@@ -115,12 +115,20 @@ export class MonthPreview {
   protected readonly busy = signal(false);
   protected readonly downloadError = signal<string | null>(null);
 
-  protected readonly title = computed(
-    () => `Le mois en cours — ${currentMonthName(this.entity().nextCollection.closesAt)}`,
-  );
+  /**
+   * Sous le rythme mensuel, le mois se nomme ; sous un autre, la période en
+   * cours se dit par ses jours, lus dans la première clôture à venir.
+   */
+  protected readonly title = computed(() => {
+    const entity = this.entity();
+    const period = entity.upcomingClosures[0]?.periodLabel;
+    return entity.billingRhythm.kind === 'monthly' || period === undefined
+      ? `Le mois en cours — ${currentMonthName(entity.nextCollection.closesAt)}`
+      : `La période en cours — ${period}`;
+  });
   protected readonly subtitle = computed(
     () =>
-      `Aperçu de ce qui serait prélevé à la fin du mois (${longDay(this.entity().nextCollection.closesAt)}), ` +
+      `Aperçu de ce qui serait prélevé à la clôture (${longDay(this.entity().nextCollection.closesAt)}), ` +
       'calculé comme le lot : une facture par payeur. Rien n’est figé.',
   );
 

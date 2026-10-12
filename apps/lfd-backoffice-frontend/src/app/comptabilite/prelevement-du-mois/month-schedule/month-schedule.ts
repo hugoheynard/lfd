@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import type { LegalEntityView } from '@lfd/contracts';
 import { FoldButtonComponent, FoldCardComponent, FoldElementTitleComponent } from 'fold-ng';
@@ -7,7 +7,7 @@ import { AutopilotLastRun } from '../../autopilot-last-run/autopilot-last-run';
 import { CollectionCalendar } from '../../collection-calendar/collection-calendar';
 
 /**
- * **Le calendrier du mois**, en tête de l'écran : la frise datée par le
+ * **Le calendrier de la prochaine clôture**, en tête de l'écran : la frise datée par le
  * serveur, l'état de la préparation automatique et sa dernière tentative
  * (PA3), et le chemin vers la fiche de l'entité où ces dates se règlent.
  *
@@ -30,4 +30,15 @@ import { CollectionCalendar } from '../../collection-calendar/collection-calenda
 })
 export class MonthSchedule {
   readonly entity = input.required<LegalEntityView>();
+
+  /**
+   * « du mois » sous le rythme mensuel, « de la prochaine clôture » sinon :
+   * deux clôtures ferment le même mois sous un autre rythme (plan
+   * `plan-rythme-de-facturation.md`, §6).
+   */
+  protected readonly title = computed(() =>
+    this.entity().billingRhythm.kind === 'monthly'
+      ? 'Le calendrier du mois'
+      : 'Le calendrier de la prochaine clôture',
+  );
 }

@@ -13,6 +13,8 @@ import { MonthPreview } from './month-preview';
  */
 
 const ENTITY: Partial<LegalEntityView> = {
+  billingRhythm: { kind: 'monthly', days: [1] },
+  upcomingClosures: [],
   id: 'le1',
   siren: '552100554',
   nextCollection: {

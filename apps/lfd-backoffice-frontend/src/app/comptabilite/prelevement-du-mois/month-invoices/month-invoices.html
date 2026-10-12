@@ -20,7 +20,7 @@
       <fold-callout variant="alert" data-invoices-error>{{ message }}</fold-callout>
     } @else if (notYetOpen(); as sentence) {
       <fold-empty-state
-        title="Pas encore de facture du mois"
+        title="Pas encore de facture pour cette période"
         [subtitle]="sentence"
         data-invoices-not-open
       >
@@ -80,8 +80,8 @@
         </fold-data-table>
       } @else if (signaled().length === 0) {
         <fold-empty-state
-          title="Aucune facture émise pour ce mois"
-          subtitle="Elles partent le dernier jour du mois à 23h55, ou par le bouton."
+          title="Aucune facture émise pour cette période"
+          subtitle="Elles partent la veille de la clôture à 23h55, ou par le bouton."
           data-invoices-empty
         >
           <fold-icon empty-icon name="receipt" />

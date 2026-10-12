@@ -1,0 +1,52 @@
+/* Les blocs de la carte se séparent par le gap, jamais par une marge. */
+.br-stack,
+.br-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.br-block {
+  gap: var(--fold-space-sm);
+}
+
+.br-heading {
+  margin: 0;
+  font-size: var(--fold-text-md);
+}
+
+.br-state {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+}
+
+.br-said {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+  max-width: 65ch;
+}
+
+.br-list {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  font-size: var(--fold-text-sm);
+}
+
+.br-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--fold-space-sm);
+  flex-wrap: wrap;
+}
+
+.br-row fold-number-input {
+  flex: 1 1 14rem;
+}
+
+.br-actions {
+  display: flex;
+  justify-content: flex-end;
+}

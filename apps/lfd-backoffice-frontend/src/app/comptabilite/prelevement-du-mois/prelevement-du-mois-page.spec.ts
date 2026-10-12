@@ -1,5 +1,7 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
+import { FoldCalloutComponent } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
 
 import type {
@@ -177,6 +179,8 @@ const ENTITY: Partial<LegalEntityView> = {
   archivedAt: null,
   autoCollectionEnabled: false,
   lastAutopilotRun: null,
+  billingRhythm: { kind: 'monthly', days: [1] },
+  upcomingClosures: [],
   nextCollection: {
     closesAt: NEXT_CLOSURE,
     plannedConstitutionAt: '2026-11-01T00:00:00.000Z',
@@ -316,7 +320,7 @@ describe('PrelevementDuMoisPage', () => {
     expect(state).not.toContain('branchée');
     const run = host(fixture).querySelector('[data-autopilot-run]')?.textContent ?? '';
     expect(run).toContain('a échoué');
-    expect(run).toContain('lot de septembre');
+    expect(run).toContain('lot de la clôture du 1er octobre 2026');
     expect(run).toContain('« L’entité n’a pas d’ICS. »');
   });
 
@@ -360,7 +364,7 @@ describe('PrelevementDuMoisPage', () => {
     const fixture = await render(api);
 
     expect(host(fixture).querySelector('[data-not-yet-open]')?.textContent).toContain(
-      'Le premier mois prélevable se clôt le 1er décembre 2026',
+      'La première période prélevable se clôt le 1er décembre 2026',
     );
   });
 
@@ -517,6 +521,45 @@ describe('PrelevementDuMoisPage', () => {
     expect(host(fixture).querySelector('[data-prepare]')).toBeNull();
     expect(button(fixture, 'Marquer déposé')).toBeUndefined();
     expect(button(fixture, 'Fichier')).toBeDefined();
+  });
+
+  it('deux fois par mois : la période se nomme par ses jours, pas par un mois', async () => {
+    const api = new FakeApi();
+    api.view = { batches: [], exclusions: [] };
+    const fixture = await render(api, undefined, {
+      ...ENTITY,
+      billingRhythm: { kind: 'semimonthly', days: [1, 16] },
+      upcomingClosures: [
+        {
+          closesAt: NEXT_CLOSURE,
+          periodLabel: 'du 16 au 31 octobre 2026',
+          invoicedOn: '2026-10-31',
+        },
+      ],
+    });
+
+    expect(text(fixture)).toContain('Le calendrier de la prochaine clôture');
+    expect(text(fixture)).toContain('La période en cours — du 16 au 31 octobre 2026');
+    expect(button(fixture, 'Préparer le lot du 1er au 30 septembre 2026')).toBeDefined();
+    expect(text(fixture)).not.toContain('Préparer le lot de septembre');
+  });
+
+  it('une clôture manquée (R4b) se voit en avertissement, en tête de l’écran', async () => {
+    const fixture = await render(new FakeApi(), undefined, {
+      ...ENTITY,
+      lastAutopilotRun: {
+        cycleClosesAt: SEPTEMBER_CLOSURE,
+        ranAt: '2026-09-30T23:15:00.000Z',
+        outcome: 'missed',
+        message: 'La période close le 1er septembre 2026 n’a jamais été préparée.',
+      },
+    });
+
+    const run = fixture.debugElement.query(By.css('[data-autopilot-run]'));
+    expect((run.componentInstance as FoldCalloutComponent).variant()).toBe('warning');
+    expect((run.nativeElement as HTMLElement).textContent).toContain(
+      'un passage précédent a été manqué',
+    );
   });
 
   it('n’emploie pas le vocabulaire bancaire interne', async () => {

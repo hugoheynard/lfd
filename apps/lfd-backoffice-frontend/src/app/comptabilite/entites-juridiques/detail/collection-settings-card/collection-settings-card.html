@@ -1,21 +1,21 @@
 <fold-page-section
   title="Prélèvement automatique"
-  description="Chaque mois, vos clients sont prélevés sur leur compte pour ce qu'ils ont commandé. Cette carte règle le calendrier de ce prélèvement."
+  description="À chaque clôture du rythme de facturation, vos clients sont prélevés sur leur compte pour ce qu'ils ont commandé pendant la période. Cette carte règle le calendrier de ce prélèvement."
   separator
 >
   <div class="cs-stack">
-    <!-- Les dates de CE mois, calculées par le serveur : la même fonction
+    <!-- Les dates de la PROCHAINE clôture, calculées par le serveur : la même fonction
          date le fichier déposé à la banque. -->
     <section class="cs-block" aria-labelledby="cs-calendar-title">
-      <h3 id="cs-calendar-title" class="cs-heading">Le calendrier de ce mois</h3>
+      <h3 id="cs-calendar-title" class="cs-heading">Le calendrier de la prochaine clôture</h3>
       <app-collection-calendar [calendar]="entity().nextCollection" />
     </section>
 
     <section class="cs-block" aria-labelledby="cs-auto-title">
       <h3 id="cs-auto-title" class="cs-heading">Préparer le lot tout seul</h3>
       <p class="cs-said">
-        Le 1er du mois, le lot se prépare tout seul&nbsp;; vous n'avez plus qu'à le vérifier et le
-        déposer à la banque.
+        À chaque clôture, le lot de la période se prépare tout seul&nbsp;; vous n'avez plus qu'à le
+        vérifier et le déposer à la banque.
       </p>
       <div class="cs-auto">
         <!-- Une phrase, pas une pastille : l'état de l'ENTITÉ est déjà la seule
@@ -24,7 +24,7 @@
           {{
             entity().autoCollectionEnabled
               ? 'Activé.'
-              : 'Désactivé : vous préparez le lot vous-même chaque mois.'
+              : 'Désactivé : vous préparez le lot vous-même à chaque clôture.'
           }}
         </p>
         <button foldButton emphasis="outline" [disabled]="busy()" (click)="toggleAuto()">
@@ -32,7 +32,7 @@
         </button>
       </div>
       <p class="cs-said">
-        Une seule tentative par mois&nbsp;: un lot annulé ne se prépare pas de nouveau tout seul.
+        Une seule tentative par clôture&nbsp;: un lot annulé ne se prépare pas de nouveau tout seul.
       </p>
       <app-autopilot-last-run [run]="entity().lastAutopilotRun" />
     </section>
@@ -51,7 +51,7 @@
       <p class="cs-said">{{ delayHint() }}</p>
 
       <fold-number-input
-        label="Jours entre la clôture du mois et le prélèvement"
+        label="Jours entre la clôture et le prélèvement"
         [hint]="
           'Ne peut pas être plus court que le délai d’avis à vos clients (' +
           entity().preNotificationDays +

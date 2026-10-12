@@ -1,6 +1,6 @@
 import type { CollectionAutopilotRunView, CollectionBatchView } from '@lfd/contracts';
 
-import { batchMonthName, ofMonth } from './collection-month-wording';
+import { longDay } from './collection-month-wording';
 import { instant } from './invoice-dossier-format';
 
 /**
@@ -8,7 +8,7 @@ import { instant } from './invoice-dossier-format';
  * `documentation/comptabilite/prelevement/prelevement-automatique.md`, PA3), lus
  * par la fiche de l'entité et par l'écran du mois.
  *
- * Une tentative par mois, jamais deux : une issue qui n'a pas préparé de
+ * Une tentative par clôture, jamais deux : une issue qui n'a pas préparé de
  * lot dit donc toujours le geste de sortie — préparer le lot à la main.
  */
 
@@ -23,9 +23,13 @@ export interface AutopilotRunSentence {
   readonly detail: string | null;
 }
 
-/** Le mois tenté, nommé comme le lot : « lot de septembre ». */
+/**
+ * La clôture tentée, nommée par sa date : « lot de la clôture du 1er octobre
+ * 2026 ». Pas par un mois — sous un rythme bimensuel ou hebdomadaire, deux
+ * lots ferment le même mois (plan `plan-rythme-de-facturation.md`, §6).
+ */
 function cycleOf(run: CollectionAutopilotRunView): string {
-  return `lot ${ofMonth(batchMonthName(run.cycleClosesAt))}`;
+  return `lot de la clôture du ${longDay(run.cycleClosesAt)}`;
 }
 
 /** La dernière tentative, en une phrase et un ton. */
@@ -48,7 +52,7 @@ export function autopilotRunSentence(run: CollectionAutopilotRunView): Autopilot
     case 'not_yet_open':
       return {
         tone: 'info',
-        said: `Préparation automatique tentée le ${at} (${cycle}) : ce mois n’est pas encore prélevable.`,
+        said: `Préparation automatique tentée le ${at} (${cycle}) : cette période n’est pas encore prélevable.`,
         detail: run.message,
       };
     case 'failed':
@@ -60,7 +64,7 @@ export function autopilotRunSentence(run: CollectionAutopilotRunView): Autopilot
     case 'missed':
       return {
         tone: 'warning',
-        said: `Préparation automatique suspendue le ${at} (${cycle}) : un passage précédent a été manqué. Préparez le lot à la main ; l’automatisme reprendra au cycle suivant.`,
+        said: `Préparation automatique suspendue le ${at} (${cycle}) : un passage précédent a été manqué. Préparez le lot à la main ; l’automatisme reprendra à la clôture suivante.`,
         detail: run.message,
       };
     case 'pending':

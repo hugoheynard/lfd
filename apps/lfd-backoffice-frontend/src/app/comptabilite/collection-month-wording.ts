@@ -101,20 +101,20 @@ export function longDay(iso: string): string {
 /** Pourquoi l'aperçu est vide quand la mise en service tombe après la clôture. */
 export function notYetOpenSentence(floorAtIso: string, firstClosureIso: string): string {
   return (
-    `Le premier mois prélevable se clôt le ${longDay(firstClosureIso)} : les commandes ` +
+    `La première période prélevable se clôt le ${longDay(firstClosureIso)} : les commandes ` +
     `passées avant le ${longDay(floorAtIso)} (mise en service du prélèvement) ` +
     'n’entrent dans aucun lot.'
   );
 }
 
 /**
- * Pourquoi l'aperçu d'un mois prélevable est vide. L'aperçu lit TOUT ce qui
+ * Pourquoi l'aperçu d'une période prélevable est vide. L'aperçu lit TOUT ce qui
  * reste à prélever depuis la mise en service — un bon écarté d'un mois passé
  * revient — donc « vide » veut dire « rien depuis la mise en service ».
  */
 export function emptyPreviewSentence(floorAtIso: string): string {
   return (
-    'Aucune commande au compte n’attend d’être prélevée : ni ce mois-ci, ni d’un mois ' +
-    `précédent depuis la mise en service du prélèvement (${longDay(floorAtIso)}).`
+    'Aucune commande au compte n’attend d’être prélevée : ni de cette période, ni d’une période ' +
+    `précédente depuis la mise en service du prélèvement (${longDay(floorAtIso)}).`
   );
 }

@@ -150,7 +150,7 @@ function button(
   return found;
 }
 
-const DAYS = 'Jours entre la clôture du mois et le prélèvement';
+const DAYS = 'Jours entre la clôture et le prélèvement';
 const CUTOFF_DAYS = 'Jours ouvrés bancaires avant le prélèvement';
 
 describe('CollectionSettingsCard — le prélèvement automatique', () => {
@@ -161,7 +161,7 @@ describe('CollectionSettingsCard — le prélèvement automatique', () => {
   it('affiche la frise du mois calculée par le serveur, et « à renseigner » sans limite de dépôt', () => {
     const fixture = boot();
 
-    expect(text(fixture)).toContain('Le mois se clôt');
+    expect(text(fixture)).toContain('La période se clôt');
     expect(text(fixture)).toContain('Vos clients sont prélevés');
     expect(text(fixture)).toContain('16 nov. 2026');
     expect(text(fixture)).toContain('à renseigner');
@@ -180,7 +180,7 @@ describe('CollectionSettingsCard — le prélèvement automatique', () => {
 
     expect(text(fixture)).not.toContain('branchée');
     expect(text(fixture)).toContain('Lot préparé automatiquement le');
-    expect(text(fixture)).toContain('lot de septembre');
+    expect(text(fixture)).toContain('lot de la clôture du 1er octobre 2026');
   });
 
   it('jamais tentée : aucun encadré de tentative', () => {

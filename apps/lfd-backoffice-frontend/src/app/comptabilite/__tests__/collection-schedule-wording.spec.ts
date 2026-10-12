@@ -32,7 +32,7 @@ describe('les mots du calendrier de prélèvement', () => {
   });
 
   it('le délai de préparation en heures', () => {
-    expect(delayExample(1)).toContain('le 1er à 01h00');
+    expect(delayExample(1)).toContain('le même jour à 01h00');
     expect(delayExample(null)).toBe('Indiquez un nombre d’heures.');
   });
 

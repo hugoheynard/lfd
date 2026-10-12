@@ -303,6 +303,13 @@
       </fold-page-section>
     </fold-card>
 
+    <!-- Le rythme AVANT le prélèvement : c'est lui qui pose les clôtures que
+         le calendrier de prélèvement compte ensuite (plan
+         `plan-rythme-de-facturation.md`, §6). -->
+    <fold-card>
+      <app-billing-rhythm-card [entity]="entity" [busy]="busy()" (saved)="runSaved($event)" />
+    </fold-card>
+
     <!-- Juste après le délai de pré-notification : l'échéance ne peut pas le
          précéder, et le refus du serveur le dit en nommant les deux. -->
     <fold-card>

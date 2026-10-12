@@ -2,8 +2,8 @@
   <div class="ms-stack">
     <fold-element-title
       variant="title"
-      title="Le calendrier du mois"
-      subtitle="Les dates de ce mois, celles que porte le fichier déposé à la banque."
+      [title]="title()"
+      subtitle="Les dates de la prochaine clôture, celles que porte le fichier déposé à la banque."
     >
       <a
         titleAction
@@ -23,14 +23,14 @@
 
     @if (entity().autoCollectionEnabled) {
       <p class="ms-said" data-auto-state>
-        Préparation automatique activée&nbsp;: le lot du mois clos se prépare tout seul à l'heure
-        prévue, une fois par mois. S'il est annulé, il ne se prépare pas de nouveau&nbsp;: c'est à
-        vous de le préparer, après correction.
+        Préparation automatique activée&nbsp;: le lot de la période close se prépare tout seul à
+        l'heure prévue, une fois par clôture. S'il est annulé, il ne se prépare pas de
+        nouveau&nbsp;: c'est à vous de le préparer, après correction.
       </p>
     } @else {
       <p class="ms-said" data-auto-state>
-        Préparation automatique désactivée&nbsp;: vous préparez le lot vous-même, après la fin du
-        mois.
+        Préparation automatique désactivée&nbsp;: vous préparez le lot vous-même, après chaque
+        clôture.
       </p>
     }
     <app-autopilot-last-run [run]="entity().lastAutopilotRun" />

@@ -46,13 +46,13 @@ describe('les mots du prélèvement du mois', () => {
 
   it('explique un mois pas encore prélevable par ses deux dates', () => {
     expect(notYetOpenSentence('2026-11-05T08:00:00.000Z', '2026-11-30T23:00:00.000Z')).toBe(
-      'Le premier mois prélevable se clôt le 1er décembre 2026 : les commandes passées avant le 5 novembre 2026 (mise en service du prélèvement) n’entrent dans aucun lot.',
+      'La première période prélevable se clôt le 1er décembre 2026 : les commandes passées avant le 5 novembre 2026 (mise en service du prélèvement) n’entrent dans aucun lot.',
     );
   });
 
   it('un aperçu vide dit qu’il ne reste rien depuis la mise en service', () => {
     expect(emptyPreviewSentence('2026-08-01T00:00:00.000Z')).toBe(
-      'Aucune commande au compte n’attend d’être prélevée : ni ce mois-ci, ni d’un mois précédent depuis la mise en service du prélèvement (1er août 2026).',
+      'Aucune commande au compte n’attend d’être prélevée : ni de cette période, ni d’une période précédente depuis la mise en service du prélèvement (1er août 2026).',
     );
   });
 });

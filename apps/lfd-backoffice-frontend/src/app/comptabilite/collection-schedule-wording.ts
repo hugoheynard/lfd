@@ -16,7 +16,7 @@ import { day, instant } from './invoice-dossier-format';
  * que le serveur rend dans `nextCollection`.
  */
 
-/** Une étape de la frise du mois — forme compatible avec un nœud `fold-timeline`. */
+/** Une étape de la frise de la clôture — forme compatible avec un nœud `fold-timeline`. */
 export interface CollectionStep {
   readonly key: string;
   readonly id: null;
@@ -27,11 +27,11 @@ export interface CollectionStep {
 /** Ce que la frise affiche quand la banque n'a pas encore donné sa limite. */
 export const DEPOSIT_UNKNOWN = 'à renseigner';
 
-/** Le calendrier de ce mois, dans l'ordre où les choses arrivent. */
+/** Le calendrier de la prochaine clôture, dans l'ordre où les choses arrivent. */
 export function collectionSteps(next: CollectionCalendarView): CollectionStep[] {
   const deposit = next.depositDeadline;
   return [
-    { key: 'closes', id: null, label: 'Le mois se clôt', displayDate: instant(next.closesAt) },
+    { key: 'closes', id: null, label: 'La période se clôt', displayDate: instant(next.closesAt) },
     {
       key: 'prepared',
       id: null,
@@ -56,12 +56,12 @@ export function collectionSteps(next: CollectionCalendarView): CollectionStep[] 
 
 const twoDigits = (value: number): string => String(value).padStart(2, '0');
 
-/** « Le mois se clôt à minuit ; le lot est préparé à 01h00. » */
+/** « La période se clôt à 00h00 ; le lot est préparé à 01h00. » */
 export function delayExample(hours: number | null): string {
   if (hours === null) {
     return 'Indiquez un nombre d’heures.';
   }
-  return `Exemple : le mois se clôt le 1er à minuit, le lot est préparé le 1er à ${twoDigits(hours)}h00.`;
+  return `Exemple : la période se clôt à 00h00, le lot est préparé le même jour à ${twoDigits(hours)}h00.`;
 }
 
 /** Au-delà, « le 1er + N » sortirait du mois : on parle en jours plutôt qu'en date. */
