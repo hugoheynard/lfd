@@ -14,6 +14,7 @@
  * Sans `uv`, il dit la commande à lancer et s'arrête.
  */
 import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
 
 import { GRAPHIFY_PACKAGE, GRAPHIFY_VERSION } from "./graphify-version.mjs";
 
@@ -40,6 +41,7 @@ function main() {
     // Une ligne, et pas le silence : sans elle, un dev qui lance le script à
     // la main croit qu'il n'a rien fait (constaté par Hugo le 2026-10-12).
     console.log(`${PREFIX} ${GRAPHIFY_VERSION} déjà installé.`);
+    buildFirstGraph();
     return;
   }
   const spec = `${GRAPHIFY_PACKAGE}==${GRAPHIFY_VERSION}`;
@@ -51,7 +53,21 @@ function main() {
   const result = spawnSync("uv", ["tool", "install", "--force", spec], { stdio: "inherit" });
   if (result.status !== 0) {
     console.log(`${PREFIX} l'installation a échoué — relancez : uv tool install ${spec}`);
+    return;
   }
+  buildFirstGraph();
+}
+
+/**
+ * Le premier graphe d'un poste neuf, sans attendre le premier commit : le même
+ * rafraîchissement que les hooks, détaché. Rien si le graphe existe déjà.
+ */
+function buildFirstGraph() {
+  if (existsSync("graphify-out/graph.json")) {
+    return;
+  }
+  console.log(`${PREFIX} premier graphe en cours, en arrière-plan (graphify-out/).`);
+  spawnSync("node", ["dev-toolbox/graphify/refresh-graph.mjs"], { stdio: "inherit" });
 }
 
 try {
