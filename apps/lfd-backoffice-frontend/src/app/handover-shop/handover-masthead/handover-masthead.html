@@ -4,6 +4,8 @@
   <fold-tabs
     direction="horizontal"
     size="comfortable"
+    background="surface"
+    activeStyle="fill"
     [tabs]="store.tabs()"
     [activeKey]="store.activeTab()"
     (activeKeyChange)="store.selectTab($event)"
