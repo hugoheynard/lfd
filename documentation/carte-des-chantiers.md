@@ -198,7 +198,7 @@ supprimé, sauf si un `migration.sql` le cite — alors bandeau daté) :
 - `b2b/comptes-client/plan-sous-comptes.md` (S1–S4 bâtis ; le README dit encore « rien n'existe »)
 - `comptabilite/fidelite/plan-points-de-fidelite.md` (A–E2 ; ne garder que F)
 - `comptabilite/mandat/plan-mandat-client.md`
-- `order/plan-idempotence-de-passation.md`, `plan-supervision-v2.md`, `architecture-tva-des-frais-de-port.md`, `plan-bon-public.md`, `plan-bon-de-commande-public-en-ttc.md`, `plan-vitrine-enregistrement.md`, `plan-nature-du-client-sur-la-commande.md`, `plan-agregation-des-commandes.md` (A1, A2)
+- `order/plan-idempotence-de-passation.md`, `plan-supervision-v2.md`, `architecture-tva-des-frais-de-port.md`, `plan-bon-public.md`, `plan-bon-de-commande-public-en-ttc.md`, `plan-vitrine-enregistrement.md`, `architecture-ce-que-porte-la-commande.md`, `plan-agregation-des-commandes.md` (A1, A2)
 - `pricing/plan-materiaux-de-prix.md`, `plan-decompte-du-panier-ht.md`, `plan-familles-en-donnees.md`, `plan-la-trace-qui-explique.md`, `mercuriales/plan-la-mercuriale-devient-un-objet.md`
 - `pim/plan-methodes-de-remise-professionnelle.md`, `plan-separer-allergenes-et-nutrition.md` (§9, §10 restent)
 - `livraisons/architecture/plan-schema-delivery.md`, `chargement/plan-geometrie-du-plancher.md`, `clientele/plan-remise-et-livraison-par-clientele.md`, `clientele/plan-retrait-slots.md`, `clientele/plan-procedure-de-livraison.md`

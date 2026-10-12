@@ -204,7 +204,7 @@ export class QueueTable {
 
   /**
    * « Pro » ou « Public » — QUI a commandé, figé à la passation, et non le
-   * tarif appliqué (plan `order/plan-nature-du-client-sur-la-commande.md`, D1).
+   * tarif appliqué (plan `order/architecture-ce-que-porte-la-commande.md`, D1).
    *
    * 🔴 `null` sur une commande d'avant la distinction : pas de badge plutôt
    * qu'un badge déduit de l'absence de société, qui n'a jamais voulu dire

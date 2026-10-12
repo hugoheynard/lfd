@@ -11,7 +11,7 @@ import type { OrderFulfillmentInput } from "./order-shapes.js";
  * `public` sinon — quel que soit le statut de la société.
  *
  * C'est QUI commande, pas le tarif : une société en attente est `pro` ici et
- * B2C au tarif (plan `documentation/order/plan-nature-du-client-sur-la-commande.md`,
+ * B2C au tarif (plan `documentation/order/architecture-ce-que-porte-la-commande.md`,
  * D1 et D2). Aucun appelant ne la passe, pour qu'aucun ne puisse la contredire.
  *
  * ⚠️ Règle **appliquée par l'agrégat**, pas une impossibilité : la base ne la

@@ -123,10 +123,39 @@ geste interne derrière une session staff.
 - 🔴 `clientele` dit **QUI commande, pas quel tarif** a été appliqué. Une
   société en attente est `pro` ici, et B2C au tarif. Elle sert au badge du
   comptoir et à la règle de production. Détail et raisons :
-  [`plan-nature-du-client-sur-la-commande.md`](plan-nature-du-client-sur-la-commande.md).
+  Les décisions sont au §3.2 bis.
 - Une société supprimée remet `companyId` à `NULL` (`ON DELETE SET NULL`) sous
   une commande restée `pro`. Les deux colonnes peuvent donc se contredire, et
   c'est `clientele` qui dit le vrai.
+
+#### 3.2 bis `clientele` : pourquoi cette colonne est ainsi (décidé le 2026-09-15, relu le 2026-10-12)
+
+Le plan qui l'a bâtie (`plan-nature-du-client-sur-la-commande`, supprimé le
+2026-10-12, historique dans git) est fondu ici. La demande de Hugo : le comptoir
+doit voir si le client est pro ou public, **inscrit à la commande**.
+
+- **D1** — on fige **QUI commande**, pas le tarif : `pro` quand la commande est
+  passée pour une société, `public` sinon, quel que soit le statut de la société.
+- **D2** — le nom est `clientele` (enum `OrderClientele`, `pro | public`). Ce
+  n'est **pas** la clientèle **tarifée** B2B/B2C (`CustomerAudiences`) : les deux
+  divergent sur une société en attente et sur un rattaché en espace perso.
+- **D3** — déduite par l'agrégat (`clienteleOf(companyId)`, `Order.toPersistence()`),
+  aucun appelant ne la passe. C'est une règle **appliquée**, pas une
+  impossibilité : aucun `CHECK`, et `ON DELETE SET NULL` sur la société.
+- **D4** — **nullable pour toujours, aucun rattrapage** : « sans société » ne
+  voulait pas dire « public » (multi-sociétés sans en-tête, pro avant sa société,
+  rattaché en espace perso). Pas de troisième déploiement qui resserre en
+  `NOT NULL`.
+- **D5** — la file du comptoir lit la colonne sans la redéduire ; sur `NULL`
+  l'écran n'affiche **aucun badge** (`queue-table.ts`, `fold-badge`).
+- **D7** — un rapatriement futur ne réécrit pas `clientele` : c'est un fait de
+  la passation ; la corriger serait un geste humain journalisé.
+- Un second lecteur est venu depuis : la **règle de production** (un règlement en
+  vol ne produit pas pour `public`, produit pour `pro` et `NULL`).
+
+Ne fait pas : figer la clientèle tarifée, l'afficher hors de la file, contraindre
+la base. Vérifié le 2026-10-12 : `orders.prisma` (`OrderClientele`), `order.ts`,
+`queue-table.ts`.
 
 La **provenance d'écran** (`self_service`, `back_office`, `recurring`) n'est pas
 une colonne : les vues de lecture la déduisent de `placedByStaffId` et

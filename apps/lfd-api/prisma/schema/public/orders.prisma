@@ -52,7 +52,7 @@ enum PaymentStatus {
 ///
 /// ⚠️ Ce n'est PAS la clientèle TARIFÉE B2B/B2C (`CustomerAudiences`, B2B =
 /// société active) : les deux divergent sur une société en attente et sur un
-/// rattaché en espace perso. Cf. documentation/order/plan-nature-du-client-sur-la-commande.md (D1, D2).
+/// rattaché en espace perso. Cf. documentation/order/architecture-ce-que-porte-la-commande.md (D1, D2).
 enum OrderClientele {
   pro
   public

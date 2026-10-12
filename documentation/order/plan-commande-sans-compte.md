@@ -322,7 +322,7 @@ externalId)` (`platform/mailer/journal/mail-journal.port.ts`) est un
      l'extraire est à concevoir au moment de bâtir, pas à supposer fait.
 
 - **D3 — le rapatriement n'est PAS dans ce plan.** ✅ Il n'existe pas :
-  [`../order/plan-nature-du-client-sur-la-commande.md`](plan-nature-du-client-sur-la-commande.md)
+  [`../order/architecture-ce-que-porte-la-commande.md`](architecture-ce-que-porte-la-commande.md)
   §1 — « aucun code ne rattache une société à une commande existante » — et son
   **D7 décide que le rapatriement ne réécrit pas** ce qui est figé à la
   passation. Un invité qui crée un compte ne reprend donc pas ses commandes sans
@@ -491,7 +491,7 @@ par des lectures faites après son passage.
   `guestEmail <> ''`, qui laissait passer la ligne interdite (`FALSE OR NULL` =
   `NULL`) — l'erreur est morte avec la voie, la leçon reste.
 - **Un plan voisin qui a vécu la même contradiction** :
-  [`../order/plan-nature-du-client-sur-la-commande.md`](plan-nature-du-client-sur-la-commande.md)
+  [`../order/architecture-ce-que-porte-la-commande.md`](architecture-ce-que-porte-la-commande.md)
   — un BLOQUANT y a renversé une décision, et le sort de chaque objection est
   consigné à son §5. C'est la forme suivie ici au §8.
 - **Une migration irréversible assumée par écrit** : son D4 — « il n'y en a pas :
