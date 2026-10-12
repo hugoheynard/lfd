@@ -254,6 +254,10 @@ export class App {
    * dépend plus des Réglages (`b2b_settings`), sous lesquels le lanceur mobile
    * cachait ces deux écrans à qui n'avait que la vitrine.
    */
+  /** La teinte de la section Communication : un rose fait de tokens fold. */
+  protected readonly communicationTint =
+    'color-mix(in oklab, var(--fold-ref-red-450), var(--fold-ref-grape-500) 45%)';
+
   protected readonly canSeeCommunication = computed(() =>
     this.permissions.can('b2b_storefront:read'),
   );

@@ -218,7 +218,11 @@
              vitrine, et ses textes. Une section du rail principal plutôt qu'un
              recoin de l'E-commerce (Hugo, 2026-10-12) : on y vient pour écrire,
              pas pour régler ce qu'on vend. Sous le droit de la vitrine. -->
-        <fold-menu-section label="Communication">
+        <!-- Le rose (Hugo, 2026-10-12 : « un rose pâle ») : fold n'en a pas ; il
+             se compose du rouge et du violet de la marque, et ressort PÂLE là
+             où fold le dilue — survol, sélection — tout en restant lisible
+             sur le trait de la section. -->
+        <fold-menu-section label="Communication" [color]="communicationTint">
           <a
             fold-menu-item
             icon="view"
