@@ -57,9 +57,6 @@ class Reader extends OrderReader {
   findById(): Promise<never> {
     return Promise.reject(new Error("non utilisé"));
   }
-  listForAdmin(): Promise<never> {
-    return Promise.reject(new Error("non utilisé"));
-  }
   findAuthorByReference(): Promise<never> {
     return Promise.reject(new Error("non utilisé"));
   }

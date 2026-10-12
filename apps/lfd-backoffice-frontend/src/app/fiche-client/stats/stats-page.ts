@@ -162,7 +162,7 @@ export class ClientStatsPage {
     try {
       const [sheet, rows, habits] = await Promise.all([
         this.sheets.sheet(id),
-        this.orders.list({ companyId: id, limit: ORDERS_WINDOW }),
+        this.orders.list({ companyId: id, limit: ORDERS_WINDOW }).then((page) => page.rows),
         this.catalog.habitsOf(id),
       ]);
       this.sheet.set(sheet);

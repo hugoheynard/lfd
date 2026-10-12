@@ -18,6 +18,8 @@ function row(companyId: string | null, companyDisplayName: string | null): Admin
     customerLabel: 'SAS Alpes Chalets',
     companyId,
     companyDisplayName,
+    fulfillmentDay: null,
+    clientele: 'pro',
     origin: 'self_service',
   };
 }

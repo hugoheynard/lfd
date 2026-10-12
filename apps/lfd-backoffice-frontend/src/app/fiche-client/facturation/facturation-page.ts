@@ -211,7 +211,7 @@ export class ClientFacturationPage {
     this.state.set('loading');
     try {
       const [rows, company] = await Promise.all([
-        this.orders.list({ companyId: id, limit: ORDERS_WINDOW }),
+        this.orders.list({ companyId: id, limit: ORDERS_WINDOW }).then((page) => page.rows),
         this.companies.getById(id),
       ]);
       this.rows.set(rows);

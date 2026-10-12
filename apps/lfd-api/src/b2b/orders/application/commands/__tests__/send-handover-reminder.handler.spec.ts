@@ -100,10 +100,6 @@ class OneOrderReader extends OrderReader {
     return unused("listPersonal");
   }
 
-  override listForAdmin(): Promise<never> {
-    return unused("listForAdmin");
-  }
-
   override findAuthorByReference() {
     return Promise.reject(new Error("non utilisé"));
   }

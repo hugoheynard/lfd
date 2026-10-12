@@ -119,6 +119,8 @@ import { OrderCutoffReader } from "./domain/ports/order-cutoff.reader.js";
 import { OrderGuardReader } from "./domain/ports/order-guard.reader.js";
 import { OrderPayerReader } from "./domain/ports/order-payer.reader.js";
 import { OrderReader } from "./domain/ports/order.reader.js";
+import { AdminOrderListReader } from "./domain/ports/admin-order-list.reader.js";
+import { PrismaAdminOrderListReader } from "./infrastructure/prisma-admin-order-list.reader.js";
 import { OrderDraftRepository } from "./domain/ports/order-draft.repository.js";
 import { ShopCartRepository } from "./domain/ports/shop-cart.repository.js";
 import { OrderIdempotencyStore } from "./domain/ports/order-idempotency.store.js";
@@ -377,6 +379,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     { provide: OrderDraftRepository, useClass: PrismaOrderDraftRepository },
     { provide: ShopCartRepository, useClass: PrismaShopCartRepository },
     { provide: OrderReader, useClass: PrismaOrderReader },
+    { provide: AdminOrderListReader, useClass: PrismaAdminOrderListReader },
     { provide: CompletedOrderReader, useClass: PrismaCompletedOrderReader },
     { provide: VoucherOrderReader, useClass: PrismaVoucherOrderReader },
     { provide: OrderNumberReader, useClass: PrismaOrderNumberReader },

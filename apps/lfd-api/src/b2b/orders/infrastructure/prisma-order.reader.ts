@@ -1,8 +1,6 @@
 import {
   orderLineAllergensSchema,
   type OrderLineAllergens,
-  type AdminOrderRow,
-  type AdminOrdersQuery,
   type BillingAddressPayload,
   billingAddressPayloadSchema,
   type CartAdjustment,
@@ -227,39 +225,6 @@ export class PrismaOrderReader extends OrderReader {
     return rows.map((row) => toOrderView(row));
   }
 
-  /**
-   * La liste staff. Une seule requête, avec les deux jointures qui nomment le
-   * client : la société si elle existe, la personne sinon. Les résoudre côté
-   * écran aurait voulu dire N appels pour une liste de N lignes.
-   */
-  async listForAdmin(query: AdminOrdersQuery): Promise<readonly AdminOrderRow[]> {
-    const rows = await this.prisma.order.findMany({
-      where: {
-        ...adminCompanyWhere(query),
-        ...(query.status === undefined ? {} : { status: query.status }),
-      },
-      orderBy: { createdAt: "desc" },
-      take: query.limit,
-      select: {
-        id: true,
-        orderNumber: true,
-        status: true,
-        paymentStatus: true,
-        fulfillmentMethod: true,
-        subtotalCents: true,
-        vatCents: true,
-        totalCents: true,
-        companyId: true,
-        fromSubscriptionId: true,
-        placedByStaffId: true,
-        createdAt: true,
-        company: { select: { raisonSociale: true, enseigne: true } },
-        placedBy: { select: { email: true, firstName: true, lastName: true } },
-      },
-    });
-    return rows.map(toAdminRow);
-  }
-
   async findById(orderId: string): Promise<OwnedOrder | null> {
     const row = await this.prisma.order.findUnique({
       where: { id: orderId },
@@ -472,63 +437,6 @@ interface ProductionRow {
     readonly productNameSnapshot: string;
     readonly quantity: number;
   }[];
-}
-
-/** Ce que Prisma rend pour la liste staff (les deux jointures incluses). */
-interface AdminRow {
-  readonly id: string;
-  readonly orderNumber: string;
-  readonly status: OrderStatus;
-  readonly paymentStatus: PaymentStatus;
-  readonly fulfillmentMethod: FulfillmentMethod;
-  readonly subtotalCents: number;
-  readonly vatCents: number;
-  readonly totalCents: number;
-  readonly companyId: string | null;
-  readonly fromSubscriptionId: string | null;
-  readonly placedByStaffId: string | null;
-  readonly createdAt: Date;
-  readonly company: { readonly raisonSociale: string; readonly enseigne: string } | null;
-  readonly placedBy: {
-    readonly email: string;
-    readonly firstName: string;
-    readonly lastName: string;
-  };
-}
-
-function toAdminRow(row: AdminRow): AdminOrderRow {
-  return {
-    id: row.id,
-    orderNumber: row.orderNumber,
-    placedAt: row.createdAt.toISOString(),
-    status: row.status,
-    paymentStatus: row.paymentStatus,
-    fulfillmentMethod: row.fulfillmentMethod,
-    subtotalCents: row.subtotalCents,
-    vatCents: row.vatCents,
-    totalCents: row.totalCents,
-    customerLabel: customerLabelOf(row),
-    companyId: row.companyId,
-    companyDisplayName: row.company === null ? null : companyDisplayName(row.company),
-    origin: orderOriginOf(row),
-  };
-}
-
-/**
- * Le filtre société de la liste staff. Avec `withSubAccounts`, la société ET
- * ses sous-comptes actuels — la structure d'aujourd'hui, pas le payeur à date :
- * l'onglet suit l'activité d'un groupe, il ne compte pas d'argent.
- */
-function adminCompanyWhere(query: AdminOrdersQuery): Prisma.OrderWhereInput {
-  if (query.companyId === undefined) {
-    return {};
-  }
-  if (query.withSubAccounts !== true) {
-    return { companyId: query.companyId };
-  }
-  return {
-    OR: [{ companyId: query.companyId }, { company: { parentCompanyId: query.companyId } }],
-  };
 }
 
 /** Les deux jointures qui suffisent à nommer un client — rien de plus. */

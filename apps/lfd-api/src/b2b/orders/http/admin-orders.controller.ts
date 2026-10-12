@@ -6,7 +6,7 @@ import {
   RequirePermission,
 } from "../../../platform/auth/admin-surface.decorator.js";
 import {
-  type AdminOrderRow,
+  type AdminOrdersPage,
   type AdminOrdersQuery,
   adminOrdersQuerySchema,
   type AdminPlaceOrderPayload,
@@ -124,12 +124,16 @@ export class AdminOrdersController {
     );
   }
 
-  /** Les commandes, la plus récente en tête, filtrables par société et par état. */
+  /**
+   * Les commandes, la plus récente en tête, **par page** : `nextCursor` se
+   * renvoie en `cursor` pour la suivante. Filtrables par société, clientèle,
+   * jours, états, mode et recherche (`AdminOrdersQuery`).
+   */
   @Get()
   async list(
     @Query(new ZodQuery(adminOrdersQuerySchema)) filters: AdminOrdersQuery,
-  ): Promise<readonly AdminOrderRow[]> {
-    return this.queries.execute<ListAdminOrdersQuery, readonly AdminOrderRow[]>(
+  ): Promise<AdminOrdersPage> {
+    return this.queries.execute<ListAdminOrdersQuery, AdminOrdersPage>(
       new ListAdminOrdersQuery(filters),
     );
   }

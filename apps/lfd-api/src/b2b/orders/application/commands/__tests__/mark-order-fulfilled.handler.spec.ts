@@ -33,7 +33,6 @@ class Reader extends OrderReader {
   listByCompany = unused;
   listPersonal = unused;
   findById = unused;
-  listForAdmin = unused;
   findForPacking = unused;
   listForProduction = unused;
 }

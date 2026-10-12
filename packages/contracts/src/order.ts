@@ -1053,73 +1053,8 @@ export interface PlacedOrderResponse {
 
 // ─── Surface ADMIN (staff) ───────────────────────────────────────────────────
 
-/**
- * Une commande dans la liste **staff**. Volontairement distincte d'`OrderView` :
- * un commercial parcourt des dizaines de lignes, il lui faut **qui a commandé**
- * — que la vue client n'a aucune raison de porter, le client se connaissant — et
- * pas les lignes d'articles, qu'il ne lit qu'après avoir ouvert.
- */
-export interface AdminOrderRow {
-  readonly id: string;
-  readonly orderNumber: string;
-  /** ISO. Passée le. */
-  readonly placedAt: string;
-  readonly status: OrderStatus;
-  readonly paymentStatus: PaymentStatus;
-  readonly fulfillmentMethod: FulfillmentMethod;
-  /**
-   * Sous-total **HT** et **TVA**, en centimes — la décomposition que réclame la
-   * comptabilité. Ils vivent déjà sur la commande ; les taire dans la liste
-   * obligeait à ouvrir chaque commande pour reporter un mois.
-   */
-  readonly subtotalCents: number;
-  readonly vatCents: number;
-  readonly totalCents: number;
-  /**
-   * Qui a commandé, en clair : la raison sociale, ou la personne quand la
-   * commande est **zéro friction** (sans entreprise). Résolu au serveur — c'est
-   * une jointure, pas une affaire d'écran.
-   */
-  readonly customerLabel: string;
-  /** `null` = commande personnelle, sans entreprise. */
-  readonly companyId: string | null;
-  /**
-   * La société sous le nom où elle se reconnaît (`companyDisplayName` :
-   * l'enseigne, à défaut la raison sociale), `null` sans entreprise. C'est ce
-   * qui distingue deux sites d'un même principal, qui partagent souvent la
-   * raison sociale.
-   */
-  readonly companyDisplayName: string | null;
-  /**
-   * Par quelle porte elle est entrée — cf. {@link OrderOrigin}. Remplace le
-   * booléen `fromSubscription` : deux façons de dire la provenance sur la même
-   * ligne finissaient par se contredire dès qu'une troisième porte s'ouvrait,
-   * et c'est précisément ce qui vient d'arriver avec la saisie par l'équipe.
-   */
-  readonly origin: OrderOrigin;
-}
-
-/**
- * Filtres de la liste staff. `limit` est **borné** : une liste d'administration
- * sans plafond finit par ramener toute la table le jour où le catalogue marche.
- */
-export const adminOrdersQuerySchema = z.object({
-  /** Restreint à une entreprise. Absent = toutes, entreprises et personnelles. */
-  companyId: z.string().trim().min(1).optional(),
-  /**
-   * Avec `companyId` : ajoute les commandes de ses sous-comptes ACTUELS
-   * (`parent_company_id`). Une vue de suivi, pas d'argent : le payeur à date,
-   * c'est le relevé de cycle. Sans `companyId`, sans effet.
-   */
-  withSubAccounts: z
-    .enum(["true", "false"])
-    .transform((value) => value === "true")
-    .optional(),
-  /** Restreint à un état d'avancement. */
-  status: orderStatusSchema.optional(),
-  limit: z.coerce.number().int().min(1).max(200).default(50),
-});
-export type AdminOrdersQuery = z.infer<typeof adminOrdersQuerySchema>;
+// La liste staff (`AdminOrderRow`, ses filtres, sa page) vit dans
+// `admin-order-list.ts` depuis le 2026-10-12 (plan-page-commandes, lot C1).
 
 /**
  * **Ce que le serveur facturera**, demandé avant de valider.

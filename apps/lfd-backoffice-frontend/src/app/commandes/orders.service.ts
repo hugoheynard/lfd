@@ -3,7 +3,7 @@ import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import type {
-  AdminOrderRow,
+  AdminOrdersPage,
   AdminOrdersQuery,
   AdminPlaceOrderPayload,
   AdminPlacedOrderResponse,
@@ -28,8 +28,11 @@ import { B2B_API_BASE } from '../api/api-config';
 export class AdminOrdersService {
   private readonly http = inject(HttpClient);
 
-  /** Les commandes, la plus récente en tête. Filtres optionnels. */
-  async list(filters: Partial<AdminOrdersQuery> = {}): Promise<readonly AdminOrderRow[]> {
+  /**
+   * Une page de commandes, la plus récente en tête. Filtres optionnels ;
+   * `nextCursor` se renvoie en `cursor` pour la page suivante.
+   */
+  async list(filters: Partial<AdminOrdersQuery> = {}): Promise<AdminOrdersPage> {
     const params = new URLSearchParams();
     if (filters.companyId !== undefined) {
       params.set('companyId', filters.companyId);
@@ -45,7 +48,7 @@ export class AdminOrdersService {
     }
     const query = params.toString();
     return firstValueFrom(
-      this.http.get<readonly AdminOrderRow[]>(
+      this.http.get<AdminOrdersPage>(
         `${B2B_API_BASE}/admin/orders${query === '' ? '' : `?${query}`}`,
       ),
     );

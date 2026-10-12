@@ -19,7 +19,6 @@ function reader(owned: OwnedOrder | null): OrderReader {
     listForProduction: () => Promise.resolve([]),
     listByCompany: () => Promise.resolve([]),
     listPersonal: () => Promise.resolve([]),
-    listForAdmin: () => Promise.resolve([]),
     findById: () => Promise.resolve(owned),
   };
 }

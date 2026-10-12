@@ -376,7 +376,7 @@ export class NouvelleCommandePage {
       const [company, history, catalogue, habits, pickups, zones, saved, deliveryAvailability] =
         await Promise.all([
           this.customerSource.customer(companyId),
-          this.orders.list({ companyId, limit: HISTORY_SIZE }),
+          this.orders.list({ companyId, limit: HISTORY_SIZE }).then((page) => page.rows),
           this.catalogService.list(),
           this.catalogService.habitsOf(companyId),
           this.pickupsService.list(),

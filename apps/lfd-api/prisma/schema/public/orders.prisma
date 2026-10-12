@@ -308,6 +308,9 @@ model Order {
   @@index([status])
   @@index([paymentStatus])
   @@index([fromSubscriptionId])
+  /// L'ordre de la liste staff (`createdAt desc, id desc`) et sa pagination par
+  /// clé : la page suivante est une descente d'index, pas un tri de la table.
+  @@index([createdAt(sort: Desc), id(sort: Desc)])
   @@map("orders")
   @@schema("public")
 }

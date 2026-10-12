@@ -150,11 +150,13 @@ export function declareCustomerAgentTools(): readonly string[] {
     execute: (args) =>
       said('Lecture des commandes', async () =>
         ordersText(
-          await orders.list({
-            companyId: args.companyId,
-            withSubAccounts: true,
-            limit: SHOWN_ROWS,
-          }),
+          await orders
+            .list({
+              companyId: args.companyId,
+              withSubAccounts: true,
+              limit: SHOWN_ROWS,
+            })
+            .then((page) => page.rows),
         ),
       ),
   });

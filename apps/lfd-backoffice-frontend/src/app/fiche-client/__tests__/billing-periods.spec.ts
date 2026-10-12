@@ -30,6 +30,8 @@ function order(
     customerLabel: 'Café des Halles',
     companyDisplayName: 'Café des Halles',
     companyId: 'cmp_1',
+    fulfillmentDay: null,
+    clientele: 'pro',
     origin: 'self_service',
   };
 }

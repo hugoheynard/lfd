@@ -367,7 +367,6 @@ const noReader: OrderReader = {
   listByCompany: () => Promise.resolve([]),
   listPersonal: () => Promise.resolve([]),
   findById: () => Promise.resolve(null),
-  listForAdmin: () => Promise.resolve([]),
   findAuthorByReference: () => Promise.resolve(null),
   findForPacking: () => Promise.reject(new Error("non utilisé")),
   listForProduction: () => Promise.resolve([]),

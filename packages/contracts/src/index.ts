@@ -590,10 +590,11 @@ export type {
   DevScenarioView,
 } from "./dev-seed.js";
 export type { PickupAddressPayload, PickupAddressView, CreatedPickupResponse } from "./pickup.js";
-export { adminOrdersQuerySchema, orderLineAllergensSchema } from "./order.js";
+export { orderLineAllergensSchema } from "./order.js";
+export { adminOrdersQuerySchema, adminOrderClienteleSchema } from "./admin-order-list.js";
 export { vatShareSchema, vatSharesSchema } from "./order.js";
 export type { VatShareView } from "./order.js";
-export type { AdminOrderRow, AdminOrdersQuery } from "./order.js";
+export type { AdminOrderRow, AdminOrdersPage, AdminOrdersQuery } from "./admin-order-list.js";
 export {
   clockTimeSchema,
   orderCutoffPayloadSchema,

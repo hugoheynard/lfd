@@ -45,7 +45,6 @@ function reader(order: OwnedOrder | null): OrderReader {
     listByCompany: () => Promise.resolve([]),
     listPersonal: () => Promise.resolve([]),
     findById: () => Promise.resolve(order),
-    listForAdmin: () => Promise.resolve([]),
     findAuthorByReference: () => Promise.resolve(null),
     findForPacking: () => Promise.reject(new Error("non utilisé")),
   };

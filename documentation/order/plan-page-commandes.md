@@ -1,6 +1,6 @@
 # Plan — la page Commandes du back-office
 
-> **Plan, doc-first**, écrit le 2026-10-12. Rien n'est bâti. Ne touche ni à
+> **Plan**, écrit le 2026-10-12. C1 (le serveur) est bâti ; C2 à C4 restent à faire. Ne touche ni à
 > l'argent, ni à une migration de données, ni à une frontière de sécurité
 > (lecture sous `b2b_orders:read`, déjà accordée) : pas de `vitruve` d'office
 > (CLAUDE.md §9 bis) ; l'existant a été relu ce jour-là.
@@ -29,6 +29,29 @@
   ne lit que les comptes voit l'onglet et prend un 403.
 
 ## 2. Le serveur (lot C1)
+
+> ✅ **C1 bâti le 2026-10-12** (non commité à l'écriture). Ce qui diffère du
+> texte ci-dessous, et pourquoi :
+>
+> - la réponse est **toujours** `{ rows, nextCursor }` (`AdminOrdersPage`,
+>   module `admin-order-list` de `@lfd/contracts`) : la forme tableau n'est plus
+>   servie, les cinq appelants (les quatre écrans et l'outil agent
+>   `account_orders`) lisent `.rows` — pré-release, contrat cassé dans le même
+>   déploiement ;
+> - `AdminOrderRow` gagne `clientele` et `fulfillmentDay` seulement :
+>   `paymentStatus` et le mode (`fulfillmentMethod`) y étaient déjà ;
+> - `clientele` nul (historique) ne répond ni à `pro` ni à `public` : on ne
+>   devine pas après coup qui une commande servait ;
+> - `q` : chaque mot doit se trouver dans la référence, la raison sociale,
+>   l'enseigne, le prénom ou le nom (`placedBy`, le `User` du commerce — même
+>   contexte), sans égard à la casse ;
+> - **`pickupAddressId` n'est PAS bâti** : une commande ne garde pas l'id de
+>   son point de retrait, seulement le snapshot postal (`orders.pickup_address`).
+>   Le filtrer demande une colonne neuve et un rattrapage — décision à prendre ;
+> - lecteur à part (`AdminOrderListReader`, retiré d'`OrderReader`), index
+>   `orders(created_at DESC, id DESC)` par la migration
+>   `20261012600000_l_ordre_de_la_liste_des_commandes` ;
+> - e2e écrites (`admin-orders-list.e2e-spec` de l'API), **pas encore jouées**.
 
 `GET /admin/orders` s'étend, sans casser ses appelants actuels :
 

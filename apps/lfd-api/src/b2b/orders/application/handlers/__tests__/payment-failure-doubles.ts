@@ -87,10 +87,6 @@ export class OneOrderReader extends OrderReader {
     return Promise.reject(new Error("non utilisé"));
   }
 
-  override listForAdmin() {
-    return Promise.reject(new Error("non utilisé"));
-  }
-
   override findAuthorByReference() {
     return Promise.reject(new Error("non utilisé"));
   }

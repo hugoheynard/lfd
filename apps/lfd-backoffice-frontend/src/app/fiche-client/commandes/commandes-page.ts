@@ -180,11 +180,13 @@ export class ClientCommandesPage {
       // l'attente sans rien apporter.
       const site = this.site();
       const [rows, sheet] = await Promise.all([
-        this.orders.list(
-          site === ALL_SITES
-            ? { companyId: id, withSubAccounts: true, limit: PAGE_SIZE }
-            : { companyId: site, limit: PAGE_SIZE },
-        ),
+        this.orders
+          .list(
+            site === ALL_SITES
+              ? { companyId: id, withSubAccounts: true, limit: PAGE_SIZE }
+              : { companyId: site, limit: PAGE_SIZE },
+          )
+          .then((page) => page.rows),
         this.sheets.sheet(id),
       ]);
       this.rows.set(rows);

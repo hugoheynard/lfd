@@ -12,7 +12,7 @@ import { randomUUID } from "node:crypto";
  * distant) et la passerelle Stripe. Le reste — guard, bus, domaine, SQL — est réel.
  */
 import type {
-  AdminOrderRow,
+  AdminOrdersPage,
   CustomerOrderView,
   OrderView,
   PlacedOrderResponse,
@@ -155,7 +155,7 @@ describe("GET /admin/orders", () => {
   it("rend les commandes des DEUX natures — le staff n'est membre de rien", async () => {
     await seedTwoOrders();
 
-    const rows = jsonBody<readonly AdminOrderRow[]>(await staff().get("/admin/orders").expect(200));
+    const rows = jsonBody<AdminOrdersPage>(await staff().get("/admin/orders").expect(200)).rows;
 
     expect(rows).toHaveLength(2);
   });
@@ -163,7 +163,7 @@ describe("GET /admin/orders", () => {
   it("nomme le client : raison sociale, ou la personne quand il n'y a pas d'entreprise", async () => {
     await seedTwoOrders();
 
-    const rows = jsonBody<readonly AdminOrderRow[]>(await staff().get("/admin/orders").expect(200));
+    const rows = jsonBody<AdminOrdersPage>(await staff().get("/admin/orders").expect(200)).rows;
 
     expect([...rows].map((row) => row.customerLabel).sort()).toEqual([
       "Café des Halles SAS",
@@ -174,9 +174,9 @@ describe("GET /admin/orders", () => {
   it("filtre sur une entreprise, laissant les commandes personnelles dehors", async () => {
     const { companyId } = await seedTwoOrders();
 
-    const rows = jsonBody<readonly AdminOrderRow[]>(
+    const rows = jsonBody<AdminOrdersPage>(
       await staff().get(`/admin/orders?companyId=${companyId}`).expect(200),
-    );
+    ).rows;
 
     expect(rows.map((row) => row.companyId)).toEqual([companyId]);
   });
@@ -200,15 +200,15 @@ describe("GET /admin/orders", () => {
       .send({ ...pickupContent(), companyId: site.id, lines: [{ sku: "VIE-001", quantity: 1 }] })
       .expect(201);
 
-    const alone = jsonBody<readonly AdminOrderRow[]>(
+    const alone = jsonBody<AdminOrdersPage>(
       await staff().get(`/admin/orders?companyId=${companyId}`).expect(200),
-    );
-    const grouped = jsonBody<readonly AdminOrderRow[]>(
+    ).rows;
+    const grouped = jsonBody<AdminOrdersPage>(
       await staff().get(`/admin/orders?companyId=${companyId}&withSubAccounts=true`).expect(200),
-    );
-    const ofSite = jsonBody<readonly AdminOrderRow[]>(
+    ).rows;
+    const ofSite = jsonBody<AdminOrdersPage>(
       await staff().get(`/admin/orders?companyId=${site.id}&withSubAccounts=true`).expect(200),
-    );
+    ).rows;
 
     expect(alone.map((row) => row.companyId)).toEqual([companyId]);
     expect([...grouped].map((row) => [row.companyId, row.companyDisplayName]).sort()).toEqual(
@@ -224,12 +224,12 @@ describe("GET /admin/orders", () => {
   it("filtre sur un état d'avancement", async () => {
     await seedTwoOrders();
 
-    const placed = jsonBody<readonly AdminOrderRow[]>(
+    const placed = jsonBody<AdminOrdersPage>(
       await staff().get("/admin/orders?status=placed").expect(200),
-    );
-    const fulfilled = jsonBody<readonly AdminOrderRow[]>(
+    ).rows;
+    const fulfilled = jsonBody<AdminOrdersPage>(
       await staff().get("/admin/orders?status=fulfilled").expect(200),
-    );
+    ).rows;
 
     expect([placed.length, fulfilled.length]).toEqual([2, 0]);
   });
@@ -237,9 +237,9 @@ describe("GET /admin/orders", () => {
   it("respecte le plafond demandé", async () => {
     await seedTwoOrders();
 
-    const rows = jsonBody<readonly AdminOrderRow[]>(
+    const rows = jsonBody<AdminOrdersPage>(
       await staff().get("/admin/orders?limit=1").expect(200),
-    );
+    ).rows;
 
     expect(rows).toHaveLength(1);
   });
