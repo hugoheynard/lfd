@@ -24,8 +24,10 @@ message :
 - Nous vendons à des **professionnels** (boulangerie de gros) et facturons
   leurs commandes **périodiquement**. Chaque facture est payée par
   **prélèvement SEPA**, sous un mandat signé par le client.
-- Les deux schémas coexistent : **SEPA B2B** (la plupart des clients pros) et
-  **SEPA CORE** (petits clients, entrepreneurs individuels).
+- **Nous ne prélevons qu'en SEPA B2B** (Hugo, 2026-10-12). Le **CORE** n'est
+  pas utilisé, mais nous posons les questions pour les deux schémas : le
+  jour où nous l'ouvririons (petits clients, entrepreneurs individuels), la
+  réponse doit déjà être là. Le code sait produire les deux.
 - Mandats **récurrents** pour l'essentiel ; quelques **ponctuels**.
 - Nous fabriquons nous-mêmes le fichier de remise (XML `pain.008.001.02`) et le
   **déposons à la main sur le portail**. Pas d'EBICS pour l'instant.
@@ -361,9 +363,11 @@ Les codes reçus sont déjà rangés dans `collection_return.reason_code`
 >
 > **Notre situation, en quelques lignes**
 >
-> Nous facturons des clients professionnels et les prélevons par SEPA : en
-> **B2B** pour la plupart, en **CORE** pour quelques petits clients, sous
-> mandats **récurrents** (quelques ponctuels). Nous produisons nous-mêmes un
+> Nous facturons des clients professionnels et les prélevons **uniquement
+> en SEPA B2B**, sous mandats **récurrents** (quelques ponctuels). Nous
+> n'utilisons pas le CORE aujourd'hui, mais nous pourrions l'ouvrir plus
+> tard pour de petits clients : quand une question porte sur les deux
+> schémas, merci de nous répondre pour **les deux**. Nous produisons nous-mêmes un
 > fichier XML **`pain.008.001.02`** et le déposons **à la main sur votre
 > portail** (pas d'EBICS pour l'instant). Chaque remise compte **un débit par
 > client**. Selon notre réglage, nous facturerons **chaque mois, deux fois par
@@ -377,7 +381,8 @@ Les codes reçus sont déjà rangés dans `collection_return.reason_code`
 >
 > 1. Pouvez-vous nous confirmer notre **BIC** et notre **ICS** (identifiant
 >    créancier SEPA) ?
-> 2. Le schéma **B2B** est-il bien ouvert sur notre contrat, en plus du CORE ?
+> 2. Le schéma **B2B** est-il bien ouvert sur notre contrat ? Si nous voulions
+>    un jour prélever aussi en **CORE**, faudrait-il une démarche ou un avenant ?
 > 3. Avons-nous un **plafond** (par remise, par jour ou par mois) ? Que se
 >    passe-t-il si une remise le dépasse ?
 > 4. Quels sont les **frais** : abonnement au service, par remise, par débit,
