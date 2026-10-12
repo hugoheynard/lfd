@@ -96,6 +96,17 @@ export class ClientFacturationPage {
   private readonly rows = signal<readonly AdminOrderRow[]>([]);
   protected readonly company = signal<AdminCompanyDetail | null>(null);
 
+  /** Le payeur d'un site facturé chez lui (même règle que la carte du mode), sinon `null`. */
+  protected readonly billedBy = computed(() => {
+    const hierarchy = this.company()?.hierarchy;
+    if (hierarchy === undefined || hierarchy.parent === null) {
+      return null;
+    }
+    return hierarchy.follows.some((follow) => follow.aspect === 'billing')
+      ? hierarchy.parent.enseigne
+      : null;
+  });
+
   protected readonly split = computed(() => splitForBilling(this.rows(), new Date()));
 
   /** La période qui accumule encore — `null` si rien n'a été porté au compte ce mois-ci. */

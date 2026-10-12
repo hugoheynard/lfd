@@ -28,6 +28,7 @@ const pdfAsked: string[] = [];
 
 async function boot(
   read: () => Promise<{ invoices: readonly IssuedInvoiceSummaryView[] }>,
+  billedBy: string | null = null,
 ): Promise<ComponentFixture<IssuedInvoicesCard>> {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
@@ -48,6 +49,7 @@ async function boot(
   });
   const fixture = TestBed.createComponent(IssuedInvoicesCard);
   fixture.componentRef.setInput('companyId', 'c1');
+  fixture.componentRef.setInput('billedBy', billedBy);
   fixture.detectChanges();
   await fixture.whenStable();
   fixture.detectChanges();
@@ -77,9 +79,23 @@ describe('IssuedInvoicesCard', () => {
     );
   });
 
-  it('sans facture, dit pourquoi un site n’en a pas', async () => {
+  it('sans facture, un site dit chez qui il est facturé', async () => {
+    const host = (await boot(() => Promise.resolve({ invoices: [] }), 'Groupe Col Pers'))
+      .nativeElement as HTMLElement;
+    expect(host.querySelector('[data-issued-invoices-empty]')?.textContent).toContain(
+      'facturé sur la facture de Groupe Col Pers',
+    );
+  });
+
+  /**
+   * Régression : la phrase des sites s'affichait sur toutes les fiches,
+   * sous-compte ou non (Hugo, 2026-10-12).
+   */
+  it('sans facture, un compte qui n’est pas un site ne parle pas de principal', async () => {
     const host = (await boot(() => Promise.resolve({ invoices: [] }))).nativeElement as HTMLElement;
-    expect(host.querySelector('[data-issued-invoices-empty]')?.textContent).toContain('principal');
+    const empty = host.querySelector('[data-issued-invoices-empty]')?.textContent ?? '';
+    expect(empty).toContain('Aucune facture adressée à ce compte');
+    expect(empty).not.toContain('principal');
   });
 
   it('dit l’échec de lecture sans inventer une liste vide', async () => {

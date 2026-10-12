@@ -59,7 +59,7 @@
     <!-- Les factures émises (facture-emise.md) : les pièces
          figées, adressées à ce payeur. Le registre plus bas reste un relevé
          des commandes, pas des factures. -->
-    <app-issued-invoices-card [companyId]="id()" />
+    <app-issued-invoices-card [companyId]="id()" [billedBy]="billedBy()" />
 
     <fold-callout appearance="inset" variant="neutral">
       Le registre ci-dessous rassemble les commandes telles qu'elles se reportent en comptabilité ;

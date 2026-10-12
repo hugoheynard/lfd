@@ -47,6 +47,13 @@ import { NotifyService } from '../../notify.service';
 })
 export class IssuedInvoicesCard {
   readonly companyId = input.required<string>();
+  /**
+   * L'enseigne du payeur quand ce compte est un SITE facturé chez lui, sinon
+   * `null`. Sans elle, la phrase « un site est facturé sur la facture du
+   * principal » s'affichait sur toutes les fiches, sous-compte ou non (Hugo,
+   * 2026-10-12).
+   */
+  readonly billedBy = input<string | null>(null);
 
   private readonly service = inject(IssuedInvoicesService);
   private readonly notify = inject(NotifyService);

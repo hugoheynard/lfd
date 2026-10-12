@@ -46,8 +46,11 @@
         </p>
       } @empty {
         <p class="empty" data-issued-invoices-empty>
-          Aucune facture adressée à ce compte. Un site qui suit la facturation de son principal est
-          facturé sur la facture du principal.
+          @if (billedBy(); as payer) {
+            Ce site est facturé sur la facture de {{ payer }} : aucune facture ne lui est adressée.
+          } @else {
+            Aucune facture adressée à ce compte pour l'instant.
+          }
         </p>
       }
     </div>
