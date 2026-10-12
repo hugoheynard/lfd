@@ -7126,9 +7126,30 @@
         },
         {
           "key": "account.bankForm.holderLegalFormHint",
-          "fr": "Exigée par le mandat interentreprises, que le titulaire soit une société ou une personne — 40 caractères au plus.",
-          "en": "Required by the business-to-business mandate, whether the holder is a company or a person — 40 characters at most.",
-          "it": "Richiesto dal mandato tra imprese, che il titolare sia una società o una persona — al massimo 40 caratteri.",
+          "fr": "Exigée par le mandat interentreprises. La forme seule — le nom va dans Titulaire.",
+          "en": "Required by the business-to-business mandate. The form only — the name goes in Account holder.",
+          "it": "Richiesto dal mandato tra imprese. Solo la forma — il nome va in Titolare del conto.",
+          "variables": []
+        },
+        {
+          "key": "account.bankForm.holderLegalFormOther",
+          "fr": "Autre forme",
+          "en": "Other form",
+          "it": "Altra forma",
+          "variables": []
+        },
+        {
+          "key": "account.bankForm.holderLegalFormOtherLabel",
+          "fr": "Autre…",
+          "en": "Other…",
+          "it": "Altro…",
+          "variables": []
+        },
+        {
+          "key": "account.bankForm.holderPreview",
+          "fr": "Imprimé sur le mandat",
+          "en": "Printed on the mandate",
+          "it": "Stampato sul mandato",
           "variables": []
         },
         {

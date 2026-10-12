@@ -75,7 +75,7 @@ export class MandateBlockers {
   protected async openBank(): Promise<void> {
     const company = this.client.company();
     if (company !== null) {
-      await BankPanel.open(this.panels, this.accounts, this.mandates, company.id, this.stack());
+      await BankPanel.open(this.panels, this.accounts, this.mandates, company, this.stack());
     }
   }
 }

@@ -80,9 +80,9 @@ export class BankDeskCard {
   }
 
   protected open(): void {
-    const id = this.companyId();
-    if (id !== null) {
-      void BankPanel.open(this.panels, this.accounts, this.mandates, id);
+    const company = this.client.company();
+    if (company !== null) {
+      void BankPanel.open(this.panels, this.accounts, this.mandates, company);
     }
   }
 }

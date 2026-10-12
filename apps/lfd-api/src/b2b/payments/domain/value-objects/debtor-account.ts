@@ -1,6 +1,9 @@
 import type { Bic } from "../../../accounting/domain/value-objects/bic.js";
 import type { Iban } from "../../../accounting/domain/value-objects/iban.js";
 import type { LegalAddress } from "../../../accounting/domain/value-objects/legal-address.js";
+import { listedHolderLegalForm } from "@lfd/contracts";
+
+import { HolderLegalFormNotALegalFormError } from "../errors/bank-account-errors.js";
 import { InvalidDebtorAccountError } from "../errors/mandate-errors.js";
 
 /** Ce qu'on recopie du RIB d'un client, avant validation. */
@@ -15,6 +18,20 @@ export interface DebtorAccountInput {
 
 /** La case « Civilité / Forme juridique » du mandat interentreprises (plan §9, décidé le 2026-09-15). */
 const HOLDER_LEGAL_FORM_MAX_LENGTH = 40;
+
+/**
+ * Ce qu'une forme saisie en « Autre » — hors de la liste fermée
+ * `HOLDER_LEGAL_FORM_LABELS` — peut mesurer (Hugo, 2026-10-12). Un libellé de
+ * la liste n'y est pas soumis : « Société de droit étranger » en fait 25. Plus court
+ * que {@link HOLDER_LEGAL_FORM_MAX_LENGTH}, qui reste la borne de RELECTURE :
+ * une ligne enregistrée avant cette règle doit toujours se relire.
+ */
+export const WRITTEN_HOLDER_LEGAL_FORM_MAX_LENGTH = 12;
+
+/** Casse, accents et espaces retirés : « Col  Pérs » et « colpers » sont le même nom. */
+function comparable(text: string): string {
+  return text.normalize("NFD").replace(/\p{M}/gu, "").replace(/\s/gu, "").toLowerCase();
+}
 
 /**
  * **Le compte du débiteur — la recopie du RIB d'un client.**
@@ -109,6 +126,29 @@ export class DebtorAccount {
       iban: this.iban,
       bic: this.bic,
     });
+  }
+
+  /**
+   * La forme juridique est-elle une FORME, et rien d'autre ? Exigé à
+   * l'écriture seulement — `CompanyBankAccount.declare` et `replaceWith` —,
+   * jamais à la relecture : un RIB saisi avant la règle reste lisible, et se
+   * corrige au prochain enregistrement.
+   *
+   * @throws {HolderLegalFormNotALegalFormError} la forme contient le nom du
+   *   titulaire (« Col Pers SAS » pour « Col Pers »), ou, hors de la liste
+   *   fermée, dépasse {@link WRITTEN_HOLDER_LEGAL_FORM_MAX_LENGTH} caractères.
+   */
+  assertWritableLegalForm(): void {
+    const form = comparable(this.holderLegalForm);
+    if (form !== "" && form.includes(comparable(this.holder))) {
+      throw new HolderLegalFormNotALegalFormError("holds_holder_name");
+    }
+    if (
+      listedHolderLegalForm(this.holderLegalForm) === null &&
+      this.holderLegalForm.length > WRITTEN_HOLDER_LEGAL_FORM_MAX_LENGTH
+    ) {
+      throw new HolderLegalFormNotALegalFormError("too_long");
+    }
   }
 
   /** Les quatre derniers caractères de l'IBAN — de quoi reconnaître, pas débiter. */

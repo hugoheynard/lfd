@@ -150,6 +150,11 @@ export class PaiementSection {
    * sociale (`companyName`) joue le même rôle.
    */
   readonly siren = input('');
+  /**
+   * La forme juridique de la société (`formeJuridique`) — de quoi préremplir la
+   * case « forme » d'un RIB vide. `''` = inconnue, rien ne se propose.
+   */
+  readonly companyLegalForm = input('');
 
   /** Le staff change l'ensemble complet des crédits accordés. */
   readonly grantedTermsChange = output<readonly DeferredTerm[]>();

@@ -35,7 +35,11 @@
      entre vide, le reste se réaffiche (`bankAccountDraftFrom`). Le fieldset
      désarme tous les champs d'un attribut sous un mandat actif. -->
 <fold-fieldset ariaLabel="Coordonnées bancaires" [disabled]="mandateActive()">
-  <lfd-bank-account-form [(value)]="draft" [holderLegalFormRequired]="holderLegalFormRequired()" />
+  <lfd-bank-account-form
+    [(value)]="draft"
+    [holderLegalFormRequired]="holderLegalFormRequired()"
+    [companyLegalForm]="companyLegalForm()"
+  />
 </fold-fieldset>
 
 <div class="ba-actions">

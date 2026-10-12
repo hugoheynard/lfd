@@ -1,6 +1,7 @@
 import { Bic } from "../../../../accounting/domain/value-objects/bic.js";
 import { Iban } from "../../../../accounting/domain/value-objects/iban.js";
 import { LegalAddress } from "../../../../accounting/domain/value-objects/legal-address.js";
+import { HolderLegalFormNotALegalFormError } from "../../errors/bank-account-errors.js";
 import { InvalidDebtorAccountError } from "../../errors/mandate-errors.js";
 import { DebtorAccount, type DebtorAccountInput } from "../debtor-account.js";
 
@@ -103,6 +104,76 @@ describe("DebtorAccount", () => {
         }),
       });
       expect(account().sameAccountAs(movedAndRenamed)).toBe(true);
+    });
+  });
+
+  /**
+   * Régression (2026-10-12) : « Col Pers SAS » saisi dans la forme, et le
+   * mandat imprimait le nom du titulaire dans la case de la forme.
+   */
+  describe("forme juridique à l'écriture", () => {
+    function refusal(holder: string, holderLegalForm: string): unknown {
+      try {
+        account({ holder, holderLegalForm }).assertWritableLegalForm();
+        return null;
+      } catch (error) {
+        return error;
+      }
+    }
+
+    it("refuse une forme qui contient le nom du titulaire", () => {
+      const error = refusal("Col Pers", "Col Pers SAS");
+      expect(error).toBeInstanceOf(HolderLegalFormNotALegalFormError);
+      expect(error).toMatchObject({
+        refusal: "holds_holder_name",
+        message:
+          "La forme juridique ne doit pas contenir le nom du titulaire : mettez « SAS » ici et « Col Pers » dans Titulaire.",
+      });
+    });
+
+    it("compare sans la casse, les accents ni les espaces", () => {
+      expect(refusal("Le Pré Fleuri", "SAS LE PRE  FLEURI")).toMatchObject({
+        refusal: "holds_holder_name",
+      });
+      expect(refusal("Cœur d'Été", "cœurd'ete")).toMatchObject({ refusal: "holds_holder_name" });
+    });
+
+    it("refuse une saisie « Autre » de plus de 12 caractères", () => {
+      expect(refusal("Col Pers", "Société civile")).toMatchObject({ refusal: "too_long" });
+    });
+
+    it("laisse passer un libellé de la liste, même long", () => {
+      expect(refusal("Col Pers", "Société de droit étranger")).toBeNull();
+      expect(refusal("Jean Dupont", "Entreprise individuelle")).toBeNull();
+      expect(refusal("Jeanne Dupont", "Mlle")).toBeNull();
+    });
+
+    it("traite « Micro-entreprise », retirée de la liste du RIB, comme une saisie « Autre »", () => {
+      expect(refusal("Jean Dupont", "Micro-entreprise")).toMatchObject({ refusal: "too_long" });
+    });
+
+    it("refuse un libellé de la liste qui contient le nom du titulaire", () => {
+      expect(refusal("Association", "Association")).toMatchObject({
+        refusal: "holds_holder_name",
+      });
+    });
+
+    it("accepte 12 caractères tout juste", () => {
+      expect(refusal("Col Pers", "x".repeat(12))).toBeNull();
+    });
+
+    it("accepte une forme seule, et l'absence de forme", () => {
+      expect(refusal("Col Pers", "SAS")).toBeNull();
+      expect(refusal("Jean Dupont", "M.")).toBeNull();
+      expect(refusal("Col Pers", "")).toBeNull();
+    });
+
+    it("ne refuse pas une forme reprise dans le titulaire — c'est l'inverse qui est faux", () => {
+      expect(refusal("Refuge du Col SARL", "SARL")).toBeNull();
+    });
+
+    it("laisse créer le compte : la règle est celle de l'écriture, pas de la relecture", () => {
+      expect(() => account({ holder: "Col Pers", holderLegalForm: "Col Pers SAS" })).not.toThrow();
     });
   });
 });

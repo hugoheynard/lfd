@@ -1,4 +1,8 @@
-import type { CustomerBankAccountView, SetCompanyBankAccountPayload } from '@lfd/contracts';
+import {
+  listedHolderLegalForm,
+  type CustomerBankAccountView,
+  type SetCompanyBankAccountPayload,
+} from '@lfd/contracts';
 
 /**
  * Le **RIB d'une société** tel qu'on le saisit — le brouillon de
@@ -25,10 +29,12 @@ const IBAN_LAST4 = 4;
 const COUNTRY_CODE_LENGTH = 2;
 
 /**
- * La case « civilité ou forme juridique du titulaire » du mandat imprimé : 40
- * caractères, la borne que le contrat pose (tranché par Hugo le 2026-09-15).
+ * Une forme saisie en « Autre » — hors de la liste fermée — tient en 12
+ * caractères (Hugo, 2026-10-12), la borne que le serveur applique à l'écriture
+ * (`WRITTEN_HOLDER_LEGAL_FORM_MAX_LENGTH`). Les libellés de la liste n'y sont
+ * pas soumis : le plus long en fait 25, la case du mandat 40.
  */
-export const HOLDER_LEGAL_FORM_MAX_LENGTH = 40;
+export const HOLDER_LEGAL_FORM_MAX_LENGTH = 12;
 
 export interface BankAccountDraft {
   readonly iban: string;
@@ -119,11 +125,13 @@ export function hasCountryCode(draft: BankAccountDraft): boolean {
 }
 
 /**
- * La civilité ou forme juridique tient-elle dans sa case ? Le serveur refuse
- * au-delà ; l'écran désarme plutôt que de laisser tomber un refus.
+ * La civilité ou forme juridique tient-elle dans sa case ? Une entrée de la
+ * liste toujours ; une saisie « Autre » jusqu'à {@link HOLDER_LEGAL_FORM_MAX_LENGTH}.
+ * Le serveur refuse au-delà ; l'écran désarme plutôt que de laisser tomber un refus.
  */
 export function holderLegalFormFits(draft: BankAccountDraft): boolean {
-  return draft.holderLegalForm.trim().length <= HOLDER_LEGAL_FORM_MAX_LENGTH;
+  const form = draft.holderLegalForm.trim();
+  return listedHolderLegalForm(form) !== null || form.length <= HOLDER_LEGAL_FORM_MAX_LENGTH;
 }
 
 /**
@@ -223,7 +231,15 @@ export interface BankAccountFormLabels {
   readonly holderLegalForm: string;
   /** Sous le champ : pourquoi le mandat interentreprises l'exige, et sa borne — sans répéter le libellé. */
   readonly holderLegalFormHint: string;
+  /** Le texte de la liste tant que rien n'est choisi. */
   readonly holderLegalFormPlaceholder?: string;
+  /** Le libellé du champ court qu'ouvre « Autre ». */
+  readonly holderLegalFormOther: string;
+  readonly holderLegalFormOtherPlaceholder?: string;
+  /** La ligne « Autre » de la liste. */
+  readonly holderLegalFormOtherLabel: string;
+  /** Le libellé de l'aperçu « SAS · Col Pers », tel que le mandat l'imprime. */
+  readonly holderPreview: string;
   readonly line1: string;
   readonly line1Placeholder?: string;
   readonly line2: string;
@@ -247,8 +263,12 @@ export const BANK_ACCOUNT_FORM_LABELS_FR: BankAccountFormLabels = {
   holderPlaceholder: 'Refuge du Col SARL',
   holderLegalForm: 'Civilité (M., Mme) ou forme juridique (SAS, SARL…)',
   holderLegalFormHint:
-    'Exigée par le mandat interentreprises, que le titulaire soit une société ou une personne — 40 caractères au plus.',
-  holderLegalFormPlaceholder: 'Ex. SAS ou M.',
+    'Exigée par le mandat interentreprises. La forme seule — le nom va dans Titulaire.',
+  holderLegalFormPlaceholder: 'Choisir…',
+  holderLegalFormOther: 'Autre forme',
+  holderLegalFormOtherPlaceholder: 'Ex. GIE',
+  holderLegalFormOtherLabel: 'Autre…',
+  holderPreview: 'Imprimé sur le mandat',
   line1: 'Adresse',
   line1Placeholder: '12 rue des Alpages',
   line2: 'Complément',

@@ -78,6 +78,7 @@
           [companyId]="id"
           [mandateActive]="debitable()"
           [holderLegalFormRequired]="holderLegalFormRequired()"
+          [companyLegalForm]="companyLegalForm()"
           (accountChange)="onBankAccount($event)"
         />
       } @else {

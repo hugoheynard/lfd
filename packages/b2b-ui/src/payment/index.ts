@@ -19,6 +19,11 @@ export type {
   BankAccountFormLabels,
   BankAccountReadView,
 } from './bank-account-draft.model';
+export {
+  HOLDER_LEGAL_FORM_OTHER,
+  holderLegalFormFromCompany,
+  holderLegalFormPreview,
+} from './holder-legal-form.model';
 export { MandateOptionsForm } from './mandate-options-form/mandate-options-form';
 export {
   EMPTY_MANDATE_OPTIONS_DRAFT,

@@ -90,7 +90,11 @@ describe('BankMobileCard', () => {
     button?.click();
 
     expect(openedPanel()?.component).toBe(BankPanel);
-    expect(openedPanel()?.data).toEqual({ companyId: 'cmp_1', account: null });
+    expect(openedPanel()?.data).toEqual({
+      companyId: 'cmp_1',
+      companyLegalForm: 'SAS',
+      account: null,
+    });
   });
 
   it('dit l’échec de lecture au lieu de « aucun RIB », et relit au clic', () => {

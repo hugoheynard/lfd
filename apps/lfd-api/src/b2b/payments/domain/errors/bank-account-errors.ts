@@ -1,5 +1,6 @@
 import {
   AuthorizationError,
+  DomainError,
   ResourceNotFoundError,
 } from "../../../../platform/shared/errors/app-error.js";
 
@@ -52,6 +53,31 @@ export class MandateOptionsWithoutBankAccountError extends ResourceNotFoundError
     super(
       "payments.bank_account.missing",
       "Aucun RIB n'est enregistré pour cette société : enregistrez d'abord ses coordonnées bancaires, puis renseignez les références du mandat, qui sont conservées avec elles.",
+    );
+  }
+}
+
+/** Pourquoi une forme juridique de titulaire est refusée à l'écriture. */
+export type HolderLegalFormRefusal = "holds_holder_name" | "too_long";
+
+/**
+ * La case « Civilité / forme juridique » du RIB porte autre chose qu'une forme
+ * — **400**.
+ *
+ * Constaté le 2026-10-12 : la commerciale y tapait « Col Pers SAS » au lieu de
+ * « SAS », et le mandat imprimait le nom du titulaire deux fois, dont une fois
+ * tronqué dans une case de quelques caractères. Le message nomme les deux
+ * champs et ce qui va dans chacun, parce qu'il est lu devant l'écran de saisie.
+ *
+ * 🔴 Comme `InvalidDebtorAccountError`, il ne recopie jamais la saisie refusée.
+ */
+export class HolderLegalFormNotALegalFormError extends DomainError {
+  constructor(readonly refusal: HolderLegalFormRefusal) {
+    super(
+      `payments.bank_account.holder_legal_form_${refusal}`,
+      refusal === "holds_holder_name"
+        ? "La forme juridique ne doit pas contenir le nom du titulaire : mettez « SAS » ici et « Col Pers » dans Titulaire."
+        : "Une forme saisie en « Autre » tient en 12 caractères au plus : choisissez-la dans la liste si elle y est, et mettez le nom dans Titulaire.",
     );
   }
 }

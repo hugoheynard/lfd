@@ -1,6 +1,7 @@
 import { Bic } from "../../../../accounting/domain/value-objects/bic.js";
 import { Iban } from "../../../../accounting/domain/value-objects/iban.js";
 import { LegalAddress } from "../../../../accounting/domain/value-objects/legal-address.js";
+import { HolderLegalFormNotALegalFormError } from "../../errors/bank-account-errors.js";
 import { DebtorAccount } from "../../value-objects/debtor-account.js";
 import { MandateOptions } from "../../value-objects/mandate-options.js";
 import { CompanyBankAccount, type CompanyBankAccountSnapshot } from "../company-bank-account.js";
@@ -155,5 +156,42 @@ describe("CompanyBankAccount — les zones facultatives du mandat", () => {
     });
     expect(options.debtorReference).toBe("C-9P2X4B");
     expect(options.contractNumber).toBe("");
+  });
+
+  /** Régression (2026-10-12) : « Col Pers SAS » dans la forme, nom imprimé deux fois. */
+  describe("forme juridique du titulaire", () => {
+    const misfiled = (): DebtorAccount =>
+      DebtorAccount.create({
+        holder: "Col Pers",
+        holderLegalForm: "Col Pers SAS",
+        address: address(),
+        iban: Iban.create(IBAN),
+        bic: Bic.create("CEPAFRPP751"),
+      });
+
+    it("refuse de déclarer un RIB dont la forme porte le nom du titulaire", () => {
+      expect(() =>
+        CompanyBankAccount.declare({
+          id: "cba_1",
+          companyId: "cmp_1",
+          account: misfiled(),
+          options: MandateOptions.empty(),
+        }),
+      ).toThrow(HolderLegalFormNotALegalFormError);
+    });
+
+    it("refuse de le poser en remplacement", () => {
+      expect(() => declared().replaceWith(misfiled())).toThrow(HolderLegalFormNotALegalFormError);
+    });
+
+    it("relit sans broncher un RIB enregistré avant la règle", () => {
+      const before = declared().toPersistence();
+      const read = CompanyBankAccount.reconstitute({
+        ...before,
+        holder: "Col Pers",
+        holderLegalForm: "Col Pers SAS",
+      });
+      expect(read.account.holderLegalForm).toBe("Col Pers SAS");
+    });
   });
 });

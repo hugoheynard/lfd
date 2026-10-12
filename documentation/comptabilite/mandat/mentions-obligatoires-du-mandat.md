@@ -65,9 +65,53 @@ refuser, les lectures pour l'annoncer.
   juridique (SAS, SARL…) ».
 - **Obligatoire à l'écran quand l'émetteur est en interentreprises**
   (`holderLegalFormRequired`, lu de `issuerScheme`), facultatif sinon ; le
-  serveur reste le garde.
+  serveur reste le garde. Une civilité ou une forme de la liste la satisfait.
 - Le semis de dev n'en invente pas : la frappe B2B y est refusée, comme elle
   le serait en production sans la mention.
+
+### 4.1 Une liste fermée, pas une saisie libre (Hugo, 2026-10-12)
+
+Constaté : la case recevait « Col Pers SAS » au lieu de « SAS », et le mandat
+imprimait le nom du titulaire dans la petite case de la forme. **La règle :
+Titulaire = « Col Pers », Forme = « SAS ».**
+
+- **La liste** (`HOLDER_LEGAL_FORM_LABELS`, `packages/contracts/src/legal-form.ts`) :
+  « M. », « Mme », « Mlle », puis les **libellés** des formes de l'écran
+  Identité (`legalFormSchema` / `LEGAL_FORM_LABELS`) — une seule source, une
+  forme ajoutée à l'identité apparaît aussi ici. **Exclues** par une liste
+  nommée (`NOT_A_HOLDER_LEGAL_FORM`) : « Micro-entreprise » et
+  « Auto-entrepreneur », régimes et non formes — pour le titulaire d'un compte,
+  c'est « Entreprise individuelle ». L'écran Identité les garde.
+- **« Autre »** ouvre une saisie courte : 12 caractères au plus. Une valeur
+  enregistrée hors liste s'y réaffiche telle quelle, sans être effacée.
+- **Ce qui s'enregistre et s'imprime est le libellé** (« SAS »,
+  « Entreprise individuelle »), jamais la clé (`sas`). Le plus long,
+  « Société de droit étranger », fait 25 caractères : la case de 40 les tient.
+- **Préremplie** depuis la forme juridique de la société quand la case est
+  vide et qu'on n'y a pas touché (`holderLegalFormOf` : `micro` et
+  `auto_entrepreneur` proposent « Entreprise individuelle »). Branché sur la
+  fiche client staff (section paiement) et sur le panneau RIB de
+  `/mon-compte` ; **pas** sur la carte « forme de collecte » de la fiche, qui
+  ne reçoit pas la forme de la société.
+- **Aperçu** sous le formulaire, tel qu'imprimé : « SAS · Col Pers ».
+- **Garde serveur, à l'écriture seulement** —
+  `DebtorAccount.assertWritableLegalForm`, appelée par
+  `CompanyBankAccount.declare` et `replaceWith`, jamais par `reconstitute` :
+  un RIB d'avant la règle reste lisible. Refus `400`
+  `HolderLegalFormNotALegalFormError` quand la forme normalisée (casse,
+  accents, espaces) **contient le titulaire** normalisé — pour toute valeur —,
+  ou quand une saisie **hors liste** dépasse 12 caractères. Le contrat garde
+  `max(40)`, borne de relecture.
+- ⚠️ Conséquence : un RIB enregistré avec une forme fautive est refusé au
+  prochain enregistrement tant qu'on ne la corrige pas — y compris depuis un
+  écran qui n'envoie pas le champ (la valeur existante est fusionnée, puis
+  vérifiée).
+- **L'audit** des RIB enregistrés : `dev-toolbox/audits/rib-holder-legal-form.mjs`,
+  lecture seule (transaction `READ ONLY`, aucune colonne d'IBAN lue), URL par
+  `DATABASE_LFD_URL`. Il liste société, titulaire et forme pour chaque RIB dont
+  la forme contient le titulaire, est hors liste, ou dépasse 12 caractères.
+  Base de dev le 2026-10-12 : 0 suspect sur 2 RIB. **La production n'a pas été
+  auditée.**
 
 ## 5. Ce qui reste ouvert
 

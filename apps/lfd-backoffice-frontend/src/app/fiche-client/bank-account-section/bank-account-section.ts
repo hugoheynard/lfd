@@ -93,6 +93,8 @@ export class BankAccountSection {
    * requise, le serveur reste le garde.
    */
   readonly holderLegalFormRequired = input(false);
+  /** La forme juridique de la société, pour préremplir une case vide ; `''` = inconnue. */
+  readonly companyLegalForm = input('');
 
   /**
    * Le RIB connu, à chaque lecture et après chaque écriture — `null` s'il n'y

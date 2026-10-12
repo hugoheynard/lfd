@@ -389,6 +389,10 @@ export {
   legalFormRequiresVat,
   toLegalForm,
   LEGAL_FORM_LABELS,
+  HOLDER_CIVILITIES,
+  HOLDER_LEGAL_FORM_LABELS,
+  listedHolderLegalForm,
+  holderLegalFormOf,
   LEGAL_FORM_OPTIONS,
 } from "./legal-form.js";
 export type { LegalForm, LegalFormOption } from "./legal-form.js";

@@ -67,13 +67,19 @@ export class CompanyBankAccount {
     private optionsValue: MandateOptions,
   ) {}
 
-  /** Le premier RIB d'un client. */
+  /**
+   * Le premier RIB d'un client.
+   *
+   * @throws {HolderLegalFormNotALegalFormError} la forme juridique du titulaire
+   *   n'est pas une forme (`DebtorAccount.assertWritableLegalForm`).
+   */
   static declare({
     id,
     companyId,
     account,
     options,
   }: CompanyBankAccountDeclaration): CompanyBankAccount {
+    account.assertWritableLegalForm();
     return new CompanyBankAccount(id, companyId, account, options);
   }
 
@@ -81,6 +87,10 @@ export class CompanyBankAccount {
    * Ligne → agrégat. Les value objects **revalident** au passage : une ligne
    * écrite par une main tierce — script, correction en SQL — est refusée à la
    * relecture plutôt que promenée dans le domaine.
+   *
+   * ⚠️ Sauf la règle d'écriture de la forme juridique
+   * (`assertWritableLegalForm`, 2026-10-12) : elle est postérieure à des RIB
+   * déjà enregistrés, qu'elle rendrait illisibles.
    */
   static reconstitute(snapshot: CompanyBankAccountSnapshot): CompanyBankAccount {
     return new CompanyBankAccount(
@@ -139,8 +149,13 @@ export class CompanyBankAccount {
    * qui on redemande une signature sans raison finit par ne plus la donner.
    *
    * C'est ce booléen que lira la règle du mandat, quand elle existera.
+   *
+   * @throws {HolderLegalFormNotALegalFormError} la forme juridique du titulaire
+   *   n'est pas une forme — à l'écriture seulement, {@link reconstitute} ne la
+   *   vérifie pas.
    */
   replaceWith(account: DebtorAccount): boolean {
+    account.assertWritableLegalForm();
     const changed = !this.accountValue.sameAccountAs(account);
     this.accountValue = account;
     return changed;

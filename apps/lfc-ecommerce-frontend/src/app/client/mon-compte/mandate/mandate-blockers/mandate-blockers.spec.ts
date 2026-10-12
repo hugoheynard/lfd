@@ -69,7 +69,11 @@ describe('MandateBlockers', () => {
     el.querySelector<HTMLButtonElement>('button.to-bank')?.click();
 
     expect(openedPanel()?.component).toBe(BankPanel);
-    expect(openedPanel()?.data).toEqual({ companyId: 'cmp_1', account: null });
+    expect(openedPanel()?.data).toEqual({
+      companyId: 'cmp_1',
+      companyLegalForm: 'SAS',
+      account: null,
+    });
     expect(openedPanel()?.side).toBe('bottom');
   });
 

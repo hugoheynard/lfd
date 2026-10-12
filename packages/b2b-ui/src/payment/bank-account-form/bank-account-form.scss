@@ -15,6 +15,22 @@
   gap: var(--fold-space-sm);
 }
 
-.row fold-input {
+.row fold-input,
+.row fold-listbox {
   flex: 1 1 var(--lfd-bank-account-field-basis, 18rem);
+}
+
+// L'aperçu imprimé : discret, lu d'un coup d'œil sous les champs.
+.preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+.preview-value {
+  font-weight: var(--fold-weight-medium);
+  color: var(--fold-color-text);
 }

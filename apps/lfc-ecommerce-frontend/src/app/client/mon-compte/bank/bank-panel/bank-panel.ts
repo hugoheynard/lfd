@@ -20,7 +20,7 @@ import {
   toBankAccountPayload,
   type BankAccountDraft,
 } from '@lfd/b2b-ui/payment';
-import type { CustomerBankAccountView } from '@lfd/contracts';
+import type { CompanyView, CustomerBankAccountView } from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
@@ -42,8 +42,16 @@ import { bankActionLabel, bankLine } from '../bank-section';
 /** Charge d'ouverture : la société, et le compte que la carte vient de lire. */
 export interface BankPanelData {
   readonly companyId: string;
+  /**
+   * La forme juridique de la société (`formeJuridique`), qui préremplit la
+   * case « forme » d'un RIB vide. Absente ou `''` = inconnue : rien ne se propose.
+   */
+  readonly companyLegalForm?: string;
   readonly account: CustomerBankAccountView | null;
 }
+
+/** Ce que le panneau lit de la société : son identifiant, et sa forme pour préremplir. */
+export type BankPanelCompany = Pick<CompanyView, 'id' | 'formeJuridique'>;
 
 /**
  * Le panneau **RIB** de `/mon-compte` — le formulaire que la carte portait.
@@ -110,13 +118,14 @@ export class BankPanel {
     panels: FoldPanelHostService,
     accounts: ClientBankAccount,
     mandates: ClientMandate,
-    companyId: string,
+    company: BankPanelCompany,
     stack = false,
   ): Promise<void> {
+    const companyId = company.id;
     const ref = panels.open<BankPanelData, boolean>(BankPanel, {
       side: dialogSide(),
       stack,
-      data: { companyId, account: accounts.account() },
+      data: { companyId, companyLegalForm: company.formeJuridique, account: accounts.account() },
     });
     if ((await ref.closed) === true) {
       await Promise.all([accounts.reload(companyId), mandates.refresh(companyId)]);

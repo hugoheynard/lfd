@@ -13,14 +13,26 @@
        sous quel schéma le mandat sera frappé, et qui le dit par
        `holderLegalFormRequired`. Requise, elle se présente comme les autres
        champs obligatoires : sans marque « facultatif ». -->
-  <fold-input
+  <fold-listbox
     [label]="labels().holderLegalForm"
     [placeholder]="labels().holderLegalFormPlaceholder ?? ''"
     [hint]="labels().holderLegalFormHint"
     [optional]="!holderLegalFormRequired()"
-    [value]="value().holderLegalForm"
-    (valueChange)="set('holderLegalForm', $event)"
+    [options]="holderLegalFormOptions()"
+    [value]="holderLegalFormSelection()"
+    (selectionChange)="chooseLegalForm($event)"
   />
+  <!-- « Autre » : une forme rare, courte. Une valeur d'avant la liste fermée
+       (« Col Pers SAS ») s'y réaffiche telle quelle — on la corrige, on ne la
+       perd pas. -->
+  @if (otherOpen()) {
+    <fold-input
+      [label]="labels().holderLegalFormOther"
+      [placeholder]="labels().holderLegalFormOtherPlaceholder ?? ''"
+      [value]="holderLegalFormState().other"
+      (valueChange)="typeOtherLegalForm($event)"
+    />
+  }
 </div>
 <div class="row">
   <fold-input
@@ -71,3 +83,11 @@
     (valueChange)="set('bic', $event)"
   />
 </div>
+<!-- Le bloc titulaire tel que le mandat l'imprime : la forme, puis le nom. Une
+     forme qui répète le nom se voit ici avant d'être refusée. -->
+@if (preview(); as printed) {
+  <p class="preview">
+    <span class="preview-label">{{ labels().holderPreview }}</span>
+    <span class="preview-value">{{ printed }}</span>
+  </p>
+}

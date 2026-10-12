@@ -354,7 +354,10 @@ export const ACCOUNT_EN: AccountCopy = {
     holder: 'Account holder',
     holderLegalForm: 'Title (Mr, Ms) or legal form (SAS, SARL…)',
     holderLegalFormHint:
-      'Required by the business-to-business mandate, whether the holder is a company or a person — 40 characters at most.',
+      'Required by the business-to-business mandate. The form only — the name goes in Account holder.',
+    holderLegalFormOther: 'Other form',
+    holderLegalFormOtherLabel: 'Other…',
+    holderPreview: 'Printed on the mandate',
     line1: 'Address',
     line2: 'Address line 2',
     postalCode: 'Postcode',

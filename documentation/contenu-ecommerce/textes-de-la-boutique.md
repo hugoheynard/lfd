@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1252 textes
+## Sommaire — 1255 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -39,13 +39,13 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [La colonne d’accompagnement](#espace-aside) | `aside` | 4 |
 | [Mes commandes](#espace-orders) | `orders` | 99 |
 | [Fidélité](#espace-loyalty) | `loyalty` | 38 |
-| [Mon compte (factures comprises)](#espace-account) | `account` | 475 |
+| [Mon compte (factures comprises)](#espace-account) | `account` | 478 |
 | [Le compte pro — le dictionnaire général](#espace-pro) | `pro` | 8 |
 | [Le compte pro — l’écran](#espace-proaccount) | `proAccount` | 27 |
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 7 |
-| **Total** | | **1252** |
+| **Total** | | **1255** |
 
 ## Le parcours de commande
 
@@ -961,7 +961,7 @@ Source : `screens/loyalty.copy.ts` · 38 textes.
 
 ### Mon compte (factures comprises) — `account`
 
-Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 475 textes.
+Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 478 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -1301,7 +1301,10 @@ Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 
 | `account.bankNotice` | Le titulaire et l’adresse sont ceux que connaît votre banque : ils peuvent différer de votre raison sociale. Si un prélèvement SEPA est en place, le RIB ne peut plus être remplacé ici : pour changer de banque, contactez-nous. | The account holder and address are the ones your bank knows: they may differ from your registered company name. If a SEPA direct debit is in place, the bank details can no longer be replaced here: to change banks, contact us. | Il titolare e l’indirizzo sono quelli noti alla vostra banca: possono differire dalla ragione sociale. Se è attivo un addebito diretto SEPA, l’IBAN non può più essere sostituito qui: per cambiare banca, contattateci. |  |
 | `account.bankForm.holder` | Titulaire du compte | Account holder | Titolare del conto |  |
 | `account.bankForm.holderLegalForm` | Civilité (M., Mme) ou forme juridique (SAS, SARL…) | Title (Mr, Ms) or legal form (SAS, SARL…) | Titolo (Sig., Sig.ra) o forma giuridica (SAS, SARL…) |  |
-| `account.bankForm.holderLegalFormHint` | Exigée par le mandat interentreprises, que le titulaire soit une société ou une personne — 40 caractères au plus. | Required by the business-to-business mandate, whether the holder is a company or a person — 40 characters at most. | Richiesto dal mandato tra imprese, che il titolare sia una società o una persona — al massimo 40 caratteri. |  |
+| `account.bankForm.holderLegalFormHint` | Exigée par le mandat interentreprises. La forme seule — le nom va dans Titulaire. | Required by the business-to-business mandate. The form only — the name goes in Account holder. | Richiesto dal mandato tra imprese. Solo la forma — il nome va in Titolare del conto. |  |
+| `account.bankForm.holderLegalFormOther` | Autre forme | Other form | Altra forma |  |
+| `account.bankForm.holderLegalFormOtherLabel` | Autre… | Other… | Altro… |  |
+| `account.bankForm.holderPreview` | Imprimé sur le mandat | Printed on the mandate | Stampato sul mandato |  |
 | `account.bankForm.line1` | Adresse | Address | Indirizzo |  |
 | `account.bankForm.line2` | Complément | Address line 2 | Complemento |  |
 | `account.bankForm.postalCode` | Code postal | Postcode | CAP |  |

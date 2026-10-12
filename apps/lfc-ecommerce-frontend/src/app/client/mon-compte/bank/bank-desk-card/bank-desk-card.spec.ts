@@ -90,7 +90,11 @@ describe('BankDeskCard', () => {
     button?.click();
 
     expect(openedPanel()?.component).toBe(BankPanel);
-    expect(openedPanel()?.data).toEqual({ companyId: 'cmp_1', account: null });
+    expect(openedPanel()?.data).toEqual({
+      companyId: 'cmp_1',
+      companyLegalForm: 'SAS',
+      account: null,
+    });
   });
 
   /** Rétabli le 2026-09-14 : le geste d'écriture du RIB manquait au bureau — il ouvre le panneau. */
@@ -102,7 +106,11 @@ describe('BankDeskCard', () => {
     button?.click();
 
     expect(openedPanel()?.component).toBe(BankPanel);
-    expect(openedPanel()?.data).toEqual({ companyId: 'cmp_1', account: SAVED });
+    expect(openedPanel()?.data).toEqual({
+      companyId: 'cmp_1',
+      companyLegalForm: 'SAS',
+      account: SAVED,
+    });
   });
 
   /**

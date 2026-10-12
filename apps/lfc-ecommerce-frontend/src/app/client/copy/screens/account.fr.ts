@@ -359,7 +359,10 @@ export const ACCOUNT_FR: AccountCopy = {
     holder: 'Titulaire du compte',
     holderLegalForm: 'Civilité (M., Mme) ou forme juridique (SAS, SARL…)',
     holderLegalFormHint:
-      'Exigée par le mandat interentreprises, que le titulaire soit une société ou une personne — 40 caractères au plus.',
+      'Exigée par le mandat interentreprises. La forme seule — le nom va dans Titulaire.',
+    holderLegalFormOther: 'Autre forme',
+    holderLegalFormOtherLabel: 'Autre…',
+    holderPreview: 'Imprimé sur le mandat',
     line1: 'Adresse',
     line2: 'Complément',
     postalCode: 'Code postal',

@@ -123,3 +123,55 @@ const LEGACY_SPELLINGS: Readonly<Record<string, LegalForm>> = {
   assoc: "association",
   association1901: "association",
 };
+
+/**
+ * Les civilités d'un titulaire de RIB qui est une **personne** — en tête de la
+ * liste du RIB (Hugo, 2026-10-12).
+ */
+export const HOLDER_CIVILITIES = ["M.", "Mme", "Mlle"] as const;
+
+/**
+ * Les formes de l'identité qui n'ont PAS leur ligne dans la liste du RIB (Hugo,
+ * 2026-10-12) : micro-entreprise et auto-entrepreneur sont des régimes, pas
+ * des formes juridiques. Pour le titulaire d'un compte, la forme est
+ * « Entreprise individuelle » — chacune y renvoie. L'écran Identité les garde.
+ */
+const NOT_A_HOLDER_LEGAL_FORM: Partial<Readonly<Record<LegalForm, LegalForm>>> = {
+  micro: "ei",
+  auto_entrepreneur: "ei",
+};
+
+/**
+ * La liste fermée de la case « civilité ou forme juridique » du **titulaire
+ * d'un RIB** : les civilités, puis les libellés de {@link LEGAL_FORM_LABELS}
+ * dans l'ordre de l'énumération, moins {@link NOT_A_HOLDER_LEGAL_FORM}. Dérivée, pas recopiée : une forme ajoutée à
+ * l'identité apparaît aussi dans le RIB.
+ *
+ * C'est le LIBELLÉ qui s'enregistre et s'imprime sur le mandat (« SAS »,
+ * « Entreprise individuelle »), pas la clé (`sas`). Le plus long, « Société de
+ * droit étranger », fait 25 caractères : la case de 40 les tient tous.
+ */
+export const HOLDER_LEGAL_FORM_LABELS: readonly string[] = [
+  ...HOLDER_CIVILITIES,
+  ...legalFormSchema.options
+    .filter((form) => !(form in NOT_A_HOLDER_LEGAL_FORM))
+    .map((form) => LEGAL_FORM_LABELS[form]),
+];
+
+/**
+ * La forme à imprimer pour le titulaire d'un compte d'une société de cette
+ * forme : la sienne, sauf les {@link NOT_A_HOLDER_LEGAL_FORM}, ramenées à
+ * l'entreprise individuelle.
+ */
+export function holderLegalFormOf(form: LegalForm): string {
+  return LEGAL_FORM_LABELS[NOT_A_HOLDER_LEGAL_FORM[form] ?? form];
+}
+
+/**
+ * La valeur est-elle une entrée de la liste fermée, à la casse et aux espaces
+ * de bord près ? Rend le libellé canonique, ou `null` pour une saisie « Autre ».
+ */
+export function listedHolderLegalForm(value: string): string | null {
+  const key = value.trim().toLowerCase();
+  return HOLDER_LEGAL_FORM_LABELS.find((label) => label.toLowerCase() === key) ?? null;
+}

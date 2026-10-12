@@ -1,4 +1,8 @@
-import type { CompanyBankAccountView, CustomerBankAccountView } from '@lfd/contracts';
+import {
+  HOLDER_LEGAL_FORM_LABELS,
+  type CompanyBankAccountView,
+  type CustomerBankAccountView,
+} from '@lfd/contracts';
 
 import {
   BANK_ACCOUNT_FORM_LABELS_FR,
@@ -212,7 +216,11 @@ describe('brouillon du RIB', () => {
     expect(BANK_ACCOUNT_FORM_LABELS_FR.holderLegalFormHint).not.toContain(
       BANK_ACCOUNT_FORM_LABELS_FR.holderLegalForm,
     );
-    expect(BANK_ACCOUNT_FORM_LABELS_FR.holderLegalFormPlaceholder).toMatch(/^Ex\. /u);
+    // Depuis la liste fermée (2026-10-12), l'invite est celle d'une liste : elle
+    // ne doit être aucune des formes proposées.
+    expect(HOLDER_LEGAL_FORM_LABELS).not.toContain(
+      BANK_ACCOUNT_FORM_LABELS_FR.holderLegalFormPlaceholder,
+    );
   });
 
   it('les libellés par défaut sont ceux de la fiche staff', () => {
@@ -220,7 +228,7 @@ describe('brouillon du RIB', () => {
       holder: 'Titulaire du compte',
       holderPlaceholder: 'Refuge du Col SARL',
       holderLegalForm: 'Civilité (M., Mme) ou forme juridique (SAS, SARL…)',
-      holderLegalFormPlaceholder: 'Ex. SAS ou M.',
+      holderLegalFormPlaceholder: 'Choisir…',
       line2Placeholder: 'Bâtiment, étage…',
       country: 'Pays',
       countryPlaceholder: 'FR',

@@ -358,7 +358,10 @@ export const ACCOUNT_IT: AccountCopy = {
     holder: 'Titolare del conto',
     holderLegalForm: 'Titolo (Sig., Sig.ra) o forma giuridica (SAS, SARL…)',
     holderLegalFormHint:
-      'Richiesto dal mandato tra imprese, che il titolare sia una società o una persona — al massimo 40 caratteri.',
+      'Richiesto dal mandato tra imprese. Solo la forma — il nome va in Titolare del conto.',
+    holderLegalFormOther: 'Altra forma',
+    holderLegalFormOtherLabel: 'Altro…',
+    holderPreview: 'Stampato sul mandato',
     line1: 'Indirizzo',
     line2: 'Complemento',
     postalCode: 'CAP',

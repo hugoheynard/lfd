@@ -97,8 +97,9 @@ describe('BankPanel', () => {
     Array.from(el().querySelectorAll<HTMLButtonElement>('fold-panel-footer button')).at(-1);
 
   /**
-   * Les champs, dans l'ordre : titulaire, civilité ou forme juridique, adresse,
-   * complément, CP, ville, pays, IBAN, BIC.
+   * Les champs de saisie, dans l'ordre : titulaire, adresse, complément, CP,
+   * ville, pays, IBAN, BIC. La civilité ou forme juridique est une LISTE depuis
+   * le 2026-10-12 : elle se pose par {@link chooseLegalForm}.
    */
   const type = (index: number, value: string): void => {
     const input = inputs()[index];
@@ -107,6 +108,14 @@ describe('BankPanel', () => {
     }
     input.value = value;
     input.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+  };
+
+  /** Pose la forme comme le ferait un choix dans la liste du formulaire partagé. */
+  const chooseLegalForm = (value: string): void => {
+    const form = fixture.debugElement.query(By.directive(BankAccountForm))
+      .componentInstance as BankAccountForm;
+    form.value.update((draft) => ({ ...draft, holderLegalForm: value }));
     fixture.detectChanges();
   };
 
@@ -148,30 +157,30 @@ describe('BankPanel', () => {
 
     it('interentreprises : vide, Enregistrer reste désarmé, et le champ n’est pas « facultatif »', () => {
       fixture = boot({ companyId: 'cmp_1', account: { ...SAVED, holderLegalForm: '' } }, 'B2B');
-      type(7, IBAN);
+      type(6, IBAN);
       expect(submit()?.disabled).toBe(true);
       expect(optionalMarks()).toBe(0);
 
-      type(1, 'SARL');
+      chooseLegalForm('SARL');
       expect(submit()?.disabled).toBe(false);
     });
 
     it('CORE ou schéma inconnu : vide, rien ne bloque, et le champ reste « facultatif »', () => {
       for (const scheme of ['CORE', null] as const) {
         fixture = boot({ companyId: 'cmp_1', account: { ...SAVED, holderLegalForm: '' } }, scheme);
-        type(7, IBAN);
+        type(6, IBAN);
         expect(submit()?.disabled).toBe(false);
         expect(optionalMarks()).toBe(1);
       }
     });
   });
 
-  it('au-delà de 40 caractères pour la forme juridique, Enregistrer reste désarmé', () => {
+  it('au-delà de 12 caractères pour une forme « Autre », Enregistrer reste désarmé', () => {
     fixture = boot({ companyId: 'cmp_1', account: SAVED });
-    type(7, 'FR14 2004 1010 0505 0001 3M02 606');
+    type(6, 'FR14 2004 1010 0505 0001 3M02 606');
     expect(submit()?.disabled).toBe(false);
 
-    type(1, 'x'.repeat(41));
+    chooseLegalForm('x'.repeat(13));
     expect(submit()?.disabled).toBe(true);
   });
 
@@ -179,7 +188,7 @@ describe('BankPanel', () => {
     fixture = boot({ companyId: 'cmp_1', account: null });
 
     expect(submit()?.textContent).toContain(FR.account.bankSave);
-    expect(inputs()[6]?.value).toBe('FR');
+    expect(inputs()[5]?.value).toBe('FR');
     expect(submit()?.disabled).toBe(true);
   });
 
@@ -188,7 +197,6 @@ describe('BankPanel', () => {
 
     expect(inputs().map((input) => input.value)).toEqual([
       'Refuge du Col SARL',
-      'SARL',
       '12 rue des Alpages',
       '',
       '73150',
@@ -204,8 +212,8 @@ describe('BankPanel', () => {
 
   it('écrit le compte entier, nettoyé, annonce et se ferme avec `true`', async () => {
     fixture = boot({ companyId: 'cmp_1', account: SAVED });
-    type(6, 'fr');
-    type(7, '  FR14 2004 1010 0505 0001 3M02 606 ');
+    type(5, 'fr');
+    type(6, '  FR14 2004 1010 0505 0001 3M02 606 ');
     await save();
 
     expect(wire.saves).toEqual([
@@ -231,7 +239,7 @@ describe('BankPanel', () => {
   it('sur un refus, reste ouvert et montre le message du serveur', async () => {
     fixture = boot({ companyId: 'cmp_1', account: SAVED });
     wire.answer = 'IBAN invalide.';
-    type(7, 'FR00');
+    type(6, 'FR00');
     await save();
 
     expect(wire.closes).toEqual([]);
@@ -249,10 +257,10 @@ describe('BankPanel', () => {
     fixture = boot({ companyId: 'cmp_1', account: SAVED });
     expect(submit()?.disabled).toBe(true);
 
-    type(3, 'Bâtiment B');
+    type(2, 'Bâtiment B');
     expect(submit()?.disabled).toBe(true);
 
-    type(7, 'FR14 2004 1010 0505 0001 3M02 606');
+    type(6, 'FR14 2004 1010 0505 0001 3M02 606');
     expect(submit()?.disabled).toBe(false);
   });
 
@@ -270,16 +278,16 @@ describe('BankPanel', () => {
       const mandates = TestBed.inject(ClientMandate);
 
       vi.stubGlobal('matchMedia', matchMediaAt(true));
-      void BankPanel.open(panels, accounts, mandates, 'cmp_1');
+      void BankPanel.open(panels, accounts, mandates, { id: 'cmp_1', formeJuridique: '' });
       expect(openedPanel()).toEqual({
         component: BankPanel,
         side: 'bottom',
-        data: { companyId: 'cmp_1', account: SAVED },
+        data: { companyId: 'cmp_1', companyLegalForm: '', account: SAVED },
       });
 
       panels.dismissAll();
       vi.stubGlobal('matchMedia', matchMediaAt(false));
-      void BankPanel.open(panels, accounts, mandates, 'cmp_1');
+      void BankPanel.open(panels, accounts, mandates, { id: 'cmp_1', formeJuridique: '' });
       expect(openedPanel()?.side).toBe('center');
     });
 
@@ -291,7 +299,10 @@ describe('BankPanel', () => {
       const accounts = TestBed.inject(ClientBankAccount);
       const mandates = TestBed.inject(ClientMandate);
       const close = async (result: boolean | undefined): Promise<void> => {
-        const opening = BankPanel.open(panels, accounts, mandates, 'cmp_1');
+        const opening = BankPanel.open(panels, accounts, mandates, {
+          id: 'cmp_1',
+          formeJuridique: '',
+        });
         const [panel] = panels.panels();
         if (panel?.kind !== 'component') {
           throw new Error('Le dialogue ne s’est pas ouvert.');

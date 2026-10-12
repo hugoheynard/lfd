@@ -49,7 +49,7 @@ export function openCompletion(target: CompletionTarget, openers: CompletionOpen
       DeliveryAddressDialog.open(panels, company, null, addresses.deliveries().length === 0);
       return;
     case 'bank':
-      void BankPanel.open(panels, accounts, mandates, company.id);
+      void BankPanel.open(panels, accounts, mandates, company);
       return;
   }
 }

@@ -14,6 +14,7 @@ import {
   Steps,
   StepUnitOfWork,
 } from "../../__tests__/payment-doubles.js";
+import { HolderLegalFormNotALegalFormError } from "../../../domain/errors/bank-account-errors.js";
 import { recordCompanyBankAccount } from "../record-company-bank-account.js";
 
 /**
@@ -129,6 +130,25 @@ describe("recordCompanyBankAccount — le fait du RIB", () => {
         deps,
       ),
     ).rejects.toBeInstanceOf(InvalidIbanError);
+    expect(events.traced).toHaveLength(0);
+  });
+
+  /**
+   * Régression (2026-10-12) : « Col Pers SAS » dans la forme juridique, et le
+   * mandat imprimait le nom du titulaire dans la case de la forme.
+   */
+  it("n'écrit ni le RIB ni son fait quand la forme juridique porte le nom du titulaire", async () => {
+    const { deps, accounts, events } = build();
+
+    await expect(
+      recordCompanyBankAccount(
+        "cmp_1",
+        { ...RIB_PAYLOAD, holder: "Col Pers", holderLegalForm: "Col Pers SAS" },
+        "staff",
+        deps,
+      ),
+    ).rejects.toBeInstanceOf(HolderLegalFormNotALegalFormError);
+    expect(accounts.saved).toHaveLength(0);
     expect(events.traced).toHaveLength(0);
   });
 });
