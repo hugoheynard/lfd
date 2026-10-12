@@ -12,7 +12,7 @@ import type {
   OrderHandoverProofResponse,
   OrderQuotePayload,
   OrderQuoteView,
-  OrderView,
+  AdminOrderView,
 } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../api/api-config';
@@ -51,9 +51,9 @@ export class AdminOrdersService {
   }
 
   /** Une commande, dans la même vue que celle du client — délibérément. */
-  async byId(id: string): Promise<OrderView> {
+  async byId(id: string): Promise<AdminOrderView> {
     return firstValueFrom(
-      this.http.get<OrderView>(`${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}`),
+      this.http.get<AdminOrderView>(`${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}`),
     );
   }
 

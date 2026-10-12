@@ -8,7 +8,7 @@ import {
   output,
   signal,
 } from '@angular/core';
-import type { OrderLineView, OrderView } from '@lfd/contracts';
+import type { AdminOrderView, OrderLineView, OrderView } from '@lfd/contracts';
 import { OrderDetail, orderDocuments, type OrderDocument } from '@lfd/b2b-ui/order';
 import {
   FoldButtonComponent,
@@ -71,7 +71,7 @@ export class OrderViewComponent {
    * page en porte la RÉFÉRENCE dans son titre, et la lui faire charger une
    * seconde fois pour un mot serait deux requêtes pour un écran.
    */
-  readonly loaded = output<OrderView>();
+  readonly loaded = output<AdminOrderView>();
 
   private readonly api = inject(AdminOrdersService);
   private readonly notify = inject(NotifyService);

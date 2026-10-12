@@ -1,11 +1,17 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { Location } from '@angular/common';
 import { Router } from '@angular/router';
-import type { OrderView } from '@lfd/contracts';
-import { FoldBackLinkComponent, FoldElementTitleComponent, FoldPageLayoutComponent } from 'fold-ng';
+import type { AdminOrderView } from '@lfd/contracts';
+import {
+  FoldBackLinkComponent,
+  FoldBadgeComponent,
+  FoldElementTitleComponent,
+  FoldPageLayoutComponent,
+} from 'fold-ng';
 
 import { orderHeader } from '../order-header';
 import { cameFromOrderList } from '../order-list-return';
+import { OrderPlacedByComponent } from '../order-placed-by/order-placed-by';
 import { OrderViewComponent } from '../order-view/order-view';
 
 /**
@@ -26,8 +32,10 @@ import { OrderViewComponent } from '../order-view/order-view';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldBackLinkComponent,
+    FoldBadgeComponent,
     FoldElementTitleComponent,
     FoldPageLayoutComponent,
+    OrderPlacedByComponent,
     OrderViewComponent,
   ],
   templateUrl: './commande-page.html',
@@ -45,23 +53,20 @@ export class AdminCommandePage {
     inject(Router).currentNavigation()?.extras.state ?? inject(Location).getState(),
   );
 
-  private readonly order = signal<OrderView | null>(null);
+  protected readonly order = signal<AdminOrderView | null>(null);
 
   /**
    * L'en-tête du détail : la RÉFÉRENCE (c'est elle qu'on dicte au téléphone),
-   * puis le mode et son jour, puis le client. La ligne « icône + numéro » du
-   * bandeau a été retirée (Hugo, 2026-10-12) : le numéro vit ici.
-   *
-   * Le badge Pro / Particulier de la liste n'y est pas : `OrderView` ne porte
-   * pas `clientele` (vérifié le 2026-10-12), et le déduire de `companyId`
-   * inventerait une valeur pour les commandes d'avant la distinction.
+   * puis le mode et son jour, puis le client, et le badge Pro / Particulier
+   * quand la commande le porte (`AdminOrderView.clientele`). La ligne « icône +
+   * numéro » du bandeau a été retirée (Hugo, 2026-10-12) : le numéro vit ici.
    */
   protected readonly header = computed(() => {
     const order = this.order();
     return order === null ? null : orderHeader(order);
   });
 
-  protected onLoaded(order: OrderView): void {
+  protected onLoaded(order: AdminOrderView): void {
     this.order.set(order);
   }
 }

@@ -595,6 +595,12 @@ export { adminOrdersQuerySchema, adminOrderClienteleSchema } from "./admin-order
 export { vatShareSchema, vatSharesSchema } from "./order.js";
 export type { VatShareView } from "./order.js";
 export type { AdminOrderRow, AdminOrdersPage, AdminOrdersQuery } from "./admin-order-list.js";
+export type {
+  AdminOrderCompanyView,
+  AdminOrderCustomerView,
+  AdminOrderPlacedByView,
+  AdminOrderView,
+} from "./admin-order-detail.js";
 export {
   clockTimeSchema,
   orderCutoffPayloadSchema,

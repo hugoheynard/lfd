@@ -1,0 +1,19 @@
+<fold-card data-placed-by>
+  <fold-element-title cardHeader variant="title" icon="user" title="Passée par" />
+  @let l = lines();
+  @if (l.onBehalf; as onBehalf) {
+    <p data-placed-by-staff>{{ onBehalf }}</p>
+  }
+  <fold-field-list>
+    <fold-field label="Client" data-placed-by-person>{{ l.person }}</fold-field>
+    <fold-field label="E-mail">
+      <fold-link [href]="'mailto:' + l.email" data-placed-by-email>{{ l.email }}</fold-link>
+    </fold-field>
+    <fold-field label="Téléphone" [empty]="l.phone === null" data-placed-by-phone>
+      {{ l.phone }}
+    </fold-field>
+    @if (l.company; as company) {
+      <fold-field label="Société" data-placed-by-company>{{ company }}</fold-field>
+    }
+  </fold-field-list>
+</fold-card>

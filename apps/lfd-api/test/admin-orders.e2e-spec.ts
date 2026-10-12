@@ -12,6 +12,7 @@ import { randomUUID } from "node:crypto";
  * distant) et la passerelle Stripe. Le reste — guard, bus, domaine, SQL — est réel.
  */
 import type {
+  AdminOrderView,
   AdminOrdersPage,
   CustomerOrderView,
   OrderView,
@@ -273,6 +274,104 @@ describe("GET /admin/orders/:id", () => {
     const order = jsonBody<OrderView>(await staff().get(`/admin/orders/${placed.id}`).expect(200));
 
     expect(order.orderNumber).toBe(placed.orderNumber);
+  });
+
+  /** Une commande pro, passée par un membre dont on connaît le téléphone. */
+  async function seedProOrder(): Promise<{ orderId: string; companyId: string }> {
+    await seedPickup();
+    const company = await createCompany(ctx.prisma, {
+      raisonSociale: "Café des Halles SAS",
+      enseigne: "Les Halles",
+      status: CompanyStatus.active,
+    });
+    const member = await createUser(ctx.prisma, {
+      auth0Sub: MEMBER,
+      email: "chef@halles.fr",
+      firstName: "Paul",
+      lastName: "Durand",
+      phone: "0611223344",
+    });
+    await attachTo(ctx.prisma, member.id, company.id, CustomerRole.owner);
+    const placed = jsonBody<PlacedOrderResponse>(
+      await ctx
+        .asSub(MEMBER)
+        .post("/orders")
+        .send({
+          ...pickupContent(),
+          companyId: company.id,
+          lines: [{ sku: "VIE-001", quantity: 2 }],
+        })
+        .expect(201),
+    );
+    return { orderId: placed.id, companyId: company.id };
+  }
+
+  it("dit qui l'a passée : clientèle, personne joignable et société", async () => {
+    const { orderId, companyId } = await seedProOrder();
+
+    const order = jsonBody<AdminOrderView>(
+      await staff().get(`/admin/orders/${orderId}`).expect(200),
+    );
+
+    expect(order.clientele).toBe("pro");
+    const member = await ctx.prisma.user.findFirstOrThrow({
+      where: { email: "chef@halles.fr" },
+      select: { id: true },
+    });
+    expect(order.placedBy).toEqual({
+      customer: {
+        userId: member.id,
+        firstName: "Paul",
+        lastName: "Durand",
+        email: "chef@halles.fr",
+        phone: "0611223344",
+      },
+      company: { id: companyId, raisonSociale: "Café des Halles SAS", enseigne: "Les Halles" },
+      staffName: null,
+    });
+  });
+
+  it("rend un particulier sans société, et un téléphone vide comme absent", async () => {
+    await seedPickup();
+    await createUser(ctx.prisma, {
+      auth0Sub: SOLO,
+      email: "solo@exemple.fr",
+      firstName: "Léa",
+      lastName: "Martin",
+    });
+    const placed = jsonBody<PlacedOrderResponse>(
+      await ctx
+        .asSub(SOLO)
+        .post("/orders")
+        .send({ ...pickupContent(), lines: [{ sku: "VIE-002", quantity: 1 }] })
+        .expect(201),
+    );
+
+    const order = jsonBody<AdminOrderView>(
+      await staff().get(`/admin/orders/${placed.id}`).expect(200),
+    );
+
+    expect(order.placedBy.company).toBeNull();
+    expect(order.placedBy.customer).toMatchObject({ email: "solo@exemple.fr", phone: null });
+  });
+
+  /**
+   * La vue staff porte l'e-mail et le téléphone du client ; aucune route client
+   * qui sert la commande ne doit les transporter — ni le détail, ni la liste de
+   * la société.
+   */
+  it("ne laisse sortir ni l'auteur ni sa clientèle par les routes client", async () => {
+    const { orderId, companyId } = await seedProOrder();
+
+    const detail = await ctx.asSub(MEMBER).get(`/orders/${orderId}`).expect(200);
+    const list = await ctx.asSub(MEMBER).get(`/companies/${companyId}/orders`).expect(200);
+
+    for (const response of [detail, list]) {
+      expect(response.text).not.toContain("0611223344");
+      expect(response.text).not.toContain("chef@halles.fr");
+      expect(response.text).not.toContain('"placedBy"');
+      expect(response.text).not.toContain('"clientele"');
+    }
   });
 
   it("rend 404 sur une commande inexistante", async () => {

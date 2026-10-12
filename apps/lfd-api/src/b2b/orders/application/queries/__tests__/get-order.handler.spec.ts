@@ -1,6 +1,14 @@
 import type { OrderView } from "@lfd/contracts";
 
+import {
+  StaffAuthors,
+  type StaffAuthorDirectory,
+} from "../../../../../staff/directory/domain/staff-author-directory.js";
 import { OrderNotFoundError } from "../../../domain/errors/order-errors.js";
+import type {
+  AdminOrderAuthor,
+  AdminOrderAuthorReader,
+} from "../../../domain/ports/admin-order-author.reader.js";
 import { OrderGuardReader, type OrderRole } from "../../../domain/ports/order-guard.reader.js";
 import { OrderReader, type OwnedOrder } from "../../../domain/ports/order.reader.js";
 import { orderView } from "../../handlers/__tests__/payment-failure-doubles.js";
@@ -111,21 +119,105 @@ describe("GetOrderHandler", () => {
   });
 });
 
-describe("GetAdminOrderHandler", () => {
-  it("rend la commande sans demander de rôle : le staff n'est ni client ni membre", async () => {
-    const handler = new GetAdminOrderHandler(reader(ofCompany("cmp_1")));
+/** Auteur doublé : la personne et sa société, ou rien (commande inconnue). */
+function authors(author: AdminOrderAuthor | null): AdminOrderAuthorReader {
+  return { authorOf: () => Promise.resolve(author) };
+}
 
-    await expect(handler.execute(new GetAdminOrderQuery("ord_1"))).resolves.toBe(VIEW);
+const CUSTOMER = {
+  userId: "usr_1",
+  firstName: "Léa",
+  lastName: "Martin",
+  email: "lea@example.test",
+  phone: "0600000000",
+} as const;
+
+const COMPANY = { id: "cmp_1", raisonSociale: "Boulangerie SAS", enseigne: "Le Fournil" } as const;
+
+/** Annuaire doublé : ne nomme que `stf_1`, et note ce qu'on lui demande. */
+function directory(): StaffAuthorDirectory & { asked: (string | null)[] } {
+  const spy = {
+    asked: [] as (string | null)[],
+    identify: (references: readonly (string | null)[]) => {
+      spy.asked.push(...references);
+      return Promise.resolve(
+        new StaffAuthors(
+          new Map([
+            [
+              "stf_1",
+              {
+                staffUserId: "stf_1",
+                firstName: "Hugo",
+                lastName: "H",
+                role: "admin",
+                roleLabel: "Admin",
+                jobTitle: "",
+              },
+            ],
+          ]),
+        ),
+      );
+    },
+  };
+  return spy;
+}
+
+describe("GetAdminOrderHandler", () => {
+  it("rend la commande avec sa clientèle, la personne et la société, sans demander de rôle", async () => {
+    const handler = new GetAdminOrderHandler(
+      reader(ofCompany("cmp_1")),
+      authors({ customer: CUSTOMER, company: COMPANY, placedByStaffId: null }),
+      directory(),
+    );
+
+    await expect(handler.execute(new GetAdminOrderQuery("ord_1"))).resolves.toEqual({
+      ...VIEW,
+      clientele: "pro",
+      placedBy: { customer: CUSTOMER, company: COMPANY, staffName: null },
+    });
   });
 
   it("rend aussi une commande personnelle, qu'aucun mur d'entreprise ne couvre", async () => {
-    const handler = new GetAdminOrderHandler(reader(personal("usr_1")));
+    const handler = new GetAdminOrderHandler(
+      reader(personal("usr_1")),
+      authors({ customer: CUSTOMER, company: null, placedByStaffId: null }),
+      directory(),
+    );
 
-    await expect(handler.execute(new GetAdminOrderQuery("ord_1"))).resolves.toBe(VIEW);
+    const view = await handler.execute(new GetAdminOrderQuery("ord_1"));
+
+    expect(view.clientele).toBe("public");
+    expect(view.placedBy.company).toBeNull();
+  });
+
+  it("nomme le membre de l'équipe qui l'a saisie, par l'annuaire staff", async () => {
+    const staff = directory();
+    const handler = new GetAdminOrderHandler(
+      reader(ofCompany("cmp_1")),
+      authors({ customer: CUSTOMER, company: COMPANY, placedByStaffId: "stf_1" }),
+      staff,
+    );
+
+    const view = await handler.execute(new GetAdminOrderQuery("ord_1"));
+
+    expect(staff.asked).toEqual(["stf_1"]);
+    expect(view.placedBy.staffName).toBe("Hugo H");
+  });
+
+  it("n'invente pas de nom quand l'annuaire ne connaît plus le membre", async () => {
+    const handler = new GetAdminOrderHandler(
+      reader(ofCompany("cmp_1")),
+      authors({ customer: CUSTOMER, company: COMPANY, placedByStaffId: "stf_parti" }),
+      directory(),
+    );
+
+    const view = await handler.execute(new GetAdminOrderQuery("ord_1"));
+
+    expect(view.placedBy.staffName).toBeNull();
   });
 
   it("lève le même 404 sur une commande inexistante", async () => {
-    const handler = new GetAdminOrderHandler(reader(null));
+    const handler = new GetAdminOrderHandler(reader(null), authors(null), directory());
 
     await expect(handler.execute(new GetAdminOrderQuery("ord_x"))).rejects.toBeInstanceOf(
       OrderNotFoundError,

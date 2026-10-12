@@ -17,7 +17,21 @@
       [title]="h.number"
       [subtitle]="h.subtitle"
       data-order-header
-    />
+    >
+      @if (h.clientele; as c) {
+        <fold-badge
+          titleAction
+          radius="square"
+          [variant]="c.variant"
+          [content]="c.label"
+          data-order-clientele
+        />
+      }
+    </fold-element-title>
+  }
+
+  @if (order(); as o) {
+    <app-order-placed-by [order]="o" />
   }
 
   <app-order-view [orderId]="orderId()" (loaded)="onLoaded($event)" />

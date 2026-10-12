@@ -14,7 +14,7 @@ import {
   type AdminPlacedOrderResponse,
   type OrderHandoverProofResponse,
   type ActivityEventView,
-  type OrderView,
+  type AdminOrderView,
   orderQuotePayloadSchema,
   type OrderQuotePayload,
   type OrderQuoteView,
@@ -206,10 +206,13 @@ export class AdminOrdersController {
     );
   }
 
-  /** Une commande, dans la même vue que celle du client — délibérément. */
+  /**
+   * Une commande, dans la vue du client — plus QUI l'a passée (`AdminOrderView`),
+   * que les routes client ne servent pas.
+   */
   @Get(":id")
-  async one(@Param("id") id: string): Promise<OrderView> {
-    return this.queries.execute<GetAdminOrderQuery, OrderView>(new GetAdminOrderQuery(id));
+  async one(@Param("id") id: string): Promise<AdminOrderView> {
+    return this.queries.execute<GetAdminOrderQuery, AdminOrderView>(new GetAdminOrderQuery(id));
   }
 
   /**
