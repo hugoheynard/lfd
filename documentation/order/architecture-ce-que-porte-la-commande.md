@@ -1,8 +1,10 @@
 # Ce que porte la commande
 
 **Statut** : ✅ décrit **tel qu'il est**. Chaque ligne a été relue dans le
-schéma, l'agrégat et les adaptateurs le 2026-09-17. Les écarts constatés ce
-jour-là sont au §7, et ils ne sont pas corrigés ici.
+schéma, l'agrégat et les adaptateurs le 2026-09-17, puis **corrigée contre le
+code le 2026-10-12** (auteurs de retrait, colisage, adresse de livraison,
+colonnes ajoutées depuis, destinataire des courriels — les passages touchés
+portent « vérifié le 2026-10-12 »). Les écarts du 2026-09-17 sont au §7.
 **Portée** : chaque information que la table `orders` et ses lignes portent, et
 **comment elle est définie** — qui la calcule, à quel moment, et ce que veut
 dire son absence. Ce document ne décrit ni les écrans, ni les transitions (voir
@@ -66,7 +68,7 @@ sequenceDiagram
     P->>DB: tout le figé — parties, acheminement, argent,<br/>lignes, numéro, jeton, status = placed,<br/>paymentStatus = pending | not_required
     S-->>DB: paymentStatus = paid + paidAt<br/>ou failed (seulement si encore pending)
     F-->>DB: arrêt de la journée — status = confirmed + confirmedAt<br/>(seulement placed et règlement acceptable)
-    F-->>DB: colisage — status = ready + readyAt + readyBy
+    F-->>DB: colisage — status = ready + readyAt + readyBy (id de fiche)
     C-->>DB: retrait — status = fulfilled + handedOverAt/By/Via<br/>(copie de production.order_handover)
 ```
 
@@ -75,8 +77,15 @@ sequenceDiagram
 | passation           | `PrismaOrderRepository.place()`                         | tout le figé                                | `order_number` et `handover_token` uniques      |
 | retour Stripe       | `markPaid` / `markPaymentFailed`                        | `paymentStatus`, `paidAt`                   | `paymentStatus = pending`                       |
 | arrêt de la journée | `absorbIntoPlan`, appelé par `on-production-day-closed` | `status → confirmed`, `confirmedAt`         | `planWhere()` — cf. le document du règlement §6 |
-| colisage            | `markReady`, appelé par `on-order-packed`               | `status → ready`, `readyAt`, `readyBy`      | ni annulée, ni brouillon, ni déjà remise        |
+| colisage            | `markReady`, appelé par `OnPackingOrderPacked`          | `status → ready`, `readyAt`, `readyBy`      | ni annulée, ni brouillon, ni déjà remise        |
 | retrait             | `markFulfilled`, appelé par `on-order-handed-over`      | `status → fulfilled`, `handedOverAt/By/Via` | `handedOverAt IS NULL`                          |
+
+Le colisage n'est plus une route du commerce : le poste de colisage
+(`packing/application/station/close-packing-order.handler.ts`) publie
+`packing.order_packed`, et `OnPackingOrderPacked`
+(`b2b/orders/application/handlers/on-packing-order-packed.handler.ts`, abonné
+durable `b2b.orders.mark-ready-from-packing`) écrit `ready` (vérifié le
+2026-10-12).
 
 ---
 
@@ -136,15 +145,15 @@ prix » : le prix est figé sur la ligne.
 
 ### 3.4 L'acheminement — où, quand, comment
 
-| Colonne                   | Ce qu'elle dit                                                                     | Défini par                                                  | `NULL`                       |
-| ------------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------- | ---------------------------- |
-| `fulfillmentMethod`       | `delivery` (coursier) ou `pickup` (retrait)                                        | le client ou l'équipe                                       | —                            |
-| `requestedDeliveryDate`   | la **journée de service** — une date, pas un instant                               | le client ou l'équipe ; c'est elle que lit tout le fournil  | aucune date demandée         |
-| `deliveryZoneId`          | la zone tarifée du coursier                                                        | `CartAdjustments.forDelivery`, depuis le **code postal**    | retrait                      |
-| `deliveryAddressSnapshot` | l'adresse de livraison, **recopiée**                                               | le client ou l'équipe                                       | retrait                      |
-| `pickupAddress`           | le point de retrait, **recopié** (nom et champs postaux)                           | `CartAdjustments.forPickup`, depuis l'identifiant du point  | coursier                     |
-| `fulfillment`             | **ce qui a été convenu** : créneau, contact, signature — chacun avec sa provenance | `agreeFulfillment` : la demande, sinon le défaut du réglage | commande antérieure au champ |
-| `deliveryAddressId`       | une adresse du carnet de la société                                                | **plus écrit** — héritage, lu seulement (§7)                | toute commande récente       |
+| Colonne                   | Ce qu'elle dit                                                                     | Défini par                                                                     | `NULL`                          |
+| ------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------- |
+| `fulfillmentMethod`       | `delivery` (coursier) ou `pickup` (retrait)                                        | le client ou l'équipe                                                          | —                               |
+| `requestedDeliveryDate`   | la **journée de service** — une date, pas un instant                               | le client ou l'équipe ; c'est elle que lit tout le fournil                     | aucune date demandée            |
+| `deliveryZoneId`          | la zone tarifée du coursier                                                        | `CartAdjustments.forDelivery`, depuis le **code postal**                       | retrait                         |
+| `deliveryAddressSnapshot` | l'adresse de livraison, **recopiée**                                               | le client ou l'équipe                                                          | retrait                         |
+| `pickupAddress`           | le point de retrait, **recopié** (nom et champs postaux)                           | `CartAdjustments.forPickup`, depuis l'identifiant du point                     | coursier                        |
+| `fulfillment`             | **ce qui a été convenu** : créneau, contact, signature — chacun avec sa provenance | `agreeFulfillment` : la demande, sinon le défaut du réglage                    | commande antérieure au champ    |
+| `deliveryAddressId`       | une adresse du carnet de la société, **relue sous le mur** (jamais celle du corps) | `OrderDrafting` (`bookAddressId`), écrit par `place()` — vérifié le 2026-10-12 | adresse hors carnet, ou retrait |
 
 - 🔴 **Coursier XOR retrait, tenu par l'agrégat** (`normalizeFulfillment`) : un
   coursier exige une zone ET une adresse, un retrait exige un point ; le résidu
@@ -231,15 +240,15 @@ Tout le détail — les deux situations, les courriels, la carte abandonnée :
 
 ### 3.7 L'avancement
 
-| Colonne         | Ce qu'elle dit                                    | Défini par                                    | `NULL`             |
-| --------------- | ------------------------------------------------- | --------------------------------------------- | ------------------ |
-| `status`        | où en est la **fabrication**                      | `placed` à la passation, puis les faits du §2 | —                  |
-| `confirmedAt`   | la journée a été arrêtée, la commande est au plan | l'arrêt de la journée — **sans auteur**       | pas encore au plan |
-| `readyAt`       | la fabrication est finie                          | le colisage (scan du QR de la fiche)          | pas encore prête   |
-| `readyBy`       | qui a colisé                                      | idem                                          | idem               |
-| `handedOverAt`  | la marchandise a changé de mains                  | copie de `production.order_handover`          | pas encore retirée |
-| `handedOverBy`  | qui l'a remise — le `sub` staff, **figé**         | idem                                          | idem               |
-| `handedOverVia` | `scan` (les deux parties étaient là) ou `manual`  | idem                                          | idem               |
+| Colonne         | Ce qu'elle dit                                                  | Défini par                                    | `NULL`             |
+| --------------- | --------------------------------------------------------------- | --------------------------------------------- | ------------------ |
+| `status`        | où en est la **fabrication**                                    | `placed` à la passation, puis les faits du §2 | —                  |
+| `confirmedAt`   | la journée a été arrêtée, la commande est au plan               | l'arrêt de la journée — **sans auteur**       | pas encore au plan |
+| `readyAt`       | la fabrication est finie                                        | le colisage (scan du QR de la fiche)          | pas encore prête   |
+| `readyBy`       | qui a colisé — l'**id de fiche** staff                          | idem                                          | idem               |
+| `handedOverAt`  | la marchandise a changé de mains                                | copie de `production.order_handover`          | pas encore retirée |
+| `handedOverBy`  | qui l'a remise — l'id de fiche staff, **figé**                  | idem                                          | idem               |
+| `handedOverVia` | `scan`, `manual` ou `deposit` (déposée, sans le client en face) | idem                                          | idem               |
 
 ```mermaid
 stateDiagram-v2
@@ -251,8 +260,9 @@ stateDiagram-v2
     confirmed --> fulfilled: retrait
     placed --> fulfilled: retrait
     fulfilled --> [*]
+    placed --> cancelled: abandon, clôture, impayé expiré
     note right of placed
-        draft, in_production et cancelled
+        draft et in_production
         existent dans l'énuméré
         et ne sont écrits par AUCUN
         chemin aujourd'hui (§7)
@@ -261,8 +271,12 @@ stateDiagram-v2
 
 - `confirmedAt` ne porte pas d'auteur, et c'est voulu : personne ne confirme
   une commande à la main, c'est une **journée** qui bascule.
-- `readyBy` et `handedOverBy` figent le `sub` staff et non un nom : ce sont des
+- `readyBy` et `handedOverBy` figent l'**id de la fiche** d'annuaire (route
+  staff : `@StaffUserId()`, `handover.controller.ts`) et non un nom : ce sont des
   **attestations**, et un annuaire réécrit ne doit pas réécrire une preuve.
+  Avant le 2026-09-18 ils portaient le `sub` Auth0 : les lignes anciennes en
+  gardent un (`orders.prisma`, commentaire de `handedOverBy` ; vérifié le
+  2026-10-12). `HandoverVia` : `packages/contracts/src/order-handover.ts`.
   `placedByStaffId` fait l'inverse, parce que c'est un affichage.
 - 🔴 **Les trois colonnes `handedOver*` sont une COPIE.** L'attestation vit dans
   `production.order_handover` depuis le 2026-09-07 ; le commerce recopie ce que
@@ -281,11 +295,42 @@ stateDiagram-v2
 - 🔴 **Jamais imprimé sur le colis.** Un coursier pourrait alors scanner son
   propre carton, et `handedOverVia` ne voudrait plus rien dire.
 - Ce n'est pas le numéro de commande, justement parce que le numéro est public.
+- ⚠️ **Le bon PDF archivé porte ce jeton, en retrait** (QR depuis le
+  2026-10-09). C'est un « risque accepté » écrit dans le code
+  (`domain/services/order-sheet-pdf.ts`) : le QR n'ouvre que `/retrait/<jeton>`
+  du back-office, qui exige un staff connecté avec le droit du retrait, et un
+  second retrait est refusé. En livraison, le jeton n'est jamais dessiné
+  (vérifié le 2026-10-12).
+
+### 3.8 bis Colonnes ajoutées depuis la première écriture (vérifié le 2026-10-12)
+
+| Colonne / relation                 | Ce qu'elle dit                                                                                                                                                            | Défini par                                |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| `billedCompanyId`                  | le **payeur**, copié à la passation (le principal que le site suivait en `billing`, sinon la société) ; l'argent lit `COALESCE(billed_company_id, company_id)`            | la passation ; `NULL` avant S4            |
+| `voucherDiscountCents`             | la part du **bon de fidélité** imputée, HT, à part de `discountCents` ; `0` = aucun bon                                                                                   | la passation                              |
+| `loyaltyVoucherId`                 | le bon engagé (unique parmi les commandes non annulées, index partiel à la main de `20260927100000`)                                                                      | la passation                              |
+| `deliveryVatMode`                  | le mode de TVA du port, figé : `standard` ou `follows_goods` ; `NULL` = avant le réglage = taux normal ([`plan-tva-des-frais-de-port.md`](plan-tva-des-frais-de-port.md)) | `OrderDrafting`, depuis le réglage global |
+| relation `refunds` (`OrderRefund`) | les remboursements Stripe constatés sur la commande                                                                                                                       | `record-order-refund.handler.ts`          |
+| relation `cardInvoiceOutcome`      | l'issue de la facture carte, s'il y en a une                                                                                                                              | la comptabilité (`b2b/accounting`)        |
 
 ### 3.9 La note
 
 `note` — le texte libre du client, `""` par défaut. Elle figure sur le bon qu'on
 coche au comptoir.
+
+### 3.9 bis Le destinataire des courriels (vérifié le 2026-10-12)
+
+Le courriel ne porte **pas** d'adresse figée sur la commande : il est écrit à
+`placedByUserId`, dont `OrderRecipientReader.findById` relit le prénom et
+l'adresse **dans l'annuaire au moment de l'envoi**
+(`b2b/orders/domain/ports/order-recipient.reader.ts`). Sept appelants :
+`order-placed-mail.service.ts`, `send-order-placed-mail.handler.ts`,
+`order-ready-mail.service.ts` (celui qui porte le QR),
+`delivery-en-route-mail.service.ts`, `send-payment-expired-mail.handler.ts`,
+`send-payment-failed-mail.handler.ts`, `resend-order-payment-link.handler.ts`.
+Un client dont l'adresse a changé reçoit donc le courriel à la nouvelle ; le
+cas de l'invité qui revient et le choix éventuel de figer l'adresse sont dans
+[`todo-adresse-de-la-commande.md`](todo-adresse-de-la-commande.md).
 
 ### 3.10 Les lignes (`order_lines`)
 
@@ -382,7 +427,8 @@ copie. Une commande annulée ne fait pas disparaître ce qu'on a fabriqué
 Relevés en écrivant ce document, **non corrigés** — chacun demande une décision.
 
 - ~~**`cancelled` n'est écrit par aucun chemin.**~~ ✅ **Fermé le 2026-09-26** :
-  l'abandon du règlement et la clôture l'écrivent
+  l'abandon du règlement (`markAbandoned`), la clôture (`failAtClosing`) et
+  l'expiration des impayés de la boutique l'écrivent (vérifié le 2026-10-12)
   ([`architecture-abandon-du-reglement.md`](architecture-abandon-du-reglement.md)).
   Le constat d'origine : aucune commande ne pouvait être annulée, alors que la file du comptoir, le dossier du jour et le
   compte de production savent l'écarter. La proposition d'expiration des
@@ -394,5 +440,8 @@ Relevés en écrivant ce document, **non corrigés** — chacun demande une déc
 - **`fromSubscriptionId` et `recurringDeltas` ne sont jamais écrits** : aucun
   code ne produit de commande depuis un abonnement. La provenance `recurring`
   des vues ne peut donc pas apparaître.
-- **`deliveryAddressId` n'est plus écrit** par la passation : l'adresse est
-  recopiée dans `deliveryAddressSnapshot`. La colonne n'est plus que lue.
+- ~~**`deliveryAddressId` n'est plus écrit**~~ ✅ **Faux, corrigé le
+  2026-10-12** : `OrderDrafting` le lie à l'adresse du carnet relue sous le mur
+  (`order-drafting.service.ts:210-213`) et `PrismaOrderRepository.place()` l'écrit
+  (`prisma-order.repository.ts:93`) ; la feuille de route y relit consignes et
+  procédure. L'adresse reste aussi recopiée dans `deliveryAddressSnapshot`.
