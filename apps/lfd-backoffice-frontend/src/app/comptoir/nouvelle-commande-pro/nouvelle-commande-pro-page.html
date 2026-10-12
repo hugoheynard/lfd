@@ -1,9 +1,6 @@
-<fold-page-layout title="Nouvelle commande pro">
-  <p description>
-    Cherchez le compte du client, puis saisissez sa commande. Seuls les comptes pro actifs sont
-    proposés.
-  </p>
-
+<!-- Pas de titre (Hugo, 2026-10-12) : l'onglet actif nomme déjà l'écran, et la
+     consigne vit juste au-dessus du champ qu'elle explique. -->
+<fold-page-layout>
   <app-comptoir-tabs />
 
   @if (placed(); as order) {
@@ -55,6 +52,10 @@
         </fold-empty-state>
       } @else {
         <div class="picker">
+          <p class="picker-hint">
+            Cherchez le compte du client, puis saisissez sa commande. Seuls les comptes pro actifs
+            sont proposés.
+          </p>
           <fold-search
             placeholder="Raison sociale, enseigne, référence, SIRET…"
             ariaLabel="Chercher un compte client"

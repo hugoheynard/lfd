@@ -4,6 +4,11 @@
   gap: var(--fold-space-sm);
 }
 
+.picker-hint {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+}
+
 .placed {
   display: flex;
   flex-direction: column;
