@@ -54,9 +54,11 @@
       //   2. `max_instances: 2` + routage par compteur de requêtes en vol tenu
       //      dans le DO primaire (le seul point qui connaisse sa charge).
       "max_instances": 1,
-      // lite (1/16 vCPU,256Mi) trop petit pour Node+Nest → basic (1/4 vCPU,1Gi).
-      // Monter à "standard-1" (1/2 vCPU,4Gi) si la RAM serre.
-      "instance_type": "basic",
+      // lite (1/16 vCPU,256Mi) trop petit pour Node+Nest → basic (1/4 vCPU,1Gi)
+      // → standard-1 (1/2 vCPU,4Gi) le 2026-10-12, sur décision de Hugo : la
+      // jauge d'ops restait autour de 40 % (p95 ≈ 470 ms) avec un quart de
+      // cœur. Coût estimé ≈ 30 $/mois contre ≈ 8 $ (mémoire réservée surtout).
+      "instance_type": "standard-1",
       // PLACEMENT — le container tourne en Europe de l'Ouest, point.
       //
       // Par défaut Cloudflare place le container « au plus près de la requête qui

@@ -421,7 +421,7 @@ le plafond existe.
 
 **Ce n'est pas un débit.** Les containers Cloudflare ne facturent ni ne limitent
 à la requête : ils facturent le **temps d'instance allumée** (vCPU·s, GiB·s), et
-`lfd-api` tourne en `max_instances: 1`, `instance_type: "basic"` (¼ vCPU, 1 Gio).
+`lfd-api` tourne en `max_instances: 1`, `instance_type: "standard-1"` (½ vCPU, 4 Gio) depuis le 2026-10-12 (`basic` avant).
 Dix requêtes par heure ou dix mille : **le coût est le même**. Un « prix par
 requête » serait un nombre précis et faux.
 

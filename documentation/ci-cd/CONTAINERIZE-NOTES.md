@@ -49,8 +49,8 @@
    `dist`). Si non, ajuster (copier explicitement le client, ou `pnpm deploy --legacy`).
 3. **Port** : NestJS lit `PORT` (défaut 3200) ; l'image force `PORT=8080` et le
    Worker route sur `defaultPort=8080`. Garder ces trois alignés.
-4. **`instance_type`** : démarré en `basic` (1/4 vCPU, 1 Gi). Si Node+Nest serre en
-   RAM au boot, passer à `standard-1` (4 Gi).
+4. **`instance_type`** : démarré en `basic` (1/4 vCPU, 1 Gi), passé en
+   `standard-1` (1/2 vCPU, 4 Gi) le 2026-10-12 (Hugo) sur la latence vue dans ops.
 5. **DB & connexions** : chaque instance a son pool. À une instance (le cas B2B),
    un pool suffit ; le jour où `max_instances` remonte, prévoir un **pooler**
    (PgBouncer / pooler hébergeur) pour ne pas dépasser `max_connections`.
