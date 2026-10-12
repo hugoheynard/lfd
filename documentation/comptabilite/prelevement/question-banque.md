@@ -35,9 +35,6 @@ message :
 - Le **rythme de facturation** sera, au choix de l'entité : **mensuel, deux
   fois par mois, ou hebdomadaire**. En hebdomadaire, cela fait jusqu'à **cinq
   remises par mois**.
-- Volume de départ : quelques dizaines de clients, montants unitaires de
-  quelques centaines à quelques milliers d'euros. _(Hugo : à ajuster avant
-  l'envoi.)_
 - Nous voulons **réduire le délai de pré-notification** de 14 jours
   (décision du 2026-10-12), avec la clause qu'il faut dans nos CGV et nos
   mandats.
@@ -371,9 +368,7 @@ Les codes reçus sont déjà rangés dans `collection_return.reason_code`
 > fichier XML **`pain.008.001.02`** et le déposons **à la main sur votre
 > portail** (pas d'EBICS pour l'instant). Chaque remise compte **un débit par
 > client**. Selon notre réglage, nous facturerons **chaque mois, deux fois par
-> mois ou chaque semaine**, soit jusqu'à **cinq remises par mois**. Nous
-> démarrons avec quelques dizaines de clients, pour des débits de quelques
-> centaines à quelques milliers d'euros.
+> mois ou chaque semaine**, soit jusqu'à **cinq remises par mois**.
 >
 > ---
 >
