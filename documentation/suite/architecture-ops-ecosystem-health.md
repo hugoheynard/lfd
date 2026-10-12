@@ -588,6 +588,17 @@ Et le mouvement n'est jamais la seule information : sous
 | **J9** ✅  | Les sondes : Postgres, Auth0, Resend, Stripe, Shopify — **fait le 2026-08-19**                                                                                                                     | J4        |
 | **J10** ✅ | Les fronts sondés **en deux temps** (§18) : shell HTML + point d'entrée — **fait le 2026-08-19**                                                                                                   | J9        |
 
+### La surface d'une requête (J7)
+
+La gateway (`surfaceOf`, `gateway/src/traffic.ts`) écrit la **surface** en
+`blob2` : deux segments du chemin, chacun remplacé par `_` s'il porte un
+chiffre ou dépasse 24 caractères. **Depuis le 2026-10-12**, une liste nommée
+(`DEEP_SURFACES`, aujourd'hui `admin/accounting` seul) garde un troisième
+segment, soumis au même filtre : sans lui, facturation, prélèvements et relevés
+tombaient dans une seule case. Chaque entrée multiplie la cardinalité du blob ;
+la liste reste courte. Côté lecture, rien ne suppose la profondeur : la
+surface est une chaîne opaque.
+
 ### Lire la fenêtre — deux pièges d'Analytics Engine
 
 Le contrat les rend explicites parce qu'ils ne se voient pas :

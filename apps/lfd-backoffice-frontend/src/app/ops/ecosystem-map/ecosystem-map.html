@@ -126,9 +126,24 @@
       </text>
 
       @if (box.gauge !== null) {
-        <text class="node-gauge-value" [attr.x]="box.x + node.width - 14" [attr.y]="box.y + 35">
-          {{ box.gauge * 100 | number: '1.0-0' }} %
-        </text>
+        <!-- Le pourcentage en haut à droite, la grandeur qui le fait dessous :
+             un pourcentage nu se lit comme un CPU (Hugo, 2026-10-12). La ligne
+             basse tient en douze signes, à droite du statut. -->
+        <g class="node-gauge" role="img" [attr.aria-label]="box.gaugeReading?.sentence">
+          <title>{{ box.gaugeReading?.sentence }}</title>
+          <text class="node-gauge-value" [attr.x]="box.x + node.width - 14" [attr.y]="box.y + 21">
+            {{ box.gauge * 100 | number: '1.0-0' }} %
+          </text>
+          @if (box.gaugeReading) {
+            <text
+              class="node-gauge-measure"
+              [attr.x]="box.x + node.width - 14"
+              [attr.y]="box.y + 35"
+            >
+              {{ box.gaugeReading.measure }}
+            </text>
+          }
+        </g>
         <!-- La jauge court sur l'ARÊTE BASSE de la carte : une longueur se
              compare d'une brique à l'autre, un chiffre non — et posée là, elle
              ne prend aucune hauteur. -->

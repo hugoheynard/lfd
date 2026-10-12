@@ -103,3 +103,41 @@ export function occupancyOf(traffic: TrafficWindow | undefined): Occupancy {
     basis: ratio === 0 ? 'aucune mesure' : throttle >= latency ? 'rejets' : 'latence',
   };
 }
+
+/** Ce que la case d'un nœud affiche sous son pourcentage, et ce qu'elle explique. */
+export interface OccupancyReading {
+  /** La valeur réelle qui fait le pourcentage — « p95 470 ms », « 12 % en 429 ». */
+  readonly measure: string;
+  /** Une phrase pour l'infobulle et le lecteur d'écran. */
+  readonly sentence: string;
+}
+
+/**
+ * La mesure **réelle** derrière le pourcentage, ou `null` sans mesure.
+ *
+ * Le 2026-10-12, Hugo a lu « 40 % » sur la carte comme un CPU de Cloudflare :
+ * un pourcentage nu se rattache à la jauge la plus connue, pas à la nôtre. On
+ * affiche donc la grandeur qui le produit, et la phrase dit ce qu'il n'est pas.
+ */
+export function occupancyReading(
+  traffic: TrafficWindow | undefined,
+  occupancy: Occupancy,
+): OccupancyReading | null {
+  if (traffic === undefined || occupancy.basis === 'aucune mesure') {
+    return null;
+  }
+  const percent = Math.round(occupancy.ratio * 100);
+  const caveat = 'Ce n’est ni un CPU ni une mémoire : c’est la pression vue par la gateway.';
+  if (occupancy.basis === 'rejets') {
+    const share = Math.round((traffic.throttled / traffic.requests) * 100);
+    return {
+      measure: `${share} % en 429`,
+      sentence: `Occupation ${percent} % d’après les rejets : ${share} % des requêtes refusées par le throttler (429). ${caveat}`,
+    };
+  }
+  const p95 = Math.round(traffic.p95Ms);
+  return {
+    measure: `p95 ${p95} ms`,
+    sentence: `Occupation ${percent} % d’après la latence : p95 ${p95} ms, entre ${P95_CALM_MS} ms (0 %) et ${P95_SATURATED_MS} ms (100 %). ${caveat}`,
+  };
+}

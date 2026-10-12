@@ -141,7 +141,8 @@ export const SURFACES_LIMIT = 60;
  * La même fenêtre, découpée par **surface appelée** — ce qui répond à « quelles
  * requêtes prennent la charge ».
  *
- * La surface est celle que la gateway a écrite : au plus deux segments, et tout
+ * La surface est celle que la gateway a écrite : au plus deux segments (trois
+ * sous `admin/accounting`, depuis le 2026-10-12), et tout
  * segment porteur d'un chiffre remplacé par `_`. On lit donc `admin/companies`,
  * jamais `admin/companies/cmsz…/contacts`. Ce n'est pas une limite technique,
  * c'est la décision du J1 : un identifiant en dimension, c'est la cardinalité

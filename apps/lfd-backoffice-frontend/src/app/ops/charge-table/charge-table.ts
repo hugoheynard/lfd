@@ -29,7 +29,8 @@ interface Row {
  * marque `slow`, qui remonte à l'œil ce que le tri ne remonte pas.
  *
  * **Ce que ce tableau ne peut pas dire**, et il vaut mieux le savoir en le
- * lisant : la surface s'arrête à deux segments, et tout segment porteur d'un
+ * lisant : la surface s'arrête à deux segments (trois sous `admin/accounting`,
+ * 2026-10-12), et tout segment porteur d'un
  * chiffre est masqué. On voit `admin/companies`, jamais
  * `admin/companies/cmsz…/contacts`. C'est la décision du J1 — un identifiant en
  * dimension, c'est la cardinalité qui explose et de la donnée client déposée

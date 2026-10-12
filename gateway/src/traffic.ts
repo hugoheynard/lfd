@@ -94,8 +94,23 @@ const WORD = /^[a-z][a-z-]*$/;
 /** Longueur au-delà de laquelle un « mot » n'en est plus un (garde-fou cardinalité). */
 const MAX_SEGMENT = 24;
 
+/** Profondeur ordinaire d'une surface. */
+const DEFAULT_DEPTH = 2;
+
 /**
- * La **surface** appelée : au plus deux segments du chemin transmis, chacun
+ * Les surfaces qui gardent un **troisième** segment, et seulement elles.
+ *
+ * `admin/accounting` regroupe facturation, prélèvements, relevés et pilote
+ * automatique : une seule case ne dit pas laquelle fait le volume ou la
+ * latence (décidé par Hugo le 2026-10-12). La liste est nommée et courte
+ * parce que chaque entrée multiplie la cardinalité du blob `surface` par le
+ * nombre de mots sous ce préfixe ; le 3ᵉ segment passe les mêmes filtres
+ * (`WORD`, `MAX_SEGMENT`), donc un identifiant y devient `_`.
+ */
+export const DEEP_SURFACES: readonly string[] = ["admin/accounting"];
+
+/**
+ * La **surface** appelée : au plus deux segments (trois sous `DEEP_SURFACES`) du chemin transmis, chacun
  * remplacé par `_` s'il ne ressemble pas à un mot.
  *
  * Deux segments et pas un : `admin` seul rangerait tout le back-office dans une
@@ -112,10 +127,15 @@ export function surfaceOf(forwardedPath: string): string {
   if (segments.length === 0) {
     return "root";
   }
-  return segments
-    .slice(0, 2)
-    .map((segment) => (segment.length <= MAX_SEGMENT && WORD.test(segment) ? segment : "_"))
-    .join("/");
+  const kept = segments
+    .slice(0, DEFAULT_DEPTH)
+    .map((segment) => (segment.length <= MAX_SEGMENT && WORD.test(segment) ? segment : "_"));
+  const surface = kept.join("/");
+  if (!DEEP_SURFACES.includes(surface) || segments.length <= DEFAULT_DEPTH) {
+    return surface;
+  }
+  const third = segments[DEFAULT_DEPTH];
+  return `${surface}/${third.length <= MAX_SEGMENT && WORD.test(third) ? third : "_"}`;
 }
 
 /**

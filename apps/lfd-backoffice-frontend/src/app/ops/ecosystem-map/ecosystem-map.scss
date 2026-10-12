@@ -243,6 +243,15 @@
   text-anchor: end;
 }
 
+/* La grandeur derrière le pourcentage : même corps, plus effacée — elle
+   explique le chiffre, elle ne le concurrence pas. */
+.node-gauge-measure {
+  fill: var(--fold-color-text-faded);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  text-anchor: end;
+}
+
 .node-flag {
   fill: none;
   stroke: var(--fold-color-alert);

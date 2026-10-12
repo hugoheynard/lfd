@@ -42,6 +42,20 @@ describe("surfaceOf", () => {
     expect(surfaceOf("/admin/companies/settings/pieces")).toBe("admin/companies");
   });
 
+  it("garde un troisième segment sous admin/accounting, pour savoir quelle route pèse", () => {
+    expect(surfaceOf("/admin/accounting/collections/run")).toBe("admin/accounting/collections");
+    expect(surfaceOf("/admin/accounting")).toBe("admin/accounting");
+  });
+
+  it("passe le troisième segment au même filtre qu'un autre", () => {
+    expect(surfaceOf("/admin/accounting/inv-2026-0042")).toBe("admin/accounting/_");
+  });
+
+  it("ne garde pas de troisième segment hors de la liste nommée", () => {
+    expect(surfaceOf("/admin/orders/history")).toBe("admin/orders");
+    expect(surfaceOf("/accounting/admin/x")).toBe("accounting/admin");
+  });
+
   it("remplace tout segment porteur d'un identifiant", () => {
     // Un cuid en dimension, c'est une cardinalité qui explose ET de la donnée
     // client déposée chez Cloudflare. Les deux sont refusées.

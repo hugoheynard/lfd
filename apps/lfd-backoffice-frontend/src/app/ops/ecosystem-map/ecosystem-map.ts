@@ -9,7 +9,7 @@ import type {
 } from '@lfd/ops-contract';
 
 import { layoutOf, type Lane, type LaneWidths, type MapLayout, type PlacedNode } from '../layout';
-import { occupancyOf, type Occupancy } from '../occupancy';
+import { occupancyOf, occupancyReading, type Occupancy, type OccupancyReading } from '../occupancy';
 import { sparklineOf, type Sparkline } from '../sparkline';
 import { REASON_LABEL } from '../reason-label';
 
@@ -111,6 +111,8 @@ interface Box {
   readonly glyph: readonly string[];
   /** Part du plafond, en pourcentage plein — `null` quand rien n'est mesuré. */
   readonly gauge: number | null;
+  /** La grandeur réelle derrière `gauge` — `null` quand rien n'est mesuré. */
+  readonly gaugeReading: OccupancyReading | null;
   /** Ce que CE nœud dit de son activité, déjà mis en forme. Vide = rien à dire. */
   readonly readings: string;
   /** Sa courbe des 24 h, ou `null` — rien ne garde l'histoire d'un tiers. */
@@ -163,8 +165,12 @@ export class EcosystemMap {
 
   private readonly layout = computed(() => layoutOf(this.nodes()));
 
+  private readonly windowsByNode = computed(
+    () => new Map(this.windows().map((window) => [window.node, window])),
+  );
+
   private readonly occupancies = computed(() => {
-    const byNode = new Map(this.windows().map((window) => [window.node, window]));
+    const byNode = this.windowsByNode();
     return new Map(
       this.nodes().map((node) => [node.node, occupancyOf(byNode.get(node.node))] as const),
     );
@@ -202,6 +208,7 @@ export class EcosystemMap {
         title: describe(placed.health, occupancy),
         glyph: GLYPHS[placed.health.kind],
         gauge: occupancy.basis === 'aucune mesure' ? null : occupancy.ratio,
+        gaugeReading: occupancyReading(this.windowsByNode().get(placed.health.node), occupancy),
         readings: formatReadings(placed.health.readings),
         spark: this.sparklines().get(placed.health.node) ?? null,
       };
