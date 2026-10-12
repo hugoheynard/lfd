@@ -753,3 +753,67 @@ choisir lequel fait foi pour le lot (même question).
 **Reste par l'adaptateur `BillingRhythmReader`** : M3 et M4 du tableau
 ci-dessus, inchangés. Le journal (`invoice.autopilot_ran`, `invoice.signalled`)
 dit encore le MOIS de la clôture (`periodMonthOf`).
+
+### 16.9 M4 préparé (2026-10-12, pendant M3) — le relevé et les écrans
+
+État au départ de M4 (relu ce jour) : routes de M1 en place
+(`admin-billing-modes.controller.ts` : dates d'un mode, annulation, mode
+d'un payeur en lecture/écriture/annulation) ; contrats `billingModes`,
+`lastClosure`, `PayerBillingModeView` ; côté écran, seule une carte en
+LECTURE des trois modes (`billing-modes-card`) ; la fiche du client
+(`fiche-client/facturation/`) ne dit rien du mode. Lecteurs encore sur
+l'adaptateur mensuel après M3 : `statement-period-support` (cycle courant,
+relevé, dossier et leurs CSV) et `PrismaInvoicePeriodsReader` (en SQL).
+
+**M4a — serveur (`batisseur`)**
+
+1. **Relevé et dossier par payeur** : `statement-period-support` lit la
+   `PayerTimeline` DU payeur demandé (relevé, dossier, CSV) ; `/cycles` prend
+   le payeur (`?companyId=`) et rend SES périodes ; sans payeur (cycle courant
+   de l'entité), le calendrier de M2/M3.
+2. **La période d'une facture émise, rangée** : colonne
+   `period_starts_at` sur l'issue de facture (migration additive), écrite à
+   l'émission ; `PrismaInvoicePeriodsReader` la lit au lieu de recalculer sous
+   le mensuel. Les issues d'avant restent lisibles par le calcul (aucune ligne
+   en production). _(Proposé le 2026-10-12 après R5a ; décision de Hugo
+   attendue — cf. ci-dessous.)_
+3. **L'e-mail « Votre facture » dit la période** (« commandes du 5 au 11
+   octobre 2026 ») au lieu du mois (`invoice-notice-sender.ts`,
+   `periodMonthOf`). _(Même attente.)_
+4. **Le journal dit la période** : `invoice.signalled` et
+   `invoice.autopilot_ran` gagnent `periodClosesAt` + libellé à côté de
+   `month` (gardé, compat) ; phrases du back-office à suivre.
+5. **Les restes « mois » côté serveur** : message du refus de préparation
+   (« Le premier mois prélevable »), `cycleTagOf` déjà fait (R5a).
+6. **`payerCount`** du mensuel : compter aussi les payeurs mensuels par
+   défaut ? (M1 ne compte que ceux qui l'ont choisi.) — à trancher, défaut
+   proposé : « N clients ont choisi ce mode », sans prétendre compter les
+   autres.
+
+**M4b — écrans (`pablo`), après M4a**
+
+1. **Fiche de l'entité — « Dates des modes »** : la carte en lecture devient
+   l'éditeur des trois modes : pour chacun, dates en vigueur (jour du mois,
+   deux jours, jour de semaine), programmé et prise d'effet, « Annuler ce
+   changement », avertissement permanent « un seul changement à la fois » et
+   formulaire bloqué jusqu'à `changeLockedUntil`, confirmation qui dit la
+   date de prise d'effet, 3 prochaines clôtures, nombre de clients. Réutilise
+   ce que R5b avait bâti (confirmation, avertissement, clôtures).
+2. **Fiche du client — section facturation** : « Mode de facturation :
+   Mensuel (par défaut) / Deux fois par mois / Chaque semaine », le programmé
+   et son annulation, l'avertissement, ses 3 prochaines clôtures ; un SITE
+   facturé chez un autre affiche « Suit le mode de {payeur} » sans
+   formulaire (le serveur refuse de toute façon).
+3. **Relevé et dossier** : le sélecteur de période du client montre SES
+   périodes.
+4. **« Prélèvement du mois »** : organisé par clôture du calendrier, avec
+   pour chacune les clients facturés et le lot ; la période affichée est
+   celle de chaque client (plus « la plus longue », §16.8).
+5. **Restes « mois »** : tableau de bord (« le premier mois prélevable »),
+   journal (« Mois pas encore prélevable »).
+
+**e2e** : relevé d'un payeur hebdomadaire (ses semaines), période rangée sur
+l'issue, e-mail de période ; specs des écrans.
+
+**Décisions de Hugo à demander avant M4a** : la colonne `period_starts_at`
+(2), l'e-mail par période (3), le compte de `payerCount` (6).
