@@ -478,7 +478,9 @@ Les codes reçus sont déjà rangés dans `collection_return.reason_code`
 >
 > Nous savons que la liste est longue : des réponses partielles nous aident
 > déjà, en priorité les étapes 1, 3 et 4, qui conditionnent nos premiers
-> imports. Si un échange téléphonique est plus simple pour certains points,
-> nous sommes disponibles.
+> imports. Nous avons besoin d'une **réponse écrite** sur l'ensemble de ces
+> points, plutôt que d'un échange téléphonique : nos fichiers et nos
+> procédures seront construits à partir de vos réponses, et nous devons
+> pouvoir nous y référer.
 >
 > Merci beaucoup pour votre aide,
