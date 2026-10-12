@@ -23,7 +23,7 @@ import { SaveOrderDeliveryVatCommand } from "../application/save-order-delivery-
 
 /**
  * **La TVA de la livraison** — Comptabilité › « TVA de la livraison » (plan
- * `documentation/order/plan-tva-des-frais-de-port.md`, V2).
+ * `documentation/order/architecture-tva-des-frais-de-port.md`, V2).
  *
  * Murée par `b2b_accounting`, comme les autres réglages de la comptabilité :
  * c'est le comptable qui sait si le transport est l'accessoire de la vente ou

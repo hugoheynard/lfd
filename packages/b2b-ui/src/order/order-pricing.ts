@@ -151,7 +151,7 @@ export function orderTotalRows(order: CustomerOrderView): readonly TotalRow[] {
 /**
  * Le taux de la livraison, dit sous son montant. Le mode est figé à la
  * passation ; `null` = commande d'avant le réglage, taxée au taux normal
- * (plan-tva-des-frais-de-port.md, V5).
+ * (architecture-tva-des-frais-de-port.md, V5).
  *
  * Au compte et au prorata, AUCUN taux : il n'y en a pas un seul, et le bon ne
  * chiffre pas la TVA (F5) — la livraison s'y lit en HT, sans plus.

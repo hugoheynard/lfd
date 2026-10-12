@@ -365,7 +365,7 @@ export const ORDERS_PRODUCTION_FACTS = {
   "order_late_fee.set": fact(payload({ before: lateFee().nullable(), after: lateFee() })),
   "order_late_fee.cleared": fact(payload({ before: lateFee() })),
   /**
-   * La TVA de la livraison (plan `plan-tva-des-frais-de-port.md`, V2). `before`
+   * La TVA de la livraison (plan `architecture-tva-des-frais-de-port.md`, V2). `before`
    * est le mode qui S'APPLIQUAIT — `standard` sans réglage posé : le lecteur
    * fait ce repli, et c'est ce que la passation facturait.
    */

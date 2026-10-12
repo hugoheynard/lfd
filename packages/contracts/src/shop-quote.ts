@@ -161,7 +161,7 @@ export interface ShopQuoteView {
   readonly deliveryFeeCents: number;
   /**
    * Le mode de TVA du port que la passation appliquerait — le réglage courant
-   * (plan `plan-tva-des-frais-de-port.md`, V4). Présent même en retrait : il
+   * (plan `architecture-tva-des-frais-de-port.md`, V4). Présent même en retrait : il
    * dit la règle, pas un montant.
    */
   readonly deliveryVatMode: DeliveryVatMode;

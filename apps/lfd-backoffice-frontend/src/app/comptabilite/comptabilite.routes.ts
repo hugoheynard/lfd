@@ -131,7 +131,7 @@ export const comptabiliteRoutes: Routes = [
         // La TVA de la livraison — taux normal ou au prorata des produits.
         // Sous `b2b_accounting`, comme la coquille : pas de garde propre. Les
         // gestes demandent `b2b_accounting:write` ; l'écran les masque sans lui.
-        // Plan : documentation/order/plan-tva-des-frais-de-port.md (V2).
+        // Plan : documentation/order/architecture-tva-des-frais-de-port.md (V2).
         path: 'tva-de-la-livraison',
         title: 'TVA de la livraison — LFC B2B admin',
         loadComponent: () =>

@@ -68,7 +68,7 @@ export interface VatInput {
   readonly deliveryFeeCents: number;
   /**
    * Le mode de TVA du port, lu au réglage et figé sur la commande (plan
-   * `plan-tva-des-frais-de-port.md`) : `standard` = {@link DELIVERY_VAT_RATE},
+   * `architecture-tva-des-frais-de-port.md`) : `standard` = {@link DELIVERY_VAT_RATE},
    * `follows_goods` = au prorata de la base hors taxe brute de chaque taux.
    * `null` = commande d'avant le réglage, donc `standard`.
    */

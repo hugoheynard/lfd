@@ -54,7 +54,7 @@ import { PrismaOrderCutoffWaiverRepository } from "./infrastructure/prisma-order
     { provide: OrderLateFeeRepository, useClass: PrismaOrderLateFeeRepository },
     { provide: OrderLateFeeReader, useClass: PrismaOrderLateFeeReader },
     // La TVA de la livraison vit à côté de la surtaxe, son précédent (plan
-    // `plan-tva-des-frais-de-port.md`, V2) : un réglage unique que la
+    // `architecture-tva-des-frais-de-port.md`, V2) : un réglage unique que la
     // passation lit. Deux ports, encore.
     { provide: OrderDeliveryVatRepository, useClass: PrismaOrderDeliveryVatRepository },
     { provide: OrderDeliveryVatReader, useClass: PrismaOrderDeliveryVatReader },

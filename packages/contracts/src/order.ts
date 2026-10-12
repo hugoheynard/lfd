@@ -666,7 +666,7 @@ export interface OrderView {
   readonly lateFeeAdjustment: LateFeeAdjustment | null;
   /**
    * **Le mode de TVA du port**, figé à la passation (plan
-   * `plan-tva-des-frais-de-port.md`, V3) : `standard` = taux normal,
+   * `architecture-tva-des-frais-de-port.md`, V3) : `standard` = taux normal,
    * `follows_goods` = au prorata des marchandises. `null` = commande passée
    * avant le réglage, donc au taux normal — l'écran le dit comme `standard`.
    */

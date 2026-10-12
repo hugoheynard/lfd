@@ -34,7 +34,7 @@ import { fractionByBasisPoints, roundToCents, type Exact } from "./exact.js";
  * marchandise quand il n'y a aucune marchandise à suivre.
  *
  * Ce n'est plus « le taux du transport, point » : depuis la décision du
- * 2026-09-21 (plan `documentation/order/plan-tva-des-frais-de-port.md`), le
+ * 2026-09-21 (plan `documentation/order/architecture-tva-des-frais-de-port.md`), le
  * comptable peut décider que le port, accessoire de la vente, suit le taux de
  * ce qu'il transporte ({@link VatExtra} `followsGoods`). Le taux normal reste
  * une constante légale, pas une donnée par boutique.

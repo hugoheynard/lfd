@@ -32,7 +32,7 @@ const WHEN_RIGHT: Readonly<Record<DeliveryVatMode, string>> = {
 
 /**
  * Vue **TVA de la livraison** de la Comptabilité (plan
- * `documentation/order/plan-tva-des-frais-de-port.md`, V2).
+ * `documentation/order/architecture-tva-des-frais-de-port.md`, V2).
  *
  * Sur le modèle de la surtaxe de retard, mais sous `b2b_accounting` : c'est le
  * comptable qui sait si le transport est une prestation distincte ou

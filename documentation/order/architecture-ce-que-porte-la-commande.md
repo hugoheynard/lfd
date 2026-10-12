@@ -304,14 +304,14 @@ stateDiagram-v2
 
 ### 3.8 bis Colonnes ajoutées depuis la première écriture (vérifié le 2026-10-12)
 
-| Colonne / relation                 | Ce qu'elle dit                                                                                                                                                            | Défini par                                |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| `billedCompanyId`                  | le **payeur**, copié à la passation (le principal que le site suivait en `billing`, sinon la société) ; l'argent lit `COALESCE(billed_company_id, company_id)`            | la passation ; `NULL` avant S4            |
-| `voucherDiscountCents`             | la part du **bon de fidélité** imputée, HT, à part de `discountCents` ; `0` = aucun bon                                                                                   | la passation                              |
-| `loyaltyVoucherId`                 | le bon engagé (unique parmi les commandes non annulées, index partiel à la main de `20260927100000`)                                                                      | la passation                              |
-| `deliveryVatMode`                  | le mode de TVA du port, figé : `standard` ou `follows_goods` ; `NULL` = avant le réglage = taux normal ([`plan-tva-des-frais-de-port.md`](plan-tva-des-frais-de-port.md)) | `OrderDrafting`, depuis le réglage global |
-| relation `refunds` (`OrderRefund`) | les remboursements Stripe constatés sur la commande                                                                                                                       | `record-order-refund.handler.ts`          |
-| relation `cardInvoiceOutcome`      | l'issue de la facture carte, s'il y en a une                                                                                                                              | la comptabilité (`b2b/accounting`)        |
+| Colonne / relation                 | Ce qu'elle dit                                                                                                                                                                            | Défini par                                |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| `billedCompanyId`                  | le **payeur**, copié à la passation (le principal que le site suivait en `billing`, sinon la société) ; l'argent lit `COALESCE(billed_company_id, company_id)`                            | la passation ; `NULL` avant S4            |
+| `voucherDiscountCents`             | la part du **bon de fidélité** imputée, HT, à part de `discountCents` ; `0` = aucun bon                                                                                                   | la passation                              |
+| `loyaltyVoucherId`                 | le bon engagé (unique parmi les commandes non annulées, index partiel à la main de `20260927100000`)                                                                                      | la passation                              |
+| `deliveryVatMode`                  | le mode de TVA du port, figé : `standard` ou `follows_goods` ; `NULL` = avant le réglage = taux normal ([`architecture-tva-des-frais-de-port.md`](architecture-tva-des-frais-de-port.md)) | `OrderDrafting`, depuis le réglage global |
+| relation `refunds` (`OrderRefund`) | les remboursements Stripe constatés sur la commande                                                                                                                                       | `record-order-refund.handler.ts`          |
+| relation `cardInvoiceOutcome`      | l'issue de la facture carte, s'il y en a une                                                                                                                                              | la comptabilité (`b2b/accounting`)        |
 
 ### 3.9 La note
 

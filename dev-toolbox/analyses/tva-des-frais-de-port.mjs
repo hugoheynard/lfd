@@ -3,7 +3,7 @@
  * traité en accessoire de la vente.
  *
  * Ouverte le 2026-09-21 pour
- * [`documentation/order/plan-tva-des-frais-de-port.md`](../../documentation/order/plan-tva-des-frais-de-port.md),
+ * [`documentation/order/architecture-tva-des-frais-de-port.md`](../../documentation/order/architecture-tva-des-frais-de-port.md),
  * quand Hugo a demandé si le tarif par zone devait être ventilé selon le
  * contenu du panier.
  *

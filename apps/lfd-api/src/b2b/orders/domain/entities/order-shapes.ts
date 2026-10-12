@@ -100,7 +100,7 @@ export interface DraftOrderInput {
   readonly lateFeeAdjustment: LateFeeAdjustment | null;
   /**
    * Le mode de TVA du port, lu au réglage par l'appelant (plan
-   * `plan-tva-des-frais-de-port.md`, V3). L'agrégat le passe au calcul et le
+   * `architecture-tva-des-frais-de-port.md`, V3). L'agrégat le passe au calcul et le
    * fige : rien ne recalcule une commande passée, la commande garde donc le
    * mode de sa passation par construction.
    */

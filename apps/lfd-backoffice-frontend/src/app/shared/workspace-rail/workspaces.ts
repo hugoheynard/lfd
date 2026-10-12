@@ -800,7 +800,7 @@ export const COMPTABILITE_VIEWS: readonly WorkspaceView[] = [
   },
   {
     // À côté de la surtaxe, mais sous le droit de la comptabilité (plan
-    // `plan-tva-des-frais-de-port.md`, V2).
+    // `architecture-tva-des-frais-de-port.md`, V2).
     key: 'tva-de-la-livraison',
     label: 'TVA de la livraison',
     link: '/comptabilite/tva-de-la-livraison',

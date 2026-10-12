@@ -491,7 +491,7 @@ export interface ClientCopy {
     readonly fee: string;
     /**
      * Sous la ligne de livraison : à quel taux le port est taxé (plan
-     * `plan-tva-des-frais-de-port.md`, V5). Le comptable le règle ; le client
+     * `architecture-tva-des-frais-de-port.md`, V5). Le comptable le règle ; le client
      * doit pouvoir le relire sur ce qu'il paie.
      */
     readonly feeVatStandard: string;
