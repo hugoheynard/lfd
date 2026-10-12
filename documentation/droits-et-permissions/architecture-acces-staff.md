@@ -13,6 +13,9 @@
 > Le pendant client — le mur `company_id`, la personne et la société — est dans
 > [`../auth-inscription/architecture-identite-auth-tenancy.md`](../auth-inscription/architecture-identite-auth-tenancy.md).
 > Le réglage du tenant Auth0 est dans [`../auth-inscription/auth0-setup.md`](../auth-inscription/auth0-setup.md).
+>
+> Droit par droit, tout ce qui touche une commande (routes, écrans, graine,
+> écarts) : [`droits-des-commandes.md`](droits-des-commandes.md).
 
 ## Table des matières
 
