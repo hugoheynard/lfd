@@ -104,7 +104,6 @@
               fold-menu-item
               icon="croissant"
               label="Fournil"
-              badge="app"
               routerLink="/fournil"
               routerLinkActive
               #bakehouseRla="routerLinkActive"
@@ -120,7 +119,6 @@
               fold-menu-item
               icon="package"
               label="Colisage"
-              badge="app"
               routerLink="/colisage"
               routerLinkActive
               #packingRla="routerLinkActive"
@@ -137,7 +135,6 @@
               fold-menu-item
               icon="package-check"
               label="Comptoir"
-              badge="app"
               routerLink="/comptoir"
               routerLinkActive
               #comptoirRla="routerLinkActive"
@@ -153,7 +150,6 @@
               fold-menu-item
               icon="map-pin"
               label="Coursier"
-              badge="app"
               routerLink="/coursier"
               routerLinkActive
               #courierRla="routerLinkActive"
@@ -643,7 +639,6 @@
           fold-nav-tile
           icon="croissant"
           label="Fournil"
-          badge="app"
           routerLink="/fournil"
           routerLinkActive
           #bakehouseTile="routerLinkActive"
@@ -657,7 +652,6 @@
           fold-nav-tile
           icon="package"
           label="Colisage"
-          badge="app"
           routerLink="/colisage"
           routerLinkActive
           #packingTile="routerLinkActive"
@@ -669,13 +663,8 @@
         <!-- La MÊME entrée qu'au rail, et il faut la poser deux fois : les
              deux arbres ne partagent pas leur modèle. Comme la production, le
              lanceur montre les vues de l'espace, lues dans le MÊME catalogue
-             que le rail secondaire. -->
-        <fold-nav-group
-          icon="package-check"
-          label="Comptoir"
-          badge="app"
-          [entryCountLabel]="entriesLabel"
-        >
+             que les onglets du comptoir. -->
+        <fold-nav-group icon="package-check" label="Comptoir" [entryCountLabel]="entriesLabel">
           @for (view of comptoirViews(); track view.key) {
             <a
               fold-nav-tile
@@ -698,7 +687,6 @@
           fold-nav-tile
           icon="map-pin"
           label="Coursier"
-          badge="app"
           routerLink="/coursier"
           routerLinkActive
           #courierTile="routerLinkActive"
