@@ -21,6 +21,13 @@ export const DEFAULT_WEEKLY_CLOSING_WEEKDAY = 1;
 
 export type BillingRhythmKind = "monthly" | "semimonthly" | "weekly";
 
+/** Le genre tel que la comptabilité le lit dans un refus. */
+const KIND_LABELS: Readonly<Record<BillingRhythmKind, string>> = {
+  monthly: "mensuel",
+  semimonthly: "deux fois par mois",
+  weekly: "hebdomadaire",
+};
+
 /** La forme persistée : un genre et ses jours, sans rien de Prisma. */
 export interface BillingRhythmRecord {
   readonly kind: string;
@@ -78,6 +85,31 @@ export class BillingRhythm {
       );
     }
     return new BillingRhythm("weekly", [closingWeekday]);
+  }
+
+  /**
+   * Le rythme CHOISI à l'écran : un genre et les jours saisis. Le nombre de
+   * jours est jugé ici, avec un message qui parle de la saisie — pas de la
+   * base, comme celui de {@link fromRecord}.
+   *
+   * @throws {InvalidBillingRhythmError} nombre de jours faux pour le genre, ou jour hors bornes.
+   */
+  static chosen(kind: BillingRhythmKind, days: readonly number[]): BillingRhythm {
+    const expected = kind === "semimonthly" ? 2 : 1;
+    const [first, second] = days;
+    if (days.length !== expected || first === undefined) {
+      throw new InvalidBillingRhythmError(
+        `${String(days.length)} jour(s) reçu(s) pour un rythme ${KIND_LABELS[kind]} : ` +
+          `il en faut ${String(expected)}.`,
+      );
+    }
+    if (kind === "monthly") {
+      return BillingRhythm.monthly(first);
+    }
+    if (kind === "weekly") {
+      return BillingRhythm.weekly(first);
+    }
+    return BillingRhythm.semimonthly(first, second ?? first);
   }
 
   /**

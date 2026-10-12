@@ -5,6 +5,7 @@ import {
   MANDATE_STATUS_LABELS,
   ORDER_COLLECTION_STATE_LABELS,
   SEPA_SCHEME_LABELS,
+  BILLING_RHYTHM_KIND_LABELS,
 } from '@lfd/contracts';
 
 import { domain, type ValueFamily } from './value-domain';
@@ -15,6 +16,9 @@ import { domain, type ValueFamily } from './value-domain';
  */
 
 export const SEPA_SCHEME = domain('schéma SEPA', SEPA_SCHEME_LABELS);
+
+/** Le genre d'un rythme de facturation (plan `plan-rythme-de-facturation.md`). */
+export const BILLING_RHYTHM_KIND = domain('rythme de facturation', BILLING_RHYTHM_KIND_LABELS);
 
 export const MANDATE_STATUS = domain('état d’un mandat', MANDATE_STATUS_LABELS);
 
@@ -99,6 +103,7 @@ export const COLLECTION_RETURN_RESOLUTION = domain('suite d’un retour bancaire
 export const ACCOUNTING_VALUES: ValueFamily = {
   enums: [
     SEPA_SCHEME,
+    BILLING_RHYTHM_KIND,
     MANDATE_STATUS,
     DRAFT_VOIDING_CAUSE,
     PROOF_PURGE_CAUSE,

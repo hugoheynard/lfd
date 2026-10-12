@@ -30,6 +30,32 @@ export interface DepositCutoffView {
   readonly time: string;
 }
 
+/** Les trois rythmes de facturation (plan `plan-rythme-de-facturation.md`, §2.1). */
+export const billingRhythmKindSchema = z.enum(["monthly", "semimonthly", "weekly"]);
+export type BillingRhythmKind = z.infer<typeof billingRhythmKindSchema>;
+
+/** Le genre tel que l'écran le dit (« bimensuel » serait ambigu, §0 du plan). */
+export const BILLING_RHYTHM_KIND_LABELS: Readonly<Record<BillingRhythmKind, string>> = {
+  monthly: "Mensuel",
+  semimonthly: "Deux fois par mois",
+  weekly: "Chaque semaine",
+};
+
+/**
+ * Un rythme de facturation : son genre et ses jours de clôture (00h00 Paris).
+ * Jours du mois de 1 à 28 (un pour le mensuel, deux triés pour le bimensuel),
+ * ou jour de semaine de 1 = lundi à 7 = dimanche pour l'hebdomadaire.
+ */
+export interface BillingRhythmView {
+  readonly kind: BillingRhythmKind;
+  readonly days: readonly number[];
+}
+
+/** Un rythme programmé, et l'instant ISO — une clôture de l'ancien — où il prend effet. */
+export interface ScheduledBillingRhythmView extends BillingRhythmView {
+  readonly effectiveAt: string;
+}
+
 /** Une limite locale — un jour et une heure de Paris. */
 export interface LocalDeadlineView {
   /** `AAAA-MM-JJ`. */
@@ -142,6 +168,14 @@ export interface LegalEntityView {
   readonly collectionDaysAfterClosure: number | null;
   /** `null` = « à renseigner ». */
   readonly depositCutoff: DepositCutoffView | null;
+  /** Le rythme de facturation EN VIGUEUR — celui de tous les payeurs de l'entité. */
+  readonly billingRhythm: BillingRhythmView;
+  /**
+   * Le rythme programmé, ou `null`. Il prend effet à `effectiveAt`, la
+   * prochaine clôture du rythme en vigueur : la période en cours n'est jamais
+   * coupée.
+   */
+  readonly nextBillingRhythm: ScheduledBillingRhythmView | null;
   /** Le calendrier du cycle EN COURS, avec les réglages ci-dessus. */
   readonly nextCollection: CollectionCalendarView;
   /**
@@ -408,6 +442,17 @@ export const setCollectionSchedulePayloadSchema = z.strictObject({
   depositCutoff: z.strictObject({ businessDaysBefore: z.int(), time: z.string() }).nullable(),
 });
 export type SetCollectionSchedulePayload = z.infer<typeof setCollectionSchedulePayloadSchema>;
+
+/**
+ * Le rythme de facturation de l'entité. La FORME seulement : les bornes des
+ * jours et leur nombre selon le genre sont opposés par le value object, dont le
+ * refus dit ce qui a été reçu et ce qui est attendu.
+ */
+export const setBillingRhythmPayloadSchema = z.strictObject({
+  kind: billingRhythmKindSchema,
+  days: z.array(z.int()),
+});
+export type SetBillingRhythmPayload = z.infer<typeof setBillingRhythmPayloadSchema>;
 
 /** Activer ou désactiver la constitution automatique — un geste à part. */
 export const setAutoCollectionPayloadSchema = z.strictObject({ enabled: z.boolean() });

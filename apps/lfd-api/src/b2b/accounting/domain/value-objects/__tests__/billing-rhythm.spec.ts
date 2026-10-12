@@ -64,4 +64,31 @@ describe("BillingRhythm", () => {
   it("ne confond pas un mensuel le 1 et un hebdomadaire le lundi", () => {
     expect(BillingRhythm.monthly(1).equals(BillingRhythm.weekly(1))).toBe(false);
   });
+
+  describe("chosen — la saisie de l'écran", () => {
+    it("bâtit chacun des trois rythmes", () => {
+      expect(BillingRhythm.chosen("monthly", [5]).toRecord()).toEqual({
+        kind: "monthly",
+        days: [5],
+      });
+      expect(BillingRhythm.chosen("weekly", [7]).toRecord()).toEqual({ kind: "weekly", days: [7] });
+      expect(BillingRhythm.chosen("semimonthly", [16, 1]).toRecord()).toEqual({
+        kind: "semimonthly",
+        days: [1, 16],
+      });
+    });
+
+    it.each([
+      ["monthly", []],
+      ["monthly", [1, 2]],
+      ["weekly", [1, 2]],
+      ["semimonthly", [1]],
+    ] as const)("refuse %p avec %p en nommant le nombre attendu", (kind, days) => {
+      expect(() => BillingRhythm.chosen(kind, days)).toThrow(/il en faut/u);
+    });
+
+    it("refuse le 29 du mois", () => {
+      expect(() => BillingRhythm.chosen("monthly", [29])).toThrow(InvalidBillingRhythmError);
+    });
+  });
 });

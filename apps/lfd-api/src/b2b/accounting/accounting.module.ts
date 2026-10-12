@@ -110,6 +110,7 @@ import { SetMandateDefaultsHandler } from "./application/commands/set-mandate-de
 import { SetMandateSchemeHandler } from "./application/commands/set-mandate-scheme.handler.js";
 import { SetPreNotificationHandler } from "./application/commands/set-pre-notification.handler.js";
 import { SetCollectionScheduleHandler } from "./application/commands/set-collection-schedule.handler.js";
+import { SetBillingRhythmHandler } from "./application/commands/set-billing-rhythm.handler.js";
 import { SetAutoCollectionHandler } from "./application/commands/set-auto-collection.handler.js";
 import { SetInvoicePaymentTermsHandler } from "./application/commands/set-invoice-payment-terms.handler.js";
 import { ExportCycleAuditHandler } from "./application/queries/export-cycle-audit.handler.js";
@@ -276,6 +277,7 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     SetMandateSchemeHandler,
     SetPreNotificationHandler,
     SetCollectionScheduleHandler,
+    SetBillingRhythmHandler,
     SetAutoCollectionHandler,
     SetInvoicePaymentTermsHandler,
     SetLegalEntityArchivedHandler,

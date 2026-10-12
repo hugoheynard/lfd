@@ -23,6 +23,11 @@ import {
   type InvoicePaymentTermsInput,
 } from "../value-objects/invoice-payment-terms.js";
 import type { InvoiceSellerFacts } from "../services/invoice-issuance-blockers.js";
+import { BillingRhythm } from "../value-objects/billing-rhythm.js";
+import {
+  BillingRhythmSetting,
+  type BillingRhythmChange,
+} from "../value-objects/billing-rhythm-setting.js";
 
 /**
  * Le délai EPC par défaut entre la pré-notification et le débit. Il se réduit
@@ -114,6 +119,13 @@ export interface LegalEntitySnapshot {
   readonly invoiceLatePenaltyRateBasisPoints: number | null;
   readonly invoiceRecoveryIndemnityCents: number | null;
   readonly invoiceEarlyPaymentDiscount: string | null;
+  /** Le rythme de facturation en vigueur (plan `plan-rythme-de-facturation.md`). */
+  readonly billingRhythmKind: string;
+  readonly billingRhythmDays: readonly number[];
+  /** Le rythme programmé : genre et instant nuls, jours vides = rien de programmé. */
+  readonly nextBillingRhythmKind: string | null;
+  readonly nextBillingRhythmDays: readonly number[];
+  readonly nextBillingRhythmEffectiveAt: Date | null;
 }
 
 /**
@@ -158,6 +170,7 @@ export class LegalEntity {
     private autoCollectionEnabledValue: boolean,
     private collectionScheduleValue: CollectionSchedule,
     private paymentTermsValue: InvoicePaymentTerms,
+    private billingRhythmValue: BillingRhythmSetting,
   ) {}
 
   /**
@@ -195,6 +208,8 @@ export class LegalEntity {
       // Les mentions de paiement : à renseigner. Le taux légal n'est qu'une
       // suggestion d'écran (Q4), jamais un défaut posé ici.
       InvoicePaymentTerms.empty(),
+      // Mensuel le 1er : la clôture d'avant le rythme.
+      BillingRhythmSetting.initial(),
     );
   }
 
@@ -240,6 +255,7 @@ export class LegalEntity {
         recoveryIndemnityCents: snapshot.invoiceRecoveryIndemnityCents,
         earlyPaymentDiscount: snapshot.invoiceEarlyPaymentDiscount,
       }),
+      billingRhythmOf(snapshot),
     );
   }
 
@@ -444,6 +460,37 @@ export class LegalEntity {
     return true;
   }
 
+  /** Le rythme réglé : celui en vigueur, et le programmé s'il y en a un. */
+  get billingRhythm(): BillingRhythmSetting {
+    return this.billingRhythmValue;
+  }
+
+  /**
+   * Le rythme qui fait foi à `instant` — le programmé dès sa prise d'effet.
+   * Aucune tâche ne le reporte en base : la lecture suffit (cf.
+   * {@link BillingRhythmSetting}).
+   */
+  billingRhythmAt(instant: Date): BillingRhythm {
+    return this.billingRhythmValue.rhythmAt(instant);
+  }
+
+  /**
+   * Change le rythme de facturation. **La période en cours n'est jamais
+   * coupée** : le nouveau rythme prend effet à la prochaine clôture de
+   * l'ancien ; un second changement avant cette clôture remplace le premier,
+   * et revenir au rythme en vigueur l'annule (plan, §2.3 et §10).
+   *
+   * @returns ce qui a changé, ou `null` — une saisie rejouée n'est pas un fait.
+   */
+  changeBillingRhythm(rhythm: BillingRhythm, at: Date): BillingRhythmChange | null {
+    const outcome = this.billingRhythmValue.change(rhythm, at);
+    if (outcome === null) {
+      return null;
+    }
+    this.billingRhythmValue = outcome.setting;
+    return outcome.change;
+  }
+
   /** Le vendeur tel que `invoiceIssuanceBlockers` le juge — une copie à plat. */
   invoiceSellerFacts(): InvoiceSellerFacts {
     return {
@@ -590,6 +637,7 @@ export class LegalEntity {
       invoiceLatePenaltyRateBasisPoints: this.paymentTermsValue.latePenaltyRateBasisPoints,
       invoiceRecoveryIndemnityCents: this.paymentTermsValue.recoveryIndemnityCents,
       invoiceEarlyPaymentDiscount: this.paymentTermsValue.earlyPaymentDiscount,
+      ...billingRhythmColumns(this.billingRhythmValue),
     };
   }
 
@@ -655,4 +703,42 @@ function accountOf(snapshot: LegalEntitySnapshot): CreditorAccount | null {
     iban: Iban.create(snapshot.creditorIban),
     bic: Bic.create(snapshot.creditorBic),
   });
+}
+
+/** Relit le rythme ; `fromRecord` revalide chacun des deux. */
+function billingRhythmOf(snapshot: LegalEntitySnapshot): BillingRhythmSetting {
+  const current = BillingRhythm.fromRecord({
+    kind: snapshot.billingRhythmKind,
+    days: snapshot.billingRhythmDays,
+  });
+  if (snapshot.nextBillingRhythmKind === null || snapshot.nextBillingRhythmEffectiveAt === null) {
+    return BillingRhythmSetting.of(current, null);
+  }
+  return BillingRhythmSetting.of(current, {
+    rhythm: BillingRhythm.fromRecord({
+      kind: snapshot.nextBillingRhythmKind,
+      days: snapshot.nextBillingRhythmDays,
+    }),
+    effectiveAt: snapshot.nextBillingRhythmEffectiveAt,
+  });
+}
+
+function billingRhythmColumns(
+  setting: BillingRhythmSetting,
+): Pick<
+  LegalEntitySnapshot,
+  | "billingRhythmKind"
+  | "billingRhythmDays"
+  | "nextBillingRhythmKind"
+  | "nextBillingRhythmDays"
+  | "nextBillingRhythmEffectiveAt"
+> {
+  const scheduled = setting.scheduled;
+  return {
+    billingRhythmKind: setting.current.kind,
+    billingRhythmDays: [...setting.current.days],
+    nextBillingRhythmKind: scheduled?.rhythm.kind ?? null,
+    nextBillingRhythmDays: scheduled === null ? [] : [...scheduled.rhythm.days],
+    nextBillingRhythmEffectiveAt: scheduled?.effectiveAt ?? null,
+  };
 }

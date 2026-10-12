@@ -249,13 +249,13 @@ prélevés ensemble. Ce que ça retire et ce qui reste :
 
 Lots révisés :
 
-| Lot | Contenu                                                                                                                  |
-| --- | ------------------------------------------------------------------------------------------------------------------------ |
-| R1  | `BillingRhythm` + `nextClosureAfter` / `periodAt`, purs (heure d'été, février, fin d'année)                              |
-| R2  | Migration : rythme sur `legal_entities` (+ rythme suivant et sa prise d'effet), tables de période neuves ; `LegalEntity` |
-| R3  | Facture par clôture (23h55 la veille), passe automatique et rattrapage de toutes les clôtures manquées, bouton           |
-| R4  | Lot et automatisme par clôture, relevé client par période                                                                |
-| R5  | Carte de l'entité (choix du rythme et des dates), « Prélèvement du mois » par clôture                                    |
+| Lot | Contenu                                                                                                                                                                                                                                      |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R1  | `BillingRhythm` + `nextClosureAfter` / `periodAt`, purs (heure d'été, février, fin d'année)                                                                                                                                                  |
+| R2  | ✅ 2026-10-12 — migration `20261012100000` (rythme et rythme programmé sur `legal_entities`), `LegalEntity.changeBillingRhythm`, `PUT …/billing-rhythm`, fait `legal_entity.billing_rhythm_changed`                                          |
+| R3  | Re-clé `invoice_monthly_outcome` / `invoice_autopilot_run` par `period_closes_at` (sorti de R2 : il part avec ses lecteurs) ; facture par clôture (23h55 la veille), passe automatique et rattrapage de toutes les clôtures manquées, bouton |
+| R4  | Lot et automatisme par clôture, relevé client par période                                                                                                                                                                                    |
+| R5  | Carte de l'entité (choix du rythme et des dates), « Prélèvement du mois » par clôture                                                                                                                                                        |
 
 **Préavis (Hugo, 2026-10-12) : « on le réduira ».** Le délai de pré-notification
 sera abaissé (jusqu'à 2 jours ouvrés en SEPA B2B) ; la clause CGV et mandat

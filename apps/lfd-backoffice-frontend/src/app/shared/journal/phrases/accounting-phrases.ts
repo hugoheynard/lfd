@@ -105,6 +105,69 @@ function collectionSchedule(fact: PhraseFact): Segment[] {
   ];
 }
 
+const WEEKDAYS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+
+/**
+ * « chaque mois le 1er », « deux fois par mois, le 1er et le 16 », « chaque
+ * semaine le lundi ». Une forme inconnue se dit « — ».
+ */
+function billingRhythm(raw: unknown): string {
+  if (typeof raw !== 'object' || raw === null) {
+    return '—';
+  }
+  const kind: unknown = Reflect.get(raw, 'kind');
+  const days: unknown = Reflect.get(raw, 'days');
+  const list = Array.isArray(days) ? days.filter((day) => typeof day === 'number') : [];
+  const dayOfMonth = (day: number): string => (day === 1 ? '1er' : String(day));
+  if (kind === 'monthly' && list[0] !== undefined) {
+    return `chaque mois le ${dayOfMonth(list[0])}`;
+  }
+  if (kind === 'semimonthly' && list.length === 2) {
+    return `deux fois par mois, le ${list.map(dayOfMonth).join(' et le ')}`;
+  }
+  if (kind === 'weekly' && list[0] !== undefined) {
+    return `chaque semaine le ${WEEKDAYS[list[0] - 1] ?? '—'}`;
+  }
+  return '—';
+}
+
+/**
+ * « a programmé le rythme de facturation de l'entité « X » : chaque semaine le
+ * lundi, à partir du … (au lieu de chaque mois le 1er) » — ou, prise d'effet
+ * nulle, l'annulation d'un rythme programmé (plan `plan-rythme-de-facturation.md`).
+ */
+const billingRhythmChanged: Phrase = (fact) => {
+  const effectiveAt = fact.payload['effectiveAt'];
+  const keys = ['subjectLabel', 'from', 'to', 'effectiveAt'];
+  if (effectiveAt === null || effectiveAt === undefined) {
+    return byActor(
+      fact,
+      [
+        text('a annulé le changement de rythme de facturation '),
+        ...entity(fact, 'de'),
+        text(' : il reste '),
+        value(billingRhythm(fact.payload['from'])),
+      ],
+      keys,
+    );
+  }
+  return byActor(
+    fact,
+    [
+      text('a programmé le rythme de facturation '),
+      ...entity(fact, 'de'),
+      text(' : '),
+      value(billingRhythm(fact.payload['to'])),
+      text(', à partir du '),
+      inUnit('instant', effectiveAt),
+      text(' (au lieu de '),
+      value(billingRhythm(fact.payload['from'])),
+      text(')'),
+    ],
+    keys,
+  );
+};
+
 /**
  * « : pénalités de retard 14,15 %, indemnité de recouvrement 40,00 €, escompte
  * « néant » ». Une mention nulle est « à renseigner » — dite telle quelle,
@@ -488,6 +551,7 @@ export const ACCOUNTING_PHRASES = {
     collectionSchedule,
     ['delayHours', 'daysAfterClosure', 'depositCutoffBusinessDays', 'depositCutoffTime'],
   ),
+  'legal_entity.billing_rhythm_changed': billingRhythmChanged,
   'legal_entity.auto_collection_enabled': onEntity(
     'a activé le prélèvement automatique',
     'de',

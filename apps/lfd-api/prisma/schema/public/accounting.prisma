@@ -186,6 +186,21 @@ model LegalEntity {
   invoiceRecoveryIndemnityCents     Int?    @map("invoice_recovery_indemnity_cents")
   invoiceEarlyPaymentDiscount       String? @map("invoice_early_payment_discount")
 
+  /// Le RYTHME DE FACTURATION de l'entité (plan `plan-rythme-de-facturation.md`,
+  /// §2.1 et §10) : un genre et ses jours de clôture, à 00h00 Paris. Le défaut —
+  /// mensuel, le 1er — est exactement le comportement d'avant. Forme tenue par
+  /// le value object `BillingRhythm` ET par un CHECK.
+  billingRhythmKind String @default("monthly") @map("billing_rhythm_kind")
+  billingRhythmDays Int[]  @default([1]) @map("billing_rhythm_days")
+
+  /// Le rythme PROGRAMMÉ et sa prise d'effet : un changement ne coupe jamais la
+  /// période en cours, il prend effet à la prochaine clôture de l'ancien rythme
+  /// (§2.3). Rien de programmé = genre et instant NULL, jours vides — une liste
+  /// Prisma ne peut pas être NULL ; un CHECK tient les trois ensemble.
+  nextBillingRhythmKind        String?   @map("next_billing_rhythm_kind")
+  nextBillingRhythmDays        Int[]     @default([]) @map("next_billing_rhythm_days")
+  nextBillingRhythmEffectiveAt DateTime? @map("next_billing_rhythm_effective_at") @db.Timestamptz(3)
+
   // La clé de l'objet qui porte le LOGO de l'entité, dans le stockage objet.
   // `null` = pas de logo, et c'est un état parfaitement vivable : le mandat sort
   // alors avec sa cellule vide. Le logo ne conditionne PAS l'encaissement.

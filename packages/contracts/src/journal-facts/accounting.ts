@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { billingRhythmKindSchema } from "../legal-entity.js";
 import { mandateStatusSchema } from "../payment-mandate.js";
 import { COLLECTION_FACTS } from "./collection.js";
 import { PAYMENT_REFUND_FACTS } from "./order-refunds.js";
@@ -39,6 +40,13 @@ function labelled<S extends z.ZodRawShape>(shape: S) {
 }
 
 const sepaScheme = () => z.enum(["CORE", "B2B"]);
+
+/** Un rythme de facturation tel que le journal le garde : un genre et ses jours. */
+const billingRhythm = () =>
+  z.strictObject({
+    kind: billingRhythmKindSchema,
+    days: z.array(z.number().int()),
+  });
 
 /** Qui a agi : un agent, ou le client lui-même. */
 const actorChannel = () => z.enum(["staff", "customer"]);
@@ -87,6 +95,17 @@ export const ACCOUNTING_FACTS = {
     daysAfterClosure: days().nullable(),
     depositCutoffBusinessDays: count().nullable(),
     depositCutoffTime: clockTime().nullable(),
+  }),
+  /**
+   * Le rythme de facturation (plan `plan-rythme-de-facturation.md`, §2.3) :
+   * `from` est celui en vigueur au moment du réglage, `to` celui demandé, et
+   * `effectiveAt` la clôture de `from` où `to` prend effet — `null` quand le
+   * réglage ANNULE un rythme programmé (`to` égal à `from`).
+   */
+  "legal_entity.billing_rhythm_changed": labelled({
+    from: billingRhythm(),
+    to: billingRhythm(),
+    effectiveAt: instant().nullable(),
   }),
   /** La constitution automatique — un fait distinct du calendrier. */
   "legal_entity.auto_collection_enabled": labelled({}),

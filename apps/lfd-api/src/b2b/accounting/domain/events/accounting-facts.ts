@@ -34,6 +34,11 @@ export const ACCOUNTING_FACTS = {
   preNotificationChanged: "legal_entity.pre_notification_changed",
   /** Le calendrier de prélèvement : délai de constitution, échéance N, cut-off de dépôt. */
   collectionScheduleChanged: "legal_entity.collection_schedule_changed",
+  /**
+   * Le rythme de facturation est réglé — programmé à la prochaine clôture de
+   * l'ancien, ou un programmé annulé (plan `plan-rythme-de-facturation.md`).
+   */
+  billingRhythmChanged: "legal_entity.billing_rhythm_changed",
   /** La constitution automatique est activée — des lots partiront sans clic. */
   autoCollectionEnabled: "legal_entity.auto_collection_enabled",
   autoCollectionDisabled: "legal_entity.auto_collection_disabled",
