@@ -90,3 +90,6 @@ storybook-static/
 !.claude/settings.json
 !.claude/agents/
 .claude/settings.local.json
+
+# graphify — graphe local du dépôt, régénéré par les hooks (dev-toolbox/graphify/)
+graphify-out/

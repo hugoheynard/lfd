@@ -7,7 +7,7 @@
   "type": "module",
   "packageManager": "pnpm@10.12.1",
   "scripts": {
-    "prepare": "git config core.hooksPath .githooks || true",
+    "prepare": "git config core.hooksPath .githooks || true; node dev-toolbox/graphify/install-graphify.mjs || true",
     "setup:hooks": "git config core.hooksPath .githooks",
     "build": "turbo run build",
     "dev:infra": "node dev-toolbox/ensure-docker.mjs && node dev-toolbox/ensure-map-data.mjs && docker compose --env-file apps/lfd-route-planner/osrm-version.env -f docker-compose.dev.yml up -d",

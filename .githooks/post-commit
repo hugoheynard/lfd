@@ -4,3 +4,6 @@
 # le client — l'API en watch redémarre seule. Cf. dev-toolbox/sync-dev-db-after-git.mjs.
 # Ne bloque jamais git : le script sort toujours en 0.
 node dev-toolbox/sync-dev-db-after-git.mjs commit "$@" || true
+# Le graphe du dépôt suit le code : graphify update, détaché, jamais bloquant.
+# Cf. dev-toolbox/graphify/refresh-graph.mjs.
+node dev-toolbox/graphify/refresh-graph.mjs || true
