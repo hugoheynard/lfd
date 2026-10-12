@@ -18,8 +18,8 @@ import { cancellationVoucherSentenceOf } from "../../domain/services/order-cance
 import {
   cancellationBlocker,
   cancellationRefusalOf,
-  cancellationStateOf,
 } from "../../domain/services/order-cancellation.js";
+import { CancellationRule } from "../services/cancellation-rule.js";
 import { VoucherRestitutionRefusal } from "../services/voucher-restitution-refusal.js";
 import { GetAdminOrderQuery } from "./get-admin-order.query.js";
 
@@ -49,6 +49,7 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
     private readonly inscriptions: OrderInscriptionReader,
     private readonly restitutions: VoucherRestitutionPreview,
     private readonly refusals: VoucherRestitutionRefusal,
+    private readonly rule: CancellationRule,
     private readonly clock: Clock,
   ) {}
 
@@ -82,7 +83,9 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
     if (subject === null) {
       return null;
     }
-    const block = cancellationBlocker(cancellationStateOf(subject, inscribedDay));
+    // Lot C5 : au compte, la règle lit aussi l'engagement comptable — par le
+    // port de LECTURE seul (ISP), sans verrou : c'est un affichage.
+    const block = cancellationBlocker(await this.rule.stateOf(subject, inscribedDay));
     if (block !== null) {
       return { cancellable: false, reason: cancellationRefusalOf(block) };
     }

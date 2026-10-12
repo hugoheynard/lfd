@@ -156,6 +156,11 @@ import { PrismaFirstMandateLedger } from "./infrastructure/prisma-first-mandate-
 import { PrismaLegalEntityLogoReader } from "./infrastructure/prisma-legal-entity-logo.reader.js";
 import { PrismaLegalEntityReader } from "./infrastructure/prisma-legal-entity.reader.js";
 import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entity.repository.js";
+import { AccountOrderEngaging } from "./application/services/account-order-engaging.js";
+import { OrderEngagementReader } from "./domain/ports/order-engagement.reader.js";
+import { OrderRowsLock } from "./domain/ports/order-rows-lock.js";
+import { PrismaOrderEngagementReader } from "./infrastructure/prisma-order-engagement.reader.js";
+import { PrismaOrderRowsLock } from "./infrastructure/prisma-order-rows-lock.js";
 
 /**
  * Contexte **comptabilité** — qui encaisse, et sous quelle identité.
@@ -230,6 +235,11 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     { provide: InvoiceIssuersReader, useClass: PrismaInvoiceIssuersReader },
     { provide: BillingStatementReader, useClass: PrismaBillingStatementReader },
     { provide: CancelledOrdersReader, useClass: PrismaCancelledOrdersReader },
+    // L'annulation d'une commande au compte (plan `order/plan-annulation-de-commande.md`,
+    // C5) : l'ordre unique des verrous de lignes, et la réponse à la commande.
+    { provide: OrderRowsLock, useClass: PrismaOrderRowsLock },
+    { provide: OrderEngagementReader, useClass: PrismaOrderEngagementReader },
+    AccountOrderEngaging,
     { provide: OrderNumbersReader, useClass: PrismaOrderNumbersReader },
     // La facture émise (plan `facture-emise.md`).
     { provide: InvoiceNumbering, useClass: PrismaInvoiceNumbering },
@@ -312,6 +322,8 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
   // a besoin des deux pour dessiner le MÊME document que la fiche d'exemple.
   // Exporter le lecteur de logo sans l'émetteur n'aurait aucun usage.
   // `FirstMandateLedger` sort pour la frappe, seule à savoir qu'un mandat naît.
-  exports: [CreditorReader, LegalEntityLogoReader, FirstMandateLedger],
+  // `AccountOrderEngaging` sort pour la commande, qui le reçoit sous SES
+  // tokens (`appBootstrap/account-order-engagement.module.ts`).
+  exports: [CreditorReader, LegalEntityLogoReader, FirstMandateLedger, AccountOrderEngaging],
 })
 export class AccountingModule {}

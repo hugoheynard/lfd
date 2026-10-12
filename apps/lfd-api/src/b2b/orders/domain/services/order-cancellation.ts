@@ -1,6 +1,12 @@
 import type { OrderStatus, PaymentStatus } from "@lfd/contracts";
 
+import type { AccountEngagement } from "../ports/account-order-engagement.js";
 import type { CancellationSubject } from "../ports/cancellation-subject.reader.js";
+import {
+  engagementBlockOf,
+  engagementRefusalOf,
+  type EngagementBlock,
+} from "./order-cancellation-account.js";
 import {
   remainderCancelledRefusalOf,
   remainderEngagedRefusalOf,
@@ -31,6 +37,13 @@ export interface CancellationState {
    * transaction : le guichet du fournil le tranche sous verrou.
    */
   readonly inscribedDay: string | null;
+  /**
+   * Ce que la comptabilité a déjà fait d'une commande au compte (lot C5,
+   * C5.5). `null` n'est admis que hors régime `account` : au compte, c'est
+   * une incohérence, et la règle refuse (`engagement_unknown`), jamais
+   * « annulable » (S6).
+   */
+  readonly engagement: AccountEngagement | null;
 }
 
 /**
@@ -41,6 +54,7 @@ export interface CancellationState {
 export function cancellationStateOf(
   subject: CancellationSubject,
   inscribedDay: string | null,
+  engagement: AccountEngagement | null,
 ): CancellationState {
   return {
     status: subject.status,
@@ -49,6 +63,7 @@ export function cancellationStateOf(
     serviceDay: subject.serviceDay,
     cancelledAt: subject.cancelledAt,
     inscribedDay,
+    engagement,
   };
 }
 
@@ -58,7 +73,8 @@ export type CancellationBlock =
   | { readonly kind: "draft" }
   | { readonly kind: "ready" }
   | { readonly kind: "fulfilled" }
-  | { readonly kind: "account" }
+  /** Lot C5 : au compte, et déjà engagée en comptabilité (C5.6). */
+  | EngagementBlock
   | { readonly kind: "paid" }
   | { readonly kind: "inscribed"; readonly day: string | null }
   /**
@@ -75,8 +91,13 @@ export type CancellationBlock =
   /** Lot C3b, cas 6 : le reste du bon a été annulé par l'équipe. */
   | { readonly kind: "voucher_remainder_cancelled"; readonly remainderValueCents: number };
 
-/** Les deux régimes annulables par ce lot : total nul, ou carte non payée. */
-export type CancellableRegime = "free" | "due";
+/**
+ * Les régimes annulables : total nul, carte non payée, et — depuis le lot C5 —
+ * au compte, tant que la comptabilité n'a rien engagé. 🔴 `account` est une
+ * VALEUR écrite dans le fait `order.cancelled` : irréversible dès la première
+ * annulation en production (C5.7).
+ */
+export type CancellableRegime = "free" | "due" | "account";
 
 /** La décision : annulable sous tel régime, ou bloquée, et pourquoi. */
 export type CancellationDecision =
@@ -86,8 +107,9 @@ export type CancellationDecision =
 /**
  * Annulable, et sous quel régime — ou ce qui l'empêche.
  *
- * Ordre du plan (C3.3) : statut annulé, statuts sans retour, compte, payée,
- * inscrite. `confirmed` et `in_production` se lisent comme « inscrite » : le
+ * Ordre du plan (C3.3, C5.2) : statut annulé, statuts sans retour, payée,
+ * engagement comptable d'une commande au compte (facturée, engagée, rejetée
+ * avant), inscrite. `confirmed` et `in_production` se lisent comme « inscrite » : le
  * seul chemin qui écrit `confirmed` est l'absorption par le plan du soir
  * (`absorbIntoPlan`, vérifié le 2026-10-12), et rien n'écrit `in_production`.
  */
@@ -97,8 +119,14 @@ export function cancellationOf(state: CancellationState): CancellationDecision {
     return { cancellable: false, block: byStatus };
   }
   const regime = settlementRegimeOf(state.paymentStatus, state.totalCents);
-  if (regime === "account" || regime === "paid") {
-    return { cancellable: false, block: { kind: regime } };
+  if (regime === "paid") {
+    return { cancellable: false, block: { kind: "paid" } };
+  }
+  if (regime === "account") {
+    const engaged = engagementBlockOf(state.engagement);
+    if (engaged !== null) {
+      return { cancellable: false, block: engaged };
+    }
   }
   if (state.inscribedDay !== null || state.status !== "placed") {
     const day = state.inscribedDay ?? state.serviceDay;
@@ -161,11 +189,14 @@ export function cancellationRefusalOf(block: CancellationBlock): string {
       return "Cette commande est déjà prête : elle ne s'annule plus. Voyez avec le fournil.";
     case "fulfilled":
       return "Cette commande est déjà retirée : elle ne s'annule plus.";
-    case "account":
-      return (
-        "Cette commande est passée au compte de la société. L'annulation des commandes " +
-        "au compte n'existe pas encore : voyez avec la comptabilité."
-      );
+    case "invoiced":
+    case "collecting":
+    case "collected":
+    case "written_off":
+    case "returned_before":
+    case "settled_otherwise":
+    case "engagement_unknown":
+      return engagementRefusalOf(block);
     case "paid":
       return (
         "Cette commande a été payée par carte en ligne. L'annulation avec remboursement " +

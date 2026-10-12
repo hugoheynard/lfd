@@ -1049,6 +1049,34 @@ Le gabarit `customer.order-cancelled` lit `voucher` au lieu du booléen
 
 ### Lot C5 — annuler une commande AU COMPTE, par le staff (conçu le 2026-10-12, contredit, révisé)
 
+> 🔨 **Côté serveur bâti le 2026-10-12, non commité** (`apps/lfd-api` +
+> `packages/contracts` + une valeur du journal du back-office) : migration
+> `20261012900000_la_ligne_d_encaissement_fermee` (`ADD VALUE 'cancelled'`,
+> seule), `OrderCollection.close`/`closedAtCancellation`, port
+> `AccountOrderEngagement` (+ `AccountOrderEngagementReader`) déclaré par la
+> commande et implémenté par `AccountOrderEngaging` (comptabilité, relié par
+> `apps/lfd-api/src/appBootstrap/account-order-engagement.module.ts`), `OrderRowsLock.lockAll`
+> (`ORDER BY id COLLATE "C"`) pris par l'émission (`issueFor`) et par la
+> constitution (`readAssembly`, lecture coupée en deux), `OrderInvoicingLock`
+> avant `load` dans « réglée autrement », filtre `cancelled` des impayés
+> détachés, libellé `cancelled`, courriel `account` (fr/en/it), régime
+> `account` au journal. E2E `order-account-cancel*.e2e-spec.ts`.
+> **Écarts au plan, à relire** : (1) le TYPE de C5.5 s'appelle
+> `AccountEngagement` — `AccountOrderEngagement` est le nom du port, et un type
+> et une classe ne partagent pas un nom ; (2) `closeForCancellation` prend
+> aussi le montant (`orderId, amountCents, at`) : la ligne absente se crée au
+> total de la commande, que la commande connaît ; (3) `cancelledAmong` rend des
+> NUMÉROS de commande, pas des ids (C5.3, 2) : le groupe est filtré par
+> numéro ; (4) « l'issue rangée sans objet » (C5.3, 5) n'est PAS rangée — la
+> table des issues ne connaît que `issued`/`blocked` ; le groupe vide rend
+> une issue `void` au rapport, rien en base ; (5) C5.1, 12 : le Postgres
+> local (Alpine, musl) se dit `en_US.utf8` mais trie en BINAIRE — le test de
+> collation compare à un tri ICU ; (6) `returned_before` par un relevé
+> `active` n'est atteignable par aucun geste aujourd'hui : la re-présentation
+> d'une ligne sous arrêté est refusée (`collection-returns.e2e-spec.ts`) —
+> l'e2e la produit par l'agrégat (`represent`). **Reste** : l'écran (C5.8,
+> rien de neuf côté code : il lit `cancellability`).
+
 > Hugo, 2026-10-12 : annuler une commande au compte vient **après le lot
 > livraison et avant le remboursement (C4)**. Il a demandé l'enchaînement sans
 > arrêt : les questions techniques sont tranchées ici, seules celles du §C5.9
@@ -1738,7 +1766,7 @@ continuations asynchrones — donc le balayage et le bouton. Un bail ou une
 échéance calculés dessus seraient en retard de toute la durée de l'appel
 Stripe. Aucun port d'horloge murale n'existe (`platform/time/` : `clock.ts`,
 `fixed-clock.ts`, `system-clock.ts`, lu le 2026-10-12). **Port neuf
-`WallClock`** (`platform/time/wall-clock.ts`, `elapsedNow(): Date`),
+`WallClock`** (à créer dans `platform/time/`, `elapsedNow(): Date`),
 adaptateur `SystemWallClock`, `FixedWallClock` en test ; il ne sert **qu'à**
 mesurer un bail et une échéance de reprise — jamais un instant métier
 (`requested_at`, `issued_at`, le journal restent au `Clock`). Inscrit dans

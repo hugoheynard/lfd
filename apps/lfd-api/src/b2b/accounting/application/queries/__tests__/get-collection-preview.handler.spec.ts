@@ -62,6 +62,20 @@ async function openPreview(w: ReturnType<typeof previewWorld>): Promise<Collecti
 }
 
 describe("l'aperçu du mois", () => {
+  it("ne verrouille aucune commande, mais écarte celles que la relecture ne rend plus (lot C5)", async () => {
+    const w = previewWorld();
+    const kept = order("c_port");
+    const gone = order("c_port");
+    w.candidates.orders = [kept, gone];
+    w.candidates.goneUnderLock = [gone.orderId];
+    w.mandates.mandates = [mandate("c_port")];
+
+    const view = await openPreview(w);
+
+    expect(w.steps.log.some((step) => step.startsWith("lock:rows:"))).toBe(false);
+    expect(view.lines.map((line) => line.orderCount)).toEqual([1]);
+  });
+
   it("annonce les montants que le lot prélèverait — la facture de la ligne, pas Σ bons", async () => {
     const w = previewWorld();
     w.candidates.orders = [order("c_port"), order("c_port"), order("c_fournil")];

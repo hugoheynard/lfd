@@ -125,6 +125,36 @@ export function planMonthlyInvoices(
   return { invoices, alreadyInvoiced: [...skipped] };
 }
 
+/**
+ * **Le groupe d'une facture, moins ses commandes annulées** (plan
+ * `order/plan-annulation-de-commande.md`, C5.3), relu sous le verrou des
+ * lignes `orders` du groupe. On retire, rien d'autre : le mandat effectif se
+ * calcule bon par bon (`effectiveMandateOf`), retirer un bon ne change donc
+ * ni le mandat ni la clé des autres — replanifier rendrait le même groupe.
+ * `null` : plus aucun bon, rien à émettre ni à signaler.
+ *
+ * Par NUMÉRO de commande : c'est ce que rend `CancelledOrdersReader`, écrit
+ * pour nommer le refus du dépôt (vérifié le 2026-10-12) ; un numéro est
+ * unique.
+ */
+export function withoutCancelled(
+  group: PayerInvoicePlan,
+  cancelledNumbers: ReadonlySet<string>,
+): PayerInvoicePlan | null {
+  const live = (order: InvoiceableOrder): boolean => !cancelledNumbers.has(order.orderNumber);
+  const billable = group.billable.filter(live);
+  const unbillable = group.unbillable.filter(live);
+  if (billable.length === 0 && unbillable.length === 0) {
+    return null;
+  }
+  return { ...group, billable, unbillable };
+}
+
+/** Tous les bons d'un groupe — ceux que l'émission verrouille. */
+export function groupOrderIds(group: PayerInvoicePlan): readonly string[] {
+  return [...group.billable, ...group.unbillable].map((order) => order.orderId);
+}
+
 /** Les bons d'un payeur rangés par mandat effectif, dans l'ordre du premier bon. */
 function byMandate(payer: PayerOrders, context: MandateContext): readonly PayerInvoicePlan[] {
   const groups = new Map<

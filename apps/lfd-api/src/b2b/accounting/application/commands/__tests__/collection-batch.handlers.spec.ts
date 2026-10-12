@@ -228,3 +228,37 @@ describe("constituer, annuler, déposer un lot", () => {
     });
   });
 });
+
+describe("constituer sous le verrou des commandes (lot C5, C5.3)", () => {
+  it("lit les SEULS identifiants, verrouille leurs lignes, PUIS relit les commandes", async () => {
+    const w = world();
+    const port = order("c_port");
+    w.candidates.orders = [port];
+    w.mandates.mandates = [mandate("c_port")];
+
+    await w.constitute.execute(new ConstituteCollectionBatchesCommand(ENTITY_ID, STAFF_AUTHOR));
+
+    const log = w.steps.log;
+    expect(log.slice(0, 2)).toEqual([`lock:${ENTITY_ID}`, "read:floor"]);
+    const ids = log.indexOf("read:candidate-ids");
+    const rows = log.indexOf(`lock:rows:${port.orderId}`);
+    const reread = log.indexOf("read:candidates");
+    expect(ids).toBeGreaterThan(-1);
+    expect(rows).toBeGreaterThan(ids);
+    expect(reread).toBeGreaterThan(rows);
+  });
+
+  it("une commande annulée entre la lecture des ids et le verrou n'entre ni au lot ni aux exclusions", async () => {
+    const w = world();
+    const kept = order("c_port");
+    const gone = order("c_port");
+    w.candidates.orders = [kept, gone];
+    w.candidates.goneUnderLock = [gone.orderId];
+    w.mandates.mandates = [mandate("c_port")];
+
+    await w.constitute.execute(new ConstituteCollectionBatchesCommand(ENTITY_ID, STAFF_AUTHOR));
+
+    expect([...w.orders.saved.keys()]).toEqual([kept.orderId]);
+    expect(w.orders.saved.get(kept.orderId)?.stateName).toBe("batched");
+  });
+});

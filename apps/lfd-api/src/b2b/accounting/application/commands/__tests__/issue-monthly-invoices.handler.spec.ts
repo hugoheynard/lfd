@@ -27,7 +27,14 @@ import { InvoiceIssuer } from "../../services/invoice-issuer.js";
 import { RecordingDurable } from "./notice-doubles.js";
 import { IssueMonthlyInvoicesCommand } from "../issue-monthly-invoices.command.js";
 import { IssueMonthlyInvoicesHandler } from "../issue-monthly-invoices.handler.js";
-import { FakeMandates, FixedBuyers, FixedCreditors, UlidSequence } from "./collection-doubles.js";
+import {
+  FakeCancelled,
+  FakeMandates,
+  FixedBuyers,
+  FixedCreditors,
+  RecordingRowsLock,
+  UlidSequence,
+} from "./collection-doubles.js";
 import {
   CountingNumbering,
   FakeMonthlyReader,
@@ -111,6 +118,9 @@ function harness(
   const uow = new DirectUnitOfWork();
   const durable = new RecordingDurable();
   const issuer = new InvoiceIssuer(new CountingNumbering(), invoices, clock, events, uow, durable);
+  const steps = { log: [] as string[] };
+  const rows = new RecordingRowsLock(steps);
+  const cancelled = new FakeCancelled();
   const handler = new IssueMonthlyInvoicesHandler(
     reader,
     new FixedModeDates(),
@@ -123,6 +133,8 @@ function harness(
     new NoStops(),
     issuer,
     outcomes,
+    rows,
+    cancelled,
     new UlidSequence(),
     events,
     clock,
@@ -130,7 +142,7 @@ function harness(
   );
   const run = () =>
     handler.execute(new IssueMonthlyInvoicesCommand(ENTITY_ID, options.closure ?? CLOSURE));
-  return { reader, invoices, outcomes, events, durable, mandates, run };
+  return { reader, invoices, outcomes, events, durable, mandates, run, steps, cancelled };
 }
 
 const CHALET_FOLLOWS_PRINCIPAL = {
@@ -408,6 +420,8 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
           new RecordingDurable(),
         ),
         h.outcomes,
+        new RecordingRowsLock({ log: [] }),
+        new FakeCancelled(),
         new UlidSequence(),
         h.events,
         new FixedClock(AFTER_MOMENT),
@@ -587,3 +601,65 @@ describe("IssueMonthlyInvoices — la facture du mois (E4)", () => {
 /** Hebdomadaire au lundi depuis le 1er août 2026 (une clôture du mensuel). */
 const WEEKLY_SINCE_AUGUST = [{ effectiveFrom: paris("2026-08-01"), mode: "weekly" as const }];
 const WEEKLY_PORT: PayerModeSegments = { payerCompanyId: "c_port", segments: WEEKLY_SINCE_AUGUST };
+
+describe("IssueMonthlyInvoices — les annulées entre la préparation et l'émission (lot C5)", () => {
+  it("verrouille TOUS les bons du groupe, facturables ou non, avant d'émettre", async () => {
+    const h = harness();
+    const port = bon("c_port");
+    const broken = {
+      ...bon("c_port"),
+      frozen: { ...port.frozen, lateFeeCents: 100, lateFeeVatRate: null },
+    };
+    h.reader.orders = [port, broken];
+
+    await h.run();
+
+    expect(h.steps.log).toEqual([`lock:rows:${port.orderId},${broken.orderId}`]);
+    expect(h.invoices.inserted).toHaveLength(1);
+  });
+
+  it("une annulée est retirée du groupe : la facture porte le reste, sous la même clé", async () => {
+    const h = harness();
+    const kept = bon("c_port");
+    const cancelled = bon("c_port");
+    h.reader.orders = [kept, cancelled];
+    h.cancelled.numbers = [cancelled.orderNumber];
+
+    const report = await h.run();
+
+    expect(report.issued.map((issue) => issue.payerCompanyId)).toEqual(["c_port"]);
+    const state = h.invoices.inserted[0]?.toState();
+    expect(state?.orders.map((order) => order.reference)).toEqual([kept.orderNumber]);
+    expect(h.outcomes.rows.get(PORT)?.invoiceId).toBe(state?.id);
+  });
+
+  it("toutes annulées : rien d'émis, rien de signalé, aucune issue rangée", async () => {
+    const h = harness();
+    const only = bon("c_port");
+    h.reader.orders = [only];
+    h.cancelled.numbers = [only.orderNumber];
+
+    const report = await h.run();
+
+    expect(report.issued).toEqual([]);
+    expect(report.blocked).toEqual([]);
+    expect(h.invoices.inserted).toEqual([]);
+    expect(h.outcomes.rows.size).toBe(0);
+    expect(h.events.factTypes()).toEqual([]);
+  });
+
+  it("un non facturable annulé n'est plus signalé", async () => {
+    const h = harness();
+    const port = bon("c_port");
+    const broken = {
+      ...bon("c_port"),
+      frozen: { ...port.frozen, lateFeeCents: 100, lateFeeVatRate: null },
+    };
+    h.reader.orders = [port, broken];
+    h.cancelled.numbers = [broken.orderNumber];
+
+    await h.run();
+
+    expect(h.outcomes.rows.get(PORT)?.key.unbillableOrders).toEqual([]);
+  });
+});

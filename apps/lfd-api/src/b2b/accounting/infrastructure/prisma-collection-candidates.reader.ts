@@ -39,9 +39,21 @@ export class PrismaCollectionCandidatesReader extends CollectionCandidatesReader
     return row?.floorAt ?? null;
   }
 
-  async collectableOrders(floor: Date, closesAt: Date): Promise<readonly CollectableOrder[]> {
-    const orders = await this.prisma.order.findMany({
+  async collectableOrderIds(floor: Date, closesAt: Date): Promise<readonly string[]> {
+    const rows = await this.prisma.order.findMany({
       where: billableOrderWhere(floor, closesAt),
+      select: { id: true },
+    });
+    return rows.map((row) => row.id);
+  }
+
+  async collectableOrders(
+    floor: Date,
+    closesAt: Date,
+    orderIds: readonly string[],
+  ): Promise<readonly CollectableOrder[]> {
+    const orders = await this.prisma.order.findMany({
+      where: { ...billableOrderWhere(floor, closesAt), id: { in: [...orderIds] } },
       orderBy: [{ createdAt: "asc" }, { orderNumber: "asc" }],
       // Une seule lecture rend aussi ce que le bon a figé pour sa facture.
       select: {

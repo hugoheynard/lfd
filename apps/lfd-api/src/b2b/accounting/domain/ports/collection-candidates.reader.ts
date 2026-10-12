@@ -45,11 +45,24 @@ export abstract class CollectionCandidatesReader {
   abstract floor(): Promise<Date | null>;
 
   /**
-   * Les commandes prélevables créées sur `[floor, closesAt[`, sans borne basse
-   * au-delà du plancher : une commande `due` ou `excluded` d'un cycle passé
-   * revient (plan §3).
+   * Les SEULS identifiants des commandes de l'assiette créées sur
+   * `[floor, closesAt[` — sans état ni contenu : la constitution les
+   * verrouille avant de lire quoi que ce soit d'autre (plan
+   * `order/plan-annulation-de-commande.md`, C5.3).
    */
-  abstract collectableOrders(floor: Date, closesAt: Date): Promise<readonly CollectableOrder[]>;
+  abstract collectableOrderIds(floor: Date, closesAt: Date): Promise<readonly string[]>;
+
+  /**
+   * Parmi `orderIds`, les commandes prélevables créées sur `[floor, closesAt[`,
+   * sans borne basse au-delà du plancher : une commande `due` ou `excluded`
+   * d'un cycle passé revient (plan §3). RELUES — l'assiette et l'état
+   * d'encaissement —, pour qu'une lecture faite sous verrou fasse autorité.
+   */
+  abstract collectableOrders(
+    floor: Date,
+    closesAt: Date,
+    orderIds: readonly string[],
+  ): Promise<readonly CollectableOrder[]>;
 
   /** Toutes les périodes `billing` de ces sociétés (le site suit son payeur). */
   abstract billingFollowsOf(companyIds: readonly string[]): Promise<readonly BillingFollow[]>;

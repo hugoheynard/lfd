@@ -94,6 +94,7 @@ export const ABANDON_OUTCOME = domain('issue d’un abandon de règlement', {
 export const CANCELLATION_REGIME = domain('régime d’une annulation', {
   free: 'Rien à régler (total nul)',
   due: 'Carte non réglée, paiement fermé chez Stripe',
+  account: 'Au compte, ni facturée ni prélevée',
 });
 
 /** Ce que l'annulation par l'équipe a fait du bon de fidélité (`order.cancelled`, lot C3b). */

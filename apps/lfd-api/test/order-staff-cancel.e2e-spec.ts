@@ -165,7 +165,6 @@ describe("POST /admin/orders/:id/cancel — total nul", () => {
 
 describe("POST /admin/orders/:id/cancel — les refus nommés", () => {
   it.each([
-    ["au compte", { payment: PaymentStatus.not_required, intent: null }, "orders.cancel.account"],
     ["payée par carte", { payment: PaymentStatus.paid }, "orders.cancel.paid"],
     ["prête", { status: OrderStatus.ready }, "orders.cancel.ready"],
     ["confirmée par le plan", { status: OrderStatus.confirmed }, "orders.cancel.inscribed"],
@@ -177,6 +176,20 @@ describe("POST /admin/orders/:id/cancel — les refus nommés", () => {
     expect(response.status).toBe(409);
     expect(codeOf(response)).toBe(code);
     expect(scene.cancelledIntents).toEqual([]);
+  });
+
+  /**
+   * Lot C5 : le refus `orders.cancel.account` de C3 a disparu — une commande
+   * au compte que la comptabilité n'a pas engagée s'annule. Ses refus
+   * comptables sont éprouvés par `order-account-cancel*.e2e-spec.ts`.
+   */
+  it("au compte, rien d'engagé : 204, sans appeler Stripe (lot C5)", async () => {
+    const { orderId } = await seedOrder({ payment: PaymentStatus.not_required, intent: null });
+
+    await cancelRequest(orderId).expect(204);
+
+    expect(scene.cancelledIntents).toEqual([]);
+    expect((await orderState(orderId)).status).toBe(OrderStatus.cancelled);
   });
 
   it("un motif vide : 400 qui le demande", async () => {

@@ -292,7 +292,12 @@ describe("les bons que la constitution lit (F1)", () => {
     const reader = ctx.app.get(CollectionCandidatesReader);
     const floor = await reader.floor();
 
-    const orders = await reader.collectableOrders(floor ?? closesAt, closesAt);
+    const from = floor ?? closesAt;
+    const orders = await reader.collectableOrders(
+      from,
+      closesAt,
+      await reader.collectableOrderIds(from, closesAt),
+    );
 
     expect(orders).toHaveLength(1);
     expect(orders[0]?.frozen).toMatchObject({
@@ -595,7 +600,12 @@ describe("le prélèvement suit la facture (F2)", () => {
     await orderOf(port, 3, HALF_CENT_BON);
     await orderOf(quai);
     const reader = ctx.app.get(CollectionCandidatesReader);
-    const read = await reader.collectableOrders((await reader.floor()) ?? closesAt, closesAt);
+    const from = (await reader.floor()) ?? closesAt;
+    const read = await reader.collectableOrders(
+      from,
+      closesAt,
+      await reader.collectableOrderIds(from, closesAt),
+    );
     const expectedOf = (companyId: string): number =>
       simulateInvoiceDossier(read.filter((o) => o.companyId === companyId).map((o) => o.frozen))
         .invoice.totalCents;

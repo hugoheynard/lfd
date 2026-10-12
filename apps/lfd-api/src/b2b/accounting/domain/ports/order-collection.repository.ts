@@ -9,6 +9,13 @@ export abstract class OrderCollectionRepository {
    */
   abstract load(orderId: string): Promise<OrderCollection | null>;
 
+  /**
+   * La ligne d'UNE commande telle qu'elle est en base, hors assiette —
+   * `null` si aucune (elle vaut alors `due`). Pour la fermer à l'annulation
+   * (C5.4) : `load` ne la rendrait plus une fois la commande annulée.
+   */
+  abstract ofOrder(orderId: string): Promise<OrderCollection | null>;
+
   /** Les commandes portées par les lignes d'un lot. */
   abstract ofBatch(batchId: string): Promise<readonly OrderCollection[]>;
 

@@ -91,6 +91,7 @@ export const MAIL_EN: MailCopy = {
     introWithoutDay: "Your order {ref} has been cancelled by our team.",
     nothingBilled: "You will not be charged anything for this order.",
     nothingCharged: "No payment has been taken.",
+    nothingInvoiced: "Nothing will be invoiced or debited for this order.",
     voucherReturned:
       "Your loyalty voucher of {value} has been returned to you: you can use it on a future order until {day}.",
     voucherMerged:

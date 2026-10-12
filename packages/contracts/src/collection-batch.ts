@@ -47,7 +47,9 @@ export type OrderCollectionStateView =
   | "settled_otherwise"
   /** Sa ligne est revenue de la banque (plan `retours-bancaires.md`). */
   | "returned"
-  | "written_off";
+  | "written_off"
+  /** Sa commande a été annulée par l'équipe (lot C5) : la ligne est fermée. */
+  | "cancelled";
 
 export const ORDER_COLLECTION_STATE_LABELS: Readonly<Record<OrderCollectionStateView, string>> = {
   due: "À prélever",
@@ -57,6 +59,7 @@ export const ORDER_COLLECTION_STATE_LABELS: Readonly<Record<OrderCollectionState
   settled_otherwise: "Réglée autrement",
   returned: "Rejetée par la banque",
   written_off: "Passée en perte",
+  cancelled: "Commande annulée",
 };
 
 /**

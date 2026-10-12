@@ -5,9 +5,9 @@ import type { VoucherRestitution } from "../../domain/ports/loyalty-voucher-rede
 import { CancellationSubjectReader } from "../../domain/ports/cancellation-subject.reader.js";
 import {
   cancellationOf,
-  cancellationStateOf,
   type CancellationBlock,
 } from "../../domain/services/order-cancellation.js";
+import { CancellationRule } from "./cancellation-rule.js";
 
 /** La restitution refusée — les cas 5 et 6 du lot C3b. */
 export type BlockedRestitution = Extract<VoucherRestitution, { readonly kind: "blocked" }>;
@@ -28,6 +28,7 @@ export class VoucherRestitutionRefusal {
   constructor(
     private readonly subjects: CancellationSubjectReader,
     private readonly inscriptions: OrderInscriptionReader,
+    private readonly rule: CancellationRule,
   ) {}
 
   async blockOf(blocked: BlockedRestitution): Promise<CancellationBlock> {
@@ -51,7 +52,7 @@ export class VoucherRestitutionRefusal {
       this.inscriptions.inscribedDayOf(orderId),
     ]);
     return (
-      subject !== null && cancellationOf(cancellationStateOf(subject, inscribedDay)).cancellable
+      subject !== null && cancellationOf(await this.rule.stateOf(subject, inscribedDay)).cancellable
     );
   }
 }

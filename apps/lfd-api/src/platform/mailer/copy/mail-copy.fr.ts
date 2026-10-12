@@ -95,6 +95,7 @@ export const MAIL_FR: MailCopy = {
     introWithoutDay: "Votre commande {ref} a été annulée par notre équipe.",
     nothingBilled: "Rien ne vous sera facturé pour cette commande.",
     nothingCharged: "Aucun paiement n'a été prélevé.",
+    nothingInvoiced: "Rien ne sera facturé ni prélevé pour cette commande.",
     voucherReturned:
       "Votre bon de fidélité de {value} vous est rendu : vous pourrez l'utiliser sur une prochaine commande jusqu'au {day}.",
     voucherMerged:

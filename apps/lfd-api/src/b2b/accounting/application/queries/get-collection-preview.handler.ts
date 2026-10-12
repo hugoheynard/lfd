@@ -72,10 +72,12 @@ export class GetCollectionPreviewHandler implements IQueryHandler<
           candidates: this.candidates,
           mandates: this.mandates,
           calendar: { modeDates: this.modeDates, payerModes: this.payerModes },
+          // L'aperçu ne verrouille rien (C5.3) : il lit l'état du moment.
+          rows: null,
         },
         query.legalEntityId,
         this.clock.now(),
-        { cycleOf: calendarCycleAt, simulateUninvoiced: true },
+        { cycleOf: calendarCycleAt, simulateUninvoiced: true, lockRows: false },
       );
       const debits = [...read.assembly.debits.values()].flat();
       const [payerModes] = await readLotPayerModes(this.periods, read.calendar, [

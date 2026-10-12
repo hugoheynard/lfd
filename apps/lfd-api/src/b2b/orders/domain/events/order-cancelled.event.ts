@@ -86,7 +86,7 @@ export class OrderCancelledEvent implements DurableEvent {
       placedByUserId === null ||
       cancelledBy === null ||
       reason === null ||
-      (regime !== "free" && regime !== "due") ||
+      (regime !== "free" && regime !== "due" && regime !== "account") ||
       voucher === undefined
     ) {
       throw new OrderSettlementPayloadError(ORDER_CANCELLED);

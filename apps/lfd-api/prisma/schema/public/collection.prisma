@@ -36,6 +36,9 @@ enum OrderCollectionState {
   returned
   /// Passée en perte par le staff, après un retour.
   written_off
+  /// La commande a été annulée par l'équipe (lot C5) : TERMINAL, aucune
+  /// transition ne l'accepte. Sans lot, sans ligne, sans raison.
+  cancelled
 
   @@schema("public")
 }

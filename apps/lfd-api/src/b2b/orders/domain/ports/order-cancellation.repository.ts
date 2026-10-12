@@ -15,7 +15,7 @@ export interface CancellationRecord {
  * 🔴 **Écriture nue, conditionnée en base, et c'est voulu** — comme
  * `absorbIntoPlan` et `markAbandoned` : `Order` est un agrégat de PASSATION qui
  * ne sait pas se recharger, et la règle tient entière dans le `where` (`placed`,
- * total nul ou carte non encaissée). La règle qui NOMME le refus est
+ * total nul, carte non encaissée, ou au compte — lot C5). La règle qui NOMME le refus est
  * `cancellationBlocker`, pure, relue sous le verrou par le handler.
  *
  * Les deux méthodes n'ont de sens que DANS une unité de travail : le verrou de

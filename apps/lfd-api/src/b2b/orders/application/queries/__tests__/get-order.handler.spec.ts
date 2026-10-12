@@ -16,7 +16,10 @@ import type { CancellationSubject } from "../../../domain/ports/cancellation-sub
 import {
   cancellationSubject,
   FixedSubjects,
+  ScriptedEngagements,
 } from "../../commands/__tests__/cancellation-doubles.js";
+import type { AccountEngagement } from "../../../domain/ports/account-order-engagement.js";
+import { CancellationRule } from "../../services/cancellation-rule.js";
 import { orderView } from "../../handlers/__tests__/payment-failure-doubles.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import type { VoucherRestitution } from "../../../domain/ports/loyalty-voucher-redemption.js";
@@ -216,9 +219,11 @@ function adminHandler(
   inscribedDay: string | null = null,
   preview: VoucherRestitutionPreview = new FixedRestitutionPreview({ kind: "already" }),
   others: Readonly<Record<string, CancellationSubject>> = {},
+  engagement: AccountEngagement | null = { kind: "free" },
 ): GetAdminOrderHandler {
   const subjects = new FixedSubjects(subject, others);
   const inscriptions = new FixedInscription(inscribedDay);
+  const rule = new CancellationRule(new ScriptedEngagements(engagement));
   return new GetAdminOrderHandler(
     reader(owned),
     authors(author),
@@ -226,7 +231,8 @@ function adminHandler(
     subjects,
     inscriptions,
     preview,
-    new VoucherRestitutionRefusal(subjects, inscriptions),
+    new VoucherRestitutionRefusal(subjects, inscriptions, rule),
+    rule,
     new FixedClock(VOUCHER_EXPIRES),
   );
 }
@@ -377,6 +383,40 @@ describe("GetAdminOrderHandler", () => {
     const view = await handler.execute(new GetAdminOrderQuery("ord_1"));
 
     expect(view.cancellability).toMatchObject({ cancellable: false });
+  });
+
+  it("au compte, dit l'engagement comptable par la même phrase que le geste (lot C5)", async () => {
+    const handler = adminHandler(
+      ofCompany("cmp_1"),
+      { customer: CUSTOMER, company: COMPANY, placedByStaffId: null },
+      directory(),
+      cancellationSubject({ paymentStatus: "not_required", stripePaymentIntentId: null }),
+      null,
+      undefined,
+      {},
+      { kind: "settled_otherwise" },
+    );
+
+    const view = await handler.execute(new GetAdminOrderQuery("ord_1"));
+
+    expect(view.cancellability).toEqual({
+      cancellable: false,
+      reason:
+        "Cette commande a été réglée hors prélèvement. L'annulation avec remboursement n'existe pas encore : voyez avec la comptabilité.",
+    });
+  });
+
+  it("au compte, rien d'engagé ni d'inscrit : annulable", async () => {
+    const handler = adminHandler(
+      ofCompany("cmp_1"),
+      { customer: CUSTOMER, company: COMPANY, placedByStaffId: null },
+      directory(),
+      cancellationSubject({ paymentStatus: "not_required", stripePaymentIntentId: null }),
+    );
+
+    const view = await handler.execute(new GetAdminOrderQuery("ord_1"));
+
+    expect(view.cancellability).toEqual({ cancellable: true, voucher: null });
   });
 
   it("rend aussi une commande personnelle, qu'aucun mur d'entreprise ne couvre", async () => {

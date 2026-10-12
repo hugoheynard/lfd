@@ -13,7 +13,12 @@ export type OrderCollectionStateName =
   /** Sa ligne est revenue de la banque (R5a) : elle la garde, hors des états ouverts. */
   | "returned"
   /** Passée en perte après un retour. */
-  | "written_off";
+  | "written_off"
+  /**
+   * La commande a été annulée par l'équipe (lot C5, C5.4) : TERMINAL. Aucune
+   * transition ne la nomme dans ses états de départ, donc toutes la refusent.
+   */
+  | "cancelled";
 
 /** Pourquoi une commande a été écartée. Des VALEURS : elles vivent en base. */
 export type CollectionExclusionReason =
@@ -67,6 +72,16 @@ export class OrderCollection {
     });
   }
 
+  /**
+   * La ligne d'une commande au compte annulée qu'aucun lot n'a encore vue
+   * (l'absence de ligne vaut `due`) : née fermée (C5.4).
+   */
+  static closedAtCancellation(orderId: string, amountCents: number, at: Date): OrderCollection {
+    const collection = OrderCollection.due(orderId, amountCents, at);
+    collection.close(at);
+    return collection;
+  }
+
   static rehydrate(state: OrderCollectionState): OrderCollection {
     return new OrderCollection(state);
   }
@@ -81,6 +96,16 @@ export class OrderCollection {
   exclude(reason: CollectionExclusionReason, at: Date): void {
     this.assertIn(["due", "excluded"], "être écartée");
     this.move({ state: "excluded", batchId: null, lineRank: null, exclusionReason: reason }, at);
+  }
+
+  /**
+   * `due` ou `excluded` → `cancelled` : sa commande a été annulée par l'équipe
+   * (C5.4). Ferme la ligne pour de bon — c'est ce qui rend impossible, et non
+   * seulement refusé par un contrôle, qu'un lot ou un règlement la reprenne.
+   */
+  close(at: Date): void {
+    this.assertIn(["due", "excluded"], "être fermée par l'annulation de sa commande");
+    this.move({ state: "cancelled", batchId: null, lineRank: null, exclusionReason: null }, at);
   }
 
   /** `batched` → `due` : son lot a été annulé avant dépôt. */

@@ -23,6 +23,7 @@ import { BillingStatementRepository } from "../../domain/ports/billing-statement
 import { CollectionBatchRepository } from "../../domain/ports/collection-batch.repository.js";
 import { CollectionCandidatesReader } from "../../domain/ports/collection-candidates.reader.js";
 import { CollectionLock } from "../../domain/ports/collection-lock.js";
+import { OrderRowsLock } from "../../domain/ports/order-rows-lock.js";
 import { CollectionMandatesReader } from "../../domain/ports/collection-mandates.reader.js";
 import { CollectionNoticeRepository } from "../../domain/ports/collection-notice.repository.js";
 import { CreditorReader } from "../../domain/ports/creditor.reader.js";
@@ -68,6 +69,11 @@ import { ConstituteCollectionBatchesCommand } from "./constitute-collection-batc
  * annulations des promesses d'un lot annulé (PA2, § 7 comblé le 2026-10-09) :
  * elle rend `[]`, et ne refuse que si elle n'a strictement rien fait.
  *
+ * Ordre des verrous (plan `order/plan-annulation-de-commande.md`, C5.3) :
+ * l'entité (consultatif), puis les lignes `orders` des candidats, dans
+ * l'ordre unique de `OrderRowsLock` — c'est `readAssembly` qui les prend,
+ * entre la lecture des identifiants et leur relecture.
+ *
  * ⚠️ L'entité est lue par `CreditorReader` AVANT la transaction : une entité qui
  * ne peut pas encaisser refuse (409) sans rien verrouiller.
  */
@@ -92,6 +98,7 @@ export class ConstituteCollectionBatchesHandler implements ICommandHandler<
     private readonly rejections: RepresentedRejectionsReader,
     private readonly durable: DurablePublisher,
     private readonly lock: CollectionLock,
+    private readonly rows: OrderRowsLock,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
@@ -112,6 +119,7 @@ export class ConstituteCollectionBatchesHandler implements ICommandHandler<
           candidates: this.candidates,
           mandates: this.mandates,
           calendar: { modeDates: this.modeDates, payerModes: this.payerModes },
+          rows: this.rows,
         },
         legalEntityId,
         at,

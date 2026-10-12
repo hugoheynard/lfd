@@ -21,6 +21,7 @@ function state(overrides: Partial<CancellationState> = {}): CancellationState {
     serviceDay: "2026-10-13",
     cancelledAt: null,
     inscribedDay: null,
+    engagement: null,
     ...overrides,
   };
 }
@@ -30,6 +31,11 @@ describe("cancellationOf — ce qui s'annule", () => {
     ["carte en attente", state(), "due"],
     ["carte refusée, intention vivante", state({ paymentStatus: "failed" }), "due"],
     ["total nul", state({ paymentStatus: "not_required", totalCents: 0 }), "free"],
+    [
+      "au compte, rien d'engagé (lot C5)",
+      state({ paymentStatus: "not_required", engagement: { kind: "free" } }),
+      "account",
+    ],
   ] as const)("%s → annulable, régime %s", (_, subject, regime) => {
     expect(cancellationOf(subject)).toEqual({ cancellable: true, regime });
   });
@@ -41,7 +47,19 @@ describe("cancellationBlocker — les refus, dans l'ordre du plan (C3.3)", () =>
     ["brouillon", state({ status: "draft" }), "draft"],
     ["prête", state({ status: "ready" }), "ready"],
     ["retirée", state({ status: "fulfilled" }), "fulfilled"],
-    ["au compte", state({ paymentStatus: "not_required" }), "account"],
+    [
+      "au compte, facturée",
+      state({
+        paymentStatus: "not_required",
+        engagement: { kind: "invoiced", invoiceNumber: "FA-1", issuedOn: "2026-09-30" },
+      }),
+      "invoiced",
+    ],
+    [
+      "au compte, engagement illisible",
+      state({ paymentStatus: "not_required" }),
+      "engagement_unknown",
+    ],
     ["payée", state({ paymentStatus: "paid" }), "paid"],
     ["remboursée (payée d'abord)", state({ paymentStatus: "refunded" }), "paid"],
     ["inscrite au fournil, encore placed", state({ inscribedDay: "2026-10-13" }), "inscribed"],
@@ -57,10 +75,36 @@ describe("cancellationBlocker — les refus, dans l'ordre du plan (C3.3)", () =>
     ).toEqual({ kind: "already_cancelled", at: null });
   });
 
-  it("au compte ET inscrite : le compte est dit d'abord", () => {
-    const blocked = state({ paymentStatus: "not_required", inscribedDay: "2026-10-13" });
+  it("au compte, engagée ET inscrite : la comptabilité est dite d'abord (C5.2)", () => {
+    const blocked = state({
+      paymentStatus: "not_required",
+      inscribedDay: "2026-10-13",
+      engagement: { kind: "written_off" },
+    });
 
-    expect(cancellationBlocker(blocked)?.kind).toBe("account");
+    expect(cancellationBlocker(blocked)?.kind).toBe("written_off");
+  });
+
+  it("au compte, rien d'engagé mais inscrite : le fournil refuse", () => {
+    const blocked = state({
+      paymentStatus: "not_required",
+      inscribedDay: "2026-10-13",
+      engagement: { kind: "free" },
+    });
+
+    expect(cancellationBlocker(blocked)?.kind).toBe("inscribed");
+  });
+
+  it("un engagement `null` hors du compte ne refuse rien : seule la carte et le total nul y ont droit", () => {
+    expect(cancellationBlocker(state({ engagement: null }))).toBeNull();
+  });
+
+  it("au compte, le statut l'emporte sur l'engagement", () => {
+    expect(
+      cancellationBlocker(
+        state({ status: "cancelled", paymentStatus: "not_required", engagement: null }),
+      )?.kind,
+    ).toBe("already_cancelled");
   });
 
   it("le jour de l'inscription vient du fournil, sinon du jour de service", () => {
@@ -98,9 +142,14 @@ describe("cancellationRefusalOf — les phrases (C3.7)", () => {
     );
   });
 
-  it("au compte et payée nomment le geste de sortie", () => {
-    expect(cancellationRefusalOf({ kind: "account" })).toContain("voyez avec la comptabilité");
+  it("payée nomme le geste de sortie", () => {
     expect(cancellationRefusalOf({ kind: "paid" })).toContain("remboursez depuis Stripe");
+  });
+
+  it("au compte, la phrase est celle de la comptabilité (C5.6)", () => {
+    expect(cancellationRefusalOf({ kind: "settled_otherwise" })).toContain(
+      "voyez avec la comptabilité",
+    );
   });
 
   it("cas 5 du lot C3b : ne propose d'annuler l'autre commande que si elle s'annule", () => {

@@ -35,6 +35,11 @@ export class PrismaOrderCollectionRepository extends OrderCollectionRepository {
       : OrderCollection.rehydrate(toOrderCollectionState(row));
   }
 
+  async ofOrder(orderId: string): Promise<OrderCollection | null> {
+    const row = await this.prisma.orderCollection.findUnique({ where: { orderId } });
+    return row === null ? null : OrderCollection.rehydrate(toOrderCollectionState(row));
+  }
+
   async ofBatch(batchId: string): Promise<readonly OrderCollection[]> {
     const rows = await this.prisma.orderCollection.findMany({
       where: { batchId },

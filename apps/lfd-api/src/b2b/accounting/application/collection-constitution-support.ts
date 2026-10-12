@@ -4,12 +4,14 @@ import { OrderCollection } from "../domain/entities/order-collection.js";
 import {
   CollectionFloorMissingError,
   CollectionNotYetOpenError,
+  CollectionRowsLockMissingError,
 } from "../domain/errors/collection-errors.js";
 import type {
   CollectableOrder,
   CollectionCandidatesReader,
 } from "../domain/ports/collection-candidates.reader.js";
 import type { CollectionMandatesReader } from "../domain/ports/collection-mandates.reader.js";
+import type { OrderRowsLock } from "../domain/ports/order-rows-lock.js";
 import { billedPayerOf } from "../domain/services/billed-payer.js";
 import type { BillingCycle } from "../domain/services/billing-cycle.js";
 import {
@@ -39,6 +41,11 @@ export interface ConstitutionReaders {
    * clôture du calendrier — celles d'au moins un payeur.
    */
   readonly calendar: InvoicingCalendarReaders;
+  /**
+   * Le verrou des lignes `orders` des candidats (C5.3) — la constitution le
+   * fournit, l'aperçu non (`null`) : il ne verrouille rien.
+   */
+  readonly rows: OrderRowsLock | null;
 }
 
 export interface ReadAssembly {
@@ -74,11 +81,19 @@ export interface AssemblyMode {
    * laisse attendre la leur (E4).
    */
   readonly simulateUninvoiced: boolean;
+  /**
+   * Verrouiller les lignes `orders` des candidats avant de les relire (plan
+   * `order/plan-annulation-de-commande.md`, C5.3). La constitution le fait :
+   * une annulation ou un « réglée autrement » validé pendant qu'elle lisait
+   * ne doit pas être écrasé. L'aperçu non : il dit l'état du moment.
+   */
+  readonly lockRows: boolean;
 }
 
 const TO_CONSTITUTE: AssemblyMode = {
   cycleOf: calendarCycleToConstitute,
   simulateUninvoiced: false,
+  lockRows: true,
 };
 
 /**
@@ -107,7 +122,7 @@ export async function readAssembly(
   if (floor >= cycle.closesAt) {
     throw new CollectionNotYetOpenError(floor, calendar.closureAfter(floor));
   }
-  const orders = await candidates.collectableOrders(floor, cycle.closesAt);
+  const orders = await lockedCandidates(readers, mode, floor, cycle.closesAt);
   const invoices = await candidates.invoicesOf(orders.map((order) => order.orderId));
   const follows = await candidates.billingFollowsOf(unique(orders.map((order) => order.companyId)));
   const payers = unique(orders.map((order) => billedPayerOf(order, follows)));
@@ -137,6 +152,33 @@ export async function readAssembly(
     invoicingFloor: mode.simulateUninvoiced ? null : await candidates.invoicingFloor(),
   });
   return { cycle, previousClosure, calendar, floor, assembly, companyNames };
+}
+
+/**
+ * Les candidats, lus en DEUX temps (C5.3, BLOQUANT du 2ᵉ passage de
+ * `vitruve`) : leurs seuls identifiants, puis — en mode constitution — le
+ * verrou de leurs lignes `orders` dans l'ordre unique (`OrderRowsLock`), puis
+ * la RELECTURE des commandes et de leur `order_collection`. Rien de ce qui est
+ * lu avant le verrou ne sert à constituer : une annulée validée entre-temps
+ * sort de l'assiette, une réglée autrement n'est plus ouverte.
+ *
+ * Ferme aussi la course préexistante « réglée autrement × constitution »
+ * (C5.1, 13), où l'état lu avant tout verrou était réécrit par `saveAll`.
+ */
+async function lockedCandidates(
+  readers: ConstitutionReaders,
+  mode: AssemblyMode,
+  floor: Date,
+  closesAt: Date,
+): Promise<readonly CollectableOrder[]> {
+  const ids = await readers.candidates.collectableOrderIds(floor, closesAt);
+  if (mode.lockRows) {
+    if (readers.rows === null) {
+      throw new CollectionRowsLockMissingError();
+    }
+    await readers.rows.lockAll(ids);
+  }
+  return readers.candidates.collectableOrders(floor, closesAt, ids);
 }
 
 /** Le calendrier de la facture, la dernière clôture enregistrée, et le cycle choisi. */

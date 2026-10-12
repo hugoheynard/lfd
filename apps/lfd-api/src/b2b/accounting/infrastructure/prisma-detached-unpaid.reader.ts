@@ -26,7 +26,14 @@ export class PrismaDetachedUnpaidReader extends DetachedUnpaidReader {
     });
     const excludedAt = new Map(states.map((state) => [state.orderId, state.updatedAt]));
     const orders = await this.prisma.order.findMany({
-      where: { id: { in: [...excludedAt.keys()] }, companyId: { not: null } },
+      // Une commande annulée n'est pas un impayé (lot C5) : sa ligne passe
+      // `cancelled` à l'annulation, et ce filtre la tient aussi pour une
+      // ligne restée `excluded` par un chemin qu'on n'aurait pas vu.
+      where: {
+        id: { in: [...excludedAt.keys()] },
+        companyId: { not: null },
+        status: { not: "cancelled" },
+      },
       orderBy: [{ createdAt: "asc" }, { orderNumber: "asc" }],
       select: {
         id: true,

@@ -70,6 +70,21 @@ export class PrismaOrderCancellationRepository extends OrderCancellationReposito
       },
       data: stamp,
     });
-    return free.count === 1;
+    if (free.count === 1) {
+      return true;
+    }
+    // Lot C5 : au compte. Règlement inchangé (`not_required`), comme le total
+    // nul ; disjointe des deux autres par son `where`. La règle comptable
+    // (facturée, engagée) est relue sous le verrou par le handler.
+    const account = await this.prisma.order.updateMany({
+      where: {
+        id: orderId,
+        status: OrderStatus.placed,
+        paymentStatus: PaymentStatus.not_required,
+        totalCents: { gt: 0 },
+      },
+      data: stamp,
+    });
+    return account.count === 1;
   }
 }

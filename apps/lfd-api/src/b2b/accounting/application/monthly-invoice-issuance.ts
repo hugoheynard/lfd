@@ -44,7 +44,12 @@ export type PayerIssue =
       readonly number: string;
       readonly issuedOn: string;
     }
-  | { readonly kind: "blocked"; readonly payerCompanyId: string; readonly message: string };
+  | { readonly kind: "blocked"; readonly payerCompanyId: string; readonly message: string }
+  /**
+   * Toutes ses commandes ont été annulées entre la préparation et l'émission
+   * (lot C5, C5.3) : rien d'émis, rien de signalé.
+   */
+  | { readonly kind: "void"; readonly payerCompanyId: string };
 
 /** La facture d'un payeur, une fois son numéro réservé — rien n'y est recalculé. */
 export function draftOf(

@@ -91,6 +91,16 @@ describe("le courriel « commande annulée par l'équipe »", () => {
     expect(rendered.html).not.toContain("bon de fidélité");
   });
 
+  it.each([
+    ["fr", "Rien ne sera facturé ni prélevé pour cette commande."],
+    ["en", "Nothing will be invoiced or debited for this order."],
+    ["it", "Per questo ordine non verrà fatturato né addebitato nulla."],
+  ] as const)("au compte (lot C5, %s) : ni facturée ni prélevée", (locale, sentence) => {
+    const rendered = mail({ sheet: sheet(), regime: "account", voucher: null, locale });
+
+    expect(rendered.html).toContain(sentence);
+  });
+
   it("une carte non payée : aucun paiement prélevé ; le bon rendu est annoncé, avec sa date", () => {
     const rendered = mail({ sheet: sheet(), regime: "due", voucher: RETURNED, locale: "fr" });
 

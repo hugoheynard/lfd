@@ -319,8 +319,9 @@ export const ORDERS_PRODUCTION_FACTS = {
    * `documentation/order/plan-annulation-de-commande.md`, C3.5, 2026-10-12).
    * Le sujet est le client ; `cancelledBy` la fiche staff qui a annulé, sous
    * son nom du moment ; `reason` le motif saisi (jamais montré au client) ;
-   * `regime` ce qui était dû — `free` (total nul) ou `due` (carte non payée,
-   * fermée chez Stripe) ; `voucher` ce que l'annulation a fait du bon de
+   * `regime` ce qui était dû — `free` (total nul), `due` (carte non payée,
+   * fermée chez Stripe) ou `account` (au compte, ni facturée ni prélevée,
+   * lot C5 — valeur écrite en base : elle ne se renomme que par migration) ; `voucher` ce que l'annulation a fait du bon de
    * fidélité (lot C3b) — rendu, refondu avec son reliquat, ou échu —, `null`
    * sans bon. Montants en centimes HT, l'unité du bon ; `expiresAt` sa date
    * limite d'origine. Remplace le booléen `voucherReturned` de C3, jamais servi
@@ -333,7 +334,7 @@ export const ORDERS_PRODUCTION_FACTS = {
       orderNumber: z.string(),
       cancelledBy: namedOrBare("staff_user"),
       reason: z.string(),
-      regime: z.enum(["free", "due"]),
+      regime: z.enum(["free", "due", "account"]),
       voucher: z
         .object({
           outcome: z.enum(["returned", "merged", "lapsed"]),

@@ -18,6 +18,7 @@ import {
   MemoryOrderCollections,
   MemoryStatements,
   RecordingLock,
+  RecordingRowsLock,
   Steps,
   UlidSequence,
 } from "./collection-doubles.js";
@@ -81,6 +82,7 @@ export function world(payers: readonly PayerModeSegments[] = []) {
     w.rejections,
     w.durable,
     new RecordingLock(steps),
+    new RecordingRowsLock(steps),
     new UlidSequence(),
     w.clock,
     w.events,

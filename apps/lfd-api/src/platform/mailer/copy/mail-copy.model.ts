@@ -234,6 +234,8 @@ export interface OrderCancelledCopy {
   readonly nothingBilled: string;
   /** Carte non payée, fermée chez Stripe : rien n'a été prélevé. */
   readonly nothingCharged: string;
+  /** Au compte, ni facturée ni prélevée (lot C5). */
+  readonly nothingInvoiced: string;
   /** Le bon de fidélité utilisé est rendu (lot C3b). `{value}`, `{day}` — sa date limite. */
   readonly voucherReturned: string;
   /**

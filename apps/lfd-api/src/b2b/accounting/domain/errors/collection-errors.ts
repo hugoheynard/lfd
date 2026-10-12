@@ -169,6 +169,19 @@ export class CollectionFloorMissingError extends TechnicalError {
   }
 }
 
+/**
+ * La constitution veut verrouiller ses candidats sans verrou fourni : faute
+ * de câblage, jamais un cas métier (plan `order/plan-annulation-de-commande.md`, C5.3).
+ */
+export class CollectionRowsLockMissingError extends TechnicalError {
+  constructor() {
+    super(
+      "accounting.collection.rows_lock_missing",
+      "La constitution d'un lot exige le verrou des commandes candidates, et aucun n'a été fourni : rien n'a été constitué. Signalez-le à l'équipe technique.",
+    );
+  }
+}
+
 export class CollectionOrderNotFoundError extends ResourceNotFoundError {
   constructor(readonly orderId: string) {
     super(

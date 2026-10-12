@@ -24,6 +24,7 @@ import {
   CollectionCandidatesReader,
   type CollectableOrder,
 } from "../../../domain/ports/collection-candidates.reader.js";
+import { OrderRowsLock } from "../../../domain/ports/order-rows-lock.js";
 import { CollectionLock } from "../../../domain/ports/collection-lock.js";
 import {
   CollectionMandatesReader,
@@ -76,6 +77,11 @@ export class FakeCandidates extends CollectionCandidatesReader {
   follows: BillingFollow[] = [];
   live: SepaScheme[] = [];
   previous: Date | null = null;
+  /**
+   * Lot C5 : les commandes annulées — ou réglées autrement — entre la lecture
+   * des identifiants et le verrou. La relecture ne les rend plus.
+   */
+  goneUnderLock: string[] = [];
   constructor(private readonly steps: Steps) {
     super();
   }
@@ -83,8 +89,21 @@ export class FakeCandidates extends CollectionCandidatesReader {
     this.steps.log.push("read:floor");
     return Promise.resolve(this.floorAt);
   }
-  collectableOrders(): Promise<readonly CollectableOrder[]> {
-    return Promise.resolve(this.orders);
+  collectableOrderIds(): Promise<readonly string[]> {
+    this.steps.log.push("read:candidate-ids");
+    return Promise.resolve(this.orders.map((order) => order.orderId));
+  }
+  collectableOrders(
+    _floor: Date,
+    _closesAt: Date,
+    orderIds: readonly string[],
+  ): Promise<readonly CollectableOrder[]> {
+    this.steps.log.push("read:candidates");
+    return Promise.resolve(
+      this.orders.filter(
+        (order) => orderIds.includes(order.orderId) && !this.goneUnderLock.includes(order.orderId),
+      ),
+    );
   }
   billingFollowsOf(): Promise<readonly BillingFollow[]> {
     return Promise.resolve(this.follows);
@@ -153,6 +172,9 @@ export class MemoryOrderCollections extends OrderCollectionRepository {
   load(orderId: string): Promise<OrderCollection | null> {
     return Promise.resolve(this.saved.get(orderId) ?? null);
   }
+  ofOrder(orderId: string): Promise<OrderCollection | null> {
+    return Promise.resolve(this.saved.get(orderId) ?? null);
+  }
   ofBatch(batchId: string): Promise<readonly OrderCollection[]> {
     return Promise.resolve(
       [...this.saved.values()].filter((order) => order.toPersistence().batchId === batchId),
@@ -180,6 +202,17 @@ export class RecordingLock extends CollectionLock {
   }
   acquire(legalEntityId: string): Promise<void> {
     this.steps.log.push(`lock:${legalEntityId}`);
+    return Promise.resolve();
+  }
+}
+
+/** Le verrou des lignes `orders` (lot C5) : il note les ids, dans l'ordre reçu. */
+export class RecordingRowsLock extends OrderRowsLock {
+  constructor(private readonly steps: Steps) {
+    super();
+  }
+  lockAll(orderIds: readonly string[]): Promise<void> {
+    this.steps.log.push(`lock:rows:${orderIds.join(",")}`);
     return Promise.resolve();
   }
 }

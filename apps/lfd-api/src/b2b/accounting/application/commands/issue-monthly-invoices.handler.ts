@@ -19,6 +19,7 @@ import {
 } from "../../domain/errors/monthly-invoice-errors.js";
 import { BillingModeDatesReader } from "../../domain/ports/billing-mode-dates.reader.js";
 import { CollectionMandatesReader } from "../../domain/ports/collection-mandates.reader.js";
+import { CancelledOrdersReader } from "../../domain/ports/cancelled-orders.reader.js";
 import { CreditorReader } from "../../domain/ports/creditor.reader.js";
 import { InvoiceIssuersReader } from "../../domain/ports/invoice-issuers.reader.js";
 import {
@@ -26,6 +27,7 @@ import {
   type MonthlyInvoiceOutcomeKey,
 } from "../../domain/ports/monthly-invoice-outcomes.js";
 import { MonthlyInvoicingReader } from "../../domain/ports/monthly-invoicing.reader.js";
+import { OrderRowsLock } from "../../domain/ports/order-rows-lock.js";
 import { PayerBillingModesReader } from "../../domain/ports/payer-billing-modes.reader.js";
 import { StatementBuyerReader } from "../../domain/ports/statement-buyer.reader.js";
 import type { BillingCycle } from "../../domain/services/billing-cycle.js";
@@ -40,8 +42,10 @@ import {
   periodLabelOf,
 } from "../../domain/services/invoicing-closures.js";
 import {
+  groupOrderIds,
   ordersByPayer,
   planMonthlyInvoices,
+  withoutCancelled,
   type MonthlyInvoicePlan,
   type PayerInvoicePlan,
 } from "../../domain/services/monthly-invoicing.js";
@@ -113,6 +117,8 @@ export class IssueMonthlyInvoicesHandler implements ICommandHandler<
     private readonly deliveries: OrderDeliveryHistoryReader,
     private readonly issuer: InvoiceIssuer,
     private readonly outcomes: MonthlyInvoiceOutcomes,
+    private readonly rows: OrderRowsLock,
+    private readonly cancelled: CancelledOrdersReader,
     private readonly ids: IdGenerator,
     private readonly events: DomainEventPublisher,
     private readonly clock: Clock,
@@ -223,30 +229,57 @@ export class IssueMonthlyInvoicesHandler implements ICommandHandler<
     return floor;
   }
 
-  /** Une facture (payeur × mandat) : elle et son issue ensemble, ou son refus rangé. */
-  private async issueFor(payer: PayerInvoicePlan, issuance: Issuance): Promise<PayerIssue> {
-    const key = outcomeKey(payer, issuance);
-    const { payerId } = payer;
-    if (payer.billable.length === 0) {
-      const message = `Aucun bon facturable sur la période ${payerPeriodLabelOf(payerId, issuance)} : ${key.unbillableOrders.join(", ")} (bon incohérent ou sans taux de TVA) — le signaler à l'équipe technique.`;
-      return this.signal(key, message);
-    }
+  /**
+   * Une facture (payeur × mandat) : elle et son issue ensemble, ou son refus
+   * rangé.
+   *
+   * Lot C5 (plan `order/plan-annulation-de-commande.md`, C5.3) : dans la
+   * transaction et AVANT le numéro, les lignes `orders` de TOUS les bons du
+   * groupe sont verrouillées (`OrderRowsLock`, ordre unique), puis les
+   * annulées en sont retirées. Une annulation qui attend ce verrou relira
+   * une commande facturée ; une annulation passée avant n'est pas facturée.
+   */
+  private async issueFor(planned: PayerInvoicePlan, issuance: Issuance): Promise<PayerIssue> {
+    const { payerId } = planned;
+    let key = outcomeKey(planned, issuance);
     try {
-      const number = await this.uow.run(async () => {
+      return await this.uow.run(async () => {
+        const payer = await this.liveGroup(planned);
+        if (payer === null) {
+          return { kind: "void", payerCompanyId: payerId };
+        }
+        key = outcomeKey(payer, issuance);
+        if (payer.billable.length === 0) {
+          const message = `Aucun bon facturable sur la période ${payerPeriodLabelOf(payerId, issuance)} : ${key.unbillableOrders.join(", ")} (bon incohérent ou sans taux de TVA) — le signaler à l'équipe technique.`;
+          return this.signal(key, message);
+        }
         const invoice = await this.issuer.issue({
           legalEntityId: issuance.legalEntityId,
           issuedOn: issuance.issuedOn,
           draft: (reserved) => draftOf(payer, issuance, this.ids.next(), reserved),
         });
         await this.outcomes.recordIssued(key, invoice.id);
-        return invoice.number;
+        return {
+          kind: "issued",
+          payerCompanyId: payerId,
+          number: invoice.number,
+          issuedOn: issuance.issuedOn,
+        };
       });
-      return { kind: "issued", payerCompanyId: payerId, number, issuedOn: issuance.issuedOn };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.warn({ message: "monthly_invoice_blocked", payerId, reason: message });
       return this.signal(key, message);
     }
+  }
+
+  /** Le groupe sous le verrou de ses lignes `orders`, moins ses annulées ; `null` s'il est vide. */
+  private async liveGroup(planned: PayerInvoicePlan): Promise<PayerInvoicePlan | null> {
+    const ids = groupOrderIds(planned);
+    await this.rows.lockAll(ids);
+    // `cancelledAmong` rend des NUMÉROS de commande, pas des identifiants.
+    const cancelledNumbers = await this.cancelled.cancelledAmong(ids);
+    return withoutCancelled(planned, new Set(cancelledNumbers));
   }
 
   /** Le payeur signalé : son issue rangée et son fait au journal, ensemble. */

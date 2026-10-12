@@ -37,6 +37,7 @@ import { DeliveryHandoverFeedModule } from "./delivery-handover-feed.module.js";
 import { DeliveryRoundPlacementsModule } from "./delivery-round-placements.module.js";
 import { DebtorMandateModule } from "./debtor-mandate.module.js";
 import { LoyaltyVoucherModule } from "./loyalty-voucher.module.js";
+import { AccountOrderEngagementModule } from "./account-order-engagement.module.js";
 import { IssuedMandatesModule } from "./issued-mandates.module.js";
 import { ProductionFeedModule } from "./production-feed.module.js";
 import { PackingModule } from "../packing/packing.module.js";
@@ -175,6 +176,7 @@ import { PublicationEnabledGuard } from "../pim/publication/publication-switch.j
     DeliveryRoundPlacementsModule,
     DebtorMandateModule,
     LoyaltyVoucherModule,
+    AccountOrderEngagementModule,
     IssuedMandatesModule,
     PricingAdminModule,
     PricingFollowJournalModule,

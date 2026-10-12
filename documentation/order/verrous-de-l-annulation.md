@@ -2,7 +2,7 @@
 
 > **État au 2026-10-12.** Les verrous de l'annulation par le staff (C3) et de
 > la refusion du bon (C3b) sont **bâtis**. Ceux de l'annulation **au compte**
-> (C5) sont **décidés, pas encore bâtis** : ils sont marqués _C5_ ci-dessous.
+> (C5) sont **bâtis le 2026-10-12, non commités** : ils sont marqués _C5_ ci-dessous.
 > Source : [`plan-annulation-de-commande.md`](plan-annulation-de-commande.md)
 > §C3.4 ter, §C3b, §C5.3 et §C5.4.
 
@@ -59,16 +59,16 @@ Ce qui rend le graphe sûr, vérifié dans le code le 2026-10-12 :
   ne serait pas binaire : sans `COLLATE "C"`, deux gestes pourraient verrouiller
   les mêmes lignes dans deux ordres différents et s'attendre l'un l'autre.
 
-| Geste                                         | Ordre des verrous                                               | État |
-| --------------------------------------------- | --------------------------------------------------------------- | ---- |
-| annulation staff (C3, C3b, C5)                | ligne `orders` → journée du fournil → titulaire du bon          | bâti |
-| abandon, expiration boutique, échec à l'arrêt | ligne `orders` → titulaire du bon                               | bâti |
-| passation qui engage un bon                   | titulaire du bon (puis insertion, aucune ligne existante prise) | bâti |
-| passage de nuit (reliquats, expiration)       | titulaire du bon ; commande relue **sans** `FOR UPDATE`         | bâti |
-| facture carte                                 | ligne `orders` → compteur                                       | bâti |
-| émission mensuelle                            | lignes `orders` du groupe (`COLLATE "C"`) → compteur            | _C5_ |
-| constitution d'un lot de prélèvement          | entité → lignes `orders` des candidats (`COLLATE "C"`)          | _C5_ |
-| « régler autrement »                          | ligne `orders`                                                  | _C5_ |
+| Geste                                         | Ordre des verrous                                               | État      |
+| --------------------------------------------- | --------------------------------------------------------------- | --------- |
+| annulation staff (C3, C3b, C5)                | ligne `orders` → journée du fournil → titulaire du bon          | bâti      |
+| abandon, expiration boutique, échec à l'arrêt | ligne `orders` → titulaire du bon                               | bâti      |
+| passation qui engage un bon                   | titulaire du bon (puis insertion, aucune ligne existante prise) | bâti      |
+| passage de nuit (reliquats, expiration)       | titulaire du bon ; commande relue **sans** `FOR UPDATE`         | bâti      |
+| facture carte                                 | ligne `orders` → compteur                                       | bâti      |
+| émission mensuelle                            | lignes `orders` du groupe (`COLLATE "C"`) → compteur            | bâti (C5) |
+| constitution d'un lot de prélèvement          | entité → lignes `orders` des candidats (`COLLATE "C"`)          | bâti (C5) |
+| « régler autrement »                          | ligne `orders`                                                  | bâti (C5) |
 
 ## Annulation contre facture mensuelle — _C5_
 

@@ -12,6 +12,10 @@ import {
   type ServiceDay,
 } from "../../../../../production/channels/commerce/index.js";
 import {
+  AccountOrderEngagement,
+  type AccountEngagement,
+} from "../../../domain/ports/account-order-engagement.js";
+import {
   CancellationSubjectReader,
   type CancellationSubject,
 } from "../../../domain/ports/cancellation-subject.reader.js";
@@ -156,5 +160,35 @@ export class ScriptedDesk extends OrderWithdrawalDesk {
   withdraw(day: ServiceDay, orderId: string): Promise<OrderWithdrawalOutcome> {
     this.trace.push(`withdraw:${day.value}:${orderId}`);
     return Promise.resolve(this.outcome);
+  }
+}
+
+/**
+ * La comptabilité doublée (lot C5) : l'engagement lu HORS verrou, puis SOUS
+ * verrou (`underLock`, s'il diffère — un lot constitué entre les deux), et
+ * les fermetures demandées. Tracé dans l'ordre des gestes.
+ */
+export class ScriptedEngagements extends AccountOrderEngagement {
+  readonly closed: { orderId: string; amountCents: number; at: Date }[] = [];
+  private reads = 0;
+
+  constructor(
+    private readonly first: AccountEngagement | null = { kind: "free" },
+    private readonly trace: string[] = [],
+    private readonly underLock: AccountEngagement | null = first,
+  ) {
+    super();
+  }
+
+  engagementOf(orderId: string): Promise<AccountEngagement | null> {
+    this.trace.push(`engagement:${orderId}`);
+    this.reads += 1;
+    return Promise.resolve(this.reads === 1 ? this.first : this.underLock);
+  }
+
+  closeForCancellation(orderId: string, amountCents: number, at: Date): Promise<void> {
+    this.trace.push(`close:${orderId}`);
+    this.closed.push({ orderId, amountCents, at });
+    return Promise.resolve();
   }
 }

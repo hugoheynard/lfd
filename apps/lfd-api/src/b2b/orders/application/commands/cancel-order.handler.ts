@@ -27,12 +27,10 @@ import {
 } from "../../domain/ports/cancellation-subject.reader.js";
 import { LoyaltyVoucherRedemption } from "../../domain/ports/loyalty-voucher-redemption.js";
 import { OrderCancellationRepository } from "../../domain/ports/order-cancellation.repository.js";
-import {
-  cancellationOf,
-  cancellationStateOf,
-  type CancellableRegime,
-} from "../../domain/services/order-cancellation.js";
+import { AccountOrderEngagement } from "../../domain/ports/account-order-engagement.js";
+import type { CancellableRegime } from "../../domain/services/order-cancellation.js";
 import { CancellationReason } from "../../domain/value-objects/cancellation-reason.js";
+import { CancellationRule } from "../services/cancellation-rule.js";
 import { VoucherRestitutionRefusal } from "../services/voucher-restitution-refusal.js";
 import { CancelOrderCommand } from "./cancel-order.command.js";
 
@@ -69,10 +67,18 @@ import { CancelOrderCommand } from "./cancel-order.command.js";
  * REFUS (règle, inscription au fournil) ne se rejoue pas : il dirait la même
  * chose.
  *
+ * ## La commande au compte (lot C5)
+ *
+ * La règle lit aussi l'engagement comptable (facturée, dans un lot, prélevée,
+ * rejetée avant), hors verrou puis SOUS le verrou de la ligne `orders` — le
+ * même que prennent l'émission mensuelle, la constitution d'un lot et
+ * « réglée autrement ». Quand l'écriture franchit, la ligne d'encaissement est
+ * FERMÉE (`order_collection` → `cancelled`) dans la même transaction : plus
+ * aucun geste comptable ne sait la reprendre. Aucun appel à Stripe.
+ *
  * ## Ce qu'il ne fait pas
  *
- * Aucun mur client (la route est staff), aucun remboursement (C4), aucune
- * commande au compte (C3.9).
+ * Aucun mur client (la route est staff), aucun remboursement (C4).
  */
 @CommandHandler(CancelOrderCommand)
 export class CancelOrderHandler implements ICommandHandler<CancelOrderCommand, void> {
@@ -85,6 +91,8 @@ export class CancelOrderHandler implements ICommandHandler<CancelOrderCommand, v
     private readonly desk: OrderWithdrawalDesk,
     private readonly vouchers: LoyaltyVoucherRedemption,
     private readonly refusals: VoucherRestitutionRefusal,
+    private readonly rule: CancellationRule,
+    private readonly engagements: AccountOrderEngagement,
     private readonly durable: DurablePublisher,
     private readonly unitOfWork: UnitOfWork,
     private readonly clock: Clock,
@@ -96,18 +104,10 @@ export class CancelOrderHandler implements ICommandHandler<CancelOrderCommand, v
     if (subject === null) {
       throw new OrderNotFoundError(command.orderId);
     }
-    const regime = this.ensureCancellable(subject);
+    // La règle, sans verrou : un refus ici n'a rien touché.
+    const regime = await this.rule.regimeOf(subject);
     const intentClosed = await this.closeIntent(subject, regime);
     await this.recordOnce(command, reason, intentClosed);
-  }
-
-  /** La règle, sans verrou : un refus ici n'a rien touché. */
-  private ensureCancellable(subject: CancellationSubject): CancellableRegime {
-    const decision = cancellationOf(cancellationStateOf(subject, null));
-    if (!decision.cancellable) {
-      throw new OrderNotCancellableError(subject.orderId, decision.block);
-    }
-    return decision.regime;
   }
 
   /**
@@ -173,7 +173,7 @@ export class CancelOrderHandler implements ICommandHandler<CancelOrderCommand, v
       if (locked === null) {
         throw new OrderNotFoundError(command.orderId);
       }
-      const regime = this.ensureCancellable(locked);
+      const regime = await this.rule.regimeOf(locked);
       await this.withdrawFromBakery(locked);
       const now = this.clock.now();
       const written = await this.cancellations.cancel(locked.orderId, {
@@ -186,7 +186,7 @@ export class CancelOrderHandler implements ICommandHandler<CancelOrderCommand, v
         // veut dire un état que le `where` refuse. On le relit pour le nommer,
         // et le refus annule tout, retrait au fournil compris.
         const again = (await this.cancellations.lock(locked.orderId)) ?? locked;
-        this.ensureCancellable(again);
+        await this.rule.regimeOf(again);
         throw new OrderNotCancellableError(locked.orderId, { kind: "already_cancelled", at: null });
       }
       await this.afterCancelled(locked, command.staffUserId, reason, regime, now);
@@ -217,6 +217,11 @@ export class CancelOrderHandler implements ICommandHandler<CancelOrderCommand, v
     regime: CancellableRegime,
     now: Date,
   ): Promise<void> {
+    if (regime === "account") {
+      // Sous le verrou de la ligne `orders`, l'engagement relu était `free` :
+      // la ligne d'encaissement est ouverte, on la ferme (C5.4).
+      await this.engagements.closeForCancellation(locked.orderId, locked.totalCents, now);
+    }
     const voucher = await this.restitute(locked, now);
     await this.durable.publish(
       new OrderCancelledEvent(

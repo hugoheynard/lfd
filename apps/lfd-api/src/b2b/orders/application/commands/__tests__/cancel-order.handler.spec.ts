@@ -16,6 +16,8 @@ import {
 } from "../../../domain/events/order-cancelled.event.js";
 import type { VoucherRestitution } from "../../../domain/ports/loyalty-voucher-redemption.js";
 import { VoucherRestitutionRefusal } from "../../services/voucher-restitution-refusal.js";
+import { CancellationRule } from "../../services/cancellation-rule.js";
+import type { AccountEngagement } from "../../../domain/ports/account-order-engagement.js";
 import type { CancellationSubject } from "../../../domain/ports/cancellation-subject.reader.js";
 import { CancelOrderCommand } from "../cancel-order.command.js";
 import { CancelOrderHandler } from "../cancel-order.handler.js";
@@ -26,6 +28,7 @@ import {
   InMemoryCancellations,
   ScriptedCancelGateway,
   ScriptedDesk,
+  ScriptedEngagements,
 } from "./cancellation-doubles.js";
 import { RecordingDurable } from "./durable-doubles.js";
 import { RecordingRedemption, RETURNED } from "./voucher-doubles.js";
@@ -49,6 +52,9 @@ interface Scene {
   readonly restitution?: VoucherRestitution;
   /** Les autres commandes, par id — celle qui porte un reliquat (cas 5). */
   readonly others?: Readonly<Record<string, CancellationSubject>>;
+  /** Lot C5 : l'engagement comptable lu hors verrou, puis sous verrou. */
+  readonly engagement?: AccountEngagement | null;
+  readonly engagementUnderLock?: AccountEngagement | null;
 }
 
 function scene(options: Scene = {}) {
@@ -60,25 +66,34 @@ function scene(options: Scene = {}) {
   const vouchers = new RecordingRedemption(false, options.restitution ?? RETURNED);
   const durable = new RecordingDurable();
   const subjects = new FixedSubjects(subject, options.others ?? {});
+  const first = options.engagement === undefined ? { kind: "free" as const } : options.engagement;
+  const engagements = new ScriptedEngagements(
+    first,
+    trace,
+    options.engagementUnderLock === undefined ? first : options.engagementUnderLock,
+  );
+  const rule = new CancellationRule(engagements);
   const handler = new CancelOrderHandler(
     subjects,
     rows,
     gateway,
     new ScriptedDesk(options.desk ?? "withdrawn", trace),
     vouchers,
-    new VoucherRestitutionRefusal(subjects, new FixedInscriptions()),
+    new VoucherRestitutionRefusal(subjects, new FixedInscriptions(), rule),
+    rule,
+    engagements,
     durable,
     new DirectUnitOfWork(),
     new FixedClock(NOW),
   );
-  return { handler, trace, rows, gateway, vouchers, durable };
+  return { handler, trace, rows, gateway, vouchers, durable, engagements };
 }
 
 const cancel = (reason = "Le client a appelé : il part en vacances") =>
   new CancelOrderCommand("ord_1", STAFF, reason);
 
 function eventOf(
-  regime: "free" | "due",
+  regime: "free" | "due" | "account",
   voucher: CancelledOrderVoucher | null = null,
 ): OrderCancelledEvent {
   return new OrderCancelledEvent(
@@ -327,7 +342,6 @@ describe("CancelOrderHandler — les refus", () => {
   });
 
   it.each([
-    ["au compte", { paymentStatus: "not_required", totalCents: 2_110 }, "orders.cancel.account"],
     ["payée", { paymentStatus: "paid" }, "orders.cancel.paid"],
     ["prête", { status: "ready" }, "orders.cancel.ready"],
     ["retirée", { status: "fulfilled" }, "orders.cancel.fulfilled"],
@@ -354,7 +368,13 @@ describe("CancelOrderHandler — les refus", () => {
       new ScriptedCancelGateway({ kind: "cancelled" }),
       new ScriptedDesk(),
       new RecordingRedemption(),
-      new VoucherRestitutionRefusal(new FixedSubjects(null), new FixedInscriptions()),
+      new VoucherRestitutionRefusal(
+        new FixedSubjects(null),
+        new FixedInscriptions(),
+        new CancellationRule(new ScriptedEngagements()),
+      ),
+      new CancellationRule(new ScriptedEngagements()),
+      new ScriptedEngagements(),
       new RecordingDurable(),
       new DirectUnitOfWork(),
       new FixedClock(NOW),
@@ -403,5 +423,85 @@ describe("CancelOrderHandler — la transaction qui échoue après Stripe (C3.4 
 
     await expect(handler.execute(cancel())).rejects.toBeInstanceOf(OrderNotCancellableError);
     expect(trace.filter((step) => step === "lock:ord_1")).toHaveLength(1);
+  });
+});
+
+describe("CancelOrderHandler — au compte (lot C5)", () => {
+  const ACCOUNT = cancellationSubject({
+    paymentStatus: "not_required",
+    totalCents: 2_110,
+    stripePaymentIntentId: null,
+  });
+
+  it("rien d'engagé : engagement lu hors verrou PUIS sous verrou, ligne fermée dans la transaction, sans Stripe", async () => {
+    const { handler, trace, gateway, durable, engagements } = scene({ subject: ACCOUNT });
+
+    await handler.execute(cancel());
+
+    expect(trace).toEqual([
+      "engagement:ord_1",
+      "lock:ord_1",
+      "engagement:ord_1",
+      "withdraw:2026-10-13:ord_1",
+      "cancel:ord_1",
+      "close:ord_1",
+    ]);
+    expect(gateway.cancelled).toEqual([]);
+    expect(engagements.closed).toEqual([{ orderId: "ord_1", amountCents: 2_110, at: NOW }]);
+    expect(durable.facts).toEqual([eventOf("account").durableFact()]);
+  });
+
+  it("facturée au premier regard : refus nommé, sans verrou ni retrait ni fermeture", async () => {
+    const { handler, trace, engagements } = scene({
+      subject: ACCOUNT,
+      engagement: { kind: "invoiced", invoiceNumber: "FA-2026-000012", issuedOn: "2026-09-30" },
+    });
+
+    await expect(handler.execute(cancel())).rejects.toMatchObject({
+      code: "orders.cancel.invoiced",
+      message: expect.stringContaining(
+        "facturée le 30/09/2026 (facture n° FA-2026-000012)",
+      ) as string,
+    });
+    expect(trace).toEqual(["engagement:ord_1"]);
+    expect(engagements.closed).toEqual([]);
+  });
+
+  it("entrée dans un lot entre le premier regard et le verrou : la relecture sous verrou refuse, rien ne bouge", async () => {
+    const { handler, trace, vouchers, durable, engagements } = scene({
+      subject: { ...ACCOUNT, loyaltyVoucherId: "bon_1" },
+      engagementUnderLock: {
+        kind: "collecting",
+        state: "batched",
+        collectionDay: "2026-10-20",
+        statementNumber: null,
+      },
+    });
+
+    await expect(handler.execute(cancel())).rejects.toMatchObject({
+      code: "orders.cancel.collecting",
+    });
+    expect(trace).toEqual(["engagement:ord_1", "lock:ord_1", "engagement:ord_1"]);
+    expect(vouchers.calls).toEqual([]);
+    expect(durable.facts).toEqual([]);
+    expect(engagements.closed).toEqual([]);
+  });
+
+  it("engagement illisible au compte : refus `engagement_unknown`, jamais « annulable » (S6)", async () => {
+    const { handler, trace } = scene({ subject: ACCOUNT, engagement: null });
+
+    await expect(handler.execute(cancel())).rejects.toMatchObject({
+      code: "orders.cancel.engagement_unknown",
+    });
+    expect(trace).toEqual(["engagement:ord_1"]);
+  });
+
+  it("hors régime au compte, la comptabilité n'est pas interrogée", async () => {
+    const { handler, trace } = scene();
+
+    await handler.execute(cancel());
+
+    expect(trace.filter((step) => step.startsWith("engagement:"))).toEqual([]);
+    expect(trace).not.toContain("close:ord_1");
   });
 });
