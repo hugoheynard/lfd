@@ -18,7 +18,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-import { GRAPHIFY_SPEC, GRAPHIFY_VERSION } from "./graphify-version.mjs";
+import { GRAPHIFY_PYTHON, GRAPHIFY_SPEC, GRAPHIFY_VERSION } from "./graphify-version.mjs";
 
 /**
  * Ce que ce poste a installé, en clair. `graphify --version` dit la version,
@@ -55,13 +55,23 @@ function main() {
   }
   const spec = GRAPHIFY_SPEC;
   if (run("uv", ["--version"]).error) {
-    console.log(`${PREFIX} uv est absent — installez-le, puis : uv tool install ${spec}`);
+    console.log(
+      `${PREFIX} uv est absent — installez-le, puis : uv tool install --python ${GRAPHIFY_PYTHON} ${spec}`,
+    );
     return;
   }
   console.log(`${PREFIX} installation de ${spec} (uv tool)…`);
-  const result = spawnSync("uv", ["tool", "install", "--force", spec], { stdio: "inherit" });
+  const result = spawnSync(
+    "uv",
+    ["tool", "install", "--force", "--python", GRAPHIFY_PYTHON, spec],
+    {
+      stdio: "inherit",
+    },
+  );
   if (result.status !== 0) {
-    console.log(`${PREFIX} l'installation a échoué — relancez : uv tool install ${spec}`);
+    console.log(
+      `${PREFIX} l'installation a échoué — relancez : uv tool install --python ${GRAPHIFY_PYTHON} ${spec}`,
+    );
     return;
   }
   mkdirSync(join(homedir(), ".cache", "lfd"), { recursive: true });

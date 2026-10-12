@@ -20,5 +20,12 @@ export const GRAPHIFY_VERSION = "0.9.86";
  */
 export const GRAPHIFY_EXTRAS = ["sql"];
 
+/**
+ * Le Python de l'outil, épinglé : sans lui, uv prend celui du shell — 3.9
+ * sous la base micromamba de Hugo, que graphify refuse (il veut ≥ 3.10,
+ * constaté le 2026-10-12). uv télécharge ce Python s'il manque au poste.
+ */
+export const GRAPHIFY_PYTHON = "3.12";
+
 /** Ce qu'on passe à `uv tool install` : `graphifyy[sql]==0.9.86`. */
 export const GRAPHIFY_SPEC = `${GRAPHIFY_PACKAGE}[${GRAPHIFY_EXTRAS.join(",")}]==${GRAPHIFY_VERSION}`;
