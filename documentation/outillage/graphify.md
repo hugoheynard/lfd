@@ -12,7 +12,7 @@ fichiers.
 
 ```mermaid
 flowchart LR
-  I["pnpm install<br/>(prepare)"] --> S["install-graphify.mjs<br/>uv tool install graphifyy==version épinglée"]
+  I["pnpm install<br/>(prepare)"] --> S["install-graphify.mjs<br/>uv tool install graphifyy[sql]==version épinglée"]
   S --> F["premier graphe<br/>si graphify-out/graph.json manque"]
   G["git commit · merge · checkout<br/>(.githooks)"] --> R["refresh-graph.mjs<br/>graphify update . — détaché"]
   F --> O["graphify-out/ (local, ignoré par git)"]
@@ -38,9 +38,11 @@ flowchart LR
 
 - ≈ 9 200 fichiers, **≈ 66 000 nœuds, 203 000 liens, 918 groupes**, en
   ≈ 1 minute ; le fichier du graphe ≈ 106 Mo.
-- **Les 353 `.sql` n'apportent rien** : l'extracteur SQL est une option
-  (`graphifyy[sql]`) non installée. Les migrations et le schéma ne sont donc
-  pas dans le graphe.
+- **Les 353 `.sql` n'apportaient rien** : l'extracteur SQL est une option.
+  Depuis le même jour, l'installation porte `graphifyy[sql]` ; un poste déjà
+  équipé sans l'option est réinstallé et son cache d'extraction jeté (le
+  témoin `~/.cache/lfd/graphify-spec` dit ce qui est installé, puisque
+  `graphify --version` ne dit pas les extras).
 - Au-delà de 5 000 nœuds, la vue HTML montre les **groupes**, pas les
   nœuds ; le détail se lit par `graphify query/explain/path`.
 
@@ -66,5 +68,21 @@ claude --project`) : elle écrit dans `.claude/`, à faire par Hugo et à
 - **Le hook qui pousse Claude vers le graphe avant de lire** (`graphify
 claude install`) : pas installé, il contredit « on ouvre avant
   d'affirmer ». À reconsidérer sur une mesure.
-- **Obsidian** : ouvrir `documentation/` comme coffre ; config partagée à
-  ajouter.
+- **Obsidian** : voir ci-dessous — ce n'est pas graphify, mais le même
+  usage (s'orienter par les liens).
+
+## Obsidian sur `documentation/`
+
+Ouvrir le dossier `documentation/` comme coffre (« Open folder as vault »).
+Trois réglages sont partagés par le dépôt, le reste de `.obsidian/` reste à
+chaque poste (ignoré par git) :
+
+- `app.json` — **liens Markdown relatifs** (chemin relatif entre parenthèses), la forme que
+  `lint:doc-references` lit ; un renommage dans Obsidian met les liens à
+  jour ;
+- `core-plugins.json` — graphe, rétroliens, liens sortants, aperçu ;
+- `graph.json` — les notes orphelines visibles : une doc sans lien entrant
+  est une doc que personne ne retrouvera, comme une doc absente de l'index.
+
+⚠️ **Jamais de `[[lien wiki]]`** dans `documentation/` : la porte ne le lit
+pas, et GitHub non plus.

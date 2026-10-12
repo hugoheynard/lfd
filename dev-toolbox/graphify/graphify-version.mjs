@@ -12,3 +12,13 @@
  */
 export const GRAPHIFY_PACKAGE = "graphifyy";
 export const GRAPHIFY_VERSION = "0.9.86";
+
+/**
+ * Les extras du paquet. `sql` installe l'extracteur des `.sql` : sans lui,
+ * les 353 migrations et le schéma n'entrent pas dans le graphe (constaté au
+ * premier graphe, 2026-10-12).
+ */
+export const GRAPHIFY_EXTRAS = ["sql"];
+
+/** Ce qu'on passe à `uv tool install` : `graphifyy[sql]==0.9.86`. */
+export const GRAPHIFY_SPEC = `${GRAPHIFY_PACKAGE}[${GRAPHIFY_EXTRAS.join(",")}]==${GRAPHIFY_VERSION}`;

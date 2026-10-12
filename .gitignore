@@ -93,3 +93,9 @@ storybook-static/
 
 # graphify — graphe local du dépôt, régénéré par les hooks (dev-toolbox/graphify/)
 graphify-out/
+
+# Obsidian — le coffre est documentation/ ; seuls app.json, core-plugins.json et graph.json sont partagés
+documentation/.obsidian/*
+!documentation/.obsidian/app.json
+!documentation/.obsidian/core-plugins.json
+!documentation/.obsidian/graph.json

@@ -14,9 +14,18 @@
  * Sans `uv`, il dit la commande à lancer et s'arrête.
  */
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
 
-import { GRAPHIFY_PACKAGE, GRAPHIFY_VERSION } from "./graphify-version.mjs";
+import { GRAPHIFY_SPEC, GRAPHIFY_VERSION } from "./graphify-version.mjs";
+
+/**
+ * Ce que ce poste a installé, en clair. `graphify --version` dit la version,
+ * pas les extras : sans ce témoin, un poste à 0.9.86 sans `[sql]` passerait
+ * pour à jour.
+ */
+const STAMP = join(homedir(), ".cache", "lfd", "graphify-spec");
 
 const PREFIX = "graphify :";
 
@@ -37,14 +46,14 @@ function main() {
   if (process.env.CI || process.env.LFD_SKIP_GRAPHIFY === "1") {
     return;
   }
-  if (installedVersion() === GRAPHIFY_VERSION) {
+  if (installedVersion() === GRAPHIFY_VERSION && installedSpec() === GRAPHIFY_SPEC) {
     // Une ligne, et pas le silence : sans elle, un dev qui lance le script à
     // la main croit qu'il n'a rien fait (constaté par Hugo le 2026-10-12).
     console.log(`${PREFIX} ${GRAPHIFY_VERSION} déjà installé.`);
     buildFirstGraph();
     return;
   }
-  const spec = `${GRAPHIFY_PACKAGE}==${GRAPHIFY_VERSION}`;
+  const spec = GRAPHIFY_SPEC;
   if (run("uv", ["--version"]).error) {
     console.log(`${PREFIX} uv est absent — installez-le, puis : uv tool install ${spec}`);
     return;
@@ -55,7 +64,21 @@ function main() {
     console.log(`${PREFIX} l'installation a échoué — relancez : uv tool install ${spec}`);
     return;
   }
+  mkdirSync(join(homedir(), ".cache", "lfd"), { recursive: true });
+  writeFileSync(STAMP, spec);
+  // Le cache d'extraction a été bâti sans les extras d'aujourd'hui (un .sql lu
+  // sans extracteur y est noté vide) : on le jette, le graphe se refait.
+  rmSync("graphify-out/cache", { recursive: true, force: true });
+  rmSync("graphify-out/graph.json", { force: true });
   buildFirstGraph();
+}
+
+function installedSpec() {
+  try {
+    return readFileSync(STAMP, "utf8").trim();
+  } catch {
+    return null;
+  }
 }
 
 /**
