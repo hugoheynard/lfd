@@ -248,6 +248,15 @@ export class App {
    * 2026-09-23 ; l'entrée suivait encore `pim_catalog` jusqu'au 2026-10-02.
    */
   protected readonly canSeeMedia = computed(() => this.permissions.can('media_library:read'));
+  /**
+   * La section **Communication** du rail : la vitrine et les textes de la
+   * boutique, sous le droit qui ouvre les deux (`b2b_storefront`). Elle ne
+   * dépend plus des Réglages (`b2b_settings`), sous lesquels le lanceur mobile
+   * cachait ces deux écrans à qui n'avait que la vitrine.
+   */
+  protected readonly canSeeCommunication = computed(() =>
+    this.permissions.can('b2b_storefront:read'),
+  );
 
   /**
    * **Outils agent** — l'ÉCRITURE du catalogue, pas sa lecture, et c'est la

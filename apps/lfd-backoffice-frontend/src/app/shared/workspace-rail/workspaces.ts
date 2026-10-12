@@ -598,31 +598,9 @@ export const B2B_VIEWS: readonly WorkspaceView[] = [
     icon: 'grid',
     section: 'Contenu',
   },
-  {
-    // Le rail ET les tuiles du menu mobile lisent cette liste (`views('b2b')`) :
-    // une entrée ici suffit aux deux arbres (vérifié le 2026-09-24).
-    //
-    // L'écran vit sous `/vitrine` et son propre droit
-    // (plan-vitrine-enregistrement.md, D7). Depuis le 2026-09-26 (Hugo), c'est
-    // sa SEULE entrée : la racine n'en porte plus, et le libellé dit de quelle
-    // vitrine il s'agit.
-    key: 'vitrine',
-    label: 'Vitrine boutique',
-    link: '/vitrine',
-    icon: 'view',
-    section: 'Contenu',
-    needs: 'b2b_storefront:read',
-  },
-  {
-    // Même liste pour le rail ET les tuiles du menu mobile (cf. l'entrée
-    // ci-dessus) ; même droit que la vitrine (plan-textes-de-la-boutique.md, §7).
-    key: 'textes-boutique',
-    label: 'Textes de la boutique',
-    link: '/textes-boutique',
-    icon: 'edit',
-    section: 'Contenu',
-    needs: 'b2b_storefront:read',
-  },
+  // « Vitrine boutique » et « Textes de la boutique » ont quitté cet espace le
+  // 2026-10-12 (Hugo : « en primary menu, dans une section Communication ») :
+  // ils sont au rail principal et au lanceur mobile, dans `app.html`.
   // LES CINQ MENTIONS LÉGALES, une entrée chacune et non une page d'index : on
   // vient corriger une mention précise, et un index n'aurait ajouté qu'un clic
   // entre le menu et le texte. Elles sont DÉRIVÉES du vocabulaire — leur ordre

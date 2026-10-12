@@ -213,6 +213,35 @@
         ></a>
       }
 
+      @if (canSeeCommunication()) {
+        <!-- COMMUNICATION — ce que la boutique MONTRE et ce qu'elle DIT : sa
+             vitrine, et ses textes. Une section du rail principal plutôt qu'un
+             recoin de l'E-commerce (Hugo, 2026-10-12) : on y vient pour écrire,
+             pas pour régler ce qu'on vend. Sous le droit de la vitrine. -->
+        <fold-menu-section label="Communication">
+          <a
+            fold-menu-item
+            icon="view"
+            label="Vitrine boutique"
+            routerLink="/vitrine"
+            routerLinkActive
+            #vitrineRla="routerLinkActive"
+            [active]="vitrineRla.isActive"
+            (click)="mobileNavOpen.set(false)"
+          ></a>
+          <a
+            fold-menu-item
+            icon="edit"
+            label="Textes de la boutique"
+            routerLink="/textes-boutique"
+            routerLinkActive
+            #copyRla="routerLinkActive"
+            [active]="copyRla.isActive"
+            (click)="mobileNavOpen.set(false)"
+          ></a>
+        </fold-menu-section>
+      }
+
       @if (canSeeAccounting()) {
         <!-- COMPTABILITÉ — qui encaisse, sous quelle identité. Juste après le
              B2B, et avant l'Admin : on descend de ce qu'on vend vers qui
@@ -713,6 +742,31 @@
               (click)="mobileNavOpen.set(false)"
             ></a>
           }
+        </fold-nav-group>
+      }
+      @if (canSeeCommunication()) {
+        <!-- La MÊME section qu'au rail : les deux arbres ne partagent pas leur modèle. -->
+        <fold-nav-group icon="edit" label="Communication" [entryCountLabel]="entriesLabel">
+          <a
+            fold-nav-tile
+            icon="view"
+            label="Vitrine boutique"
+            routerLink="/vitrine"
+            routerLinkActive
+            #vitrineTile="routerLinkActive"
+            [active]="vitrineTile.isActive"
+            (click)="mobileNavOpen.set(false)"
+          ></a>
+          <a
+            fold-nav-tile
+            icon="edit"
+            label="Textes de la boutique"
+            routerLink="/textes-boutique"
+            routerLinkActive
+            #copyTile="routerLinkActive"
+            [active]="copyTile.isActive"
+            (click)="mobileNavOpen.set(false)"
+          ></a>
         </fold-nav-group>
       }
       @if (canSeeAccounting()) {
