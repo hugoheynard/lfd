@@ -2,7 +2,7 @@
 
 > État relu dans le code le 2026-10-09. Décrit l'existant ; ne conçoit rien.
 > Le QR dans le bon de commande PDF est en cours de construction ce jour-là
-> (`plan-bon-public.md`) : il encode le même jeton, par la même fabrique.
+> (`architecture-bon-de-commande.md`) : il encode le même jeton, par la même fabrique.
 
 ## La règle, et jusqu'où elle tient
 

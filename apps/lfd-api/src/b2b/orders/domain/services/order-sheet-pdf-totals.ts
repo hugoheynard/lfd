@@ -166,7 +166,7 @@ function taxedGestureRows(sheet: ClientSheet): readonly TotalRow[] {
 }
 
 /**
- * **Le pied du bon public** (plan `plan-bon-public.md`, §2.2) : les articles,
+ * **Le pied du bon public** (plan `architecture-bon-de-commande.md`, §2.2) : les articles,
  * les gestes en TTC s'il y en a, le **Total TTC**, puis « dont TVA ». Ni
  * « Sous-total HT » ni « Total avant TVA » : un particulier lit un prix taxe
  * comprise, et la colonne s'additionne.

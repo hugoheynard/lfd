@@ -49,7 +49,7 @@ export interface OrderSheetPdf {
  *
  * Ce paragraphe disait « on écrit à la demande » : fabriquer à la passation
  * aurait produit un document par commande, que presque personne ne demande.
- * Le plan `documentation/order/plan-bon-public.md` (§2.4, §5, Hugo,
+ * Le plan `documentation/order/architecture-bon-de-commande.md` (§2.4, §5, Hugo,
  * 2026-10-09) renverse la décision : le bon part **joint au courriel de
  * confirmation**, donc chaque commande en écrit un (~50 Ko, logo 16 Ko).
  * C'est l'expéditeur de `customer.order-placed` qui le demande ici ; le

@@ -75,7 +75,7 @@ import { GetOrderSheetPdfQuery } from "./get-order-sheet-pdf.query.js";
  * chemins qui l'écriraient séparément finiraient par diverger.
  *
  * Le jeton de retrait passe À CÔTÉ de la feuille : c'est le rendu qui ne le
- * dessine qu'en retrait (plan `plan-bon-public.md`, §2.3).
+ * dessine qu'en retrait (plan `architecture-bon-de-commande.md`, §2.3).
  */
 @QueryHandler(GetOrderSheetPdfQuery)
 export class GetOrderSheetPdfHandler implements IQueryHandler<

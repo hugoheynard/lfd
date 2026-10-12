@@ -358,7 +358,7 @@ export interface AtelierSheet extends SheetCommon {
 
 /**
  * **Le bon d'un pro, ou le bon « public »** (plan
- * `documentation/order/plan-bon-public.md`, Hugo, 2026-10-09).
+ * `documentation/order/architecture-bon-de-commande.md`, Hugo, 2026-10-09).
  *
  * `public` = une commande **sans société** (`companyId === null`), y compris
  * la commande personnelle d'un pro : c'est un achat de particulier, réglé à la

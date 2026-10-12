@@ -148,7 +148,7 @@ export interface B2bMails {
     readonly handoverUrl: string;
     /**
      * Le bon de commande en PDF, joint — ou `null` : rendu ou lecture en
-     * échec, journalisé, et le courriel part sans (plan `plan-bon-public.md`,
+     * échec, journalisé, et le courriel part sans (plan `architecture-bon-de-commande.md`,
      * §2.4). Le même document que l'archive.
      */
     readonly document: OrderSheetMailDocument | null;

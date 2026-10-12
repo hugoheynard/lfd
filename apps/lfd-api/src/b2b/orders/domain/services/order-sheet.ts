@@ -245,7 +245,7 @@ function clientCustomerOf(order: OrderView): SheetCustomer {
  * Le bon pro, ou le bon public — **lu sur la commande**, jamais deviné au rendu.
  *
  * Public = sans société, y compris la commande personnelle d'un pro : c'est un
- * achat de particulier, réglé à la commande (plan `plan-bon-public.md`, §5).
+ * achat de particulier, réglé à la commande (plan `architecture-bon-de-commande.md`, §5).
  */
 function variantOf(order: OrderView): SheetVariant {
   return order.companyId === null ? "public" : "pro";

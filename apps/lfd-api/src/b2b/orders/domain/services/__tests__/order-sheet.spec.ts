@@ -288,7 +288,7 @@ describe("le tirage", () => {
   });
 });
 
-/** Plan `documentation/order/plan-bon-public.md`, §2.2 et §5. */
+/** Plan `documentation/order/architecture-bon-de-commande.md`, §2.2 et §5. */
 describe("le bon pro ou public", () => {
   it("une commande de société donne le bon PRO, sans téléphone imprimé", () => {
     const sheet = clientSheetOf(order(), null, "06 12 34 56 78");
