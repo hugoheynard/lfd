@@ -146,6 +146,15 @@ origine du premier `show`. ⚠️ `frame-ancestors` ne protège pas une fenêtre
 ouverte : ce sont la liste d'origines et le contrôle de `source` qui tiennent.
 Sans `show` accepté en 1,5 s, l'écran « hors cadre » s'affiche.
 
+**L'édition en place (2026-10-12, demandée par Hugo).** Au survol d'un texte
+marqué, un liseré et un crayon ; un clic l'ouvre dans un champ flottant
+(variables comprises, marqueurs retirés), le bouton ou le lien qui le porte ne
+part pas. Chaque frappe envoie `edit { key, locale, text }` ; le back-office la
+passe au `DraftWriter` comme une frappe de la colonne, ou répond
+`edit-refused { key, reason }` si une variable manque (rien d'écrit). Entrée
+ou un clic ailleurs termine, Échap renvoie le texte d'avant. Alt + clic
+navigue (`preview/app/copy-editing/`). L'aperçu ne fait que proposer.
+
 Les lectures publiques (catalogue, vitrine, points de retrait) restent
 réelles : l'aperçu montre les vrais produits.
 

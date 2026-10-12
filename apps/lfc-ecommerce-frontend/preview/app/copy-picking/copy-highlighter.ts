@@ -29,25 +29,6 @@ export function visibleKeys(root: Element, markers: CopyMarkers): readonly strin
 }
 
 /**
- * **La clé du texte cliqué.** Le point du clic désigne un nœud de texte et
- * une position : le marqueur le plus proche avant elle est celui de la phrase
- * cliquée. Sans point lisible (navigateur sans `caretPositionFromPoint`), le
- * premier marqueur de l'élément cliqué.
- */
-export function keyAtClick(event: MouseEvent, markers: CopyMarkers): string | null {
-  const document = event.view?.document;
-  const caret = document?.caretPositionFromPoint?.(event.clientX, event.clientY) ?? null;
-  if (caret !== null && caret.offsetNode.nodeType === Node.TEXT_NODE) {
-    const key = markers.keyAt(caret.offsetNode.nodeValue ?? '', caret.offset);
-    if (key !== null) {
-      return key;
-    }
-  }
-  const target = event.target;
-  return target instanceof Element ? markers.keyAt(target.textContent ?? '', 0) : null;
-}
-
-/**
  * **Surligne les textes d'une clé** — sans toucher au DOM d'Angular : la
  * surbrillance passe par l'API des surlignages CSS (`CSS.highlights`), qui
  * peint des plages sans insérer d'élément. Rend le premier élément surligné,

@@ -1,8 +1,11 @@
+import type { ContentLocale } from '@lfd/contracts';
 import {
   isShopCopyPreviewMessage,
   SHOP_COPY_PREVIEW_SOURCE,
   type ShopCopyPreviewOutbound,
 } from '@lfd/contracts/shop-copy-preview';
+
+import { COPY_LOCALES } from './copy-text';
 
 /** Ce qu'il faut savoir d'un `MessageEvent` pour le juger — de quoi l'éprouver sans navigateur. */
 export interface IncomingMessage {
@@ -45,9 +48,32 @@ export function acceptPreviewMessage(
       return 'keys' in data && isStringArray(data.keys)
         ? { source: SHOP_COPY_PREVIEW_SOURCE, type: 'visible-keys', keys: data.keys }
         : null;
+    case 'edit':
+      return readEdit(data);
     default:
       return null;
   }
+}
+
+function isLocale(value: unknown): value is ContentLocale {
+  return COPY_LOCALES.some((locale) => locale === value);
+}
+
+/** Un `edit` : une clé, une langue connue, un texte — rien de plus n'est lu. */
+function readEdit(data: object): ShopCopyPreviewOutbound | null {
+  const key = Object.hasOwn(data, 'key') ? Reflect.get(data, 'key') : undefined;
+  const locale = Object.hasOwn(data, 'locale') ? Reflect.get(data, 'locale') : undefined;
+  const text = Object.hasOwn(data, 'text') ? Reflect.get(data, 'text') : undefined;
+  if (typeof key !== 'string' || typeof text !== 'string' || !isLocale(locale)) {
+    return null;
+  }
+  return {
+    source: SHOP_COPY_PREVIEW_SOURCE,
+    type: 'edit',
+    key,
+    locale,
+    text,
+  };
 }
 
 function isStringArray(value: unknown): value is readonly string[] {

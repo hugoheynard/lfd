@@ -80,4 +80,27 @@ describe('acceptPreviewMessage — la garde des messages de l’aperçu', () => 
       keys: ['a', 'b'],
     });
   });
+
+  it('accepte un edit complet de notre iframe', () => {
+    const data = { source, type: 'edit', key: 'cart.title', locale: 'fr', text: 'Panier' };
+    expect(acceptPreviewMessage({ origin: ORIGIN, source: FRAME, data }, ORIGIN, FRAME)).toEqual(
+      data,
+    );
+  });
+
+  it('refuse un edit sans texte, d’une langue inconnue, ou d’une autre fenêtre', () => {
+    const edit = { source, type: 'edit', key: 'cart.title', locale: 'fr', text: 'Panier' };
+    for (const data of [
+      { ...edit, text: 42 },
+      { ...edit, locale: 'de' },
+      { source, type: 'edit', key: 'cart.title', locale: 'fr' },
+    ]) {
+      expect(
+        acceptPreviewMessage({ origin: ORIGIN, source: FRAME, data }, ORIGIN, FRAME),
+      ).toBeNull();
+    }
+    expect(
+      acceptPreviewMessage({ origin: ORIGIN, source: {}, data: edit }, ORIGIN, FRAME),
+    ).toBeNull();
+  });
 });

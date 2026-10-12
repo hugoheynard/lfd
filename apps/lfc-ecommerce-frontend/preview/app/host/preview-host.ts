@@ -11,11 +11,12 @@ import { ClientLocale } from '../../../src/app/client/client-locale.service';
 import { ShopCopyOverrides } from '../../../src/app/client/copy/shop-copy-overrides';
 import { previewConfig } from '../composition/preview-config';
 import type { PreviewStorages } from '../composition/memory-storage';
-import { highlightKey, keyAtClick, visibleKeys } from '../copy-picking/copy-highlighter';
+import { CopyEditing } from '../copy-editing/copy-editing';
+import { highlightKey, visibleKeys } from '../copy-picking/copy-highlighter';
 import { CopyMarkers } from '../copy-picking/copy-markers';
 import { previewScene } from '../journeys/journeys';
 import { OutsideFrame } from '../outside-frame/outside-frame';
-import { outbound, readShowMessage } from '../protocol/preview-messages';
+import { outbound, readEditRefusedMessage, readShowMessage } from '../protocol/preview-messages';
 
 /** Le temps de calme après un changement du DOM avant de relever les clés visibles. */
 const SETTLE_MS = 250;
@@ -52,6 +53,8 @@ interface EditorWindow {
  *   dans {@link OPENER_GRACE_MS}, l'écran « hors cadre » s'affiche — un
  *   `show` tardif le remplace. Une largeur demandée redimensionne la fenêtre,
  *   si le navigateur le permet.
+ * - **Édition en place** (2026-10-12, `copy-editing/`) : survol, clic sur un
+ *   texte, frappe → `edit` ; `edit-refused` revient sous le champ.
  * - **Encadré** : il annonce `ready` au back-office, puis applique chaque
  *   `show`. Un changement de parcours REDÉMARRE la boutique — stockage vidé,
  *   injecteur neuf : un parcours ne garde rien du précédent. Un changement de
@@ -84,6 +87,10 @@ export class PreviewHost {
   private opened = false;
   private graceTimer: ReturnType<typeof setTimeout> | null = null;
   private windowViewport: ShopCopyPreviewShowMessage['viewport'] | null = null;
+  /** La langue affichée — celle qu'un texte tapé en place déclare. */
+  private locale: ShopCopyPreviewShowMessage['locale'] | null = null;
+  /** L'édition en place — branchée seulement quand le back-office nous parle. */
+  private editing: CopyEditing | null = null;
 
   constructor(
     private readonly win: Window,
@@ -99,7 +106,16 @@ export class PreviewHost {
       return;
     }
     this.win.addEventListener('message', (event) => this.receive(event));
-    this.win.document.addEventListener('click', (event) => this.pick(event), { capture: true });
+    this.editing = new CopyEditing(
+      this.win.document,
+      this.markers,
+      {
+        pick: (key) => this.send(outbound({ type: 'pick', key })),
+        edit: (key, locale, text) => this.send(outbound({ type: 'edit', key, locale, text })),
+      },
+      () => (this.app === null ? null : this.locale),
+    );
+    this.editing.listen();
     new MutationObserver(() => this.scheduleSettle()).observe(this.win.document.body, {
       childList: true,
       subtree: true,
@@ -125,6 +141,11 @@ export class PreviewHost {
 
   /** Le démarrage du parcours demandé, ou rien s'il tourne déjà. */
   private receive(event: MessageEvent): void {
+    const refused = readEditRefusedMessage(event, this.allowedOrigins, this.editor);
+    if (refused !== null) {
+      this.editing?.refuse(refused.key, refused.reason);
+      return;
+    }
     const message = readShowMessage(event, this.allowedOrigins, this.editor);
     if (message === null) {
       return;
@@ -197,16 +218,9 @@ export class PreviewHost {
       .receive(message.locale, { ...message.published, ...message.drafts });
     injector.get(ClientLocale).current.set(message.locale);
     this.win.document.documentElement.lang = message.locale;
+    this.locale = message.locale;
     this.highlight = message.highlight;
     this.scheduleSettle();
-  }
-
-  /** Un clic sur un texte marqué : sa clé part au back-office. Le clic, lui, agit comme d'habitude. */
-  private pick(event: MouseEvent): void {
-    const key = keyAtClick(event, this.markers);
-    if (key !== null) {
-      this.send(outbound({ type: 'pick', key }));
-    }
   }
 
   /** Après chaque changement du DOM : la surbrillance reposée, les clés visibles relevées. */

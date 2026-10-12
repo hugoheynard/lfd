@@ -17,3 +17,68 @@
   color: var(--fold-color-text-muted);
   background: var(--fold-color-surface-sunken);
 }
+
+// L'édition en place (`copy-editing/copy-edit-layer.ts`) : un calque au-dessus
+// de la boutique, qui ne décale rien et laisse passer le pointeur — sauf le champ.
+.preview-copy-layer {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  z-index: 2147483647;
+  pointer-events: none;
+}
+
+.preview-copy-outline {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1px solid var(--fold-color-primary);
+  border-radius: var(--fold-radius-sm);
+}
+
+.preview-copy-pencil {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-end: 0;
+  translate: 50% -50%;
+  display: grid;
+  place-items: center;
+  inline-size: var(--fold-icon-size-md);
+  block-size: var(--fold-icon-size-md);
+  border-radius: 50%;
+  font-size: var(--fold-text-xs);
+  line-height: 1;
+  color: var(--fold-color-on-primary);
+  background: var(--fold-color-primary);
+}
+
+.preview-copy-editor {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  min-inline-size: 12rem;
+  pointer-events: auto;
+}
+
+.preview-copy-field {
+  box-sizing: border-box;
+  inline-size: 100%;
+  margin: 0;
+  padding: 0;
+  resize: none;
+  overflow: hidden;
+  color: inherit;
+  background: var(--fold-color-surface-card);
+  border: none;
+  outline: 2px solid var(--fold-color-primary);
+  border-radius: var(--fold-radius-sm);
+}
+
+.preview-copy-refusal {
+  margin: 0;
+  padding: var(--fold-space-xs) var(--fold-space-sm);
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-alert-text);
+  background: var(--fold-color-alert-surface);
+  border-radius: var(--fold-radius-sm);
+}

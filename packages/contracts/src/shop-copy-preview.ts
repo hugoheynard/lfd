@@ -108,8 +108,20 @@ export interface ShopCopyPreviewShowMessage {
   readonly highlight: string | null;
 }
 
+/**
+ * Éditeur → aperçu : un texte tapé dans l'aperçu (`edit`) n'a PAS été
+ * enregistré, et pourquoi — l'aperçu le dit sous son champ (2026-10-12).
+ */
+export interface ShopCopyPreviewEditRefusedMessage {
+  readonly source: typeof SHOP_COPY_PREVIEW_SOURCE;
+  readonly type: "edit-refused";
+  readonly key: string;
+  /** La phrase à afficher, déjà rédigée par l'éditeur (« Il faut garder {name} »). */
+  readonly reason: string;
+}
+
 /** Éditeur → aperçu : les messages possibles. */
-export type ShopCopyPreviewInbound = ShopCopyPreviewShowMessage;
+export type ShopCopyPreviewInbound = ShopCopyPreviewShowMessage | ShopCopyPreviewEditRefusedMessage;
 
 /** Aperçu → éditeur : prêt à recevoir (envoyé au chargement, puis à chaque redémarrage). */
 export interface ShopCopyPreviewReadyMessage {
@@ -135,9 +147,25 @@ export interface ShopCopyPreviewVisibleKeysMessage {
   readonly keys: readonly string[];
 }
 
+/**
+ * Aperçu → éditeur : un texte tapé EN PLACE dans l'aperçu (2026-10-12). Une
+ * PROPOSITION : l'éditeur la traite comme une frappe dans sa colonne — il
+ * vérifie la clé, la langue et les variables, puis l'API décide. Texte brut.
+ */
+export interface ShopCopyPreviewEditMessage {
+  readonly source: typeof SHOP_COPY_PREVIEW_SOURCE;
+  readonly type: "edit";
+  readonly key: string;
+  readonly locale: ContentLocale;
+  readonly text: string;
+}
+
 /** Aperçu → éditeur : les messages possibles. */
 export type ShopCopyPreviewOutbound =
-  ShopCopyPreviewReadyMessage | ShopCopyPreviewPickMessage | ShopCopyPreviewVisibleKeysMessage;
+  | ShopCopyPreviewReadyMessage
+  | ShopCopyPreviewPickMessage
+  | ShopCopyPreviewVisibleKeysMessage
+  | ShopCopyPreviewEditMessage;
 
 /** Est-ce un message du protocole ? Garde de forme minimale, sans zod. */
 export function isShopCopyPreviewMessage(

@@ -1,6 +1,6 @@
 import { SHOP_COPY_PREVIEW_SOURCE } from '@lfd/contracts/shop-copy-preview';
 
-import { outbound, readShowMessage } from './preview-messages';
+import { outbound, readEditRefusedMessage, readShowMessage } from './preview-messages';
 
 const EDITOR = 'https://lfd-backoffice.com';
 const ALLOWED = [EDITOR, 'https://lfd-backoffice.pages.dev'];
@@ -80,5 +80,35 @@ describe('la garde des messages de l’aperçu', () => {
       type: 'pick',
       key: 'cart.whoTitle',
     });
+  });
+
+  it('accepte un `edit-refused` du back-office ; refuse une autre fenêtre ou une raison absente', () => {
+    const data = {
+      source: SHOP_COPY_PREVIEW_SOURCE,
+      type: 'edit-refused',
+      key: 'cart.count',
+      reason: 'Il faut garder {n}',
+    };
+    expect(
+      readEditRefusedMessage({ origin: EDITOR, source: parent, data }, ALLOWED, parent),
+    ).toEqual(data);
+    expect(
+      readEditRefusedMessage({ origin: EDITOR, source: {}, data }, ALLOWED, parent),
+    ).toBeNull();
+    expect(
+      readEditRefusedMessage(
+        { origin: 'https://ailleurs.example', source: parent, data },
+        ALLOWED,
+        parent,
+      ),
+    ).toBeNull();
+    expect(
+      readEditRefusedMessage(
+        { origin: EDITOR, source: parent, data: { ...data, reason: 3 } },
+        ALLOWED,
+        parent,
+      ),
+    ).toBeNull();
+    expect(readShowMessage({ origin: EDITOR, source: parent, data }, ALLOWED, parent)).toBeNull();
   });
 });

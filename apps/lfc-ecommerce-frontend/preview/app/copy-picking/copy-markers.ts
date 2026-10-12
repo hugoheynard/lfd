@@ -37,6 +37,8 @@ const BINARY = 2;
 export class CopyMarkers {
   private readonly ids = new Map<string, number>();
   private readonly keys: string[] = [];
+  /** Le dernier texte composé de chaque clé, AVANT interpolation — `{name}` compris. */
+  private readonly sources = new Map<string, string>();
 
   /** Le marqueur invisible d'une clé, à placer devant son texte. */
   markerOf(key: string): string {
@@ -58,9 +60,25 @@ export class CopyMarkers {
   markAll(dictionary: object, space = ''): Readonly<Record<string, string>> {
     const texts: Record<string, string> = {};
     for (const [path, text] of stringLeaves(dictionary, '')) {
-      texts[path] = this.markerOf(space === '' ? path : `${space}.${path}`) + text;
+      const key = space === '' ? path : `${space}.${path}`;
+      this.sources.set(key, text);
+      texts[path] = this.markerOf(key) + text;
     }
     return texts;
+  }
+
+  /**
+   * Le texte d'une clé tel que l'éditeur le connaît — variables NON remplacées
+   * (« Bonjour {name} »), là où l'écran montre « Bonjour Marie ». C'est lui
+   * qu'on édite en place : le texte affiché aurait perdu ses variables.
+   */
+  sourceOf(key: string): string | null {
+    return this.sources.get(key) ?? null;
+  }
+
+  /** Le texte sans ses marqueurs — ce que l'œil lit. */
+  strip(text: string): string {
+    return text.replaceAll(MARKER, '');
   }
 
   /** Les marqueurs d'un texte, dans l'ordre, avec leur position. */

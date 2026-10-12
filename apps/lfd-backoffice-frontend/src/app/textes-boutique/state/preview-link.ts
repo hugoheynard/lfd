@@ -4,12 +4,15 @@ import {
   SHOP_COPY_OUTSIDE_SCREENS,
   SHOP_COPY_PREVIEW_SOURCE,
   type ShopCopyAudience,
+  type ShopCopyPreviewEditMessage,
+  type ShopCopyPreviewInbound,
   type ShopCopyPreviewStep,
   type ShopCopyPreviewShowMessage,
   type ShopCopyPreviewViewport,
 } from '@lfd/contracts/shop-copy-preview';
 
 import { previewOrigin, SHOP_PREVIEW_URL_TOKEN } from '../data/shop-preview-config';
+import { missingVariables } from '../rules/copy-text';
 import { acceptPreviewMessage, type IncomingMessage } from '../rules/preview-messages';
 import { CopyNavigation } from './copy-navigation';
 import { DraftWriter } from './draft-writer';
@@ -27,7 +30,8 @@ export interface PreviewWindow {
  * **La conversation avec l'aperçu** (plan §10 B3, protocole
  * `@lfd/contracts/shop-copy-preview`) : on attend `ready`, puis on envoie
  * `show` à chaque changement — clientèle, étape, langue, largeur, brouillons, clé
- * surlignée. On reçoit `pick` (ouvrir une clé) et `visible-keys`.
+ * surlignée. On reçoit `pick` (ouvrir une clé), `visible-keys` et `edit` (un
+ * texte tapé dans l'aperçu, auquel on répond `edit-refused` s'il perd une variable).
  *
  * **Une seule cible à la fois** (2026-10-11) : l'iframe, ou la fenêtre
  * détachée (`detached`). Changer de cible oublie l'autre — un message de
@@ -151,12 +155,44 @@ export class PreviewLink {
       case 'visible-keys':
         this.navigation.setVisibleKeys(message.keys);
         return;
+      case 'edit':
+        this.editInPlace(message);
+        return;
       default:
         return;
     }
   }
 
-  private post(message: ShopCopyPreviewShowMessage): void {
+  /**
+   * **Un texte tapé dans l'aperçu** (2026-10-12) — traité EXACTEMENT comme une
+   * frappe dans la colonne : même `DraftWriter`, donc même pause, même
+   * révision, même `409`. L'aperçu ne fait que proposer : une clé inconnue ou
+   * une autre langue que celle affichée est ignorée ; un texte qui perd une
+   * variable n'est pas écrit du tout, et l'aperçu reçoit `edit-refused`.
+   */
+  private editInPlace(message: ShopCopyPreviewEditMessage): void {
+    const entry = this.store.entry(message.key);
+    if (entry === null || message.locale !== this.locale()) {
+      return;
+    }
+    if (!this.store.canWrite()) {
+      this.refuse(message.key, 'Vous ne pouvez pas modifier les textes de la boutique.');
+      return;
+    }
+    const missing = entry.space === null ? [] : missingVariables(message.text, entry.variables);
+    if (missing.length > 0) {
+      const names = missing.map((name) => `{${name}}`).join(', ');
+      this.refuse(message.key, `Il faut garder ${names}`);
+      return;
+    }
+    this.writer.edit(entry, message.locale, message.text);
+  }
+
+  private refuse(key: string, reason: string): void {
+    this.post({ source: SHOP_COPY_PREVIEW_SOURCE, type: 'edit-refused', key, reason });
+  }
+
+  private post(message: ShopCopyPreviewInbound): void {
     if (this.frame !== null && this.origin !== null) {
       this.frame.postMessage(message, this.origin);
     }

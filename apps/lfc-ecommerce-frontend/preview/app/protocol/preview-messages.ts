@@ -5,6 +5,7 @@ import {
   SHOP_COPY_ORDER_STEPS,
   SHOP_COPY_PREVIEW_SOURCE,
   type ShopCopyAudience,
+  type ShopCopyPreviewEditRefusedMessage,
   type ShopCopyPreviewStep,
   type ShopCopyPreviewOutbound,
   type ShopCopyPreviewShowMessage,
@@ -40,12 +41,7 @@ export function readShowMessage(
   allowedOrigins: readonly string[],
   editor: unknown,
 ): ShopCopyPreviewShowMessage | null {
-  if (
-    !allowedOrigins.includes(event.origin) ||
-    editor === null ||
-    editor === undefined ||
-    event.source !== editor
-  ) {
+  if (!fromEditor(event, allowedOrigins, editor)) {
     return null;
   }
   const data = event.data;
@@ -82,6 +78,44 @@ export function readShowMessage(
     published,
     highlight,
   };
+}
+
+/**
+ * **Un refus de l'éditeur** (`edit-refused`, 2026-10-12) — mêmes murs
+ * d'origine et d'émetteur que `show`, puis une clé et une raison en texte.
+ * La raison s'affiche en `textContent`, jamais en HTML.
+ */
+export function readEditRefusedMessage(
+  event: IncomingMessage,
+  allowedOrigins: readonly string[],
+  editor: unknown,
+): ShopCopyPreviewEditRefusedMessage | null {
+  if (!fromEditor(event, allowedOrigins, editor)) {
+    return null;
+  }
+  const data = event.data;
+  if (!isShopCopyPreviewMessage(data) || data.type !== 'edit-refused') {
+    return null;
+  }
+  const key = field(data, 'key');
+  const reason = field(data, 'reason');
+  return typeof key === 'string' && typeof reason === 'string'
+    ? { source: SHOP_COPY_PREVIEW_SOURCE, type: 'edit-refused', key, reason }
+    : null;
+}
+
+/** Les deux premiers murs : l'origine du back-office, et SA fenêtre. */
+function fromEditor(
+  event: IncomingMessage,
+  allowedOrigins: readonly string[],
+  editor: unknown,
+): boolean {
+  return (
+    allowedOrigins.includes(event.origin) &&
+    editor !== null &&
+    editor !== undefined &&
+    event.source === editor
+  );
 }
 
 /** Le message sortant, toujours estampillé de la source du protocole. */
