@@ -1227,18 +1227,25 @@ graphe vit dans `graphify-out/`, local, jamais commité. Doc :
 **Quand s'en servir — d'office, avant `Explore` et avant un grep large :**
 
 ```bash
-graphify query "où se décide la clôture d'un lot de prélèvement ?"
-graphify explain "CollectionBatch"        # un nœud et ses voisins
-graphify path "OrderCollection" "Invoice"  # le chemin entre deux nœuds
+graphify explain "CollectionBatch"         # D'ABORD : un symbole, qui l'appelle, qui le teste, quelle doc le cite
+graphify path "OrderCollection" "Invoice"  # le chemin entre deux symboles
+graphify query "…"                          # EN DERNIER : recherche par mots, faible ici
 ```
+
+**Par un NOM de symbole, pas par une question.** Essayé le 2026-10-12 :
+`explain "missedClosures"` rend en ~4 s le fichier, sa ligne, son appelant,
+ses tests et les deux sections de plan qui le citent ; `query` sur la même
+question en français part de mots (« Prélèvement », un `decide()` de la CI)
+et rate le fichier — le code est en anglais, la prose en français, et
+`query` cherche par mots. Chaque appel coûte ~4 s (le graphe pèse ~100 Mo) :
+pour un nom exact déjà connu, un grep reste plus rapide.
 
 et le rapport GRAPH_REPORT de `graphify-out/` pour les nœuds centraux et les liens
 inattendus entre groupes — un lien qui traverse deux blocs est exactement le
 couplage que la matrice du §3 interdit.
 
 🔴 **Le graphe ORIENTE, il ne PROUVE pas.** Il ne voit que le code au dernier
-rafraîchissement, et ni les `.sql` (extracteur absent) ni le sens d'un
-commentaire. Une affirmation sur le code se vérifie en **ouvrant le fichier**
+rafraîchissement, et pas le sens d'un commentaire. Une affirmation sur le code se vérifie en **ouvrant le fichier**
 — la règle du §9 bis tient toujours : un graphe en retard d'un commit dit
 « absent » avec aplomb, comme un grep vide. Une absence dans le graphe n'est
 jamais une absence dans le dépôt.
