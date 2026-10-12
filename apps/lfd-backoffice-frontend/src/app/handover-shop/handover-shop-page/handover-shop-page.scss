@@ -143,5 +143,6 @@
   // fold la plafonne à `100dvh`, mais la bande du comptoir prend le haut, et
   // le sac débordait d'autant — on défilait la page pour voir son bas. La vue
   // est un conteneur de taille (`comptoir-workspace-page.scss`) ; `cqh` la lit.
-  --fold-aside-layout-rail-max: calc(100cqh - var(--fold-aside-layout-top, 24px) - 2rem);
+  // 3,5 rem : le décalage collant par défaut de fold (24 px) plus sa marge basse (2 rem).
+  --fold-aside-layout-rail-max: calc(100cqh - 3.5rem);
 }
