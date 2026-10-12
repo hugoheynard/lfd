@@ -138,4 +138,10 @@
   // retraits l'un dans l'autre, et la file y perd une colonne de texte.
   --fold-aside-layout-pad: 0;
   --fold-aside-layout-pad-sm: 0;
+
+  // 🔴 La colonne de droite se borne à la VUE, pas à l'écran (2026-10-12) :
+  // fold la plafonne à `100dvh`, mais la bande du comptoir prend le haut, et
+  // le sac débordait d'autant — on défilait la page pour voir son bas. La vue
+  // est un conteneur de taille (`comptoir-workspace-page.scss`) ; `cqh` la lit.
+  --fold-aside-layout-rail-max: calc(100cqh - var(--fold-aside-layout-top, 24px) - 2rem);
 }

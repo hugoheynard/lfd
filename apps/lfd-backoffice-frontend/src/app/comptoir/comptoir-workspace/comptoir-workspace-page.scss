@@ -22,4 +22,6 @@ app-comptoir-masthead {
   flex: 1 1 0;
   min-height: 0;
   overflow-y: auto;
+  // Conteneur de taille : une vue borne ses colonnes collantes à SA hauteur (`cqh`).
+  container-type: size;
 }
