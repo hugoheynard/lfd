@@ -137,7 +137,8 @@ async function agreedOf(orderId: string): Promise<OrderFulfillment> {
 describe("créneau ou échéance à la passation (CA-D2)", () => {
   it("en échéance globale, passe une commande « avant 06:00 » et la fige sans début", async () => {
     await setGlobal("deadline");
-    const addressId = await bookAddress();
+    // Inscrite : depuis le 2026-10-12, la boutique ne demande qu'une échéance de la liste.
+    const addressId = await bookAddress({ deadlines: { mode: "everyday", times: ["06:00"] } });
 
     const placed = await ctx
       .asSub(OWNER)

@@ -402,3 +402,45 @@ export class DeadlineWindowHasStartError extends DomainError {
     );
   }
 }
+
+/**
+ * La boutique a demandé, en mode échéance, une heure qui n'est pas une
+ * échéance inscrite de l'adresse pour ce jour (décision Hugo du 2026-10-12 :
+ * « seules les échéances inscrites sont valides »). Le refus nomme celles qui
+ * le sont ; une adresse sans échéance ce jour-là se règle dans « Mon compte ».
+ */
+export class DeadlineNotRegisteredError extends BusinessError {
+  constructor(requested: string, admitted: readonly string[]) {
+    super(
+      "orders.fulfillment.deadline_not_registered",
+      admitted.length === 0
+        ? `L'échéance « avant ${requested} » n'est pas inscrite sur cette adresse, qui n'en ` +
+            "porte aucune pour ce jour : ajoutez-en une dans « Mon compte » (adresses de " +
+            "livraison), ou choisissez un autre jour, puis validez de nouveau la commande."
+        : `L'échéance « avant ${requested} » n'est pas inscrite sur cette adresse. Échéances ` +
+            `admises ce jour-là : ${admitted.join(", ")}. Choisissez-en une, puis validez de ` +
+            "nouveau la commande.",
+    );
+  }
+}
+
+/**
+ * La boutique a demandé, en mode créneau, un créneau qui n'est pas inscrit sur
+ * l'adresse pour ce jour (décision Hugo du 2026-10-12 : en livraison, on
+ * dépend des créneaux définis avec le commercial). Le refus nomme ceux qui le
+ * sont.
+ */
+export class SlotNotRegisteredError extends BusinessError {
+  constructor(requested: string, admitted: readonly string[]) {
+    super(
+      "orders.fulfillment.slot_not_registered",
+      admitted.length === 0
+        ? `Le créneau ${requested} n'est pas inscrit sur cette adresse, qui n'en porte ` +
+            "aucun pour ce jour : voyez avec votre commercial pour en inscrire un (« Mon " +
+            "compte », adresses de livraison), ou choisissez un autre jour."
+        : `Le créneau ${requested} n'est pas inscrit sur cette adresse. Créneaux admis ce ` +
+            `jour-là : ${admitted.join(", ")}. Choisissez-en un, puis validez de nouveau ` +
+            "la commande.",
+    );
+  }
+}

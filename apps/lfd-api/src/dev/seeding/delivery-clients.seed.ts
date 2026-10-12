@@ -225,10 +225,10 @@ export const DELIVERY_CLIENTS: readonly NeighbourClient[] = [
     },
     address: { ligne1: "Route de Montrigon", codePostal: "73700", ville: "Bourg-Saint-Maurice" },
     gps: { lat: 45.615, lng: 6.772 },
-    // 🔴 Un carnet SANS échéance : la commande dit elle-même son heure — une
-    // échéance, cf. `delivery-day.seed.ts`. Une livraison sans aucune fenêtre
-    // est refusée à la passation depuis le 2026-10-03 (CA1b).
-    site: { deadlines: null, note: "", contact: null, signatureRequired: null, steps: [] },
+    // Son échéance est INSCRITE, comme le ferait le commercial : depuis le
+    // 2026-10-12, un pro ne demande qu'une heure inscrite sur son adresse, et
+    // la commande « avant 11:00 » de `delivery-day.seed.ts` était refusée.
+    site: { deadlines: ["11:00"], note: "", contact: null, signatureRequired: null, steps: [] },
   },
   {
     raisonSociale: "SAS Le Comptoir de la Chaudanne",

@@ -19,6 +19,7 @@ import {
 } from "../../../../payments/domain/payment-gateway.js";
 import { PickupAddressRepository } from "../../../../pickup-addresses/domain/pickup-address.repository.js";
 import {
+  DeadlineNotRegisteredError,
   DeadlineWindowHasStartError,
   DeliveryClosedForAudienceError,
   DeliveryWindowRequiredError,
@@ -103,14 +104,25 @@ class WalledAddressBook extends DeliveryDefaultsReader {
   of(addressId: string, companyId: string): Promise<DeliveryDefaults> {
     const owned = addressId === this.addressId && companyId === this.ownerCompanyId;
     return Promise.resolve(
-      owned ? { ...NO_DELIVERY_DEFAULTS, bookAddressId: addressId } : NO_DELIVERY_DEFAULTS,
+      owned ? { ...REGISTERED_WINDOWS, bookAddressId: addressId } : NO_DELIVERY_DEFAULTS,
     );
   }
 }
 
 function noDeliveryDefaults(): DeliveryDefaultsReader {
-  return { of: (): Promise<DeliveryDefaults> => Promise.resolve(NO_DELIVERY_DEFAULTS) };
+  return { of: (): Promise<DeliveryDefaults> => Promise.resolve(REGISTERED_WINDOWS) };
 }
+
+/**
+ * Aucun réglage, sauf la fenêtre « avant 10:00 » INSCRITE en créneau comme en
+ * échéance : depuis le 2026-10-12, le client ne demande qu'une fenêtre inscrite.
+ * `window` reste `null` — rien n'est prérempli, la commande demande.
+ */
+const REGISTERED_WINDOWS: DeliveryDefaults = {
+  ...NO_DELIVERY_DEFAULTS,
+  slots: [{ start: null, end: "10:00" }],
+  deadlines: ["10:00"],
+};
 import { PlaceOrderCommand } from "../place-order.command.js";
 import { FixedVoucherQuotes, RecordingRedemption, VoucherTakenError } from "./voucher-doubles.js";
 import { VoucherNotForCompanyOrderError } from "../../../domain/errors/order-voucher-errors.js";
@@ -1040,6 +1052,8 @@ describe("PlaceOrderHandler", () => {
         payload({
           fulfillmentMethod: "delivery",
           deliveryAddress: COURIER_ADDR,
+          // Une adresse du carnet : seule elle inscrit la fenêtre demandée (2026-10-12).
+          deliveryAddressId: "addr_c1",
           requestedWindow: BEFORE_TEN,
         }),
         "c1",
@@ -1086,6 +1100,8 @@ describe("PlaceOrderHandler", () => {
         payload({
           fulfillmentMethod: "delivery",
           deliveryAddress: COURIER_ADDR,
+          // Une adresse du carnet : seule elle inscrit la fenêtre demandée (2026-10-12).
+          deliveryAddressId: "addr_c1",
           requestedWindow: BEFORE_TEN,
         }),
         "c1",
@@ -1143,10 +1159,13 @@ describe("PlaceOrderHandler", () => {
       expect((await placeDeliveryFor("c1"))?.deliveryAddressId).toBe("addr_c1");
     });
 
-    it("🔴 n'écrit PAS le lien vers l'adresse d'une autre société — la commande passe quand même", async () => {
-      const placed = await placeDeliveryFor("c2");
-      expect(placed?.deliveryAddressId).toBeNull();
-      expect(placed?.deliveryAddress).toEqual(COURIER_ADDR);
+    /**
+     * Jusqu'au 2026-10-12 la commande passait sans le lien. Depuis que le client
+     * ne demande qu'une fenêtre inscrite, l'adresse d'une autre maison n'apporte
+     * aucune fenêtre : la commande est refusée, et aucun lien n'est écrit.
+     */
+    it("🔴 n'écrit PAS le lien vers l'adresse d'une autre société — la commande est refusée", async () => {
+      await expect(placeDeliveryFor("c2")).rejects.toThrow(DeadlineNotRegisteredError);
     });
   });
 
@@ -1669,14 +1688,16 @@ describe("PlaceOrderHandler — créneau ou échéance", () => {
     );
   });
 
-  it("une échéance de la liste de l'adresse est une reprise, une autre heure un choix", async () => {
+  /** Décision Hugo du 2026-10-12 : « une autre heure » n'existe plus côté client. */
+  it("une échéance de la liste de l'adresse est une reprise, une autre heure est refusée", async () => {
     const book = new BookWithDeadlines({ windowMode: "deadline", deadlines: ["06:00", "11:00"] });
 
     const listed = await place({ start: null, end: "11:00" }, { book });
-    const other = await place({ start: null, end: "09:00" }, { book });
 
     expect(listed?.agreed.window.source).toBe("default");
-    expect(other?.agreed.window.source).toBe("override");
+    await expect(place({ start: null, end: "09:00" }, { book })).rejects.toThrow(
+      DeadlineNotRegisteredError,
+    );
   });
 
   it("une échéance préférée unique est reprise quand la commande ne dit rien", async () => {

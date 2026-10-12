@@ -43,9 +43,6 @@ import {
 } from '../delivery-window';
 import { ServicePoints } from '../pickup-points.store';
 
-/** L'option « une autre heure » : jamais une heure `HH:mm`. */
-const OTHER_DEADLINE = '__other__';
-
 /** Ce qu'il faut pour ouvrir la porte : l'adresse déjà retenue, s'il y en a une. */
 export interface DeliveryAddressData {
   readonly currentId: string | null;
@@ -87,9 +84,12 @@ interface Entry {
  *
  * ## Ce qu'il ne fait PAS, et pourquoi
  *
- * ⚠️ **Depuis CA1b (2026-10-03), l'heure se convient ici** : une échéance de
- * l'adresse ou une autre heure, ou un créneau quand le carnet n'en a pas. Le
- * paragraphe qui suit est l'historique d'avant.
+ * ⚠️ **Depuis CA1b (2026-10-03), l'heure se convient ici.** Depuis le
+ * 2026-10-12 (Hugo : « seules les échéances inscrites sont valides »), une
+ * adresse du carnet ne propose QUE ses échéances ou créneaux inscrits pour ce
+ * jour — plus d'« autre heure », plus de créneau tapé. Seule la saisie libre
+ * (un visiteur sans carnet) tape encore son heure. Le paragraphe qui suit est
+ * l'historique d'avant.
  *
  * 🔴 **Aucune grille d'heures.** Celle de `/nouvelle-commande` est décorative :
  * `requestedWindow` ne part qu'en RETRAIT (`client-orders.service.ts`), et ses
@@ -243,10 +243,10 @@ export class DeliveryAddressDialog {
 
   // ─── L'heure de la livraison (CA3, CA1b — 2026-10-03) ─────────────────────
 
-  /** L'échéance retenue : une de la liste, ou `OTHER_DEADLINE`, ou `''`. */
+  /** L'échéance retenue dans la liste inscrite, ou `''`. */
   protected readonly deadlinePick = signal('');
-  /** L'heure tapée derrière « une autre heure ». */
-  protected readonly otherDeadline = signal('');
+  /** L'heure tapée — saisie libre seulement : un visiteur n'a pas d'échéance inscrite. */
+  protected readonly typedDeadline = signal('');
   /** Le créneau du carnet retenu (sa clé), quand le jour en porte plusieurs. */
   protected readonly slotPick = signal('');
   protected readonly slotStart = signal('');
@@ -277,9 +277,22 @@ export class DeliveryAddressDialog {
   /** Les créneaux du carnet pour ce jour (CA3b) — plusieurs possibles. */
   private readonly daySlots = computed(() => bookSlotsOfDay(this.bookAddress(), this.day()));
 
-  /** Faut-il taper un créneau ? En mode créneau, seulement quand le carnet n'en a pas. */
-  protected readonly asksSlot = computed(
-    () => this.windowMode() === 'slot' && this.daySlots().length === 0,
+  /**
+   * Faut-il taper un créneau ? Seulement en saisie libre : une adresse du
+   * carnet n'admet que ses créneaux inscrits (2026-10-12).
+   */
+  protected readonly asksSlot = computed(() => this.freeEntry() && this.windowMode() === 'slot');
+
+  /**
+   * L'adresse du carnet n'a AUCUNE heure inscrite pour ce jour dans son mode :
+   * rien à choisir, rien à taper — elle se règle dans « Mon compte ».
+   */
+  protected readonly noneRegistered = computed(
+    () =>
+      !this.freeEntry() &&
+      (this.windowMode() === 'deadline'
+        ? this.dayDeadlines().length === 0
+        : this.daySlots().length === 0),
   );
 
   /** Plusieurs créneaux au carnet ce jour-là : on en choisit un. */
@@ -300,15 +313,13 @@ export class DeliveryAddressDialog {
     return this.slotOptions().some((option) => option.value === picked) ? picked : '';
   });
 
+  /** Les SEULES échéances proposées : celles que l'adresse inscrit pour ce jour. */
   protected readonly deadlineOptions = computed(() => {
-    const copy = this.c().when;
-    return [
-      ...this.dayDeadlines().map((time) => ({
-        value: time,
-        label: formatWindow(null, time, copy.before),
-      })),
-      { value: OTHER_DEADLINE, label: copy.other },
-    ];
+    const before = this.c().when.before;
+    return this.dayDeadlines().map((time) => ({
+      value: time,
+      label: formatWindow(null, time, before),
+    }));
   });
 
   /** L'option montrée : le choix, sinon la seule échéance du jour, que le serveur reprend. */
@@ -323,15 +334,16 @@ export class DeliveryAddressDialog {
 
   /** La fenêtre envoyée ; `undefined` tant qu'il manque une heure. */
   private readonly window = computed<FulfillmentWindow | null | undefined>(() => {
-    const picked = this.deadlinePick();
+    const free = this.freeEntry();
     return deliveryWindowOf({
       mode: this.windowMode(),
-      dayDeadlines: picked === OTHER_DEADLINE ? [] : this.dayDeadlines(),
+      dayDeadlines: this.dayDeadlines(),
       daySlots: this.daySlots(),
-      deadline: picked === OTHER_DEADLINE ? this.otherDeadline() : picked,
+      // Une heure tapée ne part qu'en saisie libre ; au carnet, seule la liste.
+      deadline: free ? this.typedDeadline() : this.deadlinePick(),
       slot: this.slotPick(),
-      slotStart: this.slotStart(),
-      slotEnd: this.slotEnd(),
+      slotStart: free ? this.slotStart() : '',
+      slotEnd: free ? this.slotEnd() : '',
     });
   });
 
@@ -340,6 +352,9 @@ export class DeliveryAddressDialog {
     if (this.window() !== undefined) {
       return null;
     }
+    if (this.noneRegistered()) {
+      return this.c().when.noneRegistered;
+    }
     if (this.windowMode() === 'deadline') {
       return this.c().when.missingDeadline;
     }
@@ -347,15 +362,6 @@ export class DeliveryAddressDialog {
       ? this.c().when.missingBookSlot
       : this.c().when.missingSlot;
   });
-
-  protected onDeadline(value: string): void {
-    this.deadlinePick.set(value);
-    if (value !== OTHER_DEADLINE) {
-      this.otherDeadline.set('');
-    }
-  }
-
-  protected readonly isOtherDeadline = computed(() => this.deadlinePick() === OTHER_DEADLINE);
 
   /** L'action est-elle ouverte ? L'adresse, puis l'heure — une livraison ne part plus sans. */
   protected readonly ready = computed(
@@ -381,7 +387,6 @@ export class DeliveryAddressDialog {
     if (entry.address.id !== this.chosen()?.address.id) {
       // Les échéances d'un lieu ne valent pas pour un autre.
       this.deadlinePick.set('');
-      this.otherDeadline.set('');
       this.slotPick.set('');
     }
     this.picked.set(entry.address.id);

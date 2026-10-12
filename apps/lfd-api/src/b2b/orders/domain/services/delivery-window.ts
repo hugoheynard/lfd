@@ -7,8 +7,10 @@ import {
 } from "@lfd/contracts";
 
 import {
+  DeadlineNotRegisteredError,
   DeadlineWindowHasStartError,
   DeliveryWindowRequiredError,
+  SlotNotRegisteredError,
 } from "../errors/order-errors.js";
 import type { DeliveryDefaults } from "../ports/delivery-defaults.reader.js";
 import { agreeFulfillment, type FulfillmentRequest } from "./agreed-fulfillment.js";
@@ -40,6 +42,15 @@ export function preferredWindowOf(
 }
 
 /**
+ * Qui demande la fenêtre. Un client **pro** (`pro`) ne demande qu'une fenêtre
+ * (échéance ou créneau) inscrite sur son adresse : elle a été définie avec le
+ * commercial (Hugo, 2026-10-12). Un particulier (`individual`) n'a ni carnet
+ * ni commercial, et la saisie staff (`staff`) reste libre — deux choix
+ * provisoires du 2026-10-12, que Hugo doit encore trancher.
+ */
+export type WindowRequester = "pro" | "individual" | "staff";
+
+/**
  * Refuse la fenêtre d'une livraison qui ne tient pas son mode.
  *
  * `requested` est ce que la commande a envoyé (`undefined` = rien) ; `agreed`
@@ -47,6 +58,10 @@ export function preferredWindowOf(
  * échéance : un préréglage n'est pas un choix du client.
  *
  * @throws {DeadlineWindowHasStartError} un début fourni en mode échéance.
+ * @throws {DeadlineNotRegisteredError} une échéance demandée par un client pro
+ *   qui n'est pas inscrite sur l'adresse ce jour-là.
+ * @throws {SlotNotRegisteredError} un créneau demandé par un client pro qui
+ *   n'est pas inscrit sur l'adresse ce jour-là.
  * @throws {DeliveryWindowRequiredError} une livraison sans fenêtre.
  */
 export function ensureDeliveryWindow(input: {
@@ -54,6 +69,11 @@ export function ensureDeliveryWindow(input: {
   readonly mode: WindowMode;
   readonly requested: FulfillmentWindow | null | undefined;
   readonly agreed: FulfillmentWindow | null;
+  /** Les échéances inscrites de l'adresse pour le jour servi. */
+  readonly deadlines: readonly string[];
+  /** Les créneaux inscrits de l'adresse pour le jour servi. */
+  readonly slots: readonly FulfillmentWindow[];
+  readonly requestedBy: WindowRequester;
 }): void {
   if (input.method !== "delivery") {
     return;
@@ -61,8 +81,44 @@ export function ensureDeliveryWindow(input: {
   if (input.mode === "deadline" && input.requested?.start != null) {
     throw new DeadlineWindowHasStartError();
   }
+  ensureRegisteredWindow(input);
   if (input.agreed === null) {
     throw new DeliveryWindowRequiredError();
+  }
+}
+
+/** `06:00–08:00`, la forme lue par le client dans un refus. */
+function slotLabel(slot: FulfillmentWindow): string {
+  return `${slot.start ?? ""}–${slot.end}`;
+}
+
+/**
+ * Un client pro ne demande qu'une fenêtre inscrite sur l'adresse ce jour-là
+ * (décision Hugo du 2026-10-12) ; le particulier et le staff restent libres. Rien de demandé =
+ * rien à juger : la préférence reprise vient de la liste.
+ */
+function ensureRegisteredWindow(input: {
+  readonly mode: WindowMode;
+  readonly requested: FulfillmentWindow | null | undefined;
+  readonly deadlines: readonly string[];
+  readonly slots: readonly FulfillmentWindow[];
+  readonly requestedBy: WindowRequester;
+}): void {
+  const requested = input.requested;
+  if (input.requestedBy !== "pro" || requested == null) {
+    return;
+  }
+  if (input.mode === "deadline") {
+    if (!input.deadlines.includes(requested.end)) {
+      throw new DeadlineNotRegisteredError(requested.end, input.deadlines);
+    }
+    return;
+  }
+  const registered = input.slots.some(
+    (slot) => slot.start === requested.start && slot.end === requested.end,
+  );
+  if (!registered) {
+    throw new SlotNotRegisteredError(slotLabel(requested), input.slots.map(slotLabel));
   }
 }
 
@@ -78,6 +134,7 @@ export function agreeWithWindow(
   request: FulfillmentRequest & { readonly method: FulfillmentMethod },
   defaults: DeliveryDefaults,
   globalMode: WindowMode | null,
+  requestedBy: WindowRequester,
 ): OrderFulfillment {
   const mode = resolveWindowMode(defaults.windowMode, globalMode ?? "deadline");
   const agreed = agreeFulfillment(request, {
@@ -92,6 +149,9 @@ export function agreeWithWindow(
     mode,
     requested: request.window,
     agreed: agreed.window.value,
+    deadlines: defaults.deadlines,
+    slots: defaults.slots,
+    requestedBy,
   });
   return agreed;
 }

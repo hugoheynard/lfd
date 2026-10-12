@@ -126,6 +126,10 @@ async function seedSociete(): Promise<{ companyId: string; addressId: string }> 
         deliveryContact: CONTACT_DU_JOUR,
         gps: null,
         signatureRequired: true,
+        // Inscrite, comme par le commercial : un pro ne demande qu'une heure
+        // inscrite sur son adresse (2026-10-12).
+        windowMode: "deadline",
+        deadlines: { mode: "everyday", times: ["10:00"] },
       },
     },
     select: { id: true },
@@ -275,13 +279,15 @@ describe("la fiche de production lit ce qui a été convenu", () => {
         note: "",
         lines: [{ sku: "VIE-001", quantity: 2 }],
       })
-      .expect(201);
-    await settleCardPayments(ctx, issuedIntents);
+      // Depuis le 2026-10-12, l'adresse d'une autre maison n'apporte aucune
+      // heure inscrite : la commande est refusée, et rien n'est importé. Jusque-
+      // là elle passait, et la fiche prouvait qu'elle n'avait rien emporté.
+      .expect(409);
 
-    const sheet = (await batch()).sheets[0];
-    expect(sheet?.fulfillment.contact?.name).not.toBe("Yanis Delorme");
-    expect(sheet?.fulfillment.contact?.phone).not.toBe(CONTACT_D_APRES.telephone);
-    expect(sheet?.fulfillment.signatureRequired).toBe(false);
+    expect(await ctx.prisma.order.count()).toBe(0);
+    const serialized = JSON.stringify(await batch());
+    expect(serialized).not.toContain("Yanis Delorme");
+    expect(serialized).not.toContain(CONTACT_D_APRES.telephone);
   });
 });
 

@@ -73,6 +73,7 @@ export const GLOSSARY_M_O: Readonly<Record<string, string>> = {
   noWindow: 'Aucune tranche horaire',
   noZone: 'Hors zone',
   none: 'Aucun',
+  noneRegistered: 'Aucune heure inscrite ce jour-là',
   noneSubtitle: 'Aucun — sous-titre',
   noneTitle: 'Aucun — titre',
   notDelivered: 'Livraison non constatée',

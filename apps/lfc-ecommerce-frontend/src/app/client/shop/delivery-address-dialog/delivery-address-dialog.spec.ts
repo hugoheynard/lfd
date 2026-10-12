@@ -47,10 +47,18 @@ const SLOTTED: DeliverySpecs = {
   signatureRequired: null,
 };
 
+/** Une adresse en échéance, qui en inscrit deux tous les jours. */
+const TWO_DEADLINES: DeliverySpecs = {
+  ...SLOTTED,
+  windowMode: 'deadline',
+  deadlines: { mode: 'everyday', times: ['06:00', '11:00'] },
+};
+
 function boot(
   book: readonly DeliveryAddressView[],
   currentId: string | null = null,
   windowMode: 'slot' | 'deadline' = 'slot',
+  allowFreeEntry = false,
 ) {
   const closed: (ServiceChoice | undefined)[] = [];
   TestBed.resetTestingModule();
@@ -75,7 +83,7 @@ function boot(
     ],
   });
   const fixture = TestBed.createComponent(DeliveryAddressDialog);
-  fixture.componentRef.setInput('data', { currentId });
+  fixture.componentRef.setInput('data', { currentId, allowFreeEntry });
   fixture.detectChanges();
   return { fixture, closed };
 }
@@ -179,21 +187,42 @@ describe('DeliveryAddressDialog', () => {
     expect(cta(fixture)?.disabled).toBe(true);
   });
 
-  /** CA1b (2026-10-03) : une livraison ne part plus sans heure. */
-  it('🔴 sans créneau au carnet, demande l’heure et ne part pas sans', () => {
+  /**
+   * CA1b (2026-10-03) : une livraison ne part plus sans heure. Depuis le
+   * 2026-10-12, une adresse du carnet sans créneau inscrit ce jour-là ne fait
+   * plus TAPER d'heure : seules les heures inscrites sont valides.
+   */
+  it('🔴 sans créneau inscrit au carnet, ne demande aucune heure tapée et ne part pas', () => {
     const { fixture, closed } = boot([address({ id: 'a', isDefault: true })]);
 
     cta(fixture)?.click();
 
+    const host = fixture.nativeElement as HTMLElement;
     expect(cta(fixture)?.disabled).toBe(true);
-    expect((fixture.nativeElement as HTMLElement).textContent).toContain(
-      'Une livraison se commande avec une heure',
-    );
+    expect(host.querySelector('[data-slot-start]')).toBeNull();
+    expect(host.querySelector('[data-slot-end]')).toBeNull();
+    expect(host.textContent).toContain('Aucune heure de livraison n’est inscrite');
+    expect(host.textContent).toContain('« Mon compte »');
     expect(closed).toEqual([]);
   });
 
-  it('en créneau sans carnet, envoie le créneau tapé', () => {
+  it('🔴 un créneau tapé à la main ne part pas depuis le carnet', () => {
     const { fixture, closed } = boot([address({ id: 'a', isDefault: true })]);
+    fixture.componentInstance['slotStart'].set('07:00');
+    fixture.componentInstance['slotEnd'].set('08:00');
+    fixture.detectChanges();
+
+    cta(fixture)?.click();
+
+    expect(cta(fixture)?.disabled).toBe(true);
+    expect(closed).toEqual([]);
+  });
+
+  it('en saisie libre (visiteur sans carnet), envoie le créneau tapé', () => {
+    const { fixture, closed } = boot([], null, 'slot', true);
+    fixture.componentInstance['ligne1'].set('3 rue du Lac');
+    fixture.componentInstance['codePostal'].set('73150');
+    fixture.componentInstance['ville'].set("Val d'Isère");
     fixture.componentInstance['slotStart'].set('07:00');
     fixture.componentInstance['slotEnd'].set('08:00');
     fixture.detectChanges();
@@ -227,27 +256,48 @@ describe('DeliveryAddressDialog', () => {
 
   /** CA3 : en échéance, on choisit une heure limite, et aucun début ne part. */
   it('🔴 en échéance, envoie l’heure choisie SANS début', () => {
-    const specs: DeliverySpecs = {
-      ...SLOTTED,
-      windowMode: 'deadline',
-      deadlines: { mode: 'everyday', times: ['06:00', '11:00'] },
-    };
-    const { fixture, closed } = boot([address({ id: 'a', isDefault: true, specs })]);
+    const { fixture, closed } = boot([address({ id: 'a', isDefault: true, specs: TWO_DEADLINES })]);
     expect(cta(fixture)?.disabled).toBe(true);
 
-    fixture.componentInstance['onDeadline']('06:00');
+    fixture.componentInstance['deadlinePick'].set('06:00');
     fixture.detectChanges();
     cta(fixture)?.click();
 
     expect(closed[0]).toMatchObject({ window: { start: null, end: '06:00' } });
   });
 
-  it('suit le réglage général quand l’adresse en hérite, et accepte une autre heure', () => {
+  /** Décision Hugo du 2026-10-12 : plus d'« autre heure », seules les échéances inscrites. */
+  it('🔴 en échéance, ne propose QUE les échéances inscrites de l’adresse', () => {
+    const { fixture } = boot([address({ id: 'a', isDefault: true, specs: TWO_DEADLINES })]);
+
+    const values = fixture.componentInstance['deadlineOptions']().map((option) => option.value);
+    expect(values).toEqual(['06:00', '11:00']);
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelector('[data-deadline-typed]')).toBeNull();
+    expect(host.textContent).not.toContain('Une autre heure');
+  });
+
+  it('🔴 en échéance sans échéance inscrite ce jour-là : ni liste, ni heure tapée, et le dit', () => {
     const { fixture, closed } = boot([address({ id: 'a', isDefault: true })], null, 'deadline');
 
-    fixture.componentInstance['onDeadline']('__other__');
-    fixture.componentInstance['otherDeadline'].set('05:30');
+    cta(fixture)?.click();
+
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelector('[data-deadline]')).toBeNull();
+    expect(host.querySelector('[data-deadline-typed]')).toBeNull();
+    expect(host.textContent).toContain('Aucune heure de livraison n’est inscrite');
+    expect(cta(fixture)?.disabled).toBe(true);
+    expect(closed).toEqual([]);
+  });
+
+  it('en saisie libre (visiteur sans carnet), en échéance, envoie l’heure tapée', () => {
+    const { fixture, closed } = boot([], null, 'deadline', true);
+    fixture.componentInstance['ligne1'].set('3 rue du Lac');
+    fixture.componentInstance['codePostal'].set('73150');
+    fixture.componentInstance['ville'].set("Val d'Isère");
+    fixture.componentInstance['typedDeadline'].set('05:30');
     fixture.detectChanges();
+
     cta(fixture)?.click();
 
     expect(closed[0]).toMatchObject({ window: { start: null, end: '05:30' } });

@@ -176,6 +176,7 @@
   "test/order-payment-reprise.e2e-spec.ts": 2247,
   "test/order-payment-retry.e2e-spec.ts": 3797,
   "test/order-refunds.e2e-spec.ts": 7540,
+  "test/order-registered-deadline.e2e-spec.ts": 9286,
   "test/order-settlement-reminders.e2e-spec.ts": 3100,
   "test/order-sheet-archive.e2e-spec.ts": 4557,
   "test/order-unsettled-shop-expiry.e2e-spec.ts": 5000,

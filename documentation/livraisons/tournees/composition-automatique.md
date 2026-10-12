@@ -39,6 +39,20 @@ retard n'est jamais accepté en silence.
   exemple 6 h pour le pain et 11 h pour le déjeuner). Une **commande**, elle,
   n'en porte toujours qu'**un seul**. Deux commandes donnent donc deux arrêts.
 - Le commerce refuse toute commande livrée qui n'a ni échéance ni créneau.
+- **Seules les heures inscrites sont valides** (Hugo, 2026-10-12 : « en
+  livraison, on dépend des échéances ou créneaux définis avec le
+  commercial »). Un client **pro** ne demande qu'une échéance ou un créneau
+  inscrit sur son adresse **pour le jour servi** ; toute autre heure est
+  refusée (409 `orders.fulfillment.deadline_not_registered` /
+  `slot_not_registered`, le message nomme les heures admises). La boutique ne
+  propose plus « une autre heure », ni de créneau tapé : une adresse sans
+  heure inscrite ce jour-là affiche « Aucune heure de livraison n'est
+  inscrite… — elles se règlent avec votre commercial, dans « Mon compte » »,
+  et l'action reste fermée. Le **retrait** garde son heure libre.
+  ⚠️ **Non tranché** : la saisie **staff** reste libre de l'heure, et le
+  **particulier** (saisie libre, sans carnet ni commercial) tape encore la
+  sienne — deux choix provisoires du 2026-10-12, à trancher par Hugo
+  (`WindowRequester` dans `orders/domain/services/delivery-window.ts`).
 
 **Qui décide quoi.** Le calcul **propose**, le bureau **applique** — sauf
 à l'arrêt du plan : depuis le 2026-10-07 (Hugo : « proposer des tournées
@@ -163,7 +177,7 @@ flowchart TD
 | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | ------------------------------------------------------------ |
 | **CA0**   | Situer l'adresse (géocodage) dès la commande, en fond après validation ; rattrapage à la commande suivante du jour, à l'arrêt du plan et au retirage                                                                                         | ✅ bâti | `0aa07eb63`                                                  |
 | **CA1**   | Sans véhicule actif mesuré ni type de bac en service, « Proposer » refuse avec la phrase ; on ne peut pas retirer le dernier                                                                                                                 | ✅ bâti | `57ed88723`                                                  |
-| **CA1b**  | Pas de livraison sans échéance ni créneau à la passation                                                                                                                                                                                     | ✅ bâti | `8089a262c`                                                  |
+| **CA1b**  | Pas de livraison sans échéance ni créneau à la passation ; depuis le 2026-10-12, un pro n'en demande qu'une inscrite (§1)                                                                                                                    | ✅ bâti | `8089a262c`                                                  |
 | **CA2**   | Départ à rebours dès minuit, marge visée ; `maxRoundMinutes` ne borne plus rien : un signal (« tournée longue »), sans pénalité sur la durée — il reste le prix d'un second passage (`passagePenaltyOf`)                                     | ✅ bâti | `0cf2aaf30` (points validés `dc4bd9779`)                     |
 | **CA3**   | Réglage créneau / échéance (global, puis par adresse), affichage « avant HH:MM »                                                                                                                                                             | ✅ bâti | `8089a262c`, écrans `6f245b864`                              |
 | **CA3b**  | Plusieurs créneaux ou échéances par adresse (`slotList`, l'ancien `slots` dérivé)                                                                                                                                                            | ✅ bâti | `d4972386a`, écrans `b7ee1c883`                              |

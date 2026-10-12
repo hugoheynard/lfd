@@ -62,6 +62,7 @@ export class PrismaDeliveryDefaultsReader extends DeliveryDefaultsReader {
       window: daySlots.length === 1 ? (daySlots[0] ?? null) : null,
       windowMode: specs.data.windowMode ?? null,
       deadlines: deadlinesFor(specs.data.deadlines, weekday),
+      slots: daySlots,
       bookAddressId: row.id,
     };
   }

@@ -478,7 +478,6 @@ Source : `screens/delivery-address.copy.ts` · 35 textes.
 | `deliveryAddress.when.before` | avant | before | entro le |  |
 | `deliveryAddress.when.deadline` | Livrée avant | Delivered before | Consegnata entro le |  |
 | `deliveryAddress.when.deadlinePlaceholder` | Choisissez une heure | Pick a time | Scegliete un orario |  |
-| `deliveryAddress.when.other` | Une autre heure… | Another time… | Un altro orario… |  |
 | `deliveryAddress.when.otherLabel` | Livrée avant (heure) | Delivered before (time) | Consegnata entro le (orario) |  |
 | `deliveryAddress.when.slotStart` | Livrée à partir de | Delivered from | Consegnata dalle |  |
 | `deliveryAddress.when.slotEnd` | Livrée avant | Delivered before | Consegnata entro le |  |
@@ -487,6 +486,7 @@ Source : `screens/delivery-address.copy.ts` · 35 textes.
 | `deliveryAddress.when.missingDeadline` | Une livraison se commande avec une heure : indiquez avant quelle heure livrer. | A delivery needs a time: say before when to deliver. | Una consegna si ordina con un orario: indicate entro che ora consegnare. |  |
 | `deliveryAddress.when.missingSlot` | Une livraison se commande avec une heure : indiquez un créneau, début et fin. | A delivery needs a time: give a slot, start and end. | Una consegna si ordina con un orario: indicate una fascia, inizio e fine. |  |
 | `deliveryAddress.when.missingBookSlot` | Une livraison se commande avec une heure : choisissez un de vos créneaux. | A delivery needs a time: pick one of your slots. | Una consegna si ordina con un orario: scegliete una delle vostre fasce. |  |
+| `deliveryAddress.when.noneRegistered` | Aucune heure de livraison n’est inscrite sur cette adresse pour ce jour. Les heures se règlent avec votre commercial, dans « Mon compte » — le retrait, lui, reste ouvert. | No delivery time is set on this address for that day. Times are agreed with your sales contact, in “My account” — pickup is still open. | Nessun orario di consegna è registrato su questo indirizzo per quel giorno. Gli orari si concordano con il vostro commerciale, in « Il mio account » — il ritiro resta aperto. |  |
 | `deliveryAddress.cta` | Composer mon panier · {fee} € | Fill my basket · {fee} € | Comporre il carrello · {fee} € | `{fee}` |
 | `deliveryAddress.ctaIdle` | Choisissez une adresse | Pick an address | Scegliete un indirizzo |  |
 | `deliveryAddress.close` | Fermer | Close | Chiudi |  |

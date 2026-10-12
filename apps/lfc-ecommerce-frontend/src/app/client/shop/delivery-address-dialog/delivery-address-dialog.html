@@ -101,24 +101,24 @@
 
   <!-- L'heure (CA3, CA1b) : une livraison ne part plus sans fenêtre. -->
   @if (freeEntry() || entries().length > 0) {
-    @if (windowMode() === 'deadline') {
+    <!-- Au carnet, SEULES les heures inscrites (2026-10-12) ; la saisie libre tape la sienne. -->
+    @if (windowMode() === 'deadline' && freeEntry()) {
+      <fold-time
+        size="lg"
+        [label]="c().when.otherLabel"
+        [(value)]="typedDeadline"
+        data-deadline-typed
+      />
+    } @else if (windowMode() === 'deadline' && deadlineOptions().length > 0) {
       <fold-listbox
         size="lg"
         [label]="c().when.deadline"
         [placeholder]="c().when.deadlinePlaceholder"
         [options]="deadlineOptions()"
         [value]="deadlineValue()"
-        (selectionChange)="onDeadline($event)"
+        (selectionChange)="deadlinePick.set($event)"
         data-deadline
       />
-      @if (isOtherDeadline()) {
-        <fold-time
-          size="lg"
-          [label]="c().when.otherLabel"
-          [(value)]="otherDeadline"
-          data-deadline-other
-        />
-      }
     } @else if (slotOptions().length > 0) {
       <!-- Plusieurs créneaux au carnet ce jour-là (CA3b) : la commande en porte un. -->
       <fold-listbox

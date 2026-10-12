@@ -2152,13 +2152,6 @@
           "variables": []
         },
         {
-          "key": "deliveryAddress.when.other",
-          "fr": "Une autre heure…",
-          "en": "Another time…",
-          "it": "Un altro orario…",
-          "variables": []
-        },
-        {
           "key": "deliveryAddress.when.otherLabel",
           "fr": "Livrée avant (heure)",
           "en": "Delivered before (time)",
@@ -2212,6 +2205,13 @@
           "fr": "Une livraison se commande avec une heure : choisissez un de vos créneaux.",
           "en": "A delivery needs a time: pick one of your slots.",
           "it": "Una consegna si ordina con un orario: scegliete una delle vostre fasce.",
+          "variables": []
+        },
+        {
+          "key": "deliveryAddress.when.noneRegistered",
+          "fr": "Aucune heure de livraison n’est inscrite sur cette adresse pour ce jour. Les heures se règlent avec votre commercial, dans « Mon compte » — le retrait, lui, reste ouvert.",
+          "en": "No delivery time is set on this address for that day. Times are agreed with your sales contact, in “My account” — pickup is still open.",
+          "it": "Nessun orario di consegna è registrato su questo indirizzo per quel giorno. Gli orari si concordano con il vostro commerciale, in « Il mio account » — il ritiro resta aperto.",
           "variables": []
         },
         {

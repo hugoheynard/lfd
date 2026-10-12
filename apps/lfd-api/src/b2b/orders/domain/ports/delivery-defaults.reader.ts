@@ -26,6 +26,12 @@ export interface DeliveryDefaults {
    */
   readonly deadlines: readonly string[];
   /**
+   * Les créneaux inscrits de l'adresse **pour le jour servi**, triés. En mode
+   * créneau, la boutique ne peut demander que l'un d'eux (décision Hugo du
+   * 2026-10-12).
+   */
+  readonly slots: readonly FulfillmentWindow[];
+  /**
    * L'adresse du carnet, **confirmée sous le mur** de la société — ou `null`
    * quand elle n'y est pas (inconnue, ou d'une autre maison).
    *
@@ -45,6 +51,7 @@ export const NO_DELIVERY_DEFAULTS: DeliveryDefaults = {
   window: null,
   windowMode: null,
   deadlines: [],
+  slots: [],
   bookAddressId: null,
 };
 

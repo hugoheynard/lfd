@@ -19,7 +19,7 @@ import {
   NO_DELIVERY_DEFAULTS,
 } from "../../domain/ports/delivery-defaults.reader.js";
 import { windowFitsPickup } from "../../domain/services/agreed-fulfillment.js";
-import { agreeWithWindow } from "../../domain/services/delivery-window.js";
+import { agreeWithWindow, type WindowRequester } from "../../domain/services/delivery-window.js";
 import { Order, type OrderVoucher } from "../../domain/entities/order.js";
 import {
   InvalidOrderFulfillmentError,
@@ -195,6 +195,7 @@ export class OrderDrafting {
       },
       defaults,
       acheminement.globalWindowMode,
+      windowRequesterOf(parties),
     );
     const order = Order.draft({
       agreed,
@@ -467,4 +468,15 @@ function toSnapshot(point: PickupAddressView): BillingAddressPayload {
     ville: point.ville,
     pays: point.pays,
   };
+}
+
+/**
+ * Le pro ne demande qu'une fenêtre inscrite ; la saisie staff et le
+ * particulier restent libres de l'heure (2026-10-12, à trancher par Hugo).
+ */
+function windowRequesterOf(parties: OrderParties): WindowRequester {
+  if (parties.placedByStaffId !== null) {
+    return "staff";
+  }
+  return parties.companyId === null ? "individual" : "pro";
 }

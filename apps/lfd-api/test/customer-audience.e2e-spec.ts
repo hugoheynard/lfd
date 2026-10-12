@@ -151,9 +151,10 @@ function pickupOrder(pickupAddressId: string): Record<string, unknown> {
   };
 }
 
-function deliveryOrder(): Record<string, unknown> {
+function deliveryOrder(deliveryAddressId: string | null = null): Record<string, unknown> {
   return {
     idempotencyKey: randomUUID(),
+    deliveryAddressId,
     requestedDeliveryDate: SERVICE_DAY,
     fulfillmentMethod: "delivery",
     requestedWindow: { start: null, end: "10:00" },
@@ -161,6 +162,33 @@ function deliveryOrder(): Record<string, unknown> {
     note: "",
     lines: LINES,
   };
+}
+
+/**
+ * L'adresse du carnet de la société active, avec l'échéance « avant 10:00 »
+ * inscrite — comme le ferait le commercial : depuis le 2026-10-12, un pro ne
+ * demande qu'une heure inscrite.
+ */
+async function bookAddressBeforeTen(companyId: string): Promise<string> {
+  const created = await ctx
+    .asSub(ACTIVE)
+    .post(`/companies/${companyId}/delivery-addresses`)
+    .send({
+      ...COURIER_ADDR,
+      label: "Hôtel",
+      isDefault: true,
+      specs: {
+        signatureRequired: null,
+        note: "",
+        slotList: { mode: "everyday", slots: [] },
+        deliveryContact: null,
+        gps: null,
+        windowMode: "deadline",
+        deadlines: { mode: "everyday", times: ["10:00"] },
+      },
+    })
+    .expect(201);
+  return jsonBody<{ id: string }>(created).id;
 }
 
 async function quoteMine(sub: string, body: Record<string, unknown>): Promise<ShopQuoteView> {
@@ -219,7 +247,7 @@ describe("la livraison fermée à une clientèle", () => {
   });
 
   it("fermée aux particuliers : 409 au devis ET à la commande, ouverte à une société active", async () => {
-    await seedPeople();
+    const { activeCompanyId } = await seedPeople();
     await seedZone();
     await staff().patch("/admin/delivery-availability").send({ openToB2c: false }).expect(204);
 
@@ -233,7 +261,9 @@ describe("la livraison fermée à une clientèle", () => {
     expect(await ctx.prisma.order.count()).toBe(0);
 
     expect((await quoteMine(ACTIVE, DELIVERY_QUOTE)).deliveryFeeCents).toBe(2_000);
-    await ctx.asSub(ACTIVE).post("/orders").send(deliveryOrder()).expect(201);
+    // Un pro ne livre qu'à une heure INSCRITE sur son adresse (2026-10-12).
+    const addressId = await bookAddressBeforeTen(activeCompanyId);
+    await ctx.asSub(ACTIVE).post("/orders").send(deliveryOrder(addressId)).expect(201);
   });
 
   /** Q1 (Hugo, 2026-09-15) : le staff ne livre pas quand la livraison est fermée au B2B. */

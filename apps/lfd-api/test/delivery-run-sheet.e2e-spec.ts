@@ -48,6 +48,10 @@ const SITE = {
 const SPECS = {
   note: "Sonner à l'interphone B",
   slotList: { mode: "everyday", slots: [] },
+  // L'heure demandée par `place` est INSCRITE, comme par le commercial : un pro
+  // ne demande qu'une heure inscrite sur son adresse (2026-10-12).
+  windowMode: "deadline",
+  deadlines: { mode: "everyday", times: ["10:00"] },
   deliveryContact: { prenom: "Camille", nom: "Rousseau", telephone: "0142710844" },
   gps: { lat: 45.448, lng: 6.98 },
   signatureRequired: true,
@@ -251,15 +255,26 @@ describe("la feuille de route du jour", () => {
     const other = await seedCompany(OTHER_OWNER, "Autre Maison");
     await addStep(OTHER_OWNER, other.companyId, other.addressId, "Code secret du portail");
 
-    const orderId = await place(OWNER, "delivery", other.addressId);
+    // Depuis le 2026-10-12, l'adresse d'une autre maison n'apporte aucune heure
+    // inscrite : la commande est REFUSÉE, donc aucun lien n'est écrit ni servi.
+    // Jusque-là elle passait sans le lien, et le test lisait la feuille de route.
+    await ctx
+      .asSub(OWNER)
+      .post(`/orders`)
+      .send({
+        idempotencyKey: randomUUID(),
+        requestedDeliveryDate: DAY,
+        fulfillmentMethod: "delivery",
+        deliveryAddress: SITE,
+        deliveryAddressId: other.addressId,
+        requestedWindow: { start: null, end: "10:00" },
+        note: "par la cour",
+        lines: [{ sku: "VIE-001", quantity: 4 }],
+      })
+      .expect(409);
 
-    const stored = await ctx.prisma.order.findUniqueOrThrow({
-      where: { id: orderId },
-      select: { deliveryAddressId: true },
-    });
-    expect(stored.deliveryAddressId).toBeNull();
-    const stop = (await runSheet()).stops.find((entry) => entry.orderId === orderId);
-    expect(stop?.addressBook).toBeNull();
+    expect(await ctx.prisma.order.count({ where: { deliveryAddressId: other.addressId } })).toBe(0);
+    expect(JSON.stringify(await runSheet())).not.toContain("Code secret du portail");
   });
 
   it("🔴 ne sert JAMAIS la procédure d'une autre société, même si le lien existe en base", async () => {

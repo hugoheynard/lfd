@@ -110,6 +110,25 @@ async function seedSociete(): Promise<string> {
   await ctx.prisma.deliveryZone.create({
     data: { postalPrefixes: ["73150"], label: "Val d'Isère", feeMode: "amount", feeValue: 2000 },
   });
+  // Son adresse au carnet, l'échéance « avant 10:00 » INSCRITE comme par le
+  // commercial : un pro ne demande qu'une heure inscrite (2026-10-12).
+  await ctx.prisma.address.create({
+    data: {
+      ...SITE,
+      companyId: company.id,
+      kind: "delivery",
+      isDefault: true,
+      deliverySpecs: {
+        note: "",
+        slotList: { mode: "everyday", slots: [] },
+        deliveryContact: null,
+        gps: null,
+        signatureRequired: null,
+        windowMode: "deadline",
+        deadlines: { mode: "everyday", times: ["10:00"] },
+      },
+    },
+  });
   return company.id;
 }
 
@@ -118,6 +137,10 @@ async function placeOrder(
   day: string,
   lines: readonly { sku: string; quantity: number }[],
 ): Promise<void> {
+  const address = await ctx.prisma.address.findFirstOrThrow({
+    where: { companyId, kind: "delivery" },
+    select: { id: true },
+  });
   await ctx
     .asSub(MEMBER)
     .post(`/orders`)
@@ -128,6 +151,7 @@ async function placeOrder(
       fulfillmentMethod: "delivery",
       requestedWindow: { start: null, end: "10:00" },
       deliveryAddress: SITE,
+      deliveryAddressId: address.id,
       note: "",
       lines,
     })

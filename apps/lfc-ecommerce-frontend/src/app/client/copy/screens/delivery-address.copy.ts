@@ -85,7 +85,7 @@ export interface DeliveryAddressCopy {
     readonly before: string;
     readonly deadline: string;
     readonly deadlinePlaceholder: string;
-    readonly other: string;
+    /** L'heure tapée — saisie libre seulement, un visiteur n'a pas d'heure inscrite. */
     readonly otherLabel: string;
     readonly slotStart: string;
     readonly slotEnd: string;
@@ -96,6 +96,11 @@ export interface DeliveryAddressCopy {
     readonly missingDeadline: string;
     readonly missingSlot: string;
     readonly missingBookSlot: string;
+    /**
+     * L'adresse du carnet n'a aucune heure inscrite ce jour-là : seules les
+     * heures inscrites sont valides (Hugo, 2026-10-12), elle se règle ailleurs.
+     */
+    readonly noneRegistered: string;
   };
 
   /** `{fee}` — le tarif de la zone retenue. L'action PORTE le montant. */
@@ -133,7 +138,6 @@ export const DELIVERY_ADDRESS_FR: DeliveryAddressCopy = {
     before: 'avant',
     deadline: 'Livrée avant',
     deadlinePlaceholder: 'Choisissez une heure',
-    other: 'Une autre heure…',
     otherLabel: 'Livrée avant (heure)',
     slotStart: 'Livrée à partir de',
     slotEnd: 'Livrée avant',
@@ -143,6 +147,8 @@ export const DELIVERY_ADDRESS_FR: DeliveryAddressCopy = {
       'Une livraison se commande avec une heure : indiquez avant quelle heure livrer.',
     missingSlot: 'Une livraison se commande avec une heure : indiquez un créneau, début et fin.',
     missingBookSlot: 'Une livraison se commande avec une heure : choisissez un de vos créneaux.',
+    noneRegistered:
+      'Aucune heure de livraison n’est inscrite sur cette adresse pour ce jour. Les heures se règlent avec votre commercial, dans « Mon compte » — le retrait, lui, reste ouvert.',
   },
   cta: 'Composer mon panier · {fee} €',
   ctaIdle: 'Choisissez une adresse',
@@ -178,7 +184,6 @@ export const DELIVERY_ADDRESS_EN: DeliveryAddressCopy = {
     before: 'before',
     deadline: 'Delivered before',
     deadlinePlaceholder: 'Pick a time',
-    other: 'Another time…',
     otherLabel: 'Delivered before (time)',
     slotStart: 'Delivered from',
     slotEnd: 'Delivered before',
@@ -187,6 +192,8 @@ export const DELIVERY_ADDRESS_EN: DeliveryAddressCopy = {
     missingDeadline: 'A delivery needs a time: say before when to deliver.',
     missingSlot: 'A delivery needs a time: give a slot, start and end.',
     missingBookSlot: 'A delivery needs a time: pick one of your slots.',
+    noneRegistered:
+      'No delivery time is set on this address for that day. Times are agreed with your sales contact, in “My account” — pickup is still open.',
   },
   cta: 'Fill my basket · {fee} €',
   ctaIdle: 'Pick an address',
@@ -222,7 +229,6 @@ export const DELIVERY_ADDRESS_IT: DeliveryAddressCopy = {
     before: 'entro le',
     deadline: 'Consegnata entro le',
     deadlinePlaceholder: 'Scegliete un orario',
-    other: 'Un altro orario…',
     otherLabel: 'Consegnata entro le (orario)',
     slotStart: 'Consegnata dalle',
     slotEnd: 'Consegnata entro le',
@@ -231,6 +237,8 @@ export const DELIVERY_ADDRESS_IT: DeliveryAddressCopy = {
     missingDeadline: 'Una consegna si ordina con un orario: indicate entro che ora consegnare.',
     missingSlot: 'Una consegna si ordina con un orario: indicate una fascia, inizio e fine.',
     missingBookSlot: 'Una consegna si ordina con un orario: scegliete una delle vostre fasce.',
+    noneRegistered:
+      'Nessun orario di consegna è registrato su questo indirizzo per quel giorno. Gli orari si concordano con il vostro commerciale, in « Il mio account » — il ritiro resta aperto.',
   },
   cta: 'Comporre il carrello · {fee} €',
   ctaIdle: 'Scegliete un indirizzo',

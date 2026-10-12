@@ -125,6 +125,8 @@ async function bookAddress(): Promise<string> {
       deliveryContact: null,
       gps: null,
       windowMode: "deadline",
+      // Inscrite : un pro ne demande qu'une heure inscrite (2026-10-12).
+      deadlines: { mode: "everyday", times: ["06:00"] },
     },
   };
   const created = await ctx
