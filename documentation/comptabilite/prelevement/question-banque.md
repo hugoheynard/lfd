@@ -386,9 +386,12 @@ Les codes reçus sont déjà rangés dans `collection_return.reason_code`
 > 5. **Signature électronique** du mandat : l'acceptez-vous, et à quel niveau
 >    (simple, avancée, qualifiée) ? Une acceptation en ligne sur notre espace
 >    client suffit-elle ?
-> 6. **Mandats B2B** : le client doit enregistrer le mandat auprès de sa
->    propre banque. Avez-vous une exigence de votre côté ? Que se passe-t-il
->    s'il ne l'a pas fait ?
+> 6. **Mandats B2B** : en B2B, c'est le client qui doit déclarer le mandat
+>    auprès de **sa propre banque** avant le premier débit (ce n'est pas le
+>    cas en CORE). C'est distinct de l'import des mandats sur votre portail
+>    (étape 4). Avez-vous une exigence de votre côté sur cette déclaration ?
+>    Que se passe-t-il si le client ne l'a pas faite : le débit est rejeté
+>    seul, avec quel motif ?
 >
 > **Étape 3 — L'import des RIB destinataires** (à faire avant les mandats,
 > d'après votre service EDI)
