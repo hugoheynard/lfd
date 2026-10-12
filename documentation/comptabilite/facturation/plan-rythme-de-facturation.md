@@ -338,3 +338,23 @@ l'entité (`apps/lfd-api/src/b2b/accounting/domain/services/entity-closures.ts`,
   - la reprise est le bouton « Préparer le lot » existant, geste humain ;
   - l'automatisme reprend seul dès que plus aucune clôture n'est manquée
     (le lot manuel a été préparé).
+
+**R4b bâti (2026-10-12, non commité à l'écriture).** Écart assumé avec la
+liste ci-dessus : une seule tentative `missed` est rangée, sur la clôture
+**tentée** (clé inchangée), et non une par clôture manquée — ranger une
+tentative sur la clôture manquée la ferait passer pour « tentée », et le trou
+disparaîtrait en silence au passage suivant. Le message nomme TOUTES les
+clôtures manquées.
+
+- **Manquée** : une clôture de l'entité strictement entre la borne et la
+  clôture tentée, sans tentative dans `collection_autopilot_run`.
+- **Borne** : la plus récente de la **première tentative** de l'entité, du
+  **plancher** (`collection_floor`) et de la clôture du **dernier lot vivant**
+  (non annulé, manuel compris, clos au plus tard à la clôture tentée). Sans
+  aucune tentative passée, rien n'est manqué : le déploiement ne signale pas
+  l'historique. Un lot couvre toutes les clôtures jusqu'à la sienne (il lit
+  les bons depuis le plancher) : c'est ce qui fait reprendre l'automatisme.
+- Pur : `apps/lfd-api/src/b2b/accounting/domain/services/missed-closures.ts` ; lu par le port
+  `AutopilotCoverageReader` ; migration `20261012300000_la_tentative_manquee`
+  (CHECK de l'issue élargi à `missed`).
+- Un lot manuel annulé ne couvre plus : ses clôtures redeviennent manquées.

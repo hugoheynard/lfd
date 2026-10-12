@@ -444,6 +444,20 @@ describe('la préparation automatique (PA3)', () => {
       ),
     ).toMatch(/: lot préparé$/u);
   });
+
+  it('une clôture manquée (R4b) : « passage manqué » et le message tel quel', () => {
+    const said = sentence(
+      entity('collection.autopilot_ran', {
+        ...run,
+        outcome: 'missed',
+        message: 'Préparez le lot à la main.',
+      }),
+    );
+
+    expect(said).toContain(
+      ': passage manqué, lot à préparer à la main — « Préparez le lot à la main. »',
+    );
+  });
 });
 
 /**

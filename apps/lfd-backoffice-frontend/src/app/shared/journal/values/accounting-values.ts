@@ -65,6 +65,7 @@ export const AUTOPILOT_OUTCOME = domain('issue de la préparation automatique', 
   nothing_to_collect: 'Rien à prélever',
   not_yet_open: 'Mois pas encore prélevable',
   failed: 'Échec',
+  missed: 'Passage manqué, lot à préparer à la main',
 });
 
 /** L'issue d'un passage automatique de la facture du mois (E4, 2026-10-10). */

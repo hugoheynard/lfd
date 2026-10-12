@@ -289,8 +289,9 @@ model CollectionNotice {
 /// départage deux passages et interdit de retenter : annuler un lot ne
 /// relance pas l'automatisme. Contraintes en SQL
 /// (`20261008170000_la_constitution_automatique`) : `outcome` ∈ `pending`,
-/// `constituted`, `nothing_to_collect`, `not_yet_open`, `failed` ; un échec
-/// porte son message.
+/// `constituted`, `nothing_to_collect`, `not_yet_open`, `failed`, et `missed`
+/// depuis `20261012300000_la_tentative_manquee` (R4b) ; un échec porte son
+/// message.
 model CollectionAutopilotRun {
   legalEntityId String      @map("legal_entity_id")
   legalEntity   LegalEntity @relation(fields: [legalEntityId], references: [id], onDelete: Restrict)

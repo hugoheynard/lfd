@@ -18,6 +18,7 @@ const OUTCOMES: readonly CollectionAutopilotOutcome[] = [
   "nothing_to_collect",
   "not_yet_open",
   "failed",
+  "missed",
 ];
 
 /** Une issue que le domaine ne connaît pas : un défaut de schéma, pas un refus. */

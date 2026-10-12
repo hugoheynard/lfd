@@ -90,7 +90,7 @@ const LONG_DAY = new Intl.DateTimeFormat("fr-FR", {
 });
 
 /** Le jour civil à Paris, en toutes lettres : « 1er novembre 2026 ». */
-function parisLongDay(date: Date): string {
+export function parisLongDay(date: Date): string {
   const parts = LONG_DAY.formatToParts(date);
   const part = (type: Intl.DateTimeFormatPartTypes): string =>
     parts.find((entry) => entry.type === type)?.value ?? "";

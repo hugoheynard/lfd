@@ -107,11 +107,20 @@ carte « Prélèvement automatique » de la fiche de l'entité, sous
 - `collection_autopilot_run` (migration `20261008170000`), clé
   (`legal_entity_id`, `cycle_closes_at`) : **une tentative par mois**. La
   tentative est prise en base (`pending`) avant d'agir, puis tranchée :
-  `constituted`, `nothing_to_collect`, `not_yet_open`, `failed` (+ message).
+  `constituted`, `nothing_to_collect`, `not_yet_open`, `failed` (+ message),
+  `missed` (R4b, ci-dessous).
   Un `pending` resté seul (processus mort) s'affiche « interrompue » et ne
   se retente pas.
 - Annuler un lot ne relance pas l'automatisme : préparer de nouveau est un
   geste humain, après correction.
+- **Une clôture manquée suspend l'automatisme** (R4b, plan
+  `plan-rythme-de-facturation.md` §14 ; migration `20261012300000`) : si une
+  clôture de l'entité, après la plus récente de sa première tentative, du
+  plancher et du dernier lot vivant, n'a aucune tentative, le passage ne
+  constitue pas. Il range `missed` sur la clôture tentée, avec un message qui
+  nomme les clôtures manquées et le geste « Préparer le lot », et le
+  journalise (`collection.autopilot_ran`). Le lot manuel couvre les clôtures
+  jusqu'à la sienne : l'automatisme reprend au cycle suivant.
 - Le passage lance la **même** commande que le bouton, sous l'auteur
   `system` : `collection_batch.constituted_by` (`staff` | `system`), un
   CHECK impose une fiche staff pour `staff` et aucune pour `system`.

@@ -16,10 +16,13 @@ import {
   AutoCollectionEntitiesReader,
   type AutoCollectionEntity,
 } from "../../domain/ports/auto-collection-entities.reader.js";
+import { AutopilotCoverageReader } from "../../domain/ports/autopilot-coverage.reader.js";
 import { AutomaticCollectionConstituter } from "../../domain/ports/automatic-collection-constituter.js";
 import { BillingRhythmReader } from "../../domain/ports/billing-rhythm.reader.js";
 import { CollectionAutopilotRuns } from "../../domain/ports/collection-autopilot-runs.js";
 import { autopilotTurn } from "../../domain/services/collection-autopilot.js";
+import type { RhythmTimeline } from "../../domain/services/invoicing-closures.js";
+import { missedClosures, missedClosuresMessage } from "../../domain/services/missed-closures.js";
 import {
   RunCollectionAutopilotCommand,
   type AutopilotRunReport,
@@ -51,6 +54,15 @@ const ONLY_EXCLUSIONS =
  * Un refus n'est pas retenté au passage suivant. Il est rangé (`failed` et
  * son message, ou `nothing_to_collect`, `not_yet_open`), journalisé, et
  * l'écran le montre : le geste manuel reste ouvert. Rien n'est avalé.
+ *
+ * ## Une clôture manquée suspend l'automatisme (R4b)
+ *
+ * Si une clôture antérieure de l'entité n'a jamais été tentée ni couverte
+ * par un lot (passage arrêté, panne), le passage ne constitue PAS : il range
+ * la tentative `missed`, son message nomme les clôtures, et la journalise.
+ * Le lot manqué n'est jamais absorbé en silence par le suivant ; « Préparer
+ * le lot » le refait, et l'automatisme reprend au cycle d'après (plan
+ * `plan-rythme-de-facturation.md`, §14).
  */
 @CommandHandler(RunCollectionAutopilotCommand)
 export class RunCollectionAutopilotHandler implements ICommandHandler<
@@ -63,6 +75,7 @@ export class RunCollectionAutopilotHandler implements ICommandHandler<
     private readonly entities: AutoCollectionEntitiesReader,
     private readonly rhythms: BillingRhythmReader,
     private readonly runs: CollectionAutopilotRuns,
+    private readonly coverage: AutopilotCoverageReader,
     private readonly constituter: AutomaticCollectionConstituter,
     private readonly events: DomainEventPublisher,
     private readonly clock: Clock,
@@ -96,7 +109,7 @@ export class RunCollectionAutopilotHandler implements ICommandHandler<
     if (!(await this.runs.claim(legalEntityId, turn.cycleClosesAt, now))) {
       return null;
     }
-    const issue = await this.attempt(legalEntityId);
+    const issue = await this.issueOf(legalEntityId, turn.cycleClosesAt, setting);
     await this.uow.run(async () => {
       await this.runs.settle(legalEntityId, turn.cycleClosesAt, issue.outcome, issue.message);
       await this.events.publishTraced(
@@ -113,6 +126,20 @@ export class RunCollectionAutopilotHandler implements ICommandHandler<
       cycleClosesAt: turn.cycleClosesAt.toISOString(),
       outcome: issue.outcome,
     };
+  }
+
+  /** `missed` sans rien constituer si une clôture antérieure manque ; sinon la tentative. */
+  private async issueOf(
+    legalEntityId: string,
+    cycleClosesAt: Date,
+    timeline: RhythmTimeline,
+  ): Promise<AutopilotIssue> {
+    const coverage = await this.coverage.coverageOf(legalEntityId, cycleClosesAt);
+    const missed = missedClosures(cycleClosesAt, timeline, coverage);
+    if (missed.length > 0) {
+      return { outcome: "missed", batchCount: 0, message: missedClosuresMessage(missed) };
+    }
+    return this.attempt(legalEntityId);
   }
 
   private async attempt(legalEntityId: string): Promise<AutopilotIssue> {

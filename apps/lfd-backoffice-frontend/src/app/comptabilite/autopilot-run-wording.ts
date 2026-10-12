@@ -57,6 +57,12 @@ export function autopilotRunSentence(run: CollectionAutopilotRunView): Autopilot
         said: `La préparation automatique a échoué le ${at} (${cycle}). Elle ne réessaie pas : préparez le lot à la main, après avoir corrigé la cause.`,
         detail: run.message,
       };
+    case 'missed':
+      return {
+        tone: 'warning',
+        said: `Préparation automatique suspendue le ${at} (${cycle}) : un passage précédent a été manqué. Préparez le lot à la main ; l’automatisme reprendra au cycle suivant.`,
+        detail: run.message,
+      };
     case 'pending':
       return {
         tone: 'warning',

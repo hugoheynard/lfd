@@ -119,7 +119,8 @@ const autopilotRun = {
   subjectLabel: subjectLabel(),
   /** La clôture du cycle tenté — exclusive. */
   cycleClosesAt: instant(),
-  outcome: z.enum(["constituted", "nothing_to_collect", "not_yet_open", "failed"]),
+  /** `missed` (R4b) : une clôture antérieure jamais tentée — rien préparé. */
+  outcome: z.enum(["constituted", "nothing_to_collect", "not_yet_open", "failed", "missed"]),
   /** Les lots préparés — zéro hors `constituted`. */
   batchCount: count(),
   /** Le refus tel quel en `failed`, l'explication sinon. */

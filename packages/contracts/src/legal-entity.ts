@@ -83,10 +83,11 @@ export interface CollectionCalendarView {
 /**
  * L'issue d'une tentative de la constitution automatique (plan
  * `prelevement-automatique.md`, PA3). `pending` : prise, issue pas
- * encore écrite — ou le passage s'est interrompu entre les deux.
+ * encore écrite — ou le passage s'est interrompu entre les deux. `missed`
+ * (R4b) : une clôture antérieure n'a jamais été tentée, rien n'est préparé.
  */
 export type CollectionAutopilotOutcomeView =
-  "pending" | "constituted" | "nothing_to_collect" | "not_yet_open" | "failed";
+  "pending" | "constituted" | "nothing_to_collect" | "not_yet_open" | "failed" | "missed";
 
 /** Une tentative de l'automatisme — une par cycle, jamais deux. */
 export interface CollectionAutopilotRunView {

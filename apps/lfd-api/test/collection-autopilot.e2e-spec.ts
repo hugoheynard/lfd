@@ -5,7 +5,8 @@
  * Ce que seul le vrai SQL prouve : le passage constitue sous l'auteur
  * `system` (le CHECK tient « aucune fiche staff »), les avis partent comme
  * pour le bouton, et la clé (entité, clôture) interdit une seconde tentative
- * — même après l'annulation du lot.
+ * — même après l'annulation du lot. Une clôture antérieure jamais tentée
+ * suspend l'automatisme (`missed`, CHECK élargi en R4b) jusqu'au lot manuel.
  *
  * 🔴 Aucun courriel ne part : le mailer est un double qui enregistre.
  *
@@ -302,6 +303,49 @@ describe("la constitution automatique (PA3)", () => {
     await entity();
 
     expect((await pass()).runs.map((run) => run.outcome)).toEqual(["nothing_to_collect"]);
+  });
+
+  /**
+   * R4b (plan `plan-rythme-de-facturation.md`, §14) : la clôture d'avant n'a
+   * jamais été tentée — l'automatisme ne l'absorbe pas en silence.
+   */
+  it("une clôture manquée : `missed`, pas de lot ; le lot manuel fait reprendre l'automatisme", async () => {
+    const previous = cycleToConstitute(new Date(closesAt.getTime() - 1), null).closesAt;
+    const beforePrevious = cycleToConstitute(new Date(previous.getTime() - 1), null).closesAt;
+    await ctx.prisma.collectionFloor.update({
+      where: { id: true },
+      data: { floorAt: new Date(beforePrevious.getTime() - 30 * DAY_MS) },
+    });
+    const id = await entity();
+    await payerWithOrder(id);
+    await ctx.prisma.collectionAutopilotRun.create({
+      data: {
+        legalEntityId: id,
+        cycleClosesAt: beforePrevious,
+        ranAt: new Date(beforePrevious.getTime() + 2 * HOUR_MS),
+        outcome: "nothing_to_collect",
+      },
+    });
+
+    expect((await pass()).runs.map((run) => run.outcome)).toEqual(["missed"]);
+    expect(await ctx.prisma.collectionBatch.count({ where: { legalEntityId: id } })).toBe(0);
+    const ran = await ctx.prisma.activityEvent.findFirstOrThrow({
+      where: { type: "collection.autopilot_ran", subjectId: id },
+    });
+    expect(ran.payload).toMatchObject({ outcome: "missed", batchCount: 0 });
+    expect((await fiche(id)).lastAutopilotRun).toMatchObject({
+      cycleClosesAt: closesAt.toISOString(),
+      outcome: "missed",
+    });
+
+    await staff().post(`${BASE}/batches`).send({ legalEntityId: id }).expect(201);
+    const next = cycleToConstitute(new Date(closesAt.getTime() + 35 * DAY_MS), null).closesAt;
+    clock.set(new Date(next.getTime() + 2 * HOUR_MS));
+
+    const resumed = await pass();
+    expect(resumed.runs).toHaveLength(1);
+    expect(resumed.runs[0]?.outcome).not.toBe("missed");
+    expect(resumed.runs[0]?.cycleClosesAt).toBe(next.toISOString());
   });
 
   it("refuse sans jeton interne (401)", async () => {

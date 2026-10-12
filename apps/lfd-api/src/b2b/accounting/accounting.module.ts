@@ -65,6 +65,8 @@ import {
   PrismaCollectionAutopilotRuns,
   PrismaLastAutopilotRunReader,
 } from "./infrastructure/prisma-collection-autopilot-runs.js";
+import { PrismaAutopilotCoverageReader } from "./infrastructure/prisma-autopilot-coverage.reader.js";
+import { AutopilotCoverageReader } from "./domain/ports/autopilot-coverage.reader.js";
 import { IssueMonthlyInvoicesHandler } from "./application/commands/issue-monthly-invoices.handler.js";
 import { RunInvoiceAutopilotHandler } from "./application/commands/run-invoice-autopilot.handler.js";
 import { GetMonthlyInvoicesHandler } from "./application/queries/get-monthly-invoices.handler.js";
@@ -261,6 +263,7 @@ import { PrismaLegalEntityRepository } from "./infrastructure/prisma-legal-entit
     // La constitution automatique (PA3).
     { provide: CollectionAutopilotRuns, useClass: PrismaCollectionAutopilotRuns },
     { provide: LastAutopilotRunReader, useClass: PrismaLastAutopilotRunReader },
+    { provide: AutopilotCoverageReader, useClass: PrismaAutopilotCoverageReader },
     { provide: AutoCollectionEntitiesReader, useClass: PrismaAutoCollectionEntitiesReader },
     { provide: AutomaticCollectionConstituter, useClass: BusAutomaticCollectionConstituter },
     RunCollectionAutopilotHandler,

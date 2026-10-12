@@ -1,130 +1,29 @@
-import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
-import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
-import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import {
   CollectionFloorMissingError,
   CollectionNotYetOpenError,
   NothingToCollectError,
 } from "../../../domain/errors/collection-errors.js";
-import {
-  AutoCollectionEntitiesReader,
-  type AutoCollectionEntity,
-} from "../../../domain/ports/auto-collection-entities.reader.js";
 import { AutomaticCollectionConstituter } from "../../../domain/ports/automatic-collection-constituter.js";
-import {
-  CollectionAutopilotRuns,
-  type CollectionAutopilotOutcome,
-  type SettledAutopilotOutcome,
-} from "../../../domain/ports/collection-autopilot-runs.js";
+import type { SettledAutopilotOutcome } from "../../../domain/ports/collection-autopilot-runs.js";
 import {
   ENTITY_ID,
   mandate,
   order,
 } from "../../../domain/services/__tests__/collection-fixtures.js";
 import { ConstituteCollectionBatchesCommand } from "../constitute-collection-batches.command.js";
-import { RunCollectionAutopilotHandler } from "../run-collection-autopilot.handler.js";
 import { BillingRhythm } from "../../../domain/value-objects/billing-rhythm.js";
 import { BillingRhythmSetting } from "../../../domain/value-objects/billing-rhythm-setting.js";
+import {
+  AFTER_PLANNED,
+  BEFORE_PLANNED,
+  CLOSE,
+  ENTITY,
+  ScriptedConstituter,
+  autopilot,
+  key,
+} from "./collection-autopilot-doubles.js";
 import { world } from "./collection-world.js";
 import { FixedRhythms } from "./monthly-invoice-doubles.js";
-
-/**
- * Le cycle de septembre se clôt le 1er octobre 2026 à 00h00 de Paris (22h00
- * UTC). Délai d'une heure : constitution prévue à 23h00 UTC. L'horloge est
- * FIXE ; les instants ne sont comparés qu'à cette clôture.
- */
-const CLOSE = new Date("2026-09-30T22:00:00.000Z");
-const BEFORE_PLANNED = new Date("2026-09-30T22:15:00.000Z");
-const AFTER_PLANNED = new Date("2026-09-30T23:15:00.000Z");
-
-interface StoredRun {
-  outcome: CollectionAutopilotOutcome;
-  message: string | null;
-}
-
-/** La table, en mémoire — la clé (entité, clôture) départage comme la base. */
-class MemoryRuns extends CollectionAutopilotRuns {
-  readonly rows = new Map<string, StoredRun>();
-  readonly reads: string[] = [];
-
-  attempted(legalEntityId: string, cycleClosesAt: Date): Promise<boolean> {
-    this.reads.push(legalEntityId);
-    return Promise.resolve(this.rows.has(key(legalEntityId, cycleClosesAt)));
-  }
-  claim(legalEntityId: string, cycleClosesAt: Date): Promise<boolean> {
-    const k = key(legalEntityId, cycleClosesAt);
-    if (this.rows.has(k)) {
-      return Promise.resolve(false);
-    }
-    this.rows.set(k, { outcome: "pending", message: null });
-    return Promise.resolve(true);
-  }
-  settle(
-    legalEntityId: string,
-    cycleClosesAt: Date,
-    outcome: SettledAutopilotOutcome,
-    message: string | null,
-  ): Promise<void> {
-    this.rows.set(key(legalEntityId, cycleClosesAt), { outcome, message });
-    return Promise.resolve();
-  }
-  of(legalEntityId: string): StoredRun | undefined {
-    return this.rows.get(key(legalEntityId, CLOSE));
-  }
-}
-
-function key(legalEntityId: string, cycleClosesAt: Date): string {
-  return `${legalEntityId}@${cycleClosesAt.toISOString()}`;
-}
-
-class FixedAutoEntities extends AutoCollectionEntitiesReader {
-  constructor(private readonly entities: readonly AutoCollectionEntity[]) {
-    super();
-  }
-  enabled(): Promise<readonly AutoCollectionEntity[]> {
-    return Promise.resolve(this.entities);
-  }
-}
-
-/** Une constitution scriptée : des lots, ou un refus. */
-class ScriptedConstituter extends AutomaticCollectionConstituter {
-  readonly calls: string[] = [];
-  constructor(private readonly result: readonly string[] | Error) {
-    super();
-  }
-  constitute(legalEntityId: string): Promise<readonly string[]> {
-    this.calls.push(legalEntityId);
-    return this.result instanceof Error
-      ? Promise.reject(this.result)
-      : Promise.resolve(this.result);
-  }
-}
-
-const ENTITY: AutoCollectionEntity = {
-  legalEntityId: ENTITY_ID,
-  name: "Crazeativity",
-  autoCollectionDelayHours: 1,
-};
-
-function autopilot(
-  constituter: AutomaticCollectionConstituter,
-  at: Date = AFTER_PLANNED,
-  entities: readonly AutoCollectionEntity[] = [ENTITY],
-  rhythms: FixedRhythms = new FixedRhythms(),
-) {
-  const runs = new MemoryRuns();
-  const events = new RecordingPublisher();
-  const handler = new RunCollectionAutopilotHandler(
-    new FixedAutoEntities(entities),
-    rhythms,
-    runs,
-    constituter,
-    events,
-    new FixedClock(at),
-    new DirectUnitOfWork(),
-  );
-  return { handler, runs, events };
-}
 
 describe("le passage de la constitution automatique (PA3)", () => {
   it("constitue une fois l'heure passée, range l'issue et la journalise", async () => {

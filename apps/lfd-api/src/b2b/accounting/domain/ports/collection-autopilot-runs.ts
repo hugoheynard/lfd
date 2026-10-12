@@ -4,10 +4,13 @@
  * - `constituted` : au moins un lot préparé, ses avis en file ;
  * - `nothing_to_collect` : rien à prélever, ou seulement des commandes écartées ;
  * - `not_yet_open` : le cycle se clôt avant la mise en service (plancher) ;
- * - `failed` : la constitution a refusé ou cassé — le message dit pourquoi.
+ * - `failed` : la constitution a refusé ou cassé — le message dit pourquoi ;
+ * - `missed` : une clôture antérieure n'a jamais été tentée — rien n'est
+ *   constitué, le message nomme les clôtures et le geste « Préparer le lot »
+ *   (plan `plan-rythme-de-facturation.md`, §14, R4b).
  */
 export type CollectionAutopilotOutcome =
-  "pending" | "constituted" | "nothing_to_collect" | "not_yet_open" | "failed";
+  "pending" | "constituted" | "nothing_to_collect" | "not_yet_open" | "failed" | "missed";
 
 /** Une issue tranchée — tout sauf `pending`. */
 export type SettledAutopilotOutcome = Exclude<CollectionAutopilotOutcome, "pending">;
