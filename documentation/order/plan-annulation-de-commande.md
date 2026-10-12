@@ -494,32 +494,532 @@ blocage de `vitruve` :
 **Plus de question ouverte pour Hugo** : (a) tranché le 2026-10-12. Reste
 le passage à `vitruve` (argent, frontière `b2b → production`).
 
-### Suite immédiate — C3b, la refusion du bon (décidé, à concevoir)
+### Lot C3b — la refusion du bon (conçu le 2026-10-12, à contredire)
 
 > Hugo, 2026-10-12 : « le choix deux était pas mieux […] ça permet de
 > réconcilier le bon en cas d'annulation », « comme un remerge de bon », « il
 > faudra que ça soit spécifié en admin si la manip est faite par un staff,
 > expliquer la réconciliation du bon ».
 
-Lève le refus `orders.cancel.voucher_settled`. Le reliquat d'un bon porte son
-parent (`loyalty_vouchers.parent_voucher_id`, unique — vérifié le 2026-10-12
-dans `loyalty.prisma:140` et `LoyaltyVoucher.leaveRemainder`). À l'annulation :
+📐 **Plan prêt à bâtir, rien n'est bâti.** Touche **l'argent** et porte une
+**migration**. Contredit par `vitruve` le 2026-10-12 (2 BLOQUANT, 5 SÉRIEUX,
+2 mineurs, tous intégrés ci-dessous — C3b.11) ; Q1 à Q3 tranchées par Hugo le
+même jour. `lecteur-de-migrations` au bâti. Lève le refus
+`orders.cancel.voucher_settled`, et **remplace** le `release` nu de
+`CancelOrderHandler.afterCancelled` par une restitution qui sait qu'un bon
+peut avoir laissé un reliquat.
 
-- **reliquat émis et encore disponible** : il est annulé (tracé, jamais
-  supprimé), et le bon d'origine redevient disponible à sa valeur et à sa date
-  limite d'origine — le client retrouve exactement le bon d'avant la commande ;
-- **reliquat déjà engagé ou consommé** sur une autre commande : refus, qui
-  nomme cette commande ;
-- **pas de reliquat** (bon imputé en entier) : le bon d'origine est rendu ;
-- **reliquat éteint** (date limite passée) : le bon d'origine l'est aussi —
-  annulation sans bon rendu.
+#### C3b.1 Ce que le code dit — ouvert le 2026-10-12
 
-**À l'écran staff** : la confirmation d'annulation dit, avant le clic, ce qui
-arrivera au bon (« le reliquat de X € est annulé et le bon de Y € redevient
-disponible jusqu'au … ») ; le détail et l'historique de la commande le disent
-après. Le fait du journal porte les deux bons et les montants.
+**Quand un reliquat naît.** Deux chemins, et deux seulement :
 
-Touche l'argent : règle à écrire en détail puis `vitruve` avant de bâtir.
+- **à la passation**, dans la même transaction, quand la commande n'a pas
+  d'intention Stripe (`PlaceOrderHandler.persist`, `intent === null` →
+  `vouchers.settleRemainder`) : c'est le total nul (`free`) **et** le compte
+  (`account`, refusé par C3) ;
+- **au passage de nuit** (`SettleVoucherRemaindersHandler`), pour une commande
+  vivante dont le règlement est **`paid`** — rien d'autre. Aucun webhook
+  n'émet de reliquat.
+
+La boutique n'engage aucun bon (`place-shop-order.handler.ts` n'en cite pas).
+« Soldé » est la marque `remainder_settled_at` ; le bon d'origine reste
+**`reserved`** pour toujours après (aucun état `used`, `loyalty-voucher-shapes.ts`).
+Trois issues : `none` (imputé en entier, pas d'enfant), `issued` (un enfant,
+même titulaire, **même date limite**, 0 point), `lapsed` (le parent était échu
+au solde : rien n'est émis, fait `loyalty.voucher_remainder_lapsed`).
+
+**Ce que C3 rencontre donc, régime par régime :**
+
+| Régime annulable      | Bon à l'annulation                                        | Aujourd'hui (C3)            |
+| --------------------- | --------------------------------------------------------- | --------------------------- |
+| `free`                | **toujours soldé** (`none`, `issued` ou `lapsed`)         | refus `voucher_settled`     |
+| `due`                 | **jamais soldé** — le passage de nuit n'attend que `paid` | `release` (rendu ou expiré) |
+| `paid` (C4)           | soldé **ou non**, selon que la nuit est passée            | refusé                      |
+| `account` (plus tard) | toujours soldé, comme `free`                              | refusé                      |
+
+La carte non payée dont le bon a été engagé n'a **jamais** de reliquat : elle
+garde le chemin `release`. C3b vise `free` aujourd'hui, et pose le mécanisme
+que C4 et le compte réutiliseront tel quel.
+
+**Cinq faits qui contraignent la conception** (tous lus le 2026-10-12) :
+
+1. **`LoyaltyVoucher.release` ignore `remainderSettledAt`.** Appelé sur un
+   parent soldé, il le remet `available` à pleine valeur **à côté** du
+   reliquat vivant (double valeur), et **garde la marque** : le bon réengagé
+   plus tard ne laisserait plus jamais de reliquat (`leaveRemainder` rend
+   `settled`). C3 n'y tombe pas (`due` n'est jamais soldé), C4 y tomberait.
+2. **`parent_voucher_id` est `@unique`** (`loyalty.prisma`, relation 1-1
+   `remainder`). Un parent rendu puis réengagé ne pourrait plus émettre de
+   second reliquat : l'ancien, annulé mais conservé, tient la clé. La refusion
+   **exige** de relâcher cette unicité aux seuls reliquats vivants.
+3. **L'expiration de nuit ne prend pas le verrou du titulaire**
+   (`ExpireLoyaltyVouchersHandler` : charge hors transaction, `expire`, puis
+   `save` dans une transaction sans verrou ni relecture). `save` écrit le
+   statut sans condition : un reliquat refusionné à une milliseconde de sa date
+   limite peut être réécrit `expired` par-dessus. À corriger dans ce lot.
+4. **`settleRemainder` ne revérifie pas la commande sous le verrou** : le
+   passage de nuit lit les commandes porteuses AVANT le verrou, puis solde avec
+   le montant de CETTE commande. Si elle a été annulée entre-temps et le bon
+   réengagé par une autre, le reliquat serait calculé sur la mauvaise
+   commande. Inoffensif pour `free` (la nuit ne voit jamais un bon soldé) ;
+   **prérequis de C4**, fait dans ce lot (Q3). La relecture se fait **sans
+   `FOR UPDATE`** sur `orders` : sous le verrou du titulaire, prendre un
+   verrou de commande renverserait l'ordre orders → titulaire (C3b.5).
+5. **Le courriel de C3 ment déjà dans un cas** : `voucherReturned` vaut
+   `loyaltyVoucherId !== null`, même quand `release` fait tomber le bon en
+   `expired` (date limite passée). Le client lit « votre bon vous est rendu »
+   pour un bon mort. Et le booléen ne vit pas que dans l'outbox : il est
+   recopié au **journal** (`b2b/growth/application/handlers/on-order-cancelled.handler.ts`),
+   déclaré dans le contrat du fait (`packages/contracts/src/journal-facts/orders-production.ts`,
+   `"order.cancelled"`), libellé au back-office
+   (`shared/journal/key-labels.ts`, `voucherReturned: 'Bon de fidélité rendu'`),
+   et lu par le courriel (`platform/mailer/order-cancelled-mail.ts`, copies
+   fr/en/it, `send-order-cancelled-mail.handler.ts`) — quinze fichiers en tout,
+   tests compris (compté le 2026-10-12). C3b le **remplace partout** (C3b.6).
+
+**Les trois appelants restants de `release`** ne voient jamais un bon soldé
+(lu le 2026-10-12) : l'abandon refuse `not_required` (`abandonStanding` rend
+`nothing_to_settle`), l'échec à l'arrêt et l'expiration de la boutique ne
+lisent que `payment_status IN (pending, failed)`
+(`prisma-unsettled-settlement.reader.ts:27`, `unsettled-shop-order.where.ts:24`).
+Une commande au compte portant un bon (soldé à la passation) ne les atteint
+donc pas : le resserrement de `release` (C3b.4) ne leur coûte aucun cas.
+
+Un reliquat **annulé par le staff** (`cancel`, statut `cancelled`) existe
+aussi : la contrainte `loyalty_vouchers_cancellation_complete` exige auteur et
+motif, et `recreditCancelled` lui recrédite son `pointsCost`, c'est-à-dire
+**zéro**. Cf. C3b.3, cas 6.
+
+#### C3b.2 Le modèle : une valeur d'enum, deux colonnes, une unicité partielle
+
+**Une valeur neuve, `merged_back`** (« refondu dans son bon d'origine »).
+Réutiliser `cancelled` serait faux deux fois : sa contrainte exige un auteur
+staff et un motif (une annulation client future n'en aura pas), et
+`cancelled` veut dire « le staff a retiré une valeur, recréditable » — la
+refusion ne retire aucune valeur, elle la rend au parent.
+
+Migrations, additives, **deux fichiers** (Postgres refuse d'utiliser une
+valeur d'enum dans la transaction qui l'ajoute) :
+
+1. `…_le_reliquat_refondu` : `ALTER TYPE "public"."LoyaltyVoucherStatus" ADD VALUE 'merged_back';`
+2. `…_la_refusion_du_bon` :
+   - colonnes nullables `merged_back_at timestamptz(3)`, `merged_back_order_id text`
+     (identifiant opaque, sans clé étrangère — comme `loyalty_ledger_entries.order_id`) ;
+   - `CHECK (("status" = 'merged_back') = ("merged_back_at" IS NOT NULL AND "merged_back_order_id" IS NOT NULL))` ;
+   - `CHECK ("status" <> 'merged_back' OR "parent_voucher_id" IS NOT NULL)` — seul un reliquat se refond ;
+   - `DROP INDEX "loyalty_vouchers_parent_voucher_id_key"` puis
+     `CREATE UNIQUE INDEX "loyalty_vouchers_live_remainder_key" ON … ("parent_voucher_id") WHERE "status" IN ('available', 'reserved', 'expired', 'cancelled')` —
+     **un seul reliquat non refondu par bon**, autant de reliquats refondus que
+     de commandes annulées.
+
+   **Le prédicat nomme les statuts qui bloquent**, au lieu d'exclure
+   `merged_back` : une valeur d'enum ajoutée un jour ne se mettra pas à
+   bloquer — ou à laisser passer — sans qu'on l'ait écrit. Les quatre
+   bloquent, et pas seulement les deux « vivants » : un reliquat `expired` ou
+   `cancelled` dit que la valeur du parent a été **consommée puis perdue** ;
+   le parent ne doit pas pouvoir en laisser un second. Il ne le peut d'ailleurs
+   pas par le domaine (cas 4 : parent `expired` ; cas 6 : refus) — l'index le
+   tient aussi en base. Seul `merged_back` libère la place, parce que lui seul
+   rend la valeur au parent. (Il n'existe pas de statut `redeemed` : un bon
+   consommé reste `reserved`, `loyalty-voucher-shapes.ts`.)
+
+**Prérequis, dans le même lot et AVANT la migration** (Q3, et `vitruve`
+B2) :
+
+- l'expiration de nuit prend le verrou du titulaire, **relit** le bon sous ce
+  verrou, puis `expire` et `save` (`expire-loyalty-vouchers.handler.ts:41`,
+  qui charge aujourd'hui hors transaction) ;
+- `save` devient **conditionnel au statut chargé** : l'agrégat retient le
+  statut qu'il avait à la reconstitution, et l'`updateMany` de
+  `prisma-loyalty-voucher.repository.ts` (`:84-93`) porte
+  `status: <statut chargé>` dans son `where`. Zéro ligne sur un id qui existe
+  → `LoyaltyVoucherChangedMeanwhileError` (technique, rejouable), jamais une
+  création. Un instantané périmé ne peut ainsi plus écraser ni un `expired`,
+  ni un `merged_back` et son `merged_back_at`.
+
+**Prisma et l'index partiel** — vérifié le 2026-10-12 contre la base de dev
+(`prisma migrate diff --from-config-datasource --to-schema prisma/schema`,
+lecture seule) : Prisma **ne propose pas** de supprimer l'index partiel
+existant `orders_loyalty_voucher_live_key` (`WHERE status <> 'cancelled'`),
+absent du schéma ; il en propose d'autres, non partiels
+(`shop_carts_user_company_unique`, deux index du PIM). L'index neuf devrait
+donc survivre à un `migrate dev` — mais c'est un constat sur une version, pas
+une garantie : la **seule** défense est le test e2e
+`refuse deux reliquats non refondus pour le même bon` (C3b.9), qui insère le
+second en SQL brut et attend la violation.
+
+Côté Prisma : `parentVoucherId` perd `@unique`, la relation `remainder`
+devient `remainders LoyaltyVoucher[]` (seul le client généré la cite, vérifié
+le 2026-10-12), et le commentaire du modèle nomme l'index partiel écrit à la
+main. Le type de domaine `LoyaltyVoucherStatus`, `loyaltyVoucherStatusSchema`
+(`packages/contracts/src/loyalty.ts:71`) et les trois `switch` d'affichage
+(`loyalty-format.ts` du back-office, `loyalty-card.ts` et `loyalty.copy.ts` de
+la boutique) gagnent la valeur, comme les lecteurs qui interprètent un statut
+(recomptés le 2026-10-12) : `voucherStatusAt` (`loyalty-voucher-shapes.ts`,
+neutre pour `merged_back`), `list-loyalty-vouchers.handler.ts` (l'écran staff
+des bons : montrer « refondu dans le bon … »), `prisma-loyalty-ledger.reader.ts:64`
+(sélectionne `status` pour le relevé : à libeller) ; `get-my-loyalty.handler.ts:83` et
+`prisma-holder-loyalty.reader.ts:60` (bons « éteints ») **ne** la listent
+**pas** : un reliquat refondu n'est pas un bon perdu, le client ne doit pas le
+voir dans son historique de bons morts — il retrouve le parent.
+
+#### C3b.3 La règle, pure, et ses six issues
+
+Une fonction de domaine `voucherRestitutionOf(parent, remainder, now)` —
+fichier `b2b/loyalty/domain/services/voucher-restitution.ts`, sans horloge
+ni port — lue deux fois, comme `cancellationOf` : par l'aperçu (sans verrou)
+et par le geste (sous le verrou du titulaire). `remainder` est le reliquat
+**vivant** du parent (`status <> merged_back`), ou `null`.
+
+| #   | État lu                                                                     | Issue                           | Effet                                                                                                                       |
+| --- | --------------------------------------------------------------------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| 1   | parent `reserved`, non soldé, avant sa date limite                          | `returned`                      | parent → `available` (l'actuel `release`)                                                                                   |
+| 2   | parent `reserved`, soldé `none` (pas d'enfant), avant sa date limite        | `returned`                      | parent → `available`, `remainderSettledAt` → `null`                                                                         |
+| 3   | parent soldé, enfant `available` et **non échu**                            | `merged`                        | enfant → `merged_back` (instant, commande) ; parent → `available`, `remainderSettledAt` → `null`, valeur et date d'origine  |
+| 4   | parent `reserved`, date limite passée (soldé ou non, enfant échu, `lapsed`) | `lapsed`                        | parent → `expired` (`expiredAt` = maintenant) ; un enfant `available` échu est écrit `expired` aussi ; **rien n'est rendu** |
+| 5   | enfant `reserved`                                                           | **refus**                       | issue `blocked` → 409 qui nomme la commande vivante qui le porte (C3b.7)                                                    |
+| 6   | enfant `cancelled` (le staff l'a annulé)                                    | **refus** (Q1, Hugo 2026-10-12) | issue `blocked` → 409 (C3b.7)                                                                                               |
+
+Les dates limites coïncident : un reliquat porte **la date limite de son
+parent** (`leaveRemainder`). « Enfant échu » et « parent échu » sont donc le
+même instant ; le cas 4 n'a pas de sous-cas où l'un vivrait sans l'autre.
+Échu se lit à l'horloge (`isExpiredAt`) : un enfant `available` passé sa date,
+que la nuit n'a pas encore écrit, est le cas 4, pas le 3.
+
+**Aucun point n'est recrédité, dans aucun cas.** Les points ont été payés une
+fois, par le parent (`converted`) ; le reliquat coûte 0. La refusion ne touche
+pas au grand livre.
+
+**Le reliquat n'est jamais supprimé** : il passe `merged_back`, avec l'instant
+et la commande annulée. Son montant, ses dates, son parent restent.
+
+**La chaîne** (le reliquat R1 du bon P a servi sur O2, et laissé R2) :
+
+- annuler **O2** : la commande porte R1 ; R2 est son enfant → cas 3 : R2
+  refondu, R1 retrouve sa valeur et sa date (celle de P) ;
+- annuler **O1** pendant qu'O2 vit : R1 est `reserved` → cas 5, le refus
+  nomme O2 ; après l'annulation d'O2, R1 redevient `available` et O1 devient
+  annulable (cas 3, R1 refondu dans P) ;
+- O2 retirée ou payée : O1 reste refusée tant qu'O2 vit — le refus le dit.
+
+La règle ne remonte jamais la chaîne : elle ne regarde que **le bon de la
+commande** et **son enfant vivant**. Défaire O1 quand O2 vit voudrait dire
+reprendre une valeur déjà dépensée.
+
+**Idempotence.** L'annulation de la commande est déjà unique (verrou de la
+ligne `orders`, écriture conditionnée, la restitution n'est appelée que si
+l'écriture a franchi ; un rejeu de transaction repart d'un `ROLLBACK`). La
+fidélité ajoute la sienne, et vérifie que le bon est **engagé par cette
+commande** avant de le toucher. Sous le verrou, la commande annulée vient
+d'être écrite `cancelled` : elle n'est plus « vivante ». La fidélité lit
+`VoucherOrderReader.liveOrdersCarrying([parent])` :
+
+- parent `reserved` et **aucune** commande vivante ne le porte → c'est bien
+  celle qu'on annule : la règle s'applique ;
+- parent `reserved` et une **autre** commande vivante le porte → il a déjà
+  été rendu par cette annulation, puis réengagé : issue `already` ;
+- parent `available` ou `expired`, sans enfant non refondu, ou avec un enfant
+  `merged_back` pour cette commande → rejeu après `returned`, `merged` ou
+  `lapsed` : issue `already`.
+
+`already` **n'écrit rien et ne publie rien** — ni fait de fidélité, ni rien
+dans le fait `order.cancelled`, qui a déjà franchi une fois ; l'annulation
+n'en publie de toute façon qu'un (C3.5).
+
+#### C3b.4 L'agrégat
+
+Sur `LoyaltyVoucher` (`domain/entities/loyalty-voucher.ts`) :
+
+- **`mergeBackInto(parent, at, orderId)`** sur l'enfant : exige
+  `parentVoucherId === parent.id`, `available`, non échu à `at` ; sinon
+  `LoyaltyVoucherNotMergeableError`. → `merged_back`.
+- **`reinstate(remainder, at, orderId)`** sur le parent : appelle
+  `voucherRestitutionOf`, applique l'issue — fait appeler `mergeBackInto` à
+  l'enfant au cas 3, `lapse` au cas 4 — et la rend. Les cas 5 et 6 ne lèvent
+  pas : ils **rendent** une issue `blocked` (C3b.5), pour que la phrase soit
+  écrite par la commande, qui seule sait si l'autre commande est annulable.
+  C'est la **seule** méthode qui remet `remainderSettledAt` à `null`.
+- **`lapse(at)`** sur le parent, transition neuve du cas 4 : `reserved` et
+  échu à `at` → `expired`, `expiredAt = at`. `expire()` ne convient pas : il
+  ne part que d'`available` (`isExpiredAt`, `loyalty-voucher.ts:158`), et
+  `release` en est le seul autre chemin vers `expired`.
+- **`release` se resserre** : sur un parent soldé, il lève
+  `LoyaltyVoucherRemainderSettledError` au lieu de doubler la valeur. Les
+  trois appelants restants (abandon, expiration de la boutique, échec à
+  l'arrêt) ne voient que des cartes non payées, donc jamais un bon soldé
+  (C3b.1) : le resserrement ne change rien pour eux, il ferme la porte à C4.
+
+Deux agrégats mutés ensemble, et c'est voulu : même titulaire, même verrou,
+même transaction ; l'invariant (« la valeur d'un bon et de son reliquat vivant
+ne se compte qu'une fois ») porte sur la paire.
+
+Le dépôt gagne `loadLiveRemainderOf(parentId): Promise<LoyaltyVoucher | null>`
+(`where parentVoucherId = …, status <> merged_back`, au plus une ligne par
+l'index partiel) ; `save` range les deux colonnes neuves.
+
+#### C3b.5 La frontière et les verrous
+
+Le port d'écriture que la commande déclare, `LoyaltyVoucherRedemption`
+(`b2b/orders/domain/ports/loyalty-voucher-redemption.ts`), gagne :
+
+```ts
+/** La commande qui portait le bon est annulée : le rendre, refondre son reliquat, ou constater qu'il est éteint. */
+abstract reinstate(voucherId: string, order: { id: string; number: string }, now: Date): Promise<VoucherRestitution>;
+```
+
+`VoucherRestitution` (déclaré côté commande, à côté du port) :
+
+```ts
+type VoucherRestitution =
+  | {
+      kind: "returned" | "merged" | "lapsed";
+      voucherValueCents: number;
+      remainderValueCents: number | null;
+      expiresAt: Date;
+    }
+  | { kind: "already" }
+  | {
+      kind: "blocked";
+      cause: "remainder_engaged";
+      remainderValueCents: number;
+      order: { id: string; number: string };
+    }
+  | { kind: "blocked"; cause: "remainder_cancelled"; remainderValueCents: number };
+```
+
+`blocked` → `CancelOrderHandler` lève `OrderNotCancellableError` avec un bloc
+neuf de `CancellationBlock` (`voucher_remainder_engaged`,
+`voucher_remainder_cancelled`) : c'est un `BusinessError`, que `isRefusal`
+classe « pas de rejeu », et la transaction entière — retrait au fournil
+compris — s'annule. Pour le cas 5, la commande lit la règle de l'**autre**
+commande (`cancellationOf` sur `subjects.find(O2)` et l'inscription au
+fournil, sans verrou : c'est une phrase) pour choisir la sortie qu'elle
+propose (C3b.7).
+
+Un **second port, de lecture**, `VoucherRestitutionPreview`
+(`previewOf(voucherId, now): Promise<VoucherRestitutionPreview>`), sert
+l'aperçu du détail : même règle, sans verrou, sans écriture (ISP — l'écran ne
+dépend pas d'un port d'écriture). Les deux sont implémentés par
+`LoyaltyVoucherRedeeming` et reliés dans `appBootstrap/loyalty-voucher.module.ts`
+comme les trois méthodes existantes (cycle `loyalty → orders` déjà là, §11 bis
+S8). Pour nommer la commande d'un enfant engagé (cas 5), la fidélité lit
+`VoucherOrderReader.liveOrdersCarrying([enfant])` — le port que la commande
+publie déjà pour elle.
+
+`CancelOrderHandler.afterCancelled` remplace `release` par `reinstate` et
+passe l'issue au fait durable. Rien d'autre ne bouge dans l'ordre des gestes.
+
+**Ordre des verrous**, inchangé et sans cycle :
+
+| Geste                                         | Ordre                                                                                                 |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| annulation (C3/C3b)                           | ligne `orders` (`FOR UPDATE`) → journée du fournil → **verrou du titulaire** → relire P et son enfant |
+| passation qui engage R1                       | verrou du titulaire → `reserve(R1)` → insertion de la commande (aucune ligne existante verrouillée)   |
+| passage de nuit (reliquats)                   | verrou du titulaire, par bon ; la commande relue **sous** ce verrou, **sans** `FOR UPDATE`            |
+| expiration de nuit                            | **aujourd'hui aucun** ; C3b : verrou du titulaire, relire, `expire`, `save` conditionnel (C3b.2)      |
+| abandon, expiration boutique, échec à l'arrêt | ligne `orders` → verrou du titulaire                                                                  |
+
+Personne ne prend un verrou de commande **après** celui du titulaire : pas
+d'attente circulaire.
+
+**Les deux courses du sujet :**
+
+- **une autre commande engage le reliquat au même moment** : les deux
+  prennent le verrou du titulaire. Si la passation passe d'abord, l'annulation
+  relit R1 `reserved` → cas 5, refus qui nomme la nouvelle commande, et
+  l'annulation entière s'annule. Si l'annulation passe d'abord, R1 est
+  `merged_back` quand la passation le relit → `reserve` refuse
+  (`LoyaltyVoucherNotUsableError`), la passation échoue et rend sa clé. Le
+  client voit alors son bon P revenu à pleine valeur ;
+- **le passage de nuit** : pour `free`, il ne voit jamais le bon (soldé, hors
+  de `loadReservedUnsettled`). Pour C4 : sous le verrou, `settleRemainder`
+  doit **relire** la commande vivante qui porte le bon et vérifier qu'elle est
+  celle du lot et qu'elle est `paid`, sinon ne rien faire (C3b.1, 4). L'ordre
+  annulation → nuit donne alors « bon rendu, rien à solder » ; nuit →
+  annulation donne le cas 3.
+
+#### C3b.6 Le journal
+
+**Un fait de fidélité neuf, `loyalty.voucher_reinstated`**, sujet le
+titulaire, publié par `publishTraced` dans la transaction (comme les autres
+faits du bon) pour les issues `returned` et `merged` :
+
+```
+{ voucher: named(parent), remainder: named(enfant) | null,
+  order: { id, name }, outcome: "returned" | "merged",
+  valueCents (parent), remainderCents | null, expiresAt }
+```
+
+L'issue `lapsed` publie `loyalty.voucher_expired` sur le parent — ce que fait
+déjà `release` — et un second sur l'enfant s'il est écrit `expired`. `already`
+ne publie rien. Déclaration dans `packages/contracts/src/journal-facts/accounting.ts`,
+phrase dans `loyalty-phrases.ts` du back-office (« Bon de 12,00 € rendu au
+client après l'annulation de la commande C-… ; le reliquat de 4,50 € est
+refondu dedans. Valable jusqu'au … »).
+
+**Le fait durable `order.cancelled`** remplace `voucherReturned: boolean` par
+`voucher: null | { outcome: "returned" | "merged" | "lapsed"; voucherValueCents; remainderValueCents | null; expiresAt }`,
+**partout où le booléen passe** : l'outbox (`order-cancelled.event.ts`), la
+recopie au journal (`b2b/growth/application/handlers/on-order-cancelled.handler.ts`),
+le contrat du fait (`packages/contracts/src/journal-facts/orders-production.ts`,
+`"order.cancelled"`), la phrase et le libellé du back-office
+(`orders-phrases`, `key-labels.ts` : `voucherReturned` retiré, `voucher` et
+ses champs libellés), le courriel.
+
+**Remplacement sec, sans union ni lecture de l'ancienne forme** — décidé le
+2026-10-12 : C3 n'a **jamais** été promu sur `main` (rien poussé depuis le
+déploiement `f91935351`), aucun fait `order.cancelled` n'existe donc en
+production, et le dépôt est en pré-release (CLAUDE.md, §0). Un fait de dev
+en vol au moment du bâti est jeté avec la base de dev, pas lu. Cette phrase
+devient fausse dès que C3 est sur `main` : si C3 part avant C3b, la lecture
+de l'ancienne forme redevient nécessaire.
+
+#### C3b.7 L'écran staff
+
+`AdminOrderCancellability` (`packages/contracts/src/admin-order-detail.ts`)
+devient :
+
+```ts
+export type AdminOrderCancellability =
+  | { readonly cancellable: true; readonly voucher: AdminCancellationVoucher | null }
+  | { readonly cancellable: false; readonly reason: string };
+
+/** Ce que l'annulation fera du bon — calculé par la même règle que le geste, sans verrou. */
+export type AdminCancellationVoucher =
+  | {
+      readonly outcome: "returned";
+      readonly voucherValueCents: number;
+      readonly expiresAt: string;
+      readonly sentence: string;
+    }
+  | {
+      readonly outcome: "merged";
+      readonly voucherValueCents: number;
+      readonly remainderValueCents: number;
+      readonly expiresAt: string;
+      readonly sentence: string;
+    }
+  | {
+      readonly outcome: "lapsed";
+      readonly voucherValueCents: number;
+      readonly expiresAt: string;
+      readonly sentence: string;
+    };
+```
+
+`sentence` est la phrase du serveur, montrée telle quelle (même principe que
+`reason`) ; les montants servent à la mise en forme. Phrases :
+
+- `returned` : « Le bon de fidélité de 12,00 € utilisé sur cette commande sera
+  rendu au client, valable jusqu'au 30/11. »
+- `merged` : « Le bon de 12,00 € avait laissé un reliquat de 4,50 €. Ce
+  reliquat sera annulé et le bon de 12,00 € redeviendra disponible jusqu'au
+  30/11 : le client retrouve le bon d'avant la commande. »
+- `lapsed` : « Le bon de fidélité de 12,00 € est arrivé à échéance le 30/09 :
+  il ne sera pas rendu. »
+
+Les refus 5 et 6 arrivent en `cancellable: false`, avec une phrase qui ne
+promet que ce qui est possible (`cancellationRefusalOf`) :
+
+- cas 5, **O2 annulable** : « Le reste de 4,50 € du bon utilisé ici a servi
+  sur la commande C-… : annulez-la d'abord, puis celle-ci. »
+- cas 5, **O2 non annulable** (prête, retirée, payée, au compte, inscrite) :
+  « Le reste de 4,50 € du bon utilisé ici a servi sur la commande C-…, qui ne
+  peut plus être annulée : l'annulation de cette commande n'est plus
+  possible. Voyez avec la direction. »
+- cas 6 : « Le reste de ce bon (4,50 €) a été annulé par l'équipe :
+  l'annulation de la commande n'est plus possible. Voyez avec la direction. »
+
+`GetAdminOrderHandler.cancellabilityOf` appelle `VoucherRestitutionPreview`
+quand la commande porte un bon et que la règle de commande la laisse passer.
+La confirmation en ligne reprend `sentence` sous la phrase que le client
+recevra. **Après** : l'historique du détail lit `order.cancelled` et
+`loyalty.voucher_reinstated` ; aucune colonne neuve sur `orders`. Le montant
+affiché suit l'unité du bon (centimes HT, `loyalty.prisma`) et le formateur
+existant du back-office — ne pas en inventer un second.
+
+Le refus `voucher_settled` disparaît de `cancellationOf`, de sa phrase et de
+`CancellationBlock` ; son JSDoc daté est retiré dans le même commit.
+
+#### C3b.8 Le courriel client
+
+Le gabarit `customer.order-cancelled` lit `voucher` au lieu du booléen
+(fr, en, it) :
+
+- `returned` : « Votre bon de fidélité de 12,00 € vous est rendu : vous
+  pourrez l'utiliser sur une prochaine commande jusqu'au 30/11. »
+- `merged` : « Votre bon de fidélité retrouve sa valeur de 12,00 €, valable
+  jusqu'au 30/11. Le bon de 4,50 € qui vous avait été remis en reliquat est
+  remplacé par celui-ci. »
+- `lapsed` : rien sur le bon — **corrige le mensonge de C3** (C3b.1, 5) ;
+  Hugo, 2026-10-12 (Q2).
+
+#### C3b.9 Les tests
+
+- **domaine** (`voucher-restitution.ts`, `loyalty-voucher.ts`) : les six
+  issues ; frontière de date limite (`now === expiresAt` → `lapsed`) ;
+  enfant d'un autre parent refusé ; `mergeBackInto` sur un enfant échu,
+  réservé, annulé ; `reinstate` rejoué → `already` sans mutation ; `release`
+  sur un parent soldé lève ; après `merged`, réengager P puis
+  `leaveRemainder` émet un **nouveau** reliquat (la marque est bien nulle) ;
+  `lapse` refuse un parent non échu ou non réservé ; aucun point dans aucun
+  cas ; idempotence : rejeu après `returned`, `merged`, `lapsed` → `already`,
+  parent réengagé par une autre commande → `already` ;
+- **application** : `LoyaltyVoucherRedeeming.reinstate` relit sous le verrou,
+  sauve les deux bons, publie le bon fait ; refus 5 nomme la commande lue par
+  `VoucherOrderReader` ; `CancelOrderHandler` traduit `blocked` en refus
+  (deux phrases du cas 5 selon l'annulabilité d'O2), passe l'issue au fait
+  durable, ne publie rien pour `already` ; `save` sur un statut changé
+  entre-temps lève au lieu d'écraser ; `ExpireLoyaltyVouchersHandler`
+  prend le verrou et relit ; `settleRemainder` ne fait rien si la commande
+  relue n'est plus celle du lot ;
+- **e2e** (`order-staff-cancel-voucher.e2e-spec.ts`, dates relatives) :
+  `free` + bon imputé en entier → bon rendu ; `free` + reliquat disponible →
+  reliquat `merged_back`, parent `available`, marque nulle, date d'origine,
+  solde de points inchangé ; reliquat engagé sur une autre commande → 409 qui
+  nomme la commande, **rien** n'est écrit (ni annulation, ni retrait au
+  fournil) ; chaîne P→R1→R2 dans les deux ordres ; reliquat échu → annulée,
+  bon non rendu, courriel sans phrase de bon ; `due` + bon échu → courriel
+  sans « rendu » (régression C3) ; **course** passation qui engage R1 ×
+  annulation (deux ordres, deux transactions tenues par un verrou) ;
+  **course** expiration de nuit × refusion à la date limite ; réutiliser P
+  après refusion → second reliquat accepté par l'index partiel ;
+  **`refuse deux reliquats non refondus pour le même bon`** (insertion SQL
+  brute, violation attendue — seule défense contre une dérive Prisma qui
+  supprimerait l'index, C3b.2) ; le journal `order.cancelled` porte `voucher`
+  et plus `voucherReturned` ; l'aperçu de `GET /admin/orders/:id`
+  annonce la même issue que le geste ;
+- **contrats / front** : `AdminOrderCancellability` à trois formes ; la
+  confirmation affiche `sentence` ; l'historique rend la phrase du fait neuf.
+
+#### C3b.10 Questions pour Hugo — toutes tranchées
+
+> ✅ **Tranchées par Hugo le 2026-10-12 : « oui aux trois propositions »** —
+> Q1 refus, Q2 le courriel se tait sur le bon, Q3 les deux correctifs entrent
+> dans ce lot.
+
+- **Q1** — un reliquat **annulé par l'équipe** (cas 6) : refuser l'annulation
+  de la commande (proposé : rendre le bon ferait renaître une valeur que
+  l'équipe a retirée), ou annuler sans rendre le bon ?
+- **Q2** — bon échu à l'annulation (cas 4) : le courriel se tait sur le bon
+  (proposé), ou dit « votre bon était arrivé à échéance » ?
+- **Q3** — les correctifs de C3b.1 (3 et 4 : verrou de l'expiration, relecture
+  dans `settleRemainder`) entrent dans ce lot (proposé, ils sont courts et le
+  4 est un prérequis de C4), ou dans un lot à part ?
+
+#### C3b.11 Sort des objections de `vitruve` (2026-10-12)
+
+| Objection                                                          | Sort                                                                                       |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| B1 `voucherReturned` aussi au journal, au contrat, aux libellés    | **réglée** : remplacement sec partout, daté et justifié (C3b.1, C3b.6)                     |
+| B2 prédicat de l'index, expiration non verrouillée, `save` aveugle | **réglée** : statuts nommés, verrou + relecture + `save` conditionnel en prérequis (C3b.2) |
+| S cas 5 / 6 sans sortie                                            | **réglée** : phrases qui ne proposent que le possible (C3b.7)                              |
+| S idempotence de `reinstate`                                       | **réglée** : « engagé par cette commande », `already` muet (C3b.3)                         |
+| S index absent du schéma Prisma                                    | **vérifiée** sur la base de dev + test e2e nommé (C3b.2, C3b.9)                            |
+| S `release` resserré et la commande au compte                      | **vérifiée** : aucun appelant ne l'atteint (C3b.1)                                         |
+| S relecture de `settleRemainder` sans `FOR UPDATE`                 | **réglée** (C3b.1, C3b.5)                                                                  |
+| m lecteurs de `LoyaltyVoucherStatus`                               | **recomptés** (C3b.2)                                                                      |
+| m transition du cas 4                                              | **nommée** : `lapse` (C3b.4)                                                               |
 
 ### Suite immédiate — C4, le remboursement
 
