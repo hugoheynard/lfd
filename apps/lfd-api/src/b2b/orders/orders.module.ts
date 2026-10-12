@@ -62,6 +62,12 @@ import { VoucherOrderReader } from "./domain/ports/voucher-order.reader.js";
 import { PrismaVoucherOrderReader } from "./infrastructure/prisma-voucher-order.reader.js";
 import { PrismaOrderRecipientReader } from "./infrastructure/prisma-order-recipient.reader.js";
 import { AbandonOrderHandler } from "./application/commands/abandon-order.handler.js";
+import { CancelOrderHandler } from "./application/commands/cancel-order.handler.js";
+import { SendOrderCancelledMail } from "./application/handlers/send-order-cancelled-mail.handler.js";
+import { CancellationSubjectReader } from "./domain/ports/cancellation-subject.reader.js";
+import { OrderCancellationRepository } from "./domain/ports/order-cancellation.repository.js";
+import { PrismaCancellationSubjectReader } from "./infrastructure/prisma-cancellation-subject.reader.js";
+import { PrismaOrderCancellationRepository } from "./infrastructure/prisma-order-cancellation.repository.js";
 import { ConfirmOrderPaymentHandler } from "./application/commands/confirm-order-payment.handler.js";
 import { DiscardOrderDraftHandler } from "./application/commands/discard-order-draft.handler.js";
 import { PlaceOrderForCustomerHandler } from "./application/commands/place-order-for-customer.handler.js";
@@ -240,6 +246,13 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     PlaceOrderForCustomerHandler,
     ConfirmOrderPaymentHandler,
     AbandonOrderHandler,
+    // L'annulation par l'équipe (plan `order/plan-annulation-de-commande.md`,
+    // C3) : le geste, son courriel, et ses deux ports — lire et écrire (ISP).
+    // Le guichet du fournil vient de `ProductionDeskFeedModule`.
+    CancelOrderHandler,
+    SendOrderCancelledMail,
+    { provide: CancellationSubjectReader, useClass: PrismaCancellationSubjectReader },
+    { provide: OrderCancellationRepository, useClass: PrismaOrderCancellationRepository },
     ListCompanyOrdersHandler,
     ListPersonalOrdersHandler,
     GetOrderHandler,

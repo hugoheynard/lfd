@@ -61,6 +61,9 @@ enum StaffResource {
   /// PASSER UNE COMMANDE pour un client pro — sortie de `b2b_orders` le
   /// 2026-10-01 (`documentation/livraisons/droits/plan-droits-par-geste.md`, 5.1 bis).
   b2b_place_order
+  /// ANNULER UNE COMMANDE — un geste à part, accordé à l'écran
+  /// (2026-10-12, `documentation/order/plan-annulation-de-commande.md`, C3.8).
+  b2b_cancel_order
   /// Le COMPTOIR — la carte et le détail d'un client, taillés pour la prise de
   /// commande (2026-09-25, `architecture-commande-au-comptoir.md`).
   b2b_counter

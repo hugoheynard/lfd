@@ -58,3 +58,9 @@ export {
 // L'heure limite de commande, que l'arrêt automatique ne précède pas (A1, Q5).
 export { OrderCutoffRulesReader } from "./order-cutoff-rules.reader.js";
 export type { OrderCutoffRule } from "../../domain/services/latest-order-cutoff.js";
+// L'annulation staff (plan `order/plan-annulation-de-commande.md`, C3.4,
+// 2026-10-12) : deux ports que le fournil DÉCLARE et IMPLÉMENTE pour le
+// commerce — retirer une commande sous le verrou de la journée, et dire si
+// elle est inscrite (affichage).
+export { OrderWithdrawalDesk, type OrderWithdrawalOutcome } from "./order-withdrawal.desk.js";
+export { OrderInscriptionReader } from "./order-inscription.reader.js";

@@ -292,6 +292,18 @@ model Order {
   /// scannerait son propre carton.
   handedOverVia String? @map("handed_over_via")
 
+  /// L'ANNULATION PAR L'ÉQUIPE (plan `documentation/order/plan-annulation-de-commande.md`,
+  /// lot C3, 2026-10-12). Les trois s'écrivent ENSEMBLE, avec `status = cancelled`,
+  /// dans la seule transaction finale de l'annulation staff (C3.4 ter) — jamais
+  /// avant. Les trois annulations automatiques (abandon d'un particulier,
+  /// expiration boutique, clôture) les laissent vides ; on ne rattrape rien.
+  ///
+  /// 🔴 `cancelledBy` est l'id de la FICHE staff, jamais un `sub` (C3.5).
+  /// `cancellationReason` est le motif saisi, jamais montré au client.
+  cancelledAt        DateTime? @map("cancelled_at")
+  cancelledBy        String?   @map("cancelled_by")
+  cancellationReason String?   @map("cancellation_reason")
+
   createdAt DateTime @default(now()) @map("created_at") // = passée le
   updatedAt DateTime @updatedAt @map("updated_at")
 

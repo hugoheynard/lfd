@@ -84,6 +84,18 @@ export const MAIL_EN: MailCopy = {
     footer:
       "Unsure, or think this is a mistake? Call us — Le Labo · route de la Balme, Val d'Isère.",
   },
+  orderCancelled: {
+    subject: "Order {ref} cancelled",
+    title: "Your order has been cancelled.",
+    intro: "Your order {ref} for {day} has been cancelled by our team.",
+    introWithoutDay: "Your order {ref} has been cancelled by our team.",
+    nothingBilled: "You will not be charged anything for this order.",
+    nothingCharged: "No payment has been taken.",
+    voucherReturned:
+      "Your loyalty voucher has been returned to you: you can use it on a future order.",
+    footer:
+      "Unsure, or think this is a mistake? Call us — Le Labo · route de la Balme, Val d'Isère.",
+  },
   invoiceIssued: {
     title: "Your invoice {number}",
     subject: "{title} — {seller}",

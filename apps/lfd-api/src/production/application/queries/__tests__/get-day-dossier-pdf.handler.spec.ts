@@ -88,7 +88,7 @@ function setup(day: ProductionDay): {
 
 function closedDay(): ProductionDay {
   const day = ProductionDay.open(ServiceDay.of(DAY));
-  day.close([order("ord_1")], CLOSED, null);
+  day.close([order("ord_1")], new Set<string>(), CLOSED, null);
   return day;
 }
 
@@ -117,7 +117,7 @@ describe("GetDayDossierPdfHandler", () => {
     const day = closedDay();
     const { handler, store } = setup(day);
     await handler.execute(new GetDayDossierPdfQuery(DAY));
-    day.retake([order("ord_1"), order("ord_2")], RETAKEN, "staff-1", null);
+    day.retake([order("ord_1"), order("ord_2")], new Set<string>(), RETAKEN, "staff-1", null);
 
     await handler.execute(new GetDayDossierPdfQuery(DAY));
     expect([...store.objects.keys()].sort()).toEqual(

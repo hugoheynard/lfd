@@ -67,6 +67,11 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     write:
       "Composer et passer une commande au nom d'un client pro — devis, brouillon, passation. Demande aussi Commandes en lecture (catalogue et historique du client), et Comptoir en lecture pour saisir depuis le comptoir.",
   },
+  b2b_cancel_order: {
+    read: "N'ouvre rien : il n'y a rien à lire dans ce geste, seule l'écriture compte.",
+    write:
+      "Annuler une commande que le fournil n'a pas encore inscrite — total nul, ou carte pas encore payée (le paiement est alors fermé chez Stripe). Le client reçoit un courriel ; un bon de fidélité utilisé lui est rendu. Demande aussi Commandes en lecture pour ouvrir la commande.",
+  },
   b2b_counter: {
     read: "Chercher un client au comptoir et voir ce qu'il faut pour lui vendre — adresses, acheteurs, règlement au compte — sans ouvrir sa fiche complète.",
     write:

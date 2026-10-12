@@ -52,7 +52,7 @@ describe("arrêter une journée", () => {
   it("fige les commandes et compte ce qu'il y a à produire", () => {
     const day = opened();
 
-    day.close([order()], AT, null);
+    day.close([order()], new Set<string>(), AT, null);
 
     expect(day.isClosed).toBe(true);
     expect(day.closedAt).toBe(AT);
@@ -81,6 +81,7 @@ describe("arrêter une journée", () => {
           lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 12 }],
         }),
       ],
+      new Set<string>(),
       AT,
       null,
     );
@@ -103,6 +104,7 @@ describe("arrêter une journée", () => {
           lines: [{ sku: "PAI-001", productName: "Tradition", quantity: 3 }],
         }),
       ],
+      new Set<string>(),
       AT,
       null,
     );
@@ -115,10 +117,10 @@ describe("arrêter une journée", () => {
     // instantané, et les commandes bougent après. Le recalculer donnerait un
     // autre nombre que celui sur lequel les fournées sont parties.
     const day = opened();
-    day.close([order()], AT, null);
+    day.close([order()], new Set<string>(), AT, null);
 
     expect(() => {
-      day.close([order(), order({ orderId: "ord_2" })], AT, null);
+      day.close([order(), order({ orderId: "ord_2" })], new Set<string>(), AT, null);
     }).toThrow(ProductionDayAlreadyClosedError);
     expect(day.orders).toHaveLength(1);
   });
@@ -127,7 +129,7 @@ describe("arrêter une journée", () => {
     // Fermer le vide écrirait « ce jour-là on a produit ceci » là où il n'y a
     // rien eu — et le zéro passerait pour une mesure.
     expect(() => {
-      opened().close([], AT, null);
+      opened().close([], new Set<string>(), AT, null);
     }).toThrow(ProductionDayEmptyError);
   });
 });
@@ -135,7 +137,12 @@ describe("arrêter une journée", () => {
 describe("le colisage, vu de la journée", () => {
   function closed(): ProductionDay {
     const day = opened();
-    day.close([order(), order({ orderId: "ord_2", reference: "CMD-0002" })], AT, null);
+    day.close(
+      [order(), order({ orderId: "ord_2", reference: "CMD-0002" })],
+      new Set<string>(),
+      AT,
+      null,
+    );
     return day;
   }
 
@@ -150,7 +157,7 @@ describe("le colisage, vu de la journée", () => {
 describe("le va-et-vient avec l'adaptateur", () => {
   it("se relit identique à ce qu'il a écrit", () => {
     const day = opened();
-    day.close([order()], AT, null);
+    day.close([order()], new Set<string>(), AT, null);
 
     const again = ProductionDay.fromSnapshot(day.toSnapshot());
 
@@ -162,11 +169,11 @@ describe("le va-et-vient avec l'adaptateur", () => {
     // La garde vit dans l'agrégat, pas dans le handler : elle doit donc survivre
     // au passage par la base, sinon elle ne protège que le premier appel.
     const day = opened();
-    day.close([order()], AT, null);
+    day.close([order()], new Set<string>(), AT, null);
     const again = ProductionDay.fromSnapshot(day.toSnapshot());
 
     expect(() => {
-      again.close([order()], AT, null);
+      again.close([order()], new Set<string>(), AT, null);
     }).toThrow(ProductionDayAlreadyClosedError);
   });
 });
@@ -193,7 +200,12 @@ describe("la journée et le colisage (plan colisage, K1)", () => {
     const day = opened();
     expect(day.packingOwner).toBe("legacy");
 
-    day.close([order({ dueAt: "07:30" }), order({ orderId: "ord_2", dueAt: null })], AT, null);
+    day.close(
+      [order({ dueAt: "07:30" }), order({ orderId: "ord_2", dueAt: null })],
+      new Set<string>(),
+      AT,
+      null,
+    );
 
     expect(day.packingOwner).toBe("packing");
     expect(day.toSnapshot().packingOwner).toBe("packing");
@@ -202,9 +214,15 @@ describe("la journée et le colisage (plan colisage, K1)", () => {
 
   it("le retirage fige l'échéance des commandes qu'il absorbe", () => {
     const day = opened();
-    day.close([order()], AT, null);
+    day.close([order()], new Set<string>(), AT, null);
 
-    day.retake([order(), order({ orderId: "ord_2", dueAt: "09:00" })], LATER, "staff-1", null);
+    day.retake(
+      [order(), order({ orderId: "ord_2", dueAt: "09:00" })],
+      new Set<string>(),
+      LATER,
+      "staff-1",
+      null,
+    );
 
     expect(day.orders.map((sheet) => sheet.dueAt)).toEqual([null, "09:00"]);
   });
@@ -212,17 +230,18 @@ describe("la journée et le colisage (plan colisage, K1)", () => {
   it("la clôture fige le reste du bon, tel que le commerce l'a résolu (E1b)", () => {
     const day = opened();
 
-    day.close([order({ sheetDetails: DETAILS })], AT, null);
+    day.close([order({ sheetDetails: DETAILS })], new Set<string>(), AT, null);
 
     expect(day.orders[0]?.sheetDetails).toEqual(DETAILS);
   });
 
   it("le retirage fige le bon des commandes qu'il absorbe, et laisse celui des autres", () => {
     const day = opened();
-    day.close([order()], AT, null);
+    day.close([order()], new Set<string>(), AT, null);
 
     day.retake(
       [order({ sheetDetails: DETAILS }), order({ orderId: "ord_2", sheetDetails: DETAILS })],
+      new Set<string>(),
       LATER,
       "staff-1",
       null,
@@ -240,6 +259,7 @@ describe("la journée et le colisage (plan colisage, K1)", () => {
         order({ orderId: "ord_2", clientele: "public" }),
         order({ orderId: "ord_3", clientele: null }),
       ],
+      new Set<string>(),
       AT,
       null,
     );
@@ -249,10 +269,11 @@ describe("la journée et le colisage (plan colisage, K1)", () => {
 
   it("le retirage fige la clientèle des commandes qu'il absorbe", () => {
     const day = opened();
-    day.close([order({ clientele: "pro" })], AT, null);
+    day.close([order({ clientele: "pro" })], new Set<string>(), AT, null);
 
     day.retake(
       [order({ clientele: "pro" }), order({ orderId: "ord_2", clientele: "public" })],
+      new Set<string>(),
       LATER,
       "staff-1",
       null,
@@ -272,8 +293,18 @@ describe("la journée et le colisage (plan colisage, K1)", () => {
 describe("ProductionDay — qui a arrêté, qui a complété", () => {
   it("garde l'auteur de l'arrêt et le nom de qui complète, jusque dans l'instantané", () => {
     const day = ProductionDay.open(ServiceDay.of("2026-10-07"));
-    day.close([order()], AT, { kind: "staff", staffUserId: "s-1", name: "Marie Dupont" });
-    day.retake([order(), order({ orderId: "ord_2" })], LATER, "s-2", "Paul Martin");
+    day.close([order()], new Set<string>(), AT, {
+      kind: "staff",
+      staffUserId: "s-1",
+      name: "Marie Dupont",
+    });
+    day.retake(
+      [order(), order({ orderId: "ord_2" })],
+      new Set<string>(),
+      LATER,
+      "s-2",
+      "Paul Martin",
+    );
 
     const snapshot = day.toSnapshot();
     expect(snapshot.closedBy).toEqual({ kind: "staff", staffUserId: "s-1", name: "Marie Dupont" });
@@ -285,5 +316,58 @@ describe("ProductionDay — qui a arrêté, qui a complété", () => {
 
   it("une journée ouverte n'a pas d'auteur", () => {
     expect(ProductionDay.open(ServiceDay.of("2026-10-07")).closedBy).toBeNull();
+  });
+});
+
+/**
+ * L'annulation staff (plan `order/plan-annulation-de-commande.md`, C3.4) : la
+ * clôture et le retirage lisent les commandes du commerce AVANT le verrou ;
+ * une annulation validée entre les deux y figure encore. C'est l'agrégat qui
+ * écarte les retraits — sans double, par la règle elle-même.
+ */
+describe("ProductionDay — les commandes retirées par l'annulation staff", () => {
+  it("la clôture n'inscrit pas une commande retirée, ni ne la compte", () => {
+    const day = opened();
+
+    day.close([order(), order({ orderId: "ord_2" })], new Set(["ord_2"]), AT, null);
+
+    expect(day.orders.map((frozen) => frozen.orderId)).toEqual(["ord_1"]);
+    expect(day.counts).toEqual([
+      { sku: "VIE-001", productName: "Croissant", quantity: 40, done: null },
+    ]);
+  });
+
+  it("refuse d'arrêter une journée dont toutes les commandes sont retirées", () => {
+    expect(() => opened().close([order()], new Set(["ord_1"]), AT, null)).toThrow(
+      ProductionDayEmptyError,
+    );
+  });
+
+  it("le retirage n'absorbe pas une commande retirée depuis l'arrêt", () => {
+    const day = opened();
+    day.close([order()], new Set<string>(), AT, null);
+
+    const absorbed = day.retake(
+      [order(), order({ orderId: "ord_2" })],
+      new Set(["ord_2"]),
+      LATER,
+      "staff-1",
+      null,
+    );
+
+    expect(absorbed).toBe(0);
+    expect(day.orders.map((frozen) => frozen.orderId)).toEqual(["ord_1"]);
+    expect(day.retaken).toBeNull();
+  });
+
+  it("un retrait d'une commande déjà inscrite ne la fait pas sortir du compte", () => {
+    // Le guichet refuse ce cas ; s'il arrivait, une journée arrêtée ne se
+    // recalcule pas pour autant — le retirage n'enlève jamais rien.
+    const day = opened();
+    day.close([order()], new Set<string>(), AT, null);
+
+    day.retake([order()], new Set(["ord_1"]), LATER, "staff-1", null);
+
+    expect(day.orders.map((frozen) => frozen.orderId)).toEqual(["ord_1"]);
   });
 });

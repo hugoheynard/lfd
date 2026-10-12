@@ -118,6 +118,9 @@ export abstract class OrderRepository {
    * le `where`. Le bus vit en processus et n'est pas rejoué, mais un abonné
    * appelé deux fois ne doit pas réécrire une attestation — la première est la
    * seule vraie. Rend `false` si elle était déjà là.
+   *
+   * Une commande **annulée** ne franchit pas non plus (S1 du plan
+   * d'annulation, 2026-10-12) : `false`, et elle reste annulée.
    */
   abstract markFulfilled(
     reference: string,

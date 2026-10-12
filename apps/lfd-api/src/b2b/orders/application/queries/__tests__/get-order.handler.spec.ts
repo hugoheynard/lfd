@@ -11,6 +11,12 @@ import type {
 } from "../../../domain/ports/admin-order-author.reader.js";
 import { OrderGuardReader, type OrderRole } from "../../../domain/ports/order-guard.reader.js";
 import { OrderReader, type OwnedOrder } from "../../../domain/ports/order.reader.js";
+import { OrderInscriptionReader } from "../../../../../production/channels/commerce/index.js";
+import type { CancellationSubject } from "../../../domain/ports/cancellation-subject.reader.js";
+import {
+  cancellationSubject,
+  FixedSubjects,
+} from "../../commands/__tests__/cancellation-doubles.js";
 import { orderView } from "../../handlers/__tests__/payment-failure-doubles.js";
 import { GetAdminOrderHandler } from "../get-admin-order.handler.js";
 import { GetAdminOrderQuery } from "../get-admin-order.query.js";
@@ -162,11 +168,39 @@ function directory(): StaffAuthorDirectory & { asked: (string | null)[] } {
   return spy;
 }
 
+/** Le fournil doublé : le jour où il a inscrit la commande, ou rien. */
+class FixedInscription extends OrderInscriptionReader {
+  constructor(private readonly day: string | null = null) {
+    super();
+  }
+
+  inscribedDayOf(): Promise<string | null> {
+    return Promise.resolve(this.day);
+  }
+}
+
+/** Le détail staff, avec ce que l'annulation lit d'elle (par défaut : annulable). */
+function adminHandler(
+  owned: OwnedOrder | null,
+  author: AdminOrderAuthor | null,
+  staff: StaffAuthorDirectory = directory(),
+  subject: CancellationSubject | null = cancellationSubject(),
+  inscribedDay: string | null = null,
+): GetAdminOrderHandler {
+  return new GetAdminOrderHandler(
+    reader(owned),
+    authors(author),
+    staff,
+    new FixedSubjects(subject),
+    new FixedInscription(inscribedDay),
+  );
+}
+
 describe("GetAdminOrderHandler", () => {
   it("rend la commande avec sa clientèle, la personne et la société, sans demander de rôle", async () => {
-    const handler = new GetAdminOrderHandler(
-      reader(ofCompany("cmp_1")),
-      authors({ customer: CUSTOMER, company: COMPANY, placedByStaffId: null }),
+    const handler = adminHandler(
+      ofCompany("cmp_1"),
+      { customer: CUSTOMER, company: COMPANY, placedByStaffId: null },
       directory(),
     );
 
@@ -174,13 +208,45 @@ describe("GetAdminOrderHandler", () => {
       ...VIEW,
       clientele: "pro",
       placedBy: { customer: CUSTOMER, company: COMPANY, staffName: null },
+      cancellability: { cancellable: true },
     });
   });
 
+  it("dit pourquoi elle ne s'annule pas : le fournil l'a inscrite (C3.8)", async () => {
+    const handler = adminHandler(
+      ofCompany("cmp_1"),
+      { customer: CUSTOMER, company: COMPANY, placedByStaffId: null },
+      directory(),
+      cancellationSubject(),
+      "2026-10-13",
+    );
+
+    const view = await handler.execute(new GetAdminOrderQuery("ord_1"));
+
+    expect(view.cancellability).toEqual({
+      cancellable: false,
+      reason:
+        "Le fournil a déjà inscrit cette commande au compte à produire du 13/10 : elle sera fabriquée. Voyez avec le fournil.",
+    });
+  });
+
+  it("dit pourquoi elle ne s'annule pas : payée par carte", async () => {
+    const handler = adminHandler(
+      ofCompany("cmp_1"),
+      { customer: CUSTOMER, company: COMPANY, placedByStaffId: null },
+      directory(),
+      cancellationSubject({ paymentStatus: "paid" }),
+    );
+
+    const view = await handler.execute(new GetAdminOrderQuery("ord_1"));
+
+    expect(view.cancellability).toMatchObject({ cancellable: false });
+  });
+
   it("rend aussi une commande personnelle, qu'aucun mur d'entreprise ne couvre", async () => {
-    const handler = new GetAdminOrderHandler(
-      reader(personal("usr_1")),
-      authors({ customer: CUSTOMER, company: null, placedByStaffId: null }),
+    const handler = adminHandler(
+      personal("usr_1"),
+      { customer: CUSTOMER, company: null, placedByStaffId: null },
       directory(),
     );
 
@@ -192,9 +258,9 @@ describe("GetAdminOrderHandler", () => {
 
   it("nomme le membre de l'équipe qui l'a saisie, par l'annuaire staff", async () => {
     const staff = directory();
-    const handler = new GetAdminOrderHandler(
-      reader(ofCompany("cmp_1")),
-      authors({ customer: CUSTOMER, company: COMPANY, placedByStaffId: "stf_1" }),
+    const handler = adminHandler(
+      ofCompany("cmp_1"),
+      { customer: CUSTOMER, company: COMPANY, placedByStaffId: "stf_1" },
       staff,
     );
 
@@ -205,9 +271,9 @@ describe("GetAdminOrderHandler", () => {
   });
 
   it("n'invente pas de nom quand l'annuaire ne connaît plus le membre", async () => {
-    const handler = new GetAdminOrderHandler(
-      reader(ofCompany("cmp_1")),
-      authors({ customer: CUSTOMER, company: COMPANY, placedByStaffId: "stf_parti" }),
+    const handler = adminHandler(
+      ofCompany("cmp_1"),
+      { customer: CUSTOMER, company: COMPANY, placedByStaffId: "stf_parti" },
       directory(),
     );
 
@@ -217,7 +283,7 @@ describe("GetAdminOrderHandler", () => {
   });
 
   it("lève le même 404 sur une commande inexistante", async () => {
-    const handler = new GetAdminOrderHandler(reader(null), authors(null), directory());
+    const handler = adminHandler(null, null, directory(), null);
 
     await expect(handler.execute(new GetAdminOrderQuery("ord_x"))).rejects.toBeInstanceOf(
       OrderNotFoundError,

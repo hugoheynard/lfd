@@ -314,6 +314,26 @@ export const ORDERS_PRODUCTION_FACTS = {
       outcome: z.enum(["cancelled", "failed"]),
     }),
   ),
+  /**
+   * L'équipe a **annulé** la commande (plan
+   * `documentation/order/plan-annulation-de-commande.md`, C3.5, 2026-10-12).
+   * Le sujet est le client ; `cancelledBy` la fiche staff qui a annulé, sous
+   * son nom du moment ; `reason` le motif saisi (jamais montré au client) ;
+   * `regime` ce qui était dû — `free` (total nul) ou `due` (carte non payée,
+   * fermée chez Stripe) ; `voucherReturned` dit si un bon de fidélité a été
+   * rendu.
+   */
+  "order.cancelled": fact(
+    payload({
+      subjectLabel: customerLabel(),
+      orderId: ref("order"),
+      orderNumber: z.string(),
+      cancelledBy: namedOrBare("staff_user"),
+      reason: z.string(),
+      regime: z.enum(["free", "due"]),
+      voucherReturned: z.boolean(),
+    }),
+  ),
   "order.handed_over": fact(
     payload({
       subjectLabel: customerLabel(),

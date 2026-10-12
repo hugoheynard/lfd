@@ -121,7 +121,7 @@ function demandOfDay(quantity: number): ExpectedDayProduction {
 
 function closedDay(): ProductionDay {
   const day = ProductionDay.open(ServiceDay.of(DAY));
-  day.close([order("ord_1", 30)], TIRAGE, null);
+  day.close([order("ord_1", 30)], new Set<string>(), TIRAGE, null);
   return day;
 }
 

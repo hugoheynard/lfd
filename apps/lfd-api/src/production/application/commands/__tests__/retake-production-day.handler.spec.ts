@@ -17,6 +17,7 @@ import { RetakeProductionDayCommand } from "../retake-production-day.command.js"
 import { RetakeProductionDayHandler } from "../retake-production-day.handler.js";
 import { InMemoryBatches, RecordingDayLock } from "../../__tests__/batch-doubles.js";
 import { RecordingDurable } from "../../__tests__/handoff-doubles.js";
+import { InMemoryWithdrawals } from "../../__tests__/withdrawal-doubles.js";
 
 /** Deux instants recopiés, jamais comparés à l'horloge — exception étroite du §5. */
 const TIRAGE = new Date("2026-09-13T04:20:00.000Z");
@@ -73,7 +74,7 @@ class Days extends ProductionDayRepository {
 /** Une journée arrêtée sur la seule commande `ord_1`, coche posée ou non. */
 function closedDay(initials: string | null = null): ProductionDay {
   const day = ProductionDay.open(ServiceDay.of(DAY));
-  day.close([order("ord_1", 30)], TIRAGE, null);
+  day.close([order("ord_1", 30)], new Set<string>(), TIRAGE, null);
   if (initials !== null) {
     const marked = day.toSnapshot();
     return ProductionDay.fromSnapshot({
@@ -94,6 +95,7 @@ function subject(
   batches: InMemoryBatches = new InMemoryBatches(),
   lock: RecordingDayLock = new RecordingDayLock(),
   durable: RecordingDurable = new RecordingDurable(),
+  withdrawals: InMemoryWithdrawals = new InMemoryWithdrawals(),
 ): RetakeProductionDayHandler {
   return new RetakeProductionDayHandler(
     days,
@@ -107,6 +109,7 @@ function subject(
     new FixedStaffAuthorDirectory(
       authorsKnownAs({ firstName: "Marie", lastName: "Dupont" }, "staff-1"),
     ),
+    withdrawals,
   );
 }
 
@@ -129,6 +132,26 @@ describe("RetakeProductionDayHandler", () => {
         payload: { subjectLabel: DAY, serviceDay: DAY, absorbed: 1 },
       },
     ]);
+  });
+
+  it("🔴 n'absorbe pas une commande retirée par l'annulation staff (C3.4)", async () => {
+    const days = new Days(closedDay());
+    const withdrawals = new InMemoryWithdrawals();
+    withdrawals.rows.set("ord_2", { day: DAY, at: NOW });
+    const handler = subject(
+      days,
+      [order("ord_1", 30), order("ord_2", 6)],
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      withdrawals,
+    );
+
+    const retake = await handler.execute(new RetakeProductionDayCommand(DAY, "staff-1"));
+
+    expect(retake.absorbed).toBe(0);
+    expect(days.saved).toBeNull();
   });
 
   it("ne publie RIEN au commerce : le seul envoi est le fait journalisé", async () => {

@@ -25,7 +25,29 @@ d'une commande déjà dans le plan.
 
 ## Lot C3 — annulation par le staff (2026-10-12)
 
-> 📐 **Plan, rien n'est bâti.** Réduit le même jour sur les décisions de Hugo
+> 🔨 **Côté serveur bâti le 2026-10-12, non commité** (`apps/lfd-api` +
+> `packages/contracts`) : migrations `20261012700000_le_droit_d_annuler_une_commande`
+> et `20261012700100_l_annulation_de_commande`, `POST /admin/orders/:id/cancel`,
+> `cancellability` sur `GET /admin/orders/:id`, retrait au fournil
+> (`OrderWithdrawalDesk`, `production.order_withdrawal`), agrégat
+> `ProductionDay.close/retake` qui écarte les retraits, fait durable
+> `order.cancelled` (journal + courriel `customer.order-cancelled`), S1
+> (`markFulfilled` conditionné), e2e `order-staff-cancel*.e2e-spec.ts`.
+> **Reste** : l'écran (lot back-office), et la phrase `order.cancelled` du
+> journal côté back-office (`phrase-registry.ts` ne compile plus sans elle).
+> **Écarts au plan, à trancher** : (1) un total nul qui porte un bon est
+> REFUSÉ (`orders.cancel.voucher_settled`) — son reliquat est soldé dès la
+> passation (`PlaceOrderHandler.persist`), rendre le bon doublerait sa valeur ;
+> la décision 8 ne tient donc pas telle quelle pour `free` — **Hugo,
+> 2026-10-12 : « garde le refus pour l'instant »** ; (2) la phrase du
+> 500 « transaction non enregistrée » ne sort pas : `AppErrorFilter` masque le
+> message d'une `TechnicalError`, seul le code `orders.cancel.not_recorded`
+> sort — l'écran doit dire la phrase d'après le code ; (3) `confirmed` et
+> `in_production`, absents de C3.3, sont refusés comme « inscrite » ; (4) le
+> détail lit l'inscription par un second port du fournil,
+> `OrderInscriptionReader` (le plan ne nommait que le guichet).
+>
+> 📐 **Plan.** Réduit le même jour sur les décisions de Hugo
 > (C3.0) et les objections de `vitruve` (C3.9), puis **élargi** le même jour
 > par l'option (a) de Hugo : l'annulation ferme l'intention chez Stripe pour
 > une carte non payée (C3.2, C3.4 bis). Le remboursement vient juste après
@@ -471,6 +493,33 @@ blocage de `vitruve` :
 
 **Plus de question ouverte pour Hugo** : (a) tranché le 2026-10-12. Reste
 le passage à `vitruve` (argent, frontière `b2b → production`).
+
+### Suite immédiate — C3b, la refusion du bon (décidé, à concevoir)
+
+> Hugo, 2026-10-12 : « le choix deux était pas mieux […] ça permet de
+> réconcilier le bon en cas d'annulation », « comme un remerge de bon », « il
+> faudra que ça soit spécifié en admin si la manip est faite par un staff,
+> expliquer la réconciliation du bon ».
+
+Lève le refus `orders.cancel.voucher_settled`. Le reliquat d'un bon porte son
+parent (`loyalty_vouchers.parent_voucher_id`, unique — vérifié le 2026-10-12
+dans `loyalty.prisma:140` et `LoyaltyVoucher.leaveRemainder`). À l'annulation :
+
+- **reliquat émis et encore disponible** : il est annulé (tracé, jamais
+  supprimé), et le bon d'origine redevient disponible à sa valeur et à sa date
+  limite d'origine — le client retrouve exactement le bon d'avant la commande ;
+- **reliquat déjà engagé ou consommé** sur une autre commande : refus, qui
+  nomme cette commande ;
+- **pas de reliquat** (bon imputé en entier) : le bon d'origine est rendu ;
+- **reliquat éteint** (date limite passée) : le bon d'origine l'est aussi —
+  annulation sans bon rendu.
+
+**À l'écran staff** : la confirmation d'annulation dit, avant le clic, ce qui
+arrivera au bon (« le reliquat de X € est annulé et le bon de Y € redevient
+disponible jusqu'au … ») ; le détail et l'historique de la commande le disent
+après. Le fait du journal porte les deux bons et les montants.
+
+Touche l'argent : règle à écrire en détail puis `vitruve` avant de bâtir.
 
 ### Suite immédiate — C4, le remboursement
 

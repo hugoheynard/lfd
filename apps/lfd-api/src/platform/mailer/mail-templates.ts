@@ -23,6 +23,7 @@ import {
   type CustomerAccessOpenedMailData,
 } from "./customer-access-opened-mail.js";
 import { renderInvoiceIssuedMail, type InvoiceIssuedMailData } from "./invoice-issued-mail.js";
+import { renderOrderCancelledMail, type OrderCancelledMailData } from "./order-cancelled-mail.js";
 import {
   renderDeliveryEnRouteMail,
   type DeliveryEnRouteMailData,
@@ -118,6 +119,12 @@ export interface B2bMails {
     readonly sheet: ClientSheet;
     readonly locale: ContentLocale;
   };
+  /**
+   * **La commande a été annulée par l'équipe** (plan
+   * `documentation/order/plan-annulation-de-commande.md`, C3.5). Destinataire :
+   * le client. Cf. `order-cancelled-mail.ts`.
+   */
+  "customer.order-cancelled": OrderCancelledMailData;
   /**
    * **Le lien de règlement d'une commande**, renvoyé par la comptabilité (plan
    * `blocage-et-liens-de-paiement.md`). Destinataire :
@@ -571,6 +578,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
     "customer.delivery-en-route": (data) => renderDeliveryEnRouteMail(data, customerMail),
     "customer.collection-notice": (data) => renderCollectionNoticeMail(data, customerMail),
     "customer.invoice-issued": (data) => renderInvoiceIssuedMail(data, customerMail),
+    "customer.order-cancelled": (data) => renderOrderCancelledMail(data, customerMail),
     "customer.order-placed": (data) => {
       const copy = mailCopyOf(data.locale).orderPlaced;
       const settlement = settlementCopyKeyOf(data.sheet);

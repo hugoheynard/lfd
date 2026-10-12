@@ -15,6 +15,8 @@ import {
   type OrderHandoverProofResponse,
   type ActivityEventView,
   type AdminOrderView,
+  type AdminCancelOrderPayload,
+  adminCancelOrderPayloadSchema,
   orderQuotePayloadSchema,
   type OrderQuotePayload,
   type OrderQuoteView,
@@ -49,6 +51,7 @@ import {
   type PlaceOrderForCustomerResult,
 } from "../application/commands/place-order-for-customer.command.js";
 import { SendHandoverReminderCommand } from "../application/commands/send-handover-reminder.command.js";
+import { CancelOrderCommand } from "../application/commands/cancel-order.command.js";
 import { GetAdminOrderSheetPdfQuery } from "../application/queries/get-admin-order-sheet-pdf.query.js";
 import type { OrderSheetPdf } from "../application/services/order-sheet-archive.service.js";
 import { GetAdminOrderQuery } from "../application/queries/get-admin-order.query.js";
@@ -66,11 +69,13 @@ import type { StoredDocument } from "../../../platform/storage/document-store.js
  * L'action se déduit du verbe — `GET` demande `orders:read`, le `POST` demande
  * `orders:write`.
  *
- * **Toujours pas de mutation d'une commande existante.** La faire avancer ou
- * l'annuler sont des décisions de production, pas des boutons d'écran ; elles
- * viendront avec les avenants (cf. `architecture-commande-immuable-avenants.md`).
- * Saisir une commande neuve pour un client n'entre pas en contradiction avec
- * cela : on ajoute un fait, on n'en réécrit aucun.
+ * **Une seule mutation d'une commande existante : l'annuler** (depuis le
+ * 2026-10-12, plan `documentation/order/plan-annulation-de-commande.md`, C3),
+ * tant que le fournil ne l'a pas inscrite, sous son droit à part
+ * (`b2b_cancel_order:write`). La MODIFIER reste à venir avec les avenants
+ * (cf. `architecture-commande-immuable-avenants.md`). Saisir une commande neuve
+ * pour un client n'entre pas en contradiction avec cela : on ajoute un fait,
+ * on n'en réécrit aucun.
  */
 @Controller("admin/orders")
 // `b2b_orders` pour lire les commandes, le bon, la traçabilité et le rappel ;
@@ -110,6 +115,32 @@ export class AdminOrdersController {
   async remindHandover(@Param("id") id: string, @StaffUserId() staffUserId: string): Promise<void> {
     await this.commands.execute<SendHandoverReminderCommand, void>(
       new SendHandoverReminderCommand(id, staffUserId),
+    );
+  }
+
+  /**
+   * **Annuler la commande** (plan `documentation/order/plan-annulation-de-commande.md`,
+   * C3.8). Corps `{ reason }` — le motif, obligatoire, jamais montré au client.
+   *
+   * Sous `b2b_cancel_order:write`, un droit à part : voir les commandes n'est
+   * pas pouvoir les annuler. L'auteur vient de la porte (`@StaffUserId()`,
+   * l'id de la fiche), jamais du corps.
+   *
+   * `204` : la commande se relit (`GET :id`). Les refus — déjà annulée, au
+   * compte, payée, inscrite au fournil, paiement en traitement, Stripe
+   * injoignable — sont des `409` qui portent leur phrase ; un motif vide, un
+   * `400`.
+   */
+  @Post(":id/cancel")
+  @RequirePermission("b2b_cancel_order:write")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async cancel(
+    @Param("id") id: string,
+    @StaffUserId() staffUserId: string,
+    @Body(new ZodBody(adminCancelOrderPayloadSchema)) payload: AdminCancelOrderPayload,
+  ): Promise<void> {
+    await this.commands.execute<CancelOrderCommand, void>(
+      new CancelOrderCommand(id, staffUserId, payload.reason),
     );
   }
 

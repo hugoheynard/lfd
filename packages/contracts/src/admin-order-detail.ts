@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 import type { OrderView } from "./order.js";
 import type { OrderClientele } from "./order-handover.js";
 
@@ -19,7 +21,33 @@ export interface AdminOrderView extends OrderView {
   readonly clientele: OrderClientele | null;
   /** La personne qui l'a passée, et pour qui — cf. {@link AdminOrderPlacedByView}. */
   readonly placedBy: AdminOrderPlacedByView;
+  /**
+   * **Peut-on l'annuler, et sinon pourquoi** (plan
+   * `documentation/order/plan-annulation-de-commande.md`, C3.8). Calculée par
+   * la même règle que le refus de `POST /admin/orders/:id/cancel`, mais sans
+   * verrou : c'est un affichage. Le refus, lui, se reprend sous verrou — un
+   * bouton actif peut donc encore rendre un 409, avec la même phrase.
+   */
+  readonly cancellability: AdminOrderCancellability;
 }
+
+/**
+ * `reason` est la phrase du serveur, à montrer telle quelle sous le bouton
+ * désactivé : elle nomme le cas et le geste de sortie.
+ */
+export type AdminOrderCancellability =
+  { readonly cancellable: true } | { readonly cancellable: false; readonly reason: string };
+
+/**
+ * Le corps de `POST /admin/orders/:id/cancel` — la FORME seule. Le motif vide
+ * ou trop long est refusé par le domaine (`CancellationReason`), avec sa
+ * phrase : le contrôleur ne revalide pas ce que l'entité garantit.
+ */
+export const adminCancelOrderPayloadSchema = z.object({
+  /** Le motif — obligatoire, jamais montré au client. */
+  reason: z.string(),
+});
+export type AdminCancelOrderPayload = z.infer<typeof adminCancelOrderPayloadSchema>;
 
 /**
  * **La personne derrière la commande**, lue aujourd'hui (pas figée) : un

@@ -19,6 +19,7 @@ import {
 } from "../../domain/entities/plan-signer.js";
 import type { ProductionDay } from "../../domain/entities/production-day.js";
 import { ProductionDayClosedJournalEvent } from "../../domain/events/production-day.events.js";
+import { OrderWithdrawalsReader } from "../../domain/ports/order-withdrawals.reader.js";
 import { ProductionDayLock } from "../../domain/ports/production-day.lock.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
@@ -121,6 +122,7 @@ export class CloseProductionDayHandler implements ICommandHandler<
     private readonly durable: DurablePublisher,
     private readonly lock: ProductionDayLock,
     private readonly authors: StaffAuthorDirectory,
+    private readonly withdrawals: OrderWithdrawalsReader,
   ) {}
 
   async execute(command: CloseProductionDayCommand): Promise<ProductionPlanClosure> {
@@ -176,8 +178,11 @@ export class CloseProductionDayHandler implements ICommandHandler<
       if (current.isClosed) {
         return this.republish(day, current);
       }
+      // Les retraits de l'annulation staff, lus SOUS le verrou : une commande
+      // annulée après la lecture du commerce y figure (plan d'annulation, C3.4).
+      const withdrawn = await this.withdrawals.withdrawnOn(day);
       const now = this.clock.now();
-      current.close(producible, now, signer);
+      current.close(producible, withdrawn, now, signer);
       await this.days.save(current);
       await this.events.publishTraced(
         new ProductionDayClosedJournalEvent(day.value, current.orders.length, automatic),

@@ -124,6 +124,14 @@ export const staffResourceSchema = z.enum([
    */
   "b2b_place_order",
   /**
+   * **Annuler une commande** — `POST /admin/orders/:id/cancel` (plan
+   * `documentation/order/plan-annulation-de-commande.md`, C3.8, 2026-10-12).
+   * Un geste à part, sur le modèle de `b2b_place_order` : voir les commandes
+   * n'est pas pouvoir les annuler. Une action utile, `write`. Accordée à
+   * l'écran ; aucune migration ne la donne à un rôle.
+   */
+  "b2b_cancel_order",
+  /**
    * **Le Comptoir** — ce qu'il faut voir d'un client pour lui vendre, rien de
    * plus : une carte de recherche, et au détail ses adresses, ses acheteurs et
    * s'il règle au compte (`documentation/comptoir/architecture-commande-au-comptoir.md`).
@@ -573,6 +581,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   b2b_companies: "Comptes clients",
   b2b_orders: "Commandes",
   b2b_place_order: "Passer une commande pro",
+  b2b_cancel_order: "Annuler une commande",
   b2b_counter: "Comptoir",
   b2b_supervision: "Supervision",
   b2b_subscriptions: "Paniers récurrents",
@@ -671,6 +680,9 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     b2b_companies: "write",
     b2b_orders: "write",
     b2b_place_order: "write",
+    // La graine seule (2026-10-12, plan d'annulation C3.8) : en production,
+    // le geste s'accorde à l'écran.
+    b2b_cancel_order: "write",
     production_plan: "write",
     production_count_stop: "write",
     production_settings: "write",

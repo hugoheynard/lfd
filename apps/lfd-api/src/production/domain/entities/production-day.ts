@@ -201,20 +201,30 @@ export class ProductionDay {
    * interrupteur, décision de Hugo du 2026-10-04. Une journée `legacy` ne naît
    * plus : elle ne se relit que depuis la base (`fromSnapshot`).
    *
+   * @param withdrawn les commandes RETIRÉES par une annulation staff (plan
+   *   `order/plan-annulation-de-commande.md`, C3.4) : l'appelant les lit sous
+   *   le verrou, l'agrégat les écarte. Les commandes du commerce sont lues
+   *   avant le verrou ; une annulation validée entre les deux y figure encore.
    * @param by qui arrête — `null` quand on ne le sait pas (un semis) : le
    *   dossier dit alors « Arrêté le … », sans inventer d'auteur.
    * @throws {ProductionDayAlreadyClosedError} elle l'est déjà — cf. l'en-tête.
-   * @throws {ProductionDayEmptyError} rien à produire ce jour-là.
+   * @throws {ProductionDayEmptyError} rien à produire ce jour-là, retraits ôtés.
    */
-  close(orders: readonly ProducibleOrder[], at: Date, by: PlanSigner | null): void {
+  close(
+    orders: readonly ProducibleOrder[],
+    withdrawn: ReadonlySet<string>,
+    at: Date,
+    by: PlanSigner | null,
+  ): void {
     if (this.isClosed) {
       throw new ProductionDayAlreadyClosedError(this.day.value);
     }
-    if (orders.length === 0) {
+    const kept = withoutWithdrawn(orders, withdrawn);
+    if (kept.length === 0) {
       throw new ProductionDayEmptyError(this.day.value);
     }
-    this.ordersValue = orders.map(freezeOrder);
-    this.countsValue = countOf(orders);
+    this.ordersValue = kept.map(freezeOrder);
+    this.countsValue = countOf(kept);
     this.closedAtValue = at;
     this.closedByValue = by;
     // Écrit ici et nulle part ailleurs (colisage, §13, B1) : la journée garde
@@ -239,15 +249,25 @@ export class ProductionDay {
    * AVANT, sous le verrou de la journée, et les fournées ne dépendent pas du
    * compte (§5.3–5.4 des fournées).
    *
+   * Les commandes `withdrawn` (annulées par l'équipe, C3.4) ne sont pas
+   * absorbées — même règle et même raison qu'à la clôture.
+   *
    * @returns le nombre de commandes réellement absorbées. Zéro = rien n'était
    *   arrivé, et c'est une information, pas une erreur.
    * @throws {ProductionDayNotClosedError} il n'y a pas de tirage à reprendre.
    */
-  retake(orders: readonly ProducibleOrder[], at: Date, by: string, byName: string | null): number {
+  retake(
+    orders: readonly ProducibleOrder[],
+    withdrawn: ReadonlySet<string>,
+    at: Date,
+    by: string,
+    byName: string | null,
+  ): number {
     if (!this.isClosed) {
       throw new ProductionDayNotClosedError(this.day.value);
     }
-    const absorbed = absorbArrivals(this.ordersValue, this.countsValue, orders);
+    const kept = withoutWithdrawn(orders, withdrawn);
+    const absorbed = absorbArrivals(this.ordersValue, this.countsValue, kept);
     if (absorbed.count === 0) {
       return 0;
     }
@@ -272,4 +292,15 @@ export class ProductionDay {
       batches: this.batchesValue,
     };
   }
+}
+
+/**
+ * Les commandes du commerce, moins celles que l'équipe a retirées — la règle
+ * d'écartement, écrite une fois pour la clôture et le retirage.
+ */
+function withoutWithdrawn(
+  orders: readonly ProducibleOrder[],
+  withdrawn: ReadonlySet<string>,
+): readonly ProducibleOrder[] {
+  return orders.filter((order) => !withdrawn.has(order.orderId));
 }

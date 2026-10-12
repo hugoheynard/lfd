@@ -216,6 +216,29 @@ export interface InvoiceIssuedCopy {
   readonly footer: string;
 }
 
+/**
+ * **« Votre commande a été annulée par notre équipe »** (plan
+ * `documentation/order/plan-annulation-de-commande.md`, C3.5). Ni QR, ni
+ * motif : le motif est interne. Distinct de l'abandon et de l'expiration —
+ * ici, c'est l'équipe qui a agi.
+ */
+export interface OrderCancelledCopy {
+  /** Objet du message. `{ref}` = le numéro de commande. */
+  readonly subject: string;
+  readonly title: string;
+  /** `{ref}`, `{day}` — le jour de retrait ou de livraison, en lettres. */
+  readonly intro: string;
+  /** Sans jour de service connu. `{ref}`. */
+  readonly introWithoutDay: string;
+  /** Total nul : rien à facturer. */
+  readonly nothingBilled: string;
+  /** Carte non payée, fermée chez Stripe : rien n'a été prélevé. */
+  readonly nothingCharged: string;
+  /** Un bon de fidélité utilisé est rendu. */
+  readonly voucherReturned: string;
+  readonly footer: string;
+}
+
 /** Tout ce qu'un e-mail sait dire, dans une langue. */
 export interface MailCopy {
   readonly orderPlaced: OrderPlacedCopy;
@@ -223,6 +246,7 @@ export interface MailCopy {
   readonly deliveryEnRoute: DeliveryEnRouteCopy;
   readonly paymentFailed: PaymentFailedCopy;
   readonly paymentExpired: PaymentExpiredCopy;
+  readonly orderCancelled: OrderCancelledCopy;
   readonly invoiceIssued: InvoiceIssuedCopy;
 }
 

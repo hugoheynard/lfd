@@ -12,6 +12,7 @@ import { PendingSettlementSweeper } from "../../../channels/commerce/pending-set
 import { ProductionDay } from "../../../domain/entities/production-day.js";
 import { ProductionDayRepository } from "../../../domain/ports/production-day.repository.js";
 import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
+import { InMemoryWithdrawals } from "../../__tests__/withdrawal-doubles.js";
 import { RecordingDayLock } from "../../__tests__/batch-doubles.js";
 import { CloseProductionDayCommand } from "../close-production-day.command.js";
 import { CloseProductionDayHandler } from "../close-production-day.handler.js";
@@ -97,7 +98,7 @@ function open(): ProductionDay {
 
 function closed(): ProductionDay {
   const day = open();
-  day.close([ORDER], EARLIER, null);
+  day.close([ORDER], new Set<string>(), EARLIER, null);
   return day;
 }
 
@@ -116,6 +117,7 @@ function subject(sequence: ProductionDay[]) {
     durable,
     new RecordingDayLock(trace),
     new FixedStaffAuthorDirectory(),
+    new InMemoryWithdrawals(trace),
   );
   return { handler, days, events, durable, trace };
 }
@@ -126,7 +128,15 @@ describe("clore sous le verrou de la journée", () => {
 
     await handler.execute(new CloseProductionDayCommand(DAY));
 
-    expect(trace).toEqual(["load", "producibleFor", `lock:${DAY}`, "load", "save"]);
+    expect(trace).toEqual([
+      "load",
+      "producibleFor",
+      `lock:${DAY}`,
+      "load",
+      // Les retraits de l'annulation staff, SOUS le verrou (C3.4).
+      `withdrawals:${DAY}`,
+      "save",
+    ]);
   });
 
   /**

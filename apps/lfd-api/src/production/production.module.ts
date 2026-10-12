@@ -1,5 +1,13 @@
 import { Module } from "@nestjs/common";
 
+import { ProductionOrderWithdrawalDesk } from "./application/services/production-order-withdrawal.desk.js";
+import { OrderInscriptionReader } from "./channels/commerce/order-inscription.reader.js";
+import { OrderWithdrawalLedger } from "./domain/ports/order-withdrawal.ledger.js";
+import { OrderWithdrawalsReader } from "./domain/ports/order-withdrawals.reader.js";
+import { PrismaOrderInscriptionReader } from "./infrastructure/prisma-order-inscription.reader.js";
+import { PrismaOrderWithdrawalLedger } from "./infrastructure/prisma-order-withdrawal.ledger.js";
+import { PrismaOrderWithdrawalsReader } from "./infrastructure/prisma-order-withdrawals.reader.js";
+
 import { RunAutoCloseRoundHandler } from "./application/commands/run-auto-close-round.handler.js";
 import { BusAutomaticDayCloser } from "./application/services/bus-automatic-day-closer.js";
 import { PlanArrestBell } from "./application/services/plan-arrest-bell.js";
@@ -244,10 +252,25 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     SendDossierOnDayRetaken,
     DossierDispatch,
     { provide: DossierDispatchLog, useClass: PrismaDossierDispatchLog },
+    // L'annulation staff (plan `order/plan-annulation-de-commande.md`, C3.4) :
+    // le registre des retraits, lu par la clôture et le retirage sous le
+    // verrou, et le guichet que le commerce appelle — relié par
+    // `ProductionDeskFeedModule`, comme l'inscription qu'il affiche.
+    { provide: OrderWithdrawalLedger, useClass: PrismaOrderWithdrawalLedger },
+    { provide: OrderWithdrawalsReader, useClass: PrismaOrderWithdrawalsReader },
+    PrismaOrderInscriptionReader,
+    { provide: OrderInscriptionReader, useExisting: PrismaOrderInscriptionReader },
+    ProductionOrderWithdrawalDesk,
   ],
   // La lecture des contrôles sert aussi la retenue que la production PUBLIE au
   // retrait (`channels/handover/`, QC3) — son adaptateur est relié par la
   // racine de composition, qui a besoin de ce port pour le construire.
-  exports: [QualityCheckReader, ChannelQualityHeldOrdersReader, DayPlannedDestinationsReader],
+  exports: [
+    QualityCheckReader,
+    ChannelQualityHeldOrdersReader,
+    DayPlannedDestinationsReader,
+    ProductionOrderWithdrawalDesk,
+    PrismaOrderInscriptionReader,
+  ],
 })
 export class ProductionModule {}

@@ -61,7 +61,7 @@ describe("l'envoi du dossier à l'arrêt", () => {
     ["« automatiquement »", AUTOMATIC_SIGNER, "automatiquement"],
   ] as const)("dit l'auteur de l'arrêt %s", async (_case, signer, expected) => {
     const day = ProductionDay.open(ServiceDay.of(DAY));
-    day.close([order("ord_1", 12)], CLOSED, signer);
+    day.close([order("ord_1", 12)], new Set<string>(), CLOSED, signer);
     const { closed, mailer } = setup([PAUL], day);
     await closed.handle(closure());
     expect(mailer.sent[0]?.data).toMatchObject({ arrestedBy: expected });
@@ -111,7 +111,13 @@ describe("l'envoi du dossier à l'arrêt", () => {
 
   it("ignore l'arrêt d'une journée reprise depuis : le retirage enverra le dossier complété", async () => {
     const day = closedDay();
-    day.retake([order("ord_1", 12), order("ord_2", 4)], RETAKEN, "staff-1", null);
+    day.retake(
+      [order("ord_1", 12), order("ord_2", 4)],
+      new Set<string>(),
+      RETAKEN,
+      "staff-1",
+      null,
+    );
     const { closed, mailer } = setup([PAUL], day);
     await closed.handle(closure());
     expect(mailer.sent).toEqual([]);
@@ -121,7 +127,13 @@ describe("l'envoi du dossier à l'arrêt", () => {
 describe("l'envoi du dossier complété, au retirage", () => {
   it("renvoie à chacun, « complété », avec les commandes absorbées", async () => {
     const day = closedDay();
-    day.retake([order("ord_1", 12), order("ord_2", 4)], RETAKEN, "staff-1", "Marie Dupont");
+    day.retake(
+      [order("ord_1", 12), order("ord_2", 4)],
+      new Set<string>(),
+      RETAKEN,
+      "staff-1",
+      "Marie Dupont",
+    );
     const { retaken, mailer, events } = setup([PAUL, JEANNE], day);
 
     await retaken.handle(retake());
@@ -144,7 +156,13 @@ describe("l'envoi du dossier complété, au retirage", () => {
 
   it("ignore un retirage dépassé par un plus récent", async () => {
     const day = closedDay();
-    day.retake([order("ord_1", 12), order("ord_2", 4)], RETAKEN, "staff-1", null);
+    day.retake(
+      [order("ord_1", 12), order("ord_2", 4)],
+      new Set<string>(),
+      RETAKEN,
+      "staff-1",
+      null,
+    );
     const { retaken, mailer } = setup([PAUL], day);
     await retaken.handle(retake(CLOSED));
     expect(mailer.sent).toEqual([]);

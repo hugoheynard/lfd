@@ -11,6 +11,7 @@ import type { ProductionOrderSnapshot } from "../../domain/entities/production-d
 import { ProductionDayRetakenEvent } from "../../channels/delivery/index.js";
 import { ProductionDayRetakenJournalEvent } from "../../domain/events/production-day.events.js";
 import { ProductionBatchRepository } from "../../domain/ports/production-batch.repository.js";
+import { OrderWithdrawalsReader } from "../../domain/ports/order-withdrawals.reader.js";
 import { ProductionDayLock } from "../../domain/ports/production-day.lock.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import { arrivalsBetween } from "../../domain/services/production-handoff.js";
@@ -90,6 +91,7 @@ export class RetakeProductionDayHandler implements ICommandHandler<
     private readonly lock: ProductionDayLock,
     private readonly durable: DurablePublisher,
     private readonly authors: StaffAuthorDirectory,
+    private readonly withdrawals: OrderWithdrawalsReader,
   ) {}
 
   async execute(command: RetakeProductionDayCommand): Promise<ProductionWorksheetRetake> {
@@ -104,8 +106,10 @@ export class RetakeProductionDayHandler implements ICommandHandler<
       const locked = await this.days.load(day);
       const inherited = locked.materialize();
       const before = locked.orders;
+      // Sous le verrou, comme à la clôture (plan d'annulation, C3.4).
+      const withdrawn = await this.withdrawals.withdrawnOn(day);
       const now = this.clock.now();
-      const absorbed = locked.retake(producible, now, command.staffUserId, byName);
+      const absorbed = locked.retake(producible, withdrawn, now, command.staffUserId, byName);
       if (absorbed > 0) {
         for (const batch of inherited) {
           await this.batches.record(day, batch);

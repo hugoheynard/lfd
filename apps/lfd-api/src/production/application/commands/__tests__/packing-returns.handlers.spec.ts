@@ -49,7 +49,7 @@ const ORDER: ProducibleOrder = {
 /** Arrêtée par le binaire de K2 : colisée au colisage. */
 function packingDay(): ProductionDay {
   const day = ProductionDay.open(ServiceDay.of(DAY));
-  day.close([ORDER], new Date("2026-09-13T04:20:00.000Z"), null);
+  day.close([ORDER], new Set<string>(), new Date("2026-09-13T04:20:00.000Z"), null);
   return day;
 }
 

@@ -344,8 +344,12 @@ export class PrismaOrderRepository extends OrderRepository {
     // vient du fournil, qui a déjà tranché la course sur SA contrainte
     // d'unicité — mais un abonné rappelé ne doit pas réécrire l'attestation, et
     // une condition ici coûte moins qu'un raisonnement sur qui a rejoué quoi.
+    //
+    // 🔴 Et le STATUT, depuis le 2026-10-12 (plan d'annulation, S1) : une
+    // commande annulée ne devient jamais `fulfilled` — un fait de retrait
+    // tardif sur une annulée ne la ressuscite pas, il rend `false`.
     const { count } = await this.prisma.order.updateMany({
-      where: { orderNumber: reference, handedOverAt: null },
+      where: { orderNumber: reference, handedOverAt: null, status: { not: OrderStatus.cancelled } },
       data: {
         handedOverAt: at,
         handedOverBy: by,

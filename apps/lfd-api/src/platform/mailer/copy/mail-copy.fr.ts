@@ -88,6 +88,18 @@ export const MAIL_FR: MailCopy = {
     footer:
       "Un doute ou une erreur ? Appelez le fournil — Le Labo · route de la Balme, Val d'Isère.",
   },
+  orderCancelled: {
+    subject: "Commande {ref} annulée",
+    title: "Votre commande a été annulée.",
+    intro: "Votre commande {ref} pour le {day} a été annulée par notre équipe.",
+    introWithoutDay: "Votre commande {ref} a été annulée par notre équipe.",
+    nothingBilled: "Rien ne vous sera facturé pour cette commande.",
+    nothingCharged: "Aucun paiement n'a été prélevé.",
+    voucherReturned:
+      "Votre bon de fidélité vous est rendu : vous pourrez l'utiliser sur une prochaine commande.",
+    footer:
+      "Un doute ou une erreur ? Appelez le fournil — Le Labo · route de la Balme, Val d'Isère.",
+  },
   invoiceIssued: {
     title: "Votre facture {number}",
     subject: "{title} — {seller}",

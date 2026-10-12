@@ -1089,6 +1089,15 @@
       "information": false
     },
     {
+      "colonne": "public.orders.cancelled_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a annulé la commande (`cancelled_by`) sur `orders` — plan d'annulation, C3.5.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "public.orders.handed_over_by",
       "personne": "livreur",
       "categorie": "auteur-geste",

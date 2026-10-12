@@ -41,6 +41,7 @@ import { IssuedMandatesModule } from "./issued-mandates.module.js";
 import { ProductionFeedModule } from "./production-feed.module.js";
 import { PackingModule } from "../packing/packing.module.js";
 import { PackingFeedModule } from "./packing-feed.module.js";
+import { ProductionDeskFeedModule } from "./production-desk-feed.module.js";
 import { PackingDeliveryFeedModule } from "./packing-delivery-feed.module.js";
 import { ImageCatalogueModule } from "./image-catalogue.module.js";
 import { MediaLibraryCensusModule } from "./media-library-census.module.js";
@@ -158,6 +159,8 @@ import { PublicationEnabledGuard } from "../pim/publication/publication-switch.j
     OrdersModule,
     ProductionModule,
     ProductionFeedModule,
+    // Le retrait d'une commande annulée, que le fournil tient pour le commerce.
+    ProductionDeskFeedModule,
     HandoverModule,
     HandoverFeedModule,
     // Le colisage, en ombre (plan `colisage/colisage.md`, K1).

@@ -32,6 +32,7 @@ function day(packed: boolean): ProductionDay {
         lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 12 }],
       },
     ],
+    new Set<string>(),
     AT,
     null,
   );

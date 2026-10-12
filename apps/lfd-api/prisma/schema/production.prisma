@@ -706,3 +706,28 @@ model ProductionDossierDispatch {
   @@map("production_dossier_dispatch")
   @@schema("production")
 }
+
+/// **Une commande retirée du fournil avant d'y être inscrite** — l'annulation
+/// staff (plan `documentation/order/plan-annulation-de-commande.md`, lot C3,
+/// C3.4 et C3.4 ter, 2026-10-12).
+///
+/// Écrite sous le verrou de la journée par `OrderWithdrawalDesk`, dans la
+/// transaction du commerce qui annule ; la clôture et le retirage la relisent
+/// sous le même verrou, et l'agrégat écarte ces commandes. C'est ce qui ferme
+/// la course : clôture et retirage lisent les commandes du commerce AVANT le
+/// verrou.
+///
+/// `order_id` en clé primaire : une commande n'a qu'un jour de service, et un
+/// second retrait (`ON CONFLICT DO NOTHING`) n'est pas une erreur. Aucune clé
+/// étrangère vers `production_day` : la journée peut n'avoir jamais été
+/// arrêtée, donc n'avoir aucune ligne. Ni vers `public.orders` (cf. l'en-tête).
+model OrderWithdrawal {
+  /// L'identifiant OPAQUE de la commande côté commerce.
+  orderId     String   @id @map("order_id")
+  serviceDay  String   @map("service_day") @db.VarChar(10)
+  withdrawnAt DateTime @map("withdrawn_at") @db.Timestamptz(6)
+
+  @@index([serviceDay])
+  @@map("order_withdrawal")
+  @@schema("production")
+}

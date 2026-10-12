@@ -81,14 +81,14 @@ export function order(orderId: string, quantity: number): ProducibleOrder {
 
 export function closedDay(): ProductionDay {
   const day = ProductionDay.open(ServiceDay.of(DAY));
-  day.close([order("ord_1", 12)], CLOSED, null);
+  day.close([order("ord_1", 12)], new Set<string>(), CLOSED, null);
   return day;
 }
 
 /** Une journée arrêtée, puis reprise à `RETAKEN` avec une commande de plus. */
 export function retakenDay(): ProductionDay {
   const day = closedDay();
-  day.retake([order("ord_1", 12), order("ord_2", 4)], RETAKEN, "staff-1", null);
+  day.retake([order("ord_1", 12), order("ord_2", 4)], new Set<string>(), RETAKEN, "staff-1", null);
   return day;
 }
 

@@ -21,6 +21,7 @@ import { ProductionDayEmptyError } from "../../../domain/errors/production-error
 import { ProductionDayRepository } from "../../../domain/ports/production-day.repository.js";
 import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
 import { RecordingDayLock } from "../../__tests__/batch-doubles.js";
+import { InMemoryWithdrawals } from "../../__tests__/withdrawal-doubles.js";
 import { CloseProductionDayCommand } from "../close-production-day.command.js";
 import { CloseProductionDayHandler } from "../close-production-day.handler.js";
 
@@ -177,7 +178,11 @@ class Durable extends DurablePublisher {
   }
 }
 
-function subject(day: ProductionDay, rows: readonly ProducibleOrder[]) {
+function subject(
+  day: ProductionDay,
+  rows: readonly ProducibleOrder[],
+  withdrawals: InMemoryWithdrawals = new InMemoryWithdrawals(),
+) {
   const days = new Days(day);
   const calls: CommerceCall[] = [];
   const commerce = new Commerce(rows, calls);
@@ -188,6 +193,7 @@ function subject(day: ProductionDay, rows: readonly ProducibleOrder[]) {
   return {
     durable,
     days,
+    withdrawals,
     commerce,
     sweeper,
     calls,
@@ -204,6 +210,7 @@ function subject(day: ProductionDay, rows: readonly ProducibleOrder[]) {
       new FixedStaffAuthorDirectory(
         authorsKnownAs({ firstName: "Marie", lastName: "Dupont" }, "staff-1"),
       ),
+      withdrawals,
     ),
   };
 }
@@ -234,6 +241,22 @@ describe("clore une journée", () => {
       listFact(order(), NOW),
       listFact(order({ orderId: "ord_2" }), NOW),
     ]);
+  });
+
+  it("🔴 écarte une commande retirée par l'annulation staff, lue sous le verrou (C3.4)", async () => {
+    const withdrawals = new InMemoryWithdrawals();
+    withdrawals.rows.set("ord_2", { day: DAY, at: NOW });
+    const { handler, days, durable } = subject(
+      ProductionDay.open(ServiceDay.of(DAY)),
+      [order(), order({ orderId: "ord_2" })],
+      withdrawals,
+    );
+
+    const closure = await handler.execute(new CloseProductionDayCommand(DAY));
+
+    expect(closure.absorbed).toBe(1);
+    expect(days.saved?.orders.map((frozen) => frozen.orderId)).toEqual(["ord_1"]);
+    expect(durable.facts[0]).toEqual(closedFact(["ord_1"], NOW));
   });
 
   it("la liste à coliser porte l'ÉCHÉANCE de chaque commande (colisage, §13)", async () => {
@@ -377,7 +400,7 @@ describe("clore une journée", () => {
 describe("réannoncer une journée déjà close", () => {
   it("BALAIE quand même : une commande passée après la clôture meurt aussi (S4)", async () => {
     const closed = ProductionDay.open(ServiceDay.of(DAY));
-    closed.close([order()], EARLIER, null);
+    closed.close([order()], new Set<string>(), EARLIER, null);
     const { handler, sweeper } = subject(closed, [order()]);
 
     await handler.execute(new CloseProductionDayCommand(DAY));
@@ -390,7 +413,7 @@ describe("réannoncer une journée déjà close", () => {
     // Il porte les commandes de l'INSTANTANÉ (ord_1), jamais `ord_2` arrivée
     // après l'arrêt : le commerce n'absorbe que ce que le fournil a compté.
     const closed = ProductionDay.open(ServiceDay.of(DAY));
-    closed.close([order()], EARLIER, null);
+    closed.close([order()], new Set<string>(), EARLIER, null);
     const { handler, days, events, durable } = subject(closed, [
       order(),
       order({ orderId: "ord_2" }),
@@ -417,7 +440,7 @@ describe("réannoncer une journée déjà close", () => {
     // Dédupliquée sur la clé de la clôture, elle ne ferait rien — un bouton de
     // réparation sans effet. Cf. `ProductionDayClosedEvent`, « La clé ».
     const closed = ProductionDay.open(ServiceDay.of(DAY));
-    closed.close([order()], EARLIER, null);
+    closed.close([order()], new Set<string>(), EARLIER, null);
     const { handler, durable } = subject(closed, [order()]);
 
     await handler.execute(new CloseProductionDayCommand(DAY));
@@ -430,7 +453,7 @@ describe("réannoncer une journée déjà close", () => {
   it("n'écrit AUCUN fait au journal — rien n'a changé", async () => {
     // Un second « arrêtée » dirait une heure et un auteur qui n'ont rien arrêté.
     const closed = ProductionDay.open(ServiceDay.of(DAY));
-    closed.close([order()], EARLIER, null);
+    closed.close([order()], new Set<string>(), EARLIER, null);
     const { handler, events } = subject(closed, [order()]);
 
     await handler.execute(new CloseProductionDayCommand(DAY));
@@ -443,7 +466,7 @@ describe("réannoncer une journée déjà close", () => {
     // Une requête de moins, et surtout aucun risque de croire qu'on a lu ce
     // qu'on va écrire : une journée close ne relit pas ce qui a changé depuis.
     const closed = ProductionDay.open(ServiceDay.of(DAY));
-    closed.close([order()], EARLIER, null);
+    closed.close([order()], new Set<string>(), EARLIER, null);
     const { handler, commerce } = subject(closed, [order()]);
 
     await handler.execute(new CloseProductionDayCommand(DAY));

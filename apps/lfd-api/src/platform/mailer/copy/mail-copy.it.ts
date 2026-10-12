@@ -83,6 +83,17 @@ export const MAIL_IT: MailCopy = {
     amountLabel: "Importo non addebitato",
     footer: "Un dubbio o un errore? Ci chiami — Le Labo · route de la Balme, Val d'Isère.",
   },
+  orderCancelled: {
+    subject: "Ordine {ref} annullato",
+    title: "Il suo ordine è stato annullato.",
+    intro: "Il suo ordine {ref} per {day} è stato annullato dal nostro team.",
+    introWithoutDay: "Il suo ordine {ref} è stato annullato dal nostro team.",
+    nothingBilled: "Non le verrà addebitato nulla per questo ordine.",
+    nothingCharged: "Nessun pagamento è stato prelevato.",
+    voucherReturned:
+      "Il suo buono fedeltà le è stato restituito: potrà usarlo per un prossimo ordine.",
+    footer: "Un dubbio o un errore? Ci chiami — Le Labo · route de la Balme, Val d'Isère.",
+  },
   invoiceIssued: {
     title: "La sua fattura {number}",
     subject: "{title} — {seller}",

@@ -87,7 +87,7 @@ class NoShelves extends WorkshopShelvesReader {
 
 function closedOn(day: string): ProductionDay {
   const production = ProductionDay.open(ServiceDay.of(day));
-  production.close([ORDER], new Date(NOW.getTime() - 60 * 60 * 1000), null);
+  production.close([ORDER], new Set<string>(), new Date(NOW.getTime() - 60 * 60 * 1000), null);
   return production;
 }
 

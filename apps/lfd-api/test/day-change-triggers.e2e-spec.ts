@@ -32,6 +32,8 @@ const UNWATCHED: Readonly<Record<string, string>> = {
     "la garde passée au livreur (BQ, 2026-10-01) : le départ fait déjà bouger la journée de la livraison, et son jour n'existe que dans une table d'un autre bloc (D3), comme `order_handover`",
   "production.order_handover_proof":
     "les pièces d'une remise à la porte (B1, 2026-10-01) : la remise clôt l'arrêt, qui fait déjà bouger la journée de la livraison ; son jour n'existe que dans une table d'un autre bloc (D3), comme `order_handover`",
+  "production.order_withdrawal":
+    "le retrait d'une commande annulée par l'équipe (plan d'annulation, C3.4, 2026-10-12) : écrit dans la transaction qui passe la commande `cancelled`, dont `orders` fait déjà bouger la journée du commerce ; aucun écran du fournil ne le lit, seuls la clôture et le retirage, sous le verrou",
   "production.production_container": "un réglage par SKU, sans journée",
   // Les réglages du fournil (plan d'arrêt du plan, A1, 2026-10-06).
   "production.production_settings": "le réglage unique de l'arrêt du plan, sans journée",
