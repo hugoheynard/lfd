@@ -1207,7 +1207,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 43 portes du dépôt, d'un coup
+pnpm lint:gates         # les 44 portes du dépôt, d'un coup
 pnpm lint:no-direct-env # gate repo : aucun accès direct à process.env
 ```
 

@@ -120,5 +120,8 @@ chaque poste (ignoré par git) :
 - `graph.json` — les notes orphelines visibles : une doc sans lien entrant
   est une doc que personne ne retrouvera, comme une doc absente de l'index.
 
+**`lint:doc-orphans`** tient ce que le graphe montre : une doc qu'aucune
+autre ne cite fait échouer les portes (2026-10-12).
+
 ⚠️ **Jamais de `[[lien wiki]]`** dans `documentation/` : la porte ne le lit
 pas, et GitHub non plus.
