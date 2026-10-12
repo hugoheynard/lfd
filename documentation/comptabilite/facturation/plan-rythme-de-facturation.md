@@ -980,7 +980,7 @@ dans `IssueMonthlyInvoicesHandler`, quand `at ≥ C`, prendre aussi
 `dueOn` — l'échéance du lot qui prendra réellement la facture. À décider :
 c'est une date imprimée sur une pièce.
 
-### 16.12 M4b bâti (2026-10-12, non commité) — les écrans
+### 16.12 M4b bâti (2026-10-12) — les écrans
 
 Ni contrat, ni serveur touchés.
 

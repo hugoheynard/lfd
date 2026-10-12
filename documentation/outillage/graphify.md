@@ -55,6 +55,29 @@ flowchart LR
 - Au-delà de 5 000 nœuds, la vue HTML montre les **groupes**, pas les
   nœuds ; le détail se lit par `graphify query/explain/path`.
 
+## Mesuré le 2026-10-12 — `explain` contre grep, 5 symboles
+
+| Symbole                   | `graphify explain`    | grep (fichiers .ts/.md)  |
+| ------------------------- | --------------------- | ------------------------ |
+| `invoiceDueDay`           | 3,9 s · 7 liens typés | 3,1 s · 5 fichiers       |
+| `PayerTimeline`           | 4,2 s · 21 liens      | 1,4 s · 11 fichiers      |
+| `assertWritableLegalForm` | 3,6 s · 7 liens       | 1,6 s · 6 fichiers       |
+| `frozenCollectionDay`     | 3,9 s · 10 liens      | 1,2 s · 9 fichiers       |
+| `CollectionBatch`         | 3,5 s · 29 liens      | 1,1 s · **123 fichiers** |
+
+- **Pas plus rapide** : ~4 s contre 1 à 3 s.
+- **Plus précis** : chaque lien dit sa nature et sa ligne (qui importe, qui
+  appelle — jusqu'à la méthode —, quel test, quelle section de doc), là où
+  grep rend des fichiers à ouvrir. L'écart est net sur un symbole central :
+  123 fichiers d'un côté, 29 liens typés de l'autre.
+- **Frais** : `invoiceDueDay`, commité quelques minutes avant, y était avec
+  son appelant — les hooks rafraîchissent bien.
+- `query` en langage naturel reste faible (essai du même jour, CLAUDE.md
+  §10 bis).
+
+Verdict : s'en servir pour « qui dépend de X » sur un symbole central ;
+grep reste meilleur pour retrouver un nom exact.
+
 ## Comment s'en servir
 
 ```bash
