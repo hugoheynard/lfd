@@ -47,6 +47,7 @@ import { PricingMaterialsCache } from "../src/b2b/pricing/infrastructure/pricing
 import { CachedPublishedShopCopyReader } from "../src/b2b/shop-copy/infrastructure/cached-published-shop-copy.reader.js";
 import { StaffAccessResolver } from "../src/platform/auth/staff-access.resolver.js";
 import { prismaSchemaSource } from "../src/platform/database/prisma-schema-source.js";
+import { addDays, instantToLocal } from "@lfd/contracts";
 import { testDatabaseUrl } from "./setup-env.js";
 import { ensureTestBucket, resetStorage } from "./storage.js";
 import { seedE2eCatalog } from "./catalog-fixture.js";
@@ -306,7 +307,11 @@ export function daysAgo(days: number): string {
  * loin), et ça reste lisible comme « une commande pour la semaine prochaine ».
  */
 export function serviceDay(inDays = 7): string {
-  return new Date(Date.now() + inDays * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  // Le jour de PARIS, pas le jour UTC : entre minuit et 2 h, l'UTC est encore
+  // la veille, et `serviceDay(0)` désignait hier — une commande « pour
+  // aujourd'hui » tombait sous l'heure limite (order-cutoffs, rouge le
+  // 2026-10-13 à 00:16 sur du code inchangé).
+  return addDays(instantToLocal(new Date()).day, inDays);
 }
 
 export const E2E_STAFF_SUB = "staff-e2e";
