@@ -282,3 +282,23 @@ précédente, clôture)` : un bon passé entre 23h55 et minuit la veille d'une
   NOT NULL). Ne pas pousser autour de 23h55.
 - **Retour arrière** de la migration : restaurer aussi l'ancienne fonction
   `invoice_monthly_outcome_final` (message en `OLD."month"`).
+
+## 12. Un seul changement de rythme à la fois (Hugo, 2026-10-12)
+
+> « refus du deuxième changement, le spécifier avec un warning »
+
+Remplace la règle « un second changement remplace le programmé » (R2).
+
+- **Refusé** (`BusinessError`, 409) : tout nouveau rythme tant qu'un
+  changement est **en attente**, c'est-à-dire tant que la clôture de prise
+  d'effet n'a pas été **tentée par la facture** (`invoice_autopilot_run` à
+  `period_closes_at = effective_at`). Le message nomme la date de prise
+  d'effet et le geste de sortie.
+- **Admis** : revenir au rythme courant tant que la prise d'effet n'est pas
+  atteinte — c'est une annulation, pas un changement.
+- **L'avertissement** est dit AVANT le geste, à l'écran (R5) : « un seul
+  changement à la fois ; le suivant ne sera possible qu'après la facture du
+  {date} ». Le refus serveur reste la garantie.
+- Ce qui ferme : l'historique des rythmes n'est plus nécessaire (§11), puisque
+  aucune clôture ne peut être relue sous un rythme qui l'a précédée de deux
+  bascules.
