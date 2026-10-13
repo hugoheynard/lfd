@@ -10,10 +10,11 @@ import { CustomerCancellationSubjectReader } from "../../domain/ports/customer-c
  * - commande d'INVITÉ (personnelle, fiche sans compte connectable) : la page
  *   publique d'annulation, le jeton en FRAGMENT (`/annuler#<id>.<jeton>`, S7) —
  *   jamais envoyé au serveur par le navigateur ;
- * - toute autre : la liste `mes-commandes`, SANS secret. Un jeton pour un
- *   titulaire de compte contournerait le mur (un courriel transféré à un
- *   ancien membre annulerait au nom de la société) : c'est la session qui
- *   décide.
+ * - toute autre : CETTE commande dans « Mes commandes »
+ *   (`/mes-commandes/<id>`, tiroir ouvert, connexion demandée — décision de
+ *   Hugo du 2026-10-13), SANS secret. Un jeton pour un titulaire de compte
+ *   contournerait le mur (un courriel transféré à un ancien membre annulerait
+ *   au nom de la société) : c'est la session qui décide.
  *
  * Déterministe : un rejeu du courriel rend le même lien (B1). Vide sans
  * origine de l'app cliente.
@@ -33,6 +34,6 @@ export class OrderManageLink {
     if (subject !== null && subject.companyId === null && !subject.buyer.hasAccount) {
       return `${clientBaseUrl}/annuler#${orderId}.${this.signer.sign(orderId)}`;
     }
-    return `${clientBaseUrl}/mes-commandes`;
+    return `${clientBaseUrl}/mes-commandes/${orderId}`;
   }
 }

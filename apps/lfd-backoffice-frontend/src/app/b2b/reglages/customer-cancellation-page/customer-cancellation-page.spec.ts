@@ -12,11 +12,11 @@ import { CustomerCancellationPage } from './customer-cancellation-page';
 
 /**
  * **Réglages › Commandes** (C6.5) : un interrupteur, un délai visible quand il
- * est ouvert, et seules les clés changées partent au serveur.
+ * est imposé, et seules les clés changées partent au serveur.
  */
 
-const CLOSED: CustomerCancellationSettingsView = {
-  openToB2c: false,
+const NO_DELAY: CustomerCancellationSettingsView = {
+  delayEnabled: false,
   hoursBefore: 24,
   updatedAt: null,
   updatedBy: null,
@@ -40,9 +40,9 @@ class FakeSettings {
     if (this.refusal !== null) {
       return Promise.reject(this.refusal);
     }
-    const base = this.current instanceof Error ? CLOSED : this.current;
+    const base = this.current instanceof Error ? NO_DELAY : this.current;
     this.current = {
-      openToB2c: patch.openToB2c ?? base.openToB2c,
+      delayEnabled: patch.delayEnabled ?? base.delayEnabled,
       hoursBefore: patch.hoursBefore ?? base.hoursBefore,
       updatedAt: '2026-10-13T08:00:00.000Z',
       updatedBy: 'Hugo',
@@ -77,20 +77,23 @@ const text = (fixture: ComponentFixture<CustomerCancellationPage>): string =>
   (fixture.nativeElement as HTMLElement).textContent ?? '';
 
 describe('CustomerCancellationPage', () => {
-  it('fermé : pas de délai à l’écran, et le rappel des pros', async () => {
-    const fixture = await mount(new FakeSettings(CLOSED));
+  it('sans délai : pas de champ, et la limite dite — l’arrêt du plan de production', async () => {
+    const fixture = await mount(new FakeSettings(NO_DELAY));
     const host = fixture.nativeElement as HTMLElement;
 
-    expect(text(fixture)).toContain('Les particuliers peuvent annuler eux-mêmes');
+    expect(text(fixture)).toContain('Imposer un délai aux particuliers');
     expect(host.querySelector('fold-number-input')).toBeNull();
+    expect(text(fixture)).toContain(
+      "Sans délai, les particuliers annulent jusqu'à l'arrêt du plan de production, comme les pros.",
+    );
     expect(text(fixture)).toContain('Les pros annulent jusqu');
     expect(text(fixture)).not.toContain('Dernier réglage');
   });
 
-  it('ouvert : le délai et sa phrase, avec qui a réglé', async () => {
+  it('délai imposé : le délai et sa phrase, avec qui a réglé', async () => {
     const fixture = await mount(
       new FakeSettings({
-        openToB2c: true,
+        delayEnabled: true,
         hoursBefore: 48,
         updatedAt: '2026-10-12T08:00:00.000Z',
         updatedBy: 'Cécile Martin',
@@ -106,22 +109,22 @@ describe('CustomerCancellationPage', () => {
   });
 
   it('🔴 sans `b2b_settings:write`, aucun bouton d’écriture', async () => {
-    const fixture = await mount(new FakeSettings(CLOSED), ['b2b_settings:read']);
+    const fixture = await mount(new FakeSettings(NO_DELAY), ['b2b_settings:read']);
 
     expect((fixture.nativeElement as HTMLElement).querySelector('button')).toBeNull();
   });
 
   it('n’envoie que ce qui a changé, puis relit', async () => {
-    const api = new FakeSettings(CLOSED);
+    const api = new FakeSettings(NO_DELAY);
     const fixture = await mount(api);
     const page = fixture.componentInstance;
 
     expect(page['patch']()).toBeNull();
-    page['open'].set(true);
+    page['delay'].set(true);
     await page['save']();
 
-    expect(api.patches).toEqual([{ openToB2c: true }]);
-    expect(page['settings']()?.openToB2c).toBe(true);
+    expect(api.patches).toEqual([{ delayEnabled: true }]);
+    expect(page['settings']()?.delayEnabled).toBe(true);
     expect(page['patch']()).toBeNull();
 
     page['hours'].set(12);
@@ -130,7 +133,7 @@ describe('CustomerCancellationPage', () => {
   });
 
   it('un délai vidé ne s’enregistre pas', async () => {
-    const fixture = await mount(new FakeSettings({ ...CLOSED, openToB2c: true }));
+    const fixture = await mount(new FakeSettings({ ...NO_DELAY, delayEnabled: true }));
     const page = fixture.componentInstance;
 
     page['hours'].set(null);
@@ -139,18 +142,18 @@ describe('CustomerCancellationPage', () => {
   });
 
   it('dit un refus du serveur et garde le brouillon', async () => {
-    const api = new FakeSettings(CLOSED);
+    const api = new FakeSettings(NO_DELAY);
     api.refusal = new Error('refusé');
     const fixture = await mount(api);
     const page = fixture.componentInstance;
 
-    page['open'].set(true);
+    page['delay'].set(true);
     await page['save']();
     fixture.detectChanges();
 
     expect((fixture.nativeElement as HTMLElement).querySelector('fold-callout')).not.toBeNull();
-    expect(page['open']()).toBe(true);
-    expect(page['settings']()?.openToB2c).toBe(false);
+    expect(page['delay']()).toBe(true);
+    expect(page['settings']()?.delayEnabled).toBe(false);
   });
 
   it('propose de réessayer quand la lecture échoue', async () => {

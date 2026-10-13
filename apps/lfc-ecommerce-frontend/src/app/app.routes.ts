@@ -283,6 +283,19 @@ export const routes: Routes = [
           import('./client/commande/reglement-page/reglement-page').then((m) => m.ReglementPage),
       },
       {
+        // UNE COMMANDE, tiroir ouvert : le lien « Gérer ou annuler ma
+        // commande » du courriel de confirmation d'un compte (doc
+        // `annulation-par-le-client.md`, décision du 2026-10-13). Gardée : la
+        // connexion est demandée, et `returnTo` ramène ici après elle.
+        path: 'mes-commandes/:orderId',
+        title: 'Mes commandes — La Folie Coffee',
+        canActivate: [authenticatedGuard],
+        loadComponent: () =>
+          import('./client/mes-commandes/commandes-page/commandes-page').then(
+            (m) => m.CommandesPage,
+          ),
+      },
+      {
         // LE QR DE RETRAIT, par son identifiant de commande. Il vit sous
         // `mes-commandes/` et pas sous `commande/` : on le rouvre le
         // lendemain matin, depuis l'historique ou un signet, longtemps après

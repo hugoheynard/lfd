@@ -92,7 +92,7 @@ export class OrderPlacedMail {
         // bouton plutôt que de poser un lien relatif, inerte dans une boîte mail.
         orderUrl: client === null ? "" : `${client}/mes-commandes`,
         // Lot C6 : « gérer ou annuler » — la page d'annulation pour un invité,
-        // la liste pour un compte (C6.4).
+        // SA commande dans « Mes commandes » pour un compte (C6.4).
         manageUrl: await this.manageLink.urlFor(orderId, client),
         // Le QR encode une URL du BACK-OFFICE : c'est l'équipe qui le scanne,
         // pas le client. Sans origine admin, pas de QR — un code qui n'ouvre

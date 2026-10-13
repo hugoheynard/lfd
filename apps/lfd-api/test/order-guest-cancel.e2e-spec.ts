@@ -65,13 +65,15 @@ describe("le lien du courriel (C6.4, B1)", () => {
     ]);
   });
 
-  it("l'accusé d'un compte porte la liste, sans secret", async () => {
+  it("l'accusé d'un compte porte SA commande dans « Mes commandes », sans secret", async () => {
     const author = await customer();
     const { orderId } = await seedCustomerOrder({ placedByUserId: author.id });
 
     await ctx.app.get(OrderPlacedMail).send(orderId);
 
-    expect(scene.mails[0]?.data).toMatchObject({ manageUrl: `${CLIENT_BASE_URL}/mes-commandes` });
+    expect(scene.mails[0]?.data).toMatchObject({
+      manageUrl: `${CLIENT_BASE_URL}/mes-commandes/${orderId}`,
+    });
   });
 });
 
@@ -191,11 +193,14 @@ describe("POST /shop/orders/cancellation/confirm", () => {
     expect(jsonBody<{ code: string }>(again).code).toBe("orders.customer_cancel.already_cancelled");
   });
 
-  it("réglage fermé : refus `closed`", async () => {
-    await setCancellation(false);
-    const { orderId, token } = await guestOrder();
+  /** Décision du 2026-10-13 : plus de « réglage fermé » — sans délai, seul le fournil limite. */
+  it("délai actif : `too_late` à J+1 ; désactivé, l'invité annule la même commande", async () => {
+    const { orderId, token } = await guestOrder({ inDays: 1 });
     const refused = await confirm(orderId, token);
-    expect(jsonBody<{ code: string }>(refused).code).toBe("orders.customer_cancel.closed");
+    expect(jsonBody<{ code: string }>(refused).code).toBe("orders.customer_cancel.too_late");
+
+    await setCancellation(false);
+    await confirm(orderId, token).expect(204);
   });
 
   it("le jeton n'ouvre pas `GET /orders/:id`", async () => {

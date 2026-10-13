@@ -18,7 +18,7 @@ function handlerOf(options: Partial<CustomerScene> = {}) {
     now: NOW,
     order: { serviceDay: SERVICE_DAY },
     customer: { serviceDay: SERVICE_DAY, buyer: GUEST, placedAt: NOW },
-    settings: { openToB2c: true, hoursBefore: 24 },
+    settings: { delayEnabled: true, hoursBefore: 24 },
     ...options,
   });
   return {
@@ -111,11 +111,10 @@ describe("CancelGuestOrderHandler", () => {
     });
   });
 
-  it("P1 s'applique à l'invité : réglage fermé → `closed`", async () => {
-    const scene = handlerOf({ settings: { openToB2c: false } });
+  /** Décision du 2026-10-13 : plus de « réglage fermé » ; sans délai, rien ne refuse avant le fournil. */
+  it("délai désactivé : l'invité annule même au-delà du délai", async () => {
+    const scene = handlerOf({ settings: { delayEnabled: false, hoursBefore: 168 } });
 
-    await expect(scene.handler.execute(confirm("sig-ord_1"))).rejects.toMatchObject({
-      code: "orders.customer_cancel.closed",
-    });
+    await expect(scene.handler.execute(confirm("sig-ord_1"))).resolves.toBeUndefined();
   });
 });

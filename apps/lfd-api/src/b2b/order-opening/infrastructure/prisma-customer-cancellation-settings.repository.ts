@@ -14,7 +14,7 @@ export class PrismaCustomerCancellationSettingsRepository extends CustomerCancel
 
   async put(settings: CustomerCancellationSettings): Promise<void> {
     const row = {
-      openToB2c: settings.openToB2c,
+      delayEnabled: settings.delayEnabled,
       hoursBefore: settings.hoursBefore,
       updatedAt: settings.at,
       updatedByStaffId: settings.author.staffUserId,

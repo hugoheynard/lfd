@@ -17,7 +17,6 @@ export const CUSTOMER_REFUSAL_PHRASES: Readonly<Record<CustomerCancellationRefus
     "Votre commande est déjà en préparation : elle ne peut plus être annulée. Contactez-nous si besoin.",
   ready: "Votre commande est prête : elle ne peut plus être annulée.",
   fulfilled: "Votre commande est déjà retirée : elle ne peut plus être annulée.",
-  closed: "L'annulation en ligne n'est pas proposée. Contactez-nous pour annuler cette commande.",
   too_late: "Il est trop tard pour annuler en ligne. Contactez-nous.",
   payment_in_progress:
     "Un paiement est en cours sur cette commande. Réessayez dans quelques minutes.",

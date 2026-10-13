@@ -7,7 +7,7 @@ import {
   type CustomerCancellationWindow,
 } from "../../domain/services/customer-cancellation-window.js";
 
-/** P1/P2 appliqués, et le délai qui l'a été — à figer dans le fait. */
+/** P2 appliqué, et le délai qui l'a été — à figer dans le fait. */
 export interface AppliedCustomerWindow {
   readonly window: CustomerCancellationWindow;
   readonly hoursBefore: number;
@@ -15,7 +15,9 @@ export interface AppliedCustomerWindow {
 
 /**
  * **Le réglage, lu une fois, appliqué à une commande personnelle** (C6.3).
- * Une commande de société n'a ni P1 ni P2 (décision 2) : `null`.
+ * `null` — aucun délai, seul le compte à produire limite — pour une commande
+ * de société (décision 2) et pour un particulier quand le réglage n'impose
+ * pas de délai (décision du 2026-10-13).
  *
  * Le réglage est relu à chaque requête, sans verrou : un changement pendant
  * la requête s'applique à la suivante (S5). Le délai se compare au `now`
@@ -34,8 +36,11 @@ export class CustomerCancellationPolicyGate {
       return null;
     }
     const policy = await this.settings.current();
+    if (!policy.delayEnabled) {
+      return null;
+    }
     return {
-      window: customerCancellationWindowOf(policy, subject, now),
+      window: customerCancellationWindowOf(policy.hoursBefore, subject, now),
       hoursBefore: policy.hoursBefore,
     };
   }

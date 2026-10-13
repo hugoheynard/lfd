@@ -4,6 +4,7 @@ import {
   computed,
   inject,
   input,
+  linkedSignal,
   output,
   signal,
 } from '@angular/core';
@@ -53,6 +54,27 @@ import { OrderDetail } from '../order-detail/order-detail';
 })
 export class HistoryTable {
   readonly orders = input.required<readonly HistoryOrder[]>();
+
+  /**
+   * La commande dont le tiroir s'ouvre d'office — le lien du courriel
+   * (`/mes-commandes/:orderId`). Inconnue de la liste : rien ne s'ouvre.
+   */
+  readonly openOrderId = input<string | null>(null);
+
+  /** La clé de ligne de cette commande, une fois la liste arrivée. */
+  private readonly linkedKey = computed<string | null>(() => {
+    const id = this.openOrderId();
+    return id === null ? null : (this.orders().find((order) => order.id === id)?.reference ?? null);
+  });
+
+  /**
+   * Les tiroirs ouverts. Repartent de la commande du lien quand elle apparaît ;
+   * une relecture de la liste qui garde la même clé ne referme rien.
+   */
+  protected readonly expanded = linkedSignal<string | null, ReadonlySet<string | number>>({
+    source: this.linkedKey,
+    computation: (key) => (key === null ? new Set() : new Set([key])),
+  });
 
   /** Le signalement — l'écran décide de la surface qui l'accueille. */
   readonly problemRaised = output<HistoryOrder>();

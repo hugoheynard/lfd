@@ -25,7 +25,7 @@ function handlerOf(options: Partial<CustomerScene> = {}) {
     now: NOW,
     order: { serviceDay: SERVICE_DAY },
     customer: { serviceDay: SERVICE_DAY },
-    settings: { openToB2c: true, hoursBefore: 24 },
+    settings: { delayEnabled: true, hoursBefore: 24 },
     ...options,
   });
   const handler = new CancelOrderByCustomerHandler(
@@ -100,18 +100,23 @@ describe("CancelOrderByCustomerHandler — le mur (C6.2)", () => {
   });
 });
 
-describe("CancelOrderByCustomerHandler — P1/P2 (C6.3)", () => {
-  it("P1 : réglage fermé → refus `closed`, sans toucher le noyau", async () => {
-    const scene = handlerOf({ settings: { openToB2c: false } });
+describe("CancelOrderByCustomerHandler — le délai P2 (C6.3)", () => {
+  /**
+   * Décision de Hugo du 2026-10-13 : il n'y a plus de réglage « fermé ». Sans
+   * délai imposé, un particulier annule jusqu'à l'arrêt du plan de production,
+   * comme un pro — même avec un délai de 168 h que P2 aurait refusé.
+   */
+  it("délai désactivé : un délai dépassé ne refuse rien, aucun délai figé", async () => {
+    const scene = handlerOf({ settings: { delayEnabled: false, hoursBefore: 168 } });
 
-    await expect(scene.handler.execute(by("usr_1"))).rejects.toMatchObject({
-      code: "orders.customer_cancel.closed",
-    });
-    expect(scene.trace).toEqual([]);
+    await scene.handler.execute(by("usr_1"));
+
+    expect(factOf(scene).cancelledByUserId).toBe("usr_1");
+    expect(factOf(scene).policy).toBeNull();
   });
 
   it("P2 : délai dépassé → `too_late`, la phrase dit jusqu'à quand", async () => {
-    const scene = handlerOf({ settings: { openToB2c: true, hoursBefore: 168 } });
+    const scene = handlerOf({ settings: { delayEnabled: true, hoursBefore: 168 } });
 
     const refusal = scene.handler.execute(by("usr_1"));
     await expect(refusal).rejects.toBeInstanceOf(CustomerCancellationRefusedError);
@@ -122,11 +127,11 @@ describe("CancelOrderByCustomerHandler — P1/P2 (C6.3)", () => {
     expect(scene.trace).toEqual([]);
   });
 
-  it("un pro n'a ni P1 ni P2 : réglage fermé, il annule quand même", async () => {
+  it("un pro n'a pas de délai : même dépassé, il annule quand même", async () => {
     const scene = handlerOf({
       customer: { companyId: "co_1", serviceDay: SERVICE_DAY },
       members: ["usr_2:co_1"],
-      settings: { openToB2c: false },
+      settings: { delayEnabled: true, hoursBefore: 168 },
     });
 
     await scene.handler.execute(by("usr_2"));

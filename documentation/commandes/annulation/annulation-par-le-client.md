@@ -30,17 +30,28 @@
    confirmation », corrigé le même jour : le lien ne cesse pas de marcher, il
    ouvre toujours la page de la commande et dit pourquoi quand elle n'est plus
    annulable.
+5. **Le délai, révisé le même jour** : « fermé, on dit que le compte à
+   produire est la limite dans tous les cas ». Il n'y a plus de réglage
+   « fermé » : le réglage **impose un délai** aux particuliers, **actif par
+   défaut** (24 h) ; le désactiver est le geste, et un particulier annule alors
+   jusqu'à l'arrêt du plan de production, comme un pro. Bâti le 2026-10-13
+   (migration `20261013400000_le_delai_d_annulation_actif`).
+6. **Le lien du courriel d'un compte** mène à **sa** commande dans « Mes
+   commandes » (`/mes-commandes/<id>`, tiroir ouvert, connexion demandée), et
+   plus à la liste. Bâti le 2026-10-13.
 
 ## Le parcours
 
-> ⚠️ **Règle décidée par Hugo le 2026-10-13, PAS ENCORE BÂTIE** :
->
 > - **Le courriel de confirmation porte le lien « Gérer ou annuler ma commande »
->   dans TOUS les parcours** (Hugo : « tous les parcours doivent avoir le lien
->   d'annulation dans le mail ») : pro, particulier connecté, invité. Un compte
->   arrive sur SA commande dans Mes commandes (connexion demandée) ; l'invité sur
->   la page /annuler.
-> - Le délai des particuliers est **actif par défaut** ; le désactiver est le geste.
+>   dans TOUS les parcours** (Hugo, 2026-10-13 : « tous les parcours doivent
+>   avoir le lien d'annulation dans le mail ») : pro, particulier connecté,
+>   invité, commande saisie par l'équipe ; au compte, total nul ou carte payée.
+>   Un compte arrive sur SA commande dans Mes commandes (connexion demandée) ;
+>   l'invité sur la page /annuler. Éprouvé par
+>   `apps/lfd-api/src/b2b/orders/application/handlers/__tests__/order-placed-mail-manage-link.spec.ts`.
+>
+> ⚠️ **Décidé par Hugo le 2026-10-13, PAS ENCORE BÂTI** :
+>
 > - Les particuliers annulent jusqu'à l'**étape choisie** dans Réglages › Commandes
 >   (« Jusqu'où un particulier peut-il annuler ? » : arrêt du plan de production
 >   par défaut, commande prête, ou retrait) — un particulier n'a ni bac ni
@@ -48,9 +59,8 @@
 >   l'annulation après production, en cours d'écriture.
 > - Les pros annulent jusqu'à l'arrêt du plan de production, sans réglage.
 >
-> Le code en production applique encore l'ancienne règle (réglage fermé = pas
-> d'annulation par un particulier) ; le correctif du délai est en cours, le choix
-> d'étape (C7) est en conception.
+> Le code bâti arrête aujourd'hui tous les clients à l'arrêt du plan de
+> production ; le choix d'étape (C7) est en conception.
 
 ```mermaid
 flowchart TD
@@ -77,11 +87,11 @@ flowchart TD
     classDef refus fill:#fde8e8,stroke:#c0392b,color:#7b1d1d
 ```
 
-| Client          | Qui peut annuler                                             | Quand                                                                              | Par où                                                   |
-| --------------- | ------------------------------------------------------------ | ---------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| **Pro**         | tout membre **accepté** de **cette** société, société active | tant que le fournil ne l'a pas mise au compte à produire                           | sa session, « Mes commandes »                            |
-| **Particulier** | l'auteur                                                     | si Réglages › Commandes l'autorise, jusqu'à N h avant, et pas au compte à produire | sa session, « Mes commandes »                            |
-| **Invité**      | le porteur du lien                                           | comme le particulier                                                               | le lien de son courriel de confirmation, page `/annuler` |
+| Client          | Qui peut annuler                                             | Quand                                                                          | Par où                                                   |
+| --------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------ | -------------------------------------------------------- |
+| **Pro**         | tout membre **accepté** de **cette** société, société active | tant que le fournil ne l'a pas mise au compte à produire                       | sa session, « Mes commandes »                            |
+| **Particulier** | l'auteur                                                     | jusqu'à N h avant si le délai est imposé (défaut), et pas au compte à produire | sa session, « Mes commandes »                            |
+| **Invité**      | le porteur du lien                                           | comme le particulier                                                           | le lien de son courriel de confirmation, page `/annuler` |
 
 ## C6.2 Qui peut annuler — le mur
 
@@ -98,20 +108,24 @@ Le mur est **plus strict que la passation**, et c'est voulu : la passation
 fait régler par carte une société non active, l'annulation la refuse. Hors
 mur : **404** « Commande introuvable », jamais 403.
 
-## C6.3 Le critère client : celui du staff, plus deux
+## C6.3 Le critère client : celui du staff, plus un délai
 
-Pour une commande **personnelle** seulement, deux refus **devant** la règle
-du staff, lus à `customer_cancellation_settings` :
+Pour une commande **personnelle** seulement, et seulement si le réglage
+impose un délai (`open_to_b2c = true`, le défaut), un refus **devant** la
+règle du staff, lu à `customer_cancellation_settings` :
 
 | #   | Refus                                        | Code client |
 | --- | -------------------------------------------- | ----------- |
-| P1  | le réglage est fermé (`open_to_b2c = false`) | `closed`    |
 | P2  | il reste moins de N heures avant l'**ancre** | `too_late`  |
+
+Le refus P1 (« réglage fermé », code `closed`) a existé du déploiement de C6
+au correctif du 2026-10-13 (décision 5) ; il est retiré du code, du contrat et
+des textes. Sans délai, seul l'arrêt du plan de production limite.
 
 **L'ancre** (`customer-cancellation-window.ts`) : le jour de service à l'heure
 de début de la fenêtre figée, heure de Paris ; sans heure de début, **minuit**
 du jour — la borne la plus tôt. P2 se compare au `now` **gelé** de la requête :
-une attente de verrou ne repousse pas l'échéance. Un pro n'a ni P1 ni P2 :
+une attente de verrou ne repousse pas l'échéance. Un pro n'a pas de délai :
 seul le fournil ferme la porte.
 
 ## C6.4 L'invité : un lien d'annulation
@@ -122,10 +136,14 @@ clé))`, la clé **dérivée** de `FIELD_ENCRYPTION_KEY` par HKDF sous
   Un courriel renvoyé porte le même lien. 🔴 **Une rotation de
   `FIELD_ENCRYPTION_KEY` tue tous les liens envoyés**
   ([`secrets-et-variables.md`](../../ops/secrets-et-variables.md)).
-- **Dans `OrderPlacedMail`**, pour toute commande d'invité, quel que soit le
-  chemin d'envoi. Les comptes (particuliers connectés, pros) reçoivent à la
-  place un lien **sans secret** vers la liste `mes-commandes`
-  (`order-manage-link.ts`) : un jeton contournerait le mur.
+- **Dans l'accusé de réception**, pour toute commande d'invité, par les deux
+  chemins d'envoi (`SendOrderPlacedMail` sans rien à encaisser,
+  `OrderPlacedMail` sur `order.paid`). Les comptes (particuliers connectés,
+  pros, commandes saisies par l'équipe) reçoivent à la place un lien **sans
+  secret** vers **leur** commande, `/mes-commandes/<id>` : route gardée
+  (connexion demandée, `returnTo` y ramène), tiroir de la commande ouvert
+  d'office (`order-manage-link.ts`, `history-table.ts`). Un jeton
+  contournerait le mur.
 - **Le jeton voyage en fragment** : `/annuler#<orderId>.<jeton>`. Le
   navigateur ne l'envoie jamais ; la page le met dans le **corps** de deux
   `POST` publics, `shop/orders/cancellation/view` (20/min/IP) et
@@ -136,7 +154,7 @@ clé))`, la clé **dérivée** de `FIELD_ENCRYPTION_KEY` par HKDF sous
   d'une société, ou au-delà de **90 jours** après la date de retrait (ou la
   passation sans date) : la **même** réponse, « Lien introuvable ».
 - **Le jeton identifie, il ne décide pas** : la page s'ouvre toujours et dit
-  l'état réel (annulations fermées, délai passé, déjà en préparation, déjà
+  l'état réel (délai passé, déjà en préparation, déjà
   annulée, déjà retirée) avec « Contactez la boutique » ; le `confirm` relit
   tout sous les verrous. **Jamais d'annulation sur un `GET`** : les messageries
   suivent les liens toutes seules.
@@ -152,8 +170,12 @@ clé))`, la clé **dérivée** de `FIELD_ENCRYPTION_KEY` par HKDF sous
 
 Un CRUD honnête dans `b2b/order-opening/` (aucune règle ne refuse son
 écriture), table `public.customer_cancellation_settings`, une ligne `orders` :
-`open_to_b2c` (défaut **fermé**), `hours_before` (défaut **24**, entre 0 et
-168), auteur figé. Routes `GET` / `PATCH /admin/customer-cancellation`, même
+`open_to_b2c` — dans le code `delayEnabled` : **un délai est imposé aux
+particuliers** (défaut **actif** ; la colonne garde son nom d'origine, une
+colonne ne se renomme pas sans migration), `hours_before` (défaut **24**,
+entre 0 et 168), auteur figé. L'écran dit « Imposer un délai aux
+particuliers » ; décoché : « Sans délai, les particuliers annulent jusqu'à
+l'arrêt du plan de production, comme les pros ». Routes `GET` / `PATCH /admin/customer-cancellation`, même
 surface que l'ouverture de la boutique (`b2b_settings`). Écran du back-office
 `/b2b/reglages/commandes` (`b2b/reglages/customer-cancellation-page/`). La
 valeur n'est pas datée : elle décide d'un geste au moment où il est fait, et le
@@ -165,7 +187,7 @@ au registre RGPD.
 - **Connecté** : `POST /orders/:id/cancel`, corps `{ reasonCode?, reasonText? }`,
   `204` → `CancelOrderByCustomerCommand`. **Invité** : C6.4 →
   `CancelGuestOrderCommand`. Les deux passent par `CustomerOrderCancellation`
-  (mur, P1, P2, traduction des refus), qui appelle le noyau
+  (mur, P2, traduction des refus), qui appelle le noyau
   `OrderCancellation` avec l'acteur `customer` ou `guest`.
 - **En base** : `cancelled_by` reste **nul** (c'est la fiche staff) ;
   `cancelled_by_kind` = `customer` | `guest` ; `cancelled_by_user_id` = le
@@ -188,7 +210,7 @@ en code `orders.customer_cancel.<refus>` et en phrase écrite pour un client
 | ----------------------------------------- | ----------------------------------------------- |
 | `already_cancelled`, `ready`, `fulfilled` | statut                                          |
 | `in_preparation`                          | inscrite au fournil (« déjà en préparation »)   |
-| `closed`, `too_late`                      | P1, P2                                          |
+| `too_late`                                | P2                                              |
 | `payment_in_progress`                     | paiement en traitement, remboursement en vol    |
 | `paid_just_now`                           | `already_paid` de Stripe                        |
 | `not_recorded`                            | Stripe injoignable, transaction non écrite      |
@@ -203,7 +225,7 @@ numéro, ni le fournil comme acteur.
 
 `apps/lfc-ecommerce-frontend/src/app/client/order-cancellation/` :
 
-- `GET /orders/:id` porte `cancellability` (le noyau **et** P1/P2, sans
+- `GET /orders/:id` porte `cancellability` (le noyau **et** P2, sans
   verrou), lue par `order-cancel-section/` dans le détail « Mes commandes » :
   bouton « Annuler la commande » si annulable ; pour un refus durable
   (fournil, prête), il disparaît ; pour « trop tard », une ligne dit jusqu'à
@@ -250,14 +272,14 @@ Ce qui est bâti est ce qu'il a choisi :
 | Q-C6.3 | un membre annule la commande d'un autre membre ? | oui ; le courriel dit qui a annulé       |
 | Q-C6.4 | ancre sans heure de début                        | minuit du jour                           |
 | Q-C6.5 | nom de l'entrée                                  | « Commandes », `/b2b/reglages/commandes` |
-| Q-C6.6 | réglage au déploiement                           | fermé, 24 h                              |
+| Q-C6.6 | réglage au déploiement                           | délai actif, 24 h (révisé le 2026-10-13) |
 | Q-C6.8 | cloche à chaque annulation client                | oui                                      |
 | Q-C6.9 | borne du lien d'invité                           | 90 jours                                 |
 
+**Après l'arrêt du plan de production** : plan C7, [`plan-annulation-apres-production.md`](plan-annulation-apres-production.md) (doc-first).
+
 **Hors périmètre** : annulation partielle (c'est l'avenant) ; délai pour les
-pros ; rattrapage des liens des commandes d'invité d'avant C6 ; un lien
-profond par commande dans « Mes commandes » (le courriel des comptes mène à la
-liste).
+pros ; rattrapage des liens des commandes d'invité d'avant C6.
 
 ## Historique
 
@@ -274,3 +296,8 @@ liste).
   le `now` gelé, assumé ; S6 contrôleur invité à part, débit propre ; S7
   jeton en fragment, envoyé dans un corps ; S8 relecture d'un fait d'avant C6
   testée. Le plan devient ce document.
+- **2026-10-13, le soir** — décisions 5 et 6 bâties : le refus « réglage
+  fermé » (`closed`) retiré partout, le réglage devenu un délai imposé, actif
+  par défaut (migration `20261013400000_le_delai_d_annulation_actif`, qui ne
+  bascule la ligne que si personne ne l'a réglée à l'écran), et le lien du
+  courriel d'un compte vers sa commande, tiroir ouvert.

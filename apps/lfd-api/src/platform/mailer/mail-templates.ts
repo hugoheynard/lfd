@@ -154,7 +154,7 @@ export interface B2bMails {
     /**
      * Lot C6 (C6.4) : « gérer ou annuler ma commande ». Pour un INVITÉ, la page
      * d'annulation avec son jeton en fragment (`/annuler#<id>.<jeton>`) ; pour
-     * un compte, la liste `mes-commandes`, sans secret — la session décide.
+     * un compte, CETTE commande dans `mes-commandes/<id>`, sans secret — la session décide.
      * Vide sans origine connue : pas de lien plutôt qu'un lien inerte. Absent
      * des envois d'avant C6.
      */

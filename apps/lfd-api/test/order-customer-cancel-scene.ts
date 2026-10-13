@@ -151,11 +151,11 @@ export async function seedCustomerOrder(seed: CustomerOrderSeed): Promise<{
 }
 
 /** Le réglage, posé par la VRAIE route staff (C6.5). */
-export async function setCancellation(openToB2c: boolean, hoursBefore = 24): Promise<void> {
+export async function setCancellation(delayEnabled: boolean, hoursBefore = 24): Promise<void> {
   await context()
     .asSub(E2E_STAFF_SUB)
     .patch("/admin/customer-cancellation")
-    .send({ openToB2c, hoursBefore })
+    .send({ delayEnabled, hoursBefore })
     .expect(204);
 }
 

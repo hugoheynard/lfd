@@ -1,20 +1,22 @@
 import { localToInstant } from "@lfd/contracts";
 
 /**
- * **Les deux refus du particulier, devant la règle staff** (doc
+ * **Le délai du particulier, devant la règle staff** (doc
  * `documentation/commandes/annulation/annulation-par-le-client.md`, C6.3) —
- * purs : pas d'horloge, l'instant est reçu (le `now` GELÉ de la requête, S5).
+ * pur : pas d'horloge, l'instant est reçu (le `now` GELÉ de la requête, S5).
  *
- * - P1 — le réglage est fermé ;
- * - P2 — il reste moins de N heures avant l'**ancre**.
+ * P2 — il reste moins de N heures avant l'**ancre**. Il n'y a plus de P1
+ * (« réglage fermé ») depuis la décision de Hugo du 2026-10-13 : le compte à
+ * produire est la limite dans tous les cas, le délai ne fait que l'avancer.
  *
- * Un pro n'a ni l'un ni l'autre (décision 2) : l'appelant ne lui applique pas
- * cette fonction.
+ * Un pro n'a pas de délai (décision 2), un particulier n'en a que si le
+ * réglage l'impose : l'appelant ne leur applique alors pas cette fonction.
  */
 
 /** Le réglage tel que la décision le lit. */
 export interface CustomerCancellationPolicy {
-  readonly openToB2c: boolean;
+  /** `true` : un délai est imposé aux particuliers (colonne `open_to_b2c`). */
+  readonly delayEnabled: boolean;
   readonly hoursBefore: number;
 }
 
@@ -28,7 +30,6 @@ export interface CancellationAnchorSource {
 
 export type CustomerCancellationWindow =
   | { readonly kind: "open"; readonly until: Date }
-  | { readonly kind: "closed" }
   /** `until` : l'échéance passée ; `null` quand la commande n'a pas de date. */
   | { readonly kind: "too_late"; readonly until: Date | null };
 
@@ -51,21 +52,19 @@ export function cancellationAnchorOf(source: CancellationAnchorSource): Date | n
 }
 
 /**
- * P1 puis P2. « Jusqu'à N heures avant » est INCLUSIF : une demande faite pile
- * à l'échéance passe.
+ * P2. « Jusqu'à N heures avant » est INCLUSIF : une demande faite pile à
+ * l'échéance passe. Ne lit que le délai : savoir s'il est imposé est
+ * l'affaire de l'appelant.
  */
 export function customerCancellationWindowOf(
-  policy: CustomerCancellationPolicy,
+  hoursBefore: number,
   source: CancellationAnchorSource,
   now: Date,
 ): CustomerCancellationWindow {
-  if (!policy.openToB2c) {
-    return { kind: "closed" };
-  }
   const anchor = cancellationAnchorOf(source);
   if (anchor === null) {
     return { kind: "too_late", until: null };
   }
-  const until = new Date(anchor.getTime() - policy.hoursBefore * HOUR_MS);
+  const until = new Date(anchor.getTime() - hoursBefore * HOUR_MS);
   return now.getTime() <= until.getTime() ? { kind: "open", until } : { kind: "too_late", until };
 }

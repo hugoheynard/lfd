@@ -24,7 +24,7 @@ const SERVICE_DAY = "2030-01-15";
 function serviceOf(options: {
   readonly order?: Partial<CancellationSubject>;
   readonly inscribed?: string;
-  readonly open?: boolean;
+  readonly delay?: boolean;
 }) {
   const order = cancellationSubject({ serviceDay: SERVICE_DAY, ...options.order });
   return new CustomerCancellability(
@@ -32,7 +32,7 @@ function serviceOf(options: {
     new FixedInscriptions(options.inscribed === undefined ? {} : { ord_1: options.inscribed }),
     new CancellationRule(new ScriptedEngagements({ kind: "free" })),
     new CustomerCancellationPolicyGate(
-      new FixedCancellationSettings({ openToB2c: options.open ?? true, hoursBefore: 24 }),
+      new FixedCancellationSettings({ delayEnabled: options.delay ?? true, hoursBefore: 24 }),
     ),
   );
 }
@@ -64,17 +64,17 @@ describe("CustomerCancellability", () => {
     });
   });
 
-  it("un pro : pas d'échéance, réglage fermé ou non", async () => {
+  it("un pro : pas d'échéance, délai imposé ou non", async () => {
     const pro = customerSubject({ companyId: "co_1", serviceDay: SERVICE_DAY });
-    expect(await serviceOf({ open: false }).of(pro, NOW, true)).toMatchObject({
+    expect(await serviceOf({ delay: true }).of(pro, NOW, true)).toMatchObject({
       cancellable: true,
       until: null,
     });
   });
 
-  it("inscrite au fournil : « en préparation », même réglage fermé (la raison durable d'abord)", async () => {
+  it("inscrite au fournil : « en préparation », même sans délai imposé", async () => {
     expect(
-      await serviceOf({ inscribed: SERVICE_DAY, open: false }).of(PERSONAL, NOW, true),
+      await serviceOf({ inscribed: SERVICE_DAY, delay: false }).of(PERSONAL, NOW, true),
     ).toEqual({
       cancellable: false,
       code: "in_preparation",
@@ -82,10 +82,12 @@ describe("CustomerCancellability", () => {
     });
   });
 
-  it("réglage fermé : `closed`", async () => {
-    expect(await serviceOf({ open: false }).of(PERSONAL, NOW, true)).toMatchObject({
-      cancellable: false,
-      code: "closed",
+  /** Décision du 2026-10-13 : sans délai imposé, le particulier annule comme un pro. */
+  it("délai désactivé : annulable même au-delà du délai, sans échéance", async () => {
+    const late = new Date(Date.UTC(2030, 0, 14, 9));
+    expect(await serviceOf({ delay: false }).of(PERSONAL, late, true)).toMatchObject({
+      cancellable: true,
+      until: null,
     });
   });
 

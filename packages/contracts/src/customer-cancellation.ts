@@ -54,12 +54,12 @@ export type GuestCancellationConfirmPayload = z.infer<typeof guestCancellationCo
 /** `PATCH /admin/customer-cancellation` — seules les clés présentes changent. */
 export const customerCancellationSettingsPatchSchema = z
   .object({
-    openToB2c: z.boolean().optional(),
+    delayEnabled: z.boolean().optional(),
     // La borne (0 à 168 h) est une règle du domaine, refusée avec sa phrase.
     hoursBefore: z.number().int().optional(),
   })
   .refine((patch) => Object.values(patch).some((value) => value !== undefined), {
-    message: "au moins un réglage : openToB2c ou hoursBefore",
+    message: "au moins un réglage : delayEnabled ou hoursBefore",
   });
 export type CustomerCancellationSettingsPatch = z.infer<
   typeof customerCancellationSettingsPatchSchema

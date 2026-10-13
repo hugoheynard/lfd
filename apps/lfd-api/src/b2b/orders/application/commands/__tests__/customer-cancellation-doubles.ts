@@ -67,7 +67,7 @@ export class ReadableSigner extends CancellationLinkSigner {
   }
 }
 
-/** Le réglage, posé par le test ; fermé par défaut, comme en production. */
+/** Le réglage, posé par le test ; délai actif (24 h) par défaut, comme en production. */
 export class FixedCancellationSettings extends CustomerCancellationSettingsReader {
   reads = 0;
 

@@ -8,7 +8,7 @@ import type { StaffTrace } from "../../account/domain/value-objects/staff-trace.
 
 /** Le réglage sans sa trace : ce qu'une lecture rend et ce qu'un patch change. */
 export interface CustomerCancellationSettingsState {
-  readonly openToB2c: boolean;
+  readonly delayEnabled: boolean;
   readonly hoursBefore: number;
 }
 
@@ -24,7 +24,7 @@ export interface CustomerCancellationSettingsState {
  */
 export class CustomerCancellationSettings {
   private constructor(
-    readonly openToB2c: boolean,
+    readonly delayEnabled: boolean,
     readonly hoursBefore: number,
     readonly at: Date,
     readonly author: StaffTrace,
@@ -51,7 +51,7 @@ export class CustomerCancellationSettings {
       throw new CancellationDelayOutOfRangeError();
     }
     return new CustomerCancellationSettings(
-      patch.openToB2c ?? current.openToB2c,
+      patch.delayEnabled ?? current.delayEnabled,
       hoursBefore,
       input.at,
       input.author,

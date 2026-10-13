@@ -12,7 +12,7 @@ import { CancelGuestOrderCommand } from "./cancel-guest-order.command.js";
  * `documentation/commandes/annulation/annulation-par-le-client.md`, C6.4,
  * C6.6) : le lien vérifié (`404` neutre sinon), puis — S3 — une fiche devenue
  * un compte connectable passe par sa session, une fiche désactivée par la
- * boutique ; enfin P1/P2 et le noyau staff, l'auteur étant `guest`.
+ * boutique ; enfin P2 (si le délai est imposé) et le noyau staff, l'auteur étant `guest`.
  */
 @CommandHandler(CancelGuestOrderCommand)
 export class CancelGuestOrderHandler implements ICommandHandler<CancelGuestOrderCommand, void> {

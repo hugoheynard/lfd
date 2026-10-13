@@ -4,11 +4,11 @@ import {
 } from "../customer-cancellation-window.js";
 
 /**
- * P1/P2 (plan, C6.3) — purs. Les dates sont le SUJET du test et ne sont
+ * P2 (doc, C6.3) — purs. Les dates sont le SUJET du test et ne sont
  * comparées qu'à l'instant passé en argument, jamais à l'horloge : exception
  * étroite du CLAUDE.md §5.
  */
-const OPEN_24 = { openToB2c: true, hoursBefore: 24 };
+const OPEN_24 = 24;
 
 describe("l'ancre d'une commande", () => {
   it("prend le début du créneau, en heure de Paris (hiver : UTC+1)", () => {
@@ -37,12 +37,6 @@ describe("l'ancre d'une commande", () => {
 describe("la fenêtre d'annulation d'un particulier", () => {
   const source = { serviceDay: "2030-01-15", windowStart: "08:30" };
   const until = new Date("2030-01-14T07:30:00.000Z");
-
-  it("P1 : fermée par le réglage, quelle que soit l'heure", () => {
-    expect(
-      customerCancellationWindowOf({ openToB2c: false, hoursBefore: 24 }, source, new Date(0)),
-    ).toEqual({ kind: "closed" });
-  });
 
   it("ouverte jusqu'à N heures avant l'ancre, et dit jusqu'à quand", () => {
     const before = new Date(until.getTime() - 1);
@@ -80,8 +74,9 @@ describe("la fenêtre d'annulation d'un particulier", () => {
 
   it("délai nul : jusqu'à l'ancre elle-même", () => {
     const anchor = new Date("2030-01-15T07:30:00.000Z");
-    expect(
-      customerCancellationWindowOf({ openToB2c: true, hoursBefore: 0 }, source, anchor),
-    ).toEqual({ kind: "open", until: anchor });
+    expect(customerCancellationWindowOf(0, source, anchor)).toEqual({
+      kind: "open",
+      until: anchor,
+    });
   });
 });

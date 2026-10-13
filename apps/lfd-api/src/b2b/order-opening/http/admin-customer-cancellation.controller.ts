@@ -19,7 +19,7 @@ import { GetCustomerCancellationSettingsQuery } from "../application/queries/get
  * Même ressource que l'ouverture de la boutique, `b2b_settings` : la même
  * nature de réglage — ce que la boutique permet au client.
  *
- * `GET` rend la vue ; `PATCH` (`204`) prend `{ openToB2c?, hoursBefore? }`,
+ * `GET` rend la vue ; `PATCH` (`204`) prend `{ delayEnabled?, hoursBefore? }`,
  * au moins une clé ; un délai hors de 0 à 168 h est un `400`.
  */
 @Controller("admin/customer-cancellation")

@@ -4700,13 +4700,6 @@
           "variables": []
         },
         {
-          "key": "orderCancel.refusals.closed",
-          "fr": "L’annulation en ligne n’est pas proposée. Contactez-nous pour annuler cette commande.",
-          "en": "Online cancellation is not offered. Contact us to cancel this order.",
-          "it": "L’annullamento online non è previsto. Contattateci per annullare questo ordine.",
-          "variables": []
-        },
-        {
           "key": "orderCancel.refusals.too_late",
           "fr": "Il est trop tard pour annuler en ligne : c’était possible jusqu’au {when}. Contactez-nous.",
           "en": "It is too late to cancel online: it was possible until {when}. Contact us.",
@@ -4767,6 +4760,13 @@
           "fr": "Cette commande ne peut pas être annulée depuis votre compte.",
           "en": "This order cannot be cancelled from your account.",
           "it": "Questo ordine non può essere annullato dal vostro account.",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.tooLateUndated",
+          "fr": "Il est trop tard pour annuler en ligne. Contactez-nous.",
+          "en": "It is too late to cancel online. Contact us.",
+          "it": "È troppo tardi per annullare online. Contattateci.",
           "variables": []
         },
         {

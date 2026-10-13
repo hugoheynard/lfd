@@ -34,7 +34,6 @@ export const CUSTOMER_CANCELLATION_REFUSALS = [
   "in_preparation",
   "ready",
   "fulfilled",
-  "closed",
   "too_late",
   "payment_in_progress",
   "paid_just_now",
@@ -108,20 +107,22 @@ export interface GuestOrderCancellationView {
 }
 
 /**
- * Le réglage « Réglages › Commandes » (C6.5). Fermé par défaut ; `hoursBefore`
- * est le délai avant le retrait / la livraison.
+ * Le réglage « Réglages › Commandes » (C6.5). `delayEnabled` : un délai est
+ * imposé aux particuliers — actif par défaut (décision de Hugo du
+ * 2026-10-13) ; désactivé, seul l'arrêt du plan de production limite, comme
+ * pour un pro. `hoursBefore` est le délai avant le retrait / la livraison.
  */
 export interface CustomerCancellationSettingsView {
-  readonly openToB2c: boolean;
+  readonly delayEnabled: boolean;
   readonly hoursBefore: number;
   /** Instant du dernier geste ; `null` tant que personne n'a rien réglé. */
   readonly updatedAt: string | null;
   readonly updatedBy: string | null;
 }
 
-/** Le réglage tant que personne ne l'a posé : fermé, 24 h. */
+/** Le réglage tant que personne ne l'a posé : délai actif, 24 h. */
 export const DEFAULT_CUSTOMER_CANCELLATION_SETTINGS: CustomerCancellationSettingsView = {
-  openToB2c: false,
+  delayEnabled: true,
   hoursBefore: 24,
   updatedAt: null,
   updatedBy: null,

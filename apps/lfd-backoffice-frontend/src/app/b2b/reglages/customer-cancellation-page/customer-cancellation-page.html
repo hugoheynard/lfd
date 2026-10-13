@@ -24,13 +24,13 @@
 
         <div class="form">
           <fold-checkbox
-            label="Les particuliers peuvent annuler eux-mêmes"
-            [checked]="open()"
-            (checkedChange)="open.set($event)"
+            label="Imposer un délai aux particuliers"
+            [checked]="delay()"
+            (checkedChange)="delay.set($event)"
             [disabled]="!canWrite() || saving()"
           />
 
-          @if (open()) {
+          @if (delay()) {
             <fold-number-input
               label="Délai, en heures"
               [value]="hours()"
@@ -43,12 +43,17 @@
             />
             <p class="help">
               Jusqu'à {{ hours() ?? '…' }} h avant le début du créneau de retrait ou de livraison ;
-              sans heure de début, avant minuit du jour. Une commande déjà au compte à produire ne
+              sans heure de début, avant minuit du jour. Une commande déjà au plan de production ne
               s'annule plus.
+            </p>
+          } @else {
+            <p class="help">
+              Sans délai, les particuliers annulent jusqu'à l'arrêt du plan de production, comme les
+              pros.
             </p>
           }
 
-          <p class="help">Les pros annulent jusqu'au compte à produire, sans réglage.</p>
+          <p class="help">Les pros annulent jusqu'à l'arrêt du plan de production, sans délai.</p>
 
           @if (trace(); as author) {
             <p class="help">Dernier réglage par {{ author }}.</p>

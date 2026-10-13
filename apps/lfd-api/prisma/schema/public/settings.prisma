@@ -158,17 +158,21 @@ model OrderOpening {
 
 /// **Ce que la boutique permet au client d'annuler lui-même** (plan
 /// `documentation/commandes/annulation/annulation-par-le-client.md`, lot C6,
-/// C6.5). Une ligne, clé `orders`, posée FERMÉE par la migration ; ligne absente =
-/// fermée aussi. Un pro n'est jamais concerné : seul le fournil lui ferme la
+/// C6.5). Une ligne, clé `orders`, posée délai ACTIF (24 h) depuis `20261013400000` ; ligne absente =
+/// délai actif aussi. Un pro n'est jamais concerné : seul le fournil lui ferme la
 /// porte. Pas daté : la valeur décide d'un geste au moment où il est fait, et le
 /// fait `order.cancelled` fige le délai appliqué.
 model CustomerCancellationSettings {
   /// Toujours `orders` : il n'y a qu'un réglage.
   key String @id
 
-  openToB2c   Boolean @default(false) @map("open_to_b2c")
+  /// Un délai est-il imposé aux particuliers ? (décision du 2026-10-13 : la
+  /// colonne garde son nom d'origine, `open_to_b2c`, mais `true` veut dire
+  /// « délai imposé », plus « annulation ouverte » — la limite de tous est
+  /// le compte à produire, le délai ne fait que l'avancer.)
+  delayEnabled Boolean @default(true)  @map("open_to_b2c")
   /// Délai avant l'ancre (retrait / livraison), en heures — 0 à 168 (CHECK).
-  hoursBefore Int     @default(24) @map("hours_before")
+  hoursBefore  Int     @default(24) @map("hours_before")
 
   /// Instant du dernier geste ; NULL tant que personne n'a rien réglé.
   updatedAt        DateTime? @map("updated_at")

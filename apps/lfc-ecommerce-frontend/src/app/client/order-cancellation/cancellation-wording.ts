@@ -87,7 +87,7 @@ export function refusalSentence(
     return sentence;
   }
   return until === null
-    ? copy.refusals.closed
+    ? copy.tooLateUndated
     : fill(sentence, { when: untilLabel(until, locale, copy) });
 }
 

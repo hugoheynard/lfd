@@ -28,7 +28,7 @@ describe('cancellation-wording', () => {
     expect(late).toContain('14/10');
     expect(late).toContain('09:00');
     expect(late).not.toContain('{when}');
-    expect(refusalSentence('too_late', null, 'fr', FR)).not.toContain('{when}');
+    expect(refusalSentence('too_late', null, 'fr', FR)).toBe(FR.tooLateUndated);
   });
 
   it('lit le code d’un 409, et ignore un code étranger', () => {

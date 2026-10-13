@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import {
   FoldElementTitleComponent,
   FoldIconComponent,
@@ -83,6 +83,13 @@ export class CommandesPage {
 
   private readonly history_ = inject(ClientOrderHistory);
   private readonly client = inject(ClientCompany);
+
+  /**
+   * La commande à ouvrir, venue du lien du courriel (`/mes-commandes/:orderId`) ;
+   * `null` sur la liste seule.
+   */
+  protected readonly openOrderId: string | null =
+    inject(ActivatedRoute).snapshot.paramMap.get('orderId');
 
   /** Les mots de l'écran, que les modèles de vue ne portent pas. */
   private readonly rowCopy = computed<RowCopy>(() => rowCopyOf(this.t().orders));

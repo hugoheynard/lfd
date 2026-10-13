@@ -172,18 +172,29 @@ describe("le mur (C6.2)", () => {
 });
 
 describe("le réglage des particuliers (C6.3, C6.5)", () => {
-  it("fermé par défaut : refus `closed` pour un particulier, PAS pour un pro", async () => {
+  /**
+   * Décision de Hugo du 2026-10-13 : il n'y a plus de réglage « fermé ». Le
+   * délai est ACTIF par défaut ; désactivé, seul l'arrêt du plan de
+   * production limite un particulier, comme un pro.
+   */
+  it("délai actif par défaut : `too_late` à J+1 ; désactivé, la même commande s'annule", async () => {
     const author = await customer();
-    const { orderId } = await seedCustomerOrder({ placedByUserId: author.id });
-    const response = await customerCancel(author.sub, orderId);
-    expect(response.status).toBe(409);
-    expect(codeOf(response)).toBe("orders.customer_cancel.closed");
+    const soon = await seedCustomerOrder({ placedByUserId: author.id, inDays: 1 });
+    const refused = await customerCancel(author.sub, soon.orderId);
+    expect(refused.status).toBe(409);
+    expect(codeOf(refused)).toBe("orders.customer_cancel.too_late");
 
+    await setCancellation(false);
+    await customerCancel(author.sub, soon.orderId).expect(204);
+  });
+
+  it("un pro n'a pas de délai, même actif", async () => {
+    await setCancellation(true, 168);
     const pro = await proOrder();
     await customerCancel(pro.other.sub, pro.orderId).expect(204);
   });
 
-  it("ouvert, délai dépassé : `too_late` avec l'heure ; délai tenu : 204", async () => {
+  it("délai imposé dépassé : `too_late` avec l'heure ; délai tenu : 204", async () => {
     await setCancellation(true, 48);
     const author = await customer();
     const soon = await seedCustomerOrder({ placedByUserId: author.id, inDays: 1 });
@@ -201,7 +212,7 @@ describe("le réglage des particuliers (C6.3, C6.5)", () => {
   it("la route admin lit et pose le réglage, l'auteur figé ; un délai hors borne est un 400", async () => {
     await setCancellation(true, 12);
     const view = await ctx.asSub(E2E_STAFF_SUB).get("/admin/customer-cancellation").expect(200);
-    expect(view.body).toMatchObject({ openToB2c: true, hoursBefore: 12 });
+    expect(view.body).toMatchObject({ delayEnabled: true, hoursBefore: 12 });
     expect(jsonBody<{ updatedBy: string | null }>(view).updatedBy).not.toBeNull();
     await ctx
       .asSub(E2E_STAFF_SUB)

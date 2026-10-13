@@ -46,6 +46,8 @@ export interface OrderCancelCopy {
   readonly contact: string;
   /** `{when}` n'est rempli que pour `too_late`. */
   readonly refusals: Readonly<Record<CustomerCancellationRefusal, string>>;
+  /** Le « trop tard » d'une commande sans date : aucune échéance à dire. */
+  readonly tooLateUndated: string;
   readonly refusedFallback: string;
   readonly loading: string;
   readonly loadFailed: string;
@@ -100,7 +102,6 @@ const FR: OrderCancelCopy = {
       'Votre commande est déjà en préparation : elle ne peut plus être annulée. Contactez-nous si besoin.',
     ready: 'Votre commande est prête : elle ne peut plus être annulée.',
     fulfilled: 'Votre commande a déjà été retirée : elle ne peut plus être annulée.',
-    closed: 'L’annulation en ligne n’est pas proposée. Contactez-nous pour annuler cette commande.',
     too_late:
       'Il est trop tard pour annuler en ligne : c’était possible jusqu’au {when}. Contactez-nous.',
     payment_in_progress:
@@ -116,6 +117,7 @@ const FR: OrderCancelCopy = {
     account_disabled: 'Contactez la boutique pour gérer cette commande.',
     not_allowed: 'Cette commande ne peut pas être annulée depuis votre compte.',
   },
+  tooLateUndated: 'Il est trop tard pour annuler en ligne. Contactez-nous.',
   refusedFallback: 'La commande n’a pas pu être annulée. Réessayez dans un instant.',
   loading: 'Chargement de la commande…',
   loadFailed: 'La commande n’a pas pu être lue.',
@@ -167,7 +169,6 @@ const EN: OrderCancelCopy = {
       'Your order is already being prepared: it can no longer be cancelled. Contact us if needed.',
     ready: 'Your order is ready: it can no longer be cancelled.',
     fulfilled: 'Your order has already been collected: it can no longer be cancelled.',
-    closed: 'Online cancellation is not offered. Contact us to cancel this order.',
     too_late: 'It is too late to cancel online: it was possible until {when}. Contact us.',
     payment_in_progress: 'A payment is in progress on this order. Try again in a few minutes.',
     paid_just_now: 'Your payment has just gone through. Reload the page to cancel with a refund.',
@@ -181,6 +182,7 @@ const EN: OrderCancelCopy = {
     account_disabled: 'Contact the shop to manage this order.',
     not_allowed: 'This order cannot be cancelled from your account.',
   },
+  tooLateUndated: 'It is too late to cancel online. Contact us.',
   refusedFallback: 'The order could not be cancelled. Try again in a moment.',
   loading: 'Loading the order…',
   loadFailed: 'The order could not be loaded.',
@@ -232,7 +234,6 @@ const IT: OrderCancelCopy = {
       'Il vostro ordine è già in preparazione: non può più essere annullato. Contattateci se necessario.',
     ready: 'Il vostro ordine è pronto: non può più essere annullato.',
     fulfilled: 'Il vostro ordine è già stato ritirato: non può più essere annullato.',
-    closed: 'L’annullamento online non è previsto. Contattateci per annullare questo ordine.',
     too_late: 'È troppo tardi per annullare online: era possibile fino al {when}. Contattateci.',
     payment_in_progress: 'Un pagamento è in corso su questo ordine. Riprovate tra qualche minuto.',
     paid_just_now:
@@ -246,6 +247,7 @@ const IT: OrderCancelCopy = {
     account_disabled: 'Contattate il negozio per gestire questo ordine.',
     not_allowed: 'Questo ordine non può essere annullato dal vostro account.',
   },
+  tooLateUndated: 'È troppo tardi per annullare online. Contattateci.',
   refusedFallback: 'L’ordine non ha potuto essere annullato. Riprovate tra un istante.',
   loading: 'Caricamento dell’ordine…',
   loadFailed: 'Non è stato possibile leggere l’ordine.',

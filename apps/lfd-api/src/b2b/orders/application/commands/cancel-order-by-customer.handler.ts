@@ -16,7 +16,7 @@ import { CancelOrderByCustomerCommand } from "./cancel-order-by-customer.command
  * 1. le motif (forme métier), avant toute lecture ;
  * 2. le mur, sur la commande lue par son id — un `404` identique pour
  *    l'inconnue et l'interdite, jamais un `403` ;
- * 3. P1/P2 pour une commande personnelle, puis le noyau staff à l'identique
+ * 3. P2 (si le délai est imposé) pour une commande personnelle, puis le noyau staff à l'identique
  *    (`CustomerOrderCancellation`).
  *
  * L'instant est lu UNE fois (`now` gelé de la requête, S5).

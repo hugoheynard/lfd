@@ -24,7 +24,7 @@ import { CustomerCancellationPolicyGate } from "./customer-cancellation-policy.j
  * `documentation/commandes/annulation/annulation-par-le-client.md`, C6.8).
  *
  * La même règle que le geste (`cancellationOf`, l'inscription au fournil
- * demandée à son guichet) et le même réglage (P1/P2), SANS verrou : c'est un
+ * demandée à son guichet) et le même réglage (P2), SANS verrou : c'est un
  * affichage — le `POST` relit tout sous verrou. Les raisons durables (déjà
  * annulée, prête, en préparation) passent avant le réglage : elles disent
  * mieux pourquoi.
@@ -67,8 +67,6 @@ export class CustomerCancellability {
     switch (applied.window.kind) {
       case "open":
         return cancellable(applied.window.until, staffSubject, decision.regime);
-      case "closed":
-        return refused("closed");
       case "too_late":
         return refused("too_late", applied.window.until);
     }

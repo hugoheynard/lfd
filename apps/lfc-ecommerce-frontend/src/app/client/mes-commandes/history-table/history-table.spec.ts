@@ -43,6 +43,23 @@ describe('HistoryTable', () => {
     expect(drawers().length).toBe(0);
   });
 
+  /** Le lien du courriel (`/mes-commandes/:orderId`) ouvre SA commande (2026-10-13). */
+  it('ouvre d’office le tiroir de la commande du lien, et seulement elle', () => {
+    const target = ROWS[1] as HistoryOrder;
+    fixture.componentRef.setInput('openOrderId', target.id);
+    fixture.detectChanges();
+
+    expect(drawers().length).toBe(1);
+    expect(toggles()[1]?.getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('n’ouvre rien pour une commande que la liste ne connaît pas', () => {
+    fixture.componentRef.setInput('openOrderId', 'ord_inconnue');
+    fixture.detectChanges();
+
+    expect(drawers().length).toBe(0);
+  });
+
   /**
    * 🔴 La colonne « Passée par » nommait une personne que la commande ne désigne
    * pas : `CustomerOrderView` porte l'auteur STAFF d'une saisie, jamais l'acheteur.

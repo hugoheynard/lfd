@@ -50,6 +50,7 @@
 
     <app-history-table
       [orders]="history()"
+      [openOrderId]="openOrderId"
       (problemRaised)="report($event)"
       (orderCancelled)="reload()"
       (purchaseOrderRequested)="downloadSheet($event)"

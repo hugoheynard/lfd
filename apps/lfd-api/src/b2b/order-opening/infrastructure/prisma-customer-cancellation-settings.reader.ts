@@ -11,8 +11,8 @@ import { ORDER_OPENING_KEY } from "./order-opening.key.js";
 /**
  * Adaptateur Prisma de la lecture du réglage d'annulation par le client.
  *
- * **Ligne absente = fermé** : la migration la pose fermée, et une base remise
- * à zéro (e2e) ne doit rien ouvrir de plus.
+ * **Ligne absente = délai actif** (24 h) : le défaut voulu par Hugo le
+ * 2026-10-13 — une base remise à zéro (e2e) applique le délai.
  */
 @Injectable()
 export class PrismaCustomerCancellationSettingsReader extends CustomerCancellationSettingsReader {
@@ -23,13 +23,13 @@ export class PrismaCustomerCancellationSettingsReader extends CustomerCancellati
   async current(): Promise<CustomerCancellationSettingsView> {
     const row = await this.prisma.customerCancellationSettings.findUnique({
       where: { key: ORDER_OPENING_KEY },
-      select: { openToB2c: true, hoursBefore: true, updatedAt: true, updatedByName: true },
+      select: { delayEnabled: true, hoursBefore: true, updatedAt: true, updatedByName: true },
     });
     if (row === null) {
       return DEFAULT_CUSTOMER_CANCELLATION_SETTINGS;
     }
     return {
-      openToB2c: row.openToB2c,
+      delayEnabled: row.delayEnabled,
       hoursBefore: row.hoursBefore,
       updatedAt: row.updatedAt === null ? null : row.updatedAt.toISOString(),
       // Un agent que l'annuaire ne connaissait pas a été figé sans nom : on ne
