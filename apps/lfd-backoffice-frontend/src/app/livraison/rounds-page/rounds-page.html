@@ -235,6 +235,9 @@
         (retry)="retry()"
         (noTarget)="noTarget($event)"
         (placed)="placeSuggested($event)"
+        (transferManifest)="openManifest($event)"
+        (transferRemoved)="removeTransferStop($event)"
+        (transferMoved)="moveTransferStop($event)"
       />
     </div>
   </div>

@@ -300,6 +300,8 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // La fiche d'un bac se lit sous le colisage OU le chargement (2026-10-02).
   'livraison/bac/:binId': { anyOf: ['production_packing:read', 'delivery_loading:read'] },
   // Les étiquettes lisent le panneau des bacs : celui du geste (2026-10-02).
+  // Les étiquettes d'un transfert interne (lot T3) : la route du serveur se lit sous la lecture.
+  'livraison/etiquettes/transfert/:transferId': 'delivery_loading:read',
   'livraison/etiquettes/:orderId': {
     anyOf: ['production_packing:write', 'delivery_loading:write'],
   },

@@ -1,5 +1,9 @@
 import { computed, type Signal } from '@angular/core';
-import type { DeliveryLoadingPlanView, DeliveryLoadingRoundView } from '@lfd/contracts';
+import type {
+  DeliveryLoadingPlanView,
+  DeliveryLoadingRoundView,
+  DeliveryLoadingStopView,
+} from '@lfd/contracts';
 
 import { railTicks } from './rail-ticks';
 
@@ -16,7 +20,9 @@ export interface LoadingProgress {
 }
 
 /** « 4 / 15 bacs chargés · 5 arrêts à finir » — les nombres. */
-export function loadingProgress(stops: DeliveryLoadingRoundView['stops']): LoadingProgress {
+export function loadingProgress(
+  stops: readonly Pick<DeliveryLoadingStopView, 'bins' | 'state'>[],
+): LoadingProgress {
   const bins = stops.flatMap((stop) => stop.bins);
   return {
     loaded: bins.filter((bin) => bin.loadedAt !== null).length,
@@ -59,7 +65,12 @@ export function loadingProgressSignals(
   plan: Signal<DeliveryLoadingPlanView | null>,
 ) {
   /** « 4 / 15 bacs chargés · 5 arrêts à finir ». */
-  const progress = computed(() => loadingProgress(view()?.stops ?? []));
+  // Les arrêts de transfert comptent comme les autres : leurs bacs se
+  // chargent, et « Partir » les exige (plan du transfert interne, lot T3).
+  const progress = computed(() => {
+    const round = view();
+    return loadingProgress(round === null ? [] : [...round.stops, ...(round.transferStops ?? [])]);
+  });
   return {
     progress,
     stopsLeftLabel: computed(() => stopsLeftLabel(progress().stopsLeft)),

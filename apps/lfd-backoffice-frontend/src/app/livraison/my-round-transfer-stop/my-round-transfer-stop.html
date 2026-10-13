@@ -1,0 +1,45 @@
+<fold-card data-transfer-stop>
+  <div class="mts-body">
+    <fold-element-title variant="title" icon="truck" [title]="title()" [subtitle]="subtitle()">
+      @if (status(); as status) {
+        <fold-badge
+          titleAction
+          [variant]="open() ? 'info' : 'success'"
+          [content]="status"
+          data-transfer-status
+        />
+      }
+    </fold-element-title>
+
+    @if (stop().totals.length > 0) {
+      <app-transfer-lines [lines]="stop().totals" />
+    }
+
+    @if (canReadManifest()) {
+      <button
+        foldButton
+        size="sm"
+        emphasis="soft"
+        icon="list"
+        (click)="manifest.emit(stop())"
+        data-transfer-manifest
+      >
+        Manifeste détaillé
+      </button>
+    }
+
+    @if (gestures() && open()) {
+      <fold-inline-confirm
+        intent="primary"
+        message="Les bacs du transfert sont déchargés au site : l'arrêt se clôt."
+        [labels]="{ confirm: 'Remis au site' }"
+        [loading]="busy()"
+        (confirmed)="dropped.emit(stop())"
+      >
+        <button foldButton block size="lg" icon="check" [disabled]="busy()" data-site-drop>
+          Remis au site
+        </button>
+      </fold-inline-confirm>
+    }
+  </div>
+</fold-card>

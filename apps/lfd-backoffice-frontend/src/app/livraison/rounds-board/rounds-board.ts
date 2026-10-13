@@ -15,7 +15,11 @@ import {
   signal,
 } from '@angular/core';
 import { Router } from '@angular/router';
-import type { DeliveryIncidentView, DeliveryPlacementSuggestionView } from '@lfd/contracts';
+import type {
+  DeliveryIncidentView,
+  DeliveryPlacementSuggestionView,
+  DeliveryRoundTransferStopView,
+} from '@lfd/contracts';
 import type { FoldSelectOption } from 'fold-ng';
 import {
   FoldBadgeComponent,
@@ -34,6 +38,7 @@ import type { IncidentPhotoLoader } from '../incident-photo/incident-photo';
 import { OrderCard } from '../order-card/order-card';
 import { PlacementSuggestion } from '../placement-suggestion/placement-suggestion';
 import { RoundColumn, type StopShift } from '../round-column/round-column';
+import type { TransferStopMove } from '../transfer-stop-card/transfer-stop-card';
 import {
   type Board,
   type BoardDrop,
@@ -67,6 +72,7 @@ import {
   SCOPE_ALL,
   SCOPE_VEHICLE,
   vehicleTabsOf,
+  transferTargetsOf,
 } from '../rounds-board-view';
 
 /** Ce que montre la colonne centrale : une lecture en cours, ratée, ou le tableau. */
@@ -150,6 +156,22 @@ export class RoundsBoard {
   readonly placed = output<string>();
   /** Un dépôt sur l'onglet d'un véhicule qui n'a aucune tournée en préparation. */
   readonly noTarget = output<string>();
+  /** Les gestes d'un arrêt de transfert interne (plan du transfert interne, §5). */
+  readonly transferManifest = output<DeliveryRoundTransferStopView>();
+  readonly transferRemoved = output<RoundGesture<string>>();
+  readonly transferMoved = output<RoundGesture<TransferStopMove>>();
+
+  /**
+   * Où un arrêt de transfert de `round` peut aller : les AUTRES tournées
+   * enregistrées et non parties. Rien en aperçu — la proposition ne porte pas
+   * les transferts.
+   */
+  protected transferTargets(round: BoardRound): readonly FoldSelectOption<string>[] {
+    if (this.preview()) {
+      return [];
+    }
+    return transferTargetsOf(this.board()?.rounds ?? [], round.key);
+  }
 
   protected readonly poolKey = POOL_KEY;
   protected readonly tabPrefix = TAB_PREFIX;

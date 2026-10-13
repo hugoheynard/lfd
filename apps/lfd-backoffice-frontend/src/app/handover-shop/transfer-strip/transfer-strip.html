@@ -1,0 +1,23 @@
+@if (transfers().length > 0) {
+  <div class="ts-list">
+    @for (transfer of transfers(); track transfer.key) {
+      <fold-card>
+        <fold-element-title
+          variant="title"
+          icon="truck"
+          [title]="title(transfer)"
+          [subtitle]="summary(transfer)"
+        >
+          <div titleAction class="ts-actions">
+            <fold-badge [variant]="stateVariant(transfer)" [content]="stateLabel(transfer)" />
+            @if (receivable(transfer)) {
+              <button foldButton size="sm" icon="check" (click)="receive(transfer)">
+                Réceptionner
+              </button>
+            }
+          </div>
+        </fold-element-title>
+      </fold-card>
+    }
+  </div>
+}

@@ -1,7 +1,7 @@
 <fold-page-layout>
   <div class="blp-page">
     <div class="no-print blp-head">
-      <fold-back-link label="Colisage" routerLink="/colisage" />
+      <fold-back-link [label]="back().label" [routerLink]="back().link" />
       <fold-element-title
         variant="title"
         [title]="reference() === null ? 'Étiquettes des bacs' : 'Étiquettes · ' + reference()"
@@ -65,7 +65,11 @@
           <fold-empty-state
             icon="package"
             title="Aucun bac déclaré"
-            subtitle="Les bacs se déclarent au colisage, sur la commande prête."
+            [subtitle]="
+              transferId() === undefined
+                ? 'Les bacs se déclarent au colisage, sur la commande prête.'
+                : 'Les bacs du transfert se déclarent au chargement.'
+            "
             data-no-bin
           />
         }

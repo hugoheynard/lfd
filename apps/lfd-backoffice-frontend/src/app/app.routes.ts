@@ -608,6 +608,16 @@ export const routes: Routes = [
         loadComponent: () => import('./livraison/bin-page/bin-page').then((m) => m.BinPage),
       },
       {
+        // Les étiquettes des bacs d'un TRANSFERT interne (plan du transfert
+        // interne, lot T3) : la même page, lue sous `delivery_loading:read` —
+        // la route du serveur ne demande pas davantage.
+        path: 'etiquettes/transfert/:transferId',
+        canActivate: [permissionGuard('delivery_loading:read')],
+        title: 'Étiquettes du transfert — LFC B2B admin',
+        loadComponent: () =>
+          import('./livraison/bin-labels-page/bin-labels-page').then((m) => m.BinLabelsPage),
+      },
+      {
         // Les étiquettes lisent la liste des bacs d'une commande, qui est le
         // PANNEAU du geste : le serveur l'ouvre sous `production_packing:write`
         // OU `delivery_loading:write` (plan des droits par geste §5.3). La

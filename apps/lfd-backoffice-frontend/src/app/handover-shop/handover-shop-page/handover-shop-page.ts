@@ -30,6 +30,7 @@ import { matchingQueue } from '../handover-queue';
 import { HandoverQueueStore } from '../handover-queue.store';
 import { QueueTable } from '../queue-table/queue-table';
 import { HandoverDetail } from '../handover-detail/handover-detail';
+import { TransferStrip } from '../transfer-strip/transfer-strip';
 import { SCANNED, ScanDialog, type ScanDialogData } from '../scan-dialog/scan-dialog';
 import { AdminOrdersService } from '../../commandes/orders.service';
 import { PermissionsStore } from '../../auth/permissions.store';
@@ -81,6 +82,7 @@ const STACK_AT_PX = 1040;
     FoldTabPanelComponent,
     QueueTable,
     HandoverDetail,
+    TransferStrip,
   ],
   templateUrl: './handover-shop-page.html',
   styleUrl: './handover-shop-page.scss',
@@ -95,6 +97,9 @@ export class HandoverShopPage {
 
   /** `POST /admin/orders/:id/pickup-reminder` exige `b2b_orders:write`, pas la garde de la file. */
   protected readonly canRemind = computed(() => this.permissions.can('b2b_orders:write'));
+
+  /** « Réceptionner » un transfert exige la garde du comptoir en écriture. */
+  protected readonly canReceive = computed(() => this.permissions.can('handover_counter:write'));
 
   /**
    * Le terme cherché. Il vit ICI parce que la barre le porte, et il descend à

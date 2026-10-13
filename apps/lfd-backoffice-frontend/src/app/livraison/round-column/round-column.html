@@ -227,10 +227,34 @@
         }
       </app-order-card>
     } @empty {
-      <fold-empty-state title="Tournée vide" subtitle="Glissez une commande ici." data-empty-round>
-        <fold-icon empty-icon name="truck" />
-      </fold-empty-state>
+      @if (transferStops().length === 0) {
+        <fold-empty-state
+          title="Tournée vide"
+          subtitle="Glissez une commande ici."
+          data-empty-round
+        >
+          <fold-icon empty-icon name="truck" />
+        </fold-empty-state>
+      }
     }
     <div class="frozen-hint" aria-hidden="true">Partie : on ne dépose plus ici</div>
   </div>
+
+  <!-- Les arrêts de transfert interne : hors du glisser, qui ne range que des
+       commandes ; leur rang est dit dans la carte (plan du transfert interne, §5). -->
+  @if (transferStops().length > 0) {
+    <div class="transfers" data-transfer-stops>
+      @for (stop of transferStops(); track stop.stopId) {
+        <app-transfer-stop-card
+          [stop]="stop"
+          [movable]="movable()"
+          [busy]="busy()"
+          [targets]="transferTargets()"
+          (manifest)="transferManifest.emit($event)"
+          (removed)="transferRemoved.emit($event)"
+          (moved)="transferMoved.emit($event)"
+        />
+      }
+    </div>
+  }
 </section>

@@ -1,6 +1,6 @@
 import { CdkDrag, type CdkDragDrop, CdkDragPlaceholder, CdkDropList } from '@angular/cdk/drag-drop';
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
-import type { DeliveryIncidentView } from '@lfd/contracts';
+import type { DeliveryIncidentView, DeliveryRoundTransferStopView } from '@lfd/contracts';
 import type { FoldSelectOption } from 'fold-ng';
 import {
   FoldBadgeComponent,
@@ -19,6 +19,7 @@ import { IncidentList } from '../incident-list/incident-list';
 import type { IncidentPhotoLoader } from '../incident-photo/incident-photo';
 import { OrderCard } from '../order-card/order-card';
 import { RoundDriver } from '../round-driver/round-driver';
+import { TransferStopCard, type TransferStopMove } from '../transfer-stop-card/transfer-stop-card';
 import {
   type BoardDrop,
   type BoardRound,
@@ -65,6 +66,7 @@ export interface StopShift {
     IncidentList,
     OrderCard,
     RoundDriver,
+    TransferStopCard,
   ],
   templateUrl: './round-column.html',
   styleUrl: './round-column.scss',
@@ -86,6 +88,8 @@ export class RoundColumn {
   readonly highlighted = input<string | null>(null);
   readonly incidents = input<readonly DeliveryIncidentView[]>([]);
   readonly incidentPhoto = input.required<IncidentPhotoLoader>();
+  /** Les autres tournées où un arrêt de transfert peut aller (non parties). */
+  readonly transferTargets = input<readonly FoldSelectOption<string>[]>([]);
 
   readonly dropped = output<BoardDrop>();
   readonly shifted = output<StopShift>();
@@ -98,6 +102,12 @@ export class RoundColumn {
   readonly hovered = output<string | null>();
   /** Un arrêt est pris (`true`), puis lâché (`false`). */
   readonly dragging = output<boolean>();
+  /** Les gestes d'un arrêt de transfert interne (plan du transfert interne, §5). */
+  readonly transferManifest = output<DeliveryRoundTransferStopView>();
+  readonly transferRemoved = output<string>();
+  readonly transferMoved = output<TransferStopMove>();
+
+  protected readonly transferStops = computed(() => this.round().transferStops ?? []);
 
   /** Les gestes sur les arrêts : le droit, une tournée libre. */
   protected readonly movable = computed(() => this.canWrite() && !this.round().frozen);

@@ -7,7 +7,10 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import type { DeliveryPlacementSuggestionView } from '@lfd/contracts';
+import type {
+  DeliveryPlacementSuggestionView,
+  DeliveryRoundTransferStopView,
+} from '@lfd/contracts';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
@@ -17,6 +20,7 @@ import {
   FoldDropdownComponent,
   FoldDropdownItemComponent,
   FoldPageLayoutComponent,
+  FoldPanelHostService,
   FoldPopoverTriggerDirective,
   FoldToastComponent,
   FoldViewToggleComponent,
@@ -44,6 +48,11 @@ import { RoundsDayWriter } from '../rounds-day-writer';
 import { RoundsLayoutGestures } from '../rounds-layout-gestures';
 import { RoundsPreview } from '../rounds-preview';
 import { RoundsSettingsReads } from '../rounds-settings-reads';
+import {
+  TransferManifestDialog,
+  type TransferManifestDialogData,
+} from '../transfer-manifest-dialog/transfer-manifest-dialog';
+import type { TransferStopMove } from '../transfer-stop-card/transfer-stop-card';
 
 /** Le temps de lire le bandeau et de se raviser. */
 const UNDO_MS = 8000;
@@ -102,6 +111,7 @@ export class RoundsPage {
   private readonly pdf = inject(RoundPdf);
   private readonly gestures = inject(RoundsLayoutGestures);
   private readonly reads = inject(RoundsSettingsReads);
+  private readonly panels = inject(FoldPanelHostService);
   protected readonly preview = inject(RoundsPreview);
 
   protected readonly dayOptions = DAY_OPTIONS;
@@ -267,6 +277,21 @@ export class RoundsPage {
   /** « Placer ici » (CA7) : à la place suggérée, sous la version lue avec elle. */
   protected readonly placeSuggested = (orderId: string): Promise<boolean> =>
     this.writer.placeSuggested(orderId);
+
+  // ─── Les arrêts de transfert interne (plan du transfert interne, §5) ──
+
+  protected openManifest(stop: DeliveryRoundTransferStopView): void {
+    this.panels.open<TransferManifestDialogData, void>(TransferManifestDialog, {
+      data: { transferId: stop.transferId, siteLabel: stop.siteLabel },
+    });
+  }
+
+  protected readonly removeTransferStop = (gesture: RoundGesture<string>): Promise<boolean> =>
+    this.writer.removeTransferStop(gesture.key, gesture.value);
+  protected readonly moveTransferStop = (
+    gesture: RoundGesture<TransferStopMove>,
+  ): Promise<boolean> =>
+    this.writer.moveTransferStop(gesture.key, gesture.value.stopId, gesture.value.toKey);
 
   // ─── La tournée elle-même ──────────────────────────────────────────────
 

@@ -143,6 +143,12 @@
               </fold-callout>
             }
 
+            <!-- Les bacs d'un transfert se déclarent ICI, au dépôt : ses commandes
+                 sont en sacs (plan du transfert interne, lot T3). -->
+            @for (stop of view.transferStops ?? []; track stop.stopId) {
+              <app-transfer-bins-card [stop]="stop" [canWrite]="canLoad()" (declared)="reread()" />
+            }
+
             <ng-container *ngTemplateOutlet="missingCard" />
           </div>
 
@@ -254,7 +260,7 @@
               }
             }
 
-            @if (view.stops.length === 0) {
+            @if (view.stops.length === 0 && (view.transferStops ?? []).length === 0) {
               <fold-empty-state
                 icon="truck"
                 title="Tournée vide"

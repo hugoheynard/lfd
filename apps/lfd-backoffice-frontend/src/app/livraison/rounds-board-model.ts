@@ -1,6 +1,7 @@
 import type {
   DeliveryRoundDriverView,
   DeliveryRoundPlaceStatus,
+  DeliveryRoundTransferStopView,
   DeliveryRoundTimingView,
   DeliveryRunSheetStopView,
 } from '@lfd/contracts';
@@ -118,6 +119,12 @@ export interface BoardRound {
    */
   readonly place: DeliveryRoundPlaceStatus | null;
   readonly stops: readonly BoardStop[];
+  /**
+   * Les arrêts de transfert interne (plan du transfert interne, lot T1) — une
+   * tournée ENREGISTRÉE seulement : la proposition ne les compose pas.
+   * Absent : aucun.
+   */
+  readonly transferStops?: readonly DeliveryRoundTransferStopView[];
 }
 
 /** Un geste du glisser : la commande, d'où elle part, où elle tombe. */
@@ -187,6 +194,7 @@ function roundOfComposed(composed: ComposedRound, timing: ComposedTiming): Board
     timing: null,
     unknownDemand: round.place?.unknownOrders ?? 0,
     place: round.place?.status ?? null,
+    transferStops: round.transferStops ?? [],
     stops: composed.stops.map(({ stop, sheet, windowClash }) => ({
       orderId: stop.orderId,
       stopId: stop.stopId,

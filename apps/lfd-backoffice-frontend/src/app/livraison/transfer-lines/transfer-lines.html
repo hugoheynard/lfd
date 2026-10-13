@@ -1,0 +1,9 @@
+<ul class="tl-lines">
+  @for (line of lines(); track line.sku) {
+    <li class="tl-line">
+      <span class="tl-qty">{{ line.quantity }}</span>
+      <span>{{ line.productName }}</span>
+      <span class="tl-sku">{{ line.sku }}</span>
+    </li>
+  }
+</ul>

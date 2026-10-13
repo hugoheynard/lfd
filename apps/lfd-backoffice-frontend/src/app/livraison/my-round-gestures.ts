@@ -1,5 +1,9 @@
 import { inject, signal, type WritableSignal } from '@angular/core';
-import type { MyDeliveryRoundView, MyDeliveryStopView } from '@lfd/contracts';
+import type {
+  DriverTransferStopView,
+  MyDeliveryRoundView,
+  MyDeliveryStopView,
+} from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 
 import { DriverNoticeGate } from './driver-notice-gate';
@@ -86,6 +90,18 @@ export class MyRoundGestures {
           ...(await this.positions.read()),
         }),
       'L’arrêt n’a pas pu être clos.',
+    );
+  }
+
+  /** « Remis au site » (transfert interne, lot T2), avec la version lue. */
+  dropAtSite(stop: DriverTransferStopView): Promise<void> {
+    return this.gesture(
+      async (round) =>
+        this.service.dropAtSite(round.id, stop.stopId, {
+          version: round.version,
+          ...(await this.positions.read()),
+        }),
+      'Le transfert n’a pas pu être remis au site.',
     );
   }
 

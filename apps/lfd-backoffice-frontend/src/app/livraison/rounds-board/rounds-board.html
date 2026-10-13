@@ -213,6 +213,10 @@
                     (printed)="printed.emit(round.key)"
                     (hovered)="highlighted.set($event)"
                     (dragging)="dragging.set($event)"
+                    [transferTargets]="transferTargets(round)"
+                    (transferManifest)="transferManifest.emit($event)"
+                    (transferRemoved)="transferRemoved.emit({ key: round.key, value: $event })"
+                    (transferMoved)="transferMoved.emit({ key: round.key, value: $event })"
                   />
                 }
               </div>

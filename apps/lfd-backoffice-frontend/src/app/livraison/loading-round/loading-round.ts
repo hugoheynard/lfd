@@ -38,6 +38,7 @@ import { LoadingRowView } from '../loading-row-view/loading-row-view';
 import { LoadingWriteGate } from '../loading-write-gate';
 import { neighbourRow } from '../row-swipe';
 import { RowSwipeGesture } from '../row-swipe-gesture';
+import { TransferBinsCard } from '../transfer-bins-card/transfer-bins-card';
 
 export { loadedNotice } from '../loading-round-notice';
 
@@ -78,6 +79,7 @@ export type LoadingDeparture = (roundId: string, version: number) => Promise<voi
     LoadingRowPicker,
     LoadingRowView,
     NgTemplateOutlet,
+    TransferBinsCard,
   ],
   templateUrl: './loading-round.html',
   styleUrl: './loading-round.scss',
@@ -181,6 +183,11 @@ export class LoadingRound {
 
   protected retry(): void {
     this.source.retry();
+  }
+
+  /** Des bacs de transfert viennent d'être déclarés : la tournée et son plan sont relus. */
+  protected reread(): void {
+    void this.source.read(this.roundId());
   }
 
   protected retryPlan(): void {

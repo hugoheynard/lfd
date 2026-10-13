@@ -149,3 +149,11 @@
     transition: none;
   }
 }
+
+/* Les arrêts de transfert, sous les commandes : même respiration que la liste. */
+.transfers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  padding: 0 var(--fold-space-sm) var(--fold-space-sm);
+}

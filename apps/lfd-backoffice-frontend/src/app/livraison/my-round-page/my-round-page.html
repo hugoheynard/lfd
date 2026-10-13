@@ -210,7 +210,7 @@
                     size="lg"
                     icon="play"
                     [loading]="busy()"
-                    [disabled]="busy() || round.stops.length === 0"
+                    [disabled]="busy() || entries().length === 0"
                     (click)="depart()"
                     data-depart
                   >
@@ -260,7 +260,7 @@
                       navigation.
                     </fold-callout>
                   }
-                  @if (remaining().length === 0) {
+                  @if (entries().length === 0) {
                     <fold-empty-state
                       title="Plus aucun arrêt"
                       subtitle="La tournée est faite : il ne reste qu’à rentrer."
@@ -284,20 +284,33 @@
                   }
                 }
 
-                @for (stop of departed() ? remaining() : round.stops; track stop.stopId) {
-                  <app-my-round-stop
-                    [roundId]="round.id"
-                    [stop]="stop"
-                    [goTo]="goToOf(stop)"
-                    [gestures]="gestures()"
-                    [next]="stop.stopId === nextStop()?.stopId"
-                    [busy]="busy()"
-                    [version]="round.version"
-                    (arrive)="arrive(stop)"
-                    (closeWithoutHandover)="closeWithoutHandover(stop)"
-                    (reported)="retryRound()"
-                    (handedOver)="retryRound()"
-                  />
+                <!-- Commandes et transferts dans l'ordre de passage (lot T2) : un
+                     arrêt de transfert n'a qu'un geste, « Remis au site ». -->
+                @for (entry of entries(); track entry.stop.stopId) {
+                  @if (entry.kind === 'order') {
+                    <app-my-round-stop
+                      [roundId]="round.id"
+                      [stop]="entry.stop"
+                      [goTo]="goToOf(entry.stop)"
+                      [gestures]="gestures()"
+                      [next]="entry.stop.stopId === nextStop()?.stopId"
+                      [busy]="busy()"
+                      [version]="round.version"
+                      (arrive)="arrive(entry.stop)"
+                      (closeWithoutHandover)="closeWithoutHandover(entry.stop)"
+                      (reported)="retryRound()"
+                      (handedOver)="retryRound()"
+                    />
+                  } @else {
+                    <app-my-round-transfer-stop
+                      [stop]="entry.stop"
+                      [gestures]="gestures()"
+                      [busy]="busy()"
+                      [canReadManifest]="canReadManifest()"
+                      (dropped)="dropAtSite($event)"
+                      (manifest)="openManifest($event)"
+                    />
+                  }
                 }
               }
             }

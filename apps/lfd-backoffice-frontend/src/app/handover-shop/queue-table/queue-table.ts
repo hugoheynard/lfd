@@ -27,6 +27,7 @@ import {
   sortedQueue,
   stillRemittable,
 } from '../handover-queue';
+import { transferBlockReason } from '../handover-transfer';
 
 /**
  * Les libellés de clientèle. Le badge est carré (`radius="square"`) quand
@@ -183,7 +184,17 @@ export class QueueTable {
    * comme une entrée, donc elle doit garder son `this`. Une méthode passée par
    * référence perdrait le composant et lèverait au premier rendu.
    */
-  protected readonly hasNote = (entry: HandoverQueueEntryView): boolean => this.late(entry);
+  protected readonly hasNote = (entry: HandoverQueueEntryView): boolean =>
+    this.late(entry) || this.transferBlock(entry) !== null;
+
+  /**
+   * Pourquoi la ligne ne se remet pas encore — son transfert n'est pas reçu
+   * (plan du transfert interne, §6.2). La ligne RESTE dans la file : on doit
+   * pouvoir dire au client où en est sa commande.
+   */
+  protected transferBlock(entry: HandoverQueueEntryView): string | null {
+    return transferBlockReason(entry);
+  }
 
   // Le contexte d'un `foldCell` n'est pas typé (`let-row` est `any`) : on entre
   // par des méthodes, qui rendent la ligne typée au passage.

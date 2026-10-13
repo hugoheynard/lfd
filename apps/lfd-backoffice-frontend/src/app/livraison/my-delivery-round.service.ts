@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import type {
   CloseStopWithoutHandoverPayload,
+  DropTransferAtSitePayload,
   DepartDeliveryRoundPayload,
   DeliveryIncidentFamily,
   GesturePositionFields,
@@ -140,6 +141,18 @@ export class MyDeliveryRoundService {
     await firstValueFrom(
       this.http.post(`${stopUrl(roundId, stopId)}/close-without-handover`, payload),
     );
+  }
+
+  /**
+   * « Remis au site » (transfert interne, lot T2) — le seul geste d'un arrêt
+   * de transfert : le site reçoit le transfert, l'arrêt se clôt. Rejoué, 204.
+   */
+  async dropAtSite(
+    roundId: string,
+    stopId: string,
+    payload: DropTransferAtSitePayload,
+  ): Promise<void> {
+    await firstValueFrom(this.http.post(`${stopUrl(roundId, stopId)}/site-drop`, payload));
   }
 
   /**

@@ -1,0 +1,49 @@
+<fold-panel-header [title]="title()" [subtitle]="freshness()" closeLabel="Fermer" />
+
+<fold-panel-body>
+  @switch (state().status) {
+    @case ('loading') {
+      <fold-loading message="Lecture du manifeste…" />
+    }
+    @case ('error') {
+      <fold-empty-state
+        tone="alert"
+        title="Manifeste illisible"
+        subtitle="Le serveur n’a pas répondu. Réessayez dans un instant."
+      >
+        <button foldButton emphasis="outline" (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      @if (view(); as view) {
+        <div class="tmd-body">
+          @if (view.totals.length === 0) {
+            <fold-callout variant="info">
+              Ce transfert ne porte encore rien : ses commandes y entreront à la clôture.
+            </fold-callout>
+          }
+          @for (section of sections(); track section.key) {
+            <section class="tmd-section">
+              <fold-element-title
+                variant="eyebrow"
+                [title]="section.title"
+                [subtitle]="section.subtitle"
+              />
+              <app-transfer-lines [lines]="section.totals" />
+            </section>
+          }
+          @if (sections().length > 1) {
+            <section class="tmd-section" data-manifest-total>
+              <fold-element-title
+                variant="eyebrow"
+                title="Tout le transfert, par article"
+                [subtitle]="totalSubtitle()"
+              />
+              <app-transfer-lines [lines]="view.totals" />
+            </section>
+          }
+        </div>
+      }
+    }
+  }
+</fold-panel-body>

@@ -1,0 +1,40 @@
+<fold-card data-transfer-stop>
+  <div class="tsc-body">
+    <fold-element-title variant="title" icon="truck" [title]="title()" [subtitle]="subtitle()" />
+    <div class="tsc-actions">
+      <button
+        foldButton
+        size="sm"
+        emphasis="outline"
+        icon="list"
+        (click)="manifest.emit(stop())"
+        data-transfer-manifest
+      >
+        Manifeste
+      </button>
+      @if (movable()) {
+        <button
+          foldButton
+          size="sm"
+          emphasis="soft"
+          intent="danger"
+          [disabled]="busy()"
+          (click)="removed.emit(stop().stopId)"
+          data-transfer-remove
+        >
+          Retirer
+        </button>
+      }
+    </div>
+    @if (movable() && targets().length > 0) {
+      <fold-listbox
+        size="sm"
+        label="Déplacer vers"
+        placeholder="Une autre tournée"
+        [options]="targets()"
+        [disabled]="busy()"
+        (selectionChange)="move($event)"
+      />
+    }
+  </div>
+</fold-card>

@@ -75,30 +75,37 @@
     aucune autre.
   -->
   <ng-template foldRowNote let-row>
-    <fold-callout appearance="inset" variant="warning" icon="info">
-      <strong>{{ lateText(row) }}</strong> sur la tranche convenue.
-      @if (canRemind() && !remindable(row) && !reminderSent(row)) {
-        Le fournil ne l'a pas encore déclarée prête&nbsp;: un rappel ferait venir le client pour
-        rien.
-      }
-      @if (canRemind()) {
-        <div actions>
-          @if (reminderSent(row)) {
-            <span class="qt-muted">Rappel envoyé</span>
-          } @else {
-            <button
-              foldButton
-              emphasis="outline"
-              icon="mail"
-              [disabled]="!remindable(row)"
-              [loading]="busy(row)"
-              (click)="reminder.emit(row); $event.stopPropagation()"
-            >
-              Envoyer un rappel
-            </button>
-          }
-        </div>
-      }
-    </fold-callout>
+    <!-- Le transfert du site n'est pas reçu : la remise est refusée, et la
+         ligne dit pourquoi (plan du transfert interne, §6.2). -->
+    @if (transferBlock(row); as why) {
+      <fold-callout appearance="inset" variant="info" icon="truck">{{ why }}</fold-callout>
+    }
+    @if (late(row)) {
+      <fold-callout appearance="inset" variant="warning" icon="info">
+        <strong>{{ lateText(row) }}</strong> sur la tranche convenue.
+        @if (canRemind() && !remindable(row) && !reminderSent(row)) {
+          Le fournil ne l'a pas encore déclarée prête&nbsp;: un rappel ferait venir le client pour
+          rien.
+        }
+        @if (canRemind()) {
+          <div actions>
+            @if (reminderSent(row)) {
+              <span class="qt-muted">Rappel envoyé</span>
+            } @else {
+              <button
+                foldButton
+                emphasis="outline"
+                icon="mail"
+                [disabled]="!remindable(row)"
+                [loading]="busy(row)"
+                (click)="reminder.emit(row); $event.stopPropagation()"
+              >
+                Envoyer un rappel
+              </button>
+            }
+          </div>
+        }
+      </fold-callout>
+    }
   </ng-template>
 </fold-data-table>

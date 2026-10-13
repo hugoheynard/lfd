@@ -29,6 +29,7 @@ import { PackingService } from '../../production/packing.service';
 import { HandoverQueueService } from '../handover-queue.service';
 import { SheetPanel, type SheetPanelData } from '../sheet-panel/sheet-panel';
 import { formatWindow, stillRemittable } from '../handover-queue';
+import { transferBlockReason } from '../handover-transfer';
 import { bagReadiness, gestureCaution, readyVerdict } from './bag-readiness';
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'error';
@@ -199,7 +200,16 @@ export class HandoverDetail {
   /** Peut-on encore tendre ce sac ? La règle vit dans `handover-queue.ts`. */
   protected readonly remittable = computed<boolean>(() => {
     const entry = this.entry();
-    return entry !== null && stillRemittable(entry.state);
+    return entry !== null && stillRemittable(entry.state) && this.transferBlock() === null;
+  });
+
+  /**
+   * Son transfert n'est pas reçu au site : le serveur refuse la remise
+   * (`handover.transfer_not_received`), l'écran ne l'arme pas et dit pourquoi.
+   */
+  protected readonly transferBlock = computed<string | null>(() => {
+    const entry = this.entry();
+    return entry === null ? null : transferBlockReason(entry);
   });
 
   protected readonly placedAt = computed<string>(() => {

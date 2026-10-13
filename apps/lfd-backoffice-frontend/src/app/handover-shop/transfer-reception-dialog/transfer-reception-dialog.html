@@ -1,0 +1,52 @@
+<fold-panel-header [title]="title()" [subtitle]="summary()" closeLabel="Fermer" />
+
+<fold-panel-body>
+  <div class="trd-body">
+    @if (manual()) {
+      <fold-callout variant="warning" icon="info">
+        Ce transfert n'est parti dans aucune tournée. Le réceptionner atteste que la marchandise est
+        arrivée au site par un autre moyen&nbsp;: dites lequel.
+      </fold-callout>
+    } @else {
+      <p class="trd-said">
+        Vérifiez les bacs arrivés au site. Une fois réceptionné, ses commandes se remettent au
+        comptoir.
+      </p>
+    }
+
+    <fold-textarea
+      label="Motif"
+      [required]="manual()"
+      [optional]="!manual()"
+      optionalLabel="facultatif"
+      [rows]="3"
+      placeholder="Apporté par le fournil en voiture, tournée annulée…"
+      [hint]="
+        tooLong()
+          ? 'Au plus ' + maxLength + ' caractères.'
+          : 'Gardé avec le transfert. Au plus ' + maxLength + ' caractères.'
+      "
+      [(value)]="reason"
+    />
+
+    @if (error(); as message) {
+      <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+    }
+  </div>
+</fold-panel-body>
+
+<fold-panel-footer align="end">
+  <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
+    Annuler
+  </button>
+  <button
+    foldButton
+    icon="check"
+    type="button"
+    [disabled]="!canSubmit()"
+    [loading]="saving()"
+    (click)="submit()"
+  >
+    Réceptionner
+  </button>
+</fold-panel-footer>

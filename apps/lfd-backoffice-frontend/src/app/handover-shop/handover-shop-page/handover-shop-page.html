@@ -73,6 +73,14 @@
                 🔴 Le scan par ligne a coûté une colonne de 8,5 rem à la file.
                 Rendue au nom du client, qui est ce qu'on y cherche.
               -->
+                <!-- Le transfert du site, EN TÊTE de l'onglet : ses commandes ne se
+                   remettent qu'une fois reçu (plan du transfert interne, §6). -->
+                <app-transfer-strip
+                  [entries]="store.rows()"
+                  [canReceive]="canReceive()"
+                  (received)="store.load()"
+                />
+
                 <div class="file-head">
                   <div class="file-said">
                     <fold-element-title variant="eyebrow" [title]="eyebrow()" />

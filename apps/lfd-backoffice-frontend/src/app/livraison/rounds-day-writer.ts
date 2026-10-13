@@ -193,4 +193,34 @@ export class RoundsDayWriter {
       'La tournée n’a pas pu être déclarée rentrée.',
     );
   }
+
+  /** Retirer un arrêt de transfert : le transfert redevient sans arrêt (plan du transfert interne, §5). */
+  removeTransferStop(key: string, stopId: string): Promise<boolean> {
+    const round = this.day.roundById(key)?.round;
+    if (round === undefined) {
+      return Promise.resolve(false);
+    }
+    return this.write(
+      () => this.rounds.remove(round.id, stopId, { version: round.version }),
+      'L’arrêt de transfert n’a pas pu être retiré.',
+    );
+  }
+
+  /** Déplacer un arrêt de transfert vers une autre tournée, sous les deux versions lues. */
+  moveTransferStop(fromKey: string, stopId: string, toKey: string): Promise<boolean> {
+    const from = this.day.roundById(fromKey)?.round;
+    const to = this.day.roundById(toKey)?.round;
+    if (from === undefined || to === undefined) {
+      return Promise.resolve(false);
+    }
+    return this.write(
+      () =>
+        this.rounds.move(from.id, stopId, {
+          toRoundId: to.id,
+          fromVersion: from.version,
+          toVersion: to.version,
+        }),
+      'L’arrêt de transfert n’a pas pu être déplacé.',
+    );
+  }
 }

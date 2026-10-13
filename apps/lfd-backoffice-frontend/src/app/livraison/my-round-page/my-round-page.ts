@@ -2,6 +2,7 @@ import { Router, RouterLink } from '@angular/router';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import type {
   DeliveryIncidentFamily,
+  DriverTransferStopView,
   MyDeliveryRoundView,
   MyDeliveryStopView,
 } from '@lfd/contracts';
@@ -17,6 +18,7 @@ import {
   FoldInlineConfirmComponent,
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
+  FoldPanelHostService,
   FoldViewToggleComponent,
 } from 'fold-ng';
 
@@ -46,6 +48,17 @@ import { GesturePositionReader } from '../gesture-position';
 import { MyDeliveryRoundService } from '../my-delivery-round.service';
 import { allStopsReady, readyStopsLabel } from '../my-round-packing';
 import { MyRoundStop } from '../my-round-stop/my-round-stop';
+import { MyRoundTransferStop } from '../my-round-transfer-stop/my-round-transfer-stop';
+import {
+  interleavedStops,
+  type MyRoundEntry,
+  openTransferStops,
+  transferStopLabel,
+} from '../my-round-transfers';
+import {
+  TransferManifestDialog,
+  type TransferManifestDialogData,
+} from '../transfer-manifest-dialog/transfer-manifest-dialog';
 import { MyRoundGestures } from '../my-round-gestures';
 import { MyRoundReader } from '../my-round-reader';
 
@@ -107,6 +120,7 @@ function deviceStorage(): Storage | null {
     IncidentList,
     IncidentReportForm,
     MyRoundStop,
+    MyRoundTransferStop,
     RouterLink,
   ],
   templateUrl: './my-round-page.html',
@@ -118,6 +132,7 @@ export class MyRoundPage {
   private readonly router = inject(Router);
   /** La position au geste (YA-D4) : son absence se dit, elle ne bloque rien. */
   protected readonly positions = inject(GesturePositionReader);
+  private readonly panels = inject(FoldPanelHostService);
   private readonly storage = deviceStorage();
 
   /** Le dernier refus du serveur — la tournée reste à l'écran. */
@@ -165,11 +180,29 @@ export class MyRoundPage {
    * l'arrêt, donc ce sont les arrêts encore ouverts. `null` : aucun.
    */
   protected readonly withoutOutcome = computed(() => {
-    const open = this.remaining();
-    return open.length === 0
-      ? null
-      : open.map((stop) => `${String(stop.rank)}. ${stop.customerLabel}`).join(', ');
+    const open = [
+      ...this.remaining().map((stop) => `${String(stop.rank)}. ${stop.customerLabel}`),
+      // Un arrêt de transfert ouvert bloque aussi (I9) : « Remis au site » le clôt.
+      ...openTransferStops(this.round()?.transferStops ?? []).map(transferStopLabel),
+    ];
+    return open.length === 0 ? null : open.join(', ');
   });
+
+  /**
+   * Les arrêts dans l'ordre de passage, transferts intercalés (lot T2). En
+   * route, seulement ceux qui restent ouverts — comme les commandes.
+   */
+  protected readonly entries = computed<readonly MyRoundEntry[]>(() => {
+    const round = this.round();
+    if (round === null) {
+      return [];
+    }
+    const all = interleavedStops(round.stops, round.transferStops ?? []);
+    return this.departed() ? all.filter((entry) => entry.stop.closedAt === null) : all;
+  });
+
+  /** Le manifeste détaillé se lit sous le droit de la composition. */
+  protected readonly canReadManifest = computed(() => this.permissions.can('delivery_rounds:read'));
   /** L'arrêt suivant : le premier encore ouvert, dans l'ordre de passage. */
   protected readonly nextStop = computed(() => this.remaining()[0] ?? null);
   protected readonly currentStop = computed<CurrentStopRef | null>(() => {
@@ -190,7 +223,7 @@ export class MyRoundPage {
   /** « Rentrer » : partie, plus rien à faire, et un point de départ connu. */
   protected readonly homeHref = computed(() => {
     const home = this.round()?.home ?? null;
-    return this.rolling() && this.remaining().length === 0 && home !== null
+    return this.rolling() && this.entries().length === 0 && home !== null
       ? goToHref(this.app(), home)
       : null;
   });
@@ -241,6 +274,14 @@ export class MyRoundPage {
   protected readonly closeWithoutHandover = (stop: MyDeliveryStopView): Promise<void> =>
     this.doorstep.closeWithoutHandover(stop);
   protected readonly returnToDepot = (): Promise<void> => this.doorstep.returnToDepot();
+  protected readonly dropAtSite = (stop: DriverTransferStopView): Promise<void> =>
+    this.doorstep.dropAtSite(stop);
+
+  protected openManifest(stop: DriverTransferStopView): void {
+    this.panels.open<TransferManifestDialogData, void>(TransferManifestDialog, {
+      data: { transferId: stop.transferId, siteLabel: stop.siteLabel },
+    });
+  }
 
   /**
    * « Charger » : le chargement a sa propre adresse, sous la tournée — un

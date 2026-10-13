@@ -463,6 +463,38 @@ l'option B le même jour ; le transfert a été refondu.
 | S5  | SÉRIEUX  | T0 dépend de S1 et de Q-T11                                                                                                    | **corrigé** (§9)                                                                                                                                                                                                                         |
 | m   | mineurs  | §12.1 S6 contre la lecture synchrone ; nom du fichier du fait de départ ; lecteur des sites servis ; repli sans véhicule       | **corrigés** : §12.1 S6 aligné ; `delivery-round-departed.fact.ts` vérifié (existe) ; lecteur nommé `TransferSitesReader` (§9) ; repli sans véhicule : transfert sans arrêt, ligne au journal, sortie par réception manuelle (**Q-T13**) |
 
+## État des écrans du transfert (2026-10-13)
+
+🔨 **Bâti, non commité** (back-office, `apps/lfd-backoffice-frontend`).
+
+- **Comptoir** (`handover-shop/`) : en tête de l'onglet d'un site, une carte par
+  transfert du jour (`transfer-strip/`) — état (pas encore composé, prévu,
+  parti, reçu), bacs, commandes — et « Réceptionner » (`transfer-reception-dialog/`,
+  motif obligatoire si jamais parti), sous `handover_counter:write`. Une ligne
+  d'un transfert non reçu ou `awaiting` reste dans la file, sa raison en note ;
+  le rail n'offre plus la remise (`apps/lfd-backoffice-frontend/src/app/handover-shop/handover-transfer.ts`).
+- **« Ma tournée »** : l'arrêt de transfert intercalé à sa position
+  (`apps/lfd-backoffice-frontend/src/app/livraison/my-round-transfers.ts`, `my-round-transfer-stop/`) — site, totaux par
+  article, « Remis au site » ; manifeste détaillé si `delivery_rounds:read`.
+  « Tournée terminée » nomme un transfert encore ouvert ; une tournée dédiée
+  (sans commande) peut partir.
+- **Chargement** : une carte par arrêt de transfert (`transfer-bins-card/`) —
+  déclarer N bacs entiers, étiquettes par la page existante
+  (`/livraison/etiquettes/transfert/:transferId`) ; « → Val Village » compté
+  dans « Ce qui manque » et l'avancement.
+- **Tournées du jour** : sous chaque colonne, ses arrêts de transfert
+  (`transfer-stop-card/`) — manifeste (`transfer-manifest-dialog/`), retirer,
+  déplacer vers une autre tournée non partie (routes `move` / `removal`).
+
+**Reste** : la feuille de route PDF (`round-paper`, backend) ne montre pas
+l'arrêt ; « Y aller » n'inclut pas le site (la vue du livreur n'en porte pas le
+point) ; le nombre de bacs n'est pas dans `DriverTransferStopView` ; les formats
+de bac ne se lisent pas sous `delivery_loading` seul (`admin/delivery/bins` :
+`delivery_settings:read`, `delivery_rounds:read`, `production_packing:write`) —
+un rôle de chargement seul ne peut pas déclarer les bacs d'un transfert ; dans
+une colonne des tournées, le rang affiché des commandes ne compte pas l'arrêt
+de transfert (son rang réel est dans sa carte).
+
 ## État du lot T3 (2026-10-13)
 
 🔨 **Bâti, non commité** (non relu par `lecteur-de-migrations` ni `vitruve`).

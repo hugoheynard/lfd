@@ -1,9 +1,14 @@
 import type { CdkDragDrop } from '@angular/cdk/drag-drop';
-import type { FoldViewToggleOption } from 'fold-ng';
+import type { FoldSelectOption, FoldViewToggleOption } from 'fold-ng';
 
 import type { MapDeparture } from './delivery-map/delivery-map';
 import { type PlannedRound, stopPointOf } from './delivery-planning';
-import { type ListSlot, passageCountLabel, windowShortLabel } from './delivery-rounds';
+import {
+  type ListSlot,
+  passageCountLabel,
+  shortRoundLabel,
+  windowShortLabel,
+} from './delivery-rounds';
 import {
   alertCountOf,
   type BoardDrop,
@@ -199,4 +204,17 @@ export function orderWindowOf(order: BoardOrder): string {
 /** Les tournées que la carte trace : celles qui ont au moins un arrêt. */
 export function mapRoundsOf(shown: readonly BoardRound[]): readonly PlannedRound[] {
   return shown.filter((round) => round.stops.length > 0).map(plannedOfBoard);
+}
+
+/**
+ * **Où un arrêt de transfert peut aller** : les autres tournées ENREGISTRÉES
+ * (`roundId` connu) et non parties — le serveur refuserait les autres (I6).
+ */
+export function transferTargetsOf(
+  rounds: readonly BoardRound[],
+  fromKey: string,
+): readonly FoldSelectOption<string>[] {
+  return rounds
+    .filter((round) => round.key !== fromKey && round.roundId !== null && !round.frozen)
+    .map((round) => ({ value: round.key, label: shortRoundLabel(round) }));
 }

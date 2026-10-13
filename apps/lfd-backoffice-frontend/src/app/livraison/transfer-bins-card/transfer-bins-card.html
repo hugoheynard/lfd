@@ -1,0 +1,84 @@
+<fold-card data-transfer-bins>
+  <div class="tbc-body">
+    <fold-element-title variant="title" icon="truck" [title]="title()" [subtitle]="subtitle()">
+      <a
+        titleAction
+        foldButton
+        size="sm"
+        emphasis="outline"
+        icon="print"
+        [routerLink]="['/livraison/etiquettes/transfert', stop().transferId]"
+        [queryParams]="labelsQuery()"
+        data-transfer-labels
+      >
+        {{ justDeclared().length > 0 ? 'Imprimer les nouvelles étiquettes' : 'Étiquettes' }}
+      </a>
+    </fold-element-title>
+
+    @if (canWrite()) {
+      @if (declaring()) {
+        @if (typesError(); as message) {
+          <fold-callout variant="alert" data-types-error>{{ message }}</fold-callout>
+        } @else {
+          <div class="tbc-fields">
+            <fold-listbox
+              size="sm"
+              label="Format de bac"
+              placeholder="Choisir"
+              [options]="types()"
+              [(value)]="binTypeId"
+            />
+            <fold-number-input
+              size="sm"
+              label="Bacs"
+              spinner="none"
+              integer
+              [min]="1"
+              [max]="countMax"
+              [(value)]="count"
+            />
+            <fold-number-input
+              size="sm"
+              label="Sacs par bac"
+              spinner="none"
+              integer
+              [min]="0"
+              [max]="bagsMax"
+              [(value)]="innerBags"
+            />
+          </div>
+        }
+        @if (error(); as message) {
+          <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+        }
+        <div class="tbc-actions">
+          <button foldButton size="sm" emphasis="outline" intent="neutral" (click)="close()">
+            Annuler
+          </button>
+          <button
+            foldButton
+            size="sm"
+            icon="plus"
+            [disabled]="!canSubmit()"
+            [loading]="saving()"
+            (click)="submit()"
+            data-declare-transfer-bins
+          >
+            Déclarer
+          </button>
+        </div>
+      } @else {
+        <button
+          foldButton
+          size="sm"
+          emphasis="soft"
+          icon="plus"
+          (click)="open()"
+          data-open-transfer-bins
+        >
+          Déclarer des bacs du transfert
+        </button>
+      }
+    }
+  </div>
+</fold-card>

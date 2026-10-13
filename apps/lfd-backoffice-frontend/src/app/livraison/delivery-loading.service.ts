@@ -7,6 +7,9 @@ import type {
   DeliveryLoadingRoundView,
   DeliveryOrderBinsView,
   DeliveryPackingRoundsView,
+  DeliveryTransferBinsView,
+  DeclaredTransferBinsView,
+  DeclareTransferBinsPayload,
   LoadDeliveryBinPayload,
 } from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
@@ -93,5 +96,31 @@ export class DeliveryLoadingService {
 
   async depart(roundId: string, version: number): Promise<void> {
     await firstValueFrom(this.http.post(`${BASE}/rounds/${id(roundId)}/departure`, { version }));
+  }
+
+  /**
+   * Les bacs d'un transfert interne (lot T3) — la page d'étiquettes du
+   * transfert, annulés compris. Sous `delivery_loading:read`.
+   */
+  transferBins(transferId: string): Promise<DeliveryTransferBinsView> {
+    return firstValueFrom(
+      this.http.get<DeliveryTransferBinsView>(`${BASE}/loading/transfers/${id(transferId)}/bins`),
+    );
+  }
+
+  /**
+   * Déclarer `count` bacs ENTIERS pour un transfert (lot T3, Q-T4 révisée) :
+   * les sacs des commandes du site vont dedans. Sous `delivery_loading:write`.
+   */
+  declareTransferBins(
+    transferId: string,
+    payload: DeclareTransferBinsPayload,
+  ): Promise<DeclaredTransferBinsView> {
+    return firstValueFrom(
+      this.http.post<DeclaredTransferBinsView>(
+        `${BASE}/loading/transfers/${id(transferId)}/bins`,
+        payload,
+      ),
+    );
   }
 }

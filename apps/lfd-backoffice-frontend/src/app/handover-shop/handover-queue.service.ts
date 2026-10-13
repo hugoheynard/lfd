@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import type { HandoverQueueView, OrderHandoverView } from '@lfd/contracts';
+import type { HandoverQueueView, OrderHandoverView, ReceiveTransferPayload } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../api/api-config';
 
@@ -75,6 +75,21 @@ export class HandoverQueueService {
       this.http.post<OrderHandoverView>(
         `${B2B_API_BASE}/admin/handover/manual/${encodeURIComponent(reference)}`,
         {},
+      ),
+    );
+  }
+
+  /**
+   * **« Réceptionner »** le transfert interne qui porte cette commande (lot
+   * T2) : la route est par commande, le serveur retrouve le transfert. Motif
+   * obligatoire quand il n'est parti dans aucune tournée — le domaine le dit.
+   */
+  async receiveTransfer(orderId: string, reason: string | null): Promise<void> {
+    const payload: ReceiveTransferPayload = { reason };
+    await firstValueFrom(
+      this.http.post<void>(
+        `${B2B_API_BASE}/admin/handover/orders/${encodeURIComponent(orderId)}/transfer-reception`,
+        payload,
       ),
     );
   }

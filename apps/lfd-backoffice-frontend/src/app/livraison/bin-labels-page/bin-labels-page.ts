@@ -11,7 +11,7 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import type { DeliveryBinView, DeliveryOrderBinsView } from '@lfd/contracts';
+import type { DeliveryBinView, DeliveryOrderRoundPlaceView } from '@lfd/contracts';
 import {
   FoldBackLinkComponent,
   FoldButtonComponent,
@@ -29,7 +29,18 @@ import { DeliveryLoadingService } from '../delivery-loading.service';
 type LabelsState =
   | { readonly status: 'loading' }
   | { readonly status: 'error' }
-  | { readonly status: 'ready'; readonly view: DeliveryOrderBinsView };
+  | { readonly status: 'ready'; readonly view: LabelsView };
+
+/**
+ * Ce que la page imprime, quel que soit le propriétaire des bacs : une
+ * commande, ou un transfert interne (lot T3) — dont la référence est
+ * « → <site> » et qui n'a pas de place de tournée à imprimer.
+ */
+interface LabelsView {
+  readonly reference: string;
+  readonly bins: readonly DeliveryBinView[];
+  readonly round: DeliveryOrderRoundPlaceView | null;
+}
 
 /**
  * **Les étiquettes des bacs d'une commande, à imprimer**
@@ -64,7 +75,10 @@ export class BinLabelsPage {
   private readonly origin = inject(DOCUMENT).location.origin;
 
   /** La commande, lue dans l'adresse. */
-  readonly orderId = input.required<string>();
+  /** Les bacs d'une commande (`etiquettes/:orderId`)… */
+  readonly orderId = input<string | undefined>();
+  /** …ou ceux d'un transfert interne (`etiquettes/transfert/:transferId`). */
+  readonly transferId = input<string | undefined>();
   /**
    * `?bacs=id1,id2` : les bacs qu'une déclaration vient de créer (tranche C) —
    * on n'imprime qu'eux, les autres ont déjà leur étiquette. Absent : tous.
@@ -120,8 +134,9 @@ export class BinLabelsPage {
   constructor() {
     effect(() => {
       const orderId = this.orderId();
+      const transferId = this.transferId();
       this.reload();
-      untracked(() => void this.load(orderId));
+      untracked(() => void this.load(orderId, transferId));
     });
   }
 
@@ -145,12 +160,31 @@ export class BinLabelsPage {
     );
   }
 
-  private async load(orderId: string): Promise<void> {
+  /** Le retour : le colisage pour une commande, le chargement pour un transfert. */
+  protected readonly back = computed(() =>
+    this.transferId() === undefined
+      ? { label: 'Colisage', link: '/colisage' }
+      : { label: 'Chargement', link: '/livraison/chargement' },
+  );
+
+  private async load(orderId: string | undefined, transferId: string | undefined): Promise<void> {
     this.state.set({ status: 'loading' });
     try {
-      this.state.set({ status: 'ready', view: await this.service.orderBins(orderId) });
+      this.state.set({ status: 'ready', view: await this.read(orderId, transferId) });
     } catch {
       this.state.set({ status: 'error' });
     }
+  }
+
+  private async read(
+    orderId: string | undefined,
+    transferId: string | undefined,
+  ): Promise<LabelsView> {
+    if (transferId !== undefined) {
+      const view = await this.service.transferBins(transferId);
+      return { reference: `→ ${view.siteLabel}`, bins: view.bins, round: null };
+    }
+    const view = await this.service.orderBins(orderId ?? '');
+    return { reference: view.reference, bins: view.bins, round: view.round };
   }
 }

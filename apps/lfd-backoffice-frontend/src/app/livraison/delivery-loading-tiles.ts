@@ -242,10 +242,16 @@ export interface MissingStopRow {
  * passage. Un arrêt complet disparaît.
  */
 export function missingByStop(
-  round: Pick<DeliveryLoadingRoundView, 'stops'>,
+  round: Pick<DeliveryLoadingRoundView, 'stops' | 'transferStops'>,
 ): readonly MissingStopRow[] {
-  return round.stops
+  // Un arrêt de transfert manque comme les autres, sous « → <site> » (lot T3).
+  const transfers = (round.transferStops ?? []).map((stop) => ({
+    ...stop,
+    customerLabel: `→ ${stop.siteLabel}`,
+  }));
+  return [...round.stops, ...transfers]
     .filter((stop) => stop.state !== 'loaded' || hasBinToRedo(stop))
+    .sort((a, b) => a.position - b.position)
     .map((stop) => {
       const left = stop.bins.filter((bin) => bin.loadedAt === null);
       let status = `${String(left.length)} à charger`;
