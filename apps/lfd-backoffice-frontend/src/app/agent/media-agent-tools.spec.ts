@@ -17,6 +17,7 @@ import { MediaTagsApi } from '../mediatheque/data/media-tags-api';
 import type { MediaPageRequest } from '../mediatheque/rules/media-page-request';
 
 import { declareMediaAgentTools } from './media-agent-tools';
+import { IMAGE_FETCHER } from './media-agent-deposit';
 
 type ToolArgs = Record<
   string,
@@ -142,6 +143,8 @@ function armTools(fonds: readonly LibraryMediaView[], options: { describeFails?:
       { provide: MediaTagsApi, useValue: media },
       { provide: MediaSeriesApi, useValue: media },
       { provide: MediaPaletteApi, useValue: strip },
+      // L'hôte d'images passe par le `fetch` doublé de `stubImageHost`.
+      { provide: IMAGE_FETCHER, useValue: (url: string) => globalThis.fetch(url) },
     ],
   });
   const names = runInInjectionContext(TestBed.inject(Injector), () => declareMediaAgentTools());

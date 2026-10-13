@@ -38,10 +38,7 @@ interface DescribeItem {
  * ⚠️ La palette n'est pas calculée ici (l'écran la calcule au dépôt) : le
  * serveur range `NULL`, et le rattrapage de la médiathèque la posera.
  */
-export function declareMediaBatchTools(
-  media: MediaImagesApi,
-  fetcher: ImageFetcher = (url) => fetch(url),
-): void {
+export function declareMediaBatchTools(media: MediaImagesApi, fetcher: ImageFetcher): void {
   void declareExperimentalWebMcpTool({
     name: 'media_deposit_from_url',
     description:

@@ -17,6 +17,7 @@ import {
   stripText,
 } from './media-agent-text';
 import { declareMediaBatchTools, MEDIA_BATCH_TOOLS } from './media-agent-batch-tools';
+import { IMAGE_FETCHER } from './media-agent-deposit';
 import {
   declareMediaVocabularyTools,
   MEDIA_VOCABULARY_TOOLS,
@@ -199,7 +200,7 @@ export function declareMediaAgentTools(): readonly string[] {
   });
 
   declareMediaVocabularyTools(media);
-  declareMediaBatchTools(media);
+  declareMediaBatchTools(media, inject(IMAGE_FETCHER));
 
   return [
     'media_search',

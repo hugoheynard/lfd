@@ -1,4 +1,7 @@
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { inject, InjectionToken } from '@angular/core';
 import { MEDIA_LIMITS } from '@lfd/pim-contracts';
+import { firstValueFrom } from 'rxjs';
 
 /**
  * **Aller chercher une image à son adresse** pour la déposer — le seul
@@ -10,8 +13,40 @@ import { MEDIA_LIMITS } from '@lfd/pim-contracts';
  * octets) ; ce contrôle évite seulement d'envoyer ce qu'il refuserait.
  */
 
-/** Le `fetch` du navigateur, réduit à ce qu'on en appelle — doublé en test. */
+/** Le téléchargement d'une image, réduit à ce qu'on en appelle — doublé en test. */
 export type ImageFetcher = (url: string) => Promise<Response>;
+
+/**
+ * Le téléchargeur par défaut : `HttpClient`, pas le `fetch` global
+ * (`lint:api-types`). Le jeton staff ne part pas chez l'hôte d'images :
+ * l'intercepteur ne le pose que sur l'URL de l'API (`staff-auth.interceptor.ts`,
+ * vérifié le 2026-10-13).
+ *
+ * Une réponse non 2xx revient en `Response` à son statut, pour que le refus le
+ * nomme ; seul l'échec sans statut (CORS, réseau) est relancé.
+ */
+export const IMAGE_FETCHER = new InjectionToken<ImageFetcher>('IMAGE_FETCHER', {
+  providedIn: 'root',
+  factory: () => {
+    const http = inject(HttpClient);
+    return async (url) => {
+      try {
+        const reply = await firstValueFrom(
+          http.get(url, { responseType: 'blob', observe: 'response' }),
+        );
+        return new Response(reply.body, {
+          status: reply.status,
+          headers: { 'content-type': reply.headers.get('content-type') ?? '' },
+        });
+      } catch (error) {
+        if (error instanceof HttpErrorResponse && error.status > 0) {
+          return new Response(null, { status: error.status });
+        }
+        throw error;
+      }
+    };
+  },
+});
 
 const ACCEPTED: readonly string[] = MEDIA_LIMITS.acceptedTypes;
 const MEGABYTE = 1024 * 1024;
