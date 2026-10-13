@@ -139,5 +139,7 @@ Visé : e2e de 30 % plus courtes, run complet vers 6 min.
   (~56 s chacune). Elles fixent le plancher d'un éclat.
 - **Un test rouge une fois** sur le run de mesure :
   `guest-account-claim.e2e-spec.ts`, « une course entre deux premières
-  entrées : une seule gagne » — deux entrées ont gagné. Course réelle dans la
-  réclamation d'un compte invité, ou test instable : **non établi**.
+  entrées : une seule gagne » — deux entrées ont gagné. **Course réelle**, rouge
+  trois fois le 2026-10-13 : l'admission ne relisait pas les comptes après
+  avoir cherché la fiche invité, et la perdante ouvrait un second compte.
+  Corrigé par `163f4074e`.
