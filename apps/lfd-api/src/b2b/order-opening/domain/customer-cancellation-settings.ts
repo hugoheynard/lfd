@@ -14,7 +14,7 @@ export interface CustomerCancellationSettingsState {
 
 /**
  * **Ce que la boutique permet au client d'annuler lui-même**, tel qu'on
- * l'écrit (plan `documentation/commandes/annulation/plan-annulation-de-commande.md`, C6.5).
+ * l'écrit (doc `documentation/commandes/annulation/annulation-par-le-client.md`, C6.5).
  *
  * Pas un agrégat : un réglage sans transition ni règle de refus (CLAUDE.md
  * §3.1), copié sur `OrderOpening`. La borne du délai (0 à 168 h) est une

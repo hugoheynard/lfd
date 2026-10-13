@@ -1,6 +1,6 @@
 /**
- * **Le verrou de PLUSIEURS lignes `orders`**, dans un ordre unique (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C5.3, S7).
+ * **Le verrou de PLUSIEURS lignes `orders`**, dans un ordre unique (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, C5.3, S7).
  *
  * L'émission mensuelle et la constitution d'un lot prennent chacune
  * plusieurs commandes ; l'annulation, « réglée autrement » et la facture

@@ -1,6 +1,6 @@
 /**
- * E2E de **l'annulation d'une commande par l'équipe** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, lot C3) — les gestes,
+ * E2E de **l'annulation d'une commande par l'équipe** (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, lot C3) — les gestes,
  * les refus nommés, Stripe, le bon, le courriel, le journal, le droit.
  *
  * Les courses (double clic, deux membres de l'équipe, clôture, retirage,

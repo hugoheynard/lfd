@@ -320,7 +320,7 @@ describe("ProductionDay — qui a arrêté, qui a complété", () => {
 });
 
 /**
- * L'annulation staff (plan `order/plan-annulation-de-commande.md`, C3.4) : la
+ * L'annulation staff (doc `documentation/commandes/annulation/annulation-par-le-staff.md`, C3.4) : la
  * clôture et le retirage lisent les commandes du commerce AVANT le verrou ;
  * une annulation validée entre les deux y figure encore. C'est l'agrégat qui
  * écarte les retraits — sans double, par la règle elle-même.

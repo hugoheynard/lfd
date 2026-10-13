@@ -3,8 +3,8 @@ import type { CustomerCancellationRefusal } from "@lfd/contracts";
 import type { CancellationBlock } from "./order-cancellation.js";
 
 /**
- * **Les refus de la règle staff, dits à un client** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C6.7).
+ * **Les refus de la règle staff, dits à un client** (doc
+ * `documentation/commandes/annulation/annulation-par-le-client.md`, C6.7).
  *
  * Le noyau lève les erreurs staff ; le client en reçoit la traduction. Aucune
  * phrase ne cite le motif staff, une autre commande par son numéro (le refus

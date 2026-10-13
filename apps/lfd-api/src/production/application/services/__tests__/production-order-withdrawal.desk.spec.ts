@@ -10,7 +10,7 @@ import {
 import { ProductionOrderWithdrawalDesk } from "../production-order-withdrawal.desk.js";
 
 /**
- * Le guichet du retrait (plan `order/plan-annulation-de-commande.md`, C3.4) :
+ * Le guichet du retrait (doc `documentation/commandes/annulation/annulation-par-le-staff.md`, C3.4) :
  * verrou de la journée, PUIS inscription, PUIS écriture — l'ordre qui ferme la
  * course avec la clôture et le retirage.
  */

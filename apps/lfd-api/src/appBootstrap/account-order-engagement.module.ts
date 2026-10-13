@@ -9,7 +9,7 @@ import {
 
 /**
  * Le fil qui relie **l'annulation d'une commande au compte à la
- * comptabilité** (plan `documentation/commandes/annulation/plan-annulation-de-commande.md`,
+ * comptabilité** (doc `documentation/commandes/annulation/annulation-par-le-staff.md`,
  * lot C5, C5.4 et C5.5).
  *
  * La commande déclare ce dont elle a besoin — lire ce que la comptabilité a

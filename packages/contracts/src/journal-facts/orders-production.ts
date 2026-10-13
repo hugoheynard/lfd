@@ -316,8 +316,8 @@ export const ORDERS_PRODUCTION_FACTS = {
     }),
   ),
   /**
-   * L'équipe a **annulé** la commande (plan
-   * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C3.5, 2026-10-12).
+   * L'équipe a **annulé** la commande (doc
+   * `documentation/commandes/annulation/annulation-par-le-staff.md`, C3.5, 2026-10-12).
    * Le sujet est le client ; `cancelledBy` la fiche staff qui a annulé, sous
    * son nom du moment ; `reason` le motif saisi (jamais montré au client) ;
    * `regime` ce qui était dû — `free` (total nul), `due` (carte non payée,

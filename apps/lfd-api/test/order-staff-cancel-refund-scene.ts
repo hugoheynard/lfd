@@ -17,8 +17,8 @@ import { bootScene, context, seedOrder, type OrderSeed } from "./order-staff-can
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 
 /**
- * **La scène du remboursement à l'annulation** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, lot C4) — celle de
+ * **La scène du remboursement à l'annulation** (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, lot C4) — celle de
  * l'annulation staff, plus deux doublures :
  *
  * - **Stripe** côté remboursement : un magasin de `re_…` par intention, avec la

@@ -11,7 +11,7 @@ import {
 } from "../../errors/order-refund-request-errors.js";
 
 /**
- * La demande de remboursement (plan `order/plan-annulation-de-commande.md`,
+ * La demande de remboursement (doc `documentation/commandes/annulation/annulation-par-le-staff.md`,
  * lot C4, C4.5, C4.7), pure. Les instants ne sont comparés qu'entre eux.
  */
 const AT = new Date(Date.UTC(2030, 0, 10, 9));

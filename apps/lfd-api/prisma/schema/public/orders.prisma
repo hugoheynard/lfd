@@ -292,7 +292,7 @@ model Order {
   /// scannerait son propre carton.
   handedOverVia String? @map("handed_over_via")
 
-  /// L'ANNULATION PAR L'ÉQUIPE (plan `documentation/commandes/annulation/plan-annulation-de-commande.md`,
+  /// L'ANNULATION PAR L'ÉQUIPE (doc `documentation/commandes/annulation/annulation-par-le-staff.md`,
   /// lot C3, 2026-10-12). Les trois s'écrivent ENSEMBLE, avec `status = cancelled`,
   /// dans la seule transaction finale de l'annulation staff (C3.4 ter) — jamais
   /// avant. Les trois annulations automatiques (abandon d'un particulier,

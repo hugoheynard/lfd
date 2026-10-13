@@ -9,8 +9,8 @@ import {
 import { CUSTOMER_REFUSAL_PHRASES } from "../services/customer-cancellation-refusal.js";
 
 /**
- * Les refus de l'**annulation par le client** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C6.7).
+ * Les refus de l'**annulation par le client** (doc
+ * `documentation/commandes/annulation/annulation-par-le-client.md`, C6.7).
  * Les phrases parlent à un CLIENT : elles ne citent ni le motif staff, ni une
  * autre commande par son numéro, ni le fournil comme acteur. Le code
  * `orders.customer_cancel.<refus>` est ce que le front lit.

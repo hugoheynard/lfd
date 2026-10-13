@@ -9,7 +9,7 @@ import { LoyaltySettings } from "../../value-objects/loyalty-settings.js";
 import { LoyaltyVoucher } from "../loyalty-voucher.js";
 
 /**
- * La restitution sur l'agrégat (plan `order/plan-annulation-de-commande.md`,
+ * La restitution sur l'agrégat (doc `documentation/commandes/annulation/annulation-par-le-staff.md`,
  * C3b.4) : `reinstate`, `mergeBackInto`, `lapse`, et `release` resserré.
  */
 

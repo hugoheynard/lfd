@@ -13,8 +13,8 @@ import { SettleOrderOtherwiseHandler } from "../settle-order-otherwise.handler.j
 import { MemoryOrderCollections } from "./collection-doubles.js";
 
 /**
- * « Réglée autrement » sous le verrou de la ligne `orders` (plan
- * `order/plan-annulation-de-commande.md`, C5.4) : le verrou AVANT `load`,
+ * « Réglée autrement » sous le verrou de la ligne `orders` (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, C5.4) : le verrou AVANT `load`,
  * pour qu'une annulation ou une constitution ne passe pas entre la lecture
  * de l'état et son écriture. L'instant n'est que recopié.
  */

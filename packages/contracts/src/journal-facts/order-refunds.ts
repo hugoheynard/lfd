@@ -61,7 +61,7 @@ export const ORDER_REFUND_FACTS = {
     }),
   ),
   /**
-   * Lot C4 (`plan-annulation-de-commande.md`, C4.8) : un essai d'émettre le
+   * Lot C4 (`annulation-par-le-staff.md`, C4.8) : un essai d'émettre le
    * remboursement demandé à l'annulation n'a pas rendu l'argent. `generation`
    * la génération de la demande ; `failure` son code lisible (`unavailable`,
    * `nothing_left`, `declined:<code>`). 🔴 Valeur de type irréversible.

@@ -235,7 +235,7 @@ import { PrismaOrderRowsLock } from "./infrastructure/prisma-order-rows-lock.js"
     { provide: InvoiceIssuersReader, useClass: PrismaInvoiceIssuersReader },
     { provide: BillingStatementReader, useClass: PrismaBillingStatementReader },
     { provide: CancelledOrdersReader, useClass: PrismaCancelledOrdersReader },
-    // L'annulation d'une commande au compte (plan `order/plan-annulation-de-commande.md`,
+    // L'annulation d'une commande au compte (doc `documentation/commandes/annulation/annulation-par-le-staff.md`,
     // C5) : l'ordre unique des verrous de lignes, et la réponse à la commande.
     { provide: OrderRowsLock, useClass: PrismaOrderRowsLock },
     { provide: OrderEngagementReader, useClass: PrismaOrderEngagementReader },

@@ -16,8 +16,8 @@ import {
 import { settlementRegimeOf } from "./settlement-regime.js";
 
 /**
- * **La règle de l'annulation staff** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C3.2, C3.3, C3.7) —
+ * **La règle de l'annulation staff** (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, C3.2, C3.3, C3.7) —
  * pure, sur le modèle de `packingBlocker` : pas d'horloge, pas de port.
  *
  * Elle sert deux fois, et c'est pour ça qu'elle est une fonction : le refus du

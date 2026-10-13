@@ -47,8 +47,8 @@ export abstract class CollectionCandidatesReader {
   /**
    * Les SEULS identifiants des commandes de l'assiette créées sur
    * `[floor, closesAt[` — sans état ni contenu : la constitution les
-   * verrouille avant de lire quoi que ce soit d'autre (plan
-   * `order/plan-annulation-de-commande.md`, C5.3).
+   * verrouille avant de lire quoi que ce soit d'autre (doc
+   * `documentation/commandes/annulation/annulation-par-le-staff.md`, C5.3).
    */
   abstract collectableOrderIds(floor: Date, closesAt: Date): Promise<readonly string[]>;
 

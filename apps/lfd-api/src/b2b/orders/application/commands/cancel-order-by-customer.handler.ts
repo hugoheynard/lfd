@@ -9,8 +9,8 @@ import { CustomerOrderCancellation } from "../services/customer-order-cancellati
 import { CancelOrderByCustomerCommand } from "./cancel-order-by-customer.command.js";
 
 /**
- * **L'annulation par le client connecté** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C6.2,
+ * **L'annulation par le client connecté** (doc
+ * `documentation/commandes/annulation/annulation-par-le-client.md`, C6.2,
  * C6.3, C6.6), dans cet ordre :
  *
  * 1. le motif (forme métier), avant toute lecture ;

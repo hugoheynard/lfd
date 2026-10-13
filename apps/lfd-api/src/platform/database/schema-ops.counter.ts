@@ -228,8 +228,8 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   // Les pièces d'une remise à la porte (2026-10-01, `a-la-porte.md`, B1) :
   // écrites par le retrait avec l'attestation, relues au rejeu du livreur.
   OrderHandoverProof: "production",
-  // Le retrait d'une commande annulée par l'équipe (2026-10-12, plan
-  // `order/plan-annulation-de-commande.md`, C3.4) : écrit par le guichet du
+  // Le retrait d'une commande annulée par l'équipe (2026-10-12, doc
+  // `documentation/commandes/annulation/annulation-par-le-staff.md`, C3.4) : écrit par le guichet du
   // fournil, relu par la clôture et le retirage sous le verrou.
   OrderWithdrawal: "production",
   // Le contrôle qualité du superviseur (2026-09-28, plan `plan-controle-qualite.md`,

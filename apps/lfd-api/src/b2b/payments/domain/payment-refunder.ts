@@ -1,8 +1,8 @@
 import type { PaymentRefundStatus } from "./payment-gateway.js";
 
 /**
- * Ce qu'on demande au prestataire pour rendre l'argent d'une commande (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C4.7).
+ * Ce qu'on demande au prestataire pour rendre l'argent d'une commande (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, C4.7).
  *
  * Aucun montant : le prestataire rend ce qui RESTE remboursable sur
  * l'intention, jamais plus (C4.4) — c'est la dernière défense contre un

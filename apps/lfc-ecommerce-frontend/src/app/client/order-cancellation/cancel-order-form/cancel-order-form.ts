@@ -33,8 +33,8 @@ import {
 
 /**
  * **La confirmation d'une annulation** — la même composition dans le dialogue
- * de « Mes commandes » et sur la page de l'invité (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C6.8).
+ * de « Mes commandes » et sur la page de l'invité (doc
+ * `documentation/commandes/annulation/annulation-par-le-client.md`, C6.8).
  *
  * Ce qui arrivera à l'argent et au bon, en une phrase ; jusqu'à quand c'est
  * possible ; le motif, facultatif (une liste, et un texte quand c'est

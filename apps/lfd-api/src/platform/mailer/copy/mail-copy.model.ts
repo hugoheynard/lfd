@@ -219,8 +219,8 @@ export interface InvoiceIssuedCopy {
 }
 
 /**
- * **« Votre commande a été annulée par notre équipe »** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C3.5). Ni QR, ni
+ * **« Votre commande a été annulée par notre équipe »** (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, C3.5). Ni QR, ni
  * motif : le motif est interne. Distinct de l'abandon et de l'expiration —
  * ici, c'est l'équipe qui a agi.
  */

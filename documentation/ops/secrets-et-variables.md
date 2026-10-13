@@ -138,9 +138,9 @@ la production.
 | `FIELD_ENCRYPTION_KEY`                                                            | backend B2B                         | scelle les IBAN des clients au repos — **le backend refuse de démarrer sans elle** ; signe aussi, par une clé DÉRIVÉE (HKDF), les liens d'annulation des invités — voir sous le tableau                                                                  |
 
 **🔴 Tourner `FIELD_ENCRYPTION_KEY` tue aussi tous les liens d'annulation déjà
-envoyés** (décidé le 2026-10-13, plan
-[`plan-annulation-de-commande.md`](../commandes/annulation/plan-annulation-de-commande.md),
-lot C6, C6.4). Le lien « gérer ou annuler ma commande » du courriel d'un invité
+envoyés** (décidé le 2026-10-13,
+[`annulation-par-le-client.md`](../commandes/annulation/annulation-par-le-client.md),
+C6.4). Le lien « gérer ou annuler ma commande » du courriel d'un invité
 porte `HMAC-SHA256(orderId)` sous une clé **dérivée** de celle-ci
 (`AppConfig.cancellationLinkKey`, HKDF-SHA256, étiquette
 `lfd/order-cancellation-link/v1`) — aucune variable de plus, et la clé du

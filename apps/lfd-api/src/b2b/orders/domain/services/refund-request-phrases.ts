@@ -13,8 +13,8 @@ function isRejection(reason: string): reason is RefundRejection {
 }
 
 /**
- * **La phrase du dernier échec d'un remboursement demandé** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C4.9) — lue par
+ * **La phrase du dernier échec d'un remboursement demandé** (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, C4.9) — lue par
  * l'équipe sous le bandeau, sans le code sous les yeux. Pure. Un code inconnu
  * se dit tel quel plutôt que d'être tu.
  */

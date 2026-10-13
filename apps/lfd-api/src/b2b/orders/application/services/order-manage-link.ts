@@ -4,8 +4,8 @@ import { CancellationLinkSigner } from "../../domain/ports/cancellation-link-sig
 import { CustomerCancellationSubjectReader } from "../../domain/ports/customer-cancellation-subject.reader.js";
 
 /**
- * **Le lien « gérer ou annuler ma commande » de l'accusé de réception** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C6.4).
+ * **Le lien « gérer ou annuler ma commande » de l'accusé de réception** (doc
+ * `documentation/commandes/annulation/annulation-par-le-client.md`, C6.4).
  *
  * - commande d'INVITÉ (personnelle, fiche sans compte connectable) : la page
  *   publique d'annulation, le jeton en FRAGMENT (`/annuler#<id>.<jeton>`, S7) —

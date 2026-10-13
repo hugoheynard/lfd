@@ -1,6 +1,6 @@
 /**
- * E2E de **l'annulation par le client connecté** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, lot C6,
+ * E2E de **l'annulation par le client connecté** (doc
+ * `documentation/commandes/annulation/annulation-par-le-client.md`, lot C6,
  * C6.10) — le mur, le réglage, l'argent, le journal et le courriel, la course
  * avec la clôture. L'invité est dans `order-guest-cancel.e2e-spec.ts`.
  *

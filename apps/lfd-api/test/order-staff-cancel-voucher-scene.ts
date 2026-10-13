@@ -12,8 +12,8 @@ import { createUser } from "./factories.js";
 import { bootScene, context, DAY } from "./order-staff-cancel-scene.js";
 
 /**
- * **La scène du bon à l'annulation** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, lot C3b) — partagée
+ * **La scène du bon à l'annulation** (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, lot C3b) — partagée
  * par la suite des gestes et celle des courses.
  *
  * Tout passe par les vrais gestes : le réglage et l'ajustement par HTTP, la

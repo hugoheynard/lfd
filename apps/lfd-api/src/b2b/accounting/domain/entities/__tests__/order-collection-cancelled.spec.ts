@@ -3,7 +3,7 @@ import { OrderCollection, type OrderCollectionStateName } from "../order-collect
 
 /**
  * La ligne d'encaissement FERMÉE par l'annulation d'une commande au compte
- * (plan `order/plan-annulation-de-commande.md`, C5.4) : `cancelled` est
+ * (doc `documentation/commandes/annulation/annulation-par-le-staff.md`, C5.4) : `cancelled` est
  * terminal — aucune transition ne l'accepte. L'instant n'est que recopié.
  */
 

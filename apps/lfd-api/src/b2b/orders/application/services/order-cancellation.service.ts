@@ -35,9 +35,10 @@ import { CancellationRefundRequester } from "./cancellation-refund-requester.js"
 import { VoucherRestitutionRefusal } from "./voucher-restitution-refusal.js";
 
 /**
- * **Le noyau de l'annulation d'une commande** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, lot C3 : C3.3 à C3.7 ;
- * extrait du handler staff au lot C6, C6.6, SANS changer son comportement).
+ * **Le noyau de l'annulation d'une commande** (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, lot C3 : C3.3 à C3.7 ;
+ * extrait du handler staff au lot C6 — `annulation-par-le-client.md`, C6.6 —
+ * SANS changer son comportement).
  *
  * Deux handlers l'appellent — l'équipe (`CancelOrderHandler`) et le client
  * (`CancelOrderByCustomerHandler`, invité compris) — et jamais l'un l'autre

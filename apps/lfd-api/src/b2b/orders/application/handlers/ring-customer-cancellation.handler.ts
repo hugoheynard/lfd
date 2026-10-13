@@ -16,8 +16,8 @@ export const RING_CUSTOMER_CANCELLATION = "orders.ring-customer-cancellation";
 export const CUSTOMER_CANCELLATION_BELL = "order.cancelled_by_customer";
 
 /**
- * **« Commande annulée par le client »** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C6.9,
+ * **« Commande annulée par le client »** (doc
+ * `documentation/commandes/annulation/annulation-par-le-client.md`, C6.9,
  * Q-C6.8) — sans elle, l'équipe découvrirait l'annulation à la clôture.
  *
  * Abonné durable de `order.cancelled`, comme le journal et le courriel : la

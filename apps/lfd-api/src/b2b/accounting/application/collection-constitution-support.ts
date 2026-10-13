@@ -82,8 +82,8 @@ export interface AssemblyMode {
    */
   readonly simulateUninvoiced: boolean;
   /**
-   * Verrouiller les lignes `orders` des candidats avant de les relire (plan
-   * `order/plan-annulation-de-commande.md`, C5.3). La constitution le fait :
+   * Verrouiller les lignes `orders` des candidats avant de les relire (doc
+   * `documentation/commandes/annulation/annulation-par-le-staff.md`, C5.3). La constitution le fait :
    * une annulation ou un « réglée autrement » validé pendant qu'elle lisait
    * ne doit pas être écrasé. L'aperçu non : il dit l'état du moment.
    */

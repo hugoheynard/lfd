@@ -19,8 +19,8 @@ import { OrderRefundDispatch } from "../services/order-refund-dispatch.js";
 export const REFUND_PAID_AFTER_CANCELLATION = "orders.refund-paid-after-cancellation";
 
 /**
- * **L'encaissé après annulation se rembourse tout seul** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C4.11 — défaut de
+ * **L'encaissé après annulation se rembourse tout seul** (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, C4.11 — défaut de
  * Q5). Remplace la cloche « à rembourser depuis Stripe » (`RingRefundDue`) :
  * la commande est annulée et ne sera pas produite, l'argent n'est pas à nous.
  *

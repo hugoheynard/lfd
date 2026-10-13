@@ -286,7 +286,7 @@ describe("un encaissement après la clôture (lot 6 bis)", () => {
    * Le prix de B1 : Stripe injoignable à la clôture laisse une intention
    * vivante, que le client finit de payer. La base ne rouvre pas l'annulée.
    *
-   * Depuis le lot C4 (C4.11, plan `order/plan-annulation-de-commande.md`), le
+   * Depuis le lot C4 (C4.11, doc `documentation/commandes/annulation/annulation-par-le-staff.md`), le
    * remboursement n'est plus une cloche « à rembourser depuis Stripe » : une
    * demande automatique s'ouvre, une seule fois, et l'exécuteur la porte.
    */

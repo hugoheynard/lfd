@@ -8,8 +8,8 @@ import {
 import { frozenOrder, mandate } from "./collection-fixtures.js";
 
 /**
- * Le groupe d'une facture moins ses commandes annulées (plan
- * `order/plan-annulation-de-commande.md`, C5.3). Les dates ne sont comparées
+ * Le groupe d'une facture moins ses commandes annulées (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, C5.3). Les dates ne sont comparées
  * à rien : aucune horloge n'est lue.
  */
 

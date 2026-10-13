@@ -15,8 +15,8 @@ import { CancelGuestOrderCommand } from "../application/commands/cancel-guest-or
 import { GetGuestOrderCancellationQuery } from "../application/queries/get-guest-order-cancellation.query.js";
 
 /**
- * **L'annulation par l'invité, depuis le lien de son courriel** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C6.4).
+ * **L'annulation par l'invité, depuis le lien de son courriel** (doc
+ * `documentation/commandes/annulation/annulation-par-le-client.md`, C6.4).
  *
  * Surface PUBLIQUE, dans un contrôleur À PART (S6) : son débit est le sien,
  * pas le seau de `POST /shop/orders` — 20/min/IP pour lire, 5/min/IP pour

@@ -4,7 +4,7 @@ import type { RefundRequestParams } from "../../domain/payment-refunder.js";
 import { REFUND_METADATA, StripeRefundCalls } from "../stripe-refund-calls.js";
 
 /**
- * Les appels de remboursement (plan `order/plan-annulation-de-commande.md`,
+ * Les appels de remboursement (doc `documentation/commandes/annulation/annulation-par-le-staff.md`,
  * C4.7) devant un FAUX transport HTTP de Stripe : le vrai SDK, les vraies
  * requêtes, aucune sortie réseau. Les réponses sont écrites à la main.
  */

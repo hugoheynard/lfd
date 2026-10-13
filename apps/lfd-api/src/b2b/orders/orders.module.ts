@@ -255,7 +255,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     PlaceOrderForCustomerHandler,
     ConfirmOrderPaymentHandler,
     AbandonOrderHandler,
-    // L'annulation par l'équipe (plan `order/plan-annulation-de-commande.md`,
+    // L'annulation par l'équipe (doc `documentation/commandes/annulation/annulation-par-le-staff.md`,
     // C3) : le geste, son courriel, et ses deux ports — lire et écrire (ISP).
     // Le guichet du fournil vient de `ProductionDeskFeedModule`.
     CancelOrderHandler,

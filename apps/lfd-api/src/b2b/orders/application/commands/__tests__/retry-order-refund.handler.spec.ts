@@ -18,7 +18,7 @@ import {
 } from "./refund-doubles.js";
 
 /**
- * « Relancer le remboursement » (plan `order/plan-annulation-de-commande.md`,
+ * « Relancer le remboursement » (doc `documentation/commandes/annulation/annulation-par-le-staff.md`,
  * C4.7 (c), C4.9) : jamais Stripe dans la requête. Instants comparés entre eux.
  */
 const START = new Date(Date.UTC(2030, 0, 10, 9));

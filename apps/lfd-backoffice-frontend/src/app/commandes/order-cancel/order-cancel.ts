@@ -32,8 +32,8 @@ const NOT_RECORDED_SENTENCE =
   "Le paiement a été fermé chez Stripe mais l'annulation n'a pas pu être enregistrée. Relancez l'annulation.";
 
 /**
- * **Annuler une commande** depuis son détail staff (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C3.8).
+ * **Annuler une commande** depuis son détail staff (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, C3.8).
  *
  * Absent sans `b2b_cancel_order:write`. Désactivé, avec la phrase du serveur
  * À L'ÉCRAN, quand la commande ne s'annule plus : un tooltip ne se lit pas au

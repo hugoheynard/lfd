@@ -32,8 +32,8 @@ export interface IssuanceAttempt {
 }
 
 /**
- * **L'issue d'un appel de remboursement, écrite** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C4.7, étape 3).
+ * **L'issue d'un appel de remboursement, écrite** (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, C4.7, étape 3).
  *
  * Une transaction courte : le carnet sous le verrou de la ligne `orders`, puis
  * la demande RELUE sous ce verrou. Si le jeton n'est plus le nôtre ou si la

@@ -26,7 +26,7 @@ import { ReopenRefundOnReversal } from "../reopen-refund-on-reversal.handler.js"
 import { RingRefundFailed } from "../ring-refund-failed.handler.js";
 
 /**
- * Les abonnés du lot C4 (plan `order/plan-annulation-de-commande.md`, C4.7,
+ * Les abonnés du lot C4 (doc `documentation/commandes/annulation/annulation-par-le-staff.md`, C4.7,
  * C4.11, C4.11 bis). Instants comparés entre eux — exception étroite du §5.
  */
 const NOW = new Date(Date.UTC(2030, 0, 10, 9));

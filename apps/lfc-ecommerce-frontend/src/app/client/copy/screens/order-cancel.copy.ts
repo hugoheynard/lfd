@@ -7,8 +7,8 @@ import type { LocaleCode } from '../../client-locale.service';
 
 /**
  * **Ce que dit l'annulation d'une commande par le client** — le tiroir de
- * « Mes commandes » et la page invité `/annuler` (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C6.7,
+ * « Mes commandes » et la page invité `/annuler` (doc
+ * `documentation/commandes/annulation/annulation-par-le-client.md`, C6.7,
  * C6.8).
  *
  * Les refus se disent d'après le CODE (`orders.customer_cancel.<code>`) : le

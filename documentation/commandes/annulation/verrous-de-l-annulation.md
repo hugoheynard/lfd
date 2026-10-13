@@ -1,10 +1,11 @@
 # Les verrous de l'annulation
 
-> **État au 2026-10-12.** Les verrous de l'annulation par le staff (C3) et de
-> la refusion du bon (C3b) sont **bâtis**. Ceux de l'annulation **au compte**
-> (C5) sont **bâtis le 2026-10-12, non commités** : ils sont marqués _C5_ ci-dessous.
-> Source : [`plan-annulation-de-commande.md`](plan-annulation-de-commande.md)
-> §C3.4 ter, §C3b, §C5.3 et §C5.4.
+> **État au 2026-10-13.** Tous les verrous ci-dessous sont **bâtis** (C3,
+> C3b, C5 et C4 le 2026-10-12 ; marqués _C5_ quand ils viennent du compte). Le
+> client (C6, 2026-10-13) passe par la même transaction et n'en ajoute aucun.
+> Les gestes eux-mêmes : [`annulation-par-le-staff.md`](annulation-par-le-staff.md)
+> (§C3.4 ter, §C3b.5, §C5.3, §C5.4) et
+> [`annulation-par-le-client.md`](annulation-par-le-client.md).
 
 ## L'idée en une phrase
 
@@ -61,7 +62,7 @@ Ce qui rend le graphe sûr, vérifié dans le code le 2026-10-12 :
 
 | Geste                                         | Ordre des verrous                                               | État      |
 | --------------------------------------------- | --------------------------------------------------------------- | --------- |
-| annulation staff (C3, C3b, C5)                | ligne `orders` → journée du fournil → titulaire du bon          | bâti      |
+| annulation, staff ou client (C3 à C6)         | ligne `orders` → journée du fournil → titulaire du bon          | bâti      |
 | abandon, expiration boutique, échec à l'arrêt | ligne `orders` → titulaire du bon                               | bâti      |
 | passation qui engage un bon                   | titulaire du bon (puis insertion, aucune ligne existante prise) | bâti      |
 | passage de nuit (reliquats, expiration)       | titulaire du bon ; commande relue **sans** `FOR UPDATE`         | bâti      |
@@ -78,7 +79,7 @@ relit ce qu'il a écrit.
 ```mermaid
 sequenceDiagram
     autonumber
-    participant A as Annulation (staff)
+    participant A as Annulation (staff ou client)
     participant DB as Ligne orders
     participant F as Émission mensuelle
 

@@ -126,8 +126,8 @@ export function planMonthlyInvoices(
 }
 
 /**
- * **Le groupe d'une facture, moins ses commandes annulées** (plan
- * `order/plan-annulation-de-commande.md`, C5.3), relu sous le verrou des
+ * **Le groupe d'une facture, moins ses commandes annulées** (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, C5.3), relu sous le verrou des
  * lignes `orders` du groupe. On retire, rien d'autre : le mandat effectif se
  * calcule bon par bon (`effectiveMandateOf`), retirer un bon ne change donc
  * ni le mandat ni la clé des autres — replanifier rendrait le même groupe.

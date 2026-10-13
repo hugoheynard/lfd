@@ -37,7 +37,7 @@ import { InMemoryRefundRequests, RecordingDispatch, RefundStore } from "./refund
 import { RecordingRedemption, RETURNED } from "./voucher-doubles.js";
 
 /**
- * L'annulation staff, orchestrée (plan `order/plan-annulation-de-commande.md`,
+ * L'annulation staff, orchestrée (doc `documentation/commandes/annulation/annulation-par-le-staff.md`,
  * C3.4 à C3.4 ter) : Stripe AVANT la transaction, le verrou de ligne, le
  * retrait au fournil, l'écriture conditionnée, le bon et le fait — dans cet
  * ordre, et rien quand un refus tombe.

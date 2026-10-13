@@ -9,8 +9,8 @@ import { voucherRestitutionOf } from "../../domain/services/voucher-restitution.
 import { restitutionOf } from "./voucher-restitution-outcome.js";
 
 /**
- * **L'aperçu de la restitution** pour le détail staff (plan
- * `order/plan-annulation-de-commande.md`, C3b.5, C3b.7) : la règle pure, sans
+ * **L'aperçu de la restitution** pour le détail staff (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, C3b.5, C3b.7) : la règle pure, sans
  * verrou ni écriture. Implémente le port de lecture que la commande déclare,
  * relié dans `appBootstrap/loyalty-voucher.module.ts`.
  *

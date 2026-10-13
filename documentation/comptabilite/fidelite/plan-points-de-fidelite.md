@@ -53,9 +53,10 @@ Donc :
   `discountCents` se répartit sur les lignes avant la TVA, et il est plafonné
   au sous-total (`vat.spec.ts`).
 - **Statuts** : `placed → confirmed → in_production → ready → fulfilled`, plus
-  `cancelled`. **L'annulation n'est pas bâtie** : `cancelled` n'est écrit par
-  aucun chemin, et le plan est bloqué par `vitruve`
-  (`commandes/annulation/plan-annulation-de-commande.md`). `refunded` n'est jamais écrit.
+  `cancelled`. ⚠️ **Périmé le 2026-10-12** : l'annulation est bâtie, et le bon
+  utilisé est rendu ou refondu
+  ([`annulation-par-le-staff.md`](../../commandes/annulation/annulation-par-le-staff.md), C3b).
+  Phrase d'origine : « l'annulation n'est pas bâtie, `refunded` n'est jamais écrit ».
 - **Comptabilité** a déjà un réglage global à clé fixe : `AccountingSettings`
   (`id = 'default'`, `paymentLinkMaxCents`), gardé par `b2b_accounting`, avec
   son fait de journal `accounting_settings.payment_link_cap_set`.

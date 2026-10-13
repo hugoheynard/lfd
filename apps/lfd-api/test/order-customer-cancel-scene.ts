@@ -14,8 +14,8 @@ import { createCompany, createGuest, createUser } from "./factories.js";
 import { bootScene, context } from "./order-staff-cancel-scene.js";
 
 /**
- * **La scène de l'annulation par le client** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, lot C6).
+ * **La scène de l'annulation par le client** (doc
+ * `documentation/commandes/annulation/annulation-par-le-client.md`, lot C6).
  *
  * Elle s'appuie sur celle de l'annulation staff — Stripe, le courrier, le
  * guichet du fournil et la lecture de la clôture y sont doublés ou enveloppés,

@@ -128,7 +128,7 @@ stateDiagram-v2
   appartient à une commande annulée,
   [`ConfirmOrderPaymentHandler`](../../apps/lfd-api/src/b2b/orders/application/commands/confirm-order-payment.handler.ts)
   publie `OrderPaidAfterCancellationEvent`. Depuis le lot C4 du
-  [plan d'annulation](annulation/plan-annulation-de-commande.md) (2026-10-12, C4.11),
+  [l'annulation par le staff](annulation/annulation-par-le-staff.md) (2026-10-12, C4.11),
   [`RefundPaidAfterCancellation`](../../apps/lfd-api/src/b2b/orders/application/handlers/refund-paid-after-cancellation.handler.ts)
   ouvre une demande de remboursement, que l'exécuteur porte chez Stripe, pour
   toutes les clientèles ; la cloche « à rembourser » (`RingRefundDue`) est
@@ -376,10 +376,10 @@ substituent un faux `PaymentGateway`.
   fausse. Exposer `clientele` dans `GET /orders/:id/payment` le fermerait.
 - **Une journée sans aucun paiement reste non arrêtée** (§5), et bloque ce
   jour-là le colisage et le dossier du jour.
-- **Le remboursement** : « à rembourser » sonne, le geste se fait à la main
-  depuis Stripe. Il relève du
-  [chantier d'annulation général](annulation/plan-annulation-de-commande.md), comme
-  l'annulation d'une commande payée.
+- **Le remboursement** : depuis le 2026-10-12, un encaissement sur une
+  commande annulée est remboursé automatiquement
+  ([`annulation-par-le-staff.md`](annulation/annulation-par-le-staff.md), C4.11), comme l'annulation d'une
+  commande payée.
 - **La croissance** (S11) : `order.placed` reste compté après un abandon.
 - Les JSDoc de code que ce chantier périmait (`PAYMENTS_AWAITING`,
   `absorbedByPlan`, `ClientOrders.paymentFor`) sont réécrits le 2026-09-26.
@@ -402,6 +402,6 @@ substituent un faux `PaymentGateway`.
 
 **Ce que ce chantier ne fait pas** : annuler une commande **payée**
 (remboursement) — c'est
-[`plan-annulation-de-commande.md`](annulation/plan-annulation-de-commande.md) ; aucune
+[`annulation-par-le-staff.md`](annulation/annulation-par-le-staff.md) ; aucune
 annulation de masse des commandes déjà orphelines (le §0 du `CLAUDE.md` l'interdit
 d'autorité, elles sont balayées à la première clôture de leur jour).

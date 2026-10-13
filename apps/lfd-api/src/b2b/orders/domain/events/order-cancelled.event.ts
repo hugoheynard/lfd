@@ -38,8 +38,8 @@ export interface CancellationPolicyApplied {
 export const ORDER_CANCELLED = "order.cancelled";
 
 /**
- * Fait de domaine : **l'équipe a annulé une commande** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C3.5, 2026-10-12).
+ * Fait de domaine : **l'équipe a annulé une commande** (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, C3.5, 2026-10-12).
  *
  * Durable, écrit dans l'unité de travail qui annule : l'annulation, le bon
  * rendu et ce fait partent ensemble, ou rien. Publié une fois, au

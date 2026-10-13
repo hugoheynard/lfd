@@ -12,8 +12,8 @@ import { OrderNotFoundError } from "../../domain/errors/order-errors.js";
 import { customerRefusalOf } from "../../domain/services/customer-cancellation-refusal.js";
 
 /**
- * **Le refus du noyau, dit à un client** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C6.7).
+ * **Le refus du noyau, dit à un client** (doc
+ * `documentation/commandes/annulation/annulation-par-le-client.md`, C6.7).
  * Le noyau lève les erreurs staff — leurs phrases parlent à l'équipe et
  * citent parfois une autre commande ; le client reçoit un code
  * `orders.customer_cancel.*` et sa propre phrase. Ce qui n'est pas un refus

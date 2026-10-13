@@ -33,8 +33,8 @@ export const REFUND_LEASE_MS = 5 * 60 * 1000;
 const NO_INTENT = "no_payment_intent";
 
 /**
- * **L'exécuteur des remboursements** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C4.7).
+ * **L'exécuteur des remboursements** (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, C4.7).
  *
  * 🔴 Jamais dans une transaction ni dans un abonné durable : Stripe y serait
  * appelé sous transaction, et une levée effacerait l'essai, la cloche et le

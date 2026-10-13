@@ -74,8 +74,8 @@ export function refundTransition(from: RefundStatus, to: RefundStatus): RefundTr
 }
 
 /**
- * **Ce qu'il reste à rendre, et ce qui est en vol** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C4.4) :
+ * **Ce qu'il reste à rendre, et ce qui est en vol** (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, C4.4) :
  *
  * - `refundableCents` = encaissé − Σ `succeeded` — seul un remboursement
  *   réussi a rendu l'argent ;

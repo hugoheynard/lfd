@@ -14,8 +14,8 @@ import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, type E2eContext } from "./e2e-har
 import { addBillingAddress, attachTo, createCompany, createUser } from "./factories.js";
 
 /**
- * **La scène de l'annulation d'une commande AU COMPTE** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, lot C5) — partagée
+ * **La scène de l'annulation d'une commande AU COMPTE** (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, lot C5) — partagée
  * par la suite des gestes et celle des courses.
  *
  * Doublés : la signature des jetons (le jeton EST le `sub`), le courrier

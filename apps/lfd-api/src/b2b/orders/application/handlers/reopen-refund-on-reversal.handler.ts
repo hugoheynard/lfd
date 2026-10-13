@@ -22,7 +22,7 @@ export const REOPEN_REFUND_ON_REVERSAL = "orders.reopen-refund-on-reversal";
 
 /**
  * **Un remboursement réussi qui échoue ensuite, sur une commande annulée**
- * (plan `documentation/commandes/annulation/plan-annulation-de-commande.md`, C4.11 bis,
+ * (doc `documentation/commandes/annulation/annulation-par-le-staff.md`, C4.11 bis,
  * `vitruve` SÉRIEUX 5) : l'argent n'est plus rendu, et personne ne le
  * saurait. Dans l'unité de travail du reçu, sous le verrou `orders` :
  *

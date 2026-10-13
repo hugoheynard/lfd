@@ -4,8 +4,8 @@ import { CancellingMemberReader } from "../../domain/ports/cancelling-member.rea
 import type { CustomerCancellationSubject } from "../../domain/ports/customer-cancellation-subject.reader.js";
 
 /**
- * **Le mur de l'annulation par un client connecté** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C6.2).
+ * **Le mur de l'annulation par un client connecté** (doc
+ * `documentation/commandes/annulation/annulation-par-le-client.md`, C6.2).
  *
  * - commande personnelle : son auteur, et lui seul ;
  * - commande de société (saisie par l'équipe comprise) : un rattachement

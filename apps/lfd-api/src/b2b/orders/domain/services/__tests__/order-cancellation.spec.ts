@@ -6,7 +6,7 @@ import {
 } from "../order-cancellation.js";
 
 /**
- * La règle de l'annulation staff (plan `order/plan-annulation-de-commande.md`,
+ * La règle de l'annulation staff (doc `documentation/commandes/annulation/annulation-par-le-staff.md`,
  * C3.2, C3.3, C3.7), pure : statut × régime × inscrite au fournil.
  */
 

@@ -218,8 +218,9 @@ une panne du journal ne bloque pas le comptoir.
 et `prisma-unsettled-shop-order.canceller.ts`) : `markAbandoned` (abandon d'un
 particulier), `failAtClosing` (balayage de la clôture) et l'expiration des
 impayés de la boutique (`canceller`). Les trois écrivent `cancelled` + `failed`
-sous `status = placed`. Une annulation par le staff est en chantier
-([`plan-annulation-de-commande.md`](annulation/plan-annulation-de-commande.md)).
+sous `status = placed`. Depuis le 2026-10-12, le staff annule aussi
+([`annulation-par-le-staff.md`](annulation/annulation-par-le-staff.md)), et depuis le 2026-10-13 le client
+([`annulation-par-le-client.md`](annulation/annulation-par-le-client.md)).
 
 ## 5. Ce que le client en voit — la frise
 

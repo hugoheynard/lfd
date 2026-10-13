@@ -39,8 +39,8 @@ type SectionState =
 const SILENT = new Set<string>(['already_cancelled', 'fulfilled', 'not_allowed']);
 
 /**
- * **L'annulation dans le tiroir d'une commande** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C6.8).
+ * **L'annulation dans le tiroir d'une commande** (doc
+ * `documentation/commandes/annulation/annulation-par-le-client.md`, C6.8).
  *
  * Il relit `GET /orders/:id` à l'ouverture du tiroir : la liste ne porte pas
  * `cancellability`, et ce n'est qu'une indication — le `POST` relit tout sous

@@ -8,8 +8,8 @@ import { GuestCancellationLinkResolver } from "../services/guest-cancellation-li
 import { CancelGuestOrderCommand } from "./cancel-guest-order.command.js";
 
 /**
- * **L'annulation par l'invité** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C6.4,
+ * **L'annulation par l'invité** (doc
+ * `documentation/commandes/annulation/annulation-par-le-client.md`, C6.4,
  * C6.6) : le lien vérifié (`404` neutre sinon), puis — S3 — une fiche devenue
  * un compte connectable passe par sa session, une fiche désactivée par la
  * boutique ; enfin P1/P2 et le noyau staff, l'auteur étant `guest`.

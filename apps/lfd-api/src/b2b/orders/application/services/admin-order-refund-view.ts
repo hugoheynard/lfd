@@ -8,8 +8,8 @@ import { OrderRefundRequestReader } from "../../domain/ports/order-refund-reques
 import { refundFailurePhraseOf } from "../../domain/services/refund-request-phrases.js";
 
 /**
- * **Le bandeau du remboursement** au détail staff (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C4.9) : la demande,
+ * **Le bandeau du remboursement** au détail staff (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, C4.9) : la demande,
  * son état LU au carnet, et si « Relancer » a un sens. Sans verrou : c'est un
  * affichage — le bouton se reprend sous verrou.
  */

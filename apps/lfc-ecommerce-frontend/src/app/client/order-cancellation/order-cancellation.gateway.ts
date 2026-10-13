@@ -19,8 +19,8 @@ export type GuestViewResult =
   | { readonly kind: 'failed' };
 
 /**
- * **L'annulation d'une commande par le client**, côté réseau (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C6.4,
+ * **L'annulation d'une commande par le client**, côté réseau (doc
+ * `documentation/commandes/annulation/annulation-par-le-client.md`, C6.4,
  * C6.6, C6.8).
  *
  * Deux portes, une forme de réponse : le titulaire d'un compte passe par sa

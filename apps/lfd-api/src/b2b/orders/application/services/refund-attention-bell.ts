@@ -37,8 +37,8 @@ const GESTURES: Readonly<Record<RefundAttentionCause, string>> = {
 };
 
 /**
- * **La cloche `order.refund_attention`** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C4.8) — sans
+ * **La cloche `order.refund_attention`** (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, C4.8) — sans
  * destinataire nommé, comme « encaissé après annulation » : visible de tout
  * le back-office. Une clé par commande, génération et cause : un rejeu ne
  * sonne pas deux fois. Écrite dans la transaction de l'appelant.

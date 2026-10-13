@@ -1,8 +1,8 @@
 import { localToInstant } from "@lfd/contracts";
 
 /**
- * **Les deux refus du particulier, devant la règle staff** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C6.3) —
+ * **Les deux refus du particulier, devant la règle staff** (doc
+ * `documentation/commandes/annulation/annulation-par-le-client.md`, C6.3) —
  * purs : pas d'horloge, l'instant est reçu (le `now` GELÉ de la requête, S5).
  *
  * - P1 — le réglage est fermé ;

@@ -2,7 +2,7 @@ import { BusinessError, TechnicalError } from "../../../../platform/shared/error
 
 /**
  * Les refus de la **restitution d'un bon** à l'annulation de sa commande
- * (plan `documentation/commandes/annulation/plan-annulation-de-commande.md`, lot C3b). Aucun
+ * (doc `documentation/commandes/annulation/annulation-par-le-staff.md`, lot C3b). Aucun
  * ne devrait sortir d'un parcours normal : chacun dit que l'état du bon et
  * celui de la commande se contredisent, ou qu'une écriture concurrente est
  * passée entre la lecture et l'écriture.

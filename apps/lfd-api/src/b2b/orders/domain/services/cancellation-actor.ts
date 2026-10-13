@@ -1,5 +1,5 @@
 /**
- * **Qui annule** (plan `documentation/commandes/annulation/plan-annulation-de-commande.md`,
+ * **Qui annule** (doc `documentation/commandes/annulation/annulation-par-le-client.md`,
  * lot C6, C6.6). Le noyau de l'annulation est le même pour tous ; seul l'auteur
  * change ce qui s'écrit :
  *

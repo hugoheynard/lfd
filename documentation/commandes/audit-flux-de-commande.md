@@ -87,8 +87,10 @@ en tranche la conception.
 
 Le plan existe et a été **contredit par `vitruve` le 2026-09-17 : 4 BLOQUANT,
 7 SÉRIEUX**. Rien ne se bâtit avant qu'il soit refondu sur quatre décisions de
-Hugo — l'état, les décisions et les directions sont dans
-[`plan-annulation-de-commande.md`](annulation/plan-annulation-de-commande.md). Un de ses
+Hugo — l'état, les décisions et les directions étaient dans le plan
+d'annulation. ⚠️ **Périmé le 2026-10-12** : l'annulation est bâtie
+([`annulation-par-le-staff.md`](annulation/annulation-par-le-staff.md), [`annulation-par-le-client.md`](annulation/annulation-par-le-client.md)),
+et `markFulfilled` porte désormais `status <> cancelled`. Un de ses
 constats concerne déjà le code en place : `markFulfilled` ne filtre que sur
 `handedOverAt: null`, pas sur le statut — le jour où `cancelled` s'écrira, un
 retrait au comptoir pourra l'écraser (S1 du TODO).

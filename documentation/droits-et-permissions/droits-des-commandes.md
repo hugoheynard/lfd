@@ -121,7 +121,7 @@ menu (`app.ts`, `can('b2b_counter:read') && can('b2b_place_order:write')`).
 ## `b2b_cancel_order` — Annuler une commande
 
 Ajouté le 2026-10-12 (commits `76d54e9f6`, `ffa8a1311` ;
-[`../commandes/annulation/plan-annulation-de-commande.md`](../commandes/annulation/plan-annulation-de-commande.md), C3).
+[`../commandes/annulation/annulation-par-le-staff.md`](../commandes/annulation/annulation-par-le-staff.md), C3.8).
 Le staff annule une commande qui n'est pas encore au compte à produire.
 
 | Méthode et chemin               | Exige                                           |

@@ -253,8 +253,8 @@ export class OrdersController {
   }
 
   /**
-   * **Annuler sa commande** (plan
-   * `documentation/commandes/annulation/plan-annulation-de-commande.md`, lot C6,
+   * **Annuler sa commande** (doc
+   * `documentation/commandes/annulation/annulation-par-le-client.md`, lot C6,
    * C6.6). Corps `{ reasonCode?, reasonText? }` — le motif est facultatif.
    *
    * Le mur se lit sur la société DE LA COMMANDE : son auteur pour une commande

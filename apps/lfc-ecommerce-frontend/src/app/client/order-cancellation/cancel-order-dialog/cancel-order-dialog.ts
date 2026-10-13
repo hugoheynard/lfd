@@ -25,8 +25,8 @@ export interface CancelOrderDialogData {
 }
 
 /**
- * **« Annuler la commande »**, depuis « Mes commandes » (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C6.8).
+ * **« Annuler la commande »**, depuis « Mes commandes » (doc
+ * `documentation/commandes/annulation/annulation-par-le-client.md`, C6.8).
  *
  * Un dialogue fold par {@link dialogSide} : l'en-tête, et la confirmation
  * commune. Un refus reste dans le dialogue ; un succès annonce et ferme sur

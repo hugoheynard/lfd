@@ -24,7 +24,7 @@ import {
 } from "./refund-doubles.js";
 
 /**
- * L'exécuteur des remboursements (plan `order/plan-annulation-de-commande.md`,
+ * L'exécuteur des remboursements (doc `documentation/commandes/annulation/annulation-par-le-staff.md`,
  * C4.7). Les instants ne sont comparés qu'entre eux — exception étroite du §5.
  */
 const START = new Date(Date.UTC(2030, 0, 10, 9));

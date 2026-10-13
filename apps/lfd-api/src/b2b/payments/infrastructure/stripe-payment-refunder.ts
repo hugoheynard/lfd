@@ -13,8 +13,8 @@ import { StripeRefundCalls } from "./stripe-refund-calls.js";
 const NOT_CONFIGURED = "STRIPE_SECRET_KEY non configurée";
 
 /**
- * Adaptateur **Stripe** de {@link PaymentRefunder} (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C4.7). Canal
+ * Adaptateur **Stripe** de {@link PaymentRefunder} (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, C4.7). Canal
  * optionnel, comme la passerelle d'encaissement : sans configuration, chaque
  * appel rend `unavailable` — il ne lève jamais.
  */

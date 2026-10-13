@@ -143,8 +143,8 @@ export const b2bRoutes: Routes = [
               ),
           },
           {
-            // L'annulation par les particuliers (plan
-            // `plan-annulation-de-commande.md`, C6.5) : même droit que
+            // L'annulation par les particuliers (doc
+            // `annulation-par-le-client.md`, C6.5) : même droit que
             // l'ouverture, `b2b_settings`, porté par l'espace.
             path: 'commandes',
             title: 'Commandes — LFC B2B admin',

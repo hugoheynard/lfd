@@ -69,7 +69,7 @@ import { ConstituteCollectionBatchesCommand } from "./constitute-collection-batc
  * annulations des promesses d'un lot annulé (PA2, § 7 comblé le 2026-10-09) :
  * elle rend `[]`, et ne refuse que si elle n'a strictement rien fait.
  *
- * Ordre des verrous (plan `order/plan-annulation-de-commande.md`, C5.3) :
+ * Ordre des verrous (doc `documentation/commandes/annulation/annulation-par-le-staff.md`, C5.3) :
  * l'entité (consultatif), puis les lignes `orders` des candidats, dans
  * l'ordre unique de `OrderRowsLock` — c'est `readAssembly` qui les prend,
  * entre la lecture des identifiants et leur relecture.

@@ -66,7 +66,7 @@ export const ACTIVITY_TYPES = {
    */
   orderAbandoned: "order.abandoned",
   /**
-   * L'équipe a **annulé** la commande (plan `plan-annulation-de-commande.md`,
+   * L'équipe a **annulé** la commande (doc `annulation-par-le-staff.md`,
    * C3.5). Un fait de cycle de vie, comme l'abandon : aucun score ne le lit au
    * 2026-10-12.
    */

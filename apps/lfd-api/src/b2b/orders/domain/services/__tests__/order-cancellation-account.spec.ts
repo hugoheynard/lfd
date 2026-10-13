@@ -1,8 +1,8 @@
 import { engagementBlockOf, engagementRefusalOf } from "../order-cancellation-account.js";
 
 /**
- * Les refus d'annuler une commande au compte (plan
- * `order/plan-annulation-de-commande.md`, C5.2, C5.6) : purs, sans horloge.
+ * Les refus d'annuler une commande au compte (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, C5.2, C5.6) : purs, sans horloge.
  * Les jours ne sont comparés qu'à leur propre mise en forme.
  */
 

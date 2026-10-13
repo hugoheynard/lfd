@@ -22,16 +22,16 @@ export interface AdminOrderView extends OrderView {
   /** La personne qui l'a passée, et pour qui — cf. {@link AdminOrderPlacedByView}. */
   readonly placedBy: AdminOrderPlacedByView;
   /**
-   * **Peut-on l'annuler, et sinon pourquoi** (plan
-   * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C3.8). Calculée par
+   * **Peut-on l'annuler, et sinon pourquoi** (doc
+   * `documentation/commandes/annulation/annulation-par-le-staff.md`, C3.8). Calculée par
    * la même règle que le refus de `POST /admin/orders/:id/cancel`, mais sans
    * verrou : c'est un affichage. Le refus, lui, se reprend sous verrou — un
    * bouton actif peut donc encore rendre un 409, avec la même phrase.
    */
   readonly cancellability: AdminOrderCancellability;
   /**
-   * **L'argent à rendre d'une commande annulée** (plan
-   * `documentation/commandes/annulation/plan-annulation-de-commande.md`, lot C4, C4.9) —
+   * **L'argent à rendre d'une commande annulée** (doc
+   * `documentation/commandes/annulation/annulation-par-le-staff.md`, lot C4, C4.9) —
    * `null` quand aucun remboursement n'a été demandé.
    */
   readonly refund: AdminOrderRefund | null;
@@ -83,7 +83,7 @@ export type AdminOrderCancellability =
 
 /**
  * Ce que l'annulation fera du bon — calculé par la même règle que le geste,
- * sans verrou (plan `order/plan-annulation-de-commande.md`, C3b.7).
+ * sans verrou (doc `documentation/commandes/annulation/annulation-par-le-staff.md`, C3b.7).
  * `sentence` est la phrase du serveur, à montrer telle quelle dans la
  * confirmation ; les montants (centimes HT, l'unité du bon) servent à la mise
  * en forme. `expiresAt` : instant ISO 8601, la date limite d'origine du bon.

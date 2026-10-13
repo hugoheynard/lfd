@@ -5,8 +5,8 @@ import { OrderCancellation } from "../services/order-cancellation.service.js";
 import { CancelOrderCommand } from "./cancel-order.command.js";
 
 /**
- * **L'annulation d'une commande par l'équipe** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, lot C3 : C3.3 à C3.7).
+ * **L'annulation d'une commande par l'équipe** (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, lot C3 : C3.3 à C3.7).
  *
  * Le motif est obligatoire et validé AVANT toute lecture (`CancellationReason`),
  * puis tout le reste — règle, Stripe, fournil, bon, remboursement, fait — est

@@ -15,8 +15,8 @@ import { GuestCancellationLinkResolver } from "../services/guest-cancellation-li
 import { GetGuestOrderCancellationQuery } from "./get-guest-order-cancellation.query.js";
 
 /**
- * **La page d'annulation d'un invité** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C6.4).
+ * **La page d'annulation d'un invité** (doc
+ * `documentation/commandes/annulation/annulation-par-le-client.md`, C6.4).
  *
  * Un jeton valide rend TOUJOURS la page, annulable ou non, avec la raison.
  * La vue est un type DÉDIÉ et étroit, converti champ par champ — même raison

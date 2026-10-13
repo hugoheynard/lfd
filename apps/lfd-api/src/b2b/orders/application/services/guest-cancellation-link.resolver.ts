@@ -9,8 +9,8 @@ import {
 import { guestLinkIsLive } from "../../domain/services/guest-cancellation-link.js";
 
 /**
- * **Le lien d'annulation d'un invité, vérifié** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C6.4).
+ * **Le lien d'annulation d'un invité, vérifié** (doc
+ * `documentation/commandes/annulation/annulation-par-le-client.md`, C6.4).
  *
  * Le jeton IDENTIFIE la commande, il ne décide pas. Jeton faux, commande
  * inconnue, commande d'une société, ou lien de plus de 90 jours : la MÊME

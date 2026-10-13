@@ -16,7 +16,7 @@ import { settlementRegimeOf } from "../../domain/services/settlement-regime.js";
 
 /**
  * **La règle d'annulation, avec ce qu'elle doit demander à la comptabilité**
- * (plan `documentation/commandes/annulation/plan-annulation-de-commande.md`, C5.5).
+ * (doc `documentation/commandes/annulation/annulation-par-le-staff.md`, C5.5).
  *
  * La règle elle-même reste pure (`cancellationOf`) ; ce service ne fait que
  * lui fournir l'engagement comptable d'une commande au compte — et à elle

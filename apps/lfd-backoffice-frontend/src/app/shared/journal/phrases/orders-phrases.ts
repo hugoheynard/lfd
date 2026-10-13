@@ -113,7 +113,7 @@ function orderHandedOver(fact: PhraseFact): Said {
  * Le fait s'écrit HORS de la requête (abonné durable `OnOrderCancelled`) :
  * la phrase nomme donc `cancelledBy`, et ne retombe sur l'auteur de la ligne
  * que pour une fiche que l'annuaire ne nommait pas. Le motif, le régime et le
- * bon rendu restent au détail (plan `plan-annulation-de-commande.md`, C3.5).
+ * bon rendu restent au détail (doc `annulation-par-le-staff.md`, C3.5).
  */
 function orderCancelled(fact: PhraseFact): Said {
   const kind = fact.payload['cancelledByKind'];

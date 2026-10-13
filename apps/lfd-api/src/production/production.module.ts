@@ -252,7 +252,7 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     SendDossierOnDayRetaken,
     DossierDispatch,
     { provide: DossierDispatchLog, useClass: PrismaDossierDispatchLog },
-    // L'annulation staff (plan `order/plan-annulation-de-commande.md`, C3.4) :
+    // L'annulation staff (doc `documentation/commandes/annulation/annulation-par-le-staff.md`, C3.4) :
     // le registre des retraits, lu par la clôture et le retirage sous le
     // verrou, et le guichet que le commerce appelle — relié par
     // `ProductionDeskFeedModule`, comme l'inscription qu'il affiche.

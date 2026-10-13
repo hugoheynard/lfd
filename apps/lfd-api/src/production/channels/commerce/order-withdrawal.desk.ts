@@ -14,7 +14,7 @@ export type OrderWithdrawalOutcome = "withdrawn" | "inscribed";
 /**
  * **Le guichet du retrait au fournil** — port que le fournil DÉCLARE et
  * IMPLÉMENTE, et que le commerce appelle quand l'équipe annule une commande
- * (plan `documentation/commandes/annulation/plan-annulation-de-commande.md`, C3.4 et C3.4 ter,
+ * (doc `documentation/commandes/annulation/annulation-par-le-staff.md`, C3.4 et C3.4 ter,
  * 2026-10-12).
  *
  * ## Pourquoi un geste du fournil, et pas une lecture

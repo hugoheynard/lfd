@@ -9,8 +9,8 @@ import {
 } from "../application/commands/sweep-order-refunds.command.js";
 
 /**
- * Endpoint **batch** des remboursements dus (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C4.7 (b)). Même porte
+ * Endpoint **batch** des remboursements dus (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, C4.7 (b)). Même porte
  * machine-à-machine que `admin/outbox/sweep` : le `RecomputeGuard` et son
  * jeton, présentés par le Worker sur le cron de rafraîchissement
  * (`container/worker.ts`). Idempotent : le bail exclut deux exécuteurs.

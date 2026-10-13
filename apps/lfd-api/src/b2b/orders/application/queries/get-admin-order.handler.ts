@@ -35,7 +35,7 @@ import { GetAdminOrderQuery } from "./get-admin-order.query.js";
  * c'est le même `OrderNotFoundError` des deux côtés, donc le même texte à
  * l'écran.
  *
- * Depuis le 2026-10-12 (plan `order/plan-annulation-de-commande.md`, C3.8), il
+ * Depuis le 2026-10-12 (doc `documentation/commandes/annulation/annulation-par-le-staff.md`, C3.8), il
  * dit aussi si la commande s'annule, par la MÊME règle que le geste
  * (`cancellationBlocker`), sans verrou : c'est un affichage. L'inscription au
  * fournil se demande au fournil, par son canal.

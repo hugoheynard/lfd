@@ -16,8 +16,8 @@ import { RefundAttentionBell } from "../services/refund-attention-bell.js";
 export const RING_REFUND_FAILED = "orders.ring-refund-failed";
 
 /**
- * **« Remboursement échoué chez Stripe — à traiter »** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C4.7) : le `re_…`
+ * **« Remboursement échoué chez Stripe — à traiter »** (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, C4.7) : le `re_…`
  * qu'une demande a émis a échoué (carte fermée…). Sonne seulement quand il est
  * celui de la demande ; « Relancer » ouvrira la génération suivante. Pas de
  * relance automatique (Q3) : une carte fermée refusera encore.

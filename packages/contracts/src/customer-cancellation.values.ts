@@ -1,8 +1,8 @@
 import type { CustomerOrderView, OrderStatus } from "./order.js";
 
 /**
- * **L'annulation par le client**, sans zod (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, lot C6).
+ * **L'annulation par le client**, sans zod (doc
+ * `documentation/commandes/annulation/annulation-par-le-client.md`, lot C6).
  *
  * Séparé de `customer-cancellation.ts` pour la raison de poids de
  * `order-opening.values.ts` : la boutique lit ces valeurs, et le baril

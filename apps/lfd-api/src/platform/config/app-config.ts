@@ -149,8 +149,8 @@ export class AppConfig {
   }
 
   /**
-   * **La clé qui signe les liens d'annulation des invités** (plan
-   * `documentation/commandes/annulation/plan-annulation-de-commande.md`, lot C6,
+   * **La clé qui signe les liens d'annulation des invités** (doc
+   * `documentation/commandes/annulation/annulation-par-le-client.md`, lot C6,
    * C6.4 ; décidé le 2026-10-13 : pas de variable d'environnement de plus).
    *
    * DÉRIVÉE de la clé du coffre par HKDF-SHA256, sous une étiquette dédiée :

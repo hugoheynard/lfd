@@ -70,7 +70,7 @@ import type { StoredDocument } from "../../../platform/storage/document-store.js
  * `orders:write`.
  *
  * **Une seule mutation d'une commande existante : l'annuler** (depuis le
- * 2026-10-12, plan `documentation/commandes/annulation/plan-annulation-de-commande.md`, C3),
+ * 2026-10-12, doc `documentation/commandes/annulation/annulation-par-le-staff.md`, C3),
  * tant que le fournil ne l'a pas inscrite, sous son droit à part
  * (`b2b_cancel_order:write`). La MODIFIER reste à venir avec les avenants
  * (cf. `architecture-commande-immuable-avenants.md`). Saisir une commande neuve
@@ -119,7 +119,7 @@ export class AdminOrdersController {
   }
 
   /**
-   * **Annuler la commande** (plan `documentation/commandes/annulation/plan-annulation-de-commande.md`,
+   * **Annuler la commande** (doc `documentation/commandes/annulation/annulation-par-le-staff.md`,
    * C3.8). Corps `{ reason }` — le motif, obligatoire, jamais montré au client.
    *
    * Sous `b2b_cancel_order:write`, un droit à part : voir les commandes n'est

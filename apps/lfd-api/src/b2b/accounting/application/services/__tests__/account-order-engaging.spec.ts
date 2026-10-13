@@ -8,8 +8,8 @@ import {
 import { AccountOrderEngaging, engagementFrom } from "../account-order-engaging.js";
 
 /**
- * La comptabilité répond à l'annulation d'une commande au compte (plan
- * `order/plan-annulation-de-commande.md`, C5.4, C5.5). L'instant n'est que
+ * La comptabilité répond à l'annulation d'une commande au compte (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, C5.4, C5.5). L'instant n'est que
  * recopié ; les jours ne sont comparés qu'à eux-mêmes.
  */
 

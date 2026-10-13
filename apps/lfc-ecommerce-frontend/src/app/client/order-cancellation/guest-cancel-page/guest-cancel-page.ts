@@ -48,8 +48,8 @@ type PageState =
   | { readonly kind: 'ready'; readonly view: GuestOrderCancellationView };
 
 /**
- * **`/annuler`** — la page d'annulation de l'INVITÉ (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C6.4,
+ * **`/annuler`** — la page d'annulation de l'INVITÉ (doc
+ * `documentation/commandes/annulation/annulation-par-le-client.md`, C6.4,
  * C6.8).
  *
  * 🔴 Le jeton voyage dans le FRAGMENT (`/annuler#<orderId>.<jeton>`, S7) : un

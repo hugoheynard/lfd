@@ -9,8 +9,8 @@ export const ORDER_REFUND_REVERSED = "order.refund_reversed";
 export type OrderRefundFailureType = typeof ORDER_REFUND_FAILED | typeof ORDER_REFUND_REVERSED;
 
 /**
- * **Un remboursement constaté qui n'a pas rendu l'argent** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C4.7, C4.11 bis) —
+ * **Un remboursement constaté qui n'a pas rendu l'argent** (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, C4.7, C4.11 bis) —
  * fait DURABLE, écrit par `RecordOrderRefundHandler` dans la transaction du
  * constat. 🔴 Les deux types sont des valeurs écrites : irréversibles.
  *

@@ -1,6 +1,6 @@
 /**
- * Port du **bail de l'exécuteur** des remboursements (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C4.7, étape 1) — à
+ * Port du **bail de l'exécuteur** des remboursements (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, C4.7, étape 1) — à
  * part de l'écriture de la demande : une exclusion mutuelle, pas une règle
  * métier, et un seul consommateur (ISP).
  *

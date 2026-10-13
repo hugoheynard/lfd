@@ -62,8 +62,8 @@ const KEY_PREFIX = "lfd-order-refund";
 export const UNAVAILABLE_FAILURE = "unavailable";
 
 /**
- * **La demande de remboursement d'une commande** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C4.5, C4.7) — ce qui
+ * **La demande de remboursement d'une commande** (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, C4.5, C4.7) — ce qui
  * a été PROMIS et ce qui a été TENTÉ. L'argent vrai reste au carnet
  * (`OrderRefundLedger`) : la demande n'a aucun statut, son état se lit par
  * {@link refundRequestStateOf}.

@@ -15,7 +15,7 @@ import { SettleOrderOtherwiseCommand } from "./settle-order-otherwise.command.js
  * a été payée par un autre chemin. Elle sort du prélèvement pour de bon, avec
  * une note qui dit comment — c'est la seule trace du règlement.
  *
- * Depuis le lot C5 (plan `order/plan-annulation-de-commande.md`, C5.4), la
+ * Depuis le lot C5 (doc `documentation/commandes/annulation/annulation-par-le-staff.md`, C5.4), la
  * ligne `orders` est verrouillée AVANT `load` : l'annulation et la
  * constitution d'un lot prennent la même, donc aucune ne passe entre la
  * lecture de l'état et son écriture (un `upsert` sans version). Une commande

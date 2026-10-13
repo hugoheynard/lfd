@@ -8,7 +8,7 @@ import {
   orderView,
 } from "./payment-failure-doubles.js";
 
-/** Le courriel de l'annulation staff (plan `order/plan-annulation-de-commande.md`, C3.5). */
+/** Le courriel de l'annulation staff (doc `documentation/commandes/annulation/annulation-par-le-staff.md`, C3.5). */
 
 function subscriber(email: string | null = "camille@example.test") {
   const mailer = new RecordingMailer();

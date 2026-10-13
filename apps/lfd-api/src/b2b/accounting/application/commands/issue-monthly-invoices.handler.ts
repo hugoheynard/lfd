@@ -233,7 +233,7 @@ export class IssueMonthlyInvoicesHandler implements ICommandHandler<
    * Une facture (payeur × mandat) : elle et son issue ensemble, ou son refus
    * rangé.
    *
-   * Lot C5 (plan `order/plan-annulation-de-commande.md`, C5.3) : dans la
+   * Lot C5 (doc `documentation/commandes/annulation/annulation-par-le-staff.md`, C5.3) : dans la
    * transaction et AVANT le numéro, les lignes `orders` de TOUS les bons du
    * groupe sont verrouillées (`OrderRowsLock`, ordre unique), puis les
    * annulées en sont retirées. Une annulation qui attend ce verrou relira

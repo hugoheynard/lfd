@@ -1,6 +1,6 @@
 /**
- * **Les phrases de l'argent à l'annulation d'une commande payée** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, lot C4, C4.4, C4.6,
+ * **Les phrases de l'argent à l'annulation d'une commande payée** (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, lot C4, C4.4, C4.6,
  * C4.9) — pures. Lues par l'équipe sans le code sous les yeux. Centimes TTC,
  * l'unité de l'encaissement.
  */

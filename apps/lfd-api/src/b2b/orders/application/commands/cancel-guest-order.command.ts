@@ -1,6 +1,6 @@
 /**
- * **L'invité annule sa commande par le lien de son courriel** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C6.4).
+ * **L'invité annule sa commande par le lien de son courriel** (doc
+ * `documentation/commandes/annulation/annulation-par-le-client.md`, C6.4).
  * Le jeton arrive dans le CORPS (S7), jamais dans un chemin.
  */
 export class CancelGuestOrderCommand {

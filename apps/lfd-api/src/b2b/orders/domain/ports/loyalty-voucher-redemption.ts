@@ -11,7 +11,7 @@ export interface VoucherSettlement {
 
 /**
  * Ce que l'annulation d'une commande a fait — ou fera — du bon qu'elle
- * portait (plan `documentation/commandes/annulation/plan-annulation-de-commande.md`, C3b.5).
+ * portait (doc `documentation/commandes/annulation/annulation-par-le-staff.md`, C3b.5).
  * Montants en centimes HT, l'unité du bon.
  *
  * - `returned` : le bon redevient disponible ;

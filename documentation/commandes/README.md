@@ -89,7 +89,9 @@ flowchart TD
 | Comment on commande sans avoir d'entreprise ?                                   | [`architecture-flux-commande-zero-friction.md`](architecture-flux-commande-zero-friction.md)               |
 | Comment un commercial commande **pour** un client ?                             | [`architecture-commande-saisie-par-l-equipe.md`](architecture-commande-saisie-par-l-equipe.md)             |
 | Jusqu'à quand on prend commande, et que coûte le retard ?                       | [`architecture-heure-limite-de-commande.md`](architecture-heure-limite-de-commande.md)                     |
-| Comment on annule une commande, et ce que devient l'argent ?                    | [`plan-annulation-de-commande.md`](annulation/plan-annulation-de-commande.md) — doc-first                  |
+| Comment l'équipe annule une commande, et ce que devient l'argent ?              | [`annulation-par-le-staff.md`](annulation/annulation-par-le-staff.md)                                      |
+| Comment un client annule lui-même sa commande ?                                 | [`annulation-par-le-client.md`](annulation/annulation-par-le-client.md)                                    |
+| Quels verrous l'annulation prend, et contre quoi ?                              | [`verrous-de-l-annulation.md`](annulation/verrous-de-l-annulation.md)                                      |
 | Que se passe-t-il quand un client veut changer sa commande ?                    | [`architecture-commande-immuable-avenants.md`](architecture-commande-immuable-avenants.md)                 |
 | Que porte une commande, et d'où vient chaque information ?                      | [`architecture-ce-que-porte-la-commande.md`](architecture-ce-que-porte-la-commande.md)                     |
 | Quels états une commande traverse, et qui les écrit ?                           | [`architecture-cycle-de-vie-commande.md`](architecture-cycle-de-vie-commande.md)                           |
@@ -117,16 +119,15 @@ flowchart TD
 
 **Je veux savoir CE QUI CLOCHE.**
 
-|                                          |                                                                                                                                                                                                  |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| L'état du flux, de bout en bout          | [`audit-flux-de-commande.md`](audit-flux-de-commande.md) — **nettoyé contre le code le 2026-09-18** : sept défauts fermés, sept ouverts dont deux nouveaux (T13, T14). Le §2 est l'état du jour. |
-| Le calcul du prix et du panier           | [`../pricing/ce-qui-reste-a-faire.md`](../pricing/ce-qui-reste-a-faire.md)                                                                                                                       |
-| L'annulation en schémas, cas par cas     | [`annulation-flow.md`](annulation/annulation-flow.md)                                                                                                                                            |
-| Où en est l'annulation d'une commande    | [`plan-annulation-de-commande.md`](annulation/plan-annulation-de-commande.md)                                                                                                                    |
-| Combien de temps on garde les bons en R2 | [`todo-conservation-des-bons-en-r2.md`](todo-conservation-des-bons-en-r2.md)                                                                                                                     |
-| L'export des commandes pour le comptable | [`todo-export-des-commandes-pour-le-comptable.md`](todo-export-des-commandes-pour-le-comptable.md)                                                                                               |
-| Le relevé de cycle, avant la facture     | [`plan-agregation-des-commandes.md`](plan-agregation-des-commandes.md)                                                                                                                           |
-| Ce que la plateforme laisse sans réponse | [`../b2b/audit-flux-plateforme-admin.md`](../b2b/audit-flux-plateforme-admin.md)                                                                                                                 |
+|                                          |                                                                                                                                                                                                                                                     |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| L'état du flux, de bout en bout          | [`audit-flux-de-commande.md`](audit-flux-de-commande.md) — **nettoyé contre le code le 2026-09-18** : sept défauts fermés, sept ouverts dont deux nouveaux (T13, T14). Le §2 est l'état du jour.                                                    |
+| Le calcul du prix et du panier           | [`../pricing/ce-qui-reste-a-faire.md`](../pricing/ce-qui-reste-a-faire.md)                                                                                                                                                                          |
+| Ce qui reste ouvert dans l'annulation    | « Reste ouvert » de [`annulation-par-le-staff.md`](annulation/annulation-par-le-staff.md) et de [`annulation-par-le-client.md`](annulation/annulation-par-le-client.md) — le filtre « remboursement à faire », et les choix métier bâtis sur défaut |
+| Combien de temps on garde les bons en R2 | [`todo-conservation-des-bons-en-r2.md`](todo-conservation-des-bons-en-r2.md)                                                                                                                                                                        |
+| L'export des commandes pour le comptable | [`todo-export-des-commandes-pour-le-comptable.md`](todo-export-des-commandes-pour-le-comptable.md)                                                                                                                                                  |
+| Le relevé de cycle, avant la facture     | [`plan-agregation-des-commandes.md`](plan-agregation-des-commandes.md)                                                                                                                                                                              |
+| Ce que la plateforme laisse sans réponse | [`../b2b/audit-flux-plateforme-admin.md`](../b2b/audit-flux-plateforme-admin.md)                                                                                                                                                                    |
 
 ---
 

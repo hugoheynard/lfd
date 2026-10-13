@@ -293,7 +293,7 @@ export const routes: Routes = [
           import('./client/mes-commandes/retrait-page/retrait-page').then((m) => m.RetraitPage),
       },
       {
-        // L'ANNULATION DE L'INVITÉ (plan `plan-annulation-de-commande.md`,
+        // L'ANNULATION DE L'INVITÉ (doc `annulation-par-le-client.md`,
         // C6.4) : le lien de son courriel de confirmation. Sans garde — un
         // invité n'a pas de compte. Le jeton est dans le FRAGMENT
         // (`/annuler#<id>.<jeton>`), jamais dans le chemin : le serveur ne le

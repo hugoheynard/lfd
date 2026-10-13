@@ -1,6 +1,6 @@
 /**
- * **Le jeton du lien d'annulation d'un invité** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C6.4, B1).
+ * **Le jeton du lien d'annulation d'un invité** (doc
+ * `documentation/commandes/annulation/annulation-par-le-client.md`, C6.4, B1).
  *
  * Déterministe : `base64url(HMAC-SHA256(orderId, clé))` — rien de stocké, un
  * rejeu du courriel donne le même lien. Le jeton IDENTIFIE la commande, il ne

@@ -20,8 +20,8 @@ import { PrismaCancellingMemberReader } from "./infrastructure/prisma-cancelling
 import { PrismaCustomerCancellationSubjectReader } from "./infrastructure/prisma-customer-cancellation-subject.reader.js";
 
 /**
- * Les providers du lot C6 (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`) :
+ * Les providers du lot C6 (doc
+ * `documentation/commandes/annulation/annulation-par-le-client.md`) :
  * l'annulation par le client connecté et par l'invité, leur mur, le réglage
  * appliqué, l'annulabilité affichée, le lien signé et la cloche à l'équipe.
  * À part du module, qui dépasse déjà la taille d'un fichier. Le noyau

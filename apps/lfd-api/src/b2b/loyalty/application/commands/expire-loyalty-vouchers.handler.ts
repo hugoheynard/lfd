@@ -26,7 +26,7 @@ export const EXPIRY_BATCH = 200;
  * plutôt qu'inventé.
  *
  * 🔴 **Sous le verrou du titulaire, sur le bon RELU** depuis le lot C3b
- * (`order/plan-annulation-de-commande.md`, C3b.2) : la liste est lue hors
+ * (`documentation/commandes/annulation/annulation-par-le-staff.md`, C3b.2) : la liste est lue hors
  * transaction, et un reliquat refondu (ou un bon engagé) entre-temps ne doit
  * pas être réécrit `expired` par-dessus. Relu sous le verrou, il n'est plus
  * disponible, et `expire` ne fait rien ; la sauvegarde est de toute façon

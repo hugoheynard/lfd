@@ -1,6 +1,6 @@
 /**
- * **Une commande, vue de l'annulation par le client** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, lot C6,
+ * **Une commande, vue de l'annulation par le client** (doc
+ * `documentation/commandes/annulation/annulation-par-le-client.md`, lot C6,
  * C6.2 à C6.4) — ce que le mur, le réglage et le lien d'invité lisent AVANT
  * d'entrer dans le noyau. La règle staff, elle, relit sa propre vue
  * (`CancellationSubjectReader`) : les deux ne se mélangent pas.

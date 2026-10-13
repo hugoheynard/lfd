@@ -1,6 +1,6 @@
 /**
- * E2E de **l'annulation d'une commande AU COMPTE par l'équipe** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, lot C5) : les gestes
+ * E2E de **l'annulation d'une commande AU COMPTE par l'équipe** (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, lot C5) : les gestes
  * et les refus nommés, sur le vrai Postgres.
  *
  * Ce que seul le vrai SQL prouve : la ligne d'encaissement FERMÉE dans la

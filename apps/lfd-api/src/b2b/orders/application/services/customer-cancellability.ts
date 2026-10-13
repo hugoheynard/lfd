@@ -20,8 +20,8 @@ import { CancellationRule } from "./cancellation-rule.js";
 import { CustomerCancellationPolicyGate } from "./customer-cancellation-policy.js";
 
 /**
- * **La commande s'annule-t-elle, pour ce client, maintenant ?** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C6.8).
+ * **La commande s'annule-t-elle, pour ce client, maintenant ?** (doc
+ * `documentation/commandes/annulation/annulation-par-le-client.md`, C6.8).
  *
  * La même règle que le geste (`cancellationOf`, l'inscription au fournil
  * demandée à son guichet) et le même réglage (P1/P2), SANS verrou : c'est un

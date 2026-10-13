@@ -1,6 +1,6 @@
 /**
- * E2E de **l'annulation par l'invité** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, lot C6,
+ * E2E de **l'annulation par l'invité** (doc
+ * `documentation/commandes/annulation/annulation-par-le-client.md`, lot C6,
  * C6.4, C6.10) — le lien du courriel, le même 404 pour tout lien qui ne mène
  * nulle part, la page qui dit pourquoi, S3, le débit propre.
  */

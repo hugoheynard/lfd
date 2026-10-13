@@ -3,8 +3,8 @@ import type { ClientSheet } from "@lfd/contracts";
 import { b2bMailTemplates } from "../mail-templates.js";
 
 /**
- * « Votre commande a été annulée par notre équipe » (plan
- * `order/plan-annulation-de-commande.md`, C3.5) : le jour, ce qu'il advient de
+ * « Votre commande a été annulée par notre équipe » (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, C3.5) : le jour, ce qu'il advient de
  * l'argent, le bon rendu — et ni QR ni motif.
  */
 

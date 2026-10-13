@@ -1,7 +1,7 @@
 import { voucherRestitutionOf, type RestitutionVoucher } from "../voucher-restitution.js";
 
 /**
- * La règle de la restitution (plan `order/plan-annulation-de-commande.md`,
+ * La règle de la restitution (doc `documentation/commandes/annulation/annulation-par-le-staff.md`,
  * C3b.3), pure : le bon de la commande, son reliquat non refondu, l'instant.
  */
 

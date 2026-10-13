@@ -31,8 +31,8 @@ import {
 import { attachTo, createCompany, createUser } from "./factories.js";
 
 /**
- * **La scène de l'annulation staff** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, lot C3) — partagée par
+ * **La scène de l'annulation staff** (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, lot C3) — partagée par
  * les deux suites, celle des gestes et celle des courses.
  *
  * Doublés : la signature des jetons (le jeton EST le `sub`), Stripe (une issue

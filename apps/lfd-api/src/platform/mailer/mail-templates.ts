@@ -120,8 +120,8 @@ export interface B2bMails {
     readonly locale: ContentLocale;
   };
   /**
-   * **La commande a été annulée par l'équipe** (plan
-   * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C3.5). Destinataire :
+   * **La commande a été annulée par l'équipe** (doc
+   * `documentation/commandes/annulation/annulation-par-le-staff.md`, C3.5). Destinataire :
    * le client. Cf. `order-cancelled-mail.ts`.
    */
   "customer.order-cancelled": OrderCancelledMailData;

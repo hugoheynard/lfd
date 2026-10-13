@@ -201,8 +201,8 @@ export class ProductionDay {
    * interrupteur, décision de Hugo du 2026-10-04. Une journée `legacy` ne naît
    * plus : elle ne se relit que depuis la base (`fromSnapshot`).
    *
-   * @param withdrawn les commandes RETIRÉES par une annulation staff (plan
-   *   `order/plan-annulation-de-commande.md`, C3.4) : l'appelant les lit sous
+   * @param withdrawn les commandes RETIRÉES par une annulation staff (doc
+   *   `documentation/commandes/annulation/annulation-par-le-staff.md`, C3.4) : l'appelant les lit sous
    *   le verrou, l'agrégat les écarte. Les commandes du commerce sont lues
    *   avant le verrou ; une annulation validée entre les deux y figure encore.
    * @param by qui arrête — `null` quand on ne le sait pas (un semis) : le

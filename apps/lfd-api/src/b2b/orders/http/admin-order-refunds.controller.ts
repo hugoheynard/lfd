@@ -5,8 +5,8 @@ import { AdminSurface, RequirePermission } from "../../../platform/auth/admin-su
 import { RetryOrderRefundCommand } from "../application/commands/retry-order-refund.command.js";
 
 /**
- * **Le remboursement d'une commande annulée, vu du staff** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C4.9). À part de
+ * **Le remboursement d'une commande annulée, vu du staff** (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, C4.9). À part de
  * `AdminOrdersController`, qui dépasse déjà la taille d'un fichier.
  */
 @Controller("admin/orders")

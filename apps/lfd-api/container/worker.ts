@@ -443,8 +443,8 @@ async function triggerUnsettledShopOrderExpiry(env: Env): Promise<void> {
 /**
  * Réveille le container et passe les remboursements dus : une commande payée
  * annulée dont le remboursement n'a pas pu partir après l'annulation (Stripe
- * injoignable, processus mort) est reprise ici, au plus 20 par passage (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C4.7 (b)). Sur le cron
+ * injoignable, processus mort) est reprise ici, au plus 20 par passage (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, C4.7 (b)). Sur le cron
  * de RAFRAÎCHISSEMENT ; même porte et même jeton que la boîte d'envoi ;
  * idempotent — le bail de l'exécuteur exclut deux appels à Stripe.
  */

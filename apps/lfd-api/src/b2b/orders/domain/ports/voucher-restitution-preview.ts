@@ -1,8 +1,8 @@
 import type { VoucherRestitution } from "./loyalty-voucher-redemption.js";
 
 /**
- * **Ce que l'annulation fera du bon** — l'aperçu du détail staff (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C3b.5, C3b.7).
+ * **Ce que l'annulation fera du bon** — l'aperçu du détail staff (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, C3b.5, C3b.7).
  *
  * Même règle que {@link LoyaltyVoucherRedemption.reinstate}, sans verrou ni
  * écriture : un affichage. Port de LECTURE à part (ISP) — l'écran ne dépend

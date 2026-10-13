@@ -215,8 +215,8 @@ export class LoyaltyVoucherRemainderLapsedEvent implements JournaledEvent {
 }
 
 /**
- * Le bon d'une commande annulée par l'équipe est rendu au client (plan
- * `order/plan-annulation-de-commande.md`, lot C3b, C3b.6) : tel quel
+ * Le bon d'une commande annulée par l'équipe est rendu au client (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, lot C3b, C3b.6) : tel quel
  * (`returned`), ou en refondant son reliquat (`merged`). La trace dit quelle
  * commande, ce que le bon vaut de nouveau, jusqu'à quand, et le reliquat
  * refondu. Aucun point ne bouge : la trace ne cite pas le livre.

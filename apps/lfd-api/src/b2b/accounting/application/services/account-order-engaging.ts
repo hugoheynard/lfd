@@ -14,7 +14,7 @@ import {
 /**
  * La comptabilité répond à la commande : **qu'a-t-on déjà engagé** sur
  * cette commande au compte, et **ferme sa ligne d'encaissement** quand
- * l'équipe l'annule (plan `documentation/commandes/annulation/plan-annulation-de-commande.md`,
+ * l'équipe l'annule (doc `documentation/commandes/annulation/annulation-par-le-staff.md`,
  * C5.4, C5.5). Implémente le port que la commande déclare ; relié dans
  * `appBootstrap/account-order-engagement.module.ts`.
  *

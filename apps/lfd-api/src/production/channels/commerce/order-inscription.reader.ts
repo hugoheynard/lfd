@@ -1,7 +1,7 @@
 /**
  * **« Le fournil a-t-il inscrit cette commande, et à quel jour ? »** — port de
- * LECTURE que le fournil déclare et implémente, pour le commerce (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C3.3 et C3.8).
+ * LECTURE que le fournil déclare et implémente, pour le commerce (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, C3.3 et C3.8).
  *
  * Il sert l'AFFICHAGE : le détail staff d'une commande dit d'avance si elle
  * s'annule. Il ne décide de rien — sans verrou, sa réponse peut vieillir d'un

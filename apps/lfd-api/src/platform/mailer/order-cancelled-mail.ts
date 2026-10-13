@@ -6,7 +6,7 @@ import { fill, mailCopyOf } from "./copy/mail-copy.js";
 
 /**
  * Les données de l'e-mail **« Votre commande a été annulée par notre
- * équipe »** (plan `documentation/commandes/annulation/plan-annulation-de-commande.md`,
+ * équipe »** (doc `documentation/commandes/annulation/annulation-par-le-staff.md`,
  * C3.5). Destinataire : la personne qui a passé la commande.
  *
  * Ni QR — une commande annulée ne se retire pas —, ni motif — il est interne.

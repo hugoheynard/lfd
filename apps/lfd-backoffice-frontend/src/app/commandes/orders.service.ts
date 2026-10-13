@@ -140,8 +140,8 @@ export class AdminOrdersService {
   }
 
   /**
-   * **Annule la commande**, motif à l'appui (plan
-   * `plan-annulation-de-commande.md`, C3.8). `204` sans corps : l'écran relit
+   * **Annule la commande**, motif à l'appui (doc
+   * `annulation-par-le-staff.md`, C3.8). `204` sans corps : l'écran relit
    * le détail. Les refus (`409 orders.cancel.*`) remontent tels quels — leur
    * message est la phrase à montrer.
    */
@@ -155,8 +155,8 @@ export class AdminOrdersService {
   }
 
   /**
-   * **« Relancer le remboursement »** d'une commande annulée (plan
-   * `plan-annulation-de-commande.md`, C4.9). `202` : le serveur n'attend pas
+   * **« Relancer le remboursement »** d'une commande annulée (doc
+   * `annulation-par-le-staff.md`, C4.9). `202` : le serveur n'attend pas
    * Stripe — l'écran relit le détail. Les refus (`404`, `409
    * orders.refund_request.*`) portent leur phrase.
    */

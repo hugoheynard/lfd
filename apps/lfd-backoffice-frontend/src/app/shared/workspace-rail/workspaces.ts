@@ -658,7 +658,7 @@ export const B2B_VIEWS: readonly WorkspaceView[] = [
     section: 'Réglages',
   },
   // Ce que le client peut faire d'une commande passée : l'annuler lui-même
-  // (plan `plan-annulation-de-commande.md`, C6.5). Même droit, `b2b_settings`.
+  // (doc `annulation-par-le-client.md`, C6.5). Même droit, `b2b_settings`.
   {
     key: 'commandes',
     label: 'Commandes',

@@ -17,8 +17,8 @@ import { PermissionsStore } from '../../auth/permissions.store';
 import { AdminOrdersService } from '../orders.service';
 
 /**
- * **Le bandeau du remboursement** d'une commande annulée (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, lot C4, C4.9) : les
+ * **Le bandeau du remboursement** d'une commande annulée (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, lot C4, C4.9) : les
  * quatre états LUS au carnet par le serveur, et « Relancer » quand il a un
  * sens.
  *

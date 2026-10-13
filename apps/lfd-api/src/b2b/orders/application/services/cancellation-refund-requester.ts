@@ -7,8 +7,8 @@ import { OrderRefundRequestRepository } from "../../domain/ports/order-refund-re
 import { OrderRefundDispatch } from "./order-refund-dispatch.js";
 
 /**
- * **L'argent à rendre d'une commande payée qu'on annule** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C4.4, C4.6).
+ * **L'argent à rendre d'une commande payée qu'on annule** (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, C4.4, C4.6).
  *
  * Dans l'unité de travail de l'annulation, sous le verrou de la ligne
  * `orders` : le reste se lit sur le carnet RELU sous ce verrou (`lock()`), la

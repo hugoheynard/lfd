@@ -1,6 +1,6 @@
 /**
- * **Le mur pro de l'annulation par le client** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C6.2, B2).
+ * **Le mur pro de l'annulation par le client** (doc
+ * `documentation/commandes/annulation/annulation-par-le-client.md`, C6.2, B2).
  *
  * Plus strict que la passation, et c'est voulu : `OrderGuardReader.roleOf`
  * admet une invitation vivante NON acceptée (`openingMembership`), et

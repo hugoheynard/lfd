@@ -10,8 +10,8 @@ import { CustomerCancellationPolicyGate } from "./customer-cancellation-policy.j
 import { OrderCancellation } from "./order-cancellation.service.js";
 
 /**
- * **Ce qui suit le mur, pour un client comme pour un invité** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C6.3,
+ * **Ce qui suit le mur, pour un client comme pour un invité** (doc
+ * `documentation/commandes/annulation/annulation-par-le-client.md`, C6.3,
  * C6.6) : P1 et P2 pour une commande personnelle, puis le noyau staff, appelé
  * À L'IDENTIQUE, et ses refus traduits pour un client (C6.7).
  *

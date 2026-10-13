@@ -21,8 +21,8 @@ export const SEND_ORDER_CANCELLED_MAIL = "orders.send-order-cancelled-mail";
 
 /**
  * **« Votre commande a été annulée »** — par l'équipe, par le client, ou par
- * un membre de sa société depuis le lot C6 (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C3.5, D9).
+ * un membre de sa société depuis le lot C6 (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, C3.5, D9).
  *
  * Ni QR — une commande annulée ne se retire pas —, ni motif — il est interne.
  * Le corps dit ce qu'il advient de l'argent : rien à facturer (total nul), ou

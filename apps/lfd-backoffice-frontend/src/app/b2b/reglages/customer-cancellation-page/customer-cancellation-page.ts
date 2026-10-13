@@ -24,7 +24,7 @@ import { CustomerCancellationService } from '../customer-cancellation.service';
 type LoadState = 'loading' | 'ready' | 'error';
 
 /**
- * **Réglages › Commandes** (plan `plan-annulation-de-commande.md`, C6.5) —
+ * **Réglages › Commandes** (doc `annulation-par-le-client.md`, C6.5) —
  * si les particuliers peuvent annuler eux-mêmes, et jusqu'à combien d'heures
  * avant le début du créneau. Les pros n'ont pas de réglage : ils annulent
  * jusqu'au compte à produire.

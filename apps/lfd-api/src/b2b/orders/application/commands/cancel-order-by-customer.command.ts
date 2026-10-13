@@ -1,6 +1,6 @@
 /**
- * **Le client connecté annule une commande** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, lot C6, C6.6).
+ * **Le client connecté annule une commande** (doc
+ * `documentation/commandes/annulation/annulation-par-le-client.md`, lot C6, C6.6).
  *
  * `userId` vient du `Principal`, jamais du corps ; aucun id de société n'est
  * reçu — le mur se lit sur la société DE LA COMMANDE (C6.2). Le motif est

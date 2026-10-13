@@ -14,8 +14,8 @@ import { GetCustomerCancellationSettingsQuery } from "../application/queries/get
 
 /**
  * Réglage **staff** « Réglages › Commandes » : les particuliers peuvent-ils
- * annuler eux-mêmes, et jusqu'à combien d'heures avant (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C6.5).
+ * annuler eux-mêmes, et jusqu'à combien d'heures avant (doc
+ * `documentation/commandes/annulation/annulation-par-le-client.md`, C6.5).
  * Même ressource que l'ouverture de la boutique, `b2b_settings` : la même
  * nature de réglage — ce que la boutique permet au client.
  *

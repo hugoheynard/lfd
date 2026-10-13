@@ -171,7 +171,7 @@ export class CollectionFloorMissingError extends TechnicalError {
 
 /**
  * La constitution veut verrouiller ses candidats sans verrou fourni : faute
- * de câblage, jamais un cas métier (plan `order/plan-annulation-de-commande.md`, C5.3).
+ * de câblage, jamais un cas métier (doc `documentation/commandes/annulation/annulation-par-le-staff.md`, C5.3).
  */
 export class CollectionRowsLockMissingError extends TechnicalError {
   constructor() {

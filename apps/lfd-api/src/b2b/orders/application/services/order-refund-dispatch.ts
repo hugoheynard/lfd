@@ -20,8 +20,8 @@ export abstract class OrderRefundDispatch {
 }
 
 /**
- * L'adaptateur par le bus de commandes (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C4.3, C4.7 (a), (c)).
+ * L'adaptateur par le bus de commandes (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, C4.3, C4.7 (a), (c)).
  *
  * Best effort, sans relance : si l'exécuteur n'aboutit pas, le balayage du
  * cron le reprend. Inscrit APRÈS la validation — un abonné durable ou une

@@ -58,7 +58,7 @@ const ALLOWED = [
   // où le temps entre dans l'application, et c'est exactement ce que §3.2
   // décrit — pas une entorse, le mécanisme.
   "src/platform/context/request-context.middleware.ts",
-  // L'heure du MUR (`WallClock`, plan `order/plan-annulation-de-commande.md`,
+  // L'heure du MUR (`WallClock`, doc `documentation/commandes/annulation/annulation-par-le-staff.md`,
   // C4.7) : `SystemClock` rend l'instant gelé à l'ingress, en retard de toute
   // la durée d'un appel Stripe. Elle ne mesure qu'un BAIL et une échéance de
   // reprise — jamais un instant écrit comme fait métier, qui reste au `Clock`.

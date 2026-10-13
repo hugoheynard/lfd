@@ -6,8 +6,8 @@ import {
 import { cancellationRefusalOf, type CancellationBlock } from "../services/order-cancellation.js";
 
 /**
- * Les refus de l'**annulation staff** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C3.7). Les phrases
+ * Les refus de l'**annulation staff** (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, C3.7). Les phrases
  * parlent à l'équipe, pas au client : celles de l'abandon
  * (`order-abandon-errors.ts`) gardent leur sens et leurs mots.
  */

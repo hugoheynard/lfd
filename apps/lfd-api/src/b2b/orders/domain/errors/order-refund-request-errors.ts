@@ -6,8 +6,8 @@ import {
 } from "../../../../platform/shared/errors/app-error.js";
 
 /**
- * Les refus de la **demande de remboursement** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, lot C4). Les phrases
+ * Les refus de la **demande de remboursement** (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, lot C4). Les phrases
  * parlent à l'équipe : elles nomment le cas et le geste de sortie.
  */
 

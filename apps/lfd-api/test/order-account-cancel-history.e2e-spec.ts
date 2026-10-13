@@ -1,6 +1,6 @@
 /**
- * E2E de **l'annulation au compte face à l'histoire comptable** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C5.2 condition 5,
+ * E2E de **l'annulation au compte face à l'histoire comptable** (doc
+ * `documentation/commandes/annulation/annulation-par-le-staff.md`, C5.2 condition 5,
  * C5.4, C5.5) : le rejet bancaire passé, la ligne fermée qui fait
  * l'aller-retour, les écartées et les impayés détachés, la cohérence des
  * relevés.

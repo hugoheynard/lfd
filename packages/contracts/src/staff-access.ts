@@ -124,8 +124,8 @@ export const staffResourceSchema = z.enum([
    */
   "b2b_place_order",
   /**
-   * **Annuler une commande** — `POST /admin/orders/:id/cancel` (plan
-   * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C3.8, 2026-10-12).
+   * **Annuler une commande** — `POST /admin/orders/:id/cancel` (doc
+   * `documentation/commandes/annulation/annulation-par-le-staff.md`, C3.8, 2026-10-12).
    * Un geste à part, sur le modèle de `b2b_place_order` : voir les commandes
    * n'est pas pouvoir les annuler. Une action utile, `write`. Accordée à
    * l'écran ; aucune migration ne la donne à un rôle.

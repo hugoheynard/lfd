@@ -1,8 +1,8 @@
 import { addDays, localToInstant } from "@lfd/contracts";
 
 /**
- * **La borne du lien d'annulation d'un invité** (plan
- * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C6.4,
+ * **La borne du lien d'annulation d'un invité** (doc
+ * `documentation/commandes/annulation/annulation-par-le-client.md`, C6.4,
  * Q-C6.9) : 90 jours après la date de retrait / de livraison, ou après la
  * passation sans date. Calculée sur la COMMANDE — le HMAC n'en sait rien — et
  * aucune colonne d'expiration à tenir. Minimisation : un courriel transféré ou
