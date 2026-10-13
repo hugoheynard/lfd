@@ -105,9 +105,10 @@ describe('grantGroups', () => {
    * réglages (sites/sites.md, lot S0). 54
    * le même jour : `b2b_commercial_appointment` et `b2b_commercial_alert`, les
    * réglages commerciaux (Hugo). 55 le même jour : `b2b_request_reasons`, les
-   * motifs des demandes, sortis de `b2b_contact`.
+   * motifs des demandes, sortis de `b2b_contact`. 56 le même jour :
+   * `lfc_order_opening`, l'ouverture des commandes (plan-reglages-commandes.md, O0).
    */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(55);
+    expect(RESOURCE_COUNT).toBe(56);
   });
 });

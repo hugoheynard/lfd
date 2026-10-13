@@ -169,8 +169,14 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     write: "Créer, modifier ou archiver un site, régler ses rôles et ses couleurs.",
   },
   lfc_order_settings: {
-    read: "Voir le réglage des commandes : jusqu'à quand un client peut annuler.",
-    write: "Modifier ce réglage — ce qui change ce que chaque client peut annuler.",
+    read: "Voir l'heure limite de commande, son rattrapage, et jusqu'à quand un client peut annuler.",
+    write:
+      "Modifier l'heure limite, son rattrapage ou l'annulation par le client — ce qui change, pour chaque client, jusqu'à quand il peut commander et revenir sur sa commande.",
+  },
+  lfc_order_opening: {
+    read: "Voir si la prise de commande est ouverte, par clientèle (pros, particuliers).",
+    write:
+      "Ouvrir ou fermer la prise de commande, par clientèle — fermée, plus aucun client de cette clientèle ne peut commander.",
   },
   b2b_storefront: {
     read: "Voir la composition des pages de la boutique.",

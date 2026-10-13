@@ -304,11 +304,18 @@ export const staffResourceSchema = z.enum([
    */
   "lfc_site_settings",
   /**
-   * **Le réglage des commandes** — l'annulation par le client (même plan,
-   * §5.4). Ajoutée au lot S0 ; les routes passent dessous au lot O1. Accordée
-   * à l'écran.
+   * **Le réglage des commandes** — l'heure limite, son rattrapage, et
+   * l'annulation par le client (`documentation/commandes/plan-reglages-commandes.md`).
+   * Ajoutée au lot S0 ; les routes passent dessous au lot O1. Accordée à
+   * l'écran.
    */
   "lfc_order_settings",
+  /**
+   * **L'ouverture des commandes** — ouvrir ou fermer la prise de commande,
+   * par clientèle. Un droit à part (Hugo, 2026-10-13, Q5) : c'est
+   * l'interrupteur qui ferme toute prise de commande. Accordée à l'écran.
+   */
+  "lfc_order_opening",
   /**
    * **La vitrine** — composer les pages de la boutique : formes, positions,
    * rayons, contenus, gabarits (`documentation/commandes/boutique-rayon-layout.md`,
@@ -643,7 +650,8 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   b2b_client_notes: "Notes du commercial",
   b2b_settings: "Réglages plateforme",
   lfc_site_settings: "Sites",
-  lfc_order_settings: "Réglage des commandes",
+  lfc_order_settings: "Heure limite et annulation des commandes",
+  lfc_order_opening: "Ouverture des commandes",
   staff_access: "Équipe et accès",
   staff_notifications: "Notifications internes",
   ops_health: "Santé de l'écosystème",
@@ -760,6 +768,8 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // deux droits s'accordent à l'écran.
     lfc_site_settings: "write",
     lfc_order_settings: "write",
+    // Graine seulement (2026-10-13, plan-reglages-commandes.md §3.5).
+    lfc_order_opening: "write",
     // La graine seule (2026-10-13, réglages commerciaux) : en production,
     // ces deux droits s'accordent à l'écran.
     b2b_commercial_appointment: "write",
@@ -846,6 +856,11 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // Les notes papier de la commerciale : elle les écrit (Hugo, 2026-09-15).
     b2b_client_notes: "write",
     b2b_settings: "read",
+    // Lisent l'heure limite, l'annulation et l'ouverture comme ils les
+    // lisaient par `b2b_settings` (plan-reglages-commandes.md §3.5, Q3, Q5).
+    // Graine seulement : en production, accordées à l'écran.
+    lfc_order_settings: "read",
+    lfc_order_opening: "read",
     // Il VOIT le référentiel, il n'y touche pas. C'est exactement la séparation
     // que le découpage rend exprimable : avant, le même mot désignait le
     // référentiel et le catalogue vendu.
@@ -895,6 +910,11 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     b2b_pricing: "read",
     b2b_payments: "write",
     b2b_settings: "read",
+    // Lisent l'heure limite, l'annulation et l'ouverture comme ils les
+    // lisaient par `b2b_settings` (plan-reglages-commandes.md §3.5, Q3, Q5).
+    // Graine seulement : en production, accordées à l'écran.
+    lfc_order_settings: "read",
+    lfc_order_opening: "read",
     pim_catalog: "read",
     // Poser un taux et le corriger. **Pas** le pousser vers un canal —
     // `pim_channels` n'est pas à elle, et c'est précisément ce que l'ancienne
@@ -996,6 +1016,11 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     pim_catalog: "read",
     pim_tax: "read",
     b2b_settings: "read",
+    // Lisent l'heure limite, l'annulation et l'ouverture comme ils les
+    // lisaient par `b2b_settings` (plan-reglages-commandes.md §3.5, Q3, Q5).
+    // Graine seulement : en production, accordées à l'écran.
+    lfc_order_settings: "read",
+    lfc_order_opening: "read",
     // `read` et pas `write` : OPS est en lecture seule en v1 (il observe, il
     // n'agit pas). Le jour où des actions murées arrivent, ce droit sera le
     // premier à devoir être re-décidé — pas élargi par habitude.

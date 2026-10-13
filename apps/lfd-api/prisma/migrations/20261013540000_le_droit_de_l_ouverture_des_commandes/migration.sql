@@ -1,0 +1,21 @@
+-- LE DROIT DE L'OUVERTURE DES COMMANDES (Hugo, 2026-10-13, Q5)
+--
+-- Ouvrir ou fermer la prise de commande d'une clientèle reçoit sa ressource,
+-- `lfc_order_opening`, distincte de `lfc_order_settings` (heure limite et
+-- annulation) : c'est l'interrupteur qui ferme toute prise de commande
+-- (documentation/commandes/plan-reglages-commandes.md, §3.5, lot O0).
+--
+-- 🔴 AUCUN droit accordé ici (`lint:no-role-grants-in-migrations`) : rien
+-- n'est écrit dans `staff_role_definitions` ni `staff_permission_overrides`.
+-- Rien ne change de mur à ce déploiement : `admin/order-opening` reste sous
+-- `b2b_settings` jusqu'au lot O1a. Geste avant O1a : l'admin accorde à
+-- l'écran (`/admin/staff-roles`) l'écriture à `admin`, la lecture à
+-- `commercial`, `comptabilite` et `dev`.
+--
+-- SEULE dans sa migration : une valeur d'enum ne s'emploie pas dans la
+-- transaction qui l'ajoute.
+--
+-- ⚠️ IRRÉVERSIBLE, et sans conséquence : Postgres ne sait pas ôter une valeur
+-- d'enum. Un retour arrière la laisse en place, inutilisée.
+
+ALTER TYPE "public"."StaffResource" ADD VALUE IF NOT EXISTS 'lfc_order_opening' AFTER 'lfc_order_settings';
