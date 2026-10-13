@@ -53,9 +53,27 @@ export const WORKSPACE_HOME_ROUTE = '/accueil';
 /** Le détour qui fait remonter l'écran de destination à neuf (cf. `WorkspaceReload`). */
 export const WORKSPACE_RELOAD_ROUTE = '/changement-d-espace';
 
+/** La liste des commandes : là où l'on retombe en quittant UNE commande. */
+export const ORDERS_LIST = '/mes-commandes';
+
+/**
+ * Les écrans qui montrent UNE commande : son QR de retrait, son tiroir, son
+ * règlement. Une commande appartient à un espace ; changer d'espace en restant
+ * dessus montrait la commande de l'ancien (Hugo, 2026-10-13, sur
+ * `/mes-commandes/retrait/:id`). On retombe sur la liste du nouvel espace.
+ */
+const ORDER_SCOPED_SCREENS: readonly RegExp[] = [
+  /^\/mes-commandes\/retrait\/[^/]+$/u,
+  /^\/mes-commandes\/[^/]+$/u,
+  /^\/reglement\/[^/]+$/u,
+  /^\/commandes\/[^/]+(\/regler)?$/u,
+];
+
 /**
  * **Où aller après avoir changé d'espace**, depuis l'adresse où l'on était.
  *
+ * - depuis l'écran d'**une commande** (QR de retrait, tiroir, règlement), on
+ *   va à la liste des commandes du nouvel espace ;
  * - depuis un **accueil** — celui de la société ou celui du perso —, on va à
  *   l'accueil du nouvel espace : les deux se correspondent, et rester sur
  *   `/nouvelle-commande` en perso ne serait pas l'équivalent ;
@@ -68,6 +86,9 @@ export const WORKSPACE_RELOAD_ROUTE = '/changement-d-espace';
 export function routeAfterSwitch(url: string, nowPersonal: boolean): string {
   const path = url.split(/[?#]/u)[0] ?? url;
   const home = nowPersonal ? PERSONAL_HOME : COMPANY_HOME;
+  if (ORDER_SCOPED_SCREENS.some((pattern) => pattern.test(path))) {
+    return ORDERS_LIST;
+  }
   // Les deux accueils coïncident depuis le 2026-09-20 : la comparaison reste
   // écrite avec LES DEUX NOMS, parce que c'est bien « suis-je sur un accueil ? »
   // qu'elle pose. Les réduire à un seul parce qu'ils ont la même valeur ferait

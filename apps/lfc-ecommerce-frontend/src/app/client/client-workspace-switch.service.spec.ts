@@ -47,6 +47,20 @@ describe('routeAfterSwitch — où l’on va après avoir changé d’espace', (
     );
     expect(routeAfterSwitch('/boutique', false)).toBe('/boutique');
   });
+
+  /**
+   * Régression : changer d'espace sur le QR de retrait d'une commande laissait
+   * la commande de l'ancien espace à l'écran (Hugo, 2026-10-13).
+   */
+  it.each([
+    ['/mes-commandes/retrait/cmv72m88s00071s0965nissyx', true],
+    ['/mes-commandes/retrait/cmv72m88s00071s0965nissyx', false],
+    ['/mes-commandes/cmv72m88s00071s0965nissyx', false],
+    ['/reglement/cmv72m88s00071s0965nissyx?retour=1', true],
+    ['/commandes/c1/regler', false],
+  ])('quitte l’écran d’une commande pour la liste : %s', (url, personal) => {
+    expect(routeAfterSwitch(url, personal)).toBe('/mes-commandes');
+  });
 });
 
 @Component({ template: '' })
