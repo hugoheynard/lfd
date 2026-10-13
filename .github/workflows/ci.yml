@@ -412,11 +412,24 @@ jobs:
   # KBIS, mandat signé — partent pour de bon. Le bucket, lui, est créé par le
   # harnais (`ensureTestBucket`), donc rien à provisionner ici.
   b2b-backend:
-    name: Backend B2B · e2e ${{ matrix.shard }}/6
+    name: Backend B2B · e2e ${{ matrix.shard }}/20
     runs-on: ubuntu-latest
     needs: changes
     if: needs.changes.outputs.api == 'true'
     strategy:
+      # VINGT RUNNERS depuis le 2026-10-13. Mesuré ce jour-là (run
+      # 38351177471, déjà sous swc) : une suite prend en CI ~2,9× sa durée de
+      # `test/e2e-durations.json` — 1136 s cumulées pour 394 s attendues sur
+      # l'éclat 1. Ce n'est PAS la transpilation (swc l'a rendue négligeable
+      # sans rien changer) : c'est le runner, deux vCPU qui portent aussi
+      # Postgres et MinIO. Le ratio est stable, donc seul le nombre d'éclats
+      # le compense : ~118 s mesurées par éclat à vingt, ~3 min réelles.
+      #
+      # Les suites au-delà de 55 s mesurées bornent l'éclat qui les porte :
+      # `dev-scenario-stability` (85 s, ~2 min en CI, UN seul test),
+      # `dev-scenario` (59 s), `admin-catalog`, `production-batch`,
+      # `staff-roles` (~56 s).
+      #
       # SIX RUNNERS depuis le 2026-09-25 (quatre avant). 136 suites, et une
       # tranche sur quatre portait 895 s de tests quand une autre en portait
       # 439 — les durées de `test/e2e-durations.json` dataient d'avant la
@@ -440,7 +453,7 @@ jobs:
       # sinon on corrige une panne, on repousse, et on en découvre une seconde.
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
     services:
       postgres:
         image: postgres:16-alpine
@@ -537,7 +550,7 @@ jobs:
         # CI. `--runTestsByPath` prend des chemins littéraux, pas des motifs.
         run: |
           pnpm --filter lfd-api run test:e2e --runTestsByPath \
-            $(node dev-toolbox/ci/e2e-shard.mjs ${{ matrix.shard }} 6)
+            $(node dev-toolbox/ci/e2e-shard.mjs ${{ matrix.shard }} 20)
       - name: Sauvegarder le cache Jest
         if: github.ref == 'refs/heads/dev' && matrix.shard == 1
         uses: actions/cache/save@v6
