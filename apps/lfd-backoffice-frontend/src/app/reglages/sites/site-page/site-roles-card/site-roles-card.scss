@@ -1,0 +1,6 @@
+/* Le bouton de la carte, dans l'en-tête de sa section — même patron que les
+   créneaux publics. */
+.sr-save {
+  display: flex;
+  gap: var(--fold-space-sm);
+}

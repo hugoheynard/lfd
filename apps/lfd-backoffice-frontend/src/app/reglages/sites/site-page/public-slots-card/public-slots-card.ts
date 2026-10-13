@@ -31,8 +31,8 @@ import {
 } from 'fold-ng';
 
 import { NotifyService } from '../../../../notify.service';
-import { PickupAddressesService } from '../../pickup-addresses.service';
-import { weekdayLabel } from '../../weekday-choices';
+import { SitesService } from '../../sites.service';
+import { weekdayLabel } from '../../../../b2b/reglages/weekday-choices';
 import { ClosurePanel, type ClosurePanelData } from '../closure-panel/closure-panel';
 import { SlotRulePanel, type SlotRulePanelData } from '../slot-rule-panel/slot-rule-panel';
 
@@ -79,7 +79,7 @@ const PREVIEW_DAYS = 7;
   styleUrl: './public-slots-card.scss',
 })
 export class PublicSlotsCard {
-  private readonly pickups = inject(PickupAddressesService);
+  private readonly pickups = inject(SitesService);
   private readonly panels = inject(FoldPanelHostService);
   private readonly notify = inject(NotifyService);
 

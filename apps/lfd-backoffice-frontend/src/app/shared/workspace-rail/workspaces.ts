@@ -293,6 +293,17 @@ export const EXPLOITATION_VIEWS: readonly WorkspaceView[] = [
     section: 'Commercial',
     needs: 'b2b_growth:read',
   },
+  // RÉGLAGES › SITES (plan des sites, lot S1, 2026-10-13) — l'ancien « Points
+  // de retrait » de l'E-commerce, sous son propre droit. Une table pour le
+  // rail ET le lanceur mobile : les deux arbres le reçoivent ensemble.
+  {
+    key: 'sites',
+    label: 'Sites',
+    link: '/reglages/sites',
+    icon: 'map-pin',
+    section: 'Sites',
+    needs: 'lfc_site_settings:read',
+  },
 ];
 
 /**
@@ -634,13 +645,8 @@ export const B2B_VIEWS: readonly WorkspaceView[] = [
   // qui livrer est parti dans l'Exploitation le 2026-10-10). Ils étaient un onglet des Réglages ; sous le droit qui ouvre
   // déjà l'espace, donc sans `needs` (plan « remise et livraison par
   // clientèle », D6).
-  {
-    key: 'points-de-retrait',
-    label: 'Points de retrait',
-    link: '/b2b/reglages/points-de-retrait',
-    icon: 'map-pin',
-    section: 'Réglages',
-  },
+  // « Points de retrait » est parti le 2026-10-13 : devenu « Sites », dans les
+  // Réglages (EXPLOITATION_VIEWS), sous `lfc_site_settings`.
   {
     key: 'heures-limites',
     label: 'Heures limites de commande',

@@ -7,13 +7,14 @@ import {
   input,
   signal,
 } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import {
   ALL_DISCOUNT_AUDIENCES,
   type CartAdjustment,
   type PickupAddressPayload,
-  type PickupAddressView,
   type PickupDiscountAudiences,
+  type SiteView,
 } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
@@ -50,15 +51,37 @@ import {
 } from '@lfd/b2b-ui/pricing';
 
 import { NotifyService } from '../../../notify.service';
-import { PickupAddressesService } from '../pickup-addresses.service';
-import { EMPTY_GPS, gpsDraftFrom, gpsIssue, toGps, type GpsDraft } from '../pickup-gps';
-import { EMPTY_OPENING, openingEntries, toPickupOpening } from '../pickup-opening.model';
+import {
+  EMPTY_GPS,
+  gpsDraftFrom,
+  gpsIssue,
+  toGps,
+  type GpsDraft,
+} from '../../../b2b/reglages/pickup-gps';
+import {
+  EMPTY_OPENING,
+  openingEntries,
+  toPickupOpening,
+} from '../../../b2b/reglages/pickup-opening.model';
+import { SITES_PATH } from '../sites-path';
+import { SitesService } from '../sites.service';
 import { PublicSlotsCard } from './public-slots-card/public-slots-card';
+import { SiteColorsCard } from './site-colors-card/site-colors-card';
+import { SiteRolesCard } from './site-roles-card/site-roles-card';
 
-/** La liste dont cette page est le détail — et le retour de tous ses gestes. */
-const LIST_PATH = '/b2b/reglages/points-de-retrait';
+const NOT_FOUND = 404;
 
 /**
+ * **Un site** (Réglages › Sites, plan
+ * `documentation/livraisons/transferts/plan-sites-transfert-interne-tri-et-couleurs.md`,
+ * §3.4, lot S1) — l'ancienne page d'un point de retrait, élargie : un site EST
+ * le point de retrait, même identifiant. Elle gagne les rôles, les couleurs et
+ * l'archivage, chacun dans sa carte et avec son propre enregistrement (l'API
+ * les prend en bloc, et un refus de l'un ne doit pas faire échouer l'autre).
+ * Tout passe par `admin/sites`, sous `lfc_site_settings`.
+ *
+ * Ce qui suit est l'histoire de la page du point, toujours vraie.
+ *
  * **Un point de retrait**, en page plutôt qu'en panneau.
  *
  * 🔴 **Pourquoi une page, alors que la règle « Saisir » dit un panneau.** La
@@ -80,13 +103,15 @@ const LIST_PATH = '/b2b/reglages/points-de-retrait';
  * charger et rien à supprimer.
  */
 @Component({
-  selector: 'app-pickup-address-page',
+  selector: 'app-site-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     AddressForm,
     HoursForm,
     PriceAlterationField,
     PublicSlotsCard,
+    SiteColorsCard,
+    SiteRolesCard,
     FoldBackLinkComponent,
     FoldBadgeComponent,
     FoldButtonComponent,
@@ -101,11 +126,11 @@ const LIST_PATH = '/b2b/reglages/points-de-retrait';
     FoldPageLayoutComponent,
     FoldPageSectionComponent,
   ],
-  templateUrl: './pickup-address-page.html',
-  styleUrl: './pickup-address-page.scss',
+  templateUrl: './site-page.html',
+  styleUrl: './site-page.scss',
 })
-export class PickupAddressPage {
-  private readonly pickups = inject(PickupAddressesService);
+export class SitePage {
+  private readonly sites = inject(SitesService);
   private readonly notify = inject(NotifyService);
   private readonly router = inject(Router);
 
@@ -144,14 +169,16 @@ export class PickupAddressPage {
   protected readonly refusal = signal<string | null>(null);
   protected readonly saving = signal(false);
   protected readonly loading = signal(true);
-  /** L'`id` de la route ne désigne aucun point : l'écran le dit, et n'invente rien. */
+  /** L'`id` de la route ne désigne aucun site : l'écran le dit, et n'invente rien. */
   protected readonly notFound = signal(false);
-  /**
-   * On garde toujours au moins un point : le dernier ne se supprime pas. Su
-   * parce que la page charge la LISTE — la lecture n'a pas de route unitaire,
-   * et ce détour rend ce compte gratuit.
-   */
-  protected readonly removable = signal(false);
+  /** La lecture a échoué pour une autre raison : on propose de réessayer. */
+  protected readonly loadFailed = signal(false);
+  /** Le site tel que le serveur l'a rendu — ce que lisent les cartes à elles. */
+  protected readonly site = signal<SiteView | null>(null);
+  /** Les cartes du retrait : à la création, rien n'est encore décidé, on les montre. */
+  protected readonly handsOver = computed(() => this.site()?.handsOver ?? true);
+  /** Un site archivé ne se modifie plus (le serveur le refuse) : tout se fige. */
+  protected readonly archived = computed(() => this.site()?.archivedAt != null);
 
   protected readonly isCreate = computed(() => this.id() === undefined);
 
@@ -176,10 +203,10 @@ export class PickupAddressPage {
   /** Le titre EST le nom du point — sa ville à défaut, comme dans la liste. */
   protected readonly heading = computed(() => {
     if (this.isCreate()) {
-      return 'Nouveau point de retrait';
+      return 'Nouveau site';
     }
     const draft = this.draft();
-    return draft.label || draft.ville || 'Point de retrait';
+    return draft.label || draft.ville || 'Site';
   });
 
   /** Les cases de clientèle ne se lisent que s'il y a une réduction à attribuer. */
@@ -206,14 +233,35 @@ export class PickupAddressPage {
   );
 
   /**
-   * Le libellé d'action de la zone dangereuse, ou `undefined` pour le dernier
-   * point : la zone reste alors un cadre qui explique sans rien offrir.
+   * Pourquoi ce site ne s'archive pas, ou `null`. Le serveur refuse le défaut
+   * et celui d'où partent les livraisons (`site-errors.ts`, relu le
+   * 2026-10-13) ; la zone le dit plutôt que d'offrir un geste refusé.
+   */
+  protected readonly archiveBlocker = computed(() => {
+    const site = this.site();
+    if (site === null || site.archivedAt !== null) {
+      return null;
+    }
+    if (site.isDefault) {
+      return 'C’est le site par défaut : désignez d’abord un autre site par défaut.';
+    }
+    if (site.dispatches) {
+      return 'Les livraisons partent d’ici : décochez d’abord « Expédie » dans ses rôles.';
+    }
+    return null;
+  });
+
+  /**
+   * Le libellé d'action de la zone dangereuse, ou `undefined` quand l'archivage
+   * serait refusé : la zone reste alors un cadre qui explique sans rien offrir.
    */
   protected readonly deleteAction = computed(() =>
-    this.removable() ? 'Supprimer définitivement' : undefined,
+    this.site() !== null && this.archiveBlocker() === null && !this.archived()
+      ? 'Archiver ce site'
+      : undefined,
   );
 
-  /** Ce qu'il faut taper pour supprimer : le nom du point, ou sa ville sans nom. */
+  /** Ce qu'il faut taper pour archiver : le nom du site, ou sa ville sans nom. */
   protected readonly confirmPhrase = computed(() => {
     const draft = this.draft();
     return this.isCreate() ? '' : draft.label || draft.ville;
@@ -233,35 +281,44 @@ export class PickupAddressPage {
     });
   }
 
-  /**
-   * Charge le point depuis la **liste** : l'API n'expose aucune lecture
-   * unitaire (`GET /pickup-addresses` seulement, vérifié le 2026-09-16), et en
-   * ajouter une pour cet écran serait une surface de plus à murer pour un gain
-   * nul — la liste est courte, publique, et déjà servie au checkout.
-   */
+  /** Charge le site par sa lecture unitaire (`GET admin/sites/:id`). */
   protected async load(id: string): Promise<void> {
     this.loading.set(true);
     this.notFound.set(false);
+    this.loadFailed.set(false);
     this.refusal.set(null);
     try {
-      const points = await this.pickups.list();
-      const point = points.find((candidate) => candidate.id === id) ?? null;
-      if (point === null) {
-        this.notFound.set(true);
-        return;
-      }
-      this.fill(point);
-      this.removable.set(points.length > 1);
+      const site = await this.sites.get(id);
+      this.site.set(site);
+      this.fill(site);
     } catch (error) {
-      this.refusal.set(httpErrorMessage(error, 'Le point de retrait est illisible.'));
-      this.notFound.set(true);
+      if (error instanceof HttpErrorResponse && error.status === NOT_FOUND) {
+        this.notFound.set(true);
+      } else {
+        this.loadFailed.set(true);
+      }
     } finally {
       this.loading.set(false);
     }
   }
 
-  /** Recopie le point dans les brouillons de l'écran. */
-  private fill(point: PickupAddressView): void {
+  /** Une carte a enregistré : on relit le site, sans faire clignoter la page. */
+  protected async reload(): Promise<void> {
+    const id = this.id();
+    if (id === undefined) {
+      return;
+    }
+    try {
+      const site = await this.sites.get(id);
+      this.site.set(site);
+      this.isDefault.set(site.isDefault);
+    } catch (error) {
+      this.refusal.set(httpErrorMessage(error, 'Le site n’a pas pu être relu.'));
+    }
+  }
+
+  /** Recopie le site dans les brouillons de l'écran. */
+  private fill(point: SiteView): void {
     this.draft.set(postalDraftFrom(point));
     this.isDefault.set(point.isDefault);
     this.discount.set(point.discount);
@@ -303,26 +360,31 @@ export class PickupAddressPage {
     };
     try {
       if (id === undefined) {
-        await this.pickups.create(payload);
-        this.notify.success('Point de retrait ajouté.');
+        // Vers la page du site créé, et non la liste : ses rôles et ses
+        // couleurs ne se règlent qu'une fois qu'il existe.
+        const created = await this.sites.create(payload);
+        this.notify.success('Site ajouté.');
+        await this.router.navigate([SITES_PATH, created.id]);
       } else {
-        await this.pickups.update(id, payload);
-        this.notify.success('Point de retrait mis à jour.');
+        await this.sites.update(id, payload);
+        this.notify.success('Site mis à jour.');
+        await this.reload();
       }
-      await this.backToList();
     } catch (error) {
-      this.refusal.set(httpErrorMessage(error, "Le point de retrait n'a pas pu être enregistré."));
+      this.refusal.set(httpErrorMessage(error, "Le site n'a pas pu être enregistré."));
     } finally {
       this.saving.set(false);
     }
   }
 
   /**
-   * 🔴 **La suppression était une entrée du menu de la liste**, confirmée d'un
-   * seul clic, jusqu'au 2026-09-15 (Hugo). Elle vit dans une zone dangereuse
-   * qui fait taper le nom du point. Un refus reste sur la page.
+   * 🔴 **Archiver, pas supprimer** (plan des sites, §3.1) : un site archivé
+   * n'est plus proposé, mais se résout encore par id — départs, tournées et
+   * copies des commandes passées le citent. La zone fait taper son nom, comme
+   * la suppression d'un point le faisait depuis le 2026-09-15. Un refus reste
+   * sur la page.
    */
-  protected async remove(): Promise<void> {
+  protected async archive(): Promise<void> {
     const id = this.id();
     if (id === undefined || this.deleteAction() === undefined || this.saving()) {
       return;
@@ -330,17 +392,17 @@ export class PickupAddressPage {
     this.saving.set(true);
     this.refusal.set(null);
     try {
-      await this.pickups.remove(id);
-      this.notify.success('Point de retrait supprimé.');
+      await this.sites.archive(id);
+      this.notify.success('Site archivé.');
       await this.backToList();
     } catch (error) {
-      this.refusal.set(httpErrorMessage(error, "Le point de retrait n'a pas pu être supprimé."));
+      this.refusal.set(httpErrorMessage(error, "Le site n'a pas pu être archivé."));
     } finally {
       this.saving.set(false);
     }
   }
 
   protected backToList(): Promise<boolean> {
-    return this.router.navigate([LIST_PATH]);
+    return this.router.navigate([SITES_PATH]);
   }
 }

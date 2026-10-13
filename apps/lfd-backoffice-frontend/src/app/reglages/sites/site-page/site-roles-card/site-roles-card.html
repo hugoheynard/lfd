@@ -1,0 +1,70 @@
+<fold-card>
+  <fold-page-section title="Rôles" separator>
+    <span sectionSubtitle
+      >Ce qui se passe dans ce lieu : on y remet, on y est servi, on en part.</span
+    >
+
+    @if (!readOnly()) {
+      <div sectionActions class="sr-save">
+        <button foldButton size="sm" [disabled]="!canSave()" [loading]="saving()" (click)="save()">
+          Enregistrer les rôles
+        </button>
+      </div>
+    }
+
+    @if (refusal(); as message) {
+      <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+    }
+
+    <fold-checkbox
+      label="Remet des commandes"
+      hint="proposé au retrait, onglet au comptoir, créneaux publics, réduction de retrait"
+      [disabled]="readOnly()"
+      [checked]="draft().handsOver"
+      (checkedChange)="set('handsOver', $event)"
+    />
+
+    <fold-listbox
+      label="Approvisionné"
+      [options]="supplyOptions"
+      [disabled]="readOnly()"
+      [value]="draft().supply"
+      (selectionChange)="set('supply', $event)"
+    />
+
+    <!-- Le mode ne dit rien d'un site approvisionné sur place : il reste
+         enregistré tel quel, mais ne se montre qu'avec le transfert. -->
+    @if (draft().supply === 'transfer') {
+      <fold-listbox
+        label="Transfert"
+        [options]="transferModeOptions"
+        [disabled]="readOnly()"
+        [value]="draft().transferMode"
+        (selectionChange)="set('transferMode', $event)"
+      />
+    }
+
+    <fold-checkbox
+      label="Expédie"
+      hint="les livraisons et les transferts peuvent partir d'ici ; il porte les couleurs de livraison"
+      [disabled]="readOnly()"
+      [checked]="draft().dispatches"
+      (checkedChange)="set('dispatches', $event)"
+    />
+
+    <fold-number-input
+      label="Mise en place au comptoir (minutes)"
+      hint="le temps entre la fin du colisage et l'instant où la commande peut être remise"
+      integer
+      [min]="0"
+      [step]="5"
+      [readOnly]="readOnly()"
+      [value]="draft().counterSetupMinutes"
+      (valueChange)="set('counterSetupMinutes', $event ?? 0)"
+    />
+
+    @for (issue of issues(); track issue) {
+      <fold-callout variant="warning">{{ issue }}</fold-callout>
+    }
+  </fold-page-section>
+</fold-card>

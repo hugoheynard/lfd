@@ -129,9 +129,7 @@ describe('DeparturePage', () => {
     const warning = host(fixture).querySelector('[data-no-gps]');
 
     expect(warning?.textContent).toContain('aucune distance');
-    expect(warning?.querySelector('a')?.getAttribute('href')).toBe(
-      '/b2b/reglages/points-de-retrait/pa_2',
-    );
+    expect(warning?.querySelector('a')?.getAttribute('href')).toBe('/reglages/sites/pa_2');
   });
 
   it('sans accès aux points de retrait, signale sans offrir de lien', async () => {

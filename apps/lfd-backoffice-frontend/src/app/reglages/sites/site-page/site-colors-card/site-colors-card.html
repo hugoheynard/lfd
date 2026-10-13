@@ -1,0 +1,68 @@
+<fold-card>
+  <fold-page-section title="Couleurs" separator>
+    <span sectionSubtitle>
+      Elles rangent les commandes de ce site dans les listes de la logistique. Le vert, le rouge et
+      le rose sont réservés aux surligneurs OK / KO.
+    </span>
+
+    @if (!readOnly()) {
+      <div sectionActions class="sc-save">
+        <button foldButton size="sm" [disabled]="!canSave()" [loading]="saving()" (click)="save()">
+          Enregistrer les couleurs
+        </button>
+      </div>
+    }
+
+    @if (refusal(); as message) {
+      <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+    }
+
+    @for (slot of slots(); track slot.key) {
+      <fold-fieldset [legend]="slot.label">
+        <div class="sc-row">
+          <!-- L'aperçu : la couleur telle qu'elle sera vue, seulement si elle
+               est acceptable. Vide sinon — on ne peint pas un vert refusé. -->
+          <span
+            class="sc-swatch"
+            role="img"
+            [attr.aria-label]="swatch(slot.key) ? 'Aperçu ' + swatch(slot.key) : 'Pas de couleur'"
+            [style.background]="swatch(slot.key)"
+          ></span>
+
+          <!-- fold n'a pas de sélecteur de couleur (fold-ng.d.ts relu le
+               2026-10-13) : le natif, encadré par le fieldset fold. -->
+          @if (!readOnly()) {
+            <input
+              #picker
+              type="color"
+              class="sc-picker"
+              [attr.aria-label]="'Choisir la couleur ' + slot.label"
+              [value]="pickerValue(slot.key)"
+              (input)="setColor(slot.key, picker.value)"
+            />
+          }
+
+          <fold-input
+            class="sc-hex"
+            [ariaLabel]="slot.label + ', code hexadécimal'"
+            placeholder="#rrggbb"
+            [readOnly]="readOnly()"
+            [value]="draft()[slot.key] ?? ''"
+            (valueChange)="setColor(slot.key, $event)"
+          />
+        </div>
+
+        @if (draft()[slot.key] === null) {
+          <p class="sc-said">Pas encore saisie.</p>
+        }
+        @if (issues()[slot.key]; as issue) {
+          <fold-callout variant="warning">{{ issue }}</fold-callout>
+        }
+      </fold-fieldset>
+    } @empty {
+      <fold-callout variant="info">
+        Ce site ne remet ni n'expédie : il n'a pas de couleur à porter.
+      </fold-callout>
+    }
+  </fold-page-section>
+</fold-card>

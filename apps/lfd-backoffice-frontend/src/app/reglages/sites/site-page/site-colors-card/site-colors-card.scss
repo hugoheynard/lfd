@@ -1,0 +1,44 @@
+.sc-save {
+  display: flex;
+  gap: var(--fold-space-sm);
+}
+
+/* Pastille, sélecteur et code sur une ligne ; ils passent dessous quand la
+   place manque. */
+.sc-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+/* La pastille : la couleur du site, posée par le gabarit. Sans couleur, le
+   cadre seul dit l'absence. */
+.sc-swatch {
+  flex: none;
+  inline-size: var(--fold-space-xl);
+  block-size: var(--fold-space-xl);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-pill);
+}
+
+.sc-picker {
+  flex: none;
+  inline-size: var(--fold-space-2xl);
+  block-size: var(--fold-space-xl);
+  padding: 0;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-sm);
+  background: transparent;
+  cursor: pointer;
+}
+
+.sc-hex {
+  flex: 1 1 auto;
+}
+
+.sc-said {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}

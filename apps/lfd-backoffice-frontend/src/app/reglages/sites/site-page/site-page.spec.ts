@@ -1,27 +1,31 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import type {
   PickupAddressPayload,
   PickupAddressUpdatePayload,
-  PickupAddressView,
+  PublicPickupScheduleView,
+  SiteColorsPayload,
+  SiteRolesPayload,
+  SiteView,
 } from '@lfd/contracts';
 import { postalDraftFrom } from '@lfd/b2b-ui/company';
 import { describe, expect, it, vi } from 'vitest';
 
 import { NotifyService } from '../../../notify.service';
-import { PickupAddressesService } from '../pickup-addresses.service';
-import { PickupAddressPage } from './pickup-address-page';
+import { SITES_PATH } from '../sites-path';
+import { SitesService } from '../sites.service';
+import { SitePage } from './site-page';
 
 /**
- * **Le point de retrait, en page.** Ces cas viennent de `PickupPanel`, que cette
- * page remplace le 2026-09-16 : les clientèles de la réduction (plan « remise et
- * livraison par clientèle », D2) et la zone dangereuse. Ce qui change est
- * l'issue — on NAVIGUE vers la liste au lieu de fermer un panneau — et la
- * source du « dernier point », désormais DÉDUITE de la liste chargée plutôt que
- * reçue en paramètre.
+ * **Un site, en page** — l'ancienne page du point de retrait, élargie (plan
+ * des sites, S1). Les cas du point restent (clientèles de la réduction, GPS,
+ * refus sur la page) ; ce qui change : la lecture unitaire `admin/sites/:id`,
+ * l'archivage à la place de la suppression, et les cartes du retrait masquées
+ * à un site qui ne remet pas.
  */
 
-const LABO: PickupAddressView = {
+const LABO: SiteView = {
   id: 'pick_1',
   label: 'Labo',
   ligne1: '3 rue du Four',
@@ -33,23 +37,39 @@ const LABO: PickupAddressView = {
   discount: { mode: 'amount', cents: 800 },
   discountAudiences: { b2b: true, b2c: false },
   opening: { publicOpening: null, proPickup: null },
+  gps: null,
+  handsOver: true,
+  supply: 'on_site',
+  dispatches: false,
+  transferMode: 'integrated',
+  counterSetupMinutes: 0,
+  pickupColorB2b: null,
+  pickupColorB2c: null,
+  deliveryColorB2b: null,
+  deliveryColorB2c: null,
+  archivedAt: null,
 };
 
-/** Un second point : c'est lui qui rend le premier supprimable. */
-const VILLAGE: PickupAddressView = { ...LABO, id: 'pick_2', label: 'Village', isDefault: false };
+/** Un second site, ni défaut ni départ : c'est lui qui s'archive. */
+const VILLAGE: SiteView = { ...LABO, id: 'pick_2', label: 'Village', isDefault: false };
 
-const LIST_PATH = '/b2b/reglages/points-de-retrait';
+const NO_SCHEDULE: PublicPickupScheduleView = { rules: [], closures: [] };
 
-class FakePickups {
+class FakeSites {
   readonly created: PickupAddressPayload[] = [];
   readonly updated: PickupAddressUpdatePayload[] = [];
-  readonly removed: string[] = [];
+  readonly archived: string[] = [];
+  readonly roles: SiteRolesPayload[] = [];
+  readonly colors: SiteColorsPayload[] = [];
   refusal: unknown = null;
 
-  constructor(private readonly points: readonly PickupAddressView[]) {}
+  constructor(private readonly sites: readonly SiteView[]) {}
 
-  list(): Promise<readonly PickupAddressView[]> {
-    return Promise.resolve(this.points);
+  get(id: string): Promise<SiteView> {
+    const site = this.sites.find((candidate) => candidate.id === id);
+    return site === undefined
+      ? Promise.reject(new HttpErrorResponse({ status: 404 }))
+      : Promise.resolve(site);
   }
 
   create(payload: PickupAddressPayload): Promise<{ id: string }> {
@@ -64,36 +84,47 @@ class FakePickups {
     return this.refusal === null ? Promise.resolve() : Promise.reject(this.refusal);
   }
 
-  remove(id: string): Promise<void> {
-    this.removed.push(id);
+  setRoles(_id: string, payload: SiteRolesPayload): Promise<void> {
+    this.roles.push(payload);
     return this.refusal === null ? Promise.resolve() : Promise.reject(this.refusal);
+  }
+
+  setColors(_id: string, payload: SiteColorsPayload): Promise<void> {
+    this.colors.push(payload);
+    return this.refusal === null ? Promise.resolve() : Promise.reject(this.refusal);
+  }
+
+  archive(id: string): Promise<void> {
+    this.archived.push(id);
+    return this.refusal === null ? Promise.resolve() : Promise.reject(this.refusal);
+  }
+
+  publicSchedule(): Promise<PublicPickupScheduleView> {
+    return Promise.resolve(NO_SCHEDULE);
   }
 }
 
 interface Harness {
-  readonly fixture: ComponentFixture<PickupAddressPage>;
-  readonly pickups: FakePickups;
+  readonly fixture: ComponentFixture<SitePage>;
+  readonly pickups: FakeSites;
   readonly router: Router;
 }
 
-/**
- * Monte la page. `id` absent = création. `points` est ce que rend la liste —
- * c'est d'elle que la page tire le point ET le fait qu'il soit supprimable.
- */
+/** Monte la page. `id` absent = création. */
 async function mount(
   id: string | undefined,
-  points: readonly PickupAddressView[] = [LABO, VILLAGE],
+  sites: readonly SiteView[] = [LABO, VILLAGE],
 ): Promise<Harness> {
-  const pickups = new FakePickups(points);
+  const pickups = new FakeSites(sites);
   TestBed.configureTestingModule({
-    imports: [PickupAddressPage],
+    imports: [SitePage],
     providers: [
       provideRouter([]),
-      { provide: PickupAddressesService, useValue: pickups },
+      { provide: SitesService, useValue: pickups },
       { provide: NotifyService, useValue: { success: () => undefined, error: () => undefined } },
     ],
   });
-  const fixture = TestBed.createComponent(PickupAddressPage);
+  const fixture = TestBed.createComponent(SitePage);
   if (id !== undefined) {
     fixture.componentRef.setInput('id', id);
   }
@@ -104,11 +135,11 @@ async function mount(
 }
 
 /** Les cases natives des deux clientèles, B2B puis B2C. */
-const audienceBoxes = (fixture: ComponentFixture<PickupAddressPage>): HTMLInputElement[] =>
+const audienceBoxes = (fixture: ComponentFixture<SitePage>): HTMLInputElement[] =>
   Array.from(fixture.nativeElement.querySelectorAll('fold-fieldset fold-checkbox input'));
 
-describe('PickupAddressPage — le chargement', () => {
-  it('lit le point dans la liste, faute de route unitaire', async () => {
+describe('SitePage — le chargement', () => {
+  it('lit le site par sa route unitaire', async () => {
     const { fixture } = await mount('pick_1');
 
     expect(fixture.componentInstance['draft']().label).toBe('Labo');
@@ -119,7 +150,7 @@ describe('PickupAddressPage — le chargement', () => {
     const { fixture } = await mount('pick_absent');
 
     expect(fixture.componentInstance['notFound']()).toBe(true);
-    expect(fixture.nativeElement.textContent).toContain('Point de retrait introuvable');
+    expect(fixture.nativeElement.textContent).toContain('Site introuvable');
   });
 
   it('sans identifiant, c’est une création : rien à charger', async () => {
@@ -127,11 +158,52 @@ describe('PickupAddressPage — le chargement', () => {
 
     expect(fixture.componentInstance['isCreate']()).toBe(true);
     expect(fixture.componentInstance['loading']()).toBe(false);
-    expect(fixture.componentInstance['heading']()).toBe('Nouveau point de retrait');
+    expect(fixture.componentInstance['heading']()).toBe('Nouveau site');
+  });
+
+  it('dit un échec de lecture autre qu’un 404 par un état d’erreur fold, sans « introuvable »', async () => {
+    const { fixture, pickups } = await mount(undefined);
+    vi.spyOn(pickups, 'get').mockRejectedValue(new HttpErrorResponse({ status: 500 }));
+
+    await fixture.componentInstance['load']('pick_1');
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance['loadFailed']()).toBe(true);
+    expect(fixture.nativeElement.textContent).toContain('Impossible de charger le site');
   });
 });
 
-describe('PickupAddressPage — les clientèles de la réduction', () => {
+describe('SitePage — les cartes selon les rôles', () => {
+  it('montre rôles et couleurs d’un site existant', async () => {
+    const { fixture } = await mount('pick_1');
+
+    expect(fixture.nativeElement.querySelector('app-site-roles-card')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('app-site-colors-card')).not.toBeNull();
+  });
+
+  it('masque les cartes du retrait d’un site qui ne remet pas', async () => {
+    const { fixture } = await mount('pick_2', [LABO, { ...VILLAGE, handsOver: false }]);
+    const text: string = fixture.nativeElement.textContent;
+
+    expect(text).not.toContain('Réduction de retrait');
+    expect(text).not.toContain('Heures de retrait');
+    expect(fixture.nativeElement.querySelector('app-public-slots-card')).toBeNull();
+  });
+
+  it('🔴 fige un site archivé : ni Enregistrer, ni zone d’archivage', async () => {
+    const { fixture } = await mount('pick_2', [
+      LABO,
+      { ...VILLAGE, archivedAt: '2026-10-13T08:00:00.000Z' },
+    ]);
+    const text: string = fixture.nativeElement.textContent;
+
+    expect(text).toContain('Ce site est archivé');
+    expect(text).not.toContain('Enregistrer');
+    expect(fixture.nativeElement.querySelector('fold-danger-zone')).toBeNull();
+  });
+});
+
+describe('SitePage — les clientèles de la réduction', () => {
   it('reprend les clientèles du point, et les renvoie à la modification', async () => {
     const { fixture, pickups } = await mount('pick_1');
 
@@ -215,83 +287,98 @@ describe('PickupAddressPage — les clientèles de la réduction', () => {
     expect(alert?.textContent).toContain('Cochez au moins une clientèle, ou retirez la réduction');
   });
 
-  it('revient à la liste après un enregistrement réussi', async () => {
+  it('reste sur la page après une modification réussie', async () => {
     const { fixture, router } = await mount('pick_1');
     const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
 
     await fixture.componentInstance['submit']();
 
-    expect(navigate).toHaveBeenCalledWith([LIST_PATH]);
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('mène à la page du site créé, où se règlent ses rôles et ses couleurs', async () => {
+    const { fixture, router } = await mount(undefined);
+    const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    fixture.componentInstance['draft'].set(postalDraftFrom(LABO));
+
+    await fixture.componentInstance['submit']();
+
+    expect(navigate).toHaveBeenCalledWith([SITES_PATH, 'pick_new']);
   });
 });
 
 /**
- * **La suppression d'un point** vit dans une zone dangereuse qui fait taper le
- * nom du point — elle était une entrée du menu de la liste, confirmée d'un clic,
- * jusqu'au 2026-09-15.
+ * **Archiver un site** — il n'y a plus de suppression (plan des sites, §3.1).
+ * Le serveur refuse le défaut et le site d'où partent les livraisons ; la zone
+ * le dit plutôt que d'offrir un geste refusé.
  */
-describe('PickupAddressPage — la zone dangereuse', () => {
-  const zone = (fixture: ComponentFixture<PickupAddressPage>): HTMLElement | null =>
+describe('SitePage — la zone dangereuse', () => {
+  const zone = (fixture: ComponentFixture<SitePage>): HTMLElement | null =>
     fixture.nativeElement.querySelector('fold-danger-zone');
 
-  it('n’existe pas à la création : il n’y a rien à supprimer', async () => {
+  it('n’existe pas à la création : il n’y a rien à archiver', async () => {
     const { fixture } = await mount(undefined);
 
     expect(zone(fixture)).toBeNull();
   });
 
-  it('fait taper le nom du point pour supprimer', async () => {
-    const { fixture } = await mount('pick_1');
+  it('fait taper le nom du site pour archiver', async () => {
+    const { fixture } = await mount('pick_2');
 
-    expect(zone(fixture)).not.toBeNull();
-    expect(fixture.componentInstance['deleteAction']()).toBe('Supprimer définitivement');
-    expect(fixture.componentInstance['confirmPhrase']()).toBe('Labo');
+    expect(fixture.componentInstance['deleteAction']()).toBe('Archiver ce site');
+    expect(fixture.componentInstance['confirmPhrase']()).toBe('Village');
   });
 
-  it('un point sans nom se confirme par sa ville', async () => {
-    const { fixture } = await mount('pick_1', [{ ...LABO, label: '' }, VILLAGE]);
+  it('un site sans nom se confirme par sa ville', async () => {
+    const { fixture } = await mount('pick_2', [LABO, { ...VILLAGE, label: '' }]);
 
     expect(fixture.componentInstance['confirmPhrase']()).toBe('Paris');
   });
 
-  it('supprime, puis revient à la liste', async () => {
-    const { fixture, pickups, router } = await mount('pick_1');
+  it('archive, puis revient à la liste', async () => {
+    const { fixture, pickups, router } = await mount('pick_2');
     const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
 
-    await fixture.componentInstance['remove']();
+    await fixture.componentInstance['archive']();
 
-    expect(pickups.removed).toEqual(['pick_1']);
-    expect(navigate).toHaveBeenCalledWith([LIST_PATH]);
+    expect(pickups.archived).toEqual(['pick_2']);
+    expect(navigate).toHaveBeenCalledWith([SITES_PATH]);
   });
 
-  it('🔴 le dernier point : la zone explique, et rien ne part', async () => {
-    // « Dernier » se DÉDUIT de la liste chargée : un seul point, donc rien à
-    // supprimer. Le panneau le recevait en paramètre, ce qui laissait la liste
-    // seule juge d'un fait que la page lit elle-même.
-    const { fixture, pickups } = await mount('pick_1', [LABO]);
+  it('🔴 le site par défaut : la zone explique, et rien ne part', async () => {
+    const { fixture, pickups } = await mount('pick_1');
 
     expect(fixture.componentInstance['deleteAction']()).toBeUndefined();
-    expect(zone(fixture)?.textContent).toContain('Le dernier point de retrait ne se supprime pas');
+    expect(zone(fixture)?.textContent).toContain('site par défaut');
 
-    await fixture.componentInstance['remove']();
-    expect(pickups.removed).toEqual([]);
+    await fixture.componentInstance['archive']();
+    expect(pickups.archived).toEqual([]);
+  });
+
+  it('🔴 le site d’où partent les livraisons : la zone explique, et rien ne part', async () => {
+    const { fixture, pickups } = await mount('pick_2', [LABO, { ...VILLAGE, dispatches: true }]);
+
+    expect(zone(fixture)?.textContent).toContain('Expédie');
+
+    await fixture.componentInstance['archive']();
+    expect(pickups.archived).toEqual([]);
   });
 
   it('un refus reste sur la page, sans naviguer', async () => {
-    const { fixture, pickups, router } = await mount('pick_1');
+    const { fixture, pickups, router } = await mount('pick_2');
     const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
-    pickups.refusal = { status: 409, error: { message: 'Point encore utilisé.' } };
+    pickups.refusal = { status: 409, error: { message: 'Site encore utilisé.' } };
 
-    await fixture.componentInstance['remove']();
+    await fixture.componentInstance['archive']();
     fixture.detectChanges();
 
     expect(navigate).not.toHaveBeenCalled();
     const alert: HTMLElement | null = fixture.nativeElement.querySelector('fold-callout.v-alert');
-    expect(alert?.textContent).toContain('Point encore utilisé.');
+    expect(alert?.textContent).toContain('Site encore utilisé.');
   });
 });
 
-describe('PickupAddressPage — le point GPS', () => {
+describe('SitePage — le point GPS', () => {
   it('reprend le point GPS enregistré, et le renvoie à la modification', async () => {
     const { fixture, pickups } = await mount('pick_1', [
       { ...LABO, gps: { lat: 48.85, lng: 2.37 } },

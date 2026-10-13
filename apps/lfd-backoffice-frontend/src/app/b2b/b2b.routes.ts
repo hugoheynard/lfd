@@ -93,37 +93,29 @@ export const b2bRoutes: Routes = [
         // clientèle », D6). L'ancienne adresse redirige.
         path: 'reglages',
         children: [
-          { path: '', pathMatch: 'full', redirectTo: 'points-de-retrait' },
+          // La première page de ces réglages était les points de retrait, partis
+          // en Réglages › Sites sous leur propre droit : celle qui reste sous
+          // le droit de l'espace prend leur place.
+          { path: '', pathMatch: 'full', redirectTo: 'heures-limites' },
+          // LES POINTS DE RETRAIT sont devenus les SITES (plan des sites, lot
+          // S1, 2026-10-13) : même identifiant, Réglages › Sites, sous
+          // `lfc_site_settings`. Les anciennes adresses vivent dans des favoris
+          // et dans le journal. Absolues, la redirection s'applique AVANT les
+          // gardes : le mur `b2b_settings` de l'espace ne la voit pas.
           {
             path: 'points-de-retrait',
-            title: 'Points de retrait — LFC B2B admin',
-            loadComponent: () =>
-              import('./reglages/pickup-addresses-page/pickup-addresses-page').then(
-                (m) => m.PickupAddressesPage,
-              ),
+            pathMatch: 'full',
+            redirectTo: '/reglages/sites',
           },
           {
-            // AVANT `:id` : sans cela le segment `nouveau` serait lu comme un
-            // identifiant, et « Ajouter un point » ouvrirait une fiche
-            // introuvable. Même précaution que `commandes/:id/regler`.
             path: 'points-de-retrait/nouveau',
-            title: 'Nouveau point de retrait — LFC B2B admin',
-            loadComponent: () =>
-              import('./reglages/pickup-address-page/pickup-address-page').then(
-                (m) => m.PickupAddressPage,
-              ),
+            pathMatch: 'full',
+            redirectTo: '/reglages/sites/nouveau',
           },
           {
-            // LE DÉTAIL D'UN POINT — une page, et non un panneau : il porte six
-            // sujets (adresse, rang, heures, réduction, clientèles, suppression)
-            // et en recevra deux de plus avec les créneaux publics. Cf. le
-            // JSDoc du composant et le CLAUDE.md de cette app.
             path: 'points-de-retrait/:id',
-            title: 'Point de retrait — LFC B2B admin',
-            loadComponent: () =>
-              import('./reglages/pickup-address-page/pickup-address-page').then(
-                (m) => m.PickupAddressPage,
-              ),
+            pathMatch: 'full',
+            redirectTo: '/reglages/sites/:id',
           },
           {
             // LA LIVRAISON est partie dans l'Exploitation (Hugo, 2026-10-10) :

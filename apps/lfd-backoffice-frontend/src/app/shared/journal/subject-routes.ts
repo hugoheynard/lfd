@@ -14,7 +14,8 @@ const ROUTES: Readonly<Record<string, (id: string) => string | null>> = {
   // famille, il n'a pas de fiche (`reorder-categories.ts`, vérifié le 2026-09-19).
   product_category: (id) => (id === 'root' ? null : `/pim/categories/${encodeURIComponent(id)}`),
   company: (id) => `/comptes-clients/${encodeURIComponent(id)}`,
-  pickup_address: (id) => `/b2b/reglages/points-de-retrait/${encodeURIComponent(id)}`,
+  // Le point de retrait EST le site, même identifiant (S1, 2026-10-13).
+  pickup_address: (id) => `/reglages/sites/${encodeURIComponent(id)}`,
   staff_role: (id) => `/admin/roles/${encodeURIComponent(id)}`,
   order: (id) => `/commandes/${encodeURIComponent(id)}`,
   legal_entity: (id) => `/comptabilite/entites-juridiques/${encodeURIComponent(id)}`,

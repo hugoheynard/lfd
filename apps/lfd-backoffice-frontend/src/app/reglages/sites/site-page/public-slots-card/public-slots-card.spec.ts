@@ -7,7 +7,7 @@ import type {
 import { describe, expect, it } from 'vitest';
 
 import { NotifyService } from '../../../../notify.service';
-import { PickupAddressesService } from '../../pickup-addresses.service';
+import { SitesService } from '../../sites.service';
 import { PublicSlotsCard } from './public-slots-card';
 
 /**
@@ -55,7 +55,7 @@ async function mount(schedule: PublicPickupScheduleView): Promise<Harness> {
   TestBed.configureTestingModule({
     imports: [PublicSlotsCard],
     providers: [
-      { provide: PickupAddressesService, useValue: pickups },
+      { provide: SitesService, useValue: pickups },
       { provide: NotifyService, useValue: { success: () => undefined, error: () => undefined } },
     ],
   });

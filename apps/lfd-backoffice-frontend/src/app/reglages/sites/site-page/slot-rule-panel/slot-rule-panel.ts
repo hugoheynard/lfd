@@ -23,7 +23,7 @@ import {
   FoldTimeComponent,
 } from 'fold-ng';
 
-import { WEEKDAY_CHOICES, weekdayLabel } from '../../weekday-choices';
+import { WEEKDAY_CHOICES, weekdayLabel } from '../../../../b2b/reglages/weekday-choices';
 
 /** Ce qu'on ouvre : une plage à modifier, ou `null` pour en poser une neuve. */
 export interface SlotRulePanelData {

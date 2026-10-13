@@ -1,20 +1,20 @@
-<fold-page-layout icon="map-pin" title="Points de retrait">
+<fold-page-layout icon="map-pin" title="Sites">
   <p description>
-    Les laboratoires où le client vient chercher sa commande. Le point
-    <strong>par défaut</strong> est présélectionné au checkout ; une réduction de retrait précise à
-    quelle clientèle elle s'applique.
+    Nos lieux&nbsp;: où l'on fabrique, où l'on remet des commandes, où l'on est servi par transfert.
+    Le site <strong>par défaut</strong> est présélectionné au checkout&nbsp;; chaque site porte ses
+    rôles et ses couleurs.
   </p>
 
   @if (state() === 'ready') {
-    <button pageActions foldButton size="sm" icon="plus" (click)="add()">Ajouter un point</button>
+    <button pageActions foldButton size="sm" icon="plus" (click)="add()">Ajouter un site</button>
   }
 
   @switch (state()) {
     @case ('loading') {
-      <fold-loading message="Chargement des points de retrait…" />
+      <fold-loading message="Chargement des sites…" />
     }
     @case ('error') {
-      <fold-empty-state tone="alert" title="Impossible de charger les points de retrait">
+      <fold-empty-state tone="alert" title="Impossible de charger les sites">
         <button foldButton (click)="load()">Réessayer</button>
       </fold-empty-state>
     }
@@ -24,8 +24,13 @@
           <fold-card class="point" [class.is-default]="point.isDefault">
             <div class="point-row">
               <lfd-address [address]="postal(point)">
-                @if (point.isDefault) {
+                @if (point.archivedAt !== null) {
+                  <fold-badge content="Archivé" variant="neutral" />
+                } @else if (point.isDefault) {
                   <fold-badge content="Par défaut" variant="success" />
+                }
+                @for (role of roles(point); track role) {
+                  <fold-badge [content]="role" variant="info" />
                 }
                 @if (point.discount !== null) {
                   <fold-badge [content]="discountLabel(point)" variant="accent" />
@@ -39,7 +44,7 @@
               <button
                 type="button"
                 class="edit-trigger"
-                aria-label="Ouvrir le point de retrait"
+                aria-label="Ouvrir le site"
                 (click)="edit(point)"
               >
                 <fold-icon name="chevron-right" [size]="18" />
@@ -54,7 +59,7 @@
           </fold-card>
         } @empty {
           <fold-empty-state
-            title="Aucun point de retrait"
+            title="Aucun site"
             subtitle="Ajoutez-en un pour que les clients puissent retirer leurs commandes."
           >
             <fold-icon empty-icon name="map-pin" [size]="28" />

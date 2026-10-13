@@ -136,6 +136,15 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'documentation/facturation': OPEN,
   'documentation/mediatheque': OPEN,
   exploitation: OPEN,
+  // La même coquille, pour Réglages › Sites (S1, 2026-10-13) : elle ne
+  // dessine rien, chaque écran porte son garde.
+  reglages: OPEN,
+  // LES SITES — sous leur propre droit (Q-S5), comme `admin/sites`. La
+  // création demande l'écriture : sans elle, la page s'ouvrirait sur un
+  // « Ajouter » que le serveur refuserait. `nouveau` AVANT `:id`.
+  'reglages/sites': 'lfc_site_settings:read',
+  'reglages/sites/nouveau': 'lfc_site_settings:write',
+  'reglages/sites/:id': 'lfc_site_settings:read',
   'exploitation/commercial': 'b2b_growth:read',
 
   // L'ESPACE B2B — ce que la plateforme client vend, et à quel prix. Même mur
@@ -154,12 +163,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'b2b/tarification/simulateur': null,
   // Les réglages de l'e-commerce, venus de l'onglet « Retraits & livraisons »
   // des Réglages : même mur que celui qu'ils quittent, hérité de l'espace.
-  'b2b/reglages/points-de-retrait': null,
-  // Le détail d'un point, et sa création : même ressource que la liste, donc
-  // même mur. `nouveau` est déclaré AVANT `:id` dans les routes, sans quoi il
-  // s'y lirait comme un identifiant.
-  'b2b/reglages/points-de-retrait/nouveau': null,
-  'b2b/reglages/points-de-retrait/:id': null,
+  // Les points de retrait en sont partis le 2026-10-13 : ce sont les sites.
   'b2b/reglages/heures-limites': null,
   'b2b/reglages/ouverture-boutique': null,
   // L'annulation par les particuliers (C6.5) : le même mur, hérité de l'espace.
@@ -449,7 +453,7 @@ describe("l'arbre de routes du back-office", () => {
       ['tarification', '/b2b/tarification'],
       ['tarification/frise', '/b2b/tarification/frise'],
       ['tarification/simulateur', '/b2b/tarification/simulateur'],
-      ['retraits-livraisons', '/b2b/reglages/points-de-retrait'],
+      ['retraits-livraisons', '/reglages/sites'],
       // Partie en Comptabilité sous son propre droit (2026-09-29).
       ['surtaxe-de-retard', '/comptabilite/surtaxe-de-retard'],
       // Les deux derniers écrans, partis le 2026-10-10.
@@ -475,6 +479,22 @@ describe("l'arbre de routes du back-office", () => {
     const reglages = b2b?.children?.find((child) => child.path === 'reglages');
     const livraison = reglages?.children?.find((child) => child.path === 'livraison');
     expect(livraison?.redirectTo).toBe('/livraison/zones');
+  });
+
+  it('renvoie les anciens points de retrait vers Réglages › Sites, même identifiant', () => {
+    // Le point EST le site (plan des sites, S1, 2026-10-13) : ses adresses
+    // vivent dans des favoris et dans le journal. Absolues, sans quoi elles
+    // resteraient sous le mur `b2b_settings` de l'espace.
+    const b2b = routes.find((route) => route.path === 'b2b');
+    const reglages = b2b?.children?.find((child) => child.path === 'reglages');
+    const moved = (reglages?.children ?? [])
+      .filter((child) => child.path?.startsWith('points-de-retrait') === true)
+      .map((child) => [child.path, child.redirectTo]);
+    expect(moved).toEqual([
+      ['points-de-retrait', '/reglages/sites'],
+      ['points-de-retrait/nouveau', '/reglages/sites/nouveau'],
+      ['points-de-retrait/:id', '/reglages/sites/:id'],
+    ]);
   });
 
   it('renvoie l’ancienne fournée vers le Fournil, et /production et le prévisionnel vers Prod manager', () => {

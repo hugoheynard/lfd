@@ -29,7 +29,7 @@ type DepartureState =
   | { readonly status: 'ready'; readonly view: DepartureView };
 
 /** Là où se règle le point GPS d'un point de retrait. */
-const PICKUP_POINTS = '/b2b/reglages/points-de-retrait';
+const PICKUP_POINTS = '/reglages/sites';
 
 /**
  * **D'où partent les tournées** (`plan-preparation-de-tournee.md`, lot 2b, Q9).

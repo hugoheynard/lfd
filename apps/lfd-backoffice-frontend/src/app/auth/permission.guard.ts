@@ -28,7 +28,11 @@ const LANDINGS: readonly { readonly permission: StaffPermission; readonly path: 
   { permission: 'production_settings:read', path: '/production/reglages' },
   { permission: 'production_packing:read', path: '/colisage' },
   { permission: 'handover_counter:read', path: '/comptoir/retrait' },
-  { permission: 'b2b_settings:read', path: '/b2b/reglages/points-de-retrait' },
+  // L'espace B2B et non plus ses points de retrait : devenus les sites, ils
+  // sont sous `lfc_site_settings`, et y renvoyer qui ne tient que
+  // `b2b_settings` le ferait rebondir sur un second refus.
+  { permission: 'b2b_settings:read', path: '/b2b/catalogue' },
+  { permission: 'lfc_site_settings:read', path: '/reglages/sites' },
 ];
 
 /**

@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import type { PickupAddressView } from '@lfd/contracts';
+import type { SiteView } from '@lfd/contracts';
 import { AddressView } from '@lfd/b2b-ui/address';
 import { HoursView } from '@lfd/b2b-ui/hours';
 import { postalFrom } from '@lfd/b2b-ui/company';
@@ -16,16 +16,37 @@ import {
   FoldPageLayoutComponent,
 } from 'fold-ng';
 
-import { PickupAddressesService } from '../pickup-addresses.service';
-import { discountAudienceSuffix } from '../pickup-discount-audience';
-import { openingRows } from '../pickup-opening.model';
+import { discountAudienceSuffix } from '../../../b2b/reglages/pickup-discount-audience';
+import { openingRows } from '../../../b2b/reglages/pickup-opening.model';
+import { SITES_PATH } from '../sites-path';
+import { SitesService } from '../sites.service';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
-/** Cette liste, et la racine des pages de détail qu'elle ouvre. */
-const LIST_PATH = '/b2b/reglages/points-de-retrait';
+/** Les rôles d'un site, en mots, dans l'ordre où on les lit. */
+export function roleLabels(site: SiteView): readonly string[] {
+  const labels: string[] = [];
+  if (site.handsOver) {
+    labels.push('Remet');
+  }
+  if (site.supply === 'transfer') {
+    labels.push(site.transferMode === 'dedicated' ? 'Transfert dédié' : 'Transfert intégré');
+  }
+  if (site.dispatches) {
+    labels.push('Expédie');
+  }
+  return labels;
+}
 
 /**
+ * **Réglages › Sites** — nos lieux, leurs rôles et leurs couleurs (plan
+ * `documentation/livraisons/transferts/plan-sites-transfert-interne-tri-et-couleurs.md`,
+ * §3.4, lot S1). C'est l'ancienne liste des points de retrait : un site EST
+ * le point, élargi ; `/b2b/reglages/points-de-retrait` redirige ici. Les
+ * archivés sont listés à la fin (le serveur les trie), marqués comme tels.
+ *
+ * Ce qui suit est l'histoire de la liste des points, toujours vraie.
+ *
  * **Points de retrait** — « E-commerce LFC → Réglages ». Les laboratoires où le
  * client vient chercher sa commande.
  *
@@ -40,7 +61,7 @@ const LIST_PATH = '/b2b/reglages/points-de-retrait';
  * page, et l'ancienne adresse redirige ici.
  */
 @Component({
-  selector: 'app-pickup-addresses-page',
+  selector: 'app-sites-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     AddressView,
@@ -53,15 +74,16 @@ const LIST_PATH = '/b2b/reglages/points-de-retrait';
     FoldIconComponent,
     FoldPageLayoutComponent,
   ],
-  templateUrl: './pickup-addresses-page.html',
-  styleUrl: './pickup-addresses-page.scss',
+  templateUrl: './sites-page.html',
+  styleUrl: './sites-page.scss',
 })
-export class PickupAddressesPage {
-  private readonly pickups = inject(PickupAddressesService);
+export class SitesPage {
+  private readonly sites = inject(SitesService);
   private readonly router = inject(Router);
 
   protected readonly state = signal<LoadState>('loading');
-  protected readonly addresses = signal<readonly PickupAddressView[]>([]);
+  protected readonly addresses = signal<readonly SiteView[]>([]);
+  protected readonly roles = roleLabels;
 
   /** Les plages d'ouverture déclarées, lisibles. Vide = aucune heure opposée. */
   protected readonly hours = openingRows;
@@ -70,7 +92,7 @@ export class PickupAddressesPage {
    * « − 10 % · B2B » : la remise ET à qui elle va. Sans la clientèle, une remise
    * fermée aux particuliers se lirait comme offerte à tous.
    */
-  protected discountLabel(point: PickupAddressView): string {
+  protected discountLabel(point: SiteView): string {
     if (point.discount === null) {
       return '';
     }
@@ -81,7 +103,7 @@ export class PickupAddressesPage {
    * L'adresse à afficher. Un point sans nom d'usage prend celui de sa ville :
    * une carte sans titre ne se distingue pas de sa voisine dans la liste.
    */
-  protected postal(point: PickupAddressView): PostalAddress {
+  protected postal(point: SiteView): PostalAddress {
     return { ...postalFrom(point), label: point.label || point.ville };
   }
 
@@ -92,7 +114,7 @@ export class PickupAddressesPage {
   protected async load(): Promise<void> {
     this.state.set('loading');
     try {
-      this.addresses.set(await this.pickups.list());
+      this.addresses.set(await this.sites.list());
       this.state.set('ready');
     } catch {
       this.state.set('error');
@@ -100,7 +122,7 @@ export class PickupAddressesPage {
   }
 
   protected add(): void {
-    void this.router.navigate([LIST_PATH, 'nouveau']);
+    void this.router.navigate([SITES_PATH, 'nouveau']);
   }
 
   /**
@@ -108,7 +130,7 @@ export class PickupAddressesPage {
    * relit la liste elle-même, et c'est de là qu'elle tire aussi le fait qu'un
    * point soit le dernier — un compte que cette liste n'a plus à lui passer.
    */
-  protected edit(address: PickupAddressView): void {
-    void this.router.navigate([LIST_PATH, address.id]);
+  protected edit(address: SiteView): void {
+    void this.router.navigate([SITES_PATH, address.id]);
   }
 }
