@@ -27,6 +27,7 @@ import {
 } from "./round-paper.js";
 import { type Cursor, placeBlock, SOFT } from "./round-paper-pdf-layout.js";
 import { absentStopBlock, sheetStopBlock } from "./round-paper-pdf-stop.js";
+import { transferStopBlock } from "./round-paper-pdf-transfer.js";
 
 /** L'espace entre deux arrêts, de part et d'autre du filet. */
 const STOP_GAP = 3.5 * MM;
@@ -58,7 +59,9 @@ export function renderRoundPaperPdf(paper: RoundPaper): Promise<Buffer> {
         const block =
           stop.kind === "absent"
             ? absentStopBlock(doc, stop, index + 1)
-            : sheetStopBlock(doc, stop, index + 1);
+            : stop.kind === "transfer"
+              ? transferStopBlock(doc, stop, index + 1)
+              : sheetStopBlock(doc, stop, index + 1);
         placeBlock(doc, cursor, block);
       });
       footers(doc, paper);
@@ -100,7 +103,11 @@ function recap(doc: Doc, cursor: Cursor, paper: RoundPaper): void {
   const live = paper.stops.flatMap((stop) =>
     stop.kind === "sheet" && !stop.cancelled ? [stop] : [],
   );
-  const bins = live.reduce((sum, stop) => sum + stop.binCodes.length, 0);
+  const transferBins = paper.stops.reduce(
+    (sum, stop) => sum + (stop.kind === "transfer" ? stop.binCount : 0),
+    0,
+  );
+  const bins = live.reduce((sum, stop) => sum + stop.binCodes.length, transferBins);
   const signatures = live.filter((stop) => stop.signatureRequired).length;
   const cancelled = paper.stops.filter((stop) => stop.kind === "sheet" && stop.cancelled).length;
   const parts = [

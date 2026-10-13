@@ -475,7 +475,7 @@ l'option B le même jour ; le transfert a été refondu.
   le rail n'offre plus la remise (`apps/lfd-backoffice-frontend/src/app/handover-shop/handover-transfer.ts`).
 - **« Ma tournée »** : l'arrêt de transfert intercalé à sa position
   (`apps/lfd-backoffice-frontend/src/app/livraison/my-round-transfers.ts`, `my-round-transfer-stop/`) — site, totaux par
-  article, « Remis au site » ; manifeste détaillé si `delivery_rounds:read`.
+  article, « Remis au site » ; manifeste détaillé (depuis le 2026-10-13, pour tout livreur de la tournée).
   « Tournée terminée » nomme un transfert encore ouvert ; une tournée dédiée
   (sans commande) peut partir.
 - **Chargement** : une carte par arrêt de transfert (`transfer-bins-card/`) —
@@ -486,14 +486,50 @@ l'option B le même jour ; le transfert a été refondu.
   (`transfer-stop-card/`) — manifeste (`transfer-manifest-dialog/`), retirer,
   déplacer vers une autre tournée non partie (routes `move` / `removal`).
 
-**Reste** : la feuille de route PDF (`round-paper`, backend) ne montre pas
-l'arrêt ; « Y aller » n'inclut pas le site (la vue du livreur n'en porte pas le
-point) ; le nombre de bacs n'est pas dans `DriverTransferStopView` ; les formats
-de bac ne se lisent pas sous `delivery_loading` seul (`admin/delivery/bins` :
-`delivery_settings:read`, `delivery_rounds:read`, `production_packing:write`) —
-un rôle de chargement seul ne peut pas déclarer les bacs d'un transfert ; dans
-une colonne des tournées, le rang affiché des commandes ne compte pas l'arrêt
-de transfert (son rang réel est dans sa carte).
+**Reste** : dans une colonne des tournées, le rang affiché des commandes ne
+compte pas l'arrêt de transfert (son rang réel est dans sa carte). Les quatre
+autres points de cette liste sont bâtis — voir la section suivante.
+
+## Les quatre décisions de Hugo après les écrans (2026-10-13)
+
+🔨 **Bâti, non commité.** Aucune migration, aucun droit écrit à un rôle.
+
+1. **Formats de bac au chargement** : `GET admin/delivery/bins` s'ouvre aussi
+   sous `delivery_loading:read` (`bin-types.controller.ts`) — lecture seule,
+   l'écriture du catalogue reste à `delivery_settings`. Rien à changer au
+   front : la carte « Déclarer les bacs du transfert » lisait déjà la route.
+2. **Le manifeste détaillé du livreur** : il entre dans `DriverTransferStopView`
+   (`orders`, `resupplies`, à côté de `totals`). La vue est construite sur la
+   tournée lue SOUS LE MUR du livreur (`DriverRoundsReader.roundOf`) : il ne
+   voit que les transferts de sa tournée, sans `delivery_rounds:read`. Pas de
+   route de plus. L'arrêt de « Ma tournée » montre les sections en ligne ; le
+   bouton « Manifeste détaillé » et son dialogue y sont retirés (le dialogue
+   reste aux Tournées du jour).
+3. **« Remis au site » complet** : la vue porte `binCount` (`TransferBinCounts`),
+   `siteAddress` et `siteGps`, lus au commerce par un port NEUF du canal,
+   `TransferSitePlacesReader` (`delivery/channels/commerce/transfer-sites.reader.ts`,
+   implémenté par `SiteTransferPlacesReader` sur `SiteReader`, sites archivés
+   compris). Port à part plutôt qu'un champ de `TransferSitesReader` : celui-là
+   passe par le calcul routier. « Y aller » vise le point du site, sinon son
+   adresse (`transferTargetOf`). La réception par le livreur comptait déjà les
+   bacs (`internal_transfer.received.bins`, T3) — inchangé.
+4. **Feuille de route PDF** : `RoundPaperReader` rend aussi les arrêts de
+   transfert (par position) ; `roundPaperTransfersOf` assemble site, adresse,
+   heure d'arrivée requise (`TransferSitesReader`, la règle de l'échéance du
+   fournil), bacs, et le manifeste — figé s'il est parti — par section. Le bloc
+   (`round-paper-pdf-transfer.ts`) imprime « Vers Val Village · avant 9 h 30 »
+   (la police du papier n'a pas « → »), la case « Remis » ; le récap compte les
+   bacs du transfert dans « bacs à charger ».
+
+**Tests** : `my-round-transfer-stops.spec.ts`, `round-paper-pdf-transfer.spec.ts`,
+le cas transfert de `get-round-paper-pdf.handler.spec.ts`, e2e
+`test/internal-transfer-driver.e2e-spec.ts` (livreur sans droit des tournées,
+mur 404, PDF, formats sous chargement seul) ; front : l'arrêt de « Ma tournée »
+et `transferTargetOf`.
+
+**Ce qui reste** : « Toute la tournée » (les tronçons Google Maps) n'inclut
+pas le site du transfert — seul « Y aller » y mène ; l'heure d'arrivée
+requise n'est pas dans la vue du livreur (seulement sur le papier).
 
 ## État du lot T3 (2026-10-13)
 

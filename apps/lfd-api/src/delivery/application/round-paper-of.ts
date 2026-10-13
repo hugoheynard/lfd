@@ -1,9 +1,12 @@
-import type { BillingAddressPayload } from "@lfd/contracts";
-
 import type { DeliveryProcedureStep } from "../channels/commerce/index.js";
 import type { DepartureSheet } from "../domain/entities/departure-sheet.js";
 import type { RoundPaperRow, RoundPaperStopRow } from "../domain/ports/round-paper.reader.js";
-import type { RoundPaper, RoundPaperStop } from "../domain/services/round-paper.js";
+import type {
+  RoundPaper,
+  RoundPaperStop,
+  RoundPaperTransferStop,
+} from "../domain/services/round-paper.js";
+import { addressLinesOf } from "./round-paper-address.js";
 
 /** Ce que le papier d'une tournée assemble — les lectures faites au même moment. */
 export interface RoundPaperInputs {
@@ -14,6 +17,8 @@ export interface RoundPaperInputs {
   readonly procedures: ReadonlyMap<string, readonly DeliveryProcedureStep[]>;
   readonly driverName: string | null;
   readonly printedAt: Date;
+  /** Les arrêts de transfert, par transfert (2026-10-13) ; un absent ne s'imprime pas. */
+  readonly transfers: ReadonlyMap<string, RoundPaperTransferStop>;
 }
 
 /**
@@ -29,9 +34,21 @@ export function roundPaperOf(inputs: RoundPaperInputs): RoundPaper {
     serviceDay: round.serviceDay,
     driverName: inputs.driverName,
     planned: round.planned,
-    stops: round.stops.map((stop) => stopOf(stop, inputs)),
+    stops: placedStops(inputs),
     printedAt: inputs.printedAt,
   };
+}
+
+/** Livraisons et transferts, dans l'ordre de la composition (la position). */
+function placedStops(inputs: RoundPaperInputs): readonly RoundPaperStop[] {
+  const placed: { readonly position: number; readonly stop: RoundPaperStop }[] = [
+    ...inputs.round.stops.map((stop) => ({ position: stop.position, stop: stopOf(stop, inputs) })),
+    ...inputs.round.transferStops.flatMap((row) => {
+      const stop = inputs.transfers.get(row.transferId);
+      return stop === undefined ? [] : [{ position: row.position, stop }];
+    }),
+  ];
+  return placed.sort((a, b) => a.position - b.position).map(({ stop }) => stop);
 }
 
 function stopOf(stop: RoundPaperStopRow, inputs: RoundPaperInputs): RoundPaperStop {
@@ -82,14 +99,4 @@ function doorOf(stop: RoundPaperStopRow, live: DepartureSheet | undefined): Door
     addressNote: live.addressNote,
     cancelled: live.status === "cancelled",
   };
-}
-
-/** Les lignes postales, sans les champs vides — comme la feuille de route. */
-function addressLinesOf(address: BillingAddressPayload | null): readonly string[] {
-  if (address === null) {
-    return [];
-  }
-  return [address.ligne1, address.ligne2, `${address.codePostal} ${address.ville}`].filter(
-    (line) => line.trim() !== "",
-  );
 }

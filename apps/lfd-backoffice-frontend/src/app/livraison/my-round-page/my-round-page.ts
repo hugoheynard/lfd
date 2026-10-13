@@ -18,7 +18,6 @@ import {
   FoldInlineConfirmComponent,
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
-  FoldPanelHostService,
   FoldViewToggleComponent,
 } from 'fold-ng';
 
@@ -42,6 +41,7 @@ import {
   readNavigationApp,
   remainingStops,
   routeLegs,
+  transferTargetOf,
   writeNavigationApp,
 } from '../my-round-navigation';
 import { GesturePositionReader } from '../gesture-position';
@@ -55,10 +55,6 @@ import {
   openTransferStops,
   transferStopLabel,
 } from '../my-round-transfers';
-import {
-  TransferManifestDialog,
-  type TransferManifestDialogData,
-} from '../transfer-manifest-dialog/transfer-manifest-dialog';
 import { MyRoundGestures } from '../my-round-gestures';
 import { MyRoundReader } from '../my-round-reader';
 
@@ -132,7 +128,6 @@ export class MyRoundPage {
   private readonly router = inject(Router);
   /** La position au geste (YA-D4) : son absence se dit, elle ne bloque rien. */
   protected readonly positions = inject(GesturePositionReader);
-  private readonly panels = inject(FoldPanelHostService);
   private readonly storage = deviceStorage();
 
   /** Le dernier refus du serveur — la tournée reste à l'écran. */
@@ -201,8 +196,6 @@ export class MyRoundPage {
     return this.departed() ? all.filter((entry) => entry.stop.closedAt === null) : all;
   });
 
-  /** Le manifeste détaillé se lit sous le droit de la composition. */
-  protected readonly canReadManifest = computed(() => this.permissions.can('delivery_rounds:read'));
   /** L'arrêt suivant : le premier encore ouvert, dans l'ordre de passage. */
   protected readonly nextStop = computed(() => this.remaining()[0] ?? null);
   protected readonly currentStop = computed<CurrentStopRef | null>(() => {
@@ -255,6 +248,11 @@ export class MyRoundPage {
     return this.rolling() ? goToHref(this.app(), driveTargetOf(stop)) : null;
   }
 
+  /** « Y aller » vers le site d'un transfert : son point, sinon son adresse. */
+  protected transferGoToOf(stop: DriverTransferStopView): string | null {
+    return this.rolling() ? goToHref(this.app(), transferTargetOf(stop)) : null;
+  }
+
   protected pickApp(value: string): void {
     const app = NAVIGATION_APPS.find((option) => option.value === value)?.value;
     if (app !== undefined) {
@@ -276,12 +274,6 @@ export class MyRoundPage {
   protected readonly returnToDepot = (): Promise<void> => this.doorstep.returnToDepot();
   protected readonly dropAtSite = (stop: DriverTransferStopView): Promise<void> =>
     this.doorstep.dropAtSite(stop);
-
-  protected openManifest(stop: DriverTransferStopView): void {
-    this.panels.open<TransferManifestDialogData, void>(TransferManifestDialog, {
-      data: { transferId: stop.transferId, siteLabel: stop.siteLabel },
-    });
-  }
 
   /**
    * « Charger » : le chargement a sa propre adresse, sous la tournée — un

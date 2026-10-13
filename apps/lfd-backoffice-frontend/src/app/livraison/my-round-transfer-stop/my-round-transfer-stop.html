@@ -11,21 +11,44 @@
       }
     </fold-element-title>
 
-    @if (stop().totals.length > 0) {
-      <app-transfer-lines [lines]="stop().totals" />
+    <div class="mts-facts">
+      @if (address(); as address) {
+        <span data-transfer-address>{{ address }}</span>
+      }
+      <strong data-transfer-bins>{{ bins() }}</strong>
+    </div>
+
+    @for (section of sections(); track section.key) {
+      <section class="mts-section" [attr.data-manifest-section]="section.key">
+        <fold-element-title
+          variant="eyebrow"
+          [title]="section.title"
+          [subtitle]="section.subtitle"
+        />
+        <app-transfer-lines [lines]="section.totals" />
+      </section>
     }
 
-    @if (canReadManifest()) {
-      <button
+    @if (sections().length > 1) {
+      <section class="mts-section" data-manifest-total>
+        <fold-element-title variant="eyebrow" title="Tout le transfert, par article" />
+        <app-transfer-lines [lines]="stop().totals" />
+      </section>
+    }
+
+    @if (goTo(); as href) {
+      <a
         foldButton
-        size="sm"
-        emphasis="soft"
-        icon="list"
-        (click)="manifest.emit(stop())"
-        data-transfer-manifest
+        block
+        size="lg"
+        icon="map-pin"
+        [href]="href"
+        target="_blank"
+        rel="noopener"
+        data-go-to
       >
-        Manifeste détaillé
-      </button>
+        Y aller
+      </a>
     }
 
     @if (gestures() && open()) {

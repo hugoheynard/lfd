@@ -19,6 +19,7 @@ import {
 import { CommerceTransferSites } from "../b2b/orders/application/services/commerce-transfer-sites.service.js";
 import { PickupAddressesModule } from "../b2b/pickup-addresses/pickup-addresses.module.js";
 import { PickupDepartureCandidatesReader } from "../b2b/pickup-addresses/infrastructure/pickup-departure-candidates.reader.js";
+import { SiteTransferPlacesReader } from "../b2b/pickup-addresses/infrastructure/site-transfer-places.reader.js";
 import {
   CommerceDayVersionReader,
   DeliveryAddressPointCorrector,
@@ -35,6 +36,7 @@ import {
   RoadTravelTimeReader,
   TransferOrderContentsReader,
   TransferOrdersReader,
+  TransferSitePlacesReader,
   TransferSitesReader,
 } from "../delivery/channels/commerce/index.js";
 import { PrismaOrderDeliveryHistoryReader } from "../delivery/infrastructure/prisma-order-delivery-history.reader.js";
@@ -80,7 +82,9 @@ import { ResolvedDepartureSiteReader } from "../delivery/infrastructure/resolved
  * Et le transfert interne (lot T1, 2026-10-13) : `TransferOrdersReader` (les
  * retraits des sites servis par transfert), `TransferSitesReader` (nom, point,
  * mode, heure d'arrivée — `CommerceTransferSites`, exporté par `OrdersModule`)
- * et `TransferOrderContentsReader` (le contenu, pour le manifeste).
+ * et `TransferOrderContentsReader` (le contenu, pour le manifeste). Et
+ * `TransferSitePlacesReader` (2026-10-13) : l'adresse et le point du site,
+ * pour « Y aller » et la feuille de route — sans calcul routier.
  *
  * `@Global` pour la raison des autres fils : le consommateur est `delivery/`,
  * qui ne peut pas importer le module qui fournit le port sans dépendre du
@@ -109,6 +113,7 @@ import { ResolvedDepartureSiteReader } from "../delivery/infrastructure/resolved
     { provide: TransferOrdersReader, useClass: PrismaTransferOrdersReader },
     { provide: TransferOrderContentsReader, useClass: PrismaTransferOrderContentsReader },
     { provide: TransferSitesReader, useExisting: CommerceTransferSites },
+    { provide: TransferSitePlacesReader, useClass: SiteTransferPlacesReader },
   ],
   exports: [
     DepartureCandidatesReader,
@@ -127,6 +132,7 @@ import { ResolvedDepartureSiteReader } from "../delivery/infrastructure/resolved
     TransferOrdersReader,
     TransferOrderContentsReader,
     TransferSitesReader,
+    TransferSitePlacesReader,
   ],
 })
 export class DeliveryFeedModule {}

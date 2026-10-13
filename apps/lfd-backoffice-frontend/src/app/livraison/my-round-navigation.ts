@@ -1,4 +1,9 @@
-import type { BillingAddressPayload, GpsPoint, MyDeliveryStopView } from '@lfd/contracts';
+import type {
+  BillingAddressPayload,
+  DriverTransferStopView,
+  GpsPoint,
+  MyDeliveryStopView,
+} from '@lfd/contracts';
 
 /**
  * **Partir vers les arrêts** — les liens de navigation de « Ma tournée »
@@ -90,6 +95,17 @@ export function placeOf(target: NavigationTarget): string | null {
  */
 export function driveTargetOf(stop: MyDeliveryStopView): NavigationTarget {
   return { gps: stop.parking ?? stop.gps, address: stop.address };
+}
+
+/**
+ * **Où conduire** pour un arrêt de transfert (2026-10-13) : le point du site
+ * s'il est saisi, sinon son adresse — le site n'a pas de stationnement au
+ * carnet.
+ */
+export function transferTargetOf(
+  stop: Pick<DriverTransferStopView, 'siteGps' | 'siteAddress'>,
+): NavigationTarget {
+  return { gps: stop.siteGps, address: stop.siteAddress };
 }
 
 /**

@@ -39,7 +39,9 @@ export function sectionSubtitle(
  * « Réapprovisionnement : 0 » sur chaque transfert ferait chercher ce qui
  * n'existe pas encore.
  */
-export function manifestSections(view: InternalTransferManifestView): readonly ManifestSection[] {
+export function manifestSections(
+  view: Pick<InternalTransferManifestView, 'orders' | 'resupplies'>,
+): readonly ManifestSection[] {
   const sections: ManifestSection[] = [];
   if (view.orders.items.length > 0) {
     sections.push(section('orders', 'Commandes', 'commande', 'commandes', view.orders));

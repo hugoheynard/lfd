@@ -134,6 +134,7 @@
   "test/handover-proof-purge.e2e-spec.ts": 2792,
   "test/handover-quality-hold.e2e-spec.ts": 4369,
   "test/internal-transfer-bins.e2e-spec.ts": 8679,
+  "test/internal-transfer-driver.e2e-spec.ts": 6652,
   "test/internal-transfer.e2e-spec.ts": 7758,
   "test/invitation-expiry.e2e-spec.ts": 6000,
   "test/invoice-dossiers.e2e-spec.ts": 6300,

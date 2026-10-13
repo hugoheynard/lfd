@@ -11,8 +11,8 @@ const LIVE_STOP = { removedAt: null, closedAt: null } as const;
 
 /**
  * **Adaptateur Prisma de la tournée à imprimer.** Il ne lit que les tables de
- * la livraison : la tournée, ses arrêts vivants, leur instantané du départ et
- * les bacs de leurs commandes. Il n'écrit rien.
+ * la livraison : la tournée, ses arrêts vivants (livraisons et transferts),
+ * leur instantané du départ et les bacs de leurs commandes. Il n'écrit rien.
  */
 @Injectable()
 export class PrismaRoundPaperReader extends RoundPaperReader {
@@ -35,14 +35,21 @@ export class PrismaRoundPaperReader extends RoundPaperReader {
         stops: {
           where: LIVE_STOP,
           orderBy: { position: "asc" },
-          select: { id: true, orderId: true, execution: { select: EXECUTION_SELECT } },
+          select: {
+            id: true,
+            orderId: true,
+            transferId: true,
+            position: true,
+            execution: { select: EXECUTION_SELECT },
+          },
         },
       },
     });
     if (row === null) {
       return null;
     }
-    // La feuille de route ne porte encore que les livraisons (lot T1, reste).
+    // Les livraisons d'un côté, les transferts de l'autre (2026-10-13) :
+    // la composition les intercale par position.
     const stops = orderStopsOnly(row.stops);
     const codes = await this.binCodesOf(stops.map((stop) => stop.orderId));
     return {
@@ -59,9 +66,15 @@ export class PrismaRoundPaperReader extends RoundPaperReader {
       stops: stops.map((stop) => ({
         stopId: stop.id,
         orderId: stop.orderId,
+        position: stop.position,
         departed: stop.execution === null ? null : departedStopOf(stop.execution),
         binCodes: codes.get(stop.orderId) ?? [],
       })),
+      transferStops: row.stops.flatMap((stop) =>
+        stop.transferId === null
+          ? []
+          : [{ stopId: stop.id, transferId: stop.transferId, position: stop.position }],
+      ),
     };
   }
 

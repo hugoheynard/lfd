@@ -9,12 +9,19 @@ import {
 } from 'fold-ng';
 
 import { parisTimeOf } from '../delivery-loading';
+import { addressTextOf } from '../my-round-navigation';
+import { manifestSections } from '../transfer-manifest';
 import { TransferLines } from '../transfer-lines/transfer-lines';
 
 /**
  * **Un arrêt de transfert dans « Ma tournée »** (plan du transfert interne,
  * lot T2) : le site, ce qu'on y décharge — totalisé par article —, et le seul
  * geste de l'arrêt, « Remis au site ». Aucun client, aucune adresse de client.
+ *
+ * Depuis le 2026-10-13 (décisions de Hugo) : le manifeste détaillé par
+ * section, le nombre de bacs, l'adresse du site et « Y aller » — tout vient
+ * de la vue de « Ma tournée », lue sous le mur du livreur ; plus besoin de
+ * `delivery_rounds:read`.
  *
  * Reçu au comptoir avant le passage du livreur, l'arrêt se clôt quand même
  * par « Remis au site » : le serveur ne fait alors que le clore.
@@ -38,11 +45,10 @@ export class MyRoundTransferStop {
   /** En route, et le droit tenu. */
   readonly gestures = input(false);
   readonly busy = input(false);
-  /** `delivery_rounds:read` — le manifeste détaillé (commandes, réapprovisionnement). */
-  readonly canReadManifest = input(false);
+  /** Le lien « Y aller » vers le site, ou `null` : au dépôt, ou site sans point ni adresse. */
+  readonly goTo = input<string | null>(null);
 
   readonly dropped = output<DriverTransferStopView>();
-  readonly manifest = output<DriverTransferStopView>();
 
   protected readonly title = computed(() => `→ ${this.stop().siteLabel}`);
 
@@ -51,6 +57,23 @@ export class MyRoundTransferStop {
     const units = this.stop().totals.reduce((sum, line) => sum + line.quantity, 0);
     return `Transfert · ${orderCount} ${orderCount === 1 ? 'commande' : 'commandes'} · ${units} ${units === 1 ? 'pièce' : 'pièces'}`;
   });
+
+  /** « 3 bacs à remettre », « Aucun bac déclaré ». */
+  protected readonly bins = computed(() => {
+    const { binCount } = this.stop();
+    if (binCount === 0) {
+      return 'Aucun bac déclaré';
+    }
+    return `${binCount} ${binCount === 1 ? 'bac' : 'bacs'} à remettre`;
+  });
+
+  protected readonly address = computed(() => {
+    const { siteAddress } = this.stop();
+    return siteAddress === null ? null : addressTextOf(siteAddress);
+  });
+
+  /** Commandes, puis réapprovisionnement — les sections non vides. */
+  protected readonly sections = computed(() => manifestSections(this.stop()));
 
   /** « Remis à 9 h 40 », « Reçu au comptoir à 9 h 12 », ou rien. */
   protected readonly status = computed<string | null>(() => {

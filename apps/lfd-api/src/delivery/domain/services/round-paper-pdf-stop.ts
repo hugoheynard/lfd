@@ -35,8 +35,13 @@ import {
 import type { RoundPaperAbsentStop, RoundPaperSheetStop } from "./round-paper.js";
 import { windowPaperLabel } from "./round-paper.js";
 
-/** La pastille du rang, et sous elle la case « Livré ». */
-function rail(rank: number, tone: Tone, checkbox: boolean): Pick<Block, "railHeight" | "drawRail"> {
+/** La pastille du rang, et sous elle la case « Livré » (ou `checkLabel`). */
+export function rail(
+  rank: number,
+  tone: Tone,
+  checkbox: boolean,
+  checkLabel = "Livré",
+): Pick<Block, "railHeight" | "drawRail"> {
   const box = 5 * MM;
   return {
     railHeight: checkbox ? 2 * DISC_RADIUS + box + 7 * MM : 2 * DISC_RADIUS + 2 * MM,
@@ -51,8 +56,8 @@ function rail(rank: number, tone: Tone, checkbox: boolean): Pick<Block, "railHei
           1.2,
           tone.ink,
         );
-        const width = doc.font(REGULAR).fontSize(SMALL_SIZE).widthOfString("Livré");
-        put(doc, "Livré", LEFT + DISC_RADIUS - width / 2, top + box + 1 * MM, {
+        const width = doc.font(REGULAR).fontSize(SMALL_SIZE).widthOfString(checkLabel);
+        put(doc, checkLabel, LEFT + DISC_RADIUS - width / 2, top + box + 1 * MM, {
           size: SMALL_SIZE,
           color: tone.muted,
         });

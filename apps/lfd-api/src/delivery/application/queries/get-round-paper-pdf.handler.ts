@@ -8,7 +8,13 @@ import {
   DeliveryOrdersReader,
   type DeliveryOrderProcedure,
   DeliveryProceduresReader,
+  TransferOrderContentsReader,
+  TransferSitePlacesReader,
+  TransferSitesReader,
 } from "../../channels/commerce/index.js";
+import { InternalTransfersReader } from "../../domain/ports/internal-transfers.reader.js";
+import { TransferBinCounts } from "../../domain/ports/transfer-bin-counts.reader.js";
+import { roundPaperTransfersOf } from "../round-paper-transfers.js";
 import { DeliveryRoundNotFoundError } from "../../domain/errors/delivery-round-errors.js";
 import { RoundPaperReader } from "../../domain/ports/round-paper.reader.js";
 import { renderRoundPaperPdf, roundPaperFileName } from "../../domain/services/round-paper-pdf.js";
@@ -26,8 +32,9 @@ export interface RoundPaperFile {
  * **La feuille de tournée, tirée au moment** (Livraison → Tournées,
  * « Imprimer »). Un papier VIVANT : rien n'est rangé, chaque tirage relit la
  * tournée, les feuilles du commerce et la procédure — un second tirage après
- * une correction du carnet imprime la correction. Une lecture : elle n'écrit
- * rien.
+ * une correction du carnet imprime la correction. Les arrêts de transfert y
+ * sont à leur place (2026-10-13) : site, heure, bacs, manifeste. Une lecture :
+ * elle n'écrit rien.
  *
  * @throws {DeliveryRoundNotFoundError}
  */
@@ -42,6 +49,11 @@ export class GetRoundPaperPdfHandler implements IQueryHandler<
     private readonly procedures: DeliveryProceduresReader,
     private readonly directory: StaffAuthorDirectory,
     private readonly clock: Clock,
+    private readonly transfers: InternalTransfersReader,
+    private readonly transferContents: TransferOrderContentsReader,
+    private readonly transferBins: TransferBinCounts,
+    private readonly sitePlaces: TransferSitePlacesReader,
+    private readonly sites: TransferSitesReader,
   ) {}
 
   async execute(query: GetRoundPaperPdfQuery): Promise<RoundPaperFile> {
@@ -51,10 +63,17 @@ export class GetRoundPaperPdfHandler implements IQueryHandler<
     }
     const orderIds = round.stops.map((stop) => stop.orderId);
     const driverIds = round.driverStaffId === null ? [] : [round.driverStaffId];
-    const [sheets, procedures, names] = await Promise.all([
+    const [sheets, procedures, names, transfers] = await Promise.all([
       this.orders.departureSheetsOf(orderIds),
       this.proceduresOf(orderIds, query.canReadProcedures),
       driverNamesOf(this.directory, driverIds),
+      roundPaperTransfersOf(round.serviceDay, round.transferStops, {
+        transfers: this.transfers,
+        contents: this.transferContents,
+        bins: this.transferBins,
+        places: this.sitePlaces,
+        sites: this.sites,
+      }),
     ]);
     const paper = roundPaperOf({
       round,
@@ -62,6 +81,7 @@ export class GetRoundPaperPdfHandler implements IQueryHandler<
       procedures: new Map(procedures.map((procedure) => [procedure.orderId, procedure.steps])),
       driverName: round.driverStaffId === null ? null : (names.get(round.driverStaffId) ?? null),
       printedAt: this.clock.now(),
+      transfers,
     });
     return { fileName: roundPaperFileName(paper), bytes: await renderRoundPaperPdf(paper) };
   }

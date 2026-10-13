@@ -45,12 +45,19 @@ export class BinTypesController {
    * porte du panneau « Bacs » (`plan-droits-par-geste.md`, 5.3), lectures
    * comprises : qui ne fait que lire le colisage — le support — reste à 403.
    * On élargit une lecture, on ne déplace aucun droit.
+   *
+   * Et sous `delivery_loading:read` depuis le 2026-10-13 (décision de Hugo,
+   * plan du transfert interne) : « Déclarer les bacs du transfert », au
+   * chargement, charge ces formats (`transfer-bins-card.ts`, `open`), et un
+   * rôle qui n'a que le chargement prenait 403. Lecture seule : l'écriture
+   * du catalogue reste à `delivery_settings`.
    */
   @Get()
   @RequireAnyPermission(
     "delivery_settings:read",
     "delivery_rounds:read",
     "production_packing:write",
+    "delivery_loading:read",
   )
   list(): Promise<BinTypesView> {
     return this.queries.execute<ListBinTypesQuery, BinTypesView>(new ListBinTypesQuery());

@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import type { BillingAddressPayload, GpsPoint } from "./address.js";
 import { closeStopWithoutHandoverPayloadSchema } from "./delivery-doorstep.js";
 
 /**
@@ -99,9 +100,14 @@ export interface OrderTransferView {
 }
 
 /**
- * **L'arrêt de transfert dans « Ma tournée »** (lot T2) — le site, l'heure
- * d'arrivée requise si on la sait, et ce que l'arrêt transporte, totalisé par
- * SKU. Aucun client, aucune adresse de client.
+ * **L'arrêt de transfert dans « Ma tournée »** (lot T2) — le site, et ce que
+ * l'arrêt transporte, totalisé par SKU. Aucun client, aucune adresse de
+ * client.
+ *
+ * Depuis le 2026-10-13 (décisions de Hugo après les écrans du transfert) : le
+ * manifeste détaillé (sections commandes et réapprovisionnement), le nombre de
+ * bacs et le lieu du site. Le livreur les lit sous le mur de « Ma tournée »,
+ * sans `delivery_rounds:read`.
  */
 export interface DriverTransferStopView {
   readonly stopId: string;
@@ -116,4 +122,14 @@ export interface DriverTransferStopView {
   readonly receivedAt: string | null;
   /** Le manifeste, tous genres confondus, par SKU. */
   readonly totals: readonly TransferManifestLineView[];
+  /** Le manifeste détaillé : les commandes portées, par élément et par SKU. */
+  readonly orders: TransferManifestSectionView;
+  /** Le réapprovisionnement du site (non bâti : vide aujourd'hui). */
+  readonly resupplies: TransferManifestSectionView;
+  /** Les bacs non annulés du transfert — ce que le site doit recevoir. */
+  readonly binCount: number;
+  /** L'adresse du site, lue au commerce ; `null` : site inconnu du commerce. */
+  readonly siteAddress: BillingAddressPayload | null;
+  /** Le point GPS du site — « Y aller » ; `null` : non saisi. */
+  readonly siteGps: GpsPoint | null;
 }

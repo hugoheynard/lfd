@@ -33,6 +33,11 @@ function transferStop(over: Partial<DriverTransferStopView> = {}): DriverTransfe
     orderCount: 3,
     receivedAt: null,
     totals: [],
+    orders: { items: [], totals: [] },
+    resupplies: { items: [], totals: [] },
+    binCount: 0,
+    siteAddress: null,
+    siteGps: null,
     ...over,
   };
 }

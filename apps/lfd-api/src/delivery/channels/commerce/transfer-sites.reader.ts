@@ -1,4 +1,4 @@
-import type { GpsPoint } from "@lfd/contracts";
+import type { BillingAddressPayload, GpsPoint } from "@lfd/contracts";
 
 /** Une commande en retrait à un site servi par transfert. */
 export interface TransferOrderRef {
@@ -59,4 +59,28 @@ export abstract class TransferSitesReader {
     day: string,
     siteIds: readonly string[],
   ): Promise<ReadonlyMap<string, TransferSiteFacts>>;
+}
+
+/** Où se trouve un site servi par transfert : de quoi y conduire et l'imprimer. */
+export interface TransferSitePlace {
+  readonly siteId: string;
+  readonly address: BillingAddressPayload;
+  /** `null` : le site n'a pas de point GPS — « Y aller » vise alors l'adresse. */
+  readonly gps: GpsPoint | null;
+}
+
+/**
+ * **Le lieu des sites servis par transfert** (décisions de Hugo du
+ * 2026-10-13, après les écrans du transfert : « Y aller » mène au site, la
+ * feuille de route l'imprime). Déclaré par la livraison, implémenté par le
+ * commerce.
+ *
+ * Un port à lui (ISP) plutôt qu'un champ de plus sur {@link TransferSitesReader} :
+ * celui-là calcule l'heure d'arrivée par le calcul routier, et « Ma tournée »
+ * n'a besoin que de l'adresse et du point — une lecture sans réseau. Les
+ * sites ARCHIVÉS se résolvent aussi : un transfert déjà composé garde son site.
+ */
+export abstract class TransferSitePlacesReader {
+  /** Les sites demandés ; un site inconnu est absent. */
+  abstract placesOf(siteIds: readonly string[]): Promise<ReadonlyMap<string, TransferSitePlace>>;
 }

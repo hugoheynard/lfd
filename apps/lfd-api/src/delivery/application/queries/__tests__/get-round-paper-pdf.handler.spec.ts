@@ -17,6 +17,18 @@ import {
   type RoundPaperStopRow,
 } from "../../../domain/ports/round-paper.reader.js";
 import { deliveryOn, FixedDeliveryOrders } from "../../commands/__tests__/round-doubles.js";
+import {
+  FixedTransferBinCounts,
+  FixedTransferContents,
+  FixedTransferSites,
+  InMemoryInternalTransfers,
+  InternalTransfersReaderOver,
+  plannedTransfer,
+} from "../../__tests__/transfer-doubles.js";
+import {
+  FixedTransferSitePlaces,
+  VAL_VILLAGE_PLACE,
+} from "../../__tests__/transfer-site-places-double.js";
 import { GetRoundPaperPdfHandler, type RoundPaperFile } from "../get-round-paper-pdf.handler.js";
 import { GetRoundPaperPdfQuery } from "../get-round-paper-pdf.query.js";
 
@@ -85,7 +97,14 @@ const FROZEN: DepartedStopRow = {
 };
 
 function stopRow(orderId: string, overrides: Partial<RoundPaperStopRow> = {}): RoundPaperStopRow {
-  return { stopId: `stop_${orderId}`, orderId, departed: null, binCodes: [], ...overrides };
+  return {
+    stopId: `stop_${orderId}`,
+    orderId,
+    position: 0,
+    departed: null,
+    binCodes: [],
+    ...overrides,
+  };
 }
 
 const ROUND: RoundPaperRow = {
@@ -96,11 +115,18 @@ const ROUND: RoundPaperRow = {
   driverStaffId: "staff_paul",
   planned: null,
   stops: [
-    stopRow("o2", { binCodes: ["K7Q2"] }),
-    stopRow("o1", { departed: FROZEN }),
-    stopRow("o_unknown"),
+    stopRow("o2", { binCodes: ["K7Q2"], position: 1 }),
+    stopRow("o1", { departed: FROZEN, position: 2 }),
+    stopRow("o_unknown", { position: 4 }),
   ],
+  // L'arrêt de transfert, intercalé à la position 3 (2026-10-13).
+  transferStops: [{ stopId: "stop_t1", transferId: "t_1", position: 3 }],
 };
+
+const TRANSFER_LINES = new Map([
+  ["o_vv1", [{ sku: "PAIN", name: "Pain de campagne", quantity: 4 }]],
+  ["o_vv2", [{ sku: "PAIN", name: "Pain de campagne", quantity: 2 }]],
+]);
 
 const PROCEDURE: DeliveryOrderProcedure = {
   orderId: "o2",
@@ -115,6 +141,21 @@ function subject(round: RoundPaperRow | null = ROUND) {
     procedures,
     new OneAuthor(),
     new FixedClock(NOW),
+    new InternalTransfersReaderOver(
+      new InMemoryInternalTransfers(plannedTransfer("t_1", DAY, NOW, ["o_vv1", "o_vv2"])),
+    ),
+    new FixedTransferContents(TRANSFER_LINES),
+    new FixedTransferBinCounts(new Map([["t_1", 3]])),
+    new FixedTransferSitePlaces([VAL_VILLAGE_PLACE]),
+    new FixedTransferSites([
+      {
+        siteId: "site_vv",
+        label: "Val Village",
+        gps: null,
+        mode: "integrated",
+        arrivalBy: "09:30",
+      },
+    ]),
   );
   return { handler, procedures };
 }
@@ -138,6 +179,22 @@ describe("GetRoundPaperPdfHandler — la feuille de tournée tirée au moment", 
     expect(text).toContain("Livreur : Paul Durand");
     expect(text).toContain("Tiré le mercredi 7 octobre 2026 à 06:15");
     expect(file.fileName).toBe("tournee-2026-10-07-Kangoo blanc.pdf");
+  });
+
+  it("imprime l'arrêt de transfert à sa place : site, heure, bacs, total des commandes", async () => {
+    const { handler } = subject();
+    const text = textOf(await handler.execute(new GetRoundPaperPdfQuery("round_1", true)));
+    const positions = ["Commande FIGEE-1", "Vers Val Village", "Commande o_unknown"].map((part) =>
+      text.indexOf(part),
+    );
+    expect(positions.every((at) => at >= 0)).toBe(true);
+    expect([...positions].sort((a, b) => a - b)).toEqual(positions);
+    expect(text).toContain("avant 9 h 30");
+    expect(text).toContain("1 place du Village");
+    expect(text).toContain("3 bacs");
+    expect(text).toContain("COMMANDES · 2 COMMANDES");
+    expect(text).toContain("6 × Pain de campagne");
+    expect(text).toContain("4 bacs à charger");
   });
 
   it("imprime la procédure avec le droit de la lire", async () => {

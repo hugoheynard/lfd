@@ -306,9 +306,8 @@
                       [stop]="entry.stop"
                       [gestures]="gestures()"
                       [busy]="busy()"
-                      [canReadManifest]="canReadManifest()"
+                      [goTo]="transferGoToOf(entry.stop)"
                       (dropped)="dropAtSite($event)"
-                      (manifest)="openManifest($event)"
                     />
                   }
                 }

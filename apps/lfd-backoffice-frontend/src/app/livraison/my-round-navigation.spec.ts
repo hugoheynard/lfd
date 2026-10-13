@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   driveTargetOf,
   goToHref,
+  transferTargetOf,
   MAX_URL_LENGTH,
   NAVIGATION_APP_KEY,
   placeOf,
@@ -199,5 +200,29 @@ describe('le stationnement (`gps-y-aller-et-position.md`, §6)', () => {
     );
     expect(walkToDoorHref(myStopOf({ gps: DOOR, parking: null }))).toBeNull();
     expect(walkToDoorHref(myStopOf({ gps: null, parking: PARKING }))).toBeNull();
+  });
+});
+
+describe('transferTargetOf — « Y aller » vers le site d’un transfert', () => {
+  const address = {
+    label: 'Val Village',
+    ligne1: 'Route du Village',
+    ligne2: '',
+    codePostal: '73150',
+    ville: 'Val',
+    pays: 'France',
+  };
+
+  it('vise le point du site, sinon son adresse', () => {
+    expect(
+      goToHref(
+        'google',
+        transferTargetOf({ siteGps: { lat: 45.4, lng: 6.9 }, siteAddress: address }),
+      ),
+    ).toContain('destination=45.4,6.9');
+    expect(goToHref('google', transferTargetOf({ siteGps: null, siteAddress: address }))).toContain(
+      encodeURIComponent('Route du Village, 73150 Val'),
+    );
+    expect(goToHref('google', transferTargetOf({ siteGps: null, siteAddress: null }))).toBeNull();
   });
 });

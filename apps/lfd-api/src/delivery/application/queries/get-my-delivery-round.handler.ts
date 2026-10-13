@@ -21,7 +21,11 @@ import { departureViewOf } from "../departure-view.js";
 import { myDeliveryRoundView } from "../my-delivery-round-view.js";
 import { driverTransferStopsOf } from "../my-round-transfer-stops.js";
 import { InternalTransfersReader } from "../../domain/ports/internal-transfers.reader.js";
-import { TransferOrderContentsReader } from "../../channels/commerce/index.js";
+import {
+  TransferOrderContentsReader,
+  TransferSitePlacesReader,
+} from "../../channels/commerce/index.js";
+import { TransferBinCounts } from "../../domain/ports/transfer-bin-counts.reader.js";
 import { StopSheets } from "../stop-sheets.js";
 import { GetMyDeliveryRoundQuery } from "./get-my-delivery-round.query.js";
 
@@ -56,6 +60,8 @@ export class GetMyDeliveryRoundHandler implements IQueryHandler<
     private readonly incidents: DeliveryIncidentsReader,
     private readonly stopSheets: StopSheets,
     private readonly decisions: StopDecisionsReader,
+    private readonly transferBins: TransferBinCounts,
+    private readonly sitePlaces: TransferSitePlacesReader,
   ) {}
 
   async execute(query: GetMyDeliveryRoundQuery): Promise<MyDeliveryRoundView> {
@@ -77,11 +83,12 @@ export class GetMyDeliveryRoundHandler implements IQueryHandler<
       ]);
     // Lues pour CETTE tournée, déjà lue sous le mur du livreur.
     const decisions = await this.decisions.ofRound(round.id);
-    const transferStops = await driverTransferStopsOf(
-      round.transferStops,
-      this.transfers,
-      this.contents,
-    );
+    const transferStops = await driverTransferStopsOf(round.transferStops, {
+      transfers: this.transfers,
+      contents: this.contents,
+      bins: this.transferBins,
+      places: this.sitePlaces,
+    });
     const view = myDeliveryRoundView({
       round,
       sheets,

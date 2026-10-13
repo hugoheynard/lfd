@@ -38,7 +38,33 @@ export interface RoundPaperAbsentStop {
   readonly orderId: string;
 }
 
-export type RoundPaperStop = RoundPaperSheetStop | RoundPaperAbsentStop;
+/** Une ligne de manifeste imprimée : un article, une quantité. */
+export interface RoundPaperTransferLine {
+  readonly productName: string;
+  readonly quantity: number;
+}
+
+/**
+ * **Un arrêt de transfert interne** (décision de Hugo du 2026-10-13) : le
+ * site, l'heure d'arrivée requise, les bacs, et ce que le transfert
+ * transporte — commandes et réapprovisionnement, totalisés par article.
+ * Aucun client.
+ */
+export interface RoundPaperTransferStop {
+  readonly kind: "transfer";
+  readonly siteLabel: string;
+  /** Les lignes postales du site ; vide : le commerce ne le connaît plus. */
+  readonly addressLines: readonly string[];
+  /** L'heure d'arrivée requise (`HH:MM`), ou `null` : incalculable. */
+  readonly arrivalBy: string | null;
+  readonly binCount: number;
+  readonly orderCount: number;
+  readonly orderTotals: readonly RoundPaperTransferLine[];
+  readonly resupplyCount: number;
+  readonly resupplyTotals: readonly RoundPaperTransferLine[];
+}
+
+export type RoundPaperStop = RoundPaperSheetStop | RoundPaperAbsentStop | RoundPaperTransferStop;
 
 /**
  * **Le papier d'une tournée** — ce que l'écran des tournées imprimait par
@@ -67,7 +93,7 @@ export function roundPaperTitle(paper: Pick<RoundPaper, "vehicleName" | "passage
 }
 
 /** « 8 h 30 » à partir de « 08:30 » ; une valeur illisible est rendue telle quelle. */
-function timeLabel(time: string): string {
+export function timeLabel(time: string): string {
   const match = /^(\d{1,2}):(\d{2})/u.exec(time);
   return match === null ? time : `${String(Number(match[1]))} h ${match[2] ?? "00"}`;
 }
