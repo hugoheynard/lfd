@@ -374,12 +374,12 @@ séparés (dette notée au `CLAUDE.md` du back-office). Les deux anciennes
 entrées disparaissent des deux arbres dans le même lot.
 
 **Droit** (Hugo, Q-S5, 2026-10-13) : la page sous la ressource neuve
-**`lfc_sites`**. Lot S0 : une migration ajoute la valeur à `StaffResource`
+**`lfc_site_settings`**. Lot S0 : une migration ajoute la valeur à `StaffResource`
 et **ne l'accorde à aucun rôle** (`lint:no-role-grants-in-migrations`).
 **Geste de bascule** : après le déploiement de S0, l'admin accorde
-`lfc_sites` (lecture, écriture) aux rôles voulus à `/admin/staff-roles` ;
+`lfc_site_settings` (lecture, écriture) aux rôles voulus à `/admin/staff-roles` ;
 **ensuite seulement** S1 met l'écran et l'API d'écriture des sites derrière
-`lfc_sites` — sinon l'écran serait mort entre les deux (objection S3). La
+`lfc_site_settings` — sinon l'écran serait mort entre les deux (objection S3). La
 carte « Départ » appelle l'API de la livraison, sous `delivery_settings`
 (non relu : la séparation `:read`/`:write` de ce droit à l'écriture).
 
@@ -389,11 +389,11 @@ comptoir (`handover-shop/handover-queue.store.ts`), la saisie
 limites lisent les points par `PickupAddressesService`
 (`b2b/reglages/pickup-addresses.service.ts`) qui frappe
 `admin/pickup-addresses` (`@AdminSurface("b2b_settings")`). Déplacer la
-**route front** ne déplace pas l'API ; mais passer l'API sous `lfc_sites`
+**route front** ne déplace pas l'API ; mais passer l'API sous `lfc_site_settings`
 couperait le comptoir. S1 donne donc à chacun sa lecture : le comptoir par
 le retrait (`handover/channels/commerce/`, sous `handover_counter`), la
 saisie par une query des commandes (sous `b2b_place_order`) ; seul l'écran
-des sites lit et écrit sous `lfc_sites`.
+des sites lit et écrit sous `lfc_site_settings`.
 
 ### 3.5 Les couleurs : une palette fermée
 
@@ -540,7 +540,7 @@ cités par le §10) continuent de l'écarter — c'est ce que B1 demandait.
 
 **Les deux modes avec ce même arrêt** (§4.2 de la version précédente,
 inchangé sur le choix) — réglage `transfer_mode` du site servi, carte Rôles,
-sous `lfc_sites`, **intégré par défaut** :
+sous `lfc_site_settings`, **intégré par défaut** :
 
 - **intégré** : la composition insère l'arrêt `transfer` dans une tournée
   B2B du jour, par `insertCheapest` sous la fenêtre « arrivé avant ». **Repli
@@ -624,7 +624,7 @@ au fournil (`DayDueThresholds`).
 Ce qui s'ajoute :
 
 - **`counter_setup_minutes`** — réglage **neuf** du site (carte Rôles,
-  `lfc_sites`, entier ≥ 0, défaut 0 : pas de valeur copiée d'un autre
+  `lfc_site_settings`, entier ≥ 0, défaut 0 : pas de valeur copiée d'un autre
   réglage). C'est la mise en place au comptoir, **après** le colisage :
   il s'**ajoute** à la marge de retrait, il ne la remplace pas.
 - **L'heure requise se calcule à la volée, et c'est le snapshot du fournil
@@ -706,7 +706,7 @@ du transfert, donc juste dans les deux modes, déclaré
 et implémenté par `delivery` (forme des `OrderDeliveryHistoryReader` du
 2026-10-08). Lecture par lot.
 
-### 5.3 D'où vient chaque couleur — toutes sous `lfc_sites`
+### 5.3 D'où vient chaque couleur — toutes sous `lfc_site_settings`
 
 | Catégorie                           | Couleur (demande) | Où elle vit                                                           |
 | ----------------------------------- | ----------------- | --------------------------------------------------------------------- |
@@ -718,7 +718,7 @@ et implémenté par `delivery` (forme des `OrderDeliveryHistoryReader` du
 | `clientele = NULL`, `siteId` absent | neutre            | catégorie « autre » de la fonction pure, jamais une couleur inventée  |
 
 **S3 tranché (proposition)** : les couleurs de livraison **quittent
-`DeliveryAvailability`** et vont sur le site qui expédie, sous `lfc_sites`.
+`DeliveryAvailability`** et vont sur le site qui expédie, sous `lfc_site_settings`.
 Une palette, un écran, un droit. Le site qui expédie est celui d'où partent
 les livraisons : rôle `dispatches` (§3.1). Une commande du village garde le
 gris même triée avec les tournées : la couleur dit **à qui** on remet,
@@ -728,6 +728,32 @@ l'heure dit **quand** ça part.
 `@lfd/contracts` : la boutique ne s'en sert pas, et le baril pèse sur son
 budget de 1,30 Mo).
 
+### 5.4 Réglages › Commandes rejoint Réglages, sous son propre droit (Hugo, 2026-10-13)
+
+> « Réglage commandes peut aussi aller dans réglages, droit
+> `lfc_order_settings` ? On essaie d'être granulaire sur les droits ; même
+> chose pour les sites, `lfc_site_settings`. » — Hugo, 2026-10-13.
+
+- **Les droits sont granulaires** : l'écran des sites est sous
+  **`lfc_site_settings`** (nom retenu à la place de `lfc_sites`), et le
+  réglage de l'annulation client (`/b2b/reglages/commandes`, aujourd'hui sous
+  `b2b_settings`, `workspaces.ts` l. 661-668, vérifié le 2026-10-13) passe sous
+  **`lfc_order_settings`**.
+- **L'entrée déménage** de l'espace e-commerce vers **Réglages › Commandes**
+  (`/reglages/commandes`), à côté de Réglages › Sites ; l'ancienne route
+  redirige. Rail **et** tuiles (dette des deux arbres, CLAUDE.md du
+  back-office).
+- **La bascule des droits** : une migration ajoute les deux valeurs à
+  `StaffResource` sans les accorder à aucun rôle (CLAUDE.md §3,
+  `lint:no-role-grants-in-migrations`). Tant que l'admin ne les a pas accordées
+  à l'écran (`/admin/staff-roles`), **personne ne voit plus** le réglage de
+  l'annulation, qui était sous `b2b_settings` : le geste « accorder
+  `lfc_order_settings` » fait partie du déploiement, et se dit dans le message
+  de livraison. Les routes serveur du réglage (`@AdminSurface`) changent de
+  ressource dans le même lot.
+- **Lot S0** porte les deux ressources ; **lot O1** (S) déplace l'écran
+  Commandes et change sa ressource.
+
 ## 6. Lots
 
 Un lot à la fois (mémoire du dépôt). Tailles dites honnêtement : **T1 et T2
@@ -736,7 +762,7 @@ sans la composition ne sert à rien en production.
 
 | Lot | Taille | Contenu                                                                                                                                                                                                                                                                                                                    | Migration                                                                                                          | Touche                      |
 | --- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | --------------------------- |
-| S0  | S      | ressource `lfc_sites` ajoutée à `StaffResource`, accordée à **aucun** rôle ; bascule : après déploiement, l'admin l'accorde à `/admin/staff-roles`, **puis** S1 met l'écran derrière                                                                                                                                       | additive (valeur d'enum)                                                                                           | sécurité (périmètre)        |
+| S0  | S      | ressource `lfc_site_settings` ajoutée à `StaffResource`, accordée à **aucun** rôle ; bascule : après déploiement, l'admin l'accorde à `/admin/staff-roles`, **puis** S1 met l'écran derrière                                                                                                                               | additive (valeur d'enum)                                                                                           | sécurité (périmètre)        |
 | S1  | M      | `b2b/sites` (agrégat `Site`, rôles, couleurs nullables, archivage, `transfer_mode`, `counter_setup_minutes`), Réglages › Sites, lecteurs du comptoir et de la saisie hors de l'écran                                                                                                                                       | additive (colonnes, enums)                                                                                         | frontière (canaux)          |
 | S2  | S      | `siteId` dans le snapshot de commande (depuis `pickupAddressId` reçu à la passation), `production_order.site_id`, onglets du comptoir par id ; pas de rattrapage                                                                                                                                                           | additive                                                                                                           | —                           |
 | L1  | S      | fonction pure de catégorie (back-office), tokens `--lfc-site-*`, pastille                                                                                                                                                                                                                                                  | —                                                                                                                  | —                           |
@@ -757,7 +783,7 @@ automatique en a besoin. `lecteur-de-migrations` sur S0, S1, T0, T1, T2 ;
 
 Tranchées le 2026-10-13 : Q4, Q5, Q6, Q7 ; **Q-T1** (option B : un arrêt
 « transfert » unique ; deux modes, **intégré** par défaut) ; **Q-T2** (le
-comptoir refuse) ; **Q-S5** (`lfc_sites`) ; **Q-S2** (pas de rattrapage).
+comptoir refuse) ; **Q-S5** (`lfc_site_settings`) ; **Q-S2** (pas de rattrapage).
 Proposées ici, à valider : **Q-T9** (repli dédié automatique) et la sortie
 de S3 (réception manuelle).
 
@@ -808,8 +834,8 @@ Restent :
 | B2  | BLOQUANT | arrêt de transfert avec `order_id` nullable, cœur du bloc livraison, sans inventaire                                                | **dépassé** par la décision de Hugo (option B, §10) : `order_id` devient nullable **pour le seul genre `transfer`**, sous `CHECK`, en un déploiement assumé par le §0 du CLAUDE.md (§4.3, objection S du §11) ; inventaire par familles au §4.4                                                                                                                                                                            |
 | B3  | BLOQUANT | l'échéance du fournil pour le village est calculée en retrait                                                                       | **corrigé** (§4.6, lot T0) : heure requise figée à la clôture par site et par jour ; échéance = départ requis − marge de livraison                                                                                                                                                                                                                                                                                         |
 | S1  | SÉRIEUX  | suppression physique d'un site référencé                                                                                            | **corrigé** (§3.1, §3.3) : `archived_at` ; « supprimer » archive ; refus d'archiver le site par défaut ou celui qui expédie                                                                                                                                                                                                                                                                                                |
-| S2  | SÉRIEUX  | le comptoir lit les points par `PickupAddressesService` (l'API de l'écran de réglages)                                              | **corrigé** (§3.4) : l'API `admin/pickup-addresses` n'est pas déplacée par le changement de route front ; le comptoir et la saisie lisent les sites par leurs propres lectures, hors de `lfc_sites`                                                                                                                                                                                                                        |
-| S3  | SÉRIEUX  | deux droits pour une palette ; ressource neuve = écran mort jusqu'à l'accord                                                        | **corrigé** (§5.3, lot S0) : toutes les couleurs sous `lfc_sites` ; S0 déployé et accordé **avant** que S1 ne garde l'écran                                                                                                                                                                                                                                                                                                |
+| S2  | SÉRIEUX  | le comptoir lit les points par `PickupAddressesService` (l'API de l'écran de réglages)                                              | **corrigé** (§3.4) : l'API `admin/pickup-addresses` n'est pas déplacée par le changement de route front ; le comptoir et la saisie lisent les sites par leurs propres lectures, hors de `lfc_site_settings`                                                                                                                                                                                                                |
+| S3  | SÉRIEUX  | deux droits pour une palette ; ressource neuve = écran mort jusqu'à l'accord                                                        | **corrigé** (§5.3, lot S0) : toutes les couleurs sous `lfc_site_settings` ; S0 déployé et accordé **avant** que S1 ne garde l'écran                                                                                                                                                                                                                                                                                        |
 | S4  | SÉRIEUX  | la page Sites écrit le départ (delivery) sans port ; invariant tenu d'un côté                                                       | **corrigé** (§3.1, §3.4) : la carte « Départ » appelle l'API de la livraison (`delivery_settings:write`), pas le commerce ; la livraison ne propose que les sites `dispatches` (lecteur `DepartureCandidatesReader` existant, étendu), et le commerce refuse de retirer `dispatches` au site désigné par un port `DepartureSiteReader` déclaré par `b2b`, implémenté par `delivery` (`b2b → delivery` : port uniquement ✓) |
 | S5  | SÉRIEUX  | rattrapage par libellé irréversible ; `pickupAddressId` déjà reçu à la passation                                                    | **corrigé** (§3.3, lot S2) : le snapshot garde l'id reçu (`order-drafting.service.ts`, `pickupAddressId`, l. 48/83/333) ; pas de rattrapage                                                                                                                                                                                                                                                                                |
 | S6  | SÉRIEUX  | `received` lu par personne                                                                                                          | **corrigé, puis revu** (§4.5) : lecture synchrone `TransferStatusReader` au moment de remettre, plus de fait `delivery.transfer_received` ni d'abonné du retrait ; `TransferNotReceivedError`                                                                                                                                                                                                                              |
