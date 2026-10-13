@@ -396,15 +396,9 @@ export const routes: Routes = [
         (m) => m.ProductionWorkspacePage,
       ),
     children: [
-      {
-        path: 'commercial',
-        canActivate: [permissionGuard('b2b_growth:read')],
-        title: 'Réglages commerciaux — LFC B2B admin',
-        loadComponent: () =>
-          import('./reglages/commercial/reglages-commercial-page').then(
-            (m) => m.ReglagesCommercialPage,
-          ),
-      },
+      // Partie dans l'espace Commercial le 2026-10-13 (Hugo), découpée en
+      // trois vues : l'adresse vit dans des favoris, elle mène à la première.
+      { path: 'commercial', redirectTo: '/commercial/reglages/disponibilite' },
     ],
   },
   // PROD MANAGER (Hugo, 2026-10-10) : le prévisionnel sort de l'Exploitation

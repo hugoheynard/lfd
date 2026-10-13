@@ -320,8 +320,7 @@ supplémentaire.
 
 ### 5.1 Réglages → Commercial → **Disponibilités**
 
-Trois blocs sur la sous-page existante ([`reglages/commercial`](../../apps/lfd-backoffice-frontend/src/app/reglages/commercial/reglages-commercial-page.ts)),
-à côté d'« Alertes acquisition » et « Marché ciblé » :
+Trois blocs sur la vue **Commercial › Réglages › Disponibilité** (`/commercial/reglages/disponibilite`, [`disponibilite-page`](../../apps/lfd-backoffice-frontend/src/app/commercial/reglages/disponibilite-page/disponibilite-page.ts) — trois vues séparées depuis le 2026-10-13, à côté de « Marchés » et « Alertes ») :
 
 **a) Grille hebdomadaire.** Une ligne par jour, chaque ligne portant 0..N plages
 (`09:00–12:00`, `14:00–17:30`). Ajouter/retirer une plage, la dupliquer sur les

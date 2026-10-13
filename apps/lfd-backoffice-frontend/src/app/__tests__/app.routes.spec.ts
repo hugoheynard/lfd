@@ -145,7 +145,6 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'reglages/sites': 'lfc_site_settings:read',
   'reglages/sites/nouveau': 'lfc_site_settings:write',
   'reglages/sites/:id': 'lfc_site_settings:read',
-  'exploitation/commercial': 'b2b_growth:read',
 
   // L'ESPACE B2B — ce que la plateforme client vend, et à quel prix. Même mur
   // que les réglages d'où ses écrans viennent : décider d'un prix de vente est
@@ -338,6 +337,10 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'commercial/prospects': 'b2b_growth:read',
   analytics: 'b2b_growth:read',
   'commercial/calendrier': 'b2b_growth:read',
+  // Les réglages du commercial (2026-10-13) — venus de l'Exploitation.
+  'commercial/reglages/disponibilite': 'b2b_growth:read',
+  'commercial/reglages/marches': 'b2b_growth:read',
+  'commercial/reglages/alertes': 'b2b_growth:read',
   // Les deux gabarits héritent du mur de `commercial` (`growth:read`) : ils
   // portent des prix négociés, et la même personne qui voit les prospects
   // négocie leurs tarifs.
@@ -458,7 +461,7 @@ describe("l'arbre de routes du back-office", () => {
       ['surtaxe-de-retard', '/comptabilite/surtaxe-de-retard'],
       // Les deux derniers écrans, partis le 2026-10-10.
       ['facturation', '/documentation/facturation'],
-      ['commercial', '/exploitation/commercial'],
+      ['commercial', '/commercial/reglages/disponibilite'],
     ]);
   });
 

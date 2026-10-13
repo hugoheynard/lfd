@@ -111,6 +111,38 @@ export const COMMERCIAL_VIEWS: readonly CommercialView[] = [
     description:
       "Les grilles de prix qu'on prépare une fois : un prix fixe, ou des paliers. On les repose chez autant de clients qu'on veut.",
   },
+  // RÉGLAGES (Hugo, 2026-10-13) : les trois onglets de l'ancienne page
+  // « Réglages commerciaux » de l'Exploitation, devenus trois vues. Une table
+  // pour le rail ET le lanceur mobile : les deux arbres les reçoivent ensemble.
+  {
+    key: 'reglages-disponibilite',
+    label: 'Disponibilité',
+    link: '/commercial/reglages/disponibilite',
+    icon: 'clock',
+    section: 'Réglages',
+    needs: 'b2b_growth:read',
+    description:
+      'Quand un prospect peut prendre rendez-vous : la grille de la semaine, sa politique, ses exceptions.',
+  },
+  {
+    key: 'reglages-marches',
+    label: 'Marchés',
+    link: '/commercial/reglages/marches',
+    icon: 'map-pin',
+    section: 'Réglages',
+    needs: 'b2b_growth:read',
+    description: 'Les zones et les codes NAF visés, avec ce qu’ils comptent.',
+  },
+  {
+    key: 'reglages-alertes',
+    label: 'Alertes',
+    link: '/commercial/reglages/alertes',
+    icon: 'bell',
+    section: 'Réglages',
+    needs: 'b2b_growth:read',
+    description:
+      'Les alertes de compte client, et les seuils de couleur du calendrier d’acquisition.',
+  },
 ];
 
 /**
@@ -284,15 +316,8 @@ function underSection(section: string, views: readonly WorkspaceView[]): Workspa
 export const EXPLOITATION_VIEWS: readonly WorkspaceView[] = [
   ...underSection('Production', PRODUCTION_VIEWS),
   ...underSection('Livraison', LIVRAISON_VIEWS),
-  // Venus des Réglages le 2026-10-10 (Hugo) : rendez-vous, marchés, alertes.
-  {
-    key: 'reglages-commerciaux',
-    label: 'Réglages commerciaux',
-    link: '/exploitation/commercial',
-    icon: 'calendar',
-    section: 'Commercial',
-    needs: 'b2b_growth:read',
-  },
+  // « Réglages commerciaux » est partie dans l'espace Commercial le
+  // 2026-10-13 (Hugo), en trois vues de sa section « Réglages ».
   // RÉGLAGES › SITES (plan des sites, lot S1, 2026-10-13) — l'ancien « Points
   // de retrait » de l'E-commerce, sous son propre droit. Une table pour le
   // rail ET le lanceur mobile : les deux arbres le reçoivent ensemble.

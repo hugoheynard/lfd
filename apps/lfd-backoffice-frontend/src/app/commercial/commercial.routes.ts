@@ -101,6 +101,33 @@ export const commercialRoutes: Routes = [
         loadComponent: () =>
           import('./tarification/grille/gabarit-grille-page').then((m) => m.TemplateGridPage),
       },
+      // RÉGLAGES du commercial (Hugo, 2026-10-13) : les trois onglets de
+      // l'ancienne page « Réglages commerciaux » de l'Exploitation, devenus
+      // trois vues. Même droit qu'avant, `b2b_growth:read`.
+      { path: 'reglages', pathMatch: 'full', redirectTo: 'reglages/disponibilite' },
+      {
+        path: 'reglages/disponibilite',
+        canActivate: [permissionGuard('b2b_growth:read')],
+        title: 'Disponibilité — LFC B2B admin',
+        loadComponent: () =>
+          import('./reglages/disponibilite-page/disponibilite-page').then(
+            (m) => m.DisponibilitePage,
+          ),
+      },
+      {
+        path: 'reglages/marches',
+        canActivate: [permissionGuard('b2b_growth:read')],
+        title: 'Marchés — LFC B2B admin',
+        loadComponent: () =>
+          import('./reglages/marches-page/marches-page').then((m) => m.MarchesPage),
+      },
+      {
+        path: 'reglages/alertes',
+        canActivate: [permissionGuard('b2b_growth:read')],
+        title: 'Alertes — LFC B2B admin',
+        loadComponent: () =>
+          import('./reglages/alertes-page/alertes-page').then((m) => m.AlertesPage),
+      },
     ],
   },
   {

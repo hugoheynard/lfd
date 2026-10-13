@@ -26,7 +26,7 @@ jusqu'à l'activation :
 | Activation & frictions                       | `commercial/activation`                        |
 | Acquisition (calendrier + file à traiter)    | `commercial/acquisition`                       |
 | Demande de rappel côté client                | panneau support d'activation + panneau contact |
-| Réglages → Commercial (seuils, marché ciblé) | `reglages/commercial`                          |
+| Réglages → Commercial (seuils, marché ciblé) | `commercial/reglages/*` (depuis le 2026-10-13) |
 
 **Hors périmètre pour cette release** : catalogue, panier, commandes, paiements,
 abonnements, PIM. Le dashboard **Croissance** est dedans par la bande (il vit

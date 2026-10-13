@@ -45,7 +45,8 @@ export const reglagesRoutes: Routes = [
       // Partis le 2026-10-10 (Hugo) : la facturation explique, elle va à la
       // Documentation ; les réglages commerciaux vont à l'Exploitation.
       { path: 'facturation', redirectTo: '/documentation/facturation' },
-      { path: 'commercial', redirectTo: '/exploitation/commercial' },
+      // Puis, le 2026-10-13, dans l'espace Commercial (trois vues).
+      { path: 'commercial', redirectTo: '/commercial/reglages/disponibilite' },
 
       // RÉGLAGES › SITES — nos lieux, leurs rôles, leurs couleurs. Sous SON
       // droit, `lfc_site_settings` (Hugo, Q-S5, 2026-10-13), comme l'API
