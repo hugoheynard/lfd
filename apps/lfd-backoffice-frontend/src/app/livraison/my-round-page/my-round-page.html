@@ -291,6 +291,7 @@
                     <app-my-round-stop
                       [roundId]="round.id"
                       [stop]="entry.stop"
+                      [category]="categories().get(entry.stop.stopId) ?? null"
                       [goTo]="goToOf(entry.stop)"
                       [gestures]="gestures()"
                       [next]="entry.stop.stopId === nextStop()?.stopId"

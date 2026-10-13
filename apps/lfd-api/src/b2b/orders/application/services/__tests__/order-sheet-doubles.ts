@@ -5,6 +5,7 @@ import { CustomerDocumentStore } from "../../../../../platform/storage/customer-
 import type { StoredDocument } from "../../../../../platform/storage/document-store.js";
 import { OrderSheetLogoUnavailableError } from "../../../domain/errors/order-sheet-logo-unavailable.error.js";
 import { OrderMailOrigins } from "../../../domain/ports/order-mail-origins.js";
+import { OrderSheetColorSource } from "../../../domain/ports/order-sheet-color.source.js";
 import { OrderSheetLogoSource } from "../../../domain/ports/order-sheet-logo.source.js";
 import { OrderSheetArchive } from "../order-sheet-archive.service.js";
 import { OrderSheetAttachment } from "../order-sheet-attachment.service.js";
@@ -43,6 +44,20 @@ export class FixedLogo extends OrderSheetLogoSource {
   }
 }
 
+/** La couleur de la commande, donnée d'avance ; les commandes demandées notées. */
+export class FixedSheetColor extends OrderSheetColorSource {
+  readonly asked: string[] = [];
+
+  constructor(private readonly color: string | null = null) {
+    super();
+  }
+
+  colorOf(orderId: string): Promise<string | null> {
+    this.asked.push(orderId);
+    return Promise.resolve(this.color);
+  }
+}
+
 /** Un dossier `assets/` qui n'a pas été déployé. */
 export class MissingLogo extends OrderSheetLogoSource {
   load(): Promise<Buffer> {
@@ -70,6 +85,7 @@ export function sheetAttachment(
     readonly logo?: OrderSheetLogoSource;
     readonly admin?: string | null;
     readonly documents?: MemoryCustomerDocuments;
+    readonly color?: OrderSheetColorSource;
   } = {},
 ): OrderSheetAttachment {
   return new OrderSheetAttachment(
@@ -77,6 +93,7 @@ export function sheetAttachment(
       options.documents ?? new MemoryCustomerDocuments(),
       options.logo ?? new FixedLogo(),
       new FixedSheetOrigins(options.admin === undefined ? "https://admin.lfc.test" : options.admin),
+      options.color ?? new FixedSheetColor(),
     ),
   );
 }

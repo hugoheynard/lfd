@@ -37,6 +37,17 @@ export interface DeliveryOrderFacts extends DeliveryOrderRef {
   readonly delivery: boolean;
   /** La zone de livraison FIGÉE à la passation (identifiant opaque), ou `null`. */
   readonly zoneId: string | null;
+  /**
+   * `pro` / `public`, figée à la passation ; `null` = commande d'avant la
+   * distinction. L'écran en tire la couleur de l'arrêt (plan
+   * `commandes/plan-tri-depart-et-couleurs.md`, L1a).
+   */
+  readonly clientele: "pro" | "public" | null;
+  /**
+   * Le site d'un RETRAIT, figé à la passation (S2), identifiant opaque ;
+   * `null` : une livraison, ou un retrait d'avant le site.
+   */
+  readonly siteId: string | null;
 }
 
 /** Une fenêtre convenue, `HH:MM` ; `start` nul = « dès l'ouverture ». */

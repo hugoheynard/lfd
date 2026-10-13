@@ -8,6 +8,7 @@ import type { InternalTransfer } from "../domain/entities/internal-transfer.js";
 import type { DriverTransferStopRow } from "../domain/ports/driver-rounds.reader.js";
 import type { InternalTransfersReader } from "../domain/ports/internal-transfers.reader.js";
 import type { TransferBinCounts } from "../domain/ports/transfer-bin-counts.reader.js";
+import { transferClientelesOf, withClienteles } from "./transfer-categories.js";
 import { itemContentsOf } from "./transfer-contents.js";
 
 /** Les lectures que l'arrêt de transfert du livreur assemble. */
@@ -46,8 +47,9 @@ export async function driverTransferStopsOf(
     }
   }
   const unfrozen = [...loaded.values()].filter((transfer) => transfer.departedAt === null);
-  const [itemContents, binCounts, places] = await Promise.all([
+  const [itemContents, clienteles, binCounts, places] = await Promise.all([
     itemContentsOf(sources.contents, unfrozen),
+    transferClientelesOf(sources.contents, [...loaded.values()]),
     sources.bins.liveBinCounts([...loaded.keys()]),
     sources.places.placesOf([...new Set([...loaded.values()].map((t) => t.siteId))]),
   ]);
@@ -61,10 +63,11 @@ export async function driverTransferStopsOf(
       position: row.position,
       closedAt: row.closedAt?.toISOString() ?? null,
       siteLabel: row.siteLabel,
+      ...(transfer === undefined ? {} : { siteId: transfer.siteId }),
       orderCount: row.orderCount,
       receivedAt: row.receivedAt?.toISOString() ?? null,
       totals: manifest?.totals ?? [],
-      orders: manifest?.orders ?? NO_SECTION,
+      orders: manifest === undefined ? NO_SECTION : withClienteles(manifest.orders, clienteles),
       resupplies: manifest?.resupplies ?? NO_SECTION,
       binCount: binCounts.get(row.transferId) ?? 0,
       siteAddress: place?.address ?? null,

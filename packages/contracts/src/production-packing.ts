@@ -120,6 +120,18 @@ export interface PackingSheet {
    * distinction côté commerce. L'écran n'affiche alors rien.
    */
   readonly clientele: "pro" | "public" | null;
+  /**
+   * **Le site qui remet ce retrait**, identifiant opaque du commerce, tel que
+   * le fournil l'a figé à l'arrêt (plan `commandes/plan-tri-depart-et-couleurs.md`,
+   * L1a). `null` : une livraison, une commande d'avant le site (S2), ou une
+   * ligne inscrite avant que le colisage ne le recopie — l'écran la peint
+   * alors en teinte neutre, jamais d'une couleur devinée. Toujours servi ;
+   * facultatif dans le TYPE, comme `qualityHeld`, pour les fiches construites
+   * à la main avant lui (fixtures des fronts) — un absent se lit `null`.
+   */
+  readonly siteId?: string | null;
+  /** `HH:mm` — début du créneau, sinon fin de l'échéance ; `null` : aucune. Même réserve. */
+  readonly dueAt?: string | null;
   readonly destination: string;
   readonly lines: readonly PackingLine[];
   /** Le nombre de lignes de la commande — compté au serveur, l'écran ne compte rien. */

@@ -73,3 +73,26 @@ export interface StoredSiteView extends PickupAddressView, SiteRolesPayload, Sit
   /** ISO 8601, ou `null` : un site archivé n'est plus proposé. */
   readonly archivedAt: string | null;
 }
+
+/**
+ * **Une entrée de la palette de la logistique** — ce qu'un écran du colisage,
+ * des tournées, du chargement ou de « Ma tournée » lit d'un site pour peindre
+ * une commande (plan `commandes/plan-tri-depart-et-couleurs.md`, L1a).
+ *
+ * Lecture SEULE, sans `lfc_site_settings` : ni adresse, ni heures, ni remise.
+ * `supply` nomme un retrait servi par transfert (« Transfert Val Village ») ;
+ * `isDeparture` désigne le site dont les couleurs de livraison peignent TOUTES
+ * les livraisons — un seul départ aujourd'hui. Les archivés y sont : une
+ * commande déjà passée garde son site.
+ */
+export interface SitePaletteEntryView extends SiteColorsPayload {
+  readonly id: string;
+  readonly label: string;
+  readonly supply: SiteSupply;
+  readonly isDeparture: boolean;
+}
+
+/** `GET admin/sites/palette`. */
+export interface SitePaletteView {
+  readonly sites: readonly SitePaletteEntryView[];
+}

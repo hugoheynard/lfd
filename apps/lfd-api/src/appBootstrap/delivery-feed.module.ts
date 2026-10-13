@@ -20,9 +20,12 @@ import { CommerceTransferSites } from "../b2b/orders/application/services/commer
 import { PickupAddressesModule } from "../b2b/pickup-addresses/pickup-addresses.module.js";
 import { PickupDepartureCandidatesReader } from "../b2b/pickup-addresses/infrastructure/pickup-departure-candidates.reader.js";
 import { SiteTransferPlacesReader } from "../b2b/pickup-addresses/infrastructure/site-transfer-places.reader.js";
+import { SiteDeliveryColorsReader } from "../b2b/sites/infrastructure/site-delivery-colors.reader.js";
+import { SitesModule } from "../b2b/sites/sites.module.js";
 import {
   CommerceDayVersionReader,
   DeliveryAddressPointCorrector,
+  DeliveryColorsReader,
   DeliveryAddressPointsReader,
   DeliveryOrderLinesReader,
   DeliveryOrdersReader,
@@ -92,7 +95,14 @@ import { ResolvedDepartureSiteReader } from "../delivery/infrastructure/resolved
  */
 @Global()
 @Module({
-  imports: [PickupAddressesModule, CatalogModule, AccountModule, OrdersModule, DeliveryModule],
+  imports: [
+    PickupAddressesModule,
+    CatalogModule,
+    AccountModule,
+    OrdersModule,
+    DeliveryModule,
+    SitesModule,
+  ],
   providers: [
     { provide: DepartureCandidatesReader, useClass: PickupDepartureCandidatesReader },
     { provide: DeliveryOrdersReader, useClass: PrismaDeliveryOrdersReader },
@@ -114,6 +124,7 @@ import { ResolvedDepartureSiteReader } from "../delivery/infrastructure/resolved
     { provide: TransferOrderContentsReader, useClass: PrismaTransferOrderContentsReader },
     { provide: TransferSitesReader, useExisting: CommerceTransferSites },
     { provide: TransferSitePlacesReader, useClass: SiteTransferPlacesReader },
+    { provide: DeliveryColorsReader, useClass: SiteDeliveryColorsReader },
   ],
   exports: [
     DepartureCandidatesReader,
@@ -133,6 +144,7 @@ import { ResolvedDepartureSiteReader } from "../delivery/infrastructure/resolved
     TransferOrderContentsReader,
     TransferSitesReader,
     TransferSitePlacesReader,
+    DeliveryColorsReader,
   ],
 })
 export class DeliveryFeedModule {}

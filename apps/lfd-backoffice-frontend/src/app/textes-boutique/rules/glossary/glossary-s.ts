@@ -48,6 +48,7 @@ export const GLOSSARY_S: Readonly<Record<string, string>> = {
   slideGoTo: 'Carrousel — aller à',
   slideNext: 'Carrousel — suivant',
   slidePrevious: 'Carrousel — précédent',
+  slipped: 'Jour retenu dépassé — prochain possible',
   slot: 'Créneau',
   slotAdd: 'Ajouter un créneau',
   slotEnd: 'Créneau — fin',

@@ -112,6 +112,8 @@ import { GetOrderSheetPdfHandler } from "./application/queries/get-order-sheet-p
 import { OrderSheetArchive } from "./application/services/order-sheet-archive.service.js";
 import { OrderSheetAttachment } from "./application/services/order-sheet-attachment.service.js";
 import { OrderSheetLogoSource } from "./domain/ports/order-sheet-logo.source.js";
+import { OrderSheetColorSource } from "./domain/ports/order-sheet-color.source.js";
+import { PrismaOrderSheetColorSource } from "./infrastructure/prisma-order-sheet-color.source.js";
 import { DiskOrderSheetLogoSource } from "./infrastructure/disk-order-sheet-logo.source.js";
 import { MailDeliveryEnRoute } from "./application/handlers/mail-delivery-en-route.handler.js";
 import { OnProductionDayClosed } from "./application/handlers/on-production-day-closed.handler.js";
@@ -285,6 +287,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     OrderSheetAttachment,
     // Le logo du bon (plan-bon-public §2.1), lu dans `assets/` comme les polices de la facture.
     { provide: OrderSheetLogoSource, useClass: DiskOrderSheetLogoSource },
+    { provide: OrderSheetColorSource, useClass: PrismaOrderSheetColorSource },
     GetOrderPaymentHandler,
     GetAdminOrderHandler,
     GetOrderHandoverProofHandler,

@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import type { BillingAddressPayload, GpsPoint } from "./address.js";
 import { closeStopWithoutHandoverPayloadSchema } from "./delivery-doorstep.js";
+import type { OrderClientele } from "./order-handover.js";
 
 /**
  * **Le manifeste d'un transfert interne** (2026-10-13, plan du transfert
@@ -32,6 +33,12 @@ export interface TransferManifestItemView {
   /** La commande (ou le réapprovisionnement) — identifiant opaque. */
   readonly subjectId: string;
   readonly lines: readonly TransferManifestLineView[];
+  /**
+   * Une commande : `pro` / `public`, lue au commerce à l'instant (L1a) — même
+   * sur un manifeste figé, la clientèle d'une commande ne change pas. Absent :
+   * réapprovisionnement, ou clientèle inconnue.
+   */
+  readonly clientele?: OrderClientele;
 }
 
 export interface TransferManifestSectionView {
@@ -44,6 +51,12 @@ export interface InternalTransferManifestView {
   readonly transferId: string;
   readonly day: string;
   readonly siteLabel: string;
+  /**
+   * Le site servi, identifiant opaque du commerce (plan
+   * `commandes/plan-tri-depart-et-couleurs.md`, L1a) — l'écran y lit les
+   * couleurs du retrait. Absent : vue d'avant le champ.
+   */
+  readonly siteId?: string;
   /** Parti le (instant ISO), ou `null` : prévu. */
   readonly departedAt: string | null;
   /** `true` : le manifeste est celui figé au départ ; `false` : calculé à l'instant. */
@@ -116,6 +129,12 @@ export interface DriverTransferStopView {
   /** Instant ISO de la clôture (« Remis au site »), ou `null`. */
   readonly closedAt: string | null;
   readonly siteLabel: string;
+  /**
+   * Le site servi, identifiant opaque du commerce (plan
+   * `commandes/plan-tri-depart-et-couleurs.md`, L1a) — l'écran y lit les
+   * couleurs du retrait. Absent : vue d'avant le champ.
+   */
+  readonly siteId?: string;
   /** Les commandes portées. */
   readonly orderCount: number;
   /** Reçu au site (instant ISO) — par le livreur ou au comptoir — ou `null`. */

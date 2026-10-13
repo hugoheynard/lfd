@@ -8,6 +8,7 @@ import {
   publicPickupSchedulePayloadSchema,
   type PublicPickupScheduleView,
   type SiteColorsPayload,
+  type SitePaletteView,
   siteColorsPayloadSchema,
   type SiteRolesPayload,
   siteRolesPayloadSchema,
@@ -26,7 +27,10 @@ import {
 } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
-import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
+import {
+  AdminSurface,
+  RequireAnyPermission,
+} from "../../../platform/auth/admin-surface.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { CreatePickupAddressCommand } from "../../pickup-addresses/application/create-pickup-address.command.js";
 import { GetPublicPickupScheduleQuery } from "../../pickup-addresses/application/get-public-pickup-schedule.query.js";
@@ -35,6 +39,7 @@ import { SavePublicPickupScheduleCommand } from "../../pickup-addresses/applicat
 import { SetDefaultPickupAddressCommand } from "../../pickup-addresses/application/set-default-pickup-address.command.js";
 import { UpdatePickupAddressCommand } from "../../pickup-addresses/application/update-pickup-address.command.js";
 import { GetSiteQuery } from "../application/get-site.query.js";
+import { GetSitePaletteQuery } from "../application/get-site-palette.query.js";
 import { ListSitesQuery } from "../application/list-sites.query.js";
 import { SetSiteColorsCommand } from "../application/set-site-colors.command.js";
 import { SetSiteRolesCommand } from "../application/set-site-roles.command.js";
@@ -65,6 +70,25 @@ export class AdminSitesController {
   @Get()
   list(): Promise<readonly SiteView[]> {
     return this.queries.execute<ListSitesQuery, readonly SiteView[]>(new ListSitesQuery());
+  }
+
+  /**
+   * **La palette de la logistique** — lecture seule (id, nom, couleurs,
+   * départ), sans `lfc_site_settings` : le colisage, le tableau des tournées,
+   * le chargement et « Ma tournée » peignent leurs commandes (plan
+   * `commandes/plan-tri-depart-et-couleurs.md`, L1a). La permission déclarée
+   * REMPLACE celle de la ressource de la classe (`StaffAccessGuard`). Déclarée
+   * AVANT `:id`, qui l'avalerait sinon.
+   */
+  @Get("palette")
+  @RequireAnyPermission(
+    "production_packing:read",
+    "delivery_rounds:read",
+    "delivery_loading:read",
+    "delivery_driving:read",
+  )
+  palette(): Promise<SitePaletteView> {
+    return this.queries.execute<GetSitePaletteQuery, SitePaletteView>(new GetSitePaletteQuery());
   }
 
   @Get(":id")

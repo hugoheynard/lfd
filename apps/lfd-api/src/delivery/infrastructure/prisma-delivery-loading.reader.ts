@@ -32,7 +32,7 @@ const ROUND_SELECT = {
       kind: true,
       orderId: true,
       transferId: true,
-      transfer: { select: { siteLabel: true } },
+      transfer: { select: { siteId: true, siteLabel: true } },
       position: true,
       binLoads: { where: { loadedAt: { not: null } }, select: { binId: true, loadedAt: true } },
     },
@@ -89,6 +89,7 @@ export class PrismaDeliveryLoadingReader extends DeliveryLoadingReader {
         ...stopSubjectOf(stop),
         stopId: stop.id,
         siteLabel: stop.transfer?.siteLabel ?? null,
+        siteId: stop.transfer?.siteId ?? null,
         position: stop.position,
         bins: bins.filter((bin) => isCarriedBy(stop, carried, bin)),
         loaded: new Map(

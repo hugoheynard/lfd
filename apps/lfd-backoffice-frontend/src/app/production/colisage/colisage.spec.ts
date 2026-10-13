@@ -16,6 +16,7 @@ import { DeliveryLoadingService } from '../../livraison/delivery-loading.service
 import { PermissionsStore } from '../../auth/permissions.store';
 import { PackingContainersService } from '../packing-containers.service';
 import { PackingService } from '../packing.service';
+import { SitePaletteService } from '../../shared/logistics-colors/site-palette.service';
 import { Colisage } from './colisage';
 
 /**
@@ -312,6 +313,11 @@ describe('le poste de colisage', () => {
           useValue: { binTypes: () => Promise.resolve({ types: [] }) },
         },
         { provide: PackingContainersService, useValue: {} },
+        // La palette des cadres de couleur (L1b) : vide, toutes les commandes neutres.
+        {
+          provide: SitePaletteService,
+          useValue: { palette: () => Promise.resolve({ sites: [] }) },
+        },
       ],
     });
     rounds = [];

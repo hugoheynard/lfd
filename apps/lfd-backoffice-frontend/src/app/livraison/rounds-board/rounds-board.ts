@@ -19,6 +19,7 @@ import type {
   DeliveryIncidentView,
   DeliveryPlacementSuggestionView,
   DeliveryRoundTransferStopView,
+  SitePaletteEntryView,
 } from '@lfd/contracts';
 import type { FoldSelectOption } from 'fold-ng';
 import {
@@ -131,6 +132,8 @@ export class RoundsBoard {
   readonly busy = input(false);
   /** La couleur de chaque véhicule, par identifiant. */
   readonly colors = input<ReadonlyMap<string, string>>(new Map());
+  /** La palette des sites, lue par la page — la pastille de chaque arrêt (L1b). */
+  readonly palette = input<readonly SitePaletteEntryView[]>([]);
   readonly drivers = input<readonly FoldSelectOption<string>[]>([]);
   readonly incidents = input<readonly DeliveryIncidentView[]>([]);
   readonly incidentPhoto = input.required<IncidentPhotoLoader>();

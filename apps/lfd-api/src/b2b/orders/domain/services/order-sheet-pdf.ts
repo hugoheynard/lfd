@@ -20,6 +20,7 @@ import {
   WIDTH as CONTENT_WIDTH,
 } from "../../../../platform/pdf/paper-pdf-kit.js";
 import { sheetShowsTtc } from "./order-sheet.js";
+import { header } from "./order-sheet-pdf-header.js";
 import { money, unitPrice } from "./order-sheet-pdf-format.js";
 import { PRETAX_ONLY_NOTE, totalRows } from "./order-sheet-pdf-totals.js";
 
@@ -80,6 +81,12 @@ export interface OrderSheetArt {
   /** Le logo de l'en-tête, en octets PNG. */
   readonly logo: Buffer;
   /**
+   * La couleur de la commande (`#rrggbb`) — un trait épais entre le titre et
+   * le numéro (plan `commandes/plan-tri-depart-et-couleurs.md`, L5) ; `null` :
+   * pas de trait. Celle de l'instant du rendu, figée avec le bon archivé.
+   */
+  readonly categoryColor: string | null;
+  /**
    * L'URL du QR de retrait (`handoverUrlOf`), ou `""` : pas de jeton, pas
    * d'origine admin. Ignorée hors retrait.
    */
@@ -95,7 +102,6 @@ const X_NAME = CONTENT_LEFT + COL_QTY;
 const X_SKU_RIGHT = CONTENT_RIGHT - COL_UNIT - COL_TOTAL;
 const X_UNIT_RIGHT = CONTENT_RIGHT - COL_TOTAL;
 
-const LOGO_SIZE = 18 * MM;
 const QR_SIZE = 30 * MM;
 
 /** La légende du QR — ce qu'on fait du papier au comptoir. */
@@ -127,27 +133,6 @@ function fulfillmentLines(fulfillment: SheetFulfillment): readonly string[] {
       ? []
       : [`${fulfillment.contact.name} · ${fulfillment.contact.phone}`]),
   ].filter((line) => line !== "");
-}
-
-/**
- * L'en-tête : le logo à gauche, le titre et la référence à sa droite, les
- * dates cadrées à droite. Le logo dit qui émet — « La Folie Coffee — B2B » et
- * « EXEMPLAIRE CHIFFRÉ » sont retirés (Hugo, 2026-10-09).
- */
-function header(doc: Doc, sheet: ClientSheet, logo: Buffer): number {
-  const top = MARGIN_Y;
-  doc.image(logo, CONTENT_LEFT, top, { fit: [LOGO_SIZE, LOGO_SIZE] });
-  const titleX = CONTENT_LEFT + LOGO_SIZE + 5 * MM;
-  const y = top + 3 * MM;
-  put(doc, "BON DE COMMANDE", titleX, y, { size: 16, bold: true });
-  putRight(doc, `Passée le ${longDate(sheet.placedAt)}`, CONTENT_RIGHT, y + 3, 10);
-  put(doc, sheet.reference, titleX, y + 7 * MM, { size: 13, bold: true });
-  if (sheet.requestedFor !== null) {
-    putRight(doc, `Souhaitée le ${longDate(sheet.requestedFor)}`, CONTENT_RIGHT, y + 7 * MM, 10);
-  }
-  const bottom = top + LOGO_SIZE + 2 * MM;
-  rule(doc, bottom, 2);
-  return bottom + 2;
 }
 
 /**
@@ -371,7 +356,12 @@ const ROW_SPACE = 12 * MM;
  * ni juste avant les totaux.
  */
 function draw(doc: Doc, sheet: ClientSheet, art: OrderSheetArt): void {
-  let y = tableHead(doc, sheet, parties(doc, sheet, header(doc, sheet, art.logo)), true);
+  let y = tableHead(
+    doc,
+    sheet,
+    parties(doc, sheet, header(doc, sheet, art.logo, art.categoryColor)),
+    true,
+  );
 
   for (const line of sheet.lines) {
     if (y > PAGE_HEIGHT - MARGIN_Y - ROW_SPACE - TAIL_SPACE) {

@@ -6,6 +6,8 @@ import {
   StaffAuthors,
 } from "../../../../staff/directory/domain/staff-author-directory.js";
 import {
+  type DeliveryColors,
+  DeliveryColorsReader,
   type DeliveryOrderProcedure,
   DeliveryProceduresReader,
 } from "../../../channels/commerce/index.js";
@@ -107,6 +109,20 @@ function stopRow(orderId: string, overrides: Partial<RoundPaperStopRow> = {}): R
   };
 }
 
+/** Les couleurs de livraison du départ, données d'avance ; compte ses lectures. */
+class FixedDeliveryColors extends DeliveryColorsReader {
+  calls = 0;
+  constructor(private readonly colors: DeliveryColors) {
+    super();
+  }
+  departureColors(): Promise<DeliveryColors> {
+    this.calls += 1;
+    return Promise.resolve(this.colors);
+  }
+}
+
+const NO_COLORS: DeliveryColors = { pro: null, public: null };
+
 const ROUND: RoundPaperRow = {
   id: "round_1",
   serviceDay: DAY,
@@ -133,11 +149,14 @@ const PROCEDURE: DeliveryOrderProcedure = {
   steps: [{ id: "s1", title: "Entrer par la cour", body: "", hasPhoto: true, photoRevision: "r1" }],
 };
 
-function subject(round: RoundPaperRow | null = ROUND) {
+function subject(round: RoundPaperRow | null = ROUND, colors = new FixedDeliveryColors(NO_COLORS)) {
   const procedures = new FixedProcedures([PROCEDURE]);
   const handler = new GetRoundPaperPdfHandler(
     new FixedRoundPaper(round),
-    new FixedDeliveryOrders([deliveryOn("o1", DAY), deliveryOn("o2", DAY)]),
+    new FixedDeliveryOrders([
+      deliveryOn("o1", DAY, { clientele: "pro" }),
+      deliveryOn("o2", DAY, { clientele: null }),
+    ]),
     procedures,
     new OneAuthor(),
     new FixedClock(NOW),
@@ -156,8 +175,9 @@ function subject(round: RoundPaperRow | null = ROUND) {
         arrivalBy: "09:30",
       },
     ]),
+    colors,
   );
-  return { handler, procedures };
+  return { handler, procedures, colors };
 }
 
 function textOf(file: RoundPaperFile): string {
@@ -195,6 +215,20 @@ describe("GetRoundPaperPdfHandler — la feuille de tournée tirée au moment", 
     expect(text).toContain("COMMANDES · 2 COMMANDES");
     expect(text).toContain("6 × Pain de campagne");
     expect(text).toContain("4 bacs à charger");
+  });
+
+  it("lit les couleurs du départ À CHAQUE tirage, et un arrêt coloré change le papier (L5)", async () => {
+    const plain = subject();
+    const painted = subject(ROUND, new FixedDeliveryColors({ pro: "#1e88e5", public: null }));
+    const query = new GetRoundPaperPdfQuery("round_1", true);
+
+    const before = await plain.handler.execute(query);
+    const after = await painted.handler.execute(query);
+    await painted.handler.execute(query);
+
+    expect(painted.colors.calls).toBe(2);
+    expect(after.bytes.equals(before.bytes)).toBe(false);
+    expect(textOf(after)).toBe(textOf(before));
   });
 
   it("imprime la procédure avec le droit de la lire", async () => {

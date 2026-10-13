@@ -29,7 +29,11 @@ function delivery(fact: { type: string; payload: Readonly<Record<string, unknown
   return { eventId: "evt", type: fact.type, payload: fact.payload };
 }
 
-function drawn(orderId = "ord_1", clientele: "pro" | "public" | null = null) {
+function drawn(
+  orderId = "ord_1",
+  clientele: "pro" | "public" | null = null,
+  siteId: string | null = null,
+) {
   return new PackingListDrawnEvent(DAY, AT, {
     orderId,
     reference: `CMD-${orderId}`,
@@ -37,6 +41,7 @@ function drawn(orderId = "ord_1", clientele: "pro" | "public" | null = null) {
     fulfillmentMethod: "pickup",
     dueAt: "07:00",
     clientele,
+    siteId,
     lines: [
       { sku: "CRO", productName: "Croissant", quantity: 2 },
       { sku: "CRO", productName: "Croissant", quantity: 1 },
@@ -83,6 +88,7 @@ describe("OnPackingListDrawn", () => {
         fulfillmentMethod: "pickup",
         dueAt: "07:00",
         clientele: null,
+        siteId: null,
         drawnAt: AT,
         // K2b : toute commande inscrite désormais liste ses contenants.
         containerMode: "listed",
@@ -100,6 +106,18 @@ describe("OnPackingListDrawn", () => {
     expect([...shadow.orders.values()].map((order) => [order.orderId, order.clientele])).toEqual([
       ["ord_pro", "pro"],
       ["ord_pub", "public"],
+    ]);
+  });
+
+  it("recopie le site que le fournil a figé — la couleur du poste (L1a)", async () => {
+    const { shadow, list } = setup();
+
+    await list.handle(delivery(drawn("ord_vv", "public", "site_vv")));
+    await list.handle(delivery(drawn("ord_sans", "public", null)));
+
+    expect([...shadow.orders.values()].map((order) => [order.orderId, order.siteId])).toEqual([
+      ["ord_vv", "site_vv"],
+      ["ord_sans", null],
     ]);
   });
 

@@ -10,7 +10,7 @@ import type { OrderSheetArt } from "../order-sheet-pdf.js";
 export const LOGO = readFileSync(
   new URL("../../../../../../assets/logo-la-folie-coffee-noir-et-blanc.png", import.meta.url),
 );
-export const ART: OrderSheetArt = { logo: LOGO, handoverUrl: "" };
+export const ART: OrderSheetArt = { logo: LOGO, handoverUrl: "", categoryColor: null };
 
 export const LINE = {
   sku: "PAI-BAG-TRA",

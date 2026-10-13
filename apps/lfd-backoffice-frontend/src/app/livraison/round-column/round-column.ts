@@ -1,6 +1,10 @@
 import { CdkDrag, type CdkDragDrop, CdkDragPlaceholder, CdkDropList } from '@angular/cdk/drag-drop';
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
-import type { DeliveryIncidentView, DeliveryRoundTransferStopView } from '@lfd/contracts';
+import type {
+  DeliveryIncidentView,
+  DeliveryRoundTransferStopView,
+  SitePaletteEntryView,
+} from '@lfd/contracts';
 import type { FoldSelectOption } from 'fold-ng';
 import {
   FoldBadgeComponent,
@@ -16,6 +20,11 @@ import { incidentCountLabel, incidentsOfRound, incidentsOfStop } from '../delive
 import { parisTimeOf } from '../delivery-loading';
 import { stopCountLabel, windowShortLabel } from '../delivery-rounds';
 import { IncidentList } from '../incident-list/incident-list';
+import {
+  type LogisticsCategory,
+  logisticsCategoryOf,
+} from '../../shared/logistics-colors/logistics-category';
+import { LogisticsSwatch } from '../../shared/logistics-colors/logistics-swatch/logistics-swatch';
 import type { IncidentPhotoLoader } from '../incident-photo/incident-photo';
 import { OrderCard } from '../order-card/order-card';
 import { RoundDriver } from '../round-driver/round-driver';
@@ -64,6 +73,7 @@ export interface StopShift {
     FoldIconComponent,
     FoldInlineConfirmComponent,
     IncidentList,
+    LogisticsSwatch,
     OrderCard,
     RoundDriver,
     TransferStopCard,
@@ -73,6 +83,8 @@ export interface StopShift {
 })
 export class RoundColumn {
   readonly round = input.required<BoardRound>();
+  /** La palette des sites — `[]` : toutes les pastilles en teinte neutre (L1b). */
+  readonly palette = input<readonly SitePaletteEntryView[]>([]);
   /** La couleur du véhicule. */
   readonly color = input.required<string>();
   /** « Passage 1 », « Tournée unique ». */
@@ -148,6 +160,18 @@ export class RoundColumn {
   protected readonly placeWarning = computed(() => placeWarningLabel(this.round()));
 
   protected readonly stopCountLabel = stopCountLabel;
+
+  /**
+   * La catégorie d'un arrêt : une LIVRAISON, peinte de la couleur de livraison
+   * du site de départ pour sa clientèle — lue sur la feuille de route, qui la
+   * porte (plan du tri et des couleurs, L1b). Sans feuille : neutre.
+   */
+  protected categoryOf(stop: BoardStop): LogisticsCategory {
+    return logisticsCategoryOf(
+      { fulfillmentMethod: 'delivery', clientele: stop.sheet?.clientele ?? null },
+      this.palette(),
+    );
+  }
   protected readonly incidentCountLabel = incidentCountLabel;
   protected readonly titleOf = cardTitleOf;
   protected readonly metaOf = (stop: BoardStop): string => cardMetaOf(stop.reference, stop.sheet);

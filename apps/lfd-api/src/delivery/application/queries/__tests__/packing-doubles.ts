@@ -95,6 +95,8 @@ export function deliveryOrder(orderId: string, reference: string): DeliveryOrder
     day: null,
     delivery: true,
     zoneId: null,
+    clientele: null,
+    siteId: null,
   };
 }
 
@@ -153,6 +155,7 @@ export function roundRow(
     stops: stops.map((stop, index) => ({
       kind: "order" as const,
       siteLabel: null,
+      siteId: null,
       stopId: `stop_${stop.orderId}`,
       orderId: stop.orderId,
       position: index + 1,

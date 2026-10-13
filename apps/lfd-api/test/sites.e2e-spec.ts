@@ -5,7 +5,13 @@
  * couleurs libres (vert / rouge / rose refusés), l'archivage, et ce que le
  * client voit encore — les seuls sites actifs qui remettent.
  */
-import type { CreatedPickupResponse, PickupAddressView, RoleGrant, SiteView } from "@lfd/contracts";
+import type {
+  CreatedPickupResponse,
+  PickupAddressView,
+  RoleGrant,
+  SitePaletteView,
+  SiteView,
+} from "@lfd/contracts";
 
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
@@ -271,5 +277,60 @@ describe("admin/sites — le droit", () => {
       .post("/admin/pickup-addresses")
       .send(place("Val Village"))
       .expect(201);
+  });
+});
+
+/** Un membre du staff dont le rôle n'accorde QUE ces droits. */
+async function staffWith(key: string, grants: readonly RoleGrant[]): Promise<string> {
+  await staff().post("/admin/staff-roles").send({ key, label: key, grants }).expect(201);
+  const sub = `staff-${key}`;
+  await ctx.prisma.staffUser.create({
+    data: {
+      firstName: "Test",
+      lastName: key,
+      email: `${key}@lfc.test`,
+      role: null,
+      roleKey: key,
+      status: "active",
+      auth0Id: sub,
+    },
+  });
+  return sub;
+}
+
+describe("admin/sites/palette — la palette de la logistique (plan du tri et des couleurs, L1a)", () => {
+  it("se lit sous le colisage ou la livraison, SANS `lfc_site_settings` — id, nom, couleurs", async () => {
+    const id = await create("Val Village");
+    await staff()
+      .put(`/admin/sites/${id}/couleurs`)
+      .send({ ...NO_COLORS, pickupColorB2c: "#9E9E9E" })
+      .expect(204);
+
+    for (const [key, resource] of [
+      ["coliseur", "production_packing"],
+      ["composeur", "delivery_rounds"],
+      ["chargeur", "delivery_loading"],
+      ["livreur", "delivery_driving"],
+    ] as const) {
+      const sub = await staffWith(key, [{ resource, action: "read" }]);
+      const response = await ctx.asSub(sub).get("/admin/sites/palette").expect(200);
+      const entry = jsonBody<SitePaletteView>(response).sites.find((s) => s.id === id);
+      expect(entry).toEqual({
+        id,
+        label: "Val Village",
+        supply: "on_site",
+        isDeparture: false,
+        ...NO_COLORS,
+        pickupColorB2c: "#9e9e9e",
+      });
+      // La palette n'ouvre pas l'écran des sites.
+      await ctx.asSub(sub).get("/admin/sites").expect(403);
+    }
+  });
+
+  it("refuse (403) un membre sans aucun des quatre droits", async () => {
+    const sub = await staffWith("compta", [{ resource: "b2b_settings", action: "write" }]);
+
+    await ctx.asSub(sub).get("/admin/sites/palette").expect(403);
   });
 });

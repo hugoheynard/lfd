@@ -27,6 +27,13 @@ export interface PackingListOrder {
    * c'est aussi ce que rend un fait écrit avant le champ, qui ne le porte pas.
    */
   readonly clientele: Clientele | null;
+  /**
+   * Le site qui remet ce retrait, identifiant OPAQUE du commerce, tel que la
+   * journée l'a figé (S2) — le colisage le recopie pour sa couleur (plan
+   * `commandes/plan-tri-depart-et-couleurs.md`, L1a). `null` : livraison,
+   * commande d'avant le site, ou fait écrit avant le champ.
+   */
+  readonly siteId: string | null;
   readonly lines: readonly PackingListLine[];
 }
 
@@ -96,6 +103,8 @@ function orderOf(value: unknown): PackingListOrder | null {
   const method = raw["fulfillmentMethod"];
   const dueAt = raw["dueAt"];
   const clientele = clienteleOf(raw["clientele"]);
+  // Additif, comme la clientèle : un fait sans le champ se lit « sans site ».
+  const siteId = textOf(raw["siteId"]);
   const lines = linesOf(raw["lines"]);
   if (
     orderId === null ||
@@ -107,7 +116,16 @@ function orderOf(value: unknown): PackingListOrder | null {
   ) {
     return null;
   }
-  return { orderId, reference, customerLabel, fulfillmentMethod: method, dueAt, clientele, lines };
+  return {
+    orderId,
+    reference,
+    customerLabel,
+    fulfillmentMethod: method,
+    dueAt,
+    clientele,
+    siteId,
+    lines,
+  };
 }
 
 /**

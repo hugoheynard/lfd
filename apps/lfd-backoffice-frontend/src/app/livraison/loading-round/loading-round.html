@@ -325,6 +325,9 @@
                     <span class="lr-miss-codes">{{ row.codes }}</span>
                   }
                 </span>
+                @if (categories().get(row.stopId); as category) {
+                  <app-logistics-swatch [category]="category" data-missing-category />
+                }
                 <span class="lr-miss-status">{{ row.status }}</span>
               </div>
             }

@@ -76,7 +76,12 @@ export {
   type TransferSiteFacts,
   type TransferSitePlace,
 } from "./transfer-sites.reader.js";
-export { TransferOrderContentsReader } from "./transfer-order-contents.reader.js";
+// Les couleurs de livraison du départ, pour le papier (plan du tri et des couleurs, L5).
+export { DeliveryColorsReader, type DeliveryColors } from "./delivery-colors.reader.js";
+export {
+  type TransferOrderCategory,
+  TransferOrderContentsReader,
+} from "./transfer-order-contents.reader.js";
 export {
   OrderDeliveryHistoryReader,
   type OrderDeliveryStopFact,

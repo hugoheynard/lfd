@@ -11,6 +11,7 @@ export const GLOSSARY_D_H: Readonly<Record<string, string>> = {
   dataSummary: 'Mes données — résumé',
   dayToday: 'Aujourd’hui',
   dayTomorrow: 'Demain',
+  day: 'Jour de livraison',
   days: 'Jours',
   deadline: 'Échéance',
   deadlineAdd: 'Ajouter une échéance',

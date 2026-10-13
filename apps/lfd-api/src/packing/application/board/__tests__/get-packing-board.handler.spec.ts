@@ -64,6 +64,8 @@ function order(orderId: string, packedBy: string | null): BoardOrder {
     customerLabel: "Le Bistrot",
     fulfillmentMethod: "pickup",
     clientele: null,
+    siteId: null,
+    dueAt: null,
     drawnAt: AT,
     packed: packedBy === null ? null : { at: AT, by: packedBy },
     containers: 0,

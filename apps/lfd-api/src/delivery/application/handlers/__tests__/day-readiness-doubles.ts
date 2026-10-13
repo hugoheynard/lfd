@@ -52,6 +52,8 @@ export function orderFact(
     day: null,
     delivery: options.delivery ?? true,
     zoneId: null,
+    clientele: null,
+    siteId: null,
   };
 }
 

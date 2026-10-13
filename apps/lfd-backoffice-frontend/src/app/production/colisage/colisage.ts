@@ -27,6 +27,7 @@ import { PackingOpenOrder } from './packing-open-order/packing-open-order';
 import { PackingOrders } from './packing-orders/packing-orders';
 import { PackingResources } from './packing-resources/packing-resources';
 import { PackingRoundsReader } from './packing-rounds.reader';
+import { SitePaletteStore } from '../../shared/logistics-colors/site-palette.store';
 import { sheetsInRoundOrder } from './packing-rounds';
 import { foundOnlyElsewhere, hitLinesByOrder, normaliseTerm, searchHits } from './packing-search';
 
@@ -97,6 +98,12 @@ export class Colisage {
   protected readonly gestures = inject(PackingGestures);
   /** Les tournées du jour, lues côté livraison (lot PC2) : l'ORDRE de la liste. */
   protected readonly rounds = inject(PackingRoundsReader);
+  /**
+   * La palette des sites — les cadres de couleur de la liste (plan du tri et
+   * des couleurs, L1b). Relue à l'ouverture et à chaque relecture : une
+   * couleur changée en Réglages › Sites se voit au prochain passage.
+   */
+  protected readonly palette = inject(SitePaletteStore);
 
   /**
    * Le bac à ouvrir, quand on arrive par le QR d'une feuille d'atelier
@@ -180,6 +187,7 @@ export class Colisage {
     // la date est la lecture elle-même, et un effet qui la lirait se rappellerait
     // après chaque lecture.
     void this.load();
+    void this.palette.refresh();
     // 🔴 Enregistrée par l'ÉCRAN, pas par le lecteur : c'est l'écran qui sait
     // quelle commande est ouverte, et qui compare avant et après.
     // Seulement si la journée du fournil a bougé (`plan-version-par-journee.md`).
@@ -299,7 +307,7 @@ export class Colisage {
     }
     const openBefore = this.current();
     if (await this.day.refresh()) {
-      await this.rounds.load(this.day.date());
+      await Promise.all([this.rounds.load(this.day.date()), this.palette.refresh()]);
       this.noticeClosedElsewhere(openBefore);
     }
   }

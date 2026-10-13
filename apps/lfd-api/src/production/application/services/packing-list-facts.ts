@@ -25,6 +25,7 @@ export function packingListFactsOf(
         fulfillmentMethod: order.fulfillmentMethod,
         dueAt: order.dueAt,
         clientele: order.clientele,
+        siteId: order.siteId,
         lines: order.lines.map((line) => ({
           sku: line.sku,
           productName: line.productName,

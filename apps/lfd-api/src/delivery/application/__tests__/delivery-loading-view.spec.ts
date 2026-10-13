@@ -5,6 +5,7 @@ import {
   binViewsOf,
   loadingDayView,
   loadingRoundView,
+  orderBinsView,
 } from "../delivery-loading-view.js";
 
 // Des jours comparés entre eux seulement, jamais à l'horloge.
@@ -30,8 +31,26 @@ function bin(id: string, voidedAt: Date | null = null, overrides: Partial<BinRow
 function context(places: ReadonlyMap<string, StopPlace> = new Map()): BinContext {
   return {
     names: new Map([
-      ["o_1", { reference: "C-1", customerLabel: "Maison Colin" }],
-      ["o_2", { reference: "C-2", customerLabel: "Chez Lulu" }],
+      [
+        "o_1",
+        {
+          reference: "C-1",
+          customerLabel: "Maison Colin",
+          clientele: "pro",
+          method: "delivery",
+          siteId: null,
+        },
+      ],
+      [
+        "o_2",
+        {
+          reference: "C-2",
+          customerLabel: "Chez Lulu",
+          clientele: null,
+          method: "pickup",
+          siteId: "site_vv",
+        },
+      ],
     ]),
     places,
   };
@@ -114,6 +133,7 @@ describe("loadingRoundView / loadingDayView — L4-C17", () => {
     {
       kind: "order",
       siteLabel: null,
+      siteId: null,
       stopId: "s_1",
       orderId: "o_1",
       position: 1,
@@ -123,6 +143,7 @@ describe("loadingRoundView / loadingDayView — L4-C17", () => {
     {
       kind: "order",
       siteLabel: null,
+      siteId: null,
       stopId: "s_2",
       orderId: "o_1",
       position: 2,
@@ -132,6 +153,7 @@ describe("loadingRoundView / loadingDayView — L4-C17", () => {
     {
       kind: "order",
       siteLabel: null,
+      siteId: null,
       stopId: "s_3",
       orderId: "o_1",
       position: 3,
@@ -172,6 +194,28 @@ describe("loadingRoundView / loadingDayView — L4-C17", () => {
       },
     ]);
     expect(view.stops[2]?.bins[1]).toMatchObject({ sharedWithReference: "C-2", toRedo: true });
+  });
+
+  it("un arrêt porte la clientèle de sa commande ; inconnue, il n'en porte aucune (L1a)", () => {
+    const view = loadingRoundView(
+      round([
+        ...stops.slice(0, 1),
+        {
+          kind: "order",
+          siteLabel: null,
+          siteId: null,
+          stopId: "s_9",
+          orderId: "o_2",
+          position: 2,
+          bins: [],
+          loaded: new Map(),
+        },
+      ]),
+      context(),
+    );
+
+    expect(view.stops[0]?.clientele).toBe("pro");
+    expect(view.stops[1]).not.toHaveProperty("clientele");
   });
 
   it("le jour compte les arrêts, ceux qui sont chargés, et ceux qui ont un bac à refaire", () => {
@@ -216,6 +260,7 @@ describe("les bacs d'un transfert interne, vus du dépôt (lot T3)", () => {
         kind: "transfer",
         transferId: "t_1",
         siteLabel: "Val Village",
+        siteId: "site_vv",
         stopId: "s_t",
         position: 1,
         bins,
@@ -229,6 +274,32 @@ describe("les bacs d'un transfert interne, vus du dépôt (lot T3)", () => {
     );
 
     expect(empty.transferStops?.[0]?.state).toBe("unlabelled");
-    expect(loaded.transferStops?.[0]).toMatchObject({ state: "loaded", siteLabel: "Val Village" });
+    expect(loaded.transferStops?.[0]).toMatchObject({
+      state: "loaded",
+      siteLabel: "Val Village",
+      siteId: "site_vv",
+    });
+  });
+});
+
+describe("orderBinsView — ce qui range la commande dans sa couleur (L1b)", () => {
+  it("le mode, la clientèle et le site d'un retrait, tels que le commerce les dit", () => {
+    expect(orderBinsView("o_1", [], context())).toMatchObject({
+      fulfillmentMethod: "delivery",
+      clientele: "pro",
+    });
+    expect(orderBinsView("o_2", [], context())).toMatchObject({
+      fulfillmentMethod: "pickup",
+      siteId: "site_vv",
+    });
+  });
+
+  it("une commande inconnue, ou une clientèle inconnue : les champs sont absents", () => {
+    const unknown = orderBinsView("o_x", [], context());
+    const noClientele = orderBinsView("o_2", [], context());
+
+    expect(unknown).not.toHaveProperty("fulfillmentMethod");
+    expect(unknown).not.toHaveProperty("clientele");
+    expect(noClientele).not.toHaveProperty("clientele");
   });
 });

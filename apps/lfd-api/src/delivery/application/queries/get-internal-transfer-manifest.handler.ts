@@ -4,6 +4,7 @@ import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 import { TransferOrderContentsReader } from "../../channels/commerce/index.js";
 import { InternalTransferNotFoundError } from "../../domain/errors/internal-transfer-errors.js";
 import { InternalTransfersReader } from "../../domain/ports/internal-transfers.reader.js";
+import { transferClientelesOf, withClienteles } from "../transfer-categories.js";
 import { itemContentsOf } from "../transfer-contents.js";
 import { GetInternalTransferManifestQuery } from "./get-internal-transfer-manifest.query.js";
 
@@ -32,14 +33,20 @@ export class GetInternalTransferManifestHandler implements IQueryHandler<
       throw new InternalTransferNotFoundError(query.transferId);
     }
     const frozen = transfer.departedAt !== null;
-    const contents = frozen ? () => undefined : await itemContentsOf(this.contents, [transfer]);
+    const [contents, clienteles] = await Promise.all([
+      frozen ? () => undefined : itemContentsOf(this.contents, [transfer]),
+      transferClientelesOf(this.contents, [transfer]),
+    ]);
+    const manifest = transfer.manifest(contents);
     return {
       transferId: transfer.id,
       day: transfer.serviceDay,
       siteLabel: transfer.siteLabel,
+      siteId: transfer.siteId,
       departedAt: transfer.departedAt?.toISOString() ?? null,
       frozen,
-      ...transfer.manifest(contents),
+      ...manifest,
+      orders: withClienteles(manifest.orders, clienteles),
     };
   }
 }

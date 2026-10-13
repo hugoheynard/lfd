@@ -23,6 +23,7 @@ function stop(orderId: string, position: number, bins: readonly BinRow[] = []): 
     kind: "order",
     stopId: `stop_${orderId}`,
     siteLabel: null,
+    siteId: null,
     orderId,
     position,
     bins,

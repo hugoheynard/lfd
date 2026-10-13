@@ -203,6 +203,8 @@ export function deliveryOn(
     day,
     delivery: true,
     zoneId: null,
+    clientele: null,
+    siteId: null,
     ...overrides,
   };
 }

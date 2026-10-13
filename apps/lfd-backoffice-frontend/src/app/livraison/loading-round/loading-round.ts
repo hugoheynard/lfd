@@ -39,6 +39,10 @@ import { LoadingWriteGate } from '../loading-write-gate';
 import { neighbourRow } from '../row-swipe';
 import { RowSwipeGesture } from '../row-swipe-gesture';
 import { TransferBinsCard } from '../transfer-bins-card/transfer-bins-card';
+import type { LogisticsCategory } from '../../shared/logistics-colors/logistics-category';
+import { deliveryStopCategories } from '../stop-categories';
+import { LogisticsSwatch } from '../../shared/logistics-colors/logistics-swatch/logistics-swatch';
+import { SitePaletteStore } from '../../shared/logistics-colors/site-palette.store';
 
 export { loadedNotice } from '../loading-round-notice';
 
@@ -78,6 +82,7 @@ export type LoadingDeparture = (roundId: string, version: number) => Promise<voi
     LoadingPlan,
     LoadingRowPicker,
     LoadingRowView,
+    LogisticsSwatch,
     NgTemplateOutlet,
     TransferBinsCard,
   ],
@@ -86,6 +91,11 @@ export type LoadingDeparture = (roundId: string, version: number) => Promise<voi
 })
 export class LoadingRound {
   private readonly gateway = inject(LoadingGateway);
+  /**
+   * La palette des sites — la pastille de chaque arrêt de « Ce qui manque »
+   * (plan du tri et des couleurs, L1b). Relue à chaque ouverture.
+   */
+  private readonly palette = inject(SitePaletteStore);
 
   readonly roundId = input.required<string>();
   /** L'hôte tient le droit d'écrire ; la tournée partie l'éteint de toute façon (I6). */
@@ -115,6 +125,10 @@ export class LoadingRound {
   /** Le dernier avis : un bac chargé, un bac d'ailleurs, un refus. */
   protected readonly notice = this.gate.notice;
   protected readonly busy = this.gate.busy;
+  constructor() {
+    void this.palette.refresh();
+  }
+
   /** Le code court tapé, quand le QR est illisible. */
   protected readonly typed = signal('');
   /** Le bac désigné d'un toucher, jusqu'au prochain scan. */
@@ -130,6 +144,15 @@ export class LoadingRound {
     () => this.canWrite() && this.view() !== null && !this.departed(),
   );
   protected readonly canDepart = computed(() => this.canLoad() && this.departure() !== null);
+
+  /**
+   * La catégorie de chaque arrêt de COMMANDE — une livraison, peinte de la
+   * couleur de livraison du départ pour sa clientèle. Un arrêt de transfert
+   * mêle des clientèles : il n'en a pas.
+   */
+  protected readonly categories = computed<ReadonlyMap<string, LogisticsCategory>>(() =>
+    deliveryStopCategories(this.view()?.stops ?? [], this.palette.sites()),
+  );
 
   /** « Ce qui manque », arrêt par arrêt (SPEC §7) — dépôt comme livreur. */
   protected readonly missingRows = computed(() => {

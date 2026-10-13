@@ -1,5 +1,6 @@
 import {
   type DeliveryOrderLine,
+  type TransferOrderCategory,
   TransferOrderContentsReader,
   type TransferOrderRef,
   TransferOrdersReader,
@@ -137,8 +138,20 @@ export class FixedTransferContents extends TransferOrderContentsReader {
 
   constructor(
     private readonly lines: ReadonlyMap<string, readonly DeliveryOrderLine[]> = new Map(),
+    private readonly categories: ReadonlyMap<string, TransferOrderCategory> = new Map(),
   ) {
     super();
+  }
+
+  categoriesOf(orderIds: readonly string[]): Promise<ReadonlyMap<string, TransferOrderCategory>> {
+    return Promise.resolve(
+      new Map(
+        orderIds.flatMap((id) => {
+          const found = this.categories.get(id);
+          return found === undefined ? [] : [[id, found] as const];
+        }),
+      ),
+    );
   }
 
   contentsOf(

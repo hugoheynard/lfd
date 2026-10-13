@@ -7,6 +7,7 @@ import { sheet } from "../../../domain/services/__tests__/client-sheet.fixture.j
 import { OrderSheetArchive } from "../order-sheet-archive.service.js";
 import {
   FixedLogo,
+  FixedSheetColor,
   FixedSheetOrigins,
   MemoryCustomerDocuments,
   MissingLogo,
@@ -20,13 +21,18 @@ import {
 const TOKEN = "tok_secret_42";
 
 function archiveOf(
-  options: { readonly admin?: string | null; readonly documents?: MemoryCustomerDocuments } = {},
+  options: {
+    readonly admin?: string | null;
+    readonly documents?: MemoryCustomerDocuments;
+    readonly color?: FixedSheetColor;
+  } = {},
 ): { readonly archive: OrderSheetArchive; readonly documents: MemoryCustomerDocuments } {
   const documents = options.documents ?? new MemoryCustomerDocuments();
   const archive = new OrderSheetArchive(
     documents,
     new FixedLogo(),
     new FixedSheetOrigins(options.admin === undefined ? "https://admin.lfc.test" : options.admin),
+    options.color ?? new FixedSheetColor(),
   );
   return { archive, documents };
 }
@@ -108,6 +114,26 @@ describe("l'archive du bon de commande", () => {
     expect(withoutToken.bytes.equals(withQr.bytes)).toBe(false);
   });
 
+  it("lit la couleur de LA commande au rendu, et le trait change le bon (L5)", async () => {
+    const color = new FixedSheetColor("#1e88e5");
+    const painted = await archiveOf({ color }).archive.pdfOf(delivery(), null);
+    const plain = await archiveOf().archive.pdfOf(delivery(), null);
+
+    expect(color.asked).toEqual(["ord_1"]);
+    expect(painted.bytes.equals(plain.bytes)).toBe(false);
+  });
+
+  it("🔴 un bon déjà archivé n'est pas refait : la couleur changée depuis ne le touche pas", async () => {
+    const documents = new MemoryCustomerDocuments();
+    const first = await archiveOf({ documents }).archive.pdfOf(delivery(), null);
+    const color = new FixedSheetColor("#1e88e5");
+
+    const again = await archiveOf({ documents, color }).archive.pdfOf(delivery(), null);
+
+    expect(again.bytes.equals(first.bytes)).toBe(true);
+    expect(color.asked).toEqual([]);
+  });
+
   it("archive toujours le bon d'une livraison, qui ne porte jamais de QR", async () => {
     const { archive, documents } = archiveOf();
 
@@ -121,6 +147,7 @@ describe("l'archive du bon de commande", () => {
       new MemoryCustomerDocuments(),
       new MissingLogo(),
       new FixedSheetOrigins(null),
+      new FixedSheetColor(),
     );
 
     await expect(archive.pdfOf(sheet(), null)).rejects.toBeInstanceOf(

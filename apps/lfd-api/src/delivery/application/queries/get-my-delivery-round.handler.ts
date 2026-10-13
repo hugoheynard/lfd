@@ -70,7 +70,7 @@ export class GetMyDeliveryRoundHandler implements IQueryHandler<
       throw new DriverRoundNotFoundError();
     }
     const orderIds = round.stops.map((stop) => stop.orderId);
-    const [sheets, points, procedures, chosenId, candidates, states, incidents, stopSheets] =
+    const [sheets, points, procedures, chosenId, candidates, states, incidents, stopSheets, facts] =
       await Promise.all([
         this.liveSheetsOf(round),
         this.carnetPointsOf(round),
@@ -80,6 +80,7 @@ export class GetMyDeliveryRoundHandler implements IQueryHandler<
         this.states.statesOf(orderIds),
         this.incidents.ofRounds([round.id]),
         this.stopSheets.of(orderIds),
+        this.orders.byIds(orderIds),
       ]);
     // Lues pour CETTE tournée, déjà lue sous le mur du livreur.
     const decisions = await this.decisions.ofRound(round.id);
@@ -104,6 +105,11 @@ export class GetMyDeliveryRoundHandler implements IQueryHandler<
       stopSheets,
       readyOrders: new Set(states.filter((state) => state.ready).map((state) => state.orderId)),
       decisions: new Map(decisions.map((row) => [row.stopId, row])),
+      clienteles: new Map(
+        facts.flatMap((fact) =>
+          fact.clientele === null ? [] : [[fact.orderId, fact.clientele] as const],
+        ),
+      ),
     });
     // Lot T2 : l'arrêt de transfert, à part — il n'a ni client ni porte.
     return { ...view, transferStops };

@@ -47,6 +47,7 @@ import { RoundsDay } from '../rounds-day';
 import { RoundsDayWriter } from '../rounds-day-writer';
 import { RoundsLayoutGestures } from '../rounds-layout-gestures';
 import { RoundsPreview } from '../rounds-preview';
+import { SitePaletteStore } from '../../shared/logistics-colors/site-palette.store';
 import { RoundsSettingsReads } from '../rounds-settings-reads';
 import {
   TransferManifestDialog,
@@ -113,6 +114,8 @@ export class RoundsPage {
   private readonly reads = inject(RoundsSettingsReads);
   private readonly panels = inject(FoldPanelHostService);
   protected readonly preview = inject(RoundsPreview);
+  /** La palette des sites — la pastille de chaque arrêt (plan du tri et des couleurs, L1b). */
+  protected readonly palette = inject(SitePaletteStore);
 
   protected readonly dayOptions = DAY_OPTIONS;
   protected readonly day = this.read.day;
@@ -220,7 +223,12 @@ export class RoundsPage {
     effect(() => {
       const day = this.day();
       this.reload();
-      untracked(() => void this.read.load(day));
+      untracked(() => {
+        void this.read.load(day);
+        // Relue à chaque ouverture et chaque jour choisi : une couleur changée
+        // en Réglages › Sites se voit au prochain affichage.
+        void this.palette.refresh();
+      });
     });
     // Ne relire que si la journée de la livraison a bougé — un autre poste a
     // composé, un livreur est parti (`plan-version-par-journee.md`, D4).

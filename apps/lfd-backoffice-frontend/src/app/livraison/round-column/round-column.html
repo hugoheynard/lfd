@@ -170,6 +170,7 @@
         data-stop
       >
         <div *cdkDragPlaceholder class="drop-line"></div>
+        <app-logistics-swatch [category]="categoryOf(stop)" data-stop-category />
         @if (movable()) {
           <span cardKeys class="keys">
             <fold-button-icon

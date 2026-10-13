@@ -37,6 +37,12 @@ export class BinLabel {
   readonly url = input.required<string>();
   /** La tournée de la commande et la position de son arrêt, ou `null` hors tournée. */
   readonly round = input<DeliveryOrderRoundPlaceView | null>(null);
+  /**
+   * La couleur de la commande (`#rrggbb`), lue à l'impression (plan du tri et
+   * des couleurs, L1b) : un carré dans le coin OPPOSÉ au code, pour trier les
+   * bacs d'un coup d'œil ; `null` : aucun carré, jamais une couleur devinée.
+   */
+  readonly color = input<string | null>(null);
 
   protected readonly roundTitle = computed(() => {
     const round = this.round();

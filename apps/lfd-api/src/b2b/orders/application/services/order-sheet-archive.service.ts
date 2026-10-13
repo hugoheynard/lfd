@@ -6,6 +6,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { DocumentStorageUnavailableError } from "../../../../platform/shared/errors/storage-errors.js";
 import { CustomerDocumentStore } from "../../../../platform/storage/customer-document-store.js";
 import { OrderMailOrigins } from "../../domain/ports/order-mail-origins.js";
+import { OrderSheetColorSource } from "../../domain/ports/order-sheet-color.source.js";
 import { OrderSheetLogoSource } from "../../domain/ports/order-sheet-logo.source.js";
 import { handoverUrlOf } from "../../domain/services/handover-url.js";
 import {
@@ -71,6 +72,7 @@ export class OrderSheetArchive {
     private readonly documents: CustomerDocumentStore,
     private readonly logo: OrderSheetLogoSource,
     private readonly origins: OrderMailOrigins,
+    private readonly colors: OrderSheetColorSource,
   ) {}
 
   /**
@@ -108,9 +110,21 @@ export class OrderSheetArchive {
     return { bytes, fileName };
   }
 
+  /**
+   * La couleur est lue AU RENDU (plan `commandes/plan-tri-depart-et-couleurs.md`,
+   * L5) : celle de la passation pour le bon archivé et joint au courriel. Un
+   * bon déjà rangé n'est pas refait — c'est pourquoi la version de dessin
+   * (`orderSheetPdfKey`) n'a PAS bougé : les bons émis avant le trait restent
+   * sans trait, comme Hugo l'a voulu.
+   */
   private async render(sheet: ClientSheet, handoverToken: string | null): Promise<Buffer> {
+    const [logo, categoryColor] = await Promise.all([
+      this.logo.load(),
+      this.colors.colorOf(sheet.orderId),
+    ]);
     return renderOrderSheetPdf(sheet, {
-      logo: await this.logo.load(),
+      logo,
+      categoryColor,
       handoverUrl: this.handoverUrlFor(sheet, handoverToken),
     });
   }

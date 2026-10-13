@@ -2,6 +2,17 @@
   display: block;
 }
 
+/* Le carré de couleur de l'arrêt (L5) : cerclé, pour qu'un jaune pâle se voie,
+   et imprimé tel quel. */
+.rs-color {
+  width: var(--fold-space-xl);
+  height: var(--fold-space-xl);
+  flex: none;
+  border: 1px solid var(--fold-ref-black);
+  border-radius: var(--fold-radius-xs);
+  print-color-adjust: exact;
+}
+
 .flags {
   display: flex;
   flex-wrap: wrap;

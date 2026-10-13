@@ -39,6 +39,8 @@ export type LoadingStopRow = StopSubject & {
   readonly stopId: string;
   /** Le nom du site d'un arrêt de transfert, figé à l'ouverture ; `null` pour une commande. */
   readonly siteLabel: string | null;
+  /** Le site d'un arrêt de transfert, identifiant opaque du commerce (L1a) ; `null` pour une commande. */
+  readonly siteId: string | null;
   readonly position: number;
   /** Tous les bacs de la commande (ou du transfert), annulés compris, dans l'ordre de déclaration. */
   readonly bins: readonly BinRow[];

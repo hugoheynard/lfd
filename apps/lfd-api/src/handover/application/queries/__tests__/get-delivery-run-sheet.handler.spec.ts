@@ -1,5 +1,12 @@
 import { GetDeliveryRunSheetQuery } from "../get-delivery-run-sheet.query.js";
-import { DAY, FixedRoundPlacements, PLACED_AT, entry, handlerOf } from "./run-sheet-doubles.js";
+import {
+  DAY,
+  FixedRoundPlacements,
+  FixedRunSheetColors,
+  PLACED_AT,
+  entry,
+  handlerOf,
+} from "./run-sheet-doubles.js";
 
 /**
  * La feuille de route : la rencontre des trois lectures, l'état partagé avec
@@ -48,6 +55,28 @@ describe("GetDeliveryRunSheetHandler", () => {
     const view = await handler.execute(new GetDeliveryRunSheetQuery(DAY, true));
 
     expect(view.stops[0]?.addressBook).not.toHaveProperty("stopMinutes");
+  });
+
+  it("pose la couleur de livraison du départ selon la clientèle, lue une fois par lecture (L5)", async () => {
+    const colors = new FixedRunSheetColors({ pro: "#1e88e5", public: null });
+    const { handler } = handlerOf(
+      [
+        entry({ orderId: "pro", clientele: "pro" }),
+        entry({ orderId: "particulier", clientele: "public" }),
+        entry({ orderId: "inconnue", clientele: null }),
+      ],
+      new Map(),
+      new Set(),
+      [],
+      new FixedRoundPlacements(),
+      colors,
+    );
+
+    const view = await handler.execute(new GetDeliveryRunSheetQuery(DAY, true));
+
+    expect(view.stops.map((stop) => stop.color)).toEqual(["#1e88e5", undefined, undefined]);
+    expect(view.stops[1]).not.toHaveProperty("color");
+    expect(colors.calls).toBe(1);
   });
 
   it("🔴 ne sert AUCUN champ monétaire", async () => {

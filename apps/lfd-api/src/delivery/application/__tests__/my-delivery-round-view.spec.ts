@@ -93,11 +93,24 @@ function inputs(overrides: Partial<MyDeliveryRoundInputs>): MyDeliveryRoundInput
     stopSheets: new Map(),
     readyOrders: new Set(),
     decisions: new Map(),
+    clienteles: new Map(),
     ...overrides,
   };
 }
 
 describe("myDeliveryRoundView — la vue du livreur (MT-D5 v2)", () => {
+  it("chaque arrêt porte la clientèle de sa commande ; inconnue, aucune (L1a)", () => {
+    const view = myDeliveryRoundView(
+      inputs({
+        round: round([stop("a", 1), stop("b", 2)], null),
+        clienteles: new Map([["o_a", "public"]]),
+      }),
+    );
+
+    expect(view.stops[0]?.clientele).toBe("public");
+    expect(view.stops[1]).not.toHaveProperty("clientele");
+  });
+
   it("au dépôt : l'ordre de composition, la feuille et le point VIVANTS", () => {
     const view = myDeliveryRoundView(
       inputs({

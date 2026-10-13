@@ -27,6 +27,8 @@ import { walkToDoorHref } from '../my-round-navigation';
 import { MyRoundStepPhoto } from '../my-round-step-photo/my-round-step-photo';
 import { contactNameOf, telHrefOf, windowLabel } from '../run-sheet';
 import { decisionBadgeOf } from '../stop-decisions';
+import type { LogisticsCategory } from '../../shared/logistics-colors/logistics-category';
+import { LogisticsSwatch } from '../../shared/logistics-colors/logistics-swatch/logistics-swatch';
 
 /**
  * **Un arrêt de « Ma tournée »** — ce qu'il faut savoir à la porte
@@ -73,6 +75,7 @@ import { decisionBadgeOf } from '../stop-decisions';
     HandoverForm,
     IncidentReportForm,
     MyRoundStepPhoto,
+    LogisticsSwatch,
   ],
   templateUrl: './my-round-stop.html',
   styleUrl: './my-round-stop.scss',
@@ -80,6 +83,8 @@ import { decisionBadgeOf } from '../stop-decisions';
 export class MyRoundStop {
   readonly roundId = input.required<string>();
   readonly stop = input.required<MyDeliveryStopView>();
+  /** La catégorie de l'arrêt, lue à l'affichage (L1b) ; `null` : aucune pastille. */
+  readonly category = input<LogisticsCategory | null>(null);
   /** Le lien « Y aller », ou `null` : tournée au dépôt, ou arrêt sans point ni adresse. */
   readonly goTo = input<string | null>(null);
   /** Les gestes à la porte sont offerts : droit tenu, tournée partie et non rentrée. */

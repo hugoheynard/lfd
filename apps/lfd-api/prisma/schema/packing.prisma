@@ -27,6 +27,11 @@ model PackingOrder {
   /// `pro` ou `public`, tel que le fournil l'a figé (2026-10-06). `null` =
   /// inconnu : fait publié sans le champ. CHECK en base.
   clientele         String? @db.VarChar(6)
+  /// Le site qui remet ce retrait, identifiant OPAQUE du commerce, recopié du
+  /// fait du fournil (2026-10-13, plan du tri et des couleurs, L1a). `null` :
+  /// livraison, commande d'avant le site, ou ligne inscrite avant le champ —
+  /// jamais rattrapée (`createMany … skipDuplicates`). Aucune clé étrangère.
+  siteId            String? @map("site_id")
 
   /// L'instant du tirage (clôture ou retirage) qui l'a inscrite — celui du fournil.
   drawnAt DateTime @map("drawn_at") @db.Timestamptz(6)

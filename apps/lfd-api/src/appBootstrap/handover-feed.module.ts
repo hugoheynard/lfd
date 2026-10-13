@@ -1,6 +1,8 @@
 import { Global, Module } from "@nestjs/common";
 
 import { OrdersModule } from "../b2b/orders/orders.module.js";
+import { SiteRunSheetColorsReader } from "../b2b/sites/infrastructure/site-run-sheet-colors.reader.js";
+import { SitesModule } from "../b2b/sites/sites.module.js";
 import { PrismaDeliveryRunSheetReader } from "../b2b/orders/infrastructure/prisma-delivery-run-sheet.reader.js";
 import { PrismaHandoverQueueReader } from "../b2b/orders/infrastructure/prisma-handover-queue.reader.js";
 import { PrismaHandoverSubjectReader } from "../b2b/orders/infrastructure/prisma-handover-subject.reader.js";
@@ -10,6 +12,7 @@ import {
   HandoverQueueReader,
   HandoverSubjectReader,
   OrderHandoverHistoryReader,
+  RunSheetColorsReader,
 } from "../handover/channels/commerce/index.js";
 import { PrismaHandoverProofReader } from "../handover/infrastructure/prisma-handover-proof.reader.js";
 import { PrismaOrderHandoverHistoryReader } from "../handover/infrastructure/prisma-order-handover-history.reader.js";
@@ -48,6 +51,9 @@ import { ProductionModule } from "../production/production.module.js";
  *   commande. Même figure que `QualityHoldsReader`, dans l'autre sens.
  * - `OrderHandoverHistoryReader` (2026-10-08) — même sens : le retrait de
  *   chaque bon, pour le dossier de facturation de la comptabilité (DF3).
+ * - `RunSheetColorsReader` (2026-10-13, plan du tri et des couleurs, L5) — la
+ *   remise déclare, les sites du commerce implémentent : la couleur de
+ *   chaque arrêt de la feuille de route.
  *
  * 🔴 Aucun des trois contextes ne connaît les deux autres. C'est la racine de
  * composition qui sait, et elle seule — sans quoi la dépendance reviendrait par
@@ -61,7 +67,7 @@ import { ProductionModule } from "../production/production.module.js";
  */
 @Global()
 @Module({
-  imports: [OrdersModule, ProductionModule],
+  imports: [OrdersModule, ProductionModule, SitesModule],
   providers: [
     { provide: HandoverSubjectReader, useClass: PrismaHandoverSubjectReader },
     { provide: HandoverQueueReader, useClass: PrismaHandoverQueueReader },
@@ -72,6 +78,7 @@ import { ProductionModule } from "../production/production.module.js";
     { provide: OrderCustodyReader, useClass: PrismaOrderCustodyReader },
     { provide: HandoverProofReader, useClass: PrismaHandoverProofReader },
     { provide: OrderHandoverHistoryReader, useClass: PrismaOrderHandoverHistoryReader },
+    { provide: RunSheetColorsReader, useClass: SiteRunSheetColorsReader },
   ],
   exports: [
     HandoverSubjectReader,
@@ -83,6 +90,7 @@ import { ProductionModule } from "../production/production.module.js";
     OrderCustodyReader,
     HandoverProofReader,
     OrderHandoverHistoryReader,
+    RunSheetColorsReader,
   ],
 })
 export class HandoverFeedModule {}

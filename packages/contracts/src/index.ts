@@ -601,6 +601,8 @@ export {
 } from "./site.js";
 export type {
   SiteColorsPayload,
+  SitePaletteEntryView,
+  SitePaletteView,
   SiteRolesPayload,
   SiteSupply,
   SiteTransferMode,

@@ -35,6 +35,7 @@ function stop(
     orderNote: "",
     addressNote: null,
     cancelled: false,
+    color: null,
     ...overrides,
   };
 }

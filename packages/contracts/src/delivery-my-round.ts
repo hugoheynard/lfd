@@ -4,6 +4,7 @@ import type { DeliveryIncidentView, DeliveryStopOrderState } from "./delivery-do
 import type { DeparturePointView } from "./delivery-settings.js";
 import type { StopDecisionView } from "./delivery-stop-decision.js";
 import type { FulfillmentSource } from "./order.js";
+import type { OrderClientele } from "./order-handover.js";
 
 /**
  * **« Ma tournée » — ce que voit le livreur** (`documentation/livraisons/livreur/plan-ma-tournee.md`,
@@ -204,6 +205,13 @@ export interface MyDeliveryStopView {
    * coliseur peut déclarer autrement.
    */
   readonly binsExpected?: number;
+  /**
+   * `pro` / `public`, lue au commerce à chaque lecture (plan
+   * `commandes/plan-tri-depart-et-couleurs.md`, L1a) — l'écran en tire la
+   * couleur de la commande. Absent : inconnue (commande d'avant la
+   * distinction, ou que le commerce ne connaît plus) — teinte neutre.
+   */
+  readonly clientele?: OrderClientele;
 }
 
 /** La fenêtre convenue ; `default` n'est pas une promesse faite au client. */

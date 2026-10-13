@@ -5,6 +5,8 @@
 import {
   DeliveryRunSheetReader,
   type DeliveryRunSheetEntry,
+  RunSheetColorsReader,
+  type RunSheetDeliveryColors,
 } from "../../../channels/commerce/index.js";
 import {
   HandoverAttestationsReader,
@@ -122,17 +124,33 @@ export function handlerOf(
   without: ReadonlySet<string> = new Set(),
   elsewhere: readonly DeliveryRunSheetEntry[] = [],
   rounds: FixedRoundPlacements = new FixedRoundPlacements(),
+  colors: FixedRunSheetColors = new FixedRunSheetColors(),
 ) {
   const sheet = new FixedRunSheet(entries, elsewhere);
   const attestations = new RecordingAttestations(attested);
   const sheets = new FixedAtelierSheets(without);
   return {
-    handler: new GetDeliveryRunSheetHandler(sheet, attestations, sheets, rounds),
+    handler: new GetDeliveryRunSheetHandler(sheet, attestations, sheets, rounds, colors),
     sheet,
     attestations,
     sheets,
     rounds,
+    colors,
   };
+}
+
+/** Les couleurs de livraison du départ, données d'avance ; les lectures comptées. */
+export class FixedRunSheetColors extends RunSheetColorsReader {
+  calls = 0;
+
+  constructor(private readonly colors: RunSheetDeliveryColors = { pro: null, public: null }) {
+    super();
+  }
+
+  departureColors(): Promise<RunSheetDeliveryColors> {
+    this.calls += 1;
+    return Promise.resolve(this.colors);
+  }
 }
 
 /** La livraison doublée : un compte du jour et des places fixés, les appels notés. */

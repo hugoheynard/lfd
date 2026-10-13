@@ -5,6 +5,7 @@ import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 import { Clock } from "../../../platform/time/clock.js";
 import { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-author-directory.js";
 import {
+  DeliveryColorsReader,
   DeliveryOrdersReader,
   type DeliveryOrderProcedure,
   DeliveryProceduresReader,
@@ -17,6 +18,7 @@ import { TransferBinCounts } from "../../domain/ports/transfer-bin-counts.reader
 import { roundPaperTransfersOf } from "../round-paper-transfers.js";
 import { DeliveryRoundNotFoundError } from "../../domain/errors/delivery-round-errors.js";
 import { RoundPaperReader } from "../../domain/ports/round-paper.reader.js";
+import { deliveryStopColor } from "../../domain/services/delivery-stop-color.js";
 import { renderRoundPaperPdf, roundPaperFileName } from "../../domain/services/round-paper-pdf.js";
 import { driverNamesOf } from "../delivery-driver-support.js";
 import { roundPaperOf } from "../round-paper-of.js";
@@ -54,6 +56,7 @@ export class GetRoundPaperPdfHandler implements IQueryHandler<
     private readonly transferBins: TransferBinCounts,
     private readonly sitePlaces: TransferSitePlacesReader,
     private readonly sites: TransferSitesReader,
+    private readonly colors: DeliveryColorsReader,
   ) {}
 
   async execute(query: GetRoundPaperPdfQuery): Promise<RoundPaperFile> {
@@ -82,8 +85,29 @@ export class GetRoundPaperPdfHandler implements IQueryHandler<
       driverName: round.driverStaffId === null ? null : (names.get(round.driverStaffId) ?? null),
       printedAt: this.clock.now(),
       transfers,
+      colors: await this.colorsOf(orderIds),
     });
     return { fileName: roundPaperFileName(paper), bytes: await renderRoundPaperPdf(paper) };
+  }
+
+  /**
+   * La couleur de chaque arrêt, lue À CE TIRAGE (L5) : la clientèle au
+   * commerce, les couleurs de livraison du départ aux sites.
+   */
+  private async colorsOf(orderIds: readonly string[]): Promise<ReadonlyMap<string, string>> {
+    if (orderIds.length === 0) {
+      return new Map();
+    }
+    const [facts, colors] = await Promise.all([
+      this.orders.byIds(orderIds),
+      this.colors.departureColors(),
+    ]);
+    return new Map(
+      facts.flatMap((fact) => {
+        const color = deliveryStopColor(fact.clientele, colors);
+        return color === null ? [] : [[fact.orderId, color] as const];
+      }),
+    );
   }
 
   /** Sans le droit, on ne lit même pas : la procédure ne sort pas. */

@@ -99,6 +99,8 @@ describe("deliveryRoundsDayView", () => {
       day: DAY,
       delivery: true,
       zoneId: null,
+      clientele: null,
+      siteId: null,
       ...change,
     };
     const view = deliveryRoundsDayView(
@@ -151,6 +153,8 @@ describe("deliveryRoundsDayView", () => {
       day: "2030-03-10",
       delivery: true,
       zoneId: null,
+      clientele: null,
+      siteId: null,
     };
     const view = deliveryRoundsDayView(
       inputs({
@@ -226,6 +230,8 @@ describe("deliveryRoundsDayView", () => {
       day: DAY,
       delivery: true,
       zoneId,
+      clientele: null,
+      siteId: null,
     };
     const view = deliveryRoundsDayView(
       inputs({

@@ -10,6 +10,8 @@ function order(overrides: Partial<BoardOrder> = {}): BoardOrder {
     customerLabel: "Café du Port",
     fulfillmentMethod: "delivery",
     clientele: "pro",
+    siteId: null,
+    dueAt: null,
     drawnAt: new Date(0),
     packed: null,
     containers: 1,

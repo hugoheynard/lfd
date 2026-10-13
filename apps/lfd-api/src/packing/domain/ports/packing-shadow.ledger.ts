@@ -10,6 +10,8 @@ export interface ShadowOrderToDraw {
   readonly dueAt: string | null;
   /** `pro` / `public` ; `null` = inconnue (fait publié sans le champ). */
   readonly clientele: "pro" | "public" | null;
+  /** Le site qui remet (identifiant opaque du commerce) ; `null` = sans site. */
+  readonly siteId: string | null;
   readonly drawnAt: Date;
   /**
    * `listed` depuis K2b (`colisage.md` §5.1) : toute commande

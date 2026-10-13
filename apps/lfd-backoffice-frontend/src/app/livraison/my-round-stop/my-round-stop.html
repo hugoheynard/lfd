@@ -6,6 +6,9 @@
 
   <div class="body">
     <div class="flags">
+      @if (category(); as category) {
+        <app-logistics-swatch [category]="category" data-stop-category />
+      }
       <fold-badge [variant]="packing().variant" [content]="packing().label" data-packing />
       <fold-badge variant="neutral" [content]="bins()" data-bins />
       @if (expectedBins(); as expected) {

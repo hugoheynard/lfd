@@ -125,7 +125,11 @@ l'enregistre quand même — aide, pas règle. Aucune couleur n'est posée par u
 migration : elles se saisissent à l'écran (« Adroit » est le nom d'un site
 que Hugo saisira, Q3 ; aucun nom de site dans le code).
 
-Qui les **lit** : personne encore — c'est le plan du tri et des couleurs.
+Qui les **lit** (depuis le 2026-10-13, lots L1a/L1b/L5 du plan du tri et des
+couleurs, non commités à l'écriture) : la palette en lecture seule
+`GET admin/sites/palette` (colisage et livraison, sans `lfc_site_settings`),
+les ports `DeliveryColorsReader` et `RunSheetColorsReader` (papier), et le bon
+de commande au rendu.
 
 ## 4. L'écran Réglages › Sites et l'API
 
@@ -261,12 +265,12 @@ fait de configuration ; `handover → b2b` est interdit ; un bloc neuf aurait
 ajouté une ligne de matrice pour une notion que cinq blocs lisaient déjà au
 même endroit. Les autres blocs le lisent par les canaux qu'ils déclarent :
 
-| Lecteur      | Canal                                               | Ce qu'il lit                                         | État                                     |
-| ------------ | --------------------------------------------------- | ---------------------------------------------------- | ---------------------------------------- |
-| `delivery`   | `delivery/channels/commerce/`                       | adresse + GPS du site de départ, candidats au départ | ✅ ; sites servis par transfert : plan T |
-| `handover`   | `handover/channels/commerce/`                       | sites qui remettent (onglets), couleurs              | à faire (lecteur exact non vérifié)      |
-| `production` | `production/channels/commerce/` (`DayOrdersReader`) | `siteId` dans le snapshot `ProducibleOrder`          | ✅ (S2)                                  |
-| `packing`    | faits du fournil (`production/channels/packing/`)   | `siteId` recopié                                     | à faire ; `packing → b2b` reste interdit |
+| Lecteur      | Canal                                               | Ce qu'il lit                                                                             | État                                                                      |
+| ------------ | --------------------------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `delivery`   | `delivery/channels/commerce/`                       | adresse + GPS du site de départ, candidats au départ                                     | ✅ ; sites servis par transfert : plan T                                  |
+| `handover`   | `handover/channels/commerce/`                       | sites qui remettent (onglets) ; couleurs de livraison du départ (`RunSheetColorsReader`) | couleurs ✅ (2026-10-13) ; onglets : route publique                       |
+| `production` | `production/channels/commerce/` (`DayOrdersReader`) | `siteId` dans le snapshot `ProducibleOrder`                                              | ✅ (S2)                                                                   |
+| `packing`    | faits du fournil (`production/channels/packing/`)   | `siteId` recopié                                                                         | ✅ (2026-10-13, `packing_order.site_id`) ; `packing → b2b` reste interdit |
 
 ## 7. Reste à faire
 
@@ -285,7 +289,8 @@ même endroit. Les autres blocs le lisent par les canaux qu'ils déclarent :
     type) et ses onglets regroupent **par id** ; une commande sans `siteId`
     rejoint le site connu de même libellé, sinon un onglet à son libellé figé
     (repli dit dans `handover-queue.ts`, à retirer en S3r) ;
-  - le colisage (`packing`) ne recopie pas encore le `siteId` : hors du lot.
+  - le colisage (`packing`) ne recopiait pas le `siteId` : fait au lot L1a du
+    plan du tri et des couleurs (2026-10-13).
 - **S3r** — retirer les lectures par libellé (`pickupTabs(places: string[])`
   → par id). Le `CHECK` de présence des couleurs est tombé.
 - Renommer les champs Prisma des références (4, 5 ; `siteId`,

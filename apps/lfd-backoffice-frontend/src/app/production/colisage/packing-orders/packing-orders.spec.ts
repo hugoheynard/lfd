@@ -1,5 +1,5 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import type { PackingLine, PackingSheet } from '@lfd/contracts';
+import type { PackingLine, PackingSheet, SitePaletteEntryView } from '@lfd/contracts';
 import { By } from '@angular/platform-browser';
 import { FoldIconComponent } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
@@ -57,6 +57,7 @@ interface Given {
   readonly readyCount?: number;
   readonly openReference?: string | null;
   readonly hitLines?: ReadonlyMap<string, readonly PackingLine[]>;
+  readonly palette?: readonly SitePaletteEntryView[];
 }
 
 function render(given: Given): ComponentFixture<PackingOrders> {
@@ -69,6 +70,7 @@ function render(given: Given): ComponentFixture<PackingOrders> {
   fixture.componentRef.setInput('readyCount', given.readyCount ?? 0);
   fixture.componentRef.setInput('openReference', given.openReference ?? null);
   fixture.componentRef.setInput('hitLines', given.hitLines ?? new Map());
+  fixture.componentRef.setInput('palette', given.palette ?? []);
   fixture.detectChanges();
   return fixture;
 }
@@ -200,5 +202,46 @@ describe('la liste des commandes du colisage', () => {
     const ready = render({ sheets: [], stack: 'ready' });
     const readyHost: HTMLElement = ready.nativeElement;
     expect(said(readyHost.querySelector('.co-stack-none'))).toContain('Rien n');
+  });
+
+  it('range les commandes dans un cadre par catégorie, titré et peint de la couleur du site (L1b)', () => {
+    const fixture = render({
+      sheets: [
+        sheet({ reference: 'CMD-001', clientele: 'pro' }),
+        sheet({
+          reference: 'CMD-002',
+          fulfillmentMethod: 'pickup',
+          clientele: 'public',
+          siteId: 'vv',
+        }),
+        sheet({ reference: 'CMD-003', clientele: null }),
+      ],
+      palette: [
+        {
+          id: 'vv',
+          label: 'Val Village',
+          supply: 'transfer',
+          isDeparture: false,
+          pickupColorB2b: null,
+          pickupColorB2c: '#fdd835',
+          deliveryColorB2b: null,
+          deliveryColorB2c: null,
+        },
+      ],
+    });
+    const host: HTMLElement = fixture.nativeElement;
+    const frames = Array.from(host.querySelectorAll<HTMLElement>('.co-frame'));
+
+    expect(frames.map((frame) => said(frame.querySelector('.co-frame-title')))).toEqual([
+      'Livraison pro',
+      'Transfert Val Village · particulier',
+      'Livraison',
+    ]);
+    expect(frames[1]?.style.getPropertyValue('--co-frame-color')).toBe('#fdd835');
+    expect(frames[1]?.querySelector('.co-frame-title')?.classList.contains('on-light')).toBe(true);
+    // Sans couleur posée, ni clientèle : la teinte neutre, jamais devinée.
+    expect(frames[0]?.classList.contains('is-neutral')).toBe(true);
+    expect(frames[2]?.classList.contains('is-neutral')).toBe(true);
+    expect(frames[1]?.querySelectorAll('.co-bac')).toHaveLength(1);
   });
 });

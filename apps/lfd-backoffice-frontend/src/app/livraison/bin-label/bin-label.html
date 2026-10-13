@@ -1,4 +1,12 @@
 <section class="bl-label" [attr.aria-label]="'Étiquette ' + indexLabel(bin())" data-bin-label>
+  @if (color(); as color) {
+    <span
+      class="bl-color"
+      [style.background-color]="color"
+      aria-hidden="true"
+      data-bin-color
+    ></span>
+  }
   @if (round(); as place) {
     <p class="bl-round" data-bin-round>{{ roundTitle() }}</p>
     <p class="bl-stop" data-bin-stop>Arrêt {{ place.position }}</p>

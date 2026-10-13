@@ -52,6 +52,7 @@ export const GLOSSARY_M_O: Readonly<Record<string, string>> = {
   missingDeadline: 'Heure manquante — échéance',
   missingSlot: 'Heure manquante — créneau',
   modeDelivery: 'Mode — livraison',
+  modeTitle: 'Mode de service — question',
   modePickup: 'Mode — retrait',
   mon: 'Lundi',
   moveDown: 'Descendre l’étape',

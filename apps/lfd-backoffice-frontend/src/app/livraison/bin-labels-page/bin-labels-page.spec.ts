@@ -4,6 +4,7 @@ import type { DeliveryBinView, DeliveryOrderBinsView } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { DeliveryLoadingService } from '../delivery-loading.service';
+import { SitePaletteService } from '../../shared/logistics-colors/site-palette.service';
 import { BinLabelsPage } from './bin-labels-page';
 
 function binOf(overrides: Partial<DeliveryBinView>): DeliveryBinView {
@@ -55,6 +56,22 @@ const VIEW: DeliveryOrderBinsView = {
 
 let served: DeliveryOrderBinsView = VIEW;
 
+/** Le départ des tournées, ses couleurs de livraison : celles des étiquettes (L1b). */
+const PALETTE = {
+  sites: [
+    {
+      id: 'fournil',
+      label: 'Fournil',
+      supply: 'on_site',
+      isDeparture: true,
+      pickupColorB2b: null,
+      pickupColorB2c: null,
+      deliveryColorB2b: '#1e88e5',
+      deliveryColorB2c: null,
+    },
+  ],
+} as const;
+
 let calls: string[];
 
 async function settle(fixture: ComponentFixture<BinLabelsPage>): Promise<void> {
@@ -79,6 +96,7 @@ async function boot(bacs?: string, view: DeliveryOrderBinsView = VIEW): Promise<
           },
         } satisfies Partial<Record<keyof DeliveryLoadingService, unknown>>,
       },
+      { provide: SitePaletteService, useValue: { palette: () => Promise.resolve(PALETTE) } },
     ],
   });
   const fixture = TestBed.createComponent(BinLabelsPage);
@@ -92,6 +110,24 @@ async function boot(bacs?: string, view: DeliveryOrderBinsView = VIEW): Promise<
 }
 
 describe('BinLabelsPage', () => {
+  it('imprime le carré de la couleur de la commande, lu à la palette (L1b)', async () => {
+    const element = await boot(undefined, {
+      ...VIEW,
+      fulfillmentMethod: 'delivery',
+      clientele: 'pro',
+    });
+    const squares = [...element.querySelectorAll<HTMLElement>('[data-bin-color]')];
+
+    expect(squares).toHaveLength(2);
+    expect(squares[0]?.style.backgroundColor).toBe('rgb(30, 136, 229)');
+  });
+
+  it('🔴 sans couleur connue (clientèle inconnue) : aucun carré, jamais une teinte devinée', async () => {
+    const element = await boot(undefined, { ...VIEW, fulfillmentMethod: 'delivery' });
+
+    expect(element.querySelector('[data-bin-color]')).toBeNull();
+  });
+
   it('n’imprime que les bacs tout juste déclarés, et dit que les autres existent', async () => {
     const element = await boot('b-2');
     expect(element.querySelectorAll('app-bin-label')).toHaveLength(1);

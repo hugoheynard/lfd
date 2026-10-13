@@ -33,6 +33,7 @@ import type { BoardDrop } from '../rounds-board-model';
 import { POOL_KEY } from '../rounds-board-model';
 import { RoundsBoard } from '../rounds-board/rounds-board';
 import { RoundsPage } from './rounds-page';
+import { SitePaletteService } from '../../shared/logistics-colors/site-palette.service';
 
 const WRITE: readonly StaffPermission[] = ['delivery_rounds:read', 'delivery_rounds:write'];
 
@@ -357,6 +358,7 @@ async function boot(
       },
       { provide: NotifyService, useValue: { success: () => undefined } },
       { provide: DayVersionWatcher, useValue: fakeWatcher },
+      { provide: SitePaletteService, useValue: { palette: () => Promise.resolve({ sites: [] }) } },
       {
         provide: PermissionsStore,
         useValue: { can: (permission: StaffPermission) => grants.includes(permission) },

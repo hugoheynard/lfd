@@ -68,6 +68,15 @@ export interface DeliveryRunSheetStopView {
    * passage 2 ») ; `position` part de 1.
    */
   readonly round: DeliveryRunSheetRoundView | null;
+  /**
+   * La couleur de l'arrêt (`#rrggbb`), lue à chaque lecture dans les couleurs
+   * de livraison du site de départ selon la clientèle (plan
+   * `commandes/plan-tri-depart-et-couleurs.md`, L5). Absente : clientèle
+   * inconnue, ou couleur non posée — le papier n'imprime alors aucun carré.
+   * Servie ici parce que la feuille s'ouvre sous `delivery_run_sheet`, qui
+   * n'ouvre pas la palette.
+   */
+  readonly color?: string;
 }
 
 /** La tournée d'un arrêt, et sa place dedans. */

@@ -1,5 +1,6 @@
 /* Gabarit PROVISOIRE (Q22) : une étiquette par page A4. */
 .bl-label {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -19,6 +20,20 @@
 .bl-inner,
 .bl-code {
   margin: 0;
+}
+
+/* La couleur de la commande (plan du tri et des couleurs, L1b) : un carré en
+   HAUT, le coin opposé au code, imprimé tel quel — `print-color-adjust`
+   empêche le navigateur de le blanchir à l'impression. Cerclé : un jaune pâle
+   reste visible sur le papier. */
+.bl-color {
+  position: absolute;
+  top: var(--fold-space-lg);
+  right: var(--fold-space-lg);
+  width: 4rem;
+  height: 4rem;
+  border: 1px solid var(--fold-ref-black);
+  print-color-adjust: exact;
 }
 
 /* Lot PC3 : la tournée et le rang d'arrêt se lisent depuis l'autre bout de la pièce. */
@@ -84,5 +99,10 @@
 
   .bl-qr {
     --app-qr-size: 9cm;
+  }
+
+  .bl-color {
+    width: 3cm;
+    height: 3cm;
   }
 }

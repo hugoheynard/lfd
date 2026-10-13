@@ -82,6 +82,45 @@
   overflow-y: auto;
 }
 
+/* ── LE CADRE D'UNE CATÉGORIE (Hugo, 2026-10-13, plan du tri et des couleurs, L1b)
+   Bordé à GAUCHE et en HAUT de la couleur du site, son titre écrit DANS la
+   bordure haute : on lit de loin à qui on remet. La couleur vient de la
+   donnée (Réglages › Sites), posée en propriété `--co-frame-color` ; sans
+   couleur, la teinte neutre. Une commande prête reste dans son cadre. */
+.co-frame {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  border-left: 6px solid var(--co-frame-color);
+}
+
+.co-frame.is-neutral {
+  border-left-color: var(--fold-color-border);
+}
+
+.co-frame-title {
+  margin: 0;
+  padding: var(--fold-space-xs) var(--fold-space-md);
+  background: var(--co-frame-color);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+}
+
+.co-frame-title.on-light {
+  color: var(--fold-ref-black);
+}
+
+.co-frame-title.on-dark {
+  color: var(--fold-ref-white);
+}
+
+.co-frame.is-neutral .co-frame-title {
+  background: var(--fold-color-surface-sunken);
+  color: var(--fold-color-text-secondary);
+}
+
 .co-bac {
   display: flex;
   flex: none;

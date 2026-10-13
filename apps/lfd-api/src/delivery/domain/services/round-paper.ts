@@ -27,6 +27,12 @@ export interface RoundPaperSheetStop {
   readonly orderNote: string;
   readonly addressNote: string | null;
   readonly cancelled: boolean;
+  /**
+   * La couleur de l'arrêt (`#rrggbb`) — celle de livraison du site de départ
+   * pour sa clientèle, lue au tirage (plan du tri et des couleurs, L5) ;
+   * `null` : clientèle inconnue ou couleur non posée, aucun carré.
+   */
+  readonly color: string | null;
 }
 
 /**

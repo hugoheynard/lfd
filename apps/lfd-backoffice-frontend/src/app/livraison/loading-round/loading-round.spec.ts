@@ -12,6 +12,7 @@ import { describe, expect, it } from 'vitest';
 import { BinScanner } from '../bin-scanner/bin-scanner';
 import { LoadingGateway } from '../loading-gateway';
 import { type LoadingDeparture, LoadingRound } from './loading-round';
+import { SitePaletteService } from '../../shared/logistics-colors/site-palette.service';
 
 const VIEW: DeliveryLoadingRoundView = {
   roundId: 'r-1',
@@ -32,6 +33,8 @@ async function boot(inputs: {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
+      // La palette des couleurs (plan du tri et des couleurs, L1b) : vide, tout est neutre.
+      { provide: SitePaletteService, useValue: { palette: () => Promise.resolve({ sites: [] }) } },
       {
         provide: LoadingGateway,
         useValue: {
@@ -222,6 +225,8 @@ async function bootPlanned(): Promise<{
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
+      // La palette des couleurs (plan du tri et des couleurs, L1b) : vide, tout est neutre.
+      { provide: SitePaletteService, useValue: { palette: () => Promise.resolve({ sites: [] }) } },
       {
         provide: LoadingGateway,
         useValue: {

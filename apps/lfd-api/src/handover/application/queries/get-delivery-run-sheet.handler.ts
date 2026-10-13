@@ -9,12 +9,14 @@ import {
   DeliveryRunSheetReader,
   type DeliveryRunSheetAddressBook,
   type DeliveryRunSheetEntry,
+  RunSheetColorsReader,
 } from "../../channels/commerce/index.js";
 import {
   HandoverAttestationsReader,
   type AttestedHandover,
 } from "../../domain/ports/handover-attestations.reader.js";
 import { queueStateOf } from "../../domain/services/queue-state.js";
+import { runSheetColorOf } from "../../domain/services/run-sheet-color.js";
 import {
   RoundPlacementsReader,
   type RoundPlacement,
@@ -64,6 +66,7 @@ export class GetDeliveryRunSheetHandler implements IQueryHandler<
     private readonly attestations: HandoverAttestationsReader,
     private readonly sheets: AtelierSheetsReader,
     private readonly rounds: RoundPlacementsReader,
+    private readonly colors: RunSheetColorsReader,
   ) {}
 
   async execute(query: GetDeliveryRunSheetQuery): Promise<DeliveryRunSheetView> {
@@ -75,7 +78,7 @@ export class GetDeliveryRunSheetHandler implements IQueryHandler<
     const others = among.filter((entry) => !known.has(entry.orderId));
     const entries = [...ofDay, ...others];
     const orderIds = entries.map((entry) => entry.orderId);
-    const [attested, withoutSheet, placements] = await Promise.all([
+    const [attested, withoutSheet, placements, colors] = await Promise.all([
       this.attestations.forOrders(orderIds),
       // Le plan d'atelier est celui du JOUR : une commande d'un autre jour
       // n'y figure pas, et ce n'est pas un manque — elle a été faite le sien.
@@ -84,21 +87,31 @@ export class GetDeliveryRunSheetHandler implements IQueryHandler<
         ofDay.map((entry) => entry.orderId),
       ),
       this.rounds.placementsOf(query.day, orderIds),
+      // Lues à chaque lecture, jamais figées (plan du tri et des couleurs, L5).
+      this.colors.departureColors(),
     ]);
     return {
       day: query.day,
       stops: entries.map((entry) =>
-        toStopView(
-          entry,
-          attested.get(entry.orderId),
-          withoutSheet.has(entry.orderId),
-          query.withProcedures,
-          placements.byOrder.get(entry.orderId),
+        withColor(
+          toStopView(
+            entry,
+            attested.get(entry.orderId),
+            withoutSheet.has(entry.orderId),
+            query.withProcedures,
+            placements.byOrder.get(entry.orderId),
+          ),
+          runSheetColorOf(entry.clientele, colors),
         ),
       ),
       roundCount: placements.roundCount,
     };
   }
+}
+
+/** L'arrêt et sa couleur ; sans couleur, le champ est absent — aucun carré. */
+function withColor(stop: DeliveryRunSheetStopView, color: string | null): DeliveryRunSheetStopView {
+  return color === null ? stop : { ...stop, color };
 }
 
 /** Un arrêt, dans le vocabulaire de l'écran. Aucun montant n'y entre. */

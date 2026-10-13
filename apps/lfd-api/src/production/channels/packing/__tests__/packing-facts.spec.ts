@@ -22,6 +22,7 @@ const ORDER: PackingListOrder = {
   fulfillmentMethod: "delivery",
   dueAt: "07:30",
   clientele: null,
+  siteId: null,
   lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 12 }],
 };
 
@@ -56,6 +57,20 @@ describe("PackingListDrawnEvent", () => {
       order: older,
     };
     expect(PackingListDrawnEvent.fromPayload(payload).order.clientele).toBeNull();
+  });
+
+  it("porte le site figé, et le relit (L1a)", () => {
+    const fact = new PackingListDrawnEvent(DAY, AT, { ...ORDER, siteId: "site_vv" }).durableFact();
+    expect(PackingListDrawnEvent.fromPayload(fact.payload).order.siteId).toBe("site_vv");
+  });
+
+  it("🔴 un fait écrit SANS site (binaire d'avant) se lit « sans site », il n'est pas refusé", () => {
+    const { siteId: _absent, ...older } = { ...ORDER, siteId: "site_vv" };
+    const payload = {
+      ...new PackingListDrawnEvent(DAY, AT, ORDER).durableFact().payload,
+      order: older,
+    };
+    expect(PackingListDrawnEvent.fromPayload(payload).order.siteId).toBeNull();
   });
 
   it("une clientèle hors vocabulaire se lit « inconnue »", () => {

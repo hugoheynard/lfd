@@ -32,6 +32,12 @@ import { orderStopsOf, transferStopsOf } from "../domain/entities/delivery-round
 export interface OrderNames {
   readonly reference: string;
   readonly customerLabel: string;
+  /** `pro` / `public` — la couleur de l'arrêt au chargement (L1a) ; `null` = inconnue. */
+  readonly clientele: "pro" | "public" | null;
+  /** Livraison ou retrait ; `null` : commande inconnue du commerce. */
+  readonly method: "pickup" | "delivery" | null;
+  /** Le site d'un retrait (S2), identifiant opaque ; `null` sinon. */
+  readonly siteId: string | null;
 }
 
 /** Ce qu'il faut pour dire d'un bac s'il est partagé, et avec qui, et s'il est à refaire. */
@@ -42,7 +48,20 @@ export interface BinContext {
 }
 
 export function orderNamesOf(order: DeliveryOrderFacts | undefined): OrderNames {
-  return { reference: order?.reference ?? "", customerLabel: order?.customerLabel ?? "" };
+  return {
+    reference: order?.reference ?? "",
+    customerLabel: order?.customerLabel ?? "",
+    clientele: order?.clientele ?? null,
+    method: methodOf(order),
+    siteId: order?.siteId ?? null,
+  };
+}
+
+function methodOf(order: DeliveryOrderFacts | undefined): OrderNames["method"] {
+  if (order === undefined) {
+    return null;
+  }
+  return order.delivery ? "delivery" : "pickup";
 }
 
 /** Les noms de ces commandes, par identifiant. */
@@ -84,7 +103,13 @@ function ownerNamesOf(bin: BinRow, context: BinContext): OrderNames {
   const { owner } = bin;
   return owner.kind === "order"
     ? (context.names.get(owner.orderId) ?? orderNamesOf(undefined))
-    : { reference: `→ ${owner.siteLabel}`, customerLabel: owner.siteLabel };
+    : {
+        reference: `→ ${owner.siteLabel}`,
+        customerLabel: owner.siteLabel,
+        clientele: null,
+        method: null,
+        siteId: null,
+      };
 }
 
 /** Les bacs d'une commande, rangés : rang et total ne comptent que les non annulés. */
@@ -141,8 +166,15 @@ export function orderBinsView(
   bins: readonly BinRow[],
   context: BinContext,
 ): Omit<DeliveryOrderBinsView, "round"> {
-  const reference = context.names.get(orderId)?.reference ?? "";
-  return { orderId, reference, bins: binViewsOf(bins, context) };
+  const names = context.names.get(orderId) ?? orderNamesOf(undefined);
+  return {
+    orderId,
+    reference: names.reference,
+    bins: binViewsOf(bins, context),
+    ...(names.method === null ? {} : { fulfillmentMethod: names.method }),
+    ...(names.clientele === null ? {} : { clientele: names.clientele }),
+    ...(names.siteId === null ? {} : { siteId: names.siteId }),
+  };
 }
 
 export function binDetailView(
@@ -184,6 +216,7 @@ export function loadingRoundView(
       stopId: stop.stopId,
       transferId: stop.transferId,
       siteLabel: stop.siteLabel ?? "",
+      ...(stop.siteId === null ? {} : { siteId: stop.siteId }),
       position: stop.position,
       state: stopStateOf(stop),
       bins: loadingBinViewsOf(stop, context),
@@ -233,6 +266,7 @@ function loadingStopView(
     position: stop.position,
     state: stopStateOf(stop),
     bins: loadingBinViewsOf(stop, context),
+    ...(names.clientele === null ? {} : { clientele: names.clientele }),
   };
 }
 

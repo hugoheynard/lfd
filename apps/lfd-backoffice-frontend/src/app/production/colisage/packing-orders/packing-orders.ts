@@ -6,10 +6,16 @@ import {
   type FoldViewToggleOption,
 } from 'fold-ng';
 
-import type { DeliveryPackingRoundView, PackingLine, PackingSheet } from '@lfd/contracts';
+import type {
+  DeliveryPackingRoundView,
+  PackingLine,
+  PackingSheet,
+  SitePaletteEntryView,
+} from '@lfd/contracts';
 
 import { methodLabel, type PackingStack } from '../../packing-board';
 import { ClienteleBadge } from '../clientele-badge/clientele-badge';
+import { type PackingFrame, packingFrames } from '../packing-frames';
 import {
   type PackingGroup,
   packingGroups,
@@ -83,9 +89,26 @@ export class PackingOrders {
   /** Les tournées du jour, servies par la livraison — `[]` : aucun groupe de tournée. */
   readonly rounds = input<readonly DeliveryPackingRoundView[]>([]);
 
+  /**
+   * La palette des sites, lue à l'instant par le poste — `[]` : toutes les
+   * commandes en teinte neutre (plan du tri et des couleurs, L1b).
+   */
+  readonly palette = input<readonly SitePaletteEntryView[]>([]);
+
   /** Les groupes affichés — la pile, rangée dans l'ordre des tournées. */
   protected readonly groups = computed<readonly PackingGroup[]>(() =>
     packingGroups(this.sheets(), this.rounds()),
+  );
+
+  /**
+   * Chaque groupe, ses commandes rangées dans des cadres de couleur — par
+   * catégorie, et par tranche horaire quand elle en a plusieurs (Hugo,
+   * 2026-10-13). Un ordre d'affichage : rien n'est compté.
+   */
+  protected readonly framedGroups = computed<
+    readonly { readonly group: PackingGroup; readonly frames: readonly PackingFrame[] }[]
+  >(() =>
+    this.groups().map((group) => ({ group, frames: packingFrames(group.entries, this.palette()) })),
   );
 
   /** Y a-t-il au moins une tournée à l'écran ? Sinon, aucun en-tête de groupe. */

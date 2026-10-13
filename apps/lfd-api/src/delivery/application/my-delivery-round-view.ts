@@ -40,6 +40,11 @@ export interface MyDeliveryRoundInputs {
   readonly readyOrders: ReadonlySet<string>;
   /** La décision vivante du commercial, par arrêt (B3) ; un arrêt absent n'en a pas. */
   readonly decisions: ReadonlyMap<string, StopDecisionRow>;
+  /**
+   * La clientèle de chaque commande, lue vivante au commerce (L1a) — l'écran
+   * en tire la couleur de l'arrêt ; une absente est inconnue.
+   */
+  readonly clienteles: ReadonlyMap<string, "pro" | "public">;
 }
 
 /** Ce qu'un arrêt affiche à la porte — figé au départ, ou lu vivant au dépôt. */
@@ -160,10 +165,17 @@ function stopView(
     ...(sheet !== undefined && sheet.binsExpected !== null
       ? { binsExpected: sheet.binsExpected }
       : {}),
+    ...clienteleOf(inputs.clienteles.get(stop.orderId)),
   };
 }
 
 /** Une ligne de la fiche, champ par champ : rien d'autre ne passe. */
+function clienteleOf(
+  clientele: "pro" | "public" | undefined,
+): Pick<MyDeliveryStopView, "clientele"> {
+  return clientele === undefined ? {} : { clientele };
+}
+
 function sheetLineView(line: MyDeliverySheetLineView): MyDeliverySheetLineView {
   return {
     sku: line.sku,

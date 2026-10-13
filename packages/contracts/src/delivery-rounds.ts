@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import type { DeliveryIncidentView } from "./delivery-doorstep.js";
+import type { OrderClientele } from "./order-handover.js";
 
 /**
  * **La composition des tournées d'un jour** — répartir les livraisons entre les
@@ -88,6 +89,11 @@ export interface DeliveryRoundTransferStopView {
   readonly transferId: string;
   /** Le nom du site, figé à l'ouverture du transfert. */
   readonly siteLabel: string;
+  /**
+   * Le site servi, identifiant opaque du commerce (L1a) — l'écran y lit les
+   * couleurs du retrait. Absent : vue d'avant le champ.
+   */
+  readonly siteId?: string;
   /** Dans la même séquence 1..n que les arrêts de commande. */
   readonly position: number;
   readonly orderCount: number;
@@ -174,6 +180,13 @@ export interface DeliveryRoundStopView {
    * reste recomposable, et « tout recomposer » la replace dans sa zone.
    */
   readonly outOfZone?: boolean;
+  /**
+   * `pro` / `public`, lue au commerce à chaque lecture (plan
+   * `commandes/plan-tri-depart-et-couleurs.md`, L1a) — l'écran en tire la
+   * couleur de la commande. Absent : inconnue (commande d'avant la
+   * distinction, ou que le commerce ne connaît plus) — teinte neutre.
+   */
+  readonly clientele?: OrderClientele;
 }
 
 export type DeliveryRoundStopSignal = "cancelled" | "not_this_day" | "not_delivery";

@@ -57,6 +57,8 @@ import {
 } from '../my-round-transfers';
 import { MyRoundGestures } from '../my-round-gestures';
 import { MyRoundReader } from '../my-round-reader';
+import { deliveryStopCategories } from '../stop-categories';
+import { SitePaletteStore } from '../../shared/logistics-colors/site-palette.store';
 
 /** Le stockage de l'appareil, ou rien : un navigateur qui le refuse ne casse pas la page. */
 function deviceStorage(): Storage | null {
@@ -129,6 +131,8 @@ export class MyRoundPage {
   /** La position au geste (YA-D4) : son absence se dit, elle ne bloque rien. */
   protected readonly positions = inject(GesturePositionReader);
   private readonly storage = deviceStorage();
+  /** La palette des sites — la pastille de chaque arrêt (plan du tri et des couleurs, L1b). */
+  private readonly palette = inject(SitePaletteStore);
 
   /** Le dernier refus du serveur — la tournée reste à l'écran. */
   protected readonly refusal = signal<string | null>(null);
@@ -233,6 +237,7 @@ export class MyRoundPage {
 
   constructor() {
     void this.reader.loadList();
+    void this.palette.refresh();
     // Le coliseur déclare, le fournil marque prête : sans relecture, le
     // livreur partirait sur un « en préparation » périmé. On ne relit que si
     // la version de « ma tournée » a bougé (PL4).
@@ -242,6 +247,11 @@ export class MyRoundPage {
       reload: () => this.reader.refresh(),
     });
   }
+
+  /** La catégorie de chaque arrêt de la tournée ouverte, par arrêt — lue à l'affichage. */
+  protected readonly categories = computed(() =>
+    deliveryStopCategories(this.round()?.stops ?? [], this.palette.sites()),
+  );
 
   protected goToOf(stop: MyDeliveryRoundView['stops'][number]): string | null {
     // Le stationnement d'abord, s'il est connu (§6) : on conduit là où l'on se gare.

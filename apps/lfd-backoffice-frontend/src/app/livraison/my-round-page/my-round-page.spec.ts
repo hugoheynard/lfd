@@ -22,6 +22,7 @@ import { myRoundOf, mySheetLineOf, myStopOf } from '../my-round.fixture';
 import { NAVIGATION_APP_KEY } from '../my-round-navigation';
 import { parisDayOf } from '../run-sheet';
 import { MyRoundPage } from './my-round-page';
+import { SitePaletteService } from '../../shared/logistics-colors/site-palette.service';
 
 function summaryOf(id: string): MyDeliveryRoundSummaryView {
   return { id, vehicleName: 'Kangoo', passage: 1, departedAt: null, stopCount: 2 };
@@ -91,6 +92,8 @@ async function boot(
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
+      // La palette des couleurs (plan du tri et des couleurs, L1b) : vide, tout est neutre.
+      { provide: SitePaletteService, useValue: { palette: () => Promise.resolve({ sites: [] }) } },
       // « Mes données » est un `routerLink` : il lui faut un routeur.
       provideRouter([]),
       {

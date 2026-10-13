@@ -26,6 +26,8 @@ function order(overrides: Partial<BoardOrder> & Pick<BoardOrder, "orderId">): Bo
     customerLabel: "Le Bistrot",
     fulfillmentMethod: "delivery",
     clientele: null,
+    siteId: null,
+    dueAt: null,
     drawnAt: CLOSED,
     packed: null,
     containers: 0,
@@ -70,6 +72,22 @@ describe("packingBoardOf — le poste servi par le colisage (K3a)", () => {
       readyCount: 0,
       relativeDay: "today",
     });
+  });
+
+  it("chaque fiche porte le site et l'échéance de sa commande, tels quels (L1a)", () => {
+    const view = packingBoardOf(
+      sources({
+        orders: [
+          order({ orderId: "vv", siteId: "site_vv", dueAt: "09:30" }),
+          order({ orderId: "ancienne" }),
+        ],
+        stocks: [],
+      }),
+    );
+
+    const byId = new Map(view.sheets.map((sheet) => [sheet.orderId, sheet]));
+    expect(byId.get("vv")).toMatchObject({ siteId: "site_vv", dueAt: "09:30" });
+    expect(byId.get("ancienne")).toMatchObject({ siteId: null, dueAt: null });
   });
 
   it("l'heure de clôture est le PREMIER tirage reçu, pas celui d'un retirage", () => {

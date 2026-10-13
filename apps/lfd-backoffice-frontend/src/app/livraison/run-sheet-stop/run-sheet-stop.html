@@ -5,6 +5,17 @@
     [title]="item.reference + ' · ' + stopTitleOf(item)"
     [subtitle]="windowLabel(item.window)"
   >
+    <!-- La couleur de l'arrêt, posée par le serveur (plan du tri et des
+         couleurs, L5) : un carré après l'horaire ; absente, rien. -->
+    @if (item.color; as color) {
+      <span
+        titleAction
+        class="rs-color"
+        [style.background-color]="color"
+        aria-hidden="true"
+        data-stop-color
+      ></span>
+    }
     <fold-badge
       titleAction
       [variant]="stateLabelOf(item.state).variant"

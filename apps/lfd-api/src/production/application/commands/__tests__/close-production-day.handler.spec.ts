@@ -158,6 +158,7 @@ function listFact(source: ProducibleOrder, drawnAt: Date) {
     fulfillmentMethod: source.fulfillmentMethod,
     dueAt: source.dueAt,
     clientele: null,
+    siteId: source.siteId,
     lines: source.lines,
   }).durableFact();
 }

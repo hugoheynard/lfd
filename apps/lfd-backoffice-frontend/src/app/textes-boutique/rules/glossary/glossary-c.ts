@@ -25,6 +25,8 @@ export const GLOSSARY_C: Readonly<Record<string, string>> = {
   cateringDetail: 'Traiteur — détail',
   cateringNote: 'Traiteur — note',
   cateringTitle: 'Traiteur — titre',
+  changeAddress: 'Changer d’adresse (livraison)',
+  changeDay: 'Changer de jour (livraison)',
   changeHouse: 'Changer de maison',
   changeNote: 'Modifier une commande — note',
   changeService: 'Changer de mode de service',

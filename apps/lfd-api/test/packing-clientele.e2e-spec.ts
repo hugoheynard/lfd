@@ -116,6 +116,26 @@ describe("GET admin/packing/:date/board — la clientèle de chaque commande", (
     );
   });
 
+  it("le site figé à la passation traverse jusqu'au poste, avec l'échéance (L1a)", async () => {
+    const { proId, publicId } = await placeBoth();
+    await closePlan(ctx);
+    await releaseRelay(ctx);
+    const point = await ctx.prisma.site.findFirstOrThrow({ select: { id: true } });
+
+    const view = jsonBody<ProductionPackingView>(
+      await ctx.asSub(STAFF).get(`/admin/packing/${SERVICE_DAY}/board`).expect(200),
+    );
+    const sites = new Map(view.sheets.map((sheet) => [sheet.orderId, sheet.siteId]));
+
+    expect(sites.get(proId)).toBe(point.id);
+    expect(sites.get(publicId)).toBe(point.id);
+    const stored = await ctx.prisma.packingOrder.findMany({
+      where: { serviceDay: SERVICE_DAY },
+      select: { siteId: true },
+    });
+    expect(stored.map((row) => row.siteId)).toEqual([point.id, point.id]);
+  });
+
   it("🔴 un fait écrit sans le champ (ancien binaire) se range et se lit « inconnue »", async () => {
     const { proId, publicId } = await placeBoth();
     relayGate.open = false;

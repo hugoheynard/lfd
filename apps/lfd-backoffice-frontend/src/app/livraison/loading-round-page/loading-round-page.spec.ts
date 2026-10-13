@@ -15,6 +15,7 @@ import { BinScanner } from '../bin-scanner/bin-scanner';
 import { DeliveryLoadingService } from '../delivery-loading.service';
 import { loadedNotice } from '../loading-round/loading-round';
 import { LoadingRoundPage } from './loading-round-page';
+import { SitePaletteService } from '../../shared/logistics-colors/site-palette.service';
 
 const WRITE: readonly StaffPermission[] = ['delivery_loading:read', 'delivery_loading:write'];
 
@@ -95,6 +96,8 @@ async function boot(
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
+      // La palette des couleurs (plan du tri et des couleurs, L1b) : vide, tout est neutre.
+      { provide: SitePaletteService, useValue: { palette: () => Promise.resolve({ sites: [] }) } },
       provideRouter([]),
       {
         provide: DeliveryLoadingService,

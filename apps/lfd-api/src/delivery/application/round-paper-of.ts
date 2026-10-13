@@ -19,6 +19,8 @@ export interface RoundPaperInputs {
   readonly printedAt: Date;
   /** Les arrêts de transfert, par transfert (2026-10-13) ; un absent ne s'imprime pas. */
   readonly transfers: ReadonlyMap<string, RoundPaperTransferStop>;
+  /** La couleur de chaque arrêt, lue au tirage (L5) ; une absente : aucun carré. */
+  readonly colors: ReadonlyMap<string, string>;
 }
 
 /**
@@ -60,6 +62,7 @@ function stopOf(stop: RoundPaperStopRow, inputs: RoundPaperInputs): RoundPaperSt
     kind: "sheet",
     ...door,
     binCodes: stop.binCodes,
+    color: inputs.colors.get(stop.orderId) ?? null,
     steps: (inputs.procedures.get(stop.orderId) ?? []).map((step) => ({
       title: step.title,
       body: step.body,
@@ -67,7 +70,10 @@ function stopOf(stop: RoundPaperStopRow, inputs: RoundPaperInputs): RoundPaperSt
   };
 }
 
-type Door = Omit<Extract<RoundPaperStop, { kind: "sheet" }>, "kind" | "binCodes" | "steps">;
+type Door = Omit<
+  Extract<RoundPaperStop, { kind: "sheet" }>,
+  "kind" | "binCodes" | "steps" | "color"
+>;
 
 /** Figé si la tournée est partie, vivant sinon ; `null` : le commerce ne la connaît pas. */
 function doorOf(stop: RoundPaperStopRow, live: DepartureSheet | undefined): Door | null {

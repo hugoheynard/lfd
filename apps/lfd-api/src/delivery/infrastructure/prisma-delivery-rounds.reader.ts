@@ -30,7 +30,11 @@ export class PrismaDeliveryRoundsReader extends DeliveryRoundsReader {
           orderBy: { position: "asc" },
           include: {
             transfer: {
-              select: { siteLabel: true, _count: { select: { items: { where: ORDER_ITEM } } } },
+              select: {
+                siteId: true,
+                siteLabel: true,
+                _count: { select: { items: { where: ORDER_ITEM } } },
+              },
             },
           },
         },
@@ -63,7 +67,11 @@ export class PrismaDeliveryRoundsReader extends DeliveryRoundsReader {
             : [
                 [
                   stop.transferId,
-                  { siteLabel: stop.transfer.siteLabel, orderCount: stop.transfer._count.items },
+                  {
+                    siteId: stop.transfer.siteId,
+                    siteLabel: stop.transfer.siteLabel,
+                    orderCount: stop.transfer._count.items,
+                  },
                 ] as const,
               ],
         ),

@@ -66,11 +66,37 @@ export function rail(
   };
 }
 
-/** Le nom du client à gauche, la fenêtre en gras à droite, sur la même rangée. */
+/** Le côté du carré de couleur en tête d'arrêt (plan du tri et des couleurs, L5). */
+const COLOR_SQUARE = 4.5 * MM;
+const COLOR_GAP = 2 * MM;
+
+/**
+ * Le carré de couleur de l'arrêt, au bord droit — `0` sans couleur : aucun
+ * carré, jamais une teinte devinée. Cerclé de noir, pour qu'un jaune pâle
+ * se voie sur le blanc.
+ */
+function colorSquareWidth(stop: RoundPaperSheetStop): number {
+  return stop.color === null ? 0 : COLOR_SQUARE + COLOR_GAP;
+}
+
+function drawColorSquare(doc: Doc, color: string | null, y: number): void {
+  if (color === null) {
+    return;
+  }
+  const box = { x: RIGHT - COLOR_SQUARE, y, width: COLOR_SQUARE, height: COLOR_SQUARE };
+  fillBox(doc, box, color);
+  strokeBox(doc, box, 0.6);
+}
+
+/**
+ * Le nom du client à gauche, la fenêtre en gras à droite, sur la même rangée
+ * — et, au bord droit, le carré de la couleur de l'arrêt quand il en a une.
+ */
 function headRow(doc: Doc, stop: RoundPaperSheetStop, tone: Tone): Row {
   const window = windowPaperLabel(stop.window);
   const windowWidth = doc.font(BOLD).fontSize(WINDOW_SIZE).widthOfString(window);
-  const nameWidth = CONTENT_WIDTH - windowWidth - 5 * MM;
+  const squareWidth = colorSquareWidth(stop);
+  const nameWidth = CONTENT_WIDTH - windowWidth - squareWidth - 5 * MM;
   const nameHeight = doc
     .font(BOLD)
     .fontSize(NAME_SIZE)
@@ -84,8 +110,9 @@ function headRow(doc: Doc, stop: RoundPaperSheetStop, tone: Tone): Row {
         width: nameWidth,
         color: tone.ink,
       });
-      const windowX = RIGHT - windowWidth;
+      const windowX = RIGHT - squareWidth - windowWidth;
       put(d, window, windowX, y + 1, { size: WINDOW_SIZE, bold: true, color: tone.ink });
+      drawColorSquare(d, stop.color, y);
       if (stop.cancelled) {
         const struck = Math.min(
           d.font(BOLD).fontSize(NAME_SIZE).widthOfString(stop.customerLabel),

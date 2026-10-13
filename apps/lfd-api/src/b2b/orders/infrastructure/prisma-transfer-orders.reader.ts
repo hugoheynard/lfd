@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import {
   type DeliveryOrderLine,
+  type TransferOrderCategory,
   TransferOrderContentsReader,
   type TransferOrderRef,
   TransferOrdersReader,
@@ -88,5 +89,23 @@ export class PrismaTransferOrderContentsReader extends TransferOrderContentsRead
       byOrder.set(row.orderId, [...(byOrder.get(row.orderId) ?? []), line]);
     }
     return byOrder;
+  }
+
+  async categoriesOf(
+    orderIds: readonly string[],
+  ): Promise<ReadonlyMap<string, TransferOrderCategory>> {
+    if (orderIds.length === 0) {
+      return new Map();
+    }
+    const rows = await this.prisma.order.findMany({
+      where: { id: { in: [...orderIds] } },
+      select: { id: true, clientele: true, pickupAddress: true },
+    });
+    return new Map(
+      rows.map((row) => [
+        row.id,
+        { clientele: row.clientele, siteId: siteIdOf(row.pickupAddress) },
+      ]),
+    );
   }
 }

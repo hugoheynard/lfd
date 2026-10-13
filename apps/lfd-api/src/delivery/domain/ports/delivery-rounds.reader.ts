@@ -14,6 +14,8 @@ export type RoundStopRow = StopSubject & {
 
 /** Ce que la vue dit d'un transfert interne : son site, et combien de commandes il porte. */
 export interface RoundTransferRow {
+  /** Le site servi, identifiant opaque du commerce (L1a, la couleur). */
+  readonly siteId: string;
   readonly siteLabel: string;
   readonly orderCount: number;
 }

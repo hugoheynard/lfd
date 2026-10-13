@@ -13,6 +13,7 @@ import { deliverySpecsSchema, type DoorstepRule, doorstepRuleSchema } from "@lfd
 import { type AddressLink, snapshotOf } from "./delivery-run-sheet.query.js";
 import { customerLabelOf, expectedOnWhere } from "./handover-order.query.js";
 import { fulfillmentOf, windowOf } from "./order-fulfillment.parse.js";
+import { siteIdOf } from "./pickup-site.parse.js";
 
 /** Ce que la composition lit d'une commande : ni montant, ni adresse. */
 const DELIVERY_ORDER_SELECT = {
@@ -116,7 +117,12 @@ export class PrismaDeliveryOrdersReader extends DeliveryOrdersReader {
     }
     const rows = await this.prisma.order.findMany({
       where: { id: { in: [...orderIds] } },
-      select: { ...DELIVERY_ORDER_SELECT, ...CUSTOMER_SELECT },
+      select: {
+        ...DELIVERY_ORDER_SELECT,
+        ...CUSTOMER_SELECT,
+        clientele: true,
+        pickupAddress: true,
+      },
     });
     return rows.map((row) => ({
       ...refOf(row),
@@ -124,6 +130,8 @@ export class PrismaDeliveryOrdersReader extends DeliveryOrdersReader {
       day: row.requestedDeliveryDate?.toISOString().slice(0, 10) ?? null,
       delivery: row.fulfillmentMethod === "delivery",
       zoneId: row.deliveryZoneId,
+      clientele: row.clientele,
+      siteId: siteIdOf(row.pickupAddress),
     }));
   }
 

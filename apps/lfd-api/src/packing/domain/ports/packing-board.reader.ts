@@ -20,6 +20,10 @@ export interface BoardOrder {
   readonly fulfillmentMethod: "pickup" | "delivery";
   /** `pro` / `public` ; `null` = inconnue. */
   readonly clientele: "pro" | "public" | null;
+  /** Le site qui remet, identifiant opaque du commerce ; `null` = sans site (L1a). */
+  readonly siteId: string | null;
+  /** `HH:mm` — l'échéance figée par le fournil ; `null` = aucune. */
+  readonly dueAt: string | null;
   /** L'instant du tirage qui l'a inscrite — celui de la clôture pour les premières. */
   readonly drawnAt: Date;
   readonly packed: SheetMark | null;

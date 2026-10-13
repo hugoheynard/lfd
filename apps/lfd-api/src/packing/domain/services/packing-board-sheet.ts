@@ -79,6 +79,8 @@ export function sheetOf(order: BoardOrder, context: SheetContext): PackingSheet 
     customerLabel: order.customerLabel,
     fulfillmentMethod: order.fulfillmentMethod,
     clientele: order.clientele,
+    siteId: order.siteId,
+    dueAt: order.dueAt,
     destination: context.destinationOf(order.orderId),
     lines: linesOf(order, context.awaiting, allocatedOf),
     lineCount: order.lines.length,

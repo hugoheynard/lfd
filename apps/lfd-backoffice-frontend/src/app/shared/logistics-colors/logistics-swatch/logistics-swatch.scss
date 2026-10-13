@@ -1,0 +1,30 @@
+:host {
+  display: inline-flex;
+  min-width: 0;
+}
+
+/* La couleur vient de la donnée (Réglages › Sites), posée en style : seule
+   l'encre et la teinte neutre sont des jetons. */
+.ls-swatch {
+  overflow: hidden;
+  padding: var(--fold-space-xs) var(--fold-space-sm);
+  border-radius: var(--fold-radius-pill);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-semibold);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ls-swatch.on-light {
+  color: var(--fold-ref-black);
+}
+
+.ls-swatch.on-dark {
+  color: var(--fold-ref-white);
+}
+
+.ls-swatch.is-neutral {
+  background: var(--fold-color-surface-sunken);
+  border: 1px solid var(--fold-color-border);
+  color: var(--fold-color-text-secondary);
+}

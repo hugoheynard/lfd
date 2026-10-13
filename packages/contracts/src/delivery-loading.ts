@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import type { DeliveryOrderRoundPlaceView } from "./delivery-packing.js";
+import type { OrderClientele } from "./order-handover.js";
 
 /**
  * **Le chargement, véhicule par véhicule** — les bacs déclarés, leur
@@ -152,6 +153,16 @@ export interface DeliveryOrderBinsView {
    * pièce (`decisions-par-defaut-2026-10-02.md`, lot PC3).
    */
   readonly round: DeliveryOrderRoundPlaceView | null;
+  /**
+   * Ce qui range la commande dans sa catégorie de couleur — l'étiquette
+   * imprime un carré de cette couleur (plan
+   * `commandes/plan-tri-depart-et-couleurs.md`, L1b), lue à chaque lecture.
+   * Absents : commande inconnue du commerce, clientèle inconnue, ou retrait
+   * sans site — aucun carré.
+   */
+  readonly fulfillmentMethod?: "pickup" | "delivery";
+  readonly clientele?: OrderClientele;
+  readonly siteId?: string;
 }
 
 /**
@@ -205,6 +216,13 @@ export interface DeliveryLoadingStopView {
   readonly position: number;
   readonly state: DeliveryLoadingStopState;
   readonly bins: readonly DeliveryLoadingBinView[];
+  /**
+   * `pro` / `public`, lue au commerce à chaque lecture (plan
+   * `commandes/plan-tri-depart-et-couleurs.md`, L1a) — l'écran en tire la
+   * couleur de la commande. Absent : inconnue (commande d'avant la
+   * distinction, ou que le commerce ne connaît plus) — teinte neutre.
+   */
+  readonly clientele?: OrderClientele;
 }
 
 /** **Le chargement d'une tournée** — ce qui manque encore à CE véhicule. */
@@ -233,6 +251,11 @@ export interface DeliveryLoadingTransferStopView {
   readonly transferId: string;
   /** Le nom du site, figé à l'ouverture du transfert. */
   readonly siteLabel: string;
+  /**
+   * Le site servi, identifiant opaque du commerce (L1a) — l'écran y lit les
+   * couleurs du retrait. Absent : vue d'avant le champ.
+   */
+  readonly siteId?: string;
   readonly position: number;
   readonly state: DeliveryLoadingStopState;
   readonly bins: readonly DeliveryLoadingBinView[];

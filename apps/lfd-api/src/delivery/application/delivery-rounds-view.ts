@@ -111,13 +111,17 @@ function roundView(round: RoundRow, inputs: DeliveryRoundsDayInputs): DeliveryRo
           },
     driver: driverView(round.driverStaffId, inputs),
     stops: orderStopsOf(round.stops).map((stop) => stopView(stop, round.vehicleId, inputs)),
-    transferStops: transferStopsOf(round.stops).map((stop) => ({
-      stopId: stop.stopId,
-      transferId: stop.transferId,
-      siteLabel: round.transfers.get(stop.transferId)?.siteLabel ?? "",
-      position: stop.position,
-      orderCount: round.transfers.get(stop.transferId)?.orderCount ?? 0,
-    })),
+    transferStops: transferStopsOf(round.stops).map((stop) => {
+      const transfer = round.transfers.get(stop.transferId);
+      return {
+        stopId: stop.stopId,
+        transferId: stop.transferId,
+        siteLabel: transfer?.siteLabel ?? "",
+        ...(transfer === undefined ? {} : { siteId: transfer.siteId }),
+        position: stop.position,
+        orderCount: transfer?.orderCount ?? 0,
+      };
+    }),
     place: inputs.places.get(round.id) ?? null,
   };
 }
@@ -161,9 +165,11 @@ function stopView(
   const flagged = outOfZone(order?.zoneId ?? null, inputs.vehicleZones.get(vehicleId))
     ? { ...view, outOfZone: true }
     : view;
+  const clientele = order?.clientele ?? null;
+  const colored = clientele === null ? flagged : { ...flagged, clientele };
   return broughtBackAt === undefined
-    ? flagged
-    : { ...flagged, broughtBackAt: broughtBackAt.toISOString() };
+    ? colored
+    : { ...colored, broughtBackAt: broughtBackAt.toISOString() };
 }
 
 /** Un véhicule restreint, et une commande d'une zone qu'il n'a pas. Sans zone : partout. */

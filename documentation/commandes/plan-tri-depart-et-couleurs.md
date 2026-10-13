@@ -1,7 +1,8 @@
 # Plan — trier les commandes par heure de départ, et les colorer
 
-> **État : 📐 doc-first, 2026-10-13.** Rien n'est bâti de ce plan ; les
-> couleurs qu'il lira existent déjà sur les sites
+> **État : 🟡 partiel, 2026-10-13.** **L1a, L1b et L5 bâtis le 2026-10-13
+> (non commités à l'écriture)** — voir « Ce qui est bâti » sous §5 ; L2 reste à
+> faire, L4 est hors du chantier. Les couleurs qu'il lit existent sur les sites
 > ([`../sites/sites.md`](../sites/sites.md), ✅). Écrit d'abord ici comme
 > « écart logistique », fusionné le même jour dans un plan commun avec les
 > sites et le transfert interne, puis redécoupé le 2026-10-13 (Hugo) : le
@@ -217,13 +218,68 @@ budget de 1,30 Mo.
 
 ## 5. Lots
 
-| Lot | Taille | Contenu                                                                                                                                                                                                                                                                                                               | Dépend de                         |
-| --- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
-| L1a | M      | serveur : la copie du colisage porte `siteId` et `clientele` (fait du fournil + migration additive du schéma `packing`) ; les vues de la livraison exposent site et clientèle par arrêt (canal du commerce, par lot ; par commande dans le manifeste d'un transfert) ; lecture seule de la palette pour la logistique | S2 des sites, T1–T3 du transfert  |
-| L1b | S      | back-office : store de palette, fonction pure de catégorie, un composant de pastille (contraste calculé), teinte neutre ; posé sur colisage, tournées, chargement, Ma tournée                                                                                                                                         | L1a                               |
-| L2  | M      | `OrderDepartureReader` + tri de la liste ; tri du colisage par `dueAt`                                                                                                                                                                                                                                                | T1 du transfert (pour le village) |
-| L4  | ?      | « Écrire » — **hors du chantier** (Q1 mise de côté)                                                                                                                                                                                                                                                                   | —                                 |
-| L5  | S      | papier (Q8 = oui) : carré de couleur après les dates, en symétrie du logo, sur étiquettes de bac, feuille de route et bon                                                                                                                                                                                             | L1a                               |
+| Lot    | Taille | Contenu                                                                                                                                                                                                                                                                                                               | Dépend de                         |
+| ------ | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| L1a ✅ | M      | serveur : la copie du colisage porte `siteId` et `clientele` (fait du fournil + migration additive du schéma `packing`) ; les vues de la livraison exposent site et clientèle par arrêt (canal du commerce, par lot ; par commande dans le manifeste d'un transfert) ; lecture seule de la palette pour la logistique | S2 des sites, T1–T3 du transfert  |
+| L1b ✅ | S      | back-office : store de palette, fonction pure de catégorie, un composant de pastille (contraste calculé), teinte neutre ; posé sur colisage, tournées, chargement, Ma tournée                                                                                                                                         | L1a                               |
+| L2     | M      | `OrderDepartureReader` + tri de la liste ; tri du colisage par `dueAt`                                                                                                                                                                                                                                                | T1 du transfert (pour le village) |
+| L4     | ?      | « Écrire » — **hors du chantier** (Q1 mise de côté)                                                                                                                                                                                                                                                                   | —                                 |
+| L5 ✅  | S      | papier (Q8 = oui) : carré de couleur après les dates, en symétrie du logo, sur étiquettes de bac, feuille de route et bon                                                                                                                                                                                             | L1a                               |
+
+### Ce qui est bâti (L1a, L1b, L5 — 2026-10-13, non commité à l'écriture)
+
+**L1a, serveur.**
+
+- Le fait `production.packing_list_drawn` porte `siteId` (additif : un fait
+  sans le champ se lit « sans site ») ; le colisage le recopie dans
+  `packing.packing_order.site_id` (migration
+  `20261013730000_le_site_suit_au_colisage`, une colonne `TEXT NULL`, sans
+  rattrapage). `PackingSheet` sert `siteId` et `dueAt` (facultatifs dans le
+  type, comme `qualityHeld`).
+- `DeliveryOrdersReader.byIds` rend `clientele` et `siteId` ;
+  `TransferOrderContentsReader` gagne `categoriesOf(orderIds)` (clientèle et
+  site, en une lecture). Les vues exposent, en champs facultatifs : `clientele`
+  par arrêt (tournées, chargement, Ma tournée) et par commande dans le
+  manifeste d'un transfert (relue même figé : elle ne se recopie pas),
+  `siteId` sur les arrêts de transfert et le manifeste, et le mode, la
+  clientèle et le site sur `DeliveryOrderBinsView` (l'étiquette).
+- `GET admin/sites/palette` (`GetSitePaletteQuery`) : id, nom,
+  approvisionnement, quatre couleurs, `isDeparture` — sous
+  `RequireAnyPermission` (`production_packing`, `delivery_rounds`,
+  `delivery_loading`, `delivery_driving` en lecture), qui remplace la
+  ressource de la classe (`StaffAccessGuard`) ; vérifié en e2e (`sites`).
+  `supply` et `isDeparture` s'ajoutent à « id, nom, quatre couleurs » : le
+  premier titre « Transfert … », le second désigne les couleurs de livraison.
+- Ports de couleur, déclarés par chaque bloc et implémentés par
+  `b2b/sites/` (`DepartureDeliveryColors`) : `DeliveryColorsReader`
+  (`delivery/channels/commerce/`) et `RunSheetColorsReader`
+  (`handover/channels/commerce/`) — les couleurs de livraison du départ
+  actuel, lues à chaque lecture.
+
+**L1b, back-office** (`shared/logistics-colors/`) : `SitePaletteStore`
+(relu à l'ouverture de chaque écran, jamais au démarrage),
+`logisticsCategoryOf` et `inkOn` (encre claire / sombre par luminance WCAG),
+`LogisticsSwatch` (teinte neutre : `surface-sunken` + `border`). Posé sur le
+tableau des tournées (pastille par arrêt, clientèle lue sur la feuille de
+route), le chargement (« Ce qui manque »), Ma tournée (arrêt de commande),
+le colisage (cadres par catégorie et par tranche d'échéance quand il y en a
+plusieurs, `apps/lfd-backoffice-frontend/src/app/production/colisage/packing-frames.ts`) et l'étiquette de bac
+(carré en haut à droite, le code étant en bas).
+
+**L5, papier serveur** : la feuille de tournée PDF porte un carré cerclé au
+bord droit de l'en-tête de chaque arrêt de livraison ; la feuille de route
+(`handover`) sert `color` par arrêt, que l'écran imprime après l'horaire ; le
+bon de commande porte un trait épais sous « Bon de commande », numéro
+descendu sous lui — lu au rendu (`OrderSheetColorSource`), donc figé avec le
+bon archivé ; la version de dessin (`-d2`) n'a pas bougé, pour que les bons
+déjà rangés restent sans trait.
+
+**Ce qui n'a pas de couleur, délibérément** : un arrêt de transfert (tournées,
+chargement, Ma tournée, feuille de tournée) — il mêle des clientèles ; les
+commandes de son manifeste portent la leur dans la vue, l'écran ne la peint
+pas encore. Les titres « Transfert Val Village · particulier » sont une
+lecture de l'exemple de Hugo (« Transfert Val Village ») : un site servi par
+transfert a deux couleurs de retrait, donc deux cadres.
 
 Le tri du colisage par `dueAt` répond, pour le village, à la question 1 de
 [`../colisage/todo-colisage-tri-par-echeance.md`](../colisage/todo-colisage-tri-par-echeance.md).

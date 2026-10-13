@@ -25,6 +25,11 @@ import {
 import { BinLabel } from '../bin-label/bin-label';
 import { binUrl } from '../delivery-loading';
 import { DeliveryLoadingService } from '../delivery-loading.service';
+import {
+  type LogisticsOrderFacts,
+  logisticsCategoryOf,
+} from '../../shared/logistics-colors/logistics-category';
+import { SitePaletteStore } from '../../shared/logistics-colors/site-palette.store';
 
 type LabelsState =
   | { readonly status: 'loading' }
@@ -40,6 +45,11 @@ interface LabelsView {
   readonly reference: string;
   readonly bins: readonly DeliveryBinView[];
   readonly round: DeliveryOrderRoundPlaceView | null;
+  /**
+   * Ce qui range la commande dans sa couleur — `null` pour un transfert, qui
+   * mêle des clientèles, ou une commande que le commerce ne range pas.
+   */
+  readonly facts: LogisticsOrderFacts | null;
 }
 
 /**
@@ -71,6 +81,7 @@ interface LabelsView {
 })
 export class BinLabelsPage {
   private readonly service = inject(DeliveryLoadingService);
+  private readonly palette = inject(SitePaletteStore);
   private readonly injector = inject(Injector);
   private readonly origin = inject(DOCUMENT).location.origin;
 
@@ -131,7 +142,18 @@ export class BinLabelsPage {
     return state.status === 'ready' ? state.view.round : null;
   });
 
+  /**
+   * La couleur de la commande, lue à l'impression (plan du tri et des
+   * couleurs, L1b) — un carré dans le coin opposé au code ; `null` : aucun.
+   */
+  protected readonly color = computed(() => {
+    const state = this.state();
+    const facts = state.status === 'ready' ? state.view.facts : null;
+    return facts === null ? null : logisticsCategoryOf(facts, this.palette.sites()).color;
+  });
+
   constructor() {
+    void this.palette.refresh();
     effect(() => {
       const orderId = this.orderId();
       const transferId = this.transferId();
@@ -182,9 +204,17 @@ export class BinLabelsPage {
   ): Promise<LabelsView> {
     if (transferId !== undefined) {
       const view = await this.service.transferBins(transferId);
-      return { reference: `→ ${view.siteLabel}`, bins: view.bins, round: null };
+      return { reference: `→ ${view.siteLabel}`, bins: view.bins, round: null, facts: null };
     }
     const view = await this.service.orderBins(orderId ?? '');
-    return { reference: view.reference, bins: view.bins, round: view.round };
+    const facts =
+      view.fulfillmentMethod === undefined
+        ? null
+        : {
+            fulfillmentMethod: view.fulfillmentMethod,
+            clientele: view.clientele,
+            siteId: view.siteId,
+          };
+    return { reference: view.reference, bins: view.bins, round: view.round, facts };
   }
 }

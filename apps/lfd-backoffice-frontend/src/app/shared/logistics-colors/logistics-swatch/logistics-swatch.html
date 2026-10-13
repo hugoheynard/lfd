@@ -1,0 +1,9 @@
+<span
+  class="ls-swatch"
+  [class.is-neutral]="ink() === 'neutral'"
+  [class.on-dark]="ink() === 'light'"
+  [class.on-light]="ink() === 'dark'"
+  [style.background-color]="category().color"
+  [attr.data-category]="category().key"
+  >{{ category().label }}</span
+>

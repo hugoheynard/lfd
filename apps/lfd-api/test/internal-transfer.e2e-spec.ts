@@ -75,6 +75,7 @@ describe("le transfert interne, de la clôture au départ (lot T1)", () => {
     expect(view.rounds[0]?.transferStops).toEqual([
       expect.objectContaining({ transferId, siteLabel: "Val Village", position: 1, orderCount: 1 }),
     ]);
+    expect(view.rounds[0]?.transferStops?.[0]?.siteId).toEqual(expect.any(String));
     // Le retrait du village n'est jamais « à répartir » : ce n'est pas une livraison.
     expect(view.unassigned).toEqual([]);
   });
@@ -104,7 +105,13 @@ describe("le transfert interne, de la clôture au départ (lot T1)", () => {
     const before = jsonBody<InternalTransferManifestView>(
       await admin(ctx).get(`/admin/delivery/transfers/${transferId}/manifest`).expect(200),
     );
-    expect(before).toMatchObject({ frozen: false, siteLabel: "Val Village" });
+    const village = await ctx.prisma.site.findFirstOrThrow({
+      where: { label: "Val Village" },
+      select: { id: true },
+    });
+    expect(before).toMatchObject({ frozen: false, siteLabel: "Val Village", siteId: village.id });
+    // La clientèle de chaque commande, lue au commerce (plan du tri et des couleurs, L1a).
+    expect(before.orders.items.map((item) => item.clientele)).toEqual(["public"]);
     expect(before.totals).toEqual([
       { sku: "PAIN-VV", productName: "Pain du village", quantity: 3 },
     ]);
@@ -123,6 +130,8 @@ describe("le transfert interne, de la clôture au départ (lot T1)", () => {
     );
     expect(after.frozen).toBe(true);
     expect(after.totals).toEqual(before.totals);
+    // Figé, le manifeste garde sa clientèle : elle se relit, elle ne se recopie pas.
+    expect(after.orders.items.map((item) => item.clientele)).toEqual(["public"]);
     expect(
       await ctx.prisma.deliveryInternalTransferManifestLine.count({ where: { transferId } }),
     ).toBe(1);
