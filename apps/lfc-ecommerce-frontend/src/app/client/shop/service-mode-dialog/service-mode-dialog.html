@@ -1,0 +1,11 @@
+<fold-panel-header variant="eyebrow" [title]="c().modeTitle" [closeLabel]="c().close" />
+
+<fold-panel-body>
+  <app-service-doors
+    [pickupCopy]="doors().doors.pickup"
+    [courierCopy]="doors().doors.courier"
+    courierState="open"
+    (pickupChosen)="choose('pickup')"
+    (courierChosen)="choose('delivery')"
+  />
+</fold-panel-body>

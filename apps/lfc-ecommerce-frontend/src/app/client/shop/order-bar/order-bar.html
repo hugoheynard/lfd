@@ -32,12 +32,22 @@
         <!-- Deux gestes distincts : changer d'heure ne fait pas re-choisir la
            maison. Des LIENS, plus des boutons pleins : le seul geste plein de
            la barre est « Régler ». -->
+        <!-- 🔴 Le jour n'est pas demain : on le DIT avant de régler (2026-10-13). -->
+        @if (lateNotice(); as notice) {
+          <fold-callout variant="warning" appearance="flat" data-late-day>{{
+            notice
+          }}</fold-callout>
+        }
+
+        <!-- En LIVRAISON, ni maison ni heure de fournée : une adresse et un
+           jour (Hugo, 2026-10-13). Les deux mènent au dialogue du coursier,
+           où l'adresse, le jour et l'heure se tiennent. -->
         <span class="acts">
-          <button class="act" type="button" (click)="houseRequested.emit()">
-            {{ c().changeHouse }}
+          <button class="act" type="button" (click)="houseRequested.emit()" data-act-place>
+            {{ service.mode === 'delivery' ? c().changeAddress : c().changeHouse }}
           </button>
-          <button class="act" type="button" (click)="timeRequested.emit()">
-            {{ c().changeTime }}
+          <button class="act" type="button" (click)="timeRequested.emit()" data-act-when>
+            {{ service.mode === 'delivery' ? c().changeDay : c().changeTime }}
           </button>
         </span>
       </div>

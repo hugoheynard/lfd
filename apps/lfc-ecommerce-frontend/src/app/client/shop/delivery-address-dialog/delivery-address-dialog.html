@@ -101,6 +101,18 @@
 
   <!-- L'heure (CA3, CA1b) : une livraison ne part plus sans fenêtre. -->
   @if (freeEntry() || entries().length > 0) {
+    <!-- Le jour (2026-10-13) : AVANT l'heure, qui en dépend — une adresse
+         n'inscrit pas les mêmes heures tous les jours. -->
+    @if (dateOptions().length > 0) {
+      <fold-listbox
+        size="lg"
+        [label]="c().day.label"
+        [options]="dateOptions()"
+        [value]="date()"
+        (selectionChange)="pickDate($event)"
+        data-delivery-day
+      />
+    }
     <!-- Au carnet, SEULES les heures inscrites (2026-10-12) ; la saisie libre tape la sienne. -->
     @if (windowMode() === 'deadline' && freeEntry()) {
       <fold-time

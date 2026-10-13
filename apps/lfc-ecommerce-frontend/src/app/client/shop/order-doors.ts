@@ -11,6 +11,7 @@ import { formatHour } from '../format-hour';
 import { OrderContextStore } from '../order-context.store';
 import { DeliveryAddressDialog } from './delivery-address-dialog/delivery-address-dialog';
 import { ServicePoints } from './pickup-points.store';
+import { ServiceModeDialog } from './service-mode-dialog/service-mode-dialog';
 import { PublicHousePickerDialog } from './public-house-picker-dialog/public-house-picker-dialog';
 import { SlotPickerDialog } from './slot-picker-dialog/slot-picker-dialog';
 
@@ -83,6 +84,26 @@ export class OrderDoors {
   );
 
   /**
+   * **Rien n'est choisi : retrait ou coursier ?** puis la porte choisie.
+   *
+   * 🔴 Régression (Hugo, 2026-10-13, O6) : sans service posé, « Régler » et
+   * « Choisir » ouvraient le retrait d'office, et un pro entré par la boutique
+   * ne se voyait jamais proposer la livraison. La question ne se pose que si
+   * le coursier est ouvert à qui regarde ({@link deliveryOpen}) : sinon il n'y
+   * a rien à arbitrer, et l'on va droit au retrait.
+   */
+  async choose(): Promise<boolean> {
+    if (!this.deliveryOpen()) {
+      return this.pickup(null);
+    }
+    const mode = await ServiceModeDialog.open(this.panels).closed;
+    if (mode === undefined) {
+      return false;
+    }
+    return mode === 'delivery' ? this.delivery(null) : this.pickup(null);
+  }
+
+  /**
    * **La porte du RETRAIT** : où, puis quand.
    *
    * Deux dialogues successifs et non un à deux volets — ce sont ceux qui
@@ -123,12 +144,18 @@ export class OrderDoors {
    * `false` sans rien montrer. L'appelant qui cache déjà sa porte n'y arrive
    * jamais ; celui qui l'aurait oubliée ne fait pas de dégât.
    */
-  async delivery(currentId: string | null = null): Promise<boolean> {
+  async delivery(
+    currentId: string | null = null,
+    currentDate: string | null = null,
+  ): Promise<boolean> {
     if (!this.deliveryOpen()) {
       return false;
     }
     const choice = await DeliveryAddressDialog.open(this.panels, {
       currentId,
+      // Le jour déjà retenu se repropose (2026-10-13) : rouvrir pour changer
+      // d'adresse ne doit pas ramener en silence à la première journée.
+      currentDate,
       // 🔴 LA SAISIE LIBRE EST POUR LE B2C, et elle lui est réservée. Un pro
       // tape une adresse hors de son carnet, et c'est une livraison que
       // personne ne retrouve au bon de livraison suivant ; un visiteur n'a pas

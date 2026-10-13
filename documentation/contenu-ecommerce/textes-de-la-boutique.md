@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1309 textes
+## Sommaire — 1319 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -20,12 +20,12 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Commander — l'écran d'entrée de la commande](#espace-commande) | `commande` | 39 |
 | [Rayon / boutique](#espace-shop) | `shop` | 36 |
 | [Rayon — la fiche produit](#espace-product) | `product` | 12 |
-| [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 16 |
+| [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 23 |
 | [Choix du lieu — la maison](#espace-housepicker) | `housePicker` | 8 |
 | [Choix du lieu et de l’heure — le dialogue commun](#espace-dialog) | `dialog` | 1 |
 | [Choix du lieu — le retrait](#espace-pickupdialog) | `pickupDialog` | 10 |
 | [Choix du lieu — l’adresse de livraison](#espace-addressdialog) | `addressDialog` | 24 |
-| [Choix du lieu — la saisie d’une adresse de livraison](#espace-deliveryaddress) | `deliveryAddress` | 35 |
+| [Choix du lieu — la saisie d’une adresse de livraison](#espace-deliveryaddress) | `deliveryAddress` | 38 |
 | [Choix de l’heure — le sélecteur de créneau](#espace-slotpicker) | `slotPicker` | 19 |
 | [Choix de l’heure — l’étape du créneau](#espace-slotstep) | `slotStep` | 11 |
 | [Choix de l’heure — le rappel téléphonique](#espace-rappel) | `rappel` | 12 |
@@ -46,7 +46,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 7 |
-| **Total** | | **1309** |
+| **Total** | | **1319** |
 
 ## Le parcours de commande
 
@@ -348,7 +348,7 @@ Source : `fr.ts · en.ts · it.ts` · 12 textes.
 
 ### Barre de commande — la maison et l’heure retenues — `commandTerms`
 
-Source : `screens/command-terms.copy.ts` · 16 textes.
+Source : `screens/command-terms.copy.ts` · 23 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -357,6 +357,13 @@ Source : `screens/command-terms.copy.ts` · 16 textes.
 | `commandTerms.tomorrow` | demain | tomorrow | domani |  |
 | `commandTerms.changeHouse` | Changer de maison | Change bakery | Cambia bottega |  |
 | `commandTerms.changeTime` | Changer l’heure | Change time | Cambia orario |  |
+| `commandTerms.changeAddress` | Changer d’adresse | Change address | Cambia indirizzo |  |
+| `commandTerms.changeDay` | Changer le jour | Change day | Cambia giorno |  |
+| `commandTerms.lateDelivery` | Trop tard pour demain : votre commande sera livrée {day}. | Too late for tomorrow: your order will be delivered on {day}. | Troppo tardi per domani: il vostro ordine sarà consegnato {day}. | `{day}` |
+| `commandTerms.latePickup` | Trop tard pour demain : votre commande sera à retirer {day}. | Too late for tomorrow: your order will be ready for pickup on {day}. | Troppo tardi per domani: il vostro ordine sarà da ritirare {day}. | `{day}` |
+| `commandTerms.slipped` | Trop tard pour {day} : le premier jour encore possible est {next}. Changez le jour avant de régler. | Too late for {day}: the first day still open is {next}. Change the day before paying. | Troppo tardi per {day}: il primo giorno ancora possibile è {next}. Cambiate il giorno prima di pagare. | `{day}` `{next}` |
+| `commandTerms.modeTitle` | Retrait ou coursier ? | Pickup or courier? | Ritiro o corriere? |  |
+| `commandTerms.close` | Fermer | Close | Chiudi |  |
 | `commandTerms.pickup` | Retrait | Pickup | Ritiro |  |
 | `commandTerms.delivery` | Livraison | Delivery | Consegna |  |
 | `commandTerms.pieceOne` | {n} pièce | {n} piece | {n} pezzo | `{n}` |
@@ -452,7 +459,7 @@ Source : `fr.ts · en.ts · it.ts` · 24 textes.
 
 ### Choix du lieu — la saisie d’une adresse de livraison — `deliveryAddress`
 
-Source : `screens/delivery-address.copy.ts` · 35 textes.
+Source : `screens/delivery-address.copy.ts` · 38 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -476,6 +483,9 @@ Source : `screens/delivery-address.copy.ts` · 35 textes.
 | `deliveryAddress.free.ville` | Ville | Town | Città |  |
 | `deliveryAddress.free.villePlaceholder` | Val d’Isère | Val d’Isère | Val d’Isère |  |
 | `deliveryAddress.free.noZone` | Nous ne livrons pas encore ce code postal — le retrait, lui, reste ouvert. | We do not deliver to this postcode yet — pickup is still open. | Non consegniamo ancora a questo CAP — il ritiro resta aperto. |  |
+| `deliveryAddress.day.label` | Jour de livraison | Delivery day | Giorno di consegna |  |
+| `deliveryAddress.day.today` | Aujourd’hui | Today | Oggi |  |
+| `deliveryAddress.day.tomorrow` | Demain | Tomorrow | Domani |  |
 | `deliveryAddress.when.before` | avant | before | entro le |  |
 | `deliveryAddress.when.deadline` | Livrée avant | Delivered before | Consegnata entro le |  |
 | `deliveryAddress.when.deadlinePlaceholder` | Choisissez une heure | Pick a time | Scegliete un orario |  |

@@ -2,6 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
+import { NEVER } from 'rxjs';
 import { vi } from 'vitest';
 
 import { matchMediaAt } from '../../mon-compte/account.fixture';
@@ -17,6 +18,7 @@ import { AuthFacade } from '../../../auth/auth.facade';
 import { OrderDoors } from '../order-doors';
 import { provideWorkspace, workspaceDouble } from '../../client-workspace.fixture';
 import { NOEL, storefrontObject } from '../storefront/storefront.fixture';
+import { ClientOrders } from '../../client-orders.service';
 import { ShopPage } from './shop-page';
 
 describe('ShopPage', () => {
@@ -291,9 +293,14 @@ describe('ShopPage', () => {
     expect(navigate).not.toHaveBeenCalled();
   });
 
-  it('« Régler » sans service le pose en dialogues, et renoncer laisse sur le rayon', async () => {
+  /**
+   * Régression (Hugo, 2026-10-13, O6) : sans service, « Régler » ouvrait le
+   * retrait d'office, et la livraison n'était jamais proposée. Il pose d'abord
+   * la question « retrait ou coursier ? ».
+   */
+  it('« Régler » sans service pose « retrait ou coursier ? », et renoncer laisse sur le rayon', async () => {
     TestBed.inject(OrderContextStore).choice.set(null);
-    const pickup = vi.spyOn(TestBed.inject(OrderDoors), 'pickup').mockResolvedValue(false);
+    const pickup = vi.spyOn(TestBed.inject(OrderDoors), 'choose').mockResolvedValue(false);
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
     cart.add('VIE-001');
     fixture.detectChanges();
@@ -301,7 +308,7 @@ describe('ShopPage', () => {
     el().querySelector<HTMLButtonElement>('app-cart-bar .pay')?.click();
     await fixture.whenStable();
 
-    expect(pickup).toHaveBeenCalledWith(null);
+    expect(pickup).toHaveBeenCalled();
     expect(navigate).not.toHaveBeenCalled();
   });
 
@@ -407,5 +414,66 @@ describe('ShopPage — la barre du bas, sans compte', () => {
     await Promise.resolve();
 
     expect(asked).toEqual([]);
+  });
+});
+
+/**
+ * Régression (Hugo, 2026-10-13) : « quand je fais Régler ça m'amène
+ * directement à la confirmation de commande sans passer par la page récap de
+ * panier avec le choix au compte / carte en pro ». Connecté, la barre passait
+ * la commande elle-même.
+ */
+describe('ShopPage — Régler, connecté', () => {
+  it('🔴 ouvre le récapitulatif du panier au lieu de passer la commande', async () => {
+    localStorage.clear();
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [ShopPage],
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        {
+          provide: AuthFacade,
+          useValue: {
+            isLoading: (): boolean => false,
+            isAuthenticated: (): boolean => true,
+            authEmail: (): string | null => null,
+            // `/me` reste en vol : la barre n'a pas besoin du compte pour régler.
+            accessToken$: () => NEVER,
+            continueWithEmailCode: (): void => undefined,
+          },
+        },
+      ],
+    });
+    hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
+    TestBed.inject(OrderContextStore).choice.set({
+      mode: 'pickup',
+      place: 'Le Labo',
+      at: 'au Labo',
+      address: 'Route de la Balme, Val d’Isère',
+      pickupAddressId: 'pick_labo',
+      slot: '7 h – 8 h',
+      window: { start: '07:00', end: '08:00' },
+      date: '2026-09-07',
+    });
+    TestBed.inject(ClientCart).clear();
+    TestBed.inject(ClientCart).add(TEST_ITEMS[0]?.sku ?? '');
+    const place = vi.spyOn(TestBed.inject(ClientOrders), 'place');
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    vi.stubGlobal('matchMedia', matchMediaAt(false));
+    const { CartDialog } = await import('../../cart/cart-dialog/cart-dialog');
+    const opened = vi.spyOn(CartDialog, 'open');
+    const fixture = TestBed.createComponent(ShopPage);
+    fixture.detectChanges();
+
+    (fixture.nativeElement as HTMLElement)
+      .querySelector<HTMLButtonElement>('app-cart-bar .pay')
+      ?.click();
+    await vi.waitFor(() => {
+      expect(opened).toHaveBeenCalled();
+    });
+    expect(place).not.toHaveBeenCalled();
+    expect(navigate).not.toHaveBeenCalled();
   });
 });

@@ -225,6 +225,44 @@ describe('OrderBar', () => {
     expect(asked).toEqual(['maison', 'heure']);
   });
 
+  /**
+   * Régression (Hugo, 2026-10-13) : « je n'ai que changer de maison même si je
+   * suis en livraison ». En livraison, la barre parle d'adresse et de jour.
+   */
+  it('en livraison, propose « Changer d’adresse » et « Changer le jour »', () => {
+    const fixture = boot({
+      choice: {
+        mode: 'delivery',
+        window: null,
+        place: 'Chalet',
+        at: 'au Chalet',
+        address: '12 chemin des Barmettes, 73150',
+        codePostal: '73150',
+        slot: '',
+        date: instantToLocal(new Date()).day,
+        deliveryAddressId: 'a',
+        deliveryAddress: {
+          label: 'Chalet',
+          ligne1: '12 chemin des Barmettes',
+          ligne2: '',
+          codePostal: '73150',
+          ville: "Val d'Isère",
+          pays: 'France',
+        },
+      },
+    });
+
+    expect(textOf(fixture, '[data-act-place]')).toBe(COMMAND_TERMS_FR.changeAddress);
+    expect(textOf(fixture, '[data-act-when]')).toBe(COMMAND_TERMS_FR.changeDay);
+  });
+
+  it('en retrait, garde « Changer de maison » et « Changer l’heure »', () => {
+    const fixture = boot();
+
+    expect(textOf(fixture, '[data-act-place]')).toBe(COMMAND_TERMS_FR.changeHouse);
+    expect(textOf(fixture, '[data-act-when]')).toBe(COMMAND_TERMS_FR.changeTime);
+  });
+
   /** Lot T4 des textes : un remplacement reçu redessine l'écran, sans rechargement. */
   it('se redessine quand un remplacement de son texte arrive', () => {
     const fixture = boot();

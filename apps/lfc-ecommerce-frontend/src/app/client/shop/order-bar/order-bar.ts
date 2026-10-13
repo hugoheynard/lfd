@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, output } from '@angular/core';
 import { instantToLocal } from '@lfd/contracts';
-import { FoldButtonComponent } from 'fold-ng';
+import { FoldButtonComponent, FoldCalloutComponent } from 'fold-ng';
 
 import { ClientCart } from '../../cart/client-cart.service';
 import { formatCents } from '../../format-money';
@@ -14,6 +14,7 @@ import { serviceWhenLabel } from '../../format-day';
 import { OrderContextStore } from '../../order-context.store';
 import { pickupOffer } from '../pickup-discount';
 import { ServicePoints } from '../pickup-points.store';
+import { ServiceDayNotice } from '../service-day-notice';
 
 /**
  * **La barre « Ma commande »** — la maison et l'heure retenues à gauche, le
@@ -50,7 +51,7 @@ import { ServicePoints } from '../pickup-points.store';
 @Component({
   selector: 'app-order-bar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldButtonComponent],
+  imports: [FoldButtonComponent, FoldCalloutComponent],
   templateUrl: './order-bar.html',
   styleUrl: './order-bar.scss',
 })
@@ -77,6 +78,9 @@ export class OrderBar {
   protected readonly c = screenCopy('commandTerms', commandTermsCopy);
 
   protected readonly choice = this.order.choice;
+
+  /** « Trop tard pour demain : … » — ou `null` quand le jour retenu est demain. */
+  protected readonly lateNotice = inject(ServiceDayNotice).message;
 
   /** Le compte de pièces du panier — celui que le pied lisait déjà. */
   protected readonly count = this.cart.count;

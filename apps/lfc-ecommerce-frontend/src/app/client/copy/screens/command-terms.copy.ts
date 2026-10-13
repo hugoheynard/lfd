@@ -20,6 +20,32 @@ export interface CommandTermsCopy {
   readonly changeHouse: string;
   readonly changeTime: string;
 
+  /**
+   * Les deux gestes en LIVRAISON (Hugo, 2026-10-13 : « je n'ai que changer de
+   * maison même si je suis en livraison ») : on n'y choisit ni maison ni heure
+   * de fournée, mais une adresse et un jour.
+   */
+  readonly changeAddress: string;
+  readonly changeDay: string;
+
+  /**
+   * 🔴 Le jour de service n'est PAS demain (Hugo, 2026-10-13 : « je croyais
+   * commander pour demain et au final j'ai deux commandes pour jeudi »).
+   * `{day}` est TOUJOURS un jour dit en mot — « jeudi 15 octobre ».
+   */
+  readonly lateDelivery: string;
+  readonly latePickup: string;
+  /**
+   * Le jour retenu n'est plus demandable (la limite est passée pendant la
+   * saisie) : `{day}` le jour retenu, `{next}` le premier encore possible.
+   */
+  readonly slipped: string;
+
+  /** La question qui précède les deux portes quand rien n'est choisi (O6, 2026-10-13). */
+  readonly modeTitle: string;
+  /** Fermer cette question. */
+  readonly close: string;
+
   /** Ce qui suit « Ma commande · » — le MODE retenu. */
   readonly pickup: string;
   readonly delivery: string;
@@ -54,6 +80,14 @@ export const COMMAND_TERMS_FR: CommandTermsCopy = {
   tomorrow: 'demain',
   changeHouse: 'Changer de maison',
   changeTime: 'Changer l’heure',
+  changeAddress: 'Changer d’adresse',
+  changeDay: 'Changer le jour',
+  lateDelivery: 'Trop tard pour demain : votre commande sera livrée {day}.',
+  latePickup: 'Trop tard pour demain : votre commande sera à retirer {day}.',
+  slipped:
+    'Trop tard pour {day} : le premier jour encore possible est {next}. Changez le jour avant de régler.',
+  modeTitle: 'Retrait ou coursier ?',
+  close: 'Fermer',
   pickup: 'Retrait',
   delivery: 'Livraison',
   pieceOne: '{n} pièce',
@@ -73,6 +107,13 @@ export const COMMAND_TERMS_EN: CommandTermsCopy = {
   tomorrow: 'tomorrow',
   changeHouse: 'Change bakery',
   changeTime: 'Change time',
+  changeAddress: 'Change address',
+  changeDay: 'Change day',
+  lateDelivery: 'Too late for tomorrow: your order will be delivered on {day}.',
+  latePickup: 'Too late for tomorrow: your order will be ready for pickup on {day}.',
+  slipped: 'Too late for {day}: the first day still open is {next}. Change the day before paying.',
+  modeTitle: 'Pickup or courier?',
+  close: 'Close',
   pickup: 'Pickup',
   delivery: 'Delivery',
   pieceOne: '{n} piece',
@@ -92,6 +133,14 @@ export const COMMAND_TERMS_IT: CommandTermsCopy = {
   tomorrow: 'domani',
   changeHouse: 'Cambia bottega',
   changeTime: 'Cambia orario',
+  changeAddress: 'Cambia indirizzo',
+  changeDay: 'Cambia giorno',
+  lateDelivery: 'Troppo tardi per domani: il vostro ordine sarà consegnato {day}.',
+  latePickup: 'Troppo tardi per domani: il vostro ordine sarà da ritirare {day}.',
+  slipped:
+    'Troppo tardi per {day}: il primo giorno ancora possibile è {next}. Cambiate il giorno prima di pagare.',
+  modeTitle: 'Ritiro o corriere?',
+  close: 'Chiudi',
   pickup: 'Ritiro',
   delivery: 'Consegna',
   pieceOne: '{n} pezzo',

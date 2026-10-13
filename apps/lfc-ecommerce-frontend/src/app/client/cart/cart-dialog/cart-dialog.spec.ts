@@ -129,6 +129,10 @@ function boot({
       {
         provide: OrderDoors,
         useValue: {
+          choose: (): Promise<boolean> => {
+            ouvertes.push('choose');
+            return Promise.resolve(false);
+          },
           pickup: (): Promise<boolean> => {
             ouvertes.push('pickup');
             return Promise.resolve(false);
@@ -300,12 +304,13 @@ describe('le panier pose la question du lieu SUR PLACE', () => {
     el(fixture).querySelector<HTMLButtonElement>(selector)?.click();
   };
 
-  it('🔴 ouvre la porte du retrait sans naviguer, quand aucun mode n’est pris', () => {
+  /** O6 (2026-10-13) : rien de choisi, c'est « retrait ou coursier ? » qui s'ouvre. */
+  it('🔴 pose « retrait ou coursier ? » sans naviguer, quand aucun mode n’est pris', () => {
     const fixture = boot({ auth: RECONNU, service: null });
 
     clic(fixture, '.ask');
 
-    expect(ouvertes).toEqual(['pickup']);
+    expect(ouvertes).toEqual(['choose']);
     expect(visitees).toEqual([]);
   });
 
@@ -329,7 +334,7 @@ describe('le panier pose la question du lieu SUR PLACE', () => {
     clic(fixture, '.pay');
     await Promise.resolve();
 
-    expect(ouvertes).toEqual(['pickup']);
+    expect(ouvertes).toEqual(['choose']);
     expect(visitees).toEqual([]);
   });
 });

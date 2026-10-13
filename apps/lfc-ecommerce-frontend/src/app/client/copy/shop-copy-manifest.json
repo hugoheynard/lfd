@@ -1586,6 +1586,55 @@
           "variables": []
         },
         {
+          "key": "commandTerms.changeAddress",
+          "fr": "Changer d’adresse",
+          "en": "Change address",
+          "it": "Cambia indirizzo",
+          "variables": []
+        },
+        {
+          "key": "commandTerms.changeDay",
+          "fr": "Changer le jour",
+          "en": "Change day",
+          "it": "Cambia giorno",
+          "variables": []
+        },
+        {
+          "key": "commandTerms.lateDelivery",
+          "fr": "Trop tard pour demain : votre commande sera livrée {day}.",
+          "en": "Too late for tomorrow: your order will be delivered on {day}.",
+          "it": "Troppo tardi per domani: il vostro ordine sarà consegnato {day}.",
+          "variables": ["day"]
+        },
+        {
+          "key": "commandTerms.latePickup",
+          "fr": "Trop tard pour demain : votre commande sera à retirer {day}.",
+          "en": "Too late for tomorrow: your order will be ready for pickup on {day}.",
+          "it": "Troppo tardi per domani: il vostro ordine sarà da ritirare {day}.",
+          "variables": ["day"]
+        },
+        {
+          "key": "commandTerms.slipped",
+          "fr": "Trop tard pour {day} : le premier jour encore possible est {next}. Changez le jour avant de régler.",
+          "en": "Too late for {day}: the first day still open is {next}. Change the day before paying.",
+          "it": "Troppo tardi per {day}: il primo giorno ancora possibile è {next}. Cambiate il giorno prima di pagare.",
+          "variables": ["day", "next"]
+        },
+        {
+          "key": "commandTerms.modeTitle",
+          "fr": "Retrait ou coursier ?",
+          "en": "Pickup or courier?",
+          "it": "Ritiro o corriere?",
+          "variables": []
+        },
+        {
+          "key": "commandTerms.close",
+          "fr": "Fermer",
+          "en": "Close",
+          "it": "Chiudi",
+          "variables": []
+        },
+        {
           "key": "commandTerms.pickup",
           "fr": "Retrait",
           "en": "Pickup",
@@ -2128,6 +2177,27 @@
           "fr": "Nous ne livrons pas encore ce code postal — le retrait, lui, reste ouvert.",
           "en": "We do not deliver to this postcode yet — pickup is still open.",
           "it": "Non consegniamo ancora a questo CAP — il ritiro resta aperto.",
+          "variables": []
+        },
+        {
+          "key": "deliveryAddress.day.label",
+          "fr": "Jour de livraison",
+          "en": "Delivery day",
+          "it": "Giorno di consegna",
+          "variables": []
+        },
+        {
+          "key": "deliveryAddress.day.today",
+          "fr": "Aujourd’hui",
+          "en": "Today",
+          "it": "Oggi",
+          "variables": []
+        },
+        {
+          "key": "deliveryAddress.day.tomorrow",
+          "fr": "Demain",
+          "en": "Tomorrow",
+          "it": "Domani",
           "variables": []
         },
         {

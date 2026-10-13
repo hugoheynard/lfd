@@ -81,6 +81,16 @@ export interface DeliveryAddressCopy {
    * part plus sans fenêtre. En échéance, on choisit une heure limite ; en
    * créneau, celui du carnet vaut, et on n'en demande un que s'il manque.
    */
+  /**
+   * Le jour de la livraison (Hugo, 2026-10-13) : le libellé du choix, et les
+   * deux journées qui se disent d'un mot (cf. `serviceDayLabel`).
+   */
+  readonly day: {
+    readonly label: string;
+    readonly today: string;
+    readonly tomorrow: string;
+  };
+
   readonly when: {
     readonly before: string;
     readonly deadline: string;
@@ -134,6 +144,7 @@ export const DELIVERY_ADDRESS_FR: DeliveryAddressCopy = {
     villePlaceholder: 'Val d’Isère',
     noZone: 'Nous ne livrons pas encore ce code postal — le retrait, lui, reste ouvert.',
   },
+  day: { label: 'Jour de livraison', today: 'Aujourd’hui', tomorrow: 'Demain' },
   when: {
     before: 'avant',
     deadline: 'Livrée avant',
@@ -180,6 +191,7 @@ export const DELIVERY_ADDRESS_EN: DeliveryAddressCopy = {
     villePlaceholder: 'Val d’Isère',
     noZone: 'We do not deliver to this postcode yet — pickup is still open.',
   },
+  day: { label: 'Delivery day', today: 'Today', tomorrow: 'Tomorrow' },
   when: {
     before: 'before',
     deadline: 'Delivered before',
@@ -225,6 +237,7 @@ export const DELIVERY_ADDRESS_IT: DeliveryAddressCopy = {
     villePlaceholder: 'Val d’Isère',
     noZone: 'Non consegniamo ancora a questo CAP — il ritiro resta aperto.',
   },
+  day: { label: 'Giorno di consegna', today: 'Oggi', tomorrow: 'Domani' },
   when: {
     before: 'entro le',
     deadline: 'Consegnata entro le',

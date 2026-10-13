@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, signal } f
 import { Router } from '@angular/router';
 import { instantToLocal } from '@lfd/contracts';
 import {
+  FoldCalloutComponent,
   FoldPanelBodyComponent,
   type FoldPanelDefaults,
   FoldPanelFooterComponent,
@@ -29,6 +30,7 @@ import { dialogSide } from '../../panel-side';
 import { CartSummary } from '../cart-summary/cart-summary';
 import { OrderDoors } from '../../shop/order-doors';
 import { OrderOpeningStore } from '../../shop/order-opening.store';
+import { ServiceDayNotice } from '../../shop/service-day-notice';
 
 /**
  * Où Auth0 ramène, une fois l'identité obtenue : **le rayon**.
@@ -64,6 +66,7 @@ const AFTER_SIGN_IN = '/boutique';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CartSummary,
+    FoldCalloutComponent,
     GuestIdentityForm,
     SignInChoices,
     FoldPanelBodyComponent,
@@ -118,6 +121,9 @@ export class CartDialog {
 
   /** Les portes du mode de service — les mêmes que l'accueil ouvre. */
   private readonly doors = inject(OrderDoors);
+
+  /** « Trop tard pour demain : … » — le même avertissement que la barre du rayon. */
+  protected readonly lateNotice = inject(ServiceDayNotice).message;
 
   private readonly firm = inject(ClientCompany);
 
@@ -235,24 +241,25 @@ export class CartDialog {
    * preuve que le détour n'avait pas lieu d'être — on ne fabrique pas un
    * chemin de retour vers l'endroit qu'on n'aurait pas dû quitter.
    *
-   * ⚠️ Le retrait seulement : la porte du coursier demande un carnet
-   * d'adresses, que seul un compte possède. Un visiteur n'en a pas, et c'est
-   * l'accueil qui tranche entre les deux portes — le panier, lui, n'a qu'à
-   * rouvrir celle qu'on a déjà prise.
+   * ⚠️ Retrait OU coursier depuis le 2026-10-13 (O6) : `OrderDoors.choose`
+   * ne pose la question que si le coursier est ouvert à la clientèle, sinon
+   * il va droit au retrait.
    */
   protected async pickService(): Promise<void> {
-    await this.doors.pickup(null);
+    await this.doors.choose();
   }
 
   /** Rouvre le choix déjà fait, sans quitter le panier. */
   protected async changeService(): Promise<void> {
     const service = this.choice();
     if (service === null) {
-      await this.doors.pickup(null);
+      await this.doors.choose();
       return;
     }
     if (service.mode === 'delivery') {
-      await this.doors.delivery(null);
+      // L'adresse et le jour retenus se reproposent : rouvrir pour changer
+      // l'un ne doit pas faire perdre l'autre (2026-10-13).
+      await this.doors.delivery(service.deliveryAddressId ?? null, service.date);
       return;
     }
     // Changer de maison périme l'heure : on rouvre les deux, dans l'ordre.

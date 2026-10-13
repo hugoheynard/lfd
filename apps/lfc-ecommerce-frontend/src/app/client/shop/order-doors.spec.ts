@@ -4,11 +4,14 @@ import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import type { PublicDeliveryAvailabilityView } from '@lfd/contracts/shop-values';
 import { FoldPanelHostService } from 'fold-ng';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { ClientAudience } from '../client-audience.service';
+import { matchMediaAt } from '../mon-compte/account.fixture';
 import { OrderDoors } from './order-doors';
 import { ServicePoints } from './pickup-points.store';
+import { PublicHousePickerDialog } from './public-house-picker-dialog/public-house-picker-dialog';
+import { ServiceModeDialog } from './service-mode-dialog/service-mode-dialog';
 
 /** Le réglage « Livraison » tel que l'admin le pose, sans le mode de fenêtre. */
 type Availability = Pick<PublicDeliveryAvailabilityView, 'openToB2b' | 'openToB2c'>;
@@ -82,5 +85,47 @@ describe('OrderDoors — à qui la livraison est ouverte', () => {
     await expect(doors('b2b', { openToB2b: false, openToB2c: true }).delivery(null)).resolves.toBe(
       false,
     );
+  });
+});
+
+/**
+ * Régression (Hugo, 2026-10-13, O6) : sans service, « Régler » ouvrait le
+ * retrait d'office. `choose` pose d'abord « retrait ou coursier ? » — mais
+ * seulement quand le coursier est ouvert à la clientèle.
+ */
+describe('OrderDoors.choose — rien de choisi', () => {
+  function opened(availability: Availability): Promise<readonly unknown[]> {
+    const names: unknown[] = [];
+    // `dialogSide()` lit `matchMedia` pour choisir le côté du panneau.
+    vi.stubGlobal('matchMedia', matchMediaAt(false));
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        {
+          provide: FoldPanelHostService,
+          useValue: {
+            open: (component: unknown) => {
+              names.push(component);
+              return { closed: Promise.resolve(undefined) };
+            },
+          },
+        },
+        { provide: ClientAudience, useValue: { shown: signal('b2b') } },
+      ],
+    });
+    TestBed.inject(ServicePoints).receive([], [], [], availability);
+    return TestBed.inject(OrderDoors)
+      .choose()
+      .then(() => names);
+  }
+
+  it('🔴 demande « retrait ou coursier ? » quand le coursier est ouvert', async () => {
+    expect(await opened({ openToB2b: true, openToB2c: true })).toEqual([ServiceModeDialog]);
+  });
+
+  it('va droit au retrait quand le coursier est fermé à la clientèle', async () => {
+    expect(await opened({ openToB2b: false, openToB2c: true })).toEqual([PublicHousePickerDialog]);
   });
 });

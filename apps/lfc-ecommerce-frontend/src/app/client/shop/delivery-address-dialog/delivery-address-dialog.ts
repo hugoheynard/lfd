@@ -7,7 +7,8 @@ import {
   input,
   signal,
 } from '@angular/core';
-import type { DeliveryAddressView, FulfillmentWindow } from '@lfd/contracts';
+import { addDays, instantToLocal } from '@lfd/contracts';
+import type { DeliveryAddressView, FulfillmentWindow, Weekday } from '@lfd/contracts';
 // Sans zod, par le sous-chemin : ce dialogue s'ouvre depuis l'accueil (budget `cloudflare`).
 import { resolveWindowMode } from '@lfd/contracts/shop-values';
 import {
@@ -29,6 +30,8 @@ import { addressAt, ClientAddresses } from '../../client-addresses.service';
 import { fill } from '../../copy/client-copy.service';
 import { deliveryAddressCopy } from '../../copy/screens/delivery-address.copy';
 import { screenCopy } from '../../copy/shop-copy-composer';
+import { ClientLocale } from '../../client-locale.service';
+import { serviceDayLabel } from '../../format-day';
 import { formatWindow } from '../../format-hour';
 import { formatCents, formatRate } from '../../format-money';
 import type { ServiceChoice } from '../../order-context.store';
@@ -58,7 +61,25 @@ export interface DeliveryAddressData {
    * n'a pas encore répondu.
    */
   readonly allowFreeEntry?: boolean;
+
+  /**
+   * La journée déjà retenue, pour la reproposer — `null` ou absente : la
+   * première journée que le serveur accorde.
+   */
+  readonly currentDate?: string | null;
 }
+
+/**
+ * Combien de journées de livraison se proposent, à partir de la première que
+ * le serveur accorde — la même largeur que les onglets du retrait
+ * (`slot-picker-dialog`, `DAYS_SHOWN`).
+ *
+ * ⚠️ Une largeur d'ÉCRAN, pas une promesse : `GET /fulfillment-days` ne rend
+ * que la PREMIÈRE journée (vérifié le 2026-10-13, `ListFulfillmentDaysHandler`).
+ * Les suivantes sont fabriquées par `addDays`, comme au retrait, et
+ * `ensureWithinOrderCutoff` reste l'autorité à la commande.
+ */
+const DELIVERY_DAYS_SHOWN = 7;
 
 /** Une adresse du carnet, telle que la rangée l'affiche. */
 interface Entry {
@@ -153,6 +174,7 @@ export class DeliveryAddressDialog {
 
   private readonly points = inject(ServicePoints);
   private readonly ref = inject(FoldPanelRef);
+  private readonly locale = inject(ClientLocale);
 
   /**
    * 🔴 Le carnet vient de NOTRE BASE. Une adresse d'exemple posée à côté d'une
@@ -265,8 +287,71 @@ export class DeliveryAddressDialog {
     ),
   );
 
+  // ─── Le jour de la livraison (Hugo, 2026-10-13 : « je ne peux pas choisir le jour ») ───
+
+  /** Le jour choisi dans la liste, ou `''` : la journée retenue, sinon la première. */
+  protected readonly datePick = signal('');
+
+  /**
+   * Les journées proposables : la première que le serveur accorde, puis les
+   * suivantes jusqu'à {@link DELIVERY_DAYS_SHOWN}, jamais au-delà du dernier
+   * jour d'une opération du panier ({@link ServicePoints.lastDay}).
+   */
+  private readonly offeredDates = computed<readonly string[]>(() => {
+    const first = this.points.nextDayFor(null);
+    if (first === null) {
+      return [];
+    }
+    const last = this.points.lastDay();
+    return Array.from({ length: DELIVERY_DAYS_SHOWN }, (_unused, index) =>
+      addDays(first, index),
+    ).filter((date, index) => index === 0 || last === null || date <= last);
+  });
+
+  /**
+   * Les journées où l'adresse du carnet a une heure INSCRITE — les seules
+   * valides depuis le 2026-10-12. Si aucune n'en a, toutes restent : le refus
+   * « aucune heure inscrite » dit alors où se règlent les heures, plutôt
+   * qu'une liste vide muette.
+   */
+  private readonly deliverableDates = computed<readonly string[]>(() => {
+    const dates = this.offeredDates();
+    if (this.freeEntry()) {
+      return dates;
+    }
+    const kept = dates.filter((date) => this.hasRegisteredTime(weekdayOfIsoDate(date)));
+    return kept.length === 0 ? dates : kept;
+  });
+
+  protected readonly dateOptions = computed(() => {
+    const copy = this.c().day;
+    const today = instantToLocal(new Date()).day;
+    const locale = this.locale.current();
+    return this.deliverableDates().map((date) => ({
+      value: date,
+      label: serviceDayLabel(date, today, locale, {
+        today: copy.today,
+        tomorrow: copy.tomorrow,
+      }),
+    }));
+  });
+
+  /** La journée livrée : le choix, sinon celle déjà retenue, sinon la première. */
+  protected readonly date = computed<string | null>(() => {
+    const dates = this.deliverableDates();
+    const picked = this.datePick();
+    if (dates.includes(picked)) {
+      return picked;
+    }
+    const current = this.data().currentDate ?? null;
+    if (current !== null && dates.includes(current)) {
+      return current;
+    }
+    return dates[0] ?? null;
+  });
+
   private readonly day = computed(() => {
-    const date = this.points.nextDayFor(null);
+    const date = this.date();
     return date === null ? null : weekdayOfIsoDate(date);
   });
 
@@ -276,6 +361,23 @@ export class DeliveryAddressDialog {
 
   /** Les créneaux du carnet pour ce jour (CA3b) — plusieurs possibles. */
   private readonly daySlots = computed(() => bookSlotsOfDay(this.bookAddress(), this.day()));
+
+  /** Changer de jour périme l'heure : les heures d'un jour ne valent pas pour un autre. */
+  protected pickDate(date: string): void {
+    if (date !== this.date()) {
+      this.deadlinePick.set('');
+      this.slotPick.set('');
+    }
+    this.datePick.set(date);
+  }
+
+  /** L'adresse du carnet a-t-elle une heure inscrite ce jour-là, dans son mode ? */
+  private hasRegisteredTime(day: Weekday | null): boolean {
+    const address = this.bookAddress();
+    return this.windowMode() === 'deadline'
+      ? deadlinesOfDay(address?.specs.deadlines, day).length > 0
+      : bookSlotsOfDay(address, day).length > 0;
+  }
 
   /**
    * Faut-il taper un créneau ? Seulement en saisie libre : une adresse du
@@ -409,7 +511,7 @@ export class DeliveryAddressDialog {
    * applique alors le même barème que la facture.
    */
   protected confirm(): void {
-    const date = this.points.nextDayFor(null);
+    const date = this.date();
     if (date === null) {
       return;
     }

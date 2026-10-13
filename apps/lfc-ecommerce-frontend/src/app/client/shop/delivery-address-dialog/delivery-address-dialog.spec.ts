@@ -59,6 +59,7 @@ function boot(
   currentId: string | null = null,
   windowMode: 'slot' | 'deadline' = 'slot',
   allowFreeEntry = false,
+  currentDate: string | null = null,
 ) {
   const closed: (ServiceChoice | undefined)[] = [];
   TestBed.resetTestingModule();
@@ -73,6 +74,7 @@ function boot(
           // Une seule zone servie : tout ce qui n'est pas en 73150 est dehors.
           zoneFor: (code: string): DeliveryZoneView | null => (code === '73150' ? ZONE : null),
           nextDayFor: (): string | null => '2026-09-21',
+          lastDay: signal<string | null>(null),
           deliveryAvailability: signal({ openToB2b: true, openToB2c: true, windowMode }),
         },
       },
@@ -83,7 +85,7 @@ function boot(
     ],
   });
   const fixture = TestBed.createComponent(DeliveryAddressDialog);
-  fixture.componentRef.setInput('data', { currentId, allowFreeEntry });
+  fixture.componentRef.setInput('data', { currentId, allowFreeEntry, currentDate });
   fixture.detectChanges();
   return { fixture, closed };
 }
@@ -312,5 +314,38 @@ describe('DeliveryAddressDialog', () => {
     expect((fixture.nativeElement as HTMLElement).querySelector('.screen')?.textContent).toBe(
       'Livrer où ?',
     );
+  });
+
+  describe('le jour de livraison', () => {
+    const dayList = (fixture: ComponentFixture<DeliveryAddressDialog>): HTMLElement | null =>
+      (fixture.nativeElement as HTMLElement).querySelector('[data-delivery-day]');
+
+    /**
+     * Régression (Hugo, 2026-10-13) : « je ne peux pas choisir le jour ». La
+     * livraison partait sur la première journée accordée, sans autre choix.
+     */
+    it('propose un choix du jour, et rend le jour choisi', () => {
+      const { fixture, closed } = boot([address({ id: 'a', isDefault: true, specs: SLOTTED })]);
+      expect(dayList(fixture)).not.toBeNull();
+
+      fixture.componentInstance['pickDate']('2026-09-23');
+      fixture.detectChanges();
+      cta(fixture)?.click();
+
+      expect(closed[0]?.date).toBe('2026-09-23');
+    });
+
+    it('repropose le jour déjà retenu', () => {
+      const { fixture, closed } = boot(
+        [address({ id: 'a', isDefault: true, specs: SLOTTED })],
+        null,
+        'slot',
+        false,
+        '2026-09-24',
+      );
+      cta(fixture)?.click();
+
+      expect(closed[0]?.date).toBe('2026-09-24');
+    });
   });
 });
