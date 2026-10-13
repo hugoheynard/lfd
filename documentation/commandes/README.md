@@ -84,27 +84,28 @@ flowchart TD
 
 **Je veux COMPRENDRE.**
 
-| La question                                                                     | Le document                                                                                                |
-| ------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| Comment on commande sans avoir d'entreprise ?                                   | [`architecture-flux-commande-zero-friction.md`](architecture-flux-commande-zero-friction.md)               |
-| Comment un commercial commande **pour** un client ?                             | [`architecture-commande-saisie-par-l-equipe.md`](architecture-commande-saisie-par-l-equipe.md)             |
-| Jusqu'à quand on prend commande, et que coûte le retard ?                       | [`architecture-heure-limite-de-commande.md`](architecture-heure-limite-de-commande.md)                     |
-| Comment l'équipe annule une commande, et ce que devient l'argent ?              | [`annulation-par-le-staff.md`](annulation/annulation-par-le-staff.md)                                      |
-| Comment un client annule lui-même sa commande ?                                 | [`annulation-par-le-client.md`](annulation/annulation-par-le-client.md)                                    |
-| Quels verrous l'annulation prend, et contre quoi ?                              | [`verrous-de-l-annulation.md`](annulation/verrous-de-l-annulation.md)                                      |
-| Que se passe-t-il quand un client veut changer sa commande ?                    | [`architecture-commande-immuable-avenants.md`](architecture-commande-immuable-avenants.md)                 |
-| Que porte une commande, et d'où vient chaque information ?                      | [`architecture-ce-que-porte-la-commande.md`](architecture-ce-que-porte-la-commande.md)                     |
-| Quels états une commande traverse, et qui les écrit ?                           | [`architecture-cycle-de-vie-commande.md`](architecture-cycle-de-vie-commande.md)                           |
-| Comment la commande alimente le plan de production ?                            | [`architecture-flux-commande-prod.md`](architecture-flux-commande-prod.md) — **topologie obsolète**        |
-| Quels parcours existent, par profil de client ?                                 | [`flux-de-commande.md`](flux-de-commande.md)                                                               |
-| Comment un visiteur commande sans compte ?                                      | [`architecture-commande-sans-compte.md`](architecture-commande-sans-compte.md)                             |
-| Comment le comptoir commande-t-il pour un pro sans la fiche client ?            | [`../comptoir/architecture-commande-au-comptoir.md`](../comptoir/architecture-commande-au-comptoir.md)     |
-| Où voir, pour un jour, où en est chaque commande et lesquelles sont en retard ? | [`../supervision/architecture-supervision-du-jour.md`](../supervision/architecture-supervision-du-jour.md) |
-| Quelle journée un client public peut demander ?                                 | [`plan-heure-limite-par-clientele.md`](plan-heure-limite-par-clientele.md) — doc-first                     |
-| Quel créneau de retrait un visiteur peut choisir ?                              | [`plan-creneaux-de-retrait.md`](plan-creneaux-de-retrait.md)                                               |
-| Quels écrans le client traverse, et avec quels mots ?                           | [`flux-de-commande.md`](flux-de-commande.md)                                                               |
-| De quoi est faite la pièce qu'on imprime, envoie, affiche ?                     | [`architecture-bon-de-commande.md`](architecture-bon-de-commande.md)                                       |
-| Où sont rangés les papiers d'un client, et sous quelle clé ?                    | [`architecture-pieces-en-r2.md`](architecture-pieces-en-r2.md)                                             |
+| La question                                                                     | Le document                                                                                                  |
+| ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Comment on commande sans avoir d'entreprise ?                                   | [`architecture-flux-commande-zero-friction.md`](architecture-flux-commande-zero-friction.md)                 |
+| Comment un commercial commande **pour** un client ?                             | [`architecture-commande-saisie-par-l-equipe.md`](architecture-commande-saisie-par-l-equipe.md)               |
+| Jusqu'à quand on prend commande, et que coûte le retard ?                       | [`architecture-heure-limite-de-commande.md`](architecture-heure-limite-de-commande.md)                       |
+| Comment l'équipe annule une commande, et ce que devient l'argent ?              | [`annulation-par-le-staff.md`](annulation/annulation-par-le-staff.md)                                        |
+| Comment un client annule lui-même sa commande ?                                 | [`annulation-par-le-client.md`](annulation/annulation-par-le-client.md)                                      |
+| Un particulier peut-il annuler après l'arrêt du plan de production ?            | [`plan-annulation-apres-production.md`](annulation/plan-annulation-apres-production.md) (plan C7, doc-first) |
+| Quels verrous l'annulation prend, et contre quoi ?                              | [`verrous-de-l-annulation.md`](annulation/verrous-de-l-annulation.md)                                        |
+| Que se passe-t-il quand un client veut changer sa commande ?                    | [`architecture-commande-immuable-avenants.md`](architecture-commande-immuable-avenants.md)                   |
+| Que porte une commande, et d'où vient chaque information ?                      | [`architecture-ce-que-porte-la-commande.md`](architecture-ce-que-porte-la-commande.md)                       |
+| Quels états une commande traverse, et qui les écrit ?                           | [`architecture-cycle-de-vie-commande.md`](architecture-cycle-de-vie-commande.md)                             |
+| Comment la commande alimente le plan de production ?                            | [`architecture-flux-commande-prod.md`](architecture-flux-commande-prod.md) — **topologie obsolète**          |
+| Quels parcours existent, par profil de client ?                                 | [`flux-de-commande.md`](flux-de-commande.md)                                                                 |
+| Comment un visiteur commande sans compte ?                                      | [`architecture-commande-sans-compte.md`](architecture-commande-sans-compte.md)                               |
+| Comment le comptoir commande-t-il pour un pro sans la fiche client ?            | [`../comptoir/architecture-commande-au-comptoir.md`](../comptoir/architecture-commande-au-comptoir.md)       |
+| Où voir, pour un jour, où en est chaque commande et lesquelles sont en retard ? | [`../supervision/architecture-supervision-du-jour.md`](../supervision/architecture-supervision-du-jour.md)   |
+| Quelle journée un client public peut demander ?                                 | [`plan-heure-limite-par-clientele.md`](plan-heure-limite-par-clientele.md) — doc-first                       |
+| Quel créneau de retrait un visiteur peut choisir ?                              | [`plan-creneaux-de-retrait.md`](plan-creneaux-de-retrait.md)                                                 |
+| Quels écrans le client traverse, et avec quels mots ?                           | [`flux-de-commande.md`](flux-de-commande.md)                                                                 |
+| De quoi est faite la pièce qu'on imprime, envoie, affiche ?                     | [`architecture-bon-de-commande.md`](architecture-bon-de-commande.md)                                         |
+| Où sont rangés les papiers d'un client, et sous quelle clé ?                    | [`architecture-pieces-en-r2.md`](architecture-pieces-en-r2.md)                                               |
 
 **Je veux IMPLÉMENTER.**
 
