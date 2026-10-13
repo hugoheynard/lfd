@@ -31,7 +31,7 @@ export const MEDIA_VOCABULARY_TOOLS = [
  * rend une ligne par image : un refus n'arrête pas les autres, et l'agent sait
  * lesquelles reprendre. `PUT /media` n'a pas de forme en lot.
  */
-async function eachImage(
+export async function eachImage(
   media: Pick<MediaImagesApi, 'one' | 'describe'>,
   urls: readonly string[],
   change: (image: LibraryMediaView) => MediaDetailsPayload | string,

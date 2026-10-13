@@ -16,6 +16,7 @@ import {
   readImage,
   stripText,
 } from './media-agent-text';
+import { declareMediaBatchTools, MEDIA_BATCH_TOOLS } from './media-agent-batch-tools';
 import {
   declareMediaVocabularyTools,
   MEDIA_VOCABULARY_TOOLS,
@@ -31,7 +32,7 @@ const AGENT_STRIP_COLUMNS = Math.min(24, PALETTE_STRIP_LIMITS.defaultColumns);
 /**
  * **Les outils WebMCP de la médiathèque** — ce qu'un agent peut faire sur le
  * fonds d'images sans passer par le clic : chercher, lire, taguer, décrire,
- * ranger en séries, lire les couleurs.
+ * ranger en séries, lire les couleurs, déposer par adresse et décrire en lot.
  *
  * Même philosophie que la trousse du référentiel (`pim-agent-tools.ts`) :
  * chaque outil vise une **route HTTP** par les clients de `mediatheque/data/`
@@ -51,8 +52,11 @@ const AGENT_STRIP_COLUMNS = Math.min(24, PALETTE_STRIP_LIMITS.defaultColumns);
  * - **remplacer A par B** (`POST /media/replace`) change ce qu'affichent la
  *   vitrine, les fiches et les familles — une décision de publication, pas de
  *   rangement ;
- * - **déposer** demande un fichier, et un agent n'en a pas : il n'a que des
- *   adresses.
+ *
+ * **Déposer** était exclu jusqu'au 2026-10-13 (« un agent n'a pas de
+ * fichier ») ; Hugo l'a ouvert ce jour-là : la PAGE télécharge l'adresse et
+ * dépose comme l'écran (`media_deposit_from_url`). Un dépôt n'efface ni ne
+ * remplace rien — les mêmes octets ne dupliquent rien.
  * Retirer un mot d'UNE image (`media_tag_remove`) reste offert : c'est
  * réversible par `media_tag_add`, image par image.
  *
@@ -195,6 +199,7 @@ export function declareMediaAgentTools(): readonly string[] {
   });
 
   declareMediaVocabularyTools(media);
+  declareMediaBatchTools(media);
 
   return [
     'media_search',
@@ -202,5 +207,6 @@ export function declareMediaAgentTools(): readonly string[] {
     'media_describe',
     'media_colors',
     ...MEDIA_VOCABULARY_TOOLS,
+    ...MEDIA_BATCH_TOOLS,
   ];
 }

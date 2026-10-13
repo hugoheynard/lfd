@@ -7,7 +7,7 @@ import type {
   MediaLibraryPageView,
   MediaPaletteStripView,
 } from '@lfd/pim-contracts';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { MediaCarriersApi } from '../mediatheque/data/media-carriers-api';
 import { MediaImagesApi } from '../mediatheque/data/media-images-api';
@@ -18,7 +18,10 @@ import type { MediaPageRequest } from '../mediatheque/rules/media-page-request';
 
 import { declareMediaAgentTools } from './media-agent-tools';
 
-type ToolArgs = Record<string, string | number | boolean | readonly string[]>;
+type ToolArgs = Record<
+  string,
+  string | number | boolean | readonly string[] | readonly Record<string, unknown>[]
+>;
 
 interface RegisteredTool {
   readonly name: string;
@@ -53,6 +56,7 @@ function armTools(fonds: readonly LibraryMediaView[], options: { describeFails?:
   const written: MediaDetailsPayload[] = [];
   const requests: MediaPageRequest[] = [];
   const reads: string[] = [];
+  const uploads: { readonly name: string; readonly seriesId: string | null }[] = [];
 
   Object.defineProperty(document, 'modelContext', {
     configurable: true,
@@ -66,7 +70,7 @@ function armTools(fonds: readonly LibraryMediaView[], options: { describeFails?:
   });
 
   const pageSize = 2;
-  const media: Pick<MediaImagesApi, 'page' | 'one' | 'describe'> &
+  const media: Pick<MediaImagesApi, 'page' | 'one' | 'describe' | 'upload'> &
     Pick<MediaCarriersApi, 'carriersOf'> &
     Pick<MediaTagsApi, 'tags' | 'renameTag'> &
     Pick<MediaSeriesApi, 'series' | 'openSeries'> = {
@@ -100,6 +104,24 @@ function armTools(fonds: readonly LibraryMediaView[], options: { describeFails?:
       written.push(details);
       return Promise.resolve();
     },
+    upload: (file, seriesId = null) => {
+      if (file.name === 'refusee.png') {
+        return Promise.reject(
+          new HttpErrorResponse({ status: 400, error: { message: 'Image trop petite.' } }),
+        );
+      }
+      uploads.push({ name: file.name, seriesId });
+      return Promise.resolve({
+        id: 'm1',
+        url: `https://media.test/${file.name}`,
+        seriesId,
+        alreadyInLibrary: file.name === 'connue.png',
+        width: 1200,
+        height: 800,
+        bytes: file.size,
+        contentType: file.type,
+      });
+    },
     carriersOf: () => Promise.resolve([{ kind: 'product', id: 'p1', label: 'Brioche' }]),
     tags: () => Promise.resolve([{ tag: 'brioche', count: 3 }]),
     renameTag: () => Promise.resolve(),
@@ -131,11 +153,31 @@ function armTools(fonds: readonly LibraryMediaView[], options: { describeFails?:
     }
     return found;
   }
-  return { names, tool, written, requests, reads };
+  return { names, tool, written, requests, reads, uploads };
 }
 
 beforeEach(() => Reflect.deleteProperty(document, 'modelContext'));
-afterEach(() => Reflect.deleteProperty(document, 'modelContext'));
+afterEach(() => {
+  Reflect.deleteProperty(document, 'modelContext');
+  vi.unstubAllGlobals();
+});
+
+/** Un hôte d'images doublé : le chemin choisit la réponse. */
+function stubImageHost(): string[] {
+  const fetched: string[] = [];
+  vi.stubGlobal('fetch', (url: string): Promise<Response> => {
+    fetched.push(url);
+    if (url.includes('sans-cors')) {
+      return Promise.reject(new TypeError('Failed to fetch'));
+    }
+    const type = url.endsWith('.gif') ? 'image/gif' : 'image/png';
+    const size = url.includes('enorme') ? 11 * 1024 * 1024 : 2048;
+    return Promise.resolve(
+      new Response(new Uint8Array(size), { headers: { 'content-type': type } }),
+    );
+  });
+  return fetched;
+}
 
 describe('declareMediaAgentTools', () => {
   it("rend les noms qu'il enregistre, et aucun geste destructif", () => {
@@ -143,7 +185,8 @@ describe('declareMediaAgentTools', () => {
     for (const name of names) {
       expect(tool(name).name).toBe(name);
     }
-    for (const forbidden of ['discard', 'delete', 'replace', 'upload', 'deposit']) {
+    // Déposer est offert depuis le 2026-10-13 (Hugo) : il n'efface ni ne remplace rien.
+    for (const forbidden of ['discard', 'delete', 'replace']) {
       expect(names.some((name) => name.includes(forbidden))).toBe(false);
     }
   });
@@ -233,5 +276,69 @@ describe('declareMediaAgentTools', () => {
 
     expect(said).toContain('product p1 — Brioche');
     expect(said).toContain('focal      : x=0.3 y=0.6');
+  });
+
+  it('media_deposit_from_url dépose chaque adresse dans la série, et isole chaque refus', async () => {
+    const fetched = stubImageHost();
+    const { tool, uploads } = armTools([]);
+
+    const said = await tool('media_deposit_from_url').execute({
+      urls: [
+        'https://img.test/a.png',
+        'http://img.test/b.png',
+        'https://img.test/c.gif',
+        'https://img.test/enorme.png',
+        'https://sans-cors.test/d.png',
+        'https://img.test/refusee.png',
+        'https://img.test/connue.png',
+      ],
+      seriesId: 's1',
+    });
+
+    expect(said).toContain('https://img.test/a.png — déposée → https://media.test/a.png');
+    expect(said).toContain('http://img.test/b.png — REFUSÉ : seules les adresses https');
+    expect(said).toContain('c.gif — REFUSÉ : format non accepté');
+    expect(said).toContain('enorme.png — REFUSÉ : 11.0 Mo dépassent la limite de 10 Mo.');
+    expect(said).toContain('d.png — REFUSÉ : téléchargement impossible');
+    expect(said).toContain('refusee.png — dépôt — REFUSÉ : 400 — Image trop petite.');
+    expect(said).toContain('connue.png — déjà au fonds');
+    // http n'est jamais téléchargé ; les autres le sont, un échec n'arrête pas la suite.
+    expect(fetched).not.toContain('http://img.test/b.png');
+    expect(uploads).toEqual([
+      { name: 'a.png', seriesId: 's1' },
+      { name: 'connue.png', seriesId: 's1' },
+    ]);
+  });
+
+  it('media_describe_many AJOUTE les tags, garde le reste, et isole l’introuvable', async () => {
+    const { tool, written } = armTools([image('u1'), image('u2', { tags: [] })]);
+
+    const said = await tool('media_describe_many').execute({
+      items: [
+        { url: 'u1', tags: ['viennoiserie'], alt: { it: 'Una brioche' } },
+        { url: 'absente', name: 'X' },
+        { url: 'u2', name: 'Pain', tags: ['pain'] },
+      ],
+    });
+
+    expect(said).toContain('u1 — écrit');
+    expect(said).toContain('absente — introuvable au fonds');
+    expect(said).toContain('u2 — écrit');
+    expect(written).toEqual([
+      {
+        url: 'u1',
+        name: 'Brioche dorée',
+        alt: { fr: 'Une brioche', en: 'A brioche', it: 'Una brioche' },
+        tags: ['brioche', 'four', 'viennoiserie'],
+        focal: { x: 0.3, y: 0.6 },
+      },
+      {
+        url: 'u2',
+        name: 'Pain',
+        alt: { fr: 'Une brioche', en: 'A brioche' },
+        tags: ['pain'],
+        focal: { x: 0.3, y: 0.6 },
+      },
+    ]);
   });
 });
