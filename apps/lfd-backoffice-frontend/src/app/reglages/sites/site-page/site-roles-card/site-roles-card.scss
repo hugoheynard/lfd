@@ -4,3 +4,11 @@
   display: flex;
   gap: var(--fold-space-sm);
 }
+
+/* Latitude et longitude côte à côte, sous « Livraison » ; elles passent l'une
+   sous l'autre quand la place manque. */
+.sr-gps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-md);
+}

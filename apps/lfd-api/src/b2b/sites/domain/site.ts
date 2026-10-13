@@ -6,10 +6,12 @@ import {
   ArchivedSiteError,
   DefaultSiteArchiveError,
   DefaultSiteMustHandOverError,
-  DispatchingSiteArchiveError,
-  SiteColorErasedError,
+  DepartureSiteMustDeliverError,
+  DeliveryDepartureSiteArchiveError,
   SiteCounterSetupError,
-  SiteDispatchesFromTransferError,
+  SiteDeliveryDepartureFromTransferError,
+  SiteDeliveryDepartureWithoutGpsError,
+  SiteTransferWithoutGpsError,
   SiteTransferWithoutHandoverError,
 } from "./site-errors.js";
 
@@ -34,9 +36,9 @@ export interface SitePlace {
 
 /** Les rôles d'un site et leurs réglages (plan, §3.1 et §4.6). */
 export interface SiteRoles {
-  readonly handsOver: boolean;
+  readonly pickup: boolean;
   readonly supply: SiteSupply;
-  readonly dispatches: boolean;
+  readonly deliveryDeparture: boolean;
   readonly transferMode: SiteTransferMode;
   readonly counterSetupMinutes: number;
 }
@@ -61,9 +63,9 @@ export interface SiteState {
 
 /** Les rôles d'un site neuf : ceux de l'existant (il remet, sur place, n'expédie pas). */
 const NEW_SITE_ROLES: SiteRoles = {
-  handsOver: true,
+  pickup: true,
   supply: "on_site",
-  dispatches: false,
+  deliveryDeparture: false,
   transferMode: "integrated",
   counterSetupMinutes: 0,
 };
@@ -75,25 +77,17 @@ const NO_COLORS: SiteColors = {
   deliveryB2c: null,
 };
 
-/** Le nom de chaque couleur, tel que l'écran le montre. */
-const COLOR_LABELS: readonly (readonly [keyof SiteColors, string])[] = [
-  ["pickupB2b", "retrait pro"],
-  ["pickupB2c", "retrait particulier"],
-  ["deliveryB2b", "livraison pro"],
-  ["deliveryB2c", "livraison particulier"],
-];
-
 /**
  * @throws {SiteTransferWithoutHandoverError} servi par transfert sans remettre.
- * @throws {SiteDispatchesFromTransferError} expédie sans être sur place.
+ * @throws {SiteDeliveryDepartureFromTransferError} expédie sans être sur place.
  * @throws {SiteCounterSetupError} mise en place négative ou non entière.
  */
 function checkRoles(roles: SiteRoles): void {
-  if (roles.supply === "transfer" && !roles.handsOver) {
+  if (roles.supply === "transfer" && !roles.pickup) {
     throw new SiteTransferWithoutHandoverError();
   }
-  if (roles.dispatches && roles.supply !== "on_site") {
-    throw new SiteDispatchesFromTransferError();
+  if (roles.deliveryDeparture && roles.supply !== "on_site") {
+    throw new SiteDeliveryDepartureFromTransferError();
   }
   if (!Number.isInteger(roles.counterSetupMinutes) || roles.counterSetupMinutes < 0) {
     throw new SiteCounterSetupError(roles.counterSetupMinutes);
@@ -105,11 +99,20 @@ function checkRoles(roles: SiteRoles): void {
  * `documentation/livraisons/transferts/plan-sites-transfert-interne-tri-et-couleurs.md`, §3).
  *
  * Il porte les règles qui peuvent refuser une écriture : la cohérence des
- * rôles, les couleurs qu'on change sans jamais les effacer, et l'archivage qui
+ * rôles, le point GPS d'un site qui expédie, et l'archivage qui
  * remplace la suppression — refusé au site par défaut et à celui qui expédie.
  *
  * Les couleurs sont **tolérées absentes** (objection B1) : les lignes
  * antérieures n'en ont pas, et `rehydrate` doit les relire.
+ *
+ * **Un site qui expédie, ou qui est servi par transfert, a un point GPS**
+ * (Hugo, 2026-10-13 : départ des distances, destination du trajet) — tenu aux
+ * TRANSITIONS ({@link assignRoles}, {@link revise}), jamais au chargement :
+ * la migration S1 a posé `deliveryDeparture = true` sur le site de départ sans
+ * regarder son GPS, et revalider dans `rehydrate` casserait toutes les
+ * lectures de ce site, checkout compris (même raison que l'objection B1).
+ * Une ligne déjà incohérente se relit donc, se renomme, change ses autres
+ * rôles ; elle ne fait que refuser ce qui l'aggraverait. L'écran la signale.
  *
  * Le défaut REMET toujours : c'est le site préselectionné au checkout.
  *
@@ -117,7 +120,7 @@ function checkRoles(roles: SiteRoles): void {
  * défaut ({@link relinquishDefault}) quand il en désigne un nouveau. « Au moins
  * un site » en découle : le défaut ne s'archive pas.
  *
- * ⚠️ Ne tient PAS encore « on ne retire pas `dispatches` au site de départ des
+ * ⚠️ Ne tient PAS encore « on ne retire pas `deliveryDeparture` au site de départ des
  * tournées » : le plan fait déclarer ce port par le commerce et l'implémenter
  * par la livraison, ce que la matrice interdit (`delivery → b2b`) — remonté le
  * 2026-10-13, en attente de décision.
@@ -164,9 +167,16 @@ export class Site {
     return this.state;
   }
 
-  /** @throws {ArchivedSiteError} le site est archivé. */
+  /**
+   * @throws {ArchivedSiteError} le site est archivé.
+   * @throws {SiteDeliveryDepartureWithoutGpsError} le point d'un site qui expédie serait effacé.
+   * @throws {SiteTransferWithoutGpsError} celui d'un site servi par transfert aussi.
+   */
   revise(place: SitePlace): void {
     this.assertActive();
+    if (this.state.place.gps !== null && place.gps === null) {
+      this.assertGpsKept(this.state.roles, this.state.place.gps, null);
+    }
     this.state = { ...this.state, place };
   }
 
@@ -176,7 +186,7 @@ export class Site {
    */
   makeDefault(): void {
     this.assertActive();
-    if (!this.state.roles.handsOver) {
+    if (!this.state.roles.pickup) {
       throw new DefaultSiteMustHandOverError(this.label);
     }
     this.state = { ...this.state, isDefault: true };
@@ -188,33 +198,43 @@ export class Site {
   }
 
   /**
+   * Les rôles, et le point GPS qui se saisit avec eux (Hugo, 2026-10-13) —
+   * `undefined` le laisse tel quel, `null` l'efface. `isDeparture` est un fait
+   * que la livraison détient (`DepartureSiteReader`) : le handler le lit.
+   *
    * @throws {ArchivedSiteError} le site est archivé.
    * @throws {SiteTransferWithoutHandoverError}
-   * @throws {SiteDispatchesFromTransferError}
+   * @throws {SiteDeliveryDepartureFromTransferError}
    * @throws {SiteCounterSetupError}
    * @throws {DefaultSiteMustHandOverError} le défaut cesserait de remettre.
+   * @throws {SiteDeliveryDepartureWithoutGpsError} « Livraison » cochée sans point, ou point effacé.
+   * @throws {SiteTransferWithoutGpsError} « par transfert » sans point, ou point effacé.
+   * @throws {DepartureSiteMustDeliverError} « Livraison » retirée au départ des tournées.
    */
-  assignRoles(roles: SiteRoles): void {
+  assignRoles(roles: SiteRoles, gps?: GpsPoint | null, isDeparture = false): void {
     this.assertActive();
     checkRoles(roles);
-    if (this.state.isDefault && !roles.handsOver) {
+    if (isDeparture && !roles.deliveryDeparture) {
+      throw new DepartureSiteMustDeliverError(this.label);
+    }
+    if (this.state.isDefault && !roles.pickup) {
       throw new DefaultSiteMustHandOverError(this.label);
     }
-    this.state = { ...this.state, roles };
+    const before = this.state.place.gps;
+    const after = gps === undefined ? before : gps;
+    this.assertGpsKept(roles, before, after);
+    this.state = { ...this.state, roles, place: { ...this.state.place, gps: after } };
   }
 
   /**
+   * Les quatre couleurs, en bloc. `null` RETIRE une couleur : on peut
+   * revenir à « pas de couleur » (Hugo, 2026-10-13) — les couleurs sont
+   * facultatives pour de bon.
+   *
    * @throws {ArchivedSiteError} le site est archivé.
-   * @throws {SiteColorErasedError} une couleur posée reviendrait à `null`.
    */
   paint(colors: SiteColors): void {
     this.assertActive();
-    const current = this.state.colors;
-    for (const [key, label] of COLOR_LABELS) {
-      if (current[key] !== null && colors[key] === null) {
-        throw new SiteColorErasedError(label);
-      }
-    }
     this.state = { ...this.state, colors };
   }
 
@@ -223,17 +243,39 @@ export class Site {
    *
    * @throws {ArchivedSiteError} il l'est déjà.
    * @throws {DefaultSiteArchiveError} c'est le site par défaut.
-   * @throws {DispatchingSiteArchiveError} les livraisons en partent.
+   * @throws {DeliveryDepartureSiteArchiveError} les livraisons en partent.
    */
   archive(at: Date): void {
     this.assertActive();
     if (this.state.isDefault) {
       throw new DefaultSiteArchiveError(this.label);
     }
-    if (this.state.roles.dispatches) {
-      throw new DispatchingSiteArchiveError(this.label);
+    if (this.state.roles.deliveryDeparture) {
+      throw new DeliveryDepartureSiteArchiveError(this.label);
     }
     this.state = { ...this.state, archivedAt: at };
+  }
+
+  /**
+   * Refuse ce qui laisserait sans point un site qui en a besoin — il expédie
+   * (départ des distances) ou il est servi par transfert (destination du
+   * trajet), Hugo 2026-10-13 : prendre ce rôle sans point, ou effacer le
+   * point d'un site qui l'a. Une ligne d'avant la règle, déjà dans ce rôle
+   * sans point, n'est pas bloquée tant qu'elle n'aggrave rien.
+   */
+  private assertGpsKept(roles: SiteRoles, before: GpsPoint | null, after: GpsPoint | null): void {
+    if (after !== null) {
+      return;
+    }
+    const was = this.state.roles;
+    const departureLost = roles.deliveryDeparture && (!was.deliveryDeparture || before !== null);
+    if (departureLost) {
+      throw new SiteDeliveryDepartureWithoutGpsError(this.label);
+    }
+    const transfer = roles.supply === "transfer";
+    if (transfer && (was.supply !== "transfer" || before !== null)) {
+      throw new SiteTransferWithoutGpsError(this.label);
+    }
   }
 
   private assertActive(): void {

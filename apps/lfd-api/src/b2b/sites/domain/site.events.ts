@@ -1,4 +1,5 @@
 import type { JournalFactType } from "@lfd/contracts/journal-facts";
+import type { GpsPoint } from "@lfd/contracts";
 
 import type { JournalFact, JournaledEvent } from "../../../platform/journal/journal-fact.js";
 import type { SiteColors, SiteRoles } from "./site.js";
@@ -45,6 +46,8 @@ export class SiteRolesSetEvent implements JournaledEvent {
     readonly siteId: string,
     readonly label: string,
     readonly roles: SiteRoles,
+    /** Le point GPS, saisi avec les rôles depuis le 2026-10-13. */
+    readonly gps: GpsPoint | null,
   ) {}
 
   journalFact(): JournalFact {
@@ -54,11 +57,12 @@ export class SiteRolesSetEvent implements JournaledEvent {
       subjectId: this.siteId,
       payload: {
         subjectLabel: this.label,
-        handsOver: this.roles.handsOver,
+        pickup: this.roles.pickup,
         supply: this.roles.supply,
-        dispatches: this.roles.dispatches,
+        deliveryDeparture: this.roles.deliveryDeparture,
         transferMode: this.roles.transferMode,
         counterSetupMinutes: this.roles.counterSetupMinutes,
+        gps: this.gps,
       },
     };
   }
@@ -69,6 +73,8 @@ export class SiteColorsSetEvent implements JournaledEvent {
   constructor(
     readonly siteId: string,
     readonly label: string,
+    /** Les couleurs d'avant : ce qui a été RETIRÉ se lit dans le journal. */
+    readonly before: SiteColors,
     readonly colors: SiteColors,
   ) {}
 
@@ -83,7 +89,23 @@ export class SiteColorsSetEvent implements JournaledEvent {
         pickupColorB2c: this.colors.pickupB2c?.hex ?? null,
         deliveryColorB2b: this.colors.deliveryB2b?.hex ?? null,
         deliveryColorB2c: this.colors.deliveryB2c?.hex ?? null,
+        removed: removedColors(this.before, this.colors),
       },
     };
   }
+}
+
+/** Le nom de chaque couleur dans la charge du fait. */
+const COLOR_FIELDS: readonly (readonly [keyof SiteColors, string])[] = [
+  ["pickupB2b", "pickupColorB2b"],
+  ["pickupB2c", "pickupColorB2c"],
+  ["deliveryB2b", "deliveryColorB2b"],
+  ["deliveryB2c", "deliveryColorB2c"],
+];
+
+/** Les couleurs posées avant et vides après — « retirées » (Hugo, 2026-10-13). */
+function removedColors(before: SiteColors, after: SiteColors): readonly string[] {
+  return COLOR_FIELDS.filter(([key]) => before[key] !== null && after[key] === null).map(
+    ([, field]) => field,
+  );
 }

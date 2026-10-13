@@ -604,6 +604,7 @@ export type {
   SiteSupply,
   SiteTransferMode,
   SiteView,
+  StoredSiteView,
 } from "./site.js";
 export { orderLineAllergensSchema } from "./order.js";
 export { adminOrdersQuerySchema, adminOrderClienteleSchema } from "./admin-order-list.js";

@@ -18,50 +18,22 @@ export class SiteColorFormatError extends DomainError {
   }
 }
 
-/**
- * Une couleur trop proche du vert, du rouge ou du rose (**400**) : ces teintes
- * sont celles des surligneurs OK / KO de la logistique, et une commande peinte
- * en vert se lirait « validée » sans l'être.
- */
-export class SiteColorReservedError extends DomainError {
-  constructor(value: string) {
-    super(
-      "site.color.reserved",
-      `La couleur ${value} est trop proche du vert, du rouge ou du rose, réservés aux surligneurs OK / KO : choisissez-en une autre (bleu, jaune, orange, gris, violet…).`,
-    );
-  }
-}
-
-/**
- * Effacer une couleur déjà posée (**409**). Les couleurs naissent vides et se
- * saisissent à l'écran ; une fois posée, une couleur se change, elle ne
- * s'efface pas — la logistique trierait sinon une catégorie sans couleur.
- */
-export class SiteColorErasedError extends BusinessError {
-  constructor(which: string) {
-    super(
-      "site.color.erased",
-      `La couleur « ${which} » est déjà posée : on peut la changer, pas l'effacer.`,
-    );
-  }
-}
-
 /** Un site servi par transfert qui ne remet rien (**400**). */
 export class SiteTransferWithoutHandoverError extends DomainError {
   constructor() {
     super(
       "site.roles.transfer_without_handover",
-      "Un site approvisionné par transfert doit remettre des commandes : sinon on n'y transfère rien qui ait un client. Cochez « Remet des commandes », ou approvisionnez-le sur place.",
+      "Un site approvisionné par transfert doit remettre des commandes : sinon on n'y transfère rien qui ait un client. Cochez « Retrait », ou approvisionnez-le sur place.",
     );
   }
 }
 
 /** Un site qui expédie mais qui est lui-même servi par transfert (**400**). */
-export class SiteDispatchesFromTransferError extends DomainError {
+export class SiteDeliveryDepartureFromTransferError extends DomainError {
   constructor() {
     super(
-      "site.roles.dispatch_from_transfer",
-      "Un site d'où partent les livraisons doit être approvisionné sur place : il ne peut pas être lui-même servi par transfert. Changez l'approvisionnement, ou décochez « Expédie ».",
+      "site.roles.delivery_departure_from_transfer",
+      "Un site d'où partent les livraisons doit être approvisionné sur place : il ne peut pas être lui-même servi par transfert. Changez l'approvisionnement, ou décochez « Livraison ».",
     );
   }
 }
@@ -87,11 +59,53 @@ export class DefaultSiteArchiveError extends BusinessError {
 }
 
 /** Archiver un site d'où partent les livraisons (**409**). */
-export class DispatchingSiteArchiveError extends BusinessError {
+export class DeliveryDepartureSiteArchiveError extends BusinessError {
   constructor(label: string) {
     super(
-      "site.archive.dispatching",
-      `Les livraisons partent de « ${label} » : décochez d'abord « Expédie » dans ses rôles, puis archivez-le.`,
+      "site.archive.delivery_departure",
+      `Les livraisons partent de « ${label} » : décochez d'abord « Livraison » dans ses rôles, puis archivez-le.`,
+    );
+  }
+}
+
+/**
+ * Un site qui expédie sans point GPS (**409**) : les distances des tournées
+ * partent de ce point (Hugo, 2026-10-13). Refusé aux TRANSITIONS seulement —
+ * cocher « Livraison », ou effacer le point d'un site qui expédie.
+ */
+export class SiteDeliveryDepartureWithoutGpsError extends BusinessError {
+  constructor(label: string) {
+    super(
+      "site.delivery_departure.without_gps",
+      `Un site qui expédie doit avoir un point GPS : renseignez celui de « ${label} » sous « Livraison », dans ses rôles.`,
+    );
+  }
+}
+
+/**
+ * Un site servi par transfert sans point GPS (**409**) : il est la
+ * DESTINATION du trajet du transfert (Hugo, 2026-10-13). Refusé aux
+ * TRANSITIONS seulement — passer « par transfert », ou effacer le point d'un
+ * site qui l'est.
+ */
+export class SiteTransferWithoutGpsError extends BusinessError {
+  constructor(label: string) {
+    super(
+      "site.transfer.without_gps",
+      `Un site approvisionné par transfert doit avoir un point GPS, destination du trajet : renseignez celui de « ${label} » sous « Approvisionné par transfert », dans ses rôles.`,
+    );
+  }
+}
+
+/**
+ * Retirer « Livraison » au site d'où partent les tournées (**409**) : la
+ * livraison n'aurait plus de départ (Hugo, 2026-10-13).
+ */
+export class DepartureSiteMustDeliverError extends BusinessError {
+  constructor(label: string) {
+    super(
+      "site.departure.must_deliver",
+      `« ${label} » est le point de départ des tournées : choisissez-en un autre dans Livraison › Point de départ avant de retirer « Livraison ».`,
     );
   }
 }
@@ -113,8 +127,8 @@ export class ArchivedSiteError extends BusinessError {
 export class DefaultSiteMustHandOverError extends BusinessError {
   constructor(label: string) {
     super(
-      "site.default.hands_over",
-      `« ${label} » ne remet pas de commandes : il ne peut pas être le site par défaut, que le client voit préselectionné. Cochez « Remet des commandes », ou désignez un autre site par défaut.`,
+      "site.default.pickup",
+      `« ${label} » ne remet pas de commandes : il ne peut pas être le site par défaut, que le client voit préselectionné. Cochez « Retrait », ou désignez un autre site par défaut.`,
     );
   }
 }

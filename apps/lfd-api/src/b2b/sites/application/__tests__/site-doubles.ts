@@ -1,3 +1,4 @@
+import { DepartureSiteReader } from "../../../../delivery/channels/commerce/index.js";
 import { PickupDiscount } from "../../../pickup-addresses/domain/pickup-discount.js";
 import { Site, type SitePlace, type SiteState } from "../../domain/site.js";
 import { SiteRepository } from "../../domain/site.repository.js";
@@ -58,5 +59,23 @@ export class InMemorySites extends SiteRepository {
   /** L'état enregistré d'un site — pour les assertions. */
   stateOf(id: string): SiteState | undefined {
     return this.rows.get(id);
+  }
+}
+
+/**
+ * **Le départ des tournées, figé** — un double du port que la livraison
+ * déclare et implémente. Il compte ses lectures : le handler ne doit la
+ * demander que lorsque « Livraison » est retirée.
+ */
+export class FixedDepartureSite extends DepartureSiteReader {
+  reads = 0;
+
+  constructor(private readonly siteId: string | null = null) {
+    super();
+  }
+
+  currentSiteId(): Promise<string | null> {
+    this.reads += 1;
+    return Promise.resolve(this.siteId);
   }
 }

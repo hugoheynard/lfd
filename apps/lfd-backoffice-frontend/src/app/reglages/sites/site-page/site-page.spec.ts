@@ -1,3 +1,6 @@
+import { By } from '@angular/platform-browser';
+import { DEFAULT_DELIVERY_AVAILABILITY } from '@lfd/contracts';
+import { DeliveryAvailabilityService } from '../../../b2b/reglages/delivery-availability.service';
 import { HttpErrorResponse } from '@angular/common/http';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
@@ -14,6 +17,8 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { NotifyService } from '../../../notify.service';
 import { SITES_PATH } from '../sites-path';
+import { SiteDiscountCard } from './site-discount-card/site-discount-card';
+import { SiteHoursCard } from './site-hours-card/site-hours-card';
 import { SitesService } from '../sites.service';
 import { SitePage } from './site-page';
 
@@ -38,9 +43,9 @@ const LABO: SiteView = {
   discountAudiences: { b2b: true, b2c: false },
   opening: { publicOpening: null, proPickup: null },
   gps: null,
-  handsOver: true,
+  pickup: true,
   supply: 'on_site',
-  dispatches: false,
+  deliveryDeparture: false,
   transferMode: 'integrated',
   counterSetupMinutes: 0,
   pickupColorB2b: null,
@@ -48,6 +53,7 @@ const LABO: SiteView = {
   deliveryColorB2b: null,
   deliveryColorB2c: null,
   archivedAt: null,
+  isDeparture: false,
 };
 
 /** Un second site, ni défaut ni départ : c'est lui qui s'archive. */
@@ -121,6 +127,11 @@ async function mount(
     providers: [
       provideRouter([]),
       { provide: SitesService, useValue: pickups },
+      // La carte des couleurs lit l'ouverture de la livraison (route publique).
+      {
+        provide: DeliveryAvailabilityService,
+        useValue: { readPublic: () => Promise.resolve(DEFAULT_DELIVERY_AVAILABILITY) },
+      },
       { provide: NotifyService, useValue: { success: () => undefined, error: () => undefined } },
     ],
   });
@@ -174,17 +185,34 @@ describe('SitePage — le chargement', () => {
 });
 
 describe('SitePage — les cartes selon les rôles', () => {
-  it('montre rôles et couleurs d’un site existant', async () => {
+  it('montre la carte des rôles — couleurs comprises — d’un site existant', async () => {
     const { fixture } = await mount('pick_1');
 
     expect(fixture.nativeElement.querySelector('app-site-roles-card')).not.toBeNull();
-    expect(fixture.nativeElement.querySelector('app-site-colors-card')).not.toBeNull();
+    expect(fixture.nativeElement.textContent).not.toContain('Enregistrer les couleurs');
+  });
+
+  it('réunit le retrait en UNE carte à trois sous-cartes (Hugo, 2026-10-13)', async () => {
+    const { fixture } = await mount('pick_1');
+    const root: HTMLElement = fixture.nativeElement;
+    const text = root.textContent ?? '';
+    const order = [
+      'Paramétrage du retrait',
+      'Heures de retrait',
+      'Créneaux publics de retrait',
+      'Réduction de retrait sur ce site',
+    ].map((label) => text.indexOf(label));
+
+    expect(order.every((at) => at >= 0)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+    expect(root.querySelectorAll('fold-card[surface="sunken"]').length).toBeGreaterThanOrEqual(3);
   });
 
   it('masque les cartes du retrait d’un site qui ne remet pas', async () => {
-    const { fixture } = await mount('pick_2', [LABO, { ...VILLAGE, handsOver: false }]);
+    const { fixture } = await mount('pick_2', [LABO, { ...VILLAGE, pickup: false }]);
     const text: string = fixture.nativeElement.textContent;
 
+    expect(text).not.toContain('Paramétrage du retrait');
     expect(text).not.toContain('Réduction de retrait');
     expect(text).not.toContain('Heures de retrait');
     expect(fixture.nativeElement.querySelector('app-public-slots-card')).toBeNull();
@@ -203,32 +231,56 @@ describe('SitePage — les cartes selon les rôles', () => {
   });
 });
 
-describe('SitePage — les clientèles de la réduction', () => {
-  it('reprend les clientèles du point, et les renvoie à la modification', async () => {
+/** La sous-carte de la réduction, montée par la page. */
+function discountCard(fixture: ComponentFixture<SitePage>): SiteDiscountCard {
+  return fixture.debugElement.query(By.directive(SiteDiscountCard)).componentInstance;
+}
+
+/**
+ * La réduction a SA sauvegarde (Hugo, 2026-10-13) : ses cas vivent dans la
+ * sous-carte, et la page renvoie la réduction ENREGISTRÉE.
+ */
+describe('SitePage — la réduction, une sous-carte à elle', () => {
+  it('enregistrer l’adresse renvoie la réduction ENREGISTRÉE, pas un brouillon', async () => {
     const { fixture, pickups } = await mount('pick_1');
+    discountCard(fixture)['setAudience']('b2c', true);
+    fixture.componentInstance['draft'].update((d) => ({ ...d, label: 'Laboratoire bis' }));
 
-    await fixture.componentInstance['submit']();
+    await fixture.componentInstance['saveIdentity']();
 
-    expect(pickups.updated[0]?.discountAudiences).toEqual({ b2b: true, b2c: false });
+    expect(pickups.updated[0]).toMatchObject({
+      discount: { mode: 'amount', cents: 800 },
+      discountAudiences: { b2b: true, b2c: false },
+    });
   });
 
-  it('envoie une case changée', async () => {
+  it('modifier la réduction n’enregistre qu’elle, sur le lieu ENREGISTRÉ', async () => {
     const { fixture, pickups } = await mount('pick_1');
-    fixture.componentInstance['setAudience']('b2c', true);
+    fixture.componentInstance['draft'].update((d) => ({ ...d, ligne1: 'brouillon de la page' }));
+    const card = discountCard(fixture);
+    card['setAudience']('b2c', true);
 
-    await fixture.componentInstance['submit']();
+    await card['save']();
 
-    expect(pickups.updated[0]?.discountAudiences).toEqual({ b2b: true, b2c: true });
+    expect(pickups.updated).toHaveLength(1);
+    expect(pickups.updated[0]).toMatchObject({
+      ligne1: LABO.ligne1,
+      discountAudiences: { b2b: true, b2c: true },
+    });
+    expect(pickups.updated[0] && 'gps' in pickups.updated[0]).toBe(false);
   });
 
-  it('crée un point avec les deux clientèles par défaut — l’existant', async () => {
+  it('crée un site sans réduction : elle se règle une fois qu’il existe', async () => {
     const { fixture, pickups } = await mount(undefined);
     fixture.componentInstance['draft'].set(postalDraftFrom(LABO));
-    fixture.componentInstance['setDiscount']({ direction: 'decrease', mode: 'amount', cents: 500 });
 
     await fixture.componentInstance['submit']();
 
-    expect(pickups.created[0]?.discountAudiences).toEqual({ b2b: true, b2c: true });
+    expect(pickups.created[0]).toMatchObject({
+      discount: null,
+      discountAudiences: { b2b: true, b2c: true },
+    });
+    expect(fixture.debugElement.query(By.directive(SiteDiscountCard))).toBeNull();
   });
 
   it('grise les cases tant qu’il n’y a pas de réduction', async () => {
@@ -247,9 +299,10 @@ describe('SitePage — les clientèles de la réduction', () => {
     // Sans réduction, le serveur ne les lit pas ; les effacer ferait perdre un
     // choix qu'on retrouverait en rouvrant la réduction.
     const { fixture, pickups } = await mount('pick_1');
-    fixture.componentInstance['setDiscount'](null);
+    const card = discountCard(fixture);
+    card['setDiscount'](null);
 
-    await fixture.componentInstance['submit']();
+    await card['save']();
 
     expect(pickups.updated[0]).toMatchObject({
       discount: null,
@@ -257,17 +310,28 @@ describe('SitePage — les clientèles de la réduction', () => {
     });
   });
 
-  it('refuse d’envoyer une réduction qui ne vise personne, et le dit', async () => {
+  it('refuse d’envoyer une réduction qui ne vise personne, et le dit DANS la sous-carte', async () => {
     const { fixture, pickups } = await mount('pick_1');
-    fixture.componentInstance['setAudience']('b2b', false);
+    const card = discountCard(fixture);
+    card['setAudience']('b2b', false);
     fixture.detectChanges();
 
-    await fixture.componentInstance['submit']();
+    await card['save']();
 
     expect(pickups.updated).toEqual([]);
     expect(fixture.nativeElement.textContent).toContain('Cochez au moins une clientèle');
   });
 
+  it('dit « modifiée, pas encore enregistrée » dans la sous-carte', async () => {
+    const { fixture } = await mount('pick_1');
+    discountCard(fixture)['setAudience']('b2c', true);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Modifiée, pas encore enregistrée.');
+  });
+});
+
+describe('SitePage — les refus', () => {
   it('🔴 garde le refus du serveur SUR LA PAGE, sans naviguer', async () => {
     const { fixture, pickups, router } = await mount('pick_1');
     const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
@@ -278,8 +342,9 @@ describe('SitePage — les clientèles de la réduction', () => {
         message: 'Cochez au moins une clientèle, ou retirez la réduction',
       },
     };
+    fixture.componentInstance['draft'].update((d) => ({ ...d, label: 'Laboratoire bis' }));
 
-    await fixture.componentInstance['submit']();
+    await fixture.componentInstance['saveIdentity']();
     fixture.detectChanges();
 
     expect(navigate).not.toHaveBeenCalled();
@@ -290,8 +355,9 @@ describe('SitePage — les clientèles de la réduction', () => {
   it('reste sur la page après une modification réussie', async () => {
     const { fixture, router } = await mount('pick_1');
     const navigate = vi.spyOn(router, 'navigate').mockResolvedValue(true);
+    fixture.componentInstance['draft'].update((d) => ({ ...d, label: 'Laboratoire bis' }));
 
-    await fixture.componentInstance['submit']();
+    await fixture.componentInstance['saveIdentity']();
 
     expect(navigate).not.toHaveBeenCalled();
   });
@@ -356,9 +422,12 @@ describe('SitePage — la zone dangereuse', () => {
   });
 
   it('🔴 le site d’où partent les livraisons : la zone explique, et rien ne part', async () => {
-    const { fixture, pickups } = await mount('pick_2', [LABO, { ...VILLAGE, dispatches: true }]);
+    const { fixture, pickups } = await mount('pick_2', [
+      LABO,
+      { ...VILLAGE, deliveryDeparture: true },
+    ]);
 
-    expect(zone(fixture)?.textContent).toContain('Expédie');
+    expect(zone(fixture)?.textContent).toContain('Livraison');
 
     await fixture.componentInstance['archive']();
     expect(pickups.archived).toEqual([]);
@@ -378,34 +447,82 @@ describe('SitePage — la zone dangereuse', () => {
   });
 });
 
-describe('SitePage — le point GPS', () => {
-  it('reprend le point GPS enregistré, et le renvoie à la modification', async () => {
+/**
+ * Le point GPS se saisit SOUS « Livraison », dans la carte des rôles, et nulle
+ * part ailleurs (Hugo, 2026-10-13) : la page ne l'envoie plus, ce qui le
+ * laisse inchangé côté serveur (absent = inchangé).
+ */
+describe('SitePage — le point GPS n’est plus saisi ici', () => {
+  it('n’envoie pas de `gps` avec le lieu, et n’en montre pas la saisie', async () => {
     const { fixture, pickups } = await mount('pick_1', [
       { ...LABO, gps: { lat: 48.85, lng: 2.37 } },
       VILLAGE,
     ]);
+    fixture.componentInstance['draft'].update((d) => ({ ...d, label: 'Laboratoire bis' }));
 
-    await fixture.componentInstance['submit']();
+    await fixture.componentInstance['saveIdentity']();
 
-    expect(pickups.updated[0]?.gps).toEqual({ lat: 48.85, lng: 2.37 });
+    expect(pickups.updated[0]).toBeDefined();
+    expect(pickups.updated[0] && 'gps' in pickups.updated[0]).toBe(false);
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Latitude');
+  });
+});
+
+/**
+ * Chaque carte enregistre ce qu'elle montre (Hugo, 2026-10-13) : plus
+ * d'« Enregistrer » dans l'en-tête d'un site existant, et une seule route
+ * (`PATCH` du lieu) qui reçoit l'état ENREGISTRÉ pour tout le reste.
+ */
+describe('SitePage — un enregistrement par carte', () => {
+  it('n’offre aucun « Enregistrer » dans l’en-tête d’un site existant', async () => {
+    const { fixture } = await mount('pick_1');
+    const header: HTMLElement | null = fixture.nativeElement.querySelector('[pageActions]');
+
+    expect(header).toBeNull();
   });
 
-  it('un point sans GPS envoie `null`, jamais un point inventé', async () => {
-    const { fixture, pickups } = await mount('pick_1');
+  it('garde un seul « Ajouter » à la création', async () => {
+    const { fixture } = await mount(undefined);
+    const header: HTMLElement | null = fixture.nativeElement.querySelector('[pageActions]');
 
-    await fixture.componentInstance['submit']();
-
-    expect(pickups.updated[0]?.gps).toBeNull();
+    expect(header?.textContent).toContain('Ajouter');
+    expect(header?.textContent).not.toContain('Enregistrer');
   });
 
-  it('refuse d’envoyer une latitude sans longitude, et le dit', async () => {
+  it('enregistrer les heures n’écrit qu’elles, sur l’adresse ENREGISTRÉE', async () => {
     const { fixture, pickups } = await mount('pick_1');
-    fixture.componentInstance['setGps']('lat', 48.85);
-    fixture.detectChanges();
+    fixture.componentInstance['draft'].update((d) => ({ ...d, label: 'Laboratoire bis' }));
+    const hours: SiteHoursCard = fixture.debugElement.query(
+      By.directive(SiteHoursCard),
+    ).componentInstance;
+    hours['opening'].update((entries) =>
+      entries.map((entry, index) =>
+        index === 0 ? { ...entry, range: { start: '07:00', end: '09:00' } } : entry,
+      ),
+    );
 
-    await fixture.componentInstance['submit']();
+    await hours['save']();
 
-    expect(pickups.updated).toEqual([]);
-    expect((fixture.nativeElement as HTMLElement).textContent).toContain('ET la longitude');
+    expect(pickups.updated).toHaveLength(1);
+    expect(pickups.updated[0]?.label).toBe(LABO.label);
+    expect(pickups.updated[0]?.opening.proPickup).toEqual({ start: '07:00', end: '09:00' });
+  });
+
+  it('enregistrer l’adresse n’écrit pas les heures en cours de saisie', async () => {
+    const { fixture, pickups } = await mount('pick_1');
+    const hours: SiteHoursCard = fixture.debugElement.query(
+      By.directive(SiteHoursCard),
+    ).componentInstance;
+    hours['opening'].update((entries) =>
+      entries.map((entry, index) =>
+        index === 0 ? { ...entry, range: { start: '07:00', end: '09:00' } } : entry,
+      ),
+    );
+    fixture.componentInstance['draft'].update((d) => ({ ...d, label: 'Laboratoire bis' }));
+
+    await fixture.componentInstance['saveIdentity']();
+
+    expect(pickups.updated[0]?.label).toBe('Laboratoire bis');
+    expect(pickups.updated[0]?.opening).toEqual(LABO.opening);
   });
 });

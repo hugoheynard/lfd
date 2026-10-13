@@ -81,6 +81,24 @@ async function fleet(): Promise<VehiclesView> {
   return jsonBody<VehiclesView>(await admin().get(VEHICLES).expect(200));
 }
 
+/**
+ * Fait LIVRER un site, avec son point GPS (exigé pour livrer) : seuls les
+ * sites qui livrent sont candidats au départ depuis le 2026-10-13 (Hugo).
+ */
+async function deliverFrom(id: string, gps = { lat: 45.5, lng: 5.9 }): Promise<void> {
+  await admin()
+    .put(`/admin/sites/${id}/roles`)
+    .send({
+      pickup: true,
+      supply: "on_site",
+      deliveryDeparture: true,
+      transferMode: "integrated",
+      counterSetupMinutes: 0,
+      gps,
+    })
+    .expect(204);
+}
+
 async function addPoint(label: string, extra: Record<string, unknown> = {}): Promise<string> {
   const response = await admin()
     .post("/admin/pickup-addresses")
@@ -188,6 +206,8 @@ describe("le point de départ", () => {
   it("part du point par défaut, puis du point choisi, auteur figé et fait au journal", async () => {
     const labo = await addPoint("Laboratoire", { gps: { lat: 45.57, lng: 5.92 } });
     const boutique = await addPoint("Boutique");
+    await deliverFrom(labo, { lat: 45.57, lng: 5.92 });
+    await deliverFrom(boutique, { lat: 45.56, lng: 5.93 });
 
     const before = await departure();
     expect(before.source).toBe("default");
@@ -198,7 +218,11 @@ describe("le point de départ", () => {
 
     const after = await departure();
     expect(after.source).toBe("explicit");
-    expect(after.point).toMatchObject({ pickupAddressId: boutique, label: "Boutique", gps: null });
+    expect(after.point).toMatchObject({
+      pickupAddressId: boutique,
+      label: "Boutique",
+      gps: { lat: 45.56, lng: 5.93 },
+    });
     expect(await ctx.prisma.deliveryDeparture.findFirst()).toMatchObject({
       pickupAddressId: boutique,
       updatedByStaffId: E2E_STAFF_ID,
@@ -217,16 +241,42 @@ describe("le point de départ", () => {
     expect(await ctx.prisma.deliveryDeparture.count()).toBe(0);
   });
 
-  it("un point choisi puis supprimé retombe sur le défaut, sans adresse inventée", async () => {
+  /**
+   * Avant le 2026-10-13, ce cas supprimait le point choisi et vérifiait le
+   * repli sur le défaut. Il n'est plus atteignable : un site qui livre ne
+   * s'archive pas, et le départ ne perd pas « Livraison » (Hugo). Le repli
+   * reste tenu par `departureViewOf` ; ici, on vérifie la garde qui le rend
+   * inutile.
+   */
+  it("le point choisi ne s'archive pas et ne perd pas « Livraison » (409)", async () => {
     const labo = await addPoint("Laboratoire");
     const boutique = await addPoint("Boutique");
+    await deliverFrom(labo);
+    await deliverFrom(boutique);
     await admin().put(DEPARTURE).send({ pickupAddressId: boutique }).expect(204);
 
-    await admin().delete(`/admin/pickup-addresses/${boutique}`).expect(204);
+    await admin().delete(`/admin/pickup-addresses/${boutique}`).expect(409);
+    const roles = await admin().put(`/admin/sites/${boutique}/roles`).send({
+      pickup: true,
+      supply: "on_site",
+      deliveryDeparture: false,
+      transferMode: "integrated",
+      counterSetupMinutes: 0,
+    });
+    expect(roles.status).toBe(409);
+    expect(JSON.stringify(roles.body)).toContain("Livraison › Point de départ");
 
     const view = await departure();
-    expect(view.source).toBe("default");
-    expect(view.point?.pickupAddressId).toBe(labo);
+    expect(view.point?.pickupAddressId).toBe(boutique);
+  });
+
+  it("ne propose que les sites qui livrent", async () => {
+    const labo = await addPoint("Laboratoire");
+    await addPoint("Boutique");
+    await deliverFrom(labo);
+
+    const view = await departure();
+    expect(view.choices.map((choice) => choice.pickupAddressId)).toEqual([labo]);
   });
 });
 

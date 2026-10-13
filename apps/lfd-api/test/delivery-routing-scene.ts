@@ -53,6 +53,10 @@ export async function seedDeparture(ctx: E2eContext, gps: boolean = true): Promi
       ville: "Chambéry",
       pays: "France",
       isDefault: true,
+      // C'est LE départ : il livre — seuls les sites qui livrent sont
+      // candidats depuis le 2026-10-13 (Hugo). Sans point, c'est une ligne
+      // d'avant la règle, que l'agrégat tolère au chargement.
+      deliveryDeparture: true,
       ...(gps ? { gps: { lat: 45.5646, lng: 5.9178 } } : {}),
     },
   });

@@ -25,9 +25,11 @@ import {
   DeliveryProductsReader,
   DeliveryStepPhotosReader,
   DepartureCandidatesReader,
+  DepartureSiteReader,
   OrderDeliveryHistoryReader,
 } from "../delivery/channels/commerce/index.js";
 import { PrismaOrderDeliveryHistoryReader } from "../delivery/infrastructure/prisma-order-delivery-history.reader.js";
+import { ResolvedDepartureSiteReader } from "../delivery/infrastructure/resolved-departure-site.reader.js";
 
 /**
  * **Le fil de la livraison, relié** — la livraison déclare, le commerce
@@ -59,7 +61,9 @@ import { PrismaOrderDeliveryHistoryReader } from "../delivery/infrastructure/pri
  *
  * Et un fil dans l'AUTRE sens (2026-10-08, DF3) : `OrderDeliveryHistoryReader`
  * — la livraison déclare ET implémente, la comptabilité du commerce lit les
- * arrêts de ses bons pour le dossier de facturation.
+ * arrêts de ses bons pour le dossier de facturation. Et `DepartureSiteReader`
+ * (2026-10-13) : le commerce demande quel site est le départ des tournées,
+ * pour refuser d'y retirer « Livraison ».
  *
  * `@Global` pour la raison des autres fils : le consommateur est `delivery/`,
  * qui ne peut pas importer le module qui fournit le port sans dépendre du
@@ -83,6 +87,7 @@ import { PrismaOrderDeliveryHistoryReader } from "../delivery/infrastructure/pri
       useExisting: CommerceDeliveryAddressPointCorrector,
     },
     { provide: OrderDeliveryHistoryReader, useClass: PrismaOrderDeliveryHistoryReader },
+    { provide: DepartureSiteReader, useClass: ResolvedDepartureSiteReader },
   ],
   exports: [
     DepartureCandidatesReader,
@@ -96,6 +101,7 @@ import { PrismaOrderDeliveryHistoryReader } from "../delivery/infrastructure/pri
     DeliveryAddressPointsReader,
     DeliveryAddressPointCorrector,
     OrderDeliveryHistoryReader,
+    DepartureSiteReader,
   ],
 })
 export class DeliveryFeedModule {}

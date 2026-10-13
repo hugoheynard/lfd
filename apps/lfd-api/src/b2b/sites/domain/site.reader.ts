@@ -1,4 +1,4 @@
-import type { SiteView } from "@lfd/contracts";
+import type { StoredSiteView } from "@lfd/contracts";
 
 /**
  * **Le port de lecture des sites** — l'écran des réglages et la livraison.
@@ -10,8 +10,8 @@ import type { SiteView } from "@lfd/contracts";
  */
 export abstract class SiteReader {
   /** Tous les sites : le défaut en tête, les archivés à la fin. */
-  abstract list(): Promise<readonly SiteView[]>;
+  abstract list(): Promise<readonly StoredSiteView[]>;
 
   /** Un site, archivé ou non ; `null` si l'id n'existe pas. */
-  abstract get(id: string): Promise<SiteView | null>;
+  abstract get(id: string): Promise<StoredSiteView | null>;
 }

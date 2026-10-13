@@ -12,6 +12,8 @@ export {
   DepartureCandidatesReader,
   type DepartureCandidate,
 } from "./departure-candidates.reader.js";
+// Déclaré ET implémenté par la livraison, lu par le commerce (2026-10-13).
+export { DepartureSiteReader } from "./departure-site.reader.js";
 export {
   DeliveryOrdersReader,
   type DeliveryOrderFacts,

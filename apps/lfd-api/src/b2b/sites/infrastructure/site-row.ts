@@ -4,7 +4,7 @@ import {
   type PickupAddressView,
   type PickupOpening,
   pickupOpeningSchema,
-  type SiteView,
+  type StoredSiteView,
 } from "@lfd/contracts";
 
 import type { Prisma } from "../../../platform/database/client/client.js";
@@ -31,9 +31,9 @@ export const SITE_SELECT = {
   discountForB2c: true,
   opening: true,
   gps: true,
-  handsOver: true,
+  pickup: true,
   supply: true,
-  dispatches: true,
+  deliveryDeparture: true,
   archivedAt: true,
   transferMode: true,
   counterSetupMinutes: true,
@@ -80,13 +80,13 @@ export function toPickupView(row: SiteRow): PickupAddressView {
 }
 
 /** Le site tel que l'écran des réglages le lit. */
-export function toSiteView(row: SiteRow): SiteView {
+export function toSiteView(row: SiteRow): StoredSiteView {
   return {
     ...toPickupView(row),
     gps: gpsOf(row.gps),
-    handsOver: row.handsOver,
+    pickup: row.pickup,
     supply: row.supply,
-    dispatches: row.dispatches,
+    deliveryDeparture: row.deliveryDeparture,
     transferMode: row.transferMode,
     counterSetupMinutes: row.counterSetupMinutes,
     pickupColorB2b: row.pickupColorB2b,

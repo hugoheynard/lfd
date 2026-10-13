@@ -1,0 +1,50 @@
+<fold-card surface="sunken" padding="md">
+  <fold-page-section title="Réduction de retrait sur ce site" separator>
+    @if (!readOnly()) {
+      <div sectionActions>
+        <button foldButton size="sm" [disabled]="!canSave()" [loading]="saving()" (click)="save()">
+          Enregistrer la réduction
+        </button>
+      </div>
+    }
+
+    @if (refusal(); as message) {
+      <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+    } @else if (dirty()) {
+      <fold-callout variant="info">Modifiée, pas encore enregistrée.</fold-callout>
+    }
+
+    <lfd-price-alteration-field
+      label="Réduction de retrait"
+      lockedDirection="decrease"
+      noneLabel="Aucune réduction sur ce point"
+      [value]="alteration()"
+      (valueChange)="setDiscount($event)"
+    />
+
+    <!-- Sous la réduction qu'elles qualifient, et grisées sans elle : une case
+         qu'on coche sans réduction ne changerait rien. -->
+    <fold-fieldset
+      legend="La réduction s'applique à"
+      direction="horizontal"
+      [hint]="audiencesDisabled() ? 'Sans réduction, il n’y a rien à attribuer.' : ''"
+    >
+      <fold-checkbox
+        label="B2B"
+        [disabled]="audiencesDisabled() || readOnly()"
+        [checked]="draft().audiences.b2b"
+        (checkedChange)="setAudience('b2b', $event)"
+      />
+      <fold-checkbox
+        label="B2C"
+        [disabled]="audiencesDisabled() || readOnly()"
+        [checked]="draft().audiences.b2c"
+        (checkedChange)="setAudience('b2c', $event)"
+      />
+    </fold-fieldset>
+
+    @if (audienceIssue(); as issue) {
+      <fold-callout variant="warning">{{ issue }}</fold-callout>
+    }
+  </fold-page-section>
+</fold-card>

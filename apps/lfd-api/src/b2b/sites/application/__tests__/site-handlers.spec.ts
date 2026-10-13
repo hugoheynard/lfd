@@ -12,20 +12,21 @@ import { PickupAddressNotFoundError } from "../../../pickup-addresses/domain/pic
 import { SiteColor } from "../../domain/site-color.js";
 import {
   DefaultSiteArchiveError,
-  SiteColorErasedError,
-  SiteColorReservedError,
+  DepartureSiteMustDeliverError,
+  SiteDeliveryDepartureWithoutGpsError,
+  SiteTransferWithoutGpsError,
   SiteTransferWithoutHandoverError,
 } from "../../domain/site-errors.js";
 import { SetSiteColorsCommand } from "../set-site-colors.command.js";
 import { SetSiteColorsHandler } from "../set-site-colors.handler.js";
 import { SetSiteRolesCommand } from "../set-site-roles.command.js";
 import { SetSiteRolesHandler } from "../set-site-roles.handler.js";
-import { InMemorySites, storedSite } from "./site-doubles.js";
+import { FixedDepartureSite, InMemorySites, PLACE, storedSite } from "./site-doubles.js";
 
 const ROLES = {
-  handsOver: true,
+  pickup: true,
   supply: "transfer",
-  dispatches: false,
+  deliveryDeparture: false,
   transferMode: "integrated",
   counterSetupMinutes: 15,
 } as const;
@@ -37,6 +38,8 @@ const NO_COLORS = {
   deliveryColorB2c: null,
 } as const;
 
+const GPS = { lat: 45.45, lng: 6.98 };
+
 /** Le fournil (défaut) et le village, en base. */
 function twoSites(): InMemorySites {
   return new InMemorySites(
@@ -45,14 +48,22 @@ function twoSites(): InMemorySites {
   );
 }
 
+/** Le village AVEC son point GPS : celui qu'il faut pour un transfert. */
+function locatedVillage(): InMemorySites {
+  return new InMemorySites(storedSite("site_village", { place: { ...PLACE, gps: GPS } }));
+}
+
 describe("SetSiteRolesHandler", () => {
   it("enregistre les rôles et les journalise", async () => {
-    const sites = twoSites();
+    const sites = locatedVillage();
     const events = new RecordingPublisher();
 
-    await new SetSiteRolesHandler(sites, events, new DirectUnitOfWork()).execute(
-      new SetSiteRolesCommand("site_village", ROLES),
-    );
+    await new SetSiteRolesHandler(
+      sites,
+      events,
+      new DirectUnitOfWork(),
+      new FixedDepartureSite(),
+    ).execute(new SetSiteRolesCommand("site_village", ROLES));
 
     expect(sites.stateOf("site_village")?.roles).toEqual(ROLES);
     expect(events.factTypes()).toEqual(["pickup_address.roles_set"]);
@@ -68,30 +79,148 @@ describe("SetSiteRolesHandler", () => {
     const events = new RecordingPublisher();
 
     await expect(
-      new SetSiteRolesHandler(sites, events, new DirectUnitOfWork()).execute(
-        new SetSiteRolesCommand("site_village", { ...ROLES, handsOver: false }),
-      ),
+      new SetSiteRolesHandler(
+        sites,
+        events,
+        new DirectUnitOfWork(),
+        new FixedDepartureSite(),
+      ).execute(new SetSiteRolesCommand("site_village", { ...ROLES, pickup: false })),
     ).rejects.toBeInstanceOf(SiteTransferWithoutHandoverError);
     expect(sites.saved).toEqual([]);
     expect(events.traced).toHaveLength(0);
   });
 
+  it("refuse de faire expédier un site sans point GPS, sans rien écrire ni journaliser", async () => {
+    const sites = twoSites();
+    const events = new RecordingPublisher();
+
+    await expect(
+      new SetSiteRolesHandler(
+        sites,
+        events,
+        new DirectUnitOfWork(),
+        new FixedDepartureSite(),
+      ).execute(
+        new SetSiteRolesCommand("site_village", {
+          ...ROLES,
+          supply: "on_site",
+          deliveryDeparture: true,
+        }),
+      ),
+    ).rejects.toBeInstanceOf(SiteDeliveryDepartureWithoutGpsError);
+    expect(sites.saved).toEqual([]);
+    expect(events.traced).toHaveLength(0);
+  });
+
+  it("fait expédier un site qui a son point GPS", async () => {
+    const sites = new InMemorySites(storedSite("site_village", { place: { ...PLACE, gps: GPS } }));
+    await new SetSiteRolesHandler(
+      sites,
+      new RecordingPublisher(),
+      new DirectUnitOfWork(),
+      new FixedDepartureSite(),
+    ).execute(
+      new SetSiteRolesCommand("site_village", {
+        ...ROLES,
+        supply: "on_site",
+        deliveryDeparture: true,
+      }),
+    );
+    expect(sites.stateOf("site_village")?.roles.deliveryDeparture).toBe(true);
+  });
+
+  it("refuse de servir par transfert un site sans point GPS (Hugo, 2026-10-13)", async () => {
+    const sites = twoSites();
+    await expect(
+      new SetSiteRolesHandler(
+        sites,
+        new RecordingPublisher(),
+        new DirectUnitOfWork(),
+        new FixedDepartureSite(),
+      ).execute(new SetSiteRolesCommand("site_village", ROLES)),
+    ).rejects.toBeInstanceOf(SiteTransferWithoutGpsError);
+    expect(sites.saved).toEqual([]);
+  });
+
+  it("sert par transfert en posant le point dans la même écriture", async () => {
+    const sites = twoSites();
+    await new SetSiteRolesHandler(
+      sites,
+      new RecordingPublisher(),
+      new DirectUnitOfWork(),
+      new FixedDepartureSite(),
+    ).execute(new SetSiteRolesCommand("site_village", { ...ROLES, gps: GPS }));
+    expect(sites.stateOf("site_village")?.place.gps).toEqual(GPS);
+  });
+
+  it("refuse de retirer « Livraison » au départ des tournées (Hugo, 2026-10-13)", async () => {
+    const sites = new InMemorySites(
+      storedSite("site_bakery", {
+        place: { ...PLACE, gps: GPS },
+        roles: { ...ROLES, supply: "on_site", deliveryDeparture: true },
+      }),
+    );
+    const departure = new FixedDepartureSite("site_bakery");
+    await expect(
+      new SetSiteRolesHandler(
+        sites,
+        new RecordingPublisher(),
+        new DirectUnitOfWork(),
+        departure,
+      ).execute(new SetSiteRolesCommand("site_bakery", { ...ROLES, supply: "on_site" })),
+    ).rejects.toBeInstanceOf(DepartureSiteMustDeliverError);
+    expect(sites.saved).toEqual([]);
+  });
+
+  it("laisse retirer « Livraison » à un site qui n'est pas le départ", async () => {
+    const sites = new InMemorySites(
+      storedSite("site_village", {
+        place: { ...PLACE, gps: GPS },
+        roles: { ...ROLES, supply: "on_site", deliveryDeparture: true },
+      }),
+    );
+    await new SetSiteRolesHandler(
+      sites,
+      new RecordingPublisher(),
+      new DirectUnitOfWork(),
+      new FixedDepartureSite("site_bakery"),
+    ).execute(new SetSiteRolesCommand("site_village", { ...ROLES, supply: "on_site" }));
+    expect(sites.stateOf("site_village")?.roles.deliveryDeparture).toBe(false);
+  });
+
+  it("ne demande le départ à la livraison que si « Livraison » est retirée", async () => {
+    const departure = new FixedDepartureSite("site_village");
+    await new SetSiteRolesHandler(
+      locatedVillage(),
+      new RecordingPublisher(),
+      new DirectUnitOfWork(),
+      departure,
+    ).execute(new SetSiteRolesCommand("site_village", ROLES));
+    expect(departure.reads).toBe(0);
+  });
+
   it("un site inconnu est un 404", async () => {
     await expect(
-      new SetSiteRolesHandler(twoSites(), new RecordingPublisher(), new DirectUnitOfWork()).execute(
-        new SetSiteRolesCommand("site_absent", ROLES),
-      ),
+      new SetSiteRolesHandler(
+        twoSites(),
+        new RecordingPublisher(),
+        new DirectUnitOfWork(),
+        new FixedDepartureSite(),
+      ).execute(new SetSiteRolesCommand("site_absent", ROLES)),
     ).rejects.toBeInstanceOf(PickupAddressNotFoundError);
   });
 });
 
 describe("SetSiteColorsHandler", () => {
-  function paint(sites: InMemorySites, colors: typeof NO_COLORS | Record<string, string | null>) {
-    return new SetSiteColorsHandler(
-      sites,
-      new RecordingPublisher(),
-      new DirectUnitOfWork(),
-    ).execute(new SetSiteColorsCommand("site_village", { ...NO_COLORS, ...colors }));
+  async function paint(
+    sites: InMemorySites,
+    colors: typeof NO_COLORS | Record<string, string | null>,
+  ): Promise<RecordingPublisher> {
+    const events = new RecordingPublisher();
+    await new SetSiteColorsHandler(sites, events, new DirectUnitOfWork()).execute(
+      new SetSiteColorsCommand("site_village", { ...NO_COLORS, ...colors }),
+    );
+    return events;
   }
 
   it("normalise en minuscules et enregistre", async () => {
@@ -100,15 +229,13 @@ describe("SetSiteColorsHandler", () => {
     expect(sites.stateOf("site_village")?.colors.pickupB2c?.hex).toBe("#9ca3af");
   });
 
-  it("refuse le vert des surligneurs avant de charger le site", async () => {
+  it("enregistre un vert : aucune teinte n'est réservée (Hugo, 2026-10-13)", async () => {
     const sites = twoSites();
-    await expect(paint(sites, { pickupColorB2b: "#16a34a" })).rejects.toBeInstanceOf(
-      SiteColorReservedError,
-    );
-    expect(sites.saved).toEqual([]);
+    await paint(sites, { pickupColorB2b: "#16a34a" });
+    expect(sites.stateOf("site_village")?.colors.pickupB2b?.hex).toBe("#16a34a");
   });
 
-  it("refuse d'effacer une couleur posée", async () => {
+  it("retire une couleur posée et le journal le dit (Hugo, 2026-10-13)", async () => {
     const sites = new InMemorySites(
       storedSite("site_village", {
         colors: {
@@ -119,7 +246,12 @@ describe("SetSiteColorsHandler", () => {
         },
       }),
     );
-    await expect(paint(sites, NO_COLORS)).rejects.toBeInstanceOf(SiteColorErasedError);
+    const events = await paint(sites, NO_COLORS);
+    expect(sites.stateOf("site_village")?.colors.pickupB2b).toBeNull();
+    expect(events.traced[0]?.journalFact().payload).toMatchObject({
+      pickupColorB2b: null,
+      removed: ["pickupColorB2b"],
+    });
   });
 });
 

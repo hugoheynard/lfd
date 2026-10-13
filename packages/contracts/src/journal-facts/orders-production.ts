@@ -393,14 +393,23 @@ export const ORDERS_PRODUCTION_FACTS = {
   "pickup_address.roles_set": fact(
     payload({
       subjectLabel: subjectLabel(),
-      handsOver: z.boolean(),
+      pickup: z.boolean(),
       supply: z.enum(["on_site", "transfer"]),
-      dispatches: z.boolean(),
+      deliveryDeparture: z.boolean(),
       transferMode: z.enum(["integrated", "dedicated"]),
       counterSetupMinutes: count(),
+      /**
+       * Le point GPS, saisi avec les rôles depuis le 2026-10-13 (Hugo).
+       * Absent des faits écrits avant ce jour.
+       */
+      gps: z.object({ lat: z.number(), lng: z.number() }).nullable().optional(),
     }),
   ),
-  /** Les couleurs de la logistique, `#rrggbb` ou `null` tant qu'elles ne sont pas saisies. */
+  /**
+   * Les couleurs de la logistique, `#rrggbb` ou `null` = aucune. `removed`
+   * nomme celles qui viennent d'être RETIRÉES (Hugo, 2026-10-13 : on peut
+   * revenir à « pas de couleur ») ; absent des faits antérieurs.
+   */
   "pickup_address.colors_set": fact(
     payload({
       subjectLabel: subjectLabel(),
@@ -408,6 +417,9 @@ export const ORDERS_PRODUCTION_FACTS = {
       pickupColorB2c: z.string().nullable(),
       deliveryColorB2b: z.string().nullable(),
       deliveryColorB2c: z.string().nullable(),
+      removed: z
+        .array(z.enum(["pickupColorB2b", "pickupColorB2c", "deliveryColorB2b", "deliveryColorB2c"]))
+        .optional(),
     }),
   ),
   /** Le sujet est le point de retrait : `subjectLabel` et `label` disent son nom. */

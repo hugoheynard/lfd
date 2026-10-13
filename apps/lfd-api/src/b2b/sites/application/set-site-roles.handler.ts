@@ -2,6 +2,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
+import { DepartureSiteReader } from "../../../delivery/channels/commerce/index.js";
 import { PickupAddressNotFoundError } from "../../pickup-addresses/domain/pickup-errors.js";
 import { SiteRolesSetEvent } from "../domain/site.events.js";
 import { SiteRepository } from "../domain/site.repository.js";
@@ -18,15 +19,19 @@ export class SetSiteRolesHandler implements ICommandHandler<SetSiteRolesCommand,
     private readonly sites: SiteRepository,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly departure: DepartureSiteReader,
   ) {}
 
   /**
    * @throws {PickupAddressNotFoundError} l'`id` n'existe pas.
    * @throws {ArchivedSiteError} le site est archivé.
    * @throws {SiteTransferWithoutHandoverError}
-   * @throws {SiteDispatchesFromTransferError}
+   * @throws {SiteDeliveryDepartureFromTransferError}
    * @throws {SiteCounterSetupError}
    * @throws {DefaultSiteMustHandOverError}
+   * @throws {SiteDeliveryDepartureWithoutGpsError} « Livraison » cochée sans point, ou point effacé.
+   * @throws {SiteTransferWithoutGpsError} « par transfert » sans point, ou point effacé.
+   * @throws {DepartureSiteMustDeliverError} « Livraison » retirée au départ des tournées.
    */
   async execute(command: SetSiteRolesCommand): Promise<void> {
     await this.uow.run(async () => {
@@ -34,10 +39,19 @@ export class SetSiteRolesHandler implements ICommandHandler<SetSiteRolesCommand,
       if (site === null) {
         throw new PickupAddressNotFoundError(command.siteId);
       }
-      site.assignRoles(command.payload);
+      const { gps, ...roles } = command.payload;
+      // La livraison ne se demande que si « Livraison » est retirée.
+      const stops = site.snapshot().roles.deliveryDeparture && !roles.deliveryDeparture;
+      const isDeparture = stops && (await this.departure.currentSiteId()) === site.id;
+      site.assignRoles(roles, gps, isDeparture);
       await this.sites.save(site);
       await this.events.publishTraced(
-        new SiteRolesSetEvent(site.id, site.label, site.snapshot().roles),
+        new SiteRolesSetEvent(
+          site.id,
+          site.label,
+          site.snapshot().roles,
+          site.snapshot().place.gps,
+        ),
       );
     });
   }

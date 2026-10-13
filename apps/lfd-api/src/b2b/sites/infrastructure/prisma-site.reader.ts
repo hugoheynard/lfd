@@ -1,4 +1,4 @@
-import type { SiteView } from "@lfd/contracts";
+import type { StoredSiteView } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
@@ -12,7 +12,7 @@ export class PrismaSiteReader extends SiteReader {
     super();
   }
 
-  async list(): Promise<readonly SiteView[]> {
+  async list(): Promise<readonly StoredSiteView[]> {
     const rows = await this.prisma.site.findMany({
       orderBy: [
         { archivedAt: { sort: "asc", nulls: "first" } },
@@ -24,7 +24,7 @@ export class PrismaSiteReader extends SiteReader {
     return rows.map(toSiteView);
   }
 
-  async get(id: string): Promise<SiteView | null> {
+  async get(id: string): Promise<StoredSiteView | null> {
     const row = await this.prisma.site.findUnique({ where: { id }, select: SITE_SELECT });
     return row === null ? null : toSiteView(row);
   }

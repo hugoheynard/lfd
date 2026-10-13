@@ -25,9 +25,9 @@ const LABO: SiteView = {
   discountAudiences: { b2b: true, b2c: false },
   opening: { publicOpening: null, proPickup: null },
   gps: null,
-  handsOver: true,
+  pickup: true,
   supply: 'on_site',
-  dispatches: true,
+  deliveryDeparture: true,
   transferMode: 'integrated',
   counterSetupMinutes: 0,
   pickupColorB2b: null,
@@ -35,6 +35,7 @@ const LABO: SiteView = {
   deliveryColorB2b: null,
   deliveryColorB2c: null,
   archivedAt: null,
+  isDeparture: false,
 };
 
 async function mount(points: readonly SiteView[] | Error): Promise<ComponentFixture<SitesPage>> {
@@ -95,7 +96,7 @@ describe('SitesPage', () => {
     const fixture = await mount([LABO, archived]);
     const text: string = fixture.nativeElement.textContent;
 
-    expect(text).toContain('Expédie');
+    expect(text).toContain('Livraison');
     expect(text).toContain('Archivé');
   });
 });
@@ -105,14 +106,14 @@ describe('roleLabels', () => {
     const village: SiteView = {
       ...LABO,
       supply: 'transfer',
-      dispatches: false,
+      deliveryDeparture: false,
       transferMode: 'dedicated',
     };
 
-    expect(roleLabels(village)).toEqual(['Remet', 'Transfert dédié']);
+    expect(roleLabels(village)).toEqual(['Retrait', 'Transfert dédié']);
   });
 
   it('ne dit rien d’un rôle absent', () => {
-    expect(roleLabels({ ...LABO, handsOver: false })).toEqual(['Expédie']);
+    expect(roleLabels({ ...LABO, pickup: false })).toEqual(['Livraison']);
   });
 });

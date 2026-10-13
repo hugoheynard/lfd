@@ -179,6 +179,14 @@ export const SITE_TRANSFER_MODE = domain('mode du transfert vers un site', {
   dedicated: 'Tournée dédiée',
 });
 
+/** Une couleur de site RETIRÉE (`removed` de `colors_set`, Hugo 2026-10-13). */
+export const SITE_COLOR_FIELD = domain('couleur d’un site', {
+  pickupColorB2b: 'Couleur du retrait pro',
+  pickupColorB2c: 'Couleur du retrait particulier',
+  deliveryColorB2b: 'Couleur de la livraison pro',
+  deliveryColorB2c: 'Couleur de la livraison particulier',
+});
+
 /** Un contenant du colisage (K2b) : un bac de livraison, ou un sac à emporter. */
 export const CONTAINER_NATURE = domain('nature d’un contenant', {
   bin: 'Bac',
@@ -232,6 +240,7 @@ export const ORDERS_VALUES: ValueFamily = {
     WINDOW_MODE,
     SITE_SUPPLY,
     SITE_TRANSFER_MODE,
+    SITE_COLOR_FIELD,
     CONTAINER_NATURE,
     PRODUCTION_CLOSE_MODE,
     DOSSIER_RECIPIENT_KIND,

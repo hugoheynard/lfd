@@ -19,8 +19,8 @@ import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
-  FoldCalloutComponent,
   FoldCardComponent,
+  FoldCalloutComponent,
   FoldEmptyStateComponent,
   FoldIconComponent,
   FoldInlineConfirmComponent,
@@ -66,8 +66,8 @@ const PREVIEW_DAYS = 7;
   imports: [
     FoldBadgeComponent,
     FoldButtonComponent,
-    FoldCalloutComponent,
     FoldCardComponent,
+    FoldCalloutComponent,
     FoldEmptyStateComponent,
     FoldIconComponent,
     FoldInlineConfirmComponent,
@@ -252,7 +252,7 @@ export class PublicSlotsCard {
         rules: this.rules().map(withoutId),
         closures: this.closures().map(withoutId),
       });
-      this.notify.success('Créneaux publics enregistrés.');
+      this.notify.success('Créneaux publics de retrait enregistrés.');
       await this.load(this.pickupId());
     } catch (error) {
       this.refusal.set(

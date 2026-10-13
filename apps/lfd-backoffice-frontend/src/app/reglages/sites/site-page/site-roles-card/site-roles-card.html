@@ -1,28 +1,42 @@
 <fold-card>
   <fold-page-section title="Rôles" separator>
     <span sectionSubtitle
-      >Ce qui se passe dans ce lieu : on y remet, on y est servi, on en part.</span
+      >Ce qui se passe dans ce lieu : on y remet, on y est servi, on en part. Chaque couleur se
+      règle sous la capacité qu'elle colore.</span
     >
 
-    @if (!readOnly()) {
-      <div sectionActions class="sr-save">
+    <div sectionActions class="sr-save">
+      @for (badge of badges(); track badge) {
+        <fold-badge [content]="badge" variant="info" />
+      }
+      @if (!readOnly()) {
         <button foldButton size="sm" [disabled]="!canSave()" [loading]="saving()" (click)="save()">
-          Enregistrer les rôles
+          Enregistrer
         </button>
-      </div>
-    }
+      }
+    </div>
 
     @if (refusal(); as message) {
       <fold-callout variant="alert" announce>{{ message }}</fold-callout>
     }
 
     <fold-checkbox
-      label="Remet des commandes"
+      label="Retrait"
       hint="proposé au retrait, onglet au comptoir, créneaux publics, réduction de retrait"
       [disabled]="readOnly()"
-      [checked]="draft().handsOver"
-      (checkedChange)="set('handsOver', $event)"
+      [checked]="draft().pickup"
+      (checkedChange)="set('pickup', $event)"
     />
+    <!-- Décochée, la capacité masque ses couleurs sans les effacer. -->
+    @if (draft().pickup) {
+      <app-site-color-fields
+        [slots]="pickupSlots"
+        [draft]="colors()"
+        [issues]="colorIssues()"
+        [readOnly]="readOnly()"
+        (colorChange)="setColor($event)"
+      />
+    }
 
     <fold-listbox
       label="Approvisionné"
@@ -42,15 +56,10 @@
         [value]="draft().transferMode"
         (selectionChange)="set('transferMode', $event)"
       />
+      @if (gpsPlace() === 'transfer') {
+        <ng-container [ngTemplateOutlet]="gpsFields" />
+      }
     }
-
-    <fold-checkbox
-      label="Expédie"
-      hint="les livraisons et les transferts peuvent partir d'ici ; il porte les couleurs de livraison"
-      [disabled]="readOnly()"
-      [checked]="draft().dispatches"
-      (checkedChange)="set('dispatches', $event)"
-    />
 
     <fold-number-input
       label="Mise en place au comptoir (minutes)"
@@ -63,8 +72,73 @@
       (valueChange)="set('counterSetupMinutes', $event ?? 0)"
     />
 
+    <fold-checkbox
+      label="Livraison"
+      hint="les livraisons et les transferts peuvent partir d'ici ; il porte les couleurs de livraison"
+      [disabled]="readOnly()"
+      [checked]="draft().deliveryDeparture"
+      (checkedChange)="set('deliveryDeparture', $event)"
+    />
+    <!-- Le départ des tournées, tel que la livraison le résout (Hugo,
+         2026-10-13) : il se CHOISIT dans Livraison › Point de départ. -->
+    @if (site().isDeparture) {
+      <div>
+        <fold-badge content="Départ des tournées" variant="accent" />
+      </div>
+    }
+    @if (draft().deliveryDeparture) {
+      @if (gpsPlace() === 'delivery') {
+        <ng-container [ngTemplateOutlet]="gpsFields" />
+      }
+
+      <app-site-color-fields
+        [slots]="deliverySlots"
+        [draft]="colors()"
+        [issues]="colorIssues()"
+        [closed]="closed()"
+        [readOnly]="readOnly()"
+        (colorChange)="setColor($event)"
+      />
+    }
+
     @for (issue of issues(); track issue) {
       <fold-callout variant="warning">{{ issue }}</fold-callout>
     }
   </fold-page-section>
 </fold-card>
+
+<ng-template #gpsFields>
+  <!-- Le point GPS : UNE donnée, saisie sous le premier rôle qui l'exige
+       (« par transfert », puis « Livraison ») et nulle part ailleurs (Hugo,
+       2026-10-13). -->
+  <div class="sr-gps">
+    <fold-number-input
+      label="Latitude"
+      optional
+      [min]="-90"
+      [max]="90"
+      [step]="0.000001"
+      [readOnly]="readOnly()"
+      [value]="gps().lat"
+      (valueChange)="setGps('lat', $event)"
+    />
+    <fold-number-input
+      label="Longitude"
+      optional
+      [min]="-180"
+      [max]="180"
+      [step]="0.000001"
+      [readOnly]="readOnly()"
+      [value]="gps().lng"
+      (valueChange)="setGps('lng', $event)"
+    />
+  </div>
+  @if (gpsIssue(); as issue) {
+    <fold-callout variant="warning">{{ issue }}</fold-callout>
+  }
+  @if (gpsNotice(); as notice) {
+    <fold-callout [variant]="notice.blocking ? 'warning' : 'info'">{{
+      notice.message
+    }}</fold-callout>
+  }
+</ng-template>

@@ -1,0 +1,60 @@
+@for (slot of slots(); track slot.key) {
+  <fold-fieldset [legend]="slot.label">
+    <div class="sc-row">
+      <!-- La pastille : la couleur telle qu'elle sera vue, seulement si elle
+           est bien formée. Vide sinon. -->
+      <span
+        class="sc-swatch"
+        role="img"
+        [attr.aria-label]="swatch(slot.key) ? 'Aperçu ' + swatch(slot.key) : 'Pas de couleur'"
+        [style.background]="swatch(slot.key)"
+      ></span>
+
+      <!-- fold n'a pas de sélecteur de couleur (fold-ng.d.ts relu le
+           2026-10-13) : le natif, encadré par le fieldset fold. -->
+      @if (!locked(slot.key)) {
+        <input
+          #picker
+          type="color"
+          class="sc-picker"
+          [attr.aria-label]="'Choisir la ' + slot.label"
+          [value]="pickerValue(slot.key)"
+          (input)="change(slot.key, picker.value)"
+        />
+      }
+
+      <fold-input
+        class="sc-hex"
+        [ariaLabel]="slot.label + ', code hexadécimal'"
+        placeholder="#rrggbb"
+        [readOnly]="locked(slot.key)"
+        [value]="draft()[slot.key] ?? ''"
+        (valueChange)="change(slot.key, $event)"
+      />
+
+      <!-- Le sélecteur natif ne sait pas être vide : « Aucune couleur » est
+           un geste à part, et l'absence se dit en toutes lettres dessous. -->
+      @if (!locked(slot.key) && draft()[slot.key] !== null) {
+        <button
+          foldButton
+          emphasis="outline"
+          size="sm"
+          type="button"
+          (click)="change(slot.key, null)"
+        >
+          Aucune couleur
+        </button>
+      }
+    </div>
+
+    @if (closed()[slot.key]; as reason) {
+      <p class="sc-said">{{ reason }}</p>
+    }
+    @if (draft()[slot.key] === null) {
+      <p class="sc-said">Aucune couleur.</p>
+    }
+    @if (issues()[slot.key]; as issue) {
+      <fold-callout variant="warning">{{ issue }}</fold-callout>
+    }
+  </fold-fieldset>
+}

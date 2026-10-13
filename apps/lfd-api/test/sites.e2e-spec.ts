@@ -39,9 +39,9 @@ const place = (label: string): Record<string, unknown> => ({
 });
 
 const ROLES = {
-  handsOver: true,
+  pickup: true,
   supply: "on_site",
-  dispatches: false,
+  deliveryDeparture: false,
   transferMode: "integrated",
   counterSetupMinutes: 0,
 } as const;
@@ -55,6 +55,15 @@ const NO_COLORS = {
 
 async function create(label: string): Promise<string> {
   const response = await staff().post("/admin/sites").send(place(label)).expect(201);
+  return jsonBody<CreatedPickupResponse>(response).id;
+}
+
+/** Un site avec son point GPS : celui qu'il faut pour expédier. */
+async function createWithGps(label: string): Promise<string> {
+  const response = await staff()
+    .post("/admin/sites")
+    .send({ ...place(label), gps: { lat: 45.45, lng: 6.98 } })
+    .expect(201);
   return jsonBody<CreatedPickupResponse>(response).id;
 }
 
@@ -80,7 +89,7 @@ describe("admin/sites — rôles", () => {
 
   it("enregistre un site servi par transfert, et le journalise", async () => {
     await create("Fournil");
-    const village = await create("Val Village");
+    const village = await createWithGps("Val Village");
 
     await staff()
       .put(`/admin/sites/${village}/roles`)
@@ -102,22 +111,68 @@ describe("admin/sites — rôles", () => {
     const village = await create("Val Village");
     const response = await staff()
       .put(`/admin/sites/${village}/roles`)
-      .send({ ...ROLES, supply: "transfer", handsOver: false });
+      .send({ ...ROLES, supply: "transfer", pickup: false });
     expect(response.status).toBe(400);
   });
 
   it("un fournil qui ne remet pas quitte la liste publique, pas l'écran des sites", async () => {
     await create("Val Village");
-    const bakery = await create("Fournil");
+    const bakery = await createWithGps("Fournil");
 
     await staff()
       .put(`/admin/sites/${bakery}/roles`)
-      .send({ ...ROLES, handsOver: false, dispatches: true })
+      .send({ ...ROLES, pickup: false, deliveryDeparture: true })
       .expect(204);
 
     expect(await publicLabels()).toEqual(["Val Village"]);
     const all = jsonBody<readonly SiteView[]>(await staff().get("/admin/sites").expect(200));
     expect(all.map((s) => s.label)).toEqual(["Val Village", "Fournil"]);
+  });
+});
+
+describe("admin/sites — un site qui expédie a un point GPS (Hugo, 2026-10-13)", () => {
+  it("refuse (409) de cocher « Livraison » sans point GPS, et n'écrit rien", async () => {
+    const bakery = await create("Fournil");
+    const response = await staff()
+      .put(`/admin/sites/${bakery}/roles`)
+      .send({ ...ROLES, deliveryDeparture: true });
+    expect(response.status).toBe(409);
+    expect(JSON.stringify(response.body)).toContain("point GPS");
+    expect((await site(bakery)).deliveryDeparture).toBe(false);
+  });
+
+  it("refuse (409) de servir par transfert un site sans point GPS, en disant où le saisir", async () => {
+    const village = await create("Val Village");
+    const response = await staff()
+      .put(`/admin/sites/${village}/roles`)
+      .send({ ...ROLES, supply: "transfer" });
+    expect(response.status).toBe(409);
+    expect(JSON.stringify(response.body)).toContain("Approvisionné par transfert");
+    expect((await site(village)).supply).toBe("on_site");
+  });
+
+  it("pose le point AVEC « Livraison », en une seule écriture", async () => {
+    const bakery = await create("Fournil");
+    await staff()
+      .put(`/admin/sites/${bakery}/roles`)
+      .send({ ...ROLES, deliveryDeparture: true, gps: { lat: 45.45, lng: 6.98 } })
+      .expect(204);
+    const stored = await site(bakery);
+    expect(stored.deliveryDeparture).toBe(true);
+    expect(stored.gps).toEqual({ lat: 45.45, lng: 6.98 });
+  });
+
+  it("refuse (409) d'effacer le point d'un site qui expédie", async () => {
+    const bakery = await createWithGps("Fournil");
+    await staff()
+      .put(`/admin/sites/${bakery}/roles`)
+      .send({ ...ROLES, deliveryDeparture: true })
+      .expect(204);
+    const response = await staff()
+      .put(`/admin/sites/${bakery}/roles`)
+      .send({ ...ROLES, deliveryDeparture: true, gps: null });
+    expect(response.status).toBe(409);
+    expect((await site(bakery)).gps).toEqual({ lat: 45.45, lng: 6.98 });
   });
 });
 
@@ -131,23 +186,25 @@ describe("admin/sites — couleurs libres", () => {
     expect((await site(id)).pickupColorB2c).toBe("#9ca3af");
   });
 
-  it("refuse (400) le vert des surligneurs, en disant pourquoi", async () => {
+  it("accepte un vert : les couleurs sont entièrement libres (Hugo, 2026-10-13)", async () => {
     const id = await create("Val Village");
-    const response = await staff()
+    await staff()
       .put(`/admin/sites/${id}/couleurs`)
-      .send({ ...NO_COLORS, pickupColorB2b: "#16a34a" });
-    expect(response.status).toBe(400);
-    expect(JSON.stringify(response.body)).toContain("surligneurs OK / KO");
+      .send({ ...NO_COLORS, pickupColorB2b: "#16a34a", deliveryColorB2c: "#dc2626" })
+      .expect(204);
+    const stored = await site(id);
+    expect(stored.pickupColorB2b).toBe("#16a34a");
+    expect(stored.deliveryColorB2c).toBe("#dc2626");
   });
 
-  it("refuse (409) d'effacer une couleur posée", async () => {
+  it("revient à « pas de couleur » : une couleur posée s'efface (Hugo, 2026-10-13)", async () => {
     const id = await create("Val Village");
     await staff()
       .put(`/admin/sites/${id}/couleurs`)
       .send({ ...NO_COLORS, deliveryColorB2b: "#2563eb" })
       .expect(204);
-    const response = await staff().put(`/admin/sites/${id}/couleurs`).send(NO_COLORS);
-    expect(response.status).toBe(409);
+    await staff().put(`/admin/sites/${id}/couleurs`).send(NO_COLORS).expect(204);
+    expect((await site(id)).deliveryColorB2b).toBeNull();
   });
 
   it("la base refuse une forme hors `#rrggbb` même sans l'agrégat (CHECK)", async () => {
@@ -173,10 +230,10 @@ describe("admin/sites — archiver", () => {
 
   it("refuse (409) d'archiver le site qui expédie", async () => {
     await create("Val Village");
-    const bakery = await create("Fournil");
+    const bakery = await createWithGps("Fournil");
     await staff()
       .put(`/admin/sites/${bakery}/roles`)
-      .send({ ...ROLES, dispatches: true })
+      .send({ ...ROLES, deliveryDeparture: true })
       .expect(204);
 
     const response = await staff().post(`/admin/sites/${bakery}/archive`);

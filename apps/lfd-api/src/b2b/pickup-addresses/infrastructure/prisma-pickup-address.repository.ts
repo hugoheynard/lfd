@@ -6,7 +6,7 @@ import { SITE_SELECT, toPickupView } from "../../sites/infrastructure/site-row.j
 import { PickupAddressRepository } from "../domain/pickup-address.repository.js";
 
 /** Un site qu'on peut choisir pour un retrait : actif, et qui remet. */
-const OFFERED = { archivedAt: null, handsOver: true } as const;
+const OFFERED = { archivedAt: null, pickup: true } as const;
 
 /**
  * Adaptateur Prisma des points de retrait proposés. Lecture seule : les sites

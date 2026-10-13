@@ -31,7 +31,7 @@ export class RemovePickupAddressHandler implements ICommandHandler<
   /**
    * @throws {PickupAddressNotFoundError} l'`id` n'existe pas.
    * @throws {DefaultSiteArchiveError} c'est le site par défaut.
-   * @throws {DispatchingSiteArchiveError} les livraisons en partent.
+   * @throws {DeliveryDepartureSiteArchiveError} les livraisons en partent.
    * @throws {ArchivedSiteError} il est déjà archivé.
    */
   async execute(command: RemovePickupAddressCommand): Promise<void> {

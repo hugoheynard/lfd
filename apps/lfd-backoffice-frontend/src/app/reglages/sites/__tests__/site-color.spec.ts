@@ -3,9 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { normalizeSiteColor, siteColorIssue } from '../site-color';
 
 /**
- * **La teinte d'une couleur de site, jugée à la saisie** — la copie front de
- * `SiteColor` (serveur). Les cas sont ceux de la demande d'origine : bleu,
- * jaune, orange, gris permis ; vert, rouge, rose refusés.
+ * **La forme d'une couleur de site, jugée à la saisie** — la copie front de
+ * `SiteColor` (serveur). Toute teinte passe, vert et rouge compris (Hugo,
+ * 2026-10-13 : couleurs libres) ; seule la forme `#rrggbb` est jugée.
  */
 describe('siteColorIssue', () => {
   it.each(['#0000ff', '#ffcc00', '#ff8000', '#808080', '#ff00ff', '#FFCC00'])(
@@ -15,19 +15,12 @@ describe('siteColorIssue', () => {
     },
   );
 
-  it.each([
-    ['#00ff00', 'le vert'],
-    ['#2e8b57', 'un vert de mer'],
-    ['#ff0000', 'le rouge'],
-    ['#ff69b4', 'le rose'],
-    ['#e6194b', 'un rouge framboise'],
-  ])('refuse %s (%s), réservé aux surligneurs', (color) => {
-    expect(siteColorIssue(color)).toBe('reserved');
-  });
-
-  it('laisse passer un gris à peine verdâtre : sous le seuil de saturation', () => {
-    expect(siteColorIssue('#8a9a8a')).toBeNull();
-  });
+  it.each(['#00ff00', '#2e8b57', '#ff0000', '#ff69b4'])(
+    'laisse passer %s : aucune teinte réservée (Hugo, 2026-10-13)',
+    (color) => {
+      expect(siteColorIssue(color)).toBeNull();
+    },
+  );
 
   it.each(['bleu', '#fc0', '#ffcc0', '', '#gggggg'])(
     'dit que « %s » n’est pas #rrggbb',

@@ -14,8 +14,9 @@ function colorOf(value: string | null): SiteColor | null {
 
 /**
  * Handler **staff** : règle les couleurs de la logistique d'un site. Chaque
- * couleur est jugée par `SiteColor` (forme, teintes OK / KO refusées) ;
- * l'agrégat refuse d'en effacer une déjà posée.
+ * couleur est jugée par `SiteColor` (sa forme seule : aucune teinte n'est
+ * refusée, Hugo 2026-10-13) .
+ * `null` retire une couleur (Hugo, 2026-10-13).
  */
 @CommandHandler(SetSiteColorsCommand)
 export class SetSiteColorsHandler implements ICommandHandler<SetSiteColorsCommand, void> {
@@ -27,10 +28,8 @@ export class SetSiteColorsHandler implements ICommandHandler<SetSiteColorsComman
 
   /**
    * @throws {SiteColorFormatError} une couleur n'est pas `#rrggbb`.
-   * @throws {SiteColorReservedError} une couleur est verte, rouge ou rose.
    * @throws {PickupAddressNotFoundError} l'`id` n'existe pas.
    * @throws {ArchivedSiteError} le site est archivé.
-   * @throws {SiteColorErasedError} une couleur posée reviendrait à vide.
    */
   async execute(command: SetSiteColorsCommand): Promise<void> {
     const { payload } = command;
@@ -45,9 +44,10 @@ export class SetSiteColorsHandler implements ICommandHandler<SetSiteColorsComman
       if (site === null) {
         throw new PickupAddressNotFoundError(command.siteId);
       }
+      const before = site.snapshot().colors;
       site.paint(colors);
       await this.sites.save(site);
-      await this.events.publishTraced(new SiteColorsSetEvent(site.id, site.label, colors));
+      await this.events.publishTraced(new SiteColorsSetEvent(site.id, site.label, before, colors));
     });
   }
 }

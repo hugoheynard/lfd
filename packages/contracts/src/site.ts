@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { GpsPoint } from "./address.js";
+import { type GpsPoint, gpsPointSchema } from "./address.js";
 import type { PickupAddressView } from "./pickup.js";
 
 /**
@@ -11,7 +11,7 @@ import type { PickupAddressView } from "./pickup.js";
  *
  * Ces schémas ne tiennent que la FORME. Les règles — un site servi par
  * transfert remet, un site qui expédie est sur place, une couleur posée ne
- * s'efface pas, vert / rouge / rose refusés — sont celles de l'agrégat `Site`.
+ * s'efface pas, un site qui expédie a un point GPS — sont celles de l'agrégat `Site`.
  */
 
 /** D'où vient la marchandise : fabriquée sur place, ou arrivée par transfert. */
@@ -24,20 +24,27 @@ export type SiteTransferMode = z.infer<typeof siteTransferModeSchema>;
 
 /**
  * Une couleur LIBRE (Hugo, 2026-10-13), `#rrggbb`. Le serveur la rend en
- * minuscules ; la teinte est jugée par le serveur, pas ici.
+ * minuscules. Aucune teinte n'est refusée (Hugo, 2026-10-13).
  */
 export const siteColorSchema = z.string().regex(/^#[0-9a-fA-F]{6}$/u, "couleur attendue : #rrggbb");
 
 /** Les rôles d'un site et leurs réglages, enregistrés en bloc. */
 export const siteRolesPayloadSchema = z.object({
   /** Il remet des commandes à des clients (retrait). */
-  handsOver: z.boolean(),
+  pickup: z.boolean(),
   supply: siteSupplySchema,
   /** Livraisons et transferts peuvent en partir. */
-  dispatches: z.boolean(),
+  deliveryDeparture: z.boolean(),
   transferMode: siteTransferModeSchema,
   /** La mise en place au comptoir après le colisage, en minutes. */
   counterSetupMinutes: z.number().int(),
+  /**
+   * Le point GPS, saisi SOUS « Livraison » et nulle part ailleurs (Hugo,
+   * 2026-10-13) : il voyage avec les rôles pour que « cocher Livraison et poser
+   * le point » soit jugé en une seule écriture. **Absent = inchangé**, `null`
+   * l'efface — refusé si le site expédie.
+   */
+  gps: gpsPointSchema.nullable().optional(),
 });
 export type SiteRolesPayload = z.infer<typeof siteRolesPayloadSchema>;
 
@@ -51,7 +58,16 @@ export const siteColorsPayloadSchema = z.object({
 export type SiteColorsPayload = z.infer<typeof siteColorsPayloadSchema>;
 
 /** Un site tel que l'écran des réglages le lit — archivés compris. */
-export interface SiteView extends PickupAddressView, SiteRolesPayload, SiteColorsPayload {
+export interface SiteView extends StoredSiteView {
+  /**
+   * Ce site est le départ des tournées aujourd'hui, tel que la livraison le
+   * résout (Hugo, 2026-10-13). On ne lui retire pas « Livraison ».
+   */
+  readonly isDeparture: boolean;
+}
+
+/** Un site tel que la base le porte, sans ce que la livraison en dit. */
+export interface StoredSiteView extends PickupAddressView, SiteRolesPayload, SiteColorsPayload {
   /** Toujours rendu : `null` = pas saisi (le trajet ne se calcule pas sans lui). */
   readonly gps: GpsPoint | null;
   /** ISO 8601, ou `null` : un site archivé n'est plus proposé. */

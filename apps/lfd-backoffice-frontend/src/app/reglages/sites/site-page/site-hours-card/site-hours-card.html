@@ -1,0 +1,34 @@
+<fold-card surface="sunken" padding="md">
+  <fold-page-section title="Heures de retrait" separator>
+    <span sectionSubtitle>Pour les pros (créneau pro) et pour tous (ouverture au public).</span>
+
+    @if (!readOnly()) {
+      <div sectionActions>
+        <button foldButton size="sm" [disabled]="!canSave()" [loading]="saving()" (click)="save()">
+          Enregistrer les heures
+        </button>
+      </div>
+    }
+
+    @if (refusal(); as message) {
+      <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+    } @else if (dirty()) {
+      <fold-callout variant="info">Modifiées, pas encore enregistrées.</fold-callout>
+    }
+
+    <!-- Le formulaire dit lui-même une plage fausse. PAS de `legend` : le titre de la sous-carte dit déjà « Heures de
+         retrait ». ⚠️ `hideLegend` n'existe pas sur ce composant : Angular
+         l'ignorerait sans un mot (`lint:fold-unknown-attributes` ne couvre
+         que les composants fold). -->
+    <lfd-hours-form
+      hint="Les deux plages restent séparées : une commande doit tenir dans l'une d'elles, jamais à cheval sur le creux entre les deux."
+      [(value)]="opening"
+    >
+      @if (empty()) {
+        <p class="sh-said">
+          Sans aucune heure déclarée, ce site accepte n'importe quelle heure de retrait.
+        </p>
+      }
+    </lfd-hours-form>
+  </fold-page-section>
+</fold-card>

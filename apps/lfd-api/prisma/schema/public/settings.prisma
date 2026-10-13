@@ -52,7 +52,7 @@ model Site {
 
   /// Le site REMET des commandes à des clients (retrait) : proposé au
   /// checkout, onglet au comptoir. `true` = l'existant, où tout point remettait.
-  handsOver Boolean @default(true) @map("hands_over")
+  pickup Boolean @default(true)
 
   /// D'où vient la marchandise : fabriquée/colisée sur place, ou arrivée par
   /// un transfert interne. Un site `transfer` remet forcément (agrégat).
@@ -60,7 +60,7 @@ model Site {
 
   /// Livraisons et transferts peuvent en partir. Un site qui expédie est
   /// `on_site` (agrégat).
-  dispatches Boolean @default(false)
+  deliveryDeparture Boolean @default(false) @map("delivery_departure")
 
   /// Archivé : plus proposé, mais toujours résolu par id (départ, copies). Remplace
   /// la suppression physique — un site est référencé par des commandes.
@@ -75,9 +75,9 @@ model Site {
   counterSetupMinutes Int @default(0) @map("counter_setup_minutes")
 
   /// Les couleurs de la logistique, LIBRES (`#rrggbb`, Hugo 2026-10-13) :
-  /// vert, rouge et rose refusés par `SiteColor` (surligneurs OK / KO). `NULL`
-  /// tant que l'écran ne les a pas saisies — aucune n'est inventée ; le
-  /// resserrement viendra au lot S3r.
+  /// aucune teinte refusée, seule la forme est vérifiée (`SiteColor` et CHECK). `NULL`
+  /// = aucune couleur, pour de bon : une couleur posée peut être retirée, et le
+  /// resserrement prévu au lot S3r est tombé (Hugo, 2026-10-13).
   pickupColorB2b   String? @map("pickup_color_b2b")
   pickupColorB2c   String? @map("pickup_color_b2c")
   deliveryColorB2b String? @map("delivery_color_b2b")

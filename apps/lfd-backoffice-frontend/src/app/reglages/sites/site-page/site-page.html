@@ -18,16 +18,15 @@
   @if (isCreate()) {
     <p description>
       Un lieu à nous&nbsp;: on y fabrique, on y remet des commandes, ou on y est servi par
-      transfert. L'adresse suffit à le créer&nbsp;; ses rôles, ses couleurs et ses créneaux se
-      règlent ensuite, sur sa page.
+      transfert. L'adresse suffit à le créer&nbsp;; ses rôles, ses couleurs, ses heures et ses
+      créneaux se règlent ensuite, sur sa page.
     </p>
   }
 
-  <!-- L'enregistrement vit dans l'EN-TÊTE et non en pied de page : le corps est
-       une pile de cartes qu'on parcourt pour aller à CELLE qu'on vient régler,
-       et un bouton tout en bas obligerait à traverser les autres pour le
-       retrouver. Même place qu'à la création d'une fiche produit. -->
-  @if (!notFound() && !loadFailed() && !archived()) {
+  <!-- L'en-tête n'enregistre QU'À LA CRÉATION (« Ajouter » : rien n'existe
+       encore). Sur un site existant, chaque carte enregistre ce qu'elle
+       montre (Hugo, 2026-10-13) ; l'en-tête garde le retour et le statut. -->
+  @if (isCreate()) {
     <div pageActions class="pa-actions">
       <button foldButton emphasis="soft" intent="neutral" (click)="backToList()">Annuler</button>
       <button
@@ -37,7 +36,7 @@
         [loading]="saving()"
         (click)="submit()"
       >
-        {{ isCreate() ? 'Ajouter' : 'Enregistrer' }}
+        Ajouter
       </button>
     </div>
   }
@@ -70,6 +69,22 @@
          l'écart entre les cartes est le `--fold-page-gap` du layout. -->
     <fold-card>
       <fold-page-section title="Identité et adresse" separator>
+        @if (!isCreate() && !archived()) {
+          <div sectionActions>
+            <button
+              foldButton
+              size="sm"
+              [disabled]="!canSaveIdentity()"
+              [loading]="saving()"
+              (click)="saveIdentity()"
+            >
+              Enregistrer l'adresse
+            </button>
+          </div>
+        }
+        @if (identityDirty()) {
+          <fold-callout variant="info">Modifiée, pas encore enregistrée.</fold-callout>
+        }
         <lfd-address-form [value]="postal()" (valueChange)="setPostal($event)" />
 
         <fold-checkbox
@@ -81,127 +96,40 @@
       </fold-page-section>
     </fold-card>
 
-    <!-- Rôles et couleurs : chacun sa carte et son enregistrement, parce que
-         l'API les prend en bloc et que leur refus est le leur. Absents à la
-         création — un site qui n'existe pas encore n'a rien à porter. -->
+    <!-- Rôles, couleurs et point GPS : UNE carte, chaque couleur sous la
+         capacité qu'elle colore (Hugo, 2026-10-13). Absente à la création —
+         un site qui n'existe pas encore n'a rien à porter. -->
     @if (site(); as current) {
       <app-site-roles-card [site]="current" [readOnly]="archived()" (saved)="reload()" />
-      <app-site-colors-card [site]="current" [readOnly]="archived()" (saved)="reload()" />
     }
 
-    <!-- Les cartes du retrait ne se montrent qu'à un site qui remet (plan des
-         sites, §3.4) : ses heures et sa réduction restent enregistrées telles
-         quelles, elles ne servent juste à rien ailleurs. -->
-    @if (handsOver()) {
+    <!-- « Paramétrage du retrait » (Hugo, 2026-10-13) : UNE carte, trois
+         sous-cartes (`fold-card surface="sunken"`, la forme des incidents et
+         des décisions de la livraison). Chacune garde son enregistrement :
+         chacune a son propre enregistrement — un chevauchement refusé ne fait pas échouer
+         l'adresse. Seulement pour un site qui remet ; les créneaux restent
+         absents à la création (leur route porte un identifiant) et sur un
+         site archivé. -->
+    @if (pickup()) {
       <fold-card>
-        <fold-page-section title="Heures de retrait" separator>
-          <!-- PAS de `legend` : le titre de la carte dit déjà « Heures de
-             retrait », et le répéter trois centimètres plus bas fait lire deux
-             en-têtes pour un seul sujet. Le défaut du composant est la chaîne
-             vide, donc il suffit de ne rien passer.
+        <fold-page-section title="Paramétrage du retrait" titleVariant="heading">
+          @if (site(); as current) {
+            <app-site-hours-card [site]="current" [readOnly]="archived()" (saved)="reload()" />
+          }
 
-             ⚠️ Une première version posait `hideLegend` — qui **n'existe pas**
-             sur ce composant (il déclare `legend`, `hint`, `startLabel`,
-             `endLabel`). Angular l'a traité comme un attribut HTML statique et
-             l'a ignoré sans un mot : `lint:fold-unknown-attributes` ne couvre
-             que les composants fold, pas les `lfd-*`. Seul l'écran l'a dit. -->
-          <lfd-hours-form
-            hint="Les deux plages restent séparées : une commande doit tenir dans l'une d'elles, jamais à cheval sur le creux entre les deux."
-            [(value)]="opening"
-          >
-            @if (noOpening()) {
-              <p class="pa-said">
-                Sans aucune heure déclarée, ce point accepte n'importe quelle heure de retrait.
-              </p>
-            }
-          </lfd-hours-form>
-        </fold-page-section>
-      </fold-card>
-    }
+          @if (!isCreate() && !archived()) {
+            <app-public-slots-card [pickupId]="id() ?? ''" />
+          }
 
-    <!-- LE POINT GPS, facultatif : d'ici partent les distances quand ce point
-         est le départ des tournées. Sous l'adresse qu'il précise, dans sa
-         propre carte parce qu'il ne se lit pas comme une ligne d'adresse. -->
-    <fold-card>
-      <fold-page-section title="Point GPS" separator>
-        <p class="pa-said">
-          Facultatif. Il sert au départ des tournées et au calcul du trajet vers ce site&nbsp;: sans
-          lui, aucune distance ne part de ce point. Degrés décimaux, par exemple 48,8566 et 2,3522.
-        </p>
-        <div class="pa-gps">
-          <fold-number-input
-            label="Latitude"
-            optional
-            [min]="-90"
-            [max]="90"
-            [step]="0.000001"
-            [value]="gps().lat"
-            (valueChange)="setGps('lat', $event)"
-          />
-          <fold-number-input
-            label="Longitude"
-            optional
-            [min]="-180"
-            [max]="180"
-            [step]="0.000001"
-            [value]="gps().lng"
-            (valueChange)="setGps('lng', $event)"
-          />
-        </div>
-        @if (gpsIssue(); as issue) {
-          <fold-callout variant="warning">{{ issue }}</fold-callout>
-        }
-      </fold-page-section>
-    </fold-card>
-
-    <!-- Les créneaux PUBLICS, juste après les heures PRO : deux horaires qui se
-         lisent l'un après l'autre, et qui ne se mélangent jamais. La carte a
-         son propre enregistrement — son refus (le chevauchement) ne doit pas
-         faire échouer l'adresse. Absente à la création : sa route porte un
-         identifiant, et un point qui n'existe pas encore ne porte rien. -->
-    @if (!isCreate() && handsOver() && !archived()) {
-      <app-public-slots-card [pickupId]="id() ?? ''" />
-    }
-
-    @if (handsOver()) {
-      <fold-card>
-        <fold-page-section title="Réduction de retrait" separator>
-          <lfd-price-alteration-field
-            label="Réduction de retrait"
-            lockedDirection="decrease"
-            noneLabel="Aucune réduction sur ce point"
-            [value]="discountAlteration()"
-            (valueChange)="setDiscount($event)"
-          />
-
-          <!-- Sous la réduction qu'elles qualifient, et grisées sans elle : une
-             case qu'on coche sans réduction ne changerait rien, et le laisser
-             croire serait mentir sur ce qu'on règle. -->
-          <fold-fieldset
-            legend="La réduction s'applique à"
-            direction="horizontal"
-            [hint]="audiencesDisabled() ? 'Sans réduction, il n’y a rien à attribuer.' : ''"
-          >
-            <fold-checkbox
-              label="B2B"
-              [disabled]="audiencesDisabled()"
-              [checked]="audiences().b2b"
-              (checkedChange)="setAudience('b2b', $event)"
-            />
-            <fold-checkbox
-              label="B2C"
-              [disabled]="audiencesDisabled()"
-              [checked]="audiences().b2c"
-              (checkedChange)="setAudience('b2c', $event)"
-            />
-          </fold-fieldset>
-
-          @if (audienceIssue(); as issue) {
-            <fold-callout variant="warning">{{ issue }}</fold-callout>
+          @if (site(); as current) {
+            <app-site-discount-card [site]="current" [readOnly]="archived()" (saved)="reload()" />
           }
         </fold-page-section>
       </fold-card>
     }
+
+    <!-- Le point GPS n'a plus de carte : il se saisit SOUS « Livraison », dans
+         la carte des rôles, et nulle part ailleurs (Hugo, 2026-10-13). -->
 
     <!-- En correction seulement : on archive ce qu'on regarde. Il n'y a pas
          de suppression — un site se résout encore par id dans les tournées et

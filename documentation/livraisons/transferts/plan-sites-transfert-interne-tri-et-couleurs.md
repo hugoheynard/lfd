@@ -188,6 +188,15 @@ Ce qu'en dit l'inventaire :
 
 ### 3.1 Ce que c'est
 
+> **Renommé le 2026-10-13 (Hugo)**, pour suivre le lexique (`CLAUDE.md` §8) :
+> `handsOver` / `hands_over` → **`pickup`**, `dispatches` → **`deliveryDeparture`**
+> / `delivery_departure` ; `supply` inchangé. À l'écran, « Remet » → **« Retrait »**
+> et « Expédie » → **« Livraison »** (cartes, liste, badges, refus du serveur).
+> La migration `20261013510000` a été modifiée en place : elle n'avait jamais
+> quitté le poste de développement. Les erreurs suivent :
+> `SiteDeliveryDepartureFromTransferError`, `SiteDeliveryDepartureWithoutGpsError`,
+> `DeliveryDepartureSiteArchiveError`.
+
 > Un **site** est un lieu physique **à nous**, avec une adresse, où au moins
 > une de ces choses arrive : on y **fabrique et on en part** (le fournil), on
 > y **remet** des commandes à des clients (retrait), on y **est servi** par
@@ -195,29 +204,49 @@ Ce qu'en dit l'inventaire :
 
 Les rôles, et ce qu'ils portent :
 
-| Rôle                | Champ                                            | Ce qui en dépend                                                                                           |
-| ------------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
-| **remet** (retrait) | `handsOver: boolean`                             | proposé au checkout, onglet au comptoir, créneaux publics, ouverture pros, remise de retrait, heure limite |
-| **est servi par**   | `supply: 'on_site' \| 'transfer'`                | `on_site` = la marchandise est fabriquée/colisée **là** ; `transfer` = elle y arrive par transfert (§4)    |
-| **expédie**         | `dispatches: boolean`                            | les livraisons et les transferts peuvent en partir ; porte les couleurs de livraison (§5.3)                |
-| **départ**          | inchangé : `DeliveryDeparture` (bloc `delivery`) | LE site d'où partent tournées **et transferts**, choisi parmi ceux qui expédient ; ligne absente = défaut  |
-| **vend**            | non modélisé ici                                 | c'est `PointOfSale` (§2, ligne 10) ; Q-S3                                                                  |
+| Rôle              | Champ                                            | Ce qui en dépend                                                                                           |
+| ----------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| **retrait**       | `pickup: boolean`                                | proposé au checkout, onglet au comptoir, créneaux publics, ouverture pros, remise de retrait, heure limite |
+| **est servi par** | `supply: 'on_site' \| 'transfer'`                | `on_site` = la marchandise est fabriquée/colisée **là** ; `transfer` = elle y arrive par transfert (§4)    |
+| **livraison**     | `deliveryDeparture: boolean`                     | les livraisons et les transferts peuvent en partir ; porte les couleurs de livraison (§5.3)                |
+| **départ**        | inchangé : `DeliveryDeparture` (bloc `delivery`) | LE site d'où partent tournées **et transferts**, choisi parmi ceux qui expédient ; ligne absente = défaut  |
+| **vend**          | non modélisé ici                                 | c'est `PointOfSale` (§2, ligne 10) ; Q-S3                                                                  |
 
 Invariants (agrégat `Site`, §3.1 de CLAUDE.md : « une règle peut refuser
 l'écriture » → agrégat, pas CRUD) :
 
 - un site servi par `transfer` **remet** forcément (sinon on n'y transfère
   rien qui ait un client) ;
-- un site qui **expédie** est `on_site` ; la livraison ne propose comme
-  départ que les sites qui expédient (`DepartureCandidatesReader`,
-  `delivery/channels/commerce/departure-candidates.reader.ts`, étendu), et le
-  commerce refuse de retirer `dispatches` au site désigné, qu'il lit par un
-  port `DepartureSiteReader` qu'il déclare et que `delivery` implémente ;
-- les **couleurs** : l'agrégat **tolère leur absence** (les lignes existantes
-  n'en ont pas, et `toDomain` doit les relire) ; il refuse seulement
-  d'**effacer** une couleur posée. Aucune couleur n'est inventée : l'écran les
-  saisit, et le resserrement (lot S3r) pose le `CHECK` une fois toutes
-  saisies ;
+- un site qui **livre** est `on_site` ; la livraison ne propose comme
+  départ que les sites qui livrent (`DepartureCandidatesReader`, filtré sur
+  `deliveryDeparture`), et le commerce refuse de retirer « Livraison » au site
+  de départ (`DepartureSiteMustDeliverError`, 409). **Bâti le 2026-10-13
+  (Hugo)** : le port `DepartureSiteReader` est **déclaré ET implémenté par la
+  livraison** dans `delivery/channels/commerce/` (comme
+  `OrderDeliveryHistoryReader`) et lu par le commerce — et non déclaré par le
+  commerce, ce qui aurait fait importer `b2b` à la livraison. Il résout le
+  départ par la règle même de l'écran (`departureViewOf`). La page du site
+  l'affiche (badge « Départ des tournées », `SiteView.isDeparture`) ;
+- les **couleurs** sont **facultatives pour de bon** (Hugo, 2026-10-13) :
+  l'agrégat tolère leur absence, et une couleur posée **se retire** (`null`,
+  geste « Aucune couleur » à l'écran ; le fait `colors_set` nomme les couleurs
+  retirées dans `removed`). La règle « une couleur posée ne s'efface pas » est
+  abandonnée, et le `CHECK` de présence prévu au lot S3r **tombe** pour les
+  couleurs — seule la forme `#rrggbb` reste tenue en base ;
+- **un site qui livre, ou qui est servi par transfert, a un point GPS**
+  (Hugo, 2026-10-13 : départ des distances, destination du trajet ;
+  `SiteTransferWithoutGpsError` pour le second) — tenu aux
+  **transitions** seulement : cocher « Livraison » sans point, ou effacer le
+  point d'un site qui expédie, est refusé (`SiteDispatchesWithoutGpsError`,
+  409). Jamais au chargement : la migration S1 a posé `delivery_departure = true` sur
+  le site de départ sans regarder son GPS, et revalider dans `rehydrate`
+  casserait toutes ses lectures, checkout compris (même raison que B1). Une
+  telle ligne se relit et se modifie ; l'écran la signale sous « Livraison ».
+  Le point se saisit **sous le premier rôle qui l'exige** dans l'ordre de la
+  carte — « Approvisionné par transfert », puis « Livraison » — et nulle part
+  ailleurs (les deux ne coexistent pas : un site qui livre est sur place). Il voyage
+  avec les rôles (`PUT …/roles`, champ `gps` facultatif : absent = inchangé)
+  pour que « cocher et poser le point » soit jugé en une seule écriture ;
 - **archiver, pas supprimer** : `archived_at` remplace la suppression
   physique d'aujourd'hui (`prisma-pickup-address.repository.ts`, l. 196,
   `tx.pickupAddress.delete`) ; un site archivé n'est plus proposé mais se
@@ -257,15 +286,15 @@ ne se détruisent pas**. Aucune donnée ne bouge de table ici : la ligne
   renommer n'achète rien et coûte une migration relue) ; le modèle Prisma
   devient `Site` avec `@@map("pickup_addresses")`. À trancher : Q-S1.
 - **Colonnes ajoutées** (une migration **additive**) :
-  `hands_over boolean not null default true` (l'existant : tout point remet),
+  `pickup boolean not null default true` (l'existant : tout point remet),
   `supply site_supply not null default 'on_site'`,
-  `dispatches boolean not null default false`, `archived_at timestamptz null`,
+  `delivery_departure boolean not null default false`, `archived_at timestamptz null`,
   `transfer_mode site_transfer_mode not null default 'integrated'`,
   `counter_setup_minutes int not null default 0`, coordonnées GPS du site (trajet calculé, Q-T11 ; §4.6),
   `pickup_color_b2b`, `pickup_color_b2c`, `delivery_color_b2b`,
   `delivery_color_b2c` (`site_color null`), plus des `CHECK` posés
   **après** la saisie (lot S3r). Le site par défaut actuel reçoit
-  `dispatches = true` dans la même migration (c'est déjà lui, ou celui de
+  `delivery_departure = true` dans la même migration (c'est déjà lui, ou celui de
   `DeliveryDeparture`, qui expédie — fait, pas valeur inventée).
 - **Références** (3, 4, 5) : renommage du **champ Prisma** seulement
   (`siteId`, `@map("pickup_address_id")` conservé) — aucun SQL.
@@ -338,14 +367,38 @@ panneau, par la règle « page ou panneau » du `CLAUDE.md` du back-office
 (plusieurs sujets dont on va droit à un seul) : `fold-page-layout`,
 `fold-back-link`, **une `fold-card` par sujet** :
 
-1. Identité et adresse (libellé, adresse, GPS) ;
-2. Rôles — « Remet des commandes », « Approvisionné par » (sur place /
+> **Révisé le 2026-10-13 (Hugo)** : plus de carte « Couleurs » ni de carte
+> « Point GPS ». La carte des rôles porte, dans cet ordre : **Remet** (+ couleurs
+> retrait B2B / B2C) → **Approvisionné** (+ mode) → **Mise en place au
+> comptoir** → **Expédie** (+ point GPS, + couleurs livraison B2B / B2C). Une
+> capacité décochée masque ses couleurs sans les effacer. Une couleur de
+> livraison dont la clientèle n'est pas livrée (« Livraison › Zones de
+> livraison ») est grisée avec la raison — aide d'écran, le serveur
+> l'enregistre quand même. **Un seul bouton « Enregistrer »** appelle
+> `PUT …/roles` puis `PUT …/couleurs` ; si la seconde échoue, la carte dit
+> « Rôles enregistrés, mais les couleurs n'ont pas pu l'être » et garde le
+> brouillon. Le retrait tient en **une carte « Paramétrage du retrait »** à
+> trois **sous-cartes** (`fold-card surface="sunken"`, la forme déjà employée
+> par les incidents et les décisions de la livraison) : (a) Heures de
+> retrait, (b) Créneaux publics de retrait (+ fermetures), (c) Réduction de
+> retrait sur ce site. **Chaque carte et sous-carte enregistre ce qu'elle
+> montre** (Hugo, 2026-10-13) : plus d'« Enregistrer » dans l'en-tête d'un
+> site existant (un seul « Ajouter » à la création). Identité et adresse,
+> heures et réduction passent par l'unique `PATCH` du lieu : chaque bouton y
+> renvoie l'état ENREGISTRÉ pour le reste, et n'écrase donc pas la saisie
+> d'une autre carte. L'en-tête de la carte des rôles porte des badges — les
+> mots de la liste des sites (« Retrait », « Transfert … », « Livraison »),
+> sur l'état enregistré. Visible seulement pour un site qui
+> remet ; les créneaux restent absents à la création et sur un site archivé.
+
+1. Identité et adresse (libellé, adresse) ;
+2. Rôles — « Retrait », « Approvisionné par » (sur place /
    transfert), « Départ des tournées » (lecture + bascule sous
    `delivery_settings:write`) ;
-3. Couleurs — retrait B2B, retrait B2C (pastilles, §3.5) ;
-4. Ouverture (public / pros) ; 5. Créneaux publics et fermetures ;
-5. Réduction de retrait et ses clientèles ; 7. Heures limites de ce site ;
-6. Suppression (`fold-danger-zone`, `appearance="section"`).
+3. ~~Couleurs~~ — dans la carte des rôles (ci-dessus) ;
+4. ~~Ouverture, créneaux publics, réduction~~ — sous-cartes de « Paramétrage
+   du retrait » (ci-dessus) ; 7. Heures limites de ce site ;
+5. Suppression (`fold-danger-zone`, `appearance="section"`).
 
 Une carte d'un rôle absent est masquée (un site qui ne remet pas n'a ni
 créneaux ni réduction).
@@ -395,25 +448,24 @@ le retrait (`handover/channels/commerce/`, sous `handover_counter`), la
 saisie par une query des commandes (sous `b2b_place_order`) ; seul l'écran
 des sites lit et écrit sous `lfc_site_settings`.
 
-### 3.5 Les couleurs : libres, teintes OK / KO refusées (Hugo, 2026-10-13)
+### 3.5 Les couleurs : libres, aucune teinte refusée (Hugo, 2026-10-13)
 
 > Remplace la « palette fermée » proposée d'abord (Q-S6) : Hugo a tranché le
-> 2026-10-13 pour des **couleurs libres**, saisies à l'admin.
+> 2026-10-13 pour des **couleurs libres**, saisies à l'admin. Le même jour, il
+> a retiré la réserve des teintes : **couleurs libres, aucune teinte refusée**
+> — la demande d'origine réservait vert et rouge / rose aux surligneurs OK /
+> KO ; l'équipe s'organise entre elle.
 
 - **Stockage** : quatre colonnes `text NULL` sur `pickup_addresses`
   (`pickup_color_b2b`, `pickup_color_b2c`, `delivery_color_b2b`,
   `delivery_color_b2c`), forme `#rrggbb` en minuscules tenue **en base** par un
   `CHECK` (migration `20261013510000`). Pas d'enum `site_color`.
-- **La teinte** est jugée par le value object `SiteColor`
+- **La forme** est jugée par le value object `SiteColor`
   (`apps/lfd-api/src/b2b/sites/domain/site-color.ts`) : il normalise en
-  minuscules et refuse, avec un message qui dit « réservé aux surligneurs OK /
-  KO », le **vert** (teinte HSL 75°–165°) et le **rouge / rose** (330°–20°,
-  à cheval sur 0°), dès que la saturation HSL atteint 0,25 — en dessous, c'est
-  un gris teinté, et le gris est une couleur de la demande. Les trois seuils
-  sont des constantes nommées, éprouvées à leurs bornes.
-- Un calcul HSL n'a rien à faire dans une contrainte SQL : la base tient la
-  forme, l'agrégat la teinte. Une écriture qui contourne l'agrégat peut donc
-  poser un vert — elle contournerait aussi tous les autres invariants.
+  minuscules et refuse ce qui n'est pas `#rrggbb`. Aucune teinte n'est jugée.
+- **À l'écran**, une couleur de livraison dont la clientèle n'est pas livrée
+  (réglage « Livraison › Zones de livraison ») est grisée avec la raison ; le
+  serveur l'enregistre quand même — c'est une aide, pas une règle.
 - Le lot L1 prévoyait des tokens `--lfc-site-*` par valeur de palette : avec
   des couleurs libres, il est **à revoir** (non tranché ici), et le contraste
   en clair et sombre ne se vérifie plus une fois pour toutes.
@@ -714,19 +766,20 @@ et implémenté par `delivery` (forme des `OrderDeliveryHistoryReader` du
 
 ### 5.3 D'où vient chaque couleur — toutes sous `lfc_site_settings`
 
-| Catégorie                           | Couleur (demande) | Où elle vit                                                           |
-| ----------------------------------- | ----------------- | --------------------------------------------------------------------- |
-| Livraison B2B                       | bleu              | `Site.deliveryColorB2b` du site **qui expédie** (`dispatches = true`) |
-| Livraison B2C                       | (non demandée)    | `Site.deliveryColorB2c`, même site                                    |
-| C&C B2B (tous sites)                | jaune             | `Site.pickupColorB2b`                                                 |
-| C&C B2C Adroit                      | orange            | `Site.pickupColorB2c` du site Adroit                                  |
-| C&C B2C Val Village                 | gris              | `Site.pickupColorB2c` de Val Village                                  |
-| `clientele = NULL`, `siteId` absent | neutre            | catégorie « autre » de la fonction pure, jamais une couleur inventée  |
+| Catégorie                                       | Couleur (demande) | Où elle vit                                                                                                                                                  |
+| ----------------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Livraison B2B                                   | bleu              | `Site.deliveryColorB2b` du site **qui expédie** (`delivery_departure = true`)                                                                                |
+| Livraison B2C                                   | (non demandée)    | `Site.deliveryColorB2c`, même site                                                                                                                           |
+| C&C B2B (tous sites)                            | jaune             | `Site.pickupColorB2b`                                                                                                                                        |
+| C&C B2C Adroit                                  | orange            | `Site.pickupColorB2c` du site Adroit                                                                                                                         |
+| C&C B2C Val Village                             | gris              | `Site.pickupColorB2c` de Val Village                                                                                                                         |
+| `clientele = NULL`, `siteId` absent             | neutre            | catégorie « autre » de la fonction pure, jamais une couleur inventée                                                                                         |
+| site **sans couleur** (retirée ou jamais posée) | neutre            | les couleurs sont facultatives pour de bon (Hugo, 2026-10-13) : la liste logistique montre une **teinte neutre par défaut** — laquelle, à trancher au lot L1 |
 
 **S3 tranché (proposition)** : les couleurs de livraison **quittent
 `DeliveryAvailability`** et vont sur le site qui expédie, sous `lfc_site_settings`.
 Une palette, un écran, un droit. Le site qui expédie est celui d'où partent
-les livraisons : rôle `dispatches` (§3.1). Une commande du village garde le
+les livraisons : rôle `deliveryDeparture` (§3.1). Une commande du village garde le
 gris même triée avec les tournées : la couleur dit **à qui** on remet,
 l'heure dit **quand** ça part.
 
@@ -772,7 +825,7 @@ sans la composition ne sert à rien en production.
 | S1 ✅ 2026-10-13 (backend `c37ee5067` ; front non commité) | M      | `b2b/sites` (agrégat `Site`, rôles, couleurs nullables, archivage, `transfer_mode`, `counter_setup_minutes`), Réglages › Sites, lecteurs du comptoir et de la saisie hors de l'écran                                                                                                                                         | additive (colonnes, enums)                                                                                         | frontière (canaux)          |
 | S2                                                         | S      | `siteId` dans le snapshot de commande (depuis `pickupAddressId` reçu à la passation), `production_order.site_id`, onglets du comptoir par id ; pas de rattrapage                                                                                                                                                             | additive                                                                                                           | —                           |
 | L1                                                         | S      | fonction pure de catégorie (back-office), tokens `--lfc-site-*`, pastille                                                                                                                                                                                                                                                    | —                                                                                                                  | —                           |
-| S3r                                                        | S      | `CHECK` des couleurs après saisie ; lectures par libellé retirées                                                                                                                                                                                                                                                            | contrainte                                                                                                         | —                           |
+| S3r                                                        | S      | ~~`CHECK` des couleurs après saisie~~ (tombé le 2026-10-13 : couleurs facultatives) ; lectures par libellé retirées                                                                                                                                                                                                          | contrainte                                                                                                         | —                           |
 | T0                                                         | M      | `dueAtOf` et `requiredBy` calculent l'heure requise depuis les réglages du site (ouverture pros, créneaux publics, mise en place, trajet) ; la clôture la fige dans `production_order.due_at` comme aujourd'hui ; marges intactes. **Dépend de S1** (`counter_setup_minutes`, coordonnées) ; trajet calculé (Q-T11 tranchée) | — (colonnes du site portées par S1)                                                                                | production (échéances)      |
 | T1                                                         | **L**  | `InternalTransfer` + ses commandes ; arrêt `kind = transfer` (temps 1 : colonnes, `CHECK`, index jumeau ; union discriminée dans le domaine) ; chaque famille du §4.4 ; composition intégrée avec repli dédié ; mode dédié                                                                                                   | `String?` + `CHECK` + `DROP NOT NULL` avec le code qui écrit le premier `NULL`, un seul déploiement (CLAUDE.md §0) | migration servie, frontière |
 | T2                                                         | M      | « Remis au site » / « Réceptionner » (manuelle), `TransferStatusReader`, port `handover/channels/delivery/`, `TransferNotReceivedError`                                                                                                                                                                                      | additive (`received_at` du transfert)                                                                              | frontière                   |
@@ -785,7 +838,7 @@ sans la composition ne sert à rien en production.
 `StaffResource`, accordées à aucun rôle) et
 `20261013510000_le_point_de_retrait_devient_un_site` (types `site_supply`,
 `site_transfer_mode`, neuf colonnes, `CHECK` de forme des couleurs et de
-`counter_setup_minutes ≥ 0`, `dispatches = true` sur le site de départ actuel).
+`counter_setup_minutes ≥ 0`, `delivery_departure = true` sur le site de départ actuel).
 Le modèle Prisma s'appelle `Site`, la table reste `pickup_addresses`.
 L'API de l'écran est `admin/sites` sous `lfc_site_settings` ; l'ancienne
 `admin/pickup-addresses` (sous `b2b_settings`) reste servie au front, et
@@ -796,11 +849,9 @@ L'API de l'écran est `admin/sites` sous `lfc_site_settings` ; l'ancienne
   (`b2b/reglages/pickup-addresses.service.ts`, `list()`, vérifié le
   2026-10-13). L'objection S2 partait d'un fait faux ; mettre l'écran sous
   `lfc_site_settings` ne leur coupe rien ;
-- **le refus de retirer `dispatches` au site de départ** et le filtre « seuls
-  les sites qui expédient » de `DepartureCandidatesReader` : le §3.1 fait
-  déclarer `DepartureSiteReader` par le commerce et l'implémenter par la
-  livraison — l'implémentation importerait `b2b`, ce que la matrice interdit
-  (`delivery → b2b` ✗). En attente de décision.
+- ~~**le refus de retirer `deliveryDeparture` au site de départ** et le
+  filtre des candidats~~ — **levé le 2026-10-13 (Hugo)** : le port est
+  déclaré ET implémenté par la livraison, lu par le commerce (§3.1).
 
 **S1, côté front (bâti le 2026-10-13, non commité).** Réglages › Sites dans
 `apps/lfd-backoffice-frontend/src/app/reglages/sites/` : la liste
@@ -809,14 +860,15 @@ L'API de l'écran est `admin/sites` sous `lfc_site_settings` ; l'ancienne
 de retrait **déplacée** (`git mv`) et branchée sur `admin/sites`, plus une
 carte « Rôles » (remet, approvisionné sur place / par transfert, mode intégré /
 dédié, expédie, mise en place) et une carte « Couleurs » (retrait B2B / B2C,
-livraison B2B / B2C), chacune avec son propre enregistrement en bloc ;
+livraison B2B / B2C), chacune avec son propre enregistrement en bloc
+(réunies le 2026-10-13 en une seule carte, voir §3.4) ;
 l'archivage remplace la suppression dans la `fold-danger-zone`. Les cartes du
 retrait (heures, créneaux publics, réduction) sont masquées à un site qui ne
 remet pas ; un site archivé se lit sans se modifier. Couleurs : fold n'a pas
 de sélecteur, c'est le `input type=color` natif dans un `fold-fieldset`, avec
-le code hexadécimal en `fold-input` et une pastille d'aperçu ; la teinte est
-jugée à la saisie par une **copie** front des seuils de `SiteColor` (aucun
-contrat ne les porte ; le serveur reste l'autorité). Gardes
+le code hexadécimal en `fold-input` et une pastille d'aperçu ; la forme est
+jugée à la saisie par une **copie** front de `SiteColor` (aucune teinte
+refusée depuis le 2026-10-13 ; le serveur reste l'autorité). Gardes
 `lfc_site_settings:read` (création : `:write`) ; l'entrée « Sites » est une
 section des Réglages (`EXPLOITATION_VIEWS`, rail et lanceur mobile d'une même
 table) ; « Points de retrait » a quitté l'E-commerce ; `/b2b/reglages/points-de-retrait`,
@@ -890,19 +942,19 @@ Restent :
 
 ## 9. Contradiction par `vitruve` (2026-10-13) — et son sort
 
-| #   | Niveau   | Objection (résumé)                                                                                                                  | Sort                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| --- | -------- | ----------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| B1  | BLOQUANT | couleurs obligatoires dans l'agrégat dès S1 : `toDomain` refuserait les lignes existantes                                           | **corrigé** (§3.1, §3.3) : l'agrégat **tolère** l'absence jusqu'au resserrement S3r ; il refuse seulement d'**effacer** une couleur posée ; la migration ne pose aucune couleur, l'écran les saisit                                                                                                                                                                                                                        |
-| B2  | BLOQUANT | arrêt de transfert avec `order_id` nullable, cœur du bloc livraison, sans inventaire                                                | **dépassé** par la décision de Hugo (option B, §10) : `order_id` devient nullable **pour le seul genre `transfer`**, sous `CHECK`, en un déploiement assumé par le §0 du CLAUDE.md (§4.3, objection S du §11) ; inventaire par familles au §4.4                                                                                                                                                                            |
-| B3  | BLOQUANT | l'échéance du fournil pour le village est calculée en retrait                                                                       | **corrigé** (§4.6, lot T0) : heure requise figée à la clôture par site et par jour ; échéance = départ requis − marge de livraison                                                                                                                                                                                                                                                                                         |
-| S1  | SÉRIEUX  | suppression physique d'un site référencé                                                                                            | **corrigé** (§3.1, §3.3) : `archived_at` ; « supprimer » archive ; refus d'archiver le site par défaut ou celui qui expédie                                                                                                                                                                                                                                                                                                |
-| S2  | SÉRIEUX  | le comptoir lit les points par `PickupAddressesService` (l'API de l'écran de réglages)                                              | **corrigé** (§3.4) : l'API `admin/pickup-addresses` n'est pas déplacée par le changement de route front ; le comptoir et la saisie lisent les sites par leurs propres lectures, hors de `lfc_site_settings`                                                                                                                                                                                                                |
-| S3  | SÉRIEUX  | deux droits pour une palette ; ressource neuve = écran mort jusqu'à l'accord                                                        | **corrigé** (§5.3, lot S0) : toutes les couleurs sous `lfc_site_settings` ; S0 déployé et accordé **avant** que S1 ne garde l'écran                                                                                                                                                                                                                                                                                        |
-| S4  | SÉRIEUX  | la page Sites écrit le départ (delivery) sans port ; invariant tenu d'un côté                                                       | **corrigé** (§3.1, §3.4) : la carte « Départ » appelle l'API de la livraison (`delivery_settings:write`), pas le commerce ; la livraison ne propose que les sites `dispatches` (lecteur `DepartureCandidatesReader` existant, étendu), et le commerce refuse de retirer `dispatches` au site désigné par un port `DepartureSiteReader` déclaré par `b2b`, implémenté par `delivery` (`b2b → delivery` : port uniquement ✓) |
-| S5  | SÉRIEUX  | rattrapage par libellé irréversible ; `pickupAddressId` déjà reçu à la passation                                                    | **corrigé** (§3.3, lot S2) : le snapshot garde l'id reçu (`order-drafting.service.ts`, `pickupAddressId`, l. 48/83/333) ; pas de rattrapage                                                                                                                                                                                                                                                                                |
-| S6  | SÉRIEUX  | `received` lu par personne                                                                                                          | **corrigé, puis revu** (§4.5) : lecture synchrone `TransferStatusReader` au moment de remettre, plus de fait `delivery.transfer_received` ni d'abonné du retrait ; `TransferNotReceivedError`                                                                                                                                                                                                                              |
-| S7  | SÉRIEUX  | Q-T1 dite ouverte alors que le corps bâtit l'option A                                                                               | **corrigé** : Q-T1 tranchée (deux modes, intégré par défaut), le corps refondu (§3.3, §4, §5.2) ; la tournée et l'échéance lues par l'arrêt, justes dans les deux modes                                                                                                                                                                                                                                                    |
-| m   | mineurs  | `OrderCutoff` sans relation ; fold-ng 0.28.2 ; `Order.pickupAddress` typé `BillingAddressPayload` ; baril ; `lecteur-de-migrations` | **assumés / corrigés** : fonction pure côté back-office (baril) ; `lecteur-de-migrations` au §6 ; le typage du snapshot sera élargi à S2 (non relu) ; §1.5 garde la version lue ce jour-là                                                                                                                                                                                                                                 |
+| #   | Niveau   | Objection (résumé)                                                                                                                  | Sort                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| --- | -------- | ----------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| B1  | BLOQUANT | couleurs obligatoires dans l'agrégat dès S1 : `toDomain` refuserait les lignes existantes                                           | **corrigé** (§3.1, §3.3) : l'agrégat **tolère** l'absence jusqu'au resserrement S3r ; il refuse seulement d'**effacer** une couleur posée ; la migration ne pose aucune couleur, l'écran les saisit                                                                                                                                                                                                                                      |
+| B2  | BLOQUANT | arrêt de transfert avec `order_id` nullable, cœur du bloc livraison, sans inventaire                                                | **dépassé** par la décision de Hugo (option B, §10) : `order_id` devient nullable **pour le seul genre `transfer`**, sous `CHECK`, en un déploiement assumé par le §0 du CLAUDE.md (§4.3, objection S du §11) ; inventaire par familles au §4.4                                                                                                                                                                                          |
+| B3  | BLOQUANT | l'échéance du fournil pour le village est calculée en retrait                                                                       | **corrigé** (§4.6, lot T0) : heure requise figée à la clôture par site et par jour ; échéance = départ requis − marge de livraison                                                                                                                                                                                                                                                                                                       |
+| S1  | SÉRIEUX  | suppression physique d'un site référencé                                                                                            | **corrigé** (§3.1, §3.3) : `archived_at` ; « supprimer » archive ; refus d'archiver le site par défaut ou celui qui expédie                                                                                                                                                                                                                                                                                                              |
+| S2  | SÉRIEUX  | le comptoir lit les points par `PickupAddressesService` (l'API de l'écran de réglages)                                              | **corrigé** (§3.4) : l'API `admin/pickup-addresses` n'est pas déplacée par le changement de route front ; le comptoir et la saisie lisent les sites par leurs propres lectures, hors de `lfc_site_settings`                                                                                                                                                                                                                              |
+| S3  | SÉRIEUX  | deux droits pour une palette ; ressource neuve = écran mort jusqu'à l'accord                                                        | **corrigé** (§5.3, lot S0) : toutes les couleurs sous `lfc_site_settings` ; S0 déployé et accordé **avant** que S1 ne garde l'écran                                                                                                                                                                                                                                                                                                      |
+| S4  | SÉRIEUX  | la page Sites écrit le départ (delivery) sans port ; invariant tenu d'un côté                                                       | **corrigé** (§3.1, §3.4) : la carte « Départ » appelle l'API de la livraison (`delivery_settings:write`), pas le commerce ; la livraison ne propose que les sites `deliveryDeparture` (lecteur `DepartureCandidatesReader` existant, étendu), et le commerce refuse de retirer `deliveryDeparture` au site désigné par un port `DepartureSiteReader` déclaré par `b2b`, implémenté par `delivery` (`b2b → delivery` : port uniquement ✓) |
+| S5  | SÉRIEUX  | rattrapage par libellé irréversible ; `pickupAddressId` déjà reçu à la passation                                                    | **corrigé** (§3.3, lot S2) : le snapshot garde l'id reçu (`order-drafting.service.ts`, `pickupAddressId`, l. 48/83/333) ; pas de rattrapage                                                                                                                                                                                                                                                                                              |
+| S6  | SÉRIEUX  | `received` lu par personne                                                                                                          | **corrigé, puis revu** (§4.5) : lecture synchrone `TransferStatusReader` au moment de remettre, plus de fait `delivery.transfer_received` ni d'abonné du retrait ; `TransferNotReceivedError`                                                                                                                                                                                                                                            |
+| S7  | SÉRIEUX  | Q-T1 dite ouverte alors que le corps bâtit l'option A                                                                               | **corrigé** : Q-T1 tranchée (deux modes, intégré par défaut), le corps refondu (§3.3, §4, §5.2) ; la tournée et l'échéance lues par l'arrêt, justes dans les deux modes                                                                                                                                                                                                                                                                  |
+| m   | mineurs  | `OrderCutoff` sans relation ; fold-ng 0.28.2 ; `Order.pickupAddress` typé `BillingAddressPayload` ; baril ; `lecteur-de-migrations` | **assumés / corrigés** : fonction pure côté back-office (baril) ; `lecteur-de-migrations` au §6 ; le typage du snapshot sera élargi à S2 (non relu) ; §1.5 garde la version lue ce jour-là                                                                                                                                                                                                                                               |
 
 ## 10. Seconde contradiction par `vitruve` (2026-10-13) — et son sort
 

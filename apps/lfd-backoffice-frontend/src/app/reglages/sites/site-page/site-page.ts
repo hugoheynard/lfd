@@ -9,13 +9,7 @@ import {
 } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
-import {
-  ALL_DISCOUNT_AUDIENCES,
-  type CartAdjustment,
-  type PickupAddressPayload,
-  type PickupDiscountAudiences,
-  type SiteView,
-} from '@lfd/contracts';
+import { ALL_DISCOUNT_AUDIENCES, type PickupAddressPayload, type SiteView } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldBackLinkComponent,
@@ -26,13 +20,10 @@ import {
   FoldCheckboxComponent,
   FoldDangerZoneComponent,
   FoldEmptyStateComponent,
-  FoldFieldsetComponent,
   FoldLoadingStateComponent,
-  FoldNumberInputComponent,
   FoldPageLayoutComponent,
   FoldPageSectionComponent,
 } from 'fold-ng';
-import { HoursForm, hoursIssueOf, type HoursEntry } from '@lfd/b2b-ui/hours';
 import { AddressForm, type PostalAddress } from '@lfd/b2b-ui/address';
 import {
   EMPTY_POSTAL_DRAFT,
@@ -43,30 +34,15 @@ import {
   withPostal,
   type PostalDraft,
 } from '@lfd/b2b-ui/company';
-import {
-  fromCartAdjustment,
-  PriceAlterationField,
-  toCartAdjustment,
-  type PriceAlteration,
-} from '@lfd/b2b-ui/pricing';
 
 import { NotifyService } from '../../../notify.service';
-import {
-  EMPTY_GPS,
-  gpsDraftFrom,
-  gpsIssue,
-  toGps,
-  type GpsDraft,
-} from '../../../b2b/reglages/pickup-gps';
-import {
-  EMPTY_OPENING,
-  openingEntries,
-  toPickupOpening,
-} from '../../../b2b/reglages/pickup-opening.model';
+import { EMPTY_OPENING } from '../../../b2b/reglages/pickup-opening.model';
 import { SITES_PATH } from '../sites-path';
 import { SitesService } from '../sites.service';
 import { PublicSlotsCard } from './public-slots-card/public-slots-card';
-import { SiteColorsCard } from './site-colors-card/site-colors-card';
+import { SiteDiscountCard } from './site-discount-card/site-discount-card';
+import { SiteHoursCard } from './site-hours-card/site-hours-card';
+import { placePayload } from './site-place-payload';
 import { SiteRolesCard } from './site-roles-card/site-roles-card';
 
 const NOT_FOUND = 404;
@@ -107,10 +83,9 @@ const NOT_FOUND = 404;
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     AddressForm,
-    HoursForm,
-    PriceAlterationField,
     PublicSlotsCard,
-    SiteColorsCard,
+    SiteDiscountCard,
+    SiteHoursCard,
     SiteRolesCard,
     FoldBackLinkComponent,
     FoldBadgeComponent,
@@ -120,9 +95,7 @@ const NOT_FOUND = 404;
     FoldCheckboxComponent,
     FoldDangerZoneComponent,
     FoldEmptyStateComponent,
-    FoldFieldsetComponent,
     FoldLoadingStateComponent,
-    FoldNumberInputComponent,
     FoldPageLayoutComponent,
     FoldPageSectionComponent,
   ],
@@ -144,23 +117,6 @@ export class SitePage {
   protected readonly draft = signal<PostalDraft>(EMPTY_POSTAL_DRAFT);
   /** Proposé d'office au checkout. Rang du point, pas champ d'adresse. */
   protected readonly isDefault = signal(false);
-  /** Remise du point (retirer ici coûte moins cher), ou `null`. */
-  protected readonly discount = signal<CartAdjustment | null>(null);
-  /**
-   * À qui va la réduction. Conservées telles quelles quand la réduction est
-   * retirée : sans réduction, le serveur ne les lit pas, et les remettre à zéro
-   * ferait perdre un choix qu'on retrouverait en rouvrant la réduction.
-   */
-  protected readonly audiences = signal<PickupDiscountAudiences>(ALL_DISCOUNT_AUDIENCES);
-  /** Heures d'ouverture du point — deux fenêtres nommées, jamais fusionnées. */
-  protected readonly opening = signal<readonly HoursEntry[]>(openingEntries(EMPTY_OPENING));
-  /**
-   * Le point GPS du lieu, facultatif — d'où partira le calcul des distances
-   * quand ce point est le départ des tournées (plan-preparation-de-tournee.md,
-   * Q9). Deux vides : le point n'a pas de GPS.
-   */
-  protected readonly gps = signal<GpsDraft>(EMPTY_GPS);
-  protected readonly gpsIssue = computed(() => gpsIssue(this.gps()));
 
   /**
    * Le refus du serveur, en clair. Il reste SUR LA PAGE, au-dessus des cartes :
@@ -176,26 +132,16 @@ export class SitePage {
   /** Le site tel que le serveur l'a rendu — ce que lisent les cartes à elles. */
   protected readonly site = signal<SiteView | null>(null);
   /** Les cartes du retrait : à la création, rien n'est encore décidé, on les montre. */
-  protected readonly handsOver = computed(() => this.site()?.handsOver ?? true);
+  protected readonly pickup = computed(() => this.site()?.pickup ?? true);
   /** Un site archivé ne se modifie plus (le serveur le refuse) : tout se fige. */
   protected readonly archived = computed(() => this.site()?.archivedAt != null);
 
   protected readonly isCreate = computed(() => this.id() === undefined);
 
-  protected readonly openingIssue = computed(() => hoursIssueOf(this.opening()));
-
-  /** Aucune plage renseignée : le point accepte alors n'importe quelle heure. */
-  protected readonly noOpening = computed(() =>
-    this.opening().every((entry) => entry.range.start === '' && entry.range.end === ''),
-  );
-
   /**
    * La remise vue comme une altération de prix. Le sens est **structurel** —
    * retirer soi-même coûte moins cher, jamais plus — donc il ne se stocke pas.
    */
-  protected readonly discountAlteration = computed(() =>
-    fromCartAdjustment(this.discount(), 'decrease'),
-  );
 
   /** L'adresse postale, dans la langue neutre du fragment de saisie. */
   protected readonly postal = computed(() => toPostal(this.draft()));
@@ -209,27 +155,20 @@ export class SitePage {
     return draft.label || draft.ville || 'Site';
   });
 
-  /** Les cases de clientèle ne se lisent que s'il y a une réduction à attribuer. */
-  protected readonly audiencesDisabled = computed(() => this.discount() === null);
+  /** À la création : une adresse postable. Le reste se règle sur sa page. */
+  protected readonly canSubmit = computed(() => postalIssue(this.draft()) === '');
 
-  /**
-   * Une réduction qui ne vise personne. Le serveur la refuse (400) ; l'écran le
-   * dit AVANT l'envoi, avec la même phrase, plutôt que d'attendre le refus.
-   */
-  protected readonly audienceIssue = computed(() => {
-    const audiences = this.audiences();
-    return this.discount() !== null && !audiences.b2b && !audiences.b2c
-      ? 'Cochez au moins une clientèle, ou retirez la réduction.'
-      : '';
+  /** L'identité diffère de ce qui est enregistré (adresse ou rang par défaut). */
+  protected readonly identityDirty = computed(() => {
+    const site = this.site();
+    return (
+      site !== null &&
+      (JSON.stringify(this.draft()) !== JSON.stringify(postalDraftFrom(site)) ||
+        this.isDefault() !== site.isDefault)
+    );
   });
-
-  /** Une adresse postable, des heures cohérentes, une réduction qui vise quelqu'un. */
-  protected readonly canSubmit = computed(
-    () =>
-      postalIssue(this.draft()) === '' &&
-      this.openingIssue() === '' &&
-      this.audienceIssue() === '' &&
-      this.gpsIssue() === '',
+  protected readonly canSaveIdentity = computed(
+    () => this.identityDirty() && postalIssue(this.draft()) === '' && !this.saving(),
   );
 
   /**
@@ -245,8 +184,8 @@ export class SitePage {
     if (site.isDefault) {
       return 'C’est le site par défaut : désignez d’abord un autre site par défaut.';
     }
-    if (site.dispatches) {
-      return 'Les livraisons partent d’ici : décochez d’abord « Expédie » dans ses rôles.';
+    if (site.deliveryDeparture) {
+      return 'Les livraisons partent d’ici : décochez d’abord « Livraison » dans ses rôles.';
     }
     return null;
   });
@@ -309,9 +248,9 @@ export class SitePage {
       return;
     }
     try {
-      const site = await this.sites.get(id);
-      this.site.set(site);
-      this.isDefault.set(site.isDefault);
+      // Le site seul : les brouillons de l'identité ne sont pas touchés, une
+      // carte qui enregistre n'écrase pas une saisie en cours d'une autre.
+      this.site.set(await this.sites.get(id));
     } catch (error) {
       this.refusal.set(httpErrorMessage(error, 'Le site n’a pas pu être relu.'));
     }
@@ -321,55 +260,63 @@ export class SitePage {
   private fill(point: SiteView): void {
     this.draft.set(postalDraftFrom(point));
     this.isDefault.set(point.isDefault);
-    this.discount.set(point.discount);
-    this.audiences.set(point.discountAudiences);
-    this.opening.set(openingEntries(point.opening));
-    this.gps.set(gpsDraftFrom(point.gps));
-  }
-
-  protected setGps(axis: keyof GpsDraft, value: number | null): void {
-    this.gps.update((current) => ({ ...current, [axis]: value }));
-  }
-
-  protected setDiscount(alteration: PriceAlteration | null): void {
-    this.discount.set(toCartAdjustment(alteration));
-  }
-
-  protected setAudience(audience: keyof PickupDiscountAudiences, checked: boolean): void {
-    this.audiences.update((current) => ({ ...current, [audience]: checked }));
   }
 
   protected setPostal(postal: PostalAddress): void {
     this.draft.update((draft) => withPostal(draft, postal));
   }
 
-  protected async submit(): Promise<void> {
-    if (!this.canSubmit() || this.saving()) {
+  /**
+   * Enregistre l'identité SEULE (adresse + rang par défaut), sur le lieu tel
+   * qu'il est enregistré : heures et réduction ont leurs sous-cartes.
+   */
+  protected async saveIdentity(): Promise<void> {
+    const site = this.site();
+    if (site === null || !this.canSaveIdentity()) {
       return;
     }
-    const id = this.id();
+    this.saving.set(true);
+    this.refusal.set(null);
+    try {
+      await this.sites.update(
+        site.id,
+        placePayload(site, { ...toBillingPayload(this.draft()), isDefault: this.isDefault() }),
+      );
+      this.notify.success('Adresse du site enregistrée.');
+      await this.reload();
+      const saved = this.site();
+      if (saved !== null) {
+        this.fill(saved);
+      }
+    } catch (error) {
+      this.refusal.set(httpErrorMessage(error, "L'adresse du site n'a pas pu être enregistrée."));
+    } finally {
+      this.saving.set(false);
+    }
+  }
+
+  /** La création : rien n'existe encore, un seul « Ajouter ». */
+  protected async submit(): Promise<void> {
+    if (!this.isCreate() || !this.canSubmit() || this.saving()) {
+      return;
+    }
     this.saving.set(true);
     this.refusal.set(null);
     const payload: PickupAddressPayload = {
       ...toBillingPayload(this.draft()),
       isDefault: this.isDefault(),
-      discount: this.discount(),
-      discountAudiences: this.audiences(),
-      opening: toPickupOpening(this.opening()),
-      gps: toGps(this.gps()),
+      // La réduction se règle une fois le site créé, dans sa sous-carte.
+      discount: null,
+      discountAudiences: ALL_DISCOUNT_AUDIENCES,
+      opening: EMPTY_OPENING,
+      // Pas de `gps` : absent = inchangé. Il se saisit sous « Livraison ».
     };
     try {
-      if (id === undefined) {
-        // Vers la page du site créé, et non la liste : ses rôles et ses
-        // couleurs ne se règlent qu'une fois qu'il existe.
-        const created = await this.sites.create(payload);
-        this.notify.success('Site ajouté.');
-        await this.router.navigate([SITES_PATH, created.id]);
-      } else {
-        await this.sites.update(id, payload);
-        this.notify.success('Site mis à jour.');
-        await this.reload();
-      }
+      // Vers la page du site créé, et non la liste : ses rôles et ses
+      // couleurs ne se règlent qu'une fois qu'il existe.
+      const created = await this.sites.create(payload);
+      this.notify.success('Site ajouté.');
+      await this.router.navigate([SITES_PATH, created.id]);
     } catch (error) {
       this.refusal.set(httpErrorMessage(error, "Le site n'a pas pu être enregistré."));
     } finally {

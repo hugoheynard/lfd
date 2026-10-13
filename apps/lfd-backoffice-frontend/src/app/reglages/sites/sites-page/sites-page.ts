@@ -18,25 +18,13 @@ import {
 
 import { discountAudienceSuffix } from '../../../b2b/reglages/pickup-discount-audience';
 import { openingRows } from '../../../b2b/reglages/pickup-opening.model';
+import { roleLabels } from '../site-role-labels';
 import { SITES_PATH } from '../sites-path';
 import { SitesService } from '../sites.service';
 
-type LoadState = 'loading' | 'ready' | 'error';
+export { roleLabels } from '../site-role-labels';
 
-/** Les rôles d'un site, en mots, dans l'ordre où on les lit. */
-export function roleLabels(site: SiteView): readonly string[] {
-  const labels: string[] = [];
-  if (site.handsOver) {
-    labels.push('Remet');
-  }
-  if (site.supply === 'transfer') {
-    labels.push(site.transferMode === 'dedicated' ? 'Transfert dédié' : 'Transfert intégré');
-  }
-  if (site.dispatches) {
-    labels.push('Expédie');
-  }
-  return labels;
-}
+type LoadState = 'loading' | 'ready' | 'error';
 
 /**
  * **Réglages › Sites** — nos lieux, leurs rôles et leurs couleurs (plan
