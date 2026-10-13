@@ -6,7 +6,7 @@ const TYPE = { id: "bin_m", name: "Bac M", isotherm: false, archived: false };
 function bin(id: string, orderId: string, overrides: Partial<BinRow> = {}): BinRow {
   return {
     id,
-    orderId,
+    owner: { kind: "order", orderId },
     code: id.toUpperCase(),
     voidedAt: null,
     binType: TYPE,

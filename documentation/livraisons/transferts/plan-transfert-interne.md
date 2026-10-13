@@ -2,9 +2,9 @@
 
 > **État : 🔨 partiel, 2026-10-13.** Du transfert, les lots **T0**
 > (l'échéance selon le site), **T1** (l'agrégat, l'arrêt `transfer`, la
-> composition, le manifeste) et **T2** (la réception, le refus au comptoir —
-> backend) sont bâtis le 2026-10-13 — voir la fin du
-> document. Les **sites** dont il dépend sont bâtis
+> composition, le manifeste), **T2** (la réception, le refus au comptoir —
+> backend) et **T3** (les bacs du transfert, Q-T4 révisée — backend) sont
+> bâtis le 2026-10-13 — voir la fin du document. Les **sites** dont il dépend sont bâtis
 > et décrits dans [`../../sites/sites.md`](../../sites/sites.md) (rôle
 > « Approvisionné par transfert », `transfer_mode`, `counter_setup_minutes`,
 > point GPS) ; le **tri par heure de départ et les couleurs** de la
@@ -336,6 +336,11 @@ lit aujourd'hui que la fenêtre), lit la même fonction. Lot **T0**.
 
 ## 8. Le colisage
 
+> 🔁 **Remplacé par Q-T4 révisée (Hugo, 2026-10-13), bâti au lot T3** : les
+> commandes du site se mettent en SACS au colisage, et les sacs vont dans les
+> bacs du TRANSFERT, déclarés au chargement — voir « État du lot T3 ». Le
+> paragraphe ci-dessous décrit le lot T1.
+
 Chaque commande garde son sac / bac ([`colisage.md`](../../colisage/colisage.md)
 §2). Les commandes du village se rangent sous leur `dueAt` (§7) — c'est la
 réponse, pour le village, à la question 1 de
@@ -387,8 +392,8 @@ sortie de S3 (réception manuelle).
   nécessaire** ; **les bacs appartiennent au TRANSFERT**, pas à une commande.
   Même chose pour le réapprovisionnement. « Partir » exige au moins un bac
   déclaré pour le transfert, partagé entre ses éléments ; le manifeste reste
-  par élément ; la réception compte les bacs reçus. **Non bâti** : voir
-  « État du lot T2 », faille F1.
+  par élément ; la réception compte les bacs reçus. ✅ **Bâti au lot T3**
+  (2026-10-13, backend) : voir « État du lot T3 ».
 - **Q-T6** — « Remis au site » par le livreur, « Réceptionner » par le
   comptoir : les deux (proposé), ou un seul ?
 - **Q-T7** — Changer le mode d'un site : seulement les journées pas encore
@@ -458,6 +463,84 @@ l'option B le même jour ; le transfert a été refondu.
 | S5  | SÉRIEUX  | T0 dépend de S1 et de Q-T11                                                                                                    | **corrigé** (§9)                                                                                                                                                                                                                         |
 | m   | mineurs  | §12.1 S6 contre la lecture synchrone ; nom du fichier du fait de départ ; lecteur des sites servis ; repli sans véhicule       | **corrigés** : §12.1 S6 aligné ; `delivery-round-departed.fact.ts` vérifié (existe) ; lecteur nommé `TransferSitesReader` (§9) ; repli sans véhicule : transfert sans arrêt, ligne au journal, sortie par réception manuelle (**Q-T13**) |
 
+## État du lot T3 (2026-10-13)
+
+🔨 **Bâti, non commité** (non relu par `lecteur-de-migrations` ni `vitruve`).
+Migration `20261013720000_les_bacs_du_transfert` : `transfer_id` sur
+`delivery_bin` (clé étrangère RESTRICT, index), CHECK
+`delivery_bin_subject_check` — exactement un sujet, et un bac de transfert
+n'est jamais une moitié —, et le `DROP NOT NULL` de `order_id`, livré avec le
+code qui écrit le premier `NULL`. Additive : toutes les lignes existantes
+portent `order_id`.
+
+**Le mécanisme est celui des bacs** (méthode validée par Hugo) : même code
+court tiré, même QR, même chargement, même « Partir ». Le bac reçoit un sujet
+discriminé, comme l'arrêt en T1 :
+
+```mermaid
+flowchart LR
+  COL["colisage<br/>commandes du site en SACS"] --> DEP["dépôt : « Déclarer les bacs<br/>du transfert » (N bacs entiers)"]
+  DEP --> LOAD["charger chaque bac<br/>sur l'arrêt du transfert"]
+  LOAD --> GO["Partir : au moins un bac,<br/>tous chargés"]
+  GO --> REC["Remis au site / Réceptionner<br/>le journal compte les bacs"]
+```
+
+- **Domaine** : `BinSubject` (`order` | `transfer`) sur `DeliveryBin` ;
+  `declare` refuse une moitié de transfert (`TransferBinHalfError`) ;
+  `shareHalf` refuse un partenaire de transfert ;
+  `InternalTransfer.ensureTakesBins` refuse un transfert parti ou reçu
+  (`TransferBinsClosedError`).
+- **Déclarer** : `POST /admin/delivery/loading/transfers/:transferId/bins`
+  (`delivery_loading`, `{ binTypeId, count, innerBags }` → 201 `{ binIds }`),
+  `DeclareTransferBinsHandler` ; un transfert pas encore placé reçoit ses bacs
+  (ils attendent l'arrêt). Fait `internal_transfer.bins_declared`.
+- **Étiquettes** : `GET /admin/delivery/loading/transfers/:transferId/bins`
+  (`DeliveryTransferBinsView`) ; la fiche d'un bac (`GET …/packing/bins/:id`)
+  sert aussi un bac de transfert — `orderId: null`, `transfer`, référence
+  « → Val Village ».
+- **Charger, décharger, annuler** : par le sujet du bac (`forTransfer` sur le
+  chargement) ; les faits `delivery_bin.loaded|unloaded|voided` citent
+  `transfer` au lieu de `order` (champs devenus optionnels au contrat).
+- **« Partir »** : l'arrêt de transfert porte les bacs du transfert, puis ceux
+  que ses commandes avaient reçus en T1 ; zéro bac = « non étiqueté », refusé
+  en nommant « → Val Village ». Plus aucun bac exigé par commande.
+- **Colisage** : rien à changer au poste — un retrait ouvre déjà des sacs.
+  `BinDesk.declareBin` (et « Proposer », « moitiés libres ») refusent
+  désormais un retrait porté par un transfert
+  (`OrderBinsCarriedByTransferError`, « ses sacs vont dans les bacs du
+  transfert ») : `declarableReference` ne l'accepte plus.
+- **Réception** : `TransferBinCounts` compte les bacs non annulés (du
+  transfert et ceux d'avant T3 de ses commandes portées) ;
+  `internal_transfer.received` porte `bins`. La file du comptoir expose
+  `transfer.binCount`.
+- **F4** : `TransferStatusReader` est implémenté par `TransferArrivalStatus`
+  (application) ; un retrait d'un site servi par transfert qu'aucun transfert
+  ne porte est `awaiting` (lu par `TransferOrdersReader`, le canal du
+  commerce), et le comptoir le refuse (`handover.transfer_not_yet_composed`).
+  Contrat : `OrderTransferView.transferId` et `at` deviennent nullables,
+  l'état gagne `awaiting` (aucun front ne les lit encore).
+- **Journal** : `internal_transfer.bins_declared`, `bins` à la réception, le
+  transfert d'un bac — phrases au back-office.
+- **Tests** : domaine (`delivery-bin-transfer.spec.ts`), application
+  (`transfer-bins.spec.ts`, `transfer-arrival-status.spec.ts`, départ sans
+  bac, file et refus du comptoir), e2e `test/internal-transfer-bins.e2e-spec.ts`
+  (CHECK, déclaration, refus du colisage, étiquettes, fiche, chargement,
+  départ, file, réception, F4).
+
+**Ce qui reste hors de T3** :
+
+- **Le front** : déclarer et imprimer les bacs d'un transfert au chargement,
+  `binCount` et `awaiting` au comptoir, `bins` à « Remis au site ».
+- **Le plan de chargement** (`loading-plan`) ne place pas encore les bacs d'un
+  arrêt de transfert (inchangé depuis T1).
+- **F4, cas résiduel** : une commande d'un site passé en transfert APRÈS la
+  clôture de sa journée n'entre dans aucun transfert et reste refusée au
+  comptoir sans geste de sortie ; Q-T7 (changer de mode seulement pour une
+  journée non composée) n'est pas tenu par le code — non vérifié.
+- `OrderNotInTransferError` (« Réceptionner » sur une commande qu'aucun
+  transfert ne porte) dit encore « elle se remet comme un retrait ordinaire »,
+  faux pour une commande `awaiting`.
+
 ## État du lot T2 (2026-10-13)
 
 🔨 **Bâti, non commité** (non relu par `lecteur-de-migrations` ni `vitruve`).
@@ -500,7 +583,7 @@ vocabulaire « réapprovisionnement », Hugo, 2026-10-13 ; aucune donnée).
 
 **Écarts au plan, remontés** :
 
-- **F1 — Q-T4 révisée (bacs du transfert) non bâtie.** `delivery_bin.order_id`
+- ~~**F1**~~ — résolue au lot T3 (2026-10-13). **F1 — Q-T4 révisée (bacs du transfert) non bâtie.** `delivery_bin.order_id`
   est `NOT NULL`, et `BinDesk` (`packing/channels/delivery/`) est déclaré par
   le colisage et indexé par commande (`declareBin`, `propose`, `freeHalves`,
   `assertAtHand`) ; le partage existant ne joint que deux **moitiés** d'un bac
@@ -516,13 +599,13 @@ vocabulaire « réapprovisionnement », Hugo, 2026-10-13 ; aucune donnée).
   (vérifié le 2026-10-13 : aucune commande `b2b/orders/application/commands/`
   ne le fait). `TransferMembership` traite ce cas (`moved`) dès qu'un fait le
   déclenchera ; aujourd'hui seules la passation et l'annulation le déclenchent.
-- **F4 — une commande d'un site `transfer` qu'aucun transfert ne porte encore**
+- ~~**F4**~~ — traitée au lot T3 (2026-10-13) : refusée au comptoir. **F4 — une commande d'un site `transfer` qu'aucun transfert ne porte encore**
   (passée avant la clôture) se remet sans refus : le refus ne vaut que pour une
   commande portée.
 
 **Reste** : le front (écrans livreur, comptoir — contrats prêts), l'heure de
 l'arrêt de transfert dans « Ma tournée », la feuille de route PDF
-(`round-paper`), le nombre de bacs à la réception (F1).
+(`round-paper`), ~~le nombre de bacs à la réception (F1)~~ (bâti en T3).
 
 ## État du lot T1 (2026-10-13)
 

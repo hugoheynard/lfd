@@ -1,6 +1,7 @@
 import type { JournalFactType } from "@lfd/contracts/journal-facts";
 
 import type { JournalFact, JournaledEvent } from "../../../platform/journal/journal-fact.js";
+import type { DeliveryBin } from "../entities/delivery-bin.js";
 import type { DeliveryRound } from "../entities/delivery-round.js";
 import type { InternalTransfer } from "../entities/internal-transfer.js";
 
@@ -19,6 +20,7 @@ export const INTERNAL_TRANSFER_FACTS = {
   received: "internal_transfer.received",
   orderDetached: "internal_transfer.order_detached",
   orderKept: "internal_transfer.order_kept",
+  binsDeclared: "internal_transfer.bins_declared",
 } as const satisfies Readonly<Record<string, JournalFactType>>;
 
 /** Où le transfert a été reçu (Q-T6) : remis au site par le livreur, ou au comptoir. */
@@ -135,13 +137,15 @@ export class TransferStopRemovedEvent implements JournaledEvent {
 
 /**
  * Reçu au site (lot T2). `manual` : il n'était parti dans aucune tournée — le
- * motif dit comment la marchandise est venue.
+ * motif dit comment la marchandise est venue. `bins` (lot T3) : les bacs non
+ * annulés du transfert à cet instant — ce que le site doit avoir reçu.
  */
 export class InternalTransferReceivedEvent implements JournaledEvent {
   constructor(
     readonly transfer: InternalTransfer,
     readonly via: TransferReceivedVia,
     readonly manual: boolean,
+    readonly bins: number,
   ) {}
 
   journalFact(): JournalFact {
@@ -149,6 +153,35 @@ export class InternalTransferReceivedEvent implements JournaledEvent {
       via: this.via,
       manual: this.manual,
       reason: this.transfer.received?.reason ?? null,
+      bins: this.bins,
+    });
+  }
+}
+
+/** Un type de bac cité : son id et son nom du moment. */
+export interface CitedTransferBinType {
+  readonly id: string;
+  readonly name: string;
+}
+
+/**
+ * Des bacs d'un type de plus pour un transfert (lot T3, Q-T4 révisée) : UN
+ * fait, sujet le transfert — comme `delivery_bin.declared` l'est pour une
+ * commande. `innerBags` : les sacs posés dans CHAQUE bac.
+ */
+export class InternalTransferBinsDeclaredEvent implements JournaledEvent {
+  constructor(
+    readonly transfer: InternalTransfer,
+    readonly binType: CitedTransferBinType,
+    readonly innerBags: number,
+    readonly bins: readonly DeliveryBin[],
+  ) {}
+
+  journalFact(): JournalFact {
+    return transferFact(INTERNAL_TRANSFER_FACTS.binsDeclared, this.transfer, {
+      binType: this.binType,
+      innerBags: this.innerBags,
+      bins: this.bins.map((bin) => ({ id: bin.id, name: bin.code })),
     });
   }
 }

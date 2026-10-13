@@ -66,13 +66,23 @@ export interface DeliveryBinView {
   readonly binId: string;
   /** Six caractères, Crockford base 32 : ce qu'on tape quand le QR est illisible. */
   readonly code: string;
-  readonly orderId: string;
+  /**
+   * La commande du bac ; `null` pour un bac de TRANSFERT interne (lot T3,
+   * 2026-10-13) — ses commandes y sont en sacs, voir `transfer`.
+   */
+  readonly orderId: string | null;
+  /**
+   * Le transfert interne qui porte ce bac (lot T3), ou `null` / absent pour
+   * un bac de commande. `reference` vaut alors « → <site> », et
+   * `customerLabel` le nom du site.
+   */
+  readonly transfer?: DeliveryBinTransferRef | null | undefined;
   readonly reference: string;
   /** L'enseigne, ou la raison sociale — ce qu'on lit sur l'étiquette. */
   readonly customerLabel: string;
-  /** Rang du bac parmi les bacs non annulés de la commande, 1..n. `null` s'il est annulé. */
+  /** Rang du bac parmi les bacs non annulés de son propriétaire, 1..n. `null` s'il est annulé. */
   readonly index: number | null;
-  /** Nombre de bacs non annulés de la commande (une moitié compte pour un). */
+  /** Nombre de bacs non annulés de son propriétaire (une moitié compte pour un). */
   readonly total: number;
   readonly voidedAt: string | null;
   readonly binType: DeliveryBinTypeRef;
@@ -91,6 +101,44 @@ export interface DeliveryBinView {
    * un bac non partagé.
    */
   readonly toRedo: boolean;
+}
+
+/** Le transfert interne d'un bac de transfert (lot T3). */
+export interface DeliveryBinTransferRef {
+  readonly transferId: string;
+  /** Le nom du site servi, figé à l'ouverture du transfert. */
+  readonly siteLabel: string;
+}
+
+/**
+ * **Les bacs d'un transfert interne** (lot T3, 2026-10-13) — la page
+ * d'étiquettes du transfert : `GET admin/delivery/loading/transfers/
+ * :transferId/bins`, sous `delivery_loading:read`. Annulés compris.
+ */
+export interface DeliveryTransferBinsView {
+  readonly transferId: string;
+  readonly siteLabel: string;
+  readonly day: string;
+  readonly bins: readonly DeliveryBinView[];
+}
+
+/**
+ * **Déclarer les bacs d'un transfert interne** au chargement (lot T3, Q-T4
+ * révisée par Hugo le 2026-10-13) : `count` bacs ENTIERS d'un type, les sacs
+ * des commandes du site dedans. `POST admin/delivery/loading/transfers/
+ * :transferId/bins`, sous `delivery_loading:write` → 201 `{ binIds }`. Le
+ * domaine revérifie les bornes ; le contrat n'en tient que la forme.
+ */
+export const declareTransferBinsPayloadSchema = z.object({
+  binTypeId: z.string().trim().min(1, "type de bac requis"),
+  count: z.number().int().min(1).max(DELIVERY_BINS_PER_DECLARATION_MAX),
+  innerBags: z.number().int().min(0).max(DELIVERY_BIN_INNER_BAGS_MAX),
+});
+export type DeclareTransferBinsPayload = z.infer<typeof declareTransferBinsPayloadSchema>;
+
+/** Les bacs déclarés, dans l'ordre : leurs identifiants (ceux des QR). */
+export interface DeclaredTransferBinsView {
+  readonly binIds: readonly string[];
 }
 
 /** Les bacs d'une commande — pour le colisage et la page d'étiquettes imprimable. */
@@ -171,9 +219,10 @@ export interface DeliveryLoadingRoundView {
   readonly departedAt: string | null;
   readonly stops: readonly DeliveryLoadingStopView[];
   /**
-   * Les arrêts de **transfert interne** (lot T1, 2026-10-13) : les bacs de
-   * toutes les commandes d'un site servi par transfert, à charger sur UN
-   * arrêt. Leurs positions s'intercalent avec `stops`. Absent : aucun.
+   * Les arrêts de **transfert interne** (lot T1, 2026-10-13) : les bacs du
+   * TRANSFERT (lot T3, Q-T4 révisée — les commandes du site y sont en sacs),
+   * puis ceux que ses commandes avaient reçus avant T3, à charger sur UN
+   * arrêt. « Partir » exige au moins un bac. Leurs positions s'intercalent avec `stops`. Absent : aucun.
    */
   readonly transferStops?: readonly DeliveryLoadingTransferStopView[];
 }

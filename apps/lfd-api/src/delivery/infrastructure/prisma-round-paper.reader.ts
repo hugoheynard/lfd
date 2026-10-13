@@ -78,7 +78,7 @@ export class PrismaRoundPaperReader extends RoundPaperReader {
       select: { orderId: true, code: true },
     });
     const codes = new Map<string, string[]>();
-    for (const row of rows) {
+    for (const row of orderStopsOnly(rows)) {
       codes.set(row.orderId, [...(codes.get(row.orderId) ?? []), row.code]);
     }
     return codes;

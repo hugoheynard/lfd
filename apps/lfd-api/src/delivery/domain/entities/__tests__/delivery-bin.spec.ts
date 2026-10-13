@@ -61,7 +61,7 @@ function loadingOf(overrides: Partial<StopLoadingSnapshot> = {}): StopLoading {
 function bin(overrides: Partial<DeliveryBinState> = {}): DeliveryBin {
   return DeliveryBin.restore({
     id: "b_1",
-    orderId: "o_2",
+    subject: { kind: "order", orderId: "o_2" },
     binTypeId: "t_m",
     half: null,
     physicalBinId: null,
@@ -76,7 +76,7 @@ function bin(overrides: Partial<DeliveryBinState> = {}): DeliveryBin {
 /** La moitié gauche d'un bac physique `p_1`, déclarée pour `o_1`. */
 const LEFT_OF_O1 = bin({
   id: "h_1",
-  orderId: "o_1",
+  subject: { kind: "order", orderId: "o_1" },
   half: "left",
   physicalBinId: "p_1",
   code: "HHHHHH",
@@ -138,7 +138,7 @@ describe("BinDeclaration — lot 4 bis, tranche B", () => {
 describe("DeliveryBin.declare — un bac naît quand on le déclare (L4-C16)", () => {
   it("les entiers d'abord, puis la moitié : la gauche d'un bac physique neuf", () => {
     const bins = DeliveryBin.declare({
-      orderId: "o_1",
+      subject: { kind: "order", orderId: "o_1" },
       declaration: declaration(1, true, 2),
       identities: [
         { id: "b_1", code: "a1b2c3" },
@@ -152,7 +152,7 @@ describe("DeliveryBin.declare — un bac naît quand on le déclare (L4-C16)", (
     expect(bins.map((declared) => declared.toSnapshot())).toEqual([
       {
         id: "b_1",
-        orderId: "o_1",
+        subject: { kind: "order", orderId: "o_1" },
         binTypeId: "t_m",
         half: null,
         physicalBinId: null,
@@ -163,7 +163,7 @@ describe("DeliveryBin.declare — un bac naît quand on le déclare (L4-C16)", (
       },
       {
         id: "b_2",
-        orderId: "o_1",
+        subject: { kind: "order", orderId: "o_1" },
         binTypeId: "t_m",
         half: "left",
         physicalBinId: "p_1",
@@ -178,7 +178,7 @@ describe("DeliveryBin.declare — un bac naît quand on le déclare (L4-C16)", (
   it("refuse un code hors alphabet Crockford", () => {
     expect(() =>
       DeliveryBin.declare({
-        orderId: "o_1",
+        subject: { kind: "order", orderId: "o_1" },
         declaration: declaration(1),
         identities: [{ id: "b_1", code: "ILOU00" }],
         physicalBinId: "p_1",
@@ -191,7 +191,7 @@ describe("DeliveryBin.declare — un bac naît quand on le déclare (L4-C16)", (
   it("refuse un bac de plus pour une tournée partie (I6)", () => {
     expect(() =>
       DeliveryBin.declare({
-        orderId: "o_2",
+        subject: { kind: "order", orderId: "o_2" },
         declaration: declaration(1),
         identities: [{ id: "b_2", code: "BBBBBB" }],
         physicalBinId: "p_1",
@@ -223,7 +223,7 @@ describe("DeliveryBin.shareHalf — le bac partagé (v2-4)", () => {
   it("prend l'AUTRE moitié du même bac physique, au même type", () => {
     expect(share().toSnapshot()).toEqual({
       id: "h_2",
-      orderId: "o_2",
+      subject: { kind: "order", orderId: "o_2" },
       binTypeId: "t_m",
       half: "right",
       physicalBinId: "p_1",
@@ -258,17 +258,26 @@ describe("DeliveryBin.shareHalf — le bac partagé (v2-4)", () => {
   });
 
   it("refuse l'autre moitié déjà prise — jamais deux fois la même, jamais trois moitiés", () => {
-    const right = bin({ id: "h_x", orderId: "o_3", half: "right", physicalBinId: "p_1" });
+    const right = bin({
+      id: "h_x",
+      subject: { kind: "order", orderId: "o_3" },
+      half: "right",
+      physicalBinId: "p_1",
+    });
 
     expect(() => share({ liveHalves: [LEFT_OF_O1, right] })).toThrow(BinHalfTakenError);
   });
 
   it.each([
-    ["un bac entier", bin({ id: "w_1", orderId: "o_1" }), "est un bac entier"],
+    [
+      "un bac entier",
+      bin({ id: "w_1", subject: { kind: "order", orderId: "o_1" } }),
+      "est un bac entier",
+    ],
     ["une moitié annulée", bin({ ...LEFT_OF_O1.toSnapshot(), voidedAt: AT }), "a été annulé"],
     [
       "une moitié de la même commande",
-      bin({ ...LEFT_OF_O1.toSnapshot(), orderId: "o_2" }),
+      bin({ ...LEFT_OF_O1.toSnapshot(), subject: { kind: "order", orderId: "o_2" } }),
       "appartient déjà",
     ],
   ])("refuse de partager %s", (_label, partner, words) => {

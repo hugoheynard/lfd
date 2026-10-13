@@ -71,6 +71,18 @@ export class FixedLoading extends DeliveryLoadingReader {
   destinationOf(): Promise<BinDestinationRow | null> {
     return Promise.resolve(null);
   }
+
+  /** Les bacs d'un transfert (lot T3), où qu'ils soient rangés. */
+  transferBins(transferId: string): Promise<readonly BinRow[]> {
+    const all = this.rounds.flatMap((round) => round.stops.flatMap((stop) => stop.bins));
+    return Promise.resolve(
+      all.filter((bin) => bin.owner.kind === "transfer" && bin.owner.transferId === transferId),
+    );
+  }
+
+  transferDestinationOf(): Promise<BinDestinationRow | null> {
+    return Promise.resolve(null);
+  }
 }
 
 /** Une commande livrée, active, connue du commerce. */
@@ -113,7 +125,7 @@ export function binTypeView(
 export function binRow(id: string, orderId: string, overrides: Partial<BinRow> = {}): BinRow {
   return {
     id,
-    orderId,
+    owner: { kind: "order", orderId },
     code: id.toUpperCase().padEnd(6, "0").slice(0, 6),
     voidedAt: null,
     binType: { id: "bin_m", name: "Bac bin_m", isotherm: false, archived: false },

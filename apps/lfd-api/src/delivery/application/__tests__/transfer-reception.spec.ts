@@ -7,7 +7,11 @@ import {
   TransferReceptionReasonRequiredError,
 } from "../../domain/errors/internal-transfer-errors.js";
 import { TransferReception } from "../transfer-reception.js";
-import { InMemoryInternalTransfers, plannedTransfer } from "./transfer-doubles.js";
+import {
+  FixedTransferBinCounts,
+  InMemoryInternalTransfers,
+  plannedTransfer,
+} from "./transfer-doubles.js";
 
 /** « Réceptionner » au comptoir du site (plan du transfert interne, §6.3, Q-T6, lot T2). */
 
@@ -25,6 +29,7 @@ function scene(departed: boolean) {
   const events = new RecordingPublisher();
   const desk = new TransferReception(
     transfers,
+    new FixedTransferBinCounts(new Map([["t_1", 3]])),
     new FixedClock(NOW),
     events,
     new DirectUnitOfWork(),
@@ -41,7 +46,8 @@ describe("TransferReception", () => {
     expect(transfers.all()[0]?.received).toEqual({ at: NOW, by: "staff_c", reason: null });
     expect(events.traced[0]?.journalFact()).toMatchObject({
       type: "internal_transfer.received",
-      payload: { via: "counter", manual: false, reason: null },
+      // Lot T3 : la réception compte les bacs du transfert.
+      payload: { via: "counter", manual: false, reason: null, bins: 3 },
     });
   });
 

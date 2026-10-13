@@ -120,3 +120,18 @@ export class OrderNotInTransferError extends ResourceNotFoundError {
     );
   }
 }
+
+/**
+ * Un bac de plus sur un transfert parti ou reçu (lot T3) : il ne partirait
+ * jamais. Les sacs d'une commande arrivée trop tard partent par un autre
+ * transfert (Q-T3).
+ */
+export class TransferBinsClosedError extends BusinessError {
+  constructor(siteLabel: string, day: string, state: "departed" | "received" | "planned") {
+    super(
+      "delivery.internal_transfer_bins_closed",
+      `Le transfert vers « ${siteLabel} » du ${day} est déjà ${state === "received" ? "reçu au site" : "parti"} : ` +
+        "il ne reçoit plus de bac. Rechargez : une commande arrivée après son départ part par un autre transfert.",
+    );
+  }
+}

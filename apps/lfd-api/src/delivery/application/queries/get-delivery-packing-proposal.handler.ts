@@ -91,9 +91,9 @@ export class GetDeliveryPackingProposalHandler implements IQueryHandler<
       return null;
     }
     const { halves } = await freeHalvesOfOrder(this.loading, orderId);
-    const candidates: FreeHalf[] = halves.map(({ bin, stop }) => ({
+    const candidates: FreeHalf[] = halves.map(({ bin, orderId: halfOrderId, stop }) => ({
       binId: bin.id,
-      orderId: bin.orderId,
+      orderId: halfOrderId,
       position: stop.position,
       binTypeId: bin.binType.id,
       isotherm: bin.binType.isotherm,

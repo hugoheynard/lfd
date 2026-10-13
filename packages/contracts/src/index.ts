@@ -1175,6 +1175,7 @@ export {
   deliveryBinHalfSchema,
   loadDeliveryBinPayloadSchema,
   departDeliveryRoundPayloadSchema,
+  declareTransferBinsPayloadSchema,
 } from "./delivery-loading.js";
 export type {
   DeliveryBinHalf,
@@ -1192,6 +1193,10 @@ export type {
   DeliveryLoadingDayView,
   LoadDeliveryBinPayload,
   DepartDeliveryRoundPayload,
+  DeliveryBinTransferRef,
+  DeliveryTransferBinsView,
+  DeclareTransferBinsPayload,
+  DeclaredTransferBinsView,
 } from "./delivery-loading.js";
 export type {
   DeliveryLoadingPlanBinView,

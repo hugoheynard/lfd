@@ -65,3 +65,21 @@ export class TransferNotReceivedError extends BusinessError {
     );
   }
 }
+
+/**
+ * **Aucun transfert ne la porte encore** (plan du transfert interne, lot T3,
+ * faille F4) : un retrait d'un site servi par transfert, passé avant la
+ * clôture de sa journée. La marchandise n'est ni faite ni partie ; la
+ * remettre, ce serait attester un sac qui n'existe pas. Le transfert la
+ * prendra à la clôture (ou à sa passation, si la journée est déjà close).
+ */
+export class TransferNotYetComposedError extends BusinessError {
+  constructor(siteLabel: string) {
+    super(
+      "handover.transfer_not_yet_composed",
+      `Cette commande part par transfert interne vers « ${siteLabel} », et aucun transfert ne ` +
+        "la porte encore : sa journée de production n'est pas clôturée. Attendez la clôture, " +
+        "puis l'arrivée du transfert au site, avant de la remettre.",
+    );
+  }
+}

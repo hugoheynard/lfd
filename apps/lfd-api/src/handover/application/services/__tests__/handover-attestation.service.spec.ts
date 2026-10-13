@@ -10,6 +10,7 @@ import { OrderHandover } from "../../../domain/entities/order-handover.js";
 import {
   HandoverRefusedError,
   TransferNotReceivedError,
+  TransferNotYetComposedError,
 } from "../../../domain/errors/handover-errors.js";
 import { OrderHandoverRepository } from "../../../domain/ports/order-handover.repository.js";
 import { FixedQualityHolds } from "../../__tests__/fixed-quality-holds.js";
@@ -177,6 +178,27 @@ describe("HandoverAttestation", () => {
       expect(written).toHaveLength(0);
       expect(events.published).toEqual([]);
     }
+  });
+
+  /**
+   * Régression F4 (lot T3 du transfert interne) : un retrait d'un site servi
+   * par transfert, passé avant la clôture, n'était porté par aucun transfert
+   * et se remettait sans refus — alors que sa marchandise n'était pas au site.
+   */
+  it("refuse un retrait d'un site servi par transfert qu'aucun transfert ne porte encore", async () => {
+    const { service, written, events } = attestationOf(
+      null,
+      true,
+      new FixedQualityHolds(),
+      new FixedTransferStatus(new Map([["ord_1", "awaiting"]])),
+    );
+
+    const refusal = service.attest(subject(), "staff-1", "scan");
+
+    await expect(refusal).rejects.toBeInstanceOf(TransferNotYetComposedError);
+    await expect(refusal).rejects.toThrow(/aucun transfert ne la porte encore/u);
+    expect(written).toHaveLength(0);
+    expect(events.published).toEqual([]);
   });
 
   it("remet une commande dont le transfert est reçu", async () => {

@@ -6,7 +6,11 @@ import { DoorstepRoundStaleError } from "../../../domain/errors/delivery-doorste
 import { DriverRoundNotFoundError } from "../../../domain/errors/delivery-driver-errors.js";
 import { StopNotATransferError } from "../../../domain/errors/internal-transfer-errors.js";
 import type { InternalTransfer } from "../../../domain/entities/internal-transfer.js";
-import { InMemoryInternalTransfers, plannedTransfer } from "../../__tests__/transfer-doubles.js";
+import {
+  FixedTransferBinCounts,
+  InMemoryInternalTransfers,
+  plannedTransfer,
+} from "../../__tests__/transfer-doubles.js";
 import { DropTransferAtSiteCommand } from "../drop-transfer-at-site.command.js";
 import { DropTransferAtSiteHandler } from "../drop-transfer-at-site.handler.js";
 import { InMemoryDeliveryRounds } from "./round-doubles.js";
@@ -55,6 +59,7 @@ function scene(transfer = departedTransfer()) {
   const handler = new DropTransferAtSiteHandler(
     rounds,
     transfers,
+    new FixedTransferBinCounts(new Map([["t_1", 2]])),
     new FixedClock(NOW),
     events,
     new DirectUnitOfWork(),
@@ -79,6 +84,8 @@ describe("DropTransferAtSiteHandler", () => {
     expect(events.traced[0]?.journalFact().payload).toMatchObject({
       via: "site_drop",
       manual: false,
+      // Lot T3 : « Remis au site » compte les bacs du transfert.
+      bins: 2,
     });
   });
 

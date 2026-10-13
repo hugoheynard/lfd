@@ -10,6 +10,8 @@ import {
 import { OrderNotInTransferError } from "../domain/errors/internal-transfer-errors.js";
 import { InternalTransferReceivedEvent } from "../domain/events/internal-transfer.events.js";
 import { InternalTransferRepository } from "../domain/ports/internal-transfer.repository.js";
+import { TransferBinCounts } from "../domain/ports/transfer-bin-counts.reader.js";
+import type { InternalTransfer } from "../domain/entities/internal-transfer.js";
 import { loadTransfer } from "./internal-transfer-support.js";
 
 /**
@@ -19,7 +21,8 @@ import { loadTransfer } from "./internal-transfer-support.js";
  *
  * Dans UNE unité de travail : le transfert qui porte la commande est chargé,
  * il refuse ou reçoit (`receive` — manuel depuis `planned`, motif exigé), il
- * est écrit sous `received_at IS NULL`, et le journal le dit. L'arrêt de
+ * est écrit sous `received_at IS NULL`, et le journal le dit — avec le
+ * nombre de bacs du transfert (lot T3), ce que le site doit avoir reçu. L'arrêt de
  * transfert, s'il roule encore, reste à clore par le livreur (« Remis au
  * site » sur un transfert déjà reçu ne fait que le clore).
  */
@@ -27,6 +30,7 @@ import { loadTransfer } from "./internal-transfer-support.js";
 export class TransferReception extends TransferReceptionDesk {
   constructor(
     private readonly transfers: InternalTransferRepository,
+    private readonly bins: TransferBinCounts,
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
@@ -45,8 +49,13 @@ export class TransferReception extends TransferReceptionDesk {
       transfer.receive({ at: this.clock.now(), by: request.staffUserId, reason: request.reason });
       await this.transfers.save(transfer);
       await this.events.publishTraced(
-        new InternalTransferReceivedEvent(transfer, "counter", manual),
+        new InternalTransferReceivedEvent(transfer, "counter", manual, await this.binsOf(transfer)),
       );
     });
+  }
+
+  /** Les bacs non annulés du transfert, à cet instant. */
+  private async binsOf(transfer: InternalTransfer): Promise<number> {
+    return (await this.bins.liveBinCounts([transfer.id])).get(transfer.id) ?? 0;
   }
 }

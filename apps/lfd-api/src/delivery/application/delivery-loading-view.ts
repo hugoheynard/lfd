@@ -56,20 +56,35 @@ export function namesByOrder(
 export function ordersCitedBy(bins: readonly BinRow[]): readonly string[] {
   return [
     ...new Set(
-      bins.flatMap((bin) => [bin.orderId, ...(bin.partner === null ? [] : [bin.partner.orderId])]),
+      bins.flatMap((bin) => [
+        ...(bin.owner.kind === "order" ? [bin.owner.orderId] : []),
+        ...(bin.partner === null ? [] : [bin.partner.orderId]),
+      ]),
     ),
   ];
 }
 
 /** Le bac partagé est-il à refaire ? Jamais pour un bac non partagé. */
 export function binToRedo(bin: BinRow, places: ReadonlyMap<string, StopPlace>): boolean {
-  if (bin.partner === null || bin.voidedAt !== null) {
+  if (bin.partner === null || bin.voidedAt !== null || bin.owner.kind !== "order") {
     return false;
   }
   return isSharedBinToRedo(
-    places.get(bin.orderId) ?? null,
+    places.get(bin.owner.orderId) ?? null,
     places.get(bin.partner.orderId) ?? null,
   );
+}
+
+/**
+ * Le nom imprimé d'un bac : celui de sa commande ; pour un bac de transfert
+ * (lot T3), « → Val Village », et le site à la place du client — la
+ * référence de l'arrêt dans « Partir ».
+ */
+function ownerNamesOf(bin: BinRow, context: BinContext): OrderNames {
+  const { owner } = bin;
+  return owner.kind === "order"
+    ? (context.names.get(owner.orderId) ?? orderNamesOf(undefined))
+    : { reference: `→ ${owner.siteLabel}`, customerLabel: owner.siteLabel };
 }
 
 /** Les bacs d'une commande, rangés : rang et total ne comptent que les non annulés. */
@@ -90,7 +105,8 @@ function binViewOf(
   index: number | null,
   total: number,
 ): DeliveryBinView {
-  const names = context.names.get(bin.orderId) ?? orderNamesOf(undefined);
+  const names = ownerNamesOf(bin, context);
+  const { owner } = bin;
   const partnerNames =
     bin.partner === null
       ? null
@@ -98,7 +114,11 @@ function binViewOf(
   return {
     binId: bin.id,
     code: bin.code,
-    orderId: bin.orderId,
+    orderId: owner.kind === "order" ? owner.orderId : null,
+    transfer:
+      owner.kind === "transfer"
+        ? { transferId: owner.transferId, siteLabel: owner.siteLabel }
+        : null,
     reference: names.reference,
     customerLabel: names.customerLabel,
     index,

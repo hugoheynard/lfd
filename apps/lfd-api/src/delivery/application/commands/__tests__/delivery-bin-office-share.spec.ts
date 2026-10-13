@@ -22,7 +22,11 @@ import {
   stopOf,
 } from "./loading-doubles.js";
 import { deliveryOn, FixedDeliveryOrders } from "./round-doubles.js";
-import { FixedTransferredOrders } from "../../__tests__/transfer-doubles.js";
+import {
+  FixedTransferredOrders,
+  InMemoryInternalTransfers,
+  InternalTransfersReaderOver,
+} from "../../__tests__/transfer-doubles.js";
 
 // Des jours comparés entre eux seulement, jamais à l'horloge.
 const DAY = "2030-03-12";
@@ -58,6 +62,7 @@ function sharing(
     events,
     new DirectUnitOfWork(),
     new FixedTransferredOrders(),
+    new InternalTransfersReaderOver(new InMemoryInternalTransfers()),
   );
   const handler = {
     execute: async (request: BinShareRequest): Promise<string> => (await office.share(request)).id,
@@ -77,7 +82,7 @@ describe("DeliveryBinOffice.share — le bac partagé (lot 4 bis, v2-4)", () => 
     const id = await handler.execute({ orderId: "o_2", partnerBinId: "h_1", innerBags: 2 });
 
     expect(bins.byId.get(id)?.toSnapshot()).toMatchObject({
-      orderId: "o_2",
+      subject: { kind: "order", orderId: "o_2" },
       binTypeId: "t_m",
       half: "right",
       physicalBinId: "p_1",

@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
+import type { Prisma } from "../../platform/database/client/client.js";
 import { PrismaService } from "../../platform/database/prisma.service.js";
 import type { StopPlace } from "../domain/entities/shared-bin.js";
 import {
@@ -8,27 +9,12 @@ import {
   DeliveryLoadingReader,
   type LoadingRoundRow,
 } from "../domain/ports/delivery-loading.reader.js";
-import { binHalfOf } from "./bin-half.js";
-import { partnersOf } from "./bin-partners.js";
+import { binRowById, binRowsOf } from "./loading-bin-rows.js";
 import { stopSubjectOf } from "./delivery-round.writes.js";
 import { orderStopsOnly } from "./order-stop.js";
 
-const BIN_SELECT = {
-  id: true,
-  orderId: true,
-  code: true,
-  voidedAt: true,
-  half: true,
-  physicalBinId: true,
-  innerBags: true,
-  binType: { select: { id: true, name: true, isotherm: true, archivedAt: true } },
-} as const;
-
 /** Un arrêt vivant : ni retiré, ni clos (C12). */
 const LIVE_STOP = { removedAt: null, closedAt: null } as const;
-
-/** Les bacs dans l'ordre de déclaration : c'est ce qui fait « bac 2 / 3 ». */
-const DECLARATION_ORDER = [{ createdAt: "asc" }, { id: "asc" }] as const;
 
 /** Une tournée, ses arrêts vivants, et les bacs CHARGÉS dans chacun. */
 const ROUND_SELECT = {
@@ -52,22 +38,6 @@ const ROUND_SELECT = {
     },
   },
 } as const;
-
-interface BinRecord {
-  readonly id: string;
-  readonly orderId: string;
-  readonly code: string;
-  readonly voidedAt: Date | null;
-  readonly half: string | null;
-  readonly physicalBinId: string | null;
-  readonly innerBags: number;
-  readonly binType: {
-    readonly id: string;
-    readonly name: string;
-    readonly isotherm: boolean;
-    readonly archivedAt: Date | null;
-  };
-}
 
 /**
  * **Adaptateur Prisma des lectures du chargement** (lot 4 ; lot 4 bis,
@@ -104,7 +74,10 @@ export class PrismaDeliveryLoadingReader extends DeliveryLoadingReader {
     const orderIds = rounds.flatMap((round) =>
       round.stops.flatMap((stop) => stop.orderId ?? carried.get(stop.transferId ?? "") ?? []),
     );
-    const bins = await this.binsOf(orderIds);
+    const transferIds = rounds.flatMap((round) =>
+      round.stops.flatMap((stop) => stop.transferId ?? []),
+    );
+    const bins = await binRowsOf(this.prisma, orderIds, transferIds);
     return rounds.map((round) => ({
       id: round.id,
       serviceDay: round.serviceDay,
@@ -117,7 +90,7 @@ export class PrismaDeliveryLoadingReader extends DeliveryLoadingReader {
         stopId: stop.id,
         siteLabel: stop.transfer?.siteLabel ?? null,
         position: stop.position,
-        bins: bins.filter((bin) => carriedBy(stop, carried).has(bin.orderId)),
+        bins: bins.filter((bin) => isCarriedBy(stop, carried, bin)),
         loaded: new Map(
           stop.binLoads.flatMap((load) =>
             load.loadedAt === null ? [] : [[load.binId, load.loadedAt] as const],
@@ -147,19 +120,15 @@ export class PrismaDeliveryLoadingReader extends DeliveryLoadingReader {
   }
 
   orderBins(orderId: string): Promise<readonly BinRow[]> {
-    return this.binsOf([orderId]);
+    return binRowsOf(this.prisma, [orderId]);
   }
 
-  async bin(binId: string): Promise<BinRow | null> {
-    const row = await this.prisma.deliveryBin.findUnique({
-      where: { id: binId },
-      select: BIN_SELECT,
-    });
-    if (row === null) {
-      return null;
-    }
-    const [bin] = await this.withPartners([row]);
-    return bin ?? null;
+  transferBins(transferId: string): Promise<readonly BinRow[]> {
+    return binRowsOf(this.prisma, [], [transferId]);
+  }
+
+  bin(binId: string): Promise<BinRow | null> {
+    return binRowById(this.prisma, binId);
   }
 
   async placesOf(orderIds: readonly string[]): Promise<ReadonlyMap<string, StopPlace>> {
@@ -191,13 +160,24 @@ export class PrismaDeliveryLoadingReader extends DeliveryLoadingReader {
     return places;
   }
 
-  async destinationOf(orderId: string, binId: string): Promise<BinDestinationRow | null> {
+  destinationOf(orderId: string, binId: string): Promise<BinDestinationRow | null> {
     // Sa propre tournée, ou celle du transfert interne qui l'emporte (lot T1).
+    return this.destination(
+      { OR: [{ orderId }, { transfer: { items: { some: { kind: "order", orderId } } } }] },
+      binId,
+    );
+  }
+
+  transferDestinationOf(transferId: string, binId: string): Promise<BinDestinationRow | null> {
+    return this.destination({ transferId }, binId);
+  }
+
+  private async destination(
+    subject: Prisma.DeliveryRoundStopWhereInput,
+    binId: string,
+  ): Promise<BinDestinationRow | null> {
     const stop = await this.prisma.deliveryRoundStop.findFirst({
-      where: {
-        ...LIVE_STOP,
-        OR: [{ orderId }, { transfer: { items: { some: { kind: "order", orderId } } } }],
-      },
+      where: { ...LIVE_STOP, ...subject },
       select: {
         round: {
           select: {
@@ -223,57 +203,23 @@ export class PrismaDeliveryLoadingReader extends DeliveryLoadingReader {
       loadedAt: stop.binLoads[0]?.loadedAt ?? null,
     };
   }
-
-  /** Les bacs de ces commandes, annulés compris, dans l'ordre de déclaration. */
-  private async binsOf(orderIds: readonly string[]): Promise<BinRow[]> {
-    if (orderIds.length === 0) {
-      return [];
-    }
-    const rows = await this.prisma.deliveryBin.findMany({
-      where: { orderId: { in: [...orderIds] } },
-      orderBy: [...DECLARATION_ORDER],
-      select: BIN_SELECT,
-    });
-    return this.withPartners(rows);
-  }
-
-  /** Chaque bac, avec l'autre moitié vivante de son bac physique quand elle est à une autre commande. */
-  private async withPartners(rows: readonly BinRecord[]): Promise<BinRow[]> {
-    const physical = [...new Set(rows.flatMap((row) => row.physicalBinId ?? []))];
-    const halves =
-      physical.length === 0
-        ? []
-        : await this.prisma.deliveryBin.findMany({
-            where: { physicalBinId: { in: physical }, voidedAt: null },
-            select: { id: true, orderId: true, physicalBinId: true },
-          });
-    const partners = partnersOf(rows, halves);
-    return rows.map((row) => ({
-      id: row.id,
-      orderId: row.orderId,
-      code: row.code,
-      voidedAt: row.voidedAt,
-      binType: {
-        id: row.binType.id,
-        name: row.binType.name,
-        isotherm: row.binType.isotherm,
-        archived: row.binType.archivedAt !== null,
-      },
-      half: binHalfOf(row.half),
-      physicalBinId: row.physicalBinId,
-      innerBags: row.innerBags,
-      partner: partners.get(row.id) ?? null,
-    }));
-  }
 }
 
-/** Les commandes qu'un arrêt emporte : la sienne, ou celles de son transfert. */
-function carriedBy(
+/**
+ * Ce bac part-il avec cet arrêt ? Celui de sa commande ; pour un arrêt de
+ * transfert, ceux du transfert (lot T3) et ceux de ses commandes d'avant T3.
+ */
+function isCarriedBy(
   stop: { readonly orderId: string | null; readonly transferId: string | null },
   carried: ReadonlyMap<string, readonly string[]>,
-): ReadonlySet<string> {
-  if (stop.orderId !== null) {
-    return new Set([stop.orderId]);
+  bin: BinRow,
+): boolean {
+  const { owner } = bin;
+  if (owner.kind === "transfer") {
+    return owner.transferId === stop.transferId;
   }
-  return new Set(stop.transferId === null ? [] : (carried.get(stop.transferId) ?? []));
+  if (stop.orderId !== null) {
+    return stop.orderId === owner.orderId;
+  }
+  return (carried.get(stop.transferId ?? "") ?? []).includes(owner.orderId);
 }

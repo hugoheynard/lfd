@@ -83,15 +83,11 @@ function handlerOf(
   entries: readonly HandoverQueueEntry[],
   attested: ReadonlyMap<string, AttestedHandover>,
   holds: FixedQualityHolds = new FixedQualityHolds(),
+  transfers: FixedTransferStatus = new FixedTransferStatus(),
 ) {
   const queue = new RecordingHandoverQueueReader(entries);
   const attestations = new RecordingHandoverAttestationsReader(attested);
-  const handler = new GetHandoverQueueHandler(
-    queue,
-    attestations,
-    holds,
-    new FixedTransferStatus(),
-  );
+  const handler = new GetHandoverQueueHandler(queue, attestations, holds, transfers);
   return { handler, queue, attestations, holds };
 }
 
@@ -325,5 +321,34 @@ describe("GetHandoverQueueHandler — le site qui remet (lot S2)", () => {
     const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10"));
 
     expect(view.entries[0]).toMatchObject({ siteId: null, pickupLabel: "Le labo" });
+  });
+});
+
+describe("GetHandoverQueueHandler — le transfert d'une ligne (lots T2, T3)", () => {
+  it("expose le nombre de bacs du transfert, et l'attente d'un transfert (F4)", async () => {
+    const { handler } = handlerOf(
+      [entry({ orderId: "ord_carried" }), entry({ orderId: "ord_waiting" })],
+      new Map(),
+      new FixedQualityHolds(),
+      new FixedTransferStatus(
+        new Map([
+          ["ord_carried", "departed"],
+          ["ord_waiting", "awaiting"],
+        ]),
+      ),
+    );
+
+    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10"));
+
+    expect(view.entries.map((line) => line.transfer)).toEqual([
+      {
+        transferId: "t_1",
+        siteLabel: "Val Village",
+        state: "departed",
+        at: new Date(0).toISOString(),
+        binCount: 2,
+      },
+      { transferId: null, siteLabel: "Val Village", state: "awaiting", at: null, binCount: 0 },
+    ]);
   });
 });

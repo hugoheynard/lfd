@@ -2,10 +2,18 @@ import type { StopSubject } from "../entities/delivery-round-state.js";
 import type { StopPlace } from "../entities/shared-bin.js";
 import type { BinHalf } from "../value-objects/bin-declaration.js";
 
+/**
+ * Le propriétaire d'un bac, tel que les vues le nomment : une commande, ou un
+ * transfert interne avec le nom de son site, figé à l'ouverture (lot T3).
+ */
+export type BinOwnerRow =
+  | { readonly kind: "order"; readonly orderId: string }
+  | { readonly kind: "transfer"; readonly transferId: string; readonly siteLabel: string };
+
 /** Un bac déclaré, tel que les vues le lisent. */
 export interface BinRow {
   readonly id: string;
-  readonly orderId: string;
+  readonly owner: BinOwnerRow;
   readonly code: string;
   readonly voidedAt: Date | null;
   /** Son type — archivé depuis, il reste lisible (v2-7). */
@@ -24,8 +32,8 @@ export interface BinRow {
 
 /**
  * Un arrêt vivant vu du dépôt : les bacs de sa commande, et ceux chargés ICI.
- * Un arrêt de **transfert interne** (lot T1) porte les bacs de TOUTES ses
- * commandes — un bac par commande (Q-T4).
+ * Un arrêt de **transfert interne** porte les bacs du TRANSFERT (lot T3,
+ * Q-T4 révisée), puis ceux que ses commandes avaient reçus avant T3.
  */
 export type LoadingStopRow = StopSubject & {
   readonly stopId: string;
@@ -91,4 +99,13 @@ export abstract class DeliveryLoadingReader {
 
   /** La tournée vivante de cette commande, tous jours confondus (I3), ou `null`. */
   abstract destinationOf(orderId: string, binId: string): Promise<BinDestinationRow | null>;
+
+  /** Les bacs d'un transfert interne (lot T3), annulés compris, dans l'ordre de déclaration. */
+  abstract transferBins(transferId: string): Promise<readonly BinRow[]>;
+
+  /** La tournée vivante de ce transfert, ou `null` : il n'est dans aucune (lot T3). */
+  abstract transferDestinationOf(
+    transferId: string,
+    binId: string,
+  ): Promise<BinDestinationRow | null>;
 }

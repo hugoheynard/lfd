@@ -76,7 +76,7 @@ export interface BinsToPlace {
  * guichet ouvre sa propre unité de travail — il rejoint celle de l'appelant
  * quand il y en a une, il en ouvre une sinon.
  */
-function atTheDesk<T>(ctx: E2eContext, gesture: (desk: BinDesk) => Promise<T>): Promise<T> {
+export function atTheDesk<T>(ctx: E2eContext, gesture: (desk: BinDesk) => Promise<T>): Promise<T> {
   const seed = {
     now: ctx.app.get(Clock).now(),
     traceId: newTraceId(),

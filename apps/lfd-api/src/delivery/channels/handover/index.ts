@@ -44,5 +44,10 @@ export {
 } from "./round-placements.reader.js";
 // Le transfert interne (lot T2, 2026-10-13) : déclarés ET implémentés par la
 // livraison, lus par le comptoir — « arrivée au site ? », « réceptionner ».
-export { type OrderTransferStatus, TransferStatusReader } from "./transfer-status.reader.js";
+export {
+  type AwaitingTransferStatus,
+  type CarriedTransferStatus,
+  type OrderTransferStatus,
+  TransferStatusReader,
+} from "./transfer-status.reader.js";
 export { TransferReceptionDesk, type TransferReceptionRequest } from "./transfer-reception.desk.js";

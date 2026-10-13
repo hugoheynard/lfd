@@ -48,9 +48,10 @@ export class BinTypeNotDivisibleError extends BusinessError {
 
 /** Partager avec un bac qui n'est pas une moitié, ou qui a été annulé. */
 export class BinNotShareableError extends BusinessError {
-  constructor(code: string, reason: "whole" | "voided" | "same_order") {
+  constructor(code: string, reason: "whole" | "voided" | "same_order" | "transfer") {
     const words = {
       whole: "est un bac entier : seul un bac cloisonné se partage, moitié par moitié",
+      transfer: "appartient à un transfert interne : il ne se partage pas avec une commande",
       voided: "a été annulé : son étiquette ne vaut plus",
       same_order: "appartient déjà à cette commande : un bac ne se partage qu'avec une autre",
     } as const;
@@ -129,6 +130,20 @@ export class BinsManagedAtPackingError extends BusinessError {
     super(
       "delivery.bins_managed_at_packing",
       `Les bacs de cette commande se gèrent au poste de colisage : annulez ce bac depuis la colonne Contenants du colisage, qui garde ce qu'il contient.`,
+    );
+  }
+}
+
+/**
+ * Un bac de transfert est toujours ENTIER (lot T3 du transfert interne) : le
+ * demi-bac se partage entre deux commandes voisines d'une tournée, et un
+ * transfert n'a pas de voisin.
+ */
+export class TransferBinHalfError extends DomainError {
+  constructor() {
+    super(
+      "delivery.transfer_bin_half",
+      "Un bac de transfert se déclare entier : le demi-bac ne se partage qu'entre deux commandes voisines. Déclarez un bac entier de plus.",
     );
   }
 }

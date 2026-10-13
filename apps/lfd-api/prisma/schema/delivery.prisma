@@ -269,7 +269,13 @@ model DeliveryRoundStop {
 model DeliveryBin {
   /// Assigné par la commande (`IdGenerator`) ; c'est lui que porte le QR.
   id            String    @id
-  orderId       String    @map("order_id")
+  /// Le sujet du bac : une commande, OU un transfert interne (lot T3,
+  /// Q-T4 révisée) — exactement l'un des deux, tenu par le CHECK
+  /// `delivery_bin_subject_check`, invisible ici.
+  orderId       String?   @map("order_id")
+  /// Le transfert qui porte ce bac : ses commandes y sont en sacs. Jamais
+  /// une moitié (`half` et `physical_bin_id` nuls).
+  transferId    String?   @map("transfer_id")
   /// Le type du catalogue (v2-1). Un type archivé reste lisible ici (v2-7).
   binTypeId     String    @map("bin_type_id")
   /// `left` ou `right` pour une moitié de bac cloisonné ; nul pour un bac entier.
@@ -285,10 +291,12 @@ model DeliveryBin {
   voidedAt      DateTime? @map("voided_at")
   createdAt     DateTime  @map("created_at")
 
-  binType DeliveryBinType   @relation(fields: [binTypeId], references: [id], onDelete: Restrict)
-  loads   DeliveryBinLoad[]
+  binType  DeliveryBinType           @relation(fields: [binTypeId], references: [id], onDelete: Restrict)
+  transfer DeliveryInternalTransfer? @relation(fields: [transferId], references: [id], onDelete: Restrict)
+  loads    DeliveryBinLoad[]
 
   @@index([orderId])
+  @@index([transferId])
   @@index([physicalBinId])
   @@index([binTypeId])
   @@map("delivery_bin")
@@ -922,6 +930,7 @@ model DeliveryInternalTransfer {
   items    DeliveryInternalTransferItem[]
   stops    DeliveryRoundStop[]
   manifest DeliveryInternalTransferManifestLine[]
+  bins     DeliveryBin[]
 
   @@index([serviceDay, siteId])
   @@map("delivery_internal_transfer")
@@ -942,7 +951,7 @@ model DeliveryInternalTransferItem {
   transferId String                   @map("transfer_id")
   kind       DeliveryTransferItemKind
   orderId    String?                  @map("order_id")
-  resupplyId   String?                  @map("resupply_id")
+  resupplyId String?                  @map("resupply_id")
   attachedAt DateTime                 @map("attached_at") @db.Timestamptz(6)
   /// Sorti d'un transfert prévu (annulée, autre jour, autre site — lot T2) ; la ligne reste.
   detachedAt DateTime?                @map("detached_at") @db.Timestamptz(6)

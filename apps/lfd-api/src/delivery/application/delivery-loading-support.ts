@@ -9,6 +9,7 @@ import {
   BinCodeExhaustedError,
   BinsNotDeclarableError,
   DeliveryBinNotFoundError,
+  OrderBinsCarriedByTransferError,
   type UndeclarableReason,
 } from "../domain/errors/delivery-loading-errors.js";
 import { citeOrder, type CitedOrder } from "../domain/events/delivery-round.events.js";
@@ -86,10 +87,15 @@ export async function lookUpBinType(types: BinTypeLookup, id: string): Promise<B
 
 /**
  * Le numéro d'une commande qui peut recevoir des bacs : connue du commerce,
- * non annulée, en livraison — ou portée par un **transfert interne** (plan du
- * transfert interne, §5, §8, lot T1 : un retrait d'un site servi par
- * transfert part dans un bac, un par commande, Q-T4) —, lue au moment du geste.
- * @throws {BinsNotDeclarableError}
+ * non annulée, en livraison, lue au moment du geste.
+ *
+ * 🔁 **Un retrait porté par un transfert interne n'en reçoit plus** (lot T3,
+ * Q-T4 révisée par Hugo le 2026-10-13) : il se met en SACS au colisage, et
+ * les sacs vont dans les bacs du TRANSFERT, déclarés au chargement. Le lot T1
+ * lui donnait un bac par commande ; ceux déjà déclarés partent avec l'arrêt
+ * du transfert.
+ *
+ * @throws {BinsNotDeclarableError} @throws {OrderBinsCarriedByTransferError}
  */
 export async function declarableReference(
   orders: DeliveryOrdersReader,
@@ -100,21 +106,21 @@ export async function declarableReference(
     orders.byIds([orderId]),
     transferred.transferredAmong([orderId]),
   ]);
-  const reason = order === undefined ? "unknown" : undeclarableReason(order, carried.has(orderId));
+  if (order !== undefined && order.status !== "cancelled" && carried.has(orderId)) {
+    throw new OrderBinsCarriedByTransferError(order.reference);
+  }
+  const reason = order === undefined ? "unknown" : undeclarableReason(order);
   if (order === undefined || reason !== null) {
     throw new BinsNotDeclarableError(order?.reference ?? orderId, reason ?? "unknown");
   }
   return order.reference;
 }
 
-function undeclarableReason(
-  order: DeliveryOrderFacts,
-  transferred: boolean,
-): UndeclarableReason | null {
+function undeclarableReason(order: DeliveryOrderFacts): UndeclarableReason | null {
   if (order.status === "cancelled") {
     return "cancelled";
   }
-  return order.delivery || transferred ? null : "not_delivery";
+  return order.delivery ? null : "not_delivery";
 }
 
 /**

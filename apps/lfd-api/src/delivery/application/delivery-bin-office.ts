@@ -18,6 +18,8 @@ import { BinTypeLookup } from "../domain/ports/bin-type-lookup.js";
 import { DeliveryBinRepository } from "../domain/ports/delivery-bin.repository.js";
 import { StopLoadingRepository } from "../domain/ports/stop-loading.repository.js";
 import { BinDeclaration } from "../domain/value-objects/bin-declaration.js";
+import { orderOfBin } from "../domain/value-objects/bin-subject.js";
+import { citedOwnerOf, loadingOfBin } from "./bin-owner-support.js";
 import {
   citedOrderOf,
   declarableReference,
@@ -26,7 +28,10 @@ import {
   loadBin,
   lookUpBinType,
 } from "./delivery-loading-support.js";
-import { TransferredOrdersReader } from "../domain/ports/internal-transfers.reader.js";
+import {
+  InternalTransfersReader,
+  TransferredOrdersReader,
+} from "../domain/ports/internal-transfers.reader.js";
 
 /** Une déclaration : `whole` bacs entiers d'un type, et au besoin une moitié. */
 export interface BinsDeclaration {
@@ -62,6 +67,7 @@ export class DeliveryBinOffice {
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
     private readonly transferred: TransferredOrdersReader,
+    private readonly transfers: InternalTransfersReader,
   ) {}
 
   /**
@@ -88,7 +94,7 @@ export class DeliveryBinOffice {
       const loading = await this.loadings.forOrder(orderId);
       const codes = await drawBinCodes(this.drawer, this.bins, declaration.count);
       const bins = DeliveryBin.declare({
-        orderId,
+        subject: { kind: "order", orderId },
         declaration,
         identities: codes.map((code) => ({ id: this.ids.next(), code })),
         physicalBinId: this.ids.next(),
@@ -111,7 +117,8 @@ export class DeliveryBinOffice {
   /**
    * Annule l'étiquette d'un bac de trop (lot 4, L4-C19) — refusé s'il est
    * chargé (décharger d'abord) ou si sa tournée est partie. Annuler un bac
-   * déjà annulé n'écrit rien.
+   * déjà annulé n'écrit rien. Un bac de transfert (lot T3) s'annule de même,
+   * dans la tournée de son transfert.
    *
    * @throws {DeliveryBinNotFoundError} @throws {BinLoadedError}
    * @throws {DeliveryRoundDepartedError} @throws {DeliveryLoadingStaleError}
@@ -119,7 +126,7 @@ export class DeliveryBinOffice {
   async void(binId: string): Promise<void> {
     await this.uow.run(async () => {
       const found = await loadBin(this.bins, binId);
-      const loading = await this.loadings.forOrder(found.orderId, found.id);
+      const loading = await loadingOfBin(this.loadings, found);
       // Relu SOUS le verrou : un chargement ou une annulation concurrents sont
       // passés, et on voit ce qu'ils ont écrit.
       const bin = await loadBin(this.bins, found.id);
@@ -128,7 +135,10 @@ export class DeliveryBinOffice {
       }
       await this.bins.save(bin);
       await this.events.publishTraced(
-        new DeliveryBinVoidedEvent(bin, await citedOrderOf(this.orders, bin.orderId)),
+        new DeliveryBinVoidedEvent(
+          bin,
+          await citedOwnerOf({ orders: this.orders, transfers: this.transfers }, bin),
+        ),
       );
     });
   }
@@ -154,7 +164,11 @@ export class DeliveryBinOffice {
       const loading = await this.loadings.forOrder(orderId, partnerBinId);
       // Relue SOUS le verrou : une annulation ou un partage concurrents sont passés.
       const partner = await loadBin(this.bins, partnerBinId);
-      const partnerOrder = await citedOrderOf(this.orders, partner.orderId);
+      // Un bac de transfert n'a pas de commande à citer : le domaine le refuse
+      // au partage (`BinNotShareableError`), et le code du bac suffit à le dire.
+      const partnerOrderId = orderOfBin(partner.subject);
+      const partnerOrder =
+        partnerOrderId === null ? partner.code : await citedOrderOf(this.orders, partnerOrderId);
       const binType = await lookUpBinType(this.binTypes, partner.binTypeId);
       const code = await drawBinCode(this.drawer, this.bins);
       const bin = DeliveryBin.shareHalf({
@@ -208,9 +222,10 @@ export class DeliveryBinOffice {
     });
   }
 
-  /** La commande de ce bac, ou `null` s'il n'existe pas. */
+  /** La commande de ce bac, ou `null` s'il n'existe pas ou appartient à un transfert. */
   async orderOf(binId: string): Promise<string | null> {
-    return (await this.bins.load(binId))?.orderId ?? null;
+    const bin = await this.bins.load(binId);
+    return bin === null ? null : orderOfBin(bin.subject);
   }
 
   /** Ceux de ces bacs qui existent et ne sont pas annulés. */

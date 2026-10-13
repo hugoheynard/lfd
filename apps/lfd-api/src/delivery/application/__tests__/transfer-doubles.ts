@@ -15,6 +15,11 @@ import {
 import { InternalTransferStaleError } from "../../domain/errors/internal-transfer-errors.js";
 import { InternalTransferRepository } from "../../domain/ports/internal-transfer.repository.js";
 import {
+  CarriedOrderTransfers,
+  type CarriedOrderTransferRow,
+} from "../../domain/ports/carried-order-transfers.reader.js";
+import { TransferBinCounts } from "../../domain/ports/transfer-bin-counts.reader.js";
+import {
   InternalTransfersReader,
   TransferredOrdersReader,
   type UnplacedTransferRow,
@@ -222,4 +227,33 @@ export function attachmentOver(
     new FixedClock(new Date(0)),
     events,
   );
+}
+
+/** Les bacs de chaque transfert, comptés d'avance (lot T3) ; un transfert absent vaut 0. */
+export class FixedTransferBinCounts extends TransferBinCounts {
+  constructor(private readonly counts: ReadonlyMap<string, number> = new Map()) {
+    super();
+  }
+
+  liveBinCounts(transferIds: readonly string[]): Promise<ReadonlyMap<string, number>> {
+    return Promise.resolve(new Map(transferIds.map((id) => [id, this.counts.get(id) ?? 0])));
+  }
+}
+
+/** Les transferts qui portent des commandes, donnés d'avance (lot T3). */
+export class FixedCarriedOrderTransfers extends CarriedOrderTransfers {
+  constructor(private readonly rows: ReadonlyMap<string, CarriedOrderTransferRow> = new Map()) {
+    super();
+  }
+
+  carriedAmong(orderIds: readonly string[]): Promise<ReadonlyMap<string, CarriedOrderTransferRow>> {
+    return Promise.resolve(
+      new Map(
+        orderIds.flatMap((id) => {
+          const row = this.rows.get(id);
+          return row === undefined ? [] : [[id, row] as const];
+        }),
+      ),
+    );
+  }
 }

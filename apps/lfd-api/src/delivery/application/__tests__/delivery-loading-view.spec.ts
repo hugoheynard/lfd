@@ -15,7 +15,7 @@ const BIN_M = { id: "t_m", name: "Bac M", isotherm: false, archived: false };
 function bin(id: string, voidedAt: Date | null = null, overrides: Partial<BinRow> = {}): BinRow {
   return {
     id,
-    orderId: "o_1",
+    owner: { kind: "order", orderId: "o_1" },
     code: id.toUpperCase().padEnd(6, "0"),
     voidedAt,
     binType: BIN_M,
@@ -189,5 +189,46 @@ describe("loadingRoundView / loadingDayView — L4-C17", () => {
         },
       ],
     });
+  });
+});
+
+describe("les bacs d'un transfert interne, vus du dépôt (lot T3)", () => {
+  const OWNER = { kind: "transfer", transferId: "t_1", siteLabel: "Val Village" } as const;
+
+  it("se nomment par le site, sans commande", () => {
+    const [view] = binViewsOf([bin("t", null, { owner: OWNER })], context());
+
+    expect(view).toMatchObject({
+      orderId: null,
+      transfer: { transferId: "t_1", siteLabel: "Val Village" },
+      reference: "→ Val Village",
+      customerLabel: "Val Village",
+      index: 1,
+      total: 1,
+      sharedWith: null,
+      toRedo: false,
+    });
+  });
+
+  it("un arrêt de transfert sans bac est « non étiqueté » : « Partir » le refuse", () => {
+    const transferStop = (bins: readonly BinRow[], loaded: ReadonlyMap<string, Date>) =>
+      ({
+        kind: "transfer",
+        transferId: "t_1",
+        siteLabel: "Val Village",
+        stopId: "s_t",
+        position: 1,
+        bins,
+        loaded,
+      }) as const;
+
+    const empty = loadingRoundView(round([transferStop([], new Map())]), context());
+    const loaded = loadingRoundView(
+      round([transferStop([bin("t", null, { owner: OWNER })], new Map([["t", AT]]))]),
+      context(),
+    );
+
+    expect(empty.transferStops?.[0]?.state).toBe("unlabelled");
+    expect(loaded.transferStops?.[0]).toMatchObject({ state: "loaded", siteLabel: "Val Village" });
   });
 });

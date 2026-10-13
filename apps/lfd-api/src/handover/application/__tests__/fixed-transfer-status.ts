@@ -20,14 +20,21 @@ export class FixedTransferStatus extends TransferStatusReader {
       new Map(
         orderIds.flatMap((orderId) => {
           const state = this.states.get(orderId);
-          return state === undefined
-            ? []
-            : [
-                [
-                  orderId,
-                  { transferId: "t_1", siteLabel: "Val Village", state, at: new Date(0) },
-                ] as const,
-              ];
+          if (state === undefined) {
+            return [];
+          }
+          // Lot T3, F4 : en attente, aucun transfert ne la porte encore.
+          const status: OrderTransferStatus =
+            state === "awaiting"
+              ? { state, siteLabel: "Val Village" }
+              : {
+                  transferId: "t_1",
+                  siteLabel: "Val Village",
+                  state,
+                  at: new Date(0),
+                  binCount: 2,
+                };
+          return [[orderId, status] as const];
         }),
       ),
     );

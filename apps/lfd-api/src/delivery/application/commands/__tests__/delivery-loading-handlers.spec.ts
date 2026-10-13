@@ -36,6 +36,7 @@ import { FixedDoorstepSettings, RecordingDurable } from "./decision-doubles.js";
 import {
   FixedTransferContents,
   InMemoryInternalTransfers,
+  InternalTransfersReaderOver,
 } from "../../__tests__/transfer-doubles.js";
 
 // Des jours comparés entre eux seulement, jamais à l'horloge.
@@ -64,6 +65,7 @@ describe("LoadDeliveryBinHandler — L4-C2, L4-C18", () => {
       BINS(),
       loadings,
       ORDERS,
+      new InternalTransfersReaderOver(new InMemoryInternalTransfers()),
       new FixedIdGenerator("load"),
       clock,
       events,
@@ -161,7 +163,15 @@ describe("UnloadDeliveryBinHandler", () => {
     const directory = new FixedStaffAuthorDirectory(
       authorsKnownAs({ firstName: "Léa", lastName: "Martin", staffUserId: "staff_7" }, "staff_7"),
     );
-    const handler = new UnloadDeliveryBinHandler(BINS(), loadings, ORDERS, directory, events, uow);
+    const handler = new UnloadDeliveryBinHandler(
+      BINS(),
+      loadings,
+      ORDERS,
+      new InternalTransfersReaderOver(new InMemoryInternalTransfers()),
+      directory,
+      events,
+      uow,
+    );
 
     await handler.execute(new UnloadDeliveryBinCommand("r_1", "b_1"));
 

@@ -50,6 +50,20 @@ export class BinsNotDeclarableError extends BusinessError {
   }
 }
 
+/**
+ * 🔁 **Un retrait porté par un transfert interne ne reçoit pas de bac à lui**
+ * (lot T3, Q-T4 révisée par Hugo le 2026-10-13) : ses sacs vont dans les bacs
+ * du transfert, déclarés au chargement.
+ */
+export class OrderBinsCarriedByTransferError extends BusinessError {
+  constructor(reference: string) {
+    super(
+      "delivery.order_bins_carried_by_transfer",
+      `La commande ${reference} part par un transfert interne vers son site : elle se met en sacs, et ses sacs vont dans les bacs du transfert, déclarés au chargement (Livraison → Chargement). Ouvrez un sac plutôt qu'un bac.`,
+    );
+  }
+}
+
 /** Où part un bac — de quoi le nommer dans un refus. */
 export interface BinDestination {
   readonly vehicleName: string;
@@ -77,6 +91,19 @@ export class BinOrderNotComposedError extends BusinessError {
     super(
       "delivery.bin_order_not_composed",
       `Le bac ${code} appartient à la commande ${reference}, qui n'est dans aucune tournée : répartissez-la d'abord (Livraison → Tournées), puis chargez-le.`,
+    );
+  }
+}
+
+/**
+ * Le transfert du bac n'est dans aucune tournée vivante (lot T3 du transfert
+ * interne) : la composition ne l'a pas placé, ou on l'a retiré à la main.
+ */
+export class TransferBinNotPlacedError extends BusinessError {
+  constructor(code: string, siteLabel: string) {
+    super(
+      "delivery.transfer_bin_not_placed",
+      `Le bac ${code} part avec le transfert vers « ${siteLabel} », qui n'est dans aucune tournée : placez-le d'abord (Livraison → Tournées), puis chargez le bac.`,
     );
   }
 }

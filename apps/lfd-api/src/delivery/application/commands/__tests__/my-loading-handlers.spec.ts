@@ -1,4 +1,8 @@
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
+import {
+  InMemoryInternalTransfers,
+  InternalTransfersReaderOver,
+} from "../../__tests__/transfer-doubles.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
@@ -36,6 +40,7 @@ function loader(loadings: InMemoryStopLoadings, wall = WALL()) {
     new InMemoryBins(binOf("b_1", "o_1", "AAAAAA")),
     loadings,
     ORDERS,
+    new InternalTransfersReaderOver(new InMemoryInternalTransfers()),
     new FixedIdGenerator("load"),
     new FixedClock(NOW),
     events,
@@ -101,6 +106,7 @@ describe("UnloadMyBinHandler — reprendre un scan (PL1)", () => {
       new InMemoryBins(binOf("b_1", "o_1", "AAAAAA")),
       loadings,
       ORDERS,
+      new InternalTransfersReaderOver(new InMemoryInternalTransfers()),
       new FixedStaffAuthorDirectory(
         authorsKnownAs(
           { firstName: "Paul", lastName: "Roux", staffUserId: "staff_paul" },

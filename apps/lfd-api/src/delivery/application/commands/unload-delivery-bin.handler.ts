@@ -8,7 +8,9 @@ import { DeliveryBinUnloadedEvent } from "../../domain/events/delivery-loading.e
 import { DeliveryBinRepository } from "../../domain/ports/delivery-bin.repository.js";
 import { StopLoadingRepository } from "../../domain/ports/stop-loading.repository.js";
 import { deliveryAuthorOf } from "../delivery-author.js";
-import { citedOrderOf, loadBin } from "../delivery-loading-support.js";
+import { InternalTransfersReader } from "../../domain/ports/internal-transfers.reader.js";
+import { type BinOwnerNames, citedOwnerOf, loadingOfBin } from "../bin-owner-support.js";
+import { loadBin } from "../delivery-loading-support.js";
 import { UnloadDeliveryBinCommand } from "./unload-delivery-bin.command.js";
 
 /**
@@ -25,6 +27,7 @@ export class UnloadDeliveryBinHandler implements ICommandHandler<UnloadDeliveryB
     private readonly bins: DeliveryBinRepository,
     private readonly loadings: StopLoadingRepository,
     private readonly orders: DeliveryOrdersReader,
+    private readonly transfers: InternalTransfersReader,
     private readonly directory: StaffAuthorDirectory,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
@@ -33,7 +36,7 @@ export class UnloadDeliveryBinHandler implements ICommandHandler<UnloadDeliveryB
   async execute(command: UnloadDeliveryBinCommand): Promise<void> {
     await this.uow.run(async () => {
       const bin = await loadBin(this.bins, command.binId);
-      const loading = await this.loadings.forOrder(bin.orderId, bin.id);
+      const loading = await loadingOfBin(this.loadings, bin);
       const previous = loading?.unload({ roundId: command.roundId, binId: bin.id }) ?? null;
       if (loading === null || previous === null) {
         return;
@@ -43,12 +46,16 @@ export class UnloadDeliveryBinHandler implements ICommandHandler<UnloadDeliveryB
       await this.events.publishTraced(
         new DeliveryBinUnloadedEvent(
           bin,
-          await citedOrderOf(this.orders, bin.orderId),
+          await citedOwnerOf(this.names(), bin),
           loading,
           previous,
           author.name === "" ? author.staffUserId : { id: author.staffUserId, name: author.name },
         ),
       );
     });
+  }
+
+  private names(): BinOwnerNames {
+    return { orders: this.orders, transfers: this.transfers };
   }
 }

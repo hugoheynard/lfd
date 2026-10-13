@@ -2,18 +2,19 @@ import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../platform/database/prisma.service.js";
 import type { DeliveryRound } from "../domain/entities/delivery-round.js";
-import {
-  type BinLoadState,
-  type LoadingBin,
-  StopLoading,
-} from "../domain/entities/stop-loading.js";
+import { type BinLoadState, StopLoading } from "../domain/entities/stop-loading.js";
 import { DeliveryLoadingStaleError } from "../domain/errors/delivery-loading-errors.js";
 import { StopLoadingRepository } from "../domain/ports/stop-loading.repository.js";
 import { orderIdOf, type StopSubject } from "../domain/entities/delivery-round-state.js";
-import { partnersOf } from "./bin-partners.js";
 import { stopSubjectOf } from "./delivery-round.writes.js";
 import { orderStopsOnly } from "./order-stop.js";
 import { loadViaOf } from "./load-via.js";
+import {
+  binsOfSubject,
+  loadingBinsBySubject,
+  subjectKey,
+  transferIdsOf,
+} from "./stop-loading-bins.js";
 
 /** Les lignes de chargement d'un arrêt, telles que l'agrégat les relit. */
 const LOAD_SELECT = {
@@ -57,7 +58,21 @@ export class PrismaStopLoadingRepository extends StopLoadingRepository {
   }
 
   async forOrder(orderId: string, lockBinId?: string): Promise<StopLoading | null> {
-    const live = await this.liveStopOf(orderId);
+    return this.forLiveStop(await this.liveStopOf(orderId), lockBinId);
+  }
+
+  async forTransfer(transferId: string, lockBinId?: string): Promise<StopLoading | null> {
+    const live = await this.prisma.deliveryRoundStop.findFirst({
+      where: { transferId, removedAt: null, closedAt: null },
+      select: { id: true, roundId: true },
+    });
+    return this.forLiveStop(live, lockBinId);
+  }
+
+  private async forLiveStop(
+    live: { readonly id: string; readonly roundId: string } | null,
+    lockBinId: string | undefined,
+  ): Promise<StopLoading | null> {
     if (live === null) {
       await this.lockBin(lockBinId);
       return null;
@@ -86,7 +101,11 @@ export class PrismaStopLoadingRepository extends StopLoadingRepository {
     }
     const subject = stopSubjectOf(stop);
     const carried = await this.carriedOrders([subject]);
-    const bins = await this.binsOf([...carried.values()].flat());
+    const bins = await loadingBinsBySubject(
+      this.prisma,
+      [...carried.values()].flat(),
+      transferIdsOf([subject]),
+    );
     const roundOrderIds = await this.liveOrderIdsOf(stop.roundId);
     return StopLoading.restore({
       stopId: stop.id,
@@ -116,7 +135,11 @@ export class PrismaStopLoadingRepository extends StopLoadingRepository {
        ORDER BY "id"
          FOR UPDATE`;
     const carried = await this.carriedOrders(stops);
-    const bins = await this.binsOf([...carried.values()].flat());
+    const bins = await loadingBinsBySubject(
+      this.prisma,
+      [...carried.values()].flat(),
+      transferIdsOf(stops),
+    );
     return stops.map((stop) =>
       StopLoading.restore({
         stopId: stop.id,
@@ -221,12 +244,12 @@ export class PrismaStopLoadingRepository extends StopLoadingRepository {
   private async carriedOrders(
     subjects: readonly StopSubject[],
   ): Promise<ReadonlyMap<string, readonly string[]>> {
-    const transferIds = subjects.flatMap((s) => (s.kind === "transfer" ? [s.transferId] : []));
+    const transferIds = transferIdsOf(subjects);
     const items =
       transferIds.length === 0
         ? []
         : await this.prisma.deliveryInternalTransferItem.findMany({
-            where: { transferId: { in: transferIds }, kind: "order" },
+            where: { transferId: { in: [...transferIds] }, kind: "order" },
             orderBy: [{ attachedAt: "asc" }, { id: "asc" }],
             select: { transferId: true, orderId: true },
           });
@@ -243,64 +266,6 @@ export class PrismaStopLoadingRepository extends StopLoadingRepository {
       ),
     );
   }
-
-  /**
-   * Les bacs de ces commandes, annulés compris, dans l'ordre de déclaration —
-   * chacun avec la commande de l'autre moitié vivante de son bac physique,
-   * quand elle est à une autre commande (le bac PARTAGÉ, v2-4).
-   */
-  private async binsOf(orderIds: readonly string[]): Promise<Map<string, LoadingBin[]>> {
-    const rows = await this.prisma.deliveryBin.findMany({
-      where: { orderId: { in: [...orderIds] } },
-      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-      select: { id: true, orderId: true, code: true, voidedAt: true, physicalBinId: true },
-    });
-    const partners = await this.partnersOf(rows);
-    const byOrder = new Map<string, LoadingBin[]>();
-    for (const row of rows) {
-      const bin = {
-        id: row.id,
-        code: row.code,
-        voided: row.voidedAt !== null,
-        partnerOrderId: partners.get(row.id) ?? null,
-      };
-      byOrder.set(row.orderId, [...(byOrder.get(row.orderId) ?? []), bin]);
-    }
-    return byOrder;
-  }
-
-  /** Bac → commande de l'autre moitié vivante, si elle est à une autre commande. */
-  private async partnersOf(
-    rows: readonly {
-      readonly id: string;
-      readonly orderId: string;
-      readonly physicalBinId: string | null;
-      readonly voidedAt: Date | null;
-    }[],
-  ): Promise<ReadonlyMap<string, string>> {
-    const physical = [...new Set(rows.flatMap((row) => row.physicalBinId ?? []))];
-    if (physical.length === 0) {
-      return new Map();
-    }
-    const halves = await this.prisma.deliveryBin.findMany({
-      where: { physicalBinId: { in: physical }, voidedAt: null },
-      select: { id: true, orderId: true, physicalBinId: true },
-    });
-    return new Map([...partnersOf(rows, halves)].map(([binId, other]) => [binId, other.orderId]));
-  }
-}
-
-function subjectKey(subject: StopSubject): string {
-  return subject.kind === "order" ? `order:${subject.orderId}` : `transfer:${subject.transferId}`;
-}
-
-/** Les bacs d'un arrêt : ceux de chacune des commandes qu'il emporte, dans leur ordre. */
-function binsOfSubject(
-  subject: StopSubject,
-  carried: ReadonlyMap<string, readonly string[]>,
-  bins: ReadonlyMap<string, readonly LoadingBin[]>,
-): readonly LoadingBin[] {
-  return (carried.get(subjectKey(subject)) ?? []).flatMap((orderId) => bins.get(orderId) ?? []);
 }
 
 function toLoadState(row: LoadRow): BinLoadState {

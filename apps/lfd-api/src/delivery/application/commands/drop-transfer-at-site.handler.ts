@@ -10,6 +10,8 @@ import { StopNotATransferError } from "../../domain/errors/internal-transfer-err
 import { InternalTransferReceivedEvent } from "../../domain/events/internal-transfer.events.js";
 import { DeliveryRoundRepository } from "../../domain/ports/delivery-round.repository.js";
 import { InternalTransferRepository } from "../../domain/ports/internal-transfer.repository.js";
+import { TransferBinCounts } from "../../domain/ports/transfer-bin-counts.reader.js";
+import type { InternalTransfer } from "../../domain/entities/internal-transfer.js";
 import { ensureFreshForDriver, gesturePositionOf } from "../doorstep-support.js";
 import { loadTransfer } from "../internal-transfer-support.js";
 import { DropTransferAtSiteCommand } from "./drop-transfer-at-site.command.js";
@@ -26,7 +28,8 @@ import { DropTransferAtSiteCommand } from "./drop-transfer-at-site.command.js";
  * 4. le transfert de l'arrêt est REÇU (garde passée au site) — sauf s'il
  *    l'est déjà, réceptionné au comptoir avant l'arrivée : l'arrêt se clôt
  *    alors sans seconde réception ;
- * 5. `closeStop`, avec la position du téléphone (YA-D4), les deux `save`, le fait.
+ * 5. `closeStop`, avec la position du téléphone (YA-D4), les deux `save`, le
+ *    fait — qui compte les bacs du transfert (lot T3).
  *
  * @throws {DriverRoundNotFoundError} @throws {DoorstepStopNotFoundError}
  * @throws {StopNotATransferError} @throws {DoorstepRoundStaleError}
@@ -38,6 +41,7 @@ export class DropTransferAtSiteHandler implements ICommandHandler<DropTransferAt
   constructor(
     private readonly rounds: DeliveryRoundRepository,
     private readonly transfers: InternalTransferRepository,
+    private readonly bins: TransferBinCounts,
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
@@ -69,10 +73,20 @@ export class DropTransferAtSiteHandler implements ICommandHandler<DropTransferAt
       if (receiving) {
         await this.transfers.save(transfer);
         await this.events.publishTraced(
-          new InternalTransferReceivedEvent(transfer, "site_drop", false),
+          new InternalTransferReceivedEvent(
+            transfer,
+            "site_drop",
+            false,
+            await this.binsOf(transfer),
+          ),
         );
       }
     });
+  }
+
+  /** Les bacs non annulés du transfert, à cet instant. */
+  private async binsOf(transfer: InternalTransfer): Promise<number> {
+    return (await this.bins.liveBinCounts([transfer.id])).get(transfer.id) ?? 0;
   }
 }
 

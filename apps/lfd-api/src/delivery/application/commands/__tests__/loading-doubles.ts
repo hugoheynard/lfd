@@ -91,6 +91,12 @@ export class InMemoryStopLoadings extends StopLoadingRepository {
     return Promise.resolve(found === undefined ? null : StopLoading.restore(found));
   }
 
+  /** Un arrêt de transfert se range sous l'id de son transfert (`keyOf`, lot T3). */
+  forTransfer(transferId: string, _lockBinId?: string): Promise<StopLoading | null> {
+    const found = this.byOrder.get(transferId);
+    return Promise.resolve(found === undefined ? null : StopLoading.restore(found));
+  }
+
   forRound(round: DeliveryRound): Promise<readonly StopLoading[]> {
     return Promise.resolve(
       round.liveStops.flatMap((stop) => {
@@ -162,7 +168,7 @@ export function binOf(
 ): DeliveryBin {
   return DeliveryBin.restore({
     id,
-    orderId,
+    subject: { kind: "order", orderId },
     code,
     binTypeId: "t_m",
     half: null,

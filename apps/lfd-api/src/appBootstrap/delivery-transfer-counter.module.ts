@@ -6,7 +6,7 @@ import {
 } from "../delivery/channels/handover/index.js";
 import { TransferReception } from "../delivery/application/transfer-reception.js";
 import { DeliveryModule } from "../delivery/delivery.module.js";
-import { PrismaTransferStatusReader } from "../delivery/infrastructure/prisma-transfer-status.reader.js";
+import { TransferArrivalStatus } from "../delivery/application/transfer-arrival-status.js";
 
 /**
  * **Le transfert interne, vu du comptoir, relié** (plan du transfert interne,
@@ -19,7 +19,7 @@ import { PrismaTransferStatusReader } from "../delivery/infrastructure/prisma-tr
 @Module({
   imports: [DeliveryModule],
   providers: [
-    { provide: TransferStatusReader, useClass: PrismaTransferStatusReader },
+    { provide: TransferStatusReader, useExisting: TransferArrivalStatus },
     { provide: TransferReceptionDesk, useExisting: TransferReception },
   ],
   exports: [TransferStatusReader, TransferReceptionDesk],

@@ -30,6 +30,7 @@ import {
  */
 
 const ORDER: Noun = { the: 'de la commande', a: 'd’une commande' };
+const TRANSFER: Noun = { the: 'du transfert vers', a: 'd’un transfert' };
 const BIN: Noun = { the: '', a: 'un bac' };
 const BIN_TYPE: Noun = { the: 'de type', a: 'd’un type' };
 
@@ -58,7 +59,18 @@ function roundOf(fact: PhraseFact): Segment[] {
   ];
 }
 
-const BIN_ROUND_KEYS = ['subjectLabel', 'order', 'round', 'day', 'passage'] as const;
+const BIN_ROUND_KEYS = ['subjectLabel', 'order', 'transfer', 'round', 'day', 'passage'] as const;
+
+/**
+ * « de la commande « CMD-1 » », ou — un bac de transfert (lot T3 du
+ * transfert interne) — « du transfert vers « Val Village » ».
+ */
+function ownerOf(fact: PhraseFact): Segment[] {
+  const transfer = fact.payload['transfer'];
+  return transfer === undefined || transfer === null
+    ? cite(ORDER, fact.payload['order'])
+    : cite(TRANSFER, transfer);
+}
 
 /** « ½ gauche » — le côté d'une moitié, par son mot ; rien pour un bac entier. */
 function halfOf(raw: unknown): Segment[] {
@@ -140,8 +152,8 @@ export const DELIVERY_LOADING_PHRASES = {
   'delivery_bin.voided': (fact) =>
     byActor(
       fact,
-      [text('a annulé '), ...bin(fact), text(' '), ...cite(ORDER, fact.payload['order'])],
-      ['subjectLabel', 'order'],
+      [text('a annulé '), ...bin(fact), text(' '), ...ownerOf(fact)],
+      ['subjectLabel', 'order', 'transfer'],
     ),
   'delivery_bin.loaded': (fact) =>
     byActor(
@@ -150,7 +162,7 @@ export const DELIVERY_LOADING_PHRASES = {
         text('a chargé '),
         ...bin(fact),
         text(' '),
-        ...cite(ORDER, fact.payload['order']),
+        ...ownerOf(fact),
         text(' dans '),
         ...roundOf(fact),
         ...via(fact.payload['via']),
@@ -165,7 +177,7 @@ export const DELIVERY_LOADING_PHRASES = {
         text('a déchargé '),
         ...bin(fact),
         text(' '),
-        ...cite(ORDER, fact.payload['order']),
+        ...ownerOf(fact),
         text(' de '),
         ...roundOf(fact),
         text(' — chargé le '),

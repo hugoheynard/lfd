@@ -146,7 +146,7 @@ export class PrismaDriverRoundsReader extends DriverRoundsReader {
       select: { orderId: true, binType: { select: { isotherm: true } } },
     });
     const counts = new Map<string, { bins: number; coldBins: number }>();
-    for (const row of rows) {
+    for (const row of orderStopsOnly(rows)) {
       const count = counts.get(row.orderId) ?? { bins: 0, coldBins: 0 };
       counts.set(row.orderId, {
         bins: count.bins + 1,

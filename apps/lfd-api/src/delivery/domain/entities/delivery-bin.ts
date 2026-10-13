@@ -2,6 +2,7 @@ import {
   BinHalfTakenError,
   BinNotShareableError,
   SharedBinNotAdjacentError,
+  TransferBinHalfError,
 } from "../errors/delivery-bin-declaration-errors.js";
 import { BinLoadedError, DeliveryRoundDepartedError } from "../errors/delivery-loading-errors.js";
 import {
@@ -12,13 +13,15 @@ import {
   otherHalf,
 } from "../value-objects/bin-declaration.js";
 import { binCodeOf } from "../value-objects/bin-code.js";
+import type { BinSubject } from "../value-objects/bin-subject.js";
 import type { BinType } from "./bin-type.js";
 import type { StopLoading } from "./stop-loading.js";
 
 /** L'état persisté d'un bac déclaré. */
 export interface DeliveryBinState {
   readonly id: string;
-  readonly orderId: string;
+  /** Une commande livrée, ou un transfert interne (lot T3). */
+  readonly subject: BinSubject;
   readonly binTypeId: string;
   /** `null` = bac entier. */
   readonly half: BinHalf | null;
@@ -39,7 +42,9 @@ export interface BinIdentity {
 /**
  * **Un bac déclaré** (plan de tournée, lot 4, L4-C16, L4-C18 ; lot 4 bis,
  * v2-4) — un bac ENTIER, ou une MOITIÉ de bac cloisonné : l'unité qu'on
- * scanne. Il appartient à la COMMANDE et naît quand on le DÉCLARE :
+ * scanne. Il appartient à une COMMANDE — ou, depuis le lot T3 du transfert
+ * interne, à un TRANSFERT, dont les commandes y sont en sacs — et naît quand
+ * on le DÉCLARE :
  * l'imprimer est une lecture, réimprimer ne crée rien. Un bac de trop
  * s'annule ; il ne se supprime jamais.
  *
@@ -56,27 +61,35 @@ export class DeliveryBin {
   ) {}
 
   /**
-   * Déclare des bacs d'un type pour une commande : d'abord les entiers, puis
-   * la moitié — la GAUCHE d'un bac physique neuf (`physicalBinId`), dont la
-   * droite reste libre. `identities` en porte exactement `declaration.count`.
-   * `loading` est le chargement de l'arrêt vivant de la commande, ou `null` :
-   * une tournée partie ne reçoit plus de bac, qui partirait non chargé (Q14, I6).
+   * Déclare des bacs d'un type pour une commande ou un transfert : d'abord
+   * les entiers, puis la moitié — la GAUCHE d'un bac physique neuf
+   * (`physicalBinId`), dont la droite reste libre. `identities` en porte
+   * exactement `declaration.count`. `loading` est le chargement de l'arrêt
+   * vivant du sujet, ou `null` : une tournée partie ne reçoit plus de bac, qui
+   * partirait non chargé (Q14, I6).
+   *
+   * Un bac de TRANSFERT est toujours entier : le demi-bac se partage entre
+   * deux commandes voisines, et un transfert n'a pas de voisin (Q-T4 révisée).
    *
    * @throws {InvalidBinCodeError} @throws {DeliveryRoundDepartedError}
+   * @throws {TransferBinHalfError}
    */
   static declare(input: {
-    readonly orderId: string;
+    readonly subject: BinSubject;
     readonly declaration: BinDeclaration;
     readonly identities: readonly BinIdentity[];
     readonly physicalBinId: string;
     readonly at: Date;
     readonly loading: StopLoading | null;
   }): readonly DeliveryBin[] {
+    const { declaration, subject } = input;
+    if (subject.kind === "transfer" && declaration.half) {
+      throw new TransferBinHalfError();
+    }
     ensureAtDepot(input.loading);
-    const { declaration } = input;
     return input.identities.slice(0, declaration.count).map((identity, index) => {
       const isHalf = index >= declaration.whole;
-      return DeliveryBin.born(input.orderId, identity, input.at, {
+      return DeliveryBin.born(subject, identity, input.at, {
         binTypeId: declaration.binType.id,
         half: isHalf ? "left" : null,
         physicalBinId: isHalf ? input.physicalBinId : null,
@@ -116,10 +129,10 @@ export class DeliveryBin {
     const innerBags = innerBagsOf(input.innerBags);
     ensureDeclarable(input.binType, true);
     ensureAtDepot(input.loading);
-    if (input.loading?.isConsecutiveTo(partner.orderId) !== true) {
+    if (input.loading?.isConsecutiveTo(partnerHalf.orderId) !== true) {
       throw new SharedBinNotAdjacentError(input.names.reference, input.names.partnerReference);
     }
-    return DeliveryBin.born(input.orderId, input.identity, input.at, {
+    return DeliveryBin.born({ kind: "order", orderId: input.orderId }, input.identity, input.at, {
       binTypeId: partner.binTypeId,
       half: otherHalf(partnerHalf.half),
       physicalBinId: partnerHalf.physicalBinId,
@@ -133,13 +146,13 @@ export class DeliveryBin {
   }
 
   private static born(
-    orderId: string,
+    subject: BinSubject,
     identity: BinIdentity,
     at: Date,
     shape: Pick<DeliveryBinState, "binTypeId" | "half" | "physicalBinId" | "innerBags">,
   ): DeliveryBin {
     return new DeliveryBin(
-      { id: identity.id, orderId, code: binCodeOf(identity.code), createdAt: at, ...shape },
+      { id: identity.id, subject, code: binCodeOf(identity.code), createdAt: at, ...shape },
       null,
     );
   }
@@ -148,8 +161,8 @@ export class DeliveryBin {
     return this.state.id;
   }
 
-  get orderId(): string {
-    return this.state.orderId;
+  get subject(): BinSubject {
+    return this.state.subject;
   }
 
   get code(): string {
@@ -227,15 +240,19 @@ function ensureAtDepot(loading: StopLoading | null): void {
 function shareableHalfOf(
   partner: DeliveryBin,
   orderId: string,
-): { readonly half: BinHalf; readonly physicalBinId: string } {
+): { readonly half: BinHalf; readonly physicalBinId: string; readonly orderId: string } {
   if (partner.voidedAt !== null) {
     throw new BinNotShareableError(partner.code, "voided");
+  }
+  const { subject } = partner;
+  if (subject.kind === "transfer") {
+    throw new BinNotShareableError(partner.code, "transfer");
   }
   if (partner.half === null || partner.physicalBinId === null) {
     throw new BinNotShareableError(partner.code, "whole");
   }
-  if (partner.orderId === orderId) {
+  if (subject.orderId === orderId) {
     throw new BinNotShareableError(partner.code, "same_order");
   }
-  return { half: partner.half, physicalBinId: partner.physicalBinId };
+  return { half: partner.half, physicalBinId: partner.physicalBinId, orderId: subject.orderId };
 }

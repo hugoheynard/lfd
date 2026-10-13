@@ -21,6 +21,15 @@ export const DELIVERY_LOADING_FACTS = {
   departed: "delivery_round.departed",
 } as const satisfies Readonly<Record<string, JournalFactType>>;
 
+/**
+ * Le propriétaire d'un bac, cité au journal (lot T3 du transfert interne) :
+ * sa commande (ou son id nu), ou son transfert nommé par le site — un
+ * transfert n'est jamais supprimé, il a toujours son nom.
+ */
+export type CitedBinOwner =
+  | { readonly order: CitedOrder }
+  | { readonly transfer: { readonly id: string; readonly name: string } };
+
 /** Une fiche staff citée : son nom quand l'annuaire le connaît, son id nu sinon. */
 export type CitedStaff = { readonly id: string; readonly name: string } | string;
 
@@ -107,25 +116,25 @@ export class DeliveryBinSharedEvent implements JournaledEvent {
 export class DeliveryBinVoidedEvent implements JournaledEvent {
   constructor(
     readonly bin: DeliveryBin,
-    readonly order: CitedOrder,
+    readonly owner: CitedBinOwner,
   ) {}
 
   journalFact(): JournalFact {
-    return binFact(DELIVERY_LOADING_FACTS.voided, this.bin, { order: this.order });
+    return binFact(DELIVERY_LOADING_FACTS.voided, this.bin, { ...this.owner });
   }
 }
 
 export class DeliveryBinLoadedEvent implements JournaledEvent {
   constructor(
     readonly bin: DeliveryBin,
-    readonly order: CitedOrder,
+    readonly owner: CitedBinOwner,
     readonly loading: StopLoading,
     readonly via: LoadVia,
   ) {}
 
   journalFact(): JournalFact {
     return binFact(DELIVERY_LOADING_FACTS.loaded, this.bin, {
-      order: this.order,
+      ...this.owner,
       ...roundOf(this.loading),
       via: this.via,
     });
@@ -136,7 +145,7 @@ export class DeliveryBinLoadedEvent implements JournaledEvent {
 export class DeliveryBinUnloadedEvent implements JournaledEvent {
   constructor(
     readonly bin: DeliveryBin,
-    readonly order: CitedOrder,
+    readonly owner: CitedBinOwner,
     readonly loading: StopLoading,
     readonly previous: BinLoadRecord,
     readonly loadedBy: CitedStaff,
@@ -144,7 +153,7 @@ export class DeliveryBinUnloadedEvent implements JournaledEvent {
 
   journalFact(): JournalFact {
     return binFact(DELIVERY_LOADING_FACTS.unloaded, this.bin, {
-      order: this.order,
+      ...this.owner,
       ...roundOf(this.loading),
       loadedAt: this.previous.loadedAt.toISOString(),
       loadedBy: this.loadedBy,

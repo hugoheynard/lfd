@@ -6,6 +6,7 @@ import { BinHalfRaceError } from "../domain/errors/delivery-bin-declaration-erro
 import { BinCodeCollisionError } from "../domain/errors/delivery-loading-errors.js";
 import { DeliveryBinRepository } from "../domain/ports/delivery-bin.repository.js";
 import { binHalfOf } from "./bin-half.js";
+import { binSubjectColumns, binSubjectOfRow } from "./bin-subject.row.js";
 
 /** Code Prisma d'une violation d'unicité. */
 const UNIQUE_VIOLATION = "P2002";
@@ -14,6 +15,7 @@ const UNIQUE_VIOLATION = "P2002";
 const BIN_SELECT = {
   id: true,
   orderId: true,
+  transferId: true,
   binTypeId: true,
   half: true,
   physicalBinId: true,
@@ -25,7 +27,8 @@ const BIN_SELECT = {
 
 interface BinRecord {
   readonly id: string;
-  readonly orderId: string;
+  readonly orderId: string | null;
+  readonly transferId: string | null;
   readonly binTypeId: string;
   readonly half: string | null;
   readonly physicalBinId: string | null;
@@ -37,7 +40,8 @@ interface BinRecord {
 
 /**
  * **Adaptateur Prisma des bacs déclarés** (lot 4 ; lot 4 bis, tranche B).
- * Écrivain de `delivery_bin` : le chargement. Il écrit la ligne entière à la
+ * Écrivain de `delivery_bin` : le chargement (et, depuis le lot T3, la
+ * déclaration des bacs d'un transfert). Il écrit la ligne entière à la
  * déclaration, puis `voided_at` seul. Aucune ligne n'est supprimée.
  */
 @Injectable()
@@ -88,7 +92,7 @@ export class PrismaDeliveryBinRepository extends DeliveryBinRepository {
   async declare(bins: readonly DeliveryBin[]): Promise<void> {
     try {
       await this.prisma.deliveryBin.createMany({
-        data: bins.map((bin) => bin.toSnapshot()),
+        data: bins.map((bin) => toPersistence(bin)),
       });
     } catch (error: unknown) {
       if (error instanceof Error && Reflect.get(error, "code") === UNIQUE_VIOLATION) {
@@ -108,7 +112,18 @@ export class PrismaDeliveryBinRepository extends DeliveryBinRepository {
   }
 }
 
-/** La ligne → l'agrégat ; la moitié se relit par sa garde. */
+/** La ligne → l'agrégat ; la moitié et le sujet se relisent par leur garde. */
 function toDomain(row: BinRecord): DeliveryBin {
-  return DeliveryBin.restore({ ...row, half: binHalfOf(row.half) });
+  const { orderId, transferId, ...rest } = row;
+  return DeliveryBin.restore({
+    ...rest,
+    subject: binSubjectOfRow({ orderId, transferId }),
+    half: binHalfOf(row.half),
+  });
+}
+
+/** L'agrégat → la ligne : le sujet se range dans l'une de ses deux colonnes. */
+function toPersistence(bin: DeliveryBin): BinRecord {
+  const { subject, ...rest } = bin.toSnapshot();
+  return { ...rest, ...binSubjectColumns(subject) };
 }

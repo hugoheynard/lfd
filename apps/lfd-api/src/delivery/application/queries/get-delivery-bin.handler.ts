@@ -9,7 +9,8 @@ import { binDetailView } from "../delivery-loading-view.js";
 import { GetDeliveryBinQuery } from "./get-delivery-bin.query.js";
 
 /**
- * **Ouvrir le QR d'un bac** (L4-C13) : le bac, sa commande, sa tournée, et
+ * **Ouvrir le QR d'un bac** (L4-C13) : le bac, sa commande (ou son transfert
+ * interne, lot T3), sa tournée, et
  * s'il y est chargé. Une LECTURE — un aperçu de lien, un historique ou un
  * curieux qui scanne ne chargent rien ; « Charger » est un geste.
  *
@@ -30,11 +31,18 @@ export class GetDeliveryBinHandler implements IQueryHandler<
     if (bin === null) {
       throw new DeliveryBinNotFoundError(query.binId);
     }
-    const [orderBins, destination] = await Promise.all([
-      this.loading.orderBins(bin.orderId),
-      this.loading.destinationOf(bin.orderId, bin.id),
-    ]);
-    const context = await binContextOf(this.loading, this.orders, [bin, ...orderBins]);
-    return binDetailView(bin, orderBins, context, destination);
+    // Un bac de transfert (lot T3) se range parmi ceux de son transfert, et
+    // part avec l'arrêt de celui-ci.
+    const { owner } = bin;
+    const [siblings, destination] = await Promise.all(
+      owner.kind === "order"
+        ? [this.loading.orderBins(owner.orderId), this.loading.destinationOf(owner.orderId, bin.id)]
+        : [
+            this.loading.transferBins(owner.transferId),
+            this.loading.transferDestinationOf(owner.transferId, bin.id),
+          ],
+    );
+    const context = await binContextOf(this.loading, this.orders, [bin, ...siblings]);
+    return binDetailView(bin, siblings, context, destination);
   }
 }

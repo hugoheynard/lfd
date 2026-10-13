@@ -1,5 +1,9 @@
 import {
+  type DeclaredTransferBinsView,
+  type DeclareTransferBinsPayload,
+  declareTransferBinsPayloadSchema,
   type DeliveryLoadingDayView,
+  type DeliveryTransferBinsView,
   type DeliveryLoadingPlanView,
   type DeliveryLoadingRoundView,
   type DepartDeliveryRoundPayload,
@@ -14,7 +18,9 @@ import { z } from "zod";
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../platform/auth/staff.decorator.js";
 import { ZodBody, ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
+import { DeclareTransferBinsCommand } from "../application/commands/declare-transfer-bins.command.js";
 import { DepartDeliveryRoundCommand } from "../application/commands/depart-delivery-round.command.js";
+import { GetDeliveryTransferBinsQuery } from "../application/queries/get-delivery-transfer-bins.query.js";
 import { LoadDeliveryBinCommand } from "../application/commands/load-delivery-bin.command.js";
 import { UnloadDeliveryBinCommand } from "../application/commands/unload-delivery-bin.command.js";
 import { GetDeliveryLoadingPlanQuery } from "../application/queries/get-delivery-loading-plan.query.js";
@@ -36,6 +42,11 @@ type DayQuery = z.infer<typeof dayQuerySchema>;
  * `/tournees/{id}/depart` parce que c'est la tournée qui part, mais qui est le
  * dernier geste du CHARGEMENT : composer n'ouvre pas le droit de partir. Il
  * n'injecte que les bus.
+ *
+ * Et les bacs d'un **transfert interne** (lot T3, Q-T4 révisée) : ils se
+ * déclarent ICI, au chargement — les commandes du site arrivent en sacs du
+ * colisage, et c'est au dépôt qu'on les range dans autant de bacs que
+ * nécessaire.
  */
 @Controller("admin/delivery")
 @AdminSurface("delivery_loading")
@@ -96,5 +107,31 @@ export class DeliveryLoadingController {
     await this.commands.execute<DepartDeliveryRoundCommand, void>(
       new DepartDeliveryRoundCommand(roundId, payload),
     );
+  }
+
+  /** Les bacs d'un transfert, annulés compris — la page d'étiquettes (lot T3). */
+  @Get("loading/transfers/:transferId/bins")
+  transferBins(@Param("transferId") transferId: string): Promise<DeliveryTransferBinsView> {
+    return this.queries.execute<GetDeliveryTransferBinsQuery, DeliveryTransferBinsView>(
+      new GetDeliveryTransferBinsQuery(transferId),
+    );
+  }
+
+  /** Déclare des bacs entiers pour un transfert (lot T3) ; rend leurs identifiants. */
+  @Post("loading/transfers/:transferId/bins")
+  @HttpCode(HttpStatus.CREATED)
+  async declareTransferBins(
+    @Param("transferId") transferId: string,
+    @Body(new ZodBody(declareTransferBinsPayloadSchema)) payload: DeclareTransferBinsPayload,
+  ): Promise<DeclaredTransferBinsView> {
+    const binIds = await this.commands.execute<DeclareTransferBinsCommand, readonly string[]>(
+      new DeclareTransferBinsCommand(
+        transferId,
+        payload.binTypeId,
+        payload.count,
+        payload.innerBags,
+      ),
+    );
+    return { binIds };
   }
 }

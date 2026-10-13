@@ -131,4 +131,34 @@ describe('le transfert interne (internal_transfer.*, delivery_round.transfer_sto
       ),
     ).toContain('déjà parti : le manifeste reste inchangé');
   });
+
+  it('dit les bacs déclarés pour un transfert (lot T3)', () => {
+    expect(
+      sentence(
+        fact('internal_transfer.bins_declared', 'internal_transfer', {
+          ...TRANSFER,
+          binType: { id: 'bt_1', name: 'Bac M' },
+          innerBags: 3,
+          bins: [
+            { id: 'b_1', name: 'ABC234' },
+            { id: 'b_2', name: 'ABC235' },
+          ],
+        }),
+      ),
+    ).toBe(
+      'Colette Martin a déclaré 2 bacs de type « Bac M » pour le transfert vers « Val Village » du 1 octobre 2026, 3 sacs dans chacun : « ABC234 », « ABC235 »',
+    );
+  });
+
+  it('compte les bacs à la réception (lot T3), et n’en dit rien avant', () => {
+    const received = { ...TRANSFER, via: 'counter', manual: false, reason: null };
+    expect(
+      sentence(fact('internal_transfer.received', 'internal_transfer', { ...received, bins: 3 })),
+    ).toBe(
+      'Colette Martin a réceptionné le transfert vers « Val Village » du 1 octobre 2026, 3 bacs',
+    );
+    expect(sentence(fact('internal_transfer.received', 'internal_transfer', received))).toBe(
+      'Colette Martin a réceptionné le transfert vers « Val Village » du 1 octobre 2026',
+    );
+  });
 });

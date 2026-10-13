@@ -96,6 +96,21 @@ describe('le chargement (delivery_bin.*, delivery_round.departed)', () => {
     ).toBe('Colette Martin a annulé le bac « ABC234 » de la commande « CMD-1 »');
   });
 
+  it('nomme le transfert d’un bac de transfert (lot T3)', () => {
+    expect(
+      sentence(
+        fact('delivery_bin.loaded', 'delivery_bin', {
+          subjectLabel: 'ABC234',
+          transfer: { id: 't_1', name: 'Val Village' },
+          ...ROUND,
+          via: 'scan',
+        }),
+      ),
+    ).toBe(
+      'Colette Martin a chargé le bac « ABC234 » du transfert vers « Val Village » dans la tournée « Kangoo » du 1 octobre 2026, passage 2, par son QR',
+    );
+  });
+
   it('dit le chargement, la tournée et le chemin', () => {
     expect(
       sentence(

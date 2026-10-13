@@ -27,7 +27,11 @@ import { GetDeliveryPackingProposalHandler } from "../../queries/get-delivery-pa
 import { FixedBinCatalog, FixedDeliveryProducts } from "./bin-doubles.js";
 import { FixedManagedOrders } from "./managed-orders-double.js";
 import { deliveryOn, FixedDeliveryOrders } from "./round-doubles.js";
-import { FixedTransferredOrders } from "../../__tests__/transfer-doubles.js";
+import {
+  FixedTransferredOrders,
+  InMemoryInternalTransfers,
+  InternalTransfersReaderOver,
+} from "../../__tests__/transfer-doubles.js";
 
 const CAPACITY = { binTypeId: "t_m", sku: "CRO", units: 30 };
 
@@ -59,6 +63,7 @@ function setup(bins = new InMemoryBins(binOf("b_1", "o_listed", "AAAAAA"))) {
     events,
     new DirectUnitOfWork(),
     new FixedTransferredOrders(),
+    new InternalTransfersReaderOver(new InMemoryInternalTransfers()),
   );
   const managed = new FixedManagedOrders("o_listed");
   return { bins, events, office, managed };

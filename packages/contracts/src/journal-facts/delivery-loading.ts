@@ -18,6 +18,17 @@ import { count, day, fact, instant, named, namedOrBare, payload, subjectLabel } 
 /** Une tournée citée depuis un bac : son véhicule, son jour, son passage. */
 const roundRef = () => payload({ round: named("delivery_round"), day: day(), passage: count() });
 
+/**
+ * Le propriétaire d'un bac : sa commande, ou — depuis le lot T3 du transfert
+ * interne — son transfert, nommé par le site. Exactement l'un des deux est
+ * écrit ; un fait d'avant T3 porte toujours `order`.
+ */
+const owner = () => ({
+  order: namedOrBare("order").optional(),
+  // Toujours nommé : un transfert n'est jamais supprimé (clé étrangère RESTRICT).
+  transfer: named("internal_transfer").optional(),
+});
+
 /** Le côté d'une moitié de bac cloisonné ; `null` = bac entier. */
 const half = () => z.enum(["left", "right"]).nullable();
 
@@ -53,14 +64,12 @@ export const DELIVERY_LOADING_FACTS = {
     }),
   ),
   /** Un bac de trop, annulé (L4-C19). */
-  "delivery_bin.voided": fact(
-    payload({ subjectLabel: subjectLabel(), order: namedOrBare("order") }),
-  ),
+  "delivery_bin.voided": fact(payload({ subjectLabel: subjectLabel(), ...owner() })),
   /** Chargé dans une tournée, par le QR (`scan`) ou le code tapé (`code`). */
   "delivery_bin.loaded": fact(
     payload({
       subjectLabel: subjectLabel(),
-      order: namedOrBare("order"),
+      ...owner(),
       ...roundRef().shape,
       via: z.enum(["scan", "code"]),
     }),
@@ -69,7 +78,7 @@ export const DELIVERY_LOADING_FACTS = {
   "delivery_bin.unloaded": fact(
     payload({
       subjectLabel: subjectLabel(),
-      order: namedOrBare("order"),
+      ...owner(),
       ...roundRef().shape,
       loadedAt: instant(),
       loadedBy: namedOrBare("staff_user"),

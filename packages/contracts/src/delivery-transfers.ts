@@ -75,16 +75,27 @@ export const receiveTransferPayloadSchema = z.object({
 });
 export type ReceiveTransferPayload = z.infer<typeof receiveTransferPayloadSchema>;
 
-/** Où en est le transfert d'une commande, vu du comptoir (lot T2). */
-export type OrderTransferStateView = "planned" | "departed" | "received";
+/**
+ * Où en est le transfert d'une commande, vu du comptoir (lot T2).
+ * `awaiting` (lot T3, faille F4) : un retrait d'un site servi par transfert
+ * qu'aucun transfert ne porte ENCORE — la journée n'est pas clôturée ; le
+ * comptoir le refuse comme un transfert non reçu.
+ */
+export type OrderTransferStateView = "awaiting" | "planned" | "departed" | "received";
 
 /** Le transfert qui porte une commande du site, dans la file du comptoir. */
 export interface OrderTransferView {
-  readonly transferId: string;
+  /** `null` en attente (`awaiting`) : aucun transfert ne la porte encore. */
+  readonly transferId: string | null;
   readonly siteLabel: string;
   readonly state: OrderTransferStateView;
-  /** Instant ISO de l'état. */
-  readonly at: string;
+  /** Instant ISO de l'état ; `null` en attente. */
+  readonly at: string | null;
+  /**
+   * Les bacs non annulés du transfert (lot T3, Q-T4 révisée) — ce que le site
+   * doit recevoir ; `0` en attente.
+   */
+  readonly binCount: number;
 }
 
 /**

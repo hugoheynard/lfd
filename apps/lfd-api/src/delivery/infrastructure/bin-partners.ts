@@ -1,7 +1,8 @@
 /** Un bac tel que la recherche de sa moitié partenaire le lit. */
 interface BinHalfRow {
   readonly id: string;
-  readonly orderId: string;
+  /** Nul pour un bac de transfert (lot T3) — jamais une moitié : la base le tient. */
+  readonly orderId: string | null;
   readonly physicalBinId: string | null;
 }
 
@@ -26,7 +27,7 @@ export function partnersOf(
         half.id !== bin.id &&
         half.orderId !== bin.orderId,
     );
-    if (other !== undefined) {
+    if (other !== undefined && other.orderId !== null) {
       partners.set(bin.id, { binId: other.id, orderId: other.orderId });
     }
   }

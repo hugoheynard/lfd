@@ -4,6 +4,8 @@ import { type BinHalf, otherHalf } from "../value-objects/bin-declaration.js";
 /** Une moitié libre, et l'arrêt qui la porte. */
 export interface FreeHalfRow {
   readonly bin: BinRow;
+  /** La commande de la moitié — un bac de transfert n'est jamais une moitié (lot T3). */
+  readonly orderId: string;
   readonly stop: LoadingStopRow;
   /** Le côté qu'un partage prendrait. */
   readonly freeHalf: BinHalf;
@@ -37,8 +39,8 @@ export function freeHalvesAround(
   const found: FreeHalfRow[] = [];
   for (const stop of neighbours) {
     for (const bin of stop.bins) {
-      if (isFreeHalf(bin, taken) && bin.half !== null) {
-        found.push({ bin, stop, freeHalf: otherHalf(bin.half) });
+      if (isFreeHalf(bin, taken) && bin.half !== null && bin.owner.kind === "order") {
+        found.push({ bin, orderId: bin.owner.orderId, stop, freeHalf: otherHalf(bin.half) });
       }
     }
   }

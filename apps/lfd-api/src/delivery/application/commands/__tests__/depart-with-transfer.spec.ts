@@ -61,7 +61,7 @@ function loadedBin(binId: string) {
   };
 }
 
-function setup(transferLoaded: boolean, receivedByHand = false) {
+function setup(transferLoaded: boolean, receivedByHand = false, withBins = true) {
   const transfer = plannedTransfer("t_1", DAY, NOW, ["o_v1"]);
   if (receivedByHand) {
     transfer.receive({ at: NOW, by: "staff_counter", reason: "Venu par le personnel" });
@@ -79,8 +79,8 @@ function setup(transferLoaded: boolean, receivedByHand = false) {
       stopOf("o_v1", {
         stopId: "r_1_st",
         subject: { kind: "transfer", transferId: "t_1" },
-        bins: [{ id: "b_v", code: "VVVVVV", voided: false, partnerOrderId: null }],
-        loads: transferLoaded ? [loadedBin("b_v")] : [],
+        bins: withBins ? [{ id: "b_v", code: "VVVVVV", voided: false, partnerOrderId: null }] : [],
+        loads: transferLoaded && withBins ? [loadedBin("b_v")] : [],
       }),
     ),
     departed,
@@ -132,5 +132,20 @@ describe("Partir avec un arrêt de transfert (lot T1)", () => {
     const [transfer] = transfers.all();
     expect(transfer?.status).toBe("received");
     expect(transfer?.departedAt).toBeNull();
+  });
+
+  /**
+   * Lot T3, Q-T4 révisée : les bacs appartiennent au TRANSFERT, et ses
+   * commandes partent en sacs dedans. Un transfert sans aucun bac déclaré
+   * partirait vide d'étiquette : « Partir » le refuse, en nommant le site.
+   */
+  it("refuse de partir sans aucun bac déclaré pour le transfert (lot T3)", async () => {
+    const { handler, transfers } = setup(false, false, false);
+
+    const refusal = handler.execute(new DepartDeliveryRoundCommand("r_1", { version: 1 }));
+
+    await expect(refusal).rejects.toThrow(DeliveryRoundNotReadyError);
+    await expect(refusal).rejects.toThrow(/→ Val Village/u);
+    expect(transfers.all()[0]?.departedAt).toBeNull();
   });
 });

@@ -73,6 +73,23 @@ export const DELIVERY_TRANSFER_FACTS = {
       via: z.enum(TRANSFER_RECEIVED_VIAS),
       manual: z.boolean(),
       reason: z.string().nullable(),
+      /** Les bacs non annulés du transfert à la réception (lot T3) ; absent avant. */
+      bins: count().optional(),
+    }),
+  ),
+  /**
+   * Des bacs d'UN type de plus pour le transfert (lot T3, Q-T4 révisée par
+   * Hugo le 2026-10-13) : les commandes du site y sont en sacs, et les bacs
+   * appartiennent au transfert. Toujours entiers. `innerBags` : les sacs
+   * posés dans CHAQUE bac.
+   */
+  "internal_transfer.bins_declared": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      day: day(),
+      binType: named("delivery_bin_type"),
+      innerBags: count(),
+      bins: z.array(named("delivery_bin")),
     }),
   ),
   /** Une commande sortie d'un transfert prévu : annulée, ou changée de jour ou de site. */

@@ -3,6 +3,7 @@ import {
   InternalTransferCorruptedError,
   InternalTransferDepartedError,
   InternalTransferMismatchError,
+  TransferBinsClosedError,
 } from "../errors/internal-transfer-errors.js";
 import {
   type ManifestItem,
@@ -188,6 +189,17 @@ export class InternalTransfer {
     this.items = [...this.items, { ...input.item, id: input.itemId, attachedAt: at }];
     this.touch(at);
     return true;
+  }
+
+  /**
+   * Reçoit-il encore des bacs ? (lot T3, Q-T4 révisée) — seulement PRÉVU : un
+   * bac déclaré sur un transfert parti ou reçu ne partirait jamais.
+   * @throws {TransferBinsClosedError}
+   */
+  ensureTakesBins(): void {
+    if (this.status !== "planned") {
+      throw new TransferBinsClosedError(this.state.siteLabel, this.state.serviceDay, this.status);
+    }
   }
 
   /**

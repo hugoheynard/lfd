@@ -40,6 +40,22 @@ const LEAVE_CAUSE: Readonly<Record<string, string>> = {
 };
 
 const ORDER: Noun = { the: 'la commande', a: 'une commande' };
+const BIN: Noun = { the: '', a: 'un bac' };
+const BIN_TYPE: Noun = { the: 'de type', a: 'd’un type' };
+
+/** « , 3 bacs » — les bacs comptés à la réception (lot T3) ; rien avant T3. */
+function binsOf(raw: unknown): Segment[] {
+  const bins = count(raw);
+  return bins === null ? [] : [text(', '), value(`${String(bins)} bac${bins > 1 ? 's' : ''}`)];
+}
+
+/** « « ABC234 », « ABC235 » » — les bacs créés, par leur code. */
+function binList(raw: readonly unknown[]): Segment[] {
+  return raw.flatMap((entry, index) => {
+    const said = cite(BIN, entry);
+    return index === 0 ? said : [text(', '), ...said];
+  });
+}
 
 /** « (annulée) » — rien pour une cause inconnue. */
 function causeOf(fact: PhraseFact): Segment[] {
@@ -160,9 +176,30 @@ export const DELIVERY_TRANSFER_PHRASES = {
         text(fact.payload['via'] === 'site_drop' ? 'a remis au site ' : 'a réceptionné '),
         ...transfer(fact),
         ...(fact.payload['manual'] === true ? [text(', sans tournée')] : []),
+        ...binsOf(fact.payload['bins']),
         ...(reason === null ? [] : [text(' : '), value(reason)]),
       ],
-      [...TRANSFER_KEYS, 'via', 'manual', 'reason'],
+      [...TRANSFER_KEYS, 'via', 'manual', 'reason', 'bins'],
+    );
+  },
+  'internal_transfer.bins_declared': (fact) => {
+    const bins: readonly unknown[] = Array.isArray(fact.payload['bins'])
+      ? fact.payload['bins']
+      : [];
+    const bags = count(fact.payload['innerBags']);
+    return byActor(
+      fact,
+      [
+        text(`a déclaré ${bins.length > 1 ? `${String(bins.length)} bacs` : 'un bac'} `),
+        ...cite(BIN_TYPE, fact.payload['binType']),
+        text(' pour '),
+        ...transfer(fact),
+        ...(bags === null || bags === 0
+          ? []
+          : [text(', '), value(`${String(bags)} sac${bags > 1 ? 's' : ''}`), text(' dans chacun')]),
+        ...(bins.length === 0 ? [] : [text(' : '), ...binList(bins)]),
+      ],
+      [...TRANSFER_KEYS, 'binType', 'innerBags', 'bins'],
     );
   },
   'internal_transfer.order_detached': (fact) =>

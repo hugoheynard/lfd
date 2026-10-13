@@ -26,6 +26,15 @@ export abstract class StopLoadingRepository {
   abstract forOrder(orderId: string, lockBinId?: string): Promise<StopLoading | null>;
 
   /**
+   * Le chargement de l'arrêt VIVANT de ce transfert interne (lot T3), ou
+   * `null` s'il n'est dans aucune tournée. Mêmes verrous, dans le même ordre,
+   * que {@link forOrder}.
+   *
+   * @throws {DeliveryLoadingStaleError} l'arrêt a bougé entre la lecture et le verrou.
+   */
+  abstract forTransfer(transferId: string, lockBinId?: string): Promise<StopLoading | null>;
+
+  /**
    * Le chargement de chaque arrêt vivant d'une tournée DÉJÀ verrouillée par
    * `DeliveryRoundRepository.loadForDeparture` ; leurs lignes de chargement
    * sont verrouillées dans l'ordre de leur identifiant.

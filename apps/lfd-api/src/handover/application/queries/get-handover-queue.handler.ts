@@ -103,12 +103,24 @@ function toEntryView(
 }
 
 function transferViewOf(status: OrderTransferStatus | undefined): OrderTransferView | null {
-  return status === undefined
-    ? null
-    : {
-        transferId: status.transferId,
-        siteLabel: status.siteLabel,
-        state: status.state,
-        at: status.at.toISOString(),
-      };
+  if (status === undefined) {
+    return null;
+  }
+  // Lot T3, F4 : aucun transfert ne la porte encore — ni identifiant, ni instant, ni bac.
+  if (status.state === "awaiting") {
+    return {
+      transferId: null,
+      siteLabel: status.siteLabel,
+      state: "awaiting",
+      at: null,
+      binCount: 0,
+    };
+  }
+  return {
+    transferId: status.transferId,
+    siteLabel: status.siteLabel,
+    state: status.state,
+    at: status.at.toISOString(),
+    binCount: status.binCount,
+  };
 }
