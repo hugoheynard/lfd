@@ -307,19 +307,35 @@ jobs:
         run: pnpm --filter "./packages/**" test
 
   # ── Le backend B2B, ses contrôles ──────────────────────────────────────────
-  # Tout ce qui NE demande ni base ni stockage : typechecks, lint, gates, et les
-  # 207 suites unitaires.
+  # Tout ce qui NE demande ni base ni stockage : typechecks, lint, et les suites
+  # unitaires. Aucun conteneur : c'est `jest.unit.cjs` qui garantit qu'aucune de
+  # ces specs n'en a besoin.
   #
-  # Elles vivaient dans le job d'à côté, derrière les e2e, et le `maxWorkers: 1`
-  # que les e2e imposent les tenait en file une par une. Mesuré le 2026-08-29 :
-  # 8 min pour les 258 suites ensemble, contre 7 SECONDES pour les 207 unitaires
-  # seules, à sept cœurs. Ce ne sont pas les tests qui étaient lents, c'est la
-  # file d'attente.
-  #
-  # Le job ne monte donc aucun conteneur : c'est ce qui le rend court, et c'est
-  # `jest.unit.cjs` qui garantit qu'aucune de ces specs n'en a besoin.
-  b2b-checks:
-    name: Backend B2B · contrôles
+  # TROIS JOBS depuis le 2026-10-13, un seul avant. Ils tournaient en série
+  # sur la même machine — unitaires 225 s, ESLint type-aware 180 s, typecheck
+  # des specs 53 s, tsc 35 s : 535 s au total (run 38347525043), pour des
+  # étapes qui ne partagent rien d'autre que l'installation (~25 s). Côte à
+  # côte, le job le plus long tient seul la durée ; rien n'a été retiré.
+  b2b-lint:
+    name: Backend B2B · lint
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Construire les paquets dont dépend le backend
+        run: pnpm --filter "./packages/**" build
+      - name: Lint
+        run: pnpm --filter lfd-api lint:ci
+
+  b2b-typecheck:
+    name: Backend B2B · typecheck
     runs-on: ubuntu-latest
     needs: changes
     if: needs.changes.outputs.api == 'true'
@@ -343,14 +359,28 @@ jobs:
       # `setTva("tva_5", null)`, deux signatures mortes, deux tests verts.
       - name: "Typecheck des specs"
         run: pnpm --filter lfd-api exec tsc --noEmit -p tsconfig.test.json
-      - name: Lint
-        run: pnpm --filter lfd-api lint:ci
+
+  b2b-unit:
+    name: Backend B2B · tests unitaires
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Construire les paquets dont dépend le backend
+        run: pnpm --filter "./packages/**" build
       - name: Tests unitaires
         run: pnpm --filter lfd-api test:unit
 
   # ── Le backend B2B, ses e2e ─────────────────────────────────────────────────
   # Ce job ne fait plus QUE les e2e — ses typechecks, son lint et ses gates sont
-  # partis dans `b2b-checks` ci-dessus — et il tourne en QUATRE exemplaires.
+  # partis dans les trois jobs `b2b-*` ci-dessus — et il tourne en QUATRE exemplaires.
   #
   # Le `maxWorkers: 1` des e2e ne disparaît pas : il reste vrai à l'intérieur
   # d'un shard, et c'est ce qu'il protège. Ce qui change, c'est qu'ils sont
@@ -496,8 +526,14 @@ jobs:
   # plus les 745 tests de l'admin ni sa compilation AOT.
   #
   # Ce qu'ils partagent — les gates du dépôt — vit dans le job `gates`, pas ici.
-  front-admin:
-    name: Front admin (+ PIM)
+  #
+  # Depuis le 2026-10-13, chaque front est lui-même découpé : ses étapes
+  # tournaient en série (admin : 590 s, dont 479 de `ng test` ; boutique :
+  # 332 s, dont 228 de `ng test` — run 38347525043). Les tests sont répartis
+  # en éclats par `dev-toolbox/ci/front-shard.mjs`, qui relit le périmètre
+  # dans `angular.json` : le builder `unit-test` n'a pas de `--shard`.
+  front-admin-static:
+    name: Front admin (+ PIM) · lint et typecheck
     runs-on: ubuntu-latest
     needs: changes
     if: needs.changes.outputs.front_admin == 'true'
@@ -520,16 +556,57 @@ jobs:
       # méthode inexistante : aucune erreur.
       - name: Typecheck
         run: pnpm --filter lfd-backoffice-frontend exec tsc -p tsconfig.app.json --noEmit
-      - name: Tests
-        run: pnpm --filter lfd-backoffice-frontend test
-      # Le build de production est le seul endroit qui exerce la compilation AOT
-      # des templates : un typecheck vert ne dit rien d'un binding cassé dans un
-      # `.html`.
+
+  # Le build de production est le seul endroit qui exerce la compilation AOT
+  # des templates : un typecheck vert ne dit rien d'un binding cassé dans un
+  # `.html`.
+  front-admin-build:
+    name: Front admin (+ PIM) · build AOT
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.front_admin == 'true'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Construire les paquets
+        run: pnpm --filter "./packages/**" build
       - name: Build de production (compilation AOT)
         run: pnpm --filter lfd-backoffice-frontend build
 
-  front-platform:
-    name: Front boutique
+  front-admin-tests:
+    name: Front admin (+ PIM) · tests ${{ matrix.shard }}/4
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.front_admin == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Construire les paquets
+        run: pnpm --filter "./packages/**" build
+      # L'affectation à part : sous `bash -e`, un script qui échoue dans une
+      # affectation arrête l'étape — dans un argument, il passerait inaperçu
+      # et `ng test` sans `--include` lancerait TOUT.
+      - name: Tests
+        run: |
+          specs=$(node dev-toolbox/ci/front-shard.mjs apps/lfd-backoffice-frontend ${{ matrix.shard }} 4)
+          pnpm --filter lfd-backoffice-frontend exec ng test $specs
+
+  front-platform-build:
+    name: Front boutique · typecheck et build AOT
     runs-on: ubuntu-latest
     needs: changes
     if: needs.changes.outputs.front_platform == 'true'
@@ -548,10 +625,32 @@ jobs:
       # laisse passer. Il est couvert par le typecheck, les tests et le build.
       - name: Typecheck
         run: pnpm --filter lfc-ecommerce-frontend exec tsc -p tsconfig.app.json --noEmit
-      - name: Tests
-        run: pnpm --filter lfc-ecommerce-frontend test
       - name: Build de production (compilation AOT)
         run: pnpm --filter lfc-ecommerce-frontend build
+
+  front-platform-tests:
+    name: Front boutique · tests ${{ matrix.shard }}/2
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.front_platform == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Construire les paquets
+        run: pnpm --filter "./packages/**" build
+      - name: Tests
+        run: |
+          specs=$(node dev-toolbox/ci/front-shard.mjs apps/lfc-ecommerce-frontend ${{ matrix.shard }} 2)
+          pnpm --filter lfc-ecommerce-frontend exec ng test $specs
 
   # ── La porte ────────────────────────────────────────────────────────────────
   # Le SEUL statut à exiger sur la branche. `always()` + le test explicite sur
@@ -621,10 +720,15 @@ jobs:
         changes,
         gates,
         packages,
-        b2b-checks,
+        b2b-lint,
+        b2b-typecheck,
+        b2b-unit,
         b2b-backend,
-        front-admin,
-        front-platform,
+        front-admin-static,
+        front-admin-build,
+        front-admin-tests,
+        front-platform-build,
+        front-platform-tests,
         gateway,
         route-planner,
       ]
@@ -642,10 +746,15 @@ jobs:
         run: |
           echo "changes       : ${{ needs.changes.result }}"
           echo "packages      : ${{ needs.packages.result }}"
-          echo "b2b-checks    : ${{ needs.b2b-checks.result }}"
-          echo "b2b-backend   : ${{ needs.b2b-backend.result }}"
-          echo "front-admin   : ${{ needs.front-admin.result }}"
-          echo "front-platform: ${{ needs.front-platform.result }}"
+          echo "b2b-lint            : ${{ needs.b2b-lint.result }}"
+          echo "b2b-typecheck       : ${{ needs.b2b-typecheck.result }}"
+          echo "b2b-unit            : ${{ needs.b2b-unit.result }}"
+          echo "b2b-backend         : ${{ needs.b2b-backend.result }}"
+          echo "front-admin-static  : ${{ needs.front-admin-static.result }}"
+          echo "front-admin-build   : ${{ needs.front-admin-build.result }}"
+          echo "front-admin-tests   : ${{ needs.front-admin-tests.result }}"
+          echo "front-platform-build: ${{ needs.front-platform-build.result }}"
+          echo "front-platform-tests: ${{ needs.front-platform-tests.result }}"
           echo "gateway       : ${{ needs.gateway.result }}"
           echo "route-planner : ${{ needs.route-planner.result }}"
 
@@ -664,10 +773,15 @@ jobs:
           rouge=0
           for etat in \
             "${{ needs.packages.result }}" \
-            "${{ needs.b2b-checks.result }}" \
+            "${{ needs.b2b-lint.result }}" \
+            "${{ needs.b2b-typecheck.result }}" \
+            "${{ needs.b2b-unit.result }}" \
             "${{ needs.b2b-backend.result }}" \
-            "${{ needs.front-admin.result }}" \
-            "${{ needs.front-platform.result }}" \
+            "${{ needs.front-admin-static.result }}" \
+            "${{ needs.front-admin-build.result }}" \
+            "${{ needs.front-admin-tests.result }}" \
+            "${{ needs.front-platform-build.result }}" \
+            "${{ needs.front-platform-tests.result }}" \
             "${{ needs.gateway.result }}" \
             "${{ needs.route-planner.result }}"; do
             case "$etat" in

@@ -73,19 +73,24 @@ qu'une nouvelle sur un schéma à moitié migré.
 
 ## 3. Ce que la CI couvre — et ce qu'elle ne couvre pas
 
-`ci.yml` a huit jobs plus une barrière — et **cinq ne tournent que si le commit les concerne** :
+`ci.yml` a quatorze jobs plus une barrière — et **tous sauf `changes` et `gates` ne tournent que si le commit les concerne** (relu le 2026-10-13) :
 
-| Job              | Périmètre                                                         |
-| ---------------- | ----------------------------------------------------------------- |
-| `changes`        | calcule le PÉRIMÈTRE via le graphe turbo — toujours               |
-| `gates`          | les 16 portes qui balaient tout le dépôt — toujours               |
-| `packages`       | les paquets partagés, en premier et à part                        |
-| `b2b-checks`     | typechecks, lint et les 207 suites unitaires du backend           |
-| `b2b-backend`    | les 51 suites e2e, **4 shards × 2 workers** (une base par worker) |
-| `front-admin`    | l'admin staff (PIM compris) — lint, typecheck, tests, build AOT   |
-| `front-platform` | la boutique client — typecheck, tests, build AOT                  |
-| `gateway`        | typecheck, lint et 8 tests de routage du Worker d'entrée          |
-| `ci-gate`        | échoue si l'un d'eux est rouge — **le seul statut requis**        |
+| Job                    | Périmètre                                                                |
+| ---------------------- | ------------------------------------------------------------------------ |
+| `changes`              | calcule le PÉRIMÈTRE via le graphe turbo — toujours                      |
+| `gates`                | les portes qui balaient tout le dépôt — toujours                         |
+| `packages`             | les paquets partagés, en premier et à part                               |
+| `b2b-lint`             | ESLint type-aware du backend                                             |
+| `b2b-typecheck`        | `tsc` du backend, puis celui des specs (`tsconfig.test.json`)            |
+| `b2b-unit`             | les suites unitaires du backend                                          |
+| `b2b-backend`          | les suites e2e, en éclats par durée × 2 workers (une base par worker)    |
+| `front-admin-static`   | l'admin staff (PIM compris) — lint et typecheck                          |
+| `front-admin-build`    | l'admin staff — build AOT                                                |
+| `front-admin-tests`    | l'admin staff — `ng test` en 4 éclats (`dev-toolbox/ci/front-shard.mjs`) |
+| `front-platform-build` | la boutique client — typecheck et build AOT                              |
+| `front-platform-tests` | la boutique client — `ng test` en 2 éclats                               |
+| `gateway`              | typecheck, lint et 8 tests de routage du Worker d'entrée                 |
+| `ci-gate`              | échoue si l'un d'eux est rouge — **le seul statut requis**               |
 
 ### Les types d'API viennent des contrats
 
@@ -192,7 +197,12 @@ sautait les jobs de front — et avec eux la porte des cycles d'import, qui lit
 pourtant `apps/**` en entier. D'où le job `gates`, global et inconditionnel :
 **une porte globale appartient à un job global.**
 
-### Pourquoi `b2b-checks` existe
+### Pourquoi les contrôles du backend sont à part
+
+> Ils formaient un seul job, `b2b-checks`, jusqu'au 2026-10-13 ; il est
+> découpé en `b2b-lint`, `b2b-typecheck` et `b2b-unit`, qui tournaient en
+> série pour 535 s (run 38347525043). Le raisonnement ci-dessous, qui les a
+> sortis du job des e2e, reste vrai.
 
 Le backend tenait à lui seul le chemin critique : **10 min 12 sur une CI de
 10 min 25** (run vert du 2026-08-27), dont **8 minutes** pour une seule étape,
