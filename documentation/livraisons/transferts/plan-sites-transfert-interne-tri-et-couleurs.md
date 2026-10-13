@@ -261,7 +261,7 @@ ne se détruisent pas**. Aucune donnée ne bouge de table ici : la ligne
   `supply site_supply not null default 'on_site'`,
   `dispatches boolean not null default false`, `archived_at timestamptz null`,
   `transfer_mode site_transfer_mode not null default 'integrated'`,
-  `counter_setup_minutes int not null default 0`, `transfer_minutes int null` (trajet, Q-T11 ; §4.6),
+  `counter_setup_minutes int not null default 0`, coordonnées GPS du site (trajet calculé, Q-T11 ; §4.6),
   `pickup_color_b2b`, `pickup_color_b2c`, `delivery_color_b2b`,
   `delivery_color_b2c` (`site_color null`), plus des `CHECK` posés
   **après** la saisie (lot S3r). Le site par défaut actuel reçoit
@@ -652,8 +652,9 @@ Ce qui s'ajoute :
   du site ce jour-là (`PickupAddress.opening`, fenêtre pros) et (b) le
   premier créneau **public** ouvert ce jour-là (`PublicPickupSlotRule` moins
   `PublicPickupClosure`). Arrivée requise = ce plus tôt −
-  `counter_setup_minutes` ; départ requis = arrivée requise − trajet
-  (`transfer_minutes`, Q-T11).
+  `counter_setup_minutes` ; départ requis = arrivée requise − trajet,
+  **calculé par l'app** depuis les coordonnées GPS du fournil et du site
+  (Q-T11 tranchée : pas de durée saisie).
 - **Sans créneau ni ouverture ce jour-là** : le plus tôt des créneaux **des
   commandes** du site ; sinon `null`, et les commandes passent en `UNDATED`
   (comme une commande sans fenêtre, `deadline-thresholds.ts` l. 120–122),
@@ -760,19 +761,19 @@ Un lot à la fois (mémoire du dépôt). Tailles dites honnêtement : **T1 et T2
 sont le cœur du chantier**, et T1 ne se coupe pas — son étape « étendre »
 sans la composition ne sert à rien en production.
 
-| Lot | Taille | Contenu                                                                                                                                                                                                                                                                                                                    | Migration                                                                                                          | Touche                      |
-| --- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | --------------------------- |
-| S0  | S      | ressource `lfc_site_settings` ajoutée à `StaffResource`, accordée à **aucun** rôle ; bascule : après déploiement, l'admin l'accorde à `/admin/staff-roles`, **puis** S1 met l'écran derrière                                                                                                                               | additive (valeur d'enum)                                                                                           | sécurité (périmètre)        |
-| S1  | M      | `b2b/sites` (agrégat `Site`, rôles, couleurs nullables, archivage, `transfer_mode`, `counter_setup_minutes`), Réglages › Sites, lecteurs du comptoir et de la saisie hors de l'écran                                                                                                                                       | additive (colonnes, enums)                                                                                         | frontière (canaux)          |
-| S2  | S      | `siteId` dans le snapshot de commande (depuis `pickupAddressId` reçu à la passation), `production_order.site_id`, onglets du comptoir par id ; pas de rattrapage                                                                                                                                                           | additive                                                                                                           | —                           |
-| L1  | S      | fonction pure de catégorie (back-office), tokens `--lfc-site-*`, pastille                                                                                                                                                                                                                                                  | —                                                                                                                  | —                           |
-| S3r | S      | `CHECK` des couleurs après saisie ; lectures par libellé retirées                                                                                                                                                                                                                                                          | contrainte                                                                                                         | —                           |
-| T0  | M      | `dueAtOf` et `requiredBy` calculent l'heure requise depuis les réglages du site (ouverture pros, créneaux publics, mise en place, trajet) ; la clôture la fige dans `production_order.due_at` comme aujourd'hui ; marges intactes. **Dépend de S1** (`counter_setup_minutes`, `transfer_minutes`) **et de Q-T11** (trajet) | — (colonnes du site portées par S1)                                                                                | production (échéances)      |
-| T1  | **L**  | `InternalTransfer` + ses commandes ; arrêt `kind = transfer` (temps 1 : colonnes, `CHECK`, index jumeau ; union discriminée dans le domaine) ; chaque famille du §4.4 ; composition intégrée avec repli dédié ; mode dédié                                                                                                 | `String?` + `CHECK` + `DROP NOT NULL` avec le code qui écrit le premier `NULL`, un seul déploiement (CLAUDE.md §0) | migration servie, frontière |
-| T2  | M      | « Remis au site » / « Réceptionner » (manuelle), `TransferStatusReader`, port `handover/channels/delivery/`, `TransferNotReceivedError`                                                                                                                                                                                    | additive (`received_at` du transfert)                                                                              | frontière                   |
-| L2  | M      | `OrderDepartureReader` + tri de la liste ; tri du colisage par `dueAt`                                                                                                                                                                                                                                                     | —                                                                                                                  | frontière (canal)           |
-| L4  | ?      | « Écrire » (Q1), indépendant                                                                                                                                                                                                                                                                                               | —                                                                                                                  | —                           |
-| L5  | S      | couleur sur les supports imprimés (si Q8 = papier)                                                                                                                                                                                                                                                                         | —                                                                                                                  | —                           |
+| Lot | Taille | Contenu                                                                                                                                                                                                                                                                                                                      | Migration                                                                                                          | Touche                      |
+| --- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | --------------------------- |
+| S0  | S      | ressource `lfc_site_settings` ajoutée à `StaffResource`, accordée à **aucun** rôle ; bascule : après déploiement, l'admin l'accorde à `/admin/staff-roles`, **puis** S1 met l'écran derrière                                                                                                                                 | additive (valeur d'enum)                                                                                           | sécurité (périmètre)        |
+| S1  | M      | `b2b/sites` (agrégat `Site`, rôles, couleurs nullables, archivage, `transfer_mode`, `counter_setup_minutes`), Réglages › Sites, lecteurs du comptoir et de la saisie hors de l'écran                                                                                                                                         | additive (colonnes, enums)                                                                                         | frontière (canaux)          |
+| S2  | S      | `siteId` dans le snapshot de commande (depuis `pickupAddressId` reçu à la passation), `production_order.site_id`, onglets du comptoir par id ; pas de rattrapage                                                                                                                                                             | additive                                                                                                           | —                           |
+| L1  | S      | fonction pure de catégorie (back-office), tokens `--lfc-site-*`, pastille                                                                                                                                                                                                                                                    | —                                                                                                                  | —                           |
+| S3r | S      | `CHECK` des couleurs après saisie ; lectures par libellé retirées                                                                                                                                                                                                                                                            | contrainte                                                                                                         | —                           |
+| T0  | M      | `dueAtOf` et `requiredBy` calculent l'heure requise depuis les réglages du site (ouverture pros, créneaux publics, mise en place, trajet) ; la clôture la fige dans `production_order.due_at` comme aujourd'hui ; marges intactes. **Dépend de S1** (`counter_setup_minutes`, coordonnées) ; trajet calculé (Q-T11 tranchée) | — (colonnes du site portées par S1)                                                                                | production (échéances)      |
+| T1  | **L**  | `InternalTransfer` + ses commandes ; arrêt `kind = transfer` (temps 1 : colonnes, `CHECK`, index jumeau ; union discriminée dans le domaine) ; chaque famille du §4.4 ; composition intégrée avec repli dédié ; mode dédié                                                                                                   | `String?` + `CHECK` + `DROP NOT NULL` avec le code qui écrit le premier `NULL`, un seul déploiement (CLAUDE.md §0) | migration servie, frontière |
+| T2  | M      | « Remis au site » / « Réceptionner » (manuelle), `TransferStatusReader`, port `handover/channels/delivery/`, `TransferNotReceivedError`                                                                                                                                                                                      | additive (`received_at` du transfert)                                                                              | frontière                   |
+| L2  | M      | `OrderDepartureReader` + tri de la liste ; tri du colisage par `dueAt`                                                                                                                                                                                                                                                       | —                                                                                                                  | frontière (canal)           |
+| L4  | ?      | « Écrire » (Q1), indépendant                                                                                                                                                                                                                                                                                                 | —                                                                                                                  | —                           |
+| L5  | S      | couleur sur les supports imprimés (si Q8 = papier)                                                                                                                                                                                                                                                                           | —                                                                                                                  | —                           |
 
 L'ancien T3 (mode dédié seul) est **absorbé par T1** : avec un arrêt unique,
 la tournée dédiée est une tournée ordinaire à un arrêt, et le repli
@@ -789,20 +790,24 @@ de S3 (réception manuelle).
 
 Restent :
 
-- **Q1** — « Écrire » : saisie staff pour un client sans compte, ou « Nous
-  écrire » ?
+- ~~**Q1**~~ — « Écrire » : **mis de côté** (Hugo, 2026-10-13) ; L4 hors du chantier.
 - **Q2** — Quel écran porte le tri et les couleurs ?
-- **Q3** — « Adroit » est-il le site du fournil ? Les deux sites B2C sont-ils
-  les seuls ?
+- ~~**Q3**~~ — ✅ « Adroit » est **le nom d'un des sites** ; Hugo le saisira
+  en admin (Réglages › Sites). Aucun nom de site dans le code.
 - **Q8** — Surligneurs sur papier ou à l'écran ?
 - **Q-S1** — Garder la table `pickup_addresses` sous le modèle `Site` ?
 - **Q-S3** — Relier un `PointOfSale` (référentiel) à un site ?
 - **Q-S4** — Un second fournil est-il envisagé ?
 - **Q-S6** — La palette : `blue, yellow, orange, grey, purple, teal, brown` ?
 - **Q-S7** — Les couleurs de livraison sur le site qui expédie (§5.3) ?
-- **Q-T3** — Une commande du village ajoutée quand le transfert du jour est
-  déjà parti ou reçu : nouveau transfert du même jour sans arrêt, sorti par
-  réception manuelle (proposé, §4.5), ou report au transfert du lendemain ?
+- ~~**Q-T3**~~ — ✅ (Hugo, 2026-10-13) : si le transfert du jour est déjà
+  parti et que la commande est pour **le jour même**, l'app prévoit **un
+  autre transfert** pour honorer l'heure de retrait — un second
+  `InternalTransfer` du même site et du même jour, placé comme le premier
+  (intégré ou repli dédié). L'unicité « un transfert par site et par jour »
+  du §4.2 devient « un transfert **ouvert** (`planned`) par site et par
+  jour ». Commande pour un jour suivant : elle rejoint le transfert de ce
+  jour-là, rien de neuf.
 - **Q-T13** — Repli « tournée dédiée » sans véhicule libre : laisser le
   transfert sans arrêt avec une ligne au journal (proposé), ou une alerte
   qui sonne au tour manager ?
@@ -811,8 +816,11 @@ Restent :
   comptoir : les deux (proposé), ou un seul ?
 - **Q-T7** — Changer le mode d'un site : seulement les journées pas encore
   composées (proposé) ?
-- **Q-T11** — Trajet fournil → site : durée saisie au site (proposé,
-  immédiat), ou calculateur routier ?
+- ~~**Q-T11**~~ — ✅ (Hugo, 2026-10-13) : le site a des **coordonnées GPS**
+  comme toute adresse, et l'app calcule le trajet (planificateur, OSRM).
+  `transfer_minutes` disparaît du modèle ; T0 lit la durée par le canal
+  du planificateur de tournées (à vérifier au lot : ce que le commerce
+  peut en lire).
 - **Q-T12** — Créneaux de référence de l'heure requise : le plus tôt de
   l'ouverture pros et du premier créneau public (proposé) ?
 
