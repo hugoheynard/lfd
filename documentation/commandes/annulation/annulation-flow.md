@@ -5,6 +5,10 @@
 > [`plan-annulation-de-commande.md`](plan-annulation-de-commande.md) ; l'ordre
 > des verrous dans [`verrous-de-l-annulation.md`](verrous-de-l-annulation.md).
 
+> 📐 **Décidé, PAS bâti : lot C6, l'annulation par le client** (Hugo,
+> 2026-10-13 — [plan, Lot C6](plan-annulation-de-commande.md#lot-c6--annulation-par-le-client-depuis--mes-commandes--conçu-le-2026-10-13-pas-bâti)).
+> Rien de la section « Demain » ci-dessous n'existe dans le code.
+
 Aujourd'hui, **seul le staff annule**, depuis le détail d'une commande au
 back-office, avec la permission « Annuler une commande ». Le client ne peut
 pas encore annuler depuis « Mes commandes ».
@@ -152,3 +156,41 @@ c'est le bon qui revient.
 
 Le **motif** saisi par le staff reste au journal : il n'est jamais montré au
 client.
+
+## Demain : le client annule lui-même (lot C6, décidé, pas bâti)
+
+> 📐 **Pas bâti au 2026-10-13.** Mêmes règles que le staff : le client passe
+> par le même noyau, avec moins de droits, jamais plus.
+
+| Client          | Qui peut annuler                                             | Quand                                                                              | Comment il s'identifie                                                        |
+| --------------- | ------------------------------------------------------------ | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| **Pro**         | tout membre **accepté** de **cette** société, société active | tant que le fournil ne l'a pas mise au compte à produire                           | sa session, depuis « Mes commandes »                                          |
+| **Particulier** | l'auteur                                                     | si Réglages › Commandes l'autorise, jusqu'à N h avant, et pas au compte à produire | sa session, depuis « Mes commandes »                                          |
+| **Invité**      | le porteur du lien                                           | comme le particulier                                                               | le lien d'annulation de son courriel de confirmation (s'il n'a pas de compte) |
+
+```mermaid
+flowchart TD
+    A([Le client clique « Annuler la commande »]) --> W{Est-il autorisé ?<br/>membre de la société,<br/>auteur, ou lien valide}
+    W -- non --> R0["Commande introuvable"]:::refus
+    W -- oui --> K{Commande personnelle ?}
+    K -- "non (pro)" --> N
+    K -- oui --> S{Réglage ouvert ?}
+    S -- non --> R1["Refus : contactez-nous"]:::refus
+    S -- oui --> T{Plus de N heures<br/>avant le retrait / la livraison ?}
+    T -- non --> R2["Refus : trop tard, c'était possible jusqu'au…"]:::refus
+    T -- oui --> N[["Même parcours que le staff<br/>(fournil, argent, bon)"]]
+    N --> M([Même courriel, cloche à l'équipe])
+
+    classDef refus fill:#fde8e8,stroke:#c0392b,color:#7b1d1d
+```
+
+Le lien de l'invité ouvre **toujours** la page de sa commande. Si elle n'est
+plus annulable, la page dit pourquoi (annulations en ligne fermées, délai
+passé, déjà en production, déjà annulée, déjà retirée) et propose de
+contacter la boutique ; le lien ne montre plus rien 90 jours après la date de
+retrait. La page ne montre que le nécessaire : ni nom de famille, ni adresse,
+ni téléphone. Quand elle est annulable, elle demande de confirmer : jamais
+d'annulation à la simple ouverture, parce que les messageries suivent les
+liens toutes seules. Les commandes passées avant C6 n'ont pas de lien : rien
+n'est rétroactif. Le lien ne contient rien que le serveur garde : il se
+recalcule, et un courriel renvoyé porte le même.

@@ -10,7 +10,8 @@ document (§1 à §9) est l'état du 2026-09-17, et le §1 est en partie périm�
 `vitruve` le même jour : 4 BLOQUANT, 7 SÉRIEUX.** Les décisions D1, D2, D3, D5
 et D6 ne tiennent pas en l'état — le §9 dit pourquoi et dans quelle direction
 les reprendre. **Refondu et bâti le 2026-10-12** : lots C3, C3b, C5 et C4 ci-dessous ; le TODO
-qui suivait la refonte a été supprimé le 2026-10-13. Le parcours en schémas :
+qui suivait la refonte a été supprimé le 2026-10-13. **Lot C6** (annulation par le
+client) **conçu le 2026-10-13, pas bâti**, attend `vitruve`. Le parcours en schémas :
 [`annulation-flow.md`](annulation-flow.md).
 **Portée** : la transition `placed → cancelled`, ce qu'elle fait de l'argent, et
 ce qu'elle dit au client. Ni l'avenant (modifier une commande), ni l'annulation
@@ -2133,6 +2134,462 @@ remboursement d'une commande fabriquée (Q4), annulation par le client (S2),
 avoir sur facture mensuelle (C5, Q2). Le §2 D4/D5 et le §9 B2/B3/S3/S5 sont
 **repris ici** : D4 (« synchrone, sans webhook ») et D5 (`voided`) sont
 **abandonnés** — l'état persisté et le carnet les remplacent.
+
+### Lot C6 — annulation par le CLIENT, depuis « Mes commandes » (conçu le 2026-10-13, pas bâti)
+
+> 📐 **Décidé, pas bâti.** Rien de ce qui suit n'existe dans le code au
+> 2026-10-13. Touche **l'argent** (même fermeture d'intention, même
+> remboursement que C3/C4) et **une frontière de sécurité** (une route client
+> qui écrit, et une route publique pour l'invité) : **`vitruve` obligatoire
+> avant Hugo** (CLAUDE.md §9 bis) — **passé le 2026-10-13** ; ses objections
+> et les décisions d'ingénierie qui les tranchent sont en C6.13, et le corps
+> ci-dessous les applique.
+
+#### C6.0 Les décisions de Hugo (2026-10-13)
+
+1. **« Mêmes règles »** que l'annulation staff : C3 (critère, ordre des gestes
+   Stripe), C3b (refusion du bon), C5 (au compte, verrou commun), C4
+   (remboursement). Le client n'a **aucun** chemin à lui : il entre par le
+   même handler, avec moins de droits, jamais plus.
+2. **Pro** : « si la commande est partie en production on ne peut plus
+   l'annuler » — c'est le critère C3.3 n° 5 (inscrite au compte à produire),
+   sans délai supplémentaire. **Qui** : « ceux qui peuvent commander » au nom
+   de la société.
+3. **Particulier (connecté ou invité)** : « j'ai besoin qu'on ait ce réglage
+   en Réglages › Commandes » — Hugo a choisi **les deux** : un interrupteur
+   « les particuliers peuvent annuler eux-mêmes » ET, quand il est ouvert, un
+   **délai** avant le retrait / la livraison (« jusqu'à N heures avant »). Le
+   critère « pas encore au compte à produire » s'applique **en plus**.
+4. **L'invité** : « le lien annulation doit être dans son mail de
+   confirmation » (Hugo, 2026-10-13), **corrigé le même jour** : le lien ne
+   cesse pas de marcher. Il ouvre **toujours** la page de la commande ; quand
+   elle n'est plus annulable, la page dit **pourquoi**, selon les réglages
+   (annulations en ligne fermées, délai de N h passé, déjà en production,
+   déjà annulée, déjà retirée…), et propose de contacter la boutique. Le
+   jeton n'**identifie** que la commande ; la décision d'annuler se prend au
+   serveur, à la confirmation, avec les mêmes règles — C6.4.
+5. **Le motif** : défaut prudent appliqué (Q-C6.1) — **facultatif**, une
+   courte liste + texte libre, jamais montré à un autre client.
+
+#### C6.1 Ce que le code dit — ouvert le 2026-10-13
+
+- **Le handler staff** (`b2b/orders/application/commands/cancel-order.handler.ts`)
+  prend `CancelOrderCommand(orderId, staffUserId, reason)` ; `staffUserId`
+  part dans `cancelledBy` (`:192`), dans `OrderCancelledEvent.cancelledBy`, et
+  dans `refunds.requestFor(locked, staffUserId, now)` (C4). Son JSDoc dit
+  « Aucun mur client (la route est staff) ».
+- **`orders.cancelled_by`** est un `String?` documenté « id de la FICHE staff,
+  jamais un `sub` » (`prisma/schema/public/orders.prisma:301-305`) et inscrit
+  au registre RGPD comme donnée **staff** (`documentation/legal/rgpd-registre.json`,
+  entrée `public.orders.cancelled_by`).
+- **`order_refund_request.requested_by`** est déjà nullable, « nul pour une
+  cause automatique » (`order-refund.prisma:91-92`).
+- **Le journal** : `growth/application/handlers/on-order-cancelled.handler.ts:51`
+  résout `event.cancelledBy` par `staffCitation` — il suppose un staff.
+- **Le droit de commander pour une société** : `POST /orders`
+  (`orders.controller.ts`) prend la société du **contexte** (`@ActingCompany()`,
+  résolue par `AuthGuard` contre les rattachements, `resolve-company.ts:56`),
+  puis `PlaceOrderHandler` appelle `guard.roleOf(userId, companyId)` et
+  `ensureOrderMember(role)` (`order-access.ts:17`), qui n'exige **qu'un
+  rôle non nul**. `roleOf` (`prisma-order-guard.reader.ts:23`) lit un
+  rattachement **qui ouvre compte** (`openingMembership(now)` : accepté, ou
+  invitation vivante). Les rôles sont `owner | admin | orders | billing`
+  (`CustomerRole`, `account.prisma:50`) : **les quatre peuvent commander
+  aujourd'hui, `billing` compris**.
+- **Sous-comptes / sites** : un site est une `Company` à part
+  (`parentCompanyId`, profondeur 1). Aucune hérédité de rattachement :
+  `resolveCompany` ne compare que `membership.companyId === declared`. Un
+  membre du principal ne commande donc pour un site que s'il y est rattaché.
+- **L'abandon** (`POST /orders/:id/abandon`) n'est ouvert qu'à l'**auteur**
+  (403 à un autre membre, 404 à un étranger) — le précédent de geste client
+  le plus proche.
+- **L'invité** : un `User` sans `auth0Sub` (`account.prisma:382`), sans
+  aucune identité de connexion. La boutique n'a **aucune page publique de
+  commande** : `mes-commandes/retrait/:id` (`app.routes.ts:290`) est sous le
+  shell client et lit la commande par son id derrière le jeton. Le seul secret
+  porté par une commande est `handoverToken` (`orders.prisma:260-280`) : la
+  **preuve du retrait**, montrée en QR au comptoir et au livreur.
+- **Les réglages de commande** : il n'existe pas d'écran « Réglages ›
+  Commandes ». La section « Réglages » de l'espace B2B du back-office
+  (`shared/workspace-rail/workspaces.ts:633-660`, routes
+  `b2b/b2b.routes.ts` sous `reglages/`) porte « Points de retrait »,
+  « Heures limites de commande » et « Ouverture de la boutique ». Le modèle
+  le plus proche est `OrderOpening` (`settings.prisma:141`) : une ligne
+  unique, deux booléens, `updatedAt` + auteur figé, contexte
+  `b2b/order-opening/`, droit `b2b_settings`.
+- **L'heure de retrait / livraison** : `requestedDeliveryDate` (`@db.Date`,
+  `orders.prisma:137`) et, dans `fulfillment` (JSON figé), une `window`
+  facultative `{ start: HH:mm | null, end: HH:mm }` (`fulfillmentWindowSchema`,
+  `packages/contracts/src/address.ts:56`).
+
+#### C6.2 Qui peut annuler
+
+| Commande                        | Peut annuler                                                                        | Refus (et code)                           |
+| ------------------------------- | ----------------------------------------------------------------------------------- | ----------------------------------------- |
+| d'une société (`companyId`)     | rattachement **accepté** sur **cette** société, tout rôle, société `active` (B2)    | 404 non-divulguant (`ensureOrderVisible`) |
+| personnelle, connecté           | l'auteur (`placedByUserId === principal.userId`)                                    | 404                                       |
+| personnelle, invité             | le porteur du **lien d'annulation** (C6.4), fiche sans compte ni désactivation (S3) | 404 sur un lien faux ou périmé            |
+| saisie par l'équipe pour un pro | comme une commande de la société                                                    | idem                                      |
+
+- 🔴 **Le mur se lit sur la société DE LA COMMANDE, pas sur l'espace actif.**
+  Le rattachement est lu sur `order.companyId`, comme la lecture
+  (`ensureOrderVisible`). Un client rattaché à deux sociétés annule depuis
+  l'une une commande de l'autre s'il y est membre ; il ne peut jamais en
+  nommer une troisième, puisqu'aucun id de société n'est reçu.
+- **B2 (`vitruve`, décision d'ingénierie du 2026-10-13) : rattachement
+  ACCEPTÉ seulement, et société `active`.** `roleOf`
+  (`prisma-order-guard.reader.ts:23-33`) admet aussi une invitation vivante
+  non acceptée (`openingMembership`, `opening-membership.ts:23-26`) : il ne
+  se réutilise pas tel quel, une lecture dédiée exige `acceptedAt` non nul.
+  ⚠️ Lu le 2026-10-13 : `order-settlement.ts:122` ne **refuse** pas la
+  commande d'une société non `active`, il la fait **régler par carte** ; le
+  mur d'annulation est donc **plus strict** que la passation, et c'est voulu —
+  une société suspendue ou archivée ne défait pas ce qu'elle a commandé, la
+  boutique s'en charge. Tout rôle, `billing` compris (Q-C6.2).
+- **Pas d'hérédité vers les sites** : un membre du principal n'annule pas la
+  commande d'un site où il n'est pas rattaché (il ne pouvait pas la passer).
+- Un `User` `inactive` est déjà refusé par la résolution du `Principal`.
+
+#### C6.3 Le critère client : celui du staff, plus deux
+
+La règle reste `CancellationRule` / `cancellationOf` (C3.3, C5.2, C4.2),
+appelée **à l'identique**. Le client ajoute **devant** elle deux refus, et
+seulement pour une commande **personnelle** :
+
+| #   | Refus client, avant la règle staff           | Où il se lit                                 |
+| --- | -------------------------------------------- | -------------------------------------------- |
+| P1  | le réglage est fermé                         | `customer_cancellation_settings.open_to_b2c` |
+| P2  | il reste moins de N heures avant l'**ancre** | `Clock.now()` vs ancre − `hours_before`      |
+
+**L'ancre** : la date `requestedDeliveryDate` à l'heure `window.start` de
+l'acheminement figé, en heure **locale du laboratoire** (le fuseau que lisent
+déjà les heures limites, `shop-time-zone`). Sans `start` (fenêtre « avant
+HH:mm » ou pas de fenêtre) : **00:00 locale** du jour — la borne la plus tôt,
+donc la plus prudente (Q-C6.4). Pas de date (commande d'avant la date
+obligatoire) : refus P2.
+
+Un **pro** n'a ni P1 ni P2 (décision 2) : seul le fournil ferme la porte.
+
+**S5 — P2 se compare au `now` GELÉ de la requête** (`RequestContext`), assumé :
+une attente de verrou ne repousse pas l'échéance, et une demande partie
+avant la borne l'est même si elle aboutit une seconde après. Le délai se lit
+**sans verrou et sous le verrou de la ligne `orders`** : il est
+monotone (le temps n'avance que dans un sens) et le réglage n'est relu
+qu'une fois — un changement de réglage pendant la requête s'applique à la
+suivante, pas à celle-ci. Le reste de la course (clôture, retirage, Stripe,
+double clic) est **exactement** celui du staff : même transaction, même ordre
+des verrous ([`verrous-de-l-annulation.md`](verrous-de-l-annulation.md)).
+
+#### C6.4 L'invité : un lien d'annulation, et rien d'autre
+
+**Ce qu'on écarte, et pourquoi :**
+
+- **`handoverToken`** : c'est la preuve du retrait. Il est montré en QR au
+  comptoir et au livreur, et l'équipe le scanne ; en faire une clé
+  d'annulation donnerait à quiconque a vu le QR le pouvoir d'annuler, et
+  mélangerait deux secrets qui n'ont pas la même durée de vie.
+- **Le numéro de commande + l'adresse** : le numéro est imprimé sur le bon
+  (public), l'adresse se devine ; c'est un formulaire d'énumération.
+- **Un code par courriel à chaque fois** : sûr, mais une seconde dépendance
+  au courrier pour un geste rare ; à garder si `vitruve` l'exige.
+
+**Retenu (B1, décision d'ingénierie du 2026-10-13) — un jeton DÉTERMINISTE,
+rien de stocké :**
+
+- `jeton = base64url(HMAC-SHA256(orderId, CLÉ))`, la clé étant une **variable
+  d'environnement dédiée** lue par `AppConfig`, inscrite au runbook des
+  secrets. Aucune colonne, aucun hash, rien à régénérer : **un rejeu du
+  courriel donne le même lien**.
+- **Pourquoi pas un secret tiré à la passation** : le courriel de l'invité
+  n'en part pas. Une commande carte est confirmée sur `order.paid` par
+  `SendOrderSettledMail` → `OrderPlacedMail.send(orderId)`
+  (`send-order-settled-mail.handler.ts:42-49`, lu le 2026-10-13) ;
+  `SendOrderPlacedMail` ne sert que les `not_required` (`decidedAtPlacement`,
+  `send-order-placed-mail.handler.ts:92-99`) ; les faits ne portent que
+  l'`orderId`. Un secret aléatoire devrait traverser le journal durable en
+  clair — un HMAC se recalcule là où on envoie.
+- **Branché dans `OrderPlacedMail`**, pour toute commande d'invité, **quel que
+  soit le chemin d'envoi**.
+- **Vérification** : recalcul du HMAC et comparaison en **temps constant**
+  (`timingSafeEqual`). Jeton faux, commande inconnue, commande qui n'est pas
+  d'invité, ou passé la borne des 90 jours (lue sur la commande) : **la même
+  réponse, 404 neutre** (« Lien introuvable »). Un jeton valide rend
+  **toujours** la page, annulable ou non.
+- **Rotation de la clé = tous les liens morts.** Assumé et écrit au runbook :
+  on ne la tourne que sur fuite ; les invités passent alors par la boutique.
+- **S7 — le jeton voyage en FRAGMENT d'URL** : `/annuler#<orderId>.<jeton>`.
+  Un navigateur n'envoie jamais le fragment : ni le SSR, ni la passerelle, ni
+  un journal d'accès, ni un `Referer` ne le voient. La page le lit côté
+  client et l'envoie **dans le corps** de deux `POST` :
+  `/shop/orders/cancellation/view` (lire) et
+  `/shop/orders/cancellation/confirm` (annuler, `{ orderId, token,
+reasonCode?, reasonText? }`, 204). Aucun jeton dans un chemin.
+- **S6 — un contrôleur à part**, `@Public()`, avec **son propre**
+  `@Throttle` : 20/min/IP pour lire, 5/min/IP pour annuler — pas le seau de
+  `POST /shop/orders`.
+- **S3 — la fiche a un compte** : si le `User` a un `auth0Sub` (compte
+  connectable) ou est désactivé, la page n'annule pas et dit « Connectez-vous
+  pour gérer cette commande » (désactivé : « Contactez la boutique ») ; le
+  `confirm` refuse pareil. Un invité devenu client passe par sa session.
+- **Le jeton n'ouvre que l'annulation** : ni le QR, ni l'historique, ni les
+  coordonnées. La page publique affiche le strict nécessaire, sans adresse ni
+  téléphone.
+- **Jamais d'annulation sur un `GET`** : les scanners de liens des
+  messageries (antivirus, aperçus) suivent chaque lien d'un courriel. Le lien
+  ouvre une **page** qui montre la commande, ce qui arrivera à l'argent et au
+  bon, et demande de confirmer ; seul le `POST` du bouton annule.
+- **Le jeton identifie, il ne décide pas** (correction de Hugo,
+  2026-10-13). Il ne s'efface ni à l'annulation, ni à l'inscription au
+  fournil : la page se rouvre toujours et dit l'état réel, avec la raison
+  traduite pour un client (C6.7 — « Les annulations en ligne ne sont pas
+  ouvertes », « Le délai de 24 h avant le retrait est passé depuis le JJ/MM à
+  HH:mm », « Votre commande est déjà en préparation », « déjà annulée le… »,
+  « déjà retirée le… ») et le geste de sortie (« Contactez la boutique » :
+  les canaux de `support-channels`). Le `POST` relit tout sous les verrous.
+- **Une seule borne, tranchée : 90 jours après la date de retrait / de
+  livraison** (vérifiée sur la commande : le HMAC n'en sait rien) (ou après la passation sans date). Passé ce terme, la page dit
+  « Ce lien est trop ancien. Contactez la boutique. » — sans rien de la
+  commande. Raison : minimisation (RGPD) — un courriel transféré, oublié dans
+  une boîte partagée ou fuité ne doit pas montrer une commande pour
+  toujours ; 90 jours couvrent largement une réclamation. La borne se
+  **calcule** (date + 90 j), aucune colonne d'expiration à tenir. Q-C6.9.
+- **Ce que la page montre à qui tient le lien — le nécessaire, rien de
+  plus** : numéro, date et mode (retrait : nom du point ; livraison : la
+  **ville** seule), articles et quantités, montant, état, ce qui arrivera à
+  l'argent et au bon. **Jamais** : nom de famille, adresse de livraison,
+  téléphone, courriel, QR / `handoverToken`, moyen de paiement au-delà de
+  « carte ». Le prénom seul, en salutation. La réponse de
+  `view` est un type **dédié et étroit**,
+  converti explicitement (même raison que `toCustomerQuote` :
+  `orders.controller.ts`, un champ ajouté à la vue client ne doit pas fuir).
+  `Cache-Control: no-store`, `noindex`, et le jeton ne part jamais dans un
+  journal ni un `Referer` (fragment, S7 ; `Referrer-Policy: no-referrer`
+  en plus).
+- **Particuliers connectés et pros : pas de jeton.** Leur courriel porte un
+  lien **sans secret** vers `mes-commandes` (la **liste** : un lien profond
+  par commande n'existe pas aujourd'hui), qui exige la session. ⚠️ C'est un
+  changement du gabarit **pour tous** les courriels de confirmation de
+  compte : la phrase « gérer ou annuler ma commande » s'y ajoute, et les
+  rendus de `OrderPlacedMail` (fixtures, archives du bon) bougent avec. Un jeton pour un titulaire de compte contournerait le
+  mur C6.2 : un courriel transféré à un collègue non membre, ou à un ancien
+  membre détaché, annulerait au nom de la société. Ce qui compte pour eux est
+  la session, pas la possession du courriel.
+- Les commandes d'invité passées **avant** C6 n'ont pas de lien : elles
+  restent annulables par le staff. On ne rattrape rien (un courriel parti est
+  parti).
+
+#### C6.5 Le réglage — « Réglages › Commandes »
+
+Un **CRUD honnête** (CLAUDE.md §3.1 : aucune règle ne peut refuser son
+écriture, hors forme), copié sur `OrderOpening` :
+
+```
+public.customer_cancellation_settings   (une ligne, key = 'orders')
+  open_to_b2c        boolean  not null default false
+  hours_before       integer  not null default 24   check (0 ≤ hours_before ≤ 168)
+  updated_at, updated_by_staff_id, updated_by_name, updated_by_role
+```
+
+- **Fermé par défaut** : la migration crée la ligne `false` ; rien ne
+  s'ouvre au déploiement.
+- **Pas daté** : la valeur n'entre dans aucune décision **relue plus tard**
+  (pas de prix, pas de facture) — elle décide d'un geste au moment où il est
+  fait, et le journal de l'annulation fige ce qui a été appliqué
+  (`policy: { hoursBefore }`). `lint:dated-decisions` ne vise que la
+  résolution du prix. Si Hugo veut qu'on puisse répondre « quel délai
+  valait le 12 ? », le journal du réglage (le fait `order_settings.changed`,
+  comme l'ouverture) y suffit.
+- Contexte `b2b/order-opening/` élargi (**même écran, même droit
+  `b2b_settings`**) plutôt qu'un contexte neuf : c'est la même nature de
+  réglage — « ce que la boutique permet au client ». Q-C6.5 pour le nom.
+- **Écran** : la section « Réglages » de l'espace B2B gagne l'entrée
+  **« Commandes »** (`/b2b/reglages/commandes`) : interrupteur « Les
+  particuliers peuvent annuler eux-mêmes », et, ouvert, « jusqu'à [N] heures
+  avant le retrait ou la livraison ». Une phrase sous le champ dit l'ancre
+  (C6.3) et rappelle que la commande déjà au compte à produire reste
+  inannulable. `RGPD` : les trois colonnes d'auteur entrent au registre
+  (`lint:rgpd-staff`), comme celles d'`order_opening_settings`.
+
+#### C6.6 La route, la commande, l'auteur
+
+- **Connecté** : `POST /orders/:id/cancel` sur `OrdersController`, corps
+  `{ reasonCode?, reasonText? }` (Zod), `204`. Le contrôleur n'injecte que les
+  bus (`lint:controller-buses`).
+- **Invité** : C6.4.
+- **Une commande neuve `CancelOrderByCustomerCommand`** + son handler, qui :
+  1. lit la commande, applique le mur (C6.2) ;
+  2. pour une commande personnelle, lit le réglage et applique P1, P2 ;
+  3. **délègue au même noyau** que le staff. Le handler staff est découpé
+     d'abord, sans changer son comportement : son corps devient un service
+     applicatif `OrderCancellation.cancel(orderId, actor, reason)` que les deux
+     handlers appellent. Pas d'appel d'un handler à l'autre par le bus.
+- **L'acteur devient un type** :
+  `CancellationActor = { kind: "staff", staffUserId } | { kind: "customer", userId } | { kind: "guest", userId }`.
+- **En base**, sans casser ce qui est servi :
+  - `orders.cancelled_by` garde son sens (**id de fiche staff**) et reste
+    `NULL` pour un client ;
+  - nouvelle colonne `orders.cancelled_by_kind` (`staff | customer |
+guest`), `NULL` admis pour l'historique (automatiques, et C3 d'avant
+    C6 — on ne rattrape rien). **S4 — un CHECK à sens unique** :
+    `kind = 'staff'` ⇒ `cancelled_by` non nul ; `kind IN ('customer','guest')`
+    ⇒ `cancelled_by_user_id` non nul ;
+  - pour un client, l'auteur **est** `placed_by_user_id` ou un membre : il
+    faut donc son id quand ce n'est pas l'auteur → colonne
+    `orders.cancelled_by_user_id` (FK `users`, nullable). C'est une donnée
+    **client**, pas staff : `lint:rgpd-staff` ne la vise pas ; elle suit la
+    durée de conservation de la commande.
+  - `order_refund_request.requested_by` reste `NULL` (déjà admis).
+- **Le motif** : `cancellation_reason` reçoit le texte libre (ou le libellé
+  du code choisi), nouvelle colonne `cancellation_reason_code` (liste close,
+  CHECK). `CancellationReason.of` refuse le vide : le noyau reçoit pour le
+  client un motif **facultatif** — un value object `CustomerCancellationReason`
+  qui accepte l'absence, le noyau stockant `NULL`.
+- **Le fait `order.cancelled`** gagne `cancelledByKind` et
+  `cancelledByUserId` ; `fromPayload` les lit **facultatifs** (les faits déjà
+  au journal durable n'en ont pas → `staff`). **S8** : un test rejoue un
+  `order.cancelled` sérialisé AVANT C6 par `fromPayload` et par le journal
+  growth. Le journal (`on-order-cancelled`)
+  cite « le client » / « un membre de la société, Prénom N. » au lieu de
+  `staffCitation`.
+
+#### C6.7 Les refus nommés, pour un client
+
+Le noyau lève les erreurs staff ; le handler client les **traduit** par un code
+`orders.customer_cancel.*` et une phrase écrite pour un client (le front la dit
+d'après le code) :
+
+| Cas                                   | Phrase client                                                                                             |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| déjà annulée                          | « Cette commande est déjà annulée. »                                                                      |
+| inscrite au fournil                   | « Votre commande est déjà en préparation : elle ne peut plus être annulée. Contactez-nous si besoin. »    |
+| prête / retirée                       | « Votre commande est prête » / « déjà retirée » : « elle ne peut plus être annulée. »                     |
+| réglage fermé (particulier)           | « L'annulation en ligne n'est pas proposée. Contactez-nous pour annuler cette commande. »                 |
+| délai dépassé                         | « Il est trop tard pour annuler en ligne : c'était possible jusqu'au JJ/MM à HH:mm. Contactez-nous. »     |
+| paiement en cours                     | « Un paiement est en cours sur cette commande. Réessayez dans quelques minutes. »                         |
+| payée à l'instant                     | « Votre paiement vient d'aboutir. Rechargez la page pour annuler avec remboursement. »                    |
+| prestataire injoignable / non écrite  | « Nous n'avons pas pu annuler votre commande. Rien n'a été prélevé de plus ; réessayez dans un instant. » |
+| au compte : facturée / en lot / rejet | « Cette commande est déjà facturée : elle ne s'annule plus en ligne. Contactez-nous. »                    |
+| bon : reste déjà utilisé              | « Le bon utilisé sur cette commande a déjà resservi : contactez-nous pour l'annuler. »                    |
+| hors mur (étranger, non-membre)       | 404 « Commande introuvable. » — jamais 403                                                                |
+
+Aucune phrase ne cite le motif staff, une autre commande par son numéro
+(le refus C3b le fait côté staff : côté client, il se tait), ni le fournil
+comme acteur.
+
+#### C6.8 L'écran « Mes commandes »
+
+`apps/lfc-ecommerce-frontend/src/app/client/mes-commandes/order-detail/` :
+
+- `GET /orders/:id` gagne `cancellability` (calculée par le même noyau **et**
+  P1/P2, sans verrou) : `{ cancellable: true, until: Instant | null, money }`
+  ou `{ cancellable: false, code }`. `money` dit ce qui arrivera :
+  `nothing_charged` (carte non payée), `refund` (montant carte), `account`
+  (« rien ne sera facturé »), `voucher_returned`.
+- Bouton fold **« Annuler la commande »** (destructif, secondaire) visible si
+  `cancellable` ; s'il ne l'est pas pour une raison **durable** (fournil,
+  prête), il **disparaît** — le client n'a pas besoin d'un bouton grisé ; pour
+  « trop tard », une ligne discrète dit jusqu'à quand c'était possible.
+- **Confirmation en dialogue** : ce qui arrive à l'argent et au bon, en une
+  phrase ; motif facultatif (liste + « Autre » avec texte) ; « Annuler ma
+  commande » / « Garder ma commande ». Après succès : relecture, bandeau
+  « Commande annulée », QR de retrait retiré de `retrait-page` et de
+  `live-orders-well`.
+- **Page invité** `annuler` (publique, hors shell client, jeton dans le fragment, S7) : même
+  dialogue, en page.
+- Libellés FR/EN/IT dans les dictionnaires de la boutique, puis
+  `pnpm copy:digest` (`lint:shop-copy-digest`).
+
+#### C6.9 Le courriel
+
+**Le même** `customer.order-cancelled` (C3, C4) : même variantes d'argent et de
+bon. Seule différence, la phrase d'ouverture : « Vous avez annulé votre
+commande » / « [Prénom N.] a annulé la commande de [Société] » au lieu de
+« Votre commande a été annulée ». Le motif choisi n'y figure pas (le client
+le connaît, un autre membre n'a pas à le lire).
+
+Une **notification à l'équipe** : la cloche « commande annulée par le client »
+(même mécanique que la cloche « à rembourser » de C4) — sinon le staff
+découvre l'annulation à la clôture.
+
+#### C6.10 Les tests
+
+- **domaine** : P1/P2 purs (réglage ouvert/fermé, ancre avec et sans
+  `window.start`, sans date, pile à la borne, fuseau à la bascule d'heure) ;
+  `CustomerCancellationReason` (vide admis, code hors liste refusé, texte
+  borné).
+- **application** (ports mockés) : le handler client ne touche le noyau
+  qu'après mur et P1/P2 ; pro sans P1/P2 ; traduction de chaque erreur du
+  noyau en code client ; l'acteur porté jusqu'au fait.
+- **e2e** (vrai Postgres, `daysAgo` / dates relatives, aucune date absolue) :
+  - **mur** : membre d'une autre société → 404 ; **invitation vivante non
+    acceptée → 404** (B2) ; **société suspendue ou archivée → refus** (B2) ; membre de la société mère
+    sans rattachement au site → 404 ; invitation périmée non acceptée → 404 ;
+    particulier sur la commande d'un autre particulier → 404 ; membre
+    `orders` d'une société → 204 ; membre `billing` → 204 (tant que Q-C6.2
+    tient) ;
+  - **invité** : bon jeton → 204 ; **même lien après rejeu du courriel** (B1) ;
+    jeton faux, inconnu, et au-delà de 90 j → **même** 404 ; fiche avec
+    `auth0Sub` ou désactivée → refus « connectez-vous » (S3) ; débits
+    distincts lire / annuler (S6) ; jeton d'une commande annulée / inscrite / retirée → page 200 avec la raison, `POST` refusé avec la phrase ; jeton au-delà de 90 j → page « trop ancien » sans donnée ; la réponse ne porte ni nom, ni adresse, ni téléphone, ni `handoverToken` ; jeton faux, jeton d'une commande d'un
+    autre invité, jeton d'une commande connectée (aucun) → 404 ; second clic
+    → « déjà annulée » ; le jeton n'ouvre pas `GET /orders/:id` ; débit
+    dépassé → 429 ;
+  - **réglage** : fermé → refus P1 pour particulier et invité, **pas** pour
+    un pro ; ouvert, délai dépassé → P2 avec l'heure ; délai tenu → 204 ;
+  - **course avec la clôture** : la clôture inscrit pendant l'annulation
+    client → l'une des deux gagne, jamais les deux (rejoue l'e2e C3 avec
+    l'acteur client) ; idem retirage ;
+  - **argent** : carte non payée → intention fermée ; payée → demande de
+    remboursement, `requested_by` nul ; au compte → ligne fermée ; bon
+    rendu une fois ;
+  - **journal / courriel** : un fait, un courriel, `cancelled_by` nul,
+    `cancelled_by_kind = customer`, `cancelled_by_user_id` posé ;
+  - **S8** : un `order.cancelled` sérialisé avant C6 se relit et se
+    journalise (auteur staff) ;
+  - **non-régression staff** : toutes les suites `order-staff-cancel*`
+    passent inchangées après le découpage du noyau.
+- **front** : bouton absent si non annulable, dialogue, phrase d'argent par
+  régime, motif facultatif, bandeau après succès, page invité.
+
+#### C6.11 Questions pour Hugo — chacune avec un défaut prudent
+
+| #      | Question                                                                                                      | Défaut appliqué                                                                                                  |
+| ------ | ------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Q-C6.1 | Motif obligatoire pour le client ?                                                                            | **Facultatif** ; liste (« plus besoin », « erreur de date », « erreur de produits », « autre »)                  |
+| Q-C6.2 | `billing` peut commander aujourd'hui (`ensureOrderMember` n'exige qu'un rôle) : l'est-il aussi pour annuler ? | **Oui**, « ceux qui peuvent commander » ; si non, il faut d'abord restreindre la **passation**                   |
+| Q-C6.3 | Un membre peut-il annuler la commande passée par un **autre** membre ?                                        | **Oui** (décision 2 : au nom de la société) ; le courriel part au passeur, qui voit qui a annulé                 |
+| Q-C6.4 | L'ancre sans heure de début : minuit du jour ?                                                                | **Oui**, la borne la plus tôt                                                                                    |
+| Q-C6.5 | Le nom de l'entrée : « Commandes » sous Réglages de l'espace B2B ?                                            | **Oui**, `/b2b/reglages/commandes`                                                                               |
+| Q-C6.6 | Valeur par défaut du délai à l'ouverture ?                                                                    | **24 h** ; réglage **fermé** au déploiement                                                                      |
+| Q-C6.7 | ~~L'invité : lien dans le courriel ?~~ **Tranché par Hugo le 2026-10-13 : oui** (décision 4)                  | secret dédié haché ; jamais le QR de retrait ; comptes : lien sans secret vers « Mes commandes »                 |
+| Q-C6.8 | Prévenir l'équipe (cloche) à chaque annulation client ?                                                       | **Oui**                                                                                                          |
+| Q-C6.9 | Borne du lien d'invité                                                                                        | **90 jours** après la date de retrait / livraison, par minimisation ; « jamais » est possible si Hugo le préfère |
+
+#### C6.13 Sort des objections de `vitruve` (2026-10-13)
+
+Toutes tranchées par des **décisions d'ingénierie** (le coordinateur, le
+2026-10-13), vérifiées dans le code et appliquées dans le corps ; les
+questions métier Q-C6.1 à Q-C6.9 gardent leurs défauts.
+
+| Objection | Décision                                                                                                                                                                                             | Où                |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
+| B1        | Jeton HMAC-SHA256 déterministe (clé dédiée par `AppConfig`, runbook des secrets), rien stocké, branché dans `OrderPlacedMail` ; rotation = liens morts                                               | C6.4              |
+| B2        | Mur pro : rattachement **accepté** seulement et société `active` ; pas `roleOf` tel quel                                                                                                             | C6.2              |
+| S3        | Route invité refusée si la fiche a un `auth0Sub` ou est désactivée                                                                                                                                   | C6.4              |
+| S4        | `cancelled_by_kind` à trois valeurs, CHECK à sens unique, `NULL` pour l'historique                                                                                                                   | C6.6              |
+| S5        | P2 contre le `now` gelé de la requête, assumé                                                                                                                                                        | C6.3              |
+| S6        | Contrôleur invité à part, débit propre (20/min lire, 5/min annuler)                                                                                                                                  | C6.4              |
+| S7        | Jeton en fragment d'URL, envoyé dans le corps de deux `POST`                                                                                                                                         | C6.4              |
+| S8        | Test de relecture d'un `order.cancelled` d'avant C6                                                                                                                                                  | C6.6, C6.10       |
+| mineurs   | Lien des comptes vers la liste `mes-commandes` (gabarit changé pour tous, compté) ; 404 identique inconnu/expiré ; temps constant par recalcul ; auteur du réglage au registre RGPD ; ordre Q-C6.8/9 | C6.4, C6.5, C6.11 |
+
+#### C6.12 Ce que C6 ne fait pas
+
+- **Aucune annulation partielle** (une ligne, une quantité) : c'est l'avenant.
+- **Aucun délai pour les pros** : seul le fournil ferme (décision 2).
+- **Aucun rattrapage** des commandes d'invité passées avant C6 (pas de lien).
+- **Pas d'annulation d'une commande au compte déjà facturée** : l'avoir reste
+  un geste staff (C5).
 
 ## 1. L'existant (ouvert et vérifié le 2026-09-17)
 
