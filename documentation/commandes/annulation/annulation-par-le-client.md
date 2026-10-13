@@ -33,18 +33,32 @@
 
 ## Le parcours
 
+> ⚠️ **Règle décidée par Hugo le 2026-10-13, PAS ENCORE BÂTIE** : le délai
+> des particuliers est **actif par défaut** (le désactiver est le geste) ; sans
+> délai, seul l'arrêt du plan de production limite, comme pour un pro ; le
+> refus « annulations fermées » disparaît ; le courriel mène un compte à SA
+> commande. Le schéma ci-dessous montre la règle voulue ; le code en production
+> applique encore l'ancienne (réglage fermé = pas d'annulation par un particulier).
+
 ```mermaid
 flowchart TD
-    A([Le client clique « Annuler la commande »]) --> W{Est-il autorisé ?<br/>membre accepté de la société,<br/>auteur, ou lien valide}
-    W -- non --> R0["Commande introuvable (404)"]:::refus
-    W -- oui --> K{Commande personnelle ?}
-    K -- oui --> S{Réglage ouvert ?}
-    K -- "non (pro)" --> N
-    S -- oui --> T{Plus de N heures<br/>avant le retrait / la livraison ?}
-    S -- non --> R1["Refus : contactez-nous"]:::refus
+    MAIL(["Courriel de confirmation<br/>lien « Gérer ou annuler ma commande »"]) --> Q{"Le client a-t-il un compte ?"}
+    Q -- "oui : pro, ou particulier connecté" --> L["Mes commandes › la commande<br/>connexion demandée"]
+    Q -- "non : invité" --> G["Page /annuler<br/>sans connexion, lien secret"]
+    L --> A(["Le client clique « Annuler la commande »"])
+    G --> A
+    A --> W{"Est-il autorisé ?<br/>membre accepté de la société,<br/>auteur, ou lien valide"}
+    W -- non --> R0["Commande introuvable"]:::refus
+    W -- oui --> K{"Commande personnelle ?"}
+    K -- oui --> S{"Délai imposé aux particuliers ?<br/>réglage actif par défaut"}
+    K -- "non, pro" --> P
+    S -- oui --> T{"Plus de N heures<br/>avant le retrait / la livraison ?"}
+    S -- "non, réglage désactivé" --> P
     T -- non --> R2["Refus : trop tard"]:::refus
-    T -- oui --> N[["Le noyau du staff<br/>(fournil, argent, bon)"]]
-    N --> M([Courriel « vous avez annulé »,<br/>cloche à l'équipe])
+    T -- oui --> P{"Le plan de production<br/>est-il arrêté ?"}
+    P -- oui --> R3["Refus : déjà en production"]:::refus
+    P -- non --> N[["Le noyau du staff<br/>fournil, argent, bon"]]
+    N --> M(["Courriel « vous avez annulé »,<br/>cloche à l'équipe"])
 
     classDef refus fill:#fde8e8,stroke:#c0392b,color:#7b1d1d
 ```
