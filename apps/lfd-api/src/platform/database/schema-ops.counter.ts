@@ -199,7 +199,6 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   // La MÉDIATHÈQUE a son schéma depuis le 2026-09-23 : la table n'a pas été
   // recopiée, elle a changé de schéma d'un `SET SCHEMA` instantané.
   MediaAsset: "media",
-  MediaPrefixMove: "media",
   /** L'historique des dépôts REFUSÉS — des tentatives, pas des images. */
   MediaSeries: "media",
   MediaUploadFailure: "media",

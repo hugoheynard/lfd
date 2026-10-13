@@ -160,7 +160,6 @@
   "test/media-operation-to-shop.e2e-spec.ts": 9000,
   "test/media-palette-strip.e2e-spec.ts": 9000,
   "test/media-palette.e2e-spec.ts": 10181,
-  "test/media-prefix-move.e2e-spec.ts": 6383,
   "test/media-replace.e2e-spec.ts": 9445,
   "test/media-series.e2e-spec.ts": 26508,
   "test/media-tags.e2e-spec.ts": 7300,

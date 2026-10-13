@@ -701,8 +701,9 @@ marquées 🔵 attendent une décision de Hugo.
 
 1. **Le préfixe de clé s'appelle `products`** alors que le fonds sert tout
    porteur. C'est une valeur, pas un nom : il ne se renomme pas sans migrer
-   les URL, et rien ne l'exige. **Renommage demandé le 2026-10-13** : conçu
-   dans [`plan-prefixe-universel.md`](plan-prefixe-universel.md) (doc-first).
+   les URL, et rien ne l'exige. **Renommage demandé le 2026-10-13** : les dépôts
+   neufs passent sous `images/`, l'existant est redéposé à l'écran — cf.
+   [`plan-prefixe-universel.md`](plan-prefixe-universel.md) (bâti, non déployé).
 2. **🔵 Au-delà de 5 000 transformations par mois**, l'offre Images & Stream
    n'étant pas souscrite : facturé, ou arrêté ? Cf.
    [`../ops/cloudflare-images.md`](../ops/cloudflare-images.md) §5. Laissé en

@@ -7,7 +7,7 @@ import type { LibraryPosition, LibrarySort } from "../value-objects/library-orde
  *
  * 🔴 Il n'y a pas d'identifiant de ligne ici, et ce n'est pas un oubli :
  * l'identité est l'URL, adressée par contenu (`images/{sha256}.{ext}` —
- * `products/` avant le 2026-10-13, plan du préfixe universel), et
+ * `products/` pour les images déposées avant le préfixe universel), et
  * c'est elle que tous les porteurs citent. `media_asset.url` est unique depuis
  * le 2026-09-23 ; avant, un enregistrement de fiche recréait une ligne par
  * visuel, et seul l'URL traversait deux sauvegardes.

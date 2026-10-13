@@ -24,9 +24,10 @@ import { DepositRefusals } from "./deposit-refusals.js";
  * emploi ni son porteur — une image sert une fiche, une famille, la vitrine.
  *
  * ⚠️ Il valait `products` jusqu'au 2026-10-13 (plan du préfixe universel, lot
- * D1) : les lignes déjà au fonds ont été réécrites par la migration
- * `20261013500000_le_prefixe_universel_des_images`, et le redépôt retrouve une
- * image par son contenu, préfixe ignoré (`contentAddressOf`, lot D0).
+ * D1). Seuls les dépôts NEUFS en prennent le nouveau : aucune migration ne
+ * réécrit les lignes déjà au fonds, qui gardent leurs URL `products/` jusqu'à
+ * leur redépôt à l'écran (décision de Hugo, 2026-10-13). Le redépôt retrouve
+ * une image par son contenu, préfixe ignoré (`contentAddressOf`, lot D0).
  */
 const MEDIA_KEY_PREFIX = "images";
 

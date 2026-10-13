@@ -112,12 +112,13 @@ production/                                                   ✅ écrit
 └── orders/{orderId}/fiche-atelier.pdf
 
 media/                                                        ✅ écrit
-└── images/{sha256}.{png|jpg|webp|gif}      (products/ avant D1 — plan du préfixe universel)
+└── images/{sha256}.{png|jpg|webp|gif}      (products/ pour les images déposées avant D1)
 ```
 
 ⚠️ Jusqu'au déploiement D1 du [préfixe universel](../mediatheque/plan-prefixe-universel.md),
-les clés sont sous `products/` ; après, sous `images/`, et les objets
-`products/` restent servis jusqu'à D2 (ordre écrit de Hugo).
+les clés neuves sont sous `products/` ; après, sous `images/`. Aucune migration :
+les objets `products/` restent servis jusqu'à leur suppression à l'écran, après
+redépôt (Hugo, 2026-10-13).
 
 ### Les trois formes de clé, et ce que chacune garantit
 
