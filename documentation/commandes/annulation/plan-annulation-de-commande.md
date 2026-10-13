@@ -9,8 +9,8 @@ document (§1 à §9) est l'état du 2026-09-17, et le §1 est en partie périm�
 (annulation d'une intention Stripe, remboursement). 🔴 **Contredit par
 `vitruve` le même jour : 4 BLOQUANT, 7 SÉRIEUX.** Les décisions D1, D2, D3, D5
 et D6 ne tiennent pas en l'état — le §9 dit pourquoi et dans quelle direction
-les reprendre. **Ne pas bâtir avant la refonte** — l'état et les décisions attendues sont
-suivis dans [`todo-annulation-de-commande.md`](todo-annulation-de-commande.md).
+les reprendre. **Refondu et bâti le 2026-10-12** : lots C3, C3b, C5 et C4 ci-dessous ; le TODO
+qui suivait la refonte a été supprimé le 2026-10-13.
 **Portée** : la transition `placed → cancelled`, ce qu'elle fait de l'argent, et
 ce qu'elle dit au client. Ni l'avenant (modifier une commande), ni l'annulation
 d'une commande déjà dans le plan.

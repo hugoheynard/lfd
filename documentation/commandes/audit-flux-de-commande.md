@@ -88,7 +88,7 @@ en tranche la conception.
 Le plan existe et a été **contredit par `vitruve` le 2026-09-17 : 4 BLOQUANT,
 7 SÉRIEUX**. Rien ne se bâtit avant qu'il soit refondu sur quatre décisions de
 Hugo — l'état, les décisions et les directions sont dans
-[`todo-annulation-de-commande.md`](annulation/todo-annulation-de-commande.md). Un de ses
+[`plan-annulation-de-commande.md`](annulation/plan-annulation-de-commande.md). Un de ses
 constats concerne déjà le code en place : `markFulfilled` ne filtre que sur
 `handedOverAt: null`, pas sur le statut — le jour où `cancelled` s'écrira, un
 retrait au comptoir pourra l'écraser (S1 du TODO).
