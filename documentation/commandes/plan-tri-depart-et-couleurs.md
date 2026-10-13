@@ -25,6 +25,24 @@
   teinte refusée, **facultatives** ;
 - « Écrire » (Q1) est **mis de côté** ; « Adroit » est le nom d'un site (Q3).
 
+**Décisions du 2026-10-13 au soir (L1, L5) :**
+
+- **Q2** : les couleurs vont sur le **poste de colisage**, le **tableau des
+  tournées**, le **chargement** et **Ma tournée** ; le comptoir a déjà ses
+  onglets par site ;
+- **Q8** : écran **et** papier. Sur le papier (étiquettes de bac, feuille de
+  route, bon), un **carré de couleur placé après les dates, en symétrie du
+  logo** ;
+- la couleur **se lit à l'affichage**, jamais figée sur la commande : la
+  commande (et la copie qu'en tient le colisage) porte son **site** et sa
+  **clientèle**, la palette se lit au site — un changement en Réglages ›
+  Sites se voit partout tout de suite ;
+- la palette est lisible par la logistique **sans** `lfc_site_settings` :
+  une lecture seule (id, nom, quatre couleurs) ouverte aux droits du
+  colisage, de la livraison et du comptoir ;
+- les couleurs étant libres, la pastille choisit son texte clair ou sombre
+  par contraste (luminance), sans quoi un jaune saisi serait illisible.
+
 ## 1. La demande
 
 Une responsable logistique, après une visite du back-office, mot pour mot :
@@ -164,12 +182,13 @@ budget de 1,30 Mo.
 
 ## 5. Lots
 
-| Lot | Taille | Contenu                                                                                                                  | Dépend de                                |
-| --- | ------ | ------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------- |
-| L1  | S      | fonction pure de catégorie (back-office), pastille ; tokens `--lfc-site-*` **à revoir** (couleurs libres), teinte neutre | S2 des sites (`siteId` dans le snapshot) |
-| L2  | M      | `OrderDepartureReader` + tri de la liste ; tri du colisage par `dueAt`                                                   | T1 du transfert (pour le village)        |
-| L4  | ?      | « Écrire » — **hors du chantier** (Q1 mise de côté)                                                                      | —                                        |
-| L5  | S      | couleur sur les supports imprimés (si Q8 = papier)                                                                       | L1                                       |
+| Lot | Taille | Contenu                                                                                                                                                                                                                                                                                                               | Dépend de                         |
+| --- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| L1a | M      | serveur : la copie du colisage porte `siteId` et `clientele` (fait du fournil + migration additive du schéma `packing`) ; les vues de la livraison exposent site et clientèle par arrêt (canal du commerce, par lot ; par commande dans le manifeste d'un transfert) ; lecture seule de la palette pour la logistique | S2 des sites, T1–T3 du transfert  |
+| L1b | S      | back-office : store de palette, fonction pure de catégorie, un composant de pastille (contraste calculé), teinte neutre ; posé sur colisage, tournées, chargement, Ma tournée                                                                                                                                         | L1a                               |
+| L2  | M      | `OrderDepartureReader` + tri de la liste ; tri du colisage par `dueAt`                                                                                                                                                                                                                                                | T1 du transfert (pour le village) |
+| L4  | ?      | « Écrire » — **hors du chantier** (Q1 mise de côté)                                                                                                                                                                                                                                                                   | —                                 |
+| L5  | S      | papier (Q8 = oui) : carré de couleur après les dates, en symétrie du logo, sur étiquettes de bac, feuille de route et bon                                                                                                                                                                                             | L1a                               |
 
 Le tri du colisage par `dueAt` répond, pour le village, à la question 1 de
 [`../colisage/todo-colisage-tri-par-echeance.md`](../colisage/todo-colisage-tri-par-echeance.md).
