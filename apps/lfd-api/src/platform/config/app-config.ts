@@ -1,3 +1,5 @@
+import { hkdfSync } from "node:crypto";
+
 import { Injectable } from "@nestjs/common";
 import type { S3StorageConfig } from "@lfd/storage";
 
@@ -144,6 +146,23 @@ export class AppConfig {
    */
   fieldEncryptionKey(): Buffer {
     return this.fieldKey;
+  }
+
+  /**
+   * **La clé qui signe les liens d'annulation des invités** (plan
+   * `documentation/commandes/annulation/plan-annulation-de-commande.md`, lot C6,
+   * C6.4 ; décidé le 2026-10-13 : pas de variable d'environnement de plus).
+   *
+   * DÉRIVÉE de la clé du coffre par HKDF-SHA256, sous une étiquette dédiée :
+   * la clé de chiffrement ne sert jamais telle quelle à signer, et deux usages
+   * ne partagent pas une clé. Conséquence assumée : **une rotation de
+   * `FIELD_ENCRYPTION_KEY` tue aussi tous les liens d'annulation déjà
+   * envoyés** (`documentation/ops/secrets-et-variables.md`).
+   */
+  cancellationLinkKey(): Buffer {
+    return Buffer.from(
+      hkdfSync("sha256", this.fieldKey, Buffer.alloc(0), CANCELLATION_LINK_KEY_INFO, 32),
+    );
   }
 
   /**
@@ -571,6 +590,9 @@ export interface StripeConfig {
   readonly webhookSecret: string;
   readonly publishableKey: string;
 }
+
+/** L'étiquette HKDF des liens d'annulation : la changer tue tous les liens envoyés. */
+const CANCELLATION_LINK_KEY_INFO = "lfd/order-cancellation-link/v1";
 
 /**
  * 🔴 **Une clé absente ne doit jamais équivaloir à « pas de chiffrement ».**

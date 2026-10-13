@@ -1,0 +1,80 @@
+<fold-page-layout icon="shopping-cart" title="Commandes">
+  <p description>
+    Ce que la boutique permet au client sur une commande déjà passée. Le réglage s'applique au
+    prochain geste du client ; une annulation déjà faite ne change pas.
+  </p>
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Chargement du réglage des commandes…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Impossible de charger le réglage des commandes">
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      <fold-card>
+        <fold-element-title
+          cardHeader
+          variant="title"
+          title="Annulation par les particuliers"
+          subtitle="Depuis « Mes commandes », ou le lien du courriel pour un invité."
+        />
+
+        <div class="form">
+          <fold-checkbox
+            label="Les particuliers peuvent annuler eux-mêmes"
+            [checked]="open()"
+            (checkedChange)="open.set($event)"
+            [disabled]="!canWrite() || saving()"
+          />
+
+          @if (open()) {
+            <fold-number-input
+              label="Délai, en heures"
+              [value]="hours()"
+              (valueChange)="hours.set($event)"
+              [min]="0"
+              [max]="maxHours"
+              integer
+              [readOnly]="!canWrite()"
+              [disabled]="saving()"
+            />
+            <p class="help">
+              Jusqu'à {{ hours() ?? '…' }} h avant le début du créneau de retrait ou de livraison ;
+              sans heure de début, avant minuit du jour. Une commande déjà au compte à produire ne
+              s'annule plus.
+            </p>
+          }
+
+          <p class="help">Les pros annulent jusqu'au compte à produire, sans réglage.</p>
+
+          @if (trace(); as author) {
+            <p class="help">Dernier réglage par {{ author }}.</p>
+          }
+
+          @if (failure(); as message) {
+            <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+          }
+
+          @if (canWrite()) {
+            <div class="actions">
+              <button
+                foldButton
+                emphasis="outline"
+                [disabled]="patch() === null || saving()"
+                (click)="reset()"
+              >
+                Annuler
+              </button>
+              <button foldButton [disabled]="!canSave()" [loading]="saving()" (click)="save()">
+                Enregistrer
+              </button>
+            </div>
+          }
+        </div>
+      </fold-card>
+    }
+  }
+</fold-page-layout>

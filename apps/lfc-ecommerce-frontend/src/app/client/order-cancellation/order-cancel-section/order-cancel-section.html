@@ -1,0 +1,65 @@
+@switch (state().kind) {
+  @case ('loading') {
+    <fold-loading size="sm" [message]="c().loading" />
+  }
+  @case ('failed') {
+    <!-- Échec PARTIEL : le reste du tiroir est là, seule l'annulation manque. -->
+    <fold-callout variant="alert" data-failed>
+      {{ c().loadFailed }}
+      <button
+        actions
+        foldButton
+        size="sm"
+        emphasis="outline"
+        intent="neutral"
+        type="button"
+        (click)="load()"
+      >
+        {{ c().retry }}
+      </button>
+    </fold-callout>
+  }
+  @case ('done') {
+    <fold-callout variant="success" announce data-done>
+      <span class="line">{{ c().done }}</span>
+      <span class="line">{{ c().doneSubtitle }}</span>
+    </fold-callout>
+  }
+  @case ('ready') {
+    @if (cancellable()) {
+      <div class="cancel">
+        <button
+          foldButton
+          block
+          size="sm"
+          emphasis="outline"
+          intent="danger"
+          type="button"
+          data-cancel
+          (click)="open()"
+        >
+          {{ c().action }}
+        </button>
+        @if (until(); as said) {
+          <p class="note" data-until>{{ said }}</p>
+        }
+      </div>
+    } @else if (refusal(); as said) {
+      <div class="cancel">
+        <p class="note" data-refusal>{{ said }}</p>
+        <button
+          foldButton
+          block
+          size="sm"
+          emphasis="soft"
+          intent="neutral"
+          type="button"
+          data-contact
+          (click)="contact()"
+        >
+          {{ c().contact }}
+        </button>
+      </div>
+    }
+  }
+}

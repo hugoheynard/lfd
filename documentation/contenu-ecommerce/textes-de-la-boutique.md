@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1255 textes
+## Sommaire — 1309 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -38,6 +38,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [La navigation](#espace-nav) | `nav` | 24 |
 | [La colonne d’accompagnement](#espace-aside) | `aside` | 4 |
 | [Mes commandes](#espace-orders) | `orders` | 99 |
+| [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 54 |
 | [Fidélité](#espace-loyalty) | `loyalty` | 38 |
 | [Mon compte (factures comprises)](#espace-account) | `account` | 478 |
 | [Le compte pro — le dictionnaire général](#espace-pro) | `pro` | 8 |
@@ -45,7 +46,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 7 |
-| **Total** | | **1255** |
+| **Total** | | **1309** |
 
 ## Le parcours de commande
 
@@ -909,6 +910,69 @@ Source : `screens/orders.copy.ts` · 99 textes.
 | `orders.wordPlaceholder` | Il manquait deux croissants dans le sachet… | Two croissants were missing from the bag… | Mancavano due croissant nel sacchetto… |  |
 | `orders.send` | Envoyer au Labo | Send to Le Labo | Inviare al Labo |  |
 | `orders.reportFoot` | Camille et Malik reçoivent le message avec la commande, le mode et la photo — rien à réexpliquer. | Camille and Malik get the message with the order, the mode and the photo — nothing to explain twice. | Camille e Malik ricevono il messaggio con l’ordine, la modalità e la foto — niente da rispiegare. |  |
+
+<a id="espace-ordercancel"></a>
+
+### Annuler une commande — Mes commandes et la page invité — `orderCancel`
+
+Source : `screens/order-cancel.copy.ts` · 54 textes.
+
+| Clé | FR | EN | IT | Variables |
+| --- | --- | --- | --- | --- |
+| `orderCancel.action` | Annuler la commande | Cancel the order | Annulla l’ordine |  |
+| `orderCancel.title` | Annuler ma commande | Cancel my order | Annulla il mio ordine |  |
+| `orderCancel.subtitle` | Commande {reference} | Order {reference} | Ordine {reference} | `{reference}` |
+| `orderCancel.moneyNothing` | Rien n’a été prélevé : rien ne le sera. | Nothing has been charged, and nothing will be. | Non è stato addebitato nulla, e nulla lo sarà. |  |
+| `orderCancel.moneyRefund` | Vous serez remboursé de {amount} sur votre carte. | You will be refunded {amount} on your card. | Riceverete un rimborso di {amount} sulla vostra carta. | `{amount}` |
+| `orderCancel.moneyAccount` | Rien ne sera facturé ni prélevé. | Nothing will be invoiced or charged. | Nulla sarà fatturato né addebitato. |  |
+| `orderCancel.voucherBack` | Votre bon de fidélité vous sera rendu. | Your loyalty voucher will be returned to you. | Il vostro buono fedeltà vi sarà restituito. |  |
+| `orderCancel.until` | Annulation possible jusqu’au {when}. | You can cancel until {when}. | Annullamento possibile fino al {when}. | `{when}` |
+| `orderCancel.untilPassed` | L’annulation en ligne était possible jusqu’au {when}. | Online cancellation was possible until {when}. | L’annullamento online era possibile fino al {when}. | `{when}` |
+| `orderCancel.when` | {day} à {time} | {day} at {time} | {day} alle {time} | `{day}` `{time}` |
+| `orderCancel.reasonLabel` | Pourquoi annulez-vous ? | Why are you cancelling? | Perché annullate? |  |
+| `orderCancel.reasonPlaceholder` | Choisir un motif | Choose a reason | Scegliete un motivo |  |
+| `orderCancel.reasons.no_longer_needed` | Je n’en ai plus besoin | I no longer need it | Non mi serve più |  |
+| `orderCancel.reasons.wrong_date` | Je me suis trompé de date | I picked the wrong date | Ho sbagliato data |  |
+| `orderCancel.reasons.wrong_products` | Je me suis trompé de produits | I picked the wrong products | Ho sbagliato prodotti |  |
+| `orderCancel.reasons.other` | Autre | Other | Altro |  |
+| `orderCancel.reasonText` | Précisez | Tell us more | Precisate |  |
+| `orderCancel.reasonTextPlaceholder` | En quelques mots | In a few words | In poche parole |  |
+| `orderCancel.confirm` | Annuler ma commande | Cancel my order | Annulla il mio ordine |  |
+| `orderCancel.confirming` | Annulation… | Cancelling… | Annullamento… |  |
+| `orderCancel.keep` | Garder ma commande | Keep my order | Tengo l’ordine |  |
+| `orderCancel.done` | Commande annulée | Order cancelled | Ordine annullato |  |
+| `orderCancel.doneSubtitle` | Un e-mail de confirmation vous a été envoyé. | A confirmation e-mail has been sent to you. | Vi abbiamo inviato un’e-mail di conferma. |  |
+| `orderCancel.contact` | Contacter la boutique | Contact the shop | Contattare il negozio |  |
+| `orderCancel.refusals.already_cancelled` | Cette commande est déjà annulée. | This order is already cancelled. | Questo ordine è già annullato. |  |
+| `orderCancel.refusals.in_preparation` | Votre commande est déjà en préparation : elle ne peut plus être annulée. Contactez-nous si besoin. | Your order is already being prepared: it can no longer be cancelled. Contact us if needed. | Il vostro ordine è già in preparazione: non può più essere annullato. Contattateci se necessario. |  |
+| `orderCancel.refusals.ready` | Votre commande est prête : elle ne peut plus être annulée. | Your order is ready: it can no longer be cancelled. | Il vostro ordine è pronto: non può più essere annullato. |  |
+| `orderCancel.refusals.fulfilled` | Votre commande a déjà été retirée : elle ne peut plus être annulée. | Your order has already been collected: it can no longer be cancelled. | Il vostro ordine è già stato ritirato: non può più essere annullato. |  |
+| `orderCancel.refusals.closed` | L’annulation en ligne n’est pas proposée. Contactez-nous pour annuler cette commande. | Online cancellation is not offered. Contact us to cancel this order. | L’annullamento online non è previsto. Contattateci per annullare questo ordine. |  |
+| `orderCancel.refusals.too_late` | Il est trop tard pour annuler en ligne : c’était possible jusqu’au {when}. Contactez-nous. | It is too late to cancel online: it was possible until {when}. Contact us. | È troppo tardi per annullare online: era possibile fino al {when}. Contattateci. | `{when}` |
+| `orderCancel.refusals.payment_in_progress` | Un paiement est en cours sur cette commande. Réessayez dans quelques minutes. | A payment is in progress on this order. Try again in a few minutes. | Un pagamento è in corso su questo ordine. Riprovate tra qualche minuto. |  |
+| `orderCancel.refusals.paid_just_now` | Votre paiement vient d’aboutir. Rechargez la page pour annuler avec remboursement. | Your payment has just gone through. Reload the page to cancel with a refund. | Il vostro pagamento è appena andato a buon fine. Ricaricate la pagina per annullare con rimborso. |  |
+| `orderCancel.refusals.not_recorded` | Nous n’avons pas pu annuler votre commande. Rien n’a été prélevé de plus ; réessayez dans un instant. | We could not cancel your order. Nothing more has been charged; try again in a moment. | Non siamo riusciti ad annullare il vostro ordine. Non è stato addebitato altro; riprovate tra un istante. |  |
+| `orderCancel.refusals.invoiced` | Cette commande est déjà facturée : elle ne s’annule plus en ligne. Contactez-nous. | This order has already been invoiced: it can no longer be cancelled online. Contact us. | Questo ordine è già fatturato: non si annulla più online. Contattateci. |  |
+| `orderCancel.refusals.voucher_reused` | Le bon utilisé sur cette commande a déjà resservi : contactez-nous pour l’annuler. | The voucher used on this order has already been used again: contact us to cancel it. | Il buono usato su questo ordine è già stato riutilizzato: contattateci per annullarlo. |  |
+| `orderCancel.refusals.account_required` | Connectez-vous pour gérer cette commande. | Sign in to manage this order. | Accedete per gestire questo ordine. |  |
+| `orderCancel.refusals.account_disabled` | Contactez la boutique pour gérer cette commande. | Contact the shop to manage this order. | Contattate il negozio per gestire questo ordine. |  |
+| `orderCancel.refusals.not_allowed` | Cette commande ne peut pas être annulée depuis votre compte. | This order cannot be cancelled from your account. | Questo ordine non può essere annullato dal vostro account. |  |
+| `orderCancel.refusedFallback` | La commande n’a pas pu être annulée. Réessayez dans un instant. | The order could not be cancelled. Try again in a moment. | L’ordine non ha potuto essere annullato. Riprovate tra un istante. |  |
+| `orderCancel.loading` | Chargement de la commande… | Loading the order… | Caricamento dell’ordine… |  |
+| `orderCancel.loadFailed` | La commande n’a pas pu être lue. | The order could not be loaded. | Non è stato possibile leggere l’ordine. |  |
+| `orderCancel.retry` | Réessayer | Try again | Riprova |  |
+| `orderCancel.guestTitle` | Votre commande | Your order | Il vostro ordine |  |
+| `orderCancel.guestGreeting` | Bonjour {name}, | Hello {name}, | Buongiorno {name}, | `{name}` |
+| `orderCancel.guestLead` | Voici votre commande. Vous pouvez l’annuler ici si elle ne vous sert plus. | Here is your order. You can cancel it here if you no longer need it. | Ecco il vostro ordine. Potete annullarlo qui se non vi serve più. |  |
+| `orderCancel.guestLinesHead` | Articles | Items | Articoli |  |
+| `orderCancel.guestTotal` | Total | Total | Totale |  |
+| `orderCancel.guestDay` | Jour | Day | Giorno |  |
+| `orderCancel.guestPickup` | Retrait · {place} | Pickup · {place} | Ritiro · {place} | `{place}` |
+| `orderCancel.guestDelivery` | Livraison · {city} | Delivery · {city} | Consegna · {city} | `{city}` |
+| `orderCancel.guestPickupNoPlace` | Retrait | Pickup | Ritiro |  |
+| `orderCancel.guestDeliveryNoCity` | Livraison | Delivery | Consegna |  |
+| `orderCancel.linkNotFoundTitle` | Ce lien est introuvable ou trop ancien | This link cannot be found or is too old | Questo link è introvabile o troppo vecchio |  |
+| `orderCancel.linkNotFoundSubtitle` | Contactez la boutique pour toute question sur votre commande. | Contact the shop for any question about your order. | Contattate il negozio per qualsiasi domanda sul vostro ordine. |  |
 
 <a id="espace-loyalty"></a>
 

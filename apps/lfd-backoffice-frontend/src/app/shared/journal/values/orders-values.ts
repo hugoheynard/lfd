@@ -105,6 +105,20 @@ export const CANCELLATION_VOUCHER_OUTCOME = domain('sort du bon à une annulatio
   lapsed: 'Échu, non rendu',
 });
 
+/** Qui a annulé, quand ce n'est pas l'équipe (`order.cancelled`, lot C6) — absent d'une annulation staff. */
+export const CANCELLATION_ACTOR_KIND = domain('auteur d’une annulation', {
+  customer: 'Le client',
+  guest: 'Un client invité',
+});
+
+/** Le motif choisi par le client dans la liste (`order.cancelled`, lot C6). */
+export const CUSTOMER_CANCELLATION_REASON = domain('motif d’annulation du client', {
+  no_longer_needed: 'Plus besoin',
+  wrong_date: 'Mauvaise date',
+  wrong_products: 'Mauvais produits',
+  other: 'Autre',
+});
+
 /** Le statut d'un remboursement chez Stripe (`order.refund_*`, `payment_refund.unmatched`). */
 export const REFUND_STATUS = domain('statut d’un remboursement', {
   pending: 'En cours',
@@ -195,6 +209,8 @@ export const ORDERS_VALUES: ValueFamily = {
     ABANDON_OUTCOME,
     CANCELLATION_REGIME,
     CANCELLATION_VOUCHER_OUTCOME,
+    CANCELLATION_ACTOR_KIND,
+    CUSTOMER_CANCELLATION_REASON,
     REFUND_STATUS,
     REFUND_REJECTION,
     REFUND_NOT_CREDITED,

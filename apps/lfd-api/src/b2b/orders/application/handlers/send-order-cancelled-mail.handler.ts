@@ -2,13 +2,17 @@ import { Inject, Injectable } from "@nestjs/common";
 
 import { DEFAULT_MAIL_LOCALE } from "../../../../platform/mailer/copy/mail-copy.js";
 import { MAILER, type B2bMailer } from "../../../../platform/mailer/mailer.tokens.js";
+import type { OrderCancelledMailData } from "../../../../platform/mailer/order-cancelled-mail.js";
 import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
 import {
   DurableHandler,
   type DurableSubscriber,
 } from "../../../../platform/outbox/durable-handler.js";
 import { ORDER_CANCELLED, OrderCancelledEvent } from "../../domain/events/order-cancelled.event.js";
-import { OrderRecipientReader } from "../../domain/ports/order-recipient.reader.js";
+import {
+  OrderRecipientReader,
+  type OrderRecipient,
+} from "../../domain/ports/order-recipient.reader.js";
 import { OrderReader } from "../../domain/ports/order.reader.js";
 import { clientSheetOf } from "../../domain/services/order-sheet.js";
 
@@ -16,7 +20,8 @@ import { clientSheetOf } from "../../domain/services/order-sheet.js";
 export const SEND_ORDER_CANCELLED_MAIL = "orders.send-order-cancelled-mail";
 
 /**
- * **« Votre commande a été annulée par notre équipe »** (plan
+ * **« Votre commande a été annulée »** — par l'équipe, par le client, ou par
+ * un membre de sa société depuis le lot C6 (plan
  * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C3.5, D9).
  *
  * Ni QR — une commande annulée ne se retire pas —, ni motif — il est interne.
@@ -62,9 +67,40 @@ export class SendOrderCancelledMail implements DurableSubscriber {
             ? null
             : { ...event.voucher, expiresAt: event.voucher.expiresAt.toISOString() },
         refund: event.refund,
+        author: await this.authorOf(event, owned.view.customerLabel),
         locale: DEFAULT_MAIL_LOCALE,
       },
       idempotencyKey: `${ORDER_CANCELLED}:${event.orderId}`,
     });
   }
+
+  /**
+   * Qui a annulé, pour la phrase d'ouverture (lot C6, C6.9) : l'équipe ; le
+   * client lui-même (ou l'invité) ; ou un AUTRE membre de la société —
+   * « Prénom N. » et la société, pour que celui qui a passé la commande sache
+   * qui l'a défaite (Q-C6.3). Le motif n'y figure jamais.
+   */
+  private async authorOf(
+    event: OrderCancelledEvent,
+    company: string,
+  ): Promise<NonNullable<OrderCancelledMailData["author"]>> {
+    const by = event.cancelledByUserId;
+    if (event.cancelledByKind === "staff" || by === null) {
+      return { kind: "team" };
+    }
+    if (by === event.placedByUserId) {
+      return { kind: "self" };
+    }
+    const member = await this.recipients.findById(by);
+    return { kind: "member", name: shortNameOf(member), company };
+  }
+}
+
+/** « Prénom N. » — le prénom seul sans nom, « Un membre » sans fiche lisible. */
+function shortNameOf(member: OrderRecipient | null): string {
+  if (member === null || member.firstName.trim() === "") {
+    return "Un membre de la société";
+  }
+  const initial = member.lastName?.trim().charAt(0) ?? "";
+  return initial === "" ? member.firstName : `${member.firstName} ${initial.toUpperCase()}.`;
 }

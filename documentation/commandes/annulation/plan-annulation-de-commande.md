@@ -2137,8 +2137,12 @@ avoir sur facture mensuelle (C5, Q2). Le §2 D4/D5 et le §9 B2/B3/S3/S5 sont
 
 ### Lot C6 — annulation par le CLIENT, depuis « Mes commandes » (conçu le 2026-10-13, pas bâti)
 
-> 📐 **Décidé, pas bâti.** Rien de ce qui suit n'existe dans le code au
-> 2026-10-13. Touche **l'argent** (même fermeture d'intention, même
+> 🔧 **Côté serveur bâti le 2026-10-13, non commité à cette date** (API +
+> `@lfd/contracts`, migration `20261013100000_l_annulation_par_le_client`) ;
+> les deux fronts (C6.5 écran, C6.8) restent à bâtir.
+>
+> 📐 **Décidé, pas bâti** — phrase d'origine : rien de ce qui suit n'existait
+> dans le code au 2026-10-13. Touche **l'argent** (même fermeture d'intention, même
 > remboursement que C3/C4) et **une frontière de sécurité** (une route client
 > qui écrit, et une route publique pour l'invité) : **`vitruve` obligatoire
 > avant Hugo** (CLAUDE.md §9 bis) — **passé le 2026-10-13** ; ses objections
@@ -2296,10 +2300,12 @@ des verrous ([`verrous-de-l-annulation.md`](verrous-de-l-annulation.md)).
 **Retenu (B1, décision d'ingénierie du 2026-10-13) — un jeton DÉTERMINISTE,
 rien de stocké :**
 
-- `jeton = base64url(HMAC-SHA256(orderId, CLÉ))`, la clé étant une **variable
-  d'environnement dédiée** lue par `AppConfig`, inscrite au runbook des
-  secrets. Aucune colonne, aucun hash, rien à régénérer : **un rejeu du
-  courriel donne le même lien**.
+- `jeton = base64url(HMAC-SHA256(orderId, CLÉ))`. **Corrigé le 2026-10-13
+  (coordinateur) : pas de variable d'environnement de plus.** La clé est
+  DÉRIVÉE de `FIELD_ENCRYPTION_KEY` par HKDF-SHA256 sous l'étiquette
+  `lfd/order-cancellation-link/v1` (`AppConfig.cancellationLinkKey`) : la clé
+  de chiffrement ne signe jamais telle quelle. Aucune colonne, aucun hash,
+  rien à régénérer : **un rejeu du courriel donne le même lien**.
 - **Pourquoi pas un secret tiré à la passation** : le courriel de l'invité
   n'en part pas. Une commande carte est confirmée sur `order.paid` par
   `SendOrderSettledMail` → `OrderPlacedMail.send(orderId)`
@@ -2315,7 +2321,9 @@ rien de stocké :**
   d'invité, ou passé la borne des 90 jours (lue sur la commande) : **la même
   réponse, 404 neutre** (« Lien introuvable »). Un jeton valide rend
   **toujours** la page, annulable ou non.
-- **Rotation de la clé = tous les liens morts.** Assumé et écrit au runbook :
+- **Rotation de la clé = tous les liens morts.** Assumé : **une rotation de
+  `FIELD_ENCRYPTION_KEY` tue aussi tous les liens d'annulation déjà envoyés**
+  (écrit dans [`secrets-et-variables.md`](../../ops/secrets-et-variables.md)) ;
   on ne la tourne que sur fuite ; les invités passent alors par la boutique.
 - **S7 — le jeton voyage en FRAGMENT d'URL** : `/annuler#<orderId>.<jeton>`.
   Un navigateur n'envoie jamais le fragment : ni le SSR, ni la passerelle, ni

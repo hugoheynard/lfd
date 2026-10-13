@@ -18,6 +18,7 @@ import { OrderReader } from "../../domain/ports/order.reader.js";
 import { handoverUrlOf } from "../../domain/services/handover-url.js";
 import { clientSheetOf } from "../../domain/services/order-sheet.js";
 import { OrderSheetAttachment } from "../services/order-sheet-attachment.service.js";
+import { OrderManageLink } from "../services/order-manage-link.js";
 
 /** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
 export const SEND_ORDER_PLACED_MAIL = "orders.send-placed-mail.on-placed";
@@ -65,6 +66,7 @@ export class SendOrderPlacedMail implements DurableSubscriber {
     private readonly recipients: OrderRecipientReader,
     private readonly origins: OrderMailOrigins,
     private readonly attachment: OrderSheetAttachment,
+    private readonly manageLink: OrderManageLink,
     @Inject(MAILER) private readonly mailer: B2bMailer,
   ) {}
 
@@ -137,6 +139,9 @@ export class SendOrderPlacedMail implements DurableSubscriber {
         // Vide quand l'origine n'est pas configurée : le gabarit omet alors le
         // bouton plutôt que de poser un lien relatif, inerte dans une boîte mail.
         orderUrl: client === null ? "" : `${client}/mes-commandes`,
+        // Lot C6 : « gérer ou annuler » — la page d'annulation pour un invité,
+        // la liste pour un compte (C6.4).
+        manageUrl: await this.manageLink.urlFor(orderId, client),
         // Le QR encode une URL du BACK-OFFICE : c'est l'équipe qui le scanne,
         // pas le client. Sans origine admin configurée, pas de QR — un code qui
         // n'ouvre rien vaut moins qu'un numéro de commande lisible.

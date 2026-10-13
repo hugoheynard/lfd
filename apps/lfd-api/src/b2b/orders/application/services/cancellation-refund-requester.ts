@@ -22,10 +22,14 @@ export class CancellationRefundRequester {
     private readonly dispatch: OrderRefundDispatch,
   ) {}
 
-  /** Rend ce qui est promis — `null` quand il ne reste rien à rendre (C4.4). */
+  /**
+   * Rend ce qui est promis — `null` quand il ne reste rien à rendre (C4.4).
+   * `requestedBy` : la fiche staff, ou `null` quand un client annule lui-même
+   * (lot C6, C6.6 — la colonne l'admettait déjà).
+   */
   async requestFor(
     locked: CancellationSubject,
-    staffUserId: string,
+    requestedBy: string | null,
     now: Date,
   ): Promise<CancelledOrderRefund | null> {
     const announcedCents = locked.refunds.refundableCents;
@@ -40,7 +44,7 @@ export class CancellationRefundRequester {
         cause: "cancellation",
         announcedCents,
         requestedAt: now,
-        requestedBy: staffUserId,
+        requestedBy,
         firstAttemptAt: now,
       }),
     );

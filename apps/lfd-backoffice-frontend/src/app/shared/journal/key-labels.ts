@@ -55,6 +55,9 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   businessName: 'Enseigne',
   bytes: 'Poids',
   cancelledBy: 'Annulée par',
+  // Lot C6 : l'annulation par le client lui-même (`order.cancelled`).
+  cancelledByCustomer: 'Annulée par le client',
+  cancelledByKind: 'Annulée par',
   candidates: 'Articles candidats',
   carbsG: 'Glucides',
   category: 'Catégorie',
@@ -136,6 +139,8 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   height: 'Hauteur',
   hiddenSkus: 'Articles retirés de la sélection',
   holder: 'Titulaire',
+  // Lot C6 : le délai d'annulation appliqué à un particulier (`order.cancelled.policy`).
+  hoursBefore: 'Délai avant le créneau (heures)',
   ics: 'Identifiant créancier (ICS)',
   id: 'Identifiant',
   image: 'Image',
@@ -188,6 +193,7 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   plural: 'Pluriel',
   pointOfSale: 'Point de vente',
   pointOfSaleId: 'Point de vente',
+  policy: 'Règle appliquée',
   position: 'Rang',
   postalPrefixCount: 'Préfixes postaux',
   postalPrefixes: 'Préfixes postaux',
@@ -205,6 +211,7 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   readyAt: 'Prête le',
   readyBy: 'Préparée par',
   reason: 'Motif',
+  reasonCode: 'Motif choisi',
   recurrence: 'Récurrence',
   reference: 'Référence',
   // Lot C4 : ce que l'annulation d'une payée a promis de rendre (`order.cancelled`).

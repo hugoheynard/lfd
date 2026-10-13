@@ -123,6 +123,11 @@ export class CommandesPage {
     this.chrome.barOnDesktop.set(true);
   }
 
+  /** Une commande vient d'être annulée : la liste se relit, le suivi la quitte. */
+  protected reload(): void {
+    this.history_.reload();
+  }
+
   /** Ouvre le signalement de cette commande — un dialogue fold, qui envoie pour de bon. */
   protected report(order: HistoryOrder): void {
     ReportDialog.open(this.panels, { orderId: order.id, reference: order.reference });

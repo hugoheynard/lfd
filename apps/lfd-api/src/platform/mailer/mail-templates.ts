@@ -151,6 +151,14 @@ export interface B2bMails {
     readonly handoverToken: string | null;
     /** L'app cliente, pour le lien « voir ma commande ». */
     readonly orderUrl: string;
+    /**
+     * Lot C6 (C6.4) : « gérer ou annuler ma commande ». Pour un INVITÉ, la page
+     * d'annulation avec son jeton en fragment (`/annuler#<id>.<jeton>`) ; pour
+     * un compte, la liste `mes-commandes`, sans secret — la session décide.
+     * Vide sans origine connue : pas de lien plutôt qu'un lien inerte. Absent
+     * des envois d'avant C6.
+     */
+    readonly manageUrl?: string;
     /** L'URL que le QR encode — vide quand il n'y a pas de jeton. */
     readonly handoverUrl: string;
     /**
@@ -608,6 +616,9 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
           // un lien relatif est inerte dans une boîte mail, et un bouton qui ne
           // mène nulle part coûte plus qu'une absence de bouton.
           ...(data.orderUrl === "" ? {} : { cta: { label: copy.cta, url: data.orderUrl } }),
+          ...(data.manageUrl === undefined || data.manageUrl === ""
+            ? {}
+            : { secondaryLink: { label: copy.manageLink, url: data.manageUrl } }),
           footer: `${copy.changeNote}\n${copy.footer}`,
         }),
         ...withAttachments([

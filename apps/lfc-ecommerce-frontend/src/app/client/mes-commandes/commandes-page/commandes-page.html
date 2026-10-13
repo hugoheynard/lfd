@@ -51,6 +51,7 @@
     <app-history-table
       [orders]="history()"
       (problemRaised)="report($event)"
+      (orderCancelled)="reload()"
       (purchaseOrderRequested)="downloadSheet($event)"
     />
   </fold-page-section>

@@ -1,0 +1,11 @@
+<fold-panel-header [title]="c().title" [subtitle]="subtitle()" [closeLabel]="c().keep" />
+
+<fold-panel-body>
+  <app-cancel-order-form
+    [state]="data().state"
+    [busy]="busy()"
+    [refusal]="refusal()"
+    (confirmed)="confirm($event)"
+    (kept)="keep()"
+  />
+</fold-panel-body>

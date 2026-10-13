@@ -103,6 +103,11 @@ const ADMITTED = new Map([
       "gagne pas de points (plan des points de fidélité, D1, 2026-09-26) ; " +
       "un booléen en sort, le `sub` jamais",
   ],
+  [
+    "apps/lfd-api/src/b2b/orders/infrastructure/prisma-customer-cancellation-subject.reader.ts",
+    "dit si l'acheteur peut se connecter : le lien d'annulation d'un invité ne vaut que sans " +
+      "compte (plan d'annulation, C6.4, S3, 2026-10-13) ; un booléen en sort, le `sub` jamais",
+  ],
   ["apps/lfd-api/src/dev/seeding/client.seed.ts", "le semis de développement crée des comptes"],
   [
     "apps/lfd-api/src/dev/seeding/neighbour-clients.seed.ts",

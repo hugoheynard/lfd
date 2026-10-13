@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { weekdaySchema } from "../address.js";
+import { CUSTOMER_CANCELLATION_REASON_CODES } from "../customer-cancellation.values.js";
 import { WINDOW_MODES } from "../delivery-availability.values.js";
 import { DELIVERY_BIN_FACTS } from "./delivery-bins.js";
 import { DELIVERY_LOADING_FACTS } from "./delivery-loading.js";
@@ -329,14 +330,25 @@ export const ORDERS_PRODUCTION_FACTS = {
    * irréversible), et `refund` dit ce que l'annulation a promis de rendre sur
    * la carte (centimes TTC), `null` hors `paid` ou reste nul ; absent des faits
    * d'avant C4.
+   *
+   * Lot C6 (C6.6) : le CLIENT peut annuler. `cancelledBy` est alors `null`, et
+   * `cancelledByKind` (`customer` | `guest`) et `cancelledByCustomer` (le client,
+   * sous son nom du moment) disent qui ; `reason` peut être `null` (motif
+   * facultatif), `reasonCode` est le motif choisi dans la liste, `policy` le
+   * délai appliqué à un particulier. Les quatre clés sont ABSENTES d'une
+   * annulation staff, d'avant comme d'après C6.
    */
   "order.cancelled": fact(
     payload({
       subjectLabel: customerLabel(),
       orderId: ref("order"),
       orderNumber: z.string(),
-      cancelledBy: namedOrBare("staff_user"),
-      reason: z.string(),
+      cancelledBy: namedOrBare("staff_user").nullable(),
+      reason: z.string().nullable(),
+      cancelledByKind: z.enum(["customer", "guest"]).optional(),
+      cancelledByCustomer: namedOrBare("user").optional(),
+      reasonCode: z.enum(CUSTOMER_CANCELLATION_REASON_CODES).nullable().optional(),
+      policy: payload({ hoursBefore: count() }).nullable().optional(),
       regime: z.enum(["free", "due", "account", "paid"]),
       voucher: z
         .object({

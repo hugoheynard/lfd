@@ -87,7 +87,7 @@ model Order {
   // la saisit au téléphone, c'est le contact du compte qui est porté ici : la
   // commande reste celle du client, et elle apparaît dans « Mes commandes ».
   placedByUserId String @map("placed_by_user_id")
-  placedBy       User   @relation(fields: [placedByUserId], references: [id])
+  placedBy       User   @relation("OrderPlacedBy", fields: [placedByUserId], references: [id])
 
   // QUI L'A SAISIE chez LFC, quand ce n'est pas le client lui-même. Nul = le
   // client a commandé seul.
@@ -303,6 +303,19 @@ model Order {
   cancelledAt        DateTime? @map("cancelled_at")
   cancelledBy        String?   @map("cancelled_by")
   cancellationReason String?   @map("cancellation_reason")
+
+  /// L'ANNULATION PAR LE CLIENT (plan, lot C6, C6.6). `cancelledByKind` dit qui
+  /// a annulé : `staff | customer | guest`, NULL pour l'historique (automatiques,
+  /// et staff d'avant C6). CHECK à sens unique en base (S4) : `staff` ⇒
+  /// `cancelledBy` posé ; `customer | guest` ⇒ `cancelledByUserId` posé.
+  /// `cancelledBy` reste l'id de la FICHE staff, NULL pour un client.
+  /// `cancelledByUserId` est une donnée CLIENT (l'auteur ou un membre de la
+  /// société). `cancellationReasonCode` : la liste close du client (CHECK) —
+  /// valeurs irréversibles.
+  cancelledByKind        String? @map("cancelled_by_kind")
+  cancelledByUserId      String? @map("cancelled_by_user_id")
+  cancelledByUser        User?   @relation("OrderCancelledByUser", fields: [cancelledByUserId], references: [id], onDelete: Restrict)
+  cancellationReasonCode String? @map("cancellation_reason_code")
 
   createdAt DateTime @default(now()) @map("created_at") // = passée le
   updatedAt DateTime @updatedAt @map("updated_at")

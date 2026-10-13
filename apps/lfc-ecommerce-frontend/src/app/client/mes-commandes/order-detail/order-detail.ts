@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { FoldButtonComponent } from 'fold-ng';
 
 import { ClientCopyService } from '../../copy/client-copy.service';
+import { OrderCancelSection } from '../../order-cancellation/order-cancel-section/order-cancel-section';
 import { formatCents } from '../../format-money';
 import { isFulfilled, type HistoryOrder, type OrderPayment } from '../order-rows';
 
@@ -26,7 +27,7 @@ const STARS = [1, 2, 3, 4, 5] as const;
 @Component({
   selector: 'app-order-detail',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldButtonComponent, RouterLink],
+  imports: [FoldButtonComponent, OrderCancelSection, RouterLink],
   templateUrl: './order-detail.html',
   styleUrl: './order-detail.scss',
 })
@@ -38,6 +39,8 @@ export class OrderDetail {
 
   readonly rated = output<number>();
   readonly problemRaised = output<void>();
+  /** La commande a été annulée depuis le tiroir : la liste est à relire. */
+  readonly cancelled = output<void>();
 
   /**
    * Le bon de commande est DEMANDÉ, pas fabriqué ici.

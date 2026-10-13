@@ -135,7 +135,19 @@ la production.
 | `CLOUDFLARE_LFD_ROUTE_PLANNER`                                                    | déploiement de `lfd-route-planner`  | son jeton à lui (2026-09-29) : Workers Scripts · Edit, Account Settings · Read, Cloudflare Images · Edit, **Workers R2 Storage · Edit** (bucket `lfd-map-tiles` des tuiles, lot 10 ter) — [`planificateur-de-tournees.md`](planificateur-de-tournees.md) |
 | `ROUTE_PLANNER_TOKEN`                                                             | passerelle **et** backend B2B       | le jeton qui ouvre `/api/route-planner` — **la même valeur des deux côtés, un seul secret GitHub** ; `ROUTE_PLANNER_TOKEN_NEXT`, facultatif, le temps d'une rotation                                                                                     |
 | `VAPID_PUBLIC_KEY` · `VAPID_PRIVATE_KEY`                                          | backend B2B                         | signent les notifications poussées — cf. §3 ter ; `VAPID_SUBJECT` est une Variable                                                                                                                                                                       |
-| `FIELD_ENCRYPTION_KEY`                                                            | backend B2B                         | scelle les IBAN des clients au repos — **le backend refuse de démarrer sans elle**                                                                                                                                                                       |
+| `FIELD_ENCRYPTION_KEY`                                                            | backend B2B                         | scelle les IBAN des clients au repos — **le backend refuse de démarrer sans elle** ; signe aussi, par une clé DÉRIVÉE (HKDF), les liens d'annulation des invités — voir sous le tableau                                                                  |
+
+**🔴 Tourner `FIELD_ENCRYPTION_KEY` tue aussi tous les liens d'annulation déjà
+envoyés** (décidé le 2026-10-13, plan
+[`plan-annulation-de-commande.md`](../commandes/annulation/plan-annulation-de-commande.md),
+lot C6, C6.4). Le lien « gérer ou annuler ma commande » du courriel d'un invité
+porte `HMAC-SHA256(orderId)` sous une clé **dérivée** de celle-ci
+(`AppConfig.cancellationLinkKey`, HKDF-SHA256, étiquette
+`lfd/order-cancellation-link/v1`) — aucune variable de plus, et la clé du
+coffre ne signe jamais telle quelle. Une rotation (qui exige déjà de
+re-sceller les IBAN) rend tous ces liens « introuvables » : les invités passent
+alors par la boutique, rien d'autre ne casse. Changer l'étiquette a le même
+effet. Ne la tourner que sur fuite.
 
 **La base a deux URL, et c'est voulu** (sortie d'Accelerate, 2026-09-19). Le
 container joint le **pooler mutualisé** ; une migration tient des verrous et

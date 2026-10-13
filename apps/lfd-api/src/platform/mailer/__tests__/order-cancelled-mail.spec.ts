@@ -192,3 +192,26 @@ describe("le courriel « commande annulée par l'équipe »", () => {
     expect(rendered.subject).toBe("Ordine ORD-4812 annullato");
   });
 });
+
+/** Lot C6 (C6.9) : la phrase d'ouverture dit qui a annulé ; le motif n'y est jamais. */
+describe("customer.order-cancelled — qui a annulé (lot C6)", () => {
+  const base = { sheet: sheet(), regime: "due", voucher: null, locale: "fr" } as const;
+
+  it("sans auteur : l'équipe, comme avant C6", () => {
+    expect(mail({ ...base }).html).toContain("annulée par notre équipe");
+  });
+
+  it("le client lui-même : « Vous avez annulé »", () => {
+    const html = mail({ ...base, author: { kind: "self" } }).html;
+    expect(html).toContain("Vous avez annulé votre commande ORD-4812");
+    expect(html).not.toContain("notre équipe");
+  });
+
+  it("un autre membre : son nom court et la société", () => {
+    const html = mail({
+      ...base,
+      author: { kind: "member", name: "Léa P.", company: "Café des Halles" },
+    }).html;
+    expect(html).toContain("Léa P. a annulé la commande ORD-4812 de Café des Halles");
+  });
+});

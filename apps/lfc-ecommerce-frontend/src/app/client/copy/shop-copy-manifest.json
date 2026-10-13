@@ -4498,6 +4498,393 @@
       "unrecorded": []
     },
     {
+      "space": "orderCancel",
+      "title": "Annuler une commande — Mes commandes et la page invité",
+      "source": "screens/order-cancel.copy.ts",
+      "journey": false,
+      "entries": [
+        {
+          "key": "orderCancel.action",
+          "fr": "Annuler la commande",
+          "en": "Cancel the order",
+          "it": "Annulla l’ordine",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.title",
+          "fr": "Annuler ma commande",
+          "en": "Cancel my order",
+          "it": "Annulla il mio ordine",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.subtitle",
+          "fr": "Commande {reference}",
+          "en": "Order {reference}",
+          "it": "Ordine {reference}",
+          "variables": ["reference"]
+        },
+        {
+          "key": "orderCancel.moneyNothing",
+          "fr": "Rien n’a été prélevé : rien ne le sera.",
+          "en": "Nothing has been charged, and nothing will be.",
+          "it": "Non è stato addebitato nulla, e nulla lo sarà.",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.moneyRefund",
+          "fr": "Vous serez remboursé de {amount} sur votre carte.",
+          "en": "You will be refunded {amount} on your card.",
+          "it": "Riceverete un rimborso di {amount} sulla vostra carta.",
+          "variables": ["amount"]
+        },
+        {
+          "key": "orderCancel.moneyAccount",
+          "fr": "Rien ne sera facturé ni prélevé.",
+          "en": "Nothing will be invoiced or charged.",
+          "it": "Nulla sarà fatturato né addebitato.",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.voucherBack",
+          "fr": "Votre bon de fidélité vous sera rendu.",
+          "en": "Your loyalty voucher will be returned to you.",
+          "it": "Il vostro buono fedeltà vi sarà restituito.",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.until",
+          "fr": "Annulation possible jusqu’au {when}.",
+          "en": "You can cancel until {when}.",
+          "it": "Annullamento possibile fino al {when}.",
+          "variables": ["when"]
+        },
+        {
+          "key": "orderCancel.untilPassed",
+          "fr": "L’annulation en ligne était possible jusqu’au {when}.",
+          "en": "Online cancellation was possible until {when}.",
+          "it": "L’annullamento online era possibile fino al {when}.",
+          "variables": ["when"]
+        },
+        {
+          "key": "orderCancel.when",
+          "fr": "{day} à {time}",
+          "en": "{day} at {time}",
+          "it": "{day} alle {time}",
+          "variables": ["day", "time"]
+        },
+        {
+          "key": "orderCancel.reasonLabel",
+          "fr": "Pourquoi annulez-vous ?",
+          "en": "Why are you cancelling?",
+          "it": "Perché annullate?",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.reasonPlaceholder",
+          "fr": "Choisir un motif",
+          "en": "Choose a reason",
+          "it": "Scegliete un motivo",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.reasons.no_longer_needed",
+          "fr": "Je n’en ai plus besoin",
+          "en": "I no longer need it",
+          "it": "Non mi serve più",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.reasons.wrong_date",
+          "fr": "Je me suis trompé de date",
+          "en": "I picked the wrong date",
+          "it": "Ho sbagliato data",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.reasons.wrong_products",
+          "fr": "Je me suis trompé de produits",
+          "en": "I picked the wrong products",
+          "it": "Ho sbagliato prodotti",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.reasons.other",
+          "fr": "Autre",
+          "en": "Other",
+          "it": "Altro",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.reasonText",
+          "fr": "Précisez",
+          "en": "Tell us more",
+          "it": "Precisate",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.reasonTextPlaceholder",
+          "fr": "En quelques mots",
+          "en": "In a few words",
+          "it": "In poche parole",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.confirm",
+          "fr": "Annuler ma commande",
+          "en": "Cancel my order",
+          "it": "Annulla il mio ordine",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.confirming",
+          "fr": "Annulation…",
+          "en": "Cancelling…",
+          "it": "Annullamento…",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.keep",
+          "fr": "Garder ma commande",
+          "en": "Keep my order",
+          "it": "Tengo l’ordine",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.done",
+          "fr": "Commande annulée",
+          "en": "Order cancelled",
+          "it": "Ordine annullato",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.doneSubtitle",
+          "fr": "Un e-mail de confirmation vous a été envoyé.",
+          "en": "A confirmation e-mail has been sent to you.",
+          "it": "Vi abbiamo inviato un’e-mail di conferma.",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.contact",
+          "fr": "Contacter la boutique",
+          "en": "Contact the shop",
+          "it": "Contattare il negozio",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.refusals.already_cancelled",
+          "fr": "Cette commande est déjà annulée.",
+          "en": "This order is already cancelled.",
+          "it": "Questo ordine è già annullato.",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.refusals.in_preparation",
+          "fr": "Votre commande est déjà en préparation : elle ne peut plus être annulée. Contactez-nous si besoin.",
+          "en": "Your order is already being prepared: it can no longer be cancelled. Contact us if needed.",
+          "it": "Il vostro ordine è già in preparazione: non può più essere annullato. Contattateci se necessario.",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.refusals.ready",
+          "fr": "Votre commande est prête : elle ne peut plus être annulée.",
+          "en": "Your order is ready: it can no longer be cancelled.",
+          "it": "Il vostro ordine è pronto: non può più essere annullato.",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.refusals.fulfilled",
+          "fr": "Votre commande a déjà été retirée : elle ne peut plus être annulée.",
+          "en": "Your order has already been collected: it can no longer be cancelled.",
+          "it": "Il vostro ordine è già stato ritirato: non può più essere annullato.",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.refusals.closed",
+          "fr": "L’annulation en ligne n’est pas proposée. Contactez-nous pour annuler cette commande.",
+          "en": "Online cancellation is not offered. Contact us to cancel this order.",
+          "it": "L’annullamento online non è previsto. Contattateci per annullare questo ordine.",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.refusals.too_late",
+          "fr": "Il est trop tard pour annuler en ligne : c’était possible jusqu’au {when}. Contactez-nous.",
+          "en": "It is too late to cancel online: it was possible until {when}. Contact us.",
+          "it": "È troppo tardi per annullare online: era possibile fino al {when}. Contattateci.",
+          "variables": ["when"]
+        },
+        {
+          "key": "orderCancel.refusals.payment_in_progress",
+          "fr": "Un paiement est en cours sur cette commande. Réessayez dans quelques minutes.",
+          "en": "A payment is in progress on this order. Try again in a few minutes.",
+          "it": "Un pagamento è in corso su questo ordine. Riprovate tra qualche minuto.",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.refusals.paid_just_now",
+          "fr": "Votre paiement vient d’aboutir. Rechargez la page pour annuler avec remboursement.",
+          "en": "Your payment has just gone through. Reload the page to cancel with a refund.",
+          "it": "Il vostro pagamento è appena andato a buon fine. Ricaricate la pagina per annullare con rimborso.",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.refusals.not_recorded",
+          "fr": "Nous n’avons pas pu annuler votre commande. Rien n’a été prélevé de plus ; réessayez dans un instant.",
+          "en": "We could not cancel your order. Nothing more has been charged; try again in a moment.",
+          "it": "Non siamo riusciti ad annullare il vostro ordine. Non è stato addebitato altro; riprovate tra un istante.",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.refusals.invoiced",
+          "fr": "Cette commande est déjà facturée : elle ne s’annule plus en ligne. Contactez-nous.",
+          "en": "This order has already been invoiced: it can no longer be cancelled online. Contact us.",
+          "it": "Questo ordine è già fatturato: non si annulla più online. Contattateci.",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.refusals.voucher_reused",
+          "fr": "Le bon utilisé sur cette commande a déjà resservi : contactez-nous pour l’annuler.",
+          "en": "The voucher used on this order has already been used again: contact us to cancel it.",
+          "it": "Il buono usato su questo ordine è già stato riutilizzato: contattateci per annullarlo.",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.refusals.account_required",
+          "fr": "Connectez-vous pour gérer cette commande.",
+          "en": "Sign in to manage this order.",
+          "it": "Accedete per gestire questo ordine.",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.refusals.account_disabled",
+          "fr": "Contactez la boutique pour gérer cette commande.",
+          "en": "Contact the shop to manage this order.",
+          "it": "Contattate il negozio per gestire questo ordine.",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.refusals.not_allowed",
+          "fr": "Cette commande ne peut pas être annulée depuis votre compte.",
+          "en": "This order cannot be cancelled from your account.",
+          "it": "Questo ordine non può essere annullato dal vostro account.",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.refusedFallback",
+          "fr": "La commande n’a pas pu être annulée. Réessayez dans un instant.",
+          "en": "The order could not be cancelled. Try again in a moment.",
+          "it": "L’ordine non ha potuto essere annullato. Riprovate tra un istante.",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.loading",
+          "fr": "Chargement de la commande…",
+          "en": "Loading the order…",
+          "it": "Caricamento dell’ordine…",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.loadFailed",
+          "fr": "La commande n’a pas pu être lue.",
+          "en": "The order could not be loaded.",
+          "it": "Non è stato possibile leggere l’ordine.",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.retry",
+          "fr": "Réessayer",
+          "en": "Try again",
+          "it": "Riprova",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.guestTitle",
+          "fr": "Votre commande",
+          "en": "Your order",
+          "it": "Il vostro ordine",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.guestGreeting",
+          "fr": "Bonjour {name},",
+          "en": "Hello {name},",
+          "it": "Buongiorno {name},",
+          "variables": ["name"]
+        },
+        {
+          "key": "orderCancel.guestLead",
+          "fr": "Voici votre commande. Vous pouvez l’annuler ici si elle ne vous sert plus.",
+          "en": "Here is your order. You can cancel it here if you no longer need it.",
+          "it": "Ecco il vostro ordine. Potete annullarlo qui se non vi serve più.",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.guestLinesHead",
+          "fr": "Articles",
+          "en": "Items",
+          "it": "Articoli",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.guestTotal",
+          "fr": "Total",
+          "en": "Total",
+          "it": "Totale",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.guestDay",
+          "fr": "Jour",
+          "en": "Day",
+          "it": "Giorno",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.guestPickup",
+          "fr": "Retrait · {place}",
+          "en": "Pickup · {place}",
+          "it": "Ritiro · {place}",
+          "variables": ["place"]
+        },
+        {
+          "key": "orderCancel.guestDelivery",
+          "fr": "Livraison · {city}",
+          "en": "Delivery · {city}",
+          "it": "Consegna · {city}",
+          "variables": ["city"]
+        },
+        {
+          "key": "orderCancel.guestPickupNoPlace",
+          "fr": "Retrait",
+          "en": "Pickup",
+          "it": "Ritiro",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.guestDeliveryNoCity",
+          "fr": "Livraison",
+          "en": "Delivery",
+          "it": "Consegna",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.linkNotFoundTitle",
+          "fr": "Ce lien est introuvable ou trop ancien",
+          "en": "This link cannot be found or is too old",
+          "it": "Questo link è introvabile o troppo vecchio",
+          "variables": []
+        },
+        {
+          "key": "orderCancel.linkNotFoundSubtitle",
+          "fr": "Contactez la boutique pour toute question sur votre commande.",
+          "en": "Contact the shop for any question about your order.",
+          "it": "Contattate il negozio per qualsiasi domanda sul vostro ordine.",
+          "variables": []
+        }
+      ],
+      "unrecorded": []
+    },
+    {
       "space": "loyalty",
       "title": "Fidélité",
       "source": "screens/loyalty.copy.ts",

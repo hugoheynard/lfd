@@ -82,6 +82,8 @@ export interface OrderPlacedCopy {
   readonly cta: string;
   /** Ce que le client fait s'il veut changer quelque chose. */
   readonly changeNote: string;
+  /** Lot C6 : le lien « gérer ou annuler ma commande » (invité : la page d'annulation). */
+  readonly manageLink: string;
   readonly footer: string;
 }
 
@@ -230,6 +232,14 @@ export interface OrderCancelledCopy {
   readonly intro: string;
   /** Sans jour de service connu. `{ref}`. */
   readonly introWithoutDay: string;
+  /** Lot C6 : le client a annulé lui-même. `{ref}`, `{day}`. */
+  readonly introBySelf: string;
+  /** Le même, sans jour. `{ref}`. */
+  readonly introBySelfWithoutDay: string;
+  /** Lot C6 : un autre membre de la société a annulé. `{name}`, `{company}`, `{ref}`, `{day}`. */
+  readonly introByMember: string;
+  /** Le même, sans jour. `{name}`, `{company}`, `{ref}`. */
+  readonly introByMemberWithoutDay: string;
   /** Total nul : rien à facturer. */
   readonly nothingBilled: string;
   /** Carte non payée, fermée chez Stripe : rien n'a été prélevé. */

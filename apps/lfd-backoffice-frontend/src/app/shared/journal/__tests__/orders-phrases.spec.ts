@@ -521,4 +521,33 @@ describe('l’annulation par l’équipe (order.cancelled)', () => {
     expect(row(merged, 'Bon de fidélité › Issue')).toBe('Rendu, reliquat refondu dedans');
     expect(row(merged, 'Bon de fidélité › Valeur du reliquat')).toBe('4,50 €');
   });
+
+  const byCustomer = {
+    ...current,
+    payload: {
+      ...current.payload,
+      cancelledBy: null,
+      reason: null,
+      cancelledByKind: 'customer',
+      cancelledByCustomer: { id: 'usr_1', name: 'Jean D.' },
+      reasonCode: 'wrong_date',
+      policy: { hoursBefore: 24 },
+    },
+  };
+
+  it('nomme le client qui a annulé lui-même (lot C6), motif et délai au détail', () => {
+    expect(sentence(byCustomer)).toBe('Jean D. a annulé sa commande ORD-7 — Jean Dupont');
+    expect(renderFact(byCustomer).namesActor).toBe(false);
+    expect(renderFact(byCustomer).unlabelled).toEqual([]);
+    expect(row(byCustomer, 'Motif choisi')).toBe('Mauvaise date');
+  });
+
+  it('dit « un client invité » pour une annulation par le lien du courriel', () => {
+    const guest = {
+      ...byCustomer,
+      payload: { ...byCustomer.payload, cancelledByKind: 'guest', cancelledByCustomer: undefined },
+    };
+
+    expect(sentence(guest)).toBe('Un client invité a annulé sa commande ORD-7 — Jean Dupont');
+  });
 });

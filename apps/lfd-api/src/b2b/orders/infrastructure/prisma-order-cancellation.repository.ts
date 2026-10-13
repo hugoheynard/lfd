@@ -18,8 +18,9 @@ const PAID: readonly PaymentStatus[] = [PaymentStatus.paid, PaymentStatus.refund
  * L'adaptateur de l'annulation staff. Par le client ROUTÉ : dans l'unité de
  * travail du handler, où le guichet du fournil écrit aussi.
  *
- * Pas de mur tenant : la route est staff, et la surface admin voit toutes les
- * commandes.
+ * Pas de mur tenant ICI : la route staff voit toutes les commandes, et
+ * l'annulation par un client (lot C6) applique son mur AVANT d'entrer dans le
+ * noyau (`CancelOrderByCustomerHandler`, C6.2), sur la commande lue par son id.
  */
 @Injectable()
 export class PrismaOrderCancellationRepository extends OrderCancellationRepository {
@@ -50,6 +51,10 @@ export class PrismaOrderCancellationRepository extends OrderCancellationReposito
       cancelledAt: record.cancelledAt,
       cancelledBy: record.cancelledBy,
       cancellationReason: record.reason,
+      // Lot C6 : qui a annulé. Le CHECK de la base tient le reste (S4).
+      cancelledByKind: record.customer?.kind ?? "staff",
+      cancelledByUserId: record.customer?.userId ?? null,
+      cancellationReasonCode: record.customer?.reasonCode ?? null,
     };
     // Deux écritures exclusives par leur `where`, comme `markAbandoned` : le
     // règlement d'une carte non payée tombe aussi (`failed`), le total nul

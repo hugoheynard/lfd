@@ -1,0 +1,50 @@
+:host {
+  display: block;
+  background: var(--fold-color-bg-page);
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xl);
+  /* Pas de rembourrage en haut : la LÈVRE du shell le porte déjà. */
+  padding: 0 var(--lfc-inset) var(--fold-space-4xl);
+}
+
+.order {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.lead {
+  margin: 0;
+  color: var(--fold-color-text-secondary);
+}
+
+.facts {
+  margin: 0;
+}
+
+/* Libellé à gauche, valeur à droite : quantités et total s'alignent. */
+.fact {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-xs) 0;
+  border-top: 1px solid var(--fold-color-border-subtle);
+}
+
+.fact dd {
+  margin: 0;
+  text-align: right;
+}
+
+.total {
+  font-weight: var(--fold-weight-bold);
+}
+
+.line {
+  display: block;
+}

@@ -4,6 +4,7 @@ import { count, optional, recordOf, text as orDash } from '../payload-read';
 import {
   byActor,
   cite,
+  citePerson,
   countOf,
   fromTo,
   inUnit,
@@ -115,11 +116,31 @@ function orderHandedOver(fact: PhraseFact): Said {
  * bon rendu restent au détail (plan `plan-annulation-de-commande.md`, C3.5).
  */
 function orderCancelled(fact: PhraseFact): Said {
+  const kind = fact.payload['cancelledByKind'];
+  if (kind === 'customer' || kind === 'guest') {
+    return customerCancelled(fact, kind);
+  }
   return staffGesture(
     fact,
     'cancelledBy',
     [text(' a annulé la commande '), name(orDash(fact.payload['orderNumber']))],
     ['orderNumber'],
+  );
+}
+
+/**
+ * L'annulation par le CLIENT (lot C6) : « Jean D. a annulé sa commande ORD-7 »,
+ * ou « Un client invité a annulé sa commande ORD-7 ». `cancelledBy` est `null`
+ * dans ce cas ; le motif choisi et le délai appliqué restent au détail.
+ */
+function customerCancelled(fact: PhraseFact, kind: 'customer' | 'guest'): Said {
+  const who =
+    kind === 'guest'
+      ? [text('Un client invité')]
+      : citePerson(fact.payload['cancelledByCustomer'], 'Un client');
+  return said(
+    [...who, text(' a annulé sa commande '), name(orDash(fact.payload['orderNumber']))],
+    ['orderNumber', 'cancelledBy', 'cancelledByKind', 'cancelledByCustomer'],
   );
 }
 

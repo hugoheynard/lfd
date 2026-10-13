@@ -162,6 +162,8 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'b2b/reglages/points-de-retrait/:id': null,
   'b2b/reglages/heures-limites': null,
   'b2b/reglages/ouverture-boutique': null,
+  // L'annulation par les particuliers (C6.5) : le même mur, hérité de l'espace.
+  'b2b/reglages/commandes': null,
   // « Nous écrire » : son propre droit. Répondre aux messages n'est pas
   // régler la vente, et l'inverse non plus (demandes-clients.md, §5.6).
   'b2b/contact': 'b2b_contact:read',

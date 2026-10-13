@@ -143,6 +143,17 @@ export const b2bRoutes: Routes = [
               ),
           },
           {
+            // L'annulation par les particuliers (plan
+            // `plan-annulation-de-commande.md`, C6.5) : même droit que
+            // l'ouverture, `b2b_settings`, porté par l'espace.
+            path: 'commandes',
+            title: 'Commandes — LFC B2B admin',
+            loadComponent: () =>
+              import('./reglages/customer-cancellation-page/customer-cancellation-page').then(
+                (m) => m.CustomerCancellationPage,
+              ),
+          },
+          {
             // Les motifs des demandes, un onglet par type. Droit du contact,
             // pas celui des réglages de vente (demandes-clients.md, §3.4).
             path: 'motifs-des-demandes',

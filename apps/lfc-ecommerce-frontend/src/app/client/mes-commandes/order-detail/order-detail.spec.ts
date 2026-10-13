@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
 import { FR } from '../../copy/fr';
+import { OrderCancellationGateway } from '../../order-cancellation/order-cancellation.gateway';
 import { ROWS } from '../order-rows.fixture';
 import { OrderDetail } from './order-detail';
 
@@ -12,7 +13,17 @@ describe('OrderDetail', () => {
   const stars = (): HTMLButtonElement[] => Array.from(el().querySelectorAll('button.star'));
 
   beforeEach(() => {
-    TestBed.configureTestingModule({ imports: [OrderDetail], providers: [provideRouter([])] });
+    TestBed.configureTestingModule({
+      imports: [OrderDetail],
+      providers: [
+        provideRouter([]),
+        // L'annulation se relit au serveur : ses cas ont leur propre spec.
+        {
+          provide: OrderCancellationGateway,
+          useValue: { cancellability: () => Promise.resolve(null) },
+        },
+      ],
+    });
     fixture = TestBed.createComponent(OrderDetail);
     fixture.componentRef.setInput('order', ROWS[0]);
     fixture.detectChanges();

@@ -156,6 +156,31 @@ model OrderOpening {
   @@schema("public")
 }
 
+/// **Ce que la boutique permet au client d'annuler lui-même** (plan
+/// `documentation/commandes/annulation/plan-annulation-de-commande.md`, lot C6,
+/// C6.5). Une ligne, clé `orders`, posée FERMÉE par la migration ; ligne absente =
+/// fermée aussi. Un pro n'est jamais concerné : seul le fournil lui ferme la
+/// porte. Pas daté : la valeur décide d'un geste au moment où il est fait, et le
+/// fait `order.cancelled` fige le délai appliqué.
+model CustomerCancellationSettings {
+  /// Toujours `orders` : il n'y a qu'un réglage.
+  key String @id
+
+  openToB2c   Boolean @default(false) @map("open_to_b2c")
+  /// Délai avant l'ancre (retrait / livraison), en heures — 0 à 168 (CHECK).
+  hoursBefore Int     @default(24) @map("hours_before")
+
+  /// Instant du dernier geste ; NULL tant que personne n'a rien réglé.
+  updatedAt        DateTime? @map("updated_at")
+  /// Qui l'a posé, figé au geste ; NULL sur la ligne posée par la migration.
+  updatedByStaffId String?   @map("updated_by_staff_id")
+  updatedByName    String?   @map("updated_by_name")
+  updatedByRole    String?   @map("updated_by_role")
+
+  @@map("customer_cancellation_settings")
+  @@schema("public")
+}
+
 /// Le **contenu de plateforme** — les textes de la vitrine, tenus par le staff.
 ///
 /// Ils vivaient compilés dans le bundle du front client, en trois dictionnaires

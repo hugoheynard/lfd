@@ -323,3 +323,17 @@ describe("le courriel « votre commande est prête »", () => {
     expect(renderReady().html).toContain("Le Labo");
   });
 });
+
+/** Lot C6 (C6.4) : « gérer ou annuler » — présent quand l'appelant le donne, absent sinon. */
+describe("customer.order-placed — le lien de gestion (lot C6)", () => {
+  it("pose le lien sous le bouton principal", () => {
+    const html = render({ manageUrl: "https://app.lfc.test/annuler#order_1.sig" }).html;
+    expect(html).toContain("Gérer ou annuler ma commande");
+    expect(html).toContain("https://app.lfc.test/annuler#order_1.sig");
+  });
+
+  it("n'en pose aucun sans URL", () => {
+    expect(render({ manageUrl: "" }).html).not.toContain("Gérer ou annuler");
+    expect(render().html).not.toContain("Gérer ou annuler");
+  });
+});

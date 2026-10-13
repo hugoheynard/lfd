@@ -33,6 +33,11 @@ export const RECORD_ORDER_CANCELLED = "b2b.growth.record-order-cancelled";
  * croissance lit, et aucun score ne lit encore une commande morte
  * (`ACTIVITY_TYPES.orderAbandoned`, vérifié le 2026-10-12).
  *
+ * Lot C6 (C6.6) : le CLIENT peut annuler. `cancelledBy` est alors `null`, et
+ * la charge cite le client (`cancelledByCustomer`, sous son nom du moment) à
+ * la place de la fiche staff, avec le motif choisi et le délai appliqué. Un
+ * fait d'avant C6 se relit `staff` (S8) et se journalise comme avant.
+ *
  * Durable, comme `OnOrderHandedOver` : `record` reste best-effort, la clé
  * d'idempotence garde un seul témoin par commande, rejeu compris.
  */
@@ -48,7 +53,8 @@ export class OnOrderCancelled implements DurableSubscriber {
   async handle(delivery: DurableDelivery): Promise<void> {
     const event = OrderCancelledEvent.fromPayload(delivery.payload);
     const subject = await customerLabel(this.customers, event.placedByUserId);
-    const by = await staffCitation(this.actors, event.cancelledBy);
+    const by =
+      event.cancelledBy === null ? null : await staffCitation(this.actors, event.cancelledBy);
     await this.recorder.record({
       type: ACTIVITY_TYPES.orderCancelled,
       subjectType: "user",
@@ -66,7 +72,28 @@ export class OnOrderCancelled implements DurableSubscriber {
             ? null
             : { ...event.voucher, expiresAt: event.voucher.expiresAt.toISOString() },
         refund: event.refund,
+        ...(await this.customerAuthor(event)),
       },
     });
+  }
+
+  /**
+   * Qui, côté client, a annulé — et ce qu'il a choisi. Rien pour l'équipe :
+   * la charge d'une annulation staff garde exactement sa forme d'avant C6.
+   */
+  private async customerAuthor(event: OrderCancelledEvent): Promise<Record<string, unknown>> {
+    if (event.cancelledByKind === "staff" || event.cancelledByUserId === null) {
+      return {};
+    }
+    const named = await customerLabel(this.customers, event.cancelledByUserId);
+    return {
+      cancelledByKind: event.cancelledByKind,
+      cancelledByCustomer:
+        named.subjectLabel === undefined
+          ? event.cancelledByUserId
+          : { id: event.cancelledByUserId, name: named.subjectLabel },
+      reasonCode: event.reasonCode,
+      policy: event.policy,
+    };
   }
 }

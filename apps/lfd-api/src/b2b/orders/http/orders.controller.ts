@@ -10,6 +10,10 @@ import {
   type OrderQuotePayload,
   type CustomerOrderQuoteView,
   type CustomerOrderView,
+  type CustomerCancelOrderPayload,
+  customerCancelOrderPayloadSchema,
+  type CustomerOrderDetailView,
+  type OrderCancellability,
   type OrderQuoteView,
   toCustomerQuote,
   toCustomerOrder,
@@ -34,10 +38,12 @@ import { CurrentUser } from "../../../platform/auth/current-user.decorator.js";
 import type { Principal } from "../../../platform/auth/principal.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { AbandonOrderCommand } from "../application/commands/abandon-order.command.js";
+import { CancelOrderByCustomerCommand } from "../application/commands/cancel-order-by-customer.command.js";
 import {
   PlaceOrderCommand,
   type PlaceOrderResult,
 } from "../application/commands/place-order.command.js";
+import { GetOrderCancellabilityQuery } from "../application/queries/get-order-cancellability.query.js";
 import { GetOrderPaymentQuery } from "../application/queries/get-order-payment.query.js";
 import { GetOrderQuery } from "../application/queries/get-order.query.js";
 import { GetOrderSheetQuery } from "../application/queries/get-order-sheet.query.js";
@@ -147,12 +153,24 @@ export class OrdersController {
    * `:id` avalerait sinon le mot `mine`.
    *
    * 🔴 **Rétrécie** — cf. {@link OrdersController.mine}.
+   *
+   * Lot C6 (C6.8) : porte aussi `cancellability` — si CE client peut l'annuler
+   * maintenant, ou pourquoi pas. Lue APRÈS la commande : son mur de
+   * visibilité a déjà répondu `404` à un étranger.
    */
   @Get(":id")
-  async one(@CurrentUser() user: Principal, @Param("id") id: string): Promise<CustomerOrderView> {
-    return toCustomerOrder(
+  async one(
+    @CurrentUser() user: Principal,
+    @Param("id") id: string,
+  ): Promise<CustomerOrderDetailView> {
+    const order: CustomerOrderView = toCustomerOrder(
       await this.queries.execute<GetOrderQuery, OrderView>(new GetOrderQuery(user.userId, id)),
     );
+    const cancellability = await this.queries.execute<
+      GetOrderCancellabilityQuery,
+      OrderCancellability
+    >(new GetOrderCancellabilityQuery(user.userId, id));
+    return { ...order, cancellability };
   }
 
   /**
@@ -231,6 +249,29 @@ export class OrdersController {
   async abandon(@CurrentUser() user: Principal, @Param("id") id: string): Promise<void> {
     await this.commands.execute<AbandonOrderCommand, void>(
       new AbandonOrderCommand(user.userId, id),
+    );
+  }
+
+  /**
+   * **Annuler sa commande** (plan
+   * `documentation/commandes/annulation/plan-annulation-de-commande.md`, lot C6,
+   * C6.6). Corps `{ reasonCode?, reasonText? }` — le motif est facultatif.
+   *
+   * Le mur se lit sur la société DE LA COMMANDE : son auteur pour une commande
+   * personnelle, un rattachement ACCEPTÉ sur une société `active` pour une
+   * commande pro. Hors mur : `404`, jamais `403`. `204` : la commande se
+   * relit (`GET :id`). Les refus sont des `409` `orders.customer_cancel.*`
+   * qui portent leur phrase client ; un motif hors liste ou trop long, `400`.
+   */
+  @Post(":id/cancel")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async cancel(
+    @CurrentUser() user: Principal,
+    @Param("id") id: string,
+    @Body(new ZodBody(customerCancelOrderPayloadSchema)) payload: CustomerCancelOrderPayload,
+  ): Promise<void> {
+    await this.commands.execute<CancelOrderByCustomerCommand, void>(
+      new CancelOrderByCustomerCommand(user.userId, id, payload.reasonCode, payload.reasonText),
     );
   }
 }

@@ -293,6 +293,19 @@ export const routes: Routes = [
           import('./client/mes-commandes/retrait-page/retrait-page').then((m) => m.RetraitPage),
       },
       {
+        // L'ANNULATION DE L'INVITÉ (plan `plan-annulation-de-commande.md`,
+        // C6.4) : le lien de son courriel de confirmation. Sans garde — un
+        // invité n'a pas de compte. Le jeton est dans le FRAGMENT
+        // (`/annuler#<id>.<jeton>`), jamais dans le chemin : le serveur ne le
+        // voit pas, et la page ne l'envoie que dans le corps d'un `POST`.
+        path: 'annuler',
+        title: 'Votre commande — La Folie Coffee',
+        loadComponent: () =>
+          import('./client/order-cancellation/guest-cancel-page/guest-cancel-page').then(
+            (m) => m.GuestCancelPage,
+          ),
+      },
+      {
         path: 'confirmation-de-commande',
         title: 'Commande confirmée — La Folie Coffee',
         loadComponent: () =>

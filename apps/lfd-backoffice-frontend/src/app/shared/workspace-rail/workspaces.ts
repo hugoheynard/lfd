@@ -657,6 +657,15 @@ export const B2B_VIEWS: readonly WorkspaceView[] = [
     icon: 'store',
     section: 'Réglages',
   },
+  // Ce que le client peut faire d'une commande passée : l'annuler lui-même
+  // (plan `plan-annulation-de-commande.md`, C6.5). Même droit, `b2b_settings`.
+  {
+    key: 'commandes',
+    label: 'Commandes',
+    link: '/b2b/reglages/commandes',
+    icon: 'shopping-cart',
+    section: 'Réglages',
+  },
   // La carte de contact (surtitre, titre, phrase, numéros) : son propre droit,
   // `b2b_contact`. Ses objets et sa messagerie sont devenus les deux entrées
   // des demandes clients (demandes-clients.md, §3.5).

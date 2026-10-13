@@ -16,13 +16,13 @@ export class PrismaOrderRecipientReader extends OrderRecipientReader {
   async findById(userId: string): Promise<OrderRecipient | null> {
     const row = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { email: true, firstName: true },
+      select: { email: true, firstName: true, lastName: true },
     });
     // Une adresse vide n'est pas une adresse : la traiter comme telle ferait
     // partir un envoi voué au refus, et compterait comme un e-mail « envoyé ».
     if (row === null || row.email.trim() === "") {
       return null;
     }
-    return { email: row.email, firstName: row.firstName };
+    return { email: row.email, firstName: row.firstName, lastName: row.lastName };
   }
 }

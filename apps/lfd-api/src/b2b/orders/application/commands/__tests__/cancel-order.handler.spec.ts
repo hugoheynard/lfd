@@ -21,6 +21,7 @@ import type { AccountEngagement } from "../../../domain/ports/account-order-enga
 import type { CancellationSubject } from "../../../domain/ports/cancellation-subject.reader.js";
 import { CancelOrderCommand } from "../cancel-order.command.js";
 import { CancelOrderHandler } from "../cancel-order.handler.js";
+import { OrderCancellation } from "../../services/order-cancellation.service.js";
 import {
   cancellationSubject,
   FixedInscriptions,
@@ -78,18 +79,20 @@ function scene(options: Scene = {}) {
   const refundStore = new RefundStore();
   const dispatch = new RecordingDispatch();
   const handler = new CancelOrderHandler(
-    subjects,
-    rows,
-    gateway,
-    new ScriptedDesk(options.desk ?? "withdrawn", trace),
-    vouchers,
-    new VoucherRestitutionRefusal(subjects, new FixedInscriptions(), rule),
-    rule,
-    engagements,
-    new CancellationRefundRequester(new InMemoryRefundRequests(refundStore), dispatch),
-    durable,
-    new DirectUnitOfWork(),
-    new FixedClock(NOW),
+    new OrderCancellation(
+      subjects,
+      rows,
+      gateway,
+      new ScriptedDesk(options.desk ?? "withdrawn", trace),
+      vouchers,
+      new VoucherRestitutionRefusal(subjects, new FixedInscriptions(), rule),
+      rule,
+      engagements,
+      new CancellationRefundRequester(new InMemoryRefundRequests(refundStore), dispatch),
+      durable,
+      new DirectUnitOfWork(),
+      new FixedClock(NOW),
+    ),
   );
   return { handler, trace, rows, gateway, vouchers, durable, engagements, refundStore, dispatch };
 }
@@ -383,25 +386,27 @@ describe("CancelOrderHandler — les refus", () => {
 
   it("404 sur une commande inconnue", async () => {
     const handler = new CancelOrderHandler(
-      new FixedSubjects(null),
-      new InMemoryCancellations(null),
-      new ScriptedCancelGateway({ kind: "cancelled" }),
-      new ScriptedDesk(),
-      new RecordingRedemption(),
-      new VoucherRestitutionRefusal(
+      new OrderCancellation(
         new FixedSubjects(null),
-        new FixedInscriptions(),
+        new InMemoryCancellations(null),
+        new ScriptedCancelGateway({ kind: "cancelled" }),
+        new ScriptedDesk(),
+        new RecordingRedemption(),
+        new VoucherRestitutionRefusal(
+          new FixedSubjects(null),
+          new FixedInscriptions(),
+          new CancellationRule(new ScriptedEngagements()),
+        ),
         new CancellationRule(new ScriptedEngagements()),
+        new ScriptedEngagements(),
+        new CancellationRefundRequester(
+          new InMemoryRefundRequests(new RefundStore()),
+          new RecordingDispatch(),
+        ),
+        new RecordingDurable(),
+        new DirectUnitOfWork(),
+        new FixedClock(NOW),
       ),
-      new CancellationRule(new ScriptedEngagements()),
-      new ScriptedEngagements(),
-      new CancellationRefundRequester(
-        new InMemoryRefundRequests(new RefundStore()),
-        new RecordingDispatch(),
-      ),
-      new RecordingDurable(),
-      new DirectUnitOfWork(),
-      new FixedClock(NOW),
     );
 
     await expect(handler.execute(cancel())).rejects.toBeInstanceOf(OrderNotFoundError);

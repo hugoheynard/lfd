@@ -1,0 +1,87 @@
+<ng-template clientBanner>
+  <app-client-banner-block titleAlign="start" [title]="c().guestTitle" [lead]="greeting()" />
+</ng-template>
+
+<div class="page">
+  @switch (state().kind) {
+    @case ('loading') {
+      <fold-loading [message]="c().loading" />
+    }
+    @case ('failed') {
+      <fold-empty-state tone="alert" [title]="c().loadFailed">
+        <button foldButton type="button" (click)="load()">{{ c().retry }}</button>
+      </fold-empty-state>
+    }
+    @case ('not_found') {
+      <!-- Lien faux, inconnu ou trop ancien : la même réponse, sans rien de la commande. -->
+      <fold-empty-state
+        data-not-found
+        [title]="c().linkNotFoundTitle"
+        [subtitle]="c().linkNotFoundSubtitle"
+      >
+        <fold-icon empty-icon name="mail" />
+        <button foldButton type="button" (click)="contact()">{{ c().contact }}</button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      @if (view(); as order) {
+        @if (done()) {
+          <fold-callout variant="success" announce data-done>
+            <span class="line">{{ c().done }}</span>
+            <span class="line">{{ c().doneSubtitle }}</span>
+          </fold-callout>
+        }
+
+        <fold-card>
+          <fold-element-title
+            cardHeader
+            variant="title"
+            [title]="order.orderNumber"
+            [subtitle]="mode()"
+          />
+          <div class="order">
+            <p class="lead">{{ c().guestLead }}</p>
+            <dl class="facts">
+              @if (day(); as when) {
+                <div class="fact">
+                  <dt>{{ c().guestDay }}</dt>
+                  <dd>{{ when }}</dd>
+                </div>
+              }
+              @for (line of order.lines; track $index) {
+                <div class="fact">
+                  <dt>{{ line.name }}</dt>
+                  <dd>× {{ line.quantity }}</dd>
+                </div>
+              }
+              <div class="fact total">
+                <dt>{{ c().guestTotal }}</dt>
+                <dd>{{ total() }}</dd>
+              </div>
+            </dl>
+          </div>
+        </fold-card>
+
+        @if (cancellable(); as state) {
+          <fold-card>
+            <fold-element-title cardHeader variant="title" [title]="c().title" />
+            <app-cancel-order-form
+              [state]="state"
+              [busy]="busy()"
+              [refusal]="refusal()"
+              (confirmed)="confirm($event)"
+              (kept)="keep()"
+            />
+          </fold-card>
+        } @else if (!done() && reason(); as said) {
+          <fold-callout variant="neutral" data-reason>
+            {{ said }}
+            <button actions foldButton size="sm" type="button" (click)="contact()">
+              {{ c().contact }}
+            </button>
+          </fold-callout>
+        }
+      }
+    }
+  }
+</div>

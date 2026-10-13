@@ -416,7 +416,9 @@ model User {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   memberships      Membership[]
-  ordersPlaced     Order[]
+  ordersPlaced     Order[] @relation("OrderPlacedBy")
+  /// Les commandes que ce client a ANNULÉES lui-même (lot C6) — l'auteur, ou un membre.
+  ordersCancelled  Order[] @relation("OrderCancelledByUser")
   subscriptions    Subscription[]
   supportRequests  SupportRequest[]
   // Un panier par espace de travail : le perso, puis un par société.

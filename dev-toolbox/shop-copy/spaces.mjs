@@ -92,6 +92,13 @@ export const OTHER_SPACES = [
   { kind: "dictionary", space: "nav", title: "La navigation" },
   { kind: "dictionary", space: "aside", title: "La colonne d’accompagnement" },
   { kind: "dictionary", space: "orders", title: "Mes commandes", file: "screens/orders.copy.ts" },
+  {
+    kind: "screen",
+    space: "orderCancel",
+    title: "Annuler une commande — Mes commandes et la page invité",
+    file: "screens/order-cancel.copy.ts",
+    fn: "orderCancelCopy",
+  },
   { kind: "dictionary", space: "loyalty", title: "Fidélité", file: "screens/loyalty.copy.ts" },
   {
     kind: "dictionary",

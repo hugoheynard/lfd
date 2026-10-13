@@ -9,6 +9,7 @@ import { OrderReader } from "../../domain/ports/order.reader.js";
 import { handoverUrlOf } from "../../domain/services/handover-url.js";
 import { clientSheetOf } from "../../domain/services/order-sheet.js";
 import { OrderSheetAttachment } from "./order-sheet-attachment.service.js";
+import { OrderManageLink } from "./order-manage-link.js";
 
 /**
  * **« Votre commande est enregistrée »** — l'accusé de réception, et le seul
@@ -49,6 +50,7 @@ export class OrderPlacedMail {
     private readonly recipients: OrderRecipientReader,
     private readonly origins: OrderMailOrigins,
     private readonly attachment: OrderSheetAttachment,
+    private readonly manageLink: OrderManageLink,
     @Inject(MAILER) private readonly mailer: B2bMailer,
   ) {}
 
@@ -89,6 +91,9 @@ export class OrderPlacedMail {
         // Vide quand l'origine n'est pas configurée : le gabarit omet alors le
         // bouton plutôt que de poser un lien relatif, inerte dans une boîte mail.
         orderUrl: client === null ? "" : `${client}/mes-commandes`,
+        // Lot C6 : « gérer ou annuler » — la page d'annulation pour un invité,
+        // la liste pour un compte (C6.4).
+        manageUrl: await this.manageLink.urlFor(orderId, client),
         // Le QR encode une URL du BACK-OFFICE : c'est l'équipe qui le scanne,
         // pas le client. Sans origine admin, pas de QR — un code qui n'ouvre
         // rien vaut moins qu'un numéro de commande lisible.

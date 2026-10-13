@@ -69,6 +69,19 @@ export class ClientOrderHistory {
   }
 
   /**
+   * Relit la liste de l'espace courant — après un geste qui change une
+   * commande (une annulation) : le suivi et l'historique se recalculent dessus.
+   */
+  reload(): void {
+    const current = this.workspace.current();
+    if (!this.auth.isAuthenticated() || current === null) {
+      return;
+    }
+    this.loadedFor = current;
+    void this.load(current, this.workspace.company()?.id ?? null);
+  }
+
+  /**
    * **Une** commande, relue au serveur.
    *
    * Une lecture propre plutôt qu'une pioche dans la liste déjà chargée : un lien

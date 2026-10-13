@@ -1,11 +1,27 @@
+import type { CustomerCancellationReasonCode } from "@lfd/contracts";
+
 import type { CancellationSubject } from "./cancellation-subject.reader.js";
 
-/** Ce que l'annulation écrit, avec le statut, dans la même écriture (C3.5). */
+/**
+ * Ce que l'annulation écrit, avec le statut, dans la même écriture (C3.5).
+ *
+ * Lot C6 : sans `customer`, c'est l'équipe (`cancelled_by_kind = staff`) ;
+ * avec, un client — `cancelledBy` est alors `null` (la colonne ne porte
+ * QUE des fiches staff), et le motif peut l'être.
+ */
 export interface CancellationRecord {
-  /** L'id de la FICHE staff — jamais un `sub`. */
-  readonly cancelledBy: string;
-  readonly reason: string;
+  /** L'id de la FICHE staff — jamais un `sub` ; `null` pour un client. */
+  readonly cancelledBy: string | null;
+  readonly reason: string | null;
   readonly cancelledAt: Date;
+  readonly customer?: CustomerCancellationStamp;
+}
+
+/** L'auteur client d'une annulation, et son motif choisi (lot C6, C6.6). */
+export interface CustomerCancellationStamp {
+  readonly kind: "customer" | "guest";
+  readonly userId: string;
+  readonly reasonCode: CustomerCancellationReasonCode | null;
 }
 
 /**

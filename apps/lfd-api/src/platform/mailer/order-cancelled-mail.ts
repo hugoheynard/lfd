@@ -38,6 +38,16 @@ export interface OrderCancelledMailData {
     /** Instant ISO 8601 : la date limite d'origine du bon. */
     readonly expiresAt: string;
   } | null;
+  /**
+   * Lot C6 (C6.9) : qui a annulé, pour la phrase d'ouverture. Absent ou
+   * `team` : « annulée par notre équipe », comme avant C6. `self` : le client
+   * lui-même (ou l'invité). `member` : un autre membre de la société — son
+   * nom (« Prénom N. ») et la société. Le motif n'y figure jamais.
+   */
+  readonly author?:
+    | { readonly kind: "team" }
+    | { readonly kind: "self" }
+    | { readonly kind: "member"; readonly name: string; readonly company: string };
   readonly locale: ContentLocale;
 }
 
@@ -77,10 +87,34 @@ const MONEY_SENTENCE: Readonly<
 function bodyOf(data: OrderCancelledMailData, copy: OrderCancelledCopy): string {
   const ref = data.sheet.reference;
   const day = dayInWords(data.sheet.requestedFor, data.locale);
-  const intro = day === null ? fill(copy.introWithoutDay, { ref }) : fill(copy.intro, { ref, day });
+  const intro = introOf(data, copy, ref, day);
   const money = MONEY_SENTENCE[data.regime](copy, data);
   const voucher = voucherSentenceOf(data, copy);
   return `${intro}\n\n${money}${voucher === null ? "" : `\n\n${voucher}`}`;
+}
+
+/** La phrase d'ouverture, selon qui a annulé (C6.9). */
+function introOf(
+  data: OrderCancelledMailData,
+  copy: OrderCancelledCopy,
+  ref: string,
+  day: string | null,
+): string {
+  const author = data.author ?? { kind: "team" };
+  switch (author.kind) {
+    case "team":
+      return day === null ? fill(copy.introWithoutDay, { ref }) : fill(copy.intro, { ref, day });
+    case "self":
+      return day === null
+        ? fill(copy.introBySelfWithoutDay, { ref })
+        : fill(copy.introBySelf, { ref, day });
+    case "member": {
+      const who = { name: author.name, company: author.company, ref };
+      return day === null
+        ? fill(copy.introByMemberWithoutDay, who)
+        : fill(copy.introByMember, { ...who, day });
+    }
+  }
 }
 
 function voucherSentenceOf(data: OrderCancelledMailData, copy: OrderCancelledCopy): string | null {

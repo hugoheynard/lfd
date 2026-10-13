@@ -33,6 +33,7 @@ export const MAIL_EN: MailCopy = {
     qrLine: "Show this code at the counter. The team's scan is what records the handover.",
     cta: "View my order",
     changeNote: "Need a change? Call the bakehouse — a placed order goes straight into production.",
+    manageLink: "Manage or cancel my order",
     footer: "Le Labo · route de la Balme, Val d'Isère — 7 am – 7 pm",
   },
   orderReady: {
@@ -89,6 +90,10 @@ export const MAIL_EN: MailCopy = {
     title: "Your order has been cancelled.",
     intro: "Your order {ref} for {day} has been cancelled by our team.",
     introWithoutDay: "Your order {ref} has been cancelled by our team.",
+    introBySelf: "You cancelled your order {ref} for {day}.",
+    introBySelfWithoutDay: "You cancelled your order {ref}.",
+    introByMember: "{name} cancelled order {ref} for {company}, due {day}.",
+    introByMemberWithoutDay: "{name} cancelled order {ref} for {company}.",
     nothingBilled: "You will not be charged anything for this order.",
     nothingCharged: "No payment has been taken.",
     nothingInvoiced: "Nothing will be invoiced or debited for this order.",

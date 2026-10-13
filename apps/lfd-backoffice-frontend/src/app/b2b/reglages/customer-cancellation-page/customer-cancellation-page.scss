@@ -1,0 +1,17 @@
+// Le réglage de haut en bas : l'interrupteur, le délai, ce qu'il veut dire.
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.help {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--fold-space-sm);
+}

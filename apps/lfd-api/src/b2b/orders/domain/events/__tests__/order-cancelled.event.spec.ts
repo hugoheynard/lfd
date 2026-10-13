@@ -82,3 +82,77 @@ describe("OrderCancelledEvent — aller-retour du fait durable", () => {
     },
   );
 });
+
+/**
+ * Lot C6 (C6.6, S8) : le client peut annuler, et les faits déjà au journal
+ * durable — écrits AVANT C6 — doivent se relire tels quels, comme l'équipe.
+ */
+describe("OrderCancelledEvent — l'auteur client (lot C6)", () => {
+  /** Un `order.cancelled` sérialisé AVANT C6, tel que la boîte d'envoi le garde. */
+  const BEFORE_C6 = {
+    orderId: "o1",
+    orderNumber: "CMD-1",
+    placedByUserId: "usr_1",
+    cancelledBy: "staff_1",
+    reason: "Le client a appelé",
+    regime: "due",
+    voucher: null,
+    refund: null,
+  };
+
+  it("S8 : un fait d'avant C6 se relit comme une annulation de l'équipe", () => {
+    const event = OrderCancelledEvent.fromPayload(BEFORE_C6);
+
+    expect(event.cancelledByKind).toBe("staff");
+    expect(event.cancelledBy).toBe("staff_1");
+    expect(event.cancelledByUserId).toBeNull();
+    expect(event.reasonCode).toBeNull();
+    expect(event.policy).toBeNull();
+  });
+
+  it("un client, sans motif : l'aller-retour garde l'auteur, le code et le délai", () => {
+    const event = new OrderCancelledEvent(
+      "o1",
+      "CMD-1",
+      "usr_1",
+      null,
+      null,
+      "due",
+      null,
+      null,
+      "customer",
+      "usr_2",
+      "wrong_date",
+      { hoursBefore: 24 },
+    );
+
+    expect(OrderCancelledEvent.fromPayload(event.durableFact().payload)).toEqual(event);
+  });
+
+  it("un invité fait l'aller-retour", () => {
+    const event = new OrderCancelledEvent(
+      "o1",
+      "CMD-1",
+      "usr_1",
+      null,
+      "Plus besoin",
+      "free",
+      null,
+      null,
+      "guest",
+      "usr_1",
+    );
+
+    expect(OrderCancelledEvent.fromPayload(event.durableFact().payload)).toEqual(event);
+  });
+
+  it.each([
+    ["l'équipe sans fiche", { ...BEFORE_C6, cancelledBy: null }],
+    ["l'équipe sans motif", { ...BEFORE_C6, reason: null }],
+    ["un client sans fiche client", { ...BEFORE_C6, cancelledByKind: "customer" }],
+    ["un auteur inconnu", { ...BEFORE_C6, cancelledByKind: "robot", cancelledByUserId: "u" }],
+    ["un code hors liste", { ...BEFORE_C6, reasonCode: "caprice" }],
+  ])("%s est un fait hors forme", (_label, payload) => {
+    expect(() => OrderCancelledEvent.fromPayload(payload)).toThrow(OrderSettlementPayloadError);
+  });
+});

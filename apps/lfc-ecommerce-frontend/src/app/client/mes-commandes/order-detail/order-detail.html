@@ -66,6 +66,13 @@
   <button foldButton block size="sm" emphasis="soft" type="button">
     {{ t().orders.reorder }}
   </button>
+  <!-- L'annulation par le client (C6.8) : le bouton quand elle est possible,
+       sinon pourquoi — relue au serveur à l'ouverture du tiroir. -->
+  <app-order-cancel-section
+    [orderId]="order().id"
+    [reference]="order().reference"
+    (cancelled)="cancelled.emit()"
+  />
   <!-- Seulement sur une commande retirée ou livrée : avant, il n'y a rien à signaler. -->
   @if (reportable()) {
     <button

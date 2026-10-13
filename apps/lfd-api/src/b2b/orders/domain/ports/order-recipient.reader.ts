@@ -12,6 +12,12 @@
 export interface OrderRecipient {
   readonly email: string;
   readonly firstName: string;
+  /**
+   * Lot C6 (C6.9) : de quoi écrire « Prénom N. » quand un membre annule la
+   * commande d'un autre. Facultatif : un lecteur qui ne le donne pas laisse
+   * la phrase au seul prénom.
+   */
+  readonly lastName?: string;
 }
 
 export abstract class OrderRecipientReader {

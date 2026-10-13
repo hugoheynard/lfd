@@ -1,0 +1,61 @@
+<!-- L'argent d'abord : c'est ce qu'on veut savoir avant de confirmer. -->
+<fold-callout variant="info">
+  <span class="sentence" data-money>{{ money() }}</span>
+  @if (state().voucherReturned) {
+    <span class="sentence" data-voucher>{{ c().voucherBack }}</span>
+  }
+  @if (until(); as said) {
+    <span class="sentence" data-until>{{ said }}</span>
+  }
+</fold-callout>
+
+<!-- Un refus du serveur reste ici, la confirmation ouverte : c'est ici qu'on décide. -->
+@if (refusal(); as said) {
+  <fold-callout variant="alert" announce data-refusal>{{ said }}</fold-callout>
+}
+
+<fold-listbox
+  [label]="c().reasonLabel"
+  [placeholder]="c().reasonPlaceholder"
+  [optional]="true"
+  [options]="reasonOptions()"
+  [value]="reasonCode()"
+  [disabled]="busy()"
+  (valueChange)="reasonCode.set($event)"
+/>
+
+@if (other()) {
+  <fold-textarea
+    [label]="c().reasonText"
+    [placeholder]="c().reasonTextPlaceholder"
+    [optional]="true"
+    [rows]="3"
+    [value]="reasonText()"
+    [disabled]="busy()"
+    (valueChange)="setText($event)"
+  />
+}
+
+<div class="acts">
+  <button
+    foldButton
+    emphasis="outline"
+    intent="neutral"
+    type="button"
+    data-keep
+    [disabled]="busy()"
+    (click)="kept.emit()"
+  >
+    {{ c().keep }}
+  </button>
+  <button
+    foldButton
+    intent="danger"
+    type="button"
+    data-confirm
+    [disabled]="busy()"
+    (click)="confirm()"
+  >
+    {{ busy() ? c().confirming : c().confirm }}
+  </button>
+</div>

@@ -15,6 +15,11 @@ import { OrderReader, type OwnedOrder } from "../../../domain/ports/order.reader
 import { OrderSheetLogoSource } from "../../../domain/ports/order-sheet-logo.source.js";
 import { MissingLogo, sheetAttachment } from "../../services/__tests__/order-sheet-doubles.js";
 import { SendOrderPlacedMail } from "../send-order-placed-mail.handler.js";
+import { OrderManageLink } from "../../services/order-manage-link.js";
+import {
+  FixedCustomerSubjects,
+  ReadableSigner,
+} from "../../commands/__tests__/customer-cancellation-doubles.js";
 
 /**
  * Ce qui compte ici n'est pas qu'un e-mail parte — c'est **ce qu'il emporte**,
@@ -211,6 +216,8 @@ function handler(options: {
       ...(options.logo === undefined ? {} : { logo: options.logo }),
       admin: options.admin === undefined ? "https://admin.lfc.test" : options.admin,
     }),
+    // Lot C6 : aucune fiche lisible ici → le lien de compte, sans secret.
+    new OrderManageLink(new FixedCustomerSubjects(null), new ReadableSigner()),
     mailer,
   );
   return { run, mailer };

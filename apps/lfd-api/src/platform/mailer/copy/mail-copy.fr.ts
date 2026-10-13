@@ -35,6 +35,7 @@ export const MAIL_FR: MailCopy = {
     qrLine: "Présentez ce code au comptoir. C'est le scan de l'équipe qui atteste la remise.",
     cta: "Voir ma commande",
     changeNote: "Un changement ? Appelez le fournil — une commande passée entre en fabrication.",
+    manageLink: "Gérer ou annuler ma commande",
     footer: "Le Labo · route de la Balme, Val d'Isère — 7 h – 19 h",
   },
   orderReady: {
@@ -93,6 +94,10 @@ export const MAIL_FR: MailCopy = {
     title: "Votre commande a été annulée.",
     intro: "Votre commande {ref} pour le {day} a été annulée par notre équipe.",
     introWithoutDay: "Votre commande {ref} a été annulée par notre équipe.",
+    introBySelf: "Vous avez annulé votre commande {ref} pour le {day}.",
+    introBySelfWithoutDay: "Vous avez annulé votre commande {ref}.",
+    introByMember: "{name} a annulé la commande {ref} de {company} pour le {day}.",
+    introByMemberWithoutDay: "{name} a annulé la commande {ref} de {company}.",
     nothingBilled: "Rien ne vous sera facturé pour cette commande.",
     nothingCharged: "Aucun paiement n'a été prélevé.",
     nothingInvoiced: "Rien ne sera facturé ni prélevé pour cette commande.",

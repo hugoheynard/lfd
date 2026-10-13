@@ -34,6 +34,7 @@ export const MAIL_IT: MailCopy = {
     cta: "Vedere il mio ordine",
     changeNote:
       "Un cambiamento? Chiami il laboratorio — un ordine effettuato entra subito in produzione.",
+    manageLink: "Gestire o annullare il mio ordine",
     footer: "Le Labo · route de la Balme, Val d'Isère — 7 – 19",
   },
   orderReady: {
@@ -88,6 +89,10 @@ export const MAIL_IT: MailCopy = {
     title: "Il suo ordine è stato annullato.",
     intro: "Il suo ordine {ref} per {day} è stato annullato dal nostro team.",
     introWithoutDay: "Il suo ordine {ref} è stato annullato dal nostro team.",
+    introBySelf: "Ha annullato il suo ordine {ref} per {day}.",
+    introBySelfWithoutDay: "Ha annullato il suo ordine {ref}.",
+    introByMember: "{name} ha annullato l'ordine {ref} di {company} per {day}.",
+    introByMemberWithoutDay: "{name} ha annullato l'ordine {ref} di {company}.",
     nothingBilled: "Non le verrà addebitato nulla per questo ordine.",
     nothingCharged: "Nessun pagamento è stato prelevato.",
     nothingInvoiced: "Per questo ordine non verrà fatturato né addebitato nulla.",

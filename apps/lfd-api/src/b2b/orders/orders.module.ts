@@ -39,6 +39,11 @@ import { PrismaUnsettledShopOrderCanceller } from "./infrastructure/prisma-unset
 import { CancelledOrderPaymentReader } from "./domain/ports/cancelled-order-payment.reader.js";
 import { PrismaCancelledOrderPaymentReader } from "./infrastructure/prisma-cancelled-order-payment.reader.js";
 import { ORDER_REFUND_CONTROLLERS, ORDER_REFUND_PROVIDERS } from "./order-refund.providers.js";
+import {
+  CUSTOMER_CANCELLATION_CONTROLLERS,
+  CUSTOMER_CANCELLATION_PROVIDERS,
+} from "./customer-cancellation.providers.js";
+import { OrderCancellation } from "./application/services/order-cancellation.service.js";
 import { RecordOrderRefundHandler } from "./application/commands/record-order-refund.handler.js";
 import { RingRefundRejected } from "./application/handlers/ring-refund-rejected.handler.js";
 import { OrderRefundRepository } from "./domain/ports/order-refund.repository.js";
@@ -205,6 +210,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
   ],
   controllers: [
     ...ORDER_REFUND_CONTROLLERS,
+    ...CUSTOMER_CANCELLATION_CONTROLLERS,
     OrdersController,
     MyShopCatalogueController,
     MyShopQuoteController,
@@ -253,6 +259,9 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // C3) : le geste, son courriel, et ses deux ports — lire et écrire (ISP).
     // Le guichet du fournil vient de `ProductionDeskFeedModule`.
     CancelOrderHandler,
+    // Lot C6 : le noyau, extrait du geste staff, partagé avec le client.
+    OrderCancellation,
+    ...CUSTOMER_CANCELLATION_PROVIDERS,
     VoucherRestitutionRefusal,
     // Lot C5 : la règle d'annulation et l'engagement comptable — le port est
     // relié par `appBootstrap/account-order-engagement.module.ts`.
