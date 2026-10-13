@@ -488,6 +488,25 @@ des sites lit et écrit sous `lfc_site_settings`.
 > dans le bloc livraison : ni `DeliveryOrderFacts`, ni `departed_at`, ni
 > `RecordRoundDeparted`, ni le courriel « en route ».
 
+### 4.0 Deux précisions de Hugo (2026-10-13)
+
+- **Autant de transferts que nécessaire par jour.** Il n'y a pas de règle
+  « un transfert par site et par jour », ni « un seul ouvert » : un site peut
+  recevoir plusieurs transferts dans la journée (le matin pour l'ouverture,
+  un second l'après-midi, un de rattrapage pour une commande du jour même).
+  Partout où ce plan écrit « un par site et par jour » ou « un seul
+  `planned` », lire : **chaque transfert porte les commandes dont l'heure
+  requise il tient** ; une commande rejoint le transfert `planned` du site
+  qui part à temps pour son créneau, et s'il n'y en a aucun, l'app en ouvre
+  un. Le regroupement (combien, à quelle heure) se décide au lot T1 — c'est
+  une question de composition, pas un invariant d'unicité.
+- **« Approvisionné depuis… »** : un site servi par transfert porte le site
+  qui l'approvisionne (`supplied_from_site_id`, référence au site, qui doit
+  avoir le rôle Livraison). Aujourd'hui il n'y a qu'un site qui livre et la
+  valeur se déduit ; le champ est **écrit au plan, pas bâti** — il le sera
+  quand un second site livrera (Q-S4). Le trajet du transfert part de ce
+  site.
+
 ### 4.1 Ce que c'est
 
 Un **transfert interne** est, pour un site servi par `transfer` et un jour de
