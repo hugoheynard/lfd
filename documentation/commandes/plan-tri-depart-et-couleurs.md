@@ -43,6 +43,39 @@
 - les couleurs étant libres, la pastille choisit son texte clair ou sombre
   par contraste (luminance), sans quoi un jaune saisi serait illisible.
 
+**Après la contradiction de `vitruve` (2026-10-13, nuit) — Hugo : « fais un
+maximum de choses » :**
+
+- **Pas de couleur sur le bon de commande** : il est figé à la passation,
+  archivé et envoyé au client, sans version staff
+  (`order-sheet-archive.service.ts`) — y mettre le code couleur interne le
+  donnerait au client et le gèlerait ;
+- **papier** : étiquette de bac (HTML imprimé par le front, donc L1b) = un
+  carré dans le coin opposé au code ; feuille de tournée = un carré en tête de
+  **chaque arrêt** (une tournée mélange plusieurs catégories) ; feuille de
+  route du retrait = le carré après les dates, en symétrie du logo, si elle en
+  a un ;
+- **colisage** (Hugo) : les lignes de la colonne commande sont regroupées dans
+  un cadre par catégorie — et par tranche horaire s'il y en a plusieurs —
+  bordé à gauche et en haut de la couleur, son titre écrit dans la bordure
+  haute (« Transfert Val Village », « Livraison pro »…), lisible de loin ;
+- la copie du colisage porte **déjà** `clientele` (`packing.prisma`, depuis le
+  2026-10-06) : L1a n'y ajoute que `site_id` ; les lignes tirées avant le
+  déploiement n'en auront jamais (`createMany … skipDuplicates`) et restent
+  en teinte neutre — accepté en pré-release ;
+- **catégorie sans site** : retrait sans `siteId` (d'avant S2) ou
+  `clientele = NULL` → teinte neutre, jamais une couleur inventée ;
+  livraison → les couleurs de livraison du site de départ **actuel**
+  (`DepartureSiteReader`) : un seul départ aujourd'hui ; plusieurs départs
+  demanderont que la tournée retienne le sien ;
+- **droits de la palette** (lecture seule, `RequireAnyPermission`) :
+  `production_packing`, `delivery_rounds`, `delivery_loading`,
+  `delivery_driving` ;
+- **frontières** : la livraison et le retrait lisent la palette par un port
+  qu'ils déclarent (`…/channels/commerce/`) et que le commerce implémente ;
+  `DeliveryOrdersReader` et `TransferOrderContentsReader` gagnent site et
+  clientèle.
+
 ## 1. La demande
 
 Une responsable logistique, après une visite du back-office, mot pour mot :
