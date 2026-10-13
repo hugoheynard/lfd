@@ -143,6 +143,18 @@ export const COMMERCIAL_VIEWS: readonly CommercialView[] = [
     description:
       'Les alertes de compte client, et les seuils de couleur du calendrier d’acquisition.',
   },
+  // Venus des réglages de l'e-commerce (Hugo, 2026-10-13) ; droit du contact,
+  // inchangé (demandes-clients.md, §3.4).
+  {
+    key: 'reglages-motifs-des-demandes',
+    label: 'Motifs des demandes',
+    link: '/commercial/reglages/motifs-des-demandes',
+    icon: 'list',
+    section: 'Réglages',
+    needs: 'b2b_contact:read',
+    description:
+      'Ce que le client choisit en écrivant ou en signalant un problème de commande, l’adresse où chaque demande part par e-mail, et sa priorité dans la boîte des demandes.',
+  },
 ];
 
 /**
@@ -705,15 +717,6 @@ export const B2B_VIEWS: readonly WorkspaceView[] = [
     label: 'Contact',
     link: '/b2b/contact',
     icon: 'mail',
-    section: 'Réglages',
-    needs: 'b2b_contact:read',
-  },
-  // Les motifs des demandes, un onglet par type (demandes-clients.md, §3.4).
-  {
-    key: 'motifs-des-demandes',
-    label: 'Motifs des demandes',
-    link: '/b2b/reglages/motifs-des-demandes',
-    icon: 'list',
     section: 'Réglages',
     needs: 'b2b_contact:read',
   },

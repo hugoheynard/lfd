@@ -190,6 +190,19 @@ export class App {
    * route, pour que l'entrée ne mène jamais à une redirection muette.
    */
   protected readonly canSeeOrders = computed(() => this.permissions.can('b2b_orders:read'));
+  /**
+   * « Demandes clients » au menu principal, sous Commandes (Hugo, 2026-10-13).
+   * Les DEUX droits de la route : `/b2b/demandes` vit sous le mur
+   * `b2b_settings:read` de l'espace, et montrer l'entrée sans lui offrirait
+   * une porte fermée.
+   */
+  protected readonly canSeeCustomerRequests = computed(
+    () => this.permissions.can('b2b_contact:read') && this.permissions.can('b2b_settings:read'),
+  );
+  protected readonly requestsBadge = computed(() => {
+    const pending = this.requestsInbox.pendingCount();
+    return pending !== null && pending > 0 ? pending : undefined;
+  });
   /** Le fournil lit les commandes ; il n'a rien à voir avec le commercial. */
   /**
    * Analytics lit le même droit que Commercial (`growth:read`) — c'est la même

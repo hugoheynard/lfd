@@ -130,6 +130,17 @@ export const commercialRoutes: Routes = [
         loadComponent: () =>
           import('./reglages/alertes-page/alertes-page').then((m) => m.AlertesPage),
       },
+      {
+        // Les motifs des demandes, venus des réglages de l'e-commerce (Hugo,
+        // 2026-10-13). Droit du contact, inchangé (demandes-clients.md, §3.4).
+        path: 'reglages/motifs-des-demandes',
+        canActivate: [permissionGuard('b2b_contact:read')],
+        title: 'Motifs des demandes — LFC B2B admin',
+        loadComponent: () =>
+          import('../b2b/demandes/request-reasons-page/request-reasons-page').then(
+            (m) => m.RequestReasonsPage,
+          ),
+      },
     ],
   },
   {

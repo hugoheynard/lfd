@@ -173,7 +173,6 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // La boîte et les motifs des demandes clients : le droit du contact
   // (demandes-clients.md, §6.8).
   'b2b/demandes': 'b2b_contact:read',
-  'b2b/reglages/motifs-des-demandes': 'b2b_contact:read',
 
   // **Médiathèque** — hors de `pim/`, derrière SA ressource : le mur que la
   // route serveur oppose (`@AdminSurface("media_library")`). Elle a eu la
@@ -341,6 +340,8 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'commercial/reglages/disponibilite': 'b2b_commercial_appointment:read',
   'commercial/reglages/marches': 'b2b_growth:read',
   'commercial/reglages/alertes': 'b2b_commercial_alert:read',
+  // Les motifs des demandes, venus de l'e-commerce : le droit du contact.
+  'commercial/reglages/motifs-des-demandes': 'b2b_contact:read',
   // Les deux gabarits héritent du mur de `commercial` (`growth:read`) : ils
   // portent des prix négociés, et la même personne qui voit les prospects
   // négocie leurs tarifs.
@@ -482,6 +483,18 @@ describe("l'arbre de routes du back-office", () => {
     const reglages = b2b?.children?.find((child) => child.path === 'reglages');
     const livraison = reglages?.children?.find((child) => child.path === 'livraison');
     expect(livraison?.redirectTo).toBe('/livraison/zones');
+  });
+
+  it('renvoie les anciennes adresses des motifs des demandes vers Commercial › Réglages', () => {
+    // Déménagés le 2026-10-13 : absolues, sans quoi elles resteraient sous le
+    // mur `b2b_settings` de l'espace.
+    const b2b = routes.find((route) => route.path === 'b2b');
+    const reglages = b2b?.children?.find((child) => child.path === 'reglages');
+    const motifs = reglages?.children?.find((child) => child.path === 'motifs-des-demandes');
+    const formulaire = b2b?.children?.find((child) => child.path === 'contact/formulaire');
+    expect(motifs?.redirectTo).toBe('/commercial/reglages/motifs-des-demandes');
+    expect(motifs?.loadComponent).toBeUndefined();
+    expect(formulaire?.redirectTo).toBe('/commercial/reglages/motifs-des-demandes');
   });
 
   it('renvoie les anciens points de retrait vers Réglages › Sites, même identifiant', () => {

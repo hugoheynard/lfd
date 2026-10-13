@@ -16,7 +16,7 @@
 | Visiteur, client      | Boutique — « Nous écrire »                      | motif `contact`, nom, e-mail, téléphone facultatif, message                                                  |
 | Client connecté       | Mes commandes — « Signaler un problème »        | sur une commande **retirée ou livrée** seulement : motif `order_problem`, un mot, jusqu'à 3 photos           |
 | Staff (`b2b_contact`) | Back-office › E-commerce LFC › Demandes clients | toutes les demandes, filtres type / priorité / état, photos, commande liée, « Marquer traité »               |
-| Staff (`b2b_contact`) | Réglages › Motifs des demandes                  | un onglet par formulaire : « Nous écrire », « Signaler un problème »                                         |
+| Staff (`b2b_contact`) | Commercial › Réglages › Motifs des demandes     | un onglet par formulaire : « Nous écrire », « Signaler un problème »                                         |
 | Staff (`b2b_contact`) | Réglages › Contact                              | la carte (surtitre, titre, phrase par public et par langue) et les numéros                                   |
 | Équipe destinataire   | Sa boîte mail                                   | un courriel par demande (référence de commande, nombre de photos, lien vers la boîte), `Reply-To` = l'auteur |
 
@@ -114,9 +114,12 @@ la priorité, la cloche, le compteur et l'anonymisation ne bougent pas.
 | `GET                                                                                            | PUT /admin/contact/settings`, `GET                                    | POST /admin/contact/phones`, … | `b2b_contact` |
 
 Back-office : `/b2b/demandes` (l'ancienne `/b2b/contact/messages` y redirige ;
-`?demande=<id>` ouvre la demande), `/b2b/reglages/motifs-des-demandes`,
-`/b2b/contact`. Ces pages sont sous `/b2b`, gardé par `b2b_settings:read` : il
-faut les deux droits. `b2b_contact` est ajoutée **sans droit accordé** :
+`?demande=<id>` ouvre la demande) et `/b2b/contact`, sous `/b2b`, gardé par
+`b2b_settings:read` : il faut les deux droits. Les motifs vivent depuis le
+2026-10-13 dans **Commercial › Réglages**,
+`/commercial/reglages/motifs-des-demandes` (l'ancienne
+`/b2b/reglages/motifs-des-demandes` y redirige), sous `b2b_contact:read` et le
+`b2b_companies:read` de l'espace Commercial. `b2b_contact` est ajoutée **sans droit accordé** :
 l'accorder à l'écran après déploiement (runbook).
 
 ## 5. Ce qui reste

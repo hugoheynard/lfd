@@ -145,16 +145,13 @@ export const b2bRoutes: Routes = [
                 (m) => m.CustomerCancellationPage,
               ),
           },
+          // Les motifs des demandes ont rejoint Commercial › Réglages (Hugo,
+          // 2026-10-13). Absolue, sans quoi elle resterait sous le mur
+          // `b2b_settings` de l'espace.
           {
-            // Les motifs des demandes, un onglet par type. Droit du contact,
-            // pas celui des réglages de vente (demandes-clients.md, §3.4).
             path: 'motifs-des-demandes',
-            title: 'Motifs des demandes — LFC B2B admin',
-            canActivate: [permissionGuard('b2b_contact:read')],
-            loadComponent: () =>
-              import('./demandes/request-reasons-page/request-reasons-page').then(
-                (m) => m.RequestReasonsPage,
-              ),
+            pathMatch: 'full',
+            redirectTo: '/commercial/reglages/motifs-des-demandes',
           },
           {
             path: 'heures-limites',
@@ -178,7 +175,11 @@ export const b2bRoutes: Routes = [
           import('./contact/contact-page/contact-page').then((m) => m.ContactPage),
       },
       { path: 'contact/carte', pathMatch: 'full', redirectTo: 'contact' },
-      { path: 'contact/formulaire', pathMatch: 'full', redirectTo: 'reglages/motifs-des-demandes' },
+      {
+        path: 'contact/formulaire',
+        pathMatch: 'full',
+        redirectTo: '/commercial/reglages/motifs-des-demandes',
+      },
       // L'ancienne adresse de la cloche : un courriel déjà parti la porte encore.
       { path: 'contact/messages', pathMatch: 'full', redirectTo: 'demandes' },
       {

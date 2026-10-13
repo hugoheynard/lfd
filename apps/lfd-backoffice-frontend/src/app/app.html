@@ -59,6 +59,21 @@
           (click)="mobileNavOpen.set(false)"
         ></a>
       }
+      @if (canSeeCustomerRequests()) {
+        <!-- DEMANDES CLIENTS, sous Commandes (Hugo, 2026-10-13). La même entrée est aux tuiles plus bas. -->
+        <a
+          fold-menu-item
+          icon="inbox"
+          label="Demandes clients"
+          routerLink="/b2b/demandes"
+          routerLinkActive
+          #requestsRla="routerLinkActive"
+          [active]="requestsRla.isActive"
+          [badge]="requestsBadge()"
+          badgeTone="accent"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
 
       @if (canSeeOperationsApps()) {
         <!-- APP EXPLOITATION — les postes du jour, de la supervision au
@@ -637,6 +652,21 @@
           routerLinkActive
           #ordersTile="routerLinkActive"
           [active]="ordersTile.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
+      @if (canSeeCustomerRequests()) {
+        <!-- La MÊME entrée qu'au rail. -->
+        <a
+          fold-nav-tile
+          icon="inbox"
+          label="Demandes clients"
+          routerLink="/b2b/demandes"
+          routerLinkActive
+          #requestsTile="routerLinkActive"
+          [active]="requestsTile.isActive"
+          [badge]="requestsBadge()"
+          badgeTone="accent"
           (click)="mobileNavOpen.set(false)"
         ></a>
       }
