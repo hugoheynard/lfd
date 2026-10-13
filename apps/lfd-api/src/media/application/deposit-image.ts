@@ -10,6 +10,7 @@ import { MediaSeriesNotFoundError } from "../domain/errors/media-series-errors.j
 import { MediaAlreadyRegisteredError } from "../domain/errors/media-library-errors.js";
 import type { ProductImage } from "../domain/value-objects/image-bytes.js";
 import { mediaFileName } from "../domain/value-objects/image.js";
+import { contentAddressOf } from "../domain/value-objects/content-address.js";
 import {
   imagePalette,
   type ImagePalette,
@@ -115,7 +116,7 @@ export class DepositImageHandler implements ICommandHandler<
       // L'image est au fonds — c'est un redépôt (2026-10-11).
       const existing =
         caught instanceof MediaAlreadyRegisteredError
-          ? await this.uow.run(() => this.alreadyThere(stored.url, palette))
+          ? await this.uow.run(() => this.alreadyThere(stored.storageKey, palette))
           : null;
       if (existing === null) {
         throw caught;
@@ -137,7 +138,7 @@ export class DepositImageHandler implements ICommandHandler<
     series: MediaSeriesLabel | null,
     palette: ImagePalette | null,
   ): Promise<DepositImageResult> {
-    const existing = await this.alreadyThere(stored.url, palette);
+    const existing = await this.alreadyThere(stored.storageKey, palette);
     if (existing !== null) {
       return existing;
     }
@@ -162,16 +163,21 @@ export class DepositImageHandler implements ICommandHandler<
    * Les mêmes octets sont déjà au fonds : rien n'est écrit — ni série, ni
    * fait, il ne s'est rien passé dans la bibliothèque. Seule une palette
    * MANQUANTE se pose, parce qu'elle se déduit des octets.
+   *
+   * 🔴 Retrouvée par le CONTENU, pas par l'URL qu'on vient de fabriquer
+   * (2026-10-13) : l'image déjà au fonds peut être rangée sous un autre
+   * préfixe, et c'est SON URL qui fait foi — celle que les porteurs citent.
+   * La palette se pose donc sur elle, jamais sur l'URL du dépôt.
    */
   private async alreadyThere(
-    url: string,
+    storageKey: string,
     palette: ImagePalette | null,
   ): Promise<DepositImageResult | null> {
-    const existing = await this.library.alreadyRegistered(url);
+    const existing = await this.library.holdingContent(contentAddressOf(storageKey));
     if (existing === null) {
       return null;
     }
-    await this.palette.paintDeduced(url, palette);
+    await this.palette.paintDeduced(existing.url, palette);
     return { ...existing, alreadyInLibrary: true };
   }
 

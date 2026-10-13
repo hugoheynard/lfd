@@ -97,7 +97,7 @@ class FakeLibrary extends MediaLibrary {
     );
   }
 
-  alreadyRegistered(): Promise<RegisteredMedia | null> {
+  holdingContent(): Promise<RegisteredMedia | null> {
     return Promise.resolve(null);
   }
 

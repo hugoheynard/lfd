@@ -12,6 +12,7 @@ import { DepositRefusals } from "../deposit-refusals.js";
 import {
   FakeLibrary,
   FakeSeries,
+  DEPOSITED_HASH,
   FakeStore,
   png,
   RecordingFailures,
@@ -39,8 +40,8 @@ describe("DepositImageHandler", () => {
       { prefix: "products", asset: { bytes: png(1200, 800), contentType: "image/png" } },
     ]);
     expect(library.registered[0]).toMatchObject({
-      url: "https://media.example/products/deadbeef.png",
-      storageKey: "products/deadbeef.png",
+      url: `https://media.example/products/${DEPOSITED_HASH}.png`,
+      storageKey: `products/${DEPOSITED_HASH}.png`,
       contentType: "image/png",
       width: 1200,
       height: 800,
@@ -53,8 +54,8 @@ describe("DepositImageHandler", () => {
       {
         type: "media_asset.deposited",
         subjectType: "media_asset",
-        subjectId: "https://media.example/products/deadbeef.png",
-        payload: { subjectLabel: "deadbeef.png", contentType: "image/png" },
+        subjectId: `https://media.example/products/${DEPOSITED_HASH}.png`,
+        payload: { subjectLabel: `${DEPOSITED_HASH}.png`, contentType: "image/png" },
       },
     ]);
     expect(result.id).toBe("media_1");
@@ -242,8 +243,8 @@ describe("DepositImageHandler", () => {
   it("un redépôt garde la série d'ORIGINE, n'écrit rien, et le dit", async () => {
     const origin: RegisteredMedia = {
       id: "media_0",
-      url: "https://media.example/products/deadbeef.png",
-      storageKey: "products/deadbeef.png",
+      url: `https://media.example/products/${DEPOSITED_HASH}.png`,
+      storageKey: `products/${DEPOSITED_HASH}.png`,
       contentType: "image/png",
       width: 400,
       height: 400,
@@ -270,6 +271,47 @@ describe("DepositImageHandler", () => {
   });
 
   /**
+   * Plan du préfixe universel, lot D0 (2026-10-13) : le redépôt cherchait par
+   * l'URL. Sous un préfixe changé, les mêmes octets auraient fait une seconde
+   * ligne pour une même image.
+   */
+  it("retrouve l'image par son CONTENU, même rangée sous un autre préfixe", async () => {
+    const legacy: RegisteredMedia = {
+      id: "media_0",
+      url: `https://media.example/legacy/${DEPOSITED_HASH}.png`,
+      storageKey: `legacy/${DEPOSITED_HASH}.png`,
+      contentType: "image/png",
+      width: 400,
+      height: 400,
+      bytes: 24,
+      seriesId: null,
+    };
+    const library = new FakeLibrary([legacy]);
+    const palettes = new RecordingPalettes();
+    const handler = new DepositImageHandler(
+      new FakeStore(),
+      library,
+      new FakeSeries(),
+      new RecordingMediaJournal(),
+      new DepositRefusals(new RecordingFailures()),
+      new DirectUnitOfWork(),
+      new DepositPalette(palettes, new RecordingMediaJournal()),
+    );
+
+    const result = await handler.execute(
+      new DepositImageCommand(png(400, 400), "", null, [
+        { hex: "#aabbcc", share: 1, outlier: false },
+      ]),
+    );
+
+    expect(library.askedContent).toEqual([`${DEPOSITED_HASH}.png`]);
+    expect(result).toEqual({ ...legacy, alreadyInLibrary: true });
+    expect(library.registered).toEqual([]);
+    // La palette déduite se pose sur l'URL que les porteurs citent.
+    expect(palettes.calls).toEqual([legacy.url]);
+  });
+
+  /**
    * Régression : deux dépôts SIMULTANÉS des mêmes octets lisaient tous deux
    * « absente », et le second butait sur l'unicité de l'URL — un 409 « Cette
    * ressource existe déjà » pour un geste qui, successif, rend l'image au fonds.
@@ -277,8 +319,8 @@ describe("DepositImageHandler", () => {
   it("rend l'image déjà au fonds quand un dépôt simultané l'a inscrite d'abord", async () => {
     const winner: RegisteredMedia = {
       id: "media_0",
-      url: "https://media.example/products/deadbeef.png",
-      storageKey: "products/deadbeef.png",
+      url: `https://media.example/products/${DEPOSITED_HASH}.png`,
+      storageKey: `products/${DEPOSITED_HASH}.png`,
       contentType: "image/png",
       width: 400,
       height: 400,
@@ -312,7 +354,7 @@ class RacedLibrary extends FakeLibrary {
     super();
   }
 
-  override alreadyRegistered(): Promise<RegisteredMedia | null> {
+  override holdingContent(): Promise<RegisteredMedia | null> {
     this.reads += 1;
     return Promise.resolve(this.reads === 1 ? null : this.winner);
   }

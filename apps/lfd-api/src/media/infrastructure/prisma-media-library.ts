@@ -56,9 +56,16 @@ export class PrismaMediaLibrary extends MediaLibrary {
     });
   }
 
-  async alreadyRegistered(url: string): Promise<RegisteredMedia | null> {
-    return this.prisma.mediaAsset.findUnique({
-      where: { url },
+  async holdingContent(contentAddress: string): Promise<RegisteredMedia | null> {
+    // Le dernier segment de la clé, préfixe ignoré. `endsWith` après un `/` :
+    // `{sha256}.{ext}` a une longueur fixe, aucun autre nom ne peut finir
+    // pareil. Sans index — le fonds compte quelques centaines d'images (carte
+    // OPS, seuil à 1 000), un balayage y coûte moins qu'un index de plus.
+    // La plus ancienne si deux préfixes coexistaient : c'est celle que les
+    // porteurs citent depuis le plus longtemps.
+    return this.prisma.mediaAsset.findFirst({
+      where: { storageKey: { endsWith: `/${contentAddress}` } },
+      orderBy: { createdAt: "asc" },
       select: {
         id: true,
         url: true,

@@ -10,13 +10,14 @@ import { PaintMediaPaletteCommand, PaintMediaPaletteHandler } from "../paint-med
 import {
   FakeLibrary,
   FakeSeries,
+  DEPOSITED_HASH,
   FakeStore,
   png,
   RecordingFailures,
   RecordingPalettes,
 } from "./deposit-image-doubles.js";
 
-const URL = "https://media.example/products/deadbeef.png";
+const URL = `https://media.example/products/${DEPOSITED_HASH}.png`;
 const PALETTE = [
   { hex: "#AA3300", share: 0.7, outlier: false },
   { hex: "#ffeedd", share: 0.3, outlier: false },
@@ -65,7 +66,7 @@ describe("la palette au dépôt", () => {
     const origin: RegisteredMedia = {
       id: "media_0",
       url: URL,
-      storageKey: "products/deadbeef.png",
+      storageKey: `products/${DEPOSITED_HASH}.png`,
       contentType: "image/png",
       width: 400,
       height: 400,

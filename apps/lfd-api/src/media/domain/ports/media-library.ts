@@ -43,14 +43,23 @@ export abstract class MediaLibrary {
   ): Promise<RegisteredMedia>;
 
   /**
-   * L'inscription qui porte DÉJÀ cette URL, ou `null`.
+   * L'inscription qui porte DÉJÀ ces octets, ou `null` — retrouvée par
+   * l'adresse de contenu `{sha256}.{ext}` de sa clé de stockage, **quel que
+   * soit son préfixe**.
    *
-   * Sert au redépôt (2026-10-10) : les mêmes octets tombent sur la même
-   * URL, et l'image déjà au fonds garde tout — sa série comprise. Sans cette
-   * lecture, le second dépôt butait sur l'unicité de l'URL et rendait un 409
-   * « Cette ressource existe déjà » (constaté le 2026-10-10).
+   * Sert au redépôt (2026-10-10) : l'image déjà au fonds garde tout — sa série
+   * comprise. Sans cette lecture, le second dépôt butait sur l'unicité de
+   * l'URL et rendait un 409 « Cette ressource existe déjà » (constaté le
+   * 2026-10-10).
+   *
+   * ⚠️ Elle cherchait par URL jusqu'au 2026-10-13. L'URL porte le préfixe de
+   * la clé : le jour où il change, les mêmes octets auraient donné une seconde
+   * ligne pour une même image (plan du préfixe universel, lot D0). Une image
+   * saisie par son URL n'a pas de clé : elle n'est jamais retrouvée ici.
+   *
+   * @param contentAddress `contentAddressOf(storageKey)` — jamais une clé entière.
    */
-  abstract alreadyRegistered(url: string): Promise<RegisteredMedia | null>;
+  abstract holdingContent(contentAddress: string): Promise<RegisteredMedia | null>;
 
   /**
    * Retrouve ce qu'on sait d'une URL, ou `null`.

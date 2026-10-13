@@ -32,13 +32,16 @@ export function png(width: number, height: number): Buffer {
   return buffer;
 }
 
+/** L'empreinte que rend {@link FakeStore} — de la forme d'un vrai SHA-256. */
+export const DEPOSITED_HASH = "deadbeef".repeat(8);
+
 export class FakeStore extends MediaStore {
   readonly puts: { prefix: string; asset: PublicAsset }[] = [];
   readonly removed: string[] = [];
 
   put(prefix: string, asset: PublicAsset): Promise<StoredAsset> {
     this.puts.push({ prefix, asset });
-    const key = `${prefix}/deadbeef.png`;
+    const key = `${prefix}/${DEPOSITED_HASH}.png`;
     return Promise.resolve({ storageKey: key, url: `https://media.example/${key}` });
   }
   // Le dépôt sait supprimer depuis le ramassage des orphelins ; l'envoi ne s'en
@@ -89,13 +92,18 @@ export class FakeSeries extends MediaSeriesReader {
 export class FakeLibrary extends MediaLibrary {
   readonly registered: Omit<RegisteredMedia, "id">[] = [];
 
-  /** Ce que le fonds porte déjà, par URL — un redépôt tombe dessus. */
+  readonly askedContent: string[] = [];
+
+  /** Ce que le fonds porte déjà — un redépôt tombe dessus par son contenu. */
   constructor(private readonly existing: readonly RegisteredMedia[] = []) {
     super();
   }
 
-  alreadyRegistered(url: string): Promise<RegisteredMedia | null> {
-    return Promise.resolve(this.existing.find((entry) => entry.url === url) ?? null);
+  holdingContent(contentAddress: string): Promise<RegisteredMedia | null> {
+    this.askedContent.push(contentAddress);
+    return Promise.resolve(
+      this.existing.find((entry) => entry.storageKey?.endsWith(`/${contentAddress}`)) ?? null,
+    );
   }
 
   register(entry: Omit<RegisteredMedia, "id">): Promise<RegisteredMedia> {
