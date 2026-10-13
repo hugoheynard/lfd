@@ -38,10 +38,10 @@ flowchart TD
     A([Le client clique « Annuler la commande »]) --> W{Est-il autorisé ?<br/>membre accepté de la société,<br/>auteur, ou lien valide}
     W -- non --> R0["Commande introuvable (404)"]:::refus
     W -- oui --> K{Commande personnelle ?}
-    K -- "non (pro)" --> N
     K -- oui --> S{Réglage ouvert ?}
-    S -- non --> R1["Refus : contactez-nous"]:::refus
+    K -- "non (pro)" --> N
     S -- oui --> T{Plus de N heures<br/>avant le retrait / la livraison ?}
+    S -- non --> R1["Refus : contactez-nous"]:::refus
     T -- non --> R2["Refus : trop tard"]:::refus
     T -- oui --> N[["Le noyau du staff<br/>(fournil, argent, bon)"]]
     N --> M([Courriel « vous avez annulé »,<br/>cloche à l'équipe])
