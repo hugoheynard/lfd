@@ -126,11 +126,21 @@ export class UnknownSubjectAdmission {
     if (email === "") {
       return "new";
     }
-    const holders = await this.holdersOf(email);
+    const read = await this.holdersOf(email);
+    if (read.length === 0) {
+      const outcome = await this.guests.claim(token);
+      if (outcome !== "none") {
+        return outcome;
+      }
+    }
+    // Relue APRÈS la recherche de fiche invité : une requête concurrente a pu
+    // prendre la fiche entre notre première lecture et la nôtre — la fiche est
+    // alors devenue un compte, et l'ignorer en ouvrirait un second sur la même
+    // adresse (régression CI du 2026-10-13, « une seule gagne »).
+    const holders = read.length === 0 ? await this.holdersOf(email) : read;
     const [only] = holders;
     if (only === undefined) {
-      const outcome = await this.guests.claim(token);
-      return outcome === "none" ? "new" : outcome;
+      return "new";
     }
     // Le compte qui porte l'adresse est CE sujet : une requête concurrente du
     // même `sub` vient de le créer ou de rattacher sa fiche invité. Ce n'est pas
