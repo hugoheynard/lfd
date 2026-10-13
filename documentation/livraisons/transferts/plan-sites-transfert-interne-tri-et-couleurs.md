@@ -577,6 +577,49 @@ qui passe par le site (en pratique la première du matin) : la composition
 rien, ou le site serait servi en retard) — si aucune ne convient, Q-T9.
 Lot **T0**.
 
+### 4.5 bis Le temps de mise en place au comptoir (Hugo, 2026-10-13)
+
+> « Si on me livre à 7h30 parce que mon premier click and collect est à 7h30,
+> en réalité il faut que je sois livré avant. » — Hugo, 2026-10-13.
+
+Le créneau d'un retrait est l'heure où le **client** se présente, pas l'heure
+où la marchandise arrive. Entre les deux, le comptoir déballe, range et
+prépare. Le site porte donc un **temps de mise en place**
+(`counter_setup_minutes`, entier ≥ 0, carte « Rôles » de Réglages › Sites,
+sous `lfc_sites`) : l'écart entre l'arrivée de la marchandise — ou, pour un
+site servi sur place, l'état « prêt » de la commande — et le moment où elle
+doit être prête au comptoir.
+
+| Site                             | La marchandise doit être… | Calcul                                                                                  |
+| -------------------------------- | ------------------------- | --------------------------------------------------------------------------------------- |
+| servi par transfert (le village) | **arrivée** au site       | arrivée requise = premier créneau du jour − `counter_setup_minutes`                     |
+|                                  | partie du fournil         | départ requis = arrivée requise − durée du trajet (Q-T5 : calcul routier ou durée fixe) |
+| servi sur place (le fournil)     | **prête** (`ready`)       | prête au plus tard = créneau de la commande − `counter_setup_minutes`                   |
+
+Conséquences sur ce qui précède :
+
+- **`transfer_departure_time` (§4.5) n'est plus saisi seul** : il se
+  **déduit** du premier créneau, du temps de mise en place et du trajet. Il
+  reste affiché à la carte Rôles (« départ requis : 6 h 40 »), et la
+  composition refuse toujours une tournée B2B qui part après lui (mode
+  intégré). ⚠️ « Premier créneau du jour » : celui des créneaux **ouverts** ce
+  jour-là au site (`PickupSlots`), pas celui de la première commande — sinon
+  l'heure bougerait au gré des commandes, après la clôture du fournil.
+- **L'échéance du fournil** (§4.5) pour un site sur place devient créneau −
+  `counter_setup_minutes` au lieu de créneau − `pickupMarginMinutes` global :
+  la marge de retrait actuelle (réglage commun) devient **la valeur par
+  défaut** du temps de mise en place d'un site, pas une seconde marge qui
+  s'additionnerait. À vérifier en ouvrant `due-thresholds.service.ts` au
+  moment du lot : ce que couvre exactement `pickupMarginMinutes` aujourd'hui.
+- **Le tri par heure de départ** (§5.2) lit le départ requis pour une commande
+  du village tant que la tournée n'est pas composée.
+
+Lot : **T0** (il porte déjà l'échéance du village) s'élargit à
+`counter_setup_minutes`, au calcul du départ requis et à l'échéance des sites
+sur place. Question ajoutée : **Q-T11** — la durée du trajet fournil → site
+est-elle une valeur saisie au site (simple, immédiate) ou tirée du
+calculateur routier (Q-T5) ?
+
 ### 4.6 Le colisage
 
 Chaque commande garde son sac / bac ([`colisage.md`](../../colisage/colisage.md)
@@ -686,6 +729,8 @@ Restent :
 - **Q-T10** — Livrer d'abord le mode dédié comme marche intermédiaire ?
 - **Q-T6** — Qui appuie « Remis au site » : le livreur dans son app, ou le
   personnel du village au comptoir ?
+
+- **Q-T11** — durée du trajet fournil → site : saisie au site, ou calculateur routier (Q-T5) ? (§4.5 bis)
 
 ## 8. Ce dont ce plan n'est pas sûr
 
