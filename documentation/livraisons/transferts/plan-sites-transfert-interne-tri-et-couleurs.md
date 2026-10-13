@@ -787,3 +787,22 @@ est celle que la première contradiction jugeait lourde (`order_id`
 nullable) ; elle a l'avantage de rendre l'invariant structurel (un arrêt, un
 passage) et de laisser les commandes du village **hors** du bloc livraison.
 À trancher par Hugo avant de corriger.
+
+**Complément de la même relecture, sur le §4.5 bis** (rapport final) :
+
+- **BLOQUANT — `pickupMarginMinutes` n'est pas une durée de comptoir.** Dans
+  `deadline-thresholds.ts:87-127`, c'est l'un des deux interrupteurs des
+  vagues : `null` passe toute la journée du fournil en seuil unique
+  (`UNDATED`). Une valeur par site retire l'interrupteur ; « valeur par
+  défaut » n'est pas tranché (colonne nulle qui hérite, ou copie qui divergera) ;
+  et `DayDueThresholds.pickupMarginMinutes` est servi au fournil (contrat
+  `production-due-thresholds`) comme UN nombre, qui mentirait. Le snapshot
+  du colisage (`prisma-day-orders.reader.ts:119`, `ProducibleOrder.dueAt`)
+  doit suivre la même règle.
+- **SÉRIEUX — le « premier créneau ouvert » n'est pas stable** : créneaux
+  publics, fermetures datées éditables après la clôture et la composition ;
+  rien ne fige l'heure. Les retraits PRO du village ne passent peut-être pas
+  par ces créneaux ; sans créneau ouvert, le départ requis est `null`.
+- **SÉRIEUX — la réception** : « deux réceptions refusées » sans mécanisme
+  (agrégat ou `UPDATE … WHERE received_at IS NULL`), et rien sur une commande
+  ramenée après réception.
