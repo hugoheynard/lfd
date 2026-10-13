@@ -13,8 +13,11 @@ import { SaveAlertRuleCommand } from "../application/commands/save-alert-rule.co
 import { ListAlertRulesQuery } from "../application/queries/list-alert-rules.query.js";
 
 /**
- * Les **réglages globaux d'alerte**, côté staff (Réglages → Commercial). Même
- * montage `@AdminSurface` que les autres contrôleurs admin.
+ * Les **réglages globaux d'alerte**, côté staff (Commercial › Réglages ›
+ * Alertes). Sous `b2b_commercial_alert` depuis le 2026-10-13 (Hugo : droits
+ * granulaires) ; acquitter une alerte et régler celles d'un client restent
+ * sous `b2b_alerts`. Aucun autre écran ne lit cette route (vérifié le
+ * 2026-10-13). Geste de bascule : la ressource s'accorde à l'écran.
  *
  * Une seule route d'écriture, **sans le type dans l'URL** : le type est le
  * discriminant des paramètres, donc déjà dans le corps. Le mettre aussi dans le
@@ -24,7 +27,7 @@ import { ListAlertRulesQuery } from "../application/queries/list-alert-rules.que
  * cet écran ne doivent pas s'écraser en silence. Un 409 dit lequel a perdu.
  */
 @Controller("admin/alert-rules")
-@AdminSurface("b2b_alerts")
+@AdminSurface("b2b_commercial_alert")
 export class AdminAlertRulesController {
   constructor(
     private readonly queries: QueryBus,

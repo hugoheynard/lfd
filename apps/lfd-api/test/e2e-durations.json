@@ -42,6 +42,7 @@
   "test/collection-notices.e2e-spec.ts": 5000,
   "test/collection-returns.e2e-spec.ts": 9929,
   "test/collection-schedule.e2e-spec.ts": 4000,
+  "test/commercial-settings-access.e2e-spec.ts": 9594,
   "test/company-access-guards.e2e-spec.ts": 5565,
   "test/company-activation.e2e-spec.ts": 2435,
   "test/company-bank-account.e2e-spec.ts": 9621,

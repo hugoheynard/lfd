@@ -103,11 +103,13 @@ export const commercialRoutes: Routes = [
       },
       // RÉGLAGES du commercial (Hugo, 2026-10-13) : les trois onglets de
       // l'ancienne page « Réglages commerciaux » de l'Exploitation, devenus
-      // trois vues. Même droit qu'avant, `b2b_growth:read`.
+      // trois vues. Droits granulaires (Hugo, 2026-10-13) : Disponibilité sous
+      // `b2b_commercial_appointment`, Alertes sous `b2b_commercial_alert`, comme
+      // leurs routes d'API ; Marchés reste sous `b2b_growth`.
       { path: 'reglages', pathMatch: 'full', redirectTo: 'reglages/disponibilite' },
       {
         path: 'reglages/disponibilite',
-        canActivate: [permissionGuard('b2b_growth:read')],
+        canActivate: [permissionGuard('b2b_commercial_appointment:read')],
         title: 'Disponibilité — LFC B2B admin',
         loadComponent: () =>
           import('./reglages/disponibilite-page/disponibilite-page').then(
@@ -123,7 +125,7 @@ export const commercialRoutes: Routes = [
       },
       {
         path: 'reglages/alertes',
-        canActivate: [permissionGuard('b2b_growth:read')],
+        canActivate: [permissionGuard('b2b_commercial_alert:read')],
         title: 'Alertes — LFC B2B admin',
         loadComponent: () =>
           import('./reglages/alertes-page/alertes-page').then((m) => m.AlertesPage),

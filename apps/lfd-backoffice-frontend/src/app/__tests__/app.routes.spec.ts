@@ -338,9 +338,9 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   analytics: 'b2b_growth:read',
   'commercial/calendrier': 'b2b_growth:read',
   // Les réglages du commercial (2026-10-13) — venus de l'Exploitation.
-  'commercial/reglages/disponibilite': 'b2b_growth:read',
+  'commercial/reglages/disponibilite': 'b2b_commercial_appointment:read',
   'commercial/reglages/marches': 'b2b_growth:read',
-  'commercial/reglages/alertes': 'b2b_growth:read',
+  'commercial/reglages/alertes': 'b2b_commercial_alert:read',
   // Les deux gabarits héritent du mur de `commercial` (`growth:read`) : ils
   // portent des prix négociés, et la même personne qui voit les prospects
   // négocie leurs tarifs.

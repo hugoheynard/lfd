@@ -102,8 +102,17 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
       "Créer et suivre un prospect, choisir les zones et secteurs du marché étudié, relancer son calcul.",
   },
   b2b_appointments: {
-    read: "Voir les disponibilités et les rendez-vous clients. Le calendrier demande aussi Croissance en lecture.",
-    write: "Régler les disponibilités, prendre ou modifier un rendez-vous.",
+    read: "Voir les rendez-vous clients. Le calendrier demande aussi Croissance en lecture.",
+    write: "Prendre ou modifier un rendez-vous.",
+  },
+  b2b_commercial_appointment: {
+    read: "Voir quand un prospect peut prendre rendez-vous : la grille de la semaine, la politique de réservation, les exceptions, l'aperçu des créneaux.",
+    write:
+      "Régler la grille, la politique et les exceptions — ce qui change les créneaux proposés aux prospects.",
+  },
+  b2b_commercial_alert: {
+    read: "Voir les règles d'alerte globales, qui valent pour tous les comptes clients.",
+    write: "Modifier ces règles — ce qui change les alertes levées sur chaque compte.",
   },
   b2b_support: {
     read: "Voir les demandes envoyées par les clients.",
@@ -134,8 +143,8 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
       "Fixer, modifier ou supprimer la surtaxe de retard. L'afficher sur une commande n'en dépend pas.",
   },
   b2b_alerts: {
-    read: "Voir les alertes en attente, de compte et globales, et leurs règles.",
-    write: "Acquitter une alerte, régler les règles d'alerte globales ou celles d'un client.",
+    read: "Voir les alertes en attente et les règles d'alerte d'un client. Les règles globales relèvent de « Règles d'alerte globales ».",
+    write: "Acquitter une alerte, régler les règles d'alerte d'un client.",
   },
   b2b_order_waivers: {
     read: "Voir les dérogations d'heure limite accordées à un client.",

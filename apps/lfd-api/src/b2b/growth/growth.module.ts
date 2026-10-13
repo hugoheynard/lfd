@@ -74,6 +74,7 @@ import { LeadScoreStore } from "./domain/ports/lead-score.store.js";
 import { ProspectReader } from "./domain/ports/prospect.reader.js";
 import { AdminActivationsController } from "./http/admin-activations.controller.js";
 import { AdminAppointmentsController } from "./http/admin-appointments.controller.js";
+import { AdminAvailabilityController } from "./http/admin-availability.controller.js";
 import { AppointmentsController } from "./http/appointments.controller.js";
 import { AdminCockpitController } from "./http/admin-cockpit.controller.js";
 import { AdminGrowthController } from "./http/admin-growth.controller.js";
@@ -139,6 +140,7 @@ import { PrismaProspectReader } from "./infrastructure/prisma-prospect.reader.js
     AdminGrowthController,
     AdminMarketController,
     AdminAppointmentsController,
+    AdminAvailabilityController,
     AppointmentsController,
     // Le journal traverse tous les modules, mais la table qui le porte vit ici :
     // sa surface de lecture aussi, tant que le journal n'a pas été promu en

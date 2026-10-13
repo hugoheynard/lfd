@@ -120,7 +120,7 @@ export const COMMERCIAL_VIEWS: readonly CommercialView[] = [
     link: '/commercial/reglages/disponibilite',
     icon: 'clock',
     section: 'Réglages',
-    needs: 'b2b_growth:read',
+    needs: 'b2b_commercial_appointment:read',
     description:
       'Quand un prospect peut prendre rendez-vous : la grille de la semaine, sa politique, ses exceptions.',
   },
@@ -139,7 +139,7 @@ export const COMMERCIAL_VIEWS: readonly CommercialView[] = [
     link: '/commercial/reglages/alertes',
     icon: 'bell',
     section: 'Réglages',
-    needs: 'b2b_growth:read',
+    needs: 'b2b_commercial_alert:read',
     description:
       'Les alertes de compte client, et les seuils de couleur du calendrier d’acquisition.',
   },

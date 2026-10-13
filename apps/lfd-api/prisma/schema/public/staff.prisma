@@ -75,6 +75,13 @@ enum StaffResource {
   b2b_pricing
   b2b_growth
   b2b_appointments
+  /// LA DISPONIBILITÉ DES RENDEZ-VOUS — grille, politique, exceptions, aperçu
+  /// (2026-10-13, Hugo : droits granulaires des réglages commerciaux). Sortie
+  /// de `b2b_appointments`. Accordée à l'écran.
+  b2b_commercial_appointment
+  /// LES RÈGLES D'ALERTE GLOBALES (même jour). Sorties de `b2b_alerts`.
+  /// Accordée à l'écran.
+  b2b_commercial_alert
   b2b_support
   b2b_payments
   b2b_accounting

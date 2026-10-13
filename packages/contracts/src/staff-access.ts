@@ -177,6 +177,23 @@ export const staffResourceSchema = z.enum([
   "b2b_pricing",
   "b2b_growth",
   "b2b_appointments",
+  /**
+   * **La disponibilité des rendez-vous** — la grille de la semaine, la
+   * politique de réservation, les exceptions, et l'aperçu des créneaux
+   * (Commercial › Réglages › Disponibilité). Détachée de `b2b_appointments`
+   * (Hugo, 2026-10-13) : les droits sont granulaires, et régler ce que les
+   * prospects peuvent réserver n'est pas tenir la file des rendez-vous, qui
+   * reste sous `b2b_appointments`. Ajoutée sans être accordée : elle
+   * s'accorde à l'écran.
+   */
+  "b2b_commercial_appointment",
+  /**
+   * **Les règles d'alerte globales** (Commercial › Réglages › Alertes).
+   * Détachée de `b2b_alerts` (Hugo, 2026-10-13) : acquitter une alerte ou
+   * régler celles d'un client reste sous `b2b_alerts`. Ajoutée sans être
+   * accordée : elle s'accorde à l'écran.
+   */
+  "b2b_commercial_alert",
   /** Les demandes des clients. À ne pas confondre avec `staff_notifications`. */
   "b2b_support",
   /** Les moyens de paiement : mandats de prélèvement. Pas une donnée de compte. */
@@ -603,6 +620,8 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   b2b_pricing: "Tarification",
   b2b_growth: "Croissance",
   b2b_appointments: "Rendez-vous",
+  b2b_commercial_appointment: "Disponibilité des rendez-vous",
+  b2b_commercial_alert: "Règles d'alerte globales",
   b2b_support: "Demandes clients",
   b2b_payments: "Moyens de paiement",
   b2b_accounting: "Comptabilité",
@@ -732,6 +751,10 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // deux droits s'accordent à l'écran.
     lfc_site_settings: "write",
     lfc_order_settings: "write",
+    // La graine seule (2026-10-13, réglages commerciaux) : en production,
+    // ces deux droits s'accordent à l'écran.
+    b2b_commercial_appointment: "write",
+    b2b_commercial_alert: "write",
     media_library: "write",
     b2b_storefront: "write",
     // Graine seulement (dev, e2e) : en production, accordée à l'écran (§5.6).
