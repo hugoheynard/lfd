@@ -40,9 +40,9 @@ import { SetSiteColorsCommand } from "../application/set-site-colors.command.js"
 import { SetSiteRolesCommand } from "../application/set-site-roles.command.js";
 
 /**
- * **Réglages › Sites** — l'API de l'écran, sous `lfc_site_settings` (plan
- * `documentation/livraisons/transferts/plan-sites-transfert-interne-tri-et-couleurs.md`,
- * §3.4, lot S1, 2026-10-13).
+ * **Réglages › Sites** — l'API de l'écran, sous `lfc_site_settings` (doc
+ * `documentation/sites/sites.md`,
+ * §4, lot S1, 2026-10-13).
  *
  * Elle couvre tout ce que la page d'un site règle : lieu, défaut, rôles,
  * couleurs, horaire public, archivage. Les gestes déjà servis réutilisent les

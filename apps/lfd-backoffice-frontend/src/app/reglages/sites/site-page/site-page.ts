@@ -36,9 +36,9 @@ import { SiteRolesCard } from './site-roles-card/site-roles-card';
 const NOT_FOUND = 404;
 
 /**
- * **Un site** (Réglages › Sites, plan
- * `documentation/livraisons/transferts/plan-sites-transfert-interne-tri-et-couleurs.md`,
- * §3.4, lot S1) — l'ancienne page d'un point de retrait, élargie : un site EST
+ * **Un site** (Réglages › Sites, doc
+ * `documentation/sites/sites.md`,
+ * §4, lot S1) — l'ancienne page d'un point de retrait, élargie : un site EST
  * le point de retrait, même identifiant. Elle gagne les rôles, les couleurs et
  * l'archivage. **Chaque carte enregistre ce qu'elle montre** (Hugo,
  * 2026-10-13) : la page charge, relit et archive — elle n'écrit rien

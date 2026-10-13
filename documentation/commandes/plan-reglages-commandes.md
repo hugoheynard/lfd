@@ -3,9 +3,9 @@
 **Statut** : 📐 plan, rien n'est bâti. Écrit le 2026-10-13, contredit par
 `vitruve` le même jour (§7), **Q1, Q3, Q4, Q5 et la carte B2C tranchées par
 Hugo le 2026-10-13** (§5). Annoncé par le
-§5.4 de
-[`../livraisons/transferts/plan-sites-transfert-interne-tri-et-couleurs.md`](../livraisons/transferts/plan-sites-transfert-interne-tri-et-couleurs.md)
-(lot O1), et élargi ici.
+§5.4 du plan commun des sites (2026-10-13, découpé le même jour) ; les
+droits granulaires qui le fondent sont décrits dans
+[`../sites/sites.md`](../sites/sites.md) §5 (lot O1), et élargi ici.
 
 **Pourquoi un document à part, et ici** : le plan des sites parle de lieux, de
 transferts et de couleurs ; ce lot parle de la **règle qui refuse une

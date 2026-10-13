@@ -298,8 +298,8 @@ export const staffResourceSchema = z.enum([
   /**
    * **Les sites** — nos lieux : adresse, rôles (remet, approvisionné par
    * transfert, expédie), couleurs de la logistique, archivage
-   * (`documentation/livraisons/transferts/plan-sites-transfert-interne-tri-et-couleurs.md`,
-   * §3.4, lot S0, 2026-10-13). Détachée de `b2b_settings` : les droits sont
+   * (`documentation/sites/sites.md`,
+   * §5, lot S0, 2026-10-13). Détachée de `b2b_settings` : les droits sont
    * granulaires (Hugo). Ajoutée sans être accordée : elle s'accorde à l'écran.
    */
   "lfc_site_settings",

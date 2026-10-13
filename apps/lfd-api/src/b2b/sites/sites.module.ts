@@ -11,8 +11,8 @@ import { PrismaSiteReader } from "./infrastructure/prisma-site.reader.js";
 import { PrismaSiteRepository } from "./infrastructure/prisma-site.repository.js";
 
 /**
- * **Les sites** — nos lieux, leurs rôles et leurs couleurs (plan
- * `documentation/livraisons/transferts/plan-sites-transfert-interne-tri-et-couleurs.md`,
+ * **Les sites** — nos lieux, leurs rôles et leurs couleurs (doc
+ * `documentation/sites/sites.md`,
  * lot S1). Deux ports, un par sens (ISP) : l'agrégat s'écrit par
  * `SiteRepository`, l'écran lit par `SiteReader`.
  *

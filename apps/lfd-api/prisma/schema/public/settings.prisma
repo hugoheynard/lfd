@@ -3,8 +3,8 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 /// Un **site** — un lieu physique À NOUS (2026-10-13,
-/// `documentation/livraisons/transferts/plan-sites-transfert-interne-tri-et-couleurs.md`,
-/// §3) : on y fabrique et on en part, on y remet des commandes, ou on y est
+/// `documentation/sites/sites.md`,
+/// §1) : on y fabrique et on en part, on y remet des commandes, ou on y est
 /// servi par un transfert interne. C'était le « point de retrait » ; le modèle
 /// Prisma a changé de nom, la TABLE non (`pickup_addresses`, Q-S1 proposé) —
 /// les références (`pickup_address_id`) et les snapshots restent valides.

@@ -102,7 +102,7 @@ describe('grantGroups', () => {
    * `b2b_cancel_order`, annuler une commande n'est pas la passer
    * (annulation-par-le-staff.md, C3.8). 52 le 2026-10-13 :
    * `lfc_site_settings` et `lfc_order_settings`, les droits granulaires des
-   * réglages (plan-sites-transfert-interne-tri-et-couleurs.md, lot S0). 54
+   * réglages (sites/sites.md, lot S0). 54
    * le même jour : `b2b_commercial_appointment` et `b2b_commercial_alert`, les
    * réglages commerciaux (Hugo). 55 le même jour : `b2b_request_reasons`, les
    * motifs des demandes, sortis de `b2b_contact`.

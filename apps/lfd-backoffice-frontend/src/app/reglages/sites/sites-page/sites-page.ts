@@ -28,9 +28,9 @@ export { roleLabels } from '../site-role-labels';
 type LoadState = 'loading' | 'ready' | 'error';
 
 /**
- * **Réglages › Sites** — nos lieux, leurs rôles et leurs couleurs (plan
- * `documentation/livraisons/transferts/plan-sites-transfert-interne-tri-et-couleurs.md`,
- * §3.4, lot S1). C'est l'ancienne liste des points de retrait : un site EST
+ * **Réglages › Sites** — nos lieux, leurs rôles et leurs couleurs (doc
+ * `documentation/sites/sites.md`,
+ * §4, lot S1). C'est l'ancienne liste des points de retrait : un site EST
  * le point, élargi ; `/b2b/reglages/points-de-retrait` redirige ici. Les
  * archivés sont listés à la fin (le serveur les trie), marqués comme tels.
  *

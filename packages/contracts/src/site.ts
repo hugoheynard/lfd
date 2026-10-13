@@ -4,9 +4,9 @@ import { type GpsPoint, gpsPointSchema } from "./address.js";
 import type { PickupAddressView } from "./pickup.js";
 
 /**
- * **Les sites** — nos lieux, leurs rôles et leurs couleurs (plan
- * `documentation/livraisons/transferts/plan-sites-transfert-interne-tri-et-couleurs.md`,
- * §3, lot S1, 2026-10-13). Un site EST l'ancien point de retrait, élargi :
+ * **Les sites** — nos lieux, leurs rôles et leurs couleurs (doc
+ * `documentation/sites/sites.md`,
+ * §1, lot S1, 2026-10-13). Un site EST l'ancien point de retrait, élargi :
  * même identifiant, mêmes champs, plus ce qui suit.
  *
  * Ces schémas ne tiennent que la FORME. Les règles — un site servi par

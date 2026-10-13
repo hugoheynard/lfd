@@ -1,6 +1,6 @@
 /**
- * E2E de **Réglages › Sites** (plan
- * `documentation/livraisons/transferts/plan-sites-transfert-interne-tri-et-couleurs.md`,
+ * E2E de **Réglages › Sites** (doc
+ * `documentation/sites/sites.md`,
  * lot S1) : la surface `admin/sites` sous `lfc_site_settings`, les rôles, les
  * couleurs libres (vert / rouge / rose refusés), l'archivage, et ce que le
  * client voit encore — les seuls sites actifs qui remettent.

@@ -1,8 +1,8 @@
 import { BusinessError, DomainError } from "../../../platform/shared/errors/app-error.js";
 
 /**
- * Les refus de l'agrégat `Site` — plan
- * `documentation/livraisons/transferts/plan-sites-transfert-interne-tri-et-couleurs.md`, §3.
+ * Les refus de l'agrégat `Site` — doc
+ * `documentation/sites/sites.md`, §2.
  *
  * Tous nomment le cas réel et le geste de sortie : ils sont lus par du
  * personnel qui règle un site sans le code sous les yeux.

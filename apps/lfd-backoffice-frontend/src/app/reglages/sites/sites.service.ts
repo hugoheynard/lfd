@@ -18,9 +18,9 @@ import { B2B_API_BASE } from '../../api/api-config';
 const SITES = `${B2B_API_BASE}/admin/sites`;
 
 /**
- * **Réglages › Sites** — l'API de l'écran, sous `lfc_site_settings` (plan
- * `documentation/livraisons/transferts/plan-sites-transfert-interne-tri-et-couleurs.md`,
- * §3.4, lot S1).
+ * **Réglages › Sites** — l'API de l'écran, sous `lfc_site_settings` (doc
+ * `documentation/sites/sites.md`,
+ * §4, lot S1).
  *
  * Seul l'écran des sites passe par ici. Le comptoir, la saisie de commande et
  * les heures limites lisent la route PUBLIQUE de `PickupAddressesService.list()`

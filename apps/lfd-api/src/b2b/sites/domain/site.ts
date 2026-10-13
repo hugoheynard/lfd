@@ -95,8 +95,8 @@ function checkRoles(roles: SiteRoles): void {
 }
 
 /**
- * **Un site** — un lieu physique à nous (plan
- * `documentation/livraisons/transferts/plan-sites-transfert-interne-tri-et-couleurs.md`, §3).
+ * **Un site** — un lieu physique à nous (doc
+ * `documentation/sites/sites.md`, §2).
  *
  * Il porte les règles qui peuvent refuser une écriture : la cohérence des
  * rôles, le point GPS d'un site qui expédie, et l'archivage qui
