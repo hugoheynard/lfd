@@ -68,7 +68,7 @@ export interface LoyaltyBalanceView {
  * `reserved` (lot C) : engagé sur une commande vivante. Faute d'état `used`,
  * c'est la commande qui dit s'il a servi — cf. {@link LoyaltyVoucherView.usedOn}.
  *
- * `merged_back` (doc `documentation/commandes/annulation/annulation-par-le-staff.md`, lot C3b) : un
+ * `merged_back` (doc `documentation/commandes/annulation/fusion-du-bon.md`, lot C3b) : un
  * reliquat refondu dans son bon d'origine, à l'annulation de la commande qui
  * l'avait fait naître. Le staff le voit ; le client, jamais
  * ({@link MyLoyaltyVoucherStatus}) — il retrouve le bon d'origine.

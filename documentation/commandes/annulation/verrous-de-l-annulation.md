@@ -4,7 +4,8 @@
 > C3b, C5 et C4 le 2026-10-12 ; marqués _C5_ quand ils viennent du compte). Le
 > client (C6, 2026-10-13) passe par la même transaction et n'en ajoute aucun.
 > Les gestes eux-mêmes : [`annulation-par-le-staff.md`](annulation-par-le-staff.md)
-> (§C3.4 ter, §C3b.5, §C5.3, §C5.4) et
+> (§C3.4 ter, §C5.3, §C5.4),
+> [`fusion-du-bon.md`](fusion-du-bon.md) (§C3b.5) et
 > [`annulation-par-le-client.md`](annulation-par-le-client.md).
 
 ## L'idée en une phrase

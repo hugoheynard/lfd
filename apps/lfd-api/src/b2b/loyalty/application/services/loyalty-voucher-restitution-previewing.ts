@@ -10,7 +10,7 @@ import { restitutionOf } from "./voucher-restitution-outcome.js";
 
 /**
  * **L'aperçu de la restitution** pour le détail staff (doc
- * `documentation/commandes/annulation/annulation-par-le-staff.md`, C3b.5, C3b.7) : la règle pure, sans
+ * `documentation/commandes/annulation/fusion-du-bon.md`, C3b.5, C3b.7) : la règle pure, sans
  * verrou ni écriture. Implémente le port de lecture que la commande déclare,
  * relié dans `appBootstrap/loyalty-voucher.module.ts`.
  *

@@ -1,6 +1,6 @@
 /**
  * E2E de **la refusion du bon** à l'annulation staff (doc
- * `documentation/commandes/annulation/annulation-par-le-staff.md`, lot C3b, C3b.9) — le
+ * `documentation/commandes/annulation/fusion-du-bon.md`, lot C3b, C3b.9) — le
  * bon rendu, le reliquat refondu, le bon échu, les refus, la chaîne, et
  * l'index partiel. Les courses sont dans `order-staff-cancel-voucher-races`.
  */

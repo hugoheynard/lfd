@@ -2,7 +2,7 @@ import type { LoyaltyVoucherStatus } from "../entities/loyalty-voucher-shapes.js
 
 /**
  * **Ce que l'annulation d'une commande fait du bon qu'elle portait** (doc
- * `documentation/commandes/annulation/annulation-par-le-staff.md`, lot C3b, C3b.3) —
+ * `documentation/commandes/annulation/fusion-du-bon.md`, lot C3b, C3b.3) —
  * pure : ni horloge, ni port.
  *
  * Lue deux fois, comme la règle de l'annulation : par l'aperçu du détail staff

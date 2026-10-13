@@ -1,6 +1,6 @@
 /**
  * **Les phrases du bon à l'annulation** (doc
- * `documentation/commandes/annulation/annulation-par-le-staff.md`, lot C3b, C3b.7) —
+ * `documentation/commandes/annulation/fusion-du-bon.md`, lot C3b, C3b.7) —
  * pures. Lues par l'équipe sans le code sous les yeux : elles ne promettent
  * que ce qui est possible. Montants en centimes HT, l'unité du bon.
  */

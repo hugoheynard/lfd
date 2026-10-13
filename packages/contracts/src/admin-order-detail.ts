@@ -83,7 +83,7 @@ export type AdminOrderCancellability =
 
 /**
  * Ce que l'annulation fera du bon — calculé par la même règle que le geste,
- * sans verrou (doc `documentation/commandes/annulation/annulation-par-le-staff.md`, C3b.7).
+ * sans verrou (doc `documentation/commandes/annulation/fusion-du-bon.md`, C3b.7).
  * `sentence` est la phrase du serveur, à montrer telle quelle dans la
  * confirmation ; les montants (centimes HT, l'unité du bon) servent à la mise
  * en forme. `expiresAt` : instant ISO 8601, la date limite d'origine du bon.

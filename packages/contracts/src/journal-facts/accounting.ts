@@ -351,7 +351,7 @@ export const ACCOUNTING_FACTS = {
   ),
   /**
    * Le bon d'une commande annulée par l'équipe est rendu au client (doc
-   * `documentation/commandes/annulation/annulation-par-le-staff.md`, lot C3b) : tel quel (`returned`),
+   * `documentation/commandes/annulation/fusion-du-bon.md`, lot C3b) : tel quel (`returned`),
    * ou en refondant son reliquat `remainder` (`merged`). `valueCents` est ce
    * que le bon vaut de nouveau, jusqu'à `expiresAt` — sa date d'origine.
    */
