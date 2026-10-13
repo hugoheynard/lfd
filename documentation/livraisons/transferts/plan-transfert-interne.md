@@ -416,3 +416,21 @@ l'option B le même jour ; le transfert a été refondu.
 | S4  | SÉRIEUX  | réception : mécanisme et trace                                                                                                 | **corrigé** (§3) : un seul `UPDATE … WHERE received_at IS NULL` avec auteur et motif ; 0 ligne → `TransferAlreadyReceivedError` ; fait de journal `internal_transfer.received`                                                           |
 | S5  | SÉRIEUX  | T0 dépend de S1 et de Q-T11                                                                                                    | **corrigé** (§9)                                                                                                                                                                                                                         |
 | m   | mineurs  | §12.1 S6 contre la lecture synchrone ; nom du fichier du fait de départ ; lecteur des sites servis ; repli sans véhicule       | **corrigés** : §12.1 S6 aligné ; `delivery-round-departed.fact.ts` vérifié (existe) ; lecteur nommé `TransferSitesReader` (§9) ; repli sans véhicule : transfert sans arrêt, ligne au journal, sortie par réception manuelle (**Q-T13**) |
+
+## État du lot T0 (2026-10-13)
+
+🟡 **Partiel** — bâti : la fonction pure `transferDeparture`
+(`b2b/orders/domain/services/transfer-departure.ts`), la prise en compte du
+site dans `deadlineThresholds` (marges et interrupteur des vagues intacts),
+et le port `RoadTravelTimeReader` déclaré et implémenté par la livraison
+(`delivery/channels/commerce/road-travel-time.reader.ts`, OSRM, `null` si le
+calcul est indisponible — aucune durée inventée). **Manque**, bloqué par S2
+(la commande ne porte pas son site) : le branchement dans `dueAtOf`,
+`DeadlineOrdersReader` et `ProducibleOrder.dueAt`, le service de calcul par
+site, le signalement au journal d'une échéance sans heure, les e2e.
+
+`ProducibleOrder.dueAt` (le colisage) vaudra l'heure où la marchandise doit
+être **à destination** : livraison = la fenêtre chez le client (inchangé) ;
+retrait sur place = créneau − mise en place ; retrait par transfert =
+arrivée requise au site. L'échéance du fournil, elle, part du départ requis
+(décidé le 2026-10-13, Hugo peut revenir dessus).

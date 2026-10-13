@@ -110,6 +110,7 @@ import { DeliveryStopsLocating } from "./application/delivery-stops-locating.js"
 import { DAY_READINESS_CONTROLLERS, DAY_READINESS_PROVIDERS } from "./day-readiness.providers.js";
 import { BIN_CATALOGUE_CONTROLLERS, BIN_CATALOGUE_PROVIDERS } from "./bin-catalogue.providers.js";
 import { ROAD_ROUTING_PROVIDERS } from "./road-routing.providers.js";
+import { RoutedTravelTimeReader } from "./infrastructure/routed-travel-time.reader.js";
 import {
   SIMULATION_SCENARIOS_CONTROLLERS,
   SIMULATION_SCENARIOS_PROVIDERS,
@@ -248,7 +249,10 @@ import {
     { provide: GeocodeCacheRepository, useClass: PrismaGeocodeCacheRepository },
     { provide: DeliveryProposalRepository, useClass: PrismaDeliveryProposalRepository },
     ...ROAD_ROUTING_PROVIDERS,
+    // Le trajet d'un transfert (T0) : il lit la matrice privée du bloc, d'où
+    // sa place ici ; le fil de la livraison le relie au port du canal.
+    RoutedTravelTimeReader,
   ],
-  exports: [DeliveryBinDesk, DeliveryStopsLocating],
+  exports: [DeliveryBinDesk, DeliveryStopsLocating, RoutedTravelTimeReader],
 })
 export class DeliveryModule {}

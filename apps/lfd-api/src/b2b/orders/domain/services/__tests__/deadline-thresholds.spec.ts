@@ -196,3 +196,43 @@ describe("dueClockOf — l'heure d'échéance remise au fournil (colisage, §13)
     expect(dueClockOf({ start: null, end: "09:30" })).toBe("09:30");
   });
 });
+
+describe("deadlineThresholds — le site qui remet (plan des sites, T0)", () => {
+  const pickupAt = (site: DeadlineOrder["site"]): DeadlineOrder => ({
+    ...order("pickup", { start: "08:00", end: "09:00" }, { BAG: 10 }),
+    ...(site === undefined ? {} : { site }),
+  });
+  const firstBefore = (orders: readonly DeadlineOrder[], margins = MARGINS) =>
+    deadlineThresholds(orders, margins)[0]?.thresholds[0];
+
+  it("un site sur place à mise en place nulle ne change rien", () => {
+    expect(firstBefore([pickupAt({ supply: "on_site", counterSetupMinutes: 0 })])).toEqual(
+      firstBefore([pickupAt(undefined)]),
+    );
+    expect(firstBefore([pickupAt(undefined)])?.before).toBe("07:40");
+  });
+
+  it("la mise en place s'ajoute à la marge de retrait", () => {
+    expect(firstBefore([pickupAt({ supply: "on_site", counterSetupMinutes: 15 })])?.before).toBe(
+      "07:25",
+    );
+  });
+
+  it("un site servi par transfert : départ requis moins la marge de livraison", () => {
+    expect(firstBefore([pickupAt({ supply: "transfer", requiredBy: "06:20" })])?.before).toBe(
+      "05:30",
+    );
+  });
+
+  it("un transfert sans départ calculable passe en « sans heure »", () => {
+    expect(firstBefore([pickupAt({ supply: "transfer", requiredBy: null })])?.kind).toBe("undated");
+  });
+
+  it("l'interrupteur des vagues tient : une marge non réglée rend la journée, transfert compris", () => {
+    const threshold = firstBefore([pickupAt({ supply: "transfer", requiredBy: "06:20" })], {
+      deliveryMinutes: 50,
+      pickupMinutes: null,
+    });
+    expect(threshold).toMatchObject({ kind: "day", before: null });
+  });
+});

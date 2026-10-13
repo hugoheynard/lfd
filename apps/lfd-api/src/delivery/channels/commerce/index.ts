@@ -14,6 +14,8 @@ export {
 } from "./departure-candidates.reader.js";
 // Déclaré ET implémenté par la livraison, lu par le commerce (2026-10-13).
 export { DepartureSiteReader } from "./departure-site.reader.js";
+// Déclaré ET implémenté par la livraison, lu par le commerce (T0, 2026-10-13).
+export { RoadTravelTimeReader } from "./road-travel-time.reader.js";
 export {
   DeliveryOrdersReader,
   type DeliveryOrderFacts,

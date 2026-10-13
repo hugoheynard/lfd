@@ -27,8 +27,11 @@ import {
   DepartureCandidatesReader,
   DepartureSiteReader,
   OrderDeliveryHistoryReader,
+  RoadTravelTimeReader,
 } from "../delivery/channels/commerce/index.js";
 import { PrismaOrderDeliveryHistoryReader } from "../delivery/infrastructure/prisma-order-delivery-history.reader.js";
+import { DeliveryModule } from "../delivery/delivery.module.js";
+import { RoutedTravelTimeReader } from "../delivery/infrastructure/routed-travel-time.reader.js";
 import { ResolvedDepartureSiteReader } from "../delivery/infrastructure/resolved-departure-site.reader.js";
 
 /**
@@ -63,7 +66,9 @@ import { ResolvedDepartureSiteReader } from "../delivery/infrastructure/resolved
  * — la livraison déclare ET implémente, la comptabilité du commerce lit les
  * arrêts de ses bons pour le dossier de facturation. Et `DepartureSiteReader`
  * (2026-10-13) : le commerce demande quel site est le départ des tournées,
- * pour refuser d'y retirer « Livraison ».
+ * pour refuser d'y retirer « Livraison ». Et `RoadTravelTimeReader` (T0,
+ * 2026-10-13) : la durée de route d'un transfert interne, calculée par la
+ * matrice du bloc — d'où l'import de `DeliveryModule`, qui en garde l'adaptateur.
  *
  * `@Global` pour la raison des autres fils : le consommateur est `delivery/`,
  * qui ne peut pas importer le module qui fournit le port sans dépendre du
@@ -71,7 +76,7 @@ import { ResolvedDepartureSiteReader } from "../delivery/infrastructure/resolved
  */
 @Global()
 @Module({
-  imports: [PickupAddressesModule, CatalogModule, AccountModule, OrdersModule],
+  imports: [PickupAddressesModule, CatalogModule, AccountModule, OrdersModule, DeliveryModule],
   providers: [
     { provide: DepartureCandidatesReader, useClass: PickupDepartureCandidatesReader },
     { provide: DeliveryOrdersReader, useClass: PrismaDeliveryOrdersReader },
@@ -88,6 +93,7 @@ import { ResolvedDepartureSiteReader } from "../delivery/infrastructure/resolved
     },
     { provide: OrderDeliveryHistoryReader, useClass: PrismaOrderDeliveryHistoryReader },
     { provide: DepartureSiteReader, useClass: ResolvedDepartureSiteReader },
+    { provide: RoadTravelTimeReader, useExisting: RoutedTravelTimeReader },
   ],
   exports: [
     DepartureCandidatesReader,
@@ -102,6 +108,7 @@ import { ResolvedDepartureSiteReader } from "../delivery/infrastructure/resolved
     DeliveryAddressPointCorrector,
     OrderDeliveryHistoryReader,
     DepartureSiteReader,
+    RoadTravelTimeReader,
   ],
 })
 export class DeliveryFeedModule {}

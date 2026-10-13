@@ -35,7 +35,24 @@ export interface DeadlineOrder {
   /** `HH:mm` ; `null` = aucune fenêtre convenue (ancienne commande, retrait sans créneau). */
   readonly window: { readonly start: string | null; readonly end: string } | null;
   readonly lines: readonly DeadlineLine[];
+  /**
+   * Le site qui remet un retrait (plan des sites, §4.6, lot T0). Absent = site
+   * non résolu, et l'échéance reste celle d'avant les sites : fenêtre − marge
+   * de retrait. Ignoré pour une livraison.
+   */
+  readonly site?: DeadlineSite;
 }
+
+/**
+ * - `on_site` : le site colise sur place ; sa mise en place au comptoir
+ *   s'AJOUTE à la marge de retrait ;
+ * - `transfer` : la marchandise arrive par un transfert interne ; l'échéance
+ *   est son départ requis (`transferDeparture`) moins la marge de LIVRAISON
+ *   (colisage + chargement). `null` = départ incalculable → `UNDATED`.
+ */
+export type DeadlineSite =
+  | { readonly supply: "on_site"; readonly counterSetupMinutes: number }
+  | { readonly supply: "transfer"; readonly requiredBy: string | null };
 
 /** Les deux réglages du commerce (§7.3), en minutes ; `null` = non réglée. */
 export interface ProductionMargins {
@@ -120,11 +137,23 @@ function dueMinute(
   order: DeadlineOrder,
   margins: { readonly delivery: number; readonly pickup: number },
 ): number {
+  if (order.fulfillmentMethod === "delivery") {
+    return order.window === null
+      ? UNDATED
+      : Math.max(0, minuteOf(dueClockOf(order.window)) - margins.delivery);
+  }
+  const site = order.site;
+  if (site?.supply === "transfer") {
+    // Le transfert part pour le site, pas pour le client : sa fenêtre ne compte plus.
+    return site.requiredBy === null
+      ? UNDATED
+      : Math.max(0, minuteOf(site.requiredBy) - margins.delivery);
+  }
   if (order.window === null) {
     return UNDATED;
   }
-  const margin = order.fulfillmentMethod === "delivery" ? margins.delivery : margins.pickup;
-  return Math.max(0, minuteOf(dueClockOf(order.window)) - margin);
+  const setup = site?.counterSetupMinutes ?? 0;
+  return Math.max(0, minuteOf(dueClockOf(order.window)) - margins.pickup - setup);
 }
 
 /**
