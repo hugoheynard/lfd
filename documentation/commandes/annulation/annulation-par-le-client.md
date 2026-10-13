@@ -211,18 +211,20 @@ l'extraction du noyau.
 
 ## Reste ouvert (au 2026-10-13)
 
-**Choix métier, défauts bâtis, non tranchés par Hugo** :
+**Choix métier — tranchés par Hugo le 2026-10-13** (« 1 côté client, motif
+facultatif, 2 oui 3 oui […] 5 oui 7 oui 6 oui 8 oui », puis « garde minuit »).
+Ce qui est bâti est ce qu'il a choisi :
 
-| #      | Question                                         | Défaut appliqué                                   |
-| ------ | ------------------------------------------------ | ------------------------------------------------- |
-| Q-C6.1 | motif obligatoire ?                              | facultatif, liste + texte                         |
-| Q-C6.2 | le rôle `billing` peut-il annuler ?              | oui, comme il peut commander                      |
-| Q-C6.3 | un membre annule la commande d'un autre membre ? | oui ; le courriel dit qui a annulé                |
-| Q-C6.4 | ancre sans heure de début                        | minuit du jour                                    |
-| Q-C6.5 | nom de l'entrée                                  | « Commandes », `/b2b/reglages/commandes`          |
-| Q-C6.6 | réglage au déploiement                           | fermé, 24 h                                       |
-| Q-C6.8 | cloche à chaque annulation client                | oui                                               |
-| Q-C6.9 | borne du lien d'invité                           | 90 jours ; « jamais » possible si Hugo le préfère |
+| #      | Question                                         | Défaut appliqué                          |
+| ------ | ------------------------------------------------ | ---------------------------------------- |
+| Q-C6.1 | motif obligatoire ?                              | facultatif, liste + texte                |
+| Q-C6.2 | le rôle `billing` peut-il annuler ?              | oui, comme il peut commander             |
+| Q-C6.3 | un membre annule la commande d'un autre membre ? | oui ; le courriel dit qui a annulé       |
+| Q-C6.4 | ancre sans heure de début                        | minuit du jour                           |
+| Q-C6.5 | nom de l'entrée                                  | « Commandes », `/b2b/reglages/commandes` |
+| Q-C6.6 | réglage au déploiement                           | fermé, 24 h                              |
+| Q-C6.8 | cloche à chaque annulation client                | oui                                      |
+| Q-C6.9 | borne du lien d'invité                           | 90 jours                                 |
 
 **Hors périmètre** : annulation partielle (c'est l'avenant) ; délai pour les
 pros ; rattrapage des liens des commandes d'invité d'avant C6 ; un lien
