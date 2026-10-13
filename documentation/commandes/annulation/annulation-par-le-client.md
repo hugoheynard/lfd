@@ -33,12 +33,24 @@
 
 ## Le parcours
 
-> ⚠️ **Règle décidée par Hugo le 2026-10-13, PAS ENCORE BÂTIE** : le délai
-> des particuliers est **actif par défaut** (le désactiver est le geste) ; sans
-> délai, seul l'arrêt du plan de production limite, comme pour un pro ; le
-> refus « annulations fermées » disparaît ; le courriel mène un compte à SA
-> commande. Le schéma ci-dessous montre la règle voulue ; le code en production
-> applique encore l'ancienne (réglage fermé = pas d'annulation par un particulier).
+> ⚠️ **Règle décidée par Hugo le 2026-10-13, PAS ENCORE BÂTIE** :
+>
+> - **Le courriel de confirmation porte le lien « Gérer ou annuler ma commande »
+>   dans TOUS les parcours** (Hugo : « tous les parcours doivent avoir le lien
+>   d'annulation dans le mail ») : pro, particulier connecté, invité. Un compte
+>   arrive sur SA commande dans Mes commandes (connexion demandée) ; l'invité sur
+>   la page /annuler.
+> - Le délai des particuliers est **actif par défaut** ; le désactiver est le geste.
+> - Les particuliers annulent jusqu'à l'**étape choisie** dans Réglages › Commandes
+>   (« Jusqu'où un particulier peut-il annuler ? » : arrêt du plan de production
+>   par défaut, commande prête, ou retrait) — un particulier n'a ni bac ni
+>   tournée, il retire au comptoir. Lot C7, plan de
+>   l'annulation après production, en cours d'écriture.
+> - Les pros annulent jusqu'à l'arrêt du plan de production, sans réglage.
+>
+> Le code en production applique encore l'ancienne règle (réglage fermé = pas
+> d'annulation par un particulier) ; le correctif du délai est en cours, le choix
+> d'étape (C7) est en conception.
 
 ```mermaid
 flowchart TD
@@ -50,15 +62,17 @@ flowchart TD
     A --> W{"Est-il autorisé ?<br/>membre accepté de la société,<br/>auteur, ou lien valide"}
     W -- non --> R0["Commande introuvable"]:::refus
     W -- oui --> K{"Commande personnelle ?"}
-    K -- oui --> S{"Délai imposé aux particuliers ?<br/>réglage actif par défaut"}
-    K -- "non, pro" --> P
-    S -- oui --> T{"Plus de N heures<br/>avant le retrait / la livraison ?"}
-    S -- "non, réglage désactivé" --> P
+    K -- "non, pro" --> P{"Le plan de production<br/>est-il arrêté ?"}
+    K -- "oui, particulier" --> S{"Délai imposé ?<br/>réglage actif par défaut"}
+    S -- oui --> T{"Plus de N heures<br/>avant le retrait ?"}
+    S -- "non, désactivé" --> E
     T -- non --> R2["Refus : trop tard"]:::refus
-    T -- oui --> P{"Le plan de production<br/>est-il arrêté ?"}
+    T -- oui --> E{"La commande a-t-elle passé l'étape<br/>choisie dans les réglages ?<br/>arrêt du plan, par défaut · prête · retirée"}
     P -- oui --> R3["Refus : déjà en production"]:::refus
-    P -- non --> N[["Le noyau du staff<br/>fournil, argent, bon"]]
-    N --> M(["Courriel « vous avez annulé »,<br/>cloche à l'équipe"])
+    P -- non --> N
+    E -- non --> N
+    E -- oui --> R4["Refus : déjà en production,<br/>déjà prête, ou déjà retirée"]:::refus
+    N[["Le noyau du staff<br/>argent, bon ; ce qui est fabriqué reste fabriqué"]] --> M(["Courriel « vous avez annulé »,<br/>cloche à l'équipe"])
 
     classDef refus fill:#fde8e8,stroke:#c0392b,color:#7b1d1d
 ```
