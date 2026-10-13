@@ -28,10 +28,12 @@ import { ListRequestReasonsQuery } from "../application/queries/list-request-rea
 
 /**
  * Les **motifs des demandes** au back-office (Réglages › Motifs des demandes,
- * un onglet par `kind`), sous `b2b_contact` ; l'action se déduit du verbe.
+ * un onglet par `kind`), sous `b2b_request_reasons` depuis le 2026-10-13 ;
+ * l'action se déduit du verbe. La lecture publique des formulaires
+ * (`GET /request-reasons`) vit dans `ContactController`, hors de ce droit.
  */
 @Controller("admin/request-reasons")
-@AdminSurface("b2b_contact")
+@AdminSurface("b2b_request_reasons")
 export class AdminRequestReasonsController {
   constructor(
     private readonly commands: CommandBus,

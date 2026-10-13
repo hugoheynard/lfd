@@ -481,7 +481,7 @@ export class App {
     });
 
     // Le compte des demandes clients à traiter, tous types, pour l'entrée
-    // « Demandes clients » du rail et des tuiles. Même précaution : seulement avec le droit de lire.
+    // « Demandes clients » du menu et des tuiles. Même précaution : seulement avec le droit de lire.
     effect(() => {
       if (this.permissions.can('b2b_contact:read')) {
         void this.requestsInbox.refresh();

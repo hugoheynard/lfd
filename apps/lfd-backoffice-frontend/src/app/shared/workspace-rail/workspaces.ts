@@ -143,15 +143,15 @@ export const COMMERCIAL_VIEWS: readonly CommercialView[] = [
     description:
       'Les alertes de compte client, et les seuils de couleur du calendrier d’acquisition.',
   },
-  // Venus des réglages de l'e-commerce (Hugo, 2026-10-13) ; droit du contact,
-  // inchangé (demandes-clients.md, §3.4).
+  // Venus des réglages de l'e-commerce (Hugo, 2026-10-13) ; leur propre droit,
+  // `b2b_request_reasons`, sorti de `b2b_contact` le même jour.
   {
     key: 'reglages-motifs-des-demandes',
     label: 'Motifs des demandes',
     link: '/commercial/reglages/motifs-des-demandes',
     icon: 'list',
     section: 'Réglages',
-    needs: 'b2b_contact:read',
+    needs: 'b2b_request_reasons:read',
     description:
       'Ce que le client choisit en écrivant ou en signalant un problème de commande, l’adresse où chaque demande part par e-mail, et sa priorité dans la boîte des demandes.',
   },
@@ -615,18 +615,9 @@ export const PIM_VIEWS: readonly WorkspaceView[] = [
  * on le remet — et chacune grandira de son côté.
  */
 export const B2B_VIEWS: readonly WorkspaceView[] = [
-  {
-    // LA BOÎTE DES DEMANDES CLIENTS (demandes-clients.md, §3.3) : en tête,
-    // pour la même raison que la Réception — ce qui attend passe avant ce qui
-    // est réglé. Le compteur dit les demandes à traiter, TOUS types (§6.8).
-    key: 'demandes',
-    label: 'Demandes clients',
-    link: '/b2b/demandes',
-    icon: 'inbox',
-    section: 'Clients',
-    needs: 'b2b_contact:read',
-    counter: 'requests-pending',
-  },
+  // LA BOÎTE DES DEMANDES CLIENTS n'est plus au rail (Hugo, 2026-10-13) : elle
+  // faisait doublon avec son entrée du menu principal, sous Commandes, qui
+  // porte le même compteur (`app.html`).
   {
     // En TÊTE de la section catalogue : ce qui attend une décision passe avant
     // ce qui est déjà en vente. Une arrivée non validée ne coûte rien tant

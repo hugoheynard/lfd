@@ -104,9 +104,10 @@ describe('grantGroups', () => {
    * `lfc_site_settings` et `lfc_order_settings`, les droits granulaires des
    * réglages (plan-sites-transfert-interne-tri-et-couleurs.md, lot S0). 54
    * le même jour : `b2b_commercial_appointment` et `b2b_commercial_alert`, les
-   * réglages commerciaux (Hugo).
+   * réglages commerciaux (Hugo). 55 le même jour : `b2b_request_reasons`, les
+   * motifs des demandes, sortis de `b2b_contact`.
    */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(54);
+    expect(RESOURCE_COUNT).toBe(55);
   });
 });

@@ -177,9 +177,13 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     write: "Composer la vitrine — formes, positions, rayons, contenus — et l'enregistrer.",
   },
   b2b_contact: {
-    read: "Voir les objets de « Nous écrire », la carte de contact de la boutique, et les messages reçus des clients et des visiteurs.",
+    read: "Voir la carte de contact de la boutique et les messages reçus des clients et des visiteurs. Les motifs relèvent de « Motifs des demandes ».",
+    write: "Régler le numéro et la carte de contact, marquer un message traité.",
+  },
+  b2b_request_reasons: {
+    read: "Voir les motifs proposés aux clients dans « Nous écrire » et le signalement d'un problème de commande.",
     write:
-      "Créer, modifier, ordonner ou archiver un objet de contact, régler le numéro et la carte de contact, marquer un message traité.",
+      "Créer, modifier, ordonner ou archiver un motif — ce qui change les choix offerts aux clients.",
   },
   production_plan: {
     read: "Voir le plan du soir : l'état de la journée, le lot à produire et son PDF, le prévisionnel.",

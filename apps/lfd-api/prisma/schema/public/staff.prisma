@@ -112,6 +112,9 @@ enum StaffResource {
   /// LES DEMANDES CLIENTS — motifs, demandes reçues, carte de contact
   /// (2026-10-09, `demandes-clients.md`). Accordée à l'écran.
   b2b_contact
+  /// LES MOTIFS DES DEMANDES CLIENTS (2026-10-13, Hugo : droits granulaires).
+  /// Sortis de `b2b_contact`. Accordée à l'écran.
+  b2b_request_reasons
   /// LE FOURNIL, un droit par geste — sortis de `b2b_orders` le 2026-10-01
   /// (`documentation/livraisons/droits/plan-droits-par-geste.md`, DG-D1) : le plan du
   /// soir, la fiche d'atelier, le colisage.

@@ -170,7 +170,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // « Nous écrire » : son propre droit. Répondre aux messages n'est pas
   // régler la vente, et l'inverse non plus (demandes-clients.md, §5.6).
   'b2b/contact': 'b2b_contact:read',
-  // La boîte et les motifs des demandes clients : le droit du contact
+  // La boîte des demandes clients : le droit du contact
   // (demandes-clients.md, §6.8).
   'b2b/demandes': 'b2b_contact:read',
 
@@ -340,8 +340,9 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'commercial/reglages/disponibilite': 'b2b_commercial_appointment:read',
   'commercial/reglages/marches': 'b2b_growth:read',
   'commercial/reglages/alertes': 'b2b_commercial_alert:read',
-  // Les motifs des demandes, venus de l'e-commerce : le droit du contact.
-  'commercial/reglages/motifs-des-demandes': 'b2b_contact:read',
+  // Les motifs des demandes, venus de l'e-commerce : leur propre droit, sorti
+  // de `b2b_contact` (Hugo, 2026-10-13).
+  'commercial/reglages/motifs-des-demandes': 'b2b_request_reasons:read',
   // Les deux gabarits héritent du mur de `commercial` (`growth:read`) : ils
   // portent des prix négociés, et la même personne qui voit les prospects
   // négocie leurs tarifs.

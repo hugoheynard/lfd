@@ -324,11 +324,19 @@ export const staffResourceSchema = z.enum([
    * **« Nous écrire »** — régler les objets de contact et la carte de contact
    * de la boutique, lire et traiter les messages reçus
    * (`documentation/contenu-ecommerce/demandes-clients.md`, §5.6, 2026-10-09).
+   * Les objets (motifs) en sont sortis le 2026-10-13 : `b2b_request_reasons`.
    *
    * Ajoutée SANS être accordée par la migration : elle s'accorde à l'écran
    * (`/admin/staff-roles`). La graine ne la donne qu'à l'administrateur.
    */
   "b2b_contact",
+  /**
+   * **Les motifs des demandes clients** (Commercial › Réglages › Motifs des
+   * demandes). Détachée de `b2b_contact` (Hugo, 2026-10-13) : lire et traiter
+   * les messages reçus reste sous `b2b_contact`. Ajoutée sans être accordée :
+   * elle s'accorde à l'écran.
+   */
+  "b2b_request_reasons",
 
   // ── `production.` — LE FOURNIL ──────────────────────────────────────────
   // Sortis de `b2b_orders` le 2026-10-01, un par geste
@@ -592,6 +600,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   media_library: "Médiathèque",
   b2b_storefront: "Vitrine",
   b2b_contact: "Nous écrire",
+  b2b_request_reasons: "Motifs des demandes",
   delivery_run_sheet: "Feuille de route",
   delivery_settings: "Réglages de livraison",
   delivery_availability: "Disponibilité de la livraison",
@@ -759,6 +768,8 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     b2b_storefront: "write",
     // Graine seulement (dev, e2e) : en production, accordée à l'écran (§5.6).
     b2b_contact: "write",
+    // Graine seulement (2026-10-13) : en production, accordée à l'écran.
+    b2b_request_reasons: "write",
     // `write` sur une lecture seule : l'administrateur couvre tout, sans trou.
     delivery_run_sheet: "write",
     delivery_settings: "write",
