@@ -17,7 +17,7 @@
 ```mermaid
 flowchart LR
     ADM["Back-office<br/>/mediatheque"] -->|multipart| API["lfd-api<br/>POST /media"]
-    API -->|"clé = products/sha256.ext<br/>Cache-Control immuable"| R2[("R2 lfc-media<br/>WEUR")]
+    API -->|"clé = images/sha256.ext<br/>Cache-Control immuable"| R2[("R2 lfc-media<br/>WEUR")]
     NAV["Navigateur"] -->|"/cdn-cgi/image/width=…,format=auto"| POP["PoP Cloudflare<br/>transformation + cache"]
     POP -.->|"miss, une fois"| R2
 ```
@@ -177,4 +177,4 @@ La sonde ne pèse sur rien d'autre : elle a sa propre route, hors de
 | Le back-office peut-il lire les pixels ? | `curl -sI -H 'Origin: https://lfd-backoffice.com' https://media.lafoliecoffee.info/<clé>`                     | `access-control-allow-origin: https://lfd-backoffice.com`                 |
 | Le domaine refuse-t-il le vieux TLS ?    | R2 → `lfc-media` → Settings → Custom Domains                                                                  | Minimum TLS **1.2**                                                       |
 
-Une clé se lit dans R2 → `lfc-media` → Objects → `products/`.
+Une clé se lit dans R2 → `lfc-media` → Objects → `images/` (`products/` avant le déploiement D1 du [préfixe universel](../mediatheque/plan-prefixe-universel.md), et jusqu'à D2 pour les anciens objets).

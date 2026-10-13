@@ -19,8 +19,16 @@ import {
 import { DepositPalette } from "./deposit-palette.js";
 import { DepositRefusals } from "./deposit-refusals.js";
 
-/** Le préfixe d'usage dans le bucket. Il nomme l'emploi, pas un propriétaire. */
-const PREFIX = "products";
+/**
+ * Le préfixe des clés du fonds dans le bucket : la NATURE de l'objet, ni son
+ * emploi ni son porteur — une image sert une fiche, une famille, la vitrine.
+ *
+ * ⚠️ Il valait `products` jusqu'au 2026-10-13 (plan du préfixe universel, lot
+ * D1) : les lignes déjà au fonds ont été réécrites par la migration
+ * `20261013300000_le_prefixe_universel_des_images`, et le redépôt retrouve une
+ * image par son contenu, préfixe ignoré (`contentAddressOf`, lot D0).
+ */
+const MEDIA_KEY_PREFIX = "images";
 
 /**
  * Ce que rend un dépôt : l'entrée de bibliothèque — créée, ou celle qui
@@ -101,7 +109,7 @@ export class DepositImageHandler implements ICommandHandler<
     // inconnue — ne doit rien laisser dans le bucket.
     const palette = command.palette === null ? null : imagePalette(command.palette);
     const series = await this.seriesOf(command.seriesId);
-    const stored = await this.store.put(PREFIX, {
+    const stored = await this.store.put(MEDIA_KEY_PREFIX, {
       bytes: image.bytes,
       contentType: image.contentType,
     });

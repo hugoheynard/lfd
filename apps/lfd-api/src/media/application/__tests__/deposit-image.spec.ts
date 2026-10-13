@@ -20,6 +20,23 @@ import {
 } from "./deposit-image-doubles.js";
 
 describe("DepositImageHandler", () => {
+  it("le fonds range sous un préfixe qui ne nomme aucun porteur", async () => {
+    const store = new FakeStore();
+    const handler = new DepositImageHandler(
+      store,
+      new FakeLibrary(),
+      new FakeSeries(),
+      new RecordingMediaJournal(),
+      new DepositRefusals(new RecordingFailures()),
+      new DirectUnitOfWork(),
+      new DepositPalette(new RecordingPalettes(), new RecordingMediaJournal()),
+    );
+
+    await handler.execute(new DepositImageCommand(png(400, 400)));
+
+    expect(store.puts.map((put) => put.prefix)).toEqual(["images"]);
+  });
+
   it("range les octets puis inscrit ce qu'il en a MESURÉ", async () => {
     const store = new FakeStore();
     const library = new FakeLibrary();
@@ -37,11 +54,11 @@ describe("DepositImageHandler", () => {
     const result = await handler.execute(new DepositImageCommand(png(1200, 800)));
 
     expect(store.puts).toEqual([
-      { prefix: "products", asset: { bytes: png(1200, 800), contentType: "image/png" } },
+      { prefix: "images", asset: { bytes: png(1200, 800), contentType: "image/png" } },
     ]);
     expect(library.registered[0]).toMatchObject({
-      url: `https://media.example/products/${DEPOSITED_HASH}.png`,
-      storageKey: `products/${DEPOSITED_HASH}.png`,
+      url: `https://media.example/images/${DEPOSITED_HASH}.png`,
+      storageKey: `images/${DEPOSITED_HASH}.png`,
       contentType: "image/png",
       width: 1200,
       height: 800,
@@ -54,7 +71,7 @@ describe("DepositImageHandler", () => {
       {
         type: "media_asset.deposited",
         subjectType: "media_asset",
-        subjectId: `https://media.example/products/${DEPOSITED_HASH}.png`,
+        subjectId: `https://media.example/images/${DEPOSITED_HASH}.png`,
         payload: { subjectLabel: `${DEPOSITED_HASH}.png`, contentType: "image/png" },
       },
     ]);
