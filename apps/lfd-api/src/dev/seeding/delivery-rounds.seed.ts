@@ -2,6 +2,7 @@ import type { OpenPackingContainer } from "@lfd/contracts";
 import type { CommandBus } from "@nestjs/cqrs";
 
 import { AssignDeliveryStopCommand } from "../../delivery/application/commands/assign-delivery-stop.command.js";
+import { SetSiteRolesCommand } from "../../b2b/sites/application/set-site-roles.command.js";
 import { ChooseDepartureCommand } from "../../delivery/application/commands/choose-departure.command.js";
 import { LoadDeliveryBinCommand } from "../../delivery/application/commands/load-delivery-bin.command.js";
 import { OpenDeliveryRoundCommand } from "../../delivery/application/commands/open-delivery-round.command.js";
@@ -87,10 +88,25 @@ export async function chooseLaboDeparture(
 ): Promise<void> {
   const labo = await context.prisma.site.findFirst({
     where: { label: laboLabel },
-    select: { id: true },
+    select: {
+      id: true,
+      pickup: true,
+      supply: true,
+      deliveryDeparture: true,
+      transferMode: true,
+      counterSetupMinutes: true,
+    },
   });
   if (labo === null) {
     throw new Error(`Point « ${laboLabel} » absent : semer la station avant la livraison.`);
+  }
+  // Seul un site qui LIVRE peut être le départ (sites, 2026-10-13) : le rôle se
+  // coche par l'écran des sites, donc par sa commande, ses autres rôles inchangés.
+  if (!labo.deliveryDeparture) {
+    const { id, ...roles } = labo;
+    await asStaff(context.now, () =>
+      context.commands.execute(new SetSiteRolesCommand(id, { ...roles, deliveryDeparture: true })),
+    );
   }
   await asStaff(context.now, () =>
     context.commands.execute(new ChooseDepartureCommand(labo.id, SEED_STAFF_SUB)),

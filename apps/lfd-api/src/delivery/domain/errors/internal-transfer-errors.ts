@@ -115,8 +115,10 @@ export class OrderNotInTransferError extends ResourceNotFoundError {
   constructor(orderId: string) {
     super(
       "delivery.order_not_in_transfer",
-      `La commande ${orderId} n'est portée par aucun transfert interne : elle se remet ` +
-        "comme un retrait ordinaire. Rechargez la file du comptoir.",
+      `La commande ${orderId} n'est portée par aucun transfert interne : soit elle n'a pas ` +
+        "encore été mise dans un transfert (vérifiez avec le poste d'expédition qu'elle part " +
+        "bien), soit ce site est servi sur place et elle se remet sans réception. " +
+        "Rechargez la file du comptoir.",
     );
   }
 }
