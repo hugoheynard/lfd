@@ -53,6 +53,20 @@ export interface DriverStopRow {
 }
 
 /** Ma tournée, telle que la vue du livreur la lit. */
+/** Un arrêt de transfert de ma tournée (plan du transfert interne, lot T2). */
+export interface DriverTransferStopRow {
+  readonly stopId: string;
+  readonly transferId: string;
+  readonly position: number;
+  readonly closedAt: Date | null;
+  /** Le site servi, son nom figé à l'ouverture du transfert. */
+  readonly siteLabel: string;
+  /** Les commandes qu'il porte encore. */
+  readonly orderCount: number;
+  /** Reçu au site — par le livreur ou au comptoir — ou `null`. */
+  readonly receivedAt: Date | null;
+}
+
 export interface DriverRoundRow {
   readonly id: string;
   readonly serviceDay: string;
@@ -64,6 +78,8 @@ export interface DriverRoundRow {
   readonly returnedAt: Date | null;
   /** Par position de composition — la vue choisit l'ordre (rang figé ou position). */
   readonly stops: readonly DriverStopRow[];
+  /** Ses arrêts de transfert (lot T2), par position de composition. */
+  readonly transferStops: readonly DriverTransferStopRow[];
 }
 
 /**

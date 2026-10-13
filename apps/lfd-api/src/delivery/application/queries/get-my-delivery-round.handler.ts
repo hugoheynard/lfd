@@ -19,6 +19,9 @@ import {
 } from "../../domain/ports/driver-rounds.reader.js";
 import { departureViewOf } from "../departure-view.js";
 import { myDeliveryRoundView } from "../my-delivery-round-view.js";
+import { driverTransferStopsOf } from "../my-round-transfer-stops.js";
+import { InternalTransfersReader } from "../../domain/ports/internal-transfers.reader.js";
+import { TransferOrderContentsReader } from "../../channels/commerce/index.js";
 import { StopSheets } from "../stop-sheets.js";
 import { GetMyDeliveryRoundQuery } from "./get-my-delivery-round.query.js";
 
@@ -43,6 +46,8 @@ export class GetMyDeliveryRoundHandler implements IQueryHandler<
 > {
   constructor(
     private readonly rounds: DriverRoundsReader,
+    private readonly transfers: InternalTransfersReader,
+    private readonly contents: TransferOrderContentsReader,
     private readonly orders: DeliveryOrdersReader,
     private readonly procedures: DeliveryProceduresReader,
     private readonly departure: DepartureReader,
@@ -72,7 +77,12 @@ export class GetMyDeliveryRoundHandler implements IQueryHandler<
       ]);
     // Lues pour CETTE tournée, déjà lue sous le mur du livreur.
     const decisions = await this.decisions.ofRound(round.id);
-    return myDeliveryRoundView({
+    const transferStops = await driverTransferStopsOf(
+      round.transferStops,
+      this.transfers,
+      this.contents,
+    );
+    const view = myDeliveryRoundView({
       round,
       sheets,
       carnetPoints: points,
@@ -88,6 +98,8 @@ export class GetMyDeliveryRoundHandler implements IQueryHandler<
       readyOrders: new Set(states.filter((state) => state.ready).map((state) => state.orderId)),
       decisions: new Map(decisions.map((row) => [row.stopId, row])),
     });
+    // Lot T2 : l'arrêt de transfert, à part — il n'a ni client ni porte.
+    return { ...view, transferStops };
   }
 
   /** Les feuilles du commerce, pour les seuls arrêts que le départ n'a pas figés. */

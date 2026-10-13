@@ -9,6 +9,8 @@
  * | `DoorstepHandoverAttestor`| « atteste cette remise », à la porte (B1)   |
  * | `DeliveryOrdersBroughtBackFact` | fait durable : « elles sont revenues » (B3, DD1) |
  * | `RoundPlacementsReader`   | « quelle tournée, quel rang ? » — implémenté par la livraison elle-même (2026-10-06) |
+ * | `TransferStatusReader`    | « arrivée au site ? » — implémenté par la livraison elle-même (T2, 2026-10-13) |
+ * | `TransferReceptionDesk`   | « réceptionner » — implémenté par la livraison elle-même (T2, 2026-10-13) |
  *
  * `lint:context-boundaries` n'autorise `handover → delivery` que par ce
  * chemin ; `delivery → handover` reste interdit.
@@ -40,3 +42,7 @@ export {
   type RoundPlacement,
   type RoundPlacements,
 } from "./round-placements.reader.js";
+// Le transfert interne (lot T2, 2026-10-13) : déclarés ET implémentés par la
+// livraison, lus par le comptoir — « arrivée au site ? », « réceptionner ».
+export { type OrderTransferStatus, TransferStatusReader } from "./transfer-status.reader.js";
+export { TransferReceptionDesk, type TransferReceptionRequest } from "./transfer-reception.desk.js";

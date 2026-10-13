@@ -240,6 +240,15 @@
       "information": true
     },
     {
+      "colonne": "delivery.delivery_internal_transfer.received_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Qui a reçu le transfert interne au site (livreur ou personnel du comptoir) : garde de la marchandise (plan du transfert interne, lot T2).",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "delivery.delivery_round.returned_by",
       "personne": "livreur",
       "categorie": "auteur-geste",

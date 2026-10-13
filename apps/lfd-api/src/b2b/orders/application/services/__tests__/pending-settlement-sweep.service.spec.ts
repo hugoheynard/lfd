@@ -1,4 +1,5 @@
 import { ServiceDay } from "../../../../../production/channels/commerce/index.js";
+import { CommerceOrderCancelledFact } from "../../../../../delivery/channels/commerce/index.js";
 import {
   PaymentGateway,
   type CreatedIntent,
@@ -168,7 +169,9 @@ describe("PendingSettlementSweep — la clôture coupe les règlements en vol", 
     expect(calls).toEqual(["cancel:pi_1", "fail:ord_1", "cancel:pi_2", "fail:ord_2"]);
     expect(events.facts).toEqual([
       new OrderPaymentFailedEvent("ord_1", "day_closed").durableFact(),
+      new CommerceOrderCancelledFact("ord_1").durableFact(),
       new OrderPaymentFailedEvent("ord_2", "day_closed").durableFact(),
+      new CommerceOrderCancelledFact("ord_2").durableFact(),
     ]);
   });
 
@@ -198,6 +201,7 @@ describe("PendingSettlementSweep — la clôture coupe les règlements en vol", 
       expect(calls).toEqual(["cancel:pi_1", "fail:ord_1"]);
       expect(events.facts).toEqual([
         new OrderPaymentFailedEvent("ord_1", "day_closed").durableFact(),
+        new CommerceOrderCancelledFact("ord_1").durableFact(),
       ]);
     },
   );

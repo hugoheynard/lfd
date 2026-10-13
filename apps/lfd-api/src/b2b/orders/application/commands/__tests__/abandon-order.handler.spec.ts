@@ -193,6 +193,12 @@ describe("AbandonOrderHandler — l'ordre des gestes", () => {
         key: "order.payment_failed:order_1:abandoned",
         payload: { orderId: "order_1", cause: "abandoned" },
       },
+      // Annulée : la livraison la sort de son transfert prévu (lot T2).
+      {
+        type: "commerce.order_cancelled",
+        key: "commerce.order_cancelled:order_1",
+        payload: { orderId: "order_1" },
+      },
     ]);
     expect(events.published).toEqual([
       new OrderAbandonedEvent("order_1", "ORD-4812", "u1", "cancelled"),

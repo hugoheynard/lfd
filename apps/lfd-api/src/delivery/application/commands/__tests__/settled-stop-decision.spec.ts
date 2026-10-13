@@ -56,6 +56,7 @@ function departed(rule: DoorstepRule): DepartedStopRow {
 
 function driverRound(rule: DoorstepRule): DriverRoundRow {
   return {
+    transferStops: [],
     id: "r_1",
     serviceDay: DAY,
     vehicleName: "Kangoo",

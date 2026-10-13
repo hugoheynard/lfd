@@ -61,8 +61,12 @@ function loadedBin(binId: string) {
   };
 }
 
-function setup(transferLoaded: boolean) {
-  const transfers = new InMemoryInternalTransfers(plannedTransfer("t_1", DAY, NOW, ["o_v1"]));
+function setup(transferLoaded: boolean, receivedByHand = false) {
+  const transfer = plannedTransfer("t_1", DAY, NOW, ["o_v1"]);
+  if (receivedByHand) {
+    transfer.receive({ at: NOW, by: "staff_counter", reason: "Venu par le personnel" });
+  }
+  const transfers = new InMemoryInternalTransfers(transfer);
   const durable = new RecordingDurable();
   const departed = new RecordingDepartedStops();
   const handler = new DepartDeliveryRoundHandler(
@@ -117,5 +121,16 @@ describe("Partir avec un arrêt de transfert (lot T1)", () => {
     await expect(refusal).rejects.toThrow(DeliveryRoundNotReadyError);
     await expect(refusal).rejects.toThrow(/→ Val Village/u);
     expect(transfers.all()[0]?.departedAt).toBeNull();
+  });
+
+  /** B2 du §12.3 : une réception manuelle avant le départ ne bloque jamais « Partir ». */
+  it("part sans exiger les bacs d'un transfert déjà reçu à la main, et ne le fait pas partir (lot T2)", async () => {
+    const { handler, transfers } = setup(false, true);
+
+    await handler.execute(new DepartDeliveryRoundCommand("r_1", { version: 1 }));
+
+    const [transfer] = transfers.all();
+    expect(transfer?.status).toBe("received");
+    expect(transfer?.departedAt).toBeNull();
   });
 });

@@ -6,10 +6,8 @@ import {
   InternalTransfer,
   type TransferItem,
 } from "../domain/entities/internal-transfer.js";
-import {
-  InternalTransferCorruptedError,
-  InternalTransferStaleError,
-} from "../domain/errors/internal-transfer-errors.js";
+import { InternalTransferCorruptedError } from "../domain/errors/internal-transfer-errors.js";
+import { receiptOfRow, receivedColumns, updateTransfer } from "./internal-transfer-receipt.rows.js";
 import { InternalTransferRepository } from "../domain/ports/internal-transfer.repository.js";
 import {
   InternalTransfersReader,
@@ -28,6 +26,9 @@ interface TransferRow {
   readonly siteId: string;
   readonly siteLabel: string;
   readonly departedAt: Date | null;
+  readonly receivedAt: Date | null;
+  readonly receivedBy: string | null;
+  readonly receivedReason: string | null;
   readonly version: number;
   readonly createdAt: Date;
   readonly updatedAt: Date;
@@ -42,11 +43,15 @@ interface TransferRow {
 
 interface ItemRow {
   readonly id: string;
-  readonly kind: "order" | "refill";
+  readonly kind: "order" | "resupply";
   readonly orderId: string | null;
-  readonly refillId: string | null;
+  readonly resupplyId: string | null;
   readonly attachedAt: Date;
+  readonly detachedAt: Date | null;
 }
+
+/** Un élément toujours porté : ni retiré, ni sorti (lot T2). */
+const HELD_ITEM = { detachedAt: null } as const;
 
 /** Un arrêt vivant : ni retiré, ni clos (C12). */
 const LIVE_STOP = { removedAt: null, closedAt: null } as const;
@@ -78,7 +83,7 @@ export class PrismaInternalTransferRepository extends InternalTransferRepository
 
   async plannedOf(serviceDay: string, siteId: string): Promise<readonly InternalTransfer[]> {
     const rows = await this.prisma.deliveryInternalTransfer.findMany({
-      where: { serviceDay, siteId, departedAt: null },
+      where: { serviceDay, siteId, departedAt: null, receivedAt: null },
       orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       include: TRANSFER_INCLUDE,
     });
@@ -89,8 +94,8 @@ export class PrismaInternalTransferRepository extends InternalTransferRepository
     const found = await this.prisma.deliveryInternalTransferItem.findFirst({
       where:
         item.kind === "order"
-          ? { kind: "order", orderId: item.orderId }
-          : { kind: "refill", refillId: item.refillId },
+          ? { kind: "order", orderId: item.orderId, ...HELD_ITEM }
+          : { kind: "resupply", resupplyId: item.resupplyId, ...HELD_ITEM },
       select: { transferId: true },
     });
     return found?.transferId ?? null;
@@ -107,23 +112,14 @@ export class PrismaInternalTransferRepository extends InternalTransferRepository
             siteId: snapshot.siteId,
             siteLabel: snapshot.siteLabel,
             departedAt: snapshot.departedAt,
+            ...receivedColumns(snapshot.received ?? null),
             version: snapshot.version,
             createdAt: snapshot.createdAt,
             updatedAt: snapshot.updatedAt,
           },
         });
       } else {
-        const written = await tx.deliveryInternalTransfer.updateMany({
-          where: { id: snapshot.id, version: transfer.loadedVersion },
-          data: {
-            departedAt: snapshot.departedAt,
-            version: snapshot.version,
-            updatedAt: snapshot.updatedAt,
-          },
-        });
-        if (written.count === 0) {
-          throw new InternalTransferStaleError(snapshot.siteLabel);
-        }
+        await updateTransfer(tx, transfer, snapshot);
       }
       // Les éléments et le manifeste ne font que s'ajouter : on n'écrit que
       // ce qui manque, et la clé primaire refuse un doublon.
@@ -133,9 +129,20 @@ export class PrismaInternalTransferRepository extends InternalTransferRepository
           transferId: snapshot.id,
           ...itemColumns(item),
           attachedAt: item.attachedAt,
+          detachedAt: item.detachedAt ?? null,
         })),
         skipDuplicates: true,
       });
+      // Un élément sorti d'un transfert prévu : la ligne reste, l'instant se pose une fois.
+      const detached = snapshot.items.flatMap((item) =>
+        item.detachedAt === undefined ? [] : [{ id: item.id, at: item.detachedAt }],
+      );
+      for (const item of detached) {
+        await tx.deliveryInternalTransferItem.updateMany({
+          where: { id: item.id, detachedAt: null },
+          data: { detachedAt: item.at },
+        });
+      }
       await tx.deliveryInternalTransferManifestLine.createMany({
         data: snapshot.manifest.map((line) => ({ transferId: snapshot.id, ...line })),
         skipDuplicates: true,
@@ -156,7 +163,8 @@ export class PrismaInternalTransfersReader extends InternalTransfersReader {
       where: {
         serviceDay,
         departedAt: null,
-        items: { some: { kind: "order" } },
+        receivedAt: null,
+        items: { some: { kind: "order", ...HELD_ITEM } },
         stops: { none: LIVE_STOP },
       },
       orderBy: [{ createdAt: "asc" }, { id: "asc" }],
@@ -185,7 +193,7 @@ export class PrismaTransferredOrdersReader extends TransferredOrdersReader {
       return new Set();
     }
     const rows = await this.prisma.deliveryInternalTransferItem.findMany({
-      where: { kind: "order", orderId: { in: [...orderIds] } },
+      where: { kind: "order", orderId: { in: [...orderIds] }, ...HELD_ITEM },
       select: { orderId: true },
     });
     return new Set(rows.flatMap((row) => (row.orderId === null ? [] : [row.orderId])));
@@ -193,22 +201,27 @@ export class PrismaTransferredOrdersReader extends TransferredOrdersReader {
 }
 
 function itemColumns(item: TransferItem): {
-  readonly kind: "order" | "refill";
+  readonly kind: "order" | "resupply";
   readonly orderId: string | null;
-  readonly refillId: string | null;
+  readonly resupplyId: string | null;
 } {
   return item.kind === "order"
-    ? { kind: "order", orderId: item.orderId, refillId: null }
-    : { kind: "refill", orderId: null, refillId: item.refillId };
+    ? { kind: "order", orderId: item.orderId, resupplyId: null }
+    : { kind: "resupply", orderId: null, resupplyId: item.resupplyId };
 }
 
 /** @throws {InternalTransferCorruptedError} un élément dont le genre contredit ses colonnes. */
 function itemOf(transferId: string, row: ItemRow): HeldTransferItem {
+  const held = {
+    id: row.id,
+    attachedAt: row.attachedAt,
+    ...(row.detachedAt === null ? {} : { detachedAt: row.detachedAt }),
+  };
   if (row.kind === "order" && row.orderId !== null) {
-    return { kind: "order", orderId: row.orderId, id: row.id, attachedAt: row.attachedAt };
+    return { kind: "order", orderId: row.orderId, ...held };
   }
-  if (row.kind === "refill" && row.refillId !== null) {
-    return { kind: "refill", refillId: row.refillId, id: row.id, attachedAt: row.attachedAt };
+  if (row.kind === "resupply" && row.resupplyId !== null) {
+    return { kind: "resupply", resupplyId: row.resupplyId, ...held };
   }
   throw new InternalTransferCorruptedError(transferId, `élément ${row.id} sans sujet`);
 }
@@ -220,6 +233,7 @@ function toDomain(row: TransferRow): InternalTransfer {
     siteId: row.siteId,
     siteLabel: row.siteLabel,
     departedAt: row.departedAt,
+    received: receiptOfRow(row),
     version: row.version,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,

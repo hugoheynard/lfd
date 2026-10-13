@@ -1,4 +1,4 @@
-import type { HandoverQueueEntryView, HandoverQueueView } from "@lfd/contracts";
+import type { HandoverQueueEntryView, HandoverQueueView, OrderTransferView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { HandoverQueueReader, type HandoverQueueEntry } from "../../channels/commerce/index.js";
@@ -8,6 +8,10 @@ import {
 } from "../../domain/ports/handover-attestations.reader.js";
 import { queueStateOf, showsInQueue } from "../../domain/services/queue-state.js";
 import { QualityHoldsReader } from "../../../production/channels/handover/index.js";
+import {
+  type OrderTransferStatus,
+  TransferStatusReader,
+} from "../../../delivery/channels/handover/index.js";
 import { GetHandoverQueueQuery } from "./get-handover-queue.query.js";
 
 /**
@@ -42,14 +46,16 @@ export class GetHandoverQueueHandler implements IQueryHandler<
     private readonly queue: HandoverQueueReader,
     private readonly attestations: HandoverAttestationsReader,
     private readonly holds: QualityHoldsReader,
+    private readonly transfers: TransferStatusReader,
   ) {}
 
   async execute(query: GetHandoverQueueQuery): Promise<HandoverQueueView> {
     const expected = await this.queue.expectedOn(query.day);
     const orderIds = expected.map((entry) => entry.orderId);
-    const [attested, held] = await Promise.all([
+    const [attested, held, transfers] = await Promise.all([
       this.attestations.forOrders(orderIds),
       this.holds.heldOrders(query.day, orderIds),
+      this.transfers.statusOf(orderIds),
     ]);
     return {
       day: query.day,
@@ -57,7 +63,11 @@ export class GetHandoverQueueHandler implements IQueryHandler<
       // au comptoir — cf. `showsInQueue`.
       entries: expected
         .filter((entry) => showsInQueue(entry, attested.get(entry.orderId)))
-        .map((entry) => toEntryView(entry, attested.get(entry.orderId), held.has(entry.orderId))),
+        .map((entry) => ({
+          ...toEntryView(entry, attested.get(entry.orderId), held.has(entry.orderId)),
+          // Lot T2 du transfert interne : « Réceptionner » tant qu'il n'est pas reçu.
+          transfer: transferViewOf(transfers.get(entry.orderId)),
+        })),
     };
   }
 }
@@ -90,4 +100,15 @@ function toEntryView(
     handedOverVia: attestation?.via ?? null,
     readyAt: entry.readyAt === null ? null : entry.readyAt.toISOString(),
   };
+}
+
+function transferViewOf(status: OrderTransferStatus | undefined): OrderTransferView | null {
+  return status === undefined
+    ? null
+    : {
+        transferId: status.transferId,
+        siteLabel: status.siteLabel,
+        state: status.state,
+        at: status.at.toISOString(),
+      };
 }

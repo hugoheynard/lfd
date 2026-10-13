@@ -1,5 +1,10 @@
 import type { Provider, Type } from "@nestjs/common";
 
+import { DropTransferAtSiteHandler } from "./application/commands/drop-transfer-at-site.handler.js";
+import { AttachOnOrderPlaced } from "./application/handlers/attach-on-order-placed.handler.js";
+import { DetachOnOrderCancelled } from "./application/handlers/detach-on-order-cancelled.handler.js";
+import { TransferMembership } from "./application/transfer-membership.js";
+import { TransferReception } from "./application/transfer-reception.js";
 import { GetInternalTransferManifestHandler } from "./application/queries/get-internal-transfer-manifest.handler.js";
 import { TransferAttachment } from "./application/transfer-attachment.js";
 import { TransferPlacement } from "./application/transfer-placement.js";
@@ -21,7 +26,8 @@ import {
  * **Le transfert interne** (plan du transfert interne, lot T1), rangé à part
  * pour que `delivery.module.ts` reste lisible : l'agrégat et ses deux ports
  * de lecture (ISP), le rangement des commandes à l'arrêt du plan, le
- * placement dans les tournées, le manifeste.
+ * placement dans les tournées, le manifeste ; la réception et la place d'une
+ * commande passée ou annulée (lot T2).
  *
  * Les ports que le commerce implémente (`TransferOrdersReader`,
  * `TransferSitesReader`, `TransferOrderContentsReader`) sont reliés dans
@@ -36,6 +42,12 @@ export const INTERNAL_TRANSFER_PROVIDERS: readonly Provider[] = [
   TransferPlacement,
   { provide: TransferPlacer, useExisting: TransferPlacement },
   GetInternalTransferManifestHandler,
+  // Lot T2 : la réception, la place d'une commande passée ou annulée.
+  TransferReception,
+  TransferMembership,
+  AttachOnOrderPlaced,
+  DetachOnOrderCancelled,
+  DropTransferAtSiteHandler,
   { provide: InternalTransferRepository, useClass: PrismaInternalTransferRepository },
   { provide: InternalTransfersReader, useClass: PrismaInternalTransfersReader },
   { provide: TransferredOrdersReader, useClass: PrismaTransferredOrdersReader },

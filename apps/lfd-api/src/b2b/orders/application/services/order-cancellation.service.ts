@@ -1,5 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 
+import { CommerceOrderCancelledFact } from "../../../../delivery/channels/commerce/index.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { BusinessError, DomainError } from "../../../../platform/shared/errors/app-error.js";
@@ -265,6 +266,8 @@ export class OrderCancellation {
         intent.policy,
       ).durableFact(),
     );
+    // La livraison sort la commande de son transfert prévu (lot T2) : même transaction.
+    await this.durable.publish(new CommerceOrderCancelledFact(locked.orderId).durableFact());
   }
 
   /**

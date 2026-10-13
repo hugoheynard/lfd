@@ -16,6 +16,12 @@ import { count, day, fact, named, payload, subjectLabel } from "./fact.js";
 /** Pourquoi la composition n'a placé un transfert dans aucune tournée. */
 export const TRANSFER_UNPLACED_REASONS = ["no_vehicle", "site_not_located"] as const;
 
+/** Où un transfert a été reçu (lot T2, Q-T6). */
+export const TRANSFER_RECEIVED_VIAS = ["site_drop", "counter"] as const;
+
+/** Pourquoi une commande quitte son transfert (lot T2). */
+export const TRANSFER_LEAVE_CAUSES = ["cancelled", "moved"] as const;
+
 const roundKey = () => ({ subjectLabel: subjectLabel(), day: day(), passage: count() });
 
 export const DELIVERY_TRANSFER_FACTS = {
@@ -54,5 +60,41 @@ export const DELIVERY_TRANSFER_FACTS = {
   /** L'arrêt d'un transfert retiré à la main : le transfert redevient sans arrêt. */
   "delivery_round.transfer_stop_removed": fact(
     payload({ ...roundKey(), transfer: named("internal_transfer") }),
+  ),
+  /**
+   * Reçu au site (lot T2) : « Remis au site » par le livreur, ou
+   * « Réceptionner » au comptoir. `manual` : parti dans aucune tournée, le
+   * motif dit comment la marchandise est venue.
+   */
+  "internal_transfer.received": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      day: day(),
+      via: z.enum(TRANSFER_RECEIVED_VIAS),
+      manual: z.boolean(),
+      reason: z.string().nullable(),
+    }),
+  ),
+  /** Une commande sortie d'un transfert prévu : annulée, ou changée de jour ou de site. */
+  "internal_transfer.order_detached": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      day: day(),
+      order: named("order"),
+      cause: z.enum(TRANSFER_LEAVE_CAUSES),
+    }),
+  ),
+  /**
+   * Une commande qui aurait dû sortir d'un transfert déjà parti ou reçu : le
+   * manifeste figé ne change pas, la marchandise voyage quand même.
+   */
+  "internal_transfer.order_kept": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      day: day(),
+      order: named("order"),
+      cause: z.enum(TRANSFER_LEAVE_CAUSES),
+      state: z.enum(["departed", "received"]),
+    }),
   ),
 } as const;

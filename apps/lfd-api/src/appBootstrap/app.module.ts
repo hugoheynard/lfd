@@ -35,6 +35,7 @@ import { DeliveryModule } from "../delivery/delivery.module.js";
 import { DeliveryFeedModule } from "./delivery-feed.module.js";
 import { DeliveryHandoverFeedModule } from "./delivery-handover-feed.module.js";
 import { DeliveryRoundPlacementsModule } from "./delivery-round-placements.module.js";
+import { DeliveryTransferCounterModule } from "./delivery-transfer-counter.module.js";
 import { DebtorMandateModule } from "./debtor-mandate.module.js";
 import { LoyaltyVoucherModule } from "./loyalty-voucher.module.js";
 import { AccountOrderEngagementModule } from "./account-order-engagement.module.js";
@@ -174,6 +175,7 @@ import { PublicationEnabledGuard } from "../pim/publication/publication-switch.j
     DeliveryFeedModule,
     DeliveryHandoverFeedModule,
     DeliveryRoundPlacementsModule,
+    DeliveryTransferCounterModule,
     DebtorMandateModule,
     LoyaltyVoucherModule,
     AccountOrderEngagementModule,

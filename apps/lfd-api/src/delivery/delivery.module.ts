@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 
+import { TransferReception } from "./application/transfer-reception.js";
 import { ApplyDeliveryProposalHandler } from "./application/commands/apply-delivery-proposal.handler.js";
 import { RoundTimingEstimator } from "./application/round-timing-estimator.js";
 import { LocateDeliveryStopsHandler } from "./application/commands/locate-delivery-stops.handler.js";
@@ -259,6 +260,6 @@ import {
     // sa place ici ; le fil de la livraison le relie au port du canal.
     RoutedTravelTimeReader,
   ],
-  exports: [DeliveryBinDesk, DeliveryStopsLocating, RoutedTravelTimeReader],
+  exports: [DeliveryBinDesk, DeliveryStopsLocating, RoutedTravelTimeReader, TransferReception],
 })
 export class DeliveryModule {}

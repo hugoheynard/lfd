@@ -1,5 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 
+import { CommerceOrderCancelledFact } from "../../../../delivery/channels/commerce/index.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../../platform/time/clock.js";
@@ -120,6 +121,8 @@ export class UnsettledShopOrderExpiry {
       await this.durable.publish(
         new OrderPaymentFailedEvent(settlement.orderId, cause).durableFact(),
       );
+      // La livraison sort la commande de son transfert prévu (lot T2) : même transaction.
+      await this.durable.publish(new CommerceOrderCancelledFact(settlement.orderId).durableFact());
       return true;
     });
     return crossed;

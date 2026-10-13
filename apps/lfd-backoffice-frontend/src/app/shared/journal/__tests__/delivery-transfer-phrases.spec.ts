@@ -81,4 +81,54 @@ describe('le transfert interne (internal_transfer.*, delivery_round.transfer_sto
       'Colette Martin a retiré le transfert vers « Val Village » de la tournée « Kangoo » du 1 octobre 2026, passage 2',
     );
   });
+
+  it('dit la réception au site, et une réception manuelle avec son motif (lot T2)', () => {
+    expect(
+      sentence(
+        fact('internal_transfer.received', 'internal_transfer', {
+          ...TRANSFER,
+          via: 'site_drop',
+          manual: false,
+          reason: null,
+        }),
+      ),
+    ).toBe('Colette Martin a remis au site le transfert vers « Val Village » du 1 octobre 2026');
+    expect(
+      sentence(
+        fact('internal_transfer.received', 'internal_transfer', {
+          ...TRANSFER,
+          via: 'counter',
+          manual: true,
+          reason: 'Venu par le personnel',
+        }),
+      ),
+    ).toBe(
+      'Colette Martin a réceptionné le transfert vers « Val Village » du 1 octobre 2026, sans tournée : Venu par le personnel',
+    );
+  });
+
+  it('dit le retrait d’une commande, et celle qui reste dans un transfert parti (lot T2)', () => {
+    const order = { id: 'o_1', name: 'CMD-0042' };
+    expect(
+      sentence(
+        fact('internal_transfer.order_detached', 'internal_transfer', {
+          ...TRANSFER,
+          order,
+          cause: 'cancelled',
+        }),
+      ),
+    ).toBe(
+      'Colette Martin a retiré la commande « CMD-0042 » (annulée) du transfert vers « Val Village » du 1 octobre 2026',
+    );
+    expect(
+      sentence(
+        fact('internal_transfer.order_kept', 'internal_transfer', {
+          ...TRANSFER,
+          order,
+          cause: 'moved',
+          state: 'departed',
+        }),
+      ),
+    ).toContain('déjà parti : le manifeste reste inchangé');
+  });
 });

@@ -147,9 +147,9 @@ describe("le transfert interne, de la clôture au départ (lot T1)", () => {
     const { orderId, transferId } = await composedTransfer();
 
     const items = await ctx.prisma.deliveryInternalTransferItem.findMany({
-      select: { kind: true, orderId: true, refillId: true, transferId: true },
+      select: { kind: true, orderId: true, resupplyId: true, transferId: true },
     });
-    expect(items).toEqual([{ kind: "order", orderId, refillId: null, transferId }]);
+    expect(items).toEqual([{ kind: "order", orderId, resupplyId: null, transferId }]);
     const stops = await ctx.prisma.deliveryRoundStop.findMany({
       select: { kind: true, orderId: true, transferId: true },
     });
@@ -214,5 +214,92 @@ describe("le transfert interne, de la clôture au départ (lot T1)", () => {
     expect(
       await ctx.prisma.deliveryInternalTransferManifestLine.count({ where: { transferId } }),
     ).toBe(1);
+  });
+});
+
+/** Une commande en retrait au comptoir, par son numéro (`CMD-VV-1`). */
+function handOverAtCounter() {
+  return admin(ctx).post(`/admin/handover/manual/CMD-VV-1`);
+}
+
+function receiveAtCounter(orderId: string, reason: string | null) {
+  return admin(ctx).post(`/admin/handover/orders/${orderId}/transfer-reception`).send({ reason });
+}
+
+function codeOf(response: { readonly body: unknown }): string {
+  return jsonBody<{ readonly code: string }>(response).code;
+}
+
+describe("la réception au site et le refus au comptoir (lot T2)", () => {
+  it("le comptoir refuse une commande dont le transfert n'est pas reçu, en nommant le geste de sortie", async () => {
+    await composedTransfer();
+
+    const refusal = await handOverAtCounter().expect(409);
+
+    expect(codeOf(refusal)).toBe("handover.transfer_not_received");
+    expect(jsonBody<{ readonly message: string }>(refusal).message).toMatch(/Réceptionner/u);
+  });
+
+  it("réception manuelle (aucune tournée partie) : motif exigé, un seul gagnant, puis la remise n'est plus refusée pour le transfert", async () => {
+    const { orderId, transferId } = await composedTransfer();
+
+    const noReason = await receiveAtCounter(orderId, null).expect(400);
+    expect(codeOf(noReason)).toBe("delivery.internal_transfer_reception_reason_required");
+    await receiveAtCounter(orderId, "Venu par le personnel").expect(204);
+    const twice = await receiveAtCounter(orderId, "Encore").expect(409);
+    expect(codeOf(twice)).toBe("delivery.internal_transfer_already_received");
+
+    const row = await ctx.prisma.deliveryInternalTransfer.findUniqueOrThrow({
+      where: { id: transferId },
+      select: { receivedAt: true, receivedReason: true, departedAt: true },
+    });
+    expect(row).toMatchObject({ receivedReason: "Venu par le personnel", departedAt: null });
+    expect(row.receivedAt).not.toBeNull();
+    const after = await handOverAtCounter();
+    expect(after.status === 409 ? codeOf(after) : "").not.toBe("handover.transfer_not_received");
+  });
+
+  it("la base refuse une réception sans auteur (CHECK)", async () => {
+    const { transferId } = await composedTransfer();
+
+    await expect(
+      ctx.prisma.$executeRaw`
+        UPDATE "delivery"."delivery_internal_transfer"
+           SET "received_at" = now() WHERE "id" = ${transferId}`,
+    ).rejects.toThrow(/delivery_internal_transfer_received_check/u);
+  });
+
+  it("une commande sortie d'un transfert peut entrer dans un autre : l'unicité ne tient que les éléments portés", async () => {
+    const { orderId, transferId } = await composedTransfer();
+    await ctx.prisma.deliveryInternalTransferItem.updateMany({
+      where: { transferId },
+      data: { detachedAt: new Date() },
+    });
+    const other = await ctx.prisma.deliveryInternalTransfer.create({
+      data: {
+        id: "t_other",
+        serviceDay: DAY,
+        siteId: "s",
+        siteLabel: "Val Village",
+        version: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    });
+
+    await ctx.prisma.deliveryInternalTransferItem.create({
+      data: {
+        id: "i_other",
+        transferId: other.id,
+        kind: "order",
+        orderId,
+        attachedAt: new Date(),
+      },
+    });
+    await expect(
+      ctx.prisma.deliveryInternalTransferItem.create({
+        data: { id: "i_dup", transferId: other.id, kind: "order", orderId, attachedAt: new Date() },
+      }),
+    ).rejects.toThrow();
   });
 });

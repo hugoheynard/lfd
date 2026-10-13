@@ -1,4 +1,5 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
+import { CommerceOrderCancelledFact } from "../../../../../delivery/channels/commerce/index.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import {
   PaymentGateway,
@@ -132,7 +133,10 @@ describe("UnsettledShopOrderExpiry — l'expiration à trente minutes", () => {
 
     expect(report).toEqual({ cancelled: 1, kept: 0 });
     expect(calls).toEqual(["cancel-intent:pi_old", "cancel-order:old"]);
-    expect(events.facts).toEqual([new OrderPaymentFailedEvent("old", "expired").durableFact()]);
+    expect(events.facts).toEqual([
+      new OrderPaymentFailedEvent("old", "expired").durableFact(),
+      new CommerceOrderCancelledFact("old").durableFact(),
+    ]);
   });
 
   it("n'écrit pas quand le paiement est en cours ou déjà pris chez Stripe", async () => {
@@ -196,7 +200,10 @@ describe("UnsettledShopOrderExpiry — le remplacement par une nouvelle passatio
 
     expect(report).toEqual({ cancelled: 1, kept: 0 });
     expect(calls).toEqual(["cancel-intent:pi_mine", "cancel-order:mine"]);
-    expect(events.facts).toEqual([new OrderPaymentFailedEvent("mine", "replaced").durableFact()]);
+    expect(events.facts).toEqual([
+      new OrderPaymentFailedEvent("mine", "replaced").durableFact(),
+      new CommerceOrderCancelledFact("mine").durableFact(),
+    ]);
   });
 
   it("garde la précédente quand elle est en train d'être payée (§4.4)", async () => {

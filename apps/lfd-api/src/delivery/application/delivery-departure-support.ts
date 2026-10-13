@@ -96,7 +96,8 @@ export async function departAndFreeze(
     ...transfers.map((transfer) => [transfer.id, `→ ${transfer.siteLabel}`] as const),
   ]);
   const at = deps.clock.now();
-  round.depart(at, readinessOf(loadings, references));
+  const received = new Set(transfers.filter((t) => t.status === "received").map((t) => t.id));
+  round.depart(at, readinessOf(loadings, references, received));
   const gps = new Map<string, GpsPoint | null>(points.map((point) => [point.orderId, point.gps]));
   const departed = departedStopsOf(round, at, sheets, gps, globalRule);
   refuseHeldOrders(round, sheets, held);
@@ -109,16 +110,26 @@ export async function departAndFreeze(
   return new DeliveryRoundDepartedEvent(round, liveBinCount(loadings));
 }
 
+/**
+ * Un transfert déjà REÇU à la main (lot T2) n'a plus rien à charger : son
+ * arrêt part sans effet, et le départ ne lève jamais à cause de lui (B2 du
+ * §12.3).
+ */
 function readinessOf(
   loadings: readonly StopLoading[],
   references: ReadonlyMap<string, string>,
+  receivedTransfers: ReadonlySet<string>,
 ): readonly StopReadiness[] {
-  return loadings.map((loading) => ({
-    stopId: loading.stopId,
-    reference: references.get(subjectIdOf(loading)) ?? subjectIdOf(loading),
-    state: loading.state,
-    binsToRedo: loading.binsToRedo,
-  }));
+  return loadings.map((loading) => {
+    const received =
+      loading.subject.kind === "transfer" && receivedTransfers.has(loading.subject.transferId);
+    return {
+      stopId: loading.stopId,
+      reference: references.get(subjectIdOf(loading)) ?? subjectIdOf(loading),
+      state: received ? "loaded" : loading.state,
+      binsToRedo: received ? [] : loading.binsToRedo,
+    };
+  });
 }
 
 /** Les bacs non annulés qui partent — tous chargés, puisque la tournée est partie. */

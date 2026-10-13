@@ -1,4 +1,5 @@
 import type { BillingAddressPayload, DeliveryContact, GpsPoint } from "./address.js";
+import type { DriverTransferStopView } from "./delivery-transfers.js";
 import type { DeliveryIncidentView, DeliveryStopOrderState } from "./delivery-doorstep.js";
 import type { DeparturePointView } from "./delivery-settings.js";
 import type { StopDecisionView } from "./delivery-stop-decision.js";
@@ -86,6 +87,12 @@ export interface MyDeliveryRoundView {
   readonly freeze: MyDeliveryRoundFreeze;
   /** Dans l'ordre de passage. */
   readonly stops: readonly MyDeliveryStopView[];
+  /**
+   * Les arrêts de TRANSFERT interne (lot T2, 2026-10-13), par position — à
+   * intercaler dans l'ordre de passage avec `stops` ; leur seul geste est
+   * « Remis au site ». Facultatif : additif.
+   */
+  readonly transferStops?: readonly DriverTransferStopView[] | undefined;
   /** Le point de départ des tournées, pour « Rentrer » ; `null` s'il n'en existe aucun. */
   readonly home: DeparturePointView | null;
   /** Les problèmes signalés sur cette tournée, du plus ancien au plus récent. */

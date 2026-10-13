@@ -4,7 +4,7 @@
  * §3). Fonction pure : ni base, ni horloge.
  *
  * Un même transfert porte EN MÊME TEMPS des commandes (retraits au site) et
- * du réassort (la boutique du site, non bâti) : le genre est celui de chaque
+ * du réapprovisionnement (la boutique du site, non bâti) : le genre est celui de chaque
  * élément, jamais du transfert. Le manifeste rend donc deux sections, chacune
  * détaillée par élément et totalisée par SKU, et un total tous genres
  * confondus.
@@ -17,13 +17,13 @@ export interface ManifestLine {
   readonly quantity: number;
 }
 
-export type TransferItemKind = "order" | "refill";
+export type TransferItemKind = "order" | "resupply";
 
 /** Le contenu d'un élément du transfert. */
 export interface ManifestItem {
   readonly itemId: string;
   readonly kind: TransferItemKind;
-  /** La commande ou le réassort — identifiant opaque. */
+  /** La commande ou le réapprovisionnement — identifiant opaque. */
   readonly subjectId: string;
   readonly lines: readonly ManifestLine[];
 }
@@ -35,7 +35,7 @@ export interface ManifestSection {
 
 export interface TransferManifest {
   readonly orders: ManifestSection;
-  readonly refills: ManifestSection;
+  readonly resupplies: ManifestSection;
   /** Tous genres confondus, par SKU. */
   readonly totals: readonly ManifestLine[];
 }
@@ -66,7 +66,7 @@ function sectionOf(items: readonly ManifestItem[]): ManifestSection {
 export function manifestOf(items: readonly ManifestItem[]): TransferManifest {
   return {
     orders: sectionOf(items.filter((item) => item.kind === "order")),
-    refills: sectionOf(items.filter((item) => item.kind === "refill")),
+    resupplies: sectionOf(items.filter((item) => item.kind === "resupply")),
     totals: totalsBySku(items.flatMap((item) => item.lines)),
   };
 }

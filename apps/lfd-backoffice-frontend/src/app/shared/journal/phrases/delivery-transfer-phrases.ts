@@ -33,6 +33,20 @@ const UNPLACED_CAUSE: Readonly<Record<string, string>> = {
   site_not_located: 'le site n’a pas de point GPS',
 };
 
+/** Pourquoi une commande quitte son transfert. */
+const LEAVE_CAUSE: Readonly<Record<string, string>> = {
+  cancelled: 'annulée',
+  moved: 'changée de jour ou de site',
+};
+
+const ORDER: Noun = { the: 'la commande', a: 'une commande' };
+
+/** « (annulée) » — rien pour une cause inconnue. */
+function causeOf(fact: PhraseFact): Segment[] {
+  const cause = LEAVE_CAUSE[optional(fact.payload['cause']) ?? ''];
+  return cause === undefined ? [] : [text(' ('), value(cause), text(')')];
+}
+
 /** « , passage 2 » — rien au premier passage, comme l'écran. */
 function passageOf(raw: unknown): Segment[] {
   const passage = count(raw);
@@ -52,6 +66,17 @@ function transfer(fact: PhraseFact): Segment[] {
     ...(label === null
       ? [text('un transfert')]
       : [text('le transfert vers « '), subject(fact, label), text(' »')]),
+    ...dayOf(fact),
+  ];
+}
+
+/** « du transfert vers « Val Village » du 1 octobre 2026 » — la contraction que « de » demande. */
+function fromTransfer(fact: PhraseFact): Segment[] {
+  const label = subjectLabelOf(fact);
+  return [
+    ...(label === null
+      ? [text(' d’un transfert')]
+      : [text(' du transfert vers « '), subject(fact, label), text(' »')]),
     ...dayOf(fact),
   ];
 }
@@ -126,5 +151,42 @@ export const DELIVERY_TRANSFER_PHRASES = {
         ...round(fact),
       ],
       [...ROUND_KEYS, 'transfer'],
+    ),
+  'internal_transfer.received': (fact) => {
+    const reason = optional(fact.payload['reason']);
+    return byActor(
+      fact,
+      [
+        text(fact.payload['via'] === 'site_drop' ? 'a remis au site ' : 'a réceptionné '),
+        ...transfer(fact),
+        ...(fact.payload['manual'] === true ? [text(', sans tournée')] : []),
+        ...(reason === null ? [] : [text(' : '), value(reason)]),
+      ],
+      [...TRANSFER_KEYS, 'via', 'manual', 'reason'],
+    );
+  },
+  'internal_transfer.order_detached': (fact) =>
+    byActor(
+      fact,
+      [
+        text('a retiré '),
+        ...cite(ORDER, fact.payload['order']),
+        ...causeOf(fact),
+        ...fromTransfer(fact),
+      ],
+      [...TRANSFER_KEYS, 'order', 'cause'],
+    ),
+  'internal_transfer.order_kept': (fact) =>
+    byActor(
+      fact,
+      [
+        text('n’a pas retiré '),
+        ...cite(ORDER, fact.payload['order']),
+        ...causeOf(fact),
+        ...fromTransfer(fact),
+        text(fact.payload['state'] === 'received' ? ', déjà reçu' : ', déjà parti'),
+        text(' : le manifeste reste inchangé'),
+      ],
+      [...TRANSFER_KEYS, 'order', 'cause', 'state'],
     ),
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;

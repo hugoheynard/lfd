@@ -245,6 +245,7 @@ describe("CloseStopWithoutHandoverHandler — « déjà retirée / annulée » (
 
 describe("ReportDeliveryIncidentHandler — « Déclarer un problème » (§ 3)", () => {
   const ROUND: DriverRoundRow = {
+    transferStops: [],
     id: "r_1",
     serviceDay: DAY,
     vehicleName: "Kangoo",

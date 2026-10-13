@@ -1,11 +1,18 @@
-import { type HandoverQueueView, type OrderHandoverView } from "@lfd/contracts";
-import { Controller, Get, Param, Post, Query } from "@nestjs/common";
+import {
+  type HandoverQueueView,
+  type OrderHandoverView,
+  type ReceiveTransferPayload,
+  receiveTransferPayloadSchema,
+} from "@lfd/contracts";
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Query } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../platform/auth/staff.decorator.js";
 import { ConfirmHandoverCommand } from "../application/commands/confirm-handover.command.js";
 import { ConfirmManualHandoverCommand } from "../application/commands/confirm-manual-handover.command.js";
+import { ReceiveTransferAtCounterCommand } from "../application/commands/receive-transfer-at-counter.command.js";
+import { ZodBody } from "../../platform/shared/http/zod-body.pipe.js";
 import { GetHandoverByOrderQuery } from "../application/queries/get-handover-by-order.query.js";
 import { GetHandoverQueueQuery } from "../application/queries/get-handover-queue.query.js";
 import { GetHandoverQuery } from "../application/queries/get-handover.query.js";
@@ -100,6 +107,22 @@ export class HandoverController {
   ): Promise<OrderHandoverView> {
     return this.commands.execute<ConfirmManualHandoverCommand, OrderHandoverView>(
       new ConfirmManualHandoverCommand(reference, staffUserId),
+    );
+  }
+
+  /**
+   * **« Réceptionner »** le transfert interne qui porte cette commande (lot
+   * T2, Q-T6) — 204. Motif obligatoire quand il n'est parti dans aucune tournée.
+   */
+  @Post("orders/:orderId/transfer-reception")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async receiveTransfer(
+    @Param("orderId") orderId: string,
+    @StaffUserId() staffUserId: string,
+    @Body(new ZodBody(receiveTransferPayloadSchema)) payload: ReceiveTransferPayload,
+  ): Promise<void> {
+    await this.commands.execute<ReceiveTransferAtCounterCommand, void>(
+      new ReceiveTransferAtCounterCommand(orderId, staffUserId, payload.reason),
     );
   }
 

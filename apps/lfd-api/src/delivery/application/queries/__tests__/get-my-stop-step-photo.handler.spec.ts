@@ -72,6 +72,7 @@ function setup(): {
   photos: FixedStepPhotos;
 } {
   const rounds = new FixedDriverRounds(DRIVER, {
+    transferStops: [],
     id: ROUND,
     serviceDay: "2026-01-05",
     vehicleName: "Kangoo",

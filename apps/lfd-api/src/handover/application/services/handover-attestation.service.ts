@@ -15,6 +15,8 @@ import { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-auth
 import { authorsOf, toHandoverView } from "../queries/get-handover.handler.js";
 import { QualityHoldsReader } from "../../../production/channels/handover/index.js";
 import { isHeldForQuality } from "./quality-hold.js";
+import { TransferStatusReader } from "../../../delivery/channels/handover/index.js";
+import { ensureArrivedAtSite } from "./transfer-arrival.js";
 
 /**
  * **Graver un retrait** — le geste commun au scan et à la saisie.
@@ -52,6 +54,7 @@ export class HandoverAttestation {
     private readonly durable: DurablePublisher,
     private readonly staffAuthors: StaffAuthorDirectory,
     private readonly holds: QualityHoldsReader,
+    private readonly transfers: TransferStatusReader,
   ) {}
 
   /**
@@ -135,6 +138,12 @@ export class HandoverAttestation {
       this.handovers.findByOrderId(subject.orderId),
       isHeldForQuality(this.holds, subject),
     ]);
+    // Lot T2 du transfert interne : pas de remise d'une commande dont le
+    // transfert n'a pas été reçu au site (Q-T2). Une commande déjà retirée
+    // passe à l'agrégat, qui dit « déjà retirée » — le mot juste.
+    if (existing === null) {
+      await ensureArrivedAtSite(this.transfers, subject);
+    }
     const at = this.clock.now();
 
     // L'agrégat refuse ici — commande annulée, pas encore passée, déjà

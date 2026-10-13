@@ -1,4 +1,5 @@
 import { HandoverQueueReader, type HandoverQueueEntry } from "../../../channels/commerce/index.js";
+import { FixedTransferStatus } from "../../__tests__/fixed-transfer-status.js";
 import {
   HandoverAttestationsReader,
   type AttestedHandover,
@@ -85,7 +86,12 @@ function handlerOf(
 ) {
   const queue = new RecordingHandoverQueueReader(entries);
   const attestations = new RecordingHandoverAttestationsReader(attested);
-  const handler = new GetHandoverQueueHandler(queue, attestations, holds);
+  const handler = new GetHandoverQueueHandler(
+    queue,
+    attestations,
+    holds,
+    new FixedTransferStatus(),
+  );
   return { handler, queue, attestations, holds };
 }
 

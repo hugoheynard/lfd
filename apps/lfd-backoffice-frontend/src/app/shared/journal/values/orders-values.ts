@@ -38,6 +38,24 @@ export const CLOSED_WITHOUT_HANDOVER_CAUSE = domain('raison d’une clôture san
   cancelled: 'Commande annulée',
 });
 
+/** Où un transfert interne a été reçu (`internal_transfer.received`, lot T2). */
+export const TRANSFER_RECEIVED_VIA = domain('lieu de réception d’un transfert', {
+  site_drop: 'Remis au site par le livreur',
+  counter: 'Réceptionné au comptoir',
+});
+
+/** Où en était le transfert qui a gardé une commande (`internal_transfer.order_kept`, lot T2). */
+export const TRANSFER_FROZEN_STATE = domain('état d’un transfert qui ne bouge plus', {
+  departed: 'Parti',
+  received: 'Reçu au site',
+});
+
+/** Pourquoi une commande quitte son transfert (`internal_transfer.order_*`, lot T2). */
+export const TRANSFER_LEAVE_CAUSE = domain('raison du retrait d’une commande d’un transfert', {
+  cancelled: 'Commande annulée',
+  moved: 'Autre jour ou autre site',
+});
+
 /** Pourquoi un transfert interne reste sans arrêt (`internal_transfer.unplaced`, lot T1). */
 export const TRANSFER_UNPLACED_CAUSE = domain('raison d’un transfert sans tournée', {
   no_vehicle: 'Aucune tournée ni véhicule libre',
@@ -227,6 +245,9 @@ export const ORDERS_VALUES: ValueFamily = {
     INCIDENT_FAMILY,
     CLOSED_WITHOUT_HANDOVER_CAUSE,
     TRANSFER_UNPLACED_CAUSE,
+    TRANSFER_RECEIVED_VIA,
+    TRANSFER_LEAVE_CAUSE,
+    TRANSFER_FROZEN_STATE,
     STOP_DECISION_SOURCE,
     DOORSTEP_RULE,
     ADDRESS_POINT_KIND,

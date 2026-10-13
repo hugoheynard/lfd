@@ -103,11 +103,11 @@ describe("InternalTransfer.attach", () => {
     ).toThrow(InternalTransferDepartedError);
   });
 
-  it("porte commandes ET réassort à la fois — le genre est celui de l'élément", () => {
+  it("porte commandes ET réapprovisionnement à la fois — le genre est celui de l'élément", () => {
     const transfer = withOrders("o_1");
-    transfer.attach({ itemId: "i_r", item: { kind: "refill", refillId: "rf_1" } }, SITE, AT);
+    transfer.attach({ itemId: "i_r", item: { kind: "resupply", resupplyId: "rf_1" } }, SITE, AT);
 
-    expect(transfer.heldItems.map((item) => item.kind)).toEqual(["order", "refill"]);
+    expect(transfer.heldItems.map((item) => item.kind)).toEqual(["order", "resupply"]);
     expect(transfer.orderIds).toEqual(["o_1"]);
   });
 
@@ -130,7 +130,7 @@ describe("InternalTransfer.depart et le manifeste", () => {
       { sku: "PAIN", productName: "Pain", quantity: 5 },
       { sku: "TARTE", productName: "Tarte", quantity: 1 },
     ]);
-    expect(manifest.refills.items).toEqual([]);
+    expect(manifest.resupplies.items).toEqual([]);
     expect(manifest.totals).toEqual(manifest.orders.totals);
   });
 

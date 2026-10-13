@@ -12,6 +12,13 @@ import { orderStopsOnly } from "./order-stop.js";
 /** Un arrêt non retiré — les clos (lot 6) compris : le livreur voit qu'il est passé. */
 const KEPT_STOP = { removedAt: null } as const;
 
+/** Ce que le livreur voit d'un transfert : son site, ses commandes portées, sa réception. */
+const TRANSFER_SELECT = {
+  siteLabel: true,
+  receivedAt: true,
+  _count: { select: { items: { where: { kind: "order", detachedAt: null } } } },
+} as const;
+
 /** Les tournées dans l'ordre de la flotte, puis par passage — comme la composition. */
 const ROUND_ORDER = [
   { vehicle: { createdAt: "asc" } },
@@ -77,9 +84,11 @@ export class PrismaDriverRoundsReader extends DriverRoundsReader {
           select: {
             id: true,
             orderId: true,
+            transferId: true,
             position: true,
             closedAt: true,
             execution: { select: EXECUTION_SELECT },
+            transfer: { select: TRANSFER_SELECT },
           },
         },
       },
@@ -87,8 +96,6 @@ export class PrismaDriverRoundsReader extends DriverRoundsReader {
     if (row === null) {
       return null;
     }
-    // Un arrêt de transfert n'est pas encore montré au livreur : son geste,
-    // « Remis au site », est le lot T2 (plan du transfert interne, §9).
     const stops = orderStopsOnly(row.stops);
     const bins = await this.binsOf(stops.map((stop) => stop.orderId));
     return {
@@ -108,6 +115,22 @@ export class PrismaDriverRoundsReader extends DriverRoundsReader {
         bins: bins.get(stop.orderId)?.bins ?? 0,
         coldBins: bins.get(stop.orderId)?.coldBins ?? 0,
       })),
+      // Lot T2 : l'arrêt de transfert et son seul geste, « Remis au site ».
+      transferStops: row.stops.flatMap((stop) =>
+        stop.transferId === null || stop.transfer === null
+          ? []
+          : [
+              {
+                stopId: stop.id,
+                transferId: stop.transferId,
+                position: stop.position,
+                closedAt: stop.closedAt,
+                siteLabel: stop.transfer.siteLabel,
+                orderCount: stop.transfer._count.items,
+                receivedAt: stop.transfer.receivedAt,
+              },
+            ],
+      ),
     };
   }
 

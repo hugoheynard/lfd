@@ -52,6 +52,13 @@ export {
   CommerceOrderPlacedFact,
   CommerceOrderPlacedPayloadError,
 } from "./commerce-order-placed.fact.js";
+// « Commande annulée », fait durable (lot T2, 2026-10-13) : déclaré ici, écrit
+// par le commerce à chaque annulation — la commande sort de son transfert prévu.
+export {
+  COMMERCE_ORDER_CANCELLED,
+  CommerceOrderCancelledFact,
+  CommerceOrderCancelledPayloadError,
+} from "./commerce-order-cancelled.fact.js";
 export {
   DeliveryAddressPointsReader,
   type DeliveryOrderAddress,

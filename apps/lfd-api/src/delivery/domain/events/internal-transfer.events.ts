@@ -16,7 +16,16 @@ export const INTERNAL_TRANSFER_FACTS = {
   unplaced: "internal_transfer.unplaced",
   stopMoved: "delivery_round.transfer_stop_moved",
   stopRemoved: "delivery_round.transfer_stop_removed",
+  received: "internal_transfer.received",
+  orderDetached: "internal_transfer.order_detached",
+  orderKept: "internal_transfer.order_kept",
 } as const satisfies Readonly<Record<string, JournalFactType>>;
+
+/** Où le transfert a été reçu (Q-T6) : remis au site par le livreur, ou au comptoir. */
+export type TransferReceivedVia = "site_drop" | "counter";
+
+/** Pourquoi une commande quitte son transfert (lot T2, décision 4 de Hugo). */
+export type TransferLeaveCause = "cancelled" | "moved";
 
 /** Pourquoi un transfert reste sans arrêt (Q-T13). */
 export type TransferUnplacedCause = "no_vehicle" | "site_not_located";
@@ -120,6 +129,69 @@ export class TransferStopRemovedEvent implements JournaledEvent {
   journalFact(): JournalFact {
     return roundFact(INTERNAL_TRANSFER_FACTS.stopRemoved, this.round, {
       transfer: cited(this.transfer),
+    });
+  }
+}
+
+/**
+ * Reçu au site (lot T2). `manual` : il n'était parti dans aucune tournée — le
+ * motif dit comment la marchandise est venue.
+ */
+export class InternalTransferReceivedEvent implements JournaledEvent {
+  constructor(
+    readonly transfer: InternalTransfer,
+    readonly via: TransferReceivedVia,
+    readonly manual: boolean,
+  ) {}
+
+  journalFact(): JournalFact {
+    return transferFact(INTERNAL_TRANSFER_FACTS.received, this.transfer, {
+      via: this.via,
+      manual: this.manual,
+      reason: this.transfer.received?.reason ?? null,
+    });
+  }
+}
+
+/** Une commande citée par son numéro — l'identifiant seul quand le commerce ne le rend pas. */
+export interface CitedOrder {
+  readonly id: string;
+  readonly name: string;
+}
+
+/** Une commande sortie d'un transfert PRÉVU : annulée, ou changée de jour ou de site. */
+export class InternalTransferOrderDetachedEvent implements JournaledEvent {
+  constructor(
+    readonly transfer: InternalTransfer,
+    readonly order: CitedOrder,
+    readonly cause: TransferLeaveCause,
+  ) {}
+
+  journalFact(): JournalFact {
+    return transferFact(INTERNAL_TRANSFER_FACTS.orderDetached, this.transfer, {
+      order: this.order,
+      cause: this.cause,
+    });
+  }
+}
+
+/**
+ * Une commande qui aurait dû sortir d'un transfert DÉJÀ parti ou reçu : rien
+ * ne bouge — le manifeste figé fait foi, le transfert ne ramène rien (§3).
+ * La ligne dit au bureau qu'une marchandise voyage pour rien.
+ */
+export class InternalTransferOrderKeptEvent implements JournaledEvent {
+  constructor(
+    readonly transfer: InternalTransfer,
+    readonly order: CitedOrder,
+    readonly cause: TransferLeaveCause,
+  ) {}
+
+  journalFact(): JournalFact {
+    return transferFact(INTERNAL_TRANSFER_FACTS.orderKept, this.transfer, {
+      order: this.order,
+      cause: this.cause,
+      state: this.transfer.status,
     });
   }
 }

@@ -902,16 +902,22 @@ enum DeliveryStopKind {
 /// `public`) ; `site_label` est son nom FIGÉ à l'ouverture, pour l'écran des
 /// tournées et l'app du livreur. `departed_at` : posé par le départ de la
 /// tournée qui porte son arrêt, nul tant qu'il est prévu. La réception
-/// (`received_*`) est le lot T2.
+/// (`received_*`) : lot T2.
 model DeliveryInternalTransfer {
-  id         String    @id
-  serviceDay String    @map("service_day") @db.VarChar(10)
-  siteId     String    @map("site_id")
-  siteLabel  String    @map("site_label")
-  departedAt DateTime? @map("departed_at") @db.Timestamptz(6)
-  version    Int
-  createdAt  DateTime  @map("created_at") @db.Timestamptz(6)
-  updatedAt  DateTime  @map("updated_at") @db.Timestamptz(6)
+  id             String    @id
+  serviceDay     String    @map("service_day") @db.VarChar(10)
+  siteId         String    @map("site_id")
+  siteLabel      String    @map("site_label")
+  departedAt     DateTime? @map("departed_at") @db.Timestamptz(6)
+  /// Reçu au site (lot T2) : remis par le livreur, ou réceptionné au comptoir.
+  receivedAt     DateTime? @map("received_at") @db.Timestamptz(6)
+  /// La fiche staff qui l'a reçu — opaque, sans clé étrangère.
+  receivedBy     String?   @map("received_by")
+  /// Le motif d'une réception MANUELLE (sans départ) ; nul après un départ.
+  receivedReason String?   @map("received_reason")
+  version        Int
+  createdAt      DateTime  @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @map("updated_at") @db.Timestamptz(6)
 
   items    DeliveryInternalTransferItem[]
   stops    DeliveryRoundStop[]
@@ -924,11 +930,11 @@ model DeliveryInternalTransfer {
 
 /// Un **élément d'un transfert interne** — décision de Hugo du 2026-10-13 :
 /// un transfert porte des COMMANDES (`kind = order`, des retraits, jamais des
-/// arrêts) ou des RÉASSORTS d'un site (`kind = refill`, concept NON BÂTI :
-/// `refill_id` sans clé étrangère, aucun écrivain aujourd'hui). Tenus en base,
+/// arrêts) ou des RÉAPPROVISIONNEMENTS d'un site (`kind = resupply`, concept NON BÂTI :
+/// `resupply_id` sans clé étrangère, aucun écrivain aujourd'hui). Tenus en base,
 /// invisibles ici : le CHECK `delivery_internal_transfer_item_kind_check`
 /// (exactement l'une des deux colonnes, selon le genre) et les index uniques
-/// partiels `…_order_key` / `…_refill_key` — un élément n'est que dans UN
+/// partiels `…_order_key` / `…_resupply_key` — un élément n'est que dans UN
 /// transfert. Identifiants OPAQUES. Écrivain : l'agrégat `InternalTransfer`.
 /// Jamais supprimé.
 model DeliveryInternalTransferItem {
@@ -936,8 +942,10 @@ model DeliveryInternalTransferItem {
   transferId String                   @map("transfer_id")
   kind       DeliveryTransferItemKind
   orderId    String?                  @map("order_id")
-  refillId   String?                  @map("refill_id")
+  resupplyId   String?                  @map("resupply_id")
   attachedAt DateTime                 @map("attached_at") @db.Timestamptz(6)
+  /// Sorti d'un transfert prévu (annulée, autre jour, autre site — lot T2) ; la ligne reste.
+  detachedAt DateTime?                @map("detached_at") @db.Timestamptz(6)
 
   transfer DeliveryInternalTransfer @relation(fields: [transferId], references: [id], onDelete: Restrict)
 
@@ -946,10 +954,10 @@ model DeliveryInternalTransferItem {
   @@schema("delivery")
 }
 
-/// Le genre d'un élément de transfert : une commande, ou un réassort (non bâti).
+/// Le genre d'un élément de transfert : une commande, ou un réapprovisionnement (non bâti).
 enum DeliveryTransferItemKind {
   order
-  refill
+  resupply
 
   @@map("delivery_transfer_item_kind")
   @@schema("delivery")

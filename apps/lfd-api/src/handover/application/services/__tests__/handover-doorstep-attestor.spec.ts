@@ -21,6 +21,7 @@ import { HandoverRefusedError } from "../../../domain/errors/handover-errors.js"
 import { HandoverProofRepository } from "../../../domain/ports/handover-proof.repository.js";
 import { OrderHandoverRepository } from "../../../domain/ports/order-handover.repository.js";
 import { FixedQualityHolds } from "../../__tests__/fixed-quality-holds.js";
+import { FixedTransferStatus } from "../../__tests__/fixed-transfer-status.js";
 import { HandoverAttestation } from "../handover-attestation.service.js";
 import { HandoverDoorstepAttestor } from "../handover-doorstep-attestor.js";
 
@@ -142,6 +143,7 @@ function attestorOf(subjects: readonly HandoverSubject[] = [subjectOf("o_1")]) {
     new TransactionalDurablePublisher(uow),
     new FixedStaffAuthorDirectory(authorsKnownAs({ firstName: "Paul", lastName: "R" }, "paul")),
     new FixedQualityHolds(),
+    new FixedTransferStatus(),
   );
   const attestor = new HandoverDoorstepAttestor(
     new FixedSubjects(subjects),

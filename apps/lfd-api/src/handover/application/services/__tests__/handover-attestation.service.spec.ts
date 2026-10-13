@@ -7,9 +7,13 @@ import { Clock } from "../../../../platform/time/clock.js";
 import type { HandoverSubject } from "../../../channels/commerce/handover-subject.reader.js";
 import { OrderHandedOverEvent } from "../../../channels/commerce/order-handed-over.event.js";
 import { OrderHandover } from "../../../domain/entities/order-handover.js";
-import { HandoverRefusedError } from "../../../domain/errors/handover-errors.js";
+import {
+  HandoverRefusedError,
+  TransferNotReceivedError,
+} from "../../../domain/errors/handover-errors.js";
 import { OrderHandoverRepository } from "../../../domain/ports/order-handover.repository.js";
 import { FixedQualityHolds } from "../../__tests__/fixed-quality-holds.js";
+import { FixedTransferStatus } from "../../__tests__/fixed-transfer-status.js";
 import { HandoverAttestation } from "../handover-attestation.service.js";
 import {
   authorsKnownAs,
@@ -98,6 +102,7 @@ function attestationOf(
   existing: OrderHandover | null,
   won: boolean,
   holds: FixedQualityHolds = new FixedQualityHolds(),
+  transfers: FixedTransferStatus = new FixedTransferStatus(),
 ) {
   const { repository, written } = repositoryOf(existing, won);
   const events = new Outbox();
@@ -108,6 +113,7 @@ function attestationOf(
     events.publisher,
     AUTHORS,
     holds,
+    transfers,
   );
   return { service, written, events };
 }
@@ -152,6 +158,38 @@ describe("HandoverAttestation", () => {
     expect(view.handedOverAt).toBe(AT.toISOString());
     expect(events.published).toEqual([factOf({ at: AT, by: "staff-1", via: "scan" })]);
     expect(events.published[0]?.key).toBe("handover.handed_over:ord_1");
+  });
+
+  /** Lot T2 du transfert interne (Q-T2) : pas de remise sans marchandise au site. */
+  it("refuse une commande dont le transfert n'est pas reçu, sans rien écrire ni publier", async () => {
+    for (const state of ["planned", "departed"] as const) {
+      const { service, written, events } = attestationOf(
+        null,
+        true,
+        new FixedQualityHolds(),
+        new FixedTransferStatus(new Map([["ord_1", state]])),
+      );
+
+      const refusal = service.attest(subject(), "staff-1", "scan");
+
+      await expect(refusal).rejects.toBeInstanceOf(TransferNotReceivedError);
+      await expect(refusal).rejects.toThrow(/Réceptionner/u);
+      expect(written).toHaveLength(0);
+      expect(events.published).toEqual([]);
+    }
+  });
+
+  it("remet une commande dont le transfert est reçu", async () => {
+    const { service, written } = attestationOf(
+      null,
+      true,
+      new FixedQualityHolds(),
+      new FixedTransferStatus(new Map([["ord_1", "received"]])),
+    );
+
+    await service.attest(subject(), "staff-1", "scan");
+
+    expect(written).toHaveLength(1);
   });
 
   it("ne publie RIEN quand un autre poste a gagné la course", async () => {
@@ -253,6 +291,7 @@ describe("HandoverAttestation", () => {
       events.publisher,
       AUTHORS,
       new FixedQualityHolds(),
+      new FixedTransferStatus(),
     );
 
     await expect(service.attest(subject(), "staff-2", "manual")).rejects.toBeInstanceOf(

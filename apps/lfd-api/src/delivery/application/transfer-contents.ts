@@ -5,7 +5,7 @@ const EMPTY: ReadonlyMap<string, readonly DeliveryOrderLine[]> = new Map();
 
 /**
  * Le contenu de chaque élément de ces transferts, lu au commerce en UNE
- * lecture (décision de Hugo du 2026-10-13 : le manifeste). Un réassort n'a pas
+ * lecture (décision de Hugo du 2026-10-13 : le manifeste). Un réapprovisionnement n'a pas
  * encore de lecteur — le concept n'est pas bâti — : son contenu est inconnu,
  * et le manifeste ne l'invente pas.
  */

@@ -69,6 +69,7 @@ function sheet(orderId: string): DepartureSheet {
 
 function round(stops: readonly DriverStopRow[], departedAt: Date | null): DriverRoundRow {
   return {
+    transferStops: [],
     id: "r_1",
     serviceDay: "2030-03-12",
     vehicleName: "Kangoo",

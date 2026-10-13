@@ -1,4 +1,5 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
+import { CommerceOrderCancelledFact } from "../../../../../delivery/channels/commerce/index.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import type { IntentCancellation } from "../../../../payments/domain/payment-gateway.js";
 import type { OrderWithdrawalOutcome } from "../../../../../production/channels/commerce/index.js";
@@ -35,6 +36,9 @@ import { RecordingDurable } from "./durable-doubles.js";
 import { CancellationRefundRequester } from "../../services/cancellation-refund-requester.js";
 import { InMemoryRefundRequests, RecordingDispatch, RefundStore } from "./refund-doubles.js";
 import { RecordingRedemption, RETURNED } from "./voucher-doubles.js";
+
+/** La livraison apprend l'annulation (lot T2 du transfert interne), dans la même transaction. */
+const WITHDRAWN = new CommerceOrderCancelledFact("ord_1").durableFact();
 
 /**
  * L'annulation staff, orchestrée (doc `documentation/commandes/annulation/annulation-par-le-staff.md`,
@@ -140,7 +144,7 @@ describe("CancelOrderHandler — carte non payée (décision 7)", () => {
     expect(rows.records).toEqual([
       { cancelledBy: STAFF, reason: "Le client a appelé : il part en vacances", cancelledAt: NOW },
     ]);
-    expect(durable.facts).toEqual([eventOf("due").durableFact()]);
+    expect(durable.facts).toEqual([eventOf("due").durableFact(), WITHDRAWN]);
   });
 
   it("une intention déjà annulée (second clic chez Stripe) laisse écrire", async () => {
@@ -199,7 +203,7 @@ describe("CancelOrderHandler — carte non payée (décision 7)", () => {
     await handler.execute(cancel());
 
     expect(vouchers.calls).toEqual(["reinstate:bon_1>ord_1"]);
-    expect(durable.facts).toEqual([eventOf("due", RETURNED_IN_FACT).durableFact()]);
+    expect(durable.facts).toEqual([eventOf("due", RETURNED_IN_FACT).durableFact(), WITHDRAWN]);
   });
 });
 
@@ -216,7 +220,7 @@ describe("CancelOrderHandler — total nul", () => {
     await handler.execute(cancel());
 
     expect(trace).toEqual(["lock:ord_1", "withdraw:2026-10-13:ord_1", "cancel:ord_1"]);
-    expect(durable.facts).toEqual([eventOf("free").durableFact()]);
+    expect(durable.facts).toEqual([eventOf("free").durableFact(), WITHDRAWN]);
   });
 
   it("un total nul qui porte un bon s'annule : le bon est restitué (lot C3b)", async () => {
@@ -241,6 +245,7 @@ describe("CancelOrderHandler — total nul", () => {
         remainderValueCents: 450,
         expiresAt: RETURNED_IN_FACT.expiresAt,
       }).durableFact(),
+      WITHDRAWN,
     ]);
   });
 
@@ -252,7 +257,7 @@ describe("CancelOrderHandler — total nul", () => {
 
     await handler.execute(cancel());
 
-    expect(durable.facts).toEqual([eventOf("free").durableFact()]);
+    expect(durable.facts).toEqual([eventOf("free").durableFact(), WITHDRAWN]);
   });
 
   it("cas 5, l'autre commande s'annule : refus qui propose de l'annuler d'abord, rien publié", async () => {
@@ -421,7 +426,7 @@ describe("CancelOrderHandler — la transaction qui échoue après Stripe (C3.4 
 
     expect(trace.filter((step) => step === "stripe:pi_1")).toHaveLength(1);
     expect(trace.filter((step) => step === "lock:ord_1")).toHaveLength(2);
-    expect(durable.facts).toHaveLength(1);
+    expect(durable.facts).toHaveLength(2);
   });
 
   it("deux échecs : 500 qui dit de relancer, et rien n'est écrit", async () => {
@@ -477,7 +482,7 @@ describe("CancelOrderHandler — au compte (lot C5)", () => {
     ]);
     expect(gateway.cancelled).toEqual([]);
     expect(engagements.closed).toEqual([{ orderId: "ord_1", amountCents: 2_110, at: NOW }]);
-    expect(durable.facts).toEqual([eventOf("account").durableFact()]);
+    expect(durable.facts).toEqual([eventOf("account").durableFact(), WITHDRAWN]);
   });
 
   it("facturée au premier regard : refus nommé, sans verrou ni retrait ni fermeture", async () => {
@@ -561,7 +566,10 @@ describe("CancelOrderHandler — carte payée, avec remboursement (lot C4)", () 
       nextAttemptAt: NOW,
     });
     expect(dispatch.dispatched).toEqual(["ord_1"]);
-    expect(durable.facts).toEqual([eventOf("paid", null, { announcedCents: 2_110 }).durableFact()]);
+    expect(durable.facts).toEqual([
+      eventOf("paid", null, { announcedCents: 2_110 }).durableFact(),
+      WITHDRAWN,
+    ]);
   });
 
   it("le montant promis est celui relu SOUS le verrou, pas au premier regard", async () => {
@@ -581,7 +589,7 @@ describe("CancelOrderHandler — carte payée, avec remboursement (lot C4)", () 
 
     expect(refundStore.request).toBeNull();
     expect(dispatch.dispatched).toEqual([]);
-    expect(durable.facts).toEqual([eventOf("paid").durableFact()]);
+    expect(durable.facts).toEqual([eventOf("paid").durableFact(), WITHDRAWN]);
   });
 
   it("inscrite au fournil : ni demande, ni fait", async () => {

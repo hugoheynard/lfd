@@ -1,8 +1,9 @@
 # Plan — le transfert interne vers un site éloigné
 
 > **État : 🔨 partiel, 2026-10-13.** Du transfert, les lots **T0**
-> (l'échéance selon le site) et **T1** (l'agrégat, l'arrêt `transfer`, la
-> composition, le manifeste) sont bâtis le 2026-10-13 — voir la fin du
+> (l'échéance selon le site), **T1** (l'agrégat, l'arrêt `transfer`, la
+> composition, le manifeste) et **T2** (la réception, le refus au comptoir —
+> backend) sont bâtis le 2026-10-13 — voir la fin du
 > document. Les **sites** dont il dépend sont bâtis
 > et décrits dans [`../../sites/sites.md`](../../sites/sites.md) (rôle
 > « Approvisionné par transfert », `transfer_mode`, `counter_setup_minutes`,
@@ -72,30 +73,30 @@ jamais lu comme une livraison.
 > **Décisions de Hugo du 2026-10-13, reçues pendant le lot T1 :**
 >
 > - **Le contenu d'un transfert est une liste d'éléments discriminés** :
->   `kind` ∈ {`order`, `refill`}, `order_id` / `refill_id` nullables, un
+>   `kind` ∈ {`order`, `resupply`}, `order_id` / `resupply_id` nullables, un
 >   `CHECK` qui exige exactement l'un des deux selon le genre, une unicité
->   partielle par commande et par réassort (un élément dans un seul
+>   partielle par commande et par réapprovisionnement (un élément dans un seul
 >   transfert). Dans le domaine : `TransferItem = { kind: 'order', orderId } |
-{ kind: 'refill', refillId }`. Un même transfert porte **en même temps**
->   des commandes (retraits au site) et du réassort (la boutique du site) :
+{ kind: 'resupply', resupplyId }`. Un même transfert porte **en même temps**
+>   des commandes (retraits au site) et du réapprovisionnement (la boutique du site) :
 >   aucune contrainte de genre au niveau du transfert.
 > - **« On doit savoir ce qu'on transporte » : le manifeste.** Pour chaque
 >   élément, son contenu (SKU, libellé figé, quantité) ; deux sections
->   (commandes / réassort), chacune totalisée par SKU, et un total tous genres
+>   (commandes / réapprovisionnement), chacune totalisée par SKU, et un total tous genres
 >   confondus. Calculé à la lecture tant que le transfert est prévu (lignes de
 >   commande lues au commerce par un port de la livraison,
 >   `TransferOrderContentsReader`) ; **figé au départ** dans
 >   `delivery_internal_transfer_manifest_line` — la référence de la réception
 >   au site (T2). Lecture : `GET /admin/delivery/transfers/:id/manifest`, sous
 >   `delivery_rounds`.
-> - **Le réassort — NON BÂTI.** « Comme une commande, mais au niveau du
+> - **Le réapprovisionnement — NON BÂTI.** « Comme une commande, mais au niveau du
 >   site » : le client est le site, ni une société ni un particulier ; pour
 >   l'instant avec les **mêmes** limites produit que les commandes (heures
 >   limites, quantités), pour simplifier. Rien n'en existe : ni table, ni clé
->   étrangère (`refill_id` est opaque), ni écrivain, ni lecteur de contenu —
+>   étrangère (`resupply_id` est opaque), ni écrivain, ni lecteur de contenu —
 >   son contenu se lit « inconnu », et le manifeste ne l'invente pas. Le
 >   manifeste a le **même format de ligne** pour les deux genres, pour que le
->   réassort s'y branche sans le changer.
+>   réapprovisionnement s'y branche sans le changer.
 
 ```mermaid
 stateDiagram-v2
@@ -380,6 +381,14 @@ sortie de S3 (réception manuelle).
   transfert sans arrêt avec une ligne au journal (proposé), ou une alerte
   qui sonne au tour manager ?
 - **Q-T4** — Un bac par commande (proposé), ou un bac de transfert commun ?
+  🔁 **Révisée par Hugo le 2026-10-13 (pendant T2) — remplace « un bac par
+  commande »** : les commandes de retrait se mettent en **sacs** (un ou
+  plusieurs par commande) ; les sacs vont dans **autant de bacs que
+  nécessaire** ; **les bacs appartiennent au TRANSFERT**, pas à une commande.
+  Même chose pour le réapprovisionnement. « Partir » exige au moins un bac
+  déclaré pour le transfert, partagé entre ses éléments ; le manifeste reste
+  par élément ; la réception compte les bacs reçus. **Non bâti** : voir
+  « État du lot T2 », faille F1.
 - **Q-T6** — « Remis au site » par le livreur, « Réceptionner » par le
   comptoir : les deux (proposé), ou un seul ?
 - **Q-T7** — Changer le mode d'un site : seulement les journées pas encore
@@ -449,6 +458,72 @@ l'option B le même jour ; le transfert a été refondu.
 | S5  | SÉRIEUX  | T0 dépend de S1 et de Q-T11                                                                                                    | **corrigé** (§9)                                                                                                                                                                                                                         |
 | m   | mineurs  | §12.1 S6 contre la lecture synchrone ; nom du fichier du fait de départ ; lecteur des sites servis ; repli sans véhicule       | **corrigés** : §12.1 S6 aligné ; `delivery-round-departed.fact.ts` vérifié (existe) ; lecteur nommé `TransferSitesReader` (§9) ; repli sans véhicule : transfert sans arrêt, ligne au journal, sortie par réception manuelle (**Q-T13**) |
 
+## État du lot T2 (2026-10-13)
+
+🔨 **Bâti, non commité** (non relu par `lecteur-de-migrations` ni `vitruve`).
+Migration `20261013710000_la_reception_du_transfert` : `received_at`,
+`received_by`, `received_reason` sur le transfert (+ CHECK
+`delivery_internal_transfer_received_check`), `detached_at` sur ses éléments,
+les deux index uniques partiels **remplacés** par des index restreints aux
+éléments portés (`detached_at IS NULL`) — plus larges, aucune ligne refusée ;
+et le renommage `refill` → `resupply` (valeur d'enum, colonne, index —
+vocabulaire « réapprovisionnement », Hugo, 2026-10-13 ; aucune donnée).
+
+- **Agrégat** : `receive` (une seule ; manuelle depuis `planned`, motif
+  obligatoire ≤ 500 ; après départ, motif facultatif), `detachOrder` (prévu :
+  sort ; parti ou reçu : `frozen`, rien ne bouge), `depart` ignore un transfert
+  reçu, `attach` refuse un transfert reçu. État `planned | departed | received`.
+- **Persistance** : la réception s'écrit dans l'`UPDATE` versionné, sous
+  `received_at IS NULL` ; le perdant relit → `TransferAlreadyReceivedError`.
+- **« Remis au site »** : `POST /admin/delivery/my-round/:roundId/stops/:stopId/site-drop`
+  (`delivery_doorstep`, mur du livreur) — reçoit le transfert et clôt l'arrêt
+  (I9 se termine) ; déjà reçu au comptoir : clôt seulement.
+- **« Réceptionner »** : `POST /admin/handover/orders/:orderId/transfer-reception`
+  (`handover_counter`) → `TransferReceptionDesk`.
+- **Refus au comptoir** : `TransferStatusReader` lu par `HandoverAttestation`
+  avant l'agrégat → `TransferNotReceivedError` (409,
+  `handover.transfer_not_received`). La file du comptoir porte `transfer`
+  (additif) pour afficher l'état et le bouton.
+- **Départ** : un transfert reçu à la main est tenu pour chargé ; l'arrêt part
+  sans effet (B2 du §12.3).
+- **Passation et annulation** (décisions 3 et 4) : `TransferMembership`,
+  appelé par deux abonnés durables — `commerce.order_placed` (existant) et
+  `commerce.order_cancelled` (**nouveau**, déclaré par la livraison, écrit par
+  les quatre chemins qui annulent : annulation, abandon du règlement,
+  expiration/remplacement d'une commande boutique, clôture qui coupe un
+  règlement). Il relit la commande et la range, la sort, ou journalise
+  `internal_transfer.order_kept` si le transfert est parti.
+- **« Ma tournée »** : `transferStops` (additif) — site, commandes portées,
+  réception, totaux du manifeste.
+- **Journal** : `internal_transfer.received | order_detached | order_kept`,
+  leurs phrases au back-office.
+
+**Écarts au plan, remontés** :
+
+- **F1 — Q-T4 révisée (bacs du transfert) non bâtie.** `delivery_bin.order_id`
+  est `NOT NULL`, et `BinDesk` (`packing/channels/delivery/`) est déclaré par
+  le colisage et indexé par commande (`declareBin`, `propose`, `freeHalves`,
+  `assertAtHand`) ; le partage existant ne joint que deux **moitiés** d'un bac
+  entre deux commandes. Porter un bac « du transfert » demande un sujet de bac
+  nouveau (`transfer_id`) et un geste de déclaration que le colisage ne
+  connaît pas — un second mécanisme, que ce plan ne décrit pas. T2 garde le
+  comportement de T1 (un bac par commande, « Partir » les exige tous).
+- **F2 — le port de réception ne pouvait pas vivre dans `handover/channels/delivery/`** :
+  l'implémenter demande `delivery → handover`, interdit. Il est déclaré ET
+  implémenté par la livraison dans `delivery/channels/handover/`, comme
+  `TransferStatusReader`.
+- **F3 — aucun geste du commerce ne change le jour ou le site d'une commande**
+  (vérifié le 2026-10-13 : aucune commande `b2b/orders/application/commands/`
+  ne le fait). `TransferMembership` traite ce cas (`moved`) dès qu'un fait le
+  déclenchera ; aujourd'hui seules la passation et l'annulation le déclenchent.
+- **F4 — une commande d'un site `transfer` qu'aucun transfert ne porte encore**
+  (passée avant la clôture) se remet sans refus : le refus ne vaut que pour une
+  commande portée.
+
+**Reste** : le front (écrans livreur, comptoir — contrats prêts), l'heure de
+l'arrêt de transfert dans « Ma tournée », la feuille de route PDF
+(`round-paper`), le nombre de bacs à la réception (F1).
+
 ## État du lot T1 (2026-10-13)
 
 🔨 **Bâti, non commité** (non vérifié par `lecteur-de-migrations` ni par
@@ -458,7 +533,7 @@ l'option B le même jour ; le transfert a été refondu.
 
 **En base** : `delivery_internal_transfer` (site opaque + nom figé,
 `departed_at`, version), `delivery_internal_transfer_item` (genre
-`order`/`refill`, `CHECK`, unicités partielles),
+`order`/`resupply`, `CHECK`, unicités partielles),
 `delivery_internal_transfer_manifest_line` (le manifeste figé) ; sur
 `delivery_round_stop`, `kind delivery_stop_kind`, `transfer_id`, le `CHECK`
 `delivery_round_stop_kind_check` et l'index jumeau
@@ -533,7 +608,7 @@ sequenceDiagram
 - **Une commande annulée, changée de jour ou de site après son rangement
   reste dans son transfert** : aucun geste ne l'en retire (le plan ne nomme
   pas l'appelant).
-- **L'arrêt de transfert ne se clôt pas encore** (« Remis au site », T2) :
+- ~~**L'arrêt de transfert ne se clôt pas encore**~~ (bâti en T2, 2026-10-13) (« Remis au site », T2) :
   une tournée qui en porte un ne peut pas être terminée par le livreur (I9)
   avant T2, et l'app du livreur et la feuille de route ne le montrent pas.
 - **Pas de durée de déchargement du site** : l'arrêt prend le temps sur place

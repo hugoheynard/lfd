@@ -4,6 +4,8 @@ import {
   type DeclareStopArrivalPayload,
   declareStopArrivalPayloadSchema,
   type DepositStopFields,
+  type DropTransferAtSitePayload,
+  dropTransferAtSitePayloadSchema,
   depositStopFieldsSchema,
   type HandOverStopFields,
   handOverStopFieldsSchema,
@@ -35,6 +37,7 @@ import type { StoredDocument } from "../../platform/storage/document-store.js";
 import { CloseStopWithoutHandoverCommand } from "../application/commands/close-stop-without-handover.command.js";
 import { DeclareStopArrivalCommand } from "../application/commands/declare-stop-arrival.command.js";
 import { DepositStopCommand } from "../application/commands/deposit-stop.command.js";
+import { DropTransferAtSiteCommand } from "../application/commands/drop-transfer-at-site.command.js";
 import { HandOverStopCommand } from "../application/commands/hand-over-stop.command.js";
 import { ReportDeliveryIncidentCommand } from "../application/commands/report-delivery-incident.command.js";
 import { ReturnMyRoundCommand } from "../application/commands/return-my-round.command.js";
@@ -107,6 +110,23 @@ export class MyDeliveryDoorstepController {
   ): Promise<void> {
     await this.commands.execute<CloseStopWithoutHandoverCommand, void>(
       new CloseStopWithoutHandoverCommand(staffUserId, roundId, stopId, payload),
+    );
+  }
+
+  /**
+   * « Remis au site » (transfert interne, lot T2) — le seul geste d'un arrêt de
+   * transfert : le site reçoit le transfert, l'arrêt se clôt. 204, même rejoué.
+   */
+  @Post(":roundId/stops/:stopId/site-drop")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async dropAtSite(
+    @StaffUserId() staffUserId: string,
+    @Param("roundId") roundId: string,
+    @Param("stopId") stopId: string,
+    @Body(new ZodBody(dropTransferAtSitePayloadSchema)) payload: DropTransferAtSitePayload,
+  ): Promise<void> {
+    await this.commands.execute<DropTransferAtSiteCommand, void>(
+      new DropTransferAtSiteCommand(staffUserId, roundId, stopId, payload),
     );
   }
 

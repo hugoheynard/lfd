@@ -12,6 +12,7 @@
  * aléatoire et n'apparaît que dans l'écran du client.
  */
 
+import type { OrderTransferView } from "./delivery-transfers.js";
 import type { FulfillmentMethod, FulfillmentSource } from "./order.js";
 
 /**
@@ -184,6 +185,13 @@ export interface HandoverQueueEntryView {
    */
   readonly siteId?: string | null | undefined;
   readonly fulfillmentMethod: FulfillmentMethod;
+  /**
+   * Le transfert interne qui porte la commande vers son site (lot T2,
+   * 2026-10-13), ou `null` : aucun — elle se remet comme avant. Tant qu'il
+   * n'est pas `received`, le comptoir refuse de la remettre et propose
+   * « Réceptionner ». Facultatif : additif.
+   */
+  readonly transfer?: OrderTransferView | null | undefined;
   /** Le créneau convenu, ou `null` si aucune tranche n'a été demandée. */
   readonly window: HandoverQueueWindowView | null;
   /** Somme des quantités — le chiffre qu'on recompte à voix haute. */

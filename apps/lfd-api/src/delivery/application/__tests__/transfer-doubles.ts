@@ -48,7 +48,7 @@ export class InMemoryInternalTransfers extends InternalTransferRepository {
   plannedOf(serviceDay: string, siteId: string): Promise<readonly InternalTransfer[]> {
     return Promise.resolve(
       this.all().filter(
-        (t) => t.serviceDay === serviceDay && t.siteId === siteId && t.departedAt === null,
+        (t) => t.serviceDay === serviceDay && t.siteId === siteId && t.status === "planned",
       ),
     );
   }

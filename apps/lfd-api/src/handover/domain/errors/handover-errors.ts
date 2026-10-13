@@ -47,3 +47,21 @@ export class HandoverRefusedError extends BusinessError {
     super("handover.refused", reason);
   }
 }
+
+/**
+ * **La marchandise n'est pas encore au site** (plan du transfert interne, §6.2,
+ * Q-T2, lot T2) : la commande part par un transfert interne qui n'a pas été
+ * reçu. Le refus protège d'une remise sans sac ; le geste de sortie existe
+ * toujours — « Réceptionner », manuel avec motif quand aucune tournée ne l'a
+ * emporté.
+ */
+export class TransferNotReceivedError extends BusinessError {
+  constructor(siteLabel: string) {
+    super(
+      "handover.transfer_not_received",
+      `Cette commande n'est pas encore arrivée à « ${siteLabel} » : son transfert n'a pas été ` +
+        "reçu. Réceptionnez le transfert (bouton « Réceptionner » de la file du comptoir), " +
+        "puis remettez-la.",
+    );
+  }
+}

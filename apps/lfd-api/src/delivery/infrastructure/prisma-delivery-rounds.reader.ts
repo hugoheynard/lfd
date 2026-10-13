@@ -9,7 +9,7 @@ import { orderStopsOnly } from "./order-stop.js";
 /** Un arrêt vivant : ni retiré, ni clos (C12). */
 const LIVE_STOP = { removedAt: null, closedAt: null } as const;
 
-/** Un élément « commande » d'un transfert — le réassort n'est pas bâti. */
+/** Un élément « commande » d'un transfert — le réapprovisionnement n'est pas bâti. */
 const ORDER_ITEM = { kind: "order" } as const;
 
 /** Adaptateur Prisma de la lecture de la composition. Il n'écrit rien. */

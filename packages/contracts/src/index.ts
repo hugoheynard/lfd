@@ -2077,3 +2077,16 @@ export type {
   TransferManifestLineView,
   TransferManifestSectionView,
 } from "./delivery-transfers.js";
+// Le transfert interne, lot T2 (2026-10-13) : « Remis au site », « Réceptionner ».
+export {
+  dropTransferAtSitePayloadSchema,
+  receiveTransferPayloadSchema,
+  TRANSFER_RECEPTION_REASON_MAX,
+} from "./delivery-transfers.js";
+export type {
+  DriverTransferStopView,
+  DropTransferAtSitePayload,
+  OrderTransferStateView,
+  OrderTransferView,
+  ReceiveTransferPayload,
+} from "./delivery-transfers.js";

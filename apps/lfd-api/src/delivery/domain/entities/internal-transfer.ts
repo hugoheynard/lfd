@@ -11,50 +11,32 @@ import {
   type TransferManifest,
 } from "../services/transfer-manifest.js";
 import { isCalendarDay } from "../value-objects/service-day.js";
+import {
+  type FrozenManifestLine,
+  type HeldTransferItem,
+  type InternalTransferState,
+  type ItemContents,
+  isLive,
+  subjectOf,
+  type TransferDetachment,
+  type TransferItem,
+  type TransferReceipt,
+  type TransferState,
+} from "./internal-transfer-state.js";
+import { receiptOf } from "./transfer-receipt.js";
 
-/**
- * Un **élément** d'un transfert (décision de Hugo du 2026-10-13) : une
- * commande en retrait au site, ou un réassort de la boutique du site — ce
- * second genre est déclaré, pas bâti : aucun écrivain ne le produit.
- */
-export type TransferItem =
-  | { readonly kind: "order"; readonly orderId: string }
-  | { readonly kind: "refill"; readonly refillId: string };
-
-/** Un élément tel que le transfert le range : son identifiant, son ajout. */
-export type HeldTransferItem = TransferItem & {
-  readonly id: string;
-  readonly attachedAt: Date;
-};
-
-/** Une ligne du manifeste figé : l'élément qui la porte, et son contenu. */
-export interface FrozenManifestLine extends ManifestLine {
-  readonly itemId: string;
-}
-
-/** L'état persisté d'un transfert — ce que `restore` réhydrate et `toSnapshot` rend. */
-export interface InternalTransferState {
-  readonly id: string;
-  readonly serviceDay: string;
-  readonly siteId: string;
-  /** Le nom du site, FIGÉ à l'ouverture. */
-  readonly siteLabel: string;
-  readonly items: readonly HeldTransferItem[];
-  readonly departedAt: Date | null;
-  /** Le manifeste figé au départ ; vide tant qu'il n'est pas parti. */
-  readonly manifest: readonly FrozenManifestLine[];
-  readonly version: number;
-  readonly createdAt: Date;
-  readonly updatedAt: Date;
-}
-
-/** Le contenu d'un élément, lu au moment du départ ; `undefined` : inconnu. */
-export type ItemContents = (item: HeldTransferItem) => readonly ManifestLine[] | undefined;
-
-/** L'identifiant opaque de ce que l'élément porte. */
-export function subjectOf(item: TransferItem): string {
-  return item.kind === "order" ? item.orderId : item.refillId;
-}
+export {
+  type FrozenManifestLine,
+  type HeldTransferItem,
+  type InternalTransferState,
+  type ItemContents,
+  isLive,
+  subjectOf,
+  type TransferDetachment,
+  type TransferItem,
+  type TransferReceipt,
+  type TransferState,
+} from "./internal-transfer-state.js";
 
 /**
  * **Un transfert interne** (plan du transfert interne, §3, lot T1) : pour un
@@ -68,11 +50,16 @@ export function subjectOf(item: TransferItem): string {
  * - il part une fois ; son manifeste se FIGE au départ, et fait foi ensuite
  *   (« on doit savoir ce qu'on transporte », Hugo, 2026-10-13).
  *
- * La réception (`received`, §3) est le lot T2.
+ * - **reçu, il est clos** (lot T2) : une réception, une seule — remise au
+ *   site après le départ, ou manuelle depuis `planned`, motif obligatoire ;
+ *   un transfert reçu ne part plus (le départ l'ignore, B2 du §12.3) ;
+ * - une commande se RETIRE tant qu'il est prévu ; parti ou reçu, rien ne
+ *   bouge (le manifeste est figé, le transfert ne « ramène » rien).
  */
 export class InternalTransfer {
   private items: HeldTransferItem[];
   private departed: Date | null;
+  private receipt: TransferReceipt | null;
   private frozen: readonly FrozenManifestLine[];
   private currentVersion: number;
   private updatedAt: Date;
@@ -80,14 +67,17 @@ export class InternalTransfer {
   private constructor(
     private readonly state: Omit<
       InternalTransferState,
-      "items" | "departedAt" | "manifest" | "version" | "updatedAt"
+      "items" | "departedAt" | "received" | "manifest" | "version" | "updatedAt"
     >,
     /** `null` : ouvert à l'instant, rien en base. */
     readonly loadedVersion: number | null,
-    rest: Pick<InternalTransferState, "items" | "departedAt" | "manifest" | "updatedAt">,
+    rest: Pick<InternalTransferState, "items" | "departedAt" | "manifest" | "updatedAt"> & {
+      readonly received: TransferReceipt | null;
+    },
   ) {
     this.items = [...rest.items];
     this.departed = rest.departedAt;
+    this.receipt = rest.received;
     this.frozen = rest.manifest;
     this.currentVersion = loadedVersion ?? 1;
     this.updatedAt = rest.updatedAt;
@@ -111,6 +101,7 @@ export class InternalTransfer {
     return new InternalTransfer({ ...identity, createdAt: at }, null, {
       items: [],
       departedAt: null,
+      received: null,
       manifest: [],
       updatedAt: at,
     });
@@ -121,8 +112,14 @@ export class InternalTransfer {
     if (state.departedAt === null && state.manifest.length > 0) {
       throw new InternalTransferCorruptedError(state.id, "un manifeste figé sans départ");
     }
-    const { items, departedAt, manifest, version, updatedAt, ...identity } = state;
-    return new InternalTransfer(identity, version, { items, departedAt, manifest, updatedAt });
+    const { items, departedAt, received, manifest, version, updatedAt, ...identity } = state;
+    return new InternalTransfer(identity, version, {
+      items,
+      departedAt,
+      received: received ?? null,
+      manifest,
+      updatedAt,
+    });
   }
 
   get id(): string {
@@ -145,19 +142,31 @@ export class InternalTransfer {
     return this.departed;
   }
 
+  get received(): TransferReceipt | null {
+    return this.receipt;
+  }
+
+  get status(): TransferState {
+    if (this.receipt !== null) {
+      return "received";
+    }
+    return this.departed === null ? "planned" : "departed";
+  }
+
+  /** Les éléments qu'il porte TOUJOURS — un élément retiré n'y est plus. */
   get heldItems(): readonly HeldTransferItem[] {
-    return [...this.items];
+    return this.items.filter(isLive);
   }
 
   /** Les commandes qu'il porte, dans l'ordre d'ajout. */
   get orderIds(): readonly string[] {
-    return this.items.flatMap((item) => (item.kind === "order" ? [item.orderId] : []));
+    return this.heldItems.flatMap((item) => (item.kind === "order" ? [item.orderId] : []));
   }
 
   /**
    * Ajoute un élément — rend `false` s'il y est déjà (rien ne change).
    * @throws {InternalTransferMismatchError} un autre site ou un autre jour.
-   * @throws {InternalTransferDepartedError} il est parti.
+   * @throws {InternalTransferDepartedError} il est parti, ou déjà reçu.
    */
   attach(
     input: { readonly itemId: string; readonly item: TransferItem },
@@ -168,10 +177,12 @@ export class InternalTransfer {
       throw new InternalTransferMismatchError(this.state.siteLabel, this.state.serviceDay);
     }
     const subject = subjectOf(input.item);
-    if (this.items.some((held) => held.kind === input.item.kind && subjectOf(held) === subject)) {
+    if (
+      this.heldItems.some((held) => held.kind === input.item.kind && subjectOf(held) === subject)
+    ) {
       return false;
     }
-    if (this.departed !== null) {
+    if (this.status !== "planned") {
       throw new InternalTransferDepartedError(this.state.siteLabel, this.state.serviceDay);
     }
     this.items = [...this.items, { ...input.item, id: input.itemId, attachedAt: at }];
@@ -186,10 +197,11 @@ export class InternalTransfer {
    * vide — le manifeste ne l'invente pas, et la réception (T2) le verra.
    */
   depart(at: Date, contents: ItemContents): boolean {
-    if (this.departed !== null) {
+    // Reçu à la main avant le départ (B2 du §12.3) : l'arrêt part sans effet.
+    if (this.status !== "planned") {
       return false;
     }
-    this.frozen = this.items.flatMap((item) =>
+    this.frozen = this.heldItems.flatMap((item) =>
       (contents(item) ?? []).map((line) => ({ ...line, itemId: item.id })),
     );
     this.departed = at;
@@ -209,7 +221,7 @@ export class InternalTransfer {
             .filter((line) => line.itemId === item.id)
             .map(({ sku, productName, quantity }) => ({ sku, productName, quantity }));
     return manifestOf(
-      this.items.map((item): ManifestItem => ({
+      this.heldItems.map((item): ManifestItem => ({
         itemId: item.id,
         kind: item.kind,
         subjectId: subjectOf(item),
@@ -218,11 +230,46 @@ export class InternalTransfer {
     );
   }
 
+  /**
+   * **Reçu au site** (lot T2) : remis par le livreur après le départ, ou
+   * réceptionné au comptoir — depuis `planned`, c'est une réception MANUELLE,
+   * et son motif est obligatoire (sortie de S3, §6).
+   *
+   * @throws {TransferAlreadyReceivedError} une réception, une seule.
+   * @throws {TransferReceptionReasonRequiredError} manuelle sans motif.
+   */
+  receive(input: { readonly at: Date; readonly by: string; readonly reason: string | null }): void {
+    this.receipt = receiptOf(this.status, this.state.siteLabel, input);
+    this.touch(input.at);
+  }
+
+  /**
+   * **Retire une commande** (lot T2, décision 4 de Hugo) — annulée, changée
+   * de jour ou de site. Prévu : elle sort (`detached`). Parti ou reçu : rien
+   * ne bouge, le manifeste figé fait foi (`frozen`) ; l'appelant le dit au
+   * journal. Absente : `absent`.
+   */
+  detachOrder(orderId: string, at: Date): TransferDetachment {
+    const held = this.heldItems.find((item) => item.kind === "order" && item.orderId === orderId);
+    if (held === undefined) {
+      return "absent";
+    }
+    if (this.status !== "planned") {
+      return "frozen";
+    }
+    this.items = this.items.map((item) =>
+      item.id === held.id ? { ...item, detachedAt: at } : item,
+    );
+    this.touch(at);
+    return "detached";
+  }
+
   toSnapshot(): InternalTransferState {
     return {
       ...this.state,
       items: [...this.items],
       departedAt: this.departed,
+      received: this.receipt,
       manifest: [...this.frozen],
       version: this.currentVersion,
       updatedAt: this.updatedAt,

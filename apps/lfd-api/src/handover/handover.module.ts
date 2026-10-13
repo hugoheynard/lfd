@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 
 import { ConfirmHandoverHandler } from "./application/commands/confirm-handover.handler.js";
 import { ConfirmManualHandoverHandler } from "./application/commands/confirm-manual-handover.handler.js";
+import { ReceiveTransferAtCounterHandler } from "./application/commands/receive-transfer-at-counter.handler.js";
 import { EraseHandoverProofsHandler } from "./application/commands/erase-handover-proofs.handler.js";
 import { PurgeHandoverProofsOlderThanHandler } from "./application/commands/purge-handover-proofs-older-than.handler.js";
 import { GetDeliveryRunSheetHandler } from "./application/queries/get-delivery-run-sheet.handler.js";
@@ -64,6 +65,7 @@ import { PrismaOrderHandoverRepository } from "./infrastructure/prisma-order-han
   providers: [
     ConfirmHandoverHandler,
     ConfirmManualHandoverHandler,
+    ReceiveTransferAtCounterHandler,
     EraseHandoverProofsHandler,
     PurgeHandoverProofsOlderThanHandler,
     HandoverProofErasure,

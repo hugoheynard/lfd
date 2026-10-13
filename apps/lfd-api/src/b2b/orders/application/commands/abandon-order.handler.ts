@@ -1,4 +1,5 @@
 import { Logger } from "@nestjs/common";
+import { CommerceOrderCancelledFact } from "../../../../delivery/channels/commerce/index.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
@@ -127,6 +128,10 @@ export class AbandonOrderHandler implements ICommandHandler<AbandonOrderCommand,
       }
       if (written !== null) {
         await this.durable.publish(new OrderPaymentFailedEvent(orderId, "abandoned").durableFact());
+      }
+      if (written === "cancelled") {
+        // La livraison sort la commande de son transfert prévu (lot T2) : même transaction.
+        await this.durable.publish(new CommerceOrderCancelledFact(orderId).durableFact());
       }
       return written;
     });
