@@ -180,8 +180,16 @@ cassée au premier renommage.
   ou à un **point de retrait** (un champ de `PickupAddress`, plus la
   livraison) ? La seconde survit à un cinquième point sans code.
 - **Q6** — Couleur de la livraison B2C et des commandes `clientele = NULL` ?
-- **Q7** — Val Village « comme une livraison B2B » : même tri, même couleur
-  (non : gris demandé), ou une vraie desserte par tournée ?
+- **Q7** — ✅ **Orientée par Hugo le 2026-10-13** : c'est le **transfert
+  interne** évoqué le 2026-10-10 — le stock part du fournil vers le point de
+  retrait éloigné comme une livraison, et c'est ce départ qui range les
+  commandes de Val Village avec les tournées. Ce chantier n'est pas écrit : il
+  attend d'abord la notion de **site** (un lieu à nous qui vend, remet, est
+  servi), cf. [`../carte-des-chantiers.md`](../carte-des-chantiers.md) § 3,
+  ligne « Le transfert interne vers un point de retrait éloigné ». Le tri du
+  L2 en dépend pour Val Village ; la couleur (gris) n'en dépend pas. Le tri du
+  colisage par heure de départ a déjà son TODO :
+  [`../colisage/todo-colisage-tri-par-echeance.md`](../colisage/todo-colisage-tri-par-echeance.md).
 - **Q8** — Les « surligneurs OK/KO » sont-ils des feutres sur papier
   imprimé (alors le code couleur doit aussi passer sur le **bon** ou la
   feuille de route imprimée) ou un état de l'écran ?
