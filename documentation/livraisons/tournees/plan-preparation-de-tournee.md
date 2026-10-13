@@ -246,12 +246,12 @@ espaces (`WORKSPACES`, `workspace-rail/workspaces.ts`) et `/livraison` n'est
 dans aucun. C'est une entrée de rail à créer (`WorkspaceKey`, vues, specs), pas
 une page de plus.
 
-| Entrée           | Adresse                 | Lot  |
-| ---------------- | ----------------------- | ---- |
-| Feuille de route | `/livraison`            | 1 ✅ |
-| Véhicules        | `/livraison/vehicules`  | 2    |
-| Tournées         | `/livraison/tournees`   | 3    |
-| Chargement       | `/livraison/chargement` | 4    |
+| Entrée           | Adresse                                                | Lot  |
+| ---------------- | ------------------------------------------------------ | ---- |
+| Feuille de route | `/livraison`                                           | 1 ✅ |
+| Véhicules        | `/reglages/livraison/vehicules` (depuis le 2026-10-13) | 2    |
+| Tournées         | `/livraison/tournees`                                  | 3    |
+| Chargement       | `/livraison/chargement`                                | 4    |
 
 `/livraison` est aujourd'hui une route **feuille**, gardée par
 `b2b_orders:read` (`app.routes.ts`). Elle devient un parent à enfants, et le

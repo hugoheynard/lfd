@@ -66,9 +66,12 @@ describe('permissionGuard — redirige plutôt que de bloquer', () => {
   it.each([
     ['production_worksheet:read', '/fournil'],
     ['production_plan:read', '/prod-manager'],
-    ['production_settings:read', '/production/reglages'],
+    ['production_settings:read', '/reglages/production/fournil'],
     ['production_packing:read', '/colisage'],
     ['handover_counter:read', '/comptoir/retrait'],
+    // Réglages › Commandes (plan-reglages-commandes.md §3.3).
+    ['lfc_order_settings:read', '/reglages/commandes/heure-limite'],
+    ['lfc_order_opening:read', '/reglages/commandes/ouverture'],
   ] as const)('renvoie qui ne tient que %s vers %s', async (permission, path) => {
     const result = await guardWith([permission]);
 

@@ -1,0 +1,72 @@
+<fold-card>
+  <div class="head">
+    <div class="head-text">
+      <h2 class="section-title">Clientèle professionnelle</h2>
+      <p class="section-desc">
+        Jusqu'à quand un pro peut commander pour un acheminement donné, quand l'article ne demande
+        pas plus de temps. Passé l'heure, le <strong>rattrapage</strong> refuse encore la commande,
+        mais en invitant le client à appeler : il ne la laisse pas passer toute seule.
+      </p>
+    </div>
+    @if (canWrite() && state() === 'ready') {
+      <button foldButton size="sm" [icon]="general() ? 'edit' : 'plus'" (click)="edit()">
+        {{ general() ? 'Modifier' : 'Poser la limite générale' }}
+      </button>
+    }
+  </div>
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Chargement de l'heure limite…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Impossible de charger l'heure limite">
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @default {
+      @if (general(); as rule) {
+        <p class="general" data-cutoff-general>
+          <span class="rule-when">{{ sentence(rule) }}</span>
+          <!-- Le rattrapage ne s'affiche QUE s'il existe : l'absence est le cas normal. -->
+          @if (grace(rule); as label) {
+            <fold-badge [content]="label" variant="neutral" />
+          }
+        </p>
+      } @else {
+        <!-- `icon` et `description` n'existent PAS sur `fold-empty-state` : l'icône
+             passe par le slot `[empty-icon]`, le texte par `subtitle`. -->
+        <fold-empty-state
+          title="Aucune limite générale"
+          subtitle="Tant qu'elle n'est pas posée, un article sans limite au référentiel se commande quelle que soit l'heure."
+        >
+          <fold-icon empty-icon name="clock" [size]="28" />
+        </fold-empty-state>
+      }
+
+      @if (legacy().length > 0) {
+        <fold-callout variant="warning">
+          Des règles par point de retrait ou par jour existent encore. Elles s'appliquent toujours,
+          mais ne se règlent plus ici : non reprises, elles seront retirées au démontage.
+        </fold-callout>
+        <ul class="rules" data-cutoff-legacy>
+          @for (rule of legacy(); track rule.id) {
+            <li class="rule">
+              <div class="rule-main">
+                <span class="rule-scope">{{ scope(rule) }}</span>
+                <span class="rule-day">{{ day(rule) }}</span>
+              </div>
+              <span class="rule-when">
+                {{ sentence(rule) }}
+                @if (grace(rule); as label) {
+                  <fold-badge [content]="label" variant="neutral" />
+                }
+              </span>
+              <fold-badge content="Non reprise" variant="warning" />
+            </li>
+          }
+        </ul>
+      }
+    }
+  }
+</fold-card>

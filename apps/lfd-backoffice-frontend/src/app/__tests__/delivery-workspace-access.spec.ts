@@ -1,6 +1,6 @@
 import { Component, Injector, runInInjectionContext } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { Router, UrlTree, provideRouter } from '@angular/router';
+import { type Route, Router, UrlTree, provideRouter } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import {
   resolvePermissionsFromGrants,
@@ -64,8 +64,19 @@ function isAnyGuard(guard: unknown): guard is PermissionGuard | AnyPermissionGua
 }
 
 /** Joue les gardes de la coquille PUIS de la vue : vrai si tous laissent passer. */
+/**
+ * Les RÉGLAGES de la livraison vivent sous `/reglages/livraison/` depuis le
+ * 2026-10-13 (Hugo) : sous `livraison`, leur ancienne adresse n'est qu'une
+ * redirection, sans garde — elle ouvrirait « tout » et ne prouverait rien.
+ */
+const SETTINGS = new Set(['vehicules', 'bacs', 'contenances', 'depart', 'zones']);
+
 async function opens(role: StaffRole | typeof LIVREUR, path: string): Promise<boolean> {
   configure(role);
+  if (SETTINGS.has(path)) {
+    const reglages = routes.find((route) => route.path === 'reglages');
+    return passes(reglages?.children?.find((child) => child.path === `livraison/${path}`));
+  }
   // Le Coursier (2026-10-03) et le Tour manager (2026-10-10) sont de premier
   // niveau : pas de coquille au-dessus.
   const shell =
@@ -73,8 +84,16 @@ async function opens(role: StaffRole | typeof LIVREUR, path: string): Promise<bo
       ? undefined
       : routes.find((route) => route.path === 'livraison');
   const view = (shell?.children ?? routes).find((child) => child.path === path);
+  return passes(view, shell?.canActivate ?? []);
+}
+
+async function passes(
+  view: Route | undefined,
+  inherited: Route['canActivate'] = [],
+): Promise<boolean> {
   expect(view).toBeDefined();
-  const guards = [...(shell?.canActivate ?? []), ...(view?.canActivate ?? [])].filter(isAnyGuard);
+  expect(view?.redirectTo).toBeUndefined();
+  const guards = [...(inherited ?? []), ...(view?.canActivate ?? [])].filter(isAnyGuard);
   const state = TestBed.inject(Router).routerState.snapshot;
   const injector = TestBed.inject(Injector);
   for (const guard of guards) {

@@ -1,0 +1,49 @@
+:host {
+  display: block;
+}
+
+.waivers {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Une dérogation par rang, séparée d'un filet, la journée la plus proche d'abord. */
+.waiver {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--fold-space-md);
+  padding: var(--fold-space-sm) 0;
+  border-top: 1px solid var(--fold-color-border-subtle);
+}
+
+.what {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.what p {
+  margin: 0;
+}
+
+.company {
+  font-weight: 600;
+}
+
+.day,
+.reason {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+@media (max-width: 44rem) {
+  .waiver {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+}

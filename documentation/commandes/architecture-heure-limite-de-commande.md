@@ -108,8 +108,8 @@ testée et administrable** depuis le back-office :
 | `model OrderCutoff` (`public/orders.prisma:250`, schéma `public`) | table `order_cutoffs`                                       |
 | `packages/contracts/src/order-cutoff.ts`                          | payload Zod, vue, et **deux fonctions pures** de résolution |
 | `packages/contracts/src/__tests__/order-cutoff.spec.ts`           | 12 tests                                                    |
-| `GET/POST/PATCH/DELETE /admin/order-cutoffs`                      | muré `@AdminSurface("b2b_settings")`                        |
-| `b2b/reglages/cutoffs-section/`                                   | l'écran de saisie                                           |
+| `GET/POST/PATCH/DELETE /admin/order-cutoffs`                      | muré `@AdminSurface("lfc_order_settings")` (2026-10-13)     |
+| `reglages/commandes/cutoffs-section/`                             | l'écran de saisie — la ligne générale seule (2026-10-13)    |
 
 Une règle dit : « pour tel **point de retrait**, tel **jour d'acheminement**, il
 faut avoir commandé `daysBefore` jours avant à telle **heure locale** ».

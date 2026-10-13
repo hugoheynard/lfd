@@ -280,16 +280,20 @@ les routes des bacs avec le colisage.
 
 Deux surfaces de commande vivent sous les réglages de la plateforme :
 
-| Méthode et chemin                                              | Exige                                                                     |
-| -------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `GET /admin/order-opening`                                     | `b2b_settings:read`                                                       |
-| `PATCH /admin/order-opening`                                   | `b2b_settings:write` — ouvrir / fermer la prise de commande par clientèle |
-| `GET /admin/order-cutoffs`                                     | `b2b_settings:read`                                                       |
-| `POST /admin/order-cutoffs`, `DELETE /admin/order-cutoffs/:id` | `b2b_settings:write` — les heures limites                                 |
+| Méthode et chemin                                              | Exige                                                            |
+| -------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `GET /admin/order-opening`                                     | `lfc_order_opening:read` (depuis le 2026-10-13)                  |
+| `PATCH /admin/order-opening`                                   | `lfc_order_opening:write` — ouvrir / fermer la prise de commande |
+| `GET /admin/order-cutoffs`                                     | `lfc_order_settings:read` (depuis le 2026-10-13)                 |
+| `POST /admin/order-cutoffs`, `DELETE /admin/order-cutoffs/:id` | `lfc_order_settings:write` — les heures limites                  |
+| `GET/PATCH /admin/customer-cancellation`                       | `lfc_order_settings` — l'annulation par le client                |
+| `GET /admin/order-cutoff-waivers`                              | `b2b_order_waivers:read` — les dérogations d'actualité           |
 
-**Back-office** : `/b2b/reglages/ouverture-boutique` et
-`/b2b/reglages/heures-limites`, sous la garde du bloc `/b2b`
-(`b2b_settings:read`). Voir
+**Back-office** : Réglages › Commandes — `/reglages/commandes/ouverture`
+(`lfc_order_opening:read`), `/heure-limite` et `/annulation`
+(`lfc_order_settings:read`) depuis le 2026-10-13
+([`../commandes/plan-reglages-commandes.md`](../commandes/plan-reglages-commandes.md)) ;
+les anciennes adresses sous `/b2b/reglages/` redirigent. Voir
 [`../commandes/ouverture-de-la-boutique.md`](../commandes/ouverture-de-la-boutique.md) et
 [`../commandes/architecture-heure-limite-de-commande.md`](../commandes/architecture-heure-limite-de-commande.md).
 
@@ -357,6 +361,9 @@ droit exigé côté API n'a changé.
    `order-opening-page` cache les bascules, et `cutoffs-section` cache
    « Ajouter une règle », « Modifier » et « Supprimer », sans
    `can('b2b_settings:write')` ; l'état et les règles restent lisibles (une spec le tient).
+   Depuis le 2026-10-13, le droit suivi est `lfc_order_opening:write` pour
+   l'ouverture et `lfc_order_settings:write` pour l'heure limite, qui
+   n'édite plus que la ligne générale (`plan-reglages-commandes.md`).
 6. **`b2b_orders:write` ne protège plus qu'un rappel — assumé.** Depuis la
    sortie des gestes (2026-10-01) puis de l'annulation (2026-10-12), la seule
    route qui l'exige est `POST /admin/orders/:id/pickup-reminder`. Ce n'est pas

@@ -84,7 +84,9 @@ elles restent ouvertes aux professionnels ».
   — la garde ; l'erreur dans `domain/errors/orders-closed-for-audience.error.ts`.
 - `packages/contracts/src/order-opening{,.values}.ts` — vues, défaut,
   `ordersOpenTo`, code du refus (sans zod pour la boutique, par `shop-values`).
-- Back-office : `b2b/reglages/order-opening-page/`.
+- Back-office : `reglages/commandes/order-opening-page/` — Réglages ›
+  Commandes › Ouverture du e-commerce (`/reglages/commandes/ouverture`), sous
+  `lfc_order_opening` depuis le 2026-10-13 (`plan-reglages-commandes.md`).
 - Boutique : `client/shop/order-opening.store.ts`, pied de `cart-dialog`.
 
 ## Ce qui reste

@@ -14,7 +14,10 @@ import {
 import { OrderLateFeeRepository } from "./domain/order-late-fee.repository.js";
 import { ClearOrderLateFeeHandler } from "./application/clear-order-late-fee.handler.js";
 import { GrantOrderCutoffWaiverHandler } from "./application/grant-order-cutoff-waiver.handler.js";
+import { ListOpenOrderCutoffWaiversHandler } from "./application/list-open-order-cutoff-waivers.handler.js";
 import { ListOrderCutoffWaiversHandler } from "./application/list-order-cutoff-waivers.handler.js";
+import { OpenOrderCutoffWaiverReader } from "./domain/open-order-cutoff-waiver.reader.js";
+import { PrismaOpenOrderCutoffWaiverReader } from "./infrastructure/prisma-open-order-cutoff-waiver.reader.js";
 import { ReadOrderLateFeeHandler } from "./application/read-order-late-fee.handler.js";
 import { RevokeOrderCutoffWaiverHandler } from "./application/revoke-order-cutoff-waiver.handler.js";
 import { SaveOrderLateFeeHandler } from "./application/save-order-late-fee.handler.js";
@@ -48,6 +51,9 @@ import { PrismaOrderCutoffWaiverRepository } from "./infrastructure/prisma-order
   providers: [
     { provide: OrderCutoffWaiverRepository, useClass: PrismaOrderCutoffWaiverRepository },
     { provide: OrderCutoffWaiverGate, useClass: PrismaOrderCutoffWaiverGate },
+    // La liste transverse de Réglages › Commandes › Heure limite (lot O1c) :
+    // un port de lecture à part, la liste ne fait que lire.
+    { provide: OpenOrderCutoffWaiverReader, useClass: PrismaOpenOrderCutoffWaiverReader },
     // La surtaxe vit ici parce qu'elle n'existe QUE par la dérogation : c'est ce
     // qu'une dérogation coûte. Deux ports, encore — l'administration la règle,
     // la passation la lit.
@@ -63,6 +69,7 @@ import { PrismaOrderCutoffWaiverRepository } from "./infrastructure/prisma-order
     GrantOrderCutoffWaiverHandler,
     RevokeOrderCutoffWaiverHandler,
     ListOrderCutoffWaiversHandler,
+    ListOpenOrderCutoffWaiversHandler,
     SaveOrderLateFeeHandler,
     ClearOrderLateFeeHandler,
     ReadOrderLateFeeHandler,

@@ -8,7 +8,7 @@
  * `documentation/droits-et-permissions/architecture-acces-staff.md`.
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import type { StaffUserView } from "@lfd/contracts";
+import type { RoleGrant, StaffUserView } from "@lfd/contracts";
 
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 
@@ -99,10 +99,12 @@ describe("le mur staff — chacun son périmètre", () => {
     // L'action se déduit du verbe, sans qu'aucune route ait eu à la déclarer :
     // sur la même ressource, le GET passe et l'écriture est refusée. L'id est
     // volontairement introuvable — le guard tranche AVANT que la ressource soit
-    // cherchée, donc un 404 ici prouverait déjà qu'on est passé.
-    await accountant().get("/admin/order-cutoffs").expect(200);
+    // cherchée, donc un 400 ici prouverait déjà qu'on est passé. Reporté sur
+    // le pied de page le 2026-10-13 : les heures limites ont quitté
+    // `b2b_settings` pour `lfc_order_settings` (plan-reglages-commandes.md, O1a).
+    await accountant().get("/admin/content/footer").expect(200);
 
-    const response = await accountant().patch("/admin/order-cutoffs/inexistant").send({});
+    const response = await accountant().put("/admin/content/footer").send({});
     expect(response.status).toBe(403);
   });
 
@@ -398,7 +400,10 @@ describe("le mur staff — le balayage des huit ressources", () => {
     { resource: "b2b_growth", path: "/admin/cockpit" },
     { resource: "b2b_appointments", path: "/admin/appointments?from=2026-08-01&to=2026-08-31" },
     { resource: "b2b_support", path: "/admin/support-requests" },
-    { resource: "b2b_settings", path: "/admin/order-cutoffs" },
+    { resource: "b2b_settings", path: "/admin/content/footer" },
+    { resource: "lfc_order_settings", path: "/admin/order-cutoffs" },
+    { resource: "lfc_order_settings", path: "/admin/customer-cancellation" },
+    { resource: "lfc_order_opening", path: "/admin/order-opening" },
     { resource: "staff_access", path: "/admin/staff-users" },
     { resource: "me", path: "/admin/me" },
   ];
@@ -465,5 +470,81 @@ describe("le mur staff — la première entrée se journalise", () => {
     ]);
     const row = await ctx.prisma.staffUser.findUniqueOrThrow({ where: { id: fiche.id } });
     expect(row).toMatchObject({ status: "active", auth0Id: `auth0|${NEWCOMER_EMAIL}` });
+  });
+});
+
+/**
+ * Les réglages des commandes ont quitté `b2b_settings` le 2026-10-13
+ * (`documentation/commandes/plan-reglages-commandes.md`, §3.4, lot O1a) :
+ * l'heure limite et l'annulation sous `lfc_order_settings`, l'ouverture sous
+ * `lfc_order_opening`. Tenir les réglages plateforme n'y ouvre plus rien.
+ */
+describe("le mur staff — les réglages des commandes ont leurs droits", () => {
+  /** Un rôle créé à l'écran, qui ne tient que ces droits, et une personne qui le porte. */
+  async function holderOf(key: string, grants: readonly RoleGrant[]) {
+    await ctx
+      .asSub(E2E_STAFF_SUB)
+      .post("/admin/staff-roles")
+      .send({ key, label: key, grants })
+      .expect(201);
+    const sub = `staff-${key}`;
+    await ctx.prisma.staffUser.create({
+      data: {
+        firstName: "Test",
+        lastName: key,
+        email: `${key}@lfc.test`,
+        role: null,
+        roleKey: key,
+        status: "active",
+        auth0Id: sub,
+      },
+    });
+    return ctx.asSub(sub);
+  }
+
+  const MOVED = [
+    { resource: "lfc_order_settings", path: "/admin/order-cutoffs" },
+    { resource: "lfc_order_settings", path: "/admin/customer-cancellation" },
+    { resource: "lfc_order_opening", path: "/admin/order-opening" },
+  ] as const;
+
+  it.each(MOVED)(
+    "refuse $path à qui ne tient que `b2b_settings`, même en écriture",
+    async ({ path }) => {
+      const agent = await holderOf("reglages-plateforme", [
+        { resource: "b2b_settings", action: "write" },
+      ]);
+
+      expect((await agent.get(path)).status).toBe(403);
+    },
+  );
+
+  it.each(MOVED)("ouvre $path à qui tient $resource en lecture", async ({ resource, path }) => {
+    const agent = await holderOf("lecteur", [{ resource, action: "read" }]);
+
+    await agent.get(path).expect(200);
+  });
+
+  it("ne laisse pas l'heure limite ouvrir l'interrupteur, ni l'inverse", async () => {
+    const limits = await holderOf("heure-limite", [
+      { resource: "lfc_order_settings", action: "write" },
+    ]);
+    expect((await limits.patch("/admin/order-opening").send({})).status).toBe(403);
+
+    const opening = await holderOf("ouverture", [
+      { resource: "lfc_order_opening", action: "write" },
+    ]);
+    expect((await opening.get("/admin/order-cutoffs")).status).toBe(403);
+  });
+
+  it("refuse l'écriture à qui ne tient que la lecture", async () => {
+    const agent = await holderOf("lecture-seule", [
+      { resource: "lfc_order_settings", action: "read" },
+      { resource: "lfc_order_opening", action: "read" },
+    ]);
+
+    expect((await agent.patch("/admin/order-cutoffs/inexistant").send({})).status).toBe(403);
+    expect((await agent.patch("/admin/customer-cancellation").send({})).status).toBe(403);
+    expect((await agent.patch("/admin/order-opening").send({})).status).toBe(403);
   });
 });

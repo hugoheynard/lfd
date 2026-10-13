@@ -294,7 +294,7 @@ Le domaine décide, l'infrastructure traduit, les lecteurs épandent :
 | Surface                                     | Fichier                                                                                                                         | Fragment               |
 | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
 | la **clôture** (`placed → confirmed`)       | [`prisma-order.repository.ts`](../../apps/lfd-api/src/b2b/orders/infrastructure/prisma-order.repository.ts)                     | `planWhere`            |
-| la **fiche du fournil**                     | [`prisma-day-orders.reader.ts`](../../apps/lfd-api/src/b2b/orders/infrastructure/prisma-day-orders.reader.ts)                   | `planWhere`            |
+| la **fiche du fournil**                     | [`prisma-day-orders.source.ts`](../../apps/lfd-api/src/b2b/orders/infrastructure/prisma-day-orders.source.ts)                   | `planWhere`            |
 | le **prévisionnel**                         | [`prisma-expected-production.reader.ts`](../../apps/lfd-api/src/b2b/orders/infrastructure/prisma-expected-production.reader.ts) | `planWhere`            |
 | le **compteur de contrôle** (retards)       | [`prisma-pending-orders.reader.ts`](../../apps/lfd-api/src/b2b/orders/infrastructure/prisma-pending-orders.reader.ts)           | `planWhere`            |
 | le **dossier du jour** (la liasse imprimée) | [`prisma-order.reader.ts`](../../apps/lfd-api/src/b2b/orders/infrastructure/prisma-order.reader.ts) — `listForProduction`       | `settlementWhere` seul |

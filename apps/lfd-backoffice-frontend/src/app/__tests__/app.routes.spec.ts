@@ -145,6 +145,12 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'reglages/sites': 'lfc_site_settings:read',
   'reglages/sites/nouveau': 'lfc_site_settings:write',
   'reglages/sites/:id': 'lfc_site_settings:read',
+  // RÉGLAGES › COMMANDES (plan-reglages-commandes.md, O1b) — deux droits, ceux
+  // des routes serveur : l'interrupteur à part (Q5), l'heure limite et
+  // l'annulation ensemble.
+  'reglages/commandes/ouverture': 'lfc_order_opening:read',
+  'reglages/commandes/heure-limite': 'lfc_order_settings:read',
+  'reglages/commandes/annulation': 'lfc_order_settings:read',
 
   // L'ESPACE B2B — ce que la plateforme client vend, et à quel prix. Même mur
   // que les réglages d'où ses écrans viennent : décider d'un prix de vente est
@@ -160,13 +166,9 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // La frise LIT la même chose que la grille, à d'autres dates : même mur.
   'b2b/tarification/frise': null,
   'b2b/tarification/simulateur': null,
-  // Les réglages de l'e-commerce, venus de l'onglet « Retraits & livraisons »
-  // des Réglages : même mur que celui qu'ils quittent, hérité de l'espace.
-  // Les points de retrait en sont partis le 2026-10-13 : ce sont les sites.
-  'b2b/reglages/heures-limites': null,
-  'b2b/reglages/ouverture-boutique': null,
-  // L'annulation par les particuliers (C6.5) : le même mur, hérité de l'espace.
-  'b2b/reglages/commandes': null,
+  // Les réglages de l'e-commerce sont TOUS partis le 2026-10-13 : les points
+  // de retrait vers les sites, l'heure limite, l'ouverture et l'annulation
+  // vers Réglages › Commandes. Il ne reste ici que des redirections.
   // « Nous écrire » : son propre droit. Répondre aux messages n'est pas
   // régler la vente, et l'inverse non plus (demandes-clients.md, §5.6).
   'b2b/contact': 'b2b_contact:read',
@@ -248,7 +250,8 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // LE FOURNIL, sorti de la Production le 2026-10-06, sous la fiche d'atelier.
   fournil: 'production_worksheet:read',
   'prod-manager': 'production_plan:read',
-  'production/reglages': 'production_settings:read',
+  // Partis en Réglages › Production le 2026-10-13 (Hugo).
+  'reglages/production/fournil': 'production_settings:read',
   // LE COMPTOIR non plus : la file de retrait (`handover_counter`) et la
   // commande pro (`b2b_place_order`) sont deux droits. Attester un retrait
   // passe par `retrait/:token`, qui exige l'écriture.
@@ -298,12 +301,14 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'livraison/etiquettes/:orderId': {
     anyOf: ['production_packing:write', 'delivery_loading:write'],
   },
-  'livraison/vehicules': 'delivery_settings:read',
-  'livraison/bacs': 'delivery_settings:read',
-  'livraison/contenances': 'delivery_settings:read',
-  'livraison/depart': 'delivery_settings:read',
+  // Les RÉGLAGES de la livraison, partis en Réglages › Livraison le
+  // 2026-10-13 (Hugo), mêmes droits.
+  'reglages/livraison/vehicules': 'delivery_settings:read',
+  'reglages/livraison/bacs': 'delivery_settings:read',
+  'reglages/livraison/contenances': 'delivery_settings:read',
+  'reglages/livraison/depart': 'delivery_settings:read',
   // Venue des réglages de l'e-commerce (2026-10-10) : ses deux droits, l'un OU l'autre.
-  'livraison/zones': { anyOf: ['delivery_availability:read', 'delivery_fee:read'] },
+  'reglages/livraison/zones': { anyOf: ['delivery_availability:read', 'delivery_fee:read'] },
   // Un QR de sa propre origine et un mode d'emploi : rien à garder.
   'app-mobile': OPEN,
   // 🔴 **L'outillage de développement**, et son absence de garde est le point.
@@ -336,13 +341,14 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'commercial/prospects': 'b2b_growth:read',
   analytics: 'b2b_growth:read',
   'commercial/calendrier': 'b2b_growth:read',
-  // Les réglages du commercial (2026-10-13) — venus de l'Exploitation.
-  'commercial/reglages/disponibilite': 'b2b_commercial_appointment:read',
-  'commercial/reglages/marches': 'b2b_growth:read',
-  'commercial/reglages/alertes': 'b2b_commercial_alert:read',
+  // Les réglages du commercial (2026-10-13) — venus de l'Exploitation, passés
+  // par l'espace Commercial, rangés en Réglages › Commercial le même jour.
+  'reglages/commercial/disponibilite': 'b2b_commercial_appointment:read',
+  'reglages/commercial/marches': 'b2b_growth:read',
+  'reglages/commercial/alertes': 'b2b_commercial_alert:read',
   // Les motifs des demandes, venus de l'e-commerce : leur propre droit, sorti
   // de `b2b_contact` (Hugo, 2026-10-13).
-  'commercial/reglages/motifs-des-demandes': 'b2b_request_reasons:read',
+  'reglages/commercial/motifs-des-demandes': 'b2b_request_reasons:read',
   // Les deux gabarits héritent du mur de `commercial` (`growth:read`) : ils
   // portent des prix négociés, et la même personne qui voit les prospects
   // négocie leurs tarifs.
@@ -453,7 +459,8 @@ describe("l'arbre de routes du back-office", () => {
       .map((child) => [child.path, child.redirectTo]);
 
     expect(moved).toEqual([
-      ['', '/documentation/facturation'],
+      // `''` n'est plus une adresse fixe : elle suit les droits
+      // (`firstReglagesView`, éprouvée dans exploitation-entry-access).
       ['catalogue', '/b2b/catalogue'],
       ['tarification', '/b2b/tarification'],
       ['tarification/frise', '/b2b/tarification/frise'],
@@ -463,7 +470,12 @@ describe("l'arbre de routes du back-office", () => {
       ['surtaxe-de-retard', '/comptabilite/surtaxe-de-retard'],
       // Les deux derniers écrans, partis le 2026-10-10.
       ['facturation', '/documentation/facturation'],
-      ['commercial', '/commercial/reglages/disponibilite'],
+      // L'entrée de la section Réglages › Commandes : l'heure limite (O1b).
+      ['commandes', '/reglages/commandes/heure-limite'],
+      // Réglages › Production (2026-10-13) : l'entrée de la section.
+      ['production', '/reglages/production/fournil'],
+      // Revenus en Réglages › Commercial le 2026-10-13 : l'entrée de la section.
+      ['commercial', '/reglages/commercial/disponibilite'],
     ]);
   });
 
@@ -483,19 +495,87 @@ describe("l'arbre de routes du back-office", () => {
     const b2b = routes.find((route) => route.path === 'b2b');
     const reglages = b2b?.children?.find((child) => child.path === 'reglages');
     const livraison = reglages?.children?.find((child) => child.path === 'livraison');
-    expect(livraison?.redirectTo).toBe('/livraison/zones');
+    // Puis en Réglages › Livraison (2026-10-13) : sans détour.
+    expect(livraison?.redirectTo).toBe('/reglages/livraison/zones');
   });
 
-  it('renvoie les anciennes adresses des motifs des demandes vers Commercial › Réglages', () => {
+  it('renvoie les anciennes adresses des motifs des demandes vers Réglages › Commercial', () => {
     // Déménagés le 2026-10-13 : absolues, sans quoi elles resteraient sous le
     // mur `b2b_settings` de l'espace.
     const b2b = routes.find((route) => route.path === 'b2b');
     const reglages = b2b?.children?.find((child) => child.path === 'reglages');
     const motifs = reglages?.children?.find((child) => child.path === 'motifs-des-demandes');
     const formulaire = b2b?.children?.find((child) => child.path === 'contact/formulaire');
-    expect(motifs?.redirectTo).toBe('/commercial/reglages/motifs-des-demandes');
+    expect(motifs?.redirectTo).toBe('/reglages/commercial/motifs-des-demandes');
     expect(motifs?.loadComponent).toBeUndefined();
-    expect(formulaire?.redirectTo).toBe('/commercial/reglages/motifs-des-demandes');
+    expect(formulaire?.redirectTo).toBe('/reglages/commercial/motifs-des-demandes');
+  });
+
+  it('renvoie les anciens réglages du fournil et de la livraison vers les Réglages', () => {
+    // Partis le 2026-10-13 (Hugo) : des favoris de poste. Absolues.
+    const redirectsOf = (path: string): Record<string, unknown> =>
+      Object.fromEntries(
+        (routes.find((route) => route.path === path)?.children ?? [])
+          .filter((child) => typeof child.redirectTo === 'string')
+          .map((child) => [child.path, child.redirectTo]),
+      );
+    expect(redirectsOf('production')).toMatchObject({
+      reglages: '/reglages/production/fournil',
+    });
+    expect(redirectsOf('livraison')).toMatchObject({
+      vehicules: '/reglages/livraison/vehicules',
+      bacs: '/reglages/livraison/bacs',
+      contenances: '/reglages/livraison/contenances',
+      depart: '/reglages/livraison/depart',
+      zones: '/reglages/livraison/zones',
+    });
+  });
+
+  it('renvoie les anciens réglages du Commercial vers Réglages › Commercial, sans détour', () => {
+    // Partis le 2026-10-13 (Hugo). Absolues : sous `commercial`, elles
+    // resteraient derrière le mur `b2b_companies` de l'espace.
+    const commercial = routes.find((route) => route.path === 'commercial');
+    const moved = (commercial?.children ?? [])
+      .filter((child) => child.path?.startsWith('reglages') === true)
+      .map((child) => [child.path, child.redirectTo]);
+    expect(moved).toEqual([
+      ['reglages', '/reglages/commercial/disponibilite'],
+      ['reglages/disponibilite', '/reglages/commercial/disponibilite'],
+      ['reglages/marches', '/reglages/commercial/marches'],
+      ['reglages/alertes', '/reglages/commercial/alertes'],
+      ['reglages/motifs-des-demandes', '/reglages/commercial/motifs-des-demandes'],
+    ]);
+    const exploitation = routes.find((route) => route.path === 'exploitation');
+    expect(exploitation?.children?.[0]?.redirectTo).toBe('/reglages/commercial/disponibilite');
+  });
+
+  it('ouvre Réglages › Commercial sans avaler ses propres vues', () => {
+    // En préfixe, `commercial` capturerait `commercial/marches` et
+    // redirigerait en boucle vers la disponibilité.
+    const reglages = routes.find((route) => route.path === 'reglages');
+    const entry = reglages?.children?.find((child) => child.path === 'commercial');
+    expect(entry?.pathMatch).toBe('full');
+  });
+
+  it('renvoie les anciens réglages de l’e-commerce vers Réglages › Commandes', () => {
+    // Déménagés le 2026-10-13 (plan-reglages-commandes.md, O1b) : absolues,
+    // sans quoi elles resteraient sous le mur `b2b_settings` de l'espace.
+    const b2b = routes.find((route) => route.path === 'b2b');
+    const reglages = b2b?.children?.find((child) => child.path === 'reglages');
+    const moved = Object.fromEntries(
+      (reglages?.children ?? [])
+        .filter((child) => typeof child.redirectTo === 'string')
+        .map((child) => [child.path, child.redirectTo]),
+    );
+    expect(moved).toMatchObject({
+      '': '/reglages/commandes/heure-limite',
+      'ouverture-boutique': '/reglages/commandes/ouverture',
+      'heures-limites': '/reglages/commandes/heure-limite',
+      commandes: '/reglages/commandes/annulation',
+    });
+    expect((reglages?.children ?? []).some((child) => child.loadComponent !== undefined)).toBe(
+      false,
+    );
   });
 
   it('renvoie les anciens points de retrait vers Réglages › Sites, même identifiant', () => {
@@ -524,6 +604,8 @@ describe("l'arbre de routes du back-office", () => {
       ['', '/prod-manager'],
       ['journee', '/fournil'],
       ['previsionnel', '/prod-manager'],
+      // Partis en Réglages › Production le 2026-10-13.
+      ['reglages', '/reglages/production/fournil'],
       ['colisage', '/colisage'],
     ]);
   });

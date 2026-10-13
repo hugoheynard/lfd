@@ -1,0 +1,62 @@
+<fold-card>
+  <fold-element-title
+    cardHeader
+    variant="title"
+    title="Dérogations"
+    subtitle="Les clients autorisés à commander après l'heure pour une journée à venir. Elles s'accordent pendant la saisie d'une commande."
+  />
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Chargement des dérogations…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Impossible de charger les dérogations">
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @default {
+      @if (waivers().length === 0) {
+        <fold-empty-state
+          title="Aucune dérogation à venir"
+          subtitle="Aucun client n'est autorisé à commander après l'heure pour aujourd'hui ou un jour suivant."
+        />
+      } @else {
+        <ul class="waivers">
+          @for (waiver of waivers(); track waiver.id) {
+            <li class="waiver" [attr.data-waiver]="waiver.id">
+              <div class="what">
+                <p class="company">{{ waiver.companyName }}</p>
+                <p class="day">{{ day(waiver) }}</p>
+                <p class="reason">{{ waiver.reason }} — {{ author(waiver) }}</p>
+              </div>
+              <fold-badge
+                [variant]="waiver.usedByOrderId === null ? 'neutral' : 'success'"
+                [content]="waiver.usedByOrderId === null ? 'En attente' : 'Servie'"
+              />
+              @if (canRevoke() && waiver.usedByOrderId === null) {
+                <fold-inline-confirm
+                  intent="danger"
+                  message="Retirer cette dérogation ? Le client ne pourra plus commander après l'heure ce jour-là."
+                  [labels]="{ confirm: 'Retirer' }"
+                  [loading]="pending() === waiver.id"
+                  (confirmed)="revoke(waiver)"
+                >
+                  <button
+                    foldButton
+                    size="sm"
+                    emphasis="soft"
+                    intent="danger"
+                    [disabled]="pending() !== null"
+                  >
+                    Retirer
+                  </button>
+                </fold-inline-confirm>
+              }
+            </li>
+          }
+        </ul>
+      }
+    }
+  }
+</fold-card>

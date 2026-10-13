@@ -13,6 +13,7 @@ import {
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import {
   orderCutoffWaiverPayloadSchema,
+  type OpenOrderCutoffWaiverView,
   type OrderCutoffWaiverPayload,
   type OrderCutoffWaiverView,
 } from "@lfd/contracts";
@@ -21,6 +22,7 @@ import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js"
 import type { AuthenticatedStaffRequest } from "../../../platform/auth/staff-principal.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { GrantOrderCutoffWaiverCommand } from "../application/grant-order-cutoff-waiver.command.js";
+import { ListOpenOrderCutoffWaiversQuery } from "../application/list-open-order-cutoff-waivers.query.js";
 import { ListOrderCutoffWaiversQuery } from "../application/list-order-cutoff-waivers.query.js";
 import { RevokeOrderCutoffWaiverCommand } from "../application/revoke-order-cutoff-waiver.command.js";
 
@@ -45,6 +47,21 @@ export class AdminOrderCutoffWaiversController {
     private readonly commands: CommandBus,
     private readonly queries: QueryBus,
   ) {}
+
+  /**
+   * Toutes les dérogations dont la journée n'est pas passée, servies ou non —
+   * la liste de Réglages › Commandes › Heure limite
+   * (`documentation/commandes/plan-reglages-commandes.md`, lot O1c). Même
+   * ressource que l'accord : la règle (`lfc_order_settings`) et l'exception
+   * ne sont pas le même droit.
+   */
+  @Get()
+  async listOpen(): Promise<readonly OpenOrderCutoffWaiverView[]> {
+    return this.queries.execute<
+      ListOpenOrderCutoffWaiversQuery,
+      readonly OpenOrderCutoffWaiverView[]
+    >(new ListOpenOrderCutoffWaiversQuery());
+  }
 
   /** Les dérogations d'un client, la plus récente d'abord. */
   @Get(":companyId")

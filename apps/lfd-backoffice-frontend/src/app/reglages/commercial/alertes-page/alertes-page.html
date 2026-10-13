@@ -1,0 +1,11 @@
+<fold-page-layout icon="bell" title="Alertes">
+  <p description>
+    Les alertes de compte client, et les seuils de couleur du calendrier d’acquisition.
+  </p>
+
+  <!-- Deux jeux de règles distincts : ils s'empilent, chacun garde sa carte. -->
+  <div class="stack">
+    <app-account-alerts-card />
+    <app-activation-alerts-card />
+  </div>
+</fold-page-layout>

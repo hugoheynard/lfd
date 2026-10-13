@@ -25,7 +25,7 @@ const LANDINGS: readonly { readonly permission: StaffPermission; readonly path: 
   { permission: 'production_plan:read', path: '/prod-manager' },
   // `/production` redirige vers Prod manager (2026-10-10) : sans cette ligne,
   // qui ne tient que les réglages du fournil serait laissé sur un 403.
-  { permission: 'production_settings:read', path: '/production/reglages' },
+  { permission: 'production_settings:read', path: '/reglages/production/fournil' },
   { permission: 'production_packing:read', path: '/colisage' },
   { permission: 'handover_counter:read', path: '/comptoir/retrait' },
   // L'espace B2B et non plus ses points de retrait : devenus les sites, ils
@@ -33,6 +33,10 @@ const LANDINGS: readonly { readonly permission: StaffPermission; readonly path: 
   // `b2b_settings` le ferait rebondir sur un second refus.
   { permission: 'b2b_settings:read', path: '/b2b/catalogue' },
   { permission: 'lfc_site_settings:read', path: '/reglages/sites' },
+  // Réglages › Commandes (plan-reglages-commandes.md §3.3) : sans ces deux
+  // lignes, qui ne tient que l'un de ces droits rebondirait de refus en refus.
+  { permission: 'lfc_order_settings:read', path: '/reglages/commandes/heure-limite' },
+  { permission: 'lfc_order_opening:read', path: '/reglages/commandes/ouverture' },
 ];
 
 /**

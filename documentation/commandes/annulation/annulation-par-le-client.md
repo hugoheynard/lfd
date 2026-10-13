@@ -175,9 +175,11 @@ particuliers** (défaut **actif** ; la colonne garde son nom d'origine, une
 colonne ne se renomme pas sans migration), `hours_before` (défaut **24**,
 entre 0 et 168), auteur figé. L'écran dit « Imposer un délai aux
 particuliers » ; décoché : « Sans délai, les particuliers annulent jusqu'à
-l'arrêt du plan de production, comme les pros ». Routes `GET` / `PATCH /admin/customer-cancellation`, même
-surface que l'ouverture de la boutique (`b2b_settings`). Écran du back-office
-`/b2b/reglages/commandes` (`b2b/reglages/customer-cancellation-page/`). La
+l'arrêt du plan de production, comme les pros ». Routes `GET` / `PATCH /admin/customer-cancellation`, sous
+`lfc_order_settings` depuis le 2026-10-13 (avec l'heure limite,
+`../plan-reglages-commandes.md`). Écran du back-office
+`/reglages/commandes/annulation` (`reglages/commandes/customer-cancellation-page/`) ;
+l'ancienne `/b2b/reglages/commandes` y redirige. La
 valeur n'est pas datée : elle décide d'un geste au moment où il est fait, et le
 journal de l'annulation fige ce qui a été appliqué. Les colonnes d'auteur sont
 au registre RGPD.

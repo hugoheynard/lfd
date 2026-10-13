@@ -34,7 +34,7 @@ du fuseau ne s'y pose pas.
 
 | Colonne                                            | Sites                                                                                                                    | Symétrie                                   |
 | -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------ |
-| `Order.requestedDeliveryDate` `@db.Date`           | `prisma-order.repository.ts`, `prisma-order.reader.ts`, `prisma-day-orders.reader.ts`, `prisma-pending-orders.reader.ts` | lecture et écriture par la même convention |
+| `Order.requestedDeliveryDate` `@db.Date`           | `prisma-order.repository.ts`, `prisma-order.reader.ts`, `prisma-day-orders.source.ts`, `prisma-pending-orders.reader.ts` | lecture et écriture par la même convention |
 | `SubscriptionOccurrence.occurrenceDate` `@db.Date` | `iso-date.ts` (`toUtcDate` / `fromDate`)                                                                                 | aller-retour explicite, éprouvé            |
 | `OrderCutoffWaiver.fulfillmentDate` `@db.Date`     | `prisma-order-cutoff-waiver.gate.ts`, `…repository.ts`                                                                   | même clé des deux côtés                    |
 

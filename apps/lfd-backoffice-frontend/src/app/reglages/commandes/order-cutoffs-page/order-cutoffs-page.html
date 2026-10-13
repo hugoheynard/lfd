@@ -1,0 +1,44 @@
+<fold-page-layout icon="clock" title="Heure limite de commande">
+  <p description>
+    Jusqu'à quand un client peut commander pour un retrait ou une livraison donnés. Un article qui
+    demande plus de temps porte sa propre limite, réglée au référentiel : elle décide seule pour
+    lui.
+  </p>
+
+  <div class="blocks">
+    <app-cutoffs-section />
+
+    @if (seesWaivers()) {
+      <app-cutoff-waivers-card />
+    }
+
+    <fold-card data-b2c-card>
+      <fold-element-title
+        cardHeader
+        variant="title"
+        title="Clientèle particulière"
+        subtitle="Une limite propre aux particuliers n'est pas encore réglable."
+      >
+        <fold-badge titleAction content="À venir" variant="info" />
+      </fold-element-title>
+      <p class="text">
+        Aujourd'hui, une commande de particulier suit la limite de l'article quand il en porte une,
+        et sinon la limite générale ci-dessus — sans dérogation possible, faute de compte client.
+      </p>
+    </fold-card>
+
+    @if (seesCatalogue()) {
+      <fold-card data-pim-link>
+        <fold-element-title
+          cardHeader
+          variant="title"
+          title="Limite de fabrication par article"
+          subtitle="Certains articles demandent plus de temps : leur limite se règle au référentiel."
+        />
+        <a foldButton emphasis="outline" size="sm" routerLink="/pim/limites-de-commande">
+          Ouvrir les limites du référentiel
+        </a>
+      </fold-card>
+    }
+  </div>
+</fold-page-layout>

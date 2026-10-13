@@ -413,7 +413,7 @@ describe('les contenants d’une commande `listed` (K2b)', () => {
       'La grille des contenances ne couvre rien.',
     );
     expect(el.querySelector('[data-capacities-link]')?.getAttribute('href')).toBe(
-      '/livraison/contenances',
+      '/reglages/livraison/contenances',
     );
   });
 
@@ -435,7 +435,7 @@ describe('les contenants d’une commande `listed` (K2b)', () => {
     await settle(fixture);
 
     expect(el.querySelector('[data-capacities-link]')?.getAttribute('href')).toBe(
-      '/livraison/contenances',
+      '/reglages/livraison/contenances',
     );
     // Dans le créneau `[actions]` du callout (`.callout-actions`, gabarit de
     // fold-ng 0.28) : la garde est à plat pour ça, un `@if` imbriqué l'aurait

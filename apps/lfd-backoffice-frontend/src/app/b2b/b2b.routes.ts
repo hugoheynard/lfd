@@ -93,10 +93,12 @@ export const b2bRoutes: Routes = [
         // clientèle », D6). L'ancienne adresse redirige.
         path: 'reglages',
         children: [
-          // La première page de ces réglages était les points de retrait, partis
-          // en Réglages › Sites sous leur propre droit : celle qui reste sous
-          // le droit de l'espace prend leur place.
-          { path: '', pathMatch: 'full', redirectTo: 'heures-limites' },
+          // Il ne reste ici que des anciennes adresses : l'ouverture, l'heure
+          // limite et l'annulation sont parties en Réglages › Commandes sous
+          // leurs propres droits (plan-reglages-commandes.md, O1b, 2026-10-13).
+          // Absolues, les redirections s'appliquent AVANT les gardes : le mur
+          // `b2b_settings` de l'espace ne les voit pas.
+          { path: '', pathMatch: 'full', redirectTo: '/reglages/commandes/heure-limite' },
           // LES POINTS DE RETRAIT sont devenus les SITES (plan des sites, lot
           // S1, 2026-10-13) : même identifiant, Réglages › Sites, sous
           // `lfc_site_settings`. Les anciennes adresses vivent dans des favoris
@@ -124,42 +126,30 @@ export const b2bRoutes: Routes = [
             // La redirection s'applique AVANT les gardes.
             path: 'livraison',
             pathMatch: 'full',
-            redirectTo: '/livraison/zones',
+            redirectTo: '/reglages/livraison/zones',
           },
           {
             path: 'ouverture-boutique',
-            title: 'Ouverture de la boutique — LFC B2B admin',
-            loadComponent: () =>
-              import('./reglages/order-opening-page/order-opening-page').then(
-                (m) => m.OrderOpeningPage,
-              ),
+            pathMatch: 'full',
+            redirectTo: '/reglages/commandes/ouverture',
           },
           {
-            // L'annulation par les particuliers (doc
-            // `annulation-par-le-client.md`, C6.5) : même droit que
-            // l'ouverture, `b2b_settings`, porté par l'espace.
             path: 'commandes',
-            title: 'Commandes — LFC B2B admin',
-            loadComponent: () =>
-              import('./reglages/customer-cancellation-page/customer-cancellation-page').then(
-                (m) => m.CustomerCancellationPage,
-              ),
+            pathMatch: 'full',
+            redirectTo: '/reglages/commandes/annulation',
           },
-          // Les motifs des demandes ont rejoint Commercial › Réglages (Hugo,
+          // Les motifs des demandes ont rejoint Réglages › Commercial (Hugo,
           // 2026-10-13). Absolue, sans quoi elle resterait sous le mur
           // `b2b_settings` de l'espace.
           {
             path: 'motifs-des-demandes',
             pathMatch: 'full',
-            redirectTo: '/commercial/reglages/motifs-des-demandes',
+            redirectTo: '/reglages/commercial/motifs-des-demandes',
           },
           {
             path: 'heures-limites',
-            title: 'Heures limites de commande — LFC B2B admin',
-            loadComponent: () =>
-              import('./reglages/order-cutoffs-page/order-cutoffs-page').then(
-                (m) => m.OrderCutoffsPage,
-              ),
+            pathMatch: 'full',
+            redirectTo: '/reglages/commandes/heure-limite',
           },
         ],
       },
@@ -178,7 +168,7 @@ export const b2bRoutes: Routes = [
       {
         path: 'contact/formulaire',
         pathMatch: 'full',
-        redirectTo: '/commercial/reglages/motifs-des-demandes',
+        redirectTo: '/reglages/commercial/motifs-des-demandes',
       },
       // L'ancienne adresse de la cloche : un courriel déjà parti la porte encore.
       { path: 'contact/messages', pathMatch: 'full', redirectTo: 'demandes' },

@@ -397,8 +397,9 @@ export const routes: Routes = [
       ),
     children: [
       // Partie dans l'espace Commercial le 2026-10-13 (Hugo), découpée en
-      // trois vues : l'adresse vit dans des favoris, elle mène à la première.
-      { path: 'commercial', redirectTo: '/commercial/reglages/disponibilite' },
+      // trois vues, puis en Réglages › Commercial le même jour : l'adresse vit
+      // dans des favoris, elle mène à la première, sans détour.
+      { path: 'commercial', redirectTo: '/reglages/commercial/disponibilite' },
     ],
   },
   // PROD MANAGER (Hugo, 2026-10-10) : le prévisionnel sort de l'Exploitation
@@ -572,51 +573,14 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./livraison/bin-labels-page/bin-labels-page').then((m) => m.BinLabelsPage),
       },
-      {
-        path: 'vehicules',
-        canActivate: [permissionGuard('delivery_settings:read')],
-        title: 'Véhicules — LFC B2B admin',
-        loadComponent: () =>
-          import('./livraison/vehicles-page/vehicles-page').then((m) => m.VehiclesPage),
-      },
-      // LES BACS (lot 4 bis, tranche A) : des RÉGLAGES, sous le droit des
-      // réglages comme les véhicules. Le serveur ouvre aussi leur lecture à
-      // `delivery_rounds:read` pour les écrans qui la consomment ; ces deux
-      // écrans-ci sont ceux où l'on règle.
-      {
-        path: 'bacs',
-        canActivate: [permissionGuard('delivery_settings:read')],
-        title: 'Bacs — LFC B2B admin',
-        loadComponent: () => import('./livraison/bins-page/bins-page').then((m) => m.BinsPage),
-      },
-      {
-        path: 'contenances',
-        canActivate: [permissionGuard('delivery_settings:read')],
-        title: 'Contenances — LFC B2B admin',
-        loadComponent: () =>
-          import('./livraison/bin-capacities-page/bin-capacities-page').then(
-            (m) => m.BinCapacitiesPage,
-          ),
-      },
-      {
-        path: 'depart',
-        canActivate: [permissionGuard('delivery_settings:read')],
-        title: 'Point de départ — LFC B2B admin',
-        loadComponent: () =>
-          import('./livraison/departure-page/departure-page').then((m) => m.DeparturePage),
-      },
-      // LES ZONES ET LA DISPONIBILITÉ DE LA LIVRAISON, venues des réglages de
-      // l'e-commerce (Hugo, 2026-10-10), sous leurs deux droits : la page
-      // s'ouvre à l'un OU l'autre, chaque carte ne se montre qu'au sien.
-      {
-        path: 'zones',
-        canActivate: [anyPermissionGuard('delivery_availability:read', 'delivery_fee:read')],
-        title: 'Zones de livraison — LFC B2B admin',
-        loadComponent: () =>
-          import('./b2b/reglages/delivery-availability-page/delivery-availability-page').then(
-            (m) => m.DeliveryAvailabilityPage,
-          ),
-      },
+      // LES RÉGLAGES DE LA LIVRAISON sont partis sous `/reglages/livraison/`
+      // le 2026-10-13 (Hugo). Les anciennes adresses vivent dans des favoris ;
+      // absolues, elles redirigent avant tout garde.
+      { path: 'vehicules', pathMatch: 'full', redirectTo: '/reglages/livraison/vehicules' },
+      { path: 'bacs', pathMatch: 'full', redirectTo: '/reglages/livraison/bacs' },
+      { path: 'contenances', pathMatch: 'full', redirectTo: '/reglages/livraison/contenances' },
+      { path: 'depart', pathMatch: 'full', redirectTo: '/reglages/livraison/depart' },
+      { path: 'zones', pathMatch: 'full', redirectTo: '/reglages/livraison/zones' },
     ],
   },
   {
@@ -743,17 +707,9 @@ export const routes: Routes = [
       { path: 'journee', pathMatch: 'full', redirectTo: '/fournil' },
       // Devenu « Prod manager », au premier niveau (2026-10-10) : favori.
       { path: 'previsionnel', pathMatch: 'full', redirectTo: '/prod-manager' },
-      {
-        // L'arrêt du plan et les jours fermés (arret-du-plan.md, lot A1) :
-        // lecture sous `production_settings:read`, la page se fige sans `:write`.
-        path: 'reglages',
-        canActivate: [permissionGuard('production_settings:read')],
-        title: 'Réglages du fournil — LFC B2B admin',
-        loadComponent: () =>
-          import('./production/production-settings-page/production-settings-page').then(
-            (m) => m.ProductionSettingsPage,
-          ),
-      },
+      // Les réglages du fournil sont partis en Réglages › Production le
+      // 2026-10-13 (Hugo) : l'ancienne adresse est un favori.
+      { path: 'reglages', pathMatch: 'full', redirectTo: '/reglages/production/fournil' },
       // Le colisage est un poste à part depuis le 2026-10-04
       // (`documentation/colisage/colisage.md`, P0) : l'ancienne
       // adresse reste valide — c'est le favori des postes de labo.

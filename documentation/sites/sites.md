@@ -296,11 +296,13 @@ même endroit. Les autres blocs le lisent par les canaux qu'ils déclarent :
   livre et la valeur se déduit ; à bâtir quand un second livrera (Q-S4). Le
   trajet du transfert part de ce site.
 - Le rôle « Départ des tournées » se **lit** sur la page (badge) mais se
-  **choisit** toujours en Livraison › Point de départ (`/livraison/depart`,
-  `delivery_settings`) : la bascule depuis la page et la redirection de
-  `/livraison/depart`, prévues au plan, ne sont pas faites.
-- `/reglages` mène toujours à `/documentation/facturation` (le plan voulait
-  `/reglages/sites`, à faire confirmer : la redirection vit dans des favoris).
+  **choisit** toujours en Réglages › Livraison › Point de départ
+  (`/reglages/livraison/depart` depuis le 2026-10-13, `delivery_settings` ;
+  `/livraison/depart` y redirige) : la bascule depuis la page n'est pas faite.
+- `/reglages` mène depuis le 2026-10-13 à la première vue des Réglages que
+  les droits ouvrent, dans l'ordre Commandes, Production, Livraison,
+  Commercial, Sites (`firstReglagesView`) ; sans aucune, à
+  `/documentation/facturation`.
 - ⚠️ Le JSDoc de `Site` (`site.ts`) dit encore qu'il ne tient pas le refus de
   retirer « Livraison » au départ des tournées ; c'est faux depuis
   `a3bc7894d` (`DepartureSiteMustDeliverError`, vérifié le 2026-10-13). À

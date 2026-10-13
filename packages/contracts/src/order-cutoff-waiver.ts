@@ -74,6 +74,21 @@ export interface OrderCutoffWaiverView {
 }
 
 /**
+ * Une dérogation de la liste transverse (Réglages › Commandes › Heure limite,
+ * `documentation/commandes/plan-reglages-commandes.md`, lot O1c) : toutes
+ * sociétés confondues, dont la journée n'est pas passée — servie ou non.
+ *
+ * Le client et l'auteur y sont NOMMÉS : la liste n'est pas lue depuis une
+ * fiche client, qui dirait déjà de qui il s'agit.
+ */
+export interface OpenOrderCutoffWaiverView extends OrderCutoffWaiverView {
+  /** L'enseigne, ou la raison sociale quand elle est vide. */
+  readonly companyName: string;
+  /** « Prénom Nom » de l'auteur, ou `null` : une fiche que l'annuaire ne nomme plus. */
+  readonly grantedByName: string | null;
+}
+
+/**
  * Ce que rend l'octroi d'une dérogation.
  *
  * Déclaré ici et pas dans le front : une forme de réponse redéclarée côté client

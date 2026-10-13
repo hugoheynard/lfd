@@ -25,14 +25,16 @@ import { RemoveOrderCutoffCommand } from "../application/remove-order-cutoff.com
 import { UpdateOrderCutoffCommand } from "../application/update-order-cutoff.command.js";
 
 /**
- * Gestion **staff** des heures limites de commande (page Réglages → Retraits &
+ * Gestion **staff** des heures limites de commande (Réglages › Commandes ›
+ * Heure limite). Sous `lfc_order_settings` depuis le 2026-10-13
+ * (`documentation/commandes/plan-reglages-commandes.md`, §3.4, lot O1a).
  * Surface staff murée par `@AdminSurface` : identité vérifiée, puis périmètre.
  *
  * Une règle par ligne, et rien d'autre : ajouter un labo ou décaler le dimanche
  * doit rester de la saisie.
  */
 @Controller("admin/order-cutoffs")
-@AdminSurface("b2b_settings")
+@AdminSurface("lfc_order_settings")
 export class AdminOrderCutoffsController {
   constructor(
     private readonly commands: CommandBus,

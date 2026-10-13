@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 
 import type {
   CreatedOrderCutoffWaiverResponse,
+  OpenOrderCutoffWaiverView,
   OrderCutoffWaiverPayload,
   OrderCutoffWaiverView,
 } from '@lfd/contracts';
@@ -29,6 +30,25 @@ export class OrderCutoffWaiversService {
       this.http.get<readonly OrderCutoffWaiverView[]>(
         `${B2B_API_BASE}/admin/order-cutoff-waivers/${companyId}`,
       ),
+    );
+  }
+
+  /**
+   * Toutes les dérogations dont la journée n'est pas passée, servies ou non —
+   * la liste de Réglages › Commandes › Heure limite (plan-reglages-commandes.md, O1c).
+   */
+  async listOpen(): Promise<readonly OpenOrderCutoffWaiverView[]> {
+    return firstValueFrom(
+      this.http.get<readonly OpenOrderCutoffWaiverView[]>(
+        `${B2B_API_BASE}/admin/order-cutoff-waivers`,
+      ),
+    );
+  }
+
+  /** Retire une dérogation qui n'a pas servi ; le serveur refuse (404) une dérogation servie. */
+  async revoke(id: string): Promise<void> {
+    await firstValueFrom(
+      this.http.delete<void>(`${B2B_API_BASE}/admin/order-cutoff-waivers/${id}`),
     );
   }
 

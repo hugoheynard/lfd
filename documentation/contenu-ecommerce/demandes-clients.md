@@ -116,10 +116,10 @@ la priorité, la cloche, le compteur et l'anonymisation ne bougent pas.
 Back-office : `/b2b/demandes` (l'ancienne `/b2b/contact/messages` y redirige ;
 `?demande=<id>` ouvre la demande) et `/b2b/contact`, sous `/b2b`, gardé par
 `b2b_settings:read` : il faut les deux droits. Les motifs vivent depuis le
-2026-10-13 dans **Commercial › Réglages**,
-`/commercial/reglages/motifs-des-demandes` (l'ancienne
-`/b2b/reglages/motifs-des-demandes` y redirige), sous `b2b_contact:read` et le
-`b2b_companies:read` de l'espace Commercial. `b2b_contact` est ajoutée **sans droit accordé** :
+2026-10-13 dans **Réglages › Commercial**,
+`/reglages/commercial/motifs-des-demandes` (les anciennes
+`/b2b/reglages/motifs-des-demandes` et `/commercial/reglages/motifs-des-demandes`
+y redirigent), sous `b2b_request_reasons:read`, et sous lui seul. `b2b_contact` est ajoutée **sans droit accordé** :
 l'accorder à l'écran après déploiement (runbook).
 
 ## 5. Ce qui reste

@@ -45,7 +45,14 @@ const SURFACES: readonly { readonly resource: StaffResource; readonly path: stri
   { resource: "b2b_growth", path: "/admin/cockpit" },
   { resource: "b2b_appointments", path: "/admin/appointments?from=2026-08-01&to=2026-08-31" },
   { resource: "b2b_support", path: "/admin/support-requests" },
-  { resource: "b2b_settings", path: "/admin/order-cutoffs" },
+  { resource: "b2b_settings", path: "/admin/content/footer" },
+  /**
+   * Les RÉGLAGES DES COMMANDES (2026-10-13) — sortis de `b2b_settings`
+   * (plan-reglages-commandes.md, §3.4, lot O1a).
+   */
+  { resource: "lfc_order_settings", path: "/admin/order-cutoffs" },
+  { resource: "lfc_order_settings", path: "/admin/customer-cancellation" },
+  { resource: "lfc_order_opening", path: "/admin/order-opening" },
   { resource: "staff_access", path: "/admin/staff-users" },
   /**
    * 🔴 La MÉDIATHÈQUE, ajoutée le 2026-09-23 — et la matrice l'a réclamée
@@ -189,11 +196,13 @@ describe("la matrice des rôles — l'écriture se déduit du verbe", () => {
    * même périmètre, et seule l'intention du verbe les sépare.
    */
   it("laisse le commercial lire les réglages mais pas les écrire", async () => {
+    // Reporté sur le pied de page le 2026-10-13 : les heures limites ont
+    // quitté `b2b_settings` (plan-reglages-commandes.md, O1a).
     const agent = await asRole("commercial");
 
-    await agent.get("/admin/order-cutoffs").expect(200);
+    await agent.get("/admin/content/footer").expect(200);
 
-    const response = await agent.patch("/admin/order-cutoffs/inexistant").send({});
+    const response = await agent.put("/admin/content/footer").send({});
     expect(response.status).toBe(403);
   });
 
@@ -202,8 +211,27 @@ describe("la matrice des rôles — l'écriture se déduit du verbe", () => {
     // test précédent pour la mauvaise raison.
     const agent = await asRole("admin");
 
-    const response = await agent.patch("/admin/order-cutoffs/inexistant").send({});
+    const response = await agent.put("/admin/content/footer").send({});
     expect(response.status).not.toBe(403);
+  });
+
+  it("laisse le commercial lire l'heure limite et l'ouverture, sans les écrire", async () => {
+    // Plan-reglages-commandes.md §3.5 (vitruve S5) : il doit pouvoir dire à
+    // un client si la boutique est ouverte, pas la fermer.
+    const agent = await asRole("commercial");
+
+    await agent.get("/admin/order-cutoffs").expect(200);
+    await agent.get("/admin/order-opening").expect(200);
+    expect((await agent.patch("/admin/order-cutoffs/inexistant").send({})).status).toBe(403);
+    expect((await agent.patch("/admin/order-opening").send({})).status).toBe(403);
+    expect((await agent.patch("/admin/customer-cancellation").send({})).status).toBe(403);
+  });
+
+  it("laisse l'administrateur écrire l'heure limite et l'ouverture", async () => {
+    const agent = await asRole("admin");
+
+    expect((await agent.patch("/admin/order-cutoffs/inexistant").send({})).status).not.toBe(403);
+    expect((await agent.patch("/admin/order-opening").send({})).status).not.toBe(403);
   });
 });
 

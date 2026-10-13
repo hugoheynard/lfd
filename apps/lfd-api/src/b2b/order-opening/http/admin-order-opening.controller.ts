@@ -13,13 +13,15 @@ import { UpdateOrderOpeningCommand } from "../application/commands/update-order-
 import { GetOrderOpeningQuery } from "../application/queries/get-order-opening.query.js";
 
 /**
- * Réglage **staff** de l'ouverture de la boutique (« E-commerce LFC →
- * Réglages → Ouverture de la boutique »). Même ressource que « Livraison »,
- * `b2b_settings` : les mêmes personnes règlent à qui la boutique livre et à qui
- * elle vend. L'action se déduit du verbe (`@AdminSurface`).
+ * Réglage **staff** de l'ouverture du e-commerce (« Réglages › Commandes ›
+ * Ouverture du e-commerce »). Sous sa propre ressource, `lfc_order_opening`,
+ * depuis le 2026-10-13 (Hugo, Q5 de
+ * `documentation/commandes/plan-reglages-commandes.md`) : c'est
+ * l'interrupteur qui ferme toute prise de commande d'une clientèle, il ne se
+ * confond pas avec l'heure limite. L'action se déduit du verbe (`@AdminSurface`).
  */
 @Controller("admin/order-opening")
-@AdminSurface("b2b_settings")
+@AdminSurface("lfc_order_opening")
 export class AdminOrderOpeningController {
   constructor(
     private readonly commands: CommandBus,

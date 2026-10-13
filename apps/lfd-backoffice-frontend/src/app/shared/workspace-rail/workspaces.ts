@@ -111,50 +111,8 @@ export const COMMERCIAL_VIEWS: readonly CommercialView[] = [
     description:
       "Les grilles de prix qu'on prépare une fois : un prix fixe, ou des paliers. On les repose chez autant de clients qu'on veut.",
   },
-  // RÉGLAGES (Hugo, 2026-10-13) : les trois onglets de l'ancienne page
-  // « Réglages commerciaux » de l'Exploitation, devenus trois vues. Une table
-  // pour le rail ET le lanceur mobile : les deux arbres les reçoivent ensemble.
-  {
-    key: 'reglages-disponibilite',
-    label: 'Disponibilité',
-    link: '/commercial/reglages/disponibilite',
-    icon: 'clock',
-    section: 'Réglages',
-    needs: 'b2b_commercial_appointment:read',
-    description:
-      'Quand un prospect peut prendre rendez-vous : la grille de la semaine, sa politique, ses exceptions.',
-  },
-  {
-    key: 'reglages-marches',
-    label: 'Marchés',
-    link: '/commercial/reglages/marches',
-    icon: 'map-pin',
-    section: 'Réglages',
-    needs: 'b2b_growth:read',
-    description: 'Les zones et les codes NAF visés, avec ce qu’ils comptent.',
-  },
-  {
-    key: 'reglages-alertes',
-    label: 'Alertes',
-    link: '/commercial/reglages/alertes',
-    icon: 'bell',
-    section: 'Réglages',
-    needs: 'b2b_commercial_alert:read',
-    description:
-      'Les alertes de compte client, et les seuils de couleur du calendrier d’acquisition.',
-  },
-  // Venus des réglages de l'e-commerce (Hugo, 2026-10-13) ; leur propre droit,
-  // `b2b_request_reasons`, sorti de `b2b_contact` le même jour.
-  {
-    key: 'reglages-motifs-des-demandes',
-    label: 'Motifs des demandes',
-    link: '/commercial/reglages/motifs-des-demandes',
-    icon: 'list',
-    section: 'Réglages',
-    needs: 'b2b_request_reasons:read',
-    description:
-      'Ce que le client choisit en écrivant ou en signalant un problème de commande, l’adresse où chaque demande part par e-mail, et sa priorité dans la boîte des demandes.',
-  },
+  // RÉGLAGES : partis en Réglages › Commercial le 2026-10-13 (Hugo), dans la
+  // table des Réglages (EXPLOITATION_VIEWS).
 ];
 
 /**
@@ -195,9 +153,12 @@ export const PRODUCTION_VIEWS: readonly WorkspaceView[] = [
   // entrée de premier niveau au-dessus du Fournil (`/prod-manager`).
   {
     // Lot A1 du plan d'arrêt (2026-10-06) : l'arrêt du plan et les jours fermés.
+    // Sous `/reglages/` depuis le 2026-10-13 (Hugo) ; `/production/reglages`
+    // y redirige. Une seule vue : la page n'a pas d'onglets, ses deux cartes
+    // partagent une lecture.
     key: 'reglages',
-    label: 'Réglages',
-    link: '/production/reglages',
+    label: 'Fournil',
+    link: '/reglages/production/fournil',
     icon: 'sliders',
     needs: 'production_settings:read',
   },
@@ -214,6 +175,10 @@ export const PRODUCTION_VIEWS: readonly WorkspaceView[] = [
  * la première sans voir les autres.
  */
 export const LIVRAISON_VIEWS: readonly WorkspaceView[] = [
+  // Les RÉGLAGES de la livraison (véhicules, bacs, contenances, point de
+  // départ, zones) vivent sous `/reglages/livraison/` depuis le 2026-10-13
+  // (Hugo) ; les écrans du jour gardent `/livraison/`. Les anciennes adresses
+  // redirigent.
   {
     key: 'feuille-de-route',
     label: 'Feuille de route',
@@ -271,28 +236,28 @@ export const LIVRAISON_VIEWS: readonly WorkspaceView[] = [
   {
     key: 'vehicules',
     label: 'Véhicules',
-    link: '/livraison/vehicules',
+    link: '/reglages/livraison/vehicules',
     icon: 'truck',
     needs: 'delivery_settings:read',
   },
   {
     key: 'bacs',
     label: 'Bacs',
-    link: '/livraison/bacs',
+    link: '/reglages/livraison/bacs',
     icon: 'archive',
     needs: 'delivery_settings:read',
   },
   {
     key: 'contenances',
     label: 'Contenances',
-    link: '/livraison/contenances',
+    link: '/reglages/livraison/contenances',
     icon: 'grid',
     needs: 'delivery_settings:read',
   },
   {
     key: 'depart',
     label: 'Point de départ',
-    link: '/livraison/depart',
+    link: '/reglages/livraison/depart',
     icon: 'map-pin',
     needs: 'delivery_settings:read',
   },
@@ -303,7 +268,7 @@ export const LIVRAISON_VIEWS: readonly WorkspaceView[] = [
     // le droit qui ouvre la page entière (les zones se lisent en public).
     key: 'zones',
     label: 'Zones de livraison',
-    link: '/livraison/zones',
+    link: '/reglages/livraison/zones',
     icon: 'truck',
     needs: 'delivery_availability:read',
   },
@@ -326,10 +291,80 @@ function underSection(section: string, views: readonly WorkspaceView[]): Workspa
  * `groupRailItems` ne fabrique un groupe qu'à partir d'une vue présente.
  */
 export const EXPLOITATION_VIEWS: readonly WorkspaceView[] = [
+  // L'ORDRE DES SECTIONS (Hugo, 2026-10-13) : Commandes, Production,
+  // Livraison, Commercial, Sites. `/reglages` mène à la première vue ouverte
+  // dans cet ordre (`firstReglagesView`).
+  // RÉGLAGES › COMMANDES (plan-reglages-commandes.md, lot O1b, 2026-10-13) —
+  // venues de la section « Réglages » de l'E-commerce, chacune sous son droit.
+  // Dans l'ordre de la vie d'une commande : peut-on commander, jusqu'à quand,
+  // peut-on revenir dessus (Q7).
+  {
+    key: 'commandes-ouverture',
+    label: 'Ouverture du e-commerce',
+    link: '/reglages/commandes/ouverture',
+    icon: 'store',
+    section: 'Commandes',
+    needs: 'lfc_order_opening:read',
+  },
+  {
+    key: 'commandes-heure-limite',
+    label: 'Heure limite de commande',
+    link: '/reglages/commandes/heure-limite',
+    icon: 'clock',
+    section: 'Commandes',
+    needs: 'lfc_order_settings:read',
+  },
+  {
+    key: 'commandes-annulation',
+    label: 'Annulation de commande',
+    link: '/reglages/commandes/annulation',
+    icon: 'shopping-cart',
+    section: 'Commandes',
+    needs: 'lfc_order_settings:read',
+  },
   ...underSection('Production', PRODUCTION_VIEWS),
   ...underSection('Livraison', LIVRAISON_VIEWS),
   // « Réglages commerciaux » est partie dans l'espace Commercial le
-  // 2026-10-13 (Hugo), en trois vues de sa section « Réglages ».
+  // 2026-10-13 (Hugo), puis revenue le même jour en section « Commercial »
+  // (plus bas).
+  // RÉGLAGES › COMMERCIAL (Hugo, 2026-10-13) — venus de la section « Réglages »
+  // de l'espace Commercial, mêmes droits. Avant les Sites. Leurs
+  // descriptions sont passées dans leurs pages : la coquille des Réglages ne
+  // dessine pas d'en-tête.
+  {
+    key: 'reglages-disponibilite',
+    label: 'Disponibilité',
+    link: '/reglages/commercial/disponibilite',
+    icon: 'clock',
+    section: 'Commercial',
+    needs: 'b2b_commercial_appointment:read',
+  },
+  {
+    key: 'reglages-marches',
+    label: 'Marchés',
+    link: '/reglages/commercial/marches',
+    icon: 'map-pin',
+    section: 'Commercial',
+    needs: 'b2b_growth:read',
+  },
+  {
+    key: 'reglages-alertes',
+    label: 'Alertes',
+    link: '/reglages/commercial/alertes',
+    icon: 'bell',
+    section: 'Commercial',
+    needs: 'b2b_commercial_alert:read',
+  },
+  // Venus des réglages de l'e-commerce (Hugo, 2026-10-13) ; leur propre droit,
+  // `b2b_request_reasons`, sorti de `b2b_contact` le même jour.
+  {
+    key: 'reglages-motifs-des-demandes',
+    label: 'Motifs des demandes',
+    link: '/reglages/commercial/motifs-des-demandes',
+    icon: 'list',
+    section: 'Commercial',
+    needs: 'b2b_request_reasons:read',
+  },
   // RÉGLAGES › SITES (plan des sites, lot S1, 2026-10-13) — l'ancien « Points
   // de retrait » de l'E-commerce, sous son propre droit. Une table pour le
   // rail ET le lanceur mobile : les deux arbres le reçoivent ensemble.
@@ -669,46 +704,21 @@ export const B2B_VIEWS: readonly WorkspaceView[] = [
     icon: 'contracts',
     section: 'Contenu',
   })),
-  // LES RÉGLAGES DE L'E-COMMERCE — où retirer, jusqu'à quand commander (à
-  // qui livrer est parti dans l'Exploitation le 2026-10-10). Ils étaient un onglet des Réglages ; sous le droit qui ouvre
-  // déjà l'espace, donc sans `needs` (plan « remise et livraison par
-  // clientèle », D6).
-  // « Points de retrait » est parti le 2026-10-13 : devenu « Sites », dans les
-  // Réglages (EXPLOITATION_VIEWS), sous `lfc_site_settings`.
-  {
-    key: 'heures-limites',
-    label: 'Heures limites de commande',
-    link: '/b2b/reglages/heures-limites',
-    icon: 'clock',
-    section: 'Réglages',
-  },
-  // À qui la boutique prend des commandes (Hugo, 2026-10-09). Même droit que
-  // « Livraison », `b2b_settings`, porté par l'espace.
-  {
-    key: 'ouverture-boutique',
-    label: 'Ouverture de la boutique',
-    link: '/b2b/reglages/ouverture-boutique',
-    icon: 'store',
-    section: 'Réglages',
-  },
-  // Ce que le client peut faire d'une commande passée : l'annuler lui-même
-  // (doc `annulation-par-le-client.md`, C6.5). Même droit, `b2b_settings`.
-  {
-    key: 'commandes',
-    label: 'Commandes',
-    link: '/b2b/reglages/commandes',
-    icon: 'shopping-cart',
-    section: 'Réglages',
-  },
+  // La section « Réglages » de l'E-commerce a disparu le 2026-10-13
+  // (plan-reglages-commandes.md §3.3, Q8) : « Points de retrait » est devenu
+  // « Sites », l'ouverture, l'heure limite et l'annulation sont parties en
+  // Réglages › Commandes (EXPLOITATION_VIEWS), chacune sous son droit.
+  //
   // La carte de contact (surtitre, titre, phrase, numéros) : son propre droit,
-  // `b2b_contact`. Ses objets et sa messagerie sont devenus les deux entrées
-  // des demandes clients (demandes-clients.md, §3.5).
+  // `b2b_contact`. Un texte publié, pas un réglage : elle a rejoint
+  // « Contenu », à côté des mentions légales. Ses objets et sa messagerie
+  // sont devenus les deux entrées des demandes clients (demandes-clients.md, §3.5).
   {
     key: 'contact',
     label: 'Contact',
     link: '/b2b/contact',
     icon: 'mail',
-    section: 'Réglages',
+    section: 'Contenu',
     needs: 'b2b_contact:read',
   },
 ];

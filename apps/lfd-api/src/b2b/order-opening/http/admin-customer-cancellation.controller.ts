@@ -16,14 +16,15 @@ import { GetCustomerCancellationSettingsQuery } from "../application/queries/get
  * Réglage **staff** « Réglages › Commandes » : les particuliers peuvent-ils
  * annuler eux-mêmes, et jusqu'à combien d'heures avant (doc
  * `documentation/commandes/annulation/annulation-par-le-client.md`, C6.5).
- * Même ressource que l'ouverture de la boutique, `b2b_settings` : la même
- * nature de réglage — ce que la boutique permet au client.
+ * Sous `lfc_order_settings` depuis le 2026-10-13, avec l'heure limite : ce
+ * que le client peut faire de sa commande, et jusqu'à quand
+ * (`documentation/commandes/plan-reglages-commandes.md`, §3.4, lot O1a).
  *
  * `GET` rend la vue ; `PATCH` (`204`) prend `{ delayEnabled?, hoursBefore? }`,
  * au moins une clé ; un délai hors de 0 à 168 h est un `400`.
  */
 @Controller("admin/customer-cancellation")
-@AdminSurface("b2b_settings")
+@AdminSurface("lfc_order_settings")
 export class AdminCustomerCancellationController {
   constructor(
     private readonly commands: CommandBus,

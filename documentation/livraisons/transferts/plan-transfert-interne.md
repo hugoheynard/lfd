@@ -262,7 +262,7 @@ Ce qui s'ajoute :
   (`close-production-day.handler.ts:117`, `run-auto-close-round.handler.ts:62`)
   et **avant** (fiche d'atelier, `production-worksheet-reading.service.ts:53`) —
   une table posée « à la clôture » n'existerait pas encore quand il la lit.
-  `dueAtOf` (`b2b/orders/infrastructure/prisma-day-orders.reader.ts`,
+  `dueAtOf` (`b2b/orders/infrastructure/prisma-day-orders.source.ts`,
   l. 113–119) calcule donc l'heure depuis les réglages du site (ouverture,
   mise en place, trajet), et la clôture la fige comme elle fige déjà le
   reste : dans `production_order.due_at` (`production.prisma`, l. 103),
@@ -301,7 +301,7 @@ L'échéance d'une commande, en minutes avant laquelle sortir :
 depuis les réglages du site, par la même fonction que `dueAtOf`) ; `dueMinute` le préfère à la fenêtre
 quand il est posé. **Le snapshot du colisage suit la même règle** :
 `ProducibleOrder.dueAt`, écrit par `dueAtOf`
-(`b2b/orders/infrastructure/prisma-day-orders.reader.ts`, l. 113–119, qui ne
+(`b2b/orders/infrastructure/prisma-day-orders.source.ts`, l. 113–119, qui ne
 lit aujourd'hui que la fenêtre), lit la même fonction. Lot **T0**.
 
 ## 8. Le colisage

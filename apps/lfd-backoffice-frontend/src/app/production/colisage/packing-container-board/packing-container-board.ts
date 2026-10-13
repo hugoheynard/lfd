@@ -179,7 +179,7 @@ export class PackingContainerBoard {
   protected readonly halfLabel = shareableHalfLabel;
   protected readonly innerBags = signal<number | null>(0);
   /** Le lien de sortie d'une proposition vide : la grille des contenances. */
-  protected readonly capacitiesLink = '/livraison/contenances';
+  protected readonly capacitiesLink = '/reglages/livraison/contenances';
   /**
    * La grille des contenances est un écran de la LIVRAISON, gardé par
    * `delivery_settings:read` (`app.routes.ts`, route `contenances`). Sans ce

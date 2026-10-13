@@ -48,7 +48,7 @@ export interface PlannerResult {
 type Phase = 'idle' | 'locating' | 'proposing';
 
 /** Là où se règlent le départ et le calcul. */
-const SETTINGS_LINK = '/livraison/depart';
+const SETTINGS_LINK = '/reglages/livraison/depart';
 
 /** La phrase d'aide sous « Proposer en », mode par mode. */
 const MODE_HINTS: Readonly<Record<DeliveryProposalMode, string>> = {

@@ -1,6 +1,7 @@
 # Réglages › Commandes — ouverture, heure limite et annulation
 
-**Statut** : 📐 plan, rien n'est bâti. Écrit le 2026-10-13, contredit par
+**Statut** : 🔨 O0, O1a, O1b et O1c **bâtis le 2026-10-13, non commités**
+(§4) ; O2 reste à trancher. Écrit le 2026-10-13, contredit par
 `vitruve` le même jour (§7), **Q1, Q3, Q4, Q5 et la carte B2C tranchées par
 Hugo le 2026-10-13** (§5). Annoncé par le
 §5.4 du plan commun des sites (2026-10-13, découpé le même jour) ; les
@@ -355,6 +356,37 @@ flowchart TD
 
 O1a et O1b partent ensemble (un serveur sous le nouveau droit avec un front
 encore sous l'ancien rendrait 403).
+
+**Bâtis le 2026-10-13** (non commités à cette date) :
+
+- **O0** — migration `20261013540000_le_droit_de_l_ouverture_des_commandes`
+  (`ADD VALUE` seul), `lfc_order_opening` au contrat (libellé « Ouverture des
+  commandes »), libellés et portées des deux ressources réécrits, graine :
+  écriture admin, lecture commercial / comptabilité / dev pour les deux.
+- **O1a** — les trois `@AdminSurface` du §3.4 ; `staff-access` et
+  `staff-roles` reportés sur `admin/content/footer` (`b2b_settings`) et
+  augmentés des cas « `b2b_settings` seul est refusé », « l'un des deux droits
+  n'ouvre pas l'autre », « lecture sans écriture ». Les six autres suites
+  passent par l'opérateur e2e, `admin` : la graine leur donne les deux droits,
+  elles n'ont pas eu à changer.
+- **O1b** — Réglages › Commandes, trois vues dans l'ordre de Q7 (gardé par
+  défaut) ; « Contact » rejoint « Contenu » et la section « Réglages » de
+  l'e-commerce disparaît (Q8, gardée par défaut). La page Heure limite
+  n'édite que la ligne générale ; les règles par point ou par jour se lisent,
+  marquées « non reprise ».
+- **O1c** — `GET admin/order-cutoff-waivers` (sans paramètre) :
+  `ListOpenOrderCutoffWaiversQuery`, port de lecture
+  `OpenOrderCutoffWaiverReader`, sous `b2b_order_waivers`. « Ouverte » y veut
+  dire **journée non passée** (jour de Paris), servie ou non — pas « non
+  consommée » comme l'index `order_cutoff_waiver_one_open`.
+
+⚠️ **Constat du 2026-10-13, au lot O1b** (le §2 option A demandait de le
+vérifier) : le public **lit** la ligne générale. `PlaceShopOrderHandler`
+passe par `OrderDrafting.ensureNotTooLate`, qui oppose le repli du commerce à
+toute ligne sans limite d'article, sans distinguer la clientèle — le lot 1 de
+[`plan-heure-limite-par-clientele.md`](plan-heure-limite-par-clientele.md) §4
+n'est pas bâti. La carte « Clientèle particulière » dit donc ce qui est vrai :
+la limite de l'article, sinon la limite générale, sans dérogation possible.
 
 ## 5. Questions à Hugo
 

@@ -101,46 +101,21 @@ export const commercialRoutes: Routes = [
         loadComponent: () =>
           import('./tarification/grille/gabarit-grille-page').then((m) => m.TemplateGridPage),
       },
-      // RÉGLAGES du commercial (Hugo, 2026-10-13) : les trois onglets de
-      // l'ancienne page « Réglages commerciaux » de l'Exploitation, devenus
-      // trois vues. Droits granulaires (Hugo, 2026-10-13) : Disponibilité sous
-      // `b2b_commercial_appointment`, Alertes sous `b2b_commercial_alert`, comme
-      // leurs routes d'API ; Marchés reste sous `b2b_growth`.
-      { path: 'reglages', pathMatch: 'full', redirectTo: 'reglages/disponibilite' },
+      // RÉGLAGES du commercial : partis en Réglages › Commercial le
+      // 2026-10-13 (Hugo). Les adresses vivent dans des favoris ; absolues,
+      // les redirections s'appliquent AVANT les gardes.
+      { path: 'reglages', pathMatch: 'full', redirectTo: '/reglages/commercial/disponibilite' },
       {
         path: 'reglages/disponibilite',
-        canActivate: [permissionGuard('b2b_commercial_appointment:read')],
-        title: 'Disponibilité — LFC B2B admin',
-        loadComponent: () =>
-          import('./reglages/disponibilite-page/disponibilite-page').then(
-            (m) => m.DisponibilitePage,
-          ),
+        pathMatch: 'full',
+        redirectTo: '/reglages/commercial/disponibilite',
       },
+      { path: 'reglages/marches', pathMatch: 'full', redirectTo: '/reglages/commercial/marches' },
+      { path: 'reglages/alertes', pathMatch: 'full', redirectTo: '/reglages/commercial/alertes' },
       {
-        path: 'reglages/marches',
-        canActivate: [permissionGuard('b2b_growth:read')],
-        title: 'Marchés — LFC B2B admin',
-        loadComponent: () =>
-          import('./reglages/marches-page/marches-page').then((m) => m.MarchesPage),
-      },
-      {
-        path: 'reglages/alertes',
-        canActivate: [permissionGuard('b2b_commercial_alert:read')],
-        title: 'Alertes — LFC B2B admin',
-        loadComponent: () =>
-          import('./reglages/alertes-page/alertes-page').then((m) => m.AlertesPage),
-      },
-      {
-        // Les motifs des demandes, venus des réglages de l'e-commerce (Hugo,
-        // 2026-10-13), sous leur propre droit `b2b_request_reasons`, comme
-        // leurs routes d'API (Hugo, même jour).
         path: 'reglages/motifs-des-demandes',
-        canActivate: [permissionGuard('b2b_request_reasons:read')],
-        title: 'Motifs des demandes — LFC B2B admin',
-        loadComponent: () =>
-          import('../b2b/demandes/request-reasons-page/request-reasons-page').then(
-            (m) => m.RequestReasonsPage,
-          ),
+        pathMatch: 'full',
+        redirectTo: '/reglages/commercial/motifs-des-demandes',
       },
     ],
   },
