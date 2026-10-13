@@ -451,12 +451,18 @@ stateDiagram-v2
 
 Invariants portés par l'agrégat :
 
-- **une réception, une seule** : `receive(at, by)` refuse un transfert déjà
-  `received` (`TransferAlreadyReceivedError`), et l'adaptateur écrit
-  `UPDATE … SET received_at = $1 WHERE id = $2 AND received_at IS NULL` en
-  plus — deux comptoirs qui appuient ensemble : un seul gagne, l'autre lit
-  le refus (même forme que `markHandedOver`, CLAUDE.md §3.1) ;
-- `depart` seulement depuis `planned`, posé par le départ de la tournée ;
+- **une réception, une seule** : l'agrégat refuse un transfert déjà
+  `received`, et l'adaptateur l'écrit en **un seul**
+  `UPDATE … SET received_at, received_by, received_reason WHERE id = $1 AND
+received_at IS NULL`, qui porte l'auteur et le motif ; **0 ligne →
+  `TransferAlreadyReceivedError`**. Deux comptoirs ensemble : un seul gagne
+  (même forme que `markHandedOver`, CLAUDE.md §3.1). Le journal reçoit
+  `internal_transfer.received` (manuel : avec son motif) ;
+- `depart` depuis `planned`, posé par le départ de la tournée ; **un
+  transfert déjà `received` (réception manuelle) est ignoré par le départ** :
+  l'arrêt reste dans la tournée, sans effet, et le départ ne lève jamais à
+  cause de lui (objection B2 du §11). La vue du livreur le montre « déjà
+  reçu au site » ;
 - **réception manuelle** depuis `planned` (sortie de S3, §4.5) : nommée,
   datée, auteur figé, motif obligatoire (« venu par le personnel », « pas de
   tournée ce jour ») ;
@@ -490,17 +496,15 @@ juste pour les arrêts de commande. Son jumeau
 conditions) dit « un transfert dans au plus une tournée vivante ». Les deux
 s'écrivent à la main, comme le premier.
 
-**Migration en trois temps** (`order_id` d'une table servie devient
-nullable) :
-
-1. **Étendre** — `kind` (défaut `order`), `transfer_id`, le `CHECK`, l'index
-   jumeau ; `order_id` **reste NOT NULL**. Le code lit `kind` partout (§4.4)
-   et le domaine passe à une union `OrderStop | TransferStop`.
-2. **Basculer** — `ALTER COLUMN order_id DROP NOT NULL`, dans le
-   déploiement qui écrit le premier arrêt `transfer`, **après** que tout
-   lecteur gère le genre. Le `CHECK` tient la garantie que `NOT NULL`
-   donnait pour les arrêts de commande.
-3. **Resserrer** — rien à resserrer : le `CHECK` est la forme finale.
+**Migration** : Prisma passe `orderId` en `String?`. Les colonnes `kind`,
+`transfer_id`, le `CHECK`, l'index jumeau **et** le `DROP NOT NULL` partent
+dans le **même** déploiement que le code qui écrit le premier `NULL` — pas
+de « trois temps » comme garde-fou : c'est assumé par le §0 du CLAUDE.md
+(pré-release, Hugo 2026-10-04 : un contrat servi peut casser dans le même
+déploiement ; aucune donnée n'est détruite, les lignes existantes sont
+toutes `kind = 'order'` et satisfont le `CHECK`). Le `CHECK` tient pour les
+arrêts de commande la garantie que `NOT NULL` donnait. `lecteur-de-migrations`
+avant `main`.
 
 **Dans le domaine** : `DeliveryRoundBase.orderIds` (l. 102 :
 `this.open.map((stop) => stop.orderId)`) devient « les commandes des arrêts
@@ -517,16 +521,16 @@ l'entité), pas le nom des fichiers. 117 fichiers non-test de
 sites à changer sortira du compilateur à l'étape 1 de la migration — ce
 tableau dit ce que **chaque famille** doit faire, pas un compte.
 
-| Famille                              | Fichiers ouverts                                                                                                                                                                                                                    | Arrêt `transfer`                                                                                                                                                                                                                         |
-| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Composition et retouche**          | `domain/services/insert-cheapest.ts`, `improve-plans.ts`, `move-delivery-stop.ts`, `route-timing.ts` (`RoutingStop { id, window, stopSeconds? }`), `insert-into-rounds.ts`, `propose-rounds.ts`                                     | **un `RoutingStop` comme un autre** : son point = GPS du site, sa fenêtre = « arrivé avant » l'arrivée requise figée (§4.6), `stopSeconds` = déchargement (réglage du site). Déplaçable, retirable — un seul arrêt, rien à garder groupé |
-| **Départ**                           | `application/delivery-departure-support.ts` (`departAndFreeze`, l. 64–89)                                                                                                                                                           | les feuilles, retenues et faits portent sur `orderIds` (commandes) **seulement** ; le départ passe aussi chaque transfert de l'arrêt à `departed` (même transaction)                                                                     |
-| **Fait de départ**                   | `channels/handover/delivery-round-departed.fact.ts` (`orderIds`)                                                                                                                                                                    | **inchangé** : il ne porte que les commandes livrées. Les commandes du village n'y sont pas, donc ni `RecordRoundDeparted` ni `mail-delivery-en-route` ne les voient                                                                     |
-| **Chargement, bacs**                 | `application/delivery-loading-support.ts`, `delivery-bin-office.ts`, `prisma-stop-loading.repository.ts`, `prisma-round-placements.reader.ts`                                                                                       | les bacs des commandes du village se chargent **sur l'arrêt `transfer`** : `BinDesk` reçoit le `transferId` comme destination (Q-T4 : un bac par commande, inchangé)                                                                     |
-| **Porte, décisions, ratés, ramené**  | `prisma-doorstep-stop.repository.ts`, `channels/handover/doorstep-handover.attestor.ts`, `prisma-stop-decisions.reader.ts`, `prisma-undelivered-stops.reader.ts`, `prisma-brought-back-orders.reader.ts`, `brought-back-support.ts` | **ignorés** (filtre `kind = 'order'`) ; le seul geste d'un arrêt `transfer` est « Remis au site » (§4.5)                                                                                                                                 |
-| **Vue des tournées, app du livreur** | `prisma-delivery-rounds.reader.ts`, `driver-rounds.reader`, `round-paper.reader`                                                                                                                                                    | une ligne « → Val Village · N commandes », sans client, sans adresse de client                                                                                                                                                           |
-| **Facturation**                      | `channels/commerce/order-delivery-history.reader.ts` + `prisma-order-delivery-history.reader.ts`                                                                                                                                    | **rien** : il lit des arrêts de commande ; une commande du village n'en a pas, son historique est celui d'un retrait                                                                                                                     |
-| **Localisation, positions**          | `application/delivery-stops-locating.ts` (l. 77, écarte `delivery: false`), `prisma-gesture-positions.reader.ts`                                                                                                                    | le point d'un arrêt `transfer` vient du site (canal `delivery/channels/commerce/`), jamais du carnet d'adresses                                                                                                                          |
+| Famille                              | Fichiers ouverts                                                                                                                                                                                                                    | Arrêt `transfer`                                                                                                                                                                                                                                     |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Composition et retouche**          | `domain/services/insert-cheapest.ts`, `improve-plans.ts`, `move-delivery-stop.ts`, `route-timing.ts` (`RoutingStop { id, window, stopSeconds? }`), `insert-into-rounds.ts`, `propose-rounds.ts`                                     | **un `RoutingStop` comme un autre** : son point = GPS du site, sa fenêtre = « arrivé avant » l'arrivée requise figée (§4.6), `stopSeconds` = déchargement (réglage du site). Déplaçable, retirable — un seul arrêt, rien à garder groupé             |
+| **Départ**                           | `application/delivery-departure-support.ts` (`departAndFreeze`, l. 64–89)                                                                                                                                                           | les feuilles, retenues et faits portent sur `orderIds` (commandes) **seulement** ; le départ passe aussi chaque transfert de l'arrêt à `departed` (même transaction)                                                                                 |
+| **Fait de départ**                   | `channels/handover/delivery-round-departed.fact.ts` (`orderIds`)                                                                                                                                                                    | **inchangé** : il ne porte que les commandes livrées. Les commandes du village n'y sont pas, donc ni `RecordRoundDeparted` ni `mail-delivery-en-route` ne les voient                                                                                 |
+| **Chargement, bacs**                 | `application/delivery-loading-support.ts`, `delivery-bin-office.ts`, `prisma-stop-loading.repository.ts`, `prisma-round-placements.reader.ts`                                                                                       | les bacs restent **par commande** : `BinDesk` (`packing/channels/delivery/bin-desk.ts`) est indexé par `orderId` et **ne bouge pas** ; c'est `delivery` qui résout, au chargement, commande → transfert (`delivery_internal_transfer_order`) → arrêt |
+| **Porte, décisions, ratés, ramené**  | `prisma-doorstep-stop.repository.ts`, `channels/handover/doorstep-handover.attestor.ts`, `prisma-stop-decisions.reader.ts`, `prisma-undelivered-stops.reader.ts`, `prisma-brought-back-orders.reader.ts`, `brought-back-support.ts` | **ignorés** (filtre `kind = 'order'`) ; le seul geste d'un arrêt `transfer` est « Remis au site » (§4.5)                                                                                                                                             |
+| **Vue des tournées, app du livreur** | `prisma-delivery-rounds.reader.ts`, `driver-rounds.reader`, `round-paper.reader`                                                                                                                                                    | une ligne « → Val Village · N commandes », sans client, sans adresse de client                                                                                                                                                                       |
+| **Facturation**                      | `channels/commerce/order-delivery-history.reader.ts` + `prisma-order-delivery-history.reader.ts`                                                                                                                                    | **rien** : il lit des arrêts de commande ; une commande du village n'en a pas, son historique est celui d'un retrait                                                                                                                                 |
+| **Localisation, positions**          | `application/delivery-stops-locating.ts` (l. 77, écarte `delivery: false`), `prisma-gesture-positions.reader.ts`                                                                                                                    | le point d'un arrêt `transfer` vient du site (canal `delivery/channels/commerce/`), jamais du carnet d'adresses                                                                                                                                      |
 
 Le drapeau `delivery: boolean` (`delivery/channels/commerce/delivery-orders.reader.ts`,
 l. 37) **ne change pas** de sens : une commande du village reste `false`, et
@@ -544,7 +548,11 @@ sous `lfc_sites`, **intégré par défaut** :
   sa fenêtre — pas de tournée ce jour, ou toutes trop tardives —, la
   composition crée une **tournée dédiée** et le journal du jour le dit
   (« Val Village : aucune tournée ne passait à temps, tournée dédiée
-  créée ») ; le tour manager peut ensuite déplacer l'arrêt à la main ;
+  créée ») ; le tour manager peut ensuite déplacer l'arrêt à la main. **Sans véhicule
+  libre** pour la tournée de repli : la composition laisse le transfert
+  `planned` sans arrêt et l'écrit au journal (« Val Village : aucune tournée
+  ni véhicule libre — réception manuelle ou affectation à la main ») ; la
+  sortie reste la réception manuelle (Q-T13) ;
 - **dédié** : la composition crée une tournée qui ne porte que cet arrêt.
   Une tournée dédiée n'a **pas de genre** : c'est une tournée ordinaire à un
   arrêt `transfer` — `delivery_round` ne change pas.
@@ -578,9 +586,15 @@ n'a pas eu lieu.
    la **réception manuelle** depuis `planned` (§4.2), même bouton, motif
    obligatoire. Proposé plutôt qu'une levée du refus : le refus protège
    d'une remise sans marchandise ; le lever sans trace effacerait la
-   question « comment est-elle arrivée ? ». Une commande sans transfert
-   (ajoutée après la clôture) obtient un transfert `planned` à son ajout,
-   donc toujours une sortie.
+   question « comment est-elle arrivée ? ». Une commande ajoutée après la
+   clôture : à la passation, le commerce appelle un port **déclaré par la
+   livraison** dans `delivery/channels/commerce/`
+   (`InternalTransferDesk.attach(orderId, siteId, serviceDay)` ; `b2b →
+delivery` permis par port ; `delivery → b2b` reste interdit), qui
+   l'ajoute au transfert `planned` du jour ou en crée un. Si celui du jour
+   est déjà `departed` ou `received` : **Q-T3** (proposé : un nouveau
+   transfert `planned` du même jour, sans arrêt, sorti par réception
+   manuelle — la commande n'est jamais sans sortie).
 5. **La preuve de remise au comptoir reste un retrait** : `markHandedOver`,
    ses pièces, inchangés.
 
@@ -591,7 +605,7 @@ sequenceDiagram
   participant C as commerce b2b
   participant R as retrait handover
   F->>L: production.day_closed
-  L->>C: sites servis par transfert et leurs commandes, par canal
+  L->>C: TransferSitesReader, sites servis et leurs commandes
   L->>L: InternalTransfer planned, arrêt transfer inséré ou tournée dédiée
   L->>L: départ de la tournée, transfert departed
   L->>L: Remis au site ou Réceptionner, transfert received
@@ -613,38 +627,48 @@ Ce qui s'ajoute :
   `lfc_sites`, entier ≥ 0, défaut 0 : pas de valeur copiée d'un autre
   réglage). C'est la mise en place au comptoir, **après** le colisage :
   il s'**ajoute** à la marge de retrait, il ne la remplace pas.
-- **L'heure requise, figée à la clôture du fournil**, par site et par jour,
-  dans `site_day_requirement(site_id, service_day, required_arrival_at,
-required_departure_at, frozen_at)` (commerce). Elle n'est **jamais
-  réécrite** une fois posée : changer un créneau, une fermeture, la mise en
-  place ou le trajet vaut pour les journées pas encore closes (objection S4).
-  C'est un **fait daté par jour**, pas une décision à fenêtre :
-  `lint:dated-decisions` couvre la résolution du prix (en-tête de
-  `dev-toolbox/gates/dated-decisions.mjs`) et ne la verra pas — la règle
-  « jamais réécrite » est portée par l'agrégat (`freeze` refuse une seconde
-  écriture) et par la clé `(site_id, service_day)`.
+- **L'heure requise se calcule à la volée, et c'est le snapshot du fournil
+  qui la fige** (objection B1 du §11). Pas de table figée à part : le
+  fournil lit `DayOrdersReader` **pendant** la clôture
+  (`close-production-day.handler.ts:117`, `run-auto-close-round.handler.ts:62`)
+  et **avant** (fiche d'atelier, `production-worksheet-reading.service.ts:53`) —
+  une table posée « à la clôture » n'existerait pas encore quand il la lit.
+  `dueAtOf` (`b2b/orders/infrastructure/prisma-day-orders.reader.ts`,
+  l. 113–119) calcule donc l'heure depuis les réglages du site (ouverture,
+  mise en place, trajet), et la clôture la fige comme elle fige déjà le
+  reste : dans `production_order.due_at` (`production.prisma`, l. 103),
+  recopié du snapshot `ProducibleOrder` (« arrêter le plan d'une journée,
+  c'est figer ce que le fournil va produire »,
+  [`arret-du-plan.md`](../../production/arret-du-plan.md)). Avant la
+  clôture, la fiche d'atelier montre l'heure du moment — elle peut bouger,
+  et c'est vrai.
+- **La reprise du tirage** (`retake-production-day.handler.ts`, l. 86 :
+  `producibleFor(day)` relu hors du verrou) n'absorbe que les commandes
+  **nouvelles** ; celles déjà inscrites gardent leur `due_at` figé. Une
+  commande ajoutée après l'arrêt prend l'heure calculée **au retirage**,
+  avec les réglages de ce moment — assumé : un réglage changé entre l'arrêt
+  et le retirage ne vaut que pour les retardataires.
 - **De quels créneaux on part** : le plus tôt de (a) l'ouverture **pros**
   du site ce jour-là (`PickupAddress.opening`, fenêtre pros) et (b) le
   premier créneau **public** ouvert ce jour-là (`PublicPickupSlotRule` moins
-  `PublicPickupClosure`), lus **à la clôture**.
-  `required_arrival = ce plus tôt − counter_setup_minutes` ;
-  `required_departure = required_arrival − trajet` (Q-T11).
-- **Sans créneau ni ouverture ce jour-là** : on prend le plus tôt des
-  créneaux **des commandes** du site ; s'il n'y en a pas non plus, l'heure
-  requise est `null`, les commandes du site passent en `UNDATED` (comme une
-  commande sans fenêtre aujourd'hui, l. 120–122), et le journal de la
-  clôture le signale.
+  `PublicPickupClosure`). Arrivée requise = ce plus tôt −
+  `counter_setup_minutes` ; départ requis = arrivée requise − trajet
+  (`transfer_minutes`, Q-T11).
+- **Sans créneau ni ouverture ce jour-là** : le plus tôt des créneaux **des
+  commandes** du site ; sinon `null`, et les commandes passent en `UNDATED`
+  (comme une commande sans fenêtre, `deadline-thresholds.ts` l. 120–122),
+  signalé au journal de la clôture.
 
 L'échéance d'une commande, en minutes avant laquelle sortir :
 
-| Commande                       | Échéance (si les deux interrupteurs sont posés)                       |
-| ------------------------------ | --------------------------------------------------------------------- |
-| livraison                      | inchangée : fenêtre − `deliveryMinutes`                               |
-| retrait sur un site sur place  | fenêtre − `pickupMinutes` − `counter_setup_minutes` du site           |
-| retrait sur un site `transfer` | `required_departure` figé − `deliveryMinutes` (colisage + chargement) |
+| Commande                       | Échéance (si les deux interrupteurs sont posés)             |
+| ------------------------------ | ----------------------------------------------------------- |
+| livraison                      | inchangée : fenêtre − `deliveryMinutes`                     |
+| retrait sur un site sur place  | fenêtre − `pickupMinutes` − `counter_setup_minutes` du site |
+| retrait sur un site `transfer` | départ requis − `deliveryMinutes` (colisage + chargement)   |
 
 `DeadlineOrder` gagne `requiredBy: minute | null` (calculé par le commerce
-depuis le site et la ligne figée) ; `dueMinute` le préfère à la fenêtre
+depuis les réglages du site, par la même fonction que `dueAtOf`) ; `dueMinute` le préfère à la fenêtre
 quand il est posé. **Le snapshot du colisage suit la même règle** :
 `ProducibleOrder.dueAt`, écrit par `dueAtOf`
 (`b2b/orders/infrastructure/prisma-day-orders.reader.ts`, l. 113–119, qui ne
@@ -656,7 +680,9 @@ Chaque commande garde son sac / bac ([`colisage.md`](../../colisage/colisage.md)
 §2). Les commandes du village se rangent sous leur `dueAt` (§4.6) — c'est la
 réponse, pour le village, à la question 1 de
 [`todo-colisage-tri-par-echeance.md`](../../colisage/todo-colisage-tri-par-echeance.md) —
-et leurs bacs se chargent sur l'arrêt `transfer` (§4.4).
+et leurs bacs, déclarés par commande comme aujourd'hui, se chargent sur
+l'arrêt `transfer` par la résolution commande → transfert → arrêt que fait
+`delivery` (§4.4).
 
 ## 5. Le tri par heure de départ et le code couleur
 
@@ -666,12 +692,12 @@ et leurs bacs se chargent sur l'arrêt `transfer` (§4.4).
 
 ### 5.2 D'où vient chaque heure
 
-| Commande                                 | Heure de départ                                                                                                                                      | Source                                                                |
-| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| livraison (B2B ou B2C)                   | `plannedDepartureAt ?? departedAt` de sa tournée                                                                                                     | `delivery`, nouveau lecteur par lot sur `delivery/channels/commerce/` |
-| retrait sur un site `transfer` (village) | le départ de la tournée qui porte l'arrêt de son **transfert** (B2B en intégré, dédiée sinon) ; avant composition : `required_departure` figé (§4.6) | même lecteur ; puis le site (commerce)                                |
-| retrait sur un site `on_site`            | `window.start ?? window.end` (créneau figé)                                                                                                          | commerce, déjà sur la commande                                        |
-| sans heure                               | en fin, « pas encore de départ »                                                                                                                     | —                                                                     |
+| Commande                                 | Heure de départ                                                                                                                                                                                    | Source                                                                |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| livraison (B2B ou B2C)                   | `plannedDepartureAt ?? departedAt` de sa tournée                                                                                                                                                   | `delivery`, nouveau lecteur par lot sur `delivery/channels/commerce/` |
+| retrait sur un site `transfer` (village) | le départ de la tournée qui porte l'arrêt de son **transfert** (B2B en intégré, dédiée sinon) ; avant composition : départ requis calculé (§4.6), figé dans `production_order.due_at` à la clôture | même lecteur ; puis le site (commerce)                                |
+| retrait sur un site `on_site`            | `window.start ?? window.end` (créneau figé)                                                                                                                                                        | commerce, déjà sur la commande                                        |
+| sans heure                               | en fin, « pas encore de départ »                                                                                                                                                                   | —                                                                     |
 
 Le lecteur neuf : `OrderDepartureReader.departuresOf(orderIds)` → par
 commande `{ plannedAt, departedAt, via: 'delivery' | 'transfer' }` — pour une
@@ -708,19 +734,19 @@ Un lot à la fois (mémoire du dépôt). Tailles dites honnêtement : **T1 et T2
 sont le cœur du chantier**, et T1 ne se coupe pas — son étape « étendre »
 sans la composition ne sert à rien en production.
 
-| Lot | Taille | Contenu                                                                                                                                                                                                                    | Migration                                                            | Touche                      |
-| --- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | --------------------------- |
-| S0  | S      | ressource `lfc_sites` ajoutée à `StaffResource`, accordée à **aucun** rôle ; bascule : après déploiement, l'admin l'accorde à `/admin/staff-roles`, **puis** S1 met l'écran derrière                                       | additive (valeur d'enum)                                             | sécurité (périmètre)        |
-| S1  | M      | `b2b/sites` (agrégat `Site`, rôles, couleurs nullables, archivage, `transfer_mode`, `counter_setup_minutes`), Réglages › Sites, lecteurs du comptoir et de la saisie hors de l'écran                                       | additive (colonnes, enums)                                           | frontière (canaux)          |
-| S2  | S      | `siteId` dans le snapshot de commande (depuis `pickupAddressId` reçu à la passation), `production_order.site_id`, onglets du comptoir par id ; pas de rattrapage                                                           | additive                                                             | —                           |
-| L1  | S      | fonction pure de catégorie (back-office), tokens `--lfc-site-*`, pastille                                                                                                                                                  | —                                                                    | —                           |
-| S3r | S      | `CHECK` des couleurs après saisie ; lectures par libellé retirées                                                                                                                                                          | contrainte                                                           | —                           |
-| T0  | M      | `site_day_requirement` figée à la clôture (créneaux pros et publics, mise en place, trajet), `requiredBy` dans `deadlineThresholds` et `dueAtOf` ; marges intactes                                                         | additive (table)                                                     | production (échéances)      |
-| T1  | **L**  | `InternalTransfer` + ses commandes ; arrêt `kind = transfer` (temps 1 : colonnes, `CHECK`, index jumeau ; union discriminée dans le domaine) ; chaque famille du §4.4 ; composition intégrée avec repli dédié ; mode dédié | **trois temps** : étendre (T1), basculer `DROP NOT NULL` (fin de T1) | migration servie, frontière |
-| T2  | M      | « Remis au site » / « Réceptionner » (manuelle), `TransferStatusReader`, port `handover/channels/delivery/`, `TransferNotReceivedError`                                                                                    | additive (`received_at` du transfert)                                | frontière                   |
-| L2  | M      | `OrderDepartureReader` + tri de la liste ; tri du colisage par `dueAt`                                                                                                                                                     | —                                                                    | frontière (canal)           |
-| L4  | ?      | « Écrire » (Q1), indépendant                                                                                                                                                                                               | —                                                                    | —                           |
-| L5  | S      | couleur sur les supports imprimés (si Q8 = papier)                                                                                                                                                                         | —                                                                    | —                           |
+| Lot | Taille | Contenu                                                                                                                                                                                                                                                                                                                    | Migration                                                                                                          | Touche                      |
+| --- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | --------------------------- |
+| S0  | S      | ressource `lfc_sites` ajoutée à `StaffResource`, accordée à **aucun** rôle ; bascule : après déploiement, l'admin l'accorde à `/admin/staff-roles`, **puis** S1 met l'écran derrière                                                                                                                                       | additive (valeur d'enum)                                                                                           | sécurité (périmètre)        |
+| S1  | M      | `b2b/sites` (agrégat `Site`, rôles, couleurs nullables, archivage, `transfer_mode`, `counter_setup_minutes`), Réglages › Sites, lecteurs du comptoir et de la saisie hors de l'écran                                                                                                                                       | additive (colonnes, enums)                                                                                         | frontière (canaux)          |
+| S2  | S      | `siteId` dans le snapshot de commande (depuis `pickupAddressId` reçu à la passation), `production_order.site_id`, onglets du comptoir par id ; pas de rattrapage                                                                                                                                                           | additive                                                                                                           | —                           |
+| L1  | S      | fonction pure de catégorie (back-office), tokens `--lfc-site-*`, pastille                                                                                                                                                                                                                                                  | —                                                                                                                  | —                           |
+| S3r | S      | `CHECK` des couleurs après saisie ; lectures par libellé retirées                                                                                                                                                                                                                                                          | contrainte                                                                                                         | —                           |
+| T0  | M      | `dueAtOf` et `requiredBy` calculent l'heure requise depuis les réglages du site (ouverture pros, créneaux publics, mise en place, trajet) ; la clôture la fige dans `production_order.due_at` comme aujourd'hui ; marges intactes. **Dépend de S1** (`counter_setup_minutes`, `transfer_minutes`) **et de Q-T11** (trajet) | — (colonnes du site portées par S1)                                                                                | production (échéances)      |
+| T1  | **L**  | `InternalTransfer` + ses commandes ; arrêt `kind = transfer` (temps 1 : colonnes, `CHECK`, index jumeau ; union discriminée dans le domaine) ; chaque famille du §4.4 ; composition intégrée avec repli dédié ; mode dédié                                                                                                 | `String?` + `CHECK` + `DROP NOT NULL` avec le code qui écrit le premier `NULL`, un seul déploiement (CLAUDE.md §0) | migration servie, frontière |
+| T2  | M      | « Remis au site » / « Réceptionner » (manuelle), `TransferStatusReader`, port `handover/channels/delivery/`, `TransferNotReceivedError`                                                                                                                                                                                    | additive (`received_at` du transfert)                                                                              | frontière                   |
+| L2  | M      | `OrderDepartureReader` + tri de la liste ; tri du colisage par `dueAt`                                                                                                                                                                                                                                                     | —                                                                                                                  | frontière (canal)           |
+| L4  | ?      | « Écrire » (Q1), indépendant                                                                                                                                                                                                                                                                                               | —                                                                                                                  | —                           |
+| L5  | S      | couleur sur les supports imprimés (si Q8 = papier)                                                                                                                                                                                                                                                                         | —                                                                                                                  | —                           |
 
 L'ancien T3 (mode dédié seul) est **absorbé par T1** : avec un arrêt unique,
 la tournée dédiée est une tournée ordinaire à un arrêt, et le repli
@@ -748,8 +774,12 @@ Restent :
 - **Q-S4** — Un second fournil est-il envisagé ?
 - **Q-S6** — La palette : `blue, yellow, orange, grey, purple, teal, brown` ?
 - **Q-S7** — Les couleurs de livraison sur le site qui expédie (§5.3) ?
-- **Q-T3** — Une commande du village ajoutée après le départ : transfert du
-  lendemain, ou réception manuelle d'une course à part ?
+- **Q-T3** — Une commande du village ajoutée quand le transfert du jour est
+  déjà parti ou reçu : nouveau transfert du même jour sans arrêt, sorti par
+  réception manuelle (proposé, §4.5), ou report au transfert du lendemain ?
+- **Q-T13** — Repli « tournée dédiée » sans véhicule libre : laisser le
+  transfert sans arrêt avec une ligne au journal (proposé), ou une alerte
+  qui sonne au tour manager ?
 - **Q-T4** — Un bac par commande (proposé), ou un bac de transfert commun ?
 - **Q-T6** — « Remis au site » par le livreur, « Réceptionner » par le
   comptoir : les deux (proposé), ou un seul ?
@@ -765,11 +795,9 @@ Restent :
 - Le nombre exact de sites de code à changer pour le genre d'arrêt : 117
   fichiers non-test de `src/delivery` nomment `orderId(s)` ; le compilateur
   le dira à l'étape 1 de T1.
-- Que `BinDesk` (implémenté par la livraison pour le colisage) accepte un
-  transfert comme destination sans changer le canal
-  `packing/channels/delivery/` : non relu.
-- Que la clôture du fournil soit le bon instant pour figer (et non l'arrêt
-  du plan) : à relire dans `arret-du-plan.md` au lot T0.
+- Que la résolution commande → transfert → arrêt au chargement couvre tous
+  les appels de `BinDesk` côté `delivery` : le canal a été ouvert, son
+  implémentation non relue.
 - Le droit avec lequel le comptoir lit aujourd'hui `admin/pickup-addresses`.
 
 ## 9. Contradiction par `vitruve` (2026-10-13) — et son sort
@@ -777,14 +805,14 @@ Restent :
 | #   | Niveau   | Objection (résumé)                                                                                                                  | Sort                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | --- | -------- | ----------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | B1  | BLOQUANT | couleurs obligatoires dans l'agrégat dès S1 : `toDomain` refuserait les lignes existantes                                           | **corrigé** (§3.1, §3.3) : l'agrégat **tolère** l'absence jusqu'au resserrement S3r ; il refuse seulement d'**effacer** une couleur posée ; la migration ne pose aucune couleur, l'écran les saisit                                                                                                                                                                                                                        |
-| B2  | BLOQUANT | arrêt de transfert avec `order_id` nullable, cœur du bloc livraison, sans inventaire                                                | **dépassé** par la décision de Hugo (option B, §10) : `order_id` devient nullable **pour le seul genre `transfer`**, sous `CHECK`, en trois temps (§4.3) ; inventaire par familles au §4.4                                                                                                                                                                                                                                 |
+| B2  | BLOQUANT | arrêt de transfert avec `order_id` nullable, cœur du bloc livraison, sans inventaire                                                | **dépassé** par la décision de Hugo (option B, §10) : `order_id` devient nullable **pour le seul genre `transfer`**, sous `CHECK`, en un déploiement assumé par le §0 du CLAUDE.md (§4.3, objection S du §11) ; inventaire par familles au §4.4                                                                                                                                                                            |
 | B3  | BLOQUANT | l'échéance du fournil pour le village est calculée en retrait                                                                       | **corrigé** (§4.6, lot T0) : heure requise figée à la clôture par site et par jour ; échéance = départ requis − marge de livraison                                                                                                                                                                                                                                                                                         |
 | S1  | SÉRIEUX  | suppression physique d'un site référencé                                                                                            | **corrigé** (§3.1, §3.3) : `archived_at` ; « supprimer » archive ; refus d'archiver le site par défaut ou celui qui expédie                                                                                                                                                                                                                                                                                                |
 | S2  | SÉRIEUX  | le comptoir lit les points par `PickupAddressesService` (l'API de l'écran de réglages)                                              | **corrigé** (§3.4) : l'API `admin/pickup-addresses` n'est pas déplacée par le changement de route front ; le comptoir et la saisie lisent les sites par leurs propres lectures, hors de `lfc_sites`                                                                                                                                                                                                                        |
 | S3  | SÉRIEUX  | deux droits pour une palette ; ressource neuve = écran mort jusqu'à l'accord                                                        | **corrigé** (§5.3, lot S0) : toutes les couleurs sous `lfc_sites` ; S0 déployé et accordé **avant** que S1 ne garde l'écran                                                                                                                                                                                                                                                                                                |
 | S4  | SÉRIEUX  | la page Sites écrit le départ (delivery) sans port ; invariant tenu d'un côté                                                       | **corrigé** (§3.1, §3.4) : la carte « Départ » appelle l'API de la livraison (`delivery_settings:write`), pas le commerce ; la livraison ne propose que les sites `dispatches` (lecteur `DepartureCandidatesReader` existant, étendu), et le commerce refuse de retirer `dispatches` au site désigné par un port `DepartureSiteReader` déclaré par `b2b`, implémenté par `delivery` (`b2b → delivery` : port uniquement ✓) |
 | S5  | SÉRIEUX  | rattrapage par libellé irréversible ; `pickupAddressId` déjà reçu à la passation                                                    | **corrigé** (§3.3, lot S2) : le snapshot garde l'id reçu (`order-drafting.service.ts`, `pickupAddressId`, l. 48/83/333) ; pas de rattrapage                                                                                                                                                                                                                                                                                |
-| S6  | SÉRIEUX  | `received` lu par personne                                                                                                          | **corrigé** par Q-T2 (§4.4) : fait durable `delivery.transfer_received`, abonné du retrait, `TransferNotReceivedError`                                                                                                                                                                                                                                                                                                     |
+| S6  | SÉRIEUX  | `received` lu par personne                                                                                                          | **corrigé, puis revu** (§4.5) : lecture synchrone `TransferStatusReader` au moment de remettre, plus de fait `delivery.transfer_received` ni d'abonné du retrait ; `TransferNotReceivedError`                                                                                                                                                                                                                              |
 | S7  | SÉRIEUX  | Q-T1 dite ouverte alors que le corps bâtit l'option A                                                                               | **corrigé** : Q-T1 tranchée (deux modes, intégré par défaut), le corps refondu (§3.3, §4, §5.2) ; la tournée et l'échéance lues par l'arrêt, justes dans les deux modes                                                                                                                                                                                                                                                    |
 | m   | mineurs  | `OrderCutoff` sans relation ; fold-ng 0.28.2 ; `Order.pickupAddress` typé `BillingAddressPayload` ; baril ; `lecteur-de-migrations` | **assumés / corrigés** : fonction pure côté back-office (baril) ; `lecteur-de-migrations` au §6 ; le typage du snapshot sera élargi à S2 (non relu) ; §1.5 garde la version lue ce jour-là                                                                                                                                                                                                                                 |
 
@@ -800,9 +828,22 @@ l'option B le même jour ; le §4 a été refondu.
 | S1     | SÉRIEUX  | compte de lecteurs faux, parti du nom de la table                                                   | **corrigé** (§4.4) : par familles, depuis la table et l'entité ; le compte exact laissé au compilateur (union discriminée) plutôt qu'à un grep                          |
 | S2     | SÉRIEUX  | `departed_at` fait mentir la garde et la preuve ; facturation « parti »                             | **corrigé** (§4.5) : aucune commande du village dans `DeliveryRoundDepartedFact` ; le transfert seul sait, lu par `TransferStatusReader` ; la preuve reste un retrait   |
 | S3     | SÉRIEUX  | refus à vie si aucune tournée n'a emporté le transfert                                              | **corrigé** (§4.2, §4.5) : réception manuelle depuis `planned`, motif obligatoire ; toute commande a un transfert dès son ajout ; le message nomme un geste qui existe  |
-| S4     | SÉRIEUX  | heure requise non datée                                                                             | **corrigé** (§4.6) : `site_day_requirement` figée à la clôture, jamais réécrite ; hors du champ de `lint:dated-decisions` (prix), tenue par l'agrégat et la clé         |
+| S4     | SÉRIEUX  | heure requise non datée                                                                             | **corrigé, puis revu au §11 (B1)** : plus de table figée ; l'heure est calculée par `dueAtOf` et figée par la clôture dans `production_order.due_at`                    |
 | S5     | SÉRIEUX  | mode intégré sans tournée qui convienne                                                             | **corrigé** (§4.4) : repli automatique sur une tournée dédiée, dit au journal ; à valider (Q-T9)                                                                        |
 | B-bis  | BLOQUANT | `pickupMarginMinutes` est un interrupteur des vagues, pas une durée de comptoir                     | **corrigé** (§4.6) : marges intactes ; `counter_setup_minutes` neuf, défaut 0, **s'ajoute** ; `requiredBy` par commande ; `ProducibleOrder.dueAt` suit la même règle    |
 | S-bis1 | SÉRIEUX  | « premier créneau ouvert » instable ; retraits pros ; sans créneau                                  | **corrigé** (§4.6) : lu et figé à la clôture ; plus tôt de l'ouverture pros et du premier créneau public ; repli sur les créneaux des commandes, puis `UNDATED` signalé |
 | S-bis2 | SÉRIEUX  | double réception sans mécanisme ; commande ramenée après réception                                  | **corrigé** (§4.2) : refus de l'agrégat + `UPDATE … WHERE received_at IS NULL` ; une commande reçue relève du retrait, le transfert ne ramène rien                      |
 | m      | mineurs  | tournée dédiée citée comme cas général ; backticks échappés au §6 ; numérotation des cartes du §3.4 | **corrigés** : §4 et §6 réécrits (intégré par défaut, backticks rétablis) ; la numérotation du §3.4 est laissée (1–8, lisible)                                          |
+
+## 11. Troisième contradiction par `vitruve` (2026-10-13, sur le §4 de l'option B) — et son sort
+
+| #   | Niveau   | Objection (résumé)                                                                                                             | Sort                                                                                                                                                                                                                                    |
+| --- | -------- | ------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| B1  | BLOQUANT | `site_day_requirement` « figée à la clôture » n'existe pas quand le fournil lit `DayOrdersReader`, pendant et avant la clôture | **corrigé** (§4.6) : pas de table ; `dueAtOf` calcule à la volée depuis les réglages du site, la clôture fige dans `production_order.due_at` ; la reprise n'absorbe que les nouvelles commandes, avec les réglages du moment            |
+| B2  | BLOQUANT | une réception manuelle d'un transfert dont l'arrêt est dans une tournée vivante ferait échouer le départ                       | **corrigé** (§4.2) : le départ **ignore** un transfert déjà reçu ; l'arrêt reste sans effet ; aucun départ n'est bloqué                                                                                                                 |
+| S1  | SÉRIEUX  | ajout tardif : `delivery → b2b` interdit, mécanisme non nommé                                                                  | **corrigé** (§4.5) : port `InternalTransferDesk` déclaré par la livraison dans `delivery/channels/commerce/`, appelé par le commerce à la passation ; transfert déjà parti ou reçu → **Q-T3**, avec une proposition                     |
+| S2  | SÉRIEUX  | `BinDesk` est indexé par `orderId`                                                                                             | **corrigé** (§4.4, §4.7) : le canal du colisage ne bouge pas ; `delivery` résout commande → transfert → arrêt                                                                                                                           |
+| S3  | SÉRIEUX  | « trois temps » pour `order_id` nullable n'est pas un garde-fou réel                                                           | **corrigé** (§4.3, §6) : `String?`, `CHECK` et `DROP NOT NULL` partent avec le code qui écrit le premier `NULL`, assumé par le §0 du CLAUDE.md (pré-release) ; `lecteur-de-migrations` avant `main`                                     |
+| S4  | SÉRIEUX  | réception : mécanisme et trace                                                                                                 | **corrigé** (§4.2) : un seul `UPDATE … WHERE received_at IS NULL` avec auteur et motif ; 0 ligne → `TransferAlreadyReceivedError` ; fait de journal `internal_transfer.received`                                                        |
+| S5  | SÉRIEUX  | T0 dépend de S1 et de Q-T11                                                                                                    | **corrigé** (§6)                                                                                                                                                                                                                        |
+| m   | mineurs  | §9 S6 contre la lecture synchrone ; nom du fichier du fait de départ ; lecteur des sites servis ; repli sans véhicule          | **corrigés** : §9 S6 aligné ; `delivery-round-departed.fact.ts` vérifié (existe) ; lecteur nommé `TransferSitesReader` (§4.5) ; repli sans véhicule : transfert sans arrêt, ligne au journal, sortie par réception manuelle (**Q-T13**) |
