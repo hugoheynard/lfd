@@ -434,3 +434,5 @@ tôt fait conclure à un échec — vu le 2026-08-13.
 ⚠️ La version Node de **production** est volontairement à part : c'est le moteur
 qui exécute l'API. Elle se change délibérément — tests verts, image
 reconstruite, démarrage du container vérifié — pas dans un commit d'outillage.
+
+> Accélération de la CI (2026-10-13) : [`plan-amelioration-ci.md`](plan-amelioration-ci.md).
