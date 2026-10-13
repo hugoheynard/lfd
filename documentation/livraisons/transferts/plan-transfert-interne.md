@@ -335,7 +335,9 @@ automatique en a besoin. `lecteur-de-migrations` sur T0, T1, T2.
 
 Tranchées le 2026-10-13 : **Q-T1** (option B : un arrêt « transfert »
 unique ; deux modes, **intégré** par défaut) ; **Q-T2** (le comptoir
-refuse). Proposées, à valider : **Q-T9** (repli dédié automatique) et la
+refuse). **Validées en bloc par Hugo le 2026-10-13** (« oui valide tout ») :
+Q-T9, Q-T13, Q-T4, Q-T6, Q-T7, Q-T12, chacune telle que proposée ci-dessous,
+et la sortie de S3 par réception manuelle. Proposées, à valider : **Q-T9** (repli dédié automatique) et la
 sortie de S3 (réception manuelle).
 
 - ~~**Q-T3**~~ — ✅ (Hugo, 2026-10-13) : si le transfert du jour est déjà
