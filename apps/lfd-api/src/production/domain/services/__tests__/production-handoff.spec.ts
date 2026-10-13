@@ -26,6 +26,7 @@ function sheet(orderId: string): ProductionOrderSnapshot {
     destination: "Le Labo",
     dueAt: null,
     clientele: null,
+    siteId: null,
     sheetDetails: null,
     lines: [],
   };

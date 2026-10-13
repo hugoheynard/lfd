@@ -16,6 +16,7 @@ import { HandoverQueueService } from './handover-queue.service';
 import {
   atTheCounter,
   clockOf,
+  type CounterPlace,
   entriesForTab,
   formatHour,
   pickupTabs,
@@ -83,7 +84,8 @@ const TICK_MS = 30_000;
  * ## Un seul appel, des onglets locaux
  *
  * Le serveur rend la journée entière, tous points confondus, et les onglets
- * sont dérivés des `pickupLabel` reçus. Aucun nom de point n'est écrit ici : un
+ * sont dérivés des sites reçus (`siteId`, repli sur `pickupLabel` pour une
+ * commande d'avant le lot S2). Aucun nom de point n'est écrit ici : un
  * comptoir ouvert demain apparaît sans qu'on y touche.
  */
 @Injectable()
@@ -91,8 +93,8 @@ export class HandoverQueueStore {
   private readonly api = inject(HandoverQueueService);
   private readonly pickupAddresses = inject(PickupAddressesService);
 
-  /** Les noms de TOUS les points de retrait, pour qu'un point sans commande ait son onglet. */
-  private readonly places = signal<readonly string[]>([]);
+  /** TOUS les points de retrait (id et nom), pour qu'un point sans commande ait son onglet. */
+  private readonly places = signal<readonly CounterPlace[]>([]);
 
   readonly state = signal<HandoverQueueLoadState>('loading');
 
@@ -171,7 +173,7 @@ export class HandoverQueueStore {
    * appartient à la file, et `app-queue-table` le pose.
    */
   readonly rows = computed<readonly HandoverQueueEntryView[]>(() =>
-    entriesForTab(this.entries(), this.activeTab()),
+    entriesForTab(this.entries(), this.activeTab(), this.places()),
   );
 
   readonly total = computed(() => this.entries().length);
@@ -209,7 +211,7 @@ export class HandoverQueueStore {
     // Un échec laisse les onglets dérivés de la file, comme avant.
     this.pickupAddresses
       .list()
-      .then((list) => this.places.set(list.map((place) => place.label)))
+      .then((list) => this.places.set(list.map((place) => ({ id: place.id, label: place.label }))))
       .catch(() => undefined);
     effect(() => {
       void this.load(this.day());

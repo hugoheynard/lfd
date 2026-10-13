@@ -74,17 +74,62 @@ function entry(over: Partial<HandoverQueueEntryView> = {}): HandoverQueueEntryVi
   };
 }
 
+const PLACES = [
+  { id: 'site_labo', label: 'Laboratoire' },
+  { id: 'site_village', label: 'Val Village' },
+] as const;
+
 describe('pickupTabs', () => {
+  /** Lot S2 : deux sites peuvent porter le même nom, et un site renommé ne coupe pas sa file. */
+  it('regroupe par id de site, sous le nom du site aujourd’hui', () => {
+    const entries = [
+      entry({ orderId: 'a', siteId: 'site_village', pickupLabel: 'Village (ancien nom)' }),
+      entry({ orderId: 'b', siteId: 'site_village', pickupLabel: 'Val Village' }),
+      entry({ orderId: 'c', siteId: 'site_labo', pickupLabel: 'Val Village' }),
+    ];
+    const tabs = pickupTabs(entries, PLACES);
+
+    expect(tabs.map((tab) => [tab.key, tab.label, tab.count])).toEqual([
+      ['site_labo', 'Laboratoire', 1],
+      ['site_village', 'Val Village', 2],
+    ]);
+    expect(entriesForTab(entries, 'site_village', PLACES).map((row) => row.orderId)).toEqual([
+      'a',
+      'b',
+    ]);
+  });
+
+  it('une commande d’avant S2 (sans site) rejoint le site connu qui porte son libellé', () => {
+    const entries = [
+      entry({ orderId: 'old', pickupLabel: 'Val Village' }),
+      entry({ orderId: 'new', siteId: 'site_village', pickupLabel: 'Val Village' }),
+    ];
+
+    expect(pickupTabs(entries, PLACES).find((tab) => tab.key === 'site_village')?.count).toBe(2);
+    expect(entriesForTab(entries, 'site_village', PLACES)).toHaveLength(2);
+  });
+
+  it('un site que le comptoir ne connaît plus garde un onglet, au nom figé sur la commande', () => {
+    const entries = [
+      entry({ orderId: 'a', siteId: 'site_archive', pickupLabel: 'Ancien kiosque' }),
+    ];
+
+    expect(pickupTabs(entries, PLACES).map((tab) => [tab.key, tab.label])).toContainEqual([
+      'site_archive',
+      'Ancien kiosque',
+    ]);
+  });
+
   /** Régression : Val Village sans commande n'avait pas d'onglet, et le réassort en dépend (2026-10-12). */
   it('donne un onglet à chaque point connu, même sans commande, et sa file est vide', () => {
     const entries = [entry({ orderId: 'a', pickupLabel: 'Laboratoire' })];
-    const tabs = pickupTabs(entries, ['Laboratoire', 'Val Village']);
+    const tabs = pickupTabs(entries, PLACES);
 
-    expect(tabs.map((tab) => [tab.key, tab.count])).toEqual([
-      ['Laboratoire', 1],
-      ['Val Village', 0],
+    expect(tabs.map((tab) => [tab.key, tab.label, tab.count])).toEqual([
+      ['site_labo', 'Laboratoire', 1],
+      ['site_village', 'Val Village', 0],
     ]);
-    expect(entriesForTab(entries, 'Val Village')).toEqual([]);
+    expect(entriesForTab(entries, 'site_village', PLACES)).toEqual([]);
   });
 
   it('dérive un onglet par point présent, compté, sans nom écrit en dur', () => {

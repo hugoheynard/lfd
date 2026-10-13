@@ -865,7 +865,7 @@ describe("PlaceOrderHandler", () => {
     expect(sink.placed).toBeNull();
   });
 
-  it("en RETRAIT, fige l'adresse du point et n'attache ni zone ni adresse de livraison", async () => {
+  it("en RETRAIT, fige l'adresse du point et son site, et n'attache ni zone ni adresse de livraison", async () => {
     const sink = { placed: null as OrderToPlace | null };
     const handler = new PlaceOrderHandler(
       guard("orders", "active"),
@@ -889,7 +889,8 @@ describe("PlaceOrderHandler", () => {
     expect(sink.placed?.fulfillmentMethod).toBe("pickup");
     expect(sink.placed?.deliveryZoneId).toBeNull();
     expect(sink.placed?.deliveryAddress).toBeNull();
-    expect(sink.placed?.pickupAddress).toEqual(LABO_SNAPSHOT);
+    // Le site qui remet est figé avec le point (lot S2) : l'id du point résolu.
+    expect(sink.placed?.pickupAddress).toEqual({ ...LABO_SNAPSHOT, siteId: LABO_POINT.id });
   });
 
   it("refuse le RETRAIT quand aucun point de retrait n'est configuré (409)", async () => {

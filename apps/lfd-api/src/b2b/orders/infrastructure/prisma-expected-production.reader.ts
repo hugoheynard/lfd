@@ -14,7 +14,7 @@ import { planWhere } from "./plan-filter.js";
  * ## Pourquoi cet adaptateur vit ici
  *
  * Le port est déclaré par la production, implémenté par le commerce,
- * relié par `appBootstrap` — même motif que `PrismaDayOrdersReader`, et même
+ * relié par `appBootstrap` — même motif que `DueThresholds`, et même
  * raison : le fournil dépend d'une abstraction qu'il possède, et le commerce se
  * plie à ce qu'on lui demande sans rien exposer d'autre.
  *

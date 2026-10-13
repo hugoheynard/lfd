@@ -20,7 +20,7 @@ import { HANDOVER_SELECT, toHandoverSubject } from "./handover-order.query.js";
  * Un contexte qui publie un verbe par consommateur finit par connaître ses
  * consommateurs, et c'est la dépendance qui revient par l'autre bout. Le port a
  * donc rétréci de dix verbes à six, et cet adaptateur fait ce que son voisin
- * `PrismaDayOrdersReader` faisait déjà : il lit Prisma, puisque c'est son
+ * `PrismaDayOrdersSource` faisait déjà : il lit Prisma, puisque c'est son
  * travail d'adaptateur.
  *
  * Le `select` reste partagé — `handover-order.query.ts`, interne à

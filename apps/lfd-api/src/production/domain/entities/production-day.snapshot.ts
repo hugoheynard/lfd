@@ -61,6 +61,8 @@ export interface ProductionOrderSnapshot {
   readonly dueAt: string | null;
   /** `pro` / `public`, figée à l'arrêt ; `null` = inconnue (journée d'avant la colonne). */
   readonly clientele: Clientele | null;
+  /** Le site qui remet, opaque, figé à l'arrêt (lot S2) ; `null` = livraison ou inconnu. */
+  readonly siteId: string | null;
   readonly lines: readonly ProductionLineSnapshot[];
   /**
    * Le reste du bon, figé à l'arrêt (E1b, 2026-10-06). `null` = commande

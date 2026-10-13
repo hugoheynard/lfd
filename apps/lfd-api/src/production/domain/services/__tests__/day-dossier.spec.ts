@@ -27,6 +27,7 @@ function order(
     destination: "Boutique",
     dueAt: null,
     clientele: null,
+    siteId: null,
     sheetDetails: null,
     lines: lines.map(([sku, productName, quantity]) => ({ sku, productName, quantity })),
   };

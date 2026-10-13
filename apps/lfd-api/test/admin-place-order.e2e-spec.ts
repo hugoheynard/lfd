@@ -277,6 +277,21 @@ describe("POST /admin/orders — la trace", () => {
     expect(row.placedByStaffId).not.toBeNull();
   });
 
+  // Lot S2 des sites : le snapshot du point garde l'id du site qui remet.
+  it("fige le site qui remet dans le snapshot du point de retrait", async () => {
+    const { companyId, buyerId } = await seedCompany(true);
+
+    const placed = jsonBody<AdminPlacedOrderResponse>(
+      await staff()
+        .post("/admin/orders")
+        .send(payload({ companyId, buyerUserId: buyerId, settlement: "account" }))
+        .expect(201),
+    );
+
+    const row = await ctx.prisma.order.findUniqueOrThrow({ where: { id: placed.id } });
+    expect(row.pickupAddress).toMatchObject({ label: "Labo", siteId: pickupId });
+  });
+
   it("remonte dans « Mes commandes » DU CLIENT, marquée comme saisie par l'équipe", async () => {
     // C'est tout l'argument du modèle : la commande appartient au client.
     const { companyId, buyerId } = await seedCompany(true);

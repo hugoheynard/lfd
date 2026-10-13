@@ -1,7 +1,7 @@
 # Les sites — nos lieux, leurs rôles, leurs couleurs
 
-> **État : ✅ bâti (lots S0 et S1 et leurs suites), relu dans le code le
-> 2026-10-13.** Commits `c37ee5067` (serveur S0/S1), `768a2d8f7` (front S1),
+> **État : ✅ bâti (lots S0, S1 et leurs suites, et S2 le 2026-10-13 — non
+> commité à l'écriture), relu dans le code le 2026-10-13.** Commits `c37ee5067` (serveur S0/S1), `768a2d8f7` (front S1),
 > `a3bc7894d` (rôles Retrait / Livraison, GPS, couleurs révocables,
 > paramétrage du retrait, départ des tournées), `0def0a6c9` puis `1b286aaf6`
 > (heures limites posées sur la page du site, puis retirées).
@@ -236,10 +236,10 @@ ou en a l'air, et ce qu'il est par rapport au site :
 | 3   | `OrderCutoff.pickupAddressId`                   | `public/orders.prisma`                   | heure limite par point                                                                              | `b2b`        | référence au site — en démontage                                                                                   |
 | 4   | `Company.preferredPickupAddressId`              | `public/account.prisma`                  | le retrait préféré d'un pro                                                                         | `b2b`        | référence au site (champ Prisma pas encore renommé `siteId`)                                                       |
 | 5   | `Subscription.pickupAddressId`                  | `public/subscriptions.prisma`            | le point de retrait d'un abonnement                                                                 | `b2b`        | référence au site (idem)                                                                                           |
-| 6   | `Order.pickupAddress` (JSON)                    | `public/orders.prisma`                   | **snapshot** postal ; **aucun id**                                                                  | `b2b`        | doit gagner `siteId` (lot S2, §7) : sans id, une couleur s'accroche à un libellé                                   |
+| 6   | `Order.pickupAddress` (JSON)                    | `public/orders.prisma`                   | **snapshot** postal + `siteId` (depuis S2 ; absent avant)                                           | `b2b`        | référence au site, figée à la passation (S2, §7) ; les commandes d'avant n'en ont pas                              |
 | 7   | `DeliveryDeparture.pickupAddressId`             | `delivery.prisma`                        | d'où partent les tournées ; absent = défaut ; id **opaque**                                         | `delivery`   | référence opaque au site, lue par `delivery/channels/commerce/`                                                    |
-| 8   | `production_order.pickup_label` (+ `address_*`) | `production.prisma`                      | snapshot imprimé sur le bon                                                                         | `production` | doit gagner `site_id` opaque (lot S2)                                                                              |
-| 9   | Onglets du comptoir (`pickupTabs`)              | `handover-shop/handover-queue.ts`        | « tous les points connus », **par libellé**                                                         | front        | à lire par id (lot S2, S3r)                                                                                        |
+| 8   | `production_order.pickup_label` (+ `address_*`) | `production.prisma`                      | snapshot imprimé sur le bon ; `site_id` opaque depuis S2                                            | `production` | référence opaque au site, figée à l'arrêt (S2)                                                                     |
+| 9   | Onglets du comptoir (`pickupTabs`)              | `handover-shop/handover-queue.ts`        | « tous les points connus », **par id** (S2), repli libellé                                          | front        | repli sur le libellé à retirer (S3r)                                                                               |
 | 10  | `PointOfSale` (`kind: shop / platform`)         | `pim/sales-contexts.prisma`              | « d'où l'on vend » pour le catalogue ; `platform` n'a aucun lieu                                    | `pim`        | **à part** : canal de vente, pas un lieu ; le fusionner ferait lire le PIM hors de son canal. Lien éventuel : Q-S3 |
 | 11  | `CategoryChannel.pointOfSaleId`                 | `pim/categories.prisma`                  | ce que l'on vend où                                                                                 | `pim`        | à part (même raison)                                                                                               |
 | 12  | `LegalEntity` (adresse)                         | `public/accounting.prisma`               | siège sur les mentions légales                                                                      | `b2b`        | à part : adresse **juridique**, figée sur les documents émis                                                       |
@@ -265,19 +265,27 @@ même endroit. Les autres blocs le lisent par les canaux qu'ils déclarent :
 | ------------ | --------------------------------------------------- | ---------------------------------------------------- | ---------------------------------------- |
 | `delivery`   | `delivery/channels/commerce/`                       | adresse + GPS du site de départ, candidats au départ | ✅ ; sites servis par transfert : plan T |
 | `handover`   | `handover/channels/commerce/`                       | sites qui remettent (onglets), couleurs              | à faire (lecteur exact non vérifié)      |
-| `production` | `production/channels/commerce/` (`DayOrdersReader`) | `siteId` dans le snapshot `ProducibleOrder`          | à faire (S2)                             |
+| `production` | `production/channels/commerce/` (`DayOrdersReader`) | `siteId` dans le snapshot `ProducibleOrder`          | ✅ (S2)                                  |
 | `packing`    | faits du fournil (`production/channels/packing/`)   | `siteId` recopié                                     | à faire ; `packing → b2b` reste interdit |
 
 ## 7. Reste à faire
 
-- **S2** — `siteId` dans le snapshot `Order.pickupAddress` à la passation,
-  depuis le `pickupAddressId` que la passation reçoit déjà
-  (`b2b/orders/application/services/order-drafting.service.ts` ; `null` =
-  défaut, résolu à l'id du défaut au moment de figer) ;
-  `production_order.site_id text null` ; onglets du comptoir par id. **Pas de
-  rattrapage** par libellé (irréversible, objection S5 ; Q-S2 tranchée) :
-  l'historique est « autre ». Le typage du snapshot
-  (`BillingAddressPayload`) sera élargi à ce lot (non relu).
+- ~~**S2**~~ — ✅ bâti le 2026-10-13 :
+  - le snapshot `Order.pickupAddress` porte `siteId` — l'id du point
+    **résolu** à la passation (`toSnapshot`, `order-drafting.service.ts` ; un
+    client qui n'a rien choisi fige l'id du défaut). Typé `PickupSnapshot`
+    (`packages/contracts/src/pickup.ts`), `siteId` **facultatif** : pas de
+    rattrapage (Q-S2), les commandes d'avant le lot n'en ont pas, et tout
+    lecteur passe par `siteIdOf` (`b2b/orders/infrastructure/pickup-site.parse.ts`),
+    qui rend `null` ;
+  - `production_order.site_id text null`, sans clé étrangère (migration
+    `20261013600000_la_commande_porte_son_site`), recopié de
+    `ProducibleOrder.siteId` à l'arrêt ; le fournil ne lit pas les sites ;
+  - la file du comptoir (`HandoverQueueEntryView.siteId`, facultatif dans le
+    type) et ses onglets regroupent **par id** ; une commande sans `siteId`
+    rejoint le site connu de même libellé, sinon un onglet à son libellé figé
+    (repli dit dans `handover-queue.ts`, à retirer en S3r) ;
+  - le colisage (`packing`) ne recopie pas encore le `siteId` : hors du lot.
 - **S3r** — retirer les lectures par libellé (`pickupTabs(places: string[])`
   → par id). Le `CHECK` de présence des couleurs est tombé.
 - Renommer les champs Prisma des références (4, 5 ; `siteId`,

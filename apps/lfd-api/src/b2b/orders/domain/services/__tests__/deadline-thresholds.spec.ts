@@ -1,6 +1,7 @@
 import {
   type DeadlineOrder,
   deadlineThresholds,
+  destinationDueAt,
   dueClockOf,
   type ProductionMargins,
 } from "../deadline-thresholds.js";
@@ -219,20 +220,94 @@ describe("deadlineThresholds — le site qui remet (plan des sites, T0)", () => 
   });
 
   it("un site servi par transfert : départ requis moins la marge de livraison", () => {
-    expect(firstBefore([pickupAt({ supply: "transfer", requiredBy: "06:20" })])?.before).toBe(
-      "05:30",
-    );
+    expect(
+      firstBefore([pickupAt({ supply: "transfer", requiredBy: "06:20", arrivalBy: "07:20" })])
+        ?.before,
+    ).toBe("05:30");
   });
 
   it("un transfert sans départ calculable passe en « sans heure »", () => {
-    expect(firstBefore([pickupAt({ supply: "transfer", requiredBy: null })])?.kind).toBe("undated");
+    expect(
+      firstBefore([pickupAt({ supply: "transfer", requiredBy: null, arrivalBy: null })])?.kind,
+    ).toBe("undated");
   });
 
   it("l'interrupteur des vagues tient : une marge non réglée rend la journée, transfert compris", () => {
-    const threshold = firstBefore([pickupAt({ supply: "transfer", requiredBy: "06:20" })], {
-      deliveryMinutes: 50,
-      pickupMinutes: null,
-    });
+    const threshold = firstBefore(
+      [pickupAt({ supply: "transfer", requiredBy: "06:20", arrivalBy: "07:20" })],
+      {
+        deliveryMinutes: 50,
+        pickupMinutes: null,
+      },
+    );
     expect(threshold).toMatchObject({ kind: "day", before: null });
+  });
+});
+
+describe("destinationDueAt — l'heure où la marchandise doit être à destination (T0)", () => {
+  const WINDOW = { start: "08:00", end: "09:00" } as const;
+  const lines = [{ sku: "BAG", productName: "Baguette", quantity: 1 }];
+
+  it("une livraison garde la fenêtre du client, quel que soit un site", () => {
+    expect(
+      destinationDueAt({
+        fulfillmentMethod: "delivery",
+        window: WINDOW,
+        lines,
+        site: { supply: "on_site", counterSetupMinutes: 30 },
+      }),
+    ).toBe("08:00");
+  });
+
+  it("un retrait sans site résolu (commande d'avant S2) garde la fenêtre", () => {
+    expect(destinationDueAt({ fulfillmentMethod: "pickup", window: WINDOW, lines })).toBe("08:00");
+  });
+
+  it("un retrait sur place : la fenêtre moins la mise en place", () => {
+    expect(
+      destinationDueAt({
+        fulfillmentMethod: "pickup",
+        window: WINDOW,
+        lines,
+        site: { supply: "on_site", counterSetupMinutes: 15 },
+      }),
+    ).toBe("07:45");
+  });
+
+  it("une mise en place qui passerait minuit est ramenée à 00:00", () => {
+    expect(
+      destinationDueAt({
+        fulfillmentMethod: "pickup",
+        window: { start: "00:10", end: "01:00" },
+        lines,
+        site: { supply: "on_site", counterSetupMinutes: 30 },
+      }),
+    ).toBe("00:00");
+  });
+
+  it("un retrait par transfert : l'arrivée requise au site, pas la fenêtre du client", () => {
+    expect(
+      destinationDueAt({
+        fulfillmentMethod: "pickup",
+        window: WINDOW,
+        lines,
+        site: { supply: "transfer", requiredBy: "06:20", arrivalBy: "07:20" },
+      }),
+    ).toBe("07:20");
+  });
+
+  it("un transfert incalculable n'a pas d'heure, même avec une fenêtre", () => {
+    expect(
+      destinationDueAt({
+        fulfillmentMethod: "pickup",
+        window: WINDOW,
+        lines,
+        site: { supply: "transfer", requiredBy: null, arrivalBy: null },
+      }),
+    ).toBeNull();
+  });
+
+  it("sans fenêtre ni transfert : aucune heure", () => {
+    expect(destinationDueAt({ fulfillmentMethod: "pickup", window: null, lines })).toBeNull();
   });
 });

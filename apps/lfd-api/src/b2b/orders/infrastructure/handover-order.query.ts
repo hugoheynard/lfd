@@ -3,6 +3,7 @@ import { billingAddressPayloadSchema, isSettled, type BillingAddressPayload } fr
 
 import type { HandoverQueueWindow } from "../domain/ports/order.reader.js";
 import { fulfillmentOf, windowOf } from "./order-fulfillment.parse.js";
+import { siteIdOf } from "./pickup-site.parse.js";
 
 /**
  * **La lecture d'une commande POUR LA REMISE**, partagée par les deux
@@ -32,9 +33,9 @@ import { fulfillmentOf, windowOf } from "./order-fulfillment.parse.js";
  * réclame un `select` partagé, pas une surface publique. Ce module est interne
  * à `infrastructure/` — aucun port ne le nomme, aucun contexte ne l'importe.
  *
- * Le précédent existait déjà : `PrismaDayOrdersReader` implémente le port du
- * fournil en interrogeant Prisma directement, sans rien ajouter à
- * `OrderReader`.
+ * Le précédent existait déjà : la lecture des commandes du fournil
+ * (`PrismaDayOrdersSource`, qui implémentait seule le port jusqu'au lot T0 du
+ * 2026-10-13) interroge Prisma directement, sans rien ajouter à `OrderReader`.
  */
 
 /** Les deux jointures qui suffisent à nommer un client — rien de plus. */
@@ -207,6 +208,7 @@ export function toQueueEntry(row: QueueRow): {
   readonly tradeName: string | null;
   readonly clientele: QueueRow["clientele"];
   readonly pickupLabel: string | null;
+  readonly siteId: string | null;
   readonly fulfillmentMethod: QueueRow["fulfillmentMethod"];
   readonly window: HandoverQueueWindow | null;
   readonly totalUnits: number;
@@ -225,6 +227,7 @@ export function toQueueEntry(row: QueueRow): {
     // nulle est d'avant la distinction, et le dire vaut mieux que deviner (D5).
     clientele: row.clientele,
     pickupLabel: pickupLabelOf(row.pickupAddress),
+    siteId: siteIdOf(row.pickupAddress),
     fulfillmentMethod: row.fulfillmentMethod,
     window: windowOf(fulfillmentOf(row.fulfillment)),
     totalUnits: row.lines.reduce((sum, line) => sum + line.quantity, 0),

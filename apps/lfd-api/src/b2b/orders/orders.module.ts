@@ -117,7 +117,12 @@ import { MailDeliveryEnRoute } from "./application/handlers/mail-delivery-en-rou
 import { OnProductionDayClosed } from "./application/handlers/on-production-day-closed.handler.js";
 import { OnOrderHandedOver } from "./application/handlers/on-order-handed-over.handler.js";
 import { OnPackingOrderPacked } from "./application/handlers/on-packing-order-packed.handler.js";
-import { PrismaDayOrdersReader } from "./infrastructure/prisma-day-orders.reader.js";
+import { PrismaDayOrdersSource } from "./infrastructure/prisma-day-orders.source.js";
+import { PrismaSiteDaySettingsReader } from "./infrastructure/prisma-site-day-settings.reader.js";
+import { DayOrdersSource } from "./domain/ports/day-orders.source.js";
+import { SiteDaySettingsReader } from "./domain/ports/site-day-settings.reader.js";
+import { SiteDeadlines } from "./application/services/site-deadlines.service.js";
+import { SitedDayOrders } from "./application/services/sited-day-orders.service.js";
 import { DueThresholds } from "./application/services/due-thresholds.service.js";
 import { DeadlineOrdersReader } from "./domain/ports/deadline-orders.reader.js";
 import { PrismaDeadlineOrdersReader } from "./infrastructure/prisma-deadline-orders.reader.js";
@@ -284,7 +289,12 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     GetOrderHandoverProofHandler,
     GetOrderHandoverProofImageHandler,
     { provide: DeliveryDefaultsReader, useClass: PrismaDeliveryDefaultsReader },
-    PrismaDayOrdersReader,
+    // Les commandes du fournil (lot T0, 2026-10-13) : la base rend, l'application
+    // pose l'échéance depuis le site — `SitedDayOrders` implémente le port.
+    { provide: DayOrdersSource, useClass: PrismaDayOrdersSource },
+    { provide: SiteDaySettingsReader, useClass: PrismaSiteDaySettingsReader },
+    SiteDeadlines,
+    SitedDayOrders,
     PrismaHandoverSubjectReader,
     PrismaPendingOrdersReader,
     // Le compte à rebours du fournil (vagues, V0) : implémente un port de la
@@ -430,7 +440,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // Les trois adaptateurs que la production consomme par ses ports. Ils
     // sortent d'ici pour être RELIÉS dans la racine de composition, jamais
     // pour être importés par le fournil : le token qu'il connaît est le sien.
-    PrismaDayOrdersReader,
+    SitedDayOrders,
     PrismaHandoverSubjectReader,
     PrismaPendingOrdersReader,
     PendingSettlementSweep,

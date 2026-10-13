@@ -43,6 +43,7 @@ function order(orderId: string, quantity: number): ProducibleOrder {
     destination: "Le Labo",
     dueAt: null,
     clientele: null,
+    siteId: null,
     sheetDetails: null,
     lines: [{ sku: "PAI-SEI", productName: "Pain de seigle", quantity }],
   };

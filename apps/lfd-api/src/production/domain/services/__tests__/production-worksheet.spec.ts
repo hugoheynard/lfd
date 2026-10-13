@@ -52,6 +52,7 @@ function arrival(orderId: string, lines: readonly [string, string, number][]): P
     destination: "Le Labo",
     dueAt: null,
     clientele: null,
+    siteId: null,
     sheetDetails: null,
     lines: lines.map(([sku, productName, quantity]) => ({ sku, productName, quantity })),
   };

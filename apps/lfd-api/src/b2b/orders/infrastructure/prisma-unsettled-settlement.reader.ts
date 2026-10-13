@@ -27,7 +27,7 @@ export class PrismaUnsettledSettlementReader extends UnsettledSettlementReader {
         paymentStatus: { in: [PaymentStatus.pending, PaymentStatus.failed] },
         OR: [
           // La colonne est un `date` Postgres, lu à minuit UTC : même clé que
-          // `PrismaDayOrdersReader`, c'est une journée de service, pas un instant.
+          // `PrismaDayOrdersSource`, c'est une journée de service, pas un instant.
           { requestedDeliveryDate: new Date(`${window.serviceDay}T00:00:00.000Z`) },
           // Sans jour de retrait : le jour de passation à Paris (Q5, S6).
           {

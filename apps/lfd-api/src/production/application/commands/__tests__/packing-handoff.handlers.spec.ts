@@ -43,6 +43,7 @@ const ORDER: ProducibleOrder = {
   destination: "Le Labo",
   dueAt: null,
   clientele: null,
+  siteId: null,
   sheetDetails: null,
   lines: [{ sku: SKU, productName: "Croissant", quantity: 30 }],
 };

@@ -571,9 +571,10 @@ export {
   pickupAddressPayloadSchema,
   pickupOpeningSchema,
   pickupSlots,
+  pickupSnapshotSchema,
   pickupWindows,
 } from "./pickup.js";
-export type { PickupAccess, PickupOpening, PickupSlot } from "./pickup.js";
+export type { PickupAccess, PickupOpening, PickupSlot, PickupSnapshot } from "./pickup.js";
 export type {
   DevSeedDeliveryReport,
   DevSeedDriverReport,

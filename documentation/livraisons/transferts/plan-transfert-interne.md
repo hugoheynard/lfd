@@ -1,7 +1,8 @@
 # Plan — le transfert interne vers un site éloigné
 
-> **État : 📐 doc-first, 2026-10-13.** Rien du transfert n'est bâti. Le lot
-> **T0** est en cours le 2026-10-13. Les **sites** dont il dépend sont bâtis
+> **État : 📐 doc-first, 2026-10-13.** Du transfert, seul le lot **T0**
+> (l'échéance selon le site) est bâti, le 2026-10-13 — voir la fin du
+> document. Les **sites** dont il dépend sont bâtis
 > et décrits dans [`../../sites/sites.md`](../../sites/sites.md) (rôle
 > « Approvisionné par transfert », `transfer_mode`, `counter_setup_minutes`,
 > point GPS) ; le **tri par heure de départ et les couleurs** de la
@@ -419,18 +420,42 @@ l'option B le même jour ; le transfert a été refondu.
 
 ## État du lot T0 (2026-10-13)
 
-🟡 **Partiel** — bâti : la fonction pure `transferDeparture`
-(`b2b/orders/domain/services/transfer-departure.ts`), la prise en compte du
-site dans `deadlineThresholds` (marges et interrupteur des vagues intacts),
-et le port `RoadTravelTimeReader` déclaré et implémenté par la livraison
-(`delivery/channels/commerce/road-travel-time.reader.ts`, OSRM, `null` si le
-calcul est indisponible — aucune durée inventée). **Manque**, bloqué par S2
-(la commande ne porte pas son site) : le branchement dans `dueAtOf`,
-`DeadlineOrdersReader` et `ProducibleOrder.dueAt`, le service de calcul par
-site, le signalement au journal d'une échéance sans heure, les e2e.
+✅ **Bâti** (non commité à l'écriture ; le premier tiers dans `efbaf90a2`),
+après S2 ([`../../sites/sites.md`](../../sites/sites.md) §7) :
 
-`ProducibleOrder.dueAt` (le colisage) vaudra l'heure où la marchandise doit
-être **à destination** : livraison = la fenêtre chez le client (inchangé) ;
-retrait sur place = créneau − mise en place ; retrait par transfert =
-arrivée requise au site. L'échéance du fournil, elle, part du départ requis
-(décidé le 2026-10-13, Hugo peut revenir dessus).
+- la fonction pure `transferDeparture`
+  (`b2b/orders/domain/services/transfer-departure.ts`), et la prise en compte
+  du site dans `deadlineThresholds` (marges et interrupteur des vagues
+  intacts) ; `DeadlineSite` de genre `transfer` porte le départ **et**
+  l'arrivée requis ;
+- le port `RoadTravelTimeReader` déclaré et implémenté par la livraison
+  (`delivery/channels/commerce/road-travel-time.reader.ts`, OSRM, `null` si
+  le calcul est indisponible — aucune durée inventée) ;
+- le service applicatif `SiteDeadlines`
+  (`b2b/orders/application/services/site-deadlines.service.ts`) : pour un
+  jour, il lit les sites des retraits (`SiteDaySettingsReader`, port du
+  commerce : rôle, mise en place, ouverture pros, créneaux publics et
+  fermetures du jour, GPS — archivés compris), le départ des tournées
+  (`DepartureSiteReader`) et le trajet (`RoadTravelTimeReader`), et rend le
+  site résolu de chaque retrait ;
+- `DueThresholds` (le compte à rebours) et `SitedDayOrders` — qui implémente
+  désormais `DayOrdersReader` par-dessus `PrismaDayOrdersSource` — le lisent.
+  `ProducibleOrder.dueAt` vaut l'heure **à destination**
+  (`destinationDueAt`) : livraison = la fenêtre (inchangé) ; retrait sur
+  place = début de fenêtre − mise en place ; retrait par transfert = arrivée
+  requise au site. L'échéance du fournil part du départ requis − marge de
+  livraison. Une commande sans `siteId` (d'avant S2) garde l'ancien calcul ;
+- **un départ incalculable est dit au LOG, pas au journal** (logger
+  « Échéance par site », avec sa raison : pas de GPS au départ ou au site,
+  calcul routier indisponible, aucune heure de référence) : le calcul est
+  appelé par des lectures — fiche d'atelier, compte à rebours, arrêt — et une
+  lecture n'écrit rien (CLAUDE.md §4). Le log se répète à chaque lecture ;
+- e2e `test/site-deadlines.e2e-spec.ts`, le calcul routier doublé au port.
+
+**Ce qui reste hors de T0** : un seul départ requis par site et par jour —
+plusieurs transferts dans la journée (§1, Q-T3) relèvent de la composition
+(T1) ; « approvisionné depuis » n'est pas bâti, le trajet part du départ des
+tournées.
+
+Décidé le 2026-10-13 (Hugo peut revenir dessus) : `ProducibleOrder.dueAt` est
+l'heure à destination, l'échéance du fournil part du départ requis.

@@ -26,6 +26,7 @@ function order(overrides: Partial<ProductionOrderSnapshot> = {}): ProductionOrde
     destination: "3 rue du Four, Val d'Isère",
     dueAt: "07:00",
     clientele: null,
+    siteId: null,
     sheetDetails: DETAILS,
     lines: [],
     ...overrides,

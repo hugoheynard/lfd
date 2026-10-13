@@ -57,6 +57,7 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
             destination: true,
             dueAt: true,
             clientele: true,
+            siteId: true,
             ...SHEET_COLUMNS,
             lines: { select: { sku: true, productName: true, quantity: true } },
           },
@@ -109,6 +110,7 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
         destination: order.destination,
         dueAt: order.dueAt,
         clientele: clienteleOf(order.clientele),
+        siteId: order.siteId,
         lines: order.lines.map((line) => ({
           sku: line.sku,
           productName: line.productName,
@@ -202,6 +204,7 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
             destination: order.destination,
             dueAt: order.dueAt,
             clientele: order.clientele,
+            siteId: order.siteId,
             ...sheetRowOf(order.sheetDetails),
             ...carried.orders.get(order.orderId),
             lines: {

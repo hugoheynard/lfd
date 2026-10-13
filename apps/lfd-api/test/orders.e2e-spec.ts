@@ -430,7 +430,7 @@ describe("checkout → Order", () => {
 });
 
 describe("retrait", () => {
-  it("passe une commande en RETRAIT : adresse labo figée, sans zone ni adresse de livraison", async () => {
+  it("passe une commande en RETRAIT : adresse labo et site figés, sans zone ni adresse de livraison", async () => {
     const companyId = await seedCompany("active");
     await seedPickup();
 
@@ -454,7 +454,8 @@ describe("retrait", () => {
     expect(stored.fulfillmentMethod).toBe("pickup");
     expect(stored.deliveryZoneId).toBeNull();
     expect(stored.deliveryAddressSnapshot).toBeNull();
-    expect(stored.pickupAddress).toEqual(LABO);
+    // Le site qui remet est figé avec le point (lot S2).
+    expect(stored.pickupAddress).toEqual({ ...LABO, siteId: pickupId });
   });
 
   it("refuse le retrait si aucun point de retrait n'est configuré (409)", async () => {

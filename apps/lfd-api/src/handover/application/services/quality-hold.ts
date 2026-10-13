@@ -6,7 +6,7 @@ import { QualityHoldsReader } from "../../../production/channels/handover/index.
  * l'écran avant le geste, posée au port par lot avec une liste d'un élément.
  *
  * Le jour demandé est celui qui range la commande dans un plan de production
- * (`PrismaDayOrdersReader` lit `requested_delivery_date`, vérifié le
+ * (`PrismaDayOrdersSource` lit `requested_delivery_date`, vérifié le
  * 2026-09-28). Sans lui, la commande n'est dans aucun plan, et aucun contrôle ne
  * peut la viser : la réponse est « non » sans rien demander.
  */

@@ -6,6 +6,7 @@ import {
   type LateFeeAdjustment,
   type OrderLineInput as OrderLineRequest,
   type PickupAddressView,
+  type PickupSnapshot,
 } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
@@ -83,7 +84,7 @@ interface ResolvedFulfillment {
   readonly pickupAddressId: string | null;
   readonly deliveryZoneId: string | null;
   readonly deliveryAddress: BillingAddressPayload | null;
-  readonly pickupAddress: BillingAddressPayload | null;
+  readonly pickupAddress: PickupSnapshot | null;
   readonly discountCents: number;
   /** L'ajustement figé qui l'a produite (taux/montant du point), ou `null`. */
   readonly discountAdjustment: CartAdjustment | null;
@@ -458,9 +459,14 @@ export class OrderDrafting {
   }
 }
 
-/** Le point de retrait résolu, réduit à ses champs postaux (le snapshot figé). */
-function toSnapshot(point: PickupAddressView): BillingAddressPayload {
+/**
+ * Le point de retrait résolu, réduit à ses champs postaux — et à l'id du site
+ * qui remet (lot S2). L'id est celui du point RÉSOLU : un client qui n'a rien
+ * choisi est servi par le défaut, et c'est l'id du défaut qui est figé.
+ */
+function toSnapshot(point: PickupAddressView): PickupSnapshot {
   return {
+    siteId: point.id,
     label: point.label,
     ligne1: point.ligne1,
     ligne2: point.ligne2,

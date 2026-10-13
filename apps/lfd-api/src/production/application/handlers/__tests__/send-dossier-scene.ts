@@ -74,6 +74,7 @@ export function order(orderId: string, quantity: number): ProducibleOrder {
     destination: "Le Labo",
     dueAt: null,
     clientele: null,
+    siteId: null,
     sheetDetails: null,
     lines: [{ sku: "VIE-001", productName: "Croissant", quantity }],
   };

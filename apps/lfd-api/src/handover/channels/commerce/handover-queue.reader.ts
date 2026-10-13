@@ -77,6 +77,11 @@ export interface HandoverQueueEntry {
   readonly clientele: "pro" | "public" | null;
   /** Le point de retrait figé à la commande, ou `null` — cf. `HandoverWindow`. */
   readonly pickupLabel: string | null;
+  /**
+   * Le site qui remet, figé à la passation (lot S2) — opaque, la clé des
+   * onglets. `null` : livraison, ou commande passée avant le lot.
+   */
+  readonly siteId: string | null;
   /** L'acheminement : le coursier charge ici, le client vient ici. */
   readonly fulfillmentMethod: "pickup" | "delivery";
   /** Le créneau convenu, ou `null` si aucun n'a été demandé. */

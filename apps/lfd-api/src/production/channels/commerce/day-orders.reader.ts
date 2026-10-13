@@ -114,6 +114,14 @@ export interface ProducibleOrder {
    * rattrapé : « sans société » ne voulait pas dire « public »).
    */
   readonly clientele: Clientele | null;
+  /**
+   * **Le site qui remet** un retrait (lot S2, `documentation/sites/sites.md`
+   * §7) — identifiant OPAQUE du commerce, recopié tel quel : le fournil ne lit
+   * pas les sites, il garde de quoi en reparler. `null` : livraison, ou
+   * commande passée avant que la commande ne porte son site (jamais
+   * rattrapée).
+   */
+  readonly siteId: string | null;
   readonly lines: readonly ProducibleLine[];
   /**
    * Le reste du bon (E1b). Toujours rempli par le commerce ; `null` ne se

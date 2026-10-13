@@ -175,6 +175,14 @@ export interface HandoverQueueEntryView {
   readonly clientele: OrderClientele | null;
   /** Le point de retrait figé à la commande, ou `null` en livraison. */
   readonly pickupLabel: string | null;
+  /**
+   * Le site qui remet, figé à la passation (lot S2) — la clé des onglets du
+   * comptoir. `null` : livraison, ou commande passée avant le lot (jamais
+   * rattrapée) ; le comptoir retombe alors sur `pickupLabel`. Facultatif dans
+   * le TYPE pour les vues construites à la main avant lui ; le serveur le rend
+   * toujours.
+   */
+  readonly siteId?: string | null | undefined;
   readonly fulfillmentMethod: FulfillmentMethod;
   /** Le créneau convenu, ou `null` si aucune tranche n'a été demandée. */
   readonly window: HandoverQueueWindowView | null;

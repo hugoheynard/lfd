@@ -76,6 +76,7 @@ describe("dossierCountsOf", () => {
       destination: "",
       dueAt: null,
       clientele: null,
+      siteId: null,
       sheetDetails: null,
       lines: quantities.map(line),
       packed: null,

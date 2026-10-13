@@ -38,7 +38,7 @@ export class PrismaDaySupervisionReader extends DaySupervisionReader {
     const rows = await this.prisma.order.findMany({
       where: {
         // La colonne est un `date` Postgres, lu par Prisma à minuit UTC : la
-        // borne se compose de la même façon que dans `PrismaDayOrdersReader`.
+        // borne se compose de la même façon que dans `PrismaDayOrdersSource`.
         requestedDeliveryDate: new Date(`${day}T00:00:00.000Z`),
         status: { not: "draft" },
         ...settlementWhere(),

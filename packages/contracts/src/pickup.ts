@@ -100,6 +100,20 @@ export const pickupAddressPayloadSchema = billingAddressPayloadSchema.extend({
 export type PickupAddressPayload = z.infer<typeof pickupAddressPayloadSchema>;
 
 /**
+ * **Le point de retrait figé sur une commande** — ses champs postaux, et
+ * l'identifiant du site qui remet (lot S2, `documentation/sites/sites.md` §7).
+ *
+ * `siteId` est **facultatif pour de bon** : les commandes passées avant le
+ * lot n'en portent pas, et rien ne les rattrape (Q-S2 : un rattrapage par
+ * libellé serait irréversible). Tout lecteur doit donc tolérer son absence —
+ * le comptoir retombe alors sur le libellé, l'échéance sur l'ancien calcul.
+ */
+export const pickupSnapshotSchema = billingAddressPayloadSchema.extend({
+  siteId: z.string().min(1).optional(),
+});
+export type PickupSnapshot = z.infer<typeof pickupSnapshotSchema>;
+
+/**
  * La charge d'une **modification** : la même, sauf les clientèles de la remise,
  * **absentes = inchangées**. Avec le défaut de la création, un onglet du
  * back-office ouvert avant leur existence rouvrirait en silence une remise

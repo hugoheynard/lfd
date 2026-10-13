@@ -1,14 +1,17 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
-import { DeadlineOrdersReader } from "../domain/ports/deadline-orders.reader.js";
-import type { DeadlineOrder } from "../domain/services/deadline-thresholds.js";
+import {
+  DeadlineOrdersReader,
+  type SitedDeadlineOrder,
+} from "../domain/ports/deadline-orders.reader.js";
 import { fulfillmentOf } from "./order-fulfillment.parse.js";
+import { siteIdOf } from "./pickup-site.parse.js";
 import { planWhere } from "./plan-filter.js";
 
 /**
  * Adaptateur Prisma de `DeadlineOrdersReader` : les commandes du plan d'une
- * journée — le même `where` que la clôture (`PrismaDayOrdersReader`), pour
+ * journée — le même `where` que la clôture (`PrismaDayOrdersSource`), pour
  * que le compte à rebours et le compte à produire parlent des mêmes commandes.
  *
  * La fenêtre est lue du JSON `fulfillment` par le parseur partagé ; une
@@ -20,7 +23,7 @@ export class PrismaDeadlineOrdersReader extends DeadlineOrdersReader {
     super();
   }
 
-  async forDay(day: string): Promise<readonly DeadlineOrder[]> {
+  async forDay(day: string): Promise<readonly SitedDeadlineOrder[]> {
     const rows = await this.prisma.order.findMany({
       where: {
         // Colonne `date` lue à minuit UTC : même composition que `producibleFor`.
@@ -31,12 +34,15 @@ export class PrismaDeadlineOrdersReader extends DeadlineOrdersReader {
       select: {
         fulfillmentMethod: true,
         fulfillment: true,
+        pickupAddress: true,
         lines: { select: { sku: true, productNameSnapshot: true, quantity: true } },
       },
     });
     return rows.map((row) => ({
       fulfillmentMethod: row.fulfillmentMethod === "delivery" ? "delivery" : "pickup",
       window: fulfillmentOf(row.fulfillment).window.value,
+      // Le site figé à la passation (S2) ; `null` en livraison ou avant le lot.
+      siteId: row.fulfillmentMethod === "delivery" ? null : siteIdOf(row.pickupAddress),
       lines: row.lines.map((line) => ({
         sku: line.sku,
         productName: line.productNameSnapshot,

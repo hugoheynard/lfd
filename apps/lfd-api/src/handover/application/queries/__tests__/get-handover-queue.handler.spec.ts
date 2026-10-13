@@ -29,6 +29,7 @@ function entry(overrides: Partial<HandoverQueueEntry> = {}): HandoverQueueEntry 
     tradeName: null,
     clientele: "pro",
     pickupLabel: "Le labo",
+    siteId: "site_labo",
     fulfillmentMethod: "pickup",
     window: null,
     totalUnits: 3,
@@ -300,5 +301,23 @@ describe("GetHandoverQueueHandler — la retenue qualité (plan-controle-qualite
       ["handed_over", false],
       ["cancelled", false],
     ]);
+  });
+});
+
+describe("GetHandoverQueueHandler — le site qui remet (lot S2)", () => {
+  it("rend le site figé, clé des onglets du comptoir", async () => {
+    const { handler } = handlerOf([entry({ siteId: "site_village" })], new Map());
+
+    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10"));
+
+    expect(view.entries[0]?.siteId).toBe("site_village");
+  });
+
+  it("rend `null` pour une commande d'avant le lot : le comptoir retombe sur le libellé", async () => {
+    const { handler } = handlerOf([entry({ siteId: null })], new Map());
+
+    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10"));
+
+    expect(view.entries[0]).toMatchObject({ siteId: null, pickupLabel: "Le labo" });
   });
 });

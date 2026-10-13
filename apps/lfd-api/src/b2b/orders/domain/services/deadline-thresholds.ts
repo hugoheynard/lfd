@@ -52,7 +52,13 @@ export interface DeadlineOrder {
  */
 export type DeadlineSite =
   | { readonly supply: "on_site"; readonly counterSetupMinutes: number }
-  | { readonly supply: "transfer"; readonly requiredBy: string | null };
+  | {
+      readonly supply: "transfer";
+      /** Le départ requis du transfert, `HH:mm` ; `null` = incalculable. */
+      readonly requiredBy: string | null;
+      /** L'arrivée requise au site, `HH:mm` ; `null` = incalculable. */
+      readonly arrivalBy: string | null;
+    };
 
 /** Les deux réglages du commerce (§7.3), en minutes ; `null` = non réglée. */
 export interface ProductionMargins {
@@ -164,6 +170,34 @@ function dueMinute(
  */
 export function dueClockOf(window: NonNullable<DeadlineOrder["window"]>): string {
   return window.start ?? window.end;
+}
+
+/**
+ * **L'heure à laquelle la marchandise doit être À DESTINATION** — le snapshot
+ * remis au colisage (`ProducibleOrder.dueAt`), règle décidée le 2026-10-13
+ * (plan du transfert interne, état de T0) :
+ *
+ * - livraison : la fenêtre chez le client, inchangée ;
+ * - retrait sur un site sur place : la fenêtre moins la mise en place au
+ *   comptoir (ramenée à `00:00` au plus tôt) ;
+ * - retrait sur un site servi par transfert : l'arrivée requise au site, et
+ *   non plus la fenêtre du client — le transfert part pour le site ;
+ * - retrait au site non résolu (commande d'avant S2) : la fenêtre, comme avant.
+ *
+ * Aucune marge ici : les marges sont celles du fournil (`deadlineThresholds`),
+ * le colisage range par l'heure d'arrivée.
+ */
+export function destinationDueAt(order: DeadlineOrder): string | null {
+  const site = order.fulfillmentMethod === "pickup" ? order.site : undefined;
+  if (site?.supply === "transfer") {
+    return site.arrivalBy;
+  }
+  if (order.window === null) {
+    return null;
+  }
+  const clock = dueClockOf(order.window);
+  const setup = site?.counterSetupMinutes ?? 0;
+  return setup === 0 ? clock : clockOf(Math.max(0, minuteOf(clock) - setup));
 }
 
 function cumulate(

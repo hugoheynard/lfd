@@ -3,7 +3,7 @@ import type { BillingAddressPayload, OrderFulfillment, SheetContact } from "@lfd
 /**
  * Les morceaux du bon d'atelier que DEUX lecteurs composent : la fiche de
  * l'écran (`PrismaOrderReader.listForProduction`) et ce que le commerce remet
- * au fournil à l'arrêt (`PrismaDayOrdersReader`, E1b). Une seule règle pour le
+ * au fournil à l'arrêt (`PrismaDayOrdersSource`, E1b). Une seule règle pour le
  * contact et le point nommé — sans quoi le dossier envoyé et l'impression de
  * l'écran diraient deux choses du même bon.
  */

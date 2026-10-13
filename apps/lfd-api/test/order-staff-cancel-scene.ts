@@ -1,7 +1,7 @@
 import { lineTotalCents } from "@lfd/money";
 import type request from "supertest";
 
-import { PrismaDayOrdersReader } from "../src/b2b/orders/infrastructure/prisma-day-orders.reader.js";
+import { SitedDayOrders } from "../src/b2b/orders/application/services/sited-day-orders.service.js";
 import {
   PaymentGateway,
   type IntentCancellation,
@@ -97,9 +97,7 @@ const recordingMailer = {
 /** La vraie lecture des commandes, puis le geste glissé avant le verrou. */
 const dayOrders = {
   producibleFor: async (day: ServiceDay): Promise<readonly ProducibleOrder[]> => {
-    const rows = await context()
-      .app.get(PrismaDayOrdersReader, { strict: false })
-      .producibleFor(day);
+    const rows = await context().app.get(SitedDayOrders, { strict: false }).producibleFor(day);
     const hook = scene.afterProducibleRead;
     scene.afterProducibleRead = null;
     if (hook !== null) {

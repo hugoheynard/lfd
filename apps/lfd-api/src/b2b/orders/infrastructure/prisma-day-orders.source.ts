@@ -2,19 +2,17 @@ import { billingAddressPayloadSchema, type BillingAddressPayload } from "@lfd/co
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
-import {
-  DayOrdersReader,
-  type OrderSheetDetails,
-  type ProducibleOrder,
-  type ServiceDay,
-} from "../../../production/channels/commerce/index.js";
-import { dueClockOf } from "../domain/services/deadline-thresholds.js";
+import type { OrderSheetDetails, ServiceDay } from "../../../production/channels/commerce/index.js";
+import { DayOrdersSource, type SourcedDayOrder } from "../domain/ports/day-orders.source.js";
 import { contactOf, pickupLabelOf } from "./atelier-sheet-parts.js";
 import { fulfillmentOf } from "./order-fulfillment.parse.js";
+import { siteIdOf } from "./pickup-site.parse.js";
 import { planWhere } from "./plan-filter.js";
 
 /**
- * **Ce que le commerce rend à la production**, et rien de plus.
+ * **Ce que le commerce rend à la production**, et rien de plus — moins
+ * l'échéance, que `SitedDayOrders` pose depuis les réglages du site (lot T0,
+ * 2026-10-13) : cet adaptateur rend la fenêtre convenue à côté.
  *
  * ## Pourquoi cet adaptateur vit ici, et pas chez la production
  *
@@ -37,12 +35,12 @@ import { planWhere } from "./plan-filter.js";
  * autrement.
  */
 @Injectable()
-export class PrismaDayOrdersReader extends DayOrdersReader {
+export class PrismaDayOrdersSource extends DayOrdersSource {
   constructor(private readonly prisma: PrismaService) {
     super();
   }
 
-  async producibleFor(day: ServiceDay): Promise<readonly ProducibleOrder[]> {
+  async producibleFor(day: ServiceDay): Promise<readonly SourcedDayOrder[]> {
     const rows = await this.prisma.order.findMany({
       where: {
         // La colonne est un `date` Postgres, lu par Prisma à minuit UTC : on
@@ -87,36 +85,31 @@ export class PrismaDayOrdersReader extends DayOrdersReader {
     });
 
     return rows.map((row) => ({
-      orderId: row.id,
-      reference: row.orderNumber,
-      customerLabel: labelOf(row.company, row.placedBy),
-      fulfillmentMethod: row.fulfillmentMethod === "delivery" ? "delivery" : "pickup",
-      destination: destinationOf(
-        row.fulfillmentMethod,
-        row.pickupAddress,
-        row.deliveryAddressSnapshot,
-      ),
-      dueAt: dueAtOf(row.fulfillment),
-      // La colonne figée par l'agrégat, telle quelle : un `NULL` d'avant la
-      // distinction reste inconnu, il n'est pas redéduit de `company_id`.
-      clientele: row.clientele,
-      lines: row.lines.map((line) => ({
-        sku: line.sku,
-        productName: line.productNameSnapshot,
-        quantity: line.quantity,
-      })),
-      sheetDetails: sheetDetailsOf(row),
+      order: {
+        orderId: row.id,
+        reference: row.orderNumber,
+        customerLabel: labelOf(row.company, row.placedBy),
+        fulfillmentMethod: row.fulfillmentMethod === "delivery" ? "delivery" : "pickup",
+        destination: destinationOf(
+          row.fulfillmentMethod,
+          row.pickupAddress,
+          row.deliveryAddressSnapshot,
+        ),
+        // La colonne figée par l'agrégat, telle quelle : un `NULL` d'avant la
+        // distinction reste inconnu, il n'est pas redéduit de `company_id`.
+        clientele: row.clientele,
+        // Le site figé à la passation (S2) ; `null` en livraison ou avant le lot.
+        siteId: row.fulfillmentMethod === "delivery" ? null : siteIdOf(row.pickupAddress),
+        lines: row.lines.map((line) => ({
+          sku: line.sku,
+          productName: line.productNameSnapshot,
+          quantity: line.quantity,
+        })),
+        sheetDetails: sheetDetailsOf(row),
+      },
+      window: fulfillmentOf(row.fulfillment).window.value,
     }));
   }
-}
-
-/**
- * L'échéance remise au fournil — la fenêtre lue par le parseur partagé, réduite
- * par la règle du compte à rebours. `null` = aucune fenêtre convenue.
- */
-function dueAtOf(fulfillment: Parameters<typeof fulfillmentOf>[0]): string | null {
-  const window = fulfillmentOf(fulfillment).window.value;
-  return window === null ? null : dueClockOf(window);
 }
 
 /**

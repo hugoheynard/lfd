@@ -114,10 +114,40 @@ export interface HandoverTab {
   readonly count: number;
 }
 
+/** Un site qui remet, tel que le comptoir le connaît : son id et son nom du moment. */
+export interface CounterPlace {
+  readonly id: string;
+  readonly label: string;
+}
+
 /**
- * Les onglets, dérivés des `pickupLabel` **présents dans la réponse** — aucun
- * nom de point n'est écrit ici, et c'est volontaire : un point ouvert demain
- * apparaîtrait sinon nulle part.
+ * **La clé d'onglet d'une ligne : l'id de son site** (lot S2, 2026-10-13), et
+ * non plus son libellé — deux sites peuvent porter un nom proche, et un site
+ * renommé ne doit pas couper sa file en deux.
+ *
+ * 🔴 **Repli sur le libellé, pour les commandes passées avant S2** : leur
+ * snapshot ne porte pas d'id, et rien ne les rattrape en base (Q-S2, un
+ * rattrapage par libellé serait irréversible). Ici, le repli n'écrit rien :
+ * une ligne sans `siteId` rejoint le site connu qui porte son libellé, sinon
+ * un onglet à son libellé figé. Il disparaîtra avec la dernière commande
+ * d'avant le lot (S3r).
+ */
+function tabKeyOf(entry: HandoverQueueEntryView, places: readonly CounterPlace[]): string {
+  const siteId = entry.siteId ?? null;
+  if (siteId !== null && siteId !== '') {
+    return siteId;
+  }
+  const label = entry.pickupLabel?.trim() ?? '';
+  if (label === '') {
+    return NO_PICKUP;
+  }
+  return places.find((place) => place.label === entry.pickupLabel)?.id ?? label;
+}
+
+/**
+ * Les onglets, dérivés des sites **connus** et de ceux **présents dans la
+ * réponse** — aucun nom de point n'est écrit ici, et c'est volontaire : un
+ * point ouvert demain apparaîtrait sinon nulle part.
  *
  * 🔴 **Un onglet par point, et RIEN au-dessus.** Il y avait un « Tous les
  * points » en tête ; il est parti le 2026-09-11. On ne tend pas un sac depuis
@@ -128,42 +158,55 @@ export interface HandoverTab {
  * Les compteurs de la bande suivent le même raisonnement depuis le même jour :
  * ils portent sur le point ouvert, et non sur la journée. Les laisser à la
  * journée aurait gardé, en chiffres, la vue qu'on venait de retirer en onglets.
+ *
+ * Le nom d'un onglet est celui du site AUJOURD'HUI ; un site absent de la
+ * liste (archivé depuis) garde le nom figé sur sa commande.
  */
 export function pickupTabs(
   entries: readonly HandoverQueueEntryView[],
-  places: readonly string[] = [],
+  places: readonly CounterPlace[] = [],
 ): readonly HandoverTab[] {
   // Tous les points connus, même sans commande (Hugo, 2026-10-12) : le
   // réassort se fait par point, et un point vide doit rester choisissable.
-  const counts = new Map<string, number>(places.map((place) => [place, 0]));
+  const groups = new Map<string, { label: string; count: number }>(
+    places.map((place) => [place.id, { label: place.label, count: 0 }]),
+  );
   let withoutPickup = 0;
   for (const entry of entries) {
-    const label = entry.pickupLabel;
-    if (label === null || label.trim() === '') {
+    const key = tabKeyOf(entry, places);
+    if (key === NO_PICKUP) {
       withoutPickup += 1;
-    } else {
-      counts.set(label, (counts.get(label) ?? 0) + 1);
+      continue;
     }
+    const group = groups.get(key) ?? { label: frozenLabelOf(entry, key), count: 0 };
+    groups.set(key, { label: group.label, count: group.count + 1 });
   }
 
-  const groups: HandoverTab[] = [...counts.entries()]
-    .sort(([left], [right]) => left.localeCompare(right, 'fr'))
-    .map(([label, count]) => ({ key: label, label, count }));
+  const tabs: HandoverTab[] = [...groups.entries()]
+    .sort(([, left], [, right]) => left.label.localeCompare(right.label, 'fr'))
+    .map(([key, group]) => ({ key, label: group.label, count: group.count }));
   if (withoutPickup > 0) {
-    groups.push({ key: NO_PICKUP, label: 'Sans point de retrait', count: withoutPickup });
+    tabs.push({ key: NO_PICKUP, label: 'Sans point de retrait', count: withoutPickup });
   }
-  return groups;
+  return tabs;
 }
 
-/** Les lignes d'un onglet. Une clé inconnue ne filtre rien plutôt que de vider. */
+/** Le nom figé sur la commande — celui d'un site que le comptoir ne connaît plus. */
+function frozenLabelOf(entry: HandoverQueueEntryView, key: string): string {
+  const label = entry.pickupLabel?.trim() ?? '';
+  return label === '' ? key : label;
+}
+
+/**
+ * Les lignes d'un onglet, par la même clé que {@link pickupTabs}. Une clé
+ * inconnue ne filtre rien plutôt que de vider.
+ */
 export function entriesForTab(
   entries: readonly HandoverQueueEntryView[],
   key: string,
+  places: readonly CounterPlace[] = [],
 ): readonly HandoverQueueEntryView[] {
-  if (key === NO_PICKUP) {
-    return entries.filter((entry) => entry.pickupLabel === null || entry.pickupLabel.trim() === '');
-  }
-  return key === '' ? entries : entries.filter((entry) => entry.pickupLabel === key);
+  return key === '' ? entries : entries.filter((entry) => tabKeyOf(entry, places) === key);
 }
 
 /**

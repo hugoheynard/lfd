@@ -16,6 +16,7 @@ function order(
     destination: "Le Labo",
     dueAt: null,
     clientele: null,
+    siteId: null,
     sheetDetails: null,
     packed: null,
     lines: [{ sku: "CRO", productName: "Croissant", quantity: 12 }],

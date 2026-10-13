@@ -7,7 +7,7 @@ import { OrderCutoffsModule } from "../b2b/order-cutoffs/order-cutoffs.module.js
 import { OrdersModule } from "../b2b/orders/orders.module.js";
 import { PendingSettlementSweep } from "../b2b/orders/application/services/pending-settlement-sweep.service.js";
 import { DueThresholds } from "../b2b/orders/application/services/due-thresholds.service.js";
-import { PrismaDayOrdersReader } from "../b2b/orders/infrastructure/prisma-day-orders.reader.js";
+import { SitedDayOrders } from "../b2b/orders/application/services/sited-day-orders.service.js";
 import { PrismaExpectedProductionReader } from "../b2b/orders/infrastructure/prisma-expected-production.reader.js";
 import { PrismaPendingOrdersReader } from "../b2b/orders/infrastructure/prisma-pending-orders.reader.js";
 import {
@@ -49,7 +49,9 @@ import {
 @Module({
   imports: [OrdersModule, CatalogModule, OrderCutoffsModule],
   providers: [
-    { provide: DayOrdersReader, useClass: PrismaDayOrdersReader },
+    // `useExisting` : l'instance d'`OrdersModule`, qui a les ports des sites
+    // (échéance par site, lot T0).
+    { provide: DayOrdersReader, useExisting: SitedDayOrders },
     // Le contrepoids du couplage minimal, relié au même endroit : la production
     // demande « qu'est-ce que le commerce n'a pas basculé ? », le commerce seul
     // sait y répondre.

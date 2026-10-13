@@ -6,6 +6,7 @@ import type {
   CartAdjustment,
   DeliveryVatMode,
   FulfillmentMethod,
+  PickupSnapshot,
   LateFeeAdjustment,
   OrderClientele,
   PaymentStatus,
@@ -33,7 +34,8 @@ export interface OrderFulfillmentInput {
    * société ou hors coursier.
    */
   readonly deliveryAddressId: string | null;
-  readonly pickupAddress: BillingAddressPayload | null;
+  /** Le point figé, avec le site qui remet (`siteId`, lot S2) quand il est connu. */
+  readonly pickupAddress: PickupSnapshot | null;
 }
 
 /**
@@ -126,7 +128,7 @@ export interface OrderToPlace {
   readonly deliveryAddress: BillingAddressPayload | null;
   /** Le lien vers le carnet (cf. {@link OrderFulfillmentInput.deliveryAddressId}). */
   readonly deliveryAddressId: string | null;
-  readonly pickupAddress: BillingAddressPayload | null;
+  readonly pickupAddress: PickupSnapshot | null;
   /** L'acheminement convenu, figé (cf. {@link DraftOrderInput.agreed}). */
   readonly agreed: AgreedFulfillment;
   readonly requestedDeliveryDate: Date | null;
