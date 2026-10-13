@@ -51,36 +51,36 @@ raison avant même le clic, et rien n'est écrit.
 
 ```mermaid
 flowchart TD
-    A([Le staff clique « Annuler la commande »<br/>et donne un motif]) --> B{A-t-il la permission<br/>« Annuler une commande » ?}
-    B -- non --> R0[Le bouton n'apparaît pas]:::refus
-    B -- oui --> C{La commande est-elle<br/>encore « passée » ?}
-    C -- "prête, retirée,<br/>déjà annulée" --> R1[Refus : trop tard]:::refus
-    C -- oui --> D{Le fournil l'a-t-il déjà<br/>mise au compte à produire ?<br/>(journée arrêtée)}
-    D -- oui --> R2[Refus : déjà au compte à produire]:::refus
-    D -- non --> E{Comment est-elle réglée ?}
+    A(["Le staff clique « Annuler la commande »<br/>et donne un motif"]) --> B{"A-t-il la permission<br/>« Annuler une commande » ?"}
+    B -- non --> R0["Le bouton n'apparaît pas"]:::refus
+    B -- oui --> C{"La commande est-elle<br/>encore « passée » ?"}
+    C -- "prête, retirée,<br/>déjà annulée" --> R1["Refus : trop tard"]:::refus
+    C -- oui --> D{"Le fournil l'a-t-il déjà<br/>mise au compte à produire ?<br/>— journée arrêtée —"}
+    D -- oui --> R2["Refus : déjà au compte à produire"]:::refus
+    D -- non --> E{"Comment est-elle réglée ?"}
 
-    E -- "carte, pas encore payée" --> F1[On ferme le paiement chez Stripe]
-    F1 --> F2{Stripe a-t-il<br/>encaissé entre-temps ?}
-    F2 -- oui --> R3[Refus : payée à l'instant, rechargez]:::refus
+    E -- "carte, pas encore payée" --> F1["On ferme le paiement chez Stripe"]
+    F1 --> F2{"Stripe a-t-il<br/>encaissé entre-temps ?"}
+    F2 -- oui --> R3["Refus : payée à l'instant, rechargez"]:::refus
     F2 -- non --> OK
 
-    E -- "carte, payée" --> G1[On annule, et on enregistre<br/>une demande de remboursement]
+    E -- "carte, payée" --> G1["On annule, et on enregistre<br/>une demande de remboursement"]
     G1 --> OK
 
-    E -- "au compte (pro)" --> H1{Déjà facturée, dans un lot<br/>de prélèvement, ou rejetée<br/>par la banque ?}
-    H1 -- oui --> R4[Refus nommé :<br/>il faut un avoir,<br/>ou annuler le lot]:::refus
-    H1 -- non --> H2[On ferme sa ligne de prélèvement :<br/>rien ne sera facturé ni prélevé]
+    E -- "au compte, pro" --> H1{"Déjà facturée, dans un lot<br/>de prélèvement, ou rejetée<br/>par la banque ?"}
+    H1 -- oui --> R4["Refus nommé :<br/>il faut un avoir,<br/>ou annuler le lot"]:::refus
+    H1 -- non --> H2["On ferme sa ligne de prélèvement :<br/>rien ne sera facturé ni prélevé"]
     H2 --> OK
 
-    E -- "0 € (bon de fidélité<br/>ou geste commercial)" --> OK
+    E -- "0 €, bon de fidélité<br/>ou geste commercial" --> OK
 
-    OK[[La commande passe « annulée »<br/>et sort du compte à produire]] --> V{Portait-elle un bon<br/>de fidélité ?}
+    OK[["La commande passe « annulée »<br/>et sort du compte à produire"]] --> V{"Portait-elle un bon<br/>de fidélité ?"}
     V -- non --> M
-    V -- oui --> V1[Le bon est rendu<br/>voir plus bas]
+    V -- oui --> V1["Le bon est rendu,<br/>voir plus bas"]
     V1 --> M
-    M([Courriel au client<br/>+ ligne dans l'historique]) --> P{Payée par carte ?}
-    P -- non --> FIN([Terminé])
-    P -- oui --> S[Stripe rembourse,<br/>juste après]
+    M(["Courriel au client<br/>et ligne dans l'historique"]) --> P{"Payée par carte ?"}
+    P -- non --> FIN(["Terminé"])
+    P -- oui --> S["Stripe rembourse,<br/>juste après"]
     S --> FIN
 
     classDef refus fill:#fde8e8,stroke:#c0392b,color:#7b1d1d
