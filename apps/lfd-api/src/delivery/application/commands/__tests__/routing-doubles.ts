@@ -166,10 +166,11 @@ export class RoundsReaderOver extends DeliveryRoundsReader {
           vehicleRetiredAt: null,
           departedAt: round.departedAt,
           stops: round.liveStops.map((stop, index) => ({
+            ...stop,
             stopId: stop.id,
-            orderId: stop.orderId,
             position: index + 1,
           })),
+          transfers: new Map(),
         })),
     );
   }

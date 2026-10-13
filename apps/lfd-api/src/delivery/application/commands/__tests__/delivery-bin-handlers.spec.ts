@@ -30,6 +30,7 @@ import {
 } from "./loading-doubles.js";
 import { FixedManagedOrders } from "./managed-orders-double.js";
 import { deliveryOn, FixedDeliveryOrders } from "./round-doubles.js";
+import { FixedTransferredOrders } from "../../__tests__/transfer-doubles.js";
 
 // Des jours comparés entre eux seulement, jamais à l'horloge.
 const DAY = "2030-03-12";
@@ -80,6 +81,7 @@ describe("DeliveryBinOffice.declare — L4-C16, L4-C20, lot 4 bis", () => {
       clock,
       events,
       uow,
+      new FixedTransferredOrders(),
     );
     const handler = {
       execute: async (payload: BinsDeclaration): Promise<readonly string[]> =>
@@ -221,6 +223,7 @@ describe("VoidDeliveryBinHandler — L4-C19", () => {
           clock,
           events,
           uow,
+          new FixedTransferredOrders(),
         ),
         new FixedManagedOrders(),
       ),

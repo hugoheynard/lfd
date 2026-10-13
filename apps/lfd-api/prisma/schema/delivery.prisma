@@ -197,34 +197,50 @@ model DeliveryRound {
 /// se réordonne, ne se déplace ni ne se retire (I4).
 ///
 /// `order_id` est OPAQUE : aucune clé étrangère vers `public.orders`.
+///
+/// ## Deux genres d'arrêt (plan du transfert interne, §4, lot T1, 2026-10-13)
+///
+/// `kind = order` : une commande livrée, `order_id` posé. `kind = transfer` :
+/// le passage d'un transfert interne à son site, `transfer_id` posé et
+/// `order_id` nul — ses commandes restent des retraits, et vivent dans
+/// `delivery_internal_transfer_item`. Tenu en base, invisible ici : le CHECK
+/// `delivery_round_stop_kind_check` (exactement l'une des deux colonnes, selon
+/// le genre) et l'index unique partiel `delivery_round_stop_live_transfer_key`
+/// sur `transfer_id` des arrêts vivants — un transfert dans au plus une
+/// tournée vivante, le jumeau de I3.
 model DeliveryRoundStop {
-  id              String    @id
-  roundId         String    @map("round_id")
-  orderId         String    @map("order_id")
+  id              String           @id
+  roundId         String           @map("round_id")
+  kind            DeliveryStopKind @default(order)
+  orderId         String?          @map("order_id")
+  /// Le transfert interne d'un arrêt `transfer` ; nul pour un arrêt de commande.
+  transferId      String?          @map("transfer_id")
   /// Dénormalisé depuis la tournée : le déclencheur de journée le lit ici (C6).
-  serviceDay      String    @map("service_day") @db.VarChar(10)
+  serviceDay      String           @map("service_day") @db.VarChar(10)
   /// 1..n, contigu parmi les arrêts vivants de la tournée (I2, tenu par l'agrégat).
   position        Int
-  removedAt       DateTime? @map("removed_at")
+  removedAt       DateTime?        @map("removed_at")
   /// Écrivain : la tournée, par `closeStop` — posé depuis le 2026-10-01 par la
   /// clôture sans remise (plan « À la porte », AP-D2).
-  closedAt        DateTime? @map("closed_at")
+  closedAt        DateTime?        @map("closed_at")
   /// La position du téléphone AU GESTE qui a clos l'arrêt (YA-D4,
   /// `gps-y-aller-et-position.md`) — jamais en continu. Les trois ensemble ou
   /// aucune (CHECK) ; nulles : refus du navigateur, pas de signal, clôture par
   /// un commercial, ou effacées par la purge à 60 jours. Écrivain : la tournée,
   /// par `closeStop` ; effaceur : `PurgeStalePositionsHandler`.
-  closedLat       Float?    @map("closed_lat")
-  closedLng       Float?    @map("closed_lng")
-  closedAccuracyM Float?    @map("closed_accuracy_m")
-  createdAt       DateTime  @map("created_at")
+  closedLat       Float?           @map("closed_lat")
+  closedLng       Float?           @map("closed_lng")
+  closedAccuracyM Float?           @map("closed_accuracy_m")
+  createdAt       DateTime         @map("created_at")
 
-  round     DeliveryRound          @relation(fields: [roundId], references: [id], onDelete: Restrict)
+  round     DeliveryRound             @relation(fields: [roundId], references: [id], onDelete: Restrict)
+  transfer  DeliveryInternalTransfer? @relation(fields: [transferId], references: [id], onDelete: Restrict)
   binLoads  DeliveryBinLoad[]
   execution DeliveryStopExecution?
 
   @@index([roundId])
   @@index([orderId])
+  @@index([transferId])
   @@map("delivery_round_stop")
   @@schema("delivery")
 }
@@ -860,5 +876,103 @@ model DeliveryAddressSuggestionDecision {
 
   @@index([addressId])
   @@map("delivery_address_suggestion_decision")
+  @@schema("delivery")
+}
+
+/// Le **genre d'un arrêt** (plan du transfert interne, §4, lot T1) : une
+/// commande livrée, ou le passage d'un transfert interne à son site.
+enum DeliveryStopKind {
+  order
+  transfer
+
+  @@map("delivery_stop_kind")
+  @@schema("delivery")
+}
+
+/// Un **transfert interne** (`documentation/livraisons/transferts/plan-transfert-interne.md`,
+/// §3, lot T1) : le lot de commandes en RETRAIT d'un site servi par transfert,
+/// pour un jour, qui part du site de départ des tournées.
+///
+/// Écrivain : la livraison seule, par l'agrégat `InternalTransfer`
+/// (`load`/`save`). Aucune unicité `(service_day, site_id)` : un site reçoit
+/// autant de transferts que nécessaire (§1, Q-T3) — un second s'ouvre quand le
+/// premier est déjà parti.
+///
+/// `site_id` est OPAQUE (un site du commerce, aucune clé étrangère vers
+/// `public`) ; `site_label` est son nom FIGÉ à l'ouverture, pour l'écran des
+/// tournées et l'app du livreur. `departed_at` : posé par le départ de la
+/// tournée qui porte son arrêt, nul tant qu'il est prévu. La réception
+/// (`received_*`) est le lot T2.
+model DeliveryInternalTransfer {
+  id         String    @id
+  serviceDay String    @map("service_day") @db.VarChar(10)
+  siteId     String    @map("site_id")
+  siteLabel  String    @map("site_label")
+  departedAt DateTime? @map("departed_at") @db.Timestamptz(6)
+  version    Int
+  createdAt  DateTime  @map("created_at") @db.Timestamptz(6)
+  updatedAt  DateTime  @map("updated_at") @db.Timestamptz(6)
+
+  items    DeliveryInternalTransferItem[]
+  stops    DeliveryRoundStop[]
+  manifest DeliveryInternalTransferManifestLine[]
+
+  @@index([serviceDay, siteId])
+  @@map("delivery_internal_transfer")
+  @@schema("delivery")
+}
+
+/// Un **élément d'un transfert interne** — décision de Hugo du 2026-10-13 :
+/// un transfert porte des COMMANDES (`kind = order`, des retraits, jamais des
+/// arrêts) ou des RÉASSORTS d'un site (`kind = refill`, concept NON BÂTI :
+/// `refill_id` sans clé étrangère, aucun écrivain aujourd'hui). Tenus en base,
+/// invisibles ici : le CHECK `delivery_internal_transfer_item_kind_check`
+/// (exactement l'une des deux colonnes, selon le genre) et les index uniques
+/// partiels `…_order_key` / `…_refill_key` — un élément n'est que dans UN
+/// transfert. Identifiants OPAQUES. Écrivain : l'agrégat `InternalTransfer`.
+/// Jamais supprimé.
+model DeliveryInternalTransferItem {
+  id         String                   @id
+  transferId String                   @map("transfer_id")
+  kind       DeliveryTransferItemKind
+  orderId    String?                  @map("order_id")
+  refillId   String?                  @map("refill_id")
+  attachedAt DateTime                 @map("attached_at") @db.Timestamptz(6)
+
+  transfer DeliveryInternalTransfer @relation(fields: [transferId], references: [id], onDelete: Restrict)
+
+  @@index([transferId])
+  @@map("delivery_internal_transfer_item")
+  @@schema("delivery")
+}
+
+/// Le genre d'un élément de transfert : une commande, ou un réassort (non bâti).
+enum DeliveryTransferItemKind {
+  order
+  refill
+
+  @@map("delivery_transfer_item_kind")
+  @@schema("delivery")
+}
+
+/// Le **manifeste FIGÉ d'un transfert** (décision de Hugo du 2026-10-13 :
+/// « on doit savoir ce qu'on transporte ») — une ligne par élément et par
+/// SKU, écrite UNE fois, au départ, dans la transaction du départ. Avant le
+/// départ, le manifeste se calcule à la lecture (lignes de commande lues au
+/// commerce) ; après, c'est cette table qui fait foi : la référence de la
+/// réception au site (T2). `product_name` est le libellé figé à la passation,
+/// recopié. Écrivain : l'agrégat `InternalTransfer`, par `depart`. Jamais
+/// réécrite ni supprimée.
+model DeliveryInternalTransferManifestLine {
+  transferId  String @map("transfer_id")
+  itemId      String @map("item_id")
+  sku         String
+  productName String @map("product_name")
+  quantity    Int
+
+  transfer DeliveryInternalTransfer @relation(fields: [transferId], references: [id], onDelete: Restrict)
+
+  @@id([transferId, itemId, sku])
+  @@map("delivery_internal_transfer_manifest_line")
   @@schema("delivery")
 }

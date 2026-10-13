@@ -25,8 +25,8 @@ function round(departedAt: Date | null = null): DeliveryRound {
     createdAt: AT,
     updatedAt: AT,
     stops: [
-      { id: "s_1", orderId: "o_1", position: 1, closedAt: null },
-      { id: "s_2", orderId: "o_2", position: 2, closedAt: null },
+      { kind: "order", id: "s_1", orderId: "o_1", position: 1, closedAt: null },
+      { kind: "order", id: "s_2", orderId: "o_2", position: 2, closedAt: null },
     ],
   });
 }
@@ -100,7 +100,8 @@ describe("DeliveryRound — partir (lot 4, L4-C4, Q14)", () => {
       ["détacher", (subject: DeliveryRound) => subject.detach("s_1", LATER)],
       [
         "recevoir",
-        (subject: DeliveryRound) => subject.attach({ id: "s_9", orderId: "o_9" }, LATER),
+        (subject: DeliveryRound) =>
+          subject.attach({ kind: "order", id: "s_9", orderId: "o_9" }, LATER),
       ],
     ])("refuse %s", (_label, gesture) => {
       const subject = round(AT);

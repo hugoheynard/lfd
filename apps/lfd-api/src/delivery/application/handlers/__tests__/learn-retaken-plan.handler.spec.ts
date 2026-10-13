@@ -17,6 +17,7 @@ import {
   RecordingDayStopsLocator,
   orderFact,
 } from "./day-readiness-doubles.js";
+import { attachmentOver, RecordingTransferPlacer } from "../../__tests__/transfer-doubles.js";
 
 // Des instants comparés entre eux seulement : le handler ne lit l'horloge que
 // pour dater la ligne.
@@ -47,8 +48,16 @@ function setup() {
   );
   const clock = new FixedClock(NOW);
   const locator = new RecordingDayStopsLocator();
-  const closures = new LearnArrestedPlan(orders, days, bell, clock, locator);
-  const retakes = new LearnRetakenPlan(orders, days, bell, clock, locator);
+  const closures = new LearnArrestedPlan(orders, days, bell, clock, locator, attachmentOver());
+  const retakes = new LearnRetakenPlan(
+    orders,
+    days,
+    bell,
+    clock,
+    locator,
+    attachmentOver(),
+    new RecordingTransferPlacer(),
+  );
   async function deliver(
     handler: LearnArrestedPlan | LearnRetakenPlan,
     fact: { readonly type: string; readonly payload: Readonly<Record<string, unknown>> },

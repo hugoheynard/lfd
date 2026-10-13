@@ -10,6 +10,7 @@ import { Geocoder, type GeocodeRequest } from "../../domain/ports/geocoder.js";
 import { addressKeyOf } from "../../domain/services/address-key.js";
 import { geocodeFreshSince } from "../delivery-routing-support.js";
 import { LocateDeliveryStopsCommand } from "./locate-delivery-stops.command.js";
+import { orderIdsOf } from "../../domain/entities/delivery-round-state.js";
 
 /**
  * Au plus tant d'adresses par geste : un lot de la BAN reste court, et la
@@ -76,7 +77,7 @@ export class LocateDeliveryStopsHandler implements ICommandHandler<
     ]);
     const ids = [
       ...expected.filter((order) => order.status === "active").map((order) => order.orderId),
-      ...rounds.flatMap((round) => round.stops.map((stop) => stop.orderId)),
+      ...rounds.flatMap((round) => orderIdsOf(round.stops)),
     ];
     return [...new Set(ids)];
   }

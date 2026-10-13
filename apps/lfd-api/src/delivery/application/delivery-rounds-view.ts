@@ -11,6 +11,7 @@ import type {
 import type { DeliveryOrderFacts, DeliveryOrderRef } from "../channels/commerce/index.js";
 import { activeOnDay } from "../domain/entities/vehicle.js";
 import type { RoundRow, RoundStopRow } from "../domain/ports/delivery-rounds.reader.js";
+import { orderStopsOf, transferStopsOf } from "../domain/entities/delivery-round-state.js";
 
 /** Ce que la vue du jour assemble : trois lectures faites au même moment. */
 export interface DeliveryRoundsDayInputs {
@@ -109,7 +110,14 @@ function roundView(round: RoundRow, inputs: DeliveryRoundsDayInputs): DeliveryRo
             meters: round.planned.meters,
           },
     driver: driverView(round.driverStaffId, inputs),
-    stops: round.stops.map((stop) => stopView(stop, round.vehicleId, inputs)),
+    stops: orderStopsOf(round.stops).map((stop) => stopView(stop, round.vehicleId, inputs)),
+    transferStops: transferStopsOf(round.stops).map((stop) => ({
+      stopId: stop.stopId,
+      transferId: stop.transferId,
+      siteLabel: round.transfers.get(stop.transferId)?.siteLabel ?? "",
+      position: stop.position,
+      orderCount: round.transfers.get(stop.transferId)?.orderCount ?? 0,
+    })),
     place: inputs.places.get(round.id) ?? null,
   };
 }
@@ -134,7 +142,7 @@ function driverView(
 }
 
 function stopView(
-  stop: RoundStopRow,
+  stop: Extract<RoundStopRow, { readonly kind: "order" }>,
   vehicleId: string,
   inputs: DeliveryRoundsDayInputs,
 ): DeliveryRoundStopView {

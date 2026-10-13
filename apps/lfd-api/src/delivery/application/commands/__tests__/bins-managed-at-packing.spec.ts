@@ -27,6 +27,7 @@ import { GetDeliveryPackingProposalHandler } from "../../queries/get-delivery-pa
 import { FixedBinCatalog, FixedDeliveryProducts } from "./bin-doubles.js";
 import { FixedManagedOrders } from "./managed-orders-double.js";
 import { deliveryOn, FixedDeliveryOrders } from "./round-doubles.js";
+import { FixedTransferredOrders } from "../../__tests__/transfer-doubles.js";
 
 const CAPACITY = { binTypeId: "t_m", sku: "CRO", units: 30 };
 
@@ -57,6 +58,7 @@ function setup(bins = new InMemoryBins(binOf("b_1", "o_listed", "AAAAAA"))) {
     new FixedClock(NOW),
     events,
     new DirectUnitOfWork(),
+    new FixedTransferredOrders(),
   );
   const managed = new FixedManagedOrders("o_listed");
   return { bins, events, office, managed };
@@ -86,10 +88,12 @@ describe("DeliveryBinDesk — la porte du colisage, aux règles de la livraison"
           new FixedDeliveryProducts([]),
           new FixedBinCatalog([], []),
           new FixedLoading([]),
+          new FixedTransferredOrders(),
         ),
         new GetDeliveryBinFreeHalvesHandler(
           new FixedLoading([]),
           new FixedDeliveryOrders([deliveryOn("o_listed", DAY)]),
+          new FixedTransferredOrders(),
         ),
         new FixedBinCatalog(
           [binTypeView("t_iso", { isotherm: true }), binTypeView("t_dry")],

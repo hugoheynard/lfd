@@ -22,6 +22,7 @@ function round(id: string, serviceDay: string, orderIds: readonly string[]): Del
     createdAt: AT,
     updatedAt: AT,
     stops: orderIds.map((orderId, index) => ({
+      kind: "order" as const,
       id: `${id}_s${String(index + 1)}`,
       orderId,
       position: index + 1,
@@ -37,7 +38,7 @@ describe("moveDeliveryStop — I7", () => {
 
     const moved = moveDeliveryStop(from, to, "a_s1", LATER, false);
 
-    expect(moved).toEqual({ id: "a_s1", orderId: "o_1" });
+    expect(moved).toEqual({ kind: "order", id: "a_s1", orderId: "o_1" });
     expect(from.orderIds).toEqual(["o_2"]);
     expect(to.orderIds).toEqual(["o_3", "o_1"]);
     expect(from.toSnapshot().removedStops).toEqual([]);

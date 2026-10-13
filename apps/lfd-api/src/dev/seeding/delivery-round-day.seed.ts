@@ -175,7 +175,13 @@ export async function readTodayRounds(
     },
     orderBy: { id: "asc" },
   });
-  return rounds.map((round) => ({ roundId: round.id, stops: round.stops }));
+  // Le semis ne compose que des livraisons : un arrêt de transfert n'y entre pas.
+  return rounds.map((round) => ({
+    roundId: round.id,
+    stops: round.stops.flatMap((stop) =>
+      stop.orderId === null ? [] : [{ orderId: stop.orderId }],
+    ),
+  }));
 }
 
 /**

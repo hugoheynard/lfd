@@ -7,6 +7,7 @@ import {
   type DriverRoundSummaryRow,
 } from "../domain/ports/driver-rounds.reader.js";
 import { departedStopOf, EXECUTION_SELECT } from "./departed-stop.mapper.js";
+import { orderStopsOnly } from "./order-stop.js";
 
 /** Un arrêt non retiré — les clos (lot 6) compris : le livreur voit qu'il est passé. */
 const KEPT_STOP = { removedAt: null } as const;
@@ -86,7 +87,10 @@ export class PrismaDriverRoundsReader extends DriverRoundsReader {
     if (row === null) {
       return null;
     }
-    const bins = await this.binsOf(row.stops.map((stop) => stop.orderId));
+    // Un arrêt de transfert n'est pas encore montré au livreur : son geste,
+    // « Remis au site », est le lot T2 (plan du transfert interne, §9).
+    const stops = orderStopsOnly(row.stops);
+    const bins = await this.binsOf(stops.map((stop) => stop.orderId));
     return {
       id: row.id,
       serviceDay: row.serviceDay,
@@ -95,7 +99,7 @@ export class PrismaDriverRoundsReader extends DriverRoundsReader {
       version: row.version,
       departedAt: row.departedAt,
       returnedAt: row.returnedAt,
-      stops: row.stops.map((stop) => ({
+      stops: stops.map((stop) => ({
         stopId: stop.id,
         orderId: stop.orderId,
         position: stop.position,

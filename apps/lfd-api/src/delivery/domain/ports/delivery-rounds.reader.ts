@@ -1,10 +1,21 @@
 import type { PlannedTiming } from "../value-objects/planned-timing.js";
 
-/** Un arrêt vivant, pour la vue. */
-export interface RoundStopRow {
+import type { StopSubject } from "../entities/delivery-round-state.js";
+
+/**
+ * Un arrêt vivant, pour la vue — de commande, ou de transfert interne (plan
+ * du transfert interne, §4). Un lecteur qui lit `orderId` sans tester `kind`
+ * ne compile pas.
+ */
+export type RoundStopRow = StopSubject & {
   readonly stopId: string;
-  readonly orderId: string;
   readonly position: number;
+};
+
+/** Ce que la vue dit d'un transfert interne : son site, et combien de commandes il porte. */
+export interface RoundTransferRow {
+  readonly siteLabel: string;
+  readonly orderCount: number;
 }
 
 /** Une tournée du jour, telle que la vue la lit. */
@@ -26,6 +37,8 @@ export interface RoundRow {
   readonly planned: PlannedTiming | null;
   /** Arrêts vivants (ni retirés, ni clos), dans l'ordre de passage. */
   readonly stops: readonly RoundStopRow[];
+  /** Les transferts internes de ses arrêts de transfert, par identifiant (lot T1). */
+  readonly transfers: ReadonlyMap<string, RoundTransferRow>;
 }
 
 /**

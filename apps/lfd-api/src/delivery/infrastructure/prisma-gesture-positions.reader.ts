@@ -5,6 +5,7 @@ import {
   type GesturePositionRow,
   GesturePositionsReader,
 } from "../domain/ports/gesture-positions.reader.js";
+import { ORDER_STOP, orderStopsOnly } from "./order-stop.js";
 
 /**
  * **Les positions au geste encore gardées**, pour les suggestions de
@@ -24,7 +25,7 @@ export class PrismaGesturePositionsReader extends GesturePositionsReader {
   async kept(): Promise<readonly GesturePositionRow[]> {
     const [closed, arrived] = await Promise.all([
       this.prisma.deliveryRoundStop.findMany({
-        where: { removedAt: null, closedLat: { not: null } },
+        where: { ...ORDER_STOP, removedAt: null, closedLat: { not: null } },
         select: { orderId: true, closedLat: true, closedLng: true, closedAccuracyM: true },
       }),
       this.prisma.deliveryStopExecution.findMany({
@@ -33,7 +34,7 @@ export class PrismaGesturePositionsReader extends GesturePositionsReader {
       }),
     ]);
     return [
-      ...closed.flatMap((row) =>
+      ...orderStopsOnly(closed).flatMap((row) =>
         rowOf(row.orderId, "door", row.closedLat, row.closedLng, row.closedAccuracyM),
       ),
       ...arrived.flatMap((row) =>

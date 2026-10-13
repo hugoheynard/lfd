@@ -73,6 +73,24 @@ export interface DeliveryRoundView {
    * AVERTISSEMENT, jamais un refus — une affectation à la main passe toujours.
    */
   readonly place: DeliveryRoundPlaceView | null;
+  /**
+   * Les arrêts de **transfert interne** de la tournée (plan du transfert
+   * interne, lot T1, 2026-10-13) — « → Val Village · N commandes », sans
+   * client ni adresse. Leurs positions s'intercalent dans la même séquence que
+   * `stops`. Absent : aucun (et pour un serveur d'avant le lot).
+   */
+  readonly transferStops?: readonly DeliveryRoundTransferStopView[];
+}
+
+/** Un arrêt de transfert interne : un site servi, le nombre de ses commandes. */
+export interface DeliveryRoundTransferStopView {
+  readonly stopId: string;
+  readonly transferId: string;
+  /** Le nom du site, figé à l'ouverture du transfert. */
+  readonly siteLabel: string;
+  /** Dans la même séquence 1..n que les arrêts de commande. */
+  readonly position: number;
+  readonly orderCount: number;
 }
 
 /**

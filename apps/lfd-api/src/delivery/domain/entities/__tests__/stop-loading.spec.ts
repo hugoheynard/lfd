@@ -15,7 +15,7 @@ function loading(overrides: Partial<StopLoadingSnapshot> = {}): StopLoading {
   return StopLoading.restore({
     stopId: "s_1",
     roundId: "r_1",
-    orderId: "o_1",
+    subject: { kind: "order", orderId: "o_1" },
     serviceDay: DAY,
     vehicleName: "Kangoo blanc",
     passage: 1,

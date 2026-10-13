@@ -2,6 +2,7 @@ import type { RoundRow } from "../domain/ports/delivery-rounds.reader.js";
 import type { BusyRound } from "../domain/services/vehicle-availability.js";
 import type { KeptRound } from "./delivery-proposal-support.js";
 import { type LocatedStop, routingStopFor } from "./delivery-routing-support.js";
+import { orderIdsOf } from "../domain/entities/delivery-round-state.js";
 
 const SECONDS_PER_MINUTE = 60;
 const SECONDS_PER_HOUR = 3600;
@@ -39,7 +40,7 @@ export function fleetOccupationOf(
   const unknownReturn = new Set(
     locking
       .filter(({ round }) =>
-        round.stops.some((stop) => (stops.get(stop.orderId)?.point ?? null) === null),
+        orderIdsOf(round.stops).some((orderId) => (stops.get(orderId)?.point ?? null) === null),
       )
       .map(({ round }) => round.vehicleId),
   );
@@ -54,7 +55,7 @@ function busyRoundOf(round: RoundRow, stops: ReadonlyMap<string, LocatedStop>): 
     roundId: round.id,
     vehicle: { id: round.vehicleId, name: round.vehicleName },
     passage: round.passage,
-    stops: round.stops.map((stop) => routingStopFor(stop.orderId, stops)),
+    stops: orderIdsOf(round.stops).map((orderId) => routingStopFor(orderId, stops)),
     departedAt: round.departedAt === null ? null : parisSecondsOfDay(round.departedAt),
   };
 }

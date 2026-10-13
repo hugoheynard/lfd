@@ -19,7 +19,7 @@ const ROUND = DeliveryRound.restore({
   driverStaffId: null,
   createdAt: AT,
   updatedAt: AT,
-  stops: [{ id: "s_1", orderId: "o_1", position: 1, closedAt: null }],
+  stops: [{ kind: "order", id: "s_1", orderId: "o_1", position: 1, closedAt: null }],
 });
 
 function sheet(overrides: Partial<DepartureSheet> = {}): DepartureSheet {
@@ -63,8 +63,8 @@ describe("departedStopsOf — la feuille figée au départ", () => {
     const two = DeliveryRound.restore({
       ...ROUND.toSnapshot(),
       stops: [
-        { id: "s_b", orderId: "o_2", position: 1, closedAt: null },
-        { id: "s_a", orderId: "o_1", position: 2, closedAt: null },
+        { kind: "order", id: "s_b", orderId: "o_2", position: 1, closedAt: null },
+        { kind: "order", id: "s_a", orderId: "o_1", position: 2, closedAt: null },
       ],
     });
     const point = { lat: 45.9, lng: 6.12 };

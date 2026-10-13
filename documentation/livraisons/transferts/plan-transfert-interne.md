@@ -1,7 +1,8 @@
 # Plan — le transfert interne vers un site éloigné
 
-> **État : 📐 doc-first, 2026-10-13.** Du transfert, seul le lot **T0**
-> (l'échéance selon le site) est bâti, le 2026-10-13 — voir la fin du
+> **État : 🔨 partiel, 2026-10-13.** Du transfert, les lots **T0**
+> (l'échéance selon le site) et **T1** (l'agrégat, l'arrêt `transfer`, la
+> composition, le manifeste) sont bâtis le 2026-10-13 — voir la fin du
 > document. Les **sites** dont il dépend sont bâtis
 > et décrits dans [`../../sites/sites.md`](../../sites/sites.md) (rôle
 > « Approvisionné par transfert », `transfer_mode`, `counter_setup_minutes`,
@@ -63,10 +64,38 @@ reste interdit, la livraison compose déjà sur `production.day_closed`).
 
 ## 3. L'agrégat `InternalTransfer`
 
-Table `delivery_internal_transfer` (schéma `delivery`), clé naturelle
-`(service_day, site_id)` ; ses commandes dans
-`delivery_internal_transfer_order(transfer_id, order_id)` — `order_id`
-**opaque**, jamais lu comme une livraison.
+Table `delivery_internal_transfer` (schéma `delivery`), **sans** unicité
+`(service_day, site_id)` (§1 : autant de transferts que nécessaire) ; ses
+**éléments** dans `delivery_internal_transfer_item` — `order_id` **opaque**,
+jamais lu comme une livraison.
+
+> **Décisions de Hugo du 2026-10-13, reçues pendant le lot T1 :**
+>
+> - **Le contenu d'un transfert est une liste d'éléments discriminés** :
+>   `kind` ∈ {`order`, `refill`}, `order_id` / `refill_id` nullables, un
+>   `CHECK` qui exige exactement l'un des deux selon le genre, une unicité
+>   partielle par commande et par réassort (un élément dans un seul
+>   transfert). Dans le domaine : `TransferItem = { kind: 'order', orderId } |
+{ kind: 'refill', refillId }`. Un même transfert porte **en même temps**
+>   des commandes (retraits au site) et du réassort (la boutique du site) :
+>   aucune contrainte de genre au niveau du transfert.
+> - **« On doit savoir ce qu'on transporte » : le manifeste.** Pour chaque
+>   élément, son contenu (SKU, libellé figé, quantité) ; deux sections
+>   (commandes / réassort), chacune totalisée par SKU, et un total tous genres
+>   confondus. Calculé à la lecture tant que le transfert est prévu (lignes de
+>   commande lues au commerce par un port de la livraison,
+>   `TransferOrderContentsReader`) ; **figé au départ** dans
+>   `delivery_internal_transfer_manifest_line` — la référence de la réception
+>   au site (T2). Lecture : `GET /admin/delivery/transfers/:id/manifest`, sous
+>   `delivery_rounds`.
+> - **Le réassort — NON BÂTI.** « Comme une commande, mais au niveau du
+>   site » : le client est le site, ni une société ni un particulier ; pour
+>   l'instant avec les **mêmes** limites produit que les commandes (heures
+>   limites, quantités), pour simplifier. Rien n'en existe : ni table, ni clé
+>   étrangère (`refill_id` est opaque), ni écrivain, ni lecteur de contenu —
+>   son contenu se lit « inconnu », et le manifeste ne l'invente pas. Le
+>   manifeste a le **même format de ligne** pour les deux genres, pour que le
+>   réassort s'y branche sans le changer.
 
 ```mermaid
 stateDiagram-v2
@@ -419,6 +448,101 @@ l'option B le même jour ; le transfert a été refondu.
 | S4  | SÉRIEUX  | réception : mécanisme et trace                                                                                                 | **corrigé** (§3) : un seul `UPDATE … WHERE received_at IS NULL` avec auteur et motif ; 0 ligne → `TransferAlreadyReceivedError` ; fait de journal `internal_transfer.received`                                                           |
 | S5  | SÉRIEUX  | T0 dépend de S1 et de Q-T11                                                                                                    | **corrigé** (§9)                                                                                                                                                                                                                         |
 | m   | mineurs  | §12.1 S6 contre la lecture synchrone ; nom du fichier du fait de départ ; lecteur des sites servis ; repli sans véhicule       | **corrigés** : §12.1 S6 aligné ; `delivery-round-departed.fact.ts` vérifié (existe) ; lecteur nommé `TransferSitesReader` (§9) ; repli sans véhicule : transfert sans arrêt, ligne au journal, sortie par réception manuelle (**Q-T13**) |
+
+## État du lot T1 (2026-10-13)
+
+🔨 **Bâti, non commité** (non vérifié par `lecteur-de-migrations` ni par
+`vitruve` à l'écriture de cette section). Migration
+`20261013700000_le_transfert_interne` (additive, sauf le `DROP NOT NULL` de
+`delivery_round_stop.order_id`, assumé au §4).
+
+**En base** : `delivery_internal_transfer` (site opaque + nom figé,
+`departed_at`, version), `delivery_internal_transfer_item` (genre
+`order`/`refill`, `CHECK`, unicités partielles),
+`delivery_internal_transfer_manifest_line` (le manifeste figé) ; sur
+`delivery_round_stop`, `kind delivery_stop_kind`, `transfer_id`, le `CHECK`
+`delivery_round_stop_kind_check` et l'index jumeau
+`delivery_round_stop_live_transfer_key`. Les trois tables nouvelles et la
+journée avancent par le déclencheur `day_change` du transfert.
+
+**Dans le domaine** : l'agrégat `InternalTransfer` (prévu → parti ; un
+élément une fois ; parti, il ne reçoit plus rien ; manifeste figé au départ) ;
+l'union `StopSubject` (`DetachedStop`, `DeliveryStopState`, `RoundStopRow`,
+`LoadingStopRow`) — `DeliveryRound.orderIds` ne rend que les commandes,
+`transferIds` les transferts, `assignTransfer` insère l'arrêt ;
+`cheapestTransferInsertion` (pur) cherche la place qui ajoute le moins de
+route sans retarder aucun client.
+
+**Le cycle** :
+
+```mermaid
+sequenceDiagram
+  participant F as fournil
+  participant L as livraison
+  participant C as commerce
+  F->>L: production.day_closed (ou day_retaken)
+  L->>C: TransferOrdersReader — retraits des sites servis par transfert
+  L->>L: TransferAttachment — transfert prévu du site et du jour, ou un autre (Q-T3)
+  L->>L: DayAutoComposition — livraisons, puis TransferPlacement
+  L->>C: TransferSitesReader — nom, GPS, mode, arrivée requise (règle T0)
+  L->>L: intégré (TransferRouting) ou dédié, sans véhicule libre : journal
+  L->>L: Partir — le transfert part, son manifeste se fige
+```
+
+- **Rangement** : à l'arrêt du plan et au retirage (abonnés durables
+  `LearnArrestedPlan`, `LearnRetakenPlan`), dans leur transaction. Le
+  regroupement retenu : **un transfert prévu par site et par jour** tant qu'il
+  n'est pas parti (T0 ne calcule qu'une heure requise par site et par jour) ;
+  un second s'ouvre quand le premier est parti.
+- **Placement** (`TransferPlacement`, après la composition des livraisons, et
+  même si elle refuse) : intégré → `TransferRouting` ; aucune place à temps,
+  ou mode dédié → une tournée ouverte sur un véhicule **sans tournée ce
+  jour-là** ; aucun → `internal_transfer.unplaced` au journal (Q-T13). Le
+  retirage d'un jour déjà composé redemande un placement.
+- **Chargement** : un bac par commande (Q-T4) ; la déclaration accepte un
+  retrait porté par un transfert ; le chargement résout commande → transfert
+  → arrêt ; « Partir » exige les bacs de toutes les commandes du transfert,
+  et nomme l'arrêt « → Val Village ».
+- **Départ** : les feuilles, retenues et le fait `delivery.round_departed` ne
+  portent que les commandes livrées ; chaque transfert de la tournée part et
+  fige son manifeste, dans la même transaction.
+- **Lecteurs** : porte, décisions, ratés, ramené, historique de facturation,
+  positions → filtre `kind = 'order'` ; un geste de la porte sur un arrêt de
+  transfert lève `TransferStopNotAnOrderError`. Proposer / chronométrer /
+  suggérer ne voient que les commandes ; appliquer une proposition et
+  réordonner gardent l'arrêt de transfert à son rang.
+- **Vues** : `transferStops` (champ additif) sur la vue des tournées et sur
+  celle du chargement d'une tournée ; le manifeste par sa route.
+- **Journal** : `internal_transfer.opened|placed|unplaced`,
+  `delivery_round.transfer_stop_moved|removed`, et leurs phrases au
+  back-office.
+- **Tests** : domaine (agrégat, manifeste, insertion, tournée), application
+  (rangement, placement, départ, manifeste, abonnés, déclaration des bacs),
+  e2e `apps/lfd-api/test/internal-transfer.e2e-spec.ts` (clôture → transfert → arrêt
+  `transfer` à `order_id` nul → `CHECK` et index jumeau → bac chargé →
+  départ → manifeste figé).
+
+**Ce qui reste hors de T1, ou en écart** :
+
+- **Le port `InternalTransferDesk` de la passation (§6.4) n'est pas bâti** :
+  le rangement se fait à l'arrêt du plan et au retirage. Une commande passée
+  après l'arrêt et avant un retirage n'a pas encore de transfert — elle n'est
+  pas non plus produite. À trancher : le port synchrone appelé par les trois
+  handlers de passation, ou un abonné au fait durable
+  `commerce.order_placed`, déjà déclaré par la livraison.
+- **Une commande annulée, changée de jour ou de site après son rangement
+  reste dans son transfert** : aucun geste ne l'en retire (le plan ne nomme
+  pas l'appelant).
+- **L'arrêt de transfert ne se clôt pas encore** (« Remis au site », T2) :
+  une tournée qui en porte un ne peut pas être terminée par le livreur (I9)
+  avant T2, et l'app du livreur et la feuille de route ne le montrent pas.
+- **Pas de durée de déchargement du site** : l'arrêt prend le temps sur place
+  global des réglages.
+- **Le plan de chargement** (`loading-plan`) ne place pas encore les bacs d'un
+  arrêt de transfert ; une tournée qui porte un autre transfert n'est pas
+  candidate à l'intégration d'un second site.
+- **Le front** : afficher `transferStops`, le manifeste, et permettre de
+  déplacer / retirer l'arrêt (les routes existent).
 
 ## État du lot T0 (2026-10-13)
 

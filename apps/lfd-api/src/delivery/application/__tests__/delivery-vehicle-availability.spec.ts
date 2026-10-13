@@ -15,7 +15,13 @@ function round(id: string, vehicleId: string, orderIds: readonly string[]): Roun
     driverStaffId: null,
     returnedAt: null,
     planned: null,
-    stops: orderIds.map((orderId, position) => ({ stopId: `${id}_${orderId}`, orderId, position })),
+    stops: orderIds.map((orderId, position) => ({
+      kind: "order" as const,
+      stopId: `${id}_${orderId}`,
+      orderId,
+      position,
+    })),
+    transfers: new Map(),
   };
 }
 

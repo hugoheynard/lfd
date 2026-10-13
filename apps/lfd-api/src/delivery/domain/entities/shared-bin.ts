@@ -48,10 +48,18 @@ export function isSharedBinToRedo(
   return partner !== undefined && !areConsecutive(own, partner);
 }
 
-/** Les places, dans une tournée, des commandes de ses arrêts vivants dans l'ordre. */
+/**
+ * Les places, dans une tournée, des commandes de ses arrêts vivants dans
+ * l'ordre. `null` : un arrêt de transfert interne (lot T1) — il occupe un
+ * rang, qui sépare ses voisins comme tout arrêt, mais ne place aucune commande.
+ */
 export function placesInRound(
   roundId: string,
-  orderIds: readonly string[],
+  orderIds: readonly (string | null)[],
 ): ReadonlyMap<string, StopPlace> {
-  return new Map(orderIds.map((orderId, rank) => [orderId, { roundId, rank }]));
+  return new Map(
+    orderIds.flatMap((orderId, rank) =>
+      orderId === null ? [] : [[orderId, { roundId, rank }] as const],
+    ),
+  );
 }

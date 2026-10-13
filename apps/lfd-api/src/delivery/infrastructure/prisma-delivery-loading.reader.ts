@@ -10,6 +10,8 @@ import {
 } from "../domain/ports/delivery-loading.reader.js";
 import { binHalfOf } from "./bin-half.js";
 import { partnersOf } from "./bin-partners.js";
+import { stopSubjectOf } from "./delivery-round.writes.js";
+import { orderStopsOnly } from "./order-stop.js";
 
 const BIN_SELECT = {
   id: true,
@@ -41,7 +43,10 @@ const ROUND_SELECT = {
     orderBy: { position: "asc" },
     select: {
       id: true,
+      kind: true,
       orderId: true,
+      transferId: true,
+      transfer: { select: { siteLabel: true } },
       position: true,
       binLoads: { where: { loadedAt: { not: null } }, select: { binId: true, loadedAt: true } },
     },
@@ -93,7 +98,12 @@ export class PrismaDeliveryLoadingReader extends DeliveryLoadingReader {
       orderBy: [{ vehicle: { createdAt: "asc" } }, { vehicleId: "asc" }, { passage: "asc" }],
       select: ROUND_SELECT,
     });
-    const orderIds = rounds.flatMap((round) => round.stops.map((stop) => stop.orderId));
+    const carried = await this.transferOrdersOf(
+      rounds.flatMap((round) => round.stops.flatMap((stop) => stop.transferId ?? [])),
+    );
+    const orderIds = rounds.flatMap((round) =>
+      round.stops.flatMap((stop) => stop.orderId ?? carried.get(stop.transferId ?? "") ?? []),
+    );
     const bins = await this.binsOf(orderIds);
     return rounds.map((round) => ({
       id: round.id,
@@ -103,10 +113,11 @@ export class PrismaDeliveryLoadingReader extends DeliveryLoadingReader {
       version: round.version,
       departedAt: round.departedAt,
       stops: round.stops.map((stop) => ({
+        ...stopSubjectOf(stop),
         stopId: stop.id,
-        orderId: stop.orderId,
+        siteLabel: stop.transfer?.siteLabel ?? null,
         position: stop.position,
-        bins: bins.filter((bin) => bin.orderId === stop.orderId),
+        bins: bins.filter((bin) => carriedBy(stop, carried).has(bin.orderId)),
         loaded: new Map(
           stop.binLoads.flatMap((load) =>
             load.loadedAt === null ? [] : [[load.binId, load.loadedAt] as const],
@@ -114,6 +125,25 @@ export class PrismaDeliveryLoadingReader extends DeliveryLoadingReader {
         ),
       })),
     }));
+  }
+
+  /** Les commandes de chaque transfert, par transfert. */
+  private async transferOrdersOf(
+    transferIds: readonly string[],
+  ): Promise<ReadonlyMap<string, readonly string[]>> {
+    if (transferIds.length === 0) {
+      return new Map();
+    }
+    const items = await this.prisma.deliveryInternalTransferItem.findMany({
+      where: { transferId: { in: [...transferIds] }, kind: "order" },
+      orderBy: [{ attachedAt: "asc" }, { id: "asc" }],
+      select: { transferId: true, orderId: true },
+    });
+    const byTransfer = new Map<string, string[]>();
+    for (const item of orderStopsOnly(items)) {
+      byTransfer.set(item.transferId, [...(byTransfer.get(item.transferId) ?? []), item.orderId]);
+    }
+    return byTransfer;
   }
 
   orderBins(orderId: string): Promise<readonly BinRow[]> {
@@ -153,14 +183,21 @@ export class PrismaDeliveryLoadingReader extends DeliveryLoadingReader {
     for (const stop of stops) {
       const rank = ranks.get(stop.roundId) ?? 0;
       ranks.set(stop.roundId, rank + 1);
-      places.set(stop.orderId, { roundId: stop.roundId, rank });
+      // Un arrêt de transfert occupe un rang sans placer de commande.
+      if (stop.orderId !== null) {
+        places.set(stop.orderId, { roundId: stop.roundId, rank });
+      }
     }
     return places;
   }
 
   async destinationOf(orderId: string, binId: string): Promise<BinDestinationRow | null> {
+    // Sa propre tournée, ou celle du transfert interne qui l'emporte (lot T1).
     const stop = await this.prisma.deliveryRoundStop.findFirst({
-      where: { orderId, ...LIVE_STOP },
+      where: {
+        ...LIVE_STOP,
+        OR: [{ orderId }, { transfer: { items: { some: { kind: "order", orderId } } } }],
+      },
       select: {
         round: {
           select: {
@@ -228,4 +265,15 @@ export class PrismaDeliveryLoadingReader extends DeliveryLoadingReader {
       partner: partners.get(row.id) ?? null,
     }));
   }
+}
+
+/** Les commandes qu'un arrêt emporte : la sienne, ou celles de son transfert. */
+function carriedBy(
+  stop: { readonly orderId: string | null; readonly transferId: string | null },
+  carried: ReadonlyMap<string, readonly string[]>,
+): ReadonlySet<string> {
+  if (stop.orderId !== null) {
+    return new Set([stop.orderId]);
+  }
+  return new Set(stop.transferId === null ? [] : (carried.get(stop.transferId) ?? []));
 }

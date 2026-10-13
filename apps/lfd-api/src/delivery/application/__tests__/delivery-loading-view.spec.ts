@@ -111,8 +111,18 @@ describe("binViewsOf — « bac 2 / 3 »", () => {
 
 describe("loadingRoundView / loadingDayView — L4-C17", () => {
   const stops: LoadingRoundRow["stops"] = [
-    { stopId: "s_1", orderId: "o_1", position: 1, bins: [], loaded: new Map() },
     {
+      kind: "order",
+      siteLabel: null,
+      stopId: "s_1",
+      orderId: "o_1",
+      position: 1,
+      bins: [],
+      loaded: new Map(),
+    },
+    {
+      kind: "order",
+      siteLabel: null,
       stopId: "s_2",
       orderId: "o_1",
       position: 2,
@@ -120,6 +130,8 @@ describe("loadingRoundView / loadingDayView — L4-C17", () => {
       loaded: new Map([["a", AT]]),
     },
     {
+      kind: "order",
+      siteLabel: null,
       stopId: "s_3",
       orderId: "o_1",
       position: 3,

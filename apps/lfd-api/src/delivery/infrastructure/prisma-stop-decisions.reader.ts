@@ -12,6 +12,7 @@ import {
   StopDecisionsReader,
 } from "../domain/ports/stop-decisions.reader.js";
 import { outcomeOf, sourceOf } from "./stop-decision.mapper.js";
+import { ORDER_STOP, orderStopsOnly } from "./order-stop.js";
 
 const DECISION_SELECT = {
   stopId: true,
@@ -83,6 +84,7 @@ export class PrismaPendingDecisionsReader extends PendingDecisionsReader {
     const stops = await this.prisma.deliveryRoundStop.findMany({
       where: {
         id: { in: [...decisions.keys()] },
+        ...ORDER_STOP,
         removedAt: null,
         closedAt: null,
         round: { departedAt: { not: null }, returnedAt: null },
@@ -98,7 +100,7 @@ export class PrismaPendingDecisionsReader extends PendingDecisionsReader {
         },
       },
     });
-    return stops.flatMap((stop) => {
+    return orderStopsOnly(stops).flatMap((stop) => {
       const decision = decisions.get(stop.id);
       return decision === undefined
         ? []

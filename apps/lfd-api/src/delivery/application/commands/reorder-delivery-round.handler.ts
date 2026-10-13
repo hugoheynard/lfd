@@ -9,12 +9,14 @@ import {
   DeliveryRoundReorderedEvent,
 } from "../../domain/events/delivery-round.events.js";
 import { DeliveryRoundRepository } from "../../domain/ports/delivery-round.repository.js";
+import { withTransferStopsInPlace } from "../../domain/services/transfer-stops-in-place.js";
 import { loadRoundAt, referencesOf } from "../delivery-round-support.js";
 import { ReorderDeliveryRoundCommand } from "./reorder-delivery-round.command.js";
 
 /**
  * Range les arrêts d'une tournée dans l'ordre donné — la liste COMPLÈTE,
- * permutation exacte des arrêts vivants (I2). Un ordre identique n'écrit rien :
+ * permutation exacte des arrêts vivants (I2) ; un arrêt de transfert interne
+ * omis garde sa place (lot T1). Un ordre identique n'écrit rien :
  * ni la tournée, ni sa version, ni le journal (C7).
  *
  * @throws {DeliveryRoundNotFoundError} @throws {DeliveryRoundStaleError}
@@ -38,7 +40,10 @@ export class ReorderDeliveryRoundHandler implements ICommandHandler<
     await this.uow.run(async () => {
       const round = await loadRoundAt(this.rounds, command.roundId, version);
       const before = round.orderIds;
-      if (!round.reorder(stopIds, this.clock.now())) {
+      // L'écran ne range que les commandes : un arrêt de transfert qu'il ne
+      // cite pas garde son rang (plan du transfert interne, §5).
+      const complete = withTransferStopsInPlace(round.liveStops, stopIds);
+      if (!round.reorder(complete, this.clock.now())) {
         return;
       }
       await this.rounds.save(round);

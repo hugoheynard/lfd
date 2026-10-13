@@ -18,6 +18,10 @@ import {
   roundWith,
 } from "./round-doubles.js";
 import { FixedDoorstepSettings, RecordingDurable } from "./decision-doubles.js";
+import {
+  FixedTransferContents,
+  InMemoryInternalTransfers,
+} from "../../__tests__/transfer-doubles.js";
 
 /*
  * « Partir » du dépôt refuse une commande retenue au contrôle qualité
@@ -63,6 +67,8 @@ function depart(holds: FixedDepartureHolds) {
     new DirectUnitOfWork(),
     durable,
     new FixedStaffPermissionHolders(),
+    new InMemoryInternalTransfers(),
+    new FixedTransferContents(),
   );
   return { handler, rounds, departed, events, durable };
 }

@@ -6,6 +6,7 @@ import {
   type BroughtBackOrderRow,
   BroughtBackOrdersReader,
 } from "../domain/ports/brought-back-orders.reader.js";
+import { ORDER_STOP, orderStopsOnly } from "./order-stop.js";
 
 const BRING_BACK: StopDecisionOutcome = "bring_back";
 
@@ -29,10 +30,12 @@ export class PrismaBroughtBackOrdersReader extends BroughtBackOrdersReader {
     if (latest.size === 0) {
       return [];
     }
-    const stops = await this.prisma.deliveryRoundStop.findMany({
-      where: { orderId: { in: [...latest.keys()] }, removedAt: null },
-      select: { orderId: true, createdAt: true },
-    });
+    const stops = orderStopsOnly(
+      await this.prisma.deliveryRoundStop.findMany({
+        where: { orderId: { in: [...latest.keys()] }, ...ORDER_STOP, removedAt: null },
+        select: { orderId: true, createdAt: true },
+      }),
+    );
     const replaced = new Set(
       stops
         .filter((stop) => stop.createdAt > (latest.get(stop.orderId) ?? stop.createdAt))

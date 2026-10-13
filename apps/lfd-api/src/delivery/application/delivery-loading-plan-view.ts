@@ -10,6 +10,7 @@ import type { LoadingPlan, PlanBinType, PlanStop } from "../domain/services/load
 import { MM_PER_CM } from "../domain/value-objects/bin-type-dimensions.js";
 import { TechnicalError } from "../../platform/shared/errors/app-error.js";
 import { type BinContext, binToRedo, orderNamesOf } from "./delivery-loading-view.js";
+import { orderStopsOf } from "../domain/entities/delivery-round-state.js";
 
 /** Un bac dont le type n'a pas été relu : la clé étrangère l'aurait dû garantir. */
 class LoadingPlanBinTypeMissingError extends TechnicalError {
@@ -27,7 +28,8 @@ export function planStopsOf(
   context: BinContext,
   binTypes: ReadonlyMap<string, PlanBinType>,
 ): readonly PlanStop[] {
-  return round.stops.map((stop) => {
+  // Les bacs d'un arrêt de transfert ne sont pas encore au plan (lot T1, reste).
+  return orderStopsOf(round.stops).map((stop) => {
     const names = context.names.get(stop.orderId) ?? orderNamesOf(undefined);
     return {
       position: stop.position,

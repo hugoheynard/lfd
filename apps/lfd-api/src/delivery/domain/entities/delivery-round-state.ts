@@ -12,9 +12,7 @@ import type { PlannedTiming } from "../value-objects/planned-timing.js";
  * raté, lot 6) : il n'est plus vivant, garde sa position figée, et se
  * réécrit tel quel.
  */
-export interface DeliveryStopState {
-  readonly id: string;
-  readonly orderId: string;
+export type DeliveryStopState = DetachedStop & {
   readonly position: number;
   readonly closedAt: Date | null;
   /**
@@ -25,12 +23,12 @@ export interface DeliveryStopState {
    * ni réécrire une position que la purge a effacée, ni l'effacer lui-même.
    */
   readonly closedPosition?: GesturePosition;
-}
+};
 
 /** Un arrêt retiré pendant cette écriture : la ligne reste, `removedAt` posé. */
-export interface RemovedStopState extends DeliveryStopState {
+export type RemovedStopState = DeliveryStopState & {
   readonly removedAt: Date;
-}
+};
 
 /**
  * **Le retour au dépôt** (`parcours-du-livreur.md`, PL2) : quand, et qui l'a
@@ -75,8 +73,50 @@ export interface DeliveryRoundSnapshot extends DeliveryRoundState {
   readonly removedStops: readonly RemovedStopState[];
 }
 
+/**
+ * **Ce qu'un arrêt dessert** (plan du transfert interne, §4, lot T1) : une
+ * commande livrée, ou le passage d'un transfert interne à son site. L'union
+ * est le mécanisme qui rend l'inventaire complet : un lecteur qui lit
+ * `orderId` sans tester `kind` ne compile pas.
+ */
+export type StopSubject =
+  | { readonly kind: "order"; readonly orderId: string }
+  | { readonly kind: "transfer"; readonly transferId: string };
+
 /** Un arrêt vivant, détaché d'une tournée pour entrer dans une autre (I7). */
-export interface DetachedStop {
-  readonly id: string;
-  readonly orderId: string;
+export type DetachedStop = StopSubject & { readonly id: string };
+
+/** La commande d'un arrêt de commande ; `null` pour un arrêt de transfert. */
+export function orderIdOf(stop: StopSubject): string | null {
+  return stop.kind === "order" ? stop.orderId : null;
+}
+
+/** Les commandes d'arrêts de commande, dans l'ordre donné. */
+export function orderIdsOf(stops: readonly StopSubject[]): readonly string[] {
+  return stops.flatMap((stop) => (stop.kind === "order" ? [stop.orderId] : []));
+}
+
+/** Deux arrêts desservent-ils la même chose ? */
+export function sameSubject(a: StopSubject, b: StopSubject): boolean {
+  return a.kind === "order"
+    ? b.kind === "order" && a.orderId === b.orderId
+    : b.kind === "transfer" && a.transferId === b.transferId;
+}
+
+/** Les arrêts de commande seulement, typés comme tels — un arrêt de transfert n'a pas de commande. */
+export function orderStopsOf<T extends StopSubject>(
+  stops: readonly T[],
+): readonly Extract<T, { readonly kind: "order" }>[] {
+  return stops.filter(
+    (stop): stop is Extract<T, { readonly kind: "order" }> => stop.kind === "order",
+  );
+}
+
+/** Les arrêts de transfert seulement. */
+export function transferStopsOf<T extends StopSubject>(
+  stops: readonly T[],
+): readonly Extract<T, { readonly kind: "transfer" }>[] {
+  return stops.filter(
+    (stop): stop is Extract<T, { readonly kind: "transfer" }> => stop.kind === "transfer",
+  );
 }

@@ -13,6 +13,7 @@ import {
   RecordingDayStopsLocator,
   orderFact,
 } from "./day-readiness-doubles.js";
+import { attachmentOver } from "../../__tests__/transfer-doubles.js";
 
 // Des instants comparés entre eux seulement : le handler ne lit l'horloge que
 // pour dater la ligne.
@@ -40,7 +41,14 @@ function setup(options: { vehicles?: readonly string[]; bins?: readonly string[]
     work,
   );
   const locator = new RecordingDayStopsLocator();
-  const handler = new LearnArrestedPlan(orders, days, bell, new FixedClock(NOW), locator);
+  const handler = new LearnArrestedPlan(
+    orders,
+    days,
+    bell,
+    new FixedClock(NOW),
+    locator,
+    attachmentOver(),
+  );
   async function receive(orderIds: readonly string[], reannouncedAt: Date | null = null) {
     const fact = new ProductionDayClosedEvent(DAY, CLOSED, orderIds, reannouncedAt).durableFact();
     await handler.handle({ eventId: "e", type: fact.type, payload: fact.payload });
@@ -149,6 +157,7 @@ describe("LearnArrestedPlan — la livraison apprend que le plan est arrêté", 
       ),
       new FixedClock(NOW),
       new RecordingDayStopsLocator(),
+      attachmentOver(),
     );
     const fact = new ProductionDayClosedEvent(DAY, CLOSED, ["d1"]).durableFact();
 

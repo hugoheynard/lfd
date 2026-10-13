@@ -7,6 +7,7 @@ import {
   type RoundPlacements,
 } from "../channels/handover/index.js";
 import { roundPaperTitle } from "../domain/services/round-paper.js";
+import { ORDER_STOP, orderStopsOnly } from "./order-stop.js";
 
 /** Un arrêt de tournée lu pour sa place. */
 interface PlacedStopRow {
@@ -39,7 +40,7 @@ export class PrismaRoundPlacementsReader extends RoundPlacementsReader {
       orderIds.length === 0
         ? Promise.resolve([])
         : this.prisma.deliveryRoundStop.findMany({
-            where: { orderId: { in: [...orderIds] }, removedAt: null },
+            where: { orderId: { in: [...orderIds] }, ...ORDER_STOP, removedAt: null },
             select: {
               orderId: true,
               position: true,
@@ -49,7 +50,7 @@ export class PrismaRoundPlacementsReader extends RoundPlacementsReader {
             },
           }),
     ]);
-    return { roundCount, byOrder: placementsByOrder(stops) };
+    return { roundCount, byOrder: placementsByOrder(orderStopsOnly(stops)) };
   }
 }
 

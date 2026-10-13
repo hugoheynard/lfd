@@ -15,6 +15,8 @@ import { DeliveryDayReadiness } from "../../domain/entities/delivery-day-readine
 import { DeliveryDayReadinessRepository } from "../../domain/ports/delivery-day-readiness.repository.js";
 import { DayStopsLocator } from "../day-stops-locator.js";
 import { PlanArrestedBell } from "../plan-arrested-bell.js";
+import { TransferAttachment } from "../transfer-attachment.js";
+import { TransferPlacer } from "../transfer-placer.js";
 import { activeDeliveriesAmong } from "./arrested-plan-deliveries.js";
 
 /** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
@@ -46,6 +48,8 @@ export class LearnRetakenPlan implements DurableSubscriber {
     private readonly bell: PlanArrestedBell,
     private readonly clock: Clock,
     private readonly locating: DayStopsLocator,
+    private readonly attachment: TransferAttachment,
+    private readonly placer: TransferPlacer,
   ) {}
 
   async handle(delivery: DurableDelivery): Promise<void> {
@@ -62,6 +66,12 @@ export class LearnRetakenPlan implements DurableSubscriber {
     // CA0 : le rattrapage avant le jour J — ce qu'une commande n'a pas pu
     // situer à sa passation l'est ici, après la validation, hors transaction.
     this.locating.locateDaySoon(day.serviceDay);
+    // Lot T1 : les retraits absorbés rejoignent un transfert — un AUTRE quand
+    // celui du jour est parti (Q-T3) ; le jour déjà composé, on le place.
+    const attached = await this.attachment.attachAmong(event.orderIds);
+    if (attached > 0 && day.closedAt !== null) {
+      this.placer.placeDaySoon(day.serviceDay);
+    }
     if (announced > 0) {
       await this.bell.ring({
         serviceDay: day.serviceDay,

@@ -5,6 +5,7 @@ import type {
   LoadingRoundRow,
   LoadingStopRow,
 } from "../domain/ports/delivery-loading.reader.js";
+import { orderStopsOf } from "../domain/entities/delivery-round-state.js";
 
 /** La tournée vivante d'une commande, et son arrêt dedans. */
 export interface OrderStop {
@@ -23,7 +24,7 @@ export async function orderStopOf(
 ): Promise<OrderStop | null> {
   const place = (await loading.placesOf([orderId])).get(orderId);
   const round = place === undefined ? null : await loading.round(place.roundId);
-  const stop = round?.stops.find((candidate) => candidate.orderId === orderId);
+  const stop = orderStopsOf(round?.stops ?? []).find((candidate) => candidate.orderId === orderId);
   return round === null || stop === undefined ? null : { round, stop };
 }
 

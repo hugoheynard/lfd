@@ -1,3 +1,4 @@
+import type { StopSubject } from "../entities/delivery-round-state.js";
 import type { StopPlace } from "../entities/shared-bin.js";
 import type { BinHalf } from "../value-objects/bin-declaration.js";
 
@@ -21,16 +22,21 @@ export interface BinRow {
   readonly partner: { readonly binId: string; readonly orderId: string } | null;
 }
 
-/** Un arrêt vivant vu du dépôt : les bacs de sa commande, et ceux chargés ICI. */
-export interface LoadingStopRow {
+/**
+ * Un arrêt vivant vu du dépôt : les bacs de sa commande, et ceux chargés ICI.
+ * Un arrêt de **transfert interne** (lot T1) porte les bacs de TOUTES ses
+ * commandes — un bac par commande (Q-T4).
+ */
+export type LoadingStopRow = StopSubject & {
   readonly stopId: string;
-  readonly orderId: string;
+  /** Le nom du site d'un arrêt de transfert, figé à l'ouverture ; `null` pour une commande. */
+  readonly siteLabel: string | null;
   readonly position: number;
-  /** Tous les bacs de la commande, annulés compris, dans l'ordre de déclaration. */
+  /** Tous les bacs de la commande (ou du transfert), annulés compris, dans l'ordre de déclaration. */
   readonly bins: readonly BinRow[];
   /** Les bacs chargés dans CET arrêt, et quand. */
   readonly loaded: ReadonlyMap<string, Date>;
-}
+};
 
 /** Une tournée, vue du dépôt. */
 export interface LoadingRoundRow {

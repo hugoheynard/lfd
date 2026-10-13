@@ -26,6 +26,7 @@ import {
   loadBin,
   lookUpBinType,
 } from "./delivery-loading-support.js";
+import { TransferredOrdersReader } from "../domain/ports/internal-transfers.reader.js";
 
 /** Une déclaration : `whole` bacs entiers d'un type, et au besoin une moitié. */
 export interface BinsDeclaration {
@@ -60,6 +61,7 @@ export class DeliveryBinOffice {
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly transferred: TransferredOrdersReader,
   ) {}
 
   /**
@@ -82,7 +84,7 @@ export class DeliveryBinOffice {
     return this.uow.run(async () => {
       const binType = await lookUpBinType(this.binTypes, binTypeId);
       const declaration = BinDeclaration.of({ binType, whole, half, innerBags });
-      const reference = await declarableReference(this.orders, orderId);
+      const reference = await declarableReference(this.orders, this.transferred, orderId);
       const loading = await this.loadings.forOrder(orderId);
       const codes = await drawBinCodes(this.drawer, this.bins, declaration.count);
       const bins = DeliveryBin.declare({
@@ -148,7 +150,7 @@ export class DeliveryBinOffice {
   async share(payload: BinShareRequest): Promise<DeliveryBin> {
     const { orderId, partnerBinId, innerBags } = payload;
     return this.uow.run(async () => {
-      const reference = await declarableReference(this.orders, orderId);
+      const reference = await declarableReference(this.orders, this.transferred, orderId);
       const loading = await this.loadings.forOrder(orderId, partnerBinId);
       // Relue SOUS le verrou : une annulation ou un partage concurrents sont passés.
       const partner = await loadBin(this.bins, partnerBinId);

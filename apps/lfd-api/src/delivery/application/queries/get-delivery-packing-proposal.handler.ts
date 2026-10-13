@@ -26,6 +26,7 @@ import {
 import { freeHalvesOfOrder } from "../free-halves-support.js";
 import { packingLinesOf } from "../packing-lines.js";
 import { GetDeliveryPackingProposalQuery } from "./get-delivery-packing-proposal.query.js";
+import { TransferredOrdersReader } from "../../domain/ports/internal-transfers.reader.js";
 
 /**
  * **Le colisage proposé d'une commande livrée** (lot 4 bis, L4b-C4, v2-3,
@@ -50,10 +51,11 @@ export class GetDeliveryPackingProposalHandler implements IQueryHandler<
     private readonly products: DeliveryProductsReader,
     private readonly catalog: BinCatalogReader,
     private readonly loading: DeliveryLoadingReader,
+    private readonly transferred: TransferredOrdersReader,
   ) {}
 
   async execute(query: GetDeliveryPackingProposalQuery): Promise<DeliveryPackingProposalView> {
-    const reference = await declarableReference(this.orders, query.orderId);
+    const reference = await declarableReference(this.orders, this.transferred, query.orderId);
     const [lines, allTypes, capacities] = await Promise.all([
       this.orderLines(query.orderId),
       this.catalog.listTypes(),

@@ -5,7 +5,10 @@ import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { DurablePublisher } from "../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../platform/time/clock.js";
-import { DeliveryOrdersReader } from "../../channels/commerce/index.js";
+import {
+  DeliveryOrdersReader,
+  TransferOrderContentsReader,
+} from "../../channels/commerce/index.js";
 import { DepartureHoldsReader } from "../../channels/handover/index.js";
 import { DeliveryRoundNotFoundError } from "../../domain/errors/delivery-round-errors.js";
 import { DeliveryRoundRepository } from "../../domain/ports/delivery-round.repository.js";
@@ -14,6 +17,7 @@ import { DepartedStopRepository } from "../../domain/ports/departed-stop.reposit
 import { StopLoadingRepository } from "../../domain/ports/stop-loading.repository.js";
 import { departAndFreeze } from "../delivery-departure-support.js";
 import { DepartDeliveryRoundCommand } from "./depart-delivery-round.command.js";
+import { InternalTransferRepository } from "../../domain/ports/internal-transfer.repository.js";
 
 /**
  * **« Partir »** (lot 4, L4-C4, Q14) — la porte du CHARGEUR, une seule
@@ -58,6 +62,8 @@ export class DepartDeliveryRoundHandler implements ICommandHandler<
     private readonly uow: UnitOfWork,
     private readonly durable: DurablePublisher,
     private readonly holders: StaffPermissionHolders,
+    private readonly transfers: InternalTransferRepository,
+    private readonly contents: TransferOrderContentsReader,
   ) {}
 
   async execute(command: DepartDeliveryRoundCommand): Promise<void> {
@@ -77,6 +83,8 @@ export class DepartDeliveryRoundHandler implements ICommandHandler<
         clock: this.clock,
         durable: this.durable,
         holders: this.holders,
+        transfers: this.transfers,
+        contents: this.contents,
       });
       await this.events.publishTraced(departed);
     });

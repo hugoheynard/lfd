@@ -130,7 +130,11 @@ export abstract class DeliveryRoundOnTheRoad extends DeliveryRoundBase {
   ): boolean {
     if (this.currentDepartedAt !== null && this.currentReturn === null && this.open.length > 0) {
       throw new RoundStopsWithoutOutcomeError(
-        this.open.map((stop) => labels.get(stop.orderId) ?? stop.orderId),
+        this.open.map((stop) =>
+          stop.kind === "order"
+            ? (labels.get(stop.orderId) ?? stop.orderId)
+            : (labels.get(stop.transferId) ?? stop.transferId),
+        ),
       );
     }
     return this.returnToDepot(at, by);

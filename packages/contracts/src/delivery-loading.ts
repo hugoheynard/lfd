@@ -170,6 +170,23 @@ export interface DeliveryLoadingRoundView {
   /** Partie le, ou `null`. Partie : plus rien ne se compose ni ne se charge (I6). */
   readonly departedAt: string | null;
   readonly stops: readonly DeliveryLoadingStopView[];
+  /**
+   * Les arrêts de **transfert interne** (lot T1, 2026-10-13) : les bacs de
+   * toutes les commandes d'un site servi par transfert, à charger sur UN
+   * arrêt. Leurs positions s'intercalent avec `stops`. Absent : aucun.
+   */
+  readonly transferStops?: readonly DeliveryLoadingTransferStopView[];
+}
+
+/** Un arrêt de transfert interne vu du dépôt. */
+export interface DeliveryLoadingTransferStopView {
+  readonly stopId: string;
+  readonly transferId: string;
+  /** Le nom du site, figé à l'ouverture du transfert. */
+  readonly siteLabel: string;
+  readonly position: number;
+  readonly state: DeliveryLoadingStopState;
+  readonly bins: readonly DeliveryLoadingBinView[];
 }
 
 /** Une tournée du jour, vue du dépôt — de quoi choisir le véhicule à charger. */

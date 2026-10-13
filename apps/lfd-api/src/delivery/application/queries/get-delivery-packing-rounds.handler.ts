@@ -6,6 +6,7 @@ import { DeliveryLoadingReader } from "../../domain/ports/delivery-loading.reade
 import { namesByOrder, ordersCitedBy } from "../delivery-loading-view.js";
 import { packingRoundsView } from "../delivery-packing-rounds-view.js";
 import { GetDeliveryPackingRoundsQuery } from "./get-delivery-packing-rounds.query.js";
+import { orderStopsOf } from "../../domain/entities/delivery-round-state.js";
 
 /**
  * **Où vont les commandes du poste de colisage**
@@ -30,7 +31,9 @@ export class GetDeliveryPackingRoundsHandler implements IQueryHandler<
 
   async execute(query: GetDeliveryPackingRoundsQuery): Promise<DeliveryPackingRoundsView> {
     const rounds = await this.loading.roundsOn(query.day);
-    const orderIds = rounds.flatMap((round) => round.stops.map((stop) => stop.orderId));
+    const orderIds = rounds.flatMap((round) =>
+      orderStopsOf(round.stops).map((stop) => stop.orderId),
+    );
     const bins = rounds.flatMap((round) => round.stops.flatMap((stop) => stop.bins));
     const [facts, places, states] = await Promise.all([
       this.orders.byIds(orderIds),

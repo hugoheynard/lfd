@@ -19,7 +19,15 @@ function bin(id: string, orderId: string, overrides: Partial<BinRow> = {}): BinR
 }
 
 function stop(orderId: string, position: number, bins: readonly BinRow[] = []): LoadingStopRow {
-  return { stopId: `stop_${orderId}`, orderId, position, bins, loaded: new Map() };
+  return {
+    kind: "order",
+    stopId: `stop_${orderId}`,
+    siteLabel: null,
+    orderId,
+    position,
+    bins,
+    loaded: new Map(),
+  };
 }
 
 describe("les moitiés libres autour d'une commande (v2-4)", () => {

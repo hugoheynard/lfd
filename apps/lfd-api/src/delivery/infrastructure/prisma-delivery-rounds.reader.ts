@@ -3,9 +3,14 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../platform/database/prisma.service.js";
 import { DeliveryRoundsReader, type RoundRow } from "../domain/ports/delivery-rounds.reader.js";
 import { PlannedTiming } from "../domain/value-objects/planned-timing.js";
+import { stopSubjectOf } from "./delivery-round.writes.js";
+import { orderStopsOnly } from "./order-stop.js";
 
 /** Un arrêt vivant : ni retiré, ni clos (C12). */
 const LIVE_STOP = { removedAt: null, closedAt: null } as const;
+
+/** Un élément « commande » d'un transfert — le réassort n'est pas bâti. */
+const ORDER_ITEM = { kind: "order" } as const;
 
 /** Adaptateur Prisma de la lecture de la composition. Il n'écrit rien. */
 @Injectable()
@@ -20,7 +25,15 @@ export class PrismaDeliveryRoundsReader extends DeliveryRoundsReader {
       orderBy: [{ vehicle: { createdAt: "asc" } }, { vehicleId: "asc" }, { passage: "asc" }],
       include: {
         vehicle: { select: { retiredAt: true } },
-        stops: { where: LIVE_STOP, orderBy: { position: "asc" } },
+        stops: {
+          where: LIVE_STOP,
+          orderBy: { position: "asc" },
+          include: {
+            transfer: {
+              select: { siteLabel: true, _count: { select: { items: { where: ORDER_ITEM } } } },
+            },
+          },
+        },
       },
     });
     return rows.map((row) => ({
@@ -39,10 +52,22 @@ export class PrismaDeliveryRoundsReader extends DeliveryRoundsReader {
         meters: row.plannedMeters,
       }),
       stops: row.stops.map((stop) => ({
+        ...stopSubjectOf(stop),
         stopId: stop.id,
-        orderId: stop.orderId,
         position: stop.position,
       })),
+      transfers: new Map(
+        row.stops.flatMap((stop) =>
+          stop.transfer === null || stop.transferId === null
+            ? []
+            : [
+                [
+                  stop.transferId,
+                  { siteLabel: stop.transfer.siteLabel, orderCount: stop.transfer._count.items },
+                ] as const,
+              ],
+        ),
+      ),
     }));
   }
 
@@ -54,6 +79,6 @@ export class PrismaDeliveryRoundsReader extends DeliveryRoundsReader {
       where: { orderId: { in: [...orderIds] }, ...LIVE_STOP },
       select: { orderId: true },
     });
-    return new Set(rows.map((row) => row.orderId));
+    return new Set(orderStopsOnly(rows).map((row) => row.orderId));
   }
 }

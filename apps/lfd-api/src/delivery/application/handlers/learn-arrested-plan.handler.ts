@@ -15,6 +15,7 @@ import { DeliveryDayReadiness } from "../../domain/entities/delivery-day-readine
 import { DeliveryDayReadinessRepository } from "../../domain/ports/delivery-day-readiness.repository.js";
 import { DayStopsLocator } from "../day-stops-locator.js";
 import { PlanArrestedBell } from "../plan-arrested-bell.js";
+import { TransferAttachment } from "../transfer-attachment.js";
 import { activeDeliveriesAmong } from "./arrested-plan-deliveries.js";
 
 /** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
@@ -48,12 +49,16 @@ export class LearnArrestedPlan implements DurableSubscriber {
     private readonly bell: PlanArrestedBell,
     private readonly clock: Clock,
     private readonly locating: DayStopsLocator,
+    private readonly attachment: TransferAttachment,
   ) {}
 
   async handle(delivery: DurableDelivery): Promise<void> {
     const event = ProductionDayClosedEvent.fromPayload(delivery.payload);
     const deliveryIds = await activeDeliveriesAmong(this.orders, event.orderIds);
     const now = this.clock.now();
+    // Les retraits des sites servis par transfert rejoignent leur transfert
+    // (lot T1) ; la composition, après la validation, les placera.
+    await this.attachment.attachAmong(event.orderIds);
     const day =
       (await this.days.load(event.serviceDay)) ?? DeliveryDayReadiness.start(event.serviceDay, now);
     const announced = day.learnClosure(event.closedAt, deliveryIds, now);

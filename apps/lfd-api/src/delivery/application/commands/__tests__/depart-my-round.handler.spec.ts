@@ -26,6 +26,10 @@ import {
 } from "./round-doubles.js";
 import { DELIVERY_ROUND_DEPARTED } from "../../../channels/handover/index.js";
 import { FixedDoorstepSettings, RecordingDurable } from "./decision-doubles.js";
+import {
+  FixedTransferContents,
+  InMemoryInternalTransfers,
+} from "../../__tests__/transfer-doubles.js";
 
 // Des jours comparés entre eux seulement, jamais à l'horloge.
 const DAY = "2030-03-12";
@@ -101,6 +105,8 @@ function departMine(
     new DirectUnitOfWork(),
     durable,
     holders,
+    new InMemoryInternalTransfers(),
+    new FixedTransferContents(),
   );
   return { handler, rounds, departed, events, durable };
 }

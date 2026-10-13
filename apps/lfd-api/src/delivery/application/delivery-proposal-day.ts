@@ -9,6 +9,7 @@ import type { GeocodeCacheReader } from "../domain/ports/geocode-cache.reader.js
 import type { LoadedStopsReader } from "../domain/ports/loaded-stops.reader.js";
 import { ordersToReplace } from "./brought-back-support.js";
 import { locateFromCache, type LocatedStop } from "./delivery-routing-support.js";
+import { orderIdsOf } from "../domain/entities/delivery-round-state.js";
 
 /** Ce que la proposition a lu du jour. */
 export interface ProposalDayReading {
@@ -52,7 +53,7 @@ export async function readProposalDay(
     ordersToReplace(ports.broughtBack, ports.orders, ports.states),
   ]);
   const active = expected.filter((order) => order.status === "active");
-  const composedIds = rounds.flatMap((round) => round.stops.map((stop) => stop.orderId));
+  const composedIds = rounds.flatMap((round) => orderIdsOf(round.stops));
   const [assigned, loadedStopIds, facts, broughtBack] = await Promise.all([
     ports.rounds.composedAmong(active.map((order) => order.orderId)),
     ports.loadedStops.loadedAmong(rounds.flatMap((round) => round.stops.map((s) => s.stopId))),
@@ -83,7 +84,7 @@ export async function locateProposalDay(
   day: ProposalDayReading,
   now: Date,
 ): Promise<ReadonlyMap<string, LocatedStop>> {
-  const composedIds = day.rounds.flatMap((round) => round.stops.map((stop) => stop.orderId));
+  const composedIds = day.rounds.flatMap((round) => orderIdsOf(round.stops));
   const points = await ports.orders.stopPointsOf([...day.unassigned, ...composedIds]);
   const located = await locateFromCache(points, ports.cache, now);
   return new Map(located.map((stop) => [stop.orderId, stop]));

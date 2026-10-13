@@ -1,4 +1,5 @@
 import { deliveryRoundsDayView, type DeliveryRoundsDayInputs } from "../delivery-rounds-view.js";
+import type { RoundRow } from "../../domain/ports/delivery-rounds.reader.js";
 import { PlannedTiming } from "../../domain/value-objects/planned-timing.js";
 
 // Des jours comparés entre eux et à un retrait écrit ici — jamais à l'horloge.
@@ -21,7 +22,7 @@ function inputs(overrides: Partial<DeliveryRoundsDayInputs> = {}): DeliveryRound
   };
 }
 
-const round = {
+const round: RoundRow = {
   id: "r_1",
   vehicleId: "v_1",
   vehicleName: "Kangoo",
@@ -32,7 +33,8 @@ const round = {
   driverStaffId: null,
   returnedAt: null,
   planned: null,
-  stops: [{ stopId: "s_1", orderId: "o_1", position: 1 }],
+  stops: [{ kind: "order", stopId: "s_1", orderId: "o_1", position: 1 }],
+  transfers: new Map(),
 };
 
 describe("deliveryRoundsDayView", () => {

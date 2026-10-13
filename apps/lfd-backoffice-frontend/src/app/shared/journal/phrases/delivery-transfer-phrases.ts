@@ -1,0 +1,130 @@
+import type { JournalFactType } from '@lfd/contracts/journal-facts';
+
+import { count, optional, recordOf } from '../payload-read';
+import {
+  byActor,
+  cite,
+  inUnit,
+  subject,
+  subjectLabelOf,
+  text,
+  value,
+  type Noun,
+  type Phrase,
+  type PhraseFact,
+  type Segment,
+} from '../phrase';
+
+/**
+ * **Le transfert interne** (plan du transfert interne, lot T1, 2026-10-13) —
+ * le miroir de `DELIVERY_TRANSFER_FACTS` dans `@lfd/contracts`.
+ *
+ * Le sujet d'un `internal_transfer.*` est le transfert, nommé par le site
+ * qu'il sert ; celui d'un `delivery_round.transfer_stop_*` est la tournée,
+ * qui cite le transfert par son site.
+ */
+
+const ROUND: Noun = { the: 'la tournée', a: 'une tournée' };
+const TRANSFER: Noun = { the: 'le transfert vers', a: 'un transfert' };
+
+/** Pourquoi un transfert reste sans arrêt. */
+const UNPLACED_CAUSE: Readonly<Record<string, string>> = {
+  no_vehicle: 'aucune tournée ni véhicule libre',
+  site_not_located: 'le site n’a pas de point GPS',
+};
+
+/** « , passage 2 » — rien au premier passage, comme l'écran. */
+function passageOf(raw: unknown): Segment[] {
+  const passage = count(raw);
+  return passage === null || passage <= 1 ? [] : [text(', passage '), value(String(passage))];
+}
+
+/** « du 1 octobre 2026 » — rien sans jour. */
+function dayOf(fact: PhraseFact): Segment[] {
+  const day = optional(fact.payload['day']);
+  return day === null ? [] : [text(' du '), inUnit('day', day)];
+}
+
+/** « le transfert vers « Val Village » du 1 octobre 2026 ». */
+function transfer(fact: PhraseFact): Segment[] {
+  const label = subjectLabelOf(fact);
+  return [
+    ...(label === null
+      ? [text('un transfert')]
+      : [text('le transfert vers « '), subject(fact, label), text(' »')]),
+    ...dayOf(fact),
+  ];
+}
+
+/** « la tournée « Kangoo » du 1 octobre 2026, passage 2 ». */
+function round(fact: PhraseFact): Segment[] {
+  const label = subjectLabelOf(fact);
+  return [
+    ...(label === null
+      ? [text('une tournée')]
+      : [text('la tournée « '), subject(fact, label), text(' »')]),
+    ...dayOf(fact),
+    ...passageOf(fact.payload['passage']),
+  ];
+}
+
+const TRANSFER_KEYS = ['subjectLabel', 'day'] as const;
+const ROUND_KEYS = ['subjectLabel', 'day', 'passage'] as const;
+
+export const DELIVERY_TRANSFER_PHRASES = {
+  'internal_transfer.opened': (fact) =>
+    byActor(fact, [text('a ouvert '), ...transfer(fact)], TRANSFER_KEYS),
+  'internal_transfer.placed': (fact) =>
+    byActor(
+      fact,
+      [
+        text('a placé '),
+        ...transfer(fact),
+        text(' dans '),
+        ...cite(ROUND, fact.payload['round']),
+        ...passageOf(fact.payload['passage']),
+        ...(fact.payload['dedicated'] === true ? [text(', tournée dédiée')] : []),
+      ],
+      [...TRANSFER_KEYS, 'round', 'passage', 'dedicated'],
+    ),
+  'internal_transfer.unplaced': (fact) =>
+    byActor(
+      fact,
+      [
+        text('n’a placé '),
+        ...transfer(fact),
+        text(' dans aucune tournée : '),
+        value(UNPLACED_CAUSE[optional(fact.payload['cause']) ?? ''] ?? 'raison inconnue'),
+      ],
+      [...TRANSFER_KEYS, 'cause'],
+    ),
+  'delivery_round.transfer_stop_moved': (fact) => {
+    const from = recordOf(fact.payload['from']);
+    const position = count(fact.payload['position']);
+    return byActor(
+      fact,
+      [
+        text('a déplacé '),
+        ...cite(TRANSFER, fact.payload['transfer']),
+        text(' de '),
+        ...cite(ROUND, from?.['round']),
+        ...passageOf(from?.['passage']),
+        text(' vers '),
+        ...round(fact),
+        ...(position === null ? [] : [text(' en position '), value(String(position))]),
+      ],
+      [...ROUND_KEYS, 'transfer', 'from', 'position'],
+    );
+  },
+  'delivery_round.transfer_stop_removed': (fact) =>
+    byActor(
+      fact,
+      [
+        text('a retiré '),
+        ...cite(TRANSFER, fact.payload['transfer']),
+        text(' de '),
+        ...round(fact),
+      ],
+      [...ROUND_KEYS, 'transfer'],
+    ),
+} as const satisfies Partial<Record<JournalFactType, Phrase>>;

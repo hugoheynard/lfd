@@ -37,7 +37,15 @@ export class PrismaSiteDaySettingsReader extends SiteDaySettingsReader {
     const [sites, rules, closures] = await Promise.all([
       this.prisma.site.findMany({
         where: { id: { in: ids } },
-        select: { id: true, supply: true, counterSetupMinutes: true, gps: true, opening: true },
+        select: {
+          id: true,
+          label: true,
+          supply: true,
+          transferMode: true,
+          counterSetupMinutes: true,
+          gps: true,
+          opening: true,
+        },
       }),
       this.prisma.publicPickupSlotRule.findMany({
         where: { pickupAddressId: { in: ids } },
@@ -59,7 +67,9 @@ export class PrismaSiteDaySettingsReader extends SiteDaySettingsReader {
       sites.map((site) => [
         site.id,
         {
+          label: site.label,
           supply: site.supply,
+          transferMode: site.transferMode,
           counterSetupMinutes: site.counterSetupMinutes,
           gps: gpsOf(site.gps),
           proPickup: openingOf(site.opening).proPickup,

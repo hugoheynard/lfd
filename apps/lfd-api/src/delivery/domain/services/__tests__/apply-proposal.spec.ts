@@ -27,6 +27,7 @@ function round(
     createdAt: AT,
     updatedAt: AT,
     stops: orderIds.map((orderId, index) => ({
+      kind: "order" as const,
       id: `${id}_${orderId}`,
       orderId,
       position: index + 1,
@@ -79,8 +80,8 @@ describe("appliquer une proposition (L7-C6, L7-C11)", () => {
 
     expect(r1.orderIds).toEqual(["o3", "o1"]);
     expect(r2.orderIds).toEqual(["o4", "o2"]);
-    expect(r1.liveStops.find((s) => s.orderId === "o3")?.id).toBe("r2_o3");
-    expect(r2.liveStops.find((s) => s.orderId === "o2")?.id).toBe("r1_o2");
+    expect(r1.liveStops.find((s) => s.kind === "order" && s.orderId === "o3")?.id).toBe("r2_o3");
+    expect(r2.liveStops.find((s) => s.kind === "order" && s.orderId === "o2")?.id).toBe("r1_o2");
     expect(applied.movedStops.map((s) => s.stopId).sort()).toEqual(["r1_o2", "r2_o3"]);
     expect(applied.rounds.map((a) => [a.round.id, a.before])).toEqual([
       ["r1", ["o1", "o2"]],

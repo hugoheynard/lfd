@@ -124,7 +124,10 @@ async function readRounds(prisma: PrismaClient, forDay: string): Promise<Scenari
     select: { orderId: true },
   });
   const bins = await prisma.deliveryBin.findMany({
-    where: { orderId: { in: stops.map((stop) => stop.orderId) }, voidedAt: null },
+    where: {
+      orderId: { in: stops.flatMap((stop) => (stop.orderId === null ? [] : [stop.orderId])) },
+      voidedAt: null,
+    },
     select: { id: true },
   });
   const loaded = await prisma.deliveryBinLoad.findMany({

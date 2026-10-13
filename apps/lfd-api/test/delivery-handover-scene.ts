@@ -113,6 +113,8 @@ export async function departedStops(
   });
   return {
     roundId,
-    stops: rows.map((row) => ({ roundId, orderId: row.orderId, stopId: row.id })),
+    stops: rows.flatMap((row) =>
+      row.orderId === null ? [] : [{ roundId, orderId: row.orderId, stopId: row.id }],
+    ),
   };
 }

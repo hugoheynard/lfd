@@ -20,9 +20,9 @@ describe("loadingStateOf — L4-C17", () => {
 
 describe("unreadyStops", () => {
   const stops = [
-    { id: "s_1", orderId: "o_1" },
-    { id: "s_2", orderId: "o_2" },
-    { id: "s_3", orderId: "o_3" },
+    { kind: "order" as const, id: "s_1", orderId: "o_1" },
+    { kind: "order" as const, id: "s_2", orderId: "o_2" },
+    { kind: "order" as const, id: "s_3", orderId: "o_3" },
   ];
 
   it("range par cause ; un arrêt non cité est non étiqueté, sous son id de commande", () => {

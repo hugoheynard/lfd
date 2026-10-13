@@ -15,6 +15,7 @@ import type { DeliveryRoundsReader } from "../domain/ports/delivery-rounds.reade
 import type { VehicleRepository } from "../domain/ports/vehicle.repository.js";
 import type { AppliedRound } from "../domain/services/apply-proposal.js";
 import { loadVehicle } from "./vehicle-support.js";
+import { orderIdsOf } from "../domain/entities/delivery-round-state.js";
 
 /** Les gardes d'« Appliquer » (plan de tournée, lot 7, L7-C6, L7-C11). */
 
@@ -36,7 +37,7 @@ export async function loadTouchedRounds(
   const ids = new Set([
     ...payload.rounds.flatMap((item) => item.roundId ?? []),
     ...dayRounds
-      .filter((round) => round.stops.some((stop) => proposed.has(stop.orderId)))
+      .filter((round) => orderIdsOf(round.stops).some((orderId) => proposed.has(orderId)))
       .map((round) => round.id),
   ]);
   const versions = new Map(payload.versions.map((entry) => [entry.roundId, entry.version]));

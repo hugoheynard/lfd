@@ -5,6 +5,7 @@ import {
   InvalidStopOrderError,
   InvalidStopPositionError,
   OrderAlreadyInRoundError,
+  TransferAlreadyInRoundError,
   DeliveryStopClosedError,
   VehicleInactiveOnDayError,
 } from "../errors/delivery-round-errors.js";
@@ -13,7 +14,12 @@ import type { PlannedTiming } from "../value-objects/planned-timing.js";
 import { isCalendarDay } from "../value-objects/service-day.js";
 import type { DeliveryRoundIdentity } from "./delivery-round-base.js";
 import { DeliveryRoundOnTheRoad } from "./delivery-round-on-the-road.js";
-import type { DeliveryRoundState, DetachedStop } from "./delivery-round-state.js";
+import {
+  type DeliveryRoundState,
+  type DeliveryStopState,
+  type DetachedStop,
+  sameSubject,
+} from "./delivery-round-state.js";
 import type { Vehicle } from "./vehicle.js";
 
 export type {
@@ -23,7 +29,9 @@ export type {
   DetachedStop,
   RemovedStopState,
   RoundReturn,
+  StopSubject,
 } from "./delivery-round-state.js";
+export { orderIdOf, orderIdsOf } from "./delivery-round-state.js";
 
 /**
  * **Une tournée** — la racine de la composition (plan de tournée, lot 3, C1) :
@@ -128,7 +136,7 @@ export class DeliveryRound extends DeliveryRoundOnTheRoad {
     const round = new DeliveryRound(
       identity,
       state.version,
-      open.map(({ id, orderId }) => ({ id, orderId })),
+      open.map(detachedOf),
       closed,
       state.updatedAt,
       state.departedAt,
@@ -168,7 +176,30 @@ export class DeliveryRound extends DeliveryRoundOnTheRoad {
     if (after !== undefined && (after < 0 || after > this.open.length)) {
       throw new InvalidStopPositionError(after, this.open.length);
     }
-    this.attachAt({ id: stopId, orderId }, at, after ?? this.open.length);
+    this.attachAt({ kind: "order", id: stopId, orderId }, at, after ?? this.open.length);
+  }
+
+  /**
+   * Affecte un **transfert interne** (plan du transfert interne, §4, lot T1) :
+   * UN arrêt, qui porte toutes ses commandes, après les `after` premiers
+   * arrêts vivants — la place la moins chère, calculée par la composition.
+   * @throws {TransferAlreadyInRoundError} déjà dans cette tournée.
+   * @throws {InvalidStopPositionError} la tournée n'a pas ce rang.
+   * @throws {DeliveryRoundDepartedError}
+   */
+  assignTransfer(
+    stopId: string,
+    transfer: { readonly id: string; readonly siteLabel: string },
+    at: Date,
+    after: number,
+  ): void {
+    if (after < 0 || after > this.open.length) {
+      throw new InvalidStopPositionError(after, this.open.length);
+    }
+    if (this.transferIds.includes(transfer.id)) {
+      throw new TransferAlreadyInRoundError(transfer.siteLabel, this.state.vehicleName);
+    }
+    this.attachAt({ kind: "transfer", id: stopId, transferId: transfer.id }, at, after);
   }
 
   /** Reçoit un arrêt déplacé (I7), en dernier. @throws {OrderAlreadyInRoundError} */
@@ -178,7 +209,10 @@ export class DeliveryRound extends DeliveryRoundOnTheRoad {
 
   private attachAt(stop: DetachedStop, at: Date, after: number): void {
     this.ensureAtDepot();
-    if (this.open.some((existing) => existing.orderId === stop.orderId)) {
+    if (this.open.some((existing) => sameSubject(existing, stop))) {
+      if (stop.kind === "transfer") {
+        throw new TransferAlreadyInRoundError(stop.transferId, this.state.vehicleName);
+      }
       throw new OrderAlreadyInRoundError(null, {
         vehicleName: this.state.vehicleName,
         serviceDay: this.state.serviceDay,
@@ -278,4 +312,11 @@ export class DeliveryRound extends DeliveryRoundOnTheRoad {
     this.touch(at);
     return previous;
   }
+}
+
+/** Un arrêt réhydraté, réduit à ce qu'un arrêt vivant porte. */
+function detachedOf(stop: DeliveryStopState): DetachedStop {
+  return stop.kind === "order"
+    ? { kind: "order", id: stop.id, orderId: stop.orderId }
+    : { kind: "transfer", id: stop.id, transferId: stop.transferId };
 }

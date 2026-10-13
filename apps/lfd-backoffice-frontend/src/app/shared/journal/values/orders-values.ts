@@ -38,6 +38,12 @@ export const CLOSED_WITHOUT_HANDOVER_CAUSE = domain('raison d’une clôture san
   cancelled: 'Commande annulée',
 });
 
+/** Pourquoi un transfert interne reste sans arrêt (`internal_transfer.unplaced`, lot T1). */
+export const TRANSFER_UNPLACED_CAUSE = domain('raison d’un transfert sans tournée', {
+  no_vehicle: 'Aucune tournée ni véhicule libre',
+  site_not_located: 'Site sans point GPS',
+});
+
 /**
  * D'où vient la décision sur un arrêt signalé (`delivery_round.stop_deposit_authorized`,
  * `delivery_round.stop_brought_back` — `a-la-porte.md`, B3, B3 bis).
@@ -220,6 +226,7 @@ export const ORDERS_VALUES: ValueFamily = {
     HANDOVER_VIA,
     INCIDENT_FAMILY,
     CLOSED_WITHOUT_HANDOVER_CAUSE,
+    TRANSFER_UNPLACED_CAUSE,
     STOP_DECISION_SOURCE,
     DOORSTEP_RULE,
     ADDRESS_POINT_KIND,

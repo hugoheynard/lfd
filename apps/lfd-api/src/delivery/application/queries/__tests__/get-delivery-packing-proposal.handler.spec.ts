@@ -13,6 +13,7 @@ import {
   FixedOrderLines,
   roundRow,
 } from "./packing-doubles.js";
+import { FixedTransferredOrders } from "../../__tests__/transfer-doubles.js";
 
 const ORDERS = [
   deliveryOrder("o1", "LIV-1"),
@@ -58,6 +59,7 @@ function proposalHandler(loading = new FixedLoading([])) {
     PRODUCTS,
     CATALOG,
     loading,
+    new FixedTransferredOrders(),
   );
 }
 
@@ -157,7 +159,11 @@ describe("GetDeliveryBinFreeHalvesHandler", () => {
         { orderId: "o3", bins: [binRow("b3", "o3", { half: "right" })] },
       ]),
     ]);
-    const handler = new GetDeliveryBinFreeHalvesHandler(loading, new FixedDeliveryOrders(ORDERS));
+    const handler = new GetDeliveryBinFreeHalvesHandler(
+      loading,
+      new FixedDeliveryOrders(ORDERS),
+      new FixedTransferredOrders(),
+    );
 
     const view = await handler.execute(new GetDeliveryBinFreeHalvesQuery("o2"));
 
@@ -199,6 +205,7 @@ describe("GetDeliveryBinFreeHalvesHandler", () => {
     const handler = new GetDeliveryBinFreeHalvesHandler(
       new FixedLoading([]),
       new FixedDeliveryOrders(ORDERS),
+      new FixedTransferredOrders(),
     );
 
     expect(await handler.execute(new GetDeliveryBinFreeHalvesQuery("o2"))).toEqual({

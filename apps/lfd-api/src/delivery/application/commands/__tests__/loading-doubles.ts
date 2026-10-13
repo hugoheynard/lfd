@@ -9,6 +9,7 @@ import { BinTypeLookup } from "../../../domain/ports/bin-type-lookup.js";
 import { DeliveryBinRepository } from "../../../domain/ports/delivery-bin.repository.js";
 import { DepartedStopRepository } from "../../../domain/ports/departed-stop.repository.js";
 import { StopLoadingRepository } from "../../../domain/ports/stop-loading.repository.js";
+import type { StopSubject } from "../../../domain/entities/delivery-round-state.js";
 
 /** Un tirage écrit d'avance, rejoué dans l'ordre ; épuisé, il répète le dernier. */
 export class ScriptedDrawer extends BinCodeDrawer {
@@ -80,7 +81,7 @@ export class InMemoryStopLoadings extends StopLoadingRepository {
   constructor(...stops: readonly StopLoadingSnapshot[]) {
     super();
     for (const stop of stops) {
-      this.byOrder.set(stop.orderId, stop);
+      this.byOrder.set(keyOf(stop.subject), stop);
     }
   }
 
@@ -93,18 +94,21 @@ export class InMemoryStopLoadings extends StopLoadingRepository {
   forRound(round: DeliveryRound): Promise<readonly StopLoading[]> {
     return Promise.resolve(
       round.liveStops.flatMap((stop) => {
-        const found = this.byOrder.get(stop.orderId);
+        const found = this.byOrder.get(keyOf(stop));
         return found?.stopId === stop.id ? [StopLoading.restore(found)] : [];
       }),
     );
   }
 
   save(loading: StopLoading): Promise<boolean> {
-    const stored = this.byOrder.get(loading.orderId);
+    const stored = this.byOrder.get(keyOf(loading.subject));
     if (stored !== undefined) {
       const changed = new Map(loading.changedLoads().map((load) => [load.binId, load]));
       const kept = stored.loads.filter((load) => !changed.has(load.binId));
-      this.byOrder.set(loading.orderId, { ...stored, loads: [...kept, ...changed.values()] });
+      this.byOrder.set(keyOf(loading.subject), {
+        ...stored,
+        loads: [...kept, ...changed.values()],
+      });
     }
     this.saves.push(loading.stopId);
     return Promise.resolve(true);
@@ -134,7 +138,7 @@ export function stopOf(
   return {
     stopId: `r_1_s1`,
     roundId: "r_1",
-    orderId,
+    subject: { kind: "order", orderId },
     serviceDay: "2030-03-12",
     vehicleName: "Kangoo blanc",
     passage: 1,
@@ -217,4 +221,9 @@ export class FixedDepartureHolds extends DepartureHoldsReader {
     this.asked.push(orderIds);
     return Promise.resolve(new Set(orderIds.filter((id) => this.held.includes(id))));
   }
+}
+
+/** La clé d'un arrêt : sa commande, ou son transfert. */
+function keyOf(subject: StopSubject): string {
+  return subject.kind === "order" ? subject.orderId : subject.transferId;
 }

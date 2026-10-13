@@ -4,10 +4,13 @@ import type {
   DeliveryRound,
   DeliveryStopState,
   RoundReturn,
+  StopSubject,
 } from "../domain/entities/delivery-round.js";
 import {
   DeliveryRoundStaleError,
   OrderAlreadyInRoundError,
+  DeliveryStopCorruptedError,
+  TransferAlreadyInRoundError,
 } from "../domain/errors/delivery-round-errors.js";
 import type { GesturePosition } from "../domain/value-objects/gesture-position.js";
 import type { PlannedTiming } from "../domain/value-objects/planned-timing.js";
@@ -120,16 +123,20 @@ export async function writeStops(tx: Tx, round: DeliveryRound): Promise<void> {
     ...snapshot.removedStops,
   ];
   for (const stop of rows) {
-    // L'index I3 a vu une course que la lecture préalable n'a pas vue.
+    // L'index I3 (ou son jumeau des transferts) a vu une course que la
+    // lecture préalable n'a pas vue.
     await guard(
-      () => new OrderAlreadyInRoundError(null, null),
+      () =>
+        stop.kind === "order"
+          ? new OrderAlreadyInRoundError(null, null)
+          : new TransferAlreadyInRoundError(stop.transferId, snapshot.vehicleName),
       () =>
         tx.deliveryRoundStop.upsert({
           where: { id: stop.id },
           create: {
             id: stop.id,
             roundId: snapshot.id,
-            orderId: stop.orderId,
+            ...stopSubjectColumns(stop),
             serviceDay: snapshot.serviceDay,
             position: stop.position,
             removedAt: stop.removedAt,
@@ -182,4 +189,39 @@ async function guard(conflict: () => AppError, write: () => Promise<unknown>): P
     }
     throw error;
   }
+}
+
+/**
+ * Le genre et le sujet d'un arrêt (plan du transfert interne, §4) —
+ * exactement l'une des deux colonnes, comme le CHECK
+ * `delivery_round_stop_kind_check` l'exige.
+ */
+function stopSubjectColumns(stop: StopSubject): {
+  readonly kind: "order" | "transfer";
+  readonly orderId: string | null;
+  readonly transferId: string | null;
+} {
+  return stop.kind === "order"
+    ? { kind: "order", orderId: stop.orderId, transferId: null }
+    : { kind: "transfer", orderId: null, transferId: stop.transferId };
+}
+
+/**
+ * Un arrêt lu en base, rendu au domaine. Le CHECK garantit la colonne du
+ * genre ; une ligne qui le contredirait est refusée, jamais devinée.
+ * @throws {DeliveryStopCorruptedError}
+ */
+export function stopSubjectOf(row: {
+  readonly id: string;
+  readonly kind: "order" | "transfer";
+  readonly orderId: string | null;
+  readonly transferId: string | null;
+}): StopSubject {
+  if (row.kind === "order" && row.orderId !== null) {
+    return { kind: "order", orderId: row.orderId };
+  }
+  if (row.kind === "transfer" && row.transferId !== null) {
+    return { kind: "transfer", transferId: row.transferId };
+  }
+  throw new DeliveryStopCorruptedError(row.id);
 }

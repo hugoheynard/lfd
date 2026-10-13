@@ -13,6 +13,7 @@ import {
 } from "../domain/errors/delivery-routing-errors.js";
 import type { RoundRow } from "../domain/ports/delivery-rounds.reader.js";
 import type { LocatedStop } from "./delivery-routing-support.js";
+import { orderIdsOf } from "../domain/entities/delivery-round-state.js";
 
 /** Les gardes de « Chronométrer » (plan de tournée, lot 10 bis, L10b-C2). */
 
@@ -78,7 +79,7 @@ export function ensureRoundsTimeable(
   const lockedHolder = new Map<string, RoundRow>();
   for (const round of dayRounds) {
     if (lockOf(round) !== null) {
-      round.stops.forEach((stop) => lockedHolder.set(stop.orderId, round));
+      orderIdsOf(round.stops).forEach((orderId) => lockedHolder.set(orderId, round));
     }
   }
   const unlockedBefore = new Set<string>();
@@ -116,9 +117,11 @@ function namedRound(byId: ReadonlyMap<string, RoundRow>, item: TimedRoundInput):
 }
 
 function sameSequence(round: RoundRow, orderIds: readonly string[]): boolean {
+  // Un arrêt de transfert garde sa place (plan du transfert interne, §5) :
+  // la séquence comparée est celle des commandes.
+  const held = orderIdsOf(round.stops);
   return (
-    round.stops.length === orderIds.length &&
-    round.stops.every((stop, index) => stop.orderId === orderIds[index])
+    held.length === orderIds.length && held.every((orderId, index) => orderId === orderIds[index])
   );
 }
 

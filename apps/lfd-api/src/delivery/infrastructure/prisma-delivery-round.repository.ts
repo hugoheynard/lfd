@@ -9,7 +9,13 @@ import {
 } from "../domain/errors/delivery-round-errors.js";
 import { DeliveryRoundRepository } from "../domain/ports/delivery-round.repository.js";
 import { PlannedTiming } from "../domain/value-objects/planned-timing.js";
-import { LIVE_STOP, type Tx, writeRound, writeStops } from "./delivery-round.writes.js";
+import {
+  LIVE_STOP,
+  stopSubjectOf,
+  type Tx,
+  writeRound,
+  writeStops,
+} from "./delivery-round.writes.js";
 
 /**
  * **Adaptateur Prisma de la composition.** `toDomain` par
@@ -70,8 +76,8 @@ export class PrismaDeliveryRoundRepository extends DeliveryRoundRepository {
         meters: row.plannedMeters,
       }),
       stops: row.stops.map((stop) => ({
+        ...stopSubjectOf(stop),
         id: stop.id,
-        orderId: stop.orderId,
         position: stop.position,
         closedAt: stop.closedAt,
       })),

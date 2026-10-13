@@ -65,7 +65,7 @@ function closing() {
       driverStaffId: PAUL,
       createdAt: new Date(0),
       updatedAt: DEPARTED,
-      stops: [{ id: "s_1", orderId: "o_1", position: 1, closedAt: null }],
+      stops: [{ kind: "order", id: "s_1", orderId: "o_1", position: 1, closedAt: null }],
     }),
   );
   const handler = new CloseStopWithoutHandoverHandler(

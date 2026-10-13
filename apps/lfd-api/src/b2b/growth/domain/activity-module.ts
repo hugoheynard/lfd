@@ -112,6 +112,8 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     "delivery_departure.",
     // La composition des tournées (lot 3, 2026-09-29) : même famille.
     "delivery_round.",
+    // Le transfert interne (lot T1, 2026-10-13) : un arrêt de tournée, même famille.
+    "internal_transfer.",
     // Les bacs et leur chargement (lot 4, 2026-09-29) : même famille.
     "delivery_bin.",
     // Le calculateur de tournée (lot 7, 2026-09-29) : ses réglages.

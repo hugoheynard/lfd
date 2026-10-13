@@ -227,6 +227,7 @@ export function roundWith(
     createdAt: new Date(0),
     updatedAt: new Date(0),
     stops: orderIds.map((orderId, index) => ({
+      kind: "order" as const,
       id: `${id}_s${String(index + 1)}`,
       orderId,
       position: index + 1,

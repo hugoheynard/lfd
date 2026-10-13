@@ -11,6 +11,7 @@ import type { RoundRow } from "../domain/ports/delivery-rounds.reader.js";
 import type { FleetReader } from "../domain/ports/fleet.reader.js";
 import type { PlanningVehicle } from "../domain/services/proposal.js";
 import type { LocatedStop } from "./delivery-routing-support.js";
+import { orderIdsOf } from "../domain/entities/delivery-round-state.js";
 
 /**
  * Les véhicules de la proposition (L7-C5) : ceux qu'on a cochés, sinon tous
@@ -105,20 +106,20 @@ function keptReason(
   if (!input.recomposeAll) {
     return "not_requested";
   }
-  const signaled = round.stops.some((stop) => {
-    const order = input.facts.get(stop.orderId);
+  const signaled = orderIdsOf(round.stops).some((orderId) => {
+    const order = input.facts.get(orderId);
     return (
       order === undefined ||
       order.status === "cancelled" ||
       !order.delivery ||
-      (order.day !== input.day && !input.broughtBack.has(stop.orderId))
+      (order.day !== input.day && !input.broughtBack.has(orderId))
     );
   });
   if (signaled) {
     return "signaled_stop";
   }
-  const unlocated = round.stops.some(
-    (stop) => (input.located.get(stop.orderId)?.point ?? null) === null,
+  const unlocated = orderIdsOf(round.stops).some(
+    (orderId) => (input.located.get(orderId)?.point ?? null) === null,
   );
   return unlocated ? "unlocated_stop" : null;
 }
@@ -144,7 +145,9 @@ export function insertableRounds(input: {
     } else if (!input.vehicleIds.has(round.vehicleId)) {
       kept.push({ round, reason: "not_requested" });
     } else if (
-      round.stops.some((stop) => (input.located.get(stop.orderId)?.point ?? null) === null)
+      orderIdsOf(round.stops).some(
+        (orderId) => (input.located.get(orderId)?.point ?? null) === null,
+      )
     ) {
       kept.push({ round, reason: "unlocated_stop" });
     } else {

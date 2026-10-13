@@ -24,8 +24,8 @@ function round(departedAt: Date | null): DeliveryRound {
     createdAt: new Date(0),
     updatedAt: new Date(0),
     stops: [
-      { id: "s_1", orderId: "o_1", position: 1, closedAt: null },
-      { id: "s_2", orderId: "o_2", position: 2, closedAt: null },
+      { kind: "order", id: "s_1", orderId: "o_1", position: 1, closedAt: null },
+      { kind: "order", id: "s_2", orderId: "o_2", position: 2, closedAt: null },
     ],
   });
 }

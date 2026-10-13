@@ -12,6 +12,11 @@ import { PrismaDeliveryAddressPointsReader } from "../b2b/orders/infrastructure/
 import { PrismaDeliveryOrdersReader } from "../b2b/orders/infrastructure/prisma-delivery-orders.reader.js";
 import { PrismaDeliveryProceduresReader } from "../b2b/orders/infrastructure/prisma-delivery-procedures.reader.js";
 import { PrismaDeliveryStepPhotosReader } from "../b2b/orders/infrastructure/prisma-delivery-step-photos.reader.js";
+import {
+  PrismaTransferOrderContentsReader,
+  PrismaTransferOrdersReader,
+} from "../b2b/orders/infrastructure/prisma-transfer-orders.reader.js";
+import { CommerceTransferSites } from "../b2b/orders/application/services/commerce-transfer-sites.service.js";
 import { PickupAddressesModule } from "../b2b/pickup-addresses/pickup-addresses.module.js";
 import { PickupDepartureCandidatesReader } from "../b2b/pickup-addresses/infrastructure/pickup-departure-candidates.reader.js";
 import {
@@ -28,6 +33,9 @@ import {
   DepartureSiteReader,
   OrderDeliveryHistoryReader,
   RoadTravelTimeReader,
+  TransferOrderContentsReader,
+  TransferOrdersReader,
+  TransferSitesReader,
 } from "../delivery/channels/commerce/index.js";
 import { PrismaOrderDeliveryHistoryReader } from "../delivery/infrastructure/prisma-order-delivery-history.reader.js";
 import { DeliveryModule } from "../delivery/delivery.module.js";
@@ -69,6 +77,10 @@ import { ResolvedDepartureSiteReader } from "../delivery/infrastructure/resolved
  * pour refuser d'y retirer « Livraison ». Et `RoadTravelTimeReader` (T0,
  * 2026-10-13) : la durée de route d'un transfert interne, calculée par la
  * matrice du bloc — d'où l'import de `DeliveryModule`, qui en garde l'adaptateur.
+ * Et le transfert interne (lot T1, 2026-10-13) : `TransferOrdersReader` (les
+ * retraits des sites servis par transfert), `TransferSitesReader` (nom, point,
+ * mode, heure d'arrivée — `CommerceTransferSites`, exporté par `OrdersModule`)
+ * et `TransferOrderContentsReader` (le contenu, pour le manifeste).
  *
  * `@Global` pour la raison des autres fils : le consommateur est `delivery/`,
  * qui ne peut pas importer le module qui fournit le port sans dépendre du
@@ -94,6 +106,9 @@ import { ResolvedDepartureSiteReader } from "../delivery/infrastructure/resolved
     { provide: OrderDeliveryHistoryReader, useClass: PrismaOrderDeliveryHistoryReader },
     { provide: DepartureSiteReader, useClass: ResolvedDepartureSiteReader },
     { provide: RoadTravelTimeReader, useExisting: RoutedTravelTimeReader },
+    { provide: TransferOrdersReader, useClass: PrismaTransferOrdersReader },
+    { provide: TransferOrderContentsReader, useClass: PrismaTransferOrderContentsReader },
+    { provide: TransferSitesReader, useExisting: CommerceTransferSites },
   ],
   exports: [
     DepartureCandidatesReader,
@@ -109,6 +124,9 @@ import { ResolvedDepartureSiteReader } from "../delivery/infrastructure/resolved
     OrderDeliveryHistoryReader,
     DepartureSiteReader,
     RoadTravelTimeReader,
+    TransferOrdersReader,
+    TransferOrderContentsReader,
+    TransferSitesReader,
   ],
 })
 export class DeliveryFeedModule {}

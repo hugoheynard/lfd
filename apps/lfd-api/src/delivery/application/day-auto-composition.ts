@@ -2,6 +2,7 @@ import type { ApplyDeliveryProposalPayload, DeliveryRoundProposalView } from "@l
 import { Injectable, Logger } from "@nestjs/common";
 
 import { DayComposer } from "./day-composer.js";
+import { TransferPlacer } from "./transfer-placer.js";
 import { ApplyDeliveryProposalCommand } from "./commands/apply-delivery-proposal.command.js";
 import { ApplyDeliveryProposalHandler } from "./commands/apply-delivery-proposal.handler.js";
 import { GetDeliveryRoundProposalQuery } from "./queries/get-delivery-round-proposal.query.js";
@@ -19,6 +20,9 @@ import { GetDeliveryRoundProposalHandler } from "./queries/get-delivery-round-pr
  * lues. Un geste du bureau passé entre les deux fait refuser l'application :
  * rien n'est écrasé, et l'écran Tournées propose toujours à la main.
  *
+ * Puis place les transferts internes du jour (plan du transfert interne,
+ * §5, lot T1) — dans les tournées composées, ou dans une tournée dédiée.
+ *
  * Remplace la règle « Appliquer est toujours un clic » (`composition-
  * automatique.md`, §9) pour ce seul moment. Appelé hors transaction, après
  * que les arrêts du jour ont été situés (`DeliveryStopsLocating`).
@@ -30,24 +34,36 @@ export class DayAutoComposition extends DayComposer {
   constructor(
     private readonly proposals: GetDeliveryRoundProposalHandler,
     private readonly apply: ApplyDeliveryProposalHandler,
+    private readonly transfers: TransferPlacer,
   ) {
     super();
   }
 
   /** Rend le nombre de tournées appliquées ; 0 quand il n'y avait rien à placer. */
   async composeDay(day: string): Promise<number> {
+    // Les transferts internes APRÈS les livraisons (lot T1) : ils s'insèrent
+    // dans les tournées que la proposition vient d'écrire, ou s'en ouvrent
+    // une. Et MÊME si la proposition refuse (pas de type de bac, pas de
+    // véhicule mesuré…) : une tournée dédiée au village n'en a pas besoin.
+    try {
+      return await this.composeDeliveries(day);
+    } finally {
+      await this.transfers.placeDay(day);
+    }
+  }
+
+  private async composeDeliveries(day: string): Promise<number> {
     const view = await this.proposals.execute(
       new GetDeliveryRoundProposalQuery(day, null, false, null),
     );
     const payload = applyPayloadOf(view);
-    if (payload === null) {
-      return 0;
+    if (payload !== null) {
+      await this.apply.execute(new ApplyDeliveryProposalCommand(payload));
+      this.logger.log(
+        `Tournées du ${day} composées à l'arrêt du plan : ${String(payload.rounds.length)}.`,
+      );
     }
-    await this.apply.execute(new ApplyDeliveryProposalCommand(payload));
-    this.logger.log(
-      `Tournées du ${day} composées à l'arrêt du plan : ${String(payload.rounds.length)}.`,
-    );
-    return payload.rounds.length;
+    return payload?.rounds.length ?? 0;
   }
 }
 

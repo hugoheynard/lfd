@@ -24,8 +24,8 @@ function planned(departedAt: Date | null = null): DeliveryRound {
     createdAt: new Date(0),
     updatedAt: new Date(0),
     stops: [
-      { id: "s_1", orderId: "o_1", position: 1, closedAt: null },
-      { id: "s_2", orderId: "o_2", position: 2, closedAt: null },
+      { kind: "order", id: "s_1", orderId: "o_1", position: 1, closedAt: null },
+      { kind: "order", id: "s_2", orderId: "o_2", position: 2, closedAt: null },
     ],
   });
 }
@@ -69,7 +69,7 @@ describe("DeliveryRound — l'horaire prévu (I10)", () => {
     ["détacher (déplacer)", (round: DeliveryRound) => void round.detach("s_2", AT)],
     [
       "rattacher (déplacer)",
-      (round: DeliveryRound) => round.attach({ id: "s_9", orderId: "o_9" }, AT),
+      (round: DeliveryRound) => round.attach({ kind: "order", id: "s_9", orderId: "o_9" }, AT),
     ],
     ["réordonner", (round: DeliveryRound) => void round.reorder(["s_2", "s_1"], AT)],
   ])("%s l'efface : un chiffre périmé est pire qu'aucun", (_gesture, gesture) => {

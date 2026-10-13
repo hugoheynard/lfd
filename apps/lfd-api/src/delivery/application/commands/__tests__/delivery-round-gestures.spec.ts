@@ -21,6 +21,7 @@ import {
   InMemoryDeliveryRounds,
   roundWith,
 } from "./round-doubles.js";
+import { InMemoryInternalTransfers } from "../../__tests__/transfer-doubles.js";
 
 // Des jours comparés entre eux et à des retraits écrits ici — jamais à l'horloge.
 const DAY = "2030-03-12";
@@ -90,9 +91,14 @@ describe("RemoveDeliveryStopHandler", () => {
     const rounds = new InMemoryDeliveryRounds(roundWith("r_1", DAY, "v_1", ["o_1", "o_2"]));
     const { clock, events, uow } = tools();
 
-    await new RemoveDeliveryStopHandler(rounds, ORDERS, clock, events, uow).execute(
-      new RemoveDeliveryStopCommand("r_1", "r_1_s1", { version: 1 }),
-    );
+    await new RemoveDeliveryStopHandler(
+      rounds,
+      ORDERS,
+      clock,
+      events,
+      uow,
+      new InMemoryInternalTransfers(),
+    ).execute(new RemoveDeliveryStopCommand("r_1", "r_1_s1", { version: 1 }));
 
     expect(rounds.stored("r_1")?.orderIds).toEqual(["o_2"]);
     expect(await rounds.liveHolderOf("o_1")).toBeNull();
@@ -105,9 +111,14 @@ describe("RemoveDeliveryStopHandler", () => {
     const rounds = new InMemoryDeliveryRounds(roundWith("r_1", DAY, "v_1", ["o_gone"]));
     const { clock, events, uow } = tools();
 
-    await new RemoveDeliveryStopHandler(rounds, ORDERS, clock, events, uow).execute(
-      new RemoveDeliveryStopCommand("r_1", "r_1_s1", { version: 1 }),
-    );
+    await new RemoveDeliveryStopHandler(
+      rounds,
+      ORDERS,
+      clock,
+      events,
+      uow,
+      new InMemoryInternalTransfers(),
+    ).execute(new RemoveDeliveryStopCommand("r_1", "r_1_s1", { version: 1 }));
 
     expect(events.traced[0]?.journalFact().payload).toMatchObject({ order: "o_gone" });
   });
@@ -131,6 +142,7 @@ describe("MoveDeliveryStopHandler — I7", () => {
         clock,
         events,
         uow,
+        new InMemoryInternalTransfers(),
       ),
       events,
     };
@@ -184,6 +196,7 @@ describe("MoveDeliveryStopHandler — I7", () => {
       clock,
       events,
       uow,
+      new InMemoryInternalTransfers(),
     );
 
     await expect(

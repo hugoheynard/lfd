@@ -4,6 +4,7 @@ import { PrismaService } from "../../platform/database/prisma.service.js";
 import { RoundPaperReader, type RoundPaperRow } from "../domain/ports/round-paper.reader.js";
 import { PlannedTiming } from "../domain/value-objects/planned-timing.js";
 import { departedStopOf, EXECUTION_SELECT } from "./departed-stop.mapper.js";
+import { orderStopsOnly } from "./order-stop.js";
 
 /** Un arrêt vivant : ni retiré, ni clos — ceux que l'écran imprimait. */
 const LIVE_STOP = { removedAt: null, closedAt: null } as const;
@@ -41,7 +42,9 @@ export class PrismaRoundPaperReader extends RoundPaperReader {
     if (row === null) {
       return null;
     }
-    const codes = await this.binCodesOf(row.stops.map((stop) => stop.orderId));
+    // La feuille de route ne porte encore que les livraisons (lot T1, reste).
+    const stops = orderStopsOnly(row.stops);
+    const codes = await this.binCodesOf(stops.map((stop) => stop.orderId));
     return {
       id: row.id,
       serviceDay: row.serviceDay,
@@ -53,7 +56,7 @@ export class PrismaRoundPaperReader extends RoundPaperReader {
         returnAt: row.plannedReturnAt,
         meters: row.plannedMeters,
       }),
-      stops: row.stops.map((stop) => ({
+      stops: stops.map((stop) => ({
         stopId: stop.id,
         orderId: stop.orderId,
         departed: stop.execution === null ? null : departedStopOf(stop.execution),

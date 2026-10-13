@@ -18,6 +18,7 @@ import { deliveryIncidentView } from "../delivery-incident-view.js";
 import { driverNamesOf, driversNow } from "../delivery-driver-support.js";
 import { deliveryRoundsDayView } from "../delivery-rounds-view.js";
 import { GetDeliveryRoundsDayQuery } from "./get-delivery-rounds-day.query.js";
+import { orderIdsOf } from "../../domain/entities/delivery-round-state.js";
 
 /**
  * La composition d'un jour : les tournées, leurs arrêts signalés, leur
@@ -53,7 +54,7 @@ export class GetDeliveryRoundsDayHandler implements IQueryHandler<
       this.incidents.ofDay(query.day),
       ordersToReplace(this.broughtBack, this.orders, this.states),
     ]);
-    const composedIds = rounds.flatMap((round) => round.stops.map((stop) => stop.orderId));
+    const composedIds = rounds.flatMap((round) => orderIdsOf(round.stops));
     const driverIds = rounds.flatMap((round) =>
       round.driverStaffId === null ? [] : [round.driverStaffId],
     );
@@ -98,7 +99,7 @@ export class GetDeliveryRoundsDayHandler implements IQueryHandler<
       return new Map();
     }
     const { settings } = await routingSettingsOf(this.settings);
-    const orderIds = atDepot.flatMap((round) => round.stops.map((stop) => stop.orderId));
+    const orderIds = atDepot.flatMap((round) => orderIdsOf(round.stops));
     const { capacity, unknown } = await this.place.of(orderIds, settings);
     return new Map(
       atDepot.map((round) => [
@@ -107,7 +108,7 @@ export class GetDeliveryRoundsDayHandler implements IQueryHandler<
           capacity,
           unknown,
           vehicleId: round.vehicleId,
-          orderIds: round.stops.map((stop) => stop.orderId),
+          orderIds: orderIdsOf(round.stops),
         }),
       ]),
     );

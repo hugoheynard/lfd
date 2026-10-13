@@ -3,6 +3,7 @@ import {
   DeliveryRoundStaleError,
   DeliveryStopClosedError,
   DeliveryStopNotFoundError,
+  TransferStopNotAnOrderError,
 } from "../errors/delivery-round-errors.js";
 import { DeliveryRoundReturnedError } from "../errors/delivery-doorstep-errors.js";
 import type { PlannedTiming } from "../value-objects/planned-timing.js";
@@ -14,6 +15,7 @@ import type {
   RemovedStopState,
   RoundReturn,
 } from "./delivery-round-state.js";
+import { orderIdsOf } from "./delivery-round-state.js";
 
 /** L'identité d'une tournée : ce qui ne change plus après `open`. */
 export type DeliveryRoundIdentity = Omit<
@@ -98,9 +100,17 @@ export abstract class DeliveryRoundBase {
     return [...this.open];
   }
 
-  /** Les identifiants des commandes des arrêts vivants, dans l'ordre de passage. */
+  /**
+   * Les commandes des arrêts **de commande** vivants, dans l'ordre de passage —
+   * un arrêt de transfert n'en a pas (plan du transfert interne, §4).
+   */
   get orderIds(): readonly string[] {
-    return this.open.map((stop) => stop.orderId);
+    return orderIdsOf(this.open);
+  }
+
+  /** Les transferts internes des arrêts vivants, dans l'ordre de passage. */
+  get transferIds(): readonly string[] {
+    return this.open.flatMap((stop) => (stop.kind === "transfer" ? [stop.transferId] : []));
   }
 
   /**
@@ -113,9 +123,18 @@ export abstract class DeliveryRoundBase {
     }
   }
 
-  /** La commande d'un arrêt vivant. @throws {DeliveryStopNotFoundError} @throws {DeliveryStopClosedError} */
+  /**
+   * La commande d'un arrêt vivant — les gestes de la porte ne visent qu'un
+   * arrêt de commande.
+   * @throws {DeliveryStopNotFoundError} @throws {DeliveryStopClosedError}
+   * @throws {TransferStopNotAnOrderError} c'est un arrêt de transfert.
+   */
   orderOf(stopId: string): string {
-    return this.findOpen(stopId).stop.orderId;
+    const { stop } = this.findOpen(stopId);
+    if (stop.kind !== "order") {
+      throw new TransferStopNotAnOrderError();
+    }
+    return stop.orderId;
   }
 
   /** Position 1..n de l'arrêt vivant. @throws {DeliveryStopNotFoundError} */

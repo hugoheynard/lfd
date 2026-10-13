@@ -13,6 +13,7 @@ import {
 } from "../errors/delivery-loading-errors.js";
 import { resolveDoorstepRule } from "../services/doorstep-rule.js";
 import type { DeliveryRound } from "./delivery-round.js";
+import { orderIdsOf } from "./delivery-round-state.js";
 
 /** La fenêtre convenue, avec sa provenance (`default` n'est pas une promesse). */
 export interface DepartureWindow {
@@ -118,28 +119,35 @@ export function departedStopsOf(
   globalRule: DoorstepRule | null,
 ): readonly DepartedStop[] {
   const byOrder = new Map(sheets.map((sheet) => [sheet.orderId, sheet]));
-  const cancelled = round.liveStops.flatMap((stop) => {
-    const sheet = byOrder.get(stop.orderId);
+  const cancelled = orderIdsOf(round.liveStops).flatMap((orderId) => {
+    const sheet = byOrder.get(orderId);
     return sheet?.status === "cancelled" ? [sheet.reference] : [];
   });
   if (cancelled.length > 0) {
     throw new DepartureOrderCancelledError(round.vehicleName, cancelled);
   }
-  return round.liveStops.map((stop, index) => {
+  // Un arrêt de transfert n'a pas de feuille : ses commandes sont des
+  // retraits (plan du transfert interne, §5). Il garde son rang de passage.
+  return round.liveStops.flatMap((stop, index) => {
+    if (stop.kind !== "order") {
+      return [];
+    }
     const sheet = byOrder.get(stop.orderId);
     if (sheet === undefined) {
       throw new DepartureSheetMissingError(round.vehicleName, stop.orderId);
     }
-    return {
-      stopId: stop.id,
-      roundId: round.id,
-      serviceDay: round.serviceDay,
-      departedAt,
-      sheet,
-      departureRank: index + 1,
-      gps: points.get(stop.orderId) ?? null,
-      doorstepRule: resolveDoorstepRule(globalRule, sheet.doorstepRule),
-    };
+    return [
+      {
+        stopId: stop.id,
+        roundId: round.id,
+        serviceDay: round.serviceDay,
+        departedAt,
+        sheet,
+        departureRank: index + 1,
+        gps: points.get(stop.orderId) ?? null,
+        doorstepRule: resolveDoorstepRule(globalRule, sheet.doorstepRule),
+      },
+    ];
   });
 }
 
@@ -157,9 +165,9 @@ export function refuseHeldOrders(
   held: ReadonlySet<string>,
 ): void {
   const byOrder = new Map(sheets.map((sheet) => [sheet.orderId, sheet]));
-  const named = round.liveStops
-    .filter((stop) => held.has(stop.orderId))
-    .map((stop) => stopLabel(stop.orderId, byOrder.get(stop.orderId)));
+  const named = orderIdsOf(round.liveStops)
+    .filter((orderId) => held.has(orderId))
+    .map((orderId) => stopLabel(orderId, byOrder.get(orderId)));
   if (named.length > 0) {
     throw new DepartureOrderHeldError(round.vehicleName, named);
   }

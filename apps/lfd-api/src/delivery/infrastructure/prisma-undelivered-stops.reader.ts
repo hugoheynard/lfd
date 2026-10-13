@@ -5,6 +5,7 @@ import {
   type UndeliveredStopRow,
   UndeliveredStopsReader,
 } from "../domain/ports/undelivered-stops.reader.js";
+import { ORDER_STOP, orderStopsOnly } from "./order-stop.js";
 
 /**
  * **Adaptateur Prisma de « Non remis »** (`a-la-porte.md`, AP-D7). Il ne
@@ -24,6 +25,9 @@ export class PrismaUndeliveredStopsReader extends UndeliveredStopsReader {
   async undelivered(today: string): Promise<readonly UndeliveredStopRow[]> {
     const rows = await this.prisma.deliveryRoundStop.findMany({
       where: {
+        // Un arrêt de transfert n'est pas une livraison ratée (plan du
+        // transfert interne, §5) : sa réception au site est le lot T2.
+        ...ORDER_STOP,
         removedAt: null,
         closedAt: null,
         round: { departedAt: { not: null } },
@@ -48,7 +52,7 @@ export class PrismaUndeliveredStopsReader extends UndeliveredStopsReader {
         },
       },
     });
-    return rows.flatMap((row) => {
+    return orderStopsOnly(rows).flatMap((row) => {
       // Le filtre garantit le départ ; l'exécution le porte aussi, figé.
       const departedAt = row.execution?.departedAt ?? row.round.departedAt;
       return departedAt === null

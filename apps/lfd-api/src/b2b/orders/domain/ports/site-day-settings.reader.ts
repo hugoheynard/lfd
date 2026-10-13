@@ -15,7 +15,11 @@ import type {
  * à l'adaptateur ; celle qui combine les heures est dans `transferDeparture`.
  */
 export interface SiteDaySettings {
+  /** Le nom du site, tel que l'écran des sites l'affiche (lot T1 du transfert). */
+  readonly label: string;
   readonly supply: "on_site" | "transfer";
+  /** Le mode du transfert d'un site servi par transfert (lot T1) ; sans objet sinon. */
+  readonly transferMode: "integrated" | "dedicated";
   /** Mise en place au comptoir, ≥ 0 (tenu par l'agrégat `Site`). */
   readonly counterSetupMinutes: number;
   /** `null` = non saisi : un trajet ne se calcule pas sans lui. */

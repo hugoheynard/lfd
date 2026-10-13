@@ -18,6 +18,7 @@ import {
 import { DeliveryRoundRepository } from "../../domain/ports/delivery-round.repository.js";
 import { ensureFreshForDriver, gesturePositionOf } from "../doorstep-support.js";
 import { CloseStopWithoutHandoverCommand } from "./close-stop-without-handover.command.js";
+import { TransferStopNotAnOrderError } from "../../domain/errors/delivery-round-errors.js";
 
 /**
  * **Clore un arrêt sans remise** (`documentation/livraisons/livreur/a-la-porte.md`,
@@ -101,6 +102,9 @@ function orderOfLiveStop(round: DeliveryRound, stopId: string): string {
   const stop = round.liveStops.find((candidate) => candidate.id === stopId);
   if (stop === undefined) {
     throw new DoorstepStopNotFoundError();
+  }
+  if (stop.kind !== "order") {
+    throw new TransferStopNotAnOrderError();
   }
   return stop.orderId;
 }

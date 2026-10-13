@@ -5,11 +5,14 @@ import { DomainEventPublisher } from "../../../platform/events/domain-event-publ
 import { Clock } from "../../../platform/time/clock.js";
 import { DeliveryOrdersReader } from "../../channels/commerce/index.js";
 import { citeOrder, DeliveryStopMovedEvent } from "../../domain/events/delivery-round.events.js";
+import { TransferStopMovedEvent } from "../../domain/events/internal-transfer.events.js";
 import { DeliveryRoundRepository } from "../../domain/ports/delivery-round.repository.js";
+import { InternalTransferRepository } from "../../domain/ports/internal-transfer.repository.js";
 import { LoadedStopsReader } from "../../domain/ports/loaded-stops.reader.js";
 import { VehicleRepository } from "../../domain/ports/vehicle.repository.js";
 import { moveDeliveryStop } from "../../domain/services/move-delivery-stop.js";
 import { ensureRoundVehicleActive, loadRoundAt, referencesOf } from "../delivery-round-support.js";
+import { loadTransfer } from "../internal-transfer-support.js";
 import { MoveDeliveryStopCommand } from "./move-delivery-stop.command.js";
 
 /**
@@ -35,6 +38,7 @@ export class MoveDeliveryStopHandler implements ICommandHandler<MoveDeliveryStop
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly transfers: InternalTransferRepository,
   ) {}
 
   async execute(command: MoveDeliveryStopCommand): Promise<void> {
@@ -46,14 +50,15 @@ export class MoveDeliveryStopHandler implements ICommandHandler<MoveDeliveryStop
       const stop = moveDeliveryStop(from, to, command.stopId, this.clock.now(), stopLoaded);
       await ensureRoundVehicleActive(this.vehicles, to);
       await this.rounds.saveMove(from, to, stop.id);
+      const position = to.positionOf(stop.id);
+      if (stop.kind === "transfer") {
+        const transfer = await loadTransfer(this.transfers, stop.transferId);
+        await this.events.publishTraced(new TransferStopMovedEvent(from, to, transfer, position));
+        return;
+      }
       const references = await referencesOf(this.orders, [stop.orderId]);
       await this.events.publishTraced(
-        new DeliveryStopMovedEvent(
-          from,
-          to,
-          citeOrder(stop.orderId, references),
-          to.positionOf(stop.id),
-        ),
+        new DeliveryStopMovedEvent(from, to, citeOrder(stop.orderId, references), position),
       );
     });
   }

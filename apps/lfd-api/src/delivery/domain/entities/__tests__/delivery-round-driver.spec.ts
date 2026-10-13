@@ -30,7 +30,7 @@ function round(
     driverStaffId: overrides.driverStaffId ?? null,
     createdAt: AT,
     updatedAt: AT,
-    stops: [{ id: "s_1", orderId: "o_1", position: 1, closedAt: null }],
+    stops: [{ kind: "order", id: "s_1", orderId: "o_1", position: 1, closedAt: null }],
   });
 }
 

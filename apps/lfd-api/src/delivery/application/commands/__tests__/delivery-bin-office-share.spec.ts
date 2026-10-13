@@ -22,6 +22,7 @@ import {
   stopOf,
 } from "./loading-doubles.js";
 import { deliveryOn, FixedDeliveryOrders } from "./round-doubles.js";
+import { FixedTransferredOrders } from "../../__tests__/transfer-doubles.js";
 
 // Des jours comparés entre eux seulement, jamais à l'horloge.
 const DAY = "2030-03-12";
@@ -56,6 +57,7 @@ function sharing(
     new FixedClock(NOW),
     events,
     new DirectUnitOfWork(),
+    new FixedTransferredOrders(),
   );
   const handler = {
     execute: async (request: BinShareRequest): Promise<string> => (await office.share(request)).id,

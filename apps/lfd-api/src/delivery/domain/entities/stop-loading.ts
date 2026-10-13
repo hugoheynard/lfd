@@ -4,6 +4,7 @@ import {
   DeliveryBinNotFoundError,
   DeliveryRoundDepartedError,
 } from "../errors/delivery-loading-errors.js";
+import type { StopSubject } from "./delivery-round-state.js";
 import { loadingStateOf, type StopLoadingState } from "./departure-readiness.js";
 import { areConsecutive, isSharedBinToRedo, placesInRound, type StopPlace } from "./shared-bin.js";
 
@@ -44,14 +45,24 @@ export interface BinLoadRecord {
 export interface StopLoadingSnapshot {
   readonly stopId: string;
   readonly roundId: string;
-  readonly orderId: string;
+  /**
+   * Ce que l'arrêt dessert : une commande, ou un transfert interne — dont les
+   * bacs sont ceux de TOUTES ses commandes (plan du transfert interne, §5).
+   */
+  readonly subject: StopSubject;
   readonly serviceDay: string;
   readonly vehicleName: string;
   readonly passage: number;
   readonly departedAt: Date | null;
-  /** Les commandes des arrêts vivants de la tournée, dans l'ordre de passage. */
-  readonly roundOrderIds: readonly string[];
-  /** Tous les bacs de la commande, annulés compris, dans l'ordre de déclaration. */
+  /**
+   * Les commandes des arrêts vivants de la tournée, dans l'ordre de passage ;
+   * `null` au rang d'un arrêt de transfert.
+   */
+  readonly roundOrderIds: readonly (string | null)[];
+  /**
+   * Tous les bacs de la commande — ou des commandes du transfert —, annulés
+   * compris, dans l'ordre de déclaration.
+   */
   readonly bins: readonly LoadingBin[];
   /** Les lignes de chargement de CET arrêt. */
   readonly loads: readonly BinLoadState[];
@@ -95,8 +106,8 @@ export class StopLoading {
     return this.snapshot.roundId;
   }
 
-  get orderId(): string {
-    return this.snapshot.orderId;
+  get subject(): StopSubject {
+    return this.snapshot.subject;
   }
 
   get serviceDay(): string {
@@ -140,7 +151,7 @@ export class StopLoading {
    */
   isConsecutiveTo(orderId: string): boolean {
     const places = this.places();
-    return areConsecutive(places.get(this.snapshot.orderId) ?? null, places.get(orderId) ?? null);
+    return areConsecutive(this.ownPlace(places), places.get(orderId) ?? null);
   }
 
   /**
@@ -150,7 +161,7 @@ export class StopLoading {
    */
   get binsToRedo(): readonly string[] {
     const places = this.places();
-    const own = places.get(this.snapshot.orderId) ?? null;
+    const own = this.ownPlace(places);
     return this.snapshot.bins
       .filter(
         (bin) =>
@@ -253,6 +264,15 @@ export class StopLoading {
       throw new DeliveryRoundDepartedError(this.snapshot.vehicleName, this.snapshot.serviceDay);
     }
     return bin;
+  }
+
+  /**
+   * La place de la commande de l'arrêt ; `null` pour un arrêt de transfert :
+   * un bac partagé n'y a jamais de voisin (Q-T4, un bac par commande).
+   */
+  private ownPlace(places: ReadonlyMap<string, StopPlace>): StopPlace | null {
+    const { subject } = this.snapshot;
+    return subject.kind === "order" ? (places.get(subject.orderId) ?? null) : null;
   }
 
   private places(): ReadonlyMap<string, StopPlace> {

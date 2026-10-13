@@ -61,6 +61,7 @@ import {
 import { ProposalCapacity, type ProposalCapacityReading } from "../proposal-capacity.js";
 import { compositionZonesOf } from "../proposal-zones.js";
 import { GetDeliveryRoundProposalQuery } from "./get-delivery-round-proposal.query.js";
+import { orderIdsOf } from "../../domain/entities/delivery-round-state.js";
 
 /** Ce que les deux modes partagent. */
 interface PlanInputs {
@@ -162,7 +163,7 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
     );
     const considered = [
       ...day.unassigned,
-      ...day.rounds.flatMap((round) => round.stops.map((stop) => stop.orderId)),
+      ...day.rounds.flatMap((round) => orderIdsOf(round.stops)),
     ];
     const capacity = await this.place.of(considered, settings);
     const mode = query.recomposeAll ? "new_rounds" : (query.mode ?? settings.defaultMode);
@@ -241,7 +242,7 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
     const pool = poolOf(ctx.day.unassigned, [], ctx.stops);
     const occupation = fleetOccupationOf(kept, ctx.stops);
     const roundStops = [
-      ...insertable.flatMap((round) => round.stops.map((stop) => stop.orderId)),
+      ...insertable.flatMap((round) => orderIdsOf(round.stops)),
       ...occupation.busy.flatMap((round) => round.stops.map((stop) => stop.id)),
     ];
     const cost = await this.costOf(ctx, [...pool.map((stop) => stop.id), ...roundStops]);
@@ -252,7 +253,7 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
       rounds: insertable.map((round) => ({
         ...{ roundId: round.id, vehicleId: round.vehicleId, vehicleName: round.vehicleName },
         passage: round.passage,
-        stops: round.stops.map((stop) => routingStopFor(stop.orderId, ctx.stops)),
+        stops: orderIdsOf(round.stops).map((orderId) => routingStopFor(orderId, ctx.stops)),
       })),
       cost,
       settings: ctx.settings,

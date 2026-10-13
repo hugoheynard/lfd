@@ -7,6 +7,7 @@ import { DeliveryLoadingReader } from "../../domain/ports/delivery-loading.reade
 import { binContextOf } from "../bin-context.js";
 import { loadingRoundView } from "../delivery-loading-view.js";
 import { GetDeliveryLoadingRoundQuery } from "./get-delivery-loading-round.query.js";
+import { orderStopsOf } from "../../domain/entities/delivery-round-state.js";
 
 /**
  * **Le chargement d'une tournée** (L4-C2) : chaque arrêt vivant, ses bacs, et
@@ -33,7 +34,7 @@ export class GetDeliveryLoadingRoundHandler implements IQueryHandler<
       this.loading,
       this.orders,
       round.stops.flatMap((stop) => stop.bins),
-      round.stops.map((stop) => stop.orderId),
+      orderStopsOf(round.stops).map((stop) => stop.orderId),
     );
     return loadingRoundView(round, context);
   }

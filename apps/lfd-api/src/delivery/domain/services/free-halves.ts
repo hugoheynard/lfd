@@ -26,7 +26,7 @@ export function freeHalvesAround(
   stops: readonly LoadingStopRow[],
   orderId: string,
 ): readonly FreeHalfRow[] {
-  const rank = stops.findIndex((stop) => stop.orderId === orderId);
+  const rank = stops.findIndex((stop) => stop.kind === "order" && stop.orderId === orderId);
   if (rank < 0) {
     return [];
   }

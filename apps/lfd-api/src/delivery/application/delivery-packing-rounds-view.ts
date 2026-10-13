@@ -7,6 +7,7 @@ import type {
 import type { StopPlace } from "../domain/entities/shared-bin.js";
 import type { LoadingRoundRow, LoadingStopRow } from "../domain/ports/delivery-loading.reader.js";
 import { binToRedo, type OrderNames } from "./delivery-loading-view.js";
+import { orderStopsOf } from "../domain/entities/delivery-round-state.js";
 
 /** Ce que la vue lit d'ailleurs que des tournées. */
 export interface PackingRoundsContext {
@@ -35,7 +36,8 @@ function packingRoundView(
   round: LoadingRoundRow,
   context: PackingRoundsContext,
 ): DeliveryPackingRoundView {
-  const stops = round.stops.map((stop) => packingStopView(stop, context));
+  // Le colisage regarde des commandes livrées ; un arrêt de transfert n'en a pas.
+  const stops = orderStopsOf(round.stops).map((stop) => packingStopView(stop, context));
   return {
     roundId: round.id,
     vehicleName: round.vehicleName,
@@ -48,7 +50,7 @@ function packingRoundView(
 }
 
 function packingStopView(
-  stop: LoadingStopRow,
+  stop: Extract<LoadingStopRow, { readonly kind: "order" }>,
   context: PackingRoundsContext,
 ): DeliveryPackingStopView {
   return {

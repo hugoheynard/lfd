@@ -44,6 +44,7 @@ import { fleetOccupationOf } from "../delivery-vehicle-availability.js";
 import { ProposalCapacity } from "../proposal-capacity.js";
 import { compositionZonesOf } from "../proposal-zones.js";
 import { GetDeliveryPlacementSuggestionsQuery } from "./get-delivery-placement-suggestions.query.js";
+import { orderIdsOf } from "../../domain/entities/delivery-round-state.js";
 
 /**
  * **La place suggérée** (CA7, `composition-automatique.md` §5) — pour chaque
@@ -127,7 +128,7 @@ export class GetDeliveryPlacementSuggestionsHandler implements IQueryHandler<
     const departure = await locatedDeparture(this.departure, this.candidates);
     const occupation = fleetOccupationOf(kept, stops);
     const roundStops = [
-      ...open.flatMap((round) => round.stops.map((stop) => stop.orderId)),
+      ...open.flatMap((round) => orderIdsOf(round.stops)),
       ...occupation.busy.flatMap((round) => round.stops.map((stop) => stop.id)),
     ];
     const considered = [...day.unassigned, ...roundStops];
@@ -143,7 +144,7 @@ export class GetDeliveryPlacementSuggestionsHandler implements IQueryHandler<
       rounds: open.map((round) => ({
         ...{ roundId: round.id, vehicleId: round.vehicleId, vehicleName: round.vehicleName },
         passage: round.passage,
-        stops: round.stops.map((stop) => routingStopFor(stop.orderId, stops)),
+        stops: orderIdsOf(round.stops).map((orderId) => routingStopFor(orderId, stops)),
       })),
       starts: busyStarts({ depotId: DEPOT_ID, cost, settings }, occupation.busy),
       capacity: capacity.capacity,

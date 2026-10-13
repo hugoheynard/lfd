@@ -4,6 +4,7 @@ import { PrismaService } from "../../platform/database/prisma.service.js";
 import { DoorstepStop } from "../domain/entities/doorstep-stop.js";
 import { DoorstepStopRepository } from "../domain/ports/doorstep-stop.repository.js";
 import { outcomeOf } from "./stop-decision.mapper.js";
+import { TransferStopNotAnOrderError } from "../domain/errors/delivery-round-errors.js";
 
 /**
  * **Adaptateur Prisma de l'arrêt à la porte** (`a-la-porte.md`, AP-D6).
@@ -59,6 +60,12 @@ export class PrismaDoorstepStopRepository extends DoorstepStopRepository {
     if (row === null) {
       return null;
     }
+    // Un arrêt de transfert n'a aucun geste de la porte (plan du transfert
+    // interne, §5) : son seul geste est « Remis au site » (T2).
+    if (row.orderId === null) {
+      throw new TransferStopNotAnOrderError();
+    }
+    const orderId = row.orderId;
     // Lue APRÈS la ligne murée, et seulement pour elle : la décision d'un
     // arrêt qui n'est pas au livreur n'est jamais lue ici.
     const decision = await this.prisma.deliveryStopDecision.findUnique({
@@ -67,7 +74,7 @@ export class PrismaDoorstepStopRepository extends DoorstepStopRepository {
     });
     return DoorstepStop.restore({
       stopId: row.id,
-      orderId: row.orderId,
+      orderId,
       round: {
         roundId: row.round.id,
         vehicleName: row.round.vehicleName,

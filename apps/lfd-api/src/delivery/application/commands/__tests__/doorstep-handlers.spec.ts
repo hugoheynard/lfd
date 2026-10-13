@@ -157,8 +157,8 @@ describe("CloseStopWithoutHandoverHandler — « déjà retirée / annulée » (
       createdAt: new Date(0),
       updatedAt: DEPARTED,
       stops: [
-        { id: "s_1", orderId: "o_1", position: 1, closedAt: null },
-        { id: "s_2", orderId: "o_2", position: 2, closedAt: null },
+        { kind: "order", id: "s_1", orderId: "o_1", position: 1, closedAt: null },
+        { kind: "order", id: "s_2", orderId: "o_2", position: 2, closedAt: null },
       ],
     });
   }
@@ -471,7 +471,7 @@ describe("« Tournée terminée » — ReturnMyRoundHandler et ReturnDeliveryRou
       driverStaffId: PAUL,
       createdAt: new Date(0),
       updatedAt: DEPARTED,
-      stops: [{ id: "s_1", orderId: "o_1", position: 1, closedAt: null }],
+      stops: [{ kind: "order", id: "s_1", orderId: "o_1", position: 1, closedAt: null }],
     });
   }
 

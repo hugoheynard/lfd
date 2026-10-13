@@ -17,6 +17,7 @@ import type {
   LoadingRoundRow,
   LoadingStopRow,
 } from "../domain/ports/delivery-loading.reader.js";
+import { orderStopsOf, transferStopsOf } from "../domain/entities/delivery-round-state.js";
 
 /**
  * Les vues du chargement (plan de tournée, lot 4 ; lot 4 bis, tranche B),
@@ -158,7 +159,15 @@ export function loadingRoundView(
     passage: round.passage,
     version: round.version,
     departedAt: round.departedAt?.toISOString() ?? null,
-    stops: round.stops.map((stop) => loadingStopView(stop, context)),
+    stops: orderStopsOf(round.stops).map((stop) => loadingStopView(stop, context)),
+    transferStops: transferStopsOf(round.stops).map((stop) => ({
+      stopId: stop.stopId,
+      transferId: stop.transferId,
+      siteLabel: stop.siteLabel ?? "",
+      position: stop.position,
+      state: stopStateOf(stop),
+      bins: loadingBinViewsOf(stop, context),
+    })),
   };
 }
 
@@ -191,9 +200,11 @@ function stopStateOf(stop: LoadingStopRow): StopLoadingState {
   );
 }
 
-function loadingStopView(stop: LoadingStopRow, context: BinContext): DeliveryLoadingStopView {
+function loadingStopView(
+  stop: Extract<LoadingStopRow, { readonly kind: "order" }>,
+  context: BinContext,
+): DeliveryLoadingStopView {
   const names = context.names.get(stop.orderId) ?? orderNamesOf(undefined);
-  const live = stop.bins.filter((bin) => bin.voidedAt === null);
   return {
     stopId: stop.stopId,
     orderId: stop.orderId,
@@ -201,17 +212,26 @@ function loadingStopView(stop: LoadingStopRow, context: BinContext): DeliveryLoa
     customerLabel: names.customerLabel,
     position: stop.position,
     state: stopStateOf(stop),
-    bins: live.map((bin, index): DeliveryLoadingBinView => ({
-      binId: bin.id,
-      code: bin.code,
-      index: index + 1,
-      binTypeName: bin.binType.name,
-      half: bin.half,
-      innerBags: bin.innerBags,
-      sharedWithReference:
-        bin.partner === null ? null : (context.names.get(bin.partner.orderId)?.reference ?? ""),
-      toRedo: binToRedo(bin, context.places),
-      loadedAt: stop.loaded.get(bin.id)?.toISOString() ?? null,
-    })),
+    bins: loadingBinViewsOf(stop, context),
   };
+}
+
+/** Les bacs non annulés d'un arrêt, numérotés dans l'ordre de déclaration. */
+function loadingBinViewsOf(
+  stop: LoadingStopRow,
+  context: BinContext,
+): readonly DeliveryLoadingBinView[] {
+  const live = stop.bins.filter((bin) => bin.voidedAt === null);
+  return live.map((bin, index): DeliveryLoadingBinView => ({
+    binId: bin.id,
+    code: bin.code,
+    index: index + 1,
+    binTypeName: bin.binType.name,
+    half: bin.half,
+    innerBags: bin.innerBags,
+    sharedWithReference:
+      bin.partner === null ? null : (context.names.get(bin.partner.orderId)?.reference ?? ""),
+    toRedo: binToRedo(bin, context.places),
+    loadedAt: stop.loaded.get(bin.id)?.toISOString() ?? null,
+  }));
 }

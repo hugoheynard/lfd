@@ -1,6 +1,7 @@
 import type { DeliveryRound, DetachedStop } from "../entities/delivery-round.js";
 import { InvalidProposalError } from "../errors/delivery-routing-errors.js";
 import type { MovedStop } from "../ports/delivery-proposal.repository.js";
+import { withTransferStopsInPlace } from "./transfer-stops-in-place.js";
 import type { PlannedTiming } from "../value-objects/planned-timing.js";
 
 /** Une tournée de la proposition, telle que l'écran la renvoie. */
@@ -99,11 +100,7 @@ export function applyProposal(input: ApplyProposalInput): AppliedProposal {
         round.assign(input.newStopId(), orderId, input.at);
       }
     }
-    const stopIds = new Map(round.liveStops.map((stop) => [stop.orderId, stop.id]));
-    round.reorder(
-      item.orderIds.flatMap((orderId) => stopIds.get(orderId) ?? []),
-      input.at,
-    );
+    round.reorder(proposedSequence(round, item.orderIds), input.at);
   }
   targets.forEach(({ round }, index) => {
     round.planTiming(input.timings[index] ?? null, input.at);
@@ -133,7 +130,9 @@ function holdersOf(
 ): ReadonlyMap<string, { readonly round: DeliveryRound; readonly stopId: string }> {
   return new Map(
     [...rounds.values()].flatMap((round) =>
-      round.liveStops.map((stop) => [stop.orderId, { round, stopId: stop.id }] as const),
+      round.liveStops.flatMap((stop) =>
+        stop.kind === "order" ? [[stop.orderId, { round, stopId: stop.id }] as const] : [],
+      ),
     ),
   );
 }
@@ -167,4 +166,20 @@ function appliedRounds(
     .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
     .map((round) => ({ round, before: before.get(round.id) ?? [], opened: false }));
   return [...opened, ...existing];
+}
+
+/**
+ * L'ordre final des arrêts vivants : les arrêts de commande dans l'ordre
+ * proposé, et chaque arrêt de **transfert interne** à SA place — la
+ * proposition ne les connaît pas, et appliquer ne retire ni ne déplace jamais
+ * un arrêt en silence.
+ */
+function proposedSequence(round: DeliveryRound, orderIds: readonly string[]): readonly string[] {
+  const stopIds = new Map(
+    round.liveStops.flatMap((stop) => (stop.kind === "order" ? [[stop.orderId, stop.id]] : [])),
+  );
+  return withTransferStopsInPlace(
+    round.liveStops,
+    orderIds.flatMap((orderId) => stopIds.get(orderId) ?? []),
+  );
 }

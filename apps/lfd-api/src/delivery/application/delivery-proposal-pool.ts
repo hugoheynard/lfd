@@ -3,6 +3,7 @@ import type { RoundRow } from "../domain/ports/delivery-rounds.reader.js";
 import type { PlannableStop } from "../domain/services/propose-rounds.js";
 import type { GeoPoint } from "../domain/value-objects/geo-point.js";
 import { type LocatedStop, routingStopOf } from "./delivery-routing-support.js";
+import { orderIdsOf } from "../domain/entities/delivery-round-state.js";
 
 /** L'identifiant du départ dans la matrice : aucun identifiant de commande ne le porte. */
 export const DEPOT_ID = "depot";
@@ -25,7 +26,7 @@ export function poolOf(
   return [
     ...unassigned.flatMap((orderId) => plannable(orderId, null)),
     ...recomposable.flatMap((round) =>
-      round.stops.flatMap((stop) => plannable(stop.orderId, round.id)),
+      orderIdsOf(round.stops).flatMap((orderId) => plannable(orderId, round.id)),
     ),
   ];
 }

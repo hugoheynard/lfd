@@ -12,6 +12,7 @@ import { binContextOf } from "../bin-context.js";
 import { loadingPlanView, planStopsOf } from "../delivery-loading-plan-view.js";
 import { routingSettingsOf } from "../delivery-routing-support.js";
 import { GetDeliveryLoadingPlanQuery } from "./get-delivery-loading-plan.query.js";
+import { orderStopsOf } from "../../domain/entities/delivery-round-state.js";
 
 /**
  * **Le plan de chargement d'une tournée** (lot 4 bis, L4b-C7, v2-5) : l'ordre
@@ -49,7 +50,7 @@ export class GetDeliveryLoadingPlanHandler implements IQueryHandler<
         this.loading,
         this.orders,
         bins,
-        round.stops.map((stop) => stop.orderId),
+        orderStopsOf(round.stops).map((stop) => stop.orderId),
       ),
       this.plans.binTypes([...new Set(bins.map((bin) => bin.binType.id))]),
       routingSettingsOf(this.settings),

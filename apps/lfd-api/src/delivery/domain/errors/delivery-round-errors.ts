@@ -213,3 +213,39 @@ export class InvalidPlannedTimingError extends TechnicalError {
     );
   }
 }
+
+/**
+ * Un geste de la porte (remettre, déposer, signaler…) visé sur un arrêt de
+ * **transfert interne** (plan du transfert interne, §5) : ses commandes sont
+ * des retraits, remis au comptoir du site. Le seul geste de cet arrêt est
+ * « Remis au site » (lot T2).
+ */
+export class TransferStopNotAnOrderError extends DomainError {
+  constructor() {
+    super(
+      "delivery.transfer_stop_not_an_order",
+      "Cet arrêt est un transfert vers un site, pas une livraison à un client : ses commandes " +
+        "se remettent au comptoir du site. Rechargez votre tournée.",
+    );
+  }
+}
+
+/** Le même transfert interne est déjà dans cette tournée. */
+export class TransferAlreadyInRoundError extends BusinessError {
+  constructor(siteLabel: string, vehicleName: string) {
+    super(
+      "delivery.transfer_already_in_round",
+      `Le transfert vers « ${siteLabel} » est déjà dans la tournée « ${vehicleName} » : rechargez la composition.`,
+    );
+  }
+}
+
+/** Un arrêt relu en base dont le genre contredit ses colonnes — le CHECK l'interdit. */
+export class DeliveryStopCorruptedError extends TechnicalError {
+  constructor(stopId: string) {
+    super(
+      "delivery.stop_corrupted",
+      `L'arrêt ${stopId} est incohérent en base (genre et colonnes en désaccord) : signalez-le, rien n'a été écrit.`,
+    );
+  }
+}

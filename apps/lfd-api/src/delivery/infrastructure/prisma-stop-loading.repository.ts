@@ -9,7 +9,10 @@ import {
 } from "../domain/entities/stop-loading.js";
 import { DeliveryLoadingStaleError } from "../domain/errors/delivery-loading-errors.js";
 import { StopLoadingRepository } from "../domain/ports/stop-loading.repository.js";
+import { orderIdOf, type StopSubject } from "../domain/entities/delivery-round-state.js";
 import { partnersOf } from "./bin-partners.js";
+import { stopSubjectOf } from "./delivery-round.writes.js";
+import { orderStopsOnly } from "./order-stop.js";
 import { loadViaOf } from "./load-via.js";
 
 /** Les lignes de chargement d'un arrêt, telles que l'agrégat les relit. */
@@ -54,10 +57,7 @@ export class PrismaStopLoadingRepository extends StopLoadingRepository {
   }
 
   async forOrder(orderId: string, lockBinId?: string): Promise<StopLoading | null> {
-    const live = await this.prisma.deliveryRoundStop.findFirst({
-      where: { orderId, removedAt: null, closedAt: null },
-      select: { id: true, roundId: true },
-    });
+    const live = await this.liveStopOf(orderId);
     if (live === null) {
       await this.lockBin(lockBinId);
       return null;
@@ -70,7 +70,9 @@ export class PrismaStopLoadingRepository extends StopLoadingRepository {
       select: {
         id: true,
         roundId: true,
+        kind: true,
         orderId: true,
+        transferId: true,
         serviceDay: true,
         removedAt: true,
         closedAt: true,
@@ -82,18 +84,20 @@ export class PrismaStopLoadingRepository extends StopLoadingRepository {
     if (stop.roundId !== live.roundId || stop.removedAt !== null || stop.closedAt !== null) {
       throw new DeliveryLoadingStaleError();
     }
-    const bins = await this.binsOf([stop.orderId]);
+    const subject = stopSubjectOf(stop);
+    const carried = await this.carriedOrders([subject]);
+    const bins = await this.binsOf([...carried.values()].flat());
     const roundOrderIds = await this.liveOrderIdsOf(stop.roundId);
     return StopLoading.restore({
       stopId: stop.id,
       roundId: stop.roundId,
-      orderId: stop.orderId,
+      subject,
       serviceDay: stop.serviceDay,
       vehicleName: stop.round.vehicleName,
       passage: stop.round.passage,
       departedAt: stop.round.departedAt,
       roundOrderIds,
-      bins: bins.get(stop.orderId) ?? [],
+      bins: binsOfSubject(subject, carried, bins),
       loads: stop.binLoads.map(toLoadState),
     });
   }
@@ -111,18 +115,19 @@ export class PrismaStopLoadingRepository extends StopLoadingRepository {
        WHERE "stop_id" = ANY(${stopIds})
        ORDER BY "id"
          FOR UPDATE`;
-    const bins = await this.binsOf(stops.map((stop) => stop.orderId));
+    const carried = await this.carriedOrders(stops);
+    const bins = await this.binsOf([...carried.values()].flat());
     return stops.map((stop) =>
       StopLoading.restore({
         stopId: stop.id,
         roundId: round.id,
-        orderId: stop.orderId,
+        subject: stop,
         serviceDay: round.serviceDay,
         vehicleName: round.vehicleName,
         passage: round.passage,
         departedAt: round.departedAt,
-        roundOrderIds: stops.map((live) => live.orderId),
-        bins: bins.get(stop.orderId) ?? [],
+        roundOrderIds: round.liveStops.map(orderIdOf),
+        bins: binsOfSubject(stop, carried, bins),
         loads: loads.filter((load) => load.stopId === stop.id).map(toLoadState),
       }),
     );
@@ -171,14 +176,72 @@ export class PrismaStopLoadingRepository extends StopLoadingRepository {
     }
   }
 
-  /** Les commandes des arrêts vivants d'une tournée, dans l'ordre de passage. */
-  private async liveOrderIdsOf(roundId: string): Promise<readonly string[]> {
+  /**
+   * Les commandes des arrêts vivants d'une tournée, dans l'ordre de passage ;
+   * `null` au rang d'un arrêt de transfert (il sépare ses voisins).
+   */
+  private async liveOrderIdsOf(roundId: string): Promise<readonly (string | null)[]> {
     const stops = await this.prisma.deliveryRoundStop.findMany({
       where: { roundId, removedAt: null, closedAt: null },
       orderBy: { position: "asc" },
       select: { orderId: true },
     });
     return stops.map((stop) => stop.orderId);
+  }
+
+  /**
+   * L'arrêt vivant qui emporte cette commande : le sien, ou — pour un retrait
+   * d'un site servi par transfert — celui de son transfert interne (plan du
+   * transfert interne, §5 : `delivery` résout commande → transfert → arrêt ;
+   * le canal du colisage reste indexé par commande).
+   */
+  private async liveStopOf(
+    orderId: string,
+  ): Promise<{ readonly id: string; readonly roundId: string } | null> {
+    const own = await this.prisma.deliveryRoundStop.findFirst({
+      where: { orderId, removedAt: null, closedAt: null },
+      select: { id: true, roundId: true },
+    });
+    if (own !== null) {
+      return own;
+    }
+    const item = await this.prisma.deliveryInternalTransferItem.findFirst({
+      where: { kind: "order", orderId },
+      select: { transferId: true },
+    });
+    return item === null
+      ? null
+      : this.prisma.deliveryRoundStop.findFirst({
+          where: { transferId: item.transferId, removedAt: null, closedAt: null },
+          select: { id: true, roundId: true },
+        });
+  }
+
+  /** Les commandes que chaque arrêt emporte, par sujet : la sienne, ou celles de son transfert. */
+  private async carriedOrders(
+    subjects: readonly StopSubject[],
+  ): Promise<ReadonlyMap<string, readonly string[]>> {
+    const transferIds = subjects.flatMap((s) => (s.kind === "transfer" ? [s.transferId] : []));
+    const items =
+      transferIds.length === 0
+        ? []
+        : await this.prisma.deliveryInternalTransferItem.findMany({
+            where: { transferId: { in: transferIds }, kind: "order" },
+            orderBy: [{ attachedAt: "asc" }, { id: "asc" }],
+            select: { transferId: true, orderId: true },
+          });
+    return new Map(
+      subjects.map((subject) =>
+        subject.kind === "order"
+          ? [subjectKey(subject), [subject.orderId]]
+          : [
+              subjectKey(subject),
+              orderStopsOnly(items.filter((item) => item.transferId === subject.transferId)).map(
+                (item) => item.orderId,
+              ),
+            ],
+      ),
+    );
   }
 
   /**
@@ -225,6 +288,19 @@ export class PrismaStopLoadingRepository extends StopLoadingRepository {
     });
     return new Map([...partnersOf(rows, halves)].map(([binId, other]) => [binId, other.orderId]));
   }
+}
+
+function subjectKey(subject: StopSubject): string {
+  return subject.kind === "order" ? `order:${subject.orderId}` : `transfer:${subject.transferId}`;
+}
+
+/** Les bacs d'un arrêt : ceux de chacune des commandes qu'il emporte, dans leur ordre. */
+function binsOfSubject(
+  subject: StopSubject,
+  carried: ReadonlyMap<string, readonly string[]>,
+  bins: ReadonlyMap<string, readonly LoadingBin[]>,
+): readonly LoadingBin[] {
+  return (carried.get(subjectKey(subject)) ?? []).flatMap((orderId) => bins.get(orderId) ?? []);
 }
 
 function toLoadState(row: LoadRow): BinLoadState {

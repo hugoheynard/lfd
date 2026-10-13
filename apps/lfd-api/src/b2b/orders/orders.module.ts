@@ -123,6 +123,7 @@ import { DayOrdersSource } from "./domain/ports/day-orders.source.js";
 import { SiteDaySettingsReader } from "./domain/ports/site-day-settings.reader.js";
 import { SiteDeadlines } from "./application/services/site-deadlines.service.js";
 import { SitedDayOrders } from "./application/services/sited-day-orders.service.js";
+import { CommerceTransferSites } from "./application/services/commerce-transfer-sites.service.js";
 import { DueThresholds } from "./application/services/due-thresholds.service.js";
 import { DeadlineOrdersReader } from "./domain/ports/deadline-orders.reader.js";
 import { PrismaDeadlineOrdersReader } from "./infrastructure/prisma-deadline-orders.reader.js";
@@ -295,6 +296,8 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     { provide: SiteDaySettingsReader, useClass: PrismaSiteDaySettingsReader },
     SiteDeadlines,
     SitedDayOrders,
+    // Le transfert interne (lot T1) : l'heure d'arrivée par la même règle.
+    CommerceTransferSites,
     PrismaHandoverSubjectReader,
     PrismaPendingOrdersReader,
     // Le compte à rebours du fournil (vagues, V0) : implémente un port de la
@@ -441,6 +444,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // sortent d'ici pour être RELIÉS dans la racine de composition, jamais
     // pour être importés par le fournil : le token qu'il connaît est le sien.
     SitedDayOrders,
+    CommerceTransferSites,
     PrismaHandoverSubjectReader,
     PrismaPendingOrdersReader,
     PendingSettlementSweep,

@@ -24,9 +24,9 @@ function kangoo(): Vehicle {
 
 function loaded(
   stops: DeliveryRoundState["stops"] = [
-    { id: "s_1", orderId: "o_1", position: 1, closedAt: null },
-    { id: "s_2", orderId: "o_2", position: 2, closedAt: null },
-    { id: "s_3", orderId: "o_3", position: 3, closedAt: null },
+    { kind: "order", id: "s_1", orderId: "o_1", position: 1, closedAt: null },
+    { kind: "order", id: "s_2", orderId: "o_2", position: 2, closedAt: null },
+    { kind: "order", id: "s_3", orderId: "o_3", position: 3, closedAt: null },
   ],
 ): DeliveryRound {
   return DeliveryRound.restore({
@@ -106,20 +106,21 @@ describe("DeliveryRound.restore", () => {
   it("revérifie I2 : des positions à trou sont un défaut, pas un état", () => {
     expect(() =>
       loaded([
-        { id: "s_1", orderId: "o_1", position: 1, closedAt: null },
-        { id: "s_2", orderId: "o_2", position: 3, closedAt: null },
+        { kind: "order", id: "s_1", orderId: "o_1", position: 1, closedAt: null },
+        { kind: "order", id: "s_2", orderId: "o_2", position: 3, closedAt: null },
       ]),
     ).toThrow(DeliveryRoundCorruptedError);
   });
 
   it("ne compte pas un arrêt clos dans les positions vivantes, et le réécrit tel quel", () => {
     const round = loaded([
-      { id: "s_0", orderId: "o_0", position: 1, closedAt: AT },
-      { id: "s_1", orderId: "o_1", position: 1, closedAt: null },
+      { kind: "order", id: "s_0", orderId: "o_0", position: 1, closedAt: AT },
+      { kind: "order", id: "s_1", orderId: "o_1", position: 1, closedAt: null },
     ]);
 
     expect(round.orderIds).toEqual(["o_1"]);
     expect(round.toSnapshot().stops).toContainEqual({
+      kind: "order",
       id: "s_0",
       orderId: "o_0",
       position: 1,
@@ -194,14 +195,14 @@ describe("assign / remove", () => {
       { id: "s_3", position: 2 },
     ]);
     expect(snapshot.removedStops).toEqual([
-      { id: "s_2", orderId: "o_2", position: 2, closedAt: null, removedAt: LATER },
+      { kind: "order", id: "s_2", orderId: "o_2", position: 2, closedAt: null, removedAt: LATER },
     ]);
   });
 
   it("refuse un arrêt inconnu, et un arrêt clos (I4)", () => {
     const round = loaded([
-      { id: "s_0", orderId: "o_0", position: 1, closedAt: AT },
-      { id: "s_1", orderId: "o_1", position: 1, closedAt: null },
+      { kind: "order", id: "s_0", orderId: "o_0", position: 1, closedAt: AT },
+      { kind: "order", id: "s_1", orderId: "o_1", position: 1, closedAt: null },
     ]);
 
     expect(() => round.remove("absent", LATER)).toThrow(DeliveryStopNotFoundError);
@@ -240,8 +241,8 @@ describe("reorder — I2, permutation exacte", () => {
 
   it("refuse un arrêt clos dans la liste (I4)", () => {
     const round = loaded([
-      { id: "s_0", orderId: "o_0", position: 1, closedAt: AT },
-      { id: "s_1", orderId: "o_1", position: 1, closedAt: null },
+      { kind: "order", id: "s_0", orderId: "o_0", position: 1, closedAt: AT },
+      { kind: "order", id: "s_1", orderId: "o_1", position: 1, closedAt: null },
     ]);
 
     expect(() => round.reorder(["s_0", "s_1"], LATER)).toThrow(DeliveryStopClosedError);

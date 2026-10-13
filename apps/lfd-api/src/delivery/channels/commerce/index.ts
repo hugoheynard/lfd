@@ -60,6 +60,14 @@ export {
   DeliveryAddressPointCorrector,
   type DeliveryAddressPointCorrection,
 } from "./delivery-address-point.corrector.js";
+// Le transfert interne (lot T1, 2026-10-13) : la livraison déclare, le commerce implémente.
+export {
+  TransferOrdersReader,
+  TransferSitesReader,
+  type TransferOrderRef,
+  type TransferSiteFacts,
+} from "./transfer-sites.reader.js";
+export { TransferOrderContentsReader } from "./transfer-order-contents.reader.js";
 export {
   OrderDeliveryHistoryReader,
   type OrderDeliveryStopFact,

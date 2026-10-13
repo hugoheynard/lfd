@@ -7,6 +7,7 @@ import type { FreeHalfRow } from "../../domain/services/free-halves.js";
 import { declarableReference } from "../delivery-loading-support.js";
 import { freeHalvesOfOrder } from "../free-halves-support.js";
 import { GetDeliveryBinFreeHalvesQuery } from "./get-delivery-bin-free-halves.query.js";
+import { TransferredOrdersReader } from "../../domain/ports/internal-transfers.reader.js";
 
 /**
  * **Les moitiés libres autour d'une commande** (lot 4 bis, v2-4) — ce que le
@@ -26,10 +27,11 @@ export class GetDeliveryBinFreeHalvesHandler implements IQueryHandler<
   constructor(
     private readonly loading: DeliveryLoadingReader,
     private readonly orders: DeliveryOrdersReader,
+    private readonly transferred: TransferredOrdersReader,
   ) {}
 
   async execute(query: GetDeliveryBinFreeHalvesQuery): Promise<DeliveryBinFreeHalvesView> {
-    const reference = await declarableReference(this.orders, query.orderId);
+    const reference = await declarableReference(this.orders, this.transferred, query.orderId);
     const { round, halves } = await freeHalvesOfOrder(this.loading, query.orderId);
     const facts = await this.orders.byIds([...new Set(halves.map((half) => half.bin.orderId))]);
     const byId = new Map(facts.map((fact) => [fact.orderId, fact]));

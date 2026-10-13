@@ -6,6 +6,7 @@ import {
   OrderDeliveryHistoryReader,
   type OrderDeliveryStopFact,
 } from "../channels/commerce/order-delivery-history.reader.js";
+import { ORDER_STOP, orderStopsOnly } from "./order-stop.js";
 
 const BRING_BACK: StopDecisionOutcome = "bring_back";
 
@@ -24,18 +25,20 @@ export class PrismaOrderDeliveryHistoryReader extends OrderDeliveryHistoryReader
     if (orderIds.length === 0) {
       return [];
     }
-    const stops = await this.prisma.deliveryRoundStop.findMany({
-      where: { orderId: { in: [...orderIds] }, removedAt: null },
-      orderBy: [{ createdAt: "asc" }, { id: "asc" }],
-      select: {
-        id: true,
-        orderId: true,
-        serviceDay: true,
-        createdAt: true,
-        closedAt: true,
-        round: { select: { departedAt: true } },
-      },
-    });
+    const stops = orderStopsOnly(
+      await this.prisma.deliveryRoundStop.findMany({
+        where: { orderId: { in: [...orderIds] }, ...ORDER_STOP, removedAt: null },
+        orderBy: [{ createdAt: "asc" }, { id: "asc" }],
+        select: {
+          id: true,
+          orderId: true,
+          serviceDay: true,
+          createdAt: true,
+          closedAt: true,
+          round: { select: { departedAt: true } },
+        },
+      }),
+    );
     const decisions = await this.prisma.deliveryStopDecision.findMany({
       where: {
         stopId: { in: stops.map((stop) => stop.id) },

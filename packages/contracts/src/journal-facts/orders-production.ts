@@ -7,6 +7,7 @@ import { DELIVERY_BIN_FACTS } from "./delivery-bins.js";
 import { DELIVERY_LOADING_FACTS } from "./delivery-loading.js";
 import { DELIVERY_PURCHASE_LIBRARY_FACTS } from "./delivery-purchase-library.js";
 import { DELIVERY_ROUND_FACTS } from "./delivery-rounds.js";
+import { DELIVERY_TRANSFER_FACTS } from "./delivery-transfers.js";
 import { DELIVERY_ROUTING_FACTS } from "./delivery-routing.js";
 import { HANDOVER_PROOF_FACTS } from "./handover-proofs.js";
 import { ORDER_REFUND_FACTS } from "./order-refunds.js";
@@ -508,6 +509,8 @@ export const ORDERS_PRODUCTION_FACTS = {
   ),
   /** **La composition des tournées** (lot 3) — dans son propre fichier, même famille. */
   ...DELIVERY_ROUND_FACTS,
+  /** **Le transfert interne** (lot T1) — dans son propre fichier, même famille. */
+  ...DELIVERY_TRANSFER_FACTS,
   /** **Le chargement** (lot 4) — dans son propre fichier, même famille. */
   ...DELIVERY_LOADING_FACTS,
   /** **Le calculateur de tournée** (lot 7) — dans son propre fichier, même famille. */

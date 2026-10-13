@@ -1074,6 +1074,7 @@ export type {
   DeliveryRoundPlaceView,
   DeliveryRoundPlaceStatus,
   DeliveryRoundStopView,
+  DeliveryRoundTransferStopView,
   DeliveryRoundStopSignal,
   DeliveryRoundOrderRef,
   OpenDeliveryRoundPayload,
@@ -1185,6 +1186,7 @@ export type {
   DeliveryBinDetailView,
   DeliveryLoadingStopState,
   DeliveryLoadingStopView,
+  DeliveryLoadingTransferStopView,
   DeliveryLoadingRoundView,
   DeliveryLoadingRoundSummaryView,
   DeliveryLoadingDayView,
@@ -2069,3 +2071,9 @@ export type {
   ShopCopyPublishedView,
   ShopCopyHistoryQuery,
 } from "./shop-copy.js";
+export type {
+  InternalTransferManifestView,
+  TransferManifestItemView,
+  TransferManifestLineView,
+  TransferManifestSectionView,
+} from "./delivery-transfers.js";

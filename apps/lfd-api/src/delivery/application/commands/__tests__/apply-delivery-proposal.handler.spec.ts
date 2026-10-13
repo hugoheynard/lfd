@@ -134,7 +134,9 @@ describe("ApplyDeliveryProposalHandler — « Appliquer » (L7-C6, L7-C11, L7-C1
     const opened = rounds.all().find((round) => round.vehicleId === "v2");
     expect(opened?.orderIds).toEqual(["o3", "o2"]);
     expect(opened?.passage).toBe(1);
-    expect(opened?.liveStops.find((stop) => stop.orderId === "o2")?.id).toBe("r1_s2");
+    expect(
+      opened?.liveStops.find((stop) => stop.kind === "order" && stop.orderId === "o2")?.id,
+    ).toBe("r1_s2");
     expect(proposals.applied[0]?.movedStops).toEqual([
       { stopId: "r1_s2", fromVehicleName: "Véhicule v1" },
     ]);

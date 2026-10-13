@@ -1,3 +1,5 @@
+import type { DetachedStop } from "./delivery-round-state.js";
+
 /**
  * Où en est le chargement d'un arrêt (plan de tournée, lot 4, L4-C17) :
  *
@@ -58,7 +60,7 @@ export function sharedBinsToRedo(
  * jamais pour chargé : l'absence d'information ne fait pas partir un bac.
  */
 export function unreadyStops(
-  liveStops: readonly { readonly id: string; readonly orderId: string }[],
+  liveStops: readonly DetachedStop[],
   readiness: readonly StopReadiness[],
 ): { readonly unlabelled: readonly string[]; readonly partial: readonly string[] } {
   const byStop = new Map(readiness.map((stop) => [stop.stopId, stop]));
@@ -66,7 +68,7 @@ export function unreadyStops(
   const partial: string[] = [];
   for (const stop of liveStops) {
     const found = byStop.get(stop.id);
-    const reference = found?.reference ?? stop.orderId;
+    const reference = found?.reference ?? (stop.kind === "order" ? stop.orderId : stop.transferId);
     const state = found?.state ?? "unlabelled";
     if (state === "unlabelled") {
       unlabelled.push(reference);

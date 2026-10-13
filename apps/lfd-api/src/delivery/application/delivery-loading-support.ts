@@ -15,6 +15,7 @@ import { citeOrder, type CitedOrder } from "../domain/events/delivery-round.even
 import type { BinCodeDrawer } from "../domain/ports/bin-code-drawer.js";
 import type { BinTypeLookup } from "../domain/ports/bin-type-lookup.js";
 import type { DeliveryBinRepository } from "../domain/ports/delivery-bin.repository.js";
+import type { TransferredOrdersReader } from "../domain/ports/internal-transfers.reader.js";
 import { binCodeOf } from "../domain/value-objects/bin-code.js";
 import { referencesOf } from "./delivery-round-support.js";
 
@@ -85,26 +86,35 @@ export async function lookUpBinType(types: BinTypeLookup, id: string): Promise<B
 
 /**
  * Le numéro d'une commande qui peut recevoir des bacs : connue du commerce,
- * en livraison, non annulée — lue au moment du geste.
+ * non annulée, en livraison — ou portée par un **transfert interne** (plan du
+ * transfert interne, §5, §8, lot T1 : un retrait d'un site servi par
+ * transfert part dans un bac, un par commande, Q-T4) —, lue au moment du geste.
  * @throws {BinsNotDeclarableError}
  */
 export async function declarableReference(
   orders: DeliveryOrdersReader,
+  transferred: TransferredOrdersReader,
   orderId: string,
 ): Promise<string> {
-  const [order] = await orders.byIds([orderId]);
-  const reason = order === undefined ? "unknown" : undeclarableReason(order);
+  const [[order], carried] = await Promise.all([
+    orders.byIds([orderId]),
+    transferred.transferredAmong([orderId]),
+  ]);
+  const reason = order === undefined ? "unknown" : undeclarableReason(order, carried.has(orderId));
   if (order === undefined || reason !== null) {
     throw new BinsNotDeclarableError(order?.reference ?? orderId, reason ?? "unknown");
   }
   return order.reference;
 }
 
-function undeclarableReason(order: DeliveryOrderFacts): UndeclarableReason | null {
+function undeclarableReason(
+  order: DeliveryOrderFacts,
+  transferred: boolean,
+): UndeclarableReason | null {
   if (order.status === "cancelled") {
     return "cancelled";
   }
-  return order.delivery ? null : "not_delivery";
+  return order.delivery || transferred ? null : "not_delivery";
 }
 
 /**

@@ -44,7 +44,9 @@ export class FixedLoading extends DeliveryLoadingReader {
   orderBins(orderId: string): Promise<readonly BinRow[]> {
     return Promise.resolve(
       this.rounds
-        .flatMap((round) => round.stops.filter((stop) => stop.orderId === orderId))
+        .flatMap((round) =>
+          round.stops.filter((stop) => stop.kind === "order" && stop.orderId === orderId),
+        )
         .flatMap((stop) => stop.bins),
     );
   }
@@ -58,7 +60,7 @@ export class FixedLoading extends DeliveryLoadingReader {
     const places = new Map<string, StopPlace>();
     for (const round of this.rounds) {
       round.stops.forEach((stop, rank) => {
-        if (orderIds.includes(stop.orderId)) {
+        if (stop.kind === "order" && orderIds.includes(stop.orderId)) {
           places.set(stop.orderId, { roundId: round.id, rank });
         }
       });
@@ -137,6 +139,8 @@ export function roundRow(
     version: 1,
     departedAt,
     stops: stops.map((stop, index) => ({
+      kind: "order" as const,
+      siteLabel: null,
       stopId: `stop_${stop.orderId}`,
       orderId: stop.orderId,
       position: index + 1,

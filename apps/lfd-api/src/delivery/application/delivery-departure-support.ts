@@ -4,7 +4,10 @@ import type { GpsPoint } from "@lfd/contracts";
 
 import type { DurablePublisher } from "../../platform/outbox/durable-publisher.js";
 import type { Clock } from "../../platform/time/clock.js";
-import type { DeliveryOrdersReader } from "../channels/commerce/index.js";
+import type {
+  DeliveryOrdersReader,
+  TransferOrderContentsReader,
+} from "../channels/commerce/index.js";
 import {
   type DepartureHoldsReader,
   DeliveryRoundDepartedFact,
@@ -14,7 +17,11 @@ import type { StopReadiness } from "../domain/entities/departure-readiness.js";
 import { departedStopsOf, refuseHeldOrders } from "../domain/entities/departure-sheet.js";
 import type { StopLoading } from "../domain/entities/stop-loading.js";
 import { DeliveryRoundDepartedEvent } from "../domain/events/delivery-loading.events.js";
+import type { InternalTransfer } from "../domain/entities/internal-transfer.js";
 import type { DeliveryRoundRepository } from "../domain/ports/delivery-round.repository.js";
+import type { InternalTransferRepository } from "../domain/ports/internal-transfer.repository.js";
+import { loadTransfer } from "./internal-transfer-support.js";
+import { itemContentsOf } from "./transfer-contents.js";
 import type { DepartedStopRepository } from "../domain/ports/departed-stop.repository.js";
 import type { DoorstepSettingsReader } from "../domain/ports/doorstep-settings.reader.js";
 import type { StopLoadingRepository } from "../domain/ports/stop-loading.repository.js";
@@ -31,6 +38,10 @@ export interface DepartureDeps {
   readonly durable: DurablePublisher;
   /** Qui tient quoi, maintenant : le livreur affecté doit encore pouvoir livrer. */
   readonly holders: StaffPermissionHolders;
+  /** Les transferts internes des arrêts de transfert (lot T1). */
+  readonly transfers: InternalTransferRepository;
+  /** Le contenu de leurs commandes, pour figer le manifeste au départ. */
+  readonly contents: TransferOrderContentsReader;
 }
 
 /**
@@ -52,6 +63,10 @@ export interface DepartureDeps {
  *    (B3 bis) : une tournée partie ne change plus de règle ;
  * 4. une commande retenue au contrôle qualité arrête tout, en nommant l'arrêt
  *    (`a-la-porte.md`, BQ) — lue au retrait, dans la transaction ;
+ * 4 bis. chaque **transfert interne** de la tournée part avec elle, et fige
+ *    son manifeste (plan du transfert interne, §5, lot T1) — dans la même
+ *    transaction. Ses commandes ne sont ni dans les feuilles, ni dans les
+ *    retenues, ni dans le fait de départ : ce sont des retraits ;
  * 5. le fait DURABLE `delivery.round_departed` est écrit dans la boîte
  *    d'envoi, dans la même transaction (`plan-depart-durable.md`, DD1) : ici
  *    et pas dans les handlers, pour qu'aucune des deux portes ne l'oublie. Le
@@ -75,7 +90,11 @@ export async function departAndFreeze(
     deps.holds.heldOrders(round.orderIds),
     deps.doorstepSettings.current(),
   ]);
-  const references = new Map(sheets.map((sheet) => [sheet.orderId, sheet.reference]));
+  const transfers = await loadTransfers(deps.transfers, round.transferIds);
+  const references = new Map([
+    ...sheets.map((sheet) => [sheet.orderId, sheet.reference] as const),
+    ...transfers.map((transfer) => [transfer.id, `→ ${transfer.siteLabel}`] as const),
+  ]);
   const at = deps.clock.now();
   round.depart(at, readinessOf(loadings, references));
   const gps = new Map<string, GpsPoint | null>(points.map((point) => [point.orderId, point.gps]));
@@ -83,6 +102,7 @@ export async function departAndFreeze(
   refuseHeldOrders(round, sheets, held);
   await deps.rounds.save(round);
   await deps.departedStops.record(departed);
+  await departTransfers(transfers, at, deps);
   await deps.durable.publish(
     new DeliveryRoundDepartedFact(round.id, round.serviceDay, at, round.orderIds).durableFact(),
   );
@@ -95,7 +115,7 @@ function readinessOf(
 ): readonly StopReadiness[] {
   return loadings.map((loading) => ({
     stopId: loading.stopId,
-    reference: references.get(loading.orderId) ?? loading.orderId,
+    reference: references.get(subjectIdOf(loading)) ?? subjectIdOf(loading),
     state: loading.state,
     binsToRedo: loading.binsToRedo,
   }));
@@ -104,4 +124,40 @@ function readinessOf(
 /** Les bacs non annulés qui partent — tous chargés, puisque la tournée est partie. */
 function liveBinCount(loadings: readonly StopLoading[]): number {
   return loadings.reduce((sum, loading) => sum + loading.liveBinCount, 0);
+}
+
+function subjectIdOf(loading: StopLoading): string {
+  const { subject } = loading;
+  return subject.kind === "order" ? subject.orderId : subject.transferId;
+}
+
+async function loadTransfers(
+  repository: InternalTransferRepository,
+  ids: readonly string[],
+): Promise<readonly InternalTransfer[]> {
+  const transfers: InternalTransfer[] = [];
+  for (const id of ids) {
+    transfers.push(await loadTransfer(repository, id));
+  }
+  return transfers;
+}
+
+/**
+ * Les transferts partent avec la tournée et figent leur manifeste. Un
+ * transfert déjà parti n'écrit rien : le premier départ fait foi.
+ */
+async function departTransfers(
+  transfers: readonly InternalTransfer[],
+  at: Date,
+  deps: DepartureDeps,
+): Promise<void> {
+  if (transfers.length === 0) {
+    return;
+  }
+  const contents = await itemContentsOf(deps.contents, transfers);
+  for (const transfer of transfers) {
+    if (transfer.depart(at, contents)) {
+      await deps.transfers.save(transfer);
+    }
+  }
 }

@@ -33,6 +33,10 @@ import {
   roundWith,
 } from "./round-doubles.js";
 import { FixedDoorstepSettings, RecordingDurable } from "./decision-doubles.js";
+import {
+  FixedTransferContents,
+  InMemoryInternalTransfers,
+} from "../../__tests__/transfer-doubles.js";
 
 // Des jours comparés entre eux seulement, jamais à l'horloge.
 const DAY = "2030-03-12";
@@ -187,6 +191,8 @@ describe("DepartDeliveryRoundHandler — L4-C4, Q14", () => {
       uow,
       durable,
       new FixedStaffPermissionHolders(),
+      new InMemoryInternalTransfers(),
+      new FixedTransferContents(),
     );
     return { handler, rounds, departed, events, durable };
   }
@@ -316,6 +322,8 @@ describe("DepartDeliveryRoundHandler — L4-C4, Q14", () => {
       uow,
       new RecordingDurable(),
       new FixedStaffPermissionHolders(),
+      new InMemoryInternalTransfers(),
+      new FixedTransferContents(),
     );
 
     await expect(

@@ -46,7 +46,7 @@ function loadingOf(overrides: Partial<StopLoadingSnapshot> = {}): StopLoading {
   return StopLoading.restore({
     stopId: "s_2",
     roundId: "r_1",
-    orderId: "o_2",
+    subject: { kind: "order", orderId: "o_2" },
     serviceDay: "2030-03-12",
     vehicleName: "Kangoo blanc",
     passage: 1,
@@ -236,7 +236,7 @@ describe("DeliveryBin.shareHalf — le bac partagé (v2-4)", () => {
 
   it("refuse deux commandes qui ne sont pas à des arrêts consécutifs", () => {
     // o_1 et o_3 sont séparés par o_2.
-    const fromO3 = loadingOf({ stopId: "s_3", orderId: "o_3" });
+    const fromO3 = loadingOf({ stopId: "s_3", subject: { kind: "order", orderId: "o_3" } });
 
     expect(() => share({ orderId: "o_3", loading: fromO3 })).toThrow(SharedBinNotAdjacentError);
     expect(() => share({ orderId: "o_3", loading: fromO3 })).toThrow(

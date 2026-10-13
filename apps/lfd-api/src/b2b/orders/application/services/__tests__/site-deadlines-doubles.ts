@@ -13,7 +13,9 @@ import { SiteDeadlines } from "../site-deadlines.service.js";
 /** Les réglages d'un site pour un jour — sur place, sans heure, par défaut. */
 export function siteSettings(over: Partial<SiteDaySettings> = {}): SiteDaySettings {
   return {
+    label: "Site",
     supply: "on_site",
+    transferMode: "integrated",
     counterSetupMinutes: 0,
     gps: null,
     proPickup: null,

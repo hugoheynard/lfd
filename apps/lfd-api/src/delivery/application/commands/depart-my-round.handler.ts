@@ -5,7 +5,10 @@ import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { DurablePublisher } from "../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../platform/time/clock.js";
-import { DeliveryOrdersReader } from "../../channels/commerce/index.js";
+import {
+  DeliveryOrdersReader,
+  TransferOrderContentsReader,
+} from "../../channels/commerce/index.js";
 import { DepartureHoldsReader } from "../../channels/handover/index.js";
 import type { DeliveryRound } from "../../domain/entities/delivery-round.js";
 import { DriverRoundNotFoundError } from "../../domain/errors/delivery-driver-errors.js";
@@ -17,6 +20,7 @@ import { StopLoadingRepository } from "../../domain/ports/stop-loading.repositor
 import { departAndFreeze } from "../delivery-departure-support.js";
 import { asDriverRefusal } from "../driver-refusals.js";
 import { DepartMyRoundCommand } from "./depart-my-round.command.js";
+import { InternalTransferRepository } from "../../domain/ports/internal-transfer.repository.js";
 
 /**
  * **« Commencer ma tournée »** — la porte du LIVREUR (plan « Ma tournée »,
@@ -48,6 +52,8 @@ export class DepartMyRoundHandler implements ICommandHandler<DepartMyRoundComman
     private readonly uow: UnitOfWork,
     private readonly durable: DurablePublisher,
     private readonly holders: StaffPermissionHolders,
+    private readonly transfers: InternalTransferRepository,
+    private readonly contents: TransferOrderContentsReader,
   ) {}
 
   async execute(command: DepartMyRoundCommand): Promise<void> {
@@ -77,6 +83,8 @@ export class DepartMyRoundHandler implements ICommandHandler<DepartMyRoundComman
         clock: this.clock,
         durable: this.durable,
         holders: this.holders,
+        transfers: this.transfers,
+        contents: this.contents,
       });
     } catch (error) {
       throw await asDriverRefusal(error, this.orders, round.orderIds);
