@@ -6,7 +6,7 @@ import { RetryOrderRefundCommand } from "../application/commands/retry-order-ref
 
 /**
  * **Le remboursement d'une commande annulée, vu du staff** (plan
- * `documentation/order/plan-annulation-de-commande.md`, C4.9). À part de
+ * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C4.9). À part de
  * `AdminOrdersController`, qui dépasse déjà la taille d'un fichier.
  */
 @Controller("admin/orders")

@@ -1,6 +1,6 @@
 /**
  * E2E de **l'ouverture de la boutique à la commande** (Hugo, 2026-10-09 ;
- * doc `documentation/order/ouverture-de-la-boutique.md`).
+ * doc `documentation/commandes/ouverture-de-la-boutique.md`).
  *
  * Ce que seul le vrai chemin prouve : que le réglage posé par la route staff
  * est relu par les passations, que la clientèle est DÉDUITE au serveur (une

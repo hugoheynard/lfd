@@ -9,7 +9,7 @@ import { refundFailurePhraseOf } from "../../domain/services/refund-request-phra
 
 /**
  * **Le bandeau du remboursement** au détail staff (plan
- * `documentation/order/plan-annulation-de-commande.md`, C4.9) : la demande,
+ * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C4.9) : la demande,
  * son état LU au carnet, et si « Relancer » a un sens. Sans verrou : c'est un
  * affichage — le bouton se reprend sous verrou.
  */

@@ -14,7 +14,7 @@ export type BlockedRestitution = Extract<VoucherRestitution, { readonly kind: "b
 
 /**
  * **Le refus d'annuler à cause du bon** (plan
- * `documentation/order/plan-annulation-de-commande.md`, C3b.5, C3b.7), mis en
+ * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C3b.5, C3b.7), mis en
  * bloc de la règle d'annulation. Partagé par le geste et l'aperçu du détail,
  * qui disent donc la même phrase.
  *

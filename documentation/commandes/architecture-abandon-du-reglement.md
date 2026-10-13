@@ -25,7 +25,7 @@
 > par `vitruve`) a été **fondu ici le 2026-10-12** et supprimé : ses décisions
 > sont au §10, ce qu'il avait contesté est dans le code et ses JSDoc datés.
 > L'historique complet (constat, objections, lots) reste lisible dans git :
-> `git log --follow -- documentation/order/plan-abandon-du-reglement`.
+> `git log --follow -- documentation/commandes/plan-abandon-du-reglement`.
 > Ce document décrit ce que le code **fait**, et c'est lui qui fait foi.
 
 ## 1. En une phrase
@@ -128,7 +128,7 @@ stateDiagram-v2
   appartient à une commande annulée,
   [`ConfirmOrderPaymentHandler`](../../apps/lfd-api/src/b2b/orders/application/commands/confirm-order-payment.handler.ts)
   publie `OrderPaidAfterCancellationEvent`. Depuis le lot C4 du
-  [plan d'annulation](plan-annulation-de-commande.md) (2026-10-12, C4.11),
+  [plan d'annulation](annulation/plan-annulation-de-commande.md) (2026-10-12, C4.11),
   [`RefundPaidAfterCancellation`](../../apps/lfd-api/src/b2b/orders/application/handlers/refund-paid-after-cancellation.handler.ts)
   ouvre une demande de remboursement, que l'exécuteur porte chez Stripe, pour
   toutes les clientèles ; la cloche « à rembourser » (`RingRefundDue`) est
@@ -378,7 +378,7 @@ substituent un faux `PaymentGateway`.
   jour-là le colisage et le dossier du jour.
 - **Le remboursement** : « à rembourser » sonne, le geste se fait à la main
   depuis Stripe. Il relève du
-  [chantier d'annulation général](plan-annulation-de-commande.md), comme
+  [chantier d'annulation général](annulation/plan-annulation-de-commande.md), comme
   l'annulation d'une commande payée.
 - **La croissance** (S11) : `order.placed` reste compté après un abandon.
 - Les JSDoc de code que ce chantier périmait (`PAYMENTS_AWAITING`,
@@ -402,6 +402,6 @@ substituent un faux `PaymentGateway`.
 
 **Ce que ce chantier ne fait pas** : annuler une commande **payée**
 (remboursement) — c'est
-[`plan-annulation-de-commande.md`](plan-annulation-de-commande.md) ; aucune
+[`plan-annulation-de-commande.md`](annulation/plan-annulation-de-commande.md) ; aucune
 annulation de masse des commandes déjà orphelines (le §0 du `CLAUDE.md` l'interdit
 d'autorité, elles sont balayées à la première clôture de leur jour).

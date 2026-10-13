@@ -1,6 +1,6 @@
 /**
  * **Le verrou de PLUSIEURS lignes `orders`**, dans un ordre unique (plan
- * `documentation/order/plan-annulation-de-commande.md`, C5.3, S7).
+ * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C5.3, S7).
  *
  * L'émission mensuelle et la constitution d'un lot prennent chacune
  * plusieurs commandes ; l'annulation, « réglée autrement » et la facture
@@ -11,7 +11,7 @@
  * la base).
  *
  * Tenu jusqu'à la fin de la transaction : à appeler sous `UnitOfWork.run`.
- * Schéma : `documentation/order/verrous-de-l-annulation.md`.
+ * Schéma : `documentation/commandes/annulation/verrous-de-l-annulation.md`.
  */
 export abstract class OrderRowsLock {
   abstract lockAll(orderIds: readonly string[]): Promise<void>;

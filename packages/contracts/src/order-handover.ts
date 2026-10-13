@@ -170,7 +170,7 @@ export interface HandoverQueueEntryView {
    * badge (rien n'a été rattrapé : « sans société » ne voulait pas dire public).
    *
    * ⚠️ Pas la clientèle TARIFÉE B2B/B2C : une société en attente est `pro` ici
-   * et B2C au tarif. Cf. `documentation/order/architecture-ce-que-porte-la-commande.md`.
+   * et B2C au tarif. Cf. `documentation/commandes/architecture-ce-que-porte-la-commande.md`.
    */
   readonly clientele: OrderClientele | null;
   /** Le point de retrait figé à la commande, ou `null` en livraison. */

@@ -45,7 +45,7 @@ import { CloseProductionDayCommand } from "./close-production-day.command.js";
  * Avant tout, il DEMANDE au commerce de trancher les règlements restés en l'air
  * pour la journée — `PendingSettlementSweeper`, un port que le fournil déclare
  * et que le commerce implémente (plan
- * `documentation/order/architecture-abandon-du-reglement.md`, Q1, B1). C'est le
+ * `documentation/commandes/architecture-abandon-du-reglement.md`, Q1, B1). C'est le
  * commerce qui écrit, dans ses tables ; le fournil n'en connaît que la
  * question. Sans ce geste, une journée où aucune carte n'est payée resterait
  * vide, donc inarrêtable, donc ses règlements vivraient pour toujours.

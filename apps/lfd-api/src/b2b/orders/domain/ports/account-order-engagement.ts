@@ -1,6 +1,6 @@
 /**
  * **Ce que la comptabilité a déjà fait d'une commande au compte** (plan
- * `documentation/order/plan-annulation-de-commande.md`, lot C5, C5.5) — ce
+ * `documentation/commandes/annulation/plan-annulation-de-commande.md`, lot C5, C5.5) — ce
  * que la règle d'annulation lit pour refuser une commande déjà facturée,
  * engagée dans un lot, prélevée, ou rejetée puis re-présentée.
  *

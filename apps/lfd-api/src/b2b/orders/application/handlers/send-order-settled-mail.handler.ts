@@ -37,7 +37,7 @@ export const SEND_ORDER_SETTLED_MAIL = "orders.send-settled-mail.on-paid";
  * `order.placed:<orderId>`.
  *
  * Une carte abandonnée n'émet aucun événement Stripe ; elle expire à 30 min
- * (`documentation/order/commande-carte-reglee.md`).
+ * (`documentation/commandes/commande-carte-reglee.md`).
  */
 @Injectable()
 @DurableHandler({ type: ORDER_PAID, subscriber: SEND_ORDER_SETTLED_MAIL })

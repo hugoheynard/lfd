@@ -40,7 +40,7 @@ export type IdempotencyClaim =
  * (on en passerait une seconde). Les deux écritures ensemble, et l'intervalle
  * n'existe plus.
  *
- * @see `documentation/order/architecture-idempotence-de-passation.md` §6.2
+ * @see `documentation/commandes/architecture-idempotence-de-passation.md` §6.2
  */
 export abstract class OrderIdempotencyStore {
   /**

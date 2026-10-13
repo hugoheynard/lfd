@@ -3,7 +3,7 @@
 > ⚠️ **Le taux des extras n'est pas tranché** (2026-09-21) : le coursier est
 > taxé à 20 % en dur, alors qu'un port accessoire suit la marchandise. Hugo a
 > décidé d'en faire un **réglage** —
-> [`../order/architecture-tva-des-frais-de-port.md`](../order/architecture-tva-des-frais-de-port.md).
+> [`../commandes/architecture-tva-des-frais-de-port.md`](../commandes/architecture-tva-des-frais-de-port.md).
 
 **Ouvert le 2026-09-06. ✅ Décrit du code qui tourne.**
 

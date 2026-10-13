@@ -126,7 +126,7 @@ export type DevSeedOrdersOnlyReport = Omit<DevSeedReport, "reset">;
 
 /**
  * **Les étapes du scénario du jour** (2026-10-05,
- * `documentation/order/architecture-jeu-de-donnees-par-etapes.md` §1) : 0 commandes
+ * `documentation/commandes/architecture-jeu-de-donnees-par-etapes.md` §1) : 0 commandes
  * passées, 1 plan de production clôturé, 2 tournées composées, 3 production
  * complète, 4 colisage complet, 5 tournées chargées prêtes à partir.
  *

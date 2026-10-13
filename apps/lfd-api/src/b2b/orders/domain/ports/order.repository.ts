@@ -65,7 +65,7 @@ export abstract class OrderRepository {
 
   /**
    * **L'abandon du règlement par son client** — il quitte l'écran de carte
-   * (plan `documentation/order/architecture-abandon-du-reglement.md`, D1, D4, Q3).
+   * (plan `documentation/commandes/architecture-abandon-du-reglement.md`, D1, D4, Q3).
    *
    * 🔴 **Écriture nue, conditionnée en base, et c'est voulu** — au même titre
    * que {@link markPaid} : `Order` est un agrégat de PASSATION qui ne sait pas

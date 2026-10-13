@@ -72,7 +72,7 @@ const STEP_BADGES: Readonly<
  *
  * Le scénario de commandes ne se rejoue plus d'un bloc : six étapes, cochées
  * d'après ce que la base porte, et une seule action principale qui nomme la
- * suivante (`documentation/order/architecture-jeu-de-donnees-par-etapes.md` §3).
+ * suivante (`documentation/commandes/architecture-jeu-de-donnees-par-etapes.md` §3).
  * « Charger jusqu'ici » enchaîne les étapes UNE PAR UNE : l'écran dit toujours
  * laquelle il joue, et un échec s'arrête sur l'étape qui a refusé.
  *

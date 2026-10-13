@@ -2,7 +2,7 @@ import { z } from "zod";
 
 /**
  * **La TVA de la livraison** — le réglage global du comptable (plan
- * `documentation/order/architecture-tva-des-frais-de-port.md`, décision du 2026-09-21).
+ * `documentation/commandes/architecture-tva-des-frais-de-port.md`, décision du 2026-09-21).
  *
  * - `standard` : le port est une prestation à part, au taux normal (20 %) ;
  * - `follows_goods` : le port est l'accessoire de la vente et suit le taux de

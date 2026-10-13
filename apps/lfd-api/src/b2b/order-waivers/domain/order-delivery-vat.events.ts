@@ -5,7 +5,7 @@ import type { JournalFact, JournaledEvent } from "../../../platform/journal/jour
 
 /**
  * **Le fait de la TVA de la livraison** (plan
- * `documentation/order/architecture-tva-des-frais-de-port.md`, V2).
+ * `documentation/commandes/architecture-tva-des-frais-de-port.md`, V2).
  *
  * La ligne du réglage est unique et réécrite en place : seul le journal dit
  * quel mode s'appliquait tel jour, et qui l'a choisi. Chaque commande fige le

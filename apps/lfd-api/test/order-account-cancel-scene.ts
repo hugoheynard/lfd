@@ -15,7 +15,7 @@ import { addBillingAddress, attachTo, createCompany, createUser } from "./factor
 
 /**
  * **La scène de l'annulation d'une commande AU COMPTE** (plan
- * `documentation/order/plan-annulation-de-commande.md`, lot C5) — partagée
+ * `documentation/commandes/annulation/plan-annulation-de-commande.md`, lot C5) — partagée
  * par la suite des gestes et celle des courses.
  *
  * Doublés : la signature des jetons (le jeton EST le `sub`), le courrier

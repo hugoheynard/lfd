@@ -8,7 +8,7 @@ export const CANCELLATION_REASON_MAX_LENGTH = 500;
 
 /**
  * **Pourquoi l'équipe annule** (plan
- * `documentation/order/plan-annulation-de-commande.md`, C3.5) : obligatoire,
+ * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C3.5) : obligatoire,
  * borné, jamais montré au client — il va au journal et sur la commande.
  *
  * Le contrôleur ne valide que la forme (une chaîne) ; c'est ici que le vide

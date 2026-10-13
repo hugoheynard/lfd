@@ -1,5 +1,5 @@
 /**
- * E2E du **relevé de cycle** (plan `documentation/order/plan-agregation-des-commandes.md`, A1).
+ * E2E du **relevé de cycle** (plan `documentation/commandes/plan-agregation-des-commandes.md`, A1).
  *
  * Ce que seul le vrai SQL prouve :
  *

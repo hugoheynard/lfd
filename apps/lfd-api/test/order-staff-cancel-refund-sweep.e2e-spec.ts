@@ -1,6 +1,6 @@
 /**
  * E2E de **« Relancer », du balayage et du droit** du remboursement à
- * l'annulation (plan `documentation/order/plan-annulation-de-commande.md`, lot
+ * l'annulation (plan `documentation/commandes/annulation/plan-annulation-de-commande.md`, lot
  * C4, C4.7 (b), (c), C4.9). La scène est partagée avec
  * `order-staff-cancel-refund.e2e-spec.ts`.
  */

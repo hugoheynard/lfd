@@ -1,6 +1,6 @@
 /**
  * E2E du **balayage de la clôture** (plan
- * `documentation/order/architecture-abandon-du-reglement.md`, lots 6 et 6 bis) : la
+ * `documentation/commandes/architecture-abandon-du-reglement.md`, lots 6 et 6 bis) : la
  * clôture d'une journée tue d'abord les règlements restés en l'air, puis
  * compte ce qu'il y a à produire.
  *

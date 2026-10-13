@@ -10,7 +10,7 @@ export interface CancellationRecord {
 
 /**
  * Port d'**écriture** de l'annulation staff (plan
- * `documentation/order/plan-annulation-de-commande.md`, C3.4, C3.4 ter).
+ * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C3.4, C3.4 ter).
  *
  * 🔴 **Écriture nue, conditionnée en base, et c'est voulu** — comme
  * `absorbIntoPlan` et `markAbandoned` : `Order` est un agrégat de PASSATION qui

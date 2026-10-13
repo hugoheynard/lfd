@@ -1,6 +1,6 @@
 /**
  * Le client **quitte l'écran de règlement** sans payer : sa commande n'attend
- * plus sa carte (plan `documentation/order/architecture-abandon-du-reglement.md`, D1).
+ * plus sa carte (plan `documentation/commandes/architecture-abandon-du-reglement.md`, D1).
  */
 export class AbandonOrderCommand {
   constructor(

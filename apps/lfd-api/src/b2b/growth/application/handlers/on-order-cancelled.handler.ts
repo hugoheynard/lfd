@@ -21,7 +21,7 @@ export const RECORD_ORDER_CANCELLED = "b2b.growth.record-order-cancelled";
 /**
  * Abonné du journal : `order.cancelled` → **le témoin immuable d'une
  * annulation par l'équipe** (plan
- * `documentation/order/plan-annulation-de-commande.md`, C3.5, D10).
+ * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C3.5, D10).
  *
  * Même raison que l'abandon et le retrait : une annulation qui ne vivrait que
  * sur des colonnes qu'on peut réécrire n'atteste rien. Le sujet est le client ;

@@ -11,7 +11,7 @@
 > service** : le §2 bis, et le lot F0.
 >
 > Place réservée depuis le plan de la boutique :
-> [`order/boutique-rayon-layout.md`](../order/boutique-rayon-layout.md), ligne
+> [`commandes/boutique-rayon-layout.md`](../commandes/boutique-rayon-layout.md), ligne
 > « Formule » — « un choix par groupe, le prix de la formule appliqué ».
 
 ---

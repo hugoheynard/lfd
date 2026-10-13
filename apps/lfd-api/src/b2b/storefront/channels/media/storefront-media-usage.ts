@@ -1,7 +1,7 @@
 /**
  * **Les images qu'emploie la vitrine** — le canal que `b2b/storefront` publie
  * pour qui doit savoir si une image sert encore (plan
- * `documentation/order/boutique-rayon-layout.md`, D9).
+ * `documentation/commandes/boutique-rayon-layout.md`, D9).
  *
  * 🔴 Publié ICI et branché ailleurs : le commerce n'importe pas la médiathèque
  * (`b2b → media` est hors de la matrice), et la médiathèque ne lit pas les

@@ -11,7 +11,7 @@ import type { CustomerAudience } from "./customer-audience.js";
  * Un réglage global, posé dans « E-commerce LFC → Réglages → Ouverture de la
  * boutique » (Hugo, 2026-10-09). Fermée à une clientèle, la boutique garde son
  * catalogue et ses prix ; seules les PASSATIONS de cette clientèle sont
- * refusées. Doc : `documentation/order/ouverture-de-la-boutique.md`.
+ * refusées. Doc : `documentation/commandes/ouverture-de-la-boutique.md`.
  */
 export interface OrderOpeningView {
   readonly ordersOpenToB2b: boolean;

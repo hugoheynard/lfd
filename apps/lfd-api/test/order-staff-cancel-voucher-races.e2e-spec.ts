@@ -1,6 +1,6 @@
 /**
  * E2E des **courses de la refusion du bon** (plan
- * `documentation/order/plan-annulation-de-commande.md`, C3b.5, C3b.9) :
+ * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C3b.5, C3b.9) :
  * une passation qui engage le reliquat pendant l'annulation, et l'expiration
  * de nuit qui croise une refusion à la date limite.
  */

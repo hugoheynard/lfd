@@ -36,7 +36,7 @@ import type {
  * d'une livraison voyage dans le carton, où un coursier scannerait son propre
  * colis.
  *
- * Doc : `documentation/order/architecture-bon-de-commande.md`.
+ * Doc : `documentation/commandes/architecture-bon-de-commande.md`.
  */
 
 /**

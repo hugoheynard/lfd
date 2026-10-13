@@ -331,7 +331,7 @@ Repris de « TODO de la porte » (supprimé le 2026-10-06), relu ce jour-là.
 - 🔴 **Les livraisons ratées (6 c)** : relivrer, retrait au comptoir, annuler.
   Seul « Rapporter » existe (§ 4) ; aucun des trois gestes n'existe au
   commerce, et deux remboursent : ils supposent les **avenants**
-  ([`../../order/architecture-commande-immuable-avenants.md`](../../order/architecture-commande-immuable-avenants.md),
+  ([`../../commandes/architecture-commande-immuable-avenants.md`](../../commandes/architecture-commande-immuable-avenants.md),
   doc-first). Proposé et non tranché : un 6 c-1 « relivrer le jour X, sans
   nouveaux frais », les deux autres plus tard. En attendant, « Non remis »
   reste une vue (AP-D7).

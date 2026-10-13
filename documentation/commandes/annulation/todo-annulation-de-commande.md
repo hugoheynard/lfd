@@ -21,7 +21,7 @@ décisions de Hugo (§3).
   soir, dossier du jour, colisage, retrait, chiffre d'affaires, volumes du
   tarif, prélèvement, frise client (liste au §1 du plan).
 - **L'expiration des commandes impayées** en dépend
-  ([règlement, §4.1](architecture-reglement-et-compte-de-production.md)).
+  ([règlement, §4.1](../architecture-reglement-et-compte-de-production.md)).
 
 ## 2. Ce qui ne tient pas dans le plan actuel
 

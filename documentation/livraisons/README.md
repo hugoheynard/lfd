@@ -103,7 +103,7 @@ dossier de leur sujet :
 - [`../ops/planificateur-de-tournees.md`](../ops/planificateur-de-tournees.md) : le service `lfd-route-planner` (lot 8), déployé depuis le 2026-09-30 ; sa mise en service effective ne se lit pas dans le dépôt.
 - [`../legal/rgpd-livreur.md`](../legal/rgpd-livreur.md) et [`../legal/rgpd-purge-du-geocodage.md`](../legal/rgpd-purge-du-geocodage.md) : les données personnelles du livreur, le registre, les purges.
 - [`../journalisation/plan-evenements-durables.md`](../journalisation/plan-evenements-durables.md) : les faits durables, dont E3 (départ et retour, bâti par DD1).
-- [`../order/architecture-tva-des-frais-de-port.md`](../order/architecture-tva-des-frais-de-port.md) : la TVA des frais de livraison (bâtie). Reste dans `order/`, qui garde les TODO de la commande (règle du 2026-09-17).
+- [`../commandes/architecture-tva-des-frais-de-port.md`](../commandes/architecture-tva-des-frais-de-port.md) : la TVA des frais de livraison (bâtie). Reste dans `order/`, qui garde les TODO de la commande (règle du 2026-09-17).
 - [`../colisage/todo-colisage-tri-par-echeance.md`](../colisage/todo-colisage-tri-par-echeance.md) : trier le colisage selon le départ du véhicule.
-- [`../order/architecture-bon-de-commande.md`](../order/architecture-bon-de-commande.md) : il n'y a pas de « bon de livraison », une seule pièce qui porte un mode d'acheminement.
-- [`../order/plan-creneaux-de-retrait.md`](../order/plan-creneaux-de-retrait.md) et [`../order/architecture-heure-limite-de-commande.md`](../order/architecture-heure-limite-de-commande.md) : les créneaux et l'heure limite, qui s'appliquent aussi aux livraisons.
+- [`../commandes/architecture-bon-de-commande.md`](../commandes/architecture-bon-de-commande.md) : il n'y a pas de « bon de livraison », une seule pièce qui porte un mode d'acheminement.
+- [`../commandes/plan-creneaux-de-retrait.md`](../commandes/plan-creneaux-de-retrait.md) et [`../commandes/architecture-heure-limite-de-commande.md`](../commandes/architecture-heure-limite-de-commande.md) : les créneaux et l'heure limite, qui s'appliquent aussi aux livraisons.

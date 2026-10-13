@@ -30,7 +30,7 @@
 > faire la soustraction. Chaque T a été **rouvert dans le code** et réécrit dans
 > son état du jour ; ceux qui sont fermés tiennent en une ligne avec l'endroit où
 > vit le remède. Le texte d'origine reste dans l'historique :
-> `git show d285e715:documentation/order/audit-flux-de-commande.md`.
+> `git show d285e715:documentation/commandes/audit-flux-de-commande.md`.
 >
 > La numérotation **T1–T12 est conservée** — d'autres documents la citent
 > (`architecture-idempotence-de-passation.md` renvoie à T12). Deux défauts nouveaux
@@ -88,7 +88,7 @@ en tranche la conception.
 Le plan existe et a été **contredit par `vitruve` le 2026-09-17 : 4 BLOQUANT,
 7 SÉRIEUX**. Rien ne se bâtit avant qu'il soit refondu sur quatre décisions de
 Hugo — l'état, les décisions et les directions sont dans
-[`todo-annulation-de-commande.md`](todo-annulation-de-commande.md). Un de ses
+[`todo-annulation-de-commande.md`](annulation/todo-annulation-de-commande.md). Un de ses
 constats concerne déjà le code en place : `markFulfilled` ne filtre que sur
 `handedOverAt: null`, pas sur le statut — le jour où `cancelled` s'écrira, un
 retrait au comptoir pourra l'écraser (S1 du TODO).

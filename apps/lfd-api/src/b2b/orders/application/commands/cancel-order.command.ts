@@ -1,6 +1,6 @@
 /**
  * **L'équipe annule une commande** (plan
- * `documentation/order/plan-annulation-de-commande.md`, lot C3).
+ * `documentation/commandes/annulation/plan-annulation-de-commande.md`, lot C3).
  *
  * `staffUserId` est l'id de la FICHE, reçu de la porte (`@StaffUserId()`) —
  * jamais un `sub`, jamais lu du corps. `reason` est brut : le domaine le

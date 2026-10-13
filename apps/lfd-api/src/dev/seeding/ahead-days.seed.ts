@@ -17,7 +17,7 @@ import {
 /**
  * **Les jours qui viennent** — demain et J+2, posés à la remise à l'état de
  * base et jamais avancés ensuite. Sortis de `orders.seed.ts` le 2026-10-05 avec
- * la journée du jour (`documentation/order/architecture-jeu-de-donnees-par-etapes.md`).
+ * la journée du jour (`documentation/commandes/architecture-jeu-de-donnees-par-etapes.md`).
  */
 
 /** J+2 : la journée du pic — cf. {@link placePeak}. */

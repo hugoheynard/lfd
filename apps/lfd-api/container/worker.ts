@@ -270,7 +270,7 @@ async function triggerLoyaltySweep(env: Env): Promise<void> {
 
 /**
  * Réveille le container et déclenche le rappel des liens de paiement non réglés
- * à l'heure limite (plan `documentation/order/architecture-abandon-du-reglement.md`, Q6).
+ * à l'heure limite (plan `documentation/commandes/architecture-abandon-du-reglement.md`, Q6).
  *
  * Même porte et même jeton que le recompute. La passe est idempotente : un tour
  * manqué est rattrapé au suivant, un tour rejoué ne sonne pas deux fois.
@@ -426,7 +426,7 @@ async function triggerRoundsGapBell(env: Env): Promise<void> {
 /**
  * Réveille le container et passe l'expiration des commandes boutique non
  * réglées : annulées avec leur intention 30 minutes après leur passation
- * (plan `documentation/order/commande-carte-reglee.md`, §4.5). Sur le cron
+ * (plan `documentation/commandes/commande-carte-reglee.md`, §4.5). Sur le cron
  * de RAFRAÎCHISSEMENT, pas sur un cron à lui : passer toutes les cinq minutes
  * fait une promesse d'« au plus 35 minutes ». Même porte et même jeton que
  * l'autopilot de la facture du mois ; idempotent, l'écriture est conditionnée
@@ -444,7 +444,7 @@ async function triggerUnsettledShopOrderExpiry(env: Env): Promise<void> {
  * Réveille le container et passe les remboursements dus : une commande payée
  * annulée dont le remboursement n'a pas pu partir après l'annulation (Stripe
  * injoignable, processus mort) est reprise ici, au plus 20 par passage (plan
- * `documentation/order/plan-annulation-de-commande.md`, C4.7 (b)). Sur le cron
+ * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C4.7 (b)). Sur le cron
  * de RAFRAÎCHISSEMENT ; même porte et même jeton que la boîte d'envoi ;
  * idempotent — le bail de l'exécuteur exclut deux appels à Stripe.
  */

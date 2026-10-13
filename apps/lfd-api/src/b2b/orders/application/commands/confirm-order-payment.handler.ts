@@ -39,7 +39,7 @@ import { ConfirmOrderPaymentCommand } from "./confirm-order-payment.command.js";
  * pas ET que l'intention appartient à une commande annulée, le fait
  * `OrderPaidAfterCancellationEvent` part, et la cloche dit « à rembourser ».
  * C'est le prix assumé d'une clôture que Stripe ne bloque pas (plan
- * `documentation/order/architecture-abandon-du-reglement.md`, B1).
+ * `documentation/commandes/architecture-abandon-du-reglement.md`, B1).
  *
  * ## Et un fait DURABLE, depuis le lot E5a (2026-10-08)
  *

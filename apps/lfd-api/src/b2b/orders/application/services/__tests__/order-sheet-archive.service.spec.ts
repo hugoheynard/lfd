@@ -13,7 +13,7 @@ import {
 } from "./order-sheet-doubles.js";
 
 /**
- * L'archive du bon (plan `documentation/order/architecture-bon-de-commande.md`, §2.3, §5) :
+ * L'archive du bon (plan `documentation/commandes/architecture-bon-de-commande.md`, §2.3, §5) :
  * la clé du nouveau dessin, la relecture, et le QR qui n'entre que par elle.
  */
 

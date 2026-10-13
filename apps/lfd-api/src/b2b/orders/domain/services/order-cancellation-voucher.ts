@@ -1,6 +1,6 @@
 /**
  * **Les phrases du bon à l'annulation** (plan
- * `documentation/order/plan-annulation-de-commande.md`, lot C3b, C3b.7) —
+ * `documentation/commandes/annulation/plan-annulation-de-commande.md`, lot C3b, C3b.7) —
  * pures. Lues par l'équipe sans le code sous les yeux : elles ne promettent
  * que ce qui est possible. Montants en centimes HT, l'unité du bon.
  */

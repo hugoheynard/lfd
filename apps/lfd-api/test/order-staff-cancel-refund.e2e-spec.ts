@@ -1,6 +1,6 @@
 /**
  * E2E de **l'annulation d'une commande PAYÉE, avec remboursement** (plan
- * `documentation/order/plan-annulation-de-commande.md`, lot C4) — le geste,
+ * `documentation/commandes/annulation/plan-annulation-de-commande.md`, lot C4) — le geste,
  * la demande persistée, l'exécuteur, le carnet, le courriel, le journal,
  * l'écran, « Relancer », le balayage et le droit.
  *

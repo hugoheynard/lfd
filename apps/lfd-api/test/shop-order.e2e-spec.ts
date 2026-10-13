@@ -12,7 +12,7 @@ import { createUser } from "./factories.js";
 
 /**
  * E2E de la **commande sans compte** — plan
- * `documentation/order/architecture-commande-sans-compte.md`, lot C.
+ * `documentation/commandes/architecture-commande-sans-compte.md`, lot C.
  *
  * ## Ce que seule la base prouve
  *

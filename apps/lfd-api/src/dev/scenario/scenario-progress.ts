@@ -2,7 +2,7 @@ import type { DevScenarioStep, DevScenarioStepView } from "@lfd/contracts";
 
 /**
  * **Où en est le scénario du jour**, déduit de ce que la base porte — jamais
- * d'une étape mémorisée (`documentation/order/architecture-jeu-de-donnees-par-etapes.md`
+ * d'une étape mémorisée (`documentation/commandes/architecture-jeu-de-donnees-par-etapes.md`
  * §2 : une base modifiée à la main donne l'étape réellement atteinte).
  *
  * Pur : les faits sont lus ailleurs (`scenario-facts.reader.ts`), et la

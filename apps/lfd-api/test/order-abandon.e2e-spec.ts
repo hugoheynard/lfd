@@ -1,6 +1,6 @@
 /**
  * E2E de **l'abandon du règlement** (plan
- * `documentation/order/architecture-abandon-du-reglement.md`, lots 4 et 5) : le client
+ * `documentation/commandes/architecture-abandon-du-reglement.md`, lots 4 et 5) : le client
  * quitte l'écran de carte, et `POST /orders/:id/abandon` annule l'intention
  * chez Stripe PUIS écrit la base — pour un particulier. Un pro garde son
  * intention vivante jusqu'à la clôture (Q8).

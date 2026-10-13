@@ -110,7 +110,7 @@ export interface B2bMails {
   /**
    * **Le paiement n'a pas abouti à temps pour la fournée.** Destinataire : le
    * client. La clôture de la journée a annulé la commande (plan
-   * `documentation/order/architecture-abandon-du-reglement.md`, Q4, Q7).
+   * `documentation/commandes/architecture-abandon-du-reglement.md`, Q4, Q7).
    *
    * Sans bouton : il n'y a plus rien à reprendre, et un lien vers un
    * règlement mort mènerait à un refus.
@@ -121,7 +121,7 @@ export interface B2bMails {
   };
   /**
    * **La commande a été annulée par l'équipe** (plan
-   * `documentation/order/plan-annulation-de-commande.md`, C3.5). Destinataire :
+   * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C3.5). Destinataire :
    * le client. Cf. `order-cancelled-mail.ts`.
    */
   "customer.order-cancelled": OrderCancelledMailData;

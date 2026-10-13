@@ -5,7 +5,7 @@ import { ART, LINE, sheet } from "./client-sheet.fixture.js";
 import { pdfText } from "./pdf-text.js";
 
 /**
- * Le bon du 2026-10-09 (plan `documentation/order/architecture-bon-de-commande.md`) : le
+ * Le bon du 2026-10-09 (plan `documentation/commandes/architecture-bon-de-commande.md`) : le
  * logo et les mentions retirées pour tous, le bon PUBLIC d'une commande sans
  * société, et le QR de retrait dans le papier — retrait seulement.
  */

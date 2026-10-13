@@ -1,6 +1,6 @@
 /**
  * E2E de **la remise à l'état de base qui ne laisse rien derrière elle** —
- * `documentation/order/architecture-jeu-de-donnees-par-etapes.md` §2 bis (Hugo,
+ * `documentation/commandes/architecture-jeu-de-donnees-par-etapes.md` §2 bis (Hugo,
  * 2026-10-05 : « surtout être organisé sur le reset, pour éviter de saturer le
  * Docker »).
  *

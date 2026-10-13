@@ -1,6 +1,6 @@
 /**
  * E2E des **courses du remboursement à l'annulation** (plan
- * `documentation/order/plan-annulation-de-commande.md`, lot C4, C4.7, C4.12) :
+ * `documentation/commandes/annulation/plan-annulation-de-commande.md`, lot C4, C4.7, C4.12) :
  * double clic, deux exécuteurs, bail échu, `COMMIT` perdu, webhook avant et
  * après l'écriture de l'exécuteur, clôture, encaissé après annulation.
  *

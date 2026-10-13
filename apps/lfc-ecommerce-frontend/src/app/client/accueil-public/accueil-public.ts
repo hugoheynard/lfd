@@ -91,7 +91,7 @@ interface House {
  *
  * 🔴 **L'étape 2 — le créneau — n'est pas branchée.** Les créneaux publics
  * existent côté serveur sur une surface **admin** seulement
- * (`documentation/order/plan-creneaux-de-retrait.md`, lot A) ; aucune route ne
+ * (`documentation/commandes/plan-creneaux-de-retrait.md`, lot A) ; aucune route ne
  * les sert à un visiteur. Le rail montre donc l'étape comme À VENIR, et le
  * choix d'une maison mène à l'écran de commande, qui pose déjà la question du
  * mode de service. Simuler une grille d'heures ferait promettre une fournée que

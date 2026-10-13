@@ -6,7 +6,7 @@ import type { VatShareView } from "./order.js";
 /**
  * **Le relevé de cycle** — les commandes passées au compte par une société sur
  * une PÉRIODE de facturation, et leurs totaux. Ce n'est pas une facture : ni
- * numéro, ni mentions (plan `documentation/order/plan-agregation-des-commandes.md`).
+ * numéro, ni mentions (plan `documentation/commandes/plan-agregation-des-commandes.md`).
  *
  * La période suit le mode de facturation DU PAYEUR (plan
  * `plan-rythme-de-facturation.md`, §16.9, lot M4a) : un mois civil pour le

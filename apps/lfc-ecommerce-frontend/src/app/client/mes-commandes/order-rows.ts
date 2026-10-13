@@ -125,7 +125,7 @@ export type OrderOrigin = '' | 'recurring' | 'phone';
  * ⚠️ Ce type disait « il n'y a QUE deux états » jusqu'au 2026-10-09, et
  * l'étiquette « Réglée · CB » se lisait sur le régime : une commande carte
  * jamais payée s'affichait réglée (plan
- * `documentation/order/commande-carte-reglee.md`, §2.4). Les deux derniers
+ * `documentation/commandes/commande-carte-reglee.md`, §2.4). Les deux derniers
  * se règlent depuis l'écran de règlement de la même commande ; le serveur
  * annule celles qui restent en l'air.
  */
@@ -251,7 +251,7 @@ const STEP_OF_STATUS: Readonly<Record<string, number>> = {
  * 🔴 **Réglée, aussi** (`isSettled` du contrat). Une commande carte « À
  * régler » montrait sa carte de suivi et son QR de retrait (constaté en
  * production le 2026-10-09, plan
- * `documentation/order/commande-carte-reglee.md`) : elle reste dans la
+ * `documentation/commandes/commande-carte-reglee.md`) : elle reste dans la
  * liste, avec son étiquette et son bouton « Régler », pas dans le suivi.
  */
 export function isLive(order: CustomerOrderView): boolean {

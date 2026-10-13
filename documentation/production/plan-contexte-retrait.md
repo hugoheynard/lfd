@@ -107,7 +107,7 @@ Deux commentaires ont survécu à la fonction qu'ils décrivent.
   l'attestation ». Faux depuis le 2026-09-07 : l'attestation est dans
   `order_handover`, et `orders.handed_over_*` en est le **snapshot** — ce que le
   §3 de ce plan affirme par ailleurs.
-- [`order/architecture-bon-de-commande.md`](../order/architecture-bon-de-commande.md)
+- [`commandes/architecture-bon-de-commande.md`](../commandes/architecture-bon-de-commande.md)
   écrit « Rien de tout ça n'existe. `issuesHandoverToken()` rend
   `method === "pickup"` » — alors que **le même document**, plus bas, marque le
   lot ✅ livré. Un doc qui se contredit à trente lignes d'écart.

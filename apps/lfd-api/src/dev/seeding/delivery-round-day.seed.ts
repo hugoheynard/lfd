@@ -27,7 +27,7 @@ import {
 /**
  * **La livraison d'aujourd'hui, avancée par étapes** (2026-10-05) — sortie
  * d'`advanceDeliveryDay`, qui faisait tout d'un bloc, quand la journée a été
- * découpée (`documentation/order/architecture-jeu-de-donnees-par-etapes.md`).
+ * découpée (`documentation/commandes/architecture-jeu-de-donnees-par-etapes.md`).
  *
  * Dans l'ordre que le code impose, et pas dans un autre :
  *

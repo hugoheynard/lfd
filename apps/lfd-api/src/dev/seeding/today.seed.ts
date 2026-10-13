@@ -32,7 +32,7 @@ import { seedReturnedBatch } from "./packing-return.seed.js";
 
 /**
  * **La journée d'aujourd'hui, par étapes** (2026-10-05,
- * `documentation/order/architecture-jeu-de-donnees-par-etapes.md` §1–§2).
+ * `documentation/commandes/architecture-jeu-de-donnees-par-etapes.md` §1–§2).
  *
  * Elle se jouait d'une traite (`seedToday`) ; elle se joue désormais étape par
  * étape, chacune dans sa propre requête, et chacune par les vrais gestes :

@@ -72,7 +72,8 @@
 >   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
 >   en une commande et trompe tout de suite ;
 > - le dossier **`documentation/pricing/`** (ouvert le 2026-09-06) et le dossier
->   **`documentation/order/`** (ouvert le 2026-09-07) n'y figurent pas ;
+>   **`documentation/commandes/`** (ouvert le 2026-09-07 sous le nom `order/`,
+>   renommé le 2026-10-13) n'y figurent pas ;
 > - rien de ce qui a été livré depuis n'y est décrit : le règlement Stripe côté
 >   client, l'écran de QR de retrait, l'idempotence de passation.
 >
@@ -1045,9 +1046,11 @@ d'appel qui compte).
   `pim/`, `suite/`. La racine ne porte que l'index et le plan de release courant.
 - TODO / roadmaps / inventaires de dette → `documentation/todos/`.
   **Exception : un sujet qui a son dossier y garde ses TODO** (`todo-*.md`).
-  C'est le cas de `comptabilite/`, et de `order/` depuis le 2026-09-17 (Hugo :
-  « tous les documents et todos de commande vont dans `order/` ») — plans
-  compris, même quand ils touchent la boutique.
+  C'est le cas de `comptabilite/`, et de `commandes/` depuis le 2026-09-17
+  (Hugo : « tous les documents et todos de commande vont dans `order/` » ; le
+  dossier s'appelle `commandes/` depuis le 2026-10-13, et l'annulation y a son
+  sous-dossier `annulation/`) — plans compris, même quand ils touchent la
+  boutique.
 - Un doc technique **ship dans le même commit que le code** qu'il décrit, ou dans
   un commit `docs:` immédiatement suivant. Jamais de doc obsolète : si un
   changement invalide une phrase, on corrige la phrase.

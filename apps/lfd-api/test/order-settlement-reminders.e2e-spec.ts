@@ -1,6 +1,6 @@
 /**
  * E2E du **rappel de règlement** (plan
- * `documentation/order/architecture-abandon-du-reglement.md`, lot 10, Q6) : une
+ * `documentation/commandes/architecture-abandon-du-reglement.md`, lot 10, Q6) : une
  * commande saisie par l'équipe avec un lien de paiement, pas réglée à l'heure
  * limite de sa journée, fait sonner la cloche — une fois.
  *

@@ -22,7 +22,7 @@ export interface OrderEngagementFacts {
 
 /**
  * Port de **lecture** : l'engagement comptable d'une commande, pour
- * l'annulation (plan `documentation/order/plan-annulation-de-commande.md`,
+ * l'annulation (plan `documentation/commandes/annulation/plan-annulation-de-commande.md`,
  * C5.5). Sous le verrou de la ligne `orders` de l'appelant, la lecture fait
  * autorité : aucun écrivain d'état n'y passe sans prendre la même ligne.
  */

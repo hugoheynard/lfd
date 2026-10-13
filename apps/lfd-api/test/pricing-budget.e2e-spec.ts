@@ -149,7 +149,7 @@ async function coldOperationsOf(run: () => Promise<unknown>): Promise<number> {
  * quand le panier n'en contient aucun, le cas de presque tous les devis.
  *
  * 🔴 **De 7 à 8 le 2026-10-08** : le devis lit le mode de TVA de la livraison
- * (`OrderDeliveryVatReader`, plan `documentation/order/architecture-tva-des-frais-de-port.md`),
+ * (`OrderDeliveryVatReader`, plan `documentation/commandes/architecture-tva-des-frais-de-port.md`),
  * UNE fois par devis, pour répondre comme la passation. Constante elle aussi.
  *
  * 🔴 **De 8 à 7 le 2026-10-09** : la lecture du flag boutique (celle du

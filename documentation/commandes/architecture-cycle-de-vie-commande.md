@@ -219,7 +219,7 @@ et `prisma-unsettled-shop-order.canceller.ts`) : `markAbandoned` (abandon d'un
 particulier), `failAtClosing` (balayage de la clôture) et l'expiration des
 impayés de la boutique (`canceller`). Les trois écrivent `cancelled` + `failed`
 sous `status = placed`. Une annulation par le staff est en chantier
-([`plan-annulation-de-commande.md`](plan-annulation-de-commande.md)).
+([`plan-annulation-de-commande.md`](annulation/plan-annulation-de-commande.md)).
 
 ## 5. Ce que le client en voit — la frise
 

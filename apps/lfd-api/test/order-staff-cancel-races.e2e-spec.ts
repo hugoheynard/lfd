@@ -1,6 +1,6 @@
 /**
  * E2E des **courses de l'annulation staff** (plan
- * `documentation/order/plan-annulation-de-commande.md`, C3.4 et C3.4 ter) :
+ * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C3.4 et C3.4 ter) :
  * deux clics, deux membres de l'équipe, la clôture et le retirage qui lisent
  * les commandes avant leur verrou, et la transaction qui tombe après Stripe.
  *

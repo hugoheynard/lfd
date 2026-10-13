@@ -13,7 +13,7 @@ const URL = `${B2B_API_BASE}/admin/dev/scenario`;
 
 /**
  * **La journée de démo, étape par étape** (2026-10-05,
- * `documentation/order/architecture-jeu-de-donnees-par-etapes.md` §2–§3).
+ * `documentation/commandes/architecture-jeu-de-donnees-par-etapes.md` §2–§3).
  *
  * Store à signal : l'étape atteinte est DÉDUITE de la base par le serveur, et
  * l'écran la relit après chaque geste — réussi ou non. Un échec laisse donc à

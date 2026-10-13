@@ -10,7 +10,7 @@ import type {
 
 /**
  * Les options PAR REQUÊTE des appels de remboursement (plan
- * `documentation/order/plan-annulation-de-commande.md`, C4.7) : le client est
+ * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C4.7) : le client est
  * construit sans options (`new Stripe(secretKey)`), et le bail de
  * l'exécuteur (5 min) doit rester plus long que l'appel le plus long —
  * recherche puis création, chacune 3 × 20 s au pire.

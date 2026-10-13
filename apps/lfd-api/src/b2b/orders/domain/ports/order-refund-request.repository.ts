@@ -2,7 +2,7 @@ import type { OrderRefundRequest } from "../entities/order-refund-request.js";
 
 /**
  * Port d'**écriture** de la demande de remboursement (plan
- * `documentation/order/plan-annulation-de-commande.md`, C4.5) : charger,
+ * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C4.5) : charger,
  * sauver. Aucune écriture ciblée — ce qui a été tenté ne bouge que par les
  * méthodes de {@link OrderRefundRequest}.
  *

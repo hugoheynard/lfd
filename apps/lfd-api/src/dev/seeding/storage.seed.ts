@@ -86,7 +86,7 @@ export async function clearBucket(config: S3StorageConfig): Promise<StorageReset
 /**
  * **Ne retire que les objets rangés sous ces préfixes** (2026-10-05) — la
  * remise à l'état de base du scénario n'emporte que les pièces de SES
- * commandes et de SES journées (`documentation/order/plan-jeu-de-donnees-par-
+ * commandes et de SES journées (`documentation/commandes/plan-jeu-de-donnees-par-
  * etapes.md` §2 bis), là où le rechargement complet vide le bucket.
  *
  * Le bucket est lu une fois et filtré ici, plutôt qu'un appel par préfixe :

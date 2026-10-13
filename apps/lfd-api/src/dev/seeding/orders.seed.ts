@@ -93,7 +93,7 @@ export interface OrdersReport extends ScenarioResetResult {
  * **Le scénario entier, d'une traite** : la remise à l'état de base, puis les
  * étapes de la journée — ce que font `pnpm seed:orders`, « Recharger les
  * commandes » et « Tout recharger ». Même code que les étapes une à une
- * (`documentation/order/architecture-jeu-de-donnees-par-etapes.md` §2).
+ * (`documentation/commandes/architecture-jeu-de-donnees-par-etapes.md` §2).
  *
  * @param buckets les buckets où des pièces du scénario peuvent dormir ; vides
  *   en ligne de commande, qui ne touche pas au stockage.

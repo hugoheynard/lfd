@@ -125,7 +125,7 @@ export const staffResourceSchema = z.enum([
   "b2b_place_order",
   /**
    * **Annuler une commande** — `POST /admin/orders/:id/cancel` (plan
-   * `documentation/order/plan-annulation-de-commande.md`, C3.8, 2026-10-12).
+   * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C3.8, 2026-10-12).
    * Un geste à part, sur le modèle de `b2b_place_order` : voir les commandes
    * n'est pas pouvoir les annuler. Une action utile, `write`. Accordée à
    * l'écran ; aucune migration ne la donne à un rôle.
@@ -280,7 +280,7 @@ export const staffResourceSchema = z.enum([
   "b2b_settings",
   /**
    * **La vitrine** — composer les pages de la boutique : formes, positions,
-   * rayons, contenus, gabarits (`documentation/order/boutique-rayon-layout.md`,
+   * rayons, contenus, gabarits (`documentation/commandes/boutique-rayon-layout.md`,
    * D7).
    *
    * Détachée de `b2b_settings` parce que ce n'est pas le même métier : la

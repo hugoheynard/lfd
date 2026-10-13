@@ -137,7 +137,7 @@ model DeliveryAvailability {
 /// toujours. Une ligne unique, de clé `orders` ; **ligne absente = ouverte aux
 /// deux**. Sa propre table et non `delivery_settings` : celle-là est le réglage
 /// de la LIVRAISON, et y loger la commande aurait fait de chaque geste de l'un
-/// une réécriture de l'autre. Doc : `documentation/order/ouverture-de-la-boutique.md`.
+/// une réécriture de l'autre. Doc : `documentation/commandes/ouverture-de-la-boutique.md`.
 model OrderOpening {
   /// Toujours `orders` : il n'y a qu'un réglage.
   key String @id
@@ -195,7 +195,7 @@ model PlatformContent {
 /// découpée à pas constant pour le VISITEUR.
 ///
 /// 🔴 Elle ne remplace rien : `PickupAddress.opening` porte toujours les heures
-/// PRO, et ce plan n'y touche pas (`documentation/order/plan-creneaux-de-retrait.md`,
+/// PRO, et ce plan n'y touche pas (`documentation/commandes/plan-creneaux-de-retrait.md`,
 /// §3). Les créneaux restent DÉRIVÉS (D1) — rien d'enregistré ici ne peut
 /// diverger de l'horaire réel, seule la règle est stockée.
 ///

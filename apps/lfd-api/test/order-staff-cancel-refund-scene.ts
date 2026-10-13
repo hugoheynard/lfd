@@ -18,7 +18,7 @@ import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
 
 /**
  * **La scène du remboursement à l'annulation** (plan
- * `documentation/order/plan-annulation-de-commande.md`, lot C4) — celle de
+ * `documentation/commandes/annulation/plan-annulation-de-commande.md`, lot C4) — celle de
  * l'annulation staff, plus deux doublures :
  *
  * - **Stripe** côté remboursement : un magasin de `re_…` par intention, avec la

@@ -10,7 +10,7 @@ import {
 
 /**
  * Endpoint **batch** des remboursements dus (plan
- * `documentation/order/plan-annulation-de-commande.md`, C4.7 (b)). Même porte
+ * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C4.7 (b)). Même porte
  * machine-à-machine que `admin/outbox/sweep` : le `RecomputeGuard` et son
  * jeton, présentés par le Worker sur le cron de rafraîchissement
  * (`container/worker.ts`). Idempotent : le bail exclut deux exécuteurs.

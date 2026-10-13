@@ -10,7 +10,7 @@ import { ProductionModule } from "../production/production.module.js";
 
 /**
  * **Les guichets que le fournil tient POUR le commerce, reliés** (plan
- * `documentation/order/plan-annulation-de-commande.md`, C3.4, 2026-10-12).
+ * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C3.4, 2026-10-12).
  *
  * L'autre sens de `ProductionFeedModule` : là, le fournil déclare et le
  * commerce implémente ; ici, le fournil déclare ET implémente, et le commerce

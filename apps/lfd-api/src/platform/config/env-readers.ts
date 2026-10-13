@@ -179,7 +179,7 @@ export interface R2StorageState {
  * Ce qui protège un client d'un autre n'est jamais le bucket : c'est le préfixe
  * de clé, dérivé d'identifiants vérifiés, et le mur de la société côté API.
  *
- * Détail du rangement : `documentation/order/architecture-pieces-en-r2.md`.
+ * Détail du rangement : `documentation/commandes/architecture-pieces-en-r2.md`.
  *
  * ⚠️ **Pourquoi le KBIS n'est pas dans `customers`**, alors qu'il appartient
  * aussi à un client : il a son bucket depuis plus longtemps, avec des données

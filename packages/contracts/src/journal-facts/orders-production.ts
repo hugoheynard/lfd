@@ -301,7 +301,7 @@ export const ORDERS_PRODUCTION_FACTS = {
   ),
   /**
    * Le client a **abandonné le règlement** de sa commande en quittant l'écran
-   * de carte (plan `documentation/order/architecture-abandon-du-reglement.md`, D1).
+   * de carte (plan `documentation/commandes/architecture-abandon-du-reglement.md`, D1).
    * Le sujet est ce client, seul à pouvoir le faire (Q2). `cancelled` : la
    * commande d'un particulier est annulée ; `failed` : celle d'un pro garde
    * son statut, son seul règlement est tombé (D4).
@@ -316,7 +316,7 @@ export const ORDERS_PRODUCTION_FACTS = {
   ),
   /**
    * L'équipe a **annulé** la commande (plan
-   * `documentation/order/plan-annulation-de-commande.md`, C3.5, 2026-10-12).
+   * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C3.5, 2026-10-12).
    * Le sujet est le client ; `cancelledBy` la fiche staff qui a annulé, sous
    * son nom du moment ; `reason` le motif saisi (jamais montré au client) ;
    * `regime` ce qui était dû — `free` (total nul), `due` (carte non payée,

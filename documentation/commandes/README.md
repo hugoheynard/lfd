@@ -89,7 +89,7 @@ flowchart TD
 | Comment on commande sans avoir d'entreprise ?                                   | [`architecture-flux-commande-zero-friction.md`](architecture-flux-commande-zero-friction.md)               |
 | Comment un commercial commande **pour** un client ?                             | [`architecture-commande-saisie-par-l-equipe.md`](architecture-commande-saisie-par-l-equipe.md)             |
 | Jusqu'à quand on prend commande, et que coûte le retard ?                       | [`architecture-heure-limite-de-commande.md`](architecture-heure-limite-de-commande.md)                     |
-| Comment on annule une commande, et ce que devient l'argent ?                    | [`plan-annulation-de-commande.md`](plan-annulation-de-commande.md) — doc-first                             |
+| Comment on annule une commande, et ce que devient l'argent ?                    | [`plan-annulation-de-commande.md`](annulation/plan-annulation-de-commande.md) — doc-first                  |
 | Que se passe-t-il quand un client veut changer sa commande ?                    | [`architecture-commande-immuable-avenants.md`](architecture-commande-immuable-avenants.md)                 |
 | Que porte une commande, et d'où vient chaque information ?                      | [`architecture-ce-que-porte-la-commande.md`](architecture-ce-que-porte-la-commande.md)                     |
 | Quels états une commande traverse, et qui les écrit ?                           | [`architecture-cycle-de-vie-commande.md`](architecture-cycle-de-vie-commande.md)                           |
@@ -121,7 +121,7 @@ flowchart TD
 | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | L'état du flux, de bout en bout          | [`audit-flux-de-commande.md`](audit-flux-de-commande.md) — **nettoyé contre le code le 2026-09-18** : sept défauts fermés, sept ouverts dont deux nouveaux (T13, T14). Le §2 est l'état du jour. |
 | Le calcul du prix et du panier           | [`../pricing/ce-qui-reste-a-faire.md`](../pricing/ce-qui-reste-a-faire.md)                                                                                                                       |
-| Où en est l'annulation d'une commande    | [`todo-annulation-de-commande.md`](todo-annulation-de-commande.md)                                                                                                                               |
+| Où en est l'annulation d'une commande    | [`todo-annulation-de-commande.md`](annulation/todo-annulation-de-commande.md)                                                                                                                    |
 | Combien de temps on garde les bons en R2 | [`todo-conservation-des-bons-en-r2.md`](todo-conservation-des-bons-en-r2.md)                                                                                                                     |
 | L'export des commandes pour le comptable | [`todo-export-des-commandes-pour-le-comptable.md`](todo-export-des-commandes-pour-le-comptable.md)                                                                                               |
 | Le relevé de cycle, avant la facture     | [`plan-agregation-des-commandes.md`](plan-agregation-des-commandes.md)                                                                                                                           |

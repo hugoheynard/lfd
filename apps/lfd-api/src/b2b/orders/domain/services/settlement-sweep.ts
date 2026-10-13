@@ -4,7 +4,7 @@ import { SettlementSweepDayError } from "../errors/order-abandon-errors.js";
 
 /**
  * Ce que la clôture d'un jour balaie (plan
- * `documentation/order/architecture-abandon-du-reglement.md`, Q5, S6) : les commandes
+ * `documentation/commandes/architecture-abandon-du-reglement.md`, Q5, S6) : les commandes
  * dont le jour de retrait est `serviceDay`, **et** celles qui n'en ont pas et
  * qui ont été passées ce jour-là — à l'heure de Paris, jamais en UTC.
  *

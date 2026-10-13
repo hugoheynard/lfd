@@ -37,7 +37,7 @@ import { CancelOrderCommand } from "./cancel-order.command.js";
 
 /**
  * **L'annulation d'une commande par l'équipe** (plan
- * `documentation/order/plan-annulation-de-commande.md`, lot C3 : C3.3 à C3.7).
+ * `documentation/commandes/annulation/plan-annulation-de-commande.md`, lot C3 : C3.3 à C3.7).
  *
  * ## L'ordre des gestes (C3.4 bis)
  *

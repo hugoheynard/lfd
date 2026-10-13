@@ -2,7 +2,7 @@ import type { Buffer } from "node:buffer";
 
 /**
  * **Le logo imprimé en tête du bon de commande** (plan
- * `documentation/order/architecture-bon-de-commande.md`, §2.1), en octets PNG.
+ * `documentation/commandes/architecture-bon-de-commande.md`, §2.1), en octets PNG.
  *
  * Un port, et pas un chemin écrit dans le rendu : le rendu reste pur et
  * déterministe, l'adaptateur sait où vit le fichier. Même geste que les

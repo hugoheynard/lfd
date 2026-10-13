@@ -121,7 +121,7 @@ menu (`app.ts`, `can('b2b_counter:read') && can('b2b_place_order:write')`).
 ## `b2b_cancel_order` — Annuler une commande
 
 Ajouté le 2026-10-12 (commits `76d54e9f6`, `ffa8a1311` ;
-[`../order/plan-annulation-de-commande.md`](../order/plan-annulation-de-commande.md), C3).
+[`../commandes/annulation/plan-annulation-de-commande.md`](../commandes/annulation/plan-annulation-de-commande.md), C3).
 Le staff annule une commande qui n'est pas encore au compte à produire.
 
 | Méthode et chemin               | Exige                                           |
@@ -290,8 +290,8 @@ Deux surfaces de commande vivent sous les réglages de la plateforme :
 **Back-office** : `/b2b/reglages/ouverture-boutique` et
 `/b2b/reglages/heures-limites`, sous la garde du bloc `/b2b`
 (`b2b_settings:read`). Voir
-[`../order/ouverture-de-la-boutique.md`](../order/ouverture-de-la-boutique.md) et
-[`../order/architecture-heure-limite-de-commande.md`](../order/architecture-heure-limite-de-commande.md).
+[`../commandes/ouverture-de-la-boutique.md`](../commandes/ouverture-de-la-boutique.md) et
+[`../commandes/architecture-heure-limite-de-commande.md`](../commandes/architecture-heure-limite-de-commande.md).
 
 L'accès aux fonctionnalités (`b2b_feature_access`) n'ouvre **pas** la boutique :
 son catalogue ne porte que `customerMandate` et `facebookLogin`

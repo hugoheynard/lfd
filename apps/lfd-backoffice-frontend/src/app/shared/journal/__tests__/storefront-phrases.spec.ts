@@ -4,7 +4,7 @@ import { renderFact, type FactInput } from '../render-fact';
 
 /**
  * **La phrase de la vitrine** (`storefront.saved`, plan
- * `documentation/order/boutique-rayon-layout.md`, D6) : la seule trace de
+ * `documentation/commandes/boutique-rayon-layout.md`, D6) : la seule trace de
  * qui a vidé un rayon — elle dit donc ce qui a bougé.
  */
 function saved(payload: Record<string, unknown>): FactInput {

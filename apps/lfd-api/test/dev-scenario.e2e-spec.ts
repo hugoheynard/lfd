@@ -1,6 +1,6 @@
 /**
  * E2E du **scénario du jour par étapes** —
- * `documentation/order/architecture-jeu-de-donnees-par-etapes.md`, lot J1.
+ * `documentation/commandes/architecture-jeu-de-donnees-par-etapes.md`, lot J1.
  *
  * L'étape atteinte se lit en base, jamais dans une mémoire : ce que la suite
  * prouve, c'est que la remise à l'état de base repose le scénario, que chaque

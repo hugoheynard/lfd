@@ -11,7 +11,7 @@ import { B2B_API_BASE } from '../../api/api-config';
  *
  * Le serveur rend une vue même quand personne n'a rien réglé : ouverte aux
  * deux, `updatedAt` et `updatedBy` à `null`. Doc :
- * `documentation/order/ouverture-de-la-boutique.md`.
+ * `documentation/commandes/ouverture-de-la-boutique.md`.
  */
 @Injectable({ providedIn: 'root' })
 export class OrderOpeningService {

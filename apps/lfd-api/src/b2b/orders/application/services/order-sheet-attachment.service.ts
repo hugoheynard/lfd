@@ -6,7 +6,7 @@ import { OrderSheetArchive } from "./order-sheet-archive.service.js";
 
 /**
  * **Le bon de commande, prêt à joindre à la confirmation** — ou rien (plan
- * `documentation/order/architecture-bon-de-commande.md`, §2.4, §5).
+ * `documentation/commandes/architecture-bon-de-commande.md`, §2.4, §5).
  *
  * Le même document que l'archive : il passe par `OrderSheetArchive`, qui le
  * relit ou le fabrique et le range. Les deux expéditeurs de

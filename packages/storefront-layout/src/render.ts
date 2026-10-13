@@ -2,7 +2,7 @@
  * Ce qu'un objet de vitrine peut MONTRER — et, sinon, à qui il rend ses cases.
  *
  * 🔴 « Aucune case n'est jamais vide » (Hugo, 2026-09-24 : « dans le doute,
- * pas d'info = articles » ; `documentation/order/boutique-rayon-layout.md`,
+ * pas d'info = articles » ; `documentation/commandes/boutique-rayon-layout.md`,
  * « Une page par rayon »). Un objet qui n'a rien d'affichable ne laisse pas de
  * trou : ses cases reviennent au reste du rayon, comme des cases libres.
  *

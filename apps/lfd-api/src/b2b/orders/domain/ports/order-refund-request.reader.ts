@@ -15,7 +15,7 @@ export interface RefundRequestSnapshot {
 
 /**
  * Port de **lecture** des demandes de remboursement (plan
- * `documentation/order/plan-annulation-de-commande.md`, C4.7, C4.9). Sans
+ * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C4.7, C4.9). Sans
  * verrou : ce qu'il rend oriente, il ne décide pas — l'exécuteur relit sous
  * verrou.
  */

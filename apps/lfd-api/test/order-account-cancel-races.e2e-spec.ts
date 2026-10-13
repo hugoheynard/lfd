@@ -1,7 +1,7 @@
 /**
  * E2E des **courses de l'annulation au compte** (plan
- * `documentation/order/plan-annulation-de-commande.md`, C5.3, C5.4 ; schémas
- * `documentation/order/verrous-de-l-annulation.md`) : contre la facture du
+ * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C5.3, C5.4 ; schémas
+ * `documentation/commandes/annulation/verrous-de-l-annulation.md`) : contre la facture du
  * mois, contre la constitution d'un lot, contre « réglée autrement » — dans
  * les deux ordres —, et les trois ensemble, sans interblocage.
  *

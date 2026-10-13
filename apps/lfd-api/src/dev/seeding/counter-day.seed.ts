@@ -21,7 +21,7 @@ import { placedByKeys, scenarioOrderKey } from "./scenario-keys.seed.js";
 /**
  * **La file du comptoir d'aujourd'hui** — sortie de `orders.seed.ts` le
  * 2026-10-05, quand la journée du jour a été découpée en étapes
- * (`documentation/order/architecture-jeu-de-donnees-par-etapes.md`) : la poser est
+ * (`documentation/commandes/architecture-jeu-de-donnees-par-etapes.md`) : la poser est
  * l'étape 0, la coliser et la remettre viennent après, dans une autre requête.
  */
 

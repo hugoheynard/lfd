@@ -2885,7 +2885,7 @@ suivants.
     client ; en (b), le livreur fait signer au doigt, nom tapé.
   - **L6-Q4 — l'admin choisit**, livraison ratée par livraison ratée :
     relivrer un autre jour, retrait au comptoir, ou annulation. Le changement
-    de jour est un avenant du commerce (`documentation/order/`).
+    de jour est un avenant du commerce (`documentation/commandes/`).
   - **L6-Q5 — pas de hors-ligne pour l'instant.**
 
   **Q2 précisée (Hugo, 2026-09-29) : par e-mail.** Le contact de livraison
@@ -2949,7 +2949,7 @@ suivants.
   comptoir**, ou **annuler**. ⚠️ Les trois touchent la commande (le jour, le
   mode d'acheminement) et deux touchent **l'argent** (frais de livraison d'un
   retrait, remboursement d'une annulation) : ce sont des **avenants du
-  commerce** (`documentation/order/architecture-commande-immuable-avenants.md`),
+  commerce** (`documentation/commandes/architecture-commande-immuable-avenants.md`),
   à concevoir dans `order/`, avec `vitruve`. La tournée n'en fait qu'une
   **demande**. Lot à part, 6 c.
 

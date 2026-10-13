@@ -24,7 +24,7 @@ import { PrismaOrderRefundRequestReader } from "./infrastructure/prisma-order-re
 import { PrismaOrderRefundRequestRepository } from "./infrastructure/prisma-order-refund-request.repository.js";
 
 /**
- * Les providers du lot C4 (plan `documentation/order/plan-annulation-de-commande.md`) :
+ * Les providers du lot C4 (plan `documentation/commandes/annulation/plan-annulation-de-commande.md`) :
  * la demande de remboursement, son exécuteur, son balayage, « Relancer », et
  * les abonnés qui ouvrent ou signalent une demande. À part du module, qui
  * dépasse déjà la taille d'un fichier. Le port `PaymentRefunder` vient de

@@ -15,8 +15,8 @@
 > (le voisin immédiat, sur le même écran),
 > [`architecture-prise-de-rendez-vous.md`](../b2b/architecture-prise-de-rendez-vous.md)
 > §2.1 (le précédent « règle, pas liste »),
-> [`../order/architecture-heure-limite-de-commande.md`](architecture-heure-limite-de-commande.md)
-> et [`../order/demontage-order-cutoff.md`](demontage-order-cutoff.md)
+> [`architecture-heure-limite-de-commande.md`](architecture-heure-limite-de-commande.md)
+> et [`demontage-order-cutoff.md`](demontage-order-cutoff.md)
 > (la dimension « point × jour », et pourquoi elle a été abandonnée),
 > et le dossier de handoff `handoff-bienvenue/` — **hors dépôt**, lu le
 > 2026-09-16 : l'écran public qui consommera ceci.

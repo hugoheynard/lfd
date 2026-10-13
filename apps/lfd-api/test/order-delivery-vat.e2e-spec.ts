@@ -1,6 +1,6 @@
 /**
  * E2E de **la TVA de la livraison** — le réglage du comptable (plan
- * `documentation/order/architecture-tva-des-frais-de-port.md`, V2).
+ * `documentation/commandes/architecture-tva-des-frais-de-port.md`, V2).
  *
  * Ce que seul l'e2e prouve : la garde lit `b2b_accounting` dans la table des
  * rôles, en base ; la ligne absente se relit `standard` ; le CHECK refuse un

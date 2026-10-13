@@ -33,7 +33,7 @@ const NOT_RECORDED_SENTENCE =
 
 /**
  * **Annuler une commande** depuis son détail staff (plan
- * `documentation/order/plan-annulation-de-commande.md`, C3.8).
+ * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C3.8).
  *
  * Absent sans `b2b_cancel_order:write`. Désactivé, avec la phrase du serveur
  * À L'ÉCRAN, quand la commande ne s'annule plus : un tooltip ne se lit pas au

@@ -2,7 +2,7 @@ import type { AccountEngagement } from "../ports/account-order-engagement.js";
 
 /**
  * **Les refus d'annuler une commande au compte** (plan
- * `documentation/order/plan-annulation-de-commande.md`, lot C5 : C5.2, C5.6),
+ * `documentation/commandes/annulation/plan-annulation-de-commande.md`, lot C5 : C5.2, C5.6),
  * purs. Sortis de `order-cancellation.ts` pour qu'il garde la règle commune.
  *
  * Défauts métier appliqués (C5.9 bis, non tranchés par Hugo au 2026-10-12) :

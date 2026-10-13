@@ -7,7 +7,7 @@ import {
 
 /**
  * Les refus de la **demande de remboursement** (plan
- * `documentation/order/plan-annulation-de-commande.md`, lot C4). Les phrases
+ * `documentation/commandes/annulation/plan-annulation-de-commande.md`, lot C4). Les phrases
  * parlent à l'équipe : elles nomment le cas et le geste de sortie.
  */
 

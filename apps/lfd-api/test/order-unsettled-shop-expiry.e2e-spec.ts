@@ -1,6 +1,6 @@
 /**
  * E2E des **commandes boutique non réglées** (plan
- * `documentation/order/commande-carte-reglee.md`, §3, §4) : deux essais
+ * `documentation/commandes/commande-carte-reglee.md`, §3, §4) : deux essais
  * de paiement ne laissent qu'une commande visible, et le cron annule ce qui
  * reste en l'air au-delà de trente minutes.
  *

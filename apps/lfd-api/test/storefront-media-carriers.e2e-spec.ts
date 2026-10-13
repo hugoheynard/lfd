@@ -1,6 +1,6 @@
 /**
  * E2E — **la vitrine, porteur de la médiathèque** (plan
- * `documentation/order/boutique-rayon-layout.md`, D9).
+ * `documentation/commandes/boutique-rayon-layout.md`, D9).
  *
  * 🔴 Ce que seul ce niveau prouve : que le fil est BRANCHÉ. Le composite et
  * l'adaptateur sont éprouvés unitairement ; mais un `MediaCarriers` resté lié

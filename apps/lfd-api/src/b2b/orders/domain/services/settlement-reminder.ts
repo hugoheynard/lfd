@@ -31,7 +31,7 @@ export function settlementReminderDay(subject: SettlementReminderSubject): strin
 
 /**
  * **Faut-il prévenir le commercial maintenant ?** (plan
- * `documentation/order/architecture-abandon-du-reglement.md`, Q6, S5)
+ * `documentation/commandes/architecture-abandon-du-reglement.md`, Q6, S5)
  *
  * Oui dès que l'heure limite de la journée est passée — grâce comprise : un
  * client dans son rattrapage n'a pas payé à l'heure, et c'est le moment de le

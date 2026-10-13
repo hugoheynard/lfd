@@ -51,7 +51,7 @@ Le compte devient alors injoignable pour **tout le reste** — confirmation de
 commande, QR de retrait, lien de mot de passe.
 
 ⚠️ **Ça croise directement**
-[`../order/todo-adresse-de-la-commande.md`](../order/todo-adresse-de-la-commande.md) :
+[`../commandes/todo-adresse-de-la-commande.md`](../commandes/todo-adresse-de-la-commande.md) :
 une adresse masquée est précisément le cas où la commande doit porter **sa
 propre** adresse de contact, demandée au panier. Faire Apple sans ce TODO-là,
 c'est ajouter une porte d'entrée dont les clients ne recevront rien.

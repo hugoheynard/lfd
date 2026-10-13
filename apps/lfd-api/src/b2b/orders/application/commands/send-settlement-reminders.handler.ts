@@ -24,7 +24,7 @@ const REMINDER_KIND = "order.settlement_overdue";
 
 /**
  * **Le lien de paiement n'est pas réglé à l'heure limite : on prévient le
- * commercial** (plan `documentation/order/architecture-abandon-du-reglement.md`, Q6,
+ * commercial** (plan `documentation/commandes/architecture-abandon-du-reglement.md`, Q6,
  * S5).
  *
  * Une commande saisie par l'équipe en `link` attend que le client clique. S'il

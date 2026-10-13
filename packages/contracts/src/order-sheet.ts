@@ -51,7 +51,7 @@ import {
  * gabarit du courriel le reçoit **en second argument** ; les rendus papier n'ont
  * qu'une feuille, et imprimer le secret y est une erreur de compilation.
  *
- * Voir `documentation/order/architecture-bon-de-commande.md`.
+ * Voir `documentation/commandes/architecture-bon-de-commande.md`.
  */
 
 /** Qui lit cette feuille. C'est ce qui décide de ce qu'elle contient. */
@@ -358,7 +358,7 @@ export interface AtelierSheet extends SheetCommon {
 
 /**
  * **Le bon d'un pro, ou le bon « public »** (plan
- * `documentation/order/architecture-bon-de-commande.md`, Hugo, 2026-10-09).
+ * `documentation/commandes/architecture-bon-de-commande.md`, Hugo, 2026-10-09).
  *
  * `public` = une commande **sans société** (`companyId === null`), y compris
  * la commande personnelle d'un pro : c'est un achat de particulier, réglé à la

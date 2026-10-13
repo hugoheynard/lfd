@@ -46,7 +46,7 @@ const NEXT: Readonly<Record<Exclude<DevScenarioStep, 5>, StepGesture>> = {
 
 /**
  * **Le scénario du jour, étape par étape** (2026-10-05,
- * `documentation/order/architecture-jeu-de-donnees-par-etapes.md` §2) : lire où en est
+ * `documentation/commandes/architecture-jeu-de-donnees-par-etapes.md` §2) : lire où en est
  * la base, jouer l'étape suivante, remettre à l'état de base.
  *
  * Mêmes serrures que `DevSeedService` — base locale, hors production, mur staff

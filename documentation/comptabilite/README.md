@@ -112,7 +112,7 @@ dans [`mandat/rum.md`](mandat/rum.md).
   jour où son code rejoindra `b2b/accounting/`, pas avant : un doc qu'on range
   d'après un plan décrit un dépôt qui n'existe pas.
 - **Les alertes de compte client**, la **commande**, le **catalogue** — dans
-  `../b2b/` et `../order/`.
+  `../b2b/` et `../commandes/`.
 
 ## L'état d'esprit
 

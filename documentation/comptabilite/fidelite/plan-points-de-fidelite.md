@@ -42,7 +42,7 @@ Donc :
   gabarit de mercuriale « Fidélité »).
 - **Toute commande a une personne** : `Order.placedByUserId` → `User`, y
   compris sans compte. Un invité est un `User` dont `auth0_sub` est `NULL`
-  (`account.prisma`, plan `order/architecture-commande-sans-compte.md`). `companyId`,
+  (`account.prisma`, plan `commandes/architecture-commande-sans-compte.md`). `companyId`,
   lui, est nul pour le public.
 - **La commande porte `clientele`** (`pro` | `public`), nullable
   (`orders.prisma:109`).
@@ -55,7 +55,7 @@ Donc :
 - **Statuts** : `placed → confirmed → in_production → ready → fulfilled`, plus
   `cancelled`. **L'annulation n'est pas bâtie** : `cancelled` n'est écrit par
   aucun chemin, et le plan est bloqué par `vitruve`
-  (`order/plan-annulation-de-commande.md`). `refunded` n'est jamais écrit.
+  (`commandes/annulation/plan-annulation-de-commande.md`). `refunded` n'est jamais écrit.
 - **Comptabilité** a déjà un réglage global à clé fixe : `AccountingSettings`
   (`id = 'default'`, `paymentLinkMaxCents`), gardé par `b2b_accounting`, avec
   son fait de journal `accounting_settings.payment_link_cap_set`.
@@ -674,7 +674,7 @@ d'`execute` ; « au retrait » est retiré de C5 — tout total nul est
 **Tranché par Hugo le 2026-09-27** (« ok pour les trois ») : C6 — l'assiette
 est le HT après remise **et** bon ; B2 — le reliquat échu s'éteint, journalisé ;
 S4 — TODO ouvert :
-[`../../order/todo-commande-epargnee-a-la-cloture-puis-refusee.md`](../../order/todo-commande-epargnee-a-la-cloture-puis-refusee.md).
+[`../../commandes/todo-commande-epargnee-a-la-cloture-puis-refusee.md`](../../commandes/todo-commande-epargnee-a-la-cloture-puis-refusee.md).
 Le lot C est lancé.
 
 ## 12. Conception du lot E1 (2026-09-27)

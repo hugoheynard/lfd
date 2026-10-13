@@ -63,7 +63,7 @@ export const UNAVAILABLE_FAILURE = "unavailable";
 
 /**
  * **La demande de remboursement d'une commande** (plan
- * `documentation/order/plan-annulation-de-commande.md`, C4.5, C4.7) — ce qui
+ * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C4.5, C4.7) — ce qui
  * a été PROMIS et ce qui a été TENTÉ. L'argent vrai reste au carnet
  * (`OrderRefundLedger`) : la demande n'a aucun statut, son état se lit par
  * {@link refundRequestStateOf}.

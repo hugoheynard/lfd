@@ -14,7 +14,7 @@ const NOT_CONFIGURED = "STRIPE_SECRET_KEY non configurée";
 
 /**
  * Adaptateur **Stripe** de {@link PaymentRefunder} (plan
- * `documentation/order/plan-annulation-de-commande.md`, C4.7). Canal
+ * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C4.7). Canal
  * optionnel, comme la passerelle d'encaissement : sans configuration, chaque
  * appel rend `unavailable` — il ne lève jamais.
  */

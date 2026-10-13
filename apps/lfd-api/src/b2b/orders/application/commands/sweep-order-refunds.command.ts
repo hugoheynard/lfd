@@ -1,6 +1,6 @@
 /**
  * **Le balayage des remboursements dus** (plan
- * `documentation/order/plan-annulation-de-commande.md`, C4.7 (b)) — appelé
+ * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C4.7 (b)) — appelé
  * par le cron de rafraîchissement, au plus {@link REFUND_SWEEP_LIMIT}
  * demandes par passage.
  */

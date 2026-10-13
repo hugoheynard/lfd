@@ -34,7 +34,7 @@ const CAUSE_LINES: Readonly<Record<PaymentFailureCause, string>> = {
 
 /**
  * **Tout règlement pro qui meurt sonne** (plan
- * `documentation/order/architecture-abandon-du-reglement.md`, D4, Q3, Q7).
+ * `documentation/commandes/architecture-abandon-du-reglement.md`, D4, Q3, Q7).
  *
  * Accrochée à l'ÉVÉNEMENT et non aux appelants : tout ce qui publie un
  * règlement mort — le refus du webhook, l'abandon du client, la clôture —

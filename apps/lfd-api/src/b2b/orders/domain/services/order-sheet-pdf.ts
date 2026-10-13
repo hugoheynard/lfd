@@ -44,7 +44,7 @@ import { PRETAX_ONLY_NOTE, totalRows } from "./order-sheet-pdf-totals.js";
  *
  * ## Deux bons : pro et public
  *
- * `sheet.variant` (plan `documentation/order/architecture-bon-de-commande.md`, Hugo,
+ * `sheet.variant` (plan `documentation/commandes/architecture-bon-de-commande.md`, Hugo,
  * 2026-10-09). Le bon **public** — une commande sans société — ne porte ni
  * colonne de référence, ni hors taxe, ni révision, ni phrase sur les mentions
  * légales : un particulier lit un prix taxe comprise, et le téléphone de

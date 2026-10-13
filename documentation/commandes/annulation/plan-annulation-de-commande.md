@@ -52,7 +52,7 @@ d'une commande déjà dans le plan.
 > par l'option (a) de Hugo : l'annulation ferme l'intention chez Stripe pour
 > une carte non payée (C3.2, C3.4 bis). Le remboursement vient juste après
 > (Lot C4).
-> Numérotation : celle de [`plan-page-commandes.md`](plan-page-commandes.md)
+> Numérotation : celle de [`plan-page-commandes.md`](../plan-page-commandes.md)
 > (C1 liste, C2 écran).
 
 ### C3.0 Les décisions de Hugo (2026-10-12)
@@ -2186,7 +2186,7 @@ sur le modèle de `packingBlocker`, qui rend une phrase :
 
 ⚠️ Une commande `placed` **après** l'arrêt de sa journée s'annule aussi. C'est
 voulu : elle n'est dans aucun plan, et c'est exactement le cas de la carte
-abandonnée ([règlement, §4.1](architecture-reglement-et-compte-de-production.md)).
+abandonnée ([règlement, §4.1](../architecture-reglement-et-compte-de-production.md)).
 
 **D2 — La base tranche la course avec l'arrêt de la journée.** L'écriture est
 `updateMany where { id, status: placed }`, comme `absorbIntoPlan` l'est de son
@@ -2270,7 +2270,7 @@ refait rien — ni Stripe, ni courriel. Le courriel ne part qu'au franchissement
   `b2b_orders`, avec un **motif obligatoire** (une annulation staff sans raison
   écrite devient un geste que personne n'explique) ;
 - **le système**, pour l'expiration des impayés
-  ([règlement, §4.1](architecture-reglement-et-compte-de-production.md)) — même
+  ([règlement, §4.1](../architecture-reglement-et-compte-de-production.md)) — même
   commande applicative, motif fixe.
 
 **D8 — Trois colonnes, additives et nullables.** `cancelledAt`,
@@ -2314,7 +2314,7 @@ commande. Si le client recommande, l'équipe en accorde une autre.
 - Un remboursement **partiel**, ou retenir des frais.
 - Rendre `fulfilled` terminal par l'agrégat (le cycle de vie, §6).
 - Libérer un créneau de retrait public : aucune réservation n'existe encore
-  ([`plan-creneaux-de-retrait.md`](plan-creneaux-de-retrait.md) est doc-first).
+  ([`plan-creneaux-de-retrait.md`](../plan-creneaux-de-retrait.md) est doc-first).
   Le jour où elle existera, l'annulation devra la rendre.
 
 ## 4. Les lots

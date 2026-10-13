@@ -23,7 +23,7 @@ export interface AdminOrderView extends OrderView {
   readonly placedBy: AdminOrderPlacedByView;
   /**
    * **Peut-on l'annuler, et sinon pourquoi** (plan
-   * `documentation/order/plan-annulation-de-commande.md`, C3.8). Calculée par
+   * `documentation/commandes/annulation/plan-annulation-de-commande.md`, C3.8). Calculée par
    * la même règle que le refus de `POST /admin/orders/:id/cancel`, mais sans
    * verrou : c'est un affichage. Le refus, lui, se reprend sous verrou — un
    * bouton actif peut donc encore rendre un 409, avec la même phrase.
@@ -31,7 +31,7 @@ export interface AdminOrderView extends OrderView {
   readonly cancellability: AdminOrderCancellability;
   /**
    * **L'argent à rendre d'une commande annulée** (plan
-   * `documentation/order/plan-annulation-de-commande.md`, lot C4, C4.9) —
+   * `documentation/commandes/annulation/plan-annulation-de-commande.md`, lot C4, C4.9) —
    * `null` quand aucun remboursement n'a été demandé.
    */
   readonly refund: AdminOrderRefund | null;

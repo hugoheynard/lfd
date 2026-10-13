@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 /**
  * E2E de l'**historique d'une commande** (`GET /admin/orders/:id/history`, plan
- * `documentation/order/plan-page-commandes.md`, §3 bis, lot C2b).
+ * `documentation/commandes/plan-page-commandes.md`, §3 bis, lot C2b).
  *
  * Ce que seul le vrai SQL prouve : que les deux branches de la lecture mordent
  * (sujet `order`, et sujet `user` filtré sur `payload.orderId`), qu'un fait

@@ -11,7 +11,7 @@ import type { PaymentStatus } from "./order.js";
 /**
  * **Une commande est-elle réglée ?** — `paid` (encaissée) ou `not_required`
  * (au compte, ou gratuite). La seule définition du dépôt
- * (`documentation/order/commande-carte-reglee.md`, §1, §4.3) : le suivi
+ * (`documentation/commandes/commande-carte-reglee.md`, §1, §4.3) : le suivi
  * du client, la vue client, le comptoir et le bon la lisent tous.
  *
  * `pending` et `failed` ne le sont pas : la carte n'a pas abouti. `refunded`
