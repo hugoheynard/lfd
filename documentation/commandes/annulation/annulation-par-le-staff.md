@@ -1,5 +1,7 @@
 # Annuler une commande — par le staff
 
+> Ce qui reste à faire : [`todo-annulation.md`](todo-annulation.md).
+
 > **État au 2026-10-13 : bâti et sur `dev`.** Lots C3 (carte non payée, total
 > nul), C3b (refusion du bon), C5 (au compte) et C4 (carte payée, avec
 > remboursement), commits `76d54e9f6` à `ccde38758` (12 octobre). Le noyau

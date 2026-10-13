@@ -90,6 +90,7 @@ flowchart TD
 | Comment un commercial commande **pour** un client ?                             | [`architecture-commande-saisie-par-l-equipe.md`](architecture-commande-saisie-par-l-equipe.md)               |
 | Jusqu'à quand on prend commande, et que coûte le retard ?                       | [`architecture-heure-limite-de-commande.md`](architecture-heure-limite-de-commande.md)                       |
 | Comment l'équipe annule une commande, et ce que devient l'argent ?              | [`annulation-par-le-staff.md`](annulation/annulation-par-le-staff.md)                                        |
+| Ce qui reste à faire sur l'annulation                                           | [`todo-annulation.md`](annulation/todo-annulation.md)                                                        |
 | Comment un client annule lui-même sa commande ?                                 | [`annulation-par-le-client.md`](annulation/annulation-par-le-client.md)                                      |
 | Un particulier peut-il annuler après l'arrêt du plan de production ?            | [`plan-annulation-apres-production.md`](annulation/plan-annulation-apres-production.md) (plan C7, doc-first) |
 | Quels verrous l'annulation prend, et contre quoi ?                              | [`verrous-de-l-annulation.md`](annulation/verrous-de-l-annulation.md)                                        |
