@@ -39,6 +39,7 @@ import {
 } from 'fold-ng';
 
 import { PermissionsStore } from './auth/permissions.store';
+import { UiPrefsStore } from './shared/ui-prefs/ui-prefs.store';
 import { DEV_TOOLS } from './dev/dev-tools';
 import { StaffAuth } from './auth/staff-auth';
 import { StaffLoginPage } from './auth/staff-login/staff-login';
@@ -102,6 +103,24 @@ export class App {
   protected readonly mobileNavOpen = signal(false);
   /** Mobile = étroit, OU pointeur principal tactile (une souris branchée sur un portable tactile garde le rail). */
   protected readonly touchOrPhone = foldMediaQuery('(max-width: 768px), (pointer: coarse)');
+
+  private readonly uiPrefs = inject(UiPrefsStore);
+
+  /**
+   * Les sections du rail qu'on a pliées, retenues dans CE navigateur (Hugo,
+   * 2026-10-13 : « rends-les pliables et garde le choix »). Une section qui
+   * porte la page active reste ouverte quoi qu'il arrive (fold le garantit).
+   */
+  private readonly foldedMenu = signal<Readonly<Record<string, boolean>>>({});
+
+  protected menuFolded(key: string): boolean {
+    return this.foldedMenu()[key] ?? !this.uiPrefs.isOpen('menu', key, true);
+  }
+
+  protected foldMenu(key: string, folded: boolean): void {
+    this.foldedMenu.update((all) => ({ ...all, [key]: folded }));
+    this.uiPrefs.setOpen('menu', key, !folded);
+  }
 
   private readonly auth = inject(StaffAuth);
   private readonly permissions = inject(PermissionsStore);

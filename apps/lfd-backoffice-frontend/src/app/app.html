@@ -66,7 +66,13 @@
              TRAVAILLER, pas pour régler. La section n'existe que si l'une au
              moins de ses entrées est ouverte. Le lanceur mobile n'a pas de
              sections : il garde ses tuiles. -->
-        <fold-menu-section label="App exploitation" [color]="operationsTint">
+        <fold-menu-section
+          label="App exploitation"
+          [color]="operationsTint"
+          collapsible
+          [collapsed]="menuFolded('operations')"
+          (collapsedChange)="foldMenu('operations', $event)"
+        >
           @if (canSeeSupervision()) {
             <!-- LA SUPERVISION DU JOUR — une vue, à part des espaces de travail :
                celui qui regarde l'ensemble, pas celui qui fait. Revenue au premier
@@ -221,7 +227,13 @@
              se compose du rouge et du violet de la marque, et ressort PÂLE là
              où fold le dilue — survol, sélection — tout en restant lisible
              sur le trait de la section. -->
-        <fold-menu-section label="Communication" [color]="communicationTint">
+        <fold-menu-section
+          label="Communication"
+          [color]="communicationTint"
+          collapsible
+          [collapsed]="menuFolded('communication')"
+          (collapsedChange)="foldMenu('communication', $event)"
+        >
           @if (canSeeMedia()) {
             <!-- LA MÉDIATHÈQUE — le fonds d'images, indépendamment de ce qui
                  l'affiche. Entrée de premier niveau, juste après le PIM : c'est là
@@ -466,7 +478,12 @@
              qu'il rendait avant que les sections existent. -->
         @for (group of workspaceGroups(); track $index) {
           @if (group.label; as label) {
-            <fold-menu-section [label]="label">
+            <fold-menu-section
+              [label]="label"
+              collapsible
+              [collapsed]="menuFolded('workspace.' + label)"
+              (collapsedChange)="foldMenu('workspace.' + label, $event)"
+            >
               @for (item of group.items; track item.key) {
                 <a
                   fold-menu-item
