@@ -1,0 +1,85 @@
+<fold-card surface="sunken" padding="md">
+  <fold-page-section title="Heures limites de commande" separator>
+    <span sectionSubtitle>Jusqu'à quand on commande pour un retrait sur ce site.</span>
+
+    @if (canWrite() && state() === 'ready') {
+      <div sectionActions>
+        <button foldButton size="sm" icon="plus" (click)="add()">Ajouter une heure limite</button>
+      </div>
+    }
+
+    @switch (state()) {
+      @case ('loading') {
+        <fold-loading message="Chargement des heures limites…" />
+      }
+      @case ('forbidden') {
+        <fold-callout variant="info">
+          Les heures limites se lisent avec le droit des réglages B2B, que votre rôle n'a pas.
+        </fold-callout>
+      }
+      @case ('error') {
+        <fold-callout variant="alert">
+          Les heures limites n'ont pas pu être lues.
+          <button foldButton size="sm" emphasis="soft" (click)="load()">Réessayer</button>
+        </fold-callout>
+      }
+      @default {
+        @if (own().length === 0) {
+          <p class="sc-said">Aucune heure limite propre à ce site.</p>
+        }
+        <ul class="sc-rules">
+          @for (rule of own(); track rule.id) {
+            <li class="sc-rule">
+              <span class="sc-day">{{ day(rule) }}</span>
+              <span class="sc-when">
+                {{ sentence(rule) }}
+                @if (grace(rule); as label) {
+                  <fold-badge [content]="label" variant="neutral" />
+                }
+              </span>
+              @if (canWrite()) {
+                @if (pendingRemoval() === rule.id) {
+                  <fold-inline-confirm
+                    message="Supprimer cette heure limite ?"
+                    [labels]="{ confirm: 'Supprimer' }"
+                    (confirmed)="remove(rule)"
+                    (cancelled)="pendingRemoval.set(null)"
+                  />
+                } @else {
+                  <span class="sc-actions">
+                    <button foldButton emphasis="soft" size="sm" icon="edit" (click)="edit(rule)">
+                      Modifier
+                    </button>
+                    <button
+                      foldButton
+                      emphasis="soft"
+                      intent="danger"
+                      size="sm"
+                      icon="bin"
+                      (click)="pendingRemoval.set(rule.id)"
+                    >
+                      Supprimer
+                    </button>
+                  </span>
+                }
+              }
+            </li>
+          }
+        </ul>
+
+        <!-- La règle commune : lue ici, réglée sur l'écran des heures limites. -->
+        @for (rule of defaults(); track rule.id) {
+          <p class="sc-said">
+            Sinon, règle par défaut ({{ day(rule) }}) : {{ sentence(rule) }}
+            <a routerLink="/b2b/reglages/heures-limites">Régler la règle par défaut</a>
+          </p>
+        } @empty {
+          <p class="sc-said">
+            Aucune règle par défaut : sans heure limite propre, ce site accepte les commandes à
+            toute heure.
+          </p>
+        }
+      }
+    }
+  </fold-page-section>
+</fold-card>

@@ -1,0 +1,38 @@
+.sc-said {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+/* Une règle par ligne : le jour, la phrase, les gestes. */
+.sc-rules {
+  display: grid;
+  gap: var(--fold-space-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sc-rule {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm) var(--fold-space-md);
+}
+
+.sc-day {
+  font-weight: 600;
+}
+
+.sc-when {
+  flex: 1 1 auto;
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
+.sc-actions {
+  display: inline-flex;
+  gap: var(--fold-space-xs);
+}

@@ -386,7 +386,15 @@ panneau, par la règle « page ou panneau » du `CLAUDE.md` du back-office
 > site existant (un seul « Ajouter » à la création). Identité et adresse,
 > heures et réduction passent par l'unique `PATCH` du lieu : chaque bouton y
 > renvoie l'état ENREGISTRÉ pour le reste, et n'écrase donc pas la saisie
-> d'une autre carte. L'en-tête de la carte des rôles porte des badges — les
+> d'une autre carte. Une quatrième sous-carte, **« Heures limites de
+> commande »** (2026-10-13), lit et écrit les règles de CE site par la route
+> existante `admin/order-cutoffs` — sous `b2b_settings`, droit inchangé :
+> l'écran des sites est sous `lfc_site_settings`, et un rôle sans
+> `b2b_settings:read` voit la sous-carte le dire. La règle par défaut s'y lit
+> et se règle sur l'ancien écran (`/b2b/reglages/heures-limites`), qui reste.
+> L'en-tête de la page porte le nom, l'adresse en une ligne et le statut, et
+> n'enregistre rien ; « Identité et adresse » a sa carte et son bouton
+> (« Ajouter » à la création). L'en-tête de la carte des rôles porte des badges — les
 > mots de la liste des sites (« Retrait », « Transfert … », « Livraison »),
 > sur l'état enregistré. Visible seulement pour un site qui
 > remet ; les créneaux restent absents à la création et sur un site archivé.

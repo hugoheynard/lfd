@@ -1,44 +1,23 @@
-<!-- `headerBleed` + `separator` : l'en-tête va bord à bord, donc son filet
-     aussi — comme la fiche produit et le détail d'entité juridique, dont le
-     corps est lui aussi une PILE DE CARTES. PAS de `headerBand` : une bande
-     derrière l'en-tête ferait un sol de plus au-dessus de cartes qui en posent
-     déjà un chacune. -->
+<!-- `headerBleed` + `separator`, sans `headerBand` : le patron de la fiche
+     produit et du détail d'entité juridique, dont le corps est aussi une PILE
+     DE CARTES qui posent chacune leur sol. L'en-tête porte le nom, l'adresse
+     en une ligne et le statut ; il n'enregistre rien (Hugo, 2026-10-13). -->
 <fold-page-layout [title]="heading()" headerBleed separator>
   <!-- Un bloc de projection par `@if` : un `@if` qui porte plusieurs nœuds à sa
        racine ne projette dans aucun emplacement, et l'AOT le refuse. -->
   <fold-back-link pageEyebrow icon="arrow-back" label="Sites" routerLink="/reglages/sites" />
 
-  <!-- Un badge à la fois : un site archivé n'est plus le défaut de personne. -->
+  <!-- Un statut à la fois : un site archivé n'est plus le défaut de personne. -->
   @if (archived()) {
     <fold-badge titleBadge content="Archivé" variant="neutral" radius="pill" />
-  } @else if (isDefault()) {
+  } @else if (site()?.isDefault) {
     <fold-badge titleBadge content="Par défaut" variant="success" radius="pill" />
   }
 
   @if (isCreate()) {
-    <p description>
-      Un lieu à nous&nbsp;: on y fabrique, on y remet des commandes, ou on y est servi par
-      transfert. L'adresse suffit à le créer&nbsp;; ses rôles, ses couleurs, ses heures et ses
-      créneaux se règlent ensuite, sur sa page.
-    </p>
-  }
-
-  <!-- L'en-tête n'enregistre QU'À LA CRÉATION (« Ajouter » : rien n'existe
-       encore). Sur un site existant, chaque carte enregistre ce qu'elle
-       montre (Hugo, 2026-10-13) ; l'en-tête garde le retour et le statut. -->
-  @if (isCreate()) {
-    <div pageActions class="pa-actions">
-      <button foldButton emphasis="soft" intent="neutral" (click)="backToList()">Annuler</button>
-      <button
-        foldButton
-        intent="primary"
-        [disabled]="!canSubmit() || saving()"
-        [loading]="saving()"
-        (click)="submit()"
-      >
-        Ajouter
-      </button>
-    </div>
+    <span pageSubtitle>L'adresse suffit à le créer ; le reste se règle ensuite, sur sa page.</span>
+  } @else if (site() !== null) {
+    <span pageSubtitle>{{ addressLine() }}</span>
   }
 
   @if (refusal(); as message) {
@@ -58,83 +37,47 @@
   } @else {
     @if (archived()) {
       <fold-callout variant="info">
-        Ce site est archivé&nbsp;: il n'est plus proposé, et ne se modifie plus. Il reste lisible
-        parce que des tournées et des commandes passées le citent.
+        Ce site est archivé : il n'est plus proposé et ne se modifie plus. Des tournées et des
+        commandes passées le citent encore.
       </fold-callout>
     }
 
-    <!-- UNE CARTE PAR SUJET. Ces blocs ne se lisent pas de haut en bas : on va
-         directement à celui qu'on vient régler. La carte porte la surface, la
-         section porte le `<h2>` et le nom de la région. Aucune marge ici —
-         l'écart entre les cartes est le `--fold-page-gap` du layout. -->
-    <fold-card>
-      <fold-page-section title="Identité et adresse" separator>
-        @if (!isCreate() && !archived()) {
-          <div sectionActions>
-            <button
-              foldButton
-              size="sm"
-              [disabled]="!canSaveIdentity()"
-              [loading]="saving()"
-              (click)="saveIdentity()"
-            >
-              Enregistrer l'adresse
-            </button>
-          </div>
-        }
-        @if (identityDirty()) {
-          <fold-callout variant="info">Modifiée, pas encore enregistrée.</fold-callout>
-        }
-        <lfd-address-form [value]="postal()" (valueChange)="setPostal($event)" />
+    <!-- UNE CARTE PAR SUJET, chacune avec son enregistrement, dans l'ordre :
+         identité → rôles → paramétrage du retrait → archivage. Aucune marge
+         ici : l'écart entre les cartes est le `--fold-page-gap` du layout. -->
+    <app-site-identity-card
+      [site]="site()"
+      [readOnly]="archived()"
+      (saved)="reload()"
+      (created)="onCreated($event)"
+    />
 
-        <fold-checkbox
-          label="Site par défaut"
-          hint="proposé d'office au retrait, au checkout"
-          [checked]="isDefault()"
-          (checkedChange)="isDefault.set($event)"
-        />
-      </fold-page-section>
-    </fold-card>
-
-    <!-- Rôles, couleurs et point GPS : UNE carte, chaque couleur sous la
-         capacité qu'elle colore (Hugo, 2026-10-13). Absente à la création —
-         un site qui n'existe pas encore n'a rien à porter. -->
     @if (site(); as current) {
       <app-site-roles-card [site]="current" [readOnly]="archived()" (saved)="reload()" />
     }
 
-    <!-- « Paramétrage du retrait » (Hugo, 2026-10-13) : UNE carte, trois
-         sous-cartes (`fold-card surface="sunken"`, la forme des incidents et
-         des décisions de la livraison). Chacune garde son enregistrement :
-         chacune a son propre enregistrement — un chevauchement refusé ne fait pas échouer
-         l'adresse. Seulement pour un site qui remet ; les créneaux restent
-         absents à la création (leur route porte un identifiant) et sur un
-         site archivé. -->
-    @if (pickup()) {
-      <fold-card>
-        <fold-page-section title="Paramétrage du retrait" titleVariant="heading">
-          @if (site(); as current) {
+    <!-- « Paramétrage du retrait » : une carte, quatre sous-cartes
+         (`fold-card surface="sunken"`, la forme des incidents et des
+         décisions de la livraison), chacune avec son enregistrement. Pour un
+         site qui fait du retrait ; les créneaux sont absents d'un site
+         archivé (leur carte n'a pas de lecture seule). -->
+    @if (site(); as current) {
+      @if (pickup()) {
+        <fold-card>
+          <fold-page-section title="Paramétrage du retrait" titleVariant="heading">
             <app-site-hours-card [site]="current" [readOnly]="archived()" (saved)="reload()" />
-          }
-
-          @if (!isCreate() && !archived()) {
-            <app-public-slots-card [pickupId]="id() ?? ''" />
-          }
-
-          @if (site(); as current) {
+            @if (!archived()) {
+              <app-public-slots-card [pickupId]="current.id" />
+            }
+            <app-site-cutoffs-card [site]="current" [readOnly]="archived()" />
             <app-site-discount-card [site]="current" [readOnly]="archived()" (saved)="reload()" />
-          }
-        </fold-page-section>
-      </fold-card>
+          </fold-page-section>
+        </fold-card>
+      }
     }
 
-    <!-- Le point GPS n'a plus de carte : il se saisit SOUS « Livraison », dans
-         la carte des rôles, et nulle part ailleurs (Hugo, 2026-10-13). -->
-
-    <!-- En correction seulement : on archive ce qu'on regarde. Il n'y a pas
-         de suppression — un site se résout encore par id dans les tournées et
-         les commandes passées. Sans libellé d'action, la zone explique sans
-         rien offrir. -->
+    <!-- On archive ce qu'on regarde ; il n'y a pas de suppression. Sans
+         libellé d'action, la zone explique sans rien offrir. -->
     @if (!isCreate() && !archived()) {
       <fold-danger-zone
         appearance="section"

@@ -1,0 +1,27 @@
+<fold-card>
+  <fold-page-section title="Identité et adresse" separator>
+    @if (!readOnly()) {
+      <div sectionActions>
+        <button foldButton size="sm" [disabled]="!canSave()" [loading]="saving()" (click)="save()">
+          {{ isCreate() ? 'Ajouter' : 'Enregistrer' }}
+        </button>
+      </div>
+    }
+
+    @if (refusal(); as message) {
+      <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+    } @else if (dirty()) {
+      <fold-callout variant="info">Modifiée, pas encore enregistrée.</fold-callout>
+    }
+
+    <lfd-address-form [value]="postal()" (valueChange)="setPostal($event)" />
+
+    <fold-checkbox
+      label="Site par défaut"
+      hint="proposé d'office au retrait, au checkout"
+      [disabled]="readOnly()"
+      [checked]="isDefault()"
+      (checkedChange)="isDefault.set($event)"
+    />
+  </fold-page-section>
+</fold-card>

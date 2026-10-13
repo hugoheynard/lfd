@@ -1,17 +1,19 @@
 <fold-panel-header [title]="heading()" />
 
 <div class="body">
-  <fold-select
-    label="S'applique à"
-    hint="« Tous les points » sert de défaut : elle couvre ce qu'aucune règle plus précise ne vise."
-    [value]="pickupAddressId() ?? any"
-    (valueChange)="onScope($event)"
-  >
-    <option [value]="any">Tous les points (défaut)</option>
-    @for (point of points(); track point.id) {
-      <option [value]="point.id">{{ point.label || point.ville }}</option>
-    }
-  </fold-select>
+  @if (!locked()) {
+    <fold-select
+      label="S'applique à"
+      hint="« Tous les points » sert de défaut : elle couvre ce qu'aucune règle plus précise ne vise."
+      [value]="pickupAddressId() ?? any"
+      (valueChange)="onScope($event)"
+    >
+      <option [value]="any">Tous les points (défaut)</option>
+      @for (point of points(); track point.id) {
+        <option [value]="point.id">{{ point.label || point.ville }}</option>
+      }
+    </fold-select>
+  }
 
   <fold-select
     label="Jour d'acheminement visé"

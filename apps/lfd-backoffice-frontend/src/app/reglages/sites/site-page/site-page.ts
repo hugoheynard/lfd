@@ -9,7 +9,7 @@ import {
 } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { ALL_DISCOUNT_AUDIENCES, type PickupAddressPayload, type SiteView } from '@lfd/contracts';
+import type { SiteView } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldBackLinkComponent,
@@ -17,32 +17,21 @@ import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
-  FoldCheckboxComponent,
   FoldDangerZoneComponent,
   FoldEmptyStateComponent,
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
   FoldPageSectionComponent,
 } from 'fold-ng';
-import { AddressForm, type PostalAddress } from '@lfd/b2b-ui/address';
-import {
-  EMPTY_POSTAL_DRAFT,
-  postalDraftFrom,
-  postalIssue,
-  toBillingPayload,
-  toPostal,
-  withPostal,
-  type PostalDraft,
-} from '@lfd/b2b-ui/company';
 
 import { NotifyService } from '../../../notify.service';
-import { EMPTY_OPENING } from '../../../b2b/reglages/pickup-opening.model';
 import { SITES_PATH } from '../sites-path';
 import { SitesService } from '../sites.service';
 import { PublicSlotsCard } from './public-slots-card/public-slots-card';
+import { SiteCutoffsCard } from './site-cutoffs-card/site-cutoffs-card';
 import { SiteDiscountCard } from './site-discount-card/site-discount-card';
 import { SiteHoursCard } from './site-hours-card/site-hours-card';
-import { placePayload } from './site-place-payload';
+import { SiteIdentityCard } from './site-identity-card/site-identity-card';
 import { SiteRolesCard } from './site-roles-card/site-roles-card';
 
 const NOT_FOUND = 404;
@@ -52,8 +41,9 @@ const NOT_FOUND = 404;
  * `documentation/livraisons/transferts/plan-sites-transfert-interne-tri-et-couleurs.md`,
  * §3.4, lot S1) — l'ancienne page d'un point de retrait, élargie : un site EST
  * le point de retrait, même identifiant. Elle gagne les rôles, les couleurs et
- * l'archivage, chacun dans sa carte et avec son propre enregistrement (l'API
- * les prend en bloc, et un refus de l'un ne doit pas faire échouer l'autre).
+ * l'archivage. **Chaque carte enregistre ce qu'elle montre** (Hugo,
+ * 2026-10-13) : la page charge, relit et archive — elle n'écrit rien
+ * d'autre. Dans l'ordre : identité, rôles, paramétrage du retrait, archivage.
  * Tout passe par `admin/sites`, sous `lfc_site_settings`.
  *
  * Ce qui suit est l'histoire de la page du point, toujours vraie.
@@ -76,23 +66,23 @@ const NOT_FOUND = 404;
  * le 2026-09-16 ; le `CLAUDE.md` de cette app porte la règle.
  *
  * Le même composant sert la création et l'édition : sans `id`, il n'y a rien à
- * charger et rien à supprimer.
+ * charger, et seule la carte d'identité s'affiche, avec un unique « Ajouter ».
  */
 @Component({
   selector: 'app-site-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    AddressForm,
     PublicSlotsCard,
+    SiteCutoffsCard,
     SiteDiscountCard,
     SiteHoursCard,
+    SiteIdentityCard,
     SiteRolesCard,
     FoldBackLinkComponent,
     FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,
-    FoldCheckboxComponent,
     FoldDangerZoneComponent,
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
@@ -100,7 +90,6 @@ const NOT_FOUND = 404;
     FoldPageSectionComponent,
   ],
   templateUrl: './site-page.html',
-  styleUrl: './site-page.scss',
 })
 export class SitePage {
   private readonly sites = inject(SitesService);
@@ -114,10 +103,6 @@ export class SitePage {
    */
   readonly id = input<string | undefined>(undefined);
 
-  protected readonly draft = signal<PostalDraft>(EMPTY_POSTAL_DRAFT);
-  /** Proposé d'office au checkout. Rang du point, pas champ d'adresse. */
-  protected readonly isDefault = signal(false);
-
   /**
    * Le refus du serveur, en clair. Il reste SUR LA PAGE, au-dessus des cartes :
    * un toast disparaîtrait pendant qu'on cherche quoi corriger.
@@ -129,47 +114,28 @@ export class SitePage {
   protected readonly notFound = signal(false);
   /** La lecture a échoué pour une autre raison : on propose de réessayer. */
   protected readonly loadFailed = signal(false);
-  /** Le site tel que le serveur l'a rendu — ce que lisent les cartes à elles. */
+  /** Le site tel que le serveur l'a rendu — ce que lisent les cartes. */
   protected readonly site = signal<SiteView | null>(null);
-  /** Les cartes du retrait : à la création, rien n'est encore décidé, on les montre. */
-  protected readonly pickup = computed(() => this.site()?.pickup ?? true);
+  /** Les cartes du retrait ne se montrent qu'à un site qui fait du retrait. */
+  protected readonly pickup = computed(() => this.site()?.pickup ?? false);
   /** Un site archivé ne se modifie plus (le serveur le refuse) : tout se fige. */
   protected readonly archived = computed(() => this.site()?.archivedAt != null);
-
   protected readonly isCreate = computed(() => this.id() === undefined);
 
-  /**
-   * La remise vue comme une altération de prix. Le sens est **structurel** —
-   * retirer soi-même coûte moins cher, jamais plus — donc il ne se stocke pas.
-   */
-
-  /** L'adresse postale, dans la langue neutre du fragment de saisie. */
-  protected readonly postal = computed(() => toPostal(this.draft()));
-
-  /** Le titre EST le nom du point — sa ville à défaut, comme dans la liste. */
+  /** Le titre EST le nom du site — sa ville à défaut, comme dans la liste. */
   protected readonly heading = computed(() => {
+    const site = this.site();
     if (this.isCreate()) {
       return 'Nouveau site';
     }
-    const draft = this.draft();
-    return draft.label || draft.ville || 'Site';
+    return site === null ? 'Site' : site.label || site.ville || 'Site';
   });
 
-  /** À la création : une adresse postable. Le reste se règle sur sa page. */
-  protected readonly canSubmit = computed(() => postalIssue(this.draft()) === '');
-
-  /** L'identité diffère de ce qui est enregistré (adresse ou rang par défaut). */
-  protected readonly identityDirty = computed(() => {
+  /** L'adresse en une ligne, sous le titre — comme la ligne d'identité d'une entité. */
+  protected readonly addressLine = computed(() => {
     const site = this.site();
-    return (
-      site !== null &&
-      (JSON.stringify(this.draft()) !== JSON.stringify(postalDraftFrom(site)) ||
-        this.isDefault() !== site.isDefault)
-    );
+    return site === null ? '' : [site.ligne1, `${site.codePostal} ${site.ville}`].join(' · ');
   });
-  protected readonly canSaveIdentity = computed(
-    () => this.identityDirty() && postalIssue(this.draft()) === '' && !this.saving(),
-  );
 
   /**
    * Pourquoi ce site ne s'archive pas, ou `null`. Le serveur refuse le défaut
@@ -202,8 +168,8 @@ export class SitePage {
 
   /** Ce qu'il faut taper pour archiver : le nom du site, ou sa ville sans nom. */
   protected readonly confirmPhrase = computed(() => {
-    const draft = this.draft();
-    return this.isCreate() ? '' : draft.label || draft.ville;
+    const site = this.site();
+    return site === null ? '' : site.label || site.ville;
   });
 
   constructor() {
@@ -229,7 +195,6 @@ export class SitePage {
     try {
       const site = await this.sites.get(id);
       this.site.set(site);
-      this.fill(site);
     } catch (error) {
       if (error instanceof HttpErrorResponse && error.status === NOT_FOUND) {
         this.notFound.set(true);
@@ -256,72 +221,9 @@ export class SitePage {
     }
   }
 
-  /** Recopie le site dans les brouillons de l'écran. */
-  private fill(point: SiteView): void {
-    this.draft.set(postalDraftFrom(point));
-    this.isDefault.set(point.isDefault);
-  }
-
-  protected setPostal(postal: PostalAddress): void {
-    this.draft.update((draft) => withPostal(draft, postal));
-  }
-
-  /**
-   * Enregistre l'identité SEULE (adresse + rang par défaut), sur le lieu tel
-   * qu'il est enregistré : heures et réduction ont leurs sous-cartes.
-   */
-  protected async saveIdentity(): Promise<void> {
-    const site = this.site();
-    if (site === null || !this.canSaveIdentity()) {
-      return;
-    }
-    this.saving.set(true);
-    this.refusal.set(null);
-    try {
-      await this.sites.update(
-        site.id,
-        placePayload(site, { ...toBillingPayload(this.draft()), isDefault: this.isDefault() }),
-      );
-      this.notify.success('Adresse du site enregistrée.');
-      await this.reload();
-      const saved = this.site();
-      if (saved !== null) {
-        this.fill(saved);
-      }
-    } catch (error) {
-      this.refusal.set(httpErrorMessage(error, "L'adresse du site n'a pas pu être enregistrée."));
-    } finally {
-      this.saving.set(false);
-    }
-  }
-
-  /** La création : rien n'existe encore, un seul « Ajouter ». */
-  protected async submit(): Promise<void> {
-    if (!this.isCreate() || !this.canSubmit() || this.saving()) {
-      return;
-    }
-    this.saving.set(true);
-    this.refusal.set(null);
-    const payload: PickupAddressPayload = {
-      ...toBillingPayload(this.draft()),
-      isDefault: this.isDefault(),
-      // La réduction se règle une fois le site créé, dans sa sous-carte.
-      discount: null,
-      discountAudiences: ALL_DISCOUNT_AUDIENCES,
-      opening: EMPTY_OPENING,
-      // Pas de `gps` : absent = inchangé. Il se saisit sous « Livraison ».
-    };
-    try {
-      // Vers la page du site créé, et non la liste : ses rôles et ses
-      // couleurs ne se règlent qu'une fois qu'il existe.
-      const created = await this.sites.create(payload);
-      this.notify.success('Site ajouté.');
-      await this.router.navigate([SITES_PATH, created.id]);
-    } catch (error) {
-      this.refusal.set(httpErrorMessage(error, "Le site n'a pas pu être enregistré."));
-    } finally {
-      this.saving.set(false);
-    }
+  /** La carte d'identité a créé le site : sa page, où se règle le reste. */
+  protected async onCreated(id: string): Promise<void> {
+    await this.router.navigate([SITES_PATH, id]);
   }
 
   /**

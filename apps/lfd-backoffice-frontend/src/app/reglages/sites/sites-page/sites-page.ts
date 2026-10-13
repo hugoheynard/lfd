@@ -9,6 +9,7 @@ import type { PostalAddress } from '@lfd/b2b-ui/address';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
+  FoldButtonIconComponent,
   FoldCardComponent,
   FoldEmptyStateComponent,
   FoldIconComponent,
@@ -59,6 +60,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
     FoldButtonComponent,
+    FoldButtonIconComponent,
     FoldIconComponent,
     FoldPageLayoutComponent,
   ],
