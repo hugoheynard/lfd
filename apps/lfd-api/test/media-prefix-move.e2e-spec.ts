@@ -41,7 +41,7 @@ const stubAdminVerifier = {
 
 const MIGRATION = join(
   process.cwd(),
-  "prisma/migrations/20261013300000_le_prefixe_universel_des_images/migration.sql",
+  "prisma/migrations/20261013500000_le_prefixe_universel_des_images/migration.sql",
 );
 const RUNBOOK = join(process.cwd(), "../../documentation/ops/runbook.md");
 

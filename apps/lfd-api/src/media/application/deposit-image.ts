@@ -25,7 +25,7 @@ import { DepositRefusals } from "./deposit-refusals.js";
  *
  * ⚠️ Il valait `products` jusqu'au 2026-10-13 (plan du préfixe universel, lot
  * D1) : les lignes déjà au fonds ont été réécrites par la migration
- * `20261013300000_le_prefixe_universel_des_images`, et le redépôt retrouve une
+ * `20261013500000_le_prefixe_universel_des_images`, et le redépôt retrouve une
  * image par son contenu, préfixe ignoré (`contentAddressOf`, lot D0).
  */
 const MEDIA_KEY_PREFIX = "images";

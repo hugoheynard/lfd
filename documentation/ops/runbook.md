@@ -510,7 +510,7 @@ remplace) — cf. « Sans retour » dans le plan.
 Plan : [`../mediatheque/plan-prefixe-universel.md`](../mediatheque/plan-prefixe-universel.md)
 (décisions de Hugo du 2026-10-13). Trois déploiements de l'API : **D0** (le
 dépôt retrouve une image par son contenu), **D1** (constante + migration
-`20261013300000_le_prefixe_universel_des_images`), **D2** (retrait de l'ancien
+`20261013500000_le_prefixe_universel_des_images`), **D2** (retrait de l'ancien
 préfixe, des semaines plus tard, sur ordre écrit de Hugo). Les outils sont dans
 `dev-toolbox/media-prefix/` ; aucun ne lit de `.env`, tout se pose dans le
 shell :
@@ -602,7 +602,7 @@ Si la migration échoue, elle a levé une exception **nommée** avant tout
    refaire 6.1 :
    ```bash
    psql "$MEDIA_PREFIX_DATABASE_URL" -v ON_ERROR_STOP=1 --single-transaction \
-     -f apps/lfd-api/prisma/migrations/20261013300000_le_prefixe_universel_des_images/migration.sql
+     -f apps/lfd-api/prisma/migrations/20261013500000_le_prefixe_universel_des_images/migration.sql
    ```
 4. Une fiche, une famille, une opération, l'accueil de la vitrine : l'image
    s'affiche.

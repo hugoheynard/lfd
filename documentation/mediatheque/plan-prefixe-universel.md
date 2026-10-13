@@ -135,7 +135,7 @@ existante** — palette déduite comprise. D0 est déployable seul : sous
 
 ### 3.5 La migration SQL (D1)
 
-`apps/lfd-api/prisma/migrations/20261013300000_le_prefixe_universel_des_images/migration.sql` :
+`apps/lfd-api/prisma/migrations/20261013500000_le_prefixe_universel_des_images/migration.sql` :
 
 - crée `media.media_prefix_move(old_url, new_url, old_storage_key,
 new_storage_key, moved_at)`, **permanente** (S4), et son modèle Prisma ;
