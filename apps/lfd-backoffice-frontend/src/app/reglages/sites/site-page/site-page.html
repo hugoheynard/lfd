@@ -56,7 +56,7 @@
       <app-site-roles-card [site]="current" [readOnly]="archived()" (saved)="reload()" />
     }
 
-    <!-- « Paramétrage du retrait » : une carte, quatre sous-cartes
+    <!-- « Paramétrage du retrait » : une carte, trois sous-cartes
          (`fold-card surface="sunken"`, la forme des incidents et des
          décisions de la livraison), chacune avec son enregistrement. Pour un
          site qui fait du retrait ; les créneaux sont absents d'un site
@@ -69,7 +69,6 @@
             @if (!archived()) {
               <app-public-slots-card [pickupId]="current.id" />
             }
-            <app-site-cutoffs-card [site]="current" [readOnly]="archived()" />
             <app-site-discount-card [site]="current" [readOnly]="archived()" (saved)="reload()" />
           </fold-page-section>
         </fold-card>

@@ -15,7 +15,6 @@ import type {
 import { postalDraftFrom } from '@lfd/b2b-ui/company';
 import { describe, expect, it, vi } from 'vitest';
 
-import { OrderCutoffsService } from '../../../b2b/reglages/order-cutoffs.service';
 import { NotifyService } from '../../../notify.service';
 import { SITES_PATH } from '../sites-path';
 import { SiteDiscountCard } from './site-discount-card/site-discount-card';
@@ -135,8 +134,6 @@ async function mount(
         useValue: { readPublic: () => Promise.resolve(DEFAULT_DELIVERY_AVAILABILITY) },
       },
       { provide: NotifyService, useValue: { success: () => undefined, error: () => undefined } },
-      // La sous-carte des heures limites lit sa route : aucune règle ici.
-      { provide: OrderCutoffsService, useValue: { list: () => Promise.resolve([]) } },
     ],
   });
   const fixture = TestBed.createComponent(SitePage);
@@ -204,13 +201,12 @@ describe('SitePage — les cartes selon les rôles', () => {
       'Paramétrage du retrait',
       'Heures de retrait',
       'Créneaux publics de retrait',
-      'Heures limites de commande',
       'Réduction de retrait sur ce site',
     ].map((label) => text.indexOf(label));
 
     expect(order.every((at) => at >= 0)).toBe(true);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
-    expect(root.querySelectorAll('fold-card[surface="sunken"]').length).toBeGreaterThanOrEqual(4);
+    expect(root.querySelectorAll('fold-card[surface="sunken"]').length).toBeGreaterThanOrEqual(3);
   });
 
   it('masque les cartes du retrait d’un site qui ne remet pas', async () => {

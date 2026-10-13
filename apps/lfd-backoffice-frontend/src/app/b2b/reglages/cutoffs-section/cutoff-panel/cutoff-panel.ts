@@ -31,12 +31,6 @@ export interface CutoffPanelData {
   readonly rule: OrderCutoffView | null;
   /** Les points de retrait, pour le sélecteur de portée. */
   readonly points: readonly PickupAddressView[];
-  /**
-   * Portée verrouillée sur CE site — ouvert depuis la page d'un site (Hugo,
-   * 2026-10-13). Le sélecteur disparaît : la règle par défaut se règle sur
-   * l'écran des heures limites, pas depuis un site.
-   */
-  readonly lockedPointId?: string;
 }
 
 /** Ce que propose le sélecteur « combien de jours avant ». */
@@ -96,7 +90,6 @@ export class CutoffPanel {
   protected readonly saving = signal(false);
 
   protected readonly points = computed(() => this.data()?.points ?? []);
-  protected readonly locked = computed(() => this.data()?.lockedPointId !== undefined);
   protected readonly isCreate = computed(() => (this.data()?.rule ?? null) === null);
   protected readonly heading = computed(() =>
     this.isCreate() ? 'Nouvelle heure limite' : "Modifier l'heure limite",
@@ -125,7 +118,6 @@ export class CutoffPanel {
     effect(() => {
       const rule = this.data()?.rule ?? null;
       if (rule === null) {
-        this.pickupAddressId.set(this.data()?.lockedPointId ?? null);
         return;
       }
       this.pickupAddressId.set(rule.pickupAddressId);
