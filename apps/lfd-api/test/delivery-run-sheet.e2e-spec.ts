@@ -97,7 +97,7 @@ beforeEach(async () => {
   await ctx.prisma.deliveryZone.create({
     data: { postalPrefixes: ["73150"], label: "Val d'Isère", feeMode: "amount", feeValue: 2000 },
   });
-  await ctx.prisma.pickupAddress.create({ data: { ...SITE, isDefault: true } });
+  await ctx.prisma.site.create({ data: { ...SITE, isDefault: true } });
 });
 
 const staff = (): ReturnType<E2eContext["asSub"]> => ctx.asSub(E2E_STAFF_SUB);
@@ -145,7 +145,7 @@ async function place(
   fulfillment: "pickup" | "delivery",
   deliveryAddressId: string | null = null,
 ): Promise<string> {
-  const point = await ctx.prisma.pickupAddress.findFirstOrThrow({ select: { id: true } });
+  const point = await ctx.prisma.site.findFirstOrThrow({ select: { id: true } });
   const where =
     fulfillment === "pickup"
       ? { pickupAddressId: point.id }

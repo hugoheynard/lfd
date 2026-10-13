@@ -279,6 +279,20 @@ export const staffResourceSchema = z.enum([
   /** Le reste du paramétrage : contenu, créneaux, retraits. */
   "b2b_settings",
   /**
+   * **Les sites** — nos lieux : adresse, rôles (remet, approvisionné par
+   * transfert, expédie), couleurs de la logistique, archivage
+   * (`documentation/livraisons/transferts/plan-sites-transfert-interne-tri-et-couleurs.md`,
+   * §3.4, lot S0, 2026-10-13). Détachée de `b2b_settings` : les droits sont
+   * granulaires (Hugo). Ajoutée sans être accordée : elle s'accorde à l'écran.
+   */
+  "lfc_site_settings",
+  /**
+   * **Le réglage des commandes** — l'annulation par le client (même plan,
+   * §5.4). Ajoutée au lot S0 ; les routes passent dessous au lot O1. Accordée
+   * à l'écran.
+   */
+  "lfc_order_settings",
+  /**
    * **La vitrine** — composer les pages de la boutique : formes, positions,
    * rayons, contenus, gabarits (`documentation/commandes/boutique-rayon-layout.md`,
    * D7).
@@ -600,6 +614,8 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   b2b_feature_access: "Accès aux fonctionnalités",
   b2b_client_notes: "Notes du commercial",
   b2b_settings: "Réglages plateforme",
+  lfc_site_settings: "Sites",
+  lfc_order_settings: "Réglage des commandes",
   staff_access: "Équipe et accès",
   staff_notifications: "Notifications internes",
   ops_health: "Santé de l'écosystème",
@@ -712,6 +728,10 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     b2b_feature_access: "write",
     b2b_client_notes: "write",
     b2b_settings: "write",
+    // La graine seule (2026-10-13, lot S0 des sites) : en production, ces
+    // deux droits s'accordent à l'écran.
+    lfc_site_settings: "write",
+    lfc_order_settings: "write",
     media_library: "write",
     b2b_storefront: "write",
     // Graine seulement (dev, e2e) : en production, accordée à l'écran (§5.6).

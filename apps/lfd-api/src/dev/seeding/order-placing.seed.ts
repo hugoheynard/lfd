@@ -178,11 +178,11 @@ export async function targetOf(
   if (member === null) {
     throw new Error(`La société « ${name} » n'a aucun membre : rien à qui porter.`);
   }
-  const labo = await context.prisma.pickupAddress.findFirst({
+  const labo = await context.prisma.site.findFirst({
     where: { isDefault: true },
     select: { id: true },
   });
-  const points = await context.prisma.pickupAddress.findMany({ select: { id: true, label: true } });
+  const points = await context.prisma.site.findMany({ select: { id: true, label: true } });
   const carnet = await readCarnet(context, company.id);
   return {
     companyId: company.id,

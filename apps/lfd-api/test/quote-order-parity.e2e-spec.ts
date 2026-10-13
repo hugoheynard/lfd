@@ -86,7 +86,7 @@ const PANIER = [
 
 /** Un point de retrait qui **remet 10 %** — la remise doit se retrouver des deux côtés. */
 async function seedPickup(): Promise<string> {
-  const point = await ctx.prisma.pickupAddress.create({
+  const point = await ctx.prisma.site.create({
     data: {
       label: "Le Labo",
       ligne1: "5 rue du Four",

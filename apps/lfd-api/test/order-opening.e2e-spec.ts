@@ -80,7 +80,7 @@ let pro = { companyId: "", buyerId: "" };
 beforeEach(async () => {
   await ctx.reset();
   pickupId = (
-    await ctx.prisma.pickupAddress.create({
+    await ctx.prisma.site.create({
       data: {
         label: "Labo",
         ligne1: "5 rue du Four",

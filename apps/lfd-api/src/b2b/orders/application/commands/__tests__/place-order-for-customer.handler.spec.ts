@@ -212,10 +212,6 @@ function guard(
 const pickups: PickupAddressRepository = {
   list: () => Promise.resolve([]),
   resolve: () => Promise.resolve(LABO),
-  create: () => Promise.resolve("pickup_1"),
-  update: () => Promise.resolve(),
-  remove: () => Promise.resolve(),
-  setDefault: () => Promise.resolve(),
 };
 
 /** Le réglage de livraison ; par défaut, ligne absente = ouvert aux deux. */

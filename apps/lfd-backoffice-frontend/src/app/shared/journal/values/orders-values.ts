@@ -167,6 +167,18 @@ export const WINDOW_MODE = domain('manière de demander une livraison', {
   deadline: 'Échéance',
 });
 
+/** D'où vient la marchandise d'un site (lot S1 des sites, 2026-10-13). */
+export const SITE_SUPPLY = domain('approvisionnement d’un site', {
+  on_site: 'Sur place',
+  transfer: 'Par transfert',
+});
+
+/** Le transfert vers un site : dans une tournée pro du jour, ou dédié. */
+export const SITE_TRANSFER_MODE = domain('mode du transfert vers un site', {
+  integrated: 'Dans une tournée pro',
+  dedicated: 'Tournée dédiée',
+});
+
 /** Un contenant du colisage (K2b) : un bac de livraison, ou un sac à emporter. */
 export const CONTAINER_NATURE = domain('nature d’un contenant', {
   bin: 'Bac',
@@ -218,6 +230,8 @@ export const ORDERS_VALUES: ValueFamily = {
     QUALITY_LIFTING_VERDICT,
     HANDOVER_PROOF_ERASURE_CAUSE,
     WINDOW_MODE,
+    SITE_SUPPLY,
+    SITE_TRANSFER_MODE,
     CONTAINER_NATURE,
     PRODUCTION_CLOSE_MODE,
     DOSSIER_RECIPIENT_KIND,

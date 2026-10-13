@@ -156,7 +156,7 @@ export async function seedStation(context: StationContext): Promise<void> {
 
 async function seedPickupPoints({ prisma, commands }: StationContext): Promise<void> {
   for (const point of POINTS) {
-    const existing = await prisma.pickupAddress.findFirst({ where: { label: point.label } });
+    const existing = await prisma.site.findFirst({ where: { label: point.label } });
     if (existing) {
       console.log(`· Point « ${point.label} » déjà présent — inchangé.`);
       continue;

@@ -69,7 +69,7 @@ async function seedCatalogue(): Promise<void> {
 
 /** Un point de retrait qui remet, sous l'une ou l'autre des deux formes. */
 async function seedPickup(mode: "percent" | "amount", value: number): Promise<string> {
-  const point = await ctx.prisma.pickupAddress.create({
+  const point = await ctx.prisma.site.create({
     data: {
       label: "Le Labo",
       ligne1: "5 rue du Four",

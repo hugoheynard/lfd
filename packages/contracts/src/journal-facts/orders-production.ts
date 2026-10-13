@@ -384,6 +384,32 @@ export const ORDERS_PRODUCTION_FACTS = {
   "pickup_address.updated": fact(pickupPoint(), [pickupPointBeforeLabel()]),
   "pickup_address.removed": fact(payload({ subjectLabel: subjectLabel() }), [empty()]),
   "pickup_address.default_set": fact(payload({ subjectLabel: subjectLabel() }), [empty()]),
+  /**
+   * Le site archivé (lot S1 des sites, 2026-10-13) : il remplace la
+   * suppression, qui n'a plus lieu. `removed` reste lisible pour l'historique.
+   */
+  "pickup_address.archived": fact(payload({ subjectLabel: subjectLabel() })),
+  /** Les rôles du site, enregistrés en bloc : chacun change ce que la logistique fait. */
+  "pickup_address.roles_set": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      handsOver: z.boolean(),
+      supply: z.enum(["on_site", "transfer"]),
+      dispatches: z.boolean(),
+      transferMode: z.enum(["integrated", "dedicated"]),
+      counterSetupMinutes: count(),
+    }),
+  ),
+  /** Les couleurs de la logistique, `#rrggbb` ou `null` tant qu'elles ne sont pas saisies. */
+  "pickup_address.colors_set": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      pickupColorB2b: z.string().nullable(),
+      pickupColorB2c: z.string().nullable(),
+      deliveryColorB2b: z.string().nullable(),
+      deliveryColorB2c: z.string().nullable(),
+    }),
+  ),
   /** Le sujet est le point de retrait : `subjectLabel` et `label` disent son nom. */
   "public_pickup_schedule.updated": fact(
     payload({

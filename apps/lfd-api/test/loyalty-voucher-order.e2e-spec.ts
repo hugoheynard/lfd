@@ -112,7 +112,7 @@ beforeEach(async () => {
   await ctx.reset();
   created = 0;
   cancelledIntents.splice(0);
-  const point = await ctx.prisma.pickupAddress.create({
+  const point = await ctx.prisma.site.create({
     data: {
       label: "Le Labo",
       ligne1: "Route de la Balme",

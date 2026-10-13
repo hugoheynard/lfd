@@ -271,6 +271,7 @@
   "test/shop-order.e2e-spec.ts": 5551,
   "test/shop-quote.e2e-spec.ts": 6182,
   "test/shop-state-carry-over-migration.e2e-spec.ts": 3000,
+  "test/sites.e2e-spec.ts": 9836,
   "test/staff-access.e2e-spec.ts": 14397,
   "test/staff-author-columns.e2e-spec.ts": 2505,
   "test/staff-author-conversion.e2e-spec.ts": 4018,

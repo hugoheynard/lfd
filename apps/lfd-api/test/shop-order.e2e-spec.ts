@@ -88,7 +88,7 @@ let pickupId = "";
 
 /** Le comptoir où l'on vient chercher. Le contrat exige un point explicite. */
 async function seedPickup(): Promise<string> {
-  const point = await ctx.prisma.pickupAddress.create({
+  const point = await ctx.prisma.site.create({
     data: {
       label: "Labo",
       ligne1: "5 rue du Four",

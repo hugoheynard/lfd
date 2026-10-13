@@ -149,8 +149,8 @@ beforeEach(async () => {
  */
 async function placeAndClose(): Promise<{ readonly reference: string; readonly orderId: string }> {
   const point =
-    (await ctx.prisma.pickupAddress.findFirst({ select: { id: true } })) ??
-    (await ctx.prisma.pickupAddress.create({ data: { ...SITE, isDefault: true } }));
+    (await ctx.prisma.site.findFirst({ select: { id: true } })) ??
+    (await ctx.prisma.site.create({ data: { ...SITE, isDefault: true } }));
   const placed = jsonBody<{ orderNumber: string }>(
     await ctx
       .asSub(MEMBER)

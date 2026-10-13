@@ -45,7 +45,7 @@ export const ROAD_ROUTING_OVERRIDES: readonly E2eOverride[] = [
 
 /** Le laboratoire, à Chambéry : le départ de toutes les tournées. */
 export async function seedDeparture(ctx: E2eContext, gps: boolean = true): Promise<void> {
-  await ctx.prisma.pickupAddress.create({
+  await ctx.prisma.site.create({
     data: {
       label: "Laboratoire",
       ligne1: "1 rue du Four",

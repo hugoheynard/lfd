@@ -115,9 +115,9 @@ type Lines = readonly { sku: string; quantity: number }[];
 
 /** Passe une commande de retrait pour le jour ; `settle` règle sa carte. */
 async function place(lines: Lines, settle = true, day = DAY): Promise<string> {
-  const point = await ctx.prisma.pickupAddress.findFirst({ select: { id: true } });
+  const point = await ctx.prisma.site.findFirst({ select: { id: true } });
   const pickupAddressId =
-    point?.id ?? (await ctx.prisma.pickupAddress.create({ data: { ...SITE, isDefault: true } })).id;
+    point?.id ?? (await ctx.prisma.site.create({ data: { ...SITE, isDefault: true } })).id;
   const placed = jsonBody<{ orderNumber: string }>(
     await ctx
       .asSub(MEMBER)

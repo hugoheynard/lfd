@@ -193,8 +193,8 @@ model Company {
   // jamais sur un pointeur mort.
   preferredFulfillmentMethod FulfillmentMethod? @map("preferred_fulfillment_method")
 
-  preferredPickupAddressId String?        @map("preferred_pickup_address_id")
-  preferredPickupAddress   PickupAddress? @relation(fields: [preferredPickupAddressId], references: [id], onDelete: SetNull)
+  preferredPickupAddressId String? @map("preferred_pickup_address_id")
+  preferredPickupAddress   Site?   @relation(fields: [preferredPickupAddressId], references: [id], onDelete: SetNull)
 
   preferredDeliveryAddressId String?  @map("preferred_delivery_address_id")
   preferredDeliveryAddress   Address? @relation("PreferredDelivery", fields: [preferredDeliveryAddressId], references: [id], onDelete: SetNull)

@@ -1,9 +1,8 @@
 import type { PickupAddressView } from "@lfd/contracts";
 
-import {
-  PickupAddressRepository,
-  type PickupAddressWrite,
-} from "../../domain/pickup-address.repository.js";
+import { InMemorySites, storedSite } from "../../../sites/application/__tests__/site-doubles.js";
+import type { SitePlace } from "../../../sites/domain/site.js";
+import { PickupDiscount } from "../../domain/pickup-discount.js";
 
 /** Les champs d'un point de retrait, communs aux specs de création et de modification. */
 export const FIELDS = {
@@ -17,31 +16,38 @@ export const FIELDS = {
   opening: { publicOpening: null, proPickup: null },
 } as const;
 
-/** Un point en base, et ce qu'on y écrit. */
-export class StoredPoints extends PickupAddressRepository {
-  written: PickupAddressWrite | null = null;
+/**
+ * Un point en base — un SITE depuis le lot S1 (2026-10-13) — et le dernier
+ * lieu qu'on y a écrit. Les gestes historiques passent par l'agrégat : le
+ * double est celui du port des sites, rempli depuis la vue d'un point.
+ */
+export class StoredPoints extends InMemorySites {
+  constructor(stored: PickupAddressView | null) {
+    super(
+      ...(stored === null
+        ? []
+        : [
+            storedSite(stored.id, {
+              isDefault: stored.isDefault,
+              place: {
+                label: stored.label,
+                ligne1: stored.ligne1,
+                ligne2: stored.ligne2,
+                codePostal: stored.codePostal,
+                ville: stored.ville,
+                pays: stored.pays,
+                opening: stored.opening,
+                gps: stored.gps ?? null,
+                discount: PickupDiscount.of(stored.discount, stored.discountAudiences),
+              },
+            }),
+          ]),
+    );
+  }
 
-  constructor(private readonly stored: PickupAddressView | null) {
-    super();
-  }
-  list(): Promise<readonly PickupAddressView[]> {
-    return Promise.resolve(this.stored === null ? [] : [this.stored]);
-  }
-  resolve(): Promise<PickupAddressView | null> {
-    return Promise.resolve(this.stored);
-  }
-  create(point: PickupAddressWrite): Promise<string> {
-    this.written = point;
-    return Promise.resolve("pickup_9");
-  }
-  update(_id: string, point: PickupAddressWrite): Promise<void> {
-    this.written = point;
-    return Promise.resolve();
-  }
-  remove(): Promise<void> {
-    return Promise.reject(new Error("non utilisé"));
-  }
-  setDefault(): Promise<void> {
-    return Promise.reject(new Error("non utilisé"));
+  /** Le lieu du dernier site écrit, ou `null` si rien ne l'a été. */
+  get written(): SitePlace | null {
+    const last = this.saved.at(-1);
+    return last === undefined ? null : (this.stateOf(last)?.place ?? null);
   }
 }

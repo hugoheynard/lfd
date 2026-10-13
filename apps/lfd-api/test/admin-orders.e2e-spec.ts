@@ -107,7 +107,7 @@ function staff(): ReturnType<E2eContext["asSub"]> {
  * le contrat exige un point **explicite**, une commande ne le déduit plus.
  */
 async function seedPickup(): Promise<string> {
-  const point = await ctx.prisma.pickupAddress.create({
+  const point = await ctx.prisma.site.create({
     data: {
       label: "Labo",
       ligne1: "1 rue du Four",

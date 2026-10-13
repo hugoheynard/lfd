@@ -91,7 +91,7 @@ function staff(): ReturnType<E2eContext["asSub"]> {
 
 /** Une société active, son acheteur, et — au choix — le mensuel accordé. */
 async function seedCompany(onAccount: boolean): Promise<{ companyId: string; buyerId: string }> {
-  const point = await ctx.prisma.pickupAddress.create({
+  const point = await ctx.prisma.site.create({
     data: {
       label: "Labo",
       ligne1: "1 rue du Four",

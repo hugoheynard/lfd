@@ -45,7 +45,7 @@ let pickupId: string | null = null;
 export async function fidelity(points = 3_000): Promise<string> {
   const ctx = context();
   clock.set(new Date());
-  const point = await ctx.prisma.pickupAddress.create({
+  const point = await ctx.prisma.site.create({
     data: {
       label: "Le Labo",
       ligne1: "Route de la Balme",

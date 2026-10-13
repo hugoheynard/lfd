@@ -155,6 +155,14 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     read: "Voir les réglages du commerce : points de retrait et leurs créneaux, heures limites, pied de page, mentions légales. Ouvre aussi les espaces Réglages et B2B, que Catalogue vendu et Tarification supposent.",
     write: "Modifier ces réglages — ce qui change l'offre faite à tous les clients.",
   },
+  lfc_site_settings: {
+    read: "Voir les sites : adresse, rôles (remet des commandes, approvisionné sur place ou par transfert, expédie), couleurs de la logistique, mise en place du comptoir.",
+    write: "Créer, modifier ou archiver un site, régler ses rôles et ses couleurs.",
+  },
+  lfc_order_settings: {
+    read: "Voir le réglage des commandes : jusqu'à quand un client peut annuler.",
+    write: "Modifier ce réglage — ce qui change ce que chaque client peut annuler.",
+  },
   b2b_storefront: {
     read: "Voir la composition des pages de la boutique.",
     write: "Composer la vitrine — formes, positions, rayons, contenus — et l'enregistrer.",

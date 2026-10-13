@@ -85,7 +85,7 @@ export async function chooseLaboDeparture(
   context: RoundsContext,
   laboLabel: string,
 ): Promise<void> {
-  const labo = await context.prisma.pickupAddress.findFirst({
+  const labo = await context.prisma.site.findFirst({
     where: { label: laboLabel },
     select: { id: true },
   });

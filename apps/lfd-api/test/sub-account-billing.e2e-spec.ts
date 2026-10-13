@@ -94,7 +94,7 @@ beforeEach(async () => {
   await ctx.prisma.collectionFloor.create({
     data: { id: true, floorAt: new Date(closesAt.getTime() - 30 * DAY_MS) },
   });
-  const point = await ctx.prisma.pickupAddress.create({
+  const point = await ctx.prisma.site.create({
     select: { id: true },
     data: {
       label: "Labo",

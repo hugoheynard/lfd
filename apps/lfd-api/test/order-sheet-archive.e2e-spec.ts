@@ -71,7 +71,7 @@ async function placeOrder(): Promise<PlacedOrderResponse> {
   const user = await createUser(ctx.prisma, { auth0Sub: CLIENT });
   const company = await createCompany(ctx.prisma, { status: "active" });
   await attachTo(ctx.prisma, user.id, company.id, CustomerRole.owner);
-  const point = await ctx.prisma.pickupAddress.create({
+  const point = await ctx.prisma.site.create({
     data: { ...LABO, isDefault: true },
     select: { id: true },
   });

@@ -99,9 +99,8 @@ beforeEach(async () => {
 
 /** Passe une commande de retrait pour la journée servie. */
 async function place(sku: string, quantity: number): Promise<void> {
-  const point = await ctx.prisma.pickupAddress.findFirst({ select: { id: true } });
-  const id =
-    point?.id ?? (await ctx.prisma.pickupAddress.create({ data: { ...SITE, isDefault: true } })).id;
+  const point = await ctx.prisma.site.findFirst({ select: { id: true } });
+  const id = point?.id ?? (await ctx.prisma.site.create({ data: { ...SITE, isDefault: true } })).id;
   await ctx
     .asSub(MEMBER)
     .post(`/orders`)

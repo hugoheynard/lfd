@@ -42,7 +42,7 @@ export class PrismaOrderCutoffRepository extends OrderCutoffRepository {
       this.prisma.orderCutoff.findMany({
         orderBy: [{ pickupAddressId: "asc" }, { weekday: "asc" }],
       }),
-      this.prisma.pickupAddress.findMany({ select: { id: true, label: true } }),
+      this.prisma.site.findMany({ select: { id: true, label: true } }),
     ]);
     const labels = new Map(points.map((point) => [point.id, point.label]));
     return rows.map((row) => toView(row, labels)).sort(bySpecificity);

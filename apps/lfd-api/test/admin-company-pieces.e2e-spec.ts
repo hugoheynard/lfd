@@ -217,7 +217,7 @@ describe("activation d'un compte (gate serveur)", () => {
 
 describe("préférence d'acheminement", () => {
   it("retient le point de retrait préféré", async () => {
-    const pickup = await ctx.prisma.pickupAddress.create({
+    const pickup = await ctx.prisma.site.create({
       data: {
         label: "Labo Bastille",
         ligne1: "3 rue de la Roquette",
@@ -278,7 +278,7 @@ describe("préférence d'acheminement", () => {
   it("fait RETOMBER la préférence sur le défaut quand le point de retrait disparaît", async () => {
     // `SET NULL` plutôt que `RESTRICT` : supprimer un labo ne doit pas être
     // interdit parce qu'une société le préfère, ni laisser un pointeur mort.
-    const pickup = await ctx.prisma.pickupAddress.create({
+    const pickup = await ctx.prisma.site.create({
       data: {
         label: "Labo éphémère",
         ligne1: "9 rue Passagère",
@@ -293,7 +293,7 @@ describe("préférence d'acheminement", () => {
       .send({ method: "pickup", pickupAddressId: pickup.id })
       .expect(204);
 
-    await ctx.prisma.pickupAddress.delete({ where: { id: pickup.id } });
+    await ctx.prisma.site.delete({ where: { id: pickup.id } });
 
     const company = await ctx.prisma.company.findUniqueOrThrow({ where: { id: companyId } });
     expect(company.preferredFulfillmentMethod).toBe("pickup");

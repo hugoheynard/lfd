@@ -73,7 +73,7 @@ beforeEach(async () => {
   const company = await createCompany(ctx.prisma, { status: "active" });
   await attachTo(ctx.prisma, member.id, company.id, CustomerRole.owner);
   companyId = company.id;
-  const point = await ctx.prisma.pickupAddress.create({
+  const point = await ctx.prisma.site.create({
     data: {
       label: "Labo",
       ligne1: "5 rue du Four",

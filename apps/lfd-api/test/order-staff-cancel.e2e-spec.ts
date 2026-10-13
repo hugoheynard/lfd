@@ -241,7 +241,7 @@ describe("le bon de fidélité", () => {
 
   /** Un bon d'un palier (5 € HT), par la vraie conversion, et un point de retrait. */
   async function holderWithVoucher(): Promise<{ voucherId: string; pickupId: string }> {
-    const point = await ctx.prisma.pickupAddress.create({
+    const point = await ctx.prisma.site.create({
       data: {
         label: "Le Labo",
         ligne1: "Route de la Balme",

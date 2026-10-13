@@ -85,7 +85,7 @@ const staff = (): ReturnType<E2eContext["asSub"]> => ctx.asSub(E2E_STAFF_SUB);
 
 /** Passe une commande perso en retrait, carte NON réglée. */
 async function placeUnpaid(): Promise<{ readonly id: string; readonly number: string }> {
-  const point = await ctx.prisma.pickupAddress.create({ data: { ...SITE, isDefault: true } });
+  const point = await ctx.prisma.site.create({ data: { ...SITE, isDefault: true } });
   const placed = jsonBody<{ orderNumber: string }>(
     await ctx
       .asSub(CLIENT)

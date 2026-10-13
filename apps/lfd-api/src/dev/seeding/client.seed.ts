@@ -561,7 +561,7 @@ async function seedHabit(
     where: { companyId, kind: "delivery", isDefault: true },
     select: { id: true },
   });
-  const labo = await prisma.pickupAddress.findFirst({
+  const labo = await prisma.site.findFirst({
     where: { isDefault: true },
     select: { id: true },
   });

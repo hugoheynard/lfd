@@ -1,0 +1,218 @@
+/**
+ * E2E de **Réglages › Sites** (plan
+ * `documentation/livraisons/transferts/plan-sites-transfert-interne-tri-et-couleurs.md`,
+ * lot S1) : la surface `admin/sites` sous `lfc_site_settings`, les rôles, les
+ * couleurs libres (vert / rouge / rose refusés), l'archivage, et ce que le
+ * client voit encore — les seuls sites actifs qui remettent.
+ */
+import type { CreatedPickupResponse, PickupAddressView, RoleGrant, SiteView } from "@lfd/contracts";
+
+import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
+import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+
+let ctx: E2eContext;
+
+beforeAll(async () => {
+  ctx = await bootstrapE2e({ overrides: [ADMIN_VERIFIER_OVERRIDE] });
+});
+
+afterAll(async () => {
+  await ctx.close();
+});
+
+beforeEach(async () => {
+  await ctx.reset();
+});
+
+function staff(): ReturnType<E2eContext["asSub"]> {
+  return ctx.asSub(E2E_STAFF_SUB);
+}
+
+const place = (label: string): Record<string, unknown> => ({
+  label,
+  ligne1: "1 place du Village",
+  ligne2: "",
+  codePostal: "73150",
+  ville: "Val-d'Isère",
+  pays: "France",
+  isDefault: false,
+});
+
+const ROLES = {
+  handsOver: true,
+  supply: "on_site",
+  dispatches: false,
+  transferMode: "integrated",
+  counterSetupMinutes: 0,
+} as const;
+
+const NO_COLORS = {
+  pickupColorB2b: null,
+  pickupColorB2c: null,
+  deliveryColorB2b: null,
+  deliveryColorB2c: null,
+} as const;
+
+async function create(label: string): Promise<string> {
+  const response = await staff().post("/admin/sites").send(place(label)).expect(201);
+  return jsonBody<CreatedPickupResponse>(response).id;
+}
+
+async function site(id: string): Promise<SiteView> {
+  return jsonBody<SiteView>(await staff().get(`/admin/sites/${id}`).expect(200));
+}
+
+async function publicLabels(): Promise<readonly string[]> {
+  const response = await ctx.http().get("/pickup-addresses").expect(200);
+  return jsonBody<readonly PickupAddressView[]>(response).map((point) => point.label);
+}
+
+describe("admin/sites — rôles", () => {
+  it("un site neuf remet, sur place, n'expédie pas, sans couleur ni mise en place", async () => {
+    const id = await create("Fournil");
+    expect(await site(id)).toMatchObject({
+      ...ROLES,
+      ...NO_COLORS,
+      archivedAt: null,
+      isDefault: true,
+    });
+  });
+
+  it("enregistre un site servi par transfert, et le journalise", async () => {
+    await create("Fournil");
+    const village = await create("Val Village");
+
+    await staff()
+      .put(`/admin/sites/${village}/roles`)
+      .send({ ...ROLES, supply: "transfer", transferMode: "dedicated", counterSetupMinutes: 20 })
+      .expect(204);
+
+    expect(await site(village)).toMatchObject({
+      supply: "transfer",
+      transferMode: "dedicated",
+      counterSetupMinutes: 20,
+    });
+    const fact = await ctx.prisma.activityEvent.findFirst({
+      where: { type: "pickup_address.roles_set", subjectId: village },
+    });
+    expect(fact).not.toBeNull();
+  });
+
+  it("refuse (400) un site servi par transfert qui ne remet pas", async () => {
+    const village = await create("Val Village");
+    const response = await staff()
+      .put(`/admin/sites/${village}/roles`)
+      .send({ ...ROLES, supply: "transfer", handsOver: false });
+    expect(response.status).toBe(400);
+  });
+
+  it("un fournil qui ne remet pas quitte la liste publique, pas l'écran des sites", async () => {
+    await create("Val Village");
+    const bakery = await create("Fournil");
+
+    await staff()
+      .put(`/admin/sites/${bakery}/roles`)
+      .send({ ...ROLES, handsOver: false, dispatches: true })
+      .expect(204);
+
+    expect(await publicLabels()).toEqual(["Val Village"]);
+    const all = jsonBody<readonly SiteView[]>(await staff().get("/admin/sites").expect(200));
+    expect(all.map((s) => s.label)).toEqual(["Val Village", "Fournil"]);
+  });
+});
+
+describe("admin/sites — couleurs libres", () => {
+  it("enregistre une couleur, rendue en minuscules", async () => {
+    const id = await create("Val Village");
+    await staff()
+      .put(`/admin/sites/${id}/couleurs`)
+      .send({ ...NO_COLORS, pickupColorB2c: "#9CA3AF" })
+      .expect(204);
+    expect((await site(id)).pickupColorB2c).toBe("#9ca3af");
+  });
+
+  it("refuse (400) le vert des surligneurs, en disant pourquoi", async () => {
+    const id = await create("Val Village");
+    const response = await staff()
+      .put(`/admin/sites/${id}/couleurs`)
+      .send({ ...NO_COLORS, pickupColorB2b: "#16a34a" });
+    expect(response.status).toBe(400);
+    expect(JSON.stringify(response.body)).toContain("surligneurs OK / KO");
+  });
+
+  it("refuse (409) d'effacer une couleur posée", async () => {
+    const id = await create("Val Village");
+    await staff()
+      .put(`/admin/sites/${id}/couleurs`)
+      .send({ ...NO_COLORS, deliveryColorB2b: "#2563eb" })
+      .expect(204);
+    const response = await staff().put(`/admin/sites/${id}/couleurs`).send(NO_COLORS);
+    expect(response.status).toBe(409);
+  });
+
+  it("la base refuse une forme hors `#rrggbb` même sans l'agrégat (CHECK)", async () => {
+    const id = await create("Val Village");
+    await expect(
+      ctx.prisma.site.update({ where: { id }, data: { pickupColorB2b: "bleu" } }),
+    ).rejects.toThrow();
+  });
+});
+
+describe("admin/sites — archiver", () => {
+  it("archive : sorti de la liste publique, encore lisible par id, en fin de liste", async () => {
+    await create("Fournil");
+    const village = await create("Val Village");
+
+    await staff().post(`/admin/sites/${village}/archive`).expect(204);
+
+    expect(await publicLabels()).toEqual(["Fournil"]);
+    expect((await site(village)).archivedAt).not.toBeNull();
+    const all = jsonBody<readonly SiteView[]>(await staff().get("/admin/sites").expect(200));
+    expect(all.map((s) => s.label)).toEqual(["Fournil", "Val Village"]);
+  });
+
+  it("refuse (409) d'archiver le site qui expédie", async () => {
+    await create("Val Village");
+    const bakery = await create("Fournil");
+    await staff()
+      .put(`/admin/sites/${bakery}/roles`)
+      .send({ ...ROLES, dispatches: true })
+      .expect(204);
+
+    const response = await staff().post(`/admin/sites/${bakery}/archive`);
+    expect(response.status).toBe(409);
+  });
+});
+
+describe("admin/sites — le droit", () => {
+  /**
+   * La surface est sous `lfc_site_settings` : `b2b_settings`, qui ouvrait les
+   * points de retrait, ne l'ouvre pas.
+   */
+  it("sans `lfc_site_settings` : 403, même avec les réglages plateforme", async () => {
+    const grants: readonly RoleGrant[] = [{ resource: "b2b_settings", action: "write" }];
+    await staff()
+      .post("/admin/staff-roles")
+      .send({ key: "reglages", label: "reglages", grants })
+      .expect(201);
+    await ctx.prisma.staffUser.create({
+      data: {
+        firstName: "Test",
+        lastName: "Réglages",
+        email: "reglages@lfc.test",
+        role: null,
+        roleKey: "reglages",
+        status: "active",
+        auth0Id: "staff-reglages",
+      },
+    });
+
+    await ctx.asSub("staff-reglages").get("/admin/sites").expect(403);
+    // L'ancienne surface reste servie au front d'aujourd'hui, sous son droit.
+    await ctx
+      .asSub("staff-reglages")
+      .post("/admin/pickup-addresses")
+      .send(place("Val Village"))
+      .expect(201);
+  });
+});

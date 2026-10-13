@@ -101,7 +101,7 @@ function staff(): ReturnType<E2eContext["asSub"]> {
  * une commande ne le déduit plus d'un défaut serveur.
  */
 async function seedPickup(): Promise<string> {
-  const point = await ctx.prisma.pickupAddress.create({
+  const point = await ctx.prisma.site.create({
     data: {
       label: "Labo",
       ligne1: "1 rue du Four",

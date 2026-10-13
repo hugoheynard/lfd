@@ -2,11 +2,17 @@
 // Points de retrait — adresses GLOBALES de la plateforme
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Un **point de retrait** (laboratoire) — adresse **globale** (pas par entreprise),
-/// fallback d'acheminement tant que la livraison n'existe pas. Plusieurs points
-/// possibles, un seul `isDefault`. Une commande en retrait fige un snapshot de
-/// l'adresse choisie. Cf. `documentation/b2b/comptes-client/architecture-activation-configuration-b2b.md`.
-model PickupAddress {
+/// Un **site** — un lieu physique À NOUS (2026-10-13,
+/// `documentation/livraisons/transferts/plan-sites-transfert-interne-tri-et-couleurs.md`,
+/// §3) : on y fabrique et on en part, on y remet des commandes, ou on y est
+/// servi par un transfert interne. C'était le « point de retrait » ; le modèle
+/// Prisma a changé de nom, la TABLE non (`pickup_addresses`, Q-S1 proposé) —
+/// les références (`pickup_address_id`) et les snapshots restent valides.
+///
+/// Plusieurs sites, un seul `isDefault`. Une commande en retrait fige un
+/// snapshot de l'adresse choisie. Les invariants (rôles, couleurs, archivage,
+/// défaut) sont portés par l'agrégat `Site` (`b2b/sites/domain/site.ts`).
+model Site {
   id String @id @default(cuid())
 
   label      String
@@ -44,6 +50,39 @@ model PickupAddress {
   /// point est le départ des tournées (2026-09-29, `plan-preparation-de-tournee.md`, Q9).
   gps Json?
 
+  /// Le site REMET des commandes à des clients (retrait) : proposé au
+  /// checkout, onglet au comptoir. `true` = l'existant, où tout point remettait.
+  handsOver Boolean @default(true) @map("hands_over")
+
+  /// D'où vient la marchandise : fabriquée/colisée sur place, ou arrivée par
+  /// un transfert interne. Un site `transfer` remet forcément (agrégat).
+  supply SiteSupply @default(on_site)
+
+  /// Livraisons et transferts peuvent en partir. Un site qui expédie est
+  /// `on_site` (agrégat).
+  dispatches Boolean @default(false)
+
+  /// Archivé : plus proposé, mais toujours résolu par id (départ, copies). Remplace
+  /// la suppression physique — un site est référencé par des commandes.
+  archivedAt DateTime? @map("archived_at") @db.Timestamptz(3)
+
+  /// Comment un site servi par transfert est approvisionné (§4) : dans une
+  /// tournée B2B du jour (`integrated`, défaut) ou par une tournée dédiée.
+  transferMode SiteTransferMode @default(integrated) @map("transfer_mode")
+
+  /// La mise en place au comptoir, en minutes, APRÈS le colisage ; s'ajoute à
+  /// la marge de retrait (§4.6). ≥ 0, tenu par l'agrégat et par un CHECK.
+  counterSetupMinutes Int @default(0) @map("counter_setup_minutes")
+
+  /// Les couleurs de la logistique, LIBRES (`#rrggbb`, Hugo 2026-10-13) :
+  /// vert, rouge et rose refusés par `SiteColor` (surligneurs OK / KO). `NULL`
+  /// tant que l'écran ne les a pas saisies — aucune n'est inventée ; le
+  /// resserrement viendra au lot S3r.
+  pickupColorB2b   String? @map("pickup_color_b2b")
+  pickupColorB2c   String? @map("pickup_color_b2c")
+  deliveryColorB2b String? @map("delivery_color_b2b")
+  deliveryColorB2c String? @map("delivery_color_b2c")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -56,6 +95,24 @@ model PickupAddress {
   publicClosures  PublicPickupClosure[]
 
   @@map("pickup_addresses")
+  @@schema("public")
+}
+
+/// D'où vient la marchandise d'un site (plan des sites, §3.1).
+enum SiteSupply {
+  on_site
+  transfer
+
+  @@map("site_supply")
+  @@schema("public")
+}
+
+/// Le mode du transfert interne vers un site servi par transfert (§4).
+enum SiteTransferMode {
+  integrated
+  dedicated
+
+  @@map("site_transfer_mode")
   @@schema("public")
 }
 
@@ -170,7 +227,7 @@ model CustomerCancellationSettings {
   /// colonne garde son nom d'origine, `open_to_b2c`, mais `true` veut dire
   /// « délai imposé », plus « annulation ouverte » — la limite de tous est
   /// le compte à produire, le délai ne fait que l'avancer.)
-  delayEnabled Boolean @default(true)  @map("open_to_b2c")
+  delayEnabled Boolean @default(true) @map("open_to_b2c")
   /// Délai avant l'ancre (retrait / livraison), en heures — 0 à 168 (CHECK).
   hoursBefore  Int     @default(24) @map("hours_before")
 
@@ -237,8 +294,8 @@ model PublicPickupSlotRule {
   id String @id
 
   /// Un créneau appartient TOUJOURS à un comptoir.
-  pickupAddressId String        @map("pickup_address_id")
-  pickupAddress   PickupAddress @relation(fields: [pickupAddressId], references: [id], onDelete: Cascade)
+  pickupAddressId String @map("pickup_address_id")
+  pickupAddress   Site   @relation(fields: [pickupAddressId], references: [id], onDelete: Cascade)
 
   /// `null` = tous les jours ; sinon la clé du jour (`mon`…`sun`), celle du
   /// contrat (`Weekday`, `packages/contracts/src/address.ts`).
@@ -282,8 +339,8 @@ model PublicPickupClosure {
   /// ULID préfixé `ppclose_`.
   id String @id
 
-  pickupAddressId String        @map("pickup_address_id")
-  pickupAddress   PickupAddress @relation(fields: [pickupAddressId], references: [id], onDelete: Cascade)
+  pickupAddressId String @map("pickup_address_id")
+  pickupAddress   Site   @relation(fields: [pickupAddressId], references: [id], onDelete: Cascade)
 
   /// Jours locaux inclusifs, `AAAA-MM-JJ`. Stockés en `DATE` pour qu'aucun
   /// fuseau ne puisse les décaler — un jour de calendrier, pas un instant.

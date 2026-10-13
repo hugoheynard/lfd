@@ -216,10 +216,6 @@ function pickups(resolved: PickupAddressView | null = LABO_POINT): PickupAddress
   return {
     list: () => Promise.resolve([]),
     resolve: () => Promise.resolve(resolved),
-    create: () => Promise.resolve("pickup_1"),
-    update: () => Promise.resolve(),
-    remove: () => Promise.resolve(),
-    setDefault: () => Promise.resolve(),
   };
 }
 

@@ -16,13 +16,16 @@ import { PrismaPickupScheduleRepository } from "./infrastructure/prisma-pickup-s
 import { PrismaPublicPickupScheduleReader } from "./infrastructure/prisma-public-pickup-schedule.reader.js";
 import { AdminPickupAddressesController } from "./http/admin-pickup-addresses.controller.js";
 import { PickupAddressesController } from "./http/pickup-addresses.controller.js";
+import { SitesModule } from "../sites/sites.module.js";
 
 /**
- * **Points de retrait** (globaux) — le fallback d'acheminement tant que la
- * livraison n'existe pas. Exporte `PickupAddressRepository` : le contexte
- * `orders` en a besoin pour figer le snapshot d'une commande retrait.
+ * **Points de retrait** (globaux) — les sites qui remettent, vus du client.
+ * Exporte `PickupAddressRepository` : le contexte `orders` en a besoin pour
+ * figer le snapshot d'une commande retrait. Ses gestes d'écriture passent par
+ * l'agrégat `Site` (`SitesModule`, lot S1), qu'il réexporte.
  */
 @Module({
+  imports: [SitesModule],
   controllers: [PickupAddressesController, AdminPickupAddressesController],
   providers: [
     { provide: PickupAddressRepository, useClass: PrismaPickupAddressRepository },
@@ -41,6 +44,6 @@ import { PickupAddressesController } from "./http/pickup-addresses.controller.js
     // les règles qui les produisent.
     ListPublicPickupSlotsHandler,
   ],
-  exports: [PickupAddressRepository],
+  exports: [PickupAddressRepository, SitesModule],
 })
 export class PickupAddressesModule {}

@@ -395,23 +395,28 @@ le retrait (`handover/channels/commerce/`, sous `handover_counter`), la
 saisie par une query des commandes (sous `b2b_place_order`) ; seul l'écran
 des sites lit et écrit sous `lfc_site_settings`.
 
-### 3.5 Les couleurs : une palette fermée
+### 3.5 Les couleurs : libres, teintes OK / KO refusées (Hugo, 2026-10-13)
 
-« Interdire plutôt que vérifier » (mémoire du dépôt) : une couleur libre
-refusée si elle est « trop proche du vert » est une règle floue et une porte
-à écrire. Une **palette fermée sans vert ni rouge** rend la faute
-**inexprimable**.
+> Remplace la « palette fermée » proposée d'abord (Q-S6) : Hugo a tranché le
+> 2026-10-13 pour des **couleurs libres**, saisies à l'admin.
 
-- Enum Postgres `site_color` : `blue`, `yellow`, `orange`, `grey`, `purple`,
-  `teal`, `brown` (proposition — Q-S6). **Ni `green`, ni `red`, ni `pink`**
-  (surligneurs OK/KO, demande d'origine).
-- Chaque valeur a un token local `--lfc-site-<couleur>` dans
-  `apps/lfd-backoffice-frontend/src/styles.scss`, bâti sur des `--fold-ref-*`
-  comme les `--lfc-stage-*` (l. 127–129). **Fold n'a pas d'orange** (§1.5) :
-  `--lfc-site-orange` est le seul token qui n'a pas de référence fold directe
-  — couleur choisie à l'œil, contraste vérifié en clair et sombre.
-  `lint:fold-tokens` tient les autres. `teal` est un bleu-vert : à retirer si
-  la logistique le confond avec le vert du surligneur.
+- **Stockage** : quatre colonnes `text NULL` sur `pickup_addresses`
+  (`pickup_color_b2b`, `pickup_color_b2c`, `delivery_color_b2b`,
+  `delivery_color_b2c`), forme `#rrggbb` en minuscules tenue **en base** par un
+  `CHECK` (migration `20261013510000`). Pas d'enum `site_color`.
+- **La teinte** est jugée par le value object `SiteColor`
+  (`apps/lfd-api/src/b2b/sites/domain/site-color.ts`) : il normalise en
+  minuscules et refuse, avec un message qui dit « réservé aux surligneurs OK /
+  KO », le **vert** (teinte HSL 75°–165°) et le **rouge / rose** (330°–20°,
+  à cheval sur 0°), dès que la saturation HSL atteint 0,25 — en dessous, c'est
+  un gris teinté, et le gris est une couleur de la demande. Les trois seuils
+  sont des constantes nommées, éprouvées à leurs bornes.
+- Un calcul HSL n'a rien à faire dans une contrainte SQL : la base tient la
+  forme, l'agrégat la teinte. Une écriture qui contourne l'agrégat peut donc
+  poser un vert — elle contournerait aussi tous les autres invariants.
+- Le lot L1 prévoyait des tokens `--lfc-site-*` par valeur de palette : avec
+  des couleurs libres, il est **à revoir** (non tranché ici), et le contraste
+  en clair et sombre ne se vérifie plus une fois pour toutes.
 - Valeurs **saisies à l'écran** après S1 (aucune posée par une migration) : le site du fournil (« Adroit » ?) jaune / orange, Val
   Village jaune / gris — d'après la demande, à faire confirmer (Q3).
 
@@ -761,19 +766,41 @@ Un lot à la fois (mémoire du dépôt). Tailles dites honnêtement : **T1 et T2
 sont le cœur du chantier**, et T1 ne se coupe pas — son étape « étendre »
 sans la composition ne sert à rien en production.
 
-| Lot | Taille | Contenu                                                                                                                                                                                                                                                                                                                      | Migration                                                                                                          | Touche                      |
-| --- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | --------------------------- |
-| S0  | S      | ressource `lfc_site_settings` ajoutée à `StaffResource`, accordée à **aucun** rôle ; bascule : après déploiement, l'admin l'accorde à `/admin/staff-roles`, **puis** S1 met l'écran derrière                                                                                                                                 | additive (valeur d'enum)                                                                                           | sécurité (périmètre)        |
-| S1  | M      | `b2b/sites` (agrégat `Site`, rôles, couleurs nullables, archivage, `transfer_mode`, `counter_setup_minutes`), Réglages › Sites, lecteurs du comptoir et de la saisie hors de l'écran                                                                                                                                         | additive (colonnes, enums)                                                                                         | frontière (canaux)          |
-| S2  | S      | `siteId` dans le snapshot de commande (depuis `pickupAddressId` reçu à la passation), `production_order.site_id`, onglets du comptoir par id ; pas de rattrapage                                                                                                                                                             | additive                                                                                                           | —                           |
-| L1  | S      | fonction pure de catégorie (back-office), tokens `--lfc-site-*`, pastille                                                                                                                                                                                                                                                    | —                                                                                                                  | —                           |
-| S3r | S      | `CHECK` des couleurs après saisie ; lectures par libellé retirées                                                                                                                                                                                                                                                            | contrainte                                                                                                         | —                           |
-| T0  | M      | `dueAtOf` et `requiredBy` calculent l'heure requise depuis les réglages du site (ouverture pros, créneaux publics, mise en place, trajet) ; la clôture la fige dans `production_order.due_at` comme aujourd'hui ; marges intactes. **Dépend de S1** (`counter_setup_minutes`, coordonnées) ; trajet calculé (Q-T11 tranchée) | — (colonnes du site portées par S1)                                                                                | production (échéances)      |
-| T1  | **L**  | `InternalTransfer` + ses commandes ; arrêt `kind = transfer` (temps 1 : colonnes, `CHECK`, index jumeau ; union discriminée dans le domaine) ; chaque famille du §4.4 ; composition intégrée avec repli dédié ; mode dédié                                                                                                   | `String?` + `CHECK` + `DROP NOT NULL` avec le code qui écrit le premier `NULL`, un seul déploiement (CLAUDE.md §0) | migration servie, frontière |
-| T2  | M      | « Remis au site » / « Réceptionner » (manuelle), `TransferStatusReader`, port `handover/channels/delivery/`, `TransferNotReceivedError`                                                                                                                                                                                      | additive (`received_at` du transfert)                                                                              | frontière                   |
-| L2  | M      | `OrderDepartureReader` + tri de la liste ; tri du colisage par `dueAt`                                                                                                                                                                                                                                                       | —                                                                                                                  | frontière (canal)           |
-| L4  | ?      | « Écrire » (Q1), indépendant                                                                                                                                                                                                                                                                                                 | —                                                                                                                  | —                           |
-| L5  | S      | couleur sur les supports imprimés (si Q8 = papier)                                                                                                                                                                                                                                                                           | —                                                                                                                  | —                           |
+| Lot                                                    | Taille | Contenu                                                                                                                                                                                                                                                                                                                      | Migration                                                                                                          | Touche                      |
+| ------------------------------------------------------ | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | --------------------------- |
+| S0 ✅ 2026-10-13 (non commité)                         | S      | ressource `lfc_site_settings` (et `lfc_order_settings`, §5.4) ajoutée à `StaffResource`, accordée à **aucun** rôle ; bascule : après déploiement, l'admin l'accorde à `/admin/staff-roles`, **puis** S1 met l'écran derrière                                                                                                 | additive (valeur d'enum)                                                                                           | sécurité (périmètre)        |
+| S1 ✅ backend 2026-10-13 (non commité ; front à faire) | M      | `b2b/sites` (agrégat `Site`, rôles, couleurs nullables, archivage, `transfer_mode`, `counter_setup_minutes`), Réglages › Sites, lecteurs du comptoir et de la saisie hors de l'écran                                                                                                                                         | additive (colonnes, enums)                                                                                         | frontière (canaux)          |
+| S2                                                     | S      | `siteId` dans le snapshot de commande (depuis `pickupAddressId` reçu à la passation), `production_order.site_id`, onglets du comptoir par id ; pas de rattrapage                                                                                                                                                             | additive                                                                                                           | —                           |
+| L1                                                     | S      | fonction pure de catégorie (back-office), tokens `--lfc-site-*`, pastille                                                                                                                                                                                                                                                    | —                                                                                                                  | —                           |
+| S3r                                                    | S      | `CHECK` des couleurs après saisie ; lectures par libellé retirées                                                                                                                                                                                                                                                            | contrainte                                                                                                         | —                           |
+| T0                                                     | M      | `dueAtOf` et `requiredBy` calculent l'heure requise depuis les réglages du site (ouverture pros, créneaux publics, mise en place, trajet) ; la clôture la fige dans `production_order.due_at` comme aujourd'hui ; marges intactes. **Dépend de S1** (`counter_setup_minutes`, coordonnées) ; trajet calculé (Q-T11 tranchée) | — (colonnes du site portées par S1)                                                                                | production (échéances)      |
+| T1                                                     | **L**  | `InternalTransfer` + ses commandes ; arrêt `kind = transfer` (temps 1 : colonnes, `CHECK`, index jumeau ; union discriminée dans le domaine) ; chaque famille du §4.4 ; composition intégrée avec repli dédié ; mode dédié                                                                                                   | `String?` + `CHECK` + `DROP NOT NULL` avec le code qui écrit le premier `NULL`, un seul déploiement (CLAUDE.md §0) | migration servie, frontière |
+| T2                                                     | M      | « Remis au site » / « Réceptionner » (manuelle), `TransferStatusReader`, port `handover/channels/delivery/`, `TransferNotReceivedError`                                                                                                                                                                                      | additive (`received_at` du transfert)                                                                              | frontière                   |
+| L2                                                     | M      | `OrderDepartureReader` + tri de la liste ; tri du colisage par `dueAt`                                                                                                                                                                                                                                                       | —                                                                                                                  | frontière (canal)           |
+| L4                                                     | ?      | « Écrire » (Q1), indépendant                                                                                                                                                                                                                                                                                                 | —                                                                                                                  | —                           |
+| L5                                                     | S      | couleur sur les supports imprimés (si Q8 = papier)                                                                                                                                                                                                                                                                           | —                                                                                                                  | —                           |
+
+**S0 et S1, côté serveur (bâtis le 2026-10-13).** Migrations
+`20261013500000_les_droits_des_sites_et_des_commandes` (deux valeurs de
+`StaffResource`, accordées à aucun rôle) et
+`20261013510000_le_point_de_retrait_devient_un_site` (types `site_supply`,
+`site_transfer_mode`, neuf colonnes, `CHECK` de forme des couleurs et de
+`counter_setup_minutes ≥ 0`, `dispatches = true` sur le site de départ actuel).
+Le modèle Prisma s'appelle `Site`, la table reste `pickup_addresses`.
+L'API de l'écran est `admin/sites` sous `lfc_site_settings` ; l'ancienne
+`admin/pickup-addresses` (sous `b2b_settings`) reste servie au front, et
+« supprimer » y **archive**. Ce qui n'a pas été bâti, et pourquoi :
+
+- **les lecteurs du comptoir et de la saisie** : inutiles — ils lisent la
+  route **publique** `GET /pickup-addresses`, pas `admin/pickup-addresses`
+  (`b2b/reglages/pickup-addresses.service.ts`, `list()`, vérifié le
+  2026-10-13). L'objection S2 partait d'un fait faux ; mettre l'écran sous
+  `lfc_site_settings` ne leur coupe rien ;
+- **le refus de retirer `dispatches` au site de départ** et le filtre « seuls
+  les sites qui expédient » de `DepartureCandidatesReader` : le §3.1 fait
+  déclarer `DepartureSiteReader` par le commerce et l'implémenter par la
+  livraison — l'implémentation importerait `b2b`, ce que la matrice interdit
+  (`delivery → b2b` ✗). En attente de décision.
 
 L'ancien T3 (mode dédié seul) est **absorbé par T1** : avec un arrêt unique,
 la tournée dédiée est une tournée ordinaire à un arrêt, et le repli
@@ -798,7 +825,8 @@ Restent :
 - **Q-S1** — Garder la table `pickup_addresses` sous le modèle `Site` ?
 - **Q-S3** — Relier un `PointOfSale` (référentiel) à un site ?
 - **Q-S4** — Un second fournil est-il envisagé ?
-- **Q-S6** — La palette : `blue, yellow, orange, grey, purple, teal, brown` ?
+- ~~**Q-S6**~~ — ✅ (Hugo, 2026-10-13) : **pas de palette** — couleurs libres
+  saisies à l'admin, vert / rouge / rose refusés (§3.5).
 - **Q-S7** — Les couleurs de livraison sur le site qui expédie (§5.3) ?
 - ~~**Q-T3**~~ — ✅ (Hugo, 2026-10-13) : si le transfert du jour est déjà
   parti et que la commande est pour **le jour même**, l'app prévoit **un

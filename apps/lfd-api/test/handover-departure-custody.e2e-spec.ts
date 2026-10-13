@@ -122,9 +122,9 @@ function ulid(): string {
 
 /** Passe et règle une commande de croissants pour le jour ; rend son id commerce. */
 async function place(fulfillment: "pickup" | "delivery"): Promise<string> {
-  const point = await ctx.prisma.pickupAddress.findFirst({ select: { id: true } });
+  const point = await ctx.prisma.site.findFirst({ select: { id: true } });
   const pickupId =
-    point?.id ?? (await ctx.prisma.pickupAddress.create({ data: { ...SITE, isDefault: true } })).id;
+    point?.id ?? (await ctx.prisma.site.create({ data: { ...SITE, isDefault: true } })).id;
   const where =
     fulfillment === "pickup"
       ? { pickupAddressId: pickupId }

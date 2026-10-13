@@ -584,7 +584,7 @@ describe("les courriels d'une commande", () => {
     await ctx.prisma.deliveryZone.create({
       data: { postalPrefixes: ["73150"], label: "Val d'Isère", feeMode: "amount", feeValue: 2000 },
     });
-    const point = await ctx.prisma.pickupAddress.create({
+    const point = await ctx.prisma.site.create({
       data: { ...SITE, isDefault: true },
       select: { id: true },
     });
@@ -665,7 +665,7 @@ describe("les courriels d'une commande", () => {
 describe("le journal d'une commande", () => {
   async function placeAndReady(): Promise<string> {
     await createUser(ctx.prisma, { auth0Sub: MEMBER, email: "camille@halles.test" });
-    const point = await ctx.prisma.pickupAddress.create({
+    const point = await ctx.prisma.site.create({
       data: { ...SITE, isDefault: true },
       select: { id: true },
     });
@@ -766,10 +766,9 @@ describe("le journal d'une commande", () => {
  */
 describe("le plan du soir", () => {
   async function place(day: string): Promise<string> {
-    const point = await ctx.prisma.pickupAddress.findFirst({ select: { id: true } });
+    const point = await ctx.prisma.site.findFirst({ select: { id: true } });
     const id =
-      point?.id ??
-      (await ctx.prisma.pickupAddress.create({ data: { ...SITE, isDefault: true } })).id;
+      point?.id ?? (await ctx.prisma.site.create({ data: { ...SITE, isDefault: true } })).id;
     const placed = jsonBody<{ orderNumber: string }>(
       await ctx
         .asSub(MEMBER)
@@ -1187,7 +1186,7 @@ describe("la file de remise", () => {
 
   beforeEach(async () => {
     await createUser(ctx.prisma, { auth0Sub: MEMBER, email: "camille@halles.test" });
-    const labo = await ctx.prisma.pickupAddress.create({
+    const labo = await ctx.prisma.site.create({
       data: {
         label: "Le Labo",
         ligne1: "1 rue du Four",
@@ -1198,7 +1197,7 @@ describe("la file de remise", () => {
       },
       select: { id: true },
     });
-    const village = await ctx.prisma.pickupAddress.create({
+    const village = await ctx.prisma.site.create({
       data: {
         label: "Le Village",
         ligne1: "2 place du Marché",

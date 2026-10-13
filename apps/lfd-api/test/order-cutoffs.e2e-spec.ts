@@ -77,7 +77,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
-  const point = await ctx.prisma.pickupAddress.create({
+  const point = await ctx.prisma.site.create({
     data: { ...LABO, isDefault: true },
     select: { id: true },
   });
@@ -730,7 +730,7 @@ describe("le retrait d'une règle au journal", () => {
       .send({ ...rule, graceMinutes: 30 })
       .expect(201);
     const { id } = created.body as { id: string };
-    await ctx.prisma.pickupAddress.update({ where: { id: pickupId }, data: { label: "Atelier" } });
+    await ctx.prisma.site.update({ where: { id: pickupId }, data: { label: "Atelier" } });
 
     await ctx.asSub(STAFF).delete(`/admin/order-cutoffs/${id}`).expect(204);
 

@@ -1,7 +1,8 @@
 /**
  * E2E des **points de retrait** (globaux) : lecture publique + gestion staff
- * (ajouter / défaut / supprimer). Éprouve les invariants tenus par le repository :
- * un seul défaut, au moins un point (refus de supprimer le dernier).
+ * (ajouter / défaut / supprimer — qui archive depuis le lot S1 des sites).
+ * Éprouve les invariants de l'agrégat `Site` : un seul défaut, au moins un
+ * point (le défaut ne s'archive pas).
  */
 import type { CreatedPickupResponse, PickupAddressView } from "@lfd/contracts";
 
@@ -73,16 +74,31 @@ describe("points de retrait", () => {
     expect(points.find((p) => p.id === first)?.isDefault).toBe(false);
   });
 
-  it("supprimer le défaut promeut un autre point", async () => {
-    const first = await create("Labo Paris");
+  /**
+   * Depuis le lot S1 des sites (2026-10-13), « supprimer » ARCHIVE : la ligne
+   * reste (commandes, abonnements et départ la référencent), le point quitte
+   * la liste publique. Le défaut ne s'archive plus — il ne « promeut » donc
+   * plus personne : on désigne d'abord un autre défaut.
+   */
+  it("supprimer un point l'archive : il quitte la liste publique, la ligne reste", async () => {
+    await create("Labo Paris");
     const second = await create("Labo Lyon");
 
-    await staff().delete(`/admin/pickup-addresses/${first}`).expect(204);
+    await staff().delete(`/admin/pickup-addresses/${second}`).expect(204);
 
-    const points = await list();
-    expect(points).toHaveLength(1);
-    expect(points[0]?.id).toBe(second);
-    expect(points[0]?.isDefault).toBe(true);
+    expect((await list()).map((p) => p.label)).toEqual(["Labo Paris"]);
+    const row = await ctx.prisma.site.findUniqueOrThrow({ where: { id: second } });
+    expect(row.archivedAt).not.toBeNull();
+  });
+
+  it("refuse de supprimer le défaut (409), et le dernier point avec lui", async () => {
+    const first = await create("Labo Paris");
+    await create("Labo Lyon");
+
+    const response = await staff().delete(`/admin/pickup-addresses/${first}`);
+
+    expect(response.status).toBe(409);
+    expect(await list()).toHaveLength(2);
   });
 
   it("refuse de supprimer le dernier point (409)", async () => {

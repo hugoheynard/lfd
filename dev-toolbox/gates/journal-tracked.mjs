@@ -103,7 +103,7 @@ const ACCOUNT_ZONE = "account";
  * n'ont pas de chemin client — un client ne pose pas une zone de livraison. Là
  * où `b2b/account` mêle les deux et doit trier, ici tout est staff.
  */
-const SETTINGS_ZONES = ["delivery-zones", "pickup-addresses", "order-cutoffs"];
+const SETTINGS_ZONES = ["delivery-zones", "pickup-addresses", "sites", "order-cutoffs"];
 
 /**
  * **La vitrine** (2026-09-24, `documentation/commandes/boutique-rayon-layout.md`,

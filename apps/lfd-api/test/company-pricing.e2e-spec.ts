@@ -711,7 +711,7 @@ describe("🔴 reposer sur une période close", () => {
     const company = await createCompany(ctx.prisma);
     const buyer = await createUser(ctx.prisma, { auth0Sub: "auth0|acheteur_mercuriale" });
     await attachTo(ctx.prisma, buyer.id, company.id, CustomerRole.owner);
-    const pickup = await ctx.prisma.pickupAddress.create({
+    const pickup = await ctx.prisma.site.create({
       data: {
         label: "Labo",
         ligne1: "La Daille",

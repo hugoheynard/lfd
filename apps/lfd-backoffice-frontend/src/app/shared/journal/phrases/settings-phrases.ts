@@ -145,6 +145,11 @@ export const SETTINGS_PHRASES = {
   'pickup_address.created': onSetting('a créé', PICKUP),
   'pickup_address.updated': onSetting('a modifié', PICKUP),
   'pickup_address.removed': onSetting('a supprimé', PICKUP),
+  // Le point de retrait est devenu un site (2026-10-13, lot S1) : on archive,
+  // on règle ses rôles et ses couleurs. Le détail se lit sur la fiche du site.
+  'pickup_address.archived': onSetting('a archivé', PICKUP),
+  'pickup_address.roles_set': onSetting('a réglé les rôles', OF_PICKUP),
+  'pickup_address.colors_set': onSetting('a réglé les couleurs', OF_PICKUP),
   'pickup_address.default_set': (fact) =>
     byActor(
       fact,

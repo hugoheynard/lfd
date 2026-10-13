@@ -1,5 +1,6 @@
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
+import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
 import { PickupDiscountWithoutAudienceError } from "../../domain/pickup-errors.js";
 import { CreatePickupAddressCommand } from "../create-pickup-address.command.js";
 import { CreatePickupAddressHandler } from "../create-pickup-address.handler.js";
@@ -10,6 +11,7 @@ describe("CreatePickupAddressHandler — les clientèles de la remise", () => {
     const points = new StoredPoints(null);
     const handler = new CreatePickupAddressHandler(
       points,
+      new FixedIdGenerator(),
       new RecordingPublisher(),
       new DirectUnitOfWork(),
     );
@@ -31,6 +33,7 @@ describe("CreatePickupAddressHandler — le point GPS", () => {
   function create(points: StoredPoints, gps?: { lat: number; lng: number }): Promise<string> {
     return new CreatePickupAddressHandler(
       points,
+      new FixedIdGenerator(),
       new RecordingPublisher(),
       new DirectUnitOfWork(),
     ).execute(

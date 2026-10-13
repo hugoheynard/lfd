@@ -57,7 +57,7 @@ beforeEach(async () => {
 
 /** Une commande de retrait PAYÉE, passée pour la société du membre : `pro`. */
 async function placeForCompany(quantity: number): Promise<void> {
-  const point = await ctx.prisma.pickupAddress.findFirstOrThrow({ select: { id: true } });
+  const point = await ctx.prisma.site.findFirstOrThrow({ select: { id: true } });
   await ctx
     .asSub(PRO_MEMBER)
     .post(`/orders`)

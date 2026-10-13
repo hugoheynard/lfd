@@ -24,6 +24,13 @@ import { SetDefaultPickupAddressCommand } from "../../../pickup-addresses/applic
 import { SetDefaultPickupAddressHandler } from "../../../pickup-addresses/application/set-default-pickup-address.handler.js";
 import { UpdatePickupAddressCommand } from "../../../pickup-addresses/application/update-pickup-address.command.js";
 import { UpdatePickupAddressHandler } from "../../../pickup-addresses/application/update-pickup-address.handler.js";
+import { FixedClock } from "../../../../platform/time/fixed-clock.js";
+import { PickupDiscount } from "../../../pickup-addresses/domain/pickup-discount.js";
+import {
+  InMemorySites,
+  PLACE,
+  storedSite,
+} from "../../../sites/application/__tests__/site-doubles.js";
 import { DeliveryZoneNotFoundError } from "../../domain/delivery-zone-errors.js";
 import { DeliveryZoneRepository } from "../../domain/delivery-zone.repository.js";
 import { CreateDeliveryZoneCommand } from "../create-delivery-zone.command.js";
@@ -96,12 +103,21 @@ function pickups(stored: PickupAddressView | null = STORED_PICKUP): PickupAddres
   return {
     list: () => Promise.resolve([] as readonly PickupAddressView[]),
     resolve: () => Promise.resolve(stored),
-    create: () => Promise.resolve("pickup_2"),
-    update: () => Promise.resolve(),
-    remove: () => Promise.resolve(),
-    setDefault: () => Promise.resolve(),
   };
 }
+
+/** Le site « pickup_2 » en base, ni défaut ni archivé ; le défaut est ailleurs. */
+function sites(): InMemorySites {
+  return new InMemorySites(
+    storedSite("pickup_2", {
+      place: { ...PLACE, discount: PickupDiscount.of(null, { b2b: true, b2c: true }) },
+    }),
+    storedSite("pickup_1", { isDefault: true }),
+  );
+}
+
+/** Un instant quelconque : l'archivage le date, aucun test ne le compare à l'horloge. */
+const NOW = new FixedClock(new Date(0));
 
 /** La règle telle qu'elle est en base avant son retrait : le lundi, au laboratoire. */
 const STORED_CUTOFF: OrderCutoffView = {
@@ -184,7 +200,7 @@ describe("Les réglages commerciaux au journal", () => {
   it("emporte la REMISE d'un point de retrait et ses clientèles — c'est la décision commerciale", async () => {
     const events = new RecordingPublisher();
 
-    await new UpdatePickupAddressHandler(pickups(), events, new DirectUnitOfWork()).execute(
+    await new UpdatePickupAddressHandler(sites(), events, new DirectUnitOfWork()).execute(
       new UpdatePickupAddressCommand("pickup_2", PICKUP),
     );
 
@@ -204,7 +220,7 @@ describe("Les réglages commerciaux au journal", () => {
   it("nomme le changement de point par défaut", async () => {
     const events = new RecordingPublisher();
 
-    await new SetDefaultPickupAddressHandler(pickups(), events, new DirectUnitOfWork()).execute(
+    await new SetDefaultPickupAddressHandler(sites(), events, new DirectUnitOfWork()).execute(
       new SetDefaultPickupAddressCommand("pickup_2"),
     );
 
@@ -212,21 +228,23 @@ describe("Les réglages commerciaux au journal", () => {
     expect(events.traced[0]?.journalFact().payload).toEqual({ subjectLabel: "Laboratoire" });
   });
 
-  it("garde le nom d'un point retiré, et refuse un point inconnu sans fait", async () => {
+  /**
+   * Depuis le lot S1 des sites (2026-10-13), « supprimer » ARCHIVE : le fait
+   * dit `archived`, et garde toujours le nom du point.
+   */
+  it("garde le nom d'un point archivé, et refuse un point inconnu sans fait", async () => {
     const events = new RecordingPublisher();
+    const remove = (id: string): Promise<void> =>
+      new RemovePickupAddressHandler(sites(), NOW, events, new DirectUnitOfWork()).execute(
+        new RemovePickupAddressCommand(id),
+      );
 
-    await new RemovePickupAddressHandler(pickups(), events, new DirectUnitOfWork()).execute(
-      new RemovePickupAddressCommand("pickup_2"),
-    );
-    await expect(
-      new RemovePickupAddressHandler(pickups(null), events, new DirectUnitOfWork()).execute(
-        new RemovePickupAddressCommand("pickup_absent"),
-      ),
-    ).rejects.toBeInstanceOf(PickupAddressNotFoundError);
+    await remove("pickup_2");
+    await expect(remove("pickup_absent")).rejects.toBeInstanceOf(PickupAddressNotFoundError);
 
     expect(events.traced.map((event) => event.journalFact())).toEqual([
       {
-        type: "pickup_address.removed",
+        type: "pickup_address.archived",
         subjectType: "pickup_address",
         subjectId: "pickup_2",
         payload: { subjectLabel: "Laboratoire" },

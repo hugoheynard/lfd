@@ -199,7 +199,7 @@ async function trimStation(prisma: PrismaClient): Promise<{ pickupPoints: number
     where: { preferredPickupAddress: { label: { notIn: [...SEEDED_POINT_LABELS] } } },
     data: { preferredPickupAddressId: null },
   });
-  const points = await prisma.pickupAddress.deleteMany({
+  const points = await prisma.site.deleteMany({
     where: { label: { notIn: [...SEEDED_POINT_LABELS] } },
   });
   const zones = await prisma.deliveryZone.deleteMany({

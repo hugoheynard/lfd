@@ -95,7 +95,7 @@ async function seed(status: CompanyStatus = "active"): Promise<string> {
   const user = await createUser(ctx.prisma, { auth0Sub: CLIENT });
   const company = await createCompany(ctx.prisma, { status });
   await attachTo(ctx.prisma, user.id, company.id, CustomerRole.owner);
-  const point = await ctx.prisma.pickupAddress.create({
+  const point = await ctx.prisma.site.create({
     data: {
       label: "Labo",
       ligne1: "1 rue du Four",

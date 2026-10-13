@@ -2,15 +2,19 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
-import { PickupAddressRemovedEvent } from "../domain/pickup-address.events.js";
-import { PickupAddressRepository } from "../domain/pickup-address.repository.js";
-import { pickupLabel } from "./pickup-label.js";
+import { Clock } from "../../../platform/time/clock.js";
+import { SiteArchivedEvent } from "../../sites/domain/site.events.js";
+import { SiteRepository } from "../../sites/domain/site.repository.js";
+import { PickupAddressNotFoundError } from "../domain/pickup-errors.js";
 import { RemovePickupAddressCommand } from "./remove-pickup-address.command.js";
 
 /**
- * Handler **staff** : retire un point de retrait. Mince : il délègue au
- * repository, qui tient les invariants (un seul défaut, au moins un point). Le
- * mur est l'`AdminAuthGuard` sur la route.
+ * Handler **staff** : « supprimer » un point de retrait **l'archive** (lot S1
+ * des sites, 2026-10-13, objection S1) — une ligne référencée par des
+ * commandes, des abonnements et le départ des tournées ne se détruit pas.
+ *
+ * L'agrégat refuse d'archiver le site par défaut et celui qui expédie : le
+ * « dernier point » ne peut donc plus disparaître, puisqu'il est le défaut.
  */
 @CommandHandler(RemovePickupAddressCommand)
 export class RemovePickupAddressHandler implements ICommandHandler<
@@ -18,16 +22,27 @@ export class RemovePickupAddressHandler implements ICommandHandler<
   void
 > {
   constructor(
-    private readonly pickups: PickupAddressRepository,
+    private readonly sites: SiteRepository,
+    private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
   ) {}
 
+  /**
+   * @throws {PickupAddressNotFoundError} l'`id` n'existe pas.
+   * @throws {DefaultSiteArchiveError} c'est le site par défaut.
+   * @throws {DispatchingSiteArchiveError} les livraisons en partent.
+   * @throws {ArchivedSiteError} il est déjà archivé.
+   */
   async execute(command: RemovePickupAddressCommand): Promise<void> {
     await this.uow.run(async () => {
-      const label = await pickupLabel(this.pickups, command.id);
-      await this.pickups.remove(command.id);
-      await this.events.publishTraced(new PickupAddressRemovedEvent(command.id, label));
+      const site = await this.sites.load(command.id);
+      if (site === null) {
+        throw new PickupAddressNotFoundError(command.id);
+      }
+      site.archive(this.clock.now());
+      await this.sites.save(site);
+      await this.events.publishTraced(new SiteArchivedEvent(site.id, site.label));
     });
   }
 }

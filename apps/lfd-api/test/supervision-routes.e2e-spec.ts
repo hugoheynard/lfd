@@ -143,9 +143,8 @@ async function supervisorOnly(): Promise<void> {
 
 /** Une commande de retrait du jour servi, payée. */
 async function place(lines: readonly { sku: string; quantity: number }[]): Promise<void> {
-  const point = await ctx.prisma.pickupAddress.findFirst({ select: { id: true } });
-  const id =
-    point?.id ?? (await ctx.prisma.pickupAddress.create({ data: { ...SITE, isDefault: true } })).id;
+  const point = await ctx.prisma.site.findFirst({ select: { id: true } });
+  const id = point?.id ?? (await ctx.prisma.site.create({ data: { ...SITE, isDefault: true } })).id;
   await ctx
     .asSub(MEMBER)
     .post(`/orders`)

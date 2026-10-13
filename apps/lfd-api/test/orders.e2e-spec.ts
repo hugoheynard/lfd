@@ -102,7 +102,7 @@ async function seedCompany(status: CompanyStatus): Promise<string> {
 
 /** Sème le point de retrait par défaut (table globale). */
 async function seedPickup(): Promise<string> {
-  const point = await ctx.prisma.pickupAddress.create({
+  const point = await ctx.prisma.site.create({
     data: { ...LABO, isDefault: true },
     select: { id: true },
   });

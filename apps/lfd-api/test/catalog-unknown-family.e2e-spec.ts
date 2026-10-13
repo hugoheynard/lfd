@@ -118,7 +118,7 @@ async function seedOrphan(): Promise<void> {
 }
 
 async function seedBuyer(): Promise<{ companyId: string; buyerId: string; pickupId: string }> {
-  const point = await ctx.prisma.pickupAddress.create({
+  const point = await ctx.prisma.site.create({
     data: {
       label: "Labo",
       ligne1: "1 rue du Four",
