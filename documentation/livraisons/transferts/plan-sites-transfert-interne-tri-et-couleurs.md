@@ -386,12 +386,11 @@ panneau, par la règle « page ou panneau » du `CLAUDE.md` du back-office
 > site existant (un seul « Ajouter » à la création). Identité et adresse,
 > heures et réduction passent par l'unique `PATCH` du lieu : chaque bouton y
 > renvoie l'état ENREGISTRÉ pour le reste, et n'écrase donc pas la saisie
-> d'une autre carte. Une quatrième sous-carte, **« Heures limites de
-> commande »** (2026-10-13), lit et écrit les règles de CE site par la route
-> existante `admin/order-cutoffs` — sous `b2b_settings`, droit inchangé :
-> l'écran des sites est sous `lfc_site_settings`, et un rôle sans
-> `b2b_settings:read` voit la sous-carte le dire. La règle par défaut s'y lit
-> et se règle sur l'ancien écran (`/b2b/reglages/heures-limites`), qui reste.
+> d'une autre carte. _(2026-10-13, Hugo : la sous-carte « Heures limites de
+> commande », posée le jour même, est retirée — l'heure limite par point de
+> retrait appartient à `OrderCutoff`, en démontage
+> (`documentation/commandes/demontage-order-cutoff.md`), et la limite générale
+> ira dans Réglages › Commandes.)_
 > L'en-tête de la page porte le nom, l'adresse en une ligne et le statut, et
 > n'enregistre rien ; « Identité et adresse » a sa carte et son bouton
 > (« Ajouter » à la création). L'en-tête de la carte des rôles porte des badges — les
@@ -820,6 +819,12 @@ budget de 1,30 Mo).
   ressource dans le même lot.
 - **Lot S0** porte les deux ressources ; **lot O1** (S) déplace l'écran
   Commandes et change sa ressource.
+- **O1 a son propre plan depuis le 2026-10-13** :
+  [`../../commandes/plan-reglages-commandes.md`](../../commandes/plan-reglages-commandes.md)
+  — trois entrées (Ouverture du e-commerce, Heure limite de commande,
+  Annulation de commande), la limite générale face au démontage
+  d'`OrderCutoff`, et le geste de bascule. Ce paragraphe n'en est que
+  l'annonce.
 
 ## 6. Lots
 
