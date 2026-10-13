@@ -233,9 +233,51 @@
         ></a>
       }
 
+      @if (canSeeShopManagement()) {
+        <!-- GESTION BOUTIQUE — ce qu'on met en avant, et quand (Hugo,
+             2026-10-13) : les opérations datées, venues du rail du Catalogue,
+             et les promotions (l'ancienne « Tarification B2B »), venues de
+             celui de l'E-commerce. Chaque entrée garde le droit de sa route ;
+             les adresses `/pim/operations` et `/b2b/tarification` restent,
+             elles vivent dans des favoris. -->
+        <fold-menu-section
+          label="Gestion Boutique"
+          [color]="shopManagementTint"
+          collapsible
+          [collapsed]="menuFolded('shop-management')"
+          (collapsedChange)="foldMenu('shop-management', $event)"
+        >
+          @if (canSeePim()) {
+            <a
+              fold-menu-item
+              icon="gift"
+              label="Opérations datées"
+              routerLink="/pim/operations"
+              routerLinkActive
+              #operationsRla="routerLinkActive"
+              [active]="operationsRla.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
+          @if (canSeeSettings()) {
+            <a
+              fold-menu-item
+              icon="tag"
+              label="Promotions"
+              routerLink="/b2b/tarification"
+              routerLinkActive
+              #promotionsRla="routerLinkActive"
+              [active]="promotionsRla.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
+        </fold-menu-section>
+      }
+
       @if (canSeeCommunication()) {
         <!-- COMMUNICATION — ce que la boutique MONTRE et ce qu'elle DIT : sa
-             vitrine, et ses textes. Une section du rail principal plutôt qu'un
+             vitrine, et ses textes (la Médiathèque en est sortie le
+             2026-10-13, Hugo). Une section du rail principal plutôt qu'un
              recoin de l'E-commerce (Hugo, 2026-10-12) : on y vient pour écrire,
              pas pour régler ce qu'on vend. Sous le droit de la vitrine. -->
         <!-- Le rose (Hugo, 2026-10-12 : « un rose pâle ») : fold n'en a pas ; il
@@ -249,27 +291,6 @@
           [collapsed]="menuFolded('communication')"
           (collapsedChange)="foldMenu('communication', $event)"
         >
-          @if (canSeeMedia()) {
-            <!-- LA MÉDIATHÈQUE — le fonds d'images, indépendamment de ce qui
-                 l'affiche. Entrée de premier niveau, juste après le PIM : c'est là
-                 qu'on va chercher une photo, et la bibliothèque n'appartient à
-                 aucun référentiel — les fiches en portent, les familles aussi, les
-                 contenus de la vitrine en porteront.
-
-                 `media_library:read`, le mur que la route serveur oppose
-                 (`@AdminSurface("media_library")`, depuis le 2026-09-23 ; garde
-                 réaligné le 2026-10-02 — il demandait encore `pim_catalog`). -->
-            <a
-              fold-menu-item
-              icon="image"
-              label="Médiathèque"
-              routerLink="/mediatheque"
-              routerLinkActive
-              #mediaRla="routerLinkActive"
-              [active]="mediaRla.isActive"
-              (click)="mobileNavOpen.set(false)"
-            ></a>
-          }
           @if (canSeeStorefront()) {
             <a
               fold-menu-item
@@ -293,6 +314,29 @@
             ></a>
           }
         </fold-menu-section>
+      }
+
+      @if (canSeeMedia()) {
+        <!-- LA MÉDIATHÈQUE — le fonds d'images, indépendamment de ce qui
+             l'affiche : la bibliothèque n'appartient à aucun référentiel — les
+             fiches en portent, les familles aussi, les contenus de la vitrine
+             en porteront. Sortie de la section Communication le 2026-10-13
+             (Hugo) : entrée de premier niveau, juste au-dessus de la
+             Comptabilité.
+
+             `media_library:read`, le mur que la route serveur oppose
+             (`@AdminSurface("media_library")`, depuis le 2026-09-23 ; garde
+             réaligné le 2026-10-02 — il demandait encore `pim_catalog`). -->
+        <a
+          fold-menu-item
+          icon="image"
+          label="Médiathèque"
+          routerLink="/mediatheque"
+          routerLinkActive
+          #mediaRla="routerLinkActive"
+          [active]="mediaRla.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
       }
 
       @if (canSeeAccounting()) {
@@ -809,24 +853,38 @@
           }
         </fold-nav-group>
       }
-      @if (canSeeCommunication()) {
+      @if (canSeeShopManagement()) {
         <!-- La MÊME section qu'au rail : les deux arbres ne partagent pas leur modèle. -->
-        <fold-nav-group icon="edit" label="Communication" [entryCountLabel]="entriesLabel">
-          @if (canSeeMedia()) {
-            <!-- La MÊME entrée qu'au rail. Deux arbres, deux modèles : une entrée
-                 posée d'un seul côté est invisible de l'autre, et c'est déjà
-                 arrivé. -->
+        <fold-nav-group icon="tag" label="Gestion Boutique" [entryCountLabel]="entriesLabel">
+          @if (canSeePim()) {
             <a
               fold-nav-tile
-              icon="image"
-              label="Médiathèque"
-              routerLink="/mediatheque"
+              icon="gift"
+              label="Opérations datées"
+              routerLink="/pim/operations"
               routerLinkActive
-              #mediaTile="routerLinkActive"
-              [active]="mediaTile.isActive"
+              #operationsTile="routerLinkActive"
+              [active]="operationsTile.isActive"
               (click)="mobileNavOpen.set(false)"
             ></a>
           }
+          @if (canSeeSettings()) {
+            <a
+              fold-nav-tile
+              icon="tag"
+              label="Promotions"
+              routerLink="/b2b/tarification"
+              routerLinkActive
+              #promotionsTile="routerLinkActive"
+              [active]="promotionsTile.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
+        </fold-nav-group>
+      }
+      @if (canSeeCommunication()) {
+        <!-- La MÊME section qu'au rail : les deux arbres ne partagent pas leur modèle. -->
+        <fold-nav-group icon="edit" label="Communication" [entryCountLabel]="entriesLabel">
           @if (canSeeStorefront()) {
             <a
               fold-nav-tile
@@ -850,6 +908,21 @@
             ></a>
           }
         </fold-nav-group>
+      }
+      @if (canSeeMedia()) {
+        <!-- La MÊME entrée qu'au rail, de premier niveau depuis le 2026-10-13
+             (Hugo). Deux arbres, deux modèles : une entrée posée d'un seul côté
+             est invisible de l'autre, et c'est déjà arrivé. -->
+        <a
+          fold-nav-tile
+          icon="image"
+          label="Médiathèque"
+          routerLink="/mediatheque"
+          routerLinkActive
+          #mediaTile="routerLinkActive"
+          [active]="mediaTile.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
       }
       @if (canSeeAccounting()) {
         <fold-nav-group icon="receipt" label="Comptabilité" [entryCountLabel]="entriesLabel">

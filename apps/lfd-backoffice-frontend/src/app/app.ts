@@ -306,18 +306,30 @@ export class App {
   protected readonly communicationTint =
     'color-mix(in oklab, var(--fold-ref-red-450), var(--fold-ref-grape-500) 45%)';
 
+  /**
+   * La section **Gestion Boutique** (Hugo, 2026-10-13) : les opérations
+   * datées, sous le mur du référentiel (`pim_catalog:read`, celui de
+   * `/pim`), et les promotions, sous celui de l'espace E-commerce
+   * (`b2b_settings:read`, celui de `/b2b`). Elle existe dès que l'une de ses
+   * entrées est ouverte ; chacune garde le droit de sa route.
+   */
+  protected readonly canSeeShopManagement = computed(
+    () => this.canSeePim() || this.canSeeSettings(),
+  );
+  /** La teinte de la section Gestion Boutique : une sarcelle fold. */
+  protected readonly shopManagementTint = 'var(--fold-ref-teal-550)';
+
   /** La vitrine et les textes de la boutique : le droit de la vitrine. */
   protected readonly canSeeStorefront = computed(() => this.permissions.can('b2b_storefront:read'));
   /**
-   * La section **Communication** : la médiathèque, la vitrine et les textes
-   * de la boutique (Hugo, 2026-10-12). Elle existe dès que l'une de ses
+   * La section **Communication** : la vitrine et les textes de la boutique
+   * (Hugo, 2026-10-12 ; la médiathèque en est sortie le 2026-10-13, au
+   * premier niveau, au-dessus de la Comptabilité). Elle existe dès que l'une de ses
    * entrées est ouverte ; chacune garde son droit. Elle ne dépend pas des
    * Réglages (`b2b_settings`), sous lesquels le lanceur mobile cachait la
    * vitrine à qui ne l'avait pas.
    */
-  protected readonly canSeeCommunication = computed(
-    () => this.canSeeMedia() || this.canSeeStorefront(),
-  );
+  protected readonly canSeeCommunication = computed(() => this.canSeeStorefront());
 
   /**
    * **Outils agent** — l'ÉCRITURE du catalogue, pas sa lecture, et c'est la

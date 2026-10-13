@@ -496,17 +496,10 @@ export const PIM_VIEWS: readonly WorkspaceView[] = [
     icon: 'category',
     section: 'Catalogue',
   },
-  // Les opérations datées : une sélection d'articles bornée dans le temps.
-  // Au Catalogue, parce qu'on y CHOISIT des articles — rien n'y est diffusé
-  // avant la réception au commerce. Une seule table nourrit le rail ET le
-  // lanceur mobile (`app.html`, `pimViews()`), d'où une seule entrée.
-  {
-    key: 'operations',
-    label: 'Opérations',
-    link: '/pim/operations',
-    icon: 'gift',
-    section: 'Catalogue',
-  },
+  // « Opérations » est partie en Gestion Boutique le 2026-10-13 (Hugo :
+  // « une section Gestion Boutique dans laquelle on met opérations datées ») :
+  // elle est au rail principal et au lanceur mobile, dans `app.html`, sous
+  // « Opérations datées ». La route `/pim/operations` reste sous le mur du PIM.
   {
     key: 'revisions',
     label: 'Révisions',
@@ -675,13 +668,10 @@ export const B2B_VIEWS: readonly WorkspaceView[] = [
     icon: 'package',
     section: 'Catalogue',
   },
-  {
-    key: 'tarification',
-    label: 'Tarification B2B',
-    link: '/b2b/tarification',
-    icon: 'tag',
-    section: 'Tarification',
-  },
+  // « Tarification B2B » est partie en Gestion Boutique le 2026-10-13 (Hugo),
+  // renommée « Promotions » : elle est au rail principal et au lanceur mobile,
+  // dans `app.html`. La section « Tarification » du rail, vide sans elle, a
+  // disparu. L'adresse `/b2b/tarification` reste, elle vit dans des favoris.
   {
     key: 'app-footer',
     label: 'App footer',

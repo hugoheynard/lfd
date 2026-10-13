@@ -198,7 +198,7 @@ export const b2bRoutes: Routes = [
       },
       {
         path: 'tarification',
-        title: 'Tarification B2B — LFC B2B admin',
+        title: 'Promotions — LFC B2B admin',
         loadComponent: () =>
           import('./tarification/tarification-page').then((m) => m.TarificationPage),
       },
@@ -207,7 +207,7 @@ export const b2bRoutes: Routes = [
         // même prix — l'une pour décider aujourd'hui, l'autre pour comprendre ce
         // qui s'est passé. Une route propre les rend partageables par lien.
         path: 'tarification/frise',
-        title: 'Frise tarifaire — LFC B2B admin',
+        title: 'Frise des promotions — LFC B2B admin',
         loadComponent: () => import('./tarification/frise/frise-page').then((m) => m.FrisePage),
       },
       {
