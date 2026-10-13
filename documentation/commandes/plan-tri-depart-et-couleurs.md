@@ -46,10 +46,12 @@
 **Après la contradiction de `vitruve` (2026-10-13, nuit) — Hugo : « fais un
 maximum de choses » :**
 
-- **Pas de couleur sur le bon de commande** : il est figé à la passation,
-  archivé et envoyé au client, sans version staff
-  (`order-sheet-archive.service.ts`) — y mettre le code couleur interne le
-  donnerait au client et le gèlerait ;
+- ~~Pas de couleur sur le bon~~ — **revu par Hugo le même soir** : la
+  couleur va sur le bon, en **trait épais entre le numéro de commande et
+  « Bon de commande »**. Assumé et dit : le bon est figé à la passation,
+  archivé et envoyé au client (`order-sheet-archive.service.ts`) — la couleur
+  y est donc celle **du moment de la passation**, le client la voit, et les
+  bons déjà émis n'en ont pas. Sans site ou sans couleur : pas de trait ;
 - **papier** : étiquette de bac (HTML imprimé par le front, donc L1b) = un
   carré dans le coin opposé au code ; feuille de tournée = un carré en tête de
   **chaque arrêt** (une tournée mélange plusieurs catégories) ; feuille de
