@@ -1,6 +1,8 @@
-# Réglages › Commandes — ouverture, heure limite et annulation sous `lfc_order_settings`
+# Réglages › Commandes — ouverture, heure limite et annulation
 
-**Statut** : 📐 plan, rien n'est bâti. Écrit le 2026-10-13. Annoncé par le
+**Statut** : 📐 plan, rien n'est bâti. Écrit le 2026-10-13, contredit par
+`vitruve` le même jour (§7), **Q1, Q3, Q4, Q5 et la carte B2C tranchées par
+Hugo le 2026-10-13** (§5). Annoncé par le
 §5.4 de
 [`../livraisons/transferts/plan-sites-transfert-interne-tri-et-couleurs.md`](../livraisons/transferts/plan-sites-transfert-interne-tri-et-couleurs.md)
 (lot O1), et élargi ici.
@@ -17,8 +19,8 @@ grossissait aussi d'un déplacement d'écran (taille S) à une question d'argent
 et de frontière : il n'a plus sa place en une ligne d'un autre plan.
 
 ⚠️ Le plan touche une **frontière de sécurité** (deux surfaces changent de
-ressource) : `vitruve` d'office avant Hugo (CLAUDE.md §9 bis). **Pas encore
-fait.**
+ressource) : `vitruve` d'office avant Hugo (CLAUDE.md §9 bis). Fait le
+2026-10-13 ; le sort de chaque objection est au §7.
 
 ## 0. La demande (Hugo, 2026-10-13)
 
@@ -39,8 +41,10 @@ L'ordre suit la vie d'une commande : **peut-on** commander, **jusqu'à quand**,
 puis **peut-on revenir dessus**. Un autre ordre ne se justifie que par la
 fréquence d'usage (l'heure limite est la plus touchée) — Q7.
 
-Le tout sous le droit **`lfc_order_settings`** (ajouté à `StaffResource` au lot
-S0, accordé à aucun rôle). La limite **par point de retrait n'est pas
+L'heure limite et l'annulation sous **`lfc_order_settings`** (ajouté à
+`StaffResource` au lot S0, migration `20261013500000_les_droits_des_sites_et_des_commandes`,
+accordé à aucun rôle par migration) ; l'ouverture sous un droit à elle,
+**`lfc_order_opening`** (Hugo, 2026-10-13, Q5). La limite **par point de retrait n'est pas
 reprise** : le démontage d'`OrderCutoff` est décidé
 ([`demontage-order-cutoff.md`](demontage-order-cutoff.md), Hugo 2026-09-04).
 
@@ -103,7 +107,7 @@ un réglage **par clientèle** : le seul des trois qui l'est aujourd'hui.
 `/b2b/reglages/commandes`, vue `commandes` de la section « Réglages » de
 l'espace e-commerce (`workspaces.ts`).
 
-## 2. Où doit vivre la règle générale — trois options, non tranchées
+## 2. Où doit vivre la règle générale — A retenue pour O1, B ou C à trancher
 
 Le démontage reste bloqué par ce que son document consigne : les préconditions
 sont des **états réversibles que rien ne tient** (§1 : échelle vidée,
@@ -159,10 +163,27 @@ d'`OrderCutoff` ; le démontage devient « remplacer » au lieu de « supprimer 
   `vitruve` et `lecteur-de-migrations` d'office ; trois déploiements
   (étendre / basculer la garde / retirer `OrderCutoff`).
 
-**Proposition** : **A maintenant** (O1 ne fait que déplacer et changer la
-ressource), **C ou B décidé par Hugo avant de rouvrir le démontage** — C si
-« par clientèle » doit être un réglage du commerce, B si l'échelle doit rester
-seule. Dans les deux cas l'écran du §3 garde la même forme.
+**Décision (Hugo, 2026-10-13, Q1 : « fais ce qui a le plus de sens »)** :
+**A pour O1.** Constat qui la rend sûre (vitruve B1) : en production,
+`OrderCutoff` ne porte qu'**une** règle, le défaut « la veille à 19:00, tous
+les jours » — aucune règle par point ou par jour ne décide à sa place.
+
+**Ce que A coûte, dit honnêtement** :
+
+- **(vitruve S3)** le droit neuf `lfc_order_settings` gouverne, pour sa part
+  « heure limite », une table **promise à la suppression**. Une valeur d'enum
+  Postgres ne s'ôte pas : si B est choisi, `lfc_order_settings` ne gouvernera
+  plus que l'annulation, et son libellé devra être réécrit une seconde fois.
+  Si C est choisi, il gouvernera la nouvelle table — la valeur survit.
+- **(vitruve S4)** A **ne lève aucun bloquant** du démontage, et laisse
+  ouvert le trou « rang global de l'échelle supprimé + livraison ingérée =
+  plus rien ne refuse » pour tout article limité au référentiel. Ce trou
+  existe **déjà** aujourd'hui ; O1 ne l'agrandit pas, il ne le ferme pas.
+
+**L'échéance du choix B/C** : **avant de reprendre le démontage
+d'`OrderCutoff`** (son déploiement A). Reprendre le démontage sans l'avoir
+tranché, c'est retirer le seul filet du commerce sans savoir ce qui le
+remplace. Le plan du démontage doit porter ce préalable en tête.
 
 ## 3. L'écran
 
@@ -170,9 +191,9 @@ seule. Dans les deux cas l'écran du §3 garde la même forme.
 flowchart LR
   R[Réglages] --> S[Sites]
   R --> C[Commandes]
-  C --> O["Ouverture du e-commerce<br/>/reglages/commandes/ouverture"]
-  C --> A["Annulation de commande<br/>/reglages/commandes/annulation"]
-  C --> H["Heure limite de commande<br/>/reglages/commandes/heure-limite"]
+  C --> O["Ouverture du e-commerce<br/>/reglages/commandes/ouverture<br/>lfc_order_opening"]
+  C --> H["Heure limite de commande<br/>/reglages/commandes/heure-limite<br/>lfc_order_settings"]
+  C --> A["Annulation de commande<br/>/reglages/commandes/annulation<br/>lfc_order_settings"]
   H -.renvoi.-> P["/pim/limites-de-commande<br/>(pim_catalog)"]
 ```
 
@@ -180,14 +201,18 @@ flowchart LR
 Réglages sont des enfants de la route `reglages`, chacun gardé par son
 `permissionGuard` ; leur rail est `EXPLOITATION_VIEWS`, une vue par entrée,
 `section` = le titre de la section (`'Sites'` aujourd'hui). « Commandes » y
-devient une section à **trois vues**, `needs: 'lfc_order_settings:read'`.
+devient une section à **trois vues**, dans l'ordre Ouverture → Heure limite →
+Annulation : `needs: 'lfc_order_opening:read'` pour la première,
+`'lfc_order_settings:read'` pour les deux autres. Une section dont aucune vue
+n'est ouverte disparaît d'elle-même (`groupRailItems`).
 
 ### 3.0 « Ouverture du e-commerce » — `/reglages/commandes/ouverture`
 
 `OrderOpeningPage` déplacée telle quelle, libellés « boutique » →
 « e-commerce » (titre seulement ; la doc garde son nom de fichier).
 ⚠️ C'est l'interrupteur qui **ferme toute prise de commande** d'une
-clientèle : son droit se discute à part (§3.4, Q5).
+clientèle : d'où son droit à part, `lfc_order_opening` (Q5). Bouton
+d'enregistrement suivant `lfc_order_opening:write`.
 
 ### 3.1 « Annulation de commande » — `/reglages/commandes/annulation`
 
@@ -205,119 +230,171 @@ Trois blocs, dans cet ordre :
    qui, consommée ou non), révoquables si `b2b_order_waivers:write`. L'accord
    reste dans la saisie de commande (c'est là qu'il a un motif) ; ⚠️ la liste
    transverse **n'existe pas** côté serveur (seul `GET …/:companyId`) : une
-   requête `ListOpenOrderCutoffWaivers` est à bâtir (Q4).
-2. **Clientèle particulière — à venir** — carte vide qui dit ce que le public
+   requête `ListOpenOrderCutoffWaivers` est à bâtir (lot O1c, retenu par
+   Hugo le 2026-10-13).
+2. **Clientèle particulière — à venir** (affichée dès O1b, Hugo
+   2026-10-13) — carte sans réglage qui dit ce que le public
    suit aujourd'hui (le délai d'article, pas la règle du commerce) et renvoie
    au plan.
 3. **Limite de fabrication par article** — le renvoi : « Certains articles
    demandent plus de temps : réglé au référentiel », lien
-   `/pim/limites-de-commande`, affiché seulement si `pim_catalog:read`.
+   `/pim/limites-de-commande`, affiché seulement si `pim_catalog:read`. Ce
+   n'est qu'un **affichage** : rien de l'échelle ne se lit ni ne s'édite
+   depuis le commerce (vitruve, mineur).
+
+**JSDoc des trois pages** (vitruve, mineur) : `order-opening-page.ts`,
+`customer-cancellation-page.ts` et `cutoffs-section.ts` écrivent
+qu'enregistrer exige `b2b_settings:write` (vérifié le 2026-10-13) ; chacune
+est corrigée dans O1b avec le droit qu'elle suit désormais.
 
 ### 3.3 Redirections et arbres de navigation
 
 - `/b2b/reglages/commandes` → `/reglages/commandes/annulation` ;
 - `/b2b/reglages/heures-limites` → `/reglages/commandes/heure-limite` ;
 - `/b2b/reglages/ouverture-boutique` → `/reglages/commandes/ouverture` ;
-- `/reglages/commandes` → `/reglages/commandes/ouverture` (la première) ;
-- `/b2b/reglages` (`''` redirige aujourd'hui vers `heures-limites`) → la
-  section « Réglages » de l'e-commerce ne garde que « Contact » et « Motifs
-  des demandes » (sous leurs droits) : rediriger vers l'une d'elles, ou vers
-  `/reglages/commandes/ouverture` ;
+- `/reglages/commandes` → `/reglages/commandes/heure-limite` (la vue sous
+  `lfc_order_settings`, que commercial, comptabilité et dev liront) ;
+- **la section « Réglages » de l'e-commerce après O1** : « Motifs des
+  demandes » en est déjà partie (Commercial › Réglages, `16ddbc9d3`) ; il ne
+  lui reste que **« Contact »** (`b2b_contact`), seule vue sous ce titre.
+  Proposition : « Contact » rejoint la section **« Contenu »** de l'espace
+  (elle y porte déjà les mentions légales — c'est un texte publié, pas un
+  réglage), la section « Réglages » disparaît, et `/b2b/reglages` (`''`
+  redirige aujourd'hui vers `heures-limites`) redirige vers
+  `/reglages/commandes/heure-limite`. Les routes enfants qui restent sous
+  `/b2b/reglages` sont des redirections ; Q8 ;
 - **les deux arbres** (CLAUDE.md du back-office) : retirer les vues
   `ouverture-boutique`, `heures-limites` et `commandes` de la section « Réglages » de l'e-commerce,
   ajouter les trois vues dans `EXPLOITATION_VIEWS` — une table pour le rail et
   le lanceur mobile, comme Sites ; vérifier les tuiles de l'accueil et
   `FALLBACK_HOMES` de `permission.guard.ts` (une entrée
-  `lfc_order_settings:read` → `/reglages/commandes/ouverture`, sans quoi un
-  staff qui n'a que ce droit rebondit) ;
+  `lfc_order_settings:read` → `/reglages/commandes/heure-limite`, une
+  `lfc_order_opening:read` → `/reglages/commandes/ouverture`, sans quoi un
+  staff qui n'a que l'un de ces droits rebondit) ;
 - `lint:router-links` sur les `routerLink` qui pointaient l'ancienne adresse.
 
 ### 3.4 Routes serveur qui changent de ressource
 
-| Route                         | Aujourd'hui         | Après O1                                         |
-| ----------------------------- | ------------------- | ------------------------------------------------ |
-| `admin/order-opening`         | `b2b_settings`      | `lfc_order_settings` **ou** un droit à elle (Q5) |
-| `admin/customer-cancellation` | `b2b_settings`      | `lfc_order_settings`                             |
-| `admin/order-cutoffs`         | `b2b_settings`      | `lfc_order_settings`                             |
-| `admin/order-cutoff-waivers`  | `b2b_order_waivers` | **inchangé** (geste de saisie, pas réglage)      |
-| `order-time-limits` (PIM)     | `pim_catalog`       | **inchangé**                                     |
+| Route                         | Aujourd'hui         | Après O1                                    |
+| ----------------------------- | ------------------- | ------------------------------------------- |
+| `admin/order-opening`         | `b2b_settings`      | `lfc_order_opening`                         |
+| `admin/order-cutoffs`         | `b2b_settings`      | `lfc_order_settings`                        |
+| `admin/customer-cancellation` | `b2b_settings`      | `lfc_order_settings`                        |
+| `admin/order-cutoff-waivers`  | `b2b_order_waivers` | **inchangé** (geste de saisie, pas réglage) |
+| `order-time-limits` (PIM)     | `pim_catalog`       | **inchangé**                                |
 
-⚠️ Les trois tests d'accès qui prennent `/admin/order-cutoffs` comme exemple
-d'un `PATCH` sur `b2b_settings` (`staff-access.e2e-spec.ts`,
-`staff-roles.e2e-spec.ts`, cités au démontage §4) se **reportent** sur une
-autre route `b2b_settings` (ex. `admin/order-opening`) — ne pas les supprimer.
+🔴 **Les tests à reporter (vitruve B2)** — les trois routes apparaissent dans
+**huit** fichiers e2e (relevé le 2026-10-13, `grep` sur `apps/lfd-api/test/`) :
 
-### 3.5 Le geste de bascule des droits
+| Fichier                             | Ce qu'il en fait (à relire dans O1a)                   |
+| ----------------------------------- | ------------------------------------------------------ |
+| `order-cutoffs.e2e-spec.ts`         | règles du commerce posées par la route admin           |
+| `order-opening.e2e-spec.ts`         | ouverture / fermeture par clientèle                    |
+| `order-customer-cancel.e2e-spec.ts` | réglage de l'annulation par la route admin             |
+| `order-customer-cancel-scene.ts`    | scène partagée de ces suites (sème le réglage)         |
+| `production-settings.e2e-spec.ts`   | passe par l'une des trois routes                       |
+| `fulfillment-days.e2e-spec.ts`      | sème une règle par `admin/order-cutoffs`               |
+| `staff-access.e2e-spec.ts`          | `/admin/order-cutoffs` comme exemple de `b2b_settings` |
+| `staff-roles.e2e-spec.ts`           | idem, la preuve « lit sans pouvoir écrire »            |
 
-1. S0 est déployé (la valeur existe, accordée à personne) ;
-2. **avant** le merge d'O1 : l'admin accorde `lfc_order_settings` (lecture /
-   écriture) à l'écran `/admin/staff-roles` aux rôles qui avaient
-   `b2b_settings` et doivent garder ces réglages (et le droit propre à
-   l'ouverture s'il est retenu, ajouté à `StaffResource` par une migration
-   additive avant O1) — sans quoi, au déploiement, **plus personne** n'ouvre
-   ni ne ferme le e-commerce, ni ne règle la limite ou l'annulation ;
-3. merge d'O1 ; le message de livraison dit le geste. Aucune migration
-   n'accorde (`lint:no-role-grants-in-migrations`).
+Les staffs semés de ces suites reçoivent le nouveau droit ; les deux suites
+d'accès se **reportent** sur une autre route `b2b_settings` (ex.
+`admin/platform-content`), jamais supprimées, et gagnent les cas
+« `b2b_settings` seul est refusé » sur les trois routes déplacées.
 
-Conséquence voulue à dire : le **commercial**, qui a `b2b_settings: read`, ne
-voit plus ces trois réglages s'il n'en reçoit pas le droit.
+### 3.5 Les droits, leur libellé, et l'ordre des passages en `main`
+
+**Qui reçoit quoi (Hugo, 2026-10-13, Q3 et Q5)** — à accorder **à l'écran**
+`/admin/staff-roles`, jamais par migration (`lint:no-role-grants-in-migrations`) :
+
+| Rôle                          | `lfc_order_settings` | `lfc_order_opening` |
+| ----------------------------- | -------------------- | ------------------- |
+| admin                         | écriture             | écriture            |
+| commercial, comptabilité, dev | lecture              | lecture             |
+
+Ce sont exactement ceux qui lisent ces écrans aujourd'hui par
+`b2b_settings: read`. Pour le commercial (vitruve S5), la graine dit qu'il
+« doit pouvoir dire à un client si la boutique est ouverte » : c'est la
+**lecture** de `lfc_order_opening` qui le tient. La graine `ROLE_GRANTS`
+(`packages/contracts/src/staff-access.ts`, qui n'accorde aujourd'hui
+`lfc_order_settings` qu'à l'admin, l. 753) suit le même tableau — elle ne sert
+qu'aux bases vierges, dev et e2e.
+
+**Le libellé (vitruve S1)** : `staff-resource-scopes.ts` l. 171 ne parle que de
+l'annulation. Il est réécrit **dans le premier lot** — `lfc_order_settings` :
+« l'heure limite de commande, son rattrapage, et l'annulation par le client » ;
+`lfc_order_opening` : « ouvrir ou fermer la prise de commande, par
+clientèle ». L'admin doit lire ce qu'il accorde **avant** de l'accorder.
+
+**L'ordre des passages en `main` (vitruve S2)** — S0 n'est pas encore en
+production :
+
+```mermaid
+flowchart TD
+  M1["Passage 1 — O0<br/>S0 + ADD VALUE lfc_order_opening<br/>+ libellés + graine"] --> G["Geste à l'écran<br/>/admin/staff-roles<br/>(tableau ci-dessus)"]
+  G --> M2["Passage 2 — O1a + O1b<br/>routes et écrans basculent"]
+  M2 --> M3["Passage 3 — O1c<br/>liste des dérogations"]
+```
+
+1. **O0** part seul : les valeurs d'enum existent, accordées à l'admin
+   nulle part par migration, libellés justes. Rien ne change de mur.
+2. **Le geste** : l'admin accorde le tableau ci-dessus. Tant qu'il n'est pas
+   fait, rien ne se perd (les routes sont encore sous `b2b_settings`).
+3. **O1a + O1b** ensemble : sans le geste, plus personne n'ouvre ni ne ferme
+   le e-commerce. Le message de livraison rappelle le geste.
 
 ## 4. Lots
 
-| Lot     | Taille | Contenu                                                                                                                                                                                                                                             | Migration                                |
-| ------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| **O1a** | S      | serveur : `@AdminSurface("lfc_order_settings")` sur `order-opening` (ou son droit propre), `customer-cancellation` et `order-cutoffs` ; report des trois tests d'accès ; e2e « `b2b_settings` seul est refusé »                                     | aucune                                   |
-| **O1b** | S      | front : section Commandes (trois vues), pages Ouverture et Annulation déplacées, page Heure limite = `OrderCutoffsPage` réduite à la ligne générale (option A) + renvoi PIM + carte B2C « à venir » ; redirections ; deux arbres ; `FALLBACK_HOMES` | aucune                                   |
-| **O1c** | S      | dérogations : requête serveur de la liste ouverte (sous `b2b_order_waivers:read`), bloc dans la page                                                                                                                                                | aucune                                   |
-| **O2**  | M      | option C **si** Hugo la retient : table par clientèle, garde basculée, puis démontage d'`OrderCutoff` repris sur cette base                                                                                                                         | oui → `vitruve`, `lecteur-de-migrations` |
+| Lot     | Taille | Contenu                                                                                                                                                                                                                                       | Migration                          |
+| ------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| **O0**  | XS     | migration `ADD VALUE 'lfc_order_opening'` seule (aucun droit), contrat `staff-access.ts`, libellés `staff-resource-scopes.ts` des deux ressources, graine `ROLE_GRANTS` ; part en `main` avec S0 si S0 n'y est pas encore                     | additive → `lecteur-de-migrations` |
+| **O1a** | S      | serveur : `@AdminSurface` du §3.4 ; les huit fichiers e2e du §3.4                                                                                                                                                                             | aucune                             |
+| **O1b** | S      | front : section Commandes (trois vues, deux droits), pages déplacées, page Heure limite (ligne générale, carte B2C « à venir », renvoi PIM), redirections, « Contact » vers « Contenu », deux arbres, `FALLBACK_HOMES`, JSDoc des trois pages | aucune                             |
+| **O1c** | S      | `ListOpenOrderCutoffWaivers` sous `b2b_order_waivers:read`, bloc Dérogations                                                                                                                                                                  | aucune                             |
+| **O2**  | M      | B ou C (§2), **à trancher avant de reprendre le démontage**                                                                                                                                                                                   | selon le choix → `vitruve`         |
 
-O1a et O1b partent **ensemble** (un serveur sous le nouveau droit avec un front
-encore sous l'ancien rendrait 403). Le geste du §3.5 les précède.
+O1a et O1b partent ensemble (un serveur sous le nouveau droit avec un front
+encore sous l'ancien rendrait 403).
 
 ## 5. Questions à Hugo
 
-1. **Où vit la règle générale** (§2) : A le temps du démontage, puis B ou C ?
-   C revient sur « l'échelle seule » du 2026-09-04.
-2. Les lignes d'`OrderCutoff` **par point ou par jour** existent-elles en
-   production ? En option A, la page les montre en lecture ; faut-il plutôt
-   les retirer avant O1 ?
-3. **Qui reçoit `lfc_order_settings`** au geste du §3.5 — les mêmes rôles que
-   `b2b_settings`, ou pas le commercial ?
-4. **Dérogations** : une liste transverse (O1c) dans la page Heure limite, ou
-   rien de plus que la saisie de commande ? Et leur droit reste-t-il
-   `b2b_order_waivers` ?
-5. **Le droit de l'ouverture** : `lfc_order_settings` comme les deux autres
-   (simple, une section = un droit), ou un droit à elle
-   (`lfc_order_opening`) parce que fermer une clientèle arrête **tout** le
-   chiffre de cette clientèle — régler une heure limite n'a pas cette portée.
-   Proposition : un droit à elle si quelqu'un doit régler l'heure limite sans
-   pouvoir fermer le e-commerce ; sinon `lfc_order_settings`.
-6. La **carte B2C** : simple mention « à venir », ou attendre que le plan par
-   clientèle soit tranché pour l'afficher ?
+**Tranchées le 2026-10-13** :
 
-7. **L'ordre** des trois entrées : ouverture → heure limite → annulation
-   (le cycle de la commande), ou l'heure limite en tête (la plus fréquente) ?
+- **Q1** — option A pour O1 ; B ou C avant de reprendre le démontage (§2).
+- **Q3** — `lfc_order_settings` : lecture commercial, comptabilité, dev ;
+  écriture admin ; à l'écran ; la graine suit (§3.5).
+- **Q4** — la liste des dérogations dans la page Heure limite : oui (O1c).
+- **Q5** — l'ouverture a son droit, `lfc_order_opening` (§3.5).
+- **Q6** — la carte B2C s'affiche maintenant, « à venir ».
+- **Q2** — levée par constat : une seule règle `OrderCutoff` en production.
+
+**Restantes** :
+
+- **Q7** — l'ordre des entrées : Ouverture → Heure limite → Annulation (le
+  cycle de la commande) est appliqué ; le garder ?
+- **Q8** — « Contact » rejoint « Contenu » et la section « Réglages » de
+  l'e-commerce disparaît (§3.3) ?
+- **Q9** — B ou C (§2), à l'échéance dite.
 
 ## 6. Ce que ce plan n'a pas ouvert
 
-Les tuiles de l'accueil du back-office (leur fichier n'est pas relu), le texte
-exact de `plan-heure-limite-par-clientele.md` §4 sur ce que lit le public
-aujourd'hui, et la présence en production de lignes `OrderCutoff` non
-générales.
+Les tuiles de l'accueil du back-office ; le texte de
+`plan-heure-limite-par-clientele.md` §4 sur ce que lit le public aujourd'hui ;
+le détail de ce que `production-settings.e2e-spec.ts` fait de la route (le
+fichier la cite, son usage n'est pas relu).
 
-## Contradiction par `vitruve` (2026-10-13) — non encore corrigée
+## 7. Contradiction par `vitruve` (2026-10-13) — et son sort
 
-| #   | Niveau   | Objection                                                                                                                                                                                                                           | État                                                                                                                                                                                                                                    |
-| --- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| B1  | BLOQUANT | Option A : une règle par point ou par jour décide **à la place** de la ligne générale (`resolveOrderCutoff`, `order-cutoff.ts` l. 107-140) et ne serait plus modifiable                                                             | **Levée par constat** : en production, une seule règle, le défaut « la veille à 19:00, tous les jours » (écran `/b2b/reglages/heures-limites`, lu le 2026-10-13). Le point de départ d'O1 est `1b286aaf6` (sous-carte du site retirée). |
-| B2  | BLOQUANT | Le report des tests est sous-compté : les trois routes apparaissent dans 8 suites e2e (`order-cutoffs`, `order-opening`, `order-customer-cancel(-scene)`, `production-settings`, `fulfillment-days`, `staff-access`, `staff-roles`) | à corriger dans O1a                                                                                                                                                                                                                     |
-| S1  | SÉRIEUX  | Le libellé de `lfc_order_settings` (`staff-resource-scopes.ts` l. 171) ne parle que de l'annulation : l'admin accorderait plus qu'il ne lit                                                                                         | à réécrire **avant** le geste d'accord                                                                                                                                                                                                  |
-| S2  | SÉRIEUX  | L'ordre du geste : S0 n'est pas en production ; un droit propre à l'ouverture (Q5) ajoute une migration et un déploiement                                                                                                           | à réécrire selon Q5                                                                                                                                                                                                                     |
-| S3  | SÉRIEUX  | Avec A, le droit neuf gouverne une table promise à la suppression, et une valeur d'enum ne s'ôte pas                                                                                                                                | à assumer ou non avec Q1                                                                                                                                                                                                                |
-| S4  | SÉRIEUX  | A ne lève aucun bloquant du démontage et laisse ouvert sans échéance le trou « rang global supprimé = tout passe »                                                                                                                  | à assumer ou non avec Q1                                                                                                                                                                                                                |
-| S5  | SÉRIEUX  | Le commercial, la comptabilité et `dev` ont `b2b_settings: read` ; la graine dit que le commercial « doit pouvoir dire à un client si la boutique est ouverte »                                                                     | à intégrer à Q3                                                                                                                                                                                                                         |
-
-Mineurs : `lfc_order_settings` accordé à l'admin par la graine ; la section
-Réglages de l'e-commerce sera vide après O1 (décider ce qu'elle devient) ;
-JSDoc « exige `b2b_settings:write` » à corriger dans trois pages ; le lien
-vers le PIM n'est qu'un affichage.
+| #             | Objection                                                                                                      | Sort                                                                                                                                       |
+| ------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| B1 (BLOQUANT) | Option A : une règle par point ou par jour décide à la place de la ligne générale et ne serait plus modifiable | **Levée par constat** : une seule règle en production, le défaut « la veille à 19:00, tous les jours ». Point de départ d'O1 : `1b286aaf6` |
+| B2 (BLOQUANT) | Report des tests sous-compté : huit fichiers e2e                                                               | **Corrigé** : les huit nommés au §3.4, dans O1a                                                                                            |
+| S1 (SÉRIEUX)  | Libellé de `lfc_order_settings` limité à l'annulation                                                          | **Corrigé** : réécrit dans O0, avant le geste (§3.5)                                                                                       |
+| S2 (SÉRIEUX)  | Ordre du geste ; S0 pas en production ; droit propre = migration de plus                                       | **Corrigé** : trois passages ordonnés (§3.5)                                                                                               |
+| S3 (SÉRIEUX)  | Avec A, le droit neuf gouverne une table promise à la suppression                                              | **Assumé** (Q1) et écrit au §2                                                                                                             |
+| S4 (SÉRIEUX)  | A ne lève aucun bloquant et laisse le trou sans échéance                                                       | **Assumé** avec une échéance : B/C avant de reprendre le démontage (§2)                                                                    |
+| S5 (SÉRIEUX)  | Commercial, comptabilité, dev lisent par `b2b_settings`                                                        | **Corrigé** : lecture des deux droits (§3.5)                                                                                               |
+| mineur        | `lfc_order_settings` accordé à l'admin par la graine                                                           | conservé, et la graine suit le tableau (O0)                                                                                                |
+| mineur        | Section Réglages de l'e-commerce vide après O1                                                                 | proposition au §3.3, Q8                                                                                                                    |
+| mineur        | JSDoc « exige `b2b_settings:write` » dans trois pages                                                          | corrigé dans O1b (§3.2)                                                                                                                    |
+| mineur        | Le lien vers le PIM n'est qu'un affichage                                                                      | écrit au §3.2                                                                                                                              |
