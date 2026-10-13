@@ -8,7 +8,7 @@ import type { MediaCarrierView } from '@lfd/pim-contracts';
  * `pim/pim.routes.ts` le 2026-09-23 : enfants DIRECTS de `pim`, et « familles »
  * se dit `categories` dans l'URL. La vitrine vit en `/vitrine`, hors de
  * l'espace B2B (`documentation/commandes/boutique-rayon-layout.md`, D7).
- * Les opérations datées (2026-09-24) mènent à `/pim/operations/<clé>` : la
+ * Les opérations datées (2026-09-24) mènent à `/operations/<clé>` : la
  * route naît avec l'écran de préparation, au lot front du plan
  * `documentation/operations-datees/architecture-operations-datees.md`.
  */
@@ -21,7 +21,7 @@ const CARRIER_DESTINATIONS: Readonly<
   product: { word: 'Fiche', path: (id) => ['/pim', 'produits', id] },
   category: { word: 'Famille', path: (id) => ['/pim', 'categories', id] },
   storefront: { word: 'Vitrine', path: () => ['/vitrine'] },
-  operation: { word: 'Opération', path: (key) => ['/pim', 'operations', key] },
+  operation: { word: 'Opération', path: (key) => ['/operations', key] },
 };
 
 /** Le mot qui précède le libellé d'un porteur : « Fiche », « Famille », « Vitrine ». */

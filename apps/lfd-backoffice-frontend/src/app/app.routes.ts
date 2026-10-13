@@ -56,6 +56,52 @@ export const routes: Routes = [
   // un identifiant de société, et la page afficherait « Société introuvable ».
   ...nouveauCompteRoutes,
   {
+    // LES OPÉRATIONS DATÉES — Noël, Pâques, la galette
+    // (`documentation/operations-datees/architecture-operations-datees.md`).
+    // Premier niveau depuis le 2026-10-13 (Hugo), sans le rail du référentiel :
+    // on y vient depuis Gestion Boutique. Même mur que le catalogue (D1).
+    // `:key` est ciblé par la médiathèque (`carrier-destinations.ts`).
+    path: 'operations',
+    canActivate: [permissionGuard('pim_catalog:read')],
+    title: 'Opérations datées — LFC B2B admin',
+    loadComponent: () =>
+      import('./pim/operations/operations-page/operations-page').then((m) => m.OperationsPage),
+  },
+  {
+    path: 'operations/:key',
+    canActivate: [permissionGuard('pim_catalog:read')],
+    title: 'Opération — LFC B2B admin',
+    loadComponent: () =>
+      import('./pim/operations/operation-page/operation-page').then((m) => m.OperationPage),
+  },
+  {
+    // LES PROMOTIONS — l'ancienne « Tarification B2B », premier niveau depuis
+    // le 2026-10-13 (Hugo), sans le rail de l'e-commerce : on y vient depuis
+    // Gestion Boutique. Même mur que l'espace qu'elles ont quitté.
+    path: 'promotions',
+    canActivate: [permissionGuard('b2b_settings:read')],
+    title: 'Promotions — LFC B2B admin',
+    loadComponent: () =>
+      import('./b2b/tarification/tarification-page').then((m) => m.TarificationPage),
+  },
+  {
+    // La frise vit à côté de la grille, pas dedans : deux façons de lire le
+    // même prix. Une route propre la rend partageable par lien.
+    path: 'promotions/frise',
+    canActivate: [permissionGuard('b2b_settings:read')],
+    title: 'Frise des promotions — LFC B2B admin',
+    loadComponent: () => import('./b2b/tarification/frise/frise-page').then((m) => m.FrisePage),
+  },
+  {
+    // Le banc d'essai : ce que le prix décidé donne pour ce client-là, à cette
+    // quantité-là.
+    path: 'promotions/simulateur',
+    canActivate: [permissionGuard('b2b_settings:read')],
+    title: 'Simulateur de prix — LFC B2B admin',
+    loadComponent: () =>
+      import('./b2b/tarification/simulateur/simulateur-page').then((m) => m.SimulateurPage),
+  },
+  {
     // **Médiathèque** — le fonds d'images, indépendamment de ce qui l'affiche.
     //
     // Route de PREMIER niveau, hors de `pim/`, et c'est une affirmation sur le

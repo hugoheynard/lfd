@@ -54,7 +54,7 @@ describe('OperationsPage', () => {
     expect(text).toContain('Archivée');
     expect(text).toContain('du mer. 23 déc. 2026 au jeu. 24 déc. 2026');
     const link = root.querySelector<HTMLAnchorElement>('a.operation-name');
-    expect(link?.getAttribute('href')).toBe('/pim/operations/noel-2026');
+    expect(link?.getAttribute('href')).toBe('/operations/noel-2026');
   });
 
   it('sans opération, dit l’état vide', async () => {
@@ -78,7 +78,7 @@ describe('OperationsPage', () => {
     fixture.componentInstance['prepare']();
     await fixture.whenStable();
     expect(panels.opened).toEqual([PrepareOperationPanel]);
-    expect(navigate).toHaveBeenCalledWith(['/pim', 'operations', 'paques-2027']);
+    expect(navigate).toHaveBeenCalledWith(['/operations', 'paques-2027']);
   });
 
   it('renoncer ne navigue nulle part', async () => {

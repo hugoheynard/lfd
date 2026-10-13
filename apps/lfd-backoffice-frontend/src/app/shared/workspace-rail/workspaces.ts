@@ -499,7 +499,7 @@ export const PIM_VIEWS: readonly WorkspaceView[] = [
   // « Opérations » est partie en Gestion Boutique le 2026-10-13 (Hugo :
   // « une section Gestion Boutique dans laquelle on met opérations datées ») :
   // elle est au rail principal et au lanceur mobile, dans `app.html`, sous
-  // « Opérations datées ». La route `/pim/operations` reste sous le mur du PIM.
+  // « Opérations datées ». La route est `/operations` depuis le 2026-10-13, sous le mur du PIM.
   {
     key: 'revisions',
     label: 'Révisions',
@@ -671,7 +671,7 @@ export const B2B_VIEWS: readonly WorkspaceView[] = [
   // « Tarification B2B » est partie en Gestion Boutique le 2026-10-13 (Hugo),
   // renommée « Promotions » : elle est au rail principal et au lanceur mobile,
   // dans `app.html`. La section « Tarification » du rail, vide sans elle, a
-  // disparu. L'adresse `/b2b/tarification` reste, elle vit dans des favoris.
+  // disparu. L'écran est `/promotions` depuis le 2026-10-13 ; `/b2b/tarification` y redirige.
   {
     key: 'app-footer',
     label: 'App footer',

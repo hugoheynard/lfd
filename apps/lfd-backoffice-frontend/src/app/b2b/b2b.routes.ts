@@ -196,29 +196,13 @@ export const b2bRoutes: Routes = [
         title: 'Catalogue actuel en ligne — LFC B2B admin',
         loadComponent: () => import('./catalogue/catalogue-page').then((m) => m.CataloguePage),
       },
-      {
-        path: 'tarification',
-        title: 'Promotions — LFC B2B admin',
-        loadComponent: () =>
-          import('./tarification/tarification-page').then((m) => m.TarificationPage),
-      },
-      {
-        // La frise vit à côté de la grille, pas dedans : deux façons de lire le
-        // même prix — l'une pour décider aujourd'hui, l'autre pour comprendre ce
-        // qui s'est passé. Une route propre les rend partageables par lien.
-        path: 'tarification/frise',
-        title: 'Frise des promotions — LFC B2B admin',
-        loadComponent: () => import('./tarification/frise/frise-page').then((m) => m.FrisePage),
-      },
-      {
-        // Le banc d'essai vit à côté de la grille et de la frise : trois façons
-        // de lire le même prix — ce qui est décidé, ce qui l'était, et ce que
-        // ça donne pour ce client-là à cette quantité-là.
-        path: 'tarification/simulateur',
-        title: 'Simulateur de prix — LFC B2B admin',
-        loadComponent: () =>
-          import('./tarification/simulateur/simulateur-page').then((m) => m.SimulateurPage),
-      },
+      // LES PROMOTIONS (l'ancienne « Tarification B2B ») ont quitté cet espace
+      // le 2026-10-13 (Hugo : « ne devrait pas ouvrir le secondary menu
+      // d'e-commerce LFC ») : route de premier niveau `/promotions`, dans
+      // Gestion Boutique. Les anciennes adresses vivent dans des favoris.
+      { path: 'tarification', pathMatch: 'full', redirectTo: '/promotions' },
+      { path: 'tarification/frise', redirectTo: '/promotions/frise' },
+      { path: 'tarification/simulateur', redirectTo: '/promotions/simulateur' },
     ],
   },
 ];

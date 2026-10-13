@@ -238,7 +238,7 @@
              2026-10-13) : les opérations datées, venues du rail du Catalogue,
              et les promotions (l'ancienne « Tarification B2B »), venues de
              celui de l'E-commerce. Chaque entrée garde le droit de sa route ;
-             les adresses `/pim/operations` et `/b2b/tarification` restent,
+             les anciennes adresses `/pim/operations` et `/b2b/tarification` redirigent,
              elles vivent dans des favoris. -->
         <fold-menu-section
           label="Gestion Boutique"
@@ -252,7 +252,7 @@
               fold-menu-item
               icon="gift"
               label="Opérations datées"
-              routerLink="/pim/operations"
+              routerLink="/operations"
               routerLinkActive
               #operationsRla="routerLinkActive"
               [active]="operationsRla.isActive"
@@ -264,7 +264,7 @@
               fold-menu-item
               icon="tag"
               label="Promotions"
-              routerLink="/b2b/tarification"
+              routerLink="/promotions"
               routerLinkActive
               #promotionsRla="routerLinkActive"
               [active]="promotionsRla.isActive"
@@ -861,7 +861,7 @@
               fold-nav-tile
               icon="gift"
               label="Opérations datées"
-              routerLink="/pim/operations"
+              routerLink="/operations"
               routerLinkActive
               #operationsTile="routerLinkActive"
               [active]="operationsTile.isActive"
@@ -873,7 +873,7 @@
               fold-nav-tile
               icon="tag"
               label="Promotions"
-              routerLink="/b2b/tarification"
+              routerLink="/promotions"
               routerLinkActive
               #promotionsTile="routerLinkActive"
               [active]="promotionsTile.isActive"

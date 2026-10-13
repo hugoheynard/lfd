@@ -32,7 +32,7 @@
             @for (operation of operations(); track operation.key) {
               <li class="operation">
                 <div class="operation-head">
-                  <a class="operation-name" [routerLink]="['/pim', 'operations', operation.key]">
+                  <a class="operation-name" [routerLink]="['/operations', operation.key]">
                     {{ operation.name.fr }}
                   </a>
                   <fold-badge

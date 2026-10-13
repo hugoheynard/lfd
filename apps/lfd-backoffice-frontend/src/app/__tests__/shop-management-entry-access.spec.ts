@@ -104,7 +104,7 @@ function tile(link: string): string {
 
 describe('App — Gestion Boutique', () => {
   it('montre « Opérations datées » sous pim_catalog:read, dans les deux arbres', () => {
-    const link = '/pim/operations';
+    const link = '/operations';
     expect(render(['pim_catalog:read']).querySelector(rail(link))?.getAttribute('label')).toBe(
       'Opérations datées',
     );
@@ -115,7 +115,7 @@ describe('App — Gestion Boutique', () => {
   });
 
   it('montre « Promotions » sous b2b_settings:read, dans les deux arbres', () => {
-    const link = '/b2b/tarification';
+    const link = '/promotions';
     expect(render(['b2b_settings:read']).querySelector(rail(link))?.getAttribute('label')).toBe(
       'Promotions',
     );

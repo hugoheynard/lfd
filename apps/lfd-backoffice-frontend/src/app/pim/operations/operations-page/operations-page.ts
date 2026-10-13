@@ -76,7 +76,7 @@ export class OperationsPage {
   protected prepare(): void {
     void this.panels.open<string>(PrepareOperationPanel).closed.then((key) => {
       if (key !== undefined) {
-        void this.router.navigate(['/pim', 'operations', key]);
+        void this.router.navigate(['/operations', key]);
       }
     });
   }

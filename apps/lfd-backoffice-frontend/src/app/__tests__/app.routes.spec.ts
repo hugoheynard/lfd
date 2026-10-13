@@ -162,10 +162,6 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // rendue exprimable — la ranger sous `b2b_settings` la lui reprendrait.
   'b2b/reception': 'b2b_catalog:read',
   'b2b/catalogue': null,
-  'b2b/tarification': null,
-  // La frise LIT la même chose que la grille, à d'autres dates : même mur.
-  'b2b/tarification/frise': null,
-  'b2b/tarification/simulateur': null,
   // Les réglages de l'e-commerce sont TOUS partis le 2026-10-13 : les points
   // de retrait vers les sites, l'heure limite, l'ouverture et l'annulation
   // vers Réglages › Commandes. Il ne reste ici que des redirections.
@@ -180,6 +176,16 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // route serveur oppose (`@AdminSurface("media_library")`). Elle a eu la
   // sienne le 2026-09-23 ; cette ligne a suivi le 2026-10-02.
   mediatheque: 'media_library:read',
+
+  // **Opérations datées** et **Promotions** — premier niveau depuis le
+  // 2026-10-13 (Hugo), sous le mur des espaces qu'elles ont quittés :
+  // préparer une opération, c'est choisir des articles et fixer des dates
+  // (`pim_catalog`) ; la frise LIT la même chose que la grille (`b2b_settings`).
+  operations: 'pim_catalog:read',
+  'operations/:key': 'pim_catalog:read',
+  promotions: 'b2b_settings:read',
+  'promotions/frise': 'b2b_settings:read',
+  'promotions/simulateur': 'b2b_settings:read',
 
   // **Vitrine** — hors de l'espace B2B, derrière SA ressource : sous `b2b`, le
   // mur `b2b_settings` l'aurait fermée à la communication, qui la compose
@@ -235,10 +241,6 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'pim/allergenes': null,
   'pim/conditionnements': null,
   'pim/limites-de-commande': null,
-  // Préparer une opération, c'est choisir des articles et fixer des dates :
-  // même mur que le catalogue, le serveur garde `pim_catalog` à l'écriture.
-  'pim/operations': null,
-  'pim/operations/:key': null,
   'pim/integration': null,
   'pim/produits/nouveau': null,
   'pim/produits/:id': null,
@@ -462,9 +464,9 @@ describe("l'arbre de routes du back-office", () => {
       // `''` n'est plus une adresse fixe : elle suit les droits
       // (`firstReglagesView`, éprouvée dans exploitation-entry-access).
       ['catalogue', '/b2b/catalogue'],
-      ['tarification', '/b2b/tarification'],
-      ['tarification/frise', '/b2b/tarification/frise'],
-      ['tarification/simulateur', '/b2b/tarification/simulateur'],
+      ['tarification', '/promotions'],
+      ['tarification/frise', '/promotions/frise'],
+      ['tarification/simulateur', '/promotions/simulateur'],
       ['retraits-livraisons', '/reglages/sites'],
       // Partie en Comptabilité sous son propre droit (2026-09-29).
       ['surtaxe-de-retard', '/comptabilite/surtaxe-de-retard'],

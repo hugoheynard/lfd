@@ -35,9 +35,9 @@ export const reglagesRoutes: Routes = [
       // niveau racine : le routeur entre d'abord dans cette route parente, et
       // ce qu'il y cherche doit s'y trouver.
       { path: 'catalogue', redirectTo: '/b2b/catalogue' },
-      { path: 'tarification', pathMatch: 'full', redirectTo: '/b2b/tarification' },
-      { path: 'tarification/frise', redirectTo: '/b2b/tarification/frise' },
-      { path: 'tarification/simulateur', redirectTo: '/b2b/tarification/simulateur' },
+      { path: 'tarification', pathMatch: 'full', redirectTo: '/promotions' },
+      { path: 'tarification/frise', redirectTo: '/promotions/frise' },
+      { path: 'tarification/simulateur', redirectTo: '/promotions/simulateur' },
       // « Retraits & livraisons » a suivi, découpé en trois pages de
       // « E-commerce LFC → Réglages ». L'ancienne adresse mène à la première.
       // Elle menait aux points de retrait, devenus les sites (S1, 2026-10-13).

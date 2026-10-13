@@ -145,25 +145,12 @@ export const pimRoutes: Routes = [
             (m) => m.OrderTimeLimitsPage,
           ),
       },
-      {
-        // LES OPÉRATIONS DATÉES — Noël, Pâques, la galette
-        // (`documentation/operations-datees/architecture-operations-datees.md`, lot 1). Au
-        // référentiel parce que préparer une opération, c'est choisir des
-        // articles et fixer des dates (D1) : même mur que le catalogue.
-        //
-        // `:key` est ciblé par la médiathèque (`carriers-panel.ts`) : l'image
-        // d'une opération mène à sa page.
-        path: 'operations',
-        title: 'Opérations — LFC B2B admin',
-        loadComponent: () =>
-          import('./operations/operations-page/operations-page').then((m) => m.OperationsPage),
-      },
-      {
-        path: 'operations/:key',
-        title: 'Opération — LFC B2B admin',
-        loadComponent: () =>
-          import('./operations/operation-page/operation-page').then((m) => m.OperationPage),
-      },
+      // LES OPÉRATIONS DATÉES ont quitté le référentiel le 2026-10-13 (Hugo :
+      // « ne devrait plus ouvrir le secondary menu du pim ») : route de premier
+      // niveau `/operations`, dans Gestion Boutique. Les anciennes adresses
+      // vivent dans des favoris et y redirigent.
+      { path: 'operations', pathMatch: 'full', redirectTo: '/operations' },
+      { path: 'operations/:key', redirectTo: '/operations/:key' },
       {
         path: 'appellations',
         title: 'Appellations — LFC B2B admin',

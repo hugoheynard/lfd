@@ -37,7 +37,7 @@ import { ScheduleCard } from '../schedule-card/schedule-card';
 import { SelectionCard } from '../selection-card/selection-card';
 
 /**
- * **La page d'une opération** — `/pim/operations/:key`.
+ * **La page d'une opération** — `/operations/:key`.
  *
  * Une page et non un panneau : quatre sujets (présentation, calendrier,
  * clientèle, sélection) dont on va droit à un seul, et une adresse que la

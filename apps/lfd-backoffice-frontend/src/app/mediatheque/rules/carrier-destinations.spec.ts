@@ -21,6 +21,6 @@ describe('où mène un porteur', () => {
     expect(carrierPath(carrier('product', 'p1'))).toEqual(['/pim', 'produits', 'p1']);
     expect(carrierPath(carrier('category', 'c1'))).toEqual(['/pim', 'categories', 'c1']);
     expect(carrierPath(carrier('storefront', 'v'))).toEqual(['/vitrine']);
-    expect(carrierPath(carrier('operation', 'noel'))).toEqual(['/pim', 'operations', 'noel']);
+    expect(carrierPath(carrier('operation', 'noel'))).toEqual(['/operations', 'noel']);
   });
 });
