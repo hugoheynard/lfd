@@ -542,15 +542,35 @@ jobs:
         # et MinIO. Le parallélisme large est fourni par les shards, qui sont sur
         # QUATRE machines ; empiler 4 workers sur 2 cœurs échangerait du gain
         # contre du thrash. À remonter si les runners grossissent.
-        env:
-          E2E_WORKERS: 2
         # La liste des suites vient de `e2e-shard.mjs`, qui répartit PAR DURÉE.
         # `--shard` de Jest coupait par ordre alphabétique : 1 min 46 pour le
         # shard 1, 4 min 05 pour le shard 3, et c'est le plus lent qui tient la
         # CI. `--runTestsByPath` prend des chemins littéraux, pas des motifs.
+        #
+        # `E2E_BOOT_LOG` : le harnais y écrit, par fichier, ce que coûtent le
+        # démarrage et l'arrêt de l'application (mesure posée le 2026-10-13,
+        # résumée à l'étape suivante). La durée murale sert à en tirer la part.
         run: |
+          echo "E2E_STARTED_AT=$(date +%s)" >> "$GITHUB_ENV"
           pnpm --filter lfd-api run test:e2e --runTestsByPath \
             $(node dev-toolbox/ci/e2e-shard.mjs ${{ matrix.shard }} 20)
+        env:
+          E2E_WORKERS: 2
+          E2E_BOOT_LOG: ${{ runner.temp }}/e2e-boot-${{ matrix.shard }}.jsonl
+      - name: Coût du démarrage de l'application e2e
+        if: always()
+        run: |
+          node dev-toolbox/ci/e2e-boot-summary.mjs \
+            --wall $(( $(date +%s) - ${E2E_STARTED_AT:-$(date +%s)} )) --workers 2 \
+            "${{ runner.temp }}/e2e-boot-${{ matrix.shard }}.jsonl"
+      - name: Téléverser les mesures de démarrage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-boot-${{ matrix.shard }}
+          path: ${{ runner.temp }}/e2e-boot-${{ matrix.shard }}.jsonl
+          if-no-files-found: ignore
+          retention-days: 14
       - name: Sauvegarder le cache Jest
         if: github.ref == 'refs/heads/dev' && matrix.shard == 1
         uses: actions/cache/save@v6

@@ -38,6 +38,14 @@ const DEFAULT_TEST_DATABASE_URL = "postgresql://lfc:lfc@localhost:5433/lfc_b2b_t
 export const E2E_WORKERS = Number(process.env["E2E_WORKERS"] ?? "4");
 
 /**
+ * Où le harnais e2e écrit le coût de démarrage et d'arrêt de l'application,
+ * une ligne JSON par fichier (`test/e2e-boot-log.ts`). Absent en local : rien
+ * n'est écrit. Posé par la CI (2026-10-13) pour décider s'il vaut la peine de
+ * partager une application entre fichiers.
+ */
+export const E2E_BOOT_LOG: string | undefined = process.env["E2E_BOOT_LOG"];
+
+/**
  * Le numéro du worker courant, 1..N.
  *
  * Jest pose `JEST_WORKER_ID` dans chaque worker. Hors de Jest — le script de

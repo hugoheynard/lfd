@@ -49,6 +49,7 @@ import { StaffAccessResolver } from "../src/platform/auth/staff-access.resolver.
 import { prismaSchemaSource } from "../src/platform/database/prisma-schema-source.js";
 import { addDays, instantToLocal } from "@lfd/contracts";
 import { testDatabaseUrl } from "./setup-env.js";
+import { BootStopwatch } from "./e2e-boot-log.js";
 import { ensureTestBucket, resetStorage } from "./storage.js";
 import { seedE2eCatalog } from "./catalog-fixture.js";
 import { resetRolesToSeed } from "../src/dev/seeding/roles.seed.js";
@@ -126,6 +127,7 @@ export interface E2eOptions {
 
 /** Boote l'app e2e et vérifie que la base de test est bien joignable et migrée. */
 export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext> {
+  const stopwatch = new BootStopwatch();
   const builder = Test.createTestingModule({ imports: [AppModule, ...(options.imports ?? [])] })
     .overrideProvider(AccessTokenVerifier)
     .useValue(stubVerifier)
@@ -148,6 +150,7 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
   }
 
   const moduleRef = await builder.compile();
+  stopwatch.mark("compile");
 
   // Typé `App` (le serveur HTTP sous-jacent) plutôt que `any` : c'est ce que
   // supertest attend, et ça évite de propager de l'`any` dans le harnais.
@@ -165,11 +168,13 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
   // prod renvoie 400/404/409, et testeraient une autre application.
   app.useGlobalFilters(new AppErrorFilter());
   await app.init();
+  stopwatch.mark("init");
 
   const prisma = app.get(PrismaService);
   const background = app.get(BackgroundWork);
   await assertDatabaseReady(prisma);
   await ensureTestBucket();
+  stopwatch.mark("dbReady");
 
   // 🔴 On ÉCOUTE UNE FOIS, sur une adresse fixe pour toute la suite.
   //
@@ -188,6 +193,8 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
   // `getUrl()` rend alors `http://[::1]:…`, que superagent résout autrement.
   await app.listen(0, "127.0.0.1");
   const baseUrl = await app.getUrl();
+  stopwatch.mark("listen");
+  stopwatch.ready();
 
   const server = (): request.Agent => request.agent(baseUrl);
 
@@ -203,53 +210,54 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
     // Le bucket est vidé avec les tables, et pour la même raison : une pièce
     // laissée par un test serait visible du suivant.
     drain: () => background.whenIdle(),
-    reset: async () => {
-      await background.whenIdle();
-      await truncateAll(prisma);
-      // Le registre des contextes est du VOCABULAIRE, pas de la donnée de test :
-      // il est posé par migration, et une base qu'un `TRUNCATE` d'avant cette
-      // règle a vidée ne le retrouverait jamais — `migrate deploy` ne rejoue pas
-      // une migration déjà appliquée. On le garantit donc à chaque remise à zéro.
-      await ensureSalesContexts(prisma);
-      // Les rôles sont semés par migration, comme les contextes de vente, et le
-      // `TRUNCATE` les emporte de la même façon. Depuis le 2026-09-26, le
-      // résolveur d'accès LES LIT (`plan-roles-lus-en-base.md`) : leur absence
-      // retirerait toutes leurs permissions à tous les comptes de test — un 403
-      // partout, qui accuserait le mur au lieu du harnais. Ils sont remis AVANT
-      // l'opérateur des suites, que la clé étrangère `role_key` y rattache.
-      await ensureStaffRoleDefinitions(prisma);
-      // La plateforme professionnelle est semée au BOOT, donc une seule fois —
-      // et le `TRUNCATE` ci-dessus l'emporte à chaque remise à zéro. On rejoue
-      // la fonction de PRODUCTION plutôt qu'un double : un double dériverait,
-      // et c'est exactement ce qui a fait passer au vert un B2B « vendu depuis
-      // un lieu » quand une colonne a été ajoutée sans arriver ici.
-      await app.get(PointOfSaleReader).ensureRootPointOfSale();
-      // Le référentiel d'allergènes est posé par migration, comme les contextes
-      // de vente, et préservé par le `TRUNCATE` pour la même raison. Ne reste
-      // donc qu'à effacer ce qu'un TEST y aurait ajouté.
-      await purgeHouseAllergens(prisma);
-      await seedE2eStaff(prisma);
-      // Le catalogue est désormais l'autorité de prix du checkout : sans lui,
-      // toute suite qui commande passerait au vert sur un catalogue vide.
-      await seedE2eCatalog(prisma);
-      // La résolution d'accès garde un cache court par `sub` : sans cet oubli,
-      // le test suivant travaillerait avec l'id d'une fiche qu'on vient d'effacer.
-      app.get(StaffAccessResolver).forgetAll();
-      // 🔴 Et les matériaux de prix, pour la MÊME raison — mais avec un piège en
-      // plus. En production, le cache est vidé par `PricingActWriter`, passage
-      // obligé de toute écriture tarifaire. Les suites, elles, sèment leurs
-      // règles **directement en base** (`ctx.prisma.priceRule.create`) : ce
-      // chemin-là ne le vide pas, et le `TRUNCATE` ci-dessus non plus.
-      //
-      // Sans cet oubli, une suite tarifierait avec les règles de la précédente
-      // — vertes ou rouges au hasard de l'ordre d'exécution.
-      app.get(PricingMaterialsCache).invalidate();
-      // Les textes publiés de la boutique, gardés en mémoire sous leur version :
-      // le `TRUNCATE` fait revenir la version à 0, et une langue gardée sous
-      // l'ancienne serait resservie à la suite suivante.
-      app.get(CachedPublishedShopCopyReader).forget();
-      await resetStorage();
-    },
+    reset: () =>
+      stopwatch.timeReset(async () => {
+        await background.whenIdle();
+        await truncateAll(prisma);
+        // Le registre des contextes est du VOCABULAIRE, pas de la donnée de test :
+        // il est posé par migration, et une base qu'un `TRUNCATE` d'avant cette
+        // règle a vidée ne le retrouverait jamais — `migrate deploy` ne rejoue pas
+        // une migration déjà appliquée. On le garantit donc à chaque remise à zéro.
+        await ensureSalesContexts(prisma);
+        // Les rôles sont semés par migration, comme les contextes de vente, et le
+        // `TRUNCATE` les emporte de la même façon. Depuis le 2026-09-26, le
+        // résolveur d'accès LES LIT (`plan-roles-lus-en-base.md`) : leur absence
+        // retirerait toutes leurs permissions à tous les comptes de test — un 403
+        // partout, qui accuserait le mur au lieu du harnais. Ils sont remis AVANT
+        // l'opérateur des suites, que la clé étrangère `role_key` y rattache.
+        await ensureStaffRoleDefinitions(prisma);
+        // La plateforme professionnelle est semée au BOOT, donc une seule fois —
+        // et le `TRUNCATE` ci-dessus l'emporte à chaque remise à zéro. On rejoue
+        // la fonction de PRODUCTION plutôt qu'un double : un double dériverait,
+        // et c'est exactement ce qui a fait passer au vert un B2B « vendu depuis
+        // un lieu » quand une colonne a été ajoutée sans arriver ici.
+        await app.get(PointOfSaleReader).ensureRootPointOfSale();
+        // Le référentiel d'allergènes est posé par migration, comme les contextes
+        // de vente, et préservé par le `TRUNCATE` pour la même raison. Ne reste
+        // donc qu'à effacer ce qu'un TEST y aurait ajouté.
+        await purgeHouseAllergens(prisma);
+        await seedE2eStaff(prisma);
+        // Le catalogue est désormais l'autorité de prix du checkout : sans lui,
+        // toute suite qui commande passerait au vert sur un catalogue vide.
+        await seedE2eCatalog(prisma);
+        // La résolution d'accès garde un cache court par `sub` : sans cet oubli,
+        // le test suivant travaillerait avec l'id d'une fiche qu'on vient d'effacer.
+        app.get(StaffAccessResolver).forgetAll();
+        // 🔴 Et les matériaux de prix, pour la MÊME raison — mais avec un piège en
+        // plus. En production, le cache est vidé par `PricingActWriter`, passage
+        // obligé de toute écriture tarifaire. Les suites, elles, sèment leurs
+        // règles **directement en base** (`ctx.prisma.priceRule.create`) : ce
+        // chemin-là ne le vide pas, et le `TRUNCATE` ci-dessus non plus.
+        //
+        // Sans cet oubli, une suite tarifierait avec les règles de la précédente
+        // — vertes ou rouges au hasard de l'ordre d'exécution.
+        app.get(PricingMaterialsCache).invalidate();
+        // Les textes publiés de la boutique, gardés en mémoire sous leur version :
+        // le `TRUNCATE` fait revenir la version à 0, et une langue gardée sous
+        // l'ancienne serait resservie à la suite suivante.
+        app.get(CachedPublishedShopCopyReader).forget();
+        await resetStorage();
+      }),
     // 🔴 On draine avant de FERMER, pour la même raison qu'avant de vider — et
     // c'est le cas le plus vicieux des deux.
     //
@@ -262,10 +270,11 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
     //
     // C'est le flake inter-suites : une suite différente à chaque passage,
     // toujours verte quand on la rejoue seule.
-    close: async () => {
-      await background.whenIdle();
-      await app.close();
-    },
+    close: () =>
+      stopwatch.timeClose(async () => {
+        await background.whenIdle();
+        await app.close();
+      }),
   };
 }
 
