@@ -26,6 +26,13 @@ const UNWATCHED: Readonly<Record<string, string>> = {
   "public.day_change": "le journal lui-même",
   "delivery.day_change": "le journal lui-même",
   "packing.day_change": "le journal lui-même",
+  // Vérifié le 2026-10-13 dans `prisma-internal-transfer.repository.ts` : tout
+  // `save` écrit d'abord la ligne du transfert (create, ou update versionné)
+  // dans la même transaction, et SON déclencheur avance la journée.
+  "delivery.delivery_internal_transfer_item":
+    "écrite seulement avec la ligne de son transfert, dans la même transaction, dont le déclencheur avance déjà la journée",
+  "delivery.delivery_internal_transfer_manifest_line":
+    "figée au départ avec la ligne de son transfert, dans la même transaction, dont le déclencheur avance déjà la journée",
   "production.order_handover":
     "un retrait change le statut de la commande, donc `public.orders` et son journal ; son jour n'existe que dans une table d'un autre bloc (D3)",
   "production.order_departure":
