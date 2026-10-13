@@ -375,8 +375,24 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Construire les paquets dont dépend le backend
         run: pnpm --filter "./packages/**" build
+      # Le cache de transpilation de Jest (`cacheDirectory` de
+      # `jest.base.cjs`) : restauré partout, sauvegardé par un seul job de
+      # chaque sorte et seulement sur `dev`, pour ne pas faire tourner ~150 Mo
+      # par éclat dans les 10 Go de cache du dépôt.
+      - name: Restaurer le cache Jest
+        uses: actions/cache/restore@v6
+        with:
+          path: apps/lfd-api/node_modules/.cache/jest
+          key: jest-unit-${{ hashFiles('pnpm-lock.yaml', 'apps/lfd-api/jest.base.cjs') }}-${{ github.sha }}
+          restore-keys: jest-unit-${{ hashFiles('pnpm-lock.yaml', 'apps/lfd-api/jest.base.cjs') }}-
       - name: Tests unitaires
         run: pnpm --filter lfd-api test:unit
+      - name: Sauvegarder le cache Jest
+        if: github.ref == 'refs/heads/dev'
+        uses: actions/cache/save@v6
+        with:
+          path: apps/lfd-api/node_modules/.cache/jest
+          key: jest-unit-${{ hashFiles('pnpm-lock.yaml', 'apps/lfd-api/jest.base.cjs') }}-${{ github.sha }}
 
   # ── Le backend B2B, ses e2e ─────────────────────────────────────────────────
   # Ce job ne fait plus QUE les e2e — ses typechecks, son lint et ses gates sont
@@ -491,6 +507,16 @@ jobs:
         env:
           E2E_WORKERS: 2
         run: pnpm --filter lfd-api run db:test:setup
+      # Le cache de transpilation de Jest (`cacheDirectory` de
+      # `jest.base.cjs`) : restauré partout, sauvegardé par un seul job de
+      # chaque sorte et seulement sur `dev`, pour ne pas faire tourner ~150 Mo
+      # par éclat dans les 10 Go de cache du dépôt.
+      - name: Restaurer le cache Jest
+        uses: actions/cache/restore@v6
+        with:
+          path: apps/lfd-api/node_modules/.cache/jest
+          key: jest-e2e-${{ hashFiles('pnpm-lock.yaml', 'apps/lfd-api/jest.base.cjs') }}-${{ github.sha }}
+          restore-keys: jest-e2e-${{ hashFiles('pnpm-lock.yaml', 'apps/lfd-api/jest.base.cjs') }}-
       # ⚠️ PAS de `--` avant `--shard` : pnpm le transmet tel quel, et Jest lit
       # alors « --shard=1/4 » comme un motif de chemin de test. Zéro suite
       # trouvée, et un échec qui parle de tout sauf de la vraie cause.
@@ -512,6 +538,12 @@ jobs:
         run: |
           pnpm --filter lfd-api run test:e2e --runTestsByPath \
             $(node dev-toolbox/ci/e2e-shard.mjs ${{ matrix.shard }} 6)
+      - name: Sauvegarder le cache Jest
+        if: github.ref == 'refs/heads/dev' && matrix.shard == 1
+        uses: actions/cache/save@v6
+        with:
+          path: apps/lfd-api/node_modules/.cache/jest
+          key: jest-e2e-${{ hashFiles('pnpm-lock.yaml', 'apps/lfd-api/jest.base.cjs') }}-${{ github.sha }}
 
   # ── Les fronts et le PIM ────────────────────────────────────────────────────
   # Le build de production est le seul endroit qui exerce la compilation AOT des
