@@ -28,4 +28,10 @@ EXPOSE 5000
 # `--max-table-size 200` : le `/table` refuse au-delà de 200 points (100 par
 # défaut). Une tournée en compte quelques dizaines ; le client (lfd-api) doit
 # refuser nommément avant d'atteindre cette borne (L8-C2).
-CMD ["osrm-routed", "--algorithm", "mld", "--max-table-size", "200", "--port", "5000", "/data/savoie.osrm"]
+# 🔴 La carte est COPIÉE sur le disque de travail avant d'être servie
+# (2026-10-14) : en production, `osrm-routed` mourait au démarrage sur
+# « File "/data/savoie.osrm.fileIndex" mapping failed: Invalid argument » —
+# le fichier est projeté en mémoire (`mmap`), et le système de fichiers de
+# l'image chez Cloudflare Containers le refuse. La copie vit sur la couche
+# inscriptible, un disque ordinaire.
+CMD ["sh", "-c", "mkdir -p /tmp/osrm && cp /data/savoie.osrm.* /tmp/osrm/ && exec osrm-routed --algorithm mld --max-table-size 200 --port 5000 /tmp/osrm/savoie.osrm"]
