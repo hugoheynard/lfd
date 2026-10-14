@@ -54,6 +54,7 @@ export const GLOSSARY_S: Readonly<Record<string, string>> = {
   slotEnd: 'Créneau — fin',
   slotFree: 'Créneau disponible',
   slotFull: 'Créneau complet',
+  slotMissing: 'Créneau manquant — que faire',
   slotNote: 'Créneau choisi',
   slotOven: 'Créneau au four',
   slotOverlap: 'Créneaux qui se chevauchent',

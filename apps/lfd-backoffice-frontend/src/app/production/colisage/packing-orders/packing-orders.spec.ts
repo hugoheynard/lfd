@@ -195,6 +195,20 @@ describe('la liste des commandes du colisage', () => {
     expect(host.querySelector('.co-bac')?.classList.contains('is-hit')).toBe(true);
   });
 
+  it('dit l’heure « prête pour » de chaque commande, et sa source (L2)', () => {
+    const fixture = render({
+      sheets: [
+        sheet({ reference: 'CMD-001', readyBy: '07:10', readyBySource: 'round' }),
+        sheet({ reference: 'CMD-002', orderId: 'o-2', readyBy: null, readyBySource: null }),
+      ],
+    });
+
+    const labels = fixture.debugElement
+      .queryAll(By.css('[data-ready-by]'))
+      .map((found) => said(found.nativeElement as Element));
+    expect(labels).toEqual(['Prête pour 07 h 10 · départ de la tournée', 'Pas encore de départ']);
+  });
+
   it('dit lequel des deux cas quand la pile est vide', () => {
     const todo = render({ sheets: [], stack: 'todo' });
     const todoHost: HTMLElement = todo.nativeElement;

@@ -544,6 +544,12 @@ export interface ClientCopy {
     readonly pay: string;
     readonly payHint: string;
     /**
+     * Sous le bouton, quand le mode est choisi mais pas le créneau (un choix
+     * posé avant le 2026-10-14) : pas de commande sans créneau, et la phrase
+     * dit le geste qui débloque.
+     */
+    readonly slotMissing: string;
+    /**
      * À la place du bouton de commande quand la boutique ne prend pas les
      * commandes de la clientèle de la personne (réglage « Ouverture de la
      * boutique », 2026-10-09). Le catalogue et les prix restent visibles.

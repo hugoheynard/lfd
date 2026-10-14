@@ -218,6 +218,59 @@ describe("livraison sans fenêtre (CA1b)", () => {
   });
 });
 
+/**
+ * Hugo, 2026-10-14 : « pas de commande sans créneau ». Régression : la seule
+ * échéance de l'adresse était reprise en silence (provenance `default`) quand
+ * la commande n'en portait pas, et un retrait du client passait sans tranche.
+ */
+describe("pas de commande sans créneau CHOISI (2026-10-14)", () => {
+  it("refuse une livraison qui tait la seule échéance de son adresse", async () => {
+    await setGlobal("deadline");
+    const addressId = await bookAddress({ deadlines: { mode: "everyday", times: ["06:00"] } });
+
+    const refused = await ctx
+      .asSub(OWNER)
+      .post("/orders")
+      .send(deliveryOrder(addressId))
+      .expect(400);
+
+    expect(JSON.stringify(refused.body)).toContain("orders.fulfillment.window_required");
+    expect(await ctx.prisma.order.count()).toBe(0);
+  });
+
+  it("refuse un retrait sans tranche, en disant de choisir l'heure de retrait", async () => {
+    const site = await ctx.prisma.site.create({
+      data: {
+        label: "Boutique",
+        ligne1: "12 rue du Test",
+        ligne2: "",
+        codePostal: "73150",
+        ville: "Val d'Isère",
+        pays: "France",
+        isDefault: true,
+      },
+    });
+
+    const refused = await ctx
+      .asSub(OWNER)
+      .post("/orders")
+      .send({
+        idempotencyKey: randomUUID(),
+        requestedDeliveryDate: SERVICE_DAY,
+        fulfillmentMethod: "pickup",
+        pickupAddressId: site.id,
+        deliveryAddress: null,
+        note: "",
+        lines: [{ sku: "VIE-001", quantity: 2 }],
+      })
+      .expect(400);
+
+    expect(JSON.stringify(refused.body)).toContain("orders.fulfillment.window_required");
+    expect(JSON.stringify(refused.body)).toContain("heure de retrait");
+    expect(await ctx.prisma.order.count()).toBe(0);
+  });
+});
+
 describe("plusieurs créneaux par adresse (CA3b, §14.1)", () => {
   const MORNING = { start: "06:00", end: "08:00" };
   const EVENING = { start: "18:00", end: "20:00" };

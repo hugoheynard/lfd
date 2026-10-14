@@ -400,6 +400,9 @@ class FakeWelcome extends WelcomeBonusPreview {
 
 const KEY = "3f2504e0-4f89-41d3-9a0c-0305e82c3301";
 
+/** Le créneau que la commande a choisi — obligatoire depuis le 2026-10-14. */
+const CHOSEN_WINDOW = { start: "07:00", end: "08:00" };
+
 function payload(over: Partial<PlaceShopOrderPayload> = {}): PlaceShopOrderPayload {
   return {
     idempotencyKey: KEY,
@@ -411,6 +414,9 @@ function payload(over: Partial<PlaceShopOrderPayload> = {}): PlaceShopOrderPaylo
     requestedDeliveryDate: "2026-09-01",
     note: "",
     lines: [{ sku: "VIE-001", quantity: 2 }],
+    // Le créneau est obligatoire à toute passation (Hugo, 2026-10-14). Les
+    // points de ces suites n'ont pas d'heures déclarées : il n'y est pas jugé.
+    requestedWindow: CHOSEN_WINDOW,
     ...over,
   };
 }

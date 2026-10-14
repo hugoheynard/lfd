@@ -114,8 +114,8 @@
               }
             </span>
             <!-- L'acheminement : le mode et le lieu disent sur quelle pile la
-             commande va. ⚠️ Pas d'heure : une commande porte un JOUR de service
-             et rien de plus fin (vérifié le 2026-09-13). -->
+             commande va ; l'heure « prête pour » (L2, 2026-10-14) dit quand,
+             et d'où elle vient — calculée au serveur. -->
             <span class="co-bac-where">
               <fold-icon
                 [name]="sheet.fulfillmentMethod === 'delivery' ? 'truck' : 'store'"
@@ -127,6 +127,9 @@
                 · arrêt {{ stop.position }}
               }
             </span>
+            @if (readyBy(sheet); as due) {
+              <span class="co-bac-due" data-ready-by>{{ due }}</span>
+            }
             <!-- Lot PC2 : la retenue vient du fournil, « à refaire » de la livraison. -->
             @if (sheet.qualityHeld === true || entry.stop?.binToRedo === true) {
               <span class="co-bac-flags">

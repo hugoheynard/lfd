@@ -149,6 +149,8 @@ function order(sku: string, day: string) {
       pickupAddressId: pickupId,
       requestedDeliveryDate: day,
       fulfillmentMethod: "pickup",
+      // Pas de commande sans créneau (2026-10-14).
+      requestedWindow: { start: "07:00", end: "08:00" },
       note: "",
       lines: [{ sku, quantity: 1 }],
     });
@@ -320,6 +322,8 @@ describe("les abonnements (D6)", () => {
         startDate: serviceDay(8),
         endDate: null,
         fulfillmentMethod: "pickup",
+        // Pas de commande sans créneau (2026-10-14).
+        requestedWindow: { start: "07:00", end: "08:00" },
         deliveryAddress: null,
         pickupAddressId: null,
         lines: [{ sku: "PAT-002", quantity: 1 }],

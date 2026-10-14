@@ -1,8 +1,29 @@
 # TODO — trier le colisage par échéance de récupération
 
-> 📌 **Ouvert le 2026-09-14, à la demande de Hugo. Pour plus tard** : rien n'est
-> commencé, et rien ne l'est tant que les deux questions du bas ne sont pas
-> tranchées.
+> 📌 **Ouvert le 2026-09-14, à la demande de Hugo.**
+>
+> ✅ **Pris le 2026-10-14 par le lot L2** de
+> [`../commandes/plan-tri-depart-et-couleurs.md`](../commandes/plan-tri-depart-et-couleurs.md)
+> (« Ce qui est bâti de L2 ») — non commité à l'écriture. Le poste est rangé
+> par heure « prête pour », lue à la livraison. Ce qui suit est l'état du
+> 2026-09-14, gardé pour la trace ; les deux questions ont leur réponse
+> ci-dessous.
+
+## Réponses (2026-10-14, Hugo)
+
+1. **L'échéance** : livraison → le départ de sa tournée ; retrait par
+   transfert → le départ du transfert ; retrait sur place → le début du
+   créneau moins la mise en place au comptoir du site (`dueAt`, déjà figé à la
+   clôture).
+2. **Le délai de livraison** n'a pas à vivre quelque part : c'est le départ de
+   la tournée qui compte, et la tournée le porte (`plannedDepartureAt`). Une
+   « marge de chargement » n'existe pas dans les réglages ; aucune n'est
+   retirée.
+
+⚠️ Contrairement à « Ce que la réponse imposera » plus bas, l'heure d'une
+livraison **n'entre pas** dans le snapshot du commerce : elle n'existe qu'après
+la composition, donc après la clôture. Le colisage la lit à la livraison par
+un port qu'il déclare (`OrderDeparturesReader`).
 
 ## Ce qu'il faut
 

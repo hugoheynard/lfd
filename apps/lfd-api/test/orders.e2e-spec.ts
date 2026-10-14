@@ -133,6 +133,8 @@ function pickupOrder(companyId: string | null): Record<string, unknown> {
     pickupAddressId: pickupId,
     requestedDeliveryDate: SERVICE_DAY,
     fulfillmentMethod: "pickup",
+    // Pas de commande sans créneau (2026-10-14).
+    requestedWindow: { start: "07:00", end: "08:00" },
     note: "Livrer avant 8h",
     lines: [{ sku: "VIE-001", quantity: 3 }],
   };
@@ -443,6 +445,8 @@ describe("retrait", () => {
         pickupAddressId: pickupId,
         requestedDeliveryDate: SERVICE_DAY,
         fulfillmentMethod: "pickup",
+        // Pas de commande sans créneau (2026-10-14).
+        requestedWindow: { start: "07:00", end: "08:00" },
         note: "",
         lines: [{ sku: "VIE-001", quantity: 2 }],
       })
@@ -470,6 +474,8 @@ describe("retrait", () => {
         pickupAddressId: pickupId,
         requestedDeliveryDate: SERVICE_DAY,
         fulfillmentMethod: "pickup",
+        // Pas de commande sans créneau (2026-10-14).
+        requestedWindow: { start: "07:00", end: "08:00" },
         note: "",
         lines: [{ sku: "VIE-001", quantity: 1 }],
       })

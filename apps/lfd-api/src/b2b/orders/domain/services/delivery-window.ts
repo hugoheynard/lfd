@@ -9,7 +9,7 @@ import {
 import {
   DeadlineNotRegisteredError,
   DeadlineWindowHasStartError,
-  DeliveryWindowRequiredError,
+  FulfillmentWindowRequiredError,
   SlotNotRegisteredError,
 } from "../errors/order-errors.js";
 import type { DeliveryDefaults } from "../ports/delivery-defaults.reader.js";
@@ -62,7 +62,7 @@ export type WindowRequester = "pro" | "individual" | "staff";
  *   qui n'est pas inscrite sur l'adresse ce jour-là.
  * @throws {SlotNotRegisteredError} un créneau demandé par un client pro qui
  *   n'est pas inscrit sur l'adresse ce jour-là.
- * @throws {DeliveryWindowRequiredError} une livraison sans fenêtre.
+ * @throws {FulfillmentWindowRequiredError} une livraison sans fenêtre.
  */
 export function ensureDeliveryWindow(input: {
   readonly method: FulfillmentMethod;
@@ -83,7 +83,7 @@ export function ensureDeliveryWindow(input: {
   }
   ensureRegisteredWindow(input);
   if (input.agreed === null) {
-    throw new DeliveryWindowRequiredError();
+    throw new FulfillmentWindowRequiredError("delivery");
   }
 }
 
@@ -123,10 +123,30 @@ function ensureRegisteredWindow(input: {
 }
 
 /**
- * L'acheminement convenu, **fenêtre de livraison comprise** : le mode est celui
- * de l'adresse, sinon le global ; la fenêtre proposée suit ce mode ; une
- * livraison sans fenêtre, ou avec un début en échéance, est refusée. Les
- * commandes déjà passées ne sont jamais relues : seule la passation juge.
+ * La commande a-t-elle CHOISI son créneau ? Décision de Hugo du 2026-10-14 :
+ * « pas de commande sans créneau » — retrait comme livraison, client, invité
+ * comme équipe. `undefined` (« ne se prononce pas ») et `null` (« aucun »)
+ * sont refusés pareil : le réglage propose, il ne choisit plus à la place.
+ *
+ * @throws {FulfillmentWindowRequiredError} aucun créneau dans la demande.
+ */
+export function ensureWindowChosen(
+  method: FulfillmentMethod,
+  requested: FulfillmentWindow | null | undefined,
+): FulfillmentWindow {
+  if (requested === undefined || requested === null) {
+    throw new FulfillmentWindowRequiredError(method);
+  }
+  return requested;
+}
+
+/**
+ * L'acheminement convenu, **créneau compris** : la commande doit l'avoir
+ * choisi ({@link ensureWindowChosen}) ; en livraison, le mode est celui de
+ * l'adresse, sinon le global, et un début en échéance est refusé. La
+ * provenance reste déduite : un créneau égal à la proposition du réglage est
+ * un `default` CHOISI, jamais un défaut appliqué en silence. Les commandes
+ * déjà passées ne sont jamais relues : seule la passation juge.
  *
  * `globalMode` vaut `null` en retrait, qui n'a pas de mode.
  */
@@ -136,18 +156,22 @@ export function agreeWithWindow(
   globalMode: WindowMode | null,
   requestedBy: WindowRequester,
 ): OrderFulfillment {
+  const window = ensureWindowChosen(request.method, request.window);
   const mode = resolveWindowMode(defaults.windowMode, globalMode ?? "deadline");
-  const agreed = agreeFulfillment(request, {
-    contact: defaults.contact,
-    signatureRequired: defaults.signatureRequired,
-    window: preferredWindowOf(mode, defaults.window, defaults.deadlines),
-    // Les échéances ne valent reprise qu'en mode échéance.
-    deadlines: mode === "deadline" ? defaults.deadlines : [],
-  });
+  const agreed = agreeFulfillment(
+    { ...request, window },
+    {
+      contact: defaults.contact,
+      signatureRequired: defaults.signatureRequired,
+      window: preferredWindowOf(mode, defaults.window, defaults.deadlines),
+      // Les échéances ne valent reprise qu'en mode échéance.
+      deadlines: mode === "deadline" ? defaults.deadlines : [],
+    },
+  );
   ensureDeliveryWindow({
     method: request.method,
     mode,
-    requested: request.window,
+    requested: window,
     agreed: agreed.window.value,
     deadlines: defaults.deadlines,
     slots: defaults.slots,

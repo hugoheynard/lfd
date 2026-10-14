@@ -33,6 +33,18 @@ describe("PackingListDrawnEvent", () => {
     );
   });
 
+  /**
+   * Régression évitée (2026-10-14) : la clé ne portait que la journée et la
+   * commande. Après une réouverture, le nouveau tirage de la même commande
+   * avait la clé de l'ancien, et la boîte d'envoi l'avalait.
+   */
+  it("🔴 une clé neuve après une réouverture, l'ancienne sinon", () => {
+    const reopenedAt = new Date(AT.getTime() + 1);
+    const before = new PackingListDrawnEvent(DAY, AT, ORDER).durableFact().key;
+    const after = new PackingListDrawnEvent(DAY, AT, ORDER, reopenedAt).durableFact().key;
+    expect(after).toBe(`${before}:after-reopening:${reopenedAt.toISOString()}`);
+  });
+
   it("se relit à l'identique, échéance nulle comprise", () => {
     for (const order of [ORDER, { ...ORDER, dueAt: null }]) {
       const fact = new PackingListDrawnEvent(DAY, AT, order).durableFact();

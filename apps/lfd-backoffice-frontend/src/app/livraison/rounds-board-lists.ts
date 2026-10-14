@@ -80,9 +80,10 @@ export function relaidBoard(board: Board, lists: OrderLists): Board {
       const stop = stops.get(id);
       return stop === undefined ? [] : [stop];
     });
-    // La place a changé : l'alerte rouge attend le prochain chronométrage (CA5).
+    // La place a changé : l'alerte rouge (CA5) et l'heure de retour attendent
+    // le prochain chronométrage — une heure d'avant le geste serait fausse.
     const untimed = placed.map((stop) => ({ ...stop, placementLate: false }));
-    return { ...round, stops: withClashes(untimed) };
+    return { ...round, timing: null, stops: withClashes(untimed) };
   });
   const poolIds = lists[POOL_KEY];
   const pool =

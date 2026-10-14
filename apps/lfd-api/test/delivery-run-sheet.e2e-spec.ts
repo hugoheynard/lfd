@@ -149,7 +149,7 @@ async function place(
   const point = await ctx.prisma.site.findFirstOrThrow({ select: { id: true } });
   const where =
     fulfillment === "pickup"
-      ? { pickupAddressId: point.id }
+      ? { pickupAddressId: point.id, requestedWindow: { start: "07:00", end: "08:00" } }
       : {
           deliveryAddress: SITE,
           deliveryAddressId,

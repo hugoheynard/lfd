@@ -174,15 +174,15 @@ prix » : le prix est figé sur la ligne.
 
 ### 3.4 L'acheminement — où, quand, comment
 
-| Colonne                   | Ce qu'elle dit                                                                     | Défini par                                                                     | `NULL`                          |
-| ------------------------- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------- |
-| `fulfillmentMethod`       | `delivery` (coursier) ou `pickup` (retrait)                                        | le client ou l'équipe                                                          | —                               |
-| `requestedDeliveryDate`   | la **journée de service** — une date, pas un instant                               | le client ou l'équipe ; c'est elle que lit tout le fournil                     | aucune date demandée            |
-| `deliveryZoneId`          | la zone tarifée du coursier                                                        | `CartAdjustments.forDelivery`, depuis le **code postal**                       | retrait                         |
-| `deliveryAddressSnapshot` | l'adresse de livraison, **recopiée**                                               | le client ou l'équipe                                                          | retrait                         |
-| `pickupAddress`           | le point de retrait, **recopié** (nom et champs postaux)                           | `CartAdjustments.forPickup`, depuis l'identifiant du point                     | coursier                        |
-| `fulfillment`             | **ce qui a été convenu** : créneau, contact, signature — chacun avec sa provenance | `agreeFulfillment` : la demande, sinon le défaut du réglage                    | commande antérieure au champ    |
-| `deliveryAddressId`       | une adresse du carnet de la société, **relue sous le mur** (jamais celle du corps) | `OrderDrafting` (`bookAddressId`), écrit par `place()` — vérifié le 2026-10-12 | adresse hors carnet, ou retrait |
+| Colonne                   | Ce qu'elle dit                                                                     | Défini par                                                                        | `NULL`                          |
+| ------------------------- | ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | ------------------------------- |
+| `fulfillmentMethod`       | `delivery` (coursier) ou `pickup` (retrait)                                        | le client ou l'équipe                                                             | —                               |
+| `requestedDeliveryDate`   | la **journée de service** — une date, pas un instant                               | le client ou l'équipe ; c'est elle que lit tout le fournil                        | aucune date demandée            |
+| `deliveryZoneId`          | la zone tarifée du coursier                                                        | `CartAdjustments.forDelivery`, depuis le **code postal**                          | retrait                         |
+| `deliveryAddressSnapshot` | l'adresse de livraison, **recopiée**                                               | le client ou l'équipe                                                             | retrait                         |
+| `pickupAddress`           | le point de retrait, **recopié** (nom et champs postaux)                           | `CartAdjustments.forPickup`, depuis l'identifiant du point                        | coursier                        |
+| `fulfillment`             | **ce qui a été convenu** : créneau, contact, signature — chacun avec sa provenance | `agreeFulfillment` : la demande (créneau obligatoire), sinon le défaut du réglage | commande antérieure au champ    |
+| `deliveryAddressId`       | une adresse du carnet de la société, **relue sous le mur** (jamais celle du corps) | `OrderDrafting` (`bookAddressId`), écrit par `place()` — vérifié le 2026-10-12    | adresse hors carnet, ou retrait |
 
 - 🔴 **Coursier XOR retrait, tenu par l'agrégat** (`normalizeFulfillment`) : un
   coursier exige une zone ET une adresse, un retrait exige un point ; le résidu
@@ -195,6 +195,13 @@ prix » : le prix est figé sur la ligne.
   **aucun** défaut — les heures d'un point sont une contrainte d'ouverture, pas
   la préférence d'un client. Un créneau demandé hors des heures du point est
   refusé (`PickupClosedAtRequestedTimeError`).
+- 🔴 **Pas de commande sans créneau** (Hugo, 2026-10-14) : retrait comme
+  livraison, client, invité comme équipe, la passation refuse une demande sans
+  fenêtre (`ensureWindowChosen` dans `agreeWithWindow`, 400
+  `orders.fulfillment.window_required`). La fenêtre du carnet ne s'applique
+  plus en silence : `default` dit désormais « le client a choisi ce que son
+  adresse propose », jamais « personne n'a choisi ». Les commandes antérieures
+  sans créneau restent en base, et les écrans les montrent toujours.
 - La date passe aussi l'**heure limite** (`ensureWithinOrderCutoff`) : au-delà,
   la commande est refusée, sauf dérogation (§3.5, surtaxe).
 

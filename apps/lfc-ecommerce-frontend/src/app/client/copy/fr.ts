@@ -302,6 +302,7 @@ export const FR: ClientCopy = {
     dropAria: 'Retirer {name} du panier',
     pay: 'Régler ma commande · {total}',
     payHint: 'Paiement en ligne. Vous présentez votre QR au comptoir, rien à régler sur place.',
+    slotMissing: 'Choisissez un créneau pour régler : touchez « Modifier » et choisissez l’heure.',
     ordersClosed: 'Les commandes sont fermées pour le moment.',
     settleTitle: 'Comment réglez-vous ?',
     settleCard: 'Paiement direct',

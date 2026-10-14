@@ -108,6 +108,8 @@ function clientOrder(): Record<string, unknown> {
     pickupAddressId: pickupId,
     requestedDeliveryDate: SERVICE_DAY,
     fulfillmentMethod: "pickup",
+    // Pas de commande sans créneau (2026-10-14).
+    requestedWindow: { start: "07:00", end: "08:00" },
     note: "",
     lines: LINES,
   };
@@ -119,6 +121,8 @@ async function placeAsGuest(): Promise<unknown> {
       idempotencyKey: randomUUID(),
       buyer: { firstName: "Camille", email: "camille@visiteur.fr", phone: "0600000000" },
       fulfillmentMethod: "pickup",
+      // Pas de commande sans créneau (2026-10-14).
+      requestedWindow: { start: "07:00", end: "08:00" },
       deliveryAddress: null,
       deliveryAddressId: null,
       pickupAddressId: pickupId,

@@ -19,3 +19,13 @@ export {
   ProductionDayRetakenEvent,
   ProductionDayRetakenPayloadError,
 } from "./production-day-retaken.event.js";
+// La réouverture (Hugo, 2026-10-14) : le fait, la question que le fournil
+// pose avant de rouvrir, et l'état des plans pour ne défaire qu'un plan qui
+// n'a pas été arrêté de nouveau depuis.
+export {
+  PRODUCTION_DAY_REOPENED,
+  ProductionDayReopenedEvent,
+  ProductionDayReopenedPayloadError,
+} from "../commerce/production-day-reopened.event.js";
+export { ClosedPlansReader } from "../commerce/closed-plans.reader.js";
+export { DayDispatchProgressReader } from "./day-dispatch-progress.reader.js";

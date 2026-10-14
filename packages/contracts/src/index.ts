@@ -1734,7 +1734,7 @@ export type {
   PricedSheet,
 } from "./order-sheet.js";
 export type { OrderPackingView } from "./order-packing.js";
-export type { ProductionPlanClosure } from "./production-sheet.js";
+export type { ProductionPlanClosure, ProductionPlanReopening } from "./production-sheet.js";
 export {
   FEATURE_CATALOGUE,
   FEATURE_KEYS,

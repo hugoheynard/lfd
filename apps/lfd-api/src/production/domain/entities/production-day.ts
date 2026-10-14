@@ -12,6 +12,7 @@ import {
 } from "../value-objects/packing-owner.js";
 import { ServiceDay } from "../value-objects/service-day.value-object.js";
 import * as batching from "./production-day.batches.js";
+import { assertReopenable, type DownstreamProgress } from "./production-day.reopening.js";
 import type {
   DoneMark,
   PackedMark,
@@ -23,6 +24,7 @@ import type {
 import type { PlanSigner } from "./plan-signer.js";
 
 // La forme de la journée vit à côté ; réexportée : l'agrégat reste le point d'entrée.
+export type { DownstreamProgress } from "./production-day.reopening.js";
 export type {
   DoneMark,
   ProductionBatchSnapshot,
@@ -74,6 +76,7 @@ export class ProductionDay {
     private ordersValue: readonly ProductionOrderSnapshot[],
     private countsValue: readonly ProducedItemSnapshot[],
     private batchesValue: readonly ProductionBatchSnapshot[],
+    private reopenedValue: PackedMark | null = null,
   ) {}
 
   /**
@@ -96,6 +99,7 @@ export class ProductionDay {
       snapshot.orders,
       snapshot.counts,
       snapshot.batches,
+      snapshot.reopened ?? null,
     );
   }
 
@@ -120,6 +124,11 @@ export class ProductionDay {
   /** Le dernier retirage, ou `null` — la fiche dit quel tirage elle montre. */
   get retaken(): PackedMark | null {
     return this.retakenValue;
+  }
+
+  /** La dernière réouverture, ou `null` : jamais rouverte. */
+  get reopened(): PackedMark | null {
+    return this.reopenedValue;
   }
 
   /** Qui colise la journée — cf. `PackingOwner`. */
@@ -278,6 +287,32 @@ export class ProductionDay {
     return absorbed.count;
   }
 
+  /**
+   * **Rouvre la journée** (Hugo, 2026-10-14) : l'arrêt est défait, le plan
+   * effacé (commandes, compte, retirage), et la trace `reopened` posée. Les
+   * fournées annulées restent : elles sont l'historique du four, pas du plan.
+   * Le prochain arrêt refait un instantané neuf, avec un nouvel instant.
+   *
+   * @returns les commandes que le plan portait, pour le fait et le journal.
+   * @throws {ProductionDayNotClosedError} rien n'est arrêté.
+   * @throws les refus d'`assertReopenable` : quelque chose a commencé.
+   */
+  reopen(progress: DownstreamProgress, at: Date, by: string): readonly string[] {
+    if (!this.isClosed) {
+      throw new ProductionDayNotClosedError(this.day.value);
+    }
+    assertReopenable(this.day.value, this.countsValue, this.batchesValue, progress);
+    const released = this.ordersValue.map((order) => order.orderId);
+    this.closedAtValue = null;
+    this.closedByValue = null;
+    this.retakenValue = null;
+    this.retakenByNameValue = null;
+    this.ordersValue = [];
+    this.countsValue = [];
+    this.reopenedValue = { at, by };
+    return released;
+  }
+
   /** L'état à écrire. Les getters de l'agrégat, jamais ses champs privés. */
   toSnapshot(): ProductionDaySnapshot {
     return {
@@ -290,6 +325,7 @@ export class ProductionDay {
       orders: this.ordersValue,
       counts: this.countsValue,
       batches: this.batchesValue,
+      reopened: this.reopenedValue,
     };
   }
 }

@@ -454,6 +454,11 @@ export const ORDERS_PHRASES = {
 
   'production_day.closed': productionDayClosed,
   'production_day.retaken': productionDay('a repris', 'commande ajoutée', 'commandes ajoutées'),
+  'production_day.reopened': productionDay(
+    'a rouvert',
+    'commande retirée du plan',
+    'commandes retirées du plan',
+  ),
 
   'production_container.set': (fact) => {
     const before = fact.payload['before'];

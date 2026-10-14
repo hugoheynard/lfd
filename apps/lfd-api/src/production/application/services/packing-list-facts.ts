@@ -15,22 +15,29 @@ export function packingListFactsOf(
   day: ServiceDay,
   orders: readonly ProductionOrderSnapshot[],
   drawnAt: Date,
+  /** La dernière réouverture de la journée — cf. `PackingListDrawnEvent`. */
+  reopenedAt: Date | null = null,
 ): readonly PackingListDrawnEvent[] {
   return orders.map(
     (order) =>
-      new PackingListDrawnEvent(day.value, drawnAt, {
-        orderId: order.orderId,
-        reference: order.reference,
-        customerLabel: order.customerLabel,
-        fulfillmentMethod: order.fulfillmentMethod,
-        dueAt: order.dueAt,
-        clientele: order.clientele,
-        siteId: order.siteId,
-        lines: order.lines.map((line) => ({
-          sku: line.sku,
-          productName: line.productName,
-          quantity: line.quantity,
-        })),
-      }),
+      new PackingListDrawnEvent(
+        day.value,
+        drawnAt,
+        {
+          orderId: order.orderId,
+          reference: order.reference,
+          customerLabel: order.customerLabel,
+          fulfillmentMethod: order.fulfillmentMethod,
+          dueAt: order.dueAt,
+          clientele: order.clientele,
+          siteId: order.siteId,
+          lines: order.lines.map((line) => ({
+            sku: line.sku,
+            productName: line.productName,
+            quantity: line.quantity,
+          })),
+        },
+        reopenedAt,
+      ),
   );
 }

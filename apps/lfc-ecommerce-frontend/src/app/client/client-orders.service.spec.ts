@@ -39,8 +39,8 @@ const LIVRE: ServiceChoice = {
   address: '12 rue du Four, 73150',
   codePostal: '73150',
   slot: '9 h – 10 h',
-  // Le dialogue d'adresse n'en envoie AUCUNE — cf. le cas qui l'éprouve.
-  window: null,
+  // Choisie dans le dialogue : pas de commande sans créneau (2026-10-14).
+  window: { start: '09:00', end: '10:00' },
   date: '2026-09-07',
   deliveryAddressId: 'adr_four',
   deliveryAddress: {
@@ -143,18 +143,10 @@ describe('passer commande', () => {
     expect(body.pickupAddressId).toBeNull();
     expect(body.deliveryAddress?.ligne1).toBe('12 rue du Four');
     expect(body.deliveryAddress?.ville).toBe("Val d'Isère");
-    // ⚠️ **Aucune fenêtre en livraison, et c'est le sujet du cas.** Les créneaux
-    // de livraison viennent de `DELIVERY_SLOTS`, qui dit lui-même n'affirmer
-    // rien de vrai. L'envoyer inscrirait une promesse sur la commande, et le bon
-    // de commande l'imprimerait sur un document opposable.
-    //
-    // 🔴 **ABSENTE, et surtout pas `null`.** Le serveur lit l'absence comme
-    // « prends le défaut » — celui du CARNET, que le client a déclaré sur son
-    // adresse — et un `null` explicite comme « le client n'en veut aucune ». Ce
-    // cas exigeait `toBeNull()` : il aurait laissé passer un `null` qui EFFACE
-    // la fenêtre du carnet, ce que la première version faisait vraiment.
-    expect(body.requestedWindow).toBeUndefined();
-    expect('requestedWindow' in body).toBe(false);
+    // 🔴 **La fenêtre CHOISIE part, livraison comprise** (Hugo, 2026-10-14 :
+    // « pas de commande sans créneau »). Ce cas exigeait l'inverse — la clé
+    // absente, pour que le serveur reprenne le carnet en silence.
+    expect(body.requestedWindow).toEqual({ start: '09:00', end: '10:00' });
   });
 
   /**

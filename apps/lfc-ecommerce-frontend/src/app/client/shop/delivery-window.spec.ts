@@ -12,7 +12,6 @@ import {
 /** CA3 et CA1b : une livraison ne part plus sans heure. */
 describe('la fenêtre d’une livraison à la passation', () => {
   const base = {
-    dayDeadlines: [] as readonly string[],
     daySlots: [] as readonly { start: string; end: string }[],
     deadline: '',
     slot: '',
@@ -27,18 +26,19 @@ describe('la fenêtre d’une livraison à la passation', () => {
     });
   });
 
-  it('en échéance, omet la seule échéance du jour — le serveur la reprend', () => {
-    expect(deliveryWindowOf({ ...base, mode: 'deadline', dayDeadlines: ['06:00'] })).toBeNull();
+  /** Hugo, 2026-10-14 : la seule échéance du jour était reprise en silence par le serveur. */
+  it('🔴 en échéance, exige un choix même quand le jour n’en a qu’une', () => {
+    expect(deliveryWindowOf({ ...base, mode: 'deadline' })).toBeUndefined();
   });
 
-  it('en échéance, exige un choix quand il y en a plusieurs', () => {
-    const many = { ...base, mode: 'deadline' as const, dayDeadlines: ['06:00', '11:00'] };
-    expect(deliveryWindowOf(many)).toBeUndefined();
-  });
-
-  it('en créneau, laisse au serveur le SEUL créneau du carnet', () => {
+  /** Même décision : le seul créneau du carnet ne part plus « par défaut ». */
+  it('🔴 en créneau, exige le choix du SEUL créneau du carnet', () => {
     const daySlots = [{ start: '07:00', end: '08:00' }];
-    expect(deliveryWindowOf({ ...base, mode: 'slot', daySlots })).toBeNull();
+    expect(deliveryWindowOf({ ...base, mode: 'slot', daySlots })).toBeUndefined();
+    expect(deliveryWindowOf({ ...base, mode: 'slot', daySlots, slot: '07:00-08:00' })).toEqual({
+      start: '07:00',
+      end: '08:00',
+    });
   });
 
   it('en créneau, exige un choix quand le carnet en porte plusieurs (CA3b)', () => {

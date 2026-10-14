@@ -1,8 +1,9 @@
 # Plan — trier les commandes par heure de départ, et les colorer
 
-> **État : 🟡 partiel, 2026-10-13.** **L1a, L1b et L5 bâtis le 2026-10-13
-> (non commités à l'écriture)** — voir « Ce qui est bâti » sous §5 ; L2 reste à
-> faire, L4 est hors du chantier. Les couleurs qu'il lit existent sur les sites
+> **État : 🟡 partiel, 2026-10-14.** **L1a, L1b et L5 bâtis le 2026-10-13** —
+> voir « Ce qui est bâti » sous §5. **L2 bâti en partie le 2026-10-14 (non
+> commité à l'écriture)** : le colisage est rangé par heure « prête pour » ; le
+> tri de la liste `/commandes` attend Q2. L4 est hors du chantier. Les couleurs qu'il lit existent sur les sites
 > ([`../sites/sites.md`](../sites/sites.md), ✅). Écrit d'abord ici comme
 > « écart logistique », fusionné le même jour dans un plan commun avec les
 > sites et le transfert interne, puis redécoupé le 2026-10-13 (Hugo) : le
@@ -222,7 +223,7 @@ budget de 1,30 Mo.
 | ------ | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
 | L1a ✅ | M      | serveur : la copie du colisage porte `siteId` et `clientele` (fait du fournil + migration additive du schéma `packing`) ; les vues de la livraison exposent site et clientèle par arrêt (canal du commerce, par lot ; par commande dans le manifeste d'un transfert) ; lecture seule de la palette pour la logistique | S2 des sites, T1–T3 du transfert  |
 | L1b ✅ | S      | back-office : store de palette, fonction pure de catégorie, un composant de pastille (contraste calculé), teinte neutre ; posé sur colisage, tournées, chargement, Ma tournée                                                                                                                                         | L1a                               |
-| L2     | M      | `OrderDepartureReader` + tri de la liste ; tri du colisage par `dueAt`                                                                                                                                                                                                                                                | T1 du transfert (pour le village) |
+| L2 🟡  | M      | `OrderDepartureReader` + tri de la liste ; tri du colisage par `dueAt` — **colisage bâti le 2026-10-14** (voir plus bas), liste en attente de Q2                                                                                                                                                                      | T1 du transfert (pour le village) |
 | L4     | ?      | « Écrire » — **hors du chantier** (Q1 mise de côté)                                                                                                                                                                                                                                                                   | —                                 |
 | L5 ✅  | S      | papier (Q8 = oui) : carré de couleur après les dates, en symétrie du logo, sur étiquettes de bac, feuille de route et bon                                                                                                                                                                                             | L1a                               |
 
@@ -266,7 +267,11 @@ le colisage (`apps/lfd-backoffice-frontend/src/app/production/colisage/packing-f
 (carré en haut à droite, le code étant en bas).
 
 **Cadres du colisage, revus le 2026-10-14 (Hugo)** — ordre FIXE dans un
-groupe, commandes dans leur ordre servi à l'intérieur de chaque cadre :
+groupe, commandes dans leur ordre servi à l'intérieur de chaque cadre.
+⚠️ **Revu le même jour par L2** (Hugo : « trie DANS chaque cadre, et ordonne
+les cadres par leur échéance la plus tôt ») : l'ordre ci-dessous ne départage
+plus que les égalités ; les retraits d'un transfert gardent leur ordre fixe
+(ils partent ensemble).
 
 1. **Transfert <site>** (aujourd'hui Val Village) : un cadre englobant
    NEUTRE — il mêle des clientèles, comme l'arrêt de transfert des tournées —
@@ -301,6 +306,41 @@ même raison, et ses cadres intérieurs portent les deux couleurs de retrait
 
 Le tri du colisage par `dueAt` répond, pour le village, à la question 1 de
 [`../colisage/todo-colisage-tri-par-echeance.md`](../colisage/todo-colisage-tri-par-echeance.md).
+
+### Ce qui est bâti de L2 (2026-10-14, non commité à l'écriture)
+
+**Le colisage, seulement.** Le poste lit l'heure à laquelle chaque commande
+doit être prête, la sert et se range par elle.
+
+| Commande                                             | Heure « prête pour »                                                                | Source     |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------- | ---------- |
+| livraison                                            | départ de sa tournée (`plannedDepartureAt ?? departedAt`)                           | `round`    |
+| livraison sans tournée, ou tournée sans départ prévu | aucune — « Pas encore de départ », en fin                                           | —          |
+| retrait porté par un transfert                       | départ de la tournée qui porte l'arrêt du transfert, sinon départ réel du transfert | `transfer` |
+| idem, transfert sans départ                          | l'échéance figée (`dueAt` = arrivée requise au site)                                | `due`      |
+| retrait sur place                                    | l'échéance figée (`dueAt` = créneau − mise en place)                                | `due`      |
+
+- **Le port est déclaré par le colisage**, pas par la livraison dans
+  `delivery/channels/commerce/` comme le §3 l'écrivait :
+  `OrderDeparturesReader` (`packing/channels/delivery/`), implémenté par la
+  livraison (`PrismaOrderDeparturesReader`, deux lectures par lot), relié dans
+  `appBootstrap/packing-delivery-feed.module.ts`. `packing → delivery` est
+  interdit ; c'est la forme de `BinDesk`.
+- **Aucune marge de chargement** n'est retirée au départ : il n'en existe pas
+  dans les réglages de la livraison (`RoutingSettingsValues`, relu le
+  2026-10-14).
+- `PackingSheet` gagne `readyBy` et `readyBySource` (facultatifs dans le type,
+  comme `siteId`) ; `packingBoardOf` sert les fiches dans cet ordre, puis par
+  référence (`apps/lfd-api/src/packing/domain/services/ready-by.ts`).
+- Écran : chaque commande dit « Prête pour 07 h 10 · départ de la tournée »
+  (`apps/lfd-backoffice-frontend/src/app/production/colisage/packing-ready-by.ts`) ; dans `packing-frames.ts`, les commandes d'un cadre
+  par heure, les cadres par leur heure la plus tôt.
+
+**Reste de L2** : `OrderDepartureReader` côté commerce et le tri de
+`/commandes` — l'écran n'est pas tranché (Q2 ne parle que des couleurs).
+⚠️ Le départ prévu est **effacé dès qu'un geste à la main change les arrêts**
+(§2.3) : une journée composée à la main n'a pas d'heure de livraison au
+colisage tant qu'elle n'est pas rechronométrée par « Appliquer ».
 
 ## 6. Questions à Hugo
 

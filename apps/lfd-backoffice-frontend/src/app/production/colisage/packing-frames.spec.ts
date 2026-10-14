@@ -32,7 +32,9 @@ const PALETTE: readonly SitePaletteEntryView[] = [
 
 function entry(
   reference: string,
-  overrides: Partial<Pick<PackingSheet, 'fulfillmentMethod' | 'clientele' | 'siteId' | 'dueAt'>>,
+  overrides: Partial<
+    Pick<PackingSheet, 'fulfillmentMethod' | 'clientele' | 'siteId' | 'dueAt' | 'readyBy'>
+  >,
 ): PackingEntry {
   const sheet = {
     orderId: `o_${reference}`,
@@ -188,15 +190,10 @@ describe('packingFrames — les cadres de couleur du colisage (L1b, revus le 202
     });
   });
 
-  it('ordre fixe : transfert, livraison pro, livraison particulier, puis retraits par heure', () => {
+  it('à heure égale (ici aucune), l’ordre fixe départage : transfert, livraisons, retraits', () => {
     const frames = packingFrames(
       [
-        entry('R', {
-          fulfillmentMethod: 'pickup',
-          clientele: 'public',
-          siteId: 'adroit',
-          dueAt: '08:00',
-        }),
+        entry('R', { fulfillmentMethod: 'pickup', clientele: 'public', siteId: 'adroit' }),
         entry('P', { clientele: 'public' }),
         entry('L', { clientele: 'pro' }),
         entry('T', { fulfillmentMethod: 'pickup', clientele: 'public', siteId: 'vv' }),
@@ -210,6 +207,55 @@ describe('packingFrames — les cadres de couleur du colisage (L1b, revus le 202
       'Livraison particulier',
       'Retrait particulier Adroit',
     ]);
+  });
+
+  /**
+   * L2 (Hugo, 2026-10-14) : les cadres se rangent par leur heure « prête
+   * pour » la plus tôt — ce qui part d'abord se prépare d'abord —, et les
+   * commandes d'un cadre par heure. L'ordre FIXE d'avant ne départage plus
+   * que les égalités.
+   */
+  it('range les cadres par leur heure la plus tôt, et les commandes dans chaque cadre', () => {
+    const frames = packingFrames(
+      [
+        entry('L1', { clientele: 'pro', readyBy: '07:10' }),
+        entry('R', {
+          fulfillmentMethod: 'pickup',
+          clientele: 'public',
+          siteId: 'adroit',
+          readyBy: '06:45',
+        }),
+        entry('L0', { clientele: 'pro', readyBy: null }),
+        entry('L2', { clientele: 'pro', readyBy: '05:50' }),
+        entry('T', {
+          fulfillmentMethod: 'pickup',
+          clientele: 'public',
+          siteId: 'vv',
+          readyBy: '06:30',
+        }),
+      ],
+      [...PALETTE, ADROIT],
+    );
+
+    expect(titles(frames)).toEqual([
+      'Livraison pro',
+      ['Transfert Val Village', ['Retrait particulier Val Village']],
+      'Retrait particulier Adroit',
+    ]);
+    // Sans départ (L0) en dernier dans son cadre.
+    expect(references(frames[0])).toEqual(['L2', 'L1', 'L0']);
+  });
+
+  it('l’heure servie l’emporte sur l’échéance figée : une livraison ne se range pas à sa fenêtre', () => {
+    const frames = packingFrames(
+      [
+        entry('A', { clientele: 'pro', dueAt: '06:00', readyBy: '08:00' }),
+        entry('B', { clientele: 'pro', dueAt: '11:00', readyBy: '07:00' }),
+      ],
+      PALETTE,
+    );
+
+    expect(references(frames[0])).toEqual(['B', 'A']);
   });
 
   it('le réapprovisionnement entre dans le cadre du transfert, et jamais un cadre vide', () => {

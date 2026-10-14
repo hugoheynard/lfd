@@ -117,7 +117,7 @@ export class RetakeProductionDayHandler implements ICommandHandler<
         await this.days.save(locked);
         await this.events.publishTraced(new ProductionDayRetakenJournalEvent(day.value, absorbed));
         const arrivals = arrivalsBetween(before, locked.orders);
-        await this.publishArrivals(day, arrivals, now);
+        await this.publishArrivals(day, arrivals, now, locked.reopened?.at ?? null);
         const orderIds = arrivals.map((order) => order.orderId);
         await this.durable.publish(
           new ProductionDayRetakenEvent(day.value, now, absorbed, orderIds).durableFact(),
@@ -146,8 +146,9 @@ export class RetakeProductionDayHandler implements ICommandHandler<
     day: ServiceDay,
     arrivals: readonly ProductionOrderSnapshot[],
     drawnAt: Date,
+    reopenedAt: Date | null,
   ): Promise<void> {
-    for (const fact of packingListFactsOf(day, arrivals, drawnAt)) {
+    for (const fact of packingListFactsOf(day, arrivals, drawnAt, reopenedAt)) {
       await this.durable.publish(fact.durableFact());
     }
   }

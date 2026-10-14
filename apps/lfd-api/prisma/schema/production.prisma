@@ -46,6 +46,13 @@ model ProductionDay {
   retakenAt DateTime? @map("retaken_at")
   retakenBy String?   @map("retaken_by")
 
+  /// La dernière **réouverture** (2026-10-14) : l'arrêt a été défait, le plan
+  /// effacé, les clients peuvent de nouveau commander pour ce jour. L'auteur
+  /// est l'id de la fiche staff. `null` tous les deux = jamais rouverte ; le
+  /// journal (`production_day.reopened`) garde chacune.
+  reopenedAt DateTime? @map("reopened_at")
+  reopenedBy String?   @map("reopened_by")
+
   /// **Qui a arrêté le plan** (2026-10-06) : l'id de la fiche staff, ou
   /// `auto-close` pour l'arrêt automatique. `null` : une journée arrêtée avant
   /// que la colonne existe — l'auteur est inconnu, le papier n'en dit rien.

@@ -44,6 +44,8 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
         closedAt: true,
         retakenAt: true,
         retakenBy: true,
+        reopenedAt: true,
+        reopenedBy: true,
         closedBy: true,
         closedByName: true,
         retakenByName: true,
@@ -95,6 +97,11 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
         row.retakenAt === null || row.retakenBy === null
           ? null
           : { at: row.retakenAt, by: row.retakenBy },
+      // Même couple que `retaken`, pour la même raison.
+      reopened:
+        row.reopenedAt === null || row.reopenedBy === null
+          ? null
+          : { at: row.reopenedAt, by: row.reopenedBy },
       // Le CHECK de la base n'admet que ces deux valeurs.
       packingOwner: row.packingOwner === "packing" ? "packing" : "legacy",
       orders: row.orders.map((order) => ({
@@ -177,6 +184,8 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
           closedAt: snapshot.closedAt,
           retakenAt: snapshot.retaken?.at ?? null,
           retakenBy: snapshot.retaken?.by ?? null,
+          reopenedAt: snapshot.reopened?.at ?? null,
+          reopenedBy: snapshot.reopened?.by ?? null,
           ...signerColumns(snapshot.closedBy),
           retakenByName: snapshot.retakenByName,
           packingOwner: snapshot.packingOwner,
@@ -185,6 +194,8 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
           closedAt: snapshot.closedAt,
           retakenAt: snapshot.retaken?.at ?? null,
           retakenBy: snapshot.retaken?.by ?? null,
+          reopenedAt: snapshot.reopened?.at ?? null,
+          reopenedBy: snapshot.reopened?.by ?? null,
           ...signerColumns(snapshot.closedBy),
           retakenByName: snapshot.retakenByName,
           packingOwner: snapshot.packingOwner,

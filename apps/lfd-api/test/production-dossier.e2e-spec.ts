@@ -69,7 +69,8 @@ describe("le bon figé à l'arrêt (E1b)", () => {
       legalName: "Camille Durand",
       pickupLabel: "Boutique",
       address: { line1: "12 rue du Test", line2: "", postalCode: "73150", city: "Val d'Isère" },
-      window: null,
+      // La tranche choisie à la passation (obligatoire depuis le 2026-10-14).
+      window: { start: "07:00", end: "08:00" },
       contact: null,
       signatureRequired: false,
       note: "",

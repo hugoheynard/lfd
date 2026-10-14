@@ -2,6 +2,7 @@ import type { Provider, Type } from "@nestjs/common";
 
 import { LearnArrestedPlan } from "./application/handlers/learn-arrested-plan.handler.js";
 import { LearnRetakenPlan } from "./application/handlers/learn-retaken-plan.handler.js";
+import { ForgetReopenedPlan } from "./application/handlers/forget-reopened-plan.handler.js";
 import { LocateOnOrderPlaced } from "./application/handlers/locate-on-order-placed.handler.js";
 import { DayStopsLocator } from "./application/day-stops-locator.js";
 import { DeliveryStopsLocating } from "./application/delivery-stops-locating.js";
@@ -28,6 +29,8 @@ export const DAY_READINESS_CONTROLLERS: readonly Type[] = [
 export const DAY_READINESS_PROVIDERS: readonly Provider[] = [
   LearnArrestedPlan,
   LearnRetakenPlan,
+  // La réouverture d'une journée (2026-10-14) : oublier le plan, sortir ses arrêts.
+  ForgetReopenedPlan,
   PlanArrestedBell,
   // CA0 : situer l'adresse dès la commande, et rattraper à l'arrêt du plan.
   DeliveryStopsLocating,

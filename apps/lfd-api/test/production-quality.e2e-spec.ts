@@ -118,6 +118,8 @@ async function place(lines: readonly { sku: string; quantity: number }[]): Promi
       companyId: null,
       requestedDeliveryDate: DAY,
       fulfillmentMethod: "pickup",
+      // Pas de commande sans créneau (2026-10-14).
+      requestedWindow: { start: "07:00", end: "08:00" },
       pickupAddressId: id,
       note: "",
       lines,

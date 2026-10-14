@@ -121,6 +121,8 @@ function clientOrder(companyId: string): Record<string, unknown> {
     idempotencyKey: randomUUID(),
     pickupAddressId: pickupId,
     fulfillmentMethod: "pickup",
+    // Pas de commande sans créneau (2026-10-14).
+    requestedWindow: { start: "07:00", end: "08:00" },
     requestedDeliveryDate: serviceDay(),
     note: "",
     settlement: "account",

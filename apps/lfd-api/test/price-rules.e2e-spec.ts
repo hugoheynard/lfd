@@ -106,6 +106,8 @@ beforeEach(async () => {
 const pickupContent = (): Record<string, unknown> => ({
   idempotencyKey: randomUUID(),
   fulfillmentMethod: "pickup",
+  // Pas de commande sans créneau (2026-10-14).
+  requestedWindow: { start: "07:00", end: "08:00" },
   pickupAddressId: pickupId,
   requestedDeliveryDate: SERVICE_DAY,
 });

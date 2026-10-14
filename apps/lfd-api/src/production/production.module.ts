@@ -51,6 +51,7 @@ import { CloseProductionDayHandler } from "./application/commands/close-producti
 import { MarkWorksheetLineHandler } from "./application/commands/mark-worksheet-line.handler.js";
 import { RemoveProductionContainerHandler } from "./application/commands/remove-production-container.handler.js";
 import { RetakeProductionDayHandler } from "./application/commands/retake-production-day.handler.js";
+import { ReopenProductionDayHandler } from "./application/commands/reopen-production-day.handler.js";
 import { SetProductionContainerHandler } from "./application/commands/set-production-container.handler.js";
 import { UnmarkWorksheetLineHandler } from "./application/commands/unmark-worksheet-line.handler.js";
 import { CancelBatchHandler } from "./application/commands/cancel-batch.handler.js";
@@ -165,6 +166,7 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     RecordBatchHandler,
     CancelBatchHandler,
     RetakeProductionDayHandler,
+    ReopenProductionDayHandler,
     SetProductionContainerHandler,
     RemoveProductionContainerHandler,
     GetProductionDayStatusHandler,

@@ -1036,6 +1036,8 @@ describe("le rapport prix / volume", () => {
       .send({
         idempotencyKey: randomUUID(),
         fulfillmentMethod: "pickup",
+        // Pas de commande sans créneau (2026-10-14).
+        requestedWindow: { start: "07:00", end: "08:00" },
         pickupAddressId: pickupId,
         requestedDeliveryDate: SERVICE_DAY,
         lines: [{ sku: SKU, quantity }],
@@ -1358,6 +1360,8 @@ describe("l’écran daté et la comparaison", () => {
       .send({
         idempotencyKey: randomUUID(),
         fulfillmentMethod: "pickup",
+        // Pas de commande sans créneau (2026-10-14).
+        requestedWindow: { start: "07:00", end: "08:00" },
         pickupAddressId: pickupId,
         requestedDeliveryDate: SERVICE_DAY,
         lines: [{ sku: SKU, quantity }],
@@ -1767,6 +1771,8 @@ describe("POST /admin/pricing/projection", () => {
       .send({
         idempotencyKey: randomUUID(),
         fulfillmentMethod: "pickup",
+        // Pas de commande sans créneau (2026-10-14).
+        requestedWindow: { start: "07:00", end: "08:00" },
         pickupAddressId: pickupId,
         requestedDeliveryDate: SERVICE_DAY,
         lines: [{ sku: SKU, quantity: 600 }],

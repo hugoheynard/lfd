@@ -171,7 +171,9 @@ describe("le sélecteur d'acheminement de la saisie staff", () => {
       ville: 'Boulogne',
       pays: 'France',
     });
-    expect(choice.issue).toBeNull();
+    // Le seul créneau du carnet se choisit (2026-10-14) : l'adresse est figée,
+    // l'heure reste à prendre.
+    expect(choice.issue).toContain('Créneau de livraison à choisir');
   });
 
   it('bloque quand aucune tournée ne dessert le code postal', () => {
@@ -474,10 +476,16 @@ describe("le sélecteur d'acheminement de la saisie staff", () => {
       expect(choice(fixture).issue).toContain('Échéance de livraison à choisir');
     });
 
-    it('en créneau, garde celui du carnet sans le recopier', () => {
+    /** Hugo, 2026-10-14 : le créneau du carnet partait sans être choisi, repris par le serveur. */
+    it('🔴 en créneau, fait CHOISIR celui du carnet, puis l’envoie', () => {
       const fixture = courier([ADRESSE]);
 
       expect(choice(fixture).window).toBeNull();
+      expect(choice(fixture).issue).toContain('Créneau de livraison à choisir');
+      const [only] = fixture.componentInstance['bookSlotOptions']();
+      fixture.componentInstance['onBookSlot'](only?.value ?? '');
+      fixture.detectChanges();
+      expect(choice(fixture).window).not.toBeNull();
       expect(choice(fixture).issue).toBeNull();
     });
 
@@ -532,7 +540,8 @@ describe("le sélecteur d'acheminement de la saisie staff", () => {
         expect(choice(fixture).issue).toBeNull();
       });
 
-      it('une liste d’un seul créneau vaut sans choix — le serveur la reprend', () => {
+      /** Hugo, 2026-10-14 : « pas de commande sans créneau » — même seul, il se choisit. */
+      it('🔴 une liste d’un seul créneau se choisit aussi', () => {
         const one: DeliveryAddressView = {
           ...ADRESSE,
           specs: {
@@ -542,9 +551,14 @@ describe("le sélecteur d'acheminement de la saisie staff", () => {
         };
         const fixture = courier([one]);
 
-        expect(fixture.componentInstance['soleBookSlotLabel']()).not.toBeNull();
+        expect(fixture.componentInstance['bookSlotOptions']().map((o) => o.value)).toEqual([
+          '18:00-19:00',
+        ]);
         expect(choice(fixture).window).toBeNull();
-        expect(choice(fixture).issue).toBeNull();
+        expect(choice(fixture).issue).toContain('Créneau de livraison à choisir');
+        fixture.componentInstance['onBookSlot']('18:00-19:00');
+        fixture.detectChanges();
+        expect(choice(fixture).window).toEqual({ start: '18:00', end: '19:00' });
       });
 
       it('une liste vide fait taper début et fin', () => {
@@ -558,16 +572,20 @@ describe("le sélecteur d'acheminement de la saisie staff", () => {
       });
     });
 
-    it('la seule échéance du jour vaut sans être choisie — le serveur la reprend', () => {
+    /** Hugo, 2026-10-14 : la seule échéance n'est plus présélectionnée ni reprise. */
+    it('🔴 la seule échéance du jour se choisit aussi', () => {
       const single: DeliveryAddressView = {
         ...DEADLINES,
         specs: { ...DEADLINES.specs, deadlines: { mode: 'everyday', times: ['06:00'] } },
       };
       const fixture = courier([single]);
 
-      expect(fixture.componentInstance['deadlineChoice']()).toBe('06:00');
+      expect(fixture.componentInstance['deadlineChoice']()).toBe('');
       expect(choice(fixture).window).toBeNull();
-      expect(choice(fixture).issue).toBeNull();
+      expect(choice(fixture).issue).toContain('Échéance de livraison à choisir');
+      fixture.componentInstance['onDeadline']('06:00');
+      fixture.detectChanges();
+      expect(choice(fixture).window).toEqual({ start: null, end: '06:00' });
     });
 
     it('changer d’adresse efface l’échéance choisie', () => {

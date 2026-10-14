@@ -1,9 +1,11 @@
 import { Global, Module } from "@nestjs/common";
 
 import { PrismaPackingDayVersionReader } from "../packing/infrastructure/prisma-packing-day-version.reader.js";
+import { PrismaDayPackingProgressReader } from "../packing/infrastructure/prisma-day-packing-progress.reader.js";
 import { PrismaPackedOrdersReader } from "../packing/infrastructure/prisma-packed-orders.reader.js";
 import { PackingModule } from "../packing/packing.module.js";
 import {
+  DayPackingProgressReader,
   PackedOrdersReader,
   PackingDayVersionReader,
   PlannedDestinationsReader,
@@ -43,12 +45,16 @@ import { ProductionModule } from "../production/production.module.js";
     { provide: QualityHeldOrdersReader, useExisting: ChannelQualityHeldOrdersReader },
     { provide: PlannedDestinationsReader, useExisting: DayPlannedDestinationsReader },
     { provide: PackedOrdersReader, useExisting: PrismaPackedOrdersReader },
+    // La réouverture d'une journée (2026-10-14) : « le colisage a-t-il
+    // commencé ? » — la production déclare, le colisage implémente.
+    { provide: DayPackingProgressReader, useClass: PrismaDayPackingProgressReader },
   ],
   exports: [
     PackingDayVersionReader,
     QualityHeldOrdersReader,
     PlannedDestinationsReader,
     PackedOrdersReader,
+    DayPackingProgressReader,
   ],
 })
 export class PackingFeedModule {}

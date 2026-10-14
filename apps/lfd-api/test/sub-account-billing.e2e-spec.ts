@@ -302,6 +302,8 @@ function placeOrder(sub: string, settlement: "account" | "card" | null) {
       idempotencyKey: randomUUID(),
       requestedDeliveryDate: SERVICE_DAY,
       fulfillmentMethod: "pickup",
+      // Pas de commande sans créneau (2026-10-14).
+      requestedWindow: { start: "07:00", end: "08:00" },
       pickupAddressId: pickupId,
       settlement,
       note: "",

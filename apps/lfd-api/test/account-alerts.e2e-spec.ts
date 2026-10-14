@@ -121,6 +121,8 @@ async function orderSku(companyId: string, sku: string, quantity: number): Promi
       pickupAddressId: pickupId,
       requestedDeliveryDate: SERVICE_DAY,
       fulfillmentMethod: "pickup",
+      // Pas de commande sans créneau (2026-10-14).
+      requestedWindow: { start: "07:00", end: "08:00" },
       note: "",
       lines: [{ sku, quantity }],
     })
@@ -138,6 +140,8 @@ async function order(companyId: string, quantity: number): Promise<void> {
       pickupAddressId: pickupId,
       requestedDeliveryDate: SERVICE_DAY,
       fulfillmentMethod: "pickup",
+      // Pas de commande sans créneau (2026-10-14).
+      requestedWindow: { start: "07:00", end: "08:00" },
       note: "",
       lines: [{ sku: SKU, quantity }],
     })

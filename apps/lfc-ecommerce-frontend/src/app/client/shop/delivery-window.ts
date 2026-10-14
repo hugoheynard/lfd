@@ -73,36 +73,29 @@ export function isClockTime(time: string): boolean {
 /**
  * La fenêtre qu'une livraison enverra, ou `undefined` tant qu'il en manque une.
  *
- * - **échéance** : l'heure choisie, sans début ; omise (`null`) quand le jour
- *   n'en a qu'une — le serveur la reprend ;
- * - **créneau** : `null` quand le carnet en déclare UN SEUL pour ce jour — le
- *   serveur le lit ; plusieurs, celui choisi (`slot`, sa {@link slotKey}) ;
- *   aucun, le créneau tapé, complet (CA3b).
+ * - **échéance** : l'heure choisie, sans début ;
+ * - **créneau** : celui choisi parmi ceux du carnet (`slot`, sa
+ *   {@link slotKey}) ; aucun au carnet, le créneau tapé, complet (CA3b).
  *
- * `null` = rien à envoyer, le serveur a ce qu'il faut ; `undefined` = la
- * commande ne peut pas partir, il manque une heure (CA1b).
+ * 🔴 **Plus de reprise silencieuse** (Hugo, 2026-10-14 : « pas de commande
+ * sans créneau »). Une seule échéance, un seul créneau au carnet ce jour-là
+ * rendaient `null` — « le serveur la reprend » — et le client passait sans
+ * avoir rien choisi. Il la choisit maintenant dans la liste, même seule.
  */
 export function deliveryWindowOf(input: {
   readonly mode: 'slot' | 'deadline';
-  readonly dayDeadlines: readonly string[];
   readonly daySlots: readonly FulfillmentWindow[];
   readonly deadline: string;
   readonly slot: string;
   readonly slotStart: string;
   readonly slotEnd: string;
-}): FulfillmentWindow | null | undefined {
+}): FulfillmentWindow | undefined {
   if (input.mode === 'deadline') {
-    if (isClockTime(input.deadline)) {
-      return { start: null, end: input.deadline };
-    }
-    return input.dayDeadlines.length === 1 ? null : undefined;
+    return isClockTime(input.deadline) ? { start: null, end: input.deadline } : undefined;
   }
   if (input.daySlots.length > 0) {
     const picked = input.daySlots.find((slot) => slotKey(slot) === input.slot);
-    if (picked !== undefined) {
-      return { start: picked.start, end: picked.end };
-    }
-    return input.daySlots.length === 1 ? null : undefined;
+    return picked === undefined ? undefined : { start: picked.start, end: picked.end };
   }
   return isClockTime(input.slotStart) &&
     isClockTime(input.slotEnd) &&

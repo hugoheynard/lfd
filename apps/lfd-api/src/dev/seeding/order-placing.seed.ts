@@ -3,6 +3,7 @@ import type {
   OpenPackingContainer,
   PlaceOrderPayload,
 } from "@lfd/contracts";
+import { orderFulfillmentSchema } from "@lfd/contracts";
 import type { CommandBus } from "@nestjs/cqrs";
 import { randomUUID } from "node:crypto";
 
@@ -15,6 +16,7 @@ import { AllocateToContainerCommand } from "../../packing/application/containers
 import { OpenPackingContainerCommand } from "../../packing/application/containers/open-packing-container.command.js";
 import { MarkWorksheetLineCommand } from "../../production/application/commands/mark-worksheet-line.command.js";
 import { ClosePackingOrderCommand } from "../../packing/application/station/close-packing-order.command.js";
+import { carnetWindowOf } from "./carnet-window.seed.js";
 import { CLIENT_RAISON_SOCIALE } from "./client.seed.js";
 
 /**
@@ -115,8 +117,18 @@ export interface SeedOrder {
   readonly method: "pickup" | "delivery";
   /** Le point de retrait par libellé ; `null` = celui par défaut. */
   readonly point: string | null;
-  /** La tranche demandée ; `null` = aucune, et la clé est alors OMISE. */
+  /**
+   * La tranche demandée. `null` en LIVRAISON = celle que le client choisit
+   * dans son carnet (`carnetWindowOf`) ; en RETRAIT, `null` est refusé — une
+   * commande se passe avec un créneau depuis le 2026-10-14.
+   */
   readonly window: SeedWindow | null;
+  /**
+   * **Une commande d'avant la règle**, passée avec `window` puis privée de sa
+   * tranche — le cas que le comptoir rencontrera dans les données longtemps
+   * après que la passation l'a interdit (cf. `counter-day.seed.ts`).
+   */
+  readonly historicWithoutWindow?: true;
   readonly lines: readonly SeedLine[];
   readonly paid: boolean;
   /**
@@ -260,6 +272,41 @@ function carnetAddressOf(target: Target, order: SeedOrder): CarnetAddress {
   return address;
 }
 
+/** La tranche que la commande porte — refusée plutôt qu'inventée si elle manque. */
+async function chosenWindowOf(
+  context: SeedContext,
+  order: SeedOrder,
+  delivery: CarnetAddress | null,
+): Promise<SeedWindow> {
+  const addressId = delivery?.id ?? null;
+  const window =
+    order.window ??
+    (addressId === null ? null : await carnetWindowOf(context.prisma, addressId, order.forDay));
+  if (window === null) {
+    throw new Error(
+      `Commande du ${order.forDay} sans créneau : une commande se passe avec un créneau ` +
+        "depuis le 2026-10-14 — donner sa tranche au semis, ou en inscrire une au carnet.",
+    );
+  }
+  return window;
+}
+
+/**
+ * Retire la tranche d'une commande posée — l'historique d'avant la règle, qu'aucun
+ * handler ne sait plus produire. Le bloc figé est relu par son schéma, jamais casté.
+ */
+async function eraseWindow(context: SeedContext, orderId: string): Promise<void> {
+  const row = await context.prisma.order.findUniqueOrThrow({
+    where: { id: orderId },
+    select: { fulfillment: true },
+  });
+  const fulfillment = orderFulfillmentSchema.parse(row.fulfillment);
+  await context.prisma.order.update({
+    where: { id: orderId },
+    data: { fulfillment: { ...fulfillment, window: { value: null, source: "default" } } },
+  });
+}
+
 /**
  * Pose une commande par le vrai handler, recale sa date de création, et rend
  * son identifiant et son **numéro** — la clé par laquelle le colisage et la
@@ -294,18 +341,13 @@ export async function place(
     // serveur ne sait pas de quelles consignes de site la commande s'écarte.
     deliveryAddressId: delivery?.id ?? null,
     pickupAddressId: order.method === "pickup" ? pickupAddressId : null,
-    // En RETRAIT la tranche se demande explicitement ; en LIVRAISON elle vient
-    // du carnet, que `defaultsFor` lit à partir de `deliveryAddressId`.
+    // 🔴 La tranche part TOUJOURS (Hugo, 2026-10-14 : « pas de commande sans
+    // créneau ») : en livraison, celle que le client choisit dans son carnet.
     //
-    // ⚠️ La tranche doit tenir dans UNE fenêtre d'ouverture du point, jamais
-    // dans leur union — le serveur refuse sinon, et il a raison : entre le
-    // créneau pro et l'ouverture publique du Labo, il y a porte close.
-    //
-    // 🔴 **`undefined` et `null` ne disent PAS la même chose** : `agreeFulfillment`
-    // lit l'absence comme « prends le défaut » et un `null` explicite comme « le
-    // client n'en veut aucune ». Envoyer `null` en livraison ÉCRASAIT donc la
-    // fenêtre du carnet. La clé est omise, pas mise à `null`.
-    ...(order.window === null ? {} : { requestedWindow: order.window }),
+    // ⚠️ En retrait, elle doit tenir dans UNE fenêtre d'ouverture du point,
+    // jamais dans leur union — entre le créneau pro et l'ouverture publique du
+    // Labo, il y a porte close.
+    requestedWindow: await chosenWindowOf(context, order, delivery),
     requestedDeliveryDate: order.forDay,
     note: "",
     lines: [...order.lines],
@@ -327,6 +369,9 @@ export async function place(
   // nombre d'alertes variait d'un rechargement à l'autre
   // (`dev-scenario-stability`, CI du 2026-10-10).
   await context.settle();
+  if (order.historicWithoutWindow === true) {
+    await eraseWindow(context, placed.id);
+  }
   const row = await context.prisma.order.update({
     where: { id: placed.id },
     data: {

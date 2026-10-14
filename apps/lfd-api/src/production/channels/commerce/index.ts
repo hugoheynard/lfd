@@ -73,3 +73,10 @@ export { PlanAdmissionDesk, type PlanAdmission } from "./plan-admission.desk.js"
 // L'interrupteur de l'heure limite générale, que la page Production › Réglages
 // dit : désactivée, plus rien ne borne l'heure d'arrêt (O3, B2).
 export { OrderCutoffSwitchReader } from "./order-cutoff-switch.reader.js";
+// La réouverture d'une journée (Hugo, 2026-10-14) : le fait que le commerce
+// écoute pour rendre `placed` les commandes que l'arrêt défait avait confirmées.
+export {
+  PRODUCTION_DAY_REOPENED,
+  ProductionDayReopenedEvent,
+  ProductionDayReopenedPayloadError,
+} from "./production-day-reopened.event.js";

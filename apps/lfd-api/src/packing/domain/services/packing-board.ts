@@ -4,6 +4,7 @@ import type { PackingResource, ProductionPackingView } from "@lfd/contracts";
 import type { PackingBoardDay } from "../ports/packing-board.reader.js";
 import { allocationOf, type Awaiting, byNameThenSku, sheetOf } from "./packing-board-sheet.js";
 import { leftToPlace, shortfall } from "./placement.js";
+import { compareReadyBy, type LocalDeparture, readyByOf } from "./ready-by.js";
 import { relativeDayOf } from "./relative-day.js";
 
 /**
@@ -42,9 +43,15 @@ export interface BoardSources {
   readonly heldOrders: ReadonlySet<string>;
   /** Le froid, lu à la livraison (2026-10-07). */
   readonly cold: ColdPacking;
+  /** Le départ connu de chaque commande, par id, lu à la livraison (lot L2). */
+  readonly departures: ReadonlyMap<string, LocalDeparture>;
 }
 
-/** Assemble le poste — mêmes ordres que l'ancien : bacs par référence, articles par nom. */
+/**
+ * Assemble le poste : bacs par heure « prête pour » (lot L2, 2026-10-14 —
+ * ce qui part le plus tôt d'abord, sans heure en dernier), puis par
+ * référence ; articles par nom.
+ */
 export function packingBoardOf(sources: BoardSources): ProductionPackingView {
   const relativeDay = relativeDayOf(sources.date, sources.now);
   const { orders } = sources.day;
@@ -67,8 +74,18 @@ export function packingBoardOf(sources: BoardSources): ProductionPackingView {
     date: sources.date,
     closedAt: closedAt.toISOString(),
     sheets: orders
-      .map((order) => sheetOf(order, { ...sources, awaiting }))
-      .sort((left, right) => left.reference.localeCompare(right.reference)),
+      .map((order) =>
+        sheetOf(order, {
+          ...sources,
+          awaiting,
+          readyByOf: (one) => readyByOf(one, sources.departures.get(one.orderId), sources.date),
+        }),
+      )
+      .sort(
+        (left, right) =>
+          compareReadyBy(left.readyBy ?? null, right.readyBy ?? null) ||
+          left.reference.localeCompare(right.reference),
+      ),
     resources: resourcesOf(sources.day, awaiting),
     orderCount: orders.length,
     todoCount: orders.length - readyCount,

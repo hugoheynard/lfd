@@ -3,11 +3,17 @@ import { resolveWindowMode } from "@lfd/contracts";
 import {
   DeadlineNotRegisteredError,
   DeadlineWindowHasStartError,
-  DeliveryWindowRequiredError,
+  FulfillmentWindowRequiredError,
   SlotNotRegisteredError,
 } from "../../errors/order-errors.js";
 import { agreeFulfillment } from "../agreed-fulfillment.js";
-import { ensureDeliveryWindow, preferredWindowOf } from "../delivery-window.js";
+import { NO_DELIVERY_DEFAULTS } from "../../ports/delivery-defaults.reader.js";
+import {
+  agreeWithWindow,
+  ensureDeliveryWindow,
+  ensureWindowChosen,
+  preferredWindowOf,
+} from "../delivery-window.js";
 
 const SLOT = { start: "06:00", end: "08:00" };
 const BEFORE_SIX = { start: null, end: "06:00" };
@@ -79,7 +85,7 @@ describe("la fenêtre d'une livraison", () => {
           agreed: null,
           ...FROM_SHOP,
         }),
-      ).toThrow(DeliveryWindowRequiredError);
+      ).toThrow(FulfillmentWindowRequiredError);
     }
   });
 
@@ -209,5 +215,55 @@ describe("un créneau hors de la liste de l'adresse", () => {
         requestedBy: "pro",
       }),
     ).not.toThrow();
+  });
+});
+
+/** Décision Hugo du 2026-10-14 : « pas de commande sans créneau ». */
+describe("une commande sans créneau choisi", () => {
+  it("est refusée en retrait comme en livraison, qu'elle se taise ou dise « aucun »", () => {
+    for (const method of ["pickup", "delivery"] as const) {
+      expect(() => ensureWindowChosen(method, undefined)).toThrow(FulfillmentWindowRequiredError);
+      expect(() => ensureWindowChosen(method, null)).toThrow(/choisissez/);
+    }
+  });
+
+  it("nomme le geste propre au retrait", () => {
+    expect(() => ensureWindowChosen("pickup", undefined)).toThrow(/heure de retrait/);
+  });
+
+  it("ne reprend plus en silence la seule échéance de l'adresse", () => {
+    const defaults = {
+      ...NO_DELIVERY_DEFAULTS,
+      windowMode: "deadline" as const,
+      deadlines: ["06:00"],
+    };
+    expect(() =>
+      agreeWithWindow({ method: "delivery", window: undefined }, defaults, "deadline", "pro"),
+    ).toThrow(FulfillmentWindowRequiredError);
+  });
+
+  it("garde « default » à l'échéance de l'adresse CHOISIE dans la liste", () => {
+    const defaults = {
+      ...NO_DELIVERY_DEFAULTS,
+      windowMode: "deadline" as const,
+      deadlines: ["06:00"],
+    };
+    const agreed = agreeWithWindow(
+      { method: "delivery", window: BEFORE_SIX },
+      defaults,
+      "deadline",
+      "pro",
+    );
+    expect(agreed.window).toEqual({ value: BEFORE_SIX, source: "default" });
+  });
+
+  it("fige la tranche de retrait choisie", () => {
+    const agreed = agreeWithWindow(
+      { method: "pickup", window: SLOT },
+      NO_DELIVERY_DEFAULTS,
+      null,
+      "individual",
+    );
+    expect(agreed.window.value).toEqual(SLOT);
   });
 });

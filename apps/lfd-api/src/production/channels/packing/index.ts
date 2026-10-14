@@ -48,3 +48,11 @@ export { PackingDayVersionReader } from "./packing-day-version.reader.js";
 export { PackedOrdersReader, type PackedOrderSeal } from "./packed-orders.reader.js";
 export { PlannedDestinationsReader } from "./planned-destinations.reader.js";
 export { QualityHeldOrdersReader } from "./quality-held-orders.reader.js";
+// La réouverture (Hugo, 2026-10-14) : même figure que pour la livraison.
+export {
+  PRODUCTION_DAY_REOPENED,
+  ProductionDayReopenedEvent,
+  ProductionDayReopenedPayloadError,
+} from "../commerce/production-day-reopened.event.js";
+export { ClosedPlansReader } from "../commerce/closed-plans.reader.js";
+export { DayPackingProgressReader } from "./day-packing-progress.reader.js";

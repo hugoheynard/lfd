@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1319 textes
+## Sommaire — 1320 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -29,7 +29,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Choix de l’heure — le sélecteur de créneau](#espace-slotpicker) | `slotPicker` | 19 |
 | [Choix de l’heure — l’étape du créneau](#espace-slotstep) | `slotStep` | 11 |
 | [Choix de l’heure — le rappel téléphonique](#espace-rappel) | `rappel` | 12 |
-| [Panier, connexion et saisie invité](#espace-cart) | `cart` | 53 |
+| [Panier, connexion et saisie invité](#espace-cart) | `cart` | 54 |
 | [Règlement](#espace-pay) | `pay` | 21 |
 | [Confirmation](#espace-done) | `done` | 28 |
 | [Confirmation — le QR de retrait](#espace-qr) | `qr` | 8 |
@@ -46,7 +46,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 7 |
-| **Total** | | **1319** |
+| **Total** | | **1320** |
 
 ## Le parcours de commande
 
@@ -575,7 +575,7 @@ Source : `fr.ts · en.ts · it.ts` · 12 textes.
 
 ### Panier, connexion et saisie invité — `cart`
 
-Source : `fr.ts · en.ts · it.ts` · 53 textes.
+Source : `fr.ts · en.ts · it.ts` · 54 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -612,6 +612,7 @@ Source : `fr.ts · en.ts · it.ts` · 53 textes.
 | `cart.dropAria` | Retirer {name} du panier | Remove {name} from the basket | Rimuovi {name} dal carrello | `{name}` |
 | `cart.pay` | Régler ma commande · {total} | Pay for my order · {total} | Pago il mio ordine · {total} | `{total}` |
 | `cart.payHint` | Paiement en ligne. Vous présentez votre QR au comptoir, rien à régler sur place. | Paid online. You show your QR at the counter, nothing to settle there. | Pagamento online. Mostri il QR al banco, non deve saldare nulla sul posto. |  |
+| `cart.slotMissing` | Choisissez un créneau pour régler : touchez « Modifier » et choisissez l’heure. | Choose a time slot to pay: tap “Change” and pick the time. | Scelga una fascia oraria per pagare: tocchi « Modifica » e scelga l’orario. |  |
 | `cart.ordersClosed` | Les commandes sont fermées pour le moment. | Orders are closed for the moment. | Gli ordini sono chiusi per il momento. |  |
 | `cart.settleTitle` | Comment réglez-vous ? | How are you paying? | Come pagate ? |  |
 | `cart.settleCard` | Paiement direct | Pay now | Pagamento diretto |  |

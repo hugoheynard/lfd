@@ -26,6 +26,7 @@ import type { JournalFact, JournaledEvent } from "../../../platform/journal/jour
 export const PRODUCTION_DAY_FACTS = {
   closed: "production_day.closed",
   retaken: "production_day.retaken",
+  reopened: "production_day.reopened",
 } as const satisfies Readonly<Record<string, JournalFactType>>;
 
 /** Le sujet : la journée, désignée par sa date de service — sa clé en base. */
@@ -85,6 +86,28 @@ export class ProductionDayRetakenJournalEvent implements JournaledEvent {
       subjectType: SUBJECT_TYPE,
       subjectId: this.serviceDay,
       payload: dayPayload(this.serviceDay, this.absorbed),
+    };
+  }
+}
+
+/**
+ * Fait : **la journée est rouverte** (2026-10-14) — `absorbed` commandes
+ * retirées du plan, rendues aux clients. Le nom du champ est celui des deux
+ * autres faits de journée : la phrase du back-office les lit de la même façon.
+ */
+export class ProductionDayReopenedJournalEvent implements JournaledEvent {
+  constructor(
+    /** `AAAA-MM-JJ`. */
+    readonly serviceDay: string,
+    readonly released: number,
+  ) {}
+
+  journalFact(): JournalFact {
+    return {
+      type: PRODUCTION_DAY_FACTS.reopened,
+      subjectType: SUBJECT_TYPE,
+      subjectId: this.serviceDay,
+      payload: dayPayload(this.serviceDay, this.released),
     };
   }
 }

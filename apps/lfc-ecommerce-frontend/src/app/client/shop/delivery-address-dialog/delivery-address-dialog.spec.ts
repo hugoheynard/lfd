@@ -131,19 +131,23 @@ describe('DeliveryAddressDialog', () => {
   });
 
   /**
-   * 🔴 AUCUNE FENÊTRE N'EST ENVOYÉE. Une heure partie d'ici s'écrirait sur un
-   * bon de commande opposable, et aucune heure de livraison n'a de source — pas
-   * même celle du carnet, que le serveur lit lui-même depuis l'identifiant.
+   * 🔴 Hugo, 2026-10-14 : « pas de commande sans créneau ». Le SEUL créneau du
+   * carnet partait à `null` (« le serveur le reprend ») sans que le client ait
+   * rien choisi ; il se choisit maintenant dans la liste, et c'est lui qui part.
    */
-  it('rend le mode complet, SANS fenêtre quand le carnet la fournit', () => {
+  it('n’envoie rien tant que le seul créneau du carnet n’est pas choisi', () => {
     const { fixture, closed } = boot([address({ id: 'a', isDefault: true, specs: SLOTTED })]);
 
+    expect(cta(fixture)?.disabled).toBe(true);
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-book-slot]')).not.toBeNull();
+    fixture.componentInstance['slotPick'].set('09:00-11:00');
+    fixture.detectChanges();
     cta(fixture)?.click();
 
     expect(closed).toHaveLength(1);
     expect(closed[0]).toMatchObject({
       mode: 'delivery',
-      window: null,
+      window: { start: '09:00', end: '11:00' },
       codePostal: '73150',
       date: '2026-09-21',
       // L'identité du carnet part avec le choix (2026-09-29).
@@ -329,6 +333,7 @@ describe('DeliveryAddressDialog', () => {
       expect(dayList(fixture)).not.toBeNull();
 
       fixture.componentInstance['pickDate']('2026-09-23');
+      fixture.componentInstance['slotPick'].set('09:00-11:00');
       fixture.detectChanges();
       cta(fixture)?.click();
 
@@ -343,6 +348,8 @@ describe('DeliveryAddressDialog', () => {
         false,
         '2026-09-24',
       );
+      fixture.componentInstance['slotPick'].set('09:00-11:00');
+      fixture.detectChanges();
       cta(fixture)?.click();
 
       expect(closed[0]?.date).toBe('2026-09-24');

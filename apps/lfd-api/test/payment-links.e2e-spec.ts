@@ -175,6 +175,8 @@ async function placeCardOrder(companyId: string): Promise<string> {
       idempotencyKey: randomUUID(),
       pickupAddressId: pickupId,
       fulfillmentMethod: "pickup",
+      // Pas de commande sans créneau (2026-10-14).
+      requestedWindow: { start: "07:00", end: "08:00" },
       requestedDeliveryDate: serviceDay(),
       note: "",
       lines: [{ sku: "VIE-001", quantity: 3 }],

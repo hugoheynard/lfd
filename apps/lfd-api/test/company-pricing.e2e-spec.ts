@@ -735,6 +735,8 @@ describe("🔴 reposer sur une période close", () => {
         requestedDeliveryDate: serviceDay(),
         note: "",
         fulfillmentMethod: "pickup",
+        // Pas de commande sans créneau (2026-10-14).
+        requestedWindow: { start: "07:00", end: "08:00" },
         pickupAddressId: pickup.id,
         lines: [{ sku: SKU, quantity: 1 }],
       })

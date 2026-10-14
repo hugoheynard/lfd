@@ -22,7 +22,7 @@ import {
   DeadlineNotRegisteredError,
   DeadlineWindowHasStartError,
   DeliveryClosedForAudienceError,
-  DeliveryWindowRequiredError,
+  FulfillmentWindowRequiredError,
   NoDeliveryZoneForPostalCodeError,
   OrderCompanyNotFoundError,
   PickupNotConfiguredError,
@@ -534,6 +534,9 @@ function capturingRepo(sink: { placed: OrderToPlace | null }): OrderRepository {
 }
 
 /** Payload par défaut : **retrait**, **sans entreprise** (le chemin zéro friction). */
+/** Le créneau que la commande a choisi — obligatoire depuis le 2026-10-14. */
+const CHOSEN_WINDOW = { start: "07:00", end: "08:00" };
+
 function payload(over: Partial<PlaceOrderPayload> = {}): PlaceOrderPayload {
   return {
     idempotencyKey: "3f2504e0-4f89-41d3-9a0c-0305e82c3301",
@@ -549,6 +552,9 @@ function payload(over: Partial<PlaceOrderPayload> = {}): PlaceOrderPayload {
     // ces suites n'était donc pas tout à fait celui que le contrôleur reçoit.
     settlement: null,
     lines: [{ sku: "VIE-001", quantity: 2 }],
+    // Le créneau est obligatoire à toute passation (Hugo, 2026-10-14). Les
+    // points de ces suites n'ont pas d'heures déclarées : il n'y est pas jugé.
+    requestedWindow: CHOSEN_WINDOW,
     ...over,
   };
 }
@@ -1656,7 +1662,7 @@ describe("PlaceOrderHandler — créneau ou échéance", () => {
           fulfillmentMethod: "delivery",
           deliveryAddress: COURIER_ADDR,
           deliveryAddressId: "addr_c1",
-          ...(window === undefined ? {} : { requestedWindow: window }),
+          requestedWindow: window,
         }),
         "c1",
       ),
@@ -1678,8 +1684,10 @@ describe("PlaceOrderHandler — créneau ou échéance", () => {
 
   /** CA1b : une livraison sans heure ne se place dans aucune tournée. */
   it("refuse une livraison sans fenêtre", async () => {
-    await expect(place(undefined)).rejects.toThrow(DeliveryWindowRequiredError);
-    await expect(place(null, { global: "deadline" })).rejects.toThrow(DeliveryWindowRequiredError);
+    await expect(place(undefined)).rejects.toThrow(FulfillmentWindowRequiredError);
+    await expect(place(null, { global: "deadline" })).rejects.toThrow(
+      FulfillmentWindowRequiredError,
+    );
   });
 
   it("la surcharge d'adresse l'emporte sur le global", async () => {
@@ -1702,12 +1710,16 @@ describe("PlaceOrderHandler — créneau ou échéance", () => {
     );
   });
 
-  it("une échéance préférée unique est reprise quand la commande ne dit rien", async () => {
+  /**
+   * Décision Hugo du 2026-10-14 : la seule échéance de l'adresse était reprise
+   * en silence quand la commande ne disait rien ; elle doit être CHOISIE.
+   */
+  it("une échéance préférée unique n'est plus reprise quand la commande ne dit rien", async () => {
     const book = new BookWithDeadlines({ windowMode: "deadline", deadlines: ["06:00"] });
 
-    const placed = await place(undefined, { book });
-
-    expect(placed?.agreed.window).toEqual({
+    await expect(place(undefined, { book })).rejects.toThrow(FulfillmentWindowRequiredError);
+    const chosen = await place({ start: null, end: "06:00" }, { book });
+    expect(chosen?.agreed.window).toEqual({
       value: { start: null, end: "06:00" },
       source: "default",
     });
@@ -1716,7 +1728,7 @@ describe("PlaceOrderHandler — créneau ou échéance", () => {
   it("plusieurs échéances préférées ne se choisissent pas à la place du client", async () => {
     const book = new BookWithDeadlines({ windowMode: "deadline", deadlines: ["06:00", "11:00"] });
 
-    await expect(place(undefined, { book })).rejects.toThrow(DeliveryWindowRequiredError);
+    await expect(place(undefined, { book })).rejects.toThrow(FulfillmentWindowRequiredError);
   });
 });
 

@@ -375,16 +375,25 @@ export class OrderPaymentLinkRefusedError extends BusinessError {
 }
 
 /**
- * Une livraison passée **sans fenêtre** — ni créneau, ni échéance (plan
- * composition automatique, CA1b). Refus de forme (400) : la demande est
- * incomplète, et la tournée ne saurait pas avant quelle heure servir.
+ * Une commande passée **sans créneau choisi** — ni tranche de retrait, ni
+ * créneau ou échéance de livraison. Décision de Hugo du 2026-10-14 : « pas de
+ * commande sans créneau », pour le client, l'invité et l'équipe. Le réglage
+ * (heures du point, fenêtre de l'adresse) ne s'applique plus en silence : il
+ * PROPOSE, la commande CHOISIT.
+ *
+ * Refus de forme (400) : la demande est incomplète, et ni le comptoir ni la
+ * tournée ne sauraient quand servir. Le code reste celui de la livraison
+ * d'avant (CA1b), que les écrans lisent déjà.
  */
-export class DeliveryWindowRequiredError extends DomainError {
-  constructor() {
+export class FulfillmentWindowRequiredError extends DomainError {
+  constructor(method: "pickup" | "delivery") {
     super(
       "orders.fulfillment.window_required",
-      "Une livraison se commande avec une heure : indiquez avant quelle heure livrer " +
-        "(ou un créneau), puis validez de nouveau la commande.",
+      method === "pickup"
+        ? "Une commande en retrait se passe avec un créneau : choisissez l'heure de retrait, " +
+            "puis validez de nouveau la commande."
+        : "Une livraison se commande avec un créneau : choisissez le créneau (ou l'heure " +
+            "limite) de livraison, puis validez de nouveau la commande.",
     );
   }
 }

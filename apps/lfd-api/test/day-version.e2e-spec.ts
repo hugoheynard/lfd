@@ -128,6 +128,8 @@ async function place(lines: Lines, settle = true, day = DAY): Promise<string> {
         companyId: null,
         requestedDeliveryDate: day,
         fulfillmentMethod: "pickup",
+        // Pas de commande sans créneau (2026-10-14).
+        requestedWindow: { start: "07:00", end: "08:00" },
         pickupAddressId,
         note: "",
         lines,

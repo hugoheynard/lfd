@@ -17,6 +17,7 @@ import type {
 import { methodLabel, type PackingStack } from '../../packing-board';
 import { ClienteleBadge } from '../clientele-badge/clientele-badge';
 import { type PackingFrame, packingFrames } from '../packing-frames';
+import { readyByLabel } from '../packing-ready-by';
 import {
   type PackingGroup,
   packingGroups,
@@ -110,7 +111,8 @@ export class PackingOrders {
   /**
    * Chaque groupe, ses commandes rangées dans des cadres de couleur — par
    * catégorie, et par tranche horaire quand elle en a plusieurs (Hugo,
-   * 2026-10-13). Un ordre d'affichage : rien n'est compté.
+   * 2026-10-13) ; cadres et commandes par heure « prête pour » (L2,
+   * 2026-10-14). Un ordre d'affichage : rien n'est compté.
    */
   protected readonly framedGroups = computed<
     readonly { readonly group: PackingGroup; readonly frames: readonly PackingFrame[] }[]
@@ -122,6 +124,7 @@ export class PackingOrders {
   protected readonly grouped = computed(() => this.groups().some((group) => group.round !== null));
 
   protected readonly roundTitle = packingRoundTitle;
+  protected readonly readyBy = readyByLabel;
   protected readonly readyLabel = readyOrdersLabel;
 
   /** La commande qu'on veut ouvrir. */

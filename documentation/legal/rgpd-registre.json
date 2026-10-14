@@ -639,6 +639,15 @@
       "information": false
     },
     {
+      "colonne": "production.production_day.reopened_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`reopened_by`) sur `production_day`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "production.production_day.retaken_by",
       "personne": "staff",
       "categorie": "auteur-geste",

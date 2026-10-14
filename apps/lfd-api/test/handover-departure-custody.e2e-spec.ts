@@ -127,7 +127,7 @@ async function place(fulfillment: "pickup" | "delivery"): Promise<string> {
     point?.id ?? (await ctx.prisma.site.create({ data: { ...SITE, isDefault: true } })).id;
   const where =
     fulfillment === "pickup"
-      ? { pickupAddressId: pickupId }
+      ? { pickupAddressId: pickupId, requestedWindow: { start: "07:00", end: "08:00" } }
       : { deliveryAddress: SITE, requestedWindow: { start: null, end: "10:00" } };
   const placed = jsonBody<{ orderNumber: string }>(
     await ctx

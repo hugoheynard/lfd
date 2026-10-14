@@ -3,6 +3,7 @@ import type { PackingContainerView, PackingLine, PackingSheet } from "@lfd/contr
 import type { SheetLine } from "../entities/packing-sheet.snapshot.js";
 import type { BoardOrder } from "../ports/packing-board.reader.js";
 import { allocatedOnLine, leftToPlace } from "./placement.js";
+import type { ReadyBy } from "./ready-by.js";
 
 /** « Faut-il encore attendre le four pour poser `quantity` pièces de `sku` ? » */
 export type Awaiting = (sku: string, quantity: number) => boolean;
@@ -15,6 +16,8 @@ export interface SheetContext {
   readonly heldOrders: ReadonlySet<string>;
   /** Les SKU froids, et les bacs isothermes vivants de la journée. */
   readonly cold: ColdPacking;
+  /** L'heure « prête pour » de chaque commande (lot L2), déjà résolue. */
+  readonly readyByOf: (order: BoardOrder) => ReadyBy;
 }
 
 /** Ce que la livraison dit du froid — relu ici sans connaître le port. */
@@ -72,6 +75,7 @@ export function canDeclareReady(order: BoardOrder): boolean {
 export function sheetOf(order: BoardOrder, context: SheetContext): PackingSheet {
   const packed = order.lines.filter((line) => line.packed !== null);
   const allocatedOf = allocationOf(order);
+  const readyBy = context.readyByOf(order);
   return {
     orderId: order.orderId,
     reference: order.reference,
@@ -81,6 +85,8 @@ export function sheetOf(order: BoardOrder, context: SheetContext): PackingSheet 
     clientele: order.clientele,
     siteId: order.siteId,
     dueAt: order.dueAt,
+    readyBy: readyBy.time,
+    readyBySource: readyBy.source,
     destination: context.destinationOf(order.orderId),
     lines: linesOf(order, context.awaiting, allocatedOf),
     lineCount: order.lines.length,

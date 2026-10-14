@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { PlaceShopOrderPayload } from "@lfd/contracts";
 
 import { PlaceShopOrderCommand } from "../src/b2b/orders/application/commands/place-shop-order.command.js";
+import { FulfillmentWindowRequiredError } from "../src/b2b/orders/domain/errors/order-errors.js";
 import { PlaceShopOrderHandler } from "../src/b2b/orders/application/commands/place-shop-order.handler.js";
 import { LoyaltySettings } from "../src/b2b/loyalty/domain/value-objects/loyalty-settings.js";
 import { PrismaLoyaltySettingsStore } from "../src/b2b/loyalty/infrastructure/prisma-loyalty-settings.store.js";
@@ -108,6 +109,8 @@ function payload(over: Partial<PlaceShopOrderPayload> = {}): PlaceShopOrderPaylo
     idempotencyKey: randomUUID(),
     buyer: { firstName: "Camille", email: "camille@visiteur.fr", phone: "0600000000" },
     fulfillmentMethod: "pickup",
+    // Pas de commande sans créneau (2026-10-14).
+    requestedWindow: { start: "07:00", end: "08:00" },
     deliveryAddress: null,
     deliveryAddressId: null,
     pickupAddressId: pickupId,
@@ -135,6 +138,18 @@ describe("la commande sans compte — la porte", () => {
     // aucun jeton. Un corps vide n'atteint pas le handler — c'est la forme
     // qui refuse, pas une absence de route (qui rendait 404).
     await ctx.http().post("/shop/orders").send({}).expect(400);
+  });
+
+  /** Hugo, 2026-10-14 : « pas de commande sans créneau » — l'invité aussi. */
+  it("refuse un retrait sans créneau, sans rien écrire", async () => {
+    const { requestedWindow: _chosen, ...withoutWindow } = payload();
+
+    // Par le handler et non par HTTP : la route est bridée en débit, et un
+    // appel de plus fait répondre 429 aux cas suivants.
+    await expect(
+      ctx.app.get(PlaceShopOrderHandler).execute(new PlaceShopOrderCommand(withoutWindow)),
+    ).rejects.toThrow(FulfillmentWindowRequiredError);
+    expect(await ctx.prisma.order.count()).toBe(0);
   });
 });
 

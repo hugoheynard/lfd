@@ -688,28 +688,13 @@ export class ClientOrders {
  * front n'envoie pas un montant, il envoie une identité. Ici il n'envoie pas
  * « au Labo, 7 h – 8 h », il envoie le point et la date.
  *
- * 🔴 **CA1b (2026-10-03) : la livraison envoie maintenant sa fenêtre**, quand le
- * dialogue « On livre où ? » l'a convenue — une échéance (`start: null`), ou le
- * créneau qui manquait au carnet. Elle reste omise quand le carnet la fournit
- * (créneau du jour, ou seule échéance du jour) : le serveur la lit alors à
- * partir de `deliveryAddressId`, et refuse une livraison sans aucune fenêtre.
- * Le paragraphe qui suit est l'historique d'avant CA1b.
- *
- * **`requestedWindow` partait — en RETRAIT seulement.**
- *
- * Ce commentaire disait « les créneaux sont une maquette ». C'était vrai des
- * deux acheminements quand il a été écrit ; ça ne l'est plus que d'un. Le
- * retrait lit les heures d'ouverture du point (`pickupSlots`), donc la fenêtre
- * qu'un client y choisit est une VRAIE fenêtre — le dialogue avait déjà le
- * `PickupSlot` sous la main et l'aplatissait en libellé à la frontière du store.
- *
- * La livraison, elle, n'envoie toujours rien : `DELIVERY_SLOTS` dit lui-même
- * n'affirmer rien de vrai, et le bon de commande imprimerait cette heure sur un
- * document opposable. Sa fenêtre légitime est celle du CARNET, que le serveur
- * lit à partir de `deliveryAddressId` — qui part effectivement depuis le
- * 2026-09-29 (il était envoyé à `null` en dur auparavant, cf. `payloadOf`).
- *
- * Absente veut dire « aucune tranche demandée », ce qui reste exact.
+ * 🔴 **La fenêtre part TOUJOURS** (Hugo, 2026-10-14 : « pas de commande sans
+ * créneau »), retrait comme livraison : celle que le client a choisie dans le
+ * dialogue. Elle était omise quand le carnet la fournissait, et le serveur la
+ * reprenait en silence — c'est ce qui est interdit. Un choix relu du
+ * navigateur sans fenêtre (posé avant) part à `null` et se fait refuser au
+ * serveur ; le panier ne laisse de toute façon pas « Régler » sans elle
+ * (`cart-dialog`, `slotMissing`).
  */
 function payloadOf(
   service: ServiceChoice,
@@ -742,12 +727,7 @@ function payloadOf(
     // commandes, et la feuille de route ne reliait aucune livraison de la
     // boutique à son carnet (corrigé le 2026-09-29).
     deliveryAddressId: service.mode === 'delivery' ? service.deliveryAddressId : null,
-    // 🔴 **La clé est OMISE quand il n'y a pas de tranche choisie**, jamais mise
-    // à `null` : le serveur lit l'absence comme « prends le défaut » (celui du
-    // carnet, en livraison) et un `null` explicite comme « le client n'en veut
-    // aucune ». Un `null` posé par commodité effacerait donc une fenêtre que le
-    // client a lui-même déclarée sur son adresse.
-    ...(service.window === null ? {} : { requestedWindow: service.window }),
+    requestedWindow: service.window,
   };
   if (service.mode === 'pickup') {
     return {

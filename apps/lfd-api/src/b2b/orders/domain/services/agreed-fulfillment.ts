@@ -36,6 +36,11 @@ export interface FulfillmentDefaults {
  * Ce que la commande demande — les valeurs résolues telles que l'écran les
  * montre. **`undefined` = ne se prononce pas** : le réglage s'applique tel quel.
  *
+ * 🔴 **Sauf la fenêtre, depuis le 2026-10-14** (Hugo : « pas de commande sans
+ * créneau ») : `agreeWithWindow` refuse une demande qui ne la porte pas AVANT
+ * d'arriver ici, si bien que le repli sur `defaults.window` ne sert plus à la
+ * passation. Il reste pour le contact et la signature, que l'écran peut taire.
+ *
  * La distinction avec `null` (« explicitement aucun ») n'est pas un détail : un
  * écran qui ignore encore le champ ne doit pas effacer le contact d'un compte
  * qui en a un.

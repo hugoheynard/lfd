@@ -43,6 +43,87 @@ sequenceDiagram
   la journée close et réannonce seulement. Le retirage passe par le même verrou.
 - **Une commande arrivée après l'arrêt** n'est pas perdue : « Reprendre le
   tirage » (le retirage, fiche d'atelier) l'ajoute à la fournée.
+- **Un arrêt se défait** tant que rien n'a commencé : voir « Rouvrir une
+  journée arrêtée » ci-dessous.
+
+## Rouvrir une journée arrêtée
+
+**État au 2026-10-14** (décision de Hugo, plan de lancement §3). Bâti, pas
+encore déployé.
+
+Une journée arrêtée par erreur se **rouvre** depuis le **Prod manager**
+(`/prod-manager`) : bouton « Rouvrir la journée du … » à côté de l'arrêt quand
+la prochaine journée est arrêtée, et dans le dossier du jour de toute journée
+arrêtée. La confirmation dit l'effet : les clients peuvent de nouveau commander
+pour ce jour, le plan est retiré et refait au prochain arrêt. Même droit que
+l'arrêt (`production_count_stop:write`), route
+`POST admin/production/batch/:date/reopen`.
+
+**Refusée** — le message nomme le cas — dès que quelque chose s'appuie sur le
+plan : une fournée déclarée et non annulée (ou une ligne cochée par l'ancien
+poste), un colisage commencé (un contenant ouvert, même annulé, une ligne au
+bac, un bac fermé), une tournée chargée (un bac chargé) ou partie. Le fournil
+pose la question au colisage et à la livraison par deux ports qu'il déclare
+(`DayPackingProgressReader`,
+`DayDispatchProgressReader`), **avant** le verrou ;
+l'agrégat (`ProductionDay.reopen`) décide sous le verrou de l'arrêt.
+
+```mermaid
+sequenceDiagram
+    participant É as Prod manager
+    participant F as Fournil
+    participant C as Commerce
+    participant K as Colisage
+    participant L as Livraison
+    É->>F: rouvrir J
+    F->>K: le colisage de J a-t-il commencé ?
+    F->>L: une tournée de J est-elle chargée ou partie ?
+    F->>F: verrou de J, relecture, reopen (refus éventuel)
+    F-->>C: production.day_reopened
+    F-->>K: production.day_reopened
+    F-->>L: production.day_reopened
+    C->>C: confirmed → placed (commandes confirmées par CET arrêt)
+    K->>K: retire la liste à coliser de J (commandes intouchées)
+    L->>L: oublie le plan arrêté, sort les arrêts des tournées au dépôt
+```
+
+Ce qui est **défait** : chez le fournil, l'arrêt (`closed_at`, auteur), les
+commandes inscrites, le compte à produire et le retirage — la trace reste
+(`reopened_at`, `reopened_by`, migration `20261014400000_la_journee_rouverte`)
+et le journal dit `production_day.reopened` avec son auteur ; au commerce, les
+commandes confirmées par cet arrêt redeviennent `placed` ; au colisage, la
+liste du jour ; à la livraison, le plan arrêté qu'elle avait appris et les
+arrêts de commande posés dans les tournées au dépôt.
+
+Ce qui **ne l'est pas** :
+
+- les **tournées** elles-mêmes, même vides : la prochaine composition les
+  réutilise ;
+- les **transferts internes** et leurs arrêts : un retrait d'un site servi
+  par transfert y entre dès sa passation, il reste dû ;
+- le **dossier du jour déjà envoyé** par e-mail : le prochain arrêt en envoie
+  un nouveau ;
+- les fournées **annulées** : l'historique du four, pas du plan ;
+- le drapeau « reçue hors plan » d'une commande saisie par l'équipe après
+  l'arrêt : il reste posé ;
+- l'**arrêt automatique** : sa tentative du jour est déjà tracée, il ne
+  repasse pas — une journée rouverte s'arrête **à la main** (en mode manuel,
+  l'alerte repart à son heure).
+
+L'ordre des faits n'est pas garanti par la boîte d'envoi : chaque abonné ne
+défait que si la journée est **toujours ouverte** (`ClosedPlansReader`) ; le
+commerce ne rend que les commandes dont `confirmed_at` est l'instant de l'arrêt
+défait. Le fait de la liste à coliser porte la réouverture dans sa clé : sans
+elle, le nouveau tirage d'une commande avait la clé de l'ancien et la boîte
+d'envoi l'avalait.
+
+L'e2e de la réouverture (`production-day-reopened`) joue « arrêter → rouvrir →
+commander → arrêter » et les refus.
+
+**Décidé le 2026-10-14 (Hugo)** : c'est le **Prod manager** qui décide de ce
+qui entre au compte après l'arrêt, pas la fiche d'atelier — pour la
+réouverture comme pour la reprise (le retirage). La reprise vit encore sur la
+fiche d'atelier (bandeau d'écart) ; son déménagement est au plan de lancement.
 
 ## Le réglage — Production › Réglages
 

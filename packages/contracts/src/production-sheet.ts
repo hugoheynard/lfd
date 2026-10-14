@@ -135,3 +135,18 @@ export interface ProductionPlanClosure {
   /** L'instant de la clôture d'origine — celui du snapshot, jamais du rejeu. */
   readonly closedAt: string;
 }
+
+/**
+ * Ce que rend la **réouverture d'une journée** (Hugo, 2026-10-14) : combien de
+ * commandes le plan défait portait. Elles redeviennent modifiables par leurs
+ * clients chez le commerce, par un abonné qui suit — le nombre dit ce que le
+ * fournil a retiré, pas ce que le commerce a déjà rendu.
+ */
+export interface ProductionPlanReopening {
+  /** `AAAA-MM-JJ`, la journée rouverte. */
+  readonly date: string;
+  /** Les commandes retirées du plan. */
+  readonly released: number;
+  /** L'instant de la réouverture, ISO. */
+  readonly reopenedAt: string;
+}

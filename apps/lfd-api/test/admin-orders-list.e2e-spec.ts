@@ -122,6 +122,8 @@ async function place(sub: string, body: Record<string, unknown>): Promise<string
 const pickup = (companyId: string | null) => ({
   companyId,
   fulfillmentMethod: "pickup",
+  // Pas de commande sans créneau (2026-10-14).
+  requestedWindow: { start: "07:00", end: "08:00" },
   pickupAddressId: pickupId,
 });
 

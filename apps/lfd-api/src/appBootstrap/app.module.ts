@@ -33,6 +33,7 @@ import { ProductionModule } from "../production/production.module.js";
 import { HandoverFeedModule } from "./handover-feed.module.js";
 import { DeliveryModule } from "../delivery/delivery.module.js";
 import { DeliveryFeedModule } from "./delivery-feed.module.js";
+import { ProductionDeliveryFeedModule } from "./production-delivery-feed.module.js";
 import { DeliveryHandoverFeedModule } from "./delivery-handover-feed.module.js";
 import { DeliveryRoundPlacementsModule } from "./delivery-round-placements.module.js";
 import { DeliveryTransferCounterModule } from "./delivery-transfer-counter.module.js";
@@ -173,6 +174,7 @@ import { PublicationEnabledGuard } from "../pim/publication/publication-switch.j
     // tournée). Le fil relie les points de retrait du commerce à son port.
     DeliveryModule,
     DeliveryFeedModule,
+    ProductionDeliveryFeedModule,
     DeliveryHandoverFeedModule,
     DeliveryRoundPlacementsModule,
     DeliveryTransferCounterModule,

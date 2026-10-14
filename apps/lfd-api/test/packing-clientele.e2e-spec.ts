@@ -66,6 +66,8 @@ async function placeForCompany(quantity: number): Promise<void> {
       companyId,
       requestedDeliveryDate: SERVICE_DAY,
       fulfillmentMethod: "pickup",
+      // Pas de commande sans créneau (2026-10-14).
+      requestedWindow: { start: "07:00", end: "08:00" },
       pickupAddressId: point.id,
       note: "",
       lines: [{ sku: CROISSANT, quantity }],

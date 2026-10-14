@@ -95,6 +95,8 @@ async function placeUnpaid(): Promise<{ readonly id: string; readonly number: st
         companyId: null,
         requestedDeliveryDate: DAY,
         fulfillmentMethod: "pickup",
+        // Pas de commande sans créneau (2026-10-14).
+        requestedWindow: { start: "07:00", end: "08:00" },
         pickupAddressId: point.id,
         note: "",
         lines: [{ sku: "VIE-001", quantity: 2 }],

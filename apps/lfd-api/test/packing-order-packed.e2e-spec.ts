@@ -160,6 +160,8 @@ async function placeAndClose(): Promise<{ readonly reference: string; readonly o
         companyId: null,
         requestedDeliveryDate: SERVICE_DAY,
         fulfillmentMethod: "pickup",
+        // Pas de commande sans créneau (2026-10-14).
+        requestedWindow: { start: "07:00", end: "08:00" },
         pickupAddressId: point.id,
         note: "",
         lines: [{ sku: "VIE-001", quantity: 1 }],

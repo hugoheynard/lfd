@@ -82,6 +82,13 @@ export interface PackingLine {
 }
 
 /**
+ * La source de `PackingSheet.readyBy` : le départ de la tournée (`round`), le
+ * départ du transfert interne (`transfer`), ou l'échéance figée par le
+ * fournil (`due`).
+ */
+export type PackingReadyBySource = "round" | "transfer" | "due";
+
+/**
  * Un bac — une commande de la journée, vue du poste de préparation.
  *
  * `packedAt` est le fait **irréversible** : le bac est fermé, et le commerce
@@ -132,6 +139,18 @@ export interface PackingSheet {
   readonly siteId?: string | null;
   /** `HH:mm` — début du créneau, sinon fin de l'échéance ; `null` : aucune. Même réserve. */
   readonly dueAt?: string | null;
+  /**
+   * **L'heure à laquelle la commande doit être prête**, `HH:mm` (lot L2,
+   * `commandes/plan-tri-depart-et-couleurs.md` §3, 2026-10-14) : le départ de
+   * sa tournée pour une livraison, le départ du transfert pour un retrait
+   * porté au site, l'échéance (`dueAt`) pour un retrait sur place. Lu à chaque
+   * ouverture du poste — la composition des tournées vient après la clôture.
+   * `null` : aucune heure connue (« pas encore de départ »). Les fiches sont
+   * SERVIES dans cet ordre, sans heure en dernier. Même réserve que `siteId`.
+   */
+  readonly readyBy?: string | null;
+  /** D'où vient `readyBy` ; `null` quand il n'y en a pas. Même réserve. */
+  readonly readyBySource?: PackingReadyBySource | null;
   readonly destination: string;
   readonly lines: readonly PackingLine[];
   /** Le nombre de lignes de la commande — compté au serveur, l'écran ne compte rien. */

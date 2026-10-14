@@ -92,8 +92,9 @@
 
 <fold-panel-footer>
   <!-- Un panier vide n'a pas de bouton gris à offrir : il a un rayon à rouvrir.
-       Le bouton ne se grise donc QUE faute de savoir qui commande — le seul cas
-       où il n'a nulle part où mener. -->
+       Le bouton ne se grise que faute de savoir qui commande, ou faute de
+       créneau choisi (2026-10-14) — les deux cas où il n'a nulle part où
+       mener, et la phrase dessous dit lequel. -->
   @if (ordersClosed()) {
     <!-- La boutique ne prend pas les commandes de cette clientèle : le
          catalogue et le panier restent, le bouton cède la place à la phrase. -->
@@ -124,6 +125,10 @@
     </button>
   }
   @if (!ordersClosed()) {
-    <p class="hint">{{ t().cart.payHint }}</p>
+    @if (slotMissing()) {
+      <p class="hint" role="status" data-slot-missing>{{ t().cart.slotMissing }}</p>
+    } @else {
+      <p class="hint">{{ t().cart.payHint }}</p>
+    }
   }
 </fold-panel-footer>

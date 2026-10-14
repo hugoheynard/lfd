@@ -6,7 +6,7 @@ import type {
   DeliveryRunSheetStopView,
 } from '@lfd/contracts';
 
-import type { PlannedTiming } from './delivery-planning';
+import { type PlannedTiming, timingOf } from './delivery-planning';
 import {
   type ComposedDay,
   type ComposedRound,
@@ -147,9 +147,19 @@ export interface ComposedTiming {
   readonly geometries: Geometries;
   /** Les commandes que leur place rend intenables. */
   readonly placementLate: ReadonlySet<string>;
+  /**
+   * Départ et retour estimés de chaque tournée, par id — le MÊME calcul que
+   * « Proposer » (trajet routier, temps sur place, marges), lu au
+   * chronométrage : l'en-tête de colonne les montre (Hugo, 2026-10-14).
+   */
+  readonly timings: ReadonlyMap<string, PlannedTiming>;
 }
 
-export const NO_TIMING: ComposedTiming = { geometries: new Map(), placementLate: new Set() };
+export const NO_TIMING: ComposedTiming = {
+  geometries: new Map(),
+  placementLate: new Set(),
+  timings: new Map(),
+};
 
 /** Le chronométrage des tournées `timed`, rendu dans le même ordre, lu pour le tableau. */
 export function composedTimingOf(
@@ -167,6 +177,12 @@ export function composedTimingOf(
       view.rounds.flatMap((round) =>
         round.stops.filter((stop) => stop.placementLate).map((stop) => stop.orderId),
       ),
+    ),
+    timings: new Map(
+      timed.flatMap((round, index) => {
+        const line = view.rounds[index];
+        return line === undefined ? [] : [[round.id, timingOf(line)] as const];
+      }),
     ),
   };
 }
@@ -191,7 +207,7 @@ function roundOfComposed(composed: ComposedRound, timing: ComposedTiming): Board
     vehicleRetired: round.vehicleRetired,
     driver: round.driver,
     geometry: timing.geometries.get(round.id) ?? null,
-    timing: null,
+    timing: timing.timings.get(round.id) ?? null,
     unknownDemand: round.place?.unknownOrders ?? 0,
     place: round.place?.status ?? null,
     transferStops: round.transferStops ?? [],

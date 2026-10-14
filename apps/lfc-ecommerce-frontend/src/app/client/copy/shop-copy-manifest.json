@@ -2855,6 +2855,13 @@
           "variables": []
         },
         {
+          "key": "cart.slotMissing",
+          "fr": "Choisissez un créneau pour régler : touchez « Modifier » et choisissez l’heure.",
+          "en": "Choose a time slot to pay: tap “Change” and pick the time.",
+          "it": "Scelga una fascia oraria per pagare: tocchi « Modifica » e scelga l’orario.",
+          "variables": []
+        },
+        {
           "key": "cart.ordersClosed",
           "fr": "Les commandes sont fermées pour le moment.",
           "en": "Orders are closed for the moment.",

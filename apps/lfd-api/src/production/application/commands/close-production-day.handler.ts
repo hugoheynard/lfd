@@ -196,8 +196,9 @@ export class CloseProductionDayHandler implements ICommandHandler<
   /**
    * Republie le fait sur une journée déjà close, sans rien recalculer. Sous le
    * verrou, sur la journée relue : un retirage concurrent ne fait pas
-   * republier un instantané d'avant lui. Une journée close ne se rouvre pas —
-   * aucune méthode de l'agrégat n'efface `closedAt` (vérifié le 2026-10-06).
+   * republier un instantané d'avant lui. Depuis le 2026-10-14, une journée close
+   * se rouvre (`ProductionDay.reopen`) ; rouverte, elle n'est plus close, et
+   * l'appel suivant l'arrête de nouveau au lieu de réannoncer.
    */
   private async reannounce(day: ServiceDay): Promise<ProductionPlanClosure> {
     return this.uow.run(async () => {
@@ -224,7 +225,8 @@ export class CloseProductionDayHandler implements ICommandHandler<
     current: ProductionDay,
     drawnAt: Date,
   ): Promise<void> {
-    for (const fact of packingListFactsOf(day, current.orders, drawnAt)) {
+    const reopenedAt = current.reopened?.at ?? null;
+    for (const fact of packingListFactsOf(day, current.orders, drawnAt, reopenedAt)) {
       await this.durable.publish(fact.durableFact());
     }
   }

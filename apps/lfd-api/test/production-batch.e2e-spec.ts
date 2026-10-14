@@ -596,6 +596,8 @@ describe("les courriels d'une commande", () => {
         companyId: null,
         requestedDeliveryDate: SERVICE_DAY,
         fulfillmentMethod: "pickup",
+        // Pas de commande sans créneau (2026-10-14).
+        requestedWindow: { start: "07:00", end: "08:00" },
         pickupAddressId: point.id,
         note: "",
         lines: [{ sku: "VIE-001", quantity: 2 }],
@@ -678,6 +680,8 @@ describe("le journal d'une commande", () => {
           companyId: null,
           requestedDeliveryDate: SERVICE_DAY,
           fulfillmentMethod: "pickup",
+          // Pas de commande sans créneau (2026-10-14).
+          requestedWindow: { start: "07:00", end: "08:00" },
           pickupAddressId: point.id,
           note: "",
           lines: [{ sku: "VIE-001", quantity: 2 }],
@@ -778,6 +782,8 @@ describe("le plan du soir", () => {
           companyId: null,
           requestedDeliveryDate: day,
           fulfillmentMethod: "pickup",
+          // Pas de commande sans créneau (2026-10-14).
+          requestedWindow: { start: "07:00", end: "08:00" },
           pickupAddressId: id,
           note: "",
           lines: [{ sku: "VIE-001", quantity: 1 }],
@@ -1168,6 +1174,8 @@ describe("la file de remise", () => {
           companyId,
           requestedDeliveryDate: SERVICE_DAY,
           fulfillmentMethod: "pickup",
+          // Pas de commande sans créneau (2026-10-14).
+          requestedWindow: { start: "07:00", end: "08:00" },
           pickupAddressId,
           note: "",
           lines: [{ sku: "VIE-001", quantity }],

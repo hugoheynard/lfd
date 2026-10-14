@@ -226,19 +226,20 @@ describe("POST /admin/orders — le mur", () => {
       .expect(400);
   });
 
-  it("🔴 n'exige AUCUN créneau en coursier — celui qui vaut est au carnet", async () => {
-    // La fenêtre légitime d'une livraison vient de l'adresse du carnet, que le
-    // serveur lit lui-même. L'exiger dans la charge utile ferait écraser par
-    // l'écran ce que le compte a déclaré.
-    //
-    // ⚠️ On éprouve « la VALIDATION ne refuse pas », pas « la commande passe » :
-    // aucune tournée n'est semée dans cette suite, donc la règle métier des
-    // zones répond 409 juste après. Exiger 201 obligerait à semer une zone pour
-    // prouver une question de schéma, et ferait dépendre ce cas d'un sujet qui
-    // n'est pas le sien. La forme pure est éprouvée dans `@lfd/contracts`.
+  /**
+   * Ce cas disait l'inverse jusqu'au 2026-10-14 (« n'exige AUCUN créneau en
+   * coursier — celui qui vaut est au carnet »). Décision de Hugo ce jour-là :
+   * « pas de commande sans créneau », l'équipe comprise. Le schéma de la saisie
+   * n'exige toujours rien en coursier ; c'est le domaine qui refuse.
+   */
+  it("🔴 refuse aussi une LIVRAISON sans créneau, l'équipe comprise", async () => {
     const { companyId, buyerId } = await seedCompany(true);
+    // Une tournée dessert l'adresse : sans elle, le refus de zone (409) passerait avant.
+    await ctx.prisma.deliveryZone.create({
+      data: { postalPrefixes: ["73150"], label: "Val d'Isère", feeMode: "amount", feeValue: 0 },
+    });
 
-    const answer = await staff()
+    const refused = await staff()
       .post("/admin/orders")
       .send({
         ...payload({ companyId, buyerUserId: buyerId }),
@@ -253,9 +254,11 @@ describe("POST /admin/orders — le mur", () => {
           ville: "Val d'Isère",
           pays: "France",
         },
-      });
+      })
+      .expect(400);
 
-    expect(answer.status).not.toBe(400);
+    expect(JSON.stringify(refused.body)).toContain("orders.fulfillment.window_required");
+    expect(await ctx.prisma.order.count()).toBe(0);
   });
 });
 

@@ -4,6 +4,7 @@ import {
   type ProductionForecastQuery,
   type ProductionForecastView,
   type ProductionPlanClosure,
+  type ProductionPlanReopening,
   productionBatchQuerySchema,
   productionForecastQuerySchema,
 } from "@lfd/contracts";
@@ -15,6 +16,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { AdminSurface, RequirePermission } from "../../platform/auth/admin-surface.decorator.js";
 import { ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
 import { CloseProductionDayCommand } from "../application/commands/close-production-day.command.js";
+import { ReopenProductionDayCommand } from "../application/commands/reopen-production-day.command.js";
 import { GetAtelierSheetPdfQuery } from "../application/queries/get-atelier-sheet-pdf.query.js";
 import { GetDayDossierPdfQuery } from "../application/queries/get-day-dossier-pdf.query.js";
 import { GetProductionCountPdfQuery } from "../application/queries/get-production-count-pdf.query.js";
@@ -214,6 +216,27 @@ export class ProductionDayController {
         "manual",
         staffUserId,
       ),
+    );
+  }
+
+  /**
+   * **Rouvre une journée arrêtée** (Hugo, 2026-10-14) : le plan est retiré,
+   * les clients peuvent de nouveau commander pour ce jour, et le prochain
+   * arrêt refait tout. Refusée dès qu'une fournée, un colisage ou une tournée
+   * a commencé — le refus nomme lequel.
+   *
+   * Sous le droit de l'arrêt, `production_count_stop:write` : défaire un
+   * geste demande le droit de le faire. Aucun droit nouveau, rien d'écrit à
+   * un rôle.
+   */
+  @Post("batch/:date/reopen")
+  @RequirePermission("production_count_stop:write")
+  async reopen(
+    @Param("date") date: string,
+    @StaffUserId() staffUserId: string,
+  ): Promise<ProductionPlanReopening> {
+    return this.commands.execute<ReopenProductionDayCommand, ProductionPlanReopening>(
+      new ReopenProductionDayCommand(productionBatchQuerySchema.parse({ date }).date, staffUserId),
     );
   }
 }

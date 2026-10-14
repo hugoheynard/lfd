@@ -397,11 +397,11 @@ export class DeliveryAddressDialog {
         : this.daySlots().length === 0),
   );
 
-  /** Plusieurs créneaux au carnet ce jour-là : on en choisit un. */
+  /** Les créneaux du carnet ce jour-là : on en choisit un, même s'il est seul (2026-10-14). */
   protected readonly slotOptions = computed(() => {
     const slots = this.daySlots();
     const before = this.c().when.before;
-    return this.windowMode() !== 'slot' || slots.length < 2
+    return this.windowMode() !== 'slot' || slots.length === 0
       ? []
       : slots.map((slot) => ({
           value: slotKey(slot),
@@ -424,22 +424,20 @@ export class DeliveryAddressDialog {
     }));
   });
 
-  /** L'option montrée : le choix, sinon la seule échéance du jour, que le serveur reprend. */
+  /**
+   * L'option montrée : le choix, ou rien — même une échéance seule se choisit
+   * (Hugo, 2026-10-14 : « pas de commande sans créneau »).
+   */
   protected readonly deadlineValue = computed(() => {
     const picked = this.deadlinePick();
-    if (picked !== '') {
-      return picked;
-    }
-    const times = this.dayDeadlines();
-    return times.length === 1 ? (times[0] ?? '') : '';
+    return this.dayDeadlines().includes(picked) ? picked : '';
   });
 
   /** La fenêtre envoyée ; `undefined` tant qu'il manque une heure. */
-  private readonly window = computed<FulfillmentWindow | null | undefined>(() => {
+  private readonly window = computed<FulfillmentWindow | undefined>(() => {
     const free = this.freeEntry();
     return deliveryWindowOf({
       mode: this.windowMode(),
-      dayDeadlines: this.dayDeadlines(),
       daySlots: this.daySlots(),
       // Une heure tapée ne part qu'en saisie libre ; au carnet, seule la liste.
       deadline: free ? this.typedDeadline() : this.deadlinePick(),
@@ -494,18 +492,18 @@ export class DeliveryAddressDialog {
     this.picked.set(entry.address.id);
   }
 
-  /** Le libellé de la fenêtre envoyée, ou `''` quand elle vient du carnet. */
-  private windowLabel(window: FulfillmentWindow | null): string {
-    return window === null ? '' : formatWindow(window.start, window.end, this.c().when.before);
+  /** Le libellé de la fenêtre choisie. */
+  private windowLabel(window: FulfillmentWindow): string {
+    return formatWindow(window.start, window.end, this.c().when.before);
   }
 
   /**
    * Rend le mode de service COMPLET.
    *
    * 🔴 La fenêtre (CA3, CA1b — 2026-10-03) : celle que le client vient de
-   * convenir — une échéance, ou le créneau qui manquait —, sinon `null` quand
-   * le carnet la fournit et que le serveur la lit à partir de
-   * `deliveryAddressId`. Jamais aucune : une livraison ne part plus sans heure.
+   * CHOISIR — une échéance ou un créneau du carnet, ou le créneau tapé. Plus
+   * jamais `null` pour « le serveur la reprend » (Hugo, 2026-10-14 : « pas de
+   * commande sans créneau »).
    *
    * 🔴 Le CODE POSTAL, jamais le tarif : la zone s'en déduit côté serveur, qui
    * applique alors le même barème que la facture.
@@ -535,9 +533,7 @@ export class DeliveryAddressDialog {
       at: addressAt(entry.name),
       address: `${address.ligne1}, ${address.codePostal}`,
       codePostal: address.codePostal,
-      // La fenêtre du carnet tient lieu de libellé quand elle existe ; sinon
-      // rien, et l'écran qui l'affiche ne dira que la journée.
-      slot: this.windowLabel(window) || windowOf(address, '{window}', this.c().when.before),
+      slot: this.windowLabel(window),
       date,
       deliveryAddressId: address.id,
       deliveryAddress: {

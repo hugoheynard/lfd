@@ -79,7 +79,8 @@ function keyOf(
   return round.roundId ?? `new:${round.vehicleId}:${String(round.passage)}`;
 }
 
-function timingOf(round: DeliveryProposedRoundView): PlannedTiming {
+/** Départ, retour, distance et durée d'une tournée calculée, tels que le serveur les rend. */
+export function timingOf(round: DeliveryProposedRoundView): PlannedTiming {
   return {
     departureTime: round.departureTime,
     returnTime: round.returnTime,

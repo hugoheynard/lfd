@@ -68,9 +68,10 @@ export const STAFF_SETTLEMENT_LABELS: Readonly<Record<StaffSettlement, string>> 
  * donnée qu'on bannit. Le message est lu par du personnel sans le code sous les
  * yeux : il dit quoi faire, pas ce qui manque.
  *
- * ⚠️ **En coursier, rien n'est exigé** : la fenêtre légitime d'une livraison est
- * celle du CARNET, que le serveur lit à partir de l'adresse. L'exiger dans la
- * charge utile ferait écraser par l'écran ce que le compte a déclaré.
+ * ⚠️ **En coursier, ce schéma n'exige rien — mais le DOMAINE si**, depuis le
+ * 2026-10-14 (Hugo : « pas de commande sans créneau ») : `ensureWindowChosen`
+ * refuse toute passation sans fenêtre, retrait comme livraison, client comme
+ * équipe. Le carnet ne se reprend plus en silence ; il propose, l'écran choisit.
  *
  * 🔴 **Et seulement sur la saisie STAFF.** `placeOrderPayloadSchema`, le
  * parcours client, n'est pas touché : son dialogue de retrait n'émet déjà que

@@ -51,8 +51,9 @@ export interface OrderContent {
   readonly pickupAddressId: string | null;
   readonly requestedDeliveryDate: string | null;
   /**
-   * La tranche demandée — engagement, pas préférence. `undefined` = l'écran ne
-   * se prononce pas, le réglage du client s'applique (cf. `agreeFulfillment`).
+   * La tranche demandée — engagement, pas préférence. **Obligatoire à la
+   * passation** depuis le 2026-10-14 (`ensureWindowChosen`) : facultative ici
+   * seulement parce que le devis partage cette forme et n'a pas de tranche.
    */
   readonly requestedWindow?: FulfillmentWindow | null | undefined;
   /** Qui reçoit, tel que l'écran l'affiche. `undefined` = prendre le réglage. */

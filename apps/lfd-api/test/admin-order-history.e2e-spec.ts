@@ -82,6 +82,8 @@ async function place(pickupAddressId: string): Promise<string> {
       lines: [{ sku: "VIE-001", quantity: 1 }],
       companyId: null,
       fulfillmentMethod: "pickup",
+      // Pas de commande sans créneau (2026-10-14).
+      requestedWindow: { start: "07:00", end: "08:00" },
       pickupAddressId,
     })
     .expect(201);

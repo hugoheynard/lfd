@@ -15,11 +15,13 @@ export interface DeliveryDayReadinessState {
  * §4, CA6a) : par journée, l'ENSEMBLE des livraisons que les faits du
  * fournil lui ont apprises.
  *
- * L'invariant est structurel : l'ensemble ne fait que grandir. Chaque fait
- * — clôture, réannonce, retirage (CA6b) — en fait l'UNION ; un fait
- * rejoué, ou une réannonce qui recouvre ce qu'on sait déjà, n'ajoute rien.
- * Aucun ordre d'arrivée n'est supposé : `closedAt` se pose à la première
- * clôture reçue et ne bouge plus (une journée close ne se rouvre pas, S1).
+ * L'invariant est structurel : TANT QUE le plan tient, l'ensemble ne fait
+ * que grandir. Chaque fait — clôture, réannonce, retirage (CA6b) — en fait
+ * l'UNION ; un fait rejoué, ou une réannonce qui recouvre ce qu'on sait déjà,
+ * n'ajoute rien. `closedAt` se pose à la première clôture reçue et ne bouge
+ * plus — sauf la réouverture (Hugo, 2026-10-14, qui lève le S1 « une journée
+ * close ne se rouvre pas ») : elle oublie le plan entier, et la clôture
+ * suivante repart de zéro.
  *
  * Ce que l'appelant en tire — sonner ou non — est le nombre de livraisons à
  * ANNONCER, rendu par `learnClosure` et `learnRetake` : rien n'est annoncé
@@ -99,6 +101,17 @@ export class DeliveryDayReadiness {
   learnRetake(deliveryOrderIds: readonly string[], at: Date): number {
     const added = this.union(deliveryOrderIds, at);
     return this.closed === null ? 0 : added;
+  }
+
+  /**
+   * Une réouverture reçue : le plan arrêté est oublié — instant d'arrêt et
+   * ensemble. L'abonné ne l'appelle que si la journée n'a pas été arrêtée de
+   * nouveau depuis : c'est lui qui sait le demander au fournil.
+   */
+  forgetClosure(at: Date): void {
+    this.closed = null;
+    this.ids = new Set();
+    this.touchedAt = at;
   }
 
   private union(deliveryOrderIds: readonly string[], at: Date): number {

@@ -559,6 +559,8 @@ export const ORDERS_PRODUCTION_FACTS = {
     dayFactBeforeLabel(),
   ]),
   "production_day.retaken": fact(dayFact(), [dayFactBeforeLabel()]),
+  /** La réouverture (2026-10-14) : `absorbed` = commandes retirées du plan. */
+  "production_day.reopened": fact(dayFact()),
   /**
    * Le libellé est le SKU : la production ne lit pas le référentiel, et aucun
    * port de son contexte ne nomme un article hors d'une commande. Le SKU est

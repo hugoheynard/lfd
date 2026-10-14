@@ -313,17 +313,14 @@ export class AcheminementCommande {
     return specs === undefined ? [] : slotsFor(specs, this.deliveryDay());
   });
 
-  /** Le SEUL créneau du jour : le serveur le reprend si on n'en envoie aucun. */
-  protected readonly soleBookSlotLabel = computed(() => {
-    const slots = this.bookSlots();
-    const sole = slots.length === 1 ? (slots[0] ?? null) : null;
-    return sole === null ? null : fulfillmentWindowLabel(sole);
-  });
-
-  /** Plusieurs créneaux ce jour-là : la commande en choisit un. */
+  /**
+   * Les créneaux du carnet ce jour-là : la commande en choisit un, même s'il
+   * est seul. Le seul créneau était repris en silence par le serveur ; pas de
+   * commande sans créneau CHOISI (Hugo, 2026-10-14).
+   */
   protected readonly bookSlotOptions = computed(() => {
     const slots = this.bookSlots();
-    return slots.length < 2
+    return slots.length === 0
       ? []
       : slots.map((slot) => ({ value: idOf(slot), label: fulfillmentWindowLabel(slot) }));
   });
@@ -353,15 +350,6 @@ export class AcheminementCommande {
     deadlinesFor(this.bookEntry()?.specs.deadlines, this.deliveryDay()),
   );
 
-  /**
-   * L'échéance que le serveur reprend si on n'en envoie aucune : la SEULE du
-   * jour. Plusieurs, et la commande doit en choisir une (contrat CA3).
-   */
-  private readonly soleDeadline = computed(() => {
-    const times = this.dayDeadlines();
-    return times.length === 1 ? (times[0] ?? null) : null;
-  });
-
   /** Les échéances préférées de l'adresse pour ce jour, puis « une autre heure ». */
   protected readonly deadlineOptions = computed(() => [
     ...this.dayDeadlines().map((time) => ({
@@ -377,8 +365,9 @@ export class AcheminementCommande {
     if (this.otherDeadlineOpen()) {
       return OTHER_DEADLINE;
     }
+    // Rien de présélectionné, pas même la seule échéance du jour (2026-10-14).
     if (window === null || window.start !== null) {
-      return this.soleDeadline() ?? '';
+      return '';
     }
     const listed = this.deadlineOptions().some((option) => option.value === window.end);
     return listed ? window.end : OTHER_DEADLINE;
@@ -437,21 +426,15 @@ export class AcheminementCommande {
       if (window !== null && window.start === null) {
         return { window, issue: null };
       }
-      // Omise, la seule échéance du jour est reprise par le serveur.
-      return this.soleDeadline() !== null && !this.otherDeadlineOpen()
-        ? { window: null, issue: null }
-        : {
-            window: null,
-            issue:
-              'Échéance de livraison à choisir — une de l’adresse, ou une autre heure. Une livraison ne part plus sans heure.',
-          };
+      return {
+        window: null,
+        issue:
+          'Échéance de livraison à choisir — une de l’adresse, ou une autre heure. Une livraison ne part plus sans heure.',
+      };
     }
-    const slots = this.bookSlots();
-    if (slots.length === 1) {
-      // Le seul créneau du carnet pour ce jour : le serveur le lit.
-      return { window: null, issue: null };
-    }
-    if (slots.length > 1) {
+    // Même le seul créneau du carnet se choisit : le serveur ne le reprend
+    // plus en silence (Hugo, 2026-10-14 : « pas de commande sans créneau »).
+    if (this.bookSlots().length > 0) {
       return this.bookSlotChoice() !== ''
         ? { window, issue: null }
         : {
@@ -545,9 +528,9 @@ export class AcheminementCommande {
       // Décochée par défaut, et sans effet sur une entrée du carnet : c'est un
       // geste explicite, pas une conséquence d'avoir tapé une adresse.
       saveToBook: this.canKeepAddress() && this.isNewAddress() && this.keepAddress(),
-      // Le créneau du CARNET n'est jamais recopié : le serveur le lit à partir
-      // de l'adresse, et en poser un ici l'écraserait. Seule part une fenêtre
-      // convenue au téléphone — l'échéance choisie, ou le créneau qu'il manquait.
+      // La fenêtre CHOISIE part toujours — une échéance ou un créneau du
+      // carnet, ou celle convenue au téléphone (2026-10-14 : le serveur ne
+      // reprend plus le carnet en silence).
       window: timing.window,
       issue:
         this.zone() === null

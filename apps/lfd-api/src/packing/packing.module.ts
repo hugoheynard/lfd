@@ -3,6 +3,9 @@ import { Module } from "@nestjs/common";
 import { OnHandedToPacking } from "./application/handlers/on-handed-to-packing.handler.js";
 import { OnPackingListDrawn } from "./application/handlers/on-packing-list-drawn.handler.js";
 import { OnReturnRequested } from "./application/handlers/on-return-requested.handler.js";
+import { OnProductionDayReopened } from "./application/handlers/on-production-day-reopened.handler.js";
+import { PackingListWithdrawal } from "./domain/ports/packing-list-withdrawal.js";
+import { PrismaPackingListWithdrawal } from "./infrastructure/prisma-packing-list-withdrawal.js";
 import { PackingShadowLedger } from "./domain/ports/packing-shadow.ledger.js";
 import { ApplyPackingProposalHandler } from "./application/containers/apply-packing-proposal.handler.js";
 import { GetShareableHalvesHandler } from "./application/containers/get-shareable-halves.handler.js";
@@ -66,6 +69,9 @@ import { PrismaPackingBoardReader } from "./infrastructure/prisma-packing-board.
     OnPackingListDrawn,
     OnHandedToPacking,
     OnReturnRequested,
+    // La réouverture d'une journée (2026-10-14) : la liste du jour se retire.
+    OnProductionDayReopened,
+    { provide: PackingListWithdrawal, useClass: PrismaPackingListWithdrawal },
     { provide: PackingShadowLedger, useClass: PrismaPackingShadowLedger },
     // Les retours du fournil (K2).
     PackingReturnDesk,

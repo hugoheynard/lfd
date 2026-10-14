@@ -205,7 +205,11 @@ describe("le devis de la vitrine et la facture", () => {
         lines: [...PANIER],
         fulfillment: { method: "pickup", pickupAddressId: pickupId },
       },
-      { fulfillmentMethod: "pickup", pickupAddressId: pickupId },
+      {
+        fulfillmentMethod: "pickup",
+        pickupAddressId: pickupId,
+        requestedWindow: { start: "07:00", end: "08:00" },
+      },
     );
   });
 
@@ -270,7 +274,11 @@ describe("le devis de la vitrine et la facture", () => {
         lines: [...PANIER],
         fulfillment: { method: "pickup", pickupAddressId: pickupId },
       },
-      { fulfillmentMethod: "pickup", pickupAddressId: pickupId },
+      {
+        fulfillmentMethod: "pickup",
+        pickupAddressId: pickupId,
+        requestedWindow: { start: "07:00", end: "08:00" },
+      },
     );
   });
 
@@ -300,6 +308,8 @@ describe("le devis de la vitrine et la facture", () => {
           requestedDeliveryDate: SERVICE_DAY,
           note: "",
           fulfillmentMethod: "pickup",
+          // Pas de commande sans créneau (2026-10-14).
+          requestedWindow: { start: "07:00", end: "08:00" },
           pickupAddressId: pickupId,
           lines: [...PANIER],
         })
@@ -409,6 +419,8 @@ describe("le devis de la vitrine et la facture", () => {
           requestedDeliveryDate: SERVICE_DAY,
           note: "",
           fulfillmentMethod: "pickup",
+          // Pas de commande sans créneau (2026-10-14).
+          requestedWindow: { start: "07:00", end: "08:00" },
           pickupAddressId: pickupId,
           lines: [...PANIER],
         })

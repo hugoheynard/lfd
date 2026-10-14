@@ -9,21 +9,24 @@ import type { PackingEntry } from './packing-rounds';
 
 /**
  * **Les cadres de couleur de la colonne des commandes** (Hugo, 2026-10-13,
- * revus le 2026-10-14 — plan `commandes/plan-tri-depart-et-couleurs.md`, L1b).
- * Chaque cadre est bordé à gauche et en haut de sa couleur, son titre écrit
- * dans la bordure haute. Dans un groupe, l'ordre est FIXE :
+ * revus le 2026-10-14 — plan `commandes/plan-tri-depart-et-couleurs.md`, L1b
+ * puis L2). Chaque cadre est bordé à gauche et en haut de sa couleur, son
+ * titre écrit dans la bordure haute :
  *
  * 1. un cadre **Transfert <site>** par site servi par transfert, qui CONTIENT
  *    ses retraits par clientèle (« Retrait pro Val Village »…) et, quand il
  *    sera bâti, son réapprovisionnement ;
- * 2. **Livraison pro**, puis **Livraison particulier** (puis « Livraison »,
- *    clientèle inconnue) — UN cadre chacun : l'échéance d'une livraison est la
- *    fenêtre du client, et la découper faisait un cadre par commande ;
- * 3. les **retraits sur place**, par heure, coupés par créneau quand une
- *    catégorie en a plusieurs (« Retrait particulier Adroit · 08:00 »).
+ * 2. **Livraison pro**, **Livraison particulier** (puis « Livraison »,
+ *    clientèle inconnue) — UN cadre chacun, jamais coupé par heure ;
+ * 3. les **retraits sur place**, coupés par créneau quand une catégorie en a
+ *    plusieurs (« Retrait particulier Adroit · 08:00 »).
  *
- * Fonction pure d'AFFICHAGE : les commandes gardent leur ordre servi dans
- * chaque cadre ; rien n'est compté.
+ * **L'ordre est celui de l'heure « prête pour »** (L2, Hugo 2026-10-14) : les
+ * commandes d'un cadre par heure croissante, les cadres par leur heure la plus
+ * tôt, sans heure en dernier. À heure égale, l'ordre ci-dessus départage, puis
+ * l'ordre servi (le tri est stable : dans une tournée, l'ordre de chargement).
+ *
+ * Fonction pure d'AFFICHAGE : rien n'est compté.
  */
 export type PackingFrame = PackingOrderFrame | PackingTransferFrame;
 
@@ -95,8 +98,23 @@ const DELIVERY_ORDER: readonly string[] = ['delivery:pro', 'delivery:public', 'd
 interface Bucket {
   readonly head: Omit<PackingFrameHead, 'title'> & { readonly title: string };
   readonly entries: PackingEntry[];
-  /** La plus tôt des échéances du cadre, pour ranger les retraits par heure. */
+  /** La plus tôt des heures « prête pour » du cadre. */
   due: string | null;
+}
+
+/**
+ * L'heure « prête pour » d'une fiche (L2) : `readyBy`, servi par le colisage ;
+ * une fiche qui ne le porte pas du tout (construite avant lui) retombe sur
+ * son échéance figée.
+ */
+export function deadlineOf(sheet: PackingEntry['sheet']): string | null {
+  return sheet.readyBy === undefined ? (sheet.dueAt ?? null) : sheet.readyBy;
+}
+
+/** Un cadre de premier niveau, et l'heure qui le range. */
+interface Ranked {
+  readonly frame: PackingFrame;
+  readonly due: string | null;
 }
 
 export function packingFrames(
@@ -104,21 +122,29 @@ export function packingFrames(
   palette: readonly SitePaletteEntryView[],
   replenishments: readonly PackingReplenishment[] = [],
 ): readonly PackingFrame[] {
-  const transfers = transferFrames(entries, palette, replenishments);
+  const sorted = [...entries].sort((a, b) => compareDue(deadlineOf(a.sheet), deadlineOf(b.sheet)));
+  const transfers = transferFrames(sorted, palette, replenishments);
   const deliveries = bucketize(
-    entries.filter((entry) => entry.sheet.fulfillmentMethod === 'delivery'),
+    sorted.filter((entry) => entry.sheet.fulfillmentMethod === 'delivery'),
     palette,
     false,
   ).sort((a, b) => DELIVERY_ORDER.indexOf(a.head.key) - DELIVERY_ORDER.indexOf(b.head.key));
   const pickups = bucketize(
-    entries.filter(
+    sorted.filter(
       (entry) =>
         entry.sheet.fulfillmentMethod === 'pickup' && transferSiteOf(entry, palette) === null,
     ),
     palette,
     true,
-  ).sort((a, b) => compareDue(a.due, b.due));
-  return [...transfers, ...[...deliveries, ...pickups].map(orderFrame)];
+  );
+  const ranked: Ranked[] = [
+    ...transfers,
+    ...[...deliveries, ...pickups].map((bucket) => ({
+      frame: orderFrame(bucket),
+      due: bucket.due,
+    })),
+  ];
+  return ranked.sort((a, b) => compareDue(a.due, b.due)).map((one) => one.frame);
 }
 
 function transferSiteOf(
@@ -137,7 +163,7 @@ function transferFrames(
   entries: readonly PackingEntry[],
   palette: readonly SitePaletteEntryView[],
   replenishments: readonly PackingReplenishment[],
-): PackingTransferFrame[] {
+): Ranked[] {
   const sites = new Map<string, { site: SitePaletteEntryView; entries: PackingEntry[] }>();
   for (const entry of entries) {
     const site = transferSiteOf(entry, palette);
@@ -157,10 +183,10 @@ function transferFrames(
     const items = replenishments
       .filter((replenishment) => replenishment.siteId === site.id)
       .flatMap((replenishment) => replenishment.items);
-    const inner: (PackingOrderFrame | PackingReplenishmentFrame)[] = transferPickupBuckets(
-      own,
-      site,
-    ).map(orderFrame);
+    // Ses retraits partent ENSEMBLE, avec le transfert : l'ordre fixe reste
+    // (pro, particulier) ; c'est le cadre englobant qui se range par heure.
+    const buckets = transferPickupBuckets(own, site);
+    const inner: (PackingOrderFrame | PackingReplenishmentFrame)[] = buckets.map(orderFrame);
     if (items.length > 0) {
       inner.push({
         kind: 'replenishment',
@@ -171,12 +197,13 @@ function transferFrames(
         items,
       });
     }
-    return {
+    const frame: PackingTransferFrame = {
       kind: 'transfer',
       key: `transfer:${site.id}`,
       title: `Transfert ${site.label}`,
       frames: inner,
     };
+    return { frame, due: buckets.map((bucket) => bucket.due).sort(compareDue)[0] ?? null };
   });
 }
 
@@ -188,7 +215,8 @@ function transferPickupBuckets(
   const order: readonly ('pro' | 'public' | null)[] = ['pro', 'public', null];
   return order.flatMap((clientele) => {
     const own = entries.filter((entry) => (entry.sheet.clientele ?? null) === clientele);
-    if (own.length === 0) {
+    const first = own[0];
+    if (first === undefined) {
       return [];
     }
     const color =
@@ -206,7 +234,7 @@ function transferPickupBuckets(
           ink: inkOf(color),
         },
         entries: own,
-        due: null,
+        due: deadlineOf(first.sheet),
       },
     ];
   });
@@ -227,14 +255,11 @@ function bucketize(
   }));
   const slices = new Map<string, Set<string | null>>();
   for (const { entry, category } of categorized) {
-    slices.set(
-      category.key,
-      (slices.get(category.key) ?? new Set()).add(entry.sheet.dueAt ?? null),
-    );
+    slices.set(category.key, (slices.get(category.key) ?? new Set()).add(deadlineOf(entry.sheet)));
   }
   const buckets = new Map<string, Bucket>();
   for (const { entry, category } of categorized) {
-    const due = entry.sheet.dueAt ?? null;
+    const due = deadlineOf(entry.sheet);
     const cut = sliced && (slices.get(category.key)?.size ?? 0) > 1;
     const key = cut ? `${category.key}@${due ?? ''}` : category.key;
     const found = buckets.get(key);

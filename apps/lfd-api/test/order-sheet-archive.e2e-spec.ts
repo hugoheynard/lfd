@@ -86,6 +86,8 @@ async function placeOrder(): Promise<PlacedOrderResponse> {
         pickupAddressId: point.id,
         requestedDeliveryDate: SERVICE_DAY,
         fulfillmentMethod: "pickup",
+        // Pas de commande sans créneau (2026-10-14).
+        requestedWindow: { start: "07:00", end: "08:00" },
         note: "",
         lines: [{ sku: "VIE-001", quantity: 3 }],
       })

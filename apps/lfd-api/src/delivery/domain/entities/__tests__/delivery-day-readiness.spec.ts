@@ -103,3 +103,17 @@ describe("DeliveryDayReadiness — l'ensemble des livraisons d'un plan arrêté"
     expect(day.learnRetake(["c"], LATER)).toBe(0);
   });
 });
+
+describe("DeliveryDayReadiness.forgetClosure (réouverture, 2026-10-14)", () => {
+  it("oublie le plan, et la clôture suivante annonce tout comme une première", () => {
+    const day = DeliveryDayReadiness.start(DAY, AT);
+    day.learnClosure(CLOSED, ["a", "b"], AT);
+
+    day.forgetClosure(LATER);
+
+    expect(day.closedAt).toBeNull();
+    expect(day.deliveryOrderIds).toEqual([]);
+    expect(day.learnClosure(LATER, ["b", "c"], LATER)).toBe(2);
+    expect(day.closedAt).toEqual(LATER);
+  });
+});

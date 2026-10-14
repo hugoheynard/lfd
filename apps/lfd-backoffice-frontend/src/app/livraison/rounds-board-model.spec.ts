@@ -157,6 +157,23 @@ describe('l’alerte rouge : la place rend l’échéance intenable (CA5)', () =
     expect(board.rounds[1]!.stops[0]!.placementLate).toBe(false);
   });
 
+  it('porte le départ et le retour estimés en tête de la tournée chronométrée (2026-10-14)', () => {
+    expect(board.rounds[1]?.timing).toEqual({
+      departureTime: '05:00',
+      returnTime: '08:00',
+      meters: 1000,
+      minutes: 180,
+      overDuration: false,
+    });
+    expect(roundTimingLabel(board.rounds[1]!.timing!)).toMatch(/^Départ .+ · Retour .+ · 1 km$/);
+    expect(board.rounds[2]?.timing).toBeNull();
+  });
+
+  it('un geste en vol efface l’heure de retour jusqu’au prochain chronométrage', () => {
+    const next = relaidBoard(board, { 'r-2': ['3', '2'] });
+    expect(next.rounds[1]?.timing).toBeNull();
+  });
+
   it('badge rouge, liseré rouge, compté « à régler », marqueur en retard sur la carte', () => {
     expect(stopTagsOf(late)).toContainEqual({ label: PLACEMENT_LATE_LABEL, variant: 'alert' });
     expect(stopEdgeOf(late)).toBe('alert');

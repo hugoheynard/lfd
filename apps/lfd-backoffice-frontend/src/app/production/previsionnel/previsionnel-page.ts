@@ -32,6 +32,7 @@ import { ProductionSettingsService } from '../production-settings.service';
 import { NotifyService } from '../../notify.service';
 import { DossierDuJour, defaultDossierDate } from './dossier-du-jour/dossier-du-jour';
 import { ForecastTable } from './forecast-table/forecast-table';
+import { ReopenDay } from './reopen-day/reopen-day';
 import { forecastRayons, totalOfRayons } from './previsionnel-matrix';
 import { FORECAST_DAYS, forecastHeaders, isoDay, shiftDay, windowEnd } from './previsionnel-range';
 
@@ -113,6 +114,7 @@ type ForecastView = 'matrix' | 'dossier';
   imports: [
     DossierDuJour,
     ForecastTable,
+    ReopenDay,
     FoldButtonComponent,
     FoldButtonIconComponent,
     FoldCalloutComponent,
@@ -252,6 +254,22 @@ export class PrevisionnelPage {
       ? `Plan du ${tomorrow.weekday} ${tomorrow.dayMonth} arrêté`
       : 'Rien à arrêter';
   });
+
+  /**
+   * **La journée à rouvrir depuis la matrice** (Hugo, 2026-10-14) : la
+   * prochaine après aujourd'hui, si elle est arrêtée — la même que celle que
+   * le bouton désactivé dit « arrêtée ». Les autres se rouvrent depuis leur
+   * dossier du jour.
+   */
+  protected readonly dayToReopen = computed(() => {
+    const tomorrow = this.aheadHeaders().find((header) => header.date > this.today);
+    return tomorrow?.closed === true ? tomorrow : undefined;
+  });
+
+  /** « jeudi 15 octobre », pour le dossier ouvert. */
+  protected readonly dossierDayLabel = computed(() =>
+    DOSSIER_DAY_LABEL.format(new Date(`${this.dossierDate()}T00:00:00`)),
+  );
 
   /**
    * **La fenêtre qui commence aujourd'hui, lue à part** quand la fenêtre

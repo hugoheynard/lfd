@@ -133,6 +133,8 @@ function order(day: string): Record<string, unknown> {
     idempotencyKey: randomUUID(),
     pickupAddressId: pickupId,
     fulfillmentMethod: "pickup",
+    // Pas de commande sans créneau (2026-10-14).
+    requestedWindow: { start: "07:00", end: "08:00" },
     requestedDeliveryDate: day,
     // Au compte : le fournil compte une commande réglée, pas un paiement en vol.
     settlement: "account",

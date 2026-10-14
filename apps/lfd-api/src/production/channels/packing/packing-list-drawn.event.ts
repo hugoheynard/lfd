@@ -63,12 +63,22 @@ export class PackingListDrawnEvent implements DurableEvent {
     /** L'instant du tirage qui l'a inscrite (clôture ou retirage), jamais celui d'un rejeu. */
     readonly drawnAt: Date,
     readonly order: PackingListOrder,
+    /**
+     * La dernière réouverture de la journée, ou `null` (2026-10-14). Elle
+     * n'entre que dans la CLÉ : sans elle, la commande tirée de nouveau après
+     * une réouverture portait la clé du premier tirage, et la boîte d'envoi
+     * (`ON CONFLICT (key) DO NOTHING`) l'avalait — le colisage ne la revoyait
+     * jamais. `null` garde la clé d'avant, à l'identique.
+     */
+    readonly reopenedAt: Date | null = null,
   ) {}
 
   durableFact(): DurableFact {
     return {
       type: PRODUCTION_PACKING_LIST_DRAWN,
-      key: `${PRODUCTION_PACKING_LIST_DRAWN}:${this.serviceDay}:${this.order.orderId}`,
+      key:
+        `${PRODUCTION_PACKING_LIST_DRAWN}:${this.serviceDay}:${this.order.orderId}` +
+        (this.reopenedAt === null ? "" : `:after-reopening:${this.reopenedAt.toISOString()}`),
       payload: {
         serviceDay: this.serviceDay,
         drawnAt: this.drawnAt.toISOString(),

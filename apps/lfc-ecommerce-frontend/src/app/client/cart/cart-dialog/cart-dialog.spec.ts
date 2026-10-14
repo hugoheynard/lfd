@@ -453,3 +453,31 @@ describe('la boutique fermée à la commande', () => {
     expect(bouton(fixture)).not.toBeNull();
   });
 });
+
+/**
+ * Hugo, 2026-10-14 : « pas de commande sans créneau ». Un choix relu du
+ * navigateur, posé avant, peut porter le mode sans la fenêtre : on ne la
+ * présélectionne pas, on grise « Régler » et on dit le geste.
+ */
+describe('le panier exige un créneau choisi', () => {
+  const SANS_CRENEAU: ServiceChoice = { ...AU_LABO, slot: '', window: null };
+
+  it('🔴 grise le règlement et dit quoi faire, sans rien envoyer', async () => {
+    const fixture = boot({ auth: RECONNU, service: SANS_CRENEAU });
+
+    expect(bouton(fixture)?.disabled).toBe(true);
+    expect(el(fixture).querySelector('[data-slot-missing]')?.textContent?.trim()).toBe(
+      FR.cart.slotMissing,
+    );
+    bouton(fixture)?.click();
+    await Promise.resolve();
+    expect(regle).toEqual([]);
+  });
+
+  it('laisse régler dès que le créneau est choisi', () => {
+    const fixture = boot({ auth: RECONNU, service: AU_LABO });
+
+    expect(bouton(fixture)?.disabled).toBe(false);
+    expect(el(fixture).querySelector('[data-slot-missing]')).toBeNull();
+  });
+});

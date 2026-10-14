@@ -187,8 +187,23 @@ export class CartDialog {
   /** L'identité que le visiteur a saisie dans la carte, complète, ou `null`. */
   protected readonly guest = signal<GuestIdentity | null>(null);
 
-  /** Le règlement attend qu'on sache qui commande : un compte, ou une saisie complète. */
-  protected readonly payBlocked = computed(() => this.identityNeeded() && this.guest() === null);
+  /**
+   * Le mode est choisi, mais pas le créneau — un choix relu du navigateur,
+   * posé avant le 2026-10-14. Pas de commande sans créneau (Hugo) : on ne le
+   * présélectionne pas, on dit le geste (« Modifier »).
+   */
+  protected readonly slotMissing = computed(() => {
+    const service = this.choice();
+    return !this.cart.isEmpty() && service !== null && service.window === null;
+  });
+
+  /**
+   * Le règlement attend qu'on sache qui commande — un compte, ou une saisie
+   * complète — et que le créneau soit choisi.
+   */
+  protected readonly payBlocked = computed(
+    () => this.slotMissing() || (this.identityNeeded() && this.guest() === null),
+  );
 
   /**
    * « demain · créneau choisi », avec la VRAIE journée : celle que le serveur a
@@ -335,6 +350,11 @@ export class CartDialog {
       if (this.choice() === null) {
         return;
       }
+    }
+    // Pas de commande sans créneau (2026-10-14) : le bouton est grisé, et la
+    // garde tient aussi si on l'appelle autrement.
+    if (this.slotMissing()) {
+      return;
     }
     // Un visiteur commande avec ce qu'il a saisi dans la carte : `POST
     // /shop/orders` rend l'intention Stripe AVEC la commande, et la suite est

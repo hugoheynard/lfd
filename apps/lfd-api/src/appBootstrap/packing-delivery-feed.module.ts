@@ -2,7 +2,12 @@ import { Global, Module } from "@nestjs/common";
 
 import { DeliveryBinDesk } from "../delivery/application/delivery-bin-desk.js";
 import { DeliveryModule } from "../delivery/delivery.module.js";
-import { BinDesk, ContainerManagedOrders } from "../packing/channels/delivery/index.js";
+import { PrismaOrderDeparturesReader } from "../delivery/infrastructure/prisma-order-departures.reader.js";
+import {
+  BinDesk,
+  ContainerManagedOrders,
+  OrderDeparturesReader,
+} from "../packing/channels/delivery/index.js";
 import { PrismaContainerManagedOrders } from "../packing/infrastructure/prisma-container-managed-orders.js";
 import { PackingModule } from "../packing/packing.module.js";
 
@@ -14,7 +19,10 @@ import { PackingModule } from "../packing/packing.module.js";
  *   annuler, partager un bac, proposer, « ces bacs sont-ils vivants ? » ;
  * - `ContainerManagedOrders` — le colisage l'implémente lui-même, et
  *   l'annulation d'un bac par la livraison le lit pour refuser (ses routes de
- *   déclaration et de partage sont retirées le 2026-10-10).
+ *   déclaration et de partage sont retirées le 2026-10-10) ;
+ * - `OrderDeparturesReader` — la livraison l'implémente : le départ de la
+ *   tournée ou du transfert de chaque commande, pour ranger le poste par
+ *   échéance (lot L2, 2026-10-14).
  *
  * `@Global` pour la raison des autres fils : ni `packing/` ni `delivery/` ne
  * peuvent importer le module de l'autre.
@@ -25,7 +33,8 @@ import { PackingModule } from "../packing/packing.module.js";
   providers: [
     { provide: BinDesk, useExisting: DeliveryBinDesk },
     { provide: ContainerManagedOrders, useExisting: PrismaContainerManagedOrders },
+    { provide: OrderDeparturesReader, useClass: PrismaOrderDeparturesReader },
   ],
-  exports: [BinDesk, ContainerManagedOrders],
+  exports: [BinDesk, ContainerManagedOrders, OrderDeparturesReader],
 })
 export class PackingDeliveryFeedModule {}

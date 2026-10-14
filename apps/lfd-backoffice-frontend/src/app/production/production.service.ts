@@ -7,6 +7,7 @@ import type {
   ProductionDueThresholdsView,
   ProductionForecastView,
   ProductionPlanClosure,
+  ProductionPlanReopening,
 } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../api/api-config';
@@ -55,6 +56,21 @@ export class ProductionService {
     return firstValueFrom(
       this.http.post<ProductionPlanClosure>(
         `${B2B_API_BASE}/admin/production/batch/${encodeURIComponent(date)}/close`,
+        {},
+      ),
+    );
+  }
+
+  /**
+   * **Rouvre une journée arrêtée** (Hugo, 2026-10-14) : le plan est retiré,
+   * les clients peuvent de nouveau commander pour ce jour, et le prochain
+   * arrêt refait tout. Refusée en 409 dès qu'une fournée, un colisage ou une
+   * tournée a commencé — le message du serveur nomme lequel.
+   */
+  async reopenDay(date: string): Promise<ProductionPlanReopening> {
+    return firstValueFrom(
+      this.http.post<ProductionPlanReopening>(
+        `${B2B_API_BASE}/admin/production/batch/${encodeURIComponent(date)}/reopen`,
         {},
       ),
     );

@@ -1,0 +1,24 @@
+@if (confirming()) {
+  <fold-inline-confirm
+    [open]="true"
+    [loading]="reopening()"
+    keepOpenOnConfirm
+    intent="danger"
+    [message]="
+      'Rouvrir la journée du ' +
+      label() +
+      ' ? Les clients pourront de nouveau commander pour ce jour ; le plan sera retiré, et refait au prochain arrêt.'
+    "
+    (confirmed)="reopen()"
+    (cancelled)="confirming.set(false)"
+  >
+    <span hidden></span>
+  </fold-inline-confirm>
+} @else {
+  <button foldButton emphasis="outline" intent="danger" size="sm" (click)="ask()">
+    Rouvrir la journée du {{ label() }}
+  </button>
+}
+@if (refusal(); as message) {
+  <fold-callout variant="warning">{{ message }}</fold-callout>
+}

@@ -195,6 +195,15 @@
                 {{ nothingToArrestLabel() }}
               </button>
             }
+            <!-- Rouvrir (Hugo, 2026-10-14) : la journée que le bouton désactivé dit
+                 arrêtée, sous le même droit que l'arrêt. -->
+            @if (dayToReopen(); as day) {
+              <app-reopen-day
+                [date]="day.date"
+                [label]="day.weekday + ' ' + day.dayMonth"
+                (reopened)="load()"
+              />
+            }
           }
         } @else {
           <button
@@ -207,6 +216,15 @@
           >
             Retour au prévisionnel
           </button>
+          <!-- Rouvrir la journée du dossier ouvert, si son plan est arrêté
+               (Hugo, 2026-10-14) — sous le même droit que l'arrêt. -->
+          @if (canArrest() && dossierClosed() === true) {
+            <app-reopen-day
+              [date]="dossierDate()"
+              [label]="dossierDayLabel()"
+              (reopened)="load()"
+            />
+          }
         }
       </div>
     </div>
