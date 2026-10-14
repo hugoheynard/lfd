@@ -110,7 +110,9 @@ sortie** : une semaine pleine sans observation bloquante.
 
 ## 10. Questions à Hugo
 
-- **Q-L1** — Le réapprovisionnement : bâti avant le 6 novembre, ou après
-  l'ouverture ?
+- ~~**Q-L1**~~ — ✅ (Hugo, 2026-10-14) : **avant l'ouverture** — le
+  réapprovisionnement se bâtit à partir du 2026-10-15. Reste à trancher avant
+  de bâtir : Q-R1 (agrégat à part, recommandé) et l'heure limite qui
+  s'applique (celle des pros, proposée).
 - **Q-L2** — Les journées à blanc : quelles dates, et avec qui à chaque poste ?
 - **Q-L3** — Qui fait la revue de sécurité : un tiers, ou une revue interne ?
