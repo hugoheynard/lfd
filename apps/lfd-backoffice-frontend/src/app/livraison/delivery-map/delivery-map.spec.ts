@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { PlannedRound } from '../delivery-planning';
 import { MAP_TILES } from '../map-tiles.config';
-import { DeliveryMap } from './delivery-map';
+import { DeliveryMap, namespaceOf } from './delivery-map';
 
 function round(stops: PlannedRound['stops']): PlannedRound {
   return {
@@ -64,5 +64,18 @@ describe('DeliveryMap', () => {
 
     const error = (fixture.nativeElement as HTMLElement).querySelector('[data-map-error]');
     expect(error?.textContent).toContain('« Labo » n’a pas de coordonnées GPS valides');
+  });
+});
+
+/** Régression (2026-10-14) : « r.addProtocol is not a function » en production. */
+describe('namespaceOf', () => {
+  it('prend les exports sous `default` quand le build de production y range le module', () => {
+    const inner = { addProtocol: () => undefined };
+    expect(namespaceOf({ default: inner }, 'addProtocol')).toBe(inner);
+  });
+
+  it('garde le module tel quel quand ses exports sont à plat', () => {
+    const flat = { addProtocol: () => undefined };
+    expect(namespaceOf(flat, 'addProtocol')).toBe(flat);
   });
 });
