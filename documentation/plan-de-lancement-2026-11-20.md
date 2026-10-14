@@ -21,16 +21,16 @@ par Hugo le 2026-10-13 en a sorti six
 
 ## 2. Le calendrier
 
-| Période        | Phase                       | Ce qui s'y fait                                                               | Sortie attendue                                                               |
-| -------------- | --------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| 14 oct → 6 nov | **Finir et remplir**        | finir l'en-cours (§3) ; remplir les données réelles (§4)                      | rien de neuf après le 6                                                       |
-| 6 → 13 nov     | **Journées à blanc**        | de vraies journées avec l'équipe, commandes internes, du soir au retrait (§5) | au moins **une semaine pleine sans bug bloquant**                             |
-| 13 → 18 nov    | **Argent, droit, matériel** | argent réel (§6), juridique (§7), matériel et équipe (§8), exploitation (§9)  | un paiement, un remboursement, un prélèvement réels ; une restauration réelle |
-| 18 → 20 nov    | **Gel**                     | aucune mise en production sauf correctif bloquant                             | ouverture le 20                                                               |
+| Période        | Phase                       | Ce qui s'y fait                                                                                                                    | Sortie attendue                                                               |
+| -------------- | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| 14 oct → 6 nov | **Finir et remplir**        | finir l'en-cours (§3) ; remplir les données réelles (§4)                                                                           | rien de neuf après le 6                                                       |
+| 6 → 10 nov     | **Argent, droit, matériel** | argent réel (§6), juridique (§7), matériel et équipe (§8), exploitation (§9) — commencés avant les journées à blanc, finis pendant | un paiement, un remboursement, un prélèvement réels ; une restauration réelle |
+| 10 → 17 nov    | **Journées à blanc**        | de vraies journées avec l'équipe, commandes internes, du soir au retrait (§5)                                                      | au moins **une semaine pleine sans bug bloquant**                             |
+| 17 → 20 nov    | **Gel**                     | aucune mise en production sauf correctif bloquant                                                                                  | ouverture le 20                                                               |
 
 **Règle du gel** : après le 6 novembre, une mise en production ne porte qu'un
 correctif, avec son test de non-régression, sur décision de Hugo. Après le
-18, seulement un correctif bloquant.
+17, seulement un correctif bloquant.
 
 ## 3. Finir l'en-cours (jusqu'au 6 novembre)
 
@@ -63,7 +63,7 @@ réapprovisionnement suit après l'ouverture.
 - [ ] **Droits** : chaque rôle réglé à l'écran (`/admin/staff-roles`), dont
       les six ressources neuves du 2026-10-13.
 
-## 5. Les journées à blanc (6 → 13 novembre)
+## 5. Les journées à blanc (10 → 17 novembre)
 
 Chaque journée se joue **en vrai**, avec l'équipe à ses postes, des commandes
 passées par la boutique (pro et particulier, retrait et livraison, Labo et
@@ -79,7 +79,7 @@ Village) :
 Chaque écart va au carnet des observations, avec son sort. **Critère de
 sortie** : une semaine pleine sans observation bloquante.
 
-## 6. L'argent en réel (13 → 18 novembre)
+## 6. L'argent en réel (6 → 17 novembre)
 
 - [ ] Stripe en mode **réel** : un paiement carte, puis son remboursement.
 - [ ] Un **prélèvement SEPA** réel sur un compte de l'équipe.
@@ -87,14 +87,14 @@ sortie** : une semaine pleine sans observation bloquante.
 - [ ] La relance de règlement (son comportement si l'heure limite est
       désactivée est encore à trancher — O3 §8.1).
 
-## 7. Le juridique (13 → 18 novembre)
+## 7. Le juridique (6 → 17 novembre)
 
 - [ ] CGV et mentions légales relues.
 - [ ] Texte d'information RGPD du livreur, à jour du registre
       ([`legal/rgpd-registre.json`](legal/rgpd-registre.json)).
 - [ ] Durées de conservation encore « non décidées » : décidées.
 
-## 8. Le matériel et l'équipe (13 → 18 novembre)
+## 8. Le matériel et l'équipe (6 → 10 novembre)
 
 - [ ] Imprimantes : étiquettes de bac, feuilles de route, bons — la couleur
       s'imprime-t-elle ?
@@ -102,7 +102,7 @@ sortie** : une semaine pleine sans observation bloquante.
 - [ ] Une formation courte par poste (fournil, colisage, chargement, tournée,
       comptoir).
 
-## 9. Sécurité et exploitation (13 → 18 novembre)
+## 9. Sécurité et exploitation (6 → 17 novembre)
 
 - [ ] Revue de sécurité ciblée : droits, mur entre clients, paiements.
 - [ ] Une sauvegarde de la base **réellement restaurée** une fois.
@@ -114,5 +114,6 @@ sortie** : une semaine pleine sans observation bloquante.
   réapprovisionnement se bâtit à partir du 2026-10-15. Reste à trancher avant
   de bâtir : Q-R1 (agrégat à part, recommandé) et l'heure limite qui
   s'applique (celle des pros, proposée).
-- **Q-L2** — Les journées à blanc : quelles dates, et avec qui à chaque poste ?
-- **Q-L3** — Qui fait la revue de sécurité : un tiers, ou une revue interne ?
+- ~~**Q-L2**~~ — ✅ (Hugo, 2026-10-14) : journées à blanc **à partir du
+  10 novembre**. Reste : qui à chaque poste.
+- ~~**Q-L3**~~ — ✅ (Hugo, 2026-10-14) : revue de sécurité **en interne**.
