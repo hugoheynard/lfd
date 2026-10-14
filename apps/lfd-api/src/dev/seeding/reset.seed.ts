@@ -1,5 +1,6 @@
 import type { PrismaClient } from "../../platform/database/client/client.js";
 import { CLIENT_RAISON_SOCIALE } from "./client.seed.js";
+import { dropSitelessPickups } from "./siteless-pickups.seed.js";
 import { SEEDED_POINT_LABELS, SEEDED_ZONE_LABELS } from "./station.seed.js";
 
 /**
@@ -42,6 +43,11 @@ import { SEEDED_POINT_LABELS, SEEDED_ZONE_LABELS } from "./station.seed.js";
  * supprimerait la protection que l'écran affiche, et le poste cesserait de
  * refuser ce que la production refuse.
  *
+ * 4. **les retraits sans site** — toute commande de retrait passée avant que
+ *    la commande fige son site (S2), quel que soit son client : la base de
+ *    développement est ainsi entièrement à la norme (`siteless-pickups.seed.ts`,
+ *    2026-10-14).
+ *
  * ## Ce qu'il NE touche pas
  *
  * Le catalogue, le référentiel PIM, les heures limites, l'annuaire du staff, et
@@ -65,6 +71,10 @@ export interface ResetReport {
   readonly priceRules: number;
   /** Barèmes de volume retirés. */
   readonly volumeLadders: number;
+  /** Retraits sans site retirés (`siteless-pickups.seed.ts`). */
+  readonly sitelessPickups: number;
+  /** Retraits sans site gardés : une pièce comptable les désigne. */
+  readonly sitelessPickupsKept: number;
 }
 
 export async function resetToSeed(prisma: PrismaClient): Promise<ResetReport> {
@@ -102,7 +112,15 @@ export async function resetToSeed(prisma: PrismaClient): Promise<ResetReport> {
   await wipe(prisma, companyIds, userIds);
   const station = await trimStation(prisma);
   const pricing = await trimPricing(prisma);
-  return { companies: companyIds.length, people: userIds.length, ...station, ...pricing };
+  const siteless = await dropSitelessPickups(prisma);
+  return {
+    companies: companyIds.length,
+    people: userIds.length,
+    ...station,
+    ...pricing,
+    sitelessPickups: siteless.removed,
+    sitelessPickupsKept: siteless.keptInAccounting,
+  };
 }
 
 /**

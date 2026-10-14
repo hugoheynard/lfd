@@ -41,13 +41,26 @@ export async function resolveScenarioScope(
   companyIds: readonly string[],
   namedDays: readonly string[],
 ): Promise<ScenarioScope> {
-  const orders = await prisma.order.findMany({
-    where: { companyId: { in: [...companyIds] } },
-    select: { id: true, orderNumber: true, requestedDeliveryDate: true },
-  });
   const members = await prisma.membership.findMany({
     where: { companyId: { in: [...companyIds] } },
     select: { userId: true },
+  });
+  const userIds = [...new Set(members.map((member) => member.userId))];
+  const orders = await prisma.order.findMany({
+    where: {
+      OR: [
+        { companyId: { in: [...companyIds] } },
+        // Les commandes PARTICULIER des mêmes acheteurs, sur les journées que
+        // le scénario nomme (2026-10-14) : il les pose pour eux, sans société,
+        // et ne peut les retrouver que par l'acheteur et le jour.
+        {
+          companyId: null,
+          placedByUserId: { in: userIds },
+          requestedDeliveryDate: { in: namedDays.map(asDateColumn) },
+        },
+      ],
+    },
+    select: { id: true, orderNumber: true, requestedDeliveryDate: true },
   });
   const orderDays = orders.flatMap((order) =>
     // Une colonne `@db.Date` revient à minuit UTC : sa date UTC EST le jour.
@@ -57,9 +70,14 @@ export async function resolveScenarioScope(
   );
   return {
     companyIds: [...companyIds],
-    userIds: [...new Set(members.map((member) => member.userId))],
+    userIds,
     orderIds: orders.map((order) => order.id),
     orderNumbers: orders.map((order) => order.orderNumber),
     days: [...new Set([...orderDays, ...namedDays])].sort(),
   };
+}
+
+/** Un jour `AAAA-MM-JJ` tel qu'une colonne `@db.Date` le rend : minuit UTC. */
+function asDateColumn(day: string): Date {
+  return new Date(`${day}T00:00:00.000Z`);
 }

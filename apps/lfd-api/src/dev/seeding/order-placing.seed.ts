@@ -73,12 +73,14 @@ export interface SeedContext {
 
 /** Une adresse du carnet : son identité, et l'instantané postal que la commande fige. */
 export interface CarnetAddress {
-  readonly id: string;
+  /** `null` : une adresse dictée à la commande, hors carnet — celle d'un particulier. */
+  readonly id: string | null;
   readonly postal: BillingAddressPayload;
 }
 
 export interface Target {
-  readonly companyId: string;
+  /** `null` : l'acheteur commande pour lui-même, en particulier (`personal-orders.seed.ts`). */
+  readonly companyId: string | null;
   readonly buyerUserId: string;
   readonly pickupAddressId: string | null;
   /**

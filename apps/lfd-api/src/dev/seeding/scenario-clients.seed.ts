@@ -1,6 +1,7 @@
 import { CLIENT_ENSEIGNE } from "./client.seed.js";
 import { DELIVERY_CLIENTS, seedDeliveryClients } from "./delivery-clients.seed.js";
 import { NEIGHBOURS, seedNeighbourClients } from "./neighbour-clients.seed.js";
+import { PERSONAL_ENSEIGNE, personalTargetOf } from "./personal-orders.seed.js";
 import { resolveTarget, type SeedContext, type Target } from "./order-placing.seed.js";
 import {
   seedTomorrowRoundsClients,
@@ -37,6 +38,8 @@ export async function prepareClients(context: SeedContext): Promise<ScenarioClie
   const byEnseigne = new Map<string, Target>(
     [
       [CLIENT_ENSEIGNE, target],
+      // Le même acheteur, pour lui-même : la livraison particulier du jour.
+      [PERSONAL_ENSEIGNE, personalTargetOf(target)],
       ...NEIGHBOURS.map((neighbour, rank) => [neighbour.enseigne, neighbours[rank]] as const),
       ...DELIVERY_CLIENTS.map((client, rank) => [client.enseigne, deliveryClients[rank]] as const),
       ...TOMORROW_ROUNDS_CLIENTS.map(
@@ -48,8 +51,8 @@ export async function prepareClients(context: SeedContext): Promise<ScenarioClie
   return {
     counter,
     byEnseigne,
-    companyIds: [...counter, ...deliveryClients, ...tomorrowHouses].map(
-      (client) => client.companyId,
+    companyIds: [...counter, ...deliveryClients, ...tomorrowHouses].flatMap((client) =>
+      client.companyId === null ? [] : [client.companyId],
     ),
   };
 }

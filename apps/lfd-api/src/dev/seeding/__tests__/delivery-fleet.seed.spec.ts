@@ -26,6 +26,8 @@ function bareRow(overrides: Partial<SeededVehicleRow> = {}): SeededVehicleRow {
     name: "Camionnette 1",
     plate: "FG-481-KL",
     cargoLengthCm: null,
+    cargoWidthCm: null,
+    cargoHeightCm: null,
     wheelArchLengthCm: null,
     refrigeratedVolumeLiters: null,
     energy: null,
@@ -41,9 +43,16 @@ describe("FLEET", () => {
     }
   });
 
-  it("au moins une a ses passages de roue, et une autre une caisse réfrigérée", () => {
-    expect(FLEET.some((vehicle) => vehicle.wheelArches != null)).toBe(true);
+  /** Les cotes du Ford Transit City L2H2 (Hugo, 2026-10-14), version inconnue : la plus grande. */
+  it("toutes portent les cotes utiles du Transit City L2H2, et une caisse réfrigérée", () => {
+    for (const vehicle of FLEET) {
+      expect(vehicle.cargo).toEqual({ lengthCm: 294, widthCm: 174, heightCm: 171 });
+    }
     expect(FLEET.some((vehicle) => vehicle.refrigeration != null)).toBe(true);
+  });
+
+  it("n'invente aucun passage de roue : leurs cotes ne sont pas connues", () => {
+    expect(FLEET.every((vehicle) => vehicle.wheelArches == null)).toBe(true);
   });
 
   it("la tournée semée (Camionnette 1) tient au sol, même au jeu maximal", () => {
@@ -91,11 +100,27 @@ describe("fleetCorrection", () => {
     expect(fleetCorrection(bareRow(), seeded("Camionnette 1"))?.energy).toBe("diesel");
   });
 
+  it("ne touche pas à une camionnette déjà aux cotes du semis", () => {
+    const row = bareRow({ cargoLengthCm: 294, cargoWidthCm: 174, cargoHeightCm: 171 });
+
+    expect(fleetCorrection(row, seeded("Camionnette 1"))).toBeNull();
+  });
+
+  /** Régression : une cote déjà renseignée n'était jamais reprise, la flotte restait aux cotes d'avant le Transit City. */
   it.each([
-    ["des dimensions", { cargoLengthCm: 300 }],
-    ["des passages de roue", { wheelArchLengthCm: 80 }],
-    ["une caisse réfrigérée", { refrigeratedVolumeLiters: 900 }],
-  ])("ne touche pas à une camionnette qui a déjà %s", (_label, overrides) => {
-    expect(fleetCorrection(bareRow(overrides), seeded("Camionnette 1"))).toBeNull();
+    ["d'anciennes dimensions", { cargoLengthCm: 260, cargoWidthCm: 166, cargoHeightCm: 145 }],
+    ["des passages de roue inventés", { wheelArchLengthCm: 90 }],
+    ["une caisse réfrigérée que le semis ne lui donne pas", { refrigeratedVolumeLiters: 900 }],
+  ])("repose les cotes du semis sur une camionnette qui a %s", (_label, overrides) => {
+    const row = bareRow({
+      cargoLengthCm: 294,
+      cargoWidthCm: 174,
+      cargoHeightCm: 171,
+      ...overrides,
+    });
+
+    expect(fleetCorrection(row, seeded("Camionnette 1"))?.cargo).toEqual(
+      seeded("Camionnette 1").cargo,
+    );
   });
 });

@@ -31,7 +31,7 @@ export const DEV_SCENARIO_STEPS: readonly DevScenarioStepText[] = [
     step: 0,
     title: 'Commandes passées',
     explanation:
-      'Les clients ont commandé hier pour aujourd’hui : 6 retraits au comptoir (dont 2 au Village, approvisionné par transfert depuis le Labo) et 18 livraisons, dont une en début d’après-midi (13:30–14:30). Rien n’est encore produit.',
+      'Les clients ont commandé hier pour aujourd’hui : 9 retraits au comptoir, dont 3 de particuliers (2 au Labo, 1 au Village), et 3 au Village, approvisionné par transfert depuis le Labo ; et 19 livraisons, dont une en début d’après-midi (13:30–14:30) et une chez un particulier (avant 11:00). Chaque commande porte son site, et les écrans la colorent par catégorie. Rien n’est encore produit.',
     meaning: 'les commandes sont passées, rien n’est encore produit',
     loading: 'Passage des commandes d’hier, d’aujourd’hui et des jours à venir…',
     // Aucun écran ne liste toutes les commandes du jour (vérifié le 2026-10-05) :
@@ -54,7 +54,7 @@ export const DEV_SCENARIO_STEPS: readonly DevScenarioStepText[] = [
     step: 2,
     title: 'Tournées composées',
     explanation:
-      'Les livraisons du matin sont réparties entre les camionnettes . La livraison de l’après-midi est laissée au calcul. Les bacs ne sont pas encore faits.',
+      'Les livraisons du matin, celle du particulier comprise, sont réparties entre les camionnettes. La livraison de l’après-midi est laissée au calcul. Les bacs ne sont pas encore faits.',
     meaning: 'les tournées sont composées',
     loading: 'Répartition des livraisons entre les camionnettes…',
     links: [{ label: 'Tournées', route: '/tour-manager' }],

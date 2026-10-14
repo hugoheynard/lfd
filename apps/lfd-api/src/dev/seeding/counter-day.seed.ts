@@ -16,6 +16,7 @@ import {
   type SeedLine,
   type Target,
 } from "./order-placing.seed.js";
+import { personalTargetOf } from "./personal-orders.seed.js";
 import { placedByKeys, scenarioOrderKey } from "./scenario-keys.seed.js";
 
 /**
@@ -45,6 +46,12 @@ export const PICKUP_WINDOW = { start: "05:30", end: "06:30" } as const;
  */
 export const VILLAGE_MORNING = { start: "09:00", end: "10:00" } as const;
 export const VILLAGE_AFTERNOON = { start: "14:00", end: "15:00" } as const;
+
+/**
+ * La tranche d'un retrait **particulier** au Labo : dans son ouverture
+ * publique (07:00–19:00), après le créneau pro et le trou qui le suit.
+ */
+export const LABO_PUBLIC_WINDOW = { start: "07:30", end: "08:30" } as const;
 
 /** Les deux points, par leur libellé — la clé sous laquelle la station les sème. */
 export const LABO = "Le Labo";
@@ -107,6 +114,11 @@ export interface CounterOrder {
    * {@link wideLines}. `step` est alors ignoré.
    */
   readonly wide?: boolean;
+  /**
+   * Le client de ce rang commande **pour lui-même**, sans société : un retrait
+   * particulier (`clientele = public`), réglé par carte (`personal-orders.seed.ts`).
+   */
+  readonly personal?: true;
 }
 
 export const COUNTER: readonly CounterOrder[] = [
@@ -156,6 +168,24 @@ export const COUNTER: readonly CounterOrder[] = [
   // 🔴 **Et le retard qui est le nôtre** : sa tranche finit à 6 h 30 et le sac
   // n'est pas fait — la Supervision le compte « pas prête à temps », en rouge.
   { point: LABO, window: PICKUP_WINDOW, outcome: "expected", step: 1, wide: true, client: 4 },
+  // Les retraits PARTICULIER (2026-10-14) : aux deux sites, le Village par le transfert.
+  { point: LABO, window: LABO_PUBLIC_WINDOW, outcome: "ready", step: 2, client: 0, personal: true },
+  {
+    point: LABO,
+    window: LABO_PUBLIC_WINDOW,
+    outcome: "expected",
+    step: 5,
+    client: 1,
+    personal: true,
+  },
+  {
+    point: VILLAGE,
+    window: VILLAGE_MORNING,
+    outcome: "ready",
+    step: 0,
+    client: 0,
+    personal: true,
+  },
 ];
 
 /** L'heure du colisage, et celle de la remise. Le sac sort avant de partir. */
@@ -187,14 +217,16 @@ export async function placeCounter(
     if (client === undefined) {
       throw new Error(`Client de rang ${String(entry.client)} absent du comptoir du jour.`);
     }
-    const order = await place(context, client, {
+    const buyer = entry.personal === true ? personalTargetOf(client) : client;
+    const order = await place(context, buyer, {
       at: day.orderedAt,
       forDay: day.forDay,
       method: entry.point === null ? "delivery" : "pickup",
       point: entry.point,
       window: entry.window,
       lines: entry.wide === true ? day.wide : linesFor(entry.step),
-      paid: false,
+      // Réglée par carte : sans règlement, elle ne serait pas au plan.
+      paid: entry.personal === true,
       idempotencyKey: scenarioOrderKey(day.forDay, "counter", rank),
     });
     placed.push({ order, entry });

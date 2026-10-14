@@ -2,6 +2,7 @@ import {
   LABO,
   PICKUP_WINDOW,
   VILLAGE,
+  VILLAGE_AFTERNOON,
   VILLAGE_MORNING,
   type CounterOrder,
 } from "./counter-day.seed.js";
@@ -13,6 +14,7 @@ import {
   shiftDays,
   type Target,
 } from "./order-placing.seed.js";
+import { personalTargetOf } from "./personal-orders.seed.js";
 
 /**
  * **Les jours qui viennent** — demain et J+2, posés à la remise à l'état de
@@ -24,7 +26,8 @@ import {
 export const PEAK_AHEAD = 2;
 
 /**
- * Demain : **trois clients**, un retrait par comptoir et une livraison — cf.
+ * Demain : **trois clients**, un retrait par comptoir et une livraison, plus un
+ * retrait particulier au Village (2026-10-14) — cf.
  * `seedOrders`. `client` est un rang : 0 = le client de référence, puis les
  * voisins de `NEIGHBOURS` dans leur ordre.
  *
@@ -32,7 +35,7 @@ export const PEAK_AHEAD = 2;
  * commande doit surligner SES produits en préparation, et deux paniers qui
  * portent le même croissant surligneraient le même rayon pour les deux.
  */
-export const TOMORROW: readonly (Pick<CounterOrder, "point" | "window"> & {
+export const TOMORROW: readonly (Pick<CounterOrder, "point" | "window" | "personal"> & {
   readonly client: number;
   readonly lines: readonly { readonly sku: string; readonly quantity: number }[];
 })[] = [
@@ -65,6 +68,18 @@ export const TOMORROW: readonly (Pick<CounterOrder, "point" | "window"> & {
       { sku: "VIE-009", quantity: 36 },
     ],
   },
+  // Un retrait PARTICULIER au Village (2026-10-14) : le transfert de demain
+  // porte les deux clientèles, comme celui d'aujourd'hui.
+  {
+    client: 0,
+    personal: true,
+    point: VILLAGE,
+    window: VILLAGE_AFTERNOON,
+    lines: [
+      { sku: "VIE-016", quantity: 6 },
+      { sku: "VIE-019", quantity: 4 },
+    ],
+  },
 ];
 
 /**
@@ -73,7 +88,8 @@ export const TOMORROW: readonly (Pick<CounterOrder, "point" | "window"> & {
  * Le plan du soir arrête la prochaine journée À VENIR qui a des commandes.
  * Demain vide, il sautait au pic de J+2 : en démonstration, « arrêter le plan
  * du soir » arrêtait le surlendemain, et la suite du geste — fiche d'atelier,
- * fournée, colisage de demain — ne se montrait pas. Trois commandes, une par
+ * fournée, colisage de demain — ne se montrait pas. Trois commandes pros (et le
+ * retrait particulier), une par
  * acheminement et les deux comptoirs, laissées OUVERTES : c'est à l'équipe de
  * les arrêter, à l'écran.
  */
@@ -87,14 +103,16 @@ export async function placeTomorrow(
     if (client === undefined) {
       throw new Error(`Client de rang ${String(order.client)} absent du semis de demain.`);
     }
-    await place(context, client, {
+    const buyer = order.personal === true ? personalTargetOf(client) : client;
+    await place(context, buyer, {
       at: today,
       forDay: isoDay(shiftDays(today, 1)),
       method: order.point === null ? "delivery" : "pickup",
       point: order.point,
       window: order.window,
       lines: order.lines,
-      paid: false,
+      // Un particulier règle par carte : sans règlement, il ne serait pas au plan.
+      paid: order.personal === true,
     });
   }
 }

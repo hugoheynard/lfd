@@ -95,7 +95,7 @@ function mannesOnFloor(vehicleName: string): number {
 
 describe("les tournées de demain du semis", () => {
   it(
-    "« Proposer » compose trois tournées, une par camionnette, sans rien laisser à répartir",
+    "« Proposer » compose ses tournées, une camionnette au plus chacune, sans rien laisser à répartir",
     async () => {
       const view = await propose("mode=new_rounds");
 
@@ -103,8 +103,10 @@ describe("les tournées de demain du semis", () => {
       expect(view.overflow).toEqual([]);
       expect(view.unfit).toEqual([]);
       expect(view.unknownDemand).toEqual([]);
-      expect(view.rounds).toHaveLength(3);
-      expect(new Set(view.rounds.map((round) => round.vehicleId)).size).toBe(3);
+      // Trois tournées, une par camionnette, jusqu'au 2026-10-14 : aux cotes du
+      // Transit City L2H2 (24 mannes chacune), deux camionnettes suffisent.
+      expect(view.rounds.length).toBeGreaterThan(0);
+      expect(new Set(view.rounds.map((round) => round.vehicleId)).size).toBe(view.rounds.length);
       const stops = view.rounds.flatMap((round) => round.stops);
       // Les maisons des tournées de demain, et la livraison du Lac Blanc déjà posée.
       expect(stops).toHaveLength(TOMORROW_ROUNDS_CLIENTS.length + 1);
@@ -148,27 +150,35 @@ describe("les tournées de demain du semis", () => {
    * G5b (2026-10-08) : dans cette caisse, une manne monte aussi au-dessus de
    * chaque passage de roue (30 cm mesurés : k₀ = 1, 2 − 1 = 1 étage) — 18 + 2.
    * Les caisses de 140 cm n'ont qu'un étage : rien au-dessus, 9 et 9.
+   *
+   * Depuis le 2026-10-14 (Hugo), la flotte est aux cotes utiles du Ford
+   * Transit City L2H2 — 294 × 174 × 171 cm, sans passages de roue, faute de
+   * leurs cotes : douze mannes au sol, deux étages dans 171 cm. 24 chacune,
+   * un majorant tant que les passages de roue ne sont pas mesurés.
    */
-  it("chaque camionnette porte ses mannes plafond compris : 20, 9 et 9", () => {
-    expect(FLEET.slice(0, 3).map((vehicle) => mannesOnFloor(vehicle.name))).toEqual([20, 9, 9]);
+  it("chaque camionnette porte ses mannes plafond compris : 24, 24 et 24", () => {
+    expect(FLEET.slice(0, 3).map((vehicle) => mannesOnFloor(vehicle.name))).toEqual([24, 24, 24]);
   });
 
   /**
-   * Depuis le 2026-10-14 la démo permet un second passage (Hugo) : deux
-   * camionnettes ne manquent plus de place, elles reviennent recharger. Ce
-   * test disait l'inverse tant que la démo n'en permettait qu'un.
+   * Depuis le 2026-10-14 la démo permet un second passage (Hugo). Il servait
+   * ici : aux anciennes cotes, deux camionnettes devaient revenir recharger.
+   * Aux cotes du Transit City (le même jour), elles portent toute la journée
+   * de demain d'un seul passage — ce test disait « un second passage » avant.
    */
   it(
-    "avec deux camionnettes seulement, la seconde place vient d'un second passage",
+    "avec deux camionnettes seulement, la journée de demain part d'un seul passage",
     async () => {
       const two = await ctx.prisma.deliveryVehicle.findMany({
-        where: { plate: { in: FLEET.slice(0, 2).map((vehicle) => vehicle.plate) } },
+        where: { plate: { in: FLEET.slice(0, 2).flatMap((vehicle) => vehicle.plate ?? []) } },
         select: { id: true },
       });
       expect(two).toHaveLength(2);
       const view = await propose(`mode=new_rounds&vehicles=${two.map((v) => v.id).join(",")}`);
 
-      expect(view.rounds.length).toBeGreaterThan(2);
+      expect(view.overflow).toEqual([]);
+      expect(view.unfit).toEqual([]);
+      expect(view.rounds.every((round) => round.passage === 1)).toBe(true);
       expect(new Set(view.rounds.map((round) => round.vehicleId)).size).toBeLessThanOrEqual(2);
     },
     TIMEOUT_MS,

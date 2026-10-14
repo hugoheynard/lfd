@@ -13,7 +13,7 @@ const SEEDED: RoutingSettingsRow = {
   maxRoundMinutes: 240,
   stopMinutes: 6,
   defaultMode: "new_rounds",
-  multiplePassages: false,
+  multiplePassages: true,
   safetyMarginMinutes: 15,
   defaultBinTypeId: MANNE_ID,
   defaultBinCount: 1,
@@ -28,8 +28,8 @@ describe("routingSettingsToPose", () => {
     expect(routingSettingsToPose(SEEDED, WANTED)).toBeNull();
   });
 
-  it("remet le second passage coupé, sans quoi deux camionnettes suffiraient", () => {
-    expect(routingSettingsToPose({ ...SEEDED, multiplePassages: true }, WANTED)).toEqual(WANTED);
+  it("remet le second passage permis (démo à plusieurs passages depuis le 2026-10-14)", () => {
+    expect(routingSettingsToPose({ ...SEEDED, multiplePassages: false }, WANTED)).toEqual(WANTED);
   });
 
   it("remet le contenant par défaut quand il a été vidé ou changé", () => {
@@ -40,8 +40,8 @@ describe("routingSettingsToPose", () => {
 });
 
 describe("demoRoutingSettings", () => {
-  it("compte une manne par commande et coupe le second passage", () => {
+  it("compte une manne par commande et permet le second passage", () => {
     expect(WANTED.defaultContainer).toEqual({ binTypeId: MANNE_ID, count: 1 });
-    expect(WANTED.multiplePassages).toBe(false);
+    expect(WANTED.multiplePassages).toBe(true);
   });
 });
