@@ -322,6 +322,11 @@ invariant :
   normalisée des véhicules non retirés — écrit à la main dans le SQL, Prisma
   ne le connaît pas (précédent : `20260927100000_le_bon_sur_la_commande`) ;
 - plaque **obligatoire** : `NULL` échapperait à l'unicité ;
+  ⚠️ **Révisé le 2026-10-14 (Hugo)** : seul le nom est obligatoire, la plaque
+  est facultative (migration `20261014300000_la_plaque_facultative`). Un
+  véhicule sans plaque échappe en effet à l'unicité, et c'est assumé : la
+  fiche le dit en avertissement (`vehicleGaps`, code `no_plate`), avec ce que
+  le véhicule ne peut pas faire tant qu'il lui manque une plaque ou ses cotes ;
 - réactiver un véhicule retiré peut buter sur l'index : le conflit se traduit
   en un refus qui nomme le véhicule actif qui porte déjà cette plaque
   (`CLAUDE.md` §0), jamais en 500.

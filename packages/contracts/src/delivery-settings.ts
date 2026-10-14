@@ -77,7 +77,11 @@ export const vehiclePayloadSchema = z.object({
     .trim()
     .min(1, "nom du véhicule requis")
     .max(60, "nom trop long (60 caractères au plus)"),
-  plate: z.string().trim().min(1, "plaque requise").max(20, "plaque trop longue"),
+  /**
+   * Facultative depuis le 2026-10-14 : absente, `null` ou vide = pas de plaque
+   * (le domaine lit le blanc comme une absence). Seul le nom est obligatoire.
+   */
+  plate: z.string().trim().max(20, "plaque trop longue").nullable().optional(),
   /** Dimensions utiles ; `null` ou absent = inconnues (voir la mise en garde ci-dessus). */
   cargo: vehicleCargoPayloadSchema.nullable().optional(),
   /** Passages de roue ; `null` ou absent = plancher rectangle (même règle : absent efface). */
@@ -99,8 +103,11 @@ export type VehiclePayload = z.infer<typeof vehiclePayloadSchema>;
 export interface VehicleView {
   readonly id: string;
   readonly name: string;
-  /** La plaque sous sa forme normalisée, celle qui fait foi pour l'unicité. */
-  readonly plate: string;
+  /**
+   * La plaque sous sa forme normalisée, celle qui fait foi pour l'unicité ;
+   * `null` si elle n'est pas renseignée (facultative depuis le 2026-10-14).
+   */
+  readonly plate: string | null;
   /**
    * Retiré le, ou `null` s'il est actif. Une DATE et non un drapeau : la
    * composition lira « actif ce jour-là », et un retrait ne doit pas effacer un
@@ -122,6 +129,20 @@ export interface VehicleView {
    * n'autorise alors rien.
    */
   readonly allowedZoneIds: readonly string[];
+  /**
+   * Ce que le véhicule ne peut pas faire tant qu'une donnée manque — des
+   * AVERTISSEMENTS, jamais des refus (2026-10-14). Vide = rien ne manque.
+   */
+  readonly gaps: readonly VehicleGapView[];
+}
+
+/** Une donnée manquante d'un véhicule ; le code est stable, la phrase est lue au bureau. */
+export type VehicleGapCode = "no_plate" | "no_cargo" | "no_wheel_arches";
+
+/** Un avertissement de la fiche : son code, et ce qu'on ne peut pas faire sans la donnée. */
+export interface VehicleGapView {
+  readonly code: VehicleGapCode;
+  readonly message: string;
 }
 
 /**

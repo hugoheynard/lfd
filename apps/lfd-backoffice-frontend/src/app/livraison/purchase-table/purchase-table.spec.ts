@@ -52,6 +52,7 @@ const FLEET: VehicleView[] = [
     refrigeration: null,
     energy: null,
     allowedZoneIds: [],
+    gaps: [],
   },
   {
     // Sans espace utile : il ne se compare à rien, il n'est pas proposé.
@@ -65,6 +66,7 @@ const FLEET: VehicleView[] = [
     refrigeration: null,
     energy: null,
     allowedZoneIds: [],
+    gaps: [],
   },
 ];
 

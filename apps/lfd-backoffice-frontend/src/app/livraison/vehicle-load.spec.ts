@@ -267,6 +267,7 @@ describe('loadDraftOf', () => {
         refrigeration: { volumeLiters: 400, minTempC: 0, maxTempC: 4 },
         energy: null,
         allowedZoneIds: [],
+        gaps: [],
       }),
     ).toEqual(COLD);
   });

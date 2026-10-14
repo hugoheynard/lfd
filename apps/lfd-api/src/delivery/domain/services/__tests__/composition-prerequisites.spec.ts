@@ -161,3 +161,24 @@ describe("compositionGapOf — la même règle, dite sans lever (CA6a)", () => {
     );
   });
 });
+
+describe("NoMeasuredVehicleError — nomme ce qui manque (2026-10-14)", () => {
+  it("nomme les véhicules en service sans cotes, et la donnée à renseigner", () => {
+    const refusing = (): void =>
+      ensureComposable({
+        measuredVehicleIds: [],
+        activeBinTypeIds: ["b1"],
+        unmeasuredVehicleNames: ["Kangoo", "Fourgon neuf"],
+      });
+
+    expect(refusing).toThrow(NoMeasuredVehicleError);
+    expect(refusing).toThrow(/« Kangoo », « Fourgon neuf »/u);
+    expect(refusing).toThrow(/longueur, la largeur ou la hauteur utiles/u);
+  });
+
+  it("sans nom à citer, garde la phrase générale", () => {
+    expect(() => ensureComposable({ measuredVehicleIds: [], activeBinTypeIds: ["b1"] })).toThrow(
+      /Aucun véhicule en service n'a ses cotes : renseignez/u,
+    );
+  });
+});

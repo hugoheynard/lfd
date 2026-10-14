@@ -141,6 +141,8 @@ export class VehicleDialog implements FoldPanelContent<VehicleDialogData> {
   protected readonly refusal = signal<string | null>(null);
 
   protected readonly isCreate = computed(() => this.data().vehicle === undefined);
+  /** Ce que la fiche ENREGISTRÉE ne permet pas encore — lu du serveur, pas de la saisie. */
+  protected readonly gaps = computed(() => this.data().vehicle?.gaps ?? []);
   protected readonly title = computed(() =>
     this.isCreate() ? 'Ajouter un véhicule' : 'Corriger le véhicule',
   );
@@ -151,7 +153,6 @@ export class VehicleDialog implements FoldPanelContent<VehicleDialogData> {
     const plate = this.plate().trim();
     if (name === '') return 'Nommez le véhicule.';
     if (name.length > NAME_MAX) return `Nom trop long (${String(NAME_MAX)} caractères au plus).`;
-    if (plate === '') return 'Saisissez la plaque.';
     if (plate.length > PLATE_MAX) return 'Plaque trop longue.';
     return this.loadIssue();
   });
@@ -162,7 +163,7 @@ export class VehicleDialog implements FoldPanelContent<VehicleDialogData> {
     return (
       vehicle !== undefined &&
       vehicle.name === this.name().trim() &&
-      vehicle.plate === this.plate().trim() &&
+      (vehicle.plate ?? '') === this.plate().trim() &&
       vehicle.energy === this.energy() &&
       sameZones(vehicle.allowedZoneIds, this.allowedZoneIds()) &&
       // Ce qui PARTIRAIT, pas la saisie : décocher puis recocher le froid
@@ -210,7 +211,8 @@ export class VehicleDialog implements FoldPanelContent<VehicleDialogData> {
     }
     const payload: VehiclePayload = {
       name: this.name().trim(),
-      plate: this.plate().trim(),
+      // Vide = pas de plaque : facultative depuis le 2026-10-14.
+      plate: this.plate().trim() === '' ? null : this.plate().trim(),
       cargo: reading.cargo,
       // Toujours envoyés : absent EFFACE côté serveur (G4).
       wheelArches: reading.wheelArches,

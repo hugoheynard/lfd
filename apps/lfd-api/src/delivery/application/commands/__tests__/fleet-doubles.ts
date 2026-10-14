@@ -29,7 +29,8 @@ export class InMemoryVehicles extends VehicleRepository {
 
   inServiceHolderOf(plate: LicensePlate, exceptId: string | null): Promise<string | null> {
     const holder = [...this.byId.values()].find(
-      (vehicle) => vehicle.inService && vehicle.plate.equals(plate) && vehicle.id !== exceptId,
+      (vehicle) =>
+        vehicle.inService && vehicle.plate?.equals(plate) === true && vehicle.id !== exceptId,
     );
     return Promise.resolve(holder?.name ?? null);
   }

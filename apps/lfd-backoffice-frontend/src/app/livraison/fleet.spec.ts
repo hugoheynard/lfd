@@ -1,7 +1,14 @@
 import type { DeparturePointView, VehicleView } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
-import { activeCountLabel, pointAddressLine, retiredOnLabel, splitFleet } from './fleet';
+import {
+  activeCountLabel,
+  gapsBadgeLabel,
+  plateLabel,
+  pointAddressLine,
+  retiredOnLabel,
+  splitFleet,
+} from './fleet';
 
 function vehicle(id: string, retiredAt: string | null = null): VehicleView {
   return {
@@ -15,6 +22,7 @@ function vehicle(id: string, retiredAt: string | null = null): VehicleView {
     refrigeration: null,
     energy: null,
     allowedZoneIds: [],
+    gaps: [],
   };
 }
 
@@ -73,5 +81,27 @@ describe('pointAddressLine', () => {
   it('met l’adresse sur une ligne, sans complément vide', () => {
     expect(pointAddressLine(point(''))).toBe('12 rue du Four, 75011 Paris');
     expect(pointAddressLine(point('Bât. B'))).toBe('12 rue du Four, Bât. B, 75011 Paris');
+  });
+});
+
+describe('plateLabel', () => {
+  it('rend la plaque, ou « Sans plaque » : elle est facultative', () => {
+    expect(plateLabel('AB-123-CD')).toBe('AB-123-CD');
+    expect(plateLabel(null)).toBe('Sans plaque');
+  });
+});
+
+describe('gapsBadgeLabel', () => {
+  const gap = { code: 'no_cargo', message: 'pas de cotes' } as const;
+
+  it('rien ne manque : pas de badge', () => {
+    expect(gapsBadgeLabel(vehicle('1'))).toBeNull();
+  });
+
+  it('accorde le nombre', () => {
+    expect(gapsBadgeLabel({ ...vehicle('1'), gaps: [gap] })).toBe('1 donnée manquante');
+    expect(gapsBadgeLabel({ ...vehicle('1'), gaps: [gap, { ...gap, code: 'no_plate' }] })).toBe(
+      '2 données manquantes',
+    );
   });
 });

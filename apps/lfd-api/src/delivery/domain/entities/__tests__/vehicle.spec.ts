@@ -77,7 +77,7 @@ describe("Vehicle", () => {
     vehicle.retire(LATER);
     vehicle.correct({ name: "Kangoo gris", plate: "EF456GH" }, MUCH_LATER);
     expect(vehicle.name).toBe("Kangoo gris");
-    expect(vehicle.plate.value).toBe("EF-456-GH");
+    expect(vehicle.plate?.value).toBe("EF-456-GH");
     expect(vehicle.inService).toBe(false);
   });
 
@@ -125,7 +125,7 @@ describe("Vehicle — le chargement (lot 2 bis)", () => {
       ),
     ).toThrow(InvalidCargoDimensionsError);
     expect(vehicle.name).toBe("Master");
-    expect(vehicle.plate.value).toBe("AB-123-CD");
+    expect(vehicle.plate?.value).toBe("AB-123-CD");
     expect(vehicle.updatedAt).toEqual(CREATED);
   });
 

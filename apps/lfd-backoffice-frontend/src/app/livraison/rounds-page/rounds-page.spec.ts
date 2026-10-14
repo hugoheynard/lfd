@@ -330,6 +330,7 @@ async function boot(
                   refrigeration: { volumeLiters: 400, minTempC: 0, maxTempC: 4 },
                   energy: null,
                   allowedZoneIds: [],
+                  gaps: [],
                 } satisfies VehicleView,
               ],
             }),

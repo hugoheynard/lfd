@@ -32,6 +32,21 @@ export function retiredOnLabel(retiredAt: string): string {
   return `retiré le ${RETIRED_DAY.format(new Date(retiredAt))}`;
 }
 
+/** La plaque d'un véhicule, ou « Sans plaque » : elle est facultative depuis le 2026-10-14. */
+export function plateLabel(plate: string | null): string {
+  return plate ?? 'Sans plaque';
+}
+
+/**
+ * Le badge d'une fiche incomplète : « 1 donnée manquante », « 2 données
+ * manquantes » — ou `null` si rien ne manque. Le détail est sur la fiche.
+ */
+export function gapsBadgeLabel(vehicle: VehicleView): string | null {
+  const count = vehicle.gaps.length;
+  if (count === 0) return null;
+  return count === 1 ? '1 donnée manquante' : `${String(count)} données manquantes`;
+}
+
 /** « 1 véhicule actif », « 3 véhicules actifs » — le nombre EST la liste. */
 export function activeCountLabel(count: number): string {
   return count === 1 ? '1 véhicule actif' : `${String(count)} véhicules actifs`;

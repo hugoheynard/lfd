@@ -46,7 +46,7 @@
                 <fold-element-title
                   variant="title"
                   [title]="vehicle.name"
-                  [subtitle]="vehicle.plate"
+                  [subtitle]="plateOf(vehicle.plate)"
                 >
                   @if (canWrite()) {
                     <div titleAction class="fleet-actions">
@@ -75,6 +75,9 @@
                     </div>
                   }
                 </fold-element-title>
+                @if (gapsBadge(vehicle); as missing) {
+                  <fold-badge variant="warning" [content]="missing" data-gaps />
+                }
                 @if (loadLine(vehicle); as line) {
                   <span data-load>{{ line }}</span>
                 }
@@ -103,7 +106,7 @@
               <fold-element-title
                 variant="title"
                 [title]="vehicle.name"
-                [subtitle]="vehicle.plate + ' · ' + retiredOn(vehicle.retiredAt ?? '')"
+                [subtitle]="plateOf(vehicle.plate) + ' · ' + retiredOn(vehicle.retiredAt ?? '')"
               >
                 @if (canWrite()) {
                   <button

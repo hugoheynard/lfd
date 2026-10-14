@@ -177,3 +177,14 @@ export function passageLimitsOf(
     ]),
   );
 }
+
+/**
+ * Les véhicules EN SERVICE sans cotes utiles, par nom — ce que le refus
+ * « aucun véhicule mesuré » nomme pour dire où aller les renseigner.
+ */
+export async function unmeasuredNamesOf(fleet: FleetReader): Promise<readonly string[]> {
+  const all = await fleet.list();
+  return all
+    .filter((vehicle) => vehicle.retiredAt === null && vehicle.cargo === null)
+    .map((vehicle) => vehicle.name);
+}

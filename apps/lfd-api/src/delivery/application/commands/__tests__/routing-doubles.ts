@@ -140,6 +140,7 @@ export function vehicleView(
     refrigeration: null,
     energy: null,
     allowedZoneIds: [],
+    gaps: [],
   };
 }
 

@@ -35,6 +35,7 @@ import {
   insertableRounds,
   type KeptRound,
   passageLimitsOf,
+  unmeasuredNamesOf,
 } from "../delivery-proposal-support.js";
 import {
   locateProposalDay,
@@ -142,9 +143,12 @@ export class GetDeliveryRoundProposalHandler implements IQueryHandler<
   ) {}
 
   async execute(query: GetDeliveryRoundProposalQuery): Promise<DeliveryRoundProposalView> {
+    const measuredVehicleIds = await this.measured.measuredIds();
     ensureComposable({
-      measuredVehicleIds: await this.measured.measuredIds(),
+      measuredVehicleIds,
       activeBinTypeIds: await this.binTypes.activeIds(),
+      unmeasuredVehicleNames:
+        measuredVehicleIds.length === 0 ? await unmeasuredNamesOf(this.fleet) : [],
     });
     const { settings, source } = await routingSettingsOf(this.settings);
     const departure = await locatedDeparture(this.departure, this.candidates);

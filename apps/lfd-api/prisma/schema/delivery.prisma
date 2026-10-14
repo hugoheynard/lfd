@@ -45,7 +45,9 @@ model DeliveryVehicle {
   /// « Kangoo blanc » — ce qu'on dit au dépôt.
   name  String
   /// La forme NORMALISÉE (`AB-123-CD`) : c'est elle que l'index compare.
-  plate String
+  /// `NULL` = pas de plaque (facultative depuis `20261014300000`) ; l'index
+  /// partiel tient deux `NULL` pour distincts.
+  plate String?
 
   /// Retiré le, ou `NULL` s'il roule. Une DATE et non un drapeau : la
   /// composition lira « actif ce jour-là ».

@@ -23,6 +23,7 @@ function vehicle(id: string, name: string, retiredAt: string | null = null): Veh
     refrigeration: null,
     energy: null,
     allowedZoneIds: [],
+    gaps: [],
   };
 }
 
@@ -277,6 +278,29 @@ describe('VehiclesPage', () => {
     await settle(fixture);
     expect(wire.said).toEqual(['Véhicule mis à jour.']);
     expect(wire.reads).toBe(2);
+  });
+
+  it('un véhicule sans plaque se lit « Sans plaque », en service comme retiré (2026-10-14)', async () => {
+    const fixture = await boot([
+      { ...vehicle('1', 'Fourgon neuf'), plate: null },
+      { ...vehicle('2', 'Vieux Kangoo', '2026-02-01T10:00:00.000Z'), plate: null },
+    ]);
+
+    expect(all(fixture, '[data-active-vehicle]')[0]?.textContent).toContain('Sans plaque');
+    expect(all(fixture, '[data-retired-vehicle]')[0]?.textContent).toContain('Sans plaque');
+  });
+
+  it('une fiche incomplète porte un badge qui compte ce qui manque ; une complète, aucun', async () => {
+    const gap = { code: 'no_cargo', message: 'pas de cotes' } as const;
+    const fixture = await boot([
+      { ...vehicle('1', 'Fourgon neuf'), gaps: [gap, { ...gap, code: 'no_plate' }] },
+      vehicle('3', 'Jumpy'),
+    ]);
+
+    expect(all(fixture, '[data-gaps]').map((badge) => badge.getAttribute('variant'))).toEqual([
+      'warning',
+    ]);
+    expect(all(fixture, '[data-active-vehicle]')[0]?.textContent).toContain('2 données manquantes');
   });
 
   it('un dialogue d’ajout abandonné ne relit rien', async () => {

@@ -37,6 +37,7 @@ import {
   InMemoryGeocodeCache,
   InMemoryRoutingSettings,
   RoundsReaderOver,
+  vehicleView,
 } from "../../commands/__tests__/routing-doubles.js";
 import { GetDeliveryRoundProposalHandler } from "../get-delivery-round-proposal.handler.js";
 import { type DeliveryOrderLinesReader } from "../../../channels/commerce/index.js";
@@ -234,6 +235,19 @@ describe("GetDeliveryRoundProposalHandler — « Proposer » (L7-C3 à C6)", () 
     await expect(
       handler.execute(new GetDeliveryRoundProposalQuery(DAY, null, false)),
     ).rejects.toThrow(NoMeasuredVehicleError);
+  });
+
+  it("sans véhicule mesuré, nomme les véhicules en service à qui les cotes manquent (2026-10-14)", async () => {
+    const fleet = new FixedFleet([
+      vehicleView("v1", "Fourgon neuf"),
+      vehicleView("v2", "Vieux Kangoo", new Date(0).toISOString()),
+    ]);
+    const { handler } = scene({ measuredVehicleIds: [], fleet });
+
+    // Le véhicule retiré n'est pas cité : le renseigner ne débloquerait rien.
+    await expect(
+      handler.execute(new GetDeliveryRoundProposalQuery(DAY, null, false)),
+    ).rejects.toThrow(/de « Fourgon neuf » : renseignez-les/u);
   });
 
   it("🔴 sans type de bac en service, refuse en renvoyant aux bacs (CA-D3)", async () => {

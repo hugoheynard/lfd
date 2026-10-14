@@ -26,6 +26,7 @@ const FLEET: VehiclesView = {
       refrigeration: null,
       energy: null,
       allowedZoneIds: [],
+      gaps: [],
     },
     {
       id: 'v-trafic',
@@ -38,6 +39,7 @@ const FLEET: VehiclesView = {
       refrigeration: null,
       energy: null,
       allowedZoneIds: [],
+      gaps: [],
     },
     {
       id: 'v-master',
@@ -50,6 +52,7 @@ const FLEET: VehiclesView = {
       refrigeration: null,
       energy: null,
       allowedZoneIds: [],
+      gaps: [],
     },
     {
       id: 'v-retire',
@@ -62,6 +65,7 @@ const FLEET: VehiclesView = {
       refrigeration: null,
       energy: null,
       allowedZoneIds: [],
+      gaps: [],
     },
   ],
 };

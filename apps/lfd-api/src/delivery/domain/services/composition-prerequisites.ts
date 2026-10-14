@@ -26,6 +26,8 @@ export type CompositionGap = "no_measured_vehicle" | "no_active_bin_type";
 export interface CompositionBase {
   readonly measuredVehicleIds: readonly string[];
   readonly activeBinTypeIds: readonly string[];
+  /** Les véhicules en service SANS cotes, que le refus nomme ; absent = ne pas les nommer. */
+  readonly unmeasuredVehicleNames?: readonly string[] | undefined;
 }
 
 /**
@@ -44,7 +46,7 @@ export function compositionGapOf(input: CompositionBase): CompositionGap | null 
 export function ensureComposable(input: CompositionBase): void {
   const gap = compositionGapOf(input);
   if (gap === "no_measured_vehicle") {
-    throw new NoMeasuredVehicleError();
+    throw new NoMeasuredVehicleError(input.unmeasuredVehicleNames ?? []);
   }
   if (gap === "no_active_bin_type") {
     throw new NoActiveBinTypeError();

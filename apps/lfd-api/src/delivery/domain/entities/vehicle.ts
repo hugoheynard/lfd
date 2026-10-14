@@ -23,7 +23,8 @@ export const VEHICLE_NAME_MAX_LENGTH = 60;
 export interface VehicleState {
   readonly id: string;
   readonly name: string;
-  readonly plate: string;
+  /** Forme normalisée, ou `null` : la plaque est facultative (2026-10-14). */
+  readonly plate: string | null;
   readonly retiredAt: Date | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
@@ -44,7 +45,12 @@ export interface VehicleState {
  */
 export interface VehicleIdentity {
   readonly name: string;
-  readonly plate: string;
+  /**
+   * Facultative depuis le 2026-10-14 (Hugo : « seul le nom devrait être
+   * obligatoire ») : absente, `null` ou blanche = pas de plaque. Ce qui manque
+   * alors, `vehicleGaps` le dit.
+   */
+  readonly plate?: string | null | undefined;
   readonly cargo?: CargoDimensions | null | undefined;
   readonly wheelArches?: MeasuredWheelArches | null | undefined;
   readonly refrigeration?: RefrigerationSpec | null | undefined;
@@ -63,12 +69,14 @@ export interface VehicleIdentity {
  *
  * L'unicité de la plaque entre véhicules EN SERVICE n'est pas ici : elle
  * concerne la flotte entière, et c'est la base qui la tient (index partiel).
+ * Un véhicule sans plaque n'y entre pas : Postgres tient deux `NULL` pour
+ * distincts dans un index unique.
  */
 export class Vehicle {
   private constructor(
     readonly id: string,
     private currentName: string,
-    private currentPlate: LicensePlate,
+    private currentPlate: LicensePlate | null,
     private currentRetiredAt: Date | null,
     readonly createdAt: Date,
     private currentUpdatedAt: Date,
@@ -87,7 +95,7 @@ export class Vehicle {
     return new Vehicle(
       input.id,
       nameOf(input.name),
-      LicensePlate.of(input.plate),
+      plateOf(input.plate),
       null,
       input.at,
       input.at,
@@ -101,7 +109,7 @@ export class Vehicle {
     return new Vehicle(
       state.id,
       state.name,
-      LicensePlate.of(state.plate),
+      state.plate === null ? null : LicensePlate.of(state.plate),
       state.retiredAt,
       state.createdAt,
       state.updatedAt,
@@ -114,7 +122,8 @@ export class Vehicle {
     return this.currentName;
   }
 
-  get plate(): LicensePlate {
+  /** La plaque, ou `null` si elle n'est pas renseignée. */
+  get plate(): LicensePlate | null {
     return this.currentPlate;
   }
 
@@ -151,7 +160,7 @@ export class Vehicle {
   get identity(): VehicleIdentity {
     return {
       name: this.currentName,
-      plate: this.currentPlate.value,
+      plate: this.currentPlate?.value ?? null,
       cargo: this.currentLoad.cargo?.toDimensions() ?? null,
       wheelArches: this.currentLoad.wheelArches?.measured() ?? null,
       refrigeration: this.currentLoad.refrigeration?.toSpec() ?? null,
@@ -189,7 +198,7 @@ export class Vehicle {
    */
   correct(identity: VehicleIdentity, at: Date): void {
     const name = nameOf(identity.name);
-    const plate = LicensePlate.of(identity.plate);
+    const plate = plateOf(identity.plate);
     const load = loadSpaceOf(identity);
     const zones = AllowedZones.of(identity.allowedZoneIds ?? []);
     this.currentName = name;
@@ -221,7 +230,7 @@ export class Vehicle {
     return {
       id: this.id,
       name: this.currentName,
-      plate: this.currentPlate.value,
+      plate: this.currentPlate?.value ?? null,
       retiredAt: this.currentRetiredAt,
       createdAt: this.createdAt,
       updatedAt: this.currentUpdatedAt,
@@ -254,4 +263,16 @@ function nameOf(raw: string): string {
     throw new InvalidVehicleNameError(VEHICLE_NAME_MAX_LENGTH);
   }
   return name;
+}
+
+/**
+ * Une plaque saisie, ou `null` si rien n'est saisi — le blanc compris :
+ * l'écran envoie le champ vidé tel quel.
+ * @throws {InvalidLicensePlateError} saisie, mais ni SIV ni FNI.
+ */
+function plateOf(raw: string | null | undefined): LicensePlate | null {
+  if (raw === null || raw === undefined || raw.trim().length === 0) {
+    return null;
+  }
+  return LicensePlate.of(raw);
 }

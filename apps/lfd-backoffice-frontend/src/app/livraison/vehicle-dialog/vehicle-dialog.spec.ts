@@ -32,6 +32,7 @@ const KANGOO: VehicleView = {
   refrigeration: null,
   energy: null,
   allowedZoneIds: [],
+  gaps: [],
 };
 
 const FRIGO: VehicleView = {
@@ -131,15 +132,39 @@ async function submit(fixture: ComponentFixture<VehicleDialog>): Promise<void> {
 }
 
 describe('VehicleDialog', () => {
-  it('ajout : refuse l’envoi tant que le nom et la plaque manquent', async () => {
+  it('ajout : seul le nom est requis — la plaque est facultative (2026-10-14)', async () => {
     const fixture = await boot({});
     expect(submitButton(fixture).disabled).toBe(true);
 
     type(fixture, 0, 'Kangoo blanc');
-    expect(submitButton(fixture).disabled).toBe(true);
-
-    type(fixture, 1, ' ab 123 cd ');
     expect(submitButton(fixture).disabled).toBe(false);
+  });
+
+  it('ajout sans plaque : envoie `plate: null`, pas une chaîne vide', async () => {
+    const fixture = await boot({});
+    type(fixture, 0, 'Fourgon neuf');
+    type(fixture, 1, '   ');
+    await submit(fixture);
+
+    expect(wire.adds[0]?.plate).toBeNull();
+    expect(wire.closes).toEqual([true]);
+  });
+
+  it('correction : dit ce que la fiche enregistrée ne permet pas encore', async () => {
+    const message = '« Kangoo » n’a pas ses cotes utiles : il ne compte pas…';
+    const fixture = await boot({
+      vehicle: { ...KANGOO, plate: null, gaps: [{ code: 'no_cargo', message }] },
+    });
+
+    const callout = host(fixture).querySelector('fold-callout[data-gaps]');
+    expect(callout?.getAttribute('variant')).toBe('warning');
+    expect(callout?.textContent).toContain(message);
+  });
+
+  it('correction : une fiche complète n’affiche aucun avertissement', async () => {
+    const fixture = await boot({ vehicle: KANGOO });
+
+    expect(host(fixture).querySelector('[data-gaps]')).toBeNull();
   });
 
   it('ajout : envoie la saisie rognée, et ferme sur un succès', async () => {

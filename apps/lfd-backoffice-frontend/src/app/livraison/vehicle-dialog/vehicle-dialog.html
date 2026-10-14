@@ -1,11 +1,21 @@
 <fold-panel-header
   [title]="title()"
-  subtitle="Un nom pour s'y retrouver, la plaque pour l'identifier, et ce qu'il emporte"
+  subtitle="Seul le nom est obligatoire ; la plaque et ce qu'il emporte peuvent venir plus tard"
   closeLabel="Fermer"
 />
 
 <fold-panel-body>
   <div class="vd-fields">
+    @if (gaps().length > 0) {
+      <fold-callout variant="warning" data-gaps>
+        Tant que ces données manquent :
+        <ul>
+          @for (gap of gaps(); track gap.code) {
+            <li>{{ gap.message }}</li>
+          }
+        </ul>
+      </fold-callout>
+    }
     <fold-input
       label="Nom"
       placeholder="Kangoo blanc"
@@ -15,7 +25,7 @@
     <fold-input
       label="Plaque"
       placeholder="AB-123-CD"
-      hint="Avec ou sans tirets : AB-123-CD et AB123CD sont la même plaque."
+      hint="Facultative. Avec ou sans tirets : AB-123-CD et AB123CD sont la même plaque."
       [value]="plate()"
       (valueChange)="plate.set($event)"
     />

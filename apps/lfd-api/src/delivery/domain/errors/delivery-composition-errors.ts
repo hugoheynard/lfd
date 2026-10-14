@@ -7,12 +7,18 @@ import { BusinessError, TechnicalError } from "../../../platform/shared/errors/a
  * pas le code sous les yeux : chacun dit ce qui manque et où le régler.
  */
 
-/** « Proposer » sur une flotte dont aucun véhicule en service n'a ses cotes. */
+/**
+ * « Proposer » sur une flotte dont aucun véhicule en service n'a ses cotes.
+ * Nomme les véhicules en service à qui elles manquent (2026-10-14) : depuis
+ * que la fiche s'enregistre sans elles, c'est le cas le plus probable.
+ */
 export class NoMeasuredVehicleError extends BusinessError {
-  constructor() {
+  constructor(unmeasuredNames: readonly string[] = []) {
     super(
       "delivery.no_measured_vehicle",
-      "Aucun véhicule en service n'a ses cotes : renseignez la longueur, la largeur et la hauteur utiles d'un véhicule dans Livraison → Véhicules avant de proposer des tournées.",
+      unmeasuredNames.length === 0
+        ? "Aucun véhicule en service n'a ses cotes : renseignez la longueur, la largeur et la hauteur utiles d'un véhicule dans Livraison → Véhicules avant de proposer des tournées."
+        : `Aucun véhicule en service n'a ses cotes — il manque la longueur, la largeur ou la hauteur utiles de ${unmeasuredNames.map((name) => `« ${name} »`).join(", ")} : renseignez-les dans Livraison → Véhicules avant de proposer des tournées.`,
     );
   }
 }

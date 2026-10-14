@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import type { DeliveryZoneView, VehicleView } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
+  FoldBadgeComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
@@ -17,7 +18,7 @@ import { PermissionsStore } from '../../auth/permissions.store';
 import { NotifyService } from '../../notify.service';
 import { DeliveryZonesService } from '../../b2b/reglages/delivery-zones.service';
 import { DeliverySettingsService } from '../delivery-settings.service';
-import { activeCountLabel, retiredOnLabel, splitFleet } from '../fleet';
+import { activeCountLabel, gapsBadgeLabel, plateLabel, retiredOnLabel, splitFleet } from '../fleet';
 import { energyLabel, vehicleLoadLine, wheelArchesLabel } from '../vehicle-load';
 import { VehicleDialog, type VehicleDialogData } from '../vehicle-dialog/vehicle-dialog';
 import { zonesLine } from '../vehicle-zones';
@@ -43,6 +44,7 @@ type FleetState =
   selector: 'app-vehicles-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,
@@ -78,6 +80,8 @@ export class VehiclesPage {
   protected readonly activeCount = computed(() => activeCountLabel(this.fleet().active.length));
 
   protected readonly retiredOn = retiredOnLabel;
+  protected readonly plateOf = plateLabel;
+  protected readonly gapsBadge = gapsBadgeLabel;
   protected readonly loadLine = vehicleLoadLine;
   protected readonly archesLine = wheelArchesLabel;
   protected readonly energyLine = energyLabel;

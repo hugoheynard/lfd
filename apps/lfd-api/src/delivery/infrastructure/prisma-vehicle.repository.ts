@@ -55,7 +55,12 @@ export class PrismaVehicleRepository extends VehicleRepository {
     } catch (error: unknown) {
       // L'index partiel a vu une course que la lecture préalable n'a pas vue.
       // La transaction est perdue : on ne peut plus lire le nom du détenteur.
-      if (error instanceof Error && Reflect.get(error, "code") === UNIQUE_VIOLATION) {
+      // Seule la plaque est unique : sans plaque, l'index n'a rien pu refuser.
+      if (
+        row.plate !== null &&
+        error instanceof Error &&
+        Reflect.get(error, "code") === UNIQUE_VIOLATION
+      ) {
         throw new LicensePlateAlreadyInServiceError(row.plate, null);
       }
       throw error;

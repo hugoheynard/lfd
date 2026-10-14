@@ -46,6 +46,7 @@ const FLEET: VehiclesView = {
       refrigeration: { volumeLiters: 400, minTempC: 0, maxTempC: 4 },
       energy: null,
       allowedZoneIds: [],
+      gaps: [],
     },
     {
       id: 'v2',
@@ -58,6 +59,7 @@ const FLEET: VehiclesView = {
       refrigeration: null,
       energy: null,
       allowedZoneIds: [],
+      gaps: [],
     },
   ],
 };

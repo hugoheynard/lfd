@@ -70,7 +70,7 @@ export function vehicleChoices(
       key: `fleet:${vehicle.id}`,
       ref: { source: 'fleet' as const, id: vehicle.id },
       name: vehicle.name,
-      detail: `Flotte · ${vehicle.plate}`,
+      detail: `Flotte · ${vehicle.plate ?? 'sans plaque'}`,
     })),
   ];
 }
