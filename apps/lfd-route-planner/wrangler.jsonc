@@ -24,7 +24,10 @@
       "image": "registry.cloudflare.com/__CF_ACCOUNT_ID__/lfd-osrm:__IMAGE_TAG__",
       // `lite` (1/16 vCPU, 256 MiB, 2 Go de disque) : `osrm-routed` chargé tient
       // en 47 à 51 Mo, l'image en ≈ 220 Mo (mesuré le 2026-09-29, L8-C6).
-      "instance_type": "lite",
+      // `basic` (1/4 vCPU, 1 GiB) depuis le 2026-10-14 : en `lite`, le réveil
+      // (copie de la carte, puis chargement) et une recomposition complète
+      // dépassaient le délai de l'API — « le calcul routier ne répond pas ».
+      "instance_type": "basic",
       // Une instance : OSRM est sans état et son trafic tient en quelques
       // appels par matin. Plusieurs instances n'apporteraient que des réveils.
       "max_instances": 1,
