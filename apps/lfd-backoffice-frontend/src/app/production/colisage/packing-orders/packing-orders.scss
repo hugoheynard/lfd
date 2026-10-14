@@ -121,6 +121,21 @@
   color: var(--fold-color-text-secondary);
 }
 
+/* Le cadre englobant d'un site servi par transfert (Hugo, 2026-10-14) : neutre,
+   il mêle des clientèles ; ses cadres intérieurs portent les couleurs, en
+   retrait sous sa bordure pour qu'on voie qu'ils lui appartiennent. */
+.co-transfer {
+  padding-left: var(--fold-space-sm);
+}
+
+/* Un élément de réapprovisionnement — forme réservée, rien ne le sert encore. */
+.co-replenishment {
+  margin: 0;
+  padding: var(--fold-space-md) var(--fold-space-xl);
+  border-bottom: 1px solid var(--fold-color-border);
+  font-size: var(--fold-text-md);
+}
+
 .co-bac {
   display: flex;
   flex: none;

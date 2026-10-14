@@ -170,7 +170,8 @@ describe('la liste des commandes du colisage', () => {
         .queryAll(By.css(selector))
         .map((icon) => (icon.componentInstance as FoldIconComponent).name());
 
-    expect(name('.co-bac-where fold-icon')).toEqual(['store', 'truck']);
+    // Les livraisons passent avant les retraits (ordre fixe des cadres, 2026-10-14).
+    expect(name('.co-bac-where fold-icon')).toEqual(['truck', 'store']);
     expect(name('.co-bac-closed fold-icon')).toEqual(['check']);
   });
 
@@ -233,15 +234,19 @@ describe('la liste des commandes du colisage', () => {
     const frames = Array.from(host.querySelectorAll<HTMLElement>('.co-frame'));
 
     expect(frames.map((frame) => said(frame.querySelector('.co-frame-title')))).toEqual([
+      'Transfert Val Village',
+      'Retrait particulier Val Village',
       'Livraison pro',
-      'Transfert Val Village · particulier',
       'Livraison',
     ]);
+    // Le transfert CONTIENT son retrait (Hugo, 2026-10-14).
+    expect(frames[0]?.contains(frames[1] ?? null)).toBe(true);
     expect(frames[1]?.style.getPropertyValue('--co-frame-color')).toBe('#fdd835');
     expect(frames[1]?.querySelector('.co-frame-title')?.classList.contains('on-light')).toBe(true);
     // Sans couleur posée, ni clientèle : la teinte neutre, jamais devinée.
     expect(frames[0]?.classList.contains('is-neutral')).toBe(true);
     expect(frames[2]?.classList.contains('is-neutral')).toBe(true);
+    expect(frames[3]?.classList.contains('is-neutral')).toBe(true);
     expect(frames[1]?.querySelectorAll('.co-bac')).toHaveLength(1);
   });
 });

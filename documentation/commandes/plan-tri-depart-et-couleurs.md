@@ -262,9 +262,27 @@ budget de 1,30 Mo.
 `LogisticsSwatch` (teinte neutre : `surface-sunken` + `border`). Posé sur le
 tableau des tournées (pastille par arrêt, clientèle lue sur la feuille de
 route), le chargement (« Ce qui manque »), Ma tournée (arrêt de commande),
-le colisage (cadres par catégorie et par tranche d'échéance quand il y en a
-plusieurs, `apps/lfd-backoffice-frontend/src/app/production/colisage/packing-frames.ts`) et l'étiquette de bac
+le colisage (`apps/lfd-backoffice-frontend/src/app/production/colisage/packing-frames.ts`) et l'étiquette de bac
 (carré en haut à droite, le code étant en bas).
+
+**Cadres du colisage, revus le 2026-10-14 (Hugo)** — ordre FIXE dans un
+groupe, commandes dans leur ordre servi à l'intérieur de chaque cadre :
+
+1. **Transfert <site>** (aujourd'hui Val Village) : un cadre englobant
+   NEUTRE — il mêle des clientèles, comme l'arrêt de transfert des tournées —
+   qui contient « Retrait pro Val Village » et « Retrait particulier Val
+   Village » aux couleurs de retrait du site, sans découpage horaire, puis
+   « Réapprovisionnement Val Village ». Ce dernier n'est pas bâti : la forme
+   l'accepte (`PackingReplenishmentFrame`, troisième argument de
+   `packingFrames`, que rien ne sert encore) et aucun cadre vide n'est produit.
+2. **Livraison pro**, puis **Livraison particulier** : UN cadre chacun, sans
+   heure — l'échéance d'une livraison est la fenêtre du client, et le
+   découpage faisait un cadre par commande.
+3. **Retraits sur place**, rangés par heure, coupés par créneau quand une
+   catégorie en a plusieurs (« Retrait particulier Adroit · 08:00 »).
+
+Ces titres sont propres au colisage : `logisticsCategoryOf` garde
+« Transfert Val Village · particulier » pour les autres écrans.
 
 **L5, papier serveur** : la feuille de tournée PDF porte un carré cerclé au
 bord droit de l'en-tête de chaque arrêt de livraison ; la feuille de route
@@ -277,9 +295,9 @@ déjà rangés restent sans trait.
 **Ce qui n'a pas de couleur, délibérément** : un arrêt de transfert (tournées,
 chargement, Ma tournée, feuille de tournée) — il mêle des clientèles ; les
 commandes de son manifeste portent la leur dans la vue, l'écran ne la peint
-pas encore. Les titres « Transfert Val Village · particulier » sont une
-lecture de l'exemple de Hugo (« Transfert Val Village ») : un site servi par
-transfert a deux couleurs de retrait, donc deux cadres.
+pas encore. Au colisage, le cadre « Transfert Val Village » est neutre pour la
+même raison, et ses cadres intérieurs portent les deux couleurs de retrait
+(2026-10-14).
 
 Le tri du colisage par `dueAt` répond, pour le village, à la question 1 de
 [`../colisage/todo-colisage-tri-par-echeance.md`](../colisage/todo-colisage-tri-par-echeance.md).

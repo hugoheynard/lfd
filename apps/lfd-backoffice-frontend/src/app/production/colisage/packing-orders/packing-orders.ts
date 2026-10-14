@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import {
   FoldBadgeComponent,
@@ -47,7 +48,13 @@ import {
 @Component({
   selector: 'app-packing-orders',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ClienteleBadge, FoldBadgeComponent, FoldIconComponent, FoldViewToggleComponent],
+  imports: [
+    ClienteleBadge,
+    FoldBadgeComponent,
+    FoldIconComponent,
+    FoldViewToggleComponent,
+    NgTemplateOutlet,
+  ],
   templateUrl: './packing-orders.html',
   styleUrl: './packing-orders.scss',
   host: {
