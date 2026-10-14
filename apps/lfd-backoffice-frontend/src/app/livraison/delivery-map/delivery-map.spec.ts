@@ -40,4 +40,29 @@ describe('DeliveryMap', () => {
     expect(element.querySelector('[data-map-absent]')).not.toBeNull();
     expect(element.querySelector('.delivery-map__canvas')?.hasAttribute('hidden')).toBe(true);
   });
+
+  /**
+   * Régression (2026-10-14) : en production, la carte disait « les tuiles
+   * n'ont pas pu être chargées » sans en avoir demandé une seule — la cause
+   * était avalée. Un départ sans coordonnées se dit, avant tout chargement.
+   */
+  it('un point de départ sans coordonnées : la carte dit pourquoi, sans charger MapLibre', async () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [DeliveryMap],
+      providers: [{ provide: MAP_TILES, useValue: { baseUrl: '/tiles/', wholeFile: false } }],
+    });
+    const fixture: ComponentFixture<DeliveryMap> = TestBed.createComponent(DeliveryMap);
+    fixture.componentRef.setInput('rounds', [round([])]);
+    fixture.componentRef.setInput('departure', {
+      label: 'Labo',
+      gps: { lat: Number.NaN, lng: 6.98 },
+    });
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const error = (fixture.nativeElement as HTMLElement).querySelector('[data-map-error]');
+    expect(error?.textContent).toContain('« Labo » n’a pas de coordonnées GPS valides');
+  });
 });

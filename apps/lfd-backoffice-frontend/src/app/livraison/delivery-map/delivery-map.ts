@@ -114,6 +114,12 @@ export class DeliveryMap {
   readonly hovered = output<string | null>();
 
   protected readonly state = signal<MapState>('loading');
+  /**
+   * La cause d'un échec, dite à l'écran. Régression (2026-10-14) : en
+   * production la carte disait « tuiles non chargées » alors qu'aucune tuile
+   * n'avait été demandée — l'erreur était avalée, et la cause introuvable.
+   */
+  protected readonly failure = signal<string | null>(null);
   private readonly canvas = viewChild.required<ElementRef<HTMLElement>>('canvas');
 
   /** Les tournées qui ont des arrêts mais pas de tracé : la carte le dit (L10b-C4). */
@@ -170,6 +176,13 @@ export class DeliveryMap {
       this.state.set('absent');
       return;
     }
+    const { gps, label } = this.departure();
+    if (!Number.isFinite(gps.lat) || !Number.isFinite(gps.lng)) {
+      this.fail(
+        `le point de départ « ${label} » n’a pas de coordonnées GPS valides (Réglages › Sites)`,
+      );
+      return;
+    }
     this.state.set('loading');
     this.map?.remove();
     this.map = null;
@@ -205,14 +218,22 @@ export class DeliveryMap {
       this.fittedOn = null;
       map.once('load', () => this.state.set('ready'));
       // Un style refusé n'émet que `error` : sans ceci, « Chargement » à vie.
-      map.on('error', () => {
+      map.on('error', (event: { error?: unknown }) => {
         if (this.state() === 'loading') {
-          this.state.set('error');
+          this.fail(event.error);
         }
       });
-    } catch {
-      this.state.set('error');
+    } catch (error) {
+      this.fail(error);
     }
+  }
+
+  /** L'échec, dit à l'écran ET à la console : une cause tue est introuvable. */
+  private fail(cause: unknown): void {
+    const detail = cause instanceof Error ? cause.message : String(cause ?? 'cause inconnue');
+    console.error('Carte de livraison :', cause);
+    this.failure.set(detail);
+    this.state.set('error');
   }
 
   private draw(rounds: readonly PlannedRound[]): void {

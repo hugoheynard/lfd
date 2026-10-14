@@ -13,7 +13,11 @@
       <fold-empty-state
         tone="alert"
         title="Carte illisible"
-        subtitle="Les tuiles n’ont pas pu être chargées. Les feuilles de route restent justes."
+        [subtitle]="
+          'La carte n’a pas pu s’afficher : ' +
+          (failure() ?? 'cause inconnue') +
+          '. Les feuilles de route restent justes.'
+        "
         data-map-error
       >
         <button foldButton emphasis="outline" (click)="retry()">Réessayer</button>
