@@ -13,6 +13,8 @@ import {
 } from "../../../domain/ports/guest-order-notice.reader.js";
 import type { OrderReader, OwnedOrder } from "../../../domain/ports/order.reader.js";
 import { OneOrderReader, orderView } from "./payment-failure-doubles.js";
+import { OrderPaidFact } from "../../../domain/events/order-paid.fact.js";
+import { SendGuestOrderNoticeOnPaid } from "../send-guest-order-notice-on-paid.handler.js";
 import { SendGuestOrderNotice } from "../send-guest-order-notice.handler.js";
 
 const PROPRIETAIRE: GuestOrderNotice = { email: "camille@exemple.fr", firstName: "Camille" };
@@ -25,7 +27,7 @@ const DELIVERY = { eventId: "evt_1", ...new CommerceOrderPlacedFact("ord_1").dur
 
 /** La commande passée par l'invité : seul son auteur compte ici. */
 const GUEST_ORDER: OwnedOrder = {
-  view: orderView(),
+  view: orderView("placed", "not_required"),
   companyId: null,
   placedByUserId: "user_guest",
   stripePaymentIntentId: null,
@@ -114,6 +116,7 @@ function scene(
   };
 
   const handler = new SendGuestOrderNotice(orders, notices, journal, clock, mailer);
+  const onPaid = new SendGuestOrderNoticeOnPaid(orders, notices, journal, clock, mailer);
 
   return {
     sent,
@@ -126,8 +129,38 @@ function scene(
       }
       await handler.handle(DELIVERY);
     },
+    /** Le règlement de la carte, comme la boîte d'envoi le livre. */
+    async firePaid(): Promise<void> {
+      await onPaid.handle({ eventId: "evt_2", ...new OrderPaidFact("ord_1").durableFact() });
+    },
   };
 }
+
+/** La commande carte de l'invité, pas encore réglée. */
+const UNPAID_CARD_ORDER: OwnedOrder = { ...GUEST_ORDER, view: orderView("placed", "pending") };
+
+/**
+ * Régression (Hugo, 2026-10-14) : un invité a quitté la page de règlement
+ * sans payer, et le titulaire de l'adresse a reçu « la confirmation et le code
+ * de retrait sont partis ».
+ */
+describe("SendGuestOrderNotice — une commande carte attend son règlement", () => {
+  it("ne prévient personne à la passation d'une commande carte non réglée", async () => {
+    const world = scene(PROPRIETAIRE, new OneOrderReader(UNPAID_CARD_ORDER));
+
+    await world.fire();
+
+    expect(world.sent).toEqual([]);
+  });
+
+  it("prévient quand la commande carte est réglée", async () => {
+    const world = scene(PROPRIETAIRE, new OneOrderReader(UNPAID_CARD_ORDER));
+
+    await world.firePaid();
+
+    expect(world.sent.map((mail) => mail.to)).toEqual([PROPRIETAIRE.email]);
+  });
+});
 
 describe("SendGuestOrderNotice — qui l'on prévient", () => {
   it("écrit au propriétaire du compte qui porte l'adresse", async () => {

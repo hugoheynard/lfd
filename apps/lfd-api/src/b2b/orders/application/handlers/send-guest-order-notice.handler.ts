@@ -78,6 +78,12 @@ export class SendGuestOrderNotice implements DurableSubscriber {
     @Inject(MAILER) private readonly mailer: B2bMailer,
   ) {}
 
+  /** L'auteur d'une commande réglée, ou `null` si elle est introuvable. */
+  protected async paidOrder(orderId: string): Promise<string | null> {
+    const order = await this.orders.findById(orderId);
+    return order === null ? null : order.placedByUserId;
+  }
+
   async handle(delivery: DurableDelivery): Promise<void> {
     const fact = CommerceOrderPlacedFact.fromPayload(delivery.payload);
     const order = await this.orders.findById(fact.orderId);
@@ -85,10 +91,19 @@ export class SendGuestOrderNotice implements DurableSubscriber {
     if (order === null) {
       return;
     }
+    // Régression (Hugo, 2026-10-14) : un invité quittait la page de règlement
+    // sans payer, et le titulaire de l'adresse recevait « la confirmation et le
+    // code de retrait sont partis » — pour une commande qui n'existait pas
+    // encore. Une commande carte n'existe qu'une fois réglée : son avis part
+    // sur `order.paid` (`SendGuestOrderNoticeOnPaid`). Décidé par le MODE, comme
+    // l'accusé (`SendOrderPlacedMail.decidedAtPlacement`).
+    if (order.view.paymentStatus !== "not_required") {
+      return;
+    }
     await this.run(order.placedByUserId);
   }
 
-  private async run(placedByUserId: string): Promise<void> {
+  protected async run(placedByUserId: string): Promise<void> {
     const notice = await this.notices.noticeFor(placedByUserId);
     // Le cas NORMAL : le porteur n'est pas un invité, ou personne d'autre ne
     // porte cette adresse. On ne prévient personne, et ce n'est pas un échec.
