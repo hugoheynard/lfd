@@ -81,6 +81,13 @@ sortie** : une semaine pleine sans observation bloquante.
 
 ## 6. L'argent en réel (6 → 17 novembre)
 
+> **Au 2026-10-14** : la banque n'a répondu à **aucune** de nos 31 questions
+> sur le prélèvement
+> ([`comptabilite/prelevement/question-banque-v2.md`](comptabilite/prelevement/question-banque-v2.md)) —
+> le prélèvement réel dépend de ses réponses, et c'est le **risque principal**
+> de cette section. Pour les particuliers, le seul moyen de paiement est
+> **Stripe**, à **1,25 % + 0,25 € par transaction**.
+
 - [ ] Stripe en mode **réel** : un paiement carte, puis son remboursement.
 - [ ] Un **prélèvement SEPA** réel sur un compte de l'équipe.
 - [ ] Une **facture mensuelle** émise et relue.

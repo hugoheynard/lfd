@@ -9,6 +9,16 @@ Ils y étaient rangés par projet ; ils se lisent par sujet, et ce sujet-là a
 gagné son propre contexte dans le code (`apps/lfd-api/src/b2b/accounting/`), son
 propre droit staff (`b2b_accounting`) et son propre espace dans le back-office.
 
+> **État des moyens de paiement au 2026-10-14 (Hugo).**
+>
+> - **Prélèvement** : la banque (Caisse d'Épargne) n'a encore répondu à
+>   **aucune** de nos 31 questions sur le prélèvement
+>   ([`prelevement/question-banque.md`](prelevement/question-banque.md),
+>   [`prelevement/question-banque-v2.md`](prelevement/question-banque-v2.md)).
+>   Le prélèvement n'est donc pas encore éprouvable en réel.
+> - **Particuliers (B2C)** : le **seul** moyen de paiement est **Stripe**, à
+>   **1,25 % + 0,25 € de commission par transaction**.
+
 ## Par où entrer
 
 Rangé par thème le 2026-10-08 (Hugo : « mets `facturation` en sous-dossier de
