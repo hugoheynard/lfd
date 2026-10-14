@@ -88,7 +88,8 @@ sortie** : une semaine pleine sans observation bloquante.
 > de cette section. Pour les particuliers, le seul moyen de paiement est
 > **Stripe**, à **1,25 % + 0,25 € par transaction**.
 
-- [ ] Stripe en mode **réel** : un paiement carte, puis son remboursement.
+- [x] Stripe en mode **réel** : un paiement carte, puis son remboursement —
+      ✅ fait par Hugo le 2026-10-14, les deux fonctionnent.
 - [ ] Un **prélèvement SEPA** réel sur un compte de l'équipe.
 - [ ] Une **facture mensuelle** émise et relue.
 - [ ] La relance de règlement (son comportement si l'heure limite est
