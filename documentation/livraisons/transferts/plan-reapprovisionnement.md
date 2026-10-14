@@ -130,3 +130,26 @@ n'a pas. `lint:price-door` ne tiendrait pas l'absence de champ monétaire.
 **Suite** : mesurer honnêtement ce que coûterait l'option A (où une commande
 compte de l'argent : chiffre d'affaires, facturation, règlement), puis
 re-trancher Q-R1 avec un champ `kind` explicite au contrat dans les deux cas.
+
+## 8. L'option A mesurée (2026-10-14)
+
+Lecture du code (exploration, lignes citées dans l'échange du jour) : une
+commande touche l'argent ou le client à **20 endroits** — 16 points de
+changement, 4 contraintes de l'agrégat. **6** se règlent par un filtre unique
+(`revenueWhere`, `billableOrderWhere`, l'écrivain du journal `order.placed`,
+le volume par SKU des paliers, `earningFor`, le courriel « prête ») ; **10**
+demandent une branche. **10 sont dangereux** : un oubli y compte un faux
+chiffre d'affaires, **facture ou prélève réellement** une société
+(`billableOrderWhere`), ouvre une intention Stripe (`settleOrder`) ou envoie un
+courriel. Et l'agrégat `Order` calcule toujours prix, TVA et total : A exige
+une branche dans l'agrégat lui-même.
+
+|                    | A — une commande                                    | B — un agrégat à part                                  |
+| ------------------ | --------------------------------------------------- | ------------------------------------------------------ |
+| Endroits à toucher | ~20                                                 | ~8 (3 faits durables, 4 abonnés, réception/annulation) |
+| Un oubli…          | se tait : faux revenu, vraie facture, vrai courriel | crie : abonné en lettre morte, visible à la santé      |
+| Argent             | partout                                             | nulle part                                             |
+
+**Recommandation maintenue : B**, avec un **genre explicite** (`kind:
+order | resupply`) au contrat de ce que le fournil produit et dans les faits
+`production.*` / `packing.*`, plutôt qu'un identifiant préfixé.
