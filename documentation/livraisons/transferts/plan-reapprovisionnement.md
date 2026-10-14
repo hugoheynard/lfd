@@ -85,8 +85,15 @@ paie en branchements ce que A paierait en exceptions.
 ## 6. Questions à Hugo
 
 - **Q-R1** — A ou B (§3) ? Proposé : **B**.
-- **Q-R2** — Qui saisit un réapprovisionnement : le site lui-même (son
-  responsable), le labo, ou les deux ? Le droit en dépend.
+- ~~**Q-R2**~~ — ✅ (Hugo, 2026-10-14) : **les deux**. « Le site commande le
+  réassort » — c'est le geste normal, fait par l'équipe du site ; « en cas de
+  problème, ou si le site appelle, le labo peut enregistrer le réassort pour
+  le village ». Conséquence : le réapprovisionnement porte son **auteur** et
+  **pour quel site** il est saisi ; l'écran propose d'office le site de qui
+  saisit, et laisse le labo choisir le site. **Non vérifié** : le dépôt
+  sait-il rattacher un membre du staff à un site ? Si non, R1 commence par un
+  droit unique `lfc_site_resupply` (tout détenteur saisit pour tout site), et
+  le cloisonnement par site devient une question à part.
 - **Q-R3** — Un site servi **sur place** (le Labo) a-t-il du
   réapprovisionnement ? Proposé : non — il se sert au fournil, sans transport.
 - **Q-R4** — Un réapprovisionnement récurrent (le même chaque jour), ou saisi
