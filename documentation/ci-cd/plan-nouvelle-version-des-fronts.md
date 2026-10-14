@@ -20,6 +20,16 @@
 >   le bandeau est `shared/new-version-banner/`, posé au-dessus du
 >   `router-outlet` dans `app.html`.
 >
+> - **N3 révisé le 2026-10-14 (Hugo : « une nouvelle version est disponible,
+>   finissez votre opération et rechargez la page »)** — au **back-office**, le
+>   bandeau s'affiche sur **tous** les écrans, en `fold-callout` `info`
+>   `appearance="flat"` sous l'en-tête, et l'onglet ne se recharge **plus
+>   jamais de lui-même** : `provideNewVersionWatch({ reloadOnNavigation: false })`
+>   dans son `app.config.ts`. La **boutique est inchangée** (défaut : rechargement
+>   à la navigation, `data.newVersion: "banner"` toujours honoré). Le
+>   `data: { newVersion: "banner" }` des routes `/coursier` reste posé mais ne
+>   change plus rien au back-office.
+>
 > **Reste à vérifier au premier déploiement** : `https://<front>/version.json`
 > rend le SHA de `main` et `index.html` porte la balise (un YAML n'est lu que
 > par GitHub ; l'étape n'a été rejouée qu'en local, sur une copie) ; un onglet
@@ -97,6 +107,10 @@ local, `ng serve`), la veille ne démarre pas : rien à comparer.
   balise, la comparaison), comme `shouldReload`.
 
 ### N3 — Les écrans qui ne rechargent pas d'eux-mêmes
+
+> ⚠️ **Dépassé au back-office le 2026-10-14** : il ne recharge plus nulle part
+> à la navigation et affiche le bandeau partout (cf. bandeau d'état en tête).
+> Ce qui suit reste vrai pour la boutique.
 
 Une route porte `data: { newVersion: "banner" }` : la veille n'y recharge
 pas, et l'application affiche un bandeau « Une nouvelle version est en

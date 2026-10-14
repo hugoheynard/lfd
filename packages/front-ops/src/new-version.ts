@@ -81,12 +81,25 @@ export async function fetchServedBuild(
 }
 
 /**
- * Recharger à cette navigation ? Seulement si une version neuve est connue et
- * que la route cible n'a pas demandé le bandeau. La garde anti-boucle
- * (`shouldReload`) se décide APRÈS, parce qu'elle écrit.
+ * Les réglages d'un front. `reloadOnNavigation: false` : l'onglet ne se
+ * recharge jamais de lui-même, seul le bandeau annonce la version (le
+ * back-office, Hugo 2026-10-14 : « finissez votre opération et rechargez »).
  */
-export function shouldReloadOnNavigation(newVersion: boolean, targetMode: unknown): boolean {
-  return newVersion && targetMode !== NEW_VERSION_BANNER;
+export interface NewVersionWatchOptions {
+  readonly reloadOnNavigation?: boolean;
+}
+
+/**
+ * Recharger à cette navigation ? Seulement si le front l'autorise, qu'une
+ * version neuve est connue et que la route cible n'a pas demandé le bandeau.
+ * La garde anti-boucle (`shouldReload`) se décide APRÈS, parce qu'elle écrit.
+ */
+export function shouldReloadOnNavigation(
+  newVersion: boolean,
+  targetMode: unknown,
+  options: NewVersionWatchOptions = {},
+): boolean {
+  return (options.reloadOnNavigation ?? true) && newVersion && targetMode !== NEW_VERSION_BANNER;
 }
 
 /** La `data` d'un nœud de route, et son enfant principal. */

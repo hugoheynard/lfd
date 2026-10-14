@@ -97,6 +97,12 @@ describe("shouldReloadOnNavigation", () => {
   it("version neuve, route à bandeau → ne recharge pas", () => {
     expect(shouldReloadOnNavigation(true, NEW_VERSION_BANNER)).toBe(false);
   });
+  it("front sans rechargement automatique (back-office) → jamais", () => {
+    expect(shouldReloadOnNavigation(true, undefined, { reloadOnNavigation: false })).toBe(false);
+  });
+  it("rechargement explicitement permis → comme le défaut", () => {
+    expect(shouldReloadOnNavigation(true, undefined, { reloadOnNavigation: true })).toBe(true);
+  });
 });
 
 describe("newVersionModeOf", () => {

@@ -16,6 +16,7 @@ import {
   newVersionModeOf,
   readBuildMeta,
   shouldReloadOnNavigation,
+  type NewVersionWatchOptions,
 } from "./new-version.js";
 import { shouldReload, type ReloadGuardStore } from "./stale-bundle.js";
 
@@ -42,8 +43,11 @@ export const NEW_VERSION = new InjectionToken<Signal<boolean>>("lfd.new-version"
  * perdu : le rechargement attend que la personne change d'écran, et vise
  * l'adresse qu'elle demandait. La décision se prend à `RoutesRecognized`, le
  * premier événement qui connaît la route cible et donc sa `data`.
+ *
+ * `{ reloadOnNavigation: false }` coupe ce rechargement : seul le signal
+ * {@link NEW_VERSION} parle, et l'écran affiche son bandeau.
  */
-export function provideNewVersionWatch(): EnvironmentProviders {
+export function provideNewVersionWatch(options: NewVersionWatchOptions = {}): EnvironmentProviders {
   return provideEnvironmentInitializer(() => {
     // SSR : pas de navigateur, pas d'onglet à tenir à jour.
     if (typeof window === "undefined") {
@@ -72,7 +76,7 @@ export function provideNewVersionWatch(): EnvironmentProviders {
     router.events.subscribe((event) => {
       if (
         event instanceof RoutesRecognized &&
-        shouldReloadOnNavigation(state(), newVersionModeOf(event.state.root)) &&
+        shouldReloadOnNavigation(state(), newVersionModeOf(event.state.root), options) &&
         shouldReload(sessionStorageOrNull(), Date.now())
       ) {
         window.location.assign(event.urlAfterRedirects);

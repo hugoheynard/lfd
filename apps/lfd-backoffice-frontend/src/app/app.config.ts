@@ -51,9 +51,10 @@ export const appConfig: ApplicationConfig = {
     // se recharge une fois, au lieu de laisser croire au « compte bloqué »
     // (2026-09-28, aucun journal n'en gardait trace).
     provideStaleBundleReload(),
-    // Une version neuve en ligne se prend à la navigation suivante
-    // (documentation/ci-cd/plan-nouvelle-version-des-fronts.md).
-    provideNewVersionWatch(),
+    // Une version neuve en ligne s'annonce par le bandeau, jamais par un
+    // rechargement à la navigation : la personne finit son opération et
+    // recharge (Hugo, 2026-10-14 ; plan-nouvelle-version-des-fronts.md, N3).
+    provideNewVersionWatch({ reloadOnNavigation: false }),
     // Les quatre mots que fold dit de lui-même, traduits UNE fois. Sans ce
     // fournisseur, chaque champ répétait `optionalLabel="facultatif"` (25 fois
     // dans 9 fichiers), et « More information » partait en anglais au lecteur
