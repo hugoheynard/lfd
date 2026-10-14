@@ -71,7 +71,7 @@ export class DeliveryRoundsService {
   }
 
   async move(roundId: string, stopId: string, payload: MoveDeliveryStopPayload): Promise<void> {
-    await firstValueFrom(this.http.post(`${stopUrl(roundId, stopId)}/deplacement`, payload));
+    await firstValueFrom(this.http.post(`${stopUrl(roundId, stopId)}/move`, payload));
   }
 
   async reorder(roundId: string, payload: ReorderDeliveryRoundPayload): Promise<void> {
@@ -81,7 +81,7 @@ export class DeliveryRoundsService {
   }
 
   async remove(roundId: string, stopId: string, payload: RemoveDeliveryStopPayload): Promise<void> {
-    await firstValueFrom(this.http.post(`${stopUrl(roundId, stopId)}/retrait`, payload));
+    await firstValueFrom(this.http.post(`${stopUrl(roundId, stopId)}/removal`, payload));
   }
 
   /** Qui peut conduire : le droit EFFECTIF `delivery_driving:write` (MT-D2 v2). */
