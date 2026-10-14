@@ -175,6 +175,12 @@ async function wipe(prisma: PrismaClient, companyIds: string[], userIds: string[
     where: { address: { companyId: { in: companyIds } } },
   });
   await prisma.address.deleteMany({ where: { companyId: { in: companyIds } } });
+  // Les périodes de suivi d'un sous-compte pointent DEUX sociétés (clés
+  // `Restrict`) : absentes ici, une société suivie ou qui suit faisait échouer
+  // tout le rechargement (« une ressource liée est introuvable », 2026-10-14).
+  await prisma.companyFollow.deleteMany({
+    where: { OR: [{ companyId: { in: companyIds } }, { parentId: { in: companyIds } }] },
+  });
   await prisma.membership.deleteMany({
     where: { OR: [{ companyId: { in: companyIds } }, { userId: { in: userIds } }] },
   });
