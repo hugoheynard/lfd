@@ -80,6 +80,9 @@ export async function guardTarget(
   if (target.kind !== "backend" || target.backend !== "routePlanner") {
     return request;
   }
+  if (isTilesPreflight(target.path, request.method)) {
+    return tilesPreflight();
+  }
   const admission = isPublicTiles(target.path, request.method)
     ? await admitTiles(request, env)
     : await admitRoutePlanner(request, env);
@@ -95,6 +98,30 @@ const TILES_PATH_PREFIX = "/tiles/";
  */
 export function isPublicTiles(path: string, method: string): boolean {
   return (method === "GET" || method === "HEAD") && path.startsWith(TILES_PATH_PREFIX);
+}
+
+/**
+ * La demande d'autorisation du navigateur (`OPTIONS`) avant de lire une
+ * tuile : elle part quand la lecture porte un en-tête que le navigateur ne
+ * tient pas pour simple. Régression (2026-10-14) : elle recevait le 401 du
+ * calcul routier, et la carte du back-office ne s'affichait pas (« blocked by
+ * CORS policy »). Répondue ICI, sans rien réveiller derrière.
+ */
+export function isTilesPreflight(path: string, method: string): boolean {
+  return method === "OPTIONS" && path.startsWith(TILES_PATH_PREFIX);
+}
+
+/** La réponse à la demande d'autorisation : lecture seule, par plages, depuis toute origine. */
+export function tilesPreflight(): Response {
+  return new Response(null, {
+    status: 204,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
+      "Access-Control-Allow-Headers": "Range, If-Match, If-None-Match, Cache-Control",
+      "Access-Control-Max-Age": "86400",
+    },
+  });
 }
 
 /**

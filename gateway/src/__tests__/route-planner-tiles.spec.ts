@@ -154,3 +154,16 @@ describe("/api/route-planner/tiles — sa propre limite de débit", () => {
     expect(second.routePlanner.received).toHaveLength(0);
   });
 });
+
+/** Régression (2026-10-14) : la demande d'autorisation recevait 401, et la carte restait vide. */
+describe("la demande d'autorisation avant une tuile", () => {
+  it("répond 204 avec les en-têtes d'accès, sans jeton", async () => {
+    const { isTilesPreflight, tilesPreflight } = await import("../route-planner-guard");
+    expect(isTilesPreflight("/tiles/rues.pmtiles", "OPTIONS")).toBe(true);
+    expect(isTilesPreflight("/table/v1", "OPTIONS")).toBe(false);
+    const response = tilesPreflight();
+    expect(response.status).toBe(204);
+    expect(response.headers.get("Access-Control-Allow-Origin")).toBe("*");
+    expect(response.headers.get("Access-Control-Allow-Headers")).toContain("Range");
+  });
+});
