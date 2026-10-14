@@ -9,7 +9,7 @@ interface ExpectedOrder {
   readonly key: string;
   readonly delivery: boolean;
   readonly ready: boolean;
-  /** Le scénario la met en tournée (Val d'Isère, ou prête ailleurs). */
+  /** Le scénario la met en tournée à l'étape 2 (Val d'Isère, ou prête ailleurs, hors calcul). */
   readonly routed: boolean;
 }
 
@@ -26,7 +26,7 @@ function expectedOrders(forDay: string): readonly ExpectedOrder[] {
       key: scenarioOrderKey(forDay, "delivery", rank),
       delivery: true,
       ready: entry.ready,
-      routed: entry.stop !== null || entry.ready,
+      routed: entry.stop !== null || (entry.ready && entry.leftToComposition !== true),
     })),
   ];
 }
@@ -139,5 +139,11 @@ async function readRounds(prisma: PrismaClient, forDay: string): Promise<Scenari
     select: { binId: true },
     distinct: ["binId"],
   });
-  return { rounds, bins: bins.length, loaded: loaded.length };
+  const laterPassages = await prisma.deliveryRound.count({
+    where: { serviceDay: forDay, passage: { gt: 1 } },
+  });
+  const placedTransfers = await prisma.deliveryRoundStop.count({
+    where: { serviceDay: forDay, removedAt: null, transferId: { not: null } },
+  });
+  return { rounds, bins: bins.length, loaded: loaded.length, laterPassages, placedTransfers };
 }

@@ -8,6 +8,7 @@ import type {
 import { Injectable } from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
 
+import { DayComposer } from "../delivery/application/day-composer.js";
 import { AppConfig } from "../platform/config/app-config.js";
 import { PrismaService } from "../platform/database/prisma.service.js";
 import { BackgroundWork } from "../platform/events/background-work.js";
@@ -62,6 +63,7 @@ export class DevSeedService {
     private readonly config: AppConfig,
     private readonly clock: Clock,
     private readonly work: BackgroundWork,
+    private readonly composer: DayComposer,
   ) {}
 
   /**
@@ -123,7 +125,7 @@ export class DevSeedService {
     // livraison, flotte, départ, tournée chargée — les mêmes fonctions que
     // `pnpm seed:orders`, pour que le bouton et la ligne de commande posent le
     // même jeu de données.
-    const orders = await seedOrders(context);
+    const orders = await seedOrders(context, this.composer);
     return { reset, orders: ordersOf(orders), storage, delivery: deliveryOf(orders) };
   }
 
@@ -151,7 +153,7 @@ export class DevSeedService {
     // Depuis le 2026-10-05, la remise à l'état de base du scénario suivie de
     // ses étapes (`seedOrders`) : les bons tirés ne partent plus avec le
     // bucket entier, seulement ceux des commandes et journées du scénario.
-    const orders = await seedOrders(context, {
+    const orders = await seedOrders(context, this.composer, {
       customers: this.config.r2Storage("customers"),
       production: this.config.r2Storage("production"),
     });

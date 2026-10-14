@@ -67,6 +67,13 @@ export interface DeliverySite {
    * tard ; `null` = aucune convenue. La démo est en échéance (Hugo, 2026-10-04).
    */
   readonly deadlines: readonly [string, ...string[]] | null;
+  /**
+   * Des **créneaux** convenus, tous les jours : l'adresse passe alors en mode
+   * créneau (`windowMode: "slot"`), et `deadlines` doit être `null`. Absent :
+   * mode de la plateforme, sans créneau. Un client pro ne commande qu'un
+   * créneau inscrit (2026-10-12) — d'où ce champ (2026-10-14).
+   */
+  readonly slots?: readonly { readonly start: string; readonly end: string }[];
   readonly note: string;
   readonly contact: {
     readonly prenom: string;
@@ -278,7 +285,8 @@ function siteSpecs(neighbour: NeighbourClient) {
   const site = neighbour.site ?? DEFAULT_SITE;
   return {
     note: site.note,
-    slotList: { mode: "everyday" as const, slots: [] },
+    ...(site.slots === undefined ? {} : { windowMode: "slot" as const }),
+    slotList: { mode: "everyday" as const, slots: [...(site.slots ?? [])] },
     deadlines:
       site.deadlines === null ? null : { mode: "everyday" as const, times: [...site.deadlines] },
     deliveryContact: site.contact,

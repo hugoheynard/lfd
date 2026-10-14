@@ -83,13 +83,17 @@ describe("le rechargement de dev joue la journée du jour au colisage (K2)", () 
       ).toBe(sealed);
 
       // K3c : plus d'ancien poste — aucune commande `counted`, et chaque bac de
-      // livraison du jour est né au colisage, par un contenant.
+      // COMMANDE du jour est né au colisage, par un contenant. Les bacs d'un
+      // transfert interne naissent au chargement (lot T3) : le Village est
+      // approvisionné par transfert depuis le 2026-10-14.
       expect(
         await ctx.prisma.packingOrder.count({
           where: { serviceDay: day, containerMode: "counted" },
         }),
       ).toBe(0);
-      const bins = await ctx.prisma.deliveryBin.count({ where: { voidedAt: null } });
+      const bins = await ctx.prisma.deliveryBin.count({
+        where: { voidedAt: null, transferId: null },
+      });
       expect(bins).toBeGreaterThan(0);
       expect(await ctx.prisma.packingContainer.count({ where: { binId: { not: null } } })).toBe(
         bins,

@@ -2,7 +2,7 @@ import type { ClientContext } from "./client.seed.js";
 import { type NeighbourClient, seedFictiveClients } from "./neighbour-clients.seed.js";
 
 /**
- * **Les onze maisons de la journée de livraison** (Hugo, 2026-09-29).
+ * **Les douze maisons de la journée de livraison** (Hugo, 2026-09-29).
  *
  * Les voisins de `NEIGHBOURS` suffisent au comptoir ; ils ne suffisent pas à
  * une tournée. Pour « se projeter » dans la feuille de route, l'écran des
@@ -294,6 +294,32 @@ export const DELIVERY_CLIENTS: readonly NeighbourClient[] = [
     site: {
       deadlines: ["11:30"],
       note: "",
+      contact: null,
+      signatureRequired: null,
+      steps: [],
+    },
+  },
+  {
+    // Le seul client du semis en mode CRÉNEAU (2026-10-14) : il reçoit
+    // l'après-midi, et sa livraison ouvre la seconde tournée du jour.
+    raisonSociale: "SARL Salon Olympique",
+    enseigne: "Le Salon Olympique",
+    formeJuridique: "SARL",
+    siret: "90778812900019",
+    vatNumber: "FR62907788129",
+    person: {
+      auth0Sub: "seed|salon-olympique",
+      email: "commandes@salon-olympique.test",
+      firstName: "Inès",
+      lastName: "Favre",
+      phone: "06 55 21 74 08",
+    },
+    address: { ligne1: "Place de l'Église", codePostal: "73150", ville: "Val d'Isère" },
+    gps: { lat: 45.4489, lng: 6.9794 },
+    site: {
+      deadlines: null,
+      slots: [{ start: "13:30", end: "14:30" }],
+      note: "Livrer par l'entrée de service, à gauche de la terrasse.",
       contact: null,
       signatureRequired: null,
       steps: [],

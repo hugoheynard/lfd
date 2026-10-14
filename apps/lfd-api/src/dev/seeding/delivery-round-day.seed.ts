@@ -55,8 +55,8 @@ const ROUND_VEHICLE = "Camionnette 1";
 
 /** Colisage à 5 h comme le comptoir ; tournées et chargement à 5 h 45, avant le départ. */
 const PACKED_HOUR = 5;
-const LOADING_HOUR = 5;
-const LOADING_MINUTE = 45;
+export const LOADING_HOUR = 5;
+export const LOADING_MINUTE = 45;
 
 /** Une tournée composée, avec ses arrêts dans l'ordre. */
 export interface ComposedRound {
@@ -240,10 +240,12 @@ function fleetIds(vehicles: ReadonlyMap<string, string>): readonly string[] {
   return [first, ...[...vehicles].flatMap(([name, id]) => (name === ROUND_VEHICLE ? [] : [id]))];
 }
 
-/** Les livraisons prêtes hors Val d'Isère, dans l'ordre des vallées. */
+/** Les livraisons prêtes hors Val d'Isère, dans l'ordre des vallées — sauf celles laissées au calcul. */
 function otherReadyStops(placed: readonly PlacedDelivery[]): readonly RoundStop[] {
   return placed.flatMap(({ order, entry }) =>
-    entry.stop === null && entry.ready ? [{ orderId: order.id }] : [],
+    entry.stop === null && entry.ready && entry.leftToComposition !== true
+      ? [{ orderId: order.id }]
+      : [],
   );
 }
 

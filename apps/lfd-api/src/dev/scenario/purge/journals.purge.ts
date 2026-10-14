@@ -17,7 +17,8 @@ const ORDER_MAIL_TEMPLATE_PREFIX = "customer.order-";
  *
  * - une commande, par sa charge (`orderId`, ou `order.id` pour les faits de
  *   bac et d'arrêt) ou comme sujet (`delivery_bin.declared`, contenants) ;
- * - une tournée du scénario, comme sujet ;
+ * - une tournée du scénario, comme sujet ; un transfert interne de ses
+ *   journées aussi, comme sujet ou comme propriétaire d'un bac (2026-10-14) ;
  * - une journée du scénario (`production_day.closed`, par `serviceDay`), et
  *   sa composition automatique à l'arrêt du plan (`delivery_day`, 2026-10-07) ;
  * - les deux réglages que le scénario rejoue à chaque passage : le départ
@@ -30,10 +31,11 @@ const ORDER_MAIL_TEMPLATE_PREFIX = "customer.order-";
 export async function purgeJournals(
   tx: PurgeClient,
   scope: ScenarioScope,
-  roundIds: readonly string[],
+  emptied: { readonly roundIds: readonly string[]; readonly transferIds: readonly string[] },
 ): Promise<number> {
   const orders = [...scope.orderIds];
-  const rounds = [...roundIds];
+  const rounds = [...emptied.roundIds];
+  const transfers = [...emptied.transferIds];
   const days = [...scope.days];
   const companies = [...scope.companyIds];
   const users = [...scope.userIds];
@@ -43,6 +45,8 @@ export async function purgeJournals(
         OR payload->'order'->>'id' = ANY(${orders})
         OR (subject_type = 'order' AND subject_id = ANY(${orders}))
         OR (subject_type = 'delivery_round' AND subject_id = ANY(${rounds}))
+        OR (subject_type = 'internal_transfer' AND subject_id = ANY(${transfers}))
+        OR payload->'transfer'->>'id' = ANY(${transfers})
         OR (subject_type = 'production_day' AND payload->>'serviceDay' = ANY(${days}))
         OR (subject_type = 'delivery_day' AND subject_id = ANY(${days}))
         OR (type = 'delivery_departure.chosen' AND actor_id = ${SEED_STAFF_SUB})

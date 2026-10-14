@@ -1,3 +1,4 @@
+import type { DayComposer } from "../../delivery/application/day-composer.js";
 import type { S3StorageConfig } from "@lfd/storage";
 
 import { STILL_SOLD } from "../../b2b/catalog/infrastructure/sellable-filter.js";
@@ -95,17 +96,20 @@ export interface OrdersReport extends ScenarioResetResult {
  * commandes » et « Tout recharger ». Même code que les étapes une à une
  * (`documentation/commandes/architecture-jeu-de-donnees-par-etapes.md` §2).
  *
+ * @param composer la composition automatique des tournées (`DayComposer`) :
+ *   elle place, au chargement, ce que le semis laisse au calcul.
  * @param buckets les buckets où des pièces du scénario peuvent dormir ; vides
  *   en ligne de commande, qui ne touche pas au stockage.
  */
 export async function seedOrders(
   context: SeedContext,
+  composer: DayComposer,
   buckets: ScenarioBucketsInput = NO_BUCKETS,
 ): Promise<OrdersReport> {
   const reset = await resetScenario(context, buckets);
   const day = scenarioDayOf(context.now);
   await closeTodayPlan(context, day);
-  const delivery = await advanceToday(context, day);
+  const delivery = await advanceToday(context, day, composer);
   return { ...reset, delivery };
 }
 

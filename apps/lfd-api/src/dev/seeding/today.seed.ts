@@ -1,3 +1,4 @@
+import type { DayComposer } from "../../delivery/application/day-composer.js";
 import { CloseProductionDayCommand } from "../../production/application/commands/close-production-day.command.js";
 import { MarkWorksheetLineCommand } from "../../production/application/commands/mark-worksheet-line.command.js";
 import {
@@ -29,6 +30,8 @@ import {
   type Target,
 } from "./order-placing.seed.js";
 import { seedReturnedBatch } from "./packing-return.seed.js";
+import { composeRestOfToday } from "./afternoon-round.seed.js";
+import { supplyVillageByTransfer } from "./village-transfer.seed.js";
 
 /**
  * **La journée d'aujourd'hui, par étapes** (2026-10-05,
@@ -155,6 +158,9 @@ export async function placeToday(
   day: ScenarioDay,
   wide: readonly SeedLine[],
 ): Promise<number> {
+  // Le Village par transfert AVANT le plan du soir : c'est l'arrêt du plan
+  // qui range ses retraits dans un transfert interne.
+  await supplyVillageByTransfer(context);
   const counter = await placeCounter(context, clients.counter, { ...day, wide });
   const deliveries = await placeDeliveryDay(context, clients.byEnseigne, day.orderedAt, day.forDay);
   return counter.length + deliveries.length;
@@ -268,21 +274,35 @@ export async function packToday(context: SeedContext, day: ScenarioDay): Promise
   return packDeliveryDay(context, { today: day.today, placed: deliveries, baked, binTypes });
 }
 
-/** **Étape 5 — les tournées chargées**, prêtes à partir : tous les bacs, sans départ. */
-export async function loadToday(context: SeedContext, day: ScenarioDay): Promise<number> {
+/**
+ * **Étape 5 — les tournées chargées**, prêtes à partir : tous les bacs des
+ * tournées du matin, puis ce que la composition automatique place d'elle-même
+ * (`composeRestOfToday` : la livraison de l'après-midi en second passage), chargé
+ * à son tour. Sans départ. Rend le nombre de bacs chargés.
+ */
+export async function loadToday(
+  context: SeedContext,
+  day: ScenarioDay,
+  composer: DayComposer,
+): Promise<number> {
   const rounds = await readTodayRounds(context, day.forDay);
-  return loadTodayRounds(context, { today: day.today, rounds });
+  const morning = await loadTodayRounds(context, { today: day.today, rounds });
+  const afternoon = await composeRestOfToday(context, { today: day.today, composer });
+  return morning + afternoon.loadedBins;
 }
 
 /** Toute la journée après le plan du soir, d'une traite — ce que rejouent les rechargements. */
 export async function advanceToday(
   context: SeedContext,
   day: ScenarioDay,
+  composer: DayComposer,
 ): Promise<DeliveryDayReport> {
-  const composed = await composeToday(context, day);
+  const morning = await composeToday(context, day);
   await bakeToday(context, day);
   const sharedBins = await packToday(context, day);
-  const loadedBins = await loadToday(context, day);
+  const loadedBins = await loadToday(context, day, composer);
+  // Le relevé compte AUSSI ce que le calcul a ouvert au chargement.
+  const composed = { ...morning, rounds: await readTodayRounds(context, day.forDay) };
   const { deliveries } = await readToday(context, day);
   return deliveryDayReport({
     forDay: day.forDay,

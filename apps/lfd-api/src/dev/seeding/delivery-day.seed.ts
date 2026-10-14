@@ -16,7 +16,7 @@ import { placedByKeys, scenarioOrderKey } from "./scenario-keys.seed.js";
  * projeter dans la feuille de route, l'écran des tournées et « Proposer », et
  * le chargement.
  *
- * Seize livraisons de plus que la file du comptoir, dans trois vallées : Val
+ * Dix-sept livraisons de plus que la file du comptoir, dans trois vallées : Val
  * d'Isère, Bourg-Saint-Maurice et les Arcs, La Rosière. Posées HIER par le
  * vrai handler (l'heure limite s'y oppose comme au client), AVANT le plan du
  * soir — sans quoi elles ne seraient ni en fournée ni au colisage.
@@ -36,7 +36,10 @@ import { placedByKeys, scenarioOrderKey } from "./scenario-keys.seed.js";
  *   (Hugo, 2026-10-05) : Camionnette 1 tient Val d'Isère dans l'ordre de la
  *   vallée, les autres prêtes sont réparties en tranches contiguës sur les
  *   autres véhicules (`spreadOverVehicles`, pas l'algorithme de « Proposer ») ;
- *   seules les pas encore prêtes — sans bac — restent hors tournée.
+ *   seules les pas encore prêtes — sans bac — restent hors tournée ;
+ * - **une livraison de début d'après-midi** (13:30–14:30) que le semis ne
+ *   place pas : au chargement, la composition automatique la met en tournée
+ *   — avec les pas encore prêtes, qu'elle prend aussi (2026-10-14).
  */
 
 /** Une livraison du jour, visée par l'enseigne du client. */
@@ -61,6 +64,12 @@ export interface DeliveryDayEntry {
   readonly bins?: readonly DayBins[];
   /** Prend l'autre moitié du demi-bac de l'arrêt précédent (v2-4) : les sacs de sa moitié. */
   readonly sharesPreviousHalf?: { readonly innerBags: number };
+  /**
+   * Laissée à la **composition automatique** (Hugo, 2026-10-14) : ni la
+   * tournée de Val d'Isère ni les tranches ne la prennent ; elle entre en
+   * tournée à l'étape du chargement, par `DayComposer` (`afternoon-round.seed.ts`).
+   */
+  readonly leftToComposition?: true;
   readonly lines: readonly SeedLine[];
 }
 
@@ -249,6 +258,21 @@ export const DELIVERY_DAY: readonly DeliveryDayEntry[] = [
     lines: [
       { sku: "VIE-001", quantity: 10 },
       { sku: "PAI-001", quantity: 6 },
+    ],
+  },
+  // ── L'après-midi — laissée au calcul (Hugo, 2026-10-14) ───────────────────
+  {
+    // Son créneau de début d'après-midi : aucune tournée du matin ne le tient
+    // sans attendre des heures. Personne ne la place à la main : la
+    // composition automatique lui ouvre un second passage.
+    enseigne: "Le Salon Olympique",
+    window: { start: "13:30", end: "14:30" },
+    ready: true,
+    stop: null,
+    leftToComposition: true,
+    lines: [
+      { sku: "PAI-001", quantity: 14 },
+      { sku: "PAI-013", quantity: 6 },
     ],
   },
 ];

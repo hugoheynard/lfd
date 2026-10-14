@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 
+import { DeliveryModule } from "../delivery/delivery.module.js";
 import { DevScenarioService } from "./dev-scenario.service.js";
 import { DevSeedService } from "./dev-seed.service.js";
 import { DevScenarioController } from "./http/dev-scenario.controller.js";
@@ -22,6 +23,9 @@ import { DevSeedController } from "./http/dev-seed.controller.js";
  * et le refus sur `NODE_ENV=production`.
  */
 @Module({
+  // La composition automatique des tournées (`DayComposer`) : le scénario la
+  // joue au chargement, sur ce qu'il laisse au calcul (2026-10-14).
+  imports: [DeliveryModule],
   controllers: [DevSeedController, DevScenarioController],
   providers: [DevSeedService, DevScenarioService],
 })

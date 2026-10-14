@@ -262,6 +262,7 @@ import {
     RoutedTravelTimeReader,
   ],
   exports: [
+    DayComposer,
     DeliveryBinDesk,
     DeliveryStopsLocating,
     RoutedTravelTimeReader,

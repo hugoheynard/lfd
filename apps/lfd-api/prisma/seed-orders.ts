@@ -1,5 +1,6 @@
 import "dotenv/config";
 
+import { DayComposer } from "../src/delivery/application/day-composer.js";
 import { seedOrders } from "../src/dev/seeding/orders.seed.js";
 import { refuseNonLocalTarget } from "./local-target.js";
 import { bootstrapHarness } from "./seed-growth/harness.js";
@@ -21,12 +22,15 @@ async function main(): Promise<void> {
   try {
     // Le mur se lit ICI, une fois : une ligne de commande EST l'adaptateur de
     // son propre instant, et `src/` n'a pas le droit d'y toucher (`clock-port`).
-    const report = await seedOrders({
-      prisma: harness.prisma,
-      commands: harness.commands,
-      now: new Date(),
-      settle: () => harness.settle(),
-    });
+    const report = await seedOrders(
+      {
+        prisma: harness.prisma,
+        commands: harness.commands,
+        now: new Date(),
+        settle: () => harness.settle(),
+      },
+      harness.module.get(DayComposer, { strict: false }),
+    );
     console.log(
       `· ${report.purge.orders} commande(s) effacée(s) — reposées.\n` +
         `· remise à l'état de base : ${report.purge.removed

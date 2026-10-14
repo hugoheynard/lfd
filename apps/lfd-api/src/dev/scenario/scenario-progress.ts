@@ -27,7 +27,15 @@ export interface ScenarioFacts {
   /** Étape 4 — les commandes prévues au colisage, et celles qui y sont fermées. */
   readonly packing: { readonly expected: number; readonly packed: number; readonly left: number };
   /** Étape 5 — les tournées du jour, les bacs de leurs arrêts, et ceux qui sont chargés. */
-  readonly rounds: { readonly rounds: number; readonly bins: number; readonly loaded: number };
+  readonly rounds: {
+    readonly rounds: number;
+    readonly bins: number;
+    readonly loaded: number;
+    /** Les tournées en second passage (ou plus) — celles que le calcul ouvre au chargement. */
+    readonly laterPassages: number;
+    /** Les transferts internes du jour qui ont un arrêt dans une tournée. */
+    readonly placedTransfers: number;
+  };
 }
 
 /** Les étapes, dans l'ordre. */
@@ -97,6 +105,8 @@ const SUMMARIES: Readonly<Record<DevScenarioStep, (facts: ScenarioFacts) => stri
     `${String(packing.packed)} sur ${count(packing.expected, "commande prête", "commandes prêtes")}, ` +
     `${String(packing.left)} laissée(s) hors colisage`,
   5: ({ rounds }) =>
-    `${count(rounds.rounds, "tournée", "tournées")}, ` +
-    `${String(rounds.loaded)} sur ${count(rounds.bins, "bac chargé", "bacs chargés")}`,
+    `${count(rounds.rounds, "tournée", "tournées")} ` +
+    `(dont ${String(rounds.laterPassages)} en second passage), ` +
+    `${String(rounds.loaded)} sur ${count(rounds.bins, "bac chargé", "bacs chargés")}, ` +
+    `${count(rounds.placedTransfers, "transfert placé", "transferts placés")}`,
 };

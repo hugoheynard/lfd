@@ -129,14 +129,16 @@ export const COUNTER: readonly CounterOrder[] = [
   // seul exemplaire d'un cas que le comptoir rencontrera pendant des mois.
   { point: LABO, window: null, outcome: "expected", step: 2, client: 0 },
   // Le Village — deux tranches, donc un onglet avec son propre compteur.
-  // Retirée dans sa tranche : le Village a servi à l'heure.
+  // Prête au Labo, et pas encore retirée : depuis le 2026-10-14 le Village
+  // est approvisionné PAR TRANSFERT, et le comptoir refuse de tendre une
+  // commande dont le transfert n'est pas reçu. Le scénario s'arrête avant
+  // tout départ de tournée : le transfert n'est donc ni parti, ni reçu.
   {
     point: VILLAGE,
     window: VILLAGE_MORNING,
-    outcome: "handed_over",
+    outcome: "ready",
     step: 3,
     client: 2,
-    handedOverHour: 9,
   },
   // ⚠️ Après 15 h, elle devient à son tour un retard « par nous ».
   { point: VILLAGE, window: VILLAGE_AFTERNOON, outcome: "expected", step: 4, client: 3 },

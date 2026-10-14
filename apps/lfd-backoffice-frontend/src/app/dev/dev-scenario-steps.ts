@@ -31,7 +31,7 @@ export const DEV_SCENARIO_STEPS: readonly DevScenarioStepText[] = [
     step: 0,
     title: 'Commandes passées',
     explanation:
-      'Les clients ont commandé hier pour aujourd’hui : 7 au comptoir, 17 en livraison. Rien n’est encore produit.',
+      'Les clients ont commandé hier pour aujourd’hui : 6 retraits au comptoir (dont 2 au Village, approvisionné par transfert depuis le Labo) et 18 livraisons, dont une en début d’après-midi (13:30–14:30). Rien n’est encore produit.',
     meaning: 'les commandes sont passées, rien n’est encore produit',
     loading: 'Passage des commandes d’hier, d’aujourd’hui et des jours à venir…',
     // Aucun écran ne liste toutes les commandes du jour (vérifié le 2026-10-05) :
@@ -44,7 +44,8 @@ export const DEV_SCENARIO_STEPS: readonly DevScenarioStepText[] = [
   {
     step: 1,
     title: 'Plan de production clôturé',
-    explanation: 'Le soir, on arrête les commandes du jour : le fournil sait quoi produire.',
+    explanation:
+      'Le soir, on arrête les commandes du jour : le fournil sait quoi produire, et les retraits du Village partent dans un transfert interne.',
     meaning: 'le plan de production est clôturé',
     loading: 'Clôture du plan de production du jour…',
     links: [{ label: 'Prod manager', route: '/prod-manager' }],
@@ -53,7 +54,7 @@ export const DEV_SCENARIO_STEPS: readonly DevScenarioStepText[] = [
     step: 2,
     title: 'Tournées composées',
     explanation:
-      'Le calcul répartit les livraisons du jour entre les camionnettes. Les bacs ne sont pas encore faits.',
+      'Les livraisons du matin sont réparties entre les camionnettes . La livraison de l’après-midi est laissée au calcul. Les bacs ne sont pas encore faits.',
     meaning: 'les tournées sont composées',
     loading: 'Répartition des livraisons entre les camionnettes…',
     links: [{ label: 'Tournées', route: '/tour-manager' }],
@@ -70,7 +71,7 @@ export const DEV_SCENARIO_STEPS: readonly DevScenarioStepText[] = [
     step: 4,
     title: 'Colisage complet',
     explanation:
-      'Chaque commande est mise en sac (comptoir) ou en bacs (livraison). Trois livraisons restent volontairement en attente, pour montrer un colisage en cours.',
+      'Chaque commande est mise en sac (comptoir) ou en bacs (livraison). Trois livraisons restent volontairement en attente, pour montrer un colisage en cours. Les sacs du Village attendent leur transfert : ils ne se retirent qu’une fois le transfert reçu.',
     meaning: 'le colisage est terminé',
     loading: 'Mise en sacs et en bacs, commande par commande…',
     links: [{ label: 'Colisage', route: '/colisage' }],
@@ -78,7 +79,8 @@ export const DEV_SCENARIO_STEPS: readonly DevScenarioStepText[] = [
   {
     step: 5,
     title: 'Tournées chargées, prêtes à partir',
-    explanation: 'Une tournée par camionnette, bacs chargés. La première vous est affectée.',
+    explanation:
+      'Une tournée par camionnette, bacs chargés ; la première vous est affectée. Puis la composition automatique est rejouée sur ce qui reste : elle place le transfert du Village dans une tournée du matin, dont le bac est chargé ; avec les réglages de la démo (un seul passage par camionnette), elle n’ouvre pas de seconde tournée, et la livraison de l’après-midi reste à répartir.',
     meaning: 'La journée est prête : les tournées peuvent partir depuis Ma tournée.',
     loading: 'Chargement des bacs dans les camionnettes…',
     links: [

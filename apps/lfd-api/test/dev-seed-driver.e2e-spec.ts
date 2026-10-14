@@ -6,6 +6,7 @@
  * livraison colisée est en tournée chargée, pas partie), aucun à refaire. Un
  * requérant sans le droit de conduire ne fait pas échouer le rechargement.
  */
+import { DELIVERY_DAY } from "../src/dev/seeding/delivery-day.seed.js";
 import type {
   DeliveryLoadingRoundView,
   DevSeedReport,
@@ -85,8 +86,12 @@ describe("le rechargement affecte la tournée chargée à qui clique", () => {
       );
       expect(toLoad).toEqual([]);
       expect(loading.stops.length).toBeGreaterThan(0);
-      // Hors tournée : les seules pas encore prêtes, qui n'ont aucun bac.
-      expect(report.delivery.unassigned).toBe(report.delivery.notReady);
+      // Hors tournée : les pas encore prêtes, qui n'ont aucun bac, et celle
+      // que le semis laisse au calcul (2026-10-14) — les réglages de la démo
+      // refusent un second passage (`multiplePassages: false`), la composition
+      // automatique ne lui ouvre donc rien.
+      const leftToComposition = DELIVERY_DAY.filter((entry) => entry.leftToComposition).length;
+      expect(report.delivery.unassigned).toBe(report.delivery.notReady + leftToComposition);
 
       const { version } = jsonBody<MyDeliveryRoundView>(
         await admin(ctx).get(`${MY_ROUND}/${roundId}`).expect(200),

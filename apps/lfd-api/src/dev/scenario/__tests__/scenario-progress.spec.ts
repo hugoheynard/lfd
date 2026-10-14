@@ -12,7 +12,7 @@ const COMPLETE: ScenarioFacts = {
   composed: { expected: 15, assigned: 15 },
   production: { items: 12, done: 12 },
   packing: { expected: 17, packed: 17, left: 6 },
-  rounds: { rounds: 3, bins: 51, loaded: 51 },
+  rounds: { rounds: 4, bins: 51, loaded: 51, laterPassages: 1, placedTransfers: 1 },
 };
 
 /** Les mêmes faits, juste après la remise à l'état de base. */
@@ -22,7 +22,7 @@ const PLACED: ScenarioFacts = {
   composed: { expected: 15, assigned: 0 },
   production: { items: 0, done: 0 },
   packing: { expected: 17, packed: 0, left: 6 },
-  rounds: { rounds: 0, bins: 0, loaded: 0 },
+  rounds: { rounds: 0, bins: 0, loaded: 0, laterPassages: 0, placedTransfers: 0 },
 };
 
 describe("reachedStep", () => {
@@ -58,7 +58,7 @@ describe("reachedStep", () => {
       ...PLACED,
       plan: { closed: true, orders: 0 },
       composed: { expected: 15, assigned: 15 },
-      rounds: { rounds: 3, bins: 0, loaded: 0 },
+      rounds: { rounds: 3, bins: 0, loaded: 0, laterPassages: 0, placedTransfers: 0 },
     };
     expect(reachedStep(facts)).toBe(2);
   });
@@ -66,12 +66,27 @@ describe("reachedStep", () => {
   it("veut TOUTES les livraisons à router dans une tournée pour l'étape 2", () => {
     expect(reachedStep({ ...COMPLETE, composed: { expected: 15, assigned: 14 } })).toBe(1);
     // Des arrêts sans tournée du jour n'existent pas : zéro tournée, pas d'étape 2.
-    expect(reachedStep({ ...COMPLETE, rounds: { rounds: 0, bins: 0, loaded: 0 } })).toBe(1);
+    expect(
+      reachedStep({
+        ...COMPLETE,
+        rounds: { rounds: 0, bins: 0, loaded: 0, laterPassages: 0, placedTransfers: 0 },
+      }),
+    ).toBe(1);
   });
 
   it("veut TOUS les bacs chargés pour l'étape 5", () => {
-    expect(reachedStep({ ...COMPLETE, rounds: { rounds: 3, bins: 51, loaded: 50 } })).toBe(4);
-    expect(reachedStep({ ...COMPLETE, rounds: { rounds: 3, bins: 0, loaded: 0 } })).toBe(4);
+    expect(
+      reachedStep({
+        ...COMPLETE,
+        rounds: { rounds: 3, bins: 51, loaded: 50, laterPassages: 0, placedTransfers: 0 },
+      }),
+    ).toBe(4);
+    expect(
+      reachedStep({
+        ...COMPLETE,
+        rounds: { rounds: 3, bins: 0, loaded: 0, laterPassages: 0, placedTransfers: 0 },
+      }),
+    ).toBe(4);
   });
 
   it("veut TOUTES les commandes prévues fermées au colisage pour l'étape 4", () => {
@@ -95,10 +110,10 @@ describe("stepViews", () => {
     expect(stepViews(COMPLETE).map((view) => view.summary)).toEqual([
       "23 sur 23 commandes du jour — 17 livraisons, 6 retraits au comptoir",
       "plan arrêté, 23 commandes au plan",
-      "3 tournées, 15 sur 15 livraisons placées",
+      "4 tournées, 15 sur 15 livraisons placées",
       "12 sur 12 articles sortis du four",
       "17 sur 17 commandes prêtes, 6 laissée(s) hors colisage",
-      "3 tournées, 51 sur 51 bacs chargés",
+      "4 tournées (dont 1 en second passage), 51 sur 51 bacs chargés, 1 transfert placé",
     ]);
   });
 
@@ -106,12 +121,14 @@ describe("stepViews", () => {
     const facts: ScenarioFacts = {
       ...PLACED,
       placed: { expected: 2, found: 2, deliveries: 1, pickups: 1 },
-      rounds: { rounds: 1, bins: 1, loaded: 0 },
+      rounds: { rounds: 1, bins: 1, loaded: 0, laterPassages: 0, placedTransfers: 0 },
     };
     const summaries = stepViews(facts).map((view) => view.summary);
     expect(summaries[0]).toBe("2 sur 2 commandes du jour — 1 livraison, 1 retrait au comptoir");
     expect(summaries[1]).toBe("plan du jour pas encore arrêté");
     expect(summaries[2]).toBe("1 tournée, 0 sur 15 livraisons placées");
-    expect(summaries[5]).toBe("1 tournée, 0 sur 1 bac chargé");
+    expect(summaries[5]).toBe(
+      "1 tournée (dont 0 en second passage), 0 sur 1 bac chargé, 0 transfert placé",
+    );
   });
 });

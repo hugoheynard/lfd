@@ -52,10 +52,7 @@ export async function purgeScenario(
   const production = await prisma.$transaction((tx) => purgeProduction(tx, scope), options);
   const outbox = await prisma.$transaction((tx) => purgeOutbox(tx, scope), options);
   const commerce = await prisma.$transaction((tx) => purgeCommerce(tx, scope), options);
-  const journals = await prisma.$transaction(
-    (tx) => purgeJournals(tx, scope, delivery.roundIds),
-    options,
-  );
+  const journals = await prisma.$transaction((tx) => purgeJournals(tx, scope, delivery), options);
   const storage = await purgeStorage(
     buckets,
     scenarioPrefixes(scope, { proofKeys: production.proofKeys, roundIds: delivery.roundIds }),

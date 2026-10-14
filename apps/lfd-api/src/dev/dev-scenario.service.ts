@@ -7,6 +7,7 @@ import type {
 import { Injectable } from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
 
+import { DayComposer } from "../delivery/application/day-composer.js";
 import { AppConfig } from "../platform/config/app-config.js";
 import { PrismaService } from "../platform/database/prisma.service.js";
 import { BackgroundWork } from "../platform/events/background-work.js";
@@ -29,7 +30,11 @@ import {
 /** Le geste qui mène d'une étape atteinte à la suivante, et l'étape qu'il joue. */
 interface StepGesture {
   readonly played: DevScenarioStep;
-  readonly play: (context: SeedContext, day: ScenarioDay) => Promise<unknown>;
+  readonly play: (
+    context: SeedContext,
+    day: ScenarioDay,
+    composer: DayComposer,
+  ) => Promise<unknown>;
 }
 
 /**
@@ -41,7 +46,7 @@ const NEXT: Readonly<Record<Exclude<DevScenarioStep, 5>, StepGesture>> = {
   1: { played: 2, play: composeToday },
   2: { played: 3, play: bakeToday },
   3: { played: 4, play: packToday },
-  4: { played: 5, play: loadToday },
+  4: { played: 5, play: (context, day, composer) => loadToday(context, day, composer) },
 };
 
 /**
@@ -65,6 +70,7 @@ export class DevScenarioService {
     private readonly config: AppConfig,
     private readonly clock: Clock,
     private readonly work: BackgroundWork,
+    private readonly composer: DayComposer,
   ) {}
 
   /** L'étape atteinte, déduite de la base, et la taille de la base. */
@@ -97,7 +103,7 @@ export class DevScenarioService {
       throw new ScenarioCompleteError(day.forDay);
     }
     const gesture = NEXT[reached];
-    await gesture.play(context, day);
+    await gesture.play(context, day, this.composer);
     return { played: gesture.played };
   }
 
