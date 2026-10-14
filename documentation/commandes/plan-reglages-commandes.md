@@ -465,3 +465,30 @@ fournil : une commande a été acceptée sur un plan arrêté (observation O5,
 
 **Ce que l'on accepte** : sans limite produit, un article se commande pour le
 lendemain à toute heure jusqu'à l'arrêt du plan.
+
+### 8.1 Après la contradiction de `vitruve` (2026-10-14) — corrigé avant de bâtir
+
+- **B1 — grâce, dérogation, surtaxe** : elles appartiennent aussi aux limites
+  **produit** (`OrderLimitSpec.graceMinutes`). L'interrupteur ne coupe que la
+  **règle générale** ; une limite produit garde sa grâce, sa dérogation et sa
+  surtaxe. L'écran ne grise que ce qui appartient à la règle générale.
+  (Remplace le point 4 ci-dessus.)
+- **B2 — l'heure d'arrêt du fournil** : elle est bornée par la règle générale
+  (`latestOrderCutoff`). Désactivée, plus rien ne la borne — c'est voulu et
+  testé ; la page Production › Réglages le dit.
+- **S3/S4 — où vit l'interrupteur** : un réglage singleton du commerce
+  (`order_cutoff_settings.enabled`, migration additive, défaut `true`), avec
+  un fait journalisé à chaque bascule. Il est appliqué **dans les adaptateurs
+  qui servent la règle** à la passation, à la boutique (`nextFulfillmentDay`)
+  et au fournil (`ProductionOrderCutoffRulesReader`) — ils rendent « aucune
+  règle » ; l'écran d'administration continue de lire les règles.
+- **S3b — relance de règlement** (`isSettlementReminderDue`) : sans règle, elle
+  ne part plus. **Accepté pour l'instant, à confirmer par Hugo.**
+- **S5 — la course passation × arrêt** : la passation prend le verrou de la
+  journée (`production_day:<jour>`, par un port du fournil) dans sa
+  transaction, puis lit l'état ; l'arrêt prend le même verrou. Ordre fixé :
+  la journée **avant** toute ligne `orders` (une passation n'en verrouille
+  aucune existante), compatible avec C3.4 ter.
+- **S6 — O5** est vérifié par un test qui échoue avant le correctif.
+- **S7 — issue pour l'équipe un jour arrêté** : aucune pour l'instant ; une
+  journée retirée reste arrêtée. **À confirmer par Hugo.**
