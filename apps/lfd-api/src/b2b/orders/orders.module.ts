@@ -4,7 +4,7 @@ import { CatalogModule } from "../catalog/catalog.module.js";
 import { DeliveryAvailabilityModule } from "../delivery-availability/delivery-availability.module.js";
 import { OrderOpeningModule } from "../order-opening/order-opening.module.js";
 import { DeliveryZonesModule } from "../delivery-zones/delivery-zones.module.js";
-import { OrderCutoffRepository } from "../order-cutoffs/domain/order-cutoff.repository.js";
+import { OrderCutoffsInForce } from "../order-cutoffs/domain/order-cutoffs-in-force.js";
 import { OrderCutoffsModule } from "../order-cutoffs/order-cutoffs.module.js";
 import { OrderWaiversModule } from "../order-waivers/order-waivers.module.js";
 import { PaymentsModule } from "../payments/payments.module.js";
@@ -95,6 +95,9 @@ import { ShopCartController } from "./http/shop-cart.controller.js";
 import { ShopQuoteController } from "./http/shop-quote.controller.js";
 import { OrderOperations } from "./application/services/order-operations.service.js";
 import { OrderDrafting } from "./application/services/order-drafting.service.js";
+import { OrderPlanGate } from "./application/services/order-plan-gate.service.js";
+import { SameDayOrderReader } from "./domain/ports/same-day-order.reader.js";
+import { SettingsSameDayOrderReader } from "./infrastructure/settings-same-day-order.reader.js";
 import { OrderLinePricing } from "./application/services/order-line-pricing.service.js";
 import { GetAdminOrderHandler } from "./application/queries/get-admin-order.handler.js";
 import { GetOrderHandoverProofImageHandler } from "./application/queries/get-order-handover-proof-image.handler.js";
@@ -253,6 +256,11 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
   ],
   providers: [
     OrderDrafting,
+    // L'arrêt du plan opposé à la passation (lot O3) ; ses deux ports viennent
+    // du fournil par `ProductionDeskFeedModule`.
+    OrderPlanGate,
+    // Le réglage « jour même » (§8.3), lu sur le réglage de l'heure limite.
+    { provide: SameDayOrderReader, useClass: SettingsSameDayOrderReader },
     // Le garde des opérations datées, partagé par la caisse et les deux devis.
     OrderOperations,
     OrderLinePricing,
@@ -408,10 +416,12 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     SaveShopCartHandler,
     // `useExisting` et non `useClass` : une SEULE instance lit la table des
     // règles. Le contexte `orders` n'en voit que `list()` — le port étroit —
-    // pendant que les réglages gardent le repository complet. Deux instances
+    // pendant que les réglages gardent le repository complet. Depuis le lot O3
+    // (2026-10-14), ce sont les règles EN VIGUEUR : l'heure limite générale
+    // désactivée, la passation et la relance n'en voient plus aucune. Deux instances
     // n'auraient rien cassé aujourd'hui, mais auraient rendu légitime, demain,
     // d'ajouter un cache à l'une et pas à l'autre.
-    { provide: OrderCutoffReader, useExisting: OrderCutoffRepository },
+    { provide: OrderCutoffReader, useExisting: OrderCutoffsInForce },
     { provide: OrderGuardReader, useClass: PrismaOrderGuardReader },
     { provide: OrderPayerReader, useClass: PrismaOrderPayerReader },
     // Le port étroit du statut, sur la MÊME instance que le garde : la clientèle

@@ -10,6 +10,7 @@ function row(companyId: string | null, companyDisplayName: string | null): Admin
     orderNumber: 'C-0001',
     placedAt: '2026-09-12T08:00:00.000Z',
     status: 'placed',
+    offPlan: false,
     paymentStatus: 'not_required',
     fulfillmentMethod: 'pickup',
     subtotalCents: 1_000,
@@ -20,6 +21,9 @@ function row(companyId: string | null, companyDisplayName: string | null): Admin
     companyDisplayName,
     fulfillmentDay: null,
     clientele: 'pro',
+    siteId: null,
+    pickupLabel: null,
+    fulfillmentWindow: null,
     origin: 'self_service',
   };
 }

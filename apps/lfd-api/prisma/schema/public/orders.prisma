@@ -249,6 +249,12 @@ model Order {
   // aucun auteur : ce n'est pas un acte constaté, c'est une journée qui bascule.
   confirmedAt DateTime? @map("confirmed_at")
 
+  // Reçue par l'ÉQUIPE pour une journée dont le plan était déjà ARRÊTÉ (lot O3,
+  // plan-reglages-commandes.md §8.3, Hugo 2026-10-14). Figé à la passation, sous
+  // le verrou de la journée. Le fournil ne l'a pas comptée : le retirage la fait
+  // entrer au plan (`confirmedAt`). « Hors plan » = ce drapeau ET `placed`.
+  placedOffPlan Boolean @default(false) @map("placed_off_plan")
+
   // Le COLISAGE : la fabrication est finie. Écrit par l'atelier, au scan du QR
   // de la fiche — lequel n'encode que le NUMÉRO de commande, déjà imprimé en
   // clair sur la même feuille. Le scanner est donc sans risque : il ne porte

@@ -24,6 +24,7 @@ import type { HandoverVia } from "../src/b2b/orders/domain/services/handover.js"
 import { ON_PRODUCTION_DAY_CLOSED } from "../src/b2b/orders/application/handlers/on-production-day-closed.handler.js";
 import { PrismaOrderRepository } from "../src/b2b/orders/infrastructure/prisma-order.repository.js";
 import { bootstrapE2e, daysAgo, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
+import { placeLateByStaff } from "./staff-late-order.js";
 import { createUser } from "./factories.js";
 import { settleCardPayments } from "./card-payments.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
@@ -237,7 +238,9 @@ describe("la clôture de journée passe par la boîte d'envoi", () => {
     // passée après l'arrêt, que le fournil n'avait jamais comptée.
     const counted = await place();
     await closePlan();
-    const late = await place();
+    // Un client ne passe plus après l'arrêt (O3, §8.3) : la retardataire est saisie par l'équipe.
+    const late = (await placeLateByStaff(ctx, SERVICE_DAY, [{ sku: "VIE-001", quantity: 1 }]))
+      .orderNumber;
 
     await closePlan();
 
@@ -251,7 +254,9 @@ describe("la clôture de journée passe par la boîte d'envoi", () => {
   it("une re-clôture après un retirage fait apprendre au commerce les commandes reprises", async () => {
     await place();
     await closePlan();
-    const late = await place();
+    // Un client ne passe plus après l'arrêt (O3, §8.3) : la retardataire est saisie par l'équipe.
+    const late = (await placeLateByStaff(ctx, SERVICE_DAY, [{ sku: "VIE-001", quantity: 1 }]))
+      .orderNumber;
     await ctx.asSub(STAFF).post(`/admin/production/worksheet/${SERVICE_DAY}/retake`).expect(201);
 
     await closePlan();

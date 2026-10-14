@@ -5,6 +5,7 @@ import {
   orderStatusSchema,
   paymentStatusSchema,
   type FulfillmentMethod,
+  type FulfillmentSource,
   type OrderOrigin,
   type OrderStatus,
   type PaymentStatus,
@@ -32,6 +33,12 @@ export interface AdminOrderRow {
   /** ISO. Passée le. */
   readonly placedAt: string;
   readonly status: OrderStatus;
+  /**
+   * **Hors plan** (lot O3, `plan-reglages-commandes.md` §8.3) : reçue par
+   * l'équipe pour une journée dont le plan était déjà arrêté, et pas encore
+   * reprise au fournil (toujours `placed`). Le geste : reprendre la journée.
+   */
+  readonly offPlan: boolean;
   readonly paymentStatus: PaymentStatus;
   readonly fulfillmentMethod: FulfillmentMethod;
   /**
@@ -45,6 +52,28 @@ export interface AdminOrderRow {
    * dire public) — cf. `HandoverQueueEntryView.clientele`.
    */
   readonly clientele: OrderClientele | null;
+  /**
+   * Le site d'un retrait, figé dans le snapshot du point de retrait (lot S2) ;
+   * `null` pour une livraison ou un retrait d'avant S2. Sert à la couleur
+   * logistique de la liste staff, lue à l'affichage dans la palette des sites.
+   */
+  readonly siteId: string | null;
+  /**
+   * Le nom du point de retrait FIGÉ à la commande (`pickup_address.label`) ;
+   * `null` pour une livraison ou un snapshot illisible. Dit le lieu d'un
+   * retrait dont le snapshot n'a pas de `siteId`.
+   */
+  readonly pickupLabel: string | null;
+  /**
+   * L'heure du service — la fenêtre ou le créneau figé sur la commande, AVEC
+   * sa provenance : un `default` est une heure d'ouverture recopiée, pas une
+   * promesse (cf. `HandoverQueueWindow`). `null` : rien de figé.
+   */
+  readonly fulfillmentWindow: {
+    readonly start: string | null;
+    readonly end: string;
+    readonly source: FulfillmentSource;
+  } | null;
   /**
    * Sous-total **HT** et **TVA**, en centimes — la décomposition que réclame la
    * comptabilité. Ils vivent déjà sur la commande ; les taire dans la liste

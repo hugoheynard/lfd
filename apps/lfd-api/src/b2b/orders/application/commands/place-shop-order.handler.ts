@@ -154,6 +154,9 @@ export class PlaceShopOrderHandler implements ICommandHandler<
     // survivrait pas : ni rendable (la commande existe), ni reprenable (on en
     // passerait une seconde).
     const placed = await this.unitOfWork.run(async () => {
+      // La journée d'abord, sous son verrou : l'arrêt du plan ne passe plus
+      // entre la composition et l'écriture (lot O3, S5).
+      await this.drafting.holdPlan(order, payload.requestedDeliveryDate);
       const written = await this.orders.place(order);
       await this.keys.resolve(payload.idempotencyKey, written.id);
       // La livraison situe l'adresse : un fait durable, écrit avec la commande (CA0).

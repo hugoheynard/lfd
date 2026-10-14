@@ -80,6 +80,7 @@ export class PrismaOrderRepository extends OrderRepository {
         clientele: state.clientele,
         placedByUserId: state.placedByUserId,
         placedByStaffId: state.placedByStaffId,
+        placedOffPlan: state.placedOffPlan,
         requestedDeliveryDate: state.requestedDeliveryDate,
         // D'où venaient les articles, jamais à quel prix — celui-là est sur la
         // ligne. `null` = aucune version posée à cet instant, ce qui est la

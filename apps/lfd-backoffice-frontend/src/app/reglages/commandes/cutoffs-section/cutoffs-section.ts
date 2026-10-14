@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import type { OrderCutoffView } from '@lfd/contracts';
 import {
   FoldBadgeComponent,
@@ -37,6 +37,11 @@ function isGeneral(rule: OrderCutoffView): boolean {
  * Le serveur ouvre la lecture sous `lfc_order_settings:read` et l'écriture
  * sous `lfc_order_settings:write` (plan, §3.4) : sans ce dernier, la règle se
  * lit et aucun geste ne promet un refus.
+ *
+ * `dormant` (lot O3, §8.1) : l'heure limite générale est désactivée. La
+ * section reste lisible et modifiable — la règle est en base, et la
+ * réactivation la remettra telle quelle — mais elle est grisée et le dit :
+ * ni elle ni son rattrapage ne s'appliquent.
  */
 @Component({
   selector: 'app-cutoffs-section',
@@ -57,6 +62,9 @@ export class CutoffsSection {
   private readonly api = inject(OrderCutoffsService);
   private readonly panelHost = inject(FoldPanelHostService);
   private readonly permissions = inject(PermissionsStore);
+
+  /** L'heure limite générale est désactivée : la règle dort. */
+  readonly dormant = input(false);
 
   protected readonly canWrite = computed(() => this.permissions.can('lfc_order_settings:write'));
 

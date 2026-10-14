@@ -45,10 +45,20 @@ const DAY_BEFORE = 1;
  *
  * Le plan s'arrête la VEILLE : sans heure limite, ou avec une heure limite le
  * jour même, aucune heure d'arrêt ne laisserait toutes les commandes dedans.
+ *
+ * Sauf quand l'heure limite générale est DÉSACTIVÉE au commerce (lot O3,
+ * `plan-reglages-commandes.md` §8.1, B2) : l'arrêt du plan est alors la limite
+ * — une commande qui arrive après est refusée, pas laissée hors du plan — et
+ * rien ne le borne. Le serveur ne refusait déjà pas le mode automatique sans
+ * heure limite (`refuseAutoWithout`, vérifié le 2026-10-14).
  */
 export function autoImpossibleReason(
   cutoff: ProductionLatestOrderCutoffView | null,
+  orderCutoffEnabled = true,
 ): string | null {
+  if (!orderCutoffEnabled) {
+    return null;
+  }
   if (cutoff === null) {
     return 'Aucune heure limite de commande n’est réglée : sans elle, rien ne garantit qu’un arrêt automatique laisse toutes les commandes du lendemain dans le plan. Le mode automatique est impossible.';
   }
@@ -126,8 +136,13 @@ export class ProductionSettingsPage {
 
   protected readonly autoImpossible = computed(() => {
     const view = this.view();
-    return view === null ? null : autoImpossibleReason(view.latestOrderCutoff);
+    return view === null
+      ? null
+      : autoImpossibleReason(view.latestOrderCutoff, view.orderCutoffEnabled);
   });
+
+  /** L'heure limite générale est désactivée au commerce : plus rien ne borne l'arrêt. */
+  protected readonly cutoffOff = computed(() => this.view()?.orderCutoffEnabled === false);
 
   protected readonly cutoffSentence = computed(() => {
     const cutoff = this.view()?.latestOrderCutoff ?? null;

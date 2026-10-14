@@ -1,10 +1,13 @@
 import { Module } from "@nestjs/common";
 
 import { ProductionOrderWithdrawalDesk } from "./application/services/production-order-withdrawal.desk.js";
+import { ProductionPlanAdmissionDesk } from "./application/services/production-plan-admission.desk.js";
+import { ClosedPlansReader } from "./channels/commerce/closed-plans.reader.js";
 import { OrderInscriptionReader } from "./channels/commerce/order-inscription.reader.js";
 import { OrderWithdrawalLedger } from "./domain/ports/order-withdrawal.ledger.js";
 import { OrderWithdrawalsReader } from "./domain/ports/order-withdrawals.reader.js";
 import { PrismaOrderInscriptionReader } from "./infrastructure/prisma-order-inscription.reader.js";
+import { PrismaClosedPlansReader } from "./infrastructure/prisma-closed-plans.reader.js";
 import { PrismaOrderWithdrawalLedger } from "./infrastructure/prisma-order-withdrawal.ledger.js";
 import { PrismaOrderWithdrawalsReader } from "./infrastructure/prisma-order-withdrawals.reader.js";
 
@@ -261,6 +264,10 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     PrismaOrderInscriptionReader,
     { provide: OrderInscriptionReader, useExisting: PrismaOrderInscriptionReader },
     ProductionOrderWithdrawalDesk,
+    // L'arrêt du plan comme limite (lot O3) : relié par `ProductionDeskFeedModule`.
+    PrismaClosedPlansReader,
+    { provide: ClosedPlansReader, useExisting: PrismaClosedPlansReader },
+    ProductionPlanAdmissionDesk,
   ],
   // La lecture des contrôles sert aussi la retenue que la production PUBLIE au
   // retrait (`channels/handover/`, QC3) — son adaptateur est relié par la
@@ -271,6 +278,8 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     DayPlannedDestinationsReader,
     ProductionOrderWithdrawalDesk,
     PrismaOrderInscriptionReader,
+    PrismaClosedPlansReader,
+    ProductionPlanAdmissionDesk,
   ],
 })
 export class ProductionModule {}

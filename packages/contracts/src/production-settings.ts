@@ -54,8 +54,17 @@ export interface ProductionLatestOrderCutoffView {
 /** `GET /admin/production/settings`. */
 export interface ProductionSettingsView {
   readonly close: ProductionCloseSettingsView;
-  /** `null` : aucune heure limite n'est réglée au commerce. */
+  /**
+   * `null` : aucune heure limite n'est servie par le commerce — aucune règle
+   * posée, ou l'heure limite générale désactivée (`orderCutoffEnabled`).
+   */
   readonly latestOrderCutoff: ProductionLatestOrderCutoffView | null;
+  /**
+   * L'heure limite générale est-elle active au commerce ? Désactivée (lot O3,
+   * 2026-10-14), plus rien ne borne l'heure d'arrêt : c'est l'arrêt du plan
+   * qui ferme la journée, et le mode automatique reste permis.
+   */
+  readonly orderCutoffEnabled: boolean;
   /** Les jours fermés d'aujourd'hui (compris) à plus tard, `AAAA-MM-JJ`, dans l'ordre. */
   readonly closedDays: readonly string[];
 }

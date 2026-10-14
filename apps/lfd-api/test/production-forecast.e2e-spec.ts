@@ -23,6 +23,7 @@ import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { Clock } from "../src/platform/time/clock.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
+import { grantAccount, placeByStaff } from "./staff-late-order.js";
 import { settleCardPayments } from "./card-payments.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
@@ -161,6 +162,34 @@ async function placeOrder(
   await settleCardPayments(ctx, issuedIntents);
 }
 
+/** La même commande, saisie par l'équipe pour le membre de la société. */
+async function placeLateForCompany(
+  companyId: string,
+  day: string,
+  lines: readonly { sku: string; quantity: number }[],
+): Promise<void> {
+  const [address, buyer] = await Promise.all([
+    ctx.prisma.address.findFirstOrThrow({
+      where: { companyId, kind: "delivery" },
+      select: { id: true },
+    }),
+    ctx.prisma.user.findFirstOrThrow({ where: { auth0Sub: MEMBER }, select: { id: true } }),
+  ]);
+  await grantAccount(ctx, companyId);
+  await placeByStaff(
+    ctx,
+    {
+      requestedDeliveryDate: day,
+      fulfillmentMethod: "delivery",
+      requestedWindow: { start: null, end: "10:00" },
+      deliveryAddress: SITE,
+      deliveryAddressId: address.id,
+      lines,
+    },
+    { companyId, buyerUserId: buyer.id },
+  );
+}
+
 async function forecast(from: string, to: string): Promise<ProductionForecastView> {
   const response = await ctx
     .asSub("staff-e2e")
@@ -246,7 +275,8 @@ describe("le prévisionnel du fournil", () => {
     await placeOrder(companyId, DAY_1, [{ sku: "VIE-001", quantity: 6 }]);
     await ctx.asSub("staff-e2e").post(`/admin/production/batch/${DAY_1}/close`).expect(201);
 
-    await placeOrder(companyId, DAY_1, [{ sku: "VIE-001", quantity: 4 }]);
+    // Un client ne passe plus après l'arrêt (O3, §8.3) : la retardataire est saisie par l'équipe.
+    await placeLateForCompany(companyId, DAY_1, [{ sku: "VIE-001", quantity: 4 }]);
 
     const view = await forecast(DAY_1, DAY_1);
     expect(view.days[0]?.totalUnits).toBe(6);

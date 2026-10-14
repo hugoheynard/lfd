@@ -632,6 +632,7 @@ export {
   orderCutoffPayloadSchema,
   decideOrderCutoff,
   decideOrderLimit,
+  NEXT_FULFILLMENT_HORIZON_DAYS,
   nextFulfillmentDay,
   orderCutoffInstant,
   orderLimitInstant,
@@ -1032,6 +1033,8 @@ export type {
   VehicleRefrigerationView,
   VehicleEnergy,
   VehicleView,
+  VehicleGapCode,
+  VehicleGapView,
   VehiclesView,
   DeparturePayload,
   DepartureView,
@@ -1892,6 +1895,11 @@ export type {
   GuestOrderCancellationView,
   OrderCancellability,
 } from "./customer-cancellation.js";
+export {
+  DEFAULT_ORDER_CUTOFF_SETTINGS,
+  orderCutoffSettingsPatchSchema,
+} from "./order-cutoff-settings.js";
+export type { OrderCutoffSettingsPatch, OrderCutoffSettingsView } from "./order-cutoff-settings.js";
 export {
   DEFAULT_ORDER_OPENING,
   ORDERS_CLOSED_FOR_AUDIENCE,

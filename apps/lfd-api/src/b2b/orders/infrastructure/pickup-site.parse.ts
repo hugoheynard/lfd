@@ -17,3 +17,15 @@ export function siteIdOf(value: unknown): string | null {
   const parsed = pickupSnapshotSchema.safeParse(value);
   return parsed.success ? (parsed.data.siteId ?? null) : null;
 }
+
+/**
+ * Le nom du point de retrait figé dans le snapshot, ou `null` (livraison,
+ * snapshot illisible, nom vide). Validé plutôt que casté, comme le site.
+ */
+export function pickupLabelOf(value: unknown): string | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  const parsed = pickupSnapshotSchema.safeParse(value);
+  return parsed.success && parsed.data.label !== "" ? parsed.data.label : null;
+}

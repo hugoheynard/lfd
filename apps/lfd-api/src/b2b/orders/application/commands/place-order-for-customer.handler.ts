@@ -82,6 +82,9 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
     const intent = await this.settle(order, payload.settlement, companyId);
     // La commande et le fait qui fait situer son adresse (CA0), ensemble.
     const placed = await this.unitOfWork.run(async () => {
+      // La journée d'abord, sous son verrou : l'arrêt du plan ne passe plus
+      // entre la composition et l'écriture (lot O3, S5).
+      await this.drafting.holdPlan(order, payload.requestedDeliveryDate);
       const written = await this.orders.place(order);
       await this.durable.publish(new CommerceOrderPlacedFact(written.id).durableFact());
       return written;

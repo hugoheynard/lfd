@@ -60,6 +60,9 @@ import { OrderCutoffReader } from "../../../domain/ports/order-cutoff.reader.js"
 import { OrderCutoffWaiverGate } from "../../../domain/ports/order-cutoff-waiver.gate.js";
 import { OrderLateFeeReader } from "../../../domain/ports/order-late-fee.reader.js";
 import { FixedDeliveryVat } from "./fixed-delivery-vat.js";
+import { OrderPlanGate } from "../../services/order-plan-gate.service.js";
+import { ProductionPlanClosedError } from "../../../domain/errors/production-plan-closed.error.js";
+import { FixedClosedPlans, gateOf, openPlanGate, RecordingAdmissionDesk } from "./plan-doubles.js";
 import {
   LoyaltyEarningPreview,
   type LoyaltyEarningBasis,
@@ -238,6 +241,7 @@ function zones(found: DeliveryZoneView | null = null): DeliveryZoneRepository {
 /** La composition réelle, montée sur les doubles ci-dessus. */
 function drafting(
   delivery: DeliveryAvailabilityView = DEFAULT_DELIVERY_AVAILABILITY,
+  plans: OrderPlanGate = openPlanGate(),
 ): OrderDrafting {
   return new OrderDrafting(
     new OrderLinePricing(
@@ -270,6 +274,7 @@ function drafting(
     new OrderOperations(noSaleOperations(PRICED_AT)),
     ownPayers(),
     new FixedDeliveryVat(),
+    plans,
   );
 }
 
@@ -418,6 +423,7 @@ function scene(
     readonly opening?: PublicOrderOpeningView;
     readonly points?: number | null;
     readonly welcomeBonus?: number | null;
+    readonly plans?: OrderPlanGate;
   } = {},
 ) {
   const earning = new FakeEarning(options.points ?? null);
@@ -429,7 +435,7 @@ function scene(
   const durable = new RecordingDurable();
   const handler = new PlaceShopOrderHandler(
     buyers,
-    drafting(options.delivery),
+    drafting(options.delivery, options.plans),
     capturingRepo(sink),
     payments(paid),
     published,
@@ -667,6 +673,21 @@ describe("PlaceShopOrderHandler — ce qui échoue avant l'écriture", () => {
       ),
     ).rejects.toBeInstanceOf(UnknownSkuError);
     expect(keys.released).toEqual([KEY]);
+    expect(sink.placed).toBeNull();
+  });
+
+  /** Lot O3 : l'invité aussi est refusé sur un plan arrêté (O5), et sa clé lui est rendue. */
+  it("REFUSE une journée au plan arrêté, REND la clé, sans intention", async () => {
+    const day = payload().requestedDeliveryDate;
+    const { handler, keys, sink, paid } = scene({
+      plans: gateOf(new FixedClosedPlans([day]), new RecordingAdmissionDesk([day])),
+    });
+
+    await expect(handler.execute(new PlaceShopOrderCommand(payload()))).rejects.toBeInstanceOf(
+      ProductionPlanClosedError,
+    );
+    expect(keys.released).toEqual([KEY]);
+    expect(paid.intent).toBeNull();
     expect(sink.placed).toBeNull();
   });
 

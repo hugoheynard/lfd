@@ -1,4 +1,4 @@
-<fold-card>
+<fold-card [class.dormant]="dormant()">
   <div class="head">
     <div class="head-text">
       <h2 class="section-title">Clientèle professionnelle</h2>
@@ -25,6 +25,12 @@
       </fold-empty-state>
     }
     @default {
+      @if (dormant()) {
+        <fold-callout variant="info" data-cutoff-dormant>
+          L'heure limite générale est désactivée : cette limite et son rattrapage ne s'appliquent
+          pas. Elle reste enregistrée, et la réactiver la remet telle quelle.
+        </fold-callout>
+      }
       @if (general(); as rule) {
         <p class="general" data-cutoff-general>
           <span class="rule-when">{{ sentence(rule) }}</span>

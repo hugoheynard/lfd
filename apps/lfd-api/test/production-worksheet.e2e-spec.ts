@@ -25,6 +25,7 @@ import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { Clock } from "../src/platform/time/clock.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
+import { placeLateByStaff } from "./staff-late-order.js";
 import { createUser } from "./factories.js";
 import { settleCardPayments } from "./card-payments.js";
 import { E2E_FAMILIES } from "./catalog-fixture.js";
@@ -115,6 +116,11 @@ async function place(sku: string, quantity: number): Promise<void> {
     })
     .expect(201);
   await settleCardPayments(ctx, issuedIntents);
+}
+
+/** La retardataire, saisie par l'équipe — un client ne passe plus après l'arrêt (O3, §8.3). */
+async function placeLate(sku: string, quantity: number): Promise<void> {
+  await placeLateByStaff(ctx, SERVICE_DAY, [{ sku, quantity }]);
 }
 
 /** Arrête le plan du jour et rend l'heure du tirage. */
@@ -241,7 +247,7 @@ describe("l'écart et le retirage", () => {
   it("fait apparaître l'écart d'une commande passée APRÈS la clôture", async () => {
     await place(CROISSANT, 12);
     await closePlan();
-    await place(BAGUETTE, 30);
+    await placeLate(BAGUETTE, 30);
 
     const view = await worksheet();
 
@@ -271,7 +277,7 @@ describe("l'écart et le retirage", () => {
     await place(CROISSANT, 12);
     await closePlan();
     await mark(CROISSANT, "MB");
-    await place(CROISSANT, 6);
+    await placeLate(CROISSANT, 6);
 
     const retake = jsonBody<ProductionWorksheetRetake>(
       await ctx.asSub(STAFF).post(`/admin/production/worksheet/${SERVICE_DAY}/retake`).expect(201),
@@ -293,7 +299,7 @@ describe("l'écart et le retirage", () => {
   it("rend `absorbed: 0` au second retirage — une information, pas une erreur", async () => {
     await place(CROISSANT, 12);
     await closePlan();
-    await place(CROISSANT, 6);
+    await placeLate(CROISSANT, 6);
 
     const first = jsonBody<ProductionWorksheetRetake>(
       await ctx.asSub(STAFF).post(`/admin/production/worksheet/${SERVICE_DAY}/retake`).expect(201),

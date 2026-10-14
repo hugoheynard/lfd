@@ -46,6 +46,9 @@ import { OrderCutoffReader } from "../../../domain/ports/order-cutoff.reader.js"
 import { OrderCutoffWaiverGate } from "../../../domain/ports/order-cutoff-waiver.gate.js";
 import { OrderLateFeeReader } from "../../../domain/ports/order-late-fee.reader.js";
 import { FixedDeliveryVat } from "./fixed-delivery-vat.js";
+import { OrderPlanGate } from "../../services/order-plan-gate.service.js";
+import { SameDayOrderClosedError } from "../../../domain/errors/same-day-order-closed.error.js";
+import { FixedClosedPlans, gateOf, openPlanGate, RecordingAdmissionDesk } from "./plan-doubles.js";
 import { OrderLinePricing } from "../../services/order-line-pricing.service.js";
 import { Pricer } from "../../../../pricing/application/pricer.js";
 import { PricingMaterialsLoader } from "../../../../pricing/application/pricing-materials.loader.js";
@@ -312,6 +315,7 @@ function handler(
     readonly clientBaseUrl?: string | null;
     readonly delivery?: DeliveryAvailabilityView;
     readonly payers?: FixedOrderPayers;
+    readonly plans?: OrderPlanGate;
     readonly durable?: RecordingDurable;
   } = {},
 ): PlaceOrderForCustomerHandler {
@@ -354,6 +358,7 @@ function handler(
       new OrderOperations(noSaleOperations(PRICED_AT)),
       options.payers ?? ownPayers(),
       new FixedDeliveryVat(),
+      options.plans ?? openPlanGate(),
     ),
     repo(sink),
     options.payments ?? payments(),
@@ -412,6 +417,84 @@ describe("PlaceOrderForCustomerHandler — le mur", () => {
       handler(guard(null), sink).execute(new PlaceOrderForCustomerCommand("staff_1", payload())),
     ).rejects.toBeInstanceOf(OrderCompanyNotFoundError);
     expect(sink.placed).toBeNull();
+  });
+});
+
+/**
+ * Lot O3 (`plan-reglages-commandes.md`, §8.3, Hugo 2026-10-14) : l'équipe
+ * peut encore saisir pour une journée arrêtée — la commande est REÇUE, marquée
+ * « hors plan », et le retirage du fournil la fera entrer.
+ */
+describe("PlaceOrderForCustomerHandler — l'arrêt du plan", () => {
+  it("REÇOIT une journée au plan arrêté, marquée « hors plan » (§8.3)", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const day = payload().requestedDeliveryDate;
+    const plans = gateOf(new FixedClosedPlans([day]), new RecordingAdmissionDesk([day]));
+
+    await handler(guard("orders", "active", "granted"), sink, { plans }).execute(
+      new PlaceOrderForCustomerCommand("staff_1", payload()),
+    );
+
+    expect(sink.placed?.placedOffPlan).toBe(true);
+  });
+
+  it("arrêté entre la composition et l'écriture : reçue hors plan, sous le verrou", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const day = payload().requestedDeliveryDate;
+    const plans = gateOf(new FixedClosedPlans(), new RecordingAdmissionDesk([day]));
+
+    await handler(guard("orders", "active", "granted"), sink, { plans }).execute(
+      new PlaceOrderForCustomerCommand("staff_1", payload()),
+    );
+
+    expect(sink.placed?.placedOffPlan).toBe(true);
+  });
+
+  it("un plan ouvert : la commande n'est pas hors plan", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+
+    await handler(guard("orders", "active", "granted"), sink).execute(
+      new PlaceOrderForCustomerCommand("staff_1", payload()),
+    );
+
+    expect(sink.placed?.placedOffPlan).toBe(false);
+  });
+
+  it("le jour même fermé par le réglage refuse aussi l'équipe, plan ouvert", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const today = "2026-01-01";
+
+    await expect(
+      handler(guard("orders", "active", "granted"), sink).execute(
+        new PlaceOrderForCustomerCommand("staff_1", payload({ requestedDeliveryDate: today })),
+      ),
+    ).rejects.toBeInstanceOf(SameDayOrderClosedError);
+    expect(sink.placed).toBeNull();
+  });
+
+  it("le jour même, plan arrêté : l'équipe est reçue hors plan, le réglage ne s'y oppose pas", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const today = "2026-01-01";
+    const plans = gateOf(new FixedClosedPlans([today]), new RecordingAdmissionDesk([today]));
+
+    await handler(guard("orders", "active", "granted"), sink, { plans }).execute(
+      new PlaceOrderForCustomerCommand("staff_1", payload({ requestedDeliveryDate: today })),
+    );
+
+    expect(sink.placed?.placedOffPlan).toBe(true);
+  });
+
+  it("tient la journée sous le verrou avant d'écrire la commande", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const writtenWhenHeld: boolean[] = [];
+    const desk = new RecordingAdmissionDesk([], () => writtenWhenHeld.push(sink.placed !== null));
+
+    await handler(guard("orders", "active", "granted"), sink, {
+      plans: gateOf(new FixedClosedPlans(), desk),
+    }).execute(new PlaceOrderForCustomerCommand("staff_1", payload()));
+
+    expect(desk.held).toEqual([payload().requestedDeliveryDate]);
+    expect(writtenWhenHeld).toEqual([false]);
   });
 });
 
@@ -617,6 +700,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
         new OrderOperations(noSaleOperations(PRICED_AT)),
         ownPayers(),
         new FixedDeliveryVat(),
+        openPlanGate(),
       ),
       repo(sink),
       payments(intents),

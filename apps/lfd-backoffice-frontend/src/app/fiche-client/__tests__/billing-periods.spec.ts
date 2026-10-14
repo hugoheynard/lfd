@@ -23,6 +23,7 @@ function order(
     placedAt,
     status,
     paymentStatus,
+    offPlan: false,
     fulfillmentMethod: 'pickup',
     subtotalCents: totalCents,
     vatCents: 0,
@@ -32,6 +33,9 @@ function order(
     companyId: 'cmp_1',
     fulfillmentDay: null,
     clientele: 'pro',
+    siteId: null,
+    pickupLabel: null,
+    fulfillmentWindow: null,
     origin: 'self_service',
   };
 }

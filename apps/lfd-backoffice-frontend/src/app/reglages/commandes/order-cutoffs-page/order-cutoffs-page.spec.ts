@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { OrderCutoffWaiversService } from '../../../commandes/order-cutoff-waivers.service';
 import { NotifyService } from '../../../notify.service';
+import { OrderCutoffSettingsService } from '../order-cutoff-settings.service';
 import { OrderCutoffsService } from '../order-cutoffs.service';
 import { OrderCutoffsPage } from './order-cutoffs-page';
 
@@ -16,6 +17,7 @@ import { OrderCutoffsPage } from './order-cutoffs-page';
  */
 async function mount(
   permissions: readonly StaffPermission[],
+  enabled = true,
 ): Promise<ComponentFixture<OrderCutoffsPage>> {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
@@ -23,6 +25,14 @@ async function mount(
     providers: [
       provideRouter([]),
       { provide: OrderCutoffsService, useValue: { list: () => Promise.resolve([]) } },
+      {
+        provide: OrderCutoffSettingsService,
+        useValue: {
+          read: () =>
+            Promise.resolve({ enabled, sameDayAllowed: false, updatedAt: null, updatedBy: null }),
+          update: () => Promise.resolve(),
+        },
+      },
       { provide: OrderCutoffWaiversService, useValue: { listOpen: () => Promise.resolve([]) } },
       { provide: NotifyService, useValue: { success: () => undefined, error: () => undefined } },
       {
@@ -69,5 +79,24 @@ describe('OrderCutoffsPage', () => {
 
     const link = root(fixture).querySelector('[data-pim-link] a');
     expect(link?.getAttribute('href')).toBe('/pim/limites-de-commande');
+  });
+
+  it('monte l’interrupteur de l’heure limite générale en tête', async () => {
+    const fixture = await mount(['lfc_order_settings:read']);
+
+    const blocks = root(fixture).querySelector('.blocks');
+    expect(blocks?.firstElementChild?.tagName.toLowerCase()).toBe('app-cutoff-switch-card');
+  });
+
+  it('désactivée, grise la limite générale et récrit la carte des particuliers', async () => {
+    const fixture = await mount(['lfc_order_settings:read'], false);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(root(fixture).querySelector('app-cutoffs-section [data-cutoff-dormant]')).not.toBeNull();
+    expect(root(fixture).querySelector('[data-b2c-card]')?.textContent).toContain(
+      "plan de production de la journée n'est pas arrêté",
+    );
   });
 });

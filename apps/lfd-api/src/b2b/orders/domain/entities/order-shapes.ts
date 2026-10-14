@@ -122,6 +122,8 @@ export interface OrderToPlace {
   /** Qui commande, déduit par l'agrégat — cf. `clienteleOf` dans `order-fulfillment.ts`. */
   readonly clientele: OrderClientele;
   readonly placedByUserId: string;
+  /** Reçue par l'équipe sur un plan déjà arrêté (lot O3) — cf. `Order.receiveOffPlan`. */
+  readonly placedOffPlan: boolean;
   readonly placedByStaffId: string | null;
   readonly fulfillmentMethod: FulfillmentMethod;
   readonly deliveryZoneId: string | null;

@@ -10,15 +10,20 @@ import {
 } from "../domain/ports/admin-order-list.reader.js";
 import { orderOriginOf } from "../domain/services/order-origin.js";
 import { customerLabelOf } from "./handover-order.query.js";
+import { fulfillmentOf, windowOf } from "./order-fulfillment.parse.js";
+import { pickupLabelOf, siteIdOf } from "./pickup-site.parse.js";
 
 const ADMIN_ROW_SELECT = {
   id: true,
   orderNumber: true,
   status: true,
+  placedOffPlan: true,
   paymentStatus: true,
   fulfillmentMethod: true,
   requestedDeliveryDate: true,
   clientele: true,
+  pickupAddress: true,
+  fulfillment: true,
   subtotalCents: true,
   vatCents: true,
   totalCents: true,
@@ -139,6 +144,9 @@ function toAdminRow(row: AdminRow): AdminOrderRow {
     orderNumber: row.orderNumber,
     placedAt: row.createdAt.toISOString(),
     status: row.status,
+    // Hors plan TANT QUE le fournil ne l'a pas reprise : le retirage la passe
+    // `confirmed`, et c'est ce que l'écart du fournil sait déjà compter (§8.3).
+    offPlan: row.placedOffPlan && row.status === "placed",
     paymentStatus: row.paymentStatus,
     fulfillmentMethod: row.fulfillmentMethod,
     fulfillmentDay:
@@ -146,6 +154,9 @@ function toAdminRow(row: AdminRow): AdminOrderRow {
         ? null
         : row.requestedDeliveryDate.toISOString().slice(0, 10),
     clientele: row.clientele,
+    siteId: siteIdOf(row.pickupAddress),
+    pickupLabel: pickupLabelOf(row.pickupAddress),
+    fulfillmentWindow: windowOf(fulfillmentOf(row.fulfillment)),
     subtotalCents: row.subtotalCents,
     vatCents: row.vatCents,
     totalCents: row.totalCents,

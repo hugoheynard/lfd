@@ -46,7 +46,7 @@ import {
  *
  * Sans `subjectLabel`, et c'est voulu : les **réglages uniques**
  * (`order_late_fee.*`, `order_delivery_vat.*`, `delivery_availability.updated`,
- * `order_opening.updated`), dont le sujet n'a pas
+ * `order_opening.updated`, `order_cutoff_settings.updated`), dont le sujet n'a pas
  * d'autre nom que son type ; les **heures limites** et les **dérogations**, qui
  * n'ont pas de nom du tout — une règle se dit par son contenu (point, jour,
  * heure), une dérogation par son client et sa journée, et les deux sont dans la
@@ -68,7 +68,8 @@ const adjustment = () =>
 const vehicleIdentity = () =>
   payload({
     name: z.string().min(1),
-    plate: z.string().min(1),
+    /** `null` depuis le 2026-10-14 : un véhicule peut entrer sans plaque. */
+    plate: z.string().min(1).nullable(),
     ...vehicleLoadSpace(),
   });
 
@@ -109,7 +110,11 @@ const vehicleLoadSpace = () => ({
 
 /** Un geste sur un véhicule : son nom en libellé, et sa plaque. */
 const vehicleFact = () =>
-  payload({ subjectLabel: subjectLabel(), plate: z.string().min(1), ...vehicleLoadSpace() });
+  payload({
+    subjectLabel: subjectLabel(),
+    plate: z.string().min(1).nullable(),
+    ...vehicleLoadSpace(),
+  });
 
 /** Un point de retrait, et la remise qu'on y consent — avant le lot B. */
 const pickupPointBeforeLabel = () =>
@@ -446,6 +451,18 @@ export const ORDERS_PRODUCTION_FACTS = {
   "order_cutoff.updated": fact(cutoffRule(), [cutoffRuleBeforeLabel()]),
   /** La règle effacée, telle qu'elle décidait — elle n'emportait que son id avant le 2026-09-19. */
   "order_cutoff.removed": fact(cutoffRule(), [empty()]),
+  /**
+   * **L'interrupteur de l'heure limite générale et le jour même** (lot O3,
+   * 2026-10-14) : l'état posé et celui qu'il remplace. Désactivée, la règle reste en base et n'est
+   * plus servie — le journal dit depuis quand une commande tardive passait.
+   */
+  "order_cutoff_settings.updated": fact(
+    payload({
+      enabled: z.boolean(),
+      sameDayAllowed: z.boolean(),
+      previous: payload({ enabled: z.boolean(), sameDayAllowed: z.boolean() }),
+    }),
+  ),
   "order_cutoff_waiver.granted": fact(waiverDecision(), [waiverDecisionBeforeLabel()]),
   "order_cutoff_waiver.revoked": fact(waiverDecision(), [waiverDecisionBeforeLabel()]),
   "order_late_fee.set": fact(payload({ before: lateFee().nullable(), after: lateFee() })),

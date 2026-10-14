@@ -1,4 +1,8 @@
-import { nextFulfillmentDay, type OrderCutoffView } from "../order-cutoff.js";
+import {
+  NEXT_FULFILLMENT_HORIZON_DAYS,
+  nextFulfillmentDay,
+  type OrderCutoffView,
+} from "../order-cutoff.js";
 
 /** Limite : la veille à 18 h, heure de Paris. Aucun rattrapage. */
 const VEILLE_18H: OrderCutoffView = {
@@ -61,5 +65,30 @@ describe("nextFulfillmentDay — la journée qu’on peut encore demander", () =
     const impossible: OrderCutoffView = { ...VEILLE_18H, daysBefore: 14 };
 
     expect(nextFulfillmentDay([impossible], null, paris("2026-09-08T15:00:00Z"), 3)).toBeNull();
+  });
+});
+
+/**
+ * Lot O3 (`plan-reglages-commandes.md`, §8, 2026-10-14) : un plan de production
+ * arrêté ferme sa journée, heure limite ou pas. Sans règle, c'est la seule
+ * borne — sans elle, on proposerait aujourd'hui même.
+ */
+describe("nextFulfillmentDay — les journées qu'un réglage ferme", () => {
+  const AT = paris("2026-09-08T15:00:00Z");
+  const HORIZON = NEXT_FULFILLMENT_HORIZON_DAYS;
+
+  it("sans règle, saute aujourd'hui quand son plan est arrêté", () => {
+    expect(nextFulfillmentDay([], null, AT, HORIZON, new Set(["2026-09-08"]))).toBe("2026-09-09");
+  });
+
+  it("avec une règle, saute la journée qu'elle laissait ouverte si son plan est arrêté", () => {
+    expect(nextFulfillmentDay([VEILLE_18H], null, AT, HORIZON, new Set(["2026-09-09"]))).toBe(
+      "2026-09-10",
+    );
+  });
+
+  it("rend null quand tout l'horizon est arrêté", () => {
+    const all = new Set(["2026-09-08", "2026-09-09", "2026-09-10"]);
+    expect(nextFulfillmentDay([], null, AT, 2, all)).toBeNull();
   });
 });

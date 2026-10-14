@@ -1,3 +1,4 @@
+import { ProductionPlanClosedError } from "../errors/production-plan-closed.error.js";
 import type {
   // Aliasé : `OrderFulfillmentInput` désigne déjà ici le mode + les adresses.
   // Deux « fulfillment » dans le même fichier finiraient par se confondre.
@@ -45,6 +46,7 @@ type Payment = { readonly status: PaymentStatus; readonly intentId: string | nul
  */
 export class Order {
   private payment: Payment = null;
+  private offPlan = false;
 
   private constructor(
     private readonly companyId: string | null,
@@ -208,6 +210,20 @@ export class Order {
     return settlementRegimeOf(this.payment.status, this.totalCentsValue);
   }
 
+  /**
+   * **Reçue pour une journée dont le plan est déjà arrêté** (lot O3,
+   * `plan-reglages-commandes.md` §8.3, Hugo 2026-10-14). Seule l'équipe le
+   * peut : un client est refusé, il n'existe pas de chemin pour lui.
+   *
+   * @throws {ProductionPlanClosedError} la commande n'est pas une saisie de l'équipe.
+   */
+  receiveOffPlan(fulfillmentDate: string): void {
+    if (this.placedByStaffId === null) {
+      throw new ProductionPlanClosedError(fulfillmentDate);
+    }
+    this.offPlan = true;
+  }
+
   /** Sérialise pour l'adaptateur — refuse une commande au règlement non décidé. */
   toPersistence(): OrderToPlace {
     if (this.payment === null) {
@@ -219,6 +235,7 @@ export class Order {
       clientele: clienteleOf(this.companyId),
       placedByUserId: this.placedByUserId,
       placedByStaffId: this.placedByStaffId,
+      placedOffPlan: this.offPlan,
       fulfillmentMethod: this.fulfillment.method,
       deliveryZoneId: this.fulfillment.deliveryZoneId,
       deliveryAddress: this.fulfillment.deliveryAddress,

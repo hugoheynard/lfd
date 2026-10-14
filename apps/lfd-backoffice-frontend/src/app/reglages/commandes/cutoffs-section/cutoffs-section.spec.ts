@@ -95,3 +95,30 @@ describe('CutoffsSection — la limite générale', () => {
     expect(legacy?.querySelector('button')).toBeNull();
   });
 });
+
+/**
+ * Lot O3 (`plan-reglages-commandes.md` §8.1, B1) : l'heure limite générale
+ * désactivée, la section grise ce qui n'appartient qu'à elle et le dit — la
+ * règle reste lisible et modifiable, la réactivation la remettra telle quelle.
+ */
+describe('CutoffsSection — la règle qui dort', () => {
+  it('désactivée, dit que la limite et son rattrapage ne s’appliquent pas', async () => {
+    const fixture = await mount(['lfc_order_settings:write'], [GENERAL]);
+    fixture.componentRef.setInput('dormant', true);
+    fixture.detectChanges();
+
+    expect(root(fixture).querySelector('[data-cutoff-dormant]')?.textContent).toContain(
+      "ne s'appliquent pas",
+    );
+    expect(root(fixture).querySelector('fold-card')?.classList.contains('dormant')).toBe(true);
+    expect(root(fixture).querySelector('[data-cutoff-general]')).not.toBeNull();
+    expect(buttons(fixture)).toEqual(['Modifier']);
+  });
+
+  it('activée, ne dit rien de plus', async () => {
+    const fixture = await mount(['lfc_order_settings:write'], [GENERAL]);
+
+    expect(root(fixture).querySelector('[data-cutoff-dormant]')).toBeNull();
+    expect(root(fixture).querySelector('fold-card')?.classList.contains('dormant')).toBe(false);
+  });
+});

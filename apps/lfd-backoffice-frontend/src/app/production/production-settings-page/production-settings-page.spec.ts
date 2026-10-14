@@ -30,6 +30,7 @@ async function boot(canWrite = true): Promise<ComponentFixture<ProductionSetting
     view: {
       close: { mode: 'manual', closeAt: null, alertAt: '20:00' },
       latestOrderCutoff: { daysBefore: 1, time: '18:30' },
+      orderCutoffEnabled: true,
       closedDays: [FAR_DAY],
     },
     closes: [],
@@ -139,6 +140,21 @@ describe('Production › Réglages — l’arrêt du plan', () => {
     expect(autoImpossibleReason(null)).toContain('impossible');
     expect(autoImpossibleReason({ daysBefore: 0, time: '08:00' })).toContain('jour même');
     expect(autoImpossibleReason({ daysBefore: 1, time: '18:30' })).toBeNull();
+  });
+
+  /** Lot O3 (B2) : désactivée, l'arrêt du plan est la limite, et rien ne le borne. */
+  it('ne bloque pas le mode automatique quand l’heure limite générale est désactivée', async () => {
+    expect(autoImpossibleReason(null, false)).toBeNull();
+    const fixture = await boot();
+    wire.view = { ...wire.view, latestOrderCutoff: null, orderCutoffEnabled: false };
+    await fixture.componentInstance['load']();
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[data-cutoff-off]')?.textContent).toContain(
+      'rien ne borne l’heure d’arrêt',
+    );
+    expect(el.querySelector('[data-auto-impossible]')).toBeNull();
   });
 });
 

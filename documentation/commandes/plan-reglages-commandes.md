@@ -1,7 +1,7 @@
 # Réglages › Commandes — ouverture, heure limite et annulation
 
 **Statut** : 🔨 O0, O1a, O1b et O1c **bâtis le 2026-10-13, non commités**
-(§4) ; O2 reste à trancher. Écrit le 2026-10-13, contredit par
+(§4) ; O3 **bâti le 2026-10-14, non commité** (§8.2) ; O2 reste à trancher. Écrit le 2026-10-13, contredit par
 `vitruve` le même jour (§7), **Q1, Q3, Q4, Q5 et la carte B2C tranchées par
 Hugo le 2026-10-13** (§5). Annoncé par le
 §5.4 du plan commun des sites (2026-10-13, découpé le même jour) ; les
@@ -492,3 +492,76 @@ lendemain à toute heure jusqu'à l'arrêt du plan.
 - **S6 — O5** est vérifié par un test qui échoue avant le correctif.
 - **S7 — issue pour l'équipe un jour arrêté** : aucune pour l'instant ; une
   journée retirée reste arrêtée. **À confirmer par Hugo.**
+
+### 8.2 Bâti le 2026-10-14 (non commité)
+
+- **Interrupteur** — table `public.order_cutoff_settings` (migration
+  `20261014100000_l_interrupteur_de_l_heure_limite`, additive, aucune ligne
+  posée : absente = activée). `GET`/`PATCH admin/order-cutoff-settings` sous
+  `lfc_order_settings` ; fait `order_cutoff_settings.updated` (état posé et
+  remplacé), rien d'écrit ni journalisé quand l'état ne change pas. Pas un
+  agrégat : aucune règle ne refuse la bascule (CLAUDE.md §3.1).
+- **Où il s'applique** — un port `OrderCutoffsInForce` (contexte
+  `order-cutoffs`), qui rend les règles ou aucune. Il sert la passation
+  (`OrderCutoffReader`, donc aussi la relance de règlement), la boutique
+  (`ListFulfillmentDaysHandler`) et le fournil
+  (`ProductionOrderCutoffRulesReader`). L'écran lit toujours
+  `OrderCutoffRepository`. Les limites produit ne passent pas par lui.
+- **L'arrêt du plan** — deux ports que le fournil déclare et implémente dans
+  `production/channels/commerce/` : `ClosedPlansReader` (sans verrou) et
+  `PlanAdmissionDesk` (verrou `production_day:<jour>` dans l'unité de travail
+  de l'appelant, puis lecture). `OrderDrafting` refuse tôt
+  (`ensureOpen`) ; les trois passations appellent `holdPlan` en premier dans
+  leur transaction, avant toute ligne `orders`. Refus :
+  `ProductionPlanClosedError` (409 `orders.production_plan_closed`). La
+  boutique saute les journées arrêtées (`nextFulfillmentDay`, paramètre
+  `closedPlans`).
+- **Le fournil** — `ProductionSettingsView.orderCutoffEnabled` (port
+  `OrderCutoffSwitchReader`) ; désactivée, la page Production › Réglages dit
+  que rien ne borne l'heure d'arrêt et n'interdit plus le mode automatique.
+- **L'écran** — carte « Heure limite générale » en tête de la page, bascule
+  confirmée ; la limite générale grisée et dite « ne s'applique pas » ; la
+  carte des particuliers récrite. Les dérogations restent actives (B1).
+- **Tests** — domaine/application (`switched-order-cutoffs`,
+  `update-order-cutoff-settings.handler`, `order-plan-gate.service`,
+  `production-plan-admission.desk`, trois specs de passation,
+  `list-fulfillment-days.handler`, `get-production-settings.handler`,
+  `next-fulfillment-day`), e2e `apps/lfd-api/test/order-cutoff-switch.e2e-spec.ts` (O5 rouge
+  avant le correctif, vérifié), specs front.
+
+### 8.3 Décisions de Hugo (2026-10-14), bâties le même jour (non commité)
+
+- **Recevoir n'est pas traiter.** Après l'arrêt du plan, le **client** (compte
+  ou invité) reste refusé (`orders.production_plan_closed`). La saisie de
+  l'**équipe** est **reçue**, marquée **hors plan** : colonne additive
+  `orders.placed_off_plan` (migration
+  `20261014110000_la_commande_recue_hors_plan`), figée à la passation SOUS le
+  verrou de la journée par `Order.receiveOffPlan` — l'agrégat refuse ce
+  marquage à une commande qui n'est pas une saisie de l'équipe. Son
+  traitement ne change pas : le retirage du fournil l'inscrit, rien
+  d'automatique.
+- **Ce que l'écart sait déjà** : le fournil compte comme écart toute commande
+  `placed` du jour non inscrite ; le commerce l'apprend à la **re-clôture**
+  (`confirmedAt`). « Hors plan » dans la liste staff = `placed_off_plan` ET
+  `placed` — donc l'alerte tient jusqu'à la re-clôture, pas jusqu'au seul
+  retirage (le commerce ne lit pas l'inscription du fournil dans sa liste).
+- **Liste des commandes** : `AdminOrderRow.offPlan` (additif) ; la ligne est en
+  ton `alert`, et la colonne Avancement dit « Hors plan — Reprendre la journée
+  au fournil ».
+- **Les suites e2e** qui éprouvent l'écart, le retirage et la re-clôture
+  sèment leur retardataire par la saisie de l'équipe
+  (`apps/lfd-api/test/staff-late-order.ts`), jamais en base.
+- **Le jour même est un réglage**, aucune règle de délai codée en dur —
+  décision Hugo. « Autoriser les commandes pour le jour même »,
+  `order_cutoff_settings.same_day_allowed` (migration
+  `20261014120000_le_jour_meme`), **non par défaut** ; journalisé dans le même
+  fait `order_cutoff_settings.updated`. Appliqué à la boutique (aujourd'hui
+  n'est pas proposé) et à toute passation — client, invité **et équipe** : une
+  journée qui n'est pas après aujourd'hui est refusée
+  (`orders.same_day_closed`). **Exception, l'équipe sur un plan arrêté** :
+  elle est reçue hors plan sans que le réglage s'y oppose — la journée est
+  déjà en fabrication et seul le fournil, en la reprenant, décide. Autorisé,
+  le premier jour ne dépend plus que de l'heure limite (si activée), des
+  limites produit et de l'arrêt du plan.
+- **Relance de règlement sans règle** : elle ne part plus. **Non tranché** par
+  Hugo, laissé tel quel.

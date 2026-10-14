@@ -17,6 +17,7 @@ function order(
     orderNumber: `C-${totalCents}`,
     placedAt,
     status: 'fulfilled' as OrderStatus,
+    offPlan: false,
     paymentStatus,
     fulfillmentMethod: 'pickup',
     subtotalCents: Math.round(totalCents / 1.055),
@@ -27,6 +28,9 @@ function order(
     companyId: 'cmp_1',
     fulfillmentDay: null,
     clientele: 'pro',
+    siteId: null,
+    pickupLabel: null,
+    fulfillmentWindow: null,
     origin: 'self_service',
     ...overrides,
   };

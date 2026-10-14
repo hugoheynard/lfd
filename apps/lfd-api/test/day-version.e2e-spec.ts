@@ -25,6 +25,7 @@ import {
   serviceDay,
   type E2eContext,
 } from "./e2e-harness.js";
+import { placeLateByStaff } from "./staff-late-order.js";
 import { createUser } from "./factories.js";
 import { packingOrderPath } from "./production-day-fixture.js";
 
@@ -320,7 +321,8 @@ describe("le journal du FOURNIL avance à chaque geste du fournil", () => {
   it("retirer à nouveau (le retirage)", async () => {
     await place([{ sku: CROISSANT, quantity: 6 }]);
     await close();
-    await place([{ sku: BAGUETTE, quantity: 2 }]);
+    // Un client ne passe plus après l'arrêt (O3, §8.3) : la retardataire est saisie par l'équipe.
+    await placeLateByStaff(ctx, DAY, [{ sku: BAGUETTE, quantity: 2 }]);
     const { before, after } = await around("production", () =>
       staff().post(`/admin/production/worksheet/${DAY}/retake`).expect(201),
     );

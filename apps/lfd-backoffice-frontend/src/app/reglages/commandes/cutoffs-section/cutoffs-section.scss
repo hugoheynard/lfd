@@ -2,6 +2,12 @@
   display: block;
 }
 
+/* La règle dort (heure limite générale désactivée, lot O3) : lisible, grisée. */
+.dormant .general,
+.dormant .rules {
+  opacity: 0.55;
+}
+
 .head {
   display: flex;
   align-items: flex-start;

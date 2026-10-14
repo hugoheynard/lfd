@@ -274,6 +274,11 @@ export function orderLimitInstant(limit: OrderLimitSpec, fulfillmentDate: string
   return localToInstant(addDays(fulfillmentDate, -limit.daysBefore), limit.time);
 }
 
+/** L'horizon de recherche de la prochaine journée demandable, en jours. */
+export const NEXT_FULFILLMENT_HORIZON_DAYS = 14;
+
+const NO_UNAVAILABLE_DAYS: ReadonlySet<string> = new Set();
+
 /**
  * **La prochaine journée de production encore demandable**, pour un point de
  * retrait (ou pour le défaut de la plateforme, `pickupAddressId` à `null`).
@@ -297,6 +302,13 @@ export function orderLimitInstant(limit: OrderLimitSpec, fulfillmentDate: string
  * qui tranche. Les deux ne peuvent pas se contredire en silence : celle-ci ne
  * fait qu'ouvrir un écran, l'autre seule refuse.
  *
+ * ## Les journées qu'un réglage ferme
+ *
+ * `unavailableDays` (lot O3 de `plan-reglages-commandes.md`, 2026-10-14) : les
+ * journées dont le plan de production est arrêté, et aujourd'hui quand le
+ * réglage « jour même » ne l'autorise pas. Elles sont sautées, quelle que soit
+ * l'heure limite. Le serveur les décide ; aucune n'est codée ici.
+ *
  * @returns `AAAA-MM-JJ`, ou `null` si aucune journée de l'horizon n'est ouverte.
  * Un `null` se montre (« aucune journée disponible ») ; il ne se remplace pas
  * par un défaut, sinon on retombe sur le « demain » qu'on vient de retirer.
@@ -305,11 +317,15 @@ export function nextFulfillmentDay(
   rules: readonly OrderCutoffView[],
   pickupAddressId: string | null,
   now: Date,
-  horizonDays = 14,
+  horizonDays = NEXT_FULFILLMENT_HORIZON_DAYS,
+  unavailableDays: ReadonlySet<string> = NO_UNAVAILABLE_DAYS,
 ): string | null {
   const today = instantToLocal(now).day;
   for (let ahead = 0; ahead <= horizonDays; ahead += 1) {
     const day = addDays(today, ahead);
+    if (unavailableDays.has(day)) {
+      continue;
+    }
     if (decideOrderCutoff(rules, pickupAddressId, day, now).status === "open") {
       return day;
     }

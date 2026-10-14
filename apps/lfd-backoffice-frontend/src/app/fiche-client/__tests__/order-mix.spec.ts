@@ -20,6 +20,7 @@ function order(shape: OrderShape): AdminOrderRow {
     orderNumber: 'C-0001',
     placedAt: shape.placedAt,
     status: shape.status ?? 'placed',
+    offPlan: false,
     paymentStatus: shape.paymentStatus ?? 'paid',
     fulfillmentMethod: 'pickup',
     subtotalCents: shape.totalCents,
@@ -30,6 +31,9 @@ function order(shape: OrderShape): AdminOrderRow {
     companyId: 'cmp_1',
     fulfillmentDay: null,
     clientele: 'pro',
+    siteId: null,
+    pickupLabel: null,
+    fulfillmentWindow: null,
     origin: shape.origin ?? 'self_service',
   };
 }

@@ -206,6 +206,8 @@ describe("GET /admin/orders — filtres", () => {
     expect(numbersOf((await list("?clientele=public")).rows)).toEqual([scene.publicPickup]);
     expect((await list("")).rows.find((row) => row.orderNumber === scene.delivery)).toMatchObject({
       clientele: null,
+      // Une livraison n'a pas de site de retrait.
+      siteId: null,
     });
   });
 

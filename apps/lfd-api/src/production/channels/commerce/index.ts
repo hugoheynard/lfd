@@ -64,3 +64,12 @@ export type { OrderCutoffRule } from "../../domain/services/latest-order-cutoff.
 // elle est inscrite (affichage).
 export { OrderWithdrawalDesk, type OrderWithdrawalOutcome } from "./order-withdrawal.desk.js";
 export { OrderInscriptionReader } from "./order-inscription.reader.js";
+// L'arrêt du plan devient une limite (lot O3 de
+// `documentation/commandes/plan-reglages-commandes.md`, 2026-10-14) : deux
+// ports que le fournil DÉCLARE et IMPLÉMENTE — lire les journées arrêtées
+// (proposer, refuser tôt), et admettre une commande sous le verrou de la journée.
+export { ClosedPlansReader } from "./closed-plans.reader.js";
+export { PlanAdmissionDesk, type PlanAdmission } from "./plan-admission.desk.js";
+// L'interrupteur de l'heure limite générale, que la page Production › Réglages
+// dit : désactivée, plus rien ne borne l'heure d'arrêt (O3, B2).
+export { OrderCutoffSwitchReader } from "./order-cutoff-switch.reader.js";

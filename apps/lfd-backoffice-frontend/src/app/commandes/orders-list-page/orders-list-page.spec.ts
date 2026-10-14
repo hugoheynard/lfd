@@ -7,6 +7,7 @@ import type { AdminOrderRow, AdminOrdersPage, AdminOrdersQuery } from '@lfd/cont
 import { describe, expect, it } from 'vitest';
 
 import { FROM_ORDER_LIST } from '../order-list-return';
+import { SitePaletteService } from '../../shared/logistics-colors/site-palette.service';
 import { AdminOrdersService } from '../orders.service';
 import { OrdersListPage } from './orders-list-page';
 
@@ -26,10 +27,14 @@ function row(id: string): AdminOrderRow {
     orderNumber: `CMD-${id}`,
     placedAt: '2026-10-12T08:00:00.000Z',
     status: 'placed',
+    offPlan: false,
     paymentStatus: 'paid',
     fulfillmentMethod: 'pickup',
     fulfillmentDay: '2026-10-14',
     clientele: 'pro',
+    siteId: null,
+    pickupLabel: null,
+    fulfillmentWindow: null,
     subtotalCents: 1000,
     vatCents: 55,
     totalCents: 1055,
@@ -65,6 +70,7 @@ async function open(url: string, orders: FakeOrders) {
         withComponentInputBinding(),
       ),
       { provide: AdminOrdersService, useValue: orders },
+      { provide: SitePaletteService, useValue: { palette: () => Promise.resolve({ sites: [] }) } },
     ],
   });
   const harness = await RouterTestingHarness.create();

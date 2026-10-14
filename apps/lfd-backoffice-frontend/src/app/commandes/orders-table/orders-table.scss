@@ -12,14 +12,16 @@
   gap: var(--fold-space-xs);
 }
 
-.ot-when {
+/* Le jour, puis l'heure en dessous. */
+.ot-stack {
   display: flex;
   flex-direction: column;
 }
 
-.ot-day {
+.ot-time {
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-xs);
+  font-variant-numeric: tabular-nums;
 }
 
 /* La seule colonne qu'on parcourt de haut en bas : chiffres de largeur fixe,

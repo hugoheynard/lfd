@@ -38,6 +38,7 @@ import {
   type OrderListFilterKey,
   type OrderListFilters,
 } from '../order-list-filters';
+import { SitePaletteStore } from '../../shared/logistics-colors/site-palette.store';
 import { AdminOrdersService } from '../orders.service';
 import { OrdersTable } from '../orders-table/orders-table';
 
@@ -102,6 +103,8 @@ export class OrdersListPage {
   private readonly orders = inject(AdminOrdersService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  /** La couleur de la colonne « Mode » — relue à chaque ouverture, cf. `SitePaletteStore`. */
+  protected readonly palette = inject(SitePaletteStore);
 
   protected readonly filters = computed<OrderListFilters>(
     () =>
@@ -150,6 +153,7 @@ export class OrdersListPage {
   private generation = 0;
 
   constructor() {
+    void this.palette.refresh();
     effect(() => {
       const filters = this.filters();
       untracked(() => void this.load(filters));

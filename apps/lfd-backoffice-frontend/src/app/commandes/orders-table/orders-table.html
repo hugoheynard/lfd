@@ -6,6 +6,7 @@
   [columns]="columns()"
   [rows]="rows()"
   [rowKey]="rowKey"
+  [rowTone]="rowTone"
   [empty]="empty()"
   [loading]="loading()"
   (rowClick)="opened.emit($event)"
@@ -35,17 +36,36 @@
 
   <ng-template foldCell="site" let-row>{{ site(row) }}</ng-template>
 
-  <ng-template foldCell="placedAt" let-row>{{ date(row) }}</ng-template>
-
-  <ng-template foldCell="fulfillment" let-row>
-    <span class="ot-when">
-      <span>{{ method(row) }}</span>
-      <span class="ot-day">{{ day(row) ?? '—' }}</span>
+  <ng-template foldCell="placedAt" let-row>
+    <span class="ot-stack" data-placed>
+      <span>{{ date(row) }}</span>
+      <span class="ot-time">{{ placedTime(row) }}</span>
     </span>
   </ng-template>
 
+  <ng-template foldCell="fulfillmentDay" let-row>
+    <span class="ot-stack" data-service>
+      <span>{{ day(row) ?? '—' }}</span>
+      @if (serviceTime(row); as time) {
+        <span class="ot-time">{{ time }}</span>
+      }
+    </span>
+  </ng-template>
+
+  <ng-template foldCell="mode" let-row>
+    <app-logistics-swatch [category]="mode(row)" data-mode />
+  </ng-template>
+
   <ng-template foldCell="status" let-row>
-    <fold-badge [variant]="statusTone(row)" [content]="status(row)" />
+    @if (row.offPlan) {
+      <!-- Lot O3 (§8.3) : reçue par l'équipe sur un plan arrêté, pas encore reprise. -->
+      <span class="ot-stack" data-off-plan>
+        <fold-badge variant="alert" content="Hors plan" />
+        <span class="ot-time">Reprendre la journée au fournil</span>
+      </span>
+    } @else {
+      <fold-badge [variant]="statusTone(row)" [content]="status(row)" />
+    }
   </ng-template>
 
   <ng-template foldCell="paymentStatus" let-row>

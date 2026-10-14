@@ -56,7 +56,7 @@ describe("« Proposer » sans socle", () => {
     expect(refusal(refused)).toMatchObject({
       code: "delivery.no_measured_vehicle",
       message:
-        "Aucun véhicule en service n'a ses cotes : renseignez la longueur, la largeur et la hauteur utiles d'un véhicule dans Livraison → Véhicules avant de proposer des tournées.",
+        "Aucun véhicule en service n'a ses cotes — il manque la longueur, la largeur ou la hauteur utiles de « Kangoo » : renseignez-les dans Livraison → Véhicules avant de proposer des tournées.",
     });
   });
 

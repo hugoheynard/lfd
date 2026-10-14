@@ -77,6 +77,14 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
+  // Ces cas parlent de l'heure limite, et en éprouvent plusieurs sur
+  // AUJOURD'HUI : le jour même est ouvert, sans quoi le réglage du jour même
+  // (fermé par défaut depuis le lot O3, §8.3) refuserait avant elle.
+  await ctx
+    .asSub(STAFF)
+    .patch("/admin/order-cutoff-settings")
+    .send({ sameDayAllowed: true })
+    .expect(204);
   const point = await ctx.prisma.site.create({
     data: { ...LABO, isDefault: true },
     select: { id: true },

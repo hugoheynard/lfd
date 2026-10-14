@@ -213,6 +213,31 @@ model OrderOpening {
   @@schema("public")
 }
 
+/// **L'interrupteur de l'heure limite générale** (plan
+/// `documentation/commandes/plan-reglages-commandes.md`, §8.1, lot O3, Hugo
+/// 2026-10-14). Désactivée, la règle `OrderCutoff` n'est plus servie (passation,
+/// boutique, fournil) ; elle reste en base. Une ligne au plus, clé `orders` ;
+/// **ligne absente = activée**. Les limites produit n'en dépendent pas.
+model OrderCutoffSettings {
+  /// Toujours `orders` : il n'y a qu'un réglage.
+  key String @id
+
+  enabled Boolean @default(true)
+  /// Une commande peut-elle viser AUJOURD'HUI ? (Hugo, 2026-10-14, §8.3.) Non
+  /// par défaut ; aucune règle de délai codée en dur ailleurs.
+  sameDayAllowed Boolean @default(false) @map("same_day_allowed")
+
+  /// Instant du geste, lu du `Clock`.
+  updatedAt        DateTime @map("updated_at")
+  /// Qui l'a posé, figé au geste : l'id de fiche staff, un nom et un rôle instantanés.
+  updatedByStaffId String   @map("updated_by_staff_id")
+  updatedByName    String   @map("updated_by_name")
+  updatedByRole    String   @map("updated_by_role")
+
+  @@map("order_cutoff_settings")
+  @@schema("public")
+}
+
 /// **Ce que la boutique permet au client d'annuler lui-même** (plan
 /// `documentation/commandes/annulation/annulation-par-le-client.md`, lot C6,
 /// C6.5). Une ligne, clé `orders`, posée délai ACTIF (24 h) depuis `20261013400000` ; ligne absente =

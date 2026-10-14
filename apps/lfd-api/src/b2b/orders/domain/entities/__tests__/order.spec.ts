@@ -1,4 +1,5 @@
 import { BilledWithoutCompanyError } from "../../errors/order-payer-errors.js";
+import { ProductionPlanClosedError } from "../../errors/production-plan-closed.error.js";
 import type { BillingAddressPayload } from "@lfd/contracts";
 
 import {
@@ -577,5 +578,27 @@ describe("Order.draft — le payeur copié (plan-sous-comptes §2.3)", () => {
     expect(() => Order.draft(draftInput({ companyId: null, billedCompanyId: "alpes" }))).toThrow(
       BilledWithoutCompanyError,
     );
+  });
+});
+
+/**
+ * Lot O3 (`plan-reglages-commandes.md` §8.3, Hugo 2026-10-14) : seule une
+ * saisie de l'équipe est reçue sur un plan arrêté ; un client est refusé.
+ */
+describe("Order — reçue hors plan", () => {
+  it("une saisie de l'équipe est reçue, et le dit à la persistance", () => {
+    const order = Order.draft(draftInput({ placedByStaffId: "staff_1" }));
+    order.receiveOffPlan("2026-10-15");
+    order.deferPayment();
+
+    expect(order.toPersistence().placedOffPlan).toBe(true);
+  });
+
+  it("une commande du client est refusée, et rien n'est marqué", () => {
+    const order = Order.draft(draftInput());
+
+    expect(() => order.receiveOffPlan("2026-10-15")).toThrow(ProductionPlanClosedError);
+    order.deferPayment();
+    expect(order.toPersistence().placedOffPlan).toBe(false);
   });
 });

@@ -26,6 +26,7 @@ import {
   InvalidOrderFulfillmentError,
   PickupClosedAtRequestedTimeError,
 } from "../../domain/errors/order-errors.js";
+import { ProductionPlanClosedError } from "../../domain/errors/production-plan-closed.error.js";
 import { OrderCutoffReader } from "../../domain/ports/order-cutoff.reader.js";
 import { OrderCutoffWaiverGate } from "../../domain/ports/order-cutoff-waiver.gate.js";
 import { OrderDeliveryVatReader } from "../../domain/ports/order-delivery-vat.reader.js";
@@ -36,6 +37,7 @@ import { ProductCatalogReader } from "../../../catalog/domain/ports/product-cata
 import { ensureWithinOrderCutoff } from "../../domain/services/order-cutoff-guard.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { OrderOperations } from "./order-operations.service.js";
+import { OrderPlanGate } from "./order-plan-gate.service.js";
 import { OrderLinePricing, type ResolvedOrderLine } from "./order-line-pricing.service.js";
 import type { OrderParties } from "./order-parties.js";
 import { lineTotalCents } from "@lfd/money";
@@ -126,6 +128,7 @@ export class OrderDrafting {
     private readonly operations: OrderOperations,
     private readonly payers: OrderPayerReader,
     private readonly deliveryVat: OrderDeliveryVatReader,
+    private readonly plans: OrderPlanGate,
   ) {}
 
   /**
@@ -152,6 +155,10 @@ export class OrderDrafting {
     // un refus — payeur suspendu, compte de groupe — ne doit rien coûter de
     // plus que cette lecture (plan-sous-comptes §2.3, §2.4).
     const billedCompanyId = await this.payerOf(parties.companyId);
+    // L'arrêt du plan ferme la journée au CLIENT, heure limite ou pas (lot O3) :
+    // refusé ici, tôt et sans verrou ; `holdPlan` le reprend sous verrou. La
+    // saisie de l'équipe passe, et sera reçue « hors plan » (§8.3).
+    await this.ensureDayOpen(content.requestedDeliveryDate, parties);
     // Lue AVANT la résolution, et l'ordre est un choix. Une validation qui
     // tomberait pile entre les deux ne peut alors que rendre l'estampille
     // ANCIENNE de ce que les lignes portent — jamais l'inverse. Une estampille
@@ -234,6 +241,39 @@ export class OrderDrafting {
       voucher,
     });
     return { order, waiverUsed };
+  }
+
+  /**
+   * Le premier jour qu'on peut demander, selon les réglages seuls (§8.3) : le
+   * plan arrêté refuse le client ; le réglage « jour même » refuse aujourd'hui
+   * à tous — sauf à l'équipe sur un plan arrêté, qui reçoit « hors plan » : la
+   * marchandise est déjà en fabrication, et le retirage décidera.
+   */
+  private async ensureDayOpen(day: string | null, parties: OrderParties): Promise<void> {
+    const closed = await this.plans.isClosed(day);
+    if (closed && parties.placedByStaffId === null) {
+      throw new ProductionPlanClosedError(day ?? "");
+    }
+    if (!closed) {
+      await this.plans.ensureNotTooSoon(day);
+    }
+  }
+
+  /**
+   * **La journée tenue pour la commande qu'on écrit** — à appeler en PREMIER
+   * dans la transaction qui la persiste, avant toute ligne `orders` (plan
+   * `plan-reglages-commandes.md`, §8.1, S5). Le verrou de la journée tient
+   * jusqu'au `COMMIT` : l'arrêt du plan attend, ou la commande est refusée.
+   *
+   * Plan arrêté : la saisie de l'équipe est reçue « hors plan », le client
+   * refusé — c'est l'agrégat qui tranche (`Order.receiveOffPlan`, §8.3).
+   *
+   * @throws {ProductionPlanClosedError} le plan a été arrêté depuis `draft`, pour un client.
+   */
+  async holdPlan(order: Order, requestedDeliveryDate: string | null): Promise<void> {
+    if (requestedDeliveryDate !== null && (await this.plans.hold(requestedDeliveryDate))) {
+      order.receiveOffPlan(requestedDeliveryDate);
+    }
   }
 
   /**

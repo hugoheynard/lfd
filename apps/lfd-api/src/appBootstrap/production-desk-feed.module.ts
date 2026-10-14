@@ -1,10 +1,14 @@
 import { Global, Module } from "@nestjs/common";
 
 import { ProductionOrderWithdrawalDesk } from "../production/application/services/production-order-withdrawal.desk.js";
+import { ProductionPlanAdmissionDesk } from "../production/application/services/production-plan-admission.desk.js";
 import {
+  ClosedPlansReader,
   OrderInscriptionReader,
   OrderWithdrawalDesk,
+  PlanAdmissionDesk,
 } from "../production/channels/commerce/index.js";
+import { PrismaClosedPlansReader } from "../production/infrastructure/prisma-closed-plans.reader.js";
 import { PrismaOrderInscriptionReader } from "../production/infrastructure/prisma-order-inscription.reader.js";
 import { ProductionModule } from "../production/production.module.js";
 
@@ -31,7 +35,11 @@ import { ProductionModule } from "../production/production.module.js";
   providers: [
     { provide: OrderWithdrawalDesk, useExisting: ProductionOrderWithdrawalDesk },
     { provide: OrderInscriptionReader, useExisting: PrismaOrderInscriptionReader },
+    // L'arrêt du plan comme limite (lot O3, 2026-10-14) : la boutique lit les
+    // journées arrêtées, la passation s'y admet sous le verrou de la journée.
+    { provide: ClosedPlansReader, useExisting: PrismaClosedPlansReader },
+    { provide: PlanAdmissionDesk, useExisting: ProductionPlanAdmissionDesk },
   ],
-  exports: [OrderWithdrawalDesk, OrderInscriptionReader],
+  exports: [OrderWithdrawalDesk, OrderInscriptionReader, ClosedPlansReader, PlanAdmissionDesk],
 })
 export class ProductionDeskFeedModule {}

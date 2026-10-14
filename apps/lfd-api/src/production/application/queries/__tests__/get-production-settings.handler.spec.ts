@@ -9,7 +9,17 @@ import {
   SettingsReader,
   SettingsTable,
 } from "../../__tests__/settings-doubles.js";
+import { OrderCutoffSwitchReader } from "../../../channels/commerce/order-cutoff-switch.reader.js";
 import { GetProductionSettingsHandler } from "../get-production-settings.handler.js";
+
+/** L'interrupteur de l'heure limite générale au commerce, fixé par le test. */
+class CutoffSwitch extends OrderCutoffSwitchReader {
+  on = true;
+
+  enabled(): Promise<boolean> {
+    return Promise.resolve(this.on);
+  }
+}
 
 const NOW = new Date();
 const TODAY = todayOf(NOW);
@@ -18,12 +28,14 @@ function subject() {
   const settings = new SettingsTable();
   const closedDays = new ClosedDaysTable();
   const cutoffs = new CutoffRules();
+  const cutoffSwitch = new CutoffSwitch();
   const handler = new GetProductionSettingsHandler(
     new SettingsReader(settings, closedDays),
     cutoffs,
     new FixedClock(NOW),
+    cutoffSwitch,
   );
-  return { settings, closedDays, cutoffs, handler };
+  return { settings, closedDays, cutoffs, cutoffSwitch, handler };
 }
 
 describe("GetProductionSettingsHandler", () => {
@@ -33,6 +45,7 @@ describe("GetProductionSettingsHandler", () => {
     expect(await handler.execute()).toEqual({
       close: { mode: "manual", closeAt: null, alertAt: "20:00" },
       latestOrderCutoff: null,
+      orderCutoffEnabled: true,
       closedDays: [],
     });
   });
@@ -53,7 +66,22 @@ describe("GetProductionSettingsHandler", () => {
     expect(await handler.execute()).toEqual({
       close: { mode: "auto", closeAt: "21:00", alertAt: null },
       latestOrderCutoff: { daysBefore: 1, time: "19:15" },
+      orderCutoffEnabled: true,
       closedDays: [TODAY, addDays(TODAY, 5)],
+    });
+  });
+
+  /**
+   * Lot O3 (B2) : désactivée, le commerce ne rend plus de règle — et la page
+   * doit pouvoir dire « désactivée » plutôt que « aucune heure limite ».
+   */
+  it("dit que l'heure limite générale est désactivée, sans heure limite à respecter", async () => {
+    const { handler, cutoffSwitch } = subject();
+    cutoffSwitch.on = false;
+
+    expect(await handler.execute()).toMatchObject({
+      latestOrderCutoff: null,
+      orderCutoffEnabled: false,
     });
   });
 });

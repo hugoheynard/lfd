@@ -77,6 +77,10 @@ import { OrderReader } from "../../../domain/ports/order.reader.js";
 import { UnitOfWork } from "../../../../../platform/database/unit-of-work.js";
 import { OrderLateFeeReader } from "../../../domain/ports/order-late-fee.reader.js";
 import { FixedDeliveryVat } from "./fixed-delivery-vat.js";
+import { OrderPlanGate } from "../../services/order-plan-gate.service.js";
+import { FixedClosedPlans, gateOf, openPlanGate, RecordingAdmissionDesk } from "./plan-doubles.js";
+import { ProductionPlanClosedError } from "../../../domain/errors/production-plan-closed.error.js";
+import { SameDayOrderClosedError } from "../../../domain/errors/same-day-order-closed.error.js";
 import { OrderLinePricing } from "../../services/order-line-pricing.service.js";
 import { Pricer } from "../../../../pricing/application/pricer.js";
 import { PricingMaterialsLoader } from "../../../../pricing/application/pricing-materials.loader.js";
@@ -421,6 +425,7 @@ function drafting(
     readonly book?: DeliveryDefaultsReader;
     readonly payers?: FixedOrderPayers;
     readonly deliveryVat?: FixedDeliveryVat;
+    readonly plans?: OrderPlanGate;
   } = {},
 ): OrderDrafting {
   return new OrderDrafting(
@@ -457,6 +462,7 @@ function drafting(
     new OrderOperations(audience.sale ?? noSaleOperations(PRICED_AT)),
     audience.payers ?? ownPayers(),
     audience.deliveryVat ?? new FixedDeliveryVat(),
+    audience.plans ?? openPlanGate(),
   );
 }
 
@@ -1899,5 +1905,119 @@ describe("PlaceOrderHandler — la boutique fermée à une clientèle", () => {
 
     await handler.execute(new PlaceOrderCommand("u1", payload(), "c1"));
     expect(sink.placed).not.toBeNull();
+  });
+});
+
+/**
+ * **L'arrêt du plan est une limite** (lot O3 de `plan-reglages-commandes.md`,
+ * 2026-10-14). Régression O5 : une commande passait sur un plan arrêté, hors
+ * du compte à produire, sans que personne le sache.
+ */
+describe("PlaceOrderHandler — l'arrêt du plan", () => {
+  const DAY = "2026-09-01";
+
+  function planHandler(over: {
+    readonly sink: { placed: OrderToPlace | null };
+    readonly plans: OrderPlanGate;
+    readonly intents?: { intent: CreateIntentParams | null };
+    readonly cancelled?: string[];
+  }): PlaceOrderHandler {
+    const gateway = payments(over.intents);
+    const cancelled = over.cancelled ?? [];
+    return new PlaceOrderHandler(
+      guard(null, null),
+      drafting(pickups(LABO_POINT), zones(), versionsAt(CURRENT_VERSION), { plans: over.plans }),
+      capturingRepo(over.sink),
+      {
+        createIntent: (params) => gateway.createIntent(params),
+        retrieveIntent: (id) => gateway.retrieveIntent(id),
+        publishableKey: () => gateway.publishableKey(),
+        parseWebhook: (body, signature) => gateway.parseWebhook(body, signature),
+        cancelIntent: (paymentIntentId) => {
+          cancelled.push(paymentIntentId);
+          return Promise.resolve({ kind: "cancelled" });
+        },
+      },
+      events(),
+      noWaivers,
+      new FixedClock(PRICED_AT),
+      freeKeys,
+      noReader,
+      directWork,
+      new FixedVoucherQuotes(),
+      new RecordingRedemption(),
+      new RecordingDurable(),
+      intakeAt(),
+    );
+  }
+
+  it("refuse une journée au plan arrêté AVANT l'intention Stripe, sans rien écrire", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const intents = { intent: null as CreateIntentParams | null };
+    const desk = new RecordingAdmissionDesk([DAY]);
+    const plans = gateOf(new FixedClosedPlans([DAY]), desk);
+
+    await expect(
+      planHandler({ sink, plans, intents }).execute(
+        new PlaceOrderCommand("u1", payload({ requestedDeliveryDate: DAY }), null),
+      ),
+    ).rejects.toBeInstanceOf(ProductionPlanClosedError);
+
+    expect(intents.intent).toBeNull();
+    expect(sink.placed).toBeNull();
+    expect(desk.held).toEqual([]);
+  });
+
+  it("arrêté entre la composition et l'écriture : refusé sous le verrou, intention annulée", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const cancelled: string[] = [];
+    const plans = gateOf(new FixedClosedPlans(), new RecordingAdmissionDesk([DAY]));
+
+    await expect(
+      planHandler({ sink, plans, cancelled }).execute(
+        new PlaceOrderCommand("u1", payload({ requestedDeliveryDate: DAY }), null),
+      ),
+    ).rejects.toBeInstanceOf(ProductionPlanClosedError);
+
+    expect(sink.placed).toBeNull();
+    expect(cancelled).toEqual(["pi_test_1"]);
+  });
+
+  it("tient la journée AVANT d'écrire la commande, dans la transaction", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const writtenWhenHeld: boolean[] = [];
+    const desk = new RecordingAdmissionDesk([], () => writtenWhenHeld.push(sink.placed !== null));
+
+    await planHandler({
+      sink,
+      plans: gateOf(new FixedClosedPlans(), desk),
+    }).execute(new PlaceOrderCommand("u1", payload({ requestedDeliveryDate: DAY }), null));
+
+    expect(desk.held).toEqual([DAY]);
+    expect(writtenWhenHeld).toEqual([false]);
+    expect(sink.placed).not.toBeNull();
+  });
+
+  it("le jour même, fermé par le réglage : refusé au client avant l'intention", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const intents = { intent: null as CreateIntentParams | null };
+
+    await expect(
+      planHandler({ sink, plans: gateOf(), intents }).execute(
+        new PlaceOrderCommand("u1", payload({ requestedDeliveryDate: "2026-01-01" }), null),
+      ),
+    ).rejects.toBeInstanceOf(SameDayOrderClosedError);
+    expect(intents.intent).toBeNull();
+  });
+
+  it("le jour même, ouvert par le réglage : la commande passe", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const plans = gateOf(new FixedClosedPlans(), new RecordingAdmissionDesk(), true);
+
+    await planHandler({ sink, plans }).execute(
+      new PlaceOrderCommand("u1", payload({ requestedDeliveryDate: "2026-01-01" }), null),
+    );
+
+    expect(sink.placed?.placedOffPlan).toBe(false);
   });
 });

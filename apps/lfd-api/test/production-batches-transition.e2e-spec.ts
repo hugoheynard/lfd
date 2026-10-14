@@ -37,6 +37,7 @@ import {
   storedBatches,
   worksheetLine,
 } from "./production-day-fixture.js";
+import { placeLateByStaff } from "./staff-late-order.js";
 
 let ctx: E2eContext;
 let issued: string[];
@@ -99,7 +100,7 @@ describe("le rattrapage", () => {
     // Un retirage réécrit le compte : nouveaux `id`, et plus de `done_*`. Un
     // poste resté sur l'ancien binaire recoche : la ligne a déjà une fournée,
     // le rattrapage ne la double pas.
-    await place(ctx, issued, [{ sku: CROISSANT, quantity: 12 }]);
+    await placeLateByStaff(ctx, SERVICE_DAY, [{ sku: CROISSANT, quantity: 12 }]);
     await retake(ctx);
     await legacyCheck();
     await runBackfill();
@@ -123,7 +124,7 @@ describe("le retirage", () => {
     await place(ctx, issued, [{ sku: CROISSANT, quantity: 30 }]);
     await closePlan(ctx);
     await legacyCheck();
-    await place(ctx, issued, [{ sku: CROISSANT, quantity: 12 }]);
+    await placeLateByStaff(ctx, SERVICE_DAY, [{ sku: CROISSANT, quantity: 12 }]);
 
     await retake(ctx);
 
@@ -153,7 +154,7 @@ describe("le retirage", () => {
       where: { serviceDay: SERVICE_DAY },
       select: { reference: true },
     });
-    await place(ctx, issued, [{ sku: CROISSANT, quantity: 6 }]);
+    await placeLateByStaff(ctx, SERVICE_DAY, [{ sku: CROISSANT, quantity: 6 }]);
 
     let retaking: Promise<void> = Promise.resolve();
     await ctx.prisma.$transaction(async (tx) => {
@@ -192,7 +193,7 @@ describe("le retirage", () => {
   it("le verrou n'empêche pas de coliser après un retirage", async () => {
     await place(ctx, issued, [{ sku: CROISSANT, quantity: 12 }]);
     await closePlan(ctx);
-    await place(ctx, issued, [{ sku: CROISSANT, quantity: 6 }]);
+    await placeLateByStaff(ctx, SERVICE_DAY, [{ sku: CROISSANT, quantity: 6 }]);
     await retake(ctx);
     // Une fournée REMISE au colisage — une coche héritée ne l'est jamais.
     expect(await recordBatch(ctx, "01K6A0000000000000000000T1", 18)).toBe(204);

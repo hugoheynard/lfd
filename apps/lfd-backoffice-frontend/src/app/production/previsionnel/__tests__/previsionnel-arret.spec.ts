@@ -572,6 +572,7 @@ describe('le prévisionnel — arrêter le plan', () => {
       return {
         close: { mode, closeAt: '21:30', alertAt: '20:00' },
         latestOrderCutoff: null,
+        orderCutoffEnabled: true,
         closedDays: [],
       };
     }

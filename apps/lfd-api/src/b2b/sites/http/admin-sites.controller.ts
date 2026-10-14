@@ -75,7 +75,8 @@ export class AdminSitesController {
   /**
    * **La palette de la logistique** — lecture seule (id, nom, couleurs,
    * départ), sans `lfc_site_settings` : le colisage, le tableau des tournées,
-   * le chargement et « Ma tournée » peignent leurs commandes (plan
+   * le chargement, « Ma tournée » et la liste des Commandes (2026-10-14)
+   * peignent leurs commandes (plan
    * `commandes/plan-tri-depart-et-couleurs.md`, L1a). La permission déclarée
    * REMPLACE celle de la ressource de la classe (`StaffAccessGuard`). Déclarée
    * AVANT `:id`, qui l'avalerait sinon.
@@ -86,6 +87,7 @@ export class AdminSitesController {
     "delivery_rounds:read",
     "delivery_loading:read",
     "delivery_driving:read",
+    "b2b_orders:read",
   )
   palette(): Promise<SitePaletteView> {
     return this.queries.execute<GetSitePaletteQuery, SitePaletteView>(new GetSitePaletteQuery());

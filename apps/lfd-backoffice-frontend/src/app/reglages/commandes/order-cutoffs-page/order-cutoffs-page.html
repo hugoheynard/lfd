@@ -6,7 +6,9 @@
   </p>
 
   <div class="blocks">
-    <app-cutoffs-section />
+    <app-cutoff-switch-card (enabledChange)="generalEnabled.set($event)" />
+
+    <app-cutoffs-section [dormant]="!generalEnabled()" />
 
     @if (seesWaivers()) {
       <app-cutoff-waivers-card />
@@ -22,8 +24,14 @@
         <fold-badge titleAction content="À venir" variant="info" />
       </fold-element-title>
       <p class="text">
-        Aujourd'hui, une commande de particulier suit la limite de l'article quand il en porte une,
-        et sinon la limite générale ci-dessus — sans dérogation possible, faute de compte client.
+        @if (generalEnabled()) {
+          Aujourd'hui, une commande de particulier suit la limite de l'article quand il en porte
+          une, et sinon la limite générale ci-dessus — sans dérogation possible, faute de compte
+          client.
+        } @else {
+          Aujourd'hui, une commande de particulier suit la limite de l'article quand il en porte une
+          ; sinon, elle passe tant que le plan de production de la journée n'est pas arrêté.
+        }
       </p>
     </fold-card>
 

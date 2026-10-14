@@ -630,8 +630,8 @@
         </p>
       </div>
     } @else {
-      <!-- Sur les écrans de terrain (`data.newVersion === "banner"`), une version
-           neuve s'annonce au lieu de recharger à la navigation. -->
+      <!-- Une version neuve en ligne s'annonce sur tout écran, en bande fine
+           sous l'en-tête : on finit son opération, puis on recharge. -->
       <app-new-version-banner />
       <router-outlet />
     }

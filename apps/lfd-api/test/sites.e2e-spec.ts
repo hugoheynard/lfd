@@ -299,7 +299,7 @@ async function staffWith(key: string, grants: readonly RoleGrant[]): Promise<str
 }
 
 describe("admin/sites/palette — la palette de la logistique (plan du tri et des couleurs, L1a)", () => {
-  it("se lit sous le colisage ou la livraison, SANS `lfc_site_settings` — id, nom, couleurs", async () => {
+  it("se lit sous le colisage, la livraison ou les commandes, SANS `lfc_site_settings` — id, nom, couleurs", async () => {
     const id = await create("Val Village");
     await staff()
       .put(`/admin/sites/${id}/couleurs`)
@@ -311,6 +311,8 @@ describe("admin/sites/palette — la palette de la logistique (plan du tri et de
       ["composeur", "delivery_rounds"],
       ["chargeur", "delivery_loading"],
       ["livreur", "delivery_driving"],
+      // La liste des Commandes peint sa colonne « Mode » (2026-10-14).
+      ["commercial", "b2b_orders"],
     ] as const) {
       const sub = await staffWith(key, [{ resource, action: "read" }]);
       const response = await ctx.asSub(sub).get("/admin/sites/palette").expect(200);
@@ -328,7 +330,7 @@ describe("admin/sites/palette — la palette de la logistique (plan du tri et de
     }
   });
 
-  it("refuse (403) un membre sans aucun des quatre droits", async () => {
+  it("refuse (403) un membre sans aucun des cinq droits", async () => {
     const sub = await staffWith("compta", [{ resource: "b2b_settings", action: "write" }]);
 
     await ctx.asSub(sub).get("/admin/sites/palette").expect(403);

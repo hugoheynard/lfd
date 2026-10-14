@@ -71,6 +71,7 @@ describe("le réglage d'arrêt du plan", () => {
     expect(await read()).toEqual({
       close: { mode: "manual", closeAt: null, alertAt: "20:00" },
       latestOrderCutoff: null,
+      orderCutoffEnabled: true,
       closedDays: [],
     });
   });

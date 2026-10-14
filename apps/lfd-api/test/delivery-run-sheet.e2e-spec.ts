@@ -28,6 +28,7 @@ import {
   serviceDay,
   type E2eContext,
 } from "./e2e-harness.js";
+import { grantAccount, placeByStaff } from "./staff-late-order.js";
 import { pngOf } from "./delivery-procedure-scene.js";
 import { addVehicle, assign, openRound } from "./delivery-rounds-scene.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
@@ -295,7 +296,7 @@ describe("la feuille de route du jour", () => {
   });
 
   it("🔴 signale la retardataire, passée après la clôture, sans feuille d'atelier", async () => {
-    const { addressId } = await seedCompany(OWNER, "Boulangerie du Col");
+    const { addressId, companyId } = await seedCompany(OWNER, "Boulangerie du Col");
     const planned = await place(OWNER, "delivery", addressId);
 
     const open = await runSheet();
@@ -304,7 +305,28 @@ describe("la feuille de route du jour", () => {
     expect(open.stops).toHaveLength(1);
 
     await staff().post(`/admin/production/batch/${DAY}/close`).expect(201);
-    const late = await place(OWNER, "delivery", addressId);
+    // Un client ne passe plus après l'arrêt (O3, §8.3) : la retardataire est saisie par l'équipe.
+    const owner = await ctx.prisma.user.findFirstOrThrow({
+      where: { auth0Sub: OWNER },
+      select: { id: true },
+    });
+    // La saisie de l'équipe se règle au compte : la société y a droit.
+    await grantAccount(ctx, companyId);
+    const late = (
+      await placeByStaff(
+        ctx,
+        {
+          requestedDeliveryDate: DAY,
+          fulfillmentMethod: "delivery",
+          deliveryAddress: SITE,
+          deliveryAddressId: addressId,
+          requestedWindow: { start: null, end: "10:00" },
+          note: "par la cour",
+          lines: [{ sku: "VIE-001", quantity: 4 }],
+        },
+        { companyId, buyerUserId: owner.id },
+      )
+    ).id;
 
     const closed = await runSheet();
     expect(closed.stops.map((stop) => [stop.orderId, stop.withoutAtelierSheet]).sort()).toEqual(

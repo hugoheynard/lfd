@@ -71,7 +71,12 @@
             }
             <p class="note">{{ boundsHint }}</p>
 
-            @if (autoImpossible(); as reason) {
+            @if (cutoffOff()) {
+              <fold-callout variant="info" data-cutoff-off>
+                L’heure limite générale de commande est désactivée : rien ne borne l’heure d’arrêt.
+                C’est l’arrêt du plan qui ferme la journée aux commandes.
+              </fold-callout>
+            } @else if (autoImpossible(); as reason) {
               <fold-callout variant="warning" data-auto-impossible>{{ reason }}</fold-callout>
             } @else if (cutoffSentence(); as sentence) {
               <fold-callout variant="info" data-cutoff>

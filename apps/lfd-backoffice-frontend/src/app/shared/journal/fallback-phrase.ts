@@ -100,6 +100,7 @@ const SUBJECT_NOUNS: Readonly<Record<string, string>> = {
   operation: 'l’opération',
   order_cutoff: 'l’heure limite',
   order_cutoff_waiver: 'la dérogation d’heure limite',
+  order_cutoff_settings: 'l’heure limite générale',
   order_late_fee: 'la surtaxe de retard',
   order_time_limit: 'l’heure limite',
   payment_mandate: 'le mandat',

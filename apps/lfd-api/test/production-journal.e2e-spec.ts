@@ -27,6 +27,7 @@ import {
   serviceDay,
   type E2eContext,
 } from "./e2e-harness.js";
+import { placeLateByStaff } from "./staff-late-order.js";
 import { createUser } from "./factories.js";
 
 const MEMBER = "auth0|member-production-journal";
@@ -129,6 +130,11 @@ async function place(quantity: number): Promise<void> {
   await settleCardPayments(ctx, issuedIntents);
 }
 
+/** La retardataire, saisie par l'équipe — un client ne passe plus après l'arrêt (O3, §8.3). */
+async function placeLate(quantity: number): Promise<void> {
+  await placeLateByStaff(ctx, DAY, [{ sku: CROISSANT, quantity }]);
+}
+
 const close = () => staff().post(`/admin/production/batch/${DAY}/close`);
 const retake = () => staff().post(`/admin/production/worksheet/${DAY}/retake`);
 
@@ -184,7 +190,7 @@ describe("reprendre le tirage", () => {
   it("un fait quand le retirage absorbe, aucun quand il n'absorbe rien", async () => {
     await place(12);
     await close().expect(201);
-    await place(6);
+    await placeLate(6);
 
     await retake().expect(201);
     await retake().expect(201);
@@ -203,7 +209,7 @@ describe("reprendre le tirage", () => {
   it("ANNULE le retirage quand le journal refuse d'écrire", async () => {
     await place(12);
     await close().expect(201);
-    await place(6);
+    await placeLate(6);
     await breakJournal("production_day.retaken");
 
     const response = await retake();

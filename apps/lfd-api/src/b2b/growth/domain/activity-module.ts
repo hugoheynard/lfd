@@ -98,6 +98,9 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // ⚠️ `order_cutoff_waiver.` ne tombe PAS sous `order_cutoff.` — le point
     // fait partie du préfixe —, d'où son entrée propre.
     "order_cutoff_waiver.",
+    // L'interrupteur de l'heure limite générale (lot O3, 2026-10-14) — même
+    // remarque : `order_cutoff_settings.` ne tombe pas sous `order_cutoff.`.
+    "order_cutoff_settings.",
     "order_late_fee.",
     // La TVA du port (2026-10-08) : un réglage de la commande, comme la surtaxe.
     "order_delivery_vat.",
