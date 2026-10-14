@@ -100,3 +100,33 @@ paie en branchements ce que A paierait en exceptions.
   chaque fois ? Proposé : saisi chaque fois d'abord, gabarit plus tard.
 - **Q-R5** — Faut-il en tenir un coût interne (valorisation du stock du
   site) ? Proposé : non pour R1–R5 ; si oui, c'est un plan d'argent à part.
+
+## 7. Contradiction de `vitruve` (2026-10-14) — le §3 est à refaire
+
+L'option B a été chiffrée trop bas. Toute la chaîne aval est **en forme de
+commande**, et un réapprovisionnement qui y entre par un identifiant préfixé
+en devient un discriminant implicite :
+
+- `ProducibleOrder` exige `fulfillmentMethod` (`pickup` | `delivery`),
+  `clientele`, `customerLabel` ;
+- `production.day_closed`, `production.packing_list_drawn` et la table
+  `packing_order` (clé `(service_day, order_id)`, `fulfillment_method` non
+  nul) supposent une commande ;
+- `packing.order_packed` → `MarkOrderReadyCommand` lève
+  `OrderReferenceNotFoundError` sur un id inconnu : un abonné durable en
+  lettre morte à chaque réapprovisionnement colisé ;
+- le rangement au transfert lit `TransferOrdersReader` (commandes seulement)
+  et part du fait `commerce-order-placed` ; il faut un fait neuf et son
+  annulation, et l'ordre des verrous de `OrderWithdrawalDesk` ;
+- l'échéance du transfert vit dans `delivery` : le commerce la lirait par un
+  port à nommer.
+
+Et deux promesses fausses : les « quantités et multiples » de l'article
+**n'existent pas** (`OrderLine` ne vérifie qu'un entier > 0) ; l'heure limite
+est indexée par point de retrait et jour de semaine, et la limite par
+article se lit par **audience** (`pro` | `public`), qu'un réapprovisionnement
+n'a pas. `lint:price-door` ne tiendrait pas l'absence de champ monétaire.
+
+**Suite** : mesurer honnêtement ce que coûterait l'option A (où une commande
+compte de l'argent : chiffre d'affaires, facturation, règlement), puis
+re-trancher Q-R1 avec un champ `kind` explicite au contrat dans les deux cas.
