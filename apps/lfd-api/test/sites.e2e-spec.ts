@@ -311,8 +311,10 @@ describe("admin/sites/palette — la palette de la logistique (plan du tri et de
       ["composeur", "delivery_rounds"],
       ["chargeur", "delivery_loading"],
       ["livreur", "delivery_driving"],
-      // La liste des Commandes peint sa colonne « Mode » (2026-10-14).
-      ["commercial", "b2b_orders"],
+      // La liste des Commandes peint sa colonne « Mode » (2026-10-14). Pas la
+      // clé `commercial` : c'est un rôle de la graine, que le reset remet, et
+      // sa création répondrait 409.
+      ["preneur-de-commandes", "b2b_orders"],
     ] as const) {
       const sub = await staffWith(key, [{ resource, action: "read" }]);
       const response = await ctx.asSub(sub).get("/admin/sites/palette").expect(200);

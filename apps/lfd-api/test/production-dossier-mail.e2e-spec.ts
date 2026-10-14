@@ -22,6 +22,7 @@ import {
   place,
   retake,
 } from "./production-day-fixture.js";
+import { placeLateByStaff } from "./staff-late-order.js";
 
 interface SentMail {
   readonly to: string;
@@ -133,7 +134,8 @@ describe("l'envoi du dossier du jour (E3)", () => {
     await place(ctx, issued, [{ sku: CROISSANT, quantity: 12 }]);
     await closePlan(ctx);
     await ctx.drain();
-    await place(ctx, issued, [{ sku: CROISSANT, quantity: 4 }]);
+    // Le plan est arrêté : depuis O3, seule la saisie de l'équipe y entre.
+    await placeLateByStaff(ctx, SERVICE_DAY, [{ sku: CROISSANT, quantity: 4 }]);
 
     await retake(ctx);
     await ctx.drain();

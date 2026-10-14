@@ -121,9 +121,6 @@ import { PrismaOrderSheetColorSource } from "./infrastructure/prisma-order-sheet
 import { DiskOrderSheetLogoSource } from "./infrastructure/disk-order-sheet-logo.source.js";
 import { MailDeliveryEnRoute } from "./application/handlers/mail-delivery-en-route.handler.js";
 import { OnProductionDayClosed } from "./application/handlers/on-production-day-closed.handler.js";
-import { OnProductionDayReopened } from "./application/handlers/on-production-day-reopened.handler.js";
-import { OrderPlanRelease } from "./domain/ports/order-plan-release.js";
-import { PrismaOrderPlanRelease } from "./infrastructure/prisma-order-plan-release.js";
 import { OnOrderHandedOver } from "./application/handlers/on-order-handed-over.handler.js";
 import { OnPackingOrderPacked } from "./application/handlers/on-packing-order-packed.handler.js";
 import { PrismaDayOrdersSource } from "./infrastructure/prisma-day-orders.source.js";
@@ -320,10 +317,6 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     DueThresholds,
     { provide: DeadlineOrdersReader, useClass: PrismaDeadlineOrdersReader },
     OnProductionDayClosed,
-    // La réouverture d'une journée (2026-10-14) : son abonné, et le seul port
-    // qu'il écrit.
-    OnProductionDayReopened,
-    { provide: OrderPlanRelease, useClass: PrismaOrderPlanRelease },
     // Le bac fermé au colisage — le seul fait « bac fait » depuis K3c.
     OnPackingOrderPacked,
     OnOrderHandedOver,

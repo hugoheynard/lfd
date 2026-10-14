@@ -14,6 +14,7 @@ import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { ADMIN_VERIFIER_OVERRIDE, admin } from "./delivery-rounds-scene.js";
 import { seedDriverRole } from "./delivery-driver-scene.js";
+import { ROAD_ROUTING_OVERRIDES } from "./delivery-routing-scene.js";
 
 const RELOAD = "/admin/dev/seed/reload";
 /** Cf. `dev-seed-driver.e2e-spec.ts` : un rechargement complet est long. */
@@ -41,7 +42,13 @@ let ctx: E2eContext;
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
-    overrides: [ADMIN_VERIFIER_OVERRIDE, { token: PaymentGateway, value: fakeGateway }],
+    // Le rechargement compose la tournée de l'après-midi (`DayComposer`) : sans
+    // le double routier, la CI — qui n'a pas d'OSRM — répond 409 (2026-10-14).
+    overrides: [
+      ADMIN_VERIFIER_OVERRIDE,
+      { token: PaymentGateway, value: fakeGateway },
+      ...ROAD_ROUTING_OVERRIDES,
+    ],
   });
 });
 
