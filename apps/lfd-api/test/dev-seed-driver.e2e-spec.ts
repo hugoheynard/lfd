@@ -6,7 +6,6 @@
  * livraison colisée est en tournée chargée, pas partie), aucun à refaire. Un
  * requérant sans le droit de conduire ne fait pas échouer le rechargement.
  */
-import { DELIVERY_DAY } from "../src/dev/seeding/delivery-day.seed.js";
 import type {
   DeliveryLoadingRoundView,
   DevSeedReport,
@@ -76,8 +75,10 @@ describe("le rechargement affecte la tournée chargée à qui clique", () => {
       expect(rounds).toHaveLength(1);
       const roundId = rounds[0]?.id ?? "";
 
-      // Toutes les tournées du jour sont composées et chargées, pas parties.
-      expect(report.delivery.rounds).toBe(report.delivery.vehicles);
+      // Toutes les tournées du jour sont composées et chargées, pas parties :
+      // une par camionnette, plus celle d'après-midi que la composition ouvre
+      // en second passage (démo à plusieurs passages depuis le 2026-10-14).
+      expect(report.delivery.rounds).toBe(report.delivery.vehicles + 1);
       const loading = jsonBody<DeliveryLoadingRoundView>(
         await admin(ctx).get(`${MY_ROUND}/${roundId}/loading`).expect(200),
       );
@@ -86,12 +87,11 @@ describe("le rechargement affecte la tournée chargée à qui clique", () => {
       );
       expect(toLoad).toEqual([]);
       expect(loading.stops.length).toBeGreaterThan(0);
-      // Hors tournée : les pas encore prêtes, qui n'ont aucun bac, et celle
-      // que le semis laisse au calcul (2026-10-14) — les réglages de la démo
-      // refusent un second passage (`multiplePassages: false`), la composition
-      // automatique ne lui ouvre donc rien.
-      const leftToComposition = DELIVERY_DAY.filter((entry) => entry.leftToComposition).length;
-      expect(report.delivery.unassigned).toBe(report.delivery.notReady + leftToComposition);
+      // Hors tournée : rien. Les réglages de la démo permettent un second
+      // passage depuis le 2026-10-14 : la composition automatique ouvre une
+      // tournée d'après-midi pour les pas encore prêtes et celle que le semis
+      // laisse au calcul.
+      expect(report.delivery.unassigned).toBe(0);
 
       const { version } = jsonBody<MyDeliveryRoundView>(
         await admin(ctx).get(`${MY_ROUND}/${roundId}`).expect(200),
@@ -121,7 +121,7 @@ describe("le rechargement affecte la tournée chargée à qui clique", () => {
       expect(
         report.delivery.driver.status === "refused" ? report.delivery.driver.reason : "",
       ).toContain("Conduire sa tournée");
-      expect(report.delivery.rounds).toBe(report.delivery.vehicles);
+      expect(report.delivery.rounds).toBe(report.delivery.vehicles + 1);
     },
     FULL_RELOAD_TIMEOUT_MS,
   );

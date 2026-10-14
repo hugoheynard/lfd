@@ -80,7 +80,7 @@ export const DEV_SCENARIO_STEPS: readonly DevScenarioStepText[] = [
     step: 5,
     title: 'Tournées chargées, prêtes à partir',
     explanation:
-      'Une tournée par camionnette, bacs chargés ; la première vous est affectée. Puis la composition automatique est rejouée sur ce qui reste : elle place le transfert du Village dans une tournée du matin, dont le bac est chargé ; avec les réglages de la démo (un seul passage par camionnette), elle n’ouvre pas de seconde tournée, et la livraison de l’après-midi reste à répartir.',
+      'Une tournée par camionnette, bacs chargés ; la première vous est affectée. Puis la composition automatique est rejouée sur ce qui reste : elle place le transfert du Village dans une tournée du matin, dont le bac est chargé ; la démo permettant un second passage, elle ouvre seule une tournée d’après-midi sur la camionnette 1 pour ce qui restait, dont la livraison de 13:30.',
     meaning: 'La journée est prête : les tournées peuvent partir depuis Ma tournée.',
     loading: 'Chargement des bacs dans les camionnettes…',
     links: [

@@ -34,10 +34,12 @@ export interface RoutingSettingsRow {
  * **Les réglages de la démo.** Deux s'écartent des valeurs d'usine, et ce
  * sont eux qui font la journée de demain :
  *
- * - `multiplePassages: false` : une camionnette ne revient pas recharger. Le
- *   départ se calcule dès minuit (CA-D1) ; avec un second passage, deux
- *   camionnettes auraient le temps de tout faire en deux allers, et la place
- *   au sol ne contraindrait plus rien ;
+ * - `multiplePassages: true` depuis le 2026-10-14 (Hugo : « passe-le à oui
+ *   dans la démo ») : une camionnette peut revenir recharger, et la livraison
+ *   d'après-midi de J ouvre seule une seconde tournée sur la camionnette 1.
+ *   Le prix, assumé : avec un second passage, la place au sol contraint moins
+ *   la journée de demain (le départ se calculait dès minuit, CA-D1, pour qu'un
+ *   seul aller doive tout porter) ;
  * - le contenant par défaut, une manne : une commande dont on ne sait rien
  *   occupe une manne au sol (CA4b), au lieu d'être placée sans contrôle.
  *
@@ -50,7 +52,7 @@ export function demoRoutingSettings(manneTypeId: string): DeliveryRoutingSetting
     maxRoundMinutes: 240,
     stopMinutes: 6,
     defaultMode: "new_rounds",
-    multiplePassages: false,
+    multiplePassages: true,
     safetyMarginMinutes: 15,
     defaultContainer: { binTypeId: manneTypeId, count: 1 },
   };

@@ -153,8 +153,13 @@ describe("les tournées de demain du semis", () => {
     expect(FLEET.slice(0, 3).map((vehicle) => mannesOnFloor(vehicle.name))).toEqual([20, 9, 9]);
   });
 
+  /**
+   * Depuis le 2026-10-14 la démo permet un second passage (Hugo) : deux
+   * camionnettes ne manquent plus de place, elles reviennent recharger. Ce
+   * test disait l'inverse tant que la démo n'en permettait qu'un.
+   */
   it(
-    "avec deux camionnettes seulement, la place manque",
+    "avec deux camionnettes seulement, la seconde place vient d'un second passage",
     async () => {
       const two = await ctx.prisma.deliveryVehicle.findMany({
         where: { plate: { in: FLEET.slice(0, 2).map((vehicle) => vehicle.plate) } },
@@ -163,8 +168,8 @@ describe("les tournées de demain du semis", () => {
       expect(two).toHaveLength(2);
       const view = await propose(`mode=new_rounds&vehicles=${two.map((v) => v.id).join(",")}`);
 
-      expect(view.rounds.length).toBeLessThanOrEqual(2);
-      expect(view.unfit.length + view.overflow.length).toBeGreaterThan(0);
+      expect(view.rounds.length).toBeGreaterThan(2);
+      expect(new Set(view.rounds.map((round) => round.vehicleId)).size).toBeLessThanOrEqual(2);
     },
     TIMEOUT_MS,
   );
