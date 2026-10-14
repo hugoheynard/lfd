@@ -188,7 +188,12 @@ export class DeliveryMap {
     this.map = null;
     try {
       ensureMaplibreStylesheet(this.document);
-      const [library, pmtiles] = await Promise.all([import('maplibre-gl'), import('pmtiles')]);
+      const [maplibreModule, pmtilesModule] = await Promise.all([
+        import('maplibre-gl'),
+        import('pmtiles'),
+      ]);
+      const library = namespaceOf(maplibreModule, 'addProtocol');
+      const pmtiles = namespaceOf(pmtilesModule, 'Protocol');
       const protocol = new pmtiles.Protocol();
       library.addProtocol('pmtiles', protocol.tile);
       const streets = new URL(`${tiles.baseUrl}${STREETS_FILE}`, this.document.baseURI).href;
@@ -315,4 +320,20 @@ export class DeliveryMap {
     const bounds = roundsBounds(library, this.departure().gps, rounds);
     map.fitBounds(bounds, { padding: FIT_PADDING, duration: 0 });
   }
+}
+
+/**
+ * Le module chargé à la demande, là où sont vraiment ses exports.
+ *
+ * Régression (2026-10-14) : en production, la carte disait « r.addProtocol is
+ * not a function ». MapLibre est un paquet CommonJS : le build de production
+ * le range sous `default`, le serveur de dev à plat. On prend le premier des
+ * deux qui porte l'export attendu.
+ */
+export function namespaceOf<T extends object>(loaded: T, key: string): T {
+  if (key in loaded) {
+    return loaded;
+  }
+  const fallback = (loaded as { readonly default?: T }).default;
+  return fallback !== undefined && key in fallback ? fallback : loaded;
 }
