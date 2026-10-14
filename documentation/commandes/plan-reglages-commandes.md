@@ -430,3 +430,38 @@ fichier la cite, son usage n'est pas relu).
 | mineur        | Section Réglages de l'e-commerce vide après O1                                                                 | proposition au §3.3, Q8                                                                                                                    |
 | mineur        | JSDoc « exige `b2b_settings:write` » dans trois pages                                                          | corrigé dans O1b (§3.2)                                                                                                                    |
 | mineur        | Le lien vers le PIM n'est qu'un affichage                                                                      | écrit au §3.2                                                                                                                              |
+
+## 8. Lot O3 — désactiver l'heure limite générale (Hugo, 2026-10-14)
+
+> « Est-ce qu'on peut carrément avoir un bouton pour la désactiver, et que
+> seuls l'arrêt du compte de production et les limites "produit" s'il y en a
+> soient pris en compte ? » — Hugo, puis « oui fais-le ».
+
+**Ce qui existe (vérifié le 2026-10-14)** : `ensureWithinOrderCutoff`
+(`b2b/orders/domain/services/order-cutoff-guard.ts`) — un article qui porte
+une limite produit décide seul ; sinon il retombe sur `OrderCutoff` ; **rien
+nulle part → tout passe**. La passation ne lit pas l'état de la journée du
+fournil : une commande a été acceptée sur un plan arrêté (observation O5,
+[`observations-flux-de-commande.md`](observations-flux-de-commande.md)).
+
+**Décidé :**
+
+1. **Un interrupteur** « Heure limite générale : activée / désactivée » dans
+   Réglages › Commandes › Heure limite, sous `lfc_order_settings`. Désactivée,
+   la règle du commerce n'est plus consultée : la garde se comporte comme si
+   elle n'existait pas. **La règle reste en base** : la réactiver la remet
+   telle quelle.
+2. **Les limites produit** restent appliquées, inchangées.
+3. **L'arrêt du compte de production** devient une limite à part entière, que
+   l'interrupteur soit ouvert ou fermé : la passation (client et équipe)
+   **refuse** une commande pour une journée dont le plan est arrêté, par un
+   port que le fournil déclare dans `production/channels/commerce/` (lecture
+   de l'état de la journée) ; et la boutique **ne propose plus** ce jour — le
+   premier jour proposé saute les journées arrêtées, avec l'avertissement
+   « Trop tard pour demain » déjà en place (O1). Ferme O5.
+4. **Grâce, surtaxe de retard et dérogations** n'ont plus d'objet quand la
+   règle générale est désactivée : l'écran les grise et le dit ; le serveur
+   ne les consulte pas.
+
+**Ce que l'on accepte** : sans limite produit, un article se commande pour le
+lendemain à toute heure jusqu'à l'arrêt du plan.
