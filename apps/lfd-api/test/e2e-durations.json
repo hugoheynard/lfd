@@ -120,6 +120,7 @@
   "test/dev-seed-driver.e2e-spec.ts": 14230,
   "test/dev-seed-packing.e2e-spec.ts": 8028,
   "test/dev-seed-sites.e2e-spec.ts": 21660,
+  "test/order-cutoff-switch.e2e-spec.ts": 13063,
   "test/dev-seed-tomorrow-rounds.e2e-spec.ts": 17054,
   "test/devis-comptable.e2e-spec.ts": 4320,
   "test/direct-debit-blocks.e2e-spec.ts": 6182,
