@@ -1,5 +1,11 @@
 # Plan — l'audience par héritage, à la place des canaux
 
+> 🔁 **Remplacé le 2026-10-15** par
+> [`plan-catalogue-synchronise-par-audience.md`](plan-catalogue-synchronise-par-audience.md),
+> qui fusionne ce plan et son voisin. Gardé pour son relevé de l'existant et
+> sa contradiction par `vitruve`, que le nouveau plan cite au lieu de les
+> recopier.
+
 > 📐 **Doc-first, rien n'est bâti** (rédigé le 2026-10-15). Porte une
 > **migration de données** (trois tables ramenées à une colonne) : `vitruve`
 > est obligatoire avant Hugo (CLAUDE.md §9 bis). Sa contradiction est en fin

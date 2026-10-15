@@ -1,0 +1,312 @@
+# Plan — un catalogue synchronisé, activé par audience
+
+> 📐 **Doc-first, rien n'est bâti** (rédigé le 2026-10-15). Remplace deux
+> plans, qui restent en place avec un bandeau :
+> [`plan-audience-par-heritage.md`](plan-audience-par-heritage.md) (même jour)
+> et [`plan-publication-par-faits-versionnes.md`](plan-publication-par-faits-versionnes.md)
+> (2026-10-13). Leurs relevés de l'existant et les contradictions de `vitruve`
+> y sont toujours ; ce document ne les recopie pas, il y renvoie.
+>
+> Touche **l'argent** (le prix part en continu) et porte une **migration de
+> données** : `vitruve` est obligatoire avant Hugo (CLAUDE.md §9 bis).
+> Comptes : base de **dev** seulement, la production n'a pas été mesurée.
+
+## 0. La demande (Hugo, 2026-10-15)
+
+> « Quand on fait la création d'un produit ou d'une catégorie, ça s'ajoute en
+> simultané à b2b, évidemment non vendu […] que le geste de publication
+> disparaisse un peu et qu'on revienne au final à activer le produit pour
+> l'audience définie. Là j'ai trop d'étapes pour un truc bête. »
+
+Décisions déjà prises le même jour :
+
+| #   | Décision                                                                                                                                  |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| H1  | Audience `pro` / `public` / `both`, posée sur la famille, une fiche peut l'élargir ou la restreindre                                      |
+| H2  | Les contextes de vente restent, comme régimes de TVA                                                                                      |
+| H3  | Une modification d'une fiche active part **tout de suite**, sans relecture                                                                |
+| H4  | Les schémas `pim` et `public` restent séparés                                                                                             |
+| H5  | Le masquage de la plateforme ne fait que retirer, et n'a qu'une route                                                                     |
+| H6  | Une vue « Catalogue publié » : une ligne par article, une colonne par audience                                                            |
+| H7  | Une fiche publiée mais invisible aujourd'hui est dépubliée à la bascule                                                                   |
+| H9  | La vue « Catalogue publié » va dans **Gestion Boutique** (aujourd'hui « Catalogue actuel en ligne », section Catalogue, `/b2b/catalogue`) |
+| H10 | **Aucune perte de donnée** : des gens remplissent le catalogue en ce moment — §4 bis                                                      |
+| H8  | Les tables à QR iront sur le site, comme capacité « sur place » (plan à venir)                                                            |
+
+## 1. Avant / après, vu du staff
+
+| Avant                                                                                                         | Après                                                    |
+| ------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| créer → remplir → publier → lier au canal B2B → cocher la case B2B → aperçu → envoyer → accepter la livraison | **créer → remplir → activer**                            |
+| la plateforme ignore une fiche tant qu'elle n'a pas été envoyée                                               | la fiche est sur la plateforme dès sa création, inactive |
+| rien ne se vend au public seul                                                                                | l'audience le dit                                        |
+
+```mermaid
+sequenceDiagram
+  participant S as Staff (PIM)
+  participant P as pim.product
+  participant O as outbox
+  participant B as b2b/catalog (public)
+  S->>P: créer / modifier / activer
+  P->>P: refus si active et invendable
+  P->>O: pim.catalog_product_changed (snapshot, seq)
+  O->>B: @DurableHandler
+  B->>B: appliquer si seq > applied_seq
+  Note over B: catalog_items à jour,<br/>vue « Catalogue publié »
+```
+
+## 2. Décisions
+
+### C1 — Deux états : inactive, active ; la garde est dans la projection
+
+`ProductStatus` garde ses valeurs en base (`draft`, `published`, `archived` —
+une valeur d'enum Postgres ne se renomme pas, CLAUDE.md §8) ; l'écran et le
+domaine disent **inactive / active / archivée**. `publish()` devient
+`activate()`, `unpublish()` devient `deactivate()`.
+
+**Ce qui se vend se décide déclinaison par déclinaison, comme aujourd'hui.**
+La projection écarte déjà une déclinaison sans prix, sans taux ou sans
+allergènes (`variant_sans_prix`, `variant_sans_taux`, refus de `publish()`).
+Ce plan généralise ce tri au lieu d'ajouter des refus sur chaque geste :
+
+- **une déclinaison incomplète n'est jamais vendue** — sans allergènes, sans
+  prix ou sans taux, elle part dans le snapshot marquée `incomplete` avec ce
+  qui lui manque, et la plateforme la range non vendable ;
+- **activer** refuse une fiche qui n'a **aucune** déclinaison complète, avec
+  la liste de ce qui manque ;
+- **aucune modification d'une fiche active n'est refusée** pour cause
+  d'incomplétude : une déclinaison neuve (`Variant.open` naît sans prix,
+  `variant.ts:262-280`) arrive non vendable, celle dont on vide les
+  allergènes sort de la vente, une famille dont on retire le taux sort ses
+  fiches de la vente. Chacune se voit dans la vue « Catalogue publié »
+  (« incomplète : allergènes »).
+
+Pourquoi pas des refus sur chaque geste (version précédente) : la
+vendabilité dépend de choses que `Product` ne voit pas — taux de la famille
+(`set-category-vat`), suppression d'un taux (`remove-vat-rate`),
+`reclassify`, `setChannels` qui efface des taux (`product.ts:230-245`),
+rapport pro. Les énumérer laisserait toujours un trou ; la projection, elle,
+lit l'état final, quel que soit le geste. C'est la règle « interdire plutôt
+que vérifier » : une déclinaison incomplète n'a pas de prix servi, elle est
+**invendable par construction**.
+
+Ce qui reste vendu sans relecture, choisi par Hugo (H3) : une valeur
+**fausse mais complète** — un prix mal tapé.
+
+### C2 — L'audience (H1)
+
+Reprise telle quelle de [`plan-audience-par-heritage.md`](plan-audience-par-heritage.md)
+D1 et D3 : `category.audience` obligatoire, `product.audience` nullable
+(hérite), `OPERATION_AUDIENCES` réutilisée, et une règle `servedTo(item,
+viewer)` qui remplace les **quatre** lectures directes du masquage côté
+plateforme (D3 du plan d'audience, relevé `vitruve`).
+
+### C3 — La synchronisation : un fait par fiche, à chaque enregistrement
+
+- Toute écriture sur une fiche ou une famille — création comprise, active ou
+  non — émet, **dans sa transaction**, un fait durable
+  `pim.catalog_product_changed` portant le **snapshot complet** de la fiche :
+  ce que `projection.ts` fabrique aujourd'hui par produit, plus `status` et
+  `audience`. Un snapshot, pas un diff : il se rejoue seul.
+- Même chose pour la famille (`pim.catalog_category_changed`) et pour les
+  opérations (`pim.catalog_operation_changed`).
+- **Les règles globales voyagent comme règles, pas recopiées par fiche.**
+  Les limites de commande traversent déjà en règles depuis la v7 du fil
+  (`projection.ts:307-315`) : elles deviennent un fait global
+  `pim.catalog_rules_changed`, avec le rapport pro. Recopier une règle
+  globale sur chaque fiche réémettrait tout le catalogue à chaque réglage.
+- **Ce qui change des prix ou des taux sur plusieurs fiches** — taux d'une
+  famille, pourcentage d'un taux (`update-vat-rate.ts:37-47`), suppression
+  d'un taux, rapport pro (le HT pro est calculé par fiche), allergènes d'un
+  ingrédient (`set-ingredient-allergens.ts`), description d'une image venue de
+  la médiathèque (`on-media-asset-described.ts`), renommage ou déplacement de
+  famille si le snapshot les porte — émet **une tâche de réémission** des
+  fiches concernées, exécutée hors de la transaction du geste, **une
+  transaction par fiche**. Aucun geste ne verrouille le catalogue entier.
+  La liste exacte des émetteurs se dresse au lot 4, par grep sur les
+  écritures des tables que la projection lit.
+- Le fait est déclaré dans `pim/channels/b2b-platform/` ; le récepteur est un
+  `@DurableHandler` par fait dans `b2b/catalog/application/handlers/`
+  (`lint:durable-cross-block`), sur le modèle de
+  `on-product-media-changed.handler.ts`.
+- **Une fiche inactive arrive aussi**, et la plateforme la range non vendue :
+  c'est ce qui fait « apparaître » le catalogue en cours de saisie.
+
+### C4 — L'ordre : deux enregistrements simultanés
+
+Objection BLOQUANT n° 2 de `vitruve` (2026-10-13), et sa précision du
+2026-10-15 : les handlers chargent l'agrégat **hors** transaction
+(`save-variant-allergens.ts:46` avant `uow.run` l. 79), et les satellites
+(allergènes, rédactionnel, médias) s'écrivent par des ports qui ne passent
+pas par `products.save`.
+
+Proposé : **le snapshot n'est jamais pris dans l'agrégat en mémoire.** Un
+seul émetteur, `CatalogEmitter.emit(productIds, tx)`, appelé en **dernière
+instruction** de la transaction de chaque geste :
+
+1. `SELECT … FOR UPDATE` sur les lignes `pim.product` concernées, **triées par
+   id** — le seul verrou du mécanisme, toujours dans le même ordre, sur la
+   même table : pas d'interblocage possible entre deux émetteurs ;
+2. tire le numéro d'ordre **après** le verrou ;
+3. **relit la fiche en base** dans la transaction et la projette ;
+4. écrit le fait dans l'outbox.
+
+En `READ COMMITTED`, l'instruction qui suit l'obtention du verrou voit ce
+que la transaction précédente a validé : le snapshot émis sous le numéro
+`n+1` contient donc forcément l'écriture émise sous `n`. Les handlers n'ont
+pas à changer d'ordre de chargement ; ils ajoutent l'appel, et un geste qui
+ne l'ajoute pas est rattrapé par la parité (§4). Le refus de C1 ne juge plus
+un état en mémoire : il n'y a plus de refus sur fiche active.
+
+⚠️ **À vérifier au lot 2** : que tous les handlers d'écriture passent par
+une transaction `uow` qui porte l'outbox (vu pour `set-product-media.ts:72-85`
+seulement), et en compter le nombre (≈ 22 dans `catalogue/product/application/`,
+plus `category/`).
+
+Côté plateforme : `catalog_items.applied_seq`, écriture **conditionnée en
+base** (`WHERE applied_seq < :seq`), comme `showIfNewer`.
+
+### C5 — Ce qui disparaît
+
+- Le push, l'aperçu, l'empreinte comme verrou, la boîte `catalog_delivery` et
+  l'acceptation (liste dans le plan de publication, P5). La boîte se vide
+  avant la bascule (aucune livraison `pending`).
+- Le lien au canal B2B, la matrice des canaux, le point de vente sauf sa
+  grille de tables (plan d'audience, D5 et Q4).
+- Les deux routes de masquage, remplacées par une (H5, plan d'audience D7).
+- **Les tables restent en base** (CLAUDE.md §0), plus lues ni écrites.
+
+### C6 — Ce qui reste
+
+- **Les révisions, comme historique** : une photographie du catalogue, prise
+  automatiquement une fois par jour où quelque chose a changé, et à la main
+  avec un nom ; le diff entre deux révisions. **Pas de « revenir à R »
+  automatique dans ce plan** : réémettre d'anciens snapshots sans réécrire le
+  référentiel contournerait la projection et serait annulé par la prochaine
+  édition (`vitruve`, 2026-10-15). Restaurer une fiche se fait dans le
+  référentiel, à la main, révision sous les yeux. → Q1.
+- **Le masquage**, comme frein d'urgence : une faute de prix sur une fiche
+  active se retire en un clic le temps de corriger (H3).
+- **L'interrupteur `PIM_PUBLICATION_ENABLED`** : fermé, les faits ne
+  s'émettent pas ; « réémettre tout » rattrape à la réouverture.
+- **`catalog_versions` et `orders.catalog_version_id`** : la colonne n'a aucun
+  lecteur hors son écriture (`vitruve`, grep du 2026-10-15) et chaque ligne de
+  commande copie déjà prix et TVA. **Aucune estampille neuve** : la colonne
+  reste, plus écrite. Un `max(applied_seq)` ne désignerait de toute façon
+  aucun état du catalogue.
+
+### C7 — La bascule
+
+1. Comptage en prod : fiches publiées non liées, liées non publiées,
+   dérogations sans case `b2b`, livraisons en attente.
+2. Les fiches invisibles aujourd'hui repassent inactives (H7) ; la liste est
+   rendue.
+3. Audiences posées : `both` sur tout ce qui est vendu aujourd'hui (plan
+   d'audience, D6).
+4. « Réémettre tout » : chaque fiche, active ou non, émet son snapshot ; la
+   plateforme se remplit, y compris des fiches inactives.
+
+## 3. Lots
+
+| Lot   | Contenu                                                                                                                                  | Donne                             |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| **1** | Comptage ; colonnes d'audience ; activer/désactiver avec le refus complet (C1) ; refus sur fiche active                                  | l'agrégat tient la règle          |
+| **2** | Faits fiche + famille, verrou et `seq` (C3, C4) ; récepteur conditionné ; `servedTo` ; réémettre tout                                    | **créer → la plateforme le voit** |
+| **3** | Écrans : bouton Activer, audience famille et fiche, vue « Catalogue publié » déplacée en Gestion Boutique (H9), route unique de masquage | **le parcours en trois gestes**   |
+| **4** | Opérations en faits ; émissions en lot (TVA, limites, rapport pro) ; révisions automatiques                                              | plus aucun besoin du push         |
+| **5** | Retraits (C5) ; estampille de commande par `seq`                                                                                         | le ménage                         |
+
+**Le push est coupé dès que le lot 2 est en service.** Il envoie un
+instantané complet et efface ce qui n'y figure pas — il effacerait les fiches
+inactives que les faits posent, sans `applied_seq`. Le filet n'est pas le
+push, c'est « réémettre tout ». Retour arrière avant le lot 5 : redéployer la
+version précédente rouvre le push (son code est encore là), et les fiches
+dépubliées par H7 se réactivent depuis la liste rendue en C7.
+
+## 4. Risques
+
+- **Une faute de prix vendue tout de suite** (H3, choisi en connaissance de
+  cause). Filets : masquage en un clic, révisions.
+- **Un fait perdu** laisse une fiche en retard : la parité
+  (`check-catalog-parity.service.ts`) devient le filet, « réémettre la
+  fiche » la réparation.
+- **Les allergènes** : l'acceptation humaine disparaît ; le garde est la
+  projection (C1). Un e2e le prouve : vider les allergènes d'une déclinaison
+  vendue la sort de la vente au fait suivant, et la commande est refusée.
+- **Les réémissions en lot** (TVA d'une famille de 40 fiches) : 40
+  transactions courtes, une par fiche ; mesurer le délai total au lot 4.
+
+## 4 bis. Aucune perte de donnée (H10)
+
+> « Attention à la perte de donnée, des gens remplissent le catalogue. » —
+> Hugo, 2026-10-15
+
+Ce qui est saisi en ce moment vit à deux endroits, et aucun des deux ne doit
+perdre une ligne.
+
+**Dans le référentiel (`pim`)**
+
+- Les migrations n'ajoutent que des colonnes (`audience`, le numéro d'ordre).
+  Aucune ne réécrit le contenu d'une fiche : noms, prix, allergènes, visuels,
+  textes ne sont touchés par aucune étape de la bascule.
+- La seule écriture de la bascule est le **statut** des fiches invisibles
+  aujourd'hui (H7). Elle est réversible (réactiver), et la liste des fiches
+  concernées est rendue **avant** d'être appliquée, pour que Hugo la relise.
+- Une **révision nommée** « avant la bascule » est prise juste avant :
+  c'est la photographie à laquelle revenir.
+- Rien n'impose d'arrêter la saisie. Le déploiement se fait hors des heures de
+  saisie, annoncé : une page ouverte au moment du déploiement doit se
+  recharger, et un formulaire non enregistré serait perdu à ce rechargement.
+
+**Sur la plateforme (`public`)**
+
+- Ce que la plateforme décide seule — prix pro et public remplacés, masquage,
+  mise en avant (`catalog_item_overrides`), mercuriales — **n'est jamais écrit
+  par un fait**. Un fait réécrit les colonnes reçues du référentiel, rien
+  d'autre. C'est le piège que `prisma-catalog-item.repository.ts:160` nomme
+  déjà (« le seul endroit du dépôt où un champ oublié compile et perd une
+  donnée ») : le récepteur ne passe pas par cette écriture-là, il a la sienne,
+  qui ne contient pas les décisions. Un e2e le prouve : une décision de prix
+  survit à dix faits sur la même fiche.
+- **Rien n'est supprimé.** Une fiche désactivée ou archivée pose
+  `withdrawn_at` ; la ligne et ses décisions restent, et reviennent à la
+  réactivation. Le chemin actuel qui efface une décision
+  (`prisma-catalog-item.repository.ts:158`, quand l'agrégat n'en porte plus)
+  n'est appelé par aucun fait.
+- **Une famille ne se supprime jamais** côté plateforme : `catalog_items` la
+  référence en `onDelete: Cascade` (`catalog.prisma:129`), et la supprimer
+  emporterait ses articles et leurs décisions. Une famille retirée pose une
+  date, comme un article.
+- Un fait **plus ancien** que la ligne ne l'écrase pas (`applied_seq`, C4).
+
+## 5. Questions ouvertes
+
+1. **Q1** — Restaurer une fiche depuis une révision : à la main suffit
+   (proposé), ou faut-il un bouton « restaurer cette fiche » qui réécrit le
+   référentiel ?
+2. **Q2** — Une famille sans aucune fiche active : visible sur la plateforme
+   (grisée, comme une fiche inactive), proposé, ou invisible ?
+
+## Contradiction de `vitruve` (2026-10-15) — intégrée
+
+Trois BLOQUANT, traités dans le corps :
+
+1. **Une déclinaison neuve naît sans prix** : la règle « une fiche active
+   refuse ce qui la rend invendable » aurait interdit d'ajouter une
+   déclinaison à une fiche en vente → C1 ne refuse plus rien sur une fiche
+   active ; une déclinaison incomplète est invendable par construction.
+2. **L'agrégat est chargé hors transaction** → C4 : le snapshot est relu en
+   base sous verrou, par un émetteur unique en fin de transaction.
+3. **La vendabilité dépend de gestes que `Product` ne voit pas** (taux de
+   famille, suppression de taux, reclassement, rapport pro) → même réponse
+   que 1 : la projection juge l'état final.
+
+Sérieux intégrés : liste des émetteurs complétée et émission en tâche, une
+transaction par fiche (C3) ; règles globales en fait global (C3) ; un seul
+verrou, trié (C4) ; pas d'estampille de commande (C6) ; pas de retour
+automatique à une révision (C6, Q1) ; push coupé au lot 2 et retour arrière
+écrit (§3).
+
+Restent **non vérifiés** : que tous les handlers portent l'outbox dans leur
+transaction ; que `catalog_items` sait déjà ranger un article non vendable ;
+la forme de l'écriture conditionnée ; les volumes de production.

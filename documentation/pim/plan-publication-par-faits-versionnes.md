@@ -1,5 +1,11 @@
 # Plan — la publication par faits versionnés, et le retrait du point de vente
 
+> 🔁 **Remplacé le 2026-10-15** par
+> [`plan-catalogue-synchronise-par-audience.md`](plan-catalogue-synchronise-par-audience.md),
+> qui fusionne ce plan et son voisin. Gardé pour son relevé de l'existant et
+> sa contradiction par `vitruve`, que le nouveau plan cite au lieu de les
+> recopier.
+
 > 📐 **Doc-first, rien n'est bâti** (rédigé le 2026-10-13). Touche l'argent
 > (prix, TVA copiés dans chaque fait) et porte une migration de données :
 > **`vitruve` est obligatoire avant Hugo** (CLAUDE.md §9 bis).
