@@ -130,6 +130,17 @@ il n'existe pas d'authentification optionnelle. Plutôt que d'en créer une
   l'audience du client. La boutique l'appelle quand un client est connecté.
   Aucune URL ne rend deux contenus selon le lecteur : pas de `Vary`.
 
+> 🔁 **C2′ remplacé le même jour (Hugo, 2026-10-15)** : « imaginons que
+> j'ai une landing pro : en non connecté on aurait la capacité de donner les
+> CGV pro ». Les CGV pro ne sont pas un secret, ce sont des conditions
+> publiées. **Les deux sont publiques**, chacune à son adresse
+> (`content/legal/sales-terms`, `content/legal/sales-terms-pro`), PDF compris.
+> Pas de route authentifiée. Ce que le serveur décide seul, c'est **quelles
+> CGV s'appliquent à une commande** (C2″, C4′) — enregistré à la passation.
+> Quelle page la boutique montre à qui (landing pro, compte pro, page
+> publique) devient un choix d'affichage, sans enjeu juridique ; à trancher
+> au lot des pages de la boutique.
+
 **C2″ — « pro » veut dire ce que le devis dit** (BLOQUANT). Pas « a une
 société » : l'audience vient de `audienceOf` (`customer-audiences.service.ts`),
 qui ne classe en B2B qu'une société **active**. Une société en attente de
