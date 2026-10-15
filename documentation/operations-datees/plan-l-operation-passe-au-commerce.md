@@ -190,9 +190,9 @@ faits passés restent lisibles), `b2b-platform.module.ts`. Tables gardées.
 
 ## 5. Questions à Hugo
 
-1. **Q1** — La raison du 2026-09-24, « la préparation » : y a-t-il un geste de
-   préparation (hors production, qui ne lit pas l'opération) qui a besoin de
-   l'opération **dans le référentiel** ? Sinon, le déplacement tient.
+1. ~~**Q1**~~ — **Rien ne la retient au référentiel (Hugo, 2026-10-15)** :
+   « la préparation ne lit pas les opérations, déplace-les ». D1 du
+   2026-09-24 est levée.
 2. ~~**Q2**~~ — **`lfc_operations` (Hugo, 2026-10-15)** : un droit à lui,
    lecture et écriture, sur le modèle de `lfc_legal` — la migration ajoute la
    ressource et ne l'accorde à aucun rôle ; Hugo l'accorde à l'écran, le
