@@ -1,5 +1,6 @@
 /** Segments de clé `P` → ce que le texte est, dit comme la boutique le dit. */
 export const GLOSSARY_P: Readonly<Record<string, string>> = {
+  pageTitle: 'Titre de la page',
   paidByCard: 'Acquittée par carte',
   paidOnline: 'Réglé en ligne',
   panelDot: 'Aller à la section',
@@ -18,6 +19,7 @@ export const GLOSSARY_P: Readonly<Record<string, string>> = {
   payment: 'Paiement',
   paymentNote: 'Paiement — note',
   pdfPending: 'PDF en préparation',
+  pdfReference: 'Le PDF fait foi — mention',
   pending: 'Bientôt',
   perPiece: 'Mention « par pièce »',
   period: 'Période facturée',
@@ -98,6 +100,7 @@ export const GLOSSARY_P: Readonly<Record<string, string>> = {
   proAccountsLead: 'Mes comptes pro — accroche',
   proAccountsTitle: 'Mes comptes pro — titre',
   proDiscount: 'Prix pro — remise',
+  proDraftTitle: 'CGV pro — en cours de rédaction',
   proLabel: 'Professionnel',
   proOnly: 'Réservé aux pros',
   proPills: 'Pastilles pro',

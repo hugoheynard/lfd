@@ -1,5 +1,6 @@
 /** Segments de clé `S` → ce que le texte est, dit comme la boutique le dit. */
 export const GLOSSARY_S: Readonly<Record<string, string>> = {
+  salesTerms: 'Conditions générales de vente',
   sameDeadlinesEveryDay: 'Mêmes échéances tous les jours',
   sameDeadlinesEveryDayHint: 'Mêmes échéances tous les jours — aide',
   sameEveryDay: 'Mêmes créneaux tous les jours',
@@ -26,6 +27,9 @@ export const GLOSSARY_S: Readonly<Record<string, string>> = {
   shop: 'Boutique',
   shopPrice: 'Prix boutique',
   shortcuts: 'Raccourcis',
+  sideLabel: 'CGV — choix particulier / pro',
+  sideParticulier: 'CGV — côté particulier',
+  sidePro: 'CGV — côté pro',
   signIn: 'Se connecter',
   signInCancelledSub: 'Connexion annulée — sous-titre',
   signInCancelledTitle: 'Connexion annulée — titre',
