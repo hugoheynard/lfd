@@ -30,6 +30,31 @@
 
 ## 2. Décisions
 
+### C0 — Le droit `lfc_legal` (Hugo, 2026-10-15)
+
+Les cinq mentions ont quitté l'espace E-commerce pour Réglages › Légal en
+gardant le droit de l'espace, `b2b_settings` : quiconque le tient — le
+commercial — voyait soudain une entrée « Réglages » qui ouvrait sur les
+mentions légales. Elles prennent leur **propre ressource** : `lfc_legal`
+(lecture, écriture), sur le modèle de `lfc_site_settings`.
+
+- La migration **ajoute la valeur** à `StaffResource` et rien d'autre ; elle
+  n'accorde le droit à **aucun** rôle (`lint:no-role-grants-in-migrations`).
+  Hugo l'accorde à l'écran (`/admin/staff-roles`) ; le superadmin, dont les
+  droits sont calculés, l'a d'office.
+- Côté API, les routes des mentions (`admin-platform-content.controller.ts`,
+  aujourd'hui `@AdminSurface("b2b_settings")`) passent sous
+  `@AdminSurface("lfc_legal")`. Le pied de page (`app-footer`), servi par le
+  même contrôleur, **reste** sous `b2b_settings` : le contrôleur se coupe en
+  deux plutôt que de mêler deux droits.
+- Côté back-office : la route `/reglages/legal/:mention` et la section Légal
+  du menu passent sous `lfc_legal:read` ; écrire demande `lfc_legal:write`.
+- Le PDF (C3) et les CGV pro (C1) naissent sous ce droit.
+
+⚠️ **Au déploiement**, tant que Hugo n'a pas accordé `lfc_legal`, seul le
+superadmin voit la section Légal : c'est voulu, et c'est le geste de mise en
+service.
+
 ### C1 — Deux textes de CGV
 
 - `sales-terms` reste le texte **particuliers** — aucune réécriture.
@@ -95,6 +120,7 @@ aujourd'hui ; le dépôt est une écriture.
 
 | Lot | Contenu                                                                                                                          |
 | --- | -------------------------------------------------------------------------------------------------------------------------------- |
+| 0   | Le droit `lfc_legal` (C0) : ressource, contrôleur coupé, routes et menu du back-office                                           |
 | 1   | `sales-terms-pro` (clé, semis vide), lecture par audience au serveur, page « en cours de rédaction » ; onglets au back-office    |
 | 2   | `legal_document_files` + dépôt R2 + téléchargement boutique et back-office, ligne « version de référence », alerte de divergence |
 | 3   | Version acceptée sur la commande (migration additive), affichage au détail de commande                                           |
