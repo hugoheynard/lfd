@@ -1,4 +1,4 @@
-import { DEFAULT_LEGAL_DOCUMENT, type LegalMention } from "@lfd/contracts";
+import { DEFAULT_LEGAL_DOCUMENT, type LegalDocumentKey } from "@lfd/contracts";
 
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
 import {
@@ -41,6 +41,23 @@ describe("lire un document légal", () => {
     const privacy = await handler.execute(new GetLegalDocumentQuery("privacy"));
 
     expect(cookies.content.title.fr).not.toBe(privacy.content.title.fr);
+  });
+
+  /**
+   * C1′ (plan `legal/plan-cgv-par-audience.md`) : les CGV pro ne sont pas
+   * semées. Jamais rédigées, elles rendent LEUR titre et aucun article — l'état
+   * « en cours de rédaction », jamais les CGV particuliers ni une absence.
+   */
+  it("des CGV pro jamais rédigées rendent leur titre, sans article", async () => {
+    const handler = new GetLegalDocumentHandler(new FakeContentRepository());
+
+    const pro = await handler.execute(new GetLegalDocumentQuery("salesTermsPro"));
+    const consumers = await handler.execute(new GetLegalDocumentQuery(SALES_TERMS));
+
+    expect(pro.revision).toBe(0);
+    expect(pro.content.paragraphs).toEqual([]);
+    expect(pro.content.title.fr).toBe("Conditions générales de vente professionnelles");
+    expect(pro.content.title.fr).not.toBe(consumers.content.title.fr);
   });
 });
 
@@ -129,7 +146,7 @@ describe("ajouter un article", () => {
 describe("modifier, retirer, déplacer", () => {
   /** Un document de trois articles, déjà enregistré sous la mention demandée. */
   async function seeded(
-    mention: LegalMention = SALES_TERMS,
+    mention: LegalDocumentKey = SALES_TERMS,
     repository = new FakeContentRepository(),
   ): Promise<FakeContentRepository> {
     const handler = new AddLegalDocumentParagraphHandler(repository, new FixedIdGenerator("art"));

@@ -2,11 +2,13 @@ import {
   cartAdjustmentCents,
   type BillingAddressPayload,
   type CartAdjustment,
+  type CustomerAudience,
   type FulfillmentMethod,
   type LateFeeAdjustment,
   type OrderLineInput as OrderLineRequest,
   type PickupAddressView,
   type PickupSnapshot,
+  type SalesTermsDocument,
 } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
@@ -21,7 +23,7 @@ import {
 } from "../../domain/ports/delivery-defaults.reader.js";
 import { windowFitsPickup } from "../../domain/services/agreed-fulfillment.js";
 import { agreeWithWindow, type WindowRequester } from "../../domain/services/delivery-window.js";
-import { Order, type OrderVoucher } from "../../domain/entities/order.js";
+import { Order, type OrderSalesTerms, type OrderVoucher } from "../../domain/entities/order.js";
 import {
   InvalidOrderFulfillmentError,
   PickupClosedAtRequestedTimeError,
@@ -32,6 +34,8 @@ import { OrderCutoffWaiverGate } from "../../domain/ports/order-cutoff-waiver.ga
 import { OrderDeliveryVatReader } from "../../domain/ports/order-delivery-vat.reader.js";
 import { OrderLateFeeReader } from "../../domain/ports/order-late-fee.reader.js";
 import { OrderPayerReader } from "../../domain/ports/order-payer.reader.js";
+import { OrderSalesTermsReader } from "../../domain/ports/order-sales-terms.reader.js";
+import { salesTermsOf } from "../../domain/services/sales-terms-of.js";
 import { orderPayerOf } from "../../domain/services/order-payer.js";
 import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import { ensureWithinOrderCutoff } from "../../domain/services/order-cutoff-guard.js";
@@ -130,6 +134,7 @@ export class OrderDrafting {
     private readonly payers: OrderPayerReader,
     private readonly deliveryVat: OrderDeliveryVatReader,
     private readonly plans: OrderPlanGate,
+    private readonly salesTerms: OrderSalesTermsReader,
   ) {}
 
   /**
@@ -177,7 +182,11 @@ export class OrderDrafting {
       (sum, line) => sum + lineTotalCents(line.unitPriceMillicents, line.quantity),
       0,
     );
-    const acheminement = await this.resolveFulfillment(content, subtotalCents, parties.companyId);
+    // La clientèle, lue UNE fois : elle tarife l'acheminement et désigne les
+    // CGV que la commande porte (plan des CGV, C2″, C4′) — deux lectures
+    // pourraient diverger d'une validation de société entre les deux.
+    const audience = await this.audiences.of(parties.companyId);
+    const acheminement = await this.resolveFulfillment(content, subtotalCents, audience);
     // APRÈS la résolution, et l'ordre est un choix : la règle qui s'applique est
     // celle du point EFFECTIVEMENT retenu, qu'on ne connaît qu'ici. Le coût est
     // de tarifer un panier qu'on refusera ensuite ; le prix de l'inverse serait
@@ -240,6 +249,7 @@ export class OrderDrafting {
       lateFeeAdjustment: late.frozen,
       deliveryVatMode,
       voucher,
+      salesTerms: await this.salesTermsIn(salesTermsOf(audience)),
     });
     return { order, waiverUsed };
   }
@@ -431,12 +441,16 @@ export class OrderDrafting {
     return orderPayerOf(await this.payers.standingAt(companyId, this.clock.now()));
   }
 
+  /** Les CGV de ce texte en vigueur maintenant, prêtes à figer. */
+  private async salesTermsIn(document: SalesTermsDocument): Promise<OrderSalesTerms> {
+    return { document, ...(await this.salesTerms.inForce(document)) };
+  }
+
   private async resolveFulfillment(
     content: OrderContent,
     subtotalCents: number,
-    companyId: string | null,
+    audience: CustomerAudience,
   ): Promise<ResolvedFulfillment> {
-    const audience = await this.audiences.of(companyId);
     if (content.fulfillmentMethod === "pickup") {
       // La remise vient du service PARTAGÉ avec le devis de la boutique : deux
       // implémentations de « quelle remise s'applique » finiraient par annoncer

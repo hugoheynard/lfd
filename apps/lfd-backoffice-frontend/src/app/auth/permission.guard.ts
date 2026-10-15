@@ -37,6 +37,9 @@ const LANDINGS: readonly { readonly permission: StaffPermission; readonly path: 
   // lignes, qui ne tient que l'un de ces droits rebondirait de refus en refus.
   { permission: 'lfc_order_settings:read', path: '/reglages/commandes/heure-limite' },
   { permission: 'lfc_order_opening:read', path: '/reglages/commandes/ouverture' },
+  // Réglages › Légal (plan des CGV, C0′) : qui ne tient que `lfc_legal`
+  // atterrit sur les CGV plutôt que de rebondir de refus en refus.
+  { permission: 'lfc_legal:read', path: '/reglages/legal/cgv' },
 ];
 
 /**

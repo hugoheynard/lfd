@@ -49,6 +49,32 @@ export const legalMentionOrder = [
 export type LegalMention = (typeof legalMentionOrder)[number];
 
 /**
+ * Les **documents légaux** que le staff rédige — les cinq mentions, plus les
+ * CGV professionnelles (`documentation/legal/plan-cgv-par-audience.md`, C1).
+ *
+ * 🔴 Deux listes, et pas une : `salesTermsPro` n'est PAS une mention du
+ * bandeau. Le pied de page coche des obligations, et les CGV n'en font qu'une
+ * — c'est leur lien qui mène au texte de l'audience. L'ajouter à
+ * {@link legalMentionOrder} aurait fait naître une case « CGV pro » au pied de
+ * page, et un sixième libellé de barre que personne n'a demandé.
+ *
+ * Les deux sont publics (Hugo, 2026-10-15) : une landing pro doit pouvoir
+ * montrer les CGV pro sans connexion. Ce que le serveur décide seul, c'est
+ * quelles CGV s'appliquent à une COMMANDE (C2″, C4′).
+ */
+export const legalDocumentKeys = [...legalMentionOrder, "salesTermsPro"] as const;
+
+export type LegalDocumentKey = (typeof legalDocumentKeys)[number];
+
+/**
+ * Les deux textes de CGV — celui des particuliers et celui des professionnels.
+ * C'est le vocabulaire de la version enregistrée sur une commande (C4).
+ */
+export const salesTermsDocuments = ["salesTerms", "salesTermsPro"] as const;
+
+export type SalesTermsDocument = (typeof salesTermsDocuments)[number];
+
+/**
  * Le mot de chaque mention, par langue.
  *
  * Il vit dans le CONTRAT et non en base : une mention légale porte un nom
@@ -337,6 +363,7 @@ export const DEFAULT_FOOTER_CONTENT: FooterContent = {
  */
 export {
   DEFAULT_LEGAL_DOCUMENT,
+  LEGAL_DOCUMENT_TITLES,
   DEMO_LEGAL_DOCUMENTS,
   DEMO_LEGAL_SECTIONS,
 } from "./legal-document.defaults.js";

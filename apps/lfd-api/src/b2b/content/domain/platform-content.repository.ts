@@ -2,7 +2,7 @@ import type {
   FooterContent,
   FooterContentView,
   LegalDocumentView,
-  LegalMention,
+  LegalDocumentKey,
 } from "@lfd/contracts";
 
 import type { LegalDocument } from "./entities/legal-document.js";
@@ -52,7 +52,7 @@ export abstract class PlatformContentRepository {
    * DÉPART du contrat avec `revision: 0`. La boutique n'a donc aucun instant où
    * son dialogue serait vide — il annonce alors une mention non publiée.
    */
-  abstract readLegalDocument(mention: LegalMention): Promise<LegalDocumentView>;
+  abstract readLegalDocument(mention: LegalDocumentKey): Promise<LegalDocumentView>;
 
   /**
    * Le document d'une mention, pour l'ÉCRITURE — l'agrégat, pas la vue.
@@ -72,7 +72,7 @@ export abstract class PlatformContentRepository {
    *   (B3) : partir du repli réécrirait le document VIDE.
    */
   abstract loadLegalDocument(
-    mention: LegalMention,
+    mention: LegalDocumentKey,
     expectedRevision: number,
   ): Promise<LegalDocument>;
 
@@ -87,7 +87,7 @@ export abstract class PlatformContentRepository {
    * @throws {LegalDocumentChangedError} quelqu'un a écrit depuis le chargement.
    */
   abstract saveLegalDocument(
-    mention: LegalMention,
+    mention: LegalDocumentKey,
     document: LegalDocument,
     staffUserId: string,
   ): Promise<void>;

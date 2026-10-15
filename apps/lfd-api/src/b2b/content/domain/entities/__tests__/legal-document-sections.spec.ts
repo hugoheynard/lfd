@@ -1,4 +1,4 @@
-import type { LegalDocumentParagraphPayload, LegalMention } from "@lfd/contracts";
+import type { LegalDocumentParagraphPayload, LegalDocumentKey } from "@lfd/contracts";
 
 import {
   LegalSectionAlreadyPresentError,
@@ -15,7 +15,7 @@ function prose(word: string): LegalDocumentParagraphPayload {
   };
 }
 
-function empty(mention: LegalMention): LegalDocument {
+function empty(mention: LegalDocumentKey): LegalDocument {
   return LegalDocument.reconstitute(
     mention,
     { title: { fr: "Confidentialité", en: "Privacy", it: "Privacy" }, paragraphs: [] },

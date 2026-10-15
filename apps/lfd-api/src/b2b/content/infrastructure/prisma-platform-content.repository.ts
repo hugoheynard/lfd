@@ -7,7 +7,7 @@ import {
   type FooterContentView,
   type LegalDocument as LegalDocumentContent,
   type LegalDocumentView,
-  type LegalMention,
+  type LegalDocumentKey,
 } from "@lfd/contracts";
 import { Injectable, Logger } from "@nestjs/common";
 
@@ -35,12 +35,15 @@ const FOOTER_KEY = "footer";
  * bouge pas : ce sont des clés NEUVES dans une table à clé naturelle, d'où
  * l'absence de migration.
  */
-const LEGAL_DOCUMENT_KEYS: Readonly<Record<LegalMention, string>> = {
+const LEGAL_DOCUMENT_KEYS: Readonly<Record<LegalDocumentKey, string>> = {
   legalNotice: "legal-notice",
   salesTerms: "sales-terms",
   privacy: "privacy",
   cookies: "cookies",
   accessibility: "accessibility",
+  // Clé NEUVE (plan `legal/plan-cgv-par-audience.md`, C1) : aucune ligne semée,
+  // son absence se lit « en cours de rédaction ».
+  salesTermsPro: "sales-terms-pro",
 };
 
 @Injectable()
@@ -98,7 +101,7 @@ export class PrismaPlatformContentRepository extends PlatformContentRepository {
     };
   }
 
-  async readLegalDocument(mention: LegalMention): Promise<LegalDocumentView> {
+  async readLegalDocument(mention: LegalDocumentKey): Promise<LegalDocumentView> {
     const row = await this.prisma.platformContent.findUnique({
       where: { key: LEGAL_DOCUMENT_KEYS[mention] },
     });
@@ -136,7 +139,10 @@ export class PrismaPlatformContentRepository extends PlatformContentRepository {
    * différence de la lecture (plan `legal/plan-page-confidentialite.md` §4.5,
    * B3) : on réécrirait le document de production vide. Refus, rien n'est écrit.
    */
-  async loadLegalDocument(mention: LegalMention, expectedRevision: number): Promise<LegalDocument> {
+  async loadLegalDocument(
+    mention: LegalDocumentKey,
+    expectedRevision: number,
+  ): Promise<LegalDocument> {
     const row = await this.prisma.platformContent.findUnique({
       where: { key: LEGAL_DOCUMENT_KEYS[mention] },
     });
@@ -164,7 +170,7 @@ export class PrismaPlatformContentRepository extends PlatformContentRepository {
    *   ligne à jour et ne touche rien (`count` 0 → refus).
    */
   async saveLegalDocument(
-    mention: LegalMention,
+    mention: LegalDocumentKey,
     document: LegalDocument,
     staffUserId: string,
   ): Promise<void> {
@@ -215,7 +221,7 @@ export class PrismaPlatformContentRepository extends PlatformContentRepository {
    * JSON, donc sans cette relecture une modification viserait deux articles à
    * la fois et n'en changerait qu'un, en silence.
    */
-  private parseLegalDocument(mention: LegalMention, raw: unknown): LegalDocumentContent {
+  private parseLegalDocument(mention: LegalDocumentKey, raw: unknown): LegalDocumentContent {
     const parsed = legalDocumentSchema.safeParse(raw);
     if (parsed.success) {
       return parsed.data;
@@ -227,7 +233,7 @@ export class PrismaPlatformContentRepository extends PlatformContentRepository {
   }
 
   /** La relecture pour ÉCRIRE : même schéma, mais un refus là où la lecture se replie. */
-  private parseForWrite(mention: LegalMention, raw: unknown): LegalDocumentContent {
+  private parseForWrite(mention: LegalDocumentKey, raw: unknown): LegalDocumentContent {
     const parsed = legalDocumentSchema.safeParse(raw);
     if (!parsed.success) {
       throw new UnreadableLegalDocumentError(LEGAL_DOCUMENT_KEYS[mention], parsed.error.message);

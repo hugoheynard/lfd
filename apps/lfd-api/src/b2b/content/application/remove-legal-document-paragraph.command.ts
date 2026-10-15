@@ -1,9 +1,9 @@
-import type { LegalMention } from "@lfd/contracts";
+import type { LegalDocumentKey } from "@lfd/contracts";
 
 /** Command : retirer un article du document d'une mention. */
 export class RemoveLegalDocumentParagraphCommand {
   constructor(
-    readonly mention: LegalMention,
+    readonly mention: LegalDocumentKey,
     readonly paragraphId: string,
     /**
      * La révision que l'écran a lue : l'écriture lui est conditionnée (B2).

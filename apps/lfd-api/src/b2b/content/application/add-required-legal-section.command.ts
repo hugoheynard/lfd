@@ -1,4 +1,8 @@
-import type { LegalDocumentParagraphPayload, LegalMention, LegalSectionKey } from "@lfd/contracts";
+import type {
+  LegalDocumentParagraphPayload,
+  LegalDocumentKey,
+  LegalSectionKey,
+} from "@lfd/contracts";
 
 /**
  * Command : créer la **section requise** d'un document, avec le texte que le
@@ -7,7 +11,7 @@ import type { LegalDocumentParagraphPayload, LegalMention, LegalSectionKey } fro
  */
 export class AddRequiredLegalSectionCommand {
   constructor(
-    readonly mention: LegalMention,
+    readonly mention: LegalDocumentKey,
     readonly section: LegalSectionKey,
     readonly prose: LegalDocumentParagraphPayload,
     /** La révision que l'écran a lue : l'écriture lui est conditionnée (B2). */

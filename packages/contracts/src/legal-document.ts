@@ -2,7 +2,11 @@ import { z } from "zod";
 
 import { MAX_LEGAL_DOCUMENT_BODY, MAX_LEGAL_DOCUMENT_PARAGRAPHS } from "./legal-document.bounds.js";
 import { legalSectionKeys } from "./legal-document.sections.js";
-import { legalMentionOrder } from "./platform-content.defaults.js";
+import {
+  legalDocumentKeys,
+  legalMentionOrder,
+  salesTermsDocuments,
+} from "./platform-content.defaults.js";
 
 /**
  * **Un document de mention légale** — un titre, puis des paragraphes titrés,
@@ -236,3 +240,14 @@ export interface LegalDocumentParagraphCreated {
  * une ressource, et celle qu'on demande n'existe pas.
  */
 export const legalMentionSchema = z.enum(legalMentionOrder);
+
+/**
+ * Le **document légal** qu'un chemin désigne — les cinq mentions et les CGV
+ * professionnelles (plan `legal/plan-cgv-par-audience.md`, C1). C'est lui que
+ * lisent les routes des documents, publiques comme staff ; le pied de page,
+ * lui, ne coche que des {@link legalMentionSchema}.
+ */
+export const legalDocumentKeySchema = z.enum(legalDocumentKeys);
+
+/** L'un des deux textes de CGV — ce que porte une commande (C4). */
+export const salesTermsDocumentSchema = z.enum(salesTermsDocuments);

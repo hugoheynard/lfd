@@ -1,4 +1,4 @@
-import type { FooterContentView, LegalDocumentView, LegalMention } from "@lfd/contracts";
+import type { FooterContentView, LegalDocumentView, LegalDocumentKey } from "@lfd/contracts";
 import { Controller, Get, Param } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
 import { Throttle } from "@nestjs/throttler";
@@ -34,13 +34,19 @@ export class PlatformContentController {
    * **paresseusement**, à la première ouverture. Public par nature : c'est ce
    * qu'on oppose au client, le cacher derrière un jeton n'aurait aucun sens.
    *
+   * Les CGV professionnelles (`salesTermsPro`) se lisent ici aussi, sans
+   * connexion (Hugo, 2026-10-15 : une landing pro doit pouvoir les donner).
+   * Jamais rédigées, elles rendent leur titre et aucun article, en révision 0
+   * — l'état « en cours de rédaction », jamais une 404 (plan
+   * `legal/plan-cgv-par-audience.md`, C1′).
+   *
    * 🔴 La mention est validée contre le vocabulaire fermé, et une mention
    * inconnue rend **404**. Sur une surface anonyme, c'est aussi ce qui empêche
    * de sonder la table de contenu par son segment d'URL.
    */
   @Get("legal/:mention")
   legalDocument(
-    @Param("mention", LegalMentionParam) mention: LegalMention,
+    @Param("mention", LegalMentionParam) mention: LegalDocumentKey,
   ): Promise<LegalDocumentView> {
     return this.queries.execute<GetLegalDocumentQuery, LegalDocumentView>(
       new GetLegalDocumentQuery(mention),

@@ -48,7 +48,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // (Hugo) sous le droit qu'il héritait de l'espace B2B — ni élargi, ni
   // resserré. Le segment est validé par le composant, qui n'appelle rien
   // quand il ne désigne aucune mention du vocabulaire.
-  'reglages/legal/:mention': 'b2b_settings:read',
+  'reglages/legal/:mention': 'lfc_legal:read',
   'commercial/comptes-clients': 'b2b_companies:read',
   'comptes-clients/nouveau': 'b2b_companies:write',
   // La liste de TOUTES les commandes (plan-page-commandes.md, C2).

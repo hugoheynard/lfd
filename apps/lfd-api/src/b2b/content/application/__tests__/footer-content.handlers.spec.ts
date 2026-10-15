@@ -5,7 +5,7 @@ import {
   type FooterContentView,
   type LegalDocument as LegalDocumentContent,
   type LegalDocumentView,
-  type LegalMention,
+  type LegalDocumentKey,
 } from "@lfd/contracts";
 
 import { LegalDocument } from "../../domain/entities/legal-document.js";
@@ -24,7 +24,7 @@ import { SaveFooterContentHandler } from "../save-footer-content.handler.js";
  * vrai sous-type, et les documents légaux ont leur propre suite.
  */
 class FakeContentRepository extends PlatformContentRepository {
-  private readonly documents = new Map<LegalMention, LegalDocumentContent>();
+  private readonly documents = new Map<LegalDocumentKey, LegalDocumentContent>();
   saved: { content: FooterContent; staffUserId: string } | null = null;
   revision = 0;
 
@@ -48,7 +48,7 @@ class FakeContentRepository extends PlatformContentRepository {
     });
   }
 
-  readLegalDocument(mention: LegalMention): Promise<LegalDocumentView> {
+  readLegalDocument(mention: LegalDocumentKey): Promise<LegalDocumentView> {
     const stored = this.documents.get(mention);
     return Promise.resolve({
       content: stored ?? DEFAULT_LEGAL_DOCUMENT(mention),
@@ -58,7 +58,7 @@ class FakeContentRepository extends PlatformContentRepository {
     });
   }
 
-  loadLegalDocument(mention: LegalMention, expectedRevision: number): Promise<LegalDocument> {
+  loadLegalDocument(mention: LegalDocumentKey, expectedRevision: number): Promise<LegalDocument> {
     return Promise.resolve(
       LegalDocument.reconstitute(
         mention,
@@ -68,7 +68,7 @@ class FakeContentRepository extends PlatformContentRepository {
     );
   }
 
-  saveLegalDocument(mention: LegalMention, document: LegalDocument): Promise<void> {
+  saveLegalDocument(mention: LegalDocumentKey, document: LegalDocument): Promise<void> {
     this.documents.set(mention, document.snapshot());
     return Promise.resolve();
   }

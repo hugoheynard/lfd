@@ -161,8 +161,13 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     write: "Ajouter, modifier, réordonner ou retirer une note photo.",
   },
   b2b_settings: {
-    read: "Voir les réglages du commerce : points de retrait et leurs créneaux, heures limites, pied de page, mentions légales. Ouvre aussi les espaces Réglages et B2B, que Catalogue vendu et Tarification supposent.",
+    read: "Voir les réglages du commerce : points de retrait et leurs créneaux, heures limites, pied de page. Les mentions légales relèvent de « Légal ». Ouvre aussi les espaces Réglages et B2B, que Catalogue vendu et Tarification supposent.",
     write: "Modifier ces réglages — ce qui change l'offre faite à tous les clients.",
+  },
+  lfc_legal: {
+    read: "Voir les mentions légales de la boutique — mentions, CGV particuliers et professionnels, confidentialité, cookies, accessibilité — et les PDF de référence des CGV.",
+    write:
+      "Rédiger ces mentions et déposer un PDF de référence des CGV — ce que la boutique oppose à tous les clients.",
   },
   lfc_site_settings: {
     read: "Voir les sites : adresse, rôles (remet des commandes, approvisionné sur place ou par transfert, expédie), couleurs de la logistique, mise en place du comptoir.",

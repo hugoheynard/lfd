@@ -1,9 +1,9 @@
-import type { LegalDocumentParagraphPayload, LegalMention } from "@lfd/contracts";
+import type { LegalDocumentParagraphPayload, LegalDocumentKey } from "@lfd/contracts";
 
 /** Command : réécrire un article existant. L'identifiant survit à la réécriture. */
 export class EditLegalDocumentParagraphCommand {
   constructor(
-    readonly mention: LegalMention,
+    readonly mention: LegalDocumentKey,
     readonly paragraphId: string,
     readonly prose: LegalDocumentParagraphPayload,
     /**

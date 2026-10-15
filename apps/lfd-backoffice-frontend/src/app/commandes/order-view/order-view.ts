@@ -21,6 +21,7 @@ import { NotifyService } from '../../notify.service';
 import { HandoverProofCard } from '../handover-proof-card/handover-proof-card';
 import { OrderCancelComponent } from '../order-cancel/order-cancel';
 import { OrderHistoryCard } from '../order-history-card/order-history-card';
+import { OrderSalesTermsCard } from '../order-sales-terms-card/order-sales-terms-card';
 import { OrderInvoicesCard } from '../order-invoices-card/order-invoices-card';
 import { OrderRefundBanner } from '../order-refund-banner/order-refund-banner';
 import { OrderRefundsCard } from '../order-refunds-card/order-refunds-card';
@@ -59,6 +60,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     OrderCancelComponent,
     OrderDetail,
     OrderHistoryCard,
+    OrderSalesTermsCard,
     OrderInvoicesCard,
     OrderRefundBanner,
     OrderRefundsCard,

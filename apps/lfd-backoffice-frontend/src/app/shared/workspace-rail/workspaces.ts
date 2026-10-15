@@ -379,8 +379,8 @@ export const EXPLOITATION_VIEWS: readonly WorkspaceView[] = [
     needs: 'lfc_site_settings:read',
   },
   // RÉGLAGES › LÉGAL (Hugo, 2026-10-15) — les cinq mentions légales, venues de
-  // E-commerce › Contenu, sous le droit qu'elles avaient là-bas
-  // (`b2b_settings:read`). Une entrée chacune et non une page d'index : on
+  // E-commerce › Contenu, sous LEUR droit, `lfc_legal:read` (plan
+  // `legal/plan-cgv-par-audience.md`, C0). Une entrée chacune et non une page d'index : on
   // vient corriger une mention précise. DÉRIVÉES du vocabulaire — ordre et
   // mots viennent du contrat (sauf « CGV », libellé court du menu), l'adresse
   // de `LEGAL_MENTION_SLUGS`.
@@ -392,7 +392,7 @@ export const EXPLOITATION_VIEWS: readonly WorkspaceView[] = [
     section: 'Légal',
     // La MÊME teinte que la Communication du menu principal (Hugo, 2026-10-15).
     sectionColor: BRAND_PINK_TINT,
-    needs: 'b2b_settings:read',
+    needs: 'lfc_legal:read',
   })),
 ];
 

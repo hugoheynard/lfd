@@ -4,140 +4,199 @@
     corrige ici — sans développeur ni déploiement.
   </p>
 
-  @switch (state()) {
-    @case ('unknown') {
-      <!-- LE SEGMENT D'URL NE DÉSIGNE AUCUNE MENTION du vocabulaire fermé. Rien
-           n'est demandé au serveur : une clé libre ouvrirait un bloc de contenu
-           que le pied de page ne peut pas cocher et que personne ne saurait
-           retrouver. -->
-      <fold-empty-state
-        tone="alert"
-        title="Mention inconnue"
-        subtitle="Cette adresse ne désigne aucune des cinq mentions légales. Choisissez-en une dans les Réglages, section Légal."
-      >
-        <fold-icon empty-icon name="contracts" [size]="28" />
-      </fold-empty-state>
-    }
-    @case ('loading') {
-      <fold-loading message="Lecture du document…" />
-    }
-    @case ('error') {
-      <fold-empty-state
-        tone="alert"
-        title="Document illisible"
-        subtitle="La lecture a échoué — le document enregistré, lui, est intact."
-      >
-        <button foldButton (click)="reload()">Réessayer</button>
-      </fold-empty-state>
-    }
-    @default {
-      <!-- ÉCHEC PARTIEL : l'écriture est passée, la relecture non. Le document
-           reste à l'écran parce qu'il est juste à un enregistrement près — le
-           masquer ferait croire à une perte. -->
-      @if (stale()) {
-        <fold-callout variant="alert">
-          L’enregistrement est passé, mais la relecture a échoué&nbsp;: ce qui s’affiche peut dater
-          d’avant.
-          <button actions foldButton emphasis="outline" intent="neutral" (click)="reload()">
-            Relire le document
-          </button>
-        </fold-callout>
-      }
-
-      <!-- CONFLIT DE RÉVISION : quelqu'un a enregistré entre-temps. Le message
-           du serveur tel quel, et « Recharger » relit SANS fermer les saisies
-           ouvertes : elles se renvoient ensuite contre la révision relue. -->
-      @if (conflict(); as message) {
-        <fold-callout variant="alert" announce>
-          {{ message }} Vos saisies en cours restent ouvertes&nbsp;: rechargez, relisez, puis
-          enregistrez-les à nouveau.
-          <button
-            actions
-            foldButton
-            emphasis="outline"
-            intent="neutral"
-            (click)="reloadAfterConflict()"
-          >
-            Recharger
-          </button>
-        </fold-callout>
-      }
-
-      @if (revision() === 0) {
-        <fold-callout variant="info">
-          Personne n’a encore enregistré cette mention&nbsp;: ce que vous lisez est le document de
-          <strong>démonstration</strong>, servi par défaut. Il n’engage personne tant qu’il n’a pas
-          été réécrit.
-        </fold-callout>
-      }
-
-      @for (section of missingSections(); track section) {
-        <app-required-section-callout
-          [section]="section"
-          [busy]="busy()"
-          (submitted)="submitSection($event)"
-        />
-      }
-
-      <app-legal-title-card
-        [saved]="document().title"
-        [locale]="locale()"
-        [busy]="busy()"
-        (localeChange)="pickLocale($event)"
-        (submitted)="saveTitle($event)"
+  <!-- LA PAGE DES CGV porte DEUX textes, un onglet chacun (plan
+       legal/plan-cgv-par-audience.md, C5) ; les autres mentions n'en ont qu'un.
+       Le corps est le même gabarit dans les deux cas. -->
+  @if (target() === 'salesTerms') {
+    <fold-nav-layout>
+      <fold-tabs
+        tabNav
+        #bar="foldTabs"
+        size="compact"
+        activeStyle="fill"
+        background="surface"
+        [tabs]="salesTermsTabs"
+        [(activeKey)]="salesTermsTab"
       />
+      <fold-tab-panel [tabs]="bar" [key]="salesTermsTab()">
+        <ng-container [ngTemplateOutlet]="body" />
+      </fold-tab-panel>
+    </fold-nav-layout>
+  } @else {
+    <ng-container [ngTemplateOutlet]="body" />
+  }
 
-      <!-- LES ARTICLES, dans l'ordre de lecture. -->
-      @if (paragraphs().length === 0) {
+  <ng-template #body>
+    @switch (state()) {
+      @case ('unknown') {
+        <!-- LE SEGMENT D'URL NE DÉSIGNE AUCUNE MENTION du vocabulaire fermé. Rien
+             n'est demandé au serveur : une clé libre ouvrirait un bloc de contenu
+             que le pied de page ne peut pas cocher et que personne ne saurait
+             retrouver. -->
         <fold-empty-state
-          title="Aucun article"
-          subtitle="Le document n’a que son titre. Écrivez le premier article ci-dessous."
+          tone="alert"
+          title="Mention inconnue"
+          subtitle="Cette adresse ne désigne aucune des cinq mentions légales. Choisissez-en une dans les Réglages, section Légal."
         >
           <fold-icon empty-icon name="contracts" [size]="28" />
         </fold-empty-state>
-      } @else {
-        @for (paragraph of paragraphs(); track paragraph.id; let i = $index) {
-          <app-legal-paragraph-card
-            [paragraph]="paragraph"
-            [index]="i"
-            [first]="$first"
-            [last]="$last"
-            [locale]="locale()"
+      }
+      @case ('loading') {
+        <fold-loading message="Lecture du document…" />
+      }
+      @case ('error') {
+        <fold-empty-state
+          tone="alert"
+          title="Document illisible"
+          subtitle="La lecture a échoué — le document enregistré, lui, est intact."
+        >
+          <button foldButton (click)="reload()">Réessayer</button>
+        </fold-empty-state>
+      }
+      @default {
+        <!-- ÉCHEC PARTIEL : l'écriture est passée, la relecture non. Le document
+             reste à l'écran parce qu'il est juste à un enregistrement près — le
+             masquer ferait croire à une perte. -->
+        @if (stale()) {
+          <fold-callout variant="alert">
+            L’enregistrement est passé, mais la relecture a échoué&nbsp;: ce qui s’affiche peut
+            dater d’avant.
+            <button actions foldButton emphasis="outline" intent="neutral" (click)="reload()">
+              Relire le document
+            </button>
+          </fold-callout>
+        }
+
+        <!-- CONFLIT DE RÉVISION : quelqu'un a enregistré entre-temps. Le message
+             du serveur tel quel, et « Recharger » relit SANS fermer les saisies
+             ouvertes : elles se renvoient ensuite contre la révision relue. -->
+        @if (conflict(); as message) {
+          <fold-callout variant="alert" announce>
+            {{ message }} Vos saisies en cours restent ouvertes&nbsp;: rechargez, relisez, puis
+            enregistrez-les à nouveau.
+            <button
+              actions
+              foldButton
+              emphasis="outline"
+              intent="neutral"
+              (click)="reloadAfterConflict()"
+            >
+              Recharger
+            </button>
+          </fold-callout>
+        }
+
+        @if (revision() === 0) {
+          @if (documentKey() === 'salesTermsPro') {
+            <!-- C1′ : jamais semées. La boutique dit « en cours de rédaction »,
+                 et ne sert JAMAIS les CGV particuliers à un pro. -->
+            <fold-callout variant="info">
+              Les CGV professionnelles ne sont pas encore rédigées&nbsp;: la boutique annonce
+              <strong>« en cours de rédaction »</strong>, et ne montre jamais à un pro les CGV des
+              particuliers.
+            </fold-callout>
+          } @else {
+            <fold-callout variant="info">
+              Personne n’a encore enregistré cette mention&nbsp;: ce que vous lisez est le document
+              de
+              <strong>démonstration</strong>, servi par défaut. Il n’engage personne tant qu’il n’a
+              pas été réécrit.
+            </fold-callout>
+          }
+        }
+
+        @if (!canWrite()) {
+          <fold-callout variant="info">
+            Lecture seule&nbsp;: rédiger une mention ou déposer un PDF demande le droit d’écriture «
+            Légal ».
+          </fold-callout>
+        }
+
+        @for (section of missingSections(); track section) {
+          <app-required-section-callout
+            [section]="section"
             [busy]="busy()"
-            [editing]="editingId() === paragraph.id"
-            (moved)="move(paragraph.id, $event)"
-            (removed)="remove(paragraph.id)"
-            (editStarted)="editingId.set(paragraph.id)"
-            (editCancelled)="editingId.set(null)"
-            (saved)="saveEdit(paragraph, $event)"
+            (submitted)="submitSection($event)"
           />
         }
-      }
 
-      <!-- L'AJOUT, hors du sélecteur de langue : un article naît dans les trois
-           langues ou n'existe pas. -->
-      <fold-card>
-        <fold-element-title
-          variant="title"
-          title="Ajouter un article"
-          subtitle="Un article naît dans les trois langues à la fois : le document n’en accepte pas d’à moitié traduit."
+        <app-legal-title-card
+          [saved]="document().title"
+          [locale]="locale()"
+          [busy]="busy()"
+          (localeChange)="pickLocale($event)"
+          (submitted)="saveTitle($event)"
         />
 
-        @if (adding()) {
-          <app-legal-paragraph-form
-            submitLabel="Ajouter l’article"
-            [busy]="busy()"
-            (submitted)="submitAdd($event)"
-            (cancelled)="adding.set(false)"
+        <!-- LE PDF DE RÉFÉRENCE, pour les deux textes de CGV seulement (C3) :
+             le document juridique, dont les articles ci-dessous sont la lecture
+             en ligne. -->
+        @if (salesTermsDocument(); as salesTerms) {
+          <app-legal-pdf-card
+            [document]="salesTerms"
+            [textUpdatedAt]="updatedAt()"
+            [canWrite]="canWrite()"
           />
-        } @else {
-          <div class="actions">
-            <button foldButton emphasis="outline" intent="neutral" (click)="adding.set(true)">
-              Écrire un article dans les trois langues
-            </button>
-          </div>
         }
-      </fold-card>
+
+        <!-- LES ARTICLES, dans l'ordre de lecture. -->
+        @if (paragraphs().length === 0) {
+          <fold-empty-state
+            title="Aucun article"
+            subtitle="Le document n’a que son titre. Écrivez le premier article ci-dessous."
+          >
+            <fold-icon empty-icon name="contracts" [size]="28" />
+          </fold-empty-state>
+        } @else {
+          @for (paragraph of paragraphs(); track paragraph.id; let i = $index) {
+            <app-legal-paragraph-card
+              [paragraph]="paragraph"
+              [index]="i"
+              [first]="$first"
+              [last]="$last"
+              [locale]="locale()"
+              [busy]="busy()"
+              [editing]="editingId() === paragraph.id"
+              (moved)="move(paragraph.id, $event)"
+              (removed)="remove(paragraph.id)"
+              (editStarted)="editingId.set(paragraph.id)"
+              (editCancelled)="editingId.set(null)"
+              (saved)="saveEdit(paragraph, $event)"
+            />
+          }
+        }
+
+        <!-- L'AJOUT, hors du sélecteur de langue : un article naît dans les trois
+             langues ou n'existe pas. -->
+        <fold-card>
+          <fold-element-title
+            variant="title"
+            title="Ajouter un article"
+            subtitle="Un article naît dans les trois langues à la fois : le document n’en accepte pas d’à moitié traduit."
+          />
+
+          @if (adding()) {
+            <app-legal-paragraph-form
+              submitLabel="Ajouter l’article"
+              [busy]="busy()"
+              (submitted)="submitAdd($event)"
+              (cancelled)="adding.set(false)"
+            />
+          } @else {
+            <div class="actions">
+              <button
+                foldButton
+                emphasis="outline"
+                intent="neutral"
+                [disabled]="!canWrite()"
+                (click)="adding.set(true)"
+              >
+                Écrire un article dans les trois langues
+              </button>
+            </div>
+          }
+        </fold-card>
+      }
     }
-  }
+  </ng-template>
 </fold-page-layout>

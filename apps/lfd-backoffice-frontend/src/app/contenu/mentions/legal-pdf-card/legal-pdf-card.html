@@ -1,0 +1,79 @@
+<fold-card>
+  <fold-element-title
+    variant="title"
+    title="Document PDF de référence"
+    subtitle="La version de référence est le document PDF ; le texte ci-dessus en facilite la lecture en ligne."
+  />
+
+  @if (loadError()) {
+    <fold-empty-state
+      tone="alert"
+      title="Historique illisible"
+      subtitle="La lecture des dépôts a échoué — les fichiers déposés, eux, sont intacts."
+    >
+      <fold-icon empty-icon name="contracts" [size]="28" />
+    </fold-empty-state>
+  } @else {
+    @if (current(); as file) {
+      <p class="current" data-current-pdf>
+        En vigueur&nbsp;: déposé le <strong>{{ stamp(file.uploadedAt) }}</strong>
+        @if (file.uploadedByName; as name) {
+          par {{ name }}
+        }
+        — <fold-link [href]="urlOf(file)">Télécharger</fold-link>
+      </p>
+    } @else {
+      <fold-callout variant="info">
+        Aucun PDF n’est déposé&nbsp;: la boutique ne propose pas encore de télécharger ces CGV.
+      </fold-callout>
+    }
+
+    @if (textIsNewer()) {
+      <!-- C3 : le texte et le PDF peuvent diverger. L'écran le DIT, il ne
+           l'empêche pas — c'est aux juristes de produire le PDF. -->
+      @if (current(); as file) {
+        <fold-callout variant="warning" data-text-newer>
+          Le texte en ligne a été modifié le {{ day(textUpdatedAt() ?? file.uploadedAt) }}, après le
+          dépôt du PDF en vigueur ({{ day(file.uploadedAt) }}). Faites produire un PDF à jour par
+          les juristes, puis déposez-le.
+        </fold-callout>
+      }
+    }
+
+    @if (canWrite()) {
+      <fold-file-dropzone
+        [label]="current() === null ? 'Déposer le PDF' : 'Remplacer le PDF'"
+        accept="application/pdf,.pdf"
+        hint="Un PDF de 10 Mo au plus. Le précédent n’est pas effacé : il reste dans l’historique."
+        [busy]="busy()"
+        busyLabel="Dépôt du PDF…"
+        (filesPicked)="picked($event)"
+      />
+    }
+
+    @if (files().length > 0) {
+      <fold-data-table
+        caption="Historique des dépôts"
+        narrowLayout="cards"
+        zebra
+        [columns]="columns"
+        [rows]="files()"
+        [rowKey]="rowKey"
+      >
+        <ng-template foldCell="uploadedAt" let-row>{{ stamp(row.uploadedAt) }}</ng-template>
+        <ng-template foldCell="author" let-row>{{ row.uploadedByName ?? '—' }}</ng-template>
+        <ng-template foldCell="size" let-row>{{ size(row.sizeBytes) }}</ng-template>
+        <ng-template foldCell="state" let-row>
+          @if (row.supersededAt === null) {
+            En vigueur
+          } @else {
+            Remplacé le {{ day(row.supersededAt) }}
+          }
+        </ng-template>
+        <ng-template foldCell="download" let-row>
+          <fold-link [href]="urlOf(row)">Télécharger</fold-link>
+        </ng-template>
+      </fold-data-table>
+    }
+  }
+</fold-card>

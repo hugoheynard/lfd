@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 
 import type {
   ActivityEventView,
+  OrderSalesTermsResponse,
   AdminOrdersPage,
   AdminOrdersQuery,
   AdminPlaceOrderPayload,
@@ -62,6 +63,19 @@ export class AdminOrdersService {
    * **L'historique d'une commande** — les faits du journal qui la touchent, le
    * plus récent d'abord, bornés côté serveur (plan `plan-page-commandes.md` §3 bis).
    */
+  /**
+   * Les CGV que la commande porte — texte, révision, PDF en vigueur à sa
+   * passation (plan `legal/plan-cgv-par-audience.md`, C4). `salesTerms: null`
+   * pour une commande d'avant l'enregistrement.
+   */
+  async salesTerms(id: string): Promise<OrderSalesTermsResponse> {
+    return firstValueFrom(
+      this.http.get<OrderSalesTermsResponse>(
+        `${B2B_API_BASE}/admin/orders/${encodeURIComponent(id)}/sales-terms`,
+      ),
+    );
+  }
+
   async history(id: string): Promise<readonly ActivityEventView[]> {
     return firstValueFrom(
       this.http.get<ActivityEventView[]>(

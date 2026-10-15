@@ -1071,6 +1071,15 @@
       "information": false
     },
     {
+      "colonne": "public.legal_document_files.uploaded_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a déposé un PDF de référence des CGV (`legal/plan-cgv-par-audience.md`, C3′) ; la ligne ne se supprime pas, comme le PDF.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "public.loyalty_settings.updated_by_staff_id",
       "personne": "staff",
       "categorie": "auteur-geste",

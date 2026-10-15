@@ -1649,7 +1649,11 @@ export type {
   FooterContentView,
   LegalMentionDisplay,
 } from "./platform-content.js";
-export type { LegalMention } from "./platform-content.defaults.js";
+export type {
+  LegalMention,
+  LegalDocumentKey,
+  SalesTermsDocument,
+} from "./platform-content.defaults.js";
 export {
   MAX_LEGAL_DOCUMENT_BODY,
   MAX_LEGAL_DOCUMENT_PARAGRAPHS,
@@ -1666,6 +1670,8 @@ export {
   legalDocumentRevisionQuerySchema,
   legalSectionKeySchema,
   legalMentionSchema,
+  legalDocumentKeySchema,
+  salesTermsDocumentSchema,
 } from "./legal-document.js";
 export type {
   LegalDocumentProse,
@@ -1681,6 +1687,13 @@ export type {
   LegalRequiredSectionPayload,
   LegalDocumentRevisionQuery,
 } from "./legal-document.js";
+export type {
+  LegalDocumentFileView,
+  LegalDocumentFileHistoryView,
+  LegalDocumentFileDeposited,
+  OrderSalesTermsView,
+  OrderSalesTermsResponse,
+} from "./legal-document-file.js";
 export {
   legalSectionKeys,
   legalSectionLabels,
@@ -1695,8 +1708,11 @@ export {
   socialChannelLabels,
   legalMentionOrder,
   legalMentionLabels,
+  legalDocumentKeys,
+  salesTermsDocuments,
   DEFAULT_FOOTER_CONTENT,
   DEFAULT_LEGAL_DOCUMENT,
+  LEGAL_DOCUMENT_TITLES,
   DEMO_LEGAL_DOCUMENTS,
   DEMO_LEGAL_SECTIONS,
 } from "./platform-content.defaults.js";

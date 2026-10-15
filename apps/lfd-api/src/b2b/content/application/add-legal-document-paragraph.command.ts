@@ -1,9 +1,9 @@
-import type { LegalDocumentParagraphPayload, LegalMention } from "@lfd/contracts";
+import type { LegalDocumentParagraphPayload, LegalDocumentKey } from "@lfd/contracts";
 
 /** Command : ajouter un article en fin de document, dans les trois langues. */
 export class AddLegalDocumentParagraphCommand {
   constructor(
-    readonly mention: LegalMention,
+    readonly mention: LegalDocumentKey,
     readonly prose: LegalDocumentParagraphPayload,
     /**
      * La révision que l'écran a lue : l'écriture lui est conditionnée (B2).

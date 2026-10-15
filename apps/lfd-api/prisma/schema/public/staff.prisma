@@ -103,6 +103,10 @@ enum StaffResource {
   /// `documentation/sites/sites.md`,
   /// lot S0). Accordée à l'écran.
   lfc_site_settings
+  /// LE LÉGAL — les mentions de la boutique et le PDF de référence des CGV
+  /// (2026-10-15, `documentation/legal/plan-cgv-par-audience.md`, C0).
+  /// Accordée à l'écran.
+  lfc_legal
   /// LE RÉGLAGE DES COMMANDES — l'heure limite, son rattrapage, et
   /// l'annulation par le client (`documentation/commandes/plan-reglages-commandes.md`).
   /// Ajoutée au lot S0 ; les routes la portent au lot O1. Accordée à l'écran.

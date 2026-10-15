@@ -70,6 +70,7 @@ function draftInput(over: Partial<DraftOrderInput> = {}): DraftOrderInput {
     lateFeeAdjustment: null,
     deliveryVatMode: "standard",
     voucher: null,
+    salesTerms: { document: "salesTerms", revision: null, fileId: null },
     ...over,
   };
 }

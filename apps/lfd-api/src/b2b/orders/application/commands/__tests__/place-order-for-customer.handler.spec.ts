@@ -46,6 +46,7 @@ import { OrderCutoffReader } from "../../../domain/ports/order-cutoff.reader.js"
 import { OrderCutoffWaiverGate } from "../../../domain/ports/order-cutoff-waiver.gate.js";
 import { OrderLateFeeReader } from "../../../domain/ports/order-late-fee.reader.js";
 import { FixedDeliveryVat } from "./fixed-delivery-vat.js";
+import { FixedSalesTerms } from "./fixed-sales-terms.js";
 import { OrderPlanGate } from "../../services/order-plan-gate.service.js";
 import { SameDayOrderClosedError } from "../../../domain/errors/same-day-order-closed.error.js";
 import { FixedClosedPlans, gateOf, openPlanGate, RecordingAdmissionDesk } from "./plan-doubles.js";
@@ -326,6 +327,7 @@ function handler(
     readonly delivery?: DeliveryAvailabilityView;
     readonly payers?: FixedOrderPayers;
     readonly plans?: OrderPlanGate;
+    readonly salesTerms?: FixedSalesTerms;
     readonly durable?: RecordingDurable;
   } = {},
 ): PlaceOrderForCustomerHandler {
@@ -371,6 +373,7 @@ function handler(
       options.payers ?? ownPayers(),
       new FixedDeliveryVat(),
       options.plans ?? openPlanGate(),
+      options.salesTerms ?? new FixedSalesTerms(),
     ),
     repo(sink),
     options.payments ?? payments(),
@@ -715,6 +718,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
         ownPayers(),
         new FixedDeliveryVat(),
         openPlanGate(),
+        new FixedSalesTerms(),
       ),
       repo(sink),
       payments(intents),
@@ -775,5 +779,45 @@ describe("PlaceOrderForCustomerHandler — un site facturé à son principal", (
     expect(sink.placed?.billedCompanyId).toBe("alpes");
     expect(sink.placed?.paymentStatus).toBe("not_required");
     expect(asked).toEqual(["alpes"]);
+  });
+});
+
+/**
+ * Les CGV figées sur une saisie de l'équipe (plan
+ * `legal/plan-cgv-par-audience.md`, C4′) — celles de l'audience du CLIENT,
+ * pas du commercial. L'écran les dira « applicables », pas « acceptées ».
+ */
+describe("PlaceOrderForCustomerHandler — les CGV en vigueur", () => {
+  it("une société active porte les CGV pro", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const salesTerms = new FixedSalesTerms({ salesTermsPro: { revision: 2, fileId: "ldf_pro_9" } });
+
+    await handler(guard("orders", "active", "granted"), sink, { salesTerms }).execute(
+      new PlaceOrderForCustomerCommand("staff_1", payload()),
+    );
+
+    expect(sink.placed?.salesTerms).toEqual({
+      document: "salesTermsPro",
+      revision: 2,
+      fileId: "ldf_pro_9",
+    });
+    expect(sink.placed?.placedByStaffId).toBe("staff_1");
+  });
+
+  it("une société en attente porte les CGV particuliers (C2″)", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const salesTerms = new FixedSalesTerms();
+
+    // Par lien de paiement : une société en attente n'a pas de compte.
+    await handler(guard("orders", "pending", "granted"), sink, { salesTerms }).execute(
+      new PlaceOrderForCustomerCommand("staff_1", payload({ settlement: "link" })),
+    );
+
+    expect(salesTerms.asked).toEqual(["salesTerms"]);
+    expect(sink.placed?.salesTerms).toEqual({
+      document: "salesTerms",
+      revision: null,
+      fileId: null,
+    });
   });
 });

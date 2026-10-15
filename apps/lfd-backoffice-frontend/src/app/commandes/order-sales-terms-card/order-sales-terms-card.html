@@ -1,0 +1,32 @@
+<fold-card data-order-sales-terms>
+  <fold-element-title
+    cardHeader
+    variant="title"
+    icon="contracts"
+    title="Conditions générales de vente"
+  />
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Lecture des CGV de la commande…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Les CGV de cette commande n’ont pas pu être lues.">
+        <button foldButton (click)="retry()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @default {
+      @if (sentence(); as text) {
+        <p data-order-sales-terms-sentence>
+          {{ text }}
+          @if (fileUrl(); as url) {
+            — <fold-link [href]="url">Télécharger ce PDF</fold-link>
+          }
+        </p>
+      } @else {
+        <p data-order-sales-terms-unknown>
+          Commande passée avant l’enregistrement des CGV&nbsp;: aucune version n’est connue.
+        </p>
+      }
+    }
+  }
+</fold-card>

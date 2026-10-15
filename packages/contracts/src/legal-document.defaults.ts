@@ -1,5 +1,5 @@
 import type { LegalSectionKey } from "./legal-document.sections.js";
-import type { LegalMention } from "./platform-content.defaults.js";
+import type { LegalDocumentKey, LegalMention } from "./platform-content.defaults.js";
 import type {
   LegalDocument,
   LegalDocumentHeading,
@@ -190,6 +190,28 @@ export const DEMO_LEGAL_DOCUMENTS: Readonly<Record<LegalMention, DemoLegalDocume
 };
 
 /**
+ * Le titre de départ de chaque document — celui des cinq mentions repris de
+ * {@link DEMO_LEGAL_DOCUMENTS}, plus celui des CGV professionnelles.
+ *
+ * ⚠️ Les CGV pro n'ont PAS de document de démonstration, et c'est voulu
+ * (plan `legal/plan-cgv-par-audience.md`, C1′) : aucune ligne n'est semée, et
+ * leur absence se lit « en cours de rédaction ». Un corps de démonstration
+ * semé en développement aurait été la seule version jamais vue de cet état.
+ */
+export const LEGAL_DOCUMENT_TITLES: Readonly<Record<LegalDocumentKey, LegalDocumentHeading>> = {
+  legalNotice: DEMO_LEGAL_DOCUMENTS.legalNotice.title,
+  salesTerms: DEMO_LEGAL_DOCUMENTS.salesTerms.title,
+  privacy: DEMO_LEGAL_DOCUMENTS.privacy.title,
+  cookies: DEMO_LEGAL_DOCUMENTS.cookies.title,
+  accessibility: DEMO_LEGAL_DOCUMENTS.accessibility.title,
+  salesTermsPro: {
+    fr: "Conditions générales de vente professionnelles",
+    en: "Terms and conditions of sale for professionals",
+    it: "Condizioni generali di vendita per i professionisti",
+  },
+};
+
+/**
  * Le document de DÉPART d'une mention — ce que le serveur rend tant que
  * personne n'a rien enregistré, et ce dont la boutique se replie quand l'API ne
  * répond pas.
@@ -215,7 +237,7 @@ export const DEMO_LEGAL_DOCUMENTS: Readonly<Record<LegalMention, DemoLegalDocume
  * et n'entrent en base que par le SEMIS de développement — un geste explicite,
  * sur une base locale.
  */
-export const DEFAULT_LEGAL_DOCUMENT = (mention: LegalMention): LegalDocument => ({
-  title: DEMO_LEGAL_DOCUMENTS[mention].title,
+export const DEFAULT_LEGAL_DOCUMENT = (key: LegalDocumentKey): LegalDocument => ({
+  title: LEGAL_DOCUMENT_TITLES[key],
   paragraphs: [],
 });

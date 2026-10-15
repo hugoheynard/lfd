@@ -304,6 +304,14 @@ export const staffResourceSchema = z.enum([
    */
   "lfc_site_settings",
   /**
+   * **Le légal** — les mentions de la boutique (mentions légales, CGV
+   * particuliers et professionnels, confidentialité, cookies, accessibilité)
+   * et le PDF de référence des CGV (`documentation/legal/plan-cgv-par-audience.md`,
+   * C0). Détachée de `b2b_settings` le 2026-10-15 : le commercial qui règle
+   * les retraits n'a pas à voir une entrée « Légal ». Accordée à l'écran.
+   */
+  "lfc_legal",
+  /**
    * **Le réglage des commandes** — l'heure limite, son rattrapage, et
    * l'annulation par le client (`documentation/commandes/plan-reglages-commandes.md`).
    * Ajoutée au lot S0 ; les routes passent dessous au lot O1. Accordée à
@@ -650,6 +658,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   b2b_client_notes: "Notes du commercial",
   b2b_settings: "Réglages plateforme",
   lfc_site_settings: "Sites",
+  lfc_legal: "Légal",
   lfc_order_settings: "Heure limite et annulation des commandes",
   lfc_order_opening: "Ouverture des commandes",
   staff_access: "Équipe et accès",
@@ -768,6 +777,9 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // deux droits s'accordent à l'écran.
     lfc_site_settings: "write",
     lfc_order_settings: "write",
+    // Graine seulement (2026-10-15, plan des CGV, C0) : en production,
+    // accordée à l'écran.
+    lfc_legal: "write",
     // Graine seulement (2026-10-13, plan-reglages-commandes.md §3.5).
     lfc_order_opening: "write",
     // La graine seule (2026-10-13, réglages commerciaux) : en production,

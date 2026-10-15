@@ -21,7 +21,12 @@ import {
   voucherDiscountOf,
 } from "./order-amount-guards.js";
 import { clienteleOf, normalizeFulfillment } from "./order-fulfillment.js";
-import type { DraftOrderInput, OrderFulfillmentInput, OrderToPlace } from "./order-shapes.js";
+import type {
+  DraftOrderInput,
+  OrderFulfillmentInput,
+  OrderSalesTerms,
+  OrderToPlace,
+} from "./order-shapes.js";
 import { settlementRegimeOf } from "../services/settlement-regime.js";
 import { computeOrderTotals } from "../services/vat.js";
 import { OrderLine } from "../value-objects/order-line.js";
@@ -29,6 +34,7 @@ import { OrderLine } from "../value-objects/order-line.js";
 export type {
   DraftOrderInput,
   OrderFulfillmentInput,
+  OrderSalesTerms,
   OrderToPlace,
   OrderVoucher,
 } from "./order-shapes.js";
@@ -71,6 +77,7 @@ export class Order {
     private readonly vatCentsValue: number,
     private readonly vatSharesValue: readonly VatShare[],
     private readonly totalCentsValue: number,
+    private readonly salesTerms: OrderSalesTerms,
   ) {}
 
   /** Compose une commande : valide, fige les lignes et calcule tous les montants. */
@@ -147,6 +154,7 @@ export class Order {
       vatCents,
       vatShares,
       totalCents,
+      input.salesTerms,
     );
   }
 
@@ -260,6 +268,7 @@ export class Order {
       totalCents: this.totalCentsValue,
       paymentStatus: this.payment.status,
       stripePaymentIntentId: this.payment.intentId,
+      salesTerms: this.salesTerms,
       lines: this.lines.map((line) => line.toSnapshot()),
     };
   }

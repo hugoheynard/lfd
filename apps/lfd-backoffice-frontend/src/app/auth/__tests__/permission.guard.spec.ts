@@ -72,6 +72,8 @@ describe('permissionGuard — redirige plutôt que de bloquer', () => {
     // Réglages › Commandes (plan-reglages-commandes.md §3.3).
     ['lfc_order_settings:read', '/reglages/commandes/heure-limite'],
     ['lfc_order_opening:read', '/reglages/commandes/ouverture'],
+    // Réglages › Légal (plan des CGV, C0′).
+    ['lfc_legal:read', '/reglages/legal/cgv'],
   ] as const)('renvoie qui ne tient que %s vers %s', async (permission, path) => {
     const result = await guardWith([permission]);
 

@@ -1,4 +1,4 @@
-import type { LegalDocumentHeading, LegalMention } from "@lfd/contracts";
+import type { LegalDocumentHeading, LegalDocumentKey } from "@lfd/contracts";
 
 /**
  * Command : renommer le document d'une mention, dans les trois langues d'un coup.
@@ -9,7 +9,7 @@ import type { LegalDocumentHeading, LegalMention } from "@lfd/contracts";
  */
 export class SetLegalDocumentTitleCommand {
   constructor(
-    readonly mention: LegalMention,
+    readonly mention: LegalDocumentKey,
     readonly heading: LegalDocumentHeading,
     /**
      * La révision que l'écran a lue : l'écriture lui est conditionnée (B2).

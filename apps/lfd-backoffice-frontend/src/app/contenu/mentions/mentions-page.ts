@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -12,8 +13,10 @@ import type {
   LegalDocument,
   LegalDocumentHeading,
   LegalDocumentParagraph,
+  LegalDocumentKey,
   LegalDocumentParagraphPayload,
   LegalMention,
+  SalesTermsDocument,
 } from '@lfd/contracts';
 // Les VALEURS par `content-values`, qui ne tire pas zod (cf. l'écran du pied de page).
 import {
@@ -30,14 +33,20 @@ import {
   FoldEmptyStateComponent,
   FoldIconComponent,
   FoldLoadingStateComponent,
+  FoldNavLayoutComponent,
   FoldPageLayoutComponent,
+  FoldTabPanelComponent,
+  FoldTabsComponent,
+  type FoldTabItem,
 } from 'fold-ng';
 
+import { PermissionsStore } from '../../auth/permissions.store';
 import { NotifyService } from '../../notify.service';
 import { legalMentionOfSlug } from '../../reglages/legal-mention-slugs';
 import { PlatformContentService } from '../platform-content.service';
 import { LegalParagraphCard } from './legal-paragraph-card/legal-paragraph-card';
 import { LegalParagraphForm } from './legal-paragraph-form/legal-paragraph-form';
+import { LegalPdfCard } from './legal-pdf-card/legal-pdf-card';
 import { LegalTitleCard } from './legal-title-card/legal-title-card';
 import {
   RequiredSectionCallout,
@@ -57,6 +66,14 @@ const BLANK_DOCUMENT: LegalDocument = {
 /** L'état de la LECTURE, pas des écritures. `unknown` : le segment d'URL ne
  *  désigne aucune mention, rien n'est demandé au serveur. */
 type LoadState = 'unknown' | 'loading' | 'ready' | 'error';
+
+/** Les deux onglets de la page des CGV (plan `legal/plan-cgv-par-audience.md`, C5). */
+export type SalesTermsTab = 'consumers' | 'pro';
+
+const SALES_TERMS_TABS: readonly FoldTabItem<SalesTermsTab>[] = [
+  { key: 'consumers', label: 'Particuliers', icon: 'user' },
+  { key: 'pro', label: 'Professionnels', icon: 'company' },
+];
 
 /** Garde de type : évite un `as` là où une vérification suffit. */
 function isLocale(value: string): value is ContentLocale {
@@ -90,10 +107,15 @@ function isLocale(value: string): value is ContentLocale {
     FoldEmptyStateComponent,
     FoldIconComponent,
     FoldLoadingStateComponent,
+    FoldNavLayoutComponent,
     FoldPageLayoutComponent,
+    FoldTabPanelComponent,
+    FoldTabsComponent,
     LegalParagraphCard,
     LegalParagraphForm,
+    LegalPdfCard,
     LegalTitleCard,
+    NgTemplateOutlet,
     RequiredSectionCallout,
   ],
   templateUrl: './mentions-page.html',
@@ -102,6 +124,7 @@ function isLocale(value: string): value is ContentLocale {
 export class MentionsPage {
   private readonly api = inject(PlatformContentService);
   private readonly notify = inject(NotifyService);
+  private readonly permissions = inject(PermissionsStore);
 
   /** Le segment `:mention` de la route, brut — le SEGMENT français
    *  (`/reglages/legal/cgv`), pas la clé du contrat, depuis le 2026-10-15. */
@@ -113,6 +136,40 @@ export class MentionsPage {
   protected readonly target = computed<LegalMention | null>(() =>
     legalMentionOfSlug(this.mention()),
   );
+
+  /**
+   * L'onglet de la page des CGV : particuliers ou professionnels (C5). Une
+   * entrée de menu, deux textes — les autres mentions n'en ont qu'un.
+   */
+  protected readonly salesTermsTabs = SALES_TERMS_TABS;
+  protected readonly salesTermsTab = signal<SalesTermsTab>('consumers');
+
+  /**
+   * Le DOCUMENT édité : la mention, ou les CGV pro quand l'onglet
+   * « Professionnels » est ouvert sur la page des CGV.
+   */
+  protected readonly documentKey = computed<LegalDocumentKey | null>(() => {
+    const mention = this.target();
+    if (mention === 'salesTerms' && this.salesTermsTab() === 'pro') {
+      return 'salesTermsPro';
+    }
+    return mention;
+  });
+
+  /** Le texte de CGV ouvert, s'il en est un — c'est lui qui porte un PDF de référence. */
+  protected readonly salesTermsDocument = computed<SalesTermsDocument | null>(() => {
+    const key = this.documentKey();
+    return key === 'salesTerms' || key === 'salesTermsPro' ? key : null;
+  });
+
+  /**
+   * Écrire demande `lfc_legal:write` (C0). Sans lui, la page se lit : elle le
+   * dit, n'ouvre pas l'ajout ni le dépôt, et le serveur refuse le reste (403).
+   */
+  protected readonly canWrite = computed(() => this.permissions.can('lfc_legal:write'));
+
+  /** La date de la dernière révision du texte — comparée à celle du PDF (C3). */
+  protected readonly updatedAt = signal<string | null>(null);
 
   /** Le titre de l'écran vient du CONTRAT : il se nomme avant toute lecture. */
   protected readonly heading = computed(() => {
@@ -149,7 +206,7 @@ export class MentionsPage {
 
   /** Les sections que la mention exige et que le document ne porte pas encore. */
   protected readonly missingSections = computed(() => {
-    const mention = this.target();
+    const mention = this.documentKey();
     if (mention === null) {
       return [];
     }
@@ -161,19 +218,20 @@ export class MentionsPage {
     // Le routeur réutilise le composant d'une mention à l'autre : la lecture
     // se rejoue sur le changement d'entrée, pas seulement à la construction.
     effect(() => {
-      const mention = this.target();
-      void this.open(mention);
+      const document = this.documentKey();
+      void this.open(document);
     });
   }
 
   /** Ouvre une mention : remet l'écran à zéro, puis lit — ou dit qu'elle n'existe pas. */
-  private async open(mention: LegalMention | null): Promise<void> {
+  private async open(mention: LegalDocumentKey | null): Promise<void> {
     this.editingId.set(null);
     this.adding.set(false);
     this.conflict.set(null);
     this.document.set(BLANK_DOCUMENT);
     this.stale.set(false);
     this.revision.set(0);
+    this.updatedAt.set(null);
     if (mention === null) {
       this.state.set('unknown');
       return;
@@ -182,7 +240,7 @@ export class MentionsPage {
   }
 
   /** La lecture d'entrée, et celle du bouton « Réessayer ». */
-  protected async load(mention: LegalMention): Promise<void> {
+  protected async load(mention: LegalDocumentKey): Promise<void> {
     this.state.set('loading');
     try {
       await this.read(mention);
@@ -195,16 +253,17 @@ export class MentionsPage {
 
   /** Le geste de relecture depuis le gabarit, où la mention est déjà résolue. */
   protected async reload(): Promise<void> {
-    const mention = this.target();
+    const mention = this.documentKey();
     if (mention !== null) {
       await this.load(mention);
     }
   }
 
-  private async read(mention: LegalMention): Promise<void> {
+  private async read(mention: LegalDocumentKey): Promise<void> {
     const view = await this.api.legalDocument(mention);
     this.document.set(view.content);
     this.revision.set(view.revision);
+    this.updatedAt.set(view.revision === 0 ? null : view.updatedAt);
     this.stale.set(false);
   }
 
@@ -214,7 +273,7 @@ export class MentionsPage {
    * à l'écran, et se renvoient contre la révision relue.
    */
   protected async reloadAfterConflict(): Promise<void> {
-    const mention = this.target();
+    const mention = this.documentKey();
     if (mention === null) {
       return;
     }
@@ -306,11 +365,11 @@ export class MentionsPage {
    * le message du serveur reste affiché avec « Recharger » (`conflict`).
    */
   private async write(
-    action: (mention: LegalMention, revision: number) => Promise<void>,
+    action: (mention: LegalDocumentKey, revision: number) => Promise<void>,
     success: string,
     fallback: string,
   ): Promise<boolean> {
-    const mention = this.target();
+    const mention = this.documentKey();
     if (mention === null) {
       return false;
     }

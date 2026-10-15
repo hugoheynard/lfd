@@ -9,10 +9,14 @@ import type {
   LegalDocumentParagraphCreated,
   LegalDocumentParagraphPayload,
   LegalDocumentView,
-  LegalMention,
+  LegalDocumentKey,
+  LegalDocumentFileHistoryView,
   LegalSectionKey,
+  SalesTermsDocument,
+  StaffPermission,
 } from '@lfd/contracts';
 
+import { PermissionsStore } from '../../auth/permissions.store';
 import { NotifyService } from '../../notify.service';
 import { PlatformContentService } from '../platform-content.service';
 import { MentionsPage } from './mentions-page';
@@ -67,17 +71,17 @@ const STALE_ERROR = {
 };
 
 class FakeContent {
-  reads: LegalMention[] = [];
+  reads: LegalDocumentKey[] = [];
   /** La révision portée par chaque écriture, dans l'ordre. */
   revisions: number[] = [];
-  sections: readonly [LegalMention, LegalSectionKey, LegalDocumentParagraphPayload][] = [];
+  sections: readonly [LegalDocumentKey, LegalSectionKey, LegalDocumentParagraphPayload][] = [];
   /** La prochaine écriture échoue avec cette erreur. */
   failNextWrite: unknown = null;
-  moved: readonly [LegalMention, string, number][] = [];
-  removed: readonly [LegalMention, string][] = [];
-  added: readonly [LegalMention, LegalDocumentParagraphPayload][] = [];
-  renamed: readonly [LegalMention, LegalDocumentHeading][] = [];
-  edited: readonly [LegalMention, string, LegalDocumentParagraphPayload][] = [];
+  moved: readonly [LegalDocumentKey, string, number][] = [];
+  removed: readonly [LegalDocumentKey, string][] = [];
+  added: readonly [LegalDocumentKey, LegalDocumentParagraphPayload][] = [];
+  renamed: readonly [LegalDocumentKey, LegalDocumentHeading][] = [];
+  edited: readonly [LegalDocumentKey, string, LegalDocumentParagraphPayload][] = [];
   failRead = false;
 
   /**
@@ -85,15 +89,24 @@ class FakeContent {
    * menu ne doivent pas éditer le même document. Un double à un seul document
    * aurait laissé passer un écran qui ignore son segment de route.
    */
-  views: Readonly<Record<LegalMention, LegalDocumentView>> = {
+  views: Readonly<Record<LegalDocumentKey, LegalDocumentView>> = {
     legalNotice: legalView('Mentions', 'ml'),
     salesTerms: legalView('Conditions', 'cgv'),
     privacy: legalView('Confidentialité', 'conf'),
     cookies: legalView('Cookies', 'ck'),
     accessibility: legalView('Accessibilité', 'acc'),
+    salesTermsPro: legalView('Conditions pro', 'pro'),
   };
 
-  async legalDocument(mention: LegalMention): Promise<LegalDocumentView> {
+  /** Les textes dont l'historique des PDF a été lu (plan des CGV, C3). */
+  fileReads: SalesTermsDocument[] = [];
+
+  async legalFileHistory(document: SalesTermsDocument): Promise<LegalDocumentFileHistoryView> {
+    this.fileReads = [...this.fileReads, document];
+    return Promise.resolve({ document, files: [] });
+  }
+
+  async legalDocument(mention: LegalDocumentKey): Promise<LegalDocumentView> {
     this.reads = [...this.reads, mention];
     if (this.failRead) {
       throw new Error('lecture refusée');
@@ -111,7 +124,7 @@ class FakeContent {
   }
 
   async renameLegalDocument(
-    mention: LegalMention,
+    mention: LegalDocumentKey,
     title: LegalDocumentHeading,
     revision: number,
   ): Promise<void> {
@@ -120,7 +133,7 @@ class FakeContent {
   }
 
   async addLegalParagraph(
-    mention: LegalMention,
+    mention: LegalDocumentKey,
     payload: LegalDocumentParagraphPayload,
     revision: number,
   ): Promise<LegalDocumentParagraphCreated> {
@@ -130,7 +143,7 @@ class FakeContent {
   }
 
   async editLegalParagraph(
-    mention: LegalMention,
+    mention: LegalDocumentKey,
     id: string,
     payload: LegalDocumentParagraphPayload,
     revision: number,
@@ -140,7 +153,7 @@ class FakeContent {
   }
 
   async addLegalRequiredSection(
-    mention: LegalMention,
+    mention: LegalDocumentKey,
     section: LegalSectionKey,
     payload: LegalDocumentParagraphPayload,
     revision: number,
@@ -150,13 +163,17 @@ class FakeContent {
     return { id: 'p9' };
   }
 
-  async removeLegalParagraph(mention: LegalMention, id: string, revision: number): Promise<void> {
+  async removeLegalParagraph(
+    mention: LegalDocumentKey,
+    id: string,
+    revision: number,
+  ): Promise<void> {
     this.written(revision);
     this.removed = [...this.removed, [mention, id]];
   }
 
   async moveLegalParagraph(
-    mention: LegalMention,
+    mention: LegalDocumentKey,
     id: string,
     position: number,
     revision: number,
@@ -174,11 +191,24 @@ class SilentNotify {
   refused(): void {}
 }
 
-async function render(api: FakeContent, segment = 'cgv'): Promise<ComponentFixture<MentionsPage>> {
+/** Le droit d'écrire les mentions, accordé par défaut : la plupart des cas écrivent. */
+const WRITER: readonly StaffPermission[] = ['lfc_legal:read', 'lfc_legal:write'];
+
+async function render(
+  api: FakeContent,
+  segment = 'cgv',
+  permissions: readonly StaffPermission[] = WRITER,
+): Promise<ComponentFixture<MentionsPage>> {
   TestBed.configureTestingModule({
     imports: [MentionsPage],
     providers: [
       { provide: PlatformContentService, useValue: api },
+      {
+        provide: PermissionsStore,
+        useValue: {
+          can: (permission: StaffPermission): boolean => permissions.includes(permission),
+        },
+      },
       { provide: NotifyService, useClass: SilentNotify },
       // Les mêmes libellés qu'au démarrage de l'app : sans eux, fold demande
       // « Confirm » en anglais, et le test lirait un écran que personne n'a.
@@ -565,5 +595,50 @@ describe('MentionsPage', () => {
   it('une mention sans section exigée n’annonce rien', async () => {
     const fixture = await render(new FakeContent(), 'cgv');
     expect(text(fixture)).not.toContain('Section requise manquante');
+  });
+});
+
+/**
+ * Plan `legal/plan-cgv-par-audience.md` : la page des CGV porte deux textes, un
+ * onglet chacun (C5), et le PDF de référence des deux (C3). Écrire demande
+ * `lfc_legal:write` (C0).
+ */
+describe('MentionsPage — les CGV par audience', () => {
+  it('ouvre les CGV particuliers, puis les CGV pro sur l’onglet « Professionnels »', async () => {
+    const api = new FakeContent();
+    const fixture = await render(api, 'cgv');
+
+    expect(api.reads).toEqual(['salesTerms']);
+    expect(host(fixture).textContent).toContain('Professionnels');
+
+    const proTab = [...host(fixture).querySelectorAll<HTMLElement>('fold-tabs [role="tab"]')].find(
+      (tab) => tab.textContent?.includes('Professionnels'),
+    );
+    proTab?.click();
+    fixture.detectChanges();
+    await settle(fixture);
+
+    expect(api.reads).toEqual(['salesTerms', 'salesTermsPro']);
+    expect(api.fileReads).toEqual(['salesTerms', 'salesTermsPro']);
+  });
+
+  it('n’a pas d’onglets ni de PDF hors des CGV', async () => {
+    const api = new FakeContent();
+    const fixture = await render(api, 'confidentialite');
+
+    expect(host(fixture).querySelector('fold-tabs')).toBeNull();
+    expect(host(fixture).querySelector('app-legal-pdf-card')).toBeNull();
+    expect(api.fileReads).toEqual([]);
+  });
+
+  it('sans `lfc_legal:write`, se lit seulement : l’ajout est fermé et la page le dit', async () => {
+    const fixture = await render(new FakeContent(), 'cgv', ['lfc_legal:read']);
+    const element = host(fixture);
+
+    expect(element.textContent).toContain('Lecture seule');
+    const add = [...element.querySelectorAll('button')].find((button) =>
+      button.textContent?.includes('Écrire un article'),
+    );
+    expect(add?.disabled).toBe(true);
   });
 });

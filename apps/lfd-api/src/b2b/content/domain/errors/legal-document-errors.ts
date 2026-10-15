@@ -112,7 +112,7 @@ export class UnknownLegalMentionError extends ResourceNotFoundError {
     super(
       "legal_document.mention.unknown",
       `Aucune mention légale « ${mention} » : les mentions connues sont ` +
-        `${known.join(", ")}. Vérifiez l'adresse ou repartez du menu Contenu.`,
+        `${known.join(", ")}. Vérifiez l'adresse ou repartez du menu Réglages › Légal.`,
     );
   }
 }

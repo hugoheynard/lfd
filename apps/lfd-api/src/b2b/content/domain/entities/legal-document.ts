@@ -5,7 +5,7 @@ import {
   type LegalDocumentHeading,
   type LegalDocumentParagraph,
   type LegalDocumentParagraphPayload,
-  type LegalMention,
+  type LegalDocumentKey,
   type LegalSectionKey,
 } from "@lfd/contracts";
 
@@ -49,7 +49,7 @@ import {
  */
 export class LegalDocument {
   private constructor(
-    private readonly mention: LegalMention,
+    private readonly mention: LegalDocumentKey,
     private heading: LegalDocumentHeading,
     private readonly paragraphs: LegalDocumentParagraph[],
     /**
@@ -73,7 +73,7 @@ export class LegalDocument {
    * contenu n'a pas les mêmes refus sous `privacy` et sous `cookies`.
    */
   static reconstitute(
-    mention: LegalMention,
+    mention: LegalDocumentKey,
     content: LegalDocumentContent,
     revision: number,
   ): LegalDocument {

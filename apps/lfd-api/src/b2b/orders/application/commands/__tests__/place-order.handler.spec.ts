@@ -77,6 +77,7 @@ import { OrderReader } from "../../../domain/ports/order.reader.js";
 import { UnitOfWork } from "../../../../../platform/database/unit-of-work.js";
 import { OrderLateFeeReader } from "../../../domain/ports/order-late-fee.reader.js";
 import { FixedDeliveryVat } from "./fixed-delivery-vat.js";
+import { FixedSalesTerms } from "./fixed-sales-terms.js";
 import { OrderPlanGate } from "../../services/order-plan-gate.service.js";
 import { FixedClosedPlans, gateOf, openPlanGate, RecordingAdmissionDesk } from "./plan-doubles.js";
 import { ProductionPlanClosedError } from "../../../domain/errors/production-plan-closed.error.js";
@@ -430,6 +431,7 @@ function drafting(
     readonly payers?: FixedOrderPayers;
     readonly deliveryVat?: FixedDeliveryVat;
     readonly plans?: OrderPlanGate;
+    readonly salesTerms?: FixedSalesTerms;
   } = {},
 ): OrderDrafting {
   return new OrderDrafting(
@@ -469,6 +471,7 @@ function drafting(
     audience.payers ?? ownPayers(),
     audience.deliveryVat ?? new FixedDeliveryVat(),
     audience.plans ?? openPlanGate(),
+    audience.salesTerms ?? new FixedSalesTerms(),
   );
 }
 
@@ -2037,5 +2040,70 @@ describe("PlaceOrderHandler — l'arrêt du plan", () => {
     );
 
     expect(sink.placed?.placedOffPlan).toBe(false);
+  });
+});
+
+/**
+ * Les CGV figées à la passation (plan `legal/plan-cgv-par-audience.md`, C4′) :
+ * celles de l'audience qui TARIFE la commande (`audienceOf`), lues au port.
+ */
+describe("PlaceOrderHandler — les CGV en vigueur", () => {
+  async function placeAs(
+    status: "active" | "pending",
+    salesTerms: FixedSalesTerms,
+  ): Promise<OrderToPlace | null> {
+    const sink = { placed: null as OrderToPlace | null };
+    const handler = new PlaceOrderHandler(
+      guard("orders", status),
+      drafting(pickups(LABO_POINT), zones(), versionsAt(CURRENT_VERSION), { status, salesTerms }),
+      capturingRepo(sink),
+      payments(),
+      events(),
+      noWaivers,
+      new FixedClock(PRICED_AT),
+      freeKeys,
+      noReader,
+      directWork,
+      new FixedVoucherQuotes(),
+      new RecordingRedemption(),
+      new RecordingDurable(),
+      intakeAt(),
+    );
+    await handler.execute(new PlaceOrderCommand("u1", payload(), "c1"));
+    return sink.placed;
+  }
+
+  it("une société ACTIVE porte les CGV pro, révision et PDF en vigueur", async () => {
+    const salesTerms = new FixedSalesTerms({
+      salesTermsPro: { revision: 4, fileId: "ldf_pro_1" },
+      salesTerms: { revision: 9, fileId: "ldf_part_1" },
+    });
+
+    const placed = await placeAs("active", salesTerms);
+
+    expect(salesTerms.asked).toEqual(["salesTermsPro"]);
+    expect(placed?.salesTerms).toEqual({
+      document: "salesTermsPro",
+      revision: 4,
+      fileId: "ldf_pro_1",
+    });
+  });
+
+  /**
+   * C2″ : une société en attente paie les prix des particuliers — elle est
+   * liée par leurs CGV, pas par celles des pros.
+   */
+  it("une société EN ATTENTE porte les CGV particuliers", async () => {
+    const salesTerms = new FixedSalesTerms({ salesTerms: { revision: 9, fileId: null } });
+
+    const placed = await placeAs("pending", salesTerms);
+
+    expect(placed?.salesTerms).toEqual({ document: "salesTerms", revision: 9, fileId: null });
+  });
+
+  it("des CGV pro jamais rédigées : le texte est figé, révision et PDF nuls", async () => {
+    const placed = await placeAs("active", new FixedSalesTerms());
+
+    expect(placed?.salesTerms).toEqual({ document: "salesTermsPro", revision: null, fileId: null });
   });
 });

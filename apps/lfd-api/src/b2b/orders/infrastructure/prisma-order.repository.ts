@@ -1,3 +1,4 @@
+import type { SalesTermsDocument } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import {
@@ -19,6 +20,17 @@ import {
 import { issuesHandoverToken, type HandoverVia } from "../domain/services/handover.js";
 import { jsonSteps, toFulfillmentJson } from "./order-json.js";
 import { planWhere } from "./plan-filter.js";
+
+/**
+ * La clé de ligne de chaque texte de CGV — tenue par le CHECK
+ * `orders_sales_terms_key_check`, et la même que dans `platform_content`
+ * (plan `legal/plan-cgv-par-audience.md`, C4). Une table explicite : un
+ * renommage de vocabulaire ne doit pas changer une valeur stockée.
+ */
+const SALES_TERMS_ROW_KEYS: Readonly<Record<SalesTermsDocument, string>> = {
+  salesTerms: "sales-terms",
+  salesTermsPro: "sales-terms-pro",
+};
 
 /** Adaptateur Prisma des commandes. */
 /**
@@ -113,6 +125,11 @@ export class PrismaOrderRepository extends OrderRepository {
         // Le mode de TVA du port, figé : c'est ce que l'écran et le dossier de
         // facturation relisent — rien ne recalcule la commande.
         deliveryVatMode: state.deliveryVatMode,
+        // Les CGV en vigueur pour l'audience qui l'a tarifée (C4′), figées avec
+        // elle, dans la même écriture — donc dans la transaction de passation.
+        salesTermsKey: SALES_TERMS_ROW_KEYS[state.salesTerms.document],
+        salesTermsRevision: state.salesTerms.revision,
+        salesTermsFileId: state.salesTerms.fileId,
         vatCents: state.vatCents,
         // La ventilation part AVEC le total, pas à côté : c'est ce qui
         // permettra au bon de détailler « dont TVA 5,5 % » sans rien refaire.

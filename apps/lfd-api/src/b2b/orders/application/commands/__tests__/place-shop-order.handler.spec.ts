@@ -60,6 +60,7 @@ import { OrderCutoffReader } from "../../../domain/ports/order-cutoff.reader.js"
 import { OrderCutoffWaiverGate } from "../../../domain/ports/order-cutoff-waiver.gate.js";
 import { OrderLateFeeReader } from "../../../domain/ports/order-late-fee.reader.js";
 import { FixedDeliveryVat } from "./fixed-delivery-vat.js";
+import { FixedSalesTerms } from "./fixed-sales-terms.js";
 import { OrderPlanGate } from "../../services/order-plan-gate.service.js";
 import { ProductionPlanClosedError } from "../../../domain/errors/production-plan-closed.error.js";
 import { FixedClosedPlans, gateOf, openPlanGate, RecordingAdmissionDesk } from "./plan-doubles.js";
@@ -246,6 +247,7 @@ function zones(found: DeliveryZoneView | null = null): DeliveryZoneRepository {
 function drafting(
   delivery: DeliveryAvailabilityView = DEFAULT_DELIVERY_AVAILABILITY,
   plans: OrderPlanGate = openPlanGate(),
+  salesTerms: FixedSalesTerms = new FixedSalesTerms(),
 ): OrderDrafting {
   return new OrderDrafting(
     new OrderLinePricing(
@@ -281,6 +283,7 @@ function drafting(
     ownPayers(),
     new FixedDeliveryVat(),
     plans,
+    salesTerms,
   );
 }
 
@@ -436,6 +439,7 @@ function scene(
     readonly points?: number | null;
     readonly welcomeBonus?: number | null;
     readonly plans?: OrderPlanGate;
+    readonly salesTerms?: FixedSalesTerms;
   } = {},
 ) {
   const earning = new FakeEarning(options.points ?? null);
@@ -447,7 +451,7 @@ function scene(
   const durable = new RecordingDurable();
   const handler = new PlaceShopOrderHandler(
     buyers,
-    drafting(options.delivery, options.plans),
+    drafting(options.delivery, options.plans, options.salesTerms),
     capturingRepo(sink),
     payments(paid),
     published,
@@ -784,5 +788,40 @@ describe("PlaceShopOrderHandler — la boutique fermée aux particuliers", () =>
     await handler.execute(new PlaceShopOrderCommand(payload()));
 
     expect(sink.placed).not.toBeNull();
+  });
+});
+
+/**
+ * Les CGV figées à la passation de la boutique (plan
+ * `legal/plan-cgv-par-audience.md`, C4′) : une commande publique est sans
+ * société, donc tarifée et liée comme un particulier.
+ */
+describe("PlaceShopOrderHandler — les CGV en vigueur", () => {
+  it("porte les CGV particuliers, révision et PDF en vigueur", async () => {
+    const salesTerms = new FixedSalesTerms({ salesTerms: { revision: 3, fileId: "ldf_part_2" } });
+    const { handler, sink } = scene({ salesTerms });
+
+    await handler.execute(new PlaceShopOrderCommand(payload()));
+
+    expect(salesTerms.asked).toEqual(["salesTerms"]);
+    expect(sink.placed?.salesTerms).toEqual({
+      document: "salesTerms",
+      revision: 3,
+      fileId: "ldf_part_2",
+    });
+  });
+
+  /** L'idempotence : un rejeu ne recompose rien, donc ne relit ni ne refige les CGV. */
+  it("un rejeu ne relit pas les CGV et n'écrit rien", async () => {
+    const salesTerms = new FixedSalesTerms({ salesTerms: { revision: 3, fileId: null } });
+    const { handler, sink } = scene({
+      claim: { kind: "replayed", orderId: "order_1" },
+      salesTerms,
+    });
+
+    await handler.execute(new PlaceShopOrderCommand(payload())).catch(() => undefined);
+
+    expect(salesTerms.asked).toEqual([]);
+    expect(sink.placed).toBeNull();
   });
 });

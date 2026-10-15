@@ -7,6 +7,7 @@ import { DeliveryZonesModule } from "../delivery-zones/delivery-zones.module.js"
 import { OrderCutoffsInForce } from "../order-cutoffs/domain/order-cutoffs-in-force.js";
 import { OrderCutoffsModule } from "../order-cutoffs/order-cutoffs.module.js";
 import { OrderWaiversModule } from "../order-waivers/order-waivers.module.js";
+import { PlatformContentModule } from "../content/content.module.js";
 import { PaymentsModule } from "../payments/payments.module.js";
 import { PricerModule } from "../pricing/pricer.module.js";
 import { PickupAddressesModule } from "../pickup-addresses/pickup-addresses.module.js";
@@ -190,6 +191,10 @@ import { PrismaDaySupervisionReader } from "./infrastructure/prisma-day-supervis
 import { GetOrderDayVersionHandler } from "./application/queries/get-order-day-version.handler.js";
 import { PruneOrderDayChangesHandler } from "./application/commands/prune-order-day-changes.handler.js";
 import { OrderDayVersionReader } from "./domain/ports/order-day-version.reader.js";
+import { AdminOrderSalesTermsController } from "./http/admin-order-sales-terms.controller.js";
+import { OrderSalesTermsRecordReader } from "./domain/ports/order-sales-terms-record.reader.js";
+import { PrismaOrderSalesTermsRecordReader } from "./infrastructure/prisma-order-sales-terms-record.reader.js";
+import { GetOrderSalesTermsHandler } from "./application/queries/get-order-sales-terms.handler.js";
 import { OrderDayChangePruner } from "./domain/ports/order-day-change.pruner.js";
 import { PrismaOrderDayVersionReader } from "./infrastructure/prisma-order-day-version.reader.js";
 import { PrismaOrderDayChangePruner } from "./infrastructure/prisma-order-day-change.pruner.js";
@@ -216,6 +221,8 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     OrderOpeningModule,
     OrderCutoffsModule,
     OrderWaiversModule,
+    // Les CGV en vigueur, figées à la passation (plan des CGV, C4′).
+    PlatformContentModule,
     PaymentsModule,
     CatalogModule,
     // La caisse passe par LA porte du prix depuis le 2026-09-09, plus par le
@@ -231,6 +238,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     MyShopQuoteController,
     CompanyOrdersController,
     AdminOrdersController,
+    AdminOrderSalesTermsController,
     AdminProductionController,
     AdminOrderDraftsController,
     AdminCatalogController,
@@ -393,6 +401,9 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     GetOrderDayVersionHandler,
     PruneOrderDayChangesHandler,
     { provide: OrderDayVersionReader, useClass: PrismaOrderDayVersionReader },
+    // Les CGV figées sur une commande, pour son détail (plan des CGV, C4).
+    { provide: OrderSalesTermsRecordReader, useClass: PrismaOrderSalesTermsRecordReader },
+    GetOrderSalesTermsHandler,
     { provide: OrderDayChangePruner, useClass: PrismaOrderDayChangePruner },
     ResendOrderPaymentLinkHandler,
     { provide: OrderRecipientReader, useClass: PrismaOrderRecipientReader },

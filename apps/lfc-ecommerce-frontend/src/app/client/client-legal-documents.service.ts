@@ -5,7 +5,11 @@ import type { LegalDocument, LegalDocumentView } from '@lfd/contracts';
 // ⚠️ Les VALEURS passent par `content-values` et non par le baril : celui-ci
 // tire zod, qui n'a rien à faire dans un bundle de vitrine — mesuré, +380 ko,
 // et le budget passait de vert à rouge.
-import { DEFAULT_LEGAL_DOCUMENT, type LegalMention } from '@lfd/contracts/content-values';
+import {
+  DEFAULT_LEGAL_DOCUMENT,
+  type LegalDocumentKey,
+  type SalesTermsDocument,
+} from '@lfd/contracts/content-values';
 
 import { AUTH_CONFIG } from '../auth/auth.config';
 import { ClientLocale } from './client-locale.service';
@@ -24,6 +28,12 @@ export interface LegalDocumentArticle {
 
 /**
  * Les **documents de mentions légales**, tels que la boutique les lit.
+ *
+ * Les CGV professionnelles (`salesTermsPro`) se lisent par la même route
+ * publique, sans connexion (plan `legal/plan-cgv-par-audience.md`, C2′
+ * remplacé le 2026-10-15) : quelle page les montre à qui reste à trancher au
+ * lot des pages de la boutique. Jamais rédigées, elles rendent leur titre et
+ * aucun article — « en cours de rédaction ».
  *
  * Un service pour les CINQ, et non cinq services : les mentions ont exactement
  * la même forme, ce qui les distingue est leur CLÉ. L'état est donc tenu **par
@@ -51,8 +61,8 @@ export class ClientLegalDocuments {
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   /** Ce qui a été lu, mention par mention. Absent = jamais chargé. */
-  private readonly documents = signal<Partial<Record<LegalMention, LegalDocument>>>({});
-  private readonly states = signal<Partial<Record<LegalMention, LegalDocumentStatus>>>({});
+  private readonly documents = signal<Partial<Record<LegalDocumentKey, LegalDocument>>>({});
+  private readonly states = signal<Partial<Record<LegalDocumentKey, LegalDocumentStatus>>>({});
 
   /**
    * Où en est la lecture d'une mention — c'est ce que le panneau donne à ses
@@ -63,17 +73,17 @@ export class ClientLegalDocuments {
    * obliger le service à fabriquer cinq jeux de signaux dont quatre ne servent
    * jamais.
    */
-  statusOf(mention: LegalMention): LegalDocumentStatus {
+  statusOf(mention: LegalDocumentKey): LegalDocumentStatus {
     return this.states()[mention] ?? 'idle';
   }
 
   /** Le titre du document dans la langue courante. Jamais vide, repli compris. */
-  titleOf(mention: LegalMention): string {
+  titleOf(mention: LegalDocumentKey): string {
     return this.documentOf(mention).title[this.locale.current()];
   }
 
   /** Les articles dans l'ordre de lecture, numérotés, dans la langue courante. */
-  articlesOf(mention: LegalMention): readonly LegalDocumentArticle[] {
+  articlesOf(mention: LegalDocumentKey): readonly LegalDocumentArticle[] {
     const code = this.locale.current();
     return this.documentOf(mention).paragraphs.map((paragraph, index) => ({
       id: paragraph.id,
@@ -90,7 +100,7 @@ export class ClientLegalDocuments {
    * lecture en cours n'est pas relancée. Une lecture ÉCHOUÉE, elle, se rejoue —
    * c'est ce que fait le bouton « Réessayer » du panneau.
    */
-  ensureLoaded(mention: LegalMention): void {
+  ensureLoaded(mention: LegalDocumentKey): void {
     // ⚠️ Navigateur SEULEMENT, comme `ClientContent` : le rendu serveur n'a pas
     // à attendre un appel réseau pour un dialogue que personne n'a encore
     // ouvert.
@@ -117,11 +127,20 @@ export class ClientLegalDocuments {
   }
 
   /** Le document lu, ou le repli — un titre, aucun article. */
-  private documentOf(mention: LegalMention): LegalDocument {
+  private documentOf(mention: LegalDocumentKey): LegalDocument {
     return this.documents()[mention] ?? DEFAULT_LEGAL_DOCUMENT(mention);
   }
 
-  private setStatus(mention: LegalMention, status: LegalDocumentStatus): void {
+  private setStatus(mention: LegalDocumentKey, status: LegalDocumentStatus): void {
     this.states.update((all) => ({ ...all, [mention]: status }));
+  }
+
+  /**
+   * L'adresse du PDF de référence en vigueur d'un texte de CGV (C3) —
+   * publique, servie en `attachment` sous un nom daté. Un 404 dit qu'aucun
+   * PDF n'est encore déposé : la page garde alors son texte seul.
+   */
+  pdfUrlOf(document: SalesTermsDocument): string {
+    return `${AUTH_CONFIG.apiBaseUrl}/content/legal/${document}/pdf`;
   }
 }

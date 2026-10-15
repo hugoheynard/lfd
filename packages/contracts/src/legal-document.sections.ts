@@ -1,4 +1,4 @@
-import type { LegalMention } from "./platform-content.defaults.js";
+import type { LegalDocumentKey } from "./platform-content.defaults.js";
 
 /**
  * Les **sections requises** d'un document légal — le vocabulaire fermé des
@@ -21,16 +21,17 @@ export type LegalSectionKey = (typeof legalSectionKeys)[number];
  * Les sections qu'exige chaque mention, écrites une fois. Les CGV pourront
  * exiger `withdrawal` le jour venu, sans nouveau mécanisme.
  */
-const REQUIRED_SECTIONS: Readonly<Record<LegalMention, readonly LegalSectionKey[]>> = {
+const REQUIRED_SECTIONS: Readonly<Record<LegalDocumentKey, readonly LegalSectionKey[]>> = {
   legalNotice: [],
   salesTerms: [],
   privacy: ["dataDeletion"],
   cookies: [],
   accessibility: [],
+  salesTermsPro: [],
 };
 
 /** Les sections qu'une mention doit porter — une liste vide si elle n'en exige aucune. */
-export function requiredSections(mention: LegalMention): readonly LegalSectionKey[] {
+export function requiredSections(mention: LegalDocumentKey): readonly LegalSectionKey[] {
   return REQUIRED_SECTIONS[mention];
 }
 

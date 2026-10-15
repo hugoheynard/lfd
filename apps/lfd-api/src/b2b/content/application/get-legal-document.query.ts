@@ -1,4 +1,4 @@
-import type { LegalMention } from "@lfd/contracts";
+import type { LegalDocumentKey } from "@lfd/contracts";
 
 /**
  * Query : lire le document d'une mention légale.
@@ -7,5 +7,5 @@ import type { LegalMention } from "@lfd/contracts";
  * au bord : une clé libre ouvrirait un bloc de contenu que rien n'affiche.
  */
 export class GetLegalDocumentQuery {
-  constructor(readonly mention: LegalMention) {}
+  constructor(readonly mention: LegalDocumentKey) {}
 }

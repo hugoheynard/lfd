@@ -3,12 +3,15 @@ import { inject, Injectable } from '@angular/core';
 import type {
   FooterContent,
   FooterContentView,
+  LegalDocumentFileDeposited,
+  LegalDocumentFileHistoryView,
   LegalDocumentHeading,
   LegalDocumentParagraphCreated,
   LegalDocumentParagraphPayload,
   LegalDocumentView,
-  LegalMention,
+  LegalDocumentKey,
   LegalSectionKey,
+  SalesTermsDocument,
 } from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 
@@ -22,12 +25,12 @@ import { B2B_API_BASE } from '../api/api-config';
  * table explicite de l'adaptateur serveur, et la recopier ici en ferait une
  * seconde qui dériverait au premier ajout.
  */
-function legalBase(mention: LegalMention): string {
+function legalBase(mention: LegalDocumentKey): string {
   return `${B2B_API_BASE}/admin/content/legal/${mention}`;
 }
 
 /** Le segment d'un paragraphe, échappé une seule fois pour les quatre routes. */
-function paragraphPath(mention: LegalMention, paragraphId: string): string {
+function paragraphPath(mention: LegalDocumentKey, paragraphId: string): string {
   return `${legalBase(mention)}/paragraphs/${encodeURIComponent(paragraphId)}`;
 }
 
@@ -66,7 +69,7 @@ export class PlatformContentService {
 
   /** Un document de mention, avec sa révision. Aboutit toujours — le serveur
    *  sert le document de départ tant que personne n'a enregistré. */
-  async legalDocument(mention: LegalMention): Promise<LegalDocumentView> {
+  async legalDocument(mention: LegalDocumentKey): Promise<LegalDocumentView> {
     return firstValueFrom(this.http.get<LegalDocumentView>(legalBase(mention)));
   }
 
@@ -82,7 +85,7 @@ export class PlatformContentService {
    * enregistré entre-temps, au lieu de réécrire le document sans son geste.
    */
   async renameLegalDocument(
-    mention: LegalMention,
+    mention: LegalDocumentKey,
     title: LegalDocumentHeading,
     expectedRevision: number,
   ): Promise<void> {
@@ -94,7 +97,7 @@ export class PlatformContentService {
   /** Ajoute un article, dans les trois langues. Rend son identifiant — le seul
    *  retour qu'une commande se permet, parce que rien d'autre ne le donne. */
   async addLegalParagraph(
-    mention: LegalMention,
+    mention: LegalDocumentKey,
     payload: LegalDocumentParagraphPayload,
     expectedRevision: number,
   ): Promise<LegalDocumentParagraphCreated> {
@@ -112,7 +115,7 @@ export class PlatformContentService {
    * pose aucun de départ. Seule route qui pose une clé de section.
    */
   async addLegalRequiredSection(
-    mention: LegalMention,
+    mention: LegalDocumentKey,
     section: LegalSectionKey,
     payload: LegalDocumentParagraphPayload,
     expectedRevision: number,
@@ -130,7 +133,7 @@ export class PlatformContentService {
    *  comprises : la route remplace la charge utile, elle ne la rapièce pas. La
    *  clé de section, elle, n'y figure pas : le serveur la garde. */
   async editLegalParagraph(
-    mention: LegalMention,
+    mention: LegalDocumentKey,
     paragraphId: string,
     payload: LegalDocumentParagraphPayload,
     expectedRevision: number,
@@ -143,7 +146,7 @@ export class PlatformContentService {
   /** Retire un article du document. La route `DELETE` n'a pas de corps : la
    *  révision lue voyage en chaîne de requête. */
   async removeLegalParagraph(
-    mention: LegalMention,
+    mention: LegalDocumentKey,
     paragraphId: string,
     expectedRevision: number,
   ): Promise<void> {
@@ -156,7 +159,7 @@ export class PlatformContentService {
 
   /** Déplace un article au rang demandé, compté à partir de zéro. */
   async moveLegalParagraph(
-    mention: LegalMention,
+    mention: LegalDocumentKey,
     paragraphId: string,
     position: number,
     expectedRevision: number,
@@ -168,4 +171,38 @@ export class PlatformContentService {
       }),
     );
   }
+
+  /**
+   * L'historique des PDF de référence d'un texte de CGV, le plus récent
+   * d'abord (plan `legal/plan-cgv-par-audience.md`, C3, C5).
+   */
+  async legalFileHistory(document: SalesTermsDocument): Promise<LegalDocumentFileHistoryView> {
+    return firstValueFrom(
+      this.http.get<LegalDocumentFileHistoryView>(`${legalBase(document)}/files`),
+    );
+  }
+
+  /**
+   * Dépose un PDF, qui devient celui en vigueur ; le précédent est remplacé,
+   * jamais écrasé. Multipart `file` : le serveur juge les octets, pas le nom.
+   */
+  async depositLegalFile(
+    document: SalesTermsDocument,
+    file: File,
+  ): Promise<LegalDocumentFileDeposited> {
+    const form = new FormData();
+    form.append('file', file, file.name);
+    return firstValueFrom(
+      this.http.post<LegalDocumentFileDeposited>(`${legalBase(document)}/files`, form),
+    );
+  }
+}
+
+/**
+ * L'adresse de téléchargement d'un dépôt précis — PUBLIQUE : chaque dépôt a
+ * été, à son heure, le PDF que la boutique servait à tous. Un simple lien
+ * suffit, sans jeton ni blob.
+ */
+export function legalFileUrl(document: SalesTermsDocument, fileId: string): string {
+  return `${B2B_API_BASE}/content/legal/${document}/files/${encodeURIComponent(fileId)}`;
 }

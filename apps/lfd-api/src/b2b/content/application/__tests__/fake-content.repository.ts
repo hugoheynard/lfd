@@ -6,7 +6,7 @@ import {
   type LegalDocument as LegalDocumentContent,
   type LegalDocumentParagraphPayload,
   type LegalDocumentView,
-  type LegalMention,
+  type LegalDocumentKey,
 } from "@lfd/contracts";
 
 import { LegalDocument } from "../../domain/entities/legal-document.js";
@@ -14,7 +14,7 @@ import { LegalDocumentChangedError } from "../../domain/errors/legal-document-er
 import { PlatformContentRepository } from "../../domain/platform-content.repository.js";
 
 /** La mention par défaut des cas qui n'en éprouvent qu'une seule. */
-export const SALES_TERMS: LegalMention = "salesTerms";
+export const SALES_TERMS: LegalDocumentKey = "salesTerms";
 
 /** Un article reconnaissable à son mot-clé, dans les trois langues. */
 export function prose(word: string): LegalDocumentParagraphPayload {
@@ -34,12 +34,12 @@ export function prose(word: string): LegalDocumentParagraphPayload {
  * deux mentions ne peuvent pas se marcher dessus par accident du double.
  */
 export class FakeContentRepository extends PlatformContentRepository {
-  private readonly stored = new Map<LegalMention, LegalDocumentContent>();
-  private readonly counts = new Map<LegalMention, number>();
+  private readonly stored = new Map<LegalDocumentKey, LegalDocumentContent>();
+  private readonly counts = new Map<LegalDocumentKey, number>();
   saves = 0;
   lastAuthor: string | null = null;
 
-  content(mention: LegalMention = SALES_TERMS): LegalDocumentContent {
+  content(mention: LegalDocumentKey = SALES_TERMS): LegalDocumentContent {
     return this.stored.get(mention) ?? DEFAULT_LEGAL_DOCUMENT(mention);
   }
 
@@ -61,7 +61,7 @@ export class FakeContentRepository extends PlatformContentRepository {
     });
   }
 
-  readLegalDocument(mention: LegalMention): Promise<LegalDocumentView> {
+  readLegalDocument(mention: LegalDocumentKey): Promise<LegalDocumentView> {
     return Promise.resolve({
       // Le repli d'AFFICHAGE : jamais `null`, jamais sans titre.
       content: this.content(mention),
@@ -72,11 +72,11 @@ export class FakeContentRepository extends PlatformContentRepository {
   }
 
   /** La révision courante — ce qu'un écran à jour a lu. */
-  revision(mention: LegalMention = SALES_TERMS): number {
+  revision(mention: LegalDocumentKey = SALES_TERMS): number {
     return this.counts.get(mention) ?? 0;
   }
 
-  loadLegalDocument(mention: LegalMention, expectedRevision: number): Promise<LegalDocument> {
+  loadLegalDocument(mention: LegalDocumentKey, expectedRevision: number): Promise<LegalDocument> {
     const revision = this.revision(mention);
     if (revision !== expectedRevision) {
       return Promise.reject(new LegalDocumentChangedError(expectedRevision, "document"));
@@ -85,7 +85,7 @@ export class FakeContentRepository extends PlatformContentRepository {
   }
 
   saveLegalDocument(
-    mention: LegalMention,
+    mention: LegalDocumentKey,
     document: LegalDocument,
     staffUserId: string,
   ): Promise<void> {
@@ -105,5 +105,5 @@ export class FakeContentRepository extends PlatformContentRepository {
 /** Les identifiants d'articles d'une mention, dans l'ordre du document. */
 export const ids = (
   repository: FakeContentRepository,
-  mention: LegalMention = SALES_TERMS,
+  mention: LegalDocumentKey = SALES_TERMS,
 ): string[] => repository.content(mention).paragraphs.map((paragraph) => paragraph.id);

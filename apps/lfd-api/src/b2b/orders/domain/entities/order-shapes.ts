@@ -10,6 +10,7 @@ import type {
   LateFeeAdjustment,
   OrderClientele,
   PaymentStatus,
+  SalesTermsDocument,
 } from "@lfd/contracts";
 import type { VatShare } from "@lfd/money";
 
@@ -112,6 +113,12 @@ export interface DraftOrderInput {
    * commande personnelle : l'agrégat refuse un bon sur une commande de société.
    */
   readonly voucher: OrderVoucher | null;
+  /**
+   * Les CGV en vigueur pour l'audience qui a tarifé la commande, lues par
+   * l'appelant (plan `legal/plan-cgv-par-audience.md`, C4′). L'agrégat les
+   * fige : une révision écrite demain ne réécrit pas ce que la commande portait.
+   */
+  readonly salesTerms: OrderSalesTerms;
 }
 
 /** État de la commande sérialisé pour la persistance — aucun type Prisma ici. */
@@ -158,5 +165,18 @@ export interface OrderToPlace {
   readonly totalCents: number;
   readonly paymentStatus: PaymentStatus;
   readonly stripePaymentIntentId: string | null;
+  /** Les CGV figées (cf. {@link DraftOrderInput.salesTerms}). */
+  readonly salesTerms: OrderSalesTerms;
   readonly lines: readonly OrderLineSnapshot[];
+}
+
+/**
+ * **Les CGV qu'une commande porte** (C4) : le texte, sa révision et le PDF en
+ * vigueur. `revision` et `fileId` sont `null` quand rien n'existait — des CGV
+ * pro pas encore rédigées : le fait est enregistré tel quel.
+ */
+export interface OrderSalesTerms {
+  readonly document: SalesTermsDocument;
+  readonly revision: number | null;
+  readonly fileId: string | null;
 }

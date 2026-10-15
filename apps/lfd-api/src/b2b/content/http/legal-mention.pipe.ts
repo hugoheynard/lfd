@@ -1,10 +1,12 @@
-import { legalMentionOrder, legalMentionSchema, type LegalMention } from "@lfd/contracts";
+import { legalDocumentKeys, legalDocumentKeySchema, type LegalDocumentKey } from "@lfd/contracts";
 import type { PipeTransform } from "@nestjs/common";
 
 import { UnknownLegalMentionError } from "../domain/errors/legal-document-errors.js";
 
 /**
- * Valide le segment `:mention` contre le **vocabulaire fermé** du contrat.
+ * Valide le segment `:mention` contre le **vocabulaire fermé** du contrat —
+ * les cinq mentions et les CGV professionnelles (`legalDocumentKeys`, plan
+ * `legal/plan-cgv-par-audience.md`, C1).
  *
  * 🔴 C'est la garde du bord, et elle n'est pas décorative : sans elle, une clé
  * libre ouvrirait un bloc de contenu que le pied de page ne peut pas cocher,
@@ -19,11 +21,11 @@ import { UnknownLegalMentionError } from "../domain/errors/legal-document-errors
  * existe à côté de `ZodBody` : le statut et le message diffèrent, et c'est tout
  * ce qui compte pour qui lit le refus.
  */
-export class LegalMentionParam implements PipeTransform<string, LegalMention> {
-  transform(value: string): LegalMention {
-    const parsed = legalMentionSchema.safeParse(value);
+export class LegalMentionParam implements PipeTransform<string, LegalDocumentKey> {
+  transform(value: string): LegalDocumentKey {
+    const parsed = legalDocumentKeySchema.safeParse(value);
     if (!parsed.success) {
-      throw new UnknownLegalMentionError(value, legalMentionOrder);
+      throw new UnknownLegalMentionError(value, legalDocumentKeys);
     }
     return parsed.data;
   }

@@ -107,8 +107,10 @@ describe('grantGroups', () => {
    * réglages commerciaux (Hugo). 55 le même jour : `b2b_request_reasons`, les
    * motifs des demandes, sortis de `b2b_contact`. 56 le même jour :
    * `lfc_order_opening`, l'ouverture des commandes (plan-reglages-commandes.md, O0).
+   * 57 le 2026-10-15 : `lfc_legal`, les mentions légales et le PDF des CGV,
+   * sortis de `b2b_settings` (legal/plan-cgv-par-audience.md, C0).
    */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(56);
+    expect(RESOURCE_COUNT).toBe(57);
   });
 });

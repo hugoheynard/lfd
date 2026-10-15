@@ -236,11 +236,13 @@ export const reglagesRoutes: Routes = [
       // venues de E-commerce › Contenu (`/b2b/contenu/mentions/<clé>`, qui
       // redirige). UN écran paramétré par son segment français
       // (`legal-mention-slugs.ts`) : elles ont la même forme, et cinq
-      // composants auraient divergé au premier correctif. MÊME droit
-      // qu'avant, celui de l'espace qu'elles quittent : `b2b_settings:read`.
+      // composants auraient divergé au premier correctif. Sous LEUR droit,
+      // `lfc_legal` (plan `legal/plan-cgv-par-audience.md`, C0) — elles ont
+      // gardé `b2b_settings` le temps du déménagement, et le commercial voyait
+      // une entrée « Réglages » ouvrir sur les mentions légales.
       {
         path: 'legal/:mention',
-        canActivate: [permissionGuard('b2b_settings:read')],
+        canActivate: [permissionGuard('lfc_legal:read')],
         title: legalMentionTitle,
         loadComponent: () =>
           import('../contenu/mentions/mentions-page').then((m) => m.MentionsPage),

@@ -222,7 +222,7 @@ model OrderCutoffSettings {
   /// Toujours `orders` : il n'y a qu'un réglage.
   key String @id
 
-  enabled Boolean @default(true)
+  enabled        Boolean @default(true)
   /// Une commande peut-elle viser AUJOURD'HUI ? (Hugo, 2026-10-14, §8.3.) Non
   /// par défaut ; aucune règle de délai codée en dur ailleurs.
   sameDayAllowed Boolean @default(false) @map("same_day_allowed")
@@ -299,6 +299,41 @@ model PlatformContent {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("platform_content")
+  @@schema("public")
+}
+
+/// **Un PDF de référence des CGV** — le document juridique, dont les
+/// paragraphes de `platform_content` ne sont que la lecture en ligne
+/// (`documentation/legal/plan-cgv-par-audience.md`, C3, C3′).
+///
+/// 🔴 **Jamais écrasé, et la base le tient** : un déclencheur refuse tout
+/// `DELETE` et tout `UPDATE` autre que la pose de `superseded_at` quand elle
+/// est nulle. Chaque dépôt est une ligne neuve et un objet R2 neuf (bucket
+/// `customers`, port sans `delete`) ; le dépôt suivant remplace celui-ci en
+/// posant `superseded_at`. Un index unique partiel tient « un seul en vigueur
+/// par texte ».
+model LegalDocumentFile {
+  /// ULID frappé par l'API. Il entre dans la clé de stockage.
+  id                String    @id
+  /// `sales-terms` | `sales-terms-pro` — la clé de ligne du texte dans
+  /// `platform_content`. Tenu par un CHECK.
+  documentKey       String    @map("document_key")
+  /// La clé de l'objet dans le bucket `customers`, sous `legal/`.
+  storageKey        String    @unique @map("storage_key")
+  /// SHA-256 des octets, en hexadécimal.
+  sha256            String
+  sizeBytes         Int       @map("size_bytes")
+  uploadedAt        DateTime  @map("uploaded_at") @db.Timestamptz(3)
+  /// L'id de la FICHE staff qui l'a déposé — au registre RGPD.
+  uploadedByStaffId String    @map("uploaded_by_staff_id")
+  /// `NULL` = le PDF en vigueur pour ce texte.
+  supersededAt      DateTime? @map("superseded_at") @db.Timestamptz(3)
+
+  /// Les commandes passées sous ce PDF (C4) — d'où l'interdiction de supprimer.
+  orders Order[]
+
+  @@index([documentKey, uploadedAt(sort: Desc)])
+  @@map("legal_document_files")
   @@schema("public")
 }
 

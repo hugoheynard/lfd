@@ -1,19 +1,16 @@
 import {
-  footerContentPayloadSchema,
   legalDocumentParagraphWritePayloadSchema,
   legalDocumentPositionPayloadSchema,
   legalDocumentRevisionQuerySchema,
   legalDocumentTitlePayloadSchema,
   legalRequiredSectionPayloadSchema,
-  type FooterContentPayload,
-  type FooterContentView,
   type LegalDocumentParagraphCreated,
   type LegalDocumentParagraphWritePayload,
   type LegalDocumentPositionPayload,
   type LegalDocumentRevisionQuery,
   type LegalDocumentTitlePayload,
   type LegalDocumentView,
-  type LegalMention,
+  type LegalDocumentKey,
   type LegalRequiredSectionPayload,
 } from "@lfd/contracts";
 import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Query } from "@nestjs/common";
@@ -25,49 +22,31 @@ import { ZodBody, ZodQuery } from "../../../platform/shared/http/zod-body.pipe.j
 import { AddLegalDocumentParagraphCommand } from "../application/add-legal-document-paragraph.command.js";
 import { AddRequiredLegalSectionCommand } from "../application/add-required-legal-section.command.js";
 import { EditLegalDocumentParagraphCommand } from "../application/edit-legal-document-paragraph.command.js";
-import { GetFooterContentQuery } from "../application/get-footer-content.query.js";
 import { GetLegalDocumentQuery } from "../application/get-legal-document.query.js";
 import { MoveLegalDocumentParagraphCommand } from "../application/move-legal-document-paragraph.command.js";
 import { RemoveLegalDocumentParagraphCommand } from "../application/remove-legal-document-paragraph.command.js";
-import { SaveFooterContentCommand } from "../application/save-footer-content.command.js";
 import { SetLegalDocumentTitleCommand } from "../application/set-legal-document-title.command.js";
 import { LegalMentionParam } from "./legal-mention.pipe.js";
 
 /**
- * Édition **staff** du contenu de plateforme (back-office → Contenu plateforme).
+ * Édition **staff** des mentions légales (back-office → Réglages › Légal).
  *
  * La lecture y est doublée alors qu'elle existe déjà en public, et c'est
  * volontaire : l'écran d'édition doit connaître la RÉVISION et la dernière
  * main, que la surface publique n'a aucune raison de porter au client.
  *
- * `PUT` et non `PATCH` : on enregistre le pied de page ENTIER, dans ses trois
- * langues. Un enregistrement partiel laisserait une langue en arrière sans que
- * rien ne le dise — exactement ce que le contrat cherche à rendre impossible.
+ * 🔴 Sous `lfc_legal`, et plus `b2b_settings` (plan
+ * `legal/plan-cgv-par-audience.md`, C0, 2026-10-15) : le pied de page, qui
+ * partageait ce contrôleur, reste sous `b2b_settings` dans
+ * {@link AdminFooterContentController}. Un contrôleur ne mêle pas deux droits.
  */
 @Controller("admin/content")
-@AdminSurface("b2b_settings")
+@AdminSurface("lfc_legal")
 export class AdminPlatformContentController {
   constructor(
     private readonly queries: QueryBus,
     private readonly commands: CommandBus,
   ) {}
-
-  @Get("footer")
-  footer(): Promise<FooterContentView> {
-    return this.queries.execute<GetFooterContentQuery, FooterContentView>(
-      new GetFooterContentQuery(),
-    );
-  }
-
-  @Put("footer")
-  saveFooter(
-    @Body(new ZodBody(footerContentPayloadSchema)) payload: FooterContentPayload,
-    @StaffUserId() staffUserId: string,
-  ): Promise<FooterContentView> {
-    return this.commands.execute<SaveFooterContentCommand, FooterContentView>(
-      new SaveFooterContentCommand(payload, staffUserId),
-    );
-  }
 
   /**
    * Le document d'une mention — **une seule route pour les cinq**, la mention
@@ -76,7 +55,7 @@ export class AdminPlatformContentController {
    */
   @Get("legal/:mention")
   legalDocument(
-    @Param("mention", LegalMentionParam) mention: LegalMention,
+    @Param("mention", LegalMentionParam) mention: LegalDocumentKey,
   ): Promise<LegalDocumentView> {
     return this.queries.execute<GetLegalDocumentQuery, LegalDocumentView>(
       new GetLegalDocumentQuery(mention),
@@ -90,7 +69,7 @@ export class AdminPlatformContentController {
   @Put("legal/:mention/title")
   @HttpCode(204)
   async setLegalDocumentTitle(
-    @Param("mention", LegalMentionParam) mention: LegalMention,
+    @Param("mention", LegalMentionParam) mention: LegalDocumentKey,
     @Body(new ZodBody(legalDocumentTitlePayloadSchema)) payload: LegalDocumentTitlePayload,
     @StaffUserId() staffUserId: string,
   ): Promise<void> {
@@ -109,7 +88,7 @@ export class AdminPlatformContentController {
    */
   @Post("legal/:mention/paragraphs")
   async addLegalDocumentParagraph(
-    @Param("mention", LegalMentionParam) mention: LegalMention,
+    @Param("mention", LegalMentionParam) mention: LegalDocumentKey,
     @Body(new ZodBody(legalDocumentParagraphWritePayloadSchema))
     payload: LegalDocumentParagraphWritePayload,
     @StaffUserId() staffUserId: string,
@@ -128,7 +107,7 @@ export class AdminPlatformContentController {
    */
   @Post("legal/:mention/sections")
   async addRequiredLegalSection(
-    @Param("mention", LegalMentionParam) mention: LegalMention,
+    @Param("mention", LegalMentionParam) mention: LegalDocumentKey,
     @Body(new ZodBody(legalRequiredSectionPayloadSchema)) payload: LegalRequiredSectionPayload,
     @StaffUserId() staffUserId: string,
   ): Promise<LegalDocumentParagraphCreated> {
@@ -142,7 +121,7 @@ export class AdminPlatformContentController {
   @Put("legal/:mention/paragraphs/:paragraphId")
   @HttpCode(204)
   async editLegalDocumentParagraph(
-    @Param("mention", LegalMentionParam) mention: LegalMention,
+    @Param("mention", LegalMentionParam) mention: LegalDocumentKey,
     @Param("paragraphId") paragraphId: string,
     @Body(new ZodBody(legalDocumentParagraphWritePayloadSchema))
     payload: LegalDocumentParagraphWritePayload,
@@ -164,7 +143,7 @@ export class AdminPlatformContentController {
   @Delete("legal/:mention/paragraphs/:paragraphId")
   @HttpCode(204)
   async removeLegalDocumentParagraph(
-    @Param("mention", LegalMentionParam) mention: LegalMention,
+    @Param("mention", LegalMentionParam) mention: LegalDocumentKey,
     @Param("paragraphId") paragraphId: string,
     @Query(new ZodQuery(legalDocumentRevisionQuerySchema)) query: LegalDocumentRevisionQuery,
     @StaffUserId() staffUserId: string,
@@ -186,7 +165,7 @@ export class AdminPlatformContentController {
   @Put("legal/:mention/paragraphs/:paragraphId/position")
   @HttpCode(204)
   async moveLegalDocumentParagraph(
-    @Param("mention", LegalMentionParam) mention: LegalMention,
+    @Param("mention", LegalMentionParam) mention: LegalDocumentKey,
     @Param("paragraphId") paragraphId: string,
     @Body(new ZodBody(legalDocumentPositionPayloadSchema)) payload: LegalDocumentPositionPayload,
     @StaffUserId() staffUserId: string,

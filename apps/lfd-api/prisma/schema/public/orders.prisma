@@ -166,6 +166,17 @@ model Order {
   /// avant le réglage = taux normal. Tenu par un CHECK.
   deliveryVatMode   String? @map("delivery_vat_mode")
 
+  // **Les CGV en vigueur à la passation** (`documentation/legal/plan-cgv-par-audience.md`,
+  // C4, C4′) — d'après l'audience qui a tarifé la commande (`audienceOf`).
+  // Les trois `NULL` = commande passée avant la colonne : on n'en invente pas.
+  /// `sales-terms` | `sales-terms-pro`. Tenu par un CHECK.
+  salesTermsKey      String?            @map("sales_terms_key")
+  /// La révision du texte en ligne, ou `NULL` s'il n'existait pas encore.
+  salesTermsRevision Int?               @map("sales_terms_revision")
+  /// Le PDF de référence en vigueur, ou `NULL` s'il n'y en avait aucun.
+  salesTermsFileId   String?            @map("sales_terms_file_id")
+  salesTermsFile     LegalDocumentFile? @relation(fields: [salesTermsFileId], references: [id], onDelete: Restrict)
+
   // L'acheminement CONVENU, figé à la commande, chaque valeur avec sa provenance
   // (défaut du réglage / override) — forme = `OrderFulfillment` de
   // `@lfd/contracts`. Figé comme les prix : le contact d'une adresse, ses heures
