@@ -408,7 +408,7 @@ ci-dessus :**
 Ouvert avant d'écrire : `packages/pim-contracts/src/accounting-rules.ts`
 (`PRO_PRICE_METHODS = ["ratio_ttc"]`, `proPriceOf` — « l'unique porte » du
 prix pro, qui annonce elle-même le `switch` « avec la deuxième méthode »),
-`projection.ts:228-247` (seul appelant côté fil), `product.prisma`
+`projection.ts:228-247` et `catalog-facts.ts:209-215` (les deux appelants côté fil), `product.prisma`
 (`priceCents`, `pricingFollowsDefault` sur la déclinaison).
 
 **Cinq décimales = des millicentimes.** 10⁻⁵ € est l'unité que le fil et
@@ -423,6 +423,57 @@ entier, jamais un flottant.
 | P4  | **Complétude** : en `entered`, une déclinaison sans prix pro est incomplète (`gaps: pro_price`, jamais vendue) et `activate` la refuse — avec la règle « tous les contextes » de 2b.                                                                                                                                                                                                                                                                            |
 | P5  | **Pré-remplissage** : `PrefillProPrices`, deux temps. `dryRun` rend la liste (SKU, prix public TTC, prix pro HT calculé par le ratio et le taux `b2b` en vigueur) ; `apply` l'écrit **uniquement** là où `pro_price_millicents` est `NULL`, journalisé par déclinaison. Une déclinaison sans taux `b2b` n'est pas pré-remplie : elle est listée à part. Puis la méthode passe à `entered` dans _Règles comptables_ (geste existant, `choose-pro-price-method`). |
 | P6  | **Écrans** : dans la section Tarification de la fiche, « Prix pro HT » sous le prix public TTC (5 décimales, unité écrite) ; dans _Règles comptables_, la méthode « Prix saisi » et le bouton de pré-remplissage avec son aperçu.                                                                                                                                                                                                                               |
+
+**Corrections après `vitruve` (2026-10-15), qui priment sur la table :**
+
+- **Deux listes de méthodes** (BLOQUANT) : `entered` s'ajoute aussi à
+  `packages/contracts/src/journal-facts/referential-settings.ts:61`, que le
+  fait de changement de méthode valide (l. 209). Sans elle, la bascule de
+  méthode échoue à la journalisation.
+- **Cinq appelants de `proPriceOf`** (BLOQUANT) : `projection.ts:242`,
+  `catalog-facts.ts:213`, `accounting-rules-page.ts:217` et `:254`,
+  `product-form-store.ts:887` et `:916`. Nouvelle signature :
+  `proPriceOf(publicTtcCents, policy, articleVatPercent, enteredHtMillicents: number | null)`.
+  Dans `catalog-facts.ts`, `gapsOf` gagne `pro_price` **avant** que
+  `sellableVariant` n'appelle la porte : une saisie absente écarte la
+  déclinaison, elle ne lève pas `IncompleteVariantProjectedError`.
+- **La fiche ne ment pas** (BLOQUANT) : sous `entered`, `proPricing` et
+  `basePriceEurFor` (`product-form-store.ts:868-910`) lisent la saisie ; la
+  « remise » tirée du ratio n'est plus affichée — à sa place, l'écart
+  constaté entre prix pro et prix public, en lecture. Le JSDoc de `proPriceOf`
+  recompte ses appelants.
+- **Sous `entered`, le HT fait foi** (SÉRIEUX) : `ttcCents` est un affichage,
+  jamais une source ; personne ne redérive un HT de ce TTC. La doctrine
+  « le TTC fait foi » reste vraie sous `ratio_ttc`. Le commentaire de
+  `product-form-store.ts:901-905` est réécrit en conséquence, et
+  `prisma-catalog.reader.ts:297` (qui repasse par `htMillicentsOf`) est lu au
+  lot : il ne doit pas recalculer un HT reçu.
+- **P5 rejoue la porte** (SÉRIEUX) : le pré-remplissage appelle `proPriceOf`
+  sous `ratio_ttc`, sur les mêmes `percents` que la projection (résolution
+  famille/fiche, `vatOf` au contexte `b2b`). Contrôle obligatoire, rendu par
+  l'aperçu : pour chaque déclinaison, HT servi aujourd'hui = HT pré-rempli,
+  au millicentime ; un seul écart bloque l'`apply`.
+- **Déclinaisons alignées** (SÉRIEUX) : le prix pro suit le défaut par le
+  même mécanisme que le prix public — la résolution dans l'instantané de
+  `Product` (`variant.ts:411-412`). P5 **n'écrit que sur les déclinaisons
+  qui ont leur propre tarif** ; une alignée n'a pas de colonne réveillée au
+  désalignement.
+- **`apply` passe par l'agrégat** (SÉRIEUX) : `Product.priceVariant`
+  (`product.ts:489`), un fait de journal `variant.pro_price_prefilled` par
+  déclinaison, et l'émetteur du lot 2a (sans effet tant que les faits sont
+  fermés).
+- **Les révisions couvrent le prix pro** (SÉRIEUX) : le champ entre dans la
+  source (`prisma-catalog-revision.source.ts:74`), le diff, l'attribution et
+  la signature ; sans quoi le filet du §4 ne couvre pas le prix qu'on vend.
+- **Bascule de méthode → fil** : changer la méthode réémet tout le catalogue
+  (déjà branché en 2a pour `choose-pro-price-method`) ; côté push actuel, le
+  prochain push porte les prix saisis. P5 exact ⇒ aucune ligne d'historique de
+  prix à la bascule ; une ligne serait le signe d'un écart, et le contrôle de
+  P5 l'aura refusé avant.
+- **À dire à Hugo** : après la bascule, revenir à `ratio_ttc` reste un clic,
+  mais change des prix servis dès qu'une saisie a divergé du ratio.
+- `revision.ts:44` cite une méthode `remise_apres_tva_max` disparue : relue et
+  corrigée au passage.
 
 **Ordre** : P1 à P4 se déploient avec la méthode toujours sur `ratio_ttc` —
 rien de servi ne change. P5 puis la bascule de méthode sont les gestes de
