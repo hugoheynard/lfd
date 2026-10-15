@@ -631,6 +631,73 @@ Les colonnes et tables posées par les faits (`catalog_entries`,
 `catalog_items.variant_id`/`audience`) restent en base : aucun lecteur hors des
 récepteurs des faits et de `servedTo`.
 
+## Déployer le lot D — le prix ne se décide plus sur la plateforme
+
+Lot D de [`plan-catalogue-synchronise-par-audience.md`](../pim/plan-catalogue-synchronise-par-audience.md)
+(2026-10-15). Les routes `PUT|DELETE admin/catalog/:sku/price` et
+`:sku/public-price` disparaissent ; le prix servi devient celui du
+référentiel. **Aucune migration** : les colonnes
+`catalog_item_overrides.price_millicents` et `decided_public_ttc_cents`
+restent en base, ni lues ni écrites, et aucune ligne n'est supprimée.
+
+🔴 **Ce qui change de servi dès le déploiement** : un article dont le prix
+avait été remplacé sur la plateforme se vend au prix du référentiel.
+
+**1. Avant de pousser `main` — le relevé en production** (lecture seule) :
+
+```sql
+select count(*)
+  from public.catalog_item_overrides
+ where price_millicents is not null or decided_public_ttc_cents is not null;
+
+select o.sku, i.name, o.price_millicents, i.price_millicents as referential_millicents,
+       o.decided_public_ttc_cents, i.public_ttc_cents as referential_ttc_cents,
+       o.decided_by, o.decided_at
+  from public.catalog_item_overrides o
+  join public.catalog_items i on i.sku = o.sku
+ where o.price_millicents is not null or o.decided_public_ttc_cents is not null
+ order by o.sku;
+```
+
+- **Zéro ligne ⇒ déployer.**
+- **Des lignes ⇒** Hugo choisit celles à garder, et les **reporte en prix pro
+  HT saisi** dans les fiches du référentiel (lot P) **avant** le déploiement.
+  Garder la sortie de la seconde requête : c'est la seule liste des prix qui
+  cessent d'être servis.
+
+**2. Après le déploiement — retracer** (droit d'écriture du catalogue,
+`b2b_catalog:write`, journalisé) :
+
+```http
+POST /admin/catalog/prices/retrace
+```
+
+Réponse `204`. Le tarificateur relit les prix passés dans l'historique
+(`catalog_price_history`), dont la dernière ligne d'un article était peut-être
+l'ancien prix décidé : sans ce geste, une lecture datée — le tableau de
+tarification, un devis à une date — rendrait ce prix indéfiniment pour un
+article que rien ne touche. Le geste écrit une ligne pour chaque article vendu
+dont la dernière trace diffère du référentiel, et rien d'autre. Un fait
+`catalog_price_history.retraced` liste les SKU au journal.
+
+**Contrôle** — un second appel n'écrit rien (aucun nouveau fait), et :
+
+```sql
+select count(*)
+  from public.catalog_items i
+  join lateral (
+    select price_millicents from public.catalog_price_history h
+     where h.sku = i.sku order by recorded_at desc limit 1
+  ) last on true
+ where i.withdrawn_at is null and last.price_millicents <> i.price_millicents;
+```
+
+rend `0`.
+
+**Retour arrière** : redéployer la version précédente rend les routes et la
+lecture des colonnes, qui n'ont pas bougé. Les lignes retracées restent dans
+l'historique — elles disent le prix réellement servi pendant l'intervalle.
+
 ## Si l'API refuse de démarrer : `persistence.migrations_pending`
 
 Symptôme : au démarrage, `La base de données est en retard de N migration(s) : …`

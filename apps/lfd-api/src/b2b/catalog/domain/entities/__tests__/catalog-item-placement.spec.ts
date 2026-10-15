@@ -76,8 +76,6 @@ describe("CatalogItem — le masquage par audience", () => {
       facts: FACTS,
       withdrawnAt: null,
       decision: {
-        priceMillicents: null,
-        decidedPublicTtcCents: null,
         isHidden: false,
         isHiddenPublic: true,
         isFeatured: false,

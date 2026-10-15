@@ -32,6 +32,12 @@ describe("le catalogue des faits", () => {
     const retired = JOURNAL_FACT_TYPES.filter((type) => JOURNAL_FACTS[type].retired);
 
     expect(retired.sort()).toEqual([
+      // Le prix ne se décide plus sur la plateforme (lot D du catalogue
+      // synchronisé, 2026-10-15) : ses quatre faits restent lisibles.
+      "catalog_item.b2b_price_cleared",
+      "catalog_item.b2b_price_set",
+      "catalog_item.public_price_cleared",
+      "catalog_item.public_price_set",
       "company.delivery_procedure_edited_by_staff",
       "company.kbis_uploaded_by_staff",
       // Le rythme UNIQUE de l'entité (R2), retiré en M1 (2026-10-12) : les dates

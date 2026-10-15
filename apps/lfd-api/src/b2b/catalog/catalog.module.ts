@@ -3,10 +3,9 @@ import { Module } from "@nestjs/common";
 import { B2bPlatformModule } from "../../pim/channels/b2b-platform/b2b-platform.module.js";
 import { PricerModule } from "../pricing/pricer.module.js";
 
-import { AlignOnPimPriceHandler } from "./application/commands/align-on-pim-price.handler.js";
-import { AlignPublicOnPimHandler } from "./application/commands/align-public-on-pim.handler.js";
-import { SetB2bPriceHandler } from "./application/commands/set-b2b-price.handler.js";
-import { SetPublicPriceHandler } from "./application/commands/set-public-price.handler.js";
+import { RetracePricesFromReferentialHandler } from "./application/commands/retrace-prices-from-referential.handler.js";
+import { CatalogPriceRetracer } from "./domain/ports/catalog-price-retracer.js";
+import { PrismaCatalogPriceRetracer } from "./infrastructure/prisma-catalog-price-retracer.js";
 import { SetMaskingHandler } from "./application/commands/set-masking.handler.js";
 import { ApproveReviewHandler } from "./application/commands/approve-review.handler.js";
 import { SetCatalogFeaturedHandler } from "./application/commands/set-catalog-featured.handler.js";
@@ -162,10 +161,10 @@ import { PrismaCatalogMediaCopies } from "./infrastructure/prisma-catalog-media-
     // bas : la route reconnue l'appelle avec un `companyId`, la publique avec
     // `null`, et c'est la seule différence entre elles.
     ShopCataloguePricing,
-    SetB2bPriceHandler,
-    AlignOnPimPriceHandler,
-    SetPublicPriceHandler,
-    AlignPublicOnPimHandler,
+    // Le prix ne se décide plus ici (lot D, 2026-10-15) : il se RETRACE
+    // depuis le référentiel, une fois au déploiement.
+    RetracePricesFromReferentialHandler,
+    { provide: CatalogPriceRetracer, useClass: PrismaCatalogPriceRetracer },
     SetMaskingHandler,
     ApproveReviewHandler,
     SetCatalogFeaturedHandler,

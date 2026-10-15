@@ -22,13 +22,16 @@ import { servedTo } from "../served-to.js";
  * « Crème pâtissière » devient « CrÃ¨me pÃ¢tissiÃ¨re ». C'est trois octets
  * contre un fichier illisible, et le symptôme ne ressemble pas à sa cause.
  *
- * ## Ce que le fichier dit, et qu'un écran dit mal
+ * ## Les colonnes de prix (lot D, 2026-10-15)
  *
- * Les **trois** prix, côte à côte : celui du référentiel, celui qu'on a négocié,
- * et celui qui sera facturé. Le troisième se déduit des deux autres, et c'est
- * précisément pour ça qu'il est écrit — la déduction (« B2B s'il existe, PIM
- * sinon ») est une règle du domaine, et la refaire à la main dans un tableur est
- * la façon dont on se trompe d'une ligne sur deux.
+ * Le fichier portait trois prix : celui du référentiel, le « Prix B2B » décidé
+ * sur la plateforme, et le « Prix appliqué » (le décidé s'il existait). La
+ * plateforme ne décide plus de prix : la colonne « Prix B2B (€ HT) » est
+ * retirée, et « Prix appliqué (€ HT) » vaut le prix du référentiel — gardée
+ * pour qu'un tableur qui la lisait par son nom la trouve encore.
+ *
+ * ⚠️ **Un fichier dont les colonnes changent** : un tableur qui lisait les
+ * colonnes par leur RANG voit « Prix appliqué » passer de la 6ᵉ à la 5ᵉ.
  */
 const SEPARATOR = ";";
 
@@ -47,7 +50,6 @@ const HEADERS = [
   "Article",
   "Catégorie",
   "Tarif PIM (€ HT)",
-  "Prix B2B (€ HT)",
   "Prix appliqué (€ HT)",
   "TVA (%)",
   "État",
@@ -67,11 +69,8 @@ function row(item: CatalogAdminItemView): string {
     field(item.name),
     field(item.categoryName),
     euros(item.pimPriceMillicents),
-    // Vide, et non « 0,00 » : aucune décision n'a été posée sur cet article, et
-    // un zéro dirait « négocié à zéro euro ». La colonne d'à côté porte déjà ce
-    // qui sera facturé.
-    item.b2bPriceMillicents === null ? "" : euros(item.b2bPriceMillicents),
-    euros(item.effectivePriceMillicents),
+    // Le prix du référentiel, seul prix depuis le lot D.
+    euros(item.pimPriceMillicents),
     // Vide aussi, pour la même raison, et celle-ci coûte plus cher : la famille
     // n'a pas de régime de TVA dans le référentiel. Écrire « 0 » ferait lire un
     // article exonéré là où il n'est simplement PAS VENDABLE.

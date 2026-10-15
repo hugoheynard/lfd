@@ -6,8 +6,6 @@ export interface PricedLine {
   readonly productSku: string;
   /** Le prix du référentiel, hors taxe, en millicentimes. */
   readonly pimPriceMillicents: number;
-  /** La décision locale, ou `null` s'il n'y en a aucune. */
-  readonly decision: { readonly priceMillicents: number | null } | null;
   readonly vatRatePercent: number | null;
 }
 
@@ -18,7 +16,11 @@ export interface PriceTraceRow {
   readonly productSku: string;
   readonly priceMillicents: number;
   readonly vatRatePercent: number | null;
-  readonly source: "pim" | "b2b";
+  /**
+   * Toujours `"pim"` depuis le lot D (2026-10-15). `"b2b"` — un prix décidé
+   * sur la plateforme — reste lisible dans l'historique passé, plus écrit.
+   */
+  readonly source: "pim";
   readonly recordedAt: Date;
 }
 
@@ -28,14 +30,15 @@ type RecordedPrices = ReadonlyMap<
 >;
 
 /**
- * **La trace du tarif**, partagée par les deux écrivains de prix du miroir :
- * l'enregistrement d'un agrégat (`PrismaCatalogItemRepository.saveMany`) et le
- * récepteur des faits du référentiel (lot 2a). Une seule règle de « a-t-il
+ * **La trace du tarif**, partagée par les trois écrivains de l'historique :
+ * l'enregistrement d'un agrégat (`PrismaCatalogItemRepository.saveMany`), le
+ * récepteur des faits du référentiel (lot 2a) et le retraçage
+ * (`PrismaCatalogPriceRetracer`, lot D). Une seule règle de « a-t-il
  * changé ? » — deux copies finiraient par tracer différemment le même prix.
  *
- * Le prix EFFECTIF (décision locale, sinon référentiel) est tracé, et
- * seulement si le COUPLE prix + taux a bougé : ne comparer que le prix
- * laisserait passer sans trace la bascule d'un taux légal.
+ * Le prix du RÉFÉRENTIEL est tracé — le seul prix depuis le lot D
+ * (2026-10-15) —, et seulement si le COUPLE prix + taux a bougé : ne comparer
+ * que le prix laisserait passer sans trace la bascule d'un taux légal.
  */
 export function priceTraceRows(
   lines: readonly PricedLine[],
@@ -44,10 +47,10 @@ export function priceTraceRows(
   recordedAt: Date,
 ): PriceTraceRow[] {
   return lines.flatMap((line) => {
-    const effective = line.decision?.priceMillicents ?? line.pimPriceMillicents;
+    const price = line.pimPriceMillicents;
     const rate = line.vatRatePercent;
     const last = recorded.get(line.sku);
-    if (last?.priceMillicents === effective && last.vatRatePercent === rate) {
+    if (last?.priceMillicents === price && last.vatRatePercent === rate) {
       return [];
     }
     return [
@@ -55,9 +58,9 @@ export function priceTraceRows(
         id: nextId(),
         sku: line.sku,
         productSku: line.productSku,
-        priceMillicents: effective,
+        priceMillicents: price,
         vatRatePercent: rate,
-        source: line.decision?.priceMillicents === undefined ? "pim" : "b2b",
+        source: "pim" as const,
         recordedAt,
       },
     ];

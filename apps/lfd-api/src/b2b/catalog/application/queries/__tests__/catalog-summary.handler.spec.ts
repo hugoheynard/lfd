@@ -14,16 +14,12 @@ function item(over: Partial<CatalogAdminItemView> = {}): CatalogAdminItemView {
     categoryId: "cat_1",
     categoryName: "Viennoiserie",
     pimPriceMillicents: 120_000,
-    b2bPriceMillicents: null,
-    effectivePriceMillicents: 120_000,
     vatRatePercent: 5.5,
     // L'étiquette publique du référentiel, en centimes TTC, et le taux de son
     // contexte. Posées parce que le contrat les exige — aucun cas d'ici ne les
     // lit, et un article poussé en porte toujours.
     publicTtcCents: 150,
     publicVatRatePercent: 5.5,
-    // Aucune décision publique : l'article suit l'étiquette du référentiel.
-    decidedPublicTtcCents: null,
     allergens: [],
     allergensIncomplete: false,
     isHidden: false,

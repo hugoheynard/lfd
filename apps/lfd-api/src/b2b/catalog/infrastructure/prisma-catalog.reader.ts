@@ -1,7 +1,6 @@
 import { categoryPathOf } from "@lfd/catalog-sync";
 import { Injectable } from "@nestjs/common";
 import type { OrderLineAllergens } from "@lfd/contracts";
-import { htMillicentsOf } from "@lfd/money";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import {
@@ -13,6 +12,7 @@ import { PUBLIC_SALES_CONTEXT } from "../domain/public-context.js";
 import { catalogAudienceOf, servedTo } from "../domain/served-to.js";
 import { publicByContextOf } from "./public-by-context.js";
 import { STILL_SOLD } from "./sellable-filter.js";
+import { DECISION_COLUMNS } from "./catalog-decision-columns.js";
 
 /**
  * ⚠️ **`findSku` reste au tarif `pro`, et c'est écrit plutôt que laissé par
@@ -71,8 +71,6 @@ interface ItemRow {
     readonly position: number;
   };
   readonly override: {
-    readonly priceMillicents: number | null;
-    readonly decidedPublicTtcCents: number | null;
     readonly isHidden: boolean;
     readonly isHiddenPublic: boolean;
     readonly isFeatured: boolean;
@@ -95,7 +93,7 @@ export class PrismaCatalogReader extends CatalogReader {
   async findSku(sku: string): Promise<ResolvedCatalogItem | null> {
     const row = await this.prisma.catalogItem.findUnique({
       where: { sku, ...STILL_SOLD },
-      include: { category: true, override: true },
+      include: { category: true, override: { select: DECISION_COLUMNS } },
     });
     if (row === null || !servedToViewer(row, "pro")) {
       return null;
@@ -111,7 +109,7 @@ export class PrismaCatalogReader extends CatalogReader {
   ): Promise<ResolvedCatalogItem | null> {
     const row = await this.prisma.catalogItem.findFirst({
       where: { productSku, isDefault: true, ...STILL_SOLD },
-      include: { category: true, override: true },
+      include: { category: true, override: { select: DECISION_COLUMNS } },
     });
     if (row === null || !servedToViewer(row, audience)) {
       return null;
@@ -129,7 +127,7 @@ export class PrismaCatalogReader extends CatalogReader {
     }
     const rows = await this.prisma.catalogItem.findMany({
       where: { productSku: { in: [...productSkus] }, isDefault: true, ...STILL_SOLD },
-      include: { category: true, override: true },
+      include: { category: true, override: { select: DECISION_COLUMNS } },
     });
     const resolved = new Map<string, ResolvedCatalogItem>();
     const lineage = await this.lineage(rows);
@@ -161,7 +159,7 @@ export class PrismaCatalogReader extends CatalogReader {
           { vatRatePercent: { not: null } },
         ],
       },
-      include: { category: true, override: true },
+      include: { category: true, override: { select: DECISION_COLUMNS } },
       // 🔴 `sku` DÉPARTAGE, et ce n'est pas de la coquetterie : le référentiel
       // envoie `position: 0` sur **tous** les articles (vérifié le 2026-09-10 —
       // dix-neuf viennoiseries, dix-neuf zéros). Les deux premiers critères sont
@@ -256,32 +254,24 @@ interface ServedPrice {
  * **Ce qu'on sert à qui regarde** — l'unique endroit où l'audience change le
  * prix, et c'est tout ce qu'elle change.
  *
- * Au `pro` : le tarif de son canal. La décision locale gagne quand elle existe,
- * sinon le prix du référentiel. Les deux sont rendus — un écran qui ne verrait
- * que le prix final ne pourrait pas dire « prix PIM 2,40 € · prix B2B 2,10 € »,
- * et un prix sans provenance ne se défend pas devant un client qui le conteste.
+ * Au `pro` : le prix pro HT du référentiel. Au `public` : **l'étiquette** du
+ * référentiel, mise hors taxe au taux de son contexte — et surtout **pas le
+ * prix PRO**, qui n'est pas le sien.
  *
- * Au `public` : **l'étiquette**, mise hors taxe au taux de son contexte — celle
- * décidée ici quand il y en a une, celle du référentiel sinon. Et surtout **pas
- * le prix PRO** : il naît d'une négociation, et le servir à un particulier lui
- * appliquerait une décision qui n'est pas la sienne.
+ * 🔴 **Plus aucun prix décidé ici** (lot D de
+ * `plan-catalogue-synchronise-par-audience.md`, 2026-10-15). La plateforme
+ * remplaçait le prix pro (`price_millicents`) et l'étiquette publique
+ * (`decided_public_ttc_cents`) ; le référentiel porte depuis le lot P un prix
+ * pro saisi qui prime, et un remplacement local masquait en silence ses
+ * corrections. Mercuriales, promotions et paliers s'appliquent par-dessus,
+ * comme avant : ils partent de `unitPriceMillicents`.
  *
- * 🔴 **Les deux audiences ont chacune leur décision, et elles ne se touchent
- * pas.** `priceMillicents` est l'entrée du canal professionnel,
- * `decidedPublicTtcCents` celle du public. Lire l'une pour l'autre est
- * exactement le défaut que ce chantier ferme.
- *
- * ⚠️ **La conversion a lieu ICI, à la lecture, et pas à la pose.** Le taux
- * appliqué est donc celui que le miroir porte AU MOMENT DE SERVIR — un push qui
- * change le taux d'un contexte change le hors taxe servi, sans qu'on ait à
- * retoucher le prix posé. C'est ce qu'on veut : le prix posé est un TTC, et un
- * TTC ne bouge pas quand la taxe bouge.
+ * `pimPriceMillicents` reste égal au prix servi : la vitrine ne barre un prix
+ * que lorsque la RÉSOLUTION le baisse, jamais sur une étiquette.
  *
  * 🔴 **`null` = pas vendable à cette audience, et on n'invente rien.** Un
  * article sans taux ne se facture pas ; un article dont le référentiel n'a pas
- * encore poussé le prix public ne se vend pas au public — le servir au tarif
- * pro serait exactement le défaut que ce chantier ferme. Un push complet du
- * référentiel remplit les deux.
+ * encore poussé le prix public ne se vend pas au public.
  */
 function servedPriceOf(row: ItemRow, audience: ShopAudience): ServedPrice | null {
   const pimPriceMillicents = row.priceMillicents;
@@ -289,27 +279,15 @@ function servedPriceOf(row: ItemRow, audience: ShopAudience): ServedPrice | null
     const vatRate = billableRate(row);
     return vatRate === null
       ? null
-      : {
-          unitPriceMillicents: row.override?.priceMillicents ?? pimPriceMillicents,
-          pimPriceMillicents,
-          vatRate,
-        };
+      : { unitPriceMillicents: pimPriceMillicents, pimPriceMillicents, vatRate };
   }
   const price = publicByContextOf(row.publicByContext)?.[PUBLIC_SALES_CONTEXT];
   if (price === undefined) {
     return null;
   }
-  const decided = row.override?.decidedPublicTtcCents ?? null;
-  const decidedMillicents = decided === null ? null : htMillicentsOf(decided, price.vatRatePercent);
   return {
-    unitPriceMillicents: decidedMillicents ?? price.htMillicents,
-    // 🔴 **Le tarif de référence suit le prix servi, il ne reste pas en
-    // arrière.** Si seul `unitPriceMillicents` devenait la décision, la vitrine
-    // publique barrerait l'étiquette du PIM — c'est-à-dire annoncerait une
-    // remise que personne n'a accordée, sur une page servie sans jeton. Le
-    // « prix barré » n'apparaît que lorsque la RÉSOLUTION baisse le prix, et
-    // c'est son seul cas légitime.
-    pimPriceMillicents: decidedMillicents ?? price.htMillicents,
+    unitPriceMillicents: price.htMillicents,
+    pimPriceMillicents: price.htMillicents,
     vatRate: price.vatRatePercent,
   };
 }

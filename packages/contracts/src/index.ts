@@ -964,8 +964,6 @@ export type {
 export type { CatalogFamilyView, CatalogItemView } from "./catalog.js";
 
 export {
-  setB2bPricePayloadSchema,
-  setPublicPricePayloadSchema,
   setMaskingPayloadSchema,
   approveReviewPayloadSchema,
   REVIEW_BATCH_MAX,
@@ -976,8 +974,6 @@ export type {
   CatalogAdminItemView,
   CatalogItemAudience,
   CatalogAllergenView,
-  SetB2bPricePayload,
-  SetPublicPricePayload,
   SetMaskingPayload,
   ApproveReviewPayload,
   SetCatalogFeaturedPayload,

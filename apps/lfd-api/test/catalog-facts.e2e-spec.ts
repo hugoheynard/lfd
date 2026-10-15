@@ -187,14 +187,16 @@ describe("aucune décision locale ne se perd (H10)", () => {
   async function decidedFiche(name: string) {
     const fiche = await anActiveFiche(staff, name);
     await relayAll(ctx);
-    await staff()
-      .put(`/admin/catalog/${fiche.variantSku}/price`)
-      .send({ priceMillicents: DECIDED_PRICE })
-      .expect(204);
+    // Un prix décidé AVANT le lot D (2026-10-15) : plus aucun geste ne le
+    // pose, la ligne est semée telle que la base la porte encore. Elle n'est
+    // plus lue — elle doit seulement ne jamais disparaître.
+    await ctx.prisma.catalogItemOverride.create({
+      data: { sku: fiche.variantSku, priceMillicents: DECIDED_PRICE },
+    });
     return fiche;
   }
 
-  it("une décision de prix survit à dix faits sur la même fiche", async () => {
+  it("un ancien prix décidé survit à dix faits sur la même fiche", async () => {
     const fiche = await decidedFiche("Kouign-amann");
 
     for (let rank = 1; rank <= TEN_FACTS; rank += 1) {

@@ -96,6 +96,14 @@ centime.
 
 ## L'import, et ce qu'il a révélé
 
+> ⚠️ **Retiré le 2026-10-15** (lot D de
+> [`plan-catalogue-synchronise-par-audience.md`](plan-catalogue-synchronise-par-audience.md)) :
+> la plateforme ne décide plus de prix, `SetB2bPrice` n'existe plus, et le
+> script `prisma/import-mercuriale.ts` est supprimé avec lui. Les 89 couples
+> restent dans `prisma/mercuriale/plaquette-hiver-2026.ts` ; les reporter se
+> fait désormais en prix pro HT saisi dans les fiches du référentiel (lot P).
+> Le texte ci-dessous décrit l'outil tel qu'il était.
+
 `pnpm --filter lfd-api mercuriale:import` — compte rendu seul, puis
 `--appliquer` pour écrire. Il passe par le **bus de commandes** (`SetB2bPrice`),
 jamais par la colonne : écrire `catalog_item_overrides` en direct contournerait

@@ -16,16 +16,9 @@ import { CataloguePage } from './catalogue-page';
 import { CatalogueService, type ShopAudience } from '../catalogue.service';
 
 /**
- * Ce que ces cas tiennent, et c'est **exactement** ce qui manquait : le geste de
- * prix est **atteignable** et il arrive au serveur avec le bon montant.
- *
- * 🔴 Aucun test n'aurait pu voir le défaut d'origine — le contrôle était peint
- * en blanc sur blanc, donc présent dans le DOM, nommé, cliquable et invisible.
- * Ces cas ne prétendent pas le couvrir : ils couvrent ce qu'un test PEUT tenir,
- * c'est-à-dire que le bouton existe une fois par article, qu'il ouvre un champ,
- * et que ce qui en sort est en millicentimes. La couleur, elle, se tient par le
- * fait que le contrôle est désormais un `foldButton` — donc peint par le
- * système, plus à la main.
+ * La vue « Catalogue publié » : les prix du référentiel en lecture (lot D,
+ * 2026-10-15 — plus aucun geste de prix), les audiences, le masquage et la
+ * validation.
  *
  * On passe par le DOM plutôt que par l'instance : les membres sont `protected`,
  * et c'est le gabarit qui câble les colonnes — que `tsc` ne lit pas.
@@ -39,8 +32,6 @@ function item(over: Partial<CatalogAdminItemView> = {}): CatalogAdminItemView {
     categoryId: 'cat_vien',
     categoryName: 'Viennoiseries',
     pimPriceMillicents: 170_616,
-    b2bPriceMillicents: null,
-    effectivePriceMillicents: 170_616,
     vatRatePercent: 5.5,
     // L'étiquette publique, en centimes TTC — 2,25 €, volontairement SANS
     // rapport arithmétique avec le prix pro juste au-dessus : la colonne montre
@@ -48,8 +39,6 @@ function item(over: Partial<CatalogAdminItemView> = {}): CatalogAdminItemView {
     // laisserait passer une confusion entre les deux.
     publicTtcCents: 225,
     publicVatRatePercent: 5.5,
-    // Aucune décision publique : l'article suit l'étiquette du référentiel.
-    decidedPublicTtcCents: null,
     allergens: [],
     allergensIncomplete: false,
     isHidden: false,
@@ -140,8 +129,6 @@ class FakeCatalogue {
   items: readonly CatalogAdminItemView[] = [item()];
   /** `null` = dérivée des lignes en vente (`viewOf`). */
   view: PublishedCatalogView | null = null;
-  readonly prices: { sku: string; priceMillicents: number }[] = [];
-  readonly aligned: string[] = [];
 
   list(): Promise<readonly CatalogAdminItemView[]> {
     return Promise.resolve(this.items);
@@ -149,25 +136,6 @@ class FakeCatalogue {
   published(): Promise<PublishedCatalogView> {
     return Promise.resolve(this.view ?? viewOf(this.items));
   }
-  setPrice(sku: string, priceMillicents: number): Promise<void> {
-    this.prices.push({ sku, priceMillicents });
-    return Promise.resolve();
-  }
-  alignOnPim(sku: string): Promise<void> {
-    this.aligned.push(sku);
-    return Promise.resolve();
-  }
-  readonly publicPrices: { sku: string; ttcCents: number }[] = [];
-  setPublicPrice(sku: string, ttcCents: number): Promise<void> {
-    this.publicPrices.push({ sku, ttcCents });
-    return Promise.resolve();
-  }
-  readonly publicAligned: string[] = [];
-  alignPublicOnPim(sku: string): Promise<void> {
-    this.publicAligned.push(sku);
-    return Promise.resolve();
-  }
-
   /** Ce que la route unique `/masking` a reçu. */
   readonly masking: { sku: string; audience: ShopAudience; hidden: boolean }[] = [];
   setMasking(sku: string, audience: ShopAudience, hidden: boolean): Promise<void> {
@@ -219,60 +187,27 @@ function button(fixture: ComponentFixture<CataloguePage>, label: string): HTMLBu
   return found;
 }
 
-describe('CataloguePage — poser un prix pro', () => {
-  it('offre le geste sur un article qui suit encore le PIM', async () => {
+/**
+ * 🔴 **Plus aucun prix ne se pose ici** (lot D, 2026-10-15) : la plateforme
+ * ne décide plus de prix, et la colonne envoie à la fiche du référentiel.
+ */
+describe('CataloguePage — les prix en lecture', () => {
+  it('n’offre aucun geste de prix, ni pro ni public', async () => {
     const fixture = await render(new FakeCatalogue());
 
-    expect(button(fixture, 'Poser un prix pro sur Croissant')).toBeDefined();
-    expect(text(fixture)).toContain('suit le PIM');
+    expect(() => button(fixture, 'Poser un prix pro sur Croissant')).toThrow();
+    expect(() => button(fixture, 'Poser un prix public sur Croissant')).toThrow();
+    expect((fixture.nativeElement as HTMLElement).querySelector('input[type="number"]')).toBeNull();
   });
 
-  it('envoie le montant saisi en MILLICENTIMES, pas en euros', async () => {
-    const api = new FakeCatalogue();
-    const fixture = await render(api);
+  it('envoie à la fiche du référentiel pour changer un prix', async () => {
+    const fixture = await render(new FakeCatalogue());
 
-    button(fixture, 'Poser un prix pro sur Croissant').click();
-    fixture.detectChanges();
-
-    const input = (fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>(
-      'input[type="number"]',
+    const link = (fixture.nativeElement as HTMLElement).querySelector<HTMLAnchorElement>(
+      '.pim a.link',
     );
-    if (input === null) {
-      throw new Error("le champ de saisie ne s'est pas ouvert");
-    }
-    input.value = '1.45';
-    input.dispatchEvent(new Event('input'));
-    input.dispatchEvent(new Event('change'));
-    fixture.detectChanges();
-
-    button(fixture, 'Enregistrer le prix pro de Croissant').click();
-    await fixture.whenStable();
-
-    expect(api.prices).toEqual([{ sku: 'VIE-001-1', priceMillicents: 145_000 }]);
-  });
-
-  /**
-   * Le serveur refuse un prix égal à celui du PIM ; le dire ici évite un
-   * aller-retour pour apprendre une règle que l'écran connaissait déjà.
-   */
-  it('laisse « Enregistrer » inerte tant que le montant est celui du PIM', async () => {
-    const fixture = await render(new FakeCatalogue());
-
-    button(fixture, 'Poser un prix pro sur Croissant').click();
-    fixture.detectChanges();
-
-    expect(button(fixture, 'Enregistrer le prix pro de Croissant').disabled).toBe(true);
-  });
-
-  it('propose de revenir au PIM sur un article déjà négocié, et pas sur les autres', async () => {
-    const api = new FakeCatalogue();
-    api.items = [item({ b2bPriceMillicents: 145_000, effectivePriceMillicents: 145_000 })];
-    const fixture = await render(api);
-
-    button(fixture, 'Revenir au tarif du PIM pour Croissant').click();
-    await fixture.whenStable();
-
-    expect(api.aligned).toEqual(['VIE-001-1']);
+    expect(link?.textContent).toContain('Changer dans la fiche');
+    expect(link?.getAttribute('href')).toBe('/pim/produits/prd_VIE-001-1');
   });
 });
 
@@ -304,9 +239,9 @@ describe('CataloguePage — ce qui ne se vend pas', () => {
 
   /**
    * C'est l'objet du lot 3 : une fiche INACTIVE paraît, grisée, et ses cellules
-   * le disent — elle n'a ni ligne en vente ni prix décidé à offrir.
+   * le disent — elle n'a pas de ligne en vente.
    */
-  it('montre une fiche inactive, grisée, sans geste de prix', async () => {
+  it('montre une fiche inactive, grisée', async () => {
     const api = new FakeCatalogue();
     api.items = [];
     api.view = {
@@ -333,7 +268,6 @@ describe('CataloguePage — ce qui ne se vend pas', () => {
     expect(fixture.nativeElement.querySelector('.identity.is-inactive')).not.toBeNull();
     expect(text(fixture)).toContain('inactive');
     expect(text(fixture)).toContain('pas en vente');
-    expect(() => button(fixture, 'Poser un prix pro sur Brioche')).toThrow();
   });
 });
 
@@ -648,8 +582,7 @@ function confirmNamed(fixture: ComponentFixture<CataloguePage>, label: string): 
  * 🔴 Ce que ces cas tiennent et qu'aucun autre ne peut tenir : les mots « HT »
  * et « TTC » sont à l'écran. Un HT pro et un TTC public l'un sous l'autre, sans
  * leur unité, se lisent comme deux versions du même prix — et l'écart entre eux
- * passe pour une remise. C'est une confusion sur de l'argent, dans un écran où
- * l'on pose des prix.
+ * passe pour une remise. C'est une confusion sur de l'argent.
  */
 describe('CataloguePage — les deux prix du référentiel', () => {
   it('montre le pro en HT et le public en TTC, chacun avec son unité', async () => {
@@ -703,48 +636,21 @@ function cell(fixture: ComponentFixture<CataloguePage>, selector: string): strin
 }
 
 /**
- * **La colonne du prix public**, et le nombre qu'elle ajoute.
+ * **L'étiquette publique, et le nombre qu'elle ajoute.**
  *
  * 🔴 Ce que ces cas tiennent et qui n'existe nulle part ailleurs : l'écart
- * entre le prix POSÉ et le prix ENCAISSÉ est écrit à l'écran. C'est la
- * contrepartie de la décision d'ancre — on assume qu'un TTC posé puisse
- * revenir un centime plus haut, donc on le dit à celui qui le pose. Sans cette
- * ligne, le commercial tape 1,05 € et découvre 1,06 € en caisse.
+ * entre l'étiquette et le prix ENCAISSÉ est écrit à l'écran. C'est la
+ * contrepartie de la décision d'ancre — on assume qu'un TTC puisse revenir un
+ * centime plus haut, donc on le dit.
  */
-describe('CataloguePage — le prix public', () => {
-  it('pose une étiquette en CENTIMES TTC, pas en millicentimes', async () => {
-    const api = new FakeCatalogue();
-    const fixture = await render(api);
-
-    button(fixture, 'Poser un prix public sur Croissant').click();
-    await fixture.whenStable();
-    fixture.detectChanges();
-
-    const input = (fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>(
-      'input[type="number"]',
-    );
-    if (input === null) {
-      throw new Error("le champ de saisie ne s'est pas ouvert");
-    }
-    input.value = '2.99';
-    input.dispatchEvent(new Event('input'));
-    input.dispatchEvent(new Event('change'));
-    fixture.detectChanges();
-
-    button(fixture, 'Enregistrer le prix public de Croissant').click();
-    await fixture.whenStable();
-
-    // 299 centimes, pas 299 000 millicentimes : l'unité suit l'audience.
-    expect(api.publicPrices).toEqual([{ sku: 'VIE-001-1', ttcCents: 299 }]);
-  });
-
+describe('CataloguePage — le prix public encaissé', () => {
   /**
    * 🔴 **Le nombre qui dit la vérité sur l'arrondi.** 2,25 € TTC à 5,5 % font
    * 213 270 millicentimes hors taxe, qui refacturés rendent 2,25 € : les deux
    * coïncident, donc la ligne ne s'affiche pas. Répéter le même montant
    * apprendrait à ne plus le lire.
    */
-  it("ne répète pas l'encaissé quand il vaut le prix posé", async () => {
+  it("ne répète pas l'encaissé quand il vaut l'étiquette", async () => {
     const api = new FakeCatalogue();
     const fixture = await render(api);
 
@@ -763,14 +669,5 @@ describe('CataloguePage — le prix public', () => {
 
     expect(text(fixture)).toContain('encaissé');
     expect(text(fixture)).toContain('1,06');
-  });
-
-  it('dit qu’aucune étiquette n’est arrivée, plutôt que de proposer d’en poser une', async () => {
-    const api = new FakeCatalogue();
-    api.items = [item({ publicTtcCents: null, publicVatRatePercent: null })];
-    const fixture = await render(api);
-
-    expect(text(fixture)).toContain('pas d’étiquette reçue');
-    expect(() => button(fixture, 'Poser un prix public sur Croissant')).toThrow();
   });
 });

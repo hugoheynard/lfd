@@ -59,6 +59,10 @@ const ALLOWED = new Set([
   // elle PORTE le filtre — une déclinaison retirée n'y paraît que par les
   // manques que le fait de sa fiche déclare, jamais comme article en vente.
   "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-published-catalog.reader.ts",
+  // Le retraçage du prix (lot D du catalogue synchronisé, 2026-10-15) : il
+  // PORTE le filtre (`...STILL_SOLD`) — un article retiré ne se vend plus, sa
+  // trace n'a pas à suivre le référentiel.
+  "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-catalog-price-retracer.ts",
   // Le semis de développement, et il PORTE le filtre : sa lecture demande
   // `withdrawnAt: null` explicitement (`ensureSkusExist`). Elle ne sert pas à
   // vendre — elle vérifie AVANT d'écrire que les SKU du corpus existent, pour

@@ -27,6 +27,7 @@ const UNNAMED_SUBJECTS: Readonly<Record<string, string>> = {
   "subscription.occurrence_overridden": "un panier récurrent n'a pas de nom",
   "subscription.deleted": "un panier récurrent n'a pas de nom",
   "catalog_delivery.accepted": "une arrivée de catalogue n'a pas de nom ; ses ids la disent",
+  "catalog_price_history.retraced": "l'historique des prix n'a pas de nom ; ses SKU le disent",
   "order_cutoff.created": "une règle d'heure limite se dit par son contenu (point, jour, heure)",
   "order_cutoff.updated": "une règle d'heure limite se dit par son contenu (point, jour, heure)",
   "order_cutoff.removed": "une règle d'heure limite se dit par son contenu (point, jour, heure)",

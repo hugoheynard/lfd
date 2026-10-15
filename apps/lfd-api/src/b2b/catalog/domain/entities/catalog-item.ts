@@ -1,10 +1,5 @@
 import {
   CannotFeatureHiddenItemError,
-  InvalidB2bPriceError,
-  InvalidPublicPriceError,
-  PublicPriceWithoutContextError,
-  RedundantPublicPriceError,
-  RedundantB2bPriceError,
   MaskingOutsideAudienceError,
 } from "../errors/catalog-errors.js";
 import type { ShopAudience } from "../ports/catalog.reader.js";
@@ -17,8 +12,14 @@ import { audienceIncludes, type CatalogAudience } from "../served-to.js";
  *
  * - les **faits reçus du PIM** (nom, prix canonique, famille, TVA) — subis, jamais
  *   décidés ici, remplacés au push suivant ;
- * - la **décision de la plateforme** (prix B2B, visibilité, mise en avant) — prise
- *   ici, et qui doit survivre au push.
+ * - la **décision de la plateforme** (masquage par audience, mise en avant) —
+ *   prise ici, et qui doit survivre au push.
+ *
+ * 🔴 **Le prix ne s'y décide plus** (lot D de
+ * `documentation/pim/plan-catalogue-synchronise-par-audience.md`, 2026-10-15) :
+ * le prix servi est celui du référentiel, qui porte depuis le lot P un prix pro
+ * HT saisi. Les colonnes `price_millicents` et `decided_public_ttc_cents`
+ * restent en base, ni lues ni écrites.
  *
  * Les faire cohabiter dans un agrégat rend l'invariant structurel plutôt que
  * conventionnel : `refreshFromPim()` ne **peut pas** toucher à la décision, parce
@@ -229,18 +230,13 @@ export interface PimContextPrice {
   readonly htMillicents: number;
 }
 
-/** La décision de la plateforme. `null` partout = aucune décision prise. */
+/**
+ * La décision de la plateforme. Tout à `false` = aucune décision prise.
+ *
+ * ⚠️ Plus aucun prix ici depuis le lot D (2026-10-15) : un champ de prix
+ * réintroduit serait relu de colonnes que plus personne ne tient à jour.
+ */
 export interface LocalDecision {
-  readonly priceMillicents: number | null;
-  /**
-   * Le prix **public** décidé ici, en centimes **TTC**. `null` = on garde
-   * l'étiquette du PIM.
-   *
-   * ⚠️ **Une unité différente de sa voisine**, et c'est voulu : celui-ci est un
-   * prix qu'un humain POSE, l'autre un hors taxe DÉRIVÉ. `millicents.ts` tient
-   * la règle.
-   */
-  readonly decidedPublicTtcCents: number | null;
   /** Masqué de la boutique **professionnelle**. */
   readonly isHidden: boolean;
   /**
@@ -258,8 +254,6 @@ export interface LocalDecision {
 
 /** Aucune décision : l'état d'un article que personne n'a encore touché. */
 const NO_DECISION: LocalDecision = {
-  priceMillicents: null,
-  decidedPublicTtcCents: null,
   isHidden: false,
   isHiddenPublic: false,
   isFeatured: false,
@@ -279,9 +273,11 @@ export interface CatalogItemState {
    */
   readonly withdrawnAt: Date | null;
   /**
-   * `null` quand plus aucune décision ne subsiste : l'adaptateur **supprime**
-   * alors la ligne d'override au lieu d'en écrire une neutre. « Revenir au prix
-   * du PIM » redevient ainsi l'absence de décision, pas une décision vide.
+   * `null` quand aucune décision ne subsiste. L'adaptateur ne crée alors pas
+   * de ligne, et remet à `false` les drapeaux d'une ligne existante — il ne
+   * la **supprime jamais** (lot D, correction BLOQUANT de `vitruve`,
+   * 2026-10-15) : elle porte peut-être un ancien prix décidé, qui reste en
+   * base comme trace même s'il n'est plus lu.
    */
   readonly decision: LocalDecision | null;
   /**
@@ -366,29 +362,9 @@ export class CatalogItem {
     return this.facts.productId;
   }
 
-  /**
-   * Le prix **réellement applicable** : la décision locale si elle existe, sinon
-   * celui du PIM. La règle vit ici, une seule fois — la laisser fuir donnerait
-   * autant de réponses qu'il y a d'écrans.
-   */
-  get effectivePriceMillicents(): number {
-    return this.decision.priceMillicents ?? this.facts.priceMillicents;
-  }
-
+  /** Le prix pro HT du référentiel, en millicentimes — le seul prix de l'article. */
   get pimPriceMillicents(): number {
     return this.facts.priceMillicents;
-  }
-
-  /**
-   * Le prix B2B **décidé**, ou `null` quand l'article suit le tarif du PIM.
-   *
-   * Distinct de {@link effectivePriceMillicents} : un prix B2B peut égaler le
-   * prix du PIM après un push, et seul ce getter dit alors qu'une décision
-   * existe — ce que le journal doit savoir pour ne pas annoncer un retour au
-   * PIM qui n'a rien retiré.
-   */
-  get b2bPriceMillicents(): number | null {
-    return this.decision.priceMillicents;
   }
 
   /**
@@ -492,17 +468,17 @@ export class CatalogItem {
    * **Remplace les faits** par ceux d'un nouveau push.
    *
    * Rend un agrégat neuf portant la **même décision** : c'est ce qui garantit
-   * qu'un push ne perd jamais un prix négocié. L'invariant n'est pas surveillé,
+   * qu'un push ne perd jamais un masquage. L'invariant n'est pas surveillé,
    * il est indisponible autrement.
    *
    * 🔴 **Et il remet l'article en vente.** Le référentiel l'envoie : il est au
-   * catalogue, point. C'est ce qui rend le retrait réversible — et le prix
-   * négocié le retrouve, puisque la décision traverse.
+   * catalogue, point. C'est ce qui rend le retrait réversible — et la
+   * décision le retrouve, puisqu'elle traverse.
    *
    * Le repli inverse — préserver le retrait — a été écrit d'abord, et il perdait
    * la décision : le miroir ne rendant pas les retirés, un article qui revient
    * repassait par `receive`, donc sans décision, et `saveMany` supprimait
-   * l'override. La sortie n'est pas de préserver le retrait ici, c'est de faire
+   * l'override (il ne supprime plus rien depuis le lot D). La sortie n'est pas de préserver le retrait ici, c'est de faire
    * lire les retirés à l'ingestion.
    */
   refreshFromPim(facts: PimFacts): CatalogItem {
@@ -572,78 +548,6 @@ export class CatalogItem {
   /** L'article a quitté la vente. Sa décision, elle, l'attend. */
   get isWithdrawn(): boolean {
     return this.withdrawnAt !== null;
-  }
-
-  /**
-   * Pose le **prix de vente B2B**, distinct de celui du PIM.
-   *
-   * @throws {InvalidB2bPriceError} prix nul ou négatif.
-   * @throws {RedundantB2bPriceError} prix identique à celui du PIM — le geste
-   *   voulu est alors {@link alignOnPim}.
-   */
-  setB2bPrice(priceMillicents: number, decidedBy: string | null): void {
-    if (!Number.isInteger(priceMillicents) || priceMillicents <= 0) {
-      throw new InvalidB2bPriceError(priceMillicents);
-    }
-    if (priceMillicents === this.facts.priceMillicents) {
-      throw new RedundantB2bPriceError(priceMillicents);
-    }
-    this.decision = { ...this.decision, priceMillicents, decidedBy };
-  }
-
-  /**
-   * Retire le prix B2B : l'article **repasse au tarif du PIM**, et suivra ses
-   * évolutions. C'est l'inverse de {@link setB2bPrice}, et le seul moyen de
-   * revenir en arrière — d'où un nom qui dit le résultat, pas la suppression.
-   */
-  alignOnPim(): void {
-    this.decision = { ...this.decision, priceMillicents: null };
-  }
-
-  /** Le prix public décidé ici, en centimes TTC. `null` = on suit l'étiquette. */
-  get decidedPublicTtcCents(): number | null {
-    return this.decision.decidedPublicTtcCents;
-  }
-
-  /**
-   * Pose le **prix public**, en centimes TTC — l'étiquette que la maison
-   * substitue à celle du référentiel.
-   *
-   * 🔴 **Ce nombre est une ENTRÉE, pas un affichage.** Il est mis hors taxe à la
-   * lecture, au taux du contexte public, puis traverse le même pipeline que le
-   * prix professionnel — promotions et paliers ouverts à tous s'appliquent
-   * par-dessus. Ce que le rayon montre est le TTC qui en RESSORT, et il peut
-   * différer d'un centime de celui-ci : l'aller-retour hors taxe ne revient pas
-   * toujours sur lui-même (mesuré, `ancrage-du-ttc-pose.mjs`, et assumé —
-   * Hugo, 2026-09-21).
-   *
-   * @throws {InvalidPublicPriceError} prix nul, négatif ou non entier.
-   * @throws {RedundantPublicPriceError} prix identique à l'étiquette du PIM —
-   *   le geste voulu est alors {@link alignPublicOnPim}.
-   * @throws {PublicPriceWithoutContextError} le miroir ne porte aucune entrée
-   *   pour ce contexte : la vitrine n'expose pas l'article, et le prix serait
-   *   écrit sans jamais être servi.
-   */
-  setPublicPrice(ttcCents: number, publicContext: string, decidedBy: string | null): void {
-    if (!Number.isInteger(ttcCents) || ttcCents <= 0) {
-      throw new InvalidPublicPriceError(ttcCents);
-    }
-    if (this.facts.publicByContext?.[publicContext] === undefined) {
-      throw new PublicPriceWithoutContextError(this.facts.sku, publicContext);
-    }
-    if (ttcCents === this.facts.publicTtcCents) {
-      throw new RedundantPublicPriceError(ttcCents);
-    }
-    this.decision = { ...this.decision, decidedPublicTtcCents: ttcCents, decidedBy };
-  }
-
-  /**
-   * Retire le prix public : l'article **repasse à l'étiquette du PIM**.
-   * L'inverse de {@link setPublicPrice}, et sans effet sur le prix
-   * professionnel — les deux audiences se décident séparément.
-   */
-  alignPublicOnPim(): void {
-    this.decision = { ...this.decision, decidedPublicTtcCents: null };
   }
 
   /**
@@ -764,23 +668,17 @@ export class CatalogItem {
   /**
    * L'état à écrire.
    *
-   * `decision: null` quand plus rien n'a été décidé — l'adaptateur supprime
-   * alors la ligne. Sans ça, un article ramené au prix du PIM garderait une
-   * ligne de décision vide, et l'écran annoncerait une négociation qui n'existe
-   * plus.
+   * `decision: null` quand plus rien n'a été décidé — l'adaptateur ne crée
+   * alors aucune ligne, et remet à `false` les drapeaux d'une ligne existante
+   * sans jamais la supprimer (lot D, 2026-10-15).
    */
   toPersistence(): CatalogItemState {
-    // 🔴 **Toute décision doit figurer ici.** Un champ oublié rendrait
-    // `untouched` vrai alors qu'une décision existe : l'adaptateur supprimerait
-    // la ligne, et le prix disparaîtrait AU PROCHAIN PUSH du PIM — loin du
-    // geste, donc loin de sa cause. C'est le mode de panne le plus coûteux de
-    // cet agrégat, et aucun type ne le voit.
+    // 🔴 **Toute décision doit figurer ici.** Un drapeau oublié rendrait
+    // `untouched` vrai alors qu'une décision existe : l'adaptateur le
+    // remettrait à `false` AU PROCHAIN PUSH du PIM — loin du geste, donc loin
+    // de sa cause. Aucun type ne le voit.
     const untouched =
-      this.decision.priceMillicents === null &&
-      this.decision.decidedPublicTtcCents === null &&
-      !this.decision.isHidden &&
-      !this.decision.isHiddenPublic &&
-      !this.decision.isFeatured;
+      !this.decision.isHidden && !this.decision.isHiddenPublic && !this.decision.isFeatured;
     return {
       facts: this.facts,
       withdrawnAt: this.withdrawnAt,

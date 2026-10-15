@@ -409,6 +409,14 @@ en ligne.
 
 ### 6.1 Faits reçus et décision locale, dans un seul agrégat
 
+> ⚠️ **Lot D, 2026-10-15** ([`plan-catalogue-synchronise-par-audience.md`](plan-catalogue-synchronise-par-audience.md)) :
+> la plateforme ne décide plus de prix. `catalog_item_overrides` ne porte plus
+> que le masquage et la mise en avant ; ses colonnes `price_millicents` et
+> `decided_public_ttc_cents` restent en base, ni lues ni écrites, et **aucune
+> ligne n'est plus supprimée** (une décision neutre remet ses drapeaux à
+> `false`). Le prix servi est celui du référentiel. Ce qui suit sur le « prix
+> B2B » décrit l'état d'avant.
+
 `CatalogItem` tient ensemble deux choses de natures opposées :
 
 - les **faits reçus du PIM** — nom, prix canonique, famille, TVA, allergènes —

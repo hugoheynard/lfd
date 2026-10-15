@@ -284,6 +284,25 @@ const publicPriceSet: Phrase = (fact) => {
   );
 };
 
+/**
+ * « … a retracé le prix du référentiel de 2 articles : TAR-001, TAR-002 »
+ * (lot D du catalogue synchronisé, 2026-10-15). Au-delà de
+ * {@link LISTED_SKUS}, la phrase compte et laisse la liste au détail.
+ */
+const pricesRetraced: Phrase = (fact) => {
+  const skus = strings(fact.payload['skus']);
+  const listed = skus.length <= LISTED_SKUS;
+  return byActor(
+    fact,
+    [
+      text('a retracé le prix du référentiel de '),
+      value(`${skus.length} ${skus.length > 1 ? 'articles' : 'article'}`),
+      ...(listed ? [text(' : '), value(skus.join(', '))] : []),
+    ],
+    listed ? ['skus'] : [],
+  );
+};
+
 export const COMMERCE_PHRASES = {
   'catalog_item.b2b_price_set': priceSet,
   'catalog_item.public_price_set': publicPriceSet,
@@ -318,6 +337,7 @@ export const COMMERCE_PHRASES = {
   'catalog_item.featured': onArticle('a mis en avant ', ' dans le catalogue professionnel'),
   'catalog_item.unfeatured': onArticle('a cessé de mettre en avant ', ''),
   'catalog_delivery.accepted': deliveryAccepted,
+  'catalog_price_history.retraced': pricesRetraced,
   // La surcharge d'une opération datée reçue (D9, lot 2 du plan des opérations
   // datées, 2026-09-24). Le détail dit ce qui est restreint.
   'catalog_operation.override_set': (fact) =>

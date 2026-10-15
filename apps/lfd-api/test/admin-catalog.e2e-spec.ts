@@ -4,14 +4,13 @@ import { millicentsFromCents } from "@lfd/money";
  * E2E du **paramétrage du catalogue** — sur un vrai Postgres.
  *
  * Ce que seul ce niveau prouve : les refus de l'agrégat traversent le bus et le
- * filtre d'erreurs pour ressortir en 400/409, et une décision posée survit
- * réellement à l'ingestion suivante. Deux propriétés qu'un test unitaire montre
- * séparément et jamais ensemble.
+ * filtre d'erreurs pour ressortir en 400/409, une décision posée survit
+ * réellement à l'ingestion suivante, et — depuis le lot D (2026-10-15) — aucun
+ * ancien prix décidé n'est ni servi ni supprimé.
  */
 import { CATALOG_SNAPSHOT_VERSION, type CatalogSnapshot } from "@lfd/catalog-sync";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { Prisma } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, E2E_STAFF_ID, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { B2bCatalogDriver } from "../src/pim/channels/b2b-platform/products/driver.js";
 
@@ -39,6 +38,8 @@ beforeEach(async () => {
 });
 
 const SKU = "VIE-001-1";
+/** L'étiquette publique du référentiel (250 TTC à 5,5 %), hors taxe — celle du fil. */
+const PUBLIC_HT_MILLICENTS = 236_967;
 
 /** Ce qu'une déclinaison porte de réglementaire sur le fil. */
 interface SheetOnWire {
@@ -84,7 +85,9 @@ function snapshot(priceMillicents: number, sheet: SheetOnWire = NO_SHEET): Catal
             position: 0,
             vatRatePercent: 5.5,
             publicTtcCents: 250,
-            publicByContext: { takeaway: { vatRatePercent: 5.5, htMillicents: 236_967 } },
+            publicByContext: {
+              takeaway: { vatRatePercent: 5.5, htMillicents: PUBLIC_HT_MILLICENTS },
+            },
           },
         ],
         note: null,
@@ -138,12 +141,13 @@ async function listOne(): Promise<CatalogAdminItemView | undefined> {
 }
 
 describe("GET /admin/catalog", () => {
-  it("rend les DEUX prix, pas seulement le résultat", async () => {
+  it("rend le prix du référentiel, et aucun champ de prix décidé (lot D)", async () => {
     const item = await listOne();
 
     expect(item?.pimPriceMillicents).toBe(200_000);
-    expect(item?.b2bPriceMillicents).toBeNull();
-    expect(item?.effectivePriceMillicents).toBe(200_000);
+    expect(Object.keys(item ?? {})).not.toContain("b2bPriceMillicents");
+    expect(Object.keys(item ?? {})).not.toContain("effectivePriceMillicents");
+    expect(Object.keys(item ?? {})).not.toContain("decidedPublicTtcCents");
   });
 
   /**
@@ -274,146 +278,136 @@ describe("GET /admin/catalog — la fiche d'allergènes", () => {
   });
 });
 
-describe("PUT /admin/catalog/:sku/price", () => {
-  it("pose le prix B2B et trace son auteur", async () => {
-    await asStaff()
-      .put(`/admin/catalog/${SKU}/price`)
-      .send({ priceMillicents: 180_000 })
-      .expect(204);
-
-    const item = await listOne();
-    expect(item?.b2bPriceMillicents).toBe(180_000);
-    expect(item?.effectivePriceMillicents).toBe(180_000);
-    // L'id de fiche, plus le `sub` (plan de l'auteur, étape 3).
-    expect(item?.decidedBy).toBe(E2E_STAFF_ID);
-  });
-
-  it("refuse un prix nul — le refus de l'agrégat ressort en 400", async () => {
-    const response = await asStaff()
-      .put(`/admin/catalog/${SKU}/price`)
-      .send({ priceMillicents: 0 });
-
-    expect(response.status).toBe(400);
-  });
-
-  /**
-   * Recopier le prix du PIM créerait une négociation fantôme qui bloquerait sa
-   * prochaine hausse. Le refus est **métier**, donc 409, et il nomme le geste
-   * correct.
-   */
-  it("refuse un prix identique à celui du PIM", async () => {
-    const response = await asStaff()
-      .put(`/admin/catalog/${SKU}/price`)
-      .send({ priceMillicents: 200_000 });
-
-    expect(response.status).toBe(409);
-  });
-
-  it("rend 404 pour un article qui n'est plus au catalogue", async () => {
-    const response = await asStaff()
-      .put("/admin/catalog/INCONNU/price")
-      .send({ priceMillicents: 180_000 });
-
-    expect(response.status).toBe(404);
-  });
-});
-
-describe("DELETE /admin/catalog/:sku/price", () => {
-  it("ramène l'article au tarif du PIM", async () => {
-    await asStaff()
-      .put(`/admin/catalog/${SKU}/price`)
-      .send({ priceMillicents: 180_000 })
-      .expect(204);
-
-    await asStaff().delete(`/admin/catalog/${SKU}/price`).expect(204);
-
-    const item = await listOne();
-    expect(item?.b2bPriceMillicents).toBeNull();
-    expect(item?.effectivePriceMillicents).toBe(200_000);
-  });
-});
-
 /**
- * **Le prix PUBLIC**, et ce qui le distingue de son voisin professionnel.
+ * **Le prix ne se décide plus sur la plateforme** (lot D de
+ * `plan-catalogue-synchronise-par-audience.md`, 2026-10-15).
  *
- * Ces cas traversent le vrai SQL parce que c'est là que se joue le piège du
- * lot : l'objet d'écriture de `saveMany` est le seul endroit du dépôt où un
- * champ oublié COMPILE et perd la donnée. Un test de handler l'aurait raté.
+ * Les anciennes décisions restent en base, ni lues ni écrites : la ligne
+ * d'override est semée telle qu'une base d'avant le déploiement la porte —
+ * plus aucun geste ne sait la produire, et c'est ce qu'on éprouve.
  */
-describe("PUT /admin/catalog/:sku/public-price", () => {
-  it("pose l'étiquette publique, en centimes TTC, sans toucher au prix pro", async () => {
-    await asStaff().put(`/admin/catalog/${SKU}/public-price`).send({ ttcCents: 299 }).expect(204);
-
-    const item = await listOne();
-    expect(item?.decidedPublicTtcCents).toBe(299);
-    // 🔴 Le canal professionnel n'a pas bougé : deux audiences, deux décisions.
-    expect(item?.b2bPriceMillicents).toBeNull();
-    expect(item?.decidedBy).toBe(E2E_STAFF_ID);
-  });
-
-  /**
-   * 🔴 **Le cas qui prouve que la donnée est bien ÉCRITE**, et pas seulement
-   * acceptée. Une décision réduite au seul prix public doit retenir la ligne
-   * d'override : si `untouched` l'ignorait, elle serait supprimée et le prix
-   * disparaîtrait — pas au geste, mais au prochain push du PIM.
-   */
-  it("🔴 survit à une relecture quand le prix public est la SEULE décision", async () => {
-    await asStaff().put(`/admin/catalog/${SKU}/public-price`).send({ ttcCents: 299 }).expect(204);
-
-    // On repasse par le miroir, pas par un cache : c'est la base qu'on éprouve.
-    const stored = await ctx.prisma.catalogItemOverride.findUnique({ where: { sku: SKU } });
-    expect(stored?.decidedPublicTtcCents).toBe(299);
-    expect(stored?.priceMillicents).toBeNull();
-  });
-
-  it("refuse un prix nul — le refus de l'agrégat ressort en 400", async () => {
-    const response = await asStaff()
-      .put(`/admin/catalog/${SKU}/public-price`)
-      .send({ ttcCents: 0 });
-
-    expect(response.status).toBe(400);
-  });
-
-  it("refuse l'étiquette du PIM recopiée — 409, et le geste correct est de revenir", async () => {
-    const response = await asStaff()
-      .put(`/admin/catalog/${SKU}/public-price`)
-      .send({ ttcCents: 250 });
-
-    expect(response.status).toBe(409);
-  });
-
-  /**
-   * 🔴 **Le refus sans équivalent professionnel.** La vitrine publique écarte
-   * déjà un article dont le miroir ne porte pas le contexte servi : accepter le
-   * prix l'écrirait, l'afficherait comme une décision prise, et ne le servirait
-   * jamais.
-   */
-  it("🔴 refuse un prix sur un article que la vitrine publique n'expose pas", async () => {
-    await ctx.prisma.catalogItem.update({
-      where: { sku: SKU },
-      data: { publicByContext: Prisma.DbNull },
+describe("lot D — le prix vient du référentiel", () => {
+  /** Une ligne « prix seul » d'avant le lot D : aucun drapeau, deux prix décidés. */
+  async function legacyPriceOnly(): Promise<void> {
+    await ctx.prisma.catalogItemOverride.create({
+      data: { sku: SKU, priceMillicents: 180_000, decidedPublicTtcCents: 299 },
     });
+  }
 
-    const response = await asStaff()
-      .put(`/admin/catalog/${SKU}/public-price`)
-      .send({ ttcCents: 299 });
+  it("les quatre routes de prix décidé ont disparu", async () => {
+    await asStaff()
+      .put(`/admin/catalog/${SKU}/price`)
+      .send({ priceMillicents: 180_000 })
+      .expect(404);
+    await asStaff().delete(`/admin/catalog/${SKU}/price`).expect(404);
+    await asStaff().put(`/admin/catalog/${SKU}/public-price`).send({ ttcCents: 299 }).expect(404);
+    await asStaff().delete(`/admin/catalog/${SKU}/public-price`).expect(404);
+  });
 
-    expect(response.status).toBe(409);
+  it("un ancien prix décidé n'est plus servi, ni aux pros ni au public", async () => {
+    await legacyPriceOnly();
+
+    const quote = jsonBody<{ lines: { unitPriceMillicents: number }[] }>(
+      await ctx
+        .http()
+        .post("/shop/quote")
+        .send({ lines: [{ sku: "VIE-001", quantity: 1 }], fulfillment: null })
+        .expect(200),
+    );
+    const shop = jsonBody<{ items: { sku: string; unitPriceMillicents: number }[] }>(
+      await ctx.http().get("/shop/catalogue").expect(200),
+    );
+    const view = jsonBody<PublishedCatalogView>(
+      await asStaff().get("/admin/catalog/published").expect(200),
+    );
+
+    // Public : l'étiquette du référentiel (250 TTC → 236 967 HT), pas le 299 décidé.
+    expect(shop.items[0]?.unitPriceMillicents).toBe(PUBLIC_HT_MILLICENTS);
+    expect(quote.lines[0]?.unitPriceMillicents).toBe(PUBLIC_HT_MILLICENTS);
+    // Pro : le prix du référentiel, pas le 180 000 décidé.
+    expect(croissantIn(await board())).toBe(200_000);
+    expect(view.entries[0]?.variants[0]).toMatchObject({
+      pro: { htMillicents: 200_000 },
+      public: { ttcCents: 250 },
+    });
+  });
+
+  /**
+   * 🔴 **La correction BLOQUANT de `vitruve`** : une décision devenue neutre
+   * supprimait la ligne, et tout geste qui charge puis sauve l'article y passe.
+   * Masquer puis démasquer un article qui n'avait qu'un prix décidé aurait
+   * effacé ce prix en production, sans que personne l'ait demandé.
+   */
+  it("🔴 masqué puis démasqué, un article « prix seul » garde sa ligne et ses prix", async () => {
+    await legacyPriceOnly();
+
+    await asStaff()
+      .put(`/admin/catalog/${SKU}/masking`)
+      .send({ audience: "pro", hidden: true })
+      .expect(204);
+    await asStaff()
+      .put(`/admin/catalog/${SKU}/masking`)
+      .send({ audience: "pro", hidden: false })
+      .expect(204);
+    await push(220);
+
+    const stored = await ctx.prisma.catalogItemOverride.findUnique({ where: { sku: SKU } });
+    expect(stored).toMatchObject({
+      priceMillicents: 180_000,
+      decidedPublicTtcCents: 299,
+      isHidden: false,
+      isHiddenPublic: false,
+      isFeatured: false,
+      // L'auteur du masque, gardé : neutraliser ne réécrit que les drapeaux.
+      decidedBy: E2E_STAFF_ID,
+    });
+  });
+
+  /**
+   * 🔴 **La seconde correction BLOQUANT** : le tarificateur relit l'historique
+   * daté, dont la dernière ligne était le prix décidé. Sans retraçage, une
+   * lecture de « maintenant » rendrait ce prix indéfiniment.
+   */
+  it("🔴 retracer rend le prix du référentiel à la lecture datée, et un second appel n'écrit rien", async () => {
+    await ctx.prisma.catalogPriceHistory.create({
+      data: {
+        id: "ph_ancien_prix_decide",
+        sku: SKU,
+        productSku: "VIE-001",
+        priceMillicents: 180_000,
+        vatRatePercent: 5.5,
+        source: "b2b",
+        recordedAt: new Date(),
+      },
+    });
+    expect(croissantIn(await board())).toBe(180_000);
+
+    await asStaff().post("/admin/catalog/prices/retrace").expect(204);
+
+    expect(croissantIn(await board())).toBe(200_000);
+    const rows = await ctx.prisma.catalogPriceHistory.findMany({
+      where: { sku: SKU },
+      orderBy: { recordedAt: "desc" },
+    });
+    expect(rows[0]).toMatchObject({ priceMillicents: 200_000, source: "pim" });
+
+    await asStaff().post("/admin/catalog/prices/retrace").expect(204);
+    expect(await ctx.prisma.catalogPriceHistory.count({ where: { sku: SKU } })).toBe(rows.length);
+  });
+
+  it("retracer reste muré : sans jeton staff, rien ne s'écrit", async () => {
+    await ctx.http().post("/admin/catalog/prices/retrace").expect(401);
   });
 });
 
-describe("DELETE /admin/catalog/:sku/public-price", () => {
-  it("ramène l'article à l'étiquette du PIM", async () => {
-    await asStaff().put(`/admin/catalog/${SKU}/public-price`).send({ ttcCents: 299 }).expect(204);
-
-    await asStaff().delete(`/admin/catalog/${SKU}/public-price`).expect(204);
-
-    const item = await listOne();
-    expect(item?.decidedPublicTtcCents).toBeNull();
-    // Plus aucune décision : la ligne d'override est retirée, pas neutralisée.
-    expect(await ctx.prisma.catalogItemOverride.findUnique({ where: { sku: SKU } })).toBeNull();
-  });
-});
+/** Le tableau de tarification de maintenant. */
+async function board(): Promise<{
+  categories: { items: { sku: string; canonicalMillicents: number }[] }[];
+}> {
+  return jsonBody<{
+    categories: { items: { sku: string; canonicalMillicents: number }[] }[];
+  }>(await asStaff().get("/admin/pricing").expect(200));
+}
 
 /**
  * **Le masquage par audience**, et la divergence qu'il ferme.
@@ -491,8 +485,13 @@ describe("masquage par audience", () => {
 
     const item = await listOne();
     expect(item?.isHiddenPublic).toBe(false);
-    // Plus aucune décision : la ligne d'override est retirée, pas neutralisée.
-    expect(await ctx.prisma.catalogItemOverride.findUnique({ where: { sku: SKU } })).toBeNull();
+    // Plus aucune décision : la ligne reste, neutralisée — elle n'est plus
+    // jamais supprimée (lot D, 2026-10-15).
+    expect(await ctx.prisma.catalogItemOverride.findUnique({ where: { sku: SKU } })).toMatchObject({
+      isHidden: false,
+      isHiddenPublic: false,
+      isFeatured: false,
+    });
   });
 });
 
@@ -539,18 +538,17 @@ describe("visibilité et mise en avant", () => {
  * de bout en bout : décision posée par HTTP, push réel, décision toujours là.
  */
 describe("une décision survit au push suivant", () => {
-  it("garde le prix B2B quand le PIM change le sien", async () => {
+  it("garde le masquage quand le PIM change son prix — et le prix suit le PIM", async () => {
     await asStaff()
-      .put(`/admin/catalog/${SKU}/price`)
-      .send({ priceMillicents: 180_000 })
+      .put(`/admin/catalog/${SKU}/masking`)
+      .send({ audience: "public", hidden: true })
       .expect(204);
 
     await push(220);
 
     const item = await listOne();
     expect(item?.pimPriceMillicents).toBe(220_000);
-    expect(item?.b2bPriceMillicents).toBe(180_000);
-    expect(item?.effectivePriceMillicents).toBe(180_000);
+    expect(item?.isHiddenPublic).toBe(true);
   });
 });
 
@@ -565,21 +563,18 @@ describe("une décision survit au push suivant", () => {
  * démontre.
  */
 describe("l'historique du tarif canonique", () => {
-  it("trace le prix décidé, et le relit à la date où il valait", async () => {
+  it("trace le prix reçu, et le relit à la date où il valait", async () => {
     const before = new Date();
     await new Promise((resolve) => setTimeout(resolve, 20));
 
-    await asStaff()
-      .put(`/admin/catalog/${SKU}/price`)
-      .send({ priceMillicents: 999_000 })
-      .expect(204);
+    await push(999);
 
     const now = jsonBody<{
       categories: { items: { sku: string; canonicalMillicents: number }[] }[];
     }>(await asStaff().get("/admin/pricing").expect(200));
     expect(croissantIn(now)).toBe(millicentsFromCents(999));
 
-    // La MÊME lecture, datée d'avant la décision : le tarif d'alors.
+    // La MÊME lecture, datée d'avant le push : le tarif d'alors.
     const past = jsonBody<{
       categories: { items: { sku: string; canonicalMillicents: number }[] }[];
     }>(await asStaff().get(`/admin/pricing?at=${before.toISOString()}`).expect(200));
@@ -619,14 +614,8 @@ describe("l'historique du tarif canonique", () => {
   it("n'écrit rien quand le prix ne bouge pas", async () => {
     const before = await ctx.prisma.catalogPriceHistory.count({ where: { sku: SKU } });
 
-    await asStaff()
-      .put(`/admin/catalog/${SKU}/price`)
-      .send({ priceMillicents: 300_000 })
-      .expect(204);
-    await asStaff()
-      .put(`/admin/catalog/${SKU}/price`)
-      .send({ priceMillicents: 300_000 })
-      .expect(204);
+    await push(300);
+    await push(300);
 
     const after = await ctx.prisma.catalogPriceHistory.count({ where: { sku: SKU } });
     expect(after - before).toBe(1);

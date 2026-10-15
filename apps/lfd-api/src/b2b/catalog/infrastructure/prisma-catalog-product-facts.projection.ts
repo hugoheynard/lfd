@@ -130,23 +130,17 @@ export class PrismaCatalogProductFactsProjection extends CatalogProductFactsProj
     });
   }
 
-  /** La trace du tarif, par la règle partagée — décision locale relue, jamais écrite. */
+  /** La trace du tarif, par la règle partagée — le prix du référentiel seul (lot D). */
   private async tracePrices(items: readonly PimFacts[]): Promise<void> {
-    const skus = items.map((facts) => facts.sku);
-    const [recorded, decisions] = await Promise.all([
-      lastRecordedPrices(this.prisma, skus),
-      this.prisma.catalogItemOverride.findMany({
-        where: { sku: { in: skus } },
-        select: { sku: true, priceMillicents: true },
-      }),
-    ]);
-    const decisionOf = new Map(decisions.map((decision) => [decision.sku, decision]));
+    const recorded = await lastRecordedPrices(
+      this.prisma,
+      items.map((facts) => facts.sku),
+    );
     const changes = priceTraceRows(
       items.map((facts) => ({
         sku: facts.sku,
         productSku: facts.productSku,
         pimPriceMillicents: facts.priceMillicents,
-        decision: decisionOf.get(facts.sku) ?? null,
         vatRatePercent: facts.vatRatePercent,
       })),
       recorded,

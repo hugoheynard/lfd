@@ -12,6 +12,7 @@ import { publicByContextOf } from "./public-by-context.js";
 import { STILL_SOLD } from "./sellable-filter.js";
 import { CatalogAdminReader } from "../domain/ports/catalog-admin.reader.js";
 import { catalogAudienceOf } from "../domain/served-to.js";
+import { DECISION_COLUMNS } from "./catalog-decision-columns.js";
 
 /** La ligne rendue par Prisma, famille et décision jointes. */
 interface AdminRow {
@@ -37,8 +38,6 @@ interface AdminRow {
     readonly name: string;
   };
   readonly override: {
-    readonly priceMillicents: number | null;
-    readonly decidedPublicTtcCents: number | null;
     readonly isHidden: boolean;
     readonly isHiddenPublic: boolean;
     readonly isFeatured: boolean;
@@ -63,7 +62,7 @@ export class PrismaCatalogAdminReader extends CatalogAdminReader {
       // article retiré y apparaîtrait comme un écart avec le référentiel qui ne
       // l'envoie plus.
       where: { ...STILL_SOLD },
-      include: { category: true, override: true },
+      include: { category: true, override: { select: DECISION_COLUMNS } },
       // 🔴 `sku` DÉPARTAGE, et ce n'est pas de la coquetterie : le référentiel
       // envoie `position: 0` sur **tous** les articles (vérifié le 2026-09-10 —
       // dix-neuf viennoiseries, dix-neuf zéros). Les deux premiers critères sont
@@ -85,14 +84,10 @@ export class PrismaCatalogAdminReader extends CatalogAdminReader {
 }
 
 /**
- * Rend **les deux prix**, jamais le seul résultat.
- *
- * Un écran qui ne verrait que le prix effectif ne pourrait ni dire « celui-là,
- * c'est nous qui l'avons posé », ni proposer d'y renoncer — et un prix sans
- * provenance ne se défend pas devant un client qui le conteste.
+ * L'article vu du paramétrage. Le prix est **celui du référentiel**, et lui
+ * seul depuis le lot D (2026-10-15) : la plateforme ne décide plus de prix.
  */
 function toView(row: AdminRow, authors: StaffAuthors): CatalogAdminItemView {
-  const b2bPriceMillicents = row.override?.priceMillicents ?? null;
   return {
     sku: row.sku,
     productSku: row.productSku,
@@ -100,8 +95,6 @@ function toView(row: AdminRow, authors: StaffAuthors): CatalogAdminItemView {
     categoryId: row.category.id,
     categoryName: row.category.name,
     pimPriceMillicents: row.priceMillicents,
-    b2bPriceMillicents,
-    effectivePriceMillicents: b2bPriceMillicents ?? row.priceMillicents,
     // Le taux de L'ARTICLE, et lui seul — **exactement ce que la boutique
     // facture**. C'est toute la raison d'être de cette ligne : l'écran lisait
     // celui de la FAMILLE et affichait donc un taux que la caisse n'appliquait
@@ -124,7 +117,6 @@ function toView(row: AdminRow, authors: StaffAuthors): CatalogAdminItemView {
     publicTtcCents: row.publicTtcCents,
     publicVatRatePercent:
       publicByContextOf(row.publicByContext)?.[PUBLIC_SALES_CONTEXT]?.vatRatePercent ?? null,
-    decidedPublicTtcCents: row.override?.decidedPublicTtcCents ?? null,
     ...allergensOf(row.allergens, row.allergenLabels),
     isHidden: row.override?.isHidden ?? false,
     isHiddenPublic: row.override?.isHiddenPublic ?? false,

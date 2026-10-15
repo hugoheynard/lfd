@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import type { CatalogAdminItemView } from '@lfd/contracts';
-import { formatEuros, PriceEditor, PriceOrigin } from '@lfd/catalog-ui';
+import { formatEuros } from '@lfd/catalog-ui';
 import { htMillicentsOf, lineTotalCents, MILLICENTS_PER_CENT, ventilateVat } from '@lfd/money';
 import {
   FoldBadgeComponent,
@@ -27,10 +28,15 @@ import {
 /**
  * **Un rayon du catalogue vendu, en table.**
  *
- * Les colonnes se lisent de gauche à droite comme le prix se construit : ce que
- * le référentiel a envoyé — **ses deux prix**, le pro hors taxe et l'étiquette
- * publique TTC —, ce que la maison en a décidé, puis ce qui conditionne la
- * vente.
+ * Les colonnes se lisent de gauche à droite : l'article, son audience, **les
+ * deux prix du référentiel** — le pro hors taxe et l'étiquette publique TTC —,
+ * puis ce que chaque audience en voit.
+ *
+ * 🔴 **Plus aucun prix ne s'écrit ici** (lot D de
+ * `plan-catalogue-synchronise-par-audience.md`, 2026-10-15). Les deux colonnes
+ * « Prix pro HT » et « Prix public TTC », où l'on remplaçait le prix du
+ * référentiel, sont parties avec leurs routes : la colonne des prix les lit,
+ * et envoie à la fiche pour les changer.
  *
  * ⚠️ **Trois colonnes ont quitté cette table le 2026-09-21** (Hugo) : la fiche
  * réglementaire, la mise en avant et le taux de TVA. Aucune ne parle du prix
@@ -47,21 +53,6 @@ import {
  * Les allergènes et le taux restent au contrat : c'est l'écran qui ne les
  * montre plus, pas le serveur qui ne les envoie plus.
  *
- * ## Pourquoi une table, et pas la ligne d'avant
- *
- * L'écran empilait des `lfd-catalog-row` : une grille de quatre colonnes dont la
- * dernière recevait **tout le reste** dans une boîte flex — le taux, les
- * allergènes, l'éditeur de prix, la pastille « masqué » et le bouton de
- * visibilité. Cinq choses sans rapport, dans une seule cellule, sans alignement
- * d'une ligne à l'autre. Sur quarante articles, rien ne se compare en colonne,
- * et le seul élément qui ressortait était le bouton le plus criard.
- *
- * 🔴 **C'est là que le prix pro se perdait.** « Poser un prix » était le
- * quatrième enfant d'une boîte qui en portait cinq, écrit en blanc sur blanc
- * (cf. `PriceEditor`). Lui donner sa **propre colonne**, à côté du tarif reçu
- * qu'il remplace, est la moitié de la réparation ; l'autre moitié est la
- * couleur. Aucune des deux ne suffisait seule.
- *
  * Ce composant ne décide rien : il rend le rayon et remonte les gestes.
  */
 @Component({
@@ -72,9 +63,8 @@ import {
     FoldDataTableComponent,
     FoldDataTableCellDirective,
     FoldPageSectionComponent,
-    PriceEditor,
-    PriceOrigin,
     PublishedCell,
+    RouterLink,
   ],
   templateUrl: './shelf-catalogue.html',
   styleUrl: './shelf-catalogue.scss',
@@ -82,10 +72,6 @@ import {
 export class ShelfCatalogue {
   readonly shelf = input.required<PublishedShelf>();
 
-  readonly priceSet = output<{ item: CatalogAdminItemView; priceMillicents: number }>();
-  readonly priceAligned = output<CatalogAdminItemView>();
-  readonly publicPriceSet = output<{ item: CatalogAdminItemView; ttcCents: number }>();
-  readonly publicPriceAligned = output<CatalogAdminItemView>();
   /** L'interrupteur d'une cellule d'audience — la route unique `/masking`. */
   readonly maskToggled = output<{ row: PublishedRow; audience: ShopAudience }>();
 
@@ -101,10 +87,6 @@ export class ShelfCatalogue {
    * référentiel — famille, puis position dans la famille —, et trier par prix
    * ferait perdre le seul repère qu'un lecteur ait pour retrouver un article
    * deux minutes plus tard.
-   *
-   * `Prix pro` est la plus large de toutes, et c'est délibéré : c'est la seule
-   * colonne où l'on **écrit**, et elle doit tenir un champ ouvert sans faire
-   * sauter la mise en page des voisines.
    */
   protected readonly columns: readonly FoldTableColumn<PublishedRow>[] = [
     { key: 'article', label: 'Article' },
@@ -114,18 +96,11 @@ export class ShelfCatalogue {
     // envoie les deux prix ; n'en montrer qu'un faisait passer le tarif du
     // canal professionnel pour « le » tarif du PIM.
     //
-    // ⚠️ Plus `numeric` : un alignement à droite oppose des nombres
-    // comparables, et un HT pro n'est pas comparable à un TTC public. Les
-    // mettre en colonne d'un même chiffrier inviterait à en faire la
-    // différence, qui ne veut rien dire.
-    { key: 'pim', label: 'Tarif PIM', width: '11rem' },
-    // ⚠️ La CLÉ reste `b2b` : elle relie la colonne à son `ng-template`, et
-    // c'est du code, pas un libellé. Seul le mot affiché devient « pro ».
-    { key: 'b2b', label: 'Prix pro HT', width: '15rem' },
-    { key: 'public', label: 'Prix public TTC', width: '15rem' },
+    // ⚠️ Pas `numeric` : un alignement à droite oppose des nombres
+    // comparables, et un HT pro n'est pas comparable à un TTC public.
+    { key: 'pim', label: 'Prix du référentiel', width: '13rem' },
     // Assez larges pour tenir la confirmation qui s'y ouvre. À `9rem`, la
     // phrase qui dit ce que « Masquer » va faire tombait sur cinq lignes.
-    // ⚠️ La clé publique n'est pas `public` : elle est prise par le prix décidé.
     { key: 'pros', label: 'Pros', width: '13rem' },
     { key: 'audiencePublic', label: 'Public', width: '13rem' },
   ];
@@ -174,19 +149,15 @@ export class ShelfCatalogue {
   /**
    * **Ce que le rayon public affichera vraiment**, en euros TTC.
    *
-   * 🔴 **Ce n'est PAS le prix posé, et c'est tout l'objet de cette méthode.**
-   * Le prix posé est une ENTRÉE : il est mis hors taxe, traverse la résolution,
-   * et le TTC qui en ressort peut valoir un centime de plus — l'aller-retour ne
-   * revient pas toujours sur lui-même, et jamais vers le bas à 10 % ou 20 %
-   * (mesuré, `dev-toolbox/analyses/ancrage-du-ttc-pose.mjs`).
-   *
-   * Le montrer ici est la contrepartie de la décision d'ancre (Hugo,
-   * 2026-09-21) : on assume l'écart, donc on le DIT — à celui qui pose le prix
-   * comme au client qui le paiera. Sans cette ligne, un commercial taperait
-   * 1,05 € et découvrirait 1,06 € en caisse.
+   * 🔴 **Ce n'est PAS l'étiquette, et c'est tout l'objet de cette méthode.**
+   * L'étiquette est une ENTRÉE : elle est mise hors taxe, traverse la
+   * résolution, et le TTC qui en ressort peut valoir un centime de plus —
+   * l'aller-retour ne revient pas toujours sur lui-même, et jamais vers le bas
+   * à 10 % ou 20 % (mesuré, `dev-toolbox/analyses/ancrage-du-ttc-pose.mjs`).
+   * On assume l'écart (Hugo, 2026-09-21), donc on le DIT.
    */
   protected chargedEuros(item: CatalogAdminItemView): string | null {
-    const posed = item.decidedPublicTtcCents ?? item.publicTtcCents;
+    const posed = item.publicTtcCents;
     const rate = item.publicVatRatePercent;
     if (posed === null || rate === null) {
       return null;
@@ -220,21 +191,5 @@ export class ShelfCatalogue {
   protected publicEuros(item: CatalogAdminItemView): string | null {
     const cents = item.publicTtcCents;
     return cents === null ? null : formatEuros(cents * MILLICENTS_PER_CENT);
-  }
-
-  /**
-   * **Quand la décision a été prise**, en jour et mois courts.
-   *
-   * Sans année : un prix négocié se relit dans la semaine, et l'année n'ajoute
-   * rien à la question qu'on se pose devant la colonne — « est-ce que ça date
-   * d'avant la dernière hausse ? ». `null` quand rien n'a été décidé.
-   */
-  protected decidedOn(item: CatalogAdminItemView): string | null {
-    const decidedAt = item.decidedAt;
-    return decidedAt === null
-      ? null
-      : new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short' }).format(
-          new Date(decidedAt),
-        );
   }
 }

@@ -4,6 +4,14 @@
 sa comparaison de parité, mais la bascule attend deux blocages hors code (voir
 « La bascule »). C6 et C7 ne sont pas commencés. Date : 2026-08-17.
 
+> ⚠️ **Lot D, 2026-10-15** ([`plan-catalogue-synchronise-par-audience.md`](../pim/plan-catalogue-synchronise-par-audience.md)) :
+> la plateforme ne décide plus de prix. `catalog_item_overrides` ne porte plus
+> que le masquage et la mise en avant ; ses colonnes `price_millicents` et
+> `decided_public_ttc_cents` restent en base, ni lues ni écrites, et **aucune
+> ligne n'est plus supprimée** (une décision neutre remet ses drapeaux à
+> `false`). Le prix servi est celui du référentiel. Ce qui suit sur le « prix
+> B2B » décrit l'état d'avant.
+
 > ⚠️ **Trois choses ont changé depuis, et ce document ne les porte pas.** Il
 > reste la référence sur les **décisions** ; pour la mécanique telle qu'elle
 > tourne, lire [`push-catalogue-pim-vers-boutique.md`](push-catalogue-pim-vers-boutique.md).

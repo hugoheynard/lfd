@@ -220,6 +220,14 @@ Le tout dans **une transaction** : un catalogue à moitié écrit vend des artic
 
 ### La ligne de partage : reçu vs décidé
 
+> ⚠️ **Lot D, 2026-10-15** ([`plan-catalogue-synchronise-par-audience.md`](../pim/plan-catalogue-synchronise-par-audience.md)) :
+> la plateforme ne décide plus de prix. `catalog_item_overrides` ne porte plus
+> que le masquage et la mise en avant ; ses colonnes `price_millicents` et
+> `decided_public_ttc_cents` restent en base, ni lues ni écrites, et **aucune
+> ligne n'est plus supprimée** (une décision neutre remet ses drapeaux à
+> `false`). Le prix servi est celui du référentiel. Ce qui suit sur le « prix
+> B2B » décrit l'état d'avant.
+
 | Table                    | Qui écrit          | Ce qu'un push en fait      |
 | ------------------------ | ------------------ | -------------------------- |
 | `catalog_items`          | le **push**        | remplacé                   |

@@ -11,6 +11,7 @@ import { STILL_SOLD } from "./sellable-filter.js";
 import { lastRecordedPrices, priceTraceRows } from "./catalog-price-trace.js";
 import { pimFactsColumns } from "./catalog-item-columns.js";
 import { catalogAudienceOf } from "../domain/served-to.js";
+import { DECISION_COLUMNS } from "./catalog-decision-columns.js";
 
 /** La ligne telle que Prisma la rend, décision jointe. Aucun type `Prisma.*` exporté. */
 interface ItemRow {
@@ -53,8 +54,6 @@ interface ItemRow {
   readonly publicReviewPending: boolean;
   readonly proReviewPending: boolean;
   readonly override: {
-    readonly priceMillicents: number | null;
-    readonly decidedPublicTtcCents: number | null;
     readonly isHidden: boolean;
     readonly isHiddenPublic: boolean;
     readonly isFeatured: boolean;
@@ -82,7 +81,7 @@ export class PrismaCatalogItemRepository extends CatalogItemRepository {
   async load(sku: string): Promise<CatalogItem | null> {
     const row = await this.prisma.catalogItem.findUnique({
       where: { sku, ...STILL_SOLD },
-      include: { override: true },
+      include: { override: { select: DECISION_COLUMNS } },
     });
     return row === null ? null : toDomain(row);
   }
@@ -90,7 +89,7 @@ export class PrismaCatalogItemRepository extends CatalogItemRepository {
   async loadAll(): Promise<CatalogItem[]> {
     const rows = await this.prisma.catalogItem.findMany({
       where: { ...STILL_SOLD },
-      include: { override: true },
+      include: { override: { select: DECISION_COLUMNS } },
     });
     return rows.map(toDomain);
   }
@@ -113,7 +112,7 @@ export class PrismaCatalogItemRepository extends CatalogItemRepository {
     // reviendrait un jour en vente sous une photo périmée.
     const rows = await this.prisma.catalogItem.findMany({
       where: { productId },
-      include: { override: true },
+      include: { override: { select: DECISION_COLUMNS } },
     });
     return rows.map(toDomain);
   }
@@ -128,7 +127,9 @@ export class PrismaCatalogItemRepository extends CatalogItemRepository {
   async loadAllIncludingWithdrawn(): Promise<CatalogItem[]> {
     // withdrawn-filter: exempt — l'ingestion doit reconnaître un SKU réintroduit
     // pour lui rendre sa décision commerciale.
-    const rows = await this.prisma.catalogItem.findMany({ include: { override: true } });
+    const rows = await this.prisma.catalogItem.findMany({
+      include: { override: { select: DECISION_COLUMNS } },
+    });
     return rows.map(toDomain);
   }
 
@@ -143,7 +144,7 @@ export class PrismaCatalogItemRepository extends CatalogItemRepository {
       return;
     }
     const states = items.map((item) => item.toPersistence());
-    // Le prix EFFECTIF déjà tracé, par SKU : c'est à lui qu'on compare pour
+    // Le prix déjà tracé, par SKU : c'est à lui qu'on compare pour
     // n'écrire une ligne d'historique que sur un vrai changement.
     const recorded = await lastRecordedPrices(
       this.prisma,
@@ -160,36 +161,12 @@ export class PrismaCatalogItemRepository extends CatalogItemRepository {
           update: facts,
         });
 
-        if (state.decision === null) {
-          // Plus aucune décision : on retire la ligne au lieu d'en écrire une
-          // neutre. Sinon l'écran annoncerait une négociation qui n'existe plus.
-          await tx.catalogItemOverride.deleteMany({ where: { sku: state.facts.sku } });
-          continue;
-        }
-
-        // 🔴 **Cet objet est le seul endroit du dépôt où un champ oublié
-        // COMPILE et perd une donnée en silence.** Les champs d'un
-        // `create`/`update` Prisma sont tous optionnels : une décision absente
-        // d'ici n'est simplement jamais écrite, et rien — ni `tsc`, ni ESLint,
-        // ni une porte — ne peut le dire. Seul un test le dit.
-        //
-        // Il est donc l'agrégat ÉTALÉ, plutôt qu'une énumération champ par champ :
-        // une décision ajoutée à `LocalDecision` part automatiquement en base,
-        // au lieu d'attendre qu'on pense à l'ajouter. Et si elle n'a pas de
-        // colonne, Prisma refuse la clé inconnue — donc la compilation échoue
-        // au lieu de perdre la donnée. Les deux sens sont couverts, ce qu'une
-        // énumération manuelle ne faisait ni dans un sens ni dans l'autre.
-        const decision = { ...state.decision };
-        await tx.catalogItemOverride.upsert({
-          where: { sku: state.facts.sku },
-          create: { sku: state.facts.sku, ...decision },
-          update: decision,
-        });
+        await writeDecision(tx, state);
       }
 
       // **La trace du tarif, dans la MÊME transaction que le prix.**
       //
-      // Ici et non chez les appelants : un push du PIM et une décision du
+      // Ici et non chez les appelants : un push du PIM et un geste du
       // back-office aboutissent tous deux à `saveMany`. Le récepteur des faits
       // du référentiel (lot 2a) est le SECOND écrivain de prix du miroir, et il
       // trace par la même règle (`priceTraceRows`) — c'est la condition pour
@@ -202,7 +179,6 @@ export class PrismaCatalogItemRepository extends CatalogItemRepository {
           sku: state.facts.sku,
           productSku: state.facts.productSku,
           pimPriceMillicents: state.facts.priceMillicents,
-          decision: state.decision,
           vatRatePercent: state.facts.vatRatePercent,
         })),
         recorded,
@@ -312,13 +288,56 @@ function toDomain(row: ItemRow): CatalogItem {
       row.override === null
         ? null
         : {
-            priceMillicents: row.override.priceMillicents,
-            decidedPublicTtcCents: row.override.decidedPublicTtcCents,
             isHidden: row.override.isHidden,
             isHiddenPublic: row.override.isHiddenPublic,
             isFeatured: row.override.isFeatured,
             decidedBy: row.override.decidedBy,
           },
+  });
+}
+
+/** Le client de transaction, tel que `saveMany` le reçoit — jamais exporté. */
+type Tx = Parameters<Parameters<PrismaService["$transaction"]>[0]>[0];
+
+/**
+ * **La décision, écrite sans jamais supprimer de ligne** (lot D,
+ * correction BLOQUANT de `vitruve`, 2026-10-15).
+ *
+ * Une ligne d'override porte peut-être un ancien prix décidé
+ * (`price_millicents`, `decided_public_ttc_cents`) : plus lu, plus écrit, mais
+ * conservé — rien ne se supprime en production sans ordre (CLAUDE.md §0).
+ * Avant le lot D, une décision devenue neutre retirait la ligne ; tout geste
+ * qui charge puis sauve l'agrégat (masquer, mettre en avant, valider une
+ * arrivée) aurait alors effacé ces prix sans que personne l'ait demandé.
+ *
+ * - décision posée → `upsert` des seuls drapeaux ;
+ * - plus rien de décidé → aucune ligne créée, et les drapeaux d'une ligne
+ *   existante remis à `false` — seulement s'il y en avait un de levé, pour ne
+ *   pas réécrire `decided_at` à chaque push.
+ */
+async function writeDecision(tx: Tx, state: CatalogItemState): Promise<void> {
+  const sku = state.facts.sku;
+  if (state.decision === null) {
+    await tx.catalogItemOverride.updateMany({
+      where: { sku, OR: [{ isHidden: true }, { isHiddenPublic: true }, { isFeatured: true }] },
+      data: { isHidden: false, isHiddenPublic: false, isFeatured: false },
+    });
+    return;
+  }
+  // 🔴 **Cet objet est le seul endroit du dépôt où un champ oublié COMPILE et
+  // perd une donnée en silence.** Les champs d'un `create`/`update` Prisma sont
+  // tous optionnels : une décision absente d'ici n'est simplement jamais
+  // écrite, et rien — ni `tsc`, ni ESLint, ni une porte — ne peut le dire.
+  //
+  // Il est donc l'agrégat ÉTALÉ : une décision ajoutée à `LocalDecision` part
+  // automatiquement en base, et si elle n'a pas de colonne, Prisma refuse la
+  // clé inconnue. ⚠️ Les deux colonnes de prix n'y figurent plus (lot D) : elles
+  // ne sont donc jamais écrites, et gardent ce qu'elles portaient.
+  const decision = { ...state.decision };
+  await tx.catalogItemOverride.upsert({
+    where: { sku },
+    create: { sku, ...decision },
+    update: decision,
   });
 }
 

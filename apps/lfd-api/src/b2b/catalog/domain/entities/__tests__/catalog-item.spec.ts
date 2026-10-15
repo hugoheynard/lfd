@@ -1,11 +1,4 @@
-import {
-  CannotFeatureHiddenItemError,
-  InvalidB2bPriceError,
-  InvalidPublicPriceError,
-  PublicPriceWithoutContextError,
-  RedundantB2bPriceError,
-  RedundantPublicPriceError,
-} from "../../errors/catalog-errors.js";
+import { CannotFeatureHiddenItemError } from "../../errors/catalog-errors.js";
 import { CatalogItem, type PimFacts } from "../catalog-item.js";
 
 /**
@@ -41,70 +34,43 @@ function facts(over: Partial<PimFacts> = {}): PimFacts {
   };
 }
 
+/**
+ * **Le prix est celui du référentiel, et lui seul** (lot D de
+ * `plan-catalogue-synchronise-par-audience.md`, 2026-10-15) : l'agrégat ne
+ * porte plus de décision de prix, et un push qui change le prix le change.
+ */
 describe("CatalogItem — le prix", () => {
-  it("part au tarif du PIM tant que personne n'a rien décidé", () => {
+  it("porte le prix du référentiel, sans décision", () => {
     const item = CatalogItem.receive(facts());
 
-    expect(item.effectivePriceMillicents).toBe(200);
-    expect(item.toPersistence().decision).toBeNull();
-  });
-
-  it("la décision locale gagne une fois posée", () => {
-    const item = CatalogItem.receive(facts());
-
-    item.setB2bPrice(180, "cecile");
-
-    expect(item.effectivePriceMillicents).toBe(180);
     expect(item.pimPriceMillicents).toBe(200);
-  });
-
-  it("refuse un prix nul ou négatif — on ne vend ni à perte ni gratuitement", () => {
-    const item = CatalogItem.receive(facts());
-
-    expect(() => item.setB2bPrice(0, null)).toThrow(InvalidB2bPriceError);
-    expect(() => item.setB2bPrice(-50, null)).toThrow(InvalidB2bPriceError);
-  });
-
-  it("refuse un prix à virgule — l'argent est en centimes entiers", () => {
-    const item = CatalogItem.receive(facts());
-
-    expect(() => item.setB2bPrice(180.5, null)).toThrow(InvalidB2bPriceError);
-  });
-
-  /**
-   * Recopier le prix du PIM créerait une ligne fantôme : l'écran annoncerait une
-   * négociation inexistante, et le jour où le PIM change son tarif, cette ligne
-   * empêcherait le nouveau prix de passer sans que personne ne comprenne.
-   */
-  it("refuse un prix identique à celui du PIM, et nomme le geste correct", () => {
-    const item = CatalogItem.receive(facts());
-
-    expect(() => item.setB2bPrice(200, "cecile")).toThrow(RedundantB2bPriceError);
-  });
-
-  it("s'aligner sur le PIM efface la décision, pas la remplace par une valeur", () => {
-    const item = CatalogItem.receive(facts());
-    item.setB2bPrice(180, "cecile");
-
-    item.alignOnPim();
-
-    expect(item.effectivePriceMillicents).toBe(200);
     expect(item.toPersistence().decision).toBeNull();
   });
 
-  /**
-   * Le journal en dépend (2026-09-19) : un prix B2B que le PIM a rejoint reste
-   * une décision, et le prix effectif seul ne permet plus de la voir.
-   */
-  it("dit le prix B2B décidé, même quand le PIM l'a rejoint", () => {
+  it("suit le référentiel au push, même sur un article masqué", () => {
     const item = CatalogItem.receive(facts());
-    expect(item.b2bPriceMillicents).toBeNull();
+    item.hide("cecile");
 
-    item.setB2bPrice(180, "cecile");
-    const rejoined = item.refreshFromPim(facts({ priceMillicents: 180 }));
+    const refreshed = item.refreshFromPim(facts({ priceMillicents: 220 }));
 
-    expect(rejoined.effectivePriceMillicents).toBe(rejoined.pimPriceMillicents);
-    expect(rejoined.b2bPriceMillicents).toBe(180);
+    expect(refreshed.pimPriceMillicents).toBe(220);
+  });
+
+  /**
+   * 🔴 La décision persistée ne porte plus aucune colonne de prix : l'adaptateur
+   * étale l'objet dans l'`upsert`, et une clé de prix y réécrirait les colonnes
+   * conservées (correction BLOQUANT de `vitruve`, 2026-10-15).
+   */
+  it("🔴 ne persiste aucune clé de prix dans la décision", () => {
+    const item = CatalogItem.receive(facts());
+    item.hide("cecile");
+
+    expect(Object.keys(item.toPersistence().decision ?? {}).sort()).toEqual([
+      "decidedBy",
+      "isFeatured",
+      "isHidden",
+      "isHiddenPublic",
+    ]);
   });
 });
 
@@ -155,14 +121,14 @@ describe("CatalogItem — le push", () => {
    */
   it("rafraîchir depuis le PIM garde la décision locale", () => {
     const item = CatalogItem.receive(facts());
-    item.setB2bPrice(180, "cecile");
+    item.hidePublic("cecile");
 
     const refreshed = item.refreshFromPim(
       facts({ priceMillicents: 220, name: "Croissant beurre" }),
     );
 
     expect(refreshed.pimPriceMillicents).toBe(220);
-    expect(refreshed.effectivePriceMillicents).toBe(180);
+    expect(refreshed.isHiddenPublic).toBe(true);
     expect(refreshed.toPersistence().decision?.decidedBy).toBe("cecile");
   });
 
@@ -194,14 +160,14 @@ describe("CatalogItem — le retrait", () => {
 
   it("marque la sortie sans toucher à ce qui a été décidé", () => {
     const item = CatalogItem.receive(facts());
-    item.setB2bPrice(180_000, "cecile");
+    item.hide("cecile");
 
     item.withdraw(SORTIE);
 
     expect(item.isWithdrawn).toBe(true);
     expect(item.toPersistence()).toMatchObject({
       withdrawnAt: SORTIE,
-      decision: { priceMillicents: 180_000, decidedBy: "cecile" },
+      decision: { isHidden: true, decidedBy: "cecile" },
     });
   });
 
@@ -220,18 +186,18 @@ describe("CatalogItem — le retrait", () => {
 
   /**
    * 🔴 Le référentiel envoie l'article : il est au catalogue, point. C'est ce qui
-   * rend le retrait réversible — et le prix négocié le retrouve, puisque la
-   * décision traverse `refreshFromPim`.
+   * rend le retrait réversible — et la décision le retrouve, puisqu'elle
+   * traverse `refreshFromPim`.
    */
   it("un push qui rapporte l'article le remet en vente, décision comprise", () => {
     const item = CatalogItem.receive(facts());
-    item.setB2bPrice(180_000, "cecile");
+    item.hide("cecile");
     item.withdraw(SORTIE);
 
     const revenu = item.refreshFromPim(facts({ priceMillicents: 210_000 }));
 
     expect(revenu.isWithdrawn).toBe(false);
-    expect(revenu.effectivePriceMillicents).toBe(180_000);
+    expect(revenu.isHidden).toBe(true);
   });
 
   it("naît en vente — un article reçu n'est jamais retiré", () => {
@@ -240,108 +206,26 @@ describe("CatalogItem — le retrait", () => {
 });
 
 /**
- * **Le prix public**, et ce qui le distingue de son voisin professionnel.
- *
- * Les deux décisions vivent sur le même override et ne se touchent pas : c'est
- * ce que ces cas tiennent, parce que rien dans les types ne l'empêche.
+ * **Une décision neutre ne fait pas supprimer la ligne** (lot D, correction
+ * BLOQUANT de `vitruve`, 2026-10-15) : l'agrégat dit seulement « plus rien de
+ * décidé », et c'est à l'adaptateur de remettre les drapeaux à `false` sans
+ * jamais supprimer — la ligne porte peut-être un ancien prix décidé.
  */
-describe("CatalogItem — le prix public", () => {
-  const CONTEXT = "takeaway";
-
-  it("suit l'étiquette du PIM tant que personne n'a rien décidé", () => {
+describe("CatalogItem — la décision neutre", () => {
+  it("rend `decision: null` quand le dernier masque est levé", () => {
     const item = CatalogItem.receive(facts());
+    item.hidePublic("cecile");
 
-    expect(item.decidedPublicTtcCents).toBeNull();
+    item.showPublic("cecile");
+
     expect(item.toPersistence().decision).toBeNull();
   });
 
-  it("se pose en centimes TTC, sans toucher au prix professionnel", () => {
+  it("🔴 retient la décision quand la mise en avant est la SEULE", () => {
     const item = CatalogItem.receive(facts());
 
-    item.setPublicPrice(299, CONTEXT, "cecile");
+    item.feature("cecile");
 
-    expect(item.decidedPublicTtcCents).toBe(299);
-    // Le canal pro n'a pas bougé : deux audiences, deux décisions.
-    expect(item.effectivePriceMillicents).toBe(200);
-  });
-
-  it("refuse un prix nul, négatif ou à virgule — un centime ne se coupe pas", () => {
-    const item = CatalogItem.receive(facts());
-
-    expect(() => item.setPublicPrice(0, CONTEXT, null)).toThrow(InvalidPublicPriceError);
-    expect(() => item.setPublicPrice(-120, CONTEXT, null)).toThrow(InvalidPublicPriceError);
-    expect(() => item.setPublicPrice(12.5, CONTEXT, null)).toThrow(InvalidPublicPriceError);
-  });
-
-  /**
-   * Même règle que le prix professionnel : recopier l'étiquette annoncerait une
-   * décision qui n'en est pas une, et empêcherait la prochaine étiquette du
-   * référentiel de passer.
-   */
-  it("refuse l'étiquette du PIM recopiée — le geste voulu est d'y revenir", () => {
-    const item = CatalogItem.receive(facts());
-
-    expect(() => item.setPublicPrice(250, CONTEXT, null)).toThrow(RedundantPublicPriceError);
-  });
-
-  /**
-   * 🔴 **Le refus qui n'a pas d'équivalent côté pro.** La vitrine publique
-   * écarte déjà un article dont le miroir ne porte pas ce contexte : accepter
-   * le prix l'écrirait, l'afficherait au back-office comme une décision prise,
-   * et ne le servirait jamais. Un prix qu'on croit posé est pire qu'un prix
-   * refusé.
-   */
-  it("🔴 refuse un prix sur un article que la vitrine publique n'expose pas", () => {
-    const item = CatalogItem.receive(facts({ publicByContext: null }));
-
-    expect(() => item.setPublicPrice(299, CONTEXT, null)).toThrow(PublicPriceWithoutContextError);
-  });
-
-  it("refuse aussi quand le miroir porte d'AUTRES contextes, mais pas celui-là", () => {
-    // Le cas qu'un refus formulé sur « a-t-il un taux public ? » laisserait
-    // passer : la carte existe, elle est garnie, et la clé servie n'y est pas.
-    const item = CatalogItem.receive(
-      facts({ publicByContext: { eatIn: { vatRatePercent: 10, htMillicents: 227_273 } } }),
-    );
-
-    expect(() => item.setPublicPrice(299, CONTEXT, null)).toThrow(PublicPriceWithoutContextError);
-  });
-
-  it("revient à l'étiquette du PIM sans toucher au prix professionnel", () => {
-    const item = CatalogItem.receive(facts());
-    item.setPublicPrice(299, CONTEXT, "cecile");
-    item.setB2bPrice(180, "cecile");
-
-    item.alignPublicOnPim();
-
-    expect(item.decidedPublicTtcCents).toBeNull();
-    expect(item.effectivePriceMillicents).toBe(180);
-  });
-
-  /**
-   * 🔴 **Régression du champ oublié.** `toPersistence()` rend `decision: null`
-   * quand plus rien n'est décidé, et l'adaptateur SUPPRIME alors la ligne. Un
-   * prix public absent de ce test rendrait `untouched` vrai : la ligne serait
-   * effacée, et le prix disparaîtrait au prochain push du PIM — loin du geste,
-   * donc loin de sa cause.
-   */
-  it("🔴 retient la ligne quand le prix public est la SEULE décision", () => {
-    const item = CatalogItem.receive(facts());
-
-    item.setPublicPrice(299, CONTEXT, "cecile");
-
-    expect(item.toPersistence().decision).toMatchObject({
-      decidedPublicTtcCents: 299,
-      priceMillicents: null,
-    });
-  });
-
-  it("rend la ligne effaçable quand la dernière décision est retirée", () => {
-    const item = CatalogItem.receive(facts());
-    item.setPublicPrice(299, CONTEXT, "cecile");
-
-    item.alignPublicOnPim();
-
-    expect(item.toPersistence().decision).toBeNull();
+    expect(item.toPersistence().decision).toMatchObject({ isFeatured: true });
   });
 });

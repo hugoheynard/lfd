@@ -33,6 +33,7 @@ describe("moduleOf — les décisions de catalogue", () => {
     ["catalog_item.featured", "commercial"],
     ["catalog_item.unfeatured", "commercial"],
     ["catalog_delivery.accepted", "commercial"],
+    ["catalog_price_history.retraced", "commercial"],
   ])("%s se range sous %s", (type, module) => {
     expect(moduleOf(type)).toBe(module);
   });

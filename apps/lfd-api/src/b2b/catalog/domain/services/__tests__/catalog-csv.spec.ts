@@ -19,16 +19,12 @@ function item(over: Partial<CatalogAdminItemView> = {}): CatalogAdminItemView {
     categoryId: "cat_1",
     categoryName: "Viennoiserie",
     pimPriceMillicents: 120_000,
-    b2bPriceMillicents: null,
-    effectivePriceMillicents: 120_000,
     vatRatePercent: 5.5,
     // L'étiquette publique du référentiel, en centimes TTC, et le taux de son
     // contexte. Posées parce que le contrat les exige — aucun cas d'ici ne les
     // lit, et un article poussé en porte toujours.
     publicTtcCents: 150,
     publicVatRatePercent: 5.5,
-    // Aucune décision publique : l'article suit l'étiquette du référentiel.
-    decidedPublicTtcCents: null,
     allergens: [],
     allergensIncomplete: false,
     isHidden: false,
@@ -93,43 +89,30 @@ describe("catalogCsv", () => {
   it("écrit les montants en NOMBRE français : virgule, deux décimales, rien d'autre", () => {
     // 2,40 € HT. Ni « 2.40 », que le tableur FR lit en texte, ni « 2,40 € »,
     // qui ne s'additionne pas.
-    const csv = catalogCsv([
-      item({ pimPriceMillicents: 240_000, effectivePriceMillicents: 240_000 }),
-    ]);
+    const csv = catalogCsv([item({ pimPriceMillicents: 240_000 })]);
 
     expect(bodyLines(csv)[0]).toContain(";2,40;");
     expect(csv).not.toContain("€ HT;2");
   });
 
-  it("laisse le prix B2B VIDE quand aucune décision n'a été posée", () => {
-    // Un « 0,00 » dirait « négocié à zéro euro ». La colonne d'à côté porte déjà
-    // ce qui sera facturé.
-    const line = firstBodyLine(catalogCsv([item({ b2bPriceMillicents: null })]));
+  /**
+   * Lot D (2026-10-15) : la colonne « Prix B2B (€ HT) » est retirée, et
+   * « Prix appliqué (€ HT) » vaut le prix du référentiel.
+   */
+  it("n'a plus de colonne de prix décidé : sept colonnes, prix appliqué = référentiel", () => {
+    const csv = catalogCsv([item({ pimPriceMillicents: 240_000 })]);
 
-    expect(line).toContain(";;");
-  });
-
-  it("porte les TROIS prix, dont celui qui sera facturé", () => {
-    const line = firstBodyLine(
-      catalogCsv([
-        item({
-          pimPriceMillicents: 240_000,
-          b2bPriceMillicents: 210_000,
-          effectivePriceMillicents: 210_000,
-        }),
-      ]),
+    expect(csv.split("\r\n")[0]).toBe(
+      "\uFEFFSKU;Article;Catégorie;Tarif PIM (€ HT);Prix appliqué (€ HT);TVA (%);État",
     );
-
-    // La règle « B2B s'il existe, PIM sinon » est du domaine ; la refaire à la
-    // main dans un tableur est la façon dont on se trompe d'une ligne sur deux.
-    expect(line).toContain("2,40;2,10;2,10");
+    expect(firstBodyLine(csv)).toContain(";2,40;2,40;");
   });
 
   it("échappe un point-virgule dans un nom — sinon la ligne entière se décale", () => {
     const line = firstBodyLine(catalogCsv([item({ name: "Tarte citron ; meringuée" })]));
 
     expect(line).toContain('"Tarte citron ; meringuée"');
-    expect(line.split(";").length).toBe(9);
+    expect(line.split(";").length).toBe(8);
   });
 
   it("double les guillemets, comme le RFC le demande", () => {

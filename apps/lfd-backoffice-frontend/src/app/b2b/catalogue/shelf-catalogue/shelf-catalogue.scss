@@ -33,7 +33,6 @@
 }
 
 .sku,
-.decided,
 .follows,
 .charged,
 .pim-audience {
@@ -41,16 +40,8 @@
   font-size: var(--fold-text-sm);
 }
 
-.decision {
-  display: flex;
-  flex-direction: column;
-  align-items: start;
-  gap: var(--fold-space-xs);
-}
-
-/* « suit le PIM » n'est pas un manque : c'est l'état par défaut d'un article que
-   personne n'a eu besoin de renégocier. En gris, donc, et pas en pastille
-   d'alerte — sans quoi trente-neuf lignes sur quarante réclameraient un geste. */
+/* « pas en vente » n'est pas un manque à réparer ici : en gris, pas en
+   pastille d'alerte. */
 .follows {
   font-style: italic;
 }
@@ -93,4 +84,10 @@
    centime d'écart n'appelle aucun geste, il appelle à être su. */
 .charged {
   font-style: italic;
+}
+
+/* Le lien vers la fiche : le seul geste de la colonne, discret — on lit les
+   prix ici, on les change ailleurs. */
+.link {
+  font-size: var(--fold-text-sm);
 }

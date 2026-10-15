@@ -54,13 +54,18 @@
     </ng-template>
 
     <!--
-      Ce que le référentiel a envoyé — **ses DEUX prix**. Ils ne se modifient
-      pas ici : c'est le socle, et la colonne d'à côté est ce qu'on en fait.
+      **Les DEUX prix du référentiel, en lecture** (lot D, 2026-10-15). Ils ne
+      se modifient pas ici : la plateforme ne décide plus de prix, et le lien
+      ouvre la fiche où ils se changent.
 
       🔴 **L'unité est écrite sur chaque ligne, et ce n'est pas décoratif.** Le
-      pro est un HT dérivé par un rapport, le public l'étiquette TTC qu'un
-      humain a tapée. Deux montants nus l'un sous l'autre se liraient comme deux
-      versions du même prix, et l'écart entre eux passerait pour une remise.
+      pro est un HT, le public l'étiquette TTC qu'un humain a tapée. Deux
+      montants nus l'un sous l'autre se liraient comme deux versions du même
+      prix, et l'écart entre eux passerait pour une remise.
+
+      « encaissé » ne paraît que lorsqu'il diffère de l'étiquette : l'aller-
+      retour hors taxe peut ajouter un centime, et c'est ce jour-là qu'on a
+      besoin qu'il saute aux yeux.
 
       Le prix public manquant n'est pas un zéro : c'est un article que la
       vitrine publique ÉCARTE. Le dire par un mot, pas par un tiret.
@@ -80,88 +85,17 @@
               <fold-badge content="non poussé" variant="warning" />
             }
           </span>
+          @if (chargedEuros(item); as charged) {
+            @if (charged !== publicEuros(item)) {
+              <span class="charged">encaissé {{ charged }}</span>
+            }
+          }
+          <a class="link" [routerLink]="['/pim/produits', row.entry.productId]"
+            >Changer dans la fiche</a
+          >
         </div>
       } @else {
         <span class="follows">pas en vente</span>
-      }
-    </ng-template>
-
-    <!--
-      **La colonne qui écrit.** Le prix effectif y est affiché avec sa
-      provenance — le tarif du PIM barré quand on l'a remplacé —, et le geste
-      est juste en dessous.
-
-      Elle est à DROITE du tarif reçu et pas ailleurs : c'est l'ordre dans
-      lequel le prix se fabrique, et c'est aussi la seule disposition où le
-      remplacement se lit d'un coup d'œil.
-    -->
-    <ng-template foldCell="b2b" let-row>
-      @if (row.item; as item) {
-        <div class="decision">
-          @if (item.b2bPriceMillicents !== null) {
-            <lfd-price-origin
-              [originMillicents]="item.pimPriceMillicents"
-              [alteredMillicents]="item.b2bPriceMillicents"
-            />
-            @if (decidedOn(item); as day) {
-              <span class="decided">posé le {{ day }}</span>
-            }
-          } @else {
-            <span class="follows">suit le PIM</span>
-          }
-          <lfd-price-editor
-            [originMillicents]="item.pimPriceMillicents"
-            [alteredMillicents]="item.b2bPriceMillicents"
-            [label]="item.name"
-            (save)="priceSet.emit({ item, priceMillicents: $event })"
-            (reset)="priceAligned.emit(item)"
-          />
-        </div>
-      }
-    </ng-template>
-
-    <!--
-      **L'étiquette publique, et ce qu'elle produit vraiment.**
-
-      🔴 Deux nombres, et le second n'est pas décoratif : le prix posé est une
-      ENTRÉE, le prix encaissé est ce que le client paiera. L'aller-retour hors
-      taxe peut ajouter un centime — jamais en retirer à 10 % ou 20 %. On assume
-      l'écart (Hugo, 2026-09-21), donc on le DIT ici plutôt que de le laisser
-      découvrir en caisse.
-
-      Quand les deux coïncident, la seconde ligne ne s'affiche pas : répéter le
-      même montant apprendrait à ne plus le lire, et c'est exactement le jour où
-      il diffère qu'on a besoin qu'il saute aux yeux.
-    -->
-    <ng-template foldCell="public" let-row>
-      @if (row.item; as item) {
-        <div class="decision">
-          @if (item.publicTtcCents === null) {
-            <fold-badge content="pas d’étiquette reçue" variant="warning" />
-          } @else {
-            @if (item.decidedPublicTtcCents !== null) {
-              <lfd-price-origin
-                [originMillicents]="item.publicTtcCents * 1000"
-                [alteredMillicents]="item.decidedPublicTtcCents * 1000"
-              />
-            } @else {
-              <span class="follows">suit le PIM</span>
-            }
-            @if (chargedEuros(item); as charged) {
-              @if (charged !== publicEuros(item)) {
-                <span class="charged">encaissé {{ charged }}</span>
-              }
-            }
-            <lfd-price-editor
-              kind="public"
-              [originMillicents]="item.publicTtcCents"
-              [alteredMillicents]="item.decidedPublicTtcCents"
-              [label]="item.name"
-              (save)="publicPriceSet.emit({ item, ttcCents: $event })"
-              (reset)="publicPriceAligned.emit(item)"
-            />
-          }
-        </div>
       }
     </ng-template>
 

@@ -128,6 +128,34 @@ describe('le catalogue professionnel', () => {
     );
   });
 
+  it('dit les articles dont le prix du référentiel a été retracé (lot D)', () => {
+    const few = renderFact(
+      on(
+        'catalog_price_history',
+        'catalog_price_history.retraced',
+        { skus: ['TAR-001', 'TAR-002'] },
+        'catalog',
+      ),
+    );
+    const many = renderFact(
+      on(
+        'catalog_price_history',
+        'catalog_price_history.retraced',
+        {
+          skus: ['A', 'B', 'C', 'D', 'E', 'F'],
+        },
+        'catalog',
+      ),
+    );
+
+    expect(few.sentence).toBe(
+      'Colette Martin a retracé le prix du référentiel de 2 articles : TAR-001, TAR-002',
+    );
+    expect(few.detail).toEqual([]);
+    expect(many.sentence).toBe('Colette Martin a retracé le prix du référentiel de 6 articles');
+    expect(many.detail.map((row) => row.label)).toContain('Articles');
+  });
+
   it('compte les articles écartés quand ils sont nombreux, et en laisse la liste au détail', () => {
     const many = renderFact(
       on('catalog_delivery', 'catalog_delivery.accepted', {

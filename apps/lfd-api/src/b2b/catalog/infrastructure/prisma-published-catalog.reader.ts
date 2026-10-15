@@ -11,6 +11,7 @@ import {
 import { catalogAudienceOf } from "../domain/served-to.js";
 import { publicByContextOf } from "./public-by-context.js";
 import { STILL_SOLD } from "./sellable-filter.js";
+import { DECISION_COLUMNS } from "./catalog-decision-columns.js";
 
 const ENTRY_STATUSES: readonly CatalogEntryStatus[] = ["inactive", "active", "archived"];
 
@@ -32,8 +33,6 @@ interface ItemRow {
   readonly publicByContext: unknown;
   readonly receivedAt: Date;
   readonly override: {
-    readonly priceMillicents: number | null;
-    readonly decidedPublicTtcCents: number | null;
     readonly isHidden: boolean;
     readonly isHiddenPublic: boolean;
   } | null;
@@ -55,7 +54,7 @@ export class PrismaPublishedCatalogReader extends PublishedCatalogReader {
       this.prisma.catalogEntry.findMany({ orderBy: [{ name: "asc" }, { productId: "asc" }] }),
       this.prisma.catalogItem.findMany({
         where: { ...STILL_SOLD },
-        include: { override: true },
+        include: { override: { select: DECISION_COLUMNS } },
         orderBy: [{ position: "asc" }, { sku: "asc" }],
       }),
       this.prisma.catalogCategory.findMany({ orderBy: [{ position: "asc" }, { id: "asc" }] }),
@@ -99,7 +98,8 @@ function toItem(row: ItemRow): PublishedItemRow {
     proReviewPending: row.proReviewPending,
     isHidden: row.override?.isHidden ?? false,
     isHiddenPublic: row.override?.isHiddenPublic ?? false,
-    proHtMillicents: row.override?.priceMillicents ?? row.priceMillicents,
+    // Le prix du référentiel, seul prix depuis le lot D (2026-10-15).
+    proHtMillicents: row.priceMillicents,
     vatRatePercent: row.vatRatePercent?.toNumber() ?? null,
     publicTtcCents: publicTtcOf(row),
     receivedAt: row.receivedAt,
@@ -107,15 +107,15 @@ function toItem(row: ItemRow): PublishedItemRow {
 }
 
 /**
- * L'étiquette servie au public : la décision, sinon celle du référentiel —
- * et rien si le contexte public n'a pas d'entrée, parce que la boutique ne
- * sert alors pas l'article (`servedPriceOf`, `prisma-catalog.reader.ts`).
+ * L'étiquette servie au public : celle du référentiel — et rien si le
+ * contexte public n'a pas d'entrée, parce que la boutique ne sert alors pas
+ * l'article (`servedPriceOf`, `prisma-catalog.reader.ts`).
  */
 function publicTtcOf(row: ItemRow): number | null {
   if (publicByContextOf(row.publicByContext)?.[PUBLIC_SALES_CONTEXT] === undefined) {
     return null;
   }
-  return row.override?.decidedPublicTtcCents ?? row.publicTtcCents;
+  return row.publicTtcCents;
 }
 
 /** Une valeur inconnue se lit `inactive` : ne rien annoncer en vente sur un doute. */

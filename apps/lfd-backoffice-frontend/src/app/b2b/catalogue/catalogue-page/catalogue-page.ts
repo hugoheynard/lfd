@@ -43,42 +43,16 @@ type LoadState = 'loading' | 'ready' | 'error';
  * Elle s'appelait « Catalogue actuel en ligne » et ne montrait que les
  * articles en vente. Elle part désormais des FICHES reçues (`GET
  * admin/catalog/published`) : une fiche inactive ou incomplète y paraît, parce
- * que c'est tout l'objet du lot — voir le catalogue se construire. Les
- * décisions de prix restent lues du paramétrage (`GET admin/catalog`) et
- * jointes par SKU : seule une ligne en vente en porte.
+ * que c'est tout l'objet du lot — voir le catalogue se construire. Le
+ * paramétrage (`GET admin/catalog`) est joint par SKU : seule une ligne en
+ * vente en porte.
+ *
+ * 🔴 **Les prix s'y lisent, ils ne s'y posent plus** (lot D, 2026-10-15) :
+ * le prix servi est celui du référentiel, et la ligne envoie à la fiche pour
+ * le changer.
  *
  * Elle a quitté l'espace E-commerce pour **Gestion Boutique** (H9),
  * `/catalogue-publie` ; `/b2b/catalogue` y redirige.
- *
- * ⚠️ Ce qui suit est l'historique de l'écran d'avant, gardé parce que ses
- * colonnes de prix sont gardées.
- *
- * 🔴 **Le prix qu'on pose ici est celui du canal PROFESSIONNEL**, et l'écran le
- * dit depuis le 2026-09-21. Il s'appelait « prix B2B », ce qui était vrai tant
- * que la plateforme n'avait qu'une audience ; elle en a deux, et la vitrine
- * publique ne lit jamais ce nombre — elle sert l'étiquette reçue du
- * référentiel. Un nom qui désigne la plateforme là où il désigne un canal fait
- * croire qu'un prix posé ici vaut pour tout ce qu'elle vend.
- *
- * L'écran montre ce que le référentiel a poussé — le **tarif du PIM** — et ce
- * que la maison en a fait. Le prix décidé ici n'est pas un étage de la
- * tarification : il **remplace le canonique**, avant que mercuriale, paliers,
- * promotions et gestes ne s'appliquent par-dessus. C'est le premier
- * remplacement, et le seul qui survive à tous les pushs suivants.
- *
- * Trois choses que l'écran doit dire, parce qu'elles décident de la suite :
- *
- * - **d'où vient chaque prix** — un tarif sans provenance ne se défend pas ;
- * - **comment en poser un** — voir la suite ;
- * - **quels articles ne sont pas vendables** — un article sans taux de TVA
- *   entre au catalogue mais reste hors boutique. Le taire donnerait une liste
- *   rassurante dont la moitié n'est achetable par personne.
- *
- * 🔴 **Le deuxième point a été FAUX du premier jour au 2026-09-10.** Le contrôle
- * existait, il répondait au clic, et il était peint en blanc sur la carte
- * blanche (cf. `PriceEditor`) — au milieu de quatre autres choses entassées dans
- * la même cellule. Personne n'a jamais posé un prix pro depuis cet écran, et le
- * compteur « 0 à prix pro » l'annonçait sans que personne ne fasse le lien.
  *
  * 🔴 **Ce compteur de non-vendables était aveugle jusqu'au 2026-09-06.** Le
  * serveur repliait sur le taux de la FAMILLE quand l'article n'en portait pas :
@@ -124,7 +98,7 @@ export class CataloguePage {
 
   /**
    * Le filtre de recherche. Quarante lignes ne se parcourent pas à l'œil : sans
-   * lui, corriger un prix demande de faire défiler cinq rayons.
+   * lui, retrouver un article demande de faire défiler cinq rayons.
    */
   protected readonly query = signal('');
 
@@ -235,63 +209,6 @@ export class CataloguePage {
       this.notify.error(error, "La validation n'a pas pu être enregistrée.");
     } finally {
       this.approving.set(false);
-    }
-  }
-
-  /**
-   * Pose l'étiquette publique. Le serveur oppose trois refus — montant nul,
-   * étiquette du PIM recopiée, article hors vitrine publique — et les trois se
-   * comprennent en une lecture, d'où `refused` plutôt qu'`error`.
-   */
-  protected async setPublicPrice(change: {
-    item: CatalogAdminItemView;
-    ttcCents: number;
-  }): Promise<void> {
-    try {
-      await this.catalogue.setPublicPrice(change.item.sku, change.ttcCents);
-      this.notify.success(`Prix public posé sur ${change.item.name}.`);
-      await this.load();
-    } catch (error) {
-      this.notify.refused(error, "Le prix public n'a pas pu être enregistré.");
-    }
-  }
-
-  /** Retire l'étiquette publique décidée ici : l'article repasse à celle du PIM. */
-  protected async alignPublicOnPim(item: CatalogAdminItemView): Promise<void> {
-    try {
-      await this.catalogue.alignPublicOnPim(item.sku);
-      this.notify.success(`${item.name} repasse à l'étiquette du PIM.`);
-      await this.load();
-    } catch (error) {
-      this.notify.error(error, "La décision n'a pas pu être retirée.");
-    }
-  }
-
-  /** Pose le prix pro. Le serveur refuse un montant égal à celui du PIM. */
-  protected async setPrice(change: {
-    item: CatalogAdminItemView;
-    priceMillicents: number;
-  }): Promise<void> {
-    try {
-      await this.catalogue.setPrice(change.item.sku, change.priceMillicents);
-      this.notify.success(`Prix pro posé sur ${change.item.name}.`);
-      await this.load();
-    } catch (error) {
-      // `refused` et non `error` : le refus le plus fréquent est « ce prix est
-      // celui du PIM », une règle qui se comprend en une lecture et dont le
-      // toast n'a pas à rester à l'écran.
-      this.notify.refused(error, "Le prix n'a pas pu être enregistré.");
-    }
-  }
-
-  /** Retire la décision : l'article repasse au tarif du PIM et suivra ses hausses. */
-  protected async alignOnPim(item: CatalogAdminItemView): Promise<void> {
-    try {
-      await this.catalogue.alignOnPim(item.sku);
-      this.notify.success(`${item.name} suit de nouveau le tarif du PIM.`);
-      await this.load();
-    } catch (error) {
-      this.notify.error(error, "La décision n'a pas pu être retirée.");
     }
   }
 }

@@ -9,6 +9,7 @@ import {
   millicents,
   payload,
   ref,
+  retired,
   subjectLabel,
   type JournalFactFamily,
 } from "./fact.js";
@@ -32,6 +33,14 @@ function labelled<S extends z.ZodRawShape>(shape: S) {
   return fact(payload({ subjectLabel: subjectLabel(), ...shape }), [payload(shape)]);
 }
 
+/**
+ * Comme {@link labelled}, pour un type qui ne s'écrit plus : ses deux formes
+ * restent lisibles.
+ */
+function retiredLabelled<S extends z.ZodRawShape>(shape: S) {
+  return retired(payload({ subjectLabel: subjectLabel(), ...shape }), [payload(shape)]);
+}
+
 /** Un prix B2B unitaire, en millicentimes. */
 const price = () => payload({ priceMillicents: millicents() });
 /** L'étiquette publique — en CENTIMES TTC, l'unité d'un prix qu'un humain pose. */
@@ -44,25 +53,37 @@ const LEAD_STATUSES = ["contacted", "qualified", "negotiating", "converted", "lo
 const PLAYS = ["lock_in", "rescue", "upgrade", "win_back", "nurture"] as const;
 
 export const COMMERCE_FACTS = {
-  /** `subjectLabel` : le nom de l'article, tel que le référentiel l'avait livré. */
-  "catalog_item.b2b_price_set": labelled({
+  /**
+   * `subjectLabel` : le nom de l'article, tel que le référentiel l'avait livré.
+   *
+   * ⚠️ **Les quatre faits de prix décidé sont retirés** (lot D de
+   * `plan-catalogue-synchronise-par-audience.md`, 2026-10-15) : la plateforme
+   * ne décide plus de prix. Ils restent ici pour que le journal passé se lise.
+   */
+  "catalog_item.b2b_price_set": retiredLabelled({
     sku: z.string(),
     before: price().nullable(),
     after: price(),
   }),
-  "catalog_item.b2b_price_cleared": labelled({ sku: z.string(), before: price() }),
+  "catalog_item.b2b_price_cleared": retiredLabelled({ sku: z.string(), before: price() }),
   /**
    * ⚠️ **En centimes TTC, et c'est une autre charge que sa voisine.** Le prix
    * professionnel est un hors taxe DÉRIVÉ, donc en millicentimes ; celui-ci est
    * l'étiquette qu'un humain a posée. Partager `price()` aurait fait relire
    * 299 comme des millicentimes — « 0,00299 € » sur un croissant à 2,99 €.
    */
-  "catalog_item.public_price_set": labelled({
+  "catalog_item.public_price_set": retiredLabelled({
     sku: z.string(),
     before: publicPrice().nullable(),
     after: publicPrice(),
   }),
-  "catalog_item.public_price_cleared": labelled({ sku: z.string(), before: publicPrice() }),
+  "catalog_item.public_price_cleared": retiredLabelled({ sku: z.string(), before: publicPrice() }),
+  /**
+   * **Le prix du référentiel retracé** dans l'historique des prix (lot D,
+   * `POST admin/catalog/prices/retrace`) : les SKU dont la dernière trace
+   * différait. Sans `subjectLabel` : l'historique des prix n'a pas de nom.
+   */
+  "catalog_price_history.retraced": fact(payload({ skus: z.array(z.string()).min(1) })),
   "catalog_item.hidden": labelled(skuOnly().shape),
   "catalog_item.shown": labelled(skuOnly().shape),
   "catalog_item.hidden_public": labelled(skuOnly().shape),

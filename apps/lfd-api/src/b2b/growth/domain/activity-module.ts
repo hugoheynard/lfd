@@ -71,6 +71,10 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // (2026-09-19).
     "catalog_item.",
     "catalog_delivery.",
+    // Le prix du référentiel retracé dans l'historique des prix (lot D du
+    // catalogue synchronisé, 2026-10-15) : un geste sur ce qu'on vend et à
+    // quel prix, sous le même droit.
+    "catalog_price_history.",
     // La surcharge d'une opération datée reçue restreint ce qu'on vend et
     // quand : le même geste que masquer un article (2026-09-24, lot 2 du plan
     // des opérations datées).

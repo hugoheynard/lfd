@@ -34,6 +34,7 @@ const REFUSAL = "e2e_journal_catalogue_en_panne";
 const SKU = "VIE-001-1";
 const ITEM = `/admin/catalog/${SKU}`;
 const PIM_PRICE = 210_000;
+/** Un ancien prix décidé, d'avant le lot D — il ne vit plus que dans l'historique. */
 const NEGOTIATED = 190_000;
 /** Un instant passé, calculé UNE fois ; aucune règle ne le compare à l'horloge. */
 const RECEIVED = daysAgo(1);
@@ -166,7 +167,7 @@ const ARTICLE = "Article VIE-001";
  */
 describe("le nom du moment", () => {
   it("un article renommé depuis se lit sous l'ancien nom sur la ligne d'avant", async () => {
-    await staff().put(`${ITEM}/price`).send({ priceMillicents: NEGOTIATED }).expect(204);
+    await staff().put(`${ITEM}/masking`).send({ audience: "pro", hidden: true }).expect(204);
 
     const renamed = snapshot(["VIE-001"]);
     await sell({
@@ -176,81 +177,70 @@ describe("le nom du moment", () => {
         variants: product.variants.map((variant) => ({ ...variant, name: "Croissant pur beurre" })),
       })),
     });
-    await staff().put(`${ITEM}/price`).send({ priceMillicents: 180_000 }).expect(204);
+    await staff().put(`${ITEM}/masking`).send({ audience: "pro", hidden: false }).expect(204);
 
-    expect((await facts("catalog_item.b2b_price_set")).map((fact) => fact.payload)).toMatchObject([
+    expect((await facts("catalog_item.hidden")).map((fact) => fact.payload)).toMatchObject([
       { subjectLabel: ARTICLE },
+    ]);
+    expect((await facts("catalog_item.shown")).map((fact) => fact.payload)).toMatchObject([
       { subjectLabel: "Croissant pur beurre" },
     ]);
   });
 });
 
-describe("le prix B2B", () => {
-  it("poser puis remplacer : l'avant et l'après en millicentimes, sous la fiche staff", async () => {
-    await staff().put(`${ITEM}/price`).send({ priceMillicents: NEGOTIATED }).expect(204);
-    await staff().put(`${ITEM}/price`).send({ priceMillicents: 180_000 }).expect(204);
-
-    expect(await facts("catalog_item.b2b_price_set")).toEqual([
-      {
-        ...byStaff,
-        actorId: E2E_STAFF_ID,
-        payload: {
-          subjectLabel: ARTICLE,
-          sku: SKU,
-          before: null,
-          after: { priceMillicents: NEGOTIATED },
-        },
+/**
+ * **Le retraçage du prix** (lot D de `plan-catalogue-synchronise-par-audience.md`,
+ * 2026-10-15) : un fait quand il écrit, rien quand il n'a rien à écrire, et
+ * aucune ligne d'historique si le journal refuse.
+ */
+describe("le retraçage du prix du référentiel", () => {
+  /** Une dernière trace qui n'est plus le prix servi — un ancien prix décidé. */
+  async function staleTrace(): Promise<void> {
+    await ctx.prisma.catalogPriceHistory.create({
+      data: {
+        id: "ph_ancien_prix_decide",
+        sku: SKU,
+        productSku: "VIE-001",
+        priceMillicents: NEGOTIATED,
+        vatRatePercent: 5.5,
+        source: "b2b",
+        recordedAt: new Date(),
       },
+    });
+  }
+
+  it("journalise les SKU retracés, sous la fiche staff, une seule fois", async () => {
+    await staleTrace();
+
+    await staff().post("/admin/catalog/prices/retrace").expect(204);
+    await staff().post("/admin/catalog/prices/retrace").expect(204);
+
+    expect(await facts("catalog_price_history.retraced")).toEqual([
       {
-        ...byStaff,
+        subjectType: "catalog_price_history",
+        subjectId: "catalog",
+        actorType: "staff",
         actorId: E2E_STAFF_ID,
-        payload: {
-          subjectLabel: ARTICLE,
-          sku: SKU,
-          before: { priceMillicents: NEGOTIATED },
-          after: { priceMillicents: 180_000 },
-        },
-      },
-    ]);
-  });
-
-  it("revenir au PIM : un fait qui dit le prix retiré", async () => {
-    await staff().put(`${ITEM}/price`).send({ priceMillicents: NEGOTIATED }).expect(204);
-
-    await staff().delete(`${ITEM}/price`).expect(204);
-
-    expect(await facts("catalog_item.b2b_price_cleared")).toEqual([
-      {
-        ...byStaff,
-        actorId: E2E_STAFF_ID,
-        payload: { subjectLabel: ARTICLE, sku: SKU, before: { priceMillicents: NEGOTIATED } },
+        payload: { skus: [SKU] },
       },
     ]);
   });
 
-  it("revenir au PIM sur un article qui le suit déjà n'écrit aucun fait", async () => {
-    await staff().delete(`${ITEM}/price`).expect(204);
+  it("n'écrit aucun fait quand rien n'est à retracer", async () => {
+    await staff().post("/admin/catalog/prices/retrace").expect(204);
 
-    expect(await facts("catalog_item.b2b_price_cleared")).toEqual([]);
+    expect(await facts("catalog_price_history.retraced")).toEqual([]);
   });
 
-  it("ANNULE la pose quand le journal refuse d'écrire", async () => {
-    await breakJournal("catalog_item.b2b_price_set");
+  it("ANNULE le retraçage quand le journal refuse d'écrire — l'historique reste", async () => {
+    await staleTrace();
+    const before = await ctx.prisma.catalogPriceHistory.count({ where: { sku: SKU } });
+    await breakJournal("catalog_price_history.retraced");
 
-    const response = await staff().put(`${ITEM}/price`).send({ priceMillicents: NEGOTIATED });
-
-    expect(response.status).toBeGreaterThanOrEqual(500);
-    expect(await decision()).toBeNull();
-  });
-
-  it("ANNULE le retour au PIM quand le journal refuse d'écrire — le prix reste", async () => {
-    await staff().put(`${ITEM}/price`).send({ priceMillicents: NEGOTIATED }).expect(204);
-    await breakJournal("catalog_item.b2b_price_cleared");
-
-    const response = await staff().delete(`${ITEM}/price`);
+    const response = await staff().post("/admin/catalog/prices/retrace");
 
     expect(response.status).toBeGreaterThanOrEqual(500);
-    expect(await decision()).toMatchObject({ priceMillicents: NEGOTIATED });
+    expect(await ctx.prisma.catalogPriceHistory.count({ where: { sku: SKU } })).toBe(before);
   });
 });
 

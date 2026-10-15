@@ -1,6 +1,4 @@
 import {
-  setB2bPricePayloadSchema,
-  setPublicPricePayloadSchema,
   setMaskingPayloadSchema,
   approveReviewPayloadSchema,
   setCatalogFeaturedPayloadSchema,
@@ -8,15 +6,12 @@ import {
   type CatalogAdminItemView,
   type CatalogSummaryView,
   type PublishedCatalogView,
-  type SetB2bPricePayload,
-  type SetPublicPricePayload,
   type SetMaskingPayload,
   type SetCatalogFeaturedPayload,
 } from "@lfd/contracts";
 import {
   Body,
   Controller,
-  Delete,
   Get,
   Header,
   HttpCode,
@@ -30,10 +25,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
-import { AlignOnPimPriceCommand } from "../application/commands/align-on-pim-price.command.js";
-import { AlignPublicOnPimCommand } from "../application/commands/align-public-on-pim.command.js";
-import { SetB2bPriceCommand } from "../application/commands/set-b2b-price.command.js";
-import { SetPublicPriceCommand } from "../application/commands/set-public-price.command.js";
+import { RetracePricesFromReferentialCommand } from "../application/commands/retrace-prices-from-referential.command.js";
 import { ApproveReviewCommand } from "../application/commands/approve-review.command.js";
 import { SetMaskingCommand } from "../application/commands/set-masking.command.js";
 import { SetCatalogFeaturedCommand } from "../application/commands/set-catalog-featured.command.js";
@@ -44,15 +36,18 @@ import { ListCatalogQuery } from "../application/queries/list-catalog.query.js";
 
 /**
  * **Le paramétrage du catalogue** : ce que la plateforme décide par-dessus le
- * PIM — un prix, une visibilité, une mise en avant.
+ * PIM — une visibilité, une mise en avant.
  *
  * Une route par geste, nommée comme le geste. Un `PATCH` unique acceptant un
  * patch partiel aurait été plus court et aurait tout perdu : le journal ne
  * dirait plus ce qui a été fait, et le serveur devrait deviner l'intention
  * depuis les champs présents.
  *
- * Retirer un prix B2B est un `DELETE` et pas un `PUT { priceMillicents: null }` : on
- * **supprime une décision**, on n'en pose pas une qui vaudrait « rien ».
+ * 🔴 **Le prix ne s'y décide plus** (lot D de
+ * `plan-catalogue-synchronise-par-audience.md`, 2026-10-15). Les quatre routes
+ * `PUT|DELETE :sku/price` et `PUT|DELETE :sku/public-price` sont retirées
+ * (pré-release, CLAUDE.md §0 ; seul lecteur : le back-office) : le prix servi
+ * est celui du référentiel.
  *
  * Surface staff murée par `@AdminSurface("b2b_catalog")` : le paramétrage du
  * catalogue est du réglage, et n'ouvrir une ressource `catalog` qu'ici créerait
@@ -105,50 +100,21 @@ export class AdminCatalogController {
     return this.queries.execute<ExportCatalogCsvQuery, string>(new ExportCatalogCsvQuery());
   }
 
-  @Put(":sku/price")
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async setPrice(
-    @Param("sku") sku: string,
-    @Body(new ZodBody(setB2bPricePayloadSchema)) payload: SetB2bPricePayload,
-    @StaffUserId() staffUserId: string,
-  ): Promise<void> {
-    await this.commands.execute<SetB2bPriceCommand, void>(
-      new SetB2bPriceCommand(sku, payload.priceMillicents, staffUserId),
-    );
-  }
-
-  /** Revenir au tarif du PIM — et le suivre à nouveau. */
-  @Delete(":sku/price")
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async alignOnPim(@Param("sku") sku: string): Promise<void> {
-    await this.commands.execute<AlignOnPimPriceCommand, void>(new AlignOnPimPriceCommand(sku));
-  }
-
   /**
-   * Poser le **prix public**, en centimes TTC.
+   * **Retracer le prix du référentiel** dans l'historique des prix (lot D) :
+   * une ligne pour chaque article vendu dont la dernière trace diffère —
+   * typiquement un ancien prix décidé ici —, et rien d'autre. Idempotent,
+   * journalisé quand il écrit. Se lance une fois après le déploiement du
+   * lot D (runbook).
    *
-   * ⚠️ Route distincte de `:sku/price` et non un champ de plus sur celle-ci :
-   * ce sont deux intentions, sur deux audiences, avec deux refus différents.
-   * Une route unique aurait forcé le handler à deviner laquelle depuis les
-   * champs présents — et le journal à porter un fait ambigu.
+   * Droit d'écriture du catalogue : la surface `b2b_catalog` du contrôleur.
    */
-  @Put(":sku/public-price")
+  @Post("prices/retrace")
   @HttpCode(HttpStatus.NO_CONTENT)
-  async setPublicPrice(
-    @Param("sku") sku: string,
-    @Body(new ZodBody(setPublicPricePayloadSchema)) payload: SetPublicPricePayload,
-    @StaffUserId() staffUserId: string,
-  ): Promise<void> {
-    await this.commands.execute<SetPublicPriceCommand, void>(
-      new SetPublicPriceCommand(sku, payload.ttcCents, staffUserId),
+  async retracePrices(): Promise<void> {
+    await this.commands.execute<RetracePricesFromReferentialCommand, void>(
+      new RetracePricesFromReferentialCommand(),
     );
-  }
-
-  /** Revenir à l'étiquette publique du PIM — et la suivre à nouveau. */
-  @Delete(":sku/public-price")
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async alignPublicOnPim(@Param("sku") sku: string): Promise<void> {
-    await this.commands.execute<AlignPublicOnPimCommand, void>(new AlignPublicOnPimCommand(sku));
   }
 
   /**

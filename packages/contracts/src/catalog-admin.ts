@@ -4,16 +4,12 @@ import type { CatalogParityView } from "./catalog-parity.js";
 
 /**
  * Le catalogue **vu du paramétrage** — ce que le PIM envoie ET ce que la
- * plateforme décide, côte à côte.
+ * plateforme décide (masquage, mise en avant), côte à côte.
  *
- * Distinct de `catalog.ts`, qui sert la boutique : là-bas on montre un prix, ici
- * on montre **d'où il vient**. Un écran qui n'afficherait que le prix final ne
- * permettrait ni de dire « celui-là, c'est nous qui l'avons posé », ni de
- * revenir en arrière — et un prix sans provenance ne se défend pas devant un
- * client qui le conteste.
+ * Distinct de `catalog.ts`, qui sert la boutique. Le prix, lui, ne se décide
+ * plus ici depuis le lot D (2026-10-15) : il vient du référentiel.
  */
 
-/** Un article, avec sa provenance et la décision prise dessus s'il y en a une. */
 /** Un allergène tel qu'une étiquette le nomme. */
 export interface CatalogAllergenView {
   /** La catégorie réglementaire INCO — la clé, stable et non traduite. */
@@ -33,12 +29,14 @@ export interface CatalogAdminItemView {
   readonly categoryId: string;
   readonly categoryName: string;
 
-  /** Le tarif du PIM. Toujours présent — c'est le socle. */
+  /**
+   * Le prix pro HT du référentiel, en millicentimes — **le seul prix** de
+   * l'article depuis le lot D (`plan-catalogue-synchronise-par-audience.md`,
+   * 2026-10-15). `b2bPriceMillicents`, `effectivePriceMillicents` et
+   * `decidedPublicTtcCents` sont retirés : la plateforme ne décide plus de
+   * prix, il se change dans la fiche du référentiel.
+   */
   readonly pimPriceMillicents: number;
-  /** Le tarif décidé ici. `null` = on suit le PIM. */
-  readonly b2bPriceMillicents: number | null;
-  /** Ce qui sera facturé : le B2B s'il existe, le PIM sinon. */
-  readonly effectivePriceMillicents: number;
 
   /**
    * **L'étiquette publique reçue du référentiel**, en centimes **TTC**.
@@ -61,19 +59,6 @@ export interface CatalogAdminItemView {
    * sur place, et rien n'oblige les deux canaux à porter le même.
    */
   readonly publicVatRatePercent: number | null;
-  /**
-   * L'étiquette publique **décidée ici**, en centimes TTC. `null` = on suit
-   * celle du référentiel.
-   *
-   * ⚠️ Ce n'est **pas** ce que le rayon affiche. Ce nombre est une ENTRÉE : il
-   * est mis hors taxe au taux du contexte public, traverse le pipeline de
-   * résolution, et le TTC qui en ressort peut différer d'un centime —
-   * l'aller-retour hors taxe ne revient pas toujours sur lui-même (mesuré,
-   * `dev-toolbox/analyses/ancrage-du-ttc-pose.mjs`). L'écran doit donc montrer
-   * le prix ENCAISSÉ à côté de celui qu'on pose, pas ce champ seul.
-   */
-  readonly decidedPublicTtcCents: number | null;
-
   /**
    * `null` = la famille n'a pas de régime de TVA dans le PIM. L'article est
    * alors visible ici mais **pas vendable** : l'écran doit le dire, plutôt que
@@ -164,35 +149,6 @@ export interface CatalogAdminItemView {
   /** Quand le PIM a envoyé ces faits pour la dernière fois. */
   readonly receivedAt: string;
 }
-
-/**
- * Poser le **prix de vente B2B**.
- *
- * Le serveur refuse un prix identique à celui du PIM : le geste voulu est alors
- * de **retirer** la décision (`DELETE`), pas de la recopier. Une ligne fantôme
- * annoncerait une négociation inexistante et bloquerait la prochaine hausse du
- * PIM sans que personne ne comprenne pourquoi.
- */
-export const setB2bPricePayloadSchema = z.object({
-  priceMillicents: z.number().int().positive(),
-});
-export type SetB2bPricePayload = z.infer<typeof setB2bPricePayloadSchema>;
-
-/**
- * Poser le **prix public**, en centimes **TTC**.
- *
- * 🔴 **L'unité n'est pas celle de son voisin**, et le nom du champ est la seule
- * chose qui le dise : le prix professionnel est un hors taxe DÉRIVÉ, en
- * millicentimes ; celui-ci est l'étiquette qu'un humain tape.
- *
- * Mêmes refus que le prix professionnel — un montant nul, ou l'étiquette du PIM
- * recopiée — plus un qui n'a pas d'équivalent : un article que la vitrine
- * publique n'expose pas. Le prix y serait écrit et jamais servi.
- */
-export const setPublicPricePayloadSchema = z.object({
-  ttcCents: z.number().int().positive(),
-});
-export type SetPublicPricePayload = z.infer<typeof setPublicPricePayloadSchema>;
 
 /**
  * **Masquer un article pour une audience, ou l'y remettre** — la route unique

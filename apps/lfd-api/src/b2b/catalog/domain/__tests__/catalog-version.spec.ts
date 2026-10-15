@@ -59,16 +59,9 @@ describe("CatalogVersion.photograph", () => {
     expect(version.lineCount).toBe(2);
   });
 
-  /**
-   * 🔴 Le prix **REÇU**, jamais l'effectif. Une version est immuable après pose,
-   * tandis que le prix effectif bouge sans qu'aucune livraison n'arrive — un
-   * commercial renégocie. Y inscrire l'effectif donnerait une archive fausse dès
-   * la première renégociation, et fausse pour toujours.
-   */
-  it("archive le prix du PIM, pas le prix négocié", () => {
+  /** Le prix **REÇU** du référentiel — le seul prix depuis le lot D. */
+  it("archive le prix du PIM", () => {
     const item = CatalogItem.receive(facts("VIE-001-1", { priceMillicents: 210_000 }));
-    item.setB2bPrice(180_000, "staff_1");
-    expect(item.effectivePriceMillicents).toBe(180_000);
 
     const version = photograph([item]);
 

@@ -15,11 +15,11 @@ export type ShopAudience = 'pro' | 'public';
 
 /**
  * Le catalogue **du paramétrage** : ce que le PIM a poussé, plus ce qu'on décide
- * ici.
+ * ici — le masquage, la mise en avant, la validation.
  *
- * Écriture par geste nommé, comme côté serveur — `setPrice` / `alignOnPim` /
- * `setMasking` / `setFeatured`. Un `update(sku, patch)` unique aurait été plus court et
- * aurait perdu la seule chose qui compte : ce que l'utilisateur croyait faire.
+ * Écriture par geste nommé, comme côté serveur — `setMasking` / `setFeatured` /
+ * `approveReview`. Le prix ne se décide plus ici depuis le lot D
+ * (2026-10-15) : il se change dans la fiche du référentiel.
  */
 @Injectable({ providedIn: 'root' })
 export class CatalogueService {
@@ -29,27 +29,6 @@ export class CatalogueService {
   list(): Promise<readonly CatalogAdminItemView[]> {
     return firstValueFrom(
       this.http.get<readonly CatalogAdminItemView[]>(`${B2B_API_BASE}/admin/catalog`),
-    );
-  }
-
-  /** Pose le tarif de vente PRO. Le serveur refuse un prix égal à celui du PIM. */
-  async setPrice(sku: string, priceMillicents: number): Promise<void> {
-    await firstValueFrom(
-      this.http.put<void>(`${B2B_API_BASE}/admin/catalog/${encodeURIComponent(sku)}/price`, {
-        priceMillicents,
-      }),
-    );
-  }
-
-  /**
-   * Retire le tarif PRO : l'article repasse au prix du PIM et suivra ses hausses.
-   *
-   * Un `DELETE`, pas un `PUT { priceMillicents: null }` — on supprime une décision, on
-   * n'en pose pas une qui vaudrait « rien ».
-   */
-  async alignOnPim(sku: string): Promise<void> {
-    await firstValueFrom(
-      this.http.delete<void>(`${B2B_API_BASE}/admin/catalog/${encodeURIComponent(sku)}/price`),
     );
   }
 
@@ -72,30 +51,6 @@ export class CatalogueService {
       this.http.put<void>(`${B2B_API_BASE}/admin/catalog/${encodeURIComponent(sku)}/featured`, {
         featured,
       }),
-    );
-  }
-
-  /**
-   * Pose l'étiquette **publique**, en centimes TTC.
-   *
-   * Route distincte de celle du prix pro : deux intentions, deux audiences,
-   * deux refus. Le serveur en oppose un que le pro ne connaît pas — un article
-   * que la vitrine publique n'expose pas.
-   */
-  async setPublicPrice(sku: string, ttcCents: number): Promise<void> {
-    await firstValueFrom(
-      this.http.put<void>(`${B2B_API_BASE}/admin/catalog/${encodeURIComponent(sku)}/public-price`, {
-        ttcCents,
-      }),
-    );
-  }
-
-  /** Retire l'étiquette publique : l'article repasse à celle du PIM. */
-  async alignPublicOnPim(sku: string): Promise<void> {
-    await firstValueFrom(
-      this.http.delete<void>(
-        `${B2B_API_BASE}/admin/catalog/${encodeURIComponent(sku)}/public-price`,
-      ),
     );
   }
 
