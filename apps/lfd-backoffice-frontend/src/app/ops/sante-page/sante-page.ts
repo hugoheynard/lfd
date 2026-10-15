@@ -19,6 +19,7 @@ import { Capabilities, type CapabilitiesState } from '../capabilities/capabiliti
 import { ChargeTable } from '../charge-table/charge-table';
 import { DeadLetters } from '../dead-letters/dead-letters';
 import { MediaThresholds } from '../media-thresholds/media-thresholds';
+import { PricingProbe } from '../pricing-probe/pricing-probe';
 import { EcosystemMap } from '../ecosystem-map/ecosystem-map';
 import { OpsService } from '../ops.service';
 import { elapsedSince } from '../elapsed';
@@ -59,6 +60,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     EcosystemMap,
     FoldLoadingStateComponent,
     MediaThresholds,
+    PricingProbe,
   ],
   templateUrl: './sante-page.html',
   styleUrl: './sante-page.scss',

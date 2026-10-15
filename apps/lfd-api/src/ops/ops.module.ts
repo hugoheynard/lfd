@@ -2,6 +2,8 @@ import { Module } from "@nestjs/common";
 
 import { AppConfig } from "../platform/config/app-config.js";
 import { AdminHealthController } from "./health/admin-health.controller.js";
+import { AdminPricingProbeController } from "./health/admin-pricing-probe.controller.js";
+import { ReadPricingProbeHandler } from "./health/read-pricing-probe.handler.js";
 import { Auth0ReadingsReader } from "./health/auth0-readings.reader.js";
 import { MailReadingsReader } from "./health/mail-readings.reader.js";
 import { VitalsController } from "./vitals/vitals.controller.js";
@@ -61,6 +63,7 @@ const FRONTEND_PROBES: readonly NodeProbe[] = TOPOLOGY.flatMap((node) =>
   controllers: [
     AdminTrafficController,
     AdminHealthController,
+    AdminPricingProbeController,
     AdminMediaThresholdsController,
     AdminCapabilitiesController,
     VitalsController,
@@ -95,6 +98,9 @@ const FRONTEND_PROBES: readonly NodeProbe[] = TOPOLOGY.flatMap((node) =>
     // Les seuils de la médiathèque : le compte vient du port que la racine
     // relie (`MediaLibraryCensusModule`), jamais d'une lecture de sa table.
     ReadMediaThresholdsHandler,
+    // La sonde du calcul des prix : la fenêtre vient de `platform/metrics`,
+    // où le commerce écrit sans savoir qui lit.
+    ReadPricingProbeHandler,
     // Les capacités éteintes : le bulletin de démarrage (global, `platform/`),
     // lu par un port étroit — la même source que la route au jeton.
     ReadCapabilitiesHandler,

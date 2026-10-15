@@ -167,7 +167,7 @@ export class OrderDrafting {
     // avance affirmerait que la ligne vient d'une livraison qu'elle n'a pas vue.
     // La seconde est un mensonge, la première une borne.
     const catalogVersionId = await this.catalogVersions.currentId();
-    const resolved = await this.linePricing.resolve(content.lines, parties);
+    const resolved = await this.linePricing.resolve(content.lines, parties, "checkout");
     const lines = resolved.map((entry) => entry.line);
     // Le sous-total est un MONTANT : arrondi au centime, une fois par ligne,
     // par la même fonction que la ligne persistée. Deux arithmétiques ici
@@ -295,7 +295,7 @@ export class OrderDrafting {
     parties: OrderParties,
     lines: readonly OrderLineRequest[],
   ): Promise<ResolvedOrderLine[]> {
-    const explained = await this.linePricing.explain(lines, parties);
+    const explained = await this.linePricing.explain(lines, parties, "cart");
     // Sans jour : le devis ne juge pas la date, mais il dit déjà qu'une bûche
     // n'est pas encore ouverte, close ou introuvable — le refus n'attend pas
     // le paiement (D6).

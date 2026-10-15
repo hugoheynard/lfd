@@ -7,6 +7,7 @@ import type {
   CapabilitiesReport,
   EcosystemHealth,
   MediaThresholdsReport,
+  PricingProbeReport,
   TrafficReport,
 } from '@lfd/ops-contract';
 
@@ -36,6 +37,13 @@ export class OpsService {
   /** Le fonds de la médiathèque face à ses limites connues, jugé côté serveur. */
   mediaThresholds(): Promise<MediaThresholdsReport> {
     return firstValueFrom(this.http.get<MediaThresholdsReport>(`${B2B_API_BASE}/admin/ops/media`));
+  }
+
+  /** Ce que coûte le calcul des prix sur cette instance, jugé côté serveur. */
+  pricingProbe(): Promise<PricingProbeReport> {
+    return firstValueFrom(
+      this.http.get<PricingProbeReport>(`${B2B_API_BASE}/admin/ops/health/pricing`),
+    );
   }
 
   /** Les capacités éteintes de l'instance en service — des noms de variables, jamais leur valeur. */

@@ -63,6 +63,7 @@ import { AppConfigModule } from "../platform/config/config.module.js";
 import { envFilePaths } from "../platform/config/env-readers.js";
 import { BusModule } from "../platform/bus/bus.module.js";
 import { ContextModule } from "../platform/context/context.module.js";
+import { MetricsModule } from "../platform/metrics/metrics.module.js";
 import { EventsModule } from "../platform/events/events.module.js";
 import { OutboxModule } from "../platform/outbox/outbox.module.js";
 import { IdentityModule } from "../platform/identity/identity.module.js";
@@ -92,6 +93,7 @@ import { PublicationEnabledGuard } from "../pim/publication/publication-switch.j
     // Les bus CQRS (@Global) : les contextes les injectent sans réimporter.
     BusModule,
     ContextModule,
+    MetricsModule,
     // Publication d'événements de domaine (@Global) : bus cqrs derrière un port
     // injectable. Les émetteurs publient, le journal croissance écoute.
     EventsModule,

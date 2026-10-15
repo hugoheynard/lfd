@@ -115,6 +115,7 @@ export class ShopCartQuoting {
       // `null` pour un visiteur : ce n'est pas un trou à combler, c'est le
       // parcours par défaut de la boutique, et `applies` le sait déjà.
       { companyId: query.companyId },
+      "cart",
     );
     // Sans jour — le devis de la boutique n'en porte pas —, mais une bûche
     // pas encore ouverte, close ou introuvable le dit ici, au panier, plutôt

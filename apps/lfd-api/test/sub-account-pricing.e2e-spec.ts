@@ -116,7 +116,12 @@ async function lotOf(companyId: string, quantity: number, at?: Date): Promise<Pr
   if (found === null) {
     throw new Error(`Le catalogue e2e ne connaît pas « ${SKU} ».`);
   }
-  return pricer.load({ articles: [{ article: found.article, quantity }], companyId, at });
+  return pricer.load({
+    articles: [{ article: found.article, quantity }],
+    companyId,
+    at,
+    caller: "cart",
+  });
 }
 
 async function priceOf(companyId: string, at?: Date): Promise<number> {

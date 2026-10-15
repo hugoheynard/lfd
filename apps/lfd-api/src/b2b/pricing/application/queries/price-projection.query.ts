@@ -80,6 +80,7 @@ export class PriceProjectionQuery {
       // écarter ensuite (2026-09-09).
       lens: "unproven",
       at,
+      caller: "back-office",
     });
 
     return {

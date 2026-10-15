@@ -147,7 +147,7 @@ export class ShopCataloguePricing {
     // 🔴 La porte prend l'instant elle-même, une fois pour tout le lot : deux
     // articles résolus à quelques millisecondes d'écart pourraient sinon tomber
     // de part et d'autre du basculement d'une promotion.
-    const lot = await this.pricer.load({ articles, companyId });
+    const lot = await this.pricer.load({ articles, companyId, caller: "shelf" });
     const lines = articles.map(({ article, quantity }) => ({ sku: article.sku, quantity }));
     const prices = new Map(lot.all(lines).map((priced) => [priced.sku, priced.finalMillicents]));
     return { ...catalogue, items: catalogue.items.map((item) => struck(item, prices)) };

@@ -86,6 +86,10 @@ import { PAINS } from "../../../../catalog/domain/__tests__/families.fixture.js"
 import { ownPricingParties } from "../../../../pricing/application/__tests__/pricing-parties.doubles.js";
 import { CommerceOrderPlacedFact } from "../../../../../delivery/channels/commerce/index.js";
 import { RecordingDurable } from "./durable-doubles.js";
+import {
+  FixedStopwatch,
+  RecordingTimings,
+} from "../../../../../platform/metrics/__tests__/metrics-doubles.js";
 
 /**
  * **La commande sans compte**, éprouvée là où elle décide — plan
@@ -259,6 +263,8 @@ function drafting(
         new FixedClock(PRICED_AT),
         noPriceHistory,
         ownPricingParties(),
+        new RecordingTimings(),
+        new FixedStopwatch(),
       ),
       new FixedClock(PRICED_AT),
     ),

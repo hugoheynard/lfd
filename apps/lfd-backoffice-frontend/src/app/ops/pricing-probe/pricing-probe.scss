@@ -1,0 +1,9 @@
+:host {
+  display: block;
+}
+
+.scope {
+  margin: 0 0 var(--fold-space-sm);
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}

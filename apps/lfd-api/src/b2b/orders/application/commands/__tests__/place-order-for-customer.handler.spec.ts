@@ -73,6 +73,10 @@ import { VIENNOISERIES } from "../../../../catalog/domain/__tests__/families.fix
 import { ownPricingParties } from "../../../../pricing/application/__tests__/pricing-parties.doubles.js";
 import { CommerceOrderPlacedFact } from "../../../../../delivery/channels/commerce/index.js";
 import { RecordingDurable } from "./durable-doubles.js";
+import {
+  FixedStopwatch,
+  RecordingTimings,
+} from "../../../../../platform/metrics/__tests__/metrics-doubles.js";
 
 /**
  * L'historique du tarif canonique — **jamais consulté ici** : ces cas ne posent
@@ -349,6 +353,8 @@ function handler(
           new FixedClock(PRICED_AT),
           noPriceHistory,
           ownPricingParties(),
+          new RecordingTimings(),
+          new FixedStopwatch(),
         ),
         new FixedClock(PRICED_AT),
       ),
@@ -691,6 +697,8 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
             new FixedClock(PRICED_AT),
             noPriceHistory,
             ownPricingParties(),
+            new RecordingTimings(),
+            new FixedStopwatch(),
           ),
           new FixedClock(PRICED_AT),
         ),

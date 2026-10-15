@@ -107,6 +107,12 @@
     <app-charge-table [windows]="windows()" />
   </section>
 
+  <!-- À côté du trafic : lui dit ce que ressent le client, réseau compris ;
+       celle-ci ce que coûte le calcul des prix lui-même. -->
+  <section aria-label="Temps de calcul des prix">
+    <app-pricing-probe />
+  </section>
+
   <!-- La légende dit ce que la carte encode. Sans elle, la vitesse d'un trait
        serait devinée — et devinée comme une alarme. -->
   <footer class="legend">

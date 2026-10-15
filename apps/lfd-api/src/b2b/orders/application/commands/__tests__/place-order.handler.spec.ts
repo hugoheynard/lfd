@@ -140,6 +140,10 @@ import { CommerceOrderPlacedFact } from "../../../../../delivery/channels/commer
 import { RecordingDurable } from "./durable-doubles.js";
 import { intakeAt } from "./intake-doubles.js";
 import { OrdersClosedForAudienceError } from "../../../domain/errors/orders-closed-for-audience.error.js";
+import {
+  FixedStopwatch,
+  RecordingTimings,
+} from "../../../../../platform/metrics/__tests__/metrics-doubles.js";
 
 /**
  * L'historique du tarif canonique — **jamais consulté ici** : ces cas ne posent
@@ -447,6 +451,8 @@ function drafting(
         new FixedClock(PRICED_AT),
         noPriceHistory,
         ownPricingParties(),
+        new RecordingTimings(),
+        new FixedStopwatch(),
       ),
       new FixedClock(PRICED_AT),
     ),

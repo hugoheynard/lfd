@@ -1,0 +1,48 @@
+<fold-card>
+  <fold-element-title
+    variant="title"
+    title="Temps de calcul des prix"
+    subtitle="Résolution d'un lot de prix, lectures en base comprises — par appelant et par audience."
+  />
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Lecture de la sonde…" />
+    }
+    @case ('error') {
+      <fold-empty-state
+        tone="alert"
+        title="Sonde illisible"
+        subtitle="La lecture a échoué. Ce n'est pas le calcul des prix qui est tombé, c'est la carte qui ne voit plus."
+      >
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @default {
+      @if (report(); as probe) {
+        <!-- La limite de la mesure, dite à l'écran et non en note : avec
+             plusieurs conteneurs, chacun ne voit que sa part. -->
+        <p class="scope">
+          {{ probe.windowMinutes }} dernières minutes · seuil du 95ᵉ centile :
+          {{ probe.p95ThresholdMs | number: '1.0-0' }} ms
+          @if (probe.perInstance) {
+            · cette instance seulement — une tendance, pas une comptabilité.
+          }
+        </p>
+        <fold-data-table
+          caption="Temps de calcul des prix par appelant"
+          narrowLayout="cards"
+          [columns]="columns"
+          [rows]="rows()"
+          [rowKey]="rowKey"
+          [rowTone]="toneOf"
+          [empty]="nothing"
+        >
+          <ng-template foldCell="state" let-row>
+            <fold-badge radius="pill" [variant]="tone(row.state)" [content]="label(row.state)" />
+          </ng-template>
+        </fold-data-table>
+      }
+    }
+  }
+</fold-card>

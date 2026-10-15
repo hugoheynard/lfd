@@ -52,6 +52,10 @@ import { EmptyLotError, type PricedLot } from "../priced-lot.js";
 import { NoCanonicalPriceAtError, Pricer } from "../pricer.js";
 import { VIENNOISERIES } from "../../../catalog/domain/__tests__/families.fixture.js";
 import { ownPricingParties } from "./pricing-parties.doubles.js";
+import {
+  FixedStopwatch,
+  RecordingTimings,
+} from "../../../../platform/metrics/__tests__/metrics-doubles.js";
 
 // ── L'instant, et les fenêtres ────────────────────────────────────────────
 //
@@ -147,7 +151,7 @@ async function lotOf(
       quantity: line.quantity,
     })),
   );
-  return pricer.load({ articles, companyId, at });
+  return pricer.load({ articles, companyId, at, caller: "cart" });
 }
 
 /** Le même lot, mais pour une question qui ne prouve rien. */
@@ -162,7 +166,7 @@ async function unprovenLotOf(
       quantity: line.quantity,
     })),
   );
-  return pricer.load({ articles, companyId, lens: "unproven" });
+  return pricer.load({ articles, companyId, lens: "unproven", caller: "back-office" });
 }
 
 // ── Les matériaux ─────────────────────────────────────────────────────────
@@ -350,11 +354,15 @@ class StubSkuVolumes extends SkuVolumeReader {
   }
 }
 
+/** La durée que le chronomètre doublé rend pour tout lot. */
+const LOT_MS = 42;
+
 interface Doubles {
   readonly rules: StubRules;
   readonly mercuriales: StubMercuriales;
   readonly commitments: StubCommitments;
   readonly volumes: StubCustomerVolumes;
+  readonly timings: RecordingTimings;
 }
 
 function pricerWith(
@@ -373,6 +381,7 @@ function pricerWith(
   const mercuriales = new StubMercuriales(parts.mercuriales ?? []);
   const commitments = new StubCommitments(parts.commitments ?? []);
   const volumes = new StubCustomerVolumes(parts.ordered ?? new Map());
+  const timings = new RecordingTimings();
   const loader = new PricingMaterialsLoader(
     rules,
     mercuriales,
@@ -388,8 +397,10 @@ function pricerWith(
       new FrozenClock(NOW),
       new StubPriceHistory(parts.pastPrices ?? null),
       ownPricingParties(),
+      timings,
+      new FixedStopwatch(LOT_MS),
     ),
-    doubles: { rules, mercuriales, commitments, volumes },
+    doubles: { rules, mercuriales, commitments, volumes, timings },
   };
 }
 
@@ -699,9 +710,9 @@ describe("Pricer.load — plusieurs articles", () => {
   it("refuse un lot vide", async () => {
     const { pricer, doubles } = pricerWith();
 
-    await expect(pricer.load({ articles: [], companyId: "cmp_1" })).rejects.toBeInstanceOf(
-      EmptyLotError,
-    );
+    await expect(
+      pricer.load({ articles: [], companyId: "cmp_1", caller: "cart" }),
+    ).rejects.toBeInstanceOf(EmptyLotError);
     expect(doubles.rules.seenAt).toEqual([]);
   });
 
@@ -826,5 +837,52 @@ describe("Pricer.load — le tarif canonique à la date", () => {
     const lot = await lotOf(pricer, [{ sku: "CRO-001", quantity: 1 }], null);
 
     expect(lot.price("CRO-001", 1).finalMillicents).toBe(millicentsFromCents(100));
+  });
+});
+
+/**
+ * La sonde `pricing.resolve` (`documentation/ops/sonde-calcul-des-prix.md`) :
+ * une mesure par lot résolu, étiquetée sans rien de nominatif.
+ */
+describe("Pricer.load — la sonde du calcul", () => {
+  it("mesure un lot résolu : qui demande, l'audience, la taille, la durée", async () => {
+    const { pricer, doubles } = pricerWith();
+
+    await lotOf(
+      pricer,
+      [
+        { sku: "CRO-001", quantity: 1 },
+        { sku: "PAI-001", quantity: 2 },
+      ],
+      "cmp_1",
+    );
+
+    expect(doubles.timings.recorded).toEqual([
+      {
+        name: "pricing.resolve",
+        labels: { caller: "cart", audience: "pro" },
+        ms: LOT_MS,
+        size: 2,
+      },
+    ]);
+  });
+
+  it("range un visiteur sans société sous l'audience publique", async () => {
+    const { pricer, doubles } = pricerWith();
+
+    await unprovenLotOf(pricer, [{ sku: "CRO-001", quantity: 1 }], null);
+
+    expect(doubles.timings.recorded.map((one) => one.labels)).toEqual([
+      { caller: "back-office", audience: "public" },
+    ]);
+  });
+
+  it("ne mesure pas un lot refusé : ce n'est pas une résolution", async () => {
+    const { pricer, doubles } = pricerWith();
+
+    await expect(
+      pricer.load({ articles: [], companyId: null, caller: "shelf" }),
+    ).rejects.toBeInstanceOf(EmptyLotError);
+    expect(doubles.timings.recorded).toEqual([]);
   });
 });

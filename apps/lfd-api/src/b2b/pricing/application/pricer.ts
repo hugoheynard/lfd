@@ -10,6 +10,9 @@ import type { PriceLens } from "../domain/price-lens.js";
 import { EmptyLotError, PricedLot } from "./priced-lot.js";
 import { PricingMaterialsLoader } from "./pricing-materials.loader.js";
 import { PricingPartiesResolver } from "./pricing-parties.resolver.js";
+import { PRICING_RESOLVE_TIMING, type PricingCaller } from "./pricing-caller.js";
+import { Stopwatch } from "../../../platform/metrics/stopwatch.js";
+import { TimingRecorder } from "../../../platform/metrics/timing-recorder.js";
 
 export type { PricedArticle } from "../domain/loaded-pricer.js";
 
@@ -34,6 +37,8 @@ export interface LotRequest {
    */
   readonly lens?: PriceLens | undefined;
   readonly at?: Date | undefined;
+  /** Qui demande — l'étiquette de la sonde, jamais un critère de prix. */
+  readonly caller: PricingCaller;
 }
 
 /**
@@ -81,9 +86,31 @@ export class Pricer {
     private readonly clock: Clock,
     private readonly history: CanonicalPriceHistoryReader,
     private readonly parties: PricingPartiesResolver,
+    private readonly timings: TimingRecorder,
+    private readonly stopwatch: Stopwatch,
   ) {}
 
+  /**
+   * Charge le lot, et **mesure** ce chargement (`pricing.resolve`, cf.
+   * `documentation/ops/sonde-calcul-des-prix.md`) : lectures en base et
+   * tension du tarificateur comprises. Rien de nominatif n'en sort — ni
+   * client, ni article, ni prix : l'audience et la taille du lot seulement.
+   *
+   * Un lot refusé n'est pas mesuré : ce n'est pas une résolution.
+   */
   async load(request: LotRequest): Promise<PricedLot> {
+    const elapsed = this.stopwatch.start();
+    const lot = await this.resolve(request);
+    this.timings.record(
+      PRICING_RESOLVE_TIMING,
+      { caller: request.caller, audience: request.companyId === null ? "public" : "pro" },
+      elapsed(),
+      request.articles.length,
+    );
+    return lot;
+  }
+
+  private async resolve(request: LotRequest): Promise<PricedLot> {
     if (request.articles.length === 0) {
       throw new EmptyLotError();
     }

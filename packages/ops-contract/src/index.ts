@@ -39,3 +39,5 @@ export type {
   CapabilitySeverity,
   MissingCapabilityView,
 } from "./capabilities.js";
+
+export type { PricingProbeReport, PricingProbeRow, PricingProbeState } from "./pricing.js";

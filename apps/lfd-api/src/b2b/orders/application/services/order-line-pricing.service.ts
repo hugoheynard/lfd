@@ -14,6 +14,7 @@ import {
   type ResolvedOrderLine,
 } from "../../domain/services/price-line.js";
 import { Clock } from "../../../../platform/time/clock.js";
+import type { PricingCaller } from "../../../pricing/application/pricing-caller.js";
 
 export type { ResolvedOrderLine };
 
@@ -69,9 +70,10 @@ export class OrderLinePricing {
   async resolve(
     input: readonly OrderLineRequest[],
     parties: ServedCompany,
+    caller: PricingCaller,
     at?: Date,
   ): Promise<ResolvedOrderLine[]> {
-    return this.priceAll(input, parties, false, at);
+    return this.priceAll(input, parties, { withTiers: false, caller }, at);
   }
 
   /**
@@ -86,15 +88,16 @@ export class OrderLinePricing {
   async explain(
     input: readonly OrderLineRequest[],
     parties: ServedCompany,
+    caller: PricingCaller,
     at?: Date,
   ): Promise<ResolvedOrderLine[]> {
-    return this.priceAll(input, parties, true, at);
+    return this.priceAll(input, parties, { withTiers: true, caller }, at);
   }
 
   private async priceAll(
     input: readonly OrderLineRequest[],
     parties: ServedCompany,
-    withTiers: boolean,
+    { withTiers, caller }: { readonly withTiers: boolean; readonly caller: PricingCaller },
     /**
      * L'instant de résolution, **quand l'appelant en a un**.
      *
@@ -166,6 +169,7 @@ export class OrderLinePricing {
       articles: lines.map(({ item, quantity }) => ({ article: item.article, quantity })),
       companyId: parties.companyId,
       at,
+      caller,
     });
 
     return lines.map(({ item, quantity }) => priceLine({ item, quantity, withTiers }, lot));
