@@ -132,7 +132,7 @@ qui a agi, c'est-à-dire la personne connectée.
 
 ## 3. Doc
 
-`documentation/droits-et-permissions/outils-agent-droits.md` (l'état bâti,
+un document d’état « outils-agent-droits » dans ce dossier (l'état bâti,
 sur le modèle de `outils-agent-vehicules.md`), sa ligne d'index, et la
 mention de la trousse dans `ops/outils-agent.md`.
 
