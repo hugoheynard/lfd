@@ -302,14 +302,48 @@ l'envers : le plus ancien n'écrit rien) ; décisions qui survivent à dix faits
 fiche désactivée → déclinaisons retirées, décisions intactes ; commande pro
 refusée sur un article `public`.
 
+**Corrections après `vitruve` (2026-10-15), qui priment sur les tables
+ci-dessus :**
+
+- **Tous les émetteurs avant la bascule** (BLOQUANT). 2a3 couvre aussi ce qui
+  change un snapshot hors de `catalogue/` : `ingredients/application/set-product-ingredients.ts`
+  (par fiche, émetteur direct) ; `vat-rates/*`, `sales-contexts/*`,
+  `allergens/*` (révision, archivage), `accounting-rules/set-pro-price-ratio.ts`
+  et `choose-pro-price-method.ts` (plusieurs fiches : tâche de réémission des
+  fiches concernées, une transaction par fiche). Sans eux, ouvrir
+  l'interrupteur figerait les prix servis. Le lot 4 ne garde que les
+  opérations, les limites de commande et les révisions automatiques.
+- **Une fiche apporte sa famille** (SÉRIEUX). Les faits fiche et famille vont à
+  deux abonnés sans ordre entre eux, et `catalog_items.category_id` est une clé
+  étrangère. Le snapshot d'une fiche porte donc sa famille (nom, parent,
+  position, taux) ; le récepteur la crée si la plateforme ne la connaît pas, et
+  ne la met jamais à jour — c'est le fait famille, sous son propre
+  `applied_seq`, qui le fait. `catalog_entries.category_id` sans clé
+  étrangère. « Réémettre tout » émet les familles d'abord.
+- **Un seul écrivain à la fois** (SÉRIEUX). Dès 2a, `IngestCatalogService.apply`
+  lit `CATALOG_FACTS_ENABLED` : ouvert, le push ne touche plus fiches ni
+  familles (il ne porte plus qu'opérations et règles). 2b2 est donc bâti en
+  2a, et ne fait plus qu'être ouvert.
+- **Le retrait se fait par fiche, sur les SKU** (SÉRIEUX). Le récepteur pose
+  `withdrawnAt` sur toute ligne de `catalog_items` dont le `product_id` est la
+  fiche et dont le SKU n'est pas dans les vendables du fait : une fiche
+  archivée ou inactive retire toutes les siennes, un SKU renommé retire
+  l'ancien. Les décisions restent sur l'ancien SKU, inertes.
+- **Le comptage de bascule compte aussi les allergènes** (SÉRIEUX) : l'aperçu
+  gagne la liste des déclinaisons vendues aujourd'hui **sans déclaration**,
+  qui sortiront de la vente à la bascule (2b3).
+- « Réémettre » est un `@PublicationGesture()` : impossible tant que
+  `PIM_PUBLICATION_ENABLED` est fermé, et c'est voulu.
+- Tests ajoutés : fiche reçue avant sa famille ; même fait livré deux fois.
+
 **2b — la bascule**, une fois 2a en service et l'aperçu de bascule relu par Hugo
 
-| #   | Quoi                                                                                                                                                                              |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2b1 | Commande `ApplyAudienceSwitch` : désactive les fiches que l'aperçu liste (H7), journalisé par fiche.                                                                              |
-| 2b2 | L'ingestion du push **ne touche plus** fiches ni familles quand `CATALOG_FACTS_ENABLED` est ouvert : il ne porte plus que les opérations et les règles (limites), jusqu'au lot 4. |
-| 2b3 | Le refus des allergènes passe à « au moins une déclinaison complète » (C1) : la projection 2a1 les écarte désormais.                                                              |
-| 2b4 | Ouverture de `CATALOG_FACTS_ENABLED`, puis « réémettre tout ». Le geste est écrit au runbook.                                                                                     |
+| #   | Quoi                                                                                                                 |
+| --- | -------------------------------------------------------------------------------------------------------------------- |
+| 2b1 | Commande `ApplyAudienceSwitch` : désactive les fiches que l'aperçu liste (H7), journalisé par fiche.                 |
+| 2b2 | ~~Bâti en 2a~~ (garde dans `apply`) : il ne reste qu'à ouvrir.                                                       |
+| 2b3 | Le refus des allergènes passe à « au moins une déclinaison complète » (C1) : la projection 2a1 les écarte désormais. |
+| 2b4 | Ouverture de `CATALOG_FACTS_ENABLED`, puis « réémettre tout ». Le geste est écrit au runbook.                        |
 
 ## 4. Risques
 
