@@ -1,11 +1,15 @@
-import type { FooterContentView, LegalDocumentView, LegalDocumentKey } from "@lfd/contracts";
+import type {
+  FooterContentView,
+  LegalDocumentKey,
+  PublishedLegalDocumentView,
+} from "@lfd/contracts";
 import { Controller, Get, Param } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
 import { Throttle } from "@nestjs/throttler";
 
 import { Public } from "../../../platform/auth/public.decorator.js";
 import { GetFooterContentQuery } from "../application/get-footer-content.query.js";
-import { GetLegalDocumentQuery } from "../application/get-legal-document.query.js";
+import { GetPublishedLegalDocumentQuery } from "../application/get-published-legal-document.query.js";
 import { LegalMentionParam } from "./legal-mention.pipe.js";
 
 /**
@@ -40,6 +44,9 @@ export class PlatformContentController {
    * — l'état « en cours de rédaction », jamais une 404 (plan
    * `legal/plan-cgv-par-audience.md`, C1′).
    *
+   * Le texte porte son PDF en vigueur (`pdf`, `null` sans dépôt ou hors CGV) :
+   * la boutique n'a plus à le deviner par une sonde `HEAD` (Hugo, 2026-10-15).
+   *
    * 🔴 La mention est validée contre le vocabulaire fermé, et une mention
    * inconnue rend **404**. Sur une surface anonyme, c'est aussi ce qui empêche
    * de sonder la table de contenu par son segment d'URL.
@@ -47,9 +54,9 @@ export class PlatformContentController {
   @Get("legal/:mention")
   legalDocument(
     @Param("mention", LegalMentionParam) mention: LegalDocumentKey,
-  ): Promise<LegalDocumentView> {
-    return this.queries.execute<GetLegalDocumentQuery, LegalDocumentView>(
-      new GetLegalDocumentQuery(mention),
+  ): Promise<PublishedLegalDocumentView> {
+    return this.queries.execute<GetPublishedLegalDocumentQuery, PublishedLegalDocumentView>(
+      new GetPublishedLegalDocumentQuery(mention),
     );
   }
 }

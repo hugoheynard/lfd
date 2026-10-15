@@ -1,7 +1,11 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import type { LegalDocument, LegalDocumentView } from '@lfd/contracts';
+import type {
+  LegalDocument,
+  LegalDocumentPdfView,
+  PublishedLegalDocumentView,
+} from '@lfd/contracts';
 // ⚠️ Les VALEURS passent par `content-values` et non par le baril : celui-ci
 // tire zod, qui n'a rien à faire dans un bundle de vitrine — mesuré, +380 ko,
 // et le budget passait de vert à rouge.
@@ -16,13 +20,6 @@ import { ClientLocale } from './client-locale.service';
 
 /** Où en est la lecture d'un document. Le titre, lui, est toujours disponible. */
 export type LegalDocumentStatus = 'idle' | 'loading' | 'ready' | 'failed';
-
-/**
- * Ce qu'on sait du PDF de référence d'un texte de CGV : `unknown` tant que la
- * sonde n'a pas répondu, `absent` pour un 404 — ou toute autre réponse : un
- * bouton qui mènerait à une erreur promet un document qu'on ne peut pas donner.
- */
-export type LegalPdfAvailability = 'unknown' | 'available' | 'absent';
 
 /** Un article prêt à l'affichage : son rang de lecture, dans la langue courante. */
 export interface LegalDocumentArticle {
@@ -70,9 +67,10 @@ export class ClientLegalDocuments {
   /** Ce qui a été lu, mention par mention. Absent = jamais chargé. */
   private readonly documents = signal<Partial<Record<LegalDocumentKey, LegalDocument>>>({});
   private readonly states = signal<Partial<Record<LegalDocumentKey, LegalDocumentStatus>>>({});
-  private readonly pdfs = signal<Partial<Record<SalesTermsDocument, LegalPdfAvailability>>>({});
-  /** Les sondes parties : une seconde ouverture n'en relance pas une en vol. */
-  private readonly probed = new Set<SalesTermsDocument>();
+  /** Le PDF en vigueur que la lecture a annoncé, `null` sans PDF. Absent = pas encore lu. */
+  private readonly pdfs = signal<Partial<Record<LegalDocumentKey, LegalDocumentPdfView | null>>>(
+    {},
+  );
 
   /**
    * Où en est la lecture d'une mention — c'est ce que le panneau donne à ses
@@ -123,10 +121,11 @@ export class ClientLegalDocuments {
     // (`salesTerms`) — la clé de stockage (`sales-terms`) est l'affaire de
     // l'adaptateur, côté serveur.
     this.http
-      .get<LegalDocumentView>(`${AUTH_CONFIG.apiBaseUrl}/content/legal/${mention}`)
+      .get<PublishedLegalDocumentView>(`${AUTH_CONFIG.apiBaseUrl}/content/legal/${mention}`)
       .subscribe({
         next: (view) => {
           this.documents.update((all) => ({ ...all, [mention]: view.content }));
+          this.pdfs.update((all) => ({ ...all, [mention]: view.pdf }));
           this.setStatus(mention, 'ready');
         },
         // Dit, pas avalé : le visiteur a ouvert ce dialogue pour lire un
@@ -147,39 +146,20 @@ export class ClientLegalDocuments {
 
   /**
    * L'adresse du PDF de référence en vigueur d'un texte de CGV (C3) —
-   * publique, servie en `attachment` sous un nom daté. Un 404 dit qu'aucun
-   * PDF n'est encore déposé : la page garde alors son texte seul.
+   * publique, servie en `attachment` sous un nom daté. On ne la tend que si
+   * la lecture du texte a annoncé un PDF ({@link hasPdf}).
    */
   pdfUrlOf(document: SalesTermsDocument): string {
     return `${AUTH_CONFIG.apiBaseUrl}/content/legal/${document}/pdf`;
   }
 
-  /** Ce qu'on sait du PDF en vigueur de ce texte — c'est ce qui montre ou cache le bouton. */
-  pdfOf(document: SalesTermsDocument): LegalPdfAvailability {
-    return this.pdfs()[document] ?? 'unknown';
-  }
-
   /**
-   * Demande au serveur s'il existe un PDF en vigueur pour ce texte, une fois.
-   *
-   * Un `HEAD` sur l'adresse de téléchargement elle-même : la route publique ne
-   * dit pas autrement qu'un PDF est déposé (vérifié le 2026-10-15,
-   * `legal-document-files.controller.ts` — `GET :mention/pdf`, 404 sinon), et
-   * Express répond au `HEAD` d'une route `GET`. Un échec, quel qu'il soit,
-   * cache le bouton plutôt que de mener à une erreur.
+   * Ce texte a-t-il un PDF en vigueur ? C'est la lecture du texte qui le dit
+   * (`pdf` de la vue publique, Hugo, 2026-10-15) — aucune sonde. Tant que le
+   * texte n'est pas lu, ou si sa lecture a échoué : non, et le bouton reste
+   * caché plutôt que de mener à une erreur.
    */
-  ensurePdfProbed(document: SalesTermsDocument): void {
-    if (!this.isBrowser || this.probed.has(document)) {
-      return;
-    }
-    this.probed.add(document);
-    this.http.head(this.pdfUrlOf(document)).subscribe({
-      next: () => this.setPdf(document, 'available'),
-      error: () => this.setPdf(document, 'absent'),
-    });
-  }
-
-  private setPdf(document: SalesTermsDocument, availability: LegalPdfAvailability): void {
-    this.pdfs.update((all) => ({ ...all, [document]: availability }));
+  hasPdf(document: SalesTermsDocument): boolean {
+    return (this.pdfs()[document] ?? null) !== null;
   }
 }

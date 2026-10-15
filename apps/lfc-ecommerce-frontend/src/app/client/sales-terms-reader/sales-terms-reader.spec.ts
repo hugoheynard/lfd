@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import type { LegalDocumentView } from '@lfd/contracts';
+import type { LegalDocumentPdfView, PublishedLegalDocumentView } from '@lfd/contracts';
 import type { SalesTermsDocument } from '@lfd/contracts/content-values';
 
 import { AUTH_CONFIG } from '../../auth/auth.config';
@@ -16,7 +16,14 @@ const pdfUrl = (document: SalesTermsDocument): string => `${textUrl(document)}/p
 const prose = (title: string, body: string) => ({ title, body });
 
 /** Un texte d'un article — le corps nomme son côté, pour qu'on ne les confonde pas. */
-const view = (title: string, body: string | null): LegalDocumentView => ({
+const PDF: LegalDocumentPdfView = {
+  fileId: 'file-1',
+  fileName: 'cgv-professionnels-2026-01-01.pdf',
+  uploadedAt: '2026-01-01T00:00:00.000Z',
+  sizeBytes: 2048,
+};
+
+const view = (title: string, body: string | null): PublishedLegalDocumentView => ({
   content: {
     title: { fr: title, en: title, it: title },
     paragraphs:
@@ -27,6 +34,7 @@ const view = (title: string, body: string | null): LegalDocumentView => ({
   revision: body === null ? 0 : 2,
   updatedAt: '2026-01-01T00:00:00.000Z',
   updatedBy: null,
+  pdf: null,
 });
 
 const PARTICULIER = view('CGV particuliers', 'Le droit de rétractation de quatorze jours.');
@@ -49,20 +57,16 @@ describe('les CGV, d’un côté ou de l’autre', () => {
     fixture.detectChanges();
   };
 
-  /** Répond au texte et à la sonde du PDF de ce texte. */
+  /**
+   * Répond au texte, qui annonce lui-même son PDF — et SEULEMENT au texte :
+   * `verify` refuse toute sonde du PDF (la `HEAD` d'avant le 2026-10-15).
+   */
   const serve = (
     document: SalesTermsDocument,
-    content: LegalDocumentView,
+    content: PublishedLegalDocumentView,
     pdf: 'present' | 'absent',
   ): void => {
-    http.expectOne(textUrl(document)).flush(content);
-    const probe = http.expectOne(pdfUrl(document));
-    expect(probe.request.method).toBe('HEAD');
-    if (pdf === 'present') {
-      probe.flush(null);
-    } else {
-      probe.flush(null, { status: 404, statusText: 'Not Found' });
-    }
+    http.expectOne(textUrl(document)).flush({ ...content, pdf: pdf === 'present' ? PDF : null });
     fixture.detectChanges();
   };
 
@@ -162,10 +166,10 @@ describe('les CGV, d’un côté ou de l’autre', () => {
   it('dit l’échec de lecture et le rejoue', () => {
     mount('particulier');
     http.expectOne(textUrl('salesTerms')).flush('nope', { status: 500, statusText: 'Error' });
-    http.expectOne(pdfUrl('salesTerms')).flush(null, { status: 404, statusText: 'Not Found' });
     fixture.detectChanges();
 
     expect(el().querySelector('fold-empty-state')?.getAttribute('tone')).toBe('alert');
+    expect(pdfLink()).toBeNull();
     el().querySelector<HTMLButtonElement>('fold-empty-state button')?.click();
     fixture.detectChanges();
 

@@ -2,7 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { PLATFORM_ID } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import type { LegalDocumentView } from '@lfd/contracts';
+import type { PublishedLegalDocumentView } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { AUTH_CONFIG } from '../auth/auth.config';
@@ -28,6 +28,26 @@ function boot(): { documents: ClientLegalDocuments; http: HttpTestingController 
  * propre adresse, et leur PDF aussi. Les pages qui les montrent viendront au
  * lot de la boutique ; le service, lui, sait déjà les lire.
  */
+function proView(pdf: PublishedLegalDocumentView['pdf']): PublishedLegalDocumentView {
+  return {
+    content: {
+      title: { fr: 'CGV pro', en: 'Pro terms', it: 'CGV pro' },
+      paragraphs: [],
+    },
+    revision: 0,
+    updatedAt: '1970-01-01T00:00:00.000Z',
+    updatedBy: null,
+    pdf,
+  };
+}
+
+const PDF = {
+  fileId: 'file-1',
+  fileName: 'cgv-professionnels-1970-01-01.pdf',
+  uploadedAt: '1970-01-01T00:00:00.000Z',
+  sizeBytes: 2048,
+};
+
 describe('ClientLegalDocuments — les CGV professionnelles', () => {
   it('lit les CGV pro par la route publique, à leur clé', () => {
     const { documents, http } = boot();
@@ -35,16 +55,7 @@ describe('ClientLegalDocuments — les CGV professionnelles', () => {
     documents.ensureLoaded('salesTermsPro');
 
     const request = http.expectOne(`${AUTH_CONFIG.apiBaseUrl}/content/legal/salesTermsPro`);
-    const view: LegalDocumentView = {
-      content: {
-        title: { fr: 'CGV pro', en: 'Pro terms', it: 'CGV pro' },
-        paragraphs: [],
-      },
-      revision: 0,
-      updatedAt: '1970-01-01T00:00:00.000Z',
-      updatedBy: null,
-    };
-    request.flush(view);
+    request.flush(proView(null));
     expect(documents.statusOf('salesTermsPro')).toBe('ready');
     // Jamais rédigées : leur titre, aucun article — « en cours de rédaction ».
     expect(documents.articlesOf('salesTermsPro')).toEqual([]);
@@ -66,5 +77,31 @@ describe('ClientLegalDocuments — les CGV professionnelles', () => {
     expect(documents.pdfUrlOf('salesTermsPro')).toBe(
       `${AUTH_CONFIG.apiBaseUrl}/content/legal/salesTermsPro/pdf`,
     );
+  });
+
+  /**
+   * Le PDF en vigueur est ANNONCÉ par la lecture du texte (Hugo, 2026-10-15) :
+   * plus aucune sonde `HEAD` — `verify` refuserait toute requête de plus.
+   */
+  it('sait qu’un PDF existe par la lecture du texte, sans autre requête', () => {
+    const { documents, http } = boot();
+    expect(documents.hasPdf('salesTermsPro')).toBe(false);
+
+    documents.ensureLoaded('salesTermsPro');
+    http.expectOne(`${AUTH_CONFIG.apiBaseUrl}/content/legal/salesTermsPro`).flush(proView(PDF));
+
+    expect(documents.hasPdf('salesTermsPro')).toBe(true);
+    expect(documents.hasPdf('salesTerms')).toBe(false);
+    http.verify();
+  });
+
+  it('un texte qui annonce `pdf: null` n’a pas de PDF', () => {
+    const { documents, http } = boot();
+
+    documents.ensureLoaded('salesTermsPro');
+    http.expectOne(`${AUTH_CONFIG.apiBaseUrl}/content/legal/salesTermsPro`).flush(proView(null));
+
+    expect(documents.hasPdf('salesTermsPro')).toBe(false);
+    http.verify();
   });
 });

@@ -1707,6 +1707,8 @@ export type {
   LegalDocumentFileDeposited,
   OrderSalesTermsView,
   OrderSalesTermsResponse,
+  LegalDocumentPdfView,
+  PublishedLegalDocumentView,
 } from "./legal-document-file.js";
 export {
   legalSectionKeys,

@@ -5,6 +5,7 @@ import { AddRequiredLegalSectionHandler } from "./application/add-required-legal
 import { EditLegalDocumentParagraphHandler } from "./application/edit-legal-document-paragraph.handler.js";
 import { GetFooterContentHandler } from "./application/get-footer-content.handler.js";
 import { GetLegalDocumentHandler } from "./application/get-legal-document.handler.js";
+import { GetPublishedLegalDocumentHandler } from "./application/get-published-legal-document.handler.js";
 import { MoveLegalDocumentParagraphHandler } from "./application/move-legal-document-paragraph.handler.js";
 import { RemoveLegalDocumentParagraphHandler } from "./application/remove-legal-document-paragraph.handler.js";
 import { SaveFooterContentHandler } from "./application/save-footer-content.handler.js";
@@ -48,6 +49,7 @@ import { PrismaOrderSalesTermsReader } from "./infrastructure/prisma-order-sales
     GetFooterContentHandler,
     SaveFooterContentHandler,
     GetLegalDocumentHandler,
+    GetPublishedLegalDocumentHandler,
     SetLegalDocumentTitleHandler,
     AddLegalDocumentParagraphHandler,
     EditLegalDocumentParagraphHandler,

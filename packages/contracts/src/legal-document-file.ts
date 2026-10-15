@@ -1,4 +1,5 @@
 import type { SalesTermsDocument } from "./platform-content.defaults.js";
+import type { LegalDocumentView } from "./legal-document.js";
 
 /**
  * **Un PDF de référence des CGV**, tel que l'écran du back-office le liste
@@ -65,4 +66,32 @@ export interface OrderSalesTermsView {
  */
 export interface OrderSalesTermsResponse {
   readonly salesTerms: OrderSalesTermsView | null;
+}
+
+/**
+ * **Le PDF en vigueur d'un texte**, tel que la lecture publique d'une mention
+ * l'annonce (décision de Hugo, 2026-10-15 : « l'API doit le dire »). La
+ * boutique n'a plus à le deviner par une sonde `HEAD`, qui coûtait une lecture
+ * R2 et comptait dans le throttle.
+ */
+export interface LegalDocumentPdfView {
+  readonly fileId: string;
+  /** Le nom daté sous lequel le téléchargement le servira. */
+  readonly fileName: string;
+  /** ISO 8601. */
+  readonly uploadedAt: string;
+  readonly sizeBytes: number;
+}
+
+/**
+ * Le document d'une mention tel que la route PUBLIQUE le rend : le texte, et
+ * son PDF en vigueur — `null` s'il n'y en a pas, ou si la mention n'en porte
+ * jamais (seules les CGV en ont).
+ *
+ * Une vue DISTINCTE de {@link LegalDocumentView}, et délibérément : l'écran
+ * d'édition lit l'historique des PDF par sa propre route, et n'a que faire
+ * de ce champ.
+ */
+export interface PublishedLegalDocumentView extends LegalDocumentView {
+  readonly pdf: LegalDocumentPdfView | null;
 }

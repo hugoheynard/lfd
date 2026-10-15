@@ -79,7 +79,7 @@ export class SalesTermsReader {
 
   protected readonly status = computed(() => this.documents.statusOf(this.document()));
   protected readonly articles = computed(() => this.documents.articlesOf(this.document()));
-  protected readonly hasPdf = computed(() => this.documents.pdfOf(this.document()) === 'available');
+  protected readonly hasPdf = computed(() => this.documents.hasPdf(this.document()));
   protected readonly pdfUrl = computed(() => this.documents.pdfUrlOf(this.document()));
 
   /** Le titre de l'état vide : un texte pro pas encore rédigé n'est pas une mention vide. */
@@ -96,10 +96,7 @@ export class SalesTermsReader {
     // relancerait en boucle une lecture ratée. Seul le côté est une dépendance.
     effect(() => {
       const document = this.document();
-      untracked(() => {
-        this.documents.ensureLoaded(document);
-        this.documents.ensurePdfProbed(document);
-      });
+      untracked(() => this.documents.ensureLoaded(document));
     });
   }
 

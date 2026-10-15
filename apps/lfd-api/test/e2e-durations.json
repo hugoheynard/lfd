@@ -22,6 +22,7 @@
   "test/admin-subscriptions.e2e-spec.ts": 2299,
   "test/appointments.e2e-spec.ts": 11928,
   "test/b2b-legal-documents.e2e-spec.ts": 6637,
+  "test/b2b-legal-sales-terms.e2e-spec.ts": 14128,
   "test/b2b-legal-sections.e2e-spec.ts": 5507,
   "test/billing-modes.e2e-spec.ts": 7498,
   "test/billing-statements.e2e-spec.ts": 6751,
@@ -207,6 +208,7 @@
   "test/order-waivers-open-list.e2e-spec.ts": 5000,
   "test/order-window-mode.e2e-spec.ts": 4975,
   "test/orders-idempotency.e2e-spec.ts": 6165,
+  "test/orders-sales-terms.e2e-spec.ts": 13080,
   "test/orders.e2e-spec.ts": 10565,
   "test/outbox.e2e-spec.ts": 4964,
   "test/packing-board.e2e-spec.ts": 9171,
@@ -320,7 +322,5 @@
   "test/catalog-facts.e2e-spec.ts": 13869,
   "test/catalog-facts-closed.e2e-spec.ts": 5766,
   "test/catalog-facts-rules.e2e-spec.ts": 9000,
-  "test/b2b-legal-sales-terms.e2e-spec.ts": 14128,
-  "test/orders-sales-terms.e2e-spec.ts": 13080,
   "test/catalog-public-review.e2e-spec.ts": 15291
 }

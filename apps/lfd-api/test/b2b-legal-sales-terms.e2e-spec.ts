@@ -11,13 +11,15 @@
  *    de rédaction » (leur titre, aucun article), jamais une 404 ni les CGV
  *    particuliers ;
  * 3. le PDF : un non-PDF refusé, un dépôt servi en `attachment` daté, un
- *    second qui remplace le premier sans l'écraser ;
+ *    second qui remplace le premier sans l'écraser, et la lecture publique
+ *    qui annonce le PDF en vigueur (`pdf`, `null` sans dépôt) ;
  * 4. la base, et non le code, refuse UPDATE et DELETE sur un PDF déposé.
  */
 import type {
   LegalDocumentFileDeposited,
   LegalDocumentFileHistoryView,
   LegalDocumentView,
+  PublishedLegalDocumentView,
   RoleGrant,
 } from "@lfd/contracts";
 
@@ -170,6 +172,43 @@ describe("le PDF de référence (lot 2)", () => {
       [second.id, true],
       [first.id, false],
     ]);
+  });
+});
+
+/**
+ * La lecture publique d'une mention annonce son PDF en vigueur (Hugo,
+ * 2026-10-15 : « l'API doit le dire ») — la boutique ne le devine plus par une
+ * sonde `HEAD` sur le téléchargement.
+ */
+describe("le PDF en vigueur, annoncé par la lecture publique", () => {
+  async function published(mention: string): Promise<PublishedLegalDocumentView> {
+    return jsonBody<PublishedLegalDocumentView>(
+      await ctx.http().get(`/content/legal/${mention}`).expect(200),
+    );
+  }
+
+  it("rend `pdf: null` tant que rien n'est déposé, et pour une mention sans PDF", async () => {
+    expect((await published("salesTerms")).pdf).toBeNull();
+    expect((await published("salesTermsPro")).pdf).toBeNull();
+    expect((await published("privacy")).pdf).toBeNull();
+  });
+
+  it("annonce le dépôt, puis seulement son remplaçant — et pas sous l'autre texte", async () => {
+    const first = jsonBody<LegalDocumentFileDeposited>(await deposit("salesTermsPro", PDF));
+    const announced = (await published("salesTermsPro")).pdf;
+    expect(announced).toMatchObject({ fileId: first.id, sizeBytes: PDF.length });
+    expect(announced?.fileName).toMatch(/^cgv-professionnels-\d{4}-\d{2}-\d{2}\.pdf$/u);
+
+    const replacement = Buffer.concat([PDF, Buffer.from("\n")]);
+    const second = jsonBody<LegalDocumentFileDeposited>(
+      await deposit("salesTermsPro", replacement),
+    );
+
+    expect((await published("salesTermsPro")).pdf).toMatchObject({
+      fileId: second.id,
+      sizeBytes: replacement.length,
+    });
+    expect((await published("salesTerms")).pdf).toBeNull();
   });
 });
 
