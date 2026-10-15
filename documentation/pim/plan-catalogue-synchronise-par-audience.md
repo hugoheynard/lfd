@@ -730,7 +730,7 @@ lecture, un secret de signature) : **`vitruve` avant de bâtir**.
 > ✅ **Bâti le 2026-10-15, non commité à l'écriture de ce bandeau.** Écarts et
 > précisions à relire :
 >
-> - `prisma/import-mercuriale.ts` **écrivait** `price_millicents` (par
+> - import-mercuriale (retiré au lot D) **écrivait** `price_millicents` (par
 >   `SetB2bPriceCommand`) : il est supprimé avec la commande, et le script
 >   `mercuriale:import` avec lui. Les 89 couples de la plaquette restent dans
 >   `prisma/mercuriale/` ;
@@ -759,8 +759,8 @@ masquerait en silence une correction du référentiel arrivée par les faits.
 Ouvert le 2026-10-15 : la décision est dans `catalog_item_overrides`
 (`price_millicents`, `decided_public_ttc_cents`), posée par
 `PUT|DELETE admin/catalog/:sku/price` et `:sku/public-price`
-(`admin-catalog.controller.ts:108-148`), `set-public-price.handler.ts`,
-`align-public-on-pim.handler.ts` ; elle est **lue** au prix servi
+(`admin-catalog.controller.ts:108-148`), set-public-price.handler (retiré au lot D),
+align-public-on-pim.handler (retiré au lot D) ; elle est **lue** au prix servi
 (`prisma-catalog.reader.ts:293,302`), par la vue publiée
 (`prisma-published-catalog.reader.ts:102,118`), par la vue admin
 (`prisma-catalog-admin.reader.ts:95,127`), par l'agrégat
@@ -797,13 +797,13 @@ Ouvert le 2026-10-15 : la décision est dans `catalog_item_overrides`
   se lance une fois au déploiement (runbook) et après l'effacement en dev.
   La trace ne suit plus que le prix reçu ; la valeur `source: "b2b"` reste
   lisible dans l'historique passé, plus écrite.
-- **Les noms et lecteurs exacts** : écrivains `set-b2b-price.handler.ts`,
-  `align-on-pim-price.handler.ts`, `set-public-price.handler.ts`,
-  `align-public-on-pim.handler.ts` (et leurs commandes), quatre routes ;
+- **Les noms et lecteurs exacts** : écrivains set-b2b-price.handler (retiré au lot D),
+  align-on-pim-price.handler (retiré au lot D), set-public-price.handler (retiré au lot D),
+  align-public-on-pim.handler (retiré au lot D) (et leurs commandes), quatre routes ;
   lecteurs en plus : `catalog-csv.ts:73-74` (l'export perd les colonnes
   « prix B2B décidé » et « effectif » devient le prix du référentiel — un
   fichier dont les colonnes changent, à dire), `prisma-catalog-admin.reader.ts:104`
-  (`effectivePriceMillicents`), `prisma/import-mercuriale.ts` (vérifier qu'il
+  (`effectivePriceMillicents`), import-mercuriale (retiré au lot D) (vérifier qu'il
   n'écrit pas `price_millicents`), le contrat `catalog-admin.ts:39,41,75` et le
   front `shelf-catalogue.{html,ts}` — `pnpm test` à la racine obligatoire.
 - **Le relevé en production** entre au runbook de promotion vers `main`,

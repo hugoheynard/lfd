@@ -99,7 +99,7 @@ centime.
 > ⚠️ **Retiré le 2026-10-15** (lot D de
 > [`plan-catalogue-synchronise-par-audience.md`](plan-catalogue-synchronise-par-audience.md)) :
 > la plateforme ne décide plus de prix, `SetB2bPrice` n'existe plus, et le
-> script `prisma/import-mercuriale.ts` est supprimé avec lui. Les 89 couples
+> script import-mercuriale (retiré au lot D) est supprimé avec lui. Les 89 couples
 > restent dans `prisma/mercuriale/plaquette-hiver-2026.ts` ; les reporter se
 > fait désormais en prix pro HT saisi dans les fiches du référentiel (lot P).
 > Le texte ci-dessous décrit l'outil tel qu'il était.

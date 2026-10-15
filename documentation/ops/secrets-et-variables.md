@@ -172,7 +172,7 @@ directe vise déjà la même base.
   `.env`.** ⚠️ Plus aucun outil ne la lit depuis le 2026-10-15 : son seul
   lecteur, l’import de la mercuriale, est supprimé avec le prix décidé
   (lot D de `pim/plan-catalogue-synchronise-par-audience.md`). Ce qui suit
-  décrit l'état d'avant. Seul `prisma/import-mercuriale.ts` la lisait — l'unique outil de
+  décrit l'état d'avant. Seul import-mercuriale (retiré au lot D) la lisait — l'unique outil de
   `prisma/` destiné à la production, qui ne lit jamais `DATABASE_LFD_URL`. Elle
   se pose dans l'environnement du terminal pour l'occasion, depuis le
   gestionnaire de mots de passe, jamais sur la ligne de commande. Les autres
