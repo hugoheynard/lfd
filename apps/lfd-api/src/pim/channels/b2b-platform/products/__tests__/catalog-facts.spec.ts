@@ -177,6 +177,18 @@ describe("projectProductFact", () => {
       ).audience,
     ).toBe("pro");
   });
+
+  /** Lot 3 : la plateforme dit « hérité » ou « propre à la fiche », même à valeur égale. */
+  it("dit si l'audience est héritée — une dérogation identique à la famille n'en est pas une", () => {
+    const inherited = projectProductFact(
+      input({ product: tarte({ audience: null }), family: family({ audience: "both" }) }),
+    );
+    const own = projectProductFact(
+      input({ product: tarte({ audience: "both" }), family: family({ audience: "both" }) }),
+    );
+    expect(inherited.audienceInherited).toBe(true);
+    expect(own.audienceInherited).toBe(false);
+  });
 });
 
 describe("projectFamilyFact", () => {

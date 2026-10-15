@@ -46,6 +46,7 @@ function withFamily(store: ProductFormStore): void {
       ],
       vatByContext: { takeaway: 'tva_55', eatIn: 'tva_55', b2b: 'tva_20' },
       activeProductCount: 0,
+      audience: 'both',
     },
   ]);
   store.categoryId.set('cat_tartes');

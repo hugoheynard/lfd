@@ -1,0 +1,23 @@
+/* Une pile : l'état, le prix, puis le geste. La table pose `nowrap` sur ses
+   cellules ; la confirmation qui s'ouvre ici porte une phrase, et sans retour
+   à la ligne elle pousserait la colonne à cinq cents pixels. */
+.cell {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  gap: var(--fold-space-xs);
+  white-space: normal;
+}
+
+.price {
+  font-variant-numeric: tabular-nums;
+}
+
+.note {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}
+
+.link {
+  font-size: var(--fold-text-sm);
+}

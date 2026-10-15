@@ -321,5 +321,6 @@
   "test/catalog-facts-closed.e2e-spec.ts": 5766,
   "test/catalog-facts-rules.e2e-spec.ts": 9000,
   "test/b2b-legal-sales-terms.e2e-spec.ts": 14128,
-  "test/orders-sales-terms.e2e-spec.ts": 13080
+  "test/orders-sales-terms.e2e-spec.ts": 13080,
+  "test/catalog-public-review.e2e-spec.ts": 15291
 }

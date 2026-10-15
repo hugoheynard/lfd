@@ -1,5 +1,6 @@
 import type { PimFacts } from "./entities/catalog-item.js";
-import type { CatalogAudience } from "./served-to.js";
+import type { ShopAudience } from "./ports/catalog.reader.js";
+import { audienceIncludes, type CatalogAudience } from "./served-to.js";
 
 /**
  * Un article reçu par le fait de sa fiche : les faits d'un article, plus
@@ -28,6 +29,8 @@ export interface ReceivedCatalogProduct {
   readonly categoryId: string;
   readonly status: CatalogEntryStatus;
   readonly audience: CatalogAudience;
+  /** Hérite-t-elle l'audience de sa famille ? `null` = fait d'avant le lot 3. */
+  readonly audienceInherited: boolean | null;
   readonly gaps: Readonly<Record<string, readonly string[]>>;
   readonly seq: number;
   readonly receivedAt: Date;
@@ -45,4 +48,43 @@ export interface ReceivedCatalogProduct {
  */
 export function itemsOnSale(product: ReceivedCatalogProduct): readonly ReceivedCatalogItem[] {
   return product.status === "active" ? product.items : [];
+}
+
+/**
+ * Une ligne neuve attend-elle d'être validée pour cette audience ?
+ *
+ * Seulement si son audience la contient (lot 3 ; côté pro aussi depuis la
+ * décision de Hugo du 2026-10-15). Une ligne née `pro` n'attend rien côté
+ * public : l'y mettre en attente la ferait attendre le jour où son audience
+ * s'élargit, ce que le plan exclut (« pas pour un élargissement d'audience »).
+ */
+export function awaitsReview(audience: CatalogAudience, viewer: ShopAudience): boolean {
+  return audienceIncludes(audience, viewer);
+}
+
+/**
+ * Une déclinaison COMPLÈTE telle que l'entrée de la fiche la range (lot 3) :
+ * ce que la vue « Catalogue publié » montre d'une fiche dont rien n'est en
+ * vente — inactive, ou pas encore reçue en `catalog_items`. Les prix sont
+ * ceux que le référentiel PROPOSE, sans décision de la plateforme.
+ */
+export interface EntryVariant {
+  readonly sku: string;
+  readonly name: string;
+  readonly isDefault: boolean;
+  /** Le prix pro HT proposé, en millicentimes. */
+  readonly proHtMillicents: number;
+  /** L'étiquette publique proposée, en centimes TTC — `null` si le fait n'en porte pas. */
+  readonly publicTtcCents: number | null;
+}
+
+/** Les déclinaisons complètes d'une fiche reçue, dans la forme de son entrée. */
+export function entryVariantsOf(product: ReceivedCatalogProduct): readonly EntryVariant[] {
+  return product.items.map((item) => ({
+    sku: item.sku,
+    name: item.name,
+    isDefault: item.isDefault,
+    proHtMillicents: item.priceMillicents,
+    publicTtcCents: item.publicTtcCents,
+  }));
 }

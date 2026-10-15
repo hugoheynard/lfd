@@ -1,16 +1,17 @@
 import {
   setB2bPricePayloadSchema,
   setPublicPricePayloadSchema,
-  setPublicVisibilityPayloadSchema,
+  setMaskingPayloadSchema,
+  approveReviewPayloadSchema,
   setCatalogFeaturedPayloadSchema,
-  setCatalogVisibilityPayloadSchema,
+  type ApproveReviewPayload,
   type CatalogAdminItemView,
   type CatalogSummaryView,
+  type PublishedCatalogView,
   type SetB2bPricePayload,
   type SetPublicPricePayload,
-  type SetPublicVisibilityPayload,
+  type SetMaskingPayload,
   type SetCatalogFeaturedPayload,
-  type SetCatalogVisibilityPayload,
 } from "@lfd/contracts";
 import {
   Body,
@@ -21,6 +22,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Post,
   Put,
 } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
@@ -32,9 +34,10 @@ import { AlignOnPimPriceCommand } from "../application/commands/align-on-pim-pri
 import { AlignPublicOnPimCommand } from "../application/commands/align-public-on-pim.command.js";
 import { SetB2bPriceCommand } from "../application/commands/set-b2b-price.command.js";
 import { SetPublicPriceCommand } from "../application/commands/set-public-price.command.js";
-import { SetPublicVisibilityCommand } from "../application/commands/set-public-visibility.command.js";
+import { ApproveReviewCommand } from "../application/commands/approve-review.command.js";
+import { SetMaskingCommand } from "../application/commands/set-masking.command.js";
 import { SetCatalogFeaturedCommand } from "../application/commands/set-catalog-featured.command.js";
-import { SetCatalogVisibilityCommand } from "../application/commands/set-catalog-visibility.command.js";
+import { GetPublishedCatalogQuery } from "../application/queries/get-published-catalog.query.js";
 import { ExportCatalogCsvQuery } from "../application/queries/export-catalog-csv.query.js";
 import { GetCatalogSummaryQuery } from "../application/queries/get-catalog-summary.query.js";
 import { ListCatalogQuery } from "../application/queries/list-catalog.query.js";
@@ -148,34 +151,49 @@ export class AdminCatalogController {
     await this.commands.execute<AlignPublicOnPimCommand, void>(new AlignPublicOnPimCommand(sku));
   }
 
-  @Put(":sku/visibility")
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async setVisibility(
-    @Param("sku") sku: string,
-    @Body(new ZodBody(setCatalogVisibilityPayloadSchema)) payload: SetCatalogVisibilityPayload,
-    @StaffUserId() staffUserId: string,
-  ): Promise<void> {
-    await this.commands.execute<SetCatalogVisibilityCommand, void>(
-      new SetCatalogVisibilityCommand(sku, payload.hidden, staffUserId),
+  /**
+   * **La vue « Catalogue publié »** (lot 3, H6) : toutes les fiches reçues du
+   * référentiel — inactives et incomplètes comprises —, l'état de chaque
+   * déclinaison pour les pros et pour le public, les comptes par rayon et la
+   * liste à valider pour la boutique publique.
+   */
+  @Get("published")
+  published(): Promise<PublishedCatalogView> {
+    return this.queries.execute<GetPublishedCatalogQuery, PublishedCatalogView>(
+      new GetPublishedCatalogQuery(),
     );
   }
 
   /**
-   * Masquer de la vitrine **publique**, ou l'y remettre.
-   *
-   * Route distincte de `:sku/visibility`, et non une audience ajoutée à son
-   * payload : celui-ci est servi à un back-office en service, et un champ
-   * obligatoire de plus casserait l'écran d'avant le déploiement.
+   * Valider un ou plusieurs articles arrivés du référentiel, pour les pros,
+   * le public, ou les deux — journalisé par article et par audience. Tout ou
+   * rien.
    */
-  @Put(":sku/public-visibility")
+  @Post("review/approve")
   @HttpCode(HttpStatus.NO_CONTENT)
-  async setPublicVisibility(
+  async approveReview(
+    @Body(new ZodBody(approveReviewPayloadSchema)) payload: ApproveReviewPayload,
+  ): Promise<void> {
+    await this.commands.execute<ApproveReviewCommand, void>(
+      new ApproveReviewCommand(payload.skus, payload.audiences),
+    );
+  }
+
+  /**
+   * **Masquer pour une audience, ou y remettre** — la route unique du masquage
+   * (H5 ; D7 de `plan-audience-par-heritage.md`). Les deux routes d'avant
+   * (`:sku/visibility`, `:sku/public-visibility`) sont retirées le 2026-10-15 :
+   * pré-release (CLAUDE.md §0), et leur seul lecteur était le back-office.
+   */
+  @Put(":sku/masking")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async setMasking(
     @Param("sku") sku: string,
-    @Body(new ZodBody(setPublicVisibilityPayloadSchema)) payload: SetPublicVisibilityPayload,
+    @Body(new ZodBody(setMaskingPayloadSchema)) payload: SetMaskingPayload,
     @StaffUserId() staffUserId: string,
   ): Promise<void> {
-    await this.commands.execute<SetPublicVisibilityCommand, void>(
-      new SetPublicVisibilityCommand(sku, payload.hidden, staffUserId),
+    await this.commands.execute<SetMaskingCommand, void>(
+      new SetMaskingCommand(sku, payload.audience, payload.hidden, staffUserId),
     );
   }
 

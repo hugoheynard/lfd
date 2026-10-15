@@ -68,9 +68,14 @@ export async function aDraftFiche(staff: Staff, name: string): Promise<Fiche> {
  * Une fiche ACTIVE, vendue aux deux clientèles : déclaration d'allergènes,
  * prix, un taux pour chaque contexte en service — `b2b`, `takeaway`, `eatIn`
  * (le comptoir ouvert aux deux contextes de boutique pour que leurs taux s'y
- * posent, lot 2b) —, rapport pro réglé.
+ * posent, lot 2b) —, rapport pro réglé. `audience` déroge à celle de la
+ * famille avant l'activation ; `null` = elle hérite.
  */
-export async function anActiveFiche(staff: Staff, name: string): Promise<Fiche> {
+export async function anActiveFiche(
+  staff: Staff,
+  name: string,
+  audience: "pro" | "public" | "both" | null = null,
+): Promise<Fiche> {
   const fiche = await aDraftFiche(staff, name);
   const detail = await detailOf(staff, fiche.id);
   const variantId = detail.variants.find((entry) => entry.isDefault)?.id ?? "";
@@ -110,6 +115,10 @@ export async function anActiveFiche(staff: Staff, name: string): Promise<Fiche> 
     .put("/pim/accounting-rules/pro-price-ratio")
     .send({ ratioBp: PRO_RATIO_BP })
     .expect(200);
+  if (audience !== null) {
+    // Posée AVANT l'activation : la première ligne en vente naît avec elle (lot 3).
+    await staff().put(`${PRODUCTS}/${fiche.id}/audience`).send({ audience }).expect(200);
+  }
   await staff().put(`${PRODUCTS}/${fiche.id}/publish`).send({}).expect(200);
   return fiche;
 }

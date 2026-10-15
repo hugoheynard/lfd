@@ -66,6 +66,7 @@ function productFact(
   return new CatalogProductChangedFact("prd_1", 7, EMITTED, {
     status,
     audience: "pro",
+    audienceInherited: false,
     product: {
       id: "prd_1",
       sku: "VIE-1",

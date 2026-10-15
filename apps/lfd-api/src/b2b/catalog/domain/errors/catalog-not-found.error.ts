@@ -9,6 +9,9 @@ import { ResourceNotFoundError } from "../../../../platform/shared/errors/app-er
  */
 export class CatalogItemNotFoundError extends ResourceNotFoundError {
   constructor(readonly sku: string) {
-    super("catalog.item.not_found", "Cet article n'est plus au catalogue.");
+    super(
+      "catalog.item.not_found",
+      `L'article ${sku} n'est plus au catalogue : rechargez la liste, il a été retiré depuis son affichage.`,
+    );
   }
 }

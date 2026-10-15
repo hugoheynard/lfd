@@ -1,7 +1,11 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import type { JournaledEvent } from "../../../../../platform/journal/journal-fact.js";
-import { CatalogItem, type PimFacts } from "../../../domain/entities/catalog-item.js";
+import {
+  CatalogItem,
+  type PimFacts,
+  type Placement,
+} from "../../../domain/entities/catalog-item.js";
 import { CatalogItemRepository } from "../../../domain/ports/catalog-item.repository.js";
 
 /**
@@ -16,7 +20,7 @@ export const NEGOTIATED = 190_000;
 /** Le nom de l'article, que chaque fait fige en `subjectLabel` (lot B du plan des phrases). */
 export const NAME = "Croissant";
 
-function article(): CatalogItem {
+function article(placement: Placement): CatalogItem {
   const facts: PimFacts = {
     sku: SKU,
     productId: "p_VIE-001",
@@ -41,8 +45,11 @@ function article(): CatalogItem {
     orderTimeLimit: null,
     receivedAt: new Date("2026-01-01T00:00:00.000Z"),
   };
-  return CatalogItem.receive(facts);
+  return CatalogItem.reconstitute({ facts, withdrawnAt: null, decision: null, placement });
 }
+
+/** Un article reçu par le push : aucune audience, rien en attente. */
+const PUSHED: Placement = { audience: null, publicReviewPending: false, proReviewPending: false };
 
 /**
  * Le miroir en mémoire : il rend un agrégat RECONSTITUÉ à chaque chargement,
@@ -105,12 +112,15 @@ class StepRecordingPublisher extends RecordingPublisher {
 }
 
 /** Un article semé (éventuellement déjà décidé), ses doubles, et le fil des gestes. */
-export function build(seed: (item: CatalogItem) => void = () => undefined) {
+export function build(
+  seed: (item: CatalogItem) => void = () => undefined,
+  placement: Placement = PUSHED,
+) {
   const steps: string[] = [];
   const items = new InMemoryCatalog(steps);
   const events = new StepRecordingPublisher(steps);
   const uow = new DirectUnitOfWork();
-  const item = article();
+  const item = article(placement);
   seed(item);
   items.put(item);
   return { steps, items, events, uow };

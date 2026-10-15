@@ -65,6 +65,11 @@ export interface CatalogProductFactBody {
   readonly status: CatalogEntryStatus;
   /** L'audience EFFECTIVE : la dérogation de la fiche, sinon sa famille. */
   readonly audience: Audience;
+  /**
+   * La fiche hérite-t-elle l'audience de sa famille (`product.audience` vide) ?
+   * `null` sur un fait émis avant le lot 3 : on ne sait pas.
+   */
+  readonly audienceInherited: boolean | null;
   readonly product: CatalogProductHead;
   /**
    * Les déclinaisons **complètes** au sens de `variantGaps` — non arrêtées,
@@ -145,6 +150,7 @@ export function projectProductFact(input: ProductFactInput): CatalogProductFactB
   return {
     status: STATUS_OF[product.status],
     audience,
+    audienceInherited: product.audience === null,
     product: {
       id: product.id,
       sku: product.sku,

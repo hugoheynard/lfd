@@ -3,9 +3,11 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { Clock } from "../../../platform/time/clock.js";
-import type {
-  ReceivedCatalogItem,
-  ReceivedCatalogProduct,
+import {
+  awaitsReview,
+  entryVariantsOf,
+  type ReceivedCatalogItem,
+  type ReceivedCatalogProduct,
 } from "../domain/catalog-product-facts.js";
 import type { PimFacts } from "../domain/entities/catalog-item.js";
 import type { ReceivedCatalogFamily } from "../domain/ports/catalog-family-facts.projection.js";
@@ -46,9 +48,12 @@ export class PrismaCatalogProductFactsProjection extends CatalogProductFactsProj
     // passent l'une après l'autre, et la plus ancienne ne réécrit rien.
     const written = await this.prisma.$executeRaw`
       INSERT INTO public.catalog_entries
-        (product_id, product_sku, name, category_id, status, audience, gaps, applied_seq, received_at)
+        (product_id, product_sku, name, category_id, status, audience, audience_inherited,
+         gaps, variants, applied_seq, received_at)
       VALUES (${product.productId}, ${product.productSku}, ${product.name}, ${product.categoryId},
-              ${product.status}, ${product.audience}, ${JSON.stringify(product.gaps)}::jsonb,
+              ${product.status}, ${product.audience}, ${product.audienceInherited},
+              ${JSON.stringify(product.gaps)}::jsonb,
+              ${JSON.stringify(entryVariantsOf(product))}::jsonb,
               ${product.seq}, ${product.receivedAt})
       ON CONFLICT (product_id) DO UPDATE SET
         product_sku = EXCLUDED.product_sku,
@@ -56,7 +61,9 @@ export class PrismaCatalogProductFactsProjection extends CatalogProductFactsProj
         category_id = EXCLUDED.category_id,
         status = EXCLUDED.status,
         audience = EXCLUDED.audience,
+        audience_inherited = EXCLUDED.audience_inherited,
         gaps = EXCLUDED.gaps,
+        variants = EXCLUDED.variants,
         applied_seq = EXCLUDED.applied_seq,
         received_at = EXCLUDED.received_at
       WHERE public.catalog_entries.applied_seq < EXCLUDED.applied_seq`;
@@ -97,6 +104,11 @@ export class PrismaCatalogProductFactsProjection extends CatalogProductFactsProj
         create: {
           sku: facts.sku,
           ...row,
+          // 🔴 À la CRÉATION seulement — premier SKU arrivé (lot 3) : l'`update`
+          // ne les porte pas, donc rien de ce qui existe ne repasse en attente,
+          // ni une modification ni un élargissement d'audience.
+          publicReviewPending: awaitsReview(audience, "public"),
+          proReviewPending: awaitsReview(audience, "pro"),
           orderLimitDaysBefore,
           orderLimitTime,
           orderLimitGraceMinutes,

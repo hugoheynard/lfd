@@ -437,6 +437,31 @@ l'aurait fait entrer dans la boutique publique. Ce filtre tombe avec le push
 
 ### Lot 3 — décisions déjà prises (2026-10-15)
 
+> 🟡 **Partie API bâtie le 2026-10-15, non commitée à l'écriture de ce
+> bandeau ; le front reste à faire.** `PUT admin/catalog/:sku/masking`
+> (`SetMaskingCommand`, refus 409 `catalog.item.masking_outside_audience`) —
+> les deux anciennes routes sont **retirées** (seul lecteur : le back-office,
+> `catalogue.service.ts`, à basculer) ; `GET admin/catalog/published`
+> (contrat `PublishedCatalogView` de `@lfd/contracts`). Écarts et décisions
+> postérieures à relire :
+>
+> - **Les pros attendent aussi** (Hugo, 2026-10-15, option 2) : deux drapeaux
+>   indépendants, `catalog_items.public_review_pending` (`20261015600000`) et
+>   `pro_review_pending` (`20261015600200`), posés à la création d'une ligne
+>   par un fait pour chaque audience qu'elle contient, jamais ensuite, jamais
+>   par le push. `servedTo` refuse chaque audience tant que son drapeau est
+>   posé — une commande pro sur un article en attente pro est refusée.
+>   `POST admin/catalog/review/approve { skus, audiences }`, faits
+>   `catalog_item.pro_review_approved` / `public_review_approved` ;
+> - une ligne née pour une audience n'attend rien pour l'autre : l'élargir ne
+>   la met pas en attente ;
+> - le fait porte désormais `audienceInherited` (`null` sur un fait d'avant),
+>   rangé dans `catalog_entries.audience_inherited` ; `catalog_entries.variants`
+>   range les déclinaisons complètes du fait (`20261015600100`), pour qu'une
+>   fiche inactive les montre ; une déclinaison incomplète n'a que son SKU ;
+> - un état `inactif`, décidé juste après « hors audience » ;
+> - une fiche connue du seul push (sans fait reçu) n'apparaît pas dans la vue.
+
 **La validation avant la boutique publique.** Hugo : « que les produits
 nouvellement arrivés sur public soient masqués ? ça servira de vérification,
 et un callout inline sur `/b2b/catalogue` pour dire que de nouveaux produits

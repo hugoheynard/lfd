@@ -31,7 +31,7 @@ const LANDINGS: readonly { readonly permission: StaffPermission; readonly path: 
   // L'espace B2B et non plus ses points de retrait : devenus les sites, ils
   // sont sous `lfc_site_settings`, et y renvoyer qui ne tient que
   // `b2b_settings` le ferait rebondir sur un second refus.
-  { permission: 'b2b_settings:read', path: '/b2b/catalogue' },
+  { permission: 'b2b_settings:read', path: '/catalogue-publie' },
   { permission: 'lfc_site_settings:read', path: '/reglages/sites' },
   // Réglages › Commandes (plan-reglages-commandes.md §3.3) : sans ces deux
   // lignes, qui ne tient que l'un de ces droits rebondirait de refus en refus.

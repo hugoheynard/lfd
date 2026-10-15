@@ -278,6 +278,11 @@ describe("l'audience décide à qui l'article se vend (servedTo)", () => {
   it("refuse une commande pro sur un article réservé au public", async () => {
     const fiche = await anActiveFiche(staff, "Éclair");
     await relayAll(ctx);
+    // Lot 3 : l'article neuf attend sa validation, pros comme public.
+    await staff()
+      .post("/admin/catalog/review/approve")
+      .send({ skus: [fiche.variantSku], audiences: ["pro", "public"] })
+      .expect(204);
     const buyer = await aBuyer();
     await order(buyer, fiche.sku).expect(201);
 

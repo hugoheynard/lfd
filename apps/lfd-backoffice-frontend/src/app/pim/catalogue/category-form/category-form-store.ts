@@ -1,6 +1,11 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 
-import type { CategoryMediaView, LocalizedText, SalesChannels } from '@lfd/pim-contracts';
+import type {
+  CategoryMediaView,
+  LocalizedText,
+  OperationAudience,
+  SalesChannels,
+} from '@lfd/pim-contracts';
 
 import { localizedField } from '../../../shared/lang-switch/localized-field';
 import { NotifyService } from '../../../notify.service';
@@ -64,6 +69,11 @@ export class CategoryFormStore implements SectionEditing {
   readonly parentId = signal('');
   readonly channels = signal<SalesChannels>(NO_CHANNELS);
   readonly vat = signal<CategoryVatDraft>({});
+  /**
+   * À qui la famille vend — une écriture à part (`PUT …/audience`), hors des
+   * sections. `null` tant que la famille n'est pas chargée.
+   */
+  readonly audience = signal<OperationAudience | null>(null);
 
   /** Les quatre textes, et la langue qu'on rédige. */
   readonly editorial = editorialDraft();
@@ -130,6 +140,7 @@ export class CategoryFormStore implements SectionEditing {
     this.parentId.set(category?.parentId ?? '');
     this.channels.set(category?.channelPreset ?? NO_CHANNELS);
     this.vat.set({ ...(category?.vatByContext ?? {}) });
+    this.audience.set(category?.audience ?? null);
     this.editorial.adopt(category?.editorial ?? null);
     this.media.adopt(category?.media ?? []);
     this.tracking.rebase(SECTIONS);

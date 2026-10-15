@@ -256,8 +256,8 @@ describe("le prix B2B", () => {
 
 describe("la visibilité et la mise en avant", () => {
   it("masquer puis remettre en vente : deux faits, sous la fiche staff", async () => {
-    await staff().put(`${ITEM}/visibility`).send({ hidden: true }).expect(204);
-    await staff().put(`${ITEM}/visibility`).send({ hidden: false }).expect(204);
+    await staff().put(`${ITEM}/masking`).send({ audience: "pro", hidden: true }).expect(204);
+    await staff().put(`${ITEM}/masking`).send({ audience: "pro", hidden: false }).expect(204);
 
     const expected = {
       ...byStaff,
@@ -269,9 +269,9 @@ describe("la visibilité et la mise en avant", () => {
   });
 
   it("masquer un article déjà masqué n'écrit pas un second fait", async () => {
-    await staff().put(`${ITEM}/visibility`).send({ hidden: true }).expect(204);
+    await staff().put(`${ITEM}/masking`).send({ audience: "pro", hidden: true }).expect(204);
 
-    await staff().put(`${ITEM}/visibility`).send({ hidden: true }).expect(204);
+    await staff().put(`${ITEM}/masking`).send({ audience: "pro", hidden: true }).expect(204);
 
     expect(await facts("catalog_item.hidden")).toHaveLength(1);
   });
@@ -292,7 +292,7 @@ describe("la visibilité et la mise en avant", () => {
   it("ANNULE le masquage quand le journal refuse d'écrire", async () => {
     await breakJournal("catalog_item.hidden");
 
-    const response = await staff().put(`${ITEM}/visibility`).send({ hidden: true });
+    const response = await staff().put(`${ITEM}/masking`).send({ audience: "pro", hidden: true });
 
     expect(response.status).toBeGreaterThanOrEqual(500);
     expect(await decision()).toBeNull();

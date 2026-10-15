@@ -164,7 +164,6 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // l'est pas. C'est la séparation que le découpage des droits par outil a
   // rendue exprimable — la ranger sous `b2b_settings` la lui reprendrait.
   'b2b/reception': 'b2b_catalog:read',
-  'b2b/catalogue': null,
   // Les réglages de l'e-commerce sont TOUS partis le 2026-10-13 : les points
   // de retrait vers les sites, l'heure limite, l'ouverture et l'annulation
   // vers Réglages › Commandes. Il ne reste ici que des redirections.
@@ -187,6 +186,9 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   operations: 'pim_catalog:read',
   'operations/:key': 'pim_catalog:read',
   promotions: 'b2b_settings:read',
+  // **Catalogue publié** — parti de l'espace E-commerce le 2026-10-15 (H9),
+  // sous le mur qu'il y avait : le paramétrage de ce que la boutique vend.
+  'catalogue-publie': 'b2b_settings:read',
   'promotions/frise': 'b2b_settings:read',
   'promotions/simulateur': 'b2b_settings:read',
 
@@ -475,7 +477,7 @@ describe("l'arbre de routes du back-office", () => {
     expect(moved).toEqual([
       // `''` n'est plus une adresse fixe : elle suit les droits
       // (`firstReglagesView`, éprouvée dans exploitation-entry-access).
-      ['catalogue', '/b2b/catalogue'],
+      ['catalogue', '/catalogue-publie'],
       ['tarification', '/promotions'],
       ['tarification/frise', '/promotions/frise'],
       ['tarification/simulateur', '/promotions/simulateur'],
@@ -491,6 +493,18 @@ describe("l'arbre de routes du back-office", () => {
       // Revenus en Réglages › Commercial le 2026-10-13 : l'entrée de la section.
       ['commercial', '/reglages/commercial/disponibilite'],
     ]);
+  });
+
+  it('renvoie l’ancienne adresse du catalogue vers « Catalogue publié », en Gestion Boutique', () => {
+    // Partie le 2026-10-15 (H9) : un favori. Absolue, elle s'applique avant le
+    // mur de l'espace — et l'entrée de l'espace ne la vise plus, sans quoi
+    // ouvrir « E-commerce LFC » ferait sortir de l'espace.
+    const b2b = routes.find((route) => route.path === 'b2b');
+    const children = b2b?.children ?? [];
+    expect(children.find((child) => child.path === 'catalogue')?.redirectTo).toBe(
+      '/catalogue-publie',
+    );
+    expect(children.find((child) => child.path === '')?.redirectTo).toBe('contenu');
   });
 
   it('renvoie l’ancienne adresse de la vitrine vers son écran hors de l’espace', () => {

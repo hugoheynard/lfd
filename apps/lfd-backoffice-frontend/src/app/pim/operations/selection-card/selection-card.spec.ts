@@ -40,6 +40,7 @@ function product(name: string, variants: readonly Variant[], operationOnly = fal
     vatByContext: {},
     operationOnly,
     requiresCold: false,
+    audience: null,
   };
 }
 

@@ -4,24 +4,25 @@ import { formatEuros, PriceEditor, PriceOrigin } from '@lfd/catalog-ui';
 import { htMillicentsOf, lineTotalCents, MILLICENTS_PER_CENT, ventilateVat } from '@lfd/money';
 import {
   FoldBadgeComponent,
-  FoldButtonComponent,
   FoldDataTableCellDirective,
   FoldDataTableComponent,
-  FoldInlineConfirmComponent,
   FoldPageSectionComponent,
   type FoldTableColumn,
   type FoldTableEmpty,
   type FoldTableTone,
 } from 'fold-ng';
 
-/** Un rayon : la famille et ses articles, dans l'ordre reçu du PIM. */
-export interface CatalogueShelf {
-  readonly id: string;
-  readonly name: string;
-  readonly items: readonly CatalogAdminItemView[];
-  /** Aucun article du rayon n'a de taux de TVA : rien n'y est vendable. */
-  readonly untaxed: boolean;
-}
+import type { ShopAudience } from '../catalogue.service';
+import { PublishedCell } from '../published-cell/published-cell';
+import {
+  audienceLabel,
+  audienceOrigin,
+  countsLabel,
+  isInactive,
+  rowName,
+  type PublishedRow,
+  type PublishedShelf,
+} from '../published-catalogue';
 
 /**
  * **Un rayon du catalogue vendu, en table.**
@@ -68,30 +69,32 @@ export interface CatalogueShelf {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldBadgeComponent,
-    FoldButtonComponent,
     FoldDataTableComponent,
     FoldDataTableCellDirective,
-    FoldInlineConfirmComponent,
     FoldPageSectionComponent,
     PriceEditor,
     PriceOrigin,
+    PublishedCell,
   ],
   templateUrl: './shelf-catalogue.html',
   styleUrl: './shelf-catalogue.scss',
 })
 export class ShelfCatalogue {
-  readonly shelf = input.required<CatalogueShelf>();
+  readonly shelf = input.required<PublishedShelf>();
 
   readonly priceSet = output<{ item: CatalogAdminItemView; priceMillicents: number }>();
   readonly priceAligned = output<CatalogAdminItemView>();
   readonly publicPriceSet = output<{ item: CatalogAdminItemView; ttcCents: number }>();
   readonly publicPriceAligned = output<CatalogAdminItemView>();
-  readonly visibilityToggled = output<CatalogAdminItemView>();
-  readonly publicVisibilityToggled = output<CatalogAdminItemView>();
+  /** L'interrupteur d'une cellule d'audience — la route unique `/masking`. */
+  readonly maskToggled = output<{ row: PublishedRow; audience: ShopAudience }>();
 
   protected readonly euros = formatEuros;
+  protected readonly name = rowName;
+  protected readonly inactive = isInactive;
 
-  protected readonly items = computed<readonly CatalogAdminItemView[]>(() => this.shelf().items);
+  protected readonly proCounts = computed(() => countsLabel(this.shelf().pro));
+  protected readonly publicCounts = computed(() => countsLabel(this.shelf().public));
 
   /**
    * Les colonnes. Aucune n'est `sortable` : l'ordre du catalogue est celui du
@@ -103,8 +106,10 @@ export class ShelfCatalogue {
    * colonne où l'on **écrit**, et elle doit tenir un champ ouvert sans faire
    * sauter la mise en page des voisines.
    */
-  protected readonly columns: readonly FoldTableColumn<CatalogAdminItemView>[] = [
+  protected readonly columns: readonly FoldTableColumn<PublishedRow>[] = [
     { key: 'article', label: 'Article' },
+    // L'audience du RÉFÉRENTIEL — ce qu'il vend, avant tout masquage d'ici.
+    { key: 'audience', label: 'Audience', width: '8rem' },
     // 🔴 **Deux lignes, et deux UNITÉS** (Hugo, 2026-09-21). Le référentiel
     // envoie les deux prix ; n'en montrer qu'un faisait passer le tarif du
     // canal professionnel pour « le » tarif du PIM.
@@ -118,18 +123,19 @@ export class ShelfCatalogue {
     // c'est du code, pas un libellé. Seul le mot affiché devient « pro ».
     { key: 'b2b', label: 'Prix pro HT', width: '15rem' },
     { key: 'public', label: 'Prix public TTC', width: '15rem' },
-    // Assez large pour tenir la confirmation qui s'y ouvre. À `9rem`, la
+    // Assez larges pour tenir la confirmation qui s'y ouvre. À `9rem`, la
     // phrase qui dit ce que « Masquer » va faire tombait sur cinq lignes.
-    { key: 'shop', label: 'Affichage boutique', width: '15rem' },
+    // ⚠️ La clé publique n'est pas `public` : elle est prise par le prix décidé.
+    { key: 'pros', label: 'Pros', width: '13rem' },
+    { key: 'audiencePublic', label: 'Public', width: '13rem' },
   ];
 
   protected readonly empty: FoldTableEmpty = {
     title: 'Aucun article dans ce rayon',
-    subtitle:
-      'Publiez des produits de cette famille sur le canal professionnel, puis lancez un push.',
+    subtitle: 'Aucune fiche de cette famille ne répond au filtre.',
   };
 
-  protected readonly rowKey = (item: CatalogAdminItemView): string => item.sku;
+  protected readonly rowKey = (row: PublishedRow): string => row.variant.sku;
 
   /**
    * **Le ton de ligne dit ce qui empêche de VENDRE**, rien d'autre.
@@ -142,8 +148,28 @@ export class ShelfCatalogue {
    * Le fait est **écrit** dans la cellule du taux, donc la couleur ne le porte
    * jamais seule.
    */
-  protected readonly rowTone = (item: CatalogAdminItemView): FoldTableTone =>
-    item.vatRatePercent === null ? 'warning' : null;
+  protected readonly rowTone = (row: PublishedRow): FoldTableTone =>
+    row.item?.vatRatePercent === null ? 'warning' : null;
+
+  protected audience(row: PublishedRow): string {
+    return audienceLabel(row.entry.audience);
+  }
+
+  protected origin(row: PublishedRow): string | null {
+    return audienceOrigin(row.entry.audienceInherited);
+  }
+
+  /** Le prix pro servi (ou proposé), en euros HT — `null` sans prix. */
+  protected proPrice(row: PublishedRow): string | null {
+    const ht = row.variant.pro.htMillicents;
+    return ht === null ? null : `${formatEuros(ht)} HT`;
+  }
+
+  /** L'étiquette publique servie (ou proposée), en euros TTC — `null` sans étiquette. */
+  protected publicPrice(row: PublishedRow): string | null {
+    const ttc = row.variant.public.ttcCents;
+    return ttc === null ? null : `${formatEuros(ttc * MILLICENTS_PER_CENT)} TTC`;
+  }
 
   /**
    * **Ce que le rayon public affichera vraiment**, en euros TTC.

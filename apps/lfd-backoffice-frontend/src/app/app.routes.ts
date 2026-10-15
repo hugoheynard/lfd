@@ -85,6 +85,18 @@ export const routes: Routes = [
       import('./b2b/tarification/tarification-page').then((m) => m.TarificationPage),
   },
   {
+    // LE CATALOGUE PUBLIÉ — l'ancien « Catalogue actuel en ligne », premier
+    // niveau depuis le 2026-10-15 (H9 de plan-catalogue-synchronise-par-
+    // audience.md), sans le rail de l'e-commerce : on y vient depuis Gestion
+    // Boutique. Même mur que l'espace qu'il a quitté ; `/b2b/catalogue` y
+    // redirige.
+    path: 'catalogue-publie',
+    canActivate: [permissionGuard('b2b_settings:read')],
+    title: 'Catalogue publié — LFC B2B admin',
+    loadComponent: () =>
+      import('./b2b/catalogue/catalogue-page/catalogue-page').then((m) => m.CataloguePage),
+  },
+  {
     // La frise vit à côté de la grille, pas dedans : deux façons de lire le
     // même prix. Une route propre la rend partageable par lien.
     path: 'promotions/frise',

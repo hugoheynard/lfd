@@ -55,7 +55,7 @@ export const reglagesRoutes: Routes = [
       // Les redirections sont ici, DANS les enfants de `reglages`, et non au
       // niveau racine : le routeur entre d'abord dans cette route parente, et
       // ce qu'il y cherche doit s'y trouver.
-      { path: 'catalogue', redirectTo: '/b2b/catalogue' },
+      { path: 'catalogue', redirectTo: '/catalogue-publie' },
       { path: 'tarification', pathMatch: 'full', redirectTo: '/promotions' },
       { path: 'tarification/frise', redirectTo: '/promotions/frise' },
       { path: 'tarification/simulateur', redirectTo: '/promotions/simulateur' },

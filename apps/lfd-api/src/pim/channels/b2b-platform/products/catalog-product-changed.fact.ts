@@ -27,6 +27,8 @@ const payloadSchema = z.object({
   emittedAt: z.string().datetime({ offset: true }),
   status: z.enum(["inactive", "active", "archived"]),
   audience: operationAudienceSchema,
+  // Lot 3 : absent d'un fait émis avant lui, lu `null` — « on ne sait pas ».
+  audienceInherited: z.boolean().nullable().default(null),
   product: syncProductSchema.omit({ variants: true }),
   variants: z.array(syncVariantSchema),
   gaps: z.record(z.string(), z.array(z.string().min(1))),

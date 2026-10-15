@@ -18,7 +18,7 @@
  * utilise — `@lfd/pim-contracts` tire zod, qui n'a rien à faire dans le bundle
  * initial.
  */
-import type { LocalizedText } from '@lfd/pim-contracts';
+import type { LocalizedText, OperationAudience } from '@lfd/pim-contracts';
 
 export type { Locale, LocalizedText, TranslatedLocale } from '@lfd/pim-contracts';
 
@@ -200,6 +200,8 @@ export interface Product {
    * livraison ne le charge qu'en bac isotherme. `false` = rien de déclaré.
    */
   requiresCold: boolean;
+  /** À qui la fiche vend quand elle déroge à sa famille ; `null` = elle hérite. */
+  audience: OperationAudience | null;
   /** Pilote l'URL publique — jamais changé après création (SEO). */
   slug?: LocalizedText;
   /** Prix de vente TTC, en euros. */
@@ -237,6 +239,8 @@ export interface Category {
    * de laisser le refus du backend l'apprendre après.
    */
   activeProductCount: number;
+  /** À qui la famille vend — ses fiches en héritent, sauf dérogation. */
+  audience: OperationAudience;
 }
 
 /**

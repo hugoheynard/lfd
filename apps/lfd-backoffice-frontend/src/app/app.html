@@ -234,8 +234,8 @@
       }
 
       @if (canSeeShopManagement()) {
-        <!-- GESTION BOUTIQUE — ce qu'on met en avant, et quand (Hugo,
-             2026-10-13) : les opérations datées, venues du rail du Catalogue,
+        <!-- GESTION BOUTIQUE — ce qu'on vend, ce qu'on met en avant, et quand
+             (Hugo, 2026-10-13 ; le catalogue publié depuis le 2026-10-15) : les opérations datées, venues du rail du Catalogue,
              et les promotions (l'ancienne « Tarification B2B »), venues de
              celui de l'E-commerce. Chaque entrée garde le droit de sa route ;
              les anciennes adresses `/pim/operations` et `/b2b/tarification` redirigent,
@@ -247,6 +247,20 @@
           [collapsed]="menuFolded('shop-management')"
           (collapsedChange)="foldMenu('shop-management', $event)"
         >
+          @if (canSeeSettings()) {
+            <!-- Le CATALOGUE PUBLIÉ, venu du rail de l'E-commerce le 2026-10-15
+                 (H9) : ce qu'on vend, avant ce qu'on met en avant. -->
+            <a
+              fold-menu-item
+              icon="package"
+              label="Catalogue publié"
+              routerLink="/catalogue-publie"
+              routerLinkActive
+              #publishedRla="routerLinkActive"
+              [active]="publishedRla.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
           @if (canSeePim()) {
             <a
               fold-menu-item
@@ -857,6 +871,18 @@
       @if (canSeeShopManagement()) {
         <!-- La MÊME section qu'au rail : les deux arbres ne partagent pas leur modèle. -->
         <fold-nav-group icon="tag" label="Gestion Boutique" [entryCountLabel]="entriesLabel">
+          @if (canSeeSettings()) {
+            <a
+              fold-nav-tile
+              icon="package"
+              label="Catalogue publié"
+              routerLink="/catalogue-publie"
+              routerLinkActive
+              #publishedTile="routerLinkActive"
+              [active]="publishedTile.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
           @if (canSeePim()) {
             <a
               fold-nav-tile

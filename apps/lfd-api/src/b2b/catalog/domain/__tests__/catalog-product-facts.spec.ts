@@ -1,4 +1,6 @@
 import {
+  awaitsReview,
+  entryVariantsOf,
   itemsOnSale,
   type ReceivedCatalogItem,
   type ReceivedCatalogProduct,
@@ -16,6 +18,7 @@ function product(status: ReceivedCatalogProduct["status"]): ReceivedCatalogProdu
     categoryId: "cat_1",
     status,
     audience: "both",
+    audienceInherited: true,
     gaps: {},
     seq: 1,
     receivedAt: new Date(0),
@@ -58,5 +61,29 @@ describe("itemsOnSale", () => {
 
   it.each(["inactive", "archived"] as const)("ne vend rien d'une fiche %s", (status) => {
     expect(itemsOnSale(product(status))).toEqual([]);
+  });
+});
+
+/** Lot 3 : une ligne neuve n'attend la validation que des audiences qu'elle sert. */
+describe("awaitsReview", () => {
+  it("met en attente une ligne neuve pour chaque audience qu'elle contient, et elles seules", () => {
+    expect(awaitsReview("both", "public")).toBe(true);
+    expect(awaitsReview("both", "pro")).toBe(true);
+    expect(awaitsReview("pro", "public")).toBe(false);
+    expect(awaitsReview("public", "pro")).toBe(false);
+  });
+});
+
+/** Lot 3 : ce que l'entrée de la fiche range de ses déclinaisons complètes. */
+describe("entryVariantsOf", () => {
+  it("garde le SKU, le nom, le défaut et les deux prix proposés", () => {
+    const [variant] = entryVariantsOf(product("inactive"));
+    expect(variant).toEqual({
+      sku: ITEM.sku,
+      name: "Croissant",
+      isDefault: true,
+      proHtMillicents: 100_000,
+      publicTtcCents: 120,
+    });
   });
 });

@@ -55,6 +55,10 @@ const ALLOWED = new Set([
   // 2026-10-15) : elle PORTE le filtre — un article retiré reçoit ses limites
   // quand le fait de sa fiche le remet en vente.
   "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-catalog-order-limits.ts",
+  // La vue « Catalogue publié » (lot 3 du catalogue synchronisé, 2026-10-15) :
+  // elle PORTE le filtre — une déclinaison retirée n'y paraît que par les
+  // manques que le fait de sa fiche déclare, jamais comme article en vente.
+  "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-published-catalog.reader.ts",
   // Le semis de développement, et il PORTE le filtre : sa lecture demande
   // `withdrawnAt: null` explicitement (`ensureSkusExist`). Elle ne sert pas à
   // vendre — elle vérifie AVANT d'écrire que les SKU du corpus existent, pour

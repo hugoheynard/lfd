@@ -163,11 +163,14 @@ describe("GET /admin/storefront/catalog", () => {
 
   it("un article masqué des deux boutiques est rendu, mais non servi", async () => {
     const staff = ctx.asSub(E2E_STAFF_SUB);
-    await staff.put("/admin/catalog/VIE-002-1/visibility").send({ hidden: true }).expect(204);
+    await staff
+      .put("/admin/catalog/VIE-002-1/masking")
+      .send({ audience: "pro", hidden: true })
+      .expect(204);
     await ctx
       .asSub(E2E_STAFF_SUB)
-      .put("/admin/catalog/VIE-002-1/public-visibility")
-      .send({ hidden: true })
+      .put("/admin/catalog/VIE-002-1/masking")
+      .send({ audience: "public", hidden: true })
       .expect(204);
 
     const view = jsonBody<StorefrontCatalogView>(await staff.get(ROUTE).expect(200));

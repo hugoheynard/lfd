@@ -15,10 +15,16 @@
   white-space: normal;
 }
 
-/* Un article retiré de la vente reste LISIBLE, seulement en retrait : le masquer
-   d'un écran de paramétrage empêcherait de le rouvrir. */
-.is-hidden {
+/* Une fiche INACTIVE reste lisible, seulement en retrait : elle est là pour
+   qu'on voie le catalogue se construire, pas pour être vendue. */
+.is-inactive {
   opacity: 0.6;
+}
+
+.audience-cell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
 }
 
 .name {
@@ -47,21 +53,6 @@
    d'alerte — sans quoi trente-neuf lignes sur quarante réclameraient un geste. */
 .follows {
   font-style: italic;
-}
-
-.shop {
-  display: flex;
-  /* Une audience par LIGNE, pas côte à côte : deux boutons alignés se lisent
-     comme deux moitiés d'un même geste, et c'est exactement ce qu'ils ne sont
-     pas. Empilés, chacun porte sa pastille d'état au-dessus de lui. */
-  flex-direction: column;
-  align-items: start;
-  gap: var(--fold-space-sm);
-  /* 🔴 La table pose `white-space: nowrap` sur ses cellules — juste pour un
-     montant ou une pastille, faux pour une phrase. La confirmation qui s'ouvre
-     ici en porte une : sans ce retour à la ligne, elle poussait la colonne à
-     cinq cents pixels et déformait toute la table (mesuré le 2026-09-10). */
-  white-space: normal;
 }
 
 /* **Les deux prix du référentiel**, l'un sous l'autre.
@@ -102,11 +93,4 @@
    centime d'écart n'appelle aucun geste, il appelle à être su. */
 .charged {
   font-style: italic;
-}
-
-.audience {
-  display: flex;
-  align-items: center;
-  gap: var(--fold-space-xs);
-  white-space: normal;
 }

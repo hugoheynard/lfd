@@ -83,7 +83,7 @@ describe('permissionGuard — redirige plutôt que de bloquer', () => {
   it('descend dans la liste quand les premières portes sont fermées', async () => {
     const result = await guardWith(['b2b_settings:read']);
 
-    expect(redirectPath(result)).toBe('/b2b/catalogue');
+    expect(redirectPath(result)).toBe('/catalogue-publie');
   });
 });
 

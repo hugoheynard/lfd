@@ -1,0 +1,8 @@
+<fold-listbox
+  label="Audience"
+  hint="Ses fiches en héritent, sauf celles qui y dérogent."
+  [options]="options"
+  [value]="store.audience()"
+  [disabled]="busy()"
+  (selectionChange)="onChange($event)"
+/>

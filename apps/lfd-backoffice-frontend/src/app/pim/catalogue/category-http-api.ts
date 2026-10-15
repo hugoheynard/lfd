@@ -6,7 +6,9 @@ import type {
   CategoryMediaView,
   CategoryView,
   LocalizedText,
+  OperationAudience,
   SalesChannels,
+  SetCategoryAudiencePayload,
 } from '@lfd/pim-contracts';
 import { firstValueFrom } from 'rxjs';
 
@@ -30,6 +32,7 @@ function toCategory(row: CategoryView): Category {
     channelPreset: row.channelPreset,
     vatByContext: row.vatByContext,
     activeProductCount: row.activeProductCount,
+    audience: row.audience,
   };
 }
 
@@ -124,6 +127,12 @@ export class CategoryHttpApi {
     return this.put(`categories/${id}/vat`, {
       vatByContext: settledOnly(ids),
     });
+  }
+
+  /** À qui la famille vend — ses fiches en héritent, sauf dérogation. */
+  setAudience(id: string, audience: OperationAudience): Promise<void> {
+    const payload: SetCategoryAudiencePayload = { audience };
+    return this.put(`categories/${id}/audience`, payload);
   }
 
   /** Les textes de la famille — les quatre champs partent ensemble. */

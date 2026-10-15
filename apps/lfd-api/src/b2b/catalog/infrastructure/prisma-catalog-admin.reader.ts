@@ -26,6 +26,8 @@ interface AdminRow {
   readonly allergenLabels: unknown;
   readonly operationOnly: boolean;
   readonly audience: string | null;
+  readonly publicReviewPending: boolean;
+  readonly proReviewPending: boolean;
   readonly receivedAt: Date;
   // Le taux de la FAMILLE n'y figure plus : plus rien ici ne le lit. Le laisser
   // dans la forme suffirait à ce qu'un jour quelqu'un le relise « puisqu'il est
@@ -127,6 +129,8 @@ function toView(row: AdminRow, authors: StaffAuthors): CatalogAdminItemView {
     isHidden: row.override?.isHidden ?? false,
     isHiddenPublic: row.override?.isHiddenPublic ?? false,
     audience: catalogAudienceOf(row.audience),
+    publicReviewPending: row.publicReviewPending,
+    proReviewPending: row.proReviewPending,
     isFeatured: row.override?.isFeatured ?? false,
     operationOnly: row.operationOnly,
     decidedBy: row.override?.decidedBy ?? null,

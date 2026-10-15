@@ -125,6 +125,19 @@ export interface CatalogAdminItemView {
    * montrer aux pros un article que le référentiel dit `public`.
    */
   readonly audience: CatalogItemAudience | null;
+  /**
+   * **À valider pour la boutique publique** (lot 3 de
+   * `plan-catalogue-synchronise-par-audience.md`) : arrivé récemment, vu des
+   * pros, pas encore servi au public. Distinct de `isHiddenPublic` — « personne
+   * ne l'a encore regardé » n'est pas « on l'a masqué exprès ».
+   */
+  readonly publicReviewPending: boolean;
+  /**
+   * **À valider pour les pros** — même règle côté professionnel (Hugo,
+   * 2026-10-15, option 2) : un article neuf n'est ni vu ni commandable par
+   * les pros tant que personne ne l'a validé pour eux.
+   */
+  readonly proReviewPending: boolean;
   readonly isFeatured: boolean;
   /**
    * Vendu **seulement pendant une opération** (fil v11), tel que reçu. Porté ici
@@ -181,23 +194,38 @@ export const setPublicPricePayloadSchema = z.object({
 });
 export type SetPublicPricePayload = z.infer<typeof setPublicPricePayloadSchema>;
 
-/** Masquer ou réafficher un article dans la boutique **professionnelle**. */
-export const setCatalogVisibilityPayloadSchema = z.object({
+/**
+ * **Masquer un article pour une audience, ou l'y remettre** — la route unique
+ * du masquage (`PUT admin/catalog/:sku/masking`, H5 ; D7 de
+ * `documentation/pim/plan-audience-par-heritage.md`). Elle remplace les deux
+ * routes d'avant (`:sku/visibility`, `:sku/public-visibility`), retirées le
+ * 2026-10-15 (pré-release, seul lecteur : le back-office).
+ *
+ * Le serveur refuse de masquer pour une audience à laquelle le référentiel ne
+ * vend pas l'article (409, `catalog.item.masking_outside_audience`).
+ */
+export const setMaskingPayloadSchema = z.object({
+  audience: z.enum(["pro", "public"]),
   hidden: z.boolean(),
 });
+export type SetMaskingPayload = z.infer<typeof setMaskingPayloadSchema>;
+
+/** Au plus autant de SKU par validation : « Tout afficher » d'un catalogue entier tient dedans. */
+export const REVIEW_BATCH_MAX = 500;
 
 /**
- * Masquer ou réafficher un article dans la boutique **publique**.
- *
- * ⚠️ Une route et un schéma à part, plutôt qu'une audience ajoutée au payload
- * voisin : celui-ci est **déjà servi** à un back-office en service, et lui
- * ajouter un champ obligatoire casserait l'écran d'avant le déploiement.
+ * **Valider** un ou plusieurs articles arrivés du référentiel, pour une ou
+ * deux audiences (`POST admin/catalog/review/approve`, lot 3 de
+ * `plan-catalogue-synchronise-par-audience.md` ; côté pro, décision de Hugo du
+ * 2026-10-15). Tout ou rien : un SKU que la plateforme ne vend plus fait
+ * échouer le lot (404). Une audience pour laquelle l'article n'attendait rien
+ * est sans effet.
  */
-export const setPublicVisibilityPayloadSchema = z.object({
-  hidden: z.boolean(),
+export const approveReviewPayloadSchema = z.object({
+  skus: z.array(z.string().min(1)).min(1).max(REVIEW_BATCH_MAX),
+  audiences: z.array(z.enum(["pro", "public"])).min(1),
 });
-export type SetPublicVisibilityPayload = z.infer<typeof setPublicVisibilityPayloadSchema>;
-export type SetCatalogVisibilityPayload = z.infer<typeof setCatalogVisibilityPayloadSchema>;
+export type ApproveReviewPayload = z.infer<typeof approveReviewPayloadSchema>;
 
 /**
  * Mettre en avant, ou retirer la mise en avant.

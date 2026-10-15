@@ -98,61 +98,59 @@
   </fold-card>
 </section>
 
-<!-- LA PUBLICATION AU CATALOGUE, en dernier — c'est l'aboutissement de la
-     colonne : ce qui reste à enregistrer, ce qui manque, qui a validé, puis ce
-     qu'on en fait. Ces gestes vivaient dans un menu ⋮ de l'en-tête, à l'autre
-     bout de l'écran et sans lien visible avec la complétude qui les conditionne.
+<!-- L'ACTIVATION, en dernier — c'est l'aboutissement de la colonne : ce qui
+     reste à enregistrer, ce qui manque, qui a validé, puis ce qu'on en fait.
 
-     « Publier au catalogue » et non « Mettre en vente » : le geste bascule un
-     statut, il n'envoie rien. La diffusion vers un canal est un PUSH, séparé et
-     manuel, sur un autre écran — nommer les deux pareil ferait croire que
-     publier suffit à vendre (audit 2026-09-01, §4 et §10). Le vocabulaire est
-     désormais le même que celui de la liste produits. -->
+     « Activer » et non plus « Publier au catalogue » (lot 3 de
+     plan-catalogue-synchronise-par-audience.md, C1) : la fiche est sur la
+     plateforme dès sa création, inactive, et chaque enregistrement l'y
+     renvoie. Le geste ne pousse plus rien ; il dit « vends-la à son
+     audience ». Les routes `/publish` et `/unpublish` ne changent pas. -->
 <section class="pr-block" aria-labelledby="pr-sale">
-  <fold-element-title id="pr-sale" title="Publication au catalogue" />
+  <fold-element-title id="pr-sale" title="Activation" />
   <fold-card>
     @if (store.status() === 'archived') {
       <p class="pr-said">
-        Cette fiche est <strong>archivée</strong>&nbsp;: aucun push ne l'emporte. La restaurer la
-        remet en brouillon — jamais directement en ligne.
+        Cette fiche est <strong>archivée</strong>&nbsp;: elle n'est vendue nulle part. La restaurer
+        la rend inactive — jamais directement en vente.
       </p>
       <button foldButton class="pr-cta" [loading]="store.busy()" (click)="restore.emit()">
         Restaurer
       </button>
     } @else {
-      <!-- Ce que le bouton fait VRAIMENT, dit à l'endroit où on appuie. Publier
-           bascule un statut ; ça n'envoie rien. La diffusion est un push
-           séparé, manuel, sur un autre écran — et l'écran le taisait, si bien
-           qu'une fiche « en ligne » jamais poussée n'était en vente nulle part
-           sans que rien ne le dise (audit 2026-09-01, §4). -->
       <p class="pr-said">
         @if (store.status() === 'published') {
-          Publiée au catalogue. Elle sera ajoutée au <strong>prochain push</strong> du catalogue
-          vers les canaux de vente&nbsp;: publier ne pousse rien par soi-même. La dépublier la remet
-          en brouillon sans rien détruire.
+          <strong>Active</strong>&nbsp;: la plateforme la vend à son audience, déclinaison complète
+          par déclinaison complète, et reçoit chaque enregistrement. La désactiver la retire de la
+          vente sans rien détruire.
         } @else {
-          Brouillon&nbsp;: aucun push ne la mettra en vente tant qu'elle n'est pas publiée au
-          catalogue.
+          <strong>Inactive</strong>&nbsp;: la plateforme la connaît, mais ne la vend pas. L'activer
+          demande au moins une déclinaison complète.
         }
       </p>
 
-      <!-- Le trou que la complétude ne peut pas boucher : elle mesure ce que la
-           fiche PORTE, jamais où on la vend. Une fiche à 10/10, signée et « en
-           ligne » pouvait n'apparaître dans aucun contexte — tout juste, et rien
-           ne se passait. Un avertissement, pas un blocage : préparer une fiche
-           avant d'ouvrir ses canaux est un usage normal. -->
       @if (store.soldNowhere()) {
         <fold-callout appearance="inset" variant="warning">
-          @if (store.status() === 'published') {
-            Publiée, mais vendue dans <strong>aucun contexte</strong>&nbsp;: le push ne l'emportera
-            nulle part.
-          } @else {
-            Vendue dans <strong>aucun contexte</strong>&nbsp;: la publier au catalogue ne la fera
-            apparaître nulle part.
-          }
-          Réglez-le dans «&nbsp;Tarif &amp; TVA&nbsp;», ou sur la famille dont elle hérite.
+          Vendue dans <strong>aucun contexte</strong>&nbsp;: réglez-le dans «&nbsp;Tarif &amp;
+          TVA&nbsp;», ou sur la famille dont elle hérite.
         </fold-callout>
       }
+
+      <!-- Le refus d'activer nomme chaque déclinaison et ce qui lui manque :
+           une ligne par déclinaison, sous le bouton qui l'a provoqué. -->
+      @if (store.activationRefusal(); as refusal) {
+        <fold-callout appearance="inset" variant="alert" announce>
+          <p class="pr-refusal">{{ refusal.intro }}</p>
+          @if (refusal.lines.length > 0) {
+            <ul class="pr-gaps">
+              @for (line of refusal.lines; track line) {
+                <li>{{ line }}</li>
+              }
+            </ul>
+          }
+        </fold-callout>
+      }
+
       @if (store.status() === 'published') {
         <button
           foldButton
@@ -162,11 +160,11 @@
           [loading]="store.busy()"
           (click)="unpublish.emit()"
         >
-          Dépublier
+          Désactiver
         </button>
       } @else {
         <button foldButton class="pr-cta" [loading]="store.busy()" (click)="publish.emit()">
-          Publier au catalogue
+          Activer
         </button>
       }
 

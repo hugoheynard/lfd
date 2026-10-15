@@ -28,7 +28,9 @@ export const PROJECT_CATALOG_PRODUCT = "catalog.project-catalog-product";
  * 2. l'entrée `catalog_entries` s'écrit **si ce fait est plus récent** que la
  *    ligne (`applied_seq`) — sinon rien d'autre ne s'écrit : un fait ancien
  *    rejoué, ou livré deux fois, est inerte ;
- * 3. les déclinaisons vendables d'une fiche active sont mises en vente ;
+ * 3. les déclinaisons vendables d'une fiche active sont mises en vente — une
+ *    ligne NEUVE dont l'audience contient le public naît « à valider pour la
+ *    boutique publique » (lot 3), jamais une ligne existante ;
  * 4. tout autre article de la fiche encore en vente est retiré — fiche
  *    inactive ou archivée, déclinaison devenue incomplète, SKU renommé ;
  * 5. les limites de commande des articles en vente de la fiche sont

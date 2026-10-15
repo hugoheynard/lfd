@@ -1,0 +1,56 @@
+<div class="cell">
+  @switch (state()) {
+    @case ('en_vente') {
+      <fold-badge content="en vente" variant="success" />
+      @if (price(); as amount) {
+        <span class="price">{{ amount }}</span>
+      }
+    }
+    @case ('masque') {
+      <fold-badge content="masqué" variant="neutral" />
+      @if (price(); as amount) {
+        <span class="price">{{ amount }}</span>
+      }
+    }
+    @case ('en_attente_validation') {
+      <fold-badge content="en attente de validation" variant="info" />
+      @if (price(); as amount) {
+        <span class="price">{{ amount }}</span>
+      }
+    }
+    @case ('pas_vendu') {
+      <span class="note">pas vendu {{ to() }}</span>
+      <a class="link" [routerLink]="['/pim/produits', productId()]"
+        >Régler l'audience de la fiche</a
+      >
+    }
+    @case ('incomplet') {
+      <fold-badge content="incomplet" variant="warning" />
+      <span class="note">manque : {{ missing() }}</span>
+    }
+    @case ('inactif') {
+      <span class="note">inactive</span>
+    }
+  }
+
+  @if (state() === 'en_vente' || state() === 'masque') {
+    <fold-inline-confirm
+      size="sm"
+      [intent]="hidden() ? 'primary' : 'warning'"
+      [message]="confirmMessage()"
+      [labels]="{ confirm: hidden() ? 'Afficher' : 'Masquer' }"
+      (confirmed)="maskToggled.emit()"
+    >
+      <button
+        foldButton
+        size="sm"
+        type="button"
+        emphasis="outline"
+        intent="neutral"
+        [attr.aria-label]="toggleLabel()"
+      >
+        {{ hidden() ? 'Afficher' : 'Masquer' }}
+      </button>
+    </fold-inline-confirm>
+  }
+</div>

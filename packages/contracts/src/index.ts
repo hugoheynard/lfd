@@ -948,13 +948,27 @@ export type {
   OrderRefundView,
 } from "./order.js";
 export type { CatalogPricing } from "./catalog-pricing.js";
+export { PUBLISHED_CELL_STATES } from "./published-catalog.js";
+export type {
+  PendingReviewView,
+  PublishedCatalogView,
+  PublishedCellCounts,
+  PublishedCellState,
+  PublishedEntryStatus,
+  PublishedEntryView,
+  PublishedProCellView,
+  PublishedPublicCellView,
+  PublishedShelfView,
+  PublishedVariantView,
+} from "./published-catalog.js";
 export type { CatalogFamilyView, CatalogItemView } from "./catalog.js";
 
 export {
   setB2bPricePayloadSchema,
   setPublicPricePayloadSchema,
-  setPublicVisibilityPayloadSchema,
-  setCatalogVisibilityPayloadSchema,
+  setMaskingPayloadSchema,
+  approveReviewPayloadSchema,
+  REVIEW_BATCH_MAX,
   setCatalogFeaturedPayloadSchema,
   acceptDeliveryPayloadSchema,
 } from "./catalog-admin.js";
@@ -964,8 +978,8 @@ export type {
   CatalogAllergenView,
   SetB2bPricePayload,
   SetPublicPricePayload,
-  SetPublicVisibilityPayload,
-  SetCatalogVisibilityPayload,
+  SetMaskingPayload,
+  ApproveReviewPayload,
   SetCatalogFeaturedPayload,
   AcceptDeliveryPayload,
   DeliveryChangeView,

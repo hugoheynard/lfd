@@ -5,7 +5,10 @@ import {
   PublicPriceWithoutContextError,
   RedundantPublicPriceError,
   RedundantB2bPriceError,
+  MaskingOutsideAudienceError,
 } from "../errors/catalog-errors.js";
+import type { ShopAudience } from "../ports/catalog.reader.js";
+import { audienceIncludes, type CatalogAudience } from "../served-to.js";
 
 /**
  * **L'article du catalogue B2B** — l'agrégat, et le seul chemin d'écriture.
@@ -281,13 +284,43 @@ export interface CatalogItemState {
    * du PIM » redevient ainsi l'absence de décision, pas une décision vide.
    */
   readonly decision: LocalDecision | null;
+  /**
+   * **Où l'article est rangé côté audience** — ni un fait du push, ni une
+   * décision : posé par le récepteur des faits d'une fiche (lot 2a et lot 3).
+   * Cf. {@link Placement}.
+   */
+  readonly placement: Placement;
 }
+
+/**
+ * Ce que le récepteur des faits range sur l'article et que le push ignore.
+ *
+ * - `audience` : à qui le référentiel le vend, `null` lu `both`. **Lue
+ *   seulement** par l'agrégat — l'adaptateur ne la réécrit jamais depuis
+ *   lui, sans quoi un push (qui ne la connaît pas) l'effacerait ;
+ * - `publicReviewPending` / `proReviewPending` : personne ne l'a encore
+ *   validé pour cette audience (lot 3 ; côté pro, Hugo, 2026-10-15). Le seul
+ *   geste qui les change est {@link CatalogItem.approveFor}.
+ */
+export interface Placement {
+  readonly audience: CatalogAudience | null;
+  readonly publicReviewPending: boolean;
+  readonly proReviewPending: boolean;
+}
+
+/** L'article reçu par le push : aucune audience reçue, rien en attente. */
+const PUSHED_PLACEMENT: Placement = {
+  audience: null,
+  publicReviewPending: false,
+  proReviewPending: false,
+};
 
 export class CatalogItem {
   private constructor(
     private readonly facts: PimFacts,
     private decision: LocalDecision,
     private withdrawnAt: Date | null,
+    private placement: Placement = PUSHED_PLACEMENT,
   ) {}
 
   /**
@@ -308,7 +341,12 @@ export class CatalogItem {
 
   /** Reconstitue un article persisté, décision comprise. */
   static reconstitute(state: CatalogItemState): CatalogItem {
-    return new CatalogItem(state.facts, state.decision ?? NO_DECISION, state.withdrawnAt);
+    return new CatalogItem(
+      state.facts,
+      state.decision ?? NO_DECISION,
+      state.withdrawnAt,
+      state.placement,
+    );
   }
 
   get sku(): string {
@@ -468,7 +506,7 @@ export class CatalogItem {
    * lire les retirés à l'ingestion.
    */
   refreshFromPim(facts: PimFacts): CatalogItem {
-    return new CatalogItem(facts, this.decision, null);
+    return new CatalogItem(facts, this.decision, null, this.placement);
   }
 
   /**
@@ -500,7 +538,12 @@ export class CatalogItem {
    * référentiel ne porte plus.
    */
   showVisuals(image: PimImage | null, thumbnail: PimImage | null): CatalogItem {
-    return new CatalogItem({ ...this.facts, image, thumbnail }, this.decision, this.withdrawnAt);
+    return new CatalogItem(
+      { ...this.facts, image, thumbnail },
+      this.decision,
+      this.withdrawnAt,
+      this.placement,
+    );
   }
 
   /**
@@ -651,6 +694,68 @@ export class CatalogItem {
     this.decision = { ...this.decision, isFeatured: true, decidedBy };
   }
 
+  /**
+   * **Masque l'article pour une audience** — la route unique du masquage (H5,
+   * D7 du plan d'audience).
+   *
+   * @throws {MaskingOutsideAudienceError} le référentiel ne vend pas l'article
+   *   à ce lecteur : il n'y a rien à retirer. Démasquer, à l'inverse, n'est
+   *   jamais refusé — retirer un masque ne montre rien au-delà de l'audience.
+   */
+  mask(viewer: ShopAudience, decidedBy: string | null): void {
+    if (!audienceIncludes(this.placement.audience, viewer)) {
+      throw new MaskingOutsideAudienceError(this.facts.sku, viewer);
+    }
+    if (viewer === "pro") {
+      this.hide(decidedBy);
+    } else {
+      this.hidePublic(decidedBy);
+    }
+  }
+
+  /** Lève le masquage d'une audience. */
+  unmask(viewer: ShopAudience, decidedBy: string | null): void {
+    if (viewer === "pro") {
+      this.show(decidedBy);
+    } else {
+      this.showPublic(decidedBy);
+    }
+  }
+
+  /** Masqué pour ce lecteur ? */
+  isMaskedFor(viewer: ShopAudience): boolean {
+    return viewer === "pro" ? this.decision.isHidden : this.decision.isHiddenPublic;
+  }
+
+  /** À qui le référentiel vend l'article — `null` lu `both`. */
+  get audience(): CatalogAudience | null {
+    return this.placement.audience;
+  }
+
+  /** Personne ne l'a encore validé pour cette audience (lot 3). */
+  isReviewPendingFor(viewer: ShopAudience): boolean {
+    return viewer === "pro" ? this.placement.proReviewPending : this.placement.publicReviewPending;
+  }
+
+  /**
+   * **Valide l'article pour une audience** — elle le voit dès lors, s'il n'est
+   * pas masqué. Rend `false` quand il n'était pas en attente pour elle : le
+   * geste n'a rien changé, et le journal n'a rien à dire.
+   *
+   * Sans retour : rien ne remet un article en attente — ni une modification,
+   * ni un élargissement d'audience. Seule une ligne NEUVE naît en attente.
+   */
+  approveFor(viewer: ShopAudience): boolean {
+    if (!this.isReviewPendingFor(viewer)) {
+      return false;
+    }
+    this.placement =
+      viewer === "pro"
+        ? { ...this.placement, proReviewPending: false }
+        : { ...this.placement, publicReviewPending: false };
+    return true;
+  }
+
   /** Retire la mise en avant. */
   unfeature(decidedBy: string | null): void {
     this.decision = { ...this.decision, isFeatured: false, decidedBy };
@@ -680,6 +785,7 @@ export class CatalogItem {
       facts: this.facts,
       withdrawnAt: this.withdrawnAt,
       decision: untouched ? null : this.decision,
+      placement: this.placement,
     };
   }
 }

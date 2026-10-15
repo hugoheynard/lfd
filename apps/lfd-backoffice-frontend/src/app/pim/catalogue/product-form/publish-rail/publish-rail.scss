@@ -107,3 +107,16 @@
   padding-top: var(--fold-space-md);
   border-top: 1px solid var(--fold-color-border);
 }
+
+/* Le refus d'activer : la phrase, puis une déclinaison par ligne. */
+.pr-refusal {
+  margin: 0;
+}
+
+.pr-gaps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  padding-left: var(--fold-space-lg);
+}

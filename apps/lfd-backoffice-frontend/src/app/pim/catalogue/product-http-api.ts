@@ -10,6 +10,8 @@ import type {
   VariantNutritionView,
   VariantView,
   LocalizedText,
+  OperationAudience,
+  SetProductAudiencePayload,
 } from '@lfd/pim-contracts';
 import { SOURCE_LOCALE, type VariantAspect } from '@lfd/pim-contracts';
 import { firstValueFrom } from 'rxjs';
@@ -189,6 +191,7 @@ export function backendToProduct(
     vatByContext: product.vatByContext,
     operationOnly: product.operationOnly,
     requiresCold: product.requiresCold,
+    audience: product.audience,
     slug: product.slug,
     ...(price === null || price === undefined ? {} : { priceEur: price / 100 }),
     ...(weight === null || weight === undefined ? {} : { weightGrams: weight }),
@@ -518,6 +521,15 @@ export class ProductHttpApi {
   async setColdRequirement(id: string, requiresCold: boolean): Promise<void> {
     const payload: SetProductColdRequirementPayload = { requiresCold };
     await this.put(`products/${id}/cold-requirement`, payload);
+  }
+
+  /**
+   * **À qui la fiche vend** — `null` la rend à sa famille. Une écriture à part,
+   * journalisée par le serveur (`product.audience_changed`), hors des sections.
+   */
+  async setAudience(id: string, audience: OperationAudience | null): Promise<void> {
+    const payload: SetProductAudiencePayload = { audience };
+    await this.put(`products/${id}/audience`, payload);
   }
 
   private async put(path: string, body: unknown): Promise<void> {

@@ -125,6 +125,34 @@ describe('App — Gestion Boutique', () => {
     expect(render(['pim_catalog:read']).querySelector(rail(link))).toBeNull();
   });
 
+  /**
+   * Parti du rail de l'E-commerce le 2026-10-15 (H9) : il doit paraître dans
+   * les DEUX arbres de Gestion Boutique, et ne plus paraître dans le rail de
+   * l'espace qu'il a quitté.
+   */
+  it('montre « Catalogue publié » sous b2b_settings:read, dans les deux arbres', () => {
+    const link = '/catalogue-publie';
+    const entry = render(['b2b_settings:read']).querySelector(rail(link));
+    expect(entry?.getAttribute('label')).toBe('Catalogue publié');
+    expect(entry?.closest('fold-menu-section')?.getAttribute('label')).toBe('Gestion Boutique');
+    expect(
+      render(['b2b_settings:read'], true).querySelector(tile(link))?.getAttribute('label'),
+    ).toBe('Catalogue publié');
+    expect(render(['pim_catalog:read']).querySelector(rail(link))).toBeNull();
+  });
+
+  /**
+   * Par le `href` rendu, pas par l'attribut : les entrées de l'espace sont
+   * liées par `[routerLink]="view.link"`, qui ne laisse aucun attribut à lire.
+   * La présence du nouveau lien prouve que le sélecteur voit quelque chose.
+   */
+  it("ne garde plus l'ancienne entrée de l'E-commerce, ni au rail ni aux tuiles", () => {
+    for (const host of [render(['b2b_settings:read']), render(['b2b_settings:read'], true)]) {
+      expect(host.querySelector('a[href="/catalogue-publie"]')).not.toBeNull();
+      expect(host.querySelector('a[href="/b2b/catalogue"]')).toBeNull();
+    }
+  });
+
   it('est absente sans aucun des deux droits', () => {
     const host = render(['b2b_orders:read']);
     expect(host.querySelector('fold-menu-section[label="Gestion Boutique"]')).toBeNull();

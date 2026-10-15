@@ -189,6 +189,27 @@
                sans lui être rattachées deux fois : c'est la position dans la
                boucle qui les range, pas une famille recopiée. -->
           @if (section.key === 'tarif') {
+            <!-- AUDIENCE — à qui la fiche vend (lot 3 du plan du catalogue
+             synchronisé, H1). Sous le tarif, parce que c'est la même
+             question : à qui, et à quel prix. Seule, sur sa route, hors de
+             « Tout enregistrer », comme la vente en opération. -->
+            @if (store.isEdit()) {
+              <fold-card>
+                <fold-page-section
+                  title="Audience"
+                  separator
+                  collapsible
+                  [open]="sectionOpen('audience')()"
+                  (openChange)="setSectionOpen('audience', $event)"
+                >
+                  <span sectionSubtitle>
+                    À qui la fiche est vendue : aux pros, au public, ou aux deux. S'applique à
+                    toutes ses déclinaisons.
+                  </span>
+                  <app-audience-form />
+                </fold-page-section>
+              </fold-card>
+            }
             <!-- LIMITE DE COMMANDE — sa propre carte, et pas un bloc sous le tarif.
              « Combien ça coûte » et « jusqu'à quand on en prend » sont deux
              sujets : le premier est une décision commerciale, le second une

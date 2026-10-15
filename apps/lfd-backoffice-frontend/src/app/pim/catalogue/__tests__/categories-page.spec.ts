@@ -20,6 +20,7 @@ function category(overrides: Partial<Category> = {}): Category {
     channelPreset: [],
     vatByContext: {},
     activeProductCount: 0,
+    audience: 'both',
     ...overrides,
   };
 }

@@ -83,6 +83,7 @@ function body(id: string): CatalogProductFactBody {
   return {
     status: "inactive",
     audience: "both",
+    audienceInherited: true,
     product: {
       id,
       sku: `SKU-${id}`,
@@ -163,6 +164,16 @@ describe("B2bCatalogFactsEmitter", () => {
     const first = CatalogProductChangedFact.fromPayload(facts[0]?.payload ?? {});
     expect(first).toMatchObject({ productId: "p_a", seq: 41, emittedAt: NOW.toISOString() });
     expect(first.body).toEqual(body("p_a"));
+  });
+
+  /** Lot 3 : un fait resté dans la boîte avant le champ se lit encore — « on ne sait pas ». */
+  it("relit un fait émis avant `audienceInherited` en le disant inconnu", async () => {
+    const { uow, emitter } = setup(OPEN, ["p_a"]);
+    await uow.run(() => emitter.emitProducts(["p_a"]));
+    const { audienceInherited: _dropped, ...older } = uow.of(PIM_CATALOG_PRODUCT_CHANGED)[0]
+      ?.payload ?? { audienceInherited: null };
+
+    expect(CatalogProductChangedFact.fromPayload(older).body.audienceInherited).toBeNull();
   });
 
   it("ignore une fiche que le verrou ne trouve pas, sans tirer de numéro pour elle", async () => {

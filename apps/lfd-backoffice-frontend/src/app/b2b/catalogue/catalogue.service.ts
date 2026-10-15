@@ -2,16 +2,23 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import type { CatalogAdminItemView } from '@lfd/contracts';
+import {
+  REVIEW_BATCH_MAX,
+  type CatalogAdminItemView,
+  type PublishedCatalogView,
+} from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../../api/api-config';
+
+/** Les deux audiences d'une boutique — celles qu'on masque et qu'on valide. */
+export type ShopAudience = 'pro' | 'public';
 
 /**
  * Le catalogue **du paramétrage** : ce que le PIM a poussé, plus ce qu'on décide
  * ici.
  *
  * Écriture par geste nommé, comme côté serveur — `setPrice` / `alignOnPim` /
- * `setVisibility` / `setFeatured`. Un `update(sku, patch)` unique aurait été plus court et
+ * `setMasking` / `setFeatured`. Un `update(sku, patch)` unique aurait été plus court et
  * aurait perdu la seule chose qui compte : ce que l'utilisateur croyait faire.
  */
 @Injectable({ providedIn: 'root' })
@@ -92,22 +99,53 @@ export class CatalogueService {
     );
   }
 
-  /** Masque ou réaffiche l'article dans la vitrine **publique**. */
-  async setPublicVisibility(sku: string, hidden: boolean): Promise<void> {
-    await firstValueFrom(
-      this.http.put<void>(
-        `${B2B_API_BASE}/admin/catalog/${encodeURIComponent(sku)}/public-visibility`,
-        { hidden },
-      ),
+  /**
+   * **La vue « Catalogue publié »** — toutes les fiches reçues du référentiel,
+   * inactives et incomplètes comprises, l'état de chaque déclinaison par
+   * audience, les comptes par rayon et ce qui attend une validation.
+   */
+  published(): Promise<PublishedCatalogView> {
+    return firstValueFrom(
+      this.http.get<PublishedCatalogView>(`${B2B_API_BASE}/admin/catalog/published`),
     );
   }
 
-  /** Masque ou réaffiche l'article dans la boutique **professionnelle**. */
-  async setVisibility(sku: string, hidden: boolean): Promise<void> {
+  /**
+   * **Masquer pour UNE audience, ou y remettre** — la route unique du masquage
+   * (H5 du plan `plan-catalogue-synchronise-par-audience.md`, D7 du plan
+   * d'audience). Elle a remplacé `:sku/visibility` et `:sku/public-visibility`,
+   * retirées côté serveur le 2026-10-15 : deux routes pour un même geste,
+   * l'audience en paramètre plutôt que dans le chemin.
+   *
+   * Le serveur refuse (409 `catalog.item.masking_outside_audience`) de masquer
+   * pour une audience que l'article n'a pas : l'écran n'offre donc le geste que
+   * sur une cellule `en_vente` ou `masque`.
+   */
+  async setMasking(sku: string, audience: ShopAudience, hidden: boolean): Promise<void> {
     await firstValueFrom(
-      this.http.put<void>(`${B2B_API_BASE}/admin/catalog/${encodeURIComponent(sku)}/visibility`, {
+      this.http.put<void>(`${B2B_API_BASE}/admin/catalog/${encodeURIComponent(sku)}/masking`, {
+        audience,
         hidden,
       }),
     );
+  }
+
+  /**
+   * **Valider** des articles arrivés du référentiel, pour une ou deux audiences.
+   *
+   * Par lots de `REVIEW_BATCH_MAX` : le serveur refuse au-delà, et « Tout
+   * valider » d'un catalogue entier peut le dépasser. Une audience déjà validée
+   * pour un SKU est ignorée par le serveur, sans refus — « Tout valider » peut
+   * donc envoyer les deux audiences pour tous.
+   */
+  async approveReview(skus: readonly string[], audiences: readonly ShopAudience[]): Promise<void> {
+    for (let start = 0; start < skus.length; start += REVIEW_BATCH_MAX) {
+      await firstValueFrom(
+        this.http.post<void>(`${B2B_API_BASE}/admin/catalog/review/approve`, {
+          skus: skus.slice(start, start + REVIEW_BATCH_MAX),
+          audiences,
+        }),
+      );
+    }
   }
 }

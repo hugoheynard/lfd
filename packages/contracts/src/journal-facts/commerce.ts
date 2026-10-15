@@ -69,6 +69,15 @@ export const COMMERCE_FACTS = {
   "catalog_item.shown_public": labelled(skuOnly().shape),
   "catalog_item.featured": labelled(skuOnly().shape),
   "catalog_item.unfeatured": labelled(skuOnly().shape),
+  // Lot 3 du plan du catalogue synchronisé : l'article arrivé récemment est
+  // validé pour la boutique publique. Né avec sa forme labellisée, sans historique.
+  "catalog_item.public_review_approved": fact(
+    payload({ subjectLabel: subjectLabel(), sku: z.string() }),
+  ),
+  // Son jumeau côté pro (Hugo, 2026-10-15, option 2).
+  "catalog_item.pro_review_approved": fact(
+    payload({ subjectLabel: subjectLabel(), sku: z.string() }),
+  ),
   /**
    * Une arrivée du référentiel validée, moins ses articles écartés.
    *

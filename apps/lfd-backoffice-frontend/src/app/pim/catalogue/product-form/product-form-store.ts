@@ -16,6 +16,7 @@ import {
   writeLocalized,
   type Locale,
   type LocalizedText,
+  type OperationAudience,
   type ProductReadinessView,
   type ProPrice,
   type VariantAspect,
@@ -24,6 +25,7 @@ import {
 import { MILLICENTS_PER_CENT } from '@lfd/money';
 
 import { variantTabLabel } from './variant-label';
+import { activationRefusalOf, type ActivationRefusal } from './activation-refusal';
 import {
   observedGapLabel,
   proPriceMillicentsOf,
@@ -669,6 +671,16 @@ export class ProductFormStore {
   readonly operationOnly = signal(false);
   /** Demande le froid (lot 4 bis). Hors des sections, comme la réservation. */
   readonly requiresCold = signal(false);
+  /**
+   * À qui la fiche vend quand elle déroge à sa famille ; `null` = elle hérite.
+   * Une écriture à part (`PUT …/audience`), hors des sections.
+   */
+  readonly audience = signal<OperationAudience | null>(null);
+  /**
+   * Le refus d'ACTIVER, rangé à part de `error` : il porte une liste par
+   * déclinaison, que le rail montre sous le bouton qui l'a provoqué.
+   */
+  readonly activationRefusal = signal<ActivationRefusal | null>(null);
   readonly weightGrams = signal<number | null>(null);
   /**
    * **La déclaration d'allergènes — un seul signal, et c'est le sujet.**
@@ -975,6 +987,11 @@ export class ProductFormStore {
 
   private readonly selectedCategory = computed<Category | undefined>(() =>
     this.categories().find((c) => c.id === this.categoryId()),
+  );
+
+  /** L'audience de la famille — ce dont la fiche hérite. `null` tant qu'elle n'est pas chargée. */
+  readonly familyAudience = computed<OperationAudience | null>(
+    () => this.selectedCategory()?.audience ?? null,
   );
 
   /**
@@ -1748,11 +1765,17 @@ export class ProductFormStore {
     }
     this.busy.set(true);
     this.error.set(null);
+    this.activationRefusal.set(null);
     try {
       await this.callLifecycle(id, gesture);
       await this.refreshLifecycle(id);
     } catch (caught) {
-      this.error.set(messageOf(caught));
+      const refusal = activationRefusalOf(caught);
+      if (refusal === null) {
+        this.error.set(messageOf(caught));
+      } else {
+        this.activationRefusal.set(refusal);
+      }
     } finally {
       this.busy.set(false);
     }
@@ -2174,6 +2197,7 @@ export class ProductFormStore {
     this.channelsOverride.set(product.channelsOverride);
     this.operationOnly.set(product.operationOnly);
     this.requiresCold.set(product.requiresCold);
+    this.audience.set(product.audience);
 
     this.editorial.set(detail.editorial);
     this.media.set([...detail.media]);

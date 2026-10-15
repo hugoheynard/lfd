@@ -1,0 +1,8 @@
+<fold-listbox
+  label="Audience"
+  hint="Pros, public, ou les deux. Hériter suit la famille, y compris quand elle change."
+  [options]="options()"
+  [value]="choice()"
+  [disabled]="busy()"
+  (selectionChange)="onChange($event)"
+/>

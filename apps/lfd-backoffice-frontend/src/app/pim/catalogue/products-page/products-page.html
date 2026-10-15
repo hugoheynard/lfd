@@ -209,12 +209,12 @@
           }
           @if (p.status === 'draft') {
             <fold-dropdown-item icon="check" [disabled]="busy()" (selected)="publish(p)">
-              Publier au catalogue
+              Activer
             </fold-dropdown-item>
           }
           @if (p.status === 'published') {
             <fold-dropdown-item icon="eye-off" [disabled]="busy()" (selected)="unpublish(p)">
-              Dépublier
+              Désactiver
             </fold-dropdown-item>
           }
           @if (p.status !== 'archived') {

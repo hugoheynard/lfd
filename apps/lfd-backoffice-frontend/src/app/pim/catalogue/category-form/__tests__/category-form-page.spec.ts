@@ -24,6 +24,7 @@ function category(overrides: Partial<Category> = {}): Category {
     channelPreset: [{ pointOfSaleId: 'emp_village', context: 'takeaway' }],
     vatByContext: { takeaway: 'tva_55' },
     activeProductCount: 0,
+    audience: 'both',
     ...overrides,
   };
 }

@@ -69,6 +69,26 @@
             </fold-page-section>
           </fold-card>
         }
+
+        <!-- AUDIENCE — à qui la famille vend (lot 3 du plan du catalogue
+             synchronisé, H1). Hors des sections : elle s'écrit seule, sur sa
+             route. Absente d'une famille archivée, que le référentiel gèle. -->
+        @if (!store.isArchived()) {
+          <fold-card>
+            <fold-page-section
+              title="Audience"
+              separator
+              collapsible
+              [open]="sectionOpen('audience')()"
+              (openChange)="setSectionOpen('audience', $event)"
+            >
+              <span sectionSubtitle>
+                Pros, public, ou les deux. Ses fiches en héritent, sauf celles qui y dérogent.
+              </span>
+              <app-category-audience-form />
+            </fold-page-section>
+          </fold-card>
+        }
       </div>
 
       <app-category-summary-rail asideRight (archived)="archive()" />

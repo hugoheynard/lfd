@@ -18,6 +18,7 @@ import { UiPrefsStore } from '../../../shared/ui-prefs/ui-prefs.store';
 import { SECTION_EDITING } from '../section-state/section-editing';
 import { SectionState } from '../section-state/section-state';
 import { CategoryFormStore, type CategorySection } from './category-form-store';
+import { CategoryAudienceForm } from './form-sections/audience/category-audience-form';
 import { CategoryChannelsForm } from './form-sections/channels/channels-form';
 import { CategoryCommunicationForm } from './form-sections/communication/communication-form';
 import { CategoryIdentityForm } from './form-sections/identity/identity-form';
@@ -64,6 +65,7 @@ interface PageSection {
     FoldPageSectionComponent,
     SectionState,
     CategoryIdentityForm,
+    CategoryAudienceForm,
     CategoryChannelsForm,
     CategoryCommunicationForm,
     CategoryVisualsForm,

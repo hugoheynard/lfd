@@ -7,9 +7,9 @@ import { AlignOnPimPriceHandler } from "./application/commands/align-on-pim-pric
 import { AlignPublicOnPimHandler } from "./application/commands/align-public-on-pim.handler.js";
 import { SetB2bPriceHandler } from "./application/commands/set-b2b-price.handler.js";
 import { SetPublicPriceHandler } from "./application/commands/set-public-price.handler.js";
-import { SetPublicVisibilityHandler } from "./application/commands/set-public-visibility.handler.js";
+import { SetMaskingHandler } from "./application/commands/set-masking.handler.js";
+import { ApproveReviewHandler } from "./application/commands/approve-review.handler.js";
 import { SetCatalogFeaturedHandler } from "./application/commands/set-catalog-featured.handler.js";
-import { SetCatalogVisibilityHandler } from "./application/commands/set-catalog-visibility.handler.js";
 import { IngestCatalogService } from "./application/ingest-catalog.service.js";
 import { OnOperationImageChangedHandler } from "./application/handlers/on-operation-image-changed.handler.js";
 import { OnProductMediaChangedHandler } from "./application/handlers/on-product-media-changed.handler.js";
@@ -63,6 +63,9 @@ import { CheckCatalogHealthService } from "./application/check-catalog-health.se
 import { CheckCatalogHealthHandler } from "./application/queries/check-catalog-health.handler.js";
 import { ExportCatalogCsvHandler } from "./application/queries/export-catalog-csv.handler.js";
 import { GetCatalogSummaryHandler } from "./application/queries/get-catalog-summary.handler.js";
+import { GetPublishedCatalogHandler } from "./application/queries/get-published-catalog.handler.js";
+import { PublishedCatalogReader } from "./domain/ports/published-catalog.reader.js";
+import { PrismaPublishedCatalogReader } from "./infrastructure/prisma-published-catalog.reader.js";
 import { ListCatalogHandler } from "./application/queries/list-catalog.handler.js";
 import { CheckCatalogParityHandler } from "./application/queries/check-catalog-parity.handler.js";
 import { PreviewCatalogPushHandler } from "./application/queries/preview-catalog-push.handler.js";
@@ -152,6 +155,7 @@ import { PrismaCatalogMediaCopies } from "./infrastructure/prisma-catalog-media-
     CheckCatalogHealthHandler,
     ListCatalogHandler,
     GetCatalogSummaryHandler,
+    GetPublishedCatalogHandler,
     ExportCatalogCsvHandler,
     ReadShopCatalogueHandler,
     // 🔴 LA logique de prix de la vitrine, pour les DEUX routes. Exportée plus
@@ -162,8 +166,8 @@ import { PrismaCatalogMediaCopies } from "./infrastructure/prisma-catalog-media-
     AlignOnPimPriceHandler,
     SetPublicPriceHandler,
     AlignPublicOnPimHandler,
-    SetPublicVisibilityHandler,
-    SetCatalogVisibilityHandler,
+    SetMaskingHandler,
+    ApproveReviewHandler,
     SetCatalogFeaturedHandler,
     { provide: CatalogItemRepository, useClass: PrismaCatalogItemRepository },
     { provide: CatalogVisualsProjection, useClass: PrismaCatalogVisualsProjection },
@@ -181,6 +185,7 @@ import { PrismaCatalogMediaCopies } from "./infrastructure/prisma-catalog-media-
     // importait `orders` neuf fois pour une donnée qui n'y est pas.
     { provide: ProductCatalogReader, useClass: CatalogBackedProductCatalog },
     { provide: CatalogAdminReader, useClass: PrismaCatalogAdminReader },
+    { provide: PublishedCatalogReader, useClass: PrismaPublishedCatalogReader },
     // La boîte de réception. Déclarée AVANT d'avoir un lecteur : l'ingestion
     // continue d'écrire les faits en direct, et la bascule est un déploiement
     // séparé, derrière un drapeau `B2B_DELIVERY_INBOX`.

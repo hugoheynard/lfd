@@ -313,6 +313,8 @@ export const COMMERCE_PHRASES = {
   'catalog_item.shown': onArticle('a remis ', ' au catalogue professionnel'),
   'catalog_item.hidden_public': onArticle('a masqué ', ' de la boutique publique'),
   'catalog_item.shown_public': onArticle('a remis ', ' en boutique publique'),
+  'catalog_item.public_review_approved': onArticle('a validé ', ' pour la boutique publique'),
+  'catalog_item.pro_review_approved': onArticle('a validé ', ' pour les professionnels'),
   'catalog_item.featured': onArticle('a mis en avant ', ' dans le catalogue professionnel'),
   'catalog_item.unfeatured': onArticle('a cessé de mettre en avant ', ''),
   'catalog_delivery.accepted': deliveryAccepted,

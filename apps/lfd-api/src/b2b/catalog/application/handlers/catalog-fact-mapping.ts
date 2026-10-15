@@ -25,6 +25,7 @@ export function receivedProductOf(fact: CatalogProductChangedFact): ReceivedCata
     categoryId: product.categoryId,
     status: body.status,
     audience: body.audience,
+    audienceInherited: body.audienceInherited,
     gaps: body.gaps,
     seq: fact.seq,
     receivedAt,

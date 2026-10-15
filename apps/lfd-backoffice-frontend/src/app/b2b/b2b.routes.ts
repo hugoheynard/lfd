@@ -36,7 +36,11 @@ export const b2bRoutes: Routes = [
     title: 'E-commerce LFC — LFC B2B admin',
     loadComponent: () => import('./b2b-page/b2b-page').then((m) => m.B2bPage),
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'catalogue' },
+      // L'entrée de l'espace : son contenu, depuis que le catalogue publié est
+      // parti en Gestion Boutique (2026-10-15). La réception, en tête du rail,
+      // a son propre droit — y envoyer qui ne tient que `b2b_settings` le
+      // ferait rebondir sur un refus.
+      { path: '', pathMatch: 'full', redirectTo: 'contenu' },
       {
         // LE CONTENU DE PLATEFORME — les textes de la vitrine. Sous le B2B et
         // non dans un espace à lui : c'est le même contexte que son catalogue
@@ -185,11 +189,12 @@ export const b2bRoutes: Routes = [
         canActivate: [permissionGuard('b2b_catalog:read')],
         loadComponent: () => import('./reception/reception-page').then((m) => m.ReceptionPage),
       },
-      {
-        path: 'catalogue',
-        title: 'Catalogue actuel en ligne — LFC B2B admin',
-        loadComponent: () => import('./catalogue/catalogue-page').then((m) => m.CataloguePage),
-      },
+      // LE CATALOGUE PUBLIÉ (l'ancien « Catalogue actuel en ligne ») a quitté
+      // cet espace le 2026-10-15 pour Gestion Boutique, `/catalogue-publie`
+      // (H9 de plan-catalogue-synchronise-par-audience.md). L'ancienne adresse
+      // vit dans des favoris ; absolue, la redirection s'applique AVANT les
+      // gardes : le mur de l'espace ne la voit pas.
+      { path: 'catalogue', pathMatch: 'full', redirectTo: '/catalogue-publie' },
       // LES PROMOTIONS (l'ancienne « Tarification B2B ») ont quitté cet espace
       // le 2026-10-13 (Hugo : « ne devrait pas ouvrir le secondary menu
       // d'e-commerce LFC ») : route de premier niveau `/promotions`, dans

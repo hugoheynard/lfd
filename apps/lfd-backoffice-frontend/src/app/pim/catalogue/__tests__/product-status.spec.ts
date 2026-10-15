@@ -8,9 +8,9 @@ const ALL: readonly ProductStatus[] = ['draft', 'published', 'archived'];
 describe('la façon dont un statut de produit se montre', () => {
   it('rend un libellé en FRANÇAIS pour chaque état', () => {
     expect(ALL.map((status) => productStatusLabel(status))).toEqual([
-      'Brouillon',
-      'Publié',
-      'Archivé',
+      'Inactive',
+      'Active',
+      'Archivée',
     ]);
   });
 

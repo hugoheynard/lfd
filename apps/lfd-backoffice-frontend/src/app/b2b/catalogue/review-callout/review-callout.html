@@ -1,0 +1,38 @@
+<fold-callout variant="info">
+  <div class="body">
+    <h2 class="title">{{ title() }}</h2>
+    <p>
+      Arrivés du référentiel, ils ne sont servis à une audience qu'une fois validés pour elle. La
+      cellule de l'audience dit « en attente de validation » d'ici là.
+    </p>
+    <ul class="list">
+      @for (entry of pending(); track entry.sku) {
+        <li class="line">
+          <span class="identity">
+            <span class="name">{{ entry.name }}</span>
+            <span class="sku">{{ entry.sku }}</span>
+          </span>
+          <span class="gestures">
+            @for (audience of entry.audiences; track audience) {
+              <button
+                foldButton
+                size="sm"
+                type="button"
+                emphasis="outline"
+                intent="neutral"
+                [disabled]="busy()"
+                [attr.aria-label]="label(audience) + ' : ' + entry.name"
+                (click)="approveOne(entry, audience)"
+              >
+                {{ label(audience) }}
+              </button>
+            }
+          </span>
+        </li>
+      }
+    </ul>
+  </div>
+  <button actions foldButton size="sm" type="button" [loading]="busy()" (click)="approveAll()">
+    Tout valider
+  </button>
+</fold-callout>

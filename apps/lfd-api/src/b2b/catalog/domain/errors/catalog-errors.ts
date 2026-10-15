@@ -157,3 +157,27 @@ export class UnknownExcludedSkuError extends BusinessError {
     );
   }
 }
+
+/** Les mots d'une audience dans un message lu par le staff. */
+const AUDIENCE_WORDS = { pro: "aux professionnels", public: "au public" } as const;
+
+/**
+ * On a voulu masquer un article pour une audience à laquelle le référentiel
+ * ne le vend pas (H5, D7 du plan d'audience).
+ *
+ * Il n'y a rien à retirer : le masquage ne fait que retirer, et l'article n'est
+ * déjà pas servi à ce lecteur. Accepter écrirait une décision sans effet, que
+ * l'écran afficherait comme un geste pris.
+ */
+export class MaskingOutsideAudienceError extends BusinessError {
+  constructor(
+    readonly sku: string,
+    readonly viewer: "pro" | "public",
+  ) {
+    super(
+      "catalog.item.masking_outside_audience",
+      `L'article ${sku} n'est pas vendu ${AUDIENCE_WORDS[viewer]} : il n'y a rien à masquer. ` +
+        "Pour changer à qui il se vend, modifiez son audience dans le référentiel.",
+    );
+  }
+}

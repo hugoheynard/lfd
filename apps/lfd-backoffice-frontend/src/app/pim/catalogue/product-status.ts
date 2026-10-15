@@ -20,10 +20,13 @@ import type { FoldBadgeVariant } from 'fold-ng';
  * modèle gagne un état, la compilation casse ici, là où un `switch` avec
  * `default` l'aurait peint « Brouillon » en silence.
  */
+// « Inactive / Active / Archivée » depuis le lot 3 de
+// `plan-catalogue-synchronise-par-audience.md` (C1) : l'écran parle d'activer
+// une fiche, plus de la publier. Les VALEURS d'enum ne changent pas (§8).
 const STATUS_LABELS: Readonly<Record<ProductStatus, string>> = {
-  draft: 'Brouillon',
-  published: 'Publié',
-  archived: 'Archivé',
+  draft: 'Inactive',
+  published: 'Active',
+  archived: 'Archivée',
 };
 
 /**

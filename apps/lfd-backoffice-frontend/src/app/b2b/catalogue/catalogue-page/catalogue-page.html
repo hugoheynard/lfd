@@ -10,8 +10,8 @@
   @case ('ready') {
     @if (total() === 0) {
       <fold-empty-state
-        title="Aucun article reçu"
-        subtitle="Le catalogue arrive du PIM. Publiez-y des produits sur le canal professionnel, puis lancez un push."
+        title="Aucune fiche reçue"
+        subtitle="Le catalogue arrive du référentiel : une fiche y paraît dès sa création, inactive."
       />
     } @else {
       <!--
@@ -37,7 +37,7 @@
         <fold-page-section bleed stack class="masthead" foldSurface="chrome">
           <div class="masthead-head">
             <div class="masthead-identity">
-              <h1 class="masthead-title">Catalogue actuel en ligne</h1>
+              <h1 class="masthead-title">Catalogue publié</h1>
               <fold-badge [content]="total() + ' articles'" variant="neutral" />
             </div>
           </div>
@@ -75,10 +75,22 @@
               activeStyle="accent"
               [options]="filters()"
               [value]="filter()"
-              (valueChange)="filter.set($event)"
+              (valueChange)="selectFilter($event)"
             />
           </div>
         </fold-page-section>
+
+        <!--
+          LES ARRIVÉES À VALIDER, avant tout le reste : ce qui attend une
+          décision passe devant ce qui est déjà en vente.
+        -->
+        @if (pending().length > 0) {
+          <app-review-callout
+            [pending]="pending()"
+            [busy]="approving()"
+            (approve)="approve($event)"
+          />
+        }
 
         <!--
           Le compteur de non-vendables est en TÊTE et non en pied de page : c'est
@@ -117,7 +129,7 @@
         @if (shown() === 0) {
           <fold-empty-state
             title="Aucun article ne correspond"
-            subtitle="Essayez un autre nom, une autre référence, ou revenez à « Tous »."
+            subtitle="Essayez un autre nom, une autre référence, ou revenez à « Tout »."
           />
         }
 
@@ -128,8 +140,7 @@
             (priceAligned)="alignOnPim($event)"
             (publicPriceSet)="setPublicPrice($event)"
             (publicPriceAligned)="alignPublicOnPim($event)"
-            (visibilityToggled)="toggleVisibility($event)"
-            (publicVisibilityToggled)="togglePublicVisibility($event)"
+            (maskToggled)="toggleMasking($event)"
           />
         }
       </fold-page-layout>

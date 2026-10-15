@@ -338,6 +338,19 @@ model CatalogItem {
   /// le vise. `NULL` = jamais reçu par un fait (le push ne l'écrit pas).
   variantId String? @map("variant_id")
 
+  /// **À valider pour la boutique publique** (lot 3 du plan du catalogue
+  /// synchronisé). Posé par le récepteur des faits d'une fiche à la CRÉATION
+  /// de la ligne — premier SKU arrivé, audience qui contient le public —,
+  /// jamais ensuite ; levé par le back-office. Tant qu'il est posé, `servedTo`
+  /// refuse le public ; les pros voient l'article. Le push ne le pose jamais.
+  publicReviewPending Boolean @default(false) @map("public_review_pending")
+
+  /// **À valider pour les pros** — jumeau du précédent (décision de Hugo du
+  /// 2026-10-15, option 2) : posé à la création d'une ligne dont l'audience
+  /// contient `pro`, jamais ensuite ; `servedTo` refuse les pros tant qu'il
+  /// est posé, commande comprise.
+  proReviewPending Boolean @default(false) @map("pro_review_pending")
+
   override CatalogItemOverride?
 
   @@index([categoryId])
@@ -542,18 +555,23 @@ model CatalogItemOverride {
 ///
 /// `categoryId` SANS clé étrangère : la fiche peut arriver avant sa famille.
 model CatalogEntry {
-  productId  String @id @map("product_id")
-  productSku String @map("product_sku")
-  name       String
-  categoryId String @map("category_id")
+  productId         String   @id @map("product_id")
+  productSku        String   @map("product_sku")
+  name              String
+  categoryId        String   @map("category_id")
   /// `inactive` | `active` | `archived` — les mots de l'écran, pas l'enum du référentiel.
-  status     String
+  status            String
   /// L'audience EFFECTIVE (dérogation de la fiche, sinon sa famille).
-  audience   String
+  audience          String
   /// Déclinaison (SKU) → ce qui lui manque pour se vendre. `{}` = rien.
-  gaps       Json
-  appliedSeq BigInt   @map("applied_seq")
-  receivedAt DateTime @map("received_at")
+  gaps              Json
+  /// Les déclinaisons COMPLÈTES du fait (sku, nom, défaut, prix proposés) —
+  /// ce qu'une fiche inactive montre dans la vue « Catalogue publié » (lot 3).
+  variants          Json     @default("[]")
+  /// La fiche hérite son audience de sa famille. `NULL` = fait d'avant le lot 3.
+  audienceInherited Boolean? @map("audience_inherited")
+  appliedSeq        BigInt   @map("applied_seq")
+  receivedAt        DateTime @map("received_at")
 
   @@index([categoryId])
   @@map("catalog_entries")

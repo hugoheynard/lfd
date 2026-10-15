@@ -10,6 +10,7 @@ import { CatalogItemRepository } from "../domain/ports/catalog-item.repository.j
 import { STILL_SOLD } from "./sellable-filter.js";
 import { lastRecordedPrices, priceTraceRows } from "./catalog-price-trace.js";
 import { pimFactsColumns } from "./catalog-item-columns.js";
+import { catalogAudienceOf } from "../domain/served-to.js";
 
 /** La ligne telle que Prisma la rend, décision jointe. Aucun type `Prisma.*` exporté. */
 interface ItemRow {
@@ -48,6 +49,9 @@ interface ItemRow {
   readonly requiresCold: boolean;
   readonly receivedAt: Date;
   readonly withdrawnAt: Date | null;
+  readonly audience: string | null;
+  readonly publicReviewPending: boolean;
+  readonly proReviewPending: boolean;
   readonly override: {
     readonly priceMillicents: number | null;
     readonly decidedPublicTtcCents: number | null;
@@ -299,6 +303,11 @@ function toDomain(row: ItemRow): CatalogItem {
       receivedAt: row.receivedAt,
     },
     withdrawnAt: row.withdrawnAt,
+    placement: {
+      audience: catalogAudienceOf(row.audience),
+      publicReviewPending: row.publicReviewPending,
+      proReviewPending: row.proReviewPending,
+    },
     decision:
       row.override === null
         ? null
@@ -323,6 +332,12 @@ function factsRow(state: CatalogItemState) {
     // est réécrite et l'article reparaît. L'omettre le laisserait invisible pour
     // toujours, pendant que le push l'annoncerait accepté.
     withdrawnAt: state.withdrawnAt,
+    // L'attente de validation, écrite telle que l'agrégat la porte : le push
+    // la relit et la rend inchangée (un article reçu par lui naît `false`),
+    // la validation la lève. ⚠️ L'AUDIENCE n'est PAS réécrite d'ici : le push
+    // ne la connaît pas, et l'écrire effacerait celle qu'un fait a posée.
+    publicReviewPending: state.placement.publicReviewPending,
+    proReviewPending: state.placement.proReviewPending,
   };
 }
 

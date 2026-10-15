@@ -1,4 +1,4 @@
-import type { CatalogAdminItemView, CatalogItemView } from "@lfd/contracts";
+import type { CatalogAdminItemView, CatalogItemView, PublishedCatalogView } from "@lfd/contracts";
 import { millicentsFromCents } from "@lfd/money";
 /**
  * E2E du **paramétrage du catalogue** — sur un vrai Postgres.
@@ -427,7 +427,10 @@ describe("DELETE /admin/catalog/:sku/public-price", () => {
  */
 describe("masquage par audience", () => {
   it("🔴 masquer au PRO laisse l'article en vitrine publique", async () => {
-    await asStaff().put(`/admin/catalog/${SKU}/visibility`).send({ hidden: true }).expect(204);
+    await asStaff()
+      .put(`/admin/catalog/${SKU}/masking`)
+      .send({ audience: "pro", hidden: true })
+      .expect(204);
 
     const item = await listOne();
     expect(item?.isHidden).toBe(true);
@@ -442,8 +445,8 @@ describe("masquage par audience", () => {
 
   it("🔴 masquer au PUBLIC le retire de la vitrine, sans toucher au pro", async () => {
     await asStaff()
-      .put(`/admin/catalog/${SKU}/public-visibility`)
-      .send({ hidden: true })
+      .put(`/admin/catalog/${SKU}/masking`)
+      .send({ audience: "public", hidden: true })
       .expect(204);
 
     const item = await listOne();
@@ -463,8 +466,8 @@ describe("masquage par audience", () => {
    */
   it("🔴 masqué au public, il n'est plus achetable par la route publique", async () => {
     await asStaff()
-      .put(`/admin/catalog/${SKU}/public-visibility`)
-      .send({ hidden: true })
+      .put(`/admin/catalog/${SKU}/masking`)
+      .send({ audience: "public", hidden: true })
       .expect(204);
 
     const response = await ctx
@@ -477,13 +480,13 @@ describe("masquage par audience", () => {
 
   it("revient en vitrine publique sans rien changer au canal pro", async () => {
     await asStaff()
-      .put(`/admin/catalog/${SKU}/public-visibility`)
-      .send({ hidden: true })
+      .put(`/admin/catalog/${SKU}/masking`)
+      .send({ audience: "public", hidden: true })
       .expect(204);
 
     await asStaff()
-      .put(`/admin/catalog/${SKU}/public-visibility`)
-      .send({ hidden: false })
+      .put(`/admin/catalog/${SKU}/masking`)
+      .send({ audience: "public", hidden: false })
       .expect(204);
 
     const item = await listOne();
@@ -495,15 +498,24 @@ describe("masquage par audience", () => {
 
 describe("visibilité et mise en avant", () => {
   it("masque puis réaffiche", async () => {
-    await asStaff().put(`/admin/catalog/${SKU}/visibility`).send({ hidden: true }).expect(204);
+    await asStaff()
+      .put(`/admin/catalog/${SKU}/masking`)
+      .send({ audience: "pro", hidden: true })
+      .expect(204);
     expect((await listOne())?.isHidden).toBe(true);
 
-    await asStaff().put(`/admin/catalog/${SKU}/visibility`).send({ hidden: false }).expect(204);
+    await asStaff()
+      .put(`/admin/catalog/${SKU}/masking`)
+      .send({ audience: "pro", hidden: false })
+      .expect(204);
     expect((await listOne())?.isHidden).toBe(false);
   });
 
   it("refuse de mettre en avant un article masqué", async () => {
-    await asStaff().put(`/admin/catalog/${SKU}/visibility`).send({ hidden: true }).expect(204);
+    await asStaff()
+      .put(`/admin/catalog/${SKU}/masking`)
+      .send({ audience: "pro", hidden: true })
+      .expect(204);
 
     const response = await asStaff().put(`/admin/catalog/${SKU}/featured`).send({ featured: true });
 
@@ -513,7 +525,10 @@ describe("visibilité et mise en avant", () => {
   it("masquer éteint la mise en avant", async () => {
     await asStaff().put(`/admin/catalog/${SKU}/featured`).send({ featured: true }).expect(204);
 
-    await asStaff().put(`/admin/catalog/${SKU}/visibility`).send({ hidden: true }).expect(204);
+    await asStaff()
+      .put(`/admin/catalog/${SKU}/masking`)
+      .send({ audience: "pro", hidden: true })
+      .expect(204);
 
     expect((await listOne())?.isFeatured).toBe(false);
   });
@@ -740,7 +755,10 @@ describe("GET /admin/catalog/summary", () => {
 
   it("bascule l'article masqué d'une colonne à l'autre", async () => {
     await push(240);
-    await asStaff().put("/admin/catalog/VIE-001-1/visibility").send({ hidden: true }).expect(204);
+    await asStaff()
+      .put("/admin/catalog/VIE-001-1/masking")
+      .send({ audience: "pro", hidden: true })
+      .expect(204);
 
     const response = await asStaff().get("/admin/catalog/summary").expect(200);
 
@@ -801,5 +819,53 @@ describe("GET /admin/catalog/sellable", () => {
 
     expect(items).toHaveLength(1);
     expect(items[0]?.categoryName).toBe("Viennoiseries");
+  });
+});
+
+/**
+ * Lot 3 : la vue « Catalogue publié » remplacera `/b2b/catalogue` en
+ * production AVANT l'ouverture des faits (2b4). Faits fermés, le catalogue
+ * vient du seul push et `catalog_entries` est vide : la vue doit le rendre
+ * entier, sans quoi l'écran serait vide.
+ */
+describe("GET /admin/catalog/published — faits fermés, catalogue du push", () => {
+  async function published(): Promise<PublishedCatalogView> {
+    return jsonBody<PublishedCatalogView>(
+      await asStaff().get("/admin/catalog/published").expect(200),
+    );
+  }
+
+  it("rend la fiche du push en entrée active, vendue aux deux audiences", async () => {
+    const view = await published();
+
+    expect(view.entries).toHaveLength(1);
+    expect(view.entries[0]).toMatchObject({
+      productId: "prd_1",
+      productSku: "VIE-001",
+      status: "active",
+      audience: "both",
+      audienceInherited: null,
+    });
+    expect(view.entries[0]?.variants).toEqual([
+      expect.objectContaining({
+        sku: SKU,
+        onSale: true,
+        pro: { state: "en_vente", htMillicents: millicentsFromCents(200) },
+        public: { state: "en_vente", ttcCents: 250 },
+      }),
+    ]);
+    expect(view.pendingReview).toEqual([]);
+  });
+
+  it("dit « masqué » pour la seule audience masquée", async () => {
+    await asStaff()
+      .put(`/admin/catalog/${SKU}/masking`)
+      .send({ audience: "public", hidden: true })
+      .expect(204);
+
+    const variant = (await published()).entries[0]?.variants[0];
+
+    expect(variant?.pro.state).toBe("en_vente");
+    expect(variant?.public.state).toBe("masque");
   });
 });

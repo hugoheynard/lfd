@@ -38,6 +38,8 @@ export const CATALOG_ITEM_FACTS = {
   shownPublic: "catalog_item.shown_public",
   featured: "catalog_item.featured",
   unfeatured: "catalog_item.unfeatured",
+  publicReviewApproved: "catalog_item.public_review_approved",
+  proReviewApproved: "catalog_item.pro_review_approved",
 } as const satisfies Readonly<Record<string, JournalFactType>>;
 
 const SUBJECT_TYPE = "catalog_item";
@@ -212,4 +214,23 @@ export class CatalogItemFeaturedEvent extends CatalogItemFlagEvent {
 /** Fait : **l'article n'est plus mis en avant**. */
 export class CatalogItemUnfeaturedEvent extends CatalogItemFlagEvent {
   protected readonly type = CATALOG_ITEM_FACTS.unfeatured;
+}
+
+/**
+ * Fait : **l'article est validé pour la boutique publique** (lot 3 de
+ * `documentation/pim/plan-catalogue-synchronise-par-audience.md`). Arrivé du
+ * référentiel, il n'était servi qu'aux pros ; le public le voit désormais,
+ * s'il n'est pas masqué.
+ */
+export class CatalogItemPublicReviewApprovedEvent extends CatalogItemFlagEvent {
+  protected readonly type = CATALOG_ITEM_FACTS.publicReviewApproved;
+}
+
+/**
+ * Fait : **l'article est validé pour les pros** (décision de Hugo du
+ * 2026-10-15, option 2) : arrivé du référentiel, il n'était ni vu ni
+ * commandable par les pros ; il l'est désormais, s'il n'est pas masqué.
+ */
+export class CatalogItemProReviewApprovedEvent extends CatalogItemFlagEvent {
+  protected readonly type = CATALOG_ITEM_FACTS.proReviewApproved;
 }

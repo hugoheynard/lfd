@@ -47,6 +47,7 @@ describe('ChannelsForm', () => {
         ],
         vatByContext: { takeaway: 'tva_55', eatIn: 'tva_55' },
         activeProductCount: 0,
+        audience: 'both',
       },
     ]);
     store.categoryId.set('cat_vien');

@@ -39,7 +39,7 @@ describe('ProductFormPage — en-tête', () => {
     // `content` et `variant` sont des entrées signal : rien ne les reflète en
     // attribut. On lit donc ce que la pastille REND — le texte, et la classe que
     // `fold-badge` pose depuis sa variante.
-    expect(badge?.textContent?.trim()).toBe('Brouillon');
+    expect(badge?.textContent?.trim()).toBe('Inactive');
     expect(badge?.classList.contains('warning')).toBe(true);
   });
 
@@ -95,15 +95,15 @@ describe('ProductFormPage — en-tête', () => {
     expect(root.querySelector('fold-dropdown')).toBeNull();
   });
 
-  it('propose la publication sur un brouillon, jamais la dépublication', () => {
+  it('propose « Activer » sur une fiche inactive, jamais « Désactiver »', () => {
     const { root } = render(true);
     const actions = [...root.querySelectorAll('app-publish-rail button')].map(
       (button) => button.textContent?.trim() ?? '',
     );
 
-    expect(actions).toContain('Publier au catalogue');
+    expect(actions).toContain('Activer');
     expect(actions).toContain('Archiver');
-    expect(actions).not.toContain('Dépublier');
+    expect(actions).not.toContain('Désactiver');
   });
 
   it('pose le retour AU-DESSUS du titre, dans l’en-tête', () => {

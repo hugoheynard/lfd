@@ -6,7 +6,14 @@ import { catalogAudienceOf, servedTo, servedToAnyone, type ServableItem } from "
  */
 
 function item(over: Partial<ServableItem> = {}): ServableItem {
-  return { audience: null, isHidden: false, isHiddenPublic: false, ...over };
+  return {
+    audience: null,
+    isHidden: false,
+    isHiddenPublic: false,
+    publicReviewPending: false,
+    proReviewPending: false,
+    ...over,
+  };
 }
 
 describe("servedTo", () => {
@@ -36,6 +43,21 @@ describe("servedTo", () => {
   /** H5 : démasquer ne peut pas montrer aux pros un article que le référentiel dit `public`. */
   it("ne laisse pas le masquage élargir l'audience", () => {
     expect(servedTo(item({ audience: "public", isHidden: false }), "pro")).toBe(false);
+  });
+
+  /** Lot 3 : un article neuf attend d'être validé avant la boutique publique. */
+  it("refuse le public tant que l'article attend sa validation, et le sert aux pros validés", () => {
+    const pending = item({ audience: "both", publicReviewPending: true });
+    expect(servedTo(pending, "public")).toBe(false);
+    expect(servedTo(pending, "pro")).toBe(true);
+    expect(servedToAnyone(item({ audience: "public", publicReviewPending: true }))).toBe(false);
+  });
+
+  /** Hugo, 2026-10-15, option 2 : les pros aussi attendent la validation. */
+  it("refuse les pros tant que l'article attend leur validation, sans toucher au public", () => {
+    const pending = item({ audience: "both", proReviewPending: true });
+    expect(servedTo(pending, "pro")).toBe(false);
+    expect(servedTo(pending, "public")).toBe(true);
   });
 
   it("dit servi à quelqu'un si l'une des deux boutiques le sert", () => {

@@ -56,6 +56,10 @@ interface ItemRow {
   readonly orderLimitGraceMinutes: number | null;
   /** À qui l'article se vend — `NULL` lu `both` (cf. `servedTo`). */
   readonly audience: string | null;
+  /** À valider pour la boutique publique (lot 3) — cf. `servedTo`. */
+  readonly publicReviewPending: boolean;
+  /** À valider pour les pros (Hugo, 2026-10-15) — cf. `servedTo`. */
+  readonly proReviewPending: boolean;
   // Le taux de la FAMILLE n'y figure plus : plus rien ici ne le lit. Le laisser
   // dans la forme suffirait à ce qu'un jour quelqu'un le relise « puisqu'il est
   // là ».
@@ -234,6 +238,8 @@ function servedToViewer(row: ItemRow, viewer: ShopAudience): boolean {
       audience: catalogAudienceOf(row.audience),
       isHidden: row.override?.isHidden ?? false,
       isHiddenPublic: row.override?.isHiddenPublic ?? false,
+      publicReviewPending: row.publicReviewPending,
+      proReviewPending: row.proReviewPending,
     },
     viewer,
   );

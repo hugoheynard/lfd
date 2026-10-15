@@ -1,11 +1,19 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 
-import type { CatalogAdminItemView } from '@lfd/contracts';
+import { provideRouter } from '@angular/router';
+import type {
+  CatalogAdminItemView,
+  PendingReviewView,
+  PublishedCatalogView,
+  PublishedCellCounts,
+  PublishedEntryView,
+  PublishedVariantView,
+} from '@lfd/contracts';
 
 import { NotifyService } from '../../../notify.service';
-import { CataloguePage } from '../catalogue-page';
-import { CatalogueService } from '../catalogue.service';
+import { CataloguePage } from './catalogue-page';
+import { CatalogueService, type ShopAudience } from '../catalogue.service';
 
 /**
  * Ce que ces cas tiennent, et c'est **exactement** ce qui manquait : le geste de
@@ -46,6 +54,8 @@ function item(over: Partial<CatalogAdminItemView> = {}): CatalogAdminItemView {
     allergensIncomplete: false,
     isHidden: false,
     isHiddenPublic: false,
+    publicReviewPending: false,
+    proReviewPending: false,
     audience: null,
     isFeatured: false,
     operationOnly: false,
@@ -57,13 +67,87 @@ function item(over: Partial<CatalogAdminItemView> = {}): CatalogAdminItemView {
   };
 }
 
+const NO_COUNTS: PublishedCellCounts = {
+  inactif: 0,
+  en_vente: 0,
+  masque: 0,
+  pas_vendu: 0,
+  en_attente_validation: 0,
+  incomplet: 0,
+};
+
+/** Une déclinaison EN VENTE aux deux audiences — le cas courant. */
+function variantView(over: Partial<PublishedVariantView> = {}): PublishedVariantView {
+  return {
+    sku: 'VIE-001-1',
+    name: 'Croissant',
+    onSale: true,
+    isDefault: true,
+    gaps: [],
+    reviewPending: { pro: false, public: false },
+    pro: { state: 'en_vente', htMillicents: 170_616 },
+    public: { state: 'en_vente', ttcCents: 225 },
+    ...over,
+  };
+}
+
+function entry(over: Partial<PublishedEntryView> = {}): PublishedEntryView {
+  return {
+    productId: 'prd_vie_001',
+    productSku: 'VIE-001',
+    name: 'Croissant',
+    categoryId: 'cat_vien',
+    status: 'active',
+    audience: 'both',
+    audienceInherited: true,
+    familyAudience: 'both',
+    variants: [variantView()],
+    receivedAt: '2026-09-01T08:00:00.000Z',
+    ...over,
+  };
+}
+
+/**
+ * La vue publiée qui va avec des lignes en vente : une fiche par article, son
+ * SKU et son nom repris. C'est la forme que le serveur rend pour un catalogue
+ * où tout se vend — les cas qui s'en écartent posent `published` eux-mêmes.
+ */
+function viewOf(items: readonly CatalogAdminItemView[]): PublishedCatalogView {
+  return {
+    shelves: [
+      {
+        categoryId: 'cat_vien',
+        name: 'Viennoiseries',
+        position: 0,
+        withdrawn: false,
+        pro: { ...NO_COUNTS, en_vente: items.length },
+        public: { ...NO_COUNTS, en_vente: items.length },
+      },
+    ],
+    entries: items.map((one) =>
+      entry({
+        productId: `prd_${one.sku}`,
+        productSku: one.productSku,
+        name: one.name,
+        variants: [variantView({ sku: one.sku, name: one.name })],
+      }),
+    ),
+    pendingReview: [],
+  };
+}
+
 class FakeCatalogue {
   items: readonly CatalogAdminItemView[] = [item()];
+  /** `null` = dérivée des lignes en vente (`viewOf`). */
+  view: PublishedCatalogView | null = null;
   readonly prices: { sku: string; priceMillicents: number }[] = [];
   readonly aligned: string[] = [];
 
   list(): Promise<readonly CatalogAdminItemView[]> {
     return Promise.resolve(this.items);
+  }
+  published(): Promise<PublishedCatalogView> {
+    return Promise.resolve(this.view ?? viewOf(this.items));
   }
   setPrice(sku: string, priceMillicents: number): Promise<void> {
     this.prices.push({ sku, priceMillicents });
@@ -84,15 +168,16 @@ class FakeCatalogue {
     return Promise.resolve();
   }
 
-  readonly publicVisibility: { sku: string; hidden: boolean }[] = [];
-  setPublicVisibility(sku: string, hidden: boolean): Promise<void> {
-    this.publicVisibility.push({ sku, hidden });
+  /** Ce que la route unique `/masking` a reçu. */
+  readonly masking: { sku: string; audience: ShopAudience; hidden: boolean }[] = [];
+  setMasking(sku: string, audience: ShopAudience, hidden: boolean): Promise<void> {
+    this.masking.push({ sku, audience, hidden });
     return Promise.resolve();
   }
 
-  readonly visibility: { sku: string; hidden: boolean }[] = [];
-  setVisibility(sku: string, hidden: boolean): Promise<void> {
-    this.visibility.push({ sku, hidden });
+  readonly approvals: { skus: readonly string[]; audiences: readonly ShopAudience[] }[] = [];
+  approveReview(skus: readonly string[], audiences: readonly ShopAudience[]): Promise<void> {
+    this.approvals.push({ skus, audiences });
     return Promise.resolve();
   }
 }
@@ -110,6 +195,7 @@ async function render(api: FakeCatalogue) {
   TestBed.configureTestingModule({
     imports: [CataloguePage],
     providers: [
+      provideRouter([]),
       { provide: CatalogueService, useValue: api },
       { provide: NotifyService, useValue: new FakeNotify() },
     ],
@@ -190,25 +276,7 @@ describe('CataloguePage — poser un prix pro', () => {
   });
 });
 
-describe('CataloguePage — les quatre lectures', () => {
-  it('compte ce que chaque segment montrerait', async () => {
-    const api = new FakeCatalogue();
-    api.items = [
-      item(),
-      item({ sku: 'VIE-002-1', name: 'Pain au chocolat', b2bPriceMillicents: 145_000 }),
-      item({ sku: 'VIE-003-1', name: "Patte d'ours", vatRatePercent: null, isFeatured: true }),
-      item({ sku: 'VIE-004-1', name: 'Chausson', isHidden: true }),
-    ];
-    const fixture = await render(api);
-
-    const shown = text(fixture);
-    expect(shown).toContain('Tous (4)');
-    expect(shown).toContain('À prix pro (1)');
-    expect(shown).toContain('En avant (1)');
-    expect(shown).toContain('Sans TVA (1)');
-    expect(shown).toContain('Masqués (1)');
-  });
-
+describe('CataloguePage — ce qui ne se vend pas', () => {
   /**
    * Un article sans taux entre au catalogue et n'est achetable par personne :
    * l'écran doit le dire, plutôt que de rendre une liste rassurante.
@@ -223,13 +291,8 @@ describe('CataloguePage — les quatre lectures', () => {
 
   /**
    * 🔴 **Régression du déménagement du 2026-09-21.** L'aveu « sans taux » vivait
-   * dans la colonne TVA, qui a été retirée — elle montrait le taux PRO en
-   * laissant croire qu'il valait pour les deux audiences.
-   *
-   * Le mot devait suivre, et pas disparaître avec elle : la ligne d'un article
-   * invendable est TEINTÉE, et une couleur ne dit jamais rien seule. Sans cette
-   * assertion, la colonne suivante qu'on retire emporte le mot en silence, et
-   * il reste quarante lignes orangées que rien n'explique.
+   * dans la colonne TVA, qui a été retirée. La ligne d'un article invendable est
+   * TEINTÉE, et une couleur ne dit jamais rien seule.
    */
   it("garde l'aveu « invendable » SUR LA LIGNE, pas seulement dans l'encart", async () => {
     const api = new FakeCatalogue();
@@ -238,80 +301,327 @@ describe('CataloguePage — les quatre lectures', () => {
 
     expect(cell(fixture, '.identity')).toContain('invendable');
   });
+
+  /**
+   * C'est l'objet du lot 3 : une fiche INACTIVE paraît, grisée, et ses cellules
+   * le disent — elle n'a ni ligne en vente ni prix décidé à offrir.
+   */
+  it('montre une fiche inactive, grisée, sans geste de prix', async () => {
+    const api = new FakeCatalogue();
+    api.items = [];
+    api.view = {
+      ...viewOf([]),
+      entries: [
+        entry({
+          status: 'inactive',
+          name: 'Brioche',
+          variants: [
+            variantView({
+              sku: 'VIE-009-1',
+              name: 'Brioche',
+              onSale: false,
+              pro: { state: 'inactif', htMillicents: 150_000 },
+              public: { state: 'inactif', ttcCents: 190 },
+            }),
+          ],
+        }),
+      ],
+    };
+    const fixture = await render(api);
+
+    expect(text(fixture)).toContain('Brioche');
+    expect(fixture.nativeElement.querySelector('.identity.is-inactive')).not.toBeNull();
+    expect(text(fixture)).toContain('inactive');
+    expect(text(fixture)).toContain('pas en vente');
+    expect(() => button(fixture, 'Poser un prix pro sur Brioche')).toThrow();
+  });
 });
 
-describe('CataloguePage — retirer de la vente', () => {
+describe('CataloguePage — la colonne Audience', () => {
+  it('dit l’audience et d’où elle vient — famille ou fiche', async () => {
+    const api = new FakeCatalogue();
+    api.view = {
+      ...viewOf(api.items),
+      entries: [entry({ audience: 'pro', audienceInherited: false })],
+    };
+    const fixture = await render(api);
+
+    expect(cell(fixture, '.audience-cell')).toContain('Pros');
+    expect(cell(fixture, '.audience-cell')).toContain('fiche');
+  });
+
+  it('ne dit rien de l’origine sur un fait d’avant le lot 3', async () => {
+    const api = new FakeCatalogue();
+    api.view = { ...viewOf(api.items), entries: [entry({ audienceInherited: null })] };
+    const fixture = await render(api);
+
+    const audience = cell(fixture, '.audience-cell');
+    expect(audience).toContain('Pros et public');
+    expect(audience).not.toContain('famille');
+    expect(audience).not.toContain('fiche');
+  });
+});
+
+describe('CataloguePage — masquer, par la route unique', () => {
   /**
-   * 🔴 Le geste coupe la commande pour tous les clients, et il se prenait d'un
-   * clic sec sur le bouton le plus criard de la ligne (`variant="ghost"` ne
-   * voulant rien dire pour `foldButton`, il rendait en solide primaire).
-   * La confirmation s'ouvre DANS la cellule, comme la pose d'un prix.
+   * 🔴 Le geste coupe la commande pour une audience : il se confirme DANS la
+   * cellule, et rien ne part avant.
    */
   it("n'écrit rien tant que la confirmation n'est pas donnée", async () => {
     const api = new FakeCatalogue();
     const fixture = await render(api);
 
-    button(fixture, 'Masquer Croissant pour les pros').click();
+    button(fixture, 'Masquer Croissant aux pros').click();
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(api.visibility).toEqual([]);
-    // 🔴 La phrase nomme l'audience TOUCHÉE et celle qui ne l'est pas. Un geste
-    // dont la portée surprend coûte une vente, et c'est justement la portée qui
-    // vient de changer (2026-09-21).
+    expect(api.masking).toEqual([]);
     expect(text(fixture)).toContain('boutique PROFESSIONNELLE');
-    expect(text(fixture)).toContain('vitrine publique n’est pas touchée');
+    expect(text(fixture)).toContain('boutique publique n’est pas touchée');
   });
 
-  it('masque une fois la confirmation donnée', async () => {
+  it('masque aux pros sur `/masking`, audience « pro »', async () => {
     const api = new FakeCatalogue();
     const fixture = await render(api);
 
-    button(fixture, 'Masquer Croissant pour les pros').click();
+    button(fixture, 'Masquer Croissant aux pros').click();
     fixture.detectChanges();
     confirmNamed(fixture, 'Masquer');
     await fixture.whenStable();
 
-    expect(api.visibility).toEqual([{ sku: 'VIE-001-1', hidden: true }]);
-  });
-
-  /** Réafficher remet en vente : ça se confirme aussi, et le texte change. */
-  it('confirme aussi la remise en vente', async () => {
-    const api = new FakeCatalogue();
-    api.items = [item({ isHidden: true })];
-    const fixture = await render(api);
-
-    button(fixture, 'Réafficher Croissant pour les pros').click();
-    fixture.detectChanges();
-
-    expect(text(fixture)).toContain('revient dans la boutique PROFESSIONNELLE');
-    confirmNamed(fixture, 'Réafficher');
-    await fixture.whenStable();
-
-    expect(api.visibility).toEqual([{ sku: 'VIE-001-1', hidden: false }]);
+    expect(api.masking).toEqual([{ sku: 'VIE-001-1', audience: 'pro', hidden: true }]);
   });
 
   /**
-   * 🔴 **Les deux boutons ne touchent pas le même drapeau**, et c'est tout
-   * l'objet du lot. Sans ce cas, brancher les deux sur la même route passerait
-   * au vert : les trois cas d'à côté ne regardent que le canal pro, et c'est
-   * exactement la demi-couverture qui laisse un geste mentir.
+   * 🔴 **Les deux cellules ne touchent pas la même audience** — sans ce cas,
+   * brancher les deux sur la même valeur passerait au vert.
    */
-  it('🔴 masque au PUBLIC par un geste distinct, sur une autre route', async () => {
+  it('🔴 masque au PUBLIC par la même route, avec l’audience « public »', async () => {
     const api = new FakeCatalogue();
     const fixture = await render(api);
 
     button(fixture, 'Masquer Croissant au public').click();
     fixture.detectChanges();
-    expect(text(fixture)).toContain('vitrine PUBLIQUE');
-    expect(text(fixture)).toContain('professionnelle n’est pas touchée');
-
+    expect(text(fixture)).toContain('boutique PUBLIQUE');
     confirmNamed(fixture, 'Masquer');
     await fixture.whenStable();
 
-    expect(api.publicVisibility).toEqual([{ sku: 'VIE-001-1', hidden: true }]);
-    // Le canal pro n'a rien reçu : deux audiences, deux décisions.
-    expect(api.visibility).toEqual([]);
+    expect(api.masking).toEqual([{ sku: 'VIE-001-1', audience: 'public', hidden: true }]);
+  });
+
+  it('réaffiche une cellule masquée', async () => {
+    const api = new FakeCatalogue();
+    api.view = {
+      ...viewOf(api.items),
+      entries: [
+        entry({ variants: [variantView({ pro: { state: 'masque', htMillicents: 170_616 } })] }),
+      ],
+    };
+    const fixture = await render(api);
+
+    button(fixture, 'Afficher Croissant aux pros').click();
+    fixture.detectChanges();
+    expect(text(fixture)).toContain('revient dans la boutique PROFESSIONNELLE');
+    confirmNamed(fixture, 'Afficher');
+    await fixture.whenStable();
+
+    expect(api.masking).toEqual([{ sku: 'VIE-001-1', audience: 'pro', hidden: false }]);
+  });
+});
+
+describe('CataloguePage — le filtre', () => {
+  function mixed(api: FakeCatalogue): void {
+    api.items = [];
+    api.view = {
+      ...viewOf([]),
+      entries: [
+        entry({
+          name: 'Croissant',
+          variants: [variantView({ sku: 'A-1', name: 'Croissant' })],
+        }),
+        entry({
+          productId: 'prd_b',
+          name: 'Pain',
+          variants: [
+            variantView({
+              sku: 'B-1',
+              name: 'Pain',
+              pro: { state: 'pas_vendu', htMillicents: null },
+              public: { state: 'masque', ttcCents: 300 },
+            }),
+          ],
+        }),
+        entry({
+          productId: 'prd_c',
+          name: 'Chausson',
+          variants: [
+            variantView({
+              sku: 'C-1',
+              name: 'Chausson',
+              pro: { state: 'en_vente', htMillicents: 100_000 },
+              public: { state: 'en_attente_validation', ttcCents: 150 },
+            }),
+          ],
+        }),
+        entry({
+          productId: 'prd_d',
+          name: 'Brioche',
+          status: 'inactive',
+          variants: [
+            variantView({
+              sku: 'D-1',
+              name: 'Brioche',
+              pro: { state: 'inactif', htMillicents: null },
+              public: { state: 'inactif', ttcCents: null },
+            }),
+          ],
+        }),
+      ],
+    };
+  }
+
+  it('compte ce que chaque lecture montrerait', async () => {
+    const api = new FakeCatalogue();
+    mixed(api);
+    const shown = text(await render(api));
+
+    expect(shown).toContain('Tout (4)');
+    expect(shown).toContain('Vu des pros (2)');
+    expect(shown).toContain('Vu du public (1)');
+    expect(shown).toContain('Masqué (1)');
+    expect(shown).toContain('En attente (1)');
+    expect(shown).toContain('Inactif (1)');
+  });
+
+  it('« vu du public » ne garde que ce que le public voit vraiment', async () => {
+    const api = new FakeCatalogue();
+    mixed(api);
+    const fixture = await render(api);
+
+    // Le filtre par sa méthode : `fold-view-toggle` rend des boutons dont le
+    // libellé porte le compte, et c'est la règle qu'on éprouve, pas le clic.
+    fixture.componentInstance['selectFilter']('public');
+    fixture.detectChanges();
+
+    const names = [
+      ...(fixture.nativeElement as HTMLElement).querySelectorAll('.identity .name'),
+    ].map((node) => node.textContent?.trim());
+    expect(names).toEqual(['Croissant']);
+  });
+});
+
+describe('CataloguePage — les états de cellule', () => {
+  function single(variant: PublishedVariantView, status: PublishedEntryView['status'] = 'active') {
+    const api = new FakeCatalogue();
+    api.items = [];
+    api.view = { ...viewOf([]), entries: [entry({ status, variants: [variant] })] };
+    return api;
+  }
+
+  it('« pas vendu » : une lecture, avec un lien vers la fiche, sans interrupteur', async () => {
+    const fixture = await render(
+      single(variantView({ pro: { state: 'pas_vendu', htMillicents: null } })),
+    );
+
+    expect(text(fixture)).toContain('pas vendu aux pros');
+    const link = (fixture.nativeElement as HTMLElement).querySelector<HTMLAnchorElement>(
+      'app-published-cell a',
+    );
+    expect(link?.getAttribute('href')).toBe('/pim/produits/prd_vie_001');
+    expect(() => button(fixture, 'Masquer Croissant aux pros')).toThrow();
+  });
+
+  it('« incomplet » : dit ce qui manque, en mots', async () => {
+    const fixture = await render(
+      single(
+        variantView({
+          gaps: ['price', 'vat:b2b'],
+          pro: { state: 'incomplet', htMillicents: null },
+          public: { state: 'incomplet', ttcCents: null },
+        }),
+      ),
+    );
+
+    expect(text(fixture)).toContain('manque : prix, taux de TVA « b2b »');
+    expect(() => button(fixture, 'Masquer Croissant au public')).toThrow();
+  });
+
+  it('« en attente » : la cellule le dit, sans interrupteur', async () => {
+    const fixture = await render(
+      single(variantView({ public: { state: 'en_attente_validation', ttcCents: 225 } })),
+    );
+
+    expect(text(fixture)).toContain('en attente de validation');
+    expect(() => button(fixture, 'Masquer Croissant au public')).toThrow();
+  });
+
+  it('« en vente » : le prix servi, avec son unité', async () => {
+    const fixture = await render(single(variantView()));
+
+    const cells = [
+      ...(fixture.nativeElement as HTMLElement).querySelectorAll('app-published-cell'),
+    ].map((node) => (node.textContent ?? '').replace(/\s/gu, ' '));
+    expect(cells[0]).toContain('1,70616 € HT');
+    expect(cells[1]).toContain('2,25 € TTC');
+  });
+});
+
+describe('CataloguePage — la validation des arrivées', () => {
+  function pendingOf(over: Partial<PendingReviewView> = {}): PendingReviewView {
+    return {
+      sku: 'VIE-001-1',
+      productId: 'prd_vie_001',
+      productSku: 'VIE-001',
+      name: 'Croissant',
+      categoryId: 'cat_vien',
+      audiences: ['pro', 'public'],
+      receivedAt: '2026-09-01T08:00:00.000Z',
+      ...over,
+    };
+  }
+
+  it('ne montre aucun callout quand rien n’attend', async () => {
+    const fixture = await render(new FakeCatalogue());
+    expect((fixture.nativeElement as HTMLElement).querySelector('app-review-callout')).toBeNull();
+  });
+
+  it('annonce les arrivées et valide UNE ligne pour une audience', async () => {
+    const api = new FakeCatalogue();
+    api.view = {
+      ...viewOf(api.items),
+      pendingReview: [
+        pendingOf(),
+        pendingOf({ sku: 'VIE-002-1', name: 'Pain au chocolat', audiences: ['public'] }),
+      ],
+    };
+    const fixture = await render(api);
+
+    expect(text(fixture)).toContain('2 nouveaux articles attendent votre validation');
+    expect(() => button(fixture, 'Valider pour les pros : Pain au chocolat')).toThrow();
+
+    button(fixture, 'Valider pour la boutique : Croissant').click();
+    await fixture.whenStable();
+
+    expect(api.approvals).toEqual([{ skus: ['VIE-001-1'], audiences: ['public'] }]);
+  });
+
+  it('« Tout valider » envoie toute la liste, pour les deux audiences', async () => {
+    const api = new FakeCatalogue();
+    api.view = {
+      ...viewOf(api.items),
+      pendingReview: [pendingOf(), pendingOf({ sku: 'VIE-002-1', audiences: ['pro'] })],
+    };
+    const fixture = await render(api);
+
+    const all = [...(fixture.nativeElement as HTMLElement).querySelectorAll('button')].find(
+      (candidate) => candidate.textContent?.trim() === 'Tout valider',
+    );
+    all?.click();
+    await fixture.whenStable();
+
+    expect(api.approvals).toEqual([
+      { skus: ['VIE-001-1', 'VIE-002-1'], audiences: ['pro', 'public'] },
+    ]);
   });
 });
 
@@ -319,7 +629,12 @@ describe('CataloguePage — retirer de la vente', () => {
 function confirmNamed(fixture: ComponentFixture<CataloguePage>, label: string): void {
   const found = [
     ...(fixture.nativeElement as HTMLElement).querySelectorAll('fold-inline-confirm button'),
-  ].find((candidate) => candidate.textContent?.trim() === label);
+    // Les déclencheurs portent un `aria-label` qui nomme l'article ; le bouton
+    // de confirmation, non. Sans ce tri, « Masquer » trouverait le déclencheur
+    // de la PREMIÈRE cellule — celle des pros — quel que soit le geste ouvert.
+  ].find(
+    (candidate) => candidate.textContent?.trim() === label && !candidate.hasAttribute('aria-label'),
+  );
   if (found === undefined) {
     throw new Error(`confirmation « ${label} » absente`);
   }
