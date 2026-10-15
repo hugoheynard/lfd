@@ -9,54 +9,102 @@
   />
 </div>
 
+<ng-template #parts let-parts>
+  @for (part of parts; track $index) {
+    @if (part.match) {
+      <mark class="hit">{{ part.text }}</mark>
+    } @else {
+      {{ part.text }}
+    }
+  }
+</ng-template>
+
+<fold-search
+  placeholder="Rechercher un droit ou un outil…"
+  ariaLabel="Rechercher dans les droits"
+  clearLabel="Effacer la recherche"
+  [delayMs]="searchDelayMs"
+  [value]="draft()"
+  (valueChange)="onDraft($event)"
+  (searchChange)="term.set($event)"
+  [resultCount]="searching() ? visibleCount() : null"
+  [resultLabel]="visibleCount() > 1 ? 'domaines' : 'domaine'"
+  placement="end"
+/>
+
 <!-- Groupé PAR OUTIL, et pas à plat. Douze lignes se lisaient d'un coup d'œil ;
      le découpage à venir (référentiel / plateforme / socle) en fera dix-neuf, et
      une liste plate de dix-neuf droits ne se remplit pas sans se tromper. Le
      groupe dit AUSSI de quel outil on parle : `catalog` seul ne le disait pas. -->
-<div class="grid-scroll">
-  <table class="grid">
-    <thead>
-      <tr>
-        <th scope="col">Domaine</th>
-        <th scope="col">Niveau</th>
-      </tr>
-    </thead>
-    @for (group of groups(); track group.tool) {
-      <tbody>
-        <tr class="grid-group">
-          <th scope="colgroup" colspan="2">
-            <span class="grid-group-label">{{ group.label }}</span>
-            <span class="grid-group-hint">{{ group.hint }}</span>
-          </th>
+@if (groups().length === 0) {
+  <fold-empty-state
+    title="Aucun droit ne correspond"
+    [subtitle]="
+      'Rien ne contient « ' + term().trim() + ' » — ni un outil, ni un domaine, ni sa portée.'
+    "
+  >
+    <fold-icon empty-icon name="search" />
+  </fold-empty-state>
+} @else {
+  <div class="grid-scroll">
+    <table class="grid">
+      <thead>
+        <tr>
+          <th scope="col">Domaine</th>
+          <th scope="col">Niveau</th>
         </tr>
-        @for (row of group.rows; track row.resource) {
-          <tr>
-            <!-- La portée, ÉCRITE sous le libellé et non dans un `title` : on choisit un
-                 niveau en sachant ce qu'il ouvre, sans devoir survoler (2026-10-02). -->
-            <th scope="row">
-              <span class="row-label">{{ row.label }}</span>
-              <span class="row-scope">
-                <span class="row-scope-line"><strong>Lecture</strong> — {{ row.scope.read }}</span>
-                <span class="row-scope-line"
-                  ><strong>Écriture</strong> — {{ row.scope.write }}</span
-                >
-              </span>
-            </th>
-            <td>
-              <fold-select
-                size="sm"
-                [attr.aria-label]="group.label + ' — ' + row.label"
-                [value]="row.level"
-                (valueChange)="setLevel(row.resource, $event)"
-              >
-                @for (level of levels; track level.value) {
-                  <option [value]="level.value">{{ level.label }}</option>
+      </thead>
+      @for (group of groups(); track group.tool) {
+        <tbody>
+          <tr class="grid-group" [class.grid-group--associated]="group.associated">
+            <th scope="colgroup" colspan="2">
+              <span class="grid-group-title">
+                <span class="grid-group-label"
+                  ><ng-container
+                    *ngTemplateOutlet="parts; context: { $implicit: group.labelParts }"
+                /></span>
+                @if (group.associated) {
+                  <fold-badge variant="warning" content="Droit associé" />
                 }
-              </fold-select>
-            </td>
+              </span>
+              <span class="grid-group-hint">{{ group.hint }}</span>
+            </th>
           </tr>
-        }
-      </tbody>
-    }
-  </table>
-</div>
+          @for (row of group.rows; track row.resource) {
+            <tr>
+              <!-- La portée, ÉCRITE sous le libellé et non dans un `title` : on choisit un
+                 niveau en sachant ce qu'il ouvre, sans devoir survoler (2026-10-02). -->
+              <th scope="row">
+                <span class="row-label"
+                  ><ng-container *ngTemplateOutlet="parts; context: { $implicit: row.labelParts }"
+                /></span>
+                <span class="row-scope">
+                  <span class="row-scope-line"
+                    ><strong>Lecture</strong> —
+                    <ng-container *ngTemplateOutlet="parts; context: { $implicit: row.readParts }"
+                  /></span>
+                  <span class="row-scope-line"
+                    ><strong>Écriture</strong> —
+                    <ng-container *ngTemplateOutlet="parts; context: { $implicit: row.writeParts }"
+                  /></span>
+                </span>
+              </th>
+              <td>
+                <fold-select
+                  size="sm"
+                  [attr.aria-label]="group.label + ' — ' + row.label"
+                  [value]="row.level"
+                  (valueChange)="setLevel(row.resource, $event)"
+                >
+                  @for (level of levels; track level.value) {
+                    <option [value]="level.value">{{ level.label }}</option>
+                  }
+                </fold-select>
+              </td>
+            </tr>
+          }
+        </tbody>
+      }
+    </table>
+  </div>
+}

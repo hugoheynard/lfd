@@ -1,5 +1,7 @@
 :host {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
 }
 
 .grid-head {
@@ -7,7 +9,6 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--fold-space-sm);
-  margin-block-end: var(--fold-space-sm);
 }
 
 .grid-hint {
@@ -99,4 +100,26 @@
     font-weight: 600;
     color: var(--fold-color-text);
   }
+}
+
+/* Le titre d'un outil et, pendant une recherche, sa pastille « associé ». */
+.grid-group-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
+/* Gardé pour un droit trouvé, pas pour son nom : le liseré le dit sans
+   surligner dans le titre un mot qui n'y est pas. */
+.grid-group--associated th {
+  box-shadow: inset 3px 0 0 var(--fold-color-warning-border);
+}
+
+/* Le terme trouvé, dans un titre d'outil, un libellé ou une portée. */
+.hit {
+  padding-inline: 1px;
+  border-radius: 2px;
+  background: var(--fold-color-warning-surface);
+  color: var(--fold-color-warning-text);
 }
