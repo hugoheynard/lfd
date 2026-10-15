@@ -148,6 +148,7 @@ function toVariant(variant: VariantView): Variant {
     position: variant.position,
     priceCents: variant.priceCents,
     weightGrams: variant.weightGrams,
+    proPriceMillicents: variant.proPriceMillicents,
     regulatoryFollowsDefault: variant.regulatoryFollowsDefault,
     nutritionFollowsDefault: variant.nutritionFollowsDefault,
     pricingFollowsDefault: variant.pricingFollowsDefault,

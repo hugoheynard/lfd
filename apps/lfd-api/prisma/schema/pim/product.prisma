@@ -249,6 +249,15 @@ model ProductVariant {
   /// articles qui portaient le leur.
   pricingFollowsDefault Boolean @default(false) @map("pricing_follows_default")
 
+  /// **Le prix professionnel HORS TAXE saisi**, en millicentimes (10⁻⁵ €) —
+  /// lot P de `documentation/pim/plan-catalogue-synchronise-par-audience.md`.
+  ///
+  /// Lu seulement sous la méthode `entered` des règles comptables ; sous
+  /// `ratio_ttc`, le prix pro reste dérivé du prix public et cette colonne dort.
+  /// `NULL` = pas saisi. Une déclinaison qui suit le tarif du défaut
+  /// (`pricingFollowsDefault`) suit aussi son prix pro. `CHECK (>= 0)`.
+  proPriceMillicents Int? @map("pro_price_millicents")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   updatedBy String?  @map("updated_by")

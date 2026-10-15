@@ -17,6 +17,7 @@ function variant(sku: string, name: string): Variant {
     position: 0,
     priceCents: null,
     weightGrams: null,
+    proPriceMillicents: null,
     regulatoryFollowsDefault: false,
     nutritionFollowsDefault: false,
     pricingFollowsDefault: false,

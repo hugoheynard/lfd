@@ -36,6 +36,11 @@
   }
 }
 
+/* « € HT » est plus long que « € » : la gouttière suit (lot P). */
+.field-money-ht .native-input {
+  padding-inline-end: 3.25rem;
+}
+
 .field-unit {
   position: absolute;
   inset-block: 0;
@@ -95,6 +100,7 @@
   color: var(--fold-color-text-muted);
 }
 
+.field-hint,
 .pro-say,
 .pro-missing {
   margin: 0;

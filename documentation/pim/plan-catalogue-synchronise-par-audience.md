@@ -399,6 +399,28 @@ ci-dessus :**
 
 ### Lot P — le prix pro saisi (décidé le 2026-10-15)
 
+> ✅ **Bâti le 2026-10-15, non commité à l'écriture de ce bandeau.** La méthode
+> reste `ratio_ttc` : la parité est tenue par la suite « la parité ratio_ttc,
+> avant et après le lot P » du canal B2B (empreinte relevée avant le changement
+> de signature). Écarts au texte, tous à relire :
+>
+> - **une seconde migration**, `20261015300100_la_methode_prix_saisi` : le
+>   `CHECK accounting_rules_method_known` (`20260913140000`) n'admettait que
+>   `ratio_ttc` — choisir `entered` aurait échoué en base. Il est élargi ;
+> - le prix pro se saisit en **texte** (`proPriceHt: "27.30331"`, absent =
+>   inchangé, `null` = effacer) ; la vue rend `proPriceMillicents` ;
+> - P4 n'applique **pas** la règle « tous les contextes » de 2b : seulement
+>   « une déclinaison tarifée = prix public ET prix pro » sous `entered` ;
+> - le push gagne un motif `variant_sans_prix_pro` (au lieu de
+>   `variant_sans_taux`, qui enverrait ouvrir le mauvais écran) ;
+> - P5 : `GET` (aperçu) et `POST` (écriture, `pim_tax:write`) sur
+>   `/pim/accounting-rules/pro-price-prefill`, contrôleur dans le catalogue
+>   (le catalogue importe déjà les règles comptables) ; le fait
+>   `variant.pro_price_prefilled` n'est lu ni par `attribution.ts` ni par
+>   `content-facts.ts` (préfixe `variant.*`) ;
+> - la révision ne porte `proPriceMillicents` que lorsqu'il est saisi : une clé
+>   à `null` partout aurait rebasculé toutes les empreintes déjà posées.
+
 > « On enlève la règle, le calcul avec le ratio pro/public global ; tu me
 > mets un champ prix pro HT dans la fiche, en dessous du public TTC ; en
 > revanche n'efface pas le code si possible ; le prix HT doit pouvoir

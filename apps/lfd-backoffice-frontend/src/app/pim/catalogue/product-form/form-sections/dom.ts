@@ -9,6 +9,10 @@ export function numberValue(event: Event): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+/** Le texte d'une zone de texte ou d'un champ (le prix pro HT se saisit en texte, lot P). */
 export function textValue(event: Event): string {
-  return event.target instanceof HTMLTextAreaElement ? event.target.value : '';
+  const target = event.target;
+  return target instanceof HTMLTextAreaElement || target instanceof HTMLInputElement
+    ? target.value
+    : '';
 }

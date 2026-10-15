@@ -98,6 +98,12 @@ export type B2bExclusionReason =
    */
   | "variant_sans_taux"
   /**
+   * Sous la méthode `entered` (lot P), la déclinaison n'a pas de prix pro HT
+   * saisi : elle ne se vend pas aux professionnels, et c'est la section
+   * « Tarif » de la fiche qu'il faut ouvrir — pas l'écran des taux.
+   */
+  | "variant_sans_prix_pro"
+  /**
    * Un article de la sélection d'une opération datée que CET envoi ne porte
    * pas — non publié, sans prix, canal fermé (fil v11). Il manquerait au rayon
    * de l'opération sans que personne sache pourquoi ; le motif le dit, et

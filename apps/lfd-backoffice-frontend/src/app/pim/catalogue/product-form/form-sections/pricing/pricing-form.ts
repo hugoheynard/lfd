@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 
 import { ChannelsForm } from '../channels/channels-form';
 import { ProductFormStore } from '../../product-form-store';
-import { numberValue } from '../dom';
+import { numberValue, textValue } from '../dom';
 
 /**
  * Panneau Tarif & TVA — le **prix public TTC**, ce qu'il devient pour les
@@ -32,4 +32,5 @@ import { numberValue } from '../dom';
 export class PricingForm {
   protected readonly store = inject(ProductFormStore);
   protected readonly numberValue = numberValue;
+  protected readonly textValue = textValue;
 }

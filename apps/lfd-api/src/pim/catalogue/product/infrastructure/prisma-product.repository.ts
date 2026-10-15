@@ -49,6 +49,7 @@ interface VariantRow {
   position: number;
   priceCents: number | null;
   weightGrams: number | null;
+  proPriceMillicents: number | null;
   regulatoryFollowsDefault: boolean;
   pricingFollowsDefault: boolean;
   nutritionFollowsDefault: boolean;
@@ -104,6 +105,7 @@ function toVariant(row: VariantRow): VariantSnapshot {
     position: row.position,
     priceCents: row.priceCents,
     weightGrams: row.weightGrams,
+    proPriceMillicents: row.proPriceMillicents,
     regulatoryFollowsDefault: row.regulatoryFollowsDefault,
     pricingFollowsDefault: row.pricingFollowsDefault,
     nutritionFollowsDefault: row.nutritionFollowsDefault,
@@ -345,6 +347,7 @@ export class PrismaProductRepository extends ProductRepository {
             position: variant.position,
             priceCents: variant.priceCents,
             weightGrams: variant.weightGrams,
+            proPriceMillicents: variant.proPriceMillicents,
             regulatoryFollowsDefault: variant.regulatoryFollowsDefault,
             pricingFollowsDefault: variant.pricingFollowsDefault,
             nutritionFollowsDefault: variant.nutritionFollowsDefault,
@@ -356,6 +359,7 @@ export class PrismaProductRepository extends ProductRepository {
             position: variant.position,
             priceCents: variant.priceCents,
             weightGrams: variant.weightGrams,
+            proPriceMillicents: variant.proPriceMillicents,
             regulatoryFollowsDefault: variant.regulatoryFollowsDefault,
             pricingFollowsDefault: variant.pricingFollowsDefault,
             nutritionFollowsDefault: variant.nutritionFollowsDefault,

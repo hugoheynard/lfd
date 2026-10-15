@@ -58,7 +58,7 @@ const orderTimeLimit = () =>
  * suite des handlers des règles comptables écrit chaque méthode du référentiel
  * contre ce catalogue (`accounting-rules.handlers.spec.ts`).
  */
-const PRO_PRICE_METHODS = ["ratio_ttc"] as const;
+const PRO_PRICE_METHODS = ["ratio_ttc", "entered"] as const;
 
 // ─── Les formes du lot A (9c3c2d35), encore en base ────────────────────────
 

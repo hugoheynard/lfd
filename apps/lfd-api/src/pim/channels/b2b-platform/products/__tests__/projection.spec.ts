@@ -28,6 +28,7 @@ function variant(over: Partial<VariantRecord> = {}): VariantRecord {
     position: 0,
     priceCents: 200,
     weightGrams: null,
+    proPriceMillicents: null,
     regulatoryFollowsDefault: false,
     nutritionFollowsDefault: false,
     pricingFollowsDefault: false,
@@ -895,5 +896,40 @@ describe("le fil v11 — les opérations datées et le drapeau de la fiche", () 
     expect(projectionFingerprint(withNoel)).not.toBe(projectionFingerprint(without));
     // Même sélection partie (seul VIE-001-1 est dans l'envoi) : même empreinte.
     expect(projectionFingerprint(reordered)).toBe(projectionFingerprint(withNoel));
+  });
+});
+
+/** Lot P : sous « Prix saisi », le push sert la saisie, et nomme son absence. */
+describe("projectCatalog — sous la méthode entered", () => {
+  const ENTERED: ProPricePolicy = { method: "entered", ratioBp: 9_000 };
+
+  function push(over: Partial<VariantRecord>) {
+    return projectCatalog(
+      [product({ variants: [variant(over)] })],
+      [category()],
+      vat(),
+      sold(),
+      ENTERED,
+      NO_LIMITS,
+      INCO,
+      NO_SHOWCASE,
+      NO_OPERATIONS,
+      AT,
+    );
+  }
+
+  it("écarte une déclinaison sans prix pro saisi, sous son propre motif", () => {
+    const { excluded } = push({});
+
+    expect(excluded).toContainEqual({ sku: "VIE-001-1", reason: "variant_sans_prix_pro" });
+  });
+
+  it("pousse le HT saisi tel quel, et le prix public inchangé", () => {
+    const { snapshot } = push({ proPriceMillicents: 151_234 });
+
+    expect(snapshot.products[0]?.variants[0]).toMatchObject({
+      priceMillicents: 151_234,
+      publicTtcCents: 200,
+    });
   });
 });

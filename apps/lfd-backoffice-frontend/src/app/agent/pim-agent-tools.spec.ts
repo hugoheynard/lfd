@@ -38,6 +38,7 @@ function variant(id: string, overrides: Partial<Variant>): Variant {
     position: 1,
     priceCents: null,
     weightGrams: null,
+    proPriceMillicents: null,
     regulatoryFollowsDefault: false,
     nutritionFollowsDefault: false,
     pricingFollowsDefault: false,

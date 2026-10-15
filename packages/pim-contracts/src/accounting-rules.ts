@@ -1,6 +1,6 @@
 import { fractionByBasisPoints, fromCents, roundToCents } from "@lfd/money";
 
-import { htFromTtc, htMillicentsOf } from "@lfd/money";
+import { htFromTtc, htMillicentsOf, ttcCentsFromHtMillicents } from "@lfd/money";
 import { z } from "zod";
 
 /**
@@ -44,8 +44,15 @@ export const MAX_RATIO_BP = 10_000;
  * de supprimer le champ n'est pas de la généralité spéculative — c'est ce qui
  * évite de refaire la colonne, la migration, la route et l'écran pour ajouter
  * un mot.
+ *
+ * **`entered`** (lot P, `plan-catalogue-synchronise-par-audience.md`, décidé
+ * par Hugo le 2026-10-15) : le prix pro HT est **saisi** par déclinaison, et ne
+ * se dérive plus. `ratio_ttc` reste sélectionnable, et son code ne bouge pas.
+ *
+ * ⚠️ Recopiée dans `@lfd/contracts` (`journal-facts/referential-settings.ts`),
+ * qui valide le fait du changement de méthode : les deux listes vont ensemble.
  */
-export const PRO_PRICE_METHODS = ["ratio_ttc"] as const;
+export const PRO_PRICE_METHODS = ["ratio_ttc", "entered"] as const;
 export type ProPriceMethod = (typeof PRO_PRICE_METHODS)[number];
 
 /**
@@ -68,9 +75,8 @@ export type ProPriceRatioPayload = z.infer<typeof proPriceRatioPayloadSchema>;
 /**
  * **Choisir la méthode appliquée.**
  *
- * Un seul champ, et un seul choix possible aujourd'hui. La route existe pour
- * que la deuxième méthode — si le commerce fournit un jour une formule — ne
- * demande qu'une valeur de plus dans {@link PRO_PRICE_METHODS}.
+ * Un seul champ. La route existait avant la deuxième méthode ; `entered` n'a
+ * demandé qu'une valeur de plus dans {@link PRO_PRICE_METHODS}.
  */
 export const proPriceMethodPayloadSchema = z.object({
   method: z.enum(PRO_PRICE_METHODS),
@@ -176,7 +182,12 @@ export interface ProPricePolicy {
  * est l'original — c'est-à-dire à reconstruire la branche ici.
  */
 export interface ProPrice {
-  /** Ce qu'un professionnel paie, taxe comprise. */
+  /**
+   * Ce qu'un professionnel paie, taxe comprise.
+   *
+   * ⚠️ Sous `entered`, c'est un **affichage** : le HT saisi fait foi, et
+   * personne ne redérive un HT de ce TTC (il perdrait les décimales saisies).
+   */
   readonly ttcCents: number;
   /** Ce qui part sur le fil et que multiplie une quantité (10⁻⁵ €). */
   readonly htMillicents: number;
@@ -186,27 +197,116 @@ export interface ProPrice {
  * **Le prix professionnel — l'unique porte, quelle que soit la méthode.**
  *
  * Un seul point d'entrée parce que la branche est une décision d'argent : la
- * dupliquer chez ses quatre appelants (le VO, la projection, l'écran des règles
- * et la fiche produit) garantirait qu'un écran finisse par montrer une méthode
- * pendant que le fil en pousse une autre.
+ * dupliquer chez ses appelants garantirait qu'un écran finisse par montrer une
+ * méthode pendant que le fil en pousse une autre. Ils sont **six**, vérifié le
+ * 2026-10-15 : `projection.ts` et `catalog-facts.ts` (le fil), le
+ * pré-remplissage du lot P (`prefill-pro-prices.ts`), l'écran des règles
+ * (`accounting-rules-page.ts`, deux appels) et la fiche
+ * (`product-form-store.ts`, deux appels).
  *
- * `null` **sans taux d'article** : le hors taxe n'en est pas dérivable, et le
- * taux sert de toute façon à FACTURER. Un article sans taux est donc écarté du
- * canal (`variant_sans_taux`) — inventer un taux facturerait un montant que
- * personne n'a décidé.
+ * `null` **sans taux d'article** : le hors taxe n'en est pas dérivable sous
+ * `ratio_ttc`, et le taux sert de toute façon à FACTURER. Un article sans taux
+ * est donc écarté du canal (`variant_sans_taux`) — inventer un taux facturerait
+ * un montant que personne n'a décidé.
+ *
+ * Sous `entered`, `null` aussi **sans saisie** : un prix pro absent n'est pas
+ * le prix public, ni zéro. `enteredHtMillicents` est ignoré sous `ratio_ttc`.
  */
 export function proPriceOf(
   publicTtcCents: number,
   policy: ProPricePolicy,
   articleVatPercent: number | null,
+  enteredHtMillicents: number | null,
 ): ProPrice | null {
   if (articleVatPercent === null) {
     return null;
   }
-  // Le TTC pro est un PRIX : il s'arrête au centime, et le hors taxe se déduit
-  // de CE montant-là (cf. `proHtFromPublic`). Une seule branche aujourd'hui —
-  // le `switch` viendra avec la deuxième méthode, pas avant.
-  const ttcCents = proPriceFromPublic(publicTtcCents, policy.ratioBp);
+  return policy.method === "entered"
+    ? enteredProPrice(enteredHtMillicents, articleVatPercent)
+    : ratioTtcProPrice(publicTtcCents, policy.ratioBp, articleVatPercent);
+}
+
+/**
+ * `ratio_ttc` — **inchangé** depuis avant le lot P. Le TTC pro est un PRIX :
+ * il s'arrête au centime, et le hors taxe se déduit de CE montant-là (cf.
+ * `proHtFromPublic`).
+ */
+function ratioTtcProPrice(
+  publicTtcCents: number,
+  ratioBp: number,
+  articleVatPercent: number,
+): ProPrice | null {
+  const ttcCents = proPriceFromPublic(publicTtcCents, ratioBp);
   const htMillicents = htMillicentsOf(ttcCents, articleVatPercent);
   return htMillicents === null ? null : { ttcCents, htMillicents };
+}
+
+/**
+ * `entered` — **le HT saisi fait foi**, au millicentime ; le TTC en est la
+ * conséquence, arrondi au centime par la même règle que `htMillicentsOf`, à
+ * l'envers.
+ */
+function enteredProPrice(
+  enteredHtMillicents: number | null,
+  articleVatPercent: number,
+): ProPrice | null {
+  if (enteredHtMillicents === null) {
+    return null;
+  }
+  return {
+    ttcCents: ttcCentsFromHtMillicents(enteredHtMillicents, articleVatPercent),
+    htMillicents: enteredHtMillicents,
+  };
+}
+
+// ── Le pré-remplissage du prix pro saisi (lot P, P5) ───────────────────────
+
+/**
+ * Le sort d'une déclinaison dans le pré-remplissage.
+ *
+ * - `to_prefill` : tarif propre, prix public, taux `b2b`, aucune saisie —
+ *   l'`apply` l'écrira ;
+ * - `already_entered` : une saisie existe, elle ne s'écrase jamais ;
+ * - `aligned` : elle suit le tarif du défaut, et donc son prix pro ;
+ * - `no_price` : pas de prix public, rien à dériver ;
+ * - `no_vat_b2b` : pas de taux au contexte `b2b`, listée à part — le HT ne se
+ *   dérive pas sans lui.
+ */
+export const PRO_PRICE_PREFILL_STATUSES = [
+  "to_prefill",
+  "already_entered",
+  "aligned",
+  "no_price",
+  "no_vat_b2b",
+] as const;
+export type ProPricePrefillStatus = (typeof PRO_PRICE_PREFILL_STATUSES)[number];
+
+/** Une déclinaison de l'aperçu — tout en entiers. */
+export interface ProPricePrefillRowView {
+  readonly productId: string;
+  readonly productName: string;
+  readonly variantId: string;
+  readonly sku: string;
+  readonly status: ProPricePrefillStatus;
+  readonly publicTtcCents: number | null;
+  /** Le taux `b2b` effectif de la fiche, celui que la projection lit. */
+  readonly vatPercent: number | null;
+  /** Le HT que le fil sert AUJOURD'HUI, sous la méthode en place (10⁻⁵ €). */
+  readonly servedHtMillicents: number | null;
+  /** Le HT que l'`apply` écrirait : le ratio rejoué par `proPriceOf` (10⁻⁵ €). */
+  readonly prefilledHtMillicents: number | null;
+  /**
+   * `to_prefill` dont le HT pré-rempli diffère du HT servi, au millicentime.
+   * Un seul suffit à refuser l'`apply`.
+   */
+  readonly mismatch: boolean;
+}
+
+/** L'aperçu (`dryRun`) — ce que l'`apply` ferait, et s'il le peut. */
+export interface ProPricePrefillPreviewView {
+  readonly method: ProPriceMethod;
+  readonly ratioBp: number;
+  readonly rows: readonly ProPricePrefillRowView[];
+  readonly toPrefill: number;
+  readonly mismatches: number;
 }

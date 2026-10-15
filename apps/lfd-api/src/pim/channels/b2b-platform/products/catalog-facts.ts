@@ -33,6 +33,11 @@ export const PRICE_GAP = "price";
 export const ALLERGENS_GAP = "allergens";
 /** Le rapport pro n'est pas réglé : aucun prix pro ne se calcule. */
 export const PRO_PRICE_RULE_GAP = "pro_price_rule";
+/**
+ * Sous la méthode `entered` (lot P, P4), la déclinaison n'a pas de prix pro HT
+ * saisi : elle n'est jamais vendue, et la porte n'est pas appelée.
+ */
+export const PRO_PRICE_GAP = "pro_price";
 /** Un taux manque au contexte nommé — `vat:b2b`, `vat:takeaway`. */
 export const VAT_GAP_PREFIX = "vat:";
 
@@ -186,6 +191,8 @@ function gapsOf(variant: VariantOf, input: ProductFactInput, audience: Audience)
   }
   if (input.policy === null) {
     missing.push(PRO_PRICE_RULE_GAP);
+  } else if (input.policy.method === "entered" && variant.proPriceMillicents === null) {
+    missing.push(PRO_PRICE_GAP);
   }
   const contexts = new Set([
     BILLING_CONTEXT_OF.pro,
@@ -210,7 +217,7 @@ function sellableVariant(variant: VariantOf, input: ProductFactInput): SyncVaria
   const proPrice =
     variant.priceCents === null || input.policy === null
       ? null
-      : proPriceOf(variant.priceCents, input.policy, vatRatePercent);
+      : proPriceOf(variant.priceCents, input.policy, vatRatePercent, variant.proPriceMillicents);
   if (proPrice === null || variant.priceCents === null) {
     throw new IncompleteVariantProjectedError(variant.sku);
   }

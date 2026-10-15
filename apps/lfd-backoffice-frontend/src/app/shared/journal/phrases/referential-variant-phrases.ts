@@ -4,6 +4,7 @@ import { nameOf, optional, recordOf } from '../payload-read';
 import {
   byActor,
   cite,
+  inUnit,
   name,
   text,
   valueIn,
@@ -164,7 +165,30 @@ function variantRenamed(fact: PhraseFact): Said {
   );
 }
 
+/**
+ * « a pré-rempli le prix pro HT de la déclinaison « Boîte » de « Florentin »
+ * à 24 € HT, depuis la remise » (lot P, P5). Le rapport et le taux restent au
+ * détail : ce sont les matériaux du calcul, pas la phrase.
+ */
+function proPricePrefilled(fact: PhraseFact): Said {
+  const p = fact.payload;
+  return byActor(
+    fact,
+    [
+      text('a pré-rempli le prix pro HT de '),
+      ...cite(VARIANT, p['variant']),
+      text(' '),
+      ...theSubject(fact, OF_PRODUCT),
+      text(' à '),
+      inUnit('millicents', p['proPriceMillicents']),
+      text(' HT, depuis la remise'),
+    ],
+    ['subjectLabel', 'variant', 'proPriceMillicents'],
+  );
+}
+
 export const REFERENTIAL_VARIANT_PHRASES = {
+  'variant.pro_price_prefilled': proPricePrefilled,
   'variant.added': variantAdded,
   'variant.aligned': (fact) => variantAligned(fact, fact.payload['aspect'], ['aspect']),
   'variant.renamed': variantRenamed,

@@ -24,6 +24,7 @@ function aVariant(over: Partial<VariantSnapshot> = {}): VariantSnapshot {
     position: 0,
     priceCents: null,
     weightGrams: null,
+    proPriceMillicents: null,
     regulatoryFollowsDefault: false,
     nutritionFollowsDefault: false,
     pricingFollowsDefault: false,
@@ -222,6 +223,7 @@ describe("une écriture ne recopie pas le défaut dans les colonnes propres", ()
           allergenSheet: { declared: ["AM"], mayContain: [] },
           priceCents: 250,
           weightGrams: 100,
+          proPriceMillicents: null,
         },
         ...rest,
       ],
@@ -259,6 +261,7 @@ describe("une écriture ne recopie pas le défaut dans les colonnes propres", ()
     expect(products.variant(SECOND_ID)).toMatchObject({
       priceCents: null,
       weightGrams: null,
+      proPriceMillicents: null,
       pricingFollowsDefault: true,
     });
   });

@@ -407,3 +407,88 @@ describe('PricingForm — la ligne B2B suit le prix remisé', () => {
     expect(marked[0]?.querySelector('dt')?.textContent).toContain('B2B');
   });
 });
+
+/** Lot P : le prix pro HT saisi, sous le prix public. */
+describe('PricingForm — le prix pro HT saisi', () => {
+  function withMethod(store: ProductFormStore, method: 'ratio_ttc' | 'entered'): void {
+    const rules = TestBed.inject(AccountingRulesStore);
+    vi.spyOn(rules, 'rules').mockReturnValue({ ratioBp: 9_000, method, updatedAt: null });
+    withFamily(store);
+    store.priceEur.set(12);
+  }
+
+  function render(): HTMLElement {
+    const fixture = TestBed.createComponent(PricingForm);
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  const flat = (text: string | null | undefined): string =>
+    (text ?? '').replace(/\u202f|\u00a0/g, ' ');
+
+  it('offre le champ « Prix pro HT », et la saisie remonte au store en texte', () => {
+    const store = setup();
+    withMethod(store, 'ratio_ttc');
+    const host = render();
+
+    expect(host.textContent).toContain('Prix pro HT');
+    const input = host.querySelector<HTMLInputElement>('.field-money-ht input');
+    if (input === null) {
+      throw new TypeError('champ « Prix pro HT » absent');
+    }
+    input.value = '8,12345';
+    input.dispatchEvent(new Event('input'));
+
+    expect(store.proPriceHtText()).toBe('8,12345');
+    expect(store.proPriceMillicents()).toBe(812_345);
+  });
+
+  it('sous ratio_ttc, dit que la saisie n’est pas encore appliquée et garde la remise', () => {
+    const store = setup();
+    withMethod(store, 'ratio_ttc');
+    store.proPriceHtText.set('1');
+    const host = render();
+
+    expect(host.textContent).toContain('Pas encore appliqué');
+    expect(flat(host.querySelector('.pro')?.textContent)).toContain('−10 %');
+    expect(flat(host.querySelector('.pro')?.textContent)).toContain('10,80 €');
+  });
+
+  /** « La fiche ne ment pas » : sous « Prix saisi », plus de remise tirée du ratio. */
+  it('sous entered, montre le TTC de la saisie et l’écart constaté, jamais la remise', () => {
+    const store = setup();
+    withMethod(store, 'entered');
+    // 8,50000 € HT × 1,20 = 10,20 € TTC, soit −15 % sous 12,00 €.
+    store.proPriceHtText.set('8,5');
+    const host = render();
+
+    const pro = flat(host.querySelector('.pro')?.textContent);
+    expect(pro).toContain('10,20 €');
+    expect(pro).toContain('8,50 €');
+    expect(pro).toContain('écart constaté −15 %');
+    expect(pro).not.toContain('−10 %');
+  });
+
+  it('sous entered, la ligne B2B du tableau montre le HT saisi, pas un HT redérivé', () => {
+    const store = setup();
+    withMethod(store, 'entered');
+    // 8,336 € HT s'affiche 8,34 € ; re-taxé à 20 % (10,00 € TTC) puis
+    // redivisé, on tomberait sur 8,33 € — un centime que la facture dément.
+    store.proPriceHtText.set('8,336');
+    const host = render();
+
+    const b2b = [...host.querySelectorAll('.inherit-row')].find((row) =>
+      row.querySelector('dt')?.textContent?.includes('B2B'),
+    );
+    expect(flat(b2b?.querySelector('.inherit-gross strong')?.textContent)).toBe('8,34 €');
+  });
+
+  it('sous entered, sans saisie, dit que la déclinaison n’est pas vendue aux pros', () => {
+    const store = setup();
+    withMethod(store, 'entered');
+    const host = render();
+
+    expect(host.querySelector('.pro')).toBeNull();
+    expect(host.textContent).toContain('n’est pas vendue aux');
+  });
+});

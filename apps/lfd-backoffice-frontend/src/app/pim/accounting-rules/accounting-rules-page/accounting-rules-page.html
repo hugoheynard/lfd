@@ -48,11 +48,40 @@
             <strong>Ratio TTC pré-remise</strong>
             <span class="method-say">
               La remise porte sur le prix <strong>TTC</strong>, et le hors taxe se déduit ensuite du
-              taux réel de l'article. C'est la seule méthode disponible, et c'est elle qui part au
-              prochain envoi.
+              taux réel de l'article.
             </span>
           </span>
         </label>
+
+        <!-- Lot P : le prix pro HT se SAISIT sur chaque déclinaison. La
+             remise ci-dessous ne sert plus alors qu'au pré-remplissage. -->
+        <label class="method" [class.is-chosen]="draftMethod() === 'entered'">
+          <input
+            type="radio"
+            name="pro-price-method"
+            [checked]="draftMethod() === 'entered'"
+            (change)="chooseMethod('entered')"
+          />
+          <span class="method-body">
+            <strong>Prix saisi</strong>
+            <span class="method-say">
+              Le prix pro <strong>HT</strong> est saisi sur chaque déclinaison, sous le prix public.
+              Une déclinaison sans prix pro saisi n'est plus vendue aux professionnels&nbsp;:
+              pré-remplir d'abord, ci-dessous.
+            </span>
+          </span>
+        </label>
+
+        @if (canWrite()) {
+          <button
+            foldButton
+            emphasis="outline"
+            [disabled]="!canChooseMethod()"
+            (click)="submitMethod()"
+          >
+            Appliquer la méthode
+          </button>
+        }
 
         <fold-callout appearance="inset" variant="info">
           <strong>La plaquette commerciale n'applique aucune règle.</strong> Ses 89 prix
@@ -157,6 +186,11 @@
            partir sans ce réglage (`ProPriceRatioNotSetError`). Une consigne
            fausse dans l'écran qui fait autorité coûte plus qu'une absence de
            consigne — corrigé le 2026-09-13. -->
+      <section class="prefill">
+        <h3>Pré-remplir le prix pro saisi</h3>
+        <app-pro-price-prefill />
+      </section>
+
       <fold-callout appearance="inset" variant="warning">
         <strong>Ces réglages tarifent pour de vrai.</strong> Le prochain envoi vers la boutique
         professionnelle partira avec cette remise. Elle pose le prix de <em>base</em> du

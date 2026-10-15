@@ -32,6 +32,8 @@ import {
 } from "../../../shared/domain/value-objects/context-vat.js";
 import type { AllergenDeclaration } from "../value-objects/nutrition-declaration.js";
 import type { Sku } from "../value-objects/sku.value-object.js";
+import type { ProPriceHt } from "../value-objects/pro-price-ht.js";
+import type { ProPriceMethod } from "@lfd/pim-contracts";
 import type { Audience } from "../../../shared/domain/value-objects/audience.js";
 import type { CategoryVatPercents } from "../../../shared/domain/ports/catalogue-reader.js";
 import { activationGaps, isActivatable } from "../services/activation-gaps.js";
@@ -401,8 +403,16 @@ export class Product {
    * ⚠️ Le refus des allergènes reste **par déclinaison** jusqu'au lot 2 : la
    * projection d'aujourd'hui n'écarte pas une déclinaison sans déclaration,
    * elle compte sur ce refus-ci.
+   *
+   * Sous la méthode `entered` (lot P, P4), une déclinaison n'est tarifée
+   * qu'avec son prix pro HT saisi : sans lui, la projection l'écarte, et une
+   * fiche dont aucune déclinaison n'a les deux prix ne vendrait rien.
    */
-  activate(vatPercents: CategoryVatPercents, audience: Audience): StatusChanged {
+  activate(
+    vatPercents: CategoryVatPercents,
+    audience: Audience,
+    proPriceMethod: ProPriceMethod,
+  ): StatusChanged {
     if (this.statusValue === "archived") {
       throw new ArchivedProductNotPublishableError(this.identity);
     }
@@ -416,7 +426,7 @@ export class Product {
       throw new ProductNotPublishableError(this.identity, missing);
     }
     const resolved = this.variantList.map((variant) => this.resolvedSnapshot(variant));
-    const gaps = activationGaps(resolved, vatPercents, audience);
+    const gaps = activationGaps(resolved, vatPercents, audience, proPriceMethod);
     if (!isActivatable(gaps)) {
       throw new ProductNotActivatableError(this.identity, gaps);
     }
@@ -488,6 +498,26 @@ export class Product {
   /** Tarif et poids d'une déclinaison **du produit**. */
   priceVariant(variantId: string, pricing: VariantPricing): void {
     this.variant(variantId).price(pricing);
+  }
+
+  /**
+   * **Pré-remplit le prix pro HT** d'une déclinaison (lot P, P5) — et
+   * seulement là où rien n'est saisi.
+   *
+   * Deux refus silencieux, tenus ICI plutôt que dans le handler : une
+   * déclinaison qui suit le tarif du défaut n'a pas de prix à elle (lui en
+   * écrire un dormirait sous le drapeau et se réveillerait au désalignement),
+   * et une saisie existante ne s'écrase jamais. Rend `true` si la déclinaison
+   * a changé.
+   */
+  prefillProPrice(variantId: string, price: ProPriceHt): boolean {
+    const target = this.variant(variantId);
+    if (target.pricingFollowsDefault || target.hasOwnProPrice) {
+      return false;
+    }
+    const own = target.snapshot();
+    target.price({ priceCents: own.priceCents, weightGrams: own.weightGrams, proPrice: price });
+    return true;
   }
 
   /**
@@ -635,7 +665,11 @@ export class Product {
     const allergensFrom = variant.follows("allergens") ? source : own;
     const valuesFrom = variant.follows("nutrition") ? source : own;
     const pricing = variant.follows("pricing")
-      ? { priceCents: source.priceCents, weightGrams: source.weightGrams }
+      ? {
+          priceCents: source.priceCents,
+          weightGrams: source.weightGrams,
+          proPriceMillicents: source.proPriceMillicents,
+        }
       : {};
     return {
       ...own,

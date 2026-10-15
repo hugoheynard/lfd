@@ -4,6 +4,7 @@ import {
 } from "../errors/product-errors.js";
 import type { LocalizedText } from "../../../shared/domain/value-objects/localized-text.js";
 import type { AllergenDeclaration } from "../value-objects/nutrition-declaration.js";
+import type { ProPriceHt } from "../value-objects/pro-price-ht.js";
 import type { Sku } from "../value-objects/sku.value-object.js";
 
 /**
@@ -140,6 +141,12 @@ export interface VariantSnapshot {
   /** Poids net de l'unité vendue, en grammes ; `null` = non renseigné. */
   readonly weightGrams: number | null;
   /**
+   * Le prix professionnel HORS TAXE saisi, en millicentimes (10⁻⁵ €) ;
+   * `null` = pas saisi. Lu seulement sous la méthode `entered` (lot P) ; il
+   * suit le défaut avec le prix public quand `pricingFollowsDefault`.
+   */
+  readonly proPriceMillicents: number | null;
+  /**
    * La déclaration d'allergènes, traces comprises. `null` = **non
    * renseignée** ; `declared: []` = « aucun allergène » déclaré.
    */
@@ -168,6 +175,12 @@ export interface VariantSnapshot {
 export interface VariantPricing {
   readonly priceCents: number | null;
   readonly weightGrams: number | null;
+  /**
+   * Le prix pro HT saisi (lot P). **Absent = inchangé** : les écrans et les
+   * semis d'avant le lot n'envoient pas ce champ, et l'absence ne doit pas
+   * effacer une saisie. `null` = effacer.
+   */
+  readonly proPrice?: ProPriceHt | null;
 }
 
 export class Variant {
@@ -180,6 +193,7 @@ export class Variant {
   private positionValue: number;
   private priceCentsValue: number | null;
   private weightGramsValue: number | null;
+  private proPriceMillicentsValue: number | null;
   private allergenSheetValue: VariantAllergenSheetSnapshot | null;
   private nutritionValue: VariantNutritionSnapshot | null;
   private readonly followsDefault: Record<VariantFlag, boolean>;
@@ -202,6 +216,7 @@ export class Variant {
     this.positionValue = snapshot.position;
     this.priceCentsValue = snapshot.priceCents;
     this.weightGramsValue = snapshot.weightGrams;
+    this.proPriceMillicentsValue = snapshot.proPriceMillicents;
     this.allergenSheetValue = snapshot.allergenSheet;
     this.nutritionValue = snapshot.nutrition;
     this.followsDefault = {
@@ -229,6 +244,7 @@ export class Variant {
       position: 0,
       priceCents: null,
       weightGrams: null,
+      proPriceMillicents: null,
       // Elle ne peut pas se suivre elle-même : c'est ELLE, le défaut.
       regulatoryFollowsDefault: false,
       pricingFollowsDefault: false,
@@ -269,6 +285,7 @@ export class Variant {
       position: input.position,
       priceCents: null,
       weightGrams: null,
+      proPriceMillicents: null,
       regulatoryFollowsDefault: true,
       // Les VALEURS naissent alignées pour la même raison que les allergènes :
       // née nue, la déclinaison afficherait un tableau vide là où celui du
@@ -449,6 +466,14 @@ export class Variant {
   price(input: VariantPricing): void {
     this.priceCentsValue = requireCountOrNull("priceCents", input.priceCents);
     this.weightGramsValue = requireCountOrNull("weightGrams", input.weightGrams);
+    if (input.proPrice !== undefined) {
+      this.proPriceMillicentsValue = input.proPrice?.millicents ?? null;
+    }
+  }
+
+  /** A-t-elle un prix pro HT À ELLE — sans regarder le défaut ? */
+  get hasOwnProPrice(): boolean {
+    return this.proPriceMillicentsValue !== null;
   }
 
   snapshot(): VariantSnapshot {
@@ -462,6 +487,7 @@ export class Variant {
       position: this.positionValue,
       priceCents: this.priceCentsValue,
       weightGrams: this.weightGramsValue,
+      proPriceMillicents: this.proPriceMillicentsValue,
       regulatoryFollowsDefault: this.followsDefault.regulatory,
       pricingFollowsDefault: this.followsDefault.pricing,
       nutritionFollowsDefault: this.followsDefault.nutrition,

@@ -272,3 +272,30 @@ describe('AccountingRulesPage — lecture en échec', () => {
     expect(host.querySelector('fold-number-input')).toBeNull();
   });
 });
+
+/** Lot P : la méthode « Prix saisi » se propose à côté du ratio. */
+describe('AccountingRulesPage — la méthode « Prix saisi »', () => {
+  const IN_PLACE_RATIO = { ratioBp: 9_000, method: 'ratio_ttc' as const, updatedAt: null };
+
+  it('propose « Prix saisi », et un bouton qui ne s’allume qu’au changement', async () => {
+    const fixture = await render({ view: IN_PLACE_RATIO });
+    const apply = [...host(fixture).querySelectorAll('button')].find((b) =>
+      (b.textContent ?? '').includes('Appliquer la méthode'),
+    );
+
+    expect(text(fixture)).toContain('Prix saisi');
+    expect(apply?.disabled).toBe(true);
+
+    const radios = [...host(fixture).querySelectorAll<HTMLInputElement>('input[type="radio"]')];
+    radios[1]?.dispatchEvent(new Event('change'));
+    fixture.detectChanges();
+
+    expect(apply?.disabled).toBe(false);
+  });
+
+  it('offre le pré-remplissage du prix pro', async () => {
+    const fixture = await render({ view: IN_PLACE_RATIO });
+
+    expect(text(fixture)).toContain('Pré-remplir le prix pro saisi');
+  });
+});

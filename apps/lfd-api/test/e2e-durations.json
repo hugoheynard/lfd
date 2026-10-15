@@ -236,6 +236,7 @@
   "test/pim-operations.e2e-spec.ts": 7270,
   "test/pim-order-time-limits.e2e-spec.ts": 6376,
   "test/pim-points-of-sale.e2e-spec.ts": 5830,
+  "test/pim-pro-price.e2e-spec.ts": 8895,
   "test/pim-product-history.e2e-spec.ts": 7853,
   "test/pim-product-lifecycle.e2e-spec.ts": 4549,
   "test/pim-publication-allergens.e2e-spec.ts": 5069,

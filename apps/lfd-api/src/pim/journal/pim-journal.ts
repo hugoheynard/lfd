@@ -256,6 +256,13 @@ export const PIM_EVENTS = {
    * à côté, et il ne faut pas en ajouter un.
    */
   variantRenamed: "variant.renamed",
+  /**
+   * Le prix pro HT d'une déclinaison **pré-rempli depuis le ratio** (lot P,
+   * P5) — un fait par déclinaison écrite. Nommé `variant.*` comme le plan le
+   * nomme : il échappe donc à `attribution.ts` et à `content-facts.ts`, qui ne
+   * lisent que `product.*` (cf. le contrat de `product.allergens_saved`).
+   */
+  variantProPricePrefilled: "variant.pro_price_prefilled",
   productArchived: "product.archived",
   productRestored: "product.restored",
   /**

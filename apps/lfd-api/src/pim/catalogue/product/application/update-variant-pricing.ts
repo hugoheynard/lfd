@@ -5,6 +5,7 @@ import { changesBetween } from "../../../../platform/journal/changes.js";
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 
 import type { VariantPricing } from "../domain/entities/variant.js";
+import { ProPriceHt } from "../domain/value-objects/pro-price-ht.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { namedVariant, requireProduct } from "./product-support.js";
 import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
@@ -13,8 +14,16 @@ import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
  * Ce que la section « Tarif & TVA » envoie. L'assiette voyage AVEC le prix :
  * un nombre et sa signification ne s'enregistrent pas séparément, sinon la base
  * porte un montant dont personne ne sait s'il est hors taxe.
+ *
+ * Le prix pro HT (lot P) arrive en TEXTE, tel que saisi : c'est le value
+ * object `ProPriceHt` qui le lit et refuse une sixième décimale. Absent =
+ * inchangé, `null` = effacer.
  */
-export type UpdateVariantPricingInput = VariantPricing;
+export interface UpdateVariantPricingInput {
+  readonly priceCents: number | null;
+  readonly weightGrams: number | null;
+  readonly proPriceHt?: string | null | undefined;
+}
 
 export class UpdateVariantPricingCommand {
   constructor(
@@ -45,7 +54,7 @@ export class UpdateVariantPricingHandler implements ICommandHandler<
     const { productId, variantId, input } = command;
     const product = await requireProduct(this.products, productId);
     const before = pricingOf(product.snapshot().variants, variantId);
-    product.priceVariant(variantId, input);
+    product.priceVariant(variantId, pricingOfInput(input));
     const changes = changesBetween(before, pricingOf(product.snapshot().variants, variantId));
 
     await this.uow.run(async () => {
@@ -71,12 +80,30 @@ export class UpdateVariantPricingHandler implements ICommandHandler<
   }
 }
 
-/** Ce que la section « Tarif & logistique » possède, pour UNE déclinaison. */
+/** La saisie, lue par le domaine — le prix pro passe par son value object. */
+function pricingOfInput(input: UpdateVariantPricingInput): VariantPricing {
+  const base = { priceCents: input.priceCents, weightGrams: input.weightGrams };
+  if (input.proPriceHt === undefined) {
+    return base;
+  }
+  return {
+    ...base,
+    proPrice: input.proPriceHt === null ? null : ProPriceHt.fromEuros(input.proPriceHt),
+  };
+}
+
+/**
+ * Ce que la section « Tarif & logistique » possède, pour UNE déclinaison.
+ *
+ * Le prix pro y entre (lot P) : sa clé est celle de la révision et du contrat
+ * du fait, `proPriceMillicents`, pour que `attribution.ts` le lise tel quel.
+ */
 function pricingOf(
   variants: readonly {
     readonly id: string;
     readonly priceCents: number | null;
     readonly weightGrams: number | null;
+    readonly proPriceMillicents: number | null;
   }[],
   variantId: string,
 ): Record<string, unknown> {
@@ -84,5 +111,6 @@ function pricingOf(
   return {
     priceCents: variant?.priceCents ?? null,
     weightGrams: variant?.weightGrams ?? null,
+    proPriceMillicents: variant?.proPriceMillicents ?? null,
   };
 }

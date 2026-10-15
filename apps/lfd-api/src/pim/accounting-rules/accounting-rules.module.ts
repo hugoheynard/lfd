@@ -5,6 +5,7 @@ import { ReadAccountingRulesHandler } from "./application/read-accounting-rules.
 import { SetProPriceRatioHandler } from "./application/set-pro-price-ratio.js";
 import { ChooseProPriceMethodHandler } from "./application/choose-pro-price-method.js";
 import { AccountingRulesRepository } from "./domain/ports/accounting-rules.repository.js";
+import { AccountingRulesReader } from "./domain/ports/accounting-rules.reader.js";
 import { AccountingRulesController } from "./http/accounting-rules.controller.js";
 import { PrismaAccountingRulesRepository } from "./infrastructure/prisma-accounting-rules.repository.js";
 
@@ -25,10 +26,13 @@ import { PrismaAccountingRulesRepository } from "./infrastructure/prisma-account
   controllers: [AccountingRulesController],
   providers: [
     { provide: AccountingRulesRepository, useClass: PrismaAccountingRulesRepository },
+    // La lecture seule, sur la MÊME instance (lot P) : ceux qui ne font que
+    // lire la méthode n'ont pas à recevoir de quoi l'écrire.
+    { provide: AccountingRulesReader, useExisting: AccountingRulesRepository },
     ReadAccountingRulesHandler,
     SetProPriceRatioHandler,
     ChooseProPriceMethodHandler,
   ],
-  exports: [AccountingRulesRepository],
+  exports: [AccountingRulesRepository, AccountingRulesReader],
 })
 export class AccountingRulesModule {}

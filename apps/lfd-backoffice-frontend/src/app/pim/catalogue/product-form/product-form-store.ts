@@ -17,12 +17,19 @@ import {
   type Locale,
   type LocalizedText,
   type ProductReadinessView,
+  type ProPrice,
   type VariantAspect,
 } from '@lfd/pim-contracts';
 
 import { MILLICENTS_PER_CENT } from '@lfd/money';
 
 import { variantTabLabel } from './variant-label';
+import {
+  observedGapLabel,
+  proPriceMillicentsOf,
+  proPricePayloadOf,
+  proPriceTextOf,
+} from './pro-price-entry';
 import {
   bucketsOf,
   citedNotDeclaredIn,
@@ -151,7 +158,17 @@ export interface DerivedAmount {
  */
 export interface ProPricing {
   readonly ttc: string;
-  /** « −10 % » — la pastille, pour que le nombre ne tombe pas de nulle part. */
+  /**
+   * D'où vient le prix pro : la remise des règles comptables (`ratio`), ou la
+   * saisie de la déclinaison (`entered`, lot P).
+   */
+  readonly source: 'ratio' | 'entered';
+  /**
+   * « −10 % » — la pastille, pour que le nombre ne tombe pas de nulle part.
+   *
+   * Sous `entered`, c'est l'**écart constaté** entre les deux TTC, en lecture :
+   * aucune remise ne produit plus le prix, et afficher celle du ratio mentirait.
+   */
   readonly discountLabel: string;
   /** `null` quand le contexte professionnel n'a pas de taux réglé. */
   readonly ht: string | null;
@@ -482,6 +499,8 @@ function writeText(
 interface VariantDraft {
   readonly priceEur: number | null;
   readonly weightGrams: number | null;
+  /** Le prix pro HT, en TEXTE tel que saisi : cinq décimales ne passent pas par un flottant. */
+  readonly proPriceHtText: string;
   /**
    * Allergènes **et** traces, en un seul état tri-étatique.
    *
@@ -596,6 +615,19 @@ export class ProductFormStore {
   readonly kind = signal<ProductKind>('daily');
   readonly categoryId = signal('');
   readonly priceEur = signal<number | null>(null);
+  /**
+   * **Le prix pro HT saisi**, en TEXTE (lot P) — `""` = pas saisi.
+   *
+   * Un texte et non un nombre : cinq décimales tapées doivent arriver au
+   * serveur telles quelles, et c'est lui qui refuse la sixième.
+   */
+  readonly proPriceHtText = signal('');
+
+  /** La méthode « Prix saisi » est-elle appliquée ? (lot P) */
+  readonly proPriceEntered = computed(() => this.accounting.rules().method === 'entered');
+
+  /** La saisie, lue — `null` si vide ou si elle ne fait pas un prix. */
+  readonly proPriceMillicents = computed(() => proPriceMillicentsOf(this.proPriceHtText()));
 
   /**
    * **Ce que `priceEur` veut dire.**
@@ -870,7 +902,7 @@ export class ProductFormStore {
     // Le prix pro de la MÉTHODE appliquée — celle que le push suivra. Garder
     // ici le calcul d'origine ferait afficher un prix pendant que le fil en
     // pousse un autre, ce que le JSDoc de `proPriceOf` interdit précisément.
-    const proCents = this.proPriceCentsAt(priceEur, this.percentOf(PRO_CONTEXT_KEY));
+    const proCents = this.proPriceAt(priceEur, this.percentOf(PRO_CONTEXT_KEY))?.ttcCents ?? null;
     // En EUROS, comme son nom le dit et comme le rendait la version d'origine.
     // Sans taux, on rend le prix public : cette fonction sert d'assiette à un
     // affichage, et `null` y ferait disparaître une ligne plutôt que de la dire.
@@ -880,44 +912,57 @@ export class ProductFormStore {
   readonly proPricing = computed<ProPricing | null>(() => {
     const priceEur = this.priceEur();
     const rules = this.accounting.rules();
-    const percent = this.percentOf(PRO_CONTEXT_KEY);
     if (priceEur === null || rules.ratioBp === null) {
       return null;
     }
-    const price = proPriceOf(
-      Math.round(priceEur * 100),
-      { method: rules.method, ratioBp: rules.ratioBp },
-      percent ?? null,
-    );
+    const price = this.proPriceAt(priceEur, this.percentOf(PRO_CONTEXT_KEY));
     if (price === null) {
-      // Sans taux, aucune des deux méthodes ne produit de prix — et le canal
-      // écarterait l'article pour la même raison. Montrer le TTC public ici
-      // laisserait croire à un prix pro.
+      // Sans taux — ou, sous « Prix saisi », sans saisie — aucune méthode ne
+      // produit de prix, et le canal écarterait l'article pour la même raison.
+      // Montrer le TTC public ici laisserait croire à un prix pro.
       return null;
     }
+    const entered = rules.method === 'entered';
+    const publicCents = Math.round(priceEur * 100);
     return {
       ttc: euros(price.ttcCents),
-      discountLabel: formatDiscount(rules.ratioBp),
-      // Le hors taxe vient de `proPriceOf`, comme le TTC — les deux s'affichent
-      // l'un sous l'autre, et le second re-taxé doit redonner le premier. Le
-      // déduire ici avec `htFromTtc` marcherait sous `ratio_ttc` et mentirait
-      // d'un centime sous la plaquette, où c'est le HT qui est l'original.
+      source: entered ? 'entered' : 'ratio',
+      discountLabel: entered
+        ? (observedGapLabel(publicCents, price.ttcCents) ?? '—')
+        : formatDiscount(rules.ratioBp),
+      // Le hors taxe vient de `proPriceOf`, comme le TTC. Sous `ratio_ttc`, il
+      // se déduit du TTC pro ; sous `entered`, c'est la SAISIE, qui fait foi —
+      // le TTC n'en est que l'affichage, et personne n'en redérive un HT.
       ht: euros(Math.round(price.htMillicents / MILLICENTS_PER_CENT)),
     };
   });
 
-  /** Le TTC pro en centimes sous la méthode appliquée — `null` faute de taux. */
-  private proPriceCentsAt(priceEur: number, percent: number | undefined): number | null {
+  /**
+   * Sous « Prix saisi », la ligne B2B du tableau montre la SAISIE, au centime
+   * d'affichage — jamais un HT redérivé du TTC pro, qui perdrait les décimales
+   * saisies (lot P, « le HT fait foi »).
+   */
+  private enteredCounterpart(): DerivedAmount | null {
+    const ht = this.proPriceMillicents();
+    return ht === null
+      ? null
+      : { label: 'HT', amount: euros(Math.round(ht / MILLICENTS_PER_CENT)) };
+  }
+
+  /**
+   * Le prix pro sous la méthode appliquée — `null` faute de taux, de rapport,
+   * ou (sous `entered`) de saisie. Le seul appel à la porte de cet écran.
+   */
+  private proPriceAt(priceEur: number, percent: number | undefined): ProPrice | null {
     const rules = this.accounting.rules();
     if (rules.ratioBp === null) {
       return null;
     }
-    return (
-      proPriceOf(
-        Math.round(priceEur * 100),
-        { method: rules.method, ratioBp: rules.ratioBp },
-        percent ?? null,
-      )?.ttcCents ?? null
+    return proPriceOf(
+      Math.round(priceEur * 100),
+      { method: rules.method, ratioBp: rules.ratioBp },
+      percent ?? null,
+      this.proPriceMillicents(),
     );
   }
 
@@ -989,7 +1034,9 @@ export class ProductFormStore {
       override[contextKey] ?? category.vatByContext[contextKey];
     const rateOf = (contextKey: string): RateView | null => viewOf(rateIdOf(contextKey));
     const counterpartFor = (contextKey: string): DerivedAmount | null =>
-      counterpartOf(this.basePriceEurFor(contextKey), this.percentOf(contextKey));
+      contextKey === PRO_CONTEXT_KEY && this.proPriceEntered()
+        ? this.enteredCounterpart()
+        : counterpartOf(this.basePriceEurFor(contextKey), this.percentOf(contextKey));
     return {
       categoryName: category.name.fr,
       // UNE ligne par contexte du registre : un contexte de plus en base est une
@@ -1140,6 +1187,7 @@ export class ProductFormStore {
         this.priceEur.set(value[0] as number | null);
         this.vatOverride.set(value[1] as Readonly<Record<string, string>>);
         this.channelsOverride.set(value[2] as SalesChannels | null);
+        this.proPriceHtText.set(String(value[4] ?? ''));
         return;
       case 'allergenes':
         this.declaration.set({
@@ -1608,6 +1656,9 @@ export class ProductFormStore {
       // de chaque canal, il ne s'enregistre pas.
       priceCents: price === null ? null : Math.round(price * 100),
       weightGrams: weight === null ? null : Math.round(weight),
+      // Le prix pro HT part en TEXTE, tel que saisi : le serveur le lit et
+      // refuse une sixième décimale (lot P).
+      proPriceHt: proPricePayloadOf(this.proPriceHtText()),
     });
   }
 
@@ -1991,6 +2042,9 @@ export class ProductFormStore {
           this.vatOverride(),
           this.channelsOverride(),
           this.pricingAligned(),
+          // Le prix pro HT (lot P) : une saisie qui bouge EST une modification
+          // de la section, sans quoi le bouton d'enregistrement n'apparaît pas.
+          this.proPriceHtText(),
         ]);
       case 'allergenes': {
         const declaration = this.declaration();
@@ -2024,6 +2078,7 @@ export class ProductFormStore {
     return {
       priceEur: this.priceEur(),
       weightGrams: this.weightGrams(),
+      proPriceHtText: this.proPriceHtText(),
       declaration: this.declaration(),
       nutrition: this.nutrition(),
       allergensAligned: this.allergensAligned(),
@@ -2042,6 +2097,7 @@ export class ProductFormStore {
           ? null
           : variant.priceCents / 100,
       weightGrams: variant?.weightGrams ?? null,
+      proPriceHtText: proPriceTextOf(variant?.proPriceMillicents ?? null),
       // `[]` est une AFFIRMATION (« aucun allergène »), `null` une absence de
       // réponse. Les confondre transformerait un oubli de saisie en promesse —
       // et le serveur rend déjà les deux, c'est l'écran qui les aplatissait.
@@ -2059,6 +2115,7 @@ export class ProductFormStore {
   private applyDraft(draft: VariantDraft): void {
     this.priceEur.set(draft.priceEur);
     this.weightGrams.set(draft.weightGrams);
+    this.proPriceHtText.set(draft.proPriceHtText);
     this.declaration.set(draft.declaration);
     this.nutrition.set(draft.nutrition);
     this.allergensAligned.set(draft.allergensAligned);

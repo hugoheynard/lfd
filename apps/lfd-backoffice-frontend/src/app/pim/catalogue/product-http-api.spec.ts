@@ -26,6 +26,7 @@ function backendProduct(overrides: Partial<BackendVariantLike> = {}) {
     isDiscontinued: false,
     priceCents: 450,
     weightGrams: 250,
+    proPriceMillicents: null,
     regulatoryFollowsDefault: false,
     nutritionFollowsDefault: false,
     pricingFollowsDefault: false,

@@ -1,6 +1,7 @@
 import { ROOT_CONTEXT_KEY } from "../../../../sales-contexts/domain/value-objects/bootstrap-contexts.js";
 import type { CategoryVatPercents } from "../../../shared/domain/ports/catalogue-reader.js";
 import { servedAudiences, type Audience } from "../../../shared/domain/value-objects/audience.js";
+import type { ProPriceMethod } from "@lfd/pim-contracts";
 import type { VariantSnapshot } from "../entities/variant.js";
 
 /** Une clientèle servie, sans le `both` qui en regroupe deux. */
@@ -32,6 +33,11 @@ export interface UnbilledAudience {
  */
 export interface ActivationGaps {
   /**
+   * Le prix pro HT saisi est exigé (méthode `entered`, lot P) : un « prix »
+   * veut alors dire les DEUX prix, et le refus doit le dire.
+   */
+  readonly proPriceRequired: boolean;
+  /**
    * Aucune déclinaison non arrêtée n'a de prix — y compris quand toutes sont
    * arrêtées, où la liste ci-dessous est vide sans que rien ne soit vendable.
    */
@@ -57,10 +63,16 @@ export function activationGaps(
   variants: readonly VariantSnapshot[],
   vatPercents: CategoryVatPercents,
   audience: Audience,
+  proPriceMethod: ProPriceMethod,
 ): ActivationGaps {
+  const proPriceRequired = proPriceMethod === "entered";
   const live = variants.filter((variant) => !variant.isDiscontinued);
-  const priced = live.some((variant) => variant.priceCents !== null);
+  const priced = live.some(
+    (variant) =>
+      variant.priceCents !== null && (!proPriceRequired || variant.proPriceMillicents !== null),
+  );
   return {
+    proPriceRequired,
     priceMissing: !priced,
     unpricedVariantSkus: priced ? [] : live.map((variant) => variant.sku),
     unbilledAudiences: servedAudiences(audience)

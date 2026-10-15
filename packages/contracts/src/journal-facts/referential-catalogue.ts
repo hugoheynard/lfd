@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import {
+  basisPoints,
   blast,
   cents,
   changes,
@@ -10,8 +11,10 @@ import {
   grams,
   kcal,
   localizedText,
+  millicents,
   named,
   payload,
+  percent,
   day,
   ref,
   retired,
@@ -112,9 +115,17 @@ const productReclassifiedV1 = payload({
   from: ref("product_category"),
   to: ref("product_category"),
 });
+/** Le prix pro HT saisi (lot P) s'ajoute aux clés possibles : une ligne d'avant reste lisible. */
 const pricingChanges = () =>
-  changes({ priceCents: cents().nullable(), weightGrams: grams().nullable() });
-const productPricingV1 = payload({ variantId: ref("variant"), changes: pricingChanges() });
+  changes({
+    priceCents: cents().nullable(),
+    weightGrams: grams().nullable(),
+    proPriceMillicents: millicents().nullable(),
+  });
+const productPricingV1 = payload({
+  variantId: ref("variant"),
+  changes: changes({ priceCents: cents().nullable(), weightGrams: grams().nullable() }),
+});
 /**
  * **Ce que la déclinaison CONTIENT** — la déclaration de sécurité.
  *
@@ -467,6 +478,21 @@ export const REFERENTIAL_CATALOGUE_FACTS = {
       changes: variantRenameChanges(),
     }),
     [variantRenamedV1],
+  ),
+  /**
+   * **Le prix pro HT pré-rempli depuis le ratio** (lot P, P5 de
+   * `plan-catalogue-synchronise-par-audience.md`) — une ligne par déclinaison,
+   * écrite seulement là où rien n'était saisi. `ratioBp` et `vatPercent` sont
+   * les matériaux du calcul, pour qu'on puisse le refaire en lisant la ligne.
+   */
+  "variant.pro_price_prefilled": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      variant: named("variant"),
+      proPriceMillicents: millicents(),
+      ratioBp: basisPoints(),
+      vatPercent: percent(),
+    }),
   ),
   /**
    * Remplacé par `variant.aligned` (`aspect: "regulatory"`) le 2026-09-03

@@ -21,6 +21,7 @@ import {
   tarte,
 } from "./audience-doubles.js";
 import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
+import { FixedAccountingRules } from "../../../../accounting-rules/domain/ports/__tests__/fixed-accounting-rules.js";
 
 /**
  * **Activer** — l'ancien « publier » (1e du plan
@@ -34,6 +35,7 @@ interface Setup {
   readonly familyAudience?: Audience;
   readonly percents?: CategoryVatPercents;
   readonly journal?: RecordingJournal;
+  readonly accounting?: FixedAccountingRules;
 }
 
 function activating(products: OneProduct, setup: Setup = {}): Promise<void> {
@@ -44,6 +46,7 @@ function activating(products: OneProduct, setup: Setup = {}): Promise<void> {
     setup.journal ?? new RecordingJournal(),
     new DirectUnitOfWork(),
     new RecordingCatalogEmitter(),
+    setup.accounting ?? FixedAccountingRules.with("ratio_ttc", 9_000),
   ).execute(new ActivateProductCommand(PRODUCT_ID));
 }
 
@@ -128,6 +131,36 @@ describe("ActivateProductHandler — le prix et le taux", () => {
     await expect(
       activating(products, { familyAudience: "pro", percents: { b2b: 20 } }),
     ).rejects.toThrow(/particuliers/);
+  });
+});
+
+/** Lot P (P4) : sous « Prix saisi », le prix pro HT est exigé pour activer. */
+describe("ActivateProductHandler — le prix pro saisi", () => {
+  it("refuse sous entered une fiche sans prix pro HT, en le disant", async () => {
+    const products = new OneProduct(tarte());
+
+    await expect(
+      activating(products, { accounting: FixedAccountingRules.with("entered", 9_000) }),
+    ).rejects.toThrow(/prix pro HT.*PAT-7-1/);
+    expect(products.stored?.status).toBe("draft");
+  });
+
+  it("active sous entered une fiche dont la déclinaison porte les deux prix", async () => {
+    const products = new OneProduct(
+      tarte({ variants: [{ ...SELLABLE_VARIANT, proPriceMillicents: 2_730_000 }] }),
+    );
+
+    await activating(products, { accounting: FixedAccountingRules.with("entered", 9_000) });
+
+    expect(products.stored?.status).toBe("published");
+  });
+
+  it("lit ratio_ttc quand rien n'est réglé", async () => {
+    const products = new OneProduct(tarte());
+
+    await activating(products, { accounting: new FixedAccountingRules(null) });
+
+    expect(products.stored?.status).toBe("published");
   });
 });
 

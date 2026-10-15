@@ -10,6 +10,7 @@ import type { Product } from "../domain/entities/product.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { requireProduct } from "./product-support.js";
 import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
+import { AccountingRulesReader } from "../../../accounting-rules/domain/ports/accounting-rules.reader.js";
 
 export class ActivateProductCommand {
   constructor(readonly id: string) {}
@@ -27,6 +28,10 @@ export class ActivateProductCommand {
  * même lecture que `feed-projection.service.ts`), et l'audience effective,
  * qui dépend de la famille.
  *
+ * La méthode du prix pro aussi (lot P, P4) : sous `entered`, une déclinaison
+ * n'est tarifée qu'avec son prix pro HT saisi. Rien de réglé = `ratio_ttc`,
+ * comme le lit `read-accounting-rules.ts`.
+ *
  * ⚠️ Les valeurs nutritionnelles n'entrent pas dans ce refus : le règlement
  * (UE) n° 1169/2011 les exempte dans les deux cas de vente de La Folie Coffee
  * (`plan-separer-allergenes-et-nutrition.md`, D2).
@@ -40,6 +45,7 @@ export class ActivateProductHandler implements ICommandHandler<ActivateProductCo
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
     private readonly emitter: CatalogEmitter,
+    private readonly accounting: AccountingRulesReader,
   ) {}
 
   async execute(command: ActivateProductCommand): Promise<void> {
@@ -69,9 +75,11 @@ export class ActivateProductHandler implements ICommandHandler<ActivateProductCo
     const category = await requireCategory(this.categories, product.categoryId);
     const record = product.snapshot();
     const vat = await this.catalogue.vatPercents([record]);
+    const rules = await this.accounting.read();
     return product.activate(
       vat.get(record.id) ?? {},
       effectiveAudience(product.audience, category.audience),
+      rules?.rules.proPriceMethod.method ?? "ratio_ttc",
     );
   }
 }

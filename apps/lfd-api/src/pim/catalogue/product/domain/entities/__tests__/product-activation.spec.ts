@@ -25,6 +25,7 @@ function variant(over: Partial<VariantSnapshot> = {}): VariantSnapshot {
     position: 0,
     priceCents: 1_000,
     weightGrams: null,
+    proPriceMillicents: null,
     regulatoryFollowsDefault: false,
     nutritionFollowsDefault: false,
     pricingFollowsDefault: false,
@@ -59,15 +60,15 @@ describe("Product.activate — le prix et le taux", () => {
   it("active une fiche tarifée et taxée pour son audience", () => {
     const tarte = product();
 
-    expect(tarte.activate(BOTH, "both")).toBe(true);
+    expect(tarte.activate(BOTH, "both", "ratio_ttc")).toBe(true);
     expect(tarte.status).toBe("published");
   });
 
   it("refuse sans prix, et dit où le saisir", () => {
     const tarte = product({ variants: [variant({ priceCents: null })] });
 
-    expect(() => tarte.activate(BOTH, "both")).toThrow(ProductNotActivatableError);
-    expect(() => tarte.activate(BOTH, "both")).toThrow(/PAT-1.*Tarif/);
+    expect(() => tarte.activate(BOTH, "both", "ratio_ttc")).toThrow(ProductNotActivatableError);
+    expect(() => tarte.activate(BOTH, "both", "ratio_ttc")).toThrow(/PAT-1.*Tarif/);
     expect(tarte.status).toBe("draft");
   });
 
@@ -90,31 +91,35 @@ describe("Product.activate — le prix et le taux", () => {
       ],
     });
 
-    expect(tarte.activate(BOTH, "both")).toBe(true);
+    expect(tarte.activate(BOTH, "both", "ratio_ttc")).toBe(true);
   });
 
   it("refuse sans le taux de la clientèle visée, et nomme la clientèle", () => {
     const tarte = product();
 
-    expect(() => tarte.activate({ takeaway: 5.5 }, "both")).toThrow(/b2b.*professionnels/);
+    expect(() => tarte.activate({ takeaway: 5.5 }, "both", "ratio_ttc")).toThrow(
+      /b2b.*professionnels/,
+    );
   });
 
   it("dit les deux manques d'un coup plutôt qu'un à la fois", () => {
     const tarte = product({ variants: [variant({ priceCents: null })] });
 
-    expect(() => tarte.activate({}, "public")).toThrow(/PAT-1.*takeaway/);
+    expect(() => tarte.activate({}, "public", "ratio_ttc")).toThrow(/PAT-1.*takeaway/);
   });
 
   it("refuse toujours une fiche archivée, avant tout le reste", () => {
     const tarte = product({ status: "archived", variants: [variant({ priceCents: null })] });
 
-    expect(() => tarte.activate({}, "both")).toThrow(ArchivedProductNotPublishableError);
+    expect(() => tarte.activate({}, "both", "ratio_ttc")).toThrow(
+      ArchivedProductNotPublishableError,
+    );
   });
 
   it("une fiche déjà active ne re-vérifie rien", () => {
     const tarte = product({ status: "published", variants: [variant({ priceCents: null })] });
 
-    expect(tarte.activate({}, "both")).toBe(false);
+    expect(tarte.activate({}, "both", "ratio_ttc")).toBe(false);
   });
 });
 

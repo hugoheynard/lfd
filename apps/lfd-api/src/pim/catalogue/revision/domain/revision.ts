@@ -41,8 +41,10 @@ export interface RevisionHeader {
    * La **méthode** qui transforme ce rapport en prix professionnel.
    *
    * Pour la même raison que son voisin, et un cran plus fort : basculer de
-   * `ratio_ttc` vers `remise_apres_tva_max` déplace le prix de base d'environ
-   * 12 % sur un article à 5,5 %, sans qu'une seule ligne de produit ne change.
+   * `ratio_ttc` vers `entered` (le prix pro saisi, lot P) remplace le prix de
+   * base de chaque article dont la saisie diverge du ratio, sans qu'une seule
+   * ligne de produit ne change. (Ce paragraphe citait `remise_apres_tva_max`,
+   * méthode retirée le 2026-09-13 — corrigé le 2026-10-15.)
    * Une révision qui ne garderait pas la méthode montrerait « tous les articles
    * ont changé » et n'expliquerait rien.
    *
@@ -90,6 +92,16 @@ export interface RevisionItemInput {
   /** Prix public TTC en centimes ; `null` = pas tarifé. */
   readonly priceCents: number | null;
   readonly weightGrams: number | null;
+  /**
+   * Le prix pro HT **saisi**, en millicentimes (lot P) — **absent** quand rien
+   * n'est saisi, jamais `null`.
+   *
+   * Absent plutôt que `null`, et c'est délibéré : l'empreinte hache l'article
+   * entier, et une clé de plus à `null` partout rebasculerait toutes les
+   * empreintes des révisions déjà posées. Le diff lit déjà l'absence comme
+   * `null` (`diffItem`) ; une saisie, elle, change l'empreinte de SON article.
+   */
+  readonly proPriceMillicents?: number;
   readonly isDefault: boolean;
   readonly isDiscontinued: boolean;
   /** `null` = aucune fiche réglementaire ; `[]` = fiche déclarée, sans allergène. */

@@ -25,6 +25,7 @@ const LABELS: Readonly<Record<string, string>> = {
   categoryName: 'Famille',
   priceCents: 'Prix public TTC',
   weightGrams: 'Poids',
+  proPriceMillicents: 'Prix pro HT saisi',
   isDefault: 'Déclinaison par défaut',
   isDiscontinued: 'Article arrêté',
   allergens: 'Allergènes',

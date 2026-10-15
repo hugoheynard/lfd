@@ -46,6 +46,9 @@ import { SetProductVatHandler } from "./product/application/set-product-vat.js";
 import { UpdateProductEditorialHandler } from "./product/application/update-product-editorial.js";
 import { UpdateProductIdentityHandler } from "./product/application/update-product-identity.js";
 import { UpdateVariantPricingHandler } from "./product/application/update-variant-pricing.js";
+import { PreviewProPricePrefillHandler } from "./product/application/preview-pro-price-prefill.js";
+import { ApplyProPricePrefillHandler } from "./product/application/apply-pro-price-prefill.js";
+import { ProPricePrefillController } from "./product/http/pro-price-prefill.controller.js";
 import { CatalogueReader } from "./shared/domain/ports/catalogue-reader.js";
 import { CatalogFactsReader } from "./shared/domain/ports/catalog-facts.reader.js";
 import { RepositoryCatalogFactsReader } from "./shared/infrastructure/repository-catalog-facts.reader.js";
@@ -118,6 +121,7 @@ import {
     CategoryController,
     ProductController,
     ProductHistoryController,
+    ProPricePrefillController,
     ReferenceController,
   ],
   providers: [
@@ -142,6 +146,8 @@ import {
     AlignVariantOnDefaultHandler,
     UpdateProductIdentityHandler,
     UpdateVariantPricingHandler,
+    PreviewProPricePrefillHandler,
+    ApplyProPricePrefillHandler,
     RenameProductVariantHandler,
     SetProductMediaHandler,
     OnMediaAssetDescribedHandler,

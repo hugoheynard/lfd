@@ -34,7 +34,7 @@ export type { VatExtra, VatLine, VatShare, VatVentilation, VatVentilationInput }
  * La déduction du hors taxe depuis un prix d'étiquette — arrivée de
  * `@lfd/pim-contracts` le 2026-09-21, quand un second site en a eu besoin.
  */
-export { htFromTtc, htMillicentsOf } from "./tax.js";
+export { htFromTtc, htMillicentsOf, ttcCentsFromHtMillicents } from "./tax.js";
 export { invoiceVatBreakdown } from "./invoice-vat.js";
 export type {
   InvoiceAllowance,

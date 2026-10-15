@@ -1,6 +1,10 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import type { AccountingRulesView, ProPriceMethod } from '@lfd/pim-contracts';
+import type {
+  AccountingRulesView,
+  ProPriceMethod,
+  ProPricePrefillPreviewView,
+} from '@lfd/pim-contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { API_BASE_URL } from '../data/api';
@@ -40,6 +44,26 @@ export class AccountingRulesHttpApi {
   chooseProPriceMethod(method: ProPriceMethod): Promise<AccountingRulesView> {
     return firstValueFrom(
       this.http.put<AccountingRulesView>(`${this.url()}/pro-price-method`, { method }),
+    );
+  }
+
+  /**
+   * **L'aperçu du pré-remplissage du prix pro** (lot P, P5) — lecture seule :
+   * par déclinaison, le HT servi aujourd'hui et le HT que l'écriture poserait.
+   */
+  previewProPricePrefill(): Promise<ProPricePrefillPreviewView> {
+    return firstValueFrom(
+      this.http.get<ProPricePrefillPreviewView>(`${this.url()}/pro-price-prefill`),
+    );
+  }
+
+  /**
+   * **Écrit le pré-remplissage**, et rend l'aperçu relu. Le serveur recalcule
+   * tout et refuse au moindre écart : ce qu'on a vu à l'écran ne décide pas.
+   */
+  applyProPricePrefill(): Promise<ProPricePrefillPreviewView> {
+    return firstValueFrom(
+      this.http.post<ProPricePrefillPreviewView>(`${this.url()}/pro-price-prefill`, {}),
     );
   }
 

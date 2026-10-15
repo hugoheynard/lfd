@@ -39,6 +39,7 @@ function variant(over: Partial<Variant> = {}): Variant {
     position: 0,
     priceCents: 250,
     weightGrams: 100,
+    proPriceMillicents: 2_730_331,
     regulatoryFollowsDefault: false,
     nutritionFollowsDefault: false,
     pricingFollowsDefault: false,
@@ -57,6 +58,7 @@ const SECOND = variant({
   position: 1,
   priceCents: null,
   weightGrams: 220,
+  proPriceMillicents: null,
   regulatoryFollowsDefault: true,
   nutritionFollowsDefault: true,
 });
@@ -387,5 +389,35 @@ describe('la case « aligner sur le défaut »', () => {
     expect(api.calls.map((call) => call.name)).toContain('saveVariantNutrition');
     expect(api.calls.map((call) => call.name)).not.toContain('saveVariantAllergens');
     expect(store.allergensAligned()).toBe(true);
+  });
+});
+
+/** Lot P : le prix pro HT saisi voyage avec le tarif de SA déclinaison. */
+describe('le prix pro HT saisi', () => {
+  it('se relit en texte exact, déclinaison par déclinaison', async () => {
+    const { store } = await setup();
+
+    expect(store.proPriceHtText()).toBe('27,30331');
+    store.selectVariant('var_2');
+    expect(store.proPriceHtText()).toBe('');
+  });
+
+  it('part avec le tarif, en texte, tel que saisi', async () => {
+    const { store, api } = await setup();
+    store.proPriceHtText.set('8,12345');
+
+    await store.saveOne('tarif');
+
+    const call = api.calls.find((entry) => entry.name === 'savePricing');
+    expect(call?.args[2]).toMatchObject({ proPriceHt: '8,12345' });
+  });
+
+  it('une saisie modifiée rend la section « tarif » modifiée', async () => {
+    const { store } = await setup();
+    expect(store.isDirty('tarif')).toBe(false);
+
+    store.proPriceHtText.set('9');
+
+    expect(store.isDirty('tarif')).toBe(true);
   });
 });

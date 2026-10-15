@@ -1,5 +1,6 @@
 import type { WriteTicket } from "../../../../platform/journal/scoped-journal.js";
 import type { AccountingRules } from "../entities/accounting-rules.js";
+import { AccountingRulesReader } from "./accounting-rules.reader.js";
 
 /** Ce que le dépôt rend en plus de l'agrégat : quand la règle a bougé. */
 export interface AccountingRulesRecord {
@@ -16,8 +17,7 @@ export interface AccountingRulesRecord {
  * public » et « personne n'a rien décidé », qui n'ont pas du tout le même sens
  * sur une facture.
  */
-export abstract class AccountingRulesRepository {
-  abstract read(): Promise<AccountingRulesRecord | null>;
+export abstract class AccountingRulesRepository extends AccountingRulesReader {
   /** Pose ou remplace le réglage unique. Crée la ligne au premier appel. */
   abstract save(rules: AccountingRules, ticket: WriteTicket): Promise<void>;
 }

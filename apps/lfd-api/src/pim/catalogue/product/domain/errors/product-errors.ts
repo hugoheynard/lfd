@@ -62,6 +62,37 @@ export class InvalidVariantPricingError extends DomainError {
 }
 
 /**
+ * Un prix pro HT saisi que la fiche ne peut pas ranger : plus de cinq
+ * décimales, négatif, ou hors de la colonne (lot P du plan
+ * `plan-catalogue-synchronise-par-audience.md`).
+ */
+export class InvalidProPriceError extends DomainError {
+  constructor(received: string, expected: string) {
+    super(
+      "catalogue.variant.invalid_pro_price",
+      `Prix pro HT impossible (« ${received} ») : attendu ${expected}. ` +
+        `Corriger le montant dans la section « Tarif » de la déclinaison.`,
+    );
+  }
+}
+
+/**
+ * Le pré-remplissage du prix pro écrirait un HT différent de celui que le fil
+ * sert aujourd'hui (lot P, P5). Un seul écart refuse tout : le pré-remplissage
+ * promet qu'aucun prix servi ne change à la bascule.
+ */
+export class ProPricePrefillMismatchError extends BusinessError {
+  constructor(readonly mismatches: number) {
+    super(
+      "catalogue.pro_price_prefill.mismatch",
+      `Pré-remplissage refusé : ${mismatches} déclinaison(s) recevraient un prix pro HT ` +
+        `différent de celui servi aujourd'hui. Relire l'aperçu dans « Règles comptables » ` +
+        `(la méthode est-elle encore « Ratio » ?) avant de recommencer.`,
+    );
+  }
+}
+
+/**
  * Invariant 7 du socle : `PublishProduct` est **refusée** si une déclinaison
  * active ne déclare pas ses **allergènes**.
  *
@@ -123,7 +154,11 @@ function describeGaps(gaps: ActivationGaps): string {
     reasons.push(
       gaps.unpricedVariantSkus.length === 0
         ? "toutes les déclinaisons sont arrêtées — en rouvrir une et lui donner un prix"
-        : `aucune déclinaison n'a de prix (${gaps.unpricedVariantSkus.join(", ")}) — ` +
+        : gaps.proPriceRequired
+          ? `aucune déclinaison n'a à la fois un prix public et un prix pro HT ` +
+            `(${gaps.unpricedVariantSkus.join(", ")}) — renseigner les deux prix d'au ` +
+            `moins l'une d'elles dans la section « Tarif »`
+          : `aucune déclinaison n'a de prix (${gaps.unpricedVariantSkus.join(", ")}) — ` +
             `renseigner le prix d'au moins l'une d'elles dans la section « Tarif »`,
     );
   }

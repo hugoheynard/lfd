@@ -97,7 +97,15 @@ const WATCHED = [
  * multiplie et arrondit une fois, ce que le serveur fait sur la ligne de
  * commande. Les autres existent pour les cas où il n'y a pas de quantité.
  */
-const CONVERTERS = ["lineTotalCents", "centsFromMillicents", "unitPriceCents", "roundToCents"];
+const CONVERTERS = [
+  "lineTotalCents",
+  "centsFromMillicents",
+  "unitPriceCents",
+  "roundToCents",
+  // Lot P (2026-10-15) : le TTC au centime d'un HT saisi en millicentimes —
+  // `htMillicentsOf` à l'envers, un seul arrondi, dans `@lfd/money`.
+  "ttcCentsFromHtMillicents",
+];
 
 /**
  * La dette connue, site par site — `chemin relatif : nom lié`.

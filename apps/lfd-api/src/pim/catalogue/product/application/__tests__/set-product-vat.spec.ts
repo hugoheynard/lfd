@@ -77,6 +77,7 @@ function snapshot(
         position: 0,
         priceCents: null,
         weightGrams: null,
+        proPriceMillicents: null,
         regulatoryFollowsDefault: false,
         nutritionFollowsDefault: false,
         pricingFollowsDefault: false,

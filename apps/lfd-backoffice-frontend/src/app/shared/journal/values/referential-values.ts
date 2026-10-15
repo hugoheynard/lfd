@@ -73,6 +73,8 @@ export const PUSH_CHANNEL = domain('canal de diffusion', {
  */
 export const PRO_PRICE_METHOD_WRITTEN = domain('méthode du prix professionnel', {
   ratio_ttc: 'Ratio TTC pré-remise',
+  // Lot P (2026-10-15) : le prix pro HT saisi par déclinaison.
+  entered: 'Prix saisi',
 });
 
 /**

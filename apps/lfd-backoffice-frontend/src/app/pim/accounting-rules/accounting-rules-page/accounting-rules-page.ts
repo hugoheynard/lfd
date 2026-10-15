@@ -22,6 +22,7 @@ import {
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { NotifyService } from '../../../notify.service';
 import { AccountingRulesStore } from '../accounting-rules.store';
+import { ProPricePrefill } from '../pro-price-prefill/pro-price-prefill';
 import {
   discountToRatioBp,
   formatDiscount,
@@ -105,6 +106,7 @@ export interface SampleRateRow {
     FoldCalloutComponent,
     FoldDataTableComponent,
     FoldDataTableCellDirective,
+    ProPricePrefill,
   ],
   templateUrl: './accounting-rules-page.html',
   styleUrl: './accounting-rules-page.scss',
@@ -214,7 +216,9 @@ export class AccountingRulesPage {
     // Le TTC pro de la méthode appliquée. Le taux passé ne change rien au TTC
     // sous `ratio_ttc` — il est exigé parce qu'une autre méthode, elle, en
     // dépendrait, et que l'écran doit suivre la méthode sans la connaître.
-    return proPriceOf(publicCents, ratioTtcPolicy(ratioBp), SAMPLE_RATES[0])?.ttcCents ?? null;
+    return (
+      proPriceOf(publicCents, ratioTtcPolicy(ratioBp), SAMPLE_RATES[0], null)?.ttcCents ?? null
+    );
   });
 
   protected readonly samplePro = computed(() => {
@@ -251,7 +255,7 @@ export class AccountingRulesPage {
       return null;
     }
     return SAMPLE_RATES.map((rate) => {
-      const pro = proPriceOf(publicTtc, ratioTtcPolicy(ratioBp), rate);
+      const pro = proPriceOf(publicTtc, ratioTtcPolicy(ratioBp), rate, null);
       return {
         label: `${String(rate).replace('.', ',')} %`,
         publicHt: formatCents(htFromTtc(publicTtc, rate)),
@@ -267,9 +271,9 @@ export class AccountingRulesPage {
   /**
    * Rien à enregistrer si la méthode saisie est celle qui s'applique déjà.
    *
-   * ⚠️ Il n'y a qu'une méthode aujourd'hui : ce bouton ne peut donc rien faire
-   * d'autre que rester éteint. Le mécanisme est là pour la suivante — voir
-   * `PRO_PRICE_METHODS` dans le contrat.
+   * Deux méthodes depuis le lot P : `ratio_ttc` et `entered` (« Prix saisi »).
+   * Basculer retarife le catalogue professionnel ; le pré-remplissage, plus
+   * bas, est le geste qui rend la bascule sans effet sur les prix servis.
    */
   protected readonly canChooseMethod = computed(
     () => !this.busy() && this.draftMethod() !== this.savedMethod(),

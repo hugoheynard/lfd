@@ -239,7 +239,14 @@ function sortVariants(
     // que personne n'a décidé, et rien ne le signalerait ensuite. ⚠️ Le refus
     // vaut pour les DEUX méthodes, y compris celle de la plaquette où le hors
     // taxe ne dépend plus du taux de l'article : il sert toujours à FACTURER.
-    const proPrice = proPriceOf(priceCents, policy, vatRatePercent);
+    // Sous `entered` (lot P), la saisie de la déclinaison — résolue par
+    // l'instantané : une alignée porte celle du défaut. Sans saisie, le motif
+    // le dit, pour qu'on aille ouvrir le tarif et pas l'écran des taux.
+    if (policy.method === "entered" && variant.proPriceMillicents === null) {
+      excluded.push({ sku: variant.sku, reason: "variant_sans_prix_pro" });
+      continue;
+    }
+    const proPrice = proPriceOf(priceCents, policy, vatRatePercent, variant.proPriceMillicents);
     if (proPrice === null) {
       excluded.push({ sku: variant.sku, reason: "variant_sans_taux" });
       continue;

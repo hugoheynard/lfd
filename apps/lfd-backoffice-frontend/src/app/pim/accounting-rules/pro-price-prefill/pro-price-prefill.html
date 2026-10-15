@@ -1,0 +1,54 @@
+<p class="say">
+  Avant de basculer sur «&nbsp;Prix saisi&nbsp;», chaque déclinaison à tarif propre reçoit le prix
+  pro HT que la remise lui donne aujourd'hui. Rien n'est écrit là où un prix pro est déjà saisi, ni
+  sur une déclinaison qui suit le tarif du défaut.
+</p>
+
+<button foldButton emphasis="outline" [disabled]="busy()" (click)="load()">
+  @if (preview() === null) {
+    Voir l'aperçu
+  } @else {
+    Recalculer l'aperçu
+  }
+</button>
+
+@if (loadError() !== null) {
+  <fold-callout variant="alert">
+    <strong>Aperçu illisible.</strong> Le référentiel n'a pas pu le calculer — rien n'est proposé à
+    l'écriture tant que c'est le cas.
+  </fold-callout>
+}
+
+@if (preview(); as view) {
+  @if (view.mismatches > 0) {
+    <!-- L'écart BLOQUE : le pré-remplissage promet qu'aucun prix servi ne
+         change à la bascule. Un seul écart, et il ne le promet plus. -->
+    <fold-callout variant="alert">
+      <strong>{{ view.mismatches }} écart(s) entre le HT servi et le HT pré-rempli.</strong> Le
+      pré-remplissage est bloqué&nbsp;: il ne doit changer aucun prix servi. La méthode en place
+      est-elle encore «&nbsp;Ratio TTC&nbsp;»&nbsp;?
+    </fold-callout>
+  }
+
+  <fold-data-table
+    [columns]="columns"
+    [rows]="rows()"
+    [rowKey]="rowKey"
+    [rowTone]="rowTone"
+    [empty]="{ title: 'Aucune déclinaison au référentiel' }"
+  >
+    <ng-template foldCell="article" let-row>
+      <strong>{{ row.product }}</strong> <span class="sku">{{ row.sku }}</span>
+    </ng-template>
+    <ng-template foldCell="status" let-row>{{ row.status }}</ng-template>
+    <ng-template foldCell="public" let-row>{{ row.publicTtc }}</ng-template>
+    <ng-template foldCell="served" let-row>{{ row.served }}</ng-template>
+    <ng-template foldCell="prefilled" let-row>{{ row.prefilled }}</ng-template>
+  </fold-data-table>
+
+  @if (canWrite()) {
+    <button foldButton emphasis="solid" intent="primary" [disabled]="!canApply()" (click)="apply()">
+      Pré-remplir {{ view.toPrefill }} prix pro
+    </button>
+  }
+}

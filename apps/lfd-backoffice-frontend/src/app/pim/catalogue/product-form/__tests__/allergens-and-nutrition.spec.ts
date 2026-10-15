@@ -48,6 +48,7 @@ function variant(over: Partial<Variant> = {}): Variant {
     position: 0,
     priceCents: 250,
     weightGrams: 100,
+    proPriceMillicents: null,
     regulatoryFollowsDefault: false,
     nutritionFollowsDefault: false,
     pricingFollowsDefault: false,
@@ -83,6 +84,7 @@ class FakeApi {
         channelsOverride: null,
         priceEur: 2.5,
         weightGrams: 100,
+        proPriceMillicents: null,
       },
       editorial: {
         descriptionShort: null,

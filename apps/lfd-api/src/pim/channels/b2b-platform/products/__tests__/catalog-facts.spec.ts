@@ -172,3 +172,30 @@ describe("projectFamilyFact", () => {
     expect(projectFamilyFact(family(), { takeaway: 5.5 }).vatRatePercent).toBeNull();
   });
 });
+
+/** Lot P (P4) : sous « Prix saisi », la saisie fait le prix, son absence fait un manque. */
+describe("projectProductFact — sous la méthode entered", () => {
+  const ENTERED: ProPricePolicy = { method: "entered", ratioBp: 10_000 };
+
+  it("range une déclinaison sans prix pro saisi dans les manques, sans lever", () => {
+    const body = projectProductFact(input({ policy: ENTERED }));
+
+    expect(body.variants).toEqual([]);
+    expect(body.gaps).toEqual({ "PAT-7-1": ["pro_price"] });
+  });
+
+  it("vend au HT saisi, au millicentime", () => {
+    const body = projectProductFact(
+      input({
+        policy: ENTERED,
+        product: tarte({
+          status: "published",
+          variants: [{ ...SELLABLE_VARIANT, proPriceMillicents: 2_712_345 }],
+        }),
+      }),
+    );
+
+    expect(body.gaps).toEqual({});
+    expect(body.variants[0]?.priceMillicents).toBe(2_712_345);
+  });
+});

@@ -1,5 +1,5 @@
-import { divideByBasisPoints, fromCents, roundToCents } from "./exact.js";
-import { roundToMillicents } from "./millicents.js";
+import { divideByBasisPoints, fractionByBasisPoints, fromCents, roundToCents } from "./exact.js";
+import { fromMillicents, roundToMillicents } from "./millicents.js";
 
 /**
  * **Le hors taxe se déduit du prix d'étiquette.** Ce module ne fait que ça.
@@ -83,4 +83,20 @@ export function htMillicentsOf(ttcCents: number, ratePercent: number | null): nu
   return ratePercent === null
     ? null
     : roundToMillicents(divideByBasisPoints(fromCents(ttcCents), taxMultiplierBp(ratePercent)));
+}
+
+/**
+ * Le **TTC au centime** d'un hors taxe en millicentimes — `htMillicentsOf` à
+ * l'envers : même multiplicateur en points de base, même arrondi commercial
+ * (au plus proche, la moitié s'éloignant de zéro), un seul arrondi en sortie.
+ *
+ * Arrivé avec le prix pro saisi (lot P de
+ * `documentation/pim/plan-catalogue-synchronise-par-audience.md`) : là, c'est
+ * le HT qui fait foi, et ce TTC n'est qu'un affichage. Ne jamais en redériver
+ * un HT — il perdrait les décimales saisies.
+ */
+export function ttcCentsFromHtMillicents(htMillicents: number, ratePercent: number): number {
+  return roundToCents(
+    fractionByBasisPoints(fromMillicents(htMillicents), taxMultiplierBp(ratePercent)),
+  );
 }

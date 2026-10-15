@@ -8,7 +8,7 @@
  * suivent : un test qui reste derrière son code cesse d'être lancé quand le
  * paquet d'origine se vide.
  */
-import { htFromTtc, htMillicentsOf } from "../tax.js";
+import { htFromTtc, htMillicentsOf, ttcCentsFromHtMillicents } from "../tax.js";
 
 describe("htFromTtc", () => {
   it("déduit le hors taxe d'un prix d'étiquette", () => {
@@ -68,5 +68,34 @@ describe("htMillicentsOf", () => {
    */
   it("refuse de dériver sans taux", () => {
     expect(htMillicentsOf(120, null)).toBeNull();
+  });
+});
+
+/** Lot P : le TTC d'un HT saisi — `htMillicentsOf` à l'envers, même arrondi. */
+describe("ttcCentsFromHtMillicents", () => {
+  it("taxe puis arrondit au centime, une seule fois", () => {
+    expect(ttcCentsFromHtMillicents(1_000_000, 20)).toBe(1_200);
+    // 1,13744 € × 1,055 = 1,1999992 € → 120 c.
+    expect(ttcCentsFromHtMillicents(113_744, 5.5)).toBe(120);
+    expect(ttcCentsFromHtMillicents(0, 5.5)).toBe(0);
+  });
+
+  it("arrondit la moitié en s'éloignant de zéro", () => {
+    // 0,00417 € × 1,20 = 0,005004 € → 1 c ; 0,00416 € × 1,20 = 0,004992 € → 0 c.
+    expect(ttcCentsFromHtMillicents(417, 20)).toBe(1);
+    expect(ttcCentsFromHtMillicents(416, 20)).toBe(0);
+  });
+
+  it("retombe sur le TTC d'origine quand le HT en a été déduit", () => {
+    for (const ttc of [1, 99, 120, 199, 3_200, 99_999]) {
+      for (const rate of [2.1, 5.5, 10, 20]) {
+        const ht = htMillicentsOf(ttc, rate);
+        expect([ttc, rate, ht === null ? null : ttcCentsFromHtMillicents(ht, rate)]).toEqual([
+          ttc,
+          rate,
+          ttc,
+        ]);
+      }
+    }
   });
 });

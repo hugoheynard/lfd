@@ -28,6 +28,30 @@
       </span>
     </label>
 
+    <!-- Le prix PRO HORS TAXE saisi (lot P), sous le prix public. Un champ
+         TEXTE et non nombre : cinq décimales tapées doivent partir telles
+         quelles, et c'est le serveur qui refuse la sixième. -->
+    <label class="field">
+      <span class="field-label">Prix pro HT</span>
+      <span class="field-money field-money-ht">
+        <input
+          class="native-input"
+          type="text"
+          inputmode="decimal"
+          autocomplete="off"
+          [value]="store.proPriceHtText()"
+          (input)="store.proPriceHtText.set(textValue($event))"
+        />
+        <span class="field-unit" aria-hidden="true">€ HT</span>
+      </span>
+      <span class="field-hint">
+        Jusqu’à 5 décimales.
+        @if (!store.proPriceEntered()) {
+          Pas encore appliqué&nbsp;: la méthode en place dérive le prix pro de la remise.
+        }
+      </span>
+    </label>
+
     <!-- Le prix PROFESSIONNEL, sous le prix public parce qu'il en découle. La
          pastille porte la remise : sans elle, le montant tomberait de nulle
          part et personne ne saurait où aller le changer. -->
@@ -35,7 +59,13 @@
       <div class="pro">
         <p class="pro-head">
           <span class="pro-title">Prix pro TTC</span>
-          <span class="pro-badge">{{ pro.discountLabel }}</span>
+          @if (pro.source === 'entered') {
+            <!-- Sous « Prix saisi », aucune remise ne produit plus le prix :
+                 la pastille dit l'écart CONSTATÉ, en lecture. -->
+            <span class="pro-badge">écart constaté {{ pro.discountLabel }}</span>
+          } @else {
+            <span class="pro-badge">{{ pro.discountLabel }}</span>
+          }
         </p>
         <p class="pro-amount">
           <strong>{{ pro.ttc }}</strong>
@@ -47,11 +77,25 @@
             <span class="pro-net muted">HT indisponible — taux pro non défini</span>
           }
         </p>
-        <p class="pro-say">
-          Dérivé du prix public par la remise posée dans
-          <strong>Règles comptables</strong>. Il ne se saisit pas ici.
-        </p>
+        @if (pro.source === 'entered') {
+          <p class="pro-say">
+            Le <strong>HT saisi</strong> fait foi&nbsp;; ce TTC n’en est que l’affichage. Méthode
+            «&nbsp;Prix saisi&nbsp;» des <strong>Règles comptables</strong>.
+          </p>
+        } @else {
+          <p class="pro-say">
+            Dérivé du prix public par la remise posée dans
+            <strong>Règles comptables</strong>.
+          </p>
+        }
       </div>
+    } @else if (store.proPriceEntered() && store.priceEur() !== null) {
+      <!-- Sous « Prix saisi », sans saisie : la déclinaison n'est pas vendue
+           aux professionnels. Le dire, plutôt que de laisser un blanc. -->
+      <p class="pro-missing">
+        Aucun <strong>prix pro HT</strong> saisi&nbsp;: cette déclinaison n’est pas vendue aux
+        professionnels.
+      </p>
     } @else if (store.priceEur() !== null) {
       <!-- Prix TTC saisi mais aucun rapport réglé : le dire, plutôt que de
            laisser un blanc qu'on prendrait pour « pas de prix pro ». -->

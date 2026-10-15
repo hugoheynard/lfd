@@ -73,6 +73,10 @@ export class PrismaCatalogRevisionSource extends CatalogRevisionSource {
         categoryName: categoryName.get(product.categoryId) ?? {},
         priceCents: variant.priceCents,
         weightGrams: variant.weightGrams,
+        // Absent sans saisie : voir `RevisionItemInput.proPriceMillicents`.
+        ...(variant.proPriceMillicents === null
+          ? {}
+          : { proPriceMillicents: variant.proPriceMillicents }),
         isDefault: variant.isDefault,
         isDiscontinued: variant.isDiscontinued,
         // La moitié « sécurité » est un objet depuis le lot 7 ; l'ancre, elle,

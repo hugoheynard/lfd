@@ -123,6 +123,11 @@ export interface Variant {
   priceCents: number | null;
   weightGrams: number | null;
   /**
+   * Le prix pro HT saisi, en millicentimes (10⁻⁵ €) ; `null` = pas saisi
+   * (lot P). **Résolu** comme le prix public sur une déclinaison alignée.
+   */
+  proPriceMillicents: number | null;
+  /**
    * Elle **suit les ALLERGÈNES de celle par défaut** — traces comprises,
    * puisqu'une trace est un allergène.
    *

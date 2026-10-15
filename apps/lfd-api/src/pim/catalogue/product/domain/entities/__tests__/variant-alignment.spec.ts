@@ -98,11 +98,13 @@ describe("déclarer les allergènes met l'agrégat à jour", () => {
     // Un prix : activer en exige un depuis le lot 1 du plan d'audience.
     product.priceVariant(variant!.id, { priceCents: 1_000, weightGrams: null });
 
-    expect(() => product.activate(SELLABLE_RATES, "both")).toThrow(ProductNotPublishableError);
+    expect(() => product.activate(SELLABLE_RATES, "both", "ratio_ttc")).toThrow(
+      ProductNotPublishableError,
+    );
 
     product.declareAllergens(variant!.id, { allergens: ["AM"], mayContain: [] });
 
-    expect(() => product.activate(SELLABLE_RATES, "both")).not.toThrow();
+    expect(() => product.activate(SELLABLE_RATES, "both", "ratio_ttc")).not.toThrow();
   });
 
   /** `[]` compte comme déclaré — c'est une affirmation, pas un silence. */
@@ -114,7 +116,7 @@ describe("déclarer les allergènes met l'agrégat à jour", () => {
 
     product.declareAllergens(variant!.id, { allergens: [], mayContain: [] });
 
-    expect(() => product.activate(SELLABLE_RATES, "both")).not.toThrow();
+    expect(() => product.activate(SELLABLE_RATES, "both", "ratio_ttc")).not.toThrow();
   });
 });
 
@@ -137,7 +139,9 @@ describe("déclarer une moitié laisse l’autre intacte", () => {
     // `null` et non `[]` : personne ne s'est prononcé, et l'invariant 7 le voit.
     expect(after?.allergenSheet).toBeNull();
     expect(after?.nutrition?.saltG).toBe(2);
-    expect(() => product.activate(SELLABLE_RATES, "both")).toThrow(ProductNotPublishableError);
+    expect(() => product.activate(SELLABLE_RATES, "both", "ratio_ttc")).toThrow(
+      ProductNotPublishableError,
+    );
   });
 
   it("enregistrer les allergènes n’efface pas les valeurs", () => {
@@ -208,7 +212,7 @@ describe("l’invariant 7 lit l’alignement", () => {
     const product = withDefaultDeclared(aProduct());
     addVariant(product);
 
-    expect(() => product.activate(SELLABLE_RATES, "both")).not.toThrow();
+    expect(() => product.activate(SELLABLE_RATES, "both", "ratio_ttc")).not.toThrow();
   });
 
   /**
@@ -221,7 +225,9 @@ describe("l’invariant 7 lit l’alignement", () => {
     const product = aProduct();
     addVariant(product);
 
-    expect(() => product.activate(SELLABLE_RATES, "both")).toThrow(ProductNotPublishableError);
+    expect(() => product.activate(SELLABLE_RATES, "both", "ratio_ttc")).toThrow(
+      ProductNotPublishableError,
+    );
   });
 
   it("refuse une déclinaison détachée qui ne déclare rien", () => {
@@ -230,7 +236,9 @@ describe("l’invariant 7 lit l’alignement", () => {
 
     product.alignVariant(variantId, "regulatory", false);
 
-    expect(() => product.activate(SELLABLE_RATES, "both")).toThrow(ProductNotPublishableError);
+    expect(() => product.activate(SELLABLE_RATES, "both", "ratio_ttc")).toThrow(
+      ProductNotPublishableError,
+    );
   });
 });
 
@@ -265,6 +273,7 @@ describe("le tarif s’aligne aussi, et ne s’aligne PAS d’office", () => {
     expect(product.snapshot().variants[1]).toMatchObject({
       priceCents: 250,
       weightGrams: 100,
+      proPriceMillicents: null,
     });
   });
 
@@ -442,7 +451,9 @@ describe("les allergènes et la nutrition s’alignent séparément", () => {
 
     product.alignVariant(variantId, "allergens", false);
 
-    expect(() => product.activate(SELLABLE_RATES, "both")).toThrow(ProductNotPublishableError);
+    expect(() => product.activate(SELLABLE_RATES, "both", "ratio_ttc")).toThrow(
+      ProductNotPublishableError,
+    );
   });
 
   /**
@@ -460,7 +471,7 @@ describe("les allergènes et la nutrition s’alignent séparément", () => {
 
     product.alignVariant(variantId, "nutrition", false);
 
-    expect(() => product.activate(SELLABLE_RATES, "both")).not.toThrow();
+    expect(() => product.activate(SELLABLE_RATES, "both", "ratio_ttc")).not.toThrow();
     expect(product.status).toBe("published");
   });
 
@@ -475,7 +486,7 @@ describe("les allergènes et la nutrition s’alignent séparément", () => {
 
     product.declareNutritionValues(variantId, { ...BLANK, energyKcal: 410 });
 
-    expect(() => product.activate(SELLABLE_RATES, "both")).not.toThrow();
+    expect(() => product.activate(SELLABLE_RATES, "both", "ratio_ttc")).not.toThrow();
     // Les allergènes viennent toujours du défaut, et ce sont eux qui couvrent.
     expect(product.snapshot().variants[1]?.allergenSheet?.declared).toEqual(["AM"]);
   });

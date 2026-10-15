@@ -95,6 +95,17 @@ export const updateVariantPricingPayloadSchema = z.object({
    */
   priceCents: z.number().int().min(0).nullable(),
   weightGrams: z.number().int().min(0).nullable(),
+  /**
+   * Le prix **pro HORS TAXE** saisi, en euros, sous forme de TEXTE (lot P) :
+   * `"12.34567"`. Une chaîne et non un nombre, pour que le cinquième chiffre
+   * ne passe jamais par un flottant ; la borne des cinq décimales est tenue par
+   * le domaine (`ProPriceHt`), pas ici. Absent = inchangé, `null` = effacer.
+   */
+  proPriceHt: z
+    .string()
+    .regex(/^\d+(?:[.,]\d+)?$/u)
+    .nullable()
+    .optional(),
 });
 export type UpdateVariantPricingPayload = z.infer<typeof updateVariantPricingPayloadSchema>;
 
@@ -214,6 +225,13 @@ export interface VariantView {
    */
   readonly priceCents: number | null;
   readonly weightGrams: number | null;
+  /**
+   * Le prix **pro HORS TAXE saisi**, en millicentimes (10⁻⁵ €) ; `null` = pas
+   * saisi (lot P). **Résolu** comme le prix public : une déclinaison qui suit le
+   * tarif du défaut rend ici celui du défaut. Lu par le fil sous la méthode
+   * `entered` seulement.
+   */
+  readonly proPriceMillicents: number | null;
   /**
    * Cette déclinaison **suit les ALLERGÈNES de celle par défaut** — traces
    * comprises, puisqu'une trace est un allergène.
