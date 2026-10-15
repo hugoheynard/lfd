@@ -176,6 +176,14 @@ base** (`WHERE applied_seq < :seq`), comme `showIfNewer`.
 - Les deux routes de masquage, remplacées par une (H5, plan d'audience D7).
 - **Les tables restent en base** (CLAUDE.md §0), plus lues ni écrites.
 
+**Et l'espace E-commerce du back-office (Hugo, 2026-10-15)** : une fois
+« Réception » retirée, il n'a plus aucune vue — le catalogue publié, les
+opérations et les promotions sont en Gestion Boutique, les textes, le pied de
+page et le contact en Communication, les mentions en Réglages › Légal. Le
+lot 5 le supprime : son entrée au rail et au lanceur, `b2b/b2b-page`,
+`B2B_VIEWS` ; `/b2b` et ses anciennes adresses redirigent vers leurs
+nouvelles places (favoris), avant les gardes.
+
 ### C6 — Ce qui reste
 
 - **Les révisions, comme historique** : une photographie du catalogue, prise
@@ -718,6 +726,26 @@ lecture, un secret de signature) : **`vitruve` avant de bâtir**.
 **Plus tard** : les formules (Hugo, 2026-10-15 — « on verra ça plus tard »).
 
 ### Lot D — le prix ne se décide plus sur la plateforme (décidé le 2026-10-15)
+
+> ✅ **Bâti le 2026-10-15, non commité à l'écriture de ce bandeau.** Écarts et
+> précisions à relire :
+>
+> - `prisma/import-mercuriale.ts` **écrivait** `price_millicents` (par
+>   `SetB2bPriceCommand`) : il est supprimé avec la commande, et le script
+>   `mercuriale:import` avec lui. Les 89 couples de la plaquette restent dans
+>   `prisma/mercuriale/` ;
+> - le contrat perd aussi `effectivePriceMillicents` (égal au prix du
+>   référentiel) ; le CSV passe de huit à sept colonnes — « Prix B2B (€ HT) »
+>   retirée, « Prix appliqué (€ HT) » = prix du référentiel ;
+> - les quatre faits de prix décidé passent `retired` (lisibles, plus
+>   écrits) ; le retraçage écrit `catalog_price_history.retraced` ;
+> - une ligne d'override neutralisée ne remet ses drapeaux à `false` que si
+>   l'un était levé (sinon `decided_at` bougerait à chaque push) ; les
+>   lecteurs sélectionnent les colonnes de décision (`DECISION_COLUMNS`) au
+>   lieu de relire la ligne entière ;
+> - D5 : la parité et la santé ne comparaient déjà que le prix reçu
+>   (`catalog-parity.ts`) — rien à changer ;
+> - runbook : « Déployer le lot D » (`ops/runbook.md`).
 
 > « Est-ce qu'on garde poser un prix sur Catalogue publié ou on se base
 > uniquement sur le référentiel ? » — « notre nouvelle approche pur catalogue
