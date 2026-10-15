@@ -101,8 +101,7 @@ retirer le push, l'aperçu et l'écran « Réception » dès la bascule faite.
 « Opérations » (déjà en Gestion Boutique) écrit au commerce. Les faits de
 journal `operation.*` du PIM restent lisibles (le passé ne se réécrit pas) ;
 les nouveaux s'écrivent au journal du commerce, avec leurs phrases au
-back-office. Le droit : `b2b_catalog` aujourd'hui pour la surcharge,
-`pim_catalog` pour la préparation — **Q2**.
+back-office. Le droit : `lfc_operations` (Q2, tranché).
 
 ## 3. Lots
 
@@ -129,9 +128,11 @@ back-office. Le droit : `b2b_catalog` aujourd'hui pour la surcharge,
 1. **Q1** — La raison du 2026-09-24, « la préparation » : y a-t-il un geste de
    préparation (hors production, qui ne lit pas l'opération) qui a besoin de
    l'opération **dans le référentiel** ? Sinon, le déplacement tient.
-2. **Q2** — Qui crée et modifie une opération : le droit de la vente
-   (`b2b_catalog`), ou un droit à lui (`lfc_operations`, sur le modèle de
-   `lfc_legal`) ?
+2. ~~**Q2**~~ — **`lfc_operations` (Hugo, 2026-10-15)** : un droit à lui,
+   lecture et écriture, sur le modèle de `lfc_legal` — la migration ajoute la
+   ressource et ne l'accorde à aucun rôle ; Hugo l'accorde à l'écran, le
+   superadmin l'a d'office. Il remplace `pim_catalog` (préparation) et
+   `b2b_catalog` (surcharge) sur tout ce qui touche une opération.
 
 ## Contradiction de `vitruve`
 
