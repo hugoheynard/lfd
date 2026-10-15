@@ -330,14 +330,13 @@ contredit. Ce document n'y touche pas.
 
 ## 8. Questions à Hugo
 
-1. **Q1** — Une fiche peut-elle **élargir** l'audience de sa famille (famille
-   `pro`, fiche `both`), ou seulement la restreindre ? Proposé : les deux, c'est
-   un héritage, pas un plafond.
-2. **Q2** — Une fiche publiée mais **invisible aujourd'hui** (non liée, ou
-   sans case `b2b`) : on la dépublie (proposé : rien ne change pour le client),
-   ou on lui donne une audience et elle apparaît le jour de la bascule ? Et une
-   fiche liée **non publiée** : on la publie, ou elle sort ? Sans objet si le
-   comptage de prod du lot 1 rend zéro partout.
+1. ~~**Q1**~~ — **Oui (Hugo, 2026-10-15)** : une fiche peut élargir comme
+   restreindre l'audience de sa famille. C'est un héritage, pas un plafond.
+2. ~~**Q2**~~ — **Dépublier (Hugo, 2026-10-15)** : une fiche publiée mais
+   invisible aujourd'hui (non liée, ou sans case `b2b`) repasse en brouillon
+   à la migration ; une fiche liée non publiée sort. Rien ne change pour le
+   client le jour de la bascule. La liste des fiches dépubliées est rendue par
+   le lot 1, pour que personne ne cherche une fiche disparue.
 3. **Q3** — Les masquages de la plateforme restent, et ne peuvent que
    restreindre : d'accord ?
 4. ~~**Q4**~~ — **Tranché (Hugo, 2026-10-15) : la commande à table viendra
