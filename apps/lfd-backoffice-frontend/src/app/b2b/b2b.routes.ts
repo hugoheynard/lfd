@@ -36,25 +36,23 @@ export const b2bRoutes: Routes = [
     title: 'E-commerce LFC — LFC B2B admin',
     loadComponent: () => import('./b2b-page/b2b-page').then((m) => m.B2bPage),
     children: [
-      // L'entrée de l'espace : son contenu, depuis que le catalogue publié est
-      // parti en Gestion Boutique (2026-10-15). La réception, en tête du rail,
-      // a son propre droit — y envoyer qui ne tient que `b2b_settings` le
-      // ferait rebondir sur un refus.
-      { path: '', pathMatch: 'full', redirectTo: 'contenu' },
+      // L'entrée de l'espace : la réception, seule vue qui reste à son rail
+      // depuis que le pied de page et le contact sont partis en Communication
+      // (2026-10-15). Elle a son propre droit : qui ne tient que
+      // `b2b_settings` y rebondit sur le refus de son garde.
+      { path: '', pathMatch: 'full', redirectTo: 'reception' },
       {
-        // LE CONTENU DE PLATEFORME — les textes de la vitrine. Sous le B2B et
-        // non dans un espace à lui : c'est le même contexte que son catalogue
-        // et sa tarification, et un espace séparé aurait fait deux portes pour
-        // une seule maison.
+        // LES ANCIENNES ADRESSES DU CONTENU DE PLATEFORME. Tout ce qu'il portait
+        // est parti : la vitrine, les mentions, puis le pied de page (2026-10-15,
+        // Hugo, section Communication). Elles vivent dans des favoris.
+        // Absolues, les redirections s'appliquent AVANT les gardes : le mur de
+        // l'espace ne les voit pas.
         path: 'contenu',
         children: [
-          { path: '', pathMatch: 'full', redirectTo: 'app-footer' },
-          {
-            path: 'app-footer',
-            title: 'App footer — LFC B2B admin',
-            loadComponent: () =>
-              import('../contenu/app-footer/app-footer-page').then((m) => m.AppFooterPage),
-          },
+          { path: '', pathMatch: 'full', redirectTo: '/pied-de-page' },
+          // LE PIED DE PAGE est parti en Communication le 2026-10-15 (Hugo),
+          // `/pied-de-page`, sous le même droit `b2b_settings:read`.
+          { path: 'app-footer', pathMatch: 'full', redirectTo: '/pied-de-page' },
           {
             // L'ANCIENNE adresse de la vitrine. Elle a quitté l'espace pour
             // `/vitrine`, gardée par son propre droit : sous ce parent, le mur
@@ -151,18 +149,12 @@ export const b2bRoutes: Routes = [
           },
         ],
       },
-      {
-        // LA CARTE DE CONTACT — surtitre, titre, phrase et numéros. Elle portait
-        // aussi les objets et la messagerie, devenus « Motifs des demandes » et
-        // « Demandes clients » (demandes-clients.md, §3.5). Les anciennes
-        // adresses de ses onglets redirigent : elles sont dans des favoris.
-        path: 'contact',
-        title: 'Contact — LFC B2B admin',
-        canActivate: [permissionGuard('b2b_contact:read')],
-        loadComponent: () =>
-          import('./contact/contact-page/contact-page').then((m) => m.ContactPage),
-      },
-      { path: 'contact/carte', pathMatch: 'full', redirectTo: 'contact' },
+      // LA CARTE DE CONTACT est partie en Communication le 2026-10-15 (Hugo),
+      // `/contact`, sous le même droit `b2b_contact:read`. Les anciennes
+      // adresses vivent dans des favoris ; absolues, elles s'appliquent AVANT
+      // les gardes : le mur `b2b_settings` de l'espace ne les voit pas.
+      { path: 'contact', pathMatch: 'full', redirectTo: '/contact' },
+      { path: 'contact/carte', pathMatch: 'full', redirectTo: '/contact' },
       {
         path: 'contact/formulaire',
         pathMatch: 'full',

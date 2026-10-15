@@ -40,10 +40,6 @@ interface AnyOf {
 }
 
 const SCREENS: Readonly<Record<string, ScreenAccess>> = {
-  // CONTENU PLATEFORME — sous le B2B, dont il partage le contexte et le droit.
-  // Seule la VUE est listée : `b2b/contenu` ne porte pas d'écran, c'est un
-  // groupement, et la table n'inventorie que ce qui s'affiche.
-  'b2b/contenu/app-footer': null,
   // UN écran pour les cinq mentions, parti en Réglages › Légal le 2026-10-15
   // (Hugo) sous le droit qu'il héritait de l'espace B2B — ni élargi, ni
   // resserré. Le segment est validé par le composant, qui n'appelle rien
@@ -167,9 +163,6 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // Les réglages de l'e-commerce sont TOUS partis le 2026-10-13 : les points
   // de retrait vers les sites, l'heure limite, l'ouverture et l'annulation
   // vers Réglages › Commandes. Il ne reste ici que des redirections.
-  // « Nous écrire » : son propre droit. Répondre aux messages n'est pas
-  // régler la vente, et l'inverse non plus (demandes-clients.md, §5.6).
-  'b2b/contact': 'b2b_contact:read',
   // La boîte des demandes clients : le droit du contact
   // (demandes-clients.md, §6.8).
   'b2b/demandes': 'b2b_contact:read',
@@ -200,6 +193,14 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // **Textes de la boutique** — même métier et même mur que la vitrine
   // (`@AdminSurface("b2b_storefront")`, plan-textes-de-la-boutique.md, §7).
   'textes-boutique': 'b2b_storefront:read',
+
+  // **Pied de page** et **Contact** — partis de l'espace E-commerce pour la
+  // section Communication le 2026-10-15 (Hugo), chacun sous le droit qu'il y
+  // avait : le pied de page héritait de `b2b_settings` (le mur que sa route
+  // serveur oppose) ; le contact garde le sien — répondre aux messages n'est
+  // pas régler la vente (demandes-clients.md, §5.6).
+  'pied-de-page': 'b2b_settings:read',
+  contact: 'b2b_contact:read',
 
   // **Outils agent** — hors de `pim/`, et gardé PLUS SERRÉ que lui : le
   // référentiel s'ouvre en lecture (`pim_catalog:read`), cet atelier écrit. Il
@@ -504,7 +505,29 @@ describe("l'arbre de routes du back-office", () => {
     expect(children.find((child) => child.path === 'catalogue')?.redirectTo).toBe(
       '/catalogue-publie',
     );
-    expect(children.find((child) => child.path === '')?.redirectTo).toBe('contenu');
+    expect(children.find((child) => child.path === '')?.redirectTo).toBe('reception');
+  });
+
+  it('renvoie l’ancienne adresse du pied de page vers la section Communication', () => {
+    // Parti le 2026-10-15 (Hugo) : un favori. Absolue, elle s'applique avant le
+    // mur de l'espace.
+    const b2b = routes.find((route) => route.path === 'b2b');
+    const contenu = b2b?.children?.find((child) => child.path === 'contenu');
+    const footer = contenu?.children?.find((child) => child.path === 'app-footer');
+    expect(footer?.redirectTo).toBe('/pied-de-page');
+    expect(footer?.loadComponent).toBeUndefined();
+    expect(contenu?.children?.find((child) => child.path === '')?.redirectTo).toBe('/pied-de-page');
+  });
+
+  it('renvoie les anciennes adresses du contact vers la section Communication', () => {
+    // Parti le 2026-10-15 (Hugo) : absolues, sans quoi elles resteraient sous
+    // le mur `b2b_settings` de l'espace, que le contact ne demande plus.
+    const b2b = routes.find((route) => route.path === 'b2b');
+    const children = b2b?.children ?? [];
+    const contact = children.find((child) => child.path === 'contact');
+    expect(contact?.redirectTo).toBe('/contact');
+    expect(contact?.loadComponent).toBeUndefined();
+    expect(children.find((child) => child.path === 'contact/carte')?.redirectTo).toBe('/contact');
   });
 
   it('renvoie l’ancienne adresse de la vitrine vers son écran hors de l’espace', () => {

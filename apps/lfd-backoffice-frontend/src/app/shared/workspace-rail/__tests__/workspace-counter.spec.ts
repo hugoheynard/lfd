@@ -22,7 +22,11 @@ function configure(): void {
       {
         provide: PermissionsStore,
         useValue: {
-          can: (p: StaffPermission) => p === 'b2b_contact:read' || p === 'b2b_settings:read',
+          // `b2b_catalog:read` : la réception est la seule vue restée au rail
+          // depuis le départ du pied de page et du contact (2026-10-15) ; sans
+          // elle le rail serait vide, et `every()` vrai sur une liste vide.
+          can: (p: StaffPermission) =>
+            p === 'b2b_contact:read' || p === 'b2b_settings:read' || p === 'b2b_catalog:read',
         },
       },
       { provide: PimCapabilitiesStore, useValue: { publication: () => true } },

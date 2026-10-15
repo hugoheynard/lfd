@@ -172,6 +172,31 @@ export const routes: Routes = [
       import('./textes-boutique/ui/shop-copy-page/shop-copy-page').then((m) => m.ShopCopyPage),
   },
   {
+    // **Pied de page** — le pied de page de l'app cliente. Parti de l'espace
+    // E-commerce (`/b2b/contenu/app-footer`) pour la section Communication le
+    // 2026-10-15 (Hugo), au premier niveau comme ses voisines. Droit
+    // INCHANGÉ : `b2b_settings:read`, qu'il héritait de l'espace et que la
+    // route serveur oppose (`admin-footer-content.controller.ts`). L'ancienne
+    // adresse y redirige.
+    path: 'pied-de-page',
+    canActivate: [permissionGuard('b2b_settings:read')],
+    title: 'Pied de page — LFC B2B admin',
+    loadComponent: () =>
+      import('./contenu/app-footer/app-footer-page').then((m) => m.AppFooterPage),
+  },
+  {
+    // **Contact** — la carte de contact (surtitre, titre, phrase, numéros).
+    // Partie de l'espace E-commerce (`/b2b/contact`) pour la section
+    // Communication le 2026-10-15 (Hugo). Droit INCHANGÉ : `b2b_contact:read`.
+    // Hors de l'espace, elle ne demande plus aussi `b2b_settings:read`, le mur
+    // de `/b2b` qu'elle cumulait. L'ancienne adresse y redirige.
+    path: 'contact',
+    canActivate: [permissionGuard('b2b_contact:read')],
+    title: 'Contact — LFC B2B admin',
+    loadComponent: () =>
+      import('./b2b/contact/contact-page/contact-page').then((m) => m.ContactPage),
+  },
+  {
     // **Outils agent** — l'écran est l'interrupteur : les outils WebMCP du
     // référentiel ne sont déclarés que par ce composant, donc ils n'existent
     // que tant qu'on est dessus. Route de premier niveau, hors de `pim/` : ce

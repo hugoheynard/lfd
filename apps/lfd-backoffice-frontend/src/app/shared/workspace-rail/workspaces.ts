@@ -683,13 +683,12 @@ export const B2B_VIEWS: readonly WorkspaceView[] = [
   // renommée « Promotions » : elle est au rail principal et au lanceur mobile,
   // dans `app.html`. La section « Tarification » du rail, vide sans elle, a
   // disparu. L'écran est `/promotions` depuis le 2026-10-13 ; `/b2b/tarification` y redirige.
-  {
-    key: 'app-footer',
-    label: 'App footer',
-    link: '/b2b/contenu/app-footer',
-    icon: 'grid',
-    section: 'Contenu',
-  },
+  // « App footer » et « Contact » ont quitté cet espace le 2026-10-15 (Hugo)
+  // pour la section Communication, comme la vitrine et ses textes avant eux :
+  // « Pied de page » (`/pied-de-page`, `b2b_settings:read`) et « Contact »
+  // (`/contact`, `b2b_contact:read`) sont au rail principal et au lanceur
+  // mobile, dans `app.html`. La section « Contenu », vide sans eux, a disparu ;
+  // les anciennes adresses redirigent.
   // « Vitrine boutique » et « Textes de la boutique » ont quitté cet espace le
   // 2026-10-12 (Hugo : « en primary menu, dans une section Communication ») :
   // ils sont au rail principal et au lanceur mobile, dans `app.html`.
@@ -701,19 +700,6 @@ export const B2B_VIEWS: readonly WorkspaceView[] = [
   // (plan-reglages-commandes.md §3.3, Q8) : « Points de retrait » est devenu
   // « Sites », l'ouverture, l'heure limite et l'annulation sont parties en
   // Réglages › Commandes (EXPLOITATION_VIEWS), chacune sous son droit.
-  //
-  // La carte de contact (surtitre, titre, phrase, numéros) : son propre droit,
-  // `b2b_contact`. Un texte publié, pas un réglage : elle a rejoint
-  // « Contenu », à côté des mentions légales (parties depuis). Ses objets et sa messagerie
-  // sont devenus les deux entrées des demandes clients (demandes-clients.md, §3.5).
-  {
-    key: 'contact',
-    label: 'Contact',
-    link: '/b2b/contact',
-    icon: 'mail',
-    section: 'Contenu',
-    needs: 'b2b_contact:read',
-  },
 ];
 
 /**

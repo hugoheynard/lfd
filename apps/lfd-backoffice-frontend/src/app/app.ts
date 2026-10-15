@@ -328,8 +328,16 @@ export class App {
    * entrées est ouverte ; chacune garde son droit. Elle ne dépend pas des
    * Réglages (`b2b_settings`), sous lesquels le lanceur mobile cachait la
    * vitrine à qui ne l'avait pas.
+   *
+   * Le pied de page et le contact l'ont rejointe le 2026-10-15 (Hugo), chacun
+   * sous le droit qu'il avait dans l'espace E-commerce : la section s'ouvre
+   * donc aussi à qui tient l'un d'eux, et à personne d'autre.
    */
-  protected readonly canSeeCommunication = computed(() => this.canSeeStorefront());
+  protected readonly canSeeCommunication = computed(
+    () => this.canSeeStorefront() || this.canSeeSettings() || this.canSeeContact(),
+  );
+  /** La carte de contact : le droit de sa route, `b2b_contact:read`. */
+  protected readonly canSeeContact = computed(() => this.permissions.can('b2b_contact:read'));
 
   /**
    * **Outils agent** — l'ÉCRITURE du catalogue, pas sa lecture, et c'est la

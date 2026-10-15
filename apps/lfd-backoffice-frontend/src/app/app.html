@@ -293,7 +293,9 @@
              vitrine, et ses textes (la Médiathèque en est sortie le
              2026-10-13, Hugo). Une section du rail principal plutôt qu'un
              recoin de l'E-commerce (Hugo, 2026-10-12) : on y vient pour écrire,
-             pas pour régler ce qu'on vend. Sous le droit de la vitrine. -->
+             pas pour régler ce qu'on vend. Sous le droit de la vitrine ; le
+             pied de page et le contact l'ont rejointe le 2026-10-15 (Hugo),
+             chacun sous son droit. -->
         <!-- Le rose (Hugo, 2026-10-12 : « un rose pâle ») : fold n'en a pas ; il
              se compose du rouge et du violet de la marque, et ressort PÂLE là
              où fold le dilue — survol, sélection — tout en restant lisible
@@ -324,6 +326,34 @@
               routerLinkActive
               #copyRla="routerLinkActive"
               [active]="copyRla.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
+          @if (canSeeSettings()) {
+            <!-- Parti de l'espace E-commerce le 2026-10-15 (Hugo), sous le
+                 même droit que là-bas, `b2b_settings:read`. -->
+            <a
+              fold-menu-item
+              icon="grid"
+              label="Pied de page"
+              routerLink="/pied-de-page"
+              routerLinkActive
+              #footerRla="routerLinkActive"
+              [active]="footerRla.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
+          @if (canSeeContact()) {
+            <!-- Parti de l'espace E-commerce le 2026-10-15 (Hugo), sous son
+                 droit, `b2b_contact:read`. -->
+            <a
+              fold-menu-item
+              icon="mail"
+              label="Contact"
+              routerLink="/contact"
+              routerLinkActive
+              #contactRla="routerLinkActive"
+              [active]="contactRla.isActive"
               (click)="mobileNavOpen.set(false)"
             ></a>
           }
@@ -931,6 +961,34 @@
               routerLinkActive
               #copyTile="routerLinkActive"
               [active]="copyTile.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
+          @if (canSeeSettings()) {
+            <!-- Parti de l'espace E-commerce le 2026-10-15 (Hugo), sous le
+                 même droit que là-bas, `b2b_settings:read`. -->
+            <a
+              fold-nav-tile
+              icon="grid"
+              label="Pied de page"
+              routerLink="/pied-de-page"
+              routerLinkActive
+              #footerTile="routerLinkActive"
+              [active]="footerTile.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
+          @if (canSeeContact()) {
+            <!-- Parti de l'espace E-commerce le 2026-10-15 (Hugo), sous son
+                 droit, `b2b_contact:read`. -->
+            <a
+              fold-nav-tile
+              icon="mail"
+              label="Contact"
+              routerLink="/contact"
+              routerLinkActive
+              #contactTile="routerLinkActive"
+              [active]="contactTile.isActive"
               (click)="mobileNavOpen.set(false)"
             ></a>
           }
