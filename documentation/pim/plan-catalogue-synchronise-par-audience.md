@@ -281,11 +281,10 @@ perdre une ligne.
 
 ## 5. Questions ouvertes
 
-1. **Q1** — Restaurer une fiche depuis une révision : à la main suffit
-   (proposé), ou faut-il un bouton « restaurer cette fiche » qui réécrit le
-   référentiel ?
-2. **Q2** — Une famille sans aucune fiche active : visible sur la plateforme
-   (grisée, comme une fiche inactive), proposé, ou invisible ?
+1. ~~**Q1**~~ — **À la main suffit (Hugo, 2026-10-15)** : restaurer une fiche
+   se fait dans le référentiel, révision sous les yeux. Pas de bouton.
+2. ~~**Q2**~~ — **Grisée (Hugo, 2026-10-15)** : une famille sans fiche active
+   est visible sur la plateforme, grisée, comme une fiche inactive.
 
 ## Contradiction de `vitruve` (2026-10-15) — intégrée
 
