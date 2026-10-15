@@ -746,6 +746,46 @@ Ouvert le 2026-10-15 : la décision est dans `catalog_item_overrides`
 | D4  | **Les données** : les colonnes restent en base, plus lues ni écrites (§0 : rien ne se supprime en production sans ordre). **En dev**, Hugo l'ordonne : les décisions de prix existantes sont effacées de la base locale (geste de dev, pas une migration). Le masquage, la mise en avant et les attentes de validation, qui vivent dans la même table, **restent**. |
 | D5  | **La parité** et la santé du catalogue ne comparent plus un prix décidé.                                                                                                                                                                                                                                                                                            |
 
+**Corrections après `vitruve` (2026-10-15), qui priment :**
+
+- **Ne plus jamais supprimer une ligne d'override** (BLOQUANT). Aujourd'hui,
+  une décision devenue neutre retire la ligne (`catalog-item.ts:779-787`,
+  `untouched` ; `prisma-catalog-item.repository.ts:158-161`, `deleteMany`),
+  et tout geste admin qui charge puis sauve l'agrégat y passe (masquer,
+  mettre en avant, `accept-delivery.handler.ts:67`). Retirer le prix de
+  l'agrégat ferait partir, en production et sans ordre, les lignes « prix
+  seul ». Donc : la branche `deleteMany` disparaît ; une décision neutre
+  écrit ses drapeaux à `false` ; les colonnes de prix ne sont **plus jamais
+  écrites** (absentes du `create`/`update`), donc conservées telles quelles.
+- **Retracer le prix au moment de la bascule** (BLOQUANT). Le tarificateur
+  part de l'historique daté (`pricer.ts:188-197`,
+  `prisma-pricing-board.reader.ts:126` → `pricingAt`), dont la dernière ligne
+  est le prix **décidé** (`catalog-price-trace.ts:47`). Sans nouvelle ligne,
+  une lecture datée rendrait l'ancien prix décidé indéfiniment pour un
+  article que rien ne touche. Une commande `RetracePricesFromReferential`
+  (route admin `POST admin/catalog/prices/retrace`, journalisée) écrit une
+  ligne d'historique pour chaque article encore vendu dont le dernier prix
+  tracé diffère du prix du référentiel, et rien d'autre ; idempotente. Elle
+  se lance une fois au déploiement (runbook) et après l'effacement en dev.
+  La trace ne suit plus que le prix reçu ; la valeur `source: "b2b"` reste
+  lisible dans l'historique passé, plus écrite.
+- **Les noms et lecteurs exacts** : écrivains `set-b2b-price.handler.ts`,
+  `align-on-pim-price.handler.ts`, `set-public-price.handler.ts`,
+  `align-public-on-pim.handler.ts` (et leurs commandes), quatre routes ;
+  lecteurs en plus : `catalog-csv.ts:73-74` (l'export perd les colonnes
+  « prix B2B décidé » et « effectif » devient le prix du référentiel — un
+  fichier dont les colonnes changent, à dire), `prisma-catalog-admin.reader.ts:104`
+  (`effectivePriceMillicents`), `prisma/import-mercuriale.ts` (vérifier qu'il
+  n'écrit pas `price_millicents`), le contrat `catalog-admin.ts:39,41,75` et le
+  front `shelf-catalogue.{html,ts}` — `pnpm test` à la racine obligatoire.
+- **Le relevé en production** entre au runbook de promotion vers `main`,
+  avec la requête ci-dessous, avant le push ; puis `retrace` après le
+  déploiement.
+- Précisions : il n'y a pas d'« attente de validation » dans
+  `catalog_item_overrides` (elles sont sur `catalog_items`) ; un TTC décidé
+  ne tenait jamais lieu d'étiquette au prix servi (`prisma-catalog.reader.ts:298-301`),
+  seule la vue publiée l'affichait — elle cesse de le faire.
+
 ⚠️ **Ce qui change de servi** : un article dont le prix avait été remplacé
 sur la plateforme est vendu au prix du référentiel dès le déploiement. En
 production, le nombre de remplacements n'est pas connu : **Hugo les relève
