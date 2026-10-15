@@ -203,8 +203,15 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // Deux trousses depuis le 2026-10-11 : le référentiel OU la médiathèque,
   // chacune en écriture ; la page ne déclare que celle dont on a le droit.
   // Trois depuis le 2026-10-11 : l'exploitation, en lecture (`ops_health:read`).
+  // Cinq depuis le 2026-10-14 : la flotte, en lecture (`delivery_settings:read`).
   'outils-agent': {
-    anyOf: ['pim_catalog:write', 'media_library:write', 'ops_health:read', 'b2b_companies:read'],
+    anyOf: [
+      'pim_catalog:write',
+      'media_library:write',
+      'ops_health:read',
+      'b2b_companies:read',
+      'delivery_settings:read',
+    ],
   },
 
   pim: 'pim_catalog:read',
