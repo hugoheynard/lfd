@@ -341,12 +341,21 @@ contredit. Ce document n'y touche pas.
 3. **Q3** — Les masquages de la plateforme restent, et ne peuvent que
    restreindre : d'accord ?
 4. ~~**Q4**~~ — **Tranché (Hugo, 2026-10-15) : la commande à table viendra
-   « un jour ».** Le point de vente ne sort donc pas entier : il perd son rôle
-   de canal (cases, ligne `platform`, `PointOfSaleContext`), et **garde sa
-   grille de tables** (`PointOfSaleTable`, `generate-table-qr`,
-   `remove-table-qr`, son écran) telle quelle. Où vivront les tables — le
-   point de vente ou le site de retrait (`public.pickup_addresses`), qui le
-   doublonne — se décide dans le plan de la commande à table, pas ici.
+   « un jour », et ce sera une capacité du site** — « presque une capacité de
+   site eatIn, l'endroit où définir un plan de table et des QR ».
+
+   Le site (`public.sites`, modèle `Site`, `prisma/schema/public/settings.prisma`)
+   a déjà ses capacités, chacune un drapeau : `pickup` (il remet des
+   commandes), `deliveryDeparture` (des tournées en partent), `supply`. Une
+   capacité « sur place » s'y range à côté, et le plan de tables avec ses QR
+   lui appartient. Le mot rejoint le contexte de TVA `eatIn` : servir sur place
+   **est** ce qui fait facturer à ce taux.
+
+   Conséquence pour ce plan : le point de vente perd son rôle de canal au
+   lot 4, et sa grille de tables (`PointOfSaleTable`, `generate-table-qr`,
+   `remove-table-qr`, son écran) **reste telle quelle, non lue**, jusqu'au plan
+   de la commande à table, qui la recréera sur le site. Ce jour-là, le point de
+   vente sort entier du référentiel.
 
 ## Contradiction de `vitruve` (2026-10-15) — intégrée
 
