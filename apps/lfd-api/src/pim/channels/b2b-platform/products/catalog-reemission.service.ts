@@ -4,6 +4,7 @@ import { AppConfig } from "../../../../platform/config/app-config.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { CatalogEmitter } from "../../../catalogue/shared/domain/ports/catalog-emitter.js";
 import { CatalogFactsReader } from "../../../catalogue/shared/domain/ports/catalog-facts.reader.js";
+import { CatalogRulesEmitter } from "../../../order-time-limitation/domain/ports/catalog-rules.emitter.js";
 import {
   CatalogReemission,
   type ReemissionReport,
@@ -30,6 +31,7 @@ export class B2bCatalogReemission extends CatalogReemission {
     private readonly facts: CatalogFactsReader,
     private readonly emitter: CatalogEmitter,
     private readonly uow: UnitOfWork,
+    private readonly rules: CatalogRulesEmitter,
   ) {
     super();
   }
@@ -54,6 +56,10 @@ export class B2bCatalogReemission extends CatalogReemission {
     }
     const products = await this.facts.allProductIds();
     const failedProducts = await this.emitEach(products);
+    // Les règles EN DERNIER (lot 2b) : la plateforme les descend sur chaque
+    // article, et c'est le fait d'une fiche qui lui apprend l'identifiant de
+    // déclinaison qu'une règle de ce rang vise.
+    await this.uow.run(() => this.rules.emitRules());
     return { categories: families.length, products: products.length, failedProducts };
   }
 

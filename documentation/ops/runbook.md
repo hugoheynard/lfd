@@ -505,6 +505,132 @@ arrivée v11 en attente. Revenir en arrière après ce point demande d'abord de
 vider la boîte de réception (faire accepter, ou attendre un envoi v10 qui la
 remplace) — cf. « Sans retour » dans le plan.
 
+## Basculer le catalogue vers les faits (lot 2b) — l'ordre, et le retour
+
+Lot 2b de [`plan-catalogue-synchronise-par-audience.md`](../pim/plan-catalogue-synchronise-par-audience.md)
+(C7, §4 bis). Le push cesse d'écrire fiches et familles ; la plateforme les
+reçoit fiche par fiche (`pim.catalog_product_changed`), famille par famille, et
+les limites de commande en règles (`pim.catalog_rules_changed`). **Le code est
+déployé fermé** : rien de servi ne change tant que la Variable
+`CATALOG_FACTS_ENABLED` n'est pas à `true`. Ce qui suit est le geste qui
+l'ouvre — il appartient à Hugo.
+
+🔴 **Ce que la bascule retire de la vente, à lire AVANT** : une déclinaison
+n'est vendue par les faits que **complète** — un prix, ses allergènes, un prix
+pro résolu, et **un taux pour chaque contexte de vente en service** (b2b, à
+emporter, sur place), quelle que soit l'audience. Le push, lui, n'exigeait que
+le taux `b2b`. Toute fiche listée sous `activeIncomplete` dans l'aperçu perd
+les déclinaisons nommées à l'ouverture ; `keepsSelling: false` = la fiche ne
+vend plus rien.
+
+**1. La boîte de réception est vide.** Une livraison en attente serait
+acceptée par le push, qui ne touche plus fiches ni familles une fois les faits
+ouverts :
+
+```sql
+select id, received_at from public.catalog_delivery where status = 'pending';
+```
+
+Zéro ligne, ou la faire accepter (écran « Réception ») d'abord.
+
+**2. Une révision nommée « avant la bascule »** — la photographie à laquelle
+revenir (§4 bis). Rien ne la prend automatiquement :
+
+```http
+POST /pim/catalogue/revisions
+{ "label": "avant la bascule" }
+```
+
+**3. L'aperçu, relu par Hugo** — lecture seule :
+
+```http
+GET /pim/channels/b2b/audience-switch-preview
+```
+
+- `publishedUnbound` et `publishedB2bClosed` : les fiches que l'étape 4
+  désactive (H7) ;
+- `boundUnpublished` : liées mais pas en vente — la projection les écarte déjà,
+  rien ne change pour elles ;
+- `soldWithoutAllergens` : déclinaisons qui sortent de la vente (elles en sont
+  déjà sorties du push depuis le déploiement du lot 2b, motif
+  `variant_sans_allergenes`) ;
+- `activeIncomplete` : voir l'avertissement ci-dessus. **Compléter les taux
+  manquants avant l'étape 6** (famille ou fiche), ou accepter la sortie.
+
+**4. Appliquer la bascule** — `@PublicationGesture()`, droit d'écriture du
+référentiel :
+
+```http
+POST /pim/channels/b2b/audience-switch
+```
+
+La réponse liste `deactivated` et `failed`. 🔴 **Garder `deactivated`** : c'est
+la liste du retour arrière. Rejouer le geste ne retouche que les fiches encore
+publiées et invisibles. Un fait `product.unpublished` par fiche au journal ;
+aucun autre champ n'est écrit.
+
+**5. Pré-remplir le prix pro (P5), si voulu** — aperçu puis écriture :
+
+```http
+GET  /pim/accounting-rules/pro-price-prefill
+POST /pim/accounting-rules/pro-price-prefill
+```
+
+L'écriture est refusée au moindre écart entre le HT servi et le HT pré-rempli.
+
+**6. Ouvrir.** Variable GitHub `CATALOG_FACTS_ENABLED=true`, puis redéployer
+(cf. « Après avoir changé une variable GitHub ») :
+
+```bash
+gh variable set CATALOG_FACTS_ENABLED --body true
+gh workflow run deploy_lfd_api.yml --ref main
+```
+
+**7. Réémettre tout** — familles, puis chaque fiche (une transaction chacune),
+puis les règles de limite de commande, **dans cet ordre** : une règle de rang
+« déclinaison » vise un identifiant que seul le fait d'une fiche apporte.
+
+```http
+POST /pim/channels/b2b/reemit
+{}
+```
+
+`failedProducts` non vide ⇒ réémettre chaque fiche nommée :
+`{ "productId": "<id>" }`. Puis vérifier que la boîte d'envoi s'est vidée
+(carte de santé, lettres mortes à zéro).
+
+**8. Contrôle de parité** — `GET /admin/catalog/parity`. Écarts **attendus**,
+et seulement eux : les fiches de `boundUnpublished` (le push les vendait sans
+regarder le statut, les faits non) et les déclinaisons de `activeIncomplete`
+non complétées. Tout autre écart : réémettre la fiche, puis relire.
+
+```sql
+-- Les limites ont été rangées et descendues :
+select applied_seq, jsonb_array_length(rules) from public.catalog_rules;
+select count(*) from public.catalog_items where withdrawn_at is null and variant_id is null;
+```
+
+La seconde requête rend `0` : tout article en vente est passé par le fait de
+sa fiche.
+
+### Le retour arrière
+
+Avant le lot 5, le code du push est toujours là.
+
+1. `gh variable set CATALOG_FACTS_ENABLED --body false`, puis redéployer : le
+   push réécrit fiches et familles, les faits ne s'émettent plus.
+2. Réactiver chaque fiche de la liste `deactivated` de l'étape 4 (« Activer »
+   sur la fiche, ou `PUT /pim/catalogue/products/<id>/publish`). Elles étaient
+   vendues avant la bascule ; une fiche refusée nomme ce qui lui manque.
+3. Un push : il remet en vente ce que son instantané porte, et retire le
+   reste — sans rien supprimer. Les décisions de prix (`catalog_item_overrides`)
+   n'ont été touchées à aucune étape.
+
+Les colonnes et tables posées par les faits (`catalog_entries`,
+`catalog_rules`, `catalog_categories.withdrawn_at`/`audience`,
+`catalog_items.variant_id`/`audience`) restent en base : aucun lecteur hors des
+récepteurs des faits et de `servedTo`.
+
 ## Si l'API refuse de démarrer : `persistence.migrations_pending`
 
 Symptôme : au démarrage, `La base de données est en retard de N migration(s) : …`

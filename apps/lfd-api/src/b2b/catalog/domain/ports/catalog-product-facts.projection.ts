@@ -1,7 +1,6 @@
-import type { ReceivedCatalogProduct } from "../catalog-product-facts.js";
-import type { PimFacts } from "../entities/catalog-item.js";
+import type { ReceivedCatalogItem, ReceivedCatalogProduct } from "../catalog-product-facts.js";
 import type { CatalogAudience } from "../served-to.js";
-import type { CatalogCategoryFacts } from "./catalog-category.projection.js";
+import type { ReceivedCatalogFamily } from "./catalog-family-facts.projection.js";
 
 /**
  * **Ce que le fait d'une fiche écrit sur la plateforme** (2a4 de
@@ -35,15 +34,19 @@ export abstract class CatalogProductFactsProjection {
    * jamais à jour** — c'est le fait famille, sous son propre numéro, qui le
    * fait. Une fiche peut arriver avant sa famille.
    */
-  abstract ensureFamily(family: CatalogCategoryFacts): Promise<void>;
+  abstract ensureFamily(family: ReceivedCatalogFamily): Promise<void>;
 
   /**
    * Met en vente (ou y laisse) ces articles : faits du référentiel réécrits,
-   * `withdrawnAt` remis à `null`, audience posée. Les décisions locales ne
-   * sont pas touchées ; les limites de commande non plus (règles globales,
-   * lot 4). Trace le prix effectif s'il change, comme toute écriture de prix.
+   * identifiant de déclinaison posé, `withdrawnAt` remis à `null`, audience
+   * posée. Les décisions locales ne sont pas touchées ; les limites de
+   * commande non plus — elles se descendent des règles reçues, à part
+   * (`OrderLimitsRefresher`, lot 2b). Trace le prix effectif s'il change.
    */
-  abstract putOnSale(items: readonly PimFacts[], audience: CatalogAudience): Promise<void>;
+  abstract putOnSale(
+    items: readonly ReceivedCatalogItem[],
+    audience: CatalogAudience,
+  ): Promise<void>;
 
   /**
    * Retire de la vente les articles de la fiche dont le SKU n'est pas dans

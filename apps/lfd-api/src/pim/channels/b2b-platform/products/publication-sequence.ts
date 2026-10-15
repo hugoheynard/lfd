@@ -16,6 +16,11 @@ export abstract class PublicationSequence {
   abstract lockProducts(ids: readonly string[]): Promise<string[]>;
   /** Verrouille les familles existantes parmi `ids`, triées ; rend celles qui existent. */
   abstract lockCategories(ids: readonly string[]): Promise<string[]>;
+  /**
+   * Verrouille les règles globales du catalogue (lot 2b) — un verrou à part,
+   * jamais pris avec celui d'une fiche : pas d'interblocage possible.
+   */
+  abstract lockRules(): Promise<void>;
   /** Tire le numéro suivant — à appeler APRÈS le verrou. */
   abstract next(): Promise<number>;
 }

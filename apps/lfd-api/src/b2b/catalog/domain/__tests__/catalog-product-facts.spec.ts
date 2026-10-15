@@ -1,5 +1,8 @@
-import { itemsOnSale, type ReceivedCatalogProduct } from "../catalog-product-facts.js";
-import type { PimFacts } from "../entities/catalog-item.js";
+import {
+  itemsOnSale,
+  type ReceivedCatalogItem,
+  type ReceivedCatalogProduct,
+} from "../catalog-product-facts.js";
 
 /** Ce qui se vend d'une fiche reçue : ses déclinaisons complètes, si elle est active. */
 
@@ -20,8 +23,9 @@ function product(status: ReceivedCatalogProduct["status"]): ReceivedCatalogProdu
   };
 }
 
-function fact(): PimFacts {
+function fact(): ReceivedCatalogItem {
   return {
+    variantId: "var_1",
     sku: ITEM.sku,
     productId: "p1",
     productSku: "VIE-1",

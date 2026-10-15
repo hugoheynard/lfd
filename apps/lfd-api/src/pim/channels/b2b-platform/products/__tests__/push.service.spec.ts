@@ -65,7 +65,9 @@ function product(over: Partial<ProductRecord> = {}): ProductRecord {
         regulatoryFollowsDefault: false,
         nutritionFollowsDefault: false,
         pricingFollowsDefault: false,
-        allergenSheet: null,
+        // Une déclaration (« aucun allergène ») : depuis le lot 2b, une
+        // déclinaison sans déclaration ne part plus, et ces cas parlent d'envoi.
+        allergenSheet: { declared: [], mayContain: [] },
         nutrition: null,
       },
     ],
@@ -315,7 +317,7 @@ describe("l’empreinte relie la relecture à l’envoi", () => {
           regulatoryFollowsDefault: false,
           nutritionFollowsDefault: false,
           pricingFollowsDefault: false,
-          allergenSheet: null,
+          allergenSheet: { declared: [], mayContain: [] },
           nutrition: null,
         },
       ],

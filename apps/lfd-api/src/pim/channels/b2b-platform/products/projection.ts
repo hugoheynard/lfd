@@ -251,6 +251,20 @@ function sortVariants(
       excluded.push({ sku: variant.sku, reason: "variant_sans_taux" });
       continue;
     }
+    // 🔴 **Sans déclaration d'allergènes, rien ne part** (lot 2b, 2b3). Le
+    // refus vivait à l'activation, fiche entière ; il est désormais ici, par
+    // déclinaison, comme dans les faits du catalogue — sans quoi assouplir
+    // l'activation (« au moins une déclinaison complète ») aurait mis en vente
+    // par cet envoi une déclinaison qu'on ne sait pas étiqueter. Et le push ne
+    // regarde pas le statut : un brouillon lié au canal partait déjà sans
+    // déclaration (`b2b-exclusions.ts` côté écran, vérifié le 2026-10-15).
+    //
+    // Testé EN DERNIER : une déclinaison déjà écartée pour un autre motif garde
+    // le sien, et aucune autre sortie de cette projection ne change.
+    if (variant.allergenSheet === null) {
+      excluded.push({ sku: variant.sku, reason: "variant_sans_allergenes" });
+      continue;
+    }
     const htMillicents = proPrice.htMillicents;
     // Absence dans la carte = aucune limite. Une carte plutôt qu'un `null`
     // explicite par déclinaison : l'immense majorité des articles n'en a pas, et

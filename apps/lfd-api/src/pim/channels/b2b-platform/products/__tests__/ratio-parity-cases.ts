@@ -112,7 +112,8 @@ export function projectGrid(entered: (price: number) => number | null): ParityGr
         },
         familyPercents: percents,
         percents,
-        policy,
+        // Les contextes de la grille : chacun a son taux, rien ne manque.
+        rules: { activeContextKeys: Object.keys(percents), policy },
         inco: INCO,
         showcase: undefined,
       }).variants;

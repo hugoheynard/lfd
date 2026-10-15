@@ -19,6 +19,7 @@ import {
   RemoveOrderTimeLimitHandler,
 } from "../remove-order-time-limit.js";
 import { SetOrderTimeLimitCommand, SetOrderTimeLimitHandler } from "../set-order-time-limit.js";
+import { RecordingRulesEmitter } from "../../domain/ports/__tests__/recording-rules-emitter.js";
 
 function payload(over: Partial<OrderTimeLimitPayload> = {}): OrderTimeLimitPayload {
   return {
@@ -35,6 +36,8 @@ interface Doubles {
   readonly saved: OrderTimeLimit[];
   readonly minted: string[];
   readonly journal: RecordingJournal;
+  /** À chaque émission des règles : combien de règles étaient déjà enregistrées. */
+  readonly rules: RecordingRulesEmitter;
 }
 
 /**
@@ -69,6 +72,7 @@ function doubles(existing: OrderTimeLimit | null): Doubles {
     },
   };
   const journal = new RecordingJournal();
+  const rules = new RecordingRulesEmitter(() => saved.length);
   return {
     handler: new SetOrderTimeLimitHandler(
       limits,
@@ -76,14 +80,25 @@ function doubles(existing: OrderTimeLimit | null): Doubles {
       journal,
       new DirectUnitOfWork(),
       new TableScopeNamer(),
+      rules,
     ),
     saved,
     minted,
     journal,
+    rules,
   };
 }
 
 describe("SetOrderTimeLimitHandler", () => {
+  /** Lot 2b : l'échelle part vers la plateforme, relue APRÈS l'écriture. */
+  it("émet les règles une fois, après avoir enregistré la règle", async () => {
+    const { handler, rules } = doubles(null);
+
+    await handler.execute(new SetOrderTimeLimitCommand(payload()));
+
+    expect(rules.emissions).toEqual([1]);
+  });
+
   it("crée la règle quand la portée est libre, avec un identifiant frappé par la commande", async () => {
     const { handler, saved, minted } = doubles(null);
 
@@ -223,6 +238,7 @@ describe("RemoveOrderTimeLimitHandler", () => {
     readonly handler: RemoveOrderTimeLimitHandler;
     readonly removed: string[];
     readonly journal: RecordingJournal;
+    readonly emitter: RecordingRulesEmitter;
   }
 
   function removeDoubles(rules: readonly OrderTimeLimitView[]): RemoveDoubles {
@@ -237,10 +253,12 @@ describe("RemoveOrderTimeLimitHandler", () => {
       },
     } satisfies OrderTimeLimitRepository;
     const journal = new RecordingJournal();
+    const emitter = new RecordingRulesEmitter(() => removed.length);
     return {
-      handler: new RemoveOrderTimeLimitHandler(limits, journal, new DirectUnitOfWork()),
+      handler: new RemoveOrderTimeLimitHandler(limits, journal, new DirectUnitOfWork(), emitter),
       removed,
       journal,
+      emitter,
     };
   }
 
@@ -251,6 +269,15 @@ describe("RemoveOrderTimeLimitHandler", () => {
 
     expect(removed).toEqual(["id_1"]);
     expect(journal.types()).toEqual(["order_time_limit.removed"]);
+  });
+
+  /** Lot 2b : l'échelle d'après la suppression part vers la plateforme. */
+  it("émet les règles après la suppression", async () => {
+    const { handler, emitter } = removeDoubles([view({ id: "id_1" })]);
+
+    await handler.execute(new RemoveOrderTimeLimitCommand("id_1"));
+
+    expect(emitter.emissions).toEqual([1]);
   });
 
   /**

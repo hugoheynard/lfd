@@ -51,6 +51,10 @@ const ALLOWED = new Set([
   // Le froid relayé à la livraison (lot 4 bis, 2026-09-29) : il PORTE le
   // filtre (`...STILL_SOLD`) — un article retiré n'a plus à être chargé froid.
   "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-catalog-cold.reader.ts",
+  // La descente des limites de commande (lot 2b du catalogue synchronisé,
+  // 2026-10-15) : elle PORTE le filtre — un article retiré reçoit ses limites
+  // quand le fait de sa fiche le remet en vente.
+  "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-catalog-order-limits.ts",
   // Le semis de développement, et il PORTE le filtre : sa lecture demande
   // `withdrawnAt: null` explicitement (`ensureSkusExist`). Elle ne sert pas à
   // vendre — elle vérifie AVANT d'écrire que les SKU du corpus existent, pour

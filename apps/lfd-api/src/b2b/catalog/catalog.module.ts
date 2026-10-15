@@ -15,6 +15,12 @@ import { OnOperationImageChangedHandler } from "./application/handlers/on-operat
 import { OnProductMediaChangedHandler } from "./application/handlers/on-product-media-changed.handler.js";
 import { OnCatalogProductChangedHandler } from "./application/handlers/on-catalog-product-changed.handler.js";
 import { OnCatalogCategoryChangedHandler } from "./application/handlers/on-catalog-category-changed.handler.js";
+import { OnCatalogRulesChangedHandler } from "./application/handlers/on-catalog-rules-changed.handler.js";
+import { OrderLimitsRefresher } from "./application/order-limits-refresher.service.js";
+import { CatalogOrderLimits } from "./domain/ports/catalog-order-limits.js";
+import { CatalogRulesProjection } from "./domain/ports/catalog-rules.projection.js";
+import { PrismaCatalogOrderLimits } from "./infrastructure/prisma-catalog-order-limits.js";
+import { PrismaCatalogRulesProjection } from "./infrastructure/prisma-catalog-rules.projection.js";
 import { CatalogProductFactsProjection } from "./domain/ports/catalog-product-facts.projection.js";
 import { CatalogFamilyFactsProjection } from "./domain/ports/catalog-family-facts.projection.js";
 import { PrismaCatalogProductFactsProjection } from "./infrastructure/prisma-catalog-product-facts.projection.js";
@@ -131,6 +137,9 @@ import { PrismaCatalogMediaCopies } from "./infrastructure/prisma-catalog-media-
     OnProductMediaChangedHandler,
     OnCatalogProductChangedHandler,
     OnCatalogCategoryChangedHandler,
+    // Les règles globales du référentiel (lot 2b) : rangées, puis descendues.
+    OnCatalogRulesChangedHandler,
+    OrderLimitsRefresher,
     // Même chose pour l'image d'une opération reçue (mediatheque.md §7 bis).
     OnOperationImageChangedHandler,
     IngestCatalogService,
@@ -160,6 +169,8 @@ import { PrismaCatalogMediaCopies } from "./infrastructure/prisma-catalog-media-
     { provide: CatalogVisualsProjection, useClass: PrismaCatalogVisualsProjection },
     { provide: CatalogProductFactsProjection, useClass: PrismaCatalogProductFactsProjection },
     { provide: CatalogFamilyFactsProjection, useClass: PrismaCatalogFamilyFactsProjection },
+    { provide: CatalogRulesProjection, useClass: PrismaCatalogRulesProjection },
+    { provide: CatalogOrderLimits, useClass: PrismaCatalogOrderLimits },
     { provide: CatalogOperationImageProjection, useClass: PrismaCatalogOperationImageProjection },
     { provide: CatalogCategoryProjection, useClass: PrismaCatalogCategoryProjection },
     { provide: CatalogReader, useClass: PrismaCatalogReader },

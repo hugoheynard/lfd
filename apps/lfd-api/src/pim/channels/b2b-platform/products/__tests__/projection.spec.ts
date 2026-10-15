@@ -32,7 +32,10 @@ function variant(over: Partial<VariantRecord> = {}): VariantRecord {
     regulatoryFollowsDefault: false,
     nutritionFollowsDefault: false,
     pricingFollowsDefault: false,
-    allergenSheet: null,
+    // « Aucun allergène », une déclaration : depuis le lot 2b, une déclinaison
+    // sans déclaration ne part plus (`variant_sans_allergenes`), et ces cas
+    // parlent d'autre chose.
+    allergenSheet: { declared: [], mayContain: [] },
     nutrition: null,
     ...over,
   };
@@ -682,8 +685,10 @@ describe("projectCatalog — les allergènes", () => {
    * ici ferait lire « aucun allergène » là où personne n'a rien déclaré, et
    * c'est la seule faute qui compte sur ce champ.
    */
-  it("laisse les mentions à `null` quand aucune fiche n'est déclarée", () => {
-    expect(labelsOf(null)).toMatchObject({ allergens: null, allergenLabels: null });
+  it("n'envoie pas une déclinaison sans fiche déclarée — ni codes, ni mentions", () => {
+    // Avant le lot 2b, elle partait avec `allergens: null` ; elle est
+    // désormais écartée, motif nommé (cf. la suite « sans déclaration »).
+    expect(labelsOf(null)).toBeUndefined();
   });
 
   it("distingue « fiche sans allergène » de « pas de fiche »", () => {
@@ -930,6 +935,60 @@ describe("projectCatalog — sous la méthode entered", () => {
     expect(snapshot.products[0]?.variants[0]).toMatchObject({
       priceMillicents: 151_234,
       publicTtcCents: 200,
+    });
+  });
+});
+
+/**
+ * 🔴 **Lot 2b (2b3) : sans déclaration d'allergènes, rien ne part.** Le refus
+ * vivait à l'activation, fiche entière ; l'activation n'exige plus qu'UNE
+ * déclinaison complète, donc l'envoi écarte lui-même les autres — sans quoi
+ * il mettrait en vente une déclinaison qu'on ne sait pas étiqueter.
+ */
+describe("projectCatalog — sans déclaration d'allergènes", () => {
+  function push(variants: readonly VariantRecord[]) {
+    return projectCatalog(
+      [product({ variants: [...variants] })],
+      [category()],
+      vat(),
+      sold(),
+      NO_DISCOUNT,
+      NO_LIMITS,
+      INCO,
+      NO_SHOWCASE,
+      NO_OPERATIONS,
+      AT,
+    );
+  }
+
+  it("écarte la déclinaison sous son propre motif, et garde sa sœur déclarée", () => {
+    const { snapshot, excluded } = push([
+      variant(),
+      variant({ id: "var_2", sku: "VIE-001-2", isDefault: false, allergenSheet: null }),
+    ]);
+
+    expect(excluded).toEqual([{ sku: "VIE-001-2", reason: "variant_sans_allergenes" }]);
+    expect(snapshot.products[0]?.variants.map((entry) => entry.sku)).toEqual(["VIE-001-1"]);
+  });
+
+  it("écarte la fiche entière quand plus rien n'est déclaré", () => {
+    const { snapshot, excluded } = push([variant({ allergenSheet: null })]);
+
+    expect(snapshot.products).toEqual([]);
+    expect(excluded).toEqual([
+      { sku: "VIE-001-1", reason: "variant_sans_allergenes" },
+      { sku: "VIE-001", reason: "produit_sans_variante_vendable" },
+    ]);
+  });
+
+  /** Testé en dernier : une déclinaison déjà écartée garde son motif d'avant. */
+  it("ne change pas le motif d'une déclinaison déjà écartée pour une autre raison", () => {
+    const { excluded } = push([variant({ priceCents: null, allergenSheet: null })]);
+
+    expect(excluded).toContainEqual({ sku: "VIE-001-1", reason: "variant_sans_prix" });
+    expect(excluded).not.toContainEqual({
+      sku: "VIE-001-1",
+      reason: "variant_sans_allergenes",
     });
   });
 });

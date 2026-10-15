@@ -4,7 +4,6 @@ import {
   InvalidProductVariantsError,
   NotArchivedProductNotRestorableError,
   ProductNotActivatableError,
-  ProductNotPublishableError,
   ProductVatWithoutChannelError,
   ProductUnknownContextError,
   VariantNotFoundError,
@@ -33,10 +32,10 @@ import {
 import type { AllergenDeclaration } from "../value-objects/nutrition-declaration.js";
 import type { Sku } from "../value-objects/sku.value-object.js";
 import type { ProPriceHt } from "../value-objects/pro-price-ht.js";
-import type { ProPriceMethod } from "@lfd/pim-contracts";
 import type { Audience } from "../../../shared/domain/value-objects/audience.js";
 import type { CategoryVatPercents } from "../../../shared/domain/ports/catalogue-reader.js";
 import { activationGaps, isActivatable } from "../services/activation-gaps.js";
+import type { CompletenessRules } from "../services/variant-completeness.js";
 
 export type ProductKind = "daily" | "made_to_order" | "resale";
 export type ProductStatus = "draft" | "published" | "archived";
@@ -371,62 +370,40 @@ export class Product {
   }
 
   /**
-   * **Invariant 7** : on ne met pas en vente ce qu'on ne peut pas étiqueter.
+   * **Invariant 7, tel que le lot 2b le tient** : on ne met pas en vente ce
+   * qu'on ne peut pas étiqueter — mais le refus se fait désormais **par
+   * construction**, déclinaison par déclinaison, et non sur la fiche entière.
    *
-   * Toute déclinaison **active** doit porter une déclaration d'**allergènes** —
-   * la sienne, ou celle du défaut qu'elle suit. `[]` compte comme déclarée :
-   * « aucun allergène » est une affirmation, pas une absence de réponse. Les
-   * déclinaisons arrêtées ne comptent pas : elles ne partiront chez aucun canal.
+   * Activer exige **au moins une déclinaison non arrêtée complète** (C1 et 2b3
+   * de `plan-catalogue-synchronise-par-audience.md`) : un prix public, ses
+   * allergènes déclarés (`[]` est une réponse), un prix pro que `proPriceOf`
+   * résout, et un taux pour chaque contexte de vente en service. Les autres
+   * déclinaisons n'empêchent rien : la projection des faits ET l'envoi actuel
+   * (`variant_sans_allergenes`) les écartent de la vente — c'est ce qui rend
+   * l'assouplissement sûr, et c'est pourquoi il n'a pas été fait avant.
    *
    * 🔴 **Les valeurs nutritionnelles n'entrent PAS dans ce compte**, et ce n'est
    * pas un desserrage : le règlement (UE) n° 1169/2011 rend les allergènes
    * obligatoires (art. 9 §1 point c) et exempte la déclaration nutritionnelle
-   * (point l) dans les deux cas de vente de La Folie Coffee — le frais non
-   * préemballé en boutique par l'art. 44 §1, les confiseries par l'annexe V
-   * pt 19. Exiger ce que le règlement n'exige pas était le redressement, pas
-   * l'inverse (`plan-separer-allergenes-et-nutrition.md`, D2, vérifié le
-   * 2026-09-22 sur le texte consolidé).
-   *
-   * ⚠️ Ce qui rouvrirait la question ne s'annoncera pas depuis le code : une
-   * confiserie **préemballée** partie chez un revendeur **non local** sort des
-   * deux exemptions, et la nutrition redevient obligatoire pour elle seule.
+   * (point l) dans les deux cas de vente de La Folie Coffee
+   * (`plan-separer-allergenes-et-nutrition.md`, D2, vérifié le 2026-09-22).
    *
    * Un produit archivé se restaure d'abord : passer d'« retiré de la vente » à
    * « en ligne » d'un seul geste ferait sauter l'étape où quelqu'un regarde.
    *
-   * **Activer exige aussi de quoi vendre** (1e du plan
-   * `plan-catalogue-synchronise-par-audience.md`) : au moins une déclinaison
-   * non arrêtée avec un prix, et un taux au contexte qui facture chaque
-   * clientèle de son audience effective. Le taux et l'audience arrivent
-   * résolus : ils dépendent de la famille, que la fiche ne voit pas.
-   *
-   * ⚠️ Le refus des allergènes reste **par déclinaison** jusqu'au lot 2 : la
-   * projection d'aujourd'hui n'écarte pas une déclinaison sans déclaration,
-   * elle compte sur ce refus-ci.
-   *
-   * Sous la méthode `entered` (lot P, P4), une déclinaison n'est tarifée
-   * qu'avec son prix pro HT saisi : sans lui, la projection l'écarte, et une
-   * fiche dont aucune déclinaison n'a les deux prix ne vendrait rien.
+   * Le jugement porte sur les déclinaisons RÉSOLUES : une alignée porte le prix
+   * et la déclaration du défaut qu'elle suit. Taux, contextes et règle du prix
+   * pro arrivent résolus : ils dépendent de registres que la fiche ne voit pas.
    */
-  activate(
-    vatPercents: CategoryVatPercents,
-    audience: Audience,
-    proPriceMethod: ProPriceMethod,
-  ): StatusChanged {
+  activate(vatPercents: CategoryVatPercents, rules: CompletenessRules): StatusChanged {
     if (this.statusValue === "archived") {
       throw new ArchivedProductNotPublishableError(this.identity);
     }
     if (this.statusValue === "published") {
       return false;
     }
-    const missing = this.variantList
-      .filter((variant) => !variant.isDiscontinued && !this.declaresAllergens(variant))
-      .map((variant) => variant.sku);
-    if (missing.length > 0) {
-      throw new ProductNotPublishableError(this.identity, missing);
-    }
     const resolved = this.variantList.map((variant) => this.resolvedSnapshot(variant));
-    const gaps = activationGaps(resolved, vatPercents, audience, proPriceMethod);
+    const gaps = activationGaps(resolved, vatPercents, rules);
     if (!isActivatable(gaps)) {
       throw new ProductNotActivatableError(this.identity, gaps);
     }
@@ -530,8 +507,8 @@ export class Product {
    *
    * 🔴 Ce verbe ne PERSISTE rien : l'écriture reste au port dédié
    * (`plan-separer-allergenes-et-nutrition.md`, §6a). Il existe pour que
-   * l'agrégat porte l'état qu'il est seul à savoir juger — `declaresAllergens`
-   * compare la déclinaison à son défaut, et il le fait sur l'état d'APRÈS.
+   * l'agrégat porte l'état qu'il est seul à savoir juger — `activate` juge la
+   * déclinaison RÉSOLUE contre son défaut, et il le fait sur l'état d'APRÈS.
    */
   declareAllergens(variantId: string, declaration: AllergenDeclaration): void {
     this.variant(variantId).declareAllergens(declaration);
@@ -568,27 +545,6 @@ export class Product {
    */
   private get defaultVariant(): Variant {
     return this.variantList.find((variant) => variant.isDefault) ?? this.variantList[0]!;
-  }
-
-  /**
-   * Cette déclinaison est-elle **étiquetable** — par ses propres allergènes, ou
-   * par ceux du défaut qu'elle suit ?
-   *
-   * Le drapeau lu est celui des **allergènes**, jamais celui de la nutrition :
-   * les deux moitiés s'alignent séparément depuis le lot 4, et une déclinaison
-   * qui saisit ses propres valeurs tout en suivant les allergènes du défaut est
-   * parfaitement étiquetable. Lire le mauvais drapeau ici l'aurait rendue
-   * impubliable sur un geste qui ne touche pas à la sécurité.
-   *
-   * La question ne peut pas vivre sur la déclinaison : elle seule ne voit pas le
-   * défaut, et un objet ne garantit que ce qu'il voit. C'est le même partage que
-   * pour les taux, où la fiche ne juge sa dérogation qu'une fois qu'on lui
-   * montre les canaux de sa famille.
-   */
-  private declaresAllergens(variant: Variant): boolean {
-    return variant.follows("allergens")
-      ? this.defaultVariant.declaresOwnAllergens
-      : variant.declaresOwnAllergens;
   }
 
   /**

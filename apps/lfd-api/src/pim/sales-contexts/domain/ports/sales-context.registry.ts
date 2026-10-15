@@ -1,4 +1,5 @@
 import type { SalesContext } from "../value-objects/sales-context.js";
+import { ActiveSalesContextsReader } from "./active-sales-contexts.reader.js";
 
 /**
  * Le **registre** des contextes de vente.
@@ -8,9 +9,9 @@ import type { SalesContext } from "../value-objects/sales-context.js";
  * modèle, et l'ouvrir à un formulaire rendrait possible d'inventer un contexte
  * que ni Shopify ni la facturation ne savent traiter.
  */
-export abstract class SalesContextRegistry {
+export abstract class SalesContextRegistry extends ActiveSalesContextsReader {
   /** Tous les contextes **en service**, dans l'ordre. */
-  abstract active(): Promise<readonly SalesContext[]>;
+  abstract override active(): Promise<readonly SalesContext[]>;
 
   /** Tous les contextes, **hors service compris** — la surface d'administration. */
   abstract all(): Promise<readonly SalesContext[]>;

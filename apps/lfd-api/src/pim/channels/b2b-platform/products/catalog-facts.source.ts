@@ -1,7 +1,9 @@
 import { Injectable } from "@nestjs/common";
 import { SOURCE_LOCALE } from "@lfd/pim-contracts";
 
-import { AccountingRulesRepository } from "../../../accounting-rules/domain/ports/accounting-rules.repository.js";
+import { AccountingRulesReader } from "../../../accounting-rules/domain/ports/accounting-rules.reader.js";
+import { readCompletenessRules } from "../../../catalogue/product/application/completeness-support.js";
+import { ActiveSalesContextsReader } from "../../../sales-contexts/domain/ports/active-sales-contexts.reader.js";
 import { AllergenCatalogueReader } from "../../../allergens/domain/ports/allergen-catalogue.reader.js";
 import { IncoProjector } from "../../../allergens/domain/services/inco-projector.js";
 import { EditorialReader } from "../../../catalogue/product/domain/ports/editorial-reader.js";
@@ -27,7 +29,7 @@ import { showcaseOf } from "./showcase.js";
  * Toutes les lectures passent par des ports qui suivent la transaction
  * ambiante : appelé par l'émetteur APRÈS son verrou, il voit ce que le geste
  * vient d'écrire — fiche, satellites (allergènes, rédactionnel, visuels) et
- * réglages (taux, rapport pro, référentiel d'allergènes).
+ * réglages (taux, rapport pro, contextes en service, référentiel d'allergènes).
  *
  * Séparé de l'émetteur (SRP) : celui-ci tient l'ordre (verrou, numéro,
  * boîte d'envoi) ; celui-là sait seulement ce qu'une fiche est devenue.
@@ -37,7 +39,8 @@ export class CatalogFactsSource extends CatalogSnapshots {
   constructor(
     private readonly facts: CatalogFactsReader,
     private readonly rates: VatRateRepository,
-    private readonly accounting: AccountingRulesRepository,
+    private readonly accounting: AccountingRulesReader,
+    private readonly contexts: ActiveSalesContextsReader,
     private readonly allergens: AllergenCatalogueReader,
     private readonly editorials: EditorialReader,
   ) {
@@ -54,7 +57,7 @@ export class CatalogFactsSource extends CatalogSnapshots {
     const [families, percentOf, rules, catalogue, notes, medias] = await Promise.all([
       this.facts.families(familyIds),
       this.percentIndex(),
-      this.accounting.read(),
+      readCompletenessRules(this.contexts, this.accounting),
       this.allergens.catalogue(),
       this.editorials.findByProducts(ids),
       this.editorials.mediaOfProducts(ids),
@@ -77,7 +80,7 @@ export class CatalogFactsSource extends CatalogSnapshots {
           family,
           familyPercents: resolve(family.vatByContext, percentOf),
           percents: resolve(effectiveVat(family.vatByContext, product.vatByContext), percentOf),
-          policy: rules?.rules.policy ?? null,
+          rules,
           inco,
           showcase: showcase.get(product.id),
         }),

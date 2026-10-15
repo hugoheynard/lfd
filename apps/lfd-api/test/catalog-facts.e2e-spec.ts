@@ -94,7 +94,15 @@ describe("une fiche créée au référentiel apparaît sur la plateforme", () =>
     expect(entry).toMatchObject({ productSku: fiche.sku, status: "inactive", audience: "both" });
     // Tout ce qui manque, nommé : rien n'est réglé sur une fiche neuve.
     expect(entry?.gaps).toEqual({
-      [fiche.variantSku]: ["price", "allergens", "pro_price_rule", "vat:b2b", "vat:takeaway"],
+      // Lot 2b : un taux pour CHAQUE contexte en service, sur place compris.
+      [fiche.variantSku]: [
+        "price",
+        "allergens",
+        "pro_price_rule",
+        "vat:b2b",
+        "vat:takeaway",
+        "vat:eatIn",
+      ],
     });
     // La famille est arrivée avec elle — et sous son propre fait.
     const family = await ctx.prisma.catalogCategory.findUnique({ where: { id: fiche.categoryId } });

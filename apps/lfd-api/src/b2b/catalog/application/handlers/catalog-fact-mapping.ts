@@ -1,7 +1,7 @@
 import type { CatalogFamilyFactBody } from "../../../../pim/channels/b2b-platform/products/catalog-facts.js";
 import type { CatalogProductChangedFact } from "../../../../pim/channels/b2b-platform/products/catalog-product-changed.fact.js";
 import type { ReceivedCatalogProduct } from "../../domain/catalog-product-facts.js";
-import type { CatalogCategoryFacts } from "../../domain/ports/catalog-category.projection.js";
+import type { ReceivedCatalogFamily } from "../../domain/ports/catalog-family-facts.projection.js";
 import { pimImageOf } from "../pim-image.js";
 
 /**
@@ -9,8 +9,10 @@ import { pimImageOf } from "../pim-image.js";
  *
  * Les déclinaisons deviennent des faits d'articles par la même traduction
  * que l'ingestion d'un instantané (`ingest-catalog.service.ts`, `factsOf`) —
- * aux limites de commande près : ce sont des règles globales, qui ne
- * voyagent pas avec une fiche (C3), et l'écriture ne les touche pas.
+ * aux limites de commande près : ce sont des règles globales, qui voyagent à
+ * part (`pim.catalog_rules_changed`, lot 2b) ; le récepteur les descend sur
+ * les articles de la fiche après l'écriture (`OrderLimitsRefresher`). D'où
+ * l'identifiant de déclinaison, que seul le fait porte.
  */
 export function receivedProductOf(fact: CatalogProductChangedFact): ReceivedCatalogProduct {
   const { body } = fact;
@@ -27,6 +29,7 @@ export function receivedProductOf(fact: CatalogProductChangedFact): ReceivedCata
     seq: fact.seq,
     receivedAt,
     items: body.variants.map((variant) => ({
+      variantId: variant.id,
       sku: variant.sku,
       productId: product.id,
       productSku: product.sku,
@@ -53,12 +56,17 @@ export function receivedProductOf(fact: CatalogProductChangedFact): ReceivedCata
   };
 }
 
-/** La famille d'un fait — la sienne, ou celle qu'une fiche apporte. */
+/**
+ * La famille d'un fait — la sienne, ou celle qu'une fiche apporte — avec son
+ * audience et son archivage (lot 2b).
+ */
 export function receivedFamilyOf(
   family: CatalogFamilyFactBody,
   receivedAt: Date,
-): CatalogCategoryFacts {
+): ReceivedCatalogFamily {
   return {
+    audience: family.audience,
+    archived: family.archived,
     id: family.id,
     name: family.name,
     slug: family.slug,

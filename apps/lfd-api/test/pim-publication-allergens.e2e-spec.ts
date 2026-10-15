@@ -173,7 +173,8 @@ describe("les allergènes suffisent, la nutrition ne remplace rien", () => {
 
     expect(refus.status).toBe(409);
     const body = jsonBody<{ code: string; message: string }>(refus);
-    expect(body.code).toBe("catalogue.product.not_publishable");
+    // Lot 2b : un seul refus d'activation, qui nomme ce qui manque à chacune.
+    expect(body.code).toBe("catalogue.product.not_activatable");
     // Le SKU nommé : le back-office ne lit que ce message, et « ce produit
     // n'est pas publiable » n'aide personne devant six déclinaisons.
     expect(body.message).toContain(sku);
@@ -259,16 +260,21 @@ describe("la couverture lit le drapeau des allergènes, pas celui des valeurs", 
    * fiche impubliable, en nommant la déclinaison muette — pas le défaut, qui
    * est en règle.
    */
-  it("refuse (409) une déclinaison détachée des allergènes qui n’a rien déclaré", async () => {
-    const { productId, secondId, secondSku } = await aProductWithSecondVariant("-f");
+  /**
+   * Lot 2b (2b3) : la fiche s'active par son défaut complet ; la déclinaison
+   * détachée et muette n'est pas vendue — la projection des faits et l'envoi
+   * actuel l'écartent (`variant_sans_allergenes`). Ce cas était un 409 tant
+   * que l'envoi ne l'écartait pas.
+   */
+  it("active par le défaut ; la déclinaison détachée reste sans déclaration", async () => {
+    const { productId, secondId } = await aProductWithSecondVariant("-f");
 
     expect([200, 204]).toContain((await align(productId, secondId, "allergens", false)).status);
 
-    const refus = await publish(productId);
-    expect(refus.status).toBe(409);
-    const { message } = jsonBody<{ message: string }>(refus);
-    expect(message).toContain(secondSku);
-    expect((await detailOf(productId)).status).toBe("draft");
+    expect((await publish(productId)).status).toBe(200);
+    const detail = await detailOf(productId);
+    expect(detail.status).toBe("published");
+    expect(detail.variants.find((v) => v.id === secondId)?.allergenSheet).toBeNull();
   });
 
   /**

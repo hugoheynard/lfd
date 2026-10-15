@@ -3,7 +3,14 @@ import {
   DomainError,
   ResourceNotFoundError,
 } from "../../../../../platform/shared/errors/app-error.js";
-import type { ActivationGaps, UnbilledAudience } from "../services/activation-gaps.js";
+import type { ActivationGaps } from "../services/activation-gaps.js";
+import {
+  ALLERGENS_GAP,
+  PRICE_GAP,
+  PRO_PRICE_GAP,
+  PRO_PRICE_RULE_GAP,
+  VAT_GAP_PREFIX,
+} from "../services/variant-completeness.js";
 
 export class ProductNotFoundError extends ResourceNotFoundError {
   constructor(readonly productId: string) {
@@ -92,52 +99,31 @@ export class ProPricePrefillMismatchError extends BusinessError {
   }
 }
 
-/**
- * Invariant 7 du socle : `PublishProduct` est **refusée** si une déclinaison
- * active ne déclare pas ses **allergènes**.
- *
- * 🔴 **C'est l'état nommé de D3** (`plan-separer-allergenes-et-nutrition.md`).
- * Saisir un tableau nutritionnel sans déclarer d'allergène est le cas courant —
- * les valeurs se copient d'un document, la déclaration demande de regarder la
- * recette — et il ne doit surtout pas se refuser en silence : il se refuse par
- * un message qui dit lequel des deux gestes manque.
- *
- * Le message nomme les références en cause ET le geste de sortie, parce qu'il
- * est lu au back-office par du personnel qui n'a pas le code sous les yeux :
- * « ce produit n'est pas publiable » n'aide personne devant un produit à six
- * déclinaisons, et « fiche réglementaire manquante » envoyait remplir le
- * tableau nutritionnel — qui n'y change rien.
- */
-export class ProductNotPublishableError extends BusinessError {
-  constructor(
-    readonly productId: string,
-    readonly undeclaredAllergenSkus: readonly string[],
-  ) {
-    super(
-      "catalogue.product.not_publishable",
-      `Publication refusée : aucune déclaration d'allergènes sur ` +
-        `${undeclaredAllergenSkus.join(", ")}. Ouvrir la section « Allergènes » de ` +
-        `chacune de ces déclinaisons et déclarer ce qu'elle contient — ou cocher ` +
-        `« aucun allergène », qui est une réponse — puis republier. Aligner la ` +
-        `déclinaison sur celle par défaut convient aussi, à condition que le défaut ` +
-        `ait lui-même déclaré. Le tableau nutritionnel, lui, n'est pas demandé ici.`,
-    );
-  }
-}
-
-/** Ce qu'une clientèle se dit à l'écran, dans un message de refus. */
-const AUDIENCE_LABEL: Readonly<Record<UnbilledAudience["audience"], string>> = {
-  pro: "les professionnels",
-  public: "les particuliers",
+/** Ce qu'un manque se dit à l'écran, avec le geste qui le répare. */
+const GAP_LABEL: Readonly<Record<string, string>> = {
+  [PRICE_GAP]: "prix public (section « Tarif »)",
+  [ALLERGENS_GAP]:
+    "déclaration d'allergènes (section « Allergènes » — « aucun allergène » est une réponse)",
+  [PRO_PRICE_GAP]: "prix pro HT (section « Tarif »)",
+  [PRO_PRICE_RULE_GAP]: "rapport pro non réglé (écran « Règles comptables »)",
 };
 
+function gapLabel(gap: string): string {
+  if (gap.startsWith(VAT_GAP_PREFIX)) {
+    return `taux de TVA « ${gap.slice(VAT_GAP_PREFIX.length)} » (famille ou fiche)`;
+  }
+  return GAP_LABEL[gap] ?? gap;
+}
+
 /**
- * `activate` refusée : rien n'est vendable, faute de prix ou de taux (1e du
- * plan `plan-catalogue-synchronise-par-audience.md`).
+ * `activate` refusée : aucune déclinaison n'est complète (lot 2b de
+ * `plan-catalogue-synchronise-par-audience.md`, C1 et 2b3). Remplace aussi
+ * l'ancien refus des allergènes par déclinaison (`not_publishable`) : une
+ * déclinaison sans déclaration n'empêche plus d'activer, elle n'est pas vendue.
  *
- * Le message nomme chaque déclinaison sans prix et chaque clientèle sans taux,
- * avec le geste qui répare : il est lu par du personnel devant la fiche, pas
- * devant le code.
+ * Le message nomme chaque déclinaison et ce qui lui manque, avec l'écran qui
+ * le répare : il est lu par du personnel devant la fiche, pas devant le code.
+ * Il dit aussi qu'une seule suffit, pour qu'on ne croie pas devoir tout remplir.
  */
 export class ProductNotActivatableError extends BusinessError {
   constructor(
@@ -149,26 +135,19 @@ export class ProductNotActivatableError extends BusinessError {
 }
 
 function describeGaps(gaps: ActivationGaps): string {
-  const reasons: string[] = [];
-  if (gaps.priceMissing) {
-    reasons.push(
-      gaps.unpricedVariantSkus.length === 0
-        ? "toutes les déclinaisons sont arrêtées — en rouvrir une et lui donner un prix"
-        : gaps.proPriceRequired
-          ? `aucune déclinaison n'a à la fois un prix public et un prix pro HT ` +
-            `(${gaps.unpricedVariantSkus.join(", ")}) — renseigner les deux prix d'au ` +
-            `moins l'une d'elles dans la section « Tarif »`
-          : `aucune déclinaison n'a de prix (${gaps.unpricedVariantSkus.join(", ")}) — ` +
-            `renseigner le prix d'au moins l'une d'elles dans la section « Tarif »`,
+  if (gaps.allDiscontinued) {
+    return (
+      "Activation refusée : toutes les déclinaisons sont arrêtées — en rouvrir une et la " +
+      "compléter."
     );
   }
-  for (const gap of gaps.unbilledAudiences) {
-    reasons.push(
-      `aucun taux de TVA « ${gap.contextKey} » pour vendre à ${AUDIENCE_LABEL[gap.audience]} — ` +
-        `le régler sur la famille ou sur la fiche, ou changer l'audience`,
-    );
-  }
-  return `Activation refusée : ${reasons.join(" ; ")}.`;
+  const lines = Object.entries(gaps.byVariant).map(
+    ([sku, missing]) => `${sku} : ${missing.map(gapLabel).join(", ")}`,
+  );
+  return (
+    `Activation refusée : aucune déclinaison n'est complète, et il en suffit d'une — ` +
+    `${lines.join(" ; ")}.`
+  );
 }
 
 /** Un produit archivé se restaure avant de se publier — jamais d'un geste. */

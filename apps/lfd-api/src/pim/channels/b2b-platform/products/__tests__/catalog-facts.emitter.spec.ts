@@ -57,6 +57,10 @@ class RecordingSequence extends PublicationSequence {
     this.calls.push(`lock:categories:${ids.join(",")}`);
     return Promise.resolve(ids.filter((id) => this.existing.has(id)));
   }
+  lockRules(): Promise<void> {
+    this.calls.push("lock:rules");
+    return Promise.resolve();
+  }
   next(): Promise<number> {
     this.value += 1;
     this.calls.push(`next:${String(this.value)}`);

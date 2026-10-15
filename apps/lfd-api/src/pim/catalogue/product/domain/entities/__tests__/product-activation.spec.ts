@@ -4,12 +4,13 @@ import {
 } from "../../errors/product-errors.js";
 import { Product, type ProductSnapshot } from "../product.js";
 import type { VariantSnapshot } from "../variant.js";
+import type { CompletenessRules } from "../../services/variant-completeness.js";
 
 /**
- * **Activer exige de quoi vendre** (1e du plan
- * `plan-catalogue-synchronise-par-audience.md`) : un prix, et un taux par
- * clientèle de l'audience effective. L'audience propre de la fiche est un
- * réglage sans refus.
+ * **Activer exige de quoi vendre** (lot 2b du plan
+ * `plan-catalogue-synchronise-par-audience.md`) : au moins une déclinaison
+ * complète — prix, allergènes, prix pro, un taux par contexte en service.
+ * L'audience propre de la fiche est un réglage sans refus.
  */
 
 const SHEET = { declared: ["gluten"], mayContain: [] };
@@ -54,21 +55,26 @@ function product(over: Partial<ProductSnapshot> = {}): Product {
   });
 }
 
-const BOTH = { b2b: 20, takeaway: 5.5 };
+/** Les trois contextes en service du semis : un taux pour chacun. */
+const ALL_RATES = { b2b: 20, takeaway: 5.5, eatIn: 10 };
+const RULES: CompletenessRules = {
+  activeContextKeys: ["b2b", "takeaway", "eatIn"],
+  policy: { method: "ratio_ttc", ratioBp: 9_000 },
+};
 
-describe("Product.activate — le prix et le taux", () => {
-  it("active une fiche tarifée et taxée pour son audience", () => {
+describe("Product.activate — au moins une déclinaison complète (lot 2b)", () => {
+  it("active une fiche tarifée, déclarée, taxée pour chaque contexte en service", () => {
     const tarte = product();
 
-    expect(tarte.activate(BOTH, "both", "ratio_ttc")).toBe(true);
+    expect(tarte.activate(ALL_RATES, RULES)).toBe(true);
     expect(tarte.status).toBe("published");
   });
 
   it("refuse sans prix, et dit où le saisir", () => {
     const tarte = product({ variants: [variant({ priceCents: null })] });
 
-    expect(() => tarte.activate(BOTH, "both", "ratio_ttc")).toThrow(ProductNotActivatableError);
-    expect(() => tarte.activate(BOTH, "both", "ratio_ttc")).toThrow(/PAT-1.*Tarif/);
+    expect(() => tarte.activate(ALL_RATES, RULES)).toThrow(ProductNotActivatableError);
+    expect(() => tarte.activate(ALL_RATES, RULES)).toThrow(/PAT-1.*Tarif/);
     expect(tarte.status).toBe("draft");
   });
 
@@ -91,35 +97,42 @@ describe("Product.activate — le prix et le taux", () => {
       ],
     });
 
-    expect(tarte.activate(BOTH, "both", "ratio_ttc")).toBe(true);
+    expect(tarte.activate(ALL_RATES, RULES)).toBe(true);
   });
 
-  it("refuse sans le taux de la clientèle visée, et nomme la clientèle", () => {
+  /**
+   * 🔴 La règle tranchée par Hugo (2026-10-15) : un taux pour CHAQUE contexte
+   * en service, quelle que soit l'audience — changer d'audience ne doit jamais
+   * rendre une fiche invendable.
+   */
+  it("exige le taux d'un contexte en service même hors de l'audience, et le nomme", () => {
+    const tarte = product({ audience: "pro" });
+
+    expect(() => tarte.activate({ b2b: 20, takeaway: 5.5 }, RULES)).toThrow(/eatIn/);
+  });
+
+  it("n'exige pas le taux d'un contexte hors service", () => {
     const tarte = product();
 
-    expect(() => tarte.activate({ takeaway: 5.5 }, "both", "ratio_ttc")).toThrow(
-      /b2b.*professionnels/,
-    );
+    expect(tarte.activate({ b2b: 20 }, { ...RULES, activeContextKeys: ["b2b"] })).toBe(true);
   });
 
-  it("dit les deux manques d'un coup plutôt qu'un à la fois", () => {
-    const tarte = product({ variants: [variant({ priceCents: null })] });
+  it("dit tous les manques d'un coup plutôt qu'un à la fois", () => {
+    const tarte = product({ variants: [variant({ priceCents: null, allergenSheet: null })] });
 
-    expect(() => tarte.activate({}, "public", "ratio_ttc")).toThrow(/PAT-1.*takeaway/);
+    expect(() => tarte.activate({}, RULES)).toThrow(/PAT-1.*prix.*allergènes.*takeaway/);
   });
 
   it("refuse toujours une fiche archivée, avant tout le reste", () => {
     const tarte = product({ status: "archived", variants: [variant({ priceCents: null })] });
 
-    expect(() => tarte.activate({}, "both", "ratio_ttc")).toThrow(
-      ArchivedProductNotPublishableError,
-    );
+    expect(() => tarte.activate({}, RULES)).toThrow(ArchivedProductNotPublishableError);
   });
 
   it("une fiche déjà active ne re-vérifie rien", () => {
     const tarte = product({ status: "published", variants: [variant({ priceCents: null })] });
 
-    expect(tarte.activate({}, "both", "ratio_ttc")).toBe(false);
+    expect(tarte.activate({}, RULES)).toBe(false);
   });
 });
 

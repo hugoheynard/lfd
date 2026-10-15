@@ -104,6 +104,12 @@ export type B2bExclusionReason =
    */
   | "variant_sans_prix_pro"
   /**
+   * La déclinaison n'a pas de déclaration d'allergènes — la sienne, ou celle
+   * du défaut qu'elle suit (lot 2b) : on ne vend pas ce qu'on ne sait pas
+   * étiqueter. C'est la section « Allergènes » de la fiche qu'il faut ouvrir.
+   */
+  | "variant_sans_allergenes"
+  /**
    * Un article de la sélection d'une opération datée que CET envoi ne porte
    * pas — non publié, sans prix, canal fermé (fil v11). Il manquerait au rayon
    * de l'opération sans que personne sache pourquoi ; le motif le dit, et
@@ -229,6 +235,33 @@ export interface AudienceSwitchPreviewView {
    * bascule (2b3).
    */
   readonly soldWithoutAllergens: readonly AudienceSwitchVariantView[];
+  /**
+   * Fiches **actives** dont au moins une déclinaison est incomplète selon la
+   * règle du lot 2b — prix public, allergènes, prix pro, et un taux pour
+   * chaque contexte de vente en service, quelle que soit l'audience. Les
+   * déclinaisons incomplètes ne seront pas vendues par les faits du
+   * catalogue ; `keepsSelling: false` = la fiche ne vendra plus rien.
+   */
+  readonly activeIncomplete: readonly AudienceSwitchIncompleteView[];
+}
+
+/** Une fiche active citée par l'aperçu de bascule, avec ce qui manque à ses déclinaisons. */
+export interface AudienceSwitchIncompleteView extends AudienceSwitchItemView {
+  /** Au moins une déclinaison reste complète : la fiche continue de vendre. */
+  readonly keepsSelling: boolean;
+  /** SKU de déclinaison → ce qui lui manque (`price`, `allergens`, `vat:eatIn`…). */
+  readonly gaps: Readonly<Record<string, readonly string[]>>;
+}
+
+/**
+ * **Ce que la bascule a désactivé** (2b1) : les fiches publiées mais
+ * invisibles aujourd'hui (H7), une transaction par fiche. La liste est rendue
+ * pour être gardée : c'est elle qui sert au retour arrière (réactiver).
+ */
+export interface AudienceSwitchAppliedView {
+  readonly deactivated: readonly AudienceSwitchItemView[];
+  /** Les fiches dont la transaction a échoué — nommées, à relancer. */
+  readonly failed: readonly AudienceSwitchItemView[];
 }
 
 /** Une déclinaison citée par l'aperçu de bascule. */

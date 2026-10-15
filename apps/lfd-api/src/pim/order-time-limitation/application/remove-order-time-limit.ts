@@ -7,6 +7,7 @@ import {
   GlobalOrderTimeLimitStillNeededError,
   OrderTimeLimitNotFoundError,
 } from "../domain/errors/order-time-limit-errors.js";
+import { CatalogRulesEmitter } from "../domain/ports/catalog-rules.emitter.js";
 import { OrderTimeLimitRepository } from "../domain/ports/order-time-limit.repository.js";
 import { limitScopeLabel } from "../domain/services/limit-scope-label.js";
 import { LimitScope } from "../domain/value-objects/limit-scope.js";
@@ -57,6 +58,7 @@ export class RemoveOrderTimeLimitHandler implements ICommandHandler<
     private readonly limits: OrderTimeLimitRepository,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
+    private readonly rules: CatalogRulesEmitter,
   ) {}
 
   async execute(command: RemoveOrderTimeLimitCommand): Promise<void> {
@@ -94,6 +96,8 @@ export class RemoveOrderTimeLimitHandler implements ICommandHandler<
         },
       });
       await this.limits.remove(doomed.id, ticket);
+      // L'échelle d'après, relue dans la transaction (lot 2b).
+      await this.rules.emitRules();
     });
   }
 }

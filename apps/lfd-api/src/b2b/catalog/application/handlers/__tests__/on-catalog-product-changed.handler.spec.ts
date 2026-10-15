@@ -9,10 +9,16 @@ import type {
   CatalogProductFactBody,
 } from "../../../../../pim/channels/b2b-platform/products/catalog-facts.js";
 import { CatalogProductChangedFact } from "../../../../../pim/channels/b2b-platform/products/catalog-product-changed.fact.js";
-import type { ReceivedCatalogProduct } from "../../../domain/catalog-product-facts.js";
-import type { PimFacts } from "../../../domain/entities/catalog-item.js";
-import type { CatalogCategoryFacts } from "../../../domain/ports/catalog-category.projection.js";
-import { CatalogFamilyFactsProjection } from "../../../domain/ports/catalog-family-facts.projection.js";
+import type {
+  ReceivedCatalogItem,
+  ReceivedCatalogProduct,
+} from "../../../domain/catalog-product-facts.js";
+import {
+  CatalogFamilyFactsProjection,
+  type ReceivedCatalogFamily,
+} from "../../../domain/ports/catalog-family-facts.projection.js";
+import { RecordingOrderLimits } from "../../../domain/ports/__tests__/recording-order-limits.js";
+import { OrderLimitsRefresher } from "../../order-limits-refresher.service.js";
 import { CatalogProductFactsProjection } from "../../../domain/ports/catalog-product-facts.projection.js";
 import type { CatalogAudience } from "../../../domain/served-to.js";
 import { OnCatalogCategoryChangedHandler } from "../on-catalog-category-changed.handler.js";
@@ -83,7 +89,7 @@ function productFact(
 class SpyingProduct extends CatalogProductFactsProjection {
   readonly calls: string[] = [];
   entry: ReceivedCatalogProduct | null = null;
-  onSale: readonly PimFacts[] = [];
+  onSale: readonly ReceivedCatalogItem[] = [];
   audience: CatalogAudience | null = null;
   kept: readonly string[] = [];
 
@@ -95,11 +101,11 @@ class SpyingProduct extends CatalogProductFactsProjection {
     this.entry = product;
     return Promise.resolve(this.newer);
   }
-  ensureFamily(family: CatalogCategoryFacts): Promise<void> {
+  ensureFamily(family: ReceivedCatalogFamily): Promise<void> {
     this.calls.push(`family:${family.id}`);
     return Promise.resolve();
   }
-  putOnSale(items: readonly PimFacts[], audience: CatalogAudience): Promise<void> {
+  putOnSale(items: readonly ReceivedCatalogItem[], audience: CatalogAudience): Promise<void> {
     this.calls.push("onSale");
     this.onSale = items;
     this.audience = audience;
@@ -112,11 +118,17 @@ class SpyingProduct extends CatalogProductFactsProjection {
   }
 }
 
+/** La descente des limites, sur un double qui retient les fiches demandées. */
+function refresher(limits = new RecordingOrderLimits([])): OrderLimitsRefresher {
+  return new OrderLimitsRefresher(limits);
+}
+
 async function deliver(
   projection: CatalogProductFactsProjection,
   fact: CatalogProductChangedFact,
+  limits = new RecordingOrderLimits([]),
 ): Promise<void> {
-  await new OnCatalogProductChangedHandler(projection).handle({
+  await new OnCatalogProductChangedHandler(projection, refresher(limits)).handle({
     eventId: "evt_1",
     ...fact.durableFact(),
   });
@@ -137,7 +149,11 @@ describe("OnCatalogProductChangedHandler", () => {
       receivedAt: new Date(EMITTED),
     });
     expect(projection.onSale.map((item) => item.sku)).toEqual(["VIE-1-1"]);
-    expect(projection.onSale[0]).toMatchObject({ priceMillicents: 100_000, orderTimeLimit: null });
+    expect(projection.onSale[0]).toMatchObject({
+      variantId: "var_1",
+      priceMillicents: 100_000,
+      orderTimeLimit: null,
+    });
     expect(projection.audience).toBe("pro");
     expect(projection.kept).toEqual(["VIE-1-1"]);
   });
@@ -145,10 +161,22 @@ describe("OnCatalogProductChangedHandler", () => {
   /** Un fait plus ancien que la ligne — rejoué, ou livré à l'envers — n'écrit rien d'autre. */
   it("s'arrête après l'entrée si un fait plus récent est déjà appliqué", async () => {
     const projection = new SpyingProduct(false);
+    const limits = new RecordingOrderLimits([]);
 
-    await deliver(projection, productFact("active"));
+    await deliver(projection, productFact("active"), limits);
 
     expect(projection.calls).toEqual(["family:fam_1", "entry"]);
+    expect(limits.asked).toEqual([]);
+  });
+
+  /** Lot 2b : un article neuf reçoit ses limites — descendues de l'échelle reçue. */
+  it("redescend les limites de commande des articles de la fiche, après la mise en vente", async () => {
+    const projection = new SpyingProduct(true);
+    const limits = new RecordingOrderLimits([]);
+
+    await deliver(projection, productFact("active"), limits);
+
+    expect(limits.asked).toEqual(["prd_1"]);
   });
 
   it("retire toutes les déclinaisons d'une fiche inactive, sans rien mettre en vente", async () => {
@@ -165,7 +193,7 @@ describe("OnCatalogProductChangedHandler", () => {
     const projection = new SpyingProduct(true);
 
     await expect(
-      new OnCatalogProductChangedHandler(projection).handle({
+      new OnCatalogProductChangedHandler(projection, refresher()).handle({
         eventId: "evt_1",
         type: "pim.catalog_product_changed",
         payload: { productId: "prd_1", seq: "sept" },
@@ -176,10 +204,13 @@ describe("OnCatalogProductChangedHandler", () => {
 });
 
 class SpyingFamily extends CatalogFamilyFactsProjection {
-  applied: { family: CatalogCategoryFacts; seq: number } | null = null;
-  applyIfNewer(family: CatalogCategoryFacts, seq: number): Promise<boolean> {
+  applied: { family: ReceivedCatalogFamily; seq: number } | null = null;
+  constructor(private readonly newer = true) {
+    super();
+  }
+  applyIfNewer(family: ReceivedCatalogFamily, seq: number): Promise<boolean> {
     this.applied = { family, seq };
-    return Promise.resolve(true);
+    return Promise.resolve(this.newer);
   }
 }
 
@@ -188,7 +219,7 @@ describe("OnCatalogCategoryChangedHandler", () => {
     const projection = new SpyingFamily();
     const fact = new CatalogCategoryChangedFact("fam_1", 12, EMITTED, FAMILY);
 
-    await new OnCatalogCategoryChangedHandler(projection).handle({
+    await new OnCatalogCategoryChangedHandler(projection, refresher()).handle({
       eventId: "evt_2",
       ...fact.durableFact(),
     });
@@ -203,7 +234,50 @@ describe("OnCatalogCategoryChangedHandler", () => {
         position: 0,
         vatRatePercent: 5.5,
         receivedAt: new Date(EMITTED),
+        audience: "both",
+        archived: false,
       },
     });
+  });
+
+  /** Lot 2b : une famille déplacée change la lignée de ses descendantes. */
+  it("redescend les limites de tous les articles quand la famille s'applique", async () => {
+    const limits = new RecordingOrderLimits([]);
+    const fact = new CatalogCategoryChangedFact("fam_1", 12, EMITTED, FAMILY);
+
+    await new OnCatalogCategoryChangedHandler(new SpyingFamily(), refresher(limits)).handle({
+      eventId: "evt_3",
+      ...fact.durableFact(),
+    });
+
+    expect(limits.asked).toEqual([null]);
+  });
+
+  it("ne redescend rien quand un fait plus récent est déjà appliqué", async () => {
+    const limits = new RecordingOrderLimits([]);
+    const fact = new CatalogCategoryChangedFact("fam_1", 12, EMITTED, FAMILY);
+
+    await new OnCatalogCategoryChangedHandler(new SpyingFamily(false), refresher(limits)).handle({
+      eventId: "evt_4",
+      ...fact.durableFact(),
+    });
+
+    expect(limits.asked).toEqual([]);
+  });
+
+  it("porte l'archivage et l'audience de la famille", async () => {
+    const projection = new SpyingFamily();
+    const fact = new CatalogCategoryChangedFact("fam_1", 13, EMITTED, {
+      ...FAMILY,
+      audience: "public",
+      archived: true,
+    });
+
+    await new OnCatalogCategoryChangedHandler(projection, refresher()).handle({
+      eventId: "evt_5",
+      ...fact.durableFact(),
+    });
+
+    expect(projection.applied?.family).toMatchObject({ audience: "public", archived: true });
   });
 });

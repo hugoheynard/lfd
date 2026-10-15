@@ -318,5 +318,6 @@
   "test/supervision-routes.e2e-spec.ts": 6374,
   "test/support-requests.e2e-spec.ts": 6282,
   "test/catalog-facts.e2e-spec.ts": 13869,
-  "test/catalog-facts-closed.e2e-spec.ts": 5766
+  "test/catalog-facts-closed.e2e-spec.ts": 5766,
+  "test/catalog-facts-rules.e2e-spec.ts": 9000
 }

@@ -4,12 +4,13 @@ import {
   InvalidProductVariantsError,
   InvalidVariantPricingError,
   NotArchivedProductNotRestorableError,
-  ProductNotPublishableError,
+  ProductNotActivatableError,
   VariantNotFoundError,
 } from "../../errors/product-errors.js";
 import { Sku } from "../../value-objects/sku.value-object.js";
 import { Product, type ProductSnapshot } from "../product.js";
 import type { VariantNutritionSnapshot } from "../variant.js";
+import type { CompletenessRules } from "../../services/variant-completeness.js";
 
 const open = (): Product =>
   Product.open({
@@ -67,6 +68,12 @@ function declared(
  * à l'agrégat. Ces suites parlent d'allergènes et de statut, pas de TVA.
  */
 const SELLABLE_RATES = { b2b: 20, takeaway: 5.5 } as const;
+
+/** Les contextes en service et la règle du prix pro (lot 2b) : un taux pour chacun. */
+const SELLING: CompletenessRules = {
+  activeContextKeys: ["b2b", "takeaway"],
+  policy: { method: "ratio_ttc", ratioBp: 9_000 },
+};
 
 describe("l’agrégat Product", () => {
   describe("invariant 2 : une déclinaison au moins, une par défaut exactement", () => {
@@ -132,7 +139,7 @@ describe("l’agrégat Product", () => {
      */
     it("REFUSE de restaurer ce qui n’est pas archivé — un produit en ligne y perdait sa vente", () => {
       const product = declared([{ allergens: ["gluten"] }]);
-      product.activate(SELLABLE_RATES, "both", "ratio_ttc");
+      product.activate(SELLABLE_RATES, SELLING);
       expect(() => product.restore()).toThrow(NotArchivedProductNotRestorableError);
       expect(product.status).toBe("published");
     });
@@ -149,8 +156,8 @@ describe("l’agrégat Product", () => {
      */
     it("dit ce qu’il a fait : vrai quand l’état bouge, faux quand il y était déjà", () => {
       const product = declared([{ allergens: ["gluten"] }]);
-      expect(product.activate(SELLABLE_RATES, "both", "ratio_ttc")).toBe(true);
-      expect(product.activate(SELLABLE_RATES, "both", "ratio_ttc")).toBe(false);
+      expect(product.activate(SELLABLE_RATES, SELLING)).toBe(true);
+      expect(product.activate(SELLABLE_RATES, SELLING)).toBe(false);
       expect(product.deactivate()).toBe(true);
       expect(product.deactivate()).toBe(false);
       expect(product.archive()).toBe(true);
@@ -160,27 +167,25 @@ describe("l’agrégat Product", () => {
 
     it("republier ne re-vérifie pas les fiches : rien ne change, donc rien ne peut échouer", () => {
       const product = declared([{ allergens: ["gluten"] }]);
-      product.activate(SELLABLE_RATES, "both", "ratio_ttc");
-      expect(() => product.activate(SELLABLE_RATES, "both", "ratio_ttc")).not.toThrow();
+      product.activate(SELLABLE_RATES, SELLING);
+      expect(() => product.activate(SELLABLE_RATES, SELLING)).not.toThrow();
       expect(product.status).toBe("published");
     });
   });
 
   describe("invariant 7 : on ne met pas en vente ce qu’on ne peut pas étiqueter", () => {
     /** Le produit tel qu'il naît : aucune fiche renseignée. */
-    it("refuse de publier tant qu’une déclinaison active n’a pas de fiche", () => {
-      expect(() => open().activate(SELLABLE_RATES, "both", "ratio_ttc")).toThrow(
-        ProductNotPublishableError,
-      );
+    it("refuse d’activer tant qu’aucune déclinaison n’est complète", () => {
+      expect(() => open().activate(SELLABLE_RATES, SELLING)).toThrow(ProductNotActivatableError);
     });
 
     it("nomme les références en cause plutôt que de dire « non »", () => {
-      expect(() => open().activate(SELLABLE_RATES, "both", "ratio_ttc")).toThrow("PATI-TARTE-1");
+      expect(() => open().activate(SELLABLE_RATES, SELLING)).toThrow("PATI-TARTE-1");
     });
 
     it("publie dès que chaque déclinaison active est étiquetée", () => {
       const product = declared([{ allergens: ["gluten"] }]);
-      product.activate(SELLABLE_RATES, "both", "ratio_ttc");
+      product.activate(SELLABLE_RATES, SELLING);
       expect(product.status).toBe("published");
     });
 
@@ -191,7 +196,7 @@ describe("l’agrégat Product", () => {
      */
     it("traite « aucun allergène » comme une fiche déclarée", () => {
       const product = declared([{ allergens: [] }]);
-      product.activate(SELLABLE_RATES, "both", "ratio_ttc");
+      product.activate(SELLABLE_RATES, SELLING);
       expect(product.status).toBe("published");
     });
 
@@ -201,14 +206,14 @@ describe("l’agrégat Product", () => {
         { allergens: ["gluten"] },
         { allergens: null, isDiscontinued: true },
       ]);
-      product.activate(SELLABLE_RATES, "both", "ratio_ttc");
+      product.activate(SELLABLE_RATES, SELLING);
       expect(product.status).toBe("published");
     });
 
     it("refuse de publier un produit archivé — le restaurer d’abord", () => {
       const product = declared([{ allergens: ["gluten"] }]);
       product.archive();
-      expect(() => product.activate(SELLABLE_RATES, "both", "ratio_ttc")).toThrow(
+      expect(() => product.activate(SELLABLE_RATES, SELLING)).toThrow(
         ArchivedProductNotPublishableError,
       );
     });
@@ -248,7 +253,7 @@ describe("l’agrégat Product", () => {
     it("publie une déclinaison qui déclare ses allergènes et AUCUNE valeur", () => {
       const product = declared([{ allergens: ["gluten"], nutrition: null }]);
 
-      product.activate(SELLABLE_RATES, "both", "ratio_ttc");
+      product.activate(SELLABLE_RATES, SELLING);
 
       expect(product.status).toBe("published");
     });
@@ -257,7 +262,7 @@ describe("l’agrégat Product", () => {
     it("publie sur « aucun allergène » sans le moindre tableau nutritionnel", () => {
       const product = declared([{ allergens: [], nutrition: null }]);
 
-      product.activate(SELLABLE_RATES, "both", "ratio_ttc");
+      product.activate(SELLABLE_RATES, SELLING);
 
       expect(product.status).toBe("published");
     });
@@ -274,9 +279,7 @@ describe("l’agrégat Product", () => {
         { allergens: null, nutrition: { ...NO_VALUES, energyKcal: 410, saltG: 2 } },
       ]);
 
-      expect(() => product.activate(SELLABLE_RATES, "both", "ratio_ttc")).toThrow(
-        ProductNotPublishableError,
-      );
+      expect(() => product.activate(SELLABLE_RATES, SELLING)).toThrow(ProductNotActivatableError);
       expect(product.status).toBe("draft");
     });
 
@@ -284,32 +287,38 @@ describe("l’agrégat Product", () => {
     it("nomme la référence en cause et le geste de sortie", () => {
       const product = declared([{ allergens: null, nutrition: { ...NO_VALUES, energyKcal: 410 } }]);
 
-      expect(() => product.activate(SELLABLE_RATES, "both", "ratio_ttc")).toThrow("PATI-TARTE-1");
-      expect(() => product.activate(SELLABLE_RATES, "both", "ratio_ttc")).toThrow(/Allergènes/);
+      expect(() => product.activate(SELLABLE_RATES, SELLING)).toThrow("PATI-TARTE-1");
+      expect(() => product.activate(SELLABLE_RATES, SELLING)).toThrow(/Allergènes/);
     });
 
     /**
-     * Une seule déclinaison muette suffit à refuser, et c'est elle qu'on nomme
-     * — pas celle qui est en règle. Un produit à six déclinaisons se corrige
-     * autrement.
+     * 🔴 **Lot 2b (2b3) : une déclinaison muette n'empêche plus d'activer**
+     * dès qu'une autre est complète. Elle n'est pas vendue pour autant : la
+     * projection des faits et l'envoi actuel (`variant_sans_allergenes`)
+     * l'écartent. Ce test remplace « une seule déclinaison muette suffit à
+     * refuser », qui était la règle d'avant l'écart par déclinaison.
      */
-    it("ne nomme que les déclinaisons réellement muettes", () => {
+    it("active dès qu’une déclinaison est complète, même si une autre est muette", () => {
       const product = declared([
         { allergens: ["gluten"] },
         { allergens: null, nutrition: { ...NO_VALUES, saltG: 2 } },
       ]);
 
-      expect(() => product.activate(SELLABLE_RATES, "both", "ratio_ttc")).toThrow("PATI-TARTE-2");
-      expect(() => product.activate(SELLABLE_RATES, "both", "ratio_ttc")).not.toThrow(
-        /PATI-TARTE-1/,
-      );
+      expect(product.activate(SELLABLE_RATES, SELLING)).toBe(true);
+      expect(product.status).toBe("published");
+    });
+
+    it("refuse quand TOUTES sont muettes, et les nomme toutes", () => {
+      const product = declared([{ allergens: null }, { allergens: null }]);
+
+      expect(() => product.activate(SELLABLE_RATES, SELLING)).toThrow(/PATI-TARTE-1.*PATI-TARTE-2/);
     });
   });
 
   describe("dépublier", () => {
     it("ramène en brouillon, pas aux archives", () => {
       const product = declared([{ allergens: [] }]);
-      product.activate(SELLABLE_RATES, "both", "ratio_ttc");
+      product.activate(SELLABLE_RATES, SELLING);
       product.deactivate();
       expect(product.status).toBe("draft");
     });

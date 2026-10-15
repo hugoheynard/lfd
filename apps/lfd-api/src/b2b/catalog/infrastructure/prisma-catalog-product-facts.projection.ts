@@ -3,9 +3,12 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { Clock } from "../../../platform/time/clock.js";
-import type { ReceivedCatalogProduct } from "../domain/catalog-product-facts.js";
+import type {
+  ReceivedCatalogItem,
+  ReceivedCatalogProduct,
+} from "../domain/catalog-product-facts.js";
 import type { PimFacts } from "../domain/entities/catalog-item.js";
-import type { CatalogCategoryFacts } from "../domain/ports/catalog-category.projection.js";
+import type { ReceivedCatalogFamily } from "../domain/ports/catalog-family-facts.projection.js";
 import { CatalogProductFactsProjection } from "../domain/ports/catalog-product-facts.projection.js";
 import type { CatalogAudience } from "../domain/served-to.js";
 import { pimFactsColumns } from "./catalog-item-columns.js";
@@ -21,9 +24,11 @@ import { STILL_SOLD } from "./sellable-filter.js";
  * colonnes reçues du référentiel, rien d'autre. Les colonnes viennent de
  * `pimFactsColumns`, la liste partagée avec l'agrégat.
  *
- * Les limites de commande ne sont pas réécrites sur un article existant : ce
- * sont des RÈGLES globales qui voyagent à part (C3, lot 4) — les remettre à
- * `null` ici effacerait ce que le push a posé.
+ * Les limites de commande ne sont pas écrites ici sur un article existant : ce
+ * sont des RÈGLES globales qui voyagent à part (C3, `pim.catalog_rules_changed`
+ * depuis le lot 2b), et le récepteur les descend après cette écriture
+ * (`OrderLimitsRefresher`). Les remettre à `null` ici effacerait ce que le push
+ * a posé quand aucune règle n'a encore été reçue.
  */
 @Injectable()
 export class PrismaCatalogProductFactsProjection extends CatalogProductFactsProjection {
@@ -58,7 +63,7 @@ export class PrismaCatalogProductFactsProjection extends CatalogProductFactsProj
     return written > 0;
   }
 
-  async ensureFamily(family: CatalogCategoryFacts): Promise<void> {
+  async ensureFamily(family: ReceivedCatalogFamily): Promise<void> {
     // `skipDuplicates` = `ON CONFLICT DO NOTHING` : une famille connue n'est
     // jamais réécrite d'ici, son fait à elle s'en charge sous son numéro.
     await this.prisma.catalogCategory.createMany({
@@ -71,20 +76,22 @@ export class PrismaCatalogProductFactsProjection extends CatalogProductFactsProj
           position: family.position,
           vatRatePercent: family.vatRatePercent,
           receivedAt: family.receivedAt,
+          audience: family.audience,
+          withdrawnAt: family.archived ? family.receivedAt : null,
         },
       ],
       skipDuplicates: true,
     });
   }
 
-  async putOnSale(items: readonly PimFacts[], audience: CatalogAudience): Promise<void> {
+  async putOnSale(items: readonly ReceivedCatalogItem[], audience: CatalogAudience): Promise<void> {
     if (items.length === 0) {
       return;
     }
     for (const facts of items) {
       const { orderLimitDaysBefore, orderLimitTime, orderLimitGraceMinutes, ...columns } =
         pimFactsColumns(facts);
-      const row = { ...columns, audience, withdrawnAt: null };
+      const row = { ...columns, audience, variantId: facts.variantId, withdrawnAt: null };
       await this.prisma.catalogItem.upsert({
         where: { sku: facts.sku },
         create: {

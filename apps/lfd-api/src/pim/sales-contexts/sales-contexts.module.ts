@@ -7,6 +7,7 @@ import { ListActiveSalesContextsHandler } from "./application/list-active-sales-
 import { ListSalesContextsHandler } from "./application/list-sales-contexts.js";
 import { RemoveSalesContextHandler } from "./application/remove-sales-context.js";
 import { UpdateSalesContextHandler } from "./application/update-sales-context.js";
+import { ActiveSalesContextsReader } from "./domain/ports/active-sales-contexts.reader.js";
 import { SalesContextRegistry } from "./domain/ports/sales-context.registry.js";
 import { SalesContextRepository } from "./domain/ports/sales-context.repository.js";
 import { SalesContextController } from "./http/sales-context.controller.js";
@@ -53,8 +54,11 @@ import { PrismaSalesContextRepository } from "./infrastructure/prisma-sales-cont
     ListSalesContextsHandler,
     { provide: SalesContextRegistry, useClass: PrismaSalesContextRegistry },
     { provide: SalesContextRepository, useClass: PrismaSalesContextRepository },
+    // Le port étroit (ISP) : la même instance, vue par ceux qui ne lisent que
+    // les contextes en service — la règle de complétude des fiches.
+    { provide: ActiveSalesContextsReader, useExisting: SalesContextRegistry },
   ],
-  exports: [SalesContextRegistry],
+  exports: [SalesContextRegistry, ActiveSalesContextsReader],
 })
 export class SalesContextsModule implements OnModuleInit {
   private readonly logger = new Logger(SalesContextsModule.name);

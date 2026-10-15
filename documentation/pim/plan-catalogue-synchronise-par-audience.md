@@ -390,6 +390,31 @@ ci-dessus :**
 
 **2b — la bascule**, une fois 2a en service et l'aperçu de bascule relu par Hugo
 
+> ✅ **Bâti le 2026-10-15 sauf 2b4 (l'ouverture, geste de Hugo), non commité à
+> l'écriture de ce bandeau.** Écarts au texte, tous à relire :
+>
+> - **une seule règle de complétude** (`variantGaps`, à côté de l'activation dans le domaine de la fiche), appelée par
+>   l'activation et par `catalog-facts.ts` : prix public, allergènes, prix pro
+>   résolu par `proPriceOf`, un taux pour chaque `SalesContext` en service — et
+>   le `b2b` toujours, même s'il était mis hors service (`price_millicents`
+>   `NOT NULL`). Sans rapport pro réglé, l'activation est désormais refusée
+>   (`pro_price_rule`) — elle lisait `ratio_ttc` jusque-là ;
+> - **2b3 n'était pas sûr avec le push** : `projection.ts` n'écartait pas une
+>   déclinaison sans allergènes (il ne regarde même pas le statut). Il l'écarte
+>   désormais, motif `variant_sans_allergenes`, testé en dernier pour qu'aucun
+>   autre motif ne change ; l'empreinte de parité `ratio_ttc` est inchangée ;
+> - **2b1** : `POST /pim/channels/b2b/audience-switch`, qui passe par
+>   `DeactivateProductCommand` fiche par fiche (le dépôt des fiches ne sort pas
+>   du catalogue) ; l'aperçu gagne `activeIncomplete` ;
+> - **les limites en règles** : `pim.catalog_rules_changed` (verrou consultatif
+>   - numéro), rangé dans `public.catalog_rules`, descendu sur les articles en
+>     vente par les trois récepteurs. Il a fallu `catalog_items.variant_id` (une
+>     règle de rang « déclinaison » vise un identifiant que la plateforme ne
+>     rangeait pas) ; « réémettre tout » émet les règles en dernier ;
+> - **la famille** : `catalog_categories.withdrawn_at` et `audience`
+>   (`20261015400000`) ; une restauration remet la date à `NULL`.
+> - le geste est au runbook (« Basculer le catalogue vers les faits »).
+
 | #   | Quoi                                                                                                                 |
 | --- | -------------------------------------------------------------------------------------------------------------------- |
 | 2b1 | Commande `ApplyAudienceSwitch` : désactive les fiches que l'aperçu liste (H7), journalisé par fiche.                 |
@@ -464,7 +489,7 @@ ont été ajoutés, les afficher dans la boutique ».
 Ouvert avant d'écrire : `packages/pim-contracts/src/accounting-rules.ts`
 (`PRO_PRICE_METHODS = ["ratio_ttc"]`, `proPriceOf` — « l'unique porte » du
 prix pro, qui annonce elle-même le `switch` « avec la deuxième méthode »),
-`projection.ts:228-247` et `catalog-facts.ts:209-215` (les deux appelants côté fil), `product.prisma`
+`projection.ts:228-247` et `catalog-facts.ts` (`sellableVariant`) (les deux appelants côté fil), `product.prisma`
 (`priceCents`, `pricingFollowsDefault` sur la déclinaison).
 
 **Cinq décimales = des millicentimes.** 10⁻⁵ € est l'unité que le fil et
@@ -487,7 +512,7 @@ entier, jamais un flottant.
   fait de changement de méthode valide (l. 209). Sans elle, la bascule de
   méthode échoue à la journalisation.
 - **Cinq appelants de `proPriceOf`** (BLOQUANT) : `projection.ts:242`,
-  `catalog-facts.ts:213`, `accounting-rules-page.ts:217` et `:254`,
+  `catalog-facts.ts` (`sellableVariant`), `accounting-rules-page.ts:217` et `:254`,
   `product-form-store.ts:887` et `:916`. Nouvelle signature :
   `proPriceOf(publicTtcCents, policy, articleVatPercent, enteredHtMillicents: number | null)`.
   Dans `catalog-facts.ts`, `gapsOf` gagne `pro_price` **avant** que

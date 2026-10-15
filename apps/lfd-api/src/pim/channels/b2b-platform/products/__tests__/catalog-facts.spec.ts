@@ -8,6 +8,7 @@ import {
 } from "../../../../catalogue/product/application/__tests__/audience-doubles.js";
 import type { CatalogFamilyRecord } from "../../../../catalogue/shared/domain/ports/catalog-facts.reader.js";
 import type { CategoryVatPercents } from "../../../../catalogue/shared/domain/ports/catalogue-reader.js";
+import type { CompletenessRules } from "../../../../catalogue/product/domain/services/variant-completeness.js";
 import { projectFamilyFact, projectProductFact, type ProductFactInput } from "../catalog-facts.js";
 
 /**
@@ -17,6 +18,8 @@ import { projectFamilyFact, projectProductFact, type ProductFactInput } from "..
  */
 
 const POLICY: ProPricePolicy = { method: "ratio_ttc", ratioBp: 10_000 };
+/** Le seul contexte b2b en service : la fiche par défaut est complète. */
+const B2B_ONLY: CompletenessRules = { activeContextKeys: ["b2b"], policy: POLICY };
 const PRO_ONLY: CategoryVatPercents = { b2b: 5.5 };
 const BOTH_CONTEXTS: CategoryVatPercents = { b2b: 5.5, takeaway: 5.5 };
 const NO_ALLERGEN_REFERENCE = IncoProjector.from([], "fr");
@@ -41,7 +44,7 @@ function input(over: Partial<ProductFactInput> = {}): ProductFactInput {
     family: family(),
     familyPercents: PRO_ONLY,
     percents: PRO_ONLY,
-    policy: POLICY,
+    rules: B2B_ONLY,
     inco: NO_ALLERGEN_REFERENCE,
     showcase: undefined,
     ...over,
@@ -71,12 +74,12 @@ describe("projectProductFact", () => {
     expect(body.gaps).toEqual({ "PAT-7-1": ["allergens"] });
   });
 
-  it("nomme chaque manque : prix, rapport pro, taux de chaque contexte servi", () => {
+  it("nomme chaque manque : prix, rapport pro, taux de chaque contexte en service", () => {
     const body = projectProductFact(
       input({
         product: tarte({ audience: "both", variants: [bareVariant()] }),
         percents: {},
-        policy: null,
+        rules: { activeContextKeys: ["b2b", "takeaway"], policy: null },
       }),
     );
 
@@ -98,13 +101,22 @@ describe("projectProductFact", () => {
     expect(body.gaps).toEqual({ "PAT-7-1": ["vat:b2b"] });
   });
 
-  it("n'exige le taux à emporter que si le public est servi", () => {
-    expect(projectProductFact(input()).gaps).toEqual({});
+  /**
+   * 🔴 La règle du lot 2b (Hugo, 2026-10-15) : un taux pour CHAQUE contexte en
+   * service, quelle que soit l'audience — changer d'audience ne doit jamais
+   * rendre une fiche invendable.
+   */
+  it("exige le taux de chaque contexte en service, même hors de l'audience", () => {
+    const allServed: CompletenessRules = {
+      activeContextKeys: ["b2b", "takeaway", "eatIn"],
+      policy: POLICY,
+    };
+
+    expect(projectProductFact(input({ rules: allServed })).gaps).toEqual({
+      "PAT-7-1": ["vat:takeaway", "vat:eatIn"],
+    });
     expect(
-      projectProductFact(input({ product: tarte({ audience: "both" }), percents: PRO_ONLY })).gaps,
-    ).toEqual({ "PAT-7-1": ["vat:takeaway"] });
-    expect(
-      projectProductFact(input({ product: tarte({ audience: "both" }), percents: BOTH_CONTEXTS }))
+      projectProductFact(input({ rules: allServed, percents: { ...BOTH_CONTEXTS, eatIn: 10 } }))
         .gaps,
     ).toEqual({});
   });
@@ -178,7 +190,7 @@ describe("projectProductFact — sous la méthode entered", () => {
   const ENTERED: ProPricePolicy = { method: "entered", ratioBp: 10_000 };
 
   it("range une déclinaison sans prix pro saisi dans les manques, sans lever", () => {
-    const body = projectProductFact(input({ policy: ENTERED }));
+    const body = projectProductFact(input({ rules: { ...B2B_ONLY, policy: ENTERED } }));
 
     expect(body.variants).toEqual([]);
     expect(body.gaps).toEqual({ "PAT-7-1": ["pro_price"] });
@@ -187,7 +199,7 @@ describe("projectProductFact — sous la méthode entered", () => {
   it("vend au HT saisi, au millicentime", () => {
     const body = projectProductFact(
       input({
-        policy: ENTERED,
+        rules: { ...B2B_ONLY, policy: ENTERED },
         product: tarte({
           status: "published",
           variants: [{ ...SELLABLE_VARIANT, proPriceMillicents: 2_712_345 }],

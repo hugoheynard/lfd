@@ -3,8 +3,10 @@
  *
  * Lot 1 de `documentation/pim/plan-catalogue-synchronise-par-audience.md` :
  * l'audience se règle par l'API et se relit (colonnes `audience`, `CHECK` en
- * base), activer exige un prix et un taux par clientèle, et l'aperçu de
- * bascule mesure ce que la bascule toucherait — sans rien écrire.
+ * base), et l'aperçu de bascule mesure ce que la bascule toucherait — sans
+ * rien écrire. Lot 2b : activer exige UNE déclinaison complète (un taux pour
+ * chaque contexte en service, quelle que soit l'audience), et la bascule
+ * désactive les fiches publiées invisibles — rien d'autre.
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { makeActivatable } from "./pim-sellable.js";
@@ -163,22 +165,51 @@ describe("activer exige un prix et un taux", () => {
     expect((await detailOf(id)).status).toBe("draft");
   });
 
-  it("refuse sans le taux de la clientèle, puis active une fois le taux posé", async () => {
+  /**
+   * 🔴 La règle du lot 2b (Hugo, 2026-10-15) : un taux pour CHAQUE contexte en
+   * service, même hors de l'audience — la famille vend aux pros seuls, et le
+   * taux « sur place » est exigé quand même.
+   */
+  it("refuse sans le taux d'un contexte en service hors de l'audience, puis active", async () => {
     const { id, categoryId } = await aProduct("Croissant");
     await declareNoAllergen(id);
     await makeActivatable(staff, id);
-    // La famille vend aux pros et a son taux `b2b` ; l'ouvrir au public
-    // demande aussi `takeaway`, qu'elle n'a pas.
+    const rates = jsonBody<{ vatByContext: Record<string, string> }>(
+      await staff().get(`${CATEGORIES}/${categoryId}`).expect(200),
+    ).vatByContext;
+    const { eatIn, ...withoutEatIn } = rates;
     await staff()
-      .put(`${CATEGORIES}/${categoryId}/audience`)
-      .send({ audience: "both" })
+      .put(`${CATEGORIES}/${categoryId}/vat`)
+      .send({ vatByContext: withoutEatIn })
       .expect(200);
 
     const refus = await staff().put(`${PRODUCTS}/${id}/publish`).send({}).expect(409);
-    expect(jsonBody<{ message: string }>(refus).message).toContain("takeaway");
+    expect(jsonBody<{ message: string }>(refus).message).toContain("eatIn");
 
-    await staff().put(`${CATEGORIES}/${categoryId}/audience`).send({ audience: "pro" }).expect(200);
+    await staff()
+      .put(`${CATEGORIES}/${categoryId}/vat`)
+      .send({ vatByContext: { ...withoutEatIn, eatIn } })
+      .expect(200);
     await staff().put(`${PRODUCTS}/${id}/publish`).send({}).expect(200);
+    expect((await detailOf(id)).status).toBe("published");
+  });
+
+  /** 2b3 : une déclinaison complète suffit ; sa sœur muette n'est pas vendue. */
+  it("active avec une seule déclinaison complète, l'autre sans allergènes", async () => {
+    const { id } = await aProduct("Croissant");
+    await declareNoAllergen(id);
+    await makeActivatable(staff, id);
+    const added = await staff()
+      .post(`${PRODUCTS}/${id}/variants`)
+      .send({ name: { fr: "Grand format" } })
+      .expect(201);
+    // Détachée des allergènes du défaut : elle n'a plus aucune déclaration.
+    await staff()
+      .put(`${PRODUCTS}/${id}/variants/${jsonBody<{ id: string }>(added).id}/alignment`)
+      .send({ aspect: "allergens", aligned: false });
+
+    await staff().put(`${PRODUCTS}/${id}/publish`).send({}).expect(200);
+
     expect((await detailOf(id)).status).toBe("published");
   });
 });
@@ -216,5 +247,77 @@ describe("l'aperçu de bascule mesure sans écrire", () => {
       expect((await detailOf(id)).status).toBe("published");
     }
     expect((await detailOf(draftBound)).status).toBe("draft");
+  });
+});
+
+describe("la bascule (2b1) désactive les fiches invisibles, et rien d'autre", () => {
+  async function anActiveProduct(name: string): Promise<string> {
+    const { id } = await aProduct(name);
+    await declareNoAllergen(id);
+    await makeActivatable(staff, id);
+    await staff().put(`${PRODUCTS}/${id}/publish`).send({}).expect(200);
+    return id;
+  }
+
+  it("désactive la fiche publiée non liée, garde la vendue, et ne change rien d'autre", async () => {
+    const sold = await anActiveProduct("Vendu");
+    const unbound = await anActiveProduct("Non lié");
+    await staff().put(`/pim/channels/b2b/products/${sold}`).send({ published: true }).expect(200);
+    const before = await staff().get(`${PRODUCTS}/${unbound}`).expect(200);
+    await ctx.drain();
+    const journalBefore = await ctx.prisma.activityEvent.count();
+
+    const applied = jsonBody<{ deactivated: { id: string }[]; failed: { id: string }[] }>(
+      await staff().post("/pim/channels/b2b/audience-switch").send({}).expect(200),
+    );
+
+    expect(applied.deactivated.map((entry) => entry.id)).toEqual([unbound]);
+    expect(applied.failed).toEqual([]);
+    expect((await detailOf(sold)).status).toBe("published");
+    // Seul le statut a bougé : nom, prix, déclinaisons, audience intacts. Les
+    // horodatages suivent le geste, comme pour toute désactivation.
+    const neutral = { status: "x", updatedAt: "x", contentUpdatedAt: "x" };
+    const after = await staff().get(`${PRODUCTS}/${unbound}`).expect(200);
+    expect({ ...jsonBody<Record<string, unknown>>(after), ...neutral }).toEqual({
+      ...jsonBody<Record<string, unknown>>(before),
+      ...neutral,
+    });
+    // Un fait de journal par fiche désactivée, et aucun autre.
+    await ctx.drain();
+    expect(await ctx.prisma.activityEvent.count()).toBe(journalBefore + 1);
+    const unpublished = await ctx.prisma.activityEvent.findMany({
+      where: { type: "product.unpublished" },
+      select: { subjectId: true },
+    });
+    expect(unpublished).toEqual([{ subjectId: unbound }]);
+    // Le lien au canal de la fiche vendue n'a pas bougé.
+    const preview = jsonBody<{ publishedUnbound: { id: string }[] }>(
+      await staff().get(PREVIEW).expect(200),
+    );
+    expect(preview.publishedUnbound).toEqual([]);
+  });
+
+  it("l'aperçu nomme les fiches actives incomplètes selon la règle du lot 2b", async () => {
+    const id = await anActiveProduct("Complet");
+    const { categoryId } = await detailOf(id);
+    const rates = jsonBody<{ vatByContext: Record<string, string> }>(
+      await staff().get(`${CATEGORIES}/${categoryId}`).expect(200),
+    ).vatByContext;
+    const withoutEatIn = Object.fromEntries(
+      Object.entries(rates).filter(([context]) => context !== "eatIn"),
+    );
+    await staff()
+      .put(`${CATEGORIES}/${categoryId}/vat`)
+      .send({ vatByContext: withoutEatIn })
+      .expect(200);
+
+    const preview = jsonBody<{
+      activeIncomplete: { id: string; keepsSelling: boolean; gaps: Record<string, string[]> }[];
+    }>(await staff().get(PREVIEW).expect(200));
+
+    expect(preview.activeIncomplete.map((entry) => [entry.id, entry.keepsSelling])).toEqual([
+      [id, false],
+    ]);
+    expect(Object.values(preview.activeIncomplete[0]?.gaps ?? {})).toEqual([["vat:eatIn"]]);
   });
 });

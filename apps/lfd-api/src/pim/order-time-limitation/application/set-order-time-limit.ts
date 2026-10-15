@@ -6,6 +6,7 @@ import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { UuidGenerator } from "../../../platform/id/uuid-generator.js";
 import { PIM_EVENTS, PimJournal } from "../../journal/pim-journal.js";
 import { OrderTimeLimit } from "../domain/entities/order-time-limit.js";
+import { CatalogRulesEmitter } from "../domain/ports/catalog-rules.emitter.js";
 import { LimitScopeNamer } from "../domain/ports/limit-scope.namer.js";
 import { OrderTimeLimitRepository } from "../domain/ports/order-time-limit.repository.js";
 import { limitScopeLabel } from "../domain/services/limit-scope-label.js";
@@ -27,6 +28,9 @@ export class SetOrderTimeLimitCommand {
  * quand il en faut un neuf : remplacer garde l'identifiant existant, sans quoi
  * un simple changement d'heure ferait disparaître la ligne et en créerait une
  * autre sous les yeux de qui la regardait.
+ *
+ * Émet `pim.catalog_rules_changed` dans sa transaction (lot 2b) : la
+ * plateforme applique l'échelle entière, comme l'ingestion du push.
  */
 @CommandHandler(SetOrderTimeLimitCommand)
 export class SetOrderTimeLimitHandler implements ICommandHandler<SetOrderTimeLimitCommand, string> {
@@ -36,6 +40,7 @@ export class SetOrderTimeLimitHandler implements ICommandHandler<SetOrderTimeLim
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
     private readonly scopes: LimitScopeNamer,
+    private readonly rules: CatalogRulesEmitter,
   ) {}
 
   async execute(command: SetOrderTimeLimitCommand): Promise<string> {
@@ -73,6 +78,9 @@ export class SetOrderTimeLimitHandler implements ICommandHandler<SetOrderTimeLim
         },
       });
       await this.limits.save(limit, ticket);
+      // Les règles relues APRÈS l'écriture, dans la transaction (lot 2b) :
+      // sans effet tant que les faits du catalogue sont fermés.
+      await this.rules.emitRules();
     });
     return limit.id;
   }

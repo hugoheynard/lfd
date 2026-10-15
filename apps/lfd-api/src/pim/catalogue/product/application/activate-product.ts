@@ -2,15 +2,14 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
-import { requireCategory } from "../../category/application/category-support.js";
-import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
 import { CatalogueReader } from "../../shared/domain/ports/catalogue-reader.js";
-import { effectiveAudience } from "../../shared/domain/value-objects/audience.js";
 import type { Product } from "../domain/entities/product.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { requireProduct } from "./product-support.js";
 import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
 import { AccountingRulesReader } from "../../../accounting-rules/domain/ports/accounting-rules.reader.js";
+import { ActiveSalesContextsReader } from "../../../sales-contexts/domain/ports/active-sales-contexts.reader.js";
+import { readCompletenessRules } from "./completeness-support.js";
 
 export class ActivateProductCommand {
   constructor(readonly id: string) {}
@@ -22,15 +21,12 @@ export class ActivateProductCommand {
  * valeur de journal `product.published` restent : le front n'est touché qu'au
  * lot 3, et une valeur de journal ne se renomme pas.
  *
- * Le refus appartient à l'agrégat — allergènes par déclinaison, prix, taux.
- * Le handler ne fait que lui montrer ce qu'il ne voit pas : le taux effectif
- * résolu comme la projection le résout (`CatalogueReader.vatPercents`, la
- * même lecture que `feed-projection.service.ts`), et l'audience effective,
- * qui dépend de la famille.
- *
- * La méthode du prix pro aussi (lot P, P4) : sous `entered`, une déclinaison
- * n'est tarifée qu'avec son prix pro HT saisi. Rien de réglé = `ratio_ttc`,
- * comme le lit `read-accounting-rules.ts`.
+ * Le refus appartient à l'agrégat : au moins une déclinaison complète (lot 2b,
+ * C1). Le handler ne fait que lui montrer ce qu'il ne voit pas : le taux
+ * effectif résolu comme la projection le résout (`CatalogueReader.vatPercents`,
+ * la même lecture que `feed-projection.service.ts`), les contextes de vente en
+ * service et la règle du prix pro (`readCompletenessRules`). L'audience n'y
+ * entre plus : une fiche complète sert tous les contextes en service.
  *
  * ⚠️ Les valeurs nutritionnelles n'entrent pas dans ce refus : le règlement
  * (UE) n° 1169/2011 les exempte dans les deux cas de vente de La Folie Coffee
@@ -40,12 +36,12 @@ export class ActivateProductCommand {
 export class ActivateProductHandler implements ICommandHandler<ActivateProductCommand, void> {
   constructor(
     private readonly products: ProductRepository,
-    private readonly categories: CategoryRepository,
     private readonly catalogue: CatalogueReader,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
     private readonly emitter: CatalogEmitter,
     private readonly accounting: AccountingRulesReader,
+    private readonly contexts: ActiveSalesContextsReader,
   ) {}
 
   async execute(command: ActivateProductCommand): Promise<void> {
@@ -72,14 +68,11 @@ export class ActivateProductHandler implements ICommandHandler<ActivateProductCo
 
   /** Résout ce que la fiche ne voit pas, puis la laisse juger. */
   private async activate(product: Product): Promise<boolean> {
-    const category = await requireCategory(this.categories, product.categoryId);
     const record = product.snapshot();
-    const vat = await this.catalogue.vatPercents([record]);
-    const rules = await this.accounting.read();
-    return product.activate(
-      vat.get(record.id) ?? {},
-      effectiveAudience(product.audience, category.audience),
-      rules?.rules.proPriceMethod.method ?? "ratio_ttc",
-    );
+    const [vat, rules] = await Promise.all([
+      this.catalogue.vatPercents([record]),
+      readCompletenessRules(this.contexts, this.accounting),
+    ]);
+    return product.activate(vat.get(record.id) ?? {}, rules);
   }
 }

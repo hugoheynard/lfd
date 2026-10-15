@@ -692,6 +692,12 @@ async function aDeliverableProduct(): Promise<{ id: string; variantId: string; s
     .put(`${PRODUCTS}/${id}/variants/${variantId}/pricing`)
     .send({ priceCents: 200, weightGrams: null })
     .expect(200);
+  // « Aucun allergène », une déclaration : depuis le lot 2b, l'envoi écarte une
+  // déclinaison sans déclaration (`variant_sans_allergenes`).
+  await staff()
+    .put(`${PRODUCTS}/${id}/variants/${variantId}/allergens`)
+    .send({ allergens: [] })
+    .expect(200);
   await staff().put(`/pim/channels/b2b/products/${id}`).send({ published: true }).expect(200);
   // Sans rapport professionnel, le push refuse plutôt que d'envoyer le plein tarif.
   await staff().put("/pim/accounting-rules/pro-price-ratio").send({ ratioBp: 9_000 }).expect(200);

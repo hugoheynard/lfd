@@ -66,8 +66,9 @@ export async function aDraftFiche(staff: Staff, name: string): Promise<Fiche> {
 
 /**
  * Une fiche ACTIVE, vendue aux deux clientèles : déclaration d'allergènes,
- * prix, taux `b2b` et `takeaway` sur la famille (le comptoir ouvert pour
- * que le taux à emporter s'y pose), rapport pro réglé.
+ * prix, un taux pour chaque contexte en service — `b2b`, `takeaway`, `eatIn`
+ * (le comptoir ouvert aux deux contextes de boutique pour que leurs taux s'y
+ * posent, lot 2b) —, rapport pro réglé.
  */
 export async function anActiveFiche(staff: Staff, name: string): Promise<Fiche> {
   const fiche = await aDraftFiche(staff, name);
@@ -83,7 +84,7 @@ export async function anActiveFiche(staff: Staff, name: string): Promise<Fiche> 
     .send({
       kind: "shop",
       label: `Comptoir ${name}`,
-      contexts: ["takeaway"],
+      contexts: ["takeaway", "eatIn"],
       baseUrl: "",
       tableCount: 0,
     })
@@ -94,11 +95,12 @@ export async function anActiveFiche(staff: Staff, name: string): Promise<Fiche> 
     .send([
       { pointOfSaleId: "pos_b2b", context: "b2b" },
       { pointOfSaleId: jsonBody<{ id: string }>(shop).id, context: "takeaway" },
+      { pointOfSaleId: jsonBody<{ id: string }>(shop).id, context: "eatIn" },
     ])
     .expect(200);
   await staff()
     .put(`${category}/vat`)
-    .send({ vatByContext: { b2b: rateId, takeaway: rateId } })
+    .send({ vatByContext: { b2b: rateId, takeaway: rateId, eatIn: rateId } })
     .expect(200);
   await staff()
     .put(`${PRODUCTS}/${fiche.id}/variants/${variantId}/pricing`)

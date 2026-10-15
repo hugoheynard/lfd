@@ -12,6 +12,9 @@ import { B2bReemitController } from "./products/reemit.controller.js";
 import { B2bMembershipController } from "./membership/membership.controller.js";
 import { AudienceSwitchPreviewController } from "./membership/audience-switch-preview.controller.js";
 import { GetAudienceSwitchPreviewHandler } from "./application/audience-switch-preview.js";
+import { ApplyAudienceSwitchHandler } from "./application/apply-audience-switch.js";
+import { AudienceSwitchController } from "./membership/audience-switch.controller.js";
+import { SalesContextsModule } from "../../sales-contexts/sales-contexts.module.js";
 import { B2bMembershipService } from "./membership/membership.service.js";
 import { DryRunB2bCatalogDriver } from "./products/driver.js";
 import { B2bCatalogFeedPreview } from "./products/feed-preview.js";
@@ -47,12 +50,15 @@ import { B2bCatalogPushService } from "./products/push.service.js";
     AllergensModule,
     // Le port de LECTURE des opérations datées, projetées dans le fil v11.
     OperationsModule,
+    // Les contextes en service : l'aperçu de bascule juge la complétude (2b).
+    SalesContextsModule,
   ],
   controllers: [
     B2bMembershipController,
     B2bPushController,
     B2bProductDeliveryController,
     AudienceSwitchPreviewController,
+    AudienceSwitchController,
     B2bReemitController,
   ],
   providers: [
@@ -62,6 +68,8 @@ import { B2bCatalogPushService } from "./products/push.service.js";
     ReemitCatalogHandler,
     // L'aperçu de la bascule vers l'audience (lot 1, 1f) : lecture seule.
     GetAudienceSwitchPreviewHandler,
+    // Son second temps (2b1) : désactive ce que l'aperçu liste invisible (H7).
+    ApplyAudienceSwitchHandler,
     // La frise. Son port de RETOUR (`B2bDeliveryFactsReader`) n'est pas fourni
     // ici : il est publié par ce module et relié par la racine de composition,
     // seule à connaître les deux côtés du fil.

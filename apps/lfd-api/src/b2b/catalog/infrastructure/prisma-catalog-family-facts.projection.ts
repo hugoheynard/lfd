@@ -1,12 +1,16 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
-import type { CatalogCategoryFacts } from "../domain/ports/catalog-category.projection.js";
-import { CatalogFamilyFactsProjection } from "../domain/ports/catalog-family-facts.projection.js";
+import {
+  CatalogFamilyFactsProjection,
+  type ReceivedCatalogFamily,
+} from "../domain/ports/catalog-family-facts.projection.js";
 
 /**
  * L'adaptateur du récepteur des faits d'une famille : une écriture
- * conditionnée sur `applied_seq`, en une instruction. Jamais de suppression.
+ * conditionnée sur `applied_seq`, en une instruction. Jamais de suppression :
+ * une famille archivée pose `withdrawn_at` (lot 2b), et garde la date du
+ * premier fait qui l'a dite archivée — un fait suivant ne la repousse pas.
  */
 @Injectable()
 export class PrismaCatalogFamilyFactsProjection extends CatalogFamilyFactsProjection {
@@ -14,14 +18,17 @@ export class PrismaCatalogFamilyFactsProjection extends CatalogFamilyFactsProjec
     super();
   }
 
-  async applyIfNewer(family: CatalogCategoryFacts, seq: number): Promise<boolean> {
+  async applyIfNewer(family: ReceivedCatalogFamily, seq: number): Promise<boolean> {
+    const withdrawnAt = family.archived ? family.receivedAt : null;
     // `applied_seq IS NULL` : posée par un push ou apportée par une fiche, la
     // famille n'a encore reçu aucun fait d'elle-même — le premier s'applique.
     const written = await this.prisma.$executeRaw`
       INSERT INTO public.catalog_categories
-        (id, name, slug, parent_id, position, vat_rate_percent, received_at, applied_seq)
+        (id, name, slug, parent_id, position, vat_rate_percent, received_at, applied_seq,
+         audience, withdrawn_at)
       VALUES (${family.id}, ${family.name}, ${family.slug}, ${family.parentId}, ${family.position},
-              ${family.vatRatePercent}, ${family.receivedAt}, ${seq})
+              ${family.vatRatePercent}, ${family.receivedAt}, ${seq},
+              ${family.audience}, ${withdrawnAt})
       ON CONFLICT (id) DO UPDATE SET
         name = EXCLUDED.name,
         slug = EXCLUDED.slug,
@@ -29,7 +36,12 @@ export class PrismaCatalogFamilyFactsProjection extends CatalogFamilyFactsProjec
         position = EXCLUDED.position,
         vat_rate_percent = EXCLUDED.vat_rate_percent,
         received_at = EXCLUDED.received_at,
-        applied_seq = EXCLUDED.applied_seq
+        applied_seq = EXCLUDED.applied_seq,
+        audience = EXCLUDED.audience,
+        withdrawn_at = CASE
+          WHEN EXCLUDED.withdrawn_at IS NULL THEN NULL
+          ELSE COALESCE(public.catalog_categories.withdrawn_at, EXCLUDED.withdrawn_at)
+        END
       WHERE public.catalog_categories.applied_seq IS NULL
          OR public.catalog_categories.applied_seq < EXCLUDED.applied_seq`;
     return written > 0;

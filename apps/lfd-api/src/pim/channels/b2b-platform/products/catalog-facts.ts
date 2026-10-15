@@ -1,16 +1,18 @@
 import type { SyncMedia, SyncVariant } from "@lfd/catalog-sync";
-import { proPriceOf, type ProPricePolicy } from "@lfd/pim-contracts";
+import { proPriceOf } from "@lfd/pim-contracts";
 
 import { TechnicalError } from "../../../../platform/shared/errors/app-error.js";
 import type { IncoProjector } from "../../../allergens/domain/services/inco-projector.js";
 import type { ProductRecord } from "../../../catalogue/product/domain/ports/product.repository.js";
 import type { ProductStatus } from "../../../catalogue/product/domain/entities/product.js";
-import { BILLING_CONTEXT_OF } from "../../../catalogue/product/domain/services/activation-gaps.js";
+import {
+  variantGaps,
+  type CompletenessRules,
+} from "../../../catalogue/product/domain/services/variant-completeness.js";
 import type { CatalogFamilyRecord } from "../../../catalogue/shared/domain/ports/catalog-facts.reader.js";
 import type { CategoryVatPercents } from "../../../catalogue/shared/domain/ports/catalogue-reader.js";
 import {
   effectiveAudience,
-  servedAudiences,
   type Audience,
 } from "../../../catalogue/shared/domain/value-objects/audience.js";
 import { projectVariant, vatOf, type Showcase } from "./projection.js";
@@ -27,19 +29,6 @@ const STATUS_OF: Readonly<Record<ProductStatus, CatalogEntryStatus>> = {
   published: "active",
   archived: "archived",
 };
-
-/** Ce qui manque à une déclinaison pour se vendre. */
-export const PRICE_GAP = "price";
-export const ALLERGENS_GAP = "allergens";
-/** Le rapport pro n'est pas réglé : aucun prix pro ne se calcule. */
-export const PRO_PRICE_RULE_GAP = "pro_price_rule";
-/**
- * Sous la méthode `entered` (lot P, P4), la déclinaison n'a pas de prix pro HT
- * saisi : elle n'est jamais vendue, et la porte n'est pas appelée.
- */
-export const PRO_PRICE_GAP = "pro_price";
-/** Un taux manque au contexte nommé — `vat:b2b`, `vat:takeaway`. */
-export const VAT_GAP_PREFIX = "vat:";
 
 /** La famille telle qu'un fait la porte — celle d'une fiche, ou la sienne. */
 export interface CatalogFamilyFactBody {
@@ -78,8 +67,9 @@ export interface CatalogProductFactBody {
   readonly audience: Audience;
   readonly product: CatalogProductHead;
   /**
-   * Les déclinaisons **complètes** — non arrêtées, avec prix, taux et
-   * allergènes déclarés. Ce sont les seules qu'une fiche ACTIVE vend ; une
+   * Les déclinaisons **complètes** au sens de `variantGaps` — non arrêtées,
+   * avec prix, prix pro résolu, allergènes déclarés et un taux par contexte en
+   * service. Ce sont les seules qu'une fiche ACTIVE vend ; une
    * fiche inactive les porte aussi, et la plateforme ne les vend pas.
    */
   readonly variants: readonly SyncVariant[];
@@ -96,8 +86,12 @@ export interface ProductFactInput {
   readonly familyPercents: CategoryVatPercents;
   /** Les taux effectifs de la fiche (dérogation par-dessus la famille). */
   readonly percents: CategoryVatPercents;
-  /** `null` = le rapport pro n'est pas réglé : rien ne se vend aux pros. */
-  readonly policy: ProPricePolicy | null;
+  /**
+   * Les contextes en service et la règle du prix pro — ce que la règle de
+   * complétude partagée avec l'activation (`variantGaps`) ne voit pas d'une
+   * fiche. `policy: null` = le rapport pro n'est pas réglé : rien ne se vend.
+   */
+  readonly rules: CompletenessRules;
   readonly inco: IncoProjector;
   readonly showcase: Showcase | undefined;
 }
@@ -141,7 +135,7 @@ export function projectProductFact(input: ProductFactInput): CatalogProductFactB
     if (variant.isDiscontinued) {
       continue;
     }
-    const missing = gapsOf(variant, input, audience);
+    const missing = variantGaps(variant, input.percents, input.rules);
     if (missing.length > 0) {
       gaps[variant.sku] = missing;
       continue;
@@ -172,52 +166,18 @@ export function projectProductFact(input: ProductFactInput): CatalogProductFactB
 type VariantOf = ProductRecord["variants"][number];
 
 /**
- * Ce qui manque à une déclinaison, dans l'ordre où l'écran le dira.
- *
- * 🔴 **Le taux `b2b` est exigé quelle que soit l'audience.** La plateforme
- * range un article vendable avec son prix PRO hors taxe
- * (`catalog_items.price_millicents`, `NOT NULL`), et ce prix ne se calcule pas
- * sans lui. Une fiche « public » sans taux `b2b` reste donc dans `gaps` : on
- * ne fabrique pas un prix pro que personne n'a décidé pour pouvoir écrire la
- * ligne.
- */
-function gapsOf(variant: VariantOf, input: ProductFactInput, audience: Audience): string[] {
-  const missing: string[] = [];
-  if (variant.priceCents === null) {
-    missing.push(PRICE_GAP);
-  }
-  if (variant.allergenSheet === null) {
-    missing.push(ALLERGENS_GAP);
-  }
-  if (input.policy === null) {
-    missing.push(PRO_PRICE_RULE_GAP);
-  } else if (input.policy.method === "entered" && variant.proPriceMillicents === null) {
-    missing.push(PRO_PRICE_GAP);
-  }
-  const contexts = new Set([
-    BILLING_CONTEXT_OF.pro,
-    ...servedAudiences(audience).map((served) => BILLING_CONTEXT_OF[served]),
-  ]);
-  for (const context of contexts) {
-    if (input.percents[context] === undefined) {
-      missing.push(`${VAT_GAP_PREFIX}${context}`);
-    }
-  }
-  return missing;
-}
-
-/**
  * Une déclinaison sans manque, convertie comme le push la convertit.
  *
  * @throws {IncompleteVariantProjectedError} appelée sur une déclinaison
- *   incomplète — faute de cette projection, `gapsOf` devait l'avoir écartée.
+ *   incomplète — faute de cette projection, `variantGaps` devait l'avoir écartée.
  */
 function sellableVariant(variant: VariantOf, input: ProductFactInput): SyncVariant {
   const vatRatePercent = vatOf(input.percents);
+  const { policy } = input.rules;
   const proPrice =
-    variant.priceCents === null || input.policy === null
+    variant.priceCents === null || policy === null
       ? null
-      : proPriceOf(variant.priceCents, input.policy, vatRatePercent, variant.proPriceMillicents);
+      : proPriceOf(variant.priceCents, policy, vatRatePercent, variant.proPriceMillicents);
   if (proPrice === null || variant.priceCents === null) {
     throw new IncompleteVariantProjectedError(variant.sku);
   }

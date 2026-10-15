@@ -34,6 +34,15 @@ export class PrismaPublicationSequence extends PublicationSequence {
     return rows.map((row) => row.id);
   }
 
+  async lockRules(): Promise<void> {
+    // Un verrou CONSULTATIF de transaction plutôt qu'un verrou de ligne : les
+    // règles sont plusieurs lignes, dont aucune n'existe peut-être encore, et
+    // retirer la dernière ne doit pas laisser l'émission sans verrou. Libéré
+    // à la fin de la transaction du geste.
+    await this.prisma
+      .$queryRaw`SELECT pg_advisory_xact_lock(hashtext('pim.catalog_rules'))::text AS locked`;
+  }
+
   async next(): Promise<number> {
     const [row] = await this.prisma.$queryRaw<{ seq: bigint }[]>`
       SELECT nextval('pim.catalog_publication_seq') AS seq`;

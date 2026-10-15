@@ -11,6 +11,7 @@ import {
 } from "../../../../platform/outbox/durable-handler.js";
 import { itemsOnSale } from "../../domain/catalog-product-facts.js";
 import { CatalogProductFactsProjection } from "../../domain/ports/catalog-product-facts.projection.js";
+import { OrderLimitsRefresher } from "../order-limits-refresher.service.js";
 import { receivedFamilyOf, receivedProductOf } from "./catalog-fact-mapping.js";
 
 /** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
@@ -29,7 +30,10 @@ export const PROJECT_CATALOG_PRODUCT = "catalog.project-catalog-product";
  *    rejoué, ou livré deux fois, est inerte ;
  * 3. les déclinaisons vendables d'une fiche active sont mises en vente ;
  * 4. tout autre article de la fiche encore en vente est retiré — fiche
- *    inactive ou archivée, déclinaison devenue incomplète, SKU renommé.
+ *    inactive ou archivée, déclinaison devenue incomplète, SKU renommé ;
+ * 5. les limites de commande des articles en vente de la fiche sont
+ *    redescendues de l'échelle reçue (lot 2b) — un article neuf reçoit les
+ *    siennes. Sans échelle reçue, rien ne bouge.
  *
  * ## Ce qu'il ne fait jamais
  *
@@ -47,7 +51,10 @@ export const PROJECT_CATALOG_PRODUCT = "catalog.project-catalog-product";
 @Injectable()
 @DurableHandler({ type: PIM_CATALOG_PRODUCT_CHANGED, subscriber: PROJECT_CATALOG_PRODUCT })
 export class OnCatalogProductChangedHandler implements DurableSubscriber {
-  constructor(private readonly projection: CatalogProductFactsProjection) {}
+  constructor(
+    private readonly projection: CatalogProductFactsProjection,
+    private readonly limits: OrderLimitsRefresher,
+  ) {}
 
   async handle(delivery: DurableDelivery): Promise<void> {
     const fact = CatalogProductChangedFact.fromPayload(delivery.payload);
@@ -65,5 +72,6 @@ export class OnCatalogProductChangedHandler implements DurableSubscriber {
       onSale.map((item) => item.sku),
       product.receivedAt,
     );
+    await this.limits.refresh(product.productId);
   }
 }

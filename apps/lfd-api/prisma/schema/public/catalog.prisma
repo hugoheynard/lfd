@@ -113,6 +113,16 @@ model CatalogCategory {
   /// un fait : un push l'a posée, ou une fiche l'a apportée.
   appliedSeq BigInt? @map("applied_seq")
 
+  /// **Archivée au référentiel** (lot 2b) : une date, jamais une suppression —
+  /// `catalog_items` la référence en cascade, et la supprimer emporterait ses
+  /// articles et leurs décisions. `NULL` = en service, ou jamais reçue par un
+  /// fait. Écrite par le seul fait famille ; remise à `NULL` à la restauration.
+  withdrawnAt DateTime? @map("withdrawn_at")
+
+  /// À qui la famille vend (`pro`, `public`, `both`), telle que son fait le
+  /// dit (lot 2b). `NULL` = jamais reçue par un fait.
+  audience String?
+
   @@map("catalog_categories")
   @@schema("public")
 }
@@ -322,6 +332,11 @@ model CatalogItem {
   /// fiche (lot 2a). `NULL` = jamais reçu par un fait, lu `both` — ce que fait
   /// tout article avant l'audience. Lu par `servedTo`, et lui seul.
   audience String?
+
+  /// L'identifiant de la déclinaison au référentiel, posé par le fait de sa
+  /// fiche (lot 2b) : une règle de limite de commande de rang « déclinaison »
+  /// le vise. `NULL` = jamais reçu par un fait (le push ne l'écrit pas).
+  variantId String? @map("variant_id")
 
   override CatalogItemOverride?
 
@@ -542,5 +557,23 @@ model CatalogEntry {
 
   @@index([categoryId])
   @@map("catalog_entries")
+  @@schema("public")
+}
+
+/// **Les règles globales du catalogue, telles que le référentiel les a
+/// apportées** (lot 2b, `documentation/pim/plan-catalogue-synchronise-par-audience.md`).
+///
+/// Une ligne par sorte de règle — aujourd'hui l'échelle des limites de
+/// commande (`order_time_limits`), au format du fil (`SyncOrderTimeLimitRule[]`).
+/// Écrite par le seul récepteur de `pim.catalog_rules_changed`, sous condition
+/// `applied_seq` ; ce sont les RÈGLES qui traversent, la plateforme les descend
+/// sur chaque article. Vide = aucun fait reçu : les limites du push tiennent.
+model CatalogRules {
+  kind       String   @id
+  rules      Json
+  appliedSeq BigInt   @map("applied_seq")
+  receivedAt DateTime @map("received_at")
+
+  @@map("catalog_rules")
   @@schema("public")
 }

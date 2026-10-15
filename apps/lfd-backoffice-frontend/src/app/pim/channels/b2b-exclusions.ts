@@ -41,6 +41,8 @@ export const REASON_LABELS: Readonly<Record<B2bExclusionReason, string>> = {
   variant_sans_taux: 'prix sans taux B2B',
   // Lot P : sous « Prix saisi », c'est le prix pro HT de la fiche qui manque.
   variant_sans_prix_pro: 'pas de prix pro HT saisi',
+  // Lot 2b : sans déclaration d'allergènes, la déclinaison ne part plus.
+  variant_sans_allergenes: 'pas de déclaration d’allergènes',
   // Un article d'une opération qui ne part pas dans l'envoi : l'opération
   // traverse sans lui (plan des opérations datées, D10).
   operation_article_absent: 'article d’opération hors de l’envoi',

@@ -105,6 +105,12 @@ process.env["AUTH0_CUSTOMER_CLIENT_ID"] = "spa-boutique-de-test";
 // `AdminTokenVerifier` (cf. `admin-companies.e2e-spec.ts`).
 process.env["AUTH_DEV_IMPERSONATE"] = "false";
 process.env["AUTH_ADMIN_DEV_BYPASS"] = "false";
+// Les faits du catalogue : FERMÉS en e2e, quoi que dise le `.env` local. Un
+// poste qui les a ouverts pour essayer la synchronisation faisait échouer les
+// onze suites du push, qui ne touche plus fiches ni familles faits ouverts
+// (2026-10-15). Les suites des faits les ouvrent elles-mêmes, par leur scène
+// (`catalog-facts-scene.ts`).
+process.env["CATALOG_FACTS_ENABLED"] = "false";
 
 /**
  * Stockage objet des e2e : le MinIO du conteneur de dev (`lfd-dev-minio`, port

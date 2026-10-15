@@ -7,6 +7,7 @@ import {
   CatalogFactsReader,
   type CatalogFamilyRecord,
 } from "../../../../catalogue/shared/domain/ports/catalog-facts.reader.js";
+import { CatalogRulesEmitter } from "../../../../order-time-limitation/domain/ports/catalog-rules.emitter.js";
 import { B2bCatalogReemission } from "../catalog-reemission.service.js";
 
 /**
@@ -62,6 +63,16 @@ class TracingEmitter extends CatalogEmitter {
   }
 }
 
+class TracingRules extends CatalogRulesEmitter {
+  constructor(private readonly uow: CountingUnitOfWork) {
+    super();
+  }
+  emitRules(): Promise<void> {
+    this.uow.current?.push("rules");
+    return Promise.resolve();
+  }
+}
+
 class TableFacts extends CatalogFactsReader {
   constructor(
     private readonly productIds: readonly string[],
@@ -93,6 +104,7 @@ function setup(open: boolean, failing: readonly string[] = []) {
     new TableFacts(["p_1", "p_2", "p_3"], ["cat_1", "cat_2"]),
     new TracingEmitter(uow, new Set(failing)),
     uow,
+    new TracingRules(uow),
   );
   return { uow, reemission };
 }
@@ -116,7 +128,7 @@ describe("B2bCatalogReemission", () => {
     expect(uow.transactions).toEqual([["product:p_1"], ["product:p_2"]]);
   });
 
-  it("émet tout : les familles d'abord, puis chaque fiche dans sa transaction", async () => {
+  it("émet tout : les familles d'abord, puis chaque fiche, puis les règles", async () => {
     const { uow, reemission } = setup(true);
 
     const report = await reemission.everything();
@@ -127,6 +139,9 @@ describe("B2bCatalogReemission", () => {
       ["product:p_1"],
       ["product:p_2"],
       ["product:p_3"],
+      // Lot 2b : les règles EN DERNIER, dans leur propre transaction — la
+      // plateforme les descend sur des articles qui portent leur déclinaison.
+      ["rules"],
     ]);
     expect(report).toEqual({ categories: 2, products: 3, failedProducts: [] });
   });
