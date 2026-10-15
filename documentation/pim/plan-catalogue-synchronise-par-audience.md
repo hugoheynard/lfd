@@ -397,6 +397,38 @@ ci-dessus :**
 | 2b3 | Le refus des allergènes passe à « au moins une déclinaison complète » (C1) : la projection 2a1 les écarte désormais. |
 | 2b4 | Ouverture de `CATALOG_FACTS_ENABLED`, puis « réémettre tout ». Le geste est écrit au runbook.                        |
 
+### Lot 3 — décisions déjà prises (2026-10-15)
+
+**La validation avant la boutique publique.** Hugo : « que les produits
+nouvellement arrivés sur public soient masqués ? ça servira de vérification,
+et un callout inline sur `/b2b/catalogue` pour dire que de nouveaux produits
+ont été ajoutés, les afficher dans la boutique ».
+
+- **Un état « à valider pour la boutique »**, posé par le récepteur à la
+  **première arrivée d'un SKU** sur la plateforme — une fiche neuve, **ou une
+  déclinaison neuve d'une fiche déjà en ligne** (Hugo : oui). Une fiche déjà
+  en ligne qui change de prix ou de texte n'y repasse pas.
+- **Pas pour un élargissement d'audience** : une fiche qui passe de `pro` à
+  `both` n'est pas remise en attente (Hugo : non) — l'audience est déjà une
+  décision humaine prise au référentiel.
+- **Un drapeau à part, pas le masquage** : `catalog_items.public_review_pending`
+  (posé à la création de la ligne, jamais ensuite). Le récepteur n'écrit
+  toujours pas `catalog_item_overrides` (§4 bis), et « je l'ai masqué exprès »
+  reste distinct de « personne ne l'a encore regardé ». `servedTo` refuse le
+  public tant que le drapeau est posé ; les pros voient l'article tout de
+  suite.
+- **L'écran** : sur `/b2b/catalogue` (« Catalogue publié », Gestion
+  Boutique), un `fold-callout` inline « N nouveaux produits — vus des pros,
+  pas encore dans la boutique publique », la liste, « Afficher dans la
+  boutique » par ligne et « Tout afficher » ; la cellule public dit « en
+  attente de validation ». Une route pour lever le drapeau (une ou plusieurs
+  lignes), journalisée.
+- **La vitrine** (lot W) ne voit pas un article en attente : elle lit la vue
+  publique.
+- **La bascule** : « tout renvoyer » ne pose le drapeau que sur les SKU qui
+  n'existaient pas encore dans `catalog_items` ; rien de ce qui est en ligne
+  ne repasse en attente.
+
 ### Lot P — le prix pro saisi (décidé le 2026-10-15)
 
 > ✅ **Bâti le 2026-10-15, non commité à l'écriture de ce bandeau.** La méthode
