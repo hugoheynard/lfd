@@ -717,6 +717,42 @@ lecture, un secret de signature) : **`vitruve` avant de bâtir**.
 
 **Plus tard** : les formules (Hugo, 2026-10-15 — « on verra ça plus tard »).
 
+### Lot D — le prix ne se décide plus sur la plateforme (décidé le 2026-10-15)
+
+> « Est-ce qu'on garde poser un prix sur Catalogue publié ou on se base
+> uniquement sur le référentiel ? » — « notre nouvelle approche pur catalogue
+> me paraît mieux » — « on peut les supprimer en vrai, c'est en dev ». — Hugo
+
+Le remplacement d'un prix par la plateforme existait parce que le référentiel
+ne savait que **dériver** le prix pro par un ratio. Depuis le lot P, il porte
+un prix pro HT saisi qui prime toujours : le remplacement fait doublon, et
+masquerait en silence une correction du référentiel arrivée par les faits.
+
+Ouvert le 2026-10-15 : la décision est dans `catalog_item_overrides`
+(`price_millicents`, `decided_public_ttc_cents`), posée par
+`PUT|DELETE admin/catalog/:sku/price` et `:sku/public-price`
+(`admin-catalog.controller.ts:108-148`), `set-public-price.handler.ts`,
+`align-public-on-pim.handler.ts` ; elle est **lue** au prix servi
+(`prisma-catalog.reader.ts:293,302`), par la vue publiée
+(`prisma-published-catalog.reader.ts:102,118`), par la vue admin
+(`prisma-catalog-admin.reader.ts:95,127`), par l'agrégat
+(`catalog-item.ts:375,604`) et par la trace de prix (`catalog-price-trace.ts:47`).
+
+| #   | Quoi                                                                                                                                                                                                                                                                                                                                                                |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | **Plus aucune lecture** de `price_millicents` ni de `decided_public_ttc_cents` : le prix servi est celui du référentiel (pro HT, étiquette TTC publique), puis mercuriales, promotions et paliers comme aujourd'hui. L'agrégat perd la décision de prix ; la trace de prix ne suit que le prix reçu.                                                                |
+| D2  | **Plus aucune écriture** : les quatre routes et les handlers `set-price`, `set-public-price`, `align-public-on-pim` sont retirés (pré-release, §0) ; les faits de journal qu'ils écrivaient restent lisibles au journal (le passé ne se réécrit pas).                                                                                                               |
+| D3  | **L'écran** : « Catalogue publié » montre les prix en lecture — HT pro et TTC public servis, d'où ils viennent (référentiel), et le lien vers la fiche pour les changer. Les éditeurs de prix et `lfd-price-origin` en mode décision disparaissent.                                                                                                                 |
+| D4  | **Les données** : les colonnes restent en base, plus lues ni écrites (§0 : rien ne se supprime en production sans ordre). **En dev**, Hugo l'ordonne : les décisions de prix existantes sont effacées de la base locale (geste de dev, pas une migration). Le masquage, la mise en avant et les attentes de validation, qui vivent dans la même table, **restent**. |
+| D5  | **La parité** et la santé du catalogue ne comparent plus un prix décidé.                                                                                                                                                                                                                                                                                            |
+
+⚠️ **Ce qui change de servi** : un article dont le prix avait été remplacé
+sur la plateforme est vendu au prix du référentiel dès le déploiement. En
+production, le nombre de remplacements n'est pas connu : **Hugo les relève
+avant de pousser `main`** (`select count(*) from public.catalog_item_overrides
+where price_millicents is not null or decided_public_ttc_cents is not null`),
+et reporte ceux qu'il veut garder en prix pro saisi au référentiel.
+
 ## 4. Risques
 
 - **Une faute de prix vendue tout de suite** (H3, choisi en connaissance de
