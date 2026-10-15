@@ -484,6 +484,39 @@ complétude de 2b en dépend.
 (`catalog_item_overrides.price_millicents`) priment toujours sur le prix
 reçu ; les mercuriales et paliers s'appliquent par-dessus comme aujourd'hui.
 
+### Lot W — le webhook de la vitrine (décidé le 2026-10-15)
+
+> « L'agence web qui produit le site vitrine a besoin d'avoir l'update des
+> contenus et tarifs et offres, textes, médias, au fur et à mesure que nos
+> bureaux updatent le catalogue » ; « pouvoir cocher/décocher son contenu en
+> admin ». Puis : webhook **léger** ; les formules plus tard. — Hugo, 2026-10-15
+
+Ouvert avant d'écrire : `b2b/catalog/http/shop-catalogue.controller.ts` — la
+boutique publique a **déjà** sa lecture anonyme, `GET /shop/catalogue`,
+résolue à `companyId: null` : prix publics, promotions publiques comprises,
+mercuriale exclue. La vitrine lit **la même chose**, pas une seconde
+projection.
+
+**Principe : notifier, puis laisser relire.** Le webhook ne transporte qu'un
+signal ; le contenu ne circule que par une lecture que nous servons.
+
+| #   | Quoi                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| W1  | **Ce qui sort, par construction** : la vue publique de la boutique (`ReadShopCatalogueQuery`), rien d'autre. Ni prix pro, ni mercuriale, ni palier, ni client, ni article d'audience `pro`, ni article masqué au public. Aucune case à cocher ne peut l'élargir : les cases ne font que **retirer** des familles de contenu.                                                                                                   |
+| W2  | **Abonnés** (plusieurs prévus dès le départ) : `public.vitrine_subscribers` — nom, URL, secret de signature (scellé au repos comme les IBAN, `FIELD_ENCRYPTION_KEY`), clé de lecture, actif, et les familles de contenu reçues : `catalogue`, `operations`, `promotions`, `textes`, `photos`. Écran dans **Gestion Boutique** ; le secret ne s'affiche qu'une fois, à la création ou à la rotation.                            |
+| W3  | **Les événements** : un `@DurableHandler` sur la plateforme écoute ce qui change la vue publique — fait fiche et fait famille (lot 2a), opérations reçues, décisions de prix et masquage de la plateforme, règles de prix publiques (promotions), textes de la boutique (`ShopCopyPublication`), visuels (`product_media_changed`). Il écrit, par abonné intéressé, une notification `{ type, id, version }` en boîte d'envoi. |
+| W4  | **🔴 Le temps change aussi la vitrine** : une promotion qui commence à minuit change un prix public **sans aucune écriture**. Un passage planifié émet une notification à chaque borne de fenêtre (début et fin de promotion, d'opération, de limite) qui touche la vue publique.                                                                                                                                              |
+| W5  | **L'envoi** : `POST` vers l'URL de l'abonné, corps `{ type, id, version, at }`, en-tête de signature HMAC-SHA256 du corps avec horodatage (rejeu refusable par l'agence) ; relances avec délai croissant, puis lettre morte visible. Plusieurs changements de la même fiche dans une courte fenêtre (proposé : 10 s) partent en **une** notification, de la version la plus haute.                                             |
+| W6  | **La lecture de l'agence** : `GET /vitrine/catalogue` (tout, pour la première synchronisation et les rattrapages) et `GET /vitrine/produits/:id`, protégées par la clé de lecture de l'abonné (pas un compte staff ni client), passant par la passerelle, limitées en débit ; filtrées selon les cases de l'abonné. Photos en URL publiques Cloudflare, aux tailles déjà servies.                                              |
+| W7  | **Le journal des envois** : livré, en échec, en attente ; « renvoyer » une notification ; « tout renvoyer » (une notification par fiche, pour resynchroniser).                                                                                                                                                                                                                                                                 |
+
+**Ordre** : W se bâtit après 2a (il en écoute les faits) ; il ne voit des
+changements en continu qu'après la bascule 2b. Avant, une notification par
+push accepté suffit. Frontière de sécurité (données vers un tiers, une clé de
+lecture, un secret de signature) : **`vitruve` avant de bâtir**.
+
+**Plus tard** : les formules (Hugo, 2026-10-15 — « on verra ça plus tard »).
+
 ## 4. Risques
 
 - **Une faute de prix vendue tout de suite** (H3, choisi en connaissance de
