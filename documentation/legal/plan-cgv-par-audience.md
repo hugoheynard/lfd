@@ -141,6 +141,14 @@ il n'existe pas d'authentification optionnelle. Plutôt que d'en créer une
 > publique) devient un choix d'affichage, sans enjeu juridique ; à trancher
 > au lot des pages de la boutique.
 
+> ✅ **La page de la boutique (Hugo, 2026-10-15)** : les juristes livrent
+> **deux documents** — on garde deux textes et deux PDF. Côté boutique, **une
+> seule page « CGV »** avec un **switch Particulier / Pro** : un seul lien en
+> pied de page, une seule adresse ; le switch s'ouvre côté pro sur la landing
+> pro ou pour un client dont l'audience est pro, côté particulier sinon (et
+> le côté se garde dans l'adresse, pour qu'un lien partagé ouvre le bon
+> texte) ; le téléchargement donne le PDF du côté affiché.
+
 **C2″ — « pro » veut dire ce que le devis dit** (BLOQUANT). Pas « a une
 société » : l'audience vient de `audienceOf` (`customer-audiences.service.ts`),
 qui ne classe en B2B qu'une société **active**. Une société en attente de
