@@ -33,6 +33,7 @@ Chaque ligne porte l'**état réel du code**, pas l'intention :
   doc par écran : un cache se juge sur ce qu'il périme, et ce qui périme
   dépend de l'écran qui le lit.
 - **L'équipe — annuaire, journalisation → `staff/`**, TODO compris.
+  | [`droits-et-permissions/plan-outils-agent-droits.md`](droits-et-permissions/plan-outils-agent-droits.md) | 📐 | **Les outils agent de la gestion des droits** (Hugo, 2026-10-15) : lire rôles, personnes, droits effectifs et « qui peut » ; accorder ou retirer un droit à un rôle, changer le rôle d'une personne — jamais sur `superadmin` ni `admin`, jamais un droit `staff_access`, jamais sur soi-même. Doc-first, `vitruve` à passer. |
 - **Droits, rôles, permissions (staff et client) → `droits-et-permissions/`**, TODO compris.
 - **Les points ouverts sur la journalisation, tous journaux confondus →
   `journalisation/`** (2026-09-18). Les architectures restent chez leur
