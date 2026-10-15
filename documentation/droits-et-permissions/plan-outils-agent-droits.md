@@ -86,6 +86,50 @@ Les écritures passent par les routes existantes : elles journalisent déjà
 (les faits de rôle et d'annuaire). Rien de neuf à journaliser ; le fait dit
 qui a agi, c'est-à-dire la personne connectée.
 
+### Corrections après `vitruve` (2026-10-15), qui priment sur A1–A5
+
+- **`staff_assign_role` renvoie la fiche entière à l'identique** (BLOQUANT).
+  `PATCH admin/staff-users/:id` exige toute la fiche (`staff-user.ts:40-56`),
+  et des `overrides` absents valent « aucune » : le dépôt **effacerait toutes
+  les dérogations** de la personne (`prisma-staff-user.repository.ts:125-141`).
+  L'outil relit la `StaffUserView`, ne change que `role`, renvoie identité et
+  `overrides` tels quels ; un test prouve qu'aucune dérogation n'est perdue.
+- **La garde porte sur le pouvoir, pas sur la clé** (BLOQUANT). Le serveur
+  reconnaît un gardien de l'annuaire à `staff_access:write` résolu
+  (`staff-mutation-target.ts:24-27,69-72`), et l'écran crée des rôles. L'agent
+  refuse donc : un rôle cible dont les droits résolus (`StaffRoleView.permissions`)
+  contiennent un `staff_access:*` ; une personne dont les droits résolus
+  (`StaffUserView.permissions`, rôle **et** dérogations) en contiennent un ;
+  la fiche racine (`isRescue`) ; les clés `superadmin` et `admin` ; soi-même.
+- **Pas d'écriture sur un état périmé** (SÉRIEUX). Aucune des deux routes n'a
+  de version (`update-staff-role.handler.ts:30-44`). Elles gagnent une
+  **précondition facultative** : `PUT …/staff-roles/:key` accepte
+  `expectedPermissions` (les droits lus), `PATCH …/staff-users/:id` accepte
+  `expectedUpdatedAt` ; si l'état a changé depuis, 409 qui le dit. L'écran ne
+  les envoie pas (inchangé) ; les outils les envoient toujours.
+- **Dire ce que la garde protège** (SÉRIEUX). Elle vit dans les outils : elle
+  empêche une **erreur** de l'agent, elle n'arrête pas un agent hostile, qui a
+  la même session et peut appeler les routes directement — comme la personne
+  pourrait le faire à l'écran. Il n'y a pas de contrôle d'escalade au serveur
+  aujourd'hui (`staff-role-definition.ts:121-131` ne vérifie pas que l'auteur
+  tient ce qu'il accorde) : c'est une dette du droit, pas de l'agent, inscrite
+  à part.
+- **Marquer les gestes d'agent** (SÉRIEUX). Les outils posent l'en-tête
+  `x-lfd-agent-tool: <nom de l'outil>` ; les deux routes le lisent et le
+  rangent dans le fait de journal (`via: { agentTool }`). Falsifiable, comme
+  tout ce qui vient du navigateur : c'est une trace, pas une porte.
+- **Aucune route nouvelle en lecture** (SÉRIEUX). `GET admin/staff-users`
+  rend déjà `permissions` effectives, `overrides` et `isRescue` résolus par le
+  serveur (`staff-user.ts:80-108`), `StaffRoleView.permissions` aussi
+  (`staff-role.ts:184-192`). `staff_access_of` et `who_can` les filtrent ;
+  l'outil ne recombine **jamais** rôle et dérogations lui-même.
+- **Le délai du cache** : le cache d'accès ne se vide que sur l'instance qui
+  écrit (`update-staff-role.handler.ts:15-19`) ; l'outil d'écriture dit
+  « effectif partout sous 30 secondes », pas « retiré ».
+- L'ouverture de `/outils-agent` à `staff_access:read` touche
+  `app.routes.ts:213-221` (liste et commentaire), `app.ts` (menu) et
+  `__tests__/app.routes.spec.ts`. Un `PUT` de rôle renvoie le libellé relu.
+
 ## 3. Doc
 
 `documentation/droits-et-permissions/outils-agent-droits.md` (l'état bâti,
