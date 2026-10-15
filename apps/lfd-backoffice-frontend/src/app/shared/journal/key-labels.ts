@@ -141,6 +141,9 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   handedOverBy: 'Retrait validé par',
   handleSuffix: 'Suffixe de collection',
   pickup: 'Retrait',
+  // Les clientèles du retrait d'un site (2026-10-15).
+  pickupForB2b: 'Retrait pour les pros',
+  pickupForB2c: 'Retrait pour les particuliers',
   hash: 'Empreinte',
   height: 'Hauteur',
   hiddenSkus: 'Articles retirés de la sélection',
