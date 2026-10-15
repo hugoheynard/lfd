@@ -54,22 +54,6 @@ export class CategoryHasActiveProductsError extends BusinessError {
 }
 
 /**
- * Un taux ne se règle que pour un canal **qu'on vend**.
- *
- * Le garder pour un canal fermé laisserait la famille pointer un taux dont
- * personne ne se sert : il gonflerait le compte d'usages de l'écran des taux,
- * et la base refuserait de supprimer un taux que plus rien ne facture.
- */
-export class CategoryVatWithoutChannelError extends BusinessError {
-  constructor(readonly channel: string) {
-    super(
-      "catalogue.category.tva_without_channel",
-      `Le canal « ${channel} » n’est pas vendu : il ne peut pas porter de taux.`,
-    );
-  }
-}
-
-/**
  * On n'archive pas une famille qui porte encore des familles vivantes.
  *
  * Le pendant d'`CategoryArchivedParentError` : celui-là refuse de RANGER une

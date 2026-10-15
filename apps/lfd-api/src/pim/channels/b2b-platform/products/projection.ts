@@ -370,7 +370,8 @@ export function projectCatalog(
     // La matrice DÉCIDE, elle ne se contente plus de décrire : une fiche qu'on
     // ne vend pas aux professionnels n'entre pas dans leur boutique, et celle
     // qui y était en sort au push suivant.
-    if (!sellsContext(channelsByProduct.get(product.id) ?? [], B2B_CONTEXT_KEY)) {
+    const channels = channelsByProduct.get(product.id) ?? [];
+    if (!sellsContext(channels, B2B_CONTEXT_KEY)) {
       excluded.push({ sku: product.sku, reason: "canal_ferme" });
       continue;
     }
@@ -378,7 +379,7 @@ export function projectCatalog(
     // et le récepteur n'a plus à rejoindre une famille pour savoir facturer.
     const { sellable, excluded: rejected } = sortVariants(
       product,
-      vatByProduct.get(product.id) ?? {},
+      soldPercents(vatByProduct.get(product.id) ?? {}, channels),
       policy,
       inco,
     );
@@ -434,6 +435,32 @@ export function projectCatalog(
     },
     excluded,
   };
+}
+
+/**
+ * Les taux des seuls contextes que la fiche **vend** — le filtre du push.
+ *
+ * 🔴 **Pourquoi il existe (2026-10-15).** Le push ne porte pas l'audience : la
+ * plateforme range l'article en `both`, et c'est l'entrée `takeaway` de
+ * `publicByContext` qui décide s'il entre dans la boutique publique
+ * (`servedPriceOf`, `b2b/catalog/infrastructure/prisma-catalog.reader.ts`,
+ * vérifié le 2026-10-15). Jusqu'à ce jour, la matrice garantissait qu'un
+ * contexte non vendu n'avait pas de taux. La TVA s'en est découplée — un taux
+ * se pose pour n'importe quel contexte en service — et sans ce filtre, poser
+ * un taux à emporter sur une famille vendue seulement en B2B la ferait entrer
+ * dans la boutique publique au push suivant.
+ *
+ * Le contexte B2B passe toujours : la fiche n'arrive ici que s'il est vendu
+ * (`canal_ferme`). Le chemin des faits (`catalog-facts.ts`) n'est PAS filtré :
+ * il porte l'audience, et `servedTo` décide.
+ *
+ * ⚠️ **Il tombe avec le push** (lot 5 du plan
+ * `documentation/pim/plan-catalogue-synchronise-par-audience.md`).
+ */
+function soldPercents(percents: CategoryVatPercents, channels: SalesChannels): CategoryVatPercents {
+  return Object.fromEntries(
+    Object.entries(percents).filter(([key]) => sellsContext(channels, key)),
+  );
 }
 
 /**

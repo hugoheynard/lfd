@@ -4,17 +4,12 @@ import {
   KnownVatRates,
 } from "../../../shared/application/__tests__/journal-name-doubles.js";
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
-import { Category } from "../../../category/domain/entities/category.js";
-import { CategoryRepository } from "../../../category/domain/ports/category.repository.js";
 import { VatRateNotFoundError } from "../../../../vat-rates/domain/errors/vat-rate-errors.js";
 import { VatRateRepository } from "../../../../vat-rates/domain/ports/vat-rate.repository.js";
 import type { SalesChannels } from "../../../shared/domain/value-objects/sales-channels.js";
 import type { SalesContext } from "../../../../sales-contexts/domain/value-objects/sales-context.js";
 import { SalesContextRegistry } from "../../../../sales-contexts/domain/ports/sales-context.registry.js";
-import {
-  ProductVatWithoutChannelError,
-  ProductUnknownContextError,
-} from "../../domain/errors/product-errors.js";
+import { ProductUnknownContextError } from "../../domain/errors/product-errors.js";
 import { Product, type ProductSnapshot } from "../../domain/entities/product.js";
 import { ProductRepository } from "../../domain/ports/product.repository.js";
 import { UnknownPointOfSaleError } from "../../../shared/domain/errors/channel-errors.js";
@@ -133,57 +128,6 @@ class FakeProducts extends ProductRepository {
   }
 }
 
-/** La famille du produit, et ce qu'elle vend — le seul fait que l'agrégat
- *  produit ne peut pas voir seul. */
-function familySelling(channels: SalesChannels): CategoryRepository {
-  const category = Category.reconstitute({
-    id: "cat_1",
-    name: { fr: "Tartes" },
-    slug: { fr: "tartes" },
-    parentId: null,
-    position: 0,
-    isArchived: false,
-    channelPreset: channels,
-    vatByContext: { takeaway: "tva_55" },
-    audience: "both",
-  });
-  return new FamilyOnly(category);
-}
-
-/** Le port des familles réduit à la lecture par id ; toute écriture refuse. */
-class FamilyOnly extends CategoryRepository {
-  constructor(private readonly category: Category) {
-    super();
-  }
-  findById(): Promise<Category | null> {
-    return Promise.resolve(this.category);
-  }
-  findBySlugFr(): Promise<Category | null> {
-    return Promise.resolve(null);
-  }
-  listAll(): Promise<Category[]> {
-    return Promise.resolve([this.category]);
-  }
-  listChildren(): Promise<Category[]> {
-    return Promise.resolve([]);
-  }
-  add(): Promise<void> {
-    return Promise.reject(new Error("non appelé : la TVA d'un produit n'écrit pas sa famille"));
-  }
-  save(): Promise<void> {
-    return this.add();
-  }
-  saveAll(): Promise<void> {
-    return this.add();
-  }
-  countActiveChildren(): Promise<number> {
-    return Promise.resolve(0);
-  }
-  nextPosition(): Promise<number> {
-    return Promise.resolve(0);
-  }
-}
-
 function rates(): VatRateRepository {
   return new KnownVatRates({
     tva_55: { name: "Réduit", percent: 5.5 },
@@ -197,11 +141,6 @@ const POINTS_OF_SALE = new KnownPointsOfSale({
   pos_b2b: "Plateforme pro",
 });
 
-const SELLS_ALL: SalesChannels = [
-  { pointOfSaleId: "emp_1", context: "takeaway" },
-  { pointOfSaleId: "pos_b2b", context: "b2b" },
-];
-
 describe("SetProductVatHandler", () => {
   it("fait DÉROGER la fiche au taux de sa famille", async () => {
     const products = new FakeProducts(snapshot());
@@ -209,7 +148,6 @@ describe("SetProductVatHandler", () => {
 
     await new SetProductVatHandler(
       products,
-      familySelling(SELLS_ALL),
       rates(),
       registry,
       journal,
@@ -234,7 +172,6 @@ describe("SetProductVatHandler", () => {
 
     await new SetProductVatHandler(
       products,
-      familySelling(SELLS_ALL),
       rates(),
       registry,
       new RecordingJournal(),
@@ -251,7 +188,6 @@ describe("SetProductVatHandler", () => {
     await expect(
       new SetProductVatHandler(
         products,
-        familySelling(SELLS_ALL),
         rates(),
         registry,
         new RecordingJournal(),
@@ -268,7 +204,6 @@ describe("SetProductVatHandler", () => {
     await expect(
       new SetProductVatHandler(
         products,
-        familySelling(SELLS_ALL),
         rates(),
         registry,
         new RecordingJournal(),
@@ -278,23 +213,23 @@ describe("SetProductVatHandler", () => {
     ).rejects.toBeInstanceOf(ProductUnknownContextError);
   });
 
-  it("refuse de déroger là où la FAMILLE ne vend pas", async () => {
-    // Déroger sur un contexte fermé, c'est décider d'un prix pour une vente qui
-    // n'a pas lieu — et bloquer la suppression d'un taux que plus rien ne
-    // facture. La règle est celle de la famille ; elle change juste de porteur.
+  /**
+   * Régression : refusé (`ProductVatWithoutChannelError`) jusqu'au 2026-10-15.
+   * Le handler ne lit même plus la famille : ce qu'elle vend ne compte plus.
+   */
+  it("un taux se pose pour un contexte que la famille ne vend pas", async () => {
     const products = new FakeProducts(snapshot());
 
-    await expect(
-      new SetProductVatHandler(
-        products,
-        familySelling([{ pointOfSaleId: "emp_1", context: "takeaway" }]),
-        rates(),
-        registry,
-        new RecordingJournal(),
-        new DirectUnitOfWork(),
-        new RecordingCatalogEmitter(),
-      ).execute(new SetProductVatCommand("prd_1", { b2b: "tva_20" })),
-    ).rejects.toBeInstanceOf(ProductVatWithoutChannelError);
+    await new SetProductVatHandler(
+      products,
+      rates(),
+      registry,
+      new RecordingJournal(),
+      new DirectUnitOfWork(),
+      new RecordingCatalogEmitter(),
+    ).execute(new SetProductVatCommand("prd_1", { b2b: "tva_20" }));
+
+    expect(products.saved.vatByContext).toEqual({ b2b: "tva_20" });
   });
 
   it("reste muet quand rien n’a changé", async () => {
@@ -303,7 +238,6 @@ describe("SetProductVatHandler", () => {
 
     await new SetProductVatHandler(
       products,
-      familySelling(SELLS_ALL),
       rates(),
       registry,
       journal,
@@ -322,11 +256,9 @@ describe("SetProductChannelsHandler", () => {
 
     await new SetProductChannelsHandler(
       products,
-      familySelling(SELLS_ALL),
       allPointsOfSaleOffer,
       registry,
       POINTS_OF_SALE,
-      rates(),
       journal,
       new DirectUnitOfWork(),
       new RecordingCatalogEmitter(),
@@ -343,11 +275,9 @@ describe("SetProductChannelsHandler", () => {
 
     await new SetProductChannelsHandler(
       products,
-      familySelling(SELLS_ALL),
       allPointsOfSaleOffer,
       registry,
       POINTS_OF_SALE,
-      rates(),
       new RecordingJournal(),
       new DirectUnitOfWork(),
       new RecordingCatalogEmitter(),
@@ -365,11 +295,9 @@ describe("SetProductChannelsHandler", () => {
     await expect(
       new SetProductChannelsHandler(
         products,
-        familySelling(SELLS_ALL),
         noPointOfSaleKnown,
         registry,
         POINTS_OF_SALE,
-        rates(),
         new RecordingJournal(),
         new DirectUnitOfWork(),
         new RecordingCatalogEmitter(),
@@ -381,20 +309,15 @@ describe("SetProductChannelsHandler", () => {
     ).rejects.toBeInstanceOf(UnknownPointOfSaleError);
   });
 
-  it("EFFACE le taux d’un canal que la fiche vient de fermer", async () => {
-    // La règle de la famille, un cran plus bas : sans cet effacement, une fiche
-    // qui ne se vend plus en B2B garderait son taux B2B, il compterait comme un
-    // usage, et la suppression de ce taux resterait bloquée par une décision que
-    // plus rien n'applique.
+  /** Régression : jusqu'au 2026-10-15, fermer le canal effaçait ce taux. */
+  it("garde le taux d’un canal que la fiche vient de fermer", async () => {
     const products = new FakeProducts(snapshot({ b2b: "tva_20" }));
 
     await new SetProductChannelsHandler(
       products,
-      familySelling(SELLS_ALL),
       allPointsOfSaleOffer,
       registry,
       POINTS_OF_SALE,
-      rates(),
       new RecordingJournal(),
       new DirectUnitOfWork(),
       new RecordingCatalogEmitter(),
@@ -402,25 +325,22 @@ describe("SetProductChannelsHandler", () => {
       new SetProductChannelsCommand("prd_1", [{ pointOfSaleId: "emp_1", context: "takeaway" }]),
     );
 
-    expect(products.saved.vatByContext).toEqual({});
+    expect(products.saved.vatByContext).toEqual({ b2b: "tva_20" });
   });
 
-  it("juge les taux sur les canaux EFFECTIFS, pas sur ceux de la famille", async () => {
-    // La famille vend en B2B ; cette fiche-là non, parce qu'elle a redéfini sa
-    // matrice. Elle ne peut donc pas y poser un taux — sinon elle décide d'un
-    // prix pour une vente qu'elle vient elle-même de fermer.
+  /** Régression : refusé jusqu'au 2026-10-15 — la fiche avait fermé le B2B. */
+  it("un taux se pose pour un contexte que la fiche a elle-même fermé", async () => {
     const products = new FakeProducts(snapshot({}, []));
 
-    await expect(
-      new SetProductVatHandler(
-        products,
-        familySelling(SELLS_ALL),
-        rates(),
-        registry,
-        new RecordingJournal(),
-        new DirectUnitOfWork(),
-        new RecordingCatalogEmitter(),
-      ).execute(new SetProductVatCommand("prd_1", { b2b: "tva_20" })),
-    ).rejects.toBeInstanceOf(ProductVatWithoutChannelError);
+    await new SetProductVatHandler(
+      products,
+      rates(),
+      registry,
+      new RecordingJournal(),
+      new DirectUnitOfWork(),
+      new RecordingCatalogEmitter(),
+    ).execute(new SetProductVatCommand("prd_1", { b2b: "tva_20" }));
+
+    expect(products.saved.vatByContext).toEqual({ b2b: "tva_20" });
   });
 });

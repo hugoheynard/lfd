@@ -95,8 +95,8 @@ export class CategorySummaryRail {
       { label: 'Nom', state: this.store.name.filled() ? 'done' : 'todo' },
       { label: 'Au moins un canal', state: this.store.channels().length > 0 ? 'done' : 'todo' },
       {
-        // Un taux PAR contexte vendu : un seul manquant et la famille facture
-        // au hasard sur ce canal-là.
+        // Un taux PAR contexte en service, vendu ou non (2026-10-15) : un seul
+        // manquant et la fiche ne peut pas servir ce contexte-là.
         label: contexts.length === 0 ? 'Taux de TVA' : `Taux de TVA (${String(contexts.length)})`,
         state:
           contexts.length > 0 && contexts.every((context) => (vat[context.key] ?? '') !== '')

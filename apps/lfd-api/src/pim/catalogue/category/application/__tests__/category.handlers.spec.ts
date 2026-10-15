@@ -19,7 +19,6 @@ import {
   CategoryNotFoundError,
   CategoryOrderMismatchError,
   CategorySlugTakenError,
-  CategoryVatWithoutChannelError,
 } from "../../domain/errors/category-errors.js";
 import {
   CategoryEditorialReader,
@@ -336,7 +335,6 @@ function setChannels(repo: InMemoryCategories): SetCategoryChannelsHandler {
     allPointsOfSaleOffer(),
     registry,
     POINTS_OF_SALE,
-    new InMemoryRegimes(),
     new RecordingJournal(),
 
     new DirectUnitOfWork(),
@@ -502,7 +500,6 @@ describe("SetCategoryChannelsHandler", () => {
         noPointOfSaleKnown(),
         registry,
         POINTS_OF_SALE,
-        new InMemoryRegimes(),
         new RecordingJournal(),
 
         new DirectUnitOfWork(),
@@ -524,7 +521,6 @@ describe("SetCategoryChannelsHandler", () => {
         noPointOfSaleKnown(),
         registry,
         POINTS_OF_SALE,
-        new InMemoryRegimes(),
         new RecordingJournal(),
 
         new DirectUnitOfWork(),
@@ -608,26 +604,26 @@ describe("SetCategoryVatHandler", () => {
   });
 
   /**
-   * La règle tenue par l'agrégat, vue depuis le handler : aucun appelant ne
-   * peut plus rattacher un taux à un canal fermé, même en sautant l'écran.
+   * Régression : jusqu'au 2026-10-15, l'agrégat refusait ce taux parce que la
+   * famille ne vendait pas le contexte. La TVA ne dépend plus des canaux.
    */
-  it("refuse le taux d’un canal que la famille ne vend pas", async () => {
+  it("un taux se pose pour un contexte que la famille ne vend pas", async () => {
     const categories = new InMemoryCategories();
     const rates = new InMemoryRegimes();
     await rates.add(VatRate.open({ id: "tva_5", name: "Réduit", description: "", percent: 5.5 }));
     const [id] = await openRoots(categories, 1);
 
-    await expect(
-      new SetCategoryVatHandler(
-        categories,
-        rates,
-        registry,
-        new RecordingJournal(),
-        new DirectUnitOfWork(),
-        new RecordingCatalogEmitter(),
-        new RecordingCatalogReemission(),
-      ).execute(new SetCategoryVatCommand(id!, { takeaway: "tva_5" })),
-    ).rejects.toBeInstanceOf(CategoryVatWithoutChannelError);
+    await new SetCategoryVatHandler(
+      categories,
+      rates,
+      registry,
+      new RecordingJournal(),
+      new DirectUnitOfWork(),
+      new RecordingCatalogEmitter(),
+      new RecordingCatalogReemission(),
+    ).execute(new SetCategoryVatCommand(id!, { takeaway: "tva_5" }));
+
+    expect(categories.at(id!).vatByContext).toEqual({ takeaway: "tva_5" });
   });
 });
 
@@ -1007,7 +1003,6 @@ describe("Ce que les familles inscrivent au journal", () => {
       allPointsOfSaleOffer(),
       registry,
       POINTS_OF_SALE,
-      new InMemoryRegimes(),
       journal,
       uow,
       new RecordingCatalogEmitter(),

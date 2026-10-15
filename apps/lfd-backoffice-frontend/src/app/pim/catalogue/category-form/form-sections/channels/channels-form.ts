@@ -39,8 +39,8 @@ export class CategoryChannelsForm {
   protected readonly pointsOfSaleError = computed(() => this.points.loadError());
   protected readonly rates = computed(() => this.vatRates.items());
 
-  /** Aucun canal coché ⇒ la partie « taux » n'a rien à montrer. */
-  protected readonly hasAnyChannel = computed(() => this.store.settableContexts().length > 0);
+  /** Aucun contexte en service ⇒ la partie « taux » n'a rien à montrer. */
+  protected readonly hasAnyContext = computed(() => this.store.settableContexts().length > 0);
 
   protected vatOf(contextKey: string): string {
     return this.store.vat()[contextKey] ?? '';

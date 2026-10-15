@@ -10,12 +10,11 @@
 <section class="block">
   <fold-element-title variant="eyebrow" icon="tax" title="Taux de TVA" />
 
-  <!-- Un taux ne se règle que pour un canal qu'on vend : afficher les autres
-       demanderait de trancher pour une vente qui n'a pas lieu, et laisserait la
-       famille pointer un taux dont personne ne se sert. -->
-  @if (hasAnyChannel()) {
+  <!-- Un taux par contexte EN SERVICE, vendu ou non : la TVA ne dépend plus
+       des canaux (2026-10-15). -->
+  @if (hasAnyContext()) {
     <div class="grid vat-pickers">
-      <!-- UNE liste par contexte VENDU, itérée depuis le registre : un contexte
+      <!-- UNE liste par contexte en service, itérée depuis le registre : un contexte
            de plus est une ligne de données, pas un bloc de gabarit. -->
       @for (context of store.settableContexts(); track context.key) {
         <fold-listbox
@@ -36,6 +35,6 @@
       dans <a routerLink="/pim/tva">Taux de TVA</a>.
     </p>
   } @else {
-    <p class="muted">Cochez un canal ci-dessus pour lui régler un taux.</p>
+    <p class="muted">Aucun contexte de vente en service : rien à taxer.</p>
   }
 </section>

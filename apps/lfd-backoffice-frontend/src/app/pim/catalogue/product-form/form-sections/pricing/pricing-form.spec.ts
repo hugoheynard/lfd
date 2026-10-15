@@ -209,6 +209,25 @@ describe('PricingForm — la fiche qui ne suit plus sa famille', () => {
     expect(emporter?.textContent).toContain('non proposé');
     expect(b2b?.textContent).toContain('20 %');
   });
+
+  /**
+   * Régression : jusqu'au 2026-10-15, un contexte non vendu cachait son taux
+   * et le geste de dérogation. La TVA ne dépend plus des canaux.
+   */
+  it('montre et laisse régler le taux d’un contexte que la fiche ne vend pas', () => {
+    const store = setup();
+    withFamily(store);
+    store.channelsOverride.set([{ pointOfSaleId: 'pos_b2b', context: 'b2b' }]);
+    const fixture = TestBed.createComponent(PricingForm);
+    fixture.detectChanges();
+
+    const emporter = [
+      ...(fixture.nativeElement as HTMLElement).querySelectorAll('.inherit-row'),
+    ].find((row) => row.querySelector('dt')?.textContent?.includes('À emporter'));
+
+    expect(emporter?.textContent).toContain('5,5 %');
+    expect(emporter?.querySelector('fold-button-icon')).not.toBeNull();
+  });
 });
 
 describe('PricingForm — ce qui n’y est PAS', () => {

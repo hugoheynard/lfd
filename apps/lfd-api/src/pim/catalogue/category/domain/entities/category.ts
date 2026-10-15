@@ -1,7 +1,6 @@
 import {
   CategoryFrozenError,
   CategorySelfParentError,
-  CategoryVatWithoutChannelError,
   CategoryUnknownContextError,
 } from "../errors/category-errors.js";
 import {
@@ -14,10 +13,7 @@ import {
   type SalesChannels,
 } from "../../../shared/domain/value-objects/sales-channels.js";
 import type { SalesContext } from "../../../../sales-contexts/domain/value-objects/sales-context.js";
-import {
-  contextIsSold,
-  type ContextVat,
-} from "../../../shared/domain/value-objects/context-vat.js";
+import type { ContextVat } from "../../../shared/domain/value-objects/context-vat.js";
 import type { Audience } from "../../../shared/domain/value-objects/audience.js";
 
 /**
@@ -30,12 +26,8 @@ import type { Audience } from "../../../shared/domain/value-objects/audience.js"
  *   le premier verbe qui oubliait faisait diverger les deux en silence. Le
  *   slug n'a plus de passage par l'extérieur : `rename` le recalcule ;
  * - une famille **n'est jamais sa propre parente** ;
- * - un taux **ne se règle que pour un canal vendu**, et fermer un canal
- *   **efface** son taux. Cette règle vivait dans le navigateur : le panneau
- *   envoyait les canaux, PUIS les taux nettoyés, en deux requêtes sans
- *   transaction — la seconde perdue laissait une famille qui ne vend plus en
- *   B2B et pointe toujours son taux B2B. L'agrégat voit les deux moitiés de la
- *   règle, c'est donc à lui de la tenir ;
+ * - un taux **ne se règle que pour un contexte connu** — et pour tout contexte
+ *   connu, vendu ou non : la TVA ne dépend plus des canaux (2026-10-15) ;
  * - une famille **archivée est gelée** : ses réglages — canaux, TVA, place
  *   dans l'arbre — sont refusés. Seul le **renommage** reste permis, parce
  *   qu'une faute de frappe doit pouvoir se corriger sans ressusciter une
@@ -210,16 +202,15 @@ export class Category {
   }
 
   /**
-   * Change ce qui est vendu — et **efface le taux des canaux qu'on ferme**.
+   * Change ce qui est vendu — et **ne touche à aucun taux**.
    *
-   * Deux verbes, un seul invariant : sans cet effacement, il faudrait que
-   * l'appelant enchaîne `setVat` derrière, et un appelant qui l'oublie (ou une
-   * requête perdue entre les deux) laisse un taux orphelin.
+   * Les taux ne dépendent plus des canaux (Hugo, 2026-10-15 : « n'importe
+   * quelle fiche devrait être en capacité de servir n'importe quel contexte ») :
+   * fermer un canal n'efface plus rien, et le rouvrir retrouve le taux posé.
    */
-  setChannels(channels: SalesChannels, contexts: readonly SalesContext[]): void {
+  setChannels(channels: SalesChannels): void {
     this.refuseIfArchived();
     this.channelPresetValue = normalizeSalesChannels(channels);
-    this.forgetVatOfClosedChannels(contexts);
   }
 
   /**
@@ -231,13 +222,13 @@ export class Category {
    *
    * Les contextes viennent du registre, pas de l'agrégat : il ne peut pas
    * savoir seul quels contextes existent, et un objet ne garantit que ce qu'il
-   * voit. Ce qu'il garantit, lui : un taux ne se règle pas pour un contexte
-   * qu'on ne vend pas, et **rien ne se règle pour un contexte inconnu**.
+   * voit. Ce qu'il garantit, lui : **rien ne se règle pour un contexte
+   * inconnu**. Un contexte que la famille ne vend pas se règle : la matrice ne
+   * décide plus de la TVA (2026-10-15).
    */
   setVat(vat: ContextVat, contexts: readonly SalesContext[]): void {
     this.refuseIfArchived();
     this.refuseUnknownContext(vat, contexts);
-    this.refuseVatWithoutChannel(vat, contexts);
     this.vatByContextValue = { ...vat };
   }
 
@@ -267,32 +258,6 @@ export class Category {
         throw new CategoryUnknownContextError(key);
       }
     }
-  }
-
-  private refuseVatWithoutChannel(vat: ContextVat, contexts: readonly SalesContext[]): void {
-    for (const context of contexts) {
-      if (vat[context.key] !== undefined && !contextIsSold(context, this.channelPresetValue)) {
-        throw new CategoryVatWithoutChannelError(context.key);
-      }
-    }
-  }
-
-  /**
-   * Fermer un canal **efface** le taux des contextes qu'il portait — sans quoi
-   * il faudrait que l'appelant enchaîne `setVat`, et un appelant qui l'oublie
-   * laisse un taux orphelin. Un contexte qu'on ne connaît plus voit son taux
-   * conservé : on n'efface pas ce qu'on ne sait pas juger.
-   */
-  private forgetVatOfClosedChannels(contexts: readonly SalesContext[]): void {
-    const closed = contexts.filter((context) => !contextIsSold(context, this.channelPresetValue));
-    if (closed.length === 0) {
-      return;
-    }
-    const kept: Record<string, string> = { ...this.vatByContextValue };
-    for (const context of closed) {
-      delete kept[context.key];
-    }
-    this.vatByContextValue = kept;
   }
 
   private refuseIfArchived(): void {

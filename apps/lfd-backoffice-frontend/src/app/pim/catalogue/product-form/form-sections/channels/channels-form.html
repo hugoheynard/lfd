@@ -30,23 +30,25 @@
       @for (row of rows(); track row.key) {
         <div class="inherit-row" [class.is-overridden]="row.source === 'overridden'">
           <dt>{{ row.label }}</dt>
-          @if (row.sold) {
-            <dd class="inherit-where">
-              @if (row.source === 'overridden') {
-                <span class="inherit-mark">Redéfini</span>
-              } @else {
-                {{ row.boutiques.join(' · ') }}
-              }
-            </dd>
-            <dd class="inherit-rate">
-              @if (row.rate; as rate) {
-                <strong>{{ rate.percent }}</strong>
-                <span class="inherit-regime">{{ rate.name }}</span>
-              } @else {
-                <span class="muted">taux non défini</span>
-              }
-            </dd>
-            <!-- L'AUTRE FACE du prix, pour CE contexte — le hors taxe quand on
+          <!-- Le taux se lit et se règle pour TOUT contexte en service, vendu ou
+               non : la TVA ne dépend plus des canaux (2026-10-15). Seule la
+               colonne « où » dit encore si le contexte est proposé. -->
+          @if (row.source === 'overridden') {
+            <dd class="inherit-where"><span class="inherit-mark">Redéfini</span></dd>
+          } @else if (row.sold) {
+            <dd class="inherit-where">{{ row.boutiques.join(' · ') }}</dd>
+          } @else {
+            <dd class="inherit-where muted">non proposé</dd>
+          }
+          <dd class="inherit-rate">
+            @if (row.rate; as rate) {
+              <strong>{{ rate.percent }}</strong>
+              <span class="inherit-regime">{{ rate.name }}</span>
+            } @else {
+              <span class="muted">taux non défini</span>
+            }
+          </dd>
+          <!-- L'AUTRE FACE du prix, pour CE contexte — le hors taxe quand on
                  saisit un prix d'étiquette, le TTC quand on saisit un hors taxe.
                  C'est ici que l'ancrage TTC se voit : un seul prix public, un
                  hors taxe par taux, alignés les uns sous les autres.
@@ -55,39 +57,36 @@
                  tenir d'accord avec les deux autres. La facture, elle, est
                  calculée par le serveur au moment de la commande — avec le même
                  code, qui vient du contrat. -->
-            <dd class="inherit-gross">
-              @if (row.counterpart; as counterpart) {
-                <strong>{{ counterpart.amount }}</strong>
-                <!-- Cette ligne ne part PAS du prix public : le contexte
+          <dd class="inherit-gross">
+            @if (row.counterpart; as counterpart) {
+              <strong>{{ counterpart.amount }}</strong>
+              <!-- Cette ligne ne part PAS du prix public : le contexte
                      professionnel vend au prix remisé. Sans la mention, un
                      lecteur qui compare la ligne au prix affiché plus haut ne
                      retrouverait pas ses comptes. -->
-                @if (row.discounted) {
-                  <span class="inherit-discounted">remisé</span>
-                }
-                <!-- Le montant seul ne dit pas ce qu'il est : à côté d'un taux
+              @if (row.discounted) {
+                <span class="inherit-discounted">remisé</span>
+              }
+              <!-- Le montant seul ne dit pas ce qu'il est : à côté d'un taux
                      et d'un prix saisi plus haut, « 12,00 € » peut se lire comme
                      l'un ou l'autre. La mention lève le doute là où il naît, pas
                      dans un en-tête qu'on ne relit pas. -->
-                <span class="inherit-regime">{{ counterpart.label }}</span>
-              } @else {
-                <span class="muted">—</span>
-              }
-              <!-- Le geste est SUR la ligne qu'il change : un bouton unique en
+              <span class="inherit-regime">{{ counterpart.label }}</span>
+            } @else {
+              <span class="muted">—</span>
+            }
+            <!-- Le geste est SUR la ligne qu'il change : un bouton unique en
                    pied de bloc aurait demandé de choisir le contexte deux fois,
                    une fois dans sa tête et une fois dans le panneau. -->
-              <fold-button-icon
-                icon="edit"
-                size="sm"
-                [tooltip]="
-                  row.source === 'overridden' ? 'Modifier la dérogation' : 'Redéfinir ce taux'
-                "
-                (clicked)="redefine(row)"
-              />
-            </dd>
-          } @else {
-            <dd class="inherit-where muted">non proposé</dd>
-          }
+            <fold-button-icon
+              icon="edit"
+              size="sm"
+              [tooltip]="
+                row.source === 'overridden' ? 'Modifier la dérogation' : 'Redéfinir ce taux'
+              "
+              (clicked)="redefine(row)"
+            />
+          </dd>
         </div>
       }
     </dl>

@@ -212,28 +212,27 @@ describe("un preset ne cite que des points de vente qui existent", () => {
   });
 });
 
-describe("un taux ne tient que sur un canal vendu", () => {
-  it("refuse le taux d'un canal fermé", async () => {
+/**
+ * La TVA ne dépend plus des canaux (Hugo, 2026-10-15). Jusque-là, un taux se
+ * refusait sans canal (`catalogue.category.tva_without_channel`) et fermer un
+ * canal l'effaçait, avec un fait `product_category.vat_changed` à côté.
+ */
+describe("un taux ne dépend plus des canaux", () => {
+  /** Régression : refusé en 409 jusqu'au 2026-10-15. */
+  it("un taux se pose pour un contexte que la famille ne vend pas", async () => {
     const category = await createCategory("Viennoiseries");
     const rate = await createRate("Réduit", 5.5);
 
-    const response = await staff()
+    await staff()
       .put(`${CATEGORIES}/${category}/vat`)
-      .send({ vatByContext: { takeaway: rate } });
+      .send({ vatByContext: { takeaway: rate } })
+      .expect(200);
 
-    expect(response.status).toBe(409);
-    expect(jsonBody<{ code: string }>(response).code).toBe(
-      "catalogue.category.tva_without_channel",
-    );
+    expect((await readCategory(category)).vatByContext).toEqual({ takeaway: rate });
   });
 
-  /**
-   * L'effacement traverse jusqu'à la BASE : c'est ce que la panne d'origine
-   * laissait derrière elle — une famille qui ne vend plus en B2B et pointe
-   * toujours son taux B2B, parce que l'écran envoyait les deux réglages en deux
-   * requêtes et que la seconde pouvait se perdre.
-   */
-  it("efface en base le taux d'un canal qu'on ferme", async () => {
+  /** Régression : le taux B2B était effacé en base à la fermeture du canal. */
+  it("fermer un canal garde son taux en base et n'écrit que le fait des canaux", async () => {
     const category = await createCategory("Viennoiseries");
     const rate = await createRate("Réduit", 5.5);
     await staff()
@@ -244,94 +243,17 @@ describe("un taux ne tient que sur un canal vendu", () => {
       .put(`${CATEGORIES}/${category}/vat`)
       .send({ vatByContext: { b2b: rate } })
       .expect(200);
-    expect((await readCategory(category)).vatByContext).toEqual({ b2b: rate });
 
     await staff().put(`${CATEGORIES}/${category}/channels`).send([]).expect(200);
 
-    expect((await readCategory(category)).vatByContext).toEqual({});
-  });
-});
-
-/**
- * **Le taux qu'efface une fermeture de canal est journalisé** (2026-09-19) —
- * la comptabilité relit tout ce qui touche au taux, et `channels_changed` ne
- * porte que les canaux. Le fait de TVA part dans la même transaction : la
- * technique de `pim-journal-atomicity`, une contrainte qui refuse ce type-là.
- */
-describe("fermer un canal journalise le taux qu'il efface", () => {
-  const VAT_CHANGED = "product_category.vat_changed";
-  const REFUSAL = "e2e_journal_tva_en_panne";
-
-  async function repairJournal(): Promise<void> {
-    await ctx.prisma.$executeRawUnsafe(
-      `ALTER TABLE growth.activity_events DROP CONSTRAINT IF EXISTS ${REFUSAL}`,
-    );
-  }
-
-  /** Le journal refuse désormais tout fait de TVA de famille. */
-  async function breakJournal(): Promise<void> {
-    await ctx.prisma.$executeRawUnsafe(
-      `ALTER TABLE growth.activity_events
-         ADD CONSTRAINT ${REFUSAL} CHECK (type <> '${VAT_CHANGED}') NOT VALID`,
-    );
-  }
-
-  afterEach(repairJournal);
-
-  /** Une famille vendue en B2B, avec son taux B2B réglé. */
-  async function familyWithB2bRate(): Promise<{ category: string; rate: string }> {
-    const category = await createCategory("Viennoiseries");
-    const rate = await createRate("Réduit", 5.5);
-    await staff()
-      .put(`${CATEGORIES}/${category}/channels`)
-      .send([{ pointOfSaleId: "pos_b2b", context: "b2b" }])
-      .expect(200);
-    await staff()
-      .put(`${CATEGORIES}/${category}/vat`)
-      .send({ vatByContext: { b2b: rate } })
-      .expect(200);
-    return { category, rate };
-  }
-
-  async function factsOf(category: string): Promise<{ type: string; payload: unknown }[]> {
-    return ctx.prisma.activityEvent.findMany({
+    expect((await readCategory(category)).vatByContext).toEqual({ b2b: rate });
+    const facts = await ctx.prisma.activityEvent.findMany({
       where: { subjectType: "product_category", subjectId: category },
       orderBy: { id: "asc" },
-      select: { type: true, payload: true },
+      select: { type: true },
     });
-  }
-
-  it("écrit le fait de TVA à côté du fait de canaux", async () => {
-    const { category, rate } = await familyWithB2bRate();
-
-    await staff().put(`${CATEGORIES}/${category}/channels`).send([]).expect(200);
-
-    const facts = (await factsOf(category)).slice(-2);
-    expect(facts.map((fact) => fact.type)).toEqual([
-      "product_category.channels_changed",
-      VAT_CHANGED,
-    ]);
-    expect(facts[1]?.payload).toEqual({
-      subjectLabel: "Viennoiseries",
-      vatByContext: { b2b: { from: { id: rate, name: "Réduit" }, to: null } },
-      contextLabels: { b2b: "B2B" },
-    });
-  });
-
-  it("ANNULE la fermeture quand le fait de TVA ne s'écrit pas", async () => {
-    const { category, rate } = await familyWithB2bRate();
-    const before = (await factsOf(category)).length;
-    await breakJournal();
-
-    const response = await staff().put(`${CATEGORIES}/${category}/channels`).send([]);
-
-    // Le fait de canaux, lui, passait la contrainte : il est annulé avec le
-    // reste. Pas de canal fermé sans la trace du taux qu'il efface.
-    expect(response.status).toBeGreaterThanOrEqual(500);
-    const after = await readCategory(category);
-    expect(after.vatByContext).toEqual({ b2b: rate });
-    expect(after.channelPreset).toEqual([{ pointOfSaleId: "pos_b2b", context: "b2b" }]);
-    expect(await factsOf(category)).toHaveLength(before);
+    expect(facts.at(-1)?.type).toBe("product_category.channels_changed");
+    expect(facts.filter((fact) => fact.type === "product_category.vat_changed")).toHaveLength(1);
   });
 });
 

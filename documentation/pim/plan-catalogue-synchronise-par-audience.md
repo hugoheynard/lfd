@@ -422,6 +422,19 @@ ci-dessus :**
 | 2b3 | Le refus des allergènes passe à « au moins une déclinaison complète » (C1) : la projection 2a1 les écarte désormais. |
 | 2b4 | Ouverture de `CATALOG_FACTS_ENABLED`, puis « réémettre tout ». Le geste est écrit au runbook.                        |
 
+### La TVA découplée des canaux (bâti le 2026-10-15)
+
+Préalable à 2b4, conséquence de « une fiche complète a un taux pour chaque
+contexte en service » : un taux se règle désormais pour tout contexte en
+service, que la famille ou la fiche le vende ou non, et fermer un canal
+n'efface plus aucun taux (`refuseVatWithoutChannel`,
+`forgetVatOfClosedChannels` et les deux erreurs `tva_without_channel`
+retirés). **Le push filtre** les prix par contexte sur les canaux effectifs
+(`soldPercents`, `projection.ts`) : il ne porte pas l'audience, et sans ce
+filtre un taux à emporter posé sur une famille vendue aux seuls pros
+l'aurait fait entrer dans la boutique publique. Ce filtre tombe avec le push
+(lot 5) ; les faits ne filtrent pas — l'audience y décide.
+
 ### Lot 3 — décisions déjà prises (2026-10-15)
 
 **La validation avant la boutique publique.** Hugo : « que les produits

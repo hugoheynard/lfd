@@ -47,9 +47,10 @@ export async function makeActivatable(staff: Staff, productId: string): Promise<
   const category = `${CATEGORIES}/${detail.categoryId}`;
   const rateId = await foodRate(staff);
   await staff().put(`${category}/audience`).send({ audience: "pro" }).expect(200);
-  // Un taux ne se règle que pour un contexte vendu : la famille s'ouvre à
-  // chacun. `pos_b2b` n'est pas une boutique : c'est la ligne de la
-  // plateforme dans la matrice, et elle existe sans avoir été créée.
+  // La famille s'ouvre à chaque contexte : le push ne sert que les contextes
+  // vendus (`soldPercents`, 2026-10-15), même si un taux se règle sans canal.
+  // `pos_b2b` n'est pas une boutique : c'est la ligne de la plateforme dans
+  // la matrice, et elle existe sans avoir été créée.
   const shopId = await counterFor(staff, productId);
   await staff()
     .put(`${category}/channels`)

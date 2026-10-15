@@ -729,13 +729,20 @@ describe("projectCatalog — les allergènes", () => {
  * pro au taux de TVA pro. Câbler ce prix n'était pas aller chercher une donnée
  * — c'était **cesser de la jeter**.
  */
+/** Une fiche vendue dans les trois contextes : chaque taux réglé y passe. */
+const SOLD_EVERYWHERE: SalesChannels = [
+  { pointOfSaleId: "pos_b2b", context: "b2b" },
+  { pointOfSaleId: "pos_shop", context: "takeaway" },
+  { pointOfSaleId: "pos_shop", context: "eatIn" },
+];
+
 describe("le prix public sur le fil — v9", () => {
   const publicOf = (percents: Record<string, number>, priceCents = 200) =>
     projectCatalog(
       [product({ variants: [variant({ priceCents })] })],
       [category()],
       vat(percents),
-      sold(),
+      sold(SOLD_EVERYWHERE),
       NO_DISCOUNT,
       NO_LIMITS,
       INCO,
@@ -990,5 +997,47 @@ describe("projectCatalog — sans déclaration d'allergènes", () => {
       sku: "VIE-001-1",
       reason: "variant_sans_allergenes",
     });
+  });
+});
+
+/**
+ * Le filtre du push (2026-10-15) : la TVA ne dépend plus des canaux, mais le
+ * push ne porte pas l'audience — c'est l'entrée `takeaway` qui ouvre la
+ * boutique publique côté plateforme. Il doit donc garder EXACTEMENT son sens.
+ */
+describe("projectCatalog — le push ne sert que les contextes vendus", () => {
+  const pushed = (channels: SalesChannels) =>
+    projectCatalog(
+      [product()],
+      [category()],
+      vat({ takeaway: 5.5, b2b: 5.5 }),
+      sold(channels),
+      NO_DISCOUNT,
+      NO_LIMITS,
+      INCO,
+      NO_SHOWCASE,
+      NO_OPERATIONS,
+      AT,
+    ).snapshot.products[0]?.variants[0];
+
+  /**
+   * Régression évitée : sans filtre, un taux à emporter réglable sur une
+   * famille vendue seulement en B2B ouvrait la boutique publique par le push.
+   */
+  it("poser un taux à emporter sur une famille vendue seulement en B2B ne la fait pas entrer dans la boutique publique par le push", () => {
+    const v = pushed([{ pointOfSaleId: "pos_b2b", context: "b2b" }]);
+
+    expect(Object.keys(v?.publicByContext ?? {})).toEqual(["b2b"]);
+    // Le prix pro, lui, ne bouge pas : il se lit au taux b2b.
+    expect(v?.vatRatePercent).toBe(5.5);
+  });
+
+  it("garde l'entrée à emporter tant que le canal à emporter est vendu", () => {
+    const v = pushed([
+      { pointOfSaleId: "pos_b2b", context: "b2b" },
+      { pointOfSaleId: "pos_shop", context: "takeaway" },
+    ]);
+
+    expect(Object.keys(v?.publicByContext ?? {}).sort()).toEqual(["b2b", "takeaway"]);
   });
 });

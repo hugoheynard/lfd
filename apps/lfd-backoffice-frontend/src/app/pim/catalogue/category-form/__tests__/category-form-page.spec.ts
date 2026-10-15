@@ -483,7 +483,10 @@ describe('CategoryFormPage — le rail', () => {
    * annoncerait un manque là où il n'y en a pas.
    */
   it('ne compte pas les traductions dans la complétude', async () => {
-    const { host } = await edit(category({ vatByContext: { takeaway: 'tva_55' } }));
+    // Un taux pour CHAQUE contexte en service, vendu ou non (2026-10-15).
+    const { host } = await edit(
+      category({ vatByContext: { takeaway: 'tva_55', eatIn: 'tva_55', b2b: 'tva_55' } }),
+    );
 
     // Trois lignes requises — nom, canal, TVA — toutes remplies par la fixture.
     // Six lignes AU TOTAL dans la liste : la barre en ignore trois.
@@ -499,5 +502,19 @@ describe('CategoryFormPage — le rail', () => {
     // remplirait la complétude de gris avant la première frappe.
     const { host } = await mount([], null);
     expect(checklist(host).some((row) => row.includes('anglais'))).toBe(false);
+  });
+});
+
+/**
+ * Régression : jusqu'au 2026-10-15, l'écran ne montrait un sélecteur de taux
+ * que pour les contextes VENDUS. La TVA ne dépend plus des canaux.
+ */
+describe('CategoryFormPage — la TVA de tous les contextes en service', () => {
+  it('montre un taux pour un contexte que la famille ne vend pas', async () => {
+    const { host } = await edit(category());
+
+    // La famille ne vend qu'à emporter ; les trois contextes du registre ont
+    // pourtant chacun leur sélecteur.
+    expect(host.querySelectorAll('.vat-pickers fold-listbox').length).toBe(3);
   });
 });

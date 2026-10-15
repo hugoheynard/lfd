@@ -213,23 +213,6 @@ export class ProductUnknownContextError extends BusinessError {
 }
 
 /**
- * Une dérogation pour un contexte que la **famille ne vend pas**.
- *
- * Déroger là où rien ne se vend, c'est décider d'un prix pour une vente qui
- * n'a pas lieu — et gonfler le compte d'usages d'un taux que plus rien ne
- * facture, donc bloquer sa suppression pour rien. La règle est la même que sur
- * la famille : elle change juste de porteur.
- */
-export class ProductVatWithoutChannelError extends BusinessError {
-  constructor(readonly contextKey: string) {
-    super(
-      "catalogue.product.tva_without_channel",
-      `La famille ne vend pas en « ${contextKey} » : son taux ne se redéfinit pas.`,
-    );
-  }
-}
-
-/**
  * Une déclaration de publiabilité sans auteur identifié.
  *
  * Elle ne se refuse pas par prudence technique : une déclaration EST une

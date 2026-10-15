@@ -5,8 +5,6 @@ import { requireRate } from "../../../vat-rates/application/vat-support.js";
 import { VatRateRepository } from "../../../vat-rates/domain/ports/vat-rate.repository.js";
 import type { WriteTicket } from "../../../../platform/journal/scoped-journal.js";
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
-import { requireCategory } from "../../category/application/category-support.js";
-import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
 import { SalesContextRegistry } from "../../../sales-contexts/domain/ports/sales-context.registry.js";
 import type { ContextVat } from "../../shared/domain/value-objects/context-vat.js";
 import { vatChangePayload } from "../../shared/application/journal-names.js";
@@ -29,16 +27,15 @@ export class SetProductVatCommand {
  * Le geste est donc réversible sans écrire un état « pas de dérogation », qui
  * ressemblerait à une décision et se compterait comme un usage.
  *
- * Trois vérifications, et aucune n'est à la portée de l'agrégat seul : le taux
- * existe (contexte commerce), le contexte existe (registre), la famille vend ce
- * contexte (elle est ailleurs). Le produit, lui, tient la dernière une fois
- * qu'on lui montre les canaux de sa famille.
+ * Deux vérifications : le taux existe, le contexte existe (registre, que le
+ * produit tient une fois qu'on le lui montre). Que la famille vende ce
+ * contexte ou non ne compte plus : la TVA ne dépend plus des canaux
+ * (2026-10-15).
  */
 @CommandHandler(SetProductVatCommand)
 export class SetProductVatHandler implements ICommandHandler<SetProductVatCommand, void> {
   constructor(
     private readonly products: ProductRepository,
-    private readonly categories: CategoryRepository,
     private readonly rates: VatRateRepository,
     private readonly contexts: SalesContextRegistry,
     private readonly journal: PimJournal,
@@ -53,10 +50,8 @@ export class SetProductVatHandler implements ICommandHandler<SetProductVatComman
     for (const rateId of Object.values(command.vat)) {
       await requireRate(this.rates, rateId);
     }
-    const category = await requireCategory(this.categories, product.categoryId);
-
     const before = product.vatByContext;
-    product.setVat(command.vat, await this.contexts.active(), category.channelPreset);
+    product.setVat(command.vat, await this.contexts.active());
     await this.uow.run(async () => {
       const ticket = await this.journalize(product, before, product.vatByContext);
       await this.products.save(product, ticket);

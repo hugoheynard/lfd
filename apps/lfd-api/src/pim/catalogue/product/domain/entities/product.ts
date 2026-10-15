@@ -4,7 +4,6 @@ import {
   InvalidProductVariantsError,
   NotArchivedProductNotRestorableError,
   ProductNotActivatableError,
-  ProductVatWithoutChannelError,
   ProductUnknownContextError,
   VariantNotFoundError,
   VariantNotInProductError,
@@ -25,10 +24,7 @@ import {
   type SalesChannels,
 } from "../../../shared/domain/value-objects/sales-channels.js";
 import type { SalesContext } from "../../../../sales-contexts/domain/value-objects/sales-context.js";
-import {
-  contextIsSold,
-  type ContextVat,
-} from "../../../shared/domain/value-objects/context-vat.js";
+import type { ContextVat } from "../../../shared/domain/value-objects/context-vat.js";
 import type { AllergenDeclaration } from "../value-objects/nutrition-declaration.js";
 import type { Sku } from "../value-objects/sku.value-object.js";
 import type { ProPriceHt } from "../value-objects/pro-price-ht.js";
@@ -222,40 +218,13 @@ export class Product {
   }
 
   /**
-   * Où cette fiche se vend RÉELLEMENT : sa matrice si elle en a une, celle de
-   * sa famille sinon.
-   *
-   * La règle de résolution vit ici plutôt que chez chaque appelant — c'est elle
-   * qui décide où un taux peut se poser, et deux copies finiraient par ne plus
-   * dire la même chose.
-   */
-  effectiveChannels(familyChannels: SalesChannels): SalesChannels {
-    return this.channelOverrideValue ?? familyChannels;
-  }
-
-  /**
    * Redéfinit où la fiche se vend — ou la rend à sa famille avec `null`.
    *
-   * Fermer un canal **efface** les taux que la fiche y avait posés, exactement
-   * comme sur la famille : sans cet effacement, une fiche qui ne se vend plus en
-   * B2B garderait son taux B2B, il compterait comme un usage, et la suppression
-   * de ce taux resterait bloquée par une décision que plus rien n'applique.
+   * **Aucun taux n'est effacé** : la TVA ne dépend plus des canaux (Hugo,
+   * 2026-10-15), une fiche doit pouvoir servir n'importe quel contexte.
    */
-  setChannels(
-    channels: SalesChannels | null,
-    contexts: readonly SalesContext[],
-    familyChannels: SalesChannels,
-  ): void {
+  setChannels(channels: SalesChannels | null): void {
     this.channelOverrideValue = channels === null ? null : normalizeSalesChannels(channels);
-    const effective = this.effectiveChannels(familyChannels);
-    const kept: Record<string, string> = {};
-    for (const context of contexts) {
-      const rateId = this.vatByContextValue[context.key];
-      if (rateId !== undefined && contextIsSold(context, effective)) {
-        kept[context.key] = rateId;
-      }
-    }
-    this.vatByContextValue = kept;
   }
 
   /**
@@ -265,24 +234,14 @@ export class Product {
    * la famille, et c'est ce qui rend le geste réversible sans écrire un état
    * « pas de dérogation » qui ressemblerait à une décision.
    *
-   * Deux refus, et l'agrégat ne peut en tenir qu'un seul seul : le contexte
-   * doit exister (registre), et le contexte doit être VENDU par la famille —
-   * d'où les canaux passés en argument. Un produit ne voit pas sa famille ;
-   * un objet ne garantit que ce qu'il voit.
+   * Un seul refus : le contexte doit exister (registre). Un contexte que la
+   * fiche ne vend pas se règle — la matrice ne décide plus de la TVA.
    */
-  setVat(vat: ContextVat, contexts: readonly SalesContext[], familyChannels: SalesChannels): void {
-    // Les canaux EFFECTIFS : une fiche qui a redéfini où elle se vend juge ses
-    // taux là-dessus, pas sur ceux de sa famille. Sans quoi elle pourrait poser
-    // un taux sur un canal qu'elle vient elle-même de fermer.
-    const sellingChannels = this.effectiveChannels(familyChannels);
-    const known = new Map(contexts.map((context) => [context.key, context]));
+  setVat(vat: ContextVat, contexts: readonly SalesContext[]): void {
+    const known = new Set(contexts.map((context) => context.key));
     for (const key of Object.keys(vat)) {
-      const context = known.get(key);
-      if (context === undefined) {
+      if (!known.has(key)) {
         throw new ProductUnknownContextError(key);
-      }
-      if (!contextIsSold(context, sellingChannels)) {
-        throw new ProductVatWithoutChannelError(key);
       }
     }
     this.vatByContextValue = { ...vat };

@@ -2,7 +2,6 @@ import { Category } from "../category.js";
 import {
   CategoryFrozenError,
   CategorySelfParentError,
-  CategoryVatWithoutChannelError,
   CategoryUnknownContextError,
 } from "../../errors/category-errors.js";
 import type { SalesChannels } from "../../../../shared/domain/value-objects/sales-channels.js";
@@ -52,7 +51,7 @@ function channels(sold: SalesChannels = []): SalesChannels {
 /** Une famille qui vend le mode demandé, prête à porter un taux. */
 function selling(sold: SalesChannels): Category {
   const category = Category.open(OPEN);
-  category.setChannels(channels(sold), CONTEXTS);
+  category.setChannels(channels(sold));
   return category;
 }
 
@@ -104,7 +103,6 @@ describe("l’agrégat Category", () => {
             { pointOfSaleId: "emp_1", context: "takeaway" },
             { pointOfSaleId: "emp_1", context: "eatIn" },
           ]),
-          CONTEXTS,
         ),
       ).toThrow(CategoryFrozenError);
     });
@@ -146,53 +144,31 @@ describe("l’agrégat Category", () => {
   });
 
   /**
-   * La règle vivait dans le navigateur : le panneau envoyait les canaux, PUIS
-   * les taux nettoyés, en deux requêtes sans transaction. La seconde perdue
-   * laissait une famille qui ne vend plus en B2B et pointe toujours son taux.
+   * La TVA ne dépend plus des canaux (Hugo, 2026-10-15) : une famille doit
+   * pouvoir servir n'importe quel contexte, vendu aujourd'hui ou non.
    */
-  describe("un taux ne se règle que pour un canal vendu", () => {
-    it("refuse le taux d’un canal fermé", () => {
+  describe("un taux se règle pour tout contexte connu, vendu ou non", () => {
+    /** Régression : `refuseVatWithoutChannel` refusait ce geste jusqu'au 2026-10-15. */
+    it("un taux se pose pour un contexte que la famille ne vend pas", () => {
       const category = selling([{ pointOfSaleId: "emp_1", context: "takeaway" }]);
-      expect(() => category.setVat({ takeaway: "tva_55", eatIn: "tva_10" }, CONTEXTS)).toThrow(
-        CategoryVatWithoutChannelError,
-      );
+      category.setVat({ takeaway: "tva_55", eatIn: "tva_10" }, CONTEXTS);
+      expect(category.vatByContext).toEqual({ takeaway: "tva_55", eatIn: "tva_10" });
     });
 
-    it("accepte le taux d’un canal vendu, quelle que soit la boutique", () => {
-      const category = selling([{ pointOfSaleId: "emp_1", context: "takeaway" }]);
-      category.setVat({ takeaway: "tva_55" }, CONTEXTS);
-      expect(category.vatByContext).toEqual({ takeaway: "tva_55" });
-    });
-
-    it("traite le B2B comme un canal à part entière", () => {
+    it("traite le B2B comme un contexte à part entière", () => {
       const category = selling([{ pointOfSaleId: "pos_b2b", context: "b2b" }]);
       category.setVat({ b2b: "tva_55" }, CONTEXTS);
       expect(category.vatOf("b2b")).toBe("tva_55");
     });
 
-    it("EFFACE le taux d’un canal qu’on ferme", () => {
+    /** Régression : `forgetVatOfClosedChannels` effaçait ce taux jusqu'au 2026-10-15. */
+    it("fermer un canal n’efface plus le taux de son contexte", () => {
       const category = selling([{ pointOfSaleId: "pos_b2b", context: "b2b" }]);
       category.setVat({ b2b: "tva_55" }, CONTEXTS);
 
-      category.setChannels(channels([]), CONTEXTS);
+      category.setChannels(channels([]));
 
-      expect(category.vatOf("b2b")).toBeNull();
-    });
-
-    it("laisse intact le taux d’un canal qui reste vendu", () => {
-      const category = selling([{ pointOfSaleId: "emp_1", context: "takeaway" }]);
-      category.setVat({ takeaway: "tva_55" }, CONTEXTS);
-
-      // Une SECONDE boutique ouvre ; « à emporter » se vend toujours.
-      category.setChannels(
-        channels([
-          { pointOfSaleId: "emp_1", context: "takeaway" },
-          { pointOfSaleId: "emp_2", context: "takeaway" },
-        ]),
-        CONTEXTS,
-      );
-
-      expect(category.vatOf("takeaway")).toBe("tva_55");
+      expect(category.vatOf("b2b")).toBe("tva_55");
     });
 
     it("refuse un contexte que le registre ne connaît pas", () => {

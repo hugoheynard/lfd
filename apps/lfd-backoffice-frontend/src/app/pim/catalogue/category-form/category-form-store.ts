@@ -4,7 +4,7 @@ import type { CategoryMediaView, LocalizedText, SalesChannels } from '@lfd/pim-c
 
 import { localizedField } from '../../../shared/lang-switch/localized-field';
 import { NotifyService } from '../../../notify.service';
-import { NO_CHANNELS, sellsContext } from '../../data/channels';
+import { NO_CHANNELS } from '../../data/channels';
 import { SalesContextStore } from '../../sales-contexts/sales-context-store';
 import { CategoryHttpApi, type CategoryDetail, type CategoryVatDraft } from '../category-http-api';
 import { CategoryStore } from '../category-store';
@@ -76,11 +76,10 @@ export class CategoryFormStore implements SectionEditing {
     this.categories.items().filter((item) => !item.isArchived && item.id !== this.id()),
   );
 
-  /** Les contextes réglables : ceux dont le canal est vendu. Un taux posé sur
-   *  une vente qui n'a pas lieu rendrait ce taux indéboulonnable. */
-  readonly settableContexts = computed(() =>
-    this.contexts.items().filter((context) => sellsContext(this.channels(), context.key)),
-  );
+  /** Les contextes réglables : TOUS ceux en service, vendus ou non. La TVA ne
+   *  dépend plus des canaux (2026-10-15) : une famille doit pouvoir servir
+   *  n'importe quel contexte, et la complétude exige un taux pour chacun. */
+  readonly settableContexts = computed(() => this.contexts.items());
 
   /** Le suivi « modifié / enregistré », extrait : il ne compare que des
    *  empreintes, et n'a rien de métier. */
@@ -290,8 +289,8 @@ export class CategoryFormStore implements SectionEditing {
     return this.parentId() === '' ? null : this.parentId();
   }
 
-  /** Les taux à enregistrer — **seulement ceux qu'on montre**. Envoyer celui
-   *  d'un champ qu'on vient de masquer ferait tout échouer. */
+  /** Les taux à enregistrer — ceux des contextes en service ; un contexte
+   *  retiré du registre serait refusé par le serveur. */
   private vatToSave(): CategoryVatDraft {
     const draft = this.vat();
     return Object.fromEntries(

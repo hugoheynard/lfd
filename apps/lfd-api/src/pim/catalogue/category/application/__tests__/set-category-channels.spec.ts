@@ -1,8 +1,5 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
-import {
-  KnownPointsOfSale,
-  KnownVatRates,
-} from "../../../shared/application/__tests__/journal-name-doubles.js";
+import { KnownPointsOfSale } from "../../../shared/application/__tests__/journal-name-doubles.js";
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
 import { SalesContextRegistry } from "../../../../sales-contexts/domain/ports/sales-context.registry.js";
 import type { SalesContext } from "../../../../sales-contexts/domain/value-objects/sales-context.js";
@@ -20,9 +17,8 @@ import {
 } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
 
 /**
- * Fermer un canal efface le taux du contexte fermé — et la comptabilité doit
- * le relire (Hugo, 2026-09-19). Le fait de TVA ordinaire accompagne donc
- * `channels_changed`, mais SEULEMENT quand un taux a réellement disparu.
+ * Fermer un canal n'efface plus aucun taux (2026-10-15) : la TVA ne dépend
+ * plus des canaux. Le geste n'écrit donc que `channels_changed`.
  */
 
 const CONTEXTS: readonly SalesContext[] = [
@@ -136,10 +132,6 @@ async function setChannels(
     new OffersEverything(),
     new ActiveContexts(),
     new KnownPointsOfSale({ emp_1: "Boutique du Village", pos_b2b: "Plateforme pro" }),
-    new KnownVatRates({
-      tva_20: { name: "Normal", percent: 20 },
-      tva_55: { name: "Réduit", percent: 5.5 },
-    }),
     journal,
     new DirectUnitOfWork(),
     new RecordingCatalogEmitter(),
@@ -147,30 +139,16 @@ async function setChannels(
   ).execute(new SetCategoryChannelsCommand("cat_1", channels));
 }
 
-describe("SetCategoryChannelsHandler — les taux qu'une fermeture efface", () => {
-  it("écrit le fait de TVA quand fermer un canal efface son taux", async () => {
+describe("SetCategoryChannelsHandler — la TVA ne suit plus les canaux", () => {
+  /** Régression : jusqu'au 2026-10-15, fermer le canal B2B effaçait le taux B2B. */
+  it("fermer un canal garde son taux et n'écrit que le fait des canaux", async () => {
     const repo = family({ b2b: "tva_20", takeaway: "tva_55" });
     const journal = new RecordingJournal();
 
     await setChannels(repo, journal, TAKEAWAY);
 
-    expect(repo.stored.vatByContext).toEqual({ takeaway: "tva_55" });
-    expect(journal.types()).toEqual([
-      "product_category.channels_changed",
-      "product_category.vat_changed",
-    ]);
-    // Chaque objet cité l'est avec son nom du moment (plan des phrases, D5).
-    expect(journal.entries[1]).toMatchObject({
-      subjectType: "product_category",
-      subjectId: "cat_1",
-      payload: {
-        subjectLabel: "Viennoiseries",
-        vatByContext: { b2b: { from: { id: "tva_20", name: "Normal" }, to: null } },
-        // Le contexte aussi, sous son libellé du moment (lot D) : un contexte
-        // créé à l'écran ne se lirait sinon que par sa clé.
-        contextLabels: { b2b: "B2B" },
-      },
-    });
+    expect(repo.stored.vatByContext).toEqual({ b2b: "tva_20", takeaway: "tva_55" });
+    expect(journal.types()).toEqual(["product_category.channels_changed"]);
     expect(journal.entries[0]?.payload).toEqual({
       subjectLabel: "Viennoiseries",
       changes: {
@@ -194,15 +172,6 @@ describe("SetCategoryChannelsHandler — les taux qu'une fermeture efface", () =
         },
       },
     });
-  });
-
-  it("n'écrit pas de fait de TVA quand le canal fermé ne portait aucun taux", async () => {
-    const repo = family({ takeaway: "tva_55" });
-    const journal = new RecordingJournal();
-
-    await setChannels(repo, journal, TAKEAWAY);
-
-    expect(journal.types()).toEqual(["product_category.channels_changed"]);
   });
 
   it("n'écrit pas de fait de TVA quand on OUVRE un canal", async () => {

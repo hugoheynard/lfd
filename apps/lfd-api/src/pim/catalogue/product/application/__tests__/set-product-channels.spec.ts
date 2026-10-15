@@ -1,13 +1,8 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
-import {
-  KnownPointsOfSale,
-  KnownVatRates,
-} from "../../../shared/application/__tests__/journal-name-doubles.js";
+import { KnownPointsOfSale } from "../../../shared/application/__tests__/journal-name-doubles.js";
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
 import { SalesContextRegistry } from "../../../../sales-contexts/domain/ports/sales-context.registry.js";
 import type { SalesContext } from "../../../../sales-contexts/domain/value-objects/sales-context.js";
-import { Category } from "../../../category/domain/entities/category.js";
-import { CategoryRepository } from "../../../category/domain/ports/category.repository.js";
 import { PointOfSaleOfferReader } from "../../../shared/domain/ports/point-of-sale-offer.reader.js";
 import type { SalesChannels } from "../../../shared/domain/value-objects/sales-channels.js";
 import { Product, type ProductSnapshot } from "../../domain/entities/product.js";
@@ -16,10 +11,8 @@ import { SetProductChannelsCommand, SetProductChannelsHandler } from "../set-pro
 import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
 
 /**
- * Une fiche qui ferme un canal efface la dérogation de taux qu'elle y avait
- * posée — et la comptabilité doit le relire (Hugo, 2026-09-19). Le fait de TVA
- * ordinaire accompagne donc `channels_changed`, SEULEMENT quand une dérogation
- * a réellement disparu.
+ * Une fiche qui ferme un canal garde ses dérogations de taux (2026-10-15) : la
+ * TVA ne dépend plus des canaux. Le geste n'écrit que `channels_changed`.
  */
 
 const CONTEXTS: readonly SalesContext[] = [
@@ -66,49 +59,6 @@ class OffersEverything extends PointOfSaleOfferReader {
 
 const TAKEAWAY: SalesChannels = [{ pointOfSaleId: "emp_1", context: "takeaway" }];
 const BOTH: SalesChannels = [...TAKEAWAY, { pointOfSaleId: "pos_b2b", context: "b2b" }];
-
-/** La famille de la fiche : elle vend partout. Seule sa matrice sert ici. */
-class FamilySellingBoth extends CategoryRepository {
-  findById(id: string): Promise<Category | null> {
-    return Promise.resolve(
-      Category.reconstitute({
-        id,
-        name: { fr: "Tartes" },
-        slug: { fr: "tartes" },
-        parentId: null,
-        position: 0,
-        isArchived: false,
-        channelPreset: BOTH,
-        vatByContext: { takeaway: "tva_55" },
-        audience: "both",
-      }),
-    );
-  }
-  findBySlugFr(): Promise<Category | null> {
-    return Promise.resolve(null);
-  }
-  listAll(): Promise<Category[]> {
-    return Promise.resolve([]);
-  }
-  listChildren(): Promise<Category[]> {
-    return Promise.resolve([]);
-  }
-  add(): Promise<void> {
-    return Promise.resolve();
-  }
-  save(): Promise<void> {
-    return Promise.resolve();
-  }
-  saveAll(): Promise<void> {
-    return Promise.resolve();
-  }
-  countActiveChildren(): Promise<number> {
-    return Promise.resolve(0);
-  }
-  nextPosition(): Promise<number> {
-    return Promise.resolve(0);
-  }
-}
 
 /** Reconstitue à chaque lecture : le handler ne tient pas l'instance du test. */
 class OneProduct extends ProductRepository {
@@ -184,37 +134,25 @@ async function setChannels(
 ): Promise<void> {
   await new SetProductChannelsHandler(
     products,
-    new FamilySellingBoth(),
     new OffersEverything(),
     new ActiveContexts(),
     new KnownPointsOfSale({ emp_1: "Boutique du Village", pos_b2b: "Plateforme pro" }),
-    new KnownVatRates({ tva_20: { name: "Normal", percent: 20 } }),
     journal,
     new DirectUnitOfWork(),
     new RecordingCatalogEmitter(),
   ).execute(new SetProductChannelsCommand("prd_1", channels));
 }
 
-describe("SetProductChannelsHandler — les dérogations qu'une fermeture efface", () => {
-  it("écrit le fait de TVA quand fermer un canal efface la dérogation qui y était", async () => {
+describe("SetProductChannelsHandler — la TVA ne suit plus les canaux", () => {
+  /** Régression : jusqu'au 2026-10-15, fermer le canal B2B effaçait la dérogation B2B. */
+  it("fermer un canal garde la dérogation qui y était et n'écrit que le fait des canaux", async () => {
     const products = tart({ b2b: "tva_20" }, null);
     const journal = new RecordingJournal();
 
     await setChannels(products, journal, TAKEAWAY);
 
-    expect(products.stored.vatByContext).toEqual({});
-    expect(journal.types()).toEqual(["product.channels_changed", "product.vat_changed"]);
-    expect(journal.entries[1]).toMatchObject({
-      subjectType: "product",
-      subjectId: "prd_1",
-      payload: {
-        subjectLabel: "Tarte",
-        vatByContext: { b2b: { from: { id: "tva_20", name: "Normal" }, to: null } },
-        // Le contexte aussi, sous son libellé du moment (lot D) : un contexte
-        // créé à l'écran ne se lirait sinon que par sa clé.
-        contextLabels: { b2b: "B2B" },
-      },
-    });
+    expect(products.stored.vatByContext).toEqual({ b2b: "tva_20" });
+    expect(journal.types()).toEqual(["product.channels_changed"]);
     // La matrice, nommée : « hérité » d'un côté, les lignes de l'autre.
     expect(journal.entries[0]?.payload).toEqual({
       subjectLabel: "Tarte",
@@ -226,17 +164,6 @@ describe("SetProductChannelsHandler — les dérogations qu'une fermeture efface
         },
       ],
     });
-  });
-
-  it("n'écrit pas de fait de TVA quand le canal fermé ne portait aucune dérogation", async () => {
-    // La famille y avait un taux, la fiche non : rien de la FICHE n'est effacé,
-    // et le taux de la famille reste en place — il n'y a pas de fait à écrire.
-    const products = tart({}, null);
-    const journal = new RecordingJournal();
-
-    await setChannels(products, journal, TAKEAWAY);
-
-    expect(journal.types()).toEqual(["product.channels_changed"]);
   });
 
   it("n'écrit pas de fait de TVA quand la fiche revient à une famille qui vend partout", async () => {
