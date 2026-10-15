@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { type GpsPoint, gpsPointSchema } from "./address.js";
-import type { PickupAddressView } from "./pickup.js";
+import { type PickupAddressView, pickupDiscountAudiencesSchema } from "./pickup.js";
 
 /**
  * **Les sites** — nos lieux, leurs rôles et leurs couleurs (doc
@@ -32,6 +32,12 @@ export const siteColorSchema = z.string().regex(/^#[0-9a-fA-F]{6}$/u, "couleur a
 export const siteRolesPayloadSchema = z.object({
   /** Il remet des commandes à des clients (retrait). */
   pickup: z.boolean(),
+  /**
+   * À quelles clientèles il remet (Hugo, 2026-10-15) — lu seulement si
+   * `pickup`. **Absent = inchangé** : le champ arrive sur un contrat servi, et
+   * un onglet ouvert avant lui ne doit pas rouvrir un site réservé.
+   */
+  pickupAudiences: pickupDiscountAudiencesSchema.optional(),
   supply: siteSupplySchema,
   /** Livraisons et transferts peuvent en partir. */
   deliveryDeparture: z.boolean(),
@@ -67,7 +73,8 @@ export interface SiteView extends StoredSiteView {
 }
 
 /** Un site tel que la base le porte, sans ce que la livraison en dit. */
-export interface StoredSiteView extends PickupAddressView, SiteRolesPayload, SiteColorsPayload {
+export interface StoredSiteView
+  extends PickupAddressView, Omit<SiteRolesPayload, "pickupAudiences">, SiteColorsPayload {
   /** Toujours rendu : `null` = pas saisi (le trajet ne se calcule pas sans lui). */
   readonly gps: GpsPoint | null;
   /** ISO 8601, ou `null` : un site archivé n'est plus proposé. */

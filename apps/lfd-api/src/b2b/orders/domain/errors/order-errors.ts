@@ -1,4 +1,8 @@
-import { DELIVERY_CLOSED_FOR_AUDIENCE } from "@lfd/contracts";
+import {
+  type CustomerAudience,
+  DELIVERY_CLOSED_FOR_AUDIENCE,
+  PICKUP_CLOSED_FOR_AUDIENCE,
+} from "@lfd/contracts";
 
 import {
   BusinessError,
@@ -49,6 +53,29 @@ export class PickupClosedAtRequestedTimeError extends BusinessError {
     super(
       "orders.pickup.closed_at_requested_time",
       "Le point de retrait est fermé sur la tranche horaire demandée.",
+    );
+  }
+}
+
+/** Comment une clientèle se nomme dans un refus lu par le client ou l'équipe. */
+const AUDIENCE_NAMES: Readonly<Record<CustomerAudience, string>> = {
+  b2b: "aux professionnels",
+  b2c: "aux particuliers",
+};
+
+/**
+ * Le site choisi (ou le défaut) ne remet pas à cette clientèle (Hugo,
+ * 2026-10-15) — la même règle pour le client et pour l'équipe qui saisit.
+ * Ce n'est pas une question d'heure : aucun créneau ne l'ouvre.
+ */
+export class PickupClosedForAudienceError extends BusinessError {
+  constructor(
+    readonly siteLabel: string,
+    readonly audience: CustomerAudience,
+  ) {
+    super(
+      PICKUP_CLOSED_FOR_AUDIENCE,
+      `Le retrait à « ${siteLabel} » n'est pas ouvert ${AUDIENCE_NAMES[audience]}. Choisissez un autre point de retrait, ou la livraison.`,
     );
   }
 }

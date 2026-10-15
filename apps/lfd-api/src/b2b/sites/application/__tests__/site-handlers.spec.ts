@@ -14,6 +14,7 @@ import {
   DefaultSiteArchiveError,
   DepartureSiteMustDeliverError,
   SiteDeliveryDepartureWithoutGpsError,
+  SitePickupWithoutAudienceError,
   SiteTransferWithoutGpsError,
   SiteTransferWithoutHandoverError,
 } from "../../domain/site-errors.js";
@@ -29,6 +30,15 @@ const ROLES = {
   deliveryDeparture: false,
   transferMode: "integrated",
   counterSetupMinutes: 15,
+} as const;
+
+/** L'existant : le retrait ouvert aux deux clientèles. */
+const BOTH = { b2b: true, b2c: true } as const;
+
+/** Un site réservé aux particuliers, tel qu'il est en base. */
+const RESERVED_ROLES = {
+  ...ROLES,
+  pickupAudiences: { b2b: false, b2c: true },
 } as const;
 
 const NO_COLORS = {
@@ -65,13 +75,78 @@ describe("SetSiteRolesHandler", () => {
       new FixedDepartureSite(),
     ).execute(new SetSiteRolesCommand("site_village", ROLES));
 
-    expect(sites.stateOf("site_village")?.roles).toEqual(ROLES);
+    // Les clientèles du retrait, absentes de la charge, restent celles du site.
+    expect(sites.stateOf("site_village")?.roles).toEqual({
+      ...ROLES,
+      pickupAudiences: { b2b: true, b2c: true },
+    });
     expect(events.factTypes()).toEqual(["pickup_address.roles_set"]);
     expect(events.traced[0]?.journalFact().payload).toMatchObject({
       subjectLabel: "Laboratoire",
       supply: "transfer",
       counterSetupMinutes: 15,
     });
+  });
+
+  it("réserve le retrait aux pros, et le journalise (Hugo, 2026-10-15)", async () => {
+    const sites = locatedVillage();
+    const events = new RecordingPublisher();
+
+    await new SetSiteRolesHandler(
+      sites,
+      events,
+      new DirectUnitOfWork(),
+      new FixedDepartureSite(),
+    ).execute(
+      new SetSiteRolesCommand("site_village", {
+        ...ROLES,
+        pickupAudiences: { b2b: true, b2c: false },
+      }),
+    );
+
+    expect(sites.stateOf("site_village")?.roles.pickupAudiences).toEqual({ b2b: true, b2c: false });
+    expect(events.traced[0]?.journalFact().payload).toMatchObject({
+      pickupForB2b: true,
+      pickupForB2c: false,
+    });
+  });
+
+  it("garde un site réservé quand la charge n'envoie pas les cases (absent = inchangé)", async () => {
+    const reserved = storedSite("site_village", {
+      place: { ...PLACE, gps: GPS },
+      roles: RESERVED_ROLES,
+    });
+    const sites = new InMemorySites(reserved);
+
+    await new SetSiteRolesHandler(
+      sites,
+      new RecordingPublisher(),
+      new DirectUnitOfWork(),
+      new FixedDepartureSite(),
+    ).execute(new SetSiteRolesCommand("site_village", ROLES));
+
+    expect(sites.stateOf("site_village")?.roles.pickupAudiences).toEqual({ b2b: false, b2c: true });
+  });
+
+  it("refuse un retrait ouvert à personne sans rien écrire", async () => {
+    const sites = locatedVillage();
+    const events = new RecordingPublisher();
+
+    await expect(
+      new SetSiteRolesHandler(
+        sites,
+        events,
+        new DirectUnitOfWork(),
+        new FixedDepartureSite(),
+      ).execute(
+        new SetSiteRolesCommand("site_village", {
+          ...ROLES,
+          pickupAudiences: { b2b: false, b2c: false },
+        }),
+      ),
+    ).rejects.toBeInstanceOf(SitePickupWithoutAudienceError);
+    expect(sites.saved).toEqual([]);
+    expect(events.traced).toHaveLength(0);
   });
 
   it("refuse des rôles incohérents sans rien écrire ni journaliser", async () => {
@@ -157,7 +232,7 @@ describe("SetSiteRolesHandler", () => {
     const sites = new InMemorySites(
       storedSite("site_bakery", {
         place: { ...PLACE, gps: GPS },
-        roles: { ...ROLES, supply: "on_site", deliveryDeparture: true },
+        roles: { ...ROLES, pickupAudiences: BOTH, supply: "on_site", deliveryDeparture: true },
       }),
     );
     const departure = new FixedDepartureSite("site_bakery");
@@ -176,7 +251,7 @@ describe("SetSiteRolesHandler", () => {
     const sites = new InMemorySites(
       storedSite("site_village", {
         place: { ...PLACE, gps: GPS },
-        roles: { ...ROLES, supply: "on_site", deliveryDeparture: true },
+        roles: { ...ROLES, pickupAudiences: BOTH, supply: "on_site", deliveryDeparture: true },
       }),
     );
     await new SetSiteRolesHandler(

@@ -409,6 +409,12 @@ export const ORDERS_PRODUCTION_FACTS = {
        * Absent des faits écrits avant ce jour.
        */
       gps: z.object({ lat: z.number(), lng: z.number() }).nullable().optional(),
+      /**
+       * Les clientèles du retrait (Hugo, 2026-10-15). Absentes des faits
+       * écrits avant ce jour : le retrait y était ouvert aux deux.
+       */
+      pickupForB2b: z.boolean().optional(),
+      pickupForB2c: z.boolean().optional(),
     }),
   ),
   /**

@@ -80,6 +80,16 @@ describe('PublicHousePickerDialog', () => {
     expect(houses(boot().fixture)).toHaveLength(2);
   });
 
+  /** Hugo, 2026-10-15 : un site peut être réservé au retrait des pros. */
+  it('🔴 ne propose pas à un particulier un site réservé aux pros', () => {
+    const reserved: PickupAddressView = { ...LABO, pickupAudiences: { b2b: true, b2c: false } };
+    const rendered = houses(boot({ points: [reserved, VILLAGE] }).fixture);
+
+    expect(rendered.map((house) => house.querySelector('.name')?.textContent?.trim())).toEqual([
+      'Le Village',
+    ]);
+  });
+
   it('nomme chaque maison par son enseigne', () => {
     const [premier] = houses(boot().fixture);
 

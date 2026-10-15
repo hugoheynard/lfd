@@ -37,6 +37,7 @@ import {
 
 import { AccountService } from '../../../../account/account.service';
 import { ClientAddresses } from '../../../client-addresses.service';
+import { ClientAudience } from '../../../client-audience.service';
 import { ClientPreferences } from '../../../client-preferences.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
 import { LangSwitch } from '../../../lang-switch/lang-switch';
@@ -116,6 +117,8 @@ export class PreferencesPanel {
   private readonly account = inject(AccountService);
   private readonly addresses = inject(ClientAddresses);
   private readonly service = inject(ServicePoints);
+  /** Seuls les sites ouverts à la clientèle de l'espace se choisissent (2026-10-15). */
+  private readonly audience = inject(ClientAudience).shown;
   private readonly ref = inject(FoldPanelRef);
 
   protected readonly draft = signal<FulfillmentPreferenceView>(NO_FULFILLMENT_PREFERENCE);
@@ -150,7 +153,7 @@ export class PreferencesPanel {
   protected readonly destinations = computed<readonly FoldSelectOption<string>[]>(() => {
     const copy = this.t().account;
     const pickup = this.draft().method === 'pickup';
-    const named = pickup ? this.service.pickups() : this.addresses.deliveries();
+    const named = pickup ? this.service.pickupsFor(this.audience()) : this.addresses.deliveries();
     return [
       {
         value: DEFAULT_DESTINATION,

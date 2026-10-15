@@ -106,6 +106,16 @@ describe('rolesIssues — les refus du serveur, dits avant l’envoi', () => {
     expect(issues.join(' ')).toContain('approvisionné sur place');
   });
 
+  it('refuse un retrait ouvert à aucune clientèle (Hugo, 2026-10-15)', () => {
+    const issues = rolesIssues({ ...rolesOf(SITE), pickupAudiences: { b2b: false, b2c: false } });
+    expect(issues.join(' ')).toContain('au moins une clientèle');
+  });
+
+  it('ignore les clientèles d’un site sans retrait', () => {
+    const roles = { ...rolesOf(SITE), pickup: false, pickupAudiences: { b2b: false, b2c: false } };
+    expect(rolesIssues(roles)).toEqual([]);
+  });
+
   it('refuse une mise en place négative', () => {
     expect(rolesIssues({ ...rolesOf(SITE), counterSetupMinutes: -5 })).toHaveLength(1);
   });
@@ -227,6 +237,43 @@ describe('SiteRolesCard — le point GPS, sous « Livraison » seulement (Hugo, 
   it('signale sans bloquer un site qui expédiait déjà sans point', () => {
     const legacy = { ...SITE, deliveryDeparture: true };
     expect(gpsNotice(rolesOf(legacy), legacy, null)?.blocking).toBe(false);
+  });
+});
+
+describe('SiteRolesCard — le retrait par clientèle (Hugo, 2026-10-15)', () => {
+  it('lit un site d’avant les cases comme ouvert aux deux', () => {
+    expect(rolesOf(SITE).pickupAudiences).toEqual({ b2b: true, b2c: true });
+  });
+
+  it('envoie les cases avec les rôles quand on réserve le site aux pros', async () => {
+    const { fixture, sites } = mount();
+    fixture.componentInstance['setPickupAudience']('b2c', false);
+
+    await fixture.componentInstance['save']();
+
+    expect(sites.sent).toEqual([{ ...rolesOf(SITE), pickupAudiences: { b2b: true, b2c: false } }]);
+  });
+
+  it('n’envoie pas un retrait ouvert à personne, et dit pourquoi', async () => {
+    const { fixture, sites } = mount();
+    fixture.componentInstance['setPickupAudience']('b2b', false);
+    fixture.componentInstance['setPickupAudience']('b2c', false);
+    fixture.detectChanges();
+
+    await fixture.componentInstance['save']();
+
+    expect(sites.sent).toEqual([]);
+    expect(fixture.nativeElement.textContent).toContain('au moins une clientèle');
+  });
+
+  it('montre les deux cases sous « Retrait », et les masque sans lui', () => {
+    const { fixture } = mount();
+    expect(fixture.nativeElement.textContent).toContain('Retrait pour les pros');
+    expect(fixture.nativeElement.textContent).toContain('Retrait pour les particuliers');
+
+    fixture.componentInstance['set']('pickup', false);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.textContent).not.toContain('Retrait pour les pros');
   });
 });
 

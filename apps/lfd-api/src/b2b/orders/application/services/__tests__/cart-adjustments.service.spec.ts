@@ -4,6 +4,7 @@ import {
   type DeliveryZoneView,
   type PickupAddressView,
   type PickupDiscountAudiences,
+  PICKUP_CLOSED_FOR_AUDIENCE,
 } from "@lfd/contracts";
 
 import { DeliveryAvailabilityReader } from "../../../../delivery-availability/domain/ports/delivery-availability.reader.js";
@@ -12,6 +13,7 @@ import { PickupAddressRepository } from "../../../../pickup-addresses/domain/pic
 import {
   DeliveryClosedForAudienceError,
   NoDeliveryZoneForPostalCodeError,
+  PickupClosedForAudienceError,
 } from "../../../domain/errors/order-errors.js";
 import { CartAdjustments } from "../cart-adjustments.service.js";
 
@@ -135,6 +137,48 @@ describe("CartAdjustments — la remise du point, par clientèle", () => {
     );
 
     expect((await adjustments.forPickup(null, 5_000, "b2b")).discountCents).toBe(0);
+  });
+});
+
+/** Hugo, 2026-10-15 : un site peut être réservé au retrait d'une clientèle. */
+describe("CartAdjustments — le retrait, par clientèle du site", () => {
+  function reserved(pickupAudiences: PickupDiscountAudiences): CartAdjustments {
+    return new CartAdjustments(
+      new OnePoint({ ...point({ b2b: true, b2c: true }), pickupAudiences }),
+      new OneZone(),
+      OPEN,
+    );
+  }
+
+  it("refuse un pro sur un site réservé aux particuliers, en nommant le site et le geste", async () => {
+    const refusal = reserved({ b2b: false, b2c: true }).forPickup("pickup_1", 5_000, "b2b");
+
+    await expect(refusal).rejects.toBeInstanceOf(PickupClosedForAudienceError);
+    await expect(refusal).rejects.toMatchObject({ code: PICKUP_CLOSED_FOR_AUDIENCE });
+    await expect(refusal).rejects.toThrow(
+      /« Labo ».*aux professionnels.*Choisissez un autre point/u,
+    );
+  });
+
+  it("refuse un particulier sur un site réservé aux pros", async () => {
+    await expect(reserved({ b2b: true, b2c: false }).forPickup(null, 5_000, "b2c")).rejects.toThrow(
+      /aux particuliers/u,
+    );
+  });
+
+  it("sert la clientèle à qui le site est ouvert", async () => {
+    const resolved = await reserved({ b2b: true, b2c: false }).forPickup("pickup_1", 5_000, "b2b");
+    expect(resolved.point.id).toBe("pickup_1");
+  });
+
+  it("un site d'avant les cases (vue sans le champ) reste ouvert aux deux", async () => {
+    const adjustments = new CartAdjustments(
+      new OnePoint(point({ b2b: true, b2c: true })),
+      new OneZone(),
+      OPEN,
+    );
+    await expect(adjustments.forPickup(null, 5_000, "b2b")).resolves.toBeDefined();
+    await expect(adjustments.forPickup(null, 5_000, "b2c")).resolves.toBeDefined();
   });
 });
 

@@ -1,7 +1,11 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { DELIVERY_CLOSED_FOR_AUDIENCE, type ShopQuoteView } from '@lfd/contracts';
+import {
+  DELIVERY_CLOSED_FOR_AUDIENCE,
+  PICKUP_CLOSED_FOR_AUDIENCE,
+  type ShopQuoteView,
+} from '@lfd/contracts';
 import { of } from 'rxjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -221,6 +225,29 @@ describe('ShopQuote', () => {
     quiet();
     http.expectOne(QUOTE).flush(ANSWER);
     expect(quote.refusal()).toBeNull();
+    http.verify();
+  });
+
+  /** Hugo, 2026-10-15 : un site réservé à l'autre clientèle se refuse au devis. */
+  it('montre le refus d’un retrait sur un site fermé à la clientèle, sans garder la remise', () => {
+    const { cart, quote, http } = boot();
+
+    cart.setQuantity(SKU, 1);
+    quiet();
+    http.expectOne(QUOTE).flush({ ...ANSWER, discountCents: 120, totalCents: 1_146 });
+
+    cart.setQuantity(SKU, 2);
+    quiet();
+    http
+      .expectOne(QUOTE)
+      .flush(
+        { code: PICKUP_CLOSED_FOR_AUDIENCE, message: 'Le retrait à « Le Labo » n’est pas ouvert.' },
+        { status: 409, statusText: 'Conflict' },
+      );
+
+    expect(quote.status()).toBe('refused');
+    expect(quote.refusal()).toBe('Le retrait à « Le Labo » n’est pas ouvert.');
+    expect(quote.totals().discountCents).toBe(0);
     http.verify();
   });
 

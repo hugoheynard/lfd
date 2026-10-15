@@ -113,6 +113,16 @@ describe('roleLabels', () => {
     expect(roleLabels(village)).toEqual(['Retrait', 'Transfert dédié']);
   });
 
+  it('dit la clientèle d’un retrait réservé (Hugo, 2026-10-15)', () => {
+    expect(roleLabels({ ...LABO, pickupAudiences: { b2b: true, b2c: false } })[0]).toBe(
+      'Retrait pros',
+    );
+    expect(roleLabels({ ...LABO, pickupAudiences: { b2b: false, b2c: true } })[0]).toBe(
+      'Retrait particuliers',
+    );
+    expect(roleLabels({ ...LABO, pickupAudiences: { b2b: true, b2c: true } })[0]).toBe('Retrait');
+  });
+
   it('ne dit rien d’un rôle absent', () => {
     expect(roleLabels({ ...LABO, pickup: false })).toEqual(['Livraison']);
   });

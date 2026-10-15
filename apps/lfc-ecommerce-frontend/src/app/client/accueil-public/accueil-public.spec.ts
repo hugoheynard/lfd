@@ -12,6 +12,8 @@ import {
   audienceOf,
   DEFAULT_DELIVERY_AVAILABILITY,
   type DeliveryAvailabilityView,
+  pickupOpenTo,
+  type CustomerAudience,
 } from '@lfd/contracts/shop-values';
 import { afterEach, describe, expect, it } from 'vitest';
 
@@ -64,6 +66,10 @@ const DIX = { mode: 'percent', bp: 1000 } as const;
 
 class FakePoints {
   readonly pickups = signal<readonly PickupAddressView[]>([]);
+  /** La même règle que le vrai dépôt : on n'en double que la source. */
+  pickupsFor(audience: CustomerAudience): readonly PickupAddressView[] {
+    return this.pickups().filter((candidate) => pickupOpenTo(candidate, audience));
+  }
   /**
    * Le réglage « Livraison » à son défaut, ouvert aux deux — ce que le vrai
    * dépôt rend tant que rien n'est lu. La porte du coursier le lit depuis
@@ -243,6 +249,22 @@ describe('AccueilPublic — ce que les maisons annoncent', () => {
     const fixture = await mount([point({ id: 'a', discount: DIX })]);
 
     expect(fixture.componentInstance['bestLabel']()).toContain('10');
+  });
+
+  it('🔴 ne montre pas à un particulier un site réservé aux pros, ni sa remise (2026-10-15)', async () => {
+    const fixture = await mount([
+      point({ id: 'a' }),
+      point({
+        id: 'pros',
+        label: 'Le Labo',
+        discount: DIX,
+        pickupAudiences: { b2b: true, b2c: false },
+      }),
+    ]);
+
+    const shown = fixture.componentInstance['houses']().map((house) => house.point.id);
+    expect(shown).toEqual(['a']);
+    expect(fixture.componentInstance['bestLabel']()).toBeNull();
   });
 });
 

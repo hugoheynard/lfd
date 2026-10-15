@@ -500,9 +500,10 @@ export class AccueilPublic {
   protected readonly houses = computed<readonly House[]>(() => {
     const audience = this.audience();
     const copy = this.t().pickupDialog;
-    const best = bestPickupDiscount(this.points.pickups(), audience);
+    const points = this.points.pickupsFor(audience);
+    const best = bestPickupDiscount(points, audience);
     let flagged = false;
-    return this.points.pickups().map((point) => {
+    return points.map((point) => {
       // Le drapeau ne se pose QU'UNE fois : deux cartes « le plus avantageux »
       // ne diraient plus rien.
       const isBest = !flagged && best !== null && sameAdjustment(point.discount, best);
@@ -526,7 +527,8 @@ export class AccueilPublic {
    * retrait » serait une promesse vide écrite en gros.
    */
   protected readonly bestLabel = computed(() => {
-    const best = bestPickupDiscount(this.points.pickups(), this.audience());
+    const audience = this.audience();
+    const best = bestPickupDiscount(this.points.pickupsFor(audience), audience);
     return best === null ? null : fill(this.c().proof.discount, { value: discountLabel(best) });
   });
 
@@ -544,7 +546,7 @@ export class AccueilPublic {
    */
   protected readonly opensAt = computed(() => {
     const starts = this.points
-      .pickups()
+      .pickupsFor(this.audience())
       .map((point) => point.opening.publicOpening?.start ?? null)
       .filter((start): start is string => start !== null);
     if (starts.length === 0) {
@@ -555,7 +557,7 @@ export class AccueilPublic {
   });
 
   protected readonly houseCount = computed(() =>
-    fill(this.c().houses.count, { count: String(this.points.pickups().length) }),
+    fill(this.c().houses.count, { count: String(this.points.pickupsFor(this.audience()).length) }),
   );
 
   constructor() {

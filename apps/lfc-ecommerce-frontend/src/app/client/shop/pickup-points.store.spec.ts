@@ -46,6 +46,16 @@ describe('ServicePoints — le réglage de livraison et les vues anciennes', () 
     expect(points.pickups()[0]?.discountAudiences).toEqual({ b2b: true, b2c: true });
   });
 
+  /** Hugo, 2026-10-15 : un site peut être réservé au retrait d'une clientèle. */
+  it('ne propose à chaque clientèle que les sites qui lui sont ouverts', () => {
+    const pros = { ...OLD_POINT, id: 'pros', pickupAudiences: { b2b: true, b2c: false } };
+    const shop = { ...OLD_POINT, id: 'shop', pickupAudiences: { b2b: false, b2c: true } };
+    points.receive([OLD_POINT, pros, shop], []);
+
+    expect(points.pickupsFor('b2b').map((p) => p.id)).toEqual(['pick_labo', 'pros']);
+    expect(points.pickupsFor('b2c').map((p) => p.id)).toEqual(['pick_labo', 'shop']);
+  });
+
   it('ouvert aux deux, et NON connu, tant que rien n’est lu', () => {
     expect(points.deliveryAvailability()).toEqual(DEFAULT_DELIVERY_AVAILABILITY);
     expect(points.deliveryAvailabilityKnown()).toBe(false);

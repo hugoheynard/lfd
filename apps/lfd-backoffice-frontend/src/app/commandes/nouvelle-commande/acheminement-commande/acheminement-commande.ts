@@ -18,6 +18,7 @@ import { NEW_ADDRESS, type DraftAddress, type DraftStore } from '../draft.store'
 import {
   deadlinesFor,
   deliveryOpenTo,
+  pickupOpenTo,
   pickupSlots,
   resolveWindowMode,
   slotsFor,
@@ -152,9 +153,18 @@ export class AcheminementCommande {
 
   protected readonly isCourier = computed(() => this.method() === 'delivery');
 
+  /**
+   * Les points ouverts à la clientèle de la société (Hugo, 2026-10-15) : un
+   * site réservé à l'autre clientèle n'est pas proposé — le serveur le
+   * refuserait, la même règle pour l'équipe que pour le client.
+   */
+  private readonly openPickups = computed(() =>
+    this.pickups().filter((point) => pickupOpenTo(point, this.audience())),
+  );
+
   /** Le point choisi, sinon celui par défaut, sinon le premier — jamais rien si un existe. */
   protected readonly pickup = computed<PickupAddressView | null>(() => {
-    const points = this.pickups();
+    const points = this.openPickups();
     const chosen = points.find((point) => point.id === this.draft().pickupId());
     return chosen ?? points.find((point) => point.isDefault) ?? points[0] ?? null;
   });
@@ -204,7 +214,7 @@ export class AcheminementCommande {
   });
 
   protected readonly pickupOptions = computed(() =>
-    this.pickups().map((point) => ({ value: point.id, label: point.label || point.ville })),
+    this.openPickups().map((point) => ({ value: point.id, label: point.label || point.ville })),
   );
 
   /** Le carnet, puis « une autre adresse » — l'ordre du panier client. */
@@ -479,11 +489,17 @@ export class AcheminementCommande {
       deliveryAddress: null,
       saveToBook: false,
       window: this.chosenWindow(),
-      issue:
-        point === null
-          ? 'Aucun point de retrait n’est configuré (E-commerce LFC → Réglages → Points de retrait).'
-          : this.windowIssue(),
+      issue: point === null ? this.noPickupIssue() : this.windowIssue(),
     };
+  }
+
+  /** Pourquoi aucun point : rien de configuré, ou rien d'ouvert à cette clientèle. */
+  private noPickupIssue(): string {
+    if (this.pickups().length === 0) {
+      return 'Aucun point de retrait n’est configuré (E-commerce LFC → Réglages → Points de retrait).';
+    }
+    const who = this.audience() === 'b2b' ? 'aux professionnels' : 'aux particuliers';
+    return `Aucun point de retrait n’est ouvert ${who} : proposez la livraison, ou ouvrez le retrait d’un site à cette clientèle (Réglages → Sites).`;
   }
 
   private courierChoice(): FulfillmentChoice {

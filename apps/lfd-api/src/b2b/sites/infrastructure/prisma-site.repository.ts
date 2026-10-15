@@ -38,6 +38,7 @@ function toDomain(row: SiteRow): Site {
     },
     roles: {
       pickup: row.pickup,
+      pickupAudiences: { b2b: row.pickupForB2b, b2c: row.pickupForB2c },
       supply: row.supply,
       deliveryDeparture: row.deliveryDeparture,
       transferMode: row.transferMode,
@@ -77,6 +78,8 @@ function toPersistence(site: Site): Prisma.SiteUncheckedCreateInput {
     discountForB2c: place.discount.audiences.b2c,
     isDefault,
     pickup: roles.pickup,
+    pickupForB2b: roles.pickupAudiences.b2b,
+    pickupForB2c: roles.pickupAudiences.b2c,
     supply: roles.supply,
     deliveryDeparture: roles.deliveryDeparture,
     transferMode: roles.transferMode,

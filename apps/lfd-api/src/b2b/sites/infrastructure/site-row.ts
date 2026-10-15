@@ -32,6 +32,8 @@ export const SITE_SELECT = {
   opening: true,
   gps: true,
   pickup: true,
+  pickupForB2b: true,
+  pickupForB2c: true,
   supply: true,
   deliveryDeparture: true,
   archivedAt: true,
@@ -75,6 +77,7 @@ export function toPickupView(row: SiteRow): PickupAddressView {
     isDefault: row.isDefault,
     discount: fromAdjustmentColumns(row.discountMode, row.discountValue),
     discountAudiences: { b2b: row.discountForB2b, b2c: row.discountForB2c },
+    pickupAudiences: { b2b: row.pickupForB2b, b2c: row.pickupForB2c },
     gps: gpsOf(row.gps),
   };
 }

@@ -138,6 +138,13 @@ export interface PickupAddressView {
   readonly discount: CartAdjustment | null;
   /** À qui la remise s'applique ; sans remise, sans effet. */
   readonly discountAudiences: PickupDiscountAudiences;
+  /**
+   * **À qui le site remet en retrait** (Hugo, 2026-10-15) — un site peut être
+   * réservé aux pros ou aux particuliers. Toujours rendu par le serveur ;
+   * facultatif dans le TYPE, comme `gps`, pour les vues construites à la main
+   * avant lui : absent = ouvert aux deux (`pickupOpenTo`).
+   */
+  readonly pickupAudiences?: PickupDiscountAudiences | undefined;
   /** Quand on peut venir — cf. {@link pickupOpeningSchema}. */
   readonly opening: PickupOpening;
   /**

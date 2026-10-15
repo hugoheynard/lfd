@@ -10,6 +10,8 @@ import type {
 export function rolesOf(site: SiteView): SiteRolesPayload {
   return {
     pickup: site.pickup,
+    // Absentes d'une API d'avant le 2026-10-15 : ouvert aux deux, l'existant.
+    pickupAudiences: site.pickupAudiences ?? { b2b: true, b2c: true },
     supply: site.supply,
     deliveryDeparture: site.deliveryDeparture,
     transferMode: site.transferMode,
@@ -26,8 +28,16 @@ export function rolesOf(site: SiteView): SiteRolesPayload {
 export const DEPARTURE_MUST_DELIVER =
   'Ce site est le point de départ des tournées : choisissez-en un autre dans Livraison › Point de départ avant de retirer « Livraison ».';
 
+/** Le refus du serveur (`SitePickupWithoutAudienceError`), dit avant l'envoi. */
+export const PICKUP_WITHOUT_AUDIENCE =
+  'Un site qui fait du retrait doit l’ouvrir à au moins une clientèle : cochez « Retrait pour les pros » ou « Retrait pour les particuliers », ou décochez « Retrait ».';
+
 export function rolesIssues(roles: SiteRolesPayload, isDeparture = false): readonly string[] {
   const issues: string[] = [];
+  const audiences = roles.pickupAudiences;
+  if (roles.pickup && audiences !== undefined && !audiences.b2b && !audiences.b2c) {
+    issues.push(PICKUP_WITHOUT_AUDIENCE);
+  }
   if (roles.supply === 'transfer' && !roles.pickup) {
     issues.push(
       'Un site approvisionné par transfert doit remettre des commandes : cochez « Retrait », ou approvisionnez-le sur place.',

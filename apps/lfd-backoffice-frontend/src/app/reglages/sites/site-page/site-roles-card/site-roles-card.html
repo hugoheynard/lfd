@@ -29,6 +29,24 @@
     />
     <!-- Décochée, la capacité masque ses couleurs sans les effacer. -->
     @if (draft().pickup) {
+      <!-- À qui le site remet (Hugo, 2026-10-15) : un site peut être réservé
+           aux pros ou aux particuliers ; au moins une case. -->
+      <div class="sr-audiences">
+        <fold-checkbox
+          label="Retrait pour les pros"
+          hint="sociétés actives"
+          [disabled]="readOnly()"
+          [checked]="draft().pickupAudiences?.b2b ?? true"
+          (checkedChange)="setPickupAudience('b2b', $event)"
+        />
+        <fold-checkbox
+          label="Retrait pour les particuliers"
+          hint="visiteurs, espaces perso, sociétés en attente"
+          [disabled]="readOnly()"
+          [checked]="draft().pickupAudiences?.b2c ?? true"
+          (checkedChange)="setPickupAudience('b2c', $event)"
+        />
+      </div>
       <app-site-color-fields
         [slots]="pickupSlots"
         [draft]="colors()"

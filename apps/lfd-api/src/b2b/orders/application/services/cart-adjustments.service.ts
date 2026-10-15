@@ -3,6 +3,7 @@ import {
   deliveryOpenTo,
   discountCentsOf,
   pickupDiscountFor,
+  pickupOpenTo,
   type CartAdjustment,
   type CustomerAudience,
 } from "@lfd/contracts";
@@ -15,6 +16,7 @@ import { PickupAddressRepository } from "../../../pickup-addresses/domain/pickup
 import {
   DeliveryClosedForAudienceError,
   NoDeliveryZoneForPostalCodeError,
+  PickupClosedForAudienceError,
   PickupNotConfiguredError,
 } from "../../domain/errors/order-errors.js";
 
@@ -99,7 +101,12 @@ export class CartAdjustments {
    * Une remise qui ne vise pas la clientèle rend `0` et `null` — ce que la
    * commande fige alors, comme pour un point sans remise.
    *
+   * Un site réservé à l'autre clientèle (Hugo, 2026-10-15) est refusé ICI,
+   * pour que le devis et les trois passations — client, boutique, équipe —
+   * opposent le même refus : le panier ne promet pas ce que la caisse refuse.
+   *
    * @throws {PickupNotConfiguredError} aucun point n'est configuré.
+   * @throws {PickupClosedForAudienceError} le site ne remet pas à cette clientèle.
    */
   async forPickup(
     pickupAddressId: string | null,
@@ -109,6 +116,9 @@ export class CartAdjustments {
     const point = await this.pickups.resolve(pickupAddressId);
     if (point === null) {
       throw new PickupNotConfiguredError();
+    }
+    if (!pickupOpenTo(point, audience)) {
+      throw new PickupClosedForAudienceError(point.label, audience);
     }
     const discount = pickupDiscountFor(point, audience);
     return {

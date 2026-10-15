@@ -44,15 +44,45 @@ n'achète rien et coûte une migration relue), le modèle Prisma s'appelle
 `Site` (`apps/lfd-api/prisma/schema/public/settings.prisma`). Aucune donnée
 n'a changé de table.
 
-| Rôle (écran)                  | Champ                                        | Ce qui en dépend                                                                                |
-| ----------------------------- | -------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| **Retrait**                   | `pickup: boolean`                            | proposé au checkout, onglet au comptoir, créneaux publics, ouverture pros, remise de retrait    |
-| **Approvisionné**             | `supply: 'on_site' \| 'transfer'`            | `on_site` = fabriqué/colisé **là** ; `transfer` = y arrive par transfert interne (plan à part)  |
-| ↳ mode du transfert           | `transferMode: 'integrated' \| 'dedicated'`  | lu par le futur transfert ; `integrated` par défaut                                             |
-| **Mise en place au comptoir** | `counterSetupMinutes` (entier ≥ 0, défaut 0) | lu par le futur calcul de l'heure requise (lot T0 du transfert)                                 |
-| **Livraison**                 | `deliveryDeparture: boolean`                 | les livraisons (et demain les transferts) peuvent en partir ; porte les couleurs de livraison   |
-| **départ des tournées**       | `DeliveryDeparture` (bloc `delivery`)        | LE site d'où partent les tournées, choisi en Livraison › Point de départ parmi ceux qui livrent |
-| **vend**                      | non modélisé                                 | c'est `PointOfSale` du référentiel (§5, ligne 10) ; Q-S3                                        |
+| Rôle (écran)                  | Champ                                             | Ce qui en dépend                                                                                |
+| ----------------------------- | ------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| **Retrait**                   | `pickup: boolean`                                 | proposé au checkout, onglet au comptoir, créneaux publics, ouverture pros, remise de retrait    |
+| ↳ clientèles du retrait       | `pickupAudiences: { b2b, b2c }` (défaut les deux) | « Retrait pour les pros » / « … pour les particuliers » : qui peut y retirer (2026-10-15)       |
+| **Approvisionné**             | `supply: 'on_site' \| 'transfer'`                 | `on_site` = fabriqué/colisé **là** ; `transfer` = y arrive par transfert interne (plan à part)  |
+| ↳ mode du transfert           | `transferMode: 'integrated' \| 'dedicated'`       | lu par le futur transfert ; `integrated` par défaut                                             |
+| **Mise en place au comptoir** | `counterSetupMinutes` (entier ≥ 0, défaut 0)      | lu par le futur calcul de l'heure requise (lot T0 du transfert)                                 |
+| **Livraison**                 | `deliveryDeparture: boolean`                      | les livraisons (et demain les transferts) peuvent en partir ; porte les couleurs de livraison   |
+| **départ des tournées**       | `DeliveryDeparture` (bloc `delivery`)             | LE site d'où partent les tournées, choisi en Livraison › Point de départ parmi ceux qui livrent |
+| **vend**                      | non modélisé                                      | c'est `PointOfSale` du référentiel (§5, ligne 10) ; Q-S3                                        |
+
+### Le retrait réservé à une clientèle (Hugo, 2026-10-15)
+
+« Imaginons que mes pros ne peuvent plus retirer qu'à une seule boutique » :
+un site peut être réservé au retrait des **pros** (société **active**) ou des
+**particuliers** (visiteur, espace perso, société en attente, suspendue ou
+résiliée — `audienceOf`, la règle de
+[`plan-remise-et-livraison-par-clientele.md`](../livraisons/clientele/plan-remise-et-livraison-par-clientele.md), D1).
+Réglé à l'écran, jamais en dur.
+
+- **En base** : `pickup_for_b2b`, `pickup_for_b2c`, `NOT NULL DEFAULT true` sur
+  `pickup_addresses` (migration `20261015700000`) ; un CHECK refuse un retrait
+  ouvert à personne. Un site d'avant les cases remet aux deux.
+- **L'agrégat** refuse `pickup = true` sans aucune case
+  (`SitePickupWithoutAudienceError`, 400) ; un site sans retrait garde ses
+  cases sans les lire. `PUT …/roles` : `pickupAudiences` **absent = inchangé**.
+- **Au serveur, sans exception pour l'équipe** : `CartAdjustments.forPickup`
+  refuse (`PickupClosedForAudienceError`, 409,
+  `orders.pickup.closed_for_audience`, nomme le site, la clientèle et le geste
+  de sortie) — donc le devis et les trois passations (`POST /orders`,
+  `POST /shop/orders`, `POST /admin/orders`) opposent le même refus. Ce n'est
+  pas une affaire d'heure : un site ouvert aux deux garde les fenêtres
+  (`windowFitsPickup`) telles quelles. Le point **par défaut** n'y fait pas
+  exception : fermé à la clientèle, il est refusé comme les autres.
+- **Les lectures** : `GET /pickup-addresses` (publique, anonyme) sert
+  **tous** les sites avec `pickupAudiences` ; c'est le client qui filtre par sa
+  clientèle (`ServicePoints.pickupsFor`, boutique ; `AcheminementCommande`,
+  saisie de l'équipe), comme il le fait déjà pour la remise. Une route anonyme
+  ne connaît pas la clientèle, et le serveur garde la porte.
 
 Le vocabulaire a été renommé le 2026-10-13 (Hugo, lexique `CLAUDE.md` §8) :
 `handsOver` → `pickup`, `dispatches` → `deliveryDeparture` ; « Remet » →
@@ -70,6 +100,7 @@ n'a pas de couleur.
 | servi par transfert ⇒ remet                                       | `SiteTransferWithoutHandoverError` (400)                       |
 | livre ⇒ sur place                                                 | `SiteDeliveryDepartureFromTransferError` (400)                 |
 | mise en place entière ≥ 0                                         | `SiteCounterSetupError` (400)                                  |
+| remet ⇒ au moins une clientèle (2026-10-15)                       | `SitePickupWithoutAudienceError` (400)                         |
 | livre ⇒ point GPS (aux transitions)                               | `SiteDeliveryDepartureWithoutGpsError` (409)                   |
 | servi par transfert ⇒ point GPS (aux transitions)                 | `SiteTransferWithoutGpsError` (409)                            |
 | le départ des tournées garde « Livraison »                        | `DepartureSiteMustDeliverError` (409)                          |
@@ -167,7 +198,9 @@ de détail et une `fold-card` par sujet :
 
 - **En-tête** : nom, adresse en une ligne, statut ; n'enregistre rien.
 - **Identité et adresse** — sa carte et son bouton (« Ajouter » à la création).
-- **Rôles**, dans cet ordre : Retrait (+ couleurs retrait B2B / B2C) →
+- **Rôles**, dans cet ordre : Retrait (+ « Retrait pour les pros » /
+  « Retrait pour les particuliers », au moins une — 2026-10-15 ; + couleurs
+  retrait B2B / B2C) →
   Approvisionné (+ mode) → Mise en place au comptoir → Livraison (+ point
   GPS, + couleurs livraison B2B / B2C). Le point se saisit sous le premier
   rôle qui l'exige (« par transfert », puis « Livraison » — les deux ne

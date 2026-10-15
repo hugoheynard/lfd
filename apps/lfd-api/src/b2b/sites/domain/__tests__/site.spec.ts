@@ -10,6 +10,7 @@ import {
   SiteCounterSetupError,
   SiteDeliveryDepartureFromTransferError,
   SiteDeliveryDepartureWithoutGpsError,
+  SitePickupWithoutAudienceError,
   SiteTransferWithoutGpsError,
   SiteTransferWithoutHandoverError,
 } from "../site-errors.js";
@@ -28,6 +29,7 @@ const PLACE: SitePlace = {
 
 const ROLES: SiteRoles = {
   pickup: true,
+  pickupAudiences: { b2b: true, b2c: true },
   supply: "on_site",
   deliveryDeparture: false,
   transferMode: "integrated",
@@ -100,6 +102,36 @@ describe("Site.assignRoles — la cohérence des rôles", () => {
     expect(() =>
       Site.rehydrate({ ...state, roles: { ...ROLES, supply: "transfer", pickup: false } }),
     ).toThrow(SiteTransferWithoutHandoverError);
+  });
+});
+
+describe("Site.assignRoles — le retrait par clientèle (Hugo, 2026-10-15)", () => {
+  it("un site neuf remet aux deux clientèles : l'existant", () => {
+    expect(site().snapshot().roles.pickupAudiences).toEqual({ b2b: true, b2c: true });
+  });
+
+  it("réserve le retrait aux pros", () => {
+    const labo = site();
+    labo.assignRoles({ ...ROLES, pickupAudiences: { b2b: true, b2c: false } });
+    expect(labo.snapshot().roles.pickupAudiences).toEqual({ b2b: true, b2c: false });
+  });
+
+  it("refuse un retrait ouvert à personne, en nommant les deux cases", () => {
+    expect(() =>
+      site().assignRoles({ ...ROLES, pickupAudiences: { b2b: false, b2c: false } }),
+    ).toThrow(/Retrait pour les pros.*Retrait pour les particuliers/u);
+    expect(() =>
+      site().assignRoles({ ...ROLES, pickupAudiences: { b2b: false, b2c: false } }),
+    ).toThrow(SitePickupWithoutAudienceError);
+  });
+
+  it("ignore les cases d'un site sans retrait, et les garde telles quelles", () => {
+    const bakery = site();
+    bakery.assignRoles({ ...ROLES, pickup: false, pickupAudiences: { b2b: false, b2c: false } });
+    expect(bakery.snapshot().roles).toMatchObject({
+      pickup: false,
+      pickupAudiences: { b2b: false, b2c: false },
+    });
   });
 });
 

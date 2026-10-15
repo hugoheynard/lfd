@@ -28,6 +28,7 @@ export class SetSiteRolesHandler implements ICommandHandler<SetSiteRolesCommand,
    * @throws {SiteTransferWithoutHandoverError}
    * @throws {SiteDeliveryDepartureFromTransferError}
    * @throws {SiteCounterSetupError}
+   * @throws {SitePickupWithoutAudienceError} « Retrait » ouvert à aucune clientèle.
    * @throws {DefaultSiteMustHandOverError}
    * @throws {SiteDeliveryDepartureWithoutGpsError} « Livraison » cochée sans point, ou point effacé.
    * @throws {SiteTransferWithoutGpsError} « par transfert » sans point, ou point effacé.
@@ -39,7 +40,12 @@ export class SetSiteRolesHandler implements ICommandHandler<SetSiteRolesCommand,
       if (site === null) {
         throw new PickupAddressNotFoundError(command.siteId);
       }
-      const { gps, ...roles } = command.payload;
+      const { gps, pickupAudiences, ...rest } = command.payload;
+      // Absentes = inchangées : un onglet d'avant les cases ne rouvre rien.
+      const roles = {
+        ...rest,
+        pickupAudiences: pickupAudiences ?? site.snapshot().roles.pickupAudiences,
+      };
       // La livraison ne se demande que si « Livraison » est retirée.
       const stops = site.snapshot().roles.deliveryDeparture && !roles.deliveryDeparture;
       const isDeparture = stops && (await this.departure.currentSiteId()) === site.id;

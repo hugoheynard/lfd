@@ -52,5 +52,6 @@ export {
   REQUEST_PHOTO_BOUNDS,
 } from "./contact.values.js";
 export { ALL_DISCOUNT_AUDIENCES } from "./pickup-discount-audiences.js";
+export { PICKUP_CLOSED_FOR_AUDIENCE, pickupOpenTo } from "./pickup-audiences.values.js";
 export { PERSONAL_WORKSPACE, WORKSPACE_HEADER } from "./workspace.js";
 export { exposedHandoverToken, isSettled } from "./order-settlement.values.js";

@@ -8,7 +8,10 @@ import type {
   ShopQuoteView,
 } from '@lfd/contracts';
 // Valeur par le sous-chemin sans zod : chargé au démarrage (budget `cloudflare`).
-import { DELIVERY_CLOSED_FOR_AUDIENCE } from '@lfd/contracts/shop-values';
+import {
+  DELIVERY_CLOSED_FOR_AUDIENCE,
+  PICKUP_CLOSED_FOR_AUDIENCE,
+} from '@lfd/contracts/shop-values';
 import { httpErrorCode, httpErrorMessage } from '@lfd/endpoints';
 import {
   catchError,
@@ -60,6 +63,16 @@ export type QuoteStatus = 'idle' | 'loading' | 'ready' | 'failed' | 'refused';
  */
 const DELIVERY_CLOSED_FALLBACK =
   "La livraison n'est pas proposée pour cet espace. Choisissez le retrait.";
+
+/** Le repli du refus d'un site réservé à l'autre clientèle (2026-10-15). */
+const PICKUP_CLOSED_FALLBACK =
+  "Ce point de retrait n'est pas ouvert à cet espace. Choisissez-en un autre.";
+
+/** Les refus d'acheminement qui MONTRENT, au lieu de garder l'ancien décompte. */
+const FULFILLMENT_REFUSALS: Readonly<Record<string, string>> = {
+  [DELIVERY_CLOSED_FOR_AUDIENCE]: DELIVERY_CLOSED_FALLBACK,
+  [PICKUP_CLOSED_FOR_AUDIENCE]: PICKUP_CLOSED_FALLBACK,
+};
 
 /**
  * Le préfixe des refus d'une opération datée (409) — pas encore ouverte, close,
@@ -145,7 +158,8 @@ export class ShopQuote {
   /**
    * Le refus du serveur à MONTRER, ou `null`.
    *
-   * La livraison fermée à la clientèle (409 `DELIVERY_CLOSED_FOR_AUDIENCE`), et
+   * La livraison fermée à la clientèle (409 `DELIVERY_CLOSED_FOR_AUDIENCE`), le
+   * retrait sur un site qui lui est fermé (409 `PICKUP_CLOSED_FOR_AUDIENCE`), et
    * les refus d'une opération datée (409 `orders.operation.*`). Tout autre échec reste un `failed` qui
    * garde le dernier décompte — celui-ci non : ses frais de coursier sont ceux
    * d'une livraison que la commande refusera.
@@ -279,14 +293,16 @@ export class ShopQuote {
         this.refused.set(null);
       }),
       catchError((error: unknown) => {
-        if (httpErrorCode(error) === DELIVERY_CLOSED_FOR_AUDIENCE) {
+        const fallback = FULFILLMENT_REFUSALS[httpErrorCode(error) ?? ''];
+        if (fallback !== undefined) {
           // 🔴 Le dernier décompte NE reste PAS : il porte des frais de
-          // coursier pour une livraison que la commande refusera (plan D5).
+          // coursier, ou la remise d'un site, que la commande refusera (plan D5 ;
+          // site réservé à une clientèle, 2026-10-15).
           this.view.set(EMPTY);
           this.points.set(null);
           this.voucherEffect.set(0);
           this.state.set('refused');
-          this.refused.set(httpErrorMessage(error, DELIVERY_CLOSED_FALLBACK));
+          this.refused.set(httpErrorMessage(error, fallback));
           return of(null);
         }
         const code = httpErrorCode(error);

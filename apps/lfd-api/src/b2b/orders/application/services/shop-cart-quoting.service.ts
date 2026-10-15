@@ -216,6 +216,7 @@ export class ShopCartQuoting {
    * elle ne change rien au décompte, et le devis se relance à chaque ligne.
    *
    * @throws {DeliveryClosedForAudienceError} la livraison est fermée à la clientèle.
+   * @throws {PickupClosedForAudienceError} le site ne remet pas à la clientèle.
    */
   private async termsOf(
     fulfillment: ShopQuoteFulfillment | null,

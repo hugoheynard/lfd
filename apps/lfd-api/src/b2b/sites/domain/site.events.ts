@@ -58,6 +58,8 @@ export class SiteRolesSetEvent implements JournaledEvent {
       payload: {
         subjectLabel: this.label,
         pickup: this.roles.pickup,
+        pickupForB2b: this.roles.pickupAudiences.b2b,
+        pickupForB2c: this.roles.pickupAudiences.b2c,
         supply: this.roles.supply,
         deliveryDeparture: this.roles.deliveryDeparture,
         transferMode: this.roles.transferMode,

@@ -2,7 +2,9 @@ import { signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import {
+  type CustomerAudience,
   DEFAULT_DELIVERY_AVAILABILITY,
+  pickupOpenTo,
   type DeliveryAddressView,
   type DeliveryAvailabilityView,
   type FulfillmentPreferenceView,
@@ -11,6 +13,7 @@ import { FoldListboxComponent, FoldPanelRef } from 'fold-ng';
 
 import { AccountService } from '../../../../account/account.service';
 import { ClientAddresses } from '../../../client-addresses.service';
+import { ClientAudience } from '../../../client-audience.service';
 import { ClientLocale } from '../../../client-locale.service';
 import { ClientPreferences } from '../../../client-preferences.service';
 import { EN } from '../../../copy/en';
@@ -21,6 +24,21 @@ import { PreferencesPanel, type PreferencesPanelData } from './preferences-panel
 /** Les deux points de retrait de la plateforme — seuls les champs que le panneau lit. */
 const LABO = { id: 'pk_1', label: 'Le Labo', isDefault: true };
 const BASTILLE = { id: 'pk_2', label: 'Bastille', isDefault: false };
+/** Réservé aux particuliers (Hugo, 2026-10-15) : jamais proposé à une société. */
+const BOUTIQUE = {
+  id: 'pk_3',
+  label: 'La Boutique',
+  isDefault: false,
+  pickupAudiences: { b2b: false, b2c: true },
+};
+
+/** Les points semés, typés pour que la règle de clientèle les lise. */
+const POINTS: readonly {
+  readonly id: string;
+  readonly label: string;
+  readonly isDefault: boolean;
+  readonly pickupAudiences?: { readonly b2b: boolean; readonly b2c: boolean };
+}[] = [LABO, BASTILLE, BOUTIQUE];
 
 const CHALET: DeliveryAddressView = {
   id: 'adr_1',
@@ -92,10 +110,14 @@ function boot(
         },
       },
       { provide: ClientAddresses, useValue: { deliveries: signal([CHALET, BUREAU]) } },
+      { provide: ClientAudience, useValue: { shown: signal<CustomerAudience>('b2b') } },
       {
         provide: ServicePoints,
         useValue: {
-          pickups: signal([LABO, BASTILLE]),
+          pickups: signal([LABO, BASTILLE, BOUTIQUE]),
+          // La même règle que le vrai dépôt, sur les points semés.
+          pickupsFor: (audience: CustomerAudience) =>
+            POINTS.filter((point) => pickupOpenTo(point, audience)),
           deliveryAvailability: signal(settings),
           hydrate: (): Promise<void> => {
             wire.hydrated += 1;
@@ -221,6 +243,8 @@ describe('PreferencesPanel', () => {
   });
 
   /** « Par défaut » est un choix à part entière, en tête : il suit le défaut du moment. */
+  // Le troisième point, réservé aux particuliers, n'y est pas : la société est
+  // une clientèle pro (Hugo, 2026-10-15).
   it('les points de retrait : « par défaut » en tête, puis les points, le défaut du jour étiqueté', () => {
     fixture = boot(OWNER);
     pick(0, 'pickup');

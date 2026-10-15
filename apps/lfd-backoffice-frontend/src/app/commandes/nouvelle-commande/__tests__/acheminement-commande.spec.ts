@@ -213,6 +213,29 @@ describe("le sélecteur d'acheminement de la saisie staff", () => {
     expect(choice.issue).toContain('Créneau de livraison à convenir');
   });
 
+  /** Hugo, 2026-10-15 : la même règle pour l'équipe que pour le client. */
+  it('🔴 ne propose pas à une société active un site réservé aux particuliers', () => {
+    const boutique: PickupAddressView = {
+      ...LABO,
+      id: 'pick_shop',
+      label: 'Boutique',
+      isDefault: false,
+      pickupAudiences: { b2b: false, b2c: true },
+    };
+    const fixture = mount([boutique, { ...LABO, isDefault: false }]);
+
+    expect(fixture.componentInstance['pickupOptions']().map((o) => o.value)).toEqual(['pick_1']);
+    expect(fixture.componentInstance['pickup']()?.id).toBe('pick_1');
+  });
+
+  it('dit pourquoi aucun point quand tous sont fermés à la clientèle', () => {
+    const pros: PickupAddressView = { ...LABO, pickupAudiences: { b2b: true, b2c: false } };
+    const choice = choiceOf({ pickups: [pros], audience: 'b2c' });
+
+    expect(choice.pickupAddressId).toBeNull();
+    expect(choice.issue).toContain('aux particuliers');
+  });
+
   it('bloque quand aucun point de retrait n’est configuré', () => {
     expect(choiceOf({ pickups: [] }).issue).toContain('Réglages');
   });

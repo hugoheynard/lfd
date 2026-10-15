@@ -1,4 +1,4 @@
-import type { GpsPoint, PickupOpening } from "@lfd/contracts";
+import type { GpsPoint, PickupDiscountAudiences, PickupOpening } from "@lfd/contracts";
 
 import type { PickupDiscount } from "../../pickup-addresses/domain/pickup-discount.js";
 import type { SiteColor } from "./site-color.js";
@@ -11,6 +11,7 @@ import {
   SiteCounterSetupError,
   SiteDeliveryDepartureFromTransferError,
   SiteDeliveryDepartureWithoutGpsError,
+  SitePickupWithoutAudienceError,
   SiteTransferWithoutGpsError,
   SiteTransferWithoutHandoverError,
 } from "./site-errors.js";
@@ -34,9 +35,21 @@ export interface SitePlace {
   readonly discount: PickupDiscount;
 }
 
+/**
+ * À quelles clientèles un site remet en retrait (Hugo, 2026-10-15) — même
+ * forme que les clientèles d'une remise.
+ */
+export type SitePickupAudiences = PickupDiscountAudiences;
+
 /** Les rôles d'un site et leurs réglages (plan, §3.1 et §4.6). */
 export interface SiteRoles {
   readonly pickup: boolean;
+  /**
+   * Les clientèles qui peuvent y retirer. Lues seulement si `pickup` : un site
+   * sans retrait les garde telles quelles, comme `PickupDiscount` garde les
+   * cases d'une remise retirée.
+   */
+  readonly pickupAudiences: SitePickupAudiences;
   readonly supply: SiteSupply;
   readonly deliveryDeparture: boolean;
   readonly transferMode: SiteTransferMode;
@@ -64,6 +77,7 @@ export interface SiteState {
 /** Les rôles d'un site neuf : ceux de l'existant (il remet, sur place, n'expédie pas). */
 const NEW_SITE_ROLES: SiteRoles = {
   pickup: true,
+  pickupAudiences: { b2b: true, b2c: true },
   supply: "on_site",
   deliveryDeparture: false,
   transferMode: "integrated",
@@ -81,8 +95,12 @@ const NO_COLORS: SiteColors = {
  * @throws {SiteTransferWithoutHandoverError} servi par transfert sans remettre.
  * @throws {SiteDeliveryDepartureFromTransferError} expédie sans être sur place.
  * @throws {SiteCounterSetupError} mise en place négative ou non entière.
+ * @throws {SitePickupWithoutAudienceError} un retrait ouvert à personne.
  */
 function checkRoles(roles: SiteRoles): void {
+  if (roles.pickup && !roles.pickupAudiences.b2b && !roles.pickupAudiences.b2c) {
+    throw new SitePickupWithoutAudienceError();
+  }
   if (roles.supply === "transfer" && !roles.pickup) {
     throw new SiteTransferWithoutHandoverError();
   }
@@ -206,6 +224,7 @@ export class Site {
    * @throws {SiteTransferWithoutHandoverError}
    * @throws {SiteDeliveryDepartureFromTransferError}
    * @throws {SiteCounterSetupError}
+   * @throws {SitePickupWithoutAudienceError} « Retrait » coché sans aucune clientèle.
    * @throws {DefaultSiteMustHandOverError} le défaut cesserait de remettre.
    * @throws {SiteDeliveryDepartureWithoutGpsError} « Livraison » cochée sans point, ou point effacé.
    * @throws {SiteTransferWithoutGpsError} « par transfert » sans point, ou point effacé.

@@ -4,7 +4,9 @@ import type { DeliveryZoneView, FulfillmentDayView, PickupAddressView } from '@l
 // Valeurs par le sous-chemin sans zod : chargé au démarrage (budget `cloudflare`).
 import {
   ALL_DISCOUNT_AUDIENCES,
+  type CustomerAudience,
   DEFAULT_DELIVERY_AVAILABILITY,
+  pickupOpenTo,
   type PublicDeliveryAvailabilityView,
 } from '@lfd/contracts/shop-values';
 import { firstValueFrom } from 'rxjs';
@@ -68,6 +70,16 @@ export class ServicePoints {
   private daysAskedFor = '';
 
   readonly pickups = this.pickupList.asReadonly();
+
+  /**
+   * Les points **proposés à cette clientèle** (Hugo, 2026-10-15) : un site peut
+   * être réservé au retrait des pros ou des particuliers. Lu dans un `computed`,
+   * il suit la liste comme la clientèle. Le serveur refuse de toute façon un
+   * retrait sur un site fermé : ceci évite seulement de le proposer.
+   */
+  pickupsFor(audience: CustomerAudience): readonly PickupAddressView[] {
+    return this.pickupList().filter((point) => pickupOpenTo(point, audience));
+  }
   readonly zones = this.zoneList.asReadonly();
 
   /**

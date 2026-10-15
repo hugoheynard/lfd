@@ -446,6 +446,10 @@ export class OrderDrafting {
     return { document, ...(await this.salesTerms.inForce(document)) };
   }
 
+  /**
+   * @throws {PickupClosedForAudienceError} retrait sur un site fermé à la
+   *   clientèle (`CartAdjustments.forPickup`) — avant toute règle d'heure.
+   */
   private async resolveFulfillment(
     content: OrderContent,
     subtotalCents: number,

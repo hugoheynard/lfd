@@ -28,6 +28,19 @@ export class SiteTransferWithoutHandoverError extends DomainError {
   }
 }
 
+/**
+ * Un site qui fait du retrait sans l'ouvrir à aucune clientèle (**400**,
+ * Hugo, 2026-10-15). Même forme que la remise sans clientèle.
+ */
+export class SitePickupWithoutAudienceError extends DomainError {
+  constructor() {
+    super(
+      "site.roles.pickup_without_audience",
+      "Un site qui fait du retrait doit l'ouvrir à au moins une clientèle. Cochez « Retrait pour les pros » ou « Retrait pour les particuliers », ou décochez « Retrait ».",
+    );
+  }
+}
+
 /** Un site qui expédie mais qui est lui-même servi par transfert (**400**). */
 export class SiteDeliveryDepartureFromTransferError extends DomainError {
   constructor() {

@@ -7,7 +7,7 @@ import type { SiteView } from '@lfd/contracts';
 export function roleLabels(site: SiteView): readonly string[] {
   const labels: string[] = [];
   if (site.pickup) {
-    labels.push('Retrait');
+    labels.push(pickupLabel(site.pickupAudiences));
   }
   if (site.supply === 'transfer') {
     labels.push(site.transferMode === 'dedicated' ? 'Transfert dédié' : 'Transfert intégré');
@@ -16,4 +16,12 @@ export function roleLabels(site: SiteView): readonly string[] {
     labels.push('Livraison');
   }
   return labels;
+}
+
+/** « Retrait », ou sa clientèle quand le site est réservé (Hugo, 2026-10-15). */
+function pickupLabel(audiences: SiteView['pickupAudiences']): string {
+  if (audiences === undefined || (audiences.b2b && audiences.b2c)) {
+    return 'Retrait';
+  }
+  return audiences.b2b ? 'Retrait pros' : 'Retrait particuliers';
 }

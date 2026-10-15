@@ -54,6 +54,13 @@ model Site {
   /// checkout, onglet au comptoir. `true` = l'existant, où tout point remettait.
   pickup Boolean @default(true)
 
+  /// À QUELLES clientèles le site remet (Hugo, 2026-10-15) : un site peut être
+  /// réservé au retrait des pros (société active) ou des particuliers. Défaut
+  /// `true` = l'existant. Lues seulement si `pickup` ; un retrait ouvert à
+  /// personne est refusé par l'agrégat `Site` et par un CHECK.
+  pickupForB2b Boolean @default(true) @map("pickup_for_b2b")
+  pickupForB2c Boolean @default(true) @map("pickup_for_b2c")
+
   /// D'où vient la marchandise : fabriquée/colisée sur place, ou arrivée par
   /// un transfert interne. Un site `transfer` remet forcément (agrégat).
   supply SiteSupply @default(on_site)

@@ -1947,6 +1947,7 @@ export {
   pickupDiscountFor,
 } from "./pickup.js";
 export type { PickupAddressUpdatePayload, PickupDiscountAudiences } from "./pickup.js";
+export { PICKUP_CLOSED_FOR_AUDIENCE, pickupOpenTo } from "./pickup-audiences.values.js";
 export {
   publicPickupClosurePayloadSchema,
   publicPickupSchedulePayloadSchema,

@@ -122,7 +122,7 @@ export class PublicHousePickerDialog {
     const copy = this.t().pickupDialog;
     const currentId = this.data().currentId;
     const selectedId = this.picked() ?? currentId;
-    return this.points.pickups().map((point) => ({
+    return this.points.pickupsFor(audience).map((point) => ({
       point,
       // Le nom d'usage, sa ville à défaut — une carte sans titre ne se distingue pas.
       name: point.label || point.ville,

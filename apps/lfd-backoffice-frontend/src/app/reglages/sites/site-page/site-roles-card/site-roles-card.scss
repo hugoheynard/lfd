@@ -12,3 +12,11 @@
   flex-wrap: wrap;
   gap: var(--fold-space-md);
 }
+
+/* Les deux clientèles du retrait, sous la case « Retrait » ; elles passent
+   l'une sous l'autre quand la place manque. */
+.sr-audiences {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-md);
+}

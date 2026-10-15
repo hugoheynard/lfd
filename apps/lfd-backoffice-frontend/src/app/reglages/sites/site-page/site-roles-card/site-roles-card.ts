@@ -136,8 +136,12 @@ export class SiteRolesCard {
   private readonly rolesDirty = computed(() => {
     const draft = this.draft();
     const current = rolesOf(this.site());
-    const changed = (Object.keys(current) as (keyof SiteRolesPayload)[]).some(
-      (key) => draft[key] !== current[key],
+    // Les clientèles sont un objet : comparées case à case, pas par référence.
+    const changed = (Object.keys(current) as (keyof SiteRolesPayload)[]).some((key) =>
+      key === 'pickupAudiences'
+        ? draft.pickupAudiences?.b2b !== current.pickupAudiences?.b2b ||
+          draft.pickupAudiences?.b2c !== current.pickupAudiences?.b2c
+        : draft[key] !== current[key],
     );
     return changed || this.gpsDirty();
   });
@@ -165,6 +169,18 @@ export class SiteRolesCard {
 
   protected set<K extends keyof SiteRolesPayload>(key: K, value: SiteRolesPayload[K]): void {
     this.draft.update((current) => ({ ...current, [key]: value }));
+    this.refusal.set(null);
+  }
+
+  /** Une case de clientèle du retrait (Hugo, 2026-10-15). */
+  protected setPickupAudience(audience: 'b2b' | 'b2c', checked: boolean): void {
+    this.draft.update((current) => ({
+      ...current,
+      pickupAudiences: {
+        ...(current.pickupAudiences ?? { b2b: true, b2c: true }),
+        [audience]: checked,
+      },
+    }));
     this.refusal.set(null);
   }
 
