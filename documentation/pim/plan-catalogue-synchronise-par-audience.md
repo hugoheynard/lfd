@@ -258,6 +258,59 @@ refus), handlers à ports mockés, e2e : régler l'audience d'une famille et
 d'une fiche puis relire, refus d'une valeur inconnue, activation refusée sans
 prix et sans taux, aperçu de bascule sur un semis.
 
+### Lot 2 — ce qui se bâtit (détaillé le 2026-10-15)
+
+Ouvert avant d'écrire : `set-product-media.ts:60-95` (le fait durable écrit
+dans la transaction, relu après l'écriture), `on-product-media-changed.handler.ts`
+(le récepteur `@DurableHandler`), `catalog.prisma` (`CatalogItem.priceMillicents`
+est `NOT NULL`, `withdrawnAt` dit « plus vendu », `sellable-filter.ts` le
+tient en un seul `STILL_SOLD`), et les onze lecteurs de `catalog_items`.
+
+**Décision de forme — la plateforme ne change pas ce que `catalog_items`
+veut dire.** Elle reste la table de ce qui **se vend** : onze lecteurs, dont
+les commandes et la tarification, la lisent comme telle, et un prix n'y est
+jamais nul. Ce qui manquait — une fiche inactive, une déclinaison incomplète,
+l'audience — va dans une table neuve, par **fiche** :
+
+`public.catalog_entries` : `product_id` (clé), `product_sku`, `name`,
+`category_id`, `status` (`inactive` | `active` | `archived`), `audience`
+(effective), `gaps` (jsonb : déclinaison → ce qui manque), `applied_seq`,
+`received_at`. C'est elle que la vue « Catalogue publié » lit pour montrer le
+catalogue en train de se construire ; `catalog_items` garde les seules
+déclinaisons vendables d'une fiche active, avec `audience` en colonne neuve.
+
+Découpé en deux, parce que 2a se déploie sans rien changer de servi :
+
+**2a — les rails, interrupteur fermé**
+
+| #   | Quoi                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2a1 | **Le fait** `pim.catalog_product_changed` dans `pim/channels/b2b-platform/products/` : snapshot d'une fiche = ce que `projectCatalog` produit pour elle, plus `status`, `audience` effective, `gaps`, `seq`. Une déclinaison incomplète (sans prix, sans taux, **ou sans allergènes déclarés**) part dans `gaps`, pas dans les vendables. Même chose pour la famille : `pim.catalog_category_changed`.                                                                                                                                                                                      |
+| 2a2 | **L'émetteur** `CatalogEmitter.emit(productIds)` : dans la transaction ambiante, `SELECT … FOR UPDATE` sur `pim.product` trié par id, `nextval` d'une séquence `pim.catalog_publication_seq`, relecture et projection, écriture du fait par le port durable existant. Ne fait rien si `PIM_PUBLICATION_ENABLED` est fermé, ou si `CATALOG_FACTS_ENABLED` (nouveau, fermé par défaut) l'est.                                                                                                                                                                                                 |
+| 2a3 | **Les appels** : chaque handler d'écriture de `catalogue/product/application/` et `catalogue/category/application/` appelle l'émetteur en dernière instruction de son `uow.run` (fiche : elle-même ; famille : la famille, et ses fiches si le geste change ce que leur snapshot porte — taux, audience, nom). Inventaire des handlers rendu avec le lot ; un handler qui n'écrit pas dans une `uow` est une faille à signaler, pas à combler en douce.                                                                                                                                     |
+| 2a4 | **Le récepteur** `on-catalog-product-changed.handler.ts` dans `b2b/catalog/application/handlers/` : une transaction ; `INSERT … ON CONFLICT (product_id) DO UPDATE … WHERE catalog_entries.applied_seq < EXCLUDED.applied_seq` ; si la ligne n'a pas bougé, rien d'autre. Sinon : upsert des déclinaisons vendables (`withdrawnAt = null`), `withdrawnAt` posé sur les autres déclinaisons de la fiche ; **jamais** une écriture sur `catalog_item_overrides`. Validation par article reprise d'`IngestCatalogService`. Même schéma pour la famille (`catalog_categories` + `applied_seq`). |
+| 2a5 | **`servedTo(item, viewer)`** : audience de l'article contient le lecteur ET pas de masquage pour lui. Remplace les quatre lectures directes (D3 du plan d'audience). `audience` `NULL` = `both`.                                                                                                                                                                                                                                                                                                                                                                                            |
+| 2a6 | **Réémettre** : `POST /pim/channels/b2b/reemit` (tout, ou une fiche), marqué `@PublicationGesture()`. Une transaction par fiche.                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+
+Migrations : `pim.catalog_publication_seq` (séquence) ; `public.catalog_entries` ;
+`catalog_categories.applied_seq` ; `catalog_items.audience` nullable. Toutes
+additives.
+
+Tests : e2e de bout en bout **en processus** (créer une fiche au PIM, relayer
+l'outbox, la lire dans `catalog_entries`) ; ordre (deux faits appliqués à
+l'envers : le plus ancien n'écrit rien) ; décisions qui survivent à dix faits ;
+fiche désactivée → déclinaisons retirées, décisions intactes ; commande pro
+refusée sur un article `public`.
+
+**2b — la bascule**, une fois 2a en service et l'aperçu de bascule relu par Hugo
+
+| #   | Quoi                                                                                                                                                                              |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2b1 | Commande `ApplyAudienceSwitch` : désactive les fiches que l'aperçu liste (H7), journalisé par fiche.                                                                              |
+| 2b2 | L'ingestion du push **ne touche plus** fiches ni familles quand `CATALOG_FACTS_ENABLED` est ouvert : il ne porte plus que les opérations et les règles (limites), jusqu'au lot 4. |
+| 2b3 | Le refus des allergènes passe à « au moins une déclinaison complète » (C1) : la projection 2a1 les écarte désormais.                                                              |
+| 2b4 | Ouverture de `CATALOG_FACTS_ENABLED`, puis « réémettre tout ». Le geste est écrit au runbook.                                                                                     |
+
 ## 4. Risques
 
 - **Une faute de prix vendue tout de suite** (H3, choisi en connaissance de
