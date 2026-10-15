@@ -210,6 +210,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // chacune en écriture ; la page ne déclare que celle dont on a le droit.
   // Trois depuis le 2026-10-11 : l'exploitation, en lecture (`ops_health:read`).
   // Cinq depuis le 2026-10-14 : la flotte, en lecture (`delivery_settings:read`).
+  // Six depuis le 2026-10-15 : les droits, en lecture (`staff_access:read`).
   'outils-agent': {
     anyOf: [
       'pim_catalog:write',
@@ -217,6 +218,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
       'ops_health:read',
       'b2b_companies:read',
       'delivery_settings:read',
+      'staff_access:read',
     ],
   },
 

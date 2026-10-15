@@ -116,3 +116,22 @@ export class StaffRoleSelfRevokeError extends BusinessError {
     );
   }
 }
+
+/**
+ * **La précondition d'une redéfinition n'est plus vraie** : le rôle a changé
+ * entre la lecture de l'appelant et son écriture. Renvoyer le rôle entier sur
+ * un état périmé effacerait en silence l'édition de quelqu'un d'autre (plan
+ * `plan-outils-agent-droits.md`, corrections après vitruve).
+ */
+export class StaffRoleChangedSinceReadError extends BusinessError {
+  constructor(
+    readonly key: string,
+    readonly label: string,
+  ) {
+    super(
+      "staff.role.changed_since_read",
+      `Le rôle « ${label} » a changé depuis votre lecture : rien n'a été écrit. ` +
+        `Relisez-le, puis refaites le geste sur ses droits actuels.`,
+    );
+  }
+}

@@ -325,5 +325,6 @@
   "test/catalog-public-review.e2e-spec.ts": 15291,
   "test/pickup-audience.e2e-spec.ts": 4000,
   "test/operations-at-commerce-closed.e2e-spec.ts": 6000,
-  "test/operations-at-commerce.e2e-spec.ts": 6000
+  "test/operations-at-commerce.e2e-spec.ts": 6000,
+  "test/staff-agent-tools.e2e-spec.ts": 13270
 }

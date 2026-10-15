@@ -11,10 +11,6 @@ import {
   StaffRoleStillHeldError,
 } from "../../domain/staff-role-errors.js";
 import { STAFF_ROLE_FACTS } from "../../domain/staff-role-facts.js";
-import {
-  StaffRoleRepository,
-  type StaffRoleLoadOptions,
-} from "../../domain/staff-role.repository.js";
 import { ArchiveStaffRoleHandler } from "../archive-staff-role.handler.js";
 import { CreateStaffRoleHandler } from "../create-staff-role.handler.js";
 import { RestoreStaffRoleHandler } from "../restore-staff-role.handler.js";
@@ -25,61 +21,13 @@ import {
   UpdateStaffRoleCommand,
 } from "../staff-role.commands.js";
 import { UpdateStaffRoleHandler } from "../update-staff-role.handler.js";
+import { InMemoryRoles } from "./staff-role-doubles.js";
 
 /** Un instant quelconque : l'archivage ne le compare à rien. */
 const NOW = new Date(0);
 
 /** L'auteur des redéfinitions — une fiche qui ne tient pas l'annuaire par défaut. */
 const ACTOR = "staff_auteur";
-
-/**
- * Les rôles en mémoire ; chaque `save` note s'il a eu lieu dans la transaction,
- * chaque `load` s'il a verrouillé, et `memberCount` s'il a compté DEDANS.
- */
-class InMemoryRoles extends StaffRoleRepository {
-  readonly saves: boolean[] = [];
-  readonly loads: { readonly forUpdate: boolean; readonly insideTransaction: boolean }[] = [];
-  readonly counts: boolean[] = [];
-  keepers: readonly DirectoryKeeper[] = [];
-  private readonly rows = new Map<string, StaffRoleDefinition>();
-
-  constructor(
-    private readonly uow: TrackingUnitOfWork,
-    private readonly members = 0,
-  ) {
-    super();
-  }
-
-  seed(role: StaffRoleDefinition): void {
-    this.rows.set(role.key, role);
-  }
-
-  load(key: string, options?: StaffRoleLoadOptions): Promise<StaffRoleDefinition | null> {
-    this.loads.push({
-      forUpdate: options?.forUpdate === true,
-      insideTransaction: this.uow.inside,
-    });
-    const found = this.rows.get(key);
-    return Promise.resolve(
-      found === undefined ? null : StaffRoleDefinition.reconstitute(found.toPersistence()),
-    );
-  }
-
-  save(role: StaffRoleDefinition): Promise<void> {
-    this.saves.push(this.uow.inside);
-    this.rows.set(role.key, role);
-    return Promise.resolve();
-  }
-
-  memberCount(): Promise<number> {
-    this.counts.push(this.uow.inside);
-    return Promise.resolve(this.members);
-  }
-
-  directoryKeepers(): Promise<readonly DirectoryKeeper[]> {
-    return Promise.resolve(this.keepers);
-  }
-}
 
 const LOGISTICS = {
   key: "logistique",

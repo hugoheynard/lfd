@@ -207,8 +207,10 @@ export const routes: Routes = [
     // troisième, qui ne fait que lire (2026-10-11) ; la LECTURE des comptes
     // clients pour la quatrième, en lecture seule elle aussi (2026-10-12) ; la
     // LECTURE des réglages de livraison pour la flotte (2026-10-14), dont les
-    // outils d'écriture ne se déclarent qu'avec `delivery_settings:write`.
-    // L'un des cinq suffit : la
+    // outils d'écriture ne se déclarent qu'avec `delivery_settings:write` ; la
+    // LECTURE des droits pour la trousse « Droits » (2026-10-15), dont les
+    // outils d'écriture ne se déclarent qu'avec `staff_access:write`.
+    // L'un des six suffit : la
     // page ne déclare que les trousses dont le compte a le droit.
     path: 'outils-agent',
     canActivate: [
@@ -218,6 +220,7 @@ export const routes: Routes = [
         'ops_health:read',
         'b2b_companies:read',
         'delivery_settings:read',
+        'staff_access:read',
       ),
     ],
     title: 'Outils agent — LFC B2B admin',

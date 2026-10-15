@@ -1,7 +1,8 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
+import { AGENT_TOOL_HEADER } from '@lfd/contracts';
 import type { CreateStaffRolePayload, StaffRoleView, UpdateStaffRolePayload } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../../api/api-config';
@@ -26,9 +27,22 @@ export class StaffRolesService {
     await firstValueFrom(this.http.post<void>(`${B2B_API_BASE}/admin/staff-roles`, payload));
   }
 
-  /** La clé n'est pas dans la charge : elle ne se renomme pas. */
-  async update(key: string, payload: UpdateStaffRolePayload): Promise<void> {
-    await firstValueFrom(this.http.put<void>(`${B2B_API_BASE}/admin/staff-roles/${key}`, payload));
+  /**
+   * La clé n'est pas dans la charge : elle ne se renomme pas.
+   *
+   * `agentTool` — posé par un outil agent seulement (`x-lfd-agent-tool`) : le
+   * serveur le range dans le fait du journal. L'écran ne le passe pas.
+   */
+  async update(key: string, payload: UpdateStaffRolePayload, agentTool?: string): Promise<void> {
+    const headers =
+      agentTool === undefined ? undefined : new HttpHeaders({ [AGENT_TOOL_HEADER]: agentTool });
+    await firstValueFrom(
+      this.http.put<void>(
+        `${B2B_API_BASE}/admin/staff-roles/${key}`,
+        payload,
+        headers === undefined ? {} : { headers },
+      ),
+    );
   }
 
   /** Archive — le serveur refuse tant que des personnes portent le rôle. */

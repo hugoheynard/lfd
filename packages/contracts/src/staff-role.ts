@@ -166,6 +166,9 @@ export function legacyRoleSeeds(): readonly {
 // Ce qui entre
 // ─────────────────────────────────────────────────────────────────────────────
 
+/** Borne de la précondition : deux fois le catalogue suffit largement, l'infini non. */
+const EXPECTED_PERMISSIONS_MAX = 1_000;
+
 export const createStaffRolePayloadSchema = z.object({
   key: staffRoleKeySchema,
   label: z.string().trim().min(1).max(STAFF_ROLE_LABEL_MAX_LENGTH),
@@ -173,8 +176,22 @@ export const createStaffRolePayloadSchema = z.object({
 });
 export type CreateStaffRolePayload = z.infer<typeof createStaffRolePayloadSchema>;
 
-/** La clé n'est pas modifiable : elle est écrite sur des fiches et dans le journal. */
-export const updateStaffRolePayloadSchema = createStaffRolePayloadSchema.omit({ key: true });
+/**
+ * La clé n'est pas modifiable : elle est écrite sur des fiches et dans le journal.
+ *
+ * `expectedPermissions` — la **précondition** facultative (plan
+ * `plan-outils-agent-droits.md`, corrections après vitruve) : les droits
+ * résolus du rôle tels que l'appelant les a lus (`StaffRoleView.permissions`).
+ * Si le rôle a changé depuis, le serveur refuse (409) au lieu d'écraser une
+ * édition qu'il n'a pas vue. L'écran ne l'envoie pas ; les outils agent
+ * l'envoient toujours, parce qu'ils renvoient le rôle ENTIER après n'en avoir
+ * changé qu'un droit.
+ */
+export const updateStaffRolePayloadSchema = createStaffRolePayloadSchema
+  .omit({ key: true })
+  .extend({
+    expectedPermissions: z.array(z.string().min(1)).max(EXPECTED_PERMISSIONS_MAX).optional(),
+  });
 export type UpdateStaffRolePayload = z.infer<typeof updateStaffRolePayloadSchema>;
 
 // ─────────────────────────────────────────────────────────────────────────────

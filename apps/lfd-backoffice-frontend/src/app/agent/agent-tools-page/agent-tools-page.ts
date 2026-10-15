@@ -10,6 +10,7 @@ import {
 import { FoldCalloutComponent, FoldPageLayoutComponent } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
+import { declareAccessAgentTools } from '../access-agent-tools';
 import { declareCustomerAgentTools } from '../customer-agent-tools';
 import { declareMediaAgentTools } from '../media-agent-tools';
 import { declareOpsAgentTools } from '../ops-agent-tools';
@@ -137,8 +138,16 @@ export class AgentToolsPage {
   protected readonly vehicleTools = signal<readonly string[]>([]);
 
   /**
+   * La trousse des droits (2026-10-15) — vide sans `staff_access:read`, le
+   * droit de lecture des rôles et de l'annuaire ; ses outils d'écriture ne
+   * sont déclarés qu'avec `staff_access:write`, et ils ont leur propre garde
+   * (plan `plan-outils-agent-droits.md`).
+   */
+  protected readonly accessTools = signal<readonly string[]>([]);
+
+  /**
    * Lus une fois : la garde de la route a déjà chargé les permissions. Elle
-   * laisse passer l'un des cinq droits ; chaque trousse suit le sien, et la
+   * laisse passer l'un des six droits ; chaque trousse suit le sien, et la
    * page dit laquelle manque.
    */
   private readonly permissions = inject(PermissionsStore);
@@ -148,6 +157,8 @@ export class AgentToolsPage {
   protected readonly customersAllowed = this.permissions.can('b2b_companies:read');
   protected readonly vehiclesAllowed = this.permissions.can('delivery_settings:read');
   protected readonly vehiclesWritable = this.permissions.can('delivery_settings:write');
+  protected readonly accessAllowed = this.permissions.can('staff_access:read');
+  protected readonly accessWritable = this.permissions.can('staff_access:write');
 
   /** Un agent est-il branché ? Un signal, puisque la réponse change. */
   protected readonly bridged = signal(false);
@@ -197,7 +208,7 @@ export class AgentToolsPage {
     return true;
   }
 
-  /** Déclare les cinq trousses ; à appeler dans le contexte d'injection du composant. */
+  /** Déclare les six trousses ; à appeler dans le contexte d'injection du composant. */
   private declareAll(): void {
     this.tools.set(this.pimAllowed ? declarePimAgentTools() : []);
     this.mediaTools.set(this.mediaAllowed ? declareMediaAgentTools() : []);
@@ -206,5 +217,6 @@ export class AgentToolsPage {
     this.vehicleTools.set(
       this.vehiclesAllowed ? declareVehicleAgentTools(this.vehiclesWritable) : [],
     );
+    this.accessTools.set(this.accessAllowed ? declareAccessAgentTools(this.accessWritable) : []);
   }
 }

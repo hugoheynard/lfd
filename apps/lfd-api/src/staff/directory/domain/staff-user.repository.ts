@@ -3,6 +3,7 @@ import type {
   StaffStatus,
   StaffStatusChange,
   StaffUserPayload,
+  UpdateStaffUserPayload,
   StaffUserView,
 } from "@lfd/contracts";
 
@@ -58,8 +59,13 @@ export abstract class StaffUserRepository {
    * @throws {SelfDemotionError} l'auteur se retire `staff_access:write`.
    * @throws {LastStaffAdminError} plus personne ne tiendrait l'annuaire par son rôle.
    * @throws {AdminOverrideRefusedError} un écart fermerait l'annuaire que le rôle ouvre.
+   * @throws {StaffUserChangedSinceReadError} `expectedUpdatedAt` est périmé.
    */
-  abstract update(id: string, payload: StaffUserPayload, actorId: string): Promise<StaffUserEdit>;
+  abstract update(
+    id: string,
+    payload: UpdateStaffUserPayload,
+    actorId: string,
+  ): Promise<StaffUserEdit>;
 
   /**
    * Suspend une personne, ou la réintègre. Suspendre **ferme tout, tout de

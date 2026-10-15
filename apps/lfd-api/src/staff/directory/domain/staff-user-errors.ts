@@ -178,3 +178,37 @@ export class StaffInvitationExpiredError extends AuthorizationError {
     );
   }
 }
+
+/**
+ * **La précondition d'une édition n'est plus vraie** : la fiche a été écrite
+ * entre la lecture de l'appelant et son édition (identité, rôle, dérogations
+ * ou statut). Renvoyer la fiche entière sur un état périmé effacerait en
+ * silence le geste de quelqu'un d'autre — des dérogations, d'abord (plan
+ * `plan-outils-agent-droits.md`, corrections après vitruve). Refus métier (409).
+ */
+export class StaffUserChangedSinceReadError extends BusinessError {
+  constructor(readonly id: string) {
+    super(
+      "staff_user.changed_since_read",
+      "Cette fiche a été modifiée depuis votre lecture : rien n'a été écrit. " +
+        "Relisez-la, puis refaites le geste sur son état actuel.",
+    );
+  }
+}
+
+/**
+ * La précondition d'une édition : la dernière écriture lue par l'appelant
+ * (`expectedUpdatedAt`, ISO) est-elle encore celle de la fiche ? Sans
+ * précondition, rien n'est vérifié — c'est le cas de l'écran.
+ *
+ * @throws {StaffUserChangedSinceReadError} la fiche a été écrite depuis.
+ */
+export function assertStaffUserUnchangedSince(
+  id: string,
+  expectedUpdatedAt: string | undefined,
+  updatedAt: Date,
+): void {
+  if (expectedUpdatedAt !== undefined && Date.parse(expectedUpdatedAt) !== updatedAt.getTime()) {
+    throw new StaffUserChangedSinceReadError(id);
+  }
+}

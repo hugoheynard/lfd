@@ -10,6 +10,7 @@ import {
 import {
   InvalidStaffRoleError,
   ReservedStaffRoleKeyError,
+  StaffRoleChangedSinceReadError,
   StaffRoleLastDirectoryKeeperError,
   StaffRoleSelfRevokeError,
   StaffRoleStillHeldError,
@@ -129,6 +130,23 @@ export class StaffRoleDefinition {
     }
     this.labelValue = label;
     this.grantsValue = grants;
+  }
+
+  /**
+   * La **précondition** d'une redéfinition : les droits résolus que
+   * l'appelant a lus sont-ils encore ceux du rôle ? Comparés comme un
+   * ensemble — l'ordre de la lecture n'est pas une donnée.
+   *
+   * @throws {StaffRoleChangedSinceReadError} le rôle a changé depuis.
+   */
+  assertUnchangedSince(expectedPermissions: readonly string[]): void {
+    const current = new Set<string>(this.permissions());
+    const expected = new Set(expectedPermissions);
+    const same =
+      current.size === expected.size && [...expected].every((entry) => current.has(entry));
+    if (!same) {
+      throw new StaffRoleChangedSinceReadError(this.key, this.labelValue);
+    }
   }
 
   /**

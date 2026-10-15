@@ -38,6 +38,7 @@ export interface Row {
   };
   readonly status: StaffStatus;
   readonly auth0Id: string | null;
+  readonly updatedAt: Date;
   readonly overrides: readonly StaffOverride[];
 }
 
@@ -74,6 +75,9 @@ export interface UpdateArgs {
   readonly data: Record<string, unknown>;
 }
 
+/** La dernière écriture d'une fiche : un instant quelconque, comparé à lui-même. */
+export const WRITTEN_AT = new Date(2_000_000);
+
 /** Une personne ordinaire de l'annuaire, paramétrable au cas par cas. */
 export function row(overrides: Partial<Row> = {}): Row {
   return {
@@ -86,6 +90,7 @@ export function row(overrides: Partial<Row> = {}): Row {
     ...holding("commercial"),
     status: "active",
     auth0Id: null,
+    updatedAt: WRITTEN_AT,
     overrides: [],
     ...overrides,
   };

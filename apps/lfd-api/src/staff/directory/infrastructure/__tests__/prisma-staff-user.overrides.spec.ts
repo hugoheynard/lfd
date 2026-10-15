@@ -1,5 +1,6 @@
 import type { StaffOverride } from "@lfd/contracts";
 
+import { StaffUserChangedSinceReadError } from "../../domain/staff-user-errors.js";
 import {
   ACTOR,
   buildRepo,
@@ -10,6 +11,7 @@ import {
   PRICING_WRITE,
   row,
   TODAY,
+  WRITTEN_AT,
 } from "./fake-staff-prisma.js";
 
 describe("PrismaStaffUserRepository — les dérogations ne se réécrivent plus", () => {
@@ -122,5 +124,42 @@ describe("PrismaStaffUserRepository — le statut", () => {
 
     expect(before.status).toBe("suspended");
     expect(updated).toEqual([]);
+  });
+});
+
+describe("PrismaStaffUserRepository — la précondition des outils agent", () => {
+  it("une dérogation seule touche aussi la fiche : sa date périme la lecture", async () => {
+    const { prisma, updated } = fakePrisma(row());
+    const repo = await buildRepo(prisma);
+
+    await repo.update("u1", payload({ overrides: [ORDERS_READ] }), ACTOR);
+
+    expect(updated).toHaveLength(1);
+    expect(updated[0]?.data).toMatchObject({ updatedAt: TODAY });
+  });
+
+  it("refuse une fiche écrite depuis la lecture, sans rien écrire", async () => {
+    const { prisma, updated, overrideWrites } = fakePrisma(row());
+    const repo = await buildRepo(prisma);
+    const stale = new Date(WRITTEN_AT.getTime() - 1).toISOString();
+
+    await expect(
+      repo.update("u1", { ...payload({ role: "support" }), expectedUpdatedAt: stale }, ACTOR),
+    ).rejects.toBeInstanceOf(StaffUserChangedSinceReadError);
+    expect(updated).toEqual([]);
+    expect(overrideWrites).toEqual([]);
+  });
+
+  it("écrit quand la date lue est celle de la fiche", async () => {
+    const { prisma, updated } = fakePrisma(row());
+    const repo = await buildRepo(prisma);
+
+    await repo.update(
+      "u1",
+      { ...payload({ role: "support" }), expectedUpdatedAt: WRITTEN_AT.toISOString() },
+      ACTOR,
+    );
+
+    expect(updated).toHaveLength(1);
   });
 });

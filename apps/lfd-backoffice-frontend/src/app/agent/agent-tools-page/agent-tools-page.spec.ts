@@ -223,4 +223,24 @@ describe('AgentToolsPage', () => {
     const without = render(['pim_catalog:write']);
     expect(without.root.textContent).toContain('pas le droit de lire les réglages de livraison');
   });
+
+  it('ne déclare QUE la lecture des droits sans `staff_access:write`', () => {
+    const { root } = render(['staff_access:read']);
+    const listed = [...root.querySelectorAll('code')].map((el) => el.textContent?.trim() ?? '');
+
+    expect(listed).toEqual(['roles_list', 'role_get', 'staff_list', 'staff_access_of', 'who_can']);
+    expect(root.textContent).toContain('pas le droit de modifier les rôles ni l');
+  });
+
+  it('déclare l’écriture des droits avec `staff_access:write`, et dit ce qui manque sans lecture', () => {
+    const granted = render(['staff_access:read', 'staff_access:write']);
+    const listed = [...granted.root.querySelectorAll('code')].map((el) => el.textContent?.trim());
+    expect(listed).toContain('role_grant');
+    expect(listed).toContain('role_revoke');
+    expect(listed).toContain('staff_assign_role');
+    TestBed.resetTestingModule();
+
+    const without = render(['pim_catalog:write']);
+    expect(without.root.textContent).toContain('pas le droit de lire les rôles et l');
+  });
 });

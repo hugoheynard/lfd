@@ -34,6 +34,7 @@ export interface StaffRow extends HeldRoleRow {
   readonly jobTitle: string;
   readonly status: StaffStatus;
   readonly invitedAt: Date | null;
+  readonly updatedAt: Date;
   readonly overrides: readonly OverrideRow[];
 }
 
@@ -47,6 +48,7 @@ export const SELECT = {
   ...HELD_ROLE_SELECT,
   status: true,
   invitedAt: true,
+  updatedAt: true,
   overrides: { select: { resource: true, action: true, effect: true } },
 } as const;
 
@@ -87,6 +89,7 @@ export function toView(
       row.status === "invited" && row.invitedAt !== null && isInvitationExpired(row.invitedAt, now),
     overrides,
     permissions: effective.permissions,
+    updatedAt: row.updatedAt.toISOString(),
   };
 }
 
@@ -118,6 +121,7 @@ export const SNAPSHOT = {
   ...HELD_ROLE_SELECT,
   status: true,
   auth0Id: true,
+  updatedAt: true,
 } as const;
 
 /** L'état d'avant, et ce que la politique de domaine doit savoir de la cible. */
@@ -126,6 +130,8 @@ export interface LoadedTarget {
   readonly overrides: readonly OverrideRow[];
   /** Le libellé du rôle d'avant, lu dans sa définition — pour le journal. */
   readonly roleLabel: string;
+  /** La dernière écriture de la fiche — la précondition d'une édition. */
+  readonly updatedAt: Date;
   readonly policy: StaffMutationTarget;
 }
 

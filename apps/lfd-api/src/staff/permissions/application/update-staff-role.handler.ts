@@ -17,6 +17,11 @@ import { UpdateStaffRoleCommand } from "./staff-role.commands.js";
  * le commit. Sans cet oubli, un retrait de droit mettrait jusqu'à trente
  * secondes à s'appliquer — sur cette instance ; les autres gardent leur cache
  * jusqu'à expiration, défaut assumé et écrit au plan.
+ *
+ * La **précondition** facultative (`expectedPermissions`, plan
+ * `plan-outils-agent-droits.md`) refuse d'écrire sur un rôle qui a changé
+ * depuis la lecture de l'appelant : l'écran ne l'envoie pas, les outils agent
+ * toujours.
  */
 @CommandHandler(UpdateStaffRoleCommand)
 export class UpdateStaffRoleHandler implements ICommandHandler<UpdateStaffRoleCommand, void> {
@@ -28,15 +33,21 @@ export class UpdateStaffRoleHandler implements ICommandHandler<UpdateStaffRoleCo
   ) {}
 
   async execute(command: UpdateStaffRoleCommand): Promise<void> {
-    const role = await loadEditableRole(this.roles, command.key);
-    const before = role.toPersistence();
-    role.redefine(command.payload, {
-      actorId: command.actorId,
-      keepers: await this.roles.directoryKeepers(),
-    });
     await this.uow.run(async () => {
+      // Verrouillé dans la transaction : la précondition et l'écriture voient
+      // le même état, sans qu'une édition concurrente se glisse entre les deux.
+      const role = await loadEditableRole(this.roles, command.key, { forUpdate: true });
+      const expected = command.payload.expectedPermissions;
+      if (expected !== undefined) {
+        role.assertUnchangedSince(expected);
+      }
+      const before = role.toPersistence();
+      role.redefine(command.payload, {
+        actorId: command.actorId,
+        keepers: await this.roles.directoryKeepers(),
+      });
       await this.roles.save(role);
-      const fact = roleUpdatedFact(before, role.toPersistence());
+      const fact = roleUpdatedFact(before, role.toPersistence(), command.agentTool);
       if (fact !== null) {
         await this.journal.append(fact);
       }

@@ -25,6 +25,11 @@ l'un des quatre droits : `pim_catalog:write`, `media_library:write`,
 ([`../b2b/comptes-client/outils-agent-comptes.md`](../b2b/comptes-client/outils-agent-comptes.md)). Un compte qui n'a que la carte de santé y entre et ne voit
 que cette trousse.
 
+Depuis le 2026-10-15, l'écran porte aussi la trousse **des droits** — lire
+rôles, annuaire et droits effectifs, accorder ou retirer un droit à un rôle,
+changer le rôle d'une personne — et la route s'ouvre à `staff_access:read`
+([`../droits-et-permissions/outils-agent-droits.md`](../droits-et-permissions/outils-agent-droits.md)).
+
 ## Les cinq outils
 
 Code : [`agent/ops-agent-tools.ts`](../../apps/lfd-backoffice-frontend/src/app/agent/ops-agent-tools.ts),

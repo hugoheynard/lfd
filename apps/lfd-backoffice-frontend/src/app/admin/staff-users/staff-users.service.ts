@@ -1,7 +1,8 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
+import { AGENT_TOOL_HEADER } from '@lfd/contracts';
 import type {
   CreatedStaffUserResponse,
   InvitationSentResponse,
@@ -9,6 +10,7 @@ import type {
   StaffStatusChange,
   StaffUserPayload,
   StaffUserView,
+  UpdateStaffUserPayload,
 } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../../api/api-config';
@@ -36,9 +38,21 @@ export class StaffUsersService {
     );
   }
 
-  /** Édite un user staff. */
-  async update(id: string, payload: StaffUserPayload): Promise<void> {
-    await firstValueFrom(this.http.patch<void>(`${B2B_API_BASE}/admin/staff-users/${id}`, payload));
+  /**
+   * Édite un user staff. `agentTool` — posé par un outil agent seulement
+   * (`x-lfd-agent-tool`), avec la précondition `expectedUpdatedAt` dans la
+   * charge ; l'écran ne passe ni l'un ni l'autre.
+   */
+  async update(id: string, payload: UpdateStaffUserPayload, agentTool?: string): Promise<void> {
+    const headers =
+      agentTool === undefined ? undefined : new HttpHeaders({ [AGENT_TOOL_HEADER]: agentTool });
+    await firstValueFrom(
+      this.http.patch<void>(
+        `${B2B_API_BASE}/admin/staff-users/${id}`,
+        payload,
+        headers === undefined ? {} : { headers },
+      ),
+    );
   }
 
   /**

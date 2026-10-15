@@ -301,6 +301,34 @@ describe('toLine — les faits de l’équipe, en phrases', () => {
     );
   });
 
+  it('dit qu’un geste a été écrit par un outil agent', () => {
+    const role = toLine(
+      event('staff_role.updated', {
+        label: 'Atelier',
+        previousLabel: null,
+        added: [{ resource: 'b2b_alerts', resourceLabel: 'Alertes', action: 'read' }],
+        removed: [],
+        changed: [],
+        via: { agentTool: 'role_grant' },
+      }),
+    );
+    const person = toLine(
+      event('staff_user.role_changed', {
+        person: CECILE,
+        fromLabel: 'Atelier',
+        toLabel: 'Support',
+        via: { agentTool: 'staff_assign_role' },
+      }),
+    );
+
+    expect(role.sentence).toBe(
+      'Hugo Heynard a modifié le rôle Atelier : + Alertes (lecture) via l’outil agent role_grant',
+    );
+    expect(person.sentence).toBe(
+      'Hugo Heynard a fait passer Cécile Martin de Atelier à Support via l’outil agent staff_assign_role',
+    );
+  });
+
   it('lit une charge utile incomplète sans casser ni afficher d’identifiant', () => {
     // Du JSON non typé : une personne absente rend `—`, un rôle absent disparaît.
     const line = toLine(event('staff_user.created', { person: 'cecile@x.fr' }));

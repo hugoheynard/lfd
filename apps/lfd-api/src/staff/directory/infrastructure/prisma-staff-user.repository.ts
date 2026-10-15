@@ -5,6 +5,7 @@ import {
   type StaffStatusChange,
   type StaffUserPayload,
   type StaffUserView,
+  type UpdateStaffUserPayload,
 } from "@lfd/contracts";
 import { Injectable, Logger } from "@nestjs/common";
 
@@ -24,7 +25,11 @@ import {
 } from "../../permissions/staff-access.policy.js";
 import { parseStaffNavPreferences } from "../domain/staff-nav-preferences.js";
 import { diffOverrides, isEmptyOverrideDiff, type OverrideDiff } from "../domain/override-diff.js";
-import { DuplicateStaffEmailError, StaffUserNotFoundError } from "../domain/staff-user-errors.js";
+import {
+  assertStaffUserUnchangedSince,
+  DuplicateStaffEmailError,
+  StaffUserNotFoundError,
+} from "../domain/staff-user-errors.js";
 import { StaffUserRepository, type StaffIdentityFacts } from "../domain/staff-user.repository.js";
 import type {
   StaffUserCreated,
@@ -117,8 +122,13 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
     return { id: created.id, roleLabel: role.label };
   }
 
-  async update(id: string, payload: StaffUserPayload, actorId: string): Promise<StaffUserEdit> {
+  async update(
+    id: string,
+    payload: UpdateStaffUserPayload,
+    actorId: string,
+  ): Promise<StaffUserEdit> {
     const target = await this.loadTarget(id, actorId);
+    assertStaffUserUnchangedSince(id, payload.expectedUpdatedAt, target.updatedAt);
     const requested = identityColumns(payload);
     // Normalisé AVANT de valider : on refuse ou on accepte exactement l'état
     // qu'on s'apprête à écrire, jamais un autre.
@@ -136,11 +146,19 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
     // toutes les lignes réattribuait chaque écart à son dernier éditeur et en
     // effaçait la date (plan `plan-journal-de-l-annuaire.md` §3).
     const diff = diffOverrides(target.overrides, overrides);
+    const touched = !sameIdentity(target.snapshot, after) || !isEmptyOverrideDiff(diff);
     await this.prisma.$transaction([
       ...this.overrideWrites(id, diff, actorId),
-      ...(sameIdentity(target.snapshot, after)
-        ? []
-        : [this.prisma.staffUser.update({ where: { id }, data: writableIdentity(after) })]),
+      // Des dérogations seules touchent AUSSI la fiche : `updated_at` est la
+      // précondition des éditions, et une dérogation changée doit la périmer.
+      ...(touched
+        ? [
+            this.prisma.staffUser.update({
+              where: { id },
+              data: { ...writableIdentity(after), updatedAt: this.clock.now() },
+            }),
+          ]
+        : []),
     ]);
     return {
       before: target.snapshot,

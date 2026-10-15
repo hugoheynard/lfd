@@ -7,6 +7,7 @@ import {
 import type { JournalFactType } from "@lfd/contracts/journal-facts";
 
 import type { JournalFact } from "../../../platform/journal/journal-fact.js";
+import { viaAgent } from "./agent-trace.js";
 import type { StaffRoleSnapshot } from "./staff-role-definition.js";
 
 /**
@@ -53,11 +54,13 @@ export function roleCreatedFact(role: StaffRoleSnapshot): JournalFact {
  * Ce qu'une redéfinition a changé, ou `null` si elle n'a rien changé — une
  * édition vide n'écrit rien au journal.
  *
- * `changed` porte le **nouveau** niveau.
+ * `changed` porte le **nouveau** niveau ; `agentTool` (l'outil agent qui a
+ * écrit, sinon `null`) pose `via` (plan `plan-outils-agent-droits.md`).
  */
 export function roleUpdatedFact(
   before: StaffRoleSnapshot,
   after: StaffRoleSnapshot,
+  agentTool: string | null = null,
 ): JournalFact | null {
   const previous = byResource(before.grants);
   const next = byResource(after.grants);
@@ -77,6 +80,7 @@ export function roleUpdatedFact(
     added: added.map(toEntry),
     removed: removed.map(toEntry),
     changed: changed.map(toEntry),
+    ...viaAgent(agentTool),
   });
 }
 

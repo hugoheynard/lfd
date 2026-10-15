@@ -1,6 +1,11 @@
 # Plan — les outils agent de la gestion des droits
 
-> 📐 **Doc-first, rien n'est bâti** (rédigé le 2026-10-15). Déplace une
+> ✅ **Bâti le 2026-10-15** — A1 à A5 et les corrections après `vitruve`,
+> back et front, non commité à cette date. L'état réel est dans
+> [`outils-agent-droits.md`](outils-agent-droits.md) ; ce plan garde les
+> raisons.
+>
+> ~~📐 Doc-first, rien n'est bâti (rédigé le 2026-10-15).~~ Déplace une
 > **frontière de sécurité** (un agent écrit des droits) : `vitruve` est
 > obligatoire avant de bâtir (CLAUDE.md §9 bis).
 

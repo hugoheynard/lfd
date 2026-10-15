@@ -46,7 +46,7 @@ export class UpdateStaffUserHandler implements ICommandHandler<UpdateStaffUserCo
   async execute(command: UpdateStaffUserCommand): Promise<void> {
     const edit = await this.uow.run(async () => {
       const written = await this.staff.update(command.id, command.payload, command.actorId);
-      for (const fact of staffUserEditFacts(command.id, written)) {
+      for (const fact of staffUserEditFacts(command.id, written, command.agentTool)) {
         await this.journal.append(fact);
       }
       return written;

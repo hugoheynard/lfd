@@ -1,4 +1,4 @@
-import type { StaffUserPayload } from "@lfd/contracts";
+import type { StaffUserPayload, UpdateStaffUserPayload } from "@lfd/contracts";
 
 /**
  * Commandes **staff** de gestion de l'annuaire des users staff.
@@ -16,11 +16,17 @@ export class CreateStaffUserCommand {
   ) {}
 }
 
+/**
+ * `payload` peut porter la précondition `expectedUpdatedAt` ; `agentTool` est
+ * l'outil agent qui a écrit (en-tête `x-lfd-agent-tool`), ou `null` depuis
+ * l'écran — une trace pour le journal, jamais une autorisation.
+ */
 export class UpdateStaffUserCommand {
   constructor(
     readonly id: string,
-    readonly payload: StaffUserPayload,
+    readonly payload: UpdateStaffUserPayload,
     readonly actorId: string,
+    readonly agentTool: string | null = null,
   ) {}
 }
 

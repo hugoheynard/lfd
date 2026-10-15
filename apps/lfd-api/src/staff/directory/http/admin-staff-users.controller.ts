@@ -1,18 +1,23 @@
 import type { StaffInvited } from "../../invitations/invite-staff-user.handler.js";
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import {
+  agentToolOf,
+  AGENT_TOOL_HEADER,
   type CreatedStaffUserResponse,
   type StaffUserPayload,
   staffStatusChangeSchema,
   type StaffStatusChange,
   staffUserPayloadSchema,
   type StaffUserView,
+  type UpdateStaffUserPayload,
+  updateStaffUserPayloadSchema,
 } from "@lfd/contracts";
 import {
   Body,
   Controller,
   Delete,
   Get,
+  Headers,
   HttpCode,
   HttpStatus,
   Param,
@@ -64,15 +69,22 @@ export class AdminStaffUsersController {
     return { id };
   }
 
+  /**
+   * Édite la fiche entière. `expectedUpdatedAt` (facultatif) refuse (409) une
+   * fiche écrite depuis la lecture ; l'en-tête `x-lfd-agent-tool` est lu sans
+   * être cru — il ne décide de rien, il est rangé dans les faits du journal
+   * (plan `plan-outils-agent-droits.md`).
+   */
   @Patch(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
   async update(
     @Param("id") id: string,
-    @Body(new ZodBody(staffUserPayloadSchema)) payload: StaffUserPayload,
+    @Body(new ZodBody(updateStaffUserPayloadSchema)) payload: UpdateStaffUserPayload,
     @StaffUserId() actorId: string,
+    @Headers(AGENT_TOOL_HEADER) agentTool: string | undefined,
   ): Promise<void> {
     await this.commands.execute<UpdateStaffUserCommand, void>(
-      new UpdateStaffUserCommand(id, payload, actorId),
+      new UpdateStaffUserCommand(id, payload, actorId, agentToolOf(agentTool)),
     );
   }
 

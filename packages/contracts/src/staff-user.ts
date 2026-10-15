@@ -57,6 +57,19 @@ export const staffUserPayloadSchema = z.object({
 export type StaffUserPayload = z.infer<typeof staffUserPayloadSchema>;
 
 /**
+ * La charge d'**édition** (`PATCH admin/staff-users/:id`) : la fiche entière,
+ * plus une **précondition** facultative — `expectedUpdatedAt`, la date de
+ * dernière écriture lue dans {@link StaffUserView.updatedAt}. Si la fiche a
+ * bougé depuis (identité, rôle, dérogations, statut), le serveur refuse (409)
+ * au lieu d'écraser ce qu'il n'a pas vu. L'écran ne l'envoie pas ; les outils
+ * agent l'envoient toujours (plan `plan-outils-agent-droits.md`).
+ */
+export const updateStaffUserPayloadSchema = staffUserPayloadSchema.extend({
+  expectedUpdatedAt: z.iso.datetime().optional(),
+});
+export type UpdateStaffUserPayload = z.infer<typeof updateStaffUserPayloadSchema>;
+
+/**
  * Un user staff tel que renvoyé (trié par nom).
  *
  * `permissions` est l'**effectif** — rôle et dérogations déjà combinés par le
@@ -105,6 +118,12 @@ export interface StaffUserView {
   readonly invitationExpired: boolean;
   readonly overrides: readonly StaffOverride[];
   readonly permissions: readonly StaffPermission[];
+  /**
+   * La dernière écriture de la fiche (ISO) — identité, rôle, statut, et ses
+   * dérogations, qui la touchent aussi. C'est la valeur qu'une édition renvoie
+   * en `expectedUpdatedAt` pour ne pas écraser un état qu'elle n'a pas lu.
+   */
+  readonly updatedAt: string;
 }
 
 /**

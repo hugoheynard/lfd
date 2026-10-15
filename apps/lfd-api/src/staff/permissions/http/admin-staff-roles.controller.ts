@@ -1,4 +1,6 @@
 import {
+  agentToolOf,
+  AGENT_TOOL_HEADER,
   createStaffRolePayloadSchema,
   updateStaffRolePayloadSchema,
   type CreateStaffRolePayload,
@@ -10,6 +12,7 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   HttpCode,
   HttpStatus,
   Param,
@@ -40,6 +43,10 @@ import {
  *
  * `DELETE` **archive**, il ne supprime pas : un rôle qu'on efface emporte la
  * réponse à « quels droits avait cette personne l'an dernier ».
+ *
+ * `PUT` lit l'en-tête `x-lfd-agent-tool` **sans le croire** : il ne décide de
+ * rien, il range le nom de l'outil agent dans le fait du journal (plan
+ * `plan-outils-agent-droits.md`).
  */
 @Controller("admin/staff-roles")
 @AdminSurface("staff_access")
@@ -73,9 +80,10 @@ export class AdminStaffRolesController {
     @Param("key") key: string,
     @Body(new ZodBody(updateStaffRolePayloadSchema)) payload: UpdateStaffRolePayload,
     @StaffUserId() actorId: string,
+    @Headers(AGENT_TOOL_HEADER) agentTool: string | undefined,
   ): Promise<void> {
     await this.commands.execute<UpdateStaffRoleCommand, void>(
-      new UpdateStaffRoleCommand(key, payload, actorId),
+      new UpdateStaffRoleCommand(key, payload, actorId, agentToolOf(agentTool)),
     );
   }
 

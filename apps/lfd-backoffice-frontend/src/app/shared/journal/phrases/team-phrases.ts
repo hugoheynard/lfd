@@ -10,6 +10,8 @@ import {
 } from '../payload-read';
 import { name, text, type Phrase, type PhraseFact, type Said, type Segment } from '../phrase';
 
+import { viaAgent } from './agent-mark';
+
 /**
  * **Les faits de l'équipe**, tels qu'un humain les lit : le geste en titre, puis
  * une phrase à la voix active qui nomme l'auteur et la personne visée.
@@ -112,22 +114,36 @@ export const TEAM_PHRASES = {
     ', à lui remettre en personne',
   ),
   'staff_user.identity_edited': (fact) =>
-    staff('Fiche modifiée', identitySegments(fact), ['person', 'previous', 'fields', 'changes']),
+    viaAgent(
+      fact,
+      staff('Fiche modifiée', identitySegments(fact), ['person', 'previous', 'fields', 'changes']),
+    ),
   'staff_user.role_changed': (fact) =>
-    staff(
-      'Changement de rôle',
-      [
-        text(`${fact.actor} a fait passer `),
-        name(personOf(fact.payload['person'])),
-        text(' de '),
-        name(orDash(fact.payload['fromLabel'])),
-        text(' à '),
-        name(orDash(fact.payload['toLabel'])),
-      ],
-      ['person', 'fromLabel', 'toLabel'],
+    viaAgent(
+      fact,
+      staff(
+        'Changement de rôle',
+        [
+          text(`${fact.actor} a fait passer `),
+          name(personOf(fact.payload['person'])),
+          text(' de '),
+          name(orDash(fact.payload['fromLabel'])),
+          text(' à '),
+          name(orDash(fact.payload['toLabel'])),
+        ],
+        ['person', 'fromLabel', 'toLabel'],
+      ),
     ),
   'staff_user.overrides_changed': (fact) =>
-    staff('Droits individuels', overridesSegments(fact), ['person', 'added', 'removed', 'changed']),
+    viaAgent(
+      fact,
+      staff('Droits individuels', overridesSegments(fact), [
+        'person',
+        'added',
+        'removed',
+        'changed',
+      ]),
+    ),
   'staff_user.suspended': onPerson('Accès suspendu', 'a suspendu l’accès de '),
   'staff_user.activated': onPerson('Accès activé', 'a activé l’accès de '),
   // L'auteur est la fiche elle-même : elle a tenté d'entrer (2026-10-10, §8.1 bis).
@@ -159,13 +175,16 @@ export const TEAM_PHRASES = {
       ['label'],
     ),
   'staff_role.updated': (fact) =>
-    staff('Rôle modifié', roleUpdateSegments(fact), [
-      'label',
-      'previousLabel',
-      'added',
-      'removed',
-      'changed',
-    ]),
+    viaAgent(
+      fact,
+      staff('Rôle modifié', roleUpdateSegments(fact), [
+        'label',
+        'previousLabel',
+        'added',
+        'removed',
+        'changed',
+      ]),
+    ),
   'staff_role.archived': (fact) =>
     staff(
       'Rôle archivé',

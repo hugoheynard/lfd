@@ -66,6 +66,7 @@ export async function loadMutationTarget(
     },
     overrides: existing.overrides,
     roleLabel: heldRoleLabel(existing),
+    updatedAt: existing.updatedAt,
     policy: {
       email: existing.email,
       isRoot,

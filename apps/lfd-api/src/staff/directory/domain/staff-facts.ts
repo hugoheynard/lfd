@@ -2,6 +2,7 @@ import type { StaffOverride, StaffStatus } from "@lfd/contracts";
 import type { JournalFactType } from "@lfd/contracts/journal-facts";
 
 import type { JournalFact } from "../../../platform/journal/journal-fact.js";
+import { viaAgent } from "../../permissions/domain/agent-trace.js";
 import { grantEntry, type StaffGrantEntry } from "../../permissions/domain/staff-role-facts.js";
 import { isEmptyOverrideDiff } from "./override-diff.js";
 import type { StaffUserEdit } from "./staff-user-state.js";
@@ -168,14 +169,24 @@ function statusFactType(from: StaffStatus, to: "active" | "suspended"): JournalF
  * vide. Identité, rôle et dérogations ont chacun le leur : la clé
  * d'idempotence du journal (`type:subjectId:traceId`) les distingue par leur
  * type.
+ *
+ * `agentTool` — l'outil agent qui a écrit (en-tête `x-lfd-agent-tool`), ou
+ * `null` depuis l'écran : il pose `via` sur chacun des faits de l'édition
+ * (plan `plan-outils-agent-droits.md`).
  */
-export function staffUserEditFacts(id: string, edit: StaffUserEdit): readonly JournalFact[] {
+export function staffUserEditFacts(
+  id: string,
+  edit: StaffUserEdit,
+  agentTool: string | null = null,
+): readonly JournalFact[] {
   const person = personOf(edit.after);
   return [
     identityEditedFact(id, edit, person),
     roleChangedFact(id, edit, person),
     overridesChangedFact(id, edit, person),
-  ].filter((entry): entry is JournalFact => entry !== null);
+  ]
+    .filter((entry): entry is JournalFact => entry !== null)
+    .map((entry) => ({ ...entry, payload: { ...entry.payload, ...viaAgent(agentTool) } }));
 }
 
 function identityEditedFact(

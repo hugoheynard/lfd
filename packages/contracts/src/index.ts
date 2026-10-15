@@ -868,11 +868,13 @@ export type {
   StaffMeView,
 } from "./staff-access.js";
 export { STAFF_RESOURCE_SCOPES } from "./staff-resource-scopes.js";
+export { AGENT_TOOL_HEADER, agentToolOf } from "./agent-tool.js";
 export type { StaffResourceScope } from "./staff-resource-scopes.js";
 export {
   staffStatusSchema,
   staffStatusChangeSchema,
   staffUserPayloadSchema,
+  updateStaffUserPayloadSchema,
   staffNavPreferencesSchema,
   staffNavPreferencesPatchSchema,
   productSectionFamilySchema,
@@ -882,6 +884,7 @@ export type {
   StaffStatus,
   StaffStatusChange,
   StaffUserPayload,
+  UpdateStaffUserPayload,
   StaffUserView,
   StaffNavPreferences,
   StaffNavPreferencesPatch,

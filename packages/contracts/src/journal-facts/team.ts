@@ -46,6 +46,14 @@ const backfill = {
   source: z.string().optional(),
 };
 
+/**
+ * **Le geste d'un outil agent** (plan `plan-outils-agent-droits.md`) : le nom
+ * de l'outil qui a écrit, lu dans l'en-tête `x-lfd-agent-tool`. Absent quand
+ * le geste vient de l'écran. Une trace, pas une preuve : l'en-tête vient du
+ * navigateur.
+ */
+const via = () => payload({ agentTool: z.string().min(1) }).optional();
+
 const identityField = () => z.enum(["firstName", "lastName", "email", "phone", "jobTitle"]);
 
 /** Un champ d'identité changé : sa clé, son libellé figé, l'avant et l'après. */
@@ -68,6 +76,7 @@ export const TEAM_FACTS = {
       /** Le nom d'avant, seulement s'il a changé. */
       previous: person().nullable(),
       changes: z.array(identityChange()),
+      via: via(),
     }),
     [
       // Avant le lot B : sans libellé, avec `changes`, et `fields` qui le doublait.
@@ -85,12 +94,14 @@ export const TEAM_FACTS = {
     person: person(),
     fromLabel: z.string(),
     toLabel: z.string(),
+    via: via(),
   }),
   "staff_user.overrides_changed": labelled({
     person: person(),
     added: z.array(overrideEntry()),
     removed: z.array(overrideEntry()),
     changed: z.array(overrideEntry()),
+    via: via(),
   }),
   "staff_user.suspended": labelled({ person: person() }),
   /**
@@ -130,6 +141,7 @@ export const TEAM_FACTS = {
     added: z.array(grantEntry()),
     removed: z.array(grantEntry()),
     changed: z.array(grantEntry()),
+    via: via(),
   }),
   "staff_role.archived": labelled({ label: z.string() }),
   "staff_role.restored": labelled({ label: z.string() }),

@@ -30,6 +30,7 @@ const USER: StaffUserView = {
   invitedAt: null,
   invitationExpired: false,
   permissions: [],
+  updatedAt: '2026-10-01T08:00:00.000Z',
 };
 
 /** Une définition telle que `GET /admin/staff-roles` la rend. */
