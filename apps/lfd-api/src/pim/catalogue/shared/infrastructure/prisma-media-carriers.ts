@@ -11,13 +11,14 @@ import { optionalLocalizedColumn as localizedOf } from "./json-readers.js";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 
 /**
- * Ce que le RÉFÉRENTIEL répond à la médiathèque : combien de ses fiches, de
- * ses familles et de ses opérations datées affichent chacune de ces images.
+ * Ce que le RÉFÉRENTIEL répond à la médiathèque : combien de ses fiches et de
+ * ses familles affichent chacune de ces images.
  *
- * Les opérations depuis le 2026-09-24 (plan des opérations datées, lot 1) :
- * leur image paraît dans l'annonce de la boutique. Une opération ARCHIVÉE
- * compte encore — elle garde son image, et la supprimer laisserait une ligne
- * de l'historique pointer vers rien.
+ * Ses opérations datées répondent à part depuis le 2026-10-15
+ * (`PrismaOperationMediaCarriers`, lot 2 de
+ * `documentation/operations-datees/plan-l-operation-passe-au-commerce.md`) :
+ * la racine ne les compte plus une fois l'opération passée au commerce, sans
+ * quoi une image resterait « employée » par une table que plus rien ne sert.
  *
  * Le comptage se fait par `media_url` et non par l'identifiant d'actif : c'est
  * l'URL qui est l'identité d'une image, et c'est elle que la bibliothèque
@@ -37,10 +38,10 @@ export class PrismaMediaCarriers extends MediaCarriers {
     if (wanted.length === 0) {
       return new Map();
     }
-    // Les TROIS porteurs, et l'oubli d'un seul ne se serait vu qu'en
+    // Les DEUX porteurs, et l'oubli d'un seul ne se serait vu qu'en
     // production : l'écran aurait proposé de supprimer une image qu'une
-    // famille, ou l'annonce de Noël, affiche.
-    const [byProduct, byCategory, byOperation] = await Promise.all([
+    // famille affiche.
+    const [byProduct, byCategory] = await Promise.all([
       this.prisma.productMedia.groupBy({
         by: ["mediaUrl"],
         where: { mediaUrl: { in: wanted } },
@@ -49,11 +50,6 @@ export class PrismaMediaCarriers extends MediaCarriers {
       this.prisma.categoryMedia.groupBy({
         by: ["mediaUrl"],
         where: { mediaUrl: { in: wanted } },
-        _count: { _all: true },
-      }),
-      this.prisma.operation.groupBy({
-        by: ["imageUrl"],
-        where: { imageUrl: { in: wanted } },
         _count: { _all: true },
       }),
     ]);
@@ -67,9 +63,6 @@ export class PrismaMediaCarriers extends MediaCarriers {
     for (const group of [...byProduct, ...byCategory]) {
       add(group.mediaUrl, group._count._all);
     }
-    for (const group of byOperation) {
-      add(group.imageUrl, group._count._all);
-    }
     return counts;
   }
 
@@ -78,8 +71,7 @@ export class PrismaMediaCarriers extends MediaCarriers {
    *
    * Une lecture par table, parce que les porteurs n'ont ni le même écran ni le
    * même nom de colonne. Les fiches d'abord : c'est le cas fréquent, et
-   * l'ordre de la liste est l'ordre dans lequel on cherchera. Les opérations
-   * en dernier, sous leur CLÉ comme identifiant.
+   * l'ordre de la liste est l'ordre dans lequel on cherchera.
    *
    * ⚠️ **Un porteur peut apparaître deux fois** si la même image y tient deux
    * RÔLES — la clé primaire est `(porteur, url, rôle)`. On dédoublonne donc par
@@ -88,7 +80,7 @@ export class PrismaMediaCarriers extends MediaCarriers {
    * et ferait croire à un doublon de catalogue.
    */
   async carriersOf(url: string): Promise<readonly Carrier[]> {
-    const [products, categories, operations] = await Promise.all([
+    const [products, categories] = await Promise.all([
       this.prisma.productMedia.findMany({
         where: { mediaUrl: url },
         select: { productId: true, product: { select: { name: true } } },
@@ -96,11 +88,6 @@ export class PrismaMediaCarriers extends MediaCarriers {
       this.prisma.categoryMedia.findMany({
         where: { mediaUrl: url },
         select: { categoryId: true, category: { select: { name: true } } },
-      }),
-      this.prisma.operation.findMany({
-        where: { imageUrl: url },
-        select: { key: true, name: true },
-        orderBy: { key: "asc" },
       }),
     ]);
 
@@ -119,18 +106,11 @@ export class PrismaMediaCarriers extends MediaCarriers {
         label: labelOf(row.category.name, row.categoryId),
       });
     }
-    for (const row of operations) {
-      carriers.set(`operation:${row.key}`, {
-        kind: "operation",
-        id: row.key,
-        label: labelOf(row.name, row.key),
-      });
-    }
     return [...carriers.values()];
   }
 
   /**
-   * Repointe fiches, familles et opérations de `from` vers `to` (L7,
+   * Repointe fiches et familles de `from` vers `to` (L7,
    * 2026-10-10), dans la transaction ambiante.
    *
    * 🔴 **La fusion, avant le repointage** : la clé de `product_media` et de
@@ -140,15 +120,10 @@ export class PrismaMediaCarriers extends MediaCarriers {
    * devient `to` — avec SON rang. Sous deux rôles différents, les deux lignes
    * restent : ce ne sont pas des doublons.
    *
-   * Les opérations, ARCHIVÉES comprises — comme {@link usesOf} les compte.
-   * Leur texte alternatif reste le leur.
-   *
    * ⚠️ Pas de réannonce ici : la médiathèque publie dans la même transaction
    * le fait durable `media.asset_described` sur `to`, que le référentiel
    * écoute déjà pour réannoncer les fiches qui le montrent en `hero` ou
-   * `thumbnail` (`catalogue/product/application/on-media-asset-described.ts`)
-   * et les opérations qui l'affichent
-   * (`operations/application/on-media-asset-described.ts`, 2026-10-11).
+   * `thumbnail` (`catalogue/product/application/on-media-asset-described.ts`).
    */
   async repoint({ from, to }: ImageReplacement, ticket: WriteTicket): Promise<number> {
     // Le laissez-passer n'est pas LU, et c'est voulu : il n'a pas de contenu à
@@ -158,11 +133,7 @@ export class PrismaMediaCarriers extends MediaCarriers {
     void ticket;
     const products = await this.repointProducts(from, to);
     const categories = await this.repointCategories(from, to);
-    const operations = await this.prisma.operation.updateMany({
-      where: { imageUrl: from },
-      data: { imageUrl: to },
-    });
-    return products + categories + operations.count;
+    return products + categories;
   }
 
   /** Les fiches : fusion par `(fiche, rôle)`, puis repointage. Rend le nombre de fiches. */
@@ -215,13 +186,14 @@ export class PrismaMediaCarriers extends MediaCarriers {
  *
  * Le repli est l'identifiant et non une chaîne creuse : une ligne sans mot ne
  * se clique pas, et « (sans nom) » ne dit pas laquelle des trois c'est. Un
- * identifiant est laid mais il désigne.
+ * identifiant est laid mais il désigne. Partagé avec les opérations
+ * (`PrismaOperationMediaCarriers`).
  *
  * ⚠️ En langue SOURCE, sans négociation : cette liste sert le staff du
  * back-office, pas un client. Y faire entrer une langue demanderait de la
  * faire traverser le port, pour une liste qu'on lit en français.
  */
-function labelOf(name: unknown, fallback: string): string {
+export function labelOf(name: unknown, fallback: string): string {
   const label = localizedOf(name)?.[SOURCE_LOCALE]?.trim() ?? "";
   return label === "" ? fallback : label;
 }

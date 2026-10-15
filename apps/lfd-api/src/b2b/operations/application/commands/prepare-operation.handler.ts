@@ -3,11 +3,13 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { Clock } from "../../../../platform/time/clock.js";
+import { OperationImageLibrary } from "../../channels/media/operation-image-library.js";
 import { Operation } from "../../domain/entities/operation.js";
 import { OperationKeyTakenError } from "../../domain/errors/operation-errors.js";
 import { OperationPreparedEvent } from "../../domain/events/operation.events.js";
 import { OperationRepository } from "../../domain/ports/operation.repository.js";
 import { OperationWritingSwitch } from "../../domain/ports/operation-writing-switch.js";
+import { imageFromLibrary, journalImage } from "./operation-image-choice.js";
 import { ensureWritingOpen, scheduleText, subjectOf } from "./operation-writing.js";
 import { PrepareOperationCommand } from "./prepare-operation.command.js";
 
@@ -22,6 +24,9 @@ import { PrepareOperationCommand } from "./prepare-operation.command.js";
  * lecture donne le message ; la clé primaire tient la course entre deux
  * onglets — `add` crée, il n'écrase pas.
  *
+ * L'image, s'il y en a une, est une image de la médiathèque (lot 2) — 404
+ * sinon —, et arrive avec son point focal.
+ *
  * Rend la clé : c'est l'identité, choisie par le staff et non par la base.
  */
 @CommandHandler(PrepareOperationCommand)
@@ -32,14 +37,19 @@ export class PrepareOperationHandler implements ICommandHandler<PrepareOperation
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly library: OperationImageLibrary,
   ) {}
 
   async execute(command: PrepareOperationCommand): Promise<string> {
     ensureWritingOpen(this.writing);
-    const operation = Operation.prepare(command.operation, {
-      by: command.writtenBy,
-      at: this.clock.now(),
-    });
+    const image = await imageFromLibrary(this.library, command.operation.image, null);
+    const operation = Operation.prepare(
+      { ...command.operation, image },
+      {
+        by: command.writtenBy,
+        at: this.clock.now(),
+      },
+    );
     const prepared = operation.snapshot();
     if ((await this.operations.load(prepared.key)) !== null) {
       throw new OperationKeyTakenError(prepared.key);
@@ -51,7 +61,7 @@ export class PrepareOperationHandler implements ICommandHandler<PrepareOperation
         new OperationPreparedEvent(subjectOf(prepared), {
           name: prepared.name,
           lede: prepared.lede,
-          image: prepared.image,
+          image: journalImage(prepared.image),
           audience: prepared.audience,
           ...scheduleText(prepared.schedule),
         }),

@@ -1,5 +1,6 @@
 import {
   InvalidOperationAudienceError,
+  InvalidOperationFocalError,
   InvalidOperationImageError,
   InvalidOperationTextError,
 } from "../../errors/operation-errors.js";
@@ -28,8 +29,25 @@ describe("operationImage", () => {
     expect(operationImage({ url: " https://media.test/buche.webp ", alt: "  " })).toEqual({
       url: "https://media.test/buche.webp",
       alt: "",
+      focal: null,
     });
     expect(operationImage(null)).toBeNull();
+  });
+
+  it("garde le point focal de la médiathèque, bornes comprises", () => {
+    expect(
+      operationImage({ url: "https://media.test/a.webp", alt: "", focal: { x: 0, y: 1 } })?.focal,
+    ).toEqual({ x: 0, y: 1 });
+  });
+
+  it.each([
+    { x: -0.1, y: 0.5 },
+    { x: 0.5, y: 1.01 },
+    { x: Number.NaN, y: 0.5 },
+  ])("refuse un point focal hors de l'image (%o)", (focal) => {
+    expect(() => operationImage({ url: "https://media.test/a.webp", alt: "", focal })).toThrow(
+      InvalidOperationFocalError,
+    );
   });
 
   it("refuse une image sans adresse", () => {

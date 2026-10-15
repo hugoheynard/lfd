@@ -1,6 +1,12 @@
 import { OperationArchivedError } from "../errors/operation-errors.js";
 import { operationAudience, type OperationAudience } from "../value-objects/operation-audience.js";
-import { operationImage, type OperationImage } from "../value-objects/operation-image.js";
+import {
+  operationFocal,
+  operationImage,
+  type OperationFocal,
+  type OperationImage,
+  type OperationImageInput,
+} from "../value-objects/operation-image.js";
 import { OperationKey } from "../value-objects/operation-key.js";
 import {
   OperationSchedule,
@@ -17,7 +23,7 @@ import {
 export interface OperationPresentationInput {
   readonly name: OperationTextInput;
   readonly lede: OperationTextInput | null;
-  readonly image: OperationImage | null;
+  readonly image: OperationImageInput | null;
 }
 
 /** Ce que l'annonce affiche, une fois jugé. */
@@ -176,6 +182,54 @@ export class Operation {
     this.write(stamp, { archivedAt: stamp.at });
   }
 
+  /**
+   * **La médiathèque remplace `from` par `to`** (« Remplacer », §2 de
+   * `documentation/mediatheque/mediatheque.md`) : l'image change d'adresse,
+   * le texte alternatif reste celui de l'opération, et le point focal revient
+   * au centre — il décrivait une autre image ; celui de `to` arrive par
+   * {@link refocusImage} quand la médiathèque l'annonce.
+   *
+   * Signé de qui remplace : c'est son geste qui a changé ce que l'annonce
+   * montre.
+   *
+   * @returns `false` si l'opération ne montre pas `from` — rien à écrire.
+   * @throws {OperationArchivedError} une opération archivée ne change plus.
+   */
+  repointImage(from: string, to: string, stamp: WriteStamp): boolean {
+    this.ensureActive();
+    const { image } = this.state.presentation;
+    if (image === null || image.url !== from) {
+      return false;
+    }
+    const replaced = operationImage({ url: to, alt: image.alt, focal: null });
+    this.write(stamp, { presentation: { ...this.state.presentation, image: replaced } });
+    return true;
+  }
+
+  /**
+   * **La médiathèque redécrit le point focal de `url`.** Le point suit ;
+   * l'auteur de la dernière écriture ne change pas — personne n'a recomposé
+   * l'opération, la décision est tracée à la médiathèque
+   * (`media_asset.described`), comme pour la vitrine.
+   *
+   * @returns `false` si l'opération ne montre pas `url`, ou montre déjà ce point.
+   * @throws {OperationArchivedError}
+   * @throws {InvalidOperationFocalError} le point sort de l'image.
+   */
+  refocusImage(url: string, focal: OperationFocal | null): boolean {
+    this.ensureActive();
+    const { image } = this.state.presentation;
+    const next = operationFocal(focal);
+    if (image === null || image.url !== url || sameFocal(image.focal, next)) {
+      return false;
+    }
+    this.state = {
+      ...this.state,
+      presentation: { ...this.state.presentation, image: { ...image, focal: next } },
+    };
+    return true;
+  }
+
   get isArchived(): boolean {
     return this.state.archivedAt !== null;
   }
@@ -204,4 +258,8 @@ function presentationOf(raw: OperationPresentationInput): OperationPresentation 
     lede: raw.lede === null ? null : operationText("accroche de l'opération", raw.lede),
     image: operationImage(raw.image),
   };
+}
+
+function sameFocal(a: OperationFocal | null, b: OperationFocal | null): boolean {
+  return a === null || b === null ? a === b : a.x === b.x && a.y === b.y;
 }

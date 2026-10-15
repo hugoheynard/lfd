@@ -2,6 +2,7 @@ import type { ReceivedOperationView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { AppConfig } from "../src/platform/config/app-config.js";
+import { MediaStore } from "../src/platform/storage/media-store.js";
 import {
   bootstrapE2e,
   E2E_STAFF_ID,
@@ -9,7 +10,9 @@ import {
   jsonBody,
   type E2eContext,
 } from "./e2e-harness.js";
+import { InMemoryMediaStore } from "./in-memory-media-store.js";
 import {
+  depositImage,
   noelBody,
   OpenOperationsAtCommerceConfig,
   OPERATIONS,
@@ -34,6 +37,7 @@ beforeAll(async () => {
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
       { token: AppConfig, value: new OpenOperationsAtCommerceConfig() },
+      { token: MediaStore, value: new InMemoryMediaStore() },
     ],
   });
 });
@@ -147,20 +151,24 @@ describe("composer, masquer, archiver", () => {
     ]);
   });
 
-  it("redate et réécrit les textes ; une image changée perd le point focal de l'ancienne", async () => {
+  /**
+   * Depuis le lot 2, l'image se choisit dans la médiathèque : une adresse
+   * libre est refusée, et une image changée prend le point focal de LA
+   * NOUVELLE — celui de l'ancienne décrivait une autre image.
+   */
+  it("redate et réécrit les textes ; une image changée prend le point de la nouvelle", async () => {
     await prepareNoel();
+    const a = await depositImage(ctx, 1001, { x: 0.2, y: 0.8 });
+    const b = await depositImage(ctx, 1002, null);
     await staff()
       .put(`${OPERATIONS}/noel-2026/presentation`)
-      .send({ name: { fr: "Noël" }, lede: null, image: { url: "https://m.test/a.webp", alt: "" } })
+      .send({ name: { fr: "Noël" }, lede: null, image: { url: a, alt: "" } })
       .expect(200);
-    await ctx.prisma.catalogOperation.update({
-      where: { key: "noel-2026" },
-      data: { imageFocalX: 0.2, imageFocalY: 0.8 },
-    });
+    expect(await row()).toMatchObject({ imageUrl: a, imageFocalX: 0.2, imageFocalY: 0.8 });
 
     await staff()
       .put(`${OPERATIONS}/noel-2026/presentation`)
-      .send({ name: { fr: "Noël" }, lede: null, image: { url: "https://m.test/b.webp", alt: "" } })
+      .send({ name: { fr: "Noël" }, lede: null, image: { url: b, alt: "" } })
       .expect(200);
     const body = noelBody();
     const emptyWindow = await staff()
@@ -175,11 +183,7 @@ describe("composer, masquer, archiver", () => {
       .expect(400);
     expect(emptyWindow.body).toMatchObject({ code: "operations.order_window_empty" });
 
-    expect(await row()).toMatchObject({
-      imageUrl: "https://m.test/b.webp",
-      imageFocalX: null,
-      imageFocalY: null,
-    });
+    expect(await row()).toMatchObject({ imageUrl: b, imageFocalX: null, imageFocalY: null });
   });
 
   it("archive — la date du retrait est celle du geste — puis refuse tout geste en 409", async () => {

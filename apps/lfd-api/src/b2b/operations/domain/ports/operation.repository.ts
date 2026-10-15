@@ -15,6 +15,13 @@ export abstract class OperationRepository {
   /** L'opération, archivée comprise, ou `null`. */
   abstract load(key: string): Promise<Operation | null>;
 
+  /**
+   * Les opérations NON ARCHIVÉES qui montrent cette image — celles qu'un
+   * remplacement ou un nouveau point focal de la médiathèque doit suivre. Une
+   * opération archivée ne change plus : l'agrégat la refuserait.
+   */
+  abstract loadShowingImage(url: string): Promise<readonly Operation[]>;
+
   /** @throws {OperationKeyTakenError} la clé est déjà prise, archivée comprise. */
   abstract add(operation: Operation): Promise<void>;
 

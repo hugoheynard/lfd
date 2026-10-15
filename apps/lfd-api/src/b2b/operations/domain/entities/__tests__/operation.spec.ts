@@ -162,3 +162,55 @@ describe("Operation.reconstitute", () => {
     );
   });
 });
+
+describe("l'image suit la médiathèque", () => {
+  const A = "https://media.test/buche.webp";
+  const B = "https://media.test/buche-retouchee.webp";
+  const MEDIA: WriteStamp = { by: "staff_media", at: new Date("2026-10-03T09:00:00.000Z") };
+
+  function showingA(): Operation {
+    return Operation.prepare(
+      noel({ image: { url: A, alt: "Une bûche", focal: { x: 0.3, y: 0.6 } } }),
+      PREPARED,
+    );
+  }
+
+  it("un remplacement change l'adresse, garde le texte, recentre le point, et signe", () => {
+    const operation = showingA();
+
+    expect(operation.repointImage(A, B, MEDIA)).toBe(true);
+
+    expect(operation.snapshot()).toMatchObject({
+      image: { url: B, alt: "Une bûche", focal: null },
+      lastWrite: MEDIA,
+    });
+  });
+
+  it("un remplacement d'une AUTRE image ne touche rien", () => {
+    const operation = showingA();
+
+    expect(operation.repointImage(B, A, MEDIA)).toBe(false);
+    expect(operation.snapshot()).toMatchObject({ image: { url: A }, lastWrite: PREPARED });
+  });
+
+  it("un nouveau point focal suit, sans changer l'auteur de la dernière écriture", () => {
+    const operation = showingA();
+
+    expect(operation.refocusImage(A, { x: 0.9, y: 0.1 })).toBe(true);
+    expect(operation.refocusImage(A, { x: 0.9, y: 0.1 })).toBe(false);
+    expect(operation.refocusImage(B, null)).toBe(false);
+
+    expect(operation.snapshot()).toMatchObject({
+      image: { url: A, focal: { x: 0.9, y: 0.1 } },
+      lastWrite: PREPARED,
+    });
+  });
+
+  it("une opération archivée ne suit plus : elle ne change plus", () => {
+    const operation = showingA();
+    operation.archive(LATER);
+
+    expect(() => operation.repointImage(A, B, MEDIA)).toThrow(OperationArchivedError);
+    expect(() => operation.refocusImage(A, null)).toThrow(OperationArchivedError);
+  });
+});

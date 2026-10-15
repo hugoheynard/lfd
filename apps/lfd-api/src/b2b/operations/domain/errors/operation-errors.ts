@@ -164,6 +164,38 @@ export class InvalidOperationImageError extends DomainError {
   }
 }
 
+/**
+ * Un point focal hors de l'image. 400. Il vient de la médiathèque, qui le
+ * borne déjà : le voir ici, c'est une ligne relue de travers.
+ */
+export class InvalidOperationFocalError extends DomainError {
+  constructor(
+    readonly x: number,
+    readonly y: number,
+  ) {
+    super(
+      "operations.image_focal_invalid",
+      `Le point focal de l'image (${x} ; ${y}) sort de l'image : chaque coordonnée va de 0 à 1. ` +
+        `Reposez-le à la médiathèque.`,
+    );
+  }
+}
+
+/**
+ * L'image choisie n'est pas dans la médiathèque (→ 404). Une opération ne
+ * porte qu'une image du fonds : une adresse tierce peut disparaître, et la
+ * médiathèque ne saurait pas qu'on l'affiche.
+ */
+export class UnknownOperationImageError extends ResourceNotFoundError {
+  constructor(readonly url: string) {
+    super(
+      "operations.image_unknown",
+      `L'image « ${url} » n'est pas dans la médiathèque : déposez-la d'abord à la ` +
+        `médiathèque, puis choisissez-la depuis l'opération.`,
+    );
+  }
+}
+
 /** La sélection nomme deux fois le même article. 400. */
 export class DuplicateOperationSkuError extends DomainError {
   constructor(readonly sku: string) {

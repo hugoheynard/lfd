@@ -17,6 +17,7 @@ import { SetOperationSelectionHandler } from "../set-operation-selection.handler
 import { SetOperationVisibilityCommand } from "../set-operation-visibility.command.js";
 import { SetOperationVisibilityHandler } from "../set-operation-visibility.handler.js";
 import {
+  FixedImageLibrary,
   FixedWritingSwitch,
   InMemoryOperations,
   KnownSkus,
@@ -37,19 +38,20 @@ describe("les gestes d'écriture, interrupteur fermé", () => {
   const clock = new FixedClock(new Date("2026-10-15T09:00:00.000Z"));
   const uow = new DirectUnitOfWork();
   const ports = [operations, closed, clock, events, uow] as const;
+  const library = new FixedImageLibrary([]);
 
   const gestures: readonly [string, () => Promise<unknown>][] = [
     [
       "préparer",
       () =>
-        new PrepareOperationHandler(...ports).execute(
+        new PrepareOperationHandler(...ports, library).execute(
           new PrepareOperationCommand(noel({ key: "paques-2027" }), "staff_1"),
         ),
     ],
     [
       "éditer",
       () =>
-        new EditOperationHandler(...ports).execute(
+        new EditOperationHandler(...ports, library).execute(
           new EditOperationCommand(
             "noel-2026",
             { name: { fr: "Noël" }, lede: null, image: null },
@@ -104,6 +106,8 @@ describe("les gestes d'écriture, interrupteur fermé", () => {
 
     expect(operations.adds + operations.saves).toBe(0);
     expect(events.traced).toEqual([]);
+    // Fermé, la médiathèque n'est même pas interrogée (lot 2).
+    expect(library.reads).toBe(0);
   });
 
   it("dit au staff que l'écriture ouvre à la bascule, et où préparer d'ici là", async () => {

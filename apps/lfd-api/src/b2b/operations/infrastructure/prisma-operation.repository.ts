@@ -64,24 +64,24 @@ export class PrismaOperationRepository extends OperationRepository {
     await this.writeItems(operation);
   }
 
+  async loadShowingImage(url: string): Promise<readonly Operation[]> {
+    const rows = await this.prisma.catalogOperation.findMany({
+      where: { imageUrl: url, withdrawnAt: null },
+      include: ITEMS_IN_ORDER,
+      orderBy: { key: "asc" },
+    });
+    return rows.map((row) => Operation.reconstitute(toRecord(row)));
+  }
+
   /**
-   * Écrit l'état entier. Une image CHANGÉE perd le point focal de l'ancienne
-   * (centre) : il décrivait une autre image. Le lot 2 le relira à la
-   * médiathèque.
+   * Écrit l'état entier, point focal compris : l'agrégat le tient depuis le
+   * lot 2 (lu à la médiathèque au choix de l'image).
    */
   async save(operation: Operation): Promise<void> {
     const snapshot = operation.snapshot();
-    const before = await this.prisma.catalogOperation.findUnique({
-      where: { key: snapshot.key },
-      select: { imageUrl: true },
-    });
-    const imageChanged = (before?.imageUrl ?? null) !== (snapshot.image?.url ?? null);
     await this.prisma.catalogOperation.update({
       where: { key: snapshot.key },
-      data: {
-        ...operationColumns(snapshot),
-        ...(imageChanged ? { imageFocalX: null, imageFocalY: null } : {}),
-      },
+      data: operationColumns(snapshot),
     });
     await this.prisma.catalogOperationItem.deleteMany({ where: { operationKey: snapshot.key } });
     await this.writeItems(operation);

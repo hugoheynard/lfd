@@ -1,4 +1,8 @@
 import { Operation, type PrepareOperation } from "../../../domain/entities/operation.js";
+import {
+  OperationImageLibrary,
+  type LibraryImage,
+} from "../../../channels/media/operation-image-library.js";
 import { OperationKeyTakenError } from "../../../domain/errors/operation-errors.js";
 import { OperationRepository } from "../../../domain/ports/operation.repository.js";
 import { OperationSkuCatalogue } from "../../../domain/ports/operation-sku.catalogue.js";
@@ -24,6 +28,14 @@ export class InMemoryOperations extends OperationRepository {
   load(key: string): Promise<Operation | null> {
     const found = this.rows.get(key);
     return Promise.resolve(found === undefined ? null : copyOf(found));
+  }
+
+  loadShowingImage(url: string): Promise<readonly Operation[]> {
+    const showing = [...this.rows.values()].filter((operation) => {
+      const snapshot = operation.snapshot();
+      return snapshot.archivedAt === null && snapshot.image?.url === url;
+    });
+    return Promise.resolve(showing.map(copyOf));
   }
 
   add(operation: Operation): Promise<void> {
@@ -71,6 +83,25 @@ export class FixedWritingSwitch extends OperationWritingSwitch {
   isOpen(): boolean {
     return this.open;
   }
+}
+
+/** La médiathèque réduite aux images qu'elle connaît ; compte ses lectures. */
+export class FixedImageLibrary extends OperationImageLibrary {
+  reads = 0;
+
+  constructor(private readonly images: readonly LibraryImage[] = []) {
+    super();
+  }
+
+  describe(url: string): Promise<LibraryImage | null> {
+    this.reads += 1;
+    return Promise.resolve(this.images.find((image) => image.url === url) ?? null);
+  }
+}
+
+/** Une image du fonds, avec son point focal. */
+export function libraryImage(url: string, focal: LibraryImage["focal"] = null): LibraryImage {
+  return { url, alt: "", width: 1200, height: 800, focal };
 }
 
 /** Relu par la même porte que la base : `reconstitute` sur l'instantané. */

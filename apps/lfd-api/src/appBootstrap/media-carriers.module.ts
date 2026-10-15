@@ -1,12 +1,18 @@
 import { Global, Module } from "@nestjs/common";
 
 import { CatalogModule as CommerceCatalogModule } from "../b2b/catalog/catalog.module.js";
+import { CommerceOperationsModule } from "../b2b/operations/operations.module.js";
 import { StorefrontModule } from "../b2b/storefront/storefront.module.js";
 import { MediaCarriers } from "../media/channels/carriers/media-carriers.js";
 import { CatalogueModule } from "../pim/catalogue/catalogue.module.js";
 import { PrismaMediaCarriers } from "../pim/catalogue/shared/infrastructure/prisma-media-carriers.js";
+import { PrismaOperationMediaCarriers } from "../pim/catalogue/shared/infrastructure/prisma-operation-media-carriers.js";
+import { AppConfig } from "../platform/config/app-config.js";
 import { CatalogCopyMediaCarriers } from "./catalog-copy-media-carriers.js";
+import { CommerceOperationMediaCarriers } from "./commerce-operation-media-carriers.js";
 import { CompositeMediaCarriers } from "./composite-media-carriers.js";
+import { mediaCarriersFor } from "./operation-carriers-by-switch.js";
+import { RefocusCommerceOperationsOnMediaDescribed } from "./operation-media-focus.js";
 import { StorefrontMediaCarriers } from "./storefront-media-carriers.js";
 import { RefocusStorefrontOnMediaDescribed } from "./storefront-media-focus.js";
 
@@ -28,16 +34,25 @@ import { RefocusStorefrontOnMediaDescribed } from "./storefront-media-focus.js";
  * du commerce (`catalog_operations`), qui retiennent l'ancienne image d'une
  * opération jusqu'au push suivant — elles ne se repointent pas.
  *
+ * Depuis le 2026-10-15 (lot 2 de
+ * `documentation/operations-datees/plan-l-operation-passe-au-commerce.md`), la
+ * liste dépend de `OPERATIONS_AT_COMMERCE` (`mediaCarriersFor`) : ouvert, les
+ * opérations DU COMMERCE remplacent les copies et celles du référentiel.
+ * Fermé, rien ne change.
+ *
  * `@Global` pour la raison des autres fils : le consommateur du port est
  * `media/`, qui ne peut pas importer le module qui le fournit sans devenir
  * dépendant du référentiel.
  */
 @Global()
 @Module({
-  imports: [CatalogueModule, StorefrontModule, CommerceCatalogModule],
+  imports: [CatalogueModule, StorefrontModule, CommerceCatalogModule, CommerceOperationsModule],
   providers: [
     StorefrontMediaCarriers,
     CatalogCopyMediaCarriers,
+    CommerceOperationMediaCarriers,
+    // Le point focal suit jusqu'à l'opération du commerce — inerte interrupteur fermé.
+    RefocusCommerceOperationsOnMediaDescribed,
     // Depuis le 2026-10-11 (§7 bis de la médiathèque) : le point focal suit jusqu'à la vitrine, par un fait durable.
     RefocusStorefrontOnMediaDescribed,
     // L'adaptateur du référentiel vient du module qui le construit ; celui de
@@ -45,11 +60,30 @@ import { RefocusStorefrontOnMediaDescribed } from "./storefront-media-focus.js";
     {
       provide: MediaCarriers,
       useFactory: (
-        pim: PrismaMediaCarriers,
+        config: AppConfig,
+        pimCatalogue: PrismaMediaCarriers,
+        pimOperations: PrismaOperationMediaCarriers,
         storefront: StorefrontMediaCarriers,
-        copies: CatalogCopyMediaCarriers,
-      ) => new CompositeMediaCarriers([pim, storefront, copies]),
-      inject: [PrismaMediaCarriers, StorefrontMediaCarriers, CatalogCopyMediaCarriers],
+        commerceCopies: CatalogCopyMediaCarriers,
+        commerceOperations: CommerceOperationMediaCarriers,
+      ) =>
+        new CompositeMediaCarriers(
+          mediaCarriersFor(config.operationsAtCommerce(), {
+            pimCatalogue,
+            pimOperations,
+            storefront,
+            commerceCopies,
+            commerceOperations,
+          }),
+        ),
+      inject: [
+        AppConfig,
+        PrismaMediaCarriers,
+        PrismaOperationMediaCarriers,
+        StorefrontMediaCarriers,
+        CatalogCopyMediaCarriers,
+        CommerceOperationMediaCarriers,
+      ],
     },
   ],
   exports: [MediaCarriers],

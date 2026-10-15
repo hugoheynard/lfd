@@ -17,6 +17,7 @@ import { RescheduleOperationHandler } from "../reschedule-operation.handler.js";
 import { SetOperationSelectionCommand } from "../set-operation-selection.command.js";
 import { SetOperationSelectionHandler } from "../set-operation-selection.handler.js";
 import {
+  FixedImageLibrary,
   FixedWritingSwitch,
   InMemoryOperations,
   KnownSkus,
@@ -25,6 +26,8 @@ import {
 } from "./operation-doubles.js";
 
 const NOW = new Date("2026-10-15T09:00:00.000Z");
+/** Ces cas ne choisissent aucune image : le fonds reste vide. */
+const library = new FixedImageLibrary();
 
 function scene(seed = [preparedNoel()]) {
   const operations = new InMemoryOperations(seed);
@@ -43,7 +46,7 @@ describe("PrepareOperationHandler", () => {
   it("prépare, signe, journalise tout ce qu'elle dit, et rend la clé nettoyée", async () => {
     const { operations, events, ports } = scene([]);
 
-    const key = await new PrepareOperationHandler(...ports).execute(
+    const key = await new PrepareOperationHandler(...ports, library).execute(
       new PrepareOperationCommand(noel({ key: " noel-2026 " }), "staff_1"),
     );
 
@@ -73,7 +76,9 @@ describe("PrepareOperationHandler", () => {
     const { operations, events, ports } = scene();
 
     await expect(
-      new PrepareOperationHandler(...ports).execute(new PrepareOperationCommand(noel(), "staff_1")),
+      new PrepareOperationHandler(...ports, library).execute(
+        new PrepareOperationCommand(noel(), "staff_1"),
+      ),
     ).rejects.toThrow(OperationKeyTakenError);
     expect(operations.adds).toBe(0);
     expect(events.traced).toEqual([]);
@@ -83,7 +88,7 @@ describe("PrepareOperationHandler", () => {
 describe("EditOperationHandler", () => {
   it("journalise le diff seul, et ne réécrit rien quand rien ne change", async () => {
     const { operations, events, ports } = scene();
-    const handler = new EditOperationHandler(...ports);
+    const handler = new EditOperationHandler(...ports, library);
     const presentation = { name: { fr: "Noël" }, lede: { fr: "La bûche" }, image: null };
 
     await handler.execute(new EditOperationCommand("noel-2026", presentation, "staff_1"));
@@ -106,7 +111,7 @@ describe("EditOperationHandler", () => {
     const { ports } = scene([]);
 
     await expect(
-      new EditOperationHandler(...ports).execute(
+      new EditOperationHandler(...ports, library).execute(
         new EditOperationCommand(
           "noel-2026",
           { name: { fr: "Noël" }, lede: null, image: null },

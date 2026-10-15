@@ -1,7 +1,7 @@
 import type { PrepareCommerceOperationPayload } from "@lfd/contracts";
 
 import { AppConfig } from "../src/platform/config/app-config.js";
-import { daysAgo, serviceDay, type E2eContext } from "./e2e-harness.js";
+import { daysAgo, E2E_STAFF_SUB, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 
 /**
  * La scène des opérations écrites AU COMMERCE (lot 1 de
@@ -69,4 +69,31 @@ export async function staffWith(
     },
   });
   return sub;
+}
+
+/**
+ * Dépose à la médiathèque un PNG minimal — la largeur fait l'image (l'URL est
+ * le hachage) — et pose son point focal s'il y en a un. Rend son URL.
+ */
+export async function depositImage(
+  ctx: E2eContext,
+  width: number,
+  focal: { readonly x: number; readonly y: number } | null,
+): Promise<string> {
+  const png = Buffer.alloc(24);
+  png.writeUInt32BE(0x89504e47, 0);
+  png.writeUInt32BE(0x0d0a1a0a, 4);
+  png.writeUInt32BE(width, 16);
+  png.writeUInt32BE(600, 20);
+  const deposited = await ctx.asSub(E2E_STAFF_SUB).post("/media").attach("file", png, "image.png");
+  expect(deposited.status).toBe(201);
+  const { url } = jsonBody<{ url: string }>(deposited);
+  if (focal !== null) {
+    await ctx
+      .asSub(E2E_STAFF_SUB)
+      .put("/media")
+      .send({ url, name: `image-${width}`, tags: [], focal })
+      .expect(200);
+  }
+  return url;
 }

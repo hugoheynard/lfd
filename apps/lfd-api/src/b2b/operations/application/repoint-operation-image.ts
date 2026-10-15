@@ -1,0 +1,44 @@
+import { Injectable } from "@nestjs/common";
+
+import type { WriteTicket } from "../../../platform/journal/scoped-journal.js";
+import {
+  OperationImageRepointing,
+  type OperationImageChange,
+} from "../channels/media/operation-image-repointing.js";
+import { OperationRepository } from "../domain/ports/operation.repository.js";
+
+/**
+ * Les opérations du commerce répondent au remplacement d'une image :
+ * charger chacune, la repointer par l'agrégat, la sauver (CLAUDE.md §3.1) —
+ * dans la transaction de la médiathèque, qui emporte tous les porteurs ou
+ * aucun.
+ *
+ * Pas de fait `catalog_operation.*` : le geste est `media_asset.replaced`,
+ * tracé par la médiathèque avant d'appeler (le laissez-passer en témoigne).
+ *
+ * ⚠️ Branché seulement interrupteur OUVERT (`appBootstrap/media-carriers.module.ts`) :
+ * fermé, le push et le fait `pim.operation_image_changed` écrivent encore ces
+ * lignes, et un second écrivain les contredirait.
+ */
+@Injectable()
+export class RepointOperationImage extends OperationImageRepointing {
+  constructor(private readonly operations: OperationRepository) {
+    super();
+  }
+
+  /**
+   * `_ticket` n'est pas lu : il PROUVE que l'appelant a tracé le
+   * remplacement — même forme que `RepointStorefrontImage`.
+   */
+  async repoint(change: OperationImageChange, _ticket: WriteTicket): Promise<number> {
+    const showing = await this.operations.loadShowingImage(change.from);
+    let repointed = 0;
+    for (const operation of showing) {
+      if (operation.repointImage(change.from, change.to, { by: change.staffId, at: change.at })) {
+        await this.operations.save(operation);
+        repointed += 1;
+      }
+    }
+    return repointed;
+  }
+}

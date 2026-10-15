@@ -10,6 +10,8 @@ export interface OperationRow {
   readonly lede: unknown;
   readonly imageUrl: string | null;
   readonly imageAlt: string | null;
+  readonly imageFocalX: number | null;
+  readonly imageFocalY: number | null;
   readonly announceFrom: Date;
   readonly orderFrom: Date | null;
   readonly orderUntil: Date;
@@ -39,7 +41,10 @@ export function toRecord(row: OperationRow): OperationRecord {
     key: row.key,
     name: readText(row.name, "catalog_operations.name"),
     lede: row.lede === null ? null : readText(row.lede, "catalog_operations.lede"),
-    image: row.imageUrl === null ? null : { url: row.imageUrl, alt: row.imageAlt ?? "" },
+    image:
+      row.imageUrl === null
+        ? null
+        : { url: row.imageUrl, alt: row.imageAlt ?? "", focal: focalOf(row) },
     schedule: {
       announceFrom: row.announceFrom,
       orderFrom: row.orderFrom,
@@ -58,8 +63,10 @@ export function toRecord(row: OperationRow): OperationRecord {
 /**
  * Les colonnes que l'agrégat écrit — la sélection à part.
  *
- * Ni `received_at` ni le point focal ni `image_gesture_id` : ils sont au
- * miroir, que le push et la médiathèque tiennent encore jusqu'à la bascule.
+ * Ni `received_at` ni `image_gesture_id` : ils sont au miroir, que le push
+ * et le fait `pim.operation_image_changed` tiennent encore jusqu'à la bascule.
+ * Le point focal, si (lot 2) : l'agrégat le lit à la médiathèque au choix de
+ * l'image et le suit quand elle le redécrit.
  */
 export function operationColumns(snapshot: OperationSnapshot) {
   return {
@@ -68,6 +75,8 @@ export function operationColumns(snapshot: OperationSnapshot) {
     lede: snapshot.lede === null ? Prisma.DbNull : { ...snapshot.lede },
     imageUrl: snapshot.image?.url ?? null,
     imageAlt: snapshot.image?.alt ?? null,
+    imageFocalX: snapshot.image?.focal?.x ?? null,
+    imageFocalY: snapshot.image?.focal?.y ?? null,
     announceFrom: snapshot.schedule.announceFrom,
     orderFrom: snapshot.schedule.orderFrom,
     orderUntil: snapshot.schedule.orderUntil,
@@ -100,6 +109,13 @@ function readText(raw: unknown, column: string): OperationTextInput {
     en: typeof en === "string" ? en : undefined,
     it: typeof it === "string" ? it : undefined,
   };
+}
+
+/** Les deux coordonnées ou aucune : une seule ne dit pas où regarder. */
+function focalOf(row: OperationRow): { readonly x: number; readonly y: number } | null {
+  return row.imageFocalX === null || row.imageFocalY === null
+    ? null
+    : { x: row.imageFocalX, y: row.imageFocalY };
 }
 
 function dayOf(date: Date): string {
