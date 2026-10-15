@@ -111,6 +111,10 @@ process.env["AUTH_ADMIN_DEV_BYPASS"] = "false";
 // (2026-10-15). Les suites des faits les ouvrent elles-mêmes, par leur scène
 // (`catalog-facts-scene.ts`).
 process.env["CATALOG_FACTS_ENABLED"] = "false";
+// L'écriture des opérations au commerce : FERMÉE en e2e, quoi que dise le
+// `.env` local — c'est l'état qui se déploie. La suite qui l'éprouve ouverte
+// l'ouvre par sa scène (`operations-at-commerce.e2e-spec.ts`).
+process.env["OPERATIONS_AT_COMMERCE"] = "false";
 
 /**
  * Stockage objet des e2e : le MinIO du conteneur de dev (`lfd-dev-minio`, port

@@ -20,6 +20,7 @@ import {
   optionalMailerConfig,
   optionalManagementCredentials,
   optionalMediaPublicBaseUrl,
+  optionalOperationsAtCommerce,
   optionalPort,
   optionalPublicationEnabled,
   optionalR2Storage,
@@ -69,6 +70,7 @@ export class AppConfig {
   private readonly database: string;
   private readonly publicationValue: boolean;
   private readonly catalogFactsValue: boolean;
+  private readonly operationsAtCommerceValue: boolean;
   private readonly deliveryInboxValue: boolean;
   private readonly journalStrictFactsValue: boolean;
   private readonly auth0DomainValue: string;
@@ -121,6 +123,7 @@ export class AppConfig {
     this.adminBypass = optionalAdminDevBypass();
     this.publicationValue = optionalPublicationEnabled();
     this.catalogFactsValue = optionalCatalogFactsEnabled();
+    this.operationsAtCommerceValue = optionalOperationsAtCommerce();
     this.deliveryInboxValue = optionalDeliveryInboxEnabled();
     this.journalStrictFactsValue = optionalJournalStrictFacts();
     this.recomputeTokenValue = optionalString("RECOMPUTE_TOKEN");
@@ -459,6 +462,18 @@ export class AppConfig {
    */
   catalogFactsEnabled(): boolean {
     return this.catalogFactsValue;
+  }
+
+  /**
+   * Les opérations datées **s'écrivent-elles au commerce** ici ?
+   *
+   * Fermé — le défaut —, les routes d'écriture de `/admin/operations`
+   * refusent : les opérations se préparent au référentiel et arrivent par le
+   * push, comme avant (cf. `optionalOperationsAtCommerce`). S'ouvre avec la
+   * bascule, jamais avant.
+   */
+  operationsAtCommerce(): boolean {
+    return this.operationsAtCommerceValue;
   }
 
   /**

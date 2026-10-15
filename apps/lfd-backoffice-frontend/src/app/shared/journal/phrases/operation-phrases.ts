@@ -80,6 +80,24 @@ const selectionSaved: Phrase = (fact) => {
   );
 };
 
+/**
+ * **Les mêmes gestes, tenus au commerce** (`catalog_operation.*`, famille
+ * `commerce`, plan `documentation/operations-datees/plan-l-operation-passe-au-commerce.md`,
+ * lot 1). Ici et non dans `commerce-phrases.ts` : ce sont les phrases des
+ * opérations, qui changent de maison sans changer de mots. Masquer et
+ * afficher sont propres au commerce — l'ancienne surcharge de la réception.
+ */
+export const COMMERCE_OPERATION_PHRASES = {
+  'catalog_operation.prepared': prepared,
+  'catalog_operation.edited': onSubjectChanges(OPERATION),
+  'catalog_operation.rescheduled': rescheduled,
+  'catalog_operation.audience_changed': audienceChanged,
+  'catalog_operation.hidden': onSubject('a masqué', OPERATION),
+  'catalog_operation.shown': onSubject('a de nouveau affiché', OPERATION),
+  'catalog_operation.selection_saved': selectionSaved,
+  'catalog_operation.archived': onSubject('a archivé', OPERATION),
+} as const satisfies Partial<Record<JournalFactType, Phrase>>;
+
 export const OPERATION_PHRASES = {
   'operation.prepared': prepared,
   'operation.edited': onSubjectChanges(OPERATION),

@@ -63,6 +63,10 @@ const ALLOWED = new Set([
   // PORTE le filtre (`...STILL_SOLD`) — un article retiré ne se vend plus, sa
   // trace n'a pas à suivre le référentiel.
   "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-catalog-price-retracer.ts",
+  // La sélection d'une opération au commerce (lot 1 de
+  // `plan-l-operation-passe-au-commerce.md`, 2026-10-15) : elle demande si un
+  // SKU EXISTE, pas s'il se vend — exemptée sur l'appel, avec sa raison.
+  "apps/lfd-api/src/b2b/operations/infrastructure/prisma-operation-sku.catalogue.ts",
   // Le semis de développement, et il PORTE le filtre : sa lecture demande
   // `withdrawnAt: null` explicitement (`ensureSkusExist`). Elle ne sert pas à
   // vendre — elle vérifie AVANT d'écrire que les SKU du corpus existent, pour

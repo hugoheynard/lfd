@@ -108,9 +108,11 @@ describe('grantGroups', () => {
    * motifs des demandes, sortis de `b2b_contact`. 56 le même jour :
    * `lfc_order_opening`, l'ouverture des commandes (plan-reglages-commandes.md, O0).
    * 57 le 2026-10-15 : `lfc_legal`, les mentions légales et le PDF des CGV,
-   * sortis de `b2b_settings` (legal/plan-cgv-par-audience.md, C0).
+   * sortis de `b2b_settings` (legal/plan-cgv-par-audience.md, C0). 58 le même
+   * jour : `lfc_operations`, les opérations datées tenues au commerce
+   * (operations-datees/plan-l-operation-passe-au-commerce.md, Q2).
    */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(57);
+    expect(RESOURCE_COUNT).toBe(58);
   });
 });

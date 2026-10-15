@@ -11,6 +11,7 @@ import { DeliveryZonesModule } from "../b2b/delivery-zones/delivery-zones.module
 import { DeliveryAvailabilityModule } from "../b2b/delivery-availability/delivery-availability.module.js";
 import { ContactModule } from "../b2b/contact/contact.module.js";
 import { OrderOpeningModule } from "../b2b/order-opening/order-opening.module.js";
+import { CommerceOperationsModule } from "../b2b/operations/operations.module.js";
 import { FeatureAccessModule } from "../b2b/feature-access/feature-access.module.js";
 import { PlatformContentModule } from "../b2b/content/content.module.js";
 import { ShopCopyModule } from "../b2b/shop-copy/shop-copy.module.js";
@@ -118,6 +119,9 @@ import { PublicationEnabledGuard } from "../pim/publication/publication-switch.j
     // La vitrine : les pages composées de la boutique, et leur éditeur.
     StorefrontModule,
     CatalogModule,
+    // Les opérations datées, ÉCRITES au commerce (lot 1 de
+    // plan-l-operation-passe-au-commerce.md) — routes fermées jusqu'à la bascule.
+    CommerceOperationsModule,
     DeliveryZonesModule,
     // À qui la livraison est proposée — lu par la caisse et le devis.
     DeliveryAvailabilityModule,

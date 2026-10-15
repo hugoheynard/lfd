@@ -169,6 +169,11 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     write:
       "Rédiger ces mentions et déposer un PDF de référence des CGV — ce que la boutique oppose à tous les clients.",
   },
+  lfc_operations: {
+    read: "N'ouvre encore aucun écran : les opérations datées (Noël, Pâques, la galette) se lisent sous Référentiel et Catalogue vendu jusqu'à leur bascule au commerce.",
+    write:
+      "Préparer une opération, la redater, changer sa clientèle, choisir ses articles, la masquer ou l'archiver — ce qui décide de ce que la boutique annonce et vend, et jusqu'à quand. L'écriture n'ouvre qu'à la bascule des opérations au commerce.",
+  },
   lfc_site_settings: {
     read: "Voir les sites : adresse, rôles (remet des commandes, approvisionné sur place ou par transfert, expédie), couleurs de la logistique, mise en place du comptoir.",
     write: "Créer, modifier ou archiver un site, régler ses rôles et ses couleurs.",

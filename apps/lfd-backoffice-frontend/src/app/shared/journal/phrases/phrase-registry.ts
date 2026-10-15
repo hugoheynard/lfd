@@ -19,7 +19,7 @@ import { HANDOVER_PROOF_PHRASES } from './handover-proof-phrases';
 import { INVOICE_PHRASES } from './invoice-phrases';
 import { PACKING_CONTAINER_PHRASES } from './packing-container-phrases';
 import { LOYALTY_PHRASES } from './loyalty-phrases';
-import { OPERATION_PHRASES } from './operation-phrases';
+import { COMMERCE_OPERATION_PHRASES, OPERATION_PHRASES } from './operation-phrases';
 import { ORDERS_PHRASES } from './orders-phrases';
 import { PRICING_PHRASES } from './pricing-phrases';
 import { PRODUCTION_QUALITY_PHRASES } from './production-quality-phrases';
@@ -63,7 +63,7 @@ import { TEAM_PHRASES } from './team-phrases';
  * | `referentialCatalogue`| `referential-phrases.ts`          | `values/referential-values.ts`   |
  * | `referentialSettings` | `referential-settings-phrases.ts` | `values/referential-values.ts`   |
  * | `referentialOperations` | `operation-phrases.ts`          | `values/referential-values.ts`   |
- * | `commerce`            | `commerce-phrases.ts`, `storefront-phrases.ts` | `values/commerce-values.ts` |
+ * | `commerce`            | `commerce-phrases.ts`, `storefront-phrases.ts`, `operation-phrases.ts` (`catalog_operation.*` sauf la surcharge) | `values/commerce-values.ts` |
  * | `accountsAndCarts`    | `accounts-phrases.ts`             | `values/accounts-values.ts`      |
  * | `ordersAndProduction` | `orders-phrases.ts`               | `values/orders-values.ts`        |
  * | `pricing`             | `pricing-phrases.ts`              | `values/pricing-values.ts`       |
@@ -165,6 +165,7 @@ export const PHRASES: Readonly<Record<JournalFactType, Phrase>> = {
   ...ORDER_CUTOFF_SETTINGS_PHRASES,
   ...CONTACT_PHRASES,
   ...COMMERCE_PHRASES,
+  ...COMMERCE_OPERATION_PHRASES,
   ...STOREFRONT_PHRASES,
   ...ORDERS_PHRASES,
   ...DELIVERY_ROUND_PHRASES,

@@ -801,6 +801,15 @@
       "information": false
     },
     {
+      "colonne": "public.catalog_operations.written_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a écrit en dernier une opération datée au commerce (`written_by`) sur `catalog_operations`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "public.catalog_versions.created_by",
       "personne": "staff",
       "categorie": "auteur-geste",

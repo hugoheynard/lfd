@@ -45,7 +45,20 @@ model CatalogOperation {
   /// Quand l'envoi qui l'a écrite a été émis.
   receivedAt  DateTime  @map("received_at") @db.Timestamptz(3)
   /// Quand elle a disparu d'un envoi accepté, ou `NULL` si elle est tenue.
+  /// Au commerce (plan de l'opération au commerce, lot 1), c'est aussi son
+  /// ARCHIVAGE : retirée pour toujours, la clé reste prise.
   withdrawnAt DateTime? @map("withdrawn_at") @db.Timestamptz(3)
+
+  /// Masquée au commerce : ni annoncée ni vendue, sans être archivée — cela
+  /// se reprend. Écrite par l'agrégat du commerce seulement ; aucune lecture
+  /// ne la consulte avant la bascule (lot 3 du plan).
+  hidden    Boolean   @default(false)
+  /// Qui a écrit l'opération au commerce en dernier — un `StaffUser.id`,
+  /// jamais une clé étrangère. `NULL` = jamais écrite au commerce (un envoi
+  /// du référentiel seulement), ou hors requête.
+  writtenBy String?   @map("written_by")
+  /// Quand. `NULL` = jamais écrite au commerce.
+  writtenAt DateTime? @map("written_at") @db.Timestamptz(3)
 
   items    CatalogOperationItem[]
   override CatalogOperationOverride?

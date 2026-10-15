@@ -312,6 +312,16 @@ export const staffResourceSchema = z.enum([
    */
   "lfc_legal",
   /**
+   * **Les opérations datées** — Noël, Pâques, la galette : les préparer, les
+   * dater, choisir leurs articles, les masquer ou les archiver, au commerce
+   * (`documentation/operations-datees/plan-l-operation-passe-au-commerce.md`,
+   * Q2, Hugo, 2026-10-15). Un droit à lui, sur le modèle de `lfc_legal` :
+   * il remplacera `pim_catalog` (préparation) et `b2b_catalog` (surcharge)
+   * sur tout ce qui touche une opération. Ajoutée sans être accordée : elle
+   * s'accorde à l'écran.
+   */
+  "lfc_operations",
+  /**
    * **Le réglage des commandes** — l'heure limite, son rattrapage, et
    * l'annulation par le client (`documentation/commandes/plan-reglages-commandes.md`).
    * Ajoutée au lot S0 ; les routes passent dessous au lot O1. Accordée à
@@ -659,6 +669,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   b2b_settings: "Réglages plateforme",
   lfc_site_settings: "Sites",
   lfc_legal: "Légal",
+  lfc_operations: "Opérations datées",
   lfc_order_settings: "Heure limite et annulation des commandes",
   lfc_order_opening: "Ouverture des commandes",
   staff_access: "Équipe et accès",
@@ -780,6 +791,9 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // Graine seulement (2026-10-15, plan des CGV, C0) : en production,
     // accordée à l'écran.
     lfc_legal: "write",
+    // Graine seulement (2026-10-15, plan de l'opération au commerce, Q2) : en
+    // production, accordée à l'écran.
+    lfc_operations: "write",
     // Graine seulement (2026-10-13, plan-reglages-commandes.md §3.5).
     lfc_order_opening: "write",
     // La graine seule (2026-10-13, réglages commerciaux) : en production,

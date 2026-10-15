@@ -95,3 +95,81 @@ describe('les opérations datées au journal', () => {
     );
   });
 });
+
+/**
+ * **Les mêmes gestes, tenus au commerce** (`catalog_operation.*`, lot 1 de
+ * `plan-l-operation-passe-au-commerce.md`) : mêmes mots, et masquer / afficher
+ * en plus — l'ancienne surcharge de la réception.
+ */
+describe('les opérations datées tenues au commerce, au journal', () => {
+  const atCommerce = (type: FactInput['type'], payload: Record<string, unknown>): FactInput => ({
+    ...fact(type, payload),
+    subjectType: 'catalog_operation',
+  });
+
+  it('dit la préparation comme au référentiel', () => {
+    const rendered = renderFact(
+      atCommerce('catalog_operation.prepared', {
+        subjectLabel: 'Noël 2026',
+        name: { fr: 'Noël 2026' },
+        lede: null,
+        image: null,
+        audience: 'both',
+        announceFrom: '2026-10-31T23:00:00.000Z',
+        orderFrom: null,
+        orderUntil: '2026-12-21T11:00:00.000Z',
+        pickupFrom: '2026-12-20',
+        pickupUntil: '2026-12-24',
+      }),
+    );
+
+    expect(rendered.sentence).toBe('Colette Martin a préparé l’opération « Noël 2026 »');
+    expect(rendered.detail.map((row) => row.label)).toContain('Clôture des commandes');
+  });
+
+  it('dit le masquage, le retour, et l’archivage', () => {
+    const say = (type: FactInput['type']) =>
+      renderFact(atCommerce(type, { subjectLabel: 'Noël 2026' })).sentence;
+
+    expect(say('catalog_operation.hidden')).toBe(
+      'Colette Martin a masqué l’opération « Noël 2026 »',
+    );
+    expect(say('catalog_operation.shown')).toBe(
+      'Colette Martin a de nouveau affiché l’opération « Noël 2026 »',
+    );
+    expect(say('catalog_operation.archived')).toBe(
+      'Colette Martin a archivé l’opération « Noël 2026 »',
+    );
+  });
+
+  it('dit le redatage, la clientèle et la sélection', () => {
+    expect(
+      renderFact(
+        atCommerce('catalog_operation.rescheduled', {
+          subjectLabel: 'Noël 2026',
+          changes: {
+            orderUntil: { from: '2026-12-21T11:00:00.000Z', to: '2026-12-19T17:00:00.000Z' },
+          },
+        }),
+      ).sentence,
+    ).toBe('Colette Martin a redaté l’opération « Noël 2026 » : clôture des commandes');
+    expect(
+      renderFact(
+        atCommerce('catalog_operation.audience_changed', {
+          subjectLabel: 'Noël 2026',
+          audience: { from: 'both', to: 'pro' },
+        }),
+      ).sentence,
+    ).toBe(
+      'Colette Martin a passé la clientèle de l’opération « Noël 2026 » de « Professionnels et particuliers » à « Professionnels »',
+    );
+    expect(
+      renderFact(
+        atCommerce('catalog_operation.selection_saved', {
+          subjectLabel: 'Noël 2026',
+          skus: { from: ['BUC-001', 'GAL-002'], to: ['GAL-002'] },
+        }),
+      ).sentence,
+    ).toBe('Colette Martin a composé la sélection de l’opération « Noël 2026 » : 1 article');
+  });
+});

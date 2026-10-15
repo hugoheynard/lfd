@@ -142,6 +142,11 @@ const RUNTIME_KEYS = [
   // articles. FERMÉS par défaut — les rails se déploient sans rien changer de
   // servi. Elle traverse pour la même raison que les deux précédentes.
   "CATALOG_FACTS_ENABLED",
+  // L'écriture des opérations datées au commerce (lot 1 de
+  // `plan-l-operation-passe-au-commerce.md`) : FERMÉE par défaut, l'agrégat et
+  // ses routes se déploient sans rien changer de servi. Elle traverse pour la
+  // même raison que les précédentes.
+  "OPERATIONS_AT_COMMERCE",
   // 🔴 La clé du coffre de champs, qui scelle les IBAN de nos clients au repos.
   //
   // Sans elle dans cette liste, le container ne la recevrait JAMAIS — et comme

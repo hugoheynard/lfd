@@ -69,6 +69,10 @@ const SCAN_ROOTS = [
   // surcharge)`, et le lot 3 y comparera un jour de retrait aux bornes d'une
   // opération.
   "apps/lfd-api/src/b2b/catalog",
+  // L'opération tenue AU COMMERCE (lot 1 de `plan-l-operation-passe-au-commerce.md`,
+  // 2026-10-15) : son agrégat reprend la saisie au fuseau de Paris et `fin(jour)`
+  // par `localToInstant` — le plan demande que la porte couvre son dossier.
+  "apps/lfd-api/src/b2b/operations",
   // L'écran de préparation (lot front) : il saisit ces instants en heure de
   // Paris, par `localToInstant` — c'est lui qui transforme un jour en instant.
   "apps/lfd-backoffice-frontend/src/app/pim/operations",

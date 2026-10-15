@@ -13,6 +13,7 @@ import {
   subjectLabel,
   type JournalFactFamily,
 } from "./fact.js";
+import { COMMERCE_OPERATION_FACTS } from "./commerce-operations.js";
 
 /**
  * **Le commerce et le catalogue B2B** — ce qu'on vend aux pros (prix négocié,
@@ -123,6 +124,9 @@ export const COMMERCE_FACTS = {
       hiddenSkus: z.array(z.string()),
     }),
   ),
+  // Les opérations tenues AU COMMERCE (plan de l'opération au commerce, O6,
+  // lot 1, 2026-10-15) — rangées dans leur fichier, comptées dans la famille.
+  ...COMMERCE_OPERATION_FACTS,
   "catalog_delivery.accepted": fact(
     payload({
       deliveryId: ref("catalog_delivery"),

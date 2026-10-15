@@ -504,6 +504,23 @@ export function optionalCatalogFactsEnabled(): boolean {
 }
 
 /**
+ * Les opérations datées s'**écrivent-elles au commerce** ?
+ *
+ * `OPERATIONS_AT_COMMERCE=true` l'ouvre ; toute autre valeur, et l'absence,
+ * la ferment. **Fermé par défaut** (lot 1 de
+ * `documentation/operations-datees/plan-l-operation-passe-au-commerce.md`) :
+ * l'agrégat et ses routes se déploient FERMÉS, et rien de servi ne change —
+ * les opérations se préparent au référentiel et arrivent par le push.
+ *
+ * 🔴 Ne l'ouvrir qu'avec la bascule (lot 3), qui sort d'abord les opérations
+ * de l'ingestion : tant que le push les écrit, il écraserait ou retirerait ce
+ * que le commerce aurait écrit (`IngestCatalogService.applyOperations`).
+ */
+export function optionalOperationsAtCommerce(): boolean {
+  return process.env["OPERATIONS_AT_COMMERCE"]?.trim().toLowerCase() === "true";
+}
+
+/**
  * La livraison du PIM entre-t-elle dans une **boîte de réception** plutôt que
  * dans les faits de vente ?
  *

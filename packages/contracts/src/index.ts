@@ -2014,6 +2014,26 @@ export {
   RECEIVED_OPERATION_AUDIENCES,
   setOperationOverridePayloadSchema,
 } from "./catalog-operations.js";
+export {
+  COMMERCE_OPERATION_AUDIENCES,
+  commerceOperationScheduleSchema,
+  editCommerceOperationPayloadSchema,
+  prepareCommerceOperationPayloadSchema,
+  rescheduleCommerceOperationPayloadSchema,
+  setCommerceOperationAudiencePayloadSchema,
+  setCommerceOperationSelectionPayloadSchema,
+  setCommerceOperationVisibilityPayloadSchema,
+} from "./commerce-operations.js";
+export type {
+  CommerceOperationAudience,
+  CommerceOperationKeyResponse,
+  EditCommerceOperationPayload,
+  PrepareCommerceOperationPayload,
+  RescheduleCommerceOperationPayload,
+  SetCommerceOperationAudiencePayload,
+  SetCommerceOperationSelectionPayload,
+  SetCommerceOperationVisibilityPayload,
+} from "./commerce-operations.js";
 export type {
   EffectiveOperationView,
   OperationOverrideView,

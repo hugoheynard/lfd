@@ -265,6 +265,12 @@ jobs:
           # fait et le push reste le seul écrivain des articles. L'ouvrir est
           # le geste 2b4 de la bascule — lu au démarrage, donc un redéploiement.
           CATALOG_FACTS_ENABLED: ${{ vars.CATALOG_FACTS_ENABLED }}
+          # L'écriture des opérations datées au commerce (lot 1,
+          # `plan-l-operation-passe-au-commerce.md`). FERMÉE par défaut : sans
+          # cette Variable, les routes de `/admin/operations` refusent et les
+          # opérations arrivent par le push. Ne l'ouvrir qu'avec la bascule
+          # (lot 3) — ouverte avant, le push écraserait ce que le commerce écrit.
+          OPERATIONS_AT_COMMERCE: ${{ vars.OPERATIONS_AT_COMMERCE }}
           # 🔴 La clé du coffre de champs — elle scelle les IBAN de nos clients au
           # repos (AES-256-GCM, 32 octets en base64).
           #
@@ -319,6 +325,7 @@ jobs:
                       VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY VAPID_SUBJECT \
                       RECOMPUTE_TOKEN \
                       PIM_PUBLICATION_ENABLED B2B_DELIVERY_INBOX CATALOG_FACTS_ENABLED \
+                      OPERATIONS_AT_COMMERCE \
                       FIELD_ENCRYPTION_KEY BAN_GEOCODER_URL ROUTE_PLANNER_URL ROUTE_PLANNER_TOKEN; do
             value="${!name}"
             if [ -n "$value" ]; then
