@@ -365,12 +365,16 @@ ci-dessus :**
 
 **Ce que 2a a appris, et qui devient un préalable de 2b (2026-10-15) :**
 
-- **Le taux `b2b` est exigé pour toute fiche, même `public`.** Le prix pro HT
-  (`catalog_items.price_millicents`) est `NOT NULL` et se calcule avec ce taux :
-  une fiche public-seulement sans taux `b2b` part en `gaps` et n'est jamais
-  vendue. 2b aligne l'activation du lot 1 sur cette règle (activer exige le
-  taux `b2b` quelle que soit l'audience) — sans quoi on activerait une fiche
-  que la plateforme refuse en silence.
+- ~~**Le taux `b2b` est exigé pour toute fiche, même `public`.**~~ **Tranché
+  plus large (Hugo, 2026-10-15)** : « n'importe quelle fiche devrait être en
+  capacité de servir n'importe quel contexte, qu'il soit servi à l'instant T
+  ou non ». Une fiche est complète quand elle a un prix, ses allergènes, et un
+  taux pour **chaque contexte de vente en service** (`SalesContext.active`) —
+  pas seulement ceux de son audience. L'audience dit à qui on vend
+  aujourd'hui ; changer d'audience ne doit jamais rendre une fiche
+  invendable. 2b aligne l'activation du lot 1 (`activation-gaps.ts`) et les
+  `gaps` de la projection (`catalog-facts.ts`) sur cette règle, et l'aperçu de
+  bascule compte les fiches actives auxquelles il manque un taux.
 - **Les limites de commande passent avant l'ouverture.** Un article neuf reçu
   par un fait naît sans limite (le récepteur ne les écrit pas). Le fait global
   `pim.catalog_rules_changed` (C3) remonte donc du lot 4 au lot 2b.
