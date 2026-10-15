@@ -55,7 +55,7 @@ En `postgres://`, le schéma ne dit plus rien.
 | `prisma/reset-growth.ts` (supprime le corpus de démo)                           | rien ; ne pouvait pas joindre Accelerate | 🔴 devient capable de viser la production                               |
 | `prisma/seed-fiche.ts` (efface puis recrée sociétés, personnes, commandes)      | **rien**, les deux transports            | 🔴 peut déjà viser la production                                        |
 | `seed:growth`, `seed:delivery`, `prisma/backfill-naf.ts` (amorcent `AppModule`) | rien                                     | 🟠 peuvent déjà viser la production                                     |
-| `prisma/import-mercuriale.ts`                                                   | rien ; **destiné à la production**       | ⚠️ légitime en production : doit le rester, **explicitement**           |
+| l’import de la mercuriale (retiré le 2026-10-15, lot D)                         | rien ; **destiné à la production**       | ⚠️ légitime en production : doit le rester, **explicitement**           |
 | `db:migrate`, `db:push`, `db:studio` (CLI Prisma)                               | rien                                     | 🟠 visent ce que dit `DATABASE_LFD_URL` du `.env`                       |
 
 ## 2. Décisions

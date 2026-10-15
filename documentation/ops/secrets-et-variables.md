@@ -170,7 +170,7 @@ directe vise déjà la même base.
   un secret GitHub ne se relit pas.
 - **`LFD_PRODUCTION_DATABASE_URL` n'est ni un secret GitHub ni une ligne du
   `.env`.** ⚠️ Plus aucun outil ne la lit depuis le 2026-10-15 : son seul
-  lecteur, `prisma/import-mercuriale.ts`, est supprimé avec le prix décidé
+  lecteur, l’import de la mercuriale, est supprimé avec le prix décidé
   (lot D de `pim/plan-catalogue-synchronise-par-audience.md`). Ce qui suit
   décrit l'état d'avant. Seul `prisma/import-mercuriale.ts` la lisait — l'unique outil de
   `prisma/` destiné à la production, qui ne lit jamais `DATABASE_LFD_URL`. Elle
