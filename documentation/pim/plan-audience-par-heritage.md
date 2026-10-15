@@ -211,8 +211,9 @@ n'ouvre plus rien.
 - `CategoryChannel`, `ProductChannelOverride`, `ProductChannel` : plus lus ni
   écrits ; `sales-channels.ts`, `sellable-channels.ts`, `set-product-channels.ts`
   et `channel-errors.ts` sortent.
-- `pim/points-of-sale/` entier — c'est la P6 du plan de publication, absorbée
-  ici, **sans** son dédoublonnage : il n'y a plus de cellule à dédoublonner.
+- `pim/points-of-sale/` **sauf sa grille de tables** (Q4) — c'est la P6 du
+  plan de publication, absorbée ici, **sans** son dédoublonnage : il n'y a plus
+  de cellule à dédoublonner.
 - Front : la section « Canaux » de la famille (`channels-form.ts`) devient un
   choix d'audience ; la fiche gagne « hérite (_valeur de la famille_) / pro /
   public / les deux » ; l'écran `publication-b2b` (appartenance) et
@@ -286,7 +287,7 @@ jour lien et cases, que l'écran aura cessé d'écrire au lot 3. D'où : le lot 
 (`pro`/`both` ⇒ lié et coché), jusqu'au lot 4. Le retour reste un
 redéploiement tant que le lot 4 n'est pas passé.
 
-Le lot 4 attend Q4 (la grille de tables à QR).
+Le lot 4 ne touche pas la grille de tables à QR (Q4).
 
 ## 5. Ce que ça simplifie dans le plan de publication
 
@@ -339,8 +340,13 @@ contredit. Ce document n'y touche pas.
    comptage de prod du lot 1 rend zéro partout.
 3. **Q3** — Les masquages de la plateforme restent, et ne peuvent que
    restreindre : d'accord ?
-4. **Q4** — `point_of_sale` : la commande à table par QR (`PointOfSaleTable`)
-   est-elle abandonnée ? Si non, la grille de tables doit déménager avant le lot 4.
+4. ~~**Q4**~~ — **Tranché (Hugo, 2026-10-15) : la commande à table viendra
+   « un jour ».** Le point de vente ne sort donc pas entier : il perd son rôle
+   de canal (cases, ligne `platform`, `PointOfSaleContext`), et **garde sa
+   grille de tables** (`PointOfSaleTable`, `generate-table-qr`,
+   `remove-table-qr`, son écran) telle quelle. Où vivront les tables — le
+   point de vente ou le site de retrait (`public.pickup_addresses`), qui le
+   doublonne — se décide dans le plan de la commande à table, pas ici.
 
 ## Contradiction de `vitruve` (2026-10-15) — intégrée
 
