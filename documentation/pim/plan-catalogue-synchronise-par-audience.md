@@ -510,6 +510,71 @@ signal ; le contenu ne circule que par une lecture que nous servons.
 | W6  | **La lecture de l'agence** : `GET /vitrine/catalogue` (tout, pour la première synchronisation et les rattrapages) et `GET /vitrine/produits/:id`, protégées par la clé de lecture de l'abonné (pas un compte staff ni client), passant par la passerelle, limitées en débit ; filtrées selon les cases de l'abonné. Photos en URL publiques Cloudflare, aux tailles déjà servies.                                              |
 | W7  | **Le journal des envois** : livré, en échec, en attente ; « renvoyer » une notification ; « tout renvoyer » (une notification par fiche, pour resynchroniser).                                                                                                                                                                                                                                                                 |
 
+**Refondu après `vitruve` (2026-10-15), et c'est ce bloc qui fait foi :**
+
+Quatre BLOQUANT ont le même fond : W3 supposait des faits durables là où il
+n'y en a pas (règles de prix, textes, décisions et masquages, vitrine — seuls
+`orders/` et `accounting/` publient dans `b2b/`), et la boîte d'envoi ne sait
+pas livrer à des abonnés qui sont des lignes en base (`durable-handler.ts:13,41`).
+Plutôt que d'ajouter des faits dans cinq contextes, **on compare la vue au
+lieu d'écouter ses causes** :
+
+- **W3′ — une empreinte, pas des écouteurs.** À chaque balayage, pour chaque
+  abonné actif, le serveur calcule sa vue filtrée (la vue publique, moins les
+  familles décochées) et une empreinte **par élément** : article par `sku`,
+  opération par `key`, rayon par `id`, texte par clé. Il compare à la dernière
+  empreinte **livrée** et notifie ce qui a changé. Ça attrape **toutes** les
+  causes — PIM, décisions de la plateforme, promotions, textes — et les
+  bornes de temps (W4) sans mécanisme de plus : une promotion qui commence
+  change l'empreinte du prix.
+- **Le rythme** : le seul battement de l'API est le cron `*/5` du Worker
+  (`KEEP_WARM_CRON`). Une route de balayage `RecomputeGuard` s'y ajoute :
+  **l'agence est prévenue en 5 minutes au plus**. La coalescence est
+  naturelle — dix enregistrements en cinq minutes font une notification.
+- **La notification** : `{ subscriber, sequence, at, changed: { items: [sku…],
+operations: [key…], shelves: [id…], texts: [clé…] }, removed: {…} }`.
+  `sequence` est un compteur par abonné, croissant ; il n'existe pas d'autre
+  version commune à toutes les sources.
+- **W2′ — une boîte à elle** : `public.vitrine_deliveries` (abonné, séquence,
+  corps, état, essais, prochain essai) et un relais HTTP sortant à part de
+  l'outbox. Il **reprend la politique de relance** de `platform/outbox/retry-policy.ts`
+  (même fonction, pas une copie), et ses lettres mortes s'affichent dans le
+  journal des envois de l'écran, pas dans celui de l'outbox.
+- **W1′ — ce qui sort, borné** : la vue `ShopCatalogueView` (`shelves`,
+  `items`, `operations`) **et** les textes **publiés** de la boutique
+  (`ShopCopyPublication`, seconde lecture nommée : `GET /vitrine/textes`).
+  Rien d'autre ; le contenu des pages `storefront` attendra une décision.
+  ⚠️ **Non vérifié, à prouver par test au lot** : que `listSellable("public")`
+  exclut l'audience `pro` et les masqués au public, et que
+  `catalogPriceMillicents` n'est jamais un tarif pro.
+- **Identifiants** : `sku` pour un article, `key` pour une opération, `id`
+  pour un rayon. `GET /vitrine/articles/:sku`, `GET /vitrine/catalogue`,
+  `GET /vitrine/textes`.
+
+Sérieux intégrés :
+
+- **La clé de lecture n'est pas un gardien** : la vue est déjà publique
+  (`GET /shop/catalogue`, `@Public()`). La clé **identifie** l'abonné et
+  applique ses cases ; elle est rangée **hachée** (SHA-256), montrée une fois.
+- **Le secret de signature est chiffré** (`aes-gcm-field-cipher.ts`), pas
+  haché : il faut le relire pour signer. ⚠️ Une rotation de
+  `FIELD_ENCRYPTION_KEY` le rend illisible — comme les liens d'annulation
+  (`app-config.ts:162`) : la rotation impose de régénérer les secrets
+  d'abonnés, et le runbook le dit.
+- **SSRF** : l'URL d'un abonné est `https` seulement ; le relais refuse au
+  moment de l'envoi (après résolution DNS) toute adresse privée, de bouclage,
+  de lien local ou de métadonnées, et ne suit pas les redirections.
+- **La passerelle** : `/vitrine/*` est déclarée explicitement dans
+  `gateway/src/routes.ts` plutôt que de passer par le préfixe générique ; le
+  débit est limité **par clé d'abonné**, pas seulement par IP.
+- **Droits** : une ressource `shop_vitrine` (lecture/écriture), routes sous
+  `/admin/vitrine/*`, écran en Gestion Boutique. La migration ajoute la
+  ressource ; **Hugo l'accorde à l'écran** (`lint:no-role-grants-in-migrations`).
+- **RGPD** : rien de personnel ne sort. L'abonné est une organisation (nom,
+  URL) ; aucun contact nominatif n'est rangé.
+- **Photos** : les URL de la vue sont des variantes Cloudflare Images ; leur
+  stabilité pour un tiers qui les met en cache est vérifiée au lot.
+
 **Ordre** : W se bâtit après 2a (il en écoute les faits) ; il ne voit des
 changements en continu qu'après la bascule 2b. Avant, une notification par
 push accepté suffit. Frontière de sécurité (données vers un tiers, une clé de
