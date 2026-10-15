@@ -18,6 +18,7 @@ import {
   contextIsSold,
   type ContextVat,
 } from "../../../shared/domain/value-objects/context-vat.js";
+import type { Audience } from "../../../shared/domain/value-objects/audience.js";
 
 /**
  * **La famille — l'agrégat.**
@@ -56,6 +57,8 @@ export interface CategorySnapshot {
   readonly channelPreset: SalesChannels;
   /** Les taux visés, **par clé de contexte**. Clé absente = non réglé. */
   readonly vatByContext: ContextVat;
+  /** À qui la famille vend — ses fiches en héritent tant qu'elles ne dérogent pas. */
+  readonly audience: Audience;
 }
 
 /** Ce qu'il faut pour ouvrir une famille. Le reste, l'agrégat le décide. */
@@ -76,6 +79,7 @@ export class Category {
     private archivedValue: boolean,
     private channelPresetValue: SalesChannels,
     private vatByContextValue: ContextVat,
+    private audienceValue: Audience,
   ) {}
 
   /** Ouvre une famille : vivante, sans canal vendu, sans TVA réglée. */
@@ -92,6 +96,9 @@ export class Category {
       false,
       emptySalesChannels(),
       {},
+      // `both` : c'est ce que faisait toute famille avant que l'audience
+      // existe (1a du plan d'audience), et le défaut de la colonne.
+      "both",
     );
   }
 
@@ -106,6 +113,7 @@ export class Category {
       snapshot.isArchived,
       snapshot.channelPreset,
       snapshot.vatByContext,
+      snapshot.audience,
     );
   }
 
@@ -153,6 +161,25 @@ export class Category {
    */
   get channelPreset(): SalesChannels {
     return this.channelPresetValue;
+  }
+
+  get audience(): Audience {
+    return this.audienceValue;
+  }
+
+  /**
+   * Change à qui la famille vend. Refusé sur une famille archivée, comme ses
+   * autres réglages (cf. en-tête).
+   *
+   * @returns `false` quand elle y vendait déjà — rien à écrire au journal.
+   */
+  changeAudience(audience: Audience): boolean {
+    this.refuseIfArchived();
+    if (this.audienceValue === audience) {
+      return false;
+    }
+    this.audienceValue = audience;
+    return true;
   }
 
   /** Le taux visé pour UN contexte, ou `null` s'il n'est pas réglé. */
@@ -229,6 +256,7 @@ export class Category {
       isArchived: this.archivedValue,
       channelPreset: this.channelPresetValue,
       vatByContext: this.vatByContextValue,
+      audience: this.audienceValue,
     };
   }
 

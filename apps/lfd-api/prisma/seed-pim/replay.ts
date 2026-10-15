@@ -5,7 +5,8 @@ import { CreateProductCommand } from "../../src/pim/catalogue/product/applicatio
 import { SaveVariantAllergensCommand } from "../../src/pim/catalogue/product/application/save-variant-allergens.js";
 import { SaveVariantNutritionCommand } from "../../src/pim/catalogue/product/application/save-variant-nutrition.js";
 import { DeclareProductReadyCommand } from "../../src/pim/catalogue/product/application/declare-product-ready.js";
-import { PublishProductCommand } from "../../src/pim/catalogue/product/application/publish-product.js";
+import { ActivateProductCommand } from "../../src/pim/catalogue/product/application/activate-product.js";
+import { ProductNotActivatableError } from "../../src/pim/catalogue/product/domain/errors/product-errors.js";
 import { SetProductChannelsCommand } from "../../src/pim/catalogue/product/application/set-product-channels.js";
 import { SetProductVatCommand } from "../../src/pim/catalogue/product/application/set-product-vat.js";
 import { UpdateProductEditorialCommand } from "../../src/pim/catalogue/product/application/update-product-editorial.js";
@@ -265,7 +266,18 @@ async function settle(
     await bus.execute<DeclareProductReadyCommand, void>(new DeclareProductReadyCommand(productId));
     report.signed += 1;
   }
-  await bus.execute<PublishProductCommand, void>(new PublishProductCommand(productId));
+  try {
+    await bus.execute<ActivateProductCommand, void>(new ActivateProductCommand(productId));
+  } catch (error) {
+    // Activer exige aussi un prix et les taux de l'audience depuis le lot 1 du
+    // plan d'audience : une fiche du corpus qui ne les a pas reste inactive,
+    // et le rapport le dit au lieu d'interrompre tout le rejeu.
+    if (error instanceof ProductNotActivatableError) {
+      report.refused.push(`${product.sku} — reste inactive : ${error.message}`);
+      return;
+    }
+    throw error;
+  }
   report.published += 1;
 }
 
@@ -279,7 +291,7 @@ async function settle(
  * vente », et il reste un choix — le rejeu fidèle est le défaut, parce que c'est
  * lui qui reproduit la source.
  *
- * Il ne contourne aucun refus : `publish()` juge, comme toujours. Une fiche sans
+ * Il ne contourne aucun refus : `activate()` juge, comme toujours. Une fiche sans
  * déclaration reste brouillon avec ce drapeau comme sans lui.
  */
 function publishAllEnabled(): boolean {

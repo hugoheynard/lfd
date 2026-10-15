@@ -9,6 +9,7 @@
  * donc il lui faut un test qui touche chaque table, une par une.
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import { makeActivatable } from "./pim-sellable.js";
 import {
   bootstrapE2e,
   E2E_STAFF_ID,
@@ -273,6 +274,8 @@ describe("Déclaration publiable", () => {
         .put(`${PRODUCTS}/${id}/variants/${variant?.id ?? ""}/allergens`)
         .send({ allergens: [] });
       expect(declared.status).toBe(200);
+      // Activer exige aussi un prix et un taux (lot 1 du plan d'audience).
+      await makeActivatable(staff, id);
       return id;
     }
 

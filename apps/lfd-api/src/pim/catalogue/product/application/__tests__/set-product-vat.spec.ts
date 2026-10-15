@@ -87,6 +87,7 @@ function snapshot(
     channelOverride,
     operationOnly: false,
     requiresCold: false,
+    audience: null,
   };
 }
 
@@ -142,6 +143,7 @@ function familySelling(channels: SalesChannels): CategoryRepository {
     isArchived: false,
     channelPreset: channels,
     vatByContext: { takeaway: "tva_55" },
+    audience: "both",
   });
   return new FamilyOnly(category);
 }

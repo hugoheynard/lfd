@@ -113,6 +113,12 @@ export const PIM_EVENTS = {
    */
   productColdRequirementChanged: "product.cold_requirement_changed",
   /**
+   * La fiche élargit ou restreint sa clientèle — ou revient à celle de sa
+   * famille (lot 1 de `plan-catalogue-synchronise-par-audience.md`). Un fait
+   * à part : il change À QUI l'article se vend.
+   */
+  productAudienceChanged: "product.audience_changed",
+  /**
    * **Quelqu'un affirme que la fiche est juste.** Distinct de `published` :
    * l'un est une signature sur un contenu, l'autre une mise en vente. Un
    * historique qui les confondrait ne saurait plus répondre à « qui a validé ce
@@ -209,6 +215,8 @@ export const PIM_EVENTS = {
   productCategoriesReordered: "product_category.reordered",
   /** Où un rayon se vend — d'où ses fiches héritent, sauf dérogation. */
   productCategoryChannelsChanged: "product_category.channels_changed",
+  /** À qui un rayon vend — ses fiches en héritent, sauf dérogation. */
+  productCategoryAudienceChanged: "product_category.audience_changed",
   /** Les textes d'une famille — descriptions et référencement. */
   productCategoryEditorialSaved: "product_category.editorial_saved",
   /** Ses visuels : la liste entière, l'ordre compris. */

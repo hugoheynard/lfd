@@ -68,6 +68,7 @@ function buche(operationOnly: boolean): OneProduct {
     channelOverride: null,
     operationOnly,
     requiresCold: false,
+    audience: null,
   });
 }
 

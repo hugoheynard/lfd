@@ -225,6 +225,15 @@ dépubliées par H7 se réactivent depuis la liste rendue en C7.
 
 ### Lot 1 — ce qui se bâtit (détaillé le 2026-10-15)
 
+> ✅ **Bâti le 2026-10-15.** Trois écarts au texte ci-dessous, tous assumés :
+> les routes d'audience sont sous `/pim/catalogue/categories/:id/audience` et
+> `/pim/catalogue/products/:id/audience` (le voisinage) ; l'aperçu de bascule
+> est `GET /pim/channels/b2b/audience-switch-preview`, dans le canal, parce
+> qu'il lit le lien au canal et que le catalogue n'importe pas ses canaux
+> (ADR-13) ; un changement d'audience entre dans `content-facts` (il périme la
+> signature) mais ne déclenche **pas** de révision automatique — c'est le
+> lot 4. Une famille archivée refuse un changement d'audience.
+
 **Le lot 1 ne change aucun comportement servi.** Le push lit encore le lien
 et la matrice ; l'audience existe, se règle par l'API, et n'est lue par
 aucune émission. Il n'écrit aucun statut de fiche.

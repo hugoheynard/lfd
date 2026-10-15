@@ -18,6 +18,7 @@
  * précisément l'endroit où ce chantier pouvait se tromper.
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import { makeActivatable } from "./pim-sellable.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 
 /** Staff doublé : accepte n'importe quel jeton porteur comme staff synthétique. */
@@ -95,6 +96,9 @@ async function aProduct(suffix: string): Promise<{
     });
   expect(created.status).toBe(201);
   const productId = jsonBody<{ id: string }>(created).id;
+  // Activer exige aussi un prix et un taux (lot 1 du plan d'audience) : ces
+  // cas parlent d'allergènes, la fiche est donc vendable par ailleurs.
+  await makeActivatable(staff, productId);
   const [variant] = (await detailOf(productId)).variants;
   if (variant === undefined) {
     throw new Error("le produit est né sans déclinaison par défaut");

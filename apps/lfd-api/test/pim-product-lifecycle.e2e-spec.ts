@@ -14,6 +14,7 @@
  * c'est exactement là que la panne vivait.
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import { makeActivatable } from "./pim-sellable.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 
 const stubAdminVerifier = {
@@ -81,6 +82,8 @@ async function aPublishableProduct(): Promise<string> {
     // `[]` est une AFFIRMATION — « aucun allergène » — pas une absence de réponse.
     .send({ allergens: [] });
   expect(declared.status).toBe(200);
+  // Activer exige aussi un prix et un taux (lot 1 du plan d'audience).
+  await makeActivatable(staff, id);
   return id;
 }
 

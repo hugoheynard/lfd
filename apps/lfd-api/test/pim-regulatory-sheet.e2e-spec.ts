@@ -11,6 +11,7 @@
  * l'ADAPTATEUR écrit et ce que la LECTURE recolle, deux tables plus loin.
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import { makeActivatable } from "./pim-sellable.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 
 /** Staff doublé : accepte n'importe quel jeton porteur comme staff synthétique. */
@@ -152,6 +153,8 @@ describe("les deux sections ne se touchent pas", () => {
     await saveAllergens(productId, variantId, { allergens: [] }).expect(200);
 
     expect((await variantOf(productId)).allergenSheet).toEqual({ declared: [], mayContain: [] });
+    // Activer exige aussi un prix et un taux (lot 1 du plan d'audience).
+    await makeActivatable(staff, productId);
     expect((await staff().put(`${PRODUCTS}/${productId}/publish`).send({})).status).toBe(200);
   });
 

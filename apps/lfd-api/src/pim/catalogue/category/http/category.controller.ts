@@ -7,6 +7,8 @@ import {
   reorderCategoriesPayloadSchema,
   setCategoryChannelsPayloadSchema,
   setCategoryVatPayloadSchema,
+  setCategoryAudiencePayloadSchema,
+  type SetCategoryAudiencePayload,
   categoryEditorialPayloadSchema,
   setCategoryMediaPayloadSchema,
   type CategoryDetailView,
@@ -34,6 +36,7 @@ import { ReorderCategoriesCommand } from "../application/reorder-categories.js";
 import { RenameCategoryCommand } from "../application/rename-category.js";
 import { SetCategoryChannelsCommand } from "../application/set-category-channels.js";
 import { SetCategoryVatCommand } from "../application/set-category-vat.js";
+import { SetCategoryAudienceCommand } from "../application/set-category-audience.js";
 
 /**
  * Familles du catalogue — dispatchées sur les bus CQRS.
@@ -106,6 +109,18 @@ export class CategoryController {
   ) {
     await this.commands.execute<SetCategoryVatCommand, void>(
       new SetCategoryVatCommand(id, body.vatByContext),
+    );
+    return { id };
+  }
+
+  /** À qui la famille vend — ses fiches en héritent, sauf dérogation. */
+  @Put(":id/audience")
+  async setAudience(
+    @Param("id") id: string,
+    @Body(new ZodBody(setCategoryAudiencePayloadSchema)) body: SetCategoryAudiencePayload,
+  ) {
+    await this.commands.execute<SetCategoryAudienceCommand, void>(
+      new SetCategoryAudienceCommand(id, body.audience),
     );
     return { id };
   }

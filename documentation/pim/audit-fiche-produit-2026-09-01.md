@@ -93,7 +93,7 @@ Le chemin complet, chaque maillon vérifié :
 4. `product.ts:266-270` — `Product.unpublish()` est gardé :
    `if (this.statusValue === "published")`. Sur un produit **archivé**, il ne
    fait **rien**.
-5. `unpublish-product.ts:26-38` — le handler trace `product.unpublished`
+5. unpublish-product.ts:26-38 (devenu `deactivate-product.ts` le 2026-10-15) — le handler trace `product.unpublished`
    **inconditionnellement**, puis sauvegarde un agrégat inchangé.
 6. `product-form-store.ts:1183` — au retour, le front peint `statusValue = 'draft'`.
 
@@ -113,7 +113,7 @@ porte de sortie de l'archivage, et elle est murée. Sur un back-office en servic
 depuis le 2026-08-17, **archiver un produit est aujourd'hui irréversible depuis
 l'interface**.
 
-Aggravant : `blast: { variants: variants.length }` (`unpublish-product.ts:35`)
+Aggravant : `blast: { variants: variants.length }` (unpublish-product.ts:35, devenu `deactivate-product.ts` le 2026-10-15)
 annonce au journal que N articles cessent d'être vendus, alors que rien n'a
 changé — et compte au passage les déclinaisons `discontinued`.
 
@@ -295,7 +295,7 @@ Un indicateur qui se trompe dans les deux sens n'informe pas, il use.
 
 ## 8. 🟠 SÉRIEUX — la publication ne demande pas la signature
 
-`PublishProductHandler` (`publish-product.ts:20-24`) injecte
+`PublishProductHandler` (publish-product.ts:20-24, devenu `activate-product.ts` le 2026-10-15) injecte
 `ProductRepository`, `PimJournal`, `UnitOfWork`. **Pas `ReadinessRepository`.**
 
 Le JSDoc de `declare-product-ready.ts:19-30` décrit pourtant la signature comme

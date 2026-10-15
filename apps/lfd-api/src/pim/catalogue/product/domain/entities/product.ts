@@ -3,6 +3,7 @@ import {
   ArchivedProductNotWithdrawableError,
   InvalidProductVariantsError,
   NotArchivedProductNotRestorableError,
+  ProductNotActivatableError,
   ProductNotPublishableError,
   ProductVatWithoutChannelError,
   ProductUnknownContextError,
@@ -31,6 +32,9 @@ import {
 } from "../../../shared/domain/value-objects/context-vat.js";
 import type { AllergenDeclaration } from "../value-objects/nutrition-declaration.js";
 import type { Sku } from "../value-objects/sku.value-object.js";
+import type { Audience } from "../../../shared/domain/value-objects/audience.js";
+import type { CategoryVatPercents } from "../../../shared/domain/ports/catalogue-reader.js";
+import { activationGaps, isActivatable } from "../services/activation-gaps.js";
 
 export type ProductKind = "daily" | "made_to_order" | "resale";
 export type ProductStatus = "draft" | "published" | "archived";
@@ -89,6 +93,11 @@ export interface ProductSnapshot {
    * dit qu'elle était froide, pas une déclaration « se conserve au sec ».
    */
   readonly requiresCold: boolean;
+  /**
+   * À qui la fiche vend quand elle ne suit pas sa famille. `null` = elle
+   * hérite (C2 du plan `plan-catalogue-synchronise-par-audience.md`).
+   */
+  readonly audience: Audience | null;
 }
 
 /**
@@ -138,6 +147,7 @@ export class Product {
     private channelOverrideValue: SalesChannels | null,
     private operationOnlyValue: boolean,
     private requiresColdValue: boolean,
+    private audienceValue: Audience | null,
   ) {}
 
   static open(input: NewProductInput): Product {
@@ -160,6 +170,8 @@ export class Product {
       false,
       // Un produit naît SANS froid déclaré : le froid se dit, il ne se devine pas.
       false,
+      // Un produit naît avec l'audience de sa famille : il en hérite.
+      null,
     );
   }
 
@@ -178,6 +190,7 @@ export class Product {
       snapshot.channelOverride,
       snapshot.operationOnly,
       snapshot.requiresCold,
+      snapshot.audience,
     );
   }
 
@@ -320,6 +333,26 @@ export class Product {
     return true;
   }
 
+  /** Sa propre audience, ou `null` s'il suit sa famille. */
+  get audience(): Audience | null {
+    return this.audienceValue;
+  }
+
+  /**
+   * Élargit ou restreint à qui la fiche vend — ou la rend à sa famille avec
+   * `null`. Aucun refus : comme le froid, ce que l'audience change se juge à
+   * l'activation et chez ceux qui vendent.
+   *
+   * @returns `false` quand elle le disait déjà ({@link StatusChanged}).
+   */
+  changeAudience(audience: Audience | null): boolean {
+    if (this.audienceValue === audience) {
+      return false;
+    }
+    this.audienceValue = audience;
+    return true;
+  }
+
   /** Renomme — et re-dérive le slug. */
   rename(name: LocalizedText): void {
     this.nameValue = name;
@@ -358,8 +391,18 @@ export class Product {
    *
    * Un produit archivé se restaure d'abord : passer d'« retiré de la vente » à
    * « en ligne » d'un seul geste ferait sauter l'étape où quelqu'un regarde.
+   *
+   * **Activer exige aussi de quoi vendre** (1e du plan
+   * `plan-catalogue-synchronise-par-audience.md`) : au moins une déclinaison
+   * non arrêtée avec un prix, et un taux au contexte qui facture chaque
+   * clientèle de son audience effective. Le taux et l'audience arrivent
+   * résolus : ils dépendent de la famille, que la fiche ne voit pas.
+   *
+   * ⚠️ Le refus des allergènes reste **par déclinaison** jusqu'au lot 2 : la
+   * projection d'aujourd'hui n'écarte pas une déclinaison sans déclaration,
+   * elle compte sur ce refus-ci.
    */
-  publish(): StatusChanged {
+  activate(vatPercents: CategoryVatPercents, audience: Audience): StatusChanged {
     if (this.statusValue === "archived") {
       throw new ArchivedProductNotPublishableError(this.identity);
     }
@@ -371,6 +414,11 @@ export class Product {
       .map((variant) => variant.sku);
     if (missing.length > 0) {
       throw new ProductNotPublishableError(this.identity, missing);
+    }
+    const resolved = this.variantList.map((variant) => this.resolvedSnapshot(variant));
+    const gaps = activationGaps(resolved, vatPercents, audience);
+    if (!isActivatable(gaps)) {
+      throw new ProductNotActivatableError(this.identity, gaps);
     }
     this.statusValue = "published";
     return true;
@@ -387,7 +435,7 @@ export class Product {
    * restée archivée. Un no-op silencieux avait donc l'exacte apparence d'un
    * succès.
    */
-  unpublish(): StatusChanged {
+  deactivate(): StatusChanged {
     if (this.statusValue === "archived") {
       throw new ArchivedProductNotWithdrawableError(this.identity);
     }
@@ -642,6 +690,7 @@ export class Product {
       channelOverride: this.channelOverrideValue,
       operationOnly: this.operationOnlyValue,
       requiresCold: this.requiresColdValue,
+      audience: this.audienceValue,
     };
   }
 }

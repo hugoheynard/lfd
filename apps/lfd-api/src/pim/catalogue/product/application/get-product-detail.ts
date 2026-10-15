@@ -8,49 +8,53 @@ import type { ProductEditorialView, ProductMediaRecord } from "../domain/ports/e
 import { ProductRepository, type ProductRecord } from "../domain/ports/product.repository.js";
 import { ReadinessRepository } from "../domain/ports/readiness.repository.js";
 import { StaffAuthorDirectory } from "../../../../staff/directory/domain/staff-author-directory.js";
+import { requireCategory } from "../../category/application/category-support.js";
+import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
+import { audienceView, type AudienceView } from "./audience-view.js";
 
 /** Détail complet : le socle, sa couche éditoriale, ses visuels et sa signature. */
-export type ProductDetail = ProductRecord & {
-  readonly editorial: ProductEditorialView | null;
-  readonly media: readonly ProductMediaRecord[];
-  /** `null` = personne ne s'est prononcé sur cette fiche. */
-  readonly readiness: {
-    readonly readyAt: string;
-    /** L'id de fiche, ou une valeur qui ne désigne personne : l'écran s'en sert quand le nom manque. */
-    readonly readyBy: string;
-    /** « Prénom Nom » du signataire ; `null` = l'auteur ne désigne aucune fiche. */
-    readonly readyByName: string | null;
-  } | null;
-  /**
-   * Quand le contenu de la fiche a bougé pour la dernière fois.
-   *
-   * @deprecated Mesure fausse dans les deux sens, remplacée par
-   *   {@link ProductDetail.readinessStale}. Elle lit `product.updated_at`, un
-   *   `@updatedAt` posé sur la ligne qui porte `status` : **mettre en vente
-   *   périmait donc la signature qui justifiait la mise en vente**. Et elle
-   *   ignore `ProductContextVat` / `ProductChannelOverride`, si bien qu'un
-   *   changement de taux ou de canal ne périmait rien.
-   *
-   *   Le champ reste servi UN déploiement, le temps que les fronts en ligne
-   *   basculent sur `readinessStale` (audit 2026-09-01, tranche 3 — étendre,
-   *   basculer, resserrer). À supprimer au resserrement, avec la méthode
-   *   `ReadinessRepository.contentUpdatedAt` qui n'aura plus de lecteur.
-   */
-  readonly contentUpdatedAt: string;
-  /**
-   * La signature vaut-elle encore ?
-   *
-   * `false` quand personne n'a signé — il n'y a alors rien à périmer, et rendre
-   * `true` ferait afficher un avertissement sur une fiche que nul n'a validée.
-   *
-   * Calculé sur les **faits** et non sur des horodatages de ligne : le journal
-   * dit précisément ce qui a changé, dans la même transaction que l'écriture,
-   * et il ne confond pas un statut avec un prix. Cf.
-   * `domain/content-facts.ts` pour le tri, et l'audit du 2026-09-01 pour ce que
-   * l'ancienne mesure affirmait de faux.
-   */
-  readonly readinessStale: boolean;
-};
+export type ProductDetail = ProductRecord &
+  AudienceView & {
+    readonly editorial: ProductEditorialView | null;
+    readonly media: readonly ProductMediaRecord[];
+    /** `null` = personne ne s'est prononcé sur cette fiche. */
+    readonly readiness: {
+      readonly readyAt: string;
+      /** L'id de fiche, ou une valeur qui ne désigne personne : l'écran s'en sert quand le nom manque. */
+      readonly readyBy: string;
+      /** « Prénom Nom » du signataire ; `null` = l'auteur ne désigne aucune fiche. */
+      readonly readyByName: string | null;
+    } | null;
+    /**
+     * Quand le contenu de la fiche a bougé pour la dernière fois.
+     *
+     * @deprecated Mesure fausse dans les deux sens, remplacée par
+     *   {@link ProductDetail.readinessStale}. Elle lit `product.updated_at`, un
+     *   `@updatedAt` posé sur la ligne qui porte `status` : **mettre en vente
+     *   périmait donc la signature qui justifiait la mise en vente**. Et elle
+     *   ignore `ProductContextVat` / `ProductChannelOverride`, si bien qu'un
+     *   changement de taux ou de canal ne périmait rien.
+     *
+     *   Le champ reste servi UN déploiement, le temps que les fronts en ligne
+     *   basculent sur `readinessStale` (audit 2026-09-01, tranche 3 — étendre,
+     *   basculer, resserrer). À supprimer au resserrement, avec la méthode
+     *   `ReadinessRepository.contentUpdatedAt` qui n'aura plus de lecteur.
+     */
+    readonly contentUpdatedAt: string;
+    /**
+     * La signature vaut-elle encore ?
+     *
+     * `false` quand personne n'a signé — il n'y a alors rien à périmer, et rendre
+     * `true` ferait afficher un avertissement sur une fiche que nul n'a validée.
+     *
+     * Calculé sur les **faits** et non sur des horodatages de ligne : le journal
+     * dit précisément ce qui a changé, dans la même transaction que l'écriture,
+     * et il ne confond pas un statut avec un prix. Cf.
+     * `domain/content-facts.ts` pour le tri, et l'audit du 2026-09-01 pour ce que
+     * l'ancienne mesure affirmait de faux.
+     */
+    readonly readinessStale: boolean;
+  };
 
 export class GetProductDetailQuery {
   constructor(readonly id: string) {}
@@ -68,6 +72,7 @@ export class GetProductDetailHandler implements IQueryHandler<
     private readonly journal: PimJournalReader,
     private readonly clock: Clock,
     private readonly staffAuthors: StaffAuthorDirectory,
+    private readonly categories: CategoryRepository,
   ) {}
 
   async execute(query: GetProductDetailQuery): Promise<ProductDetail | null> {
@@ -75,15 +80,17 @@ export class GetProductDetailHandler implements IQueryHandler<
     if (product === null) {
       return null;
     }
-    const [editorial, media, readiness, contentUpdatedAt] = await Promise.all([
+    const [editorial, media, readiness, contentUpdatedAt, category] = await Promise.all([
       this.editorials.findByProduct(query.id),
       this.editorials.mediaOf(query.id),
       this.readiness.read(query.id),
       this.readiness.contentUpdatedAt(query.id),
+      requireCategory(this.categories, product.categoryId),
     ]);
     const authors = await this.staffAuthors.identify([readiness?.readyBy ?? null]);
     return {
       ...product.snapshot(),
+      ...audienceView(product, category.audience),
       editorial,
       media,
       readiness:

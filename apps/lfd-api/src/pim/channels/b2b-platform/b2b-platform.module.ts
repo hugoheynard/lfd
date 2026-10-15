@@ -8,6 +8,8 @@ import { PimDatabaseModule } from "../../infra/database/pim-database.module.js";
 import { OperationsModule } from "../../operations/operations.module.js";
 import { PushB2bCatalogHandler } from "./application/push-b2b-catalog.js";
 import { B2bMembershipController } from "./membership/membership.controller.js";
+import { AudienceSwitchPreviewController } from "./membership/audience-switch-preview.controller.js";
+import { GetAudienceSwitchPreviewHandler } from "./application/audience-switch-preview.js";
 import { B2bMembershipService } from "./membership/membership.service.js";
 import { DryRunB2bCatalogDriver } from "./products/driver.js";
 import { B2bCatalogFeedPreview } from "./products/feed-preview.js";
@@ -44,11 +46,18 @@ import { B2bCatalogPushService } from "./products/push.service.js";
     // Le port de LECTURE des opérations datées, projetées dans le fil v11.
     OperationsModule,
   ],
-  controllers: [B2bMembershipController, B2bPushController, B2bProductDeliveryController],
+  controllers: [
+    B2bMembershipController,
+    B2bPushController,
+    B2bProductDeliveryController,
+    AudienceSwitchPreviewController,
+  ],
   providers: [
     B2bMembershipService,
     B2bCatalogPushService,
     PushB2bCatalogHandler,
+    // L'aperçu de la bascule vers l'audience (lot 1, 1f) : lecture seule.
+    GetAudienceSwitchPreviewHandler,
     // La frise. Son port de RETOUR (`B2bDeliveryFactsReader`) n'est pas fourni
     // ici : il est publié par ce module et relié par la racine de composition,
     // seule à connaître les deux côtés du fil.

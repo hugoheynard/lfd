@@ -17,6 +17,8 @@ import {
   setProductOperationOnlyPayloadSchema,
   setProductColdRequirementPayloadSchema,
   setProductVatPayloadSchema,
+  setProductAudiencePayloadSchema,
+  type SetProductAudiencePayload,
   addProductVariantPayloadSchema,
   alignVariantPayloadSchema,
   type SetProductMediaPayload,
@@ -47,14 +49,15 @@ import { SaveVariantNutritionCommand } from "../application/save-variant-nutriti
 import { GetProductDetailQuery } from "../application/get-product-detail.js";
 import { GetProductReadinessQuery } from "../application/get-product-readiness.js";
 import { ListProductsQuery } from "../application/list-products.js";
-import { PublishProductCommand } from "../application/publish-product.js";
+import { ActivateProductCommand } from "../application/activate-product.js";
 import { RestoreProductCommand } from "../application/restore-product.js";
-import { UnpublishProductCommand } from "../application/unpublish-product.js";
+import { DeactivateProductCommand } from "../application/deactivate-product.js";
 import { SetProductMediaCommand } from "../application/set-product-media.js";
 import { SetProductChannelsCommand } from "../application/set-product-channels.js";
 import { SetProductOperationOnlyCommand } from "../application/set-product-operation-only.js";
 import { SetProductColdRequirementCommand } from "../application/set-product-cold-requirement.js";
 import { SetProductVatCommand } from "../application/set-product-vat.js";
+import { SetProductAudienceCommand } from "../application/set-product-audience.js";
 import { UpdateProductEditorialCommand } from "../application/update-product-editorial.js";
 import { UpdateProductIdentityCommand } from "../application/update-product-identity.js";
 import { UpdateVariantPricingCommand } from "../application/update-variant-pricing.js";
@@ -184,6 +187,18 @@ export class ProductController {
   ) {
     await this.commands.execute<SetProductColdRequirementCommand, void>(
       new SetProductColdRequirementCommand(id, body.requiresCold),
+    );
+    return { id };
+  }
+
+  /** À qui la fiche vend — `null` la rend à sa famille. */
+  @Put(":id/audience")
+  async setProductAudience(
+    @Param("id") id: string,
+    @Body(new ZodBody(setProductAudiencePayloadSchema)) body: SetProductAudiencePayload,
+  ) {
+    await this.commands.execute<SetProductAudienceCommand, void>(
+      new SetProductAudienceCommand(id, body.audience),
     );
     return { id };
   }
@@ -348,19 +363,22 @@ export class ProductController {
   }
 
   /**
-   * Mise en vente. Refusée (409) si une déclinaison active n'a pas de fiche
-   * réglementaire, ou si le produit est archivé — c'est l'agrégat qui tranche.
+   * Activation — la route garde son nom `/publish` jusqu'au lot 3 du plan
+   * `plan-catalogue-synchronise-par-audience.md`. Refusée (409) si une
+   * déclinaison active n'a pas d'allergènes, si aucune n'a de prix, s'il manque
+   * un taux pour une clientèle de l'audience, ou si le produit est archivé —
+   * c'est l'agrégat qui tranche.
    */
   @Put(":id/publish")
-  async publishProduct(@Param("id") id: string) {
-    await this.commands.execute<PublishProductCommand, void>(new PublishProductCommand(id));
+  async activateProduct(@Param("id") id: string) {
+    await this.commands.execute<ActivateProductCommand, void>(new ActivateProductCommand(id));
     return { id };
   }
 
-  /** Retrait de la vente : le produit redevient brouillon, pas archivé. */
+  /** Désactivation (route `/unpublish`) : la fiche redevient inactive, pas archivée. */
   @Put(":id/unpublish")
-  async unpublishProduct(@Param("id") id: string) {
-    await this.commands.execute<UnpublishProductCommand, void>(new UnpublishProductCommand(id));
+  async deactivateProduct(@Param("id") id: string) {
+    await this.commands.execute<DeactivateProductCommand, void>(new DeactivateProductCommand(id));
     return { id };
   }
 

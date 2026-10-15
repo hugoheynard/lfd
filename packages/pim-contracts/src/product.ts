@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { salesChannelsSchema } from "./category.js";
+import { operationAudienceSchema, type OperationAudience } from "./operation.js";
 
 import { localizedTextSchema, optionalLocalizedTextSchema } from "./localized.js";
 import {
@@ -297,6 +298,15 @@ export interface ProductView {
    * « se conserve au sec ».
    */
   readonly requiresCold: boolean;
+  /**
+   * La clientèle **propre** à la fiche ; `null` = elle suit sa famille. La
+   * dérogation seule, comme les canaux — l'effective est à côté.
+   */
+  readonly audience: OperationAudience | null;
+  /** À qui la fiche vend réellement : la sienne, sinon celle de sa famille. */
+  readonly effectiveAudience: OperationAudience;
+  /** Vrai quand l'audience effective vient de la famille. */
+  readonly audienceInherited: boolean;
 }
 
 /**
@@ -449,6 +459,15 @@ export const setProductColdRequirementPayloadSchema = z.strictObject({
 export type SetProductColdRequirementPayload = z.infer<
   typeof setProductColdRequirementPayloadSchema
 >;
+
+/**
+ * **Élargir ou restreindre à qui la fiche vend** — ou la rendre à sa famille
+ * avec `null` (`PUT /pim/catalogue/products/:id/audience`).
+ */
+export const setProductAudiencePayloadSchema = z.strictObject({
+  audience: operationAudienceSchema.nullable(),
+});
+export type SetProductAudiencePayload = z.infer<typeof setProductAudiencePayloadSchema>;
 
 export const setProductVatPayloadSchema = z.object({
   vatByContext: z.record(z.string(), z.string()),

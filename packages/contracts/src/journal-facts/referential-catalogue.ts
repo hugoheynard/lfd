@@ -18,6 +18,7 @@ import {
   subjectLabel,
   type JournalFactFamily,
 } from "./fact.js";
+import { audience } from "./referential-operations.js";
 
 /**
  * **Le référentiel — les fiches, leurs déclinaisons, les familles et les
@@ -427,6 +428,13 @@ export const REFERENTIAL_CATALOGUE_FACTS = {
   "product.cold_requirement_changed": fact(
     payload({ subjectLabel: subjectLabel(), from: z.boolean(), to: z.boolean() }),
   ),
+  /**
+   * À qui la fiche vend : sa propre clientèle, ou `null` — elle suit sa
+   * famille (lot 1 de `plan-catalogue-synchronise-par-audience.md`).
+   */
+  "product.audience_changed": fact(
+    payload({ subjectLabel: subjectLabel(), audience: fromTo(audience().nullable()) }),
+  ),
   "product.vat_changed": fact(vatChanged(), [vatByContextV1(), vatChangedLotB()]),
   "product.declared_ready": labelled(skuAndName()),
   "product.published": labelled(productOnSale()),
@@ -491,6 +499,10 @@ export const REFERENTIAL_CATALOGUE_FACTS = {
   "product_category.channels_changed": fact(
     payload({ subjectLabel: subjectLabel(), changes: changes({ channels: salesChannels() }) }),
     [categoryChannelsV1],
+  ),
+  /** À qui la famille vend — ses fiches en héritent, sauf dérogation. */
+  "product_category.audience_changed": fact(
+    payload({ subjectLabel: subjectLabel(), audience: fromTo(audience()) }),
   ),
   "product_category.vat_changed": fact(vatChanged(), [vatByContextV1(), vatChangedLotB()]),
   "product_category.editorial_saved": labelled(categoryEditorial),

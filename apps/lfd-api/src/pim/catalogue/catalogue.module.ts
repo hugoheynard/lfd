@@ -30,8 +30,10 @@ import { GetProductDetailHandler } from "./product/application/get-product-detai
 import { ListProductsHandler } from "./product/application/list-products.js";
 import { DeclareProductReadyHandler } from "./product/application/declare-product-ready.js";
 import { GetProductReadinessHandler } from "./product/application/get-product-readiness.js";
-import { PublishProductHandler } from "./product/application/publish-product.js";
-import { UnpublishProductHandler } from "./product/application/unpublish-product.js";
+import { ActivateProductHandler } from "./product/application/activate-product.js";
+import { SetProductAudienceHandler } from "./product/application/set-product-audience.js";
+import { SetCategoryAudienceHandler } from "./category/application/set-category-audience.js";
+import { DeactivateProductHandler } from "./product/application/deactivate-product.js";
 import { RestoreProductHandler } from "./product/application/restore-product.js";
 import { SetProductMediaHandler } from "./product/application/set-product-media.js";
 import { OnMediaAssetDescribedHandler } from "./product/application/on-media-asset-described.js";
@@ -153,8 +155,10 @@ import {
     ListProductsHandler,
     DeclareProductReadyHandler,
     GetProductReadinessHandler,
-    PublishProductHandler,
-    UnpublishProductHandler,
+    ActivateProductHandler,
+    SetProductAudienceHandler,
+    SetCategoryAudienceHandler,
+    DeactivateProductHandler,
     GetProductDetailHandler,
     // L'onglet « Historique » : la lignée ici, le journal par le port global.
     GetProductHistoryHandler,

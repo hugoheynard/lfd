@@ -46,6 +46,9 @@ function backendProduct(overrides: Partial<BackendVariantLike> = {}) {
     channelOverride: null,
     operationOnly: false,
     requiresCold: false,
+    audience: null,
+    effectiveAudience: 'both' as const,
+    audienceInherited: true,
   };
 }
 

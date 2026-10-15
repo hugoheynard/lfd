@@ -37,6 +37,7 @@ function product(vatByContext: Readonly<Record<string, string>> = {}): ProductSn
     channelOverride: null,
     operationOnly: false,
     requiresCold: false,
+    audience: null,
   };
 }
 

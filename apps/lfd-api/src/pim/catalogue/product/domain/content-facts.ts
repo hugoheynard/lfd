@@ -94,6 +94,10 @@ const CONTENT_FACTS: Readonly<Record<string, boolean>> = {
   // signataire qui a relu la fiche sèche voudrait la revoir froide (lot 4 bis
   // du plan de préparation de tournée, 2026-09-29).
   [PIM_EVENTS.productColdRequirementChanged]: true,
+  // L'audience change À QUI la fiche se vend, comme les canaux changent OÙ :
+  // un signataire qui l'a relue pour les pros voudrait la revoir ouverte au
+  // public (lot 1 de `plan-catalogue-synchronise-par-audience.md`).
+  [PIM_EVENTS.productAudienceChanged]: true,
   // Changer de famille change les taux et les canaux hérités. Le même geste
   // écrit aussi `identity_saved`, déjà compté : ce fait-ci ne périme donc
   // rien de plus, mais la table est exhaustive et il y a sa place.

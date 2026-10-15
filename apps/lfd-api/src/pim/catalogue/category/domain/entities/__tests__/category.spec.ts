@@ -205,4 +205,30 @@ describe("l’agrégat Category", () => {
       );
     });
   });
+
+  describe("l’audience — à qui la famille vend", () => {
+    it("naît à `both` : c’est ce que faisait toute famille avant l’audience", () => {
+      expect(Category.open(OPEN).audience).toBe("both");
+    });
+
+    it("change, et le dit ; ne dit rien quand rien ne change", () => {
+      const category = Category.open(OPEN);
+      expect(category.changeAudience("pro")).toBe(true);
+      expect(category.snapshot().audience).toBe("pro");
+      expect(category.changeAudience("pro")).toBe(false);
+    });
+
+    it("est gelée sur une famille archivée, comme ses autres réglages", () => {
+      const category = Category.open(OPEN);
+      category.archive();
+      expect(() => category.changeAudience("public")).toThrow(CategoryFrozenError);
+      expect(category.audience).toBe("both");
+    });
+
+    it("survit à la reconstitution", () => {
+      const category = Category.open(OPEN);
+      category.changeAudience("public");
+      expect(Category.reconstitute(category.snapshot()).audience).toBe("public");
+    });
+  });
 });

@@ -37,6 +37,7 @@ class TwoFamilies extends CategoryRepository {
         isArchived: false,
         channelPreset: [],
         vatByContext: {},
+        audience: "both",
       }),
     );
   }
@@ -125,6 +126,7 @@ function tart(): OneProduct {
     channelOverride: null,
     operationOnly: false,
     requiresCold: false,
+    audience: null,
   });
 }
 

@@ -3,6 +3,7 @@ import {
   DomainError,
   ResourceNotFoundError,
 } from "../../../../../platform/shared/errors/app-error.js";
+import type { ActivationGaps, UnbilledAudience } from "../services/activation-gaps.js";
 
 export class ProductNotFoundError extends ResourceNotFoundError {
   constructor(readonly productId: string) {
@@ -91,6 +92,48 @@ export class ProductNotPublishableError extends BusinessError {
         `ait lui-même déclaré. Le tableau nutritionnel, lui, n'est pas demandé ici.`,
     );
   }
+}
+
+/** Ce qu'une clientèle se dit à l'écran, dans un message de refus. */
+const AUDIENCE_LABEL: Readonly<Record<UnbilledAudience["audience"], string>> = {
+  pro: "les professionnels",
+  public: "les particuliers",
+};
+
+/**
+ * `activate` refusée : rien n'est vendable, faute de prix ou de taux (1e du
+ * plan `plan-catalogue-synchronise-par-audience.md`).
+ *
+ * Le message nomme chaque déclinaison sans prix et chaque clientèle sans taux,
+ * avec le geste qui répare : il est lu par du personnel devant la fiche, pas
+ * devant le code.
+ */
+export class ProductNotActivatableError extends BusinessError {
+  constructor(
+    readonly productId: string,
+    readonly gaps: ActivationGaps,
+  ) {
+    super("catalogue.product.not_activatable", describeGaps(gaps));
+  }
+}
+
+function describeGaps(gaps: ActivationGaps): string {
+  const reasons: string[] = [];
+  if (gaps.priceMissing) {
+    reasons.push(
+      gaps.unpricedVariantSkus.length === 0
+        ? "toutes les déclinaisons sont arrêtées — en rouvrir une et lui donner un prix"
+        : `aucune déclinaison n'a de prix (${gaps.unpricedVariantSkus.join(", ")}) — ` +
+            `renseigner le prix d'au moins l'une d'elles dans la section « Tarif »`,
+    );
+  }
+  for (const gap of gaps.unbilledAudiences) {
+    reasons.push(
+      `aucun taux de TVA « ${gap.contextKey} » pour vendre à ${AUDIENCE_LABEL[gap.audience]} — ` +
+        `le régler sur la famille ou sur la fiche, ou changer l'audience`,
+    );
+  }
+  return `Activation refusée : ${reasons.join(" ; ")}.`;
 }
 
 /** Un produit archivé se restaure avant de se publier — jamais d'un geste. */

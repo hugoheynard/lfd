@@ -118,6 +118,7 @@ function family(
     isArchived: false,
     channelPreset,
     vatByContext,
+    audience: "both",
   });
 }
 

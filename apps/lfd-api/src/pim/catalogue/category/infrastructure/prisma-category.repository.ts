@@ -16,6 +16,7 @@ import {
   normalizeSalesChannels,
   type SalesChannels,
 } from "../../shared/domain/value-objects/sales-channels.js";
+import { audience } from "../../shared/domain/value-objects/audience.js";
 
 interface CategoryRow {
   id: string;
@@ -24,6 +25,7 @@ interface CategoryRow {
   parentId: string | null;
   position: number;
   isArchived: boolean;
+  audience: string;
   contextVat: readonly { vatRateId: string; context: { key: string } }[];
   channels: readonly { pointOfSaleId: string; contextKey: string }[];
 }
@@ -65,6 +67,8 @@ function toCategory(row: CategoryRow): Category {
     isArchived: row.isArchived,
     channelPreset: toChannels(row.channels),
     vatByContext,
+    // Revalidée : une ligne relue n'est pas passée par le contrat.
+    audience: audience(row.audience),
   });
 }
 
@@ -76,6 +80,7 @@ function toColumns(snapshot: CategorySnapshot) {
     parentId: snapshot.parentId,
     position: snapshot.position,
     isArchived: snapshot.isArchived,
+    audience: snapshot.audience,
   };
 }
 

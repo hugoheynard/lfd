@@ -69,6 +69,7 @@ class FakeCategoryRepository extends CategoryRepository {
       isArchived,
       channelPreset: NO_CHANNELS,
       vatByContext: {},
+      audience: "both",
     });
   }
 

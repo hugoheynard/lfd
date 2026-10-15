@@ -19,6 +19,7 @@ import {
   readStringMapColumn,
 } from "../../shared/infrastructure/json-readers.js";
 import { normalizeSalesChannels } from "../../shared/domain/value-objects/sales-channels.js";
+import { audience } from "../../shared/domain/value-objects/audience.js";
 
 /** La moitié « sécurité » : ce que la déclinaison contient, et ses traces. */
 interface AllergensRow {
@@ -65,6 +66,7 @@ interface ProductRow {
   status: ProductStatus;
   operationOnly: boolean;
   requiresCold: boolean;
+  audience: string | null;
   variants: VariantRow[];
   contextVat: readonly { vatRateId: string; context: { key: string } }[];
   channelOverrideRows: {
@@ -164,6 +166,8 @@ function toProduct(row: ProductRow): Product {
     status: row.status,
     operationOnly: row.operationOnly,
     requiresCold: row.requiresCold,
+    // Revalidée : une ligne relue n'est pas passée par le contrat.
+    audience: row.audience === null ? null : audience(row.audience),
     variants: row.variants.map(toVariant),
     vatByContext: Object.fromEntries(
       row.contextVat.map((line) => [line.context.key, line.vatRateId]),
@@ -208,6 +212,7 @@ function toColumns(snapshot: ProductSnapshot) {
     status: snapshot.status,
     operationOnly: snapshot.operationOnly,
     requiresCold: snapshot.requiresCold,
+    audience: snapshot.audience,
   };
 }
 

@@ -195,3 +195,25 @@ export interface B2bProductDeliveryView {
   readonly lastPushedAt: string | null;
   readonly variants: readonly B2bDeliveryFactsView[];
 }
+
+/** Une fiche citée par l'aperçu de bascule : de quoi la retrouver à l'écran. */
+export interface AudienceSwitchItemView {
+  readonly id: string;
+  readonly sku: string;
+  /** Le nom français. */
+  readonly name: string;
+}
+
+/**
+ * **Ce que la bascule vers l'audience toucherait** (1f du plan
+ * `plan-catalogue-synchronise-par-audience.md`) — la mesure qu'on lit en
+ * production sans accès direct à sa base. Lecture seule.
+ */
+export interface AudienceSwitchPreviewView {
+  /** En vente au référentiel, mais pas liées au canal B2B : invisibles aux pros aujourd'hui. */
+  readonly publishedUnbound: readonly AudienceSwitchItemView[];
+  /** Liées au canal, mais pas en vente (brouillon ou archivées) : la projection les écarte. */
+  readonly boundUnpublished: readonly AudienceSwitchItemView[];
+  /** En vente, mais leur case `b2b` effective est fermée : la projection les écarte aussi. */
+  readonly publishedB2bClosed: readonly AudienceSwitchItemView[];
+}

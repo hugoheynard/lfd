@@ -25,6 +25,7 @@ const product = (id: string): ProductRecord => ({
   channelOverride: null,
   operationOnly: false,
   requiresCold: false,
+  audience: null,
 });
 
 const media = (over: Partial<ProductMediaRecord> = {}): ProductMediaRecord => ({

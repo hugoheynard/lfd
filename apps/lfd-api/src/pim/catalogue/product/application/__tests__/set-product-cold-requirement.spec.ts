@@ -68,6 +68,7 @@ function tarte(requiresCold: boolean): OneProduct {
     channelOverride: null,
     operationOnly: false,
     requiresCold,
+    audience: null,
   });
 }
 

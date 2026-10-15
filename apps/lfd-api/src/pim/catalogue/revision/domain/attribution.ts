@@ -79,6 +79,9 @@ const TOUCHES: Readonly<Record<string, readonly string[] | "changes" | "*">> = {
   // Le froid n'est dans aucun champ de révision non plus (`RevisionItemInput`,
   // vérifié le 2026-09-29) : il traverse le fil v12, pas l'ancre.
   [PIM_EVENTS.productColdRequirementChanged]: [],
+  // L'audience n'est dans aucun champ de révision (`RevisionItemInput`,
+  // vérifié le 2026-10-15) : aucune émission ne la lit avant le lot 2.
+  [PIM_EVENTS.productAudienceChanged]: [],
 };
 
 /** Les champs de révision qu'un fait touche. Vide = il n'en touche aucun. */

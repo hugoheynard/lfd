@@ -24,6 +24,10 @@ const GLOBAL_CAUSES: Readonly<Record<string, readonly string[]>> = {
   [PIM_EVENTS.vatRateDeleted]: ["vatByContext"],
   [PIM_EVENTS.productCategoryVatChanged]: ["vatByContext"],
   [PIM_EVENTS.productCategoryChannelsChanged]: ["soldContexts"],
+  // Cause posée au-dessus du diff, sans champ couvert : l'audience n'entre
+  // dans aucun champ de révision (`RevisionItemInput`, vérifié le 2026-10-15),
+  // et prétendre qu'elle explique `soldContexts` serait faux.
+  [PIM_EVENTS.productCategoryAudienceChanged]: [],
   [PIM_EVENTS.productCategoryRenamed]: ["categoryName"],
   [PIM_EVENTS.productCategoryMoved]: ["categoryId", "categoryName"],
   // Un contexte de vente qu'on ouvre, ferme ou renomme change les CLÉS des

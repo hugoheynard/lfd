@@ -3,6 +3,7 @@ import { z } from "zod";
 import { localizedTextSchema, optionalLocalizedTextSchema } from "./localized.js";
 import { setMediaPayloadSchema, type AttachedMediaView } from "./attached-media.js";
 import type { LocalizedText, SalesChannels } from "./shared.js";
+import { operationAudienceSchema, type OperationAudience } from "./operation.js";
 
 /**
  * Contrat de fil des **familles** (catégories). Payloads validés côté backend,
@@ -70,6 +71,16 @@ export const setCategoryVatPayloadSchema = z.object({
   vatByContext: z.record(z.string(), z.string()),
 });
 export type SetCategoryVatPayload = z.infer<typeof setCategoryVatPayloadSchema>;
+
+/**
+ * **À qui la famille vend** (`PUT /pim/catalogue/categories/:id/audience`) —
+ * professionnels, particuliers ou les deux. La liste est celle des opérations :
+ * une famille et une opération s'adressent aux mêmes clientèles.
+ */
+export const setCategoryAudiencePayloadSchema = z.strictObject({
+  audience: operationAudienceSchema,
+});
+export type SetCategoryAudiencePayload = z.infer<typeof setCategoryAudiencePayloadSchema>;
 
 /** Un contexte de vente, tel que l'API le rend — le registre, en lecture. */
 export interface SalesContextView {
@@ -139,6 +150,8 @@ export interface CategoryView {
   readonly channelPreset: SalesChannels;
   /** Les taux visés, par clé de contexte. Clé absente = non réglé. */
   readonly vatByContext: Readonly<Record<string, string>>;
+  /** À qui la famille vend — ses fiches en héritent, sauf dérogation. */
+  readonly audience: OperationAudience;
   /**
    * Combien de fiches **actives** cette famille porte.
    *

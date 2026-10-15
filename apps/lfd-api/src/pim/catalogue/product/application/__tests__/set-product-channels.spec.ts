@@ -79,6 +79,7 @@ class FamilySellingBoth extends CategoryRepository {
         isArchived: false,
         channelPreset: BOTH,
         vatByContext: { takeaway: "tva_55" },
+        audience: "both",
       }),
     );
   }
@@ -170,6 +171,7 @@ function tart(
     channelOverride,
     operationOnly: false,
     requiresCold: false,
+    audience: null,
   });
 }
 

@@ -43,6 +43,7 @@ function snapshot(status: ProductSnapshot["status"]): ProductSnapshot {
     channelOverride: null,
     operationOnly: false,
     requiresCold: false,
+    audience: null,
     variants: [
       {
         id: "prd_1_v1",

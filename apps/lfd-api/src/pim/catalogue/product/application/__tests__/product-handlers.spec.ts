@@ -7,7 +7,6 @@ import { ArchivedAllergenDeclaredError } from "../../../../allergens/domain/erro
 import { NutritionPartExceedsWholeError } from "../../domain/value-objects/nutrition-declaration.js";
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
 import {
-  ArchivedProductNotWithdrawableError,
   NotArchivedProductNotRestorableError,
   ProductNotFoundError,
   VariantNotFoundError,
@@ -42,10 +41,7 @@ import { SaveVariantAllergensHandler } from "../save-variant-allergens.js";
 import { SaveVariantAllergensCommand } from "../save-variant-allergens.js";
 import { SaveVariantNutritionHandler } from "../save-variant-nutrition.js";
 import { SaveVariantNutritionCommand } from "../save-variant-nutrition.js";
-import { ProductNotPublishableError } from "../../domain/errors/product-errors.js";
-import { PublishProductCommand, PublishProductHandler } from "../publish-product.js";
 import { RestoreProductHandler } from "../restore-product.js";
-import { UnpublishProductCommand, UnpublishProductHandler } from "../unpublish-product.js";
 import { RestoreProductCommand } from "../restore-product.js";
 import { UpdateProductEditorialHandler } from "../update-product-editorial.js";
 import { UpdateProductEditorialCommand } from "../update-product-editorial.js";
@@ -70,6 +66,7 @@ function seedProduct(): ProductSnapshot {
     channelOverride: null,
     operationOnly: false,
     requiresCold: false,
+    audience: null,
     variants: [
       {
         id: VARIANT_ID,
@@ -142,6 +139,7 @@ class FakeCategoryRepository extends CategoryRepository {
       isArchived,
       channelPreset: NO_CHANNELS,
       vatByContext: {},
+      audience: "both",
     });
   }
 
@@ -721,173 +719,8 @@ describe("Archive / Restore product", () => {
   });
 });
 
-describe("PublishProductHandler", () => {
-  it("refuse un produit dont la déclinaison n’a pas de fiche réglementaire", async () => {
-    const repo = new FakeProductRepository(seedProduct());
-
-    await expect(
-      new PublishProductHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
-        new PublishProductCommand(PRODUCT_ID),
-      ),
-    ).rejects.toBeInstanceOf(ProductNotPublishableError);
-    expect(repo.snapshot()?.status).toBe("draft");
-  });
-
-  it("publie un produit étiqueté", async () => {
-    const seeded = seedProduct();
-    const [variant] = seeded.variants;
-    const repo = new FakeProductRepository({
-      ...seeded,
-      variants: [{ ...variant!, allergenSheet: { declared: ["gluten"], mayContain: [] } }],
-    });
-
-    await new PublishProductHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
-      new PublishProductCommand(PRODUCT_ID),
-    );
-
-    expect(repo.snapshot()?.status).toBe("published");
-  });
-
-  it("jette si le produit n’existe pas", async () => {
-    await expect(
-      new PublishProductHandler(
-        new FakeProductRepository(null),
-        new RecordingJournal(),
-        new DirectUnitOfWork(),
-      ).execute(new PublishProductCommand(PRODUCT_ID)),
-    ).rejects.toBeInstanceOf(ProductNotFoundError);
-  });
-});
-
-/**
- * 🔴 **L'invariant 7 s'écrit sur les allergènes seuls** — lot 5 du plan
- * `plan-separer-allergenes-et-nutrition.md` (D2, D3).
- *
- * Vu du handler : ce qui décide d'un `409` est la moitié **allergènes** de la
- * fiche, jamais la moitié valeurs. Le règlement (UE) n° 1169/2011 trie
- * exactement comme ça — art. 9 §1 point c) obligatoire, point l) exempté par
- * l'art. 44 §1 comme par l'annexe V pt 19 — donc l'invariant cesse d'exiger ce
- * que le règlement n'exige pas. C'est un redressement, pas une dérogation.
- *
- * ⚠️ Les deux gestes d'écriture n'écrivent PAS dans le dépôt produit : ils ont
- * chacun leur port de table (§6a). L'état est donc semé ici tel que
- * l'adaptateur le recollerait à la lecture — et c'est l'e2e qui éprouve le
- * recollage lui-même, faute de join dans un double.
- */
-describe("publier ne regarde que les allergènes", () => {
-  function publishing(repo: FakeProductRepository): Promise<void> {
-    return new PublishProductHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
-      new PublishProductCommand(PRODUCT_ID),
-    );
-  }
-
-  /** L'état d'une déclinaison, moitié par moitié. */
-  function variantWith(over: Partial<ProductSnapshot["variants"][number]>): FakeProductRepository {
-    const seeded = seedProduct();
-    const [variant] = seeded.variants;
-    return new FakeProductRepository({ ...seeded, variants: [{ ...variant!, ...over }] });
-  }
-
-  /** Sept valeurs de l'annexe XV plus l'indice : seule l'énergie est saisie. */
-  const ENERGY_ONLY = {
-    energyKcal: 410,
-    fatG: null,
-    saturatedFatG: null,
-    carbsG: null,
-    sugarsG: null,
-    proteinG: null,
-    saltG: null,
-    glycemicIndex: null,
-  } as const;
-
-  /**
-   * 🔴 Cas 1. Des allergènes, aucune valeur — le cas NORMAL en boutique, celui
-   * que l'ancienne règle refusait et qui laissait 92 fiches en brouillon.
-   */
-  it("publie des allergènes déclarés sans la moindre valeur nutritionnelle", async () => {
-    const repo = variantWith({
-      allergenSheet: { declared: ["UW"], mayContain: [] },
-      nutrition: null,
-    });
-
-    await publishing(repo);
-
-    expect(repo.snapshot()?.status).toBe("published");
-  });
-
-  /**
-   * 🔴 Cas 2. Des valeurs, aucune déclaration — l'état nommé de D3. Le refus
-   * doit NOMMER la référence : le back-office ne lit que ce message.
-   */
-  it("refuse des valeurs nutritionnelles sans déclaration d’allergène", async () => {
-    const repo = variantWith({ allergenSheet: null, nutrition: ENERGY_ONLY });
-
-    await expect(publishing(repo)).rejects.toBeInstanceOf(ProductNotPublishableError);
-    await expect(publishing(repo)).rejects.toThrow("CAFE-1-1");
-    expect(repo.snapshot()?.status).toBe("draft");
-  });
-
-  /** Et il dit le geste de sortie, pas seulement le refus. */
-  it("nomme la section à ouvrir plutôt que de dire « non »", async () => {
-    const repo = variantWith({ allergenSheet: null, nutrition: ENERGY_ONLY });
-
-    await expect(publishing(repo)).rejects.toThrow(/Allergènes/);
-  });
-});
-
-describe("UnpublishProductHandler", () => {
-  it("ramène un produit publié en brouillon", async () => {
-    const seeded = seedProduct();
-    const [variant] = seeded.variants;
-    const repo = new FakeProductRepository({
-      ...seeded,
-      status: "published",
-      variants: [{ ...variant!, allergenSheet: { declared: [], mayContain: [] } }],
-    });
-
-    await new UnpublishProductHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
-      new UnpublishProductCommand(PRODUCT_ID),
-    );
-
-    expect(repo.snapshot()?.status).toBe("draft");
-  });
-
-  /**
-   * Régression : le handler traçait `product.unpublished` — portée comprise,
-   * « N articles cessent d'être vendus » — avant même de savoir si l'agrégat
-   * avait changé d'état. Le journal est la trace d'audit ; un retrait de la
-   * vente qui n'a pas eu lieu y est un fait faux (audit 2026-09-01, §1).
-   */
-  it("n’inscrit RIEN au journal quand la fiche était déjà en brouillon", async () => {
-    const repo = new FakeProductRepository(seedProduct());
-    const journal = new RecordingJournal();
-
-    await new UnpublishProductHandler(repo, journal, new DirectUnitOfWork()).execute(
-      new UnpublishProductCommand(PRODUCT_ID),
-    );
-
-    expect(journal.types()).toEqual([]);
-    expect(repo.snapshot()?.status).toBe("draft");
-  });
-
-  /**
-   * C'est par ici que passait la RESTAURATION du back-office. Le refus est la
-   * seule chose qui rendait la panne visible.
-   */
-  it("refuse un produit archivé plutôt que de faire semblant", async () => {
-    const repo = new FakeProductRepository({ ...seedProduct(), status: "archived" });
-    const journal = new RecordingJournal();
-
-    await expect(
-      new UnpublishProductHandler(repo, journal, new DirectUnitOfWork()).execute(
-        new UnpublishProductCommand(PRODUCT_ID),
-      ),
-    ).rejects.toBeInstanceOf(ArchivedProductNotWithdrawableError);
-
-    expect(journal.types()).toEqual([]);
-    expect(repo.snapshot()?.status).toBe("archived");
-  });
-});
+// Activer et désactiver ont leurs suites : `activate-product.spec.ts`,
+// `deactivate-product.spec.ts` (lot 1 du plan d'audience, 2026-10-15).
 
 describe("SetProductMediaHandler", () => {
   it("remplace la liste, et tire la position du RANG reçu", async () => {

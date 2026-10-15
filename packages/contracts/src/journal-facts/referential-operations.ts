@@ -34,7 +34,12 @@ import {
  * clientèle du contrat contre ce catalogue (`RecordingJournal` strict).
  */
 const OPERATION_AUDIENCES = ["pro", "public", "both"] as const;
-const audience = () => z.enum(OPERATION_AUDIENCES);
+
+/**
+ * Une clientèle — la même liste pour une opération, une famille et une fiche
+ * (C2 de `plan-catalogue-synchronise-par-audience.md`).
+ */
+export const audience = () => z.enum(OPERATION_AUDIENCES);
 
 /** L'image : l'URL de la médiathèque et son texte alternatif. */
 const image = () => payload({ url: z.string(), alt: z.string() });
