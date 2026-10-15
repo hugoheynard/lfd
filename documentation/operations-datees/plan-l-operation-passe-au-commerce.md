@@ -103,6 +103,71 @@ journal `operation.*` du PIM restent lisibles (le passé ne se réécrit pas) ;
 les nouveaux s'écrivent au journal du commerce, avec leurs phrases au
 back-office. Le droit : `lfc_operations` (Q2, tranché).
 
+### Corrections après `vitruve` (2026-10-15), qui priment sur O1–O6
+
+**Une seule bascule, rien d'écrit au commerce avant** (BLOQUANT). Le push
+réécrit chaque opération reçue et retire celles qui manquent
+(`IngestCatalogService.applyOperations`, `ingest-catalog.service.ts:158-185`),
+y compris faits ouverts. Ouvrir l'écriture au commerce avant de le couper
+ferait effacer ou écraser les opérations créées au commerce. Donc :
+le lot 1 bâtit l'agrégat et ses routes **fermées** ; la bascule est **un seul
+déploiement** qui, dans l'ordre : sort les opérations de l'ingestion, ferme
+les routes du PIM, migre, ouvre l'écriture au commerce.
+
+**La migration repart du PIM** (BLOQUANT). Une opération éditée, replanifiée,
+archivée ou dont la sélection a changé au PIM sans push a un miroir périmé.
+La source de la migration est donc `pim.operations` / `operation_items`, pas
+le miroir : chaque opération du PIM est écrite au commerce (valeurs du PIM),
+puis restreinte par la surcharge existante (même calcul que
+`effective-operation.ts` : `LEAST` des fenêtres, sélection moins
+`hidden_skus`, intersection des audiences). Une clé présente au miroir et
+absente du PIM est listée, pas inventée. **Un aperçu rendu avant d'écrire**
+(route admin, comme le pré-remplissage du prix pro) compare champ par champ
+PIM, miroir et résultat, opération par opération ; un écart inexpliqué
+bloque. Le même relevé est rendu après, en production — un e2e ne prouve rien
+d'une migration qui ne joue qu'une fois.
+
+**L'image : partir de ce qui existe** (BLOQUANT). Le commerce est **déjà**
+porteur d'images (`CatalogCopyMediaCarriers`, `appBootstrap/catalog-copy-media-carriers.ts`,
+branché dans `CompositeMediaCarriers`, `media-carriers.module.ts:52-58`), et
+son `repoint()` rend 0 parce que le PIM réannonce l'image par
+`pim.operation_image_changed`. À la bascule : ce porteur devient celui de
+l'opération du commerce, son `repoint()` **écrit l'agrégat** (charger, muter,
+sauver — §3.1), son lien pointe l'écran du commerce ; `PrismaMediaCarriers`
+cesse de compter et de repointer `pim.operation`
+(`prisma-media-carriers.ts:54,100-124,161`) — sinon les images resteraient
+« employées » par une table morte ; le suivi du point focal suit l'opération
+comme `RefocusStorefrontOnMediaDescribed` suit la vitrine, si l'image d'une
+opération porte un point focal (à vérifier au lot 2).
+
+**Ce que devient chaque champ de la surcharge** (SÉRIEUX) :
+
+| Surcharge                          | Devient                                                                                                                                                                                                | Réversible           |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------- |
+| `isHidden`                         | un champ `hidden` de l'opération (pas l'archivage, qui est un retrait daté)                                                                                                                            | oui                  |
+| `orderUntil` (« fermer plus tôt ») | la fenêtre de commande elle-même ; l'invariant « le commerce ne peut que restreindre » disparaît — **voulu** : il n'y a plus qu'un décideur                                                            | —                    |
+| `audience` (restreindre)           | l'audience ; une intersection **vide** (`none`, `operation-audience.ts:19,53`) donne une opération **masquée** (`hidden = true`), audience laissée à celle du PIM — rien n'est vendu, rien n'est perdu | oui                  |
+| `hiddenSkus`                       | la sélection, sans ces articles                                                                                                                                                                        | oui (on les rajoute) |
+| `decidedBy` / `decidedAt`          | un fait de journal par opération restreinte, écrit à la migration, qui dit qui avait restreint quoi                                                                                                    | —                    |
+
+`received_at` garde son sens (dernière réception, puis date de la
+migration) ; `withdrawn_at` devient l'archivage (même sens : retirée).
+Aucune colonne n'est supprimée ni renommée.
+
+**Le droit** : `lfc_operations` (Q2, tranché) — ressource ajoutée par la
+migration, accordée à l'écran, jamais par migration.
+
+**Ce qui sort du PIM au lot 4**, nommé : `src/pim/operations/**`,
+`operation-projection.ts` et son appel dans `feed-projection.service.ts` et
+`canonical-projection.ts`, `operation-image-changed.fact.ts` et son abonné,
+`on-media-asset-described.ts` des opérations, la branche `pim.operation` de
+`PrismaMediaCarriers`, les entrées `operation.*` de `pim-journal.ts` (les
+faits passés restent lisibles), `b2b-platform.module.ts`. Tables gardées.
+
+**Les dates** : l'agrégat du commerce reprend la saisie au fuseau de Paris
+(`localToInstant`), `pickup_*` en jours, `order_until` en instant ;
+`lint:business-day` couvre son dossier.
+
 ## 3. Lots
 
 | Lot | Contenu                                                                                                                                   |
