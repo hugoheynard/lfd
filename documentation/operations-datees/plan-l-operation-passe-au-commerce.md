@@ -168,6 +168,19 @@ faits passés restent lisibles), `b2b-platform.module.ts`. Tables gardées.
 (`localToInstant`), `pickup_*` en jours, `order_until` en instant ;
 `lint:business-day` couvre son dossier.
 
+**Une opération sans article (Hugo, 2026-10-15)** : elle n'est **pas**
+interdite — une opération est forcément vide pendant qu'on la prépare.
+Deux conséquences, au lieu d'un refus :
+
+- **l'écran le signale** : tant que la sélection est vide (ou qu'aucun de ses
+  articles ne se vend), l'opération porte « vide — rien ne s'affichera en
+  boutique », bien visible, surtout si sa fenêtre d'annonce est ouverte ;
+- **la boutique ne montre pas un rayon vide** : une opération dont aucun
+  article n'est servi au lecteur n'a ni rayon ni annonce. À vérifier au lot 3
+  dans la lecture de la vitrine (`storefront-catalog-operations.ts`,
+  `operationShelvesOf`) — si elle montre déjà un rayon vide, c'est là qu'on
+  corrige, pas dans l'agrégat.
+
 ## 3. Lots
 
 | Lot | Contenu                                                                                                                                   |
