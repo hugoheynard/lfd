@@ -192,6 +192,17 @@ template (titre, description, `[pageActions]`, rythme via `gap`). Exception : le
 pages **publiques hors-shell** (ex. `login`), rendues bare dans la branche
 non-authentifiée d'`app.html`.
 
+⚠️ **Seconde exception, écrite le 2026-10-15** — elle existait sans être dite.
+Les pages **du shell client** (`ClientShell` : boutique, mes commandes, mon
+compte, mon profil, ma fidélité, annulation sans compte, `/cgv`) n'utilisent
+**pas** `fold-page-layout` : leur titre vit dans le **bandeau** du shell, que
+l'écran déclare par `<ng-template clientBanner>` (`client/nav/client-banner.ts`,
+le plus souvent avec `app-client-banner-block`), et leur corps dans
+`<div class="page">`. Vérifié le 2026-10-15 : aucune des sept n'a
+`fold-page-layout` (les deux occurrences trouvées sont des commentaires qui le
+disent, `fidelite-page.html`, `profile-page.html`). Une page neuve du shell
+client suit ses voisines ; une page hors de ce shell suit la règle ci-dessus.
+
 ## Shell
 
 - Rail primaire **toujours étendu et non-collapsible** (pas de `collapsible`,
