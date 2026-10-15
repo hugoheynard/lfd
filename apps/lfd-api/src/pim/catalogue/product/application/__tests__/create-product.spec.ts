@@ -24,6 +24,7 @@ import {
   CreateProductHandler,
   type CreateProductInput,
 } from "../create-product.js";
+import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
 
 const NO_CHANNELS: SalesChannels = [];
 
@@ -175,6 +176,7 @@ function setup(taken: readonly string[] = []): {
       new DirectUnitOfWork(),
       new RealIds(),
       availability,
+      new RecordingCatalogEmitter(),
     ),
   };
 }

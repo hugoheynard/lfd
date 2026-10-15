@@ -137,6 +137,11 @@ const RUNTIME_KEYS = [
   // et RIEN ne le dirait — c'est le mode de panne que ce test existe pour
   // fermer.
   "B2B_DELIVERY_INBOX",
+  // Les faits du catalogue (lot 2a du catalogue synchronisé) : chaque écriture
+  // d'une fiche part vers la plateforme, et le push cesse d'écrire les
+  // articles. FERMÉS par défaut — les rails se déploient sans rien changer de
+  // servi. Elle traverse pour la même raison que les deux précédentes.
+  "CATALOG_FACTS_ENABLED",
   // 🔴 La clé du coffre de champs, qui scelle les IBAN de nos clients au repos.
   //
   // Sans elle dans cette liste, le container ne la recevrait JAMAIS — et comme

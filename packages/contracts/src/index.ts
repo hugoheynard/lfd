@@ -960,6 +960,7 @@ export {
 } from "./catalog-admin.js";
 export type {
   CatalogAdminItemView,
+  CatalogItemAudience,
   CatalogAllergenView,
   SetB2bPricePayload,
   SetPublicPricePayload,

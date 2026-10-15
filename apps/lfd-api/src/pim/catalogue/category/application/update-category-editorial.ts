@@ -15,6 +15,7 @@ import {
   type CategoryEditorialInput,
 } from "../domain/value-objects/category-editorial.js";
 import { requireCategory } from "./category-support.js";
+import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
 
 export class UpdateCategoryEditorialCommand {
   constructor(
@@ -38,6 +39,7 @@ export class UpdateCategoryEditorialHandler implements ICommandHandler<
     private readonly readers: CategoryEditorialReader,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
+    private readonly emitter: CatalogEmitter,
   ) {}
 
   async execute(command: UpdateCategoryEditorialCommand): Promise<void> {
@@ -60,6 +62,7 @@ export class UpdateCategoryEditorialHandler implements ICommandHandler<
             })
           : this.journal.untraced("section enregistrée sans modification");
       await this.editorials.saveTexts(command.id, after, ticket);
+      await this.emitter.emitCategories([command.id]);
     });
   }
 }

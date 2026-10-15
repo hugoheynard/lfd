@@ -8,6 +8,7 @@ import { CategoryEditorialReader } from "../domain/ports/category-editorial-read
 import { CategoryEditorialRepository } from "../domain/ports/category-editorial.repository.js";
 import { CategoryRepository } from "../domain/ports/category.repository.js";
 import { requireCategory } from "./category-support.js";
+import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
 
 export class SetCategoryMediaCommand {
   constructor(
@@ -36,6 +37,7 @@ export class SetCategoryMediaHandler implements ICommandHandler<SetCategoryMedia
     private readonly readers: CategoryEditorialReader,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
+    private readonly emitter: CatalogEmitter,
   ) {}
 
   async execute(command: SetCategoryMediaCommand): Promise<void> {
@@ -58,6 +60,7 @@ export class SetCategoryMediaHandler implements ICommandHandler<SetCategoryMedia
             })
           : this.journal.untraced("section enregistrée sans modification");
       await this.editorials.replaceMedia(command.id, after, ticket);
+      await this.emitter.emitCategories([command.id]);
     });
   }
 }

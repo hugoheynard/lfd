@@ -11,6 +11,7 @@ import {
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { ReadinessRepository } from "../domain/ports/readiness.repository.js";
 import { requireProduct } from "./product-support.js";
+import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
 
 export class DeclareProductReadyCommand {
   constructor(readonly id: string) {}
@@ -40,6 +41,7 @@ export class DeclareProductReadyHandler implements ICommandHandler<
     private readonly journal: PimJournal,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
+    private readonly emitter: CatalogEmitter,
   ) {}
 
   async execute(command: DeclareProductReadyCommand): Promise<void> {
@@ -72,6 +74,7 @@ export class DeclareProductReadyHandler implements ICommandHandler<
         readyAt: new Date(this.clock.now()),
         readyBy: actor,
       });
+      await this.emitter.emitProducts([command.id]);
     });
   }
 }

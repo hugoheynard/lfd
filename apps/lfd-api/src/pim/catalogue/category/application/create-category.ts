@@ -12,6 +12,7 @@ import {
   type LocalizedText,
 } from "../../shared/domain/value-objects/localized-text.js";
 import { assertSlugFree, requireCategory } from "./category-support.js";
+import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
 
 export interface CreateCategoryPayload {
   /** Le nom, dans les langues renseignées — la source est obligatoire. Une
@@ -32,6 +33,7 @@ export class CreateCategoryHandler implements ICommandHandler<CreateCategoryComm
     @Inject(UuidGenerator) private readonly ids: UuidGenerator,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
+    private readonly emitter: CatalogEmitter,
   ) {}
 
   /**
@@ -74,6 +76,7 @@ export class CreateCategoryHandler implements ICommandHandler<CreateCategoryComm
         },
       });
       await this.categories.add(category, ticket);
+      await this.emitter.emitCategories([category.id]);
     });
     return category.id;
   }

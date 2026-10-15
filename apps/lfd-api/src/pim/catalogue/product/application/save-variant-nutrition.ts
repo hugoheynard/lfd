@@ -11,6 +11,7 @@ import {
   type NutritionValues,
 } from "../domain/value-objects/nutrition-declaration.js";
 import { namedVariant, requireProduct } from "./product-support.js";
+import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
 
 /** Ce que la section « Nutrition » envoie — les valeurs pour 100 g. */
 export type SaveVariantNutritionInput = NutritionValues;
@@ -41,6 +42,7 @@ export class SaveVariantNutritionHandler implements ICommandHandler<
     private readonly values: NutritionValuesRepository,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
+    private readonly emitter: CatalogEmitter,
   ) {}
 
   async execute(command: SaveVariantNutritionCommand): Promise<void> {
@@ -77,6 +79,7 @@ export class SaveVariantNutritionHandler implements ICommandHandler<
             })
           : this.journal.untraced("section enregistrée sans modification");
       await this.values.save(variantId, declared, ticket);
+      await this.emitter.emitProducts([productId]);
     });
   }
 }

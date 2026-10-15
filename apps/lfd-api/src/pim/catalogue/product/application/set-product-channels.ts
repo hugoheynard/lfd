@@ -16,6 +16,7 @@ import { channelNamer, vatChangePayload } from "../../shared/application/journal
 import type { Product } from "../domain/entities/product.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { requireProduct } from "./product-support.js";
+import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
 
 export class SetProductChannelsCommand {
   constructor(
@@ -48,6 +49,7 @@ export class SetProductChannelsHandler implements ICommandHandler<SetProductChan
     private readonly rates: VatRateRepository,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
+    private readonly emitter: CatalogEmitter,
   ) {}
 
   async execute(command: SetProductChannelsCommand): Promise<void> {
@@ -64,6 +66,7 @@ export class SetProductChannelsHandler implements ICommandHandler<SetProductChan
       const channelsTicket = await this.journalize(product, before);
       const vatTicket = await this.journalizeErasedVat(product, vatBefore);
       await this.products.save(product, vatTicket ?? channelsTicket);
+      await this.emitter.emitProducts([command.id]);
     });
   }
 

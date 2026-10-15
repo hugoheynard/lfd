@@ -3,12 +3,16 @@ import { RecordingJournal } from "../../../../journal/__tests__/recording-journa
 import { ArchivedProductNotWithdrawableError } from "../../domain/errors/product-errors.js";
 import { DeactivateProductCommand, DeactivateProductHandler } from "../deactivate-product.js";
 import { OneProduct, PRODUCT_ID, tarte } from "./audience-doubles.js";
+import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
 
 /** **Désactiver** — l'ancien « dépublier », repris de la suite d'avant. */
 function deactivating(products: OneProduct, journal: RecordingJournal): Promise<void> {
-  return new DeactivateProductHandler(products, journal, new DirectUnitOfWork()).execute(
-    new DeactivateProductCommand(PRODUCT_ID),
-  );
+  return new DeactivateProductHandler(
+    products,
+    journal,
+    new DirectUnitOfWork(),
+    new RecordingCatalogEmitter(),
+  ).execute(new DeactivateProductCommand(PRODUCT_ID));
 }
 
 describe("DeactivateProductHandler", () => {

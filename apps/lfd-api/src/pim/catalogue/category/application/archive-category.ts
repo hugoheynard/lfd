@@ -9,6 +9,7 @@ import {
 import { CategoryRepository } from "../domain/ports/category.repository.js";
 import { ProductCountReader } from "../domain/ports/product-count.reader.js";
 import { requireCategory } from "./category-support.js";
+import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
 
 export class ArchiveCategoryCommand {
   constructor(readonly id: string) {}
@@ -21,6 +22,7 @@ export class ArchiveCategoryHandler implements ICommandHandler<ArchiveCategoryCo
     private readonly products: ProductCountReader,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
+    private readonly emitter: CatalogEmitter,
   ) {}
 
   /**
@@ -57,6 +59,7 @@ export class ArchiveCategoryHandler implements ICommandHandler<ArchiveCategoryCo
         payload: { subjectLabel: category.name.fr, name: category.name },
       });
       await this.categories.save(category, ticket);
+      await this.emitter.emitCategories([command.id]);
     });
   }
 }

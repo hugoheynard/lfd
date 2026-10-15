@@ -283,6 +283,33 @@ Découpé en deux, parce que 2a se déploie sans rien changer de servi :
 
 **2a — les rails, interrupteur fermé**
 
+> ✅ **Bâti le 2026-10-15, non commité à l'écriture de ce bandeau.** Écarts au
+> texte, tous à relire :
+>
+> - **le taux `b2b` est exigé de toute déclinaison vendable**, audience
+>   `public` comprise : `catalog_items.price_millicents` (prix pro HT) est
+>   `NOT NULL` et ne se calcule pas sans lui. Une fiche « public » sans taux
+>   `b2b` reste dans `gaps` (`vat:b2b`) — l'activation du lot 1, elle,
+>   l'accepte ;
+> - **les limites de commande** ne sont pas réécrites par un fait sur un
+>   article existant (règles globales, lot 4) ; un article NEUF reçu par un
+>   fait naît sans limite tant que le lot 4 n'est pas bâti ;
+> - **une famille archivée** n'est pas marquée côté plateforme :
+>   `catalog_categories` n'a pas de colonne de retrait, et aucune migration du
+>   lot ne l'ajoute ; l'audience de la famille n'y est pas rangée non plus ;
+> - `set-ingredient-allergens` n'émet pas : la projection ne lit pas les
+>   allergènes d'un ingrédient (vérifié le 2026-10-15) ; les créations de taux,
+>   de contexte et d'entrée d'allergène non plus (rien ne les cite encore) ;
+> - les gestes « plusieurs fiches » hors famille (taux, contextes, référentiel
+>   d'allergènes, réglages comptables) réémettent **tout** le catalogue, une
+>   transaction par fiche, après la transaction du geste — « les fiches
+>   concernées » reste à affiner (lot 4, mesure du délai) ;
+> - la réémission « plusieurs fiches » est **attendue** par la requête du
+>   geste (pas une tâche détachée) ; une fiche en échec est journalisée et
+>   n'échoue pas le geste ;
+> - `CATALOG_FACTS_ENABLED` traverse le Worker (`container/worker.ts`) et le
+>   workflow de déploiement, sinon la poser ne l'ouvrirait pas.
+
 | #   | Quoi                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2a1 | **Le fait** `pim.catalog_product_changed` dans `pim/channels/b2b-platform/products/` : snapshot d'une fiche = ce que `projectCatalog` produit pour elle, plus `status`, `audience` effective, `gaps`, `seq`. Une déclinaison incomplète (sans prix, sans taux, **ou sans allergènes déclarés**) part dans `gaps`, pas dans les vendables. Même chose pour la famille : `pim.catalog_category_changed`.                                                                                                                                                                                       |
@@ -335,6 +362,27 @@ ci-dessus :**
 - « Réémettre » est un `@PublicationGesture()` : impossible tant que
   `PIM_PUBLICATION_ENABLED` est fermé, et c'est voulu.
 - Tests ajoutés : fiche reçue avant sa famille ; même fait livré deux fois.
+
+**Ce que 2a a appris, et qui devient un préalable de 2b (2026-10-15) :**
+
+- **Le taux `b2b` est exigé pour toute fiche, même `public`.** Le prix pro HT
+  (`catalog_items.price_millicents`) est `NOT NULL` et se calcule avec ce taux :
+  une fiche public-seulement sans taux `b2b` part en `gaps` et n'est jamais
+  vendue. 2b aligne l'activation du lot 1 sur cette règle (activer exige le
+  taux `b2b` quelle que soit l'audience) — sans quoi on activerait une fiche
+  que la plateforme refuse en silence.
+- **Les limites de commande passent avant l'ouverture.** Un article neuf reçu
+  par un fait naît sans limite (le récepteur ne les écrit pas). Le fait global
+  `pim.catalog_rules_changed` (C3) remonte donc du lot 4 au lot 2b.
+- **La famille sur la plateforme ne range encore ni son retrait ni son
+  audience** : le fait les porte, `catalog_categories` n'a pas les colonnes. 2b
+  les ajoute (additif).
+- Les gestes multi-fiches (taux, contextes, allergènes, rapport pro) réémettent
+  **tout** le catalogue, dans la requête du geste : correct, plus lent qu'il
+  ne faut. À mesurer à l'ouverture ; resserrer aux fiches concernées si la
+  réponse dépasse quelques secondes.
+- Les faits ignorent la matrice des canaux (`canal_ferme`) : c'est l'audience
+  qui décide, comme prévu (C2, C5).
 
 **2b — la bascule**, une fois 2a en service et l'aperçu de bascule relu par Hugo
 

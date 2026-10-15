@@ -9,6 +9,7 @@ import {
 } from "../../shared/domain/value-objects/localized-text.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { requireProduct } from "./product-support.js";
+import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
 
 export class RenameProductVariantCommand {
   constructor(
@@ -43,6 +44,7 @@ export class RenameProductVariantHandler implements ICommandHandler<
     private readonly products: ProductRepository,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
+    private readonly emitter: CatalogEmitter,
   ) {}
 
   async execute(command: RenameProductVariantCommand): Promise<void> {
@@ -74,6 +76,7 @@ export class RenameProductVariantHandler implements ICommandHandler<
             })
           : this.journal.untraced("déclinaison renommée sans modification");
       await this.products.save(product, ticket);
+      await this.emitter.emitProducts([productId]);
     });
   }
 }

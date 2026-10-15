@@ -11,6 +11,7 @@ import { ProductRepository } from "../domain/ports/product.repository.js";
 import { mediaItems, type MediaInput } from "../domain/value-objects/editorial.js";
 import { announceProductMedia } from "./product-media-announcement.js";
 import { requireProduct } from "./product-support.js";
+import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
 
 export class SetProductMediaCommand {
   constructor(
@@ -42,6 +43,7 @@ export class SetProductMediaHandler implements ICommandHandler<SetProductMediaCo
     private readonly durable: DurablePublisher,
     private readonly ids: UuidGenerator,
     private readonly uow: UnitOfWork,
+    private readonly emitter: CatalogEmitter,
   ) {}
 
   async execute(command: SetProductMediaCommand): Promise<void> {
@@ -65,6 +67,7 @@ export class SetProductMediaHandler implements ICommandHandler<SetProductMediaCo
           : this.journal.untraced("section enregistrée sans modification");
       await this.editorials.replaceMedia(command.id, after, ticket);
       await this.announce(command.id);
+      await this.emitter.emitProducts([command.id]);
     });
   }
 

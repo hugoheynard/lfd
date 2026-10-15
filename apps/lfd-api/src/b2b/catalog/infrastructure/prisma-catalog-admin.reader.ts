@@ -11,6 +11,7 @@ import { PUBLIC_SALES_CONTEXT } from "../domain/public-context.js";
 import { publicByContextOf } from "./public-by-context.js";
 import { STILL_SOLD } from "./sellable-filter.js";
 import { CatalogAdminReader } from "../domain/ports/catalog-admin.reader.js";
+import { catalogAudienceOf } from "../domain/served-to.js";
 
 /** La ligne rendue par Prisma, famille et décision jointes. */
 interface AdminRow {
@@ -24,6 +25,7 @@ interface AdminRow {
   readonly allergens: unknown;
   readonly allergenLabels: unknown;
   readonly operationOnly: boolean;
+  readonly audience: string | null;
   readonly receivedAt: Date;
   // Le taux de la FAMILLE n'y figure plus : plus rien ici ne le lit. Le laisser
   // dans la forme suffirait à ce qu'un jour quelqu'un le relise « puisqu'il est
@@ -124,6 +126,7 @@ function toView(row: AdminRow, authors: StaffAuthors): CatalogAdminItemView {
     ...allergensOf(row.allergens, row.allergenLabels),
     isHidden: row.override?.isHidden ?? false,
     isHiddenPublic: row.override?.isHiddenPublic ?? false,
+    audience: catalogAudienceOf(row.audience),
     isFeatured: row.override?.isFeatured ?? false,
     operationOnly: row.operationOnly,
     decidedBy: row.override?.decidedBy ?? null,

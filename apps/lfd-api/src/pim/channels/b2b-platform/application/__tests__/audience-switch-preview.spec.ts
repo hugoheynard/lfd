@@ -8,7 +8,10 @@ import {
 import type { ProductRecord } from "../../../../catalogue/product/domain/ports/product.repository.js";
 import type { ProductEditorialView } from "../../../../catalogue/product/domain/ports/editorial-reader.js";
 import type { SalesChannels } from "../../../../catalogue/shared/domain/value-objects/sales-channels.js";
-import { tarte } from "../../../../catalogue/product/application/__tests__/audience-doubles.js";
+import {
+  bareVariant,
+  tarte,
+} from "../../../../catalogue/product/application/__tests__/audience-doubles.js";
 import { B2bMembershipService } from "../../membership/membership.service.js";
 import { GetAudienceSwitchPreviewHandler } from "../audience-switch-preview.js";
 
@@ -107,7 +110,43 @@ describe("GetAudienceSwitchPreviewHandler", () => {
         { id: "p_archived_bound", sku: "C-2", name: "Fiche C-2" },
       ],
       publishedB2bClosed: [{ id: "p_closed", sku: "D-1", name: "Fiche D-1" }],
+      soldWithoutAllergens: [],
     });
+  });
+
+  /**
+   * Corrections après `vitruve` (lot 2a) : une déclinaison vendue sans
+   * déclaration sortira de la vente à la bascule, et la liste le dit avant.
+   * Une déclinaison sans prix ou arrêtée n'est pas vendue : elle n'y est pas.
+   */
+  it("liste les déclinaisons vendues aux pros sans déclaration d'allergènes", async () => {
+    const undeclared = bareVariant({ id: "v_nu", sku: "F-1-1", priceCents: 300 });
+    const unpriced = bareVariant({ id: "v_sans_prix", sku: "F-1-2", isDefault: false });
+    const stopped = bareVariant({
+      id: "v_arrete",
+      sku: "F-1-3",
+      priceCents: 300,
+      isDefault: false,
+      isDiscontinued: true,
+    });
+    const sold = tarte({
+      id: "p_sold",
+      sku: "F-1",
+      status: "published",
+      variants: [undeclared, unpriced, stopped],
+    });
+    const unbound = tarte({
+      id: "p_unbound",
+      sku: "G-1",
+      status: "published",
+      variants: [undeclared],
+    });
+
+    const result = await preview([sold, unbound], new Map([["p_sold", SOLD_B2B]]), ["p_sold"]);
+
+    expect(result.soldWithoutAllergens).toEqual([
+      { productId: "p_sold", productSku: "F-1", variantSku: "F-1-1", name: "Tarte au citron" },
+    ]);
   });
 
   /** Une fiche peut cumuler deux écarts : chaque liste répond à sa question. */

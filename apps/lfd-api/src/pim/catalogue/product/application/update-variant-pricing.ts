@@ -7,6 +7,7 @@ import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import type { VariantPricing } from "../domain/entities/variant.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { namedVariant, requireProduct } from "./product-support.js";
+import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
 
 /**
  * Ce que la section « Tarif & TVA » envoie. L'assiette voyage AVEC le prix :
@@ -37,6 +38,7 @@ export class UpdateVariantPricingHandler implements ICommandHandler<
     private readonly products: ProductRepository,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
+    private readonly emitter: CatalogEmitter,
   ) {}
 
   async execute(command: UpdateVariantPricingCommand): Promise<void> {
@@ -64,6 +66,7 @@ export class UpdateVariantPricingHandler implements ICommandHandler<
             })
           : this.journal.untraced("section enregistrée sans modification");
       await this.products.save(product, ticket);
+      await this.emitter.emitProducts([productId]);
     });
   }
 }

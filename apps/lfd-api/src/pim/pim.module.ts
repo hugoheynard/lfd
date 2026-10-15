@@ -5,6 +5,7 @@ import { AccountingRulesModule } from "./accounting-rules/accounting-rules.modul
 import { AllergensModule } from "./allergens/allergens.module.js";
 import { CatalogueModule } from "./catalogue/catalogue.module.js";
 import { B2bPlatformModule } from "./channels/b2b-platform/b2b-platform.module.js";
+import { CatalogFactsModule } from "./channels/b2b-platform/catalog-facts.module.js";
 import { IngredientsModule } from "./ingredients/ingredients.module.js";
 import { OperationsModule } from "./operations/operations.module.js";
 import { OrderTimeLimitationModule } from "./order-time-limitation/order-time-limitation.module.js";
@@ -48,6 +49,7 @@ import { SalesContextsModule } from "./sales-contexts/sales-contexts.module.js";
     OperationsModule,
     PublicationModule,
     B2bPlatformModule,
+    CatalogFactsModule,
     // La hiérarchie de routes du référentiel, déclarée ici plutôt qu'à la
     // racine : c'est la disposition **interne** du PIM, et la racine n'a pas à
     // connaître le nom de ses canaux. Le préfixe `pim` isole le contexte dans

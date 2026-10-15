@@ -4,6 +4,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { requireProduct } from "./product-support.js";
+import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
 
 export class RestoreProductCommand {
   constructor(readonly id: string) {}
@@ -16,6 +17,7 @@ export class RestoreProductHandler implements ICommandHandler<RestoreProductComm
     private readonly products: ProductRepository,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
+    private readonly emitter: CatalogEmitter,
   ) {}
 
   async execute(command: RestoreProductCommand): Promise<void> {
@@ -37,6 +39,7 @@ export class RestoreProductHandler implements ICommandHandler<RestoreProductComm
         payload: { subjectLabel: name.fr, sku, name },
       });
       await this.products.save(product, ticket);
+      await this.emitter.emitProducts([command.id]);
     });
   }
 }

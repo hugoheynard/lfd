@@ -10,6 +10,7 @@ import {
   type ShopAudience,
 } from "../domain/ports/catalog.reader.js";
 import { PUBLIC_SALES_CONTEXT } from "../domain/public-context.js";
+import { catalogAudienceOf, servedTo } from "../domain/served-to.js";
 import { publicByContextOf } from "./public-by-context.js";
 import { STILL_SOLD } from "./sellable-filter.js";
 
@@ -53,6 +54,8 @@ interface ItemRow {
   readonly orderLimitDaysBefore: number | null;
   readonly orderLimitTime: string | null;
   readonly orderLimitGraceMinutes: number | null;
+  /** À qui l'article se vend — `NULL` lu `both` (cf. `servedTo`). */
+  readonly audience: string | null;
   // Le taux de la FAMILLE n'y figure plus : plus rien ici ne le lit. Le laisser
   // dans la forme suffirait à ce qu'un jour quelqu'un le relise « puisqu'il est
   // là ».
@@ -90,7 +93,7 @@ export class PrismaCatalogReader extends CatalogReader {
       where: { sku, ...STILL_SOLD },
       include: { category: true, override: true },
     });
-    if (row === null || hiddenFrom(row, "pro")) {
+    if (row === null || !servedToViewer(row, "pro")) {
       return null;
     }
     const served = servedPriceOf(row, "pro");
@@ -106,7 +109,7 @@ export class PrismaCatalogReader extends CatalogReader {
       where: { productSku, isDefault: true, ...STILL_SOLD },
       include: { category: true, override: true },
     });
-    if (row === null || hiddenFrom(row, audience)) {
+    if (row === null || !servedToViewer(row, audience)) {
       return null;
     }
     const served = servedPriceOf(row, audience);
@@ -128,7 +131,7 @@ export class PrismaCatalogReader extends CatalogReader {
     const lineage = await this.lineage(rows);
     for (const row of rows) {
       const served = servedPriceOf(row, audience);
-      if (hiddenFrom(row, audience) || served === null) {
+      if (!servedToViewer(row, audience) || served === null) {
         continue;
       }
       resolved.set(row.productSku, resolve(row, served, lineage));
@@ -143,19 +146,9 @@ export class PrismaCatalogReader extends CatalogReader {
         // Deux conditions indépendantes, donc un `AND` explicite : deux clés
         // `OR` dans le même objet se seraient écrasées en silence.
         AND: [
-          // 🔴 **Le masquage de CETTE audience.** La condition lisait `isHidden`
-          // quel que soit le demandeur, donc masquer un article le retirait des
-          // deux boutiques — le défaut que ce lot ferme (2026-09-21).
-          {
-            OR: [
-              { override: null },
-              audience === "pro"
-                ? { override: { isHidden: false } }
-                : {
-                    override: { isHiddenPublic: false },
-                  },
-            ],
-          },
+          // Le masquage et l'audience se jugent APRÈS la lecture, par `servedTo`
+          // — la règle unique que les autres lectures appellent aussi. Les
+          // écrire ici en SQL en ferait une seconde copie.
           // Le mur : sans taux de TVA, on ne sait pas facturer. L'article reste
           // au catalogue et se voit dans le paramétrage ; il ne se vend pas.
           //
@@ -178,6 +171,9 @@ export class PrismaCatalogReader extends CatalogReader {
     });
     const lineage = await this.lineage(rows);
     return rows.flatMap((row) => {
+      if (!servedToViewer(row, audience)) {
+        return [];
+      }
       const served = servedPriceOf(row, audience);
       return served === null ? [] : [resolve(row, served, lineage)];
     });
@@ -222,24 +218,25 @@ export class PrismaCatalogReader extends CatalogReader {
 type Lineage = (familyId: string) => readonly string[];
 
 /**
- * **L'article est-il masqué POUR CETTE AUDIENCE ?**
+ * **L'article est-il servi à ce lecteur ?** — `servedTo`, la règle du domaine,
+ * appliquée à une ligne lue.
  *
  * 🔴 **Quatre sites posaient cette question, et aucun ne la posait ainsi.** Ils
  * lisaient `isHidden` quel que soit le demandeur — le rayon, la fiche, le lot de
  * SKU, la commande. Rendre le seul `listSellable` conscient de l'audience aurait
- * fait diverger le rayon et la caisse : un article masqué au pro se serait
- * affiché au public et aurait échoué au panier ; un article masqué au public
- * serait resté achetable. Deux bugs de vente, dans les deux sens (relevé par
- * `vitruve` le 2026-09-21, avant qu'une ligne soit écrite).
- *
- * Elle est donc UNE fonction, et les quatre l'appellent.
+ * fait diverger le rayon et la caisse (relevé par `vitruve` le 2026-09-21). Ils
+ * l'appellent donc tous, et depuis le lot 2a elle lit aussi l'audience de
+ * l'article : un article `public` n'est ni montré ni vendu à un pro.
  */
-function hiddenFrom(row: ItemRow, audience: ShopAudience): boolean {
-  const override = row.override;
-  if (override === null || override === undefined) {
-    return false;
-  }
-  return audience === "pro" ? override.isHidden : override.isHiddenPublic;
+function servedToViewer(row: ItemRow, viewer: ShopAudience): boolean {
+  return servedTo(
+    {
+      audience: catalogAudienceOf(row.audience),
+      isHidden: row.override?.isHidden ?? false,
+      isHiddenPublic: row.override?.isHiddenPublic ?? false,
+    },
+    viewer,
+  );
 }
 
 /** L'entrée du pipeline de prix, et le taux qui l'accompagne. */

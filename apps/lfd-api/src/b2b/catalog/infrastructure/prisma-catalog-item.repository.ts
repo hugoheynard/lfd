@@ -2,13 +2,14 @@ import { Injectable } from "@nestjs/common";
 
 import { Clock } from "../../../platform/time/clock.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
-import { Prisma } from "../../../platform/database/client/client.js";
 import { allergenLabelsOf } from "./allergen-labels.js";
 import { publicByContextOf } from "./public-by-context.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { CatalogItem, type CatalogItemState } from "../domain/entities/catalog-item.js";
 import { CatalogItemRepository } from "../domain/ports/catalog-item.repository.js";
 import { STILL_SOLD } from "./sellable-filter.js";
+import { lastRecordedPrices, priceTraceRows } from "./catalog-price-trace.js";
+import { pimFactsColumns } from "./catalog-item-columns.js";
 
 /** La ligne telle que Prisma la rend, décision jointe. Aucun type `Prisma.*` exporté. */
 interface ItemRow {
@@ -140,7 +141,10 @@ export class PrismaCatalogItemRepository extends CatalogItemRepository {
     const states = items.map((item) => item.toPersistence());
     // Le prix EFFECTIF déjà tracé, par SKU : c'est à lui qu'on compare pour
     // n'écrire une ligne d'historique que sur un vrai changement.
-    const recorded = await this.lastRecordedPrices(states.map((state) => state.facts.sku));
+    const recorded = await lastRecordedPrices(
+      this.prisma,
+      states.map((state) => state.facts.sku),
+    );
     const recordedAt = this.clock.now();
 
     await this.prisma.$transaction(async (tx) => {
@@ -182,62 +186,29 @@ export class PrismaCatalogItemRepository extends CatalogItemRepository {
       // **La trace du tarif, dans la MÊME transaction que le prix.**
       //
       // Ici et non chez les appelants : un push du PIM et une décision du
-      // back-office aboutissent tous deux à `saveMany`, et c'est le seul point
-      // par lequel ils passent. Un port d'écriture séparé aurait laissé écrire
-      // un prix sans sa trace — au premier oubli, à la première branche
-      // d'erreur, au premier chemin de rattrapage.
-      const changes = states.flatMap((state) => {
-        const effective = state.decision?.priceMillicents ?? state.facts.priceMillicents;
-        const rate = state.facts.vatRatePercent;
-        // Inchangé ⇒ aucune ligne. Sans cette garde, un push de quatre-vingt-douze
-        // articles identiques écrirait quatre-vingt-douze lignes à chaque
-        // synchronisation, et l'historique serait illisible en une semaine.
-        //
-        // « Inchangé » porte sur le COUPLE. Ne comparer que le prix laisserait un
-        // changement de taux passer sans trace — et le jour de la bascule d'un
-        // taux légal, l'historique dirait que rien n'a bougé alors que toutes
-        // les factures ont changé.
-        const last = recorded.get(state.facts.sku);
-        if (last?.priceMillicents === effective && last.vatRatePercent === rate) {
-          return [];
-        }
-        return [
-          {
-            id: this.ids.next(),
-            sku: state.facts.sku,
-            productSku: state.facts.productSku,
-            priceMillicents: effective,
-            vatRatePercent: rate,
-            source: state.decision?.priceMillicents === undefined ? "pim" : "b2b",
-            recordedAt,
-          },
-        ];
-      });
+      // back-office aboutissent tous deux à `saveMany`. Le récepteur des faits
+      // du référentiel (lot 2a) est le SECOND écrivain de prix du miroir, et il
+      // trace par la même règle (`priceTraceRows`) — c'est la condition pour
+      // qu'un port d'écriture séparé n'écrive jamais un prix sans sa trace.
+      //
+      // Inchangé ⇒ aucune ligne, et « inchangé » porte sur le COUPLE prix +
+      // taux : le jour de la bascule d'un taux légal, l'historique doit le dire.
+      const changes = priceTraceRows(
+        states.map((state) => ({
+          sku: state.facts.sku,
+          productSku: state.facts.productSku,
+          pimPriceMillicents: state.facts.priceMillicents,
+          decision: state.decision,
+          vatRatePercent: state.facts.vatRatePercent,
+        })),
+        recorded,
+        () => this.ids.next(),
+        recordedAt,
+      );
       if (changes.length > 0) {
         await tx.catalogPriceHistory.createMany({ data: changes });
       }
     });
-  }
-
-  /** Le dernier COUPLE tracé de chaque SKU — la référence du « a-t-il changé ? ». */
-  private async lastRecordedPrices(
-    skus: readonly string[],
-  ): Promise<ReadonlyMap<string, { priceMillicents: number; vatRatePercent: number | null }>> {
-    const rows = await this.prisma.catalogPriceHistory.findMany({
-      where: { sku: { in: [...skus] } },
-      orderBy: [{ sku: "asc" }, { recordedAt: "desc" }],
-      distinct: ["sku"],
-      select: { sku: true, priceMillicents: true, vatRatePercent: true },
-    });
-    return new Map(
-      rows.map((row) => [
-        row.sku,
-        {
-          priceMillicents: row.priceMillicents,
-          vatRatePercent: row.vatRatePercent === null ? null : row.vatRatePercent.toNumber(),
-        },
-      ]),
-    );
   }
 }
 
@@ -342,74 +313,10 @@ function toDomain(row: ItemRow): CatalogItem {
   });
 }
 
-/** Les colonnes de faits — celles qu'un push remplace, et elles seules. */
+/** Les colonnes de faits, et le retrait — celles qu'un push remplace, et elles seules. */
 function factsRow(state: CatalogItemState) {
-  const { facts } = state;
   return {
-    productId: facts.productId,
-    productSku: facts.productSku,
-    name: facts.name,
-    kind: facts.kind,
-    categoryId: facts.categoryId,
-    priceMillicents: facts.priceMillicents,
-    weightGrams: facts.weightGrams,
-    isDefault: facts.isDefault,
-    position: facts.position,
-    vatRatePercent: facts.vatRatePercent,
-    // `?? Prisma.DbNull` : sans ça, `undefined` laisserait la colonne INCHANGÉE
-    // sur un upsert, et un article dont la fiche a été retirée dans le PIM
-    // garderait ses anciens allergènes.
-    allergens: facts.allergens ?? Prisma.DbNull,
-    // Même repli, même raison : `undefined` laisserait la colonne inchangée sur
-    // un upsert, et un article dont la fiche a été retirée dans le PIM garderait
-    // des mentions d'étiquette que plus rien ne déclare.
-    note: facts.note,
-    imageUrl: facts.image?.url ?? null,
-    imageAlt: facts.image?.alt ?? null,
-    imageWidth: facts.image?.width ?? null,
-    imageHeight: facts.image?.height ?? null,
-    imageFocalX: facts.image?.focal?.x ?? null,
-    imageFocalY: facts.image?.focal?.y ?? null,
-    // `?? null` et non `undefined` : sur un upsert, `undefined` laisserait la
-    // colonne INCHANGÉE, et un article dont la fiche a perdu sa vignette
-    // garderait celle d'avant. Même repli, même raison que les allergènes.
-    thumbnailUrl: facts.thumbnail?.url ?? null,
-    thumbnailAlt: facts.thumbnail?.alt ?? null,
-    thumbnailWidth: facts.thumbnail?.width ?? null,
-    thumbnailHeight: facts.thumbnail?.height ?? null,
-    thumbnailFocalX: facts.thumbnail?.focal?.x ?? null,
-    thumbnailFocalY: facts.thumbnail?.focal?.y ?? null,
-    orderLimitDaysBefore: facts.orderTimeLimit?.daysBefore ?? null,
-    orderLimitTime: facts.orderTimeLimit?.time ?? null,
-    orderLimitGraceMinutes: facts.orderTimeLimit?.graceMinutes ?? null,
-    publicTtcCents: facts.publicTtcCents,
-    // `DbNull` et non `JsonNull` : c'est l'ABSENCE de la donnée, pas un `null`
-    // JSON stocké — la même distinction que pour les mentions d'étiquette.
-    publicByContext:
-      facts.publicByContext === null
-        ? Prisma.DbNull
-        : Object.fromEntries(
-            // Recopié champ par champ plutôt qu'étalé : le document écrit doit
-            // être exactement celui que le mapper de lecture sait relire, et
-            // un objet du domaine porte des `readonly` que l'ORM refuse.
-            Object.entries(facts.publicByContext).map(([key, price]) => [
-              key,
-              { vatRatePercent: price.vatRatePercent, htMillicents: price.htMillicents },
-            ]),
-          ),
-    allergenLabels:
-      facts.allergenLabels === null
-        ? Prisma.DbNull
-        : {
-            labels: facts.allergenLabels.labels.map((entry) => ({
-              category: entry.category,
-              label: entry.label,
-            })),
-            incomplete: facts.allergenLabels.incomplete,
-          },
-    operationOnly: facts.operationOnly,
-    requiresCold: facts.requiresCold,
-    receivedAt: facts.receivedAt,
+    ...pimFactsColumns(state.facts),
     // 🔴 Écrit à CHAQUE upsert, et c'est ce qui remet en rayon un article qui
     // revient. Le miroir ne rend plus les retirés, donc un SKU réintroduit
     // repasse par `CatalogItem.receive`, dont le retrait est `null` : la colonne

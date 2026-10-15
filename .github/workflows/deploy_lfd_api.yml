@@ -260,6 +260,11 @@ jobs:
           # ouverte sans lui, le catalogue B2B se fige sur son état courant, en
           # silence.
           B2B_DELIVERY_INBOX: ${{ vars.B2B_DELIVERY_INBOX }}
+          # Les faits du catalogue (lot 2a, `plan-catalogue-synchronise-par-audience.md`).
+          # FERMÉS par défaut : sans cette Variable, aucune fiche ne part en
+          # fait et le push reste le seul écrivain des articles. L'ouvrir est
+          # le geste 2b4 de la bascule — lu au démarrage, donc un redéploiement.
+          CATALOG_FACTS_ENABLED: ${{ vars.CATALOG_FACTS_ENABLED }}
           # 🔴 La clé du coffre de champs — elle scelle les IBAN de nos clients au
           # repos (AES-256-GCM, 32 octets en base64).
           #
@@ -313,7 +318,7 @@ jobs:
                       CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_ANALYTICS_TOKEN \
                       VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY VAPID_SUBJECT \
                       RECOMPUTE_TOKEN \
-                      PIM_PUBLICATION_ENABLED B2B_DELIVERY_INBOX \
+                      PIM_PUBLICATION_ENABLED B2B_DELIVERY_INBOX CATALOG_FACTS_ENABLED \
                       FIELD_ENCRYPTION_KEY BAN_GEOCODER_URL ROUTE_PLANNER_URL ROUTE_PLANNER_TOKEN; do
             value="${!name}"
             if [ -n "$value" ]; then

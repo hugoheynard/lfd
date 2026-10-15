@@ -12,14 +12,16 @@ import { CatalogAdminReader } from "../../catalog/domain/ports/catalog-admin.rea
 import { ReceivedOperationsReader } from "../../catalog/domain/ports/received-operations.reader.js";
 import { StorefrontCatalogReader } from "../domain/storefront-catalog.reader.js";
 import { operationShelvesOf, storefrontOperationsOf } from "./storefront-catalog-operations.js";
+import { servedToAnyone } from "../../catalog/domain/served-to.js";
 
 /**
- * Un article est-il en vente quelque part ? Masqué des DEUX boutiques, non :
- * aucune ne le résoudra, et sa case retomberait au reste du rayon (D4). Même
- * définition que l'éditeur retenait en lisant `/admin/catalog` (2026-09-24).
+ * Un article est-il en vente quelque part ? Servi à aucune des deux boutiques,
+ * non : aucune ne le résoudra, et sa case retomberait au reste du rayon (D4).
+ * Depuis le lot 2a, l'audience compte autant que le masquage — la règle est
+ * `servedTo`, la même que la boutique applique.
  */
 function isServed(item: CatalogAdminItemView): boolean {
-  return !(item.isHidden && item.isHiddenPublic);
+  return servedToAnyone(item);
 }
 
 /**

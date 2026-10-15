@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import type { StoredCatalogSnapshot } from "@lfd/catalog-sync";
 
+import { AppConfig } from "../../../platform/config/app-config.js";
 import { CatalogItem, type PimFacts } from "../domain/entities/catalog-item.js";
 import { CatalogOperation } from "../domain/entities/catalog-operation.js";
 import { snapshotLimitReader } from "../domain/snapshot-limits.js";
@@ -46,6 +47,7 @@ export class IngestCatalogService {
     private readonly items: CatalogItemRepository,
     private readonly categories: CatalogCategoryProjection,
     private readonly operations: CatalogOperationRepository,
+    private readonly config: AppConfig,
   ) {}
 
   async apply(
@@ -61,6 +63,21 @@ export class IngestCatalogService {
     // absence dans le snapshot.
     const excluded = new Set(excludedSkus);
     const receivedAt = new Date(snapshot.generatedAt);
+
+    // 🔴 **Un seul écrivain à la fois** (lot 2a, corrections après `vitruve`).
+    // Faits ouverts, ce sont eux qui tiennent fiches et familles, sous
+    // `applied_seq` ; le push, lui, retire tout ce qui n'est pas dans son
+    // instantané et n'a pas de numéro — il effacerait les fiches inactives
+    // que les faits posent. Il ne porte plus alors que les opérations.
+    if (this.config.catalogFactsEnabled()) {
+      return {
+        acceptedProducts: 0,
+        acceptedVariants: 0,
+        acceptedCategories: 0,
+        removedSkus: [],
+        withdrawnOperations: await this.applyOperations(snapshot, receivedAt),
+      };
+    }
 
     // Les familles d'abord : les articles y font référence.
     await this.categories.replaceAll(

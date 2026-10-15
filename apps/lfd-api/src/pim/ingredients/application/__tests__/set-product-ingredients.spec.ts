@@ -10,6 +10,7 @@ import {
   InMemoryAppellationRepository,
   InMemoryIngredientRepository,
 } from "./in-memory-repositories.js";
+import { RecordingCatalogEmitter } from "../../../catalogue/shared/domain/ports/__tests__/catalog-emitter-doubles.js";
 
 async function declare(ingredients: InMemoryIngredientRepository, key: string): Promise<void> {
   await new CreateIngredientHandler(
@@ -39,6 +40,7 @@ describe("SetProductIngredientsHandler", () => {
       ingredients,
       new RecordingJournal(),
       new DirectUnitOfWork(),
+      new RecordingCatalogEmitter(),
     );
     await handler.execute(new SetProductIngredientsCommand("prd_1", ["beurre", "farine"]));
 
@@ -55,6 +57,7 @@ describe("SetProductIngredientsHandler", () => {
       ingredients,
       new RecordingJournal(),
       new DirectUnitOfWork(),
+      new RecordingCatalogEmitter(),
     );
     await handler.execute(new SetProductIngredientsCommand("prd_1", ["beurre"]));
 
@@ -73,6 +76,7 @@ describe("SetProductIngredientsHandler", () => {
         ingredients,
         journal,
         new DirectUnitOfWork(),
+        new RecordingCatalogEmitter(),
       );
       await handler.execute(new SetProductIngredientsCommand("prd_1", ["beurre", "farine"]));
 
@@ -94,6 +98,7 @@ describe("SetProductIngredientsHandler", () => {
         ingredients,
         journal,
         new DirectUnitOfWork(),
+        new RecordingCatalogEmitter(),
       );
       await handler.execute(new SetProductIngredientsCommand("prd_1", ["beurre", "farine"]));
 
@@ -128,6 +133,7 @@ describe("SetProductIngredientsHandler", () => {
         ingredients,
         journal,
         new DirectUnitOfWork(),
+        new RecordingCatalogEmitter(),
       );
 
       await handler.execute(new SetProductIngredientsCommand("prd_1", []));

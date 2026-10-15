@@ -216,4 +216,20 @@ export interface AudienceSwitchPreviewView {
   readonly boundUnpublished: readonly AudienceSwitchItemView[];
   /** En vente, mais leur case `b2b` effective est fermée : la projection les écarte aussi. */
   readonly publishedB2bClosed: readonly AudienceSwitchItemView[];
+  /**
+   * Déclinaisons vendues aux pros aujourd'hui **sans déclaration
+   * d'allergènes** (lot 2a, corrections après `vitruve`) : les faits du
+   * catalogue les rangent incomplètes, donc elles sortiront de la vente à la
+   * bascule (2b3).
+   */
+  readonly soldWithoutAllergens: readonly AudienceSwitchVariantView[];
+}
+
+/** Une déclinaison citée par l'aperçu de bascule. */
+export interface AudienceSwitchVariantView {
+  readonly productId: string;
+  readonly productSku: string;
+  readonly variantSku: string;
+  /** Le nom français de la déclinaison. */
+  readonly name: string;
 }

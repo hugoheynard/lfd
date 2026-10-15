@@ -13,6 +13,7 @@ import type { SalesChannels } from "../../../shared/domain/value-objects/sales-c
 import { Product, type ProductSnapshot } from "../../domain/entities/product.js";
 import { ProductRepository } from "../../domain/ports/product.repository.js";
 import { SetProductChannelsCommand, SetProductChannelsHandler } from "../set-product-channels.js";
+import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
 
 /**
  * Une fiche qui ferme un canal efface la dérogation de taux qu'elle y avait
@@ -189,6 +190,7 @@ async function setChannels(
     new KnownVatRates({ tva_20: { name: "Normal", percent: 20 } }),
     journal,
     new DirectUnitOfWork(),
+    new RecordingCatalogEmitter(),
   ).execute(new SetProductChannelsCommand("prd_1", channels));
 }
 

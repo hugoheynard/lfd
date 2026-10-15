@@ -17,6 +17,7 @@ import {
 import { Sku } from "../domain/value-objects/sku.value-object.js";
 import { SKU_AVAILABILITY } from "../infrastructure/prisma-sku-availability.js";
 import { requireProduct } from "./product-support.js";
+import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
 
 export interface AddProductVariantInput {
   /** Le nom de l'article — « Boîte de 220 g », pas celui de la fiche. */
@@ -63,6 +64,7 @@ export class AddProductVariantHandler implements ICommandHandler<AddProductVaria
     private readonly uow: UnitOfWork,
     @Inject(UuidGenerator) private readonly ids: UuidGenerator,
     @Inject(SKU_AVAILABILITY) private readonly availability: SkuAvailability,
+    private readonly emitter: CatalogEmitter,
   ) {}
 
   async execute(command: AddProductVariantCommand): Promise<string> {
@@ -96,6 +98,7 @@ export class AddProductVariantHandler implements ICommandHandler<AddProductVaria
         },
       });
       await this.products.save(product, ticket);
+      await this.emitter.emitProducts([command.productId]);
     });
 
     return variant.id;

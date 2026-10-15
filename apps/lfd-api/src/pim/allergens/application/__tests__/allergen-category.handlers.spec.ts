@@ -40,6 +40,7 @@ import {
   InMemoryAllergenCategoryRepository,
   InMemoryAllergenEntryRepository,
 } from "./in-memory-allergens.js";
+import { RecordingCatalogReemission } from "../../../catalogue/shared/domain/ports/__tests__/catalog-emitter-doubles.js";
 
 /**
  * L'instant du geste. Absolu, et c'est l'exception étroite de `CLAUDE.md` §5 :
@@ -80,18 +81,40 @@ function harness(): Harness {
     store,
     journal,
     create: new CreateAllergenCategoryHandler(categories, ids, journal, uow),
-    rename: new RenameAllergenCategoryHandler(categories, journal, uow),
-    move: new MoveAllergenCategoryHandler(categories, journal, uow),
+    rename: new RenameAllergenCategoryHandler(
+      categories,
+      journal,
+      uow,
+      new RecordingCatalogReemission(),
+    ),
+    move: new MoveAllergenCategoryHandler(
+      categories,
+      journal,
+      uow,
+      new RecordingCatalogReemission(),
+    ),
     archive: new ArchiveAllergenCategoryHandler(
       categories,
       reader,
       journal,
       new FixedClock(NOW),
       uow,
+      new RecordingCatalogReemission(),
     ),
-    restore: new RestoreAllergenCategoryHandler(categories, journal, uow),
+    restore: new RestoreAllergenCategoryHandler(
+      categories,
+      journal,
+      uow,
+      new RecordingCatalogReemission(),
+    ),
     createEntry: new CreateAllergenEntryHandler(entries, categories, ids, journal, uow),
-    archiveEntry: new ArchiveAllergenEntryHandler(entries, journal, new FixedClock(NOW), uow),
+    archiveEntry: new ArchiveAllergenEntryHandler(
+      entries,
+      journal,
+      new FixedClock(NOW),
+      uow,
+      new RecordingCatalogReemission(),
+    ),
   };
 }
 

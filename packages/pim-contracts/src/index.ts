@@ -230,6 +230,7 @@ export type {
   B2bMembershipView,
   B2bMembershipBatchResult,
   AudienceSwitchItemView,
+  AudienceSwitchVariantView,
   AudienceSwitchPreviewView,
   B2bExclusionReason,
   B2bExclusionView,

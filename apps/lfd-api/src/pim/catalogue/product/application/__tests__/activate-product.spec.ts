@@ -20,6 +20,7 @@ import {
   family,
   tarte,
 } from "./audience-doubles.js";
+import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
 
 /**
  * **Activer** — l'ancien « publier » (1e du plan
@@ -42,6 +43,7 @@ function activating(products: OneProduct, setup: Setup = {}): Promise<void> {
     new FixedVatPercents(setup.percents ?? BOTH_RATES),
     setup.journal ?? new RecordingJournal(),
     new DirectUnitOfWork(),
+    new RecordingCatalogEmitter(),
   ).execute(new ActivateProductCommand(PRODUCT_ID));
 }
 

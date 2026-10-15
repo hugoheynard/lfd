@@ -47,6 +47,8 @@ import { UpdateProductEditorialHandler } from "./product/application/update-prod
 import { UpdateProductIdentityHandler } from "./product/application/update-product-identity.js";
 import { UpdateVariantPricingHandler } from "./product/application/update-variant-pricing.js";
 import { CatalogueReader } from "./shared/domain/ports/catalogue-reader.js";
+import { CatalogFactsReader } from "./shared/domain/ports/catalog-facts.reader.js";
+import { RepositoryCatalogFactsReader } from "./shared/infrastructure/repository-catalog-facts.reader.js";
 import { SalesContextsModule } from "../sales-contexts/sales-contexts.module.js";
 import { PointsOfSaleModule } from "../points-of-sale/points-of-sale.module.js";
 import { CategoryRepository } from "./category/domain/ports/category.repository.js";
@@ -174,6 +176,7 @@ import {
     { provide: ProductRepository, useClass: PrismaProductRepository },
     { provide: SKU_AVAILABILITY, useClass: PrismaSkuAvailability },
     { provide: CatalogueReader, useClass: PrismaCatalogueReader },
+    { provide: CatalogFactsReader, useClass: RepositoryCatalogFactsReader },
     { provide: VariantAllergensRepository, useClass: PrismaVariantAllergensRepository },
     { provide: NutritionValuesRepository, useClass: PrismaNutritionValuesRepository },
     { provide: EditorialRepository, useClass: PrismaEditorialRepository },
@@ -203,6 +206,12 @@ import {
   // `EditorialReader` sort depuis la v8 du fil : le canal B2B emporte la ligne
   // de vitrine et le packshot, et les lit en LOT pour tout le catalogue. Il
   // sort en lecture seule — l'écriture reste ici.
-  exports: [PrismaMediaCarriers, CatalogueReader, CatalogRevisionRepository, EditorialReader],
+  exports: [
+    PrismaMediaCarriers,
+    CatalogueReader,
+    CatalogFactsReader,
+    CatalogRevisionRepository,
+    EditorialReader,
+  ],
 })
 export class CatalogueModule {}

@@ -11,6 +11,7 @@ import {
 } from "../../domain/ports/accounting-rules.repository.js";
 import { ReadAccountingRulesHandler } from "../read-accounting-rules.js";
 import { SetProPriceRatioCommand, SetProPriceRatioHandler } from "../set-pro-price-ratio.js";
+import { RecordingCatalogReemission } from "../../../catalogue/shared/domain/ports/__tests__/catalog-emitter-doubles.js";
 
 /**
  * Une date FIXE et relative à rien : le test n'affirme pas quand, il affirme
@@ -86,7 +87,12 @@ describe("ReadAccountingRulesHandler", () => {
 describe("SetProPriceRatioHandler", () => {
   function build(repo: InMemoryRepo) {
     const journal = new RecordingJournal();
-    const handler = new SetProPriceRatioHandler(repo, journal, new DirectUnitOfWork());
+    const handler = new SetProPriceRatioHandler(
+      repo,
+      journal,
+      new DirectUnitOfWork(),
+      new RecordingCatalogReemission(),
+    );
     return { handler, journal };
   }
 

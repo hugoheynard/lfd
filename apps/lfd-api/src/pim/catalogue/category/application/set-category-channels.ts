@@ -15,6 +15,8 @@ import { SalesContextRegistry } from "../../../sales-contexts/domain/ports/sales
 import type { SalesChannels } from "../../shared/domain/value-objects/sales-channels.js";
 import { erasedVat, type ContextVat } from "../../shared/domain/value-objects/context-vat.js";
 import { requireCategory } from "./category-support.js";
+import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
+import { CatalogReemission } from "../../shared/domain/ports/catalog-reemission.js";
 
 export class SetCategoryChannelsCommand {
   constructor(
@@ -45,6 +47,8 @@ export class SetCategoryChannelsHandler implements ICommandHandler<
     private readonly rates: VatRateRepository,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
+    private readonly emitter: CatalogEmitter,
+    private readonly reemission: CatalogReemission,
   ) {}
 
   async execute(command: SetCategoryChannelsCommand): Promise<void> {
@@ -58,7 +62,9 @@ export class SetCategoryChannelsHandler implements ICommandHandler<
     await this.uow.run(async () => {
       const ticket = await this.journalize(category, before, vatBefore);
       await this.categories.save(category, ticket);
+      await this.emitter.emitCategories([command.id]);
     });
+    await this.reemission.productsOfCategories([command.id]);
   }
 
   /**

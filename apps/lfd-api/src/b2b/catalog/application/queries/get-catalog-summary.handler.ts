@@ -3,6 +3,7 @@ import type { CatalogAdminItemView, CatalogSummaryView } from "@lfd/contracts";
 
 import { CatalogAdminReader } from "../../domain/ports/catalog-admin.reader.js";
 import { GetCatalogSummaryQuery } from "./get-catalog-summary.query.js";
+import { servedTo } from "../../domain/served-to.js";
 
 /**
  * Les trois nombres que le tableau de bord affiche.
@@ -38,6 +39,10 @@ export class GetCatalogSummaryHandler implements IQueryHandler<
   }
 }
 
+/**
+ * « En vente » aux pros : servi (audience ET masquage, par `servedTo`, la
+ * règle que la boutique applique) et facturable.
+ */
 function sellable(item: CatalogAdminItemView): boolean {
-  return !item.isHidden && item.vatRatePercent !== null;
+  return servedTo(item, "pro") && item.vatRatePercent !== null;
 }

@@ -11,6 +11,7 @@ import {
   type DurableSubscriber,
 } from "../../../../platform/outbox/durable-handler.js";
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
+import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
 import { EditorialReader } from "../domain/ports/editorial-reader.js";
 import { ProductImageUsage } from "../domain/ports/product-image-usage.js";
 import { announceProductMedia, SHOWCASED_ROLES } from "./product-media-announcement.js";
@@ -55,6 +56,7 @@ export class OnMediaAssetDescribedHandler implements DurableSubscriber {
     private readonly readers: EditorialReader,
     private readonly durable: DurablePublisher,
     private readonly ids: UuidGenerator,
+    private readonly emitter: CatalogEmitter,
   ) {}
 
   async handle(delivery: DurableDelivery): Promise<void> {
@@ -68,5 +70,9 @@ export class OnMediaAssetDescribedHandler implements DurableSubscriber {
         productId,
       );
     }
+    // Le texte alternatif est dans l'instantané de la fiche (lot 2a) : il
+    // repart avec, dans la transaction de cette livraison. Une image montre
+    // une poignée de fiches, pas le catalogue — une transaction suffit.
+    await this.emitter.emitProducts(products);
   }
 }

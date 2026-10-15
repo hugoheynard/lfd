@@ -8,6 +8,7 @@ import { SalesContextRegistry } from "../../sales-contexts/domain/ports/sales-co
 import { VatRateRepository } from "../domain/ports/vat-rate.repository.js";
 import type { VatRatePayload } from "./create-vat-rate.js";
 import { ensureRateFree, requireRate } from "./vat-support.js";
+import { CatalogReemission } from "../../catalogue/shared/domain/ports/catalog-reemission.js";
 
 export class UpdateVatRateCommand {
   constructor(
@@ -23,6 +24,7 @@ export class UpdateVatRateHandler implements ICommandHandler<UpdateVatRateComman
     private readonly contexts: SalesContextRegistry,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
+    private readonly reemission: CatalogReemission,
   ) {}
 
   /**
@@ -46,6 +48,7 @@ export class UpdateVatRateHandler implements ICommandHandler<UpdateVatRateComman
       const ticket = await this.journalize(before, rate.snapshot());
       await this.rates.save(rate, ticket);
     });
+    await this.reemission.everything();
   }
 
   /**

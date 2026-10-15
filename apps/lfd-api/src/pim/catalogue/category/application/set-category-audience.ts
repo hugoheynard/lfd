@@ -7,6 +7,8 @@ import type { Audience } from "../../shared/domain/value-objects/audience.js";
 import type { Category } from "../domain/entities/category.js";
 import { CategoryRepository } from "../domain/ports/category.repository.js";
 import { requireCategory } from "./category-support.js";
+import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
+import { CatalogReemission } from "../../shared/domain/ports/catalog-reemission.js";
 
 export class SetCategoryAudienceCommand {
   constructor(
@@ -32,6 +34,8 @@ export class SetCategoryAudienceHandler implements ICommandHandler<
     private readonly categories: CategoryRepository,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
+    private readonly emitter: CatalogEmitter,
+    private readonly reemission: CatalogReemission,
   ) {}
 
   async execute(command: SetCategoryAudienceCommand): Promise<void> {
@@ -41,7 +45,9 @@ export class SetCategoryAudienceHandler implements ICommandHandler<
     await this.uow.run(async () => {
       const ticket = await this.journalize(category, before, changed);
       await this.categories.save(category, ticket);
+      await this.emitter.emitCategories([command.id]);
     });
+    await this.reemission.productsOfCategories([command.id]);
   }
 
   private async journalize(

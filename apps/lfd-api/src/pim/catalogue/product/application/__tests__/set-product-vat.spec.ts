@@ -21,6 +21,7 @@ import { UnknownPointOfSaleError } from "../../../shared/domain/errors/channel-e
 import { PointOfSaleOfferReader } from "../../../shared/domain/ports/point-of-sale-offer.reader.js";
 import { SetProductChannelsCommand, SetProductChannelsHandler } from "../set-product-channels.js";
 import { SetProductVatCommand, SetProductVatHandler } from "../set-product-vat.js";
+import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
 
 const CONTEXTS: readonly SalesContext[] = [
   {
@@ -212,6 +213,7 @@ describe("SetProductVatHandler", () => {
       registry,
       journal,
       new DirectUnitOfWork(),
+      new RecordingCatalogEmitter(),
     ).execute(new SetProductVatCommand("prd_1", { b2b: "tva_20" }));
 
     expect(products.saved.vatByContext).toEqual({ b2b: "tva_20" });
@@ -236,6 +238,7 @@ describe("SetProductVatHandler", () => {
       registry,
       new RecordingJournal(),
       new DirectUnitOfWork(),
+      new RecordingCatalogEmitter(),
     ).execute(new SetProductVatCommand("prd_1", {}));
 
     expect(products.saved.vatByContext).toEqual({});
@@ -252,6 +255,7 @@ describe("SetProductVatHandler", () => {
         registry,
         new RecordingJournal(),
         new DirectUnitOfWork(),
+        new RecordingCatalogEmitter(),
       ).execute(new SetProductVatCommand("prd_1", { b2b: "tva_absent" })),
     ).rejects.toBeInstanceOf(VatRateNotFoundError);
     expect(products.saved.vatByContext).toEqual({});
@@ -268,6 +272,7 @@ describe("SetProductVatHandler", () => {
         registry,
         new RecordingJournal(),
         new DirectUnitOfWork(),
+        new RecordingCatalogEmitter(),
       ).execute(new SetProductVatCommand("prd_1", { traiteur: "tva_20" })),
     ).rejects.toBeInstanceOf(ProductUnknownContextError);
   });
@@ -286,6 +291,7 @@ describe("SetProductVatHandler", () => {
         registry,
         new RecordingJournal(),
         new DirectUnitOfWork(),
+        new RecordingCatalogEmitter(),
       ).execute(new SetProductVatCommand("prd_1", { b2b: "tva_20" })),
     ).rejects.toBeInstanceOf(ProductVatWithoutChannelError);
   });
@@ -301,6 +307,7 @@ describe("SetProductVatHandler", () => {
       registry,
       journal,
       new DirectUnitOfWork(),
+      new RecordingCatalogEmitter(),
     ).execute(new SetProductVatCommand("prd_1", { b2b: "tva_20" }));
 
     expect(journal.types()).toEqual([]);
@@ -321,6 +328,7 @@ describe("SetProductChannelsHandler", () => {
       rates(),
       journal,
       new DirectUnitOfWork(),
+      new RecordingCatalogEmitter(),
     ).execute(
       new SetProductChannelsCommand("prd_1", [{ pointOfSaleId: "pos_b2b", context: "b2b" }]),
     );
@@ -341,6 +349,7 @@ describe("SetProductChannelsHandler", () => {
       rates(),
       new RecordingJournal(),
       new DirectUnitOfWork(),
+      new RecordingCatalogEmitter(),
     ).execute(new SetProductChannelsCommand("prd_1", null));
 
     expect(products.saved.channelOverride).toBeNull();
@@ -362,6 +371,7 @@ describe("SetProductChannelsHandler", () => {
         rates(),
         new RecordingJournal(),
         new DirectUnitOfWork(),
+        new RecordingCatalogEmitter(),
       ).execute(
         new SetProductChannelsCommand("prd_1", [
           { pointOfSaleId: "emp_fantome", context: "takeaway" },
@@ -386,6 +396,7 @@ describe("SetProductChannelsHandler", () => {
       rates(),
       new RecordingJournal(),
       new DirectUnitOfWork(),
+      new RecordingCatalogEmitter(),
     ).execute(
       new SetProductChannelsCommand("prd_1", [{ pointOfSaleId: "emp_1", context: "takeaway" }]),
     );
@@ -407,6 +418,7 @@ describe("SetProductChannelsHandler", () => {
         registry,
         new RecordingJournal(),
         new DirectUnitOfWork(),
+        new RecordingCatalogEmitter(),
       ).execute(new SetProductVatCommand("prd_1", { b2b: "tva_20" })),
     ).rejects.toBeInstanceOf(ProductVatWithoutChannelError);
   });

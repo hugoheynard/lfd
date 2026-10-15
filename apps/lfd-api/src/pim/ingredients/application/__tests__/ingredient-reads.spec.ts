@@ -16,6 +16,7 @@ import {
   InMemoryAppellationRepository,
   InMemoryIngredientRepository,
 } from "./in-memory-repositories.js";
+import { RecordingCatalogEmitter } from "../../../catalogue/shared/domain/ports/__tests__/catalog-emitter-doubles.js";
 
 const PRODUCT = "prd_1";
 const APPELLATION = "aop-beaufort";
@@ -78,6 +79,7 @@ async function cite(
     ingredients,
     new RecordingJournal(),
     new DirectUnitOfWork(),
+    new RecordingCatalogEmitter(),
   ).execute(new SetProductIngredientsCommand(PRODUCT, keys));
 }
 

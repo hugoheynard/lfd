@@ -49,6 +49,7 @@ import { UpdateProductIdentityHandler } from "../update-product-identity.js";
 import { UpdateProductIdentityCommand } from "../update-product-identity.js";
 import { UpdateVariantPricingHandler } from "../update-variant-pricing.js";
 import { UpdateVariantPricingCommand } from "../update-variant-pricing.js";
+import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
 
 const PRODUCT_ID = "prd_1";
 const VARIANT_ID = "prd_1_v1";
@@ -276,6 +277,7 @@ describe("l’historique d’une fiche", () => {
       new FakeCategoryRepository(),
       journal,
       new DirectUnitOfWork(),
+      new RecordingCatalogEmitter(),
     ).execute(
       new UpdateProductIdentityCommand(PRODUCT_ID, {
         name: { fr: "Moka" },
@@ -299,6 +301,7 @@ describe("l’historique d’une fiche", () => {
       new FakeCategoryRepository(),
       journal,
       new DirectUnitOfWork(),
+      new RecordingCatalogEmitter(),
     ).execute(
       new UpdateProductIdentityCommand(PRODUCT_ID, {
         name: before?.name ?? { fr: "" },
@@ -316,7 +319,12 @@ describe("l’historique d’une fiche", () => {
     const products = new FakeProductRepository(seedProduct());
     const journal = new RecordingJournal();
 
-    await new UpdateVariantPricingHandler(products, journal, new DirectUnitOfWork()).execute(
+    await new UpdateVariantPricingHandler(
+      products,
+      journal,
+      new DirectUnitOfWork(),
+      new RecordingCatalogEmitter(),
+    ).execute(
       new UpdateVariantPricingCommand(PRODUCT_ID, VARIANT_ID, {
         priceCents: 260,
         weightGrams: null,
@@ -340,6 +348,7 @@ describe("UpdateProductIdentityHandler", () => {
       new FakeCategoryRepository(),
       new RecordingJournal(),
       new DirectUnitOfWork(),
+      new RecordingCatalogEmitter(),
     ).execute(
       new UpdateProductIdentityCommand(PRODUCT_ID, {
         name: { fr: "Moka" },
@@ -361,6 +370,7 @@ describe("UpdateProductIdentityHandler", () => {
         new FakeCategoryRepository(),
         new RecordingJournal(),
         new DirectUnitOfWork(),
+        new RecordingCatalogEmitter(),
       ).execute(
         new UpdateProductIdentityCommand(PRODUCT_ID, {
           name: { fr: "Moka" },
@@ -380,6 +390,7 @@ describe("UpdateProductIdentityHandler", () => {
         new FakeCategoryRepository(),
         new RecordingJournal(),
         new DirectUnitOfWork(),
+        new RecordingCatalogEmitter(),
       ).execute(
         new UpdateProductIdentityCommand(PRODUCT_ID, {
           name: { fr: "Moka" },
@@ -398,6 +409,7 @@ describe("UpdateProductIdentityHandler", () => {
         new FakeCategoryRepository(),
         new RecordingJournal(),
         new DirectUnitOfWork(),
+        new RecordingCatalogEmitter(),
       ).execute(
         new UpdateProductIdentityCommand("prd_absent", {
           name: { fr: "X" },
@@ -416,6 +428,7 @@ describe("UpdateVariantPricingHandler", () => {
       products,
       new RecordingJournal(),
       new DirectUnitOfWork(),
+      new RecordingCatalogEmitter(),
     ).execute(
       new UpdateVariantPricingCommand(PRODUCT_ID, VARIANT_ID, {
         priceCents: 500,
@@ -440,6 +453,7 @@ describe("UpdateVariantPricingHandler", () => {
       products,
       new RecordingJournal(),
       new DirectUnitOfWork(),
+      new RecordingCatalogEmitter(),
     ).execute(
       new UpdateVariantPricingCommand(PRODUCT_ID, VARIANT_ID, {
         priceCents: null,
@@ -456,6 +470,7 @@ describe("UpdateVariantPricingHandler", () => {
         products,
         new RecordingJournal(),
         new DirectUnitOfWork(),
+        new RecordingCatalogEmitter(),
       ).execute(
         new UpdateVariantPricingCommand(PRODUCT_ID, "variant_etranger", {
           priceCents: 100,
@@ -476,6 +491,7 @@ describe("UpdateProductEditorialHandler", () => {
       new EmptyEditorialReader(),
       new RecordingJournal(),
       new DirectUnitOfWork(),
+      new RecordingCatalogEmitter(),
     ).execute(
       new UpdateProductEditorialCommand(PRODUCT_ID, {
         descriptionShort: { fr: "Torréfaction douce" },
@@ -512,6 +528,7 @@ function allergensHandler(
     reference(),
     new RecordingJournal(),
     new DirectUnitOfWork(),
+    new RecordingCatalogEmitter(),
   );
 }
 
@@ -524,6 +541,7 @@ function nutritionHandler(
     values,
     new RecordingJournal(),
     new DirectUnitOfWork(),
+    new RecordingCatalogEmitter(),
   );
 }
 
@@ -698,6 +716,7 @@ describe("Archive / Restore product", () => {
       products,
       new RecordingJournal(),
       new DirectUnitOfWork(),
+      new RecordingCatalogEmitter(),
     ).execute(new ArchiveProductCommand(PRODUCT_ID));
     expect(products.snapshot()?.status).toBe("archived");
 
@@ -705,6 +724,7 @@ describe("Archive / Restore product", () => {
       products,
       new RecordingJournal(),
       new DirectUnitOfWork(),
+      new RecordingCatalogEmitter(),
     ).execute(new RestoreProductCommand(PRODUCT_ID));
     expect(products.snapshot()?.status).toBe("draft");
   });
@@ -712,9 +732,12 @@ describe("Archive / Restore product", () => {
   it("refuse d’archiver un produit inconnu", async () => {
     const products = new FakeProductRepository(seedProduct());
     await expect(
-      new ArchiveProductHandler(products, new RecordingJournal(), new DirectUnitOfWork()).execute(
-        new ArchiveProductCommand("prd_absent"),
-      ),
+      new ArchiveProductHandler(
+        products,
+        new RecordingJournal(),
+        new DirectUnitOfWork(),
+        new RecordingCatalogEmitter(),
+      ).execute(new ArchiveProductCommand("prd_absent")),
     ).rejects.toBeInstanceOf(ProductNotFoundError);
   });
 });
@@ -735,6 +758,7 @@ describe("SetProductMediaHandler", () => {
       new RecordingDurable(),
       new CountingPimIds(),
       new DirectUnitOfWork(),
+      new RecordingCatalogEmitter(),
     ).execute(
       new SetProductMediaCommand(PRODUCT_ID, [
         { role: "hero", url: "https://cdn/1.jpg" },
@@ -768,6 +792,7 @@ describe("SetProductMediaHandler", () => {
       durable,
       new CountingPimIds(),
       new DirectUnitOfWork(),
+      new RecordingCatalogEmitter(),
     ).execute(new SetProductMediaCommand(PRODUCT_ID, [{ role: "hero", url: "https://cdn/1.jpg" }]));
 
     expect(durable.facts).toHaveLength(1);
@@ -792,6 +817,7 @@ describe("SetProductMediaHandler", () => {
       new RecordingDurable(),
       new CountingPimIds(),
       new DirectUnitOfWork(),
+      new RecordingCatalogEmitter(),
     ).execute(new SetProductMediaCommand(PRODUCT_ID, []));
 
     expect(editorials.replaced[0]?.media).toEqual([]);
@@ -817,6 +843,7 @@ describe("SetProductMediaHandler", () => {
       new RecordingDurable(),
       new CountingPimIds(),
       new DirectUnitOfWork(),
+      new RecordingCatalogEmitter(),
     ).execute(new SetProductMediaCommand(PRODUCT_ID, [{ role: "hero", url: "https://cdn/1.jpg" }]));
 
     expect(journal.types()).toEqual(["product.media_saved"]);
@@ -845,6 +872,7 @@ describe("SetProductMediaHandler", () => {
       new RecordingDurable(),
       new CountingPimIds(),
       new DirectUnitOfWork(),
+      new RecordingCatalogEmitter(),
     ).execute(new SetProductMediaCommand(PRODUCT_ID, [{ role: "hero", url: "https://cdn/1.jpg" }]));
 
     expect(journal.types()).toEqual([]);
@@ -871,6 +899,7 @@ describe("SetProductMediaHandler", () => {
       new RecordingDurable(),
       new CountingPimIds(),
       new DirectUnitOfWork(),
+      new RecordingCatalogEmitter(),
     ).execute(
       new SetProductMediaCommand(PRODUCT_ID, [
         { role: "lifestyle", url: "https://cdn/2.jpg" },
@@ -894,10 +923,10 @@ describe("Ce que l’archivage d’une fiche inscrit au journal", () => {
     const journal = new RecordingJournal();
     const uow = new DirectUnitOfWork();
 
-    await new ArchiveProductHandler(products, journal, uow).execute(
+    await new ArchiveProductHandler(products, journal, uow, new RecordingCatalogEmitter()).execute(
       new ArchiveProductCommand(PRODUCT_ID),
     );
-    await new RestoreProductHandler(products, journal, uow).execute(
+    await new RestoreProductHandler(products, journal, uow, new RecordingCatalogEmitter()).execute(
       new RestoreProductCommand(PRODUCT_ID),
     );
 
@@ -914,10 +943,10 @@ describe("Ce que l’archivage d’une fiche inscrit au journal", () => {
     const journal = new RecordingJournal();
     const uow = new DirectUnitOfWork();
 
-    await new ArchiveProductHandler(products, journal, uow).execute(
+    await new ArchiveProductHandler(products, journal, uow, new RecordingCatalogEmitter()).execute(
       new ArchiveProductCommand(PRODUCT_ID),
     );
-    await new ArchiveProductHandler(products, journal, uow).execute(
+    await new ArchiveProductHandler(products, journal, uow, new RecordingCatalogEmitter()).execute(
       new ArchiveProductCommand(PRODUCT_ID),
     );
 
@@ -930,9 +959,12 @@ describe("Ce que l’archivage d’une fiche inscrit au journal", () => {
     const journal = new RecordingJournal();
 
     await expect(
-      new RestoreProductHandler(products, journal, new DirectUnitOfWork()).execute(
-        new RestoreProductCommand(PRODUCT_ID),
-      ),
+      new RestoreProductHandler(
+        products,
+        journal,
+        new DirectUnitOfWork(),
+        new RecordingCatalogEmitter(),
+      ).execute(new RestoreProductCommand(PRODUCT_ID)),
     ).rejects.toBeInstanceOf(NotArchivedProductNotRestorableError);
 
     expect(journal.types()).toEqual([]);
@@ -942,9 +974,12 @@ describe("Ce que l’archivage d’une fiche inscrit au journal", () => {
     const products = new FakeProductRepository(seedProduct());
     const journal = new RecordingJournal();
 
-    await new ArchiveProductHandler(products, journal, new DirectUnitOfWork()).execute(
-      new ArchiveProductCommand(PRODUCT_ID),
-    );
+    await new ArchiveProductHandler(
+      products,
+      journal,
+      new DirectUnitOfWork(),
+      new RecordingCatalogEmitter(),
+    ).execute(new ArchiveProductCommand(PRODUCT_ID));
 
     expect(journal.entries[0]?.payload).toHaveProperty("sku");
     expect(journal.entries[0]?.payload).toHaveProperty("name");

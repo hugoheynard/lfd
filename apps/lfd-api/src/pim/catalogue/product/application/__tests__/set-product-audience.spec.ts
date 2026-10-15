@@ -4,6 +4,7 @@ import type { Audience } from "../../../shared/domain/value-objects/audience.js"
 import { ProductNotFoundError } from "../../domain/errors/product-errors.js";
 import { SetProductAudienceCommand, SetProductAudienceHandler } from "../set-product-audience.js";
 import { OneProduct, PRODUCT_ID, tarte } from "./audience-doubles.js";
+import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
 
 /** L'audience d'une fiche (1c du plan d'audience) : posée, rendue, journalisée. */
 function setting(
@@ -12,9 +13,12 @@ function setting(
   audience: Audience | null,
   id = PRODUCT_ID,
 ): Promise<void> {
-  return new SetProductAudienceHandler(products, journal, new DirectUnitOfWork()).execute(
-    new SetProductAudienceCommand(id, audience),
-  );
+  return new SetProductAudienceHandler(
+    products,
+    journal,
+    new DirectUnitOfWork(),
+    new RecordingCatalogEmitter(),
+  ).execute(new SetProductAudienceCommand(id, audience));
 }
 
 describe("SetProductAudienceHandler", () => {

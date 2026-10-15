@@ -23,6 +23,7 @@ import {
   InMemoryIngredientRepository,
   InMemoryVariantDeclarationReader,
 } from "./in-memory-repositories.js";
+import { RecordingCatalogEmitter } from "../../../catalogue/shared/domain/ports/__tests__/catalog-emitter-doubles.js";
 
 const PRODUCT = "prd_1";
 
@@ -76,6 +77,7 @@ async function composition(
     ingredients,
     new RecordingJournal(),
     new DirectUnitOfWork(),
+    new RecordingCatalogEmitter(),
   ).execute(new SetProductIngredientsCommand(PRODUCT, [...citations.keys()]));
   return ingredients;
 }

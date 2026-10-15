@@ -13,6 +13,12 @@ import { SetCatalogVisibilityHandler } from "./application/commands/set-catalog-
 import { IngestCatalogService } from "./application/ingest-catalog.service.js";
 import { OnOperationImageChangedHandler } from "./application/handlers/on-operation-image-changed.handler.js";
 import { OnProductMediaChangedHandler } from "./application/handlers/on-product-media-changed.handler.js";
+import { OnCatalogProductChangedHandler } from "./application/handlers/on-catalog-product-changed.handler.js";
+import { OnCatalogCategoryChangedHandler } from "./application/handlers/on-catalog-category-changed.handler.js";
+import { CatalogProductFactsProjection } from "./domain/ports/catalog-product-facts.projection.js";
+import { CatalogFamilyFactsProjection } from "./domain/ports/catalog-family-facts.projection.js";
+import { PrismaCatalogProductFactsProjection } from "./infrastructure/prisma-catalog-product-facts.projection.js";
+import { PrismaCatalogFamilyFactsProjection } from "./infrastructure/prisma-catalog-family-facts.projection.js";
 import { CatalogAdminReader } from "./domain/ports/catalog-admin.reader.js";
 import { CatalogCategoryProjection } from "./domain/ports/catalog-category.projection.js";
 import { AcceptDeliveryHandler } from "./application/commands/accept-delivery.handler.js";
@@ -123,6 +129,8 @@ import { PrismaCatalogMediaCopies } from "./infrastructure/prisma-catalog-media-
     // L'abonné qui projette les visuels d'une fiche sans attendre un push.
     // Il n'importe pas le référentiel : il reçoit un fait du bus.
     OnProductMediaChangedHandler,
+    OnCatalogProductChangedHandler,
+    OnCatalogCategoryChangedHandler,
     // Même chose pour l'image d'une opération reçue (mediatheque.md §7 bis).
     OnOperationImageChangedHandler,
     IngestCatalogService,
@@ -150,6 +158,8 @@ import { PrismaCatalogMediaCopies } from "./infrastructure/prisma-catalog-media-
     SetCatalogFeaturedHandler,
     { provide: CatalogItemRepository, useClass: PrismaCatalogItemRepository },
     { provide: CatalogVisualsProjection, useClass: PrismaCatalogVisualsProjection },
+    { provide: CatalogProductFactsProjection, useClass: PrismaCatalogProductFactsProjection },
+    { provide: CatalogFamilyFactsProjection, useClass: PrismaCatalogFamilyFactsProjection },
     { provide: CatalogOperationImageProjection, useClass: PrismaCatalogOperationImageProjection },
     { provide: CatalogCategoryProjection, useClass: PrismaCatalogCategoryProjection },
     { provide: CatalogReader, useClass: PrismaCatalogReader },

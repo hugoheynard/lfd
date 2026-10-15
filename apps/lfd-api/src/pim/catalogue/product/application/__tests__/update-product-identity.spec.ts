@@ -8,6 +8,7 @@ import {
   UpdateProductIdentityCommand,
   UpdateProductIdentityHandler,
 } from "../update-product-identity.js";
+import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
 
 /**
  * Changer de famille change les taux dont la fiche hérite : un fait dédié,
@@ -141,6 +142,7 @@ async function saveIdentity(
     new TwoFamilies(),
     journal,
     new DirectUnitOfWork(),
+    new RecordingCatalogEmitter(),
   ).execute(
     new UpdateProductIdentityCommand("prd_1", { name: { fr: nameFr }, kind: "daily", categoryId }),
   );

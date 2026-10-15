@@ -6,6 +6,7 @@ import { PIM_EVENTS, PimJournal } from "../../journal/pim-journal.js";
 import { AllergenCatalogueReader } from "../domain/ports/allergen-catalogue.reader.js";
 import { AllergenCategoryRepository } from "../domain/ports/allergen-category.repository.js";
 import { ensureCategoryUncited, requireCategory } from "./allergen-support.js";
+import { CatalogReemission } from "../../catalogue/shared/domain/ports/catalog-reemission.js";
 
 export class ArchiveAllergenCategoryCommand {
   constructor(readonly id: string) {}
@@ -37,6 +38,7 @@ export class ArchiveAllergenCategoryHandler implements ICommandHandler<
     private readonly journal: PimJournal,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
+    private readonly reemission: CatalogReemission,
   ) {}
 
   async execute(command: ArchiveAllergenCategoryCommand): Promise<void> {
@@ -57,5 +59,6 @@ export class ArchiveAllergenCategoryHandler implements ICommandHandler<
       });
       await this.categories.save(category, ticket);
     });
+    await this.reemission.everything();
   }
 }

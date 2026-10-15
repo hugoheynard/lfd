@@ -7,6 +7,7 @@ import {
   AlignVariantOnDefaultCommand,
   AlignVariantOnDefaultHandler,
 } from "../align-variant-on-default.js";
+import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
 
 const PRODUCT_ID = "prd_1";
 const DEFAULT_ID = "prd_1_v1";
@@ -98,7 +99,12 @@ function scene(second: Partial<VariantSnapshot> = {}): {
 } {
   const products = new FakeProducts(snapshot(second));
   const journal = new RecordingJournal();
-  const handler = new AlignVariantOnDefaultHandler(products, journal, new DirectUnitOfWork());
+  const handler = new AlignVariantOnDefaultHandler(
+    products,
+    journal,
+    new DirectUnitOfWork(),
+    new RecordingCatalogEmitter(),
+  );
   return {
     products,
     journal,
@@ -227,6 +233,7 @@ describe("une écriture ne recopie pas le défaut dans les colonnes propres", ()
       products,
       new RecordingJournal(),
       new DirectUnitOfWork(),
+      new RecordingCatalogEmitter(),
     );
   }
 

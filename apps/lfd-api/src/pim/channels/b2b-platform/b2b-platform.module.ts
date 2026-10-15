@@ -7,6 +7,8 @@ import { OrderTimeLimitationModule } from "../../order-time-limitation/order-tim
 import { PimDatabaseModule } from "../../infra/database/pim-database.module.js";
 import { OperationsModule } from "../../operations/operations.module.js";
 import { PushB2bCatalogHandler } from "./application/push-b2b-catalog.js";
+import { ReemitCatalogHandler } from "./application/reemit-catalog.js";
+import { B2bReemitController } from "./products/reemit.controller.js";
 import { B2bMembershipController } from "./membership/membership.controller.js";
 import { AudienceSwitchPreviewController } from "./membership/audience-switch-preview.controller.js";
 import { GetAudienceSwitchPreviewHandler } from "./application/audience-switch-preview.js";
@@ -51,11 +53,13 @@ import { B2bCatalogPushService } from "./products/push.service.js";
     B2bPushController,
     B2bProductDeliveryController,
     AudienceSwitchPreviewController,
+    B2bReemitController,
   ],
   providers: [
     B2bMembershipService,
     B2bCatalogPushService,
     PushB2bCatalogHandler,
+    ReemitCatalogHandler,
     // L'aperçu de la bascule vers l'audience (lot 1, 1f) : lecture seule.
     GetAudienceSwitchPreviewHandler,
     // La frise. Son port de RETOUR (`B2bDeliveryFactsReader`) n'est pas fourni

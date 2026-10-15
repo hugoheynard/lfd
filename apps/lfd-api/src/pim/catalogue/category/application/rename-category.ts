@@ -9,6 +9,7 @@ import {
   type LocalizedText,
 } from "../../shared/domain/value-objects/localized-text.js";
 import { assertSlugFree, requireCategory } from "./category-support.js";
+import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
 
 export interface RenameCategoryPayload {
   /** Le nom, dans les langues renseignées — la source est obligatoire. Une
@@ -31,6 +32,7 @@ export class RenameCategoryHandler implements ICommandHandler<RenameCategoryComm
     private readonly categories: CategoryRepository,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
+    private readonly emitter: CatalogEmitter,
   ) {}
 
   async execute(command: RenameCategoryCommand): Promise<void> {
@@ -58,6 +60,7 @@ export class RenameCategoryHandler implements ICommandHandler<RenameCategoryComm
             })
           : this.journal.untraced("famille enregistrée sans changement de nom");
       await this.categories.save(category, ticket);
+      await this.emitter.emitCategories([command.id]);
     });
   }
 }

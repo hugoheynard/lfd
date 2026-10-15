@@ -11,6 +11,8 @@ import { vatChangePayload } from "../../shared/application/journal-names.js";
 import type { Category } from "../domain/entities/category.js";
 import { CategoryRepository } from "../domain/ports/category.repository.js";
 import { requireCategory } from "./category-support.js";
+import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
+import { CatalogReemission } from "../../shared/domain/ports/catalog-reemission.js";
 
 export class SetCategoryVatCommand {
   constructor(
@@ -34,6 +36,8 @@ export class SetCategoryVatHandler implements ICommandHandler<SetCategoryVatComm
     private readonly contexts: SalesContextRegistry,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
+    private readonly emitter: CatalogEmitter,
+    private readonly reemission: CatalogReemission,
   ) {}
 
   async execute(command: SetCategoryVatCommand): Promise<void> {
@@ -48,7 +52,9 @@ export class SetCategoryVatHandler implements ICommandHandler<SetCategoryVatComm
     await this.uow.run(async () => {
       const ticket = await this.journalize(category, before, category.vatByContext);
       await this.categories.save(category, ticket);
+      await this.emitter.emitCategories([command.id]);
     });
+    await this.reemission.productsOfCategories([command.id]);
   }
 
   /**

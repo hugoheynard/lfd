@@ -108,6 +108,11 @@ model CatalogCategory {
 
   receivedAt DateTime @map("received_at")
 
+  /// Le numéro du dernier fait « famille changée » appliqué (lot 2a,
+  /// `plan-catalogue-synchronise-par-audience.md`). `NULL` = jamais reçue par
+  /// un fait : un push l'a posée, ou une fiche l'a apportée.
+  appliedSeq BigInt? @map("applied_seq")
+
   @@map("catalog_categories")
   @@schema("public")
 }
@@ -313,6 +318,11 @@ model CatalogItem {
   /// Plan-evenements-durables §7 quater, #12 (2026-10-10).
   visualsGestureId String? @map("visuals_gesture_id")
 
+  /// À qui l'article se vend (`pro`, `public`, `both`), posé par le fait de sa
+  /// fiche (lot 2a). `NULL` = jamais reçu par un fait, lu `both` — ce que fait
+  /// tout article avant l'audience. Lu par `servedTo`, et lui seul.
+  audience String?
+
   override CatalogItemOverride?
 
   @@index([categoryId])
@@ -504,5 +514,33 @@ model CatalogItemOverride {
   decidedAt DateTime @updatedAt @map("decided_at")
 
   @@map("catalog_item_overrides")
+  @@schema("public")
+}
+
+/// **Une fiche du référentiel, telle que la plateforme la connaît** — vendue ou
+/// non (lot 2a, `documentation/pim/plan-catalogue-synchronise-par-audience.md`).
+///
+/// `catalog_items` reste la table de ce qui SE VEND ; celle-ci porte ce qui
+/// manquait : une fiche inactive, une déclinaison incomplète (`gaps`),
+/// l'audience. Écrite par le seul récepteur de `pim.catalog_product_changed`,
+/// sous condition `applied_seq` : un fait plus ancien que la ligne n'écrit rien.
+///
+/// `categoryId` SANS clé étrangère : la fiche peut arriver avant sa famille.
+model CatalogEntry {
+  productId  String @id @map("product_id")
+  productSku String @map("product_sku")
+  name       String
+  categoryId String @map("category_id")
+  /// `inactive` | `active` | `archived` — les mots de l'écran, pas l'enum du référentiel.
+  status     String
+  /// L'audience EFFECTIVE (dérogation de la fiche, sinon sa famille).
+  audience   String
+  /// Déclinaison (SKU) → ce qui lui manque pour se vendre. `{}` = rien.
+  gaps       Json
+  appliedSeq BigInt   @map("applied_seq")
+  receivedAt DateTime @map("received_at")
+
+  @@index([categoryId])
+  @@map("catalog_entries")
   @@schema("public")
 }

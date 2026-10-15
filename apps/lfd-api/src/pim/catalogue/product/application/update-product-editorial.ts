@@ -12,6 +12,7 @@ import {
   type EditorialInput,
 } from "../domain/value-objects/editorial.js";
 import { requireProduct } from "./product-support.js";
+import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
 
 export class UpdateProductEditorialCommand {
   constructor(
@@ -35,6 +36,7 @@ export class UpdateProductEditorialHandler implements ICommandHandler<
     private readonly readers: EditorialReader,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
+    private readonly emitter: CatalogEmitter,
   ) {}
 
   async execute(command: UpdateProductEditorialCommand): Promise<void> {
@@ -58,6 +60,7 @@ export class UpdateProductEditorialHandler implements ICommandHandler<
             })
           : this.journal.untraced("section enregistrée sans modification");
       await this.editorials.save(command.id, after, [], ticket);
+      await this.emitter.emitProducts([command.id]);
     });
   }
 }

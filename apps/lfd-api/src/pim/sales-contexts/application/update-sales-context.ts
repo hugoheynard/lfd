@@ -6,6 +6,7 @@ import { PIM_EVENTS, PimJournal } from "../../journal/pim-journal.js";
 import type { SalesContextAggregate } from "../domain/entities/sales-context.entity.js";
 import { SalesContextRepository } from "../domain/ports/sales-context.repository.js";
 import { ensureHandleFree, requireContext } from "./sales-context-support.js";
+import { CatalogReemission } from "../../catalogue/shared/domain/ports/catalog-reemission.js";
 
 export interface UpdateSalesContextPayload {
   readonly label: string;
@@ -32,6 +33,7 @@ export class UpdateSalesContextHandler implements ICommandHandler<UpdateSalesCon
     private readonly contexts: SalesContextRepository,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
+    private readonly reemission: CatalogReemission,
   ) {}
 
   async execute(command: UpdateSalesContextCommand): Promise<void> {
@@ -58,6 +60,7 @@ export class UpdateSalesContextHandler implements ICommandHandler<UpdateSalesCon
           : this.journal.untraced("record without modification");
       await this.contexts.save(context, ticket);
     });
+    await this.reemission.everything();
   }
 }
 

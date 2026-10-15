@@ -10,6 +10,7 @@ import { CreateVatRateCommand, CreateVatRateHandler } from "../create-vat-rate.j
 import { ListVatRatesHandler } from "../list-vat-rates.js";
 import { RemoveVatRateCommand, RemoveVatRateHandler } from "../remove-vat-rate.js";
 import { UpdateVatRateCommand, UpdateVatRateHandler } from "../update-vat-rate.js";
+import { RecordingCatalogReemission } from "../../../catalogue/shared/domain/ports/__tests__/catalog-emitter-doubles.js";
 
 /** Garde des agrégats et reconstitue à chaque lecture — comme la vraie base. */
 class InMemoryRepo extends VatRateRepository {
@@ -139,6 +140,7 @@ describe("UpdateVatRateHandler", () => {
         new KnownContexts(),
         new RecordingJournal(),
         new DirectUnitOfWork(),
+        new RecordingCatalogReemission(),
       ).execute(new UpdateVatRateCommand("absent", { name: "X", percent: 20 })),
     ).rejects.toBeInstanceOf(VatRateNotFoundError);
   });
@@ -157,6 +159,7 @@ describe("UpdateVatRateHandler", () => {
       new KnownContexts(),
       new RecordingJournal(),
       new DirectUnitOfWork(),
+      new RecordingCatalogReemission(),
     ).execute(new UpdateVatRateCommand(id, { name: "Intermédiaire", percent: 10 }));
 
     expect(repo.at(id)).toEqual({
@@ -185,6 +188,7 @@ describe("UpdateVatRateHandler", () => {
       new KnownContexts(),
       new RecordingJournal(),
       new DirectUnitOfWork(),
+      new RecordingCatalogReemission(),
     ).execute(new UpdateVatRateCommand(id, { name: "Réduit alimentaire", percent: 5.5 }));
 
     expect(repo.at(id)?.name).toBe("Réduit alimentaire");
@@ -207,6 +211,7 @@ describe("UpdateVatRateHandler", () => {
         new KnownContexts(),
         new RecordingJournal(),
         new DirectUnitOfWork(),
+        new RecordingCatalogReemission(),
       ).execute(new UpdateVatRateCommand(first, { name: "A", percent: 20 })),
     ).rejects.toBeInstanceOf(VatRateConflictError);
   });
@@ -222,9 +227,12 @@ describe("RemoveVatRateHandler", () => {
       new DirectUnitOfWork(),
     ).execute(new CreateVatRateCommand({ name: "Réduit", percent: 5.5 }));
 
-    await new RemoveVatRateHandler(repo, new RecordingJournal(), new DirectUnitOfWork()).execute(
-      new RemoveVatRateCommand(id),
-    );
+    await new RemoveVatRateHandler(
+      repo,
+      new RecordingJournal(),
+      new DirectUnitOfWork(),
+      new RecordingCatalogReemission(),
+    ).execute(new RemoveVatRateCommand(id));
 
     expect(repo.at(id)).toBeUndefined();
   });
@@ -275,6 +283,7 @@ describe("Le journal du référentiel", () => {
       new KnownContexts(),
       journal,
       new DirectUnitOfWork(),
+      new RecordingCatalogReemission(),
     ).execute(new UpdateVatRateCommand(id, { name: "Intermédiaire", percent: 10 }));
 
     expect(journal.types()).toEqual([
@@ -315,6 +324,7 @@ describe("Le journal du référentiel", () => {
       new KnownContexts(),
       journal,
       new DirectUnitOfWork(),
+      new RecordingCatalogReemission(),
     ).execute(new UpdateVatRateCommand(id, { name: "Réduit", percent: 10 }));
 
     expect(journal.entries[1]?.payload).toMatchObject({
@@ -339,6 +349,7 @@ describe("Le journal du référentiel", () => {
       new KnownContexts(),
       journal,
       new DirectUnitOfWork(),
+      new RecordingCatalogReemission(),
     ).execute(new UpdateVatRateCommand(id, { name: "Réduit", percent: 5.5 }));
 
     // Un formulaire réenregistré à l'identique n'est pas un fait.
@@ -361,9 +372,13 @@ describe("l’unicité de la valeur du taux", () => {
     ).rejects.toBeInstanceOf(VatRateConflictError);
 
     await expect(
-      new UpdateVatRateHandler(repo, new KnownContexts(), journal, new DirectUnitOfWork()).execute(
-        new UpdateVatRateCommand(other, { name: "Normal", percent: 5.5 }),
-      ),
+      new UpdateVatRateHandler(
+        repo,
+        new KnownContexts(),
+        journal,
+        new DirectUnitOfWork(),
+        new RecordingCatalogReemission(),
+      ).execute(new UpdateVatRateCommand(other, { name: "Normal", percent: 5.5 })),
     ).rejects.toBeInstanceOf(VatRateConflictError);
   });
 });

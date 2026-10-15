@@ -1,0 +1,141 @@
+import { Injectable } from "@nestjs/common";
+
+import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { IdGenerator } from "../../../platform/id/id-generator.js";
+import { Clock } from "../../../platform/time/clock.js";
+import type { ReceivedCatalogProduct } from "../domain/catalog-product-facts.js";
+import type { PimFacts } from "../domain/entities/catalog-item.js";
+import type { CatalogCategoryFacts } from "../domain/ports/catalog-category.projection.js";
+import { CatalogProductFactsProjection } from "../domain/ports/catalog-product-facts.projection.js";
+import type { CatalogAudience } from "../domain/served-to.js";
+import { pimFactsColumns } from "./catalog-item-columns.js";
+import { lastRecordedPrices, priceTraceRows } from "./catalog-price-trace.js";
+import { STILL_SOLD } from "./sellable-filter.js";
+
+/**
+ * L'adaptateur du récepteur des faits d'une fiche.
+ *
+ * 🔴 **Il n'écrit JAMAIS `catalog_item_overrides`**, et ne passe pas par
+ * `PrismaCatalogItemRepository.saveMany`, qui supprime une décision quand
+ * l'agrégat n'en porte plus (H10, §4 bis du plan) : un fait réécrit les
+ * colonnes reçues du référentiel, rien d'autre. Les colonnes viennent de
+ * `pimFactsColumns`, la liste partagée avec l'agrégat.
+ *
+ * Les limites de commande ne sont pas réécrites sur un article existant : ce
+ * sont des RÈGLES globales qui voyagent à part (C3, lot 4) — les remettre à
+ * `null` ici effacerait ce que le push a posé.
+ */
+@Injectable()
+export class PrismaCatalogProductFactsProjection extends CatalogProductFactsProjection {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly ids: IdGenerator,
+    private readonly clock: Clock,
+  ) {
+    super();
+  }
+
+  async recordEntryIfNewer(product: ReceivedCatalogProduct): Promise<boolean> {
+    // Une écriture CONDITIONNÉE en base, comme `showIfNewer` : la ligne est
+    // verrouillée par l'`ON CONFLICT`, donc deux livraisons de la même fiche
+    // passent l'une après l'autre, et la plus ancienne ne réécrit rien.
+    const written = await this.prisma.$executeRaw`
+      INSERT INTO public.catalog_entries
+        (product_id, product_sku, name, category_id, status, audience, gaps, applied_seq, received_at)
+      VALUES (${product.productId}, ${product.productSku}, ${product.name}, ${product.categoryId},
+              ${product.status}, ${product.audience}, ${JSON.stringify(product.gaps)}::jsonb,
+              ${product.seq}, ${product.receivedAt})
+      ON CONFLICT (product_id) DO UPDATE SET
+        product_sku = EXCLUDED.product_sku,
+        name = EXCLUDED.name,
+        category_id = EXCLUDED.category_id,
+        status = EXCLUDED.status,
+        audience = EXCLUDED.audience,
+        gaps = EXCLUDED.gaps,
+        applied_seq = EXCLUDED.applied_seq,
+        received_at = EXCLUDED.received_at
+      WHERE public.catalog_entries.applied_seq < EXCLUDED.applied_seq`;
+    return written > 0;
+  }
+
+  async ensureFamily(family: CatalogCategoryFacts): Promise<void> {
+    // `skipDuplicates` = `ON CONFLICT DO NOTHING` : une famille connue n'est
+    // jamais réécrite d'ici, son fait à elle s'en charge sous son numéro.
+    await this.prisma.catalogCategory.createMany({
+      data: [
+        {
+          id: family.id,
+          name: family.name,
+          slug: family.slug,
+          parentId: family.parentId,
+          position: family.position,
+          vatRatePercent: family.vatRatePercent,
+          receivedAt: family.receivedAt,
+        },
+      ],
+      skipDuplicates: true,
+    });
+  }
+
+  async putOnSale(items: readonly PimFacts[], audience: CatalogAudience): Promise<void> {
+    if (items.length === 0) {
+      return;
+    }
+    for (const facts of items) {
+      const { orderLimitDaysBefore, orderLimitTime, orderLimitGraceMinutes, ...columns } =
+        pimFactsColumns(facts);
+      const row = { ...columns, audience, withdrawnAt: null };
+      await this.prisma.catalogItem.upsert({
+        where: { sku: facts.sku },
+        create: {
+          sku: facts.sku,
+          ...row,
+          orderLimitDaysBefore,
+          orderLimitTime,
+          orderLimitGraceMinutes,
+        },
+        update: row,
+      });
+    }
+    await this.tracePrices(items);
+  }
+
+  async withdrawOthers(productId: string, keptSkus: readonly string[], at: Date): Promise<void> {
+    // Un `updateMany` conditionné plutôt qu'un aller-retour par l'agrégat : la
+    // seule règle de `CatalogItem.withdraw` — ne pas repousser une date déjà
+    // posée — est ici dans le `where` (`STILL_SOLD`), et la ligne de la fiche
+    // est déjà verrouillée par l'entrée écrite plus haut.
+    await this.prisma.catalogItem.updateMany({
+      where: { productId, sku: { notIn: [...keptSkus] }, ...STILL_SOLD },
+      data: { withdrawnAt: at },
+    });
+  }
+
+  /** La trace du tarif, par la règle partagée — décision locale relue, jamais écrite. */
+  private async tracePrices(items: readonly PimFacts[]): Promise<void> {
+    const skus = items.map((facts) => facts.sku);
+    const [recorded, decisions] = await Promise.all([
+      lastRecordedPrices(this.prisma, skus),
+      this.prisma.catalogItemOverride.findMany({
+        where: { sku: { in: skus } },
+        select: { sku: true, priceMillicents: true },
+      }),
+    ]);
+    const decisionOf = new Map(decisions.map((decision) => [decision.sku, decision]));
+    const changes = priceTraceRows(
+      items.map((facts) => ({
+        sku: facts.sku,
+        productSku: facts.productSku,
+        pimPriceMillicents: facts.priceMillicents,
+        decision: decisionOf.get(facts.sku) ?? null,
+        vatRatePercent: facts.vatRatePercent,
+      })),
+      recorded,
+      () => this.ids.next(),
+      this.clock.now(),
+    );
+    if (changes.length > 0) {
+      await this.prisma.catalogPriceHistory.createMany({ data: changes });
+    }
+  }
+}

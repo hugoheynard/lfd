@@ -1,4 +1,5 @@
 import type { CatalogAdminItemView } from "@lfd/contracts";
+import { servedTo } from "../served-to.js";
 
 /**
  * Le catalogue vendu, **en CSV**, tel qu'on l'ouvre dans un tableur pour relire
@@ -88,7 +89,13 @@ function row(item: CatalogAdminItemView): string {
  * parce qu'elle se lit comme une bonne nouvelle.
  */
 function state(item: CatalogAdminItemView): string {
-  if (item.isHidden) {
+  // L'audience D'ABORD : un article que le référentiel ne vend pas aux pros
+  // n'est pas « masqué » — personne ici ne l'a décidé, et le démasquer ne le
+  // vendrait pas (`servedTo`).
+  if (item.audience === "public") {
+    return "Pas vendu aux pros";
+  }
+  if (!servedTo(item, "pro")) {
     return "Masqué";
   }
   return item.vatRatePercent === null ? "Sans taux de TVA" : "En vente";

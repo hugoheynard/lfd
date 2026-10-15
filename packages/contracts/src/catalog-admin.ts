@@ -22,6 +22,9 @@ export interface CatalogAllergenView {
   readonly label: string;
 }
 
+/** À qui un article se vend, tel que le référentiel le dit — une valeur de donnée. */
+export type CatalogItemAudience = "pro" | "public" | "both";
+
 export interface CatalogAdminItemView {
   readonly sku: string;
   /** Le SKU du produit dont l'article est une déclinaison. */
@@ -112,6 +115,16 @@ export interface CatalogAdminItemView {
    * renommer coûterait un déploiement pour un gain de lecture seule.
    */
   readonly isHiddenPublic: boolean;
+  /**
+   * À qui le référentiel vend cet article (`pro`, `public`, `both`), posé par
+   * le fait de sa fiche (lot 2a de `plan-catalogue-synchronise-par-audience.md`).
+   * `null` = jamais reçu par un fait, et se lit `both` : c'est ce que fait tout
+   * article avant l'audience.
+   *
+   * ⚠️ Il ne se règle pas ici : le masquage ne fait que RETIRER, il ne peut pas
+   * montrer aux pros un article que le référentiel dit `public`.
+   */
+  readonly audience: CatalogItemAudience | null;
   readonly isFeatured: boolean;
   /**
    * Vendu **seulement pendant une opération** (fil v11), tel que reçu. Porté ici

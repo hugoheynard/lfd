@@ -5,6 +5,7 @@ import type { WriteTicket } from "../../../platform/journal/scoped-journal.js";
 import { PIM_EVENTS, PimJournal } from "../../journal/pim-journal.js";
 import { AccountingRules } from "../domain/entities/accounting-rules.js";
 import { AccountingRulesRepository } from "../domain/ports/accounting-rules.repository.js";
+import { CatalogReemission } from "../../catalogue/shared/domain/ports/catalog-reemission.js";
 
 /** Le sujet du fait : le singleton lui-même — il n'y en a qu'un à nommer. */
 const ACCOUNTING_RULES_SUBJECT = "accounting";
@@ -42,6 +43,7 @@ export class SetProPriceRatioHandler implements ICommandHandler<SetProPriceRatio
     private readonly rules: AccountingRulesRepository,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
+    private readonly reemission: CatalogReemission,
   ) {}
 
   /**
@@ -67,6 +69,7 @@ export class SetProPriceRatioHandler implements ICommandHandler<SetProPriceRatio
       const ticket = await this.journalize(before, after);
       await this.rules.save(rules, ticket);
     });
+    await this.reemission.everything();
   }
 
   /**

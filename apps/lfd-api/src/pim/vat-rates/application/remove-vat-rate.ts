@@ -4,6 +4,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { PIM_EVENTS, PimJournal } from "../../journal/pim-journal.js";
 import { VatRateRepository } from "../domain/ports/vat-rate.repository.js";
 import { requireRate } from "./vat-support.js";
+import { CatalogReemission } from "../../catalogue/shared/domain/ports/catalog-reemission.js";
 
 export class RemoveVatRateCommand {
   constructor(readonly id: string) {}
@@ -15,6 +16,7 @@ export class RemoveVatRateHandler implements ICommandHandler<RemoveVatRateComman
     private readonly rates: VatRateRepository,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
+    private readonly reemission: CatalogReemission,
   ) {}
 
   /**
@@ -38,5 +40,6 @@ export class RemoveVatRateHandler implements ICommandHandler<RemoveVatRateComman
       });
       await this.rates.remove(command.id, ticket);
     });
+    await this.reemission.everything();
   }
 }

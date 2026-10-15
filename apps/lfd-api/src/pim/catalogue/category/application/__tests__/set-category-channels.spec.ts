@@ -14,6 +14,10 @@ import {
   SetCategoryChannelsCommand,
   SetCategoryChannelsHandler,
 } from "../set-category-channels.js";
+import {
+  RecordingCatalogEmitter,
+  RecordingCatalogReemission,
+} from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
 
 /**
  * Fermer un canal efface le taux du contexte fermé — et la comptabilité doit
@@ -138,6 +142,8 @@ async function setChannels(
     }),
     journal,
     new DirectUnitOfWork(),
+    new RecordingCatalogEmitter(),
+    new RecordingCatalogReemission(),
   ).execute(new SetCategoryChannelsCommand("cat_1", channels));
 }
 

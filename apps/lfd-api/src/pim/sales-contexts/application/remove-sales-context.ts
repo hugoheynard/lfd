@@ -4,6 +4,7 @@ import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { PIM_EVENTS, PimJournal } from "../../journal/pim-journal.js";
 import { SalesContextRepository } from "../domain/ports/sales-context.repository.js";
 import { requireContext } from "./sales-context-support.js";
+import { CatalogReemission } from "../../catalogue/shared/domain/ports/catalog-reemission.js";
 
 export class RemoveSalesContextCommand {
   constructor(readonly key: string) {}
@@ -32,6 +33,7 @@ export class RemoveSalesContextHandler implements ICommandHandler<RemoveSalesCon
     private readonly contexts: SalesContextRepository,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
+    private readonly reemission: CatalogReemission,
   ) {}
 
   async execute(command: RemoveSalesContextCommand): Promise<void> {
@@ -50,5 +52,6 @@ export class RemoveSalesContextHandler implements ICommandHandler<RemoveSalesCon
       });
       await this.contexts.remove(key, ticket);
     });
+    await this.reemission.everything();
   }
 }

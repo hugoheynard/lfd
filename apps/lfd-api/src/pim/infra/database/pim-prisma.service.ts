@@ -78,6 +78,18 @@ export abstract class PimPrismaService {
   abstract readonly operationItem: PrismaService["operationItem"];
 
   /**
+   * Le SQL écrit à la main — pour **un seul usage** à ce jour (vérifié le
+   * 2026-10-15) : le verrou et le numéro de publication des faits du catalogue
+   * (`channels/b2b-platform/products/prisma-publication-sequence.ts`). Prisma
+   * n'exprime ni `SELECT … FOR UPDATE` ni `nextval`.
+   *
+   * ⚠️ Il élargit cette surface au-delà des délégués déclarés : une requête
+   * écrite ici peut viser n'importe quel schéma. `lint:cross-schema-join` lit
+   * ce SQL ; un appelant qui viserait `public` s'y ferait refuser.
+   */
+  abstract readonly $queryRaw: PrismaService["$queryRaw"];
+
+  /**
    * Le lot atomique, **forme TABLEAU seulement**.
    *
    * La forme callback (`$transaction(async (tx) => …)`) rendrait un client

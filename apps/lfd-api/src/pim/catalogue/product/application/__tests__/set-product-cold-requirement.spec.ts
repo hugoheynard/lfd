@@ -7,6 +7,7 @@ import {
   SetProductColdRequirementCommand,
   SetProductColdRequirementHandler,
 } from "../set-product-cold-requirement.js";
+import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
 
 /**
  * La case « demande le froid » de la fiche (lot 4 bis du plan de préparation
@@ -78,9 +79,12 @@ async function declareCold(
   requiresCold: boolean,
   id = "prd_tarte",
 ): Promise<void> {
-  await new SetProductColdRequirementHandler(products, journal, new DirectUnitOfWork()).execute(
-    new SetProductColdRequirementCommand(id, requiresCold),
-  );
+  await new SetProductColdRequirementHandler(
+    products,
+    journal,
+    new DirectUnitOfWork(),
+    new RecordingCatalogEmitter(),
+  ).execute(new SetProductColdRequirementCommand(id, requiresCold));
 }
 
 describe("SetProductColdRequirementHandler — déclarer qu'une fiche demande le froid", () => {

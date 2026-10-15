@@ -6,6 +6,7 @@ import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import type { Product } from "../domain/entities/product.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { requireProduct } from "./product-support.js";
+import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
 
 export class SetProductColdRequirementCommand {
   constructor(
@@ -32,6 +33,7 @@ export class SetProductColdRequirementHandler implements ICommandHandler<
     private readonly products: ProductRepository,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
+    private readonly emitter: CatalogEmitter,
   ) {}
 
   async execute(command: SetProductColdRequirementCommand): Promise<void> {
@@ -40,6 +42,7 @@ export class SetProductColdRequirementHandler implements ICommandHandler<
     await this.uow.run(async () => {
       const ticket = await this.journalize(product, changed);
       await this.products.save(product, ticket);
+      await this.emitter.emitProducts([command.id]);
     });
   }
 

@@ -12,6 +12,7 @@ import {
 import {
   optionalAdminDevBypass,
   optionalAnalyticsConfig,
+  optionalCatalogFactsEnabled,
   optionalDeliveryInboxEnabled,
   optionalDevImpersonation,
   optionalFieldEncryptionKey,
@@ -67,6 +68,7 @@ const DEFAULT_AUTH0_STAFF_CONNECTION = "lfc-staff";
 export class AppConfig {
   private readonly database: string;
   private readonly publicationValue: boolean;
+  private readonly catalogFactsValue: boolean;
   private readonly deliveryInboxValue: boolean;
   private readonly journalStrictFactsValue: boolean;
   private readonly auth0DomainValue: string;
@@ -118,6 +120,7 @@ export class AppConfig {
     );
     this.adminBypass = optionalAdminDevBypass();
     this.publicationValue = optionalPublicationEnabled();
+    this.catalogFactsValue = optionalCatalogFactsEnabled();
     this.deliveryInboxValue = optionalDeliveryInboxEnabled();
     this.journalStrictFactsValue = optionalJournalStrictFacts();
     this.recomputeTokenValue = optionalString("RECOMPUTE_TOKEN");
@@ -441,6 +444,21 @@ export class AppConfig {
    */
   publicationEnabled(): boolean {
     return this.publicationValue;
+  }
+
+  /**
+   * Les **faits du catalogue** sont-ils ouverts ici ?
+   *
+   * Ouverts, chaque écriture d'une fiche ou d'une famille émet son instantané
+   * vers la plateforme, et le push cesse d'écrire fiches et familles. Fermés —
+   * le défaut —, rien ne s'émet et le push reste seul : c'est l'état qui se
+   * déploie sans rien changer de servi (cf. `optionalCatalogFactsEnabled`).
+   *
+   * ⚠️ Ils ne partent que si la publication est AUSSI ouverte : un fait de
+   * catalogue envoie le catalogue dehors.
+   */
+  catalogFactsEnabled(): boolean {
+    return this.catalogFactsValue;
   }
 
   /**

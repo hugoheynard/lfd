@@ -9,6 +9,7 @@ import { effectiveAudience } from "../../shared/domain/value-objects/audience.js
 import type { Product } from "../domain/entities/product.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { requireProduct } from "./product-support.js";
+import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
 
 export class ActivateProductCommand {
   constructor(readonly id: string) {}
@@ -38,6 +39,7 @@ export class ActivateProductHandler implements ICommandHandler<ActivateProductCo
     private readonly catalogue: CatalogueReader,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
+    private readonly emitter: CatalogEmitter,
   ) {}
 
   async execute(command: ActivateProductCommand): Promise<void> {
@@ -58,6 +60,7 @@ export class ActivateProductHandler implements ICommandHandler<ActivateProductCo
         blast: { variants: variants.length },
       });
       await this.products.save(product, ticket);
+      await this.emitter.emitProducts([command.id]);
     });
   }
 

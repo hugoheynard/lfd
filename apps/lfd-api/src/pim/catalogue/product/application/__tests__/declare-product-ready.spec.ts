@@ -18,6 +18,7 @@ import {
   DeclareProductReadyCommand,
   DeclareProductReadyHandler,
 } from "../declare-product-ready.js";
+import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
 
 /**
  * **La signature.** Ce que la commande inscrit — et ce qu'elle refuse
@@ -111,6 +112,7 @@ function build(status: ProductSnapshot["status"] = "draft") {
     journal,
     new FixedClock(NOW),
     new DirectUnitOfWork(),
+    new RecordingCatalogEmitter(),
   );
   return { handler, readiness, journal };
 }
@@ -179,6 +181,7 @@ describe("DeclareProductReady", () => {
       new RecordingJournal(),
       new FixedClock(NOW),
       new DirectUnitOfWork(),
+      new RecordingCatalogEmitter(),
     );
 
     await expect(

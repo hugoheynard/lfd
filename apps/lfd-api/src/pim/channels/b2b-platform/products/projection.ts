@@ -113,7 +113,7 @@ function frenchOf(text: { readonly fr: string }): string {
  * TTC s'arrête à ce fichier. Cf.
  * `documentation/pricing/architecture-prix-ancre-ttc.md` § 4.
  */
-function projectVariant(
+export function projectVariant(
   variant: VariantRecord,
   htPriceMillicents: number,
   vatRatePercent: number | null,
@@ -423,7 +423,7 @@ export function projectCatalog(
  * `null` quand le contexte n'est pas réglé : la plateforme écarte alors
  * l'article de sa boutique plutôt que de supposer un taux.
  */
-function vatOf(percents: CategoryVatPercents): number | null {
+export function vatOf(percents: CategoryVatPercents): number | null {
   return percents[B2B_CONTEXT_KEY] ?? null;
 }
 

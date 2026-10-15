@@ -7,6 +7,7 @@ import {
   SetProductOperationOnlyCommand,
   SetProductOperationOnlyHandler,
 } from "../set-product-operation-only.js";
+import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
 
 /**
  * La case « vendu seulement pendant une opération » de la fiche (D3 du plan des
@@ -78,9 +79,12 @@ async function reserve(
   operationOnly: boolean,
   id = "prd_buche",
 ): Promise<void> {
-  await new SetProductOperationOnlyHandler(products, journal, new DirectUnitOfWork()).execute(
-    new SetProductOperationOnlyCommand(id, operationOnly),
-  );
+  await new SetProductOperationOnlyHandler(
+    products,
+    journal,
+    new DirectUnitOfWork(),
+    new RecordingCatalogEmitter(),
+  ).execute(new SetProductOperationOnlyCommand(id, operationOnly));
 }
 
 describe("SetProductOperationOnlyHandler — réserver une fiche aux opérations", () => {

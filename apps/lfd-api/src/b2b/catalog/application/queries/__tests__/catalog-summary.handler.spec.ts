@@ -28,6 +28,7 @@ function item(over: Partial<CatalogAdminItemView> = {}): CatalogAdminItemView {
     allergensIncomplete: false,
     isHidden: false,
     isHiddenPublic: false,
+    audience: null,
     isFeatured: false,
     operationOnly: false,
     decidedBy: null,

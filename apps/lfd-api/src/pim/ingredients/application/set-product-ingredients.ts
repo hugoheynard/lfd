@@ -4,6 +4,7 @@ import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { PIM_EVENTS, PimJournal } from "../../journal/pim-journal.js";
 import { IngredientNotFoundError } from "../domain/errors/ingredient-errors.js";
 import { IngredientRepository } from "../domain/ports/ingredient.repository.js";
+import { CatalogEmitter } from "../../catalogue/shared/domain/ports/catalog-emitter.js";
 
 export class SetProductIngredientsCommand {
   constructor(
@@ -34,6 +35,7 @@ export class SetProductIngredientsHandler implements ICommandHandler<
     private readonly ingredients: IngredientRepository,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
+    private readonly emitter: CatalogEmitter,
   ) {}
 
   async execute(command: SetProductIngredientsCommand): Promise<void> {
@@ -62,6 +64,7 @@ export class SetProductIngredientsHandler implements ICommandHandler<
             },
           });
       await this.ingredients.setOfProduct(productId, keys, ticket);
+      await this.emitter.emitProducts([productId]);
     });
   }
 

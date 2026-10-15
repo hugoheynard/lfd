@@ -11,6 +11,10 @@ import {
   SetCategoryAudienceCommand,
   SetCategoryAudienceHandler,
 } from "../set-category-audience.js";
+import {
+  RecordingCatalogEmitter,
+  RecordingCatalogReemission,
+} from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
 
 /** L'audience d'une famille (1c du plan d'audience). */
 function setting(
@@ -19,9 +23,13 @@ function setting(
   audience: Audience,
   id = CATEGORY_ID,
 ): Promise<void> {
-  return new SetCategoryAudienceHandler(categories, journal, new DirectUnitOfWork()).execute(
-    new SetCategoryAudienceCommand(id, audience),
-  );
+  return new SetCategoryAudienceHandler(
+    categories,
+    journal,
+    new DirectUnitOfWork(),
+    new RecordingCatalogEmitter(),
+    new RecordingCatalogReemission(),
+  ).execute(new SetCategoryAudienceCommand(id, audience));
 }
 
 describe("SetCategoryAudienceHandler", () => {

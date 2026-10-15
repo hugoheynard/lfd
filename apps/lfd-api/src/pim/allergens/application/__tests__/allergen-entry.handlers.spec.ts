@@ -39,6 +39,7 @@ import {
   InMemoryAllergenCategoryRepository,
   InMemoryAllergenEntryRepository,
 } from "./in-memory-allergens.js";
+import { RecordingCatalogReemission } from "../../../catalogue/shared/domain/ports/__tests__/catalog-emitter-doubles.js";
 
 /** Cf. la suite jumelle : absolue, mais jamais comparée à l'horloge. */
 const NOW = new Date("2026-09-02T10:00:00.000Z");
@@ -75,11 +76,36 @@ function harness(): Harness {
     store,
     journal,
     createCategory: new CreateAllergenCategoryHandler(categories, ids, journal, uow),
-    archiveCategory: new ArchiveAllergenCategoryHandler(categories, reader, journal, clock, uow),
+    archiveCategory: new ArchiveAllergenCategoryHandler(
+      categories,
+      reader,
+      journal,
+      clock,
+      uow,
+      new RecordingCatalogReemission(),
+    ),
     create: new CreateAllergenEntryHandler(entries, categories, ids, journal, uow),
-    revise: new ReviseAllergenEntryHandler(entries, categories, journal, uow),
-    archive: new ArchiveAllergenEntryHandler(entries, journal, clock, uow),
-    restore: new RestoreAllergenEntryHandler(entries, categories, journal, uow),
+    revise: new ReviseAllergenEntryHandler(
+      entries,
+      categories,
+      journal,
+      uow,
+      new RecordingCatalogReemission(),
+    ),
+    archive: new ArchiveAllergenEntryHandler(
+      entries,
+      journal,
+      clock,
+      uow,
+      new RecordingCatalogReemission(),
+    ),
+    restore: new RestoreAllergenEntryHandler(
+      entries,
+      categories,
+      journal,
+      uow,
+      new RecordingCatalogReemission(),
+    ),
   };
 }
 

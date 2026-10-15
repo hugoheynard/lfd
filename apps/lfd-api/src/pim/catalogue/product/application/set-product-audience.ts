@@ -7,6 +7,7 @@ import type { Audience } from "../../shared/domain/value-objects/audience.js";
 import type { Product } from "../domain/entities/product.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { requireProduct } from "./product-support.js";
+import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
 
 export class SetProductAudienceCommand {
   constructor(
@@ -30,6 +31,7 @@ export class SetProductAudienceHandler implements ICommandHandler<SetProductAudi
     private readonly products: ProductRepository,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
+    private readonly emitter: CatalogEmitter,
   ) {}
 
   async execute(command: SetProductAudienceCommand): Promise<void> {
@@ -39,6 +41,7 @@ export class SetProductAudienceHandler implements ICommandHandler<SetProductAudi
     await this.uow.run(async () => {
       const ticket = await this.journalize(product, before, changed);
       await this.products.save(product, ticket);
+      await this.emitter.emitProducts([command.id]);
     });
   }
 

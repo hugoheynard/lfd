@@ -5,6 +5,7 @@ import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { PIM_EVENTS, PimJournal } from "../../journal/pim-journal.js";
 import { AllergenCategoryRepository } from "../domain/ports/allergen-category.repository.js";
 import { requireCategory } from "./allergen-support.js";
+import { CatalogReemission } from "../../catalogue/shared/domain/ports/catalog-reemission.js";
 
 export class RenameAllergenCategoryCommand {
   constructor(
@@ -30,6 +31,7 @@ export class RenameAllergenCategoryHandler implements ICommandHandler<
     private readonly categories: AllergenCategoryRepository,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
+    private readonly reemission: CatalogReemission,
   ) {}
 
   async execute(command: RenameAllergenCategoryCommand): Promise<void> {
@@ -49,5 +51,6 @@ export class RenameAllergenCategoryHandler implements ICommandHandler<
       });
       await this.categories.save(category, ticket);
     });
+    await this.reemission.everything();
   }
 }

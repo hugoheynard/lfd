@@ -36,6 +36,7 @@ import { validatedDeclaration } from "./declaration-support.js";
 import { Sku } from "../domain/value-objects/sku.value-object.js";
 import { SKU_AVAILABILITY } from "../infrastructure/prisma-sku-availability.js";
 import { Product } from "../domain/entities/product.js";
+import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
 
 export interface CreateProductInput {
   /** Le nom, dans les langues renseignées — la source est obligatoire. Une
@@ -82,6 +83,7 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
     private readonly uow: UnitOfWork,
     @Inject(UuidGenerator) private readonly ids: UuidGenerator,
     @Inject(SKU_AVAILABILITY) private readonly availability: SkuAvailability,
+    private readonly emitter: CatalogEmitter,
   ) {}
 
   async execute(command: CreateProductCommand): Promise<string> {
@@ -167,6 +169,7 @@ export class CreateProductHandler implements ICommandHandler<CreateProductComman
       if (!isEmptyEditorial(story) || visuals.length > 0) {
         await this.editorials.save(productId, story, visuals, ticket);
       }
+      await this.emitter.emitProducts([productId]);
     });
 
     return productId;

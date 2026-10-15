@@ -1,5 +1,9 @@
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
-import type { AudienceSwitchItemView, AudienceSwitchPreviewView } from "@lfd/pim-contracts";
+import type {
+  AudienceSwitchItemView,
+  AudienceSwitchPreviewView,
+  AudienceSwitchVariantView,
+} from "@lfd/pim-contracts";
 
 import { CatalogueReader } from "../../../catalogue/shared/domain/ports/catalogue-reader.js";
 import type { ProductRecord } from "../../../catalogue/product/domain/ports/product.repository.js";
@@ -44,7 +48,12 @@ export class GetAudienceSwitchPreviewHandler implements IQueryHandler<
       this.catalogue.byIds(boundIds),
       this.catalogue.effectiveChannels(published),
     ]);
+    const sold = published.filter(
+      (product) =>
+        bound.has(product.id) && sellsContext(channels.get(product.id) ?? [], ROOT_CONTEXT_KEY),
+    );
     return {
+      soldWithoutAllergens: undeclared(sold),
       publishedUnbound: listed(published.filter((product) => !bound.has(product.id))),
       boundUnpublished: listed(boundProducts.filter((product) => product.status !== "published")),
       publishedB2bClosed: listed(
@@ -61,4 +70,30 @@ function listed(products: readonly ProductRecord[]): AudienceSwitchItemView[] {
   return products
     .map((product) => ({ id: product.id, sku: product.sku, name: product.name.fr }))
     .sort((left, right) => left.sku.localeCompare(right.sku));
+}
+
+/**
+ * Les déclinaisons vendues aux pros sans déclaration d'allergènes — non
+ * arrêtées, tarifées, fiche publiée, liée et ouverte au `b2b`. Les faits du
+ * catalogue les rangent incomplètes : la bascule les sort de la vente, et
+ * Hugo doit le lire avant (lot 2a, corrections après `vitruve`).
+ */
+function undeclared(products: readonly ProductRecord[]): AudienceSwitchVariantView[] {
+  return products
+    .flatMap((product) =>
+      product.variants
+        .filter(
+          (variant) =>
+            !variant.isDiscontinued &&
+            variant.priceCents !== null &&
+            variant.allergenSheet === null,
+        )
+        .map((variant) => ({
+          productId: product.id,
+          productSku: product.sku,
+          variantSku: variant.sku,
+          name: variant.name.fr,
+        })),
+    )
+    .sort((left, right) => left.variantSku.localeCompare(right.variantSku));
 }

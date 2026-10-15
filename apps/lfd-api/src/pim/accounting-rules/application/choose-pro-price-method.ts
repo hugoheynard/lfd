@@ -6,6 +6,7 @@ import type { WriteTicket } from "../../../platform/journal/scoped-journal.js";
 import { PIM_EVENTS, PimJournal } from "../../journal/pim-journal.js";
 import { AccountingRulesNotSetError } from "../domain/errors/accounting-rules-errors.js";
 import { AccountingRulesRepository } from "../domain/ports/accounting-rules.repository.js";
+import { CatalogReemission } from "../../catalogue/shared/domain/ports/catalog-reemission.js";
 
 /** Le sujet du fait : le singleton lui-même — il n'y en a qu'un à nommer. */
 const ACCOUNTING_RULES_SUBJECT = "accounting";
@@ -59,6 +60,7 @@ export class ChooseProPriceMethodHandler implements ICommandHandler<
     private readonly rules: AccountingRulesRepository,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
+    private readonly reemission: CatalogReemission,
   ) {}
 
   async execute(command: ChooseProPriceMethodCommand): Promise<void> {
@@ -74,6 +76,7 @@ export class ChooseProPriceMethodHandler implements ICommandHandler<
       const ticket = await this.journalize(before, after);
       await this.rules.save(record.rules, ticket);
     });
+    await this.reemission.everything();
   }
 
   /**

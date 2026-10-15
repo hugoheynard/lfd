@@ -18,6 +18,7 @@ import {
   type LocalizedText,
 } from "../../shared/domain/value-objects/localized-text.js";
 import { requireProduct } from "./product-support.js";
+import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
 
 export interface UpdateProductIdentityInput {
   /** Le nom, dans les langues renseignées — la source est obligatoire. Une
@@ -50,6 +51,7 @@ export class UpdateProductIdentityHandler implements ICommandHandler<
     private readonly categories: CategoryRepository,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
+    private readonly emitter: CatalogEmitter,
   ) {}
 
   /** Ce que cette section possède — le reste de la fiche ne la regarde pas. */
@@ -97,6 +99,7 @@ export class UpdateProductIdentityHandler implements ICommandHandler<
         to: category,
       });
       await this.products.save(product, ticket);
+      await this.emitter.emitProducts([id]);
     });
   }
 

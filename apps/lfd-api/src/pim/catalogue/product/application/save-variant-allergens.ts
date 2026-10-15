@@ -8,6 +8,7 @@ import { ProductRepository } from "../domain/ports/product.repository.js";
 import { VariantAllergensRepository } from "../domain/ports/variant-allergens.repository.js";
 import { validatedAllergens, type AllergensInput } from "./declaration-support.js";
 import { namedVariant, requireProduct } from "./product-support.js";
+import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
 
 /** Ce que la section « Allergènes » envoie — des codes, et rien d'autre. */
 export type SaveVariantAllergensInput = AllergensInput;
@@ -39,6 +40,7 @@ export class SaveVariantAllergensHandler implements ICommandHandler<
     private readonly reference: AllergenCatalogueReader,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
+    private readonly emitter: CatalogEmitter,
   ) {}
 
   async execute(command: SaveVariantAllergensCommand): Promise<void> {
@@ -91,6 +93,7 @@ export class SaveVariantAllergensHandler implements ICommandHandler<
             })
           : this.journal.untraced("section enregistrée sans modification");
       await this.allergenSheets.save(variantId, declaration, ticket);
+      await this.emitter.emitProducts([productId]);
     });
   }
 }

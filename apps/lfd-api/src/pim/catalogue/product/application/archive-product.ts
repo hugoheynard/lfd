@@ -4,6 +4,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { requireProduct } from "./product-support.js";
+import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
 
 export class ArchiveProductCommand {
   constructor(readonly id: string) {}
@@ -16,6 +17,7 @@ export class ArchiveProductHandler implements ICommandHandler<ArchiveProductComm
     private readonly products: ProductRepository,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
+    private readonly emitter: CatalogEmitter,
   ) {}
 
   async execute(command: ArchiveProductCommand): Promise<void> {
@@ -39,6 +41,7 @@ export class ArchiveProductHandler implements ICommandHandler<ArchiveProductComm
         payload: { subjectLabel: name.fr, sku, name },
       });
       await this.products.save(product, ticket);
+      await this.emitter.emitProducts([command.id]);
     });
   }
 }

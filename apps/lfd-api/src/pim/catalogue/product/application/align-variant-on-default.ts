@@ -5,6 +5,7 @@ import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { followsDefaultIn, type VariantAspect } from "../domain/entities/variant.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { requireProduct } from "./product-support.js";
+import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
 
 export class AlignVariantOnDefaultCommand {
   constructor(
@@ -43,6 +44,7 @@ export class AlignVariantOnDefaultHandler implements ICommandHandler<
     private readonly products: ProductRepository,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
+    private readonly emitter: CatalogEmitter,
   ) {}
 
   async execute(command: AlignVariantOnDefaultCommand): Promise<void> {
@@ -80,6 +82,7 @@ export class AlignVariantOnDefaultHandler implements ICommandHandler<
         },
       });
       await this.products.save(product, ticket);
+      await this.emitter.emitProducts([command.productId]);
     });
   }
 }
