@@ -339,9 +339,9 @@ export class App {
    * n'a que `pim_catalog:read` lui promettrait un atelier dont chaque appel
    * rendrait 403 — et la route, elle, le refuserait de toute façon
    * (`app.routes.ts`, `anyPermissionGuard('pim_catalog:write',
-   * 'media_library:write', 'ops_health:read', 'b2b_companies:read')`).
+   * 'media_library:write', 'ops_health:read', 'b2b_companies:read', 'delivery_settings:read')`).
    */
-  // Le même « l'un des quatre » que la garde de `/outils-agent` (2026-10-12) :
+  // Le même « l'un des cinq » que la garde de `/outils-agent` (2026-10-14) :
   // l'entrée suit la route, sinon un compte médiathèque ou exploitation seul
   // aurait un écran ouvert que rien n'annonce.
   protected readonly canUseAgentTools = computed(
@@ -349,7 +349,8 @@ export class App {
       this.permissions.can('pim_catalog:write') ||
       this.permissions.can('media_library:write') ||
       this.permissions.can('ops_health:read') ||
-      this.permissions.can('b2b_companies:read'),
+      this.permissions.can('b2b_companies:read') ||
+      this.permissions.can('delivery_settings:read'),
   );
 
   /**

@@ -11,6 +11,7 @@ Le plan de chargement des bacs au sol, la géométrie du plancher, et la bibliot
 | [`plan-bibliotheque-d-achat.md`](plan-bibliotheque-d-achat.md)   | 🟡 B1–B5 bâtis ; reste B6 — La bibliothèque d'achat : véhicules et bacs candidats (au millimètre), scénarios, tableau croisé.                                                                                                                      |
 | [`plan-piles-au-sol-revues.md`](plan-piles-au-sol-revues.md)     | 📐 plan                                                                                                                                                                                                                                            | Les piles au sol revues par Hugo (2026-10-08) : le jeu entre bacs devient un réglage, une pile peut monter sur un passage de roue, une pile qui ne tient pas ne bloque plus les suivantes. |
 | [`plan-geometrie-du-plancher.md`](plan-geometrie-du-plancher.md) | ✅ G1–G6 bâtis — La géométrie du plancher : largeur libre, étages, assistant d'achat, chargement au sol ; bacs au millimètre, véhicule en centimètres.                                                                                             |
+| [`outils-agent-vehicules.md`](outils-agent-vehicules.md)         | ✅ bâti (2026-10-14) — **Les outils agent de la flotte** : `vehicle_list` (avec les avertissements), `vehicle_create`, `vehicle_create_many`, `vehicle_update`, déclarés par `/outils-agent` sous `delivery_settings`. Ni retrait ni réactivation. |
 
 ## Ce qui fait foi
 

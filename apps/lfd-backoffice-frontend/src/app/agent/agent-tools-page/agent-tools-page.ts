@@ -14,6 +14,7 @@ import { declareCustomerAgentTools } from '../customer-agent-tools';
 import { declareMediaAgentTools } from '../media-agent-tools';
 import { declareOpsAgentTools } from '../ops-agent-tools';
 import { declarePimAgentTools } from '../pim-agent-tools';
+import { declareVehicleAgentTools } from '../vehicle-agent-tools';
 
 /**
  * Cadence du sondage d'apparition d'un agent.
@@ -128,8 +129,16 @@ export class AgentToolsPage {
   protected readonly customerTools = signal<readonly string[]>([]);
 
   /**
+   * La trousse de la flotte (2026-10-14) — vide sans `delivery_settings:read`,
+   * le droit de lecture de `admin/delivery/vehicles` ; ses outils d'écriture ne
+   * sont déclarés qu'avec `delivery_settings:write`, celui que `POST`/`PUT`
+   * opposent.
+   */
+  protected readonly vehicleTools = signal<readonly string[]>([]);
+
+  /**
    * Lus une fois : la garde de la route a déjà chargé les permissions. Elle
-   * laisse passer l'un des quatre droits ; chaque trousse suit le sien, et la
+   * laisse passer l'un des cinq droits ; chaque trousse suit le sien, et la
    * page dit laquelle manque.
    */
   private readonly permissions = inject(PermissionsStore);
@@ -137,6 +146,8 @@ export class AgentToolsPage {
   protected readonly mediaAllowed = this.permissions.can('media_library:write');
   protected readonly opsAllowed = this.permissions.can('ops_health:read');
   protected readonly customersAllowed = this.permissions.can('b2b_companies:read');
+  protected readonly vehiclesAllowed = this.permissions.can('delivery_settings:read');
+  protected readonly vehiclesWritable = this.permissions.can('delivery_settings:write');
 
   /** Un agent est-il branché ? Un signal, puisque la réponse change. */
   protected readonly bridged = signal(false);
@@ -186,11 +197,14 @@ export class AgentToolsPage {
     return true;
   }
 
-  /** Déclare les quatre trousses ; à appeler dans le contexte d'injection du composant. */
+  /** Déclare les cinq trousses ; à appeler dans le contexte d'injection du composant. */
   private declareAll(): void {
     this.tools.set(this.pimAllowed ? declarePimAgentTools() : []);
     this.mediaTools.set(this.mediaAllowed ? declareMediaAgentTools() : []);
     this.opsTools.set(this.opsAllowed ? declareOpsAgentTools() : []);
     this.customerTools.set(this.customersAllowed ? declareCustomerAgentTools() : []);
+    this.vehicleTools.set(
+      this.vehiclesAllowed ? declareVehicleAgentTools(this.vehiclesWritable) : [],
+    );
   }
 }

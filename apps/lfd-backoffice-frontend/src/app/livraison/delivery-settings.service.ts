@@ -1,6 +1,12 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import type { DeparturePayload, DepartureView, VehiclePayload, VehiclesView } from '@lfd/contracts';
+import type {
+  CreatedIdResponse,
+  DeparturePayload,
+  DepartureView,
+  VehiclePayload,
+  VehiclesView,
+} from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../api/api-config';
@@ -26,7 +32,16 @@ export class DeliverySettingsService {
   }
 
   async addVehicle(payload: VehiclePayload): Promise<void> {
-    await firstValueFrom(this.http.post(VEHICLES, payload));
+    await this.addVehicleAndGetId(payload);
+  }
+
+  /**
+   * La même création, qui rend l'identifiant du véhicule créé : l'outil agent
+   * (`agent/vehicle-agent-tools.ts`) relit la fiche pour dire ses manques.
+   */
+  async addVehicleAndGetId(payload: VehiclePayload): Promise<string> {
+    const created = await firstValueFrom(this.http.post<CreatedIdResponse>(VEHICLES, payload));
+    return created.id;
   }
 
   async updateVehicle(id: string, payload: VehiclePayload): Promise<void> {

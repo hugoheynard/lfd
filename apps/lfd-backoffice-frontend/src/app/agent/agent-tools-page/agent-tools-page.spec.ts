@@ -205,4 +205,22 @@ describe('AgentToolsPage', () => {
     expect(listed.some((name) => name.startsWith('account'))).toBe(false);
     expect(root.textContent).toContain('pas le droit de lire les comptes clients');
   });
+  it('ne déclare QUE la lecture de la flotte sans `delivery_settings:write`', () => {
+    const { root } = render(['delivery_settings:read']);
+    const listed = [...root.querySelectorAll('code')].map((el) => el.textContent?.trim() ?? '');
+
+    expect(listed).toEqual(['vehicle_list']);
+    expect(root.textContent).toContain('pas le droit de modifier la flotte');
+  });
+
+  it('déclare l’écriture de la flotte avec `delivery_settings:write`, et dit ce qui manque sans lecture', () => {
+    const granted = render(['delivery_settings:read', 'delivery_settings:write']);
+    const listed = [...granted.root.querySelectorAll('code')].map((el) => el.textContent?.trim());
+    expect(listed).toContain('vehicle_create');
+    expect(listed).toContain('vehicle_update');
+    TestBed.resetTestingModule();
+
+    const without = render(['pim_catalog:write']);
+    expect(without.root.textContent).toContain('pas le droit de lire les réglages de livraison');
+  });
 });
