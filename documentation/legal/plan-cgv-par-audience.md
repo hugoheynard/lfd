@@ -64,7 +64,7 @@ service.
 
 ### C2 — Qui lit quoi
 
-- Un client connecté d'une société (principal pro) lit `sales-terms-pro` ;
+- Un client dont l'audience est pro (C2″) lit `sales-terms-pro` ;
   un particulier ou un visiteur lit `sales-terms`. Le choix se fait **au
   serveur**, d'après le principal résolu en base — jamais d'après un
   paramètre que le navigateur enverrait.
@@ -115,6 +115,64 @@ Dans Réglages › Légal › **CGV** (une entrée de menu) : deux onglets,
 actuel, et une zone « Document PDF de référence » (déposer, remplacer,
 historique des dépôts, télécharger). Mêmes droits que l'écran des mentions
 aujourd'hui ; le dépôt est une écriture.
+
+### Corrections après `vitruve` (2026-10-15), qui priment sur C0–C5
+
+**C2′ — Qui lit quoi, sans toucher à la garde** (BLOQUANT). La lecture des
+mentions est `@Public()` (`platform-content.controller.ts:20,41`) et la garde
+ne résout aucun principal sur une route publique (`auth.guard.ts:42-44`) :
+il n'existe pas d'authentification optionnelle. Plutôt que d'en créer une
+(une frontière de sécurité), **deux routes** :
+
+- `GET content/legal/sales-terms` reste publique et sert **toujours** les CGV
+  particuliers — inchangée, cachable comme aujourd'hui ;
+- `GET shop/legal/sales-terms`, **authentifiée** (client), sert les CGV de
+  l'audience du client. La boutique l'appelle quand un client est connecté.
+  Aucune URL ne rend deux contenus selon le lecteur : pas de `Vary`.
+
+**C2″ — « pro » veut dire ce que le devis dit** (BLOQUANT). Pas « a une
+société » : l'audience vient de `audienceOf` (`customer-audiences.service.ts`),
+qui ne classe en B2B qu'une société **active**. Une société en attente de
+validation lit les CGV particuliers — celles des prix qu'on lui applique.
+
+**C4′ — La version, sur les trois chemins de passation.** Elle est posée là
+où l'audience de la commande est déjà décidée pour la tarifer, et éprouvée
+sur chacun : `place-order.handler.ts`, `place-shop-order.handler.ts` (avec
+son idempotence), `place-order-for-customer.handler.ts`. Sur ce dernier, la
+commande est passée **par le staff** : l'écran dit « CGV applicables », pas
+« acceptées ». `sales_terms_key` porte un `CHECK` sur les deux valeurs.
+
+**C0′ — Le droit, partout où une ressource s'inscrit à la main** : la liste et
+les libellés (`packages/contracts/src/staff-access.ts`), les scopes
+(`staff-resource-scopes.ts` ; le libellé de `b2b_settings` qui cite les
+mentions est réécrit), la graine `ROLE_GRANTS` (dev et e2e seulement), les
+redirections de `permission.guard.ts`, le `needs` du menu, la table de droits
+`app.routes.spec.ts`. Le superadmin l'a d'office : `resolveHeldRole` lui rend
+`ALL_STAFF_PERMISSIONS` (`held-role.ts:115-125`, vérifié le 2026-10-15).
+⚠️ **À faire par Hugo avant de pousser `main`** : relever en production les
+rôles qui tiennent `b2b_settings:write` et éditent les mentions — ils perdent
+l'accès au déploiement jusqu'à ce que `lfc_legal` leur soit accordé.
+Le lot 0 réécrit aussi le droit de la route `/reglages/legal/:mention` posé
+par le déplacement des mentions.
+
+**C3′ — Le PDF :**
+
+- **PDF seulement** : `ScannedDocument` accepte aussi JPEG, PNG, HEIC
+  (`scanned-document.ts:78`) ; le dépôt passe par une garde dédiée qui
+  n'admet que `%PDF-`.
+- **Jamais écrasé, en base** : un déclencheur refuse tout `DELETE` sur
+  `legal_document_files` et tout `UPDATE` autre que la pose de
+  `superseded_at` quand elle est nulle ; aucun chemin de code ne supprime un
+  objet R2 de ce préfixe. Interdire plutôt que convenir.
+- **RGPD** : « déposé par » est un identifiant staff → entrée au registre
+  `documentation/legal/rgpd-registre.json` (`lint:rgpd-staff`).
+- **Téléchargement** : `Content-Type: application/pdf`,
+  `Content-Disposition: attachment` avec un nom daté, sous le throttle de la
+  boutique ; la taille admise par la passerelle est vérifiée au lot 2 (10 Mo
+  au plus en dépôt).
+
+**C1′ — CGV pro absentes** : aucune ligne semée ; l'absence de
+`sales-terms-pro` rend l'état « en cours de rédaction », jamais une 404.
 
 ## 3. Lots
 
