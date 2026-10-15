@@ -479,5 +479,15 @@ export const IT: ClientCopy = {
     retry: 'Riprova',
     emptyTitle: 'Documento non pubblicato',
     emptySubtitle: 'Questa informativa non contiene ancora alcun articolo.',
+    salesTerms: {
+      pageTitle: 'Condizioni generali di vendita',
+      sideLabel: 'Condizioni per',
+      sideParticulier: 'Privato',
+      sidePro: 'Professionista',
+      downloadPdf: 'Scarica le condizioni (PDF)',
+      pdfReference:
+        'La versione di riferimento è il documento PDF; questo testo ne facilita la lettura.',
+      proDraftTitle: 'Condizioni generali di vendita professionali in corso di redazione.',
+    },
   },
 };

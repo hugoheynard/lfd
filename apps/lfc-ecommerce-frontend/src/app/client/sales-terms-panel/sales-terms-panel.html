@@ -1,0 +1,5 @@
+<fold-panel-header [title]="title()" [closeLabel]="t().legalDocument.close" />
+
+<div class="body">
+  <app-sales-terms-reader [side]="side()" (sideChange)="side.set($event)" />
+</div>

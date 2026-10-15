@@ -10,6 +10,7 @@ import {
 import { FoldPanelHostService } from 'fold-ng';
 
 import { LegalDocumentPanel } from '../legal-document-panel/legal-document-panel';
+import { SalesTermsPanel } from '../sales-terms-panel/sales-terms-panel';
 import { ClientFoot } from './client-foot';
 
 /** Ce que le pied a demandé d'ouvrir : le composant, et la mention passée en `data`. */
@@ -154,9 +155,10 @@ describe('le pied de page — la barre légale', () => {
 
   /**
    * Chaque lien ouvre le dialogue de SA mention : c'est la CLÉ qui relie le
-   * lien au document, jamais son texte.
+   * lien au document, jamais son texte. Les CGV ont le leur — un seul lien,
+   * deux textes derrière un switch.
    */
-  it('ouvre le dialogue de la mention cliquée', () => {
+  it('ouvre le dialogue de la mention cliquée', async () => {
     const host = boot();
     servirMentions(toutesSauf([]));
 
@@ -165,10 +167,15 @@ describe('le pied de page — la barre légale', () => {
     expect(boutons).toHaveLength(legalMentionOrder.length);
     for (const [index, bouton] of boutons.entries()) {
       bouton.click();
-      expect(opened[index]).toEqual({
-        component: LegalDocumentPanel,
-        data: legalMentionOrder[index],
-      });
+      // Le dialogue des CGV se charge à la demande (budget du paquet initial).
+      await fixture.whenStable();
+      await new Promise((resolve) => setTimeout(resolve));
+      const mention = legalMentionOrder[index];
+      expect(opened[index]).toEqual(
+        mention === 'salesTerms'
+          ? { component: SalesTermsPanel, data: undefined }
+          : { component: LegalDocumentPanel, data: mention },
+      );
     }
     expect(opened).toHaveLength(legalMentionOrder.length);
   });

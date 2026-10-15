@@ -866,5 +866,23 @@ export interface ClientCopy {
     readonly retry: string;
     readonly emptyTitle: string;
     readonly emptySubtitle: string;
+    /**
+     * Les **CGV**, lues dans le dialogue du pied de page comme sur `/cgv` (plan
+     * `legal/plan-cgv-par-audience.md`, bandeau du 2026-10-15) : un switch
+     * Particulier / Pro, le PDF de référence du côté affiché, et l'état des CGV
+     * pro pas encore rédigées — jamais le texte particulier à leur place.
+     */
+    readonly salesTerms: {
+      /** Le titre de la page `/cgv` et son mot dans le bandeau. */
+      readonly pageTitle: string;
+      /** Le nom accessible du switch. */
+      readonly sideLabel: string;
+      readonly sideParticulier: string;
+      readonly sidePro: string;
+      readonly downloadPdf: string;
+      readonly pdfReference: string;
+      /** Le titre de l'état vide côté pro : un texte pas encore rédigé, pas une panne. */
+      readonly proDraftTitle: string;
+    };
   };
 }

@@ -17,6 +17,13 @@ import { ClientLocale } from './client-locale.service';
 /** Où en est la lecture d'un document. Le titre, lui, est toujours disponible. */
 export type LegalDocumentStatus = 'idle' | 'loading' | 'ready' | 'failed';
 
+/**
+ * Ce qu'on sait du PDF de référence d'un texte de CGV : `unknown` tant que la
+ * sonde n'a pas répondu, `absent` pour un 404 — ou toute autre réponse : un
+ * bouton qui mènerait à une erreur promet un document qu'on ne peut pas donner.
+ */
+export type LegalPdfAvailability = 'unknown' | 'available' | 'absent';
+
 /** Un article prêt à l'affichage : son rang de lecture, dans la langue courante. */
 export interface LegalDocumentArticle {
   readonly id: string;
@@ -63,6 +70,9 @@ export class ClientLegalDocuments {
   /** Ce qui a été lu, mention par mention. Absent = jamais chargé. */
   private readonly documents = signal<Partial<Record<LegalDocumentKey, LegalDocument>>>({});
   private readonly states = signal<Partial<Record<LegalDocumentKey, LegalDocumentStatus>>>({});
+  private readonly pdfs = signal<Partial<Record<SalesTermsDocument, LegalPdfAvailability>>>({});
+  /** Les sondes parties : une seconde ouverture n'en relance pas une en vol. */
+  private readonly probed = new Set<SalesTermsDocument>();
 
   /**
    * Où en est la lecture d'une mention — c'est ce que le panneau donne à ses
@@ -142,5 +152,34 @@ export class ClientLegalDocuments {
    */
   pdfUrlOf(document: SalesTermsDocument): string {
     return `${AUTH_CONFIG.apiBaseUrl}/content/legal/${document}/pdf`;
+  }
+
+  /** Ce qu'on sait du PDF en vigueur de ce texte — c'est ce qui montre ou cache le bouton. */
+  pdfOf(document: SalesTermsDocument): LegalPdfAvailability {
+    return this.pdfs()[document] ?? 'unknown';
+  }
+
+  /**
+   * Demande au serveur s'il existe un PDF en vigueur pour ce texte, une fois.
+   *
+   * Un `HEAD` sur l'adresse de téléchargement elle-même : la route publique ne
+   * dit pas autrement qu'un PDF est déposé (vérifié le 2026-10-15,
+   * `legal-document-files.controller.ts` — `GET :mention/pdf`, 404 sinon), et
+   * Express répond au `HEAD` d'une route `GET`. Un échec, quel qu'il soit,
+   * cache le bouton plutôt que de mener à une erreur.
+   */
+  ensurePdfProbed(document: SalesTermsDocument): void {
+    if (!this.isBrowser || this.probed.has(document)) {
+      return;
+    }
+    this.probed.add(document);
+    this.http.head(this.pdfUrlOf(document)).subscribe({
+      next: () => this.setPdf(document, 'available'),
+      error: () => this.setPdf(document, 'absent'),
+    });
+  }
+
+  private setPdf(document: SalesTermsDocument, availability: LegalPdfAvailability): void {
+    this.pdfs.update((all) => ({ ...all, [document]: availability }));
   }
 }

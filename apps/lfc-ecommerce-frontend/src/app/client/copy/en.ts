@@ -470,5 +470,14 @@ export const EN: ClientCopy = {
     retry: 'Try again',
     emptyTitle: 'Not published yet',
     emptySubtitle: 'This notice does not carry any clause yet.',
+    salesTerms: {
+      pageTitle: 'Terms and conditions of sale',
+      sideLabel: 'Terms for',
+      sideParticulier: 'Individual',
+      sidePro: 'Business',
+      downloadPdf: 'Download the terms (PDF)',
+      pdfReference: 'The PDF document is the reference version; this text makes it easier to read.',
+      proDraftTitle: 'Business terms and conditions of sale are being drafted.',
+    },
   },
 };

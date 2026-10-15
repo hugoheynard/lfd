@@ -106,8 +106,22 @@ export class ClientFoot {
    * Ouvre le dialogue de CETTE mention. C'est CE geste qui déclenche la lecture
    * du document : le panneau appelle le service, qui ne charge qu'à la première
    * ouverture de la mention demandée.
+   *
+   * Les CGV ont leur dialogue : deux textes et un switch Particulier / Pro
+   * derrière un seul lien (plan `legal/plan-cgv-par-audience.md`, bandeau du
+   * 2026-10-15). Le même contenu vit à l'adresse `/cgv`.
+   *
+   * ⚠️ Chargé à la demande : le pied de page est dans le paquet initial, et
+   * le switch avec ses deux textes le faisait passer au-dessus du budget
+   * `cloudflare` (mesuré le 2026-10-15, +5 ko, 86 octets de trop).
    */
   protected openMention(mention: LegalMention): void {
+    if (mention === 'salesTerms') {
+      void import('../sales-terms-panel/sales-terms-panel').then(({ SalesTermsPanel }) =>
+        this.panelHost.open(SalesTermsPanel),
+      );
+      return;
+    }
     this.panelHost.open(LegalDocumentPanel, { data: mention });
   }
 }

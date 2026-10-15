@@ -1,0 +1,44 @@
+<!-- `lang` suit la langue choisie : c'est lui qui donne la césure aux articles. -->
+<div class="reader" [attr.lang]="locale()">
+  <fold-view-toggle
+    [ariaLabel]="c().sideLabel"
+    [options]="sides()"
+    [value]="side()"
+    (valueChange)="choose($event)"
+  />
+
+  @if (hasPdf()) {
+    <div class="reference">
+      <a foldButton emphasis="outline" intent="neutral" icon="download" [href]="pdfUrl()" download>
+        {{ c().downloadPdf }}
+      </a>
+      <p class="reference-note">{{ c().pdfReference }}</p>
+    </div>
+  }
+
+  @switch (status()) {
+    @case ('failed') {
+      <fold-empty-state
+        tone="alert"
+        [title]="t().legalDocument.errorTitle"
+        [subtitle]="t().legalDocument.errorSubtitle"
+      >
+        <button foldButton emphasis="outline" intent="neutral" (click)="retry()">
+          {{ t().legalDocument.retry }}
+        </button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      @if (articles().length === 0) {
+        <fold-empty-state [title]="emptyTitle()" [subtitle]="emptySubtitle()">
+          <fold-icon empty-icon name="contracts" size="xl" />
+        </fold-empty-state>
+      } @else {
+        <app-legal-articles [articles]="articles()" />
+      }
+    }
+    @default {
+      <fold-loading [message]="t().legalDocument.loading" />
+    }
+  }
+</div>

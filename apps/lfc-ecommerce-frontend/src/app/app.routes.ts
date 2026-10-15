@@ -319,6 +319,17 @@ export const routes: Routes = [
           ),
       },
       {
+        // LES CGV, à une adresse qu'on partage (plan
+        // `legal/plan-cgv-par-audience.md`, bandeau du 2026-10-15). Sans
+        // garde : les deux textes sont publics. `?pour=pro` ouvre le texte
+        // professionnel — le lien d'une landing pro. Le pied de page ouvre le
+        // même contenu en dialogue.
+        path: 'cgv',
+        title: 'Conditions générales de vente — La Folie Coffee',
+        loadComponent: () =>
+          import('./client/sales-terms-page/sales-terms-page').then((m) => m.SalesTermsPage),
+      },
+      {
         path: 'confirmation-de-commande',
         title: 'Commande confirmée — La Folie Coffee',
         loadComponent: () =>

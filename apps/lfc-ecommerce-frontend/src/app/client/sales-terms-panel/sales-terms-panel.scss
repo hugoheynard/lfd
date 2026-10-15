@@ -1,0 +1,14 @@
+/* Le même montage que `legal-document-panel` : l'hôte se borne en hauteur, et
+   c'est `.body` qui défile — jamais la page derrière. */
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: var(--fold-space-lg) var(--fold-space-xl) var(--fold-space-2xl);
+}

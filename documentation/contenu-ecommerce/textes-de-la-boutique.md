@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1320 textes
+## Sommaire — 1327 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -45,8 +45,8 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le compte pro — l’écran](#espace-proaccount) | `proAccount` | 27 |
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
-| [Les documents légaux](#espace-legaldocument) | `legalDocument` | 7 |
-| **Total** | | **1320** |
+| [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
+| **Total** | | **1327** |
 
 ## Le parcours de commande
 
@@ -1666,7 +1666,7 @@ Source : `screens/contact-dialog.copy.ts` · 25 textes.
 
 ### Les documents légaux — `legalDocument`
 
-Source : `fr.ts · en.ts · it.ts` · 7 textes.
+Source : `fr.ts · en.ts · it.ts` · 14 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -1677,6 +1677,13 @@ Source : `fr.ts · en.ts · it.ts` · 7 textes.
 | `legalDocument.retry` | Réessayer | Try again | Riprova |  |
 | `legalDocument.emptyTitle` | Document non publié | Not published yet | Documento non pubblicato |  |
 | `legalDocument.emptySubtitle` | Cette mention ne porte encore aucun article. | This notice does not carry any clause yet. | Questa informativa non contiene ancora alcun articolo. |  |
+| `legalDocument.salesTerms.pageTitle` | Conditions générales de vente | Terms and conditions of sale | Condizioni generali di vendita |  |
+| `legalDocument.salesTerms.sideLabel` | Conditions pour | Terms for | Condizioni per |  |
+| `legalDocument.salesTerms.sideParticulier` | Particulier | Individual | Privato |  |
+| `legalDocument.salesTerms.sidePro` | Pro | Business | Professionista |  |
+| `legalDocument.salesTerms.downloadPdf` | Télécharger les CGV (PDF) | Download the terms (PDF) | Scarica le condizioni (PDF) |  |
+| `legalDocument.salesTerms.pdfReference` | La version de référence est le document PDF ; ce texte en facilite la lecture. | The PDF document is the reference version; this text makes it easier to read. | La versione di riferimento è il documento PDF; questo testo ne facilita la lettura. |  |
+| `legalDocument.salesTerms.proDraftTitle` | Conditions générales de vente professionnelles en cours de rédaction. | Business terms and conditions of sale are being drafted. | Condizioni generali di vendita professionali in corso di redazione. |  |
 
 ## Non recensé
 

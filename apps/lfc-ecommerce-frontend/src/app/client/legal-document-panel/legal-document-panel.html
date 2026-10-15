@@ -24,17 +24,7 @@
           [subtitle]="t().legalDocument.emptySubtitle"
         />
       } @else {
-        <article class="doc">
-          @for (article of articles(); track article.id) {
-            <section class="article">
-              <h3 class="article-head">
-                <span class="rank">{{ article.rank }}.</span>
-                <span class="article-title">{{ article.title }}</span>
-              </h3>
-              <p class="article-body">{{ article.body }}</p>
-            </section>
-          }
-        </article>
+        <app-legal-articles [articles]="articles()" />
       }
     }
     <!-- `idle` et `loading` disent la même chose au visiteur : ça arrive. -->

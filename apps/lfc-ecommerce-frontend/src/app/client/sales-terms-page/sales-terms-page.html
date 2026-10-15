@@ -1,0 +1,9 @@
+<!-- Le châssis du shell client (cf. `fidelite-page`) : le titre dans le
+     BANDEAU, le contenu dans `.page`. -->
+<ng-template clientBanner>
+  <app-client-banner-block class="align-start" [title]="title()" />
+</ng-template>
+
+<div class="page">
+  <app-sales-terms-reader [side]="side()" (sideChange)="choose($event)" />
+</div>

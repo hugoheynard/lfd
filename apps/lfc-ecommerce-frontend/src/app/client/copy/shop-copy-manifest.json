@@ -9404,6 +9404,55 @@
           "en": "This notice does not carry any clause yet.",
           "it": "Questa informativa non contiene ancora alcun articolo.",
           "variables": []
+        },
+        {
+          "key": "legalDocument.salesTerms.pageTitle",
+          "fr": "Conditions générales de vente",
+          "en": "Terms and conditions of sale",
+          "it": "Condizioni generali di vendita",
+          "variables": []
+        },
+        {
+          "key": "legalDocument.salesTerms.sideLabel",
+          "fr": "Conditions pour",
+          "en": "Terms for",
+          "it": "Condizioni per",
+          "variables": []
+        },
+        {
+          "key": "legalDocument.salesTerms.sideParticulier",
+          "fr": "Particulier",
+          "en": "Individual",
+          "it": "Privato",
+          "variables": []
+        },
+        {
+          "key": "legalDocument.salesTerms.sidePro",
+          "fr": "Pro",
+          "en": "Business",
+          "it": "Professionista",
+          "variables": []
+        },
+        {
+          "key": "legalDocument.salesTerms.downloadPdf",
+          "fr": "Télécharger les CGV (PDF)",
+          "en": "Download the terms (PDF)",
+          "it": "Scarica le condizioni (PDF)",
+          "variables": []
+        },
+        {
+          "key": "legalDocument.salesTerms.pdfReference",
+          "fr": "La version de référence est le document PDF ; ce texte en facilite la lecture.",
+          "en": "The PDF document is the reference version; this text makes it easier to read.",
+          "it": "La versione di riferimento è il documento PDF; questo testo ne facilita la lettura.",
+          "variables": []
+        },
+        {
+          "key": "legalDocument.salesTerms.proDraftTitle",
+          "fr": "Conditions générales de vente professionnelles en cours de rédaction.",
+          "en": "Business terms and conditions of sale are being drafted.",
+          "it": "Condizioni generali di vendita professionali in corso di redazione.",
+          "variables": []
         }
       ],
       "unrecorded": []

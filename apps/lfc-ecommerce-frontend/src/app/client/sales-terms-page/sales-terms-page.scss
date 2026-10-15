@@ -1,0 +1,13 @@
+:host {
+  display: block;
+  background: var(--fold-color-bg-page);
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  /* La mesure de lecture : au-delà, l'œil perd la ligne suivante. */
+  max-width: 72ch;
+  /* Pas de rembourrage en haut : la LÈVRE du shell le porte déjà. */
+  padding: 0 var(--lfc-inset) var(--fold-space-4xl);
+}
