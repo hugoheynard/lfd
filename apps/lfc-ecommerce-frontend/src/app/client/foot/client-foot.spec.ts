@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
@@ -167,14 +168,17 @@ describe('le pied de page — la barre légale', () => {
     expect(boutons).toHaveLength(legalMentionOrder.length);
     for (const [index, bouton] of boutons.entries()) {
       bouton.click();
-      // Le dialogue des CGV se charge à la demande (budget du paquet initial).
-      await fixture.whenStable();
-      await new Promise((resolve) => setTimeout(resolve));
+      // Le dialogue des CGV se charge à la demande (budget du paquet initial) :
+      // un `import()` dont la résolution dépend de la charge. Un seul tour de
+      // boucle suffisait seul et échouait en suite complète (CI, 2026-10-15) ;
+      // on attend donc l'ouverture elle-même, pas un délai.
       const mention = legalMentionOrder[index];
-      expect(opened[index]).toEqual(
-        mention === 'salesTerms'
-          ? { component: SalesTermsPanel, data: undefined }
-          : { component: LegalDocumentPanel, data: mention },
+      await vi.waitFor(() =>
+        expect(opened[index]).toEqual(
+          mention === 'salesTerms'
+            ? { component: SalesTermsPanel, data: undefined }
+            : { component: LegalDocumentPanel, data: mention },
+        ),
       );
     }
     expect(opened).toHaveLength(legalMentionOrder.length);
