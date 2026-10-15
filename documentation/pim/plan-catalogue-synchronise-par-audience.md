@@ -397,6 +397,42 @@ ci-dessus :**
 | 2b3 | Le refus des allergènes passe à « au moins une déclinaison complète » (C1) : la projection 2a1 les écarte désormais. |
 | 2b4 | Ouverture de `CATALOG_FACTS_ENABLED`, puis « réémettre tout ». Le geste est écrit au runbook.                        |
 
+### Lot P — le prix pro saisi (décidé le 2026-10-15)
+
+> « On enlève la règle, le calcul avec le ratio pro/public global ; tu me
+> mets un champ prix pro HT dans la fiche, en dessous du public TTC ; en
+> revanche n'efface pas le code si possible ; le prix HT doit pouvoir
+> prendre 5 décimales. » — Hugo, 2026-10-15. Puis : par déclinaison, oui ;
+> pré-remplir depuis le ratio, oui ; exigé pour activer, oui.
+
+Ouvert avant d'écrire : `packages/pim-contracts/src/accounting-rules.ts`
+(`PRO_PRICE_METHODS = ["ratio_ttc"]`, `proPriceOf` — « l'unique porte » du
+prix pro, qui annonce elle-même le `switch` « avec la deuxième méthode »),
+`projection.ts:228-247` (seul appelant côté fil), `product.prisma`
+(`priceCents`, `pricingFollowsDefault` sur la déclinaison).
+
+**Cinq décimales = des millicentimes.** 10⁻⁵ € est l'unité que le fil et
+`catalog_items.price_millicents` portent déjà (`ProPrice.htMillicents`). Un
+entier, jamais un flottant.
+
+| #   | Quoi                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P1  | **Migration** additive : `pim.product_variant.pro_price_millicents INT NULL`, `CHECK (>= 0)`. Une déclinaison qui suit le tarif du défaut (`pricingFollowsDefault`) suit aussi son prix pro.                                                                                                                                                                                                                                                                    |
+| P2  | **Domaine** : value object `ProPriceHt` (saisie en euros, au plus 5 décimales, ≥ 0 → millicentimes ; refus au-delà de 5 décimales) ; la mutation de tarif de la déclinaison (`update-variant-pricing`) le porte à côté du prix public.                                                                                                                                                                                                                          |
+| P3  | **La porte du prix** : `PRO_PRICE_METHODS = ["ratio_ttc", "entered"]`. `proPriceOf` reçoit le prix pro saisi ; en `entered`, `htMillicents` = la saisie, `ttcCents` = ce HT au taux de l'article, arrondi au centime (même règle d'arrondi que `htMillicentsOf`, à l'envers) ; saisie absente → `null`. **La branche `ratio_ttc` ne bouge pas** : le code reste, et la méthode reste sélectionnable dans _Règles comptables_.                                   |
+| P4  | **Complétude** : en `entered`, une déclinaison sans prix pro est incomplète (`gaps: pro_price`, jamais vendue) et `activate` la refuse — avec la règle « tous les contextes » de 2b.                                                                                                                                                                                                                                                                            |
+| P5  | **Pré-remplissage** : `PrefillProPrices`, deux temps. `dryRun` rend la liste (SKU, prix public TTC, prix pro HT calculé par le ratio et le taux `b2b` en vigueur) ; `apply` l'écrit **uniquement** là où `pro_price_millicents` est `NULL`, journalisé par déclinaison. Une déclinaison sans taux `b2b` n'est pas pré-remplie : elle est listée à part. Puis la méthode passe à `entered` dans _Règles comptables_ (geste existant, `choose-pro-price-method`). |
+| P6  | **Écrans** : dans la section Tarification de la fiche, « Prix pro HT » sous le prix public TTC (5 décimales, unité écrite) ; dans _Règles comptables_, la méthode « Prix saisi » et le bouton de pré-remplissage avec son aperçu.                                                                                                                                                                                                                               |
+
+**Ordre** : P1 à P4 se déploient avec la méthode toujours sur `ratio_ttc` —
+rien de servi ne change. P5 puis la bascule de méthode sont les gestes de
+Hugo, après relecture de l'aperçu. Le lot P passe **avant** 2b : la
+complétude de 2b en dépend.
+
+**Ce qui ne change pas** : les prix décidés par la plateforme
+(`catalog_item_overrides.price_millicents`) priment toujours sur le prix
+reçu ; les mercuriales et paliers s'appliquent par-dessus comme aujourd'hui.
+
 ## 4. Risques
 
 - **Une faute de prix vendue tout de suite** (H3, choisi en connaissance de
