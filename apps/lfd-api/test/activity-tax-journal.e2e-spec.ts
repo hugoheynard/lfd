@@ -403,10 +403,13 @@ describe("la tranche fiscale — ce qui touche au taux, par les gestes réels", 
   });
 
   /**
-   * Fermer un canal efface le taux du contexte fermé : le fait de TVA l'écrit
-   * (2026-09-19), `channels_changed`, qui ne porte que les canaux, reste dehors.
+   * Régression de règle : fermer un canal effaçait le taux du contexte fermé,
+   * et la tranche fiscale en rendait la trace. Depuis le 2026-10-15, la TVA ne
+   * dépend plus des canaux (`plan-catalogue-synchronise-par-audience.md`) :
+   * fermer un canal ne touche à aucun taux, et la tranche fiscale n'a rien à
+   * rendre — `channels_changed`, qui ne porte que les canaux, reste dehors.
    */
-  it("rend le taux qu'efface la fermeture d'un canal, et pas le fait de canaux", async () => {
+  it("ne rend rien quand on ferme un canal : le taux reste, aucun fait fiscal", async () => {
     const category = await familySoldToProfessionals();
     const rate = await rateWrittenByAccountant("Réduit", 5.5);
     await as("staff-e2e")
@@ -417,14 +420,9 @@ describe("la tranche fiscale — ce qui touche au taux, par les gestes réels", 
     await as("staff-e2e").put(`${CATEGORIES}/${category}/channels`).send([]).expect(200);
 
     const page = await readTax({ subjectType: "product_category", subjectId: category });
-    expect(typesOf(page.events)).toEqual([
-      "product_category.vat_changed",
-      "product_category.vat_changed",
-    ]);
-    expect(page.events[0]?.payload).toEqual({
-      subjectLabel: "Viennoiseries",
-      vatByContext: { b2b: { from: { id: rate, name: "Réduit" }, to: null } },
-      contextLabels: { b2b: "B2B" },
+    expect(typesOf(page.events)).toEqual(["product_category.vat_changed"]);
+    expect(page.events[0]?.payload).toMatchObject({
+      vatByContext: { b2b: { from: null, to: { id: rate, name: "Réduit" } } },
     });
   });
 
