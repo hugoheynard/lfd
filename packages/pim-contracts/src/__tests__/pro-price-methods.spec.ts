@@ -55,10 +55,17 @@ describe("le prix professionnel — ratio TTC pré-remise", () => {
 describe("le prix professionnel — saisi (entered)", () => {
   const ENTERED: ProPricePolicy = { method: "entered", ratioBp: RATIO_90 };
 
-  it("ignore la saisie sous ratio_ttc", () => {
-    expect(proPriceOf(TEN_EUROS, RATIO_TTC, 5.5, 1)).toEqual(
-      proPriceOf(TEN_EUROS, RATIO_TTC, 5.5, null),
+  /**
+   * Régression de règle : la saisie était ignorée sous `ratio_ttc`, et la fiche
+   * montrait un prix pro tiré du ratio alors qu'un prix avait été saisi (Hugo,
+   * 2026-10-15 : « c'est lui qui doit nourrir le tableau »).
+   */
+  it("fait primer la saisie sous ratio_ttc ; le ratio n'est que le repli", () => {
+    expect(proPriceOf(TEN_EUROS, RATIO_TTC, 5.5, 853_081)).toEqual(
+      proPriceOf(TEN_EUROS, ENTERED, 5.5, 853_081),
     );
+    expect(proPriceOf(TEN_EUROS, RATIO_TTC, 5.5, null)).not.toBeNull();
+    expect(proPriceOf(TEN_EUROS, ENTERED, 5.5, null)).toBeNull();
   });
 
   it("sert le HT saisi au millicentime, et en déduit le TTC au centime", () => {

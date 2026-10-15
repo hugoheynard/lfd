@@ -497,6 +497,17 @@ entier, jamais un flottant.
 - `revision.ts:44` cite une méthode `remise_apres_tva_max` disparue : relue et
   corrigée au passage.
 
+**🔴 La saisie prime, quelle que soit la méthode (Hugo, 2026-10-15)** : « si
+un prix pro HT a été marqué dans le champ, c'est lui qui doit nourrir le
+tableau sur la partie canaux ». `proPriceOf` sert la saisie dès qu'elle
+existe ; la méthode ne décide plus que du **repli** d'une déclinaison sans
+saisie — le ratio sous `ratio_ttc`, rien sous `entered`. Conséquences :
+l'écran, l'envoi actuel et les faits disent la même chose ; une saisie est
+vendue **dès son enregistrement**, même avant la bascule de méthode ; la
+bascule ne fait plus qu'interdire le repli. L'empreinte de parité reste vraie
+sans saisie (128 cas) et un test prouve que les deux chemins du fil portent la
+saisie au millicentime.
+
 **Ordre** : P1 à P4 se déploient avec la méthode toujours sur `ratio_ttc` —
 rien de servi ne change. P5 puis la bascule de méthode sont les gestes de
 Hugo, après relecture de l'aperçu. Le lot P passe **avant** 2b : la

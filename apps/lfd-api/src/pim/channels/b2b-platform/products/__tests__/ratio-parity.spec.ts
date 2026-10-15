@@ -15,10 +15,13 @@ describe("la parité ratio_ttc, avant et après le lot P", () => {
     expect(projectGrid(() => null)).toEqual(RATIO_TTC_BEFORE_LOT_P);
   });
 
-  it("ignore un prix pro saisi tant que la méthode est ratio_ttc", () => {
-    // Des saisies volontairement fausses : 1 millicentime, puis le prix public.
-    expect(projectGrid(() => 1)).toEqual(RATIO_TTC_BEFORE_LOT_P);
-    expect(projectGrid((price) => price * 1_000)).toEqual(RATIO_TTC_BEFORE_LOT_P);
+  // La saisie PRIME, même sous `ratio_ttc` (Hugo, 2026-10-15) : sans saisie,
+  // l'empreinte d'avant le lot P tient (cas ci-dessus) ; avec une saisie, les
+  // deux chemins du fil portent la saisie, au millicentime.
+  it("porte le prix pro saisi sur les deux chemins, même sous ratio_ttc", () => {
+    for (const [key, [pushed, emitted]] of Object.entries(projectGrid(() => 853_081))) {
+      expect([key, pushed, emitted]).toEqual([key, 853_081, 853_081]);
+    }
   });
 
   it("rejoue la chaîne d'origine, pas seulement une empreinte", () => {

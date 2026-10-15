@@ -443,15 +443,31 @@ describe('PricingForm — le prix pro HT saisi', () => {
     expect(store.proPriceMillicents()).toBe(812_345);
   });
 
-  it('sous ratio_ttc, dit que la saisie n’est pas encore appliquée et garde la remise', () => {
+  /**
+   * Régression de règle : sous ratio_ttc, une saisie était « pas encore
+   * appliquée » et la fiche montrait le prix tiré du ratio (Hugo, 2026-10-15 :
+   * « si un prix pro HT a été marqué, c'est lui qui doit nourrir le tableau »).
+   */
+  it('sous ratio_ttc, une saisie prime : TTC de la saisie, écart constaté, plus de remise', () => {
     const store = setup();
     withMethod(store, 'ratio_ttc');
-    store.proPriceHtText.set('1');
+    store.proPriceHtText.set('8,5');
     const host = render();
 
-    expect(host.textContent).toContain('Pas encore appliqué');
+    const pro = flat(host.querySelector('.pro')?.textContent);
+    expect(pro).toContain('10,20 €');
+    expect(pro).toContain('écart constaté −15 %');
+    expect(pro).not.toContain('−10 %');
+    expect(host.textContent).not.toContain('suit la remise');
+  });
+
+  it('sous ratio_ttc, sans saisie, dit que le prix pro suit la remise', () => {
+    const store = setup();
+    withMethod(store, 'ratio_ttc');
+    const host = render();
+
+    expect(host.textContent).toContain('suit la remise');
     expect(flat(host.querySelector('.pro')?.textContent)).toContain('−10 %');
-    expect(flat(host.querySelector('.pro')?.textContent)).toContain('10,80 €');
   });
 
   /** « La fiche ne ment pas » : sous « Prix saisi », plus de remise tirée du ratio. */

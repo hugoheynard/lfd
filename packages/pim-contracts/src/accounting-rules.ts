@@ -221,8 +221,15 @@ export function proPriceOf(
   if (articleVatPercent === null) {
     return null;
   }
+  // 🔴 **La saisie prime, quelle que soit la méthode** (Hugo, 2026-10-15 :
+  // « si un prix pro HT a été marqué dans le champ, c'est lui qui doit
+  // nourrir le tableau »). La méthode ne décide plus que du REPLI d'une
+  // déclinaison sans saisie : le ratio sous `ratio_ttc`, rien sous `entered`.
+  if (enteredHtMillicents !== null) {
+    return enteredProPrice(enteredHtMillicents, articleVatPercent);
+  }
   return policy.method === "entered"
-    ? enteredProPrice(enteredHtMillicents, articleVatPercent)
+    ? null
     : ratioTtcProPrice(publicTtcCents, policy.ratioBp, articleVatPercent);
 }
 

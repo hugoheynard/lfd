@@ -624,7 +624,14 @@ export class ProductFormStore {
   readonly proPriceHtText = signal('');
 
   /** La méthode « Prix saisi » est-elle appliquée ? (lot P) */
-  readonly proPriceEntered = computed(() => this.accounting.rules().method === 'entered');
+  /**
+   * Le prix pro affiché est-il la SAISIE ? Oui dès qu'une saisie existe, quelle
+   * que soit la méthode — elle prime partout (`proPriceOf`, 2026-10-15) — et,
+   * sous « Prix saisi », même vide : la ligne dit alors qu'il manque.
+   */
+  readonly proPriceEntered = computed(
+    () => this.accounting.rules().method === 'entered' || this.proPriceMillicents() !== null,
+  );
 
   /** La saisie, lue — `null` si vide ou si elle ne fait pas un prix. */
   readonly proPriceMillicents = computed(() => proPriceMillicentsOf(this.proPriceHtText()));
@@ -922,7 +929,7 @@ export class ProductFormStore {
       // Montrer le TTC public ici laisserait croire à un prix pro.
       return null;
     }
-    const entered = rules.method === 'entered';
+    const entered = this.proPriceEntered();
     const publicCents = Math.round(priceEur * 100);
     return {
       ttc: euros(price.ttcCents),
