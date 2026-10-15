@@ -268,13 +268,48 @@ déploiement du lot 2, aucune livraison `pending` — acceptée ou refusée. En 
 (`prisma-catalog-delivery.repository.ts:92-97`) ; à lire au lot 2 pour que le
 refus nomme le geste.
 
+### D7 — Une route pour le masquage, une vue pour tout lire
+
+> « Il faut une seule route qui définisse le masquage […] c'est plus une
+> histoire de vue, où en un seul coup d'œil on peut voir une table de ce qui
+> est publié par audience. » — Hugo, 2026-10-15
+
+**La route.** Aujourd'hui deux routes et deux commandes disent la même chose
+pour deux audiences : `PUT admin/catalog/:sku/visibility` et
+`PUT admin/catalog/:sku/public-visibility` (`admin-catalog.controller.ts:151`,
+`:170` — `SetCatalogVisibilityCommand`, `SetPublicVisibilityCommand`). Elles
+deviennent **une** : `PUT admin/catalog/:sku/masking` `{ audience: "pro" |
+"public", hidden: boolean }`, une commande `SetMaskingCommand`. L'agrégat
+refuse de masquer pour une audience que l'article n'a pas — il n'y a rien à
+retirer — et de « démasquer » au-delà de l'audience du référentiel, ce que la
+forme rend de toute façon inexprimable.
+
+**La vue : « Catalogue publié ».** La table « Catalogue actuel en ligne » est
+gardée parce qu'elle se lit d'un coup d'œil : une ligne par article, une
+colonne par audience. Elle devient la vue de référence de ce qui est publié :
+
+| Article | Audience (référentiel)                                                             | Pros                                                       | Public                                                       |
+| ------- | ---------------------------------------------------------------------------------- | ---------------------------------------------------------- | ------------------------------------------------------------ |
+| …       | `les deux` / `pro` / `public`, et « hérité de _famille_ » ou « propre à la fiche » | **en vente** _prix HT_ · **masqué** · _pas vendu aux pros_ | **en vente** _prix TTC_ · **masqué** · _pas vendu au public_ |
+
+- Chaque cellule d'audience a **trois états**, et un seul est un geste :
+  _en vente_ ↔ _masqué_ (l'interrupteur, la route ci-dessus). _Pas vendu_ est
+  une lecture, sans interrupteur, avec un lien vers la fiche du référentiel
+  où l'audience se change.
+- Un filtre par audience en tête (« vu des pros », « vu du public »,
+  « masqué », tout) : « qu'est-ce qu'un particulier voit aujourd'hui ? » se
+  répond en un clic.
+- Le compte par audience en tête de rayon, à la place du seul « N articles ».
+- Les prix restent ceux d'aujourd'hui (prix reçu, prix décidé) — §6 n'y
+  touche pas.
+
 ## 4. Lots
 
 | Lot   | Contenu                                                                                                                                         | Donne                             |
 | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
 | **1** | Comptage en prod ; colonnes et migration de données (D6) ; value object `Audience`, résolution ; `AUDIENCES` dans `@lfd/pim-contracts`          | le référentiel connaît l'audience |
 | **2** | Le snapshot porte `audience` (version du fil + 1) ; la projection n'écarte plus par canal ; ingestion → `catalog_items.audience` ; `hiddenFrom` | **le public-seulement existe**    |
-| **3** | Écrans : famille, fiche, table « Catalogue actuel en ligne », résumé                                                                            | le staff règle et lit l'audience  |
+| **3** | Écrans : famille, fiche ; la route unique de masquage et la vue « Catalogue publié » (D7) ; résumé                                              | le staff règle et lit l'audience  |
 | **4** | Retraits D5 (appartenance, matrice, point de vente, colonnes Shopify)                                                                           | le référentiel tient en un champ  |
 
 Les lots 1 à 3 ne retirent rien : jusqu'au lot 4, la matrice et le lien
@@ -337,8 +372,8 @@ contredit. Ce document n'y touche pas.
    à la migration ; une fiche liée non publiée sort. Rien ne change pour le
    client le jour de la bascule. La liste des fiches dépubliées est rendue par
    le lot 1, pour que personne ne cherche une fiche disparue.
-3. **Q3** — Les masquages de la plateforme restent, et ne peuvent que
-   restreindre : d'accord ?
+3. ~~**Q3**~~ — **Oui (Hugo, 2026-10-15) : le masquage ne fait que retirer**,
+   et il n'a **qu'une route**. Voir D7.
 4. ~~**Q4**~~ — **Tranché (Hugo, 2026-10-15) : la commande à table viendra
    « un jour », et ce sera une capacité du site** — « presque une capacité de
    site eatIn, l'endroit où définir un plan de table et des QR ».
