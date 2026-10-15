@@ -1,11 +1,13 @@
 import { Injectable, computed, inject, type Signal } from '@angular/core';
 import type { StaffPermission } from '@lfd/contracts';
-import { legalMentionLabels, legalMentionOrder } from '@lfd/contracts/content-values';
+import { legalMentionOrder } from '@lfd/contracts/content-values';
 import type { FoldIconName } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { CustomerRequestsInbox } from '../../b2b/demandes/customer-requests-inbox.store';
 import { PimCapabilitiesStore } from '../../pim/capabilities/pim-capabilities.store';
+import { legalMentionLink, legalMentionMenuLabel } from '../../reglages/legal-mention-slugs';
+import { BRAND_PINK_TINT } from '../menu-tints';
 import type { WorkspaceRail, WorkspaceRailItem } from './workspace-rail.store';
 
 /** Une vue d'espace de travail, et le droit qui l'ouvre s'il lui est propre. */
@@ -292,7 +294,7 @@ function underSection(section: string, views: readonly WorkspaceView[]): Workspa
  */
 export const EXPLOITATION_VIEWS: readonly WorkspaceView[] = [
   // L'ORDRE DES SECTIONS (Hugo, 2026-10-13) : Commandes, Production,
-  // Livraison, Commercial, Sites. `/reglages` mène à la première vue ouverte
+  // Livraison, Commercial, Sites — puis Légal (2026-10-15). `/reglages` mène à la première vue ouverte
   // dans cet ordre (`firstReglagesView`).
   // RÉGLAGES › COMMANDES (plan-reglages-commandes.md, lot O1b, 2026-10-13) —
   // venues de la section « Réglages » de l'E-commerce, chacune sous son droit.
@@ -376,6 +378,22 @@ export const EXPLOITATION_VIEWS: readonly WorkspaceView[] = [
     section: 'Sites',
     needs: 'lfc_site_settings:read',
   },
+  // RÉGLAGES › LÉGAL (Hugo, 2026-10-15) — les cinq mentions légales, venues de
+  // E-commerce › Contenu, sous le droit qu'elles avaient là-bas
+  // (`b2b_settings:read`). Une entrée chacune et non une page d'index : on
+  // vient corriger une mention précise. DÉRIVÉES du vocabulaire — ordre et
+  // mots viennent du contrat (sauf « CGV », libellé court du menu), l'adresse
+  // de `LEGAL_MENTION_SLUGS`.
+  ...legalMentionOrder.map((mention): WorkspaceView => ({
+    key: `mention-${mention}`,
+    label: legalMentionMenuLabel(mention),
+    link: legalMentionLink(mention),
+    icon: 'contracts',
+    section: 'Légal',
+    // La MÊME teinte que la Communication du menu principal (Hugo, 2026-10-15).
+    sectionColor: BRAND_PINK_TINT,
+    needs: 'b2b_settings:read',
+  })),
 ];
 
 /**
@@ -682,18 +700,10 @@ export const B2B_VIEWS: readonly WorkspaceView[] = [
   // « Vitrine boutique » et « Textes de la boutique » ont quitté cet espace le
   // 2026-10-12 (Hugo : « en primary menu, dans une section Communication ») :
   // ils sont au rail principal et au lanceur mobile, dans `app.html`.
-  // LES CINQ MENTIONS LÉGALES, une entrée chacune et non une page d'index : on
-  // vient corriger une mention précise, et un index n'aurait ajouté qu'un clic
-  // entre le menu et le texte. Elles sont DÉRIVÉES du vocabulaire — leur ordre
-  // et leurs mots viennent du contrat, jamais d'une liste recopiée ici qui
-  // aurait divergé à la première mention ajoutée.
-  ...legalMentionOrder.map((mention): WorkspaceView => ({
-    key: `mention-${mention}`,
-    label: legalMentionLabels.fr[mention],
-    link: `/b2b/contenu/mentions/${mention}`,
-    icon: 'contracts',
-    section: 'Contenu',
-  })),
+  // LES CINQ MENTIONS LÉGALES sont parties en Réglages › Légal le 2026-10-15
+  // (Hugo), sous le même droit : elles sont dans EXPLOITATION_VIEWS, donc au
+  // rail des Réglages ET au lanceur mobile. `/b2b/contenu/mentions/<clé>`
+  // redirige.
   // La section « Réglages » de l'E-commerce a disparu le 2026-10-13
   // (plan-reglages-commandes.md §3.3, Q8) : « Points de retrait » est devenu
   // « Sites », l'ouverture, l'heure limite et l'annulation sont parties en
@@ -701,7 +711,7 @@ export const B2B_VIEWS: readonly WorkspaceView[] = [
   //
   // La carte de contact (surtitre, titre, phrase, numéros) : son propre droit,
   // `b2b_contact`. Un texte publié, pas un réglage : elle a rejoint
-  // « Contenu », à côté des mentions légales. Ses objets et sa messagerie
+  // « Contenu », à côté des mentions légales (parties depuis). Ses objets et sa messagerie
   // sont devenus les deux entrées des demandes clients (demandes-clients.md, §3.5).
   {
     key: 'contact',

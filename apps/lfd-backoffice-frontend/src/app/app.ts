@@ -46,6 +46,7 @@ import { StaffLoginPage } from './auth/staff-login/staff-login';
 import { PushNotificationsService } from './shared/push/push-notifications.service';
 import { NewVersionBanner } from './shared/new-version-banner/new-version-banner';
 import { NotificationBell } from './shared/notifications/notification-bell/notification-bell';
+import { BRAND_PINK_TINT } from './shared/menu-tints';
 import { groupRailItems, WorkspaceRailStore } from './shared/workspace-rail/workspace-rail.store';
 import { WorkspaceCatalogue, isExploitationUrl } from './shared/workspace-rail/workspaces';
 
@@ -302,9 +303,8 @@ export class App {
    * 2026-09-23 ; l'entrée suivait encore `pim_catalog` jusqu'au 2026-10-02.
    */
   protected readonly canSeeMedia = computed(() => this.permissions.can('media_library:read'));
-  /** La teinte de la section Communication : un rose fait de tokens fold. */
-  protected readonly communicationTint =
-    'color-mix(in oklab, var(--fold-ref-red-450), var(--fold-ref-grape-500) 45%)';
+  /** La teinte de la section Communication : le rose de la marque. */
+  protected readonly communicationTint = BRAND_PINK_TINT;
 
   /**
    * La section **Gestion Boutique** (Hugo, 2026-10-13) : les opérations

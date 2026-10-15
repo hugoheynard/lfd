@@ -19,7 +19,6 @@ import type {
 import {
   contentLocales,
   legalMentionLabels,
-  legalMentionOrder,
   requiredSections,
 } from '@lfd/contracts/content-values';
 import { httpErrorCode, httpErrorMessage } from '@lfd/endpoints';
@@ -35,6 +34,7 @@ import {
 } from 'fold-ng';
 
 import { NotifyService } from '../../notify.service';
+import { legalMentionOfSlug } from '../../reglages/legal-mention-slugs';
 import { PlatformContentService } from '../platform-content.service';
 import { LegalParagraphCard } from './legal-paragraph-card/legal-paragraph-card';
 import { LegalParagraphForm } from './legal-paragraph-form/legal-paragraph-form';
@@ -61,12 +61,6 @@ type LoadState = 'unknown' | 'loading' | 'ready' | 'error';
 /** Garde de type : évite un `as` là où une vérification suffit. */
 function isLocale(value: string): value is ContentLocale {
   return (contentLocales as readonly string[]).includes(value);
-}
-
-/** 🔴 Garde contre une mention inventée : une clé libre ouvrirait un bloc de
- *  contenu que personne ne saurait retrouver. */
-function isMention(value: string): value is LegalMention {
-  return (legalMentionOrder as readonly string[]).includes(value);
 }
 
 /**
@@ -109,14 +103,16 @@ export class MentionsPage {
   private readonly api = inject(PlatformContentService);
   private readonly notify = inject(NotifyService);
 
-  /** Le segment `:mention` de la route, brut. */
+  /** Le segment `:mention` de la route, brut — le SEGMENT français
+   *  (`/reglages/legal/cgv`), pas la clé du contrat, depuis le 2026-10-15. */
   readonly mention = input.required<string>();
 
-  /** La mention à éditer, ou `null` si le segment n'en désigne aucune. */
-  protected readonly target = computed<LegalMention | null>(() => {
-    const segment = this.mention();
-    return isMention(segment) ? segment : null;
-  });
+  /** La mention à éditer, ou `null` si le segment n'en désigne aucune.
+   *  🔴 Garde contre une mention inventée : une clé libre ouvrirait un bloc de
+   *  contenu que personne ne saurait retrouver. */
+  protected readonly target = computed<LegalMention | null>(() =>
+    legalMentionOfSlug(this.mention()),
+  );
 
   /** Le titre de l'écran vient du CONTRAT : il se nomme avant toute lecture. */
   protected readonly heading = computed(() => {

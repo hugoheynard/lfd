@@ -174,10 +174,7 @@ class SilentNotify {
   refused(): void {}
 }
 
-async function render(
-  api: FakeContent,
-  mention = 'salesTerms',
-): Promise<ComponentFixture<MentionsPage>> {
+async function render(api: FakeContent, segment = 'cgv'): Promise<ComponentFixture<MentionsPage>> {
   TestBed.configureTestingModule({
     imports: [MentionsPage],
     providers: [
@@ -192,7 +189,7 @@ async function render(
   const fixture: ComponentFixture<MentionsPage> = TestBed.createComponent(MentionsPage);
   // Le segment de route arrive par `withComponentInputBinding` dans l'app ; ici
   // on le pose à la main, c'est la MÊME entrée.
-  fixture.componentRef.setInput('mention', mention);
+  fixture.componentRef.setInput('mention', segment);
   fixture.detectChanges();
   await settle(fixture);
   return fixture;
@@ -271,7 +268,7 @@ describe('MentionsPage', () => {
    */
   it('lit le document de SA mention, et son titre est celui du contrat', async () => {
     const api = new FakeContent();
-    const fixture = await render(api, 'privacy');
+    const fixture = await render(api, 'confidentialite');
 
     expect(api.reads).toEqual(['privacy']);
     expect(text(fixture)).toContain('Confidentialité');
@@ -280,7 +277,7 @@ describe('MentionsPage', () => {
   });
 
   it('deux mentions n’éditent pas le même document', async () => {
-    const first = await render(new FakeContent(), 'legalNotice');
+    const first = await render(new FakeContent(), 'mentions-legales');
     expect(text(first)).toContain('1. Titre ml un FR');
 
     TestBed.resetTestingModule();
@@ -309,9 +306,26 @@ describe('MentionsPage', () => {
     expect(text(fixture)).toContain('Mention inconnue');
   });
 
+  it('ne lit pas la CLÉ du contrat comme un segment : l’adresse est française', async () => {
+    // Depuis le 2026-10-15 l'écran vit sous `/reglages/legal/<segment>` ;
+    // l'ancienne clé passe par la redirection, pas par l'écran.
+    const api = new FakeContent();
+    const fixture = await render(api, 'salesTerms');
+
+    expect(api.reads).toEqual([]);
+    expect(text(fixture)).toContain('Mention inconnue');
+  });
+
+  it('ouvre la mention que son segment français désigne', async () => {
+    const api = new FakeContent();
+    await render(api, 'confidentialite');
+
+    expect(api.reads).toEqual(['privacy']);
+  });
+
   it('dit la règle des trois langues avant la saisie, et n’arme le bouton qu’une fois les trois écrites', async () => {
     const api = new FakeContent();
-    const fixture = await render(api, 'accessibility');
+    const fixture = await render(api, 'accessibilite');
 
     // La règle est lisible AVANT d'ouvrir le formulaire.
     expect(text(fixture)).toContain('trois langues à la fois');
@@ -488,7 +502,7 @@ describe('MentionsPage', () => {
         },
       },
     };
-    const fixture = await render(api, 'privacy');
+    const fixture = await render(api, 'confidentialite');
 
     expect(text(fixture)).toContain('Requis — Suppression des données');
     expect(text(fixture)).toContain('#suppression-des-donnees');
@@ -505,7 +519,7 @@ describe('MentionsPage', () => {
 
   it('une section requise absente s’annonce, et se crée pré-remplie du SEUL titre français', async () => {
     const api = new FakeContent();
-    const fixture = await render(api, 'privacy');
+    const fixture = await render(api, 'confidentialite');
 
     expect(text(fixture)).toContain('Section requise manquante');
     expect(text(fixture)).toContain('Suppression des données');
@@ -549,7 +563,7 @@ describe('MentionsPage', () => {
   });
 
   it('une mention sans section exigée n’annonce rien', async () => {
-    const fixture = await render(new FakeContent(), 'salesTerms');
+    const fixture = await render(new FakeContent(), 'cgv');
     expect(text(fixture)).not.toContain('Section requise manquante');
   });
 });

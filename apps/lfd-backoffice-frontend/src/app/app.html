@@ -539,6 +539,7 @@
           @if (group.label; as label) {
             <fold-menu-section
               [label]="label"
+              [color]="group.color"
               collapsible
               [collapsed]="menuFolded('workspace.' + label)"
               (collapsedChange)="foldMenu('workspace.' + label, $event)"

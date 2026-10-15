@@ -1,25 +1,22 @@
-import { type ActivatedRouteSnapshot, type Routes } from '@angular/router';
-import { legalMentionLabels, legalMentionOrder } from '@lfd/contracts/content-values';
+import { type Routes } from '@angular/router';
+import { legalMentionOrder } from '@lfd/contracts/content-values';
 
 import { permissionGuard } from '../auth/permission.guard';
+import { LEGAL_MENTION_SLUGS } from '../reglages/legal-mention-slugs';
 
 /**
- * L'onglet d'une mention : son nom consacré, jamais le segment brut.
- *
- * Le titre vient du CONTRAT et non du document lu : il est posé avant tout
- * appel, et un onglet qui attendrait la réponse du serveur afficherait l'URL
- * pendant ce temps.
- *
- * ⚠️ Une mention hors vocabulaire dit « Mention inconnue », **le même mot que
- * l'écran**. Le repli a d'abord été « Mentions légales », pensé comme le nom du
- * groupe — sauf que c'est EXACTEMENT le libellé de `legalNotice` : l'onglet
- * devenait indiscernable d'une vraie page pendant que la page, elle, refusait
- * d'afficher quoi que ce soit (corrigé le 2026-09-13, vu à l'écran).
+ * L'ancienne adresse d'une mention (`/b2b/contenu/mentions/<clé>`) vers la
+ * nouvelle (`/reglages/legal/<segment>`). Une clé hors vocabulaire garde son
+ * segment : l'écran dit alors « Mention inconnue », comme avant.
  */
-function legalMentionTitle(route: ActivatedRouteSnapshot): string {
-  const segment = route.paramMap.get('mention') ?? '';
+export function legacyLegalMentionRedirect({
+  params,
+}: {
+  readonly params: Readonly<Record<string, string>>;
+}): string {
+  const segment = params['mention'] ?? '';
   const known = legalMentionOrder.find((mention) => mention === segment);
-  return `${known === undefined ? 'Mention inconnue' : legalMentionLabels.fr[known]} — LFC B2B admin`;
+  return `/reglages/legal/${known === undefined ? segment : LEGAL_MENTION_SLUGS[known]}`;
 }
 
 /**
@@ -70,18 +67,15 @@ export const b2bRoutes: Routes = [
             // qui rend 404 se paie par celui qui ne l'a pas fait.
             path: 'cgv',
             pathMatch: 'full',
-            redirectTo: 'mentions/salesTerms',
+            redirectTo: '/reglages/legal/cgv',
           },
           {
-            // LES CINQ MENTIONS par un seul écran, paramétré par son segment :
-            // elles ont la même forme, et cinq composants auraient divergé au
-            // premier correctif. Elles vivent avec le pied de page — même
-            // table, même révision, même doctrine : un article à corriger ne
-            // demande ni développeur, ni revue, ni déploiement.
+            // LES CINQ MENTIONS sont parties en Réglages › Légal le 2026-10-15
+            // (Hugo), sous le même droit `b2b_settings:read`. Absolue, la
+            // redirection s'applique AVANT les gardes : le mur de l'espace ne
+            // la voit pas.
             path: 'mentions/:mention',
-            title: legalMentionTitle,
-            loadComponent: () =>
-              import('../contenu/mentions/mentions-page').then((m) => m.MentionsPage),
+            redirectTo: legacyLegalMentionRedirect,
           },
         ],
       },

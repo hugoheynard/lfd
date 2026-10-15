@@ -40,4 +40,33 @@ describe('grouper les vues du rail', () => {
 
     expect(groups.map((g) => g.label)).toEqual([undefined, 'Application']);
   });
+
+  describe('la teinte d’une section', () => {
+    const tinted = (key: string, section: string, sectionColor: string): WorkspaceRailItem => ({
+      ...view(key, section),
+      sectionColor,
+    });
+
+    it('n’en porte aucune quand aucune vue n’en déclare', () => {
+      expect(groupRailItems([view('a', 'X')])[0]?.color).toBeUndefined();
+    });
+
+    it('prend celle de la vue qui en déclare une, même après une vue sans teinte', () => {
+      const groups = groupRailItems([view('a', 'Légal'), tinted('b', 'Légal', 'pink')]);
+
+      expect(groups.map((g) => g.color)).toEqual(['pink']);
+    });
+
+    it('garde la PREMIÈRE quand deux vues d’une section en déclarent deux', () => {
+      const groups = groupRailItems([tinted('a', 'Légal', 'pink'), tinted('b', 'Légal', 'blue')]);
+
+      expect(groups.map((g) => g.color)).toEqual(['pink']);
+    });
+
+    it('ne déborde pas sur la section suivante', () => {
+      const groups = groupRailItems([tinted('a', 'Légal', 'pink'), view('b', 'Sites')]);
+
+      expect(groups.map((g) => g.color)).toEqual(['pink', undefined]);
+    });
+  });
 });

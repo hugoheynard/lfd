@@ -18,6 +18,17 @@ export interface WorkspaceRailItem {
    */
   readonly section?: string;
   /**
+   * La teinte de la SECTION de cette vue au rail secondaire — une valeur CSS
+   * faite de tokens fold (`BRAND_PINK_TINT`), liée en `[color]` au
+   * `fold-menu-section`. Portée par la vue et non par une table des sections,
+   * qui n'existe pas : la vue est la seule chose que l'espace déclare. Si deux
+   * vues d'une même section en déclaraient deux, la PREMIÈRE gagne.
+   *
+   * ⚠️ Rail seulement : le lanceur mobile (`fold-nav-group`) n'a ni sections
+   * ni couleur (vérifié dans `fold-ng.d.ts` le 2026-10-15) — chantier fold.
+   */
+  readonly sectionColor?: string;
+  /**
    * Ce qui attend derrière l'entrée — un compte, rendu au rail ET sur la tuile
    * du menu mobile. Absent quand il n'y a rien : un « 0 » attirerait l'œil
    * pour dire qu'il n'y a rien à faire.
@@ -28,6 +39,8 @@ export interface WorkspaceRailItem {
 /** Un groupe de vues dans le rail — sans titre quand l'espace n'en groupe pas. */
 export interface WorkspaceRailGroup {
   readonly label: string | undefined;
+  /** La teinte de la section : celle de sa première vue qui en déclare une. */
+  readonly color: string | undefined;
   readonly items: readonly WorkspaceRailItem[];
 }
 
@@ -53,10 +66,14 @@ export function groupRailItems(items: readonly WorkspaceRailItem[]): readonly Wo
   for (const item of items) {
     const last = groups.at(-1);
     if (last !== undefined && last.label === item.section) {
-      groups[groups.length - 1] = { label: last.label, items: [...last.items, item] };
+      groups[groups.length - 1] = {
+        label: last.label,
+        color: last.color ?? item.sectionColor,
+        items: [...last.items, item],
+      };
       continue;
     }
-    groups.push({ label: item.section, items: [item] });
+    groups.push({ label: item.section, color: item.sectionColor, items: [item] });
   }
   return groups;
 }

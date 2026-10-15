@@ -1,12 +1,33 @@
-import { type Routes } from '@angular/router';
+import { type ActivatedRouteSnapshot, type Routes } from '@angular/router';
+import { legalMentionLabels } from '@lfd/contracts/content-values';
 
 import { anyPermissionGuard, permissionGuard } from '../auth/permission.guard';
 import { firstReglagesView } from './first-reglages-view';
+import { legalMentionOfSlug } from './legal-mention-slugs';
+
+/**
+ * L'onglet d'une mention : son nom consacré, jamais le segment brut.
+ *
+ * Le titre vient du CONTRAT et non du document lu : il est posé avant tout
+ * appel, et un onglet qui attendrait la réponse du serveur afficherait l'URL
+ * pendant ce temps.
+ *
+ * ⚠️ Une mention hors vocabulaire dit « Mention inconnue », **le même mot que
+ * l'écran**. Le repli a d'abord été « Mentions légales », pensé comme le nom du
+ * groupe — sauf que c'est EXACTEMENT le libellé de `legalNotice` : l'onglet
+ * devenait indiscernable d'une vraie page pendant que la page, elle, refusait
+ * d'afficher quoi que ce soit (corrigé le 2026-09-13, vu à l'écran).
+ */
+export function legalMentionTitle(route: ActivatedRouteSnapshot): string {
+  const known = legalMentionOfSlug(route.paramMap.get('mention') ?? '');
+  return `${known === null ? 'Mention inconnue' : legalMentionLabels.fr[known]} — LFC B2B admin`;
+}
 
 /**
  * Les **Réglages** : Réglages › Sites (lot S1 du plan des sites, 2026-10-13),
  * Réglages › Commandes (`plan-reglages-commandes.md`, lot O1b, 2026-10-13),
  * Réglages › Commercial (Hugo, 2026-10-13, venu de l'espace Commercial),
+ * Réglages › Légal (Hugo, 2026-10-15, venu de E-commerce › Contenu),
  * et les anciennes adresses des écrans partis le 2026-10-10.
  */
 export const reglagesRoutes: Routes = [
@@ -209,6 +230,20 @@ export const reglagesRoutes: Routes = [
           import('../b2b/demandes/request-reasons-page/request-reasons-page').then(
             (m) => m.RequestReasonsPage,
           ),
+      },
+
+      // RÉGLAGES › LÉGAL (Hugo, 2026-10-15) — les cinq mentions légales,
+      // venues de E-commerce › Contenu (`/b2b/contenu/mentions/<clé>`, qui
+      // redirige). UN écran paramétré par son segment français
+      // (`legal-mention-slugs.ts`) : elles ont la même forme, et cinq
+      // composants auraient divergé au premier correctif. MÊME droit
+      // qu'avant, celui de l'espace qu'elles quittent : `b2b_settings:read`.
+      {
+        path: 'legal/:mention',
+        canActivate: [permissionGuard('b2b_settings:read')],
+        title: legalMentionTitle,
+        loadComponent: () =>
+          import('../contenu/mentions/mentions-page').then((m) => m.MentionsPage),
       },
     ],
   },

@@ -3,6 +3,8 @@ import type { StaffPermission } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { routes } from '../app.routes';
+import { legacyLegalMentionRedirect } from '../b2b/b2b.routes';
+import { LEGAL_MENTION_SLUGS } from '../reglages/legal-mention-slugs';
 import { comptoirLanding } from '../comptoir/comptoir-landing';
 import type { AnyPermissionGuard, PermissionGuard } from '../auth/permission.guard';
 
@@ -42,10 +44,11 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // Seule la VUE est listée : `b2b/contenu` ne porte pas d'écran, c'est un
   // groupement, et la table n'inventorie que ce qui s'affiche.
   'b2b/contenu/app-footer': null,
-  // UN écran pour les cinq mentions : ce qui les distingue est leur clé, pas
-  // leur forme. Le segment est validé par le composant, qui n'appelle rien
+  // UN écran pour les cinq mentions, parti en Réglages › Légal le 2026-10-15
+  // (Hugo) sous le droit qu'il héritait de l'espace B2B — ni élargi, ni
+  // resserré. Le segment est validé par le composant, qui n'appelle rien
   // quand il ne désigne aucune mention du vocabulaire.
-  'b2b/contenu/mentions/:mention': null,
+  'reglages/legal/:mention': 'b2b_settings:read',
   'commercial/comptes-clients': 'b2b_companies:read',
   'comptes-clients/nouveau': 'b2b_companies:write',
   // La liste de TOUTES les commandes (plan-page-commandes.md, C2).
@@ -498,6 +501,39 @@ describe("l'arbre de routes du back-office", () => {
     const contenu = b2b?.children?.find((child) => child.path === 'contenu');
     const vitrine = contenu?.children?.find((child) => child.path === 'vitrine');
     expect(vitrine?.redirectTo).toBe('/vitrine');
+  });
+
+  it('renvoie l’ancienne adresse des CGV vers Réglages › Légal', () => {
+    // Partie le 2026-10-15 (Hugo) : un favori. Absolue, elle s'applique avant
+    // le mur de l'espace.
+    const b2b = routes.find((route) => route.path === 'b2b');
+    const contenu = b2b?.children?.find((child) => child.path === 'contenu');
+    const cgv = contenu?.children?.find((child) => child.path === 'cgv');
+    expect(cgv?.redirectTo).toBe('/reglages/legal/cgv');
+  });
+
+  it('renvoie chaque ancienne mention vers son segment français sous Réglages › Légal', () => {
+    // Partie le 2026-10-15 (Hugo). La table est celle du vocabulaire : chaque
+    // clé du contrat a une adresse, et l'ancienne y mène.
+    const b2b = routes.find((route) => route.path === 'b2b');
+    const contenu = b2b?.children?.find((child) => child.path === 'contenu');
+    const mentions = contenu?.children?.find((child) => child.path === 'mentions/:mention');
+    expect(mentions?.redirectTo).toBe(legacyLegalMentionRedirect);
+    expect(mentions?.loadComponent).toBeUndefined();
+    const moved = Object.keys(LEGAL_MENTION_SLUGS).map((mention) =>
+      legacyLegalMentionRedirect({ params: { mention } }),
+    );
+    expect(moved).toEqual([
+      '/reglages/legal/mentions-legales',
+      '/reglages/legal/cgv',
+      '/reglages/legal/confidentialite',
+      '/reglages/legal/cookies',
+      '/reglages/legal/accessibilite',
+    ]);
+    // Une clé inventée garde son segment : l'écran dira « Mention inconnue ».
+    expect(legacyLegalMentionRedirect({ params: { mention: 'inventee' } })).toBe(
+      '/reglages/legal/inventee',
+    );
   });
 
   it('renvoie les anciens réglages de livraison vers l’Exploitation', () => {
