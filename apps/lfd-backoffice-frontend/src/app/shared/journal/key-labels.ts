@@ -214,7 +214,7 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   priceCents: 'Prix TTC',
   priceMillicents: 'Prix HT',
   promisedQuantity: 'Quantité promise',
-  // Lot P : le prix pro HT saisi (`product.pricing_saved`, `variant.pro_price_prefilled`).
+  // Lot P : le prix pro HT saisi (`product.pricing_saved`, `product.pro_price_prefilled`).
   proPriceMillicents: 'Prix pro HT',
   proteinG: 'Protéines',
   providerId: 'Identifiant d’envoi',

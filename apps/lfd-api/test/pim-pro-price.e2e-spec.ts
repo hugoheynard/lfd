@@ -256,7 +256,7 @@ describe("le pré-remplissage depuis le ratio", () => {
     expect(columns.get(seed.entered)).toBe(3_333_333);
     await ctx.drain();
     const facts = await ctx.prisma.activityEvent.findMany({
-      where: { type: "variant.pro_price_prefilled" },
+      where: { type: "product.pro_price_prefilled" },
       select: { payload: true },
     });
     expect(facts).toHaveLength(1);

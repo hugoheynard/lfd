@@ -27,7 +27,7 @@ export class ApplyProPricePrefillCommand {}
  *
  * L'écriture passe par l'agrégat (`Product.prefillProPrice`), qui n'écrit que
  * sur une déclinaison à tarif propre et sans saisie ; une fiche par
- * transaction, un fait `variant.pro_price_prefilled` par déclinaison, puis
+ * transaction, un fait `product.pro_price_prefilled` par déclinaison, puis
  * l'émetteur du lot 2a (sans effet tant que les faits sont fermés).
  *
  * @throws {ProPricePrefillMismatchError} au moins un écart.
@@ -80,7 +80,7 @@ export class ApplyProPricePrefillHandler implements ICommandHandler<
         }
         const snapshot = product.snapshot();
         ticket = await this.journal.trace({
-          type: PIM_EVENTS.variantProPricePrefilled,
+          type: PIM_EVENTS.productProPricePrefilled,
           subjectType: "product",
           subjectId: product.id,
           payload: {

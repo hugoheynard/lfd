@@ -485,7 +485,7 @@ export const REFERENTIAL_CATALOGUE_FACTS = {
    * écrite seulement là où rien n'était saisi. `ratioBp` et `vatPercent` sont
    * les matériaux du calcul, pour qu'on puisse le refaire en lisant la ligne.
    */
-  "variant.pro_price_prefilled": fact(
+  "product.pro_price_prefilled": fact(
     payload({
       subjectLabel: subjectLabel(),
       variant: named("variant"),

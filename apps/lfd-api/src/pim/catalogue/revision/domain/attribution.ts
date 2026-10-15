@@ -37,6 +37,9 @@ const TOUCHES: Readonly<Record<string, readonly string[] | "changes" | "*">> = {
   // quatrième déclaration à tenir d'accord.
   [PIM_EVENTS.productIdentitySaved]: "changes",
   [PIM_EVENTS.productPricingSaved]: "changes",
+  // Le pré-remplissage (lot P, P5) écrit le prix pro d'une déclinaison, et
+  // rien d'autre : son auteur est celui de ce champ.
+  [PIM_EVENTS.productProPricePrefilled]: ["proPriceMillicents"],
   // Les deux moitiés de la fiche, chacune sur SON champ d'article. Leur ancêtre
   // garde son `["allergens"]` : retiré de l'écriture, il reste l'auteur des
   // changements qu'il a écrits, et le lui retirer rendrait anonymes des lignes

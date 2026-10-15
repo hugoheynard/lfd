@@ -415,9 +415,11 @@ ci-dessus :**
 >   `variant_sans_taux`, qui enverrait ouvrir le mauvais écran) ;
 > - P5 : `GET` (aperçu) et `POST` (écriture, `pim_tax:write`) sur
 >   `/pim/accounting-rules/pro-price-prefill`, contrôleur dans le catalogue
->   (le catalogue importe déjà les règles comptables) ; le fait
->   `variant.pro_price_prefilled` n'est lu ni par `attribution.ts` ni par
->   `content-facts.ts` (préfixe `variant.*`) ;
+>   (le catalogue importe déjà les règles comptables) ; le fait,
+>   d'abord `variant.pro_price_prefilled` (lu ni par `attribution.ts` ni par
+>   `content-facts.ts`), est renommé `product.pro_price_prefilled` le
+>   2026-10-15 (Hugo) : il est attribué au champ `proPriceMillicents` et
+>   périme la signature ;
 > - la révision ne porte `proPriceMillicents` que lorsqu'il est saisi : une clé
 >   à `null` partout aurait rebasculé toutes les empreintes déjà posées.
 
@@ -481,7 +483,7 @@ entier, jamais un flottant.
   qui ont leur propre tarif** ; une alignée n'a pas de colonne réveillée au
   désalignement.
 - **`apply` passe par l'agrégat** (SÉRIEUX) : `Product.priceVariant`
-  (`product.ts:489`), un fait de journal `variant.pro_price_prefilled` par
+  (`product.ts:489`), un fait de journal `product.pro_price_prefilled` par
   déclinaison, et l'émetteur du lot 2a (sans effet tant que les faits sont
   fermés).
 - **Les révisions couvrent le prix pro** (SÉRIEUX) : le champ entre dans la
@@ -607,6 +609,11 @@ Sérieux intégrés :
   URL) ; aucun contact nominatif n'est rangé.
 - **Photos** : les URL de la vue sont des variantes Cloudflare Images ; leur
   stabilité pour un tiers qui les met en cache est vérifiée au lot.
+
+**L'audience sort aussi (Hugo, 2026-10-15, option a)** : chaque article
+livré à la vitrine porte son audience — `public` ou `both` —, pour que le
+site puisse dire « aussi pour les professionnels ». Les articles réservés aux
+pros **ne sortent pas** : la vue reste celle d'un particulier.
 
 **Ordre** : W se bâtit après 2a (il en écoute les faits) ; il ne voit des
 changements en continu qu'après la bascule 2b. Avant, une notification par

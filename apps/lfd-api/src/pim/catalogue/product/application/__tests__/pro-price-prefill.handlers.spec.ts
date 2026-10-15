@@ -147,7 +147,7 @@ describe("ApplyProPricePrefillHandler — l'écriture", () => {
     expect(stored.get("v_aligned")).toBeNull();
     expect(stored.get("v_entered")).toBe(777_777);
     expect(stored.get("v_unpriced")).toBeNull();
-    expect(journal.types()).toEqual(["variant.pro_price_prefilled"]);
+    expect(journal.types()).toEqual(["product.pro_price_prefilled"]);
     expect(journal.entries[0]?.payload).toMatchObject({
       variant: { id: "v_own" },
       proPriceMillicents: 2_400_000,

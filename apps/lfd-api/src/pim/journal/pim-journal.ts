@@ -262,7 +262,7 @@ export const PIM_EVENTS = {
    * nomme : il échappe donc à `attribution.ts` et à `content-facts.ts`, qui ne
    * lisent que `product.*` (cf. le contrat de `product.allergens_saved`).
    */
-  variantProPricePrefilled: "variant.pro_price_prefilled",
+  productProPricePrefilled: "product.pro_price_prefilled",
   productArchived: "product.archived",
   productRestored: "product.restored",
   /**

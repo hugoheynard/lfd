@@ -74,6 +74,7 @@ const CONTENT_FACTS: Readonly<Record<string, boolean>> = {
   [PIM_EVENTS.productCreated]: true,
   [PIM_EVENTS.productIdentitySaved]: true,
   [PIM_EVENTS.productPricingSaved]: true,
+  [PIM_EVENTS.productProPricePrefilled]: true,
   // Les deux moitiés de la fiche réglementaire, et leur ancêtre. Celui-ci reste
   // à `true` bien que plus rien ne l'écrive : les lignes déjà posées doivent
   // continuer de périmer les signatures qu'elles ont périmées.

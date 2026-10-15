@@ -188,7 +188,7 @@ function proPricePrefilled(fact: PhraseFact): Said {
 }
 
 export const REFERENTIAL_VARIANT_PHRASES = {
-  'variant.pro_price_prefilled': proPricePrefilled,
+  'product.pro_price_prefilled': proPricePrefilled,
   'variant.added': variantAdded,
   'variant.aligned': (fact) => variantAligned(fact, fact.payload['aspect'], ['aspect']),
   'variant.renamed': variantRenamed,
