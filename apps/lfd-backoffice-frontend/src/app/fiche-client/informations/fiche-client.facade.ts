@@ -39,7 +39,7 @@ export class FicheClientFacade {
   readonly billing = this.store.billing;
   readonly deliveries = this.store.deliveries;
   readonly pickups = this.store.pickups;
-  readonly defaultPickup = this.store.defaultPickup;
+  readonly preselectedPickup = this.store.preselectedPickup;
   readonly deliveryHidden = this.store.deliveryHidden;
   /** Le réglage général « créneau ou échéance » (CA-D2), dont héritent les adresses. */
   readonly windowMode = computed(() => this.store.deliveryAvailability().windowMode);

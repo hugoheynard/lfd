@@ -28,7 +28,6 @@ import { GetPublicPickupScheduleQuery } from "../application/get-public-pickup-s
 import { SavePublicPickupScheduleCommand } from "../application/save-public-pickup-schedule.command.js";
 import { CreatePickupAddressCommand } from "../application/create-pickup-address.command.js";
 import { RemovePickupAddressCommand } from "../application/remove-pickup-address.command.js";
-import { SetDefaultPickupAddressCommand } from "../application/set-default-pickup-address.command.js";
 import { UpdatePickupAddressCommand } from "../application/update-pickup-address.command.js";
 
 /**
@@ -74,14 +73,6 @@ export class AdminPickupAddressesController {
   async remove(@Param("id") id: string): Promise<void> {
     await this.commands.execute<RemovePickupAddressCommand, void>(
       new RemovePickupAddressCommand(id),
-    );
-  }
-
-  @Patch(":id/default")
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async setDefault(@Param("id") id: string): Promise<void> {
-    await this.commands.execute<SetDefaultPickupAddressCommand, void>(
-      new SetDefaultPickupAddressCommand(id),
     );
   }
 

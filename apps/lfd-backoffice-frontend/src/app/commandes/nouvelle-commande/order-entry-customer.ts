@@ -30,12 +30,24 @@ export interface OrderEntryCustomer {
   /** Le carnet de livraison, la défaut en tête. */
   readonly addresses: readonly DeliveryAddressView[];
   readonly buyers: readonly OrderEntryBuyer[];
+  /**
+   * Son point de retrait préféré, ou `null` — la première règle de la
+   * présélection (`preselectedPickupId`, 2026-10-15). Le comptoir ne le lit
+   * pas : sa projection rend `null`, et la présélection retombe sur le seul
+   * point ouvert.
+   */
+  readonly preferredPickupId: string | null;
 }
 
 /** Ce que la projection lit de la fiche — et elle ne lit que ça. */
 export type AdminCompanyFacts = Pick<
   AdminCompanyDetail,
-  'raisonSociale' | 'enseigne' | 'status' | 'grantedTerms' | 'directDebitBlocked'
+  | 'raisonSociale'
+  | 'enseigne'
+  | 'status'
+  | 'grantedTerms'
+  | 'directDebitBlocked'
+  | 'fulfillmentPreference'
 > & { readonly addresses: Pick<AdminCompanyDetail['addresses'], 'deliveries'> };
 
 /**
@@ -54,6 +66,7 @@ export function customerFromAdminCompany(
       company.status === 'active' && company.grantedTerms.length > 0 && !company.directDebitBlocked,
     addresses: company.addresses.deliveries,
     buyers: members,
+    preferredPickupId: company.fulfillmentPreference.pickupAddressId,
   };
 }
 
@@ -71,5 +84,6 @@ export function customerFromCounter(customer: CounterCustomerView): OrderEntryCu
     settlesOnAccount: customer.settlesOnAccount,
     addresses: customer.deliveryAddresses,
     buyers: customer.buyers,
+    preferredPickupId: null,
   };
 }

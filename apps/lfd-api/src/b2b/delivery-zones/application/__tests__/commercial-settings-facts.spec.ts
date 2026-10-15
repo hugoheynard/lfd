@@ -20,8 +20,6 @@ import { RemovePickupAddressCommand } from "../../../pickup-addresses/applicatio
 import { RemovePickupAddressHandler } from "../../../pickup-addresses/application/remove-pickup-address.handler.js";
 import { PickupAddressNotFoundError } from "../../../pickup-addresses/domain/pickup-errors.js";
 import { PickupAddressRepository } from "../../../pickup-addresses/domain/pickup-address.repository.js";
-import { SetDefaultPickupAddressCommand } from "../../../pickup-addresses/application/set-default-pickup-address.command.js";
-import { SetDefaultPickupAddressHandler } from "../../../pickup-addresses/application/set-default-pickup-address.handler.js";
 import { UpdatePickupAddressCommand } from "../../../pickup-addresses/application/update-pickup-address.command.js";
 import { UpdatePickupAddressHandler } from "../../../pickup-addresses/application/update-pickup-address.handler.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
@@ -66,7 +64,6 @@ const PICKUP: PickupAddressPayload = {
   codePostal: "75004",
   ville: "Paris",
   pays: "France",
-  isDefault: false,
   discount: { mode: "percent", bp: 500 },
   discountAudiences: { b2b: true, b2c: false },
   opening: { publicOpening: null, proPickup: null },
@@ -106,13 +103,13 @@ function pickups(stored: PickupAddressView | null = STORED_PICKUP): PickupAddres
   };
 }
 
-/** Le site « pickup_2 » en base, ni défaut ni archivé ; le défaut est ailleurs. */
+/** Le site « pickup_2 » en base, non archivé, à côté d'un autre. */
 function sites(): InMemorySites {
   return new InMemorySites(
     storedSite("pickup_2", {
       place: { ...PLACE, discount: PickupDiscount.of(null, { b2b: true, b2c: true }) },
     }),
-    storedSite("pickup_1", { isDefault: true }),
+    storedSite("pickup_1"),
   );
 }
 
@@ -211,21 +208,6 @@ describe("Les réglages commerciaux au journal", () => {
       // n'est pas 5 % pour tout le monde.
       discountAudiences: { b2b: true, b2c: false },
     });
-  });
-
-  /**
-   * Le défaut n'est pas un détail : c'est le point où finit le colis de qui n'a
-   * rien choisi. Un fait à lui, distinct de la modification.
-   */
-  it("nomme le changement de point par défaut", async () => {
-    const events = new RecordingPublisher();
-
-    await new SetDefaultPickupAddressHandler(sites(), events, new DirectUnitOfWork()).execute(
-      new SetDefaultPickupAddressCommand("pickup_2"),
-    );
-
-    expect(events.factTypes()).toEqual(["pickup_address.default_set"]);
-    expect(events.traced[0]?.journalFact().payload).toEqual({ subjectLabel: "Laboratoire" });
   });
 
   /**

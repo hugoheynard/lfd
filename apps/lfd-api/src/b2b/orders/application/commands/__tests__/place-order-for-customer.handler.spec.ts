@@ -10,6 +10,7 @@ import {
   type CreateIntentParams,
 } from "../../../../payments/domain/payment-gateway.js";
 import { PickupAddressRepository } from "../../../../pickup-addresses/domain/pickup-address.repository.js";
+import { PreferredPickupReader } from "../../../domain/ports/preferred-pickup.reader.js";
 import type { OrderToPlace } from "../../../domain/entities/order.js";
 import {
   DeliveryClosedForAudienceError,
@@ -188,7 +189,6 @@ const LABO: PickupAddressView = {
   codePostal: "75002",
   ville: "Paris",
   pays: "France",
-  isDefault: true,
   discount: null,
   discountAudiences: { b2b: true, b2c: true },
   // Aucune heure déclarée : le point n'oppose alors rien à la tranche demandée.
@@ -218,8 +218,13 @@ function guard(
 }
 
 const pickups: PickupAddressRepository = {
-  list: () => Promise.resolve([]),
+  list: () => Promise.resolve([LABO]),
   resolve: () => Promise.resolve(LABO),
+};
+
+/** Aucune société n'a de point préféré : un retrait sans choix prend le seul point. */
+const noPreferredPickup: PreferredPickupReader = {
+  preferredPickupOf: () => Promise.resolve(null),
 };
 
 /** Le réglage de livraison ; par défaut, ligne absente = ouvert aux deux. */
@@ -361,7 +366,12 @@ function handler(
         new FixedClock(PRICED_AT),
       ),
       currentCatalogVersion,
-      new CartAdjustments(pickups, zones, deliveryAvailability(options.delivery)),
+      new CartAdjustments(
+        pickups,
+        zones,
+        deliveryAvailability(options.delivery),
+        noPreferredPickup,
+      ),
       noDeliveryDefaults(),
       noOrderCutoffs,
       new FixedClock(PRICED_AT),
@@ -706,7 +716,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
           new FixedClock(PRICED_AT),
         ),
         currentCatalogVersion,
-        new CartAdjustments(pickups, zones, deliveryAvailability()),
+        new CartAdjustments(pickups, zones, deliveryAvailability(), noPreferredPickup),
         noDeliveryDefaults(),
         noOrderCutoffs,
         new FixedClock(PRICED_AT),

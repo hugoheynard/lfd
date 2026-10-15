@@ -11,18 +11,18 @@ import type { PickupAddressWrite } from "./pickup-address.repository.js";
  * change le prix payé par tous ceux qui retirent là, sans qu'aucune commande ne
  * porte la trace de qui l'a décidé.
  *
- * Le défaut aussi compte : c'est le point que la plateforme propose quand le
- * client n'a rien choisi, donc celui où finira le colis de qui n'a rien dit.
- *
  * Chaque fait porte le nom du point en `subjectLabel` (D6 du plan des phrases,
- * 2026-09-19) — la suppression et la désignation du défaut comprises, qui
- * n'emportaient jusque-là que l'identifiant.
+ * 2026-09-19) — la suppression comprise, qui n'emportait jusque-là que
+ * l'identifiant.
+ *
+ * `pickup_address.default_set` n'est plus publié depuis le 2026-10-15 (le site
+ * par défaut a disparu) ; le type reste au registre des contrats pour que les
+ * faits déjà écrits se relisent.
  */
 export const PICKUP_ADDRESS_FACTS = {
   created: "pickup_address.created",
   updated: "pickup_address.updated",
   removed: "pickup_address.removed",
-  defaultSet: "pickup_address.default_set",
 } as const satisfies Readonly<Record<string, JournalFactType>>;
 
 /**
@@ -90,23 +90,6 @@ export class PickupAddressRemovedEvent implements JournaledEvent {
   journalFact(): JournalFact {
     return {
       type: PICKUP_ADDRESS_FACTS.removed,
-      subjectType: "pickup_address",
-      subjectId: this.pickupId,
-      payload: { subjectLabel: this.label },
-    };
-  }
-}
-
-export class DefaultPickupAddressSetEvent implements JournaledEvent {
-  constructor(
-    readonly pickupId: string,
-    /** Le nom du point désigné. */
-    readonly label: string,
-  ) {}
-
-  journalFact(): JournalFact {
-    return {
-      type: PICKUP_ADDRESS_FACTS.defaultSet,
       subjectType: "pickup_address",
       subjectId: this.pickupId,
       payload: { subjectLabel: this.label },

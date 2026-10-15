@@ -24,6 +24,8 @@ export interface PanierPanelData {
   readonly zones: readonly DeliveryZoneView[];
   readonly deliveryAvailability: DeliveryAvailabilityView;
   readonly audience: CustomerAudience;
+  /** Le point préféré du client, pour la présélection du retrait. */
+  readonly preferredPickupId: string | null;
   readonly settlesOnAccount: boolean;
   /** La case « au carnet » — absente au comptoir. */
   readonly canKeepAddress: boolean;

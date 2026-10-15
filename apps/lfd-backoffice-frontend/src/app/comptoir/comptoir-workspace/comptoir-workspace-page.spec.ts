@@ -87,7 +87,10 @@ async function open(
       { provide: CustomerRequestsService, useValue: {} },
       { provide: HandoverQueueService, useValue: queue },
       { provide: DayVersionWatcher, useValue: { watch: () => undefined } },
-      { provide: PickupAddressesService, useValue: { list: () => Promise.resolve([]) } },
+      {
+        provide: PickupAddressesService,
+        useValue: { list: () => Promise.resolve([]), listFor: () => Promise.resolve([]) },
+      },
     ],
   });
   const harness = await RouterTestingHarness.create();

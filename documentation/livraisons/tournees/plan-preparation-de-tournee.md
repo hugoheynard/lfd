@@ -400,6 +400,22 @@ points de retrait gagnent un **point GPS** facultatif, éditable sur leur
 commerce implémente (`delivery/channels/commerce/`) : l'arête `b2b → delivery`
 s'ouvre dès ce lot.
 
+> ⚠️ **Révisé le 2026-10-15 (Hugo) : il n'y a plus de « point par défaut ».**
+> Le départ est un réglage de livraison (Réglages › Livraison › Point de
+> départ), choisi parmi les **sites actifs qui livrent** (`deliveryDeparture`).
+> Sans choix enregistré — ou si le site choisi a disparu —, le départ n'est
+> **déduit que s'il n'y a qu'un candidat** ; à plusieurs, `departureViewOf`
+> rend `point: null`, l'écran demande de choisir, et le calcul refuse
+> (`DepartureNotLocatedError`, 409, qui renvoie au réglage) : la proposition,
+> la simulation, l'horaire et les suggestions de placement refusent ; la
+> composition automatique à l'arrêt du plan lève ce refus en tâche de fond
+> (journalisé par `BackgroundWork`, rien n'est écrit) et place quand même les
+> transferts, dont l'intégration à une tournée attrape le même refus et le
+> journalise (`transfer-routing.ts`) ; l'horaire prévu des tournées
+> appliquées reste vide (`RoundTimingEstimator` le rattrape et le journalise).
+> Lu le 2026-10-15 dans `delivery/application/`. Doc des sites :
+> [`../../sites/sites.md`](../../sites/sites.md).
+
 **Q10 — pas de schéma Postgres neuf : les tables vont dans `production`.**
 C'est le précédent de `order_handover` : code dans son bloc
 (`src/handover/`), table dans le schéma `production`. Rien ne se désarme :

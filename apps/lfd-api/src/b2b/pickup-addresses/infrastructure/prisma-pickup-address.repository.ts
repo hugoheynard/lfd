@@ -1,4 +1,4 @@
-import type { PickupAddressView } from "@lfd/contracts";
+import type { CustomerAudience, PickupAddressView } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
@@ -7,6 +7,19 @@ import { PickupAddressRepository } from "../domain/pickup-address.repository.js"
 
 /** Un site qu'on peut choisir pour un retrait : actif, et qui remet. */
 const OFFERED = { archivedAt: null, pickup: true } as const;
+
+/** La case de la clientèle, dans le `where` : le filtre est en base, pas à l'écran. */
+function openTo(audience: CustomerAudience | null) {
+  if (audience === null) {
+    return OFFERED;
+  }
+  return audience === "b2b"
+    ? { ...OFFERED, pickupForB2b: true }
+    : { ...OFFERED, pickupForB2c: true };
+}
+
+/** L'ordre d'affichage : par ancienneté (il n'y a plus de défaut en tête). */
+const BY_AGE = [{ createdAt: "asc" as const }, { id: "asc" as const }];
 
 /**
  * Adaptateur Prisma des points de retrait proposés. Lecture seule : les sites
@@ -18,19 +31,18 @@ export class PrismaPickupAddressRepository extends PickupAddressRepository {
     super();
   }
 
-  async list(): Promise<readonly PickupAddressView[]> {
+  async list(audience: CustomerAudience | null): Promise<readonly PickupAddressView[]> {
     const rows = await this.prisma.site.findMany({
-      where: OFFERED,
-      orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
+      where: openTo(audience),
+      orderBy: BY_AGE,
       select: SITE_SELECT,
     });
     return rows.map(toPickupView);
   }
 
-  async resolve(id: string | null): Promise<PickupAddressView | null> {
+  async resolve(id: string): Promise<PickupAddressView | null> {
     const row = await this.prisma.site.findFirst({
-      where: id === null ? OFFERED : { ...OFFERED, id },
-      orderBy: [{ isDefault: "desc" }, { createdAt: "asc" }],
+      where: { ...OFFERED, id },
       select: SITE_SELECT,
     });
     return row === null ? null : toPickupView(row);

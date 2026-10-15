@@ -22,7 +22,6 @@ function site(id: string, overrides: Partial<StoredSiteView> = {}): StoredSiteVi
     codePostal: "73150",
     ville: "Val d'Isère",
     pays: "FR",
-    isDefault: false,
     discount: null,
     discountAudiences: { b2b: true, b2c: true },
     opening: { publicOpening: null, proPickup: null },

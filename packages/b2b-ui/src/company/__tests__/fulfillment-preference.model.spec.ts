@@ -22,13 +22,12 @@ const POSTAL = {
   pays: 'France',
 } as const;
 
-/** Un point de retrait complet ; seuls `id`, `label` et `isDefault` comptent ici. */
-function pickup(id: string, label: string, isDefault: boolean): PickupAddressView {
+/** Un point de retrait complet ; seuls `id` et `label` comptent ici. */
+function pickup(id: string, label: string): PickupAddressView {
   return {
     id,
     label,
     ...POSTAL,
-    isDefault,
     discount: null,
     discountAudiences: { b2b: false, b2c: false },
     opening: { publicOpening: null, proPickup: null },
@@ -55,8 +54,8 @@ function delivery(id: string, label: string, isDefault: boolean): DeliveryAddres
 }
 
 const PICKUPS: readonly PickupAddressView[] = [
-  pickup('pick_1', 'Labo Bastille', true),
-  pickup('pick_2', 'Labo Nation', false),
+  pickup('pick_1', 'Labo Bastille'),
+  pickup('pick_2', 'Labo Nation'),
 ];
 
 const DELIVERIES: readonly DeliveryAddressView[] = [
@@ -65,7 +64,8 @@ const DELIVERIES: readonly DeliveryAddressView[] = [
 ];
 
 describe('destinations proposées', () => {
-  it('propose les POINTS DE RETRAIT en retrait', () => {
+  /** Plus de point « par défaut » à étiqueter (Hugo, 2026-10-15). */
+  it('propose les POINTS DE RETRAIT en retrait, sans étiquette de défaut', () => {
     const options = namedDestinations({
       method: 'pickup',
       pickups: PICKUPS,
@@ -73,7 +73,7 @@ describe('destinations proposées', () => {
     });
 
     expect(options).toEqual([
-      { value: 'pick_1', label: 'Labo Bastille (défaut)' },
+      { value: 'pick_1', label: 'Labo Bastille' },
       { value: 'pick_2', label: 'Labo Nation' },
     ]);
   });
@@ -102,10 +102,10 @@ describe('destinations proposées', () => {
       method: 'pickup',
       pickups: PICKUPS,
       deliveries: DELIVERIES,
-      defaultLabel: 'Celui par défaut',
+      defaultLabel: 'Aucun en particulier',
     });
 
-    expect(options[0]).toEqual({ value: DEFAULT_DESTINATION, label: 'Celui par défaut' });
+    expect(options[0]).toEqual({ value: DEFAULT_DESTINATION, label: 'Aucun en particulier' });
     expect(options).toHaveLength(3);
   });
 });

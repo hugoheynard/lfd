@@ -1,4 +1,4 @@
-import type { PickupAddressView, PublicPickupSlot } from "@lfd/contracts";
+import { audienceOf, type PickupAddressView, type PublicPickupSlot } from "@lfd/contracts";
 import { Controller, Get, Param, Query } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
 import { Throttle } from "@nestjs/throttler";
@@ -16,9 +16,15 @@ import { ListPublicPickupSlotsQuery } from "../application/list-public-pickup-sl
  */
 const daySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/u, "jour attendu au format AAAA-MM-JJ");
 
+/** Une route anonyme ne connaît personne : c'est la clientèle d'un visiteur. */
+const VISITOR_AUDIENCE = audienceOf(null);
+
 /**
- * Lecture **publique** des points de retrait — le client (checkout) comme l'admin
- * en ont besoin. Non sensible. L'écriture est staff ({@link AdminPickupAddressesController}).
+ * Lecture **publique** des points de retrait — ceux d'un **visiteur**, donc
+ * ouverts aux particuliers (Hugo, 2026-10-15 : la liste est filtrée au
+ * serveur). Un client reconnu lit les siens par `GET /pickup-addresses/mine`,
+ * l'équipe par `GET /admin/pickup-addresses`. L'écriture est staff
+ * ({@link AdminPickupAddressesController}).
  *
  * Surface anonyme ⇒ throttle resserré (60/min/IP) sous le défaut global : c'est
  * la partie la plus exposée de l'API (aucune auth en amont).
@@ -32,7 +38,7 @@ export class PickupAddressesController {
   @Get()
   list(): Promise<readonly PickupAddressView[]> {
     return this.queries.execute<ListPickupAddressesQuery, readonly PickupAddressView[]>(
-      new ListPickupAddressesQuery(),
+      new ListPickupAddressesQuery(VISITOR_AUDIENCE),
     );
   }
 

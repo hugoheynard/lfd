@@ -59,7 +59,11 @@ export const shopQuoteLineSchema = z.object({
 export const shopQuoteFulfillmentSchema = z.discriminatedUnion("method", [
   z.object({
     method: z.literal("pickup"),
-    /** `null` = le point par défaut, comme à la passation. */
+    /**
+     * `null` = aucun point choisi : le serveur applique `preselectedPickupId`
+     * (le préféré, sinon le seul ouvert), et refuse en 409
+     * (`orders.pickup.choice_required`) quand aucun ne s'impose (2026-10-15).
+     */
     pickupAddressId: z.string().min(1).nullable(),
   }),
   z.object({

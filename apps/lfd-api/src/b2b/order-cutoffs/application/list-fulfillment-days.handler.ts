@@ -65,7 +65,7 @@ export class ListFulfillmentDaysHandler implements IQueryHandler<
     const today = instantToLocal(now).day;
     const [rules, points, windows, closed, settings] = await Promise.all([
       this.cutoffs.list(),
-      this.pickups.list(),
+      this.pickups.list(null),
       this.sale.pickupRangesOf(query.cartSkus, query.audience),
       this.plans.closedBetween(today, addDays(today, NEXT_FULFILLMENT_HORIZON_DAYS)),
       this.settings.current(),

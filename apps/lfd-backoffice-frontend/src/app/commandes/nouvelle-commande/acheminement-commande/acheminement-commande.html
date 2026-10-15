@@ -124,6 +124,7 @@
   @if (pickupOptions().length > 1) {
     <fold-listbox
       label="Point de retrait"
+      placeholder="Où le client retire-t-il ?"
       [options]="pickupOptions()"
       [value]="pickup()?.id ?? ''"
       (selectionChange)="onPickup($event)"

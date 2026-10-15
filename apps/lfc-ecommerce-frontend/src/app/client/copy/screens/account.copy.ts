@@ -349,7 +349,11 @@ export interface AccountCopy {
   readonly prefMethodPickup: string;
   readonly prefMethodDelivery: string;
   readonly prefPickupPoint: string;
-  /** « Suivre le défaut » est un CHOIX, pas un placeholder : il suit le défaut du moment. */
+  /**
+   * « Aucun en particulier » est un CHOIX, pas un placeholder. Il n'y a plus de
+   * point par défaut (2026-10-15) : sans préférence, la boutique présélectionne
+   * le seul point ouvert, sinon le client choisit à chaque commande.
+   */
   readonly prefPickupDefault: string;
   readonly prefDeliveryAddress: string;
   readonly prefDeliveryDefault: string;

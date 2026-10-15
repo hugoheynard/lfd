@@ -1,5 +1,9 @@
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
-import type { DeliveryOrderFacts, DeliveryStopPoint } from "../../../channels/commerce/index.js";
+import type {
+  DeliveryOrderFacts,
+  DeliveryStopPoint,
+  DepartureCandidate,
+} from "../../../channels/commerce/index.js";
 import { DeliveryRound } from "../../../domain/entities/delivery-round.js";
 import {
   NoActiveBinTypeError,
@@ -124,6 +128,7 @@ function scene(
     readonly activeBinTypeIds?: readonly string[];
     readonly lines?: DeliveryOrderLinesReader;
     readonly fleet?: FixedFleet;
+    readonly otherDepartures?: readonly DepartureCandidate[];
   } = {},
 ) {
   // CA4 : deux véhicules mesurés, une commande = un bac (un pain, dix par bac).
@@ -140,7 +145,10 @@ function scene(
   const handler = new GetDeliveryRoundProposalHandler(
     new InMemoryRoutingSettings(options.settings ?? null),
     new FixedDeparture(null).reader,
-    new FixedDeparture(options.labo === undefined ? LABO : options.labo),
+    new FixedDeparture(
+      options.labo === undefined ? LABO : options.labo,
+      options.otherDepartures ?? [],
+    ),
     fleet,
     new RoundsReaderOver(rounds),
     orders,
@@ -215,6 +223,36 @@ describe("GetDeliveryRoundProposalHandler — « Proposer » (L7-C3 à C6)", () 
 
     expect(again).toEqual(first);
     expect(rounds.saved).toEqual([]);
+  });
+
+  /**
+   * Plus de site par défaut (Hugo, 2026-10-15) : à deux sites qui livrent et
+   * sans choix, aucun départ n'est déduit — la proposition refuse en disant
+   * où choisir, au lieu de partir du premier venu.
+   */
+  it("à plusieurs sites qui livrent et sans choix, refuse en renvoyant au réglage", async () => {
+    const { handler } = scene({
+      otherDepartures: [
+        {
+          pickupAddressId: "boutique",
+          label: "Boutique",
+          address: {
+            label: "Boutique",
+            ligne1: "2 rue du Four",
+            ligne2: "",
+            codePostal: "73000",
+            ville: "Chambéry",
+            pays: "France",
+          },
+          gps: { lat: 45.56, lng: 5.93 },
+        },
+      ],
+    });
+
+    const refusal = handler.execute(new GetDeliveryRoundProposalQuery(DAY, null, false));
+
+    await expect(refusal).rejects.toThrow(DepartureNotLocatedError);
+    await expect(refusal).rejects.toThrow(/Réglages › Livraison › Point de départ/u);
   });
 
   it("sans point GPS au départ, refuse en renvoyant au réglage", async () => {

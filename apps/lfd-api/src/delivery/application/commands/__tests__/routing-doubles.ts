@@ -198,7 +198,10 @@ export class InMemoryProposals extends DeliveryProposalRepository {
   }
 }
 
-/** Le départ : un point de retrait, avec ou sans GPS. */
+/**
+ * Le départ : un site qui livre, avec ou sans GPS — et d'autres candidats,
+ * pour éprouver « plusieurs sites livrent, personne n'a choisi » (2026-10-15).
+ */
 export class FixedDeparture extends DepartureCandidatesReader {
   readonly reader: DepartureReader = new (class extends DepartureReader {
     chosenPickupAddressId(): Promise<string | null> {
@@ -206,7 +209,10 @@ export class FixedDeparture extends DepartureCandidatesReader {
     }
   })();
 
-  constructor(private readonly gps: GeoPoint | null) {
+  constructor(
+    private readonly gps: GeoPoint | null,
+    private readonly others: readonly DepartureCandidate[] = [],
+  ) {
     super();
   }
 
@@ -224,8 +230,8 @@ export class FixedDeparture extends DepartureCandidatesReader {
           pays: "France",
         },
         gps: this.gps,
-        isDefault: true,
       },
+      ...this.others,
     ]);
   }
 }

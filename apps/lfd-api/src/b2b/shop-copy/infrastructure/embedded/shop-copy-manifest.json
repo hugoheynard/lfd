@@ -7387,9 +7387,9 @@
         },
         {
           "key": "account.prefPickupDefault",
-          "fr": "Le point par défaut",
-          "en": "The default point",
-          "it": "Il punto predefinito",
+          "fr": "Aucun en particulier",
+          "en": "None in particular",
+          "it": "Nessuno in particolare",
           "variables": []
         },
         {

@@ -33,7 +33,8 @@ export function namedDestinations(input: {
   readonly deliveries: readonly DeliveryAddressView[];
 }): readonly FulfillmentDestination[] {
   if (input.method === 'pickup') {
-    return input.pickups.map((point) => ({ value: point.id, label: labelled(point) }));
+    // Plus de point « par défaut » à étiqueter (Hugo, 2026-10-15).
+    return input.pickups.map((point) => ({ value: point.id, label: point.label }));
   }
   if (input.method === 'delivery') {
     return input.deliveries.map((address) => ({ value: address.id, label: labelled(address) }));
@@ -42,11 +43,14 @@ export function namedDestinations(input: {
 }
 
 /**
- * Ce que le choix offre : **suivre le défaut**, puis les destinations nommées.
+ * Ce que le choix offre : **aucune destination en particulier**, puis les
+ * destinations nommées.
  *
- * L'entrée « par défaut » est une option à part entière et non un placeholder,
- * parce qu'elle suit le défaut du **moment** : désigner nommément le point par
- * défaut d'aujourd'hui figerait la préférence sur lui le jour où il change.
+ * L'entrée vide est une option à part entière et non un placeholder. En
+ * livraison, elle suit l'adresse par défaut du **moment** : la désigner
+ * nommément figerait la préférence le jour où elle change. En retrait, il n'y
+ * a plus de point par défaut (2026-10-15) : elle laisse la présélection à la
+ * règle `preselectedPickupId` — le seul point ouvert, sinon le choix du client.
  */
 export function fulfillmentDestinations(input: {
   readonly method: FulfillmentMethod | null;
@@ -121,7 +125,7 @@ export function noPreference(from: FulfillmentPreferenceView): FulfillmentPrefer
   return { ...from, method: null, pickupAddressId: null, deliveryAddressId: null };
 }
 
-/** « Labo Bastille (défaut) » — le défaut se dit, il ne se devine pas. */
+/** « Boutique (défaut) » — l'adresse par défaut se dit, elle ne se devine pas. */
 function labelled(destination: { readonly label: string; readonly isDefault: boolean }): string {
   return destination.isDefault ? `${destination.label} (défaut)` : destination.label;
 }

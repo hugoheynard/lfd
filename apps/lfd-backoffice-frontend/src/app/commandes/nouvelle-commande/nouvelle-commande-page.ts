@@ -263,6 +263,8 @@ export class NouvelleCommandePage {
    * est pro » finiraient par proposer un coursier que la commande refuse.
    */
   protected readonly audience = computed(() => audienceOf(this.company()?.status ?? null));
+  /** Le point préféré du client — la présélection du retrait en part (2026-10-15). */
+  protected readonly preferredPickupId = computed(() => this.company()?.preferredPickupId ?? null);
 
   protected readonly companyName = computed(() => {
     return this.company()?.displayName ?? '';
@@ -379,7 +381,7 @@ export class NouvelleCommandePage {
           this.orders.list({ companyId, limit: HISTORY_SIZE }).then((page) => page.rows),
           this.catalogService.list(),
           this.catalogService.habitsOf(companyId),
-          this.pickupsService.list(),
+          this.pickupsService.listFor(companyId),
           this.zonesService.list(),
           this.draftsService.find(companyId),
           // Illisible = le défaut du contrat, ouverte aux deux (plan, §4) : le
@@ -487,6 +489,7 @@ export class NouvelleCommandePage {
         zones: this.zones(),
         deliveryAvailability: this.deliveryAvailability(),
         audience: this.audience(),
+        preferredPickupId: this.preferredPickupId(),
         settlesOnAccount: this.settlesOnAccount(),
         canKeepAddress: this.canKeepAddress,
       },

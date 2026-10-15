@@ -18,7 +18,7 @@ export const PLACE: SitePlace = {
 
 /** Un site enregistré, tel que l'adaptateur le relirait. */
 export function storedSite(id: string, overrides: Partial<Omit<SiteState, "id">> = {}): Site {
-  const fresh = Site.declare(id, PLACE, false).snapshot();
+  const fresh = Site.declare(id, PLACE).snapshot();
   return Site.rehydrate({ ...fresh, ...overrides });
 }
 
@@ -40,13 +40,6 @@ export class InMemorySites extends SiteRepository {
 
   load(id: string): Promise<Site | null> {
     const row = this.rows.get(id);
-    return Promise.resolve(row === undefined ? null : Site.rehydrate(row));
-  }
-
-  loadDefault(): Promise<Site | null> {
-    const row = [...this.rows.values()].find(
-      (state) => state.isDefault && state.archivedAt === null,
-    );
     return Promise.resolve(row === undefined ? null : Site.rehydrate(row));
   }
 

@@ -64,16 +64,17 @@
     } @else if (noDestination()) {
       <fold-callout variant="warning">
         @if (method() === 'pickup') {
-          Aucun point de retrait n'est configuré — la commande partira au point par défaut dès qu'il
-          y en aura un.
+          Aucun point de retrait n'est ouvert à ce client : ouvrez-en un dans Réglages › Sites pour
+          pouvoir le préférer.
         } @else {
           {{ noDeliveryHint() }}
         }
       </fold-callout>
     } @else {
-      <!-- « Par défaut » est la première option, pas un placeholder : suivre le
-           défaut du moment est un choix, et le plus fréquent. Désigner nommément
-           le défaut d'aujourd'hui figerait la préférence le jour où il change. -->
+      <!-- L'entrée vide est la première option, pas un placeholder : « aucune en
+           particulier » est un choix, et le plus fréquent. En livraison, elle
+           suit l'adresse par défaut du moment ; en retrait, la présélection
+           (le seul point ouvert, sinon le choix du client). -->
       <fold-listbox
         class="destination"
         [label]="destinationLabel()"

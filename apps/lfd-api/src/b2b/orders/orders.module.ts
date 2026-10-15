@@ -93,6 +93,7 @@ import { CartAdjustments } from "./application/services/cart-adjustments.service
 import { CustomerAudiences } from "./application/services/customer-audiences.service.js";
 import { OrderIntake } from "./application/services/order-intake.service.js";
 import { CompanyStatusReader } from "./domain/ports/company-status.reader.js";
+import { PreferredPickupReader } from "./domain/ports/preferred-pickup.reader.js";
 import { ShopCartController } from "./http/shop-cart.controller.js";
 import { ShopQuoteController } from "./http/shop-quote.controller.js";
 import { OrderOperations } from "./application/services/order-operations.service.js";
@@ -161,6 +162,7 @@ import { OrderIdempotencyStore } from "./domain/ports/order-idempotency.store.js
 import { OrderRepository } from "./domain/ports/order.repository.js";
 import { PrismaCustomerSkuReader } from "./infrastructure/prisma-customer-sku.reader.js";
 import { PrismaOrderGuardReader } from "./infrastructure/prisma-order-guard.reader.js";
+import { PrismaPreferredPickupReader } from "./infrastructure/prisma-preferred-pickup.reader.js";
 import { PrismaOrderPayerReader } from "./infrastructure/prisma-order-payer.reader.js";
 import { PrismaOrderDraftRepository } from "./infrastructure/prisma-order-draft.repository.js";
 import { PrismaShopCartRepository } from "./infrastructure/prisma-shop-cart.repository.js";
@@ -177,6 +179,9 @@ import { PrismaOrderRepository } from "./infrastructure/prisma-order.repository.
 import { CompanyOrdersController } from "./http/company-orders.controller.js";
 import { AdminCatalogController } from "./http/admin-catalog.controller.js";
 import { AdminOrderDraftsController } from "./http/admin-order-drafts.controller.js";
+import { AdminOfferedPickupsController } from "./http/admin-offered-pickups.controller.js";
+import { MyPickupAddressesController } from "./http/my-pickup-addresses.controller.js";
+import { ListCustomerPickupsHandler } from "./application/queries/list-customer-pickups.handler.js";
 import { DeliveryDefaultsReader } from "./domain/ports/delivery-defaults.reader.js";
 import { PrismaDeliveryDefaultsReader } from "./infrastructure/prisma-delivery-defaults.reader.js";
 import { AdminOrdersController } from "./http/admin-orders.controller.js";
@@ -241,6 +246,10 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     AdminOrderSalesTermsController,
     AdminProductionController,
     AdminOrderDraftsController,
+    // Les points de retrait par clientèle (2026-10-15) : la caisse les filtre,
+    // la liste aussi — client reconnu, et équipe pour un client choisi.
+    AdminOfferedPickupsController,
+    MyPickupAddressesController,
     AdminCatalogController,
     // Les commandes à régler par carte, vues de la comptabilité (plan liens de
     // paiement §2a) : la commande vit ici, la ressource est `b2b_accounting`.
@@ -278,6 +287,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     OrderLinePricing,
     CartAdjustments,
     CustomerAudiences,
+    ListCustomerPickupsHandler,
     OrderIntake,
     PlaceOrderHandler,
     PlaceOrderForCustomerHandler,
@@ -448,6 +458,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // n'a besoin que de lui, et deux lecteurs du statut n'auraient aucune raison
     // de diverger — donc aucune raison d'exister deux fois.
     { provide: CompanyStatusReader, useExisting: OrderGuardReader },
+    { provide: PreferredPickupReader, useClass: PrismaPreferredPickupReader },
     { provide: CustomerSkuReader, useClass: PrismaCustomerSkuReader },
     { provide: OrderRepository, useClass: PrismaOrderRepository },
     // Le registre des clés de passation : un double clic ne fait qu'une commande.

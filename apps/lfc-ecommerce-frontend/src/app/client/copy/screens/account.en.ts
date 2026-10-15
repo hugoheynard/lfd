@@ -319,7 +319,7 @@ export const ACCOUNT_EN: AccountCopy = {
   prefMethodPickup: 'Collection',
   prefMethodDelivery: 'Delivery',
   prefPickupPoint: 'Collection point',
-  prefPickupDefault: 'The default point',
+  prefPickupDefault: 'None in particular',
   prefDeliveryAddress: 'Delivery address',
   prefDeliveryDefault: 'The company’s default address',
   prefDefaultTag: 'default',

@@ -5,8 +5,7 @@ import type { PickupAddressUpdatePayload, SiteView } from '@lfd/contracts';
  * partie que la carte appelante change (Hugo, 2026-10-13 : chaque carte
  * enregistre ce qu'elle montre).
  *
- * Une seule route écrit l'adresse, le rang par défaut, les heures et la
- * réduction (`PATCH admin/sites/:id`, relu le 2026-10-13) : il n'existe pas de
+ * Une seule route écrit l'adresse, les heures et la réduction (`PATCH admin/sites/:id`, relu le 2026-10-13) : il n'existe pas de
  * route par sujet. Renvoyer l'état relu pour tout le reste garantit qu'une
  * carte n'écrase pas la saisie non enregistrée d'une autre. `gps` est absent :
  * il reste inchangé (il se saisit avec les rôles).
@@ -22,7 +21,6 @@ export function placePayload(
     codePostal: site.codePostal,
     ville: site.ville,
     pays: site.pays,
-    isDefault: site.isDefault,
     opening: site.opening,
     discount: site.discount,
     discountAudiences: site.discountAudiences,

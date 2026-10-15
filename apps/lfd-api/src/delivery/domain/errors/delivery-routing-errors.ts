@@ -37,8 +37,8 @@ export class DepartureNotLocatedError extends BusinessError {
     super(
       "delivery.departure_not_located",
       label === null
-        ? "Aucun point de départ n'est choisi : créez un point de retrait, puis choisissez-le dans Livraison → Réglages → Point de départ."
-        : `Le point de départ « ${label} » n'a pas de point GPS : renseignez-le dans Livraison → Réglages → Point de départ, puis reproposez.`,
+        ? "Aucun point de départ n'est choisi : cochez « Livraison » sur un site (Réglages › Sites), ou, si plusieurs sites livrent, choisissez celui d'où partent les tournées dans Réglages › Livraison › Point de départ."
+        : `Le point de départ « ${label} » n'a pas de point GPS : renseignez-le sur sa page (Réglages › Sites), ou choisissez un autre départ dans Réglages › Livraison › Point de départ, puis reproposez.`,
     );
   }
 }

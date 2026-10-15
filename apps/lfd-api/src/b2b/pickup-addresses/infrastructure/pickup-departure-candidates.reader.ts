@@ -37,7 +37,6 @@ export class PickupDepartureCandidatesReader extends DepartureCandidatesReader {
           pays: site.pays,
         },
         gps: site.gps,
-        isDefault: site.isDefault,
       }));
   }
 }

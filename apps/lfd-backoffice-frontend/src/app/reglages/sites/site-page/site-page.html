@@ -7,11 +7,8 @@
        racine ne projette dans aucun emplacement, et l'AOT le refuse. -->
   <fold-back-link pageEyebrow icon="arrow-back" label="Sites" routerLink="/reglages/sites" />
 
-  <!-- Un statut à la fois : un site archivé n'est plus le défaut de personne. -->
   @if (archived()) {
     <fold-badge titleBadge content="Archivé" variant="neutral" radius="pill" />
-  } @else if (site()?.isDefault) {
-    <fold-badge titleBadge content="Par défaut" variant="success" radius="pill" />
   }
 
   @if (isCreate()) {

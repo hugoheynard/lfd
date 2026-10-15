@@ -562,7 +562,10 @@ async function seedHabit(
     select: { id: true },
   });
   const labo = await prisma.site.findFirst({
-    where: { isDefault: true },
+    where: { archivedAt: null, pickup: true },
+    // Le premier point semé — le Labo (il n'y a plus de « site par défaut »,
+    // 2026-10-15).
+    orderBy: { createdAt: "asc" },
     select: { id: true },
   });
   if (delivery === null) {

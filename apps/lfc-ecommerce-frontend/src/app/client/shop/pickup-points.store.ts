@@ -1,17 +1,16 @@
 import { HttpClient } from '@angular/common/http';
-import { computed, inject, Injectable, signal } from '@angular/core';
+import { computed, effect, inject, Injectable, signal, untracked } from '@angular/core';
 import type { DeliveryZoneView, FulfillmentDayView, PickupAddressView } from '@lfd/contracts';
 // Valeurs par le sous-chemin sans zod : chargé au démarrage (budget `cloudflare`).
 import {
   ALL_DISCOUNT_AUDIENCES,
-  type CustomerAudience,
   DEFAULT_DELIVERY_AVAILABILITY,
-  pickupOpenTo,
   type PublicDeliveryAvailabilityView,
 } from '@lfd/contracts/shop-values';
 import { firstValueFrom } from 'rxjs';
 
 import { AUTH_CONFIG } from '../../auth/auth.config';
+import { PickupListGateway } from './pickup-list.gateway';
 
 /**
  * **Où l'on est servi**, tel que la plateforme le déclare.
@@ -19,6 +18,9 @@ import { AUTH_CONFIG } from '../../auth/auth.config';
  * Points de retrait et zones de livraison viennent de `GET /pickup-addresses`
  * et `GET /delivery-zones`, toutes deux **publiques** — comme la vitrine, et
  * pour la même raison : on choisit son mode de service avant d'avoir un compte.
+ * Un client reconnu lit ses points par `GET /pickup-addresses/mine`
+ * ({@link PickupListGateway}) : la liste est filtrée au serveur par sa
+ * clientèle, et relue au changement d'espace (2026-10-15).
  *
  * 🔴 **Ils étaient écrits en dur dans une maquette de station**, remise et frais
  * compris. Deux conséquences que ce dépôt a payées : la remise ne pouvait être
@@ -47,6 +49,15 @@ import { AUTH_CONFIG } from '../../auth/auth.config';
 @Injectable({ providedIn: 'root' })
 export class ServicePoints {
   private readonly http = inject(HttpClient);
+  private readonly list = inject(PickupListGateway);
+
+  /**
+   * Pour QUI la liste des points a été lue — {@link VISITOR} ou l'espace
+   * reconnu. Depuis le 2026-10-15 (Hugo), la liste est filtrée AU SERVEUR par
+   * la clientèle : celle d'un visiteur ne vaut plus dès qu'il se reconnaît, ni
+   * celle d'un espace dès qu'il passe de perso à société.
+   */
+  private pickupsReader: string | null = null;
 
   private readonly pickupList = signal<readonly PickupAddressView[]>([]);
   private readonly zoneList = signal<readonly DeliveryZoneView[]>([]);
@@ -69,17 +80,14 @@ export class ServicePoints {
   /** La requête dont {@link dayList} est la réponse. */
   private daysAskedFor = '';
 
+  /**
+   * Les points **proposés à qui regarde** : le serveur les a déjà filtrés par
+   * sa clientèle (`GET /pickup-addresses` pour un visiteur,
+   * `GET /pickup-addresses/mine` pour un client reconnu). La boutique ne filtre
+   * plus elle-même ; la caisse refuse de toute façon un site fermé.
+   */
   readonly pickups = this.pickupList.asReadonly();
 
-  /**
-   * Les points **proposés à cette clientèle** (Hugo, 2026-10-15) : un site peut
-   * être réservé au retrait des pros ou des particuliers. Lu dans un `computed`,
-   * il suit la liste comme la clientèle. Le serveur refuse de toute façon un
-   * retrait sur un site fermé : ceci évite seulement de le proposer.
-   */
-  pickupsFor(audience: CustomerAudience): readonly PickupAddressView[] {
-    return this.pickupList().filter((point) => pickupOpenTo(point, audience));
-  }
   readonly zones = this.zoneList.asReadonly();
 
   /**
@@ -96,6 +104,20 @@ export class ServicePoints {
    * est fermée.
    */
   readonly deliveryAvailabilityKnown = computed(() => this.settingsHeld() !== null);
+
+  constructor() {
+    // Le lecteur change — reconnaissance, espace résolu, bascule perso ↔
+    // société : la liste des points se relit, mais seulement si quelqu'un l'a
+    // déjà demandée.
+    effect(() => {
+      const reader = this.readerKey();
+      if (reader !== null && this.asked && reader !== this.pickupsReader) {
+        untracked(() => {
+          void this.refreshPickups(reader);
+        });
+      }
+    });
+  }
 
   /**
    * Borne les jours au panier : les articles réservés à une opération qu'il
@@ -133,7 +155,7 @@ export class ServicePoints {
    *
    * Publique parce que les suites en ont besoin : elles posent les points au
    * lieu de doubler ce dépôt, ce qui fait passer les tests par le VRAI code —
-   * la même sélection du défaut, la même résolution de zone par préfixe. Un
+   * la même résolution de zone par préfixe. Un
    * doublé aurait pu dériver de ce qu'il prétend jouer sans que rien ne rougisse.
    */
   receive(
@@ -147,6 +169,9 @@ export class ServicePoints {
     this.dayList.set(days);
     this.settingsHeld.set(settings === null ? null : servedSettings(settings));
     this.asked = true;
+    // La liste posée vaut pour le lecteur du moment : sans quoi l'effet la
+    // remplacerait par un appel que la suite n'attend pas.
+    this.pickupsReader = this.readerKey();
   }
 
   /**
@@ -165,21 +190,50 @@ export class ServicePoints {
     }
     this.asked = true;
     const base = AUTH_CONFIG.apiBaseUrl;
+    // Reconnu, espace pas encore connu : la liste attend, l'effet la lira.
+    const reader = this.readerKey();
     try {
       const [pickups, zones, days, settings] = await Promise.all([
-        firstValueFrom(this.http.get<readonly PickupAddressView[]>(`${base}/pickup-addresses`)),
+        reader === null ? Promise.resolve(null) : this.pickupsOf(reader),
         firstValueFrom(this.http.get<readonly DeliveryZoneView[]>(`${base}/delivery-zones`)),
         this.daysFor(this.cartQuery),
         firstValueFrom(
           this.http.get<PublicDeliveryAvailabilityView>(`${base}/delivery-availability`),
         ).catch(() => null),
       ]);
-      this.pickupList.set(pickups.map(servedPickup));
+      if (pickups !== null) {
+        this.pickupList.set(pickups.map(servedPickup));
+        this.pickupsReader = reader;
+      }
       this.zoneList.set(zones);
       this.dayList.set(days);
       this.settingsHeld.set(settings === null ? null : servedSettings(settings));
     } catch {
       this.asked = false;
+    }
+  }
+
+  private readerKey(): string | null {
+    return this.list.readerKey();
+  }
+
+  private pickupsOf(reader: string): Promise<readonly PickupAddressView[]> {
+    return this.list.pickupsOf(reader);
+  }
+
+  /**
+   * Relit les points seuls, au changement de lecteur. Un échec garde la liste
+   * connue : la caisse refuse de toute façon un point fermé, en le nommant.
+   */
+  private async refreshPickups(reader: string): Promise<void> {
+    this.pickupsReader = reader;
+    try {
+      const pickups = await this.pickupsOf(reader);
+      if (this.pickupsReader === reader) {
+        this.pickupList.set(pickups.map(servedPickup));
+      }
+    } catch {
+      // La liste connue reste : voir plus haut.
     }
   }
 

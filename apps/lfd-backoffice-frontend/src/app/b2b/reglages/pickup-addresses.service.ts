@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
@@ -7,21 +7,34 @@ import type { PickupAddressView } from '@lfd/contracts';
 import { B2B_API_BASE } from '../../api/api-config';
 
 /**
- * Points de retrait — la **lecture publique** que le comptoir, la saisie de
- * commande, les heures limites et la fiche client partagent avec le checkout.
+ * Points de retrait vus de l'**équipe** — le comptoir, la saisie de commande
+ * et la fiche client (`GET /admin/pickup-addresses`).
  *
- * L'écriture en est partie le 2026-10-13 : les points sont devenus les sites,
- * réglés par `SitesService` sous `lfc_site_settings` (plan des sites, S1).
- * Cette lecture-ci ne passe pas par ce droit, et c'est voulu.
+ * La route publique ne sert plus que les points des particuliers (Hugo,
+ * 2026-10-15 : la liste est filtrée au serveur) ; l'équipe lit la sienne,
+ * ouverte à qui tient un de ces écrans. L'écriture est celle des sites,
+ * réglés par `SitesService` sous `lfc_site_settings`.
  */
 @Injectable({ providedIn: 'root' })
 export class PickupAddressesService {
   private readonly http = inject(HttpClient);
 
-  /** Liste les points de retrait (le défaut en tête). Route publique. */
+  /** Tous les points proposés, par ancienneté — le comptoir voit tous les sites. */
   list(): Promise<readonly PickupAddressView[]> {
     return firstValueFrom(
-      this.http.get<readonly PickupAddressView[]>(`${B2B_API_BASE}/pickup-addresses`),
+      this.http.get<readonly PickupAddressView[]>(`${B2B_API_BASE}/admin/pickup-addresses`),
+    );
+  }
+
+  /**
+   * Les points que CE client peut choisir — ceux de sa clientèle, comme la
+   * boutique les lui propose et comme la caisse les accepte.
+   */
+  listFor(companyId: string): Promise<readonly PickupAddressView[]> {
+    return firstValueFrom(
+      this.http.get<readonly PickupAddressView[]>(`${B2B_API_BASE}/admin/pickup-addresses`, {
+        params: new HttpParams().set('companyId', companyId),
+      }),
     );
   }
 }

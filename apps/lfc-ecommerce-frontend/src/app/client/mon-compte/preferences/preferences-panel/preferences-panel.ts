@@ -37,7 +37,6 @@ import {
 
 import { AccountService } from '../../../../account/account.service';
 import { ClientAddresses } from '../../../client-addresses.service';
-import { ClientAudience } from '../../../client-audience.service';
 import { ClientPreferences } from '../../../client-preferences.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
 import { LangSwitch } from '../../../lang-switch/lang-switch';
@@ -68,8 +67,9 @@ export interface PreferencesPanelData {
  * ## L'habitude, pour de vrai
  *
  * Deux listes : le MODE (aucun, retrait, livraison), puis sa DESTINATION —
- * « par défaut » d'abord, parce que suivre le défaut du moment est un choix et
- * le plus fréquent, puis les points ou les adresses nommés. La préférence se
+ * l'entrée vide d'abord (« aucun en particulier » en retrait, l'adresse par
+ * défaut du moment en livraison), parce que c'est un choix et le plus
+ * fréquent, puis les points ou les adresses nommés. La préférence se
  * dérive par les fonctions du paquet partagé (`preferenceForMethod`…), les
  * mêmes que la fiche staff : changer de mode remet la destination au défaut,
  * et le socle de signature, que ce panneau ne montre pas, repart tel quel.
@@ -117,8 +117,6 @@ export class PreferencesPanel {
   private readonly account = inject(AccountService);
   private readonly addresses = inject(ClientAddresses);
   private readonly service = inject(ServicePoints);
-  /** Seuls les sites ouverts à la clientèle de l'espace se choisissent (2026-10-15). */
-  private readonly audience = inject(ClientAudience).shown;
   private readonly ref = inject(FoldPanelRef);
 
   protected readonly draft = signal<FulfillmentPreferenceView>(NO_FULFILLMENT_PREFERENCE);
@@ -149,17 +147,23 @@ export class PreferencesPanel {
       : this.t().account.prefDeliveryAddress,
   );
 
-  /** « Par défaut » en tête, puis les destinations nommées, la défaut du jour étiquetée. */
+  /**
+   * L'entrée vide en tête, puis les destinations nommées : les points de
+   * retrait que le serveur sert pour cet espace (filtrés par sa clientèle,
+   * 2026-10-15 — plus de point « par défaut » à étiqueter), ou les adresses
+   * de la société, celle par défaut étiquetée.
+   */
   protected readonly destinations = computed<readonly FoldSelectOption<string>[]>(() => {
     const copy = this.t().account;
-    const pickup = this.draft().method === 'pickup';
-    const named = pickup ? this.service.pickupsFor(this.audience()) : this.addresses.deliveries();
+    if (this.draft().method === 'pickup') {
+      return [
+        { value: DEFAULT_DESTINATION, label: copy.prefPickupDefault },
+        ...this.service.pickups().map((point) => ({ value: point.id, label: point.label })),
+      ];
+    }
     return [
-      {
-        value: DEFAULT_DESTINATION,
-        label: pickup ? copy.prefPickupDefault : copy.prefDeliveryDefault,
-      },
-      ...named.map((place) => ({
+      { value: DEFAULT_DESTINATION, label: copy.prefDeliveryDefault },
+      ...this.addresses.deliveries().map((place) => ({
         value: place.id,
         label: place.isDefault ? `${place.label} (${copy.prefDefaultTag})` : place.label,
       })),

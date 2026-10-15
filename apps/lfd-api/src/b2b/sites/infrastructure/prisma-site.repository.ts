@@ -20,7 +20,6 @@ function colorOf(value: string | null): SiteColor | null {
 function toDomain(row: SiteRow): Site {
   return Site.rehydrate({
     id: row.id,
-    isDefault: row.isDefault,
     archivedAt: row.archivedAt,
     place: {
       label: row.label,
@@ -59,7 +58,7 @@ function hexOf(colors: SiteColors, key: keyof SiteColors): string | null {
 
 /** Les getters de l'agrégat → la ligne. */
 function toPersistence(site: Site): Prisma.SiteUncheckedCreateInput {
-  const { id, place, isDefault, roles, colors, archivedAt } = site.snapshot();
+  const { id, place, roles, colors, archivedAt } = site.snapshot();
   const discount = toAdjustmentColumns(place.discount.adjustment);
   return {
     id,
@@ -76,7 +75,6 @@ function toPersistence(site: Site): Prisma.SiteUncheckedCreateInput {
     discountValue: discount.value,
     discountForB2b: place.discount.audiences.b2b,
     discountForB2c: place.discount.audiences.b2c,
-    isDefault,
     pickup: roles.pickup,
     pickupForB2b: roles.pickupAudiences.b2b,
     pickupForB2c: roles.pickupAudiences.b2c,
@@ -105,15 +103,6 @@ export class PrismaSiteRepository extends SiteRepository {
 
   async load(id: string): Promise<Site | null> {
     const row = await this.prisma.site.findUnique({ where: { id }, select: SITE_SELECT });
-    return row === null ? null : toDomain(row);
-  }
-
-  async loadDefault(): Promise<Site | null> {
-    const row = await this.prisma.site.findFirst({
-      where: { isDefault: true, archivedAt: null },
-      orderBy: { createdAt: "asc" },
-      select: SITE_SELECT,
-    });
     return row === null ? null : toDomain(row);
   }
 

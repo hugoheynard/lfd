@@ -30,9 +30,10 @@ import type { PrismaClient } from "../../platform/database/client/client.js";
  * ## 🔴 Par les COMMANDES, jamais par Prisma
  *
  * Ce seed écrivait ses lignes en direct. Il a fallu une demi-journée pour que ça
- * se paie : `isDefault: true` posé à la main sur un poste qui avait déjà un
- * point par défaut a produit **deux points par défaut**, un état que le
- * repository rend impossible et que l'écriture directe recrée sans rien dire.
+ * se paie : un drapeau « par défaut » posé à la main sur un poste qui en avait
+ * déjà un a produit **deux points par défaut**, un état que le repository
+ * rendait impossible et que l'écriture directe recréait sans rien dire (le
+ * « site par défaut » a disparu le 2026-10-15).
  *
  * La règle vaut au-delà de ce cas : un seed qui contourne les handlers ne
  * prépare pas le produit, il prépare une base qui lui ressemble. Chaque
@@ -69,7 +70,6 @@ interface SeedPoint {
   readonly ligne1: string;
   readonly ville: string;
   readonly codePostal: string;
-  readonly isDefault: boolean;
   readonly opening: PickupOpening;
   /**
    * Le point GPS, ou `null`. Sans lui, le point de départ des tournées n'a pas
@@ -86,7 +86,6 @@ const POINTS: readonly SeedPoint[] = [
     ligne1: "Route de la Balme",
     ville: "Val d'Isère",
     codePostal: "73150",
-    isDefault: true,
     opening: LABO_OPENING,
     // Le vrai point du labo, donné par Hugo le 2026-09-29.
     gps: { lat: 45.4485, lng: 6.9823 },
@@ -100,7 +99,6 @@ const POINTS: readonly SeedPoint[] = [
     ligne1: "12 avenue Olympique",
     ville: "Val d'Isère",
     codePostal: "73150",
-    isDefault: false,
     opening: VILLAGE_OPENING,
     gps: null,
     discount: null,
@@ -168,10 +166,6 @@ async function seedPickupPoints({ prisma, commands }: StationContext): Promise<v
       codePostal: point.codePostal,
       ville: point.ville,
       pays: "France",
-      // Le repository tranche : le premier point créé devient le défaut, et
-      // demander le défaut le déplace proprement. C'est LUI qui tient « un seul
-      // à la fois », et c'est pour cela qu'on le laisse décider.
-      isDefault: point.isDefault,
       discount: point.discount,
       discountAudiences: ALL_DISCOUNT_AUDIENCES,
       opening: point.opening,

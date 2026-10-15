@@ -53,7 +53,6 @@ function point(over: Partial<PickupAddressView> & { id: string }): PickupAddress
     codePostal: '73150',
     ville: "Val d'Isère",
     pays: 'France',
-    isDefault: false,
     discount: null,
     discountAudiences: { b2b: true, b2c: true },
     opening: { publicOpening: null, proPickup: null },
@@ -251,20 +250,19 @@ describe('AccueilPublic — ce que les maisons annoncent', () => {
     expect(fixture.componentInstance['bestLabel']()).toContain('10');
   });
 
-  it('🔴 ne montre pas à un particulier un site réservé aux pros, ni sa remise (2026-10-15)', async () => {
+  /**
+   * Hugo, 2026-10-15 : la liste est filtrée AU SERVEUR par la clientèle (« c'est
+   * devenu un choix business »). L'accueil montre les maisons servies, sans
+   * refiltrer : deux règles finiraient par se contredire.
+   */
+  it('montre les maisons servies, sans les refiltrer par clientèle', async () => {
     const fixture = await mount([
       point({ id: 'a' }),
-      point({
-        id: 'pros',
-        label: 'Le Labo',
-        discount: DIX,
-        pickupAudiences: { b2b: true, b2c: false },
-      }),
+      point({ id: 'b', label: 'Le Labo', pickupAudiences: { b2b: false, b2c: true } }),
     ]);
 
     const shown = fixture.componentInstance['houses']().map((house) => house.point.id);
-    expect(shown).toEqual(['a']);
-    expect(fixture.componentInstance['bestLabel']()).toBeNull();
+    expect(shown).toEqual(['a', 'b']);
   });
 });
 

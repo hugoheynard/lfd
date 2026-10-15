@@ -100,7 +100,7 @@
         [value]="pickupId()"
         (selectionChange)="pickupId.set($event)"
       />
-    } @else if (pickups.defaultPickup(); as pickup) {
+    } @else if (pickups.preselectedPickup(); as pickup) {
       <p class="pickup">
         Retrait à <strong>{{ pickup.label || pickup.ville }}</strong> — {{ pickup.ligne1 }},
         {{ pickup.codePostal }} {{ pickup.ville }}

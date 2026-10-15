@@ -127,7 +127,7 @@ export class SiteRolesCard {
   protected readonly gpsPlace = computed(() => gpsPlace(this.draft()));
   /**
    * Les badges de l'en-tête : les mots de la liste des sites, sur l'état
-   * ENREGISTRÉ — comme la liste, et comme « Par défaut » ou « Archivé ». Le
+   * ENREGISTRÉ — comme la liste, et comme « Archivé ». Le
    * brouillon se lit déjà dans les cases cochées juste dessous.
    */
   protected readonly badges = computed(() => roleLabels(this.site()));

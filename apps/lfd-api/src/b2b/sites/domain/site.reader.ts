@@ -9,7 +9,7 @@ import type { StoredSiteView } from "@lfd/contracts";
  * (`PickupAddressRepository.list`).
  */
 export abstract class SiteReader {
-  /** Tous les sites : le défaut en tête, les archivés à la fin. */
+  /** Tous les sites : les actifs par ancienneté, les archivés à la fin. */
   abstract list(): Promise<readonly StoredSiteView[]>;
 
   /** Un site, archivé ou non ; `null` si l'id n'existe pas. */

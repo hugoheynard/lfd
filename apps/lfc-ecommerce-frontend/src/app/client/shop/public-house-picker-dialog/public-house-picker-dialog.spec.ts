@@ -6,6 +6,12 @@ import { FoldPanelRef } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
 
 import { ClientAudience } from '../../client-audience.service';
+import {
+  provideWorkspace,
+  workspaceDouble,
+  type WorkspaceDouble,
+} from '../../client-workspace.fixture';
+import { TOMMEUSES } from '../../mon-compte/account.fixture';
 import { ServicePoints } from '../pickup-points.store';
 import { PublicHousePickerDialog } from './public-house-picker-dialog';
 import { ShopCopyOverrides } from '../../copy/shop-copy-overrides';
@@ -24,7 +30,6 @@ function point(
     codePostal: '73150',
     ville: "Val d'Isère",
     pays: 'France',
-    isDefault: false,
     discount,
     discountAudiences: { b2b: true, b2c: true },
     opening: { publicOpening: { start: '07:00', end: '12:00' }, proPickup: null },
@@ -37,6 +42,7 @@ const VILLAGE = point('pick_village', 'Le Village', { mode: 'percent', bp: 1000 
 interface Monde {
   readonly currentId?: string | null;
   readonly points?: readonly PickupAddressView[];
+  readonly workspace?: WorkspaceDouble;
 }
 
 /** Ce que le dialogue a rendu en se fermant — `undefined` tant qu'il est ouvert. */
@@ -44,7 +50,11 @@ interface Closed {
   readonly results: unknown[];
 }
 
-function boot({ currentId = null, points = [LABO, VILLAGE] }: Monde = {}): {
+function boot({
+  currentId = null,
+  points = [LABO, VILLAGE],
+  workspace = workspaceDouble(),
+}: Monde = {}): {
   readonly fixture: ComponentFixture<PublicHousePickerDialog>;
   readonly closed: Closed;
 } {
@@ -56,6 +66,7 @@ function boot({ currentId = null, points = [LABO, VILLAGE] }: Monde = {}): {
       provideHttpClient(),
       provideHttpClientTesting(),
       { provide: ClientAudience, useValue: { shown: () => 'b2c', current: () => 'b2c' } },
+      provideWorkspace(workspace),
       {
         provide: FoldPanelRef,
         useValue: new FoldPanelRef(1, (result: unknown) => closed.results.push(result)),
@@ -80,14 +91,49 @@ describe('PublicHousePickerDialog', () => {
     expect(houses(boot().fixture)).toHaveLength(2);
   });
 
-  /** Hugo, 2026-10-15 : un site peut être réservé au retrait des pros. */
-  it('🔴 ne propose pas à un particulier un site réservé aux pros', () => {
+  /**
+   * Hugo, 2026-10-15 : la liste est filtrée AU SERVEUR par la clientèle. Le
+   * dialogue propose ce qu'on lui sert, sans refiltrer.
+   */
+  it('propose les maisons servies, sans les refiltrer', () => {
     const reserved: PickupAddressView = { ...LABO, pickupAudiences: { b2b: true, b2c: false } };
     const rendered = houses(boot({ points: [reserved, VILLAGE] }).fixture);
 
-    expect(rendered.map((house) => house.querySelector('.name')?.textContent?.trim())).toEqual([
-      'Le Village',
-    ]);
+    expect(rendered).toHaveLength(2);
+  });
+
+  /** Plus de point par défaut : la présélection suit `preselectedPickupId`. */
+  describe('la présélection', () => {
+    const checked = (fixture: ComponentFixture<PublicHousePickerDialog>): readonly string[] =>
+      houses(fixture)
+        .filter((house) => house.getAttribute('aria-checked') === 'true')
+        .map((house) => house.querySelector('.name')?.textContent?.trim() ?? '');
+
+    it('coche la seule maison servie, et ouvre l’action', () => {
+      const { fixture } = boot({ points: [VILLAGE] });
+
+      expect(checked(fixture)).toEqual(['Le Village']);
+      const cta = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.cta');
+      expect(cta?.disabled).toBe(false);
+    });
+
+    it('ne coche rien à plusieurs maisons, sans préférence', () => {
+      expect(checked(boot().fixture)).toEqual([]);
+    });
+
+    it('coche la maison préférée de la société parmi plusieurs', () => {
+      const company = {
+        ...TOMMEUSES,
+        fulfillmentPreference: {
+          ...TOMMEUSES.fulfillmentPreference,
+          method: 'pickup' as const,
+          pickupAddressId: 'pick_village',
+        },
+      };
+      const workspace = workspaceDouble(company.id, [company]);
+
+      expect(checked(boot({ workspace }).fixture)).toEqual(['Le Village']);
+    });
   });
 
   it('nomme chaque maison par son enseigne', () => {

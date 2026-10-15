@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import type { PickupAddressView } from '@lfd/contracts';
+// Par le sous-chemin sans zod : la même règle que la caisse (budget `cloudflare`).
+import { preselectedPickupId } from '@lfd/contracts/shop-values';
 import {
   FoldButtonComponent,
   FoldPanelBodyComponent,
@@ -11,6 +13,7 @@ import {
 } from 'fold-ng';
 
 import { ClientAudience } from '../../client-audience.service';
+import { ClientWorkspace } from '../../client-workspace.service';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { housePickerCopy } from '../../copy/screens/house-picker.copy';
 import { screenCopy } from '../../copy/shop-copy-composer';
@@ -109,6 +112,20 @@ export class PublicHousePickerDialog {
 
   /** Un visiteur est `b2c` — et le défaut penche de ce côté tant qu'on ne sait pas. */
   private readonly audience = inject(ClientAudience).shown;
+  private readonly workspace = inject(ClientWorkspace);
+
+  /**
+   * La maison cochée à l'ouverture quand aucune n'est retenue (Hugo,
+   * 2026-10-15) : le point préféré de la société s'il est proposé, sinon le
+   * seul proposé, sinon aucune — la règle de la caisse, `preselectedPickupId`.
+   * Il n'y a plus de point « par défaut ».
+   */
+  private readonly preselectedId = computed(() =>
+    preselectedPickupId(
+      this.points.pickups(),
+      this.workspace.company()?.fulfillmentPreference.pickupAddressId ?? null,
+    ),
+  );
 
   protected readonly c = screenCopy('housePicker', housePickerCopy);
 
@@ -121,8 +138,8 @@ export class PublicHousePickerDialog {
     const audience = this.audience();
     const copy = this.t().pickupDialog;
     const currentId = this.data().currentId;
-    const selectedId = this.picked() ?? currentId;
-    return this.points.pickupsFor(audience).map((point) => ({
+    const selectedId = this.picked() ?? currentId ?? this.preselectedId();
+    return this.points.pickups().map((point) => ({
       point,
       // Le nom d'usage, sa ville à défaut — une carte sans titre ne se distingue pas.
       name: point.label || point.ville,
@@ -135,7 +152,8 @@ export class PublicHousePickerDialog {
   });
 
   /**
-   * La maison retenue — celle d'où l'on vient, tant qu'on n'a rien touché.
+   * La maison retenue — celle d'où l'on vient, sinon la présélection, tant
+   * qu'on n'a rien touché.
    *
    * 🔴 SÉLECTIONNER N'EST PLUS CONFIRMER (Hugo, 2026-09-20 : « on met un footer
    * avec un bouton choisir mon heure »). Le clic fermait tout et enchaînait sur

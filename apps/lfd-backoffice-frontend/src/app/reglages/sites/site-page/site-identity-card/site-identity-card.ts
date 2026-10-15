@@ -23,7 +23,6 @@ import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
-  FoldCheckboxComponent,
   FoldPageSectionComponent,
 } from 'fold-ng';
 
@@ -32,15 +31,16 @@ import { NotifyService } from '../../../../notify.service';
 import { SitesService } from '../../sites.service';
 import { placePayload } from '../site-place-payload';
 
-/** L'adresse et le rang par défaut : la part du lieu que cette carte écrit. */
-type SiteIdentity = ReturnType<typeof toBillingPayload> & { readonly isDefault: boolean };
+/** L'adresse : la part du lieu que cette carte écrit. */
+type SiteIdentity = ReturnType<typeof toBillingPayload>;
 
 /**
  * **Identité et adresse d'un site** — et sa création (Hugo, 2026-10-13 :
  * chaque carte enregistre ce qu'elle montre). Sans `site`, la carte CRÉE :
  * un seul « Ajouter », puisque rien n'existe encore. Avec un site, elle
- * n'écrit que l'adresse et le rang par défaut, sur le lieu ENREGISTRÉ
- * (`placePayload`) : heures et réduction ont leurs sous-cartes.
+ * n'écrit que l'adresse, sur le lieu ENREGISTRÉ (`placePayload`) : heures et
+ * réduction ont leurs sous-cartes. Le « site par défaut » a disparu le
+ * 2026-10-15 (Hugo) : la présélection du retrait se décide par client.
  */
 @Component({
   selector: 'app-site-identity-card',
@@ -50,7 +50,6 @@ type SiteIdentity = ReturnType<typeof toBillingPayload> & { readonly isDefault: 
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,
-    FoldCheckboxComponent,
     FoldPageSectionComponent,
   ],
   templateUrl: './site-identity-card.html',
@@ -62,7 +61,7 @@ export class SiteIdentityCard {
   /** `null` : la carte crée un site. */
   readonly site = input<SiteView | null>(null);
   readonly readOnly = input(false);
-  /** L'adresse ou le rang est enregistré : la page relit le site. */
+  /** L'adresse est enregistrée : la page relit le site. */
   readonly saved = output();
   /** Le site est créé : la page mène à sa page. */
   readonly created = output<string>();
@@ -71,8 +70,6 @@ export class SiteIdentityCard {
     const site = this.site();
     return site === null ? EMPTY_POSTAL_DRAFT : postalDraftFrom(site);
   });
-  /** Proposé d'office au checkout. Rang du site, pas champ d'adresse. */
-  protected readonly isDefault = linkedSignal(() => this.site()?.isDefault ?? false);
   protected readonly saving = signal(false);
   protected readonly refusal = signal<string | null>(null);
 
@@ -80,11 +77,7 @@ export class SiteIdentityCard {
   protected readonly postal = computed(() => toPostal(this.draft()));
   protected readonly dirty = computed(() => {
     const site = this.site();
-    return (
-      site !== null &&
-      (JSON.stringify(this.draft()) !== JSON.stringify(postalDraftFrom(site)) ||
-        this.isDefault() !== site.isDefault)
-    );
+    return site !== null && JSON.stringify(this.draft()) !== JSON.stringify(postalDraftFrom(site));
   });
   protected readonly canSave = computed(
     () =>
@@ -105,7 +98,7 @@ export class SiteIdentityCard {
     }
     this.saving.set(true);
     this.refusal.set(null);
-    const identity = { ...toBillingPayload(this.draft()), isDefault: this.isDefault() };
+    const identity: SiteIdentity = toBillingPayload(this.draft());
     const site = this.site();
     try {
       if (site === null) {

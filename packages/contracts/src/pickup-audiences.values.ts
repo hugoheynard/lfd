@@ -26,3 +26,30 @@ export function pickupOpenTo(
 ): boolean {
   return (point.pickupAudiences ?? ALL_DISCOUNT_AUDIENCES)[audience];
 }
+
+/** Le refus d'un retrait sans point choisi quand aucun ne s'impose (409). */
+export const PICKUP_CHOICE_REQUIRED = "orders.pickup.choice_required";
+
+/**
+ * **Le point de retrait présélectionné pour un client** (Hugo, 2026-10-15 —
+ * le « site par défaut » a disparu), parmi les points OUVERTS à sa clientèle :
+ *
+ * 1. son point préféré (« Mon compte », `fulfillmentPreference.pickupAddressId`)
+ *    s'il en fait partie ;
+ * 2. sinon le seul point ouvert, s'il n'y en a qu'un ;
+ * 3. sinon aucun (`null`) : le client choisit.
+ *
+ * Une seule règle, lue par le serveur (une commande ou un devis sans point
+ * choisi) et par la boutique (le point coché à l'ouverture du choix) : deux
+ * définitions finiraient par cocher un point que la caisse ne retiendrait pas.
+ */
+export function preselectedPickupId(
+  offered: readonly { readonly id: string }[],
+  preferredId: string | null,
+): string | null {
+  if (preferredId !== null && offered.some((point) => point.id === preferredId)) {
+    return preferredId;
+  }
+  const [only, ...others] = offered;
+  return only !== undefined && others.length === 0 ? only.id : null;
+}

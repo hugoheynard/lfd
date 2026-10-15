@@ -1347,7 +1347,7 @@ Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 
 | `account.prefMethodPickup` | Retrait | Collection | Ritiro |  |
 | `account.prefMethodDelivery` | Livraison | Delivery | Consegna |  |
 | `account.prefPickupPoint` | Point de retrait | Collection point | Punto di ritiro |  |
-| `account.prefPickupDefault` | Le point par défaut | The default point | Il punto predefinito |  |
+| `account.prefPickupDefault` | Aucun en particulier | None in particular | Nessuno in particolare |  |
 | `account.prefDeliveryAddress` | Adresse de livraison | Delivery address | Indirizzo di consegna |  |
 | `account.prefDeliveryDefault` | L’adresse par défaut de la société | The company’s default address | L’indirizzo predefinito della società |  |
 | `account.prefDefaultTag` | défaut | default | predefinito |  |

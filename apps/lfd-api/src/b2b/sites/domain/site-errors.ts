@@ -61,16 +61,6 @@ export class SiteCounterSetupError extends DomainError {
   }
 }
 
-/** Archiver le site par défaut (**409**). */
-export class DefaultSiteArchiveError extends BusinessError {
-  constructor(label: string) {
-    super(
-      "site.archive.default",
-      `« ${label} » est le site par défaut : désignez d'abord un autre site par défaut, puis archivez celui-ci.`,
-    );
-  }
-}
-
 /** Archiver un site d'où partent les livraisons (**409**). */
 export class DeliveryDepartureSiteArchiveError extends BusinessError {
   constructor(label: string) {
@@ -129,19 +119,6 @@ export class ArchivedSiteError extends BusinessError {
     super(
       "site.archived",
       `« ${label} » est archivé : il ne se modifie plus. Créez un nouveau site si ce lieu reprend du service.`,
-    );
-  }
-}
-
-/**
- * Un site par défaut qui ne remet pas (**409**) : le défaut est le site
- * préselectionné au checkout, et un client ne peut retirer que là où l'on remet.
- */
-export class DefaultSiteMustHandOverError extends BusinessError {
-  constructor(label: string) {
-    super(
-      "site.default.pickup",
-      `« ${label} » ne remet pas de commandes : il ne peut pas être le site par défaut, que le client voit préselectionné. Cochez « Retrait », ou désignez un autre site par défaut.`,
     );
   }
 }

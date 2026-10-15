@@ -324,7 +324,7 @@ export const ACCOUNT_FR: AccountCopy = {
   prefMethodPickup: 'Retrait',
   prefMethodDelivery: 'Livraison',
   prefPickupPoint: 'Point de retrait',
-  prefPickupDefault: 'Le point par défaut',
+  prefPickupDefault: 'Aucun en particulier',
   prefDeliveryAddress: 'Adresse de livraison',
   prefDeliveryDefault: 'L’adresse par défaut de la société',
   prefDefaultTag: 'défaut',

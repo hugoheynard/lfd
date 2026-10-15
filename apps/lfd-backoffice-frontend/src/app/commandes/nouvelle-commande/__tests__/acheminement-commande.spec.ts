@@ -22,7 +22,6 @@ const LABO: PickupAddressView = {
   codePostal: '75011',
   ville: 'Paris',
   pays: 'France',
-  isDefault: true,
   discount: null,
   discountAudiences: { b2b: true, b2c: true },
   // Aucune heure déclarée : le point n'oppose rien à la tranche demandée.
@@ -67,10 +66,14 @@ const OPEN_TO_ALL: DeliveryAvailabilityView = {
 };
 
 /** Monte le sélecteur sur ces points, sans rien toucher d'autre. */
-function mount(pickups: readonly PickupAddressView[]): ComponentFixture<AcheminementCommande> {
+function mount(
+  pickups: readonly PickupAddressView[],
+  preferredPickupId: string | null = null,
+): ComponentFixture<AcheminementCommande> {
   const fixture = TestBed.createComponent(AcheminementCommande);
   fixture.componentRef.setInput('draft', new DraftStore());
   fixture.componentRef.setInput('pickups', pickups);
+  fixture.componentRef.setInput('preferredPickupId', preferredPickupId);
   fixture.componentRef.setInput('addresses', [ADRESSE]);
   fixture.componentRef.setInput('zones', [ZONE_92]);
   fixture.componentRef.setInput('deliveryAvailability', OPEN_TO_ALL);
@@ -213,31 +216,55 @@ describe("le sélecteur d'acheminement de la saisie staff", () => {
     expect(choice.issue).toContain('Créneau de livraison à convenir');
   });
 
-  /** Hugo, 2026-10-15 : la même règle pour l'équipe que pour le client. */
-  it('🔴 ne propose pas à une société active un site réservé aux particuliers', () => {
-    const boutique: PickupAddressView = {
-      ...LABO,
-      id: 'pick_shop',
-      label: 'Boutique',
-      isDefault: false,
-      pickupAudiences: { b2b: false, b2c: true },
-    };
-    const fixture = mount([boutique, { ...LABO, isDefault: false }]);
+  /**
+   * Hugo, 2026-10-15 : la liste arrive filtrée par le serveur (la clientèle du
+   * client), et il n'y a plus de point par défaut — la présélection est celle
+   * de la boutique, `preselectedPickupId`.
+   */
+  describe('la présélection du point', () => {
+    const VILLAGE: PickupAddressView = { ...LABO, id: 'pick_2', label: 'Village' };
 
-    expect(fixture.componentInstance['pickupOptions']().map((o) => o.value)).toEqual(['pick_1']);
-    expect(fixture.componentInstance['pickup']()?.id).toBe('pick_1');
+    it('retient le seul point proposé', () => {
+      expect(choiceOf({ pickups: [VILLAGE] }).pickupAddressId).toBe('pick_2');
+    });
+
+    it('🔴 n’en retient AUCUN à plusieurs, et demande de choisir', () => {
+      const fixture = mount([LABO, VILLAGE]);
+
+      expect(fixture.componentInstance['pickup']()).toBeNull();
+      expect(fixture.componentInstance['choice']().pickupAddressId).toBeNull();
+      expect(fixture.componentInstance['choice']().issue).toContain(
+        'Choisissez le point de retrait',
+      );
+    });
+
+    it('retient le point préféré du client parmi plusieurs', () => {
+      const fixture = mount([LABO, VILLAGE], 'pick_2');
+
+      expect(fixture.componentInstance['pickup']()?.id).toBe('pick_2');
+    });
+
+    it('ignore un point préféré absent de la liste servie', () => {
+      expect(mount([VILLAGE], 'pick_1').componentInstance['pickup']()?.id).toBe('pick_2');
+    });
+
+    it('ne filtre plus lui-même : il propose ce que le serveur sert', () => {
+      const shop: PickupAddressView = { ...VILLAGE, pickupAudiences: { b2b: false, b2c: true } };
+      const fixture = mount([LABO, shop]);
+
+      expect(fixture.componentInstance['pickupOptions']().map((o) => o.value)).toEqual([
+        'pick_1',
+        'pick_2',
+      ]);
+    });
   });
 
-  it('dit pourquoi aucun point quand tous sont fermés à la clientèle', () => {
-    const pros: PickupAddressView = { ...LABO, pickupAudiences: { b2b: true, b2c: false } };
-    const choice = choiceOf({ pickups: [pros], audience: 'b2c' });
+  it('dit pourquoi aucun point quand aucun n’est ouvert à la clientèle', () => {
+    const choice = choiceOf({ pickups: [], audience: 'b2c' });
 
     expect(choice.pickupAddressId).toBeNull();
     expect(choice.issue).toContain('aux particuliers');
-  });
-
-  it('bloque quand aucun point de retrait n’est configuré', () => {
-    expect(choiceOf({ pickups: [] }).issue).toContain('Réglages');
+    expect(choice.issue).toContain('Réglages');
   });
 
   it('ne garde l’adresse au carnet que si la case est cochée', () => {
@@ -393,9 +420,10 @@ describe("le sélecteur d'acheminement de la saisie staff", () => {
         ...OUVERT,
         id: 'pick_2',
         label: 'Village',
-        isDefault: false,
       };
       const fixture = mount([OUVERT, village]);
+      fixture.componentInstance['onPickup'](OUVERT.id);
+      fixture.detectChanges();
       fixture.componentInstance['onSlot']('05:00-06:00');
       fixture.detectChanges();
 

@@ -27,7 +27,6 @@ export const DEMO_PICKUP_ADDRESSES: readonly PickupAddressView[] = [
     codePostal: '73000',
     ville: 'Chambéry',
     pays: 'France',
-    isDefault: true,
     discount: { mode: 'percent', bp: 1000 },
     discountAudiences: NO_DISCOUNT_AUDIENCE,
     opening: {
@@ -44,7 +43,6 @@ export const DEMO_PICKUP_ADDRESSES: readonly PickupAddressView[] = [
     codePostal: '73150',
     ville: 'Val-d’Isère',
     pays: 'France',
-    isDefault: false,
     discount: null,
     discountAudiences: NO_DISCOUNT_AUDIENCE,
     opening: { publicOpening: { start: '08:00', end: '12:00' }, proPickup: null },

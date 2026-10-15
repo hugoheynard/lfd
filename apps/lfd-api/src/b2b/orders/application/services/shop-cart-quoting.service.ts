@@ -232,6 +232,7 @@ export class ShopCartQuoting {
         fulfillment.pickupAddressId,
         subtotalHtCents,
         audience,
+        companyId,
       );
       return {
         discountCents: retrait.discountCents,

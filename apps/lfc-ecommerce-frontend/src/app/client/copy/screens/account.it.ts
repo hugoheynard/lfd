@@ -323,7 +323,7 @@ export const ACCOUNT_IT: AccountCopy = {
   prefMethodPickup: 'Ritiro',
   prefMethodDelivery: 'Consegna',
   prefPickupPoint: 'Punto di ritiro',
-  prefPickupDefault: 'Il punto predefinito',
+  prefPickupDefault: 'Nessuno in particolare',
   prefDeliveryAddress: 'Indirizzo di consegna',
   prefDeliveryDefault: 'L’indirizzo predefinito della società',
   prefDefaultTag: 'predefinito',

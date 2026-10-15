@@ -55,8 +55,8 @@ const NOT_FOUND = 404;
  * Elle a été écrite pour la BOUTIQUE (commit `6902e7a8`, `feat(boutique)`), où
  * ce qu'on saisit tient en un formulaire.
  *
- * Un point de retrait n'est plus une adresse : il porte l'adresse, son rang par
- * défaut, ses heures, sa réduction et les clientèles de cette réduction — et il
+ * Un point de retrait n'est plus une adresse : il porte l'adresse, ses heures,
+ * sa réduction et les clientèles de cette réduction — et il
  * recevra ses créneaux publics, leurs badges, leurs capacités et les fermetures
  * datées (`documentation/commandes/plan-creneaux-de-retrait.md`). Six sujets, bientôt
  * huit, qu'on ne lit pas de haut en bas : on va directement à celui qu'on vient
@@ -136,17 +136,15 @@ export class SitePage {
   });
 
   /**
-   * Pourquoi ce site ne s'archive pas, ou `null`. Le serveur refuse le défaut
-   * et celui d'où partent les livraisons (`site-errors.ts`, relu le
-   * 2026-10-13) ; la zone le dit plutôt que d'offrir un geste refusé.
+   * Pourquoi ce site ne s'archive pas, ou `null`. Le serveur refuse celui
+   * d'où partent les livraisons (`site-errors.ts`, relu le 2026-10-15 — le
+   * refus du « site par défaut » est parti avec lui) ; la zone le dit plutôt
+   * que d'offrir un geste refusé.
    */
   protected readonly archiveBlocker = computed(() => {
     const site = this.site();
     if (site === null || site.archivedAt !== null) {
       return null;
-    }
-    if (site.isDefault) {
-      return 'C’est le site par défaut : désignez d’abord un autre site par défaut.';
     }
     if (site.deliveryDeparture) {
       return 'Les livraisons partent d’ici : décochez d’abord « Livraison » dans ses rôles.';

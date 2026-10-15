@@ -3,8 +3,6 @@ import { Site, type SiteColors, type SitePlace, type SiteRoles } from "../site.j
 import { SiteColor } from "../site-color.js";
 import {
   ArchivedSiteError,
-  DefaultSiteArchiveError,
-  DefaultSiteMustHandOverError,
   DepartureSiteMustDeliverError,
   DeliveryDepartureSiteArchiveError,
   SiteCounterSetupError,
@@ -47,7 +45,7 @@ const NO_COLORS: SiteColors = {
 const AT = new Date(0);
 
 function site(): Site {
-  return Site.declare("site_1", PLACE, false);
+  return Site.declare("site_1", PLACE);
 }
 
 describe("Site.declare — l'existant pour un site neuf", () => {
@@ -90,11 +88,14 @@ describe("Site.assignRoles — la cohérence des rôles", () => {
     );
   });
 
-  it("refuse que le site par défaut cesse de remettre", () => {
-    const main = Site.declare("site_1", PLACE, true);
-    expect(() => main.assignRoles({ ...ROLES, pickup: false })).toThrow(
-      DefaultSiteMustHandOverError,
-    );
+  /**
+   * Le site par défaut a disparu (Hugo, 2026-10-15) : le premier site créé
+   * peut cesser de remettre comme les autres, rien ne le distingue plus.
+   */
+  it("laisse n'importe quel site cesser de remettre, le premier créé compris", () => {
+    const first = Site.declare("site_1", PLACE);
+    first.assignRoles({ ...ROLES, pickup: false, deliveryDeparture: true });
+    expect(first.snapshot().roles.pickup).toBe(false);
   });
 
   it("rehydrate revalide : une ligne incohérente ne se relit pas", () => {
@@ -169,8 +170,14 @@ describe("Site.archive — archiver plutôt que supprimer", () => {
     expect(village.snapshot().archivedAt).toBe(AT);
   });
 
-  it("refuse d'archiver le site par défaut", () => {
-    expect(() => Site.declare("site_1", PLACE, true).archive(AT)).toThrow(DefaultSiteArchiveError);
+  it("archive le premier site créé comme un autre : il n'y a plus de défaut", () => {
+    const first = Site.declare("site_1", PLACE);
+    first.archive(AT);
+    expect(first.isArchived).toBe(true);
+  });
+
+  it("ne porte plus aucun rang de défaut dans son état", () => {
+    expect(Object.keys(Site.declare("site_1", PLACE).snapshot())).not.toContain("isDefault");
   });
 
   it("refuse d'archiver le site d'où partent les livraisons", () => {
@@ -179,22 +186,13 @@ describe("Site.archive — archiver plutôt que supprimer", () => {
     expect(() => bakery.archive(AT)).toThrow(DeliveryDepartureSiteArchiveError);
   });
 
-  it("un site archivé ne se modifie plus, ni ne devient le défaut", () => {
+  it("un site archivé ne se modifie plus", () => {
     const village = site();
     village.archive(AT);
     expect(() => village.archive(AT)).toThrow(ArchivedSiteError);
     expect(() => village.revise(PLACE)).toThrow(ArchivedSiteError);
     expect(() => village.assignRoles(ROLES)).toThrow(ArchivedSiteError);
     expect(() => village.paint(NO_COLORS)).toThrow(ArchivedSiteError);
-    expect(() => village.makeDefault()).toThrow(ArchivedSiteError);
-  });
-});
-
-describe("Site.makeDefault — le défaut est proposé au checkout", () => {
-  it("refuse un site qui ne remet pas", () => {
-    const bakery = site();
-    bakery.assignRoles({ ...ROLES, pickup: false, deliveryDeparture: true });
-    expect(() => bakery.makeDefault()).toThrow(DefaultSiteMustHandOverError);
   });
 });
 
@@ -202,7 +200,7 @@ describe("Site — un site qui expédie a un point GPS (Hugo, 2026-10-13)", () =
   const NO_GPS: SitePlace = { ...PLACE, gps: null };
 
   it("refuse de cocher « Livraison » sans point GPS, en disant où le renseigner (sous « Livraison »)", () => {
-    const bakery = Site.declare("site_1", NO_GPS, false);
+    const bakery = Site.declare("site_1", NO_GPS);
     expect(() => bakery.assignRoles({ ...ROLES, deliveryDeparture: true })).toThrow(
       SiteDeliveryDepartureWithoutGpsError,
     );
@@ -234,7 +232,6 @@ describe("Site — un site qui expédie a un point GPS (Hugo, 2026-10-13)", () =
     const legacy = Site.rehydrate({
       id: "site_1",
       place: NO_GPS,
-      isDefault: false,
       roles: { ...ROLES, deliveryDeparture: true },
       colors: NO_COLORS,
       archivedAt: null,
@@ -250,7 +247,7 @@ describe("Site — un site servi par transfert a un point GPS (Hugo, 2026-10-13)
   const NO_GPS: SitePlace = { ...PLACE, gps: null };
 
   it("refuse de passer « par transfert » sans point, en disant où le saisir", () => {
-    const village = Site.declare("site_1", NO_GPS, false);
+    const village = Site.declare("site_1", NO_GPS);
     expect(() => village.assignRoles({ ...ROLES, supply: "transfer" })).toThrow(
       SiteTransferWithoutGpsError,
     );
@@ -260,7 +257,7 @@ describe("Site — un site servi par transfert a un point GPS (Hugo, 2026-10-13)
   });
 
   it("accepte le transfert quand le point arrive dans la même écriture", () => {
-    const village = Site.declare("site_1", NO_GPS, false);
+    const village = Site.declare("site_1", NO_GPS);
     village.assignRoles({ ...ROLES, supply: "transfer" }, { lat: 45.45, lng: 6.98 });
     expect(village.snapshot().roles.supply).toBe("transfer");
   });
@@ -278,7 +275,6 @@ describe("Site — un site servi par transfert a un point GPS (Hugo, 2026-10-13)
     const legacy = Site.rehydrate({
       id: "site_1",
       place: NO_GPS,
-      isDefault: false,
       roles: { ...ROLES, supply: "transfer" },
       colors: NO_COLORS,
       archivedAt: null,

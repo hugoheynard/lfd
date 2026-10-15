@@ -57,7 +57,6 @@ function point(id: string, label: string): DepartureCandidate {
       pays: "France",
     },
     gps: null,
-    isDefault: false,
   };
 }
 

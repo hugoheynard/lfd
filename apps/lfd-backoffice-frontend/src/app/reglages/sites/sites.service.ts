@@ -23,9 +23,10 @@ const SITES = `${B2B_API_BASE}/admin/sites`;
  * §4, lot S1).
  *
  * Seul l'écran des sites passe par ici. Le comptoir, la saisie de commande et
- * les heures limites lisent la route PUBLIQUE de `PickupAddressesService.list()`
- * (vérifié le 2026-10-13) : mettre cette surface sous un droit neuf ne leur
- * coupe rien.
+ * la fiche client lisent `GET /admin/pickup-addresses` par
+ * `PickupAddressesService` (depuis le 2026-10-15 : la route publique ne sert
+ * plus que les points des particuliers) : mettre cette surface sous un droit
+ * neuf ne leur coupe rien.
  *
  * Rôles et couleurs s'enregistrent chacun EN BLOC (`PUT`) : leur cohérence se
  * juge sur l'ensemble, côté serveur, qui reste l'autorité.
@@ -34,7 +35,7 @@ const SITES = `${B2B_API_BASE}/admin/sites`;
 export class SitesService {
   private readonly http = inject(HttpClient);
 
-  /** Tous les sites — le défaut en tête, les archivés à la fin. */
+  /** Tous les sites — les actifs par ancienneté, les archivés à la fin. */
   list(): Promise<readonly SiteView[]> {
     return firstValueFrom(this.http.get<readonly SiteView[]>(SITES));
   }
@@ -47,7 +48,7 @@ export class SitesService {
     return firstValueFrom(this.http.post<CreatedPickupResponse>(SITES, payload));
   }
 
-  /** Le lieu : adresse, heures pros, réduction, GPS, rang par défaut. */
+  /** Le lieu : adresse, heures pros, réduction, GPS. */
   async update(id: string, payload: PickupAddressUpdatePayload): Promise<void> {
     await firstValueFrom(this.http.patch<void>(`${SITES}/${encodeURIComponent(id)}`, payload));
   }
@@ -62,7 +63,7 @@ export class SitesService {
     );
   }
 
-  /** Archiver : il n'y a pas de suppression. Le serveur refuse le défaut et celui qui expédie. */
+  /** Archiver : il n'y a pas de suppression. Le serveur refuse celui qui expédie. */
   async archive(id: string): Promise<void> {
     await firstValueFrom(this.http.post<void>(`${SITES}/${encodeURIComponent(id)}/archive`, null));
   }

@@ -22,8 +22,10 @@ model Site {
   ville      String
   pays       String
 
-  // Un seul point par défaut (le préselectionné au checkout). L'invariant « au
-  // moins un point » et « un seul défaut » est tenu par le repository.
+  // MORTE depuis le 2026-10-15 (Hugo : le site par défaut disparaît) : ni lue
+  // ni écrite par le code, gardée en base (CLAUDE.md §0). La présélection du
+  // retrait se décide par client (`preselectedPickupId`), le départ des
+  // tournées est un réglage de la livraison. Aucun index ni CHECK ne la lie.
   isDefault Boolean @default(false) @map("is_default")
 
   // Remise appliquée au panier en cas de retrait ici. `discountMode` null =

@@ -94,7 +94,7 @@ export class RecurringOrderPanel {
     })),
   );
 
-  /** Formulaire prêt : coursier ⇒ adresse minimale ; retrait ⇒ un point existe. */
+  /** Formulaire prêt : coursier ⇒ adresse minimale ; retrait ⇒ un point choisi ou qui s'impose. */
   protected readonly ready = computed(() => {
     if (this.startDate() === '') {
       return false;
@@ -103,7 +103,7 @@ export class RecurringOrderPanel {
       const a = this.address();
       return a.ligne1.trim() !== '' && a.codePostal.trim() !== '' && a.ville.trim() !== '';
     }
-    return this.pickups.defaultPickup() !== null;
+    return this.pickupId() !== '' || this.pickups.preselectedPickup() !== null;
   });
 
   constructor() {
@@ -173,7 +173,9 @@ export class RecurringOrderPanel {
             pays: 'France',
           }
         : null,
-      pickupAddressId: courier ? null : this.pickupId() || null,
+      pickupAddressId: courier
+        ? null
+        : this.pickupId() || (this.pickups.preselectedPickup()?.id ?? null),
       lines: order.lines.map((line) => ({ sku: line.sku, quantity: line.quantity })),
       note: '',
     };

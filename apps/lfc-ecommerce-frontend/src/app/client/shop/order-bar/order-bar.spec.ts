@@ -32,7 +32,6 @@ function point(
     codePostal: '73150',
     ville: "Val d'Isère",
     pays: 'France',
-    isDefault: true,
     discount,
     discountAudiences,
     opening: { publicOpening: { start: '07:00', end: '12:00' }, proPickup: null },

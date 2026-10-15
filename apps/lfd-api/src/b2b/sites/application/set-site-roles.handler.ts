@@ -29,7 +29,6 @@ export class SetSiteRolesHandler implements ICommandHandler<SetSiteRolesCommand,
    * @throws {SiteDeliveryDepartureFromTransferError}
    * @throws {SiteCounterSetupError}
    * @throws {SitePickupWithoutAudienceError} « Retrait » ouvert à aucune clientèle.
-   * @throws {DefaultSiteMustHandOverError}
    * @throws {SiteDeliveryDepartureWithoutGpsError} « Livraison » cochée sans point, ou point effacé.
    * @throws {SiteTransferWithoutGpsError} « par transfert » sans point, ou point effacé.
    * @throws {DepartureSiteMustDeliverError} « Livraison » retirée au départ des tournées.

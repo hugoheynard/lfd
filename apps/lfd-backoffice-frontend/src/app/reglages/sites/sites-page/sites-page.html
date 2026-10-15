@@ -1,6 +1,6 @@
 <fold-page-layout icon="map-pin" title="Sites">
   <p description>
-    Nos lieux, leurs rôles et leurs couleurs. Le site par défaut est proposé au checkout.
+    Nos lieux, leurs rôles et leurs couleurs. Chaque client voit les sites ouverts à sa clientèle.
   </p>
 
   @if (state() === 'ready') {
@@ -24,8 +24,6 @@
               <lfd-address [address]="postal(point)">
                 @if (point.archivedAt !== null) {
                   <fold-badge content="Archivé" variant="neutral" />
-                } @else if (point.isDefault) {
-                  <fold-badge content="Par défaut" variant="success" />
                 }
                 @for (role of roles(point); track role) {
                   <fold-badge [content]="role" variant="info" />
@@ -36,7 +34,7 @@
               </lfd-address>
 
               <!-- Pas de menu : tout ce qu'on fait d'un point — le modifier, le
-                   mettre par défaut, le supprimer — se fait sur SA PAGE. Le
+                   supprimer — se fait sur SA PAGE. Le
                    chevron dit qu'on s'y rend ; trois points auraient promis un
                    menu qui n'existe pas. -->
               <fold-button-icon

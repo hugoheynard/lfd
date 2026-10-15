@@ -76,13 +76,62 @@ Réglé à l'écran, jamais en dur.
   de sortie) — donc le devis et les trois passations (`POST /orders`,
   `POST /shop/orders`, `POST /admin/orders`) opposent le même refus. Ce n'est
   pas une affaire d'heure : un site ouvert aux deux garde les fenêtres
-  (`windowFitsPickup`) telles quelles. Le point **par défaut** n'y fait pas
-  exception : fermé à la clientèle, il est refusé comme les autres.
-- **Les lectures** : `GET /pickup-addresses` (publique, anonyme) sert
-  **tous** les sites avec `pickupAudiences` ; c'est le client qui filtre par sa
-  clientèle (`ServicePoints.pickupsFor`, boutique ; `AcheminementCommande`,
-  saisie de l'équipe), comme il le fait déjà pour la remise. Une route anonyme
-  ne connaît pas la clientèle, et le serveur garde la porte.
+  (`windowFitsPickup`) telles quelles.
+- **Les lectures sont filtrées AU SERVEUR** (Hugo, 2026-10-15 : « c'est
+  devenu un choix business » ; ce paragraphe disait le contraire le matin
+  même). Le `where` de `PickupAddressRepository.list(audience)` porte la case
+  de la clientèle :
+  - `GET /pickup-addresses` (publique, anonyme) ne sert que les sites
+    ouverts **aux particuliers** — la clientèle d'un visiteur ;
+  - `GET /pickup-addresses/mine` (client reconnu, `MyPickupAddressesController`,
+    `b2b/orders/http/`) sert ceux de la clientèle de l'**espace** agissant
+    (`audienceOf`, par `CustomerAudiences`) ; la boutique la relit au
+    changement d'espace (`PickupListGateway`, `ServicePoints`) ;
+  - `GET /admin/pickup-addresses?companyId=` (équipe) sert ceux du client
+    choisi — saisie de commande, fiche client ; sans paramètre, tous les sites
+    proposés — le comptoir. Ouverte à qui lit `b2b_place_order`, `b2b_orders`,
+    `b2b_companies`, `b2b_settings`, `handover_counter` ou `b2b_counter`.
+
+  La boutique et le back-office ne filtrent plus eux-mêmes ; `pickupOpenTo`
+  ne sert plus qu'au refus de la caisse. Le refus serveur reste : une liste ne
+  garde pas une porte.
+
+### Plus de site par défaut (Hugo, 2026-10-15)
+
+`Site.isDefault` a disparu du domaine, de l'API et des écrans. La colonne
+`pickup_addresses.is_default` **reste en base** (§0 : pas de suppression sans
+ordre), ni lue ni écrite ; aucun index ni CHECK ne la lie (vérifié dans les
+migrations le 2026-10-15). Le geste « définir par défaut »
+(`PATCH admin/sites/:id/default`, `PATCH admin/pickup-addresses/:id/default`)
+est retiré ; un client qui envoie encore `isDefault` dans une charge le voit
+ignoré. Le fait `pickup_address.default_set` n'est plus publié, mais reste au
+registre pour relire l'historique.
+
+Ce qui le remplace :
+
+- **La présélection du retrait, par client** — une seule fonction pure,
+  `preselectedPickupId(offered, preferredId)` (`@lfd/contracts`,
+  `pickup-audiences.values.ts`), parmi les points **ouverts à sa clientèle** :
+  (a) son point préféré (`fulfillmentPreference.pickupAddressId`, « Mon
+  compte » ou la fiche client) s'il en fait partie ; (b) sinon le seul point
+  ouvert ; (c) sinon aucun — le client choisit. Elle vit dans les contrats
+  parce que DEUX côtés décident : le serveur, quand un devis arrive sans
+  point (`CartAdjustments.forPickup(null, …)`), et la boutique, qui coche un
+  point à l'ouverture du choix (`PublicHousePickerDialog`) — comme
+  `audienceOf`, une règle écrite deux fois finirait par cocher un point que la
+  caisse ne retient pas. Le back-office l'applique aussi (saisie de commande,
+  fiche client).
+- **`forPickup(null)`** applique cette règle et refuse en 409
+  (`PickupChoiceRequiredError`, `orders.pickup.choice_required`) quand
+  plusieurs points sont ouverts sans préféré parmi eux ; aucun point ouvert :
+  `orders.pickup.not_configured`. Les trois passations refusaient déjà un
+  retrait sans point au schéma (400, « point de retrait requis ») : seul le
+  devis de la boutique arrive au serveur sans point.
+- **Le départ des tournées** est un réglage de livraison : sans choix, il
+  n'est déduit que d'un candidat unique — cf.
+  [`../livraisons/tournees/plan-preparation-de-tournee.md`](../livraisons/tournees/plan-preparation-de-tournee.md), Q9.
+- **L'archivage** : le premier site n'est plus protégé ; seul le site qui
+  livre refuse d'être archivé. « Au moins un site » n'est plus tenu.
 
 Le vocabulaire a été renommé le 2026-10-13 (Hugo, lexique `CLAUDE.md` §8) :
 `handsOver` → `pickup`, `dispatches` → `deliveryDeparture` ; « Remet » →
@@ -95,19 +144,18 @@ Le vocabulaire a été renommé le 2026-10-13 (Hugo, lexique `CLAUDE.md` §8) :
 Factory `Site.declare()` : un site neuf remet, est sur place, ne livre pas,
 n'a pas de couleur.
 
-| Règle                                                             | Refus                                                          |
-| ----------------------------------------------------------------- | -------------------------------------------------------------- |
-| servi par transfert ⇒ remet                                       | `SiteTransferWithoutHandoverError` (400)                       |
-| livre ⇒ sur place                                                 | `SiteDeliveryDepartureFromTransferError` (400)                 |
-| mise en place entière ≥ 0                                         | `SiteCounterSetupError` (400)                                  |
-| remet ⇒ au moins une clientèle (2026-10-15)                       | `SitePickupWithoutAudienceError` (400)                         |
-| livre ⇒ point GPS (aux transitions)                               | `SiteDeliveryDepartureWithoutGpsError` (409)                   |
-| servi par transfert ⇒ point GPS (aux transitions)                 | `SiteTransferWithoutGpsError` (409)                            |
-| le départ des tournées garde « Livraison »                        | `DepartureSiteMustDeliverError` (409)                          |
-| le site par défaut remet                                          | `DefaultSiteMustHandOverError` (409)                           |
-| on n'archive ni le défaut, ni un site qui livre                   | `DefaultSiteArchiveError`, `DeliveryDepartureSiteArchiveError` |
-| un site archivé ne se modifie plus                                | `ArchivedSiteError` (409)                                      |
-| couleur de forme `#rrggbb` (value object `SiteColor`, minuscules) | `SiteColorFormatError` (400)                                   |
+| Règle                                                             | Refus                                          |
+| ----------------------------------------------------------------- | ---------------------------------------------- |
+| servi par transfert ⇒ remet                                       | `SiteTransferWithoutHandoverError` (400)       |
+| livre ⇒ sur place                                                 | `SiteDeliveryDepartureFromTransferError` (400) |
+| mise en place entière ≥ 0                                         | `SiteCounterSetupError` (400)                  |
+| remet ⇒ au moins une clientèle (2026-10-15)                       | `SitePickupWithoutAudienceError` (400)         |
+| livre ⇒ point GPS (aux transitions)                               | `SiteDeliveryDepartureWithoutGpsError` (409)   |
+| servi par transfert ⇒ point GPS (aux transitions)                 | `SiteTransferWithoutGpsError` (409)            |
+| le départ des tournées garde « Livraison »                        | `DepartureSiteMustDeliverError` (409)          |
+| on n'archive pas un site qui livre                                | `DeliveryDepartureSiteArchiveError` (409)      |
+| un site archivé ne se modifie plus                                | `ArchivedSiteError` (409)                      |
+| couleur de forme `#rrggbb` (value object `SiteColor`, minuscules) | `SiteColorFormatError` (400)                   |
 
 - **Le GPS est tenu aux transitions, jamais au chargement** : la migration S1
   a posé `delivery_departure = true` sur le site de départ sans regarder son
@@ -124,8 +172,9 @@ n'a pas de couleur.
   un site archivé n'est plus proposé mais se résout par id (départ, tournée,
   copies). « Supprimer » sur l'ancienne API `admin/pickup-addresses`
   archive aussi.
-- « Un seul défaut » : le handler démet l'ancien (`relinquishDefault`) ; « au
-  moins un site » en découle, le défaut ne s'archive pas.
+- ~~« Un seul défaut »~~ : retiré le 2026-10-15 avec le site par défaut
+  (`DefaultSiteMustHandOverError`, `DefaultSiteArchiveError`, `makeDefault`,
+  `relinquishDefault`, `designateDefault`, `loadDefault`).
 - **Le départ des tournées est un fait de la livraison.** Le port
   `DepartureSiteReader` est **déclaré ET implémenté par `delivery`**
   (`delivery/channels/commerce/departure-site.reader.ts`, comme
@@ -188,7 +237,7 @@ flowchart LR
 
 **API** `admin/sites` (`b2b/sites/http/admin-sites.controller.ts`, sous
 `lfc_site_settings`) : `GET`, `GET :id`, `POST`, `PATCH :id` (identité,
-adresse, heures, réduction), `PATCH :id/default`, `PUT :id/roles` (rôles + `gps`
+adresse, heures, réduction), `PUT :id/roles` (rôles + `gps`
 facultatif : absent = inchangé, pour que « cocher et poser le point » soit jugé
 en une écriture), `PUT :id/couleurs`, `POST :id/archive`,
 `GET`/`PUT :id/creneaux-publics`. Contrat : `packages/contracts/src/site.ts`.
@@ -228,10 +277,10 @@ l'E-commerce. Redirigent vers `/reglages/sites` : `/b2b/reglages/points-de-retra
 (+ `…/nouveau`, `…/:id`, même id), `/reglages/retraits-livraisons`.
 
 **Les lectures hors de l'écran ne passent pas par `lfc_site_settings`** : le
-comptoir, la saisie d'une commande, les heures limites et la fiche client
-lisent la route **publique** `GET /pickup-addresses` (`PickupAddressesService.list()`,
-vérifié le 2026-10-13). L'objection S2 (§8) partait d'un fait faux ; aucun
-lecteur dédié n'a été nécessaire. Les écritures de `PickupAddressesService`
+comptoir, la saisie d'une commande et la fiche client lisent
+`GET /admin/pickup-addresses` (`PickupAddressesService`, back-office) depuis
+le 2026-10-15 — la route publique ne sert plus que les points des
+particuliers (§1). Les écritures de `PickupAddressesService`
 sont retirées du front ; l'API `admin/pickup-addresses` (sous `b2b_settings`)
 reste servie.
 
@@ -266,23 +315,23 @@ et la limite générale va dans Réglages › Commandes.
 Le site doit être **la** définition d'un lieu à nous. Ce qui en définit un,
 ou en a l'air, et ce qu'il est par rapport au site :
 
-| #   | Ce qui existe                                   | Fichier                                  | Ce qu'il porte                                                                                      | Bloc         | Rapport au site                                                                                                    |
-| --- | ----------------------------------------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------ |
-| 1   | `Site` (`pickup_addresses`)                     | `public/settings.prisma`                 | libellé, adresse, `isDefault`, remise de retrait, `opening` (public + pros), `gps`, rôles, couleurs | `b2b`        | **le site lui-même**                                                                                               |
-| 2   | `PublicPickupSlotRule`, `PublicPickupClosure`   | même fichier                             | créneaux publics, fermetures datées                                                                 | `b2b`        | attribut du site (rôle Retrait, côté B2C)                                                                          |
-| 3   | `OrderCutoff.pickupAddressId`                   | `public/orders.prisma`                   | heure limite par point                                                                              | `b2b`        | référence au site — en démontage                                                                                   |
-| 4   | `Company.preferredPickupAddressId`              | `public/account.prisma`                  | le retrait préféré d'un pro                                                                         | `b2b`        | référence au site (champ Prisma pas encore renommé `siteId`)                                                       |
-| 5   | `Subscription.pickupAddressId`                  | `public/subscriptions.prisma`            | le point de retrait d'un abonnement                                                                 | `b2b`        | référence au site (idem)                                                                                           |
-| 6   | `Order.pickupAddress` (JSON)                    | `public/orders.prisma`                   | **snapshot** postal + `siteId` (depuis S2 ; absent avant)                                           | `b2b`        | référence au site, figée à la passation (S2, §7) ; les commandes d'avant n'en ont pas                              |
-| 7   | `DeliveryDeparture.pickupAddressId`             | `delivery.prisma`                        | d'où partent les tournées ; absent = défaut ; id **opaque**                                         | `delivery`   | référence opaque au site, lue par `delivery/channels/commerce/`                                                    |
-| 8   | `production_order.pickup_label` (+ `address_*`) | `production.prisma`                      | snapshot imprimé sur le bon ; `site_id` opaque depuis S2                                            | `production` | référence opaque au site, figée à l'arrêt (S2)                                                                     |
-| 9   | Onglets du comptoir (`pickupTabs`)              | `handover-shop/handover-queue.ts`        | « tous les points connus », **par id** (S2), repli libellé                                          | front        | repli sur le libellé à retirer (S3r)                                                                               |
-| 10  | `PointOfSale` (`kind: shop / platform`)         | `pim/sales-contexts.prisma`              | « d'où l'on vend » pour le catalogue ; `platform` n'a aucun lieu                                    | `pim`        | **à part** : canal de vente, pas un lieu ; le fusionner ferait lire le PIM hors de son canal. Lien éventuel : Q-S3 |
-| 11  | `CategoryChannel.pointOfSaleId`                 | `pim/categories.prisma`                  | ce que l'on vend où                                                                                 | `pim`        | à part (même raison)                                                                                               |
-| 12  | `LegalEntity` (adresse)                         | `public/accounting.prisma`               | siège sur les mentions légales                                                                      | `b2b`        | à part : adresse **juridique**, figée sur les documents émis                                                       |
-| 13  | `DeliveryZone`                                  | `public/settings.prisma`                 | préfixes postaux **chez le client** + frais                                                         | `b2b`        | à part : un secteur de clients (rattachement à un site de départ : Q-S4)                                           |
-| 14  | `DeliveryAvailability`                          | `public/settings.prisma`                 | ouverture B2B/B2C de la livraison, marges                                                           | `b2b`        | à part ; les couleurs de livraison n'y sont **pas** allées (elles sont sur le site qui livre)                      |
-| 15  | `Address` (carnet), `MarketZone`                | `public/account.prisma`, `growth.prisma` | adresses des clients ; prospection                                                                  | `b2b`        | à part : pas nos lieux                                                                                             |
+| #   | Ce qui existe                                   | Fichier                                  | Ce qu'il porte                                                                                                      | Bloc         | Rapport au site                                                                                                    |
+| --- | ----------------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------ |
+| 1   | `Site` (`pickup_addresses`)                     | `public/settings.prisma`                 | libellé, adresse, remise de retrait, `opening` (public + pros), `gps`, rôles, couleurs (`is_default` en base, mort) | `b2b`        | **le site lui-même**                                                                                               |
+| 2   | `PublicPickupSlotRule`, `PublicPickupClosure`   | même fichier                             | créneaux publics, fermetures datées                                                                                 | `b2b`        | attribut du site (rôle Retrait, côté B2C)                                                                          |
+| 3   | `OrderCutoff.pickupAddressId`                   | `public/orders.prisma`                   | heure limite par point                                                                                              | `b2b`        | référence au site — en démontage                                                                                   |
+| 4   | `Company.preferredPickupAddressId`              | `public/account.prisma`                  | le retrait préféré d'un pro                                                                                         | `b2b`        | référence au site (champ Prisma pas encore renommé `siteId`)                                                       |
+| 5   | `Subscription.pickupAddressId`                  | `public/subscriptions.prisma`            | le point de retrait d'un abonnement                                                                                 | `b2b`        | référence au site (idem)                                                                                           |
+| 6   | `Order.pickupAddress` (JSON)                    | `public/orders.prisma`                   | **snapshot** postal + `siteId` (depuis S2 ; absent avant)                                                           | `b2b`        | référence au site, figée à la passation (S2, §7) ; les commandes d'avant n'en ont pas                              |
+| 7   | `DeliveryDeparture.pickupAddressId`             | `delivery.prisma`                        | d'où partent les tournées ; absent = le seul site qui livre, sinon aucun ; id **opaque**                            | `delivery`   | référence opaque au site, lue par `delivery/channels/commerce/`                                                    |
+| 8   | `production_order.pickup_label` (+ `address_*`) | `production.prisma`                      | snapshot imprimé sur le bon ; `site_id` opaque depuis S2                                                            | `production` | référence opaque au site, figée à l'arrêt (S2)                                                                     |
+| 9   | Onglets du comptoir (`pickupTabs`)              | `handover-shop/handover-queue.ts`        | « tous les points connus », **par id** (S2), repli libellé                                                          | front        | repli sur le libellé à retirer (S3r)                                                                               |
+| 10  | `PointOfSale` (`kind: shop / platform`)         | `pim/sales-contexts.prisma`              | « d'où l'on vend » pour le catalogue ; `platform` n'a aucun lieu                                                    | `pim`        | **à part** : canal de vente, pas un lieu ; le fusionner ferait lire le PIM hors de son canal. Lien éventuel : Q-S3 |
+| 11  | `CategoryChannel.pointOfSaleId`                 | `pim/categories.prisma`                  | ce que l'on vend où                                                                                                 | `pim`        | à part (même raison)                                                                                               |
+| 12  | `LegalEntity` (adresse)                         | `public/accounting.prisma`               | siège sur les mentions légales                                                                                      | `b2b`        | à part : adresse **juridique**, figée sur les documents émis                                                       |
+| 13  | `DeliveryZone`                                  | `public/settings.prisma`                 | préfixes postaux **chez le client** + frais                                                                         | `b2b`        | à part : un secteur de clients (rattachement à un site de départ : Q-S4)                                           |
+| 14  | `DeliveryAvailability`                          | `public/settings.prisma`                 | ouverture B2B/B2C de la livraison, marges                                                                           | `b2b`        | à part ; les couleurs de livraison n'y sont **pas** allées (elles sont sur le site qui livre)                      |
+| 15  | `Address` (carnet), `MarketZone`                | `public/account.prisma`, `growth.prisma` | adresses des clients ; prospection                                                                                  | `b2b`        | à part : pas nos lieux                                                                                             |
 
 Ce qu'en dit l'inventaire : un lieu à nous n'était défini qu'une fois — le
 point de retrait — et les autres sont des références, des snapshots ou des
@@ -310,7 +359,8 @@ même endroit. Les autres blocs le lisent par les canaux qu'ils déclarent :
 - ~~**S2**~~ — ✅ bâti le 2026-10-13 :
   - le snapshot `Order.pickupAddress` porte `siteId` — l'id du point
     **résolu** à la passation (`toSnapshot`, `order-drafting.service.ts` ; un
-    client qui n'a rien choisi fige l'id du défaut). Typé `PickupSnapshot`
+    client qui n'a rien choisi fige l'id du point présélectionné — le seul
+    ouvert, ou son préféré, 2026-10-15). Typé `PickupSnapshot`
     (`packages/contracts/src/pickup.ts`), `siteId` **facultatif** : pas de
     rattrapage (Q-S2), les commandes d'avant le lot n'en ont pas, et tout
     lecteur passe par `siteIdOf` (`b2b/orders/infrastructure/pickup-site.parse.ts`),

@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import type { Company, UserProfile } from '../../../account/account.model';
 import { AccountService, type AccountStatus } from '../../../account/account.service';
+import { provideWorkspace, workspaceDouble } from '../../../client/client-workspace.fixture';
 import { EntreprisesPage } from './entreprises-page';
 
 /**
@@ -87,6 +88,9 @@ beforeEach(() => {
     providers: [
       provideRouter([]),
       { provide: AccountService, useValue: account },
+      // Les points de retrait se lisent pour l'espace courant (2026-10-15) :
+      // l'espace est doublé, le service de compte ne l'étant qu'en partie.
+      provideWorkspace(workspaceDouble()),
       // Le host de panneaux vit dans le shell de l'app, absent du test : seule
       // l'ouverture nous intéresserait, et aucun test ici ne clique « Créer ».
       { provide: FoldPanelHostService, useValue: { open: (): void => undefined } },

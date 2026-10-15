@@ -41,7 +41,6 @@ const place = (label: string): Record<string, unknown> => ({
   codePostal: "73150",
   ville: "Val-d'Isère",
   pays: "France",
-  isDefault: false,
 });
 
 const ROLES = {
@@ -89,8 +88,9 @@ describe("admin/sites — rôles", () => {
       ...ROLES,
       ...NO_COLORS,
       archivedAt: null,
-      isDefault: true,
     });
+    // Plus de site par défaut (2026-10-15) : le premier créé n'en porte aucun rang.
+    expect(await site(id)).not.toHaveProperty("isDefault");
   });
 
   it("enregistre un site servi par transfert, et le journalise", async () => {

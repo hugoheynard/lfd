@@ -13,8 +13,7 @@ import { RemovePickupAddressCommand } from "./remove-pickup-address.command.js";
  * des sites, 2026-10-13, objection S1) — une ligne référencée par des
  * commandes, des abonnements et le départ des tournées ne se détruit pas.
  *
- * L'agrégat refuse d'archiver le site par défaut et celui qui expédie : le
- * « dernier point » ne peut donc plus disparaître, puisqu'il est le défaut.
+ * L'agrégat refuse d'archiver le site qui expédie.
  */
 @CommandHandler(RemovePickupAddressCommand)
 export class RemovePickupAddressHandler implements ICommandHandler<
@@ -30,7 +29,6 @@ export class RemovePickupAddressHandler implements ICommandHandler<
 
   /**
    * @throws {PickupAddressNotFoundError} l'`id` n'existe pas.
-   * @throws {DefaultSiteArchiveError} c'est le site par défaut.
    * @throws {DeliveryDepartureSiteArchiveError} les livraisons en partent.
    * @throws {ArchivedSiteError} il est déjà archivé.
    */

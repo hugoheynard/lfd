@@ -186,7 +186,12 @@ export class OrderDrafting {
     // CGV que la commande porte (plan des CGV, C2″, C4′) — deux lectures
     // pourraient diverger d'une validation de société entre les deux.
     const audience = await this.audiences.of(parties.companyId);
-    const acheminement = await this.resolveFulfillment(content, subtotalCents, audience);
+    const acheminement = await this.resolveFulfillment(
+      content,
+      subtotalCents,
+      audience,
+      parties.companyId,
+    );
     // APRÈS la résolution, et l'ordre est un choix : la règle qui s'applique est
     // celle du point EFFECTIVEMENT retenu, qu'on ne connaît qu'ici. Le coût est
     // de tarifer un panier qu'on refusera ensuite ; le prix de l'inverse serait
@@ -449,11 +454,14 @@ export class OrderDrafting {
   /**
    * @throws {PickupClosedForAudienceError} retrait sur un site fermé à la
    *   clientèle (`CartAdjustments.forPickup`) — avant toute règle d'heure.
+   * @throws {PickupChoiceRequiredError} aucun point choisi, et aucun ne s'impose
+   *   (`companyId` : la société dont on lit le point préféré).
    */
   private async resolveFulfillment(
     content: OrderContent,
     subtotalCents: number,
     audience: CustomerAudience,
+    companyId: string | null,
   ): Promise<ResolvedFulfillment> {
     if (content.fulfillmentMethod === "pickup") {
       // La remise vient du service PARTAGÉ avec le devis de la boutique : deux
@@ -463,6 +471,7 @@ export class OrderDrafting {
         content.pickupAddressId,
         subtotalCents,
         audience,
+        companyId,
       );
       // La tranche demandée doit tenir dans l'une des fenêtres du point — jamais
       // dans leur union : entre le créneau pro et l'ouverture publique il peut y

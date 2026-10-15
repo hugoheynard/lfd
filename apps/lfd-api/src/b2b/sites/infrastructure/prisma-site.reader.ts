@@ -14,11 +14,7 @@ export class PrismaSiteReader extends SiteReader {
 
   async list(): Promise<readonly StoredSiteView[]> {
     const rows = await this.prisma.site.findMany({
-      orderBy: [
-        { archivedAt: { sort: "asc", nulls: "first" } },
-        { isDefault: "desc" },
-        { createdAt: "asc" },
-      ],
+      orderBy: [{ archivedAt: { sort: "asc", nulls: "first" } }, { createdAt: "asc" }],
       select: SITE_SELECT,
     });
     return rows.map(toSiteView);

@@ -1,7 +1,7 @@
 <fold-page-layout icon="map-pin" title="Point de départ">
   <p description>
-    D’où partent les tournées. C’est un point de retrait&nbsp;: son adresse et son point GPS se
-    règlent sur l’écran des points de retrait, jamais ici.
+    D’où partent les tournées. C’est un site qui livre&nbsp;: son adresse et son point GPS se
+    règlent sur l’écran des sites, jamais ici.
   </p>
 
   @if (refusal(); as message) {
@@ -61,17 +61,31 @@
             />
           }
         </div>
+      } @else if (mustChoose()) {
+        <div class="departure">
+          <fold-callout variant="warning" data-departure-unchosen>
+            Plusieurs sites livrent et aucun n’est choisi&nbsp;: aucune tournée ne peut être
+            calculée tant que le point de départ n’est pas choisi.
+          </fold-callout>
+          @if (canWrite()) {
+            <fold-listbox
+              label="Partir de"
+              placeholder="Choisir le site d’où partent les tournées"
+              [options]="options()"
+              [disabled]="saving()"
+              (selectionChange)="choose($event)"
+            />
+          }
+        </div>
       } @else {
         <fold-empty-state
-          title="Aucun point de retrait"
-          subtitle="Le point de départ est un point de retrait : créez-en un d’abord."
+          title="Aucun site ne livre"
+          subtitle="Le point de départ est un site qui livre : cochez « Livraison » sur un site d’abord."
           data-departure-empty
         >
           <fold-icon empty-icon name="map-pin" />
           @if (canOpenPickupPoints()) {
-            <a foldButton emphasis="outline" [routerLink]="pickupPointsLink">
-              Ouvrir les points de retrait
-            </a>
+            <a foldButton emphasis="outline" [routerLink]="pickupPointsLink"> Ouvrir les sites </a>
           }
         </fold-empty-state>
       }

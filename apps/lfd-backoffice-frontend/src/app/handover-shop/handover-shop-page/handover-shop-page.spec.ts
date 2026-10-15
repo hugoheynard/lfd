@@ -137,7 +137,10 @@ async function render(api: FakeQueue): Promise<ComponentFixture<RetraitHost>> {
       { provide: AdminOrdersService, useValue: new FakeOrders() },
       { provide: PermissionsStore, useValue: { can: (): boolean => true } },
       { provide: DayVersionWatcher, useValue: fakeWatcher },
-      { provide: PickupAddressesService, useValue: { list: () => Promise.resolve([]) } },
+      {
+        provide: PickupAddressesService,
+        useValue: { list: () => Promise.resolve([]), listFor: () => Promise.resolve([]) },
+      },
     ],
   });
   const fixture: ComponentFixture<RetraitHost> = TestBed.createComponent(RetraitHost);

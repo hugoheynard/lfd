@@ -97,6 +97,8 @@ export class PanierCommande {
   /** Le réglage de livraison et la clientèle de la société — relayés à l'acheminement. */
   readonly deliveryAvailability = input.required<DeliveryAvailabilityView>();
   readonly audience = input.required<CustomerAudience>();
+  /** Le point préféré du client — relayé à l'acheminement (présélection). */
+  readonly preferredPickupId = input<string | null>(null);
   /**
    * La société règle-t-elle au compte ? Faux ⇒ seul le lien est proposé. Le
    * serveur refuse de toute façon, mais un bouton qui échoue toujours est un

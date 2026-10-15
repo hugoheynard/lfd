@@ -4,6 +4,7 @@ import {
   discountCentsOf,
   pickupDiscountFor,
   pickupOpenTo,
+  preselectedPickupId,
   type CartAdjustment,
   type CustomerAudience,
 } from "@lfd/contracts";
@@ -19,6 +20,8 @@ import {
   PickupClosedForAudienceError,
   PickupNotConfiguredError,
 } from "../../domain/errors/order-errors.js";
+import { PickupChoiceRequiredError } from "../../domain/errors/pickup-choice-errors.js";
+import { PreferredPickupReader } from "../../domain/ports/preferred-pickup.reader.js";
 
 /** Le point de retrait retenu, et ce qu'il retire du panier. */
 export interface ResolvedPickup {
@@ -88,15 +91,19 @@ export class CartAdjustments {
     private readonly pickups: PickupAddressRepository,
     private readonly zones: DeliveryZoneRepository,
     private readonly delivery: DeliveryAvailabilityReader,
+    private readonly preferences: PreferredPickupReader,
   ) {}
 
   /**
-   * Le point retenu — celui qu'on a choisi, ou **le point par défaut** — et sa
+   * Le point retenu — celui qu'on a choisi, ou **celui qui s'impose** — et sa
    * remise **pour cette clientèle**.
    *
-   * `pickupAddressId` peut être `null` : le client n'a rien choisi, et c'est
-   * alors le défaut qui sert. Rendre le point ET son identifiant compte pour
-   * la caisse, qui doit opposer l'heure limite du point EFFECTIVEMENT retenu.
+   * `pickupAddressId` peut être `null` : le client n'a rien choisi. Il n'y a
+   * plus de « point par défaut » (Hugo, 2026-10-15) : la règle est celle de la
+   * boutique, `preselectedPickupId` — le point préféré de la société s'il lui
+   * est ouvert, sinon le seul point ouvert à sa clientèle, sinon un refus qui
+   * demande de choisir. Rendre le point ET son identifiant compte pour la
+   * caisse, qui doit opposer l'heure limite du point EFFECTIVEMENT retenu.
    *
    * Une remise qui ne vise pas la clientèle rend `0` et `null` — ce que la
    * commande fige alors, comme pour un point sans remise.
@@ -105,15 +112,20 @@ export class CartAdjustments {
    * pour que le devis et les trois passations — client, boutique, équipe —
    * opposent le même refus : le panier ne promet pas ce que la caisse refuse.
    *
-   * @throws {PickupNotConfiguredError} aucun point n'est configuré.
+   * @throws {PickupNotConfiguredError} le point n'existe pas, ou aucun n'est ouvert.
+   * @throws {PickupChoiceRequiredError} aucun point choisi, et aucun ne s'impose.
    * @throws {PickupClosedForAudienceError} le site ne remet pas à cette clientèle.
    */
   async forPickup(
     pickupAddressId: string | null,
     subtotalCents: number,
     audience: CustomerAudience,
+    companyId: string | null,
   ): Promise<ResolvedPickup> {
-    const point = await this.pickups.resolve(pickupAddressId);
+    const point =
+      pickupAddressId === null
+        ? await this.preselected(audience, companyId)
+        : await this.pickups.resolve(pickupAddressId);
     if (point === null) {
       throw new PickupNotConfiguredError();
     }
@@ -129,6 +141,30 @@ export class CartAdjustments {
       discountCents: discount === null ? 0 : discountCentsOf(discount, subtotalCents),
       discountAdjustment: discount,
     };
+  }
+
+  /**
+   * Le point qui s'impose sans choix, parmi ceux ouverts à la clientèle ;
+   * `null` s'il n'y en a aucun.
+   *
+   * @throws {PickupChoiceRequiredError} plusieurs, et aucun préféré parmi eux.
+   */
+  private async preselected(
+    audience: CustomerAudience,
+    companyId: string | null,
+  ): Promise<PickupAddressView | null> {
+    const [offered, preferred] = await Promise.all([
+      this.pickups.list(audience),
+      companyId === null ? null : this.preferences.preferredPickupOf(companyId),
+    ]);
+    if (offered.length === 0) {
+      return null;
+    }
+    const id = preselectedPickupId(offered, preferred);
+    if (id === null) {
+      throw new PickupChoiceRequiredError(offered.length);
+    }
+    return offered.find((point) => point.id === id) ?? null;
   }
 
   /**

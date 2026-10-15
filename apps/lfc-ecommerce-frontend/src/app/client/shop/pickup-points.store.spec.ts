@@ -1,11 +1,18 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { DEFAULT_DELIVERY_AVAILABILITY, type PickupAddressView } from '@lfd/contracts';
+import { of } from 'rxjs';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { CartStore } from '../cart/cart.store';
-import { provideWorkspace, workspaceDouble } from '../client-workspace.fixture';
+import { AuthFacade } from '../../auth/auth.facade';
+import {
+  provideWorkspace,
+  workspaceDouble,
+  type WorkspaceDouble,
+} from '../client-workspace.fixture';
 import { CartFulfillmentDays } from './cart-fulfillment-days.service';
 import { ServicePoints } from './pickup-points.store';
 import { hydrateWith, operationCatalogue } from './shop-catalogue.fixture';
@@ -20,9 +27,14 @@ const OLD_POINT: Omit<PickupAddressView, 'discountAudiences'> = {
   codePostal: '73150',
   ville: 'Val d’Isère',
   pays: 'France',
-  isDefault: true,
   discount: { mode: 'percent', bp: 1_000 },
   opening: { proPickup: null, publicOpening: null },
+};
+
+/** Un visiteur : la liste des points vient de la route publique. */
+const VISITOR_AUTH = {
+  provide: AuthFacade,
+  useValue: { isAuthenticated: signal(false), accessToken$: () => of('jeton') },
 };
 
 const url = (path: string) => (request: { url: string }) => request.url.endsWith(path);
@@ -34,7 +46,7 @@ describe('ServicePoints — le réglage de livraison et les vues anciennes', () 
   beforeEach(() => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(), provideHttpClientTesting(), VISITOR_AUTH],
     });
     points = TestBed.inject(ServicePoints);
     http = TestBed.inject(HttpTestingController);
@@ -44,16 +56,6 @@ describe('ServicePoints — le réglage de livraison et les vues anciennes', () 
   it('tient pour ouvertes les clientèles absentes d’un point', () => {
     points.receive([OLD_POINT], []);
     expect(points.pickups()[0]?.discountAudiences).toEqual({ b2b: true, b2c: true });
-  });
-
-  /** Hugo, 2026-10-15 : un site peut être réservé au retrait d'une clientèle. */
-  it('ne propose à chaque clientèle que les sites qui lui sont ouverts', () => {
-    const pros = { ...OLD_POINT, id: 'pros', pickupAudiences: { b2b: true, b2c: false } };
-    const shop = { ...OLD_POINT, id: 'shop', pickupAudiences: { b2b: false, b2c: true } };
-    points.receive([OLD_POINT, pros, shop], []);
-
-    expect(points.pickupsFor('b2b').map((p) => p.id)).toEqual(['pick_labo', 'pros']);
-    expect(points.pickupsFor('b2c').map((p) => p.id)).toEqual(['pick_labo', 'shop']);
   });
 
   it('ouvert aux deux, et NON connu, tant que rien n’est lu', () => {
@@ -108,6 +110,7 @@ describe('ServicePoints — le réglage de livraison et les vues anciennes', () 
         provideWorkspace(workspaceDouble()),
         provideHttpClient(),
         provideHttpClientTesting(),
+        VISITOR_AUTH,
       ],
     });
     points = TestBed.inject(ServicePoints);
@@ -148,6 +151,7 @@ describe('ServicePoints — le réglage de livraison et les vues anciennes', () 
         provideWorkspace(workspaceDouble()),
         provideHttpClient(),
         provideHttpClientTesting(),
+        VISITOR_AUTH,
       ],
     });
     points = TestBed.inject(ServicePoints);
@@ -168,5 +172,66 @@ describe('ServicePoints — le réglage de livraison et les vues anciennes', () 
     cart.setQuantity('PAT-NOE', 0);
     TestBed.tick();
     expect(points.lastDay()).toBeNull();
+  });
+});
+
+/**
+ * Hugo, 2026-10-15 : la liste des points est filtrée AU SERVEUR par la
+ * clientèle. Un visiteur lit la route publique ; un client reconnu lit
+ * `/pickup-addresses/mine`, relue quand il change d'espace.
+ */
+describe('ServicePoints — la liste des points, par lecteur', () => {
+  function boot(authenticated: boolean, workspace: WorkspaceDouble) {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideWorkspace(workspace),
+        {
+          provide: AuthFacade,
+          useValue: { isAuthenticated: signal(authenticated), accessToken$: () => of('jeton') },
+        },
+      ],
+    });
+    return {
+      points: TestBed.inject(ServicePoints),
+      http: TestBed.inject(HttpTestingController),
+    };
+  }
+
+  function answerTheRest(http: HttpTestingController): void {
+    http.expectOne(url('/delivery-zones')).flush([]);
+    http.expectOne(url('/fulfillment-days')).flush([]);
+    http.expectOne(url('/delivery-availability')).flush({});
+  }
+
+  it('un visiteur lit la route publique', async () => {
+    const { points, http } = boot(false, workspaceDouble());
+    const hydrating = points.hydrate();
+    http.expectOne(url('/pickup-addresses')).flush([OLD_POINT]);
+    answerTheRest(http);
+    await hydrating;
+
+    expect(points.pickups().map((p) => p.id)).toEqual(['pick_labo']);
+    http.verify();
+  });
+
+  it('un client reconnu lit les siens, et les relit au changement d’espace', async () => {
+    const workspace = workspaceDouble();
+    const { points, http } = boot(true, workspace);
+    const hydrating = points.hydrate();
+    http.expectOne(url('/pickup-addresses/mine')).flush([OLD_POINT]);
+    answerTheRest(http);
+    await hydrating;
+    expect(points.pickups().map((p) => p.id)).toEqual(['pick_labo']);
+
+    workspace.choose('cmp_pro');
+    TestBed.tick();
+    http.expectOne(url('/pickup-addresses/mine')).flush([{ ...OLD_POINT, id: 'pros' }]);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(points.pickups().map((p) => p.id)).toEqual(['pros']);
+    http.verify();
   });
 });

@@ -27,6 +27,7 @@ import {
   type CreateIntentParams,
 } from "../../../../payments/domain/payment-gateway.js";
 import { PickupAddressRepository } from "../../../../pickup-addresses/domain/pickup-address.repository.js";
+import { PreferredPickupReader } from "../../../domain/ports/preferred-pickup.reader.js";
 import { Pricer } from "../../../../pricing/application/pricer.js";
 import { PricingMaterialsLoader } from "../../../../pricing/application/pricing-materials.loader.js";
 import { CompanyMercurialeReader } from "../../../../pricing/domain/ports/company-mercuriale.reader.js";
@@ -214,15 +215,19 @@ const LABO_POINT: PickupAddressView = {
   codePostal: "75002",
   ville: "Paris",
   pays: "France",
-  isDefault: true,
   discount: null,
   discountAudiences: { b2b: true, b2c: true },
   opening: { publicOpening: null, proPickup: null },
 };
 
+/** Aucune société n'a de point préféré : un retrait sans choix prend le seul point. */
+const noPreferredPickup: PreferredPickupReader = {
+  preferredPickupOf: () => Promise.resolve(null),
+};
+
 function pickups(resolved: PickupAddressView | null = LABO_POINT): PickupAddressRepository {
   return {
-    list: () => Promise.resolve([]),
+    list: () => Promise.resolve(resolved === null ? [] : [resolved]),
     resolve: () => Promise.resolve(resolved),
   };
 }
@@ -271,7 +276,7 @@ function drafting(
       new FixedClock(PRICED_AT),
     ),
     versionsAt("cver_courante"),
-    new CartAdjustments(pickups(), zones(), deliveryAvailability(delivery)),
+    new CartAdjustments(pickups(), zones(), deliveryAvailability(delivery), noPreferredPickup),
     noDeliveryDefaults,
     noOrderCutoffs,
     new FixedClock(PRICED_AT),

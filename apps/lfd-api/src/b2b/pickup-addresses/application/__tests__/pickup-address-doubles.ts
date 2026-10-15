@@ -12,7 +12,6 @@ export const FIELDS = {
   codePostal: "75004",
   ville: "Paris",
   pays: "France",
-  isDefault: false,
   opening: { publicOpening: null, proPickup: null },
 } as const;
 
@@ -28,7 +27,6 @@ export class StoredPoints extends InMemorySites {
         ? []
         : [
             storedSite(stored.id, {
-              isDefault: stored.isDefault,
               place: {
                 label: stored.label,
                 ligne1: stored.ligne1,

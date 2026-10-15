@@ -34,10 +34,12 @@ const PICKUP_POINTS = '/reglages/sites';
 /**
  * **D'où partent les tournées** (`plan-preparation-de-tournee.md`, lot 2b, Q9).
  *
- * Un point de retrait RÉFÉRENCÉ, jamais recopié : l'adresse du labo n'a qu'une
- * source, et elle se corrige sur l'écran des points de retrait. Tant que
- * personne n'a choisi, c'est le point par défaut, et l'écran le dit. Un point
- * sans GPS est signalé : aucune distance ne partira de là.
+ * Un site RÉFÉRENCÉ, jamais recopié : l'adresse du labo n'a qu'une source, et
+ * elle se corrige sur l'écran des sites. Il n'y a plus de site par défaut
+ * (Hugo, 2026-10-15) : tant que personne n'a choisi, le départ n'est déduit
+ * que si UN SEUL site livre ; à plusieurs, l'écran demande de choisir, et le
+ * calcul des tournées refuse en attendant. Un point sans GPS est signalé :
+ * aucune distance ne partira de là.
  *
  * Le choix n'apparaît qu'avec `delivery_settings:write`. Les réglages du
  * calcul de tournée (lot 7, L7-C13) vivent sous le point : c'est d'ici que
@@ -87,8 +89,11 @@ export class DeparturePage {
   protected readonly provenance = computed(() =>
     this.view()?.source === 'explicit'
       ? 'Choisi dans les réglages'
-      : 'Par défaut — le point de retrait par défaut, tant que personne n’a choisi',
+      : 'Déduit — le seul site qui livre, tant que personne n’a choisi',
   );
+
+  /** Plusieurs sites livrent et personne n'a choisi : il faut choisir. */
+  protected readonly mustChoose = computed(() => (this.view()?.choices.length ?? 0) > 0);
 
   protected readonly options = computed((): FoldSelectOption<string>[] =>
     (this.view()?.choices ?? []).map((choice) => ({

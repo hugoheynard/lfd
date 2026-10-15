@@ -20,7 +20,6 @@ const LABO: SiteView = {
   codePostal: '75011',
   ville: 'Paris',
   pays: 'France',
-  isDefault: true,
   discount: { mode: 'amount', cents: 800 },
   discountAudiences: { b2b: true, b2c: false },
   opening: { publicOpening: null, proPickup: null },
@@ -90,7 +89,6 @@ describe('SitesPage', () => {
     const archived = {
       ...LABO,
       id: 'pick_2',
-      isDefault: false,
       archivedAt: '2026-10-13T08:00:00.000Z',
     };
     const fixture = await mount([LABO, archived]);
@@ -98,6 +96,8 @@ describe('SitesPage', () => {
 
     expect(text).toContain('Livraison');
     expect(text).toContain('Archivé');
+    // Plus de site par défaut (Hugo, 2026-10-15) : plus de badge pour le dire.
+    expect(text).not.toContain('Par défaut');
   });
 });
 

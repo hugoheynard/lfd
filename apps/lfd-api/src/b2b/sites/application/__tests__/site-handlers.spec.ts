@@ -6,12 +6,9 @@ import { CreatePickupAddressCommand } from "../../../pickup-addresses/applicatio
 import { CreatePickupAddressHandler } from "../../../pickup-addresses/application/create-pickup-address.handler.js";
 import { RemovePickupAddressCommand } from "../../../pickup-addresses/application/remove-pickup-address.command.js";
 import { RemovePickupAddressHandler } from "../../../pickup-addresses/application/remove-pickup-address.handler.js";
-import { SetDefaultPickupAddressCommand } from "../../../pickup-addresses/application/set-default-pickup-address.command.js";
-import { SetDefaultPickupAddressHandler } from "../../../pickup-addresses/application/set-default-pickup-address.handler.js";
 import { PickupAddressNotFoundError } from "../../../pickup-addresses/domain/pickup-errors.js";
 import { SiteColor } from "../../domain/site-color.js";
 import {
-  DefaultSiteArchiveError,
   DepartureSiteMustDeliverError,
   SiteDeliveryDepartureWithoutGpsError,
   SitePickupWithoutAudienceError,
@@ -50,12 +47,9 @@ const NO_COLORS = {
 
 const GPS = { lat: 45.45, lng: 6.98 };
 
-/** Le fournil (défaut) et le village, en base. */
+/** Le fournil (créé le premier) et le village, en base. */
 function twoSites(): InMemorySites {
-  return new InMemorySites(
-    storedSite("site_bakery", { isDefault: true }),
-    storedSite("site_village"),
-  );
+  return new InMemorySites(storedSite("site_bakery"), storedSite("site_village"));
 }
 
 /** Le village AVEC son point GPS : celui qu'il faut pour un transfert. */
@@ -330,22 +324,8 @@ describe("SetSiteColorsHandler", () => {
   });
 });
 
-describe("Le défaut — un seul, et il passe de main en main", () => {
-  it("désigner un site démet l'ancien défaut, écrit en premier", async () => {
-    const sites = twoSites();
-
-    await new SetDefaultPickupAddressHandler(
-      sites,
-      new RecordingPublisher(),
-      new DirectUnitOfWork(),
-    ).execute(new SetDefaultPickupAddressCommand("site_village"));
-
-    expect(sites.stateOf("site_village")?.isDefault).toBe(true);
-    expect(sites.stateOf("site_bakery")?.isDefault).toBe(false);
-    expect(sites.saved).toEqual(["site_bakery", "site_village"]);
-  });
-
-  it("le premier site créé devient le défaut ; le suivant non", async () => {
+describe("Plus de site par défaut (Hugo, 2026-10-15)", () => {
+  it("créer des sites n'en désigne aucun, le premier compris", async () => {
     const sites = new InMemorySites();
     const create = new CreatePickupAddressHandler(
       sites,
@@ -360,18 +340,18 @@ describe("Le défaut — un seul, et il passe de main en main", () => {
       codePostal: "73150",
       ville: "Val",
       pays: "France",
-      isDefault: false,
       discount: null,
       discountAudiences: { b2b: true, b2c: true },
       opening: { publicOpening: null, proPickup: null },
     };
 
     const first = await create.execute(new CreatePickupAddressCommand(payload));
-    const second = await create.execute(new CreatePickupAddressCommand(payload));
+    await create.execute(new CreatePickupAddressCommand(payload));
 
     expect(first).toBe("site_id_000001");
-    expect(sites.stateOf(first)?.isDefault).toBe(true);
-    expect(sites.stateOf(second)?.isDefault).toBe(false);
+    // Un seul `save` par création : plus de démission d'un ancien défaut.
+    expect(sites.saved).toEqual(["site_id_000001", "site_id_000002"]);
+    expect(Object.keys(sites.stateOf(first) ?? {})).not.toContain("isDefault");
   });
 });
 
@@ -391,15 +371,17 @@ describe("RemovePickupAddressHandler — supprimer archive", () => {
     expect(sites.stateOf("site_village")?.archivedAt).toBe(clock.now());
   });
 
-  /** Remplace « le dernier point ne se supprime pas » : il est forcément le défaut. */
-  it("refuse d'archiver le défaut", async () => {
-    await expect(
-      new RemovePickupAddressHandler(
-        twoSites(),
-        clock,
-        new RecordingPublisher(),
-        new DirectUnitOfWork(),
-      ).execute(new RemovePickupAddressCommand("site_bakery")),
-    ).rejects.toBeInstanceOf(DefaultSiteArchiveError);
+  /** Le premier site créé n'est plus « le défaut » : il s'archive comme un autre. */
+  it("archive le premier site créé", async () => {
+    const sites = twoSites();
+
+    await new RemovePickupAddressHandler(
+      sites,
+      clock,
+      new RecordingPublisher(),
+      new DirectUnitOfWork(),
+    ).execute(new RemovePickupAddressCommand("site_bakery"));
+
+    expect(sites.stateOf("site_bakery")?.archivedAt).toBe(clock.now());
   });
 });

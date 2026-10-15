@@ -1,45 +1,34 @@
-import { HttpClient } from '@angular/common/http';
-import { computed, inject, Injectable, signal } from '@angular/core';
-import { firstValueFrom } from 'rxjs';
-
+import { computed, inject, Injectable } from '@angular/core';
 import type { PickupAddressView } from '@lfd/contracts';
+// Par le sous-chemin sans zod, comme le reste de la boutique (budget `cloudflare`).
+import { preselectedPickupId } from '@lfd/contracts/shop-values';
 
-import { AUTH_CONFIG } from '../../auth/auth.config';
+import { ServicePoints } from '../../client/shop/pickup-points.store';
 
 /**
- * Points de retrait (laboratoires) côté **client** — lecture seule (route
- * publique). Chargés une fois, exposés en signal ; on n'en garde que le
- * **défaut**, celui présélectionné au checkout et affiché dans la section
- * adresses tant que la livraison à domicile n'existe pas. En cas d'échec réseau,
- * on garde `null` (défaut sûr : pas de point affiché plutôt qu'une erreur).
+ * Points de retrait côté **client**, pour les écrans hérités — lecture seule.
+ *
+ * Ils lisent désormais la liste de `ServicePoints` : filtrée AU SERVEUR par la
+ * clientèle de qui regarde, et relue au changement d'espace (Hugo,
+ * 2026-10-15). Il n'y a plus de point « par défaut » : on n'en garde que le
+ * point qui s'impose — le seul ouvert (`preselectedPickupId`) —, sinon `null`
+ * et l'écran fait choisir. En cas d'échec réseau, la liste reste vide.
  */
 @Injectable({ providedIn: 'root' })
 export class PickupAddressesService {
-  private readonly http = inject(HttpClient);
+  private readonly points = inject(ServicePoints);
 
-  private readonly _addresses = signal<readonly PickupAddressView[]>([]);
+  /** Les points proposés (lecture seule) — pour proposer un choix. */
+  readonly addresses = this.points.pickups;
 
-  /** Tous les points de retrait (lecture seule) — pour proposer un choix. */
-  readonly addresses = this._addresses.asReadonly();
-
-  /** Le point de retrait par défaut (renvoyé en tête par le backend), ou `null`. */
-  readonly defaultPickup = computed<PickupAddressView | null>(
-    () => this._addresses().find((a) => a.isDefault) ?? this._addresses()[0] ?? null,
-  );
+  /** Le point qui s'impose sans choix — le seul ouvert —, ou `null`. */
+  readonly preselectedPickup = computed<PickupAddressView | null>(() => {
+    const points = this.addresses();
+    const id = preselectedPickupId(points, null);
+    return points.find((point) => point.id === id) ?? null;
+  });
 
   constructor() {
-    void this.load();
-  }
-
-  private async load(): Promise<void> {
-    try {
-      this._addresses.set(
-        await firstValueFrom(
-          this.http.get<readonly PickupAddressView[]>(`${AUTH_CONFIG.apiBaseUrl}/pickup-addresses`),
-        ),
-      );
-    } catch {
-      // Points injoignables : on n'empêche pas l'app de tourner.
-    }
+    void this.points.hydrate();
   }
 }

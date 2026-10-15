@@ -119,7 +119,10 @@ async function boot(
           getById: (id: string) => Promise.resolve(id === 'parent_1' ? PRINCIPAL : fiche),
         },
       },
-      { provide: PickupAddressesService, useValue: { list: () => Promise.resolve([]) } },
+      {
+        provide: PickupAddressesService,
+        useValue: { list: () => Promise.resolve([]), listFor: () => Promise.resolve([]) },
+      },
       {
         provide: DeliveryAvailabilityService,
         useValue: {

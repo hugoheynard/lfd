@@ -106,12 +106,13 @@ const listbox = (fixture: ComponentFixture<DeparturePage>) =>
   fixture.debugElement.query(By.directive(FoldListboxComponent));
 
 describe('DeparturePage', () => {
-  it('dit « par défaut » tant que personne n’a choisi', async () => {
-    const fixture = await boot({ source: 'default', point: LABO, choices: [LABO, BOUTIQUE] });
+  it('dit « déduit » quand un seul site livre et que personne n’a choisi', async () => {
+    const fixture = await boot({ source: 'default', point: LABO, choices: [LABO] });
     const card = host(fixture).querySelector('[data-departure-point]')?.textContent ?? '';
 
     expect(card).toContain('Labo');
-    expect(card).toContain('Par défaut');
+    expect(card).toContain('le seul site qui livre');
+    expect(card).not.toContain('Par défaut');
     expect(card).toContain('12 rue du Four, 75011 Paris');
     expect(card).toContain('48.85, 2.37');
     expect(host(fixture).querySelector('[data-no-gps]')).toBeNull();
@@ -174,7 +175,42 @@ describe('DeparturePage', () => {
     expect(host(fixture).querySelector('[data-refusal]')?.textContent).toContain('n’existe plus');
   });
 
-  it('sans aucun point de retrait, le dit sans inventer d’adresse', async () => {
+  /**
+   * Hugo, 2026-10-15 : plus de site par défaut. À plusieurs sites qui livrent
+   * et sans choix, le serveur ne déduit aucun départ : l'écran demande de
+   * choisir, sans prendre le premier pour un défaut.
+   */
+  it('plusieurs sites livrent, aucun choisi : demande de choisir, sans en montrer un', async () => {
+    const fixture = await boot({ source: 'default', point: null, choices: [LABO, BOUTIQUE] });
+
+    expect(host(fixture).querySelector('[data-departure-point]')).toBeNull();
+    expect(host(fixture).querySelector('[data-departure-unchosen]')?.textContent).toContain(
+      'aucun n’est choisi',
+    );
+    expect(host(fixture).querySelector('[data-departure-empty]')).toBeNull();
+    const box = listbox(fixture).componentInstance as FoldListboxComponent<string>;
+    expect(box.options()?.map((option) => option.label)).toEqual(['Labo', 'Boutique']);
+  });
+
+  it('plusieurs sites livrent : choisir écrit le départ', async () => {
+    const fixture = await boot({ source: 'default', point: null, choices: [LABO, BOUTIQUE] });
+    wire.view = { source: 'explicit', point: BOUTIQUE, choices: [LABO, BOUTIQUE] };
+    listbox(fixture).triggerEventHandler('selectionChange', 'pa_2');
+    await settle(fixture);
+    await settle(fixture);
+
+    expect(wire.writes).toEqual([{ pickupAddressId: 'pa_2' }]);
+  });
+
+  it('plusieurs sites livrent, sans l’écriture : le dit, sans offrir de choix', async () => {
+    const fixture = await boot({ source: 'default', point: null, choices: [LABO, BOUTIQUE] }, [
+      'delivery_settings:read',
+    ]);
+    expect(host(fixture).querySelector('[data-departure-unchosen]')).not.toBeNull();
+    expect(listbox(fixture)).toBeNull();
+  });
+
+  it('sans aucun site qui livre, le dit sans inventer d’adresse', async () => {
     const fixture = await boot({ source: 'default', point: null, choices: [] });
     expect(host(fixture).querySelector('[data-departure-empty]')).not.toBeNull();
   });

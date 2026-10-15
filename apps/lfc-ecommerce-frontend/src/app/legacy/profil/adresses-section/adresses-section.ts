@@ -47,7 +47,7 @@ export class AdressesSection {
     () => !deliveryOpenTo(this.servicePoints.deliveryAvailability(), 'b2b'),
   );
   /** Le point de retrait par défaut, montré à la place de la livraison masquée. */
-  protected readonly defaultPickup = this.pickups.defaultPickup;
+  protected readonly preselectedPickup = this.pickups.preselectedPickup;
   protected readonly view = this.addresses.view;
 
   /** Contacts de l'entreprise proposés pour préremplir le contact de livraison. */

@@ -15,13 +15,5 @@
     }
 
     <lfd-address-form [value]="postal()" (valueChange)="setPostal($event)" />
-
-    <fold-checkbox
-      label="Site par défaut"
-      hint="proposé d'office au retrait, au checkout"
-      [disabled]="readOnly()"
-      [checked]="isDefault()"
-      (checkedChange)="isDefault.set($event)"
-    />
   </fold-page-section>
 </fold-card>

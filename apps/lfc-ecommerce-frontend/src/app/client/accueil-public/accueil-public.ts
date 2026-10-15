@@ -500,7 +500,7 @@ export class AccueilPublic {
   protected readonly houses = computed<readonly House[]>(() => {
     const audience = this.audience();
     const copy = this.t().pickupDialog;
-    const points = this.points.pickupsFor(audience);
+    const points = this.points.pickups();
     const best = bestPickupDiscount(points, audience);
     let flagged = false;
     return points.map((point) => {
@@ -528,7 +528,7 @@ export class AccueilPublic {
    */
   protected readonly bestLabel = computed(() => {
     const audience = this.audience();
-    const best = bestPickupDiscount(this.points.pickupsFor(audience), audience);
+    const best = bestPickupDiscount(this.points.pickups(), audience);
     return best === null ? null : fill(this.c().proof.discount, { value: discountLabel(best) });
   });
 
@@ -546,7 +546,7 @@ export class AccueilPublic {
    */
   protected readonly opensAt = computed(() => {
     const starts = this.points
-      .pickupsFor(this.audience())
+      .pickups()
       .map((point) => point.opening.publicOpening?.start ?? null)
       .filter((start): start is string => start !== null);
     if (starts.length === 0) {
@@ -557,7 +557,7 @@ export class AccueilPublic {
   });
 
   protected readonly houseCount = computed(() =>
-    fill(this.c().houses.count, { count: String(this.points.pickupsFor(this.audience()).length) }),
+    fill(this.c().houses.count, { count: String(this.points.pickups().length) }),
   );
 
   constructor() {

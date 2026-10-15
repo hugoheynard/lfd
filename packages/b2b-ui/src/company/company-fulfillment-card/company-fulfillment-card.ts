@@ -96,13 +96,15 @@ export class CompanyFulfillmentCard {
   /** La méthode retenue, ou `null` tant que rien n'est posé. */
   protected readonly method = computed<FulfillmentMethod | null>(() => this.preference().method);
 
-  /** Ce que le choix offre : suivre le défaut, puis les destinations nommées. */
+  /** Ce que le choix offre : aucune en particulier, puis les destinations nommées. */
   protected readonly options = computed(() =>
     fulfillmentDestinations({
       method: this.method(),
       pickups: this.pickups(),
       deliveries: this.deliveries(),
-      defaultLabel: this.method() === 'pickup' ? 'Celui par défaut' : 'Celle par défaut',
+      // En retrait, plus de point par défaut (2026-10-15) : sans préférence,
+      // le seul point ouvert est présélectionné, sinon le client choisit.
+      defaultLabel: this.method() === 'pickup' ? 'Aucun en particulier' : 'Celle par défaut',
     }),
   );
 

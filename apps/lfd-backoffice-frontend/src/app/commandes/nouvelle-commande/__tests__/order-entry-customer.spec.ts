@@ -1,4 +1,9 @@
-import type { CompanyMemberView, CounterCustomerView, DeliveryAddressView } from '@lfd/contracts';
+import {
+  NO_FULFILLMENT_PREFERENCE,
+  type CompanyMemberView,
+  type CounterCustomerView,
+  type DeliveryAddressView,
+} from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -47,6 +52,7 @@ function fiche(overrides: Partial<AdminCompanyFacts> = {}): AdminCompanyFacts {
     grantedTerms: ['monthly'],
     directDebitBlocked: false,
     addresses: { deliveries: [ADDRESS] },
+    fulfillmentPreference: NO_FULFILLMENT_PREFERENCE,
     ...overrides,
   };
 }
@@ -72,6 +78,9 @@ describe('customerFromCounter', () => {
       settlesOnAccount: true,
       addresses: [ADDRESS],
       buyers: counter.buyers,
+      // Le comptoir ne lit pas la préférence : la présélection retombe sur le
+      // seul point ouvert (2026-10-15).
+      preferredPickupId: null,
     });
   });
 
@@ -96,7 +105,19 @@ describe('customerFromAdminCompany', () => {
       settlesOnAccount: true,
       addresses: [ADDRESS],
       buyers: [MEMBER],
+      preferredPickupId: null,
     });
+  });
+
+  it('reprend le point de retrait préféré de la fiche — la présélection en part', () => {
+    const preferred = fiche({
+      fulfillmentPreference: {
+        ...NO_FULFILLMENT_PREFERENCE,
+        method: 'pickup',
+        pickupAddressId: 'pick_2',
+      },
+    });
+    expect(customerFromAdminCompany(preferred, []).preferredPickupId).toBe('pick_2');
   });
 
   it.each([

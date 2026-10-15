@@ -78,10 +78,14 @@ export function pickupWindows(opening: PickupOpening): readonly FulfillmentWindo
     .sort((a, b) => (a.start ?? "00:00").localeCompare(b.start ?? "00:00"));
 }
 
-/** Charge de création/édition d'un point de retrait : champs postaux + défaut +
- *  remise optionnelle (`null` = aucune remise) + heures d'ouverture. */
+/**
+ * Charge de création/édition d'un point de retrait : champs postaux + remise
+ * optionnelle (`null` = aucune remise) + heures d'ouverture.
+ *
+ * `isDefault` en est sorti le 2026-10-15 (Hugo : le site par défaut
+ * disparaît) ; un client qui l'envoie encore le voit ignoré, pas refusé.
+ */
 export const pickupAddressPayloadSchema = billingAddressPayloadSchema.extend({
-  isDefault: z.boolean().default(false),
   discount: cartAdjustmentSchema.nullable().default(null),
   discountAudiences: pickupDiscountAudiencesSchema.default(ALL_DISCOUNT_AUDIENCES),
   opening: pickupOpeningSchema.default({ publicOpening: null, proPickup: null }),
@@ -124,7 +128,7 @@ export const pickupAddressUpdatePayloadSchema = pickupAddressPayloadSchema.exten
 });
 export type PickupAddressUpdatePayload = z.infer<typeof pickupAddressUpdatePayloadSchema>;
 
-/** Un point de retrait tel que renvoyé (le défaut en tête). */
+/** Un point de retrait tel que renvoyé, par ancienneté. */
 export interface PickupAddressView {
   readonly id: string;
   readonly label: string;
@@ -133,7 +137,6 @@ export interface PickupAddressView {
   readonly codePostal: string;
   readonly ville: string;
   readonly pays: string;
-  readonly isDefault: boolean;
   /** Remise appliquée au panier en cas de retrait ici, ou `null`. */
   readonly discount: CartAdjustment | null;
   /** À qui la remise s'applique ; sans remise, sans effet. */

@@ -1,4 +1,9 @@
-import type { GpsPoint, PickupAddressPayload, PickupAddressView } from "@lfd/contracts";
+import type {
+  CustomerAudience,
+  GpsPoint,
+  PickupAddressPayload,
+  PickupAddressView,
+} from "@lfd/contracts";
 
 import type { PickupDiscount } from "./pickup-discount.js";
 
@@ -24,20 +29,26 @@ export type PickupAddressWrite = Omit<
  *
  * Un port de lecture seulement depuis le lot S1 : l'écriture est celle de
  * l'agrégat `Site` (`b2b/sites/`), qui porte désormais les invariants que ce
- * repository tenait (un seul défaut, au moins un point). Un site archivé, ou
- * qui ne remet pas, n'est ni listé ni résolu : il ne se choisit plus.
+ * repository tenait. Un site archivé, ou qui ne remet pas, n'est ni listé ni
+ * résolu : il ne se choisit plus. Il n'y a plus de point « par défaut »
+ * (Hugo, 2026-10-15) : la présélection se décide par client
+ * (`preselectedPickupId`).
  *
  * Le nom reste celui d'août : checkout, remise, heures limites et abonnements
  * le lisent, et ce lot ne les renomme pas.
  */
 export abstract class PickupAddressRepository {
-  /** Les points proposés, le **défaut en tête**. */
-  abstract list(): Promise<readonly PickupAddressView[]>;
+  /**
+   * Les points proposés, par ancienneté — à **cette clientèle** seulement
+   * (filtré en base : un choix commercial, Hugo 2026-10-15), ou à toutes avec
+   * `null` (l'équipe, qui voit tous les comptoirs).
+   */
+  abstract list(audience: CustomerAudience | null): Promise<readonly PickupAddressView[]>;
 
   /**
-   * Le point **choisi** (`id`) ou, si `id` est `null`, le point **par défaut** ;
-   * `null` si aucun point proposé ne correspond. Sert à figer le snapshot
-   * d'une commande retrait.
+   * Le point proposé d'identifiant `id`, quelle que soit sa clientèle ; `null`
+   * s'il n'existe pas, est archivé ou ne remet pas. Le refus par clientèle est
+   * celui de la caisse (`CartAdjustments.forPickup`), qui le nomme.
    */
-  abstract resolve(id: string | null): Promise<PickupAddressView | null>;
+  abstract resolve(id: string): Promise<PickupAddressView | null>;
 }

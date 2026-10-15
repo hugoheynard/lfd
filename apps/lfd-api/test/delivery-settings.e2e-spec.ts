@@ -109,7 +109,6 @@ async function addPoint(label: string, extra: Record<string, unknown> = {}): Pro
       codePostal: "73000",
       ville: "Chambéry",
       pays: "France",
-      isDefault: false,
       ...extra,
     })
     .expect(201);
@@ -203,7 +202,22 @@ describe("la flotte", () => {
 });
 
 describe("le point de départ", () => {
-  it("part du point par défaut, puis du point choisi, auteur figé et fait au journal", async () => {
+  it("un seul site qui livre : le départ en est déduit, sans choix enregistré", async () => {
+    const labo = await addPoint("Laboratoire", { gps: { lat: 45.57, lng: 5.92 } });
+    await addPoint("Boutique");
+    await deliverFrom(labo, { lat: 45.57, lng: 5.92 });
+
+    const view = await departure();
+    expect(view.source).toBe("default");
+    expect(view.point).toMatchObject({ pickupAddressId: labo, gps: { lat: 45.57, lng: 5.92 } });
+  });
+
+  /**
+   * Hugo, 2026-10-15 : il n'y a plus de site par défaut. À plusieurs sites qui
+   * livrent, aucun départ n'est déduit tant que personne n'a choisi ; puis
+   * le choix fait foi, auteur figé et fait au journal.
+   */
+  it("plusieurs sites qui livrent : aucun départ avant le choix, puis le point choisi", async () => {
     const labo = await addPoint("Laboratoire", { gps: { lat: 45.57, lng: 5.92 } });
     const boutique = await addPoint("Boutique");
     await deliverFrom(labo, { lat: 45.57, lng: 5.92 });
@@ -211,7 +225,7 @@ describe("le point de départ", () => {
 
     const before = await departure();
     expect(before.source).toBe("default");
-    expect(before.point).toMatchObject({ pickupAddressId: labo, gps: { lat: 45.57, lng: 5.92 } });
+    expect(before.point).toBeNull();
     expect(before.choices.map((choice) => choice.pickupAddressId)).toEqual([labo, boutique]);
 
     await admin().put(DEPARTURE).send({ pickupAddressId: boutique }).expect(204);
@@ -290,7 +304,6 @@ describe("le point GPS d'un point de retrait", () => {
       codePostal: "73000",
       ville: "Chambéry",
       pays: "France",
-      isDefault: true,
     };
     const gpsOf = async (): Promise<unknown> =>
       jsonBody<readonly PickupAddressView[]>(

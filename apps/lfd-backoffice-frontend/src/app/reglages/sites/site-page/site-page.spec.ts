@@ -39,7 +39,6 @@ const LABO: SiteView = {
   codePostal: '75011',
   ville: 'Paris',
   pays: 'France',
-  isDefault: true,
   discount: { mode: 'amount', cents: 800 },
   discountAudiences: { b2b: true, b2c: false },
   opening: { publicOpening: null, proPickup: null },
@@ -57,8 +56,8 @@ const LABO: SiteView = {
   isDeparture: false,
 };
 
-/** Un second site, ni défaut ni départ : c'est lui qui s'archive. */
-const VILLAGE: SiteView = { ...LABO, id: 'pick_2', label: 'Village', isDefault: false };
+/** Un second site, qui ne livre pas : c'est lui qui s'archive. */
+const VILLAGE: SiteView = { ...LABO, id: 'pick_2', label: 'Village' };
 
 const NO_SCHEDULE: PublicPickupScheduleView = { rules: [], closures: [] };
 
@@ -382,8 +381,9 @@ describe('SitePage — les refus', () => {
 
 /**
  * **Archiver un site** — il n'y a plus de suppression (plan des sites, §3.1).
- * Le serveur refuse le défaut et le site d'où partent les livraisons ; la zone
- * le dit plutôt que d'offrir un geste refusé.
+ * Le serveur refuse le site d'où partent les livraisons ; la zone le dit plutôt
+ * que d'offrir un geste refusé. Le refus du « site par défaut » est parti avec
+ * lui (Hugo, 2026-10-15).
  */
 describe('SitePage — la zone dangereuse', () => {
   const zone = (fixture: ComponentFixture<SitePage>): HTMLElement | null =>
@@ -418,14 +418,19 @@ describe('SitePage — la zone dangereuse', () => {
     expect(navigate).toHaveBeenCalledWith([SITES_PATH]);
   });
 
-  it('🔴 le site par défaut : la zone explique, et rien ne part', async () => {
-    const { fixture, pickups } = await mount('pick_1');
+  it('le premier site créé s’archive comme un autre : il n’y a plus de défaut', async () => {
+    const { fixture } = await mount('pick_1');
 
-    expect(fixture.componentInstance['deleteAction']()).toBeUndefined();
-    expect(zone(fixture)?.textContent).toContain('site par défaut');
+    expect(fixture.componentInstance['deleteAction']()).toBe('Archiver ce site');
+    expect(zone(fixture)?.textContent).not.toContain('par défaut');
+  });
 
-    await fixture.componentInstance['archive']();
-    expect(pickups.archived).toEqual([]);
+  it('n’affiche plus de badge ni de case « par défaut »', async () => {
+    const { fixture } = await mount('pick_1');
+    const text: string = fixture.nativeElement.textContent;
+
+    expect(text).not.toContain('Par défaut');
+    expect(text).not.toContain('Site par défaut');
   });
 
   it('🔴 le site d’où partent les livraisons : la zone explique, et rien ne part', async () => {

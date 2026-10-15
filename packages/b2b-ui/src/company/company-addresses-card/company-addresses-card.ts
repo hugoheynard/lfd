@@ -86,9 +86,10 @@ export class CompanyAddressesCard {
    */
   readonly showDeliveries = input(true);
   /**
-   * Le **point de retrait** par défaut (laboratoire), ou `null` si aucun n'est
-   * configuré. Affichage en lecture seule — la gestion des points vit côté staff
-   * (Réglages → Retraits & livraisons), jamais ici.
+   * Le **point de retrait présélectionné** pour ce client (`preselectedPickupId`
+   * — son préféré, sinon le seul ouvert, 2026-10-15), ou `null` si aucun ne
+   * s'impose. Lecture seule — les points se règlent côté staff (Réglages ›
+   * Sites), jamais ici.
    */
   readonly pickup = input<PickupAddressView | null>(null);
   /**

@@ -6,7 +6,6 @@ import { ListPublicPickupSlotsHandler } from "./application/list-public-pickup-s
 import { SavePublicPickupScheduleHandler } from "./application/save-public-pickup-schedule.handler.js";
 import { CreatePickupAddressHandler } from "./application/create-pickup-address.handler.js";
 import { RemovePickupAddressHandler } from "./application/remove-pickup-address.handler.js";
-import { SetDefaultPickupAddressHandler } from "./application/set-default-pickup-address.handler.js";
 import { UpdatePickupAddressHandler } from "./application/update-pickup-address.handler.js";
 import { PickupAddressRepository } from "./domain/pickup-address.repository.js";
 import { PickupScheduleRepository } from "./domain/pickup-schedule.repository.js";
@@ -37,7 +36,6 @@ import { SitesModule } from "../sites/sites.module.js";
     CreatePickupAddressHandler,
     UpdatePickupAddressHandler,
     RemovePickupAddressHandler,
-    SetDefaultPickupAddressHandler,
     SavePublicPickupScheduleHandler,
     GetPublicPickupScheduleHandler,
     // La surface PUBLIQUE des créneaux : elle ne sert que des heures, jamais

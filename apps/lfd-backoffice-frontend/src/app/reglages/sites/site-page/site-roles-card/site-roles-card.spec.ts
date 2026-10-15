@@ -20,7 +20,6 @@ const SITE: SiteView = {
   codePostal: '73000',
   ville: 'Val',
   pays: 'France',
-  isDefault: false,
   discount: null,
   discountAudiences: { b2b: true, b2c: true },
   opening: { publicOpening: null, proPickup: null },

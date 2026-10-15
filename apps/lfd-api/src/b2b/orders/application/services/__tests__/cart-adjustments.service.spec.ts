@@ -3,8 +3,11 @@ import {
   type DeliveryAvailabilityView,
   type DeliveryZoneView,
   type PickupAddressView,
+  type CustomerAudience,
   type PickupDiscountAudiences,
+  PICKUP_CHOICE_REQUIRED,
   PICKUP_CLOSED_FOR_AUDIENCE,
+  pickupOpenTo,
 } from "@lfd/contracts";
 
 import { DeliveryAvailabilityReader } from "../../../../delivery-availability/domain/ports/delivery-availability.reader.js";
@@ -14,7 +17,10 @@ import {
   DeliveryClosedForAudienceError,
   NoDeliveryZoneForPostalCodeError,
   PickupClosedForAudienceError,
+  PickupNotConfiguredError,
 } from "../../../domain/errors/order-errors.js";
+import { PickupChoiceRequiredError } from "../../../domain/errors/pickup-choice-errors.js";
+import { PreferredPickupReader } from "../../../domain/ports/preferred-pickup.reader.js";
 import { CartAdjustments } from "../cart-adjustments.service.js";
 
 function point(audiences: PickupDiscountAudiences): PickupAddressView {
@@ -26,7 +32,6 @@ function point(audiences: PickupDiscountAudiences): PickupAddressView {
     codePostal: "75002",
     ville: "Paris",
     pays: "France",
-    isDefault: true,
     discount: { mode: "percent", bp: 1_000 },
     discountAudiences: audiences,
     opening: { publicOpening: null, proPickup: null },
@@ -40,27 +45,42 @@ const TARENTAISE: DeliveryZoneView = {
   fee: { mode: "amount", cents: 2_000 },
 };
 
-class OnePoint extends PickupAddressRepository {
-  constructor(private readonly resolved: PickupAddressView) {
+/**
+ * Les points en base. `list` filtre par clientèle comme le `where` de
+ * l'adaptateur ; `resolve` rend le point quelle que soit sa clientèle.
+ */
+class Points extends PickupAddressRepository {
+  private readonly points: readonly PickupAddressView[];
+  constructor(...points: readonly PickupAddressView[]) {
+    super();
+    this.points = points;
+  }
+  list(audience: CustomerAudience | null): Promise<readonly PickupAddressView[]> {
+    return Promise.resolve(
+      this.points.filter((p) => audience === null || pickupOpenTo(p, audience)),
+    );
+  }
+  resolve(id: string): Promise<PickupAddressView | null> {
+    return Promise.resolve(this.points.find((p) => p.id === id) ?? null);
+  }
+}
+
+/** Un point unique : l'existant de toutes les suites d'avant le 2026-10-15. */
+class OnePoint extends Points {
+  constructor(resolved: PickupAddressView) {
+    super(resolved);
+  }
+}
+
+/** Le point préféré des sociétés — par société, lu seulement pour un retrait sans choix. */
+class Preferences extends PreferredPickupReader {
+  readonly asked: string[] = [];
+  constructor(private readonly byCompany: Readonly<Record<string, string>> = {}) {
     super();
   }
-  list(): Promise<readonly PickupAddressView[]> {
-    return Promise.resolve([this.resolved]);
-  }
-  resolve(): Promise<PickupAddressView | null> {
-    return Promise.resolve(this.resolved);
-  }
-  create(): Promise<string> {
-    return Promise.reject(new Error("non utilisé"));
-  }
-  update(): Promise<void> {
-    return Promise.reject(new Error("non utilisé"));
-  }
-  remove(): Promise<void> {
-    return Promise.reject(new Error("non utilisé"));
-  }
-  setDefault(): Promise<void> {
-    return Promise.reject(new Error("non utilisé"));
+  preferredPickupOf(companyId: string): Promise<string | null> {
+    this.asked.push(companyId);
+    return Promise.resolve(this.byCompany[companyId] ?? null);
   }
 }
 
@@ -105,9 +125,10 @@ describe("CartAdjustments — la remise du point, par clientèle", () => {
       new OnePoint(point({ b2b: true, b2c: false })),
       new OneZone(),
       OPEN,
+      new Preferences(),
     );
 
-    const resolved = await adjustments.forPickup("pickup_1", 5_000, "b2b");
+    const resolved = await adjustments.forPickup("pickup_1", 5_000, "b2b", null);
 
     expect(resolved.discountCents).toBe(500);
     expect(resolved.discountAdjustment).toEqual({ mode: "percent", bp: 1_000 });
@@ -119,9 +140,10 @@ describe("CartAdjustments — la remise du point, par clientèle", () => {
       new OnePoint(point({ b2b: true, b2c: false })),
       new OneZone(),
       OPEN,
+      new Preferences(),
     );
 
-    const resolved = await adjustments.forPickup("pickup_1", 5_000, "b2c");
+    const resolved = await adjustments.forPickup("pickup_1", 5_000, "b2c", null);
 
     expect(resolved.discountCents).toBe(0);
     expect(resolved.discountAdjustment).toBeNull();
@@ -134,9 +156,10 @@ describe("CartAdjustments — la remise du point, par clientèle", () => {
       new OnePoint(point({ b2b: false, b2c: true })),
       new OneZone(),
       OPEN,
+      new Preferences(),
     );
 
-    expect((await adjustments.forPickup(null, 5_000, "b2b")).discountCents).toBe(0);
+    expect((await adjustments.forPickup(null, 5_000, "b2b", null)).discountCents).toBe(0);
   });
 });
 
@@ -147,11 +170,12 @@ describe("CartAdjustments — le retrait, par clientèle du site", () => {
       new OnePoint({ ...point({ b2b: true, b2c: true }), pickupAudiences }),
       new OneZone(),
       OPEN,
+      new Preferences(),
     );
   }
 
   it("refuse un pro sur un site réservé aux particuliers, en nommant le site et le geste", async () => {
-    const refusal = reserved({ b2b: false, b2c: true }).forPickup("pickup_1", 5_000, "b2b");
+    const refusal = reserved({ b2b: false, b2c: true }).forPickup("pickup_1", 5_000, "b2b", null);
 
     await expect(refusal).rejects.toBeInstanceOf(PickupClosedForAudienceError);
     await expect(refusal).rejects.toMatchObject({ code: PICKUP_CLOSED_FOR_AUDIENCE });
@@ -161,13 +185,18 @@ describe("CartAdjustments — le retrait, par clientèle du site", () => {
   });
 
   it("refuse un particulier sur un site réservé aux pros", async () => {
-    await expect(reserved({ b2b: true, b2c: false }).forPickup(null, 5_000, "b2c")).rejects.toThrow(
-      /aux particuliers/u,
-    );
+    await expect(
+      reserved({ b2b: true, b2c: false }).forPickup("pickup_1", 5_000, "b2c", null),
+    ).rejects.toThrow(/aux particuliers/u);
   });
 
   it("sert la clientèle à qui le site est ouvert", async () => {
-    const resolved = await reserved({ b2b: true, b2c: false }).forPickup("pickup_1", 5_000, "b2b");
+    const resolved = await reserved({ b2b: true, b2c: false }).forPickup(
+      "pickup_1",
+      5_000,
+      "b2b",
+      null,
+    );
     expect(resolved.point.id).toBe("pickup_1");
   });
 
@@ -176,9 +205,80 @@ describe("CartAdjustments — le retrait, par clientèle du site", () => {
       new OnePoint(point({ b2b: true, b2c: true })),
       new OneZone(),
       OPEN,
+      new Preferences(),
     );
-    await expect(adjustments.forPickup(null, 5_000, "b2b")).resolves.toBeDefined();
-    await expect(adjustments.forPickup(null, 5_000, "b2c")).resolves.toBeDefined();
+    await expect(adjustments.forPickup(null, 5_000, "b2b", null)).resolves.toBeDefined();
+    await expect(adjustments.forPickup(null, 5_000, "b2c", null)).resolves.toBeDefined();
+  });
+});
+
+/**
+ * Hugo, 2026-10-15 : le « site par défaut » a disparu. Un retrait SANS point
+ * choisi suit la règle de la boutique (`preselectedPickupId`) — le préféré
+ * s'il est ouvert, sinon le seul ouvert, sinon un refus qui demande de choisir.
+ */
+describe("CartAdjustments — un retrait sans point choisi", () => {
+  const LABO = { ...point({ b2b: true, b2c: true }), id: "pickup_labo", label: "Labo" };
+  const VILLAGE = { ...point({ b2b: true, b2c: true }), id: "pickup_village", label: "Village" };
+  const PROS_ONLY = { ...VILLAGE, pickupAudiences: { b2b: true, b2c: false } };
+
+  function adjustments(points: Points, preferences = new Preferences()): CartAdjustments {
+    return new CartAdjustments(points, new OneZone(), OPEN, preferences);
+  }
+
+  it("retient le point préféré de la société quand il lui est ouvert", async () => {
+    const preferences = new Preferences({ co_1: "pickup_village" });
+    const resolved = await adjustments(new Points(LABO, VILLAGE), preferences).forPickup(
+      null,
+      5_000,
+      "b2b",
+      "co_1",
+    );
+    expect(resolved.point.id).toBe("pickup_village");
+    expect(preferences.asked).toEqual(["co_1"]);
+  });
+
+  it("retient le seul point ouvert à la clientèle, sans préférence", async () => {
+    const resolved = await adjustments(new Points(LABO, PROS_ONLY)).forPickup(
+      null,
+      5_000,
+      "b2c",
+      null,
+    );
+    expect(resolved.point.id).toBe("pickup_labo");
+  });
+
+  it("ignore un point préféré fermé à la clientèle, et retombe sur le seul ouvert", async () => {
+    const preferences = new Preferences({ co_1: "pickup_village" });
+    const resolved = await adjustments(new Points(LABO, PROS_ONLY), preferences).forPickup(
+      null,
+      5_000,
+      "b2c",
+      "co_1",
+    );
+    expect(resolved.point.id).toBe("pickup_labo");
+  });
+
+  it("refuse de choisir à la place du client quand plusieurs points sont ouverts", async () => {
+    const refusal = adjustments(new Points(LABO, VILLAGE)).forPickup(null, 5_000, "b2b", null);
+
+    await expect(refusal).rejects.toBeInstanceOf(PickupChoiceRequiredError);
+    await expect(refusal).rejects.toMatchObject({ code: PICKUP_CHOICE_REQUIRED });
+    await expect(refusal).rejects.toThrow(/2 points de retrait.*choisissez/u);
+  });
+
+  it("refuse comme « non configuré » quand aucun point n'est ouvert à la clientèle", async () => {
+    await expect(
+      adjustments(new Points(PROS_ONLY)).forPickup(null, 5_000, "b2c", null),
+    ).rejects.toBeInstanceOf(PickupNotConfiguredError);
+  });
+
+  it("ne lit pas la préférence d'un visiteur ni quand un point est choisi", async () => {
+    const preferences = new Preferences();
+    const subject = adjustments(new Points(LABO, VILLAGE), preferences);
+    await subject.forPickup("pickup_village", 5_000, "b2b", "co_1");
+    await subject.forPickup(null, 5_000, "b2c", null).catch(() => undefined);
+    expect(preferences.asked).toEqual([]);
   });
 });
 
@@ -188,6 +288,7 @@ describe("CartAdjustments — la livraison, par clientèle", () => {
       new OnePoint(point({ b2b: true, b2c: true })),
       new OneZone(),
       OPEN,
+      new Preferences(),
     );
 
     const resolved = await adjustments.forDelivery("73150", 5_000, "b2c");
@@ -202,6 +303,7 @@ describe("CartAdjustments — la livraison, par clientèle", () => {
       new OnePoint(point({ b2b: true, b2c: true })),
       zones,
       closedToB2c,
+      new Preferences(),
     );
 
     // Même vers un code postal non desservi : la raison du refus est la
@@ -218,6 +320,7 @@ describe("CartAdjustments — la livraison, par clientèle", () => {
       new OnePoint(point({ b2b: true, b2c: true })),
       new OneZone(),
       closedToB2c,
+      new Preferences(),
     );
 
     expect((await adjustments.forDelivery("73150", 5_000, "b2b")).feeCents).toBe(2_000);

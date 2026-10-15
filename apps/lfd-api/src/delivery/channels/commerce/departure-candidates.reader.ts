@@ -1,13 +1,11 @@
 import type { BillingAddressPayload, GpsPoint } from "@lfd/contracts";
 
-/** Un point de retrait, tel que la livraison a besoin de le connaître. */
+/** Un site qui livre, tel que la livraison a besoin de le connaître. */
 export interface DepartureCandidate {
   readonly pickupAddressId: string;
   readonly label: string;
   readonly address: BillingAddressPayload;
   readonly gps: GpsPoint | null;
-  /** Le point par défaut du commerce — le départ tant que personne n'a choisi. */
-  readonly isDefault: boolean;
 }
 
 /**
@@ -20,6 +18,6 @@ export interface DepartureCandidate {
  * déménagement (plan, Q9).
  */
 export abstract class DepartureCandidatesReader {
-  /** Tous les points de retrait, le défaut en tête. */
+  /** Les sites actifs qui livrent, par ancienneté. */
   abstract list(): Promise<readonly DepartureCandidate[]>;
 }

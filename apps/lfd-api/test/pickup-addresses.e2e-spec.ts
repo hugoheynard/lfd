@@ -1,8 +1,8 @@
 /**
  * E2E des **points de retrait** (globaux) : lecture publique + gestion staff
- * (ajouter / défaut / supprimer — qui archive depuis le lot S1 des sites).
- * Éprouve les invariants de l'agrégat `Site` : un seul défaut, au moins un
- * point (le défaut ne s'archive pas).
+ * (ajouter / supprimer — qui archive depuis le lot S1 des sites). Le site par
+ * défaut a disparu le 2026-10-15 (Hugo) : plus de geste « défaut », plus de
+ * point en tête.
  */
 import type { CreatedPickupResponse, PickupAddressView } from "@lfd/contracts";
 
@@ -41,7 +41,6 @@ const point = (label: string): Record<string, unknown> => ({
   codePostal: "75001",
   ville: "Paris",
   pays: "France",
-  isDefault: false,
 });
 
 async function create(label: string): Promise<string> {
@@ -55,30 +54,26 @@ async function list(): Promise<readonly PickupAddressView[]> {
 }
 
 describe("points de retrait", () => {
-  it("le premier point créé devient le défaut", async () => {
-    await create("Labo Paris");
-    const points = await list();
-    expect(points).toHaveLength(1);
-    expect(points[0]?.isDefault).toBe(true);
-  });
-
-  it("un seul défaut à la fois ; le défaut remonte en tête", async () => {
+  it("sert les points par ancienneté, sans aucun rang de défaut", async () => {
     const first = await create("Labo Paris");
     const second = await create("Labo Lyon");
 
-    await staff().patch(`/admin/pickup-addresses/${second}/default`).expect(204);
-
     const points = await list();
-    expect(points[0]?.id).toBe(second);
-    expect(points.filter((p) => p.isDefault)).toHaveLength(1);
-    expect(points.find((p) => p.id === first)?.isDefault).toBe(false);
+    expect(points.map((p) => p.id)).toEqual([first, second]);
+    expect(points.every((p) => !("isDefault" in p))).toBe(true);
+  });
+
+  /** Le geste a quitté l'API (Hugo, 2026-10-15 — pré-release, contrat cassable). */
+  it("ne sert plus la route « définir par défaut »", async () => {
+    const id = await create("Labo Paris");
+    await staff().patch(`/admin/pickup-addresses/${id}/default`).expect(404);
+    await staff().patch(`/admin/sites/${id}/default`).expect(404);
   });
 
   /**
    * Depuis le lot S1 des sites (2026-10-13), « supprimer » ARCHIVE : la ligne
    * reste (commandes, abonnements et départ la référencent), le point quitte
-   * la liste publique. Le défaut ne s'archive plus — il ne « promeut » donc
-   * plus personne : on désigne d'abord un autre défaut.
+   * la liste publique.
    */
   it("supprimer un point l'archive : il quitte la liste publique, la ligne reste", async () => {
     await create("Labo Paris");
@@ -91,21 +86,14 @@ describe("points de retrait", () => {
     expect(row.archivedAt).not.toBeNull();
   });
 
-  it("refuse de supprimer le défaut (409), et le dernier point avec lui", async () => {
+  /** Sans défaut, plus rien ne retient le premier point ni le dernier. */
+  it("archive le premier point créé comme un autre", async () => {
     const first = await create("Labo Paris");
     await create("Labo Lyon");
 
-    const response = await staff().delete(`/admin/pickup-addresses/${first}`);
+    await staff().delete(`/admin/pickup-addresses/${first}`).expect(204);
 
-    expect(response.status).toBe(409);
-    expect(await list()).toHaveLength(2);
-  });
-
-  it("refuse de supprimer le dernier point (409)", async () => {
-    const only = await create("Labo Paris");
-    const response = await staff().delete(`/admin/pickup-addresses/${only}`);
-    expect(response.status).toBe(409);
-    expect(await list()).toHaveLength(1);
+    expect((await list()).map((p) => p.label)).toEqual(["Labo Lyon"]);
   });
 });
 

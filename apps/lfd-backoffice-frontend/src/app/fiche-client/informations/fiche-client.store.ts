@@ -2,6 +2,7 @@ import { computed, inject, Injectable, signal } from '@angular/core';
 import {
   DEFAULT_DELIVERY_AVAILABILITY,
   deliveryOpenTo,
+  preselectedPickupId,
   type BillingAddressView,
   type CompanyStatus,
   type DeliveryAddressView,
@@ -48,16 +49,27 @@ export class FicheClientStore {
 
   readonly state = signal<LoadState>('loading');
   readonly company = signal<AdminCompanyDetail | null>(null);
-  /** Les points de retrait de la plateforme (le défaut en tête). */
+  /**
+   * Les points de retrait que CE client peut choisir — ceux de sa clientèle,
+   * filtrés au serveur (2026-10-15) ; tous, à l'ouverture d'un compte.
+   */
   readonly pickups = signal<readonly PickupAddressView[]>([]);
 
   /** Mode **ouverture** : la société n'existe pas encore. */
   readonly draft = computed(() => this.companyId() === null);
 
-  /** Le point par défaut, reflété quand la livraison est masquée. */
-  readonly defaultPickup = computed(
-    () => this.pickups().find((point) => point.isDefault) ?? this.pickups()[0] ?? null,
-  );
+  /**
+   * Le point présélectionné pour ce client, reflété quand la livraison est
+   * masquée : son préféré, sinon le seul ouvert, sinon aucun — la règle de la
+   * boutique et de la caisse (`preselectedPickupId`). Il n'y a plus de point
+   * par défaut (Hugo, 2026-10-15).
+   */
+  readonly preselectedPickup = computed(() => {
+    const points = this.pickups();
+    const preferred = this.company()?.fulfillmentPreference.pickupAddressId ?? null;
+    const id = preselectedPickupId(points, preferred);
+    return points.find((point) => point.id === id) ?? null;
+  });
 
   /**
    * Le KBIS est-il **exigé** pour activer ce compte ? La carte d'identité ne
@@ -173,7 +185,9 @@ export class FicheClientStore {
     try {
       const [company, pickups, deliveryAvailability] = await Promise.all([
         id === null ? Promise.resolve(undefined) : this.service.getById(id),
-        this.pickupsService.list().catch(() => [] as readonly PickupAddressView[]),
+        (id === null ? this.pickupsService.list() : this.pickupsService.listFor(id)).catch(
+          () => [] as readonly PickupAddressView[],
+        ),
         // Illisible = le défaut du contrat, ouverte aux deux : c'est ce que vaut
         // le réglage tant que personne ne l'a posé, et ce qu'un front servi
         // avant l'API doit supposer (plan, §4). Le serveur refuse de toute

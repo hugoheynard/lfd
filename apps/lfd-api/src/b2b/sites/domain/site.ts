@@ -4,8 +4,6 @@ import type { PickupDiscount } from "../../pickup-addresses/domain/pickup-discou
 import type { SiteColor } from "./site-color.js";
 import {
   ArchivedSiteError,
-  DefaultSiteArchiveError,
-  DefaultSiteMustHandOverError,
   DepartureSiteMustDeliverError,
   DeliveryDepartureSiteArchiveError,
   SiteCounterSetupError,
@@ -68,7 +66,6 @@ export interface SiteColors {
 export interface SiteState {
   readonly id: string;
   readonly place: SitePlace;
-  readonly isDefault: boolean;
   readonly roles: SiteRoles;
   readonly colors: SiteColors;
   readonly archivedAt: Date | null;
@@ -118,7 +115,7 @@ function checkRoles(roles: SiteRoles): void {
  *
  * Il porte les règles qui peuvent refuser une écriture : la cohérence des
  * rôles, le point GPS d'un site qui expédie, et l'archivage qui
- * remplace la suppression — refusé au site par défaut et à celui qui expédie.
+ * remplace la suppression — refusé à celui qui expédie.
  *
  * Les couleurs sont **tolérées absentes** (objection B1) : les lignes
  * antérieures n'en ont pas, et `rehydrate` doit les relire.
@@ -132,11 +129,10 @@ function checkRoles(roles: SiteRoles): void {
  * Une ligne déjà incohérente se relit donc, se renomme, change ses autres
  * rôles ; elle ne fait que refuser ce qui l'aggraverait. L'écran la signale.
  *
- * Le défaut REMET toujours : c'est le site préselectionné au checkout.
- *
- * « Un seul défaut » regarde l'ensemble des sites : le handler démet l'ancien
- * défaut ({@link relinquishDefault}) quand il en désigne un nouveau. « Au moins
- * un site » en découle : le défaut ne s'archive pas.
+ * **Il n'y a plus de site par défaut** (Hugo, 2026-10-15) : la présélection
+ * du retrait se décide par client (`preselectedPickupId`, contrats) et le
+ * départ des tournées est un réglage de la livraison. La colonne `is_default`
+ * reste en base, ni lue ni écrite.
  *
  * ⚠️ Ne tient PAS encore « on ne retire pas `deliveryDeparture` au site de départ des
  * tournées » : le plan fait déclarer ce port par le commerce et l'implémenter
@@ -147,11 +143,10 @@ export class Site {
   private constructor(private state: SiteState) {}
 
   /** Un site neuf : il remet, est approvisionné sur place, n'expédie pas, sans couleur. */
-  static declare(id: string, place: SitePlace, isDefault: boolean): Site {
+  static declare(id: string, place: SitePlace): Site {
     return new Site({
       id,
       place,
-      isDefault,
       roles: NEW_SITE_ROLES,
       colors: NO_COLORS,
       archivedAt: null,
@@ -170,10 +165,6 @@ export class Site {
 
   get label(): string {
     return this.state.place.label;
-  }
-
-  get isDefault(): boolean {
-    return this.state.isDefault;
   }
 
   get isArchived(): boolean {
@@ -199,23 +190,6 @@ export class Site {
   }
 
   /**
-   * @throws {ArchivedSiteError} un site archivé ne devient pas le défaut.
-   * @throws {DefaultSiteMustHandOverError} le défaut est proposé au checkout.
-   */
-  makeDefault(): void {
-    this.assertActive();
-    if (!this.state.roles.pickup) {
-      throw new DefaultSiteMustHandOverError(this.label);
-    }
-    this.state = { ...this.state, isDefault: true };
-  }
-
-  /** Cède le rang de défaut à un autre site, que le handler vient de désigner. */
-  relinquishDefault(): void {
-    this.state = { ...this.state, isDefault: false };
-  }
-
-  /**
    * Les rôles, et le point GPS qui se saisit avec eux (Hugo, 2026-10-13) —
    * `undefined` le laisse tel quel, `null` l'efface. `isDeparture` est un fait
    * que la livraison détient (`DepartureSiteReader`) : le handler le lit.
@@ -225,7 +199,6 @@ export class Site {
    * @throws {SiteDeliveryDepartureFromTransferError}
    * @throws {SiteCounterSetupError}
    * @throws {SitePickupWithoutAudienceError} « Retrait » coché sans aucune clientèle.
-   * @throws {DefaultSiteMustHandOverError} le défaut cesserait de remettre.
    * @throws {SiteDeliveryDepartureWithoutGpsError} « Livraison » cochée sans point, ou point effacé.
    * @throws {SiteTransferWithoutGpsError} « par transfert » sans point, ou point effacé.
    * @throws {DepartureSiteMustDeliverError} « Livraison » retirée au départ des tournées.
@@ -235,9 +208,6 @@ export class Site {
     checkRoles(roles);
     if (isDeparture && !roles.deliveryDeparture) {
       throw new DepartureSiteMustDeliverError(this.label);
-    }
-    if (this.state.isDefault && !roles.pickup) {
-      throw new DefaultSiteMustHandOverError(this.label);
     }
     const before = this.state.place.gps;
     const after = gps === undefined ? before : gps;
@@ -261,14 +231,10 @@ export class Site {
    * Archive le site : il n'est plus proposé, mais se résout toujours par id.
    *
    * @throws {ArchivedSiteError} il l'est déjà.
-   * @throws {DefaultSiteArchiveError} c'est le site par défaut.
    * @throws {DeliveryDepartureSiteArchiveError} les livraisons en partent.
    */
   archive(at: Date): void {
     this.assertActive();
-    if (this.state.isDefault) {
-      throw new DefaultSiteArchiveError(this.label);
-    }
     if (this.state.roles.deliveryDeparture) {
       throw new DeliveryDepartureSiteArchiveError(this.label);
     }

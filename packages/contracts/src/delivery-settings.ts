@@ -189,13 +189,15 @@ export type DeparturePayload = z.infer<typeof departurePayloadSchema>;
  */
 export interface DepartureView {
   /**
-   * `explicit` = choisi dans les réglages ; `default` = personne n'a encore
-   * choisi, c'est le point de retrait par défaut. `null` quand aucun point de
-   * retrait n'existe — l'écran le dit, il n'invente pas d'adresse.
+   * `explicit` = choisi dans les réglages ; `default` = aucun choix valable,
+   * et le départ n'est DÉDUIT que s'il n'y a qu'un site qui livre (il n'y a
+   * plus de site par défaut, 2026-10-15). `point` est `null` sans candidat,
+   * ou avec plusieurs et aucun choix — l'écran demande alors de choisir ; il
+   * n'invente pas d'adresse.
    */
   readonly source: "explicit" | "default";
   readonly point: DeparturePointView | null;
-  /** Les points de retrait parmi lesquels choisir. */
+  /** Les sites qui livrent, parmi lesquels choisir. */
   readonly choices: readonly DeparturePointView[];
 }
 

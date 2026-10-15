@@ -129,9 +129,11 @@ function pickupDiscountOf(
   if (fulfillment?.method !== 'pickup') {
     return null;
   }
-  const point =
-    DEMO_PICKUP_ADDRESSES.find((candidate) => candidate.id === fulfillment.pickupAddressId) ??
-    DEMO_PICKUP_ADDRESSES.find((candidate) => candidate.isDefault);
+  // Sans point choisi, la caisse retient le seul point ouvert, ou refuse
+  // (plus de point par défaut, 2026-10-15) : la démo, qui en a deux, n'en retient aucun.
+  const point = DEMO_PICKUP_ADDRESSES.find(
+    (candidate) => candidate.id === fulfillment.pickupAddressId,
+  );
   return point?.discount?.mode === 'percent' ? point.discount : null;
 }
 

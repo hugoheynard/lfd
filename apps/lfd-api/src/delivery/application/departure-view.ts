@@ -3,19 +3,19 @@ import type { DepartureView, DeparturePointView } from "@lfd/contracts";
 import type { DepartureCandidate } from "../channels/commerce/index.js";
 
 /**
- * **D'où partent les tournées**, déduit du choix enregistré et des points de
- * retrait tels que le commerce les sert aujourd'hui.
+ * **D'où partent les tournées** — un réglage de la livraison (Réglages ›
+ * Livraison › Départ), déduit du choix enregistré et des sites candidats (les
+ * sites actifs qui livrent) tels que le commerce les sert aujourd'hui.
  *
- * - un choix qui désigne un point existant → `explicit` ;
- * - aucun choix → `default`, le point par défaut du commerce ;
- * - 🔴 **un choix dont le point a disparu** (supprimé côté commerce, qui efface
- *   ses points physiquement) → `default` aussi, et c'est délibéré (bâti du
- *   lot 2, 2026-09-29). Rendre l'ancien identifiant obligerait l'écran à
- *   afficher une adresse qu'on ne connaît plus ; en inventer une serait pire.
- *   Le départ retombe sur ce qui existe, l'écran dit « par défaut », et le
- *   geste de sortie est de choisir à nouveau. La ligne enregistrée n'est pas
- *   effacée : une lecture n'écrit rien (`CLAUDE.md` §4) ;
- * - aucun point de retrait → `default` et `point: null` : l'écran le dit.
+ * - un choix qui désigne un candidat → `explicit` ;
+ * - aucun choix, ou 🔴 **un choix dont le site a disparu** (archivé, ou qui
+ *   ne livre plus) → `default`, et le départ n'est DÉDUIT que s'il n'y a
+ *   qu'un candidat : il n'y a plus de « site par défaut » pour départager
+ *   (Hugo, 2026-10-15). Plusieurs candidats → `point: null`, l'écran demande
+ *   de choisir, et le calcul des tournées refuse en le disant
+ *   (`DepartureNotLocatedError`). La ligne enregistrée n'est pas effacée :
+ *   une lecture n'écrit rien (`CLAUDE.md` §4) ;
+ * - aucun candidat → `default` et `point: null` : l'écran le dit.
  */
 export function departureViewOf(
   chosenId: string | null,
@@ -26,8 +26,9 @@ export function departureViewOf(
   if (chosen !== undefined) {
     return { source: "explicit", point: pointOf(chosen), choices };
   }
-  const fallback = candidates.find((candidate) => candidate.isDefault) ?? candidates[0];
-  return { source: "default", point: fallback === undefined ? null : pointOf(fallback), choices };
+  const [only, ...others] = candidates;
+  const deduced = only !== undefined && others.length === 0 ? pointOf(only) : null;
+  return { source: "default", point: deduced, choices };
 }
 
 function pointOf(candidate: DepartureCandidate): DeparturePointView {

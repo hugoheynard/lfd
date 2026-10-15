@@ -193,7 +193,10 @@ export async function targetOf(
     throw new Error(`La société « ${name} » n'a aucun membre : rien à qui porter.`);
   }
   const labo = await context.prisma.site.findFirst({
-    where: { isDefault: true },
+    where: { archivedAt: null, pickup: true },
+    // Le premier point semé — le Labo (il n'y a plus de « site par défaut »,
+    // 2026-10-15).
+    orderBy: { createdAt: "asc" },
     select: { id: true },
   });
   const points = await context.prisma.site.findMany({ select: { id: true, label: true } });
@@ -201,8 +204,8 @@ export async function targetOf(
   return {
     companyId: company.id,
     buyerUserId: member.userId,
-    // `null` = le point par DÉFAUT, résolu par le domaine. On le passe explicite
-    // quand il existe pour que la commande fige le bon libellé.
+    // Explicite : sans point choisi, la caisse refuse dès que plusieurs points
+    // sont ouverts (plus de « site par défaut », 2026-10-15).
     pickupAddressId: labo?.id ?? null,
     pickupIds: new Map(points.map((point) => [point.label, point.id])),
     defaultDelivery: carnet.defaultDelivery,
