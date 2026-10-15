@@ -169,17 +169,24 @@ faits passés restent lisibles), `b2b-platform.module.ts`. Tables gardées.
 `lint:business-day` couvre son dossier.
 
 **Une opération sans article (Hugo, 2026-10-15)** : elle n'est **pas**
-interdite — une opération est forcément vide pendant qu'on la prépare.
-Deux conséquences, au lieu d'un refus :
+interdite — une opération est forcément vide pendant qu'on la prépare. Et
+plutôt que de la cacher, son rayon **l'annonce** (Hugo : « une partie display
+info dans le rayon de l'opération » ; le texte est le **chapeau**) :
 
-- **l'écran le signale** : tant que la sélection est vide (ou qu'aucun de ses
-  articles ne se vend), l'opération porte « vide — rien ne s'affichera en
-  boutique », bien visible, surtout si sa fenêtre d'annonce est ouverte ;
-- **la boutique ne montre pas un rayon vide** : une opération dont aucun
-  article n'est servi au lecteur n'a ni rayon ni annonce. À vérifier au lot 3
-  dans la lecture de la vitrine (`storefront-catalog-operations.ts`,
-  `operationShelvesOf`) — si elle montre déjà un rayon vide, c'est là qu'on
-  corrige, pas dans l'agrégat.
+- **le rayon d'une opération s'ouvre toujours sur son encart** : image, nom,
+  chapeau, et ses dates dites en clair — « Commandes à partir du… »,
+  « Commandez avant le… », « Retrait du … au … » ; les articles suivent ;
+- **pendant la fenêtre d'annonce**, le rayon paraît même sans article :
+  l'encart est l'annonce, voulue ;
+- **commandes ouvertes et rayon toujours vide** : l'encart dit « Les produits
+  arrivent bientôt », et l'écran du back-office avertit (probable oubli) ;
+- **masquée ou archivée** : rien en boutique ;
+- **au back-office**, l'avertissement dit ce que verra le client : « En
+  boutique : l'annonce seule, sans produit ».
+
+Bâti au **lot 3** (la bascule touche déjà la lecture de la vitrine,
+`storefront-catalog-operations.ts`, `operationShelvesOf`) ; les textes de
+l'encart vont au dictionnaire de la boutique (`pnpm copy:digest`).
 
 ## 3. Lots
 
