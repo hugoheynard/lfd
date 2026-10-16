@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 
 import { API_BASE_URL } from '../../../data/api';
+import { PendingCreatedMedia } from '../../pending-created-media';
 import { ProductFormStore } from '../product-form-store';
 
 /**
@@ -88,6 +89,9 @@ describe('la création d’une fiche et ses photos', () => {
       .flush({ message: 'refusé' }, { status: 400, statusText: 'Bad Request' });
 
     await expect(submitted).resolves.toBe('p-3');
-    expect(form.error()).not.toBeNull();
+    expect(TestBed.inject(PendingCreatedMedia).of('p-3')).toEqual({
+      slots: [{ role: 'gallery', url: 'https://img/a.jpg', name: 'a.jpg' }],
+      message: expect.any(String),
+    });
   });
 });

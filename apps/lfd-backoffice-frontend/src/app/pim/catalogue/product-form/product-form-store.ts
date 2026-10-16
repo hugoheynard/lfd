@@ -81,6 +81,7 @@ import {
   type MediaSlot,
   type NutritionValues,
 } from '../product-http-api';
+import { PendingCreatedMedia, type CreatedMediaFailure } from '../pending-created-media';
 
 // Réexporté : les panneaux le tenaient d'ici, et il vit maintenant au niveau de
 // l'API — la couche qui parle au serveur possède la forme qu'elle envoie.
@@ -539,6 +540,7 @@ export class ProductFormStore {
   /** Les noms des points de vente — lus au référentiel, jamais codés en dur. */
   readonly pointsOfSale = this.pointStore.items;
   private readonly reference = inject(ReferenceApi);
+  private readonly pendingCreatedMedia = inject(PendingCreatedMedia);
 
   readonly kinds = KINDS;
 
@@ -1537,8 +1539,9 @@ export class ProductFormStore {
    *
    * Un échec ici ne remonte PAS comme un échec de création : la fiche existe,
    * et rendre `null` laisserait l'écran de création ouvert — un second clic
-   * sur « Créer » ferait un doublon. La page navigue donc quand même ; les
-   * photos sont à reprendre sur la fiche.
+   * sur « Créer » ferait un doublon. La page navigue donc quand même, et le
+   * refus est rangé hors de ce store (qui meurt avec la page) pour que la
+   * fiche créée l'affiche et propose de le renvoyer.
    */
   private async saveCreatedMedia(id: string): Promise<void> {
     const media = this.media();
@@ -1548,7 +1551,42 @@ export class ProductFormStore {
     try {
       await this.products.saveMedia(id, media);
     } catch (caught) {
-      this.error.set(messageOf(caught));
+      this.pendingCreatedMedia.record(id, { slots: [...media], message: messageOf(caught) });
+    }
+  }
+
+  /** Les photos de la création que le serveur a refusées, pour CETTE fiche. */
+  readonly createdMediaFailure: Signal<CreatedMediaFailure | null> = computed(() =>
+    this.isEdit() ? this.pendingCreatedMedia.of(this.productId()) : null,
+  );
+
+  readonly retryingCreatedMedia = signal(false);
+
+  /**
+   * Renvoie les photos refusées à la création.
+   *
+   * La route remplace la liste entière : les photos déjà sur la fiche sont donc
+   * renvoyées avec, et une photo déjà présente (même URL) n'est pas doublée.
+   */
+  async retryCreatedMedia(): Promise<void> {
+    const id = this.productId();
+    const failure = this.pendingCreatedMedia.of(id);
+    if (failure === null || this.retryingCreatedMedia()) {
+      return;
+    }
+    const current = this.media();
+    const missing = failure.slots.filter((slot) => !current.some((kept) => kept.url === slot.url));
+    const merged = [...current, ...missing];
+    this.retryingCreatedMedia.set(true);
+    try {
+      await this.products.saveMedia(id, merged);
+      this.media.set(merged);
+      this.baseline.update((base) => ({ ...base, visuels: this.snapshot('visuels') }));
+      this.pendingCreatedMedia.clear(id);
+    } catch (caught) {
+      this.pendingCreatedMedia.record(id, { slots: failure.slots, message: messageOf(caught) });
+    } finally {
+      this.retryingCreatedMedia.set(false);
     }
   }
 

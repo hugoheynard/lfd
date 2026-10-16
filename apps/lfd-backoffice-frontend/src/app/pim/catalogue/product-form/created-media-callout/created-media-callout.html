@@ -1,0 +1,23 @@
+@if (failure(); as failed) {
+  <fold-callout variant="alert" announce>
+    <div class="body">
+      <strong>{{ headline() }}</strong>
+      <span>{{ failed.message }}</span>
+      <ul class="files">
+        @for (slot of failed.slots; track slot.url) {
+          <li>{{ slot.name || slot.url }}</li>
+        }
+      </ul>
+      <span>Si vous rechargez la page avant de réessayer, la photo est à redéposer.</span>
+    </div>
+    <button
+      foldButton
+      actions
+      size="sm"
+      [disabled]="store.retryingCreatedMedia()"
+      (click)="retry()"
+    >
+      Réessayer
+    </button>
+  </fold-callout>
+}

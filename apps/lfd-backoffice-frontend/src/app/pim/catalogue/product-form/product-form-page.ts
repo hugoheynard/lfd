@@ -32,6 +32,7 @@ import { UiPrefsStore } from '../../../shared/ui-prefs/ui-prefs.store';
 import { productStatusLabel, productStatusVariant } from '../product-status';
 
 import { CommunicationForm } from './form-sections/communication/communication-form';
+import { CreatedMediaCallout } from './created-media-callout/created-media-callout';
 import { IdentityForm } from './form-sections/identity/identity-form';
 import { IntegrationsForm } from './form-sections/integrations/integrations-form';
 import { PricingForm } from './form-sections/pricing/pricing-form';
@@ -119,6 +120,7 @@ interface PageSection {
     FoldTabPanelComponent,
     FoldViewNavComponent,
     NgTemplateOutlet,
+    CreatedMediaCallout,
     ProductHistory,
     SectionState,
     SectionAlignment,
