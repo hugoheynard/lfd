@@ -34,14 +34,14 @@ import { placedByKeys, scenarioOrderKey } from "./scenario-keys.seed.js";
  *   créneau) : « avant 11:00 ». Elle était passée SANS fenêtre jusqu'au
  *   2026-10-03 ; une livraison sans heure est refusée depuis (plan composition
  *   automatique, CA1b) ;
- * - **toutes les livraisons colisées en tournées CHARGÉES, pas parties**
- *   (Hugo, 2026-10-05) : Camionnette 1 tient Val d'Isère dans l'ordre de la
- *   vallée, les autres prêtes sont réparties en tranches contiguës sur les
- *   autres véhicules (`spreadOverVehicles`, pas l'algorithme de « Proposer ») ;
- *   seules les pas encore prêtes — sans bac — restent hors tournée ;
- * - **une livraison de début d'après-midi** (13:30–14:30) que le semis ne
- *   place pas : au chargement, la composition automatique la met en tournée
- *   — avec les pas encore prêtes, qu'elle prend aussi (2026-10-14).
+ * - **toutes les tournées composées par le calcul** (Hugo, 2026-10-14 : « la
+ *   démo doit montrer ce que la composition automatique décide vraiment ») :
+ *   `DayComposer`, comme à l'arrêt du plan — aucun rang, aucune tranche écrits
+ *   ici. Les tournées sont CHARGÉES, pas parties (2026-10-05) ; une livraison
+ *   pas encore prête est en tournée sans bac, comme le calcul l'y met (il
+ *   compose avant le fournil, cf. `composition-automatique.md`) ;
+ * - **une livraison de début d'après-midi** (13:30–14:30) : le calcul décide
+ *   où elle va — un second passage, si rien d'autre ne la tient.
  */
 
 /** Une livraison du jour, visée par l'enseigne du client. */
@@ -53,35 +53,20 @@ export interface DeliveryDayEntry {
   readonly window: SeedWindow | null;
   readonly ready: boolean;
   /**
-   * Le rang de l'arrêt dans la tournée de Val d'Isère, ou `null` : non
-   * répartie. L'ordre suit la vallée depuis Le Labo — monter au Laisinant et
-   * au Fornet, redescendre par le centre, finir à La Daille, sur la route de
-   * sortie.
-   */
-  readonly stop: number | null;
-  /**
-   * Ses bacs, quand elle est dans la tournée — par NOM de type. Absent : un
-   * Bac M entier, deux sacs dedans.
+   * Ses bacs au colisage — par NOM de type. Absent : un Bac M entier, deux
+   * sacs dedans. Une moitié (`half`) se partage avec l'arrêt qui la suit
+   * dans la tournée que le calcul a composée, s'il est prêt (v2-4).
    */
   readonly bins?: readonly DayBins[];
-  /** Prend l'autre moitié du demi-bac de l'arrêt précédent (v2-4) : les sacs de sa moitié. */
-  readonly sharesPreviousHalf?: { readonly innerBags: number };
-  /**
-   * Laissée à la **composition automatique** (Hugo, 2026-10-14) : ni la
-   * tournée de Val d'Isère ni les tranches ne la prennent ; elle entre en
-   * tournée à l'étape du chargement, par `DayComposer` (`afternoon-round.seed.ts`).
-   */
-  readonly leftToComposition?: true;
   readonly lines: readonly SeedLine[];
 }
 
 export const DELIVERY_DAY: readonly DeliveryDayEntry[] = [
-  // ── Val d'Isère — la tournée de Camionnette 1 ─────────────────────────────
+  // ── Val d'Isère ─────────────────────────────────────────────────────────────
   {
     enseigne: "Chalet du Laisinant",
     window: null,
     ready: true,
-    stop: 0,
     // Les viennoiseries au frais : un petit isotherme, le pain en Bac M.
     bins: [
       { type: BIN_M, whole: 5, half: false, innerBags: 1 },
@@ -96,9 +81,9 @@ export const DELIVERY_DAY: readonly DeliveryDayEntry[] = [
     enseigne: "Le Refuge du Fond",
     window: null,
     ready: true,
-    stop: 1,
     // Un Bac L, et un reste qui tient dans un demi-Bac M — dont l'autre moitié
-    // part à l'arrêt suivant, le Petit Chaudron (v2-4, dernier recours).
+    // part à l'arrêt qui le suit dans sa tournée, si le calcul en met un
+    // de prêt juste après (v2-4, dernier recours).
     bins: [
       { type: BIN_L, whole: 6, half: false, innerBags: 2 },
       { type: BIN_M, whole: 0, half: true, innerBags: 1 },
@@ -113,9 +98,7 @@ export const DELIVERY_DAY: readonly DeliveryDayEntry[] = [
     // La première de ses deux échéances : le pain du petit-déjeuner.
     window: { start: null, end: "07:30" },
     ready: true,
-    stop: 2,
     bins: [{ type: BIN_L, whole: 5, half: false, innerBags: 3 }],
-    sharesPreviousHalf: { innerBags: 1 },
     lines: [
       { sku: "VIE-001", quantity: 24 },
       { sku: "VIE-002", quantity: 24 },
@@ -126,31 +109,28 @@ export const DELIVERY_DAY: readonly DeliveryDayEntry[] = [
     enseigne: "La Fromagerie du Parc",
     window: null,
     ready: true,
-    stop: 3,
     bins: [{ type: BIN_L, whole: 8, half: false, innerBags: 2 }],
     lines: [
       { sku: "PAI-001", quantity: 30 },
       { sku: "PAI-013", quantity: 12 },
     ],
   },
-  // (La Folie Douce, La Daille, est la livraison du comptoir : rang 4.)
+  // (La Folie Douce, La Daille, est la livraison du comptoir : `counter-day.seed.ts`.)
   {
     enseigne: "Les Balcons de la Daille",
     window: null,
     ready: true,
-    stop: 5,
     bins: [{ type: BIN_M, whole: 8, half: false, innerBags: 2 }],
     lines: [
       { sku: "VIE-009", quantity: 20 },
       { sku: "VIE-001", quantity: 18 },
     ],
   },
-  // ── Bourg-Saint-Maurice, les Arcs, Séez — répartis sur les autres véhicules ─
+  // ── Bourg-Saint-Maurice, les Arcs, Séez ───────────────────────────────────
   {
     enseigne: "Hôtel des Pins",
     window: null,
     ready: true,
-    stop: null,
     lines: [
       { sku: "VIE-001", quantity: 60 },
       { sku: "VIE-002", quantity: 40 },
@@ -161,7 +141,6 @@ export const DELIVERY_DAY: readonly DeliveryDayEntry[] = [
     enseigne: "Hôtel Le Lac Blanc",
     window: { start: null, end: "09:00" },
     ready: true,
-    stop: null,
     lines: [
       { sku: "VIE-002", quantity: 36 },
       { sku: "VIE-005", quantity: 12 },
@@ -171,7 +150,6 @@ export const DELIVERY_DAY: readonly DeliveryDayEntry[] = [
     enseigne: "Le Refuge 1950",
     window: null,
     ready: true,
-    stop: null,
     lines: [
       { sku: "PAI-001", quantity: 20 },
       { sku: "VIE-019", quantity: 10 },
@@ -183,7 +161,6 @@ export const DELIVERY_DAY: readonly DeliveryDayEntry[] = [
     // montrer un bac qui manque sans alarmer pour rien.
     window: { start: null, end: "11:30" },
     ready: false,
-    stop: null,
     lines: [
       { sku: "PAI-001", quantity: 25 },
       { sku: "PAI-013", quantity: 6 },
@@ -193,7 +170,6 @@ export const DELIVERY_DAY: readonly DeliveryDayEntry[] = [
     enseigne: "Auberge des Contamines",
     window: null,
     ready: true,
-    stop: null,
     lines: [
       { sku: "PAI-013", quantity: 10 },
       { sku: "VIE-001", quantity: 15 },
@@ -203,7 +179,6 @@ export const DELIVERY_DAY: readonly DeliveryDayEntry[] = [
     enseigne: "Épicerie des Eulets",
     window: { start: null, end: "11:00" },
     ready: true,
-    stop: null,
     lines: [
       { sku: "PAI-001", quantity: 12 },
       { sku: "VIE-016", quantity: 8 },
@@ -213,7 +188,6 @@ export const DELIVERY_DAY: readonly DeliveryDayEntry[] = [
     enseigne: "Le Comptoir de la Chaudanne",
     window: null,
     ready: true,
-    stop: null,
     lines: [
       { sku: "VIE-001", quantity: 30 },
       { sku: "VIE-002", quantity: 20 },
@@ -223,18 +197,16 @@ export const DELIVERY_DAY: readonly DeliveryDayEntry[] = [
     enseigne: "Café des Grangettes",
     window: null,
     ready: false,
-    stop: null,
     lines: [
       { sku: "VIE-009", quantity: 18 },
       { sku: "VIE-005", quantity: 8 },
     ],
   },
-  // ── La Rosière, Montvalezan — répartis sur les autres véhicules ───────────
+  // ── La Rosière, Montvalezan ───────────────────────────────────────────────
   {
     enseigne: "Gîte du Villaret",
     window: null,
     ready: false,
-    stop: null,
     lines: [
       { sku: "PAI-001", quantity: 8 },
       { sku: "VIE-001", quantity: 16 },
@@ -244,7 +216,6 @@ export const DELIVERY_DAY: readonly DeliveryDayEntry[] = [
     enseigne: "Crêperie du Gollet",
     window: null,
     ready: true,
-    stop: null,
     lines: [
       { sku: "VIE-019", quantity: 12 },
       { sku: "PAI-013", quantity: 4 },
@@ -256,22 +227,18 @@ export const DELIVERY_DAY: readonly DeliveryDayEntry[] = [
     deliveryLabel: "Le Chalet",
     window: null,
     ready: true,
-    stop: null,
     lines: [
       { sku: "VIE-001", quantity: 10 },
       { sku: "PAI-001", quantity: 6 },
     ],
   },
-  // ── L'après-midi — laissée au calcul (Hugo, 2026-10-14) ───────────────────
+  // ── L'après-midi ──────────────────────────────────────────────────────────
   {
     // Son créneau de début d'après-midi : aucune tournée du matin ne le tient
-    // sans attendre des heures. Personne ne la place à la main : la
-    // composition automatique lui ouvre un second passage.
+    // sans attendre des heures. Le calcul décide où elle va.
     enseigne: "Le Salon Olympique",
     window: { start: "13:30", end: "14:30" },
     ready: true,
-    stop: null,
-    leftToComposition: true,
     lines: [
       { sku: "PAI-001", quantity: 14 },
       { sku: "PAI-013", quantity: 6 },
@@ -279,8 +246,8 @@ export const DELIVERY_DAY: readonly DeliveryDayEntry[] = [
   },
   // 🔴 La livraison PARTICULIER (2026-10-14) : le client de référence pour lui-
   // même, à une adresse dictée — la couleur de livraison particulier du Labo.
-  // Répartie avec les autres tranches. Sans carnet, son point vient du cache
-  // de géocodage que le semis remplit (`situatePersonalAddress`).
+  // Sans carnet, son point vient du cache de géocodage que le semis remplit
+  // (`situatePersonalAddress`).
   {
     enseigne: PERSONAL_ENSEIGNE,
     deliveryLabel: "Domicile",
@@ -288,7 +255,6 @@ export const DELIVERY_DAY: readonly DeliveryDayEntry[] = [
     // celui de la démo livre « avant HH:MM ».
     window: { start: null, end: "11:00" },
     ready: true,
-    stop: null,
     lines: [
       { sku: "VIE-001", quantity: 4 },
       { sku: "PAI-001", quantity: 2 },

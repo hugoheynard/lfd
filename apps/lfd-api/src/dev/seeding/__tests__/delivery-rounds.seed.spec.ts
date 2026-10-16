@@ -1,7 +1,10 @@
 import {
+  type ComposedRound,
   type DeliveryRoundTables,
+  driverRoundOf,
+  halfSharedBy,
+  packingOrderOf,
   resetDeliveryRounds,
-  spreadOverVehicles,
 } from "../delivery-rounds.seed.js";
 
 /**
@@ -62,22 +65,58 @@ describe("resetDeliveryRounds", () => {
   });
 });
 
-describe("spreadOverVehicles", () => {
-  it("garde la tournée composée au premier véhicule et équilibre le reste en tranches contiguës", () => {
-    expect(spreadOverVehicles(["a", "b"], ["1", "2", "3", "4", "5", "6", "7", "8"], 3)).toEqual([
-      ["a", "b"],
-      ["1", "2", "3", "4"],
-      ["5", "6", "7", "8"],
-    ]);
+/** Une tournée relue : `null` dans la séquence = l'arrêt d'un transfert interne. */
+function round(roundId: string, sequence: readonly (string | null)[], passage = 1): ComposedRound {
+  return {
+    roundId,
+    passage,
+    sequence,
+    stops: sequence.flatMap((orderId) => (orderId === null ? [] : [{ orderId }])),
+  };
+}
+
+describe("driverRoundOf — la tournée que le requérant fera partir", () => {
+  it("prend la première dont toutes les livraisons seront colisées", () => {
+    const rounds = [round("r_1", ["a", "late"]), round("r_2", [null]), round("r_3", ["b"])];
+
+    expect(driverRoundOf(rounds, new Set(["late"]))?.roundId).toBe("r_3");
   });
 
-  it("donne le reste de la division aux premières tranches", () => {
-    expect(spreadOverVehicles<string>([], ["1", "2", "3"], 3)).toEqual([[], ["1", "2"], ["3"]]);
-    expect(spreadOverVehicles<string>([], ["1"], 4)).toEqual([[], ["1"], [], []]);
+  it("à défaut, la première qui livre — « Partir » dira ce qui manque", () => {
+    const rounds = [round("r_transfer", [null]), round("r_1", ["late"])];
+
+    expect(driverRoundOf(rounds, new Set(["late"]))?.roundId).toBe("r_1");
+    expect(driverRoundOf([round("r_transfer", [null])], new Set())).toBeUndefined();
+  });
+});
+
+describe("halfSharedBy — qui prend l'autre moitié, selon ce que le calcul a composé", () => {
+  it("l'arrêt qui suit immédiatement l'ouvreur, s'il est colisé", () => {
+    const rounds = [round("r_1", ["x", "opener", "next"]), round("r_2", ["other"])];
+
+    expect(halfSharedBy(rounds, new Set(["opener"]), new Set(["next", "other"]))).toEqual(
+      new Map([["next", "opener"]]),
+    );
   });
 
-  it("tout au seul véhicule, et rien sans véhicule", () => {
-    expect(spreadOverVehicles(["a"], ["b"], 1)).toEqual([["a", "b"]]);
-    expect(spreadOverVehicles(["a"], ["b"], 0)).toEqual([]);
+  it("personne quand l'ouvreur finit sa tournée, qu'un transfert les sépare ou que le suivant n'est pas prêt", () => {
+    const opens = new Set(["opener"]);
+
+    expect(halfSharedBy([round("r_1", ["x", "opener"])], opens, new Set(["x"])).size).toBe(0);
+    expect(halfSharedBy([round("r_1", ["opener", null, "y"])], opens, new Set(["y"])).size).toBe(0);
+    expect(halfSharedBy([round("r_1", ["opener", "y"])], opens, new Set()).size).toBe(0);
+  });
+});
+
+describe("packingOrderOf — une moitié s'ouvre avant d'être partagée", () => {
+  it("colise dans l'ordre des tournées, puis ce qui n'est en aucune", () => {
+    const item = (id: string) => ({ order: { id } });
+    const rounds = [round("r_1", ["b", "a"]), round("r_2", ["c"])];
+
+    expect(
+      packingOrderOf([item("loose"), item("c"), item("a"), item("b")], rounds).map(
+        (entry) => entry.order.id,
+      ),
+    ).toEqual(["b", "a", "c", "loose"]);
   });
 });

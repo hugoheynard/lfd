@@ -6,6 +6,7 @@ import { PlannedTiming } from "../domain/value-objects/planned-timing.js";
 
 const SECONDS_PER_MINUTE = 60;
 const MINUTES_PER_DAY = 24 * 60;
+const MILLISECONDS_PER_SECOND = 1000;
 
 /**
  * L'INSTANT d'une heure du calcul de tournée — des secondes depuis minuit,
@@ -22,6 +23,18 @@ export function parisInstantOf(day: string, seconds: number): Date | null {
   }
   const midnight = localToInstant(day, "00:00");
   return midnight === null ? null : addMinutes(midnight, minutes);
+}
+
+/**
+ * L'inverse de {@link parisInstantOf} : un instant, en secondes depuis minuit
+ * (heure de Paris) du jour de service — au-delà de 86 400 le lendemain.
+ * `null` : le jour n'est pas lisible.
+ */
+export function parisSecondsOf(day: string, instant: Date): number | null {
+  const midnight = localToInstant(day, "00:00");
+  return midnight === null
+    ? null
+    : Math.round((instant.getTime() - midnight.getTime()) / MILLISECONDS_PER_SECOND);
 }
 
 /** L'horaire prévu d'une tournée chronométrée ; `null` si un instant ne se lit pas. */

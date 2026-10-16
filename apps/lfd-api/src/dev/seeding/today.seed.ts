@@ -15,6 +15,7 @@ import {
   composeTodayRounds,
   deliveryDayReport,
   loadTodayRounds,
+  notReadyDeliveries,
   packDeliveryDay,
   readTodayRounds,
 } from "./delivery-round-day.seed.js";
@@ -30,7 +31,6 @@ import {
   type Target,
 } from "./order-placing.seed.js";
 import { seedReturnedBatch } from "./packing-return.seed.js";
-import { composeRestOfToday } from "./afternoon-round.seed.js";
 import { supplyVillageByTransfer } from "./village-transfer.seed.js";
 
 /**
@@ -187,11 +187,10 @@ export async function closeTodayPlan(
 /**
  * Efface les tournées de CE jour que l'arrêt du plan vient de composer tout
  * seul (`DayAutoComposition`, 2026-10-07). Le scénario lit son étape dans la
- * base : avec elles, l'étape 1 se lirait comme la 2. Et l'étape 2 pose sa
- * propre composition — Val d'Isère dans l'ordre de la vallée, la livraison du
- * comptoir au rang 4 —, dont le colisage, le chargement et le livreur
- * dépendent. Aucun bac n'existe à cette étape. Dev seulement : ses appelants
- * refusent toute cible non locale.
+ * base : avec elles, l'étape 1 se lirait comme la 2. L'étape 2 rejoue la MÊME
+ * composition (depuis le 2026-10-14), après avoir semé la flotte et le départ,
+ * et affecte une tournée au requérant. Aucun bac n'existe à cette étape. Dev
+ * seulement : ses appelants refusent toute cible non locale.
  */
 async function clearAutoComposed(prisma: AutoComposedRounds, forDay: string): Promise<void> {
   const rounds = await prisma.deliveryRound.findMany({
@@ -239,19 +238,32 @@ export async function bakeToday(
 async function readToday(context: SeedContext, day: ScenarioDay) {
   const counter = await readCounter(context, day.forDay);
   const deliveries = await readDeliveryDay(context, day.forDay);
-  const counterDelivery = counter.find((placed) => placed.entry.point === null)?.order ?? null;
+  const counterDelivery = counter.find((placed) => placed.entry.point === null) ?? null;
   return { counter, deliveries, counterDelivery };
 }
 
 /**
- * **Étape 2 — les tournées composées**, sans bacs : une par véhicule actif qui
- * a des arrêts, la première affectée au requérant. Avant la production et le
- * colisage, parce que le code l'impose : un demi-bac ne se partage qu'entre
- * deux arrêts consécutifs d'une tournée qui existe déjà.
+ * **Étape 2 — les tournées composées par le calcul**, sans bacs : la
+ * composition automatique (`DayComposer`, celle de l'arrêt du plan), puis une
+ * tournée affectée au requérant. Avant la production et le colisage, parce
+ * que le code l'impose : un demi-bac ne se partage qu'entre deux arrêts
+ * consécutifs d'une tournée qui existe déjà.
  */
-export async function composeToday(context: SeedContext, day: ScenarioDay): Promise<ComposedDay> {
+export async function composeToday(
+  context: SeedContext,
+  day: ScenarioDay,
+  composer: DayComposer,
+): Promise<ComposedDay> {
   const { deliveries, counterDelivery } = await readToday(context, day);
-  return composeTodayRounds(context, { today: day.today, placed: deliveries, counterDelivery });
+  const counter =
+    counterDelivery === null
+      ? null
+      : { order: counterDelivery.order, ready: counterDelivery.entry.outcome !== "expected" };
+  return composeTodayRounds(context, {
+    today: day.today,
+    composer,
+    notReady: notReadyDeliveries(deliveries, counter),
+  });
 }
 
 /**
@@ -275,20 +287,14 @@ export async function packToday(context: SeedContext, day: ScenarioDay): Promise
 }
 
 /**
- * **Étape 5 — les tournées chargées**, prêtes à partir : tous les bacs des
- * tournées du matin, puis ce que la composition automatique place d'elle-même
- * (`composeRestOfToday` : la livraison de l'après-midi en second passage), chargé
- * à son tour. Sans départ. Rend le nombre de bacs chargés.
+ * **Étape 5 — les tournées chargées**, prêtes à partir : tous les bacs de
+ * toutes les tournées que le calcul a composées (un second passage à midi),
+ * et ceux des transferts internes placés. Sans départ. Rend le nombre de bacs
+ * chargés.
  */
-export async function loadToday(
-  context: SeedContext,
-  day: ScenarioDay,
-  composer: DayComposer,
-): Promise<number> {
+export async function loadToday(context: SeedContext, day: ScenarioDay): Promise<number> {
   const rounds = await readTodayRounds(context, day.forDay);
-  const morning = await loadTodayRounds(context, { today: day.today, rounds });
-  const afternoon = await composeRestOfToday(context, { today: day.today, composer });
-  return morning + afternoon.loadedBins;
+  return loadTodayRounds(context, { today: day.today, rounds });
 }
 
 /** Toute la journée après le plan du soir, d'une traite — ce que rejouent les rechargements. */
@@ -297,12 +303,10 @@ export async function advanceToday(
   day: ScenarioDay,
   composer: DayComposer,
 ): Promise<DeliveryDayReport> {
-  const morning = await composeToday(context, day);
+  const composed = await composeToday(context, day, composer);
   await bakeToday(context, day);
   const sharedBins = await packToday(context, day);
-  const loadedBins = await loadToday(context, day, composer);
-  // Le relevé compte AUSSI ce que le calcul a ouvert au chargement.
-  const composed = { ...morning, rounds: await readTodayRounds(context, day.forDay) };
+  const loadedBins = await loadToday(context, day);
   const { deliveries } = await readToday(context, day);
   return deliveryDayReport({
     forDay: day.forDay,

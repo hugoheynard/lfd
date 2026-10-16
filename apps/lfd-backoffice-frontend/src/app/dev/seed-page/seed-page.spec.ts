@@ -210,7 +210,7 @@ describe('DevSeedPage — la journée de démo, étape par étape', () => {
     fixture.detectChanges();
 
     expect(squash(text(fixture))).toContain(
-      'Étape 2 sur 5 — Répartition des livraisons entre les camionnettes…',
+      'Étape 2 sur 5 — Composition automatique des tournées…',
     );
     expect(rows(fixture)[2]).toContain('En cours…');
     const buttons = [...root(fixture).querySelectorAll('button')];

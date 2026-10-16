@@ -54,9 +54,9 @@ export const DEV_SCENARIO_STEPS: readonly DevScenarioStepText[] = [
     step: 2,
     title: 'Tournées composées',
     explanation:
-      'Les livraisons du matin, celle du particulier comprise, sont réparties entre les camionnettes. La livraison de l’après-midi est laissée au calcul. Les bacs ne sont pas encore faits.',
+      'La composition automatique répartit toutes les livraisons du jour, comme à l’arrêt du plan : chaque camionnette reçoit un secteur, chaque tournée part le plus tard possible en tenant chaque échéance, et la livraison de 13:30 part en second passage si aucune tournée du matin ne la tient. Le transfert du Village entre dans une tournée qui y arrive avant l’ouverture du comptoir. Une tournée vous est affectée. Les bacs ne sont pas encore faits.',
     meaning: 'les tournées sont composées',
-    loading: 'Répartition des livraisons entre les camionnettes…',
+    loading: 'Composition automatique des tournées…',
     links: [{ label: 'Tournées', route: '/tour-manager' }],
   },
   {
@@ -80,7 +80,7 @@ export const DEV_SCENARIO_STEPS: readonly DevScenarioStepText[] = [
     step: 5,
     title: 'Tournées chargées, prêtes à partir',
     explanation:
-      'Une tournée par camionnette, bacs chargés ; la première vous est affectée. Puis la composition automatique est rejouée sur ce qui reste : elle place le transfert du Village dans une tournée du matin, dont le bac est chargé ; la démo permettant un second passage, elle ouvre seule une tournée d’après-midi sur la camionnette 1 pour ce qui restait, dont la livraison de 13:30.',
+      'Les bacs colisés sont chargés dans les tournées que le calcul a composées — un second passage à midi — et le bac du transfert du Village dans la sienne. Les livraisons pas encore prêtes restent dans leur tournée sans bac : la feuille de route dit ce qui manque. La tournée qui vous est affectée peut partir.',
     meaning: 'La journée est prête : les tournées peuvent partir depuis Ma tournée.',
     loading: 'Chargement des bacs dans les camionnettes…',
     links: [

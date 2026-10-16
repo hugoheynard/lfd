@@ -46,7 +46,7 @@ const NEXT: Readonly<Record<Exclude<DevScenarioStep, 5>, StepGesture>> = {
   1: { played: 2, play: composeToday },
   2: { played: 3, play: bakeToday },
   3: { played: 4, play: packToday },
-  4: { played: 5, play: (context, day, composer) => loadToday(context, day, composer) },
+  4: { played: 5, play: loadToday },
 };
 
 /**

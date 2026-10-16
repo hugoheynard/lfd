@@ -63,8 +63,13 @@ describe("reachedStep", () => {
     expect(reachedStep(facts)).toBe(2);
   });
 
-  it("veut TOUTES les livraisons à router dans une tournée pour l'étape 2", () => {
-    expect(reachedStep({ ...COMPLETE, composed: { expected: 15, assigned: 14 } })).toBe(1);
+  /**
+   * Depuis le 2026-10-14, l'étape 2 est la composition AUTOMATIQUE : ce
+   * qu'elle laisse à répartir est sa décision, pas une étape inachevée.
+   */
+  it("veut des tournées et au moins une livraison placée pour l'étape 2, pas toutes", () => {
+    expect(reachedStep({ ...COMPLETE, composed: { expected: 15, assigned: 14 } })).toBe(5);
+    expect(reachedStep({ ...COMPLETE, composed: { expected: 15, assigned: 0 } })).toBe(1);
     // Des arrêts sans tournée du jour n'existent pas : zéro tournée, pas d'étape 2.
     expect(
       reachedStep({

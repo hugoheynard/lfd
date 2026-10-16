@@ -1,4 +1,4 @@
-import { parisInstantOf, plannedTimingOf } from "../planned-timing-of.js";
+import { parisInstantOf, parisSecondsOf, plannedTimingOf } from "../planned-timing-of.js";
 
 // Des jours convertis en instants — jamais comparés à l'horloge (§5, exception étroite).
 const HOUR = 3_600;
@@ -25,6 +25,22 @@ describe("parisInstantOf — une heure du calcul de tournée, en instant", () =>
 
   it("un jour illisible ne donne rien", () => {
     expect(parisInstantOf("pas-un-jour", HOUR)).toBeNull();
+  });
+});
+
+describe("parisSecondsOf — l'inverse, pour relire un horaire prévu", () => {
+  it("rend l'heure de Paris en secondes depuis minuit, hiver comme été", () => {
+    expect(parisSecondsOf("2030-01-15", new Date("2030-01-15T05:30:00.000Z"))).toBe(6.5 * HOUR);
+    expect(parisSecondsOf("2030-07-15", new Date("2030-07-15T04:30:00.000Z"))).toBe(6.5 * HOUR);
+  });
+
+  it("relit ce que parisInstantOf écrit, même passé minuit", () => {
+    const instant = parisInstantOf("2030-01-15", 25 * HOUR);
+    expect(instant === null ? null : parisSecondsOf("2030-01-15", instant)).toBe(25 * HOUR);
+  });
+
+  it("un jour illisible ne donne rien", () => {
+    expect(parisSecondsOf("pas-un-jour", new Date(0))).toBeNull();
   });
 });
 

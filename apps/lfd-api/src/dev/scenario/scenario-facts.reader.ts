@@ -9,8 +9,6 @@ interface ExpectedOrder {
   readonly key: string;
   readonly delivery: boolean;
   readonly ready: boolean;
-  /** Le scénario la met en tournée à l'étape 2 (Val d'Isère, ou prête ailleurs, hors calcul). */
-  readonly routed: boolean;
 }
 
 /** Les commandes du jour que le scénario pose, dans l'ordre de la file puis de la livraison. */
@@ -20,13 +18,11 @@ function expectedOrders(forDay: string): readonly ExpectedOrder[] {
       key: scenarioOrderKey(forDay, "counter", rank),
       delivery: entry.point === null,
       ready: entry.outcome !== "expected",
-      routed: entry.point === null,
     })),
     ...DELIVERY_DAY.map((entry, rank) => ({
       key: scenarioOrderKey(forDay, "delivery", rank),
       delivery: true,
       ready: entry.ready,
-      routed: entry.stop !== null || (entry.ready && entry.leftToComposition !== true),
     })),
   ];
 }
@@ -58,7 +54,9 @@ export async function readScenarioFacts(
     composed: await readComposed(
       prisma,
       forDay,
-      expected.filter((order) => order.routed).map((order) => placed.get(order.key)?.id ?? ""),
+      // Toutes les livraisons : le calcul de l'étape 2 décide où elles vont, ou en
+      // laisse à répartir — le scénario ne présume plus lesquelles (2026-10-14).
+      expected.filter((order) => order.delivery).map((order) => placed.get(order.key)?.id ?? ""),
     ),
     production: await readProduction(prisma, forDay),
     packing: {
@@ -83,7 +81,7 @@ async function readPlan(prisma: PrismaClient, forDay: string): Promise<ScenarioF
   };
 }
 
-/** Les livraisons à router, et celles qui sont un arrêt vivant d'une tournée du jour. */
+/** Les livraisons du jour, et celles que le calcul a mises dans une tournée du jour. */
 async function readComposed(
   prisma: PrismaClient,
   forDay: string,

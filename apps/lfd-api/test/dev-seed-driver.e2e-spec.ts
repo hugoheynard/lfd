@@ -38,7 +38,7 @@ let ctx: E2eContext;
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
-    // Le rechargement compose la tournée de l'après-midi (`DayComposer`) : sans
+    // Le rechargement compose toutes les tournées (`DayComposer`) : sans
     // le double routier, la CI — qui n'a pas d'OSRM — répond 409 (2026-10-14).
     overrides: [
       ADMIN_VERIFIER_OVERRIDE,
@@ -82,10 +82,11 @@ describe("le rechargement affecte la tournée chargée à qui clique", () => {
       expect(rounds).toHaveLength(1);
       const roundId = rounds[0]?.id ?? "";
 
-      // Toutes les tournées du jour sont composées et chargées, pas parties :
-      // une par camionnette, plus celle d'après-midi que la composition ouvre
-      // en second passage (démo à plusieurs passages depuis le 2026-10-14).
-      expect(report.delivery.rounds).toBe(report.delivery.vehicles + 1);
+      // Les tournées du jour sont celles que le calcul compose (`DayComposer`),
+      // chargées, pas parties. Leur nombre est SA décision depuis le
+      // 2026-10-14 — plus « une par camionnette + l'après-midi », qui était
+      // le partage écrit à la main (architecture-jeu-de-donnees-par-etapes.md).
+      expect(report.delivery.rounds).toBeGreaterThan(0);
       const loading = jsonBody<DeliveryLoadingRoundView>(
         await admin(ctx).get(`${MY_ROUND}/${roundId}/loading`).expect(200),
       );
@@ -94,11 +95,6 @@ describe("le rechargement affecte la tournée chargée à qui clique", () => {
       );
       expect(toLoad).toEqual([]);
       expect(loading.stops.length).toBeGreaterThan(0);
-      // Hors tournée : rien. Les réglages de la démo permettent un second
-      // passage depuis le 2026-10-14 : la composition automatique ouvre une
-      // tournée d'après-midi pour les pas encore prêtes et celle que le semis
-      // laisse au calcul.
-      expect(report.delivery.unassigned).toBe(0);
 
       const { version } = jsonBody<MyDeliveryRoundView>(
         await admin(ctx).get(`${MY_ROUND}/${roundId}`).expect(200),
@@ -128,7 +124,7 @@ describe("le rechargement affecte la tournée chargée à qui clique", () => {
       expect(
         report.delivery.driver.status === "refused" ? report.delivery.driver.reason : "",
       ).toContain("Conduire sa tournée");
-      expect(report.delivery.rounds).toBe(report.delivery.vehicles + 1);
+      expect(report.delivery.rounds).toBeGreaterThan(0);
     },
     FULL_RELOAD_TIMEOUT_MS,
   );

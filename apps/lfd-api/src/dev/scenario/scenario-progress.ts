@@ -20,7 +20,7 @@ export interface ScenarioFacts {
   };
   /** Étape 1 — le plan du soir, et ce qu'il a absorbé. */
   readonly plan: { readonly closed: boolean; readonly orders: number };
-  /** Étape 2 — les livraisons que le scénario met en tournée, et celles qui y sont. */
+  /** Étape 2 — les livraisons du jour, et celles que le calcul a mises en tournée. */
   readonly composed: { readonly expected: number; readonly assigned: number };
   /** Étape 3 — les articles du compte, et ceux dont les fournées couvrent le compte. */
   readonly production: { readonly items: number; readonly done: number };
@@ -47,7 +47,10 @@ function holds(facts: ScenarioFacts): Readonly<Record<DevScenarioStep, boolean>>
   return {
     0: placed.expected > 0 && placed.found === placed.expected,
     1: plan.closed,
-    2: rounds.rounds > 0 && composed.expected > 0 && composed.assigned === composed.expected,
+    // Composée = le calcul a posé des tournées et y a placé au moins une
+    // livraison. Pas « toutes » : ce qu'il laisse à répartir est SA décision,
+    // et l'écran des tournées le montre (2026-10-14).
+    2: rounds.rounds > 0 && composed.expected > 0 && composed.assigned > 0,
     3: production.items > 0 && production.done === production.items,
     4: packing.expected > 0 && packing.packed === packing.expected,
     5: rounds.rounds > 0 && rounds.bins > 0 && rounds.loaded === rounds.bins,

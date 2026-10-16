@@ -17,7 +17,10 @@ import { DepartureReader } from "../domain/ports/departure.reader.js";
 import { DistanceMatrix } from "../domain/ports/distance-matrix.js";
 import { GeocodeCacheReader } from "../domain/ports/geocode-cache.reader.js";
 import { RoutingSettingsReader } from "../domain/ports/routing-settings.reader.js";
-import { cheapestTransferInsertion } from "../domain/services/place-transfer-stop.js";
+import {
+  cheapestTransferInsertion,
+  type PlannedSpan,
+} from "../domain/services/place-transfer-stop.js";
 import type { RoutingStop } from "../domain/services/route-timing.js";
 import { compositionClockOf } from "../domain/services/time-composition.js";
 import { minutesOfDay } from "../domain/value-objects/clock-time.js";
@@ -29,6 +32,7 @@ import {
   routingSettingsOf,
   routingStopFor,
 } from "./delivery-routing-support.js";
+import { parisSecondsOf } from "./planned-timing-of.js";
 import { type TransferPlace, TransferPlaceFinder } from "./transfer-placer.js";
 
 const logger = new Logger("TransferRouting");
@@ -47,9 +51,11 @@ const SECONDS_PER_MINUTE = 60;
  * (`cheapestTransferInsertion`).
  *
  * Une tournée n'est candidate que si elle est au dépôt, sur un véhicule actif
- * ce jour-là, que tous ses arrêts sont situés, et qu'elle ne porte pas déjà
- * un autre transfert : le calcul ne connaît pas encore le point d'un autre
- * site (un seul site servi par transfert aujourd'hui — limite écrite au plan).
+ * ce jour-là, et que TOUS les passages de son véhicule se chronomètrent :
+ * arrêts situés, aucun autre transfert — le calcul ne connaît pas encore le
+ * point d'un autre site (un seul site servi par transfert aujourd'hui —
+ * limite écrite au plan). Un second passage ne part qu'au retour du premier,
+ * et c'est à cette heure-là que son arrivée au site est jugée (2026-10-14).
  *
  * `null` : aucune place à temps, ou le calcul routier / le départ manquent —
  * dit au journal technique ; la composition replie alors sur une tournée
@@ -74,16 +80,16 @@ export class TransferRouting extends TransferPlaceFinder {
     if (site.gps === null) {
       return null;
     }
-    const rounds = (await this.rounds.roundsOn(day)).filter((round) => candidate(round, day));
-    if (rounds.length === 0) {
+    const rounds = (await this.rounds.roundsOn(day)).filter((round) =>
+      activeOnDay(round.vehicleRetiredAt, day),
+    );
+    if (!rounds.some(candidate)) {
       return null;
     }
     const stops = await this.locate(rounds.flatMap((round) => orderIdsOf(round.stops)));
-    const located = rounds.filter((round) =>
-      orderIdsOf(round.stops).every((id) => (stops.get(id)?.point ?? null) !== null),
-    );
+    const located = timeableVehicles(rounds, stops);
     try {
-      return await this.cheapest(located, stops, site, geoPoint(site.gps.lat, site.gps.lng));
+      return await this.cheapest(day, located, stops, site, geoPoint(site.gps.lat, site.gps.lng));
     } catch (error: unknown) {
       if (
         error instanceof RoadRoutingUnavailableError ||
@@ -97,12 +103,13 @@ export class TransferRouting extends TransferPlaceFinder {
   }
 
   private async cheapest(
+    day: string,
     rounds: readonly RoundRow[],
     stops: ReadonlyMap<string, LocatedStop>,
     site: TransferSiteFacts,
     sitePoint: GeoPoint,
   ): Promise<TransferPlace | null> {
-    if (rounds.length === 0) {
+    if (!rounds.some(candidate)) {
       return null;
     }
     const departure = await locatedDeparture(this.departure, this.candidates);
@@ -123,6 +130,10 @@ export class TransferRouting extends TransferPlaceFinder {
       transfer: transferStopOf(site),
       rounds: rounds.map((round) => ({
         roundId: round.id,
+        vehicleId: round.vehicleId,
+        passage: round.passage,
+        open: candidate(round),
+        planned: plannedSpanOf(day, round),
         stops: orderIdsOf(round.stops).map((orderId) => routingStopFor(orderId, stops)),
       })),
     });
@@ -141,14 +152,40 @@ export class TransferRouting extends TransferPlaceFinder {
   }
 }
 
-/** Au dépôt, véhicule actif ce jour-là, au moins un arrêt, aucun autre transfert. */
-function candidate(round: RoundRow, day: string): boolean {
-  return (
-    round.departedAt === null &&
-    activeOnDay(round.vehicleRetiredAt, day) &&
-    round.stops.length > 0 &&
-    round.stops.every((stop) => stop.kind === "order")
+/** L'horaire prévu d'une tournée, en secondes depuis minuit du jour ; `null` : aucun. */
+function plannedSpanOf(day: string, round: RoundRow): PlannedSpan | null {
+  if (round.planned === null) {
+    return null;
+  }
+  const departure = parisSecondsOf(day, round.planned.departureAt);
+  const back = parisSecondsOf(day, round.planned.returnAt);
+  return departure === null || back === null ? null : { departure, return: back };
+}
+
+/** Une place possible : au dépôt, au moins un arrêt (un véhicule actif, filtré avant). */
+function candidate(round: RoundRow): boolean {
+  return round.departedAt === null && round.stops.length > 0;
+}
+
+/**
+ * Les tournées des véhicules qu'on sait chronométrer d'un bout à l'autre :
+ * chaque passage n'a que des arrêts de commande, tous situés. Un passage
+ * qu'on ne sait pas chronométrer — un arrêt sans point, ou le transfert d'un
+ * autre site, dont le point n'est pas dans la matrice — rend son véhicule
+ * inchronométrable : ses autres passages en dépendent (2026-10-14).
+ */
+function timeableVehicles(
+  rounds: readonly RoundRow[],
+  stops: ReadonlyMap<string, LocatedStop>,
+): readonly RoundRow[] {
+  const timeable = (round: RoundRow): boolean =>
+    round.stops.every(
+      (stop) => stop.kind === "order" && (stops.get(stop.orderId)?.point ?? null) !== null,
+    );
+  const blocked = new Set(
+    rounds.filter((round) => !timeable(round)).map((round) => round.vehicleId),
   );
+  return rounds.filter((round) => !blocked.has(round.vehicleId));
 }
 
 /**

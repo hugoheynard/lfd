@@ -1,11 +1,9 @@
 import type { OpenPackingContainer } from "@lfd/contracts";
 import type { CommandBus } from "@nestjs/cqrs";
 
-import { AssignDeliveryStopCommand } from "../../delivery/application/commands/assign-delivery-stop.command.js";
 import { SetSiteRolesCommand } from "../../b2b/sites/application/set-site-roles.command.js";
 import { ChooseDepartureCommand } from "../../delivery/application/commands/choose-departure.command.js";
 import { LoadDeliveryBinCommand } from "../../delivery/application/commands/load-delivery-bin.command.js";
-import { OpenDeliveryRoundCommand } from "../../delivery/application/commands/open-delivery-round.command.js";
 import type { PrismaClient } from "../../platform/database/client/client.js";
 import { asStaff, SEED_STAFF_SUB } from "./order-placing.seed.js";
 
@@ -14,8 +12,9 @@ import { asStaff, SEED_STAFF_SUB } from "./order-placing.seed.js";
  *
  * Même discipline que le reste du semis : un véhicule entre par
  * `AddVehicleCommand` (donc par la plaque que le value object normalise et
- * l'unicité qu'il tient), une tournée s'ouvre, reçoit ses arrêts, ses bacs
- * naissent au colisage puis sont chargés — chaque geste par sa commande. Une tournée posée
+ * l'unicité qu'il tient), les tournées naissent de la composition
+ * automatique, leurs bacs naissent au colisage puis sont chargés — chaque
+ * geste par sa commande. Une tournée posée
  * en Prisma aurait peint l'écran sans rien éprouver.
  */
 
@@ -175,40 +174,6 @@ export async function halfBinOf(context: RoundsContext, orderId: string): Promis
 }
 
 /**
- * **Une tournée ouverte, ses arrêts affectés dans l'ordre donné** —
- * l'affectation ajoute en dernier. AVANT le colisage : un partage de moitié
- * n'est permis qu'entre deux arrêts consécutifs, et c'est la tournée qui en
- * juge.
- *
- * La version de la tournée est relue avant chaque affectation : c'est le jeton
- * de concurrence que l'écran enverrait, et le deviner serait tricher avec le
- * garde qu'il porte.
- */
-export async function composeRound(
-  context: RoundsContext,
-  round: { readonly day: string; readonly vehicleId: string; readonly at: Date },
-  stops: readonly RoundStop[],
-): Promise<string> {
-  const roundId = await asStaff(round.at, () =>
-    context.commands.execute<OpenDeliveryRoundCommand, string>(
-      new OpenDeliveryRoundCommand({ day: round.day, vehicleId: round.vehicleId }),
-    ),
-  );
-  for (const stop of stops) {
-    const { version } = await context.prisma.deliveryRound.findUniqueOrThrow({
-      where: { id: roundId },
-      select: { version: true },
-    });
-    await asStaff(round.at, () =>
-      context.commands.execute(
-        new AssignDeliveryStopCommand(roundId, { orderId: stop.orderId, version }),
-      ),
-    );
-  }
-  return roundId;
-}
-
-/**
  * **Les bacs des arrêts chargés, chargés** — chacun par son identifiant, comme
  * le ferait le scan de son QR. Les bacs sont ceux que le colisage a fait
  * naître (une lecture du semis, qui a les droits de la racine).
@@ -235,33 +200,74 @@ export async function loadRound(
   return { stops: stops.length, loadedBins: ordered.length };
 }
 
+/** Une tournée du jour telle que le semis la relit, arrêts vivants dans l'ordre. */
+export interface ComposedRound {
+  readonly roundId: string;
+  readonly passage: number;
+  /** Chaque arrêt vivant dans l'ordre : sa commande, ou `null` pour un transfert interne. */
+  readonly sequence: readonly (string | null)[];
+  /** Les arrêts de livraison seuls, dans l'ordre. */
+  readonly stops: readonly RoundStop[];
+}
+
 /**
- * **Répartit les arrêts sur la flotte**, sans rejouer « Proposer » : le
- * premier véhicule garde la tournée composée à la main (`first`, dans son
- * ordre), le reste est coupé en tranches CONTIGUËS et équilibrées sur les
- * autres — contiguës parce que la liste suit les vallées, et qu'une tranche
- * reste ainsi une vallée plutôt qu'un zigzag.
- *
- * Rend une liste par véhicule, vides comprises : un véhicule sans arrêt
- * n'ouvre pas de tournée (c'est à l'appelant de l'ignorer).
+ * **La tournée du requérant** : la première, dans l'ordre des véhicules puis
+ * des passages, qui a au moins une livraison et dont AUCUNE ne reste hors
+ * colisage — il doit pouvoir la faire partir. À défaut, la première qui a une
+ * livraison : l'affectation se fait quand même, et « Partir » dira pourquoi.
  */
-export function spreadOverVehicles<T>(
-  first: readonly T[],
-  rest: readonly T[],
-  vehicles: number,
-): readonly (readonly T[])[] {
-  if (vehicles < 1) return [];
-  const others = vehicles - 1;
-  if (others === 0) return [[...first, ...rest]];
-  // Les premières tranches prennent le reste de la division : 3 sur 2 → 2 + 1.
-  const base = Math.floor(rest.length / others);
-  const extra = rest.length % others;
-  const chunks: (readonly T[])[] = [];
-  let start = 0;
-  for (let slot = 0; slot < others; slot += 1) {
-    const size = base + (slot < extra ? 1 : 0);
-    chunks.push(rest.slice(start, start + size));
-    start += size;
+export function driverRoundOf(
+  rounds: readonly ComposedRound[],
+  notReady: ReadonlySet<string>,
+): ComposedRound | undefined {
+  const delivering = rounds.filter((round) => round.stops.length > 0);
+  return (
+    delivering.find((round) => round.stops.every((stop) => !notReady.has(stop.orderId))) ??
+    delivering[0]
+  );
+}
+
+/**
+ * **Qui prend l'autre moitié de quel bac** (v2-4) : l'arrêt qui SUIT
+ * immédiatement, dans sa tournée, une livraison qui ouvre une moitié — s'il
+ * est colisé ici. Un transfert entre les deux les sépare. Rend, par commande
+ * qui partage, la commande dont elle prend la moitié.
+ *
+ * C'est la composition qui décide qui suit qui : jusqu'au 2026-10-14, le
+ * partage était écrit sur le Petit Chaudron, rang 2 d'une tournée à la main.
+ */
+export function halfSharedBy(
+  rounds: readonly ComposedRound[],
+  opensHalf: ReadonlySet<string>,
+  packed: ReadonlySet<string>,
+): ReadonlyMap<string, string> {
+  const sharing = new Map<string, string>();
+  for (const { sequence } of rounds) {
+    sequence.forEach((orderId, index) => {
+      const previous = index === 0 ? null : (sequence[index - 1] ?? null);
+      if (orderId !== null && previous !== null && opensHalf.has(previous) && packed.has(orderId)) {
+        sharing.set(orderId, previous);
+      }
+    });
   }
-  return [first, ...chunks];
+  return sharing;
+}
+
+/**
+ * L'ordre du colisage : les livraisons en tournée dans l'ordre des tournées —
+ * une moitié s'ouvre AVANT d'être partagée —, puis les autres, dans l'ordre
+ * reçu.
+ */
+export function packingOrderOf<T extends { readonly order: { readonly id: string } }>(
+  items: readonly T[],
+  rounds: readonly ComposedRound[],
+): readonly T[] {
+  const rank = new Map<string, number>();
+  for (const round of rounds) {
+    for (const stop of round.stops) {
+      rank.set(stop.orderId, rank.size);
+    }
+  }
+  const at = (item: T): number => rank.get(item.order.id) ?? Number.MAX_SAFE_INTEGER;
+  return [...items].sort((left, right) => at(left) - at(right));
 }
