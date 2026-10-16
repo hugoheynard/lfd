@@ -236,3 +236,13 @@ des push sans effet (R2), les suites e2e (R7), le retour arrière (§2).
 - Mineurs : liens et chemins manquants ; « 18 + 3 + 2 » migrations, à recompter.
 
 **Questions ajoutées** : Q5 — la surcharge des opérations reçues part-elle ?
+
+## Décisions de Hugo (2026-10-16 au soir)
+
+- **Q1 — `PIM_PUBLICATION_ENABLED` part aussi** : « ça ne sert plus à rien, moins
+  on a de variables mieux c'est ». Il sort avec les deux autres interrupteurs
+  (X1) : l'émetteur, la réémission, la bascule et leurs routes émettent
+  toujours ; `pim/publication/publication-switch.ts` et sa suite
+  `pim-publication-switch.e2e-spec.ts` partent ; la variable sort du conteneur,
+  du workflow et de `ops/secrets-et-variables.md`. `B2B_DELIVERY_INBOX` part avec
+  la réception (X2).
