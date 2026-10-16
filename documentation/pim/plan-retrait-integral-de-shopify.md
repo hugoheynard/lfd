@@ -142,8 +142,8 @@ Le premier BLOQUANT a été rouvert dans le code avant d'être intégré.
   (`sales-context-errors.ts:57`) et sa traduction HTTP.
 - **Le compte des mentions** : 44 fichiers dans `apps/lfd-api/src`, 37 dans
   `documentation/` ; s'ajoutent `packages/` (`staff-access.ts:66`,
-  `b2b-channel.ts:64`, `catalog-revision.ts:13`, `mailer/errors.ts:6`,
-  `ops-contract/heartbeat.ts:21` et sa spec), les portes
+  `b2b-channel.ts:64`, `catalog-revision.ts:13`, `packages/mailer/src/errors.ts:6`,
+  `packages/ops-contract/src/heartbeat.ts:21` et sa spec), les portes
   `controller-buses.mjs` et `pim-data-neutral.mjs` (sa l.97 renvoie à un
   chemin à vérifier), `.github/workflows/ci.yml:196-198`, et neuf lignes du
   schéma Prisma.
