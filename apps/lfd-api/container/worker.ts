@@ -141,6 +141,8 @@ const RUNTIME_KEYS = [
   // d'une fiche part vers la plateforme, et le push cesse d'écrire les
   // articles. FERMÉS par défaut — les rails se déploient sans rien changer de
   // servi. Elle traverse pour la même raison que les deux précédentes.
+  // OUVERTE en production le 2026-10-16, après la bascule d'audience (0 fiche
+  // désactivée) ; relue par une révision neuve, comme les opérations.
   "CATALOG_FACTS_ENABLED",
   // L'écriture des opérations datées au commerce (lot 1 de
   // `plan-l-operation-passe-au-commerce.md`) : FERMÉE par défaut, l'agrégat et
