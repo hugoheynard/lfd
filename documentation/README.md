@@ -34,6 +34,7 @@ Chaque ligne porte l'**état réel du code**, pas l'intention :
   dépend de l'écran qui le lit.
 - **L'équipe — annuaire, journalisation → `staff/`**, TODO compris.
   | [`droits-et-permissions/plan-outils-agent-droits.md`](droits-et-permissions/plan-outils-agent-droits.md) | ✅ | **Le plan des outils agent de la gestion des droits** (Hugo, 2026-10-15), corrigé après `vitruve`. Bâti le 2026-10-15 ; l'état est dans `outils-agent-droits.md`. |
+  | [`droits-et-permissions/plan-droit-lfc-catalog.md`](droits-et-permissions/plan-droit-lfc-catalog.md) | 📐 | **`lfc_catalog` remplace `b2b_catalog`** (Hugo, 2026-10-16) : ressource neuve, droits transférés à l'écran sur aperçu, `b2b_catalog` gardé lisible et ignoré. Corrigé après `vitruve` ; rien n'est bâti. |
 - **Droits, rôles, permissions (staff et client) → `droits-et-permissions/`**, TODO compris.
 - **Les points ouverts sur la journalisation, tous journaux confondus →
   `journalisation/`** (2026-09-18). Les architectures restent chez leur
