@@ -1,5 +1,18 @@
 # Du catalogue à la vente — la chaîne complète
 
+> 🕰️ **Relu le 2026-10-16** — **Encore vrai, interrupteur des faits fermé** :
+> le push, les raisons d'exclusion (dont `canal_ferme`, `apps/lfd-api/src/pim/channels/b2b-platform/products/projection.ts:384`),
+> `PIM_PUBLICATION_ENABLED` et `B2B_DELIVERY_INBOX` (`apps/lfd-api/src/platform/config/env-readers.ts:488`),
+> le piège du conteneur. **Incomplet** : deux raisons manquent au tableau du §3,
+> `variant_sans_prix_pro` (lot S, `apps/lfd-api/src/pim/channels/b2b-platform/products/projection.ts:257`)
+> et `variant_sans_allergenes` (lot 2b, même fichier l. 276). **Périmé** : le
+> geste s'appelle « Activer », plus « Publier au catalogue » (lot 3,
+> `apps/lfd-backoffice-frontend/src/app/pim/catalogue/product-form/publish-rail/publish-rail.html:104`) ;
+> le §1 ne connaît ni l'audience (`pro`/`public`/`both`) ni le troisième drapeau
+> `CATALOG_FACTS_ENABLED` (`apps/lfd-api/src/platform/config/env-readers.ts:503`) : ouvert, la
+> fiche arrive par les faits dès sa création, inactive, et les étapes 3 à 5
+> disparaissent (`apps/lfd-api/src/b2b/catalog/application/ingest-catalog.service.ts:72`). **Non vérifié** : le §5 (déploiement) et le §6.
+
 > **Doc d'architecture.** Écrite le 2026-09-23, après une matinée passée à la
 > reconstituer de six fichiers parce qu'elle n'existait nulle part d'un seul
 > tenant. Deux des textes lus en route étaient périmés.

@@ -1,5 +1,15 @@
 # Un seul canal, deux prix — ce qui reste
 
+> 🕰️ **Relu le 2026-10-16** — **Périmé** : « la plateforme peut décider les
+> deux » (§1) — le lot D a retiré toute décision de prix côté plateforme
+> (`apps/lfd-api/prisma/schema/public/catalog.prisma:510`) ; « le prix pro dérivé » — depuis le lot S (`ff71d3e10`) le prix pro
+> est saisi, le rapport n'est qu'une suggestion
+> (`apps/lfd-api/src/pim/accounting-rules/domain/value-objects/pro-price-method-setting.ts:30`).
+> **Encore vrai** : un seul canal, le masquage (`apps/lfd-api/src/b2b/catalog/http/admin-catalog.controller.ts:154`).
+> **Non vérifié** : l'état de R3, R4, R6 à R9 — aucun reste n'a été rouvert ; les
+> décisions du §4 qui parlent de prix décidé sur la plateforme sont à relire
+> à la lumière du lot D.
+
 > **2026-09-21.** Écrit comme un plan le matin, **bâti dans la journée**, puis
 > ramené ici à ce qui reste : 970 lignes → 300.
 >

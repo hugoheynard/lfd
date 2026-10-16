@@ -1,5 +1,15 @@
 # L'écran Catalogue B2B — poser un prix, et le voir
 
+> 🕰️ **Relu le 2026-10-16** — **Largement périmé.** Le prix B2B n'existe plus :
+> le lot D a retiré les routes de prix, et `catalog_item_overrides` ne porte plus
+> que le masquage et la mise en avant (`apps/lfd-api/prisma/schema/public/catalog.prisma:510` ; routes restantes
+> `apps/lfd-api/src/b2b/catalog/http/admin-catalog.controller.ts:154` et l. 166). L'écran a quitté
+> `/b2b/catalogue` pour **« Catalogue publié »** en Gestion Boutique,
+> `/catalogue-publie` (`apps/lfd-backoffice-frontend/src/app/b2b/b2b.routes.ts:189`),
+> et `PriceEditor` n'existe plus dans le front (aucune occurrence, 2026-10-16).
+> **Encore vrai, à vérifier à l'écran** : la mise en avant et l'ordre du rayon
+> (§4) — non rouverts. Valeur surtout historique (les trois défauts muets du §2).
+
 **État : 🟢 implémenté.** Date : 2026-09-10. Écran
 `/b2b/catalogue` du back-office staff
 (`apps/lfd-backoffice-frontend/src/app/b2b/catalogue/`).

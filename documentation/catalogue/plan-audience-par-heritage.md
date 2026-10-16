@@ -1,5 +1,13 @@
 # Plan — l'audience par héritage, à la place des canaux
 
+> 🕰️ **Relu le 2026-10-16** — Remplacé (bandeau ci-dessous juste). L'audience
+> est **bâtie** par le plan qui le remplace : colonne `audience` sur la famille
+> et la fiche (`apps/lfd-api/prisma/schema/pim/categories.prisma:24`,
+> `apps/lfd-api/prisma/schema/pim/product.prisma:112`). La matrice des canaux et le
+> point de vente, eux, sont encore là (`apps/lfd-api/src/pim/channels/b2b-platform/membership/membership.controller.ts`,
+> `apps/lfd-api/src/pim/points-of-sale/points-of-sale.module.ts`) : leur retrait est le lot 5,
+> non bâti. Fait foi : [`plan-catalogue-synchronise-par-audience.md`](plan-catalogue-synchronise-par-audience.md).
+
 > 🔁 **Remplacé le 2026-10-15** par
 > [`plan-catalogue-synchronise-par-audience.md`](plan-catalogue-synchronise-par-audience.md),
 > qui fusionne ce plan et son voisin. Gardé pour son relevé de l'existant et

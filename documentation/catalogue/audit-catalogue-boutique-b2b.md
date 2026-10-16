@@ -1,5 +1,11 @@
 # Audit — Catalogue boutique B2B (design + features) + roadmap
 
+> 🕰️ **Relu le 2026-10-16** — Audit daté du 2026-08-04, valeur historique
+> seulement. Le bandeau du 2026-09-05 ci-dessous reste juste. **Non vérifié** :
+> les chemins front et la roadmap — rien n'a été rouvert côté boutique. Aucune
+> de ses affirmations ne décrit le catalogue d'aujourd'hui (audience, activation,
+> faits : [`plan-catalogue-synchronise-par-audience.md`](plan-catalogue-synchronise-par-audience.md)).
+
 > **But du doc.** Cadrer la montée en gamme du catalogue de la boutique B2B (La
 > Folie Coffee) : où on en est, ce que font les vrais catalogues pro, les manques
 > classés par sévérité, et une **roadmap cochable** qu'on attaque point par point.

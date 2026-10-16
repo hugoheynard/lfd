@@ -1,5 +1,18 @@
 # Le catalogue synchronisé — le PIM pousse, la plateforme accueille et altère
 
+> 🕰️ **Relu le 2026-10-16** — **Encore vrai** : le référentiel projette, un port
+> transporte, le commerce ingère par ses agrégats ; reçu et décidé restent dans
+> des colonnes séparées ; la parité existe (`apps/lfd-api/src/b2b/catalog/http/admin-catalog-parity.controller.ts:49`).
+> **Périmé** : (1) « la bascule est bloquée » — la boutique lit le catalogue en base
+> depuis le 2026-09-05 (bandeau de [`audit-catalogue-boutique-b2b.md`](audit-catalogue-boutique-b2b.md)),
+> le chantier C1–C7 en bas est donc clos, sauf le SKU de déclinaison (voir
+> [`plan-vendre-le-variant.md`](plan-vendre-le-variant.md)) ; (2) le « prix B2B » et
+> C6 « prix B2B et visibilité » — retirés au lot D (colonnes mortes, `apps/lfd-api/prisma/schema/public/catalog.prisma:510`) ;
+> (3) le push n'est plus le seul écrivain : interrupteur `CATALOG_FACTS_ENABLED`
+> ouvert, il ne porte plus que les opérations (`apps/lfd-api/src/b2b/catalog/application/ingest-catalog.service.ts:72`). **Non vérifié** : le
+> §« Peupler la base en dev » et le critère « ce qui monte sur le fil ». Pour
+> l'état courant, lire [`plan-catalogue-synchronise-par-audience.md`](plan-catalogue-synchronise-par-audience.md).
+
 **État : 🟡 partiellement implémenté.** C1 à C4 sont codés et testés ; C5 livre
 sa comparaison de parité, mais la bascule attend deux blocages hors code (voir
 « La bascule »). C6 et C7 ne sont pas commencés. Date : 2026-08-17.

@@ -1,5 +1,14 @@
 # Plan — deux méthodes de remise professionnelle, une seule appliquée
 
+> 🕰️ **Relu le 2026-10-16** — **Périmé au §9** : `PRO_PRICE_METHODS` vaut
+> désormais `["ratio_ttc", "entered"]` (`packages/pim-contracts/src/accounting-rules.ts:47`),
+> et `entered` — le prix pro HT saisi, seule source — est la méthode d'une base
+> sans règles (`apps/lfd-api/src/pim/accounting-rules/domain/value-objects/pro-price-method-setting.ts:30`,
+> lot S, commit `ff71d3e10`). Le rapport n'est plus qu'une suggestion de saisie.
+> La méthode B reste retirée. **Encore vrai** : `ratio_ttc` et son taux figé
+> survivent pour une base qui y est encore. Plan bâti puis dépassé : fait foi
+> le lot S de [`plan-catalogue-synchronise-par-audience.md`](plan-catalogue-synchronise-par-audience.md).
+
 > **État : BÂTI le 2026-09-13.** Ce qui suit est le plan tel qu'il a été
 > conçu, corrigé et tranché ; le code livré le suit, à trois exceptions près
 > notées au §9.

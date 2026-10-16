@@ -1,5 +1,12 @@
 # Plan — la publication par faits versionnés, et le retrait du point de vente
 
+> 🕰️ **Relu le 2026-10-16** — Remplacé (bandeau ci-dessous juste). Les faits
+> durables qu'il proposait sont bâtis par le plan qui le remplace, derrière
+> `CATALOG_FACTS_ENABLED`, fermé par défaut (`apps/lfd-api/src/platform/config/env-readers.ts:503`) ;
+> le push, l'aperçu et la réception **existent encore** (`apps/lfd-api/src/b2b/catalog/http/admin-catalog-delivery.controller.ts:53`)
+> et le point de vente aussi (`apps/lfd-api/src/pim/points-of-sale/points-of-sale.module.ts`) —
+> leur retrait est le lot 5, non bâti. Fait foi : [`plan-catalogue-synchronise-par-audience.md`](plan-catalogue-synchronise-par-audience.md).
+
 > 🔁 **Remplacé le 2026-10-15** par
 > [`plan-catalogue-synchronise-par-audience.md`](plan-catalogue-synchronise-par-audience.md),
 > qui fusionne ce plan et son voisin. Gardé pour son relevé de l'existant et

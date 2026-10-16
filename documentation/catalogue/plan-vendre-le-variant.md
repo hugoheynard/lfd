@@ -1,5 +1,12 @@
 # Vendre le variant, pas le produit — plan
 
+> 🕰️ **Relu le 2026-10-16** — **Toujours non bâti** : l'adaptateur présente
+> encore la déclinaison par défaut sous le SKU produit
+> (`apps/lfd-api/src/b2b/catalog/infrastructure/catalog-backed-product-catalog.ts:23`). Le
+> blocage du §10 (noms de déclinaison) n'a pas été revérifié, ni les comptes du
+> §3. Le prix B2B à clé de variant qu'il cite a disparu au lot D (`apps/lfd-api/prisma/schema/public/catalog.prisma:510`) : un
+> mur de moins au §5 bis.
+
 > Écrit le 2026-09-13, **réécrit le même jour**.
 >
 > 🔴 La première version portait une migration de données en trois temps, un

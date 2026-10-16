@@ -1,5 +1,14 @@
 # Le cycle du catalogue — du référentiel à la vente
 
+> 🕰️ **Relu le 2026-10-16** — **Encore vrai, faits fermés** : révisions,
+> empreinte, push, réception et validation (`apps/lfd-api/src/b2b/catalog/http/admin-catalog-delivery.controller.ts:53`,
+> `apps/lfd-api/src/b2b/catalog/http/admin-catalog.controller.ts:138`). **Périmé** : le §6.2 « le
+> prix du PIM est un DÉFAUT » — depuis le lot D la plateforme ne décide plus de
+> prix (`apps/lfd-api/prisma/schema/public/catalog.prisma:510`) ; le geste « publier » s'appelle « Activer » (lot 3) ; faits
+> ouverts, la réception ne voit plus ni fiches ni familles (`apps/lfd-api/src/b2b/catalog/application/ingest-catalog.service.ts:72`). **Non
+> vérifié** : les §4 et §7 à §10 ligne à ligne. Ce cycle est destiné à
+> disparaître (lot 5 de [`plan-catalogue-synchronise-par-audience.md`](plan-catalogue-synchronise-par-audience.md)).
+
 Code : `apps/lfd-api/src/pim/catalogue/revision/`,
 `apps/lfd-api/src/pim/channels/`, `apps/lfd-api/src/b2b/catalog/`,
 `apps/lfd-api/src/b2b/orders/`, `apps/lfd-backoffice-frontend/src/app/pim/`.

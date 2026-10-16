@@ -1,5 +1,15 @@
 # Le push catalogue, de bout en bout — `pim` → `public`
 
+> 🕰️ **Relu le 2026-10-16** — **Encore vrai tant que `CATALOG_FACTS_ENABLED`
+> est fermé** (défaut, `apps/lfd-api/src/platform/config/env-readers.ts:503`) : projection,
+> port, ingestion par agrégats. **Périmé** : ouvert, les faits
+> `catalog_product_changed` / `catalog_category_changed` deviennent le seul
+> écrivain des fiches et familles, et le push ne porte plus que les opérations
+> (`apps/lfd-api/src/b2b/catalog/application/ingest-catalog.service.ts:72`). La part « décidé » n'a plus de prix depuis le lot D (`apps/lfd-api/prisma/schema/public/catalog.prisma:510`) ; le
+> prix pro peut manquer (`variant_sans_prix_pro`, lot S,
+> `apps/lfd-api/src/pim/channels/b2b-platform/products/projection.ts:257`). **Non vérifié** :
+> le contrat de fil (sa version) et la liste de fichiers en fin de doc.
+
 > **Ce document décrit ce qui tourne.** Il répond à une question précise : par
 > où passe un produit entre le moment où on le saisit dans le référentiel et
 > celui où un client peut l'acheter, et **pourquoi** ce chemin est aussi
