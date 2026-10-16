@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 
 import { FoldPageLayoutComponent } from 'fold-ng';
 
+import { AudienceSwitchCard } from '../audience-switch-card/audience-switch-card';
 import { B2bIntegration } from '../b2b-integration/b2b-integration';
 
 /**
@@ -22,7 +23,7 @@ import { B2bIntegration } from '../b2b-integration/b2b-integration';
 @Component({
   selector: 'app-integration-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldPageLayoutComponent, B2bIntegration],
+  imports: [FoldPageLayoutComponent, B2bIntegration, AudienceSwitchCard],
   templateUrl: './integration-page.html',
 })
 export class IntegrationPage {}

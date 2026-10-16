@@ -1,0 +1,242 @@
+<fold-card>
+  <fold-element-title
+    variant="title"
+    title="Basculer vers les faits"
+    subtitle="Runbook — « Basculer le catalogue vers les faits (lot 2b) »"
+  />
+
+  <div class="body">
+    <fold-callout variant="warning">
+      L'ordre du runbook : <strong>1.</strong> prendre une révision « avant la bascule » (écran
+      <a routerLink="/pim/revisions">Révisions</a>) ; <strong>2.</strong> relire l'aperçu ci-dessous
+      ; <strong>3.</strong> appliquer la bascule d'audience et garder la liste des fiches
+      désactivées ; <strong>4.</strong> passer la variable <code>CATALOG_FACTS_ENABLED</code> à
+      <code>true</code> et déployer une révision neuve de l'API ; <strong>5.</strong> réémettre
+      tout. « Réémettre » n'a d'effet que les faits ouverts.
+    </fold-callout>
+
+    <section class="step">
+      <fold-element-title variant="caps" title="Aperçu" [level]="3">
+        <button
+          titleAction
+          foldButton
+          size="sm"
+          emphasis="outline"
+          [disabled]="state() === 'loading'"
+          (click)="load()"
+        >
+          Relire
+        </button>
+      </fold-element-title>
+
+      @switch (state()) {
+        @case ('loading') {
+          <fold-loading message="Lecture de l'aperçu…" />
+        }
+        @case ('error') {
+          <fold-empty-state tone="alert" title="Aperçu illisible" [subtitle]="loadError() ?? ''">
+            <button foldButton size="sm" emphasis="outline" (click)="load()">Réessayer</button>
+          </fold-empty-state>
+        }
+        @default {
+          @if (preview(); as view) {
+            <div class="lists">
+              <fold-disclosure data-list="publishedUnbound">
+                <span summary class="summary">
+                  Publiées, non liées au canal — désactivées par la bascule
+                  <fold-badge content="{{ view.publishedUnbound.length }}" />
+                </span>
+                <ng-container
+                  *ngTemplateOutlet="items; context: { $implicit: view.publishedUnbound }"
+                />
+              </fold-disclosure>
+
+              <fold-disclosure data-list="publishedB2bClosed">
+                <span summary class="summary">
+                  Publiées, case B2B fermée — désactivées par la bascule
+                  <fold-badge content="{{ view.publishedB2bClosed.length }}" />
+                </span>
+                <ng-container
+                  *ngTemplateOutlet="items; context: { $implicit: view.publishedB2bClosed }"
+                />
+              </fold-disclosure>
+
+              <fold-disclosure data-list="boundUnpublished">
+                <span summary class="summary">
+                  Liées, pas en vente — rien ne change pour elles
+                  <fold-badge content="{{ view.boundUnpublished.length }}" />
+                </span>
+                <ng-container
+                  *ngTemplateOutlet="items; context: { $implicit: view.boundUnpublished }"
+                />
+              </fold-disclosure>
+
+              <fold-disclosure data-list="soldWithoutAllergens">
+                <span summary class="summary">
+                  Déclinaisons vendues sans allergènes — sortent de la vente
+                  <fold-badge content="{{ view.soldWithoutAllergens.length }}" />
+                </span>
+                @if (view.soldWithoutAllergens.length === 0) {
+                  <p class="none">Aucune.</p>
+                } @else {
+                  <ul class="items">
+                    @for (variant of view.soldWithoutAllergens; track variant.variantSku) {
+                      <li>
+                        <a [routerLink]="['/pim/produits', variant.productId]">{{
+                          variant.productSku
+                        }}</a>
+                        — {{ variant.variantSku }} · {{ variant.name }}
+                      </li>
+                    }
+                  </ul>
+                }
+              </fold-disclosure>
+
+              <fold-disclosure data-list="activeIncomplete">
+                <span summary class="summary">
+                  Actives incomplètes — leurs déclinaisons nommées ne seront plus vendues
+                  <fold-badge
+                    [variant]="view.activeIncomplete.length === 0 ? 'neutral' : 'warning'"
+                    content="{{ view.activeIncomplete.length }}"
+                  />
+                </span>
+                @if (view.activeIncomplete.length === 0) {
+                  <p class="none">Aucune.</p>
+                } @else {
+                  <ul class="items">
+                    @for (product of view.activeIncomplete; track product.id) {
+                      <li class="incomplete">
+                        <span>
+                          <a [routerLink]="['/pim/produits', product.id]">{{ product.sku }}</a>
+                          — {{ product.name }}
+                          @if (product.keepsSelling) {
+                            <fold-badge variant="neutral" content="Continue de vendre" />
+                          } @else {
+                            <fold-badge variant="alert" content="Ne vendra plus rien" />
+                          }
+                        </span>
+                        <ul class="gaps">
+                          @for (line of gapLines(product.gaps); track line.variantSku) {
+                            <li>{{ line.variantSku }} : {{ line.missing }}</li>
+                          }
+                        </ul>
+                      </li>
+                    }
+                  </ul>
+                }
+              </fold-disclosure>
+            </div>
+          }
+        }
+      }
+    </section>
+
+    <section class="step">
+      <fold-element-title variant="caps" title="Appliquer la bascule d'audience" [level]="3" />
+      @if (canApply()) {
+        <fold-inline-confirm
+          intent="warning"
+          message="Désactive toutes les fiches publiées mais invisibles aux pros (non liées au canal, ou case B2B fermée). Un fait « dépubliée » par fiche ; rien d'autre n'est écrit. Gardez la liste rendue : c'est celle du retour arrière."
+          [loading]="applying()"
+          (confirmed)="apply()"
+        >
+          <button foldButton size="sm" intent="warning" [disabled]="applying()">
+            Appliquer la bascule d'audience
+          </button>
+        </fold-inline-confirm>
+      } @else {
+        <p class="none">Réservé au droit d'écriture du référentiel.</p>
+      }
+
+      @if (applyError(); as message) {
+        <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+      }
+
+      @if (applied(); as result) {
+        <div class="result" data-result="deactivated">
+          <p>
+            <strong>{{ result.deactivated.length }}</strong> fiche(s) désactivée(s).
+            @if (result.deactivated.length > 0) {
+              <button foldButton size="sm" emphasis="outline" (click)="copyDeactivated()">
+                Copier la liste
+              </button>
+            }
+          </p>
+          @if (result.deactivated.length > 0) {
+            <ng-container *ngTemplateOutlet="items; context: { $implicit: result.deactivated }" />
+          }
+        </div>
+        @if (result.failed.length > 0) {
+          <fold-callout variant="alert" data-result="failed">
+            {{ result.failed.length }} fiche(s) en échec — rejouer le geste ne retouche que les
+            fiches encore publiées et invisibles.
+          </fold-callout>
+          <ng-container *ngTemplateOutlet="items; context: { $implicit: result.failed }" />
+        }
+      }
+    </section>
+
+    <section class="step">
+      <fold-element-title variant="caps" title="Réémettre" [level]="3" />
+      @if (canReemit()) {
+        <fold-inline-confirm
+          intent="primary"
+          message="Réémet les familles, puis chaque fiche (une transaction chacune), puis les règles de limite de commande. Sans effet tant que les faits sont fermés."
+          [loading]="reemitting() === 'all'"
+          (confirmed)="reemitAll()"
+        >
+          <button foldButton size="sm" [disabled]="reemitting() !== null">Réémettre tout</button>
+        </fold-inline-confirm>
+      } @else {
+        <p class="none">Réservé au droit d'écriture de la diffusion du référentiel.</p>
+      }
+
+      @if (reemitError(); as message) {
+        <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+      }
+
+      @if (reemitted(); as report) {
+        <p data-result="reemitted">
+          {{ report.categories }} famille(s), {{ report.products }} fiche(s) réémises.
+        </p>
+        @if (stillFailed().length > 0) {
+          <fold-callout variant="alert" data-result="failedProducts">
+            {{ stillFailed().length }} fiche(s) en échec — à réémettre une par une.
+          </fold-callout>
+          <ul class="items">
+            @for (id of stillFailed(); track id) {
+              <li class="failed">
+                <a [routerLink]="['/pim/produits', id]">{{ id }}</a>
+                @if (canReemit()) {
+                  <button
+                    foldButton
+                    size="sm"
+                    emphasis="outline"
+                    [disabled]="reemitting() !== null"
+                    (click)="reemitOne(id)"
+                  >
+                    Réémettre cette fiche
+                  </button>
+                }
+              </li>
+            }
+          </ul>
+        }
+      }
+    </section>
+  </div>
+</fold-card>
+
+<ng-template #items let-list>
+  @if (list.length === 0) {
+    <p class="none">Aucune.</p>
+  } @else {
+    <ul class="items">
+      @for (item of list; track item.id) {
+        <li>
+          <a [routerLink]="['/pim/produits', item.id]">{{ item.sku }}</a> — {{ item.name }}
+        </li>
+      }
+    </ul>
+  }
+</ng-template>
