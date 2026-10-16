@@ -115,8 +115,8 @@ media/                                                        ✅ écrit
 └── images/{sha256}.{png|jpg|webp|gif}      (products/ pour les images déposées avant D1)
 ```
 
-⚠️ Jusqu'au déploiement D1 du [préfixe universel](../mediatheque/plan-prefixe-universel.md),
-les clés neuves sont sous `products/` ; après, sous `images/`. Aucune migration :
+⚠️ Depuis le renommage du préfixe (2026-10-13, déployé — [`../mediatheque/mediatheque.md`](../mediatheque/mediatheque.md) §2),
+les clés neuves sont sous `images/` ; les anciennes restent sous `products/`. Aucune migration :
 les objets `products/` restent servis jusqu'à leur suppression à l'écran, après
 redépôt (Hugo, 2026-10-13).
 

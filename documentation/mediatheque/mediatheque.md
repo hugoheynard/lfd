@@ -41,9 +41,25 @@ n'en dépose.
 
 ## 2. L'identité d'une image est son URL
 
-`products/{SHA-256}.{ext}` : la clé de stockage **est** le hachage du contenu
-(`DepositImageHandler`, préfixe `products` en dur, le nom est historique).
-`media_asset.url` est `@unique`.
+`images/{SHA-256}.{ext}` : la clé de stockage **est** le hachage du contenu
+(`DepositImageHandler`, `MEDIA_KEY_PREFIX = "images"` dans
+`media/application/deposit-image.ts`). `media_asset.url` est `@unique`.
+
+**Deux préfixes cohabitent, et c'est voulu** (renommage du 2026-10-13,
+déployé) : les dépôts antérieurs restent sous `products/`, servis et justes
+tant que personne ne les supprime ; tout dépôt neuf va sous `images/`. Aucune
+migration n'a réécrit l'existant (décision de Hugo : le volume est petit, le
+geste existe). Le **redépôt retrouve une image par son contenu**, préfixe
+ignoré (`MediaLibrary.holdingContent(contentAddressOf(storageKey))`) : redéposer
+un fichier identique rend la ligne existante, quel que soit son préfixe.
+
+**Passer une image de `products/` à `images/`**, à l'écran : la détacher de
+ses porteurs, la supprimer (le fonds refuse de supprimer une image portée),
+puis redéposer le fichier et le rattacher. Entre la suppression et le
+redépôt, le porteur est sans image. Les **photographies figées** (contenu des
+révisions du référentiel, snapshots de livraison, versions du catalogue,
+faits du journal) gardent l'URL `products/`, qui répondra 404 une fois l'objet
+ramassé : elles disent ce qui a été servi tel jour.
 
 Il en découle trois propriétés :
 
@@ -699,11 +715,9 @@ marquées 🔵 attendent une décision de Hugo.
 >   redescription sans push (§7 bis) ; l'aperçu hérité de l'éditeur de
 >   vitrine se recadre sur le point de l'opération.
 
-1. **Le préfixe de clé s'appelle `products`** alors que le fonds sert tout
-   porteur. C'est une valeur, pas un nom : il ne se renomme pas sans migrer
-   les URL, et rien ne l'exige. **Renommage demandé le 2026-10-13** : les dépôts
-   neufs passent sous `images/`, l'existant est redéposé à l'écran — cf.
-   [`plan-prefixe-universel.md`](plan-prefixe-universel.md) (bâti, non déployé).
+1. **Redéposer à l'écran les images encore sous `products/`** (Hugo) — le
+   code est déployé (§2) ; reste le geste, image par image. Non vérifié :
+   combien il en reste en production.
 2. **🔵 Au-delà de 5 000 transformations par mois**, l'offre Images & Stream
    n'étant pas souscrite : facturé, ou arrêté ? Cf.
    [`../ops/cloudflare-images.md`](../ops/cloudflare-images.md) §5. Laissé en
