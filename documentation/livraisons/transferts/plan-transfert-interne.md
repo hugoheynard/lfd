@@ -726,6 +726,18 @@ sequenceDiagram
   ou mode dédié → une tournée ouverte sur un véhicule **sans tournée ce
   jour-là** ; aucun → `internal_transfer.unplaced` au journal (Q-T13). Le
   retirage d'un jour déjà composé redemande un placement.
+  ⚠️ **Corrigé le 2026-10-14** : `cheapestTransferInsertion` chronométrait
+  chaque tournée **seule**, comme si elle partait à l'heure réglée. Un second
+  passage, qui ne part qu'au retour du premier, passait donc « à temps » : sur
+  la démo, le transfert du Village, dû avant l'ouverture du comptoir, a été
+  placé dans la tournée d'après-midi de Camionnette 1. Désormais une tournée
+  part au plus tôt au **retour prévu** du passage précédent (chronométré à la
+  suite s'il n'a pas d'horaire), une place ne doit retarder ni les passages
+  suivants ni le **départ prévu** du prochain qui en a un, et un véhicule
+  dont un passage ne se chronomètre pas (arrêt non situé, transfert d'un
+  autre site) n'est candidat nulle part. Sans place à temps, le repli et le
+  journal ci-dessus s'appliquent : un transfert n'est plus jamais placé trop
+  tard en silence.
 - **Chargement** : un bac par commande (Q-T4) ; la déclaration accepte un
   retrait porté par un transfert ; le chargement résout commande → transfert
   → arrêt ; « Partir » exige les bacs de toutes les commandes du transfert,

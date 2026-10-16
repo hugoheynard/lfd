@@ -1,8 +1,12 @@
 # Suite LFC — OPS « Ecosystem Health » (design, doc-first)
 
+> ⚠️ **L'ancien canal de vente en ligne, pris en exemple ci-dessous, est retiré
+> depuis le 2026-09-21**, avec sa sonde et son worker de synchro. Les exemples
+> restent pour illustrer le contrat ; ils ne décrivent pas la flotte actuelle.
+
 Ce document fixe la **cible** d'une app **OPS** de la suite : une vue **santé de
 l'écosystème** — un schéma vivant où l'on voit d'un coup d'œil les **APIs
-externes** (Shopify…), les **workers d'intégration** (sync PIM…) et les
+externes** (l'ancien canal…), les **workers d'intégration** (sync PIM…) et les
 **services domaine** (STOCK…), chacun avec son **état courant** et ses
 dépendances. On écrit le design et le **contrat** d'abord ; l'app vient quand la
 flotte le justifie (§9). Revue adversariale en fin de doc (§10).
@@ -15,12 +19,12 @@ Complément de [`architecture-suite-gateway-scaling.md`](architecture-suite-gate
 ## 1. Le besoin
 
 La suite passe de « une app » à « une flotte » : PIM + son worker de sync
-Shopify, backend B2B, bientôt **STOCK** (réassort), demain d'autres canaux. Trois
+l'ancien canal, backend B2B, bientôt **STOCK** (réassort), demain d'autres canaux. Trois
 questions n'ont aujourd'hui **aucune réponse centralisée** :
 
-- Est-ce que le worker de sync Shopify **tourne** ? Sa file est-elle **en
+- Est-ce que le worker de sync de l'ancien canal **tourne** ? Sa file est-elle **en
   retard** ? Combien d'erreurs sur la dernière heure ?
-- **Shopify** est-il **joignable / dégradé** en ce moment (et donc « ce n'est pas
+- **L'ancien canal** est-il **joignable / dégradé** en ce moment (et donc « ce n'est pas
   nous ») ?
 - Quand une chose casse, **quelle dépendance** est la cause (un nœud rouge en
   explique un autre) ?
@@ -35,15 +39,15 @@ une inspection manuelle app par app.
 
 Deux états à **ne jamais mélanger** :
 
-|                       | Qui **possède** la vérité | Exemples                                                                                   | OPS en fait quoi             |
-| --------------------- | ------------------------- | ------------------------------------------------------------------------------------------ | ---------------------------- |
-| **État DOMAINE**      | **chaque app**            | binding produit synchronisé, dernier hash poussé, stock d'une réf                          | **rien** — il n'y touche pas |
-| **État OPÉRATIONNEL** | **OPS (observe)**         | worker up/down, profondeur de file, taux d'erreur, dernier heartbeat, joignabilité Shopify | **agrège & affiche**         |
+|                       | Qui **possède** la vérité | Exemples                                                                                             | OPS en fait quoi             |
+| --------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------- | ---------------------------- |
+| **État DOMAINE**      | **chaque app**            | binding produit synchronisé, dernier hash poussé, stock d'une réf                                    | **rien** — il n'y touche pas |
+| **État OPÉRATIONNEL** | **OPS (observe)**         | worker up/down, profondeur de file, taux d'erreur, dernier heartbeat, joignabilité de l'ancien canal | **agrège & affiche**         |
 
 **Conséquence directe** (et la réponse à « le PIM devient lecteur ») : le PIM
 **publie** des signaux opérationnels et **lit** la santé agrégée pour afficher un
-bandeau « worker Shopify dégradé ». Il **ne** devient **pas** lecteur de son
-propre état domaine — ses `ShopifyProductBinding` restent sa vérité, dans son
+bandeau « worker de l'ancien canal dégradé ». Il **ne** devient **pas** lecteur de son
+propre état domaine — ses liaisons produit restent sa vérité, dans son
 Postgres. OPS **observe**, il ne **possède** pas le métier.
 
 ### Ce que OPS ne fera **jamais** (frontière)
@@ -68,11 +72,11 @@ de ». Un nœud rouge en amont **explique** un nœud dégradé en aval.
 ```mermaid
 flowchart LR
   subgraph ext["APIs externes (sondées)"]
-    SHOP[["Shopify Admin API"]]:::up
+    SHOP[["API Admin de l'ancien canal"]]:::up
     AUTH[["Auth0"]]:::up
   end
   subgraph workers["Workers d'intégration (heartbeat)"]
-    SYNC["PIM · sync Shopify"]:::degraded
+    SYNC["PIM · sync de l'ancien canal"]:::degraded
     RESTOCK["STOCK · réassort"]:::up
   end
   subgraph services["Services domaine (heartbeat)"]
@@ -97,16 +101,16 @@ flowchart LR
   classDef down fill:#7f1d1d,color:#fff,stroke:#b91c1c;
 ```
 
-Lecture : ci-dessus, `sync Shopify` est **dégradé** ; son amont `Shopify Admin
+Lecture : ci-dessus, `sync de l'ancien canal` est **dégradé** ; son amont `API Admin de l'ancien canal
 API` est **up** → donc la cause est **chez nous** (file en retard, erreurs), pas
-chez Shopify. C'est **ça**, la valeur : la **causalité** en un coup d'œil.
+chez l'ancien canal. C'est **ça**, la valeur : la **causalité** en un coup d'œil.
 
 ---
 
 ## 4. Le modèle d'état — **push** pour ce qu'on possède, **probe** pour l'externe
 
 Décision (§ choix produit) : **push-first**. Chaque worker/service **pousse** son
-heartbeat ; les dépendances **externes** (Shopify, Auth0) ne peuvent pas pousser
+heartbeat ; les dépendances **externes** (l'ancien canal, Auth0) ne peuvent pas pousser
 → OPS les **sonde**. Deux mécanismes, un seul modèle de nœud.
 
 ```mermaid
@@ -116,7 +120,7 @@ flowchart TB
     W2["STOCK worker"] -- heartbeat --> ING
   end
   subgraph probes["Ce qu'on ne possède pas"]
-    PRB["OPS prober (cron)"] -- "ping léger\n(shop{name} / status page)" --> SHOP[["Shopify"]]
+    PRB["OPS prober (cron)"] -- "ping léger\n(shop{name} / status page)" --> SHOP[["ancien canal"]]
     PRB -- "/.well-known / JWKS" --> AUTH[["Auth0"]]
     PRB -- "SELECT 1" --> PG[("Postgres")]
   end
@@ -130,11 +134,11 @@ flowchart TB
 - **Push (workers, services)** : un heartbeat périodique (**même à vide** — voir
   §10, « silence ≠ mort ») + des **events** de cycle de vie (`job.started` /
   `job.ok` / `job.failed`, `deploy`). Portés par le **contrat** (§5).
-- **Probe (Shopify, Auth0, Postgres)** : un **cron OPS** émet, pour chaque
+- **Probe (l'ancien canal, Auth0, Postgres)** : un **cron OPS** émet, pour chaque
   dépendance externe, un enregistrement **de la même forme** qu'un heartbeat — un
-  ping bon marché (`query { shop { name } }` pour Shopify, lecture JWKS pour
+  ping bon marché (`query { shop { name } }` pour l'ancien canal, lecture JWKS pour
   Auth0, `SELECT 1` pour un datastore). L'externe devient un **nœud comme un
-  autre**, juste alimenté « du dehors ». **C'est ce qui met la santé Shopify sur
+  autre**, juste alimenté « du dehors ». **C'est ce qui met la santé de l'ancien canal sur
   la carte.**
 
 ### Où vit l'état (dans la **suite**, pas en bespoke Cloudflare)
@@ -168,7 +172,7 @@ type NodeKind = "external-api" | "worker" | "service" | "datastore";
 type HealthStatus = "up" | "degraded" | "down" | "unknown";
 
 interface Heartbeat {
-  node: string; // id stable du nœud (ex. 'pim.sync-shopify')
+  node: string; // id stable du nœud (ex. 'pim.sync-catalogue')
   at: string; // ISO
   status: HealthStatus; // ce que le nœud dit de lui-même
   detail?: string;
@@ -204,7 +208,7 @@ interface NodeHealth {
 Côté émetteur, un **mini-client** (le seul « code » réutilisable) :
 
 ```ts
-const ops = createOpsReporter({ node: "pim.sync-shopify", sink });
+const ops = createOpsReporter({ node: "pim.sync-catalogue", sink });
 await ops.heartbeat("up", { queueDepth: 12 }); // périodique, même à vide
 await ops.event("job.failed", { ref: jobId, message });
 ```
@@ -229,7 +233,7 @@ occurrence d'un besoin de découverte auto déclenchera la discussion, pas avant
 - **App OPS** : lit l'état **live** (WebSocket/SSE depuis le backend Nest), rend le
   schéma + overlay santé + drill-down (metrics, derniers events, dernière erreur).
 - **PIM (et autres apps)** : lisent un **slice** santé (`NodeHealth` de leurs
-  propres nœuds) pour un **bandeau** (« sync Shopify dégradé — file en retard »).
+  propres nœuds) pour un **bandeau** (« sync de l'ancien canal dégradé — file en retard »).
   Le PIM **n'apprend pas** de OPS l'état de ses bindings : il apprend l'état de
   son **worker**. Domaine vs opérationnel (§2), toujours.
 
@@ -275,15 +279,15 @@ grande qu'un worker de sync interactif).
 On ne bâtit pas l'app OPS tant que la flotte est jeune. On **investit dans la
 couture stable** maintenant :
 
-| Étape | Quoi                                                                          | Quand                                    |
-| ----- | ----------------------------------------------------------------------------- | ---------------------------------------- |
-| **0** | **Ce doc** + `@lfd/ops-contract` (shapes + `createOpsReporter`)               | **maintenant**                           |
-| **1** | 1ᵉʳ émetteur : le **worker de sync Shopify du PIM** pousse heartbeat + events | quand le worker existe                   |
-| **2** | **Prober Shopify** (+ Auth0, Postgres) → nœuds externes sur la carte          | avec l'étape 1                           |
-| **3** | Backend OPS Nest : ingest + état live (Redis) + historique (Prisma)           | idem                                     |
-| **4** | **App OPS** (schéma live)                                                     | quand **≥3 nœuds vivants** valent la vue |
-| **5** | Bandeaux « lecteur » dans le PIM (slice santé)                                | après l'app                              |
-| **6** | Actions murées (relancer/mettre en pause)                                     | **différé**, hors v1                     |
+| Étape | Quoi                                                                                    | Quand                                    |
+| ----- | --------------------------------------------------------------------------------------- | ---------------------------------------- |
+| **0** | **Ce doc** + `@lfd/ops-contract` (shapes + `createOpsReporter`)                         | **maintenant**                           |
+| **1** | 1ᵉʳ émetteur : le **worker de sync de l'ancien canal du PIM** pousse heartbeat + events | quand le worker existe                   |
+| **2** | **Prober de l'ancien canal** (+ Auth0, Postgres) → nœuds externes sur la carte          | avec l'étape 1                           |
+| **3** | Backend OPS Nest : ingest + état live (Redis) + historique (Prisma)                     | idem                                     |
+| **4** | **App OPS** (schéma live)                                                               | quand **≥3 nœuds vivants** valent la vue |
+| **5** | Bandeaux « lecteur » dans le PIM (slice santé)                                          | après l'app                              |
+| **6** | Actions murées (relancer/mettre en pause)                                               | **différé**, hors v1                     |
 
 Règle « généraliser sur le 2ᵉ usage réel » : le **contrat** est écrit une fois et
 sert le 1ᵉʳ worker ; l'**app** attend d'avoir de quoi la remplir.
@@ -302,9 +306,9 @@ sert le 1ᵉʳ worker ; l'**app** attend d'avoir de quoi la remplir.
   un **uptime externe** (ping tiers) sur OPS lui-même ; l'état live persiste dans
   **Redis**, donc un backend OPS redémarré le **retrouve** — c'est un **lecteur**
   re-démarrable, pas le détenteur unique.
-- **Faux positif Shopify.** Un probe qui tape une route lente ≠ Shopify en panne.
+- **Faux positif sur l'ancien canal.** Un probe qui tape une route lente ≠ l'ancien canal en panne.
   **Mitigation** : ping **léger et stable** (`shop { name }`), seuils + **N échecs
-  consécutifs** avant `down`, et croiser avec la **status page** Shopify si
+  consécutifs** avant `down`, et croiser avec la **status page** de l'ancien canal si
   besoin. Ne jamais crier au loup sur un timeout isolé.
 - **Coût / cardinalité.** Un heartbeat par worker toutes les N secondes × écriture
   Postgres = ça chiffre. **Mitigation** : le live va dans **Redis** (pas
@@ -585,7 +589,7 @@ Et le mouvement n'est jamais la seule information : sous
 | **J6**     | Heartbeat des backends (`inFlight`, `errorRate1m`) pour croiser l'auto-déclaré et l'observé                                                                                                        | J3, en // |
 | **J7** ✅  | Détail **par requête** : quelles surfaces prennent la charge (AE groupé par nœud+surface, tableau sous la carte) — **fait le 2026-08-19**                                                          | J5        |
 | **J8** ✅  | Relevés par nœud (`readings`), fronts sur la carte, axe vertical — **fait le 2026-08-19**                                                                                                          | J5        |
-| **J9** ✅  | Les sondes : Postgres, Auth0, Resend, Stripe, Shopify — **fait le 2026-08-19**                                                                                                                     | J4        |
+| **J9** ✅  | Les sondes : Postgres, Auth0, Resend, Stripe, l'ancien canal — **fait le 2026-08-19**                                                                                                              | J4        |
 | **J10** ✅ | Les fronts sondés **en deux temps** (§18) : shell HTML + point d'entrée — **fait le 2026-08-19**                                                                                                   | J9        |
 
 ### La surface d'une requête (J7)
@@ -777,7 +781,7 @@ Trois couloirs, et la nature d'un nœud décide du sien :
   requête, de bas en haut : « je clique, et… » ;
 - **à gauche, ce qu'on GARDE** — bases et stockage R2. Ensemble, parce qu'ils se
   perdent ensemble et qu'on les regarde ensemble ;
-- **à droite, ce qu'on APPELLE** — Auth0, Stripe, Resend, Shopify.
+- **à droite, ce qu'on APPELLE** — Auth0, Stripe, Resend, l'ancien canal.
 
 Une seule profondeur les aurait tous posés sur la même ligne : ce sont tous des
 feuilles du graphe. Or **une panne de tierce dégrade une fonction, une base
@@ -797,15 +801,15 @@ centre par défaut aurait été le comportement le plus discret et le plus faux.
 
 L'objectif est qu'aucune carte ne soit muette. L'état au 2026-08-19 :
 
-| Nœud                      | Mesure principale                                                                                     |
-| ------------------------- | ----------------------------------------------------------------------------------------------------- |
-| Gateway                   | requêtes par seconde                                                                                  |
-| API                       | charge par module (B2B, PIM, OPS, Staff)                                                              |
-| Database — LFD            | opérations Prisma /min + répartition, connexions, taille                                              |
-| Auth0                     | actifs 30 j (ou identités) et part du plafond gratuit                                                 |
-| Stripe · Resend · Shopify | latence de la sonde                                                                                   |
-| Stockage R2               | latence de la sonde (HEAD anonyme sur le domaine public, §30) — les opérations A/B attendent un jeton |
-| Fronts                    | aucune : leur sonde dit « servi », elle ne compte rien                                                |
+| Nœud                             | Mesure principale                                                                                     |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Gateway                          | requêtes par seconde                                                                                  |
+| API                              | charge par module (B2B, PIM, OPS, Staff)                                                              |
+| Database — LFD                   | opérations Prisma /min + répartition, connexions, taille                                              |
+| Auth0                            | actifs 30 j (ou identités) et part du plafond gratuit                                                 |
+| Stripe · Resend · l'ancien canal | latence de la sonde                                                                                   |
+| Stockage R2                      | latence de la sonde (HEAD anonyme sur le domaine public, §30) — les opérations A/B attendent un jeton |
+| Fronts                           | aucune : leur sonde dit « servi », elle ne compte rien                                                |
 
 La **latence de sonde** est le repli universel : c'est le seul chiffre qu'un
 tiers donne sans qu'on demande rien à personne. Elle n'est rendue que si la sonde
@@ -849,7 +853,7 @@ navigateur — les deux dérivent, et une durée négative ferait douter du rest
 ### Les tests n'appellent plus l'internet
 
 `/admin/ops/health` déclenchait, depuis la CI, une douzaine d'appels vers Auth0,
-Stripe, Shopify, Resend et les fronts Pages. Lent, dépendant du réseau de
+Stripe, l'ancien canal, Resend et les fronts Pages. Lent, dépendant du réseau de
 quelqu'un d'autre, et capable de faire échouer un test pour une panne qui n'est
 pas la nôtre. Les sondes et le lecteur Auth0 sont **surchargés dans la suite**,
 pas débranchés par un reniflage de `NODE_ENV` : un service qui se comporte
@@ -974,7 +978,7 @@ la carte.
   base : ils n'ont pas de volume à tracer, mais ils ont une histoire, et c'est
   leur vraie métrique (§22 ne couvre qu'eux par l'absence) ;
 - **des alertes calibrables** : après quelques jours de journal, on saura combien
-  de transitions par semaine un seuil produit, au lieu de le deviner.
+  de transitions par semaine un seuil produit, au lieu du deviner.
 
 ## 24. Outillage tiers — ce qu'on prend, ce qu'on laisse
 
@@ -1030,7 +1034,7 @@ se relit dans six mois.
 | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
 | **S1** | Le fil visible de bout en bout : le `traceId` W3C (déjà posé à l'ingress) rendu en **en-tête** de réponse, gardé par les fronts, affiché dans leur message d'erreur | —         |
 | **S2** | Sentry backend, branché sur `AppErrorFilter` : **seules les erreurs techniques** partent ; scrubbing PII ; `traceId`, route, type d'acteur en tags                  | S1        |
-| **S3** | Les fils d'Ariane métier : commande posée, paiement, e-mail émis, publication Shopify — les étapes qui rendent un parcours relisible                                | S2        |
+| **S3** | Les fils d'Ariane métier : commande posée, paiement, e-mail émis, publication de l'ancien canal — les étapes qui rendent un parcours relisible                      | S2        |
 | **S4** | Sentry sur les trois fronts + **source maps** uploadées au build, sans quoi les stacks Angular sont illisibles                                                      | S1        |
 | **S5** | Le moniteur uptime externe sur la passerelle — celui qui survit à l'API, et répond au défaut de fond du §21                                                         | —         |
 | **S6** | La boucle : nouvelle issue → e-mail staff, et le lien depuis l'écran OPS                                                                                            | S2, S4    |

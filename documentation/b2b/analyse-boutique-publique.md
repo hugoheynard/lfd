@@ -114,7 +114,7 @@ Le TTC public et le taux de la vente publique, par déclinaison :
 ### 3.2 Le point dur : un prix d'étiquette TTC dans une chaîne HT
 
 Pour un pro, tout est juste en HT. Pour le public, **le prix décidé est le TTC
-d'étiquette**. Trois faits empêchent de le traiter comme un simple autre prix :
+d'étiquette**. Trois faits empêchent du traiter comme un simple autre prix :
 
 - **La remise de retrait est HT**, calculée sur le sous-total HT et répartie par
   taux dans `ventilateVat`. Tant qu'un point de retrait porte une remise, le
@@ -224,10 +224,10 @@ touche le résolveur de principal, donc une frontière d'argent et de sécurité
   éventuelle pour les denrées périssables ;
 - ce qui remplace la facture, s'il n'y en a pas (D0) ; information RGPD.
 
-### 5.6 Shopify
+### 5.6 L'ancien canal de vente en ligne
 
-Le référentiel pousse le TTC public vers Shopify. Non vérifié : quel taux la
-projection Shopify applique. Remplacé ou conservé ? (D9)
+Le référentiel pousse le TTC public vers l'ancien canal. Non vérifié : quel taux la
+projection de l'ancien canal applique. Remplacé ou conservé ? (D9)
 
 ## 6. Décisions à prendre avant le plan
 
@@ -242,7 +242,7 @@ projection Shopify applique. Remplacé ou conservé ? (D9)
 | **D6**  | Ouvrir aux deux audiences en même temps ?                                             | un flag par audience                                                    |
 | **D7**  | Quel document pour une commande publique ?                                            | récapitulatif TTC, bon et courriel                                      |
 | **D8**  | Un écran « comptes publics » ?                                                        | non en v1                                                               |
-| **D9**  | Shopify : remplacé ou conservé ?                                                      | à trancher par Hugo                                                     |
+| **D9**  | Ancien canal : remplacé ou conservé ?                                                 | à trancher par Hugo                                                     |
 | **D10** | Que voit la vitrine anonyme : prix public ou pro ?                                    | public ; le pro voit son prix une fois connecté                         |
 
 > ⚠️ **D2 et D5 ne sont plus des règles de code (2026-09-15).** Ce sont des
@@ -283,4 +283,4 @@ la parité devis / commande casserait entre les deux déploiements.
 | **S7** cycle de prélèvement mal décrit ; contradiction avec « une facture pour toute vente »                                             | corrigée — §2.2, D0 ; citation vérifiée l. 17                     |
 | **S8** snapshot v9, nom du champ de fil ; taux = qualification fiscale                                                                   | corrigée — §3.1, §5.5                                             |
 | Mineures (chemins, libellé de file, archivage du bon, courriel, alertes)                                                                 | corrigées                                                         |
-| Non vérifié : données de production, taux Shopify, abonnements, écrans HT exhaustifs                                                     | assumé — lot 0 et plan                                            |
+| Non vérifié : données de production, taux de l'ancien canal, abonnements, écrans HT exhaustifs                                           | assumé — lot 0 et plan                                            |

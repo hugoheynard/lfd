@@ -10,16 +10,16 @@
 
 Un mot = une chose. Ces termes sont les seuls autorisés, dans le code comme dans les docs.
 
-| Terme                   | Anglais (code)         | Définition                                                                                             | À ne PAS dire                |
-| ----------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------ | ---------------------------- |
-| **Produit**             | `Product`              | Ce que la boulangerie _conçoit_ — une recette commercialisée. **Pas vendable en soi.**                 | article, item, référence     |
-| **Déclinaison**         | `ProductVariant`       | L'**unité réellement vendue**. Porte prix, dispo, code caisse.                                         | variante produit, SKU        |
-| **Référence**           | `sku`                  | Chaîne lisible par un humain qui désigne une déclinaison ou un produit                                 | code, ref, EAN               |
-| **Famille**             | `Category`             | Classement **structurel**, arbre à parent unique. Un produit a **une** famille.                        | catégorie, rayon, collection |
-| **Collection**          | `Collection`           | Regroupement **libre** et n:n (« Noël », « Signature »). Marketing.                                    | catégorie, tag               |
-| **Fiche réglementaire** | `NutritionDeclaration` | Allergènes + valeurs nutritionnelles d'une **déclinaison**                                             | nutrition, INCO              |
-| **Canal**               | `Channel`              | Un débouché. Il n'en reste qu'**un** : `b2b` (Shopify sorti le 2026-09-21, la caisse PI le 2026-09-22) | plateforme, intégration      |
-| **Publication**         | —                      | Le fait de rendre un produit visible **sur un canal**                                                  | mise en ligne, push          |
+| Terme                   | Anglais (code)         | Définition                                                                                                    | À ne PAS dire                |
+| ----------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| **Produit**             | `Product`              | Ce que la boulangerie _conçoit_ — une recette commercialisée. **Pas vendable en soi.**                        | article, item, référence     |
+| **Déclinaison**         | `ProductVariant`       | L'**unité réellement vendue**. Porte prix, dispo, code caisse.                                                | variante produit, SKU        |
+| **Référence**           | `sku`                  | Chaîne lisible par un humain qui désigne une déclinaison ou un produit                                        | code, ref, EAN               |
+| **Famille**             | `Category`             | Classement **structurel**, arbre à parent unique. Un produit a **une** famille.                               | catégorie, rayon, collection |
+| **Collection**          | `Collection`           | Regroupement **libre** et n:n (« Noël », « Signature »). Marketing.                                           | catégorie, tag               |
+| **Fiche réglementaire** | `NutritionDeclaration` | Allergènes + valeurs nutritionnelles d'une **déclinaison**                                                    | nutrition, INCO              |
+| **Canal**               | `Channel`              | Un débouché. Il n'en reste qu'**un** : `b2b` (l'ancien canal sorti le 2026-09-21, la caisse PI le 2026-09-22) | plateforme, intégration      |
+| **Publication**         | —                      | Le fait de rendre un produit visible **sur un canal**                                                         | mise en ligne, push          |
 
 > **Règle** : « produit » ne désigne **jamais** ce qu'un client achète. Un client achète une
 > **déclinaison**. Ce glissement de vocabulaire est la première cause de modèle bancal en PIM.
@@ -143,11 +143,11 @@ allergènes — on peut créer une fiche incomplète sans jamais risquer de la d
 L'event store n'est **pas** activé (cf. ADR-11 révisé). Mais ces trois règles-ci le sont dès
 maintenant : elles ne coûtent rien aujourd'hui et sont **impossibles à rattraper** plus tard.
 
-| #      | Règle                                                                                                                        | Pourquoi c'est irréversible                                                                                                                                                 |
-| ------ | ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **R1** | **Les identifiants sont assignés par la commande**, jamais par la base ni par un projecteur (UUID v7 généré applicativement) | Le jour où on rejoue un log d'events, un id auto-incrément regénérerait des ids différents — et la caisse, Shopify et les commandes passées pointent dessus. Irrattrapable. |
-| **R2** | **Toute mutation porte un nom métier** (les verbes du §3). Aucun `updateProduct(partial)`                                    | Un `update` générique n'a pas d'event correspondant. Rétro-nommer les intentions après coup est impossible : l'information n'a jamais été capturée.                         |
-| **R3** | **Aucun `DELETE` physique** — on archive                                                                                     | Une ligne supprimée est une histoire perdue.                                                                                                                                |
+| #      | Règle                                                                                                                        | Pourquoi c'est irréversible                                                                                                                                                        |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **R1** | **Les identifiants sont assignés par la commande**, jamais par la base ni par un projecteur (UUID v7 généré applicativement) | Le jour où on rejoue un log d'events, un id auto-incrément regénérerait des ids différents — et la caisse, l'ancien canal et les commandes passées pointent dessus. Irrattrapable. |
+| **R2** | **Toute mutation porte un nom métier** (les verbes du §3). Aucun `updateProduct(partial)`                                    | Un `update` générique n'a pas d'event correspondant. Rétro-nommer les intentions après coup est impossible : l'information n'a jamais été capturée.                                |
+| **R3** | **Aucun `DELETE` physique** — on archive                                                                                     | Une ligne supprimée est une histoire perdue.                                                                                                                                       |
 
 Ce que ça **n'impose pas** aujourd'hui : ni table `events`, ni projecteurs, ni upcasting. Les tables
 sont écrites directement par les handlers de commande. Le passage à l'event store consistera à

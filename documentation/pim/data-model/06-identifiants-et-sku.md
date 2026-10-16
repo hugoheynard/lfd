@@ -29,7 +29,7 @@ Deux règles en découlent, et elles suffisent à trancher la plupart des débat
 ## 2. Pourquoi « un SKU par canal » est faux
 
 La proposition modélisait `Sku = (variantUuid, channel, value)` avec
-`channel ∈ {shopify, caisse, ean13}`. Quatre objections, par ordre de gravité.
+`channel ∈ {ancien_canal, caisse, ean13}`. Quatre objections, par ordre de gravité.
 
 **a. Ce n'est pas ce qu'est un SKU.** _Stock Keeping Unit_ : la référence **du commerçant**, pour
 son propre usage. Elle est par définition **unique et unique tout court** — c'est le mot que le
@@ -37,13 +37,13 @@ boulanger prononce en désignant l'article. Un SKU qui change selon l'interlocut
 sa fonction : le référentiel commun qu'on cherche à construire disparaît.
 
 **b. `ean13` n'est pas un canal.** C'est un identifiant **mondial** émis par GS1, attaché à l'article
-commercial et non à un système. Le mettre sur le même axe que « Shopify » range un organisme de
+commercial et non à un système. Le mettre sur le même axe que « l'ancien canal » range un organisme de
 normalisation à côté d'un logiciel. La proposition le remarque elle-même en §13 — puis l'embarque
 quand même.
 
-**c. `channel: 'shopify' | 'caisse'` dans le domaine viole [ADR-13](../adr.md#adr-13--composition-par-tables-satellites-canaux-au-bord).**
+**c. `channel: 'ancien_canal' | 'caisse'` dans le domaine viole [ADR-13](../adr.md#adr-13--composition-par-tables-satellites-canaux-au-bord).**
 Une énumération de canaux au cœur du catalogue, c'est le vocabulaire des systèmes tiers dans le
-domaine. Test d'ADR-13 : _si on supprimait le module Shopify, le catalogue compilerait-il encore ?_
+domaine. Test d'ADR-13 : _si on supprimait le module de l'ancien canal, le catalogue compilerait-il encore ?_
 Ici — **non**, l'enum ne compile plus.
 
 **d. Ça duplique le motif de binding déjà conçu.** Une table de canal porte
@@ -51,7 +51,7 @@ l'identifiant du tiers, **du bon côté de la frontière** — voir
 [`04`](./04-composition-et-canaux.md).
 
 > ⚠️ Cet argument citait `helios_variant_binding.plu` et
-> `shopify_variant_binding` comme « existant déjà ». **Ni l'une ni l'autre
+> la table de liaison des variantes de l'ancien canal comme « existant déjà ». **Ni l'une ni l'autre
 > n'existe** : la première n'a jamais été créée, la seconde est supprimée depuis
 > le 2026-09-21. Le seul porteur vivant du motif est `b2b_channel_binding`.
 
@@ -121,7 +121,7 @@ export class Sku {
 ```
 
 Le charset `A-Z 0-9 -` n'est pas une préférence esthétique : c'est l'intersection sûre de tout ce
-qui traversera la chaîne — champs Shopify, écrans de caisse, exports CSV, noms de fichiers,
+qui traversera la chaîne — champs de l'ancien canal, écrans de caisse, exports CSV, noms de fichiers,
 étiquettes imprimées, URL. Les accents et les espaces y cassent quelque chose tôt ou tard.
 
 > **Ce que la normalisation achète, au-delà du confort** : puisque `create()` est le **seul**
@@ -257,10 +257,10 @@ HTTP, qui décide que ça vaut un **409**.
 
 C'est ton exigence, et elle est satisfaite — mais du bon côté de la frontière.
 
-| Canal         | Table (possédée par l'adaptateur) | Colonne       | Contrainte                                                         |
-| ------------- | --------------------------------- | ------------- | ------------------------------------------------------------------ |
-| Shopify       | `shopify_variant_binding`         | `shopify_sku` | `UNIQUE`                                                           |
-| ~~Caisse PI~~ | ~~`helios_variant_binding`~~      | ~~`plu`~~     | **caduc le 2026-09-22** — PI est sorti, la table n'a jamais existé |
+| Canal         | Table (possédée par l'adaptateur)                   | Colonne               | Contrainte                                                         |
+| ------------- | --------------------------------------------------- | --------------------- | ------------------------------------------------------------------ |
+| Ancien canal  | la table de liaison des variantes de l'ancien canal | SKU de l'ancien canal | `UNIQUE`                                                           |
+| ~~Caisse PI~~ | ~~`helios_variant_binding`~~                        | ~~`plu`~~             | **caduc le 2026-09-22** — PI est sorti, la table n'a jamais existé |
 
 **Chaque table _est_ un canal** — un index unique sur sa colonne **est** une unicité par canal. Aucun
 enum de canal, aucune colonne discriminante, aucune ligne de code du domaine à toucher pour en
@@ -296,9 +296,9 @@ Trois raisons, dans l'ordre :
 La fonction de contrôle du **checksum EAN-13** de la proposition d'origine est correcte et vaut
 d'être reprise **telle quelle** le jour venu — c'est le seul de ses formats objectivement fondé.
 
-> ⚠️ Les autres contraintes de la proposition (`16` caractères pour Shopify, `6` chiffres pour la
+> ⚠️ Les autres contraintes de la proposition (`16` caractères pour l'ancien canal, `6` chiffres pour la
 > caisse) sont **affirmées sans source**. La règle caisse est explicitement marquée « à confirmer » ;
-> la règle Shopify ne l'est pas et paraît tout aussi inventée. **À vérifier avant tout usage** — c'est
+> la règle de l'ancien canal ne l'est pas et paraît tout aussi inventée. **À vérifier avant tout usage** — c'est
 > exactement le genre de constante qui traverse un projet entier sans que personne ne la questionne.
 
 ## 8. Partage front / back

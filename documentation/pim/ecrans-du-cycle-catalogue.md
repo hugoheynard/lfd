@@ -31,7 +31,7 @@ n'a aucun moyen de savoir laquelle il vient de trancher.
 ### 🔴 Et chaque geste n'a qu'UNE porte
 
 Le 2026-09-02, la liste des produits portait trois boutons d'envoi
-(`Pousser`, `Pousser la sélection`, `Tout pousser sur Shopify`) qui appelaient
+(`Pousser`, `Pousser la sélection`, `Tout pousser sur l'ancien canal`) qui appelaient
 `push(productIds)` — soit `dryRun = false` **et aucune empreinte**. L'écran
 Publication, lui, fait `push(targets, true)` puis `push(targets, false, relu())`.
 
@@ -121,10 +121,10 @@ binding est resté vide.
 ### Ce que la justification du modèle défend
 
 Le JSDoc de `B2bChannelBinding` argumente ainsi : « un état de publication
-(`published`) ne suffirait pas — il confondrait publié chez Shopify et vendu aux
+(`published`) ne suffirait pas — il confondrait publié chez l'ancien canal et vendu aux
 pros ». C'est **vrai, et hors sujet** : ça défend la table contre `Product.status`,
 pas contre la matrice. Or la matrice distingue déjà les deux exactement —
-`sales_context.key = 'b2b'` d'un côté, `sales_context.shopify_projected` de
+`sales_context.key = 'b2b'` d'un côté, la colonne de projection vers l'ancien canal de
 l'autre, et le schéma explique lui-même pourquoi les deux ne se confondent pas.
 
 La justification est correcte contre la mauvaise alternative. C'est ainsi qu'une
@@ -138,7 +138,7 @@ table en double survit.
 - **`b2b_channel_binding` cesse de porter une décision.** Il ne garde que ce que
   l'en-tête de son propre modèle annonce : un **état de synchro**
   (`last_pushed_at`), re-dérivable par un re-push. La ligne naît du push, comme
-  côté Shopify.
+  chez l'ancien canal.
 - **Aucun écran « assortiment du canal ».** Il ferait une troisième porte pour la
   même décision.
 - **Les routes de mutation `PUT /pim/channels/b2b/products/:id`** et leur
@@ -191,11 +191,11 @@ déploiements — étendre, basculer, resserrer (`documentation/ci-cd/pipelines.
 
 ---
 
-## 4. « Publier au catalogue » garde chez Shopify, et ne garde RIEN côté B2B
+## 4. « Publier au catalogue » garde chez l'ancien canal, et ne garde RIEN côté B2B
 
 ⚠️ **Ce paragraphe affirmait le contraire, et c'était faux.** Il disait « le statut
 ne sert qu'à peindre une pastille » et « un brouillon part en boutique ». Un
-`grep status` sur la projection du canal Shopify le contredisait — ce canal est
+`grep status` sur la projection de l'ancien canal de vente en ligne le contredisait — ce canal est
 sorti du dépôt le 2026-09-21, le code cité vit désormais dans l'histoire git :
 
 ```ts
@@ -203,7 +203,7 @@ sorti du dépôt le 2026-09-21, le code cité vit désormais dans l'histoire git
 status: product.status === "published" && soldOnStorefront ? "ACTIVE" : "DRAFT",
 ```
 
-Une fiche en brouillon **part** vers Shopify, mais y arrive en brouillon Shopify :
+Une fiche en brouillon **part** vers l'ancien canal, mais y arrive en brouillon chez lui :
 elle n'est pas en vitrine. La garde existe, elle est juste **plus bas** que le
 choix des candidats.
 
@@ -217,7 +217,7 @@ dev : `prd_gros-florentin-lait`, statut `draft`.
 ### La prescription, et ce qu'elle n'est PAS
 
 > **La projection B2B écarte les fiches qui ne sont pas au catalogue**, comme la
-> projection Shopify le fait déjà pour la vitrine.
+> projection de l'ancien canal le fait déjà pour la vitrine.
 
 **Ce n'est pas une migration de données**, et la première rédaction de ce document
 en prescrivait une — « marquer l'existant, puis resserrer ». Elle n'était pas
@@ -301,7 +301,7 @@ Elle répond à **« lequel »**. Rien d'autre.
 **Ne doit pas porter**
 
 - **Aucun envoi.** Ni unitaire, ni en lot, ni « tout pousser ».
-- **Aucune colonne d'état de canal** — ni `Shopify`, ni `B2B`. Une colonne qui
+- **Aucune colonne d'état de canal** — ni `ancien canal`, ni `B2B`. Une colonne qui
   parle d'un canal dans la liste des fiches est une invitation à agir depuis là,
   et elle regagnera un bouton. La colonne `B2B` ajoutée le 2026-09-02 affichait
   de surcroît le binding **à côté** de la colonne `Canaux` qui lit la matrice :
@@ -322,14 +322,14 @@ Elle répond à **« qu'est-ce qui est vrai de ce produit »**.
    (« quelqu'un affirme que ces informations sont justes »).
 2. **Sur la plateforme professionnelle** — la **frise** : dans l'assortiment,
    poussée le, livraison en attente depuis, en vente. Elle **constate**.
-3. **Sur la boutique en ligne** — état de synchro Shopify, même nature.
+3. **Sur la boutique en ligne** — état de synchro de l'ancien canal, même nature.
 
 ### Ce que la fiche doit refuser de laisser croire
 
 - Le **handle** est dérivé du nom, à la création **et à chaque renommage**
   (`Product.rename()` re-dérive le slug). Il n'est pas « attribué à la première
   poussée ». ⚠️ Renommer une fiche déjà poussée **déplace son URL publique**, et
-  l'historique Shopify — unique par `(handle, version)` — repart à v1. La fiche
+  l'historique de l'ancien canal — unique par `(handle, version)` — repart à v1. La fiche
   doit le dire au moment du renommage, pas dans une note.
 - La plateforme B2B **n'a aucun champ de saisie propre** : elle lit le nom, le
   prix et les allergènes du référentiel. Sa seule propriété par fiche est sa
@@ -414,7 +414,7 @@ depuis laquelle elle attend. Tant que personne ne l'a validée, **rien de ce qui
 
 **Intégrations** disparaît : sa moitié « santé » remonte dans la Vue d'ensemble,
 qui portait déjà l'autre moitié. **Collections** reste, comme ressource du canal
-Shopify.
+l'ancien canal.
 
 ---
 
@@ -423,12 +423,12 @@ Shopify.
 | №   | Écart                                                                                                                                                  | Écran                                 | Gravité |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------- | ------- |
 | 1   | La décision « vendu aux pros » est écrite deux fois (matrice **et** binding), et les deux ont divergé — 41 contre 1                                    | modèle + `/pim/produits`              | 🔴      |
-| 2   | La projection B2B ne consulte le statut nulle part : un brouillon est vendu aux professionnels (Shopify, lui, garde déjà)                              | modèle                                | 🔴      |
+| 2   | La projection B2B ne consulte le statut nulle part : un brouillon est vendu aux professionnels (l'ancien canal, lui, garde déjà)                       | modèle                                | 🔴      |
 | 3   | ~~La simulation ne NOMME pas ce que l'envoi va retirer là où on appuie sur Envoyer~~ — **corrigé** : `GET push-preview`, chargé à l'ouverture          | `/pim/publication`                    | ✅      |
 | 4   | La colonne `B2B`, les actions _Vendre sur / Retirer_ de la liste **et le bouton de la fiche** (`b2b-delivery.ts:201`) partent avec le binding          | `/pim/produits` · `/pim/produits/:id` | 🟠      |
 | 5   | ~~Le clic sur la ligne n'ouvre pas la fiche~~ — **corrigé** : `fold-data-table` porte `clickable` + `(rowClick)`, qui navigue vers `/pim/produits/:id` | `/pim/produits`                       | ✅      |
 | 6   | La chaîne est coupée entre la Vue d'ensemble et Intégrations                                                                                           | `/pim/catalogue`                      | 🟠      |
-| 7   | ~~La colonne `sync` (Shopify)~~ — **caduc** : la liste a cessé de lire Shopify le 2026-09-21 (`a339a1617`), et le canal est sorti                      | `/pim/produits`                       | ✅      |
+| 7   | ~~La colonne `sync` (l'ancien canal)~~ — **caduc** : la liste a cessé de lire l'ancien canal le 2026-09-21 (`a339a1617`), et le canal est sorti        | `/pim/produits`                       | ✅      |
 | 8   | Renommer une fiche déjà poussée déplace son URL publique sans avertir                                                                                  | `/pim/produits/:id`                   | 🟠      |
 | 9   | 94 fiches sur 95 sont impubliables (invariant 7 : allergènes non déclarés) — ce n'est pas un défaut d'écran, c'est du travail de saisie                | référentiel                           | 🟡      |
 | 10  | L'aperçu de push ne montre pas le contenu, donc un refus pour dérive ne se diagnostique pas                                                            | `/pim/publication`                    | 🟡      |
@@ -442,7 +442,7 @@ retirée sans trace se refait.
 
 | Affirmation                                                                            | Ce que le code dit                                                                                                                               |
 | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| « Le statut ne sert qu'à peindre une pastille » · « un brouillon part en boutique »    | Faux pour Shopify : `projection.ts:101` pose `DRAFT` si la fiche n'est pas `published`. Le défaut est **B2B seulement**                          |
+| « Le statut ne sert qu'à peindre une pastille » · « un brouillon part en boutique »    | Faux pour l'ancien canal : `projection.ts:101` pose `DRAFT` si la fiche n'est pas `published`. Le défaut est **B2B seulement**                   |
 | « Marquer l'existant, puis resserrer »                                                 | Non exécutable : `Product.publish()` refuse 94 fiches sur 95 (invariant 7). La seule forme restante était un `UPDATE` court-circuitant l'agrégat |
 | « Aucun écran ne montre ce que l'envoi va retirer »                                    | `GET /b2b/admin/catalog/parity` rend `stale`, affiché par `/pim/integration` — que le §5 proposait de supprimer                                  |
 | « Les deux canaux partent de `publishable()` » (comme si ça n'avait que deux lecteurs) | Quatre lecteurs, dont la **source de révision** : resserrer `publishable()` ferait passer l'ancre de 95 fiches à 1                               |

@@ -1,6 +1,6 @@
 # Contextes de vente, points de vente et TVA
 
-> 🔴 **Shopify est sorti du dépôt le 2026-09-21**
+> 🔴 **L'ancien canal de vente en ligne est sorti du dépôt le 2026-09-21**
 > ([`../catalogue/plan-un-seul-canal-deux-prix.md`](../catalogue/plan-un-seul-canal-deux-prix.md)).
 > Ce document décrit le modèle des **contextes de vente**, qui ne bouge pas et
 > devient au contraire plus central — c'est lui qui portera la TVA par contexte
@@ -10,7 +10,7 @@
 
 > **Le doc unique du sujet.** Ce qu'est un contexte de vente, ce qui en crée un,
 > où vit le taux de TVA, qui décide de ce qu'on vend et où, comment ça sort vers
-> Shopify et vers la plateforme professionnelle, ce que coûte chaque évolution,
+> l'ancien canal et vers la plateforme professionnelle, ce que coûte chaque évolution,
 > et quels murs refusent quoi.
 >
 > État : ✅ décrit le code qui tourne au 2026-08-26. Le seul point décidé mais
@@ -47,7 +47,7 @@ L'ordre compte, c'est lui qui rend le modèle non arbitraire :
 1. **la TVA d'abord** — elle est imposée de l'extérieur ;
 2. **la tranche de catalogue ensuite**, par conséquence : on ne peut pas taxer ce
    qu'on ne vend pas là ;
-3. **la projection en dernier** : Shopify en fait un produit ou non, la
+3. **la projection en dernier** : l'ancien canal en fait un produit ou non, la
    plateforme professionnelle a son propre projecteur.
 
 Le découpage du catalogue est une **conséquence**, pas le but. Deux manières de
@@ -105,7 +105,7 @@ appliquer avant d'en créer une.
 Trois lignes dans `pim.sales_context`, avec leur clé — l'identité que le code et
 les clés étrangères citent — et leur libellé, qui se change à l'écran :
 
-| Clé        | Libellé de semis | Projeté vers Shopify         |
+| Clé        | Libellé de semis | Projeté vers l'ancien canal  |
 | ---------- | ---------------- | ---------------------------- |
 | `takeaway` | À emporter       | ✅ (handle nu, sans suffixe) |
 | `eatIn`    | Sur place        | ❌ (suffixe `-surplace`)     |
@@ -182,7 +182,7 @@ flowchart TD
   end
 
   RES -->|"taux de la carte <b>b2b</b>"| B2B
-  RES -->|"cartes <b>shopify_projected</b>"| SHOP
+  RES -->|"cartes <b>projetées vers l'ancien canal</b>"| SHOP
 
   subgraph B2B["Plateforme pro — elle facture"]
     BI["<b>catalog_item.vat_rate_percent</b><br/>copié à la poussée"]
@@ -192,7 +192,7 @@ flowchart TD
     BO -.->|"n'y touche pas"| BL
   end
 
-  subgraph SHOP["Shopify — elle range"]
+  subgraph SHOP["L'ancien canal — elle range"]
     SH["handle <b>tva-5-5</b><br/><i>dérivé du taux</i>"]
     SC["collection<br/><i>une seule par produit</i>"]
     SH --> SC
@@ -206,16 +206,16 @@ factureraient un jour deux taux différents pour le même article.
 
 ### Ce que chaque étage décide
 
-| Étage                  | Décide                                     | Ne décide pas                            |
-| ---------------------- | ------------------------------------------ | ---------------------------------------- |
-| `tva_rate`             | qu'un taux **existe**                      | qui l'utilise                            |
-| `sales_context`        | quelles **cartes** existent                | quel taux elles portent                  |
-| `category_context_tva` | le taux d'une **famille** pour une carte   | ce qu'un article particulier facture     |
-| `product_context_tva`  | le taux d'**une fiche**, carte par carte   | ce que sa famille décide pour les autres |
-| projection B2B         | recopier le taux résolu de la carte `b2b`  | inventer un taux                         |
-| décision locale B2B    | prix, visibilité, mise en avant            | **la TVA**                               |
-| `order_line.vat_rate`  | ce qui est **facturé**, figé à la commande | rien d'autre : c'est une photo           |
-| projection Shopify     | la **collection** `tva-*` du produit       | le taux lui-même                         |
+| Étage                        | Décide                                     | Ne décide pas                            |
+| ---------------------------- | ------------------------------------------ | ---------------------------------------- |
+| `tva_rate`                   | qu'un taux **existe**                      | qui l'utilise                            |
+| `sales_context`              | quelles **cartes** existent                | quel taux elles portent                  |
+| `category_context_tva`       | le taux d'une **famille** pour une carte   | ce qu'un article particulier facture     |
+| `product_context_tva`        | le taux d'**une fiche**, carte par carte   | ce que sa famille décide pour les autres |
+| projection B2B               | recopier le taux résolu de la carte `b2b`  | inventer un taux                         |
+| décision locale B2B          | prix, visibilité, mise en avant            | **la TVA**                               |
+| `order_line.vat_rate`        | ce qui est **facturé**, figé à la commande | rien d'autre : c'est une photo           |
+| projection de l'ancien canal | la **collection** `tva-*` du produit       | le taux lui-même                         |
 
 **Le taux d'un produit n'est jamais recalculé après coup.** `order_line.vat_rate`
 est une photo prise à la commande : changer un taux demain ne réécrit aucune
@@ -365,7 +365,7 @@ erDiagram
         string key UK "takeaway, eatIn, b2b"
         string label
         bool   active
-        bool   shopify_projected
+        bool   projected_former
         string handle_suffix
         int    position
     }
@@ -406,7 +406,7 @@ flowchart TB
     end
 
     subgraph E4["ÉTAGE 4 · Les consommateurs — ce qui SORT"]
-        SHOP["adaptateur Shopify"]
+        SHOP["adaptateur de l'ancien canal"]
         B2B["adaptateur plateforme pro"]
         NEW["une borne, une caisse, une app…"]
     end
@@ -471,7 +471,7 @@ Rejoindre ne suffisait pas : un article dont le taux changeait restait membre de
 sa collection précédente, la boutique le taxait encore selon elle, et rien ne le
 signalait.
 
-⚠️ **`shopify_projected` marquait les cartes effectivement projetées** — la seule
+⚠️ **La colonne de projection vers l'ancien canal marquait les cartes effectivement projetées** — la seule
 `takeaway`. La colonne existe encore : sa QUESTION survit à son canal (_ce
 contexte donne-t-il lieu à un objet vendable à part ?_) et son successeur est une
 décision ouverte du plan, pas un reliquat à supprimer.
@@ -495,7 +495,7 @@ Un push qui tait ses exclusions laisse croire que 92 produits sont partis quand
 > ⚠️ **Repli de transition encore en place.** Côté boutique pro, `billableRate`
 > retombe sur le taux de la famille miroir quand l'article n'a pas encore le
 > sien — sans lui, la boutique se serait éteinte entre le déploiement et le
-> premier push. Un push complet suffit à le rendre inutile, et le garder fait
+> premier push. Un push complet suffit au rendre inutile, et le garder fait
 > resurgir le défaut qu'il corrige : une ligne facturée qui dépend d'une
 > jointure de famille.
 
@@ -545,7 +545,7 @@ Deux réserves :
 1. **`active` est explicite, jamais implicite.** La TVA est de l'argent, et une
    carte activée par accident facture faux. Une carte hors service ne se règle
    plus à l'écran et ne facture plus.
-2. **`shopify_projected = true` change des URL.** Le suffixe de handle doit être
+2. **Projeter vers l'ancien canal change des URL.** Le suffixe de handle doit être
    figé **avant** le premier push : une URL indexée est définitive, la changer
    coûte des 404 et du référencement. Le handle **nu** est réservé à la carte par
    défaut (`takeaway`), et deux cartes projetées ne peuvent pas partager un
@@ -604,14 +604,14 @@ l'atteindre — un appel direct, si.
 
 ## 9. Ce que chaque écran possède
 
-| Écran                   | Route               | Étage | Ce qu'on y fait                                                           |
-| ----------------------- | ------------------- | ----- | ------------------------------------------------------------------------- |
-| **Contextes de vente**  | `/pim/contextes`    | 1     | ouvrir, régler, mettre hors service une carte ; la racine ne s'efface pas |
-| **Points de vente**     | `/pim/emplacements` | 1 + 2 | ouvrir une boutique ou une plateforme, cocher son offre, équiper les QR   |
-| **TVA**                 | `/pim/tva`          | 1     | le référentiel des taux                                                   |
-| **Familles** (panneau)  | `/pim/categories`   | 3     | la matrice (point de vente × carte) et les taux par carte                 |
-| **Fiche produit**       | `/pim/produits/:id` | 3     | la dérogation — même grille, même sémantique                              |
-| **Publication Shopify** | `/pim/publication`  | 4     | ce que la projection produit                                              |
+| Écran                             | Route               | Étage | Ce qu'on y fait                                                           |
+| --------------------------------- | ------------------- | ----- | ------------------------------------------------------------------------- |
+| **Contextes de vente**            | `/pim/contextes`    | 1     | ouvrir, régler, mettre hors service une carte ; la racine ne s'efface pas |
+| **Points de vente**               | `/pim/emplacements` | 1 + 2 | ouvrir une boutique ou une plateforme, cocher son offre, équiper les QR   |
+| **TVA**                           | `/pim/tva`          | 1     | le référentiel des taux                                                   |
+| **Familles** (panneau)            | `/pim/categories`   | 3     | la matrice (point de vente × carte) et les taux par carte                 |
+| **Fiche produit**                 | `/pim/produits/:id` | 3     | la dérogation — même grille, même sémantique                              |
+| **Publication de l'ancien canal** | `/pim/publication`  | 4     | ce que la projection produit                                              |
 
 L'écran des points de vente garde l'URL `/pim/emplacements` alors qu'il s'appelle
 « Points de vente » : renommer un chemin casse les liens déjà partagés, et un mot
@@ -636,9 +636,9 @@ ne voyait.
 
 Le choix des intégrations doit se poser **par point de vente**, sur la ligne
 d'offre qui existe déjà (`point_of_sale_context`) : « ici, à emporter passe par
-Shopify et par la caisse ».
+l'ancien canal et par la caisse ».
 
-Ce qui le remplace aujourd'hui : `sales_context.shopify_projected` et
+Ce qui le remplace aujourd'hui : la colonne de projection vers l'ancien canal et
 `sales_context.handle_suffix` — le vocabulaire d'**une** intégration, rangé dans
 la table centrale du catalogue. C'est la dernière entorse au principe « le
 référentiel ne connaît pas le vocabulaire des plateformes ». Trois lecteurs

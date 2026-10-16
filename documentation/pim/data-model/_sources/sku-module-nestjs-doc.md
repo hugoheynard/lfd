@@ -16,9 +16,9 @@ Gestion des identifiants produits pour le PIM. Ce module encapsule la **stratég
 
 ## 1. Objectif & principes
 
-- **L'UUID est l'identité** — clé primaire immuable de la variante, et **clé de jointure (FK)** entre PIM, Shopify et caisse. La réconciliation (stock, ventes) se fait **toujours sur l'UUID, jamais sur le SKU**.
-- **Le SKU est un libellé par canal** — un `Sku` = `(variantUuid, channel, value)`. Un même produit peut porter un SKU différent selon le système externe (Shopify lisible, PLU numérique caisse, EAN‑13…).
-- **Valider à la frontière** — un SKU invalide est rejeté **à l'entrée dans le PIM**, pas au moment du push (où Shopify/caisse le rejetteraient). _Fail at the door, not at sync._
+- **L'UUID est l'identité** — clé primaire immuable de la variante, et **clé de jointure (FK)** entre PIM, l'ancien canal et caisse. La réconciliation (stock, ventes) se fait **toujours sur l'UUID, jamais sur le SKU**.
+- **Le SKU est un libellé par canal** — un `Sku` = `(variantUuid, channel, value)`. Un même produit peut porter un SKU différent selon le système externe (l'ancien canal lisible, PLU numérique caisse, EAN‑13…).
+- **Valider à la frontière** — un SKU invalide est rejeté **à l'entrée dans le PIM**, pas au moment du push (où l'ancien canal/caisse le rejetteraient). _Fail at the door, not at sync._
 - **Le back fait autorité** — la validation front est du confort de saisie ; le serveur revalide systématiquement avec le même schéma.
 - **Source unique de vérité** — un _registre de règles par canal_ alimente à la fois la validation, les messages d'erreur et l'aide à la saisie côté front.
 
@@ -67,9 +67,9 @@ export interface SkuRule {
 }
 
 export const SKU_RULES = {
-  shopify: {
+  ancien_canal: {
     pattern: /^[A-Z0-9]([A-Z0-9-]{0,14}[A-Z0-9])?$/,
-    label: "Shopify",
+    label: "Ancien canal",
     description: "Lettres majuscules, chiffres et tirets. 16 caractères max.",
     example: "ECL-CHOC-6P",
     maxLength: 16,
@@ -95,7 +95,7 @@ export const SKU_RULES = {
   },
 } as const satisfies Record<string, SkuRule>;
 
-export type Channel = keyof typeof SKU_RULES; // "shopify" | "caisse" | "ean13"
+export type Channel = keyof typeof SKU_RULES; // "ancien_canal" | "caisse" | "ean13"
 export const CHANNELS = Object.keys(SKU_RULES) as [Channel, ...Channel[]];
 ```
 
@@ -321,7 +321,7 @@ Cas à couvrir :
 
 - ✅ SKU valide par canal (un test par entrée du registre, piloté par `example`).
 - ❌ Format invalide → message contient `label` + `example`.
-- ✅ Normalisation : `" ecl-01 "` (shopify) → `ECL-01`.
+- ✅ Normalisation : `" ecl-01 "` (ancien canal) → `ECL-01`.
 - ❌ EAN-13 longueur ok mais **checksum faux** → rejet.
 - ❌ Doublon `(channel, value)` → `ConflictException` (409).
 - ✅ Deux canaux, même `value` → autorisé (unicité **par canal**).
@@ -333,13 +333,13 @@ Cas à couvrir :
 ## 13. Points ouverts / à confirmer
 
 - ⚠️ **Règle `caisse`** : la regex `^\d{1,6}$` est un **placeholder**. À remplacer par le format réel confirmé par **PI Electronique** (longueur max + charset de la référence article / PLU). C'est **la seule ligne à éditer** le jour où tu as la réponse.
-- Décider si `ean13` est un vrai canal de SKU ou plutôt le champ **code-barres** (distinct du SKU côté Shopify — les douchettes lisent le code-barres, pas le SKU).
+- Décider si `ean13` est un vrai canal de SKU ou plutôt le champ **code-barres** (distinct du SKU chez l'ancien canal — les douchettes lisent le code-barres, pas le SKU).
 
 ---
 
 ## 14. Place dans l'architecture globale
 
-- **Shopify** : le champ SKU natif reçoit le `Sku` de canal `shopify` ; l'**UUID de la variante** va dans un **metafield** (`custom.pim_variant_id`) et sert de clé de jointure pour la synchro `productSet`.
+- **L'ancien canal** : le champ SKU natif reçoit le `Sku` de canal `ancien_canal` ; l'**UUID de la variante** va dans un **metafield** (`custom.pim_variant_id`) et sert de clé de jointure pour la synchro `productSet`.
 - **Caisse PI Electronique** : reçoit le `Sku` de canal `caisse` ; le **mapping `référence caisse → UUID variante`** est détenu par le PIM (puisque la caisse ne stockera probablement pas l'UUID). Comme le SKU caisse est **invariant**, ce mapping est stable.
 - **Jointure partout sur l'UUID** → un SKU peut changer de forme selon le canal sans jamais rompre la réconciliation stock/ventes.
 

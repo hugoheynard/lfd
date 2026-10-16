@@ -66,7 +66,7 @@ flowchart TD
   Miroir --> Etages["Étages de résolution<br/>mercuriale · volume · promotion · geste"]
   Etages --> Facture["Facture professionnelle<br/>_HT, comme la loi le veut_"]
 
-  Public -.->|"tel quel"| Shopify["Shopify<br/>_nativement taxe comprise_"]
+  Public -.->|"tel quel"| Former["ancien canal<br/>_nativement taxe comprise_"]
 ```
 
 **Trois choses à retenir, et rien d'autre.**
@@ -167,7 +167,7 @@ parité échoue lui aussi, sur un message qui parle de règles comptables. C'est
 cohérent — il ne peut pas comparer à une référence qu'il ne sait pas calculer —
 mais le lien n'est pas évident depuis cet écran-là.
 
-⚠️ **Shopify est supposé paramétré taxe comprise.** Sa projection envoie
+⚠️ **L'ancien canal de vente en ligne est supposé paramétré taxe comprise.** Sa projection envoie
 `price_cents` tel quel, sans jamais voir de taux. Le prix stocké étant désormais
 un prix public TTC, elle envoie la bonne chose **sans avoir changé une ligne** —
 sous une hypothèse qui n'est **pas vérifiable depuis ce dépôt** : que la
@@ -300,7 +300,7 @@ n'est pas traduit à l'écran.
 - ~~**La conversion TTC → HT divisera.**~~ Réglé en tranche 3 : la division
   passe par les points de base entiers et n'arrondit qu'une fois. Pas besoin de
   rationnel exact — un seul quotient, pas une chaîne.
-- 🔴 **Shopify est nativement TTC** (« prices include tax »), et sa projection
+- 🔴 **L'ancien canal de vente en ligne est nativement TTC** (« prices include tax »), et sa projection
   envoie `price_cents` **tel quel**, sans jamais voir de taux. C'est le
   **bloquant de la tranche 4**, et la raison pour laquelle la tranche 3 ne
   livre AUCUN moyen de poser `ttc` : tant que personne ne peut basculer un
@@ -359,11 +359,11 @@ conversion aurait demandé de choisir UN taux par déclinaison alors qu'un prix
 public en a un par contexte de vente. C'est tout l'objet de ce modèle : il n'y
 avait pas de réponse mécanique.
 
-### Ce que ça règle chez Shopify, et sous quelle hypothèse
+### Ce que ça règle chez l'ancien canal, et sous quelle hypothèse
 
-Le C.5 annonçait Shopify comme le bloquant : sa projection envoie `price_cents`
+Le C.5 annonçait l'ancien canal comme le bloquant : sa projection envoie `price_cents`
 **tel quel**, sans jamais voir de taux. C'était vrai — et c'était déjà un défaut
-AVANT ce chantier : elle poussait un montant hors taxe dans un champ que Shopify
+AVANT ce chantier : elle poussait un montant hors taxe dans un champ que l'ancien canal
 lit comme taxe comprise (« prices include tax », le réglage français par défaut).
 
 Le prix stocké étant désormais un prix public TTC, la projection envoie la bonne

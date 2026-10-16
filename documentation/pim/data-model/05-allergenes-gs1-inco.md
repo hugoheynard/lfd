@@ -415,7 +415,7 @@ La rédaction précédente bloquait `product.declared_ready`. C'était faux, et 
 fichier le dit en toutes lettres : _« Elle ne touche PAS au statut. Une fiche
 déclarée publiable reste un brouillon »_ (`declare-product-ready.ts`). Le geste
 est facultatif, sans aval, et une fiche contredite pouvait donc être mise en
-vente, figée dans une révision, poussée vers Shopify et vers la plateforme
+vente, figée dans une révision, poussée vers l'ancien canal et vers la plateforme
 professionnelle sans jamais rencontrer le blocage.
 
 La porte réelle est **`product.publish()`** : c'est elle qui refuse déjà une
@@ -428,7 +428,7 @@ entendre.** Une rédaction antérieure affirmait que « les quatre gestes marqu�
 n'appelle `PublishProductCommand` — ce décorateur marque l'interrupteur de
 déploiement, pas le statut. Seul le fil B2B filtre sur les produits publiés
 (`feed-projection.service.ts`) ; une **révision de catalogue** fige encore une
-fiche contredite. ⚠️ Ce passage opposait ici **la projection Shopify, qui ne
+fiche contredite. ⚠️ Ce passage opposait ici **la projection de l'ancien canal, qui ne
 transportait aucun allergène** ; ce canal est sorti le 2026-09-21, et l'objection
 tombe avec lui. Ce
 qu'il faut trancher — `take-catalog-revision` entre-t-il dans le périmètre, ou
@@ -582,7 +582,7 @@ moment du jugement** (`citedBy`, les clés d'ingrédients) :
   d'alerte ;
 - **un ingrédient de plus cite ce code** → le jugement ne le couvre pas. La
   certification devient **dormante**, l'alerte revient, et l'écran affiche le
-  jugement passé plutôt que de le taire — on reprend une position, on n'en
+  jugement passé plutôt que du taire — on reprend une position, on n'en
   découvre pas l'absence ;
 - **déclarer le code en présence** rend le jugement sans objet ; on ne le
   supprime pas. Si cette déclaration est ensuite retirée, il **reprend effet** —

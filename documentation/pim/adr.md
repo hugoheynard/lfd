@@ -54,7 +54,7 @@ l'event store **non destructif** (détail dans
 
 - **R1 — ids assignés par la commande** (UUID v7 applicatif). Jamais de séquence ni de
   `gen_random_uuid()` en base : un replay régénérerait des ids différents, alors que la caisse,
-  Shopify et l'historique de commandes pointent dessus. **Seule règle réellement irrattrapable.**
+  l'ancien canal et l'historique de commandes pointent dessus. **Seule règle réellement irrattrapable.**
 - **R2 — toute mutation porte un nom métier** (`RenameProduct`, `DiscontinueVariant`…). Pas
   d'`update(partial)` générique : une intention non nommée ne peut pas être rétro-nommée.
 - **R3 — aucun `DELETE` physique**, on archive.
@@ -90,20 +90,20 @@ prix affiché le 24/12 ? »), ou obligation d'audit externe, ou un domaine à co
 
 **Décision** : trois natures de table, jamais mélangées — **socle** (identité), **couche canonique**
 (ce que le produit _est_, ex. réglementaire, éditorial), **contexte canal** (ce qu'un système tiers
-_en sait_, ex. `shopify_variant_binding`). Toute table satellite utilise le motif _shared primary
+_en sait_, ex. la table de liaison des variantes de l'ancien canal). Toute table satellite utilise le motif _shared primary
 key_ (**PK = FK**). Les tables canal sont possédées par leur **adaptateur**, bindent sur la
 **déclinaison** (l'unité vendue) via son **`id`**, et ne sont **pas** event-sourçables (état de
 synchro re-dérivable).
-**Raison** : « étendre par clé étrangère » ne doit pas devenir « le PIM prend la forme de Shopify ».
+**Raison** : « étendre par clé étrangère » ne doit pas devenir « le PIM prend la forme de l'ancien canal ».
 La FK ne pointe **jamais** du socle vers un canal — test de validation : _si on supprimait le module
-Shopify, le catalogue compilerait-il encore ?_
+l'ancien canal, le catalogue compilerait-il encore ?_
 **Conséquences** :
 
 - L'absence de donnée se représente par **absence de ligne**, pas par colonnes `NULL`.
 - Le code famille caisse **sort de `Category`** → un binding de canal.
   ⚠️ **Aucune des tables nommées par cette ADR n'existe** : ni
   `helios_category_binding`, ni `helios_variant_binding` (la caisse n'a jamais
-  été branchée, et PI est sorti le 2026-09-22), ni `shopify_variant_binding`
+  été branchée, et PI est sorti le 2026-09-22), ni la table de liaison des variantes de l'ancien canal
   (supprimée le 2026-09-21).
 
   🔴 Le **motif** reste appliqué, et il a aujourd'hui un seul porteur :
@@ -141,14 +141,14 @@ objectif d'`AllergenMapping.toGdsn()` (ADR-07), pas une structure de données.
 ## ADR-15 — Construire un PIM minimal plutôt qu'en acheter un
 
 **Décision** : développer nous-mêmes le PIM, **volontairement minimal**, plutôt qu'adopter un PIM du
-marché (Akeneo CE, Plytix, Sales Layer, Pimcore) ou faire de **Shopify le maître du catalogue**.
+marché (Akeneo CE, Plytix, Sales Layer, Pimcore) ou faire de **l'ancien canal le maître du catalogue**.
 
 **Requalification préalable** — ce qu'on construit n'est pas _un PIM_, c'est une **jonction** : le
-référentiel commun qui fait tenir ensemble la caisse (PI Helios), le web (Shopify) et le **labo de
+référentiel commun qui fait tenir ensemble la caisse (PI Helios), le web (l'ancien canal) et le **labo de
 production**. Le catalogue en est la première vertèbre, pas la finalité. Cette distinction n'est pas
 rhétorique : elle est le critère d'arbitrage de tout le reste (voir « Test permanent »).
 
-> 🔴 **Deux des trois systèmes de cette phrase sont partis** — Shopify le
+> 🔴 **Deux des trois systèmes de cette phrase sont partis** — l'ancien canal le
 > 2026-09-21, PI Helios le 2026-09-22. La jonction qui justifiait de CONSTRUIRE
 > plutôt que d'acheter relie aujourd'hui **la plateforme professionnelle et le
 > fournil**, et rien d'autre.
@@ -171,7 +171,7 @@ rhétorique : elle est le critère d'arbitrage de tout le reste (voir « Test pe
    deux de ses concurrents doivent se rejoindre. La consolidation des ventes multi-canal et le plan
    de production du labo n'existent dans aucun catalogue produit du marché.
 2. **80 % de l'effort est l'intégration**, et aucun PIM acheté n'en dispense : les adaptateurs PI et
-   Shopify seraient à écrire de toute façon. Acheter revient à ajouter un système à administrer pour
+   l'ancien canal seraient à écrire de toute façon. Acheter revient à ajouter un système à administrer pour
    économiser la partie la plus simple du travail.
 3. **Le modèle est spécifique et petit.** `kind = daily | made_to_order | resale`, la disponibilité
    comme **capacité de production** (pas un stock), les allergènes en **GS1 canonique projeté INCO**,
@@ -179,7 +179,7 @@ rhétorique : elle est le critère d'arbitrage de tout le reste (voir « Test pe
    l'obtiendrait qu'en encodant le métier dans de la **configuration** là où on peut l'encoder dans
    des **types** — c'est-à-dire en renonçant au bénéfice des flags stricts ([ADR-10](../adr.md)) : un attribut
    dynamique est un `any` avec une interface d'admin. Le socle fait **six tables**.
-4. **Shopify-comme-maître est intenable** malgré son coût minimal : pas de plan de production, pas de
+4. **L'ancien canal comme maître est intenable** malgré son coût minimal : pas de plan de production, pas de
    champ allergène natif (metafields + travail de thème), et un maître qui ignore l'existence de la
    caisse ne peut pas arbitrer ce qui descend vers elle.
 
@@ -229,7 +229,7 @@ adaptateur (ADR-13).
 **Raison** : _Stock Keeping Unit_ désigne la référence **du commerçant** ; un SKU qui change selon
 l'interlocuteur cesse d'être le référentiel commun qu'on construit. Trois conséquences techniques
 s'ajoutent : une énumération de canaux dans le domaine violerait ADR-13 (test : _le catalogue
-compile-t-il sans le module Shopify ?_), un `GTIN/EAN-13` n'est **pas** un canal mais un identifiant
+compile-t-il sans le module de l'ancien canal ?_), un `GTIN/EAN-13` n'est **pas** un canal mais un identifiant
 mondial émis par GS1, et les tables `*_variant_binding` font déjà ce travail du bon côté de la
 frontière.
 
@@ -302,20 +302,20 @@ le produit ; suffixe numérique lisible pour la déclinaison, jamais un hash.
 
 ## ADR-17 — Secrets d'intégration hors base ; pilote de canal derrière un port
 
-> 🔴 **Partiellement caduque depuis le 2026-09-21.** Le canal Shopify est sorti
-> du dépôt, avec son port `ShopifyDriver`, son pilote `dry-run` et son écran de
+> 🔴 **Partiellement caduque depuis le 2026-09-21.** L'ancien canal de vente en ligne est sorti
+> du dépôt, avec son port de transport vers l'ancien canal, son pilote `dry-run` et son écran de
 > réglages ; sa documentation a été retirée le 2026-09-22.
 >
 > **Ce qui SURVIT, et c'est l'essentiel** : un jeton d'API ne vit jamais en base,
 > et un écran n'affiche que sa PRÉSENCE. C'est une frontière de sécurité, vraie
-> de toute intégration — elle ne dépendait pas de Shopify et s'applique à la
+> de toute intégration — elle ne dépendait pas de l'ancien canal et s'applique à la
 > prochaine. **Ce qui est mort** : tout ce que cet ADR dit du pilote, du port et
 > du `dry-run`.
 
 **Décision** : les **réglages** d'un canal (domaine de boutique, version d'API, activation)
 vivent en base et se pilotent depuis l'écran Réglages ; le **jeton d'API** vit dans
 l'environnement (`AppConfig`) et **jamais en base**. L'écran affiche seulement sa _présence_, jamais
-sa valeur. Le transport vers le canal est isolé derrière un port `ShopifyDriver`, dont
+sa valeur. Le transport vers le canal est isolé derrière un port de transport vers l'ancien canal, dont
 l'implémentation par défaut est un pilote **`dry-run`** qui n'émet aucun appel réseau.
 
 **Raison** :
@@ -324,19 +324,19 @@ l'implémentation par défaut est un pilote **`dry-run`** qui n'émet aucun appe
   lisible par quiconque ouvre l'admin. Le distinguer d'un réglage ordinaire est une frontière de
   sécurité, pas une préférence.
 - Le pilote réel **ne pouvait pas être écrit honnêtement** au moment de la
-  décision : l'API Admin de Shopify est versionnée trimestriellement et nous
+  décision : l'API Admin de l'ancien canal est versionnée trimestriellement et nous
   n'avions ni boutique ni jeton. Écrire des mutations invérifiables aurait
   produit du code _plausible et faux_.
 
   ⚠️ **Cette prémisse est tombée deux fois.** D'abord en sa faveur : la
   connexion a été établie le 2026-08-04, la forme exacte de `productSet` relevée
-  en direct, et `SHOPIFY_ADMIN_TOKEN` posé par le déploiement — le `dry-run`
+  en direct, et le jeton d'administration de l'ancien canal posé par le déploiement — le `dry-run`
   cessait d'être une nécessité pour devenir un choix de mode. Puis contre elle :
   le canal est sorti du dépôt le 2026-09-21, et il n'y a plus rien à piloter.
 
   Les deux documents qui portaient ces relevés ont été retirés le 2026-09-22 ;
   ce qu'ils attestaient vit dans l'histoire git. **Ne pas les rechercher pour
-  écrire une nouvelle intégration** : l'API Admin de Shopify est versionnée
+  écrire une nouvelle intégration** : l'API Admin de l'ancien canal est versionnée
   trimestriellement, et un relevé d'août 2026 serait exactement le « plausible
   et faux » que cet ADR dit d'éviter.
 

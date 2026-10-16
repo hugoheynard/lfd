@@ -9,20 +9,20 @@
 
 Principe : **rien ne tourne en continu**. Chaque brique est **toujours joignable**
 mais **jamais allumée** — elle se réveille sur un déclencheur (requête HTTP,
-webhook Shopify, ou horloge), traite, puis se rendort. Aucun serveur ne se paie à
+webhook de l'ancien canal, ou horloge), traite, puis se rendort. Aucun serveur ne se paie à
 l'idle.
 
 ```mermaid
 flowchart TB
     client["🧑‍🍳 Client B2B<br/>(navigateur)"]
-    shopify["🛍️ Shopify<br/>(canal de vente)"]
+    former["🛍️ ancien canal<br/>(canal de vente)"]
     cron["⏰ Cron ~20h<br/>(horloge Cloudflare)"]
     lab["🏭 Labo de prod<br/>(écran / app)"]
 
     subgraph cf["☁️ Cloudflare — tout wake-on-demand · 0 always-on"]
         pages["Storefront B2B<br/>Pages (statique)"]
         wOrder["Worker Commande<br/>⟵ requête HTTP"]
-        wHook["Worker Webhook Shopify<br/>⟵ POST webhook + HMAC"]
+        wHook["Worker Webhook de l'ancien canal<br/>⟵ POST webhook + HMAC"]
         wCron["Worker Plan de prod<br/>⟵ cron (soir)"]
         wLab["Worker Labo<br/>⟵ requête HTTP"]
     end
@@ -34,7 +34,7 @@ flowchart TB
     pages -->|POST /order| wOrder
     wOrder -->|écrit commande<br/>+ décrémente stock| db
 
-    shopify -->|orders/create<br/>inventory_levels/update| wHook
+    former -->|orders/create<br/>inventory_levels/update| wHook
     wHook -->|vérifie HMAC · dédup<br/>maj stock / commande| db
 
     cron --> wCron
@@ -45,43 +45,43 @@ flowchart TB
     wLab -->|lit le plan de prod| db
 
     pim -.->|catalogue · prix| db
-    db -.->|push stock vers le canal ?| shopify
+    db -.->|push stock vers le canal ?| former
 
     classDef ext fill:#fde68a,stroke:#b45309,color:#000
     classDef wrk fill:#bfdbfe,stroke:#1d4ed8,color:#000
     classDef data fill:#e9d5ff,stroke:#7c3aed,color:#000
-    class client,shopify,cron,lab ext
+    class client,former,cron,lab ext
     class pages,wOrder,wHook,wCron,wLab wrk
     class db,pim data
 ```
 
 ## Qui réveille qui
 
-| Brique              | Déclencheur             | Fait quoi                                             | Allumé ?  |
-| ------------------- | ----------------------- | ----------------------------------------------------- | --------- |
-| Storefront (Pages)  | —                       | sert le SPA statique                                  | non (CDN) |
-| Worker Commande     | requête HTTP du client  | écrit la commande, décrémente le stock                | **non**   |
-| Worker Webhook      | POST webhook de Shopify | vérifie HMAC, déduplique, met à jour stock/commande   | **non**   |
-| Worker Plan de prod | cron (le soir)          | agrège les commandes du jour → qtés à produire demain | **non**   |
-| Worker Labo         | requête HTTP du labo    | lit et renvoie le plan de prod                        | **non**   |
+| Brique              | Déclencheur                    | Fait quoi                                             | Allumé ?  |
+| ------------------- | ------------------------------ | ----------------------------------------------------- | --------- |
+| Storefront (Pages)  | —                              | sert le SPA statique                                  | non (CDN) |
+| Worker Commande     | requête HTTP du client         | écrit la commande, décrémente le stock                | **non**   |
+| Worker Webhook      | POST webhook de l'ancien canal | vérifie HMAC, déduplique, met à jour stock/commande   | **non**   |
+| Worker Plan de prod | cron (le soir)                 | agrège les commandes du jour → qtés à produire demain | **non**   |
+| Worker Labo         | requête HTTP du labo           | lit et renvoie le plan de prod                        | **non**   |
 
 ## Les 4 garde-fous webhook (sinon stock faux)
 
-1. **HMAC** — vérifier `X-Shopify-Hmac-Sha256` (sinon n'importe qui fausse le stock).
+1. **HMAC** — vérifier la signature HMAC du webhook (sinon n'importe qui fausse le stock).
 2. **Ack < 5 s** — répondre 200 vite ; boulot lourd → asynchrone (DB puis cron/queue).
 3. **Idempotence** — at-least-once : dédupliquer par id d'évènement/commande (sinon double décompte).
-4. **Pas d'ordre garanti** — préférer les **valeurs autoritaires** de Shopify aux deltas.
+4. **Pas d'ordre garanti** — préférer les **valeurs autoritaires** de l'ancien canal aux deltas.
 
 ## Décisions encore ouvertes (à trancher avant de coder)
 
-- **Source de vérité du stock** : Shopify (on mirror ses `inventory_levels`) **ou**
-  notre système (Shopify = simple canal, on **pousse** le stock vers lui). Pour une
+- **Source de vérité du stock** : l'ancien canal (on mirror ses `inventory_levels`) **ou**
+  notre système (l'ancien canal = simple canal, on **pousse** le stock vers lui). Pour une
   boulangerie qui produit à la demande, le « stock » ≈ capacité à produire → penche
   pour « notre système est la vérité ».
 - **Plan de prod : cron nightly (gratuit) vs Queues temps réel (~5 $/mois)**. « Pour
   demain » = batch → le cron suffit. Queues seulement si le labo veut un compteur live.
-- **Où atterrissent les webhooks Shopify** : un nouveau Worker, **ou** le PIM NestJS
-  existant (qui fait déjà la sync Shopify). Le pattern « webhook réveille un handler »
+- **Où atterrissent les webhooks de l'ancien canal** : un nouveau Worker, **ou** le PIM NestJS
+  existant (qui fait déjà la sync de l'ancien canal). Le pattern « webhook réveille un handler »
   marche dans les deux cas.
 
 ## Modèle de messagerie : point-to-point + batch, **pas** pub/sub
@@ -90,11 +90,11 @@ Choix acté : la communication entre briques se fait par **webhooks (push HTTP)*
 **Cloudflare Queues (file point-to-point + retry)** et **cron (pull/batch)** — et
 **pas** par du pub/sub. Les 3 modèles :
 
-| Modèle         | Qui → qui                                        | Ici                                           |
-| -------------- | ------------------------------------------------ | --------------------------------------------- |
-| Point-to-point | 1 producteur → cible(s) **connue(s)**, hand-off  | Shopify → endpoint ; Commande → Notif (Queue) |
-| **Pub/sub**    | 1 producteur → **N abonnés inconnus**, broadcast | **non retenu**                                |
-| Pull / batch   | on **lit** un état partagé, personne ne pousse   | le cron du soir relit les commandes           |
+| Modèle         | Qui → qui                                        | Ici                                                |
+| -------------- | ------------------------------------------------ | -------------------------------------------------- |
+| Point-to-point | 1 producteur → cible(s) **connue(s)**, hand-off  | Ancien canal → endpoint ; Commande → Notif (Queue) |
+| **Pub/sub**    | 1 producteur → **N abonnés inconnus**, broadcast | **non retenu**                                     |
+| Pull / batch   | on **lit** un état partagé, personne ne pousse   | le cron du soir relit les commandes                |
 
 **Pourquoi pas pub/sub :**
 
@@ -186,7 +186,7 @@ Pourquoi jamais l'inverse :
   (même logique que la chaîne de responsabilité des types : une app est un puits).
 - **Le consommateur connaît ses besoins** — l'ACL vit **à la frontière du
   consommateur** ; chaque contexte adapte ce qui entre chez lui.
-- **N consommateurs** — un adapter par cible (labo, projection Shopify, compta,
+- **N consommateurs** — un adapter par cible (labo, projection de l'ancien canal, compta,
   analytics) ne scale pas ; **un contrat publié** oui.
 
 Si le contrat devient un vrai **format d'échange partagé** (JSON/CSV/PDF de fiche

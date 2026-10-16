@@ -56,19 +56,19 @@ Trois besoins qu'aucun mécanisme actuel ne couvre :
    déployé, éteint**.
 2. **Refermer en dix secondes.** Une fonctionnalité qui se comporte mal en prod
    n'a aujourd'hui qu'un remède : redéployer la version précédente. Pour un écran
-   interne c'est disproportionné ; pour une intégration tierce (Shopify, Stripe)
+   interne c'est disproportionné ; pour une intégration tierce (l'ancien canal, Stripe)
    c'est trop lent.
 3. **Versionner.** « v1 ou v2 de l'écran commandes » n'est pas un booléen, et le
    modéliser comme tel obligera à une migration le jour où la troisième arrive.
 
 ## 1. Ce qu'un flag **est**, et ce qu'il n'est pas
 
-| C'est un flag                           | Ce n'en est pas un                                  |
-| --------------------------------------- | --------------------------------------------------- |
-| « L'onglet Croissance est-il ouvert ? » | « Ce client a-t-il droit aux paniers récurrents ? » |
-| « Coupe l'export Shopify, il sature. »  | « La livraison existe-t-elle comme service ? »      |
-| « Écran commandes : v1 ou v2. »         | « Le KBIS est-il exigé pour activer ? »             |
-| Global, temporaire, technique           | Par société, durable, métier                        |
+| C'est un flag                                    | Ce n'en est pas un                                  |
+| ------------------------------------------------ | --------------------------------------------------- |
+| « L'onglet Croissance est-il ouvert ? »          | « Ce client a-t-il droit aux paniers récurrents ? » |
+| « Coupe l'export de l'ancien canal, il sature. » | « La livraison existe-t-elle comme service ? »      |
+| « Écran commandes : v1 ou v2. »                  | « Le KBIS est-il exigé pour activer ? »             |
+| Global, temporaire, technique                    | Par société, durable, métier                        |
 
 La colonne de droite a déjà ses maisons : les **exigences d'activation** sont dans
 `b2b_platform_settings` (cf. le doc d'activation), les **droits par société** dans
@@ -219,7 +219,7 @@ contextes qui gardent une route puissent le lire.
 **Tech** est une nouvelle entrée de menu (première section : Feature flags),
 distincte de **Réglages** : l'une porte des interrupteurs techniques et
 temporaires, l'autre des règles métier durables. Les mélanger ferait voisiner « le
-KBIS est-il exigé ? » et « coupe l'export Shopify ».
+KBIS est-il exigé ? » et « coupe l'export de l'ancien canal ».
 
 Au passage, **Réglages descend au pied du menu**, au-dessus de Déconnexion : on
 n'y va pas pour travailler, on y va pour régler quelque chose et repartir. Au

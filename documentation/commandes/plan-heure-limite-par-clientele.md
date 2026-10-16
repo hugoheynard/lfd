@@ -197,7 +197,7 @@ est déjà parti.
 
 ⚠️ Le dépôt a déjà noté cette dette sans la trancher :
 `apps/lfd-api/prisma/schema/growth.prisma` porte « Stock : décision _source de
-vérité_ reportée (Shopify vs nous) ».
+vérité_ reportée (l'ancien canal vs nous) ».
 
 ## 4. Lot 1 — la règle du commerce s'efface, les délais d'article restent
 
@@ -298,7 +298,7 @@ Quatre questions, dans cet ordre, et aucune n'est technique au départ :
    marchandise qui se garde, c'est-à-dire précisément celle qu'on aurait intérêt
    à vendre en ligne à J0.
 4. **Qui fait autorité ?** La note de `growth.prisma` pose déjà la question
-   (« Shopify vs nous ») et la laisse ouverte. Un stock à deux sources de vérité
+   (« l'ancien canal vs nous ») et la laisse ouverte. Un stock à deux sources de vérité
    est un stock faux.
 
 ⚠️ **Tant que 2 n'est pas tranchée, J0 ne doit pas s'ouvrir** — même avec un

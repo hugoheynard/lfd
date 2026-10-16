@@ -208,8 +208,9 @@ langages. Un type partagé n'est légitime que s'il est vraiment transverse
   entité protège ses invariants. Dès qu'une unité gagne une seconde
   responsabilité, on la coupe.
 - **OCP** — on étend par un nouveau handler / driver / projection, pas en
-  ajoutant une branche à un `switch` sur un discriminant. Un canal de diffusion
-  de plus (`channels/shopify/…`) = un driver de plus, pas un `if` de plus.
+  ajoutant une branche à un `switch` sur un discriminant. Un poste de plus qui
+  écoute le fournil (`production/channels/packing/`, `production/channels/delivery/`)
+  = un canal de plus, pas un `if` de plus.
 - **LSP** — un sous-type est substituable : pas de précondition resserrée, pas
   d'exception qu'un contrat parent ne déclare pas. Les schémas Zod restent
   structurellement compatibles.
@@ -962,9 +963,10 @@ pas, une exception tacite si :
   précise.
 - **Le front reste en français** dans ses LIBELLÉS : ils s'adressent à des
   humains francophones. Ses identifiants, eux, suivent la règle.
-- **Une VALEUR de donnée n'est pas un nom.** `TVA_HANDLE_PREFIX` s'appelle
-  désormais `VAT_HANDLE_PREFIX` mais vaut toujours `"tva-"` : c'est ce préfixe
-  qui rattache une collection Shopify à son taux. Même règle pour les clés
+- **Une VALEUR de donnée n'est pas un nom.** Les faits passés `tax_regime.*`
+  portent encore leur `tag` (`"tva-5-5"`, cf.
+  `packages/contracts/src/journal-facts/tax-regime-retired.ts`) : le champ a
+  quitté le domaine, la valeur reste celle qui a été écrite. Même règle pour les clés
   d'un `jsonb`, les valeurs d'enum Postgres et les noms de dossiers de
   migration. Les renommer est une **migration**, pas un renommage — et elle se
   fait en trois déploiements (`documentation/ci-cd/pipelines.md`).

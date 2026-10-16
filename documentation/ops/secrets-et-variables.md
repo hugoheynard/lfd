@@ -103,11 +103,11 @@ la production.
 
 ## 3. Les secrets, par destination
 
-> 🔴 **`SHOPIFY_ADMIN_TOKEN`, `SHOPIFY_CLIENT_ID` et `SHOPIFY_CLIENT_SECRET` ont
+> 🔴 **le jeton d'administration de l'ancien canal, l'identifiant client de l'ancien canal et le secret client de l'ancien canal ont
 > quitté cette table le 2026-09-21**, avec le canal qu'ils ouvraient.
 >
 > Ce qui les révoque est la **désinstallation de l'app depuis le Dev Dashboard
-> Shopify**, pas la suppression du code ni celle des secrets : un jeton vit chez
+> l'ancien canal**, pas la suppression du code ni celle des secrets : un jeton vit chez
 > le fournisseur, pas chez nous. Elle a été faite.
 >
 > ⚠️ **Ils n'ont jamais été des secrets GitHub** (vérifié ce jour-là) — la

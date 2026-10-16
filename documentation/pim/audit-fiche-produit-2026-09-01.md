@@ -65,7 +65,7 @@ parler :
 | **Le statut**     | `Product.status` (`draft`/`published`/`archived`) | « Mettre en vente », « Archiver »      |
 | **La complétude** | calculée à l'écran, jamais stockée                | la saisie                              |
 | **La signature**  | table `product_readiness`                         | « Déclarer publiable »                 |
-| **La diffusion**  | chez le canal (Shopify, plateforme B2B)           | un **push manuel**, sur un autre écran |
+| **La diffusion**  | chez le canal (l'ancien canal, plateforme B2B)    | un **push manuel**, sur un autre écran |
 
 Aucune de ces quatre ne conditionne les autres. On peut **mettre en vente** une
 fiche incomplète et non signée ; on peut **signer** une fiche qu'on ne mettra
@@ -133,7 +133,7 @@ changé — et compte au passage les déclinaisons `discontinued`.
 
 Donc : dès qu'un produit a deux déclinaisons, la seconde n'a pas de fiche, la
 publication est refusée avec un message qui nomme un SKU, et **aucun écran ne
-permet de le corriger**. L'opérateur lit « fiche réglementaire manquante sur
+permet du corriger**. L'opérateur lit « fiche réglementaire manquante sur
 `XXX-002` » sur une page qui ne connaît que `XXX-001`.
 
 **[opinion]** C'est le genre de défaut qui ne se voit pas en démonstration
@@ -197,7 +197,7 @@ dans tout `src/pim` — sa définition, son émission, et sa table d'attribution
 
 La diffusion réelle est un geste séparé, manuel, sur un autre écran :
 `b2b-platform/products/push.controller.ts` (et, à la date de cet audit, le
-contrôleur du canal Shopify, sorti du dépôt le 2026-09-21). Elle respecte le
+contrôleur de l'ancien canal de vente en ligne, sorti du dépôt le 2026-09-21). Elle respecte le
 statut — un brouillon partait en `DRAFT` côté boutique, le feed B2B lit
 `membership.publishedProductIds()` — mais elle ne part
 pas toute seule.
@@ -205,7 +205,7 @@ pas toute seule.
 Donc, en pratique :
 
 - un produit **publié et jamais poussé** n'est en vente nulle part ;
-- un produit **poussé en brouillon** existe chez Shopify, en `DRAFT` ;
+- un produit **poussé en brouillon** existe chez l'ancien canal, en `DRAFT` ;
 - le libellé « En ligne » du rail (`publish-rail.html:109`) est une affirmation
   que la fiche n'a pas les moyens de vérifier.
 

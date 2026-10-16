@@ -13,14 +13,23 @@ Elles portent sur **la journée d'aujourd'hui** (comptoir et livraison) ; hier,
 demain et J+2 sont posés par la base et ne bougent plus. Chaque étape passe par
 les **vrais gestes** (handlers), jamais par une écriture à la main.
 
-| #   | Étape                                  | Ce que le serveur fait                                                                           |
-| --- | -------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| 0   | **Commandes passées** (la base)        | le reset du scénario, puis toutes les commandes reposées                                         |
-| 1   | **Plan de production clôturé**         | `CloseProductionDayCommand` pour aujourd'hui                                                     |
-| 2   | **Tournées composées**                 | une tournée par véhicule actif qui a des arrêts, sans bacs ; la première affectée à qui clique   |
-| 3   | **Production complète**                | toutes les fournées du jour déclarées sorties du four, remises au colisage                       |
-| 4   | **Colisage complet**                   | chaque commande prête en sac (comptoir) ou en bacs (livraison, demi-bac partagé compris), fermée |
-| 5   | **Tournées chargées, prêtes à partir** | tous les bacs chargés dans leur tournée, sans départ                                             |
+| #   | Étape                                  | Ce que le serveur fait                                                                                                |
+| --- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| 0   | **Commandes passées** (la base)        | le reset du scénario, puis toutes les commandes reposées                                                              |
+| 1   | **Plan de production clôturé**         | `CloseProductionDayCommand` pour aujourd'hui                                                                          |
+| 2   | **Tournées composées**                 | la composition automatique (`DayComposer`, celle de l'arrêt du plan), sans bacs ; une tournée affectée à qui clique ¹ |
+| 3   | **Production complète**                | toutes les fournées du jour déclarées sorties du four, remises au colisage                                            |
+| 4   | **Colisage complet**                   | chaque commande prête en sac (comptoir) ou en bacs (livraison, demi-bac partagé compris), fermée                      |
+| 5   | **Tournées chargées, prêtes à partir** | tous les bacs chargés dans leur tournée (un second passage à midi), ceux du transfert compris, sans départ            |
+
+¹ **Depuis le 2026-10-14** (Hugo : « la démo doit montrer ce que la
+composition automatique décide vraiment »), aucune tournée n'est écrite à la
+main : le semis appelait des tournées à rangs fixes (Val d'Isère sur
+Camionnette 1, le reste en tranches), et seul l'après-midi venait du calcul.
+L'étape est atteinte dès que le calcul a placé une livraison — ce qu'il laisse
+à répartir est sa décision. Le requérant reçoit la première tournée dont toutes
+les livraisons seront colisées ; le demi-bac se partage avec l'arrêt qui suit
+l'ouvreur dans SA tournée, quand il y en a un de prêt.
 
 ⚠️ **L'ordre est celui du code** : les tournées sont composées _avant_ la
 production, parce que depuis K3c un bac de livraison naît au colisage et qu'un

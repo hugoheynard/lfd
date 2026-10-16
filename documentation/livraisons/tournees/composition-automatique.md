@@ -376,6 +376,28 @@ flowchart TD
   plus cinq minutes de retard sur 16 h. Aucune table, aucune migration :
   l'anti-doublon est celui de la cloche. La lecture n'écrit rien.
 
+**Ce que la composition ignore de la production (vérifié le 2026-10-14)**
+
+- **Une commande pas encore prête est placée, et c'est voulu.** La
+  composition tourne à l'arrêt du plan, AVANT que le fournil n'ait rien
+  sorti : un critère « prête » ne placerait rien. Le sens est l'inverse —
+  c'est le **départ** de la tournée qui fixe l'heure où la commande doit être
+  prête (le colisage lit `OrderDeparturesReader`, lot L2), et la feuille de
+  route dit « Pas encore prête ». Aucune lecture de la production n'entre
+  dans « Proposer » (`DeliveryOrdersReader` ne porte ni `readyAt` ni
+  échéance de fabrication).
+- **Ce qui n'existe pas, et qu'il faudrait pour refuser** : une heure « prête
+  au plus tôt » par commande, que le fournil saurait estimer (capacité du
+  four, ordre des fournées). Elle entrerait comme un **début de fenêtre** sur
+  le départ de la tournée, pas comme un filtre. Proposé à Hugo le
+  2026-10-14, non décidé.
+
+**Le transfert interne se place dans l'enchaînement de son véhicule
+(2026-10-14)** — un second passage ne part qu'au retour du premier, et c'est
+à cette heure qu'on juge s'il arrive au site à temps. Détail et régression :
+[`plan-transfert-interne.md`](../transferts/plan-transfert-interne.md), §
+« Placement ».
+
 ## 5. Ce qui manque
 
 **Lots non bâtis, dans l'ordre**

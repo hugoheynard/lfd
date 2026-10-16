@@ -128,7 +128,7 @@ noyau de résolution sort en paquet partagé.
 
 **C'est le seul chemin qui répond au multicanal**, et le multicanal est un vrai
 manque : `PriceRule` n'a **aucune dimension canal**, `PricingContext` non plus, et
-le canal Shopify pousse déjà des prix — le canonique seul. Une campagne qui doit
+l'ancien canal de vente en ligne pousse déjà des prix — le canonique seul. Une campagne qui doit
 tourner sur la boutique **et** le B2B se pose donc aujourd'hui deux fois, dans
 deux systèmes, sans fenêtre commune ni auteur commun. Aucun écran ne peut dire
 « voici la campagne de rentrée » : elle n'existe nulle part comme objet.
@@ -188,7 +188,7 @@ propre, et c'est la seule qui évite le `shared-types` que `CLAUDE.md` §1 refus
 **A si le multicanal n'est pas un besoin réel. B s'il l'est — et pas maintenant.**
 
 Le critère est unique et il se pose à des humains, pas au code : _une campagne
-doit-elle tourner sur la boutique Shopify et le B2B en même temps, avec la même
+doit-elle tourner sur la boutique de l'ancien canal et le B2B en même temps, avec la même
 fenêtre et le même auteur ?_ Si oui, A est un pansement qui devra être défait, et
 B est la bonne cible. Si non, B coûte une migration de contrainte sur la table
 qui facture pour un bénéfice théorique.
@@ -255,7 +255,7 @@ client sous mercuriale la voit.
 | Le back-office est une seule app                         | `lfd-backoffice-frontend/src/app/{pim,b2b}/`                                         |
 | `PriceRule` n'a **aucune** dimension canal               | `pricing/domain/price-rule.ts` — aucune occurrence de `channel`                      |
 | `PricingContext` non plus                                | `pricing/domain/price-rule.ts:184-209`                                               |
-| Le canal sorti poussait des prix (canonique seul)        | canal Shopify, retiré le 2026-09-21 — voir l'histoire git                            |
+| Le canal sorti poussait des prix (canonique seul)        | ancien canal de vente en ligne, retiré le 2026-09-21 — voir l'histoire git           |
 | Le noyau de résolution est pur                           | `pricing/domain/{resolve-price,specificity,floor-policy}.ts`                         |
 | `PricingContext` porte du commerce                       | `companyId`, `segmentId`, `cumulativeQuantity` (mêmes lignes)                        |
 

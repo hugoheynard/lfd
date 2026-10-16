@@ -5,7 +5,7 @@ Chevallot (Val d'Isère, avec labo de production). Le catalogue **descend** vers
 (**B2B**) ; les commandes **remontent** vers le
 plan de production du labo.
 
-> 🔴 **Le canal Shopify est sorti du dépôt le 2026-09-21**, et les sept documents
+> 🔴 **L'ancien canal de vente en ligne est sorti du dépôt le 2026-09-21**, et les sept documents
 > qui le décrivaient ont été retirés le 2026-09-22. Le référentiel n'a plus
 > qu'une sortie : la plateforme professionnelle. Ce qui a survécu au canal —
 > le modèle des contextes de vente, la mécanique des révisions, la protection

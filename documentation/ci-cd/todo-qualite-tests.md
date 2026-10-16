@@ -152,9 +152,9 @@ CI nomme explicitement ce qu'elle lance, app par app, plutôt qu'un `-r` global.
 jalons d'août — la première exécution remontera une pile d'erreurs, et ce n'est
 pas la semaine pour ça.
 
-## 3. Deux fichiers de test Shopify LIVE sont exclus du lint
+## 3. Deux fichiers de test LIVE de l'ancien canal sont exclus du lint
 
-test/shopify/live-context.ts et `test/shopify/*.shopify-live.ts` (PIM) sont
+le contexte live et les tests live de l'ancien canal (PIM) sont
 dans les `ignores` d'ESLint : ils frappent une vraie boutique, ne tournent jamais
 en CI, et le typage de `Test.createTestingModule` y résiste (10 erreurs
 `no-unsafe-*`). Exclus **explicitement, avec le motif en commentaire** plutôt que

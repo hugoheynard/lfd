@@ -23,14 +23,14 @@
 >
 > Ce qui reste vrai du reste du document : **la règle**. Le backend se découpe
 > par propriété des données, le front par audience × appareil. C'est elle qui a
-> conduit à greffer le référentiel plutôt qu'à le fédérer, et elle resservira au
+> conduit à greffer le référentiel plutôt qu'au fédérer, et elle resservira au
 > prochain sujet.
 
 > 📐 **Doc-first.** Rien de ce document n'est codé. Il fixe la règle et l'ordre,
 > pour que la question ne se rejoue pas à chaque nouveau sujet.
 >
 > Écrit le **2026-08-19**, à partir d'une question ouverte : « le PIM, même s'il
-> gère Shopify, n'aurait-il pas intérêt à vivre dans le B2B ? »
+> gère l'ancien canal, n'aurait-il pas intérêt à vivre dans le B2B ? »
 
 ## La règle, en une ligne
 
@@ -65,7 +65,7 @@ Deux de ces lignes sont des trous, pas des choix :
   avec un commentaire « temporaire » : aucun jeton n'est demandé, et seule la
   passerelle sépare le catalogue du reste du monde. Quelqu'un passé en `revoked`
   dans l'annuaire staff garde donc tout — catalogue, prix canoniques,
-  publication Shopify. **Corrigé en B2d** ; c'était vrai le jour de la mesure,
+  publication de l'ancien canal. **Corrigé en B2d** ; c'était vrai le jour de la mesure,
   et indépendamment de toute fusion.
 
 ## Ce que la séparation coûte réellement
@@ -129,7 +129,7 @@ Le lanceur redevient utile dès qu'il y a **deux** fronts internes — `ops` ou
 
 ```
 lfd-api      contextes : orders · pricing · catalog(+pim) · account · production · delivery
-lfd-worker   MÊME image, rôle `worker` — réconciliation Shopify, exports, snapshots
+lfd-worker   MÊME image, rôle `worker` — réconciliation de l'ancien canal, exports, snapshots
 lfd-ops      À PART, et pas pour une raison de données
 ```
 
@@ -398,7 +398,7 @@ elle qui remplace le mur que le réseau tenait.
 > déclare son bloc ; l'inventaire des capacités a refusé une variable
 > non déclarée ; et le test des **trois listes** (workflow → Worker →
 > configuration) a refusé de laisser `DATABASE_PIM_URL` et les identifiants
-> Shopify sans chemin jusqu'au container.
+> l'ancien canal sans chemin jusqu'au container.
 >
 > Deux choses restent **inchangées et c'est voulu** : les deux bases (la
 > consolidation en schémas est B4, avec sa migration de données), et les deux
@@ -467,8 +467,8 @@ mécanique plutôt qu'une enquête.
 > 🔴 **Le piège, à traiter AVANT tout déploiement.** `DATABASE_PIM_URL` est
 > devenue **requise** (B2c) : sans elle dans les Secrets GitHub du dépôt, le
 > container refuse de démarrer — pas une dégradation, un boot qui échoue. Le
-> même déploiement veut aussi `SHOPIFY_ADMIN_TOKEN` (ou la paire
-> `SHOPIFY_CLIENT_ID` + `SHOPIFY_CLIENT_SECRET`) si la publication en vitrine
+> même déploiement veut aussi le jeton d'administration de l'ancien canal (ou la paire
+> l'identifiant client de l'ancien canal + le secret client de l'ancien canal) si la publication en vitrine
 > doit rester allumée ; celles-là, absentes, éteignent une capacité et le
 > disent — c'est une gêne, pas une panne.
 
@@ -478,7 +478,7 @@ de la passerelle : **brancher, repointer, VÉRIFIER, et seulement ensuite
 
 | #     | Geste                                                                           | Où                          |
 | ----- | ------------------------------------------------------------------------------- | --------------------------- |
-| 1     | Poser `DATABASE_PIM_URL` (+ Shopify si le canal doit vivre)                     | Secrets GitHub              |
+| 1     | Poser `DATABASE_PIM_URL` (+ l'ancien canal si le canal doit vivre)              | Secrets GitHub              |
 | 2     | Déployer l'API — elle sert désormais `/pim/*`                                   | `deploy_lfd_api`            |
 | 3     | Vérifier `/api/b2b/pim/catalogue/products` à travers la passerelle              | `curl`                      |
 | 4     | Retirer le préfixe `/api/pim` et le binding `PIM_BACKEND`                       | `gateway/`                  |
@@ -519,11 +519,8 @@ données.
 
 ## Ce qui n'est pas tranché
 
-- **Shopify reste-t-il une vitrine vivante ?** Si oui, le PIM garde la propriété
-  du référentiel même devenu un contexte : Shopify continue d'être servi par
-  `pim/channels/shopify`, jamais par le B2B. Si Shopify devient un canal de sortie
-  parmi d'autres, la fusion complète des modèles se discute — mais alors avant
-  `C7`.
+- ~~L'ancien canal de vente en ligne reste-t-il une vitrine vivante ?~~
+  **Tranché** : non, il est retiré du dépôt depuis le 2026-09-21.
 - **Quand `terrain` devient une surface à part.** Critère proposé : le jour où
   l'appareil change, pas le jour où le sujet grossit.
 - **Le trou d'autorisation du PIM** est à traiter **indépendamment** de tout ceci :
@@ -551,7 +548,7 @@ apps/lfd-api/                          ← ex lfd-api, renommé
     ├── pim/                           ▸ LE RÉFÉRENTIEL — schéma `pim`
     │   ├── catalogue/                   produits, catégories, collections
     │   ├── channels/
-    │   │   ├── shopify/                 réconciliation 3 voies, snapshots
+    │   │   ├── ancien-canal/                 réconciliation 3 voies, snapshots
     │   │   └── b2b-platform/            le fil — devient un PORT, plus du HTTP
     │   ├── commerce/                    taux de TVA
     │   ├── locations/  allergens/
@@ -629,7 +626,7 @@ packages/
 ├── pim-contracts/         ▸ existe — DTO du référentiel
 ├── b2b-contracts/         ▸ ex `contracts/`, renommé pour cesser d'être « les » contrats
 ├── endpoints/             messages d'erreur HTTP, partagé
-├── shopify-admin/         transport Admin Shopify, framework-free
+├── ancien-canal-admin/         transport Admin de l'ancien canal, framework-free
 ├── catalog-sync/  storage/  mailer/  ops-contract/
 └── ui :  fold-ng (npm)  ·  b2b-ui  ·  catalog-ui
 ```
@@ -700,7 +697,7 @@ apps/lfd-admin/                        ← ex lfd-backoffice-frontend
     │
     ├── catalogue/                     ▸ du PIM — produits, catégories, collections, TVA
     ├── publication/                   ▸ du PIM
-    ├── canaux/                        ▸ du PIM (ex `channels/` + `integration/`) — Shopify
+    ├── canaux/                        ▸ du PIM (ex `channels/` + `integration/`) — l'ancien canal
     ├── emplacements/                  ▸ du PIM
     │
     ├── comptes-clients/  fiche-client/

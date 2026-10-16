@@ -1,6 +1,6 @@
 # LFC PIM — Journal de bord
 
-> ⚠️ **Les documents Shopify cités par ce journal n'existent plus** (retirés le 2026-09-22, après la sortie du canal le 2026-09-21). Les entrées restent : elles disent ce qui a été décidé ce jour-là, et un journal ne se réécrit pas. Leurs noms sont désormais en clair, sans lien — le contenu vit dans l'histoire git.
+> ⚠️ **Les documents de l'ancien canal cités par ce journal n'existent plus** (retirés le 2026-09-22, après la sortie du canal le 2026-09-21). Les entrées restent : elles disent ce qui a été décidé ce jour-là, et un journal ne se réécrit pas. Leurs noms sont désormais en clair, sans lien — le contenu vit dans l'histoire git.
 
 > Tenu au fil de l'eau. Chaque ajout a **deux lectures** : **PM** (ce que ça change pour le produit /
 > le métier, sans jargon) et **Tech** (ce qui a été fait, et pourquoi comme ça).
@@ -60,7 +60,7 @@ code allergène ; rien de stocké n'a eu à bouger.
 
 ### Cadrage : réconciliation de publication à trois voies (« git du catalogue »)
 
-**PM** — On fige comment publier vers Shopify **sans casse** : voir _ce qui partirait_ avant
+**PM** — On fige comment publier vers l'ancien canal **sans casse** : voir _ce qui partirait_ avant
 d'envoyer (diff champ par champ), savoir si **quelqu'un a édité la boutique** depuis la dernière
 poussée (dérive distante ⚠️), repérer un **conflit** (les deux ont bougé), et **revenir en arrière**
 sur une fiche via un historique versionné. Le PIM reste l'autorité — la boutique n'est qu'un miroir —
@@ -75,7 +75,7 @@ prêt à accueillir sur-place / B2B sans refonte.
 
 **Tech** — C1 `CatalogueReader.tvaTags` (catégorie→régime→tag, composition dans le catalogue,
 ADR-13) + registre `ACTIVE_SALES_CONTEXTS` (emporter). C2 `collectionAddProductsV2` dans
-`@lfd/shopify-admin` + `ShopifyMembershipService` (résout tag→GID via le gateway, **rapporte**
+le paquet de transport de l'ancien canal + le service d'appartenance aux collections (résout tag→GID via le gateway, **rapporte**
 l'absence de collection au lieu d'en créer une sans titre). C3 le push (live) range le produit
 après `productSet` ; **l'échec d'appartenance ne fait pas échouer le push** (le produit est poussé,
 on le signale). Piège observé : un produit **`unchanged`** saute la membership (elle est liée au
@@ -91,7 +91,7 @@ juste ; activer sur-place ou B2B plus tard = de la config, pas une refonte. Sur-
 **gelé** côté métier pour l'instant.
 
 **Tech** — Nouveau doc projection-sales-context.md (absorbé depuis par [`contextes-et-points-de-vente.md`](./contextes-et-points-de-vente.md)). Unité de
-projection = **(article × contexte actif)** → 1 produit Shopify + appartenance à **une** collection
+projection = **(article × contexte actif)** → 1 produit de l'ancien canal + appartenance à **une** collection
 `tva-*` (override, S1/S2). Registre de contextes (`emporter` seul actif). TVA résolue en composant
 catalogue (`Category.emporterTvaId`) + commerce (`TvaRegime.tag`) derrière un port (ADR-13).
 Membership = mutation **séparée** `collectionAddProductsV2` après `productSet` (F11), collection
@@ -101,22 +101,22 @@ emporter ; C4 (sur-place) / C5 (B2B) différés, purs ajouts de config.
 
 ### Test live (boutique de dev) : le moteur trois-voies validé de bout en bout
 
-**PM** — Sur la vraie boutique Shopify de dev : pré-push (aperçu), push d'un produit en DRAFT,
+**PM** — Sur la vraie boutique de l'ancien canal de dev : pré-push (aperçu), push d'un produit en DRAFT,
 détection de « déjà à jour », retour arrière (rollback) et historique — tout fonctionne. Un
 produit déjà présent d'un ancien essai est correctement signalé « à retirer ». Le test a aussi
-**attrapé un vrai piège** : Shopify renomme la déclinaison d'un produit à taille unique en
+**attrapé un vrai piège** : l'ancien canal renomme la déclinaison d'un produit à taille unique en
 « Default Title », ce qui faisait croire à tort que « quelqu'un a touché la boutique » — corrigé.
 
-**Tech** — Smoke test API sur `1kkhae-8q.myshopify.com` (mode live) : `push {dryRun}` → `push`
+**Tech** — Smoke test API sur la boutique de dev de l'ancien canal (mode live) : `push {dryRun}` → `push`
 (DRAFT, garde-fou par la donnée) → `reconciliation/:handle` → `history` → `rollback` (crée v2,
 n'efface pas v1). **Finding** : le dénominateur commun comparait le _titre de déclinaison_, que
-Shopify **normalise** (mono-variante → « Default Title », multi → dérivé des options) → fausse
+l'ancien canal **normalise** (mono-variante → « Default Title », multi → dérivé des options) → fausse
 `remote_drift` sur chaque produit dès le push. Fix : la déclinaison comparable = **SKU + prix**
 seulement (le titre _produit_ reste comparé). Test de non-régression ajouté sur le cas exact.
 
 ### Cadrage : réconciliation de publication à trois voies (« git du catalogue »)
 
-**PM** — On fige comment publier vers Shopify **sans casse** : voir _ce qui partirait_ avant
+**PM** — On fige comment publier vers l'ancien canal **sans casse** : voir _ce qui partirait_ avant
 d'envoyer (diff champ par champ), savoir si **quelqu'un a édité la boutique** depuis la dernière
 poussée (dérive distante ⚠️), repérer un **conflit** (les deux ont bougé), et **revenir en arrière**
 sur une fiche via un historique versionné. Le PIM reste l'autorité — la boutique n'est qu'un miroir —
@@ -125,27 +125,27 @@ mais on cesse d'écraser en aveugle.
 **Tech** — Nouveau doc, **la réconciliation à trois voies** (retiré le 2026-09-22).
 Modèle **BASE / OURS / THEIRS** (merge à trois voies), **clé sur le `handle`** (survit à la future
 bascule fiche×mode). Trois empreintes `fingerprint` → table de statuts (`local_ahead`, `remote_drift`,
-`conflict`, `to_remove`, `unknown≠absent`). Socle manquant : **snapshots immuables** (`ShopifyPushSnapshot`,
+`conflict`, `to_remove`, `unknown≠absent`). Socle manquant : **snapshots immuables** (la table des instantanés poussés vers l'ancien canal,
 payload `Json` rejouable) + pointeur `headSnapshotId` sur le binding → BASE + rollback (re-pousse, n'efface
 jamais). **Dry-run réel sans effet de bord** (aujourd'hui il écrit le binding). Piège identifié : normaliser
 THEIRS avant de comparer (projection inverse, cœur testable). Livraison en 5 slices — S1 (snapshots+rollback)
 et S2 (dry-run) tombent **sans boutique réelle** ; S3 (trois-voies) se valide dès le token posé, rejoint la
-boucle test DRAFT (doc de **stratégie e2e Shopify**, retiré le 2026-09-22).
+boucle test DRAFT (doc de **stratégie e2e de l'ancien canal**, retiré le 2026-09-22).
 
 ## 2026-07-28
 
-### Cadrage : projection Shopify emporter / sur place, TVA, boutiques
+### Cadrage : projection vers l'ancien canal : emporter / sur place, TVA, boutiques
 
-**PM** — On fige comment le catalogue se projette sur Shopify quand un article se vend **à emporter**
+**PM** — On fige comment le catalogue se projette sur l'ancien canal quand un article se vend **à emporter**
 (rayon public) **et** **sur place** (commande à la table via QR), à des **TVA différentes**, sur
 **plusieurs boutiques**. Point clé métier : _croissant emporter_ et _croissant sur place_ gardent le
 **même SKU** → le « total croissant » des suivis se réconcilie. L'alcool (bar) est traité comme de la
 **disponibilité** par boutique, pas comme une divergence de taux — donc rien de lourd à faire.
 
-**Tech** — Nouveau doc, **la projection Shopify** (retiré le 2026-09-22). Modèle : la **fiche**
-`produit × mode` = **un produit Shopify** ; la TVA vit **uniquement** sur les collections `tva-*`
+**Tech** — Nouveau doc, **la projection de l'ancien canal** (retiré le 2026-09-22). Modèle : la **fiche**
+`produit × mode` = **un produit de l'ancien canal** ; la TVA vit **uniquement** sur les collections `tva-*`
 (`tax override`, une seule par produit), les collections de nav/salle ne re-taxent jamais (invariants
-Shopify S1–S5). Le **SKU est partagé** entre les fiches d'un produit (S4 : SKU ≠ identité, duplication
+l'ancien canal S1–S5). Le **SKU est partagé** entre les fiches d'un produit (S4 : SKU ≠ identité, duplication
 permise). Boutique = disponibilité (`SalesChannels`) + navigation du QR, jamais le taux ; le fork
 `× boutique` reste **différé** au seul cas d'un article identique portant deux taux. Conséquences :
 `projectProduct` doit passer de 1:1 à **fiche→produit** (même SKU propagé), et le binding gagne le grain
@@ -168,7 +168,7 @@ Distinction tenue : **« Chevallot PIM » → « LFC PIM »**, mais « la boulan
 « Signature Chevallot » **restent**. Un `sed` global aurait effacé le client avec le produit.
 
 _Vérifié après coup_ — base recréée, migrations appliquées, chaîne complète rejouée (famille →
-produit avec allergènes, éditorial et visuel → push Shopify). tsc, lint, gate, 70 tests, build AOT.
+produit avec allergènes, éditorial et visuel → push vers l'ancien canal). tsc, lint, gate, 70 tests, build AOT.
 
 ### La fiche produit en trois cartes : Identité · Nutrition · Communication
 
@@ -204,7 +204,7 @@ décision d'infrastructure à part entière, pas un détail de formulaire.
 **PM** — Un bouton **Créer un produit** ouvre une vraie fiche : identité, **allergènes**, et
 valeurs nutritionnelles optionnelles. Les allergènes se cochent depuis notre référentiel, groupés
 par **catégorie d'étiquette** — cocher « blé », « seigle » ou « orge » revient au même sur
-l'étiquette (« Céréales contenant du gluten »), et le formulaire le montre au lieu de le cacher.
+l'étiquette (« Céréales contenant du gluten »), et le formulaire le montre au lieu du cacher.
 Deux catalogues : **UE / France** par défaut (la liste légale) et **Monde** (l'interopérable, B2B).
 Et une distinction qui compte : « aucun allergène » **coché** ≠ champ laissé vide.
 
@@ -233,38 +233,38 @@ _Vérifié en vrai_ — catalogue UE (23 entrées) et Monde (24), création avec
 relue correctement, code inconnu → **400**, chevauchement → **400**. tsc, lint, gate, 70 tests,
 build AOT.
 
-### Canal Shopify : écran Réglages et bouton « Pousser »
+### Ancien canal de vente en ligne : écran Réglages et bouton « Pousser »
 
 **PM** — Un écran **Réglages** apparaît : domaine de la boutique, version d'API, activation. Et le
-tableau produits gagne une colonne **Shopify** plus un bouton **Pousser** — par ligne ou pour tout le
+tableau produits gagne une colonne **ancien canal** plus un bouton **Pousser** — par ligne ou pour tout le
 catalogue. Tant qu'aucun jeton n'est fourni, tout tourne en **simulation** : la chaîne complète
 s'exécute, rien ne part vers l'extérieur, et chaque compte-rendu le rappelle. Deux garde-fous
 utiles : un produit poussé deux fois sans modification est **ignoré** la seconde fois, et un produit
 en brouillon arrive **en brouillon** — jamais en ligne par accident.
 
-**Tech** — Adaptateur `channels/shopify/`, dépendant du catalogue et jamais l'inverse
+**Tech** — Adaptateur de l'ancien canal (`pim/channels/…`), dépendant du catalogue et jamais l'inverse
 → [ADR-17](./adr.md#adr-17--secrets-dintégration-hors-base--pilote-de-canal-derrière-un-port).
 
 _Le secret ne va pas en base._ Réglages non sensibles en base et pilotables depuis l'écran ; **jeton
-d'API dans l'environnement** (`SHOPIFY_ADMIN_TOKEN` via `AppConfig`). L'écran affiche sa _présence_,
+d'API dans l'environnement** (le jeton d'administration de l'ancien canal via `AppConfig`). L'écran affiche sa _présence_,
 jamais sa valeur. Un secret en base fuite par les sauvegardes, les exports et les logs — c'est une
 frontière de sécurité, pas un détail de rangement. Conséquence : `mode = live` exige **deux**
 conditions (activé **et** approvisionné), sinon on croirait pousser pour de vrai.
 
-_Le pilote réel n'est pas écrit — délibérément._ L'API Admin de Shopify est versionnée
+_Le pilote réel n'est pas écrit — délibérément._ L'API Admin de l'ancien canal est versionnée
 trimestriellement et nous n'avons ni boutique ni jeton : écrire des mutations invérifiables
-produirait du code plausible et faux. `ShopifyDriver` est un port ; l'implémentation par défaut est
+produirait du code plausible et faux. Le transport vers l'ancien canal est un port ; l'implémentation par défaut est
 un pilote `dry-run` qui exerce **toute** la chaîne sans réseau. Le spike d'une journée ne touchera
 que ce fichier.
 
 _Ce qui a de la valeur, c'est la projection._ `projectProduct` est **pure** : catalogue → vocabulaire
-Shopify. `fingerprint` sérialise **à clés triées** — sans ce tri, deux objets équivalents donneraient
+l'ancien canal. `fingerprint` sérialise **à clés triées** — sans ce tri, deux objets équivalents donneraient
 deux empreintes et tout paraîtrait modifié en permanence. L'empreinte sert à ne pas repousser
 l'identique (les canaux ont des quotas) et à détecter la dérive. **8 tests** dédiés.
 
 _Frontières._ `CatalogueReader` devient le **seul** contrat exporté par le catalogue : l'adaptateur
 ne voit ni ses dépôts, ni ses tables, ni ses commandes. Deux tables de binding, pas une : l'état de
-synchro est au niveau **produit** (Shopify pousse produit + variantes ensemble), la _référence de
+synchro est au niveau **produit** (l'ancien canal pousse produit + variantes ensemble), la _référence de
 canal_ reste sur la **déclinaison** (R4) avec son index unique — l'unicité par canal, structurelle.
 Les relations Prisma vers le socle sont **virtuelles** : aucune colonne n'est ajoutée au catalogue,
 la clé étrangère est portée par le binding.
@@ -343,7 +343,7 @@ troncature à la longueur maximale **avec** place pour le suffixe.
 ### Le SKU : une seule référence, et des libellés de canal au bord
 
 **PM** — Premier sujet traité en profondeur. Une proposition de conception voulait **un SKU différent
-par canal** (un pour Shopify, un pour la caisse, un pour le code-barres). Écartée : c'est exactement
+par canal** (un pour l'ancien canal, un pour la caisse, un pour le code-barres). Écartée : c'est exactement
 ce qui détruirait le référentiel commun qu'on construit. **Un article, une référence** — celle que le
 boulanger prononce. Ce que chaque logiciel appelle l'article reste au niveau de ce logiciel. Et le
 système **propose désormais une référence lisible tout seul** (`PATI-TARTE-FRAISE-6P`), modifiable.
@@ -352,10 +352,10 @@ système **propose désormais une référence lisible tout seul** (`PATI-TARTE-F
 [`06-identifiants-et-sku.md`](./data-model/06-identifiants-et-sku.md) +
 [ADR-16](./adr.md#adr-16--un-sku-interne-unique--les-références-canal-vivent-au-bord).
 
-_Erreur de catégorie_ — `Sku = (variantUuid, channel, value)` avec `channel ∈ {shopify, caisse,
+_Erreur de catégorie_ — `Sku = (variantUuid, channel, value)` avec `channel ∈ {ancien_canal, caisse,
 ean13}` : un SKU est par définition la référence **du commerçant** ; `ean13` n'est pas un canal mais
 un identifiant **mondial** émis par GS1 ; et un enum de canaux dans le domaine **viole ADR-13** (le
-catalogue ne compilerait plus sans le module Shopify). Les tables `*_variant_binding` faisaient déjà
+catalogue ne compilerait plus sans le module de l'ancien canal). Les tables `*_variant_binding` faisaient déjà
 ce travail du bon côté de la frontière.
 
 _Exigence « unicité par canal » satisfaite autrement, et mieux_ — un index unique sur la colonne de
@@ -383,14 +383,14 @@ l'application.
 _SKU par défaut_ — **signifiant** plutôt que séquentiel (il sera lu à voix haute au labo et cherché
 sur un écran de caisse à 6h) ; son défaut habituel — l'information se périme — est neutralisé par
 l'invariant **« rien ne parse jamais un SKU »**. Format `{FAMILLE}-{PRODUIT}[-{DÉCLINAISON}][-{N}]`,
-charset `A-Z 0-9 -` (l'intersection sûre de Shopify, caisse, CSV, étiquettes, URL). Proposé, calculé
+charset `A-Z 0-9 -` (l'intersection sûre de l'ancien canal, caisse, CSV, étiquettes, URL). Proposé, calculé
 **une seule fois** (renommer un produit ne renomme pas sa référence), modifiable ; collision →
 suffixe numérique lisible, jamais un hash.
 
 _Deux relevés de vigilance_ — le partage front/back annoncé par la proposition était **impossible**
 (le registre contient `RegExp` et fonctions : rien ne traverse JSON) → partage **à la compilation**
 via `shared-types`, les libellés d'aide restant côté front. Et ses constantes (`16` caractères
-Shopify, `6` chiffres caisse) sont **affirmées sans source** — marquées à vérifier avant tout usage.
+l'ancien canal, `6` chiffres caisse) sont **affirmées sans source** — marquées à vérifier avant tout usage.
 
 ### Cadrage global : anti-drift, pricing, et pourquoi on construit
 
@@ -411,7 +411,7 @@ régimes possibles par champ, dont le plus réaliste est le troisième, souvent 
 dérives). Écraser silencieusement la correction faite en caisse à 7h est le meilleur moyen de faire
 débrancher l'outil.
 
-_Promotions_ — elles ne sont **pas portables** : ce sont des programmes, pas des données. Shopify
+_Promotions_ — elles ne sont **pas portables** : ce sont des programmes, pas des données. L'ancien canal
 applique au panier, une caisse au ticket. Cible retenue : le PIM possède l'**intention commerciale**
 (`Campagne`), chaque adaptateur la **compile**, et on supporte explicitement l'**intersection** — pas
 l'union. Une campagne qu'un canal ne sait pas exprimer est **refusée à la saisie**, jamais dégradée.
@@ -437,7 +437,7 @@ la décision est **testable** par D4 et D1, pas une conviction.
 ### Revue adversariale du modèle de données — et son redressement
 
 **PM** — Passe critique sur le modèle avant d'écrire la moindre table : on a cherché ses défauts au
-lieu de le défendre. Trois choses importantes en sont sorties. **Un risque légal** a été éliminé : le
+lieu du défendre. Trois choses importantes en sont sorties. **Un risque légal** a été éliminé : le
 modèle affirmait « aucun allergène » par défaut sur un produit que personne n'avait vérifié.
 **Une complexité coûteuse** a été reportée : l'historisation complète du catalogue, qu'on payait à
 vie pour un bénéfice qu'on n'a pas encore. **Un flou** a été levé : trois documents décrivaient le
@@ -458,7 +458,7 @@ fausse** : une projection a de toute façon besoin de `last_event_version`/`proj
 (projecteurs, upcasting, hard-gate de replay, à vie) disproportionné pour un catalogue édité par
 trois personnes. Précédent interne : sur SH3PHERD l'event store est arrivé en **couche 3 phase C**,
 pas au jour 1. Conservé de façon **irréversible** : **R1** ids assignés par la commande (UUID v7
-applicatif — le seul point vraiment irrattrapable, la caisse et Shopify pointent dessus), **R2** toute
+applicatif — le seul point vraiment irrattrapable, la caisse et l'ancien canal pointent dessus), **R2** toute
 mutation porte un nom métier, **R3** aucun `DELETE`. Colonnes système assumées, hors-domaine.
 
 _Sécurité de la donnée réglementaire_ — `PRODUCT ||--|| NUTRITION_INFO` (1:1 **obligatoire**) forçait
@@ -637,7 +637,7 @@ Connexion validée de bout en bout.
 
 **PM** — La connexion est **déléguée à un service éprouvé** : aucun mot de passe à stocker ni à
 sécuriser nous-mêmes. Le free tier couvre très largement nos besoins (l'équipe interne, pas les
-clients B2C — eux passent par Shopify).
+clients B2C — eux passent par l'ancien canal).
 
 **Tech** — `src/infra/auth/` : vérification des JWT RS256 contre le JWKS du tenant avec **`jose`**
 (pas Passport — ESM natif, testable). Guard **global** → API **protégée par défaut**, ouverture

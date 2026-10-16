@@ -61,8 +61,8 @@ filtre de statut, donc une fiche contredite y entre encore. Soit
 qu'une ancre photographie sans juger.
 
 À noter : `PrismaCatalogueReader.publishable()` rend _tout ce qui n'est pas
-archivé_, brouillons compris, et `ShopifyPushService.push()` prend des ids
-arbitraires. La projection Shopify, elle, ne transporte aucun allergène.
+archivé_, brouillons compris, et le service de poussée vers l'ancien canal prend des ids
+arbitraires. La projection de l'ancien canal, elle, ne transporte aucun allergène.
 
 ---
 

@@ -276,12 +276,12 @@ où l'on vient demander ce qu'on avait tenté d'envoyer. Le tri est la charge du
 **lecteur** (`mode = 'live' AND outcome = 'sent'`), pas de l'écrivain, qui
 perdrait l'information au lieu de la qualifier.
 
-### 4.6 ~~Shopify — le même mécanisme, au grain du produit~~
+### 4.6 ~~L'ancien canal — le même mécanisme, au grain du produit~~
 
 > 🔴 **Cette section décrivait un mécanisme disparu, et son retrait laisse un
 > trou qu'il faut nommer** (2026-09-22).
 >
-> Shopify poussait au grain du **produit** — une carte `productId → empreinte`,
+> L'ancien canal poussait au grain du **produit** — une carte `productId → empreinte`,
 > une fiche qui a bougé ressortant en `drifted` **elle seule** — là où la
 > plateforme professionnelle pousse tout le lot sous une empreinte globale. Cette
 > finesse-là n'existe plus.

@@ -90,7 +90,7 @@ pas distinguer un nom d'une adresse**.
 1. Des dossiers de **migrations** renommés. Prisma les suit par leur nom : une
    migration renommée est une migration inconnue, et elle se rejouerait.
 2. `TVA_HANDLE_PREFIX = "tva-"` réécrit en `"vat-"`. C'est ce préfixe qui
-   rattache une collection Shopify existante à son taux : le changer les aurait
+   rattache une collection de l'ancien canal existante à son taux : le changer les aurait
    toutes orphelinées, sans erreur visible avant la poussée suivante.
 3. `remplacement` contient `emplacement` : la prose s'est retrouvée pleine de
    « rlocation ».

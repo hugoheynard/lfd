@@ -32,17 +32,17 @@ boutiques**. Le croissant est à 2,00 € TTC au comptoir, 1,71 € HT au pro �
 
 ## 2. Ce qui reste
 
-| #      | Quoi                                   | Coût                      | Ce qui le retient                                                         |
-| ------ | -------------------------------------- | ------------------------- | ------------------------------------------------------------------------- |
-| ~~R1~~ | ✅ **Désinstaller l'app Shopify**      | fait le 2026-09-21        | —                                                                         |
-| ~~R2~~ | ✅ **Le panier public en TTC**         | fait le 2026-09-21        | —                                                                         |
-| R3     | Le **bon de commande public** en TTC   | une passe                 | rien                                                                      |
-| R4     | L'**export CSV** ignore le prix public | une passe                 | rien                                                                      |
-| ~~R5~~ | ✅ **Le masquage par audience**        | fait le 2026-09-21        | —                                                                         |
-| ~~R6~~ | ~~Le **schéma** — les tables Shopify~~ | ✅ **fait le 2026-09-21** | commit `4e006f97b`, migration `20260921220000_retrait_des_tables_shopify` |
-| R7     | Les **écrans de doc internes**         | une passe                 | une décision de forme (§ 3.7)                                             |
-| R8     | Les **94 déclarations d'allergènes**   | de la saisie              | humain, pas du code                                                       |
-| R9     | Trois **questions techniques**         | à trancher en bâtissant   | rien                                                                      |
+| #      | Quoi                                             | Coût                      | Ce qui le retient                              |
+| ------ | ------------------------------------------------ | ------------------------- | ---------------------------------------------- |
+| ~~R1~~ | ✅ **Désinstaller l'app de l'ancien canal**      | fait le 2026-09-21        | —                                              |
+| ~~R2~~ | ✅ **Le panier public en TTC**                   | fait le 2026-09-21        | —                                              |
+| R3     | Le **bon de commande public** en TTC             | une passe                 | rien                                           |
+| R4     | L'**export CSV** ignore le prix public           | une passe                 | rien                                           |
+| ~~R5~~ | ✅ **Le masquage par audience**                  | fait le 2026-09-21        | —                                              |
+| ~~R6~~ | ~~Le **schéma** — les tables de l'ancien canal~~ | ✅ **fait le 2026-09-21** | commit `4e006f97b`, migration `20260921220000` |
+| R7     | Les **écrans de doc internes**                   | une passe                 | une décision de forme (§ 3.7)                  |
+| R8     | Les **94 déclarations d'allergènes**             | de la saisie              | humain, pas du code                            |
+| R9     | Trois **questions techniques**                   | à trancher en bâtissant   | rien                                           |
 
 ✅ **R1 est fait, et c'était le seul qui coupait un accès réel.** Tout ce qui
 reste est du confort ou de la dette.
@@ -55,14 +55,14 @@ tableau.
 
 ## 3. Le détail
 
-### 3.1 ✅ R1 — l'app Shopify est désinstallée (2026-09-21)
+### 3.1 ✅ R1 — l'app de l'ancien canal est désinstallée (2026-09-21)
 
 Le code était parti depuis le matin ; **le jeton, non**. C'est la
-désinstallation depuis le **Dev Dashboard Shopify** qui le révoque — un jeton
+désinstallation depuis le **tableau de bord développeur de l'ancien canal** qui le révoque — un jeton
 vit chez le fournisseur, pas chez nous.
 
 ⚠️ **Et les « trois secrets à retirer de GitHub et Cloudflare » n'existaient
-pas.** Vérifié le jour même : aucun `SHOPIFY_*` parmi les vingt-deux secrets du
+pas.** Vérifié le jour même : aucun secret de l'ancien canal parmi les vingt-deux secrets du
 dépôt, donc la boucle de synchronisation du workflow — qui ne pousse un nom que
 s'il est **non vide** — les a toujours sautés. Ils vivaient dans le `.env` du
 poste, et lui seul.
@@ -164,28 +164,28 @@ plus rien ne montre.
 
 ### 3.6 R6 — le schéma, au déploiement suivant
 
-`DROP` de `ShopifySettings`, `ShopifyProductBinding`, `ShopifyVariantBinding`,
-`ShopifyPushSnapshot`, et des enums `ShopifySyncStatus`, `ShopifyChannelMode`,
-`ShopifyPushOutcome`.
+`DROP` des réglages de l'ancien canal, des liaisons produit et variante,
+la table des instantanés poussés vers l'ancien canal, et des trois enums de l'ancien canal (statut de synchro,
+mode, issue de poussée).
 
 ⚠️ **Trois registres tenus à la main suivent dans le MÊME commit**, sans quoi
 `schema-parity.spec.ts` devient rouge :
 
 - `platform/database/schema-ops.counter.ts` — les quatre modèles ;
 - `pim/infra/database/pim-prisma.service.ts` — les quatre délégués abstraits ;
-- `prisma/schema/pim/product.prisma` — les deux back-relations `shopifyBinding`.
+- `prisma/schema/pim/product.prisma` — les deux back-relations vers les liaisons de l'ancien canal.
 
-⚠️ Et **ni `handle_suffix` ni `shopify_projected` ne tombent avec eux** : ce sont
+⚠️ Et **ni `handle_suffix` ni la colonne de projection vers l'ancien canal ne tombent avec eux** : ce sont
 des champs **obligatoires** d'un contrat servi à un back-office en service. Trois
 déploiements.
 
 ### 3.7 R7 — les écrans de documentation interne
 
 Une dizaine de gabarits du back-office décrivent encore l'architecture avec
-Shopify dedans : les trois diagrammes (`system-diagram`, `upsert-diagram`,
+l'ancien canal dedans : les trois diagrammes (`system-diagram`, `upsert-diagram`,
 `catalogue-to-tool-diagram`), trois pages PIM (`overview`, `bricks`,
 `general-settings`), la section « Intégrations » de la fiche produit, la page des
-taux de TVA, et `pim/data/models.ts` qui déclare encore `ShopifySettings`.
+taux de TVA, et `pim/data/models.ts` qui déclare encore les réglages de l'ancien canal.
 
 Ce sont des écrans **lus par le personnel**, pas du code exécuté : ils ne cassent
 rien, mais ils décrivent un système qui n'existe plus. C'est le genre de dette
@@ -278,16 +278,16 @@ fil ni la résolution — il s'applique une fois, à la projection.
 
 Gardé parce que ces fautes reviennent, pas par goût de l'aveu.
 
-| La faute                                               | Ce qu'elle a coûté                                                                                                            |
-| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
-| **Un grep vide n'est pas une absence**                 | « aucune occurrence de shopify » — il y en avait **6**. Le grep était en minuscules, les fichiers écrivent `Shopify`.         |
-| **Compter sans filtrer `dist/`**                       | 1 870 lignes annoncées pour **805**.                                                                                          |
-| **Recopier un numéro de ligne sans ouvrir le fichier** | `orders.prisma:473` cité deux fois — c'est `order_late_fee`. Sur de l'argent.                                                 |
-| **Dire « vert » sans la racine**                       | Deux fois le même jour, sur la même clé de contrat. Une spec front qui ne compile pas **éteint 983 tests** sans en rougir un. |
-| **Lire une porte derrière un pipe**                    | Deux commits sur un arbre rouge : le code de sortie est celui de la dernière commande.                                        |
-| **Prédire le coût d'une correction**                   | « dix e2e » annoncés, **quarante-deux** rouges — et la cause était le SEMIS, pas les attentes.                                |
-| **Justifier par l'état d'un autre fichier**            | « un seul endroit à changer » : faux le soir même. « La plateforme n'a pas le droit » : la porte exclut `@lfd/…`.             |
-| **Calculer un affichage autrement que la caisse**      | Un « encaissé » plus fin que la ventilation réelle — il taisait exactement les cas qu'il devait montrer.                      |
+| La faute                                               | Ce qu'elle a coûté                                                                                                                         |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Un grep vide n'est pas une absence**                 | « aucune occurrence du nom de l'ancien canal » — il y en avait **6**. Le grep était en minuscules, les fichiers écrivent `l'ancien canal`. |
+| **Compter sans filtrer `dist/`**                       | 1 870 lignes annoncées pour **805**.                                                                                                       |
+| **Recopier un numéro de ligne sans ouvrir le fichier** | `orders.prisma:473` cité deux fois — c'est `order_late_fee`. Sur de l'argent.                                                              |
+| **Dire « vert » sans la racine**                       | Deux fois le même jour, sur la même clé de contrat. Une spec front qui ne compile pas **éteint 983 tests** sans en rougir un.              |
+| **Lire une porte derrière un pipe**                    | Deux commits sur un arbre rouge : le code de sortie est celui de la dernière commande.                                                     |
+| **Prédire le coût d'une correction**                   | « dix e2e » annoncés, **quarante-deux** rouges — et la cause était le SEMIS, pas les attentes.                                             |
+| **Justifier par l'état d'un autre fichier**            | « un seul endroit à changer » : faux le soir même. « La plateforme n'a pas le droit » : la porte exclut `@lfd/…`.                          |
+| **Calculer un affichage autrement que la caisse**      | Un « encaissé » plus fin que la ventilation réelle — il taisait exactement les cas qu'il devait montrer.                                   |
 
 🔴 **Le point commun des trois dernières** : une affirmation sur du code
 **voisin** ne se démasque jamais en relisant le fichier où elle vit. C'est le

@@ -10,7 +10,7 @@
 > (comment se fabrique un prix) · [`journalisation-et-tracabilite.md`](journalisation-et-tracabilite.md)
 > (l'anatomie d'une trace).
 >
-> ⚠️ Ce document citait la **réconciliation Shopify** comme « déjà la moitié
+> ⚠️ Ce document citait la **réconciliation de l'ancien canal** comme « déjà la moitié
 > de la réponse ». Ce canal est sorti du dépôt le 2026-09-21 et sa
 > documentation a été retirée le 2026-09-22 : la moitié de réponse n'existe
 > plus, et les points d'ancrage sont à poser sans elle.
@@ -152,9 +152,9 @@ qu'émis au plein tarif. Un snapshot vide serait ingéré et viderait la boutiqu
 | **Les faits**              | `growth.activity_events`       | type, acteur, `occurred_at`, payload contenant un **diff champ à champ** | dire qui a changé quoi, quand         |
 
 🔴 **Il y avait une troisième ligne, et c'était la plus importante** : le payload
-poussé à Shopify (`pim.shopify_push_snapshot`), versionné par `handle`, rejouable,
+poussé à l'ancien canal (la table des instantanés poussés vers l'ancien canal), versionné par `handle`, rejouable,
 et que ce document appelait « le seul vrai point d'ancrage ». La table est
-supprimée depuis le 2026-09-21 (migration `20260921220000_retrait_des_tables_shopify`).
+supprimée depuis le 2026-09-21 (migration `20260921220000`).
 
 **Le dépôt n'a donc plus AUCUN point d'ancrage rejouable, ni aucun retour
 arrière de publication.** Ce n'est pas une ligne à retirer en silence : c'est une
@@ -174,7 +174,7 @@ sans en changer la nature. C'est une trace, pas un event store.
 
 ### Ce qui manque, dit simplement
 
-- **Aucune ancre du catalogue lui-même.** Shopify sait dire « voici la version 7
+- **Aucune ancre du catalogue lui-même.** L'ancien canal sait dire « voici la version 7
   de ce produit chez moi » ; le PIM ne sait pas dire « voici le catalogue au
   moment où je l'ai publié ».
 - **Pas de diff entre deux publications**, donc — il n'y a rien à soustraire.
@@ -185,7 +185,7 @@ sans en changer la nature. C'est une trace, pas un event store.
 
 ### A · Généraliser l'ancre par canal
 
-Un `catalog_push_snapshot` sur le modèle exact de `shopify_push_snapshot`, pour
+Un `catalog_push_snapshot` sur le modèle exact de la table des instantanés poussés vers l'ancien canal, pour
 chaque canal.
 
 - ✅ Motif déjà éprouvé, coût faible, et le diff est **honnête sur ce que le
@@ -201,7 +201,7 @@ chaque canal.
 
 - ✅ Une seule vérité, diffable contre n'importe quelle autre révision. C'est ce
   que « point d'ancrage de publication » veut dire.
-- ✅ Elle **compose** avec A plutôt que de le remplacer : un push enregistre
+- ✅ Elle **compose** avec A plutôt que du remplacer : un push enregistre
   quelle révision il a envoyée. On répond alors à deux questions distinctes —
   _ce que la maison a décidé_ (révision → révision) et _ce qu'un canal porte_
   (révision → boutique, ce que la réconciliation 3 voies fait déjà).
@@ -216,7 +216,7 @@ chaque canal.
 
 ### Ma recommandation : **B**, en réutilisant deux pièces qui existent
 
-- le **hash** se calcule comme `fingerprint` de la projection Shopify ; c'est lui
+- le **hash** se calcule comme `fingerprint` de la projection de l'ancien canal ; c'est lui
   qui rend le « rien n'a changé » gratuit ;
 - le **diff** s'affiche avec `FieldDiffView`, déjà écrit pour la réconciliation.
 
@@ -297,7 +297,7 @@ mécanisme de git, pour la même raison.
 - **Les octets des visuels** — bucket, adressés par URL (ci-dessus).
 - **`product_readiness`** — une signature _sur_ la fiche, pas un morceau de la
   fiche. Elle dit qui a validé, pas ce qui est publié.
-- **Les liaisons de synchronisation** (`shopify_product_binding`, gids,
+- **Les liaisons de synchronisation** (la table de liaison des produits de l'ancien canal, gids,
   `sku_registry`) — de l'état de transport, re-dérivable, sans valeur historique.
 
 ⚠️ **Ce que cette reprise coûte** : une révision devient une copie du catalogue
@@ -371,7 +371,7 @@ la colonne « avant » d'un tableau ne doit pas se lire avec du bruit autour.
 
 ### Deux points de conception
 
-- **`FieldDiffView` est réutilisé** depuis la réconciliation Shopify plutôt que
+- **`FieldDiffView` est réutilisé** depuis la réconciliation de l'ancien canal plutôt que
   redéclaré. Un champ qui bouge se rend de la même façon, qu'il ait bougé entre
   deux révisions ou entre nous et une boutique — et deux déclarations du même
   ensemble finissent par diverger, ce qui est déjà arrivé sur les motifs

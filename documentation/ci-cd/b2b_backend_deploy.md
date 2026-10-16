@@ -356,14 +356,14 @@ Le schéma d'URL choisit le transport Prisma :
 
 Même patron, différences à connaître :
 
-|                            | B2B                                       | PIM                                                                 |
-| -------------------------- | ----------------------------------------- | ------------------------------------------------------------------- |
-| Worker/Dockerfile/wrangler | idem structure                            | idem structure                                                      |
-| DB (secret)                | `DATABASE_LFD_URL`                        | `PIM_DATABASE_URL` → env `DATABASE_URL`                             |
-| Auth0 (variables)          | `B2B_AUTH0_DOMAIN` / `B2B_AUTH0_AUDIENCE` | `SUITE_AUTH0_DOMAIN` / `SUITE_AUTH0_AUDIENCE_PIM`                   |
-| Secrets spécifiques        | `STRIPE_*`, `STORAGE_*`, `AUTH0_M2M_*`    | `SHOPIFY_ADMIN_TOKEN`, `SHOPIFY_CLIENT_ID`, `SHOPIFY_CLIENT_SECRET` |
-| Staff/audience admin       | oui (`AUTH0_ADMIN_AUDIENCE`)              | non                                                                 |
-| Token CI                   | `LFC_PIM_BACKEND_WORKER`                  | —                                                                   |
+|                            | B2B                                       | PIM                                                                                                                     |
+| -------------------------- | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Worker/Dockerfile/wrangler | idem structure                            | idem structure                                                                                                          |
+| DB (secret)                | `DATABASE_LFD_URL`                        | `PIM_DATABASE_URL` → env `DATABASE_URL`                                                                                 |
+| Auth0 (variables)          | `B2B_AUTH0_DOMAIN` / `B2B_AUTH0_AUDIENCE` | `SUITE_AUTH0_DOMAIN` / `SUITE_AUTH0_AUDIENCE_PIM`                                                                       |
+| Secrets spécifiques        | `STRIPE_*`, `STORAGE_*`, `AUTH0_M2M_*`    | le jeton d'administration de l'ancien canal, l'identifiant client de l'ancien canal, le secret client de l'ancien canal |
+| Staff/audience admin       | oui (`AUTH0_ADMIN_AUDIENCE`)              | non                                                                                                                     |
+| Token CI                   | `LFC_PIM_BACKEND_WORKER`                  | —                                                                                                                       |
 
 ---
 

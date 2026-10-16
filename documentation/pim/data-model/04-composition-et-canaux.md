@@ -4,7 +4,7 @@
 > possède, et dans quel sens pointent les clés étrangères.
 
 > 🔴 **Tous les exemples de canal de ce document sont morts — le principe, lui, a
-> été éprouvé pour de vrai.** `shopify_*` est supprimé (2026-09-21), et les
+> été éprouvé pour de vrai.** les tables de l'ancien canal de vente en ligne sont supprimées (2026-09-21), et les
 > `helios_*` n'ont **jamais** été créées (PI sorti le 2026-09-22). Le seul
 > binding de canal du dépôt s'appelle **`b2b_channel_binding`**
 > (`prisma/schema/pim/channels.prisma`) : c'est lui qu'il faut lire pour voir la
@@ -12,7 +12,7 @@
 >
 > ✅ **Ce document a prédit son propre cas d'usage, et la prédiction a tenu.** Il
 > écrit plus bas : « C'est ce qui garantit qu'on peut supprimer l'adaptateur
-> Shopify sans toucher au cœur. » Cet adaptateur a été supprimé le 2026-09-21 —
+> l'ancien canal sans toucher au cœur. » Cet adaptateur a été supprimé le 2026-09-21 —
 > le socle n'a pas bougé, et la migration n'a touché aucune table de `product`.
 > Le test posé ici en hypothèse a été **passé en conditions réelles**. C'est la
 > meilleure raison de garder ce document malgré ses exemples périmés.
@@ -29,7 +29,7 @@ La distinction qui compte : une **couche canonique** décrit ce que le produit *
 **contexte canal** décrit **ce qu'un système tiers en sait**.
 
 > **Le sens de la FK ne s'inverse jamais.** Le socle n'a aucune colonne pointant vers une couche ni
-> vers un canal. C'est ce qui garantit qu'on peut supprimer l'adaptateur Shopify sans toucher au
+> vers un canal. C'est ce qui garantit qu'on peut supprimer l'adaptateur de l'ancien canal sans toucher au
 > cœur.
 
 ## Le motif : _shared primary key_
@@ -68,7 +68,7 @@ Deux choses distinctes, à **ne pas mélanger dans la même table** :
 ### a. Le binding + l'état de synchro (mécanique, écrit par l'adaptateur)
 
 ⚠️ **Les trois blocs qui suivaient ici décrivaient des tables qui n'existent
-plus ou n'ont jamais existé** (`shopify_variant_binding`,
+plus ou n'ont jamais existé** (la table de liaison des variantes de l'ancien canal,
 `helios_variant_binding`, `helios_category_binding`). Ils ont été retirés le
 2026-09-22 : une forme « provisoire, bloquée par D4 » n'a plus de sens une fois
 D4 close et le fournisseur parti.
@@ -80,7 +80,7 @@ ici — une description recopiée diverge, une référence ne diverge pas.
 ### b. Les overrides éditoriaux par canal (métier, saisis à la main)
 
 ⚠️ **Aucun override éditorial par canal n'existe aujourd'hui.** Les deux exemples
-qui vivaient ici (`shopify_product_override`, `helios_variant_override`)
+qui vivaient ici (la surcharge produit de l'ancien canal, `helios_variant_override`)
 visaient des canaux partis. La **nature** de table reste légitime — un titre
 saisi à la main pour un canal ne se laisse jamais écraser par un push — mais
 elle n'a plus d'instance dans le dépôt.
@@ -93,7 +93,7 @@ cette différence structurelle au lieu d'être une convention qu'on oublie.
 
 ### R4 — On binde sur la **déclinaison**, jamais sur le produit
 
-Le PLU d'une caisse comme le _variant_ Shopify désignent l'**unité réellement vendue**. Un `product`
+Le PLU d'une caisse comme le _variant_ de l'ancien canal désignent l'**unité réellement vendue**. Un `product`
 n'est pas vendable. Binder au niveau produit obligerait à un éclatement artificiel côté adaptateur,
 et rendrait impossible un produit dont seules certaines déclinaisons sont publiées.
 
@@ -101,7 +101,7 @@ Le binding pointe sur l'`id` — **jamais sur le `sku`**, qui est modifiable.
 
 ### R5 — Les tables canal ne sont **pas** event-sourcées
 
-Un `shopify_variant_gid` n'est pas un fait métier, c'est de l'état de synchro : il se **re-dérive**,
+Un identifiant de variante chez l'ancien canal n'est pas un fait métier, c'est de l'état de synchro : il se **re-dérive**,
 il ne se **rejoue** pas. Les faire entrer dans le futur event store polluerait l'historique du
 catalogue avec du bruit d'intégration.
 
@@ -113,13 +113,13 @@ sans perte d'information métier.
 Une FK physique entre deux modules est acceptable (intégrité référentielle en base). Ce qui est
 **interdit**, c'est la **lecture des tables d'un autre module**.
 
-| ✅                                                                                    | ❌                                                                              |
-| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
-| L'adaptateur Shopify lit le catalogue par son **port de lecture** (`CatalogueReader`) | `SELECT … FROM product JOIN shopify_variant_binding` depuis le module catalogue |
-| Le module `pricing` référence un `variant_id` comme **valeur**                        | Le module `pricing` joint sur `product_variant` pour lire le `name`             |
-| Un adaptateur possède ses propres tables `*_binding`                                  | Le socle porte une colonne `shopify_id`                                         |
+| ✅                                                                                              | ❌                                                                             |
+| ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| L'adaptateur de l'ancien canal lit le catalogue par son **port de lecture** (`CatalogueReader`) | `SELECT … FROM product JOIN former_variant_binding` depuis le module catalogue |
+| Le module `pricing` référence un `variant_id` comme **valeur**                                  | Le module `pricing` joint sur `product_variant` pour lire le `name`            |
+| Un adaptateur possède ses propres tables `*_binding`                                            | Le socle porte une colonne d'identifiant de l'ancien canal                     |
 
-Le test : **si on supprimait le module Shopify, le catalogue compilerait-il encore ?** La réponse
+Le test : **si on supprimait le module de l'ancien canal, le catalogue compilerait-il encore ?** La réponse
 doit être oui, sans modification.
 
 ## Rappel : la règle de promotion de `attributes`

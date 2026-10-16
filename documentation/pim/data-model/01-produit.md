@@ -71,7 +71,7 @@ L'attachement passe par des **tables de liaison dédiées** — `product_media`,
 
 `role` : `hero` · `gallery` · `lifestyle` · `thumbnail` · `print`. `position` : 0 = principale.
 
-> Chaque canal a ses contraintes (Shopify multi-format, vignette caisse PI, haute-déf pour
+> Chaque canal a ses contraintes (l'ancien canal multi-format, vignette caisse PI, haute-déf pour
 > l'impression B2B). On stocke le **master** + un `focal_point` ; les déclinaisons de taille sont
 > **dérivées**, jamais ressaisies.
 
@@ -79,18 +79,18 @@ L'attachement passe par des **tables de liaison dédiées** — `product_media`,
 
 ## 4. Ce que chaque canal consomme de cette couche
 
-| Donnée              | Shopify (C&C web)  | Caisse PI / Helios | B2B     | Câblé ?                     |
-| ------------------- | ------------------ | ------------------ | ------- | --------------------------- |
-| `description_short` | ✅                 | ✅ (tronqué)       | ✅      | Shopify seulement, en repli |
-| `description_long`  | ✅                 | —                  | —       | ✅ `descriptionHtml`        |
-| SEO                 | ✅                 | —                  | —       | ✅ `seo { title, … }`       |
-| `brand`             | ✅                 | —                  | —       | ✅ `vendor`                 |
-| `story`, `pairing`  | ✅                 | —                  | —       | ❌ pas de destination       |
-| `provenance`        | ✅                 | —                  | ✅      | ❌ n'existe pas             |
-| Médias              | `hero` + `gallery` | `thumbnail`        | `print` | ❌                          |
-| Certifications      | ✅ (logos)         | éventuel           | ✅      | ❌ n'existe pas             |
+| Donnée              | Ancien canal (C&C web) | Caisse PI / Helios | B2B     | Câblé ?                          |
+| ------------------- | ---------------------- | ------------------ | ------- | -------------------------------- |
+| `description_short` | ✅                     | ✅ (tronqué)       | ✅      | Ancien canal seulement, en repli |
+| `description_long`  | ✅                     | —                  | —       | ✅ `descriptionHtml`             |
+| SEO                 | ✅                     | —                  | —       | ✅ `seo { title, … }`            |
+| `brand`             | ✅                     | —                  | —       | ✅ `vendor`                      |
+| `story`, `pairing`  | ✅                     | —                  | —       | ❌ pas de destination            |
+| `provenance`        | ✅                     | —                  | ✅      | ❌ n'existe pas                  |
+| Médias              | `hero` + `gallery`     | `thumbnail`        | `print` | ❌                               |
+| Certifications      | ✅ (logos)             | éventuel           | ✅      | ❌ n'existe pas                  |
 
-**Ce que « câblé » veut dire, et ce qu'il ne dit pas.** Shopify n'a **qu'un** champ de
+**Ce que « câblé » veut dire, et ce qu'il ne dit pas.** L'ancien canal n'a **qu'un** champ de
 description : `description_long` le prend, et `description_short` sert de repli quand la
 longue manque — le résumé garde sa vocation propre (listes, cartes, écran de caisse), qui
 n'est câblée nulle part encore.

@@ -54,7 +54,7 @@ distingue un catalogue B2B d'une boutique grand public — est **quasi absente**
   « qté avant ajout » est **100 % dans l'UI de la carte** (`boutique-page.onAdd`
   appelle `cart.add(id)` → qté 1 codée en dur). La plomberie est prête.
 
-## Le bon benchmark : les distributeurs food-service, pas Shopify
+## Le bon benchmark : les distributeurs food-service, pas l'ancien canal de vente en ligne
 
 La référence n'est pas Amazon grand public, c'est **Metro / Transgourmet / Brake /
 Pro à Pro / Ankorstore / Faire** : des gens qui vendent à des pros qui

@@ -114,17 +114,17 @@ tel quel. Il reste ici car il définit _ce qu'est_ le produit.
 caisse et **fiche réglementaire**. Elle n'a **pas de dépôt propre** : elle se modifie via l'agrégat
 `Product`.
 
-| Champ             | Type                       | Rôle                                                                                    |
-| ----------------- | -------------------------- | --------------------------------------------------------------------------------------- |
-| `id`              | UUID v7                    | Stable et **éternel** — la caisse, Shopify et l'historique de commandes pointent dessus |
-| `product_id`      | UUID → Product             | Parent                                                                                  |
-| `sku`             | string                     | **Unique globalement** — `PATI-TARTE-FRAISE-6P`                                         |
-| `name` 🌐         | LocalizedText              | « 6 personnes »                                                                         |
-| `options`         | jsonb `map<string,string>` | Axes — `{ "taille": "6 pers" }`                                                         |
-| `is_default`      | bool                       | Déclinaison par défaut                                                                  |
-| `is_discontinued` | bool                       | Retirée de la vente (jamais supprimée — R3)                                             |
-| `position`        | int                        | Ordre d'affichage                                                                       |
-| `attributes`      | jsonb                      | Échappatoire gouvernée                                                                  |
+| Champ             | Type                       | Rôle                                                                                           |
+| ----------------- | -------------------------- | ---------------------------------------------------------------------------------------------- |
+| `id`              | UUID v7                    | Stable et **éternel** — la caisse, l'ancien canal et l'historique de commandes pointent dessus |
+| `product_id`      | UUID → Product             | Parent                                                                                         |
+| `sku`             | string                     | **Unique globalement** — `PATI-TARTE-FRAISE-6P`                                                |
+| `name` 🌐         | LocalizedText              | « 6 personnes »                                                                                |
+| `options`         | jsonb `map<string,string>` | Axes — `{ "taille": "6 pers" }`                                                                |
+| `is_default`      | bool                       | Déclinaison par défaut                                                                         |
+| `is_discontinued` | bool                       | Retirée de la vente (jamais supprimée — R3)                                                    |
+| `position`        | int                        | Ordre d'affichage                                                                              |
+| `attributes`      | jsonb                      | Échappatoire gouvernée                                                                         |
 
 ## Entité : `Category` — la taxonomie structurelle
 
@@ -146,7 +146,7 @@ Arbre à **parent unique**. C'est le classement _structurel_ (« Viennoiseries �
 ## Entité : `Collection` — le regroupement libre
 
 Ce que l'arbre ne sait pas faire : « Noël », « Signature », « Vitrine du matin ». **n:n**, volatil,
-piloté par le marketing, projetable en collections Shopify.
+piloté par le marketing, projetable en collections de l'ancien canal.
 
 | Champ     | Type          | Rôle              |
 | --------- | ------------- | ----------------- |
