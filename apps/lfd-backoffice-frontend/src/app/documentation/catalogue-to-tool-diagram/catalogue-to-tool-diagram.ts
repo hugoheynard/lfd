@@ -6,8 +6,8 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
  *
  * **Un** contexte « sur place » : un taux réglé une fois par article, un
  * catalogue décrit une fois. Puis un **adaptateur** par outil, qui TRADUIT ce
- * catalogue dans le vocabulaire de sa cible — collections et handles pour
- * Shopify, familles et rayons pour une caisse. L'**intégration** ne fait que
+ * catalogue dans le vocabulaire de sa cible — articles et rayons pour la
+ * boutique en ligne, familles et rayons pour une caisse. L'**intégration** ne fait que
  * transporter le résultat.
  *
  * Il a d'abord été dessiné avec DEUX contextes (« sur place QR », « sur place

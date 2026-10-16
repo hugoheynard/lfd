@@ -17,14 +17,14 @@ const MAX_DECIMALS = 2;
 /**
  * **Le taux de TVA.**
  *
- * Il portait aussi le `tag` (`tva-5-5`), l'identité du taux côté Shopify. Ce
+ * Il portait aussi le `tag` (`tva-5-5`), l'identité du taux chez l'ancien canal de vente en ligne. Ce
  * n'était pas sa place : un taux de TVA est une donnée fiscale, un handle de
  * collection est du vocabulaire de canal. Le référentiel décrivait donc un de
  * ses consommateurs, et la seule chose qui empêchait deux taux de porter le
- * même taux était la collision de leurs handles Shopify.
+ * même taux était la collision de leurs handles de canal.
  *
- * La dérivation vit désormais dans l'adaptateur Shopify, qui est le seul à en
- * avoir jamais eu besoin.
+ * La dérivation vivait dans l'adaptateur de ce canal, le seul à en avoir
+ * jamais eu besoin, et elle est partie avec lui.
  */
 export class VatPercent {
   private constructor(readonly percent: number) {}

@@ -2,7 +2,7 @@ import type { FoldProduct } from '../../../shared';
 
 /**
  * Catalogue La Folie Coffee — **copié du PIM** (`products.seed.ts`, 92 produits
- * importés du CSV Shopify). Rangées compactes
+ * importés du CSV de l'ancienne boutique en ligne). Rangées compactes
  * `[sku, nom, slug, prix€, poids(g)|null, catégorie, description, flags]`,
  * mappées ici en {@link FoldProduct} pour la boutique B2B.
  */

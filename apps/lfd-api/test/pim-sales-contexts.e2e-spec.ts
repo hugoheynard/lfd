@@ -39,8 +39,6 @@ interface ContextRow {
   readonly key: string;
   readonly label: string;
   readonly active: boolean;
-  readonly shopifyProjected: boolean;
-  readonly handleSuffix: string;
   readonly position: number;
   readonly root: boolean;
   readonly offeredByLocations: number;
@@ -51,9 +49,7 @@ interface ContextRow {
 const NEW_CONTEXT = {
   key: "traiteur",
   label: "Traiteur",
-  handleSuffix: "-traiteur",
   active: true,
-  shopifyProjected: false,
 };
 
 const rowOf = async (key: string): Promise<ContextRow | undefined> =>
@@ -190,26 +186,25 @@ describe("ouvrir un contexte de vente", () => {
   });
 
   /**
-   * Deux contextes PROJETÉS ne peuvent pas partager un suffixe : ils
-   * produiraient la même URL de produit. Le vide est celui du contexte par
-   * défaut — le handle nu, qui protège les URL indexées.
+   * Le contexte ne porte plus aucun réglage d'un canal retiré (2026-10-16) : la
+   * vue rend exactement ce que l'agrégat tient, rien de plus.
    */
-  it("refuse un suffixe de handle déjà projeté", async () => {
-    const response = await staff()
-      .post(CONTEXTS)
-      .send({ ...NEW_CONTEXT, shopifyProjected: true, handleSuffix: "" });
+  it("crée un contexte sans réglage de canal, et la vue n'en rend aucun", async () => {
+    await staff().post(CONTEXTS).send(NEW_CONTEXT).expect(201);
 
-    expect(response.status).toBe(409);
-    expect(jsonBody<{ code: string }>(response).code).toBe("catalogue.sales_context.handle_taken");
-  });
-
-  it("laisse deux contextes NON projetés partager un suffixe vide", async () => {
-    // Un contexte qui n'a pas de handle ne collisionne avec rien ; exiger
-    // l'unicité interdirait le vide à tous sauf un.
-    await staff()
-      .post(CONTEXTS)
-      .send({ ...NEW_CONTEXT, handleSuffix: "" })
-      .expect(201);
+    const row = await rowOf("traiteur");
+    expect(Object.keys(row ?? {}).sort()).toEqual(
+      [
+        "active",
+        "key",
+        "label",
+        "offeredByLocations",
+        "position",
+        "ratedBy",
+        "root",
+        "soldBy",
+      ].sort(),
+    );
   });
 });
 
@@ -233,9 +228,7 @@ describe("régler un contexte de vente", () => {
       .put(`${CONTEXTS}/b2b`)
       .send({
         label: "Professionnels",
-        handleSuffix: "",
         active: false,
-        shopifyProjected: false,
         position: 3,
       })
       .expect(200);

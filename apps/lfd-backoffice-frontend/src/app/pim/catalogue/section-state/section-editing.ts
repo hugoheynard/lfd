@@ -5,7 +5,7 @@ import { InjectionToken, type Signal } from '@angular/core';
  *
  * `SectionState` injectait `ProductFormStore` en entier : un composant de
  * présentation dépendait donc de mille lignes d'état produit — prix, allergènes,
- * bindings Shopify — pour afficher un point et deux boutons. Une famille ne peut
+ * bindings de canal — pour afficher un point et deux boutons. Une famille ne peut
  * rien en faire.
  *
  * Quatre membres, tous portant la même clé de section. Les signatures prennent

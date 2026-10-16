@@ -64,7 +64,7 @@ describe("la carte ne montre que ce que cette application opère", () => {
   it("garde toute feuille rattachée à quelqu'un", () => {
     // Un tiers dont plus rien ne dépend flotte : il s'affiche sans qu'on sache
     // qui s'en sert, donc sans qu'on sache ce qui tombe avec lui. C'est ce qui
-    // serait arrivé à Shopify quand le nœud du référentiel a disparu.
+    // serait arrivé à l'ancien canal de vente en ligne quand le nœud du référentiel a disparu.
     const dependedUpon = new Set(TOPOLOGY.flatMap((node) => node.dependsOn));
     const floating = TOPOLOGY.filter(
       (node) => node.dependsOn.length === 0 && !dependedUpon.has(node.id),

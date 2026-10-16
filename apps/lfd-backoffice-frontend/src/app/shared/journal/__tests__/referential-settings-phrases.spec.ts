@@ -153,7 +153,7 @@ describe('les contextes de vente', () => {
       key: 'delivery',
       label: 'Livraison',
       active: false,
-      shopifyProjected: true,
+      projectedToFormerChannel: true,
     });
     const updated = on('sales_context', 'sales_context.updated', {
       subjectLabel: 'Livraison',
@@ -167,7 +167,7 @@ describe('les contextes de vente', () => {
     expect(sentence(created)).toBe(
       'Colette Martin a créé le contexte de vente « Livraison », inactif',
     );
-    expect(labels(created)).toEqual(['Clé', 'Publié sur Shopify']);
+    expect(labels(created)).toEqual(['Clé', 'Ancien canal — projeté']);
     expect(sentence(updated)).toBe(
       'Colette Martin a modifié le contexte de vente « Livraison » : actif',
     );
@@ -427,7 +427,9 @@ describe('les taux de TVA quand ils s’appelaient « régimes »', () => {
     expect(sentence(created).replace(/\s/gu, ' ')).toBe(
       'Colette Martin a créé le taux de TVA « Réduit » à 5,5 %',
     );
-    expect(render(created).detail).toEqual([{ label: 'Collection Shopify', value: 'tva-5-5' }]);
+    expect(render(created).detail).toEqual([
+      { label: 'Ancien canal — collection', value: 'tva-5-5' },
+    ]);
     expect(sentence(deleted).replace(/\s/gu, ' ')).toBe(
       'Colette Martin a supprimé le taux de TVA « Réduit » (5,5 %)',
     );
@@ -449,7 +451,7 @@ describe('les taux de TVA quand ils s’appelaient « régimes »', () => {
     expect(labels(changed)).toEqual([
       'Portée › Familles à emporter',
       'Portée › Familles sur place',
-      'Collection Shopify',
+      'Ancien canal — collection',
     ]);
   });
 

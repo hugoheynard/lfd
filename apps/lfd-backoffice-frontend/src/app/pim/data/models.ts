@@ -29,7 +29,7 @@ export type ProductStatus = 'draft' | 'published' | 'archived';
  * Un **taux de TVA** = un taux. Donnée créable — la base qui porte les
  * dérogations. Une catégorie référence un taux à emporter et un sur place.
  *
- * ⚠️ Ce commentaire l'assimilait à une collection Shopify (`tva-5-5`, `tva-10`).
+ * ⚠️ Ce commentaire l'assimilait à une collection de l'ancien canal de vente en ligne (`tva-5-5`, `tva-10`).
  * C'était déjà le vocabulaire d'un consommateur plutôt que la donnée elle-même,
  * et ce consommateur a disparu le 2026-09-21.
  */

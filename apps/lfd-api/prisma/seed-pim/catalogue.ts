@@ -39,23 +39,17 @@ export const CATALOGUE: CatalogueCorpus = {
     {
       key: "takeaway",
       label: "À emporter",
-      handleSuffix: "",
       active: true,
-      shopifyProjected: true,
     },
     {
       key: "eatIn",
       label: "Sur place",
-      handleSuffix: "-surplace",
       active: true,
-      shopifyProjected: false,
     },
     {
       key: "b2b",
       label: "B2B",
-      handleSuffix: "",
       active: true,
-      shopifyProjected: false,
     },
   ],
   pointsOfSale: [

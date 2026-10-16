@@ -35,9 +35,7 @@ export interface CatalogueCorpus {
 export interface CorpusSalesContext {
   readonly key: string;
   readonly label: string;
-  readonly handleSuffix: string;
   readonly active: boolean;
-  readonly shopifyProjected: boolean;
 }
 
 export interface CorpusPointOfSale {

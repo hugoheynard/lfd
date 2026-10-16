@@ -53,24 +53,6 @@ export class RootSalesContextProtectedError extends BusinessError {
   }
 }
 
-/**
- * Deux contextes **projetés vers Shopify** ne peuvent pas partager un suffixe
- * de handle : ils produiraient la même URL de produit.
- *
- * Le vide est celui du contexte par défaut — le handle nu, qui protège les URL
- * déjà indexées. Un second contexte projeté doit donc en porter un.
- */
-export class SalesContextHandleTakenError extends BusinessError {
-  constructor(suffix: string) {
-    super(
-      "catalogue.sales_context.handle_taken",
-      suffix === ""
-        ? `Un autre contexte est déjà projeté sans suffixe : son handle est le handle nu.`
-        : `Un autre contexte projeté porte déjà le suffixe « ${suffix} ».`,
-    );
-  }
-}
-
 /** Le contexte est encore vendu, ou encore offert par un lieu : on refuse de l'effacer. */
 export class SalesContextInUseError extends BusinessError {
   constructor(key: string) {

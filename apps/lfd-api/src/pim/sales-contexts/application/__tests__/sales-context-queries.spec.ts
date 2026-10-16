@@ -13,9 +13,7 @@ const ROOT: SalesContext = {
   id: "sc_root",
   key: ROOT_CONTEXT_KEY,
   label: "Vente en ligne pro",
-  handleSuffix: "",
   active: true,
-  shopifyProjected: false,
   position: 0,
 };
 
@@ -23,9 +21,7 @@ const RETIRED: SalesContext = {
   id: "sc_retired",
   key: "eat_in",
   label: "Sur place",
-  handleSuffix: "sur-place",
   active: false,
-  shopifyProjected: true,
   position: 1,
 };
 
@@ -47,9 +43,6 @@ class RegistryDouble extends SalesContextRegistry {
 /** Seul `usageByKey` est lu : les écritures ne sont pas le sujet. */
 class UsageDouble extends SalesContextRepository {
   findByKey(): Promise<SalesContextAggregate | null> {
-    return Promise.resolve(null);
-  }
-  findProjectedByHandleSuffix(): Promise<SalesContextAggregate | null> {
     return Promise.resolve(null);
   }
   nextPosition(): Promise<number> {
@@ -99,8 +92,6 @@ describe("ListSalesContextsHandler", () => {
         key: "eat_in",
         root: false,
         active: false,
-        shopifyProjected: true,
-        handleSuffix: "sur-place",
         offeredByLocations: 3,
         soldBy: 0,
         ratedBy: 0,

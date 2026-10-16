@@ -43,8 +43,6 @@ describe('SalesContextsPage', () => {
                 perLocation: false,
                 position: 3,
                 active: true,
-                shopifyProjected: false,
-                handleSuffix: '',
                 root: true,
                 offeredByLocations: 0,
               },
@@ -72,7 +70,7 @@ describe('SalesContextsPage', () => {
   it('projette une cellule par colonne jusqu’au tableau', () => {
     const data = table();
 
-    for (const key of ['label', 'scope', 'shopify', 'state']) {
+    for (const key of ['label', 'scope', 'state']) {
       expect(data.cellTemplate(key), `cellule « ${key} » absente`).not.toBeNull();
     }
   });

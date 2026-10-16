@@ -3,7 +3,7 @@ model VatRate {
   name        String
   description String @default("")
   /// UNIQUE, et c'est l'invariant fiscal : deux taux au même taux n'ont pas
-  /// de sens. L'unicité portait avant sur le `tag` Shopify dérivé du taux — le
+  /// de sens. L'unicité portait avant sur le `tag` de collection dérivé du taux — le
   /// référentiel faisait donc tenir une règle comptable par une collision de
   /// handles de canal.
   percent     Float  @unique

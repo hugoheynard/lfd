@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 
 /**
- * Schéma « système » — le chemin de la donnée : seed en repo → PIM → Shopify. Purement présentationnel ; couleurs par tokens (thème-aware).
+ * Schéma « système » — le chemin de la donnée : seed en repo → PIM → boutique B2B. Purement présentationnel ; couleurs par tokens (thème-aware).
  */
 @Component({
   selector: 'app-system-diagram',

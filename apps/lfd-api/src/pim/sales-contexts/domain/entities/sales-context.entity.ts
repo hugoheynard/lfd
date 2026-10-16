@@ -9,9 +9,7 @@ import type { SalesContext } from "../value-objects/sales-context.js";
 /** Ce qu'une révision remplace — tout ce qui est réglable, d'un bloc. */
 export interface SalesContextRevision {
   readonly label: string;
-  readonly handleSuffix: string;
   readonly active: boolean;
-  readonly shopifyProjected: boolean;
   readonly position: number;
 }
 
@@ -37,7 +35,7 @@ export interface NewSalesContextInput extends SalesContextRevision {
  * - **la racine est intouchable**, sauf pour être mise hors service.
  *
  * Ce qu'il ne peut pas voir, et qui reste au handler : qu'aucun AUTRE contexte
- * ne porte cette clé ou ce suffixe, et que rien ne le vend au moment de
+ * ne porte cette clé, et que rien ne le vend au moment de
  * l'effacer.
  */
 export class SalesContextAggregate {
@@ -45,9 +43,7 @@ export class SalesContextAggregate {
     private readonly identity: string,
     private readonly keyValue: string,
     private labelValue: string,
-    private handleSuffixValue: string,
     private activeValue: boolean,
-    private shopifyProjectedValue: boolean,
     private positionValue: number,
   ) {}
 
@@ -56,9 +52,7 @@ export class SalesContextAggregate {
       input.id,
       requireKey(input.key),
       requireLabel(input.label),
-      input.handleSuffix.trim(),
       input.active,
-      input.shopifyProjected,
       input.position,
     );
   }
@@ -68,9 +62,7 @@ export class SalesContextAggregate {
       snapshot.id,
       snapshot.key,
       snapshot.label,
-      snapshot.handleSuffix,
       snapshot.active,
-      snapshot.shopifyProjected,
       snapshot.position,
     );
   }
@@ -83,14 +75,6 @@ export class SalesContextAggregate {
     return isRootContext(this.keyValue);
   }
 
-  get shopifyProjected(): boolean {
-    return this.shopifyProjectedValue;
-  }
-
-  get handleSuffix(): string {
-    return this.handleSuffixValue;
-  }
-
   /**
    * Révise ce qui est réglable. La clé et la portée n'y figurent pas — ce ne
    * sont pas des réglages.
@@ -100,9 +84,7 @@ export class SalesContextAggregate {
    */
   revise(revision: SalesContextRevision): void {
     this.labelValue = requireLabel(revision.label);
-    this.handleSuffixValue = revision.handleSuffix.trim();
     this.activeValue = revision.active;
-    this.shopifyProjectedValue = revision.shopifyProjected;
     this.positionValue = revision.position;
   }
 
@@ -118,9 +100,7 @@ export class SalesContextAggregate {
       id: this.identity,
       key: this.keyValue,
       label: this.labelValue,
-      handleSuffix: this.handleSuffixValue,
       active: this.activeValue,
-      shopifyProjected: this.shopifyProjectedValue,
       position: this.positionValue,
     };
   }

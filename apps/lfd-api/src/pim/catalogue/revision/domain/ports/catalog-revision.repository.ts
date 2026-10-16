@@ -6,7 +6,7 @@ import type { Revision } from "../revision.js";
 /** Une publication d'une révision vers une destination. */
 export interface RevisionPublication {
   readonly revisionId: string;
-  /** `b2b`, `shopify`… Le registre des canaux vit chez qui les pousse. */
+  /** `b2b` ; `former_channel` pour l'ancien canal retiré. Le registre des canaux vit chez qui les pousse. */
   readonly channel: string;
   /** `live` ou `dry-run` — une simulation se trace aussi. */
   readonly mode: string;
@@ -72,8 +72,8 @@ export abstract class CatalogRevisionRepository {
    * ⚖️ **Au moins une**, pas toutes. Le modèle définit R comme un consensus —
    * publiée sur TOUS les canaux. Appliqué ici, le diff
    * perdrait sa référence dès qu'un canal est en retard, c'est-à-dire souvent.
-   * Le consensus reste une information d'écran (« Shopify est deux ancres en
-   * arrière ») ; ce qui informe ne doit pas devenir le dénominateur de tout.
+   * Le consensus reste une information d'écran (« tel canal est deux ancres
+   * en arrière ») ; ce qui informe ne doit pas devenir le dénominateur de tout.
    *
    * Conséquence assumée : un catalogue que l'on n'a jamais fait que **simuler**
    * n'a pas de référence, et l'écran le dit. C'est exact — rien n'est parti.

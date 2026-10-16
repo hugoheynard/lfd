@@ -20,9 +20,9 @@ import { VatRateTable } from './vat-rate-table/vat-rate-table';
  * Ce qu'un comptable ajoute, c'est un TAUX. Le code garde `rate` — l'agrégat
  * n'a pas changé de nature.
  *
- * Elle portait aussi une section « Usages plateforme » qui inspectait Shopify et
+ * Elle portait aussi une section « Usages plateforme » qui inspectait l'ancien canal de vente en ligne et
  * y poussait les collections `tva-*`. Ce n'était pas un usage mais un **envoi**,
- * et il est parti dans Publication → Shopify, où vivent les canaux. Restait ici
+ * et il est parti dans Publication, où vivent les canaux. Restait ici
  * le seul usage qui regarde vers l'intérieur : combien de familles visent le
  * taux — la colonne « Utilisé par », qui dit avant la suppression ce que la
  * base refuserait après.

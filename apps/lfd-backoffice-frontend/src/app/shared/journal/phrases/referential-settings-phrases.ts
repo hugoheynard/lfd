@@ -194,7 +194,7 @@ function tableQr(verb: string): Phrase {
 
 // ─── Les contextes de vente ───────────────────────────────────────────────
 
-/** « a créé le contexte de vente « Livraison », actif ». La clé et Shopify restent au détail. */
+/** « a créé le contexte de vente « Livraison », actif ». La clé reste au détail. */
 function salesContextCreated(fact: PhraseFact): Said {
   const active = fact.payload['active'];
   return byActor(

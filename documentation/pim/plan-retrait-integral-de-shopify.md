@@ -1,5 +1,14 @@
 # Plan — retirer Shopify du code et de la doc, intégralement
 
+> 🏗️ **Code et base : BÂTI le 2026-10-16, non commité** — un seul lot, selon
+> S6 et la contradiction de `vitruve` sur S6. Migration
+> `20261016200000_le_canal_retire_sans_son_nom` (faits `sales_context.*`
+> renommés, `channel` `shopify` → `former_channel`, `DROP` des deux
+> colonnes) ; porte `lint:former-channel-name` (et non `lint:no-shopify` : un
+> script qui porte le mot ferait échouer sa propre porte), qui admet encore
+> `documentation/**` et `CLAUDE.md` à titre temporaire. Reste : la doc (S-b),
+> l'aperçu au runbook, `lecteur-de-migrations`.
+
 > 📐 **Doc-first, rien n'est bâti** (rédigé le 2026-10-16). Porte une
 > **migration de données** (deux colonnes) : `vitruve` d'office avant Hugo
 > (CLAUDE.md §9 bis). Contredit le même jour ; ses corrections, en fin de

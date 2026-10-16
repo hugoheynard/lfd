@@ -227,8 +227,8 @@ const PLACES_ICON =
 
 /**
  * Les intégrations — deux maillons de chaîne. Source : SVG Repo (domaine
- * public). Elle a remplacé un glyphe `shopify` que portait l'onglet, au motif
- * que Shopify était UNE intégration et pas la catégorie. Ce glyphe est parti
+ * public). Elle a remplacé le glyphe de l'ancien canal que portait l'onglet,
+ * au motif que ce canal était UNE intégration et pas la catégorie. Ce glyphe est parti
  * avec son canal le 2026-09-21 ; le raisonnement, lui, vaut pour le suivant.
  *
  * Anneaux pleins de 64 unités sur 1024, soit 6,25 % — la graisse d'IBM Carbon,

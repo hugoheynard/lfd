@@ -22,7 +22,7 @@ export class StorefrontService {
 
   /**
    * Les rayons et les articles que l'éditeur désigne — sans prix ni réglages.
-   * Sous `b2b_storefront:read` : la communication n'a pas `b2b_catalog`, et
+   * Sous `b2b_storefront:read` : la communication n'a pas `lfc_catalog`, et
    * `/admin/catalog` lui rendait un 403.
    */
   catalog(): Promise<StorefrontCatalogView> {

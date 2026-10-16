@@ -68,7 +68,6 @@ export class SalesContextsPage {
   private readonly allColumns: readonly FoldTableColumn[] = [
     { key: 'label', label: 'Contexte' },
     { key: 'scope', label: 'Vendu depuis', width: '14rem' },
-    { key: 'shopify', label: 'Shopify', width: '10rem' },
     { key: 'state', label: 'État', width: '9rem' },
     { key: 'actions', label: '', width: '3.5rem' },
   ];
@@ -81,16 +80,6 @@ export class SalesContextsPage {
   );
 
   protected readonly rowKey = (row: SalesContextAdminView): string => row.key;
-
-  /** « Shopify : produit au handle nu », ou rien s'il n'y est pas projeté. */
-  protected shopifyLabel(context: SalesContextAdminView): string {
-    if (!context.shopifyProjected) {
-      return 'Non projeté vers Shopify';
-    }
-    return context.handleSuffix === ''
-      ? 'Shopify — handle nu'
-      : `Shopify — handle ${context.handleSuffix}`;
-  }
 
   /**
    * « 2 points de vente » — combien l'OFFRENT, plateforme comprise.

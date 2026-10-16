@@ -395,11 +395,11 @@ const SAVEABLE: readonly SectionRef[] = [
  * 🔴 **Ce commentaire a affirmé le contraire jusqu'au 2026-09-23**, et il a
  * coûté une fonctionnalité entière. Il disait : « le premier déposé devenait
  * `hero`, ce qui affirmait une hiérarchie qu'aucun canal ne lit aujourd'hui :
- * ni la projection Shopify ni le B2B ne consultent le rôle. »
+ * ni la projection de l'ancien canal ni le B2B ne consultent le rôle. »
  *
  * Les deux moitiés étaient fausses. La vitrine du canal B2B cherche
  * **précisément** le `hero` (`pim/channels/b2b-platform/products/showcase.ts`),
- * et Shopify est sorti du dépôt le 2026-09-21. Conséquence mesurée : aucun
+ * et l'ancien canal de vente en ligne est sorti du dépôt le 2026-09-21. Conséquence mesurée : aucun
  * produit ne portait de `hero`, `heroOf()` rendait donc toujours `null`, et
  * **la vitrine n'a jamais montré la moindre image**. Une phrase qui justifiait
  * de ne rien construire, par l'état d'un fichier que personne n'a rouvert.
@@ -767,9 +767,7 @@ export class ProductFormStore {
    * ⚠️ Ce JSDoc a dit deux choses fausses, corrigées le 2026-09-02 : le handle
    * ne naît pas de la première publication, et il n'est pas figé à la création.
    * `Product.rename()` le **re-dérive** — donc renommer une fiche déjà poussée
-   * déplace son URL publique, et l'historique Shopify, unique par
-   * `(handle, version)`, repart à v1 sous le nouveau handle en laissant
-   * l'ancien orphelin. Le commentaire prétendait empêcher exactement ce qu'il
+   * déplace son URL publique, en laissant l'ancienne orpheline. Le commentaire prétendait empêcher exactement ce qu'il
    * décrivait.
    */
   private readonly slugValue = signal('');

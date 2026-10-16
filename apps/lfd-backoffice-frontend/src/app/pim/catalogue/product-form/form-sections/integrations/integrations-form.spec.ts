@@ -25,7 +25,7 @@ describe('IntegrationsForm', () => {
   });
 
   it('héberge le HANDLE, parce que c’est une propriété du canal', () => {
-    // Une URL de boutique en ligne appartient à Shopify, pas à l'identité du
+    // Une URL de boutique en ligne appartient au canal, pas à l'identité du
     // produit : le B2B ne s'en sert pas, et le référencement n'est pas une
     // caractéristique de la chose vendue.
     setup();

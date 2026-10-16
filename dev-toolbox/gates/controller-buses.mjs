@@ -38,7 +38,7 @@
  * applicatifs, et le gate n'en dit rien.
  *
  * Ce choix est délibéré. Une détection qui prendrait `*Service` ferait rougir
- * une vingtaine de contrôleurs d'un coup — les canaux Shopify, les passerelles
+ * une vingtaine de contrôleurs d'un coup — les canaux de diffusion, les passerelles
  * de paiement, les sondes ops — et une porte qui rougit partout le premier jour
  * se fait désactiver la semaine suivante. Le suffixe de port, lui, ne laisse
  * aucune place à la discussion : un dépôt dans un contrôleur est toujours un

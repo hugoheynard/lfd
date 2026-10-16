@@ -29,7 +29,7 @@ import { operationFactsOf } from "./operation-facts.js";
  * Ce service lisait `CatalogReader.listSellable()`, qui retire deux populations :
  * les articles **masqués localement**, et ceux **sans taux applicable**. Or
  * masquer est un geste normal, porté par l'agrégat et exposé au commercial par
- * le droit `b2b_catalog:write`. Chaque article masqué tombait donc en `missing`,
+ * le droit `lfc_catalog:write`. Chaque article masqué tombait donc en `missing`,
  * c'est-à-dire sous la ligne « rien n'explique cet écart » : la décision qui
  * donne le droit fabriquait le bruit.
  *

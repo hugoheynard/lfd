@@ -26,18 +26,14 @@ const CONTEXTS: readonly SalesContext[] = [
     id: "ctx_emporter",
     key: "takeaway",
     label: "À emporter",
-    handleSuffix: "",
     active: true,
-    shopifyProjected: true,
     position: 1,
   },
   {
     id: "ctx_b2b",
     key: "b2b",
     label: "B2B",
-    handleSuffix: "-b2b",
     active: true,
-    shopifyProjected: false,
     position: 2,
   },
 ];

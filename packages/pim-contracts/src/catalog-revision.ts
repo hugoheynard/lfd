@@ -10,8 +10,9 @@
 /**
  * **Un champ qui diffère entre deux états.**
  *
- * ⚠️ Il vivait dans `shopify.ts`, et ce fichier l'importait de là avec cette
- * raison : « réutilisé depuis la réconciliation Shopify plutôt que redéclaré —
+ * ⚠️ Il vivait dans le contrat de l'ancien canal de vente en ligne, et ce
+ * fichier l'importait de là avec cette raison : « réutilisé depuis la
+ * réconciliation du canal plutôt que redéclaré —
  * deux déclarations du même ensemble finiraient par diverger ». La raison était
  * juste, la DIRECTION ne l'était pas : la réconciliation d'un canal est partie
  * avec ce canal, les révisions restent, et un type que le socle lit ne peut pas

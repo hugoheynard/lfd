@@ -315,7 +315,7 @@ export class ProductsPage {
   protected readonly hasFaults = (product: Product): boolean => this.rowFaults(product).length > 0;
 
   /**
-   * ⚠️ Le ton `alert` était réservé à l'échec de synchro Shopify, « une panne,
+   * ⚠️ Le ton `alert` était réservé à l'échec de synchro de l'ancien canal de vente en ligne, « une panne,
    * alors qu'un refus de projection est un état connu du catalogue ». Le canal
    * parti, il ne reste que l'état connu — et une ligne en panne n'existe plus
    * sur cet écran (2026-09-21).

@@ -27,10 +27,10 @@ import { ProductFormStore } from '../../product-form-store';
  *
  * 🔴 **Ce JSDoc a affirmé le contraire jusqu'au 2026-09-23**, et ses deux
  * moitiés étaient fausses. Il disait : « il n'y a ni "principale" ni rôle à
- * choisir ici […] ni la projection Shopify ni le B2B ne lisent le rôle ».
+ * choisir ici […] ni la projection de l'ancien canal ni le B2B ne lisent le rôle ».
  *
  * La vitrine du canal B2B cherche **précisément** le `hero`
- * (`channels/b2b-platform/products/showcase.ts`), et Shopify est sorti du dépôt
+ * (`channels/b2b-platform/products/showcase.ts`), et l'ancien canal de vente en ligne est sorti du dépôt
  * le 2026-09-21. Conséquence mesurée : aucun produit ne portait de `hero`, donc
  * la vitrine n'a jamais montré la moindre image. Une phrase qui justifiait de
  * ne rien construire, par l'état d'un fichier que personne n'a rouvert.

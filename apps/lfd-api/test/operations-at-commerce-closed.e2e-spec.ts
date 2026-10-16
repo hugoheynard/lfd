@@ -147,7 +147,7 @@ describe("interrupteur fermé : les routes refusent, et n'écrivent rien", () =>
 describe("le mur `lfc_operations`", () => {
   it("sans le droit — le catalogue vendu ne suffit pas — : 403 avant la porte", async () => {
     const sub = await staffWith(ctx, "commercial-catalogue", [
-      { resource: "b2b_catalog", action: "write" },
+      { resource: "lfc_catalog", action: "write" },
     ]);
 
     await ctx.asSub(sub).post(OPERATIONS).send(noelBody()).expect(403);

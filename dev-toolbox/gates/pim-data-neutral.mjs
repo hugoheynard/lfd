@@ -6,7 +6,7 @@
  * TOUS les écrans du référentiel lisent : le modèle, les canaux de vente d'une
  * gamme, le SKU. Elle a longtemps porté autre chose — `tvaTagFromPercent`,
  * `generateFiches`, un `collections.ts` entier. Soit `tag`, `handle`, « fiche »
- * et « collection » : quatre mots de **Shopify**, au milieu du vocabulaire du
+ * et « collection » : quatre mots de **l'ancien canal de vente en ligne**, au milieu du vocabulaire du
  * catalogue.
  *
  * Ce n'est pas une question de rangement. Le référentiel fiscal a déjà rendu
@@ -14,7 +14,7 @@
  * handle de collection est du vocabulaire de canal, et faire porter le second
  * par le premier revenait à faire décrire au référentiel un de ses
  * consommateurs. Tant que la dérivation vivait dans `data/`, six écrans qui
- * n'ont rien à voir avec Shopify la traînaient dans leur bundle et pouvaient
+ * n'ont rien à voir avec ce canal la traînaient dans leur bundle et pouvaient
  * l'appeler par accident.
  *
  * Ce qu'il vérifie, et rien d'autre : aucun fichier de `pim/data/` n'importe
@@ -22,7 +22,7 @@
  * un canal lit le catalogue, le catalogue ignore les canaux.
  *
  * Il ne dit RIEN des écrans : `products-page` affiche l'état de synchronisation
- * Shopify d'une fiche, et c'est légitime — un opérateur veut le voir à côté du
+ * d'une fiche avec un canal, et c'est légitime — un opérateur veut le voir à côté du
  * produit. Ce gate ne garde que la couche partagée, là où l'accident est muet.
  *
  * Usage : `pnpm lint:pim-data-neutral` (branché en CI).
@@ -94,7 +94,7 @@ for (const dir of dataDirs()) {
 if (leaks > 0) {
   console.error(
     `\n${leaks} fuite(s) de vocabulaire de canal dans la couche modèle du référentiel.\n` +
-      `Ce qui appartient à un canal vit chez lui — cf. pim/integration/shopify-collections/.`,
+      `Ce qui appartient à un canal vit chez lui — cf. pim/integration/b2b-integration/.`,
   );
   process.exit(1);
 }

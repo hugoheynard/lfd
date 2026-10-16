@@ -106,8 +106,6 @@ interface SalesContextRow {
   readonly label: string;
   readonly position: number;
   readonly active: boolean;
-  readonly shopifyProjected: boolean;
-  readonly handleSuffix: string;
 }
 
 /** Renomme un contexte de vente ; rend ce qu'il était AVANT. */
@@ -117,11 +115,8 @@ async function renameContext(key: string, label: string): Promise<SalesContextRo
   if (before === undefined) {
     throw new Error(`contexte « ${key} » absent du registre semé`);
   }
-  const { position, active, shopifyProjected, handleSuffix } = before;
-  await staff()
-    .put(`/pim/sales-contexts/${key}`)
-    .send({ label, position, active, shopifyProjected, handleSuffix })
-    .expect(200);
+  const { position, active } = before;
+  await staff().put(`/pim/sales-contexts/${key}`).send({ label, position, active }).expect(200);
   return before;
 }
 

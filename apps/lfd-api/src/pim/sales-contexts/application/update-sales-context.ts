@@ -5,14 +5,12 @@ import { changesBetween } from "../../../platform/journal/changes.js";
 import { PIM_EVENTS, PimJournal } from "../../journal/pim-journal.js";
 import type { SalesContextAggregate } from "../domain/entities/sales-context.entity.js";
 import { SalesContextRepository } from "../domain/ports/sales-context.repository.js";
-import { ensureHandleFree, requireContext } from "./sales-context-support.js";
+import { requireContext } from "./sales-context-support.js";
 import { CatalogReemission } from "../../catalogue/shared/domain/ports/catalog-reemission.js";
 
 export interface UpdateSalesContextPayload {
   readonly label: string;
-  readonly handleSuffix: string;
   readonly active: boolean;
-  readonly shopifyProjected: boolean;
   readonly position: number;
 }
 
@@ -42,7 +40,6 @@ export class UpdateSalesContextHandler implements ICommandHandler<UpdateSalesCon
     const before = traced(context);
 
     context.revise(payload);
-    await ensureHandleFree(this.contexts, context.snapshot());
 
     const changes = changesBetween(before, traced(context));
     await this.uow.run(async () => {
@@ -69,6 +66,6 @@ export class UpdateSalesContextHandler implements ICommandHandler<UpdateSalesCon
  * jamais, et c'est déjà le sujet du fait.
  */
 function traced(context: SalesContextAggregate): Record<string, unknown> {
-  const { label, handleSuffix, active, shopifyProjected, position } = context.snapshot();
-  return { label, handleSuffix, active, shopifyProjected, position };
+  const { label, active, position } = context.snapshot();
+  return { label, active, position };
 }

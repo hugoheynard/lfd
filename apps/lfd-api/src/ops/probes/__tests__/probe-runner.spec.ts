@@ -3,7 +3,7 @@ import { NodeProbe, type ProbeOutcome } from "../probe.port.js";
 
 /** Une sonde de test dont on pilote le verdict d'un appel à l'autre. */
 class ScriptedProbe extends NodeProbe {
-  readonly id = "shopify";
+  readonly id = "stripe";
   private next: ProbeOutcome = { verdict: "up", latencyMs: 1 };
 
   says(verdict: ProbeOutcome["verdict"]): void {
@@ -24,7 +24,7 @@ describe("ProbeRunner — la temporisation avant de crier au loup", () => {
     const runner = new ProbeRunner([probe]);
     probe.says("down");
 
-    expect((await runner.run()).get("shopify")?.verdict).toBe("unknown");
+    expect((await runner.run()).get("stripe")?.verdict).toBe("unknown");
   });
 
   it("confirme après N échecs consécutifs", async () => {
@@ -36,7 +36,7 @@ describe("ProbeRunner — la temporisation avant de crier au loup", () => {
       await runner.run();
     }
 
-    expect((await runner.run()).get("shopify")?.verdict).toBe("down");
+    expect((await runner.run()).get("stripe")?.verdict).toBe("down");
   });
 
   it("rend `unknown` et non `up` pendant l'attente", async () => {
@@ -47,8 +47,8 @@ describe("ProbeRunner — la temporisation avant de crier au loup", () => {
     probe.says("down");
     const first = await runner.run();
 
-    expect(first.get("shopify")?.verdict).not.toBe("up");
-    expect(first.get("shopify")?.detail).toContain(`1/${FAILURES_BEFORE_DOWN}`);
+    expect(first.get("stripe")?.verdict).not.toBe("up");
+    expect(first.get("stripe")?.detail).toContain(`1/${FAILURES_BEFORE_DOWN}`);
   });
 
   it("remet le compteur à zéro dès qu'une réponse revient", async () => {
@@ -60,7 +60,7 @@ describe("ProbeRunner — la temporisation avant de crier au loup", () => {
     await runner.run();
     probe.says("down");
 
-    expect((await runner.run()).get("shopify")?.verdict).toBe("unknown");
+    expect((await runner.run()).get("stripe")?.verdict).toBe("unknown");
   });
 
   it("survit à une sonde qui jette — la carte ne tombe pas avec ce qu'elle observe", async () => {

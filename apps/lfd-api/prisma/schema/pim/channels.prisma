@@ -7,7 +7,7 @@
 
 /// L'**appartenance d'un produit au canal B2B** : sa présence dit « vendu aux
 /// pros », son absence dit le contraire. Un état de publication (`published`)
-/// ne suffirait pas — il confondrait « publié chez Shopify » et « vendu aux
+/// ne suffirait pas — il confondrait « publié sur la boutique en ligne » et « vendu aux
 /// pros », et les deux catalogues ne pourraient jamais diverger.
 ///
 /// Dépublier **supprime la ligne**. Le produit disparaîtra du prochain snapshot,

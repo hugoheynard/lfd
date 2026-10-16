@@ -1,6 +1,6 @@
 <!-- DEUX blocs côte à côte, plus un troisième niveau d'onglets. Deux états vides
      derrière trois niveaux de navigation ne se justifient pas, et l'ajout d'un
-     champ Shopify ne doit pas créer une page. -->
+     champ de canal ne doit pas créer une page. -->
 <div class="channels">
   <section class="channel">
     <fold-element-title variant="eyebrow" title="Boutique B2B" />
@@ -19,7 +19,7 @@
   </section>
 
   <section class="channel">
-    <fold-element-title variant="eyebrow" title="Shopify" />
+    <fold-element-title variant="eyebrow" title="Boutique en ligne" />
     <!-- Le handle vit ICI et non dans l'identité : c'est une URL de boutique en
          ligne, donc une propriété du CANAL. Le B2B ne s'en sert pas — un
          professionnel qui commande en gros ne cherche pas le produit sur Google. -->
@@ -28,8 +28,7 @@
            (`Product.rename` re-dérive le slug). Cette case disait « attribué à
            la première poussée » : faux, et la branche vide ne s'affichait
            jamais. ⚠️ Renommer une fiche déjà poussée déplace donc son URL
-           publique — et l'historique Shopify, unique par `(handle, version)`,
-           repart à v1 sous le nouveau handle. -->
+           publique. -->
       <fold-field label="Handle">
         <code class="sku">{{ store.slug() }}</code>
       </fold-field>

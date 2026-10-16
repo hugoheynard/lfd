@@ -14,7 +14,7 @@ export type OpsSignal =
 export type OpsSink = (signal: OpsSignal) => Promise<void>;
 
 export interface OpsReporterOptions {
-  /** Id stable du nœud émetteur (ex. `pim.sync-shopify`). */
+  /** Id stable du nœud émetteur (ex. `pim.sync-catalog`). */
   readonly node: string;
   readonly sink: OpsSink;
   /** Horloge injectable (test) ; défaut : `new Date().toISOString()`. */

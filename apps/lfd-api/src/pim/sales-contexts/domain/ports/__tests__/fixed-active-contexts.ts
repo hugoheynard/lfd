@@ -21,9 +21,7 @@ export class FixedActiveContexts extends ActiveSalesContextsReader {
         id: `ctx_${key}`,
         key,
         label: key,
-        handleSuffix: "",
         active: true,
-        shopifyProjected: false,
         position,
       })),
     );

@@ -86,7 +86,6 @@ Beaucoup de réponses sont **là** plutôt que dans une app :
 | `endpoints`            | les URL et les messages d'erreur HTTP partagés                      |
 | `money`                | l'arithmétique exacte — centimes et **millicentimes**               |
 | `b2b-ui`, `catalog-ui` | présentation Angular partagée entre les deux fronts                 |
-| `shopify-admin`        | transport Admin Shopify, sans domaine                               |
 | `storage`, `mailer`    | adaptateurs R2 / Resend                                             |
 
 Règle utile : **un type de réponse d'API se cherche dans un paquet de contrats,

@@ -177,7 +177,7 @@ export const REFERENTIAL_VAT_PHRASES = {
   'vat_rate.renamed': rateRenamed,
   'vat_rate.deleted': rateDeleted,
   // Les taux quand ils s'appelaient « régimes » (le 2026-08-21, base de dev) :
-  // le `tag` (collection Shopify) et la portée d'août restent au détail.
+  // le `tag` (collection de l'ancien canal) et la portée d'août restent au détail.
   'tax_regime.created': rateCreated,
   'tax_regime.rate_changed': rateChanged,
   'tax_regime.renamed': rateRenamed,

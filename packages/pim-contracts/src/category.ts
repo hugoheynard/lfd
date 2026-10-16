@@ -100,10 +100,6 @@ export interface SalesContextView {
 export interface SalesContextAdminView extends SalesContextView {
   /** En service : réglable et facturable. */
   readonly active: boolean;
-  /** Shopify en fait-il un produit ? Distinct de `active`. */
-  readonly shopifyProjected: boolean;
-  /** Suffixe de handle Shopify — vide pour le contexte par défaut. */
-  readonly handleSuffix: string;
   /**
    * **Racine** : semé au boot, ineffaçable, non renommable. L'écran l'affiche
    * et retire le geste de suppression au lieu de le griser — un bouton grisé
@@ -175,9 +171,7 @@ export const createSalesContextPayloadSchema = z.object({
     .trim()
     .regex(/^[a-z][a-zA-Z0-9-]*$/u, "lettres, chiffres et tirets, en commençant par une lettre"),
   label: z.string().trim().min(1),
-  handleSuffix: z.string().trim(),
   active: z.boolean(),
-  shopifyProjected: z.boolean(),
 });
 export type CreateSalesContextPayload = z.infer<typeof createSalesContextPayloadSchema>;
 
@@ -190,9 +184,7 @@ export type CreateSalesContextPayload = z.infer<typeof createSalesContextPayload
  */
 export const updateSalesContextPayloadSchema = z.object({
   label: z.string().trim().min(1),
-  handleSuffix: z.string().trim(),
   active: z.boolean(),
-  shopifyProjected: z.boolean(),
   position: z.number().int().min(0),
 });
 export type UpdateSalesContextPayload = z.infer<typeof updateSalesContextPayloadSchema>;

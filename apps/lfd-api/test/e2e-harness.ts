@@ -490,32 +490,21 @@ async function ensureSalesContexts(prisma: PrismaService): Promise<void> {
       id: "ctx_emporter",
       key: "takeaway",
       label: "À emporter",
-      handleSuffix: "",
       active: true,
-      shopifyProjected: true,
       position: 1,
     },
     {
       id: "ctx_sur_place",
       key: "eatIn",
       label: "Sur place",
-      handleSuffix: "-surplace",
       active: true,
-      shopifyProjected: false,
       position: 2,
     },
     {
       id: "ctx_b2b",
       key: "b2b",
       label: "B2B",
-      // Vide, et les deux champs survivent à leur canal : `handleSuffix` et
-      // `shopifyProjected` étaient le vocabulaire de la boutique en ligne,
-      // sortie le 2026-09-21. Le contrat les exige encore — leur successeur est
-      // une décision ouverte, pas un reliquat (plan « un seul canal, deux
-      // prix », D7).
-      handleSuffix: "",
       active: true,
-      shopifyProjected: false,
       position: 3,
     },
   ];

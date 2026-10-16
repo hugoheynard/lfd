@@ -52,14 +52,6 @@
         <span class="scope">{{ scopeLabel(c) }}</span>
       </ng-template>
 
-      <ng-template foldCell="shopify" let-c>
-        @if (c.shopifyProjected) {
-          <fold-badge [content]="'produit ' + (c.handleSuffix || 'nu')" variant="neutral" />
-        } @else {
-          <span class="scope">—</span>
-        }
-      </ng-template>
-
       <ng-template foldCell="state" let-c>
         @if (c.active) {
           <fold-badge content="en service" variant="success" />
@@ -102,7 +94,6 @@
             }
           </span>
           <span class="ctx-card-line">{{ scopeLabel(c) }}</span>
-          <span class="ctx-card-line">{{ shopifyLabel(c) }}</span>
         </div>
       </ng-template>
     </fold-data-table>

@@ -4,7 +4,7 @@ import { InvalidSkuError } from "../errors/sku-errors.js";
  * Référence d'un article — ce qu'un **humain** lit et dit (`P-K7M3QT-1`).
  *
  * Le charset `A-Z 0-9 -` n'est pas esthétique : c'est l'intersection sûre de tout ce que
- * la référence traverse (champ Shopify, écran de caisse, export CSV, étiquette, URL).
+ * la référence traverse (champ d'un canal, écran de caisse, export CSV, étiquette, URL).
  *
  * Invariants (cf. `documentation/pim/data-model/06-identifiants-et-sku.md`) :
  * - `create()` est le **seul** constructeur → un SKU invalide ne peut pas exister en mémoire ;

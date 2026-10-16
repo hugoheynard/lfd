@@ -127,7 +127,6 @@ const FISCAL_SEARCHABLE = {
     key: "vat_subject",
     label: `Contexte ${WORD}`,
     active: true,
-    shopifyProjected: false,
   },
 } as const;
 /**
@@ -386,9 +385,7 @@ describe("la tranche fiscale — ce qui touche au taux, par les gestes réels", 
       .put(`${CONTEXTS}/b2b`)
       .send({
         label: "Vente pro renommée",
-        handleSuffix: "",
         active: true,
-        shopifyProjected: false,
         position: 3,
       })
       .expect(200);
@@ -487,10 +484,10 @@ describe("la tranche fiscale — ce qui touche au taux, par les gestes réels", 
    * sur `TAX_JOURNAL_SLICE`.
    */
   it("rend un contexte de vente ouvert puis réglé, même sur son seul libellé", async () => {
-    const opened = { key: "traiteur", label: "Traiteur", handleSuffix: "-traiteur" };
+    const opened = { key: "traiteur", label: "Traiteur" };
     await as("staff-e2e")
       .post(CONTEXTS)
-      .send({ ...opened, active: true, shopifyProjected: false })
+      .send({ ...opened, active: true })
       .expect(201);
     await as("staff-e2e")
       .put(`${CONTEXTS}/traiteur`)
@@ -498,7 +495,6 @@ describe("la tranche fiscale — ce qui touche au taux, par les gestes réels", 
         ...opened,
         label: "Service traiteur",
         active: true,
-        shopifyProjected: false,
         position: 9,
       })
       .expect(200);

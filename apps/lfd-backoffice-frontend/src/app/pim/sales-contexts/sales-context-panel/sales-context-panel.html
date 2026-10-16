@@ -30,23 +30,6 @@
     (checkedChange)="draftActive.set($event)"
   />
 
-  <fold-checkbox
-    label="Projeté vers Shopify"
-    hint="La boutique en tire un produit par article. Deux contextes projetés ne peuvent pas partager le même suffixe."
-    [checked]="draftProjected()"
-    (checkedChange)="draftProjected.set($event)"
-  />
-
-  @if (draftProjected()) {
-    <fold-input
-      label="Suffixe de handle"
-      hint="Vide = le handle nu, celui du contexte par défaut. Un second contexte projeté doit en porter un."
-      placeholder="ex. -traiteur"
-      [value]="draftSuffix()"
-      (valueChange)="draftSuffix.set($event)"
-    />
-  }
-
   @if (isEdit() && !isRoot()) {
     <!-- La zone dangereuse vit au bas du panneau, repliée : on décide de
          supprimer en REGARDANT l'objet. -->

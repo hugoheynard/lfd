@@ -43,7 +43,7 @@ describe("createOpsReporter", () => {
   it("remplit node + horodatage et produit un heartbeat valide", async () => {
     const rec = recorder();
     const ops = createOpsReporter({
-      node: "pim.sync-shopify",
+      node: "pim.sync-catalog",
       sink: rec.sink,
       now: () => "2026-01-01T12:00:00Z",
     });
@@ -53,7 +53,7 @@ describe("createOpsReporter", () => {
     const signal = rec.signals[0];
     expect(signal?.type).toBe("heartbeat");
     if (signal?.type === "heartbeat") {
-      expect(signal.heartbeat.node).toBe("pim.sync-shopify");
+      expect(signal.heartbeat.node).toBe("pim.sync-catalog");
       expect(signal.heartbeat.at).toBe("2026-01-01T12:00:00Z");
       expect(heartbeatSchema.safeParse(signal.heartbeat).success).toBe(true);
     }
@@ -62,7 +62,7 @@ describe("createOpsReporter", () => {
   it("émet un event corrélé", async () => {
     const rec = recorder();
     const ops = createOpsReporter({
-      node: "pim.sync-shopify",
+      node: "pim.sync-catalog",
       sink: rec.sink,
       now: () => "t",
     });

@@ -24,7 +24,7 @@ const ALL_COLUMNS: readonly FoldTableColumn[] = [
   { key: 'name', label: 'Nom', width: '12rem' },
   { key: 'description', label: 'Description' },
   { key: 'rate', label: 'Taux', width: '7rem' },
-  // Pas de colonne « Tag » : le handle `tva-5-5` était du vocabulaire Shopify,
+  // Pas de colonne « Tag » : le handle `tva-5-5` était du vocabulaire de l'ancien canal de vente en ligne,
   // sorti le 2026-09-21. La boutique lit un TAUX et facture avec.
   { key: 'usage', label: 'Utilisé par', width: '11rem' },
   { key: 'actions', label: '', align: 'right', width: '5rem' },

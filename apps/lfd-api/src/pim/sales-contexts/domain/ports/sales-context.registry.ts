@@ -7,7 +7,7 @@ import { ActiveSalesContextsReader } from "./active-sales-contexts.reader.js";
  * Pas d'écriture métier : un contexte se pose par migration, pas par écran. Ce
  * n'est pas de la donnée saisie au fil de l'eau — c'est le vocabulaire du
  * modèle, et l'ouvrir à un formulaire rendrait possible d'inventer un contexte
- * que ni Shopify ni la facturation ne savent traiter.
+ * qu'aucun canal ni la facturation ne savent traiter.
  */
 export abstract class SalesContextRegistry extends ActiveSalesContextsReader {
   /** Tous les contextes **en service**, dans l'ordre. */

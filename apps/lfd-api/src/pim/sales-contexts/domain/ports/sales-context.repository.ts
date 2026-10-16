@@ -21,8 +21,6 @@ export interface SalesContextUsage {
  */
 export abstract class SalesContextRepository {
   abstract findByKey(key: string): Promise<SalesContextAggregate | null>;
-  /** Le contexte qui porte ce suffixe de handle **et** est projeté, s'il existe. */
-  abstract findProjectedByHandleSuffix(suffix: string): Promise<SalesContextAggregate | null>;
   /** Le rang libre en fin de registre — un contexte neuf se pose après les autres. */
   abstract nextPosition(): Promise<number>;
   abstract add(context: SalesContextAggregate, ticket: WriteTicket): Promise<void>;

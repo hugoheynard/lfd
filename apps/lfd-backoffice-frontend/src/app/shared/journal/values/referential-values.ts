@@ -44,7 +44,7 @@ export const VARIANT_ASPECT = domain('section d’une déclinaison', {
   pricing: 'Tarif',
 });
 
-/** Les mêmes mots que l'intégration Shopify (`shopify-integration.html`, vérifié le 2026-09-19). */
+/** Les mots de l'écran de publication du catalogue : réel ou simulé. */
 export const PUSH_MODE = domain('mode d’envoi', {
   live: 'Réel',
   'dry-run': 'Simulation',

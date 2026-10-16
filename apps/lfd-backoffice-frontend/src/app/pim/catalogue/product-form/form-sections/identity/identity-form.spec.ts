@@ -32,7 +32,7 @@ describe('IdentityForm', () => {
   it('présente les champs dans l’ordre nom · famille · nature', () => {
     // L'ordre EST le contenu d'une fiche : on nomme la chose, on la range, on
     // dit ce qu'elle est. Le HANDLE n'y figure pas — c'est une URL de boutique
-    // en ligne, donc une propriété du canal Shopify, pas de l'identité.
+    // en ligne, donc une propriété du canal, pas de l'identité.
     const store = setup();
     store.isEdit.set(true);
     const fixture = TestBed.createComponent(IdentityForm);

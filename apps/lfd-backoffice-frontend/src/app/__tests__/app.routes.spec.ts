@@ -159,7 +159,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // qui entre en vente est le métier du commercial, régler la plateforme ne
   // l'est pas. C'est la séparation que le découpage des droits par outil a
   // rendue exprimable — la ranger sous `b2b_settings` la lui reprendrait.
-  'b2b/reception': 'b2b_catalog:read',
+  'b2b/reception': 'lfc_catalog:read',
   // Les réglages de l'e-commerce sont TOUS partis le 2026-10-13 : les points
   // de retrait vers les sites, l'heure limite, l'ouverture et l'annulation
   // vers Réglages › Commandes. Il ne reste ici que des redirections.

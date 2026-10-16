@@ -13,7 +13,7 @@ import type { CatalogIngestionReport, CatalogSnapshot } from "@lfd/catalog-sync"
  * seule chose qui ait changé, c'est qu'il n'y a plus de réseau à tomber entre
  * les deux.
  *
- * Deux pilotes concrets, comme pour Shopify : une simulation qui ne touche
+ * Deux pilotes concrets, comme pour l'ancien canal : une simulation qui ne touche
  * rien, et l'envoi réel. Le service de push choisit ; il ne sait pas lequel il
  * tient, et c'est ce qui rend le chemin testable de bout en bout.
  */

@@ -7,7 +7,7 @@ import { z } from "zod";
  * par le fil v11 et peut les **restreindre** à la réception, jamais les étendre
  * (D9 de `documentation/operations-datees/architecture-operations-datees.md`).
  *
- * Routes (surface `b2b_catalog`, le droit du paramétrage du catalogue) :
+ * Routes (surface `lfc_catalog`, le droit du paramétrage du catalogue) :
  *
  * - `GET  /admin/catalog/operations` → `ReceivedOperationView[]`
  * - `PUT  /admin/catalog/operations/:key/override` ← `SetOperationOverridePayload` → `204`

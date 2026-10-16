@@ -32,8 +32,6 @@ export class ListSalesContextsHandler implements IQueryHandler<
       label: context.label,
       position: context.position,
       active: context.active,
-      shopifyProjected: context.shopifyProjected,
-      handleSuffix: context.handleSuffix,
       root: isRootContext(context.key),
       // Un contexte global n'est offert par aucun lieu, et ce zéro-là n'est pas
       // un manque : l'écran le sait par `perLocation` et n'affiche pas le compte.

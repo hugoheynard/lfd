@@ -25,7 +25,7 @@ import {
  * Implémentation du port de lecture. Elle s'appuie sur les dépôts du catalogue —
  * c'est-à-dire qu'elle reste **à l'intérieur** du module, là où lire ces tables est
  * légitime — et compose avec le port `VatRateRepository` (commerce, déjà importé par
- * le module) pour résoudre le tag de collection d'une catégorie. L'adaptateur Shopify
+ * le module) pour résoudre le tag de collection d'une catégorie. Un adaptateur de canal
  * ne voit que le résultat (ADR-13).
  */
 @Injectable()

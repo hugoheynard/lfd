@@ -18,7 +18,7 @@ export const heartbeatMetricsSchema = z.object({
 export type HeartbeatMetrics = z.infer<typeof heartbeatMetricsSchema>;
 
 export const heartbeatSchema = z.object({
-  /** Id stable du nœud émetteur (ex. `pim.sync-shopify`). */
+  /** Id stable du nœud émetteur (ex. `pim.sync-catalog`). */
   node: z.string().min(1),
   at: z.string().min(1),
   /** Ce que le nœud dit **de lui-même** (OPS peut le corriger, cf. design §8). */

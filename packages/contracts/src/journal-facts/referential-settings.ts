@@ -103,18 +103,40 @@ const pointOfSaleDeleted = payload({ label: z.string(), tableCount: count() });
 /** Le jeton n'y est jamais : il vaut accès à la commande à table. */
 const tableQr = payload({ table: z.number().int() });
 
-const salesContextCreated = payload({
+/**
+ * Les contextes de vente ont porté deux réglages de l'ancien canal de vente en
+ * ligne — « projeté » et un suffixe de handle — jusqu'au 2026-10-16. Les
+ * lignes écrites avant ont été RENOMMÉES par la migration
+ * `20261016200000_le_canal_retire_sans_son_nom` (même fait, même charge, clés
+ * neutres) : ces formes historiques portent les noms neutres, et la forme
+ * courante n'a plus ni l'un ni l'autre.
+ */
+const salesContextCreatedV1 = payload({
   key: z.string(),
   label: z.string(),
   active: z.boolean(),
-  shopifyProjected: z.boolean(),
+  projectedToFormerChannel: z.boolean(),
 });
-const salesContextUpdated = payload({
+const salesContextUpdatedV1 = payload({
   changes: changes({
     label: z.string(),
-    handleSuffix: z.string(),
+    formerChannelHandleSuffix: z.string(),
     active: z.boolean(),
-    shopifyProjected: z.boolean(),
+    projectedToFormerChannel: z.boolean(),
+    position: z.number().int(),
+  }),
+});
+const salesContextCreated = payload({
+  subjectLabel: subjectLabel(),
+  key: z.string(),
+  label: z.string(),
+  active: z.boolean(),
+});
+const salesContextUpdated = payload({
+  subjectLabel: subjectLabel(),
+  changes: changes({
+    label: z.string(),
+    active: z.boolean(),
     position: z.number().int(),
   }),
 });
@@ -240,8 +262,15 @@ export const REFERENTIAL_SETTINGS_FACTS = {
   "point_of_sale.table_qr_generated": labelled(tableQr),
   "point_of_sale.table_qr_removed": labelled(tableQr),
 
-  "sales_context.created": labelled(salesContextCreated),
-  "sales_context.updated": labelled(salesContextUpdated),
+  /** Sans les réglages de l'ancien canal ; les lignes d'avant les portent, renommés. */
+  "sales_context.created": fact(salesContextCreated, [
+    salesContextCreatedV1.extend({ subjectLabel: subjectLabel() }),
+    salesContextCreatedV1,
+  ]),
+  "sales_context.updated": fact(salesContextUpdated, [
+    salesContextUpdatedV1.extend({ subjectLabel: subjectLabel() }),
+    salesContextUpdatedV1,
+  ]),
   "sales_context.deleted": labelled(salesContextDeleted),
 
   "appellation.created": labelled(appellationCreated),

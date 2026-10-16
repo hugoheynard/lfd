@@ -63,7 +63,7 @@ export const staffResourceSchema = z.enum([
   /** Ce que le catalogue **contient** : produits, familles, médias, allergènes, ingrédients. */
   "pim_catalog",
   /**
-   * Ce qui **en sort** : Shopify, la plateforme B2B, la publication, les
+   * Ce qui **en sort** : la diffusion vers les canaux, la publication, les
    * révisions.
    *
    * Détachée de `pim_catalog`, et c'est la découpe qui compte le plus de

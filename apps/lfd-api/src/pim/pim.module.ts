@@ -34,7 +34,7 @@ import { SalesContextsModule } from "./sales-contexts/sales-contexts.module.js";
  * ⚠️ `channels/` garde son niveau alors qu'il n'abrite plus qu'un canal : c'est
  * la forme qui dit qu'un canal est UN canal et pas le référentiel. L'aplatir
  * ferait de `b2b` un sous-module comme les autres, et le prochain canal
- * rouvrirait le débat (Shopify sorti le 2026-09-21).
+ * rouvrirait le débat (l'ancien canal de vente en ligne sorti le 2026-09-21).
  */
 @Module({
   imports: [

@@ -397,7 +397,7 @@ describe("GET /admin/catalog/health", () => {
   /**
    * 🔴 LE cas qui justifie de changer la source du miroir. Masquer un article est
    * un geste normal, porté par l'agrégat et exposé au commercial par le droit
-   * `b2b_catalog:write`. Lu par `listSellable()`, chaque article masqué tombait
+   * `lfc_catalog:write`. Lu par `listSellable()`, chaque article masqué tombait
    * en `missing` — c'est-à-dire sous la ligne « rien n'explique cet écart ». La
    * décision qui donne le droit fabriquait le bruit que celle d'à côté prétendait
    * supprimer.

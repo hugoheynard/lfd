@@ -15,8 +15,8 @@ export interface VatRateInput {
 
 /**
  * Accès **réel** aux taux de TVA — parle au backend (`vat-rates`).
- * Le `tag` (handle Shopify) est dérivé du taux côté serveur ; le front ne l'envoie
- * jamais. Remplace la branche LocalDb.
+ * Un taux, c'est un nom et un pourcentage : le front n'envoie aucun vocabulaire
+ * de canal. Remplace la branche LocalDb.
  */
 @Injectable({ providedIn: 'root' })
 export class VatRateHttpApi {

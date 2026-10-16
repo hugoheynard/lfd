@@ -40,12 +40,12 @@ interface GapRow {
 /**
  * L'intégration **Boutique B2B** — le canal qui facture.
  *
- * Elle passe devant Shopify, et c'est un ordre de vérité, pas de courtoisie :
+ * Elle passait devant l'ancien canal de vente en ligne, et c'était un ordre de vérité, pas de courtoisie :
  * la boutique B2B encaisse. Elle a longtemps manqué à cet écran, dont l'état
- * vide affirmait que « Shopify est le seul canal branché » — faux depuis que le
+ * vide affirmait que « l'ancien canal est le seul branché » — faux depuis que le
  * catalogue et les taux descendent vers la plateforme.
  *
- * Rien à configurer ici, et c'est la différence de fond avec Shopify : le canal
+ * Rien à configurer ici, et c'est la différence de fond avec l'ancien canal : le canal
  * est **interne**, en processus, sans domaine ni jeton. Ce qu'il y a à
  * surveiller n'est donc pas une connexion mais la **fidélité du miroir** — un
  * miroir qui décroche facture un prix ou un taux que personne n'a décidé.

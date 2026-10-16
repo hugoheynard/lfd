@@ -63,9 +63,7 @@ export class SalesContextPanel {
 
   protected readonly draftKey = signal('');
   protected readonly draftLabel = signal('');
-  protected readonly draftSuffix = signal('');
   protected readonly draftActive = signal(true);
-  protected readonly draftProjected = signal(false);
   /** Saisie de confirmation de suppression (doit égaler la clé). */
   protected readonly confirmKey = signal('');
   protected readonly busy = signal(false);
@@ -120,9 +118,7 @@ export class SalesContextPanel {
       if (target !== undefined) {
         this.draftKey.set(target.key);
         this.draftLabel.set(target.label);
-        this.draftSuffix.set(target.handleSuffix);
         this.draftActive.set(target.active);
-        this.draftProjected.set(target.shopifyProjected);
       }
     });
   }
@@ -174,17 +170,13 @@ export class SalesContextPanel {
       await this.store.create({
         key: this.draftKey().trim(),
         label: this.draftLabel().trim(),
-        handleSuffix: this.draftSuffix().trim(),
         active: this.draftActive(),
-        shopifyProjected: this.draftProjected(),
       });
       return;
     }
     await this.store.update(target.key, {
       label: this.draftLabel().trim(),
-      handleSuffix: this.draftSuffix().trim(),
       active: this.draftActive(),
-      shopifyProjected: this.draftProjected(),
       position: target.position,
     });
   }

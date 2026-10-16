@@ -127,6 +127,10 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   fileName: 'Fichier',
   firstName: 'Prénom',
   focal: 'Point focal',
+  // Les deux réglages de l'ancien canal de vente en ligne qu'ont portés les
+  // contextes de vente jusqu'au 2026-10-16 ; leurs clés ont été renommées dans
+  // les faits passés par migration, et ne s'écrivent plus.
+  formerChannelHandleSuffix: 'Ancien canal — suffixe',
   formeJuridique: 'Forme juridique',
   fr: 'Français',
   from: 'Avant',
@@ -143,7 +147,6 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   // réduction de prix (CLAUDE.md racine, §8, décidé le 2026-09-12).
   handedOverAt: 'Retirée le',
   handedOverBy: 'Retrait validé par',
-  handleSuffix: 'Suffixe de collection',
   pickup: 'Retrait',
   // Les clientèles du retrait d'un site (2026-10-15).
   pickupForB2b: 'Retrait pour les pros',
@@ -212,6 +215,7 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   pointOfSaleId: 'Point de vente',
   policy: 'Règle appliquée',
   position: 'Rang',
+  projectedToFormerChannel: 'Ancien canal — projeté',
   postalPrefixCount: 'Préfixes postaux',
   postalPrefixes: 'Préfixes postaux',
   previous: 'Avant',
@@ -258,7 +262,6 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   // La série d'une image de la médiathèque (L3, 2026-10-10).
   series: 'Série',
   serviceDay: 'Journée de service',
-  shopifyProjected: 'Publié sur Shopify',
   shotOn: 'Prise de vue',
   signatureRequired: 'Signature exigée',
   signedAt: 'Signé le',
@@ -283,9 +286,9 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   supportRequestId: 'Demande de contact',
   suspended: 'Compte suspendu',
   table: 'Table',
-  // Le handle de la collection Shopify d'un taux, dérivé de son pourcentage
-  // (`tva-5-5`) : `tax_regime.*`, 2026-08-21 seulement.
-  tag: 'Collection Shopify',
+  // Le handle de collection d'un taux chez l'ancien canal de vente en ligne,
+  // dérivé de son pourcentage (`tva-5-5`) : `tax_regime.*`, 2026-08-21 seulement.
+  tag: 'Ancien canal — collection',
   tableCount: 'Tables',
   tags: 'Mots-clés',
   terms: 'Conditions de règlement',

@@ -4,14 +4,12 @@ import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { PIM_EVENTS, PimJournal } from "../../journal/pim-journal.js";
 import { SalesContextAggregate } from "../domain/entities/sales-context.entity.js";
 import { SalesContextRepository } from "../domain/ports/sales-context.repository.js";
-import { ensureHandleFree, ensureKeyFree } from "./sales-context-support.js";
+import { ensureKeyFree } from "./sales-context-support.js";
 
 export interface CreateSalesContextPayload {
   readonly key: string;
   readonly label: string;
-  readonly handleSuffix: string;
   readonly active: boolean;
-  readonly shopifyProjected: boolean;
 }
 
 export class CreateSalesContextCommand {
@@ -54,7 +52,6 @@ export class CreateSalesContextHandler implements ICommandHandler<
     });
     const created = context.snapshot();
     await ensureKeyFree(this.contexts, created.key);
-    await ensureHandleFree(this.contexts, created);
 
     await this.uow.run(async () => {
       const ticket = await this.journal.trace({
@@ -68,7 +65,6 @@ export class CreateSalesContextHandler implements ICommandHandler<
           key: created.key,
           label: created.label,
           active: created.active,
-          shopifyProjected: created.shopifyProjected,
         },
       });
       await this.contexts.add(context, ticket);

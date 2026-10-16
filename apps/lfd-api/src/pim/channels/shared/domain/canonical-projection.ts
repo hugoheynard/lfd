@@ -54,7 +54,7 @@ export type CanonicalProjection = Omit<CatalogSnapshot, "generatedAt">;
  * fonction existe pour empêcher.
  *
  * Le dépôt porte déjà les deux écoles : `fingerprint.ts` compare par `<`,
- * `shopify/products/projection.ts` par `localeCompare`. Ici c'est la première,
+ * la projection de l'ancien canal par `localeCompare`. Ici c'est la première,
  * et c'est un choix, pas une reprise.
  */
 function byKey(a: string, b: string): number {

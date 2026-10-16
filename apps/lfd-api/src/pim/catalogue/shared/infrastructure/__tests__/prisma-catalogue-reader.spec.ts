@@ -120,7 +120,7 @@ describe("PrismaCatalogueReader.vatPercents", () => {
    * Il rendait `null/null` — exactement ce que rend une famille bien réelle
    * dont personne n'a réglé la TVA. Deux causes (un rattachement cassé / un
    * taux à régler), deux gestes, et un seul symptôme à l'écran. Le pousseur
-   * Shopify, seul appelant, attrape déjà les erreurs de cette lecture et les
+   * de l'ancien canal, seul appelant d'alors, attrape déjà les erreurs de cette lecture et les
    * rend visibles dans son rapport plutôt que de tomber.
    */
   it("REFUSE une catégorie introuvable, au lieu de la dire non réglée", async () => {

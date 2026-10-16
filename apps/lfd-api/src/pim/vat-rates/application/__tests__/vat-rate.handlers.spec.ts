@@ -82,9 +82,7 @@ function context(key: string, label: string, active: boolean): SalesContext {
     id: `ctx_${key}`,
     key,
     label,
-    handleSuffix: "",
     active,
-    shopifyProjected: false,
     position: 0,
   };
 }

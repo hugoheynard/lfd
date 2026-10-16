@@ -186,7 +186,7 @@ model Lead {
 //   comme une projection dérivée des Order de ce schéma (calculée par le cron).
 // - Cart : reste côté client (localStorage) jusqu'à la validation ; seule la
 //   commande (Order) est persistée.
-// - Stock : décision « source de vérité » reportée (Shopify vs nous).
+// - Stock : décision « source de vérité » reportée (un outil tiers vs nous).
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Marché ciblé — pénétration par territoire (config commerciale staff)

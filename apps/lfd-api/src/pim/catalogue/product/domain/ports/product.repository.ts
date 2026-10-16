@@ -3,8 +3,8 @@ import type { Product, ProductSnapshot } from "../entities/product.js";
 import type { VariantNutritionSnapshot, VariantSnapshot } from "../entities/variant.js";
 
 /**
- * **Le read model du catalogue** — ce que les canaux (Shopify, plateforme
- * B2B) consomment. C'est l'instantané de l'agrégat, pas l'agrégat : une
+ * **Le read model du catalogue** — ce que les canaux (la plateforme B2B)
+ * consomment. C'est l'instantané de l'agrégat, pas l'agrégat : une
  * projection n'a rien à muter, et lui tendre des méthodes serait l'inviter à
  * le faire. Les noms restent ceux que les canaux importent déjà.
  */

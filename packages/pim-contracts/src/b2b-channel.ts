@@ -61,7 +61,7 @@ export interface B2bMembershipView {
  * ── Le push du catalogue vers la boutique ────────────────────────────────────
  *
  * Le canal savait pousser côté serveur sans aucun appelant : le back-office ne
- * poussait que vers Shopify, et un régime de TVA révisé n'atteignait donc
+ * poussait que vers l'ancien canal de vente en ligne, et un régime de TVA révisé n'atteignait donc
  * jamais la boutique qui facture. Ces vues sont ce qui manquait pour le
  * brancher.
  */

@@ -3,8 +3,8 @@
  * `category` et un `code` stable, que l'app mappe vers HTTP dans son filtre
  * d'exceptions (le seul endroit qui connaît HTTP).
  *
- * ⚠️ Cette forme était justifiée par sa ressemblance avec `@lfd/shopify-admin`,
- * paquet supprimé le 2026-09-21. Elle tient toute seule — un paquet qui lèverait
+ * ⚠️ Cette forme était justifiée par sa ressemblance avec le paquet de transport
+ * de l'ancien canal de vente en ligne, supprimé le 2026-09-21. Elle tient toute seule — un paquet qui lèverait
  * une `HttpException` imposerait Nest à ses consommateurs — et la comparaison a
  * été retirée le 2026-09-22 plutôt que laissée à pointer dans le vide.
  */

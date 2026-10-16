@@ -97,9 +97,7 @@ async function seedContexts(
       new CreateSalesContextCommand({
         key: context.key,
         label: context.label,
-        handleSuffix: context.handleSuffix,
         active: context.active,
-        shopifyProjected: context.shopifyProjected,
       }),
     );
     created += 1;

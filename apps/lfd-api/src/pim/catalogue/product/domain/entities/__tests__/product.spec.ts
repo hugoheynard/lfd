@@ -375,7 +375,7 @@ describe("l’agrégat Product", () => {
 
     /**
      * La route HTTP exigeait déjà `int().min(0)`, le domaine non : un seed ou
-     * un import passait à côté, et un demi-centime partait chez Shopify.
+     * un import passait à côté, et un demi-centime partait vers un canal.
      */
     it.each([
       ["un prix négatif", -1, null],

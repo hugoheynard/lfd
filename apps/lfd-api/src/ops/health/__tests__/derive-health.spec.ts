@@ -161,9 +161,9 @@ describe("le rouge se désigne, il ne se propage pas", () => {
 describe("la carte est complète", () => {
   it("rend TOUS les nœuds déclarés, y compris ceux dont on ne sait rien", () => {
     // Un nœud absent de la réponse serait indistinguable d'un nœud qui va bien.
-    const health = derive([node({ id: "b2b" }), node({ id: "shopify" })], {});
+    const health = derive([node({ id: "b2b" }), node({ id: "stripe" })], {});
 
-    expect(health.map((entry) => entry.node)).toEqual(["b2b", "shopify"]);
+    expect(health.map((entry) => entry.node)).toEqual(["b2b", "stripe"]);
   });
 });
 
@@ -191,8 +191,8 @@ describe("la sonde est une observation directe, et elle prime", () => {
   it("laisse `unknown` un tiers non configuré, sans le peindre en rouge", () => {
     // Un tiers dont on n'a pas les identifiants n'est pas tombé. Les confondre
     // ferait rougir la carte pour une case vide dans un fichier d'environnement.
-    const [health] = derive([node({ id: "shopify", kind: "external-api" })], {
-      shopify: { probe: { verdict: "unknown" } },
+    const [health] = derive([node({ id: "stripe", kind: "external-api" })], {
+      stripe: { probe: { verdict: "unknown" } },
     });
 
     expect(health).toMatchObject({ status: "unknown", reason: "no-evidence" });

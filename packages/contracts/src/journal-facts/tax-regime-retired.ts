@@ -14,8 +14,8 @@ import { blastByNamedContexts, payload, percent, retired, type JournalFactFamily
  * depuis comme un fait inconnu.
  *
  * Deux formes par type, parce que la charge a changé entre les deux commits :
- * `de033f98` (15 h 42) a retiré le `tag` (`tva-5-5`, le handle Shopify dérivé
- * du taux) quand la colonne a quitté la table. La forme SANS tag est posée en
+ * `de033f98` (15 h 42) a retiré le `tag` (`tva-5-5`, le handle de collection que
+ * l'ancien canal de vente en ligne dérivait du taux) quand la colonne a quitté la table. La forme SANS tag est posée en
  * courante, celle d'avant en histoire — l'ordre ne décide rien pour un type
  * retiré, les deux se lisent (formes relues dans git le 2026-09-19).
  *
@@ -24,7 +24,7 @@ import { blastByNamedContexts, payload, percent, retired, type JournalFactFamily
  * et l'après SONT les noms.
  */
 
-/** Le handle Shopify du taux, dérivé de son pourcentage (`tva-5-5`). */
+/** Le handle de collection du taux chez l'ancien canal, dérivé de son pourcentage (`tva-5-5`). */
 const tag = () => z.string();
 
 const snapshot = payload({ name: z.string(), percent: percent() });

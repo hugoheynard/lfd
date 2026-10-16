@@ -8,9 +8,9 @@ import { B2bIntegration } from '../b2b-integration/b2b-integration';
  * Hub des **intégrations** — les canaux branchés sur le catalogue.
  *
  * ⚠️ **Il n'y a plus d'onglets, parce qu'il n'y a plus qu'un canal.** Cet écran
- * en a porté deux, Shopify et la boutique B2B, et son en-tête défendait l'ordre :
+ * en a porté deux, l'ancien canal de vente en ligne et la boutique B2B, et son en-tête défendait l'ordre :
  * « la boutique B2B en premier, et c'est un ordre de vérité : c'est elle qui
- * facture ». Shopify est sorti le 2026-09-21
+ * facture ». L'ancien canal est sorti le 2026-09-21
  * ([`plan-un-seul-canal-deux-prix.md`](../../../../../../documentation/catalogue/plan-un-seul-canal-deux-prix.md)),
  * et une barre d'onglets à un onglet est un choix qu'on n'offre pas.
  *

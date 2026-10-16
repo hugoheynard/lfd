@@ -38,7 +38,7 @@ export class AdminStorefrontController {
 
   /**
    * Les rayons et les articles que l'éditeur désigne — sans prix ni réglages.
-   * Sous `b2b_storefront:read`, et non `b2b_catalog` : la communication
+   * Sous `b2b_storefront:read`, et non `lfc_catalog` : la communication
    * compose la vitrine sans avoir à voir le paramétrage du catalogue.
    */
   @Get("catalog")

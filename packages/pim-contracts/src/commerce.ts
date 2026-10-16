@@ -3,7 +3,7 @@ import { z } from "zod";
 /**
  * Contrat de fil du contexte **commerce** — les taux de TVA.
  *
- * Un taux, c'est un nom et un taux. Le handle de collection Shopify n'y
+ * Un taux, c'est un nom et un taux. Le handle de collection d'un canal n'y
  * figure plus : c'est du vocabulaire de canal, dérivé par le canal.
  */
 export const vatRatePayloadSchema = z.object({

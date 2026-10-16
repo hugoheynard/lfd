@@ -14,7 +14,7 @@ export class VatRateNotFoundError extends BusinessError {
  * plus personne ne sait laquelle une famille vise — ni ce qu'il advient de la
  * collection de taxe, dont le handle se dérive du taux et serait le même.
  *
- * L'erreur s'appelait `TvaTagConflictError` et nommait un handle Shopify
+ * L'erreur s'appelait `TvaTagConflictError` et nommait un handle de l'ancien canal
  * (`tva-5-5`) : le référentiel annonçait une collision de canal là où
  * l'invariant est fiscal. Un comptable à qui l'on répond « conflit de tag » n'a
  * aucun moyen de savoir qu'il vient de recréer le taux réduit.
