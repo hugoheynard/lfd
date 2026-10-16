@@ -29,8 +29,8 @@ export class InvalidProPriceMethodError extends DomainError {
   constructor(readonly method: string) {
     super(
       "commerce.pro_price_method.invalid",
-      `Méthode de prix professionnel inconnue : « ${method} ». La seule méthode ` +
-        `disponible est « ratio_ttc » — la remise s'applique au prix public TTC.`,
+      `Méthode de prix professionnel inconnue : « ${method} ». Les méthodes ` +
+        `connues sont « entered » (prix pro HT saisi) et « ratio_ttc » (remise sur le prix public TTC).`,
     );
   }
 }
@@ -46,13 +46,20 @@ export class AccountingRulesNotSetError extends BusinessError {
   constructor() {
     super(
       "commerce.accounting_rules_not_set",
-      "Les règles comptables ne sont pas réglées : aucun rapport prix pro n'a été posé.",
+      "Les règles comptables ne sont pas réglées : aucun rapport prix pro n'a été posé. " +
+        "Posez le « Rapport suggéré » dans « Règles comptables », puis recommencez.",
     );
   }
 }
 
 /**
- * On veut tarifer le professionnel, et personne n'a réglé le rapport.
+ * On veut tarifer le professionnel sous `ratio_ttc`, et personne n'a réglé le
+ * rapport.
+ *
+ * Depuis le lot S, ce cas ne se produit plus qu'en théorie : une base sans
+ * ligne vaut `entered` (où le rapport n'est qu'une suggestion), et une ligne
+ * porte toujours un rapport. Le refus reste pour la forme `ratio_ttc` sans
+ * rapport que le type admet.
  *
  * Refus, pas repli. Un rapport implicite à 100 % ferait facturer le prix public
  * à tous les professionnels — silencieusement, sur tout le catalogue, et la

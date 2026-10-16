@@ -1,5 +1,5 @@
 import type { SyncOrderTimeLimitRule } from "@lfd/catalog-sync";
-import type { ProPricePolicy } from "@lfd/pim-contracts";
+import { UNSET_PRO_PRICE_POLICY, type ProPricePolicy } from "@lfd/pim-contracts";
 import type { SalesChannels } from "../../../../catalogue/shared/domain/value-objects/sales-channels.js";
 import type { ChannelCategory } from "../../../../catalogue/shared/domain/ports/catalogue-reader.js";
 import type {
@@ -943,6 +943,59 @@ describe("projectCatalog — sous la méthode entered", () => {
       priceMillicents: 151_234,
       publicTtcCents: 200,
     });
+  });
+
+  /**
+   * Lot S (`vitruve`) : une déclinaison sans saisie ET sans taux `b2b` — une
+   * alignée dont le défaut n'a pas pu être pré-rempli — partait « sans prix pro »
+   * alors que la cause est le taux. Le motif nomme désormais le taux.
+   */
+  it("nomme le taux, pas le prix pro, quand c'est le taux qui manque", () => {
+    const { excluded } = projectCatalog(
+      [product({ variants: [variant()] })],
+      [category()],
+      vat({ takeaway: 5.5 }),
+      sold(),
+      ENTERED,
+      NO_LIMITS,
+      INCO,
+      NO_SHOWCASE,
+      NO_OPERATIONS,
+      AT,
+    );
+
+    expect(excluded).toContainEqual({ sku: "VIE-001-1", reason: "variant_sans_taux" });
+  });
+});
+
+/**
+ * Régression (BLOQUANT `vitruve`, lot S, 2026-10-16) : une base sans règles
+ * comptables ne vendait aucune saisie. Elle vaut « prix saisi » sans rapport.
+ */
+describe("projectCatalog — base sans règles comptables", () => {
+  it("pousse la saisie, et écarte sous « sans prix pro » ce qui n'en a pas", () => {
+    const { snapshot, excluded } = projectCatalog(
+      [
+        product({
+          variants: [
+            variant({ proPriceMillicents: 151_234 }),
+            variant({ id: "var_2", sku: "VIE-001-2", isDefault: false }),
+          ],
+        }),
+      ],
+      [category()],
+      vat(),
+      sold(),
+      UNSET_PRO_PRICE_POLICY,
+      NO_LIMITS,
+      INCO,
+      NO_SHOWCASE,
+      NO_OPERATIONS,
+      AT,
+    );
+
+    expect(snapshot.products[0]?.variants.map((entry) => entry.priceMillicents)).toEqual([151_234]);
+    expect(excluded).toEqual([{ sku: "VIE-001-2", reason: "variant_sans_prix_pro" }]);
   });
 });
 

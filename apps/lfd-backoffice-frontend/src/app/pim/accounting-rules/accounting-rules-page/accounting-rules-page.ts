@@ -7,7 +7,7 @@ import {
   signal,
 } from '@angular/core';
 
-import { htFromTtc, proPriceOf, type ProPriceMethod } from '@lfd/pim-contracts';
+import { htFromTtc, proPriceOf } from '@lfd/pim-contracts';
 import { formatCents } from '@lfd/b2b-ui/order';
 import {
   FoldButtonComponent,
@@ -84,17 +84,18 @@ export interface SampleRateRow {
  * **Règles comptables** — ce que la maison décide une fois, pour tout le
  * catalogue.
  *
- * Une seule règle aujourd'hui : la remise professionnelle, c'est-à-dire le
- * rapport entre le prix public TTC et le prix professionnel TTC.
+ * Depuis le lot S (`plan-catalogue-synchronise-par-audience.md`, 2026-10-16),
+ * le prix pro HT se SAISIT par déclinaison ; le rapport n'est plus qu'une
+ * **suggestion** (« Rapport suggéré »), qui nourrit la fiche et le
+ * pré-remplissage. Le choix de méthode a quitté l'écran : sur une base encore
+ * en `ratio_ttc`, un encart dit ce qui reste à faire et offre « Passer au prix
+ * saisi » ; une fois en `entered`, l'encart disparaît et le retour ne s'offre
+ * plus (la route reste : le code n'est pas effacé).
  *
  * Écran à part du référentiel fiscal, et pas un bloc de plus sur « Taux de
  * TVA » : un taux est imposé de l'extérieur, une remise est décidée par la
  * maison. Les ranger ensemble parce qu'ils tiennent dans la même phrase
  * (« ce qu'on facture ») mélangerait la loi et la politique commerciale.
- *
- * ⚠️ **Rien ne lit encore ce rapport.** Aucun prix ne change tant que la
- * tranche 4 ne l'a pas raccordé — et l'écran le dit, plutôt que de laisser
- * croire qu'une saisie ici retarife le catalogue.
  */
 @Component({
   selector: 'app-accounting-rules-page',
@@ -149,9 +150,6 @@ export class AccountingRulesPage {
   /** La méthode **appliquée** — celle dont le push se sert. */
   protected readonly savedMethod = computed(() => this.store.rules().method);
 
-  /** La méthode qu'on s'apprête à choisir. */
-  protected readonly draftMethod = signal<ProPriceMethod>('ratio_ttc');
-
   constructor() {
     // Le champ suit ce que le serveur affirme, y compris après enregistrement.
     // Rien réglé ⇒ champ vide : pré-remplir à 0 proposerait « aucune remise »
@@ -159,10 +157,6 @@ export class AccountingRulesPage {
     effect(() => {
       const saved = this.savedRatioBp();
       this.draftDiscount.set(saved === null ? null : ratioBpToDiscount(saved));
-    });
-    // Même règle pour la méthode : le champ suit ce que le serveur affirme.
-    effect(() => {
-      this.draftMethod.set(this.savedMethod());
     });
   }
 
@@ -269,27 +263,17 @@ export class AccountingRulesPage {
   });
 
   /**
-   * Rien à enregistrer si la méthode saisie est celle qui s'applique déjà.
-   *
-   * Deux méthodes depuis le lot P : `ratio_ttc` et `entered` (« Prix saisi »).
-   * Basculer retarife le catalogue professionnel ; le pré-remplissage, plus
-   * bas, est le geste qui rend la bascule sans effet sur les prix servis.
+   * **« Passer au prix saisi »** (lot S, S4) — le geste existant
+   * `choose-pro-price-method` vers `entered`. Offert seulement tant que la base
+   * est en `ratio_ttc` ; le retour ne s'offre pas à l'écran.
    */
-  protected readonly canChooseMethod = computed(
-    () => !this.busy() && this.draftMethod() !== this.savedMethod(),
-  );
-
-  protected chooseMethod(method: ProPriceMethod): void {
-    this.draftMethod.set(method);
-  }
-
-  protected async submitMethod(): Promise<void> {
+  protected async switchToEntered(): Promise<void> {
     this.busy.set(true);
     try {
-      await this.store.chooseProPriceMethod(this.draftMethod());
-      this.notify.success('Méthode de calcul appliquée.');
+      await this.store.chooseProPriceMethod('entered');
+      this.notify.success('Le prix pro saisi est désormais la seule source.');
     } catch (caught) {
-      this.notify.refused(caught, 'Changement de méthode refusé.');
+      this.notify.refused(caught, 'Passage au prix saisi refusé.');
     } finally {
       this.busy.set(false);
     }
@@ -309,7 +293,7 @@ export class AccountingRulesPage {
     this.busy.set(true);
     try {
       await this.store.setProPriceRatio(ratioBp);
-      this.notify.success('Remise professionnelle enregistrée.');
+      this.notify.success('Rapport suggéré enregistré.');
     } catch (caught) {
       // Le champ reste garni : le message dit pourquoi, et la correction se
       // fait sur place.

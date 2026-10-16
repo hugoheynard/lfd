@@ -1,7 +1,7 @@
 <p class="say">
-  Avant de basculer sur «&nbsp;Prix saisi&nbsp;», chaque déclinaison à tarif propre reçoit le prix
-  pro HT que la remise lui donne aujourd'hui. Rien n'est écrit là où un prix pro est déjà saisi, ni
-  sur une déclinaison qui suit le tarif du défaut.
+  Chaque déclinaison à tarif propre et sans prix pro saisi reçoit le prix pro HT que le rapport
+  suggéré lui donne. Rien n'est écrit là où un prix pro est déjà saisi, ni sur une déclinaison qui
+  suit le tarif du défaut.
 </p>
 
 <button foldButton emphasis="outline" [disabled]="busy()" (click)="load()">
@@ -20,6 +20,27 @@
 }
 
 @if (preview(); as view) {
+  <!-- Le VRAI basculement (contradiction de `vitruve`, lot S) : une fois
+       écrite, chaque saisie prime, et le rapport devient inerte. -->
+  <fold-callout appearance="inset" variant="warning">
+    <strong>Après l'écriture, le prix public ne bouge plus le prix pro.</strong> Chaque déclinaison
+    pré-remplie porte son prix pro saisi&nbsp;: monter un prix public ne le monte plus. Le corriger
+    se fait sur la fiche, à la main.
+  </fold-callout>
+
+  @if (view.method === 'entered') {
+    <p class="say">
+      <strong>Rien n'est vendu aux professionnels aujourd'hui</strong> pour les déclinaisons
+      «&nbsp;à pré-remplir&nbsp;»&nbsp;: elles n'ont pas de prix pro saisi. Après l'écriture, elles
+      deviendront vendables aux pros au HT pré-rempli.
+    </p>
+  } @else {
+    <p class="say">
+      Rien de servi ne change&nbsp;: le HT pré-rempli doit être, au millicentime, celui que la
+      boutique professionnelle sert aujourd'hui.
+    </p>
+  }
+
   @if (view.mismatches > 0) {
     <!-- L'écart BLOQUE : le pré-remplissage promet qu'aucun prix servi ne
          change à la bascule. Un seul écart, et il ne le promet plus. -->
@@ -47,8 +68,35 @@
   </fold-data-table>
 
   @if (canWrite()) {
-    <button foldButton emphasis="solid" intent="primary" [disabled]="!canApply()" (click)="apply()">
-      Pré-remplir {{ view.toPrefill }} prix pro
-    </button>
+    @if (confirming()) {
+      <fold-callout variant="warning">
+        <strong>{{ view.toPrefill }} déclinaison(s) deviendront vendables aux pros</strong> au HT
+        pré-rempli. Confirmer&nbsp;?
+        <span class="actions">
+          <button
+            foldButton
+            emphasis="solid"
+            intent="primary"
+            [disabled]="busy()"
+            (click)="apply()"
+          >
+            Confirmer le pré-remplissage
+          </button>
+          <button foldButton emphasis="outline" [disabled]="busy()" (click)="cancel()">
+            Annuler
+          </button>
+        </span>
+      </fold-callout>
+    } @else {
+      <button
+        foldButton
+        emphasis="solid"
+        intent="primary"
+        [disabled]="!canApply()"
+        (click)="apply()"
+      >
+        Pré-remplir {{ view.toPrefill }} prix pro
+      </button>
+    }
   }
 }

@@ -1,8 +1,11 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 
+import { FoldButtonComponent } from 'fold-ng';
+
 import { ChannelsForm } from '../channels/channels-form';
 import { ProductFormStore } from '../../product-form-store';
 import { numberValue, textValue } from '../dom';
+import { proPriceTextOf } from '../../pro-price-entry';
 
 /**
  * Panneau Tarif & TVA — le **prix public TTC**, ce qu'il devient pour les
@@ -25,7 +28,7 @@ import { numberValue, textValue } from '../dom';
 @Component({
   selector: 'app-pricing-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ChannelsForm],
+  imports: [ChannelsForm, FoldButtonComponent],
   templateUrl: './pricing-form.html',
   styleUrls: ['../form-section.scss', './pricing-form.scss'],
 })
@@ -33,4 +36,6 @@ export class PricingForm {
   protected readonly store = inject(ProductFormStore);
   protected readonly numberValue = numberValue;
   protected readonly textValue = textValue;
+  /** Cinq décimales au plus, virgule française : « 8,53081 ». */
+  protected readonly htText = proPriceTextOf;
 }

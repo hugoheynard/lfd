@@ -12,26 +12,22 @@ import type { ProPriceRatio } from "./pro-price-ratio.js";
  * écrit, et c'est ICI qu'elle est refusée, à la reconstitution comme à la
  * saisie.
  *
- * ## Pourquoi une seule méthode, et pourtant un mécanisme
+ * ## Deux méthodes, et laquelle par défaut
  *
- * Une seconde méthode a existé le temps d'une journée : elle devait reproduire
- * le catalogue professionnel imprimé. L'analyse des 89 prix de cette plaquette
- * (2026-09-13) a montré qu'elle **n'applique aucune formule** — ses prix ont
- * été posés à la main, article par article, et la meilleure règle unique ne
- * colle qu'à 21 % des lignes. Une méthode qui ne reproduit rien a été retirée.
- *
- * Ce qui reste est la **place**. Si le commerce fournit un jour une vraie
- * formule, elle s'ajoute à {@link PRO_PRICE_METHODS} et à `proPriceOf`, et tout
- * le reste — colonne, contrainte, route, écran — est déjà là. Une union à un
- * seul membre n'est pas de la généralité spéculative : c'est le prix, très bas,
- * de ne pas refaire cinq pièces pour ajouter un mot.
+ * `entered` (le prix pro HT saisi, seule source) est la méthode d'une base
+ * vierge depuis le lot S (`plan-catalogue-synchronise-par-audience.md`,
+ * 2026-10-16). `ratio_ttc` reste : une base qui y est encore la garde jusqu'au
+ * geste « Passer au prix saisi », et son code n'est pas effacé.
  */
 export class ProPriceMethodSetting {
   private constructor(readonly method: ProPriceMethod) {}
 
-  /** Le comportement d'avant la colonne — ce qu'un réglage muet doit valoir. */
-  static ratioTtc(): ProPriceMethodSetting {
-    return new ProPriceMethodSetting("ratio_ttc");
+  /**
+   * Ce qu'un réglage muet vaut depuis le lot S : le prix saisi. Une base
+   * vierge n'a aucun prix à préserver.
+   */
+  static entered(): ProPriceMethodSetting {
+    return new ProPriceMethodSetting("entered");
   }
 
   /**

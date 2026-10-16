@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { CATALOG_SNAPSHOT_VERSION, type SyncOperation } from "@lfd/catalog-sync";
 import { SOURCE_LOCALE } from "@lfd/pim-contracts";
 
+import { AccountingRules } from "../../../accounting-rules/domain/entities/accounting-rules.js";
 import { ProPriceRatioNotSetError } from "../../../accounting-rules/domain/errors/accounting-rules-errors.js";
 import { AccountingRulesRepository } from "../../../accounting-rules/domain/ports/accounting-rules.repository.js";
 import { AllergenCatalogueReader } from "../../../allergens/domain/ports/allergen-catalogue.reader.js";
@@ -81,8 +82,13 @@ export class B2bCatalogFeedProjection extends B2bCatalogFeedPreview {
     // **Lu APRÈS le raccourci du canal vide.** Un canal où rien n'est publié
     // n'a rien à tarifer, et lui réclamer un réglage comptable refuserait un
     // aperçu qui n'a aucun prix à montrer.
-    const rules = await this.accounting.read();
-    if (rules === null) {
+    //
+    // 🔴 Lot S (2026-10-16) : sans règles, la politique vaut le prix saisi sans
+    // rapport, et les saisies partent. Le refus ne vaut plus que pour
+    // `ratio_ttc` sans rapport — une forme que le type admet et qu'aucune
+    // ligne ne porte (la colonne est `NOT NULL`).
+    const policy = AccountingRules.effectivePolicy((await this.accounting.read())?.rules ?? null);
+    if (policy.method === "ratio_ttc" && policy.ratioBp === null) {
       throw new ProPriceRatioNotSetError();
     }
 
@@ -137,7 +143,7 @@ export class B2bCatalogFeedProjection extends B2bCatalogFeedPreview {
       // rapport. C'est l'agrégat qui sait que ces trois nombres vont ensemble ;
       // les recomposer ici pourrait marier le rapport d'aujourd'hui à la méthode
       // d'hier, et personne ne le verrait avant une facture.
-      rules.rules.policy,
+      policy,
       timeLimitRules.map(toSyncRule),
       // Le canal est monolingue français : l'aplatissement se fait à l'émission
       // plutôt que de transporter un objet localisé que personne ne lira.

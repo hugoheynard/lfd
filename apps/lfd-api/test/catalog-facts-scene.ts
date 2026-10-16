@@ -115,6 +115,12 @@ export async function anActiveFiche(
     .put("/pim/accounting-rules/pro-price-ratio")
     .send({ ratioBp: PRO_RATIO_BP })
     .expect(200);
+  // Lot S : une ligne neuve naît sur « prix saisi ». Ce décor vend au RAPPORT
+  // (le repli d'origine) : la méthode est posée explicitement.
+  await staff()
+    .put("/pim/accounting-rules/pro-price-method")
+    .send({ method: "ratio_ttc" })
+    .expect(200);
   if (audience !== null) {
     // Posée AVANT l'activation : la première ligne en vente naît avec elle (lot 3).
     await staff().put(`${PRODUCTS}/${fiche.id}/audience`).send({ audience }).expect(200);

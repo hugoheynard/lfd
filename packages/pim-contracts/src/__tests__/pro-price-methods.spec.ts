@@ -1,4 +1,9 @@
-import { proPriceFromPublic, proPriceOf, type ProPricePolicy } from "../accounting-rules.js";
+import {
+  proPriceFromPublic,
+  proPriceOf,
+  UNSET_PRO_PRICE_POLICY,
+  type ProPricePolicy,
+} from "../accounting-rules.js";
 
 /** Dix euros TTC public, remise de 10 %. */
 const TEN_EUROS = 1000;
@@ -88,5 +93,28 @@ describe("le prix professionnel — saisi (entered)", () => {
   it("ne produit rien sans saisie, ni sans taux", () => {
     expect(proPriceOf(TEN_EUROS, ENTERED, 5.5, null)).toBeNull();
     expect(proPriceOf(TEN_EUROS, ENTERED, null, 853_081)).toBeNull();
+  });
+});
+
+/** Lot S : le rapport n'est plus qu'une suggestion, son absence ne bloque rien. */
+describe("le prix professionnel — base sans règles (lot S)", () => {
+  /**
+   * Régression (BLOQUANT `vitruve`, 2026-10-16) : sans ligne de règles, la
+   * politique valait `null` et aucune saisie n'était servie.
+   */
+  it("une base vierge vaut « prix saisi » sans rapport, et sert la saisie", () => {
+    expect(UNSET_PRO_PRICE_POLICY).toEqual({ method: "entered", ratioBp: null });
+    expect(proPriceOf(TEN_EUROS, UNSET_PRO_PRICE_POLICY, 5.5, 853_081)).toEqual({
+      htMillicents: 853_081,
+      ttcCents: 900,
+    });
+    expect(proPriceOf(TEN_EUROS, UNSET_PRO_PRICE_POLICY, 5.5, null)).toBeNull();
+  });
+
+  it("n'invente aucun rapport sous ratio_ttc sans rapport posé", () => {
+    const unset: ProPricePolicy = { method: "ratio_ttc", ratioBp: null };
+    expect(proPriceOf(TEN_EUROS, unset, 5.5, null)).toBeNull();
+    // La saisie prime toujours.
+    expect(proPriceOf(TEN_EUROS, unset, 5.5, 853_081)?.htMillicents).toBe(853_081);
   });
 });

@@ -242,6 +242,17 @@ function sortVariants(
     // Sous `entered` (lot P), la saisie de la déclinaison — résolue par
     // l'instantané : une alignée porte celle du défaut. Sans saisie, le motif
     // le dit, pour qu'on aille ouvrir le tarif et pas l'écran des taux.
+    //
+    // 🔴 **Le taux d'abord** (lot S, contradiction de `vitruve`) : une
+    // déclinaison sans saisie ET sans taux `b2b` — typiquement une alignée dont
+    // le défaut n'a pas pu être pré-rempli faute de taux — partait sous
+    // `variant_sans_prix_pro`, qui envoyait saisir un prix alors que la cause
+    // est le taux. Rien ne change sous `ratio_ttc` : sans taux, la porte rendait
+    // déjà `null`, donc `variant_sans_taux`.
+    if (vatRatePercent === null) {
+      excluded.push({ sku: variant.sku, reason: "variant_sans_taux" });
+      continue;
+    }
     if (policy.method === "entered" && variant.proPriceMillicents === null) {
       excluded.push({ sku: variant.sku, reason: "variant_sans_prix_pro" });
       continue;
@@ -313,15 +324,13 @@ export function projectCatalog(
    */
   channelsByProduct: ReadonlyMap<string, SalesChannels>,
   /**
-   * Le **rapport prix pro / prix public**, en points de base (9 000 = 90 %).
+   * **La politique du prix pro** — méthode et rapport (suggéré).
    *
-   * Obligatoire, et sans valeur de repli. Un défaut à 10 000 affirmerait « le
-   * pro paie le prix public » — une phrase que personne n'a prononcée, et le
-   * référentiel a déjà retiré un défaut de ce genre (`DEFAULT_FOOD_VAT_RATE`).
-   * Une branche `null` ici serait pire encore : elle ne serait jamais prise sur
-   * une maison correctement réglée, donc jamais éprouvée, et elle facturerait
-   * le plein tarif le jour où elle le serait. C'est l'APPELANT qui refuse de
-   * pousser tant que rien n'est réglé — voir `B2bCatalogFeedProjection`.
+   * Obligatoire, et sans valeur de repli inventée : c'est l'APPELANT qui la
+   * résout (`AccountingRules.effectivePolicy` — prix saisi sans rapport quand
+   * rien n'est réglé, lot S) et qui refuse de pousser sous `ratio_ttc` sans
+   * rapport (`B2bCatalogFeedProjection`). Un rapport à 10 000 par défaut
+   * affirmerait « le pro paie le prix public », que personne n'a prononcé.
    */
   policy: ProPricePolicy,
   /**

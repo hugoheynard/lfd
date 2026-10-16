@@ -1,4 +1,4 @@
-import type { ProPricePolicy } from "@lfd/pim-contracts";
+import { UNSET_PRO_PRICE_POLICY, type ProPricePolicy } from "@lfd/pim-contracts";
 
 import { IncoProjector } from "../../../../allergens/domain/services/inco-projector.js";
 import {
@@ -79,7 +79,10 @@ describe("projectProductFact", () => {
       input({
         product: tarte({ audience: "both", variants: [bareVariant()] }),
         percents: {},
-        rules: { activeContextKeys: ["b2b", "takeaway"], policy: null },
+        rules: {
+          activeContextKeys: ["b2b", "takeaway"],
+          policy: { method: "ratio_ttc", ratioBp: null },
+        },
       }),
     );
 
@@ -221,5 +224,32 @@ describe("projectProductFact — sous la méthode entered", () => {
 
     expect(body.gaps).toEqual({});
     expect(body.variants[0]?.priceMillicents).toBe(2_712_345);
+  });
+});
+
+/**
+ * Régression (BLOQUANT `vitruve`, lot S, 2026-10-16) : sans ligne de règles,
+ * la politique valait `null` et les faits ne vendaient rien, saisies comprises.
+ */
+describe("projectProductFact — base sans règles comptables", () => {
+  const UNSET: CompletenessRules = { ...B2B_ONLY, policy: UNSET_PRO_PRICE_POLICY };
+
+  it("vend la saisie", () => {
+    const body = projectProductFact(
+      input({
+        rules: UNSET,
+        product: tarte({
+          status: "published",
+          variants: [{ ...SELLABLE_VARIANT, proPriceMillicents: 2_712_345 }],
+        }),
+      }),
+    );
+
+    expect(body.gaps).toEqual({});
+    expect(body.variants[0]?.priceMillicents).toBe(2_712_345);
+  });
+
+  it("nomme « prix pro » sans saisie, jamais « rapport pro »", () => {
+    expect(projectProductFact(input({ rules: UNSET })).gaps).toEqual({ "PAT-7-1": ["pro_price"] });
   });
 });

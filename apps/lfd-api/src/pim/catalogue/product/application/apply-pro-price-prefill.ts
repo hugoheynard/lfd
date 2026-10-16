@@ -22,8 +22,11 @@ export class ApplyProPricePrefillCommand {}
  * route relit l'aperçu, qui ne compte plus de lignes `to_prefill`.
  *
  * Le plan est **recalculé ici**, jamais reçu de l'écran : un aperçu vieux de
- * dix minutes ne décide pas de ce qu'on écrit. Un seul écart entre HT servi et
- * HT pré-rempli refuse TOUT, avant la première écriture.
+ * dix minutes ne décide pas de ce qu'on écrit. Sous `ratio_ttc`, un seul écart
+ * entre HT servi et HT pré-rempli refuse TOUT, avant la première écriture.
+ * Sous `entered` (lot S), il n'y a pas d'écart à contrôler : les déclinaisons
+ * écrites deviennent vendables aux pros, ce que l'aperçu a dit et que l'écran
+ * fait confirmer.
  *
  * L'écriture passe par l'agrégat (`Product.prefillProPrice`), qui n'écrit que
  * sur une déclinaison à tarif propre et sans saisie ; une fiche par
@@ -57,7 +60,7 @@ export class ApplyProPricePrefillHandler implements ICommandHandler<
         (row) => row.productId === product.id && row.status === "to_prefill",
       );
       if (rows.length > 0) {
-        await this.prefill(product, rows, plan.policy.ratioBp);
+        await this.prefill(product, rows, plan.ratioBp);
       }
     }
   }

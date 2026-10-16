@@ -67,15 +67,13 @@ model AccountingRules {
 
   /// **Comment** le rapport se transforme en prix professionnel.
   ///
-  /// Une seule valeur aujourd'hui — `ratio_ttc` — et la colonne existe quand
-  /// même. Elle avait été ajoutée pour une seconde méthode qui devait reproduire
-  /// le catalogue professionnel imprimé ; l'analyse des 89 prix de cette
-  /// plaquette a montré qu'elle n'applique aucune formule, et la méthode a été
-  /// retirée le jour même (`20260913140000_retrait_methode_plaquette`).
-  ///
-  /// Ce qui reste est la PLACE : si le commerce fournit un jour une vraie
-  /// formule, ce sera une valeur de plus ici et dans `PRO_PRICE_METHODS` — pas
-  /// une colonne, une migration, une route et un écran à refaire.
+  /// Deux valeurs (`PRO_PRICE_METHODS`) : `entered` — le prix pro HT saisi par
+  /// déclinaison, seule source (lots P et S de
+  /// `plan-catalogue-synchronise-par-audience.md`) — et `ratio_ttc`, le repli
+  /// d'origine par le rapport, gardé pour les bases qui n'ont pas basculé.
+  /// Une ligne neuve naît sur `entered` (`AccountingRules.open`) ; le défaut
+  /// SQL `ratio_ttc` ci-dessous n'est lu par personne — l'`upsert` écrit
+  /// toujours la méthode — et ne se change pas sans migration.
   ///
   /// ⚠️ Une contrainte non exprimable ici la garde :
   /// `accounting_rules_method_known` n'admet que les valeurs connues. Une

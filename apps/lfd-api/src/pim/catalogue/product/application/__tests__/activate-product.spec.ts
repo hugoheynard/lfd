@@ -146,16 +146,26 @@ describe("ActivateProductHandler — le prix pro saisi", () => {
   });
 
   /**
-   * Lot 2b : la règle de complétude est celle des faits du catalogue — sans
-   * rapport pro réglé, aucun prix pro ne se résout (`pro_price_rule`). Avant
-   * le lot, l'activation lisait `ratio_ttc` sans rapport.
+   * Régression (BLOQUANT `vitruve`, lot S, 2026-10-16) : sans règles
+   * comptables, « Activer » refusait (`pro_price_rule`) même une déclinaison
+   * qui portait son prix pro saisi. Une base sans règles vaut « prix saisi ».
    */
-  it("refuse tant que rien n'est réglé aux règles comptables", async () => {
+  it("active sans règles comptables une fiche dont la déclinaison porte son prix pro", async () => {
+    const products = new OneProduct(
+      tarte({ variants: [{ ...SELLABLE_VARIANT, proPriceMillicents: 2_730_000 }] }),
+    );
+
+    await activating(products, { accounting: new FixedAccountingRules(null) });
+
+    expect(products.stored?.status).toBe("published");
+  });
+
+  it("refuse sans règles comptables une fiche sans prix pro, en nommant le prix pro", async () => {
     const products = new OneProduct(tarte());
 
     await expect(
       activating(products, { accounting: new FixedAccountingRules(null) }),
-    ).rejects.toThrow(/Règles comptables/);
+    ).rejects.toThrow(/PAT-7-1.*prix pro HT/);
   });
 });
 

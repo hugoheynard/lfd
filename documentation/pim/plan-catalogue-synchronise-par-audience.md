@@ -624,9 +624,38 @@ reçu ; les mercuriales et paliers s'appliquent par-dessus comme aujourd'hui.
 
 ### Lot S — le prix pro saisi seul, le rapport devient une suggestion (décidé le 2026-10-16)
 
-> 📐 **Doc-first, rien n'est bâti** (rédigé le 2026-10-16). Touche l'argent :
-> contredit par `vitruve` le même jour ; ses corrections, en fin de section,
-> priment sur la table.
+> ✅ **Bâti le 2026-10-16, non commité à l'écriture de ce bandeau**, avec la
+> contradiction de `vitruve` (qui prime sur la table). Rédigé le même jour ;
+> touche l'argent. Les cinq « non vérifiés » ont été ouverts : l'alignée
+> résout bien son prix pro depuis le défaut (`product.ts`, `resolvedSnapshot`) ;
+> la source des révisions porte `proPriceMillicents` ; `prisma-catalog.reader.ts`
+> ne repasse plus par `htMillicentsOf` pour le prix pro (le HT reçu est servi
+> tel quel) ; `CatalogReemission.everything()` journalise et liste une fiche en
+> échec sans lever (le geste reste validé) ; le runbook n'avait qu'une ligne
+> « pré-remplir, si voulu » — la procédure est ajoutée (« Passer au prix pro
+> saisi (lot S) »). Écarts au texte, à relire :
+>
+> - **`UNSET_PRO_PRICE_POLICY`** (`@lfd/pim-contracts`) et
+>   `AccountingRules.effectivePolicy(null)` portent « base sans règles =
+>   `entered` sans rapport » ; `CompletenessRules.policy` n'est plus nullable ;
+> - **le premier rapport réémet**, même sous `entered` (S6 limité à « la ligne
+>   existait ») ; `choose-pro-price-method` lit toujours hors transaction ;
+> - **le pré-remplissage refuse encore sans rapport posé**
+>   (`AccountingRulesNotSetError`, message réécrit) : sous `entered` sans
+>   rapport, rien à suggérer ;
+> - **la ligne neuve naît sur `entered`** : les décors e2e qui vendent au
+>   rapport (`pim-sellable.ts`, `catalog-facts-scene.ts`, un décor de
+>   `pim-catalog-revision`) et le semis `prisma/seed-pim/registry.ts` posent
+>   `ratio_ttc` explicitement après le rapport — décision à confirmer (§ PLAN
+>   du rapport de bâtisse) ;
+> - **le motif du push** : sans taux `b2b`, `variant_sans_taux` passe AVANT
+>   `variant_sans_prix_pro`, pour toute déclinaison (pas seulement les
+>   alignées) — inchangé sous `ratio_ttc` ;
+> - **l'aperçu** gagne `followsSku` et `alignedCause` par ligne ; sous
+>   `entered`, l'écriture se confirme à l'écran (pas côté API) ;
+> - le contrôle au millicentime ne peut, par construction, jamais trouver
+>   d'écart sous `ratio_ttc` (même appel à la porte) : `ProPricePrefillMismatchError`
+>   reste une garde que plus aucun test ne déclenche.
 
 > « Le rapport pro public devrait devenir une suggestion plutôt qu'un
 > problème, je veux qu'on valorise en premier l'écriture directe du prix

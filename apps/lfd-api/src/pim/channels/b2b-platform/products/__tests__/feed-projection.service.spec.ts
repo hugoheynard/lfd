@@ -2,7 +2,6 @@ import { OrderTimeLimitRepository } from "../../../../order-time-limitation/doma
 import { Test } from "@nestjs/testing";
 
 import { AccountingRules } from "../../../../accounting-rules/domain/entities/accounting-rules.js";
-import { ProPriceRatioNotSetError } from "../../../../accounting-rules/domain/errors/accounting-rules-errors.js";
 import { AccountingRulesRepository } from "../../../../accounting-rules/domain/ports/accounting-rules.repository.js";
 import {
   AllergenStore,
@@ -127,15 +126,21 @@ async function build(options: {
   return moduleRef.get(B2bCatalogFeedProjection);
 }
 
-describe("B2bCatalogFeedProjection — le rapport pro est une précondition", () => {
-  it("refuse de projeter tant que le rapport n'est pas réglé", async () => {
+describe("B2bCatalogFeedProjection — le rapport pro n'est plus une précondition (lot S)", () => {
+  /**
+   * Régression (BLOQUANT `vitruve`, 2026-10-16) : sans ligne de règles, le push
+   * refusait (`ProPriceRatioNotSetError`) et aucune saisie ne partait. Une base
+   * sans règles vaut désormais « prix saisi » sans rapport.
+   */
+  it("projette sans règles comptables : la base vaut « prix saisi »", async () => {
     const service = await build({
       publishedIds: ["prd_1"],
       ratioBp: null,
-      catalogue: CATALOGUE_NEVER_READ,
+      catalogue: EMPTY_CATALOGUE,
     });
 
-    await expect(service.preview(AT)).rejects.toBeInstanceOf(ProPriceRatioNotSetError);
+    const preview = await service.preview(AT);
+    expect(preview.candidates).toBe(1);
   });
 
   /**

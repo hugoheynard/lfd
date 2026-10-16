@@ -101,8 +101,11 @@ describe("activationGaps — au moins une déclinaison complète (lot 2b)", () =
     expect(isActivatable(gaps)).toBe(true);
   });
 
-  it("refuse tant que le rapport pro n'est pas réglé", () => {
-    const gaps = activationGaps([variant({})], ALL, { ...RULES, policy: null });
+  it("refuse sous ratio_ttc tant que le rapport pro n'est pas réglé", () => {
+    const gaps = activationGaps([variant({})], ALL, {
+      ...RULES,
+      policy: { method: "ratio_ttc", ratioBp: null },
+    });
 
     expect(gaps.byVariant).toEqual({ "PAT-1": ["pro_price_rule"] });
   });

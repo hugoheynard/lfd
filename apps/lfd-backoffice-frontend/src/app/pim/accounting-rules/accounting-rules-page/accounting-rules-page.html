@@ -1,9 +1,9 @@
 <fold-page-layout icon="tax" title="Règles comptables">
   <p description>
-    Ce que la maison décide <strong>une fois</strong>, pour tout le catalogue. Une seule règle
-    aujourd'hui&nbsp;: la <strong>remise professionnelle</strong> — l'écart entre le prix public TTC
-    et le prix professionnel TTC. Les <strong>taux de TVA</strong>, eux, sont imposés de l'extérieur
-    et vivent dans leur propre écran.
+    Ce que la maison décide <strong>une fois</strong>, pour tout le catalogue. Le prix pro
+    <strong>HT</strong> se <strong>saisit</strong> sur chaque déclinaison, sous le prix
+    public&nbsp;; le <strong>rapport suggéré</strong> ci-dessous ne fait que le proposer. Les
+    <strong>taux de TVA</strong>, eux, sont imposés de l'extérieur et vivent dans leur propre écran.
   </p>
 
   @if (loadError() !== null) {
@@ -16,81 +16,37 @@
       <button foldButton emphasis="outline" (click)="retry()">Réessayer</button>
     </fold-callout>
   } @else {
+    @if (savedMethod() === 'ratio_ttc') {
+      <!-- Lot S : la base est encore sur l'ancien repli. L'encart dit ce qui
+           reste à faire, et disparaît une fois en « prix saisi » — le retour
+           ne s'offre plus à l'écran (la route reste : le code n'est pas
+           effacé). -->
+      <fold-callout variant="warning" class="switch">
+        <strong>Le prix pro est encore déduit du prix public.</strong> Tant que c'est le cas, une
+        déclinaison sans prix pro saisi est vendue aux professionnels au prix public moins la
+        remise. Il reste deux gestes&nbsp;: <strong>pré-remplir</strong> le prix pro (plus bas),
+        puis <strong>passer au prix saisi</strong>. Après le pré-remplissage, monter un prix public
+        ne monte plus le prix pro.
+        @if (canWrite()) {
+          <button foldButton emphasis="outline" [disabled]="busy()" (click)="switchToEntered()">
+            Passer au prix saisi
+          </button>
+        }
+      </fold-callout>
+    }
+
     <section class="rule">
       <header class="rule-head">
-        <h2>Remise professionnelle</h2>
+        <h2>Rapport suggéré</h2>
         <span class="badge" [class.badge-unset]="savedRatioBp() === null">{{ savedLabel() }}</span>
       </header>
 
       <p class="rule-say">
-        Le professionnel paie ce pourcentage <strong>de moins</strong> que le particulier, sur le
-        prix <strong>TTC</strong>. La remise s'applique donc <em>avant</em> toute TVA&nbsp;: c'est
-        le prix affiché qui est comparé, pas le prix hors taxe — dont le montant dépend du taux, et
-        change d'un contexte de vente à l'autre.
+        Il <strong>ne change aucun prix vendu</strong>&nbsp;: il propose. Sur chaque fiche, sous le
+        prix pro HT, il suggère le prix public TTC moins ce pourcentage, ramené au hors taxe du taux
+        B2B — et «&nbsp;Reprendre&nbsp;» le recopie dans le champ. Le pré-remplissage, plus bas,
+        fait la même chose pour tout le catalogue.
       </p>
-
-      <!-- LE SÉLECTEUR, avec une seule méthode — et c'est délibéré. Une
-           seconde a existé le temps d'une journée : elle devait reproduire le
-           catalogue professionnel imprimé, et l'analyse des 89 prix de cette
-           plaquette a montré qu'elle n'applique aucune formule. Ce qui reste
-           est la PLACE, pour le jour où le commerce en fournit une vraie. -->
-      <fieldset class="methods">
-        <legend>Méthode de calcul appliquée</legend>
-
-        <label class="method" [class.is-chosen]="draftMethod() === 'ratio_ttc'">
-          <input
-            type="radio"
-            name="pro-price-method"
-            [checked]="draftMethod() === 'ratio_ttc'"
-            (change)="chooseMethod('ratio_ttc')"
-          />
-          <span class="method-body">
-            <strong>Ratio TTC pré-remise</strong>
-            <span class="method-say">
-              La remise porte sur le prix <strong>TTC</strong>, et le hors taxe se déduit ensuite du
-              taux réel de l'article.
-            </span>
-          </span>
-        </label>
-
-        <!-- Lot P : le prix pro HT se SAISIT sur chaque déclinaison. La
-             remise ci-dessous ne sert plus alors qu'au pré-remplissage. -->
-        <label class="method" [class.is-chosen]="draftMethod() === 'entered'">
-          <input
-            type="radio"
-            name="pro-price-method"
-            [checked]="draftMethod() === 'entered'"
-            (change)="chooseMethod('entered')"
-          />
-          <span class="method-body">
-            <strong>Prix saisi</strong>
-            <span class="method-say">
-              Le prix pro <strong>HT</strong> est saisi sur chaque déclinaison, sous le prix public.
-              Une déclinaison sans prix pro saisi n'est plus vendue aux professionnels&nbsp;:
-              pré-remplir d'abord, ci-dessous.
-            </span>
-          </span>
-        </label>
-
-        @if (canWrite()) {
-          <button
-            foldButton
-            emphasis="outline"
-            [disabled]="!canChooseMethod()"
-            (click)="submitMethod()"
-          >
-            Appliquer la méthode
-          </button>
-        }
-
-        <fold-callout appearance="inset" variant="info">
-          <strong>La plaquette commerciale n'applique aucune règle.</strong> Ses 89 prix
-          professionnels ont été posés à la main, article par article&nbsp;: au même prix public de
-          6,00&nbsp;€, on y trouve des prix pro de 3,20&nbsp;€ à 4,80&nbsp;€, et la meilleure
-          formule unique ne retrouve que 21&nbsp;% des lignes. Aucune seconde méthode ne peut donc
-          la reproduire. Le jour où une vraie formule est fournie, elle s'ajoutera ici.
-        </fold-callout>
-      </fieldset>
 
       @if (canWrite()) {
         <div class="rule-form">
@@ -171,13 +127,13 @@
             [disabled]="!canSubmit()"
             (click)="submit()"
           >
-            Enregistrer
+            Enregistrer le rapport suggéré
           </button>
         </div>
       } @else {
         <fold-callout appearance="inset" variant="info">
-          Poser la remise professionnelle demande le droit <strong>pim_tax:write</strong>, celui-là
-          même qui ouvre les taux de TVA — c'est une décision comptable.
+          Poser le rapport suggéré demande le droit <strong>pim_tax:write</strong>, celui-là même
+          qui ouvre les taux de TVA — c'est une décision comptable.
         </fold-callout>
       }
 
@@ -191,12 +147,12 @@
         <app-pro-price-prefill />
       </section>
 
-      <fold-callout appearance="inset" variant="warning">
-        <strong>Ces réglages tarifent pour de vrai.</strong> Le prochain envoi vers la boutique
-        professionnelle partira avec cette remise. Elle pose le prix de <em>base</em> du
-        catalogue&nbsp;: les prix professionnels négociés article par article, eux, la recouvrent là
-        où ils existent.
-      </fold-callout>
+      @if (savedMethod() === 'ratio_ttc') {
+        <fold-callout appearance="inset" variant="warning">
+          <strong>Ce rapport tarife encore pour de vrai.</strong> Tant que la base n'est pas passée
+          au prix saisi, il fixe le prix pro de chaque déclinaison qui n'en a pas de saisi.
+        </fold-callout>
+      }
     </section>
   }
 </fold-page-layout>

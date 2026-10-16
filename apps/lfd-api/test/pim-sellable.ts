@@ -41,8 +41,22 @@ async function foodRate(staff: Staff): Promise<string> {
   ).id;
 }
 
+/** Ce qu'une suite peut retenir du décor. */
+interface ActivatableOptions {
+  /**
+   * `false` : ne pose aucune règle comptable — la base reste sans ligne, donc
+   * en « prix saisi » sans rapport (lot S). Par défaut, le rapport et le repli
+   * `ratio_ttc` sont posés, et le défaut se vend au rapport.
+   */
+  readonly withRules?: boolean;
+}
+
 /** La famille vend aux pros, taxée dans chaque contexte en service ; le défaut a un prix. */
-export async function makeActivatable(staff: Staff, productId: string): Promise<void> {
+export async function makeActivatable(
+  staff: Staff,
+  productId: string,
+  options: ActivatableOptions = {},
+): Promise<void> {
   const detail = jsonBody<Detail>(await staff().get(`${PRODUCTS}/${productId}`).expect(200));
   const category = `${CATEGORIES}/${detail.categoryId}`;
   const rateId = await foodRate(staff);
@@ -64,14 +78,28 @@ export async function makeActivatable(staff: Staff, productId: string): Promise<
     .put(`${category}/vat`)
     .send({ vatByContext: { b2b: rateId, takeaway: rateId, eatIn: rateId } })
     .expect(200);
-  await staff()
-    .put("/pim/accounting-rules/pro-price-ratio")
-    .send({ ratioBp: PRO_RATIO_BP })
-    .expect(200);
+  if (options.withRules !== false) {
+    await ratioRules(staff);
+  }
   const variant = detail.variants.find((entry) => entry.isDefault);
   await staff()
     .put(`${PRODUCTS}/${productId}/variants/${variant?.id ?? ""}/pricing`)
     .send({ priceCents: PRICE_CENTS, weightGrams: null })
+    .expect(200);
+}
+
+/**
+ * Le rapport, et le repli `ratio_ttc` posé explicitement : depuis le lot S,
+ * une ligne neuve naît sur « prix saisi », et ce décor vend au RAPPORT.
+ */
+async function ratioRules(staff: Staff): Promise<void> {
+  await staff()
+    .put("/pim/accounting-rules/pro-price-ratio")
+    .send({ ratioBp: PRO_RATIO_BP })
+    .expect(200);
+  await staff()
+    .put("/pim/accounting-rules/pro-price-method")
+    .send({ method: "ratio_ttc" })
     .expect(200);
 }
 

@@ -121,3 +121,13 @@
   opacity: 0.55;
   pointer-events: none;
 }
+
+// La suggestion du rapport (lot S) : une ligne discrète sous le prix pro HT.
+.pro-suggestion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  color: var(--fold-color-text-muted);
+}

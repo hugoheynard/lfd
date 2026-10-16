@@ -4,7 +4,9 @@ import {
   observedGapLabel,
   proPriceMillicentsOf,
   proPricePayloadOf,
+  proPriceSuggestionOf,
   proPriceTextOf,
+  ratioLabelOf,
 } from '../pro-price-entry';
 
 describe('la saisie du prix pro HT', () => {
@@ -49,5 +51,30 @@ describe('l’écart constaté', () => {
     expect(observedGapLabel(1_000, 1_020)).toBe('+2 %');
     expect(observedGapLabel(1_000, 1_000)).toBe('aucun écart');
     expect(observedGapLabel(0, 10)).toBeNull();
+  });
+});
+
+/** Lot S (S3) : le rapport suggère, par la porte — le même calcul que le pré-remplissage. */
+describe('la suggestion de prix pro', () => {
+  it('donne le HT du rapport au taux b2b, au millicentime', () => {
+    // 10,00 € TTC × 90 % = 9,00 € TTC ÷ 1,055 = 8,53081 € HT.
+    expect(proPriceSuggestionOf(1_000, 9_000, 5.5)).toEqual({
+      kind: 'ready',
+      htMillicents: 853_081,
+      ratioLabel: '90 %',
+    });
+  });
+
+  it('dit pourquoi sans taux b2b', () => {
+    expect(proPriceSuggestionOf(1_000, 9_000, null)).toEqual({ kind: 'no_vat' });
+  });
+
+  it('ne suggère rien sans rapport posé ni sans prix public', () => {
+    expect(proPriceSuggestionOf(1_000, null, 5.5)).toEqual({ kind: 'none' });
+    expect(proPriceSuggestionOf(null, 9_000, 5.5)).toEqual({ kind: 'none' });
+  });
+
+  it('écrit le rapport à la française', () => {
+    expect(ratioLabelOf(8_750)).toBe('87,5 %');
   });
 });

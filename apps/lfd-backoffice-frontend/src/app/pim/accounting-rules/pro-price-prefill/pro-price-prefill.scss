@@ -19,3 +19,9 @@ fold-data-table {
   color: var(--fold-color-text-faded);
   font-variant-numeric: tabular-nums;
 }
+
+.actions {
+  display: flex;
+  gap: var(--fold-space-sm);
+  margin-block-start: var(--fold-space-sm);
+}

@@ -31,11 +31,25 @@ const COLUMNS: readonly FoldTableColumn[] = [
   { key: 'prefilled', label: 'HT pré-rempli', numeric: true, width: '8rem' },
 ];
 
+/**
+ * La vraie cause d'une alignée qui restera sans prix pro (lot S) : son défaut
+ * ne peut pas être pré-rempli, et la phrase dit pourquoi.
+ */
+const ALIGNED_CAUSE_LABELS: Readonly<Record<'no_price' | 'no_vat_b2b', string>> = {
+  no_price: 'sans prix public',
+  no_vat_b2b: 'sans taux B2B',
+};
+
 /** Une ligne affichée — les montants déjà mis en forme. */
 export interface PrefillRow {
   readonly key: string;
   readonly product: string;
   readonly sku: string;
+  /**
+   * Le sort, en mots. Une alignée se dit sous son défaut, avec la vraie cause
+   * quand le défaut ne recevra pas de prix pro : « suit PAT-7-1 — sans taux
+   * B2B ».
+   */
   readonly status: string;
   readonly publicTtc: string;
   readonly served: string;
@@ -48,12 +62,51 @@ function htLabel(millicents: number | null): string {
   return millicents === null ? '—' : `${proPriceTextOf(millicents)} €`;
 }
 
+function statusLabel(row: ProPricePrefillRowView): string {
+  if (row.status !== 'aligned' || row.followsSku === null) {
+    return PREFILL_STATUS_LABELS[row.status];
+  }
+  const follows = `suit ${row.followsSku}`;
+  return row.alignedCause === null
+    ? follows
+    : `${follows} — ${ALIGNED_CAUSE_LABELS[row.alignedCause]}`;
+}
+
+/**
+ * L'ordre de l'aperçu : chaque alignée SOUS le défaut qu'elle suit, les autres
+ * dans l'ordre du serveur.
+ */
+export function groupedUnderDefaults(
+  rows: readonly ProPricePrefillRowView[],
+): ProPricePrefillRowView[] {
+  const followers = (row: ProPricePrefillRowView) =>
+    rows.filter(
+      (other) =>
+        other.status === 'aligned' &&
+        other.productId === row.productId &&
+        other.followsSku === row.sku,
+    );
+  const placed = new Set<string>();
+  const ordered: ProPricePrefillRowView[] = [];
+  for (const row of rows) {
+    if (placed.has(row.variantId) || (row.status === 'aligned' && row.followsSku !== null)) {
+      continue;
+    }
+    for (const entry of [row, ...followers(row)]) {
+      placed.add(entry.variantId);
+      ordered.push(entry);
+    }
+  }
+  // Une alignée dont le défaut n'est pas dans la liste n'est jamais perdue.
+  return [...ordered, ...rows.filter((row) => !placed.has(row.variantId))];
+}
+
 function toRow(row: ProPricePrefillRowView): PrefillRow {
   return {
     key: row.variantId,
     product: row.productName,
     sku: row.sku,
-    status: PREFILL_STATUS_LABELS[row.status],
+    status: statusLabel(row),
     publicTtc: row.publicTtcCents === null ? '—' : formatCents(row.publicTtcCents),
     served: htLabel(row.servedHtMillicents),
     prefilled: htLabel(row.prefilledHtMillicents),
@@ -62,13 +115,20 @@ function toRow(row: ProPricePrefillRowView): PrefillRow {
 }
 
 /**
- * **Pré-remplir le prix pro HT depuis la remise** (lot P, P5 de
- * `plan-catalogue-synchronise-par-audience.md`) — en deux temps.
+ * **Pré-remplir le prix pro HT depuis le rapport suggéré** (lot P, P5 ; lot S
+ * de `plan-catalogue-synchronise-par-audience.md`) — en deux temps.
  *
- * L'aperçu montre, par déclinaison, le HT que le fil sert AUJOURD'HUI et celui
- * que l'écriture poserait ; au moindre écart, le bouton s'éteint et un encadré
- * le dit. L'écriture ne touche que les déclinaisons à tarif propre et sans
- * saisie. Basculer la méthode sur « Prix saisi » reste un geste à part.
+ * L'aperçu dit **deux vérités** selon la méthode en place :
+ *
+ * - sous `ratio_ttc`, « rien de servi ne change » : par déclinaison, le HT que
+ *   le fil sert AUJOURD'HUI et celui que l'écriture poserait ; au moindre
+ *   écart, le bouton s'éteint et un encadré le dit ;
+ * - sous `entered`, « ces déclinaisons deviendront vendables aux pros à ce
+ *   prix » : rien n'est servi aujourd'hui, et l'écriture se CONFIRME.
+ *
+ * Dans les deux cas il dit la phrase du vrai basculement : une fois écrit, le
+ * prix public ne bouge plus le prix pro. Les alignées sont rangées sous leur
+ * défaut, avec la vraie cause quand il ne sera pas pré-rempli.
  */
 @Component({
   selector: 'app-pro-price-prefill',
@@ -97,7 +157,14 @@ export class ProPricePrefill {
   protected readonly rowKey = (row: PrefillRow): string => row.key;
   protected readonly rowTone = (row: PrefillRow): 'alert' | null => (row.mismatch ? 'alert' : null);
 
-  protected readonly rows = computed(() => this.preview()?.rows.map(toRow) ?? []);
+  protected readonly rows = computed(() =>
+    groupedUnderDefaults(this.preview()?.rows ?? []).map(toRow),
+  );
+
+  /** Sous « prix saisi », l'écriture met en vente : elle se confirme d'abord. */
+  protected readonly confirming = signal(false);
+
+  protected readonly entered = computed(() => this.preview()?.method === 'entered');
 
   protected readonly canApply = computed(() => {
     const view = this.preview();
@@ -121,7 +188,12 @@ export class ProPricePrefill {
     }
   }
 
+  /** Sous `entered`, le premier clic demande confirmation ; le second écrit. */
   protected async apply(): Promise<void> {
+    if (this.entered() && !this.confirming()) {
+      this.confirming.set(true);
+      return;
+    }
     const count = this.preview()?.toPrefill ?? 0;
     this.busy.set(true);
     try {
@@ -130,7 +202,12 @@ export class ProPricePrefill {
     } catch (caught) {
       this.notify.refused(caught, 'Pré-remplissage refusé.');
     } finally {
+      this.confirming.set(false);
       this.busy.set(false);
     }
+  }
+
+  protected cancel(): void {
+    this.confirming.set(false);
   }
 }

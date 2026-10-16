@@ -506,10 +506,10 @@ describe("Diff entre deux ancres", () => {
     // La MÉTHODE bouge avec lui, et c'est juste : la première ancre est prise
     // avant qu'aucune règle n'existe — elle ne porte donc pas de méthode, et le
     // tiret dit « la question ne se posait pas ». Poser le rapport fait naître
-    // l'agrégat sur `ratio_ttc`, le calcul juste.
+    // l'agrégat sur `entered` depuis le lot S — ce que la base valait déjà.
     expect(diff.header).toEqual([
       { field: "proRatioBp", before: "—", after: "8800" },
-      { field: "proPriceMethod", before: "—", after: "ratio_ttc" },
+      { field: "proPriceMethod", before: "—", after: "entered" },
     ]);
     expect(diff.changed).toEqual([]);
   });
@@ -699,8 +699,13 @@ async function aDeliverableProduct(): Promise<{ id: string; variantId: string; s
     .send({ allergens: [] })
     .expect(200);
   await staff().put(`/pim/channels/b2b/products/${id}`).send({ published: true }).expect(200);
-  // Sans rapport professionnel, le push refuse plutôt que d'envoyer le plein tarif.
+  // Ce décor vend au RAPPORT (le repli d'origine) ; depuis le lot S, une ligne
+  // neuve naît sur « prix saisi », d'où la méthode posée explicitement.
   await staff().put("/pim/accounting-rules/pro-price-ratio").send({ ratioBp: 9_000 }).expect(200);
+  await staff()
+    .put("/pim/accounting-rules/pro-price-method")
+    .send({ method: "ratio_ttc" })
+    .expect(200);
 
   const detail = jsonBody<{ variants: { sku: string; isDefault: boolean }[] }>(
     await staff().get(`${PRODUCTS}/${id}`).expect(200),

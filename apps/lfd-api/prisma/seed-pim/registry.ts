@@ -5,6 +5,7 @@ import { SetCategoryChannelsCommand } from "../../src/pim/catalogue/category/app
 import { SetCategoryVatCommand } from "../../src/pim/catalogue/category/application/set-category-vat.js";
 import { OpenPointOfSaleCommand } from "../../src/pim/points-of-sale/application/open-point-of-sale.js";
 import { CreateSalesContextCommand } from "../../src/pim/sales-contexts/application/create-sales-context.js";
+import { ChooseProPriceMethodCommand } from "../../src/pim/accounting-rules/application/choose-pro-price-method.js";
 import { SetProPriceRatioCommand } from "../../src/pim/accounting-rules/application/set-pro-price-ratio.js";
 import { CreateVatRateCommand } from "../../src/pim/vat-rates/application/create-vat-rate.js";
 import type { SalesChannels } from "../../src/pim/catalogue/shared/domain/value-objects/sales-channels.js";
@@ -61,6 +62,12 @@ export async function seedRegistry(
   // tout le reste ne produit rien de visible côté commerce.
   await bus.execute<SetProPriceRatioCommand, void>(
     new SetProPriceRatioCommand(corpus.proPriceRatioBp),
+  );
+  // Lot S (2026-10-16) : une ligne neuve naît sur « prix saisi ». Le corpus ne
+  // saisit aucun prix pro ; sans ce repli, rien ne se vendrait aux pros après
+  // un semis. Le semis garde donc le calcul d'origine, explicitement.
+  await bus.execute<ChooseProPriceMethodCommand, void>(
+    new ChooseProPriceMethodCommand("ratio_ttc"),
   );
   const contextsCreated = await seedContexts(bus, prisma, corpus);
   const pointsCreated = await seedPointsOfSale(bus, prisma, corpus);

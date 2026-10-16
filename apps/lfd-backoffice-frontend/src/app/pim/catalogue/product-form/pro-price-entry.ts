@@ -8,6 +8,7 @@
  * même règle que lui — chiffres, une virgule ou un point, au plus cinq
  * décimales — pour ne jamais montrer un prix que le serveur refuserait.
  */
+import { proPriceOf } from '@lfd/pim-contracts';
 
 /** 10⁻⁵ € : l'unité du fil. */
 export const PRO_PRICE_DECIMALS = 5;
@@ -64,4 +65,45 @@ export function observedGapLabel(publicTtcCents: number, proTtcCents: number): s
   const sign = tenthsOfPercent < 0 ? '−' : '+';
   const magnitude = String(Math.abs(tenthsOfPercent) / 10).replace('.', ',');
   return `${sign}${magnitude} %`;
+}
+
+/**
+ * **La suggestion de prix pro** (lot S, S3) — ce que le rapport suggéré
+ * donnerait à cette déclinaison.
+ *
+ * - `ready` : le HT que « Reprendre » mettrait dans le champ ;
+ * - `no_vat` : le rapport est posé, mais la fiche n'a pas de taux `b2b` — le
+ *   hors taxe ne se déduit pas sans lui, et l'écran le dit ;
+ * - `none` : pas de rapport posé ou pas de prix public — rien à suggérer, et
+ *   rien à dire (sous « prix saisi », un rapport absent ne coûte que ça).
+ */
+export type ProPriceSuggestion =
+  | { readonly kind: 'ready'; readonly htMillicents: number; readonly ratioLabel: string }
+  | { readonly kind: 'no_vat' }
+  | { readonly kind: 'none' };
+
+/**
+ * Calcule la suggestion **par la porte** (`proPriceOf` sous `ratio_ttc`, sans
+ * saisie) — exactement l'appel du pré-remplissage (`pro-price-prefill.ts`
+ * côté serveur), pour que la suggestion et le pré-remplissage ne divergent
+ * jamais d'un millicentime.
+ */
+export function proPriceSuggestionOf(
+  publicTtcCents: number | null,
+  ratioBp: number | null,
+  b2bPercent: number | null,
+): ProPriceSuggestion {
+  if (publicTtcCents === null || ratioBp === null) {
+    return { kind: 'none' };
+  }
+  const price = proPriceOf(publicTtcCents, { method: 'ratio_ttc', ratioBp }, b2bPercent, null);
+  if (price === null) {
+    return { kind: 'no_vat' };
+  }
+  return { kind: 'ready', htMillicents: price.htMillicents, ratioLabel: ratioLabelOf(ratioBp) };
+}
+
+/** `9000` → « 90 % », `8750` → « 87,5 % » : le rapport, pas la remise. */
+export function ratioLabelOf(ratioBp: number): string {
+  return `${String(ratioBp / 100).replace('.', ',')} %`;
 }

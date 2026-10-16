@@ -29,13 +29,21 @@ export class SetProPriceRatioCommand {
  * exposerait à l'écran un état de la base — la ligne existe-t-elle — dont
  * personne n'a à se soucier.
  *
- * ⚠️ **Ce rapport est lu, et son absence bloque tout le canal B2B.** La
- * projection du miroir lève `ProPriceRatioNotSetError` avant de tarifer la
- * moindre référence : sans ce réglage, un catalogue publié, vendu aux pros et
- * tarifé n'envoie rien du tout, et l'écran de poussée n'affiche pas un miroir
- * vide mais un refus. Cette phrase disait le contraire — « rien ne lit encore
- * ce rapport », vrai jusqu'au raccordement de la tranche 4 — et elle y a
- * survécu ; c'est le seed du référentiel qui l'a démentie, en butant dessus.
+ * **Depuis le lot S (2026-10-16), le rapport est une SUGGESTION.** Sous
+ * `entered`, il ne fixe aucun prix vendu : il nourrit la suggestion de la
+ * fiche et le pré-remplissage. Sous `ratio_ttc`, il reste le repli des
+ * déclinaisons sans saisie. Son absence ne bloque plus rien : une base sans
+ * ligne vaut `entered` (`AccountingRules.effectivePolicy`).
+ *
+ * ## Quand il réémet le catalogue
+ *
+ * Toujours, SAUF quand la ligne existait déjà et que la méthode est `entered`
+ * (S6 et sa contradiction par `vitruve`) : alors aucun prix servi ne bouge.
+ * La méthode est lue DANS la transaction, avec l'écriture : un « Passer au prix
+ * saisi » concurrent réémet de toute façon de son côté
+ * (`choose-pro-price-method.ts`), ce qui couvre la course. Le premier rapport
+ * posé réémet, même sous `entered` : il fait exister la ligne, et c'est le cas
+ * que la contradiction a demandé de ne pas trancher à la place du code.
  */
 @CommandHandler(SetProPriceRatioCommand)
 export class SetProPriceRatioHandler implements ICommandHandler<SetProPriceRatioCommand, void> {
@@ -53,23 +61,18 @@ export class SetProPriceRatioHandler implements ICommandHandler<SetProPriceRatio
    * précisément ce qu'on voudra relire.
    */
   async execute(command: SetProPriceRatioCommand): Promise<void> {
-    const record = await this.rules.read();
-    const before = record?.rules.snapshot().proPriceRatioBp ?? null;
-
-    let rules: AccountingRules;
-    if (record === null) {
-      rules = AccountingRules.open(command.basisPoints);
-    } else {
-      rules = record.rules;
+    const reemit = await this.uow.run(async () => {
+      const record = await this.rules.read();
+      const before = record?.rules.snapshot().proPriceRatioBp ?? null;
+      const rules = record?.rules ?? AccountingRules.open(command.basisPoints);
       rules.setProPriceRatio(command.basisPoints);
-    }
-    const after = rules.snapshot().proPriceRatioBp;
-
-    await this.uow.run(async () => {
-      const ticket = await this.journalize(before, after);
+      const ticket = await this.journalize(before, rules.snapshot().proPriceRatioBp);
       await this.rules.save(rules, ticket);
+      return record === null || rules.proPriceMethod.method !== "entered";
     });
-    await this.reemission.everything();
+    if (reemit) {
+      await this.reemission.everything();
+    }
   }
 
   /**

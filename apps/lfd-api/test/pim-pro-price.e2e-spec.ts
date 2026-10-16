@@ -140,9 +140,14 @@ describe("la saisie du prix pro HT", () => {
 });
 
 describe("la méthode « Prix saisi »", () => {
-  it("se choisit, et la bascule est au journal", async () => {
+  /** Lot S : une ligne neuve naît sur « prix saisi » ; « Passer au prix saisi » part d'une base en ratio. */
+  it("naît sur « prix saisi », et la bascule depuis ratio_ttc est au journal", async () => {
     await staff().put(`${RULES}/pro-price-ratio`).send({ ratioBp: RATIO_BP }).expect(200);
+    expect(jsonBody<{ method: string }>(await staff().get(RULES).expect(200)).method).toBe(
+      "entered",
+    );
 
+    await chooseMethod("ratio_ttc");
     await chooseMethod("entered");
 
     const view = jsonBody<{ method: string }>(await staff().get(RULES).expect(200));
@@ -152,9 +157,35 @@ describe("la méthode « Prix saisi »", () => {
       where: { type: "accounting_rules.method_changed" },
       select: { payload: true },
     });
-    expect(facts.map((fact) => fact.payload)).toEqual([
-      expect.objectContaining({ from: "ratio_ttc", to: "entered" }),
-    ]);
+    expect(facts).toHaveLength(2);
+    expect(facts.map((fact) => fact.payload)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ from: "entered", to: "ratio_ttc" }),
+        expect.objectContaining({ from: "ratio_ttc", to: "entered" }),
+      ]),
+    );
+  });
+
+  /**
+   * Régression (BLOQUANT `vitruve`, lot S, 2026-10-16) : sans aucune règle
+   * comptable, « Activer » refusait (`pro_price_rule`) même une déclinaison qui
+   * portait son prix pro saisi. Une base sans règles vaut « prix saisi ».
+   */
+  it("active sans règles comptables une fiche dont le prix pro est saisi", async () => {
+    const id = await aProduct("Éclair");
+    await makeActivatable(staff, id, { withRules: false });
+    const variant = await defaultOf(id);
+    await declareNoAllergen(id, variant.id);
+    expect(jsonBody<{ ratioBp: number | null }>(await staff().get(RULES).expect(200)).ratioBp).toBe(
+      null,
+    );
+
+    const refus = await staff().put(`${PRODUCTS}/${id}/publish`).send({}).expect(409);
+    expect(jsonBody<{ message: string }>(refus).message).toContain("prix pro HT");
+
+    await priceVariant(id, variant.id, { priceCents: 200, proPriceHt: "1.70616" }).expect(200);
+    await staff().put(`${PRODUCTS}/${id}/publish`).send({}).expect(200);
+    expect((await detailOf(id)).status).toBe("published");
   });
 
   it("refuse d'activer une fiche sans prix pro HT, puis l'accepte avec", async () => {
@@ -203,6 +234,8 @@ describe("le pré-remplissage depuis le ratio", () => {
     ).id;
     await priceVariant(id, entered, { priceCents: 4_500, proPriceHt: "33.33333" }).expect(200);
     await staff().put(`${RULES}/pro-price-ratio`).send({ ratioBp: RATIO_BP }).expect(200);
+    // Une base EXISTANTE, encore sur le repli d'origine — le cas du contrôle.
+    await chooseMethod("ratio_ttc");
     return { id, own, aligned, entered };
   }
 
@@ -263,16 +296,32 @@ describe("le pré-remplissage depuis le ratio", () => {
     expect(facts[0]?.payload).toMatchObject({ proPriceMillicents: expected, ratioBp: RATIO_BP });
   });
 
-  it("refuse l'apply au moindre écart — la méthode n'est plus ratio_ttc", async () => {
+  /**
+   * Régression (BLOQUANT `vitruve`, lot S, 2026-10-16) : sous `entered`, le
+   * contrôle comptait un écart sur chaque ligne à pré-remplir (elle n'est pas
+   * servie) et l'`apply` refusait toujours. Il écrit désormais, et l'aperçu
+   * dit l'autre vérité : rien n'est servi, ce HT le sera.
+   */
+  it("sous « prix saisi », l'aperçu ne compte aucun écart et l'apply écrit", async () => {
     const seed = await aSeed();
     await chooseMethod("entered");
+    const expected = htMillicentsOf(proPriceFromPublic(1_990, RATIO_BP), FOOD_PERCENT);
 
-    expect((await preview()).mismatches).toBe(1);
-    const refus = await staff().post(PREFILL).expect(409);
+    const view = await preview();
+    expect(view).toMatchObject({ method: "entered", mismatches: 0, toPrefill: 1 });
+    expect(view.rows.find((row) => row.variantId === seed.own)).toMatchObject({
+      servedHtMillicents: null,
+      prefilledHtMillicents: expected,
+    });
+    expect(view.rows.find((row) => row.variantId === seed.aligned)).toMatchObject({
+      status: "aligned",
+      alignedCause: null,
+    });
 
-    expect(jsonBody<{ code: string }>(refus).code).toBe("catalogue.pro_price_prefill.mismatch");
+    await staff().post(PREFILL).expect(200);
+
     expect(
       (await detailOf(seed.id)).variants.find((v) => v.id === seed.own)?.proPriceMillicents,
-    ).toBeNull();
+    ).toBe(expected);
   });
 });

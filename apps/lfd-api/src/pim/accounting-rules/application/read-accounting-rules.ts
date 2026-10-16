@@ -1,6 +1,6 @@
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
-import type { AccountingRulesView } from "@lfd/pim-contracts";
+import { UNSET_PRO_PRICE_POLICY, type AccountingRulesView } from "@lfd/pim-contracts";
 
 import { AccountingRulesRepository } from "../domain/ports/accounting-rules.repository.js";
 
@@ -16,11 +16,11 @@ export class ReadAccountingRulesQuery {}
  */
 const NEVER_SET: AccountingRulesView = {
   ratioBp: null,
-  // La MÉTHODE, elle, n'a pas de « jamais réglée » : le calcul d'origine est
-  // celui qui s'applique tant que personne n'a choisi, et le dire `null`
+  // La MÉTHODE, elle, n'a pas de « jamais réglée » : c'est celle qui
+  // s'applique sans ligne (`entered` depuis le lot S), et la dire `null`
   // obligerait l'écran à inventer un repli — donc à le choisir une seconde fois,
   // ailleurs, avec le risque d'en choisir un autre.
-  method: "ratio_ttc",
+  method: UNSET_PRO_PRICE_POLICY.method,
   updatedAt: null,
 };
 

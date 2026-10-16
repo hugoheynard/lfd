@@ -7,7 +7,11 @@ import type { VariantSnapshot } from "../entities/variant.js";
 /** Ce qui manque à une déclinaison pour se vendre — des clés, que l'écran traduit. */
 export const PRICE_GAP = "price";
 export const ALLERGENS_GAP = "allergens";
-/** Le rapport pro n'est pas réglé : aucun prix pro ne se calcule. */
+/**
+ * Sous `ratio_ttc`, le rapport n'est pas réglé et la déclinaison n'a pas de
+ * saisie : aucun prix pro ne se calcule. Depuis le lot S, c'est le SEUL cas —
+ * une base sans règles vaut `entered`, où le rapport n'est qu'une suggestion.
+ */
 export const PRO_PRICE_RULE_GAP = "pro_price_rule";
 /**
  * Le prix pro ne se résout pas : sous `entered` sans saisie, la méthode
@@ -24,8 +28,11 @@ export const VAT_GAP_PREFIX = "vat:";
 export interface CompletenessRules {
   /** Les clés des contextes de vente en service (`SalesContext.active`). */
   readonly activeContextKeys: readonly string[];
-  /** `null` = le rapport pro n'est pas réglé. */
-  readonly policy: ProPricePolicy | null;
+  /**
+   * La politique en vigueur — jamais `null` depuis le lot S : une base sans
+   * règles vaut `entered` sans rapport (`AccountingRules.effectivePolicy`).
+   */
+  readonly policy: ProPricePolicy;
 }
 
 /** Ce que la règle lit d'une déclinaison — RÉSOLUE (une alignée porte le défaut). */
@@ -99,13 +106,15 @@ export function variantGaps(
 function proPriceGap(
   variant: CompletenessInput,
   percents: CategoryVatPercents,
-  policy: ProPricePolicy | null,
+  policy: ProPricePolicy,
 ): string | null {
-  if (policy === null) {
-    return PRO_PRICE_RULE_GAP;
-  }
-  if (policy.method === "entered" && variant.proPriceMillicents === null) {
-    return PRO_PRICE_GAP;
+  if (variant.proPriceMillicents === null) {
+    if (policy.method === "entered") {
+      return PRO_PRICE_GAP;
+    }
+    if (policy.ratioBp === null) {
+      return PRO_PRICE_RULE_GAP;
+    }
   }
   const b2bPercent = percents[ROOT_CONTEXT_KEY];
   if (variant.priceCents === null || b2bPercent === undefined) {

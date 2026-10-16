@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import type { AccountingRulesView } from '@lfd/pim-contracts';
+import type { AccountingRulesView, ProPriceMethod } from '@lfd/pim-contracts';
 import { describe, expect, it } from 'vitest';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
@@ -17,34 +17,46 @@ function permissions(granted: boolean): Pick<PermissionsStore, 'can'> {
  * partir pour de vrai — c'est ce qui faisait passer un test « rapport en place »
  * pour un échec réseau.
  */
-function stubApi(read: () => Promise<AccountingRulesView>): Pick<AccountingRulesHttpApi, 'read'> {
-  return { read };
+function stubApi(
+  read: () => Promise<AccountingRulesView>,
+  chosen: ProPriceMethod[] = [],
+): Pick<AccountingRulesHttpApi, 'read' | 'chooseProPriceMethod'> {
+  return {
+    read,
+    chooseProPriceMethod: (method) => {
+      chosen.push(method);
+      return Promise.resolve({ ratioBp: 9_000, method, updatedAt: null });
+    },
+  };
 }
 
 interface Setup {
   readonly granted?: boolean;
   readonly view?: AccountingRulesView;
   readonly fails?: boolean;
+  readonly chosen?: ProPriceMethod[];
 }
 
-async function render({ granted = true, view, fails = false }: Setup = {}) {
+async function render({ granted = true, view, fails = false, chosen = [] }: Setup = {}) {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     providers: [
       { provide: PermissionsStore, useValue: permissions(granted) },
       {
         provide: AccountingRulesHttpApi,
-        useValue: stubApi(() =>
-          fails
-            ? Promise.reject(new Error('réseau'))
-            : Promise.resolve(
-                view ?? {
-                  ratioBp: null,
-                  method: 'ratio_ttc' as const,
+        useValue: stubApi(
+          () =>
+            fails
+              ? Promise.reject(new Error('réseau'))
+              : Promise.resolve(
+                  view ?? {
+                    ratioBp: null,
+                    method: 'entered' as const,
 
-                  updatedAt: null,
-                },
-              ),
+                    updatedAt: null,
+                  },
+                ),
+          chosen,
         ),
       },
     ],
@@ -89,9 +101,13 @@ function typeInto(
   fixture.detectChanges();
 }
 
-/** Le bouton d'enregistrement — le seul de l'écran. */
+/** Le bouton d'enregistrement du rapport — trouvé par son libellé. */
 function submitButton(fixture: { nativeElement: unknown }): HTMLButtonElement | null {
-  return host(fixture).querySelector('button[foldButton]');
+  return (
+    [...host(fixture).querySelectorAll<HTMLButtonElement>('button[foldButton]')].find((b) =>
+      (b.textContent ?? '').includes('Enregistrer'),
+    ) ?? null
+  );
 }
 
 describe('AccountingRulesPage — jamais réglé', () => {
@@ -130,34 +146,34 @@ describe('AccountingRulesPage — un rapport en place', () => {
   });
 
   /**
-   * **Le sélecteur survit à la méthode qu'il devait offrir.**
-   *
-   * Une seconde méthode a existé le temps d'une journée — celle qui devait
-   * reproduire le catalogue professionnel imprimé. L'analyse des 89 prix de
-   * cette plaquette a montré qu'elle n'applique aucune formule, et la méthode a
-   * été retirée. Ce cas garde la PLACE : l'écran doit continuer de nommer la
-   * méthode appliquée, et dire pourquoi il n'y en a qu'une.
+   * Lot S (S4) : le choix de méthode a quitté l'écran ; le rapport s'y nomme
+   * « Rapport suggéré » et dit qu'il ne change aucun prix vendu.
    */
-  it('nomme la méthode appliquée, et dit pourquoi elle est seule', async () => {
-    const rendered = text(await render({ view: IN_PLACE }));
+  it('n’offre plus de choix de méthode, et nomme le rapport suggéré', async () => {
+    const fixture = await render({ view: IN_PLACE });
 
-    expect(rendered).toContain('Méthode de calcul appliquée');
-    expect(rendered).toContain('Ratio TTC pré-remise');
-    expect(rendered).toContain("n'applique aucune règle");
+    expect(text(fixture)).toContain('Rapport suggéré');
+    expect(text(fixture)).toContain('ne change aucun prix vendu');
+    expect(text(fixture)).not.toContain('Méthode de calcul appliquée');
+    expect(host(fixture).querySelector('input[type="radio"]')).toBeNull();
   });
 
   /**
-   * 🔴 Régression inversée : ce cas exigeait « Pas encore appliquée ». C'était
-   * vrai à l'écriture et faux depuis le raccordement — la projection B2B refuse
-   * même de partir sans ce réglage (`ProPriceRatioNotSetError`). Un écran qui
-   * dit qu'il ne fait rien alors qu'il tarife est la pire des consignes, et un
-   * test qui l'exige est ce qui l'a laissée survivre.
+   * 🔴 Régression inversée (2026-09-13) : ce cas exigeait « Pas encore
+   * appliquée », faux depuis le raccordement. Depuis le lot S, c'est vrai
+   * seulement tant que la base est en `ratio_ttc` — et l'écran le dit alors.
    */
-  it('dit que ces réglages tarifent pour de vrai', async () => {
+  it('dit que le rapport tarife encore tant que la base est en ratio TTC', async () => {
     const rendered = text(await render({ view: IN_PLACE }));
 
     expect(rendered).not.toContain('Pas encore appliquée');
-    expect(rendered).toContain('tarifent pour de vrai');
+    expect(rendered).toContain('tarife encore pour de vrai');
+  });
+
+  it('ne le dit plus une fois en prix saisi', async () => {
+    const rendered = text(await render({ view: { ...IN_PLACE, method: 'entered' } }));
+
+    expect(rendered).not.toContain('tarife encore');
   });
 
   /**
@@ -273,24 +289,42 @@ describe('AccountingRulesPage — lecture en échec', () => {
   });
 });
 
-/** Lot P : la méthode « Prix saisi » se propose à côté du ratio. */
-describe('AccountingRulesPage — la méthode « Prix saisi »', () => {
+/** Lot S (S4) : l'encart « encore en ratio TTC » et le geste « Passer au prix saisi ». */
+describe('AccountingRulesPage — passer au prix saisi', () => {
   const IN_PLACE_RATIO = { ratioBp: 9_000, method: 'ratio_ttc' as const, updatedAt: null };
 
-  it('propose « Prix saisi », et un bouton qui ne s’allume qu’au changement', async () => {
-    const fixture = await render({ view: IN_PLACE_RATIO });
-    const apply = [...host(fixture).querySelectorAll('button')].find((b) =>
-      (b.textContent ?? '').includes('Appliquer la méthode'),
+  function switchButton(fixture: { nativeElement: unknown }): HTMLButtonElement | undefined {
+    return [...host(fixture).querySelectorAll<HTMLButtonElement>('button')].find((b) =>
+      (b.textContent ?? '').includes('Passer au prix saisi'),
     );
+  }
 
-    expect(text(fixture)).toContain('Prix saisi');
-    expect(apply?.disabled).toBe(true);
+  it('sous ratio TTC, dit ce qui reste à faire et offre « Passer au prix saisi »', async () => {
+    const chosen: ProPriceMethod[] = [];
+    const fixture = await render({ view: IN_PLACE_RATIO, chosen });
 
-    const radios = [...host(fixture).querySelectorAll<HTMLInputElement>('input[type="radio"]')];
-    radios[1]?.dispatchEvent(new Event('change'));
+    expect(text(fixture)).toContain('pré-remplir');
+    expect(text(fixture)).toContain('ne monte plus le prix pro');
+    switchButton(fixture)?.click();
+    await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(apply?.disabled).toBe(false);
+    expect(chosen).toEqual(['entered']);
+    // Une fois en prix saisi, l'encart disparaît, et le retour ne s'offre pas.
+    expect(switchButton(fixture)).toBeUndefined();
+  });
+
+  it('sous prix saisi, n’offre ni l’encart ni le retour au ratio', async () => {
+    const fixture = await render({ view: { ...IN_PLACE_RATIO, method: 'entered' } });
+
+    expect(switchButton(fixture)).toBeUndefined();
+    expect(text(fixture)).not.toContain('Ratio TTC');
+  });
+
+  it('n’offre pas le geste sans le droit comptable', async () => {
+    const fixture = await render({ view: IN_PLACE_RATIO, granted: false });
+
+    expect(switchButton(fixture)).toBeUndefined();
   });
 
   it('offre le pré-remplissage du prix pro', async () => {

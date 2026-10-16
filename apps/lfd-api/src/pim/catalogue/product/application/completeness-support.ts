@@ -1,3 +1,4 @@
+import { AccountingRules } from "../../../accounting-rules/domain/entities/accounting-rules.js";
 import type { AccountingRulesReader } from "../../../accounting-rules/domain/ports/accounting-rules.reader.js";
 import type { ActiveSalesContextsReader } from "../../../sales-contexts/domain/ports/active-sales-contexts.reader.js";
 import type { CompletenessRules } from "../domain/services/variant-completeness.js";
@@ -9,8 +10,9 @@ import type { CompletenessRules } from "../domain/services/variant-completeness.
  *
  * Une seule lecture pour l'activation, l'aperçu de bascule et les faits du
  * catalogue : trois lectures écrites chacune de son côté finiraient par juger
- * la même fiche de deux façons. Rien de réglé au prix pro = `null`, jamais un
- * rapport inventé.
+ * la même fiche de deux façons. Rien de réglé au prix pro = prix saisi sans
+ * rapport (`AccountingRules.effectivePolicy`, lot S), jamais un rapport
+ * inventé.
  */
 export async function readCompletenessRules(
   contexts: ActiveSalesContextsReader,
@@ -19,6 +21,6 @@ export async function readCompletenessRules(
   const [active, rules] = await Promise.all([contexts.active(), accounting.read()]);
   return {
     activeContextKeys: active.map((context) => context.key),
-    policy: rules?.rules.policy ?? null,
+    policy: AccountingRules.effectivePolicy(rules?.rules ?? null),
   };
 }

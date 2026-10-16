@@ -1,9 +1,12 @@
 import { checkJournalFact } from "@lfd/contracts/journal-facts";
-import { PRO_PRICE_METHODS } from "@lfd/pim-contracts";
+import { PRO_PRICE_METHODS, type ProPriceMethod } from "@lfd/pim-contracts";
 
-import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { RecordingJournal } from "../../../journal/__tests__/recording-journal.js";
-import { AccountingRules } from "../../domain/entities/accounting-rules.js";
+import {
+  AccountingRules,
+  type AccountingRulesSnapshot,
+} from "../../domain/entities/accounting-rules.js";
 import { InvalidProPriceRatioError } from "../../domain/errors/accounting-rules-errors.js";
 import {
   AccountingRulesRepository,
@@ -22,32 +25,55 @@ const STORED_AT = new Date(0);
 
 /** Garde l'instantané et reconstitue à chaque lecture — comme la vraie base. */
 class InMemoryRepo extends AccountingRulesRepository {
-  private stored: number | null = null;
+  private stored: AccountingRulesSnapshot | null = null;
+  /** Combien de lectures ont eu lieu HORS d'une transaction (cf. `TrackingUnitOfWork`). */
+  readsOutside = 0;
+  inTransaction = false;
 
   read(): Promise<AccountingRulesRecord | null> {
+    if (!this.inTransaction) {
+      this.readsOutside += 1;
+    }
     if (this.stored === null) {
       return Promise.resolve(null);
     }
     return Promise.resolve({
-      rules: AccountingRules.reconstitute({
-        proPriceMethod: "ratio_ttc",
-        proPriceRatioBp: this.stored,
-      }),
+      rules: AccountingRules.reconstitute(this.stored),
       updatedAt: STORED_AT,
     });
   }
 
   save(rules: AccountingRules): Promise<void> {
-    this.stored = rules.snapshot().proPriceRatioBp;
+    this.stored = rules.snapshot();
     return Promise.resolve();
   }
 
   at(): number | null {
-    return this.stored;
+    return this.stored?.proPriceRatioBp ?? null;
   }
 
-  seed(basisPoints: number): void {
-    this.stored = basisPoints;
+  method(): string | null {
+    return this.stored?.proPriceMethod ?? null;
+  }
+
+  seed(basisPoints: number, method: ProPriceMethod = "ratio_ttc"): void {
+    this.stored = { proPriceRatioBp: basisPoints, proPriceMethod: method };
+  }
+}
+
+/** Une transaction qui dit au dépôt quand on est dedans — rien d'autre. */
+class TrackingUnitOfWork extends UnitOfWork {
+  constructor(private readonly repo: InMemoryRepo) {
+    super();
+  }
+
+  async run<T>(work: () => Promise<T>): Promise<T> {
+    this.repo.inTransaction = true;
+    try {
+      return await work();
+    } finally {
+      this.repo.inTransaction = false;
+    }
   }
 }
 
@@ -60,12 +86,11 @@ describe("ReadAccountingRulesHandler", () => {
   it("rend deux null quand rien n'a jamais été réglé", async () => {
     const view = await new ReadAccountingRulesHandler(new InMemoryRepo()).execute();
 
-    // La MÉTHODE, elle, n'a pas de « jamais réglée » : le calcul d'origine
-    // s'applique tant que personne n'a choisi, et le dire `null` obligerait
-    // l'écran à inventer un repli — donc à le choisir une seconde fois.
+    // La MÉTHODE, elle, n'a pas de « jamais réglée » : sans ligne, c'est le
+    // prix saisi depuis le lot S — une base vierge n'a aucun prix à préserver.
     expect(view).toEqual({
       ratioBp: null,
-      method: "ratio_ttc",
+      method: "entered",
       updatedAt: null,
     });
   });
@@ -87,14 +112,72 @@ describe("ReadAccountingRulesHandler", () => {
 describe("SetProPriceRatioHandler", () => {
   function build(repo: InMemoryRepo) {
     const journal = new RecordingJournal();
+    const reemission = new RecordingCatalogReemission();
     const handler = new SetProPriceRatioHandler(
       repo,
       journal,
-      new DirectUnitOfWork(),
-      new RecordingCatalogReemission(),
+      new TrackingUnitOfWork(repo),
+      reemission,
     );
-    return { handler, journal };
+    return { handler, journal, reemission };
   }
+
+  /** Lot S : la ligne naît sur le prix saisi, ce que la base valait déjà sans elle. */
+  it("ouvre la ligne sur « prix saisi »", async () => {
+    const repo = new InMemoryRepo();
+    const { handler } = build(repo);
+
+    await handler.execute(new SetProPriceRatioCommand(9_000));
+
+    expect(repo.method()).toBe("entered");
+  });
+
+  /**
+   * Régression (BLOQUANT `vitruve`, lot S) : le premier rapport fait exister
+   * la ligne ; il réémet, même sous `entered`.
+   */
+  it("réémet le catalogue quand il ouvre les règles", async () => {
+    const repo = new InMemoryRepo();
+    const { handler, reemission } = build(repo);
+
+    await handler.execute(new SetProPriceRatioCommand(9_000));
+
+    expect(reemission.everythingCalls).toBe(1);
+  });
+
+  it("réémet sous ratio_ttc : le rapport y fixe encore des prix", async () => {
+    const repo = new InMemoryRepo();
+    repo.seed(9_000, "ratio_ttc");
+    const { handler, reemission } = build(repo);
+
+    await handler.execute(new SetProPriceRatioCommand(8_500));
+
+    expect(reemission.everythingCalls).toBe(1);
+  });
+
+  /** S6 : sous `entered`, le rapport n'est qu'une suggestion — aucun prix servi ne bouge. */
+  it("ne réémet rien sous « prix saisi » quand la ligne existait", async () => {
+    const repo = new InMemoryRepo();
+    repo.seed(9_000, "entered");
+    const { handler, reemission, journal } = build(repo);
+
+    await handler.execute(new SetProPriceRatioCommand(8_500));
+
+    expect(reemission.everythingCalls).toBe(0);
+    expect(repo.at()).toBe(8_500);
+    expect(journal.types()).toEqual(["accounting_rules.pro_ratio_changed"]);
+  });
+
+  /** La méthode qui décide de réémettre est lue DANS la transaction de l'écriture. */
+  it("lit les règles dans la transaction", async () => {
+    const repo = new InMemoryRepo();
+    repo.seed(9_000, "entered");
+    const { handler } = build(repo);
+
+    await handler.execute(new SetProPriceRatioCommand(8_500));
+
+    expect(repo.readsOutside).toBe(0);
+  });
 
   it("pose le premier rapport et trace un « depuis rien »", async () => {
     const repo = new InMemoryRepo();

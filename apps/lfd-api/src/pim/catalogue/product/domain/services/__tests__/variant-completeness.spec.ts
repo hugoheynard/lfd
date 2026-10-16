@@ -1,3 +1,5 @@
+import { UNSET_PRO_PRICE_POLICY } from "@lfd/pim-contracts";
+
 import {
   requiredContexts,
   variantGaps,
@@ -54,8 +56,22 @@ describe("variantGaps", () => {
     );
   });
 
-  it("nomme le rapport pro non réglé", () => {
-    expect(variantGaps(COMPLETE, ALL, { ...RULES, policy: null })).toEqual(["pro_price_rule"]);
+  it("nomme le rapport pro non réglé sous ratio_ttc", () => {
+    const unset: CompletenessRules = { ...RULES, policy: { method: "ratio_ttc", ratioBp: null } };
+    expect(variantGaps(COMPLETE, ALL, unset)).toEqual(["pro_price_rule"]);
+    // La saisie prime : elle se suffit même sans rapport.
+    expect(variantGaps({ ...COMPLETE, proPriceMillicents: 1_000_000 }, ALL, unset)).toEqual([]);
+  });
+
+  /**
+   * Régression (BLOQUANT `vitruve`, lot S) : sans règles, « Activer » refusait
+   * toute déclinaison (`pro_price_rule`), saisie comprise.
+   */
+  it("base sans règles : la saisie suffit, son absence se nomme « prix pro »", () => {
+    const unset: CompletenessRules = { ...RULES, policy: UNSET_PRO_PRICE_POLICY };
+
+    expect(variantGaps({ ...COMPLETE, proPriceMillicents: 1_000_000 }, ALL, unset)).toEqual([]);
+    expect(variantGaps(COMPLETE, ALL, unset)).toEqual(["pro_price"]);
   });
 
   /** La saisie prime, quelle que soit la méthode (lot P). */

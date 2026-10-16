@@ -96,48 +96,9 @@ h2 {
   align-items: flex-end;
 }
 
-/* Le SÉLECTEUR de méthode. Deux cartes radio plutôt qu'une liste déroulante :
-   chaque méthode porte une explication et un avertissement qu'un `<option>` ne
-   peut pas contenir — et choisir ici retarife le catalogue, ce qui mérite d'être
-   lu avant d'être cliqué. */
-.methods {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-sm);
-  margin: 0;
-  padding: var(--fold-space-md);
-  border: 1px solid var(--fold-color-border-subtle);
-  border-radius: var(--fold-radius-md);
-
-  legend {
-    padding-inline: var(--fold-space-xs);
-    font-weight: var(--fold-weight-medium);
-  }
-}
-
-.method {
-  display: flex;
-  gap: var(--fold-space-sm);
-  padding: var(--fold-space-sm);
-  border: 1px solid var(--fold-color-border-subtle);
-  border-radius: var(--fold-radius-sm);
-  cursor: pointer;
-
-  &.is-chosen {
-    border-color: var(--fold-color-primary-border);
-    background: var(--fold-color-surface-raised);
-  }
-}
-
-.method-body {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-xs);
-}
-
-.method-say {
-  color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-sm);
+/* L'encart « encore en ratio TTC » (lot S) : son bouton passe à la ligne. */
+.switch button {
+  margin-block-start: var(--fold-space-sm);
 }
 
 /* Le pré-remplissage du prix pro saisi (lot P) : un sous-sujet de la règle,

@@ -1,4 +1,4 @@
-import type { ProPricePolicy } from "@lfd/pim-contracts";
+import { UNSET_PRO_PRICE_POLICY, type ProPricePolicy } from "@lfd/pim-contracts";
 
 import { ProPriceMethodSetting } from "../value-objects/pro-price-method-setting.js";
 import { ProPriceRatio } from "../value-objects/pro-price-ratio.js";
@@ -6,8 +6,9 @@ import { ProPriceRatio } from "../value-objects/pro-price-ratio.js";
 /**
  * **Les règles comptables — l'agrégat.**
  *
- * Un singleton : il n'y en a qu'un, et son identité est une constante. Il ne
- * porte qu'une règle aujourd'hui — le rapport prix pro / prix public — et c'est
+ * Un singleton : il n'y en a qu'un, et son identité est une constante. Il
+ * porte le rapport prix pro / prix public — une SUGGESTION depuis le lot S —
+ * et la méthode qui décide du repli d'une déclinaison sans saisie. C'est
  * assumé : la décision est globale, elle n'a pas de porteur naturel dans le
  * catalogue, et lui donner sa maison maintenant évite qu'elle atterrisse en
  * colonne sur `Category`. Le référentiel a déjà payé deux fois ce
@@ -19,7 +20,9 @@ import { ProPriceRatio } from "../value-objects/pro-price-ratio.js";
  *
  * **Il n'existe pas tant que rien n'a été réglé.** Pas de `AccountingRules`
  * vide, pas de rapport à 100 % par défaut : l'absence est un état que le
- * dépôt rend par `null` et que l'écran doit savoir dire.
+ * dépôt rend par `null` et que l'écran doit savoir dire. Pour TARIFER, cette
+ * absence vaut {@link AccountingRules.effectivePolicy} : prix saisi, sans
+ * rapport.
  */
 export interface AccountingRulesSnapshot {
   readonly proPriceRatioBp: number;
@@ -35,15 +38,29 @@ export class AccountingRules {
   /**
    * Le premier réglage — celui qui fait exister la ligne.
    *
-   * Il naît sur `ratio_ttc` — la seule méthode disponible, et de toute façon
-   * celle qu'un réglage muet doit valoir : un déploiement ne change jamais un
-   * prix par lui-même.
+   * Il naît sur `entered` depuis le lot S (2026-10-16) : c'est ce que la base
+   * valait déjà sans ligne ({@link AccountingRules.effectivePolicy}), donc
+   * poser le premier rapport ne change aucun prix. « Un déploiement ne change
+   * jamais un prix » reste vrai pour une base EXISTANTE — elle garde sa méthode
+   * — et une base vierge n'a aucun prix à préserver.
    */
   static open(proPriceRatioBp: number): AccountingRules {
     return new AccountingRules(
       ProPriceRatio.create(proPriceRatioBp),
-      ProPriceMethodSetting.ratioTtc(),
+      ProPriceMethodSetting.entered(),
     );
+  }
+
+  /**
+   * **La politique qui s'applique, ligne ou pas** — l'unique traduction de
+   * « rien de réglé » (lot S, contradiction de `vitruve` du 2026-10-16).
+   *
+   * Sans ligne : prix saisi, sans rapport. Avant le lot S, cette absence
+   * valait `null` chez chaque lecteur, et chacun en concluait « rien ne se
+   * vend », saisies comprises.
+   */
+  static effectivePolicy(rules: AccountingRules | null): ProPricePolicy {
+    return rules === null ? UNSET_PRO_PRICE_POLICY : rules.policy;
   }
 
   /**

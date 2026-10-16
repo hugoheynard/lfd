@@ -569,7 +569,9 @@ la liste du retour arrière. Rejouer le geste ne retouche que les fiches encore
 publiées et invisibles. Un fait `product.unpublished` par fiche au journal ;
 aucun autre champ n'est écrit.
 
-**5. Pré-remplir le prix pro (P5), si voulu** — aperçu puis écriture :
+**5. Pré-remplir le prix pro (P5), si voulu** — aperçu puis écriture (la
+procédure complète, et ce qu'elle change, est « Passer au prix pro saisi
+(lot S) » plus bas) :
 
 ```http
 GET  /pim/accounting-rules/pro-price-prefill
@@ -630,6 +632,68 @@ Les colonnes et tables posées par les faits (`catalog_entries`,
 `catalog_rules`, `catalog_categories.withdrawn_at`/`audience`,
 `catalog_items.variant_id`/`audience`) restent en base : aucun lecteur hors des
 récepteurs des faits et de `servedTo`.
+
+## Passer au prix pro saisi (lot S) — l'ordre, et le retour
+
+Lot S de [`plan-catalogue-synchronise-par-audience.md`](../pim/plan-catalogue-synchronise-par-audience.md).
+Le prix pro HT **saisi** par déclinaison devient la seule source ; le rapport
+pro / public n'est plus qu'une suggestion. Le code est déployé sans rien
+changer de servi : une base qui a déjà une ligne de règles garde sa méthode
+(`ratio_ttc`) jusqu'au geste (3). Les trois gestes sont à Hugo, **dans cet
+ordre**, depuis _Règles comptables_ (ou par l'API, droit `pim_tax:write`).
+
+🔴 **Le vrai basculement est le geste (2), pas le (3).** Une fois le
+pré-remplissage écrit, chaque déclinaison a sa saisie, et la saisie prime :
+**le prix public ne bouge plus le prix pro.** Monter un prix public après (2)
+ne monte plus le prix pro, sur tout le catalogue. C'est l'objet du lot.
+
+**1. Relire l'aperçu du pré-remplissage** — lecture seule :
+
+```http
+GET /pim/accounting-rules/pro-price-prefill
+```
+
+- `mismatches` vaut `0` (sous `ratio_ttc`, le HT pré-rempli doit être, au
+  millicentime, celui que la boutique pro sert aujourd'hui) ;
+- les lignes `no_vat_b2b` et `no_price` **ne sont pas remplies** : elles
+  sortiront du catalogue pro au geste (3). Les compléter avant (taux `b2b` de
+  la famille ou de la fiche, prix public), ou accepter leur sortie ;
+- les lignes `aligned` suivent leur défaut (`followsSku`) ; `alignedCause` non
+  nul dit pourquoi le défaut ne sera pas rempli, donc pourquoi elles sortiront.
+
+**2. Écrire** :
+
+```http
+POST /pim/accounting-rules/pro-price-prefill
+```
+
+Refusé (`catalogue.pro_price_prefill.mismatch`) au moindre écart. La réponse
+est l'aperçu relu : `toPrefill` vaut `0`. Un fait
+`product.pro_price_prefilled` par déclinaison écrite. Entre (2) et (3), rien de
+servi ne change.
+
+**3. « Passer au prix saisi »** (le bouton de l'encart, ou) :
+
+```http
+PUT /pim/accounting-rules/pro-price-method
+{ "method": "entered" }
+```
+
+Le catalogue est réémis. Après (3), seule une déclinaison **sans saisie** sort
+du catalogue pro (motif `variant_sans_prix_pro`, ou `variant_sans_taux` quand
+c'est le taux qui manque). Contrôle : `GET /admin/catalog/parity`, puis relire
+l'aperçu — `toPrefill` à `0`.
+
+### Le retour arrière
+
+**Le retour arrière d'un prix pro est une saisie**, fiche par fiche : corriger
+le « Prix pro HT » de la déclinaison, ou l'effacer — sans saisie, la
+déclinaison retombe sur le repli de la méthode (aucun sous « prix saisi »).
+
+Revenir à `ratio_ttc` (`PUT …/pro-price-method { "method": "ratio_ttc" }`,
+l'écran ne l'offre plus) est **illusoire après (2)** : la saisie prime, et ce
+retour ne toucherait que les déclinaisons sans saisie. Il ne rend pas « le
+prix public bouge le prix pro ».
 
 ## Basculer les opérations au commerce — l'ordre, et le retour
 

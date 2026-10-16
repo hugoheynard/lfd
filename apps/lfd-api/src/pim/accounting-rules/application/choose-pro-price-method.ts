@@ -47,9 +47,11 @@ export class ChooseProPriceMethodCommand {
  * `resolve-floor.ts:84`) : il ne peut donc pas annoncer combien d'articles
  * changent de prix, et il ne doit pas faire semblant.
  *
- * ⚠️ Sans objet tant qu'il n'y a qu'une méthode — cette route ne peut
- * aujourd'hui que rechoisir celle qui est déjà là. Elle existe pour la
- * suivante, et ce paragraphe est ce qu'il faudra relire ce jour-là.
+ * Depuis le lot S (2026-10-16), l'écran ne s'en sert plus que pour « Passer
+ * au prix saisi » (`entered`) ; le retour à `ratio_ttc` ne s'offre plus, mais
+ * la route l'accepte toujours — le code n'est pas effacé. Il réémet toujours,
+ * quelle que soit la méthode d'avant : c'est ce qui couvre la course avec un
+ * changement de rapport qui, lui, peut s'abstenir sous `entered`.
  */
 @CommandHandler(ChooseProPriceMethodCommand)
 export class ChooseProPriceMethodHandler implements ICommandHandler<

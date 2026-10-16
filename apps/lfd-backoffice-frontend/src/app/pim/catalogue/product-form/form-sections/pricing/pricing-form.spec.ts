@@ -244,6 +244,19 @@ describe('PricingForm — ce qui n’y est PAS', () => {
 
 describe('PricingForm — le HT par canal', () => {
   /**
+   * Ces cas décrivent le repli d'ORIGINE (`ratio_ttc`, aucune remise réglée :
+   * la ligne B2B part du prix public). Depuis le lot S, une base sans règles
+   * vaut « prix saisi » ; la méthode d'origine est donc posée explicitement.
+   */
+  function withOriginalFallback(): void {
+    vi.spyOn(TestBed.inject(AccountingRulesStore), 'rules').mockReturnValue({
+      ratioBp: null,
+      method: 'ratio_ttc',
+      updatedAt: null,
+    });
+  }
+
+  /**
    * **Le cœur de l'ancrage.** Un seul prix d'étiquette, deux taux, deux hors
    * taxe : 10,00 € TTC valent 9,48 € HT au comptoir (5,5 %) et 8,33 € HT en
    * B2B (20 %). Sans cette colonne, il faut faire le calcul de tête pour savoir
@@ -251,6 +264,7 @@ describe('PricingForm — le HT par canal', () => {
    */
   it('déduit le HT de CHAQUE contexte du prix public et de son taux', () => {
     const store = setup();
+    withOriginalFallback();
     withFamily(store);
     store.priceEur.set(10);
     const fixture = TestBed.createComponent(PricingForm);
@@ -281,6 +295,7 @@ describe('PricingForm — le HT par canal', () => {
    */
   it('étiquette « HT » et jamais « TTC » : le sens de lecture est unique', () => {
     const store = setup();
+    withOriginalFallback();
     withFamily(store);
     store.priceEur.set(10);
     const fixture = TestBed.createComponent(PricingForm);
@@ -526,5 +541,88 @@ describe('PricingForm — le prix pro HT saisi', () => {
 
     expect(host.querySelector('.pro')).toBeNull();
     expect(host.textContent).toContain('n’est pas vendue aux');
+  });
+
+  /**
+   * Régression (BLOQUANT `vitruve`, lot S, 2026-10-16) : sans règles
+   * comptables (`ratioBp: null`), la fiche n'affichait pas le prix pro saisi.
+   */
+  it('sans règles comptables, montre la saisie', () => {
+    const store = setup();
+    const rules = TestBed.inject(AccountingRulesStore);
+    vi.spyOn(rules, 'rules').mockReturnValue({ ratioBp: null, method: 'entered', updatedAt: null });
+    withFamily(store);
+    store.priceEur.set(12);
+    store.proPriceHtText.set('8,5');
+    const host = render();
+
+    expect(flat(host.querySelector('.pro')?.textContent)).toContain('10,20 €');
+    // Pas de rapport : pas de suggestion, et rien à en dire.
+    expect(host.querySelector('.pro-suggestion')).toBeNull();
+  });
+});
+
+/** Lot S (S3) : le rapport devient une suggestion sous le prix pro HT. */
+describe('PricingForm — la suggestion du rapport', () => {
+  function withRatio(store: ProductFormStore): void {
+    const rules = TestBed.inject(AccountingRulesStore);
+    vi.spyOn(rules, 'rules').mockReturnValue({
+      ratioBp: 9_000,
+      method: 'entered',
+      updatedAt: null,
+    });
+    withFamily(store);
+    store.priceEur.set(12);
+  }
+
+  function render(): HTMLElement {
+    const fixture = TestBed.createComponent(PricingForm);
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  const flat = (text: string | null | undefined): string =>
+    (text ?? '').replace(/\u202f|\u00a0/g, ' ');
+
+  it('suggère le HT du rapport au taux B2B de la fiche', () => {
+    const store = setup();
+    withRatio(store);
+    const host = render();
+
+    // 12,00 € × 90 % = 10,80 € TTC ÷ 1,20 = 9 € HT.
+    const line = flat(host.querySelector('.pro-suggestion')?.textContent);
+    expect(line).toContain('Suggéré : 9 € HT');
+    expect(line).toContain('rapport de 90 %');
+  });
+
+  it('« Reprendre » remplit le champ, sans rien enregistrer', () => {
+    const store = setup();
+    withRatio(store);
+    const host = render();
+    const button = [...host.querySelectorAll<HTMLButtonElement>('.pro-suggestion button')].find(
+      (b) => b.textContent?.includes('Reprendre'),
+    );
+    if (button === undefined) {
+      throw new TypeError('bouton « Reprendre » absent');
+    }
+
+    button.click();
+
+    expect(store.proPriceHtText()).toBe('9');
+    expect(store.proPriceMillicents()).toBe(900_000);
+  });
+
+  it('dit pourquoi il n’y a pas de suggestion sans taux B2B', () => {
+    const store = setup();
+    withRatio(store);
+    store.categories.update((categories) =>
+      categories.map((category) => ({
+        ...category,
+        vatByContext: { takeaway: 'tva_55', eatIn: 'tva_55' },
+      })),
+    );
+    const host = render();
+
+    expect(host.querySelector('.pro-suggestion')?.textContent).toContain('pas de taux B2B');
   });
 });

@@ -1,16 +1,20 @@
 import { isPlatformBrowser } from '@angular/common';
 import { Injectable, PLATFORM_ID, inject, signal } from '@angular/core';
-import type { AccountingRulesView, ProPriceMethod } from '@lfd/pim-contracts';
+import {
+  UNSET_PRO_PRICE_POLICY,
+  type AccountingRulesView,
+  type ProPriceMethod,
+} from '@lfd/pim-contracts';
 
 import { AccountingRulesHttpApi } from './accounting-rules-http-api';
 
 /** Rien réglé : la forme que rend le serveur, et l'état de départ de l'écran. */
 const NEVER_SET: AccountingRulesView = {
   ratioBp: null,
-  // La MÉTHODE n'a pas de « jamais réglée » : le calcul d'origine s'applique
-  // tant que personne n'a choisi, et le dire `null` ferait inventer un repli à
-  // l'écran — donc le choisir une seconde fois, ailleurs.
-  method: 'ratio_ttc',
+  // La MÉTHODE n'a pas de « jamais réglée » : sans ligne, c'est le prix saisi
+  // (lot S) — la même constante que le serveur, pour ne pas la choisir une
+  // seconde fois ailleurs.
+  method: UNSET_PRO_PRICE_POLICY.method,
   updatedAt: null,
 };
 

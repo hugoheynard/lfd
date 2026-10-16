@@ -98,7 +98,9 @@ describe("une fiche créée au référentiel apparaît sur la plateforme", () =>
       [fiche.variantSku]: [
         "price",
         "allergens",
-        "pro_price_rule",
+        // Lot S : une base sans règles vaut « prix saisi » — il manque le prix
+        // pro de la déclinaison, plus un rapport (`pro_price_rule`, d'avant).
+        "pro_price",
         "vat:b2b",
         "vat:takeaway",
         "vat:eatIn",

@@ -1,5 +1,7 @@
 import type { ProPricePolicy, ProPricePrefillRowView } from "@lfd/pim-contracts";
 
+import { AccountingRules } from "../../../accounting-rules/domain/entities/accounting-rules.js";
+
 import { AccountingRulesNotSetError } from "../../../accounting-rules/domain/errors/accounting-rules-errors.js";
 import type { AccountingRulesReader } from "../../../accounting-rules/domain/ports/accounting-rules.reader.js";
 import type { CatalogueReader } from "../../shared/domain/ports/catalogue-reader.js";
@@ -10,6 +12,8 @@ import { planProPricePrefill } from "../domain/services/pro-price-prefill.js";
 /** Le plan, et les agrégats qu'il décrit — l'`apply` écrit sur CEUX-LÀ. */
 export interface PrefillPlan {
   readonly policy: ProPricePolicy;
+  /** Le rapport rejoué — posé, sans quoi il n'y a pas de plan. */
+  readonly ratioBp: number;
   readonly products: readonly Product[];
   readonly rows: readonly ProPricePrefillRowView[];
 }
@@ -22,20 +26,26 @@ export interface PrefillPlan {
  * lecture de `feed-projection.service.ts`), sur l'instantané RÉSOLU.
  *
  * @throws {AccountingRulesNotSetError} aucun rapport n'a jamais été posé :
- *   le ratio n'a rien à pré-remplir.
+ *   le ratio n'a rien à pré-remplir. Sous `entered` sans rapport, rien ne se
+ *   suggère : la saisie se fait fiche par fiche.
  */
 export async function loadPrefillPlan(
   products: ProductRepository,
   catalogue: CatalogueReader,
   accounting: AccountingRulesReader,
 ): Promise<PrefillPlan> {
-  const rules = await accounting.read();
-  if (rules === null) {
+  const policy = AccountingRules.effectivePolicy((await accounting.read())?.rules ?? null);
+  const ratioBp = policy.ratioBp;
+  if (ratioBp === null) {
     throw new AccountingRulesNotSetError();
   }
   const all = await products.listAll();
   const snapshots = all.map((product) => product.snapshot());
   const vat = await catalogue.vatPercents(snapshots);
-  const policy = rules.rules.policy;
-  return { policy, products: all, rows: planProPricePrefill(snapshots, vat, policy) };
+  return {
+    policy,
+    ratioBp,
+    products: all,
+    rows: planProPricePrefill(snapshots, vat, { policy, ratioBp }),
+  };
 }

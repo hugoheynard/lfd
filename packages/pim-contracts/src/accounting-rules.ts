@@ -28,32 +28,38 @@ export const MAX_RATIO_BP = 10_000;
 // ── Les deux méthodes de prix professionnel ────────────────────────────────
 
 /**
- * **Comment on dérive le prix professionnel du prix public.**
+ * **Comment on fixe le prix professionnel d'une déclinaison sans saisie.**
  *
- * Une seule méthode aujourd'hui, et le mécanisme existe quand même — c'est
- * délibéré. Il a été bâti pour une seconde méthode qui reproduisait le calcul
- * de la plaquette commerciale ; l'analyse des 89 prix imprimés (2026-09-13,
- * `documentation/pim/analyse-plaquette-professionnelle.md`) a montré que cette
- * plaquette **n'applique aucune formule** : ses prix ont été posés à la main,
- * article par article. Une méthode qui ne reproduit rien n'a pas de raison
- * d'exister, et elle a donc été retirée.
+ * - **`entered`** (lot P, puis lot S de `plan-catalogue-synchronise-par-audience.md`,
+ *   Hugo, 2026-10-15 et 2026-10-16) : le prix pro HT est **saisi** par
+ *   déclinaison, et c'est la seule source. Une déclinaison sans saisie n'est
+ *   pas vendue aux professionnels. C'est la méthode d'une base vierge.
+ * - **`ratio_ttc`** : le repli d'origine — la remise s'applique au prix public
+ *   TTC. Son code reste (Hugo : « n'efface pas le code ») et une base qui y est
+ *   encore la garde jusqu'au geste « Passer au prix saisi » ; l'écran ne
+ *   l'offre plus.
  *
- * Ce qui reste est la **place** : le jour où le commerce fournit une vraie
- * formule, elle s'ajoute ici et dans `proPriceOf`, et l'écran la propose sans
- * qu'aucune autre pièce ne bouge. Garder une union à un seul membre plutôt que
- * de supprimer le champ n'est pas de la généralité spéculative — c'est ce qui
- * évite de refaire la colonne, la migration, la route et l'écran pour ajouter
- * un mot.
- *
- * **`entered`** (lot P, `plan-catalogue-synchronise-par-audience.md`, décidé
- * par Hugo le 2026-10-15) : le prix pro HT est **saisi** par déclinaison, et ne
- * se dérive plus. `ratio_ttc` reste sélectionnable, et son code ne bouge pas.
+ * Dans les deux cas, **la saisie prime** : la méthode ne décide que du repli.
  *
  * ⚠️ Recopiée dans `@lfd/contracts` (`journal-facts/referential-settings.ts`),
  * qui valide le fait du changement de méthode : les deux listes vont ensemble.
  */
 export const PRO_PRICE_METHODS = ["ratio_ttc", "entered"] as const;
 export type ProPriceMethod = (typeof PRO_PRICE_METHODS)[number];
+
+/**
+ * **Ce que vaut une base où rien n'a jamais été réglé** (lot S, contradiction
+ * de `vitruve` du 2026-10-16) : `entered`, sans rapport.
+ *
+ * Avant le lot S, l'absence de règles valait `null` et **tout** s'arrêtait,
+ * saisies comprises : le push refusait, les faits ne vendaient rien,
+ * « Activer » refusait. Un rapport n'est plus qu'une suggestion ; son absence
+ * ne coûte que la suggestion, jamais une saisie.
+ *
+ * Une base qui a une ligne garde sa méthode : aucun déploiement ne change une
+ * méthode en place.
+ */
+export const UNSET_PRO_PRICE_POLICY: ProPricePolicy = { method: "entered", ratioBp: null };
 
 /**
  * En **points de base entiers**, jamais en pourcentage flottant.
@@ -75,8 +81,9 @@ export type ProPriceRatioPayload = z.infer<typeof proPriceRatioPayloadSchema>;
 /**
  * **Choisir la méthode appliquée.**
  *
- * Un seul champ. La route existait avant la deuxième méthode ; `entered` n'a
- * demandé qu'une valeur de plus dans {@link PRO_PRICE_METHODS}.
+ * Un seul champ. Depuis le lot S, l'écran ne s'en sert plus que pour « Passer
+ * au prix saisi » (`entered`) ; la route accepte toujours `ratio_ttc` — le
+ * code n'est pas effacé.
  */
 export const proPriceMethodPayloadSchema = z.object({
   method: z.enum(PRO_PRICE_METHODS),
@@ -97,8 +104,9 @@ export interface AccountingRulesView {
   /**
    * La méthode **appliquée** — celle dont le push se sert.
    *
-   * `ratio_ttc` tant que personne n'a choisi : c'est le comportement d'origine,
-   * et un déploiement qui ne s'est pas prononcé ne doit pas changer de tarif.
+   * `entered` quand rien n'a jamais été réglé ({@link UNSET_PRO_PRICE_POLICY},
+   * lot S) : une base vierge n'a aucun prix à préserver. Une base qui a une
+   * ligne rend la sienne.
    */
   readonly method: ProPriceMethod;
   /** ISO-8601, ou `null` si rien n'a jamais été réglé. */
@@ -170,7 +178,12 @@ export function proHtFromPublic(
  */
 export interface ProPricePolicy {
   readonly method: ProPriceMethod;
-  readonly ratioBp: number;
+  /**
+   * Le rapport, `null` s'il n'a jamais été posé (lot S). Il ne sert de repli
+   * que sous `ratio_ttc` ; sous `entered`, il ne nourrit que la suggestion.
+   * `ratio_ttc` sans rapport ne tarife rien : `proPriceOf` rend `null`.
+   */
+  readonly ratioBp: number | null;
 }
 
 /**
@@ -198,19 +211,21 @@ export interface ProPrice {
  *
  * Un seul point d'entrée parce que la branche est une décision d'argent : la
  * dupliquer chez ses appelants garantirait qu'un écran finisse par montrer une
- * méthode pendant que le fil en pousse une autre. Ils sont **six**, vérifié le
- * 2026-10-15 : `projection.ts` et `catalog-facts.ts` (le fil), le
- * pré-remplissage du lot P (`prefill-pro-prices.ts`), l'écran des règles
- * (`accounting-rules-page.ts`, deux appels) et la fiche
- * (`product-form-store.ts`, deux appels).
+ * méthode pendant que le fil en pousse une autre. Ses appelants, vérifié le
+ * 2026-10-16 (lot S) : `projection.ts` et `catalog-facts.ts` (le fil),
+ * `variant-completeness.ts` (la complétude), le pré-remplissage
+ * (`pro-price-prefill.ts`, deux appels), l'écran des règles
+ * (`accounting-rules-page.ts`, deux appels), la fiche (`product-form-store.ts`)
+ * et la suggestion de la fiche (`pro-price-entry.ts`, `proPriceSuggestionOf`).
  *
  * `null` **sans taux d'article** : le hors taxe n'en est pas dérivable sous
  * `ratio_ttc`, et le taux sert de toute façon à FACTURER. Un article sans taux
  * est donc écarté du canal (`variant_sans_taux`) — inventer un taux facturerait
  * un montant que personne n'a décidé.
  *
- * Sous `entered`, `null` aussi **sans saisie** : un prix pro absent n'est pas
- * le prix public, ni zéro. `enteredHtMillicents` est ignoré sous `ratio_ttc`.
+ * Sans saisie, `null` aussi sous `entered` (un prix pro absent n'est pas le
+ * prix public, ni zéro), et sous `ratio_ttc` sans rapport posé (lot S : rien
+ * n'invente un rapport).
  */
 export function proPriceOf(
   publicTtcCents: number,
@@ -228,9 +243,10 @@ export function proPriceOf(
   if (enteredHtMillicents !== null) {
     return enteredProPrice(enteredHtMillicents, articleVatPercent);
   }
-  return policy.method === "entered"
-    ? null
-    : ratioTtcProPrice(publicTtcCents, policy.ratioBp, articleVatPercent);
+  if (policy.method === "entered" || policy.ratioBp === null) {
+    return null;
+  }
+  return ratioTtcProPrice(publicTtcCents, policy.ratioBp, articleVatPercent);
 }
 
 /**
@@ -304,12 +320,31 @@ export interface ProPricePrefillRowView {
   readonly prefilledHtMillicents: number | null;
   /**
    * `to_prefill` dont le HT pré-rempli diffère du HT servi, au millicentime.
-   * Un seul suffit à refuser l'`apply`.
+   * Un seul suffit à refuser l'`apply`. **Sous `ratio_ttc` seulement** (lot S) :
+   * sous `entered`, une déclinaison sans saisie n'est pas servie, et l'écart
+   * n'y prouverait rien.
    */
   readonly mismatch: boolean;
+  /**
+   * Pour une alignée (`aligned`), le SKU du défaut qu'elle suit — l'aperçu la
+   * range dessous. `null` sinon.
+   */
+  readonly followsSku: string | null;
+  /**
+   * Pour une alignée, **la vraie cause** qui laisse son défaut sans prix pro
+   * après pré-remplissage : `no_price` ou `no_vat_b2b` (contradiction de
+   * `vitruve`, lot S). `null` si le défaut a, ou recevra, son prix pro.
+   */
+  readonly alignedCause: "no_price" | "no_vat_b2b" | null;
 }
 
-/** L'aperçu (`dryRun`) — ce que l'`apply` ferait, et s'il le peut. */
+/**
+ * L'aperçu (`dryRun`) — ce que l'`apply` ferait, et s'il le peut.
+ *
+ * Deux vérités selon `method` (lot S) : sous `ratio_ttc`, « rien de servi ne
+ * change » (le contrôle au millicentime le prouve) ; sous `entered`, « ces
+ * déclinaisons deviendront vendables aux pros à ce prix ».
+ */
 export interface ProPricePrefillPreviewView {
   readonly method: ProPriceMethod;
   readonly ratioBp: number;

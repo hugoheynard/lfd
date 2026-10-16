@@ -94,7 +94,8 @@ export interface ProductFactInput {
   /**
    * Les contextes en service et la règle du prix pro — ce que la règle de
    * complétude partagée avec l'activation (`variantGaps`) ne voit pas d'une
-   * fiche. `policy: null` = le rapport pro n'est pas réglé : rien ne se vend.
+   * fiche. La politique n'est jamais `null` (lot S) : sans règles, la saisie
+   * se vend.
    */
   readonly rules: CompletenessRules;
   readonly inco: IncoProjector;
@@ -181,7 +182,7 @@ function sellableVariant(variant: VariantOf, input: ProductFactInput): SyncVaria
   const vatRatePercent = vatOf(input.percents);
   const { policy } = input.rules;
   const proPrice =
-    variant.priceCents === null || policy === null
+    variant.priceCents === null
       ? null
       : proPriceOf(variant.priceCents, policy, vatRatePercent, variant.proPriceMillicents);
   if (proPrice === null || variant.priceCents === null) {

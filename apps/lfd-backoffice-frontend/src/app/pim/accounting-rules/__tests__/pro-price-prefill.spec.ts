@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { AccountingRulesHttpApi } from '../accounting-rules-http-api';
-import { ProPricePrefill } from '../pro-price-prefill/pro-price-prefill';
+import { groupedUnderDefaults, ProPricePrefill } from '../pro-price-prefill/pro-price-prefill';
 
 /** Le pré-remplissage du prix pro (lot P, P5) : un aperçu, puis un geste. */
 
@@ -20,6 +20,8 @@ function row(over: Partial<ProPricePrefillRowView> = {}): ProPricePrefillRowView
     servedHtMillicents: 1_697_630,
     prefilledHtMillicents: 1_697_630,
     mismatch: false,
+    followsSku: null,
+    alignedCause: null,
     ...over,
   };
 }
@@ -114,7 +116,8 @@ describe('ProPricePrefill — l’aperçu', () => {
     button(fixture, 'Voir l').click();
     await settle(fixture);
 
-    expect(host(fixture).querySelector('fold-callout')?.textContent).toContain('1 écart');
+    const callouts = [...host(fixture).querySelectorAll('fold-callout')].map((c) => c.textContent);
+    expect(callouts.some((c) => (c ?? '').includes('1 écart'))).toBe(true);
     expect(button(fixture, 'Pré-remplir').disabled).toBe(true);
   });
 
@@ -145,5 +148,75 @@ describe('ProPricePrefill — l’écriture', () => {
     expect(api.applied).toBe(1);
     expect(host(fixture).textContent).toContain('déjà saisi');
     expect(button(fixture, 'Pré-remplir 0 prix pro').disabled).toBe(true);
+  });
+});
+
+/** Lot S : deux vérités, la phrase du vrai basculement, les alignées sous leur défaut. */
+describe('ProPricePrefill — lot S', () => {
+  const flat = (text: string | null | undefined): string =>
+    (text ?? '').replace(/\u202f|\u00a0/g, ' ');
+
+  it('dit que le prix public ne bouge plus le prix pro après l’écriture', async () => {
+    const fixture = await render(new FakeApi(view()));
+    button(fixture, 'Voir l').click();
+    await settle(fixture);
+
+    expect(flat(host(fixture).textContent)).toContain('le prix public ne bouge plus le prix pro');
+    expect(flat(host(fixture).textContent)).toContain('Rien de servi ne change');
+  });
+
+  it('sous prix saisi, dit que les déclinaisons deviendront vendables, et fait confirmer', async () => {
+    const api = new FakeApi(
+      view({ method: 'entered', rows: [row({ servedHtMillicents: null })] }),
+      view({ method: 'entered', rows: [row({ status: 'already_entered' })], toPrefill: 0 }),
+    );
+    const fixture = await render(api);
+    button(fixture, 'Voir l').click();
+    await settle(fixture);
+
+    expect(flat(host(fixture).textContent)).toContain('deviendront vendables aux pros');
+    button(fixture, 'Pré-remplir 1 prix pro').click();
+    await settle(fixture);
+    expect(api.applied).toBe(0);
+
+    button(fixture, 'Confirmer le pré-remplissage').click();
+    await settle(fixture);
+    expect(api.applied).toBe(1);
+  });
+
+  it('annuler la confirmation n’écrit rien', async () => {
+    const api = new FakeApi(view({ method: 'entered' }));
+    const fixture = await render(api);
+    button(fixture, 'Voir l').click();
+    await settle(fixture);
+    button(fixture, 'Pré-remplir 1 prix pro').click();
+    await settle(fixture);
+
+    button(fixture, 'Annuler').click();
+    await settle(fixture);
+
+    expect(api.applied).toBe(0);
+    expect(button(fixture, 'Pré-remplir 1 prix pro').disabled).toBe(false);
+  });
+
+  it('range une alignée sous son défaut, avec la vraie cause', async () => {
+    const aligned = row({
+      variantId: 'var_2',
+      sku: 'CHO-001-2',
+      status: 'aligned',
+      followsSku: 'CHO-001-1',
+      alignedCause: 'no_vat_b2b',
+    });
+    const other = row({ productId: 'prd_2', variantId: 'var_3', sku: 'TAR-001-1' });
+    const fixture = await render(new FakeApi(view({ rows: [aligned, other, row()] })));
+    button(fixture, 'Voir l').click();
+    await settle(fixture);
+
+    expect(flat(host(fixture).textContent)).toContain('suit CHO-001-1 — sans taux B2B');
+    expect(groupedUnderDefaults([aligned, other, row()]).map((r) => r.sku)).toEqual([
+      'TAR-001-1',
+      'CHO-001-1',
+      'CHO-001-2',
+    ]);
   });
 });

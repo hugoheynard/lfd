@@ -5,7 +5,6 @@ import { FixedAccountingRules } from "../../../../accounting-rules/domain/ports/
 import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
 import type { CategoryVatPercents } from "../../../shared/domain/ports/catalogue-reader.js";
 import type { VariantSnapshot } from "../../domain/entities/variant.js";
-import { ProPricePrefillMismatchError } from "../../domain/errors/product-errors.js";
 import { ApplyProPricePrefillHandler } from "../apply-pro-price-prefill.js";
 import { PreviewProPricePrefillHandler } from "../preview-pro-price-prefill.js";
 import {
@@ -115,15 +114,29 @@ describe("PreviewProPricePrefillHandler — l'aperçu", () => {
     expect(view.toPrefill).toBe(0);
   });
 
-  /** Sous `entered`, le fil sert la saisie — ou rien : un pré-remplissage écrirait autre chose. */
-  it("compte un écart quand la méthode n'est plus ratio_ttc", async () => {
+  /**
+   * Régression (BLOQUANT `vitruve`, lot S) : sous `entered`, le contrôle
+   * comptait un écart sur toute ligne à pré-remplir (elle n'est pas servie),
+   * et l'écriture était refusée pour toujours. L'aperçu y dit l'autre vérité :
+   * rien n'est servi aujourd'hui, ce HT le sera.
+   */
+  it("sous entered, ne compte aucun écart et montre le HT qui sera vendu", async () => {
     const view = await preview(catalogue(), FixedAccountingRules.with("entered", 9_000));
 
-    expect(view.mismatches).toBe(1);
+    expect(view).toMatchObject({ method: "entered", mismatches: 0, toPrefill: 1 });
     expect(view.rows.find((row) => row.sku === "PAT-7-1")).toMatchObject({
       servedHtMillicents: null,
       prefilledHtMillicents: 2_400_000,
-      mismatch: true,
+      mismatch: false,
+    });
+  });
+
+  it("range l'alignée sous son défaut", async () => {
+    const view = await preview(catalogue());
+
+    expect(view.rows.find((row) => row.sku === "PAT-7-2")).toMatchObject({
+      followsSku: "PAT-7-1",
+      alignedCause: null,
     });
   });
 
@@ -167,12 +180,17 @@ describe("ApplyProPricePrefillHandler — l'écriture", () => {
     expect(journal.types()).toEqual([]);
   });
 
-  it("refuse tout au moindre écart, avant la première écriture", async () => {
+  /**
+   * Régression (BLOQUANT `vitruve`, lot S) : sous `entered`, l'écriture était
+   * refusée (`ProPricePrefillMismatchError`) pour un écart qui n'en était pas un.
+   */
+  it("écrit sous entered : les déclinaisons deviennent vendables à ce prix", async () => {
     const products = catalogue();
 
-    await expect(
-      apply(products, FixedAccountingRules.with("entered", 9_000)),
-    ).rejects.toBeInstanceOf(ProPricePrefillMismatchError);
-    expect(products.stored?.variants.find((v) => v.id === "v_own")?.proPriceMillicents).toBeNull();
+    await apply(products, FixedAccountingRules.with("entered", 9_000));
+
+    expect(products.stored?.variants.find((v) => v.id === "v_own")?.proPriceMillicents).toBe(
+      2_400_000,
+    );
   });
 });

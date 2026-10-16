@@ -13,8 +13,8 @@ export class PreviewProPricePrefillQuery {}
  * **L'aperçu du pré-remplissage** (`dryRun`, lot P, P5) — lecture seule.
  *
  * Rend chaque déclinaison avec le HT servi aujourd'hui et le HT que l'`apply`
- * écrirait, et le nombre d'écarts : Hugo relit cette liste AVANT d'écrire,
- * puis avant de basculer la méthode.
+ * écrirait, et le nombre d'écarts (sous `ratio_ttc` seulement, lot S) : Hugo
+ * relit cette liste AVANT d'écrire, puis avant « Passer au prix saisi ».
  */
 @QueryHandler(PreviewProPricePrefillQuery)
 export class PreviewProPricePrefillHandler implements IQueryHandler<
@@ -31,7 +31,7 @@ export class PreviewProPricePrefillHandler implements IQueryHandler<
     const plan = await loadPrefillPlan(this.products, this.catalogue, this.accounting);
     return {
       method: plan.policy.method,
-      ratioBp: plan.policy.ratioBp,
+      ratioBp: plan.ratioBp,
       rows: plan.rows,
       toPrefill: plan.rows.filter((row) => row.status === "to_prefill").length,
       mismatches: prefillMismatches(plan.rows),
