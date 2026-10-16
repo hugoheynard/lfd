@@ -49,6 +49,30 @@ describe("OperationNotice — l'encart d'un rayon d'opération", () => {
     );
   });
 
+  it('l’heure de clôture montrée : le jour et l’heure de Paris', () => {
+    const root = render({
+      ...testOperation('open'),
+      announceFrom: '2026-11-01T08:00:00.000Z',
+      showsOrderUntilTime: true,
+    });
+    expect(root.textContent).toContain('Commandez avant le 21 déc. à 12:00');
+  });
+
+  it('l’heure de clôture éteinte : le jour seul', () => {
+    const root = render({
+      ...testOperation('open'),
+      announceFrom: '2026-11-01T08:00:00.000Z',
+      showsOrderUntilTime: false,
+    });
+    expect(root.textContent).toContain('Commandez avant le 21 déc.');
+    expect(root.textContent).not.toContain('12:00');
+  });
+
+  it('sans le champ (interrupteur fermé) : le jour seul, comme avant', () => {
+    const root = render(testOperation('open'));
+    expect(root.textContent).not.toContain('12:00');
+  });
+
   it('sans attente, aucun callout', () => {
     const root = render({ ...testOperation('open'), announceFrom: '2026-11-01T08:00:00.000Z' });
     expect(root.querySelector('fold-callout')).toBeNull();

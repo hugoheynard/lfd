@@ -63,6 +63,7 @@ export class PrismaCatalogOperationsReader extends CatalogOperationsReader {
         pickupUntil: facts.pickupUntil,
         audience: held.audience,
         skus: held.skus,
+        ...(atCommerce ? { showsOrderUntilTime: row.showsOrderUntilTime } : {}),
       });
     }
     return atCommerce ? withLibraryAlts(this.library, sellable) : sellable;

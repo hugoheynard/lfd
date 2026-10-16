@@ -17,6 +17,7 @@ export function commerceOperation(
     orderUntil: '2026-12-21T11:00:00.000Z',
     pickupFrom: '2026-12-23',
     pickupUntil: '2026-12-24',
+    showsOrderUntilTime: true,
     audience: 'both',
     skus: ['BUCHE-01'],
     sellingSkus: ['BUCHE-01'],

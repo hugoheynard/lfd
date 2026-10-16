@@ -463,6 +463,8 @@ export interface ClientCopy {
      */
     readonly operationOrderFrom: string;
     readonly operationOrderUntil: string;
+    /** La clôture avec son heure, quand l'opération la montre (`{date}`, `{time}` en HH:MM, heure de Paris). */
+    readonly operationOrderUntilTime: string;
     readonly operationPickupWindow: string;
     /** Commandes ouvertes et rayon encore vide : l'encart le dit. */
     readonly operationAwaitingProducts: string;

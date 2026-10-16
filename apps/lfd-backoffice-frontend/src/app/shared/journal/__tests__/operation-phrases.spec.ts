@@ -153,6 +153,17 @@ describe('les opérations datées tenues au commerce, au journal', () => {
         }),
       ).sentence,
     ).toBe('Colette Martin a redaté l’opération « Noël 2026 » : clôture des commandes');
+    // Hugo, 2026-10-16 : l'heure de clôture se règle avec le calendrier.
+    expect(
+      renderFact(
+        atCommerce('catalog_operation.rescheduled', {
+          subjectLabel: 'Noël 2026',
+          changes: { showsOrderUntilTime: { from: true, to: false } },
+        }),
+      ).sentence,
+    ).toBe(
+      'Colette Martin a redaté l’opération « Noël 2026 » : heure de clôture affichée en boutique',
+    );
     expect(
       renderFact(
         atCommerce('catalog_operation.audience_changed', {

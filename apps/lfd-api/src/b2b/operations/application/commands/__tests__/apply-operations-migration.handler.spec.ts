@@ -63,6 +63,7 @@ function pim(over: Partial<ReferentialOperation> = {}): ReferentialOperation {
 function copyOf(operation: ReferentialOperation): Operation {
   return Operation.reconstitute({
     key: operation.key,
+    showsOrderUntilTime: true,
     name: operation.name,
     lede: operation.lede,
     image: operation.image,

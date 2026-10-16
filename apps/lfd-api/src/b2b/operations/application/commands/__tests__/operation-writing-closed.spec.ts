@@ -63,7 +63,11 @@ describe("les gestes d'écriture, interrupteur fermé", () => {
       "redater",
       () =>
         new RescheduleOperationHandler(...ports).execute(
-          new RescheduleOperationCommand("noel-2026", noel().schedule, "staff_1"),
+          new RescheduleOperationCommand(
+            "noel-2026",
+            { schedule: noel().schedule, showsOrderUntilTime: true },
+            "staff_1",
+          ),
         ),
     ],
     [

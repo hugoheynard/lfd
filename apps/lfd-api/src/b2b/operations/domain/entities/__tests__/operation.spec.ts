@@ -39,7 +39,15 @@ const LATER: WriteStamp = { by: "staff_marc", at: new Date("2026-10-02T09:00:00.
 
 /** Une ligne telle que le push du référentiel l'a écrite : jamais écrite au commerce. */
 function received(over: Partial<OperationRecord> = {}): OperationRecord {
-  return { ...noel(), skus: [], hidden: false, archivedAt: null, lastWrite: null, ...over };
+  return {
+    ...noel(),
+    showsOrderUntilTime: true,
+    skus: [],
+    hidden: false,
+    archivedAt: null,
+    lastWrite: null,
+    ...over,
+  };
 }
 
 describe("Operation.prepare", () => {
@@ -82,7 +90,10 @@ describe("Operation — ce qui change, et qui l'a écrit", () => {
     operation.select(["BUC-001", "GAL-002"], PREPARED);
     operation.changeAudience("pro", PREPARED);
     operation.edit({ name: { fr: "Noël" }, lede: null, image: null }, PREPARED);
-    operation.reschedule({ ...noel().schedule, pickupUntil: "2026-12-31" }, LATER);
+    operation.reschedule(
+      { schedule: { ...noel().schedule, pickupUntil: "2026-12-31" }, showsOrderUntilTime: true },
+      LATER,
+    );
 
     expect(operation.snapshot()).toMatchObject({
       skus: ["BUC-001", "GAL-002"],
@@ -100,12 +111,30 @@ describe("Operation — ce qui change, et qui l'a écrit", () => {
 
     expect(() =>
       operation.reschedule(
-        { ...noel().schedule, pickupFrom: "2026-12-25", pickupUntil: "2026-12-20" },
+        {
+          schedule: { ...noel().schedule, pickupFrom: "2026-12-25", pickupUntil: "2026-12-20" },
+          showsOrderUntilTime: false,
+        },
         LATER,
       ),
     ).toThrow();
     expect(operation.snapshot().schedule.pickupFrom.value).toBe("2026-12-20");
+    expect(operation.snapshot().showsOrderUntilTime).toBe(true);
     expect(operation.snapshot().lastWrite).toEqual(PREPARED);
+  });
+
+  /** Hugo, 2026-10-16 : « Commandez avant le… » dit l'heure, sauf si on l'éteint. */
+  it("affiche l'heure de clôture dès la préparation, et l'éteint avec le calendrier", () => {
+    const operation = Operation.prepare(noel(), PREPARED);
+    expect(operation.snapshot().showsOrderUntilTime).toBe(true);
+
+    operation.reschedule({ schedule: noel().schedule, showsOrderUntilTime: false }, LATER);
+
+    expect(operation.snapshot()).toMatchObject({ showsOrderUntilTime: false, lastWrite: LATER });
+    const reread = Operation.reconstitute(
+      received({ showsOrderUntilTime: false, lastWrite: LATER }),
+    );
+    expect(reread.snapshot().showsOrderUntilTime).toBe(false);
   });
 
   /** Ce que `isHidden` de la surcharge portait : réversible, et sans toucher à l'archivage. */
@@ -132,7 +161,7 @@ describe("Operation — ce qui change, et qui l'a écrit", () => {
       () => operation.select(["BUC-001"], again),
       () => operation.changeAudience("pro", again),
       () => operation.edit({ name: { fr: "Noël" }, lede: null, image: null }, again),
-      () => operation.reschedule(noel().schedule, again),
+      () => operation.reschedule({ schedule: noel().schedule, showsOrderUntilTime: false }, again),
       () => operation.setHidden(true, again),
       () => operation.archive(again),
     ]) {
@@ -231,8 +260,13 @@ describe("l'image suit la médiathèque", () => {
 describe("la migration depuis le référentiel (lot 3)", () => {
   /** Les valeurs du référentiel, déjà restreintes par la surcharge de la réception. */
   function fromReferential(over: Partial<ReferentialOperation> = {}): ReferentialOperation {
-    const { lastWrite, ...values } = received({ skus: ["BUC-001"], hidden: true, ...over });
+    const { lastWrite, showsOrderUntilTime, ...values } = received({
+      skus: ["BUC-001"],
+      hidden: true,
+      ...over,
+    });
     expect(lastWrite).toBeNull();
+    expect(showsOrderUntilTime).toBe(true);
     return values;
   }
 
@@ -266,5 +300,17 @@ describe("la migration depuis le référentiel (lot 3)", () => {
     expect(
       Operation.fromReferential(fromReferential({ archivedAt: PREPARED.at }), LATER).snapshot(),
     ).toMatchObject({ archivedAt: PREPARED.at, lastWrite: LATER, skus: ["BUC-001"] });
+  });
+
+  /** Le référentiel ne connaît pas ce réglage : la reprise affiche l'heure, comme une préparation. */
+  it("la reprise affiche l'heure de clôture, même sur une copie qui l'avait éteinte", () => {
+    const copy = Operation.reconstitute(received({ showsOrderUntilTime: false }));
+
+    copy.adoptReferential(fromReferential(), LATER);
+
+    expect(copy.snapshot().showsOrderUntilTime).toBe(true);
+    expect(Operation.fromReferential(fromReferential(), LATER).snapshot().showsOrderUntilTime).toBe(
+      true,
+    );
   });
 });

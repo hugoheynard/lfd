@@ -168,10 +168,27 @@ describe("shopCatalogueOf — les opérations au commerce (OPERATIONS_AT_COMMERC
     });
   });
 
+  /** Hugo, 2026-10-16 : « Commandez avant le… » dit l'heure, sauf si l'opération l'éteint. */
+  it("dit si l'encart affiche l'heure de clôture — oui quand le lecteur ne dit rien", () => {
+    const at = new Date("2026-12-01T00:00:00.000Z");
+    const silent = shopCatalogueOf(SELLABLE, sale(at, { operationsAtCommerce: true }));
+    const off = shopCatalogueOf(
+      SELLABLE,
+      sale(at, {
+        operations: [noel({ showsOrderUntilTime: false })],
+        operationsAtCommerce: true,
+      }),
+    );
+
+    expect(silent.operations[0]).toMatchObject({ showsOrderUntilTime: true });
+    expect(off.operations[0]).toMatchObject({ showsOrderUntilTime: false });
+  });
+
   it("interrupteur fermé, la vue n'a pas un champ de plus", () => {
     const view = shopCatalogueOf(SELLABLE, sale(new Date("2026-12-01T00:00:00.000Z")));
 
     expect(Object.keys(view.operations[0] ?? {})).not.toContain("announceFrom");
     expect(Object.keys(view.operations[0] ?? {})).not.toContain("awaitingProducts");
+    expect(Object.keys(view.operations[0] ?? {})).not.toContain("showsOrderUntilTime");
   });
 });

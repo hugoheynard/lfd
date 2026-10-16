@@ -32,7 +32,7 @@ import { SetOperationVisibilityCommand } from "../application/commands/set-opera
 import { GetOperationQuery } from "../application/queries/get-operation.query.js";
 import { ListOperationsQuery } from "../application/queries/list-operations.query.js";
 import { PreviewOperationsMigrationQuery } from "../application/queries/preview-operations-migration.query.js";
-import { scheduleOf } from "./operation-payloads.js";
+import { calendarOf, scheduleOf } from "./operation-payloads.js";
 
 /**
  * **Les opérations datées, écrites au commerce** — `/admin/operations`
@@ -143,7 +143,7 @@ export class AdminOperationsController {
     @StaffUserId() staffUserId: string,
   ): Promise<CommerceOperationKeyResponse> {
     await this.commands.execute<RescheduleOperationCommand, void>(
-      new RescheduleOperationCommand(key, scheduleOf(body), staffUserId),
+      new RescheduleOperationCommand(key, calendarOf(body), staffUserId),
     );
     return { key };
   }

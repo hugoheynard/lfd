@@ -69,6 +69,7 @@ export async function operationViews(
               focal: operation.image.focal,
             },
       ...scheduleText(operation.schedule),
+      showsOrderUntilTime: operation.showsOrderUntilTime,
       audience: operation.audience,
       skus: [...operation.skus],
       sellingSkus,

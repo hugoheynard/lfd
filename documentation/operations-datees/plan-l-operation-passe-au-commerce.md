@@ -38,6 +38,38 @@ la sélection (`selection-order.ts`) ont quitté `pim/operations/` pour
 `operations/` ; l'écran du référentiel les importe de là jusqu'à son retrait
 (lot 4), et `lint:business-day` couvre le nouveau dossier.
 
+**2026-10-16 — l'ancien écran est retiré.** `src/app/pim/operations/` est
+supprimé (routes, entrée de menu, specs) ; l'écran du commerce prend
+`/operations` et `/operations/:key` sous `lfc_operations:read`, son entrée
+s'appelle « Opérations » au rail comme aux tuiles, et `/operations-commerce`
+(`/:key`) redirige. La route serveur `/pim/operations` reste jusqu'au lot 4.
+**Ce déploiement va avec la bascule** : avant elle, plus personne ne peut
+écrire une opération — l'interrupteur est fermé et le nouvel écran est en
+lecture seule.
+
+## L'heure de clôture, par opération (2026-10-16)
+
+Hugo : en boutique, « Commandez avant le… » ne dit que le jour. Décision : un
+réglage **par opération**, « afficher l'heure de clôture », **vrai par
+défaut** — « avant le 21 décembre à 12:00 », ou « avant le 21 décembre ».
+
+- **Il se règle avec le calendrier** (`PUT /admin/operations/:key/schedule`,
+  champ `showsOrderUntilTime`, facultatif : absent = `true`), pas par une
+  commande à part : c'est un réglage de la clôture, qu'on décide en la posant,
+  et la carte « Calendrier » de l'écran l'envoie avec les dates. L'agrégat le
+  porte (`Operation.reschedule(calendar)`) ; vrai à la préparation et à la
+  reprise depuis le référentiel, qui ne le connaît pas.
+- **En base** : `catalog_operations.shows_order_until_time`, `BOOLEAN NOT NULL
+DEFAULT true` (migration additive `20261016220000`, sans réécriture).
+- **Au journal** : `catalog_operation.rescheduled` le porte dans `changes`,
+  comme une date ; les faits d'avant se relisent tels quels (chaque clé de
+  `changes` est facultative).
+- **Contrats** : `CommerceOperationView.showsOrderUntilTime` ;
+  `ShopOperationView.showsOrderUntilTime`, présent interrupteur ouvert
+  seulement, comme `announceFrom`.
+- **Reste au front** : la case dans la carte « Calendrier » de l'écran, et
+  l'encart de la boutique qui dit l'heure selon le champ.
+
 ## 0. La demande (Hugo, 2026-10-15)
 
 > « Tu penses que opérations doit rester domaine du référentiel ? » — puis,

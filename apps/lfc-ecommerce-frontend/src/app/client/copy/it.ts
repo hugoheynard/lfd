@@ -261,6 +261,7 @@ export const IT: ClientCopy = {
     operationBadgeLastDay: 'Ultimo giorno',
     operationOrderFrom: 'Ordini a partire dal {date}',
     operationOrderUntil: 'Ordinate entro il {date}',
+    operationOrderUntilTime: 'Ordinate entro il {date} alle {time}',
     operationPickupWindow: 'Ritiro {span}',
     operationAwaitingProducts: 'I prodotti arrivano presto',
   },

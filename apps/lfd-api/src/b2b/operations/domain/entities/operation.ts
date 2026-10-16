@@ -10,12 +10,10 @@ import {
   type OperationFocal,
 } from "../value-objects/operation-image.js";
 import { OperationKey } from "../value-objects/operation-key.js";
-import {
-  OperationSchedule,
-  type OperationScheduleInput,
-} from "../value-objects/operation-schedule.js";
+import { OperationSchedule } from "../value-objects/operation-schedule.js";
 import { OperationSelection } from "../value-objects/operation-selection.js";
 import type {
+  OperationCalendarInput,
   OperationPresentation,
   OperationPresentationInput,
   OperationRecord,
@@ -27,6 +25,7 @@ import type {
 import { operationText } from "../value-objects/operation-text.js";
 
 export type {
+  OperationCalendarInput,
   OperationPresentation,
   OperationPresentationInput,
   OperationRecord,
@@ -40,6 +39,7 @@ export type {
 interface OperationState {
   presentation: OperationPresentation;
   schedule: OperationSchedule;
+  showsOrderUntilTime: boolean;
   audience: OperationAudience;
   selection: OperationSelection;
   hidden: boolean;
@@ -79,6 +79,7 @@ export class Operation {
     return new Operation(OperationKey.of(input.key).value, {
       presentation: presentationOf(input),
       schedule: OperationSchedule.of(input.schedule),
+      showsOrderUntilTime: true,
       audience: operationAudience(input.audience),
       selection: OperationSelection.empty(),
       hidden: false,
@@ -92,6 +93,7 @@ export class Operation {
     return new Operation(OperationKey.of(record.key).value, {
       presentation: presentationOf(record),
       schedule: OperationSchedule.of(record.schedule),
+      showsOrderUntilTime: record.showsOrderUntilTime,
       audience: operationAudience(record.audience),
       selection: OperationSelection.of(record.skus),
       hidden: record.hidden,
@@ -132,9 +134,18 @@ export class Operation {
     this.write(stamp, { presentation: presentationOf(presentation) });
   }
 
-  /** Réécrit les cinq dates ensemble. @throws {OperationArchivedError} */
-  reschedule(schedule: OperationScheduleInput, stamp: WriteStamp): void {
-    this.write(stamp, { schedule: OperationSchedule.of(schedule) });
+  /**
+   * Réécrit le calendrier : les cinq dates ensemble, et si la boutique dit
+   * l'HEURE de la clôture ou seulement son jour (Hugo, 2026-10-16) — un
+   * réglage de la clôture, qui se décide en la posant.
+   *
+   * @throws {OperationArchivedError}
+   */
+  reschedule(calendar: OperationCalendarInput, stamp: WriteStamp): void {
+    this.write(stamp, {
+      schedule: OperationSchedule.of(calendar.schedule),
+      showsOrderUntilTime: calendar.showsOrderUntilTime,
+    });
   }
 
   /** @throws {OperationArchivedError} */
@@ -261,6 +272,8 @@ function stateOf(values: ReferentialOperation, stamp: WriteStamp): OperationStat
   return {
     presentation: presentationOf(values),
     schedule: OperationSchedule.of(values.schedule),
+    // Le référentiel ne connaît pas ce réglage : la reprise prend le défaut.
+    showsOrderUntilTime: true,
     audience: operationAudience(values.audience),
     selection: OperationSelection.of(values.skus),
     hidden: values.hidden,

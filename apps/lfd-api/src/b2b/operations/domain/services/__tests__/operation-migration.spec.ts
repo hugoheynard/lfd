@@ -40,7 +40,10 @@ function mirrored(
   restriction: MigrationRestriction | null = null,
   over: Partial<OperationRecord> = {},
 ): MirroredOperation {
-  return { record: { ...referential(), lastWrite: null, ...over }, restriction };
+  return {
+    record: { ...referential(), showsOrderUntilTime: true, lastWrite: null, ...over },
+    restriction,
+  };
 }
 
 function restriction(over: Partial<MigrationRestriction> = {}): MigrationRestriction {

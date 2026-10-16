@@ -258,6 +258,7 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   series: 'Série',
   serviceDay: 'Journée de service',
   shotOn: 'Prise de vue',
+  showsOrderUntilTime: 'Heure de clôture affichée en boutique',
   signatureRequired: 'Signature exigée',
   signedAt: 'Signé le',
   singular: 'Singulier',

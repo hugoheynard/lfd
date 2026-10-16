@@ -70,3 +70,16 @@ export function scheduleText(schedule: OperationSchedule): ScheduleText {
     pickupUntil: schedule.pickupUntil.value,
   };
 }
+
+/** Le calendrier en texte : les dates, et le réglage de l'heure de clôture. */
+export interface CalendarText extends ScheduleText {
+  readonly showsOrderUntilTime: boolean;
+}
+
+/** Ce que le journal compare quand on règle le calendrier. */
+export function calendarText(snapshot: OperationSnapshot): CalendarText {
+  return {
+    ...scheduleText(snapshot.schedule),
+    showsOrderUntilTime: snapshot.showsOrderUntilTime,
+  };
+}

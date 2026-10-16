@@ -85,6 +85,20 @@ export function shortDate(instant: string, locale: LocaleCode): string {
   }).format(date);
 }
 
+/** L'heure d'un instant en heure de Paris, sur 24 h (« 12:00 »). */
+export function shortTime(instant: string, locale: LocaleCode): string {
+  const date = new Date(instant);
+  if (Number.isNaN(date.getTime())) {
+    return instant;
+  }
+  return new Intl.DateTimeFormat(locale, {
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+    timeZone: SHOP_TIME_ZONE,
+  }).format(date);
+}
+
 /** Un jour `AAAA-MM-JJ` en court (« 24 déc. »), ou le seul quantième (« 20 »). */
 function shortDay(day: string, locale: LocaleCode, withMonth: boolean): string {
   const date = new Date(`${day}${MIDDAY}`);

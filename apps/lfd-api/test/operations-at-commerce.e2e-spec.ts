@@ -1,4 +1,4 @@
-import type { ReceivedOperationView } from "@lfd/contracts";
+import type { CommerceOperationView, ReceivedOperationView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { AppConfig } from "../src/platform/config/app-config.js";
@@ -114,6 +114,42 @@ describe("préparer au commerce", () => {
 
     expect(refused.body).toMatchObject({ code: "operations.pickup_window_inverted" });
     expect(await ctx.prisma.catalogOperation.count()).toBe(0);
+  });
+});
+
+/** Hugo, 2026-10-16 : « Commandez avant le… » dit l'heure, réglée par opération avec le calendrier. */
+describe("l'heure de clôture, par opération", () => {
+  async function shown(): Promise<boolean> {
+    const view = jsonBody<CommerceOperationView>(
+      await staff().get(`${OPERATIONS}/noel-2026`).expect(200),
+    );
+    return view.showsOrderUntilTime;
+  }
+
+  it("est affichée à la préparation, s'éteint avec le calendrier, et se journalise seule", async () => {
+    await prepareNoel();
+    expect(await row()).toMatchObject({ showsOrderUntilTime: true });
+    expect(await shown()).toBe(true);
+
+    const { announceFrom, orderFrom, orderUntil, pickupFrom, pickupUntil } = noelBody();
+    const dates = { announceFrom, orderFrom, orderUntil, pickupFrom, pickupUntil };
+    await staff()
+      .put(`${OPERATIONS}/noel-2026/schedule`)
+      .send({ ...dates, showsOrderUntilTime: false })
+      .expect(200);
+
+    expect(await row()).toMatchObject({ showsOrderUntilTime: false });
+    expect(await shown()).toBe(false);
+    const fact = await ctx.prisma.activityEvent.findFirstOrThrow({
+      where: { type: "catalog_operation.rescheduled" },
+    });
+    expect(fact.payload).toMatchObject({
+      changes: { showsOrderUntilTime: { from: true, to: false } },
+    });
+
+    // Un écran d'avant le réglage n'envoie pas le champ : il vaut « affichée ».
+    await staff().put(`${OPERATIONS}/noel-2026/schedule`).send(dates).expect(200);
+    expect(await shown()).toBe(true);
   });
 });
 

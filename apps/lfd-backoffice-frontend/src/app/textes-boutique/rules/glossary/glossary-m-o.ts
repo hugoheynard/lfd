@@ -104,6 +104,7 @@ export const GLOSSARY_M_O: Readonly<Record<string, string>> = {
   operationOpensOn: 'Opération — ouvre le',
   operationOrderFrom: 'Opération — commandes à partir du',
   operationOrderUntil: 'Opération — commander avant le',
+  operationOrderUntilTime: 'Opération — commander avant le, avec l’heure',
   operationPickup: 'Opération — retrait',
   operationPickupDay: 'Opération — jour de retrait',
   operationPickupSpan: 'Opération — période de retrait',

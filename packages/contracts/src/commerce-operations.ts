@@ -71,8 +71,19 @@ export const commerceOperationScheduleSchema = z.strictObject({
   pickupFrom: z.string(),
   pickupUntil: z.string(),
 });
-export type RescheduleCommerceOperationPayload = z.infer<typeof commerceOperationScheduleSchema>;
-export const rescheduleCommerceOperationPayloadSchema = commerceOperationScheduleSchema;
+
+/**
+ * Le calendrier : les cinq dates, et `showsOrderUntilTime` — la boutique dit
+ * « avant le 21 décembre à 12:00 » (`true`) ou « avant le 21 décembre »
+ * (`false`). Absent = `true` : un écran d'avant le réglage (2026-10-16) n'est
+ * ni refusé, ni ne l'éteint. Une opération préparée l'affiche toujours.
+ */
+export const rescheduleCommerceOperationPayloadSchema = commerceOperationScheduleSchema.extend({
+  showsOrderUntilTime: z.boolean().optional(),
+});
+export type RescheduleCommerceOperationPayload = z.infer<
+  typeof rescheduleCommerceOperationPayloadSchema
+>;
 
 /** Préparer : la clé, choisie par le staff, ne change plus jamais. La sélection commence vide. */
 export const prepareCommerceOperationPayloadSchema = commerceOperationScheduleSchema.extend({
@@ -161,6 +172,11 @@ export interface CommerceOperationView {
   /** Jours `AAAA-MM-JJ`. */
   readonly pickupFrom: string;
   readonly pickupUntil: string;
+  /**
+   * La boutique affiche l'HEURE de clôture (« avant le 21 décembre à 12:00 »),
+   * pas seulement le jour. Vrai à la préparation ; réglé avec le calendrier.
+   */
+  readonly showsOrderUntilTime: boolean;
   readonly audience: CommerceOperationAudience;
   /** La sélection, dans l'ordre du rayon. */
   readonly skus: readonly string[];

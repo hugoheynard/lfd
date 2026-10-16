@@ -30,6 +30,11 @@
 
     @if (!locked()) {
       <app-schedule-form [(draft)]="draft" />
+      <fold-checkbox
+        label="Afficher l'heure de clôture en boutique"
+        hint="« Commandez avant le 21 décembre à 12:00 », ou le jour seul."
+        [(checked)]="showsOrderUntilTime"
+      />
 
       @if (refusal(); as message) {
         <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>

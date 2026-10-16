@@ -23,6 +23,11 @@ export interface SellableOperation {
   readonly audience: CatalogOperationAudience;
   /** La sélection moins les articles retirés à la réception, dans l'ordre du rayon. */
   readonly skus: readonly string[];
+  /**
+   * La vitrine dit l'heure de clôture, pas seulement le jour. Lu une fois les
+   * opérations au commerce ; absent avant (la vitrine n'en dit rien).
+   */
+  readonly showsOrderUntilTime?: boolean | undefined;
 }
 
 /**

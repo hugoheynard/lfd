@@ -13,6 +13,7 @@ import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
+  FoldCheckboxComponent,
   FoldElementTitleComponent,
 } from 'fold-ng';
 
@@ -43,6 +44,7 @@ import { ScheduleForm } from '../schedule-form/schedule-form';
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,
+    FoldCheckboxComponent,
     FoldElementTitleComponent,
     ScheduleForm,
   ],
@@ -57,6 +59,8 @@ export class CommerceScheduleCard {
   readonly saved = output<string>();
 
   protected readonly draft = signal<ScheduleDraft>(EMPTY_SCHEDULE);
+  /** « avant le 21 déc. à 12:00 » ou « avant le 21 déc. » — réglé avec la clôture. */
+  protected readonly showsOrderUntilTime = signal(true);
   protected readonly busy = signal(false);
   protected readonly refusal = signal<string | null>(null);
 
@@ -72,14 +76,18 @@ export class CommerceScheduleCard {
   protected readonly changed = computed(() => {
     const draft = this.draft();
     const stored = this.stored();
-    return (Object.keys(stored) as (keyof ScheduleDraft)[]).some(
-      (field) => draft[field] !== stored[field],
+    return (
+      this.showsOrderUntilTime() !== this.operation().showsOrderUntilTime ||
+      (Object.keys(stored) as (keyof ScheduleDraft)[]).some(
+        (field) => draft[field] !== stored[field],
+      )
     );
   });
 
   constructor() {
     effect(() => {
       this.draft.set(this.stored());
+      this.showsOrderUntilTime.set(this.operation().showsOrderUntilTime);
     });
   }
 
@@ -91,7 +99,10 @@ export class CommerceScheduleCard {
     this.busy.set(true);
     this.refusal.set(null);
     try {
-      await this.api.reschedule(this.operation().key, reading.payload);
+      await this.api.reschedule(this.operation().key, {
+        ...reading.payload,
+        showsOrderUntilTime: this.showsOrderUntilTime(),
+      });
       this.saved.emit('Calendrier enregistré.');
     } catch (error) {
       this.refusal.set(refusalOf(error, "Le calendrier n'a pas pu être enregistré."));

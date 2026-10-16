@@ -131,7 +131,7 @@ describe("RescheduleOperationHandler", () => {
     await new RescheduleOperationHandler(...ports).execute(
       new RescheduleOperationCommand(
         "noel-2026",
-        { ...noel().schedule, orderUntil: earlier },
+        { schedule: { ...noel().schedule, orderUntil: earlier }, showsOrderUntilTime: true },
         "staff_1",
       ),
     );
@@ -147,6 +147,40 @@ describe("RescheduleOperationHandler", () => {
     });
   });
 
+  /** Hugo, 2026-10-16 : l'heure de clôture se règle avec le calendrier, et se journalise seule. */
+  it("éteint l'heure de clôture, et ne journalise que ce réglage", async () => {
+    const { operations, events, ports } = scene();
+
+    await new RescheduleOperationHandler(...ports).execute(
+      new RescheduleOperationCommand(
+        "noel-2026",
+        { schedule: noel().schedule, showsOrderUntilTime: false },
+        "staff_1",
+      ),
+    );
+
+    expect(operations.stored("noel-2026").showsOrderUntilTime).toBe(false);
+    expect(events.traced[0]?.journalFact().payload).toEqual({
+      subjectLabel: "Noël 2026",
+      changes: { showsOrderUntilTime: { from: true, to: false } },
+    });
+  });
+
+  it("n'écrit rien quand ni les dates ni l'heure de clôture ne changent", async () => {
+    const { operations, events, ports } = scene();
+
+    await new RescheduleOperationHandler(...ports).execute(
+      new RescheduleOperationCommand(
+        "noel-2026",
+        { schedule: noel().schedule, showsOrderUntilTime: true },
+        "staff_1",
+      ),
+    );
+
+    expect(operations.saves).toBe(0);
+    expect(events.traced).toEqual([]);
+  });
+
   it("refuse des dates qui se contredisent, sans rien écrire", async () => {
     const { operations, events, ports } = scene();
 
@@ -154,7 +188,7 @@ describe("RescheduleOperationHandler", () => {
       new RescheduleOperationHandler(...ports).execute(
         new RescheduleOperationCommand(
           "noel-2026",
-          { ...noel().schedule, pickupFrom: "2026-12-25" },
+          { schedule: { ...noel().schedule, pickupFrom: "2026-12-25" }, showsOrderUntilTime: true },
           "staff_1",
         ),
       ),

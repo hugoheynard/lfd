@@ -149,6 +149,7 @@ export function recordOf(operation: Operation): OperationRecord {
       pickupFrom: snapshot.schedule.pickupFrom.value,
       pickupUntil: snapshot.schedule.pickupUntil.value,
     },
+    showsOrderUntilTime: snapshot.showsOrderUntilTime,
     audience: snapshot.audience,
     skus: snapshot.skus,
     hidden: snapshot.hidden,

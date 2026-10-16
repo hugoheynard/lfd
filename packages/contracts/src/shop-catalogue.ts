@@ -240,6 +240,12 @@ export interface ShopOperationView {
    * arrivent bientôt ». Présent seulement une fois les opérations au commerce.
    */
   readonly awaitingProducts?: boolean;
+  /**
+   * `true` : « Commandez avant le 21 décembre à 12:00 » ; `false` : le jour
+   * seul. Réglé par opération au commerce (2026-10-16). Présent seulement une
+   * fois les opérations au commerce ; absent, la vitrine dit le jour seul.
+   */
+  readonly showsOrderUntilTime?: boolean;
 }
 
 /**

@@ -38,10 +38,22 @@ export interface PrepareOperation extends OperationPresentationInput {
   readonly audience: string;
 }
 
+/**
+ * **Le calendrier tel que l'écran le règle** : les cinq dates, et si la
+ * boutique affiche l'heure de clôture (« avant le 21 décembre à 12:00 ») ou
+ * le jour seul.
+ */
+export interface OperationCalendarInput {
+  readonly schedule: OperationScheduleInput;
+  readonly showsOrderUntilTime: boolean;
+}
+
 /** L'état tel que la base le rend, jours et clientèle encore bruts. */
 export interface OperationRecord extends OperationPresentationInput {
   readonly key: string;
   readonly schedule: OperationScheduleInput;
+  /** La boutique dit l'heure de clôture, pas seulement le jour. */
+  readonly showsOrderUntilTime: boolean;
   readonly audience: string;
   readonly skus: readonly string[];
   readonly hidden: boolean;
@@ -54,12 +66,13 @@ export interface OperationRecord extends OperationPresentationInput {
  * **Une opération telle que la migration l'apporte du référentiel** (lot 3) :
  * ses valeurs, déjà restreintes par la surcharge de la réception.
  */
-export type ReferentialOperation = Omit<OperationRecord, "lastWrite">;
+export type ReferentialOperation = Omit<OperationRecord, "lastWrite" | "showsOrderUntilTime">;
 
 /** L'état complet, tel que le dépôt l'écrit. */
 export interface OperationSnapshot extends OperationPresentation {
   readonly key: string;
   readonly schedule: OperationSchedule;
+  readonly showsOrderUntilTime: boolean;
   readonly audience: OperationAudience;
   readonly skus: readonly string[];
   readonly hidden: boolean;

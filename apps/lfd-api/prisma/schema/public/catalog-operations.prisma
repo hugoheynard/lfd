@@ -39,6 +39,11 @@ model CatalogOperation {
   pickupFrom  DateTime @map("pickup_from") @db.Date
   pickupUntil DateTime @map("pickup_until") @db.Date
 
+  /// La boutique dit l'HEURE de clôture (« avant le 21 décembre à 12:00 »),
+  /// pas seulement le jour. Réglée par opération avec le calendrier, vraie à
+  /// la préparation et à la reprise du référentiel (2026-10-16).
+  showsOrderUntilTime Boolean @default(true) @map("shows_order_until_time")
+
   /// `pro` | `public` | `both`, tel que le référentiel l'a décidé.
   audience String
 

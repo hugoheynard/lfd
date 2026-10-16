@@ -29,7 +29,8 @@ export interface ShopSale {
    * `plan-l-operation-passe-au-commerce.md`). Absent ou `false` : la vitrine
    * sert exactement ce qu'elle servait. `true` : le rayon d'une opération
    * paraît sur son encart même sans article pendant l'annonce, dit
-   * `awaitingProducts` commandes ouvertes, et porte la date d'annonce.
+   * `awaitingProducts` commandes ouvertes, et porte la date d'annonce et
+   * l'affichage de l'heure de clôture.
    */
   readonly operationsAtCommerce?: boolean | undefined;
 }
@@ -123,6 +124,7 @@ export function shopOperationsOf(
             ...view,
             announceFrom: operation.announceFrom.toISOString(),
             awaitingProducts: empty && state === "open",
+            showsOrderUntilTime: operation.showsOrderUntilTime ?? true,
           }
         : view,
     ];

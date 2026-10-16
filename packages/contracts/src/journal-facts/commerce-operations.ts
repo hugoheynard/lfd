@@ -72,9 +72,16 @@ export const COMMERCE_OPERATION_FACTS = {
       }),
     }),
   ),
-  /** Les dates qui ont bougé, avant → après. */
+  /**
+   * Le calendrier : les dates qui ont bougé, et l'affichage de l'heure de
+   * clôture (2026-10-16), avant → après. Chaque clé de `changes` est
+   * facultative : les faits d'avant, sans ce réglage, se relisent tels quels.
+   */
   "catalog_operation.rescheduled": fact(
-    payload({ subjectLabel: subjectLabel(), changes: changes(schedule) }),
+    payload({
+      subjectLabel: subjectLabel(),
+      changes: changes({ ...schedule, showsOrderUntilTime: z.boolean() }),
+    }),
   ),
   "catalog_operation.audience_changed": fact(
     payload({ subjectLabel: subjectLabel(), audience: fromTo(audience()) }),

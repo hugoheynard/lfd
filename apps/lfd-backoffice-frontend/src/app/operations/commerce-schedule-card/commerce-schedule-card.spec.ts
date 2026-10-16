@@ -64,8 +64,32 @@ describe('CommerceScheduleCard', () => {
       orderUntil: '2026-10-26T11:00:00.000Z',
       pickupFrom: '2026-12-23',
       pickupUntil: '2026-12-24',
+      showsOrderUntilTime: true,
     });
     expect(saved).toEqual(['Calendrier enregistré.']);
+  });
+
+  it('éteindre l’heure de clôture suffit à enregistrer, et part avec les dates', async () => {
+    const { card, sent } = setup();
+    card['showsOrderUntilTime'].set(false);
+    expect(card['changed']()).toBe(true);
+    await card['save']();
+    expect(sent[0]).toMatchObject({
+      orderUntil: '2026-12-21T11:00:00.000Z',
+      showsOrderUntilTime: false,
+    });
+  });
+
+  it('la case part de ce que la vue dit', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [{ provide: CommerceOperationsService, useValue: {} }],
+    });
+    const fixture = TestBed.createComponent(CommerceScheduleCard);
+    fixture.componentRef.setInput('operation', commerceOperation({ showsOrderUntilTime: false }));
+    fixture.detectChanges();
+    expect(fixture.componentInstance['showsOrderUntilTime']()).toBe(false);
+    expect(fixture.componentInstance['changed']()).toBe(false);
   });
 
   it('un refus d’ordre garde la phrase du serveur, qui nomme les dates', async () => {

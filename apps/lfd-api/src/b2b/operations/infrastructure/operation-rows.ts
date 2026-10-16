@@ -17,6 +17,7 @@ export interface OperationRow {
   readonly orderUntil: Date;
   readonly pickupFrom: Date;
   readonly pickupUntil: Date;
+  readonly showsOrderUntilTime: boolean;
   readonly audience: string;
   readonly hidden: boolean;
   readonly withdrawnAt: Date | null;
@@ -49,6 +50,7 @@ export function toRecord(row: OperationRow): OperationRecord {
       pickupFrom: dayOf(row.pickupFrom),
       pickupUntil: dayOf(row.pickupUntil),
     },
+    showsOrderUntilTime: row.showsOrderUntilTime,
     audience: row.audience,
     skus: row.items.map((item) => item.sku),
     hidden: row.hidden,
@@ -85,6 +87,7 @@ export function operationColumns(snapshot: OperationSnapshot) {
     // date d'un `DATE` : le jour stocké est celui qu'on a donné.
     pickupFrom: new Date(snapshot.schedule.pickupFrom.value),
     pickupUntil: new Date(snapshot.schedule.pickupUntil.value),
+    showsOrderUntilTime: snapshot.showsOrderUntilTime,
     audience: snapshot.audience,
     hidden: snapshot.hidden,
     withdrawnAt: snapshot.archivedAt,

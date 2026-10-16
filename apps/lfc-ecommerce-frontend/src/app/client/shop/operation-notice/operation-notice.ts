@@ -2,10 +2,11 @@ import { ChangeDetectionStrategy, Component, computed, inject, input } from '@an
 import type { ShopOperationView } from '@lfd/contracts';
 import { FoldCalloutComponent, FoldCardComponent, FoldElementTitleComponent } from 'fold-ng';
 
-import { ClientLocale } from '../../client-locale.service';
+import { ClientLocale, type LocaleCode } from '../../client-locale.service';
+import type { ClientCopy } from '../../copy/client-copy.model';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { mediaSrcset, SHEET_WIDTHS, sizedMedia } from '../media-source';
-import { operationText, pickupSpan, shortDate } from '../operations';
+import { operationText, pickupSpan, shortDate, shortTime } from '../operations';
 import { objectPositionOf } from '../shelf-display';
 
 /**
@@ -47,7 +48,7 @@ export class OperationNotice {
     const locale = this.locale.current();
     const copy = this.t();
     const lines = [
-      fill(copy.shop.operationOrderUntil, { date: shortDate(operation.orderUntil, locale) }),
+      orderUntilLine(operation, locale, copy),
       fill(copy.shop.operationPickupWindow, { span: pickupSpan(operation, locale, copy) }),
     ];
     // « Commandes à partir du… » n'a de sens qu'avant l'ouverture.
@@ -74,4 +75,23 @@ export class OperationNotice {
       position: objectPositionOf(image),
     };
   });
+}
+
+/**
+ * « Commandez avant le 21 déc. à 12:00 » quand l'opération montre son heure de
+ * clôture ; le jour seul quand elle l'éteint, ou quand le champ est absent
+ * (interrupteur fermé : la vitrine a toujours dit le jour seul).
+ */
+function orderUntilLine(
+  operation: ShopOperationView,
+  locale: LocaleCode,
+  copy: ClientCopy,
+): string {
+  const date = shortDate(operation.orderUntil, locale);
+  return operation.showsOrderUntilTime === true
+    ? fill(copy.shop.operationOrderUntilTime, {
+        date,
+        time: shortTime(operation.orderUntil, locale),
+      })
+    : fill(copy.shop.operationOrderUntil, { date });
 }

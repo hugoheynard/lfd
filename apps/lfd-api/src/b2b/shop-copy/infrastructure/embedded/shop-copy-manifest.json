@@ -1504,6 +1504,13 @@
           "variables": ["date"]
         },
         {
+          "key": "shop.operationOrderUntilTime",
+          "fr": "Commandez avant le {date} à {time}",
+          "en": "Order before {date} at {time}",
+          "it": "Ordinate entro il {date} alle {time}",
+          "variables": ["date", "time"]
+        },
+        {
           "key": "shop.operationPickupWindow",
           "fr": "Retrait {span}",
           "en": "Collection {span}",

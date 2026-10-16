@@ -8,16 +8,17 @@ import { OperationRescheduledEvent } from "../../domain/events/operation.events.
 import { OperationRepository } from "../../domain/ports/operation.repository.js";
 import { OperationWritingSwitch } from "../../domain/ports/operation-writing-switch.js";
 import {
+  calendarText,
   ensureWritingOpen,
   requireOperation,
-  scheduleText,
   subjectOf,
 } from "./operation-writing.js";
 import { RescheduleOperationCommand } from "./reschedule-operation.command.js";
 
 /**
  * **Redate** une opération. L'agrégat refuse des dates qui se contredisent
- * (D2) ; le journal ne garde que celles qui ont bougé.
+ * (D2) ; le journal ne garde que ce qui a bougé — dates, et l'affichage de
+ * l'heure de clôture, qui se règle avec elles.
  *
  * « Fermer plus tôt », que la surcharge de la réception portait, est ce geste
  * au commerce : il n'y a plus qu'un décideur (plan, « Ce que devient chaque
@@ -39,10 +40,10 @@ export class RescheduleOperationHandler implements ICommandHandler<
   async execute(command: RescheduleOperationCommand): Promise<void> {
     ensureWritingOpen(this.writing);
     const operation = await requireOperation(this.operations, command.key);
-    const before = scheduleText(operation.snapshot().schedule);
-    operation.reschedule(command.schedule, { by: command.writtenBy, at: this.clock.now() });
+    const before = calendarText(operation.snapshot());
+    operation.reschedule(command.calendar, { by: command.writtenBy, at: this.clock.now() });
     const after = operation.snapshot();
-    const changes = changesBetween(before, scheduleText(after.schedule));
+    const changes = changesBetween(before, calendarText(after));
     if (Object.keys(changes).length === 0) {
       return;
     }
