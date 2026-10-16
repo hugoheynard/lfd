@@ -8,6 +8,10 @@
  * la migration du lot) s'assemblent ; que le mur `staff_access` est posé ; et
  * que le geste du runbook — accorder à l'écran, puis retirer l'ancien — mène
  * l'aperçu à « sans écart ».
+ *
+ * Depuis le lot L2 (2026-10-16), `b2b_catalog` ne s'accorde plus et la graine
+ * ne le sème plus : un rôle qui le porte encore — l'état de la production
+ * avant le geste de Hugo — se pose ici en base, comme il y est.
  */
 import {
   catalogRightTransferViewSchema,
@@ -71,6 +75,11 @@ async function person(
   });
 }
 
+/** Un rôle tel que la production le garde : ses droits écrits avant L2. */
+async function storedRole(key: string, grants: readonly object[]): Promise<void> {
+  await ctx.prisma.staffRoleDefinition.create({ data: { key, label: key, grants: [...grants] } });
+}
+
 async function seedNotification(id: string, audience: string, read: boolean): Promise<void> {
   await ctx.prisma.staffNotification.create({
     data: {
@@ -99,16 +108,20 @@ describe("GET /admin/staff-access/catalog-right-transfer", () => {
     await ctx.asSub("commerciale").get(ROUTE).expect(403);
   });
 
-  it("montre chaque rôle de la graine encore porteur de b2b_catalog, recopié au même niveau", async () => {
+  it("ne voit plus b2b_catalog dans la graine : elle ne le sème plus depuis L2", async () => {
     const view = await preview();
-    expect(
-      view.roles.map((line) => [line.key, line.legacyLevel, line.catalogLevel, line.gap]),
-    ).toEqual([
-      ["admin", "write", "write", "legacy_still_held"],
-      ["commercial", "write", "write", "legacy_still_held"],
-      ["comptabilite", "read", "read", "legacy_still_held"],
+    expect(view.roles.every((line) => line.legacyLevel === null && line.gap === "none")).toBe(true);
+    expect(view.clear).toBe(true);
+  });
+
+  it("montre un rôle encore porteur de b2b_catalog, recopié au même niveau", async () => {
+    await storedRole("vente", [
+      { resource: "b2b_catalog", action: "write" },
+      { resource: "lfc_catalog", action: "write" },
     ]);
-    expect(view.clear).toBe(false);
+    const line = (await preview()).roles.find((candidate) => candidate.key === "vente");
+    expect(line).toMatchObject({ legacyLevel: "write", catalogLevel: "write" });
+    expect(line?.gap).toBe("legacy_still_held");
   });
 
   it("nomme le retrait non recopié d'une dérogation", async () => {
@@ -136,15 +149,8 @@ describe("GET /admin/staff-access/catalog-right-transfer", () => {
   });
 
   it("atteint « sans écart » par le geste du runbook : accorder lfc_catalog, puis retirer b2b_catalog", async () => {
-    // Un rôle défini à l'écran qui ne tient que l'ancien droit : il perdrait l'accès.
-    await admin()
-      .post("/admin/staff-roles")
-      .send({
-        key: "vitrine",
-        label: "Vitrine",
-        grants: [{ resource: "b2b_catalog", action: "read" }],
-      })
-      .expect(201);
+    // Un rôle défini avant L2 qui ne tient que l'ancien droit : il a perdu l'accès.
+    await storedRole("vitrine", [{ resource: "b2b_catalog", action: "read" }]);
     expect((await preview()).roles.find((line) => line.key === "vitrine")?.gap).toBe(
       "catalog_missing",
     );

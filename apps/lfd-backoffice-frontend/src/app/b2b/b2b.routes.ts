@@ -178,7 +178,7 @@ export const b2bRoutes: Routes = [
         // le temps : ce qui attend d'être validé précède ce qui est en vente.
         path: 'reception',
         title: 'Réception du catalogue — LFC B2B admin',
-        canActivate: [permissionGuard('b2b_catalog:read')],
+        canActivate: [permissionGuard('lfc_catalog:read')],
         loadComponent: () => import('./reception/reception-page').then((m) => m.ReceptionPage),
       },
       // LE CATALOGUE PUBLIÉ (l'ancien « Catalogue actuel en ligne ») a quitté

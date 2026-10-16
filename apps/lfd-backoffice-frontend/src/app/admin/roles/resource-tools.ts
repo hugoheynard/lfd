@@ -1,4 +1,5 @@
 import {
+  isRetiredStaffResource,
   staffResourceSchema,
   STAFF_RESOURCE_LABELS,
   STAFF_RESOURCE_SCOPES,
@@ -74,6 +75,11 @@ export interface ToolResource {
   readonly label: string;
   /** Ce que la lecture ouvre et ce que l'écriture ajoute — affiché sous le libellé. */
   readonly scope: StaffResourceScope;
+  /**
+   * Retiré (`RETIRED_STAFF_RESOURCES`) : il n'ouvre plus rien, ne s'accorde
+   * plus, et ne se montre que là où il est encore porté — pour être retiré.
+   */
+  readonly retired: boolean;
 }
 
 /** Un groupe d'outil et ses domaines, dans l'ordre du catalogue. */
@@ -115,15 +121,21 @@ export function toolOf(resource: StaffResource): StaffTool {
  * L'ordre **dans** un groupe reste celui du catalogue de ressources : c'est lui
  * qui fait foi, et deux écrans qui trieraient différemment donneraient deux
  * lectures du même rôle.
+ *
+ * Une ressource retirée n'y figure que si `held` la porte : on ne la propose
+ * jamais, on montre seulement celle qu'il reste à enlever
+ * (`plan-droit-lfc-catalog.md`, L2, 2026-10-16).
  */
-export function toolGroups(): readonly ToolGroup[] {
+export function toolGroups(held: readonly StaffResource[] = []): readonly ToolGroup[] {
   return TOOL_ORDER.flatMap((tool) => {
     const resources = staffResourceSchema.options
       .filter((resource) => toolOf(resource) === tool)
+      .filter((resource) => !isRetiredStaffResource(resource) || held.includes(resource))
       .map((resource) => ({
         resource,
         label: STAFF_RESOURCE_LABELS[resource],
         scope: STAFF_RESOURCE_SCOPES[resource],
+        retired: isRetiredStaffResource(resource),
       }));
     return resources.length === 0
       ? []

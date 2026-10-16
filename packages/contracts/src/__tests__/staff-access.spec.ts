@@ -1,11 +1,11 @@
 import {
   ALL_STAFF_PERMISSIONS,
   dedupeStaffOverrides,
+  GRANTABLE_STAFF_RESOURCES,
   hasStaffPermission,
   resolveStaffPermissions,
   ROLE_GRANTS,
   staffActionSchema,
-  staffResourceSchema,
   staffRoleSchema,
   type StaffOverride,
   type StaffPermission,
@@ -186,7 +186,8 @@ describe("le catalogue", () => {
     // Le produit cartésien complet, dérivé des deux enums plutôt que d'un
     // nombre écrit à la main : une 10e ressource ne doit pas rendre ce test
     // rouge, elle doit être couverte. C'est l'absence de trou qu'on teste.
-    const expected = staffResourceSchema.options.length * staffActionSchema.options.length;
+    // Les ressources retirées en sont exclues : elles ne se résolvent plus.
+    const expected = GRANTABLE_STAFF_RESOURCES.length * staffActionSchema.options.length;
 
     expect(ALL_STAFF_PERMISSIONS).toHaveLength(expected);
     expect(new Set(ALL_STAFF_PERMISSIONS).size).toBe(ALL_STAFF_PERMISSIONS.length);

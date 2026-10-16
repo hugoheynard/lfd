@@ -49,7 +49,7 @@ import { scheduleOf } from "./operation-payloads.js";
  * de `DELETE` : on archive (D9).
  *
  * Sous `lfc_operations` (Q2, Hugo) : un droit à lui, ni `pim_catalog` ni
- * `b2b_catalog`.
+ * `lfc_catalog`.
  *
  * Les lectures (lot 3) sont fermées comme les écritures (409
  * `operations.not_at_commerce`). La migration depuis le référentiel se joue

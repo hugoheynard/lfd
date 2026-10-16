@@ -1,21 +1,56 @@
 import { catalogRightTransferViewSchema } from "../catalog-right-transfer.js";
-import { ROLE_GRANTS, staffRoleSchema, staffResourceSchema } from "../staff-access.js";
+import {
+  ALL_STAFF_PERMISSIONS,
+  GRANTABLE_STAFF_RESOURCES,
+  ROLE_GRANTS,
+  isRetiredStaffResource,
+  resolvePermissionsFromGrants,
+  staffResourceSchema,
+  staffRoleSchema,
+} from "../staff-access.js";
+import { roleGrantsSchema } from "../staff-role.js";
 
 /**
- * Le lot L1 de `plan-droit-lfc-catalog.md` : la graine donne `lfc_catalog`
- * là où elle donne `b2b_catalog`, au même niveau — sans quoi une base vierge
- * (e2e, dev) perdrait le catalogue à la bascule des gardes (L2).
+ * Le lot L2 de `plan-droit-lfc-catalog.md` : `b2b_catalog` est RETIRÉ —
+ * lisible, jamais résolu, jamais semé.
  */
-describe("la graine du catalogue publié", () => {
-  it("donne lfc_catalog à chaque rôle qui tient b2b_catalog, au même niveau", () => {
-    for (const role of staffRoleSchema.options) {
-      expect(ROLE_GRANTS[role].lfc_catalog).toBe(ROLE_GRANTS[role].b2b_catalog);
-    }
+describe("le retrait de b2b_catalog", () => {
+  it("le garde dans le schéma : un rôle qui le porte encore se lit sans erreur", () => {
+    expect(staffResourceSchema.options).toContain("b2b_catalog");
+    const parsed = roleGrantsSchema.safeParse([
+      { resource: "b2b_catalog", action: "write" },
+      { resource: "b2b_orders", action: "read" },
+    ]);
+    expect(parsed.success).toBe(true);
   });
 
-  it("garde b2b_catalog dans le catalogue des ressources jusqu'à L2", () => {
-    expect(staffResourceSchema.options).toContain("b2b_catalog");
-    expect(staffResourceSchema.options).toContain("lfc_catalog");
+  it("le marque retiré, et seul lui", () => {
+    expect(isRetiredStaffResource("b2b_catalog")).toBe(true);
+    expect(isRetiredStaffResource("lfc_catalog")).toBe(false);
+    expect(GRANTABLE_STAFF_RESOURCES).not.toContain("b2b_catalog");
+    expect(ALL_STAFF_PERMISSIONS.some((entry) => entry.startsWith("b2b_catalog:"))).toBe(false);
+  });
+
+  it("garde à un rôle qui le porte tous ses AUTRES droits, sans ouvrir le catalogue", () => {
+    const permissions = resolvePermissionsFromGrants({ b2b_catalog: "write", b2b_orders: "read" });
+    expect(permissions).toEqual(["b2b_orders:read"]);
+  });
+
+  it("n'applique aucune dérogation qui le porte — ni pour accorder, ni pour refuser", () => {
+    expect(
+      resolvePermissionsFromGrants({ lfc_catalog: "write" }, [
+        { resource: "b2b_catalog", action: "read", effect: "deny" },
+        { resource: "b2b_catalog", action: "write", effect: "allow" },
+      ]),
+    ).toEqual(["lfc_catalog:read", "lfc_catalog:write"]);
+  });
+
+  it("ne le sème plus : la graine donne lfc_catalog à la place", () => {
+    for (const role of staffRoleSchema.options) {
+      expect(ROLE_GRANTS[role].b2b_catalog).toBeUndefined();
+    }
+    expect(ROLE_GRANTS.commercial.lfc_catalog).toBe("write");
+    expect(ROLE_GRANTS.comptabilite.lfc_catalog).toBe("read");
   });
 });
 

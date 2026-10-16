@@ -27,6 +27,10 @@ interface Row {
   readonly label: string;
   readonly scope: StaffResourceScope;
   readonly level: GrantLevel;
+  /** Retiré : on ne peut que le garder tel quel ou l'enlever. */
+  readonly retired: boolean;
+  /** Les niveaux proposés — tous, ou, pour un droit retiré, le sien et « Aucun ». */
+  readonly options: typeof LEVELS;
   readonly labelParts: readonly TextSegment[];
   readonly readParts: readonly TextSegment[];
   readonly writeParts: readonly TextSegment[];
@@ -76,8 +80,6 @@ interface Group {
 export class GrantsGrid {
   readonly grants = model.required<readonly RoleGrant[]>();
 
-  protected readonly levels = LEVELS;
-
   /**
    * Le terme de recherche. Il ne filtre que l'AFFICHAGE : `grants` n'est jamais
    * lu ni écrit par lui, si bien qu'un droit masqué garde son niveau et
@@ -115,7 +117,8 @@ export class GrantsGrid {
    */
   protected readonly groups = computed<readonly Group[]>(() => {
     const term = this.term();
-    return toolGroups().flatMap((group): Group[] => {
+    const held = this.grants().map((grant) => grant.resource);
+    return toolGroups(held).flatMap((group): Group[] => {
       const categoryHit = normalizeTerm(term) !== '' && matchesTerm(group.label, term);
       const entries = categoryHit
         ? group.resources
@@ -140,6 +143,8 @@ export class GrantsGrid {
             label: entry.label,
             scope: entry.scope,
             level: levelOf(this.grants(), entry.resource),
+            retired: entry.retired,
+            options: optionsFor(entry.retired, levelOf(this.grants(), entry.resource)),
             labelParts: highlightSegments(entry.label, term),
             readParts: highlightSegments(entry.scope.read, term),
             writeParts: highlightSegments(entry.scope.write, term),
@@ -164,4 +169,11 @@ export class GrantsGrid {
       this.grants.set(applyLevel(this.grants(), resource, level));
     }
   }
+}
+
+/** Un droit retiré n'offre qu'un geste : l'enlever (`plan-droit-lfc-catalog.md`, L2). */
+function optionsFor(retired: boolean, level: GrantLevel): typeof LEVELS {
+  return retired
+    ? LEVELS.filter((entry) => entry.value === 'none' || entry.value === level)
+    : LEVELS;
 }

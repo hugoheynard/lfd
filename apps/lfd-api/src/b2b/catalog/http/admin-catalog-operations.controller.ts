@@ -16,13 +16,13 @@ import { ListReceivedOperationsQuery } from "../application/queries/list-receive
  * **Les opérations datées reçues du référentiel**, et leur surcharge à la
  * réception (D9 de `documentation/operations-datees/architecture-operations-datees.md`).
  *
- * `b2b_catalog` et jamais `pim_catalog`, pour la raison que la boîte de
+ * `lfc_catalog` et jamais `pim_catalog`, pour la raison que la boîte de
  * réception donne déjà : restreindre ce qui entre en vente est le métier du
  * commercial ; préparer Noël au référentiel ne l'est pas. C'est aussi le droit
  * de `CatalogItemOverride`, dont cette surcharge est la jumelle.
  */
 @Controller("admin/catalog/operations")
-@AdminSurface("b2b_catalog")
+@AdminSurface("lfc_catalog")
 export class AdminCatalogOperationsController {
   constructor(
     private readonly queries: QueryBus,

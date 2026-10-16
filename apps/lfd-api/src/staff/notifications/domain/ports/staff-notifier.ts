@@ -18,6 +18,11 @@ export interface StaffNotice {
    * figé. Absente : le fil PARTAGÉ, sous `staff_notifications:read`. Une
    * notice d'audience n'entre jamais dans le fil partagé, même pour qui a les
    * deux droits : elle se lit dans « mes notifications ».
+   *
+   * Jamais un droit RETIRÉ (`b2b_catalog:*` depuis le 2026-10-16, lot L2 de
+   * `plan-droit-lfc-catalog.md`) : personne ne le résout, la notice ne serait
+   * lue par personne. Le catalogue s'adresse à `lfc_catalog:*` — aucun
+   * émetteur n'adressait `b2b_catalog:*` (vérifié le 2026-10-16).
    */
   readonly audience?: StaffPermission;
 }

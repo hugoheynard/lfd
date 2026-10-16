@@ -1,7 +1,7 @@
 import {
   staffActionSchema,
   staffPermission,
-  staffResourceSchema,
+  GRANTABLE_STAFF_RESOURCES,
   type RoleGrant,
   type StaffMeView,
   type StaffPermission,
@@ -43,7 +43,8 @@ export interface ParsedPermission extends RoleGrant {
 }
 
 /** Les droits du catalogue, décomposés une fois. */
-const CATALOGUE: readonly ParsedPermission[] = staffResourceSchema.options.flatMap((resource) =>
+// Sans les ressources retirées : l'agent ne les accorde jamais (plan-droit-lfc-catalog.md, L2).
+const CATALOGUE: readonly ParsedPermission[] = GRANTABLE_STAFF_RESOURCES.flatMap((resource) =>
   staffActionSchema.options.map((action) => ({
     resource,
     action,

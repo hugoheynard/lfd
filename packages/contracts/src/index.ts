@@ -854,6 +854,9 @@ export {
   dedupeStaffOverrides,
   ROLE_GRANTS,
   ALL_STAFF_PERMISSIONS,
+  RETIRED_STAFF_RESOURCES,
+  GRANTABLE_STAFF_RESOURCES,
+  isRetiredStaffResource,
   STAFF_ROLE_LABELS,
   STAFF_RESOURCE_LABELS,
 } from "./staff-access.js";
@@ -862,6 +865,7 @@ export type {
   StaffResource,
   StaffAction,
   StaffPermission,
+  RetiredStaffResource,
   StaffRole,
   StaffOverrideEffect,
   StaffOverride,

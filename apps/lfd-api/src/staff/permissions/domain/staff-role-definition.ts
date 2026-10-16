@@ -15,6 +15,7 @@ import {
   StaffRoleSelfRevokeError,
   StaffRoleStillHeldError,
 } from "./staff-role-errors.js";
+import { assertRetiredLinesUnchanged } from "./retired-resources.js";
 
 /** Une personne qui tient l'annuaire (`staff_access:write`) par son rôle. */
 export interface DirectoryKeeper {
@@ -82,12 +83,10 @@ export class StaffRoleDefinition {
     if (key === "") {
       throw new InvalidStaffRoleError("Clé", "obligatoire");
     }
-    return new StaffRoleDefinition(
-      key,
-      requireLabel(input.label),
-      requireGrants(input.grants),
-      null,
-    );
+    const grants = requireGrants(input.grants);
+    // Un rôle neuf n'a rien de stocké : toute ressource retirée y est un accord.
+    assertRetiredLinesUnchanged([], grants, grantKey);
+    return new StaffRoleDefinition(key, requireLabel(input.label), grants, null);
   }
 
   /** Reconstruit un rôle depuis sa ligne en base. */
@@ -116,6 +115,10 @@ export class StaffRoleDefinition {
    * quand ça le retirerait à l'auteur lui-même, ou au dernier groupe de
    * personnes qui le tiennent (§3.3).
    *
+   * Une ressource retirée qu'il porte encore peut rester telle quelle ou
+   * partir — jamais être accordée ni changer de niveau.
+   *
+   * @throws {RetiredStaffResourceGrantedError} une ressource retirée accordée.
    * @throws {StaffRoleSelfRevokeError} l'auteur tient l'annuaire par ce rôle.
    * @throws {StaffRoleLastDirectoryKeeperError} seuls ses porteurs le tiennent.
    */
@@ -125,6 +128,7 @@ export class StaffRoleDefinition {
   ): void {
     const label = requireLabel(input.label);
     const grants = requireGrants(input.grants);
+    assertRetiredLinesUnchanged(this.grantsValue, grants, grantKey);
     if (this.opensDirectory(this.grantsValue) && !this.opensDirectory(grants)) {
       this.assertDirectoryStillKept(directory);
     }
@@ -222,4 +226,9 @@ function requireGrants(grants: readonly RoleGrant[]): readonly RoleGrant[] {
     throw new InvalidStaffRoleError("Droits", "une ressource ne peut porter qu'un seul niveau");
   }
   return grants;
+}
+
+/** L'identité complète d'un droit de rôle : ressource ET niveau. */
+function grantKey(grant: RoleGrant): string {
+  return `${grant.resource}:${grant.action}`;
 }

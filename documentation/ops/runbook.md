@@ -822,10 +822,21 @@ c'est-à-dire qu'aucun rôle ni aucune dérogation ne porte plus `b2b_catalog`, 
 que chacun tient `lfc_catalog` au même niveau et au même effet. Tant que ce
 n'est pas le cas, **ne pas déployer L2** : un rôle oublié y perd le catalogue.
 
-⚠️ Entre le retrait de « Catalogue vendu » et L2, les écrans du catalogue sont
-**fermés** à ceux qui l'ont perdu (les gardes sont encore sur l'ancien droit).
-Faire les étapes 3 et le déploiement de L2 dans la même fenêtre, ou commencer
-par les rôles dont personne ne se sert du catalogue ce jour-là.
+⚠️ **La fenêtre sans catalogue est ACCEPTÉE** (Hugo, 2026-10-16, option a).
+Entre le retrait de « Catalogue vendu » et le déploiement de L2, les écrans du
+catalogue sont **fermés** à ceux qui l'ont perdu (les gardes sont encore sur
+l'ancien droit). Le geste est donc : retirer « Catalogue vendu » à l'écran,
+**puis déployer L2 dans la foulée** — pas le lendemain.
+
+**5. Déployer L2** (bâti le 2026-10-16). Les gardes passent sur
+`lfc_catalog`, serveur et front. `b2b_catalog` devient **retiré** : il reste
+lisible en base (sans quoi un rôle qui le porterait encore perdrait TOUS ses
+droits), mais il n'ouvre plus rien, ni par un rôle ni par une dérogation, et
+ne s'accorde plus — le serveur refuse (400 `staff.resource_retired`) de
+l'ajouter ou d'en changer le niveau. Une ligne oubliée se voit à l'écran des
+rôles ou sur la fiche, marquée « Retiré — à enlever », et le seul choix
+proposé est de l'enlever. Les nouvelles notifications par audience
+s'adressent à `lfc_catalog:*`.
 
 **Les notifications** : l'aperçu compte celles d'audience `b2b_catalog:*`
 encore non lues. Elles ne seront plus visibles après L2 (décision du
@@ -833,7 +844,8 @@ encore non lues. Elles ne seront plus visibles après L2 (décision du
 
 **Retour arrière** : avant L2, rien à défaire (la valeur d'enum reste, inutilisée).
 Après L2, redéployer L1 rouvre les gardes sur `b2b_catalog` — qui n'est plus
-porté par personne : il faut le réaccorder à l'écran.
+porté par personne : il faut le réaccorder à l'écran (l'écran de L1 le
+propose encore ; celui de L2 non).
 
 ## Déployer le lot D — le prix ne se décide plus sur la plateforme
 

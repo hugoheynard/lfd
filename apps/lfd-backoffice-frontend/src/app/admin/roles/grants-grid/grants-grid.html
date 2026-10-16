@@ -78,6 +78,9 @@
                 <span class="row-label"
                   ><ng-container *ngTemplateOutlet="parts; context: { $implicit: row.labelParts }"
                 /></span>
+                @if (row.retired) {
+                  <fold-badge variant="warning" content="Retiré — à enlever" />
+                }
                 <span class="row-scope">
                   <span class="row-scope-line"
                     ><strong>Lecture</strong> —
@@ -96,7 +99,7 @@
                   [value]="row.level"
                   (valueChange)="setLevel(row.resource, $event)"
                 >
-                  @for (level of levels; track level.value) {
+                  @for (level of row.options; track level.value) {
                     <option [value]="level.value">{{ level.label }}</option>
                   }
                 </fold-select>

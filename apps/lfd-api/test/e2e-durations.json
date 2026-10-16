@@ -299,6 +299,7 @@
   "test/staff-lockout.e2e-spec.ts": 8997,
   "test/staff-notification-audience.e2e-spec.ts": 7484,
   "test/staff-notification-authors.e2e-spec.ts": 3616,
+  "test/staff-retired-catalog-right.e2e-spec.ts": 58809,
   "test/staff-role-keys-migration.e2e-spec.ts": 3304,
   "test/staff-role-seed.e2e-spec.ts": 2521,
   "test/staff-catalog-right-transfer.e2e-spec.ts": 8124,

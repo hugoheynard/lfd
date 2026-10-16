@@ -49,12 +49,13 @@ import { ListCatalogQuery } from "../application/queries/list-catalog.query.js";
  * (pré-release, CLAUDE.md §0 ; seul lecteur : le back-office) : le prix servi
  * est celui du référentiel.
  *
- * Surface staff murée par `@AdminSurface("b2b_catalog")` : le paramétrage du
+ * Surface staff murée par `@AdminSurface("lfc_catalog")` (`b2b_catalog` jusqu'au
+ * 2026-10-16, lot L2 de `plan-droit-lfc-catalog.md`) : le paramétrage du
  * catalogue est du réglage, et n'ouvrir une ressource `catalog` qu'ici créerait
  * un droit que rien d'autre n'exerce.
  */
 @Controller("admin/catalog")
-@AdminSurface("b2b_catalog")
+@AdminSurface("lfc_catalog")
 export class AdminCatalogController {
   constructor(
     private readonly commands: CommandBus,
@@ -107,7 +108,7 @@ export class AdminCatalogController {
    * journalisé quand il écrit. Se lance une fois après le déploiement du
    * lot D (runbook).
    *
-   * Droit d'écriture du catalogue : la surface `b2b_catalog` du contrôleur.
+   * Droit d'écriture du catalogue : la surface `lfc_catalog` du contrôleur.
    */
   @Post("prices/retrace")
   @HttpCode(HttpStatus.NO_CONTENT)

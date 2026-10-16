@@ -40,6 +40,11 @@ export function diffOverrides(
   };
 }
 
+/** L'identité complète d'un écart : ressource, niveau ET effet. */
+export function overrideIdentity(override: StaffOverride): string {
+  return `${override.resource}:${override.action}:${override.effect}`;
+}
+
 /** Vrai si l'édition ne touche à aucune dérogation. */
 export function isEmptyOverrideDiff(diff: OverrideDiff): boolean {
   return diff.added.length === 0 && diff.removed.length === 0 && diff.changed.length === 0;

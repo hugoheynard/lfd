@@ -1,4 +1,9 @@
-import { STAFF_RESOURCE_LABELS, staffResourceSchema, type RoleGrant } from '@lfd/contracts';
+import {
+  GRANTABLE_STAFF_RESOURCES,
+  STAFF_RESOURCE_LABELS,
+  staffResourceSchema,
+  type RoleGrant,
+} from '@lfd/contracts';
 
 /** Les domaines ouverts à un niveau donné, dans l'ordre du catalogue. */
 export interface GrantGroup {
@@ -37,4 +42,4 @@ export function grantGroups(grants: readonly RoleGrant[]): readonly GrantGroup[]
 }
 
 /** Le nombre total de domaines du catalogue — le dénominateur de « 8 sur 12 ». */
-export const RESOURCE_COUNT = staffResourceSchema.options.length;
+export const RESOURCE_COUNT = GRANTABLE_STAFF_RESOURCES.length;

@@ -158,11 +158,14 @@ export const staffResourceSchema = z.enum([
   /** Les paniers récurrents — un engagement dans la durée, pas une commande. */
   "b2b_subscriptions",
   /**
-   * Le catalogue **vendu** : prix négocié, masquage, mise en avant, parité.
+   * 🔴 **RETIRÉ** (lot L2 de `documentation/droits-et-permissions/plan-droit-lfc-catalog.md`,
+   * 2026-10-16) : remplacé par `lfc_catalog`, il ne garde plus aucune route.
    *
-   * Homonyme de `pim_catalog` et **délibérément distinct** : l'un dit ce qui
-   * existe, l'autre ce qu'on vend et à quel prix. Un commercial doit pouvoir
-   * toucher le second sans jamais toucher le premier.
+   * Il reste dans le schéma pour une seule raison : des rôles et des
+   * dérogations le portent encore en base, et une valeur inconnue ferait
+   * échouer la lecture du rôle ENTIER (`roleGrantsSchema`) — ses porteurs
+   * perdraient tous leurs droits. Il est dans {@link RETIRED_STAFF_RESOURCES} :
+   * lu sans erreur, ignoré à la résolution, jamais accordé.
    */
   "b2b_catalog",
   /**
@@ -171,11 +174,10 @@ export const staffResourceSchema = z.enum([
    * avec le référentiel, réception de ce qu'il diffuse. Pas le prix : il se
    * décide au référentiel depuis le lot D.
    *
-   * Remplacera `b2b_catalog`, dont le préfixe dit une vente aux seuls pros
+   * Remplace `b2b_catalog`, dont le préfixe disait une vente aux seuls pros
    * (`documentation/droits-et-permissions/plan-droit-lfc-catalog.md`, C1,
-   * 2026-10-16). Ajoutée au lot L1 sans garder aucune route : les gardes
-   * basculent au lot L2, quand l'aperçu du transfert ne montre plus d'écart.
-   * Accordée à l'écran ; aucune migration ne la donne à un rôle.
+   * 2026-10-16). Ajoutée au lot L1, elle garde les routes du catalogue depuis
+   * le lot L2. Accordée à l'écran ; aucune migration ne la donne à un rôle.
    */
   "lfc_catalog",
   /**
@@ -329,7 +331,7 @@ export const staffResourceSchema = z.enum([
    * dater, choisir leurs articles, les masquer ou les archiver, au commerce
    * (`documentation/operations-datees/plan-l-operation-passe-au-commerce.md`,
    * Q2, Hugo, 2026-10-15). Un droit à lui, sur le modèle de `lfc_legal` :
-   * il remplacera `pim_catalog` (préparation) et `b2b_catalog` (surcharge)
+   * il remplacera `pim_catalog` (préparation) et `lfc_catalog` (surcharge)
    * sur tout ce qui touche une opération. Ajoutée sans être accordée : elle
    * s'accorde à l'écran.
    */
@@ -570,6 +572,32 @@ export const staffResourceSchema = z.enum([
 export type StaffResource = z.infer<typeof staffResourceSchema>;
 
 /**
+ * **Les ressources retirées** — encore LISIBLES, plus jamais EFFECTIVES.
+ *
+ * Postgres n'ôte pas une valeur d'enum, et des droits accordés la portent
+ * encore : la sortir de {@link staffResourceSchema} ferait échouer la lecture
+ * de tout rôle qui la tient, et ses porteurs perdraient TOUS leurs droits
+ * (contradiction de vitruve, `plan-droit-lfc-catalog.md`, 2026-10-16). Elle y
+ * reste donc, et cette liste dit ce qu'on en fait :
+ *
+ * - ignorée à la résolution (rôles comme dérogations) — elle n'ouvre rien,
+ *   pas même au sommet ;
+ * - jamais proposée à l'accord ; une ligne qui la porte encore se montre
+ *   « retirée », et le seul geste offert est de l'enlever.
+ */
+export const RETIRED_STAFF_RESOURCES = ["b2b_catalog"] as const satisfies readonly StaffResource[];
+export type RetiredStaffResource = (typeof RETIRED_STAFF_RESOURCES)[number];
+
+/** Vrai si la ressource est retirée : lisible, jamais accordée ni résolue. */
+export function isRetiredStaffResource(resource: StaffResource): boolean {
+  return RETIRED_STAFF_RESOURCES.some((retired) => retired === resource);
+}
+
+/** Les ressources qui s'accordent encore, dans l'ordre du catalogue. */
+export const GRANTABLE_STAFF_RESOURCES: readonly StaffResource[] =
+  staffResourceSchema.options.filter((resource) => !isRetiredStaffResource(resource));
+
+/**
  * Deux niveaux, jamais trois. `delete` ou `approve` se paient en confusion bien
  * avant de se payer en sécurité, et rien dans le back-office ne les réclame.
  */
@@ -663,7 +691,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   b2b_counter: "Comptoir",
   b2b_supervision: "Supervision",
   b2b_subscriptions: "Paniers récurrents",
-  b2b_catalog: "Catalogue vendu",
+  b2b_catalog: "Catalogue vendu (retiré)",
   lfc_catalog: "Catalogue publié",
   b2b_pricing: "Tarification",
   b2b_growth: "Croissance",
@@ -717,7 +745,7 @@ export type RoleGrants = Partial<Readonly<Record<StaffResource, StaffAction>>>;
  *   et il est irréversible pour le client là où l'édition ne l'est pas. Il était
  *   inclus dans `catalog:write` : qui pouvait corriger une faute de frappe
  *   pouvait pousser tout le catalogue chez tous les canaux.
- * - **`b2b_pricing` et `b2b_catalog` sont en écriture pour `commercial`** — la
+ * - **`b2b_pricing` et `lfc_catalog` sont en écriture pour `commercial`** — la
  *   correction que ce découpage existe pour rendre possible. La tarification
  *   dormait dans `settings: read` et le catalogue vendu dans `catalog: read` :
  *   le commercial ne pouvait ni poser une règle de prix, ni valider ce qui
@@ -783,9 +811,8 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // trou — l'invariant qu'un test du contrat exige (2026-09-25).
     b2b_supervision: "write",
     b2b_subscriptions: "write",
-    b2b_catalog: "write",
-    // Graine seulement (2026-10-16, plan-droit-lfc-catalog.md, L1) : là où
-    // `b2b_catalog` est donné, au même niveau, jusqu'à la bascule des gardes.
+    // `b2b_catalog` n'est plus semé : il est retiré (2026-10-16,
+    // plan-droit-lfc-catalog.md, L2).
     lfc_catalog: "write",
     b2b_pricing: "write",
     b2b_growth: "write",
@@ -880,9 +907,6 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // Il négocie un prix et valide ce qui entre en vente — c'est son métier, et
     // il ne pouvait ni l'un ni l'autre : la tarification dormait dans
     // `settings: read`, et le catalogue vendu dans `catalog: read`.
-    b2b_catalog: "write",
-    // Le même niveau sur le catalogue publié (graine seulement, 2026-10-16,
-    // plan-droit-lfc-catalog.md, L1) : en production, accordé à l'écran.
     lfc_catalog: "write",
     // Sans les LIMITES : `lfc_price_limits` n'est pas à lui (Hugo, 2026-09-26). Il
     // voit la limite pro sur le tableau qu'il lit déjà, il ne la pose plus.
@@ -952,8 +976,6 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // depuis le Comptoir, elle le peut toujours (2026-09-25).
     b2b_counter: "read",
     b2b_subscriptions: "read",
-    b2b_catalog: "read",
-    // Graine seulement (2026-10-16, plan-droit-lfc-catalog.md, L1).
     lfc_catalog: "read",
     b2b_pricing: "read",
     b2b_payments: "write",
@@ -1130,11 +1152,14 @@ export function dedupeStaffOverrides(
 // La résolution
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Toutes les permissions du catalogue, dans un ordre stable (ressource, puis action). */
-export const ALL_STAFF_PERMISSIONS: readonly StaffPermission[] =
-  staffResourceSchema.options.flatMap((resource) =>
-    staffActionSchema.options.map((action) => staffPermission(resource, action)),
-  );
+/**
+ * Toutes les permissions du catalogue, dans un ordre stable (ressource, puis
+ * action) — ressources retirées EXCLUES : ce que le sommet tient, et le seul
+ * ensemble que la résolution peut rendre.
+ */
+export const ALL_STAFF_PERMISSIONS: readonly StaffPermission[] = GRANTABLE_STAFF_RESOURCES.flatMap(
+  (resource) => staffActionSchema.options.map((action) => staffPermission(resource, action)),
+);
 
 /**
  * L'effectif d'une personne. **Pure et déterministe** : ni base, ni réseau, ni
@@ -1174,13 +1199,16 @@ export function resolvePermissionsFromGrants(
   overrides: readonly StaffOverride[] = [],
 ): readonly StaffPermission[] {
   const granted = new Set<StaffPermission>(expandGrants(grants));
+  // Une dérogation sur une ressource retirée est lue, jamais appliquée — ni
+  // pour accorder, ni pour refuser (`RETIRED_STAFF_RESOURCES`).
+  const live = overrides.filter((entry) => !isRetiredStaffResource(entry.resource));
 
-  for (const override of overrides.filter((entry) => entry.effect === "allow")) {
+  for (const override of live.filter((entry) => entry.effect === "allow")) {
     for (const permission of implied(override.resource, override.action)) {
       granted.add(permission);
     }
   }
-  for (const override of overrides.filter((entry) => entry.effect === "deny")) {
+  for (const override of live.filter((entry) => entry.effect === "deny")) {
     for (const permission of deniedBy(override.resource, override.action)) {
       granted.delete(permission);
     }
@@ -1236,7 +1264,7 @@ export interface StaffMeView {
 
 /** Développe la matrice d'un rôle en permissions atomiques. */
 function expandGrants(grants: RoleGrants): readonly StaffPermission[] {
-  return staffResourceSchema.options.flatMap((resource) => {
+  return GRANTABLE_STAFF_RESOURCES.flatMap((resource) => {
     const action = grants[resource];
     return action === undefined ? [] : implied(resource, action);
   });

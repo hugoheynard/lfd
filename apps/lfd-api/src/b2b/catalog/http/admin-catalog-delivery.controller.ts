@@ -17,14 +17,15 @@ import { GetPendingDeliveryQuery } from "../application/queries/get-pending-deli
  *
  * ## Le droit, et pourquoi celui-là
  *
- * `b2b_catalog` et **jamais** `pim_catalog`. C'est la séparation que le
+ * `lfc_catalog` (`b2b_catalog` jusqu'au lot L2 de `plan-droit-lfc-catalog.md`,
+ * 2026-10-16) et **jamais** `pim_catalog`. C'est la séparation que le
  * découpage des droits par outil a rendue exprimable : valider ce qui entre en
  * vente est le métier du commercial, éditer les fiches du référentiel ne l'est
  * pas. Murer cette route derrière le droit du PIM ressouderait les deux rôles
  * qu'on venait de séparer, et rendrait le relecteur nécessairement auteur.
  */
 @Controller("admin/catalog/delivery")
-@AdminSurface("b2b_catalog")
+@AdminSurface("lfc_catalog")
 export class AdminCatalogDeliveryController {
   constructor(
     private readonly queries: QueryBus,

@@ -673,7 +673,7 @@ export const B2B_VIEWS: readonly WorkspaceView[] = [
     link: '/b2b/reception',
     icon: 'inbox',
     section: 'Catalogue',
-    needs: 'b2b_catalog:read',
+    needs: 'lfc_catalog:read',
   },
   // « Catalogue actuel en ligne » est parti en Gestion Boutique le 2026-10-15
   // (H9 de plan-catalogue-synchronise-par-audience.md), renommé « Catalogue

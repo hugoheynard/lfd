@@ -12,7 +12,7 @@ import { CheckCatalogHealthQuery } from "../application/queries/check-catalog-he
  *
  * 🔴 Elle existe parce que `ops_catalog_parity.yml` ne pouvait pas
  * s'authentifier, et personne ne l'avait vu. Il envoie `x-lfc-recompute-token` à
- * `/admin/catalog/parity`, qui est gardée par `@AdminSurface("b2b_catalog")` —
+ * `/admin/catalog/parity`, qui est gardée par `@AdminSurface("lfc_catalog")` —
  * une surface Auth0 qui attend un jeton porteur de staff. Le `RecomputeGuard`
  * n'y est **pas** posé : la requête rendait `401`.
  *

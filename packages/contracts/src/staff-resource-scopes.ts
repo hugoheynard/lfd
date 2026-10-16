@@ -87,14 +87,13 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
       "N'ajoute rien aujourd'hui : aucun geste ne modifie un panier récurrent depuis le back-office.",
   },
   b2b_catalog: {
-    read: "Voir le catalogue vendu — prix, masquage, mise en avant, parité avec le référentiel, réception de ce qu'il diffuse — et l'exporter. Ses écrans demandent aussi Réglages plateforme en lecture.",
-    write:
-      "Fixer un prix pro ou public, masquer ou mettre en avant un produit, accepter ce que le référentiel diffuse, ajuster une opération côté vente.",
+    read: "Retiré : n'ouvre plus rien, remplacé par Catalogue publié. Un rôle qui le porte encore ne gagne rien à le garder ; le seul geste est de le retirer.",
+    write: "Retiré : n'ouvre plus rien, remplacé par Catalogue publié. Il ne s'accorde plus.",
   },
   lfc_catalog: {
-    read: "N'ouvre encore aucun écran : le catalogue publié — masquage, mise en avant, arrivées, parité, réception — se lit sous Catalogue vendu jusqu'à la bascule de ses gardes. L'accorder au même niveau que Catalogue vendu prépare cette bascule.",
+    read: "Voir le catalogue publié — masquage, mise en avant, arrivées à valider, parité avec le référentiel, réception de ce qu'il diffuse — et l'exporter, pour les pros comme pour le public. Ses écrans demandent aussi Réglages plateforme en lecture.",
     write:
-      "Masquer ou mettre en avant un produit, accepter ce que le référentiel diffuse, pour les pros comme pour le public. L'écriture n'ouvre qu'à la bascule des gardes du catalogue.",
+      "Masquer ou mettre en avant un produit, valider ce qui arrive, accepter ce que le référentiel diffuse, ajuster une opération côté vente.",
   },
   b2b_pricing: {
     read: "Voir les règles de prix, paliers, gabarits, engagements de volume, mercuriales des clients et le journal tarifaire. L'espace Tarification demande aussi Réglages plateforme en lecture.",
@@ -166,7 +165,7 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     write: "Ajouter, modifier, réordonner ou retirer une note photo.",
   },
   b2b_settings: {
-    read: "Voir les réglages du commerce : points de retrait et leurs créneaux, heures limites, pied de page. Les mentions légales relèvent de « Légal ». Ouvre aussi les espaces Réglages et B2B, que Catalogue vendu et Tarification supposent.",
+    read: "Voir les réglages du commerce : points de retrait et leurs créneaux, heures limites, pied de page. Les mentions légales relèvent de « Légal ». Ouvre aussi les espaces Réglages et B2B, que Catalogue publié et Tarification supposent.",
     write: "Modifier ces réglages — ce qui change l'offre faite à tous les clients.",
   },
   lfc_legal: {
@@ -175,7 +174,7 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
       "Rédiger ces mentions et déposer un PDF de référence des CGV — ce que la boutique oppose à tous les clients.",
   },
   lfc_operations: {
-    read: "N'ouvre encore aucun écran : les opérations datées (Noël, Pâques, la galette) se lisent sous Référentiel et Catalogue vendu jusqu'à leur bascule au commerce.",
+    read: "N'ouvre encore aucun écran : les opérations datées (Noël, Pâques, la galette) se lisent sous Référentiel et Catalogue publié jusqu'à leur bascule au commerce.",
     write:
       "Préparer une opération, la redater, changer sa clientèle, choisir ses articles, la masquer ou l'archiver — ce qui décide de ce que la boutique annonce et vend, et jusqu'à quand. L'écriture n'ouvre qu'à la bascule des opérations au commerce.",
   },

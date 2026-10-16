@@ -1,13 +1,17 @@
 import { TestBed } from '@angular/core/testing';
-import { STAFF_RESOURCE_SCOPES, staffResourceSchema } from '@lfd/contracts';
+import {
+  GRANTABLE_STAFF_RESOURCES,
+  STAFF_RESOURCE_SCOPES,
+  type StaffOverride,
+} from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { OverridesGrid } from '../overrides-grid';
 
-function render(): HTMLElement {
+function render(overrides: readonly StaffOverride[] = []): HTMLElement {
   const fixture = TestBed.createComponent(OverridesGrid);
   fixture.componentRef.setInput('grants', { b2b_companies: 'read' });
-  fixture.componentRef.setInput('overrides', []);
+  fixture.componentRef.setInput('overrides', overrides);
   fixture.detectChanges();
   return fixture.nativeElement as HTMLElement;
 }
@@ -22,7 +26,7 @@ describe('OverridesGrid — la portée de chaque droit', () => {
     const host = render();
     const scopes = [...host.querySelectorAll('.row-scope')];
 
-    expect(scopes).toHaveLength(staffResourceSchema.options.length);
+    expect(scopes).toHaveLength(GRANTABLE_STAFF_RESOURCES.length);
     expect(
       scopes.some((scope) => scope.textContent?.includes(STAFF_RESOURCE_SCOPES.staff_access.write)),
     ).toBe(true);
@@ -35,5 +39,21 @@ describe('OverridesGrid — la portée de chaque droit', () => {
     );
 
     expect(labels).toContain('Gestes à la porte');
+  });
+});
+
+/** `plan-droit-lfc-catalog.md`, L2 : une dérogation retirée se garde ou s'enlève. */
+describe('OverridesGrid — une dérogation sur un droit retiré', () => {
+  it('se montre « retirée », sans rien ouvrir, et ne propose que de l’enlever', () => {
+    const host = render([{ resource: 'b2b_catalog', action: 'write', effect: 'allow' }]);
+    const row = [...host.querySelectorAll('tbody tr')].find((candidate) =>
+      candidate.textContent?.includes('Catalogue vendu (retiré)'),
+    );
+    const selects = [...(row?.querySelectorAll('fold-select') ?? [])];
+    const writeOptions = [...(selects[1]?.querySelectorAll('option') ?? [])].map((o) => o.value);
+
+    expect(row?.textContent).toContain('Retiré — à enlever');
+    expect(writeOptions).toEqual(['inherit', 'allow']);
+    expect(row?.textContent).not.toContain('oui');
   });
 });

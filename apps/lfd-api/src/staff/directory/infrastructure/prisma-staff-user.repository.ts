@@ -24,7 +24,13 @@ import {
   assertStatusChangeAllowed,
 } from "../../permissions/staff-access.policy.js";
 import { parseStaffNavPreferences } from "../domain/staff-nav-preferences.js";
-import { diffOverrides, isEmptyOverrideDiff, type OverrideDiff } from "../domain/override-diff.js";
+import { assertRetiredLinesUnchanged } from "../../permissions/domain/retired-resources.js";
+import {
+  diffOverrides,
+  isEmptyOverrideDiff,
+  overrideIdentity,
+  type OverrideDiff,
+} from "../domain/override-diff.js";
 import {
   assertStaffUserUnchangedSince,
   DuplicateStaffEmailError,
@@ -107,6 +113,8 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
   async create(payload: StaffUserPayload, actorId: string): Promise<StaffUserCreated> {
     const data = identityColumns(payload);
     const overrides = dedupeStaffOverrides(payload.overrides);
+    // Un écart retiré sur une fiche neuve serait un accord (plan-droit-lfc-catalog.md, L2).
+    assertRetiredLinesUnchanged([], overrides, overrideIdentity);
     // Sous verrou partagé, dans l'unité de travail du handler : un archivage
     // concurrent attend que la fiche soit écrite (§3.3).
     const role = await assignableRole(this.prisma, data.role);
@@ -133,6 +141,8 @@ export class PrismaStaffUserRepository extends StaffUserRepository {
     // Normalisé AVANT de valider : on refuse ou on accepte exactement l'état
     // qu'on s'apprête à écrire, jamais un autre.
     const overrides = dedupeStaffOverrides(payload.overrides);
+    // Un écart retiré reste tel quel ou part, jamais n'arrive (plan-droit-lfc-catalog.md, L2).
+    assertRetiredLinesUnchanged(target.overrides, overrides, overrideIdentity);
     const role = await this.intendedRole(target, requested.role);
     const after = { ...requested, role: role.key };
     assertEditAllowed(target.policy, {

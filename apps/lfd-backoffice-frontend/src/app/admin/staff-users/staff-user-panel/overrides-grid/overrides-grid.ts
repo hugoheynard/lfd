@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input, model } from '@angular/core';
 import {
   hasStaffPermission,
+  isRetiredStaffResource,
   resolvePermissionsFromGrants,
   staffPermission,
   staffResourceSchema,
@@ -28,6 +29,8 @@ const CHOICES: readonly { readonly value: Choice; readonly label: string }[] = [
 interface Cell {
   readonly action: StaffAction;
   readonly choice: Choice;
+  /** Les choix proposés — tous, ou, sur un droit retiré, le sien et « Hérite ». */
+  readonly options: typeof CHOICES;
   readonly granted: boolean;
 }
 
@@ -35,6 +38,8 @@ interface Row {
   readonly resource: StaffResource;
   readonly label: string;
   readonly scope: StaffResourceScope;
+  /** Retiré : la dérogation qui le porte ne peut qu'être gardée ou enlevée. */
+  readonly retired: boolean;
   readonly read: Cell;
   readonly write: Cell;
 }
@@ -65,14 +70,20 @@ export class OverridesGrid {
   readonly grants = input.required<RoleGrants>();
   readonly overrides = model.required<readonly StaffOverride[]>();
 
-  protected readonly choices = CHOICES;
-
   protected readonly rows = computed<readonly Row[]>(() => {
     const effective = resolvePermissionsFromGrants(this.grants(), this.overrides());
-    return staffResourceSchema.options.map((resource) => ({
+    // Une ressource retirée ne se montre que si une dérogation la porte encore,
+    // pour être enlevée (`plan-droit-lfc-catalog.md`, L2, 2026-10-16).
+    const shown = staffResourceSchema.options.filter(
+      (resource) =>
+        !isRetiredStaffResource(resource) ||
+        this.overrides().some((entry) => entry.resource === resource),
+    );
+    return shown.map((resource) => ({
       resource,
       label: STAFF_RESOURCE_LABELS[resource],
       scope: STAFF_RESOURCE_SCOPES[resource],
+      retired: isRetiredStaffResource(resource),
       read: this.cell(resource, 'read', effective),
       write: this.cell(resource, 'write', effective),
     }));
@@ -102,9 +113,13 @@ export class OverridesGrid {
     const override = this.overrides().find(
       (entry) => entry.resource === resource && entry.action === action,
     );
+    const choice = override?.effect ?? 'inherit';
     return {
       action,
-      choice: override?.effect ?? 'inherit',
+      choice,
+      options: isRetiredStaffResource(resource)
+        ? CHOICES.filter((entry) => entry.value === 'inherit' || entry.value === choice)
+        : CHOICES,
       granted: hasStaffPermission(effective, staffPermission(resource, action)),
     };
   }

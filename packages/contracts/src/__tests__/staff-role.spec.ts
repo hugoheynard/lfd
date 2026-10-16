@@ -1,5 +1,6 @@
 import {
   ALL_STAFF_PERMISSIONS,
+  GRANTABLE_STAFF_RESOURCES,
   ROLE_GRANTS,
   resolveStaffPermissions,
   staffResourceSchema,
@@ -24,7 +25,9 @@ describe("le sommet", () => {
     // Le court-circuit est là pour ça : une matrice énumérée aurait un trou
     // jusqu'à ce que quelqu'un pense à la compléter — sur le compte censé
     // pouvoir tout réparer.
-    const everyResourceCovered = staffResourceSchema.options.every((resource) =>
+    // Toute ressource qui s'ACCORDE : une ressource retirée n'ouvre plus rien,
+    // pas même au sommet (plan-droit-lfc-catalog.md, L2).
+    const everyResourceCovered = GRANTABLE_STAFF_RESOURCES.every((resource) =>
       resolveRolePermissions(SUPER_ADMIN_ROLE_KEY, {}).includes(`${resource}:write`),
     );
     expect(everyResourceCovered).toBe(true);

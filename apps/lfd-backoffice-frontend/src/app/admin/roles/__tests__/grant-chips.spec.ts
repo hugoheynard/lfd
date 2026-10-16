@@ -112,9 +112,11 @@ describe('grantGroups', () => {
    * jour : `lfc_operations`, les opérations datées tenues au commerce
    * (operations-datees/plan-l-operation-passe-au-commerce.md, Q2). 59 le
    * 2026-10-16 : `lfc_catalog`, le catalogue publié, qui remplacera
-   * `b2b_catalog` (droits-et-permissions/plan-droit-lfc-catalog.md, L1).
+   * `b2b_catalog` (droits-et-permissions/plan-droit-lfc-catalog.md, L1). 58
+   * le même jour : `b2b_catalog` est retiré (L2) — il reste lisible, mais ne
+   * compte plus parmi les domaines qu'on accorde.
    */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(59);
+    expect(RESOURCE_COUNT).toBe(58);
   });
 });

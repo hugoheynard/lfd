@@ -27,6 +27,9 @@
                tablette, où rien ne se survole (2026-10-02). -->
           <th scope="row">
             <span class="row-label">{{ row.label }}</span>
+            @if (row.retired) {
+              <fold-badge variant="warning" content="Retiré — à enlever" />
+            }
             <span class="row-scope">
               <span class="row-scope-line"><strong>Lecture</strong> — {{ row.scope.read }}</span>
               <span class="row-scope-line"><strong>Écriture</strong> — {{ row.scope.write }}</span>
@@ -44,7 +47,7 @@
                   [value]="cell.choice"
                   (valueChange)="setChoice(row.resource, cell.action, $event)"
                 >
-                  @for (choice of choices; track choice.value) {
+                  @for (choice of cell.options; track choice.value) {
                     <option [value]="choice.value">{{ choice.label }}</option>
                   }
                 </fold-select>

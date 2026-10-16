@@ -131,7 +131,7 @@ describe('B2bPage — le bandeau d’arrivée', () => {
   });
 
   /**
-   * La route de réception exige `b2b_catalog:read`. Un bandeau qui mène à un
+   * La route de réception exige `lfc_catalog:read`. Un bandeau qui mène à un
    * 403 est pire que pas de bandeau : il nomme un geste qu'on ne peut pas faire.
    */
   it('se tait pour qui n’a pas le droit d’ouvrir la réception', async () => {

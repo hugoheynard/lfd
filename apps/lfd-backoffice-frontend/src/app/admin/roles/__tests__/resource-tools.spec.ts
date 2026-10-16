@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { staffResourceSchema, type StaffResource } from '@lfd/contracts';
+import { GRANTABLE_STAFF_RESOURCES, staffResourceSchema, type StaffResource } from '@lfd/contracts';
 
 import { toolGroups, toolOf } from '../resource-tools';
 
@@ -12,10 +12,10 @@ describe('les domaines rangés par outil', () => {
    * Le `Record` exhaustif casse déjà la compilation ; ce test tient l'autre
    * moitié, celle que le typage ne voit pas : qu'aucun groupe ne l'avale.
    */
-  it('place TOUTES les ressources du contrat, une seule fois chacune', () => {
+  it('place TOUTES les ressources qui s’accordent, une seule fois chacune', () => {
     const placed = toolGroups().flatMap((group) => group.resources.map((r) => r.resource));
 
-    expect([...placed].sort()).toEqual([...staffResourceSchema.options].sort());
+    expect([...placed].sort()).toEqual([...GRANTABLE_STAFF_RESOURCES].sort());
     expect(new Set(placed).size).toBe(placed.length);
   });
 
@@ -70,7 +70,7 @@ describe('les domaines rangés par outil', () => {
    * catalogue vendu.
    */
   it('sépare le référentiel de la plateforme, et l’édition de la diffusion', () => {
-    expect(toolOf('pim_catalog')).not.toBe(toolOf('b2b_catalog'));
+    expect(toolOf('pim_catalog')).not.toBe(toolOf('lfc_catalog'));
     expect(toolOf('pim_catalog')).toBe(toolOf('pim_channels'));
   });
 
@@ -95,5 +95,23 @@ describe('les domaines rangés par outil', () => {
     for (const resource of staffResourceSchema.options as readonly StaffResource[]) {
       expect(toolOf(resource)).toBeTruthy();
     }
+  });
+});
+
+/** `plan-droit-lfc-catalog.md`, L2 : une ressource retirée ne se propose plus. */
+describe('une ressource retirée', () => {
+  const placed = (held: readonly StaffResource[] = []): readonly StaffResource[] =>
+    toolGroups(held).flatMap((group) => group.resources.map((r) => r.resource));
+
+  it('n’est jamais proposée à l’accord', () => {
+    expect(placed()).not.toContain('b2b_catalog');
+  });
+
+  it('se montre, marquée retirée, là où elle est encore portée', () => {
+    expect(placed(['b2b_catalog'])).toContain('b2b_catalog');
+    const entry = toolGroups(['b2b_catalog'])
+      .flatMap((group) => group.resources)
+      .find((r) => r.resource === 'b2b_catalog');
+    expect(entry?.retired).toBe(true);
   });
 });

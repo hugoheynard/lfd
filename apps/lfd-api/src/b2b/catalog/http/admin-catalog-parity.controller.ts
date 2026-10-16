@@ -25,7 +25,7 @@ import type { ParityReport } from "../domain/catalog-parity.js";
  * pas le sien.
  */
 @Controller("admin/catalog")
-@AdminSurface("b2b_catalog")
+@AdminSurface("lfc_catalog")
 export class AdminCatalogParityController {
   constructor(private readonly queries: QueryBus) {}
 

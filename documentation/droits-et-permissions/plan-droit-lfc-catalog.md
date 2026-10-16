@@ -1,5 +1,41 @@
 # Plan — `lfc_catalog` remplace `b2b_catalog`
 
+> 🔨 **L2 bâti le 2026-10-16** (non commité à l'écriture de ce bandeau).
+> **Décision de Hugo (2026-10-16), option (a)** : la fenêtre sans catalogue
+> est acceptée — il retire `b2b_catalog` à l'écran, puis déploie L2 dans la
+> foulée (runbook, « Transférer le droit du catalogue », étape 5).
+>
+> - **Gardes** : les quatre `@AdminSurface` de `b2b/catalog/http/` sur
+>   `lfc_catalog` ; front : `permissionGuard` de `/b2b/reception`, rail
+>   (`workspaces.ts`), les deux `*appCan`, et leurs specs. Commentaires
+>   porteurs redatés.
+> - **`RETIRED_STAFF_RESOURCES`** (`packages/contracts/src/staff-access.ts`,
+>   avec `isRetiredStaffResource` et `GRANTABLE_STAFF_RESOURCES`) :
+>   `b2b_catalog` reste dans `staffResourceSchema`. Ignoré à la résolution
+>   **dans `resolvePermissionsFromGrants`** — la fonction pure que le résolveur
+>   appelle par `resolveHeldRole` — plutôt que dans
+>   `prisma-staff-access.resolver.ts` même : l'écran des rôles, la fiche staff
+>   et le guard rendent ainsi la même réponse. Exclu de
+>   `ALL_STAFF_PERMISSIONS` : le sommet ne le tient plus non plus.
+> - **Jamais accordé** : `StaffRoleDefinition` (création et redéfinition) et
+>   la charge d'une fiche staff refusent une ligne retirée NOUVELLE ou au
+>   niveau/effet changé (400 `staff.resource_retired`,
+>   `apps/lfd-api/src/staff/permissions/domain/retired-resources.ts`) ; une ligne gardée à
+>   l'identique passe — la fiche ou le rôle renvoyé entier reste
+>   enregistrable. À l'écran (grille des rôles, grille des dérogations), la
+>   ressource retirée n'apparaît que si elle est portée, badge « Retiré — à
+>   enlever », et ne propose que son niveau actuel ou l'absence. Les outils
+>   agent ne la connaissent plus.
+> - **Graine** : `ROLE_GRANTS` ne donne plus `b2b_catalog`. Libellé
+>   « Catalogue vendu (retiré) » ; portées réécrites (plus de prix).
+> - **Notifications** : aucun émetteur n'adressait `b2b_catalog:*` (vérifié
+>   le 2026-10-16) ; le port `StaffNotice.audience` le dit.
+> - **L'aperçu L1 reste.**
+>
+> Écart : le type `StaffNotice.audience` n'exclut pas la ressource retirée —
+> essayé, il remonte dans tous les émetteurs qui construisent leur audience
+> par `staffPermission()` (dont `src/delivery/`, hors périmètre).
+
 > 🔨 **L1 bâti le 2026-10-16** (non commité à l'écriture de ce bandeau) :
 > migration `20261016100000_le_droit_du_catalogue_publie` (l'`ALTER TYPE`
 > seul) ; `lfc_catalog` dans `staffResourceSchema`, libellé « Catalogue
