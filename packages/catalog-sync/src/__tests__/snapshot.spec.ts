@@ -8,7 +8,8 @@ import {
 /**
  * Ce que ces tests éprouvent, ce n'est pas Zod : c'est que **les refus promis par
  * la doc sont réellement des refus**. Chacun correspond à une phrase de
- * `architecture-catalogue-synchronise.md` — si l'un tombe, c'est la doc qui ment.
+ * `documentation/catalogue/catalogue-synchronise.md` (§2, les formes du fil) — si
+ * l'un tombe, c'est la doc qui ment.
  */
 
 const variant = {

@@ -835,7 +835,7 @@ pense ; le type l'exige.
   l'était par le référentiel en v6, qui n'envoyait que le résultat : une règle
   globale se recopiait alors sur N articles, et son changement était
   indescriptible par un diff qui compare des SKU — l'arrivée s'annonçait « 0
-  changement ». Cf. `architecture-catalogue-synchronise.md`.
+  changement ». Cf. `../catalogue/catalogue-synchronise.md` (§2).
 
 - ✅ `Order` porte `lateFeeCents` + `lateFeeAdjustment`, calqués sur
   `discountCents` / `discountAdjustment` (§8), et un `order_late_fee` singleton

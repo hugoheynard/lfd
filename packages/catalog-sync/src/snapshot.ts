@@ -6,7 +6,7 @@ import { z } from "zod";
  * Complet et rejouable, jamais un delta : un delta suppose que les deux côtés
  * s'accordent sur l'état de départ, alors qu'un snapshot est vrai tout seul —
  * on peut le rejouer, le comparer, et reconstruire la base réceptrice après une
- * perte. Cf. `documentation/catalogue/architecture-catalogue-synchronise.md`.
+ * perte. Cf. `documentation/catalogue/catalogue-synchronise.md`.
  *
  * Ce package n'appartient **à aucun des deux backends**. C'est ce qui l'empêche
  * de dériver vers le langage de l'un : le PIM parle « produit / déclinaison »,

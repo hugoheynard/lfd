@@ -29,7 +29,7 @@ model ProductNorm {
 }
 
 // ---------------------------------------------------------------------------
-// Catalogue REÇU du PIM — cf. documentation/catalogue/architecture-catalogue-synchronise.md
+// Catalogue REÇU du PIM — cf. documentation/catalogue/catalogue-synchronise.md
 //
 // Deux tables, et c'est LA décision de structure de ce chantier. Le miroir est
 // remplacé en entier à chaque push ; l'override porte les décisions prises ici.

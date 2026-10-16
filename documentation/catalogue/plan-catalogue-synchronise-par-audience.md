@@ -5,12 +5,13 @@
 > Restent : W (webhook de la vitrine), 4 (TVA, limites, révisions
 > automatiques), 5 (le ménage). Rangé dans `catalogue/` le même jour.
 >
-> ~~📐 Doc-first, rien n'est bâti (rédigé le 2026-10-15).~~ Remplace deux
-> plans, qui restent en place avec un bandeau :
-> [`plan-audience-par-heritage.md`](plan-audience-par-heritage.md) (même jour)
-> et [`plan-publication-par-faits-versionnes.md`](plan-publication-par-faits-versionnes.md)
-> (2026-10-13). Leurs relevés de l'existant et les contradictions de `vitruve`
-> y sont toujours ; ce document ne les recopie pas, il y renvoie.
+> ~~📐 Doc-first, rien n'est bâti (rédigé le 2026-10-15).~~ A remplacé deux
+> plans — l'audience par héritage (même jour) et la publication par faits
+> versionnés (2026-10-13) —, **retirés le 2026-10-16** : leurs décisions sont
+> ici (C1–C7, et la contradiction de `vitruve` intégrée en fin de document),
+> leur texte dans l'historique git. **L'état bâti** se lit dans
+> [`catalogue-synchronise.md`](catalogue-synchronise.md), doc d'état écrite en
+> ouvrant le code ; ce plan garde les décisions, les lots et ce qui reste.
 >
 > Touche **l'argent** (le prix part en continu) et porte une **migration de
 > données** : `vitruve` est obligatoire avant Hugo (CLAUDE.md §9 bis).
@@ -100,7 +101,7 @@ Ce qui reste vendu sans relecture, choisi par Hugo (H3) : une valeur
 
 ### C2 — L'audience (H1)
 
-Reprise telle quelle de [`plan-audience-par-heritage.md`](plan-audience-par-heritage.md)
+Reprise telle quelle du plan d'audience par héritage (retiré le 2026-10-16)
 D1 et D3 : `category.audience` obligatoire, `product.audience` nullable
 (hérite), `OPERATION_AUDIENCES` réutilisée, et une règle `servedTo(item,
 viewer)` qui remplace les **quatre** lectures directes du masquage côté

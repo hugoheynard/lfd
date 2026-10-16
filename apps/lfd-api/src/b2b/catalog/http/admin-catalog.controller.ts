@@ -147,7 +147,7 @@ export class AdminCatalogController {
 
   /**
    * **Masquer pour une audience, ou y remettre** — la route unique du masquage
-   * (H5 ; D7 de `plan-audience-par-heritage.md`). Les deux routes d'avant
+   * (H5 ; §4 de `catalogue-synchronise.md`). Les deux routes d'avant
    * (`:sku/visibility`, `:sku/public-visibility`) sont retirées le 2026-10-15 :
    * pré-release (CLAUDE.md §0), et leur seul lecteur était le back-office.
    */

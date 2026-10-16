@@ -152,8 +152,8 @@ export interface CatalogAdminItemView {
 
 /**
  * **Masquer un article pour une audience, ou l'y remettre** — la route unique
- * du masquage (`PUT admin/catalog/:sku/masking`, H5 ; D7 de
- * `documentation/catalogue/plan-audience-par-heritage.md`). Elle remplace les deux
+ * du masquage (`PUT admin/catalog/:sku/masking`, H5 ; §4 de
+ * `documentation/catalogue/catalogue-synchronise.md`). Elle remplace les deux
  * routes d'avant (`:sku/visibility`, `:sku/public-visibility`), retirées le
  * 2026-10-15 (pré-release, seul lecteur : le back-office).
  *

@@ -8,6 +8,9 @@
 > ouverts, la réception ne voit plus ni fiches ni familles (`apps/lfd-api/src/b2b/catalog/application/ingest-catalog.service.ts:72`). **Non
 > vérifié** : les §4 et §7 à §10 ligne à ligne. Ce cycle est destiné à
 > disparaître (lot 5 de [`plan-catalogue-synchronise-par-audience.md`](plan-catalogue-synchronise-par-audience.md)).
+>
+> Le chemin **faits ouverts** — ce que la plateforme reçoit par abonnement —
+> est décrit dans [`catalogue-synchronise.md`](catalogue-synchronise.md) (2026-10-16).
 
 Code : `apps/lfd-api/src/pim/catalogue/revision/`,
 `apps/lfd-api/src/pim/channels/`, `apps/lfd-api/src/b2b/catalog/`,
