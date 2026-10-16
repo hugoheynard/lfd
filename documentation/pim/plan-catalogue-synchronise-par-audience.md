@@ -720,7 +720,7 @@ Les trois BLOQUANT ont été rouverts dans le code avant d'être intégrés.
   push dit « sans taux pro » quand c'est le cas.
 - **À corriger au passage** (MINEUR) : le JSDoc de `proPriceOf`
   (`accounting-rules.ts:205-210`) annonce six appelants et cite
-  `prefill-pro-prices.ts`, qui n'existe pas ; celui de
+  un fichier de pré-remplissage qui n'existe pas sous ce nom ; celui de
   `choose-pro-price-method.ts:47-49` (« sans objet tant qu'il n'y a qu'une
   méthode ») ; le commentaire de `vat.prisma:68-80` (« une seule valeur »).
 
