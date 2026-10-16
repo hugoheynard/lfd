@@ -790,6 +790,51 @@ Rien n'est supprimé : `pim.operations`, `pim.operation_items` et
   retirée ; une modification est écrasée. Et jusqu'à ce push, une opération
   reprise sert un texte alternatif vide (la migration n'en écrit plus).
 
+## Transférer le droit du catalogue (`b2b_catalog` → `lfc_catalog`) — l'ordre, et la condition de L2
+
+Plan : [`plan-droit-lfc-catalog.md`](../droits-et-permissions/plan-droit-lfc-catalog.md).
+Le lot L1 (bâti le 2026-10-16) ajoute la ressource « Catalogue publié »
+(`lfc_catalog`, migration `20261016100000_le_droit_du_catalogue_publie`) **sans
+l'accorder à personne** et **sans déplacer aucune garde** : les écrans du
+catalogue restent sous « Catalogue vendu » (`b2b_catalog`). Aucune migration ne
+recopie un droit, et il n'y a pas de bouton « tout recopier ».
+
+**1. Déployer L1.** Rien ne change pour personne.
+
+**2. Ouvrir l'aperçu** : Admin › Rôles, carte « Transfert : Catalogue vendu →
+Catalogue publié » (ou `GET /admin/staff-access/catalog-right-transfer`, sous
+`staff_access:read`). Une ligne par rôle (archivés compris) et par dérogation
+qui porte l'un des deux droits.
+
+**3. Pour chaque ligne, à l'écran, dans cet ordre :**
+
+- **Rôle** (`/admin/staff-roles` › Modifier) : accorder « Catalogue publié »
+  **au même niveau** que « Catalogue vendu », enregistrer ; **puis** retirer
+  « Catalogue vendu », enregistrer. Le rôle archivé se traite aussi : remis en
+  service après L2, il rendrait ce qu'il portait.
+- **Dérogation** (fiche de la personne) : recopier la même dérogation sur
+  « Catalogue publié », **même action, même effet**, puis retirer celle sur
+  « Catalogue vendu ». ⚠️ Un **retrait** non recopié (« retrait à recopier »)
+  est un accès **gagné** à la bascule, dès que le rôle reçoit le nouveau droit.
+
+**4. La condition de L2** : l'aperçu affiche **« Sans écart »** (`clear: true`),
+c'est-à-dire qu'aucun rôle ni aucune dérogation ne porte plus `b2b_catalog`, et
+que chacun tient `lfc_catalog` au même niveau et au même effet. Tant que ce
+n'est pas le cas, **ne pas déployer L2** : un rôle oublié y perd le catalogue.
+
+⚠️ Entre le retrait de « Catalogue vendu » et L2, les écrans du catalogue sont
+**fermés** à ceux qui l'ont perdu (les gardes sont encore sur l'ancien droit).
+Faire les étapes 3 et le déploiement de L2 dans la même fenêtre, ou commencer
+par les rôles dont personne ne se sert du catalogue ce jour-là.
+
+**Les notifications** : l'aperçu compte celles d'audience `b2b_catalog:*`
+encore non lues. Elles ne seront plus visibles après L2 (décision du
+2026-10-16 : perdues, sans réadressage) — les lire avant si elles comptent.
+
+**Retour arrière** : avant L2, rien à défaire (la valeur d'enum reste, inutilisée).
+Après L2, redéployer L1 rouvre les gardes sur `b2b_catalog` — qui n'est plus
+porté par personne : il faut le réaccorder à l'écran.
+
 ## Déployer le lot D — le prix ne se décide plus sur la plateforme
 
 Lot D de [`plan-catalogue-synchronise-par-audience.md`](../catalogue/plan-catalogue-synchronise-par-audience.md)

@@ -871,6 +871,18 @@ export { STAFF_RESOURCE_SCOPES } from "./staff-resource-scopes.js";
 export { AGENT_TOOL_HEADER, agentToolOf } from "./agent-tool.js";
 export type { StaffResourceScope } from "./staff-resource-scopes.js";
 export {
+  catalogRightGapSchema,
+  catalogRightOverrideLineSchema,
+  catalogRightRoleLineSchema,
+  catalogRightTransferViewSchema,
+} from "./catalog-right-transfer.js";
+export type {
+  CatalogRightGap,
+  CatalogRightOverrideLine,
+  CatalogRightRoleLine,
+  CatalogRightTransferView,
+} from "./catalog-right-transfer.js";
+export {
   staffStatusSchema,
   staffStatusChangeSchema,
   staffUserPayloadSchema,

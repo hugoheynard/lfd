@@ -301,6 +301,7 @@
   "test/staff-notification-authors.e2e-spec.ts": 3616,
   "test/staff-role-keys-migration.e2e-spec.ts": 3304,
   "test/staff-role-seed.e2e-spec.ts": 2521,
+  "test/staff-catalog-right-transfer.e2e-spec.ts": 8124,
   "test/staff-roles-in-database.e2e-spec.ts": 9404,
   "test/staff-roles.e2e-spec.ts": 55877,
   "test/staff-users.e2e-spec.ts": 10030,

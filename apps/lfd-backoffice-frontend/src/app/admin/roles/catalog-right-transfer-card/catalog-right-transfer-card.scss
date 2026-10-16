@@ -1,0 +1,32 @@
+:host {
+  display: block;
+}
+
+.lines {
+  display: grid;
+  gap: var(--fold-space-xs);
+  margin: var(--fold-space-sm) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.line {
+  display: grid;
+  grid-template-columns: minmax(12rem, 1fr) minmax(12rem, 1fr) 2fr;
+  gap: var(--fold-space-sm);
+  font-size: var(--fold-text-sm);
+}
+
+.line-done {
+  color: var(--fold-color-text-muted);
+}
+
+.line-todo {
+  font-weight: var(--fold-weight-medium);
+}
+
+.notifications {
+  margin: var(--fold-space-sm) 0 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}

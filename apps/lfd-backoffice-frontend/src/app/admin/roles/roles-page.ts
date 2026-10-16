@@ -12,6 +12,7 @@ import {
 
 import { NotifyService } from '../../notify.service';
 import { CanDirective } from '../../shared/can/can.directive';
+import { CatalogRightTransferCard } from './catalog-right-transfer-card/catalog-right-transfer-card';
 import { grantGroups, RESOURCE_COUNT, type GrantGroup } from './grant-chips';
 import { StaffRolesService } from './staff-roles.service';
 
@@ -51,6 +52,7 @@ interface RoleCard {
     FoldEmptyStateComponent,
     FoldInlineConfirmComponent,
     CanDirective,
+    CatalogRightTransferCard,
   ],
   templateUrl: './roles-page.html',
   styleUrl: './roles-page.scss',

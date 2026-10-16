@@ -3,7 +3,12 @@ import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import { AGENT_TOOL_HEADER } from '@lfd/contracts';
-import type { CreateStaffRolePayload, StaffRoleView, UpdateStaffRolePayload } from '@lfd/contracts';
+import type {
+  CatalogRightTransferView,
+  CreateStaffRolePayload,
+  StaffRoleView,
+  UpdateStaffRolePayload,
+} from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../../api/api-config';
 
@@ -48,6 +53,18 @@ export class StaffRolesService {
   /** Archive — le serveur refuse tant que des personnes portent le rôle. */
   async archive(key: string): Promise<void> {
     await firstValueFrom(this.http.delete<void>(`${B2B_API_BASE}/admin/staff-roles/${key}`));
+  }
+
+  /**
+   * L'aperçu du transfert « Catalogue vendu » → « Catalogue publié »
+   * (`plan-droit-lfc-catalog.md`, C2) — sous `staff_access:read`, comme l'écran.
+   */
+  async catalogRightTransfer(): Promise<CatalogRightTransferView> {
+    return firstValueFrom(
+      this.http.get<CatalogRightTransferView>(
+        `${B2B_API_BASE}/admin/staff-access/catalog-right-transfer`,
+      ),
+    );
   }
 
   async restore(key: string): Promise<void> {

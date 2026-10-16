@@ -72,6 +72,10 @@ enum StaffResource {
   b2b_supervision
   b2b_subscriptions
   b2b_catalog
+  /// LE CATALOGUE PUBLIÉ — ce qu'on vend, aux pros et au public, et comment ça
+  /// s'affiche (2026-10-16, `documentation/droits-et-permissions/plan-droit-lfc-catalog.md`,
+  /// C1). Remplacera `b2b_catalog` au lot L2 ; accordée à l'écran.
+  lfc_catalog
   b2b_pricing
   b2b_growth
   b2b_appointments

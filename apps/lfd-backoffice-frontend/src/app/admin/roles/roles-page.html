@@ -14,6 +14,8 @@
     <a foldButton *appCan="'staff_access:write'" routerLink="/admin/roles/nouveau">Nouveau rôle</a>
   </header>
 
+  <app-catalog-right-transfer-card class="transfer" />
+
   <div class="roles">
     @for (card of cards(); track card.role.key) {
       <fold-card class="role" [class.role-archived]="card.role.archivedAt !== null">

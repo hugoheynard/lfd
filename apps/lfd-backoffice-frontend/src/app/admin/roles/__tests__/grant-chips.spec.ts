@@ -110,9 +110,11 @@ describe('grantGroups', () => {
    * 57 le 2026-10-15 : `lfc_legal`, les mentions légales et le PDF des CGV,
    * sortis de `b2b_settings` (legal/plan-cgv-par-audience.md, C0). 58 le même
    * jour : `lfc_operations`, les opérations datées tenues au commerce
-   * (operations-datees/plan-l-operation-passe-au-commerce.md, Q2).
+   * (operations-datees/plan-l-operation-passe-au-commerce.md, Q2). 59 le
+   * 2026-10-16 : `lfc_catalog`, le catalogue publié, qui remplacera
+   * `b2b_catalog` (droits-et-permissions/plan-droit-lfc-catalog.md, L1).
    */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(58);
+    expect(RESOURCE_COUNT).toBe(59);
   });
 });

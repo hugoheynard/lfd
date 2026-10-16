@@ -1,6 +1,34 @@
 # Plan — `lfc_catalog` remplace `b2b_catalog`
 
-> 📐 **Doc-first, rien n'est bâti** (rédigé le 2026-10-16). Déplace un
+> 🔨 **L1 bâti le 2026-10-16** (non commité à l'écriture de ce bandeau) :
+> migration `20261016100000_le_droit_du_catalogue_publie` (l'`ALTER TYPE`
+> seul) ; `lfc_catalog` dans `staffResourceSchema`, libellé « Catalogue
+> publié », portées ; graine `ROLE_GRANTS` (admin et commercial en écriture,
+> comptabilité en lecture, `b2b_catalog` gardé) ; l'aperçu
+> `GET /admin/staff-access/catalog-right-transfer`
+> (`src/staff/permissions/`, contrat `packages/contracts/src/catalog-right-transfer.ts`) et sa carte
+> sur Admin › Rôles ; la section du runbook. Les gardes n'ont pas bougé.
+> **Écarts au plan, à trancher avant L2** :
+>
+> - **Une fenêtre sans catalogue.** La condition de L2 (vitruve) exige que
+>   `b2b_catalog` soit RETIRÉ avant de basculer les gardes, qui sont encore sur
+>   lui : entre ce retrait et le déploiement de L2, les écrans du catalogue
+>   sont fermés à ceux qui l'ont perdu. Le runbook le dit ; le plan ne le
+>   disait pas.
+> - `RETIRED_STAFF_RESOURCES` n'est pas créée : rien ne la lit en L1.
+> - **Points « non vérifiés », ouverts le 2026-10-16** : le front ne parse
+>   aucune fiche staff par Zod ; le serveur parse la charge d'édition d'une
+>   fiche (`staffUserPayloadSchema` → `staffOverrideSchema`) — en L2, une
+>   fiche qui porte encore une dérogation `b2b_catalog` et qu'on renvoie
+>   entière doit rester acceptée, ou l'écran ne pourra plus la retirer ;
+>   `audience` n'est jamais parsée (chaîne comparée par `IN`) ;
+>   `roles.seed.ts` écrit `legacyRoleSeeds()` sans relire, rien à craindre ;
+>   la porte `lint:no-role-grants-in-migrations` ne lit que les noms des deux
+>   tables hors commentaires — l'`ALTER TYPE` seul passe ; le cache d'accès
+>   vit dans `prisma-staff-access.resolver.ts` (TTL 30 s), pas à
+>   `staff-access.policy.ts:153`, qui compare des dérogations.
+>
+> 📐 Rédigé le 2026-10-16 en doc-first. Déplace un
 > **périmètre de permissions** : `vitruve` d'office avant Hugo (CLAUDE.md
 > §9 bis). Contredit le même jour ; ses corrections, en fin de document,
 > priment sur C1–C5.

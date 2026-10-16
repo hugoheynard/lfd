@@ -91,6 +91,11 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     write:
       "Fixer un prix pro ou public, masquer ou mettre en avant un produit, accepter ce que le référentiel diffuse, ajuster une opération côté vente.",
   },
+  lfc_catalog: {
+    read: "N'ouvre encore aucun écran : le catalogue publié — masquage, mise en avant, arrivées, parité, réception — se lit sous Catalogue vendu jusqu'à la bascule de ses gardes. L'accorder au même niveau que Catalogue vendu prépare cette bascule.",
+    write:
+      "Masquer ou mettre en avant un produit, accepter ce que le référentiel diffuse, pour les pros comme pour le public. L'écriture n'ouvre qu'à la bascule des gardes du catalogue.",
+  },
   b2b_pricing: {
     read: "Voir les règles de prix, paliers, gabarits, engagements de volume, mercuriales des clients et le journal tarifaire. L'espace Tarification demande aussi Réglages plateforme en lecture.",
     write:

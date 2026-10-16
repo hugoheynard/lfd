@@ -29,6 +29,10 @@ import { PrismaPendingStaffAccessReader } from "./invitations/prisma-pending-sta
 import { AdminStaffUsersController } from "./directory/http/admin-staff-users.controller.js";
 import { PrismaStaffUserRepository } from "./directory/infrastructure/prisma-staff-user.repository.js";
 import { AdminStaffRolesController } from "./permissions/http/admin-staff-roles.controller.js";
+import { AdminCatalogRightTransferController } from "./permissions/http/admin-catalog-right-transfer.controller.js";
+import { GetCatalogRightTransferHandler } from "./permissions/application/get-catalog-right-transfer.handler.js";
+import { CatalogRightTransferReader } from "./permissions/domain/catalog-right-transfer.reader.js";
+import { PrismaCatalogRightTransferReader } from "./permissions/infrastructure/prisma-catalog-right-transfer.reader.js";
 import { ArchiveStaffRoleHandler } from "./permissions/application/archive-staff-role.handler.js";
 import { CreateStaffRoleHandler } from "./permissions/application/create-staff-role.handler.js";
 import { ListStaffRolesHandler } from "./permissions/application/list-staff-roles.handler.js";
@@ -54,6 +58,7 @@ import {
   controllers: [
     AdminStaffUsersController,
     AdminStaffRolesController,
+    AdminCatalogRightTransferController,
     AdminStaffAccessPendingController,
     AdminMeController,
   ],
@@ -74,6 +79,9 @@ import {
     UpdateStaffRoleHandler,
     ArchiveStaffRoleHandler,
     RestoreStaffRoleHandler,
+    // L'aperçu du transfert `b2b_catalog` → `lfc_catalog` (plan-droit-lfc-catalog.md, C2).
+    { provide: CatalogRightTransferReader, useClass: PrismaCatalogRightTransferReader },
+    GetCatalogRightTransferHandler,
     // L'adaptateur de résolution vit ICI, avec les tables qu'il lit ; c'est la
     // racine de composition qui le relie au port (cf. `StaffAccessModule`).
     PrismaStaffAccessResolver,

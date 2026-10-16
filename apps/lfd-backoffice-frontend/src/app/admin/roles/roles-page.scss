@@ -22,6 +22,11 @@
   font-size: var(--fold-text-sm);
 }
 
+/* Le transfert du droit du catalogue, tant qu'il dure (plan-droit-lfc-catalog.md). */
+.transfer {
+  margin-block-end: var(--fold-space-lg);
+}
+
 /* Des cartes compactes en grille : une matrice se compare de l'œil, et une
    seule colonne obligerait à défiler entre deux rôles voisins. */
 .roles {

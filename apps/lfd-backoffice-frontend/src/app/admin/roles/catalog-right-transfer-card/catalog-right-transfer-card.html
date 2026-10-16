@@ -1,0 +1,41 @@
+@if (state() === 'error') {
+  <fold-callout variant="alert"
+    >L’aperçu du transfert du catalogue n’a pas pu être chargé.</fold-callout
+  >
+} @else {
+  @if (view(); as view) {
+    <fold-card>
+      <fold-element-title
+        variant="title"
+        icon="shield"
+        title="Transfert : Catalogue vendu → Catalogue publié"
+        subtitle="Accorder Catalogue publié au même niveau, puis retirer Catalogue vendu, rôle par rôle."
+      >
+        <div titleAction>
+          @if (view.clear) {
+            <fold-badge variant="success" content="Sans écart" />
+          } @else {
+            <fold-badge variant="warning" [content]="pending() + ' à traiter'" />
+          }
+        </div>
+      </fold-element-title>
+
+      <ul class="lines">
+        @for (line of lines(); track line.key) {
+          <li class="line" [class.line-done]="line.done">
+            <span class="line-who">{{ line.who }}</span>
+            <span class="line-held">{{ line.held }}</span>
+            <span class="line-todo">{{ line.todo }}</span>
+          </li>
+        }
+      </ul>
+
+      @if (view.unreadLegacyNotifications > 0) {
+        <p class="notifications">
+          {{ view.unreadLegacyNotifications }} notification(s) non lue(s) adressée(s) à Catalogue
+          vendu : elles ne seront plus visibles après la bascule.
+        </p>
+      }
+    </fold-card>
+  }
+}

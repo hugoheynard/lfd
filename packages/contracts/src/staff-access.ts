@@ -166,6 +166,19 @@ export const staffResourceSchema = z.enum([
    */
   "b2b_catalog",
   /**
+   * **Le catalogue publié** — ce qu'on vend, à qui (pros et public) et comment
+   * ça s'affiche : masquage, mise en avant, validation des arrivées, parité
+   * avec le référentiel, réception de ce qu'il diffuse. Pas le prix : il se
+   * décide au référentiel depuis le lot D.
+   *
+   * Remplacera `b2b_catalog`, dont le préfixe dit une vente aux seuls pros
+   * (`documentation/droits-et-permissions/plan-droit-lfc-catalog.md`, C1,
+   * 2026-10-16). Ajoutée au lot L1 sans garder aucune route : les gardes
+   * basculent au lot L2, quand l'aperçu du transfert ne montre plus d'écart.
+   * Accordée à l'écran ; aucune migration ne la donne à un rôle.
+   */
+  "lfc_catalog",
+  /**
    * La **tarification** : règles, planchers, gabarits, engagements de volume,
    * journal tarifaire.
    *
@@ -651,6 +664,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   b2b_supervision: "Supervision",
   b2b_subscriptions: "Paniers récurrents",
   b2b_catalog: "Catalogue vendu",
+  lfc_catalog: "Catalogue publié",
   b2b_pricing: "Tarification",
   b2b_growth: "Croissance",
   b2b_appointments: "Rendez-vous",
@@ -770,6 +784,9 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     b2b_supervision: "write",
     b2b_subscriptions: "write",
     b2b_catalog: "write",
+    // Graine seulement (2026-10-16, plan-droit-lfc-catalog.md, L1) : là où
+    // `b2b_catalog` est donné, au même niveau, jusqu'à la bascule des gardes.
+    lfc_catalog: "write",
     b2b_pricing: "write",
     b2b_growth: "write",
     b2b_appointments: "write",
@@ -864,6 +881,9 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // il ne pouvait ni l'un ni l'autre : la tarification dormait dans
     // `settings: read`, et le catalogue vendu dans `catalog: read`.
     b2b_catalog: "write",
+    // Le même niveau sur le catalogue publié (graine seulement, 2026-10-16,
+    // plan-droit-lfc-catalog.md, L1) : en production, accordé à l'écran.
+    lfc_catalog: "write",
     // Sans les LIMITES : `lfc_price_limits` n'est pas à lui (Hugo, 2026-09-26). Il
     // voit la limite pro sur le tableau qu'il lit déjà, il ne la pose plus.
     b2b_pricing: "write",
@@ -933,6 +953,8 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     b2b_counter: "read",
     b2b_subscriptions: "read",
     b2b_catalog: "read",
+    // Graine seulement (2026-10-16, plan-droit-lfc-catalog.md, L1).
+    lfc_catalog: "read",
     b2b_pricing: "read",
     b2b_payments: "write",
     b2b_settings: "read",
