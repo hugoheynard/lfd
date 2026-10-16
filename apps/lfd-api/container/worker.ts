@@ -145,7 +145,9 @@ const RUNTIME_KEYS = [
   // L'écriture des opérations datées au commerce (lot 1 de
   // `plan-l-operation-passe-au-commerce.md`) : FERMÉE par défaut, l'agrégat et
   // ses routes se déploient sans rien changer de servi. Elle traverse pour la
-  // même raison que les précédentes.
+  // même raison que les précédentes. OUVERTE en production le 2026-10-16 ;
+  // un `workflow_dispatch` sur le même commit ne l'avait pas fait relire
+  // (constaté à l'écran ce jour-là) : il a fallu une révision neuve.
   "OPERATIONS_AT_COMMERCE",
   // 🔴 La clé du coffre de champs, qui scelle les IBAN de nos clients au repos.
   //
