@@ -191,6 +191,20 @@ l'encart vont au dictionnaire de la boutique (`pnpm copy:digest`).
 **`received_at` d'une opération née au commerce (Hugo, 2026-10-15)** :
 l'instant de sa préparation. La colonne reste `NOT NULL`.
 
+**Après le lot 2 (Hugo, 2026-10-16)** — à bâtir avec le lot 3 :
+
+- **Le texte alternatif de l'image vient de la médiathèque**, comme pour les
+  produits (`set-product-media.ts:106` : ni étiquette ni texte alternatif sur
+  la fiche depuis le 2026-09-23) : l'opération ne garde plus son propre `alt`
+  — la vue le lit de la médiathèque par le port `OperationImageLibrary`, qui
+  l'expose déjà.
+- **L'image d'une opération archivée reste protégée**, comme au PIM : une
+  opération archivée **compte** comme porteuse (la médiathèque refuse
+  d'archiver son image), pour que l'historique ne pointe pas vers une image
+  disparue. Le remplacement d'image dans la médiathèque la suit quand même :
+  un geste de repointage permis sur une archivée, nommé pour ce qu'il est
+  (ce n'est pas une édition de l'opération).
+
 ## 3. Lots
 
 | Lot | Contenu                                                                                                                                   |
