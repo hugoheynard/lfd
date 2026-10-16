@@ -153,7 +153,6 @@ describe('les contextes de vente', () => {
       key: 'delivery',
       label: 'Livraison',
       active: false,
-      projectedToFormerChannel: true,
     });
     const updated = on('sales_context', 'sales_context.updated', {
       subjectLabel: 'Livraison',
@@ -167,7 +166,7 @@ describe('les contextes de vente', () => {
     expect(sentence(created)).toBe(
       'Colette Martin a créé le contexte de vente « Livraison », inactif',
     );
-    expect(labels(created)).toEqual(['Clé', 'Ancien canal — projeté']);
+    expect(labels(created)).toEqual(['Clé']);
     expect(sentence(updated)).toBe(
       'Colette Martin a modifié le contexte de vente « Livraison » : actif',
     );

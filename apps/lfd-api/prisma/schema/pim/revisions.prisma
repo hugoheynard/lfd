@@ -78,8 +78,8 @@ model CatalogRevisionPublication {
   revisionId String          @map("revision_id")
   revision   CatalogRevision @relation(fields: [revisionId], references: [id], onDelete: Cascade)
 
-  /// La destination : `b2b` ; `former_channel` pour les publications vers
-  /// l'ancien canal de vente en ligne, retiré le 2026-09-21. Une chaîne et non un enum — un canal de
+  /// La destination : `b2b`. Les publications vers l'ancien canal de vente en
+  /// ligne ont été supprimées le 2026-10-16, sur ordre. Une chaîne et non un enum — un canal de
   /// plus ne doit pas demander une migration d'enum, et le registre des canaux
   /// vit dans le code qui les pousse.
   channel String

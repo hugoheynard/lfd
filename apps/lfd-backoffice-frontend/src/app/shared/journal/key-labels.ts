@@ -127,10 +127,6 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   fileName: 'Fichier',
   firstName: 'Prénom',
   focal: 'Point focal',
-  // Les deux réglages de l'ancien canal de vente en ligne qu'ont portés les
-  // contextes de vente jusqu'au 2026-10-16 ; leurs clés ont été renommées dans
-  // les faits passés par migration, et ne s'écrivent plus.
-  formerChannelHandleSuffix: 'Ancien canal — suffixe',
   formeJuridique: 'Forme juridique',
   fr: 'Français',
   from: 'Avant',
@@ -215,7 +211,6 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   pointOfSaleId: 'Point de vente',
   policy: 'Règle appliquée',
   position: 'Rang',
-  projectedToFormerChannel: 'Ancien canal — projeté',
   postalPrefixCount: 'Préfixes postaux',
   postalPrefixes: 'Préfixes postaux',
   previous: 'Avant',

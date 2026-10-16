@@ -6,7 +6,7 @@ import type { Revision } from "../revision.js";
 /** Une publication d'une révision vers une destination. */
 export interface RevisionPublication {
   readonly revisionId: string;
-  /** `b2b` ; `former_channel` pour l'ancien canal retiré. Le registre des canaux vit chez qui les pousse. */
+  /** `b2b`. Le registre des canaux vit chez qui les pousse. */
   readonly channel: string;
   /** `live` ou `dry-run` — une simulation se trace aussi. */
   readonly mode: string;

@@ -9,6 +9,10 @@
 > `documentation/**` et `CLAUDE.md` à titre temporaire. Reste : la doc (S-b),
 > l'aperçu au runbook, `lecteur-de-migrations`.
 
+> 🧹 **Révisé le 2026-10-16 (Hugo) : nettoyage plutôt que renommage** — voir
+> la section du même nom, en fin de document ; elle prime sur S6 pour les
+> faits et les publications.
+
 > 📐 **Doc-first, rien n'est bâti** (rédigé le 2026-10-16). Porte une
 > **migration de données** (deux colonnes) : `vitruve` d'office avant Hugo
 > (CLAUDE.md §9 bis). Contredit le même jour ; ses corrections, en fin de
@@ -230,3 +234,35 @@ Le premier BLOQUANT a été rouvert dans le code avant d'être intégré.
 rendu d'un fait sans forme (`schema-node.ts:79`), les projections de la
 réémission, des identifiants de nœud ops `shopify` en base, les schémas
 statiques du back-office.
+
+## Nettoyage plutôt que renommage (Hugo, 2026-10-16)
+
+> « tu peux pas faire un clean des faits passés, ça n'a jamais été en
+> utilisation » → « ok supprime, et les modifs aussi ». — Hugo
+
+Prime sur S6 pour les données. `20261016200000_le_canal_retire_sans_son_nom`
+était déjà appliquée en dev : elle ne se touche pas. Une migration neuve,
+`20261016210000_le_canal_retire_efface`, efface ce qu'elle avait renommé :
+
+- `sales_context.created` : `projectedToFormerChannel` et
+  `formerChannelHandleSuffix` quittent la charge ;
+- `sales_context.updated` : les faits dont `changes` ne portait QUE ces deux
+  clés sont **supprimés** ; les autres perdent les deux clés de `changes` ;
+- `pim.catalog_revision_publication` : les lignes `channel = 'former_channel'`
+  sont **supprimées**.
+
+Irréversible. Vérifié le 2026-10-16 avant d'écrire : aucune clé étrangère ne
+pointe vers ces deux tables ; aucun hachage ni chaînage ne porte sur
+`payload` ; `lastPublished` filtre `mode` et `outcome`, jamais `channel` — si
+la dernière publication `live`/`sent` visait l'ancien canal, elle devient la
+dernière publication `b2b`, ce qui est le sens voulu ; l'empreinte de
+projection stockée n'est relue par personne.
+
+Côté code : plus aucune forme historique aux noms neutres. Une ligne nettoyée
+se relit sous la forme courante (avec ou sans `subjectLabel`, par
+`labelled`) ; les libellés « Ancien canal — suffixe / projeté » sortent du
+journal. « Ancien canal — collection » reste : c'est le `tag` des faits
+`tax_regime.*`, toujours relu.
+
+Le comptage d'avant, à lancer en lecture seule avant la promotion, remplace
+celui de S6 au runbook.

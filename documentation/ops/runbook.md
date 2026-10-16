@@ -1384,6 +1384,54 @@ facturé au volume ; si un jour il pèse, la réponse est
 `head_sampling_rate`, **pas** l'extinction : on peut se passer d'un
 échantillon, pas de la vue.
 
+## Avant de promouvoir le retrait de l'ancien canal (2026-10-16)
+
+Deux migrations partent ensemble : `20261016200000_le_canal_retire_sans_son_nom`
+(renomme les clés des faits des points de vente, renomme le canal des
+publications de révision, supprime `pim.sales_context.handle_suffix` et
+`shopify_projected`), puis `20261016210000_le_canal_retire_efface` (retire ces
+clés des faits, supprime les modifications qui ne portaient qu'elles, et les
+publications de l'ancien canal). Ordre de Hugo, 2026-10-16.
+
+🔴 **Irréversible.** Les clés retirées, les faits supprimés et les deux
+colonnes n'ont aucune copie. Faire une sauvegarde juste avant.
+`migrate deploy` n'affiche aucun compte : compter **avant** le push sur
+`main`, en lecture seule, sur la production — qui porte encore les noms
+d'origine :
+
+```sql
+SELECT
+  (SELECT count(*) FROM growth.activity_events
+    WHERE type = 'sales_context.created'
+      AND (payload ? 'shopifyProjected' OR payload ? 'handleSuffix'))           AS created_nettoyes,
+  (SELECT count(*) FROM growth.activity_events
+    WHERE type = 'sales_context.updated'
+      AND jsonb_typeof(payload->'changes') = 'object'
+      AND ((payload->'changes') ? 'shopifyProjected' OR (payload->'changes') ? 'handleSuffix')
+      AND ((payload->'changes') - 'shopifyProjected' - 'handleSuffix') = '{}'::jsonb) AS updated_supprimes,
+  (SELECT count(*) FROM growth.activity_events
+    WHERE type = 'sales_context.updated'
+      AND jsonb_typeof(payload->'changes') = 'object'
+      AND ((payload->'changes') ? 'shopifyProjected' OR (payload->'changes') ? 'handleSuffix')
+      AND ((payload->'changes') - 'shopifyProjected' - 'handleSuffix') <> '{}'::jsonb) AS updated_nettoyes,
+  (SELECT count(*) FROM pim.catalog_revision_publication WHERE channel = 'shopify') AS publications_supprimees,
+  (SELECT count(*) FROM pim.sales_context WHERE handle_suffix <> '')              AS suffixes_perdus,
+  (SELECT count(*) FROM pim.sales_context WHERE shopify_projected)                AS projetes_perdus;
+```
+
+Noter les six nombres. Après le déploiement, les quatre premières requêtes,
+relancées sous les deux orthographes, rendent 0.
+
+**La fenêtre** : la migration passe avant le `wrangler deploy`
+(`deploy_lfd_api.yml`). Pendant ces secondes, l'ancien code peut lire une
+colonne disparue (500 sur l'écran des points de vente). Accepté en
+pré-release ; ça se résorbe avec le déploiement. Si la dernière publication
+réussie visait l'ancien canal, la « dernière publication » affichée devient la
+dernière vers la plateforme.
+
+**Après** : ouvrir un point de vente existant au back-office, l'enregistrer,
+puis ouvrir son historique — il doit se lire sans fait brut.
+
 ## Remettre la production à blanc — délibérément SANS outil
 
 Fait une fois, le **2026-08-16**, pour vider les données de test avant
