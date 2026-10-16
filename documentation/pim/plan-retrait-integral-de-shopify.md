@@ -143,7 +143,7 @@ qu'elle remplace. La porte S5 admet ces deux familles, et rien d'autre.
   historiques portent les noms neutres, et aucune forme ne porte plus le
   mot. Un test relit une ligne `.created` et une `.updated` réécrites.
 - **Un seul lot pour le code et la base** (révise les lots S-a/S-c) : garder
-  les deux champs dans `schema.prisma` jusqu'à S-c laissait le mot dans le
+  les deux champs dans le schéma Prisma jusqu'à S-c laissait le mot dans le
   code. La migration du lot unique renomme les faits, renomme `channel`, et
   supprime les deux colonnes ; le code cesse de les lire dans le même
   déploiement. La migration passe avant le `wrangler deploy`
