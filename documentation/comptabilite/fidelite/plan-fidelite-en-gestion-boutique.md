@@ -84,8 +84,8 @@ Le mot est `loyalty` (le contexte serveur est `src/b2b/loyalty/`).
   `comptabilite.routes.ts:99-102` suivent en F2 ; `loyalty.service.ts`
   déménage avec l'écran.
 
-## 4. Question à Hugo
+## 4. Question à Hugo — tranchée le 2026-10-16
 
-1. **La comptabilité garde-t-elle la fidélité ?** La graine la lui donne
-   aujourd'hui (par `b2b_accounting`, en écriture). C'est une décision de
-   périmètre, pas une recopie.
+1. **La comptabilité ne garde pas la fidélité** (Hugo). La graine donne
+   `lfc_loyalty` à l'administrateur seul, en écriture ; le rôle comptabilité
+   la perd à F2. À l'écran, Hugo l'accorde aux rôles qui gèrent la boutique.
