@@ -1,0 +1,105 @@
+<fold-card>
+  <div class="card">
+    <fold-element-title variant="title" title="L'annonce" [subtitle]="shopDisplay()">
+      @if (!locked()) {
+        <button
+          titleAction
+          foldButton
+          size="sm"
+          [disabled]="!changed()"
+          [loading]="busy()"
+          (click)="save()"
+        >
+          Enregistrer
+        </button>
+      }
+    </fold-element-title>
+
+    @if (operation().hidden) {
+      <fold-callout appearance="inset" variant="neutral">
+        Masquée : rien n'en paraît en boutique.
+      </fold-callout>
+    }
+
+    <div class="row">
+      <fold-input
+        label="Nom (FR)"
+        required
+        [readOnly]="locked()"
+        [value]="name().fr"
+        (valueChange)="setName('fr', $event)"
+      />
+      <fold-input
+        label="Nom (EN)"
+        optional
+        [readOnly]="locked()"
+        [value]="name().en"
+        (valueChange)="setName('en', $event)"
+      />
+      <fold-input
+        label="Nom (IT)"
+        optional
+        [readOnly]="locked()"
+        [value]="name().it"
+        (valueChange)="setName('it', $event)"
+      />
+    </div>
+
+    <div class="row">
+      <fold-textarea
+        label="Chapeau (FR)"
+        optional
+        hint="Le texte de l'encart, en tête du rayon de l'opération."
+        [rows]="2"
+        [readOnly]="locked()"
+        [value]="lede().fr"
+        (valueChange)="setLede('fr', $event)"
+      />
+      <fold-textarea
+        label="Chapeau (EN)"
+        optional
+        [rows]="2"
+        [readOnly]="locked()"
+        [value]="lede().en"
+        (valueChange)="setLede('en', $event)"
+      />
+      <fold-textarea
+        label="Chapeau (IT)"
+        optional
+        [rows]="2"
+        [readOnly]="locked()"
+        [value]="lede().it"
+        (valueChange)="setLede('it', $event)"
+      />
+    </div>
+
+    <div class="image">
+      @if (storedImage(); as image) {
+        <app-operation-image [image]="image" />
+      } @else if (imageUrl(); as url) {
+        <img class="preview" [src]="url" alt="" />
+        <p class="said">Nouvelle image : son texte alternatif sera celui de la médiathèque.</p>
+      }
+      @if (!locked()) {
+        <div class="image-actions">
+          <button foldButton size="sm" emphasis="outline" icon="image" (click)="chooseImage()">
+            {{ imageUrl() === null ? 'Choisir dans la médiathèque' : 'Changer d’image' }}
+          </button>
+          @if (imageUrl() !== null) {
+            <button foldButton size="sm" emphasis="soft" (click)="removeImage()">
+              Retirer l’image
+            </button>
+          }
+        </div>
+      }
+    </div>
+
+    @if (refusal(); as message) {
+      <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+    } @else if (nameMissing() && !locked()) {
+      <fold-callout appearance="inset" variant="neutral">
+        Le nom en français est obligatoire : c'est lui que les autres langues remplacent.
+      </fold-callout>
+    }
+  </div>
+</fold-card>

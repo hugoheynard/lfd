@@ -31,7 +31,7 @@
     @case ('closed') {
       <fold-callout appearance="inset" variant="info">
         Les opérations sont encore tenues au référentiel sur ce déploiement (« Opérations datées »).
-        Cette page les montrera une fois la bascule faite (interrupteur
+        Cette page les montrera, et les modifiera, une fois la bascule faite (interrupteur
         <code>OPERATIONS_AT_COMMERCE</code>).
       </fold-callout>
     }
@@ -39,8 +39,17 @@
       @if (operation(); as operation) {
         @if (operation.archivedAt !== null) {
           <fold-callout appearance="inset" variant="neutral">
-            Archivée le {{ instant(operation.archivedAt) }} : elle se lit, rien n'en paraît en
-            boutique.
+            Archivée le {{ instant(operation.archivedAt) }} : elle se lit, elle ne se modifie plus,
+            et rien n'en paraît en boutique. Sa clé ne se réemploie pas.
+          </fold-callout>
+        } @else if (!operation.heldAtCommerce) {
+          <fold-callout appearance="inset" variant="warning">
+            Copie reçue du référentiel, pas encore reprise : elle ne se modifie pas avant
+            l'application de la reprise.
+          </fold-callout>
+        } @else if (!canWrite()) {
+          <fold-callout appearance="inset" variant="neutral">
+            Lecture seule : modifier une opération demande le droit d'écrire les opérations.
           </fold-callout>
         }
         @if (operation.awaitingProducts) {
@@ -53,65 +62,49 @@
             Aucun article de la sélection n'est en vente : l'encart paraîtra seul.
           </fold-callout>
         }
-        @if (!operation.heldAtCommerce) {
-          <fold-callout appearance="inset" variant="warning">
-            Copie reçue du référentiel, pas encore reprise : elle ne se modifie pas avant
-            l'application de la reprise.
-          </fold-callout>
-        }
+
+        <app-commerce-presentation-card
+          [operation]="operation"
+          [locked]="locked()"
+          (saved)="saved($event)"
+        />
+
+        <app-commerce-schedule-card
+          [operation]="operation"
+          [locked]="locked()"
+          (saved)="saved($event)"
+        />
 
         <fold-card>
           <div class="card">
             <fold-element-title
               variant="title"
-              title="L'annonce"
-              [subtitle]="shopDisplay(operation)"
-            />
-            @if (operation.hidden) {
-              <p class="said">Masquée : rien n'en paraît en boutique.</p>
-            }
-            @if (operation.image; as image) {
-              <app-operation-image [image]="image" />
-            }
-            <p class="said">
-              @if (operation.lede; as lede) {
-                {{ lede.fr }}
-              } @else {
-                Pas de chapeau.
+              title="Clientèle"
+              subtitle="À qui l'opération s'adresse."
+            >
+              @if (!locked()) {
+                <button
+                  titleAction
+                  foldButton
+                  size="sm"
+                  [disabled]="audience() === operation.audience"
+                  [loading]="busy() === 'audience'"
+                  (click)="saveAudience()"
+                >
+                  Enregistrer
+                </button>
               }
-            </p>
-          </div>
-        </fold-card>
-
-        <fold-card>
-          <div class="card">
-            <fold-element-title variant="title" title="Calendrier" />
-            <dl class="facts">
-              <div>
-                <dt>Annonce</dt>
-                <dd>{{ instant(operation.announceFrom) }}</dd>
-              </div>
-              <div>
-                <dt>Ouverture des commandes</dt>
-                <dd>
-                  {{
-                    operation.orderFrom === null ? "Dès l'annonce" : instant(operation.orderFrom)
-                  }}
-                </dd>
-              </div>
-              <div>
-                <dt>Dernière commande</dt>
-                <dd>{{ instant(operation.orderUntil) }}</dd>
-              </div>
-              <div>
-                <dt>Retrait</dt>
-                <dd>{{ pickup(operation) }}</dd>
-              </div>
-              <div>
-                <dt>Clientèle</dt>
-                <dd>{{ audience(operation) }}</dd>
-              </div>
-            </dl>
+            </fold-element-title>
+            <fold-listbox
+              label="Clientèle"
+              [disabled]="locked()"
+              [options]="audiences"
+              [value]="audience()"
+              (selectionChange)="audience.set($event)"
+            />
+            @if (refusal('audience'); as message) {
+              <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+            }
           </div>
         </fold-card>
 
@@ -119,25 +112,69 @@
           <div class="card">
             <fold-element-title
               variant="title"
-              title="Sélection"
-              [subtitle]="operation.sellingSkus.length + ' en vente sur ' + operation.skus.length"
-            />
-            @if (selection().length === 0) {
-              <p class="said">Aucun article choisi.</p>
-            } @else {
-              <ul class="selection">
-                @for (line of selection(); track line.sku) {
-                  <li class="article">
-                    <span>{{ line.sku }}</span>
-                    @if (!line.selling) {
-                      <fold-badge content="Pas en vente" variant="warning" radius="pill" />
-                    }
-                  </li>
-                }
-              </ul>
+              title="Visibilité en boutique"
+              [subtitle]="
+                operation.hidden
+                  ? 'Masquée : rien n’en paraît en boutique, quelles que soient ses dates.'
+                  : 'Affichée : la boutique la montre selon ses dates.'
+              "
+            >
+              @if (!locked()) {
+                <button
+                  titleAction
+                  foldButton
+                  size="sm"
+                  emphasis="outline"
+                  [icon]="operation.hidden ? 'eye' : 'eye-off'"
+                  [loading]="busy() === 'visibility'"
+                  (click)="toggleVisibility(!operation.hidden)"
+                >
+                  {{ operation.hidden ? 'Afficher' : 'Masquer' }}
+                </button>
+              }
+            </fold-element-title>
+            <p class="said">
+              Masquer se défait à tout moment ; archiver, non. Une opération masquée garde ses dates
+              et sa sélection.
+            </p>
+            @if (refusal('visibility'); as message) {
+              <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
             }
           </div>
         </fold-card>
+
+        <app-commerce-selection-card
+          [operation]="operation"
+          [locked]="locked()"
+          (saved)="saved($event)"
+        />
+
+        @if (!locked()) {
+          <fold-danger-zone appearance="section" title="Archiver cette opération">
+            <div class="card">
+              <p class="said">
+                Archiver n'efface rien : l'opération reste lisible, mais ne se modifie plus, et sa
+                clé ne se réemploie jamais. Le geste est sans retour.
+              </p>
+              @if (refusal('archive'); as message) {
+                <fold-callout appearance="inset" variant="alert" announce>{{
+                  message
+                }}</fold-callout>
+              }
+              <fold-inline-confirm
+                intent="danger"
+                confirmIcon="archive"
+                message="Archiver cette opération ? Elle ne se modifiera plus."
+                [labels]="{ confirm: 'Archiver' }"
+                (confirmed)="archive()"
+              >
+                <button foldButton intent="danger" icon="archive" [loading]="busy() === 'archive'">
+                  Archiver l'opération
+                </button>
+              </fold-inline-confirm>
+            </div>
+          </fold-danger-zone>
+        }
       }
     }
   }

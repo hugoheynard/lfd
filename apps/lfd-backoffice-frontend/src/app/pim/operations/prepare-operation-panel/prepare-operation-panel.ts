@@ -13,9 +13,13 @@ import {
 } from 'fold-ng';
 
 import { AUDIENCE_OPTIONS, refusalOf } from '../operation-format';
-import { EMPTY_SCHEDULE, readSchedule, type ScheduleDraft } from '../operation-schedule';
+import {
+  EMPTY_SCHEDULE,
+  readSchedule,
+  type ScheduleDraft,
+} from '../../../operations/operation-schedule';
 import { OperationsService } from '../operations.service';
-import { ScheduleForm } from '../schedule-form/schedule-form';
+import { ScheduleForm } from '../../../operations/schedule-form/schedule-form';
 
 /**
  * **Préparer une opération** — le minimum pour qu'elle existe : sa clé, son

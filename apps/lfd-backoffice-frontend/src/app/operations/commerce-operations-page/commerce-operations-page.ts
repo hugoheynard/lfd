@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import type { CommerceOperationView } from '@lfd/contracts';
 import {
   FoldBadgeComponent,
@@ -12,10 +12,11 @@ import {
   FoldIconComponent,
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
+  FoldPanelHostService,
 } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
-import { formatInstant, pickupPhrase } from '../../pim/operations/operation-schedule';
+import { formatInstant, pickupPhrase } from '../operation-schedule';
 import {
   audienceLabel,
   badgeLabel,
@@ -28,6 +29,7 @@ import {
 import { CommerceOperationsService } from '../commerce-operations.service';
 import { OperationImage } from '../operation-image/operation-image';
 import { OperationsMigrationCard } from '../operations-migration-card/operations-migration-card';
+import { PrepareCommerceOperationPanel } from '../prepare-commerce-operation-panel/prepare-commerce-operation-panel';
 
 /** `closed` : l'interrupteur `OPERATIONS_AT_COMMERCE` est fermé — un état, pas une panne. */
 type LoadState = 'loading' | 'error' | 'closed' | 'ready';
@@ -37,8 +39,10 @@ type LoadState = 'loading' | 'error' | 'closed' | 'ready';
  * chacune en est, et ce que le client en voit
  * (`plan-l-operation-passe-au-commerce.md`, lot 3).
  *
- * La reprise depuis le référentiel n'est offerte qu'à `lfc_operations:write` ;
- * son aperçu se lit interrupteur fermé, c'est lui qu'on relit avant d'ouvrir.
+ * La reprise depuis le référentiel et « Préparer une opération » (lot 3 bis)
+ * ne sont offertes qu'à `lfc_operations:write`. Interrupteur fermé, le bouton
+ * reste visible mais fermé, et le callout dit pourquoi ; l'aperçu de la
+ * reprise se lit, c'est lui qu'on relit avant d'ouvrir.
  */
 @Component({
   selector: 'app-commerce-operations-page',
@@ -64,6 +68,8 @@ type LoadState = 'loading' | 'error' | 'closed' | 'ready';
 export class CommerceOperationsPage {
   private readonly api = inject(CommerceOperationsService);
   private readonly permissions = inject(PermissionsStore);
+  private readonly panels = inject(FoldPanelHostService);
+  private readonly router = inject(Router);
 
   protected readonly state = signal<LoadState>('loading');
   private readonly operations = signal<readonly CommerceOperationView[]>([]);
@@ -71,8 +77,8 @@ export class CommerceOperationsPage {
   protected readonly live = computed(() => this.split().live);
   protected readonly archived = computed(() => this.split().archived);
 
-  /** La reprise écrit : elle n'est montrée qu'à qui peut l'appliquer. */
-  protected readonly canMigrate = computed(() => this.permissions.can('lfc_operations:write'));
+  /** La reprise et la préparation écrivent : elles ne sont montrées qu'à qui peut écrire. */
+  protected readonly canWrite = computed(() => this.permissions.can('lfc_operations:write'));
 
   protected readonly badgeLabel = (view: CommerceOperationView): string =>
     badgeLabel(badgeOf(view));
@@ -100,5 +106,14 @@ export class CommerceOperationsPage {
     } catch (error: unknown) {
       this.state.set(isNotAtCommerce(error) ? 'closed' : 'error');
     }
+  }
+
+  /** Créée, l'opération s'ouvre sur sa page : le chapeau, l'image et la sélection s'y règlent. */
+  protected prepare(): void {
+    void this.panels.open<string>(PrepareCommerceOperationPanel).closed.then((key) => {
+      if (key !== undefined) {
+        void this.router.navigate(['/operations-commerce', key]);
+      }
+    });
   }
 }

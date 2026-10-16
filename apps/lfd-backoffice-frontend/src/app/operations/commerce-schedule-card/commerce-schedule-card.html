@@ -1,0 +1,41 @@
+<fold-card>
+  <div class="card">
+    <fold-element-title
+      variant="title"
+      title="Calendrier"
+      subtitle="Les heures se saisissent et se lisent en heure de Paris."
+    >
+      @if (!locked()) {
+        <button
+          titleAction
+          foldButton
+          size="sm"
+          [disabled]="!changed() || problem() !== null"
+          [loading]="busy()"
+          (click)="save()"
+        >
+          Enregistrer
+        </button>
+      }
+    </fold-element-title>
+
+    <ol class="cycle">
+      @for (step of cycle(); track step.label) {
+        <li class="step">
+          <span class="step-label">{{ step.label }}</span>
+          <span>{{ step.when }}</span>
+        </li>
+      }
+    </ol>
+
+    @if (!locked()) {
+      <app-schedule-form [(draft)]="draft" />
+
+      @if (refusal(); as message) {
+        <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+      } @else if (changed() && problem() !== null) {
+        <fold-callout appearance="inset" variant="neutral">{{ problem() }}</fold-callout>
+      }
+    }
+  </div>
+</fold-card>

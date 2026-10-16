@@ -21,7 +21,7 @@ import {
   FoldLoadingStateComponent,
 } from 'fold-ng';
 
-import { formatInstant } from '../../pim/operations/operation-schedule';
+import { formatInstant } from '../operation-schedule';
 import {
   explanationLabel,
   fieldLabel,

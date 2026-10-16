@@ -76,6 +76,9 @@ const SCAN_ROOTS = [
   // L'écran de préparation (lot front) : il saisit ces instants en heure de
   // Paris, par `localToInstant` — c'est lui qui transforme un jour en instant.
   "apps/lfd-backoffice-frontend/src/app/pim/operations",
+  // L'écran du commerce (lot 3 bis, 2026-10-16) : la saisie au fuseau de Paris
+  // (`operation-schedule.ts`) y a déménagé, et ses formulaires l'emploient.
+  "apps/lfd-backoffice-frontend/src/app/operations",
   // La surcharge des opérations à la réception (lot 2, écran) : la clôture
   // plus précoce s'y saisit en heure de Paris, et le serveur la compare à
   // l'horloge (`min(PIM, surcharge)`).

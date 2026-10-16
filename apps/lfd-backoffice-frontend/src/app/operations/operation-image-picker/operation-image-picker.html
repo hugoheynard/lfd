@@ -1,0 +1,8 @@
+<fold-panel-header
+  title="Choisir dans la médiathèque"
+  subtitle="Le texte alternatif et le point focal sont ceux de la médiathèque."
+/>
+
+<fold-panel-body>
+  <app-library-choice [currentUrl]="data().currentUrl" (picked)="pick($event)" />
+</fold-panel-body>

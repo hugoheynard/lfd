@@ -23,9 +23,9 @@ import {
   EMPTY_SCHEDULE,
   readSchedule,
   type ScheduleDraft,
-} from '../operation-schedule';
+} from '../../../operations/operation-schedule';
 import { OperationsService } from '../operations.service';
-import { ScheduleForm } from '../schedule-form/schedule-form';
+import { ScheduleForm } from '../../../operations/schedule-form/schedule-form';
 
 /**
  * **Calendrier** — les cinq dates, et le cycle qu'elles dessinent : annonce,

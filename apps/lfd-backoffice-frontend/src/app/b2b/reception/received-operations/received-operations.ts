@@ -13,7 +13,7 @@ import {
 } from 'fold-ng';
 
 import { NotifyService } from '../../../notify.service';
-import { formatInstant, pickupPhrase } from '../../../pim/operations/operation-schedule';
+import { formatInstant, pickupPhrase } from '../../../operations/operation-schedule';
 import { CanDirective } from '../../../shared/can/can.directive';
 import { CatalogueService } from '../../catalogue/catalogue.service';
 import {

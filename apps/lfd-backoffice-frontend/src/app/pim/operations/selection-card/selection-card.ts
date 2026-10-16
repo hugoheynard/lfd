@@ -25,7 +25,7 @@ import { StorefrontProductPicker } from '../../../contenu/storefront-product-pic
 import { ProductHttpApi } from '../../catalogue/product-http-api';
 import type { Product } from '../../data/models';
 import { refusalOf } from '../operation-format';
-import { moved, sameOrder, withoutSku, withSku } from '../selection-order';
+import { moved, sameOrder, withoutSku, withSku } from '../../../operations/selection-order';
 import { OperationsService } from '../operations.service';
 
 /** Une ligne de la sélection : la référence, et ce que le catalogue en dit. */

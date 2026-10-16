@@ -7,8 +7,8 @@ import type {
   OperationMigrationFieldName,
   OperationMigrationOutcome,
 } from '@lfd/contracts';
-import { httpErrorCode } from '@lfd/endpoints';
-import type { FoldBadgeVariant } from 'fold-ng';
+import { httpErrorCode, httpErrorMessage } from '@lfd/endpoints';
+import type { FoldBadgeVariant, FoldSelectOption } from 'fold-ng';
 
 /**
  * Ce que l'écran « Opérations » dit d'une opération du commerce et de sa
@@ -68,6 +68,11 @@ const AUDIENCES: Readonly<Record<CommerceOperationAudience, string>> = {
   pro: 'Professionnels',
   public: 'Particuliers',
 };
+
+/** Les trois clientèles, pour `fold-listbox`. */
+export const AUDIENCE_OPTIONS: readonly FoldSelectOption<CommerceOperationAudience>[] = (
+  ['both', 'pro', 'public'] as const
+).map((value) => ({ value, label: AUDIENCES[value] }));
 
 export function audienceLabel(audience: CommerceOperationAudience): string {
   return AUDIENCES[audience];
@@ -132,4 +137,57 @@ const EXPLANATIONS: Readonly<Record<OperationMigrationExplanation, string>> = {
 
 export function explanationLabel(explanation: OperationMigrationExplanation): string {
   return EXPLANATIONS[explanation];
+}
+
+/**
+ * Un refus du serveur, TEL QUEL : les erreurs des opérations du commerce
+ * nomment déjà le cas et le geste de sortie, en français
+ * (`b2b/operations/domain/errors/operation-errors.ts`, lu le 2026-10-16) —
+ * y compris l'interrupteur fermé (`operations.writing_closed`). Le repli ne
+ * sert qu'à une panne sans enveloppe.
+ */
+export function refusalOf(error: unknown, fallback: string): string {
+  return httpErrorMessage(error, fallback);
+}
+
+/** Un texte d'annonce, tel que le contrat le porte. */
+export interface OperationText {
+  readonly fr: string;
+  readonly en?: string | undefined;
+  readonly it?: string | undefined;
+}
+
+/** Un texte en trois langues, tel qu'on le saisit. */
+export interface LocalizedDraft {
+  readonly fr: string;
+  readonly en: string;
+  readonly it: string;
+}
+
+export const EMPTY_LOCALIZED: LocalizedDraft = { fr: '', en: '', it: '' };
+
+export function localizedDraftOf(text: OperationText | null): LocalizedDraft {
+  return { fr: text?.fr ?? '', en: text?.en ?? '', it: text?.it ?? '' };
+}
+
+/**
+ * Le texte à envoyer, ou `null` sans français. Une langue vide est OMISE :
+ * une traduction absente retombe sur le français côté lecteur.
+ */
+export function localizedOf(draft: LocalizedDraft): OperationText | null {
+  const fr = draft.fr.trim();
+  if (fr === '') {
+    return null;
+  }
+  const en = draft.en.trim();
+  const it = draft.it.trim();
+  return { fr, ...(en === '' ? {} : { en }), ...(it === '' ? {} : { it }) };
+}
+
+/** Deux textes disent-ils la même chose, langue par langue ? */
+export function sameLocalized(a: OperationText | null, b: OperationText | null): boolean {
+  if (a === null || b === null) {
+    return a === b;
+  }
+  return a.fr === b.fr && a.en === b.en && a.it === b.it;
 }

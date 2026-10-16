@@ -97,6 +97,28 @@ describe('CommerceOperationsPage', () => {
     expect(root.textContent).toContain('Les produits arrivent bientôt');
   });
 
+  it('Préparer reste visible mais fermé quand l’interrupteur est fermé', async () => {
+    const root = await render(async () => {
+      throw { status: 409, error: { code: 'operations.not_at_commerce', message: '…' } };
+    }, ['lfc_operations:read', 'lfc_operations:write']);
+    const prepare = [...root.querySelectorAll('button')].find((button) =>
+      button.textContent?.includes('Préparer une opération'),
+    );
+    expect(prepare?.disabled).toBe(true);
+    expect(root.querySelector('fold-callout')?.textContent).toContain('en préparer');
+  });
+
+  it('Préparer est ouvert une fois les opérations au commerce, et absent sans droit', async () => {
+    const writer = await render(async () => [], ['lfc_operations:read', 'lfc_operations:write']);
+    const prepare = [...writer.querySelectorAll('button')].find((button) =>
+      button.textContent?.includes('Préparer une opération'),
+    );
+    expect(prepare?.disabled).toBe(false);
+    TestBed.resetTestingModule();
+    const reader = await render(async () => []);
+    expect(reader.textContent).not.toContain('Préparer une opération');
+  });
+
   it("ne montre la reprise qu'à qui peut l'appliquer", async () => {
     expect(
       (await render(async () => [])).querySelector('app-operations-migration-card'),

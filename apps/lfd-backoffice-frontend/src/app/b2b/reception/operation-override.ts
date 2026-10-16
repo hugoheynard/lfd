@@ -5,7 +5,7 @@ import type {
 } from '@lfd/contracts';
 import type { FoldSelectOption } from 'fold-ng';
 
-import { parisInstant, parisMoment } from '../../pim/operations/operation-schedule';
+import { parisInstant, parisMoment } from '../../operations/operation-schedule';
 
 /**
  * **La surcharge d'une opération reçue, telle qu'on la saisit** — et sa

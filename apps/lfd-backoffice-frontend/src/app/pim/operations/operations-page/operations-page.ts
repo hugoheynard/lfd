@@ -13,7 +13,7 @@ import {
 } from 'fold-ng';
 
 import { audienceLabel, badgeLabel, badgeOf, badgeVariant } from '../operation-format';
-import { formatInstant, pickupPhrase } from '../operation-schedule';
+import { formatInstant, pickupPhrase } from '../../../operations/operation-schedule';
 import { OperationsService } from '../operations.service';
 import { PrepareOperationPanel } from '../prepare-operation-panel/prepare-operation-panel';
 

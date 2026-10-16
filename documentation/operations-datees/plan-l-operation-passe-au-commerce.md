@@ -9,6 +9,35 @@
 > [`architecture-operations-datees.md`](architecture-operations-datees.md)
 > (2026-09-24). Ce plan dit pourquoi, et ce qui a changé depuis.
 
+## Lot 3 bis — l'écran écrit (2026-10-16)
+
+La bascule (`OPERATIONS_AT_COMMERCE`) ouvre l'écriture au commerce : l'écran
+« Opérations au commerce » doit donc permettre de créer et de modifier une
+opération, sans quoi le staff n'aurait plus d'endroit où le faire. Bâti dans
+`apps/lfd-backoffice-frontend/src/app/operations/`, sur les routes du lot 1
+(`/admin/operations`, sous `lfc_operations:write`) :
+
+- **Préparer** : un panneau depuis la liste (clé, nom, cinq dates en heure de
+  Paris, clientèle), qui ouvre la page de l'opération créée ;
+- **une carte par section**, un `PUT` chacune, puis la page relit : l'annonce
+  (nom, chapeau en trois langues, image **choisie dans la médiathèque** — O3 —
+  dont le texte alternatif reste celui de la médiathèque), le calendrier, la
+  clientèle, la visibilité (masquer / afficher), la sélection, et l'archivage
+  en zone de danger ;
+- **la sélection se choisit dans le catalogue du commerce** (O2) — les articles
+  de `GET /admin/catalog` —, et dit ce qui n'est pas en vente et ce qui est
+  réservé aux opérations ;
+- **interrupteur fermé** : les lectures répondent 409, « Préparer » reste visible
+  mais fermé, et un callout dit pourquoi ; une opération archivée, une copie
+  pas encore reprise ou un staff sans droit d'écrire voient les cartes en
+  lecture seule ;
+- **les refus du serveur s'affichent tels quels** : ils nomment le cas.
+
+La saisie des dates (`operation-schedule.ts`, `schedule-form/`) et l'ordre de
+la sélection (`selection-order.ts`) ont quitté `pim/operations/` pour
+`operations/` ; l'écran du référentiel les importe de là jusqu'à son retrait
+(lot 4), et `lint:business-day` couvre le nouveau dossier.
+
 ## 0. La demande (Hugo, 2026-10-15)
 
 > « Tu penses que opérations doit rester domaine du référentiel ? » — puis,

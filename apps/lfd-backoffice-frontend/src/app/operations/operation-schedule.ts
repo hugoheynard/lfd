@@ -1,5 +1,5 @@
 import { instantToLocal, localToInstant, weekdayOf } from '@lfd/contracts';
-import type { OperationSchedulePayload } from '@lfd/pim-contracts';
+import type { RescheduleCommerceOperationPayload } from '@lfd/contracts';
 
 /**
  * **Les cinq dates d'une opération, telles qu'on les saisit** — en heure de
@@ -38,7 +38,7 @@ export interface ScheduleDates {
 }
 
 export type ScheduleReading =
-  | { readonly ok: true; readonly payload: OperationSchedulePayload }
+  | { readonly ok: true; readonly payload: RescheduleCommerceOperationPayload }
   | { readonly ok: false; readonly problem: string };
 
 /** Rien de saisi : aucune date n'est inventée, pas même une heure « raisonnable ». */

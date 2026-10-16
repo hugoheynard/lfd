@@ -25,7 +25,7 @@ import {
   type FoldPanelDefaults,
 } from 'fold-ng';
 
-import { formatInstant } from '../../../pim/operations/operation-schedule';
+import { formatInstant } from '../../../operations/operation-schedule';
 import {
   AUDIENCE_CHOICES,
   audienceLabel,
