@@ -182,8 +182,8 @@ déploiements.
 ### 3.7 R7 — les écrans de documentation interne
 
 Une dizaine de gabarits du back-office décrivent encore l'architecture avec
-l'ancien canal dedans : les trois diagrammes (`system-diagram`, `upsert-diagram`,
-`catalogue-to-tool-diagram`), trois pages PIM (`overview`, `bricks`,
+l'ancien canal dedans : les diagrammes (`system-diagram`,
+`catalogue-to-tool-diagram` ; un troisième, mort, a été supprimé le 2026-10-16), trois pages PIM (`overview`, `bricks`,
 `general-settings`), la section « Intégrations » de la fiche produit, la page des
 taux de TVA, et `pim/data/models.ts` qui déclare encore les réglages de l'ancien canal.
 

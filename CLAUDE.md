@@ -68,7 +68,10 @@
 >   généré depuis les dictionnaires, et un texte changé sans `pnpm copy:digest`
 >   le fait mentir. Et **44** depuis le 2026-10-12 avec `lint:doc-orphans` :
 >   aucune doc de `documentation/` qui ne soit citée par une autre — le
->   graphe d'Obsidian les montrait, la porte les tient. C'est la
+>   graphe d'Obsidian les montrait, la porte les tient. Et **45** depuis le
+>   2026-10-16 avec `lint:former-channel-name` : le nom de l'ancien canal de
+>   vente en ligne est sorti du dépôt, faits passés compris, et seules les
+>   migrations appliquées le portent encore. C'est la
 >   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
 >   en une commande et trompe tout de suite ;
 > - le dossier **`documentation/pricing/`** (ouvert le 2026-09-06) et le dossier
@@ -1214,7 +1217,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 44 portes du dépôt, d'un coup
+pnpm lint:gates         # les 45 portes du dépôt, d'un coup
 pnpm lint:no-direct-env # gate repo : aucun accès direct à process.env
 ```
 

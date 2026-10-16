@@ -191,7 +191,7 @@ ressource et action.
 | Outil            | Ressource                    | Ce qu'elle couvre                                                                                               |
 | ---------------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | **référentiel**  | `pim_catalog`                | les fiches produit, familles, collections                                                                       |
-|                  | `pim_channels`               | ce qui **sort** du référentiel : publication, Shopify, la boutique, les révisions                               |
+|                  | `pim_channels`               | ce qui **sort** du référentiel : publication, la boutique, les révisions                                        |
 |                  | `pim_settings`               | les réglages du référentiel                                                                                     |
 |                  | `pim_tax`                    | la fiscalité : régimes de TVA, règles comptables                                                                |
 | **commerce**     | `b2b_companies`              | les comptes clients                                                                                             |

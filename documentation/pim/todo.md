@@ -106,8 +106,9 @@
       binding reste, la fiche revient si on rouvre le canal.
 
 🔴 **Voir aussi**
-[`plan-retrait-integral-de-shopify.md`](./plan-retrait-integral-de-shopify.md) :
-le retrait des deux colonnes du contexte de vente qui ont survécu au canal.
+[`retrait-de-l-ancien-canal.md`](./retrait-de-l-ancien-canal.md) :
+les deux colonnes du contexte de vente qui avaient survécu au canal sont
+retirées (2026-10-16).
 
 ---
 
@@ -118,11 +119,11 @@ le retrait des deux colonnes du contexte de vente qui ont survécu au canal.
       le filtre est alors une facette d'écran, sans aller-retour de plus.
 
       La quatrième demande une décision : une **publication** est aujourd'hui une
-                                  `modification` comme une autre. La sortir en catégorie propre veut dire
-                                  qu'un article qui change de statut ET de prix apparaît dans **deux**
-                                  facettes, ou qu'on choisit laquelle l'emporte. ⚠️ Trancher avant d'écrire :
-                                  un article qui disparaît d'un filtre parce qu'il a aussi changé de prix est
-                                  le genre d'absence qu'on ne remarque pas.
+                                      `modification` comme une autre. La sortir en catégorie propre veut dire
+                                      qu'un article qui change de statut ET de prix apparaît dans **deux**
+                                      facettes, ou qu'on choisit laquelle l'emporte. ⚠️ Trancher avant d'écrire :
+                                      un article qui disparaît d'un filtre parce qu'il a aussi changé de prix est
+                                      le genre d'absence qu'on ne remarque pas.
 
 - [ ] **Purger les contenus orphelins** — un `catalog_content` que plus aucune
       révision ne référence ne disparaît pas (clé étrangère `RESTRICT`, à dessein).
@@ -143,12 +144,12 @@ rejouable ni retour arrière de publication depuis le retrait de l'ancien canal 
       `fold-empty-state` « Écran à venir ».
 
       Ce qui vient ici est le **vocabulaire** — les types de conditionnement et ce
-                                  qu'ils nomment. Combien d'unités dans le carton d'un produit donné reste sur
-                                  la fiche : c'est une propriété de ce produit.
+                                      qu'ils nomment. Combien d'unités dans le carton d'un produit donné reste sur
+                                      la fiche : c'est une propriété de ce produit.
 
-                                  Le point qui justifie l'écran : un conditionnement porte sa **propre
-                                  référence**. Le professionnel commande « le carton de 24 », pas « 24 fois
-                                  l'article » — c'est ce qui en fait autre chose qu'une quantité.
+                                      Le point qui justifie l'écran : un conditionnement porte sa **propre
+                                      référence**. Le professionnel commande « le carton de 24 », pas « 24 fois
+                                      l'article » — c'est ce qui en fait autre chose qu'une quantité.
 
 ---
 

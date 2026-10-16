@@ -24,8 +24,6 @@
  *   ne se touchent pas (checksum Prisma), et la migration qui a renommé les
  *   faits doit nommer ce qu'elle remplace. C'est la SEULE admission durable.
  *
- * L'admission temporaire ci-dessous ne peut que disparaître.
- *
  * ⚠️ Le mot n'est écrit nulle part ici en entier — ni dans le nom de la porte,
  * ni dans celui de son script : elle se refuserait elle-même. Il est recomposé
  * à l'exécution.
@@ -41,15 +39,7 @@ const WORD = ["sho", "pify"].join("");
 /** La seule admission durable. */
 const ADMITTED = ["apps/lfd-api/prisma/migrations/**"];
 
-/**
- * ⏳ TEMPORAIRE (2026-10-16) — la documentation se purge en parallèle du code
- * (plan, lot S-b). Ces deux entrées se RETIRENT dès que la purge de
- * `documentation/` et de `CLAUDE.md` est faite ; la porte les couvre alors
- * comme le reste.
- */
-const TEMPORARILY_ADMITTED = ["documentation/**", "CLAUDE.md"];
-
-const excludes = [...ADMITTED, ...TEMPORARILY_ADMITTED].map((glob) => `:(exclude,glob)${glob}`);
+const excludes = ADMITTED.map((glob) => `:(exclude,glob)${glob}`);
 const result = spawnSync(
   "git",
   ["grep", "-l", "-i", "-I", "--untracked", "-e", WORD, "--", ".", ...excludes],
@@ -80,5 +70,5 @@ if (offenders.length > 0) {
 
 console.log(
   `✓ former-channel-name : aucun fichier suivi ne porte le nom de l'ancien canal\n` +
-    `  (admis : ${ADMITTED.join(", ")} ; temporairement : ${TEMPORARILY_ADMITTED.join(", ")}).`,
+    `  (admis : ${ADMITTED.join(", ")}).`,
 );
