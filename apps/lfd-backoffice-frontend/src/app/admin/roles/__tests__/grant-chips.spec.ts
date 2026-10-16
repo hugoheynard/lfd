@@ -114,9 +114,11 @@ describe('grantGroups', () => {
    * 2026-10-16 : `lfc_catalog`, le catalogue publié, qui remplacera
    * `b2b_catalog` (droits-et-permissions/plan-droit-lfc-catalog.md, L1). 58
    * le même jour : `b2b_catalog` est retiré (L2) — il reste lisible, mais ne
-   * compte plus parmi les domaines qu'on accorde.
+   * compte plus parmi les domaines qu'on accorde. 59 le même jour :
+   * `lfc_loyalty`, la fidélité, détachée de `b2b_accounting`
+   * (comptabilite/fidelite/plan-fidelite-en-gestion-boutique.md, F1).
    */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(58);
+    expect(RESOURCE_COUNT).toBe(59);
   });
 });

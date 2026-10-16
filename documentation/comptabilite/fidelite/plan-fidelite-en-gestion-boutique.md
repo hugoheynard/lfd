@@ -3,6 +3,12 @@
 > 📐 **Doc-first, rien n'est bâti** (rédigé le 2026-10-16). Déplace un
 > **périmètre de permissions** : `vitruve` d'office (CLAUDE.md §9 bis). Sa
 > contradiction, en fin de document, prime sur F1–F4.
+>
+> ✅ **F1 bâti le 2026-10-16** (non commité à l'écriture de ce bandeau) :
+> migration `20261016230000_le_droit_de_la_fidelite` (enum seul, aucun droit),
+> `lfc_loyalty` dans `staff-access.ts` (schéma, libellé « Fidélité », graine
+> `write` à l'administrateur seul) et `staff-resource-scopes.ts`. Les gardes
+> restent sur `b2b_accounting`. Reste : le geste de Hugo à l'écran, puis F2.
 
 ## 0. La demande (Hugo, 2026-10-16)
 

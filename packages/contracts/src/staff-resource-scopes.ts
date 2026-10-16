@@ -192,6 +192,11 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     write:
       "Ouvrir ou fermer la prise de commande, par clientèle — fermée, plus aucun client de cette clientèle ne peut commander.",
   },
+  lfc_loyalty: {
+    read: "N'ouvre encore aucun écran jusqu'à la bascule (F2) : la fidélité se lit sous Comptabilité. Ensuite : voir le programme de fidélité, les soldes de points des clients et les bons émis.",
+    write:
+      "Régler le programme, ajuster le solde d'un client, annuler un bon. N'ouvre encore aucun geste jusqu'à la bascule (F2).",
+  },
   b2b_storefront: {
     read: "Voir la composition des pages de la boutique.",
     write: "Composer la vitrine — formes, positions, rayons, contenus — et l'enregistrer.",

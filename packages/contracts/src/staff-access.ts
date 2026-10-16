@@ -350,6 +350,15 @@ export const staffResourceSchema = z.enum([
    */
   "lfc_order_opening",
   /**
+   * **La fidélité** — le programme de points, les soldes des clients et les
+   * bons émis. Détachée de `b2b_accounting` (Hugo, 2026-10-16,
+   * `documentation/comptabilite/fidelite/plan-fidelite-en-gestion-boutique.md`) :
+   * la comptabilité ne garde pas la fidélité, qui passe en Gestion Boutique.
+   * Ajoutée au lot F1 sans être accordée ; les gardes la portent au lot F2.
+   * Elle s'accorde à l'écran ; la graine ne la donne qu'à l'administrateur.
+   */
+  "lfc_loyalty",
+  /**
    * **La vitrine** — composer les pages de la boutique : formes, positions,
    * rayons, contenus, gabarits (`documentation/commandes/boutique-rayon-layout.md`,
    * D7).
@@ -714,6 +723,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   lfc_operations: "Opérations datées",
   lfc_order_settings: "Heure limite et annulation des commandes",
   lfc_order_opening: "Ouverture des commandes",
+  lfc_loyalty: "Fidélité",
   staff_access: "Équipe et accès",
   staff_notifications: "Notifications internes",
   ops_health: "Santé de l'écosystème",
@@ -840,6 +850,9 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     lfc_operations: "write",
     // Graine seulement (2026-10-13, plan-reglages-commandes.md §3.5).
     lfc_order_opening: "write",
+    // L'administrateur seul (Hugo, 2026-10-16) : la comptabilité ne garde pas
+    // la fidélité, et les autres rôles la reçoivent à l'écran.
+    lfc_loyalty: "write",
     // La graine seule (2026-10-13, réglages commerciaux) : en production,
     // ces deux droits s'accordent à l'écran.
     b2b_commercial_appointment: "write",
