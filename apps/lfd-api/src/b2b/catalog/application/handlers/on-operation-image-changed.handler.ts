@@ -4,6 +4,7 @@ import {
   OperationImageChangedFact,
   PIM_OPERATION_IMAGE_CHANGED,
 } from "../../../../pim/channels/b2b-platform/operations/operation-image-changed.fact.js";
+import { AppConfig } from "../../../../platform/config/app-config.js";
 import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
 import {
   DurableHandler,
@@ -32,13 +33,24 @@ export const PROJECT_OPERATION_IMAGE = "catalog.project-operation-image";
  * - **Il lève** : sous la boîte d'envoi, lever fait rejouer.
  * - **Il ne journalise rien** : la décision est tracée à la médiathèque ou
  *   au référentiel.
+ * - 🔴 **Inerte interrupteur `OPERATIONS_AT_COMMERCE` ouvert** (lot 3 de
+ *   `plan-l-operation-passe-au-commerce.md`) : l'image de l'opération est
+ *   alors celle du commerce, que la médiathèque repointe par l'agrégat. Il
+ *   acquitte sans écrire — lever ferait rejouer sans fin un fait qui n'a plus
+ *   de destinataire.
  */
 @Injectable()
 @DurableHandler({ type: PIM_OPERATION_IMAGE_CHANGED, subscriber: PROJECT_OPERATION_IMAGE })
 export class OnOperationImageChangedHandler implements DurableSubscriber {
-  constructor(private readonly images: CatalogOperationImageProjection) {}
+  constructor(
+    private readonly images: CatalogOperationImageProjection,
+    private readonly config: AppConfig,
+  ) {}
 
   async handle(delivery: DurableDelivery): Promise<void> {
+    if (this.config.operationsAtCommerce()) {
+      return;
+    }
     const fact = OperationImageChangedFact.fromPayload(delivery.payload);
     // Sans unité de travail à lui : le relais l'appelle déjà dans celle de la
     // livraison, qui porte aussi son reçu.

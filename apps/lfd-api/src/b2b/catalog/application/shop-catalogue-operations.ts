@@ -24,6 +24,14 @@ export interface ShopSale {
   readonly operationOnlySkus: ReadonlySet<string>;
   readonly audience: ShopAudience;
   readonly now: Date;
+  /**
+   * Interrupteur `OPERATIONS_AT_COMMERCE` (lot 3 de
+   * `plan-l-operation-passe-au-commerce.md`). Absent ou `false` : la vitrine
+   * sert exactement ce qu'elle servait. `true` : le rayon d'une opération
+   * paraît sur son encart même sans article pendant l'annonce, dit
+   * `awaitingProducts` commandes ouvertes, et porte la date d'annonce.
+   */
+  readonly operationsAtCommerce?: boolean | undefined;
 }
 
 /** La réponse de D4 pour un article du rayon, sans jour — la vitrine n'en demande pas. */
@@ -67,15 +75,23 @@ export function itemOperationOf(
 }
 
 /**
- * Les opérations que la vitrine montre : à cette clientèle, dans leur fenêtre,
- * et avec au moins un article en rayon. Leurs SKU passent de la déclinaison
- * au produit — l'identifiant que la boutique vend.
+ * Les opérations que la vitrine montre : à cette clientèle, dans leur fenêtre.
+ * Leurs SKU passent de la déclinaison au produit — l'identifiant que la
+ * boutique vend.
+ *
+ * Avant la bascule, une opération sans article en rayon n'est pas montrée :
+ * un rayon vide est une pastille sur laquelle on clique pour ne rien voir.
+ * Après (`operationsAtCommerce`, plan « Une opération sans article ») : le
+ * rayon s'ouvre sur son ENCART, et c'est lui l'annonce — montré sans article
+ * pendant l'annonce, et commandes ouvertes avec `awaitingProducts` ; commandes
+ * closes et rien à retirer, il s'efface.
  */
 export function shopOperationsOf(
   sale: ShopSale,
   shown: readonly ResolvedCatalogItem[],
 ): ShopOperationView[] {
   const productOf = new Map(shown.map((item) => [item.sku, item.productSku]));
+  const atCommerce = sale.operationsAtCommerce === true;
   return sale.operations.flatMap((operation) => {
     const state = operationStateAt(operation, sale.now);
     if (state === null || !reachesAudience(operation, sale.audience)) {
@@ -85,23 +101,30 @@ export function shopOperationsOf(
       const product = productOf.get(sku);
       return product === undefined ? [] : [product];
     });
-    if (skus.length === 0) {
-      // Un rayon vide est une pastille sur laquelle on clique pour ne rien voir.
+    const empty = skus.length === 0;
+    if (empty && (!atCommerce || state === "closed")) {
       return [];
     }
+    const view: ShopOperationView = {
+      key: operation.key,
+      name: operation.name,
+      lede: operation.lede,
+      image: operation.image,
+      state,
+      orderFrom: opensAt(operation).toISOString(),
+      orderUntil: operation.orderUntil.toISOString(),
+      pickupFrom: operation.pickupFrom,
+      pickupUntil: operation.pickupUntil,
+      skus,
+    };
     return [
-      {
-        key: operation.key,
-        name: operation.name,
-        lede: operation.lede,
-        image: operation.image,
-        state,
-        orderFrom: opensAt(operation).toISOString(),
-        orderUntil: operation.orderUntil.toISOString(),
-        pickupFrom: operation.pickupFrom,
-        pickupUntil: operation.pickupUntil,
-        skus,
-      },
+      atCommerce
+        ? {
+            ...view,
+            announceFrom: operation.announceFrom.toISOString(),
+            awaitingProducts: empty && state === "open",
+          }
+        : view,
     ];
   });
 }

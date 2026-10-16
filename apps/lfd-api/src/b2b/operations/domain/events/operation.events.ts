@@ -80,3 +80,32 @@ export class OperationArchivedEvent extends OperationFact {
     super(operation, "catalog_operation.archived", {});
   }
 }
+
+/** Ce que la réception avait décidé, tel que le journal le dit. */
+export interface CarriedRestriction {
+  readonly isHidden: boolean;
+  readonly orderUntil: Date | null;
+  readonly audience: string | null;
+  readonly hiddenSkus: readonly string[];
+  readonly decidedBy: string | null;
+  readonly decidedAt: Date;
+}
+
+/**
+ * **La restriction de la réception, versée dans l'opération** par la migration
+ * (lot 3, « Ce que devient chaque champ de la surcharge ») : qui avait
+ * restreint quoi, et quand. L'auteur du fait est qui applique la migration ;
+ * l'auteur de la décision est dans la charge.
+ */
+export class OperationRestrictionCarriedOverEvent extends OperationFact {
+  constructor(operation: Subject, restriction: CarriedRestriction) {
+    super(operation, "catalog_operation.restriction_carried_over", {
+      decidedBy: restriction.decidedBy,
+      decidedAt: restriction.decidedAt.toISOString(),
+      isHidden: restriction.isHidden,
+      orderUntil: restriction.orderUntil === null ? null : restriction.orderUntil.toISOString(),
+      audience: restriction.audience,
+      hiddenSkus: [...restriction.hiddenSkus],
+    });
+  }
+}

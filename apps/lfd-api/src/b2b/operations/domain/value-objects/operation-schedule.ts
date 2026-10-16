@@ -15,6 +15,9 @@ export interface OperationScheduleInput {
   readonly pickupUntil: string;
 }
 
+/** Où en est une opération à un instant donné (D2). */
+export type OperationState = "preparing" | "announced" | "open" | "closed" | "ended";
+
 /**
  * **Les cinq dates d'une opération** (D2), et l'ordre qui les tient ensemble :
  *
@@ -24,9 +27,9 @@ export interface OperationScheduleInput {
  * leur validité ne se juge qu'à cinq. `fin(jour)` passe par `localToInstant`
  * (heure de Paris), jamais par un `T00:00Z` (`lint:business-day`).
  *
- * L'état (annoncée, ouverte, close…) ne se calcule pas ici au lot 1 : aucune
- * lecture du commerce ne le demande encore à cet agrégat — le miroir le
- * calcule pour la boutique (`operation-access.ts`).
+ * L'état (annoncée, ouverte, close…) se calcule ici depuis le lot 3, pour
+ * l'écran « Opérations » ; la boutique garde le sien (`operation-access.ts`),
+ * qui lit les mêmes bornes.
  */
 export class OperationSchedule {
   private constructor(
@@ -63,6 +66,24 @@ export class OperationSchedule {
   /** Quand tout s'éteint : minuit, heure de Paris, le lendemain du dernier retrait. */
   get endsAt(): Date {
     return this.pickupUntil.end();
+  }
+
+  /**
+   * L'état à `now` : avant l'annonce, annoncée, commandes ouvertes, closes
+   * (retraits à venir), finie — bornes fermées à gauche, ouvertes à droite.
+   */
+  stateAt(now: Date): OperationState {
+    const at = now.getTime();
+    if (at < this.announceFrom.getTime()) {
+      return "preparing";
+    }
+    if (at < this.opensAt.getTime()) {
+      return "announced";
+    }
+    if (at < this.orderUntil.getTime()) {
+      return "open";
+    }
+    return at < this.endsAt.getTime() ? "closed" : "ended";
   }
 
   private ensureOrdered(): void {

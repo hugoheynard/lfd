@@ -34,7 +34,7 @@ export class RepointOperationImage extends OperationImageRepointing {
     const showing = await this.operations.loadShowingImage(change.from);
     let repointed = 0;
     for (const operation of showing) {
-      if (operation.repointImage(change.from, change.to, { by: change.staffId, at: change.at })) {
+      if (operation.followImageReplacement(change.from, change.to)) {
         await this.operations.save(operation);
         repointed += 1;
       }

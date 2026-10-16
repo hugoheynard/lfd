@@ -4,7 +4,7 @@ import type {
   StorefrontOperationState,
 } from "@lfd/contracts";
 
-import { effectiveOperation } from "../../catalog/domain/effective-operation.js";
+import { operationAsHeld } from "../../catalog/domain/effective-operation.js";
 import { opensAt, operationStateAt } from "../../catalog/domain/operation-access.js";
 import type { ReceivedOperation } from "../../catalog/domain/ports/received-operations.reader.js";
 import { OPERATION_SHELF_PREFIX } from "../domain/operation-link.js";
@@ -18,6 +18,10 @@ import { OPERATION_SHELF_PREFIX } from "../domain/operation-link.js";
  * boutique applique ; ce qu'elle rend `null` se dit « en préparation » avant
  * l'annonce, « terminée » après. Masquée à la réception, ou sans clientèle :
  * `hidden`, quelle que soit la date.
+ *
+ * Interrupteur `OPERATIONS_AT_COMMERCE` ouvert (lot 3), une opération écrite
+ * au commerce se lit sur ses propres champs (`held`, `operationAsHeld`) : son
+ * `hidden`, et la surcharge déjà versée en elle par la migration.
  */
 export function storefrontOperationsOf(
   received: readonly ReceivedOperation[],
@@ -25,8 +29,8 @@ export function storefrontOperationsOf(
 ): StorefrontCatalogOperation[] {
   return received
     .filter((operation) => operation.withdrawnAt === null)
-    .map(({ received: facts, override }) => {
-      const effective = effectiveOperation(facts, override?.restriction ?? null);
+    .map(({ received: facts, override, held }) => {
+      const effective = operationAsHeld(facts, override?.restriction ?? null, held ?? null);
       const dated = { ...facts, orderUntil: effective.orderUntil };
       return {
         key: facts.key,

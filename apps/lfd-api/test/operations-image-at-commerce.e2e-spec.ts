@@ -4,7 +4,6 @@ import { MediaStore } from "../src/platform/storage/media-store.js";
 import {
   bootstrapE2e,
   daysAgo,
-  E2E_STAFF_ID,
   E2E_STAFF_SUB,
   jsonBody,
   serviceDay,
@@ -14,8 +13,8 @@ import { InMemoryMediaStore } from "./in-memory-media-store.js";
 import {
   depositImage,
   noelBody,
-  OpenOperationsAtCommerceConfig,
   OPERATIONS,
+  SwitchableOperationsConfig,
   stubAdminVerifier,
 } from "./operations-at-commerce-scene.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
@@ -33,12 +32,13 @@ import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
  */
 
 let ctx: E2eContext;
+const config = new SwitchableOperationsConfig();
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
-      { token: AppConfig, value: new OpenOperationsAtCommerceConfig() },
+      { token: AppConfig, value: config },
       { token: MediaStore, value: new InMemoryMediaStore() },
     ],
   });
@@ -89,9 +89,10 @@ describe("choisir l'image d'une opération dans la médiathèque", () => {
 
     await noelShowing(a);
 
+    // Lot 3 : le texte alternatif est celui de la médiathèque — l'opération n'en garde plus.
     expect(await noel()).toMatchObject({
       imageUrl: a,
-      imageAlt: "Une bûche",
+      imageAlt: null,
       imageFocalX: 0.2,
       imageFocalY: 0.8,
     });
@@ -119,15 +120,36 @@ describe("l'opération du commerce, porteur de la médiathèque", () => {
     expect(await ctx.prisma.mediaAsset.count({ where: { url: a } })).toBe(1);
   });
 
-  it("libère l'image une fois l'opération archivée", async () => {
+  /**
+   * Lot 3 (« Après le lot 2 », Hugo 2026-10-16) : comme au référentiel, une
+   * opération archivée COMPTE — son historique ne doit pas pointer vers une
+   * image disparue. Ce cas disait l'inverse au lot 2.
+   */
+  it("garde l'image protégée une fois l'opération archivée", async () => {
     const a = await depositImage(ctx, 1001, null);
     await noelShowing(a);
     await staff().put(`${OPERATIONS}/noel-2026/archive`).send({}).expect(200);
 
-    expect(await carriersOf(a)).toEqual([]);
+    expect(await carriersOf(a)).toEqual([{ kind: "operation", id: "noel-2026", label: "Noël" }]);
+    const discarded = await staff().delete(`/media?url=${encodeURIComponent(a)}`);
+    expect(discarded.status).toBe(409);
+  });
+
+  it("un remplacement repointe aussi une opération archivée, qui reste archivée", async () => {
+    const a = await depositImage(ctx, 1001, null);
+    const b = await depositImage(ctx, 1002, null);
+    await noelShowing(a);
+    await staff().put(`${OPERATIONS}/noel-2026/archive`).send({}).expect(200);
+
+    await staff().post("/media/replace").send({ from: a, to: b }).expect(204);
+
+    const repointed = await noel();
+    expect(repointed.imageUrl).toBe(b);
+    expect(repointed.withdrawnAt).not.toBeNull();
     await staff()
-      .delete(`/media?url=${encodeURIComponent(a)}`)
-      .expect(204);
+      .put(`${OPERATIONS}/noel-2026/presentation`)
+      .send({ name: { fr: "Noël" }, lede: null, image: { url: b } })
+      .expect(409);
   });
 
   /**
@@ -144,7 +166,8 @@ describe("l'opération du commerce, porteur de la médiathèque", () => {
       .expect(204);
   });
 
-  it("un remplacement ÉCRIT l'opération du commerce (signée), et laisse le référentiel", async () => {
+  /** Lot 3 : suivre un remplacement n'est pas une édition — la médiathèque le trace, l'opération ne s'en signe pas. */
+  it("un remplacement ÉCRIT l'opération du commerce (sans la signer), et laisse le référentiel", async () => {
     const a = await depositImage(ctx, 1001, { x: 0.2, y: 0.8 });
     const b = await depositImage(ctx, 1002, { x: 0.6, y: 0.4 });
     await noelShowing(a);
@@ -156,11 +179,7 @@ describe("l'opération du commerce, porteur de la médiathèque", () => {
 
     await staff().post("/media/replace").send({ from: a, to: b }).expect(204);
 
-    expect(await noel()).toMatchObject({
-      imageUrl: b,
-      imageAlt: "Une bûche",
-      writtenBy: E2E_STAFF_ID,
-    });
+    expect(await noel()).toMatchObject({ imageUrl: b, imageAlt: null, writtenBy: null });
     const pim = await ctx.prisma.operation.findUniqueOrThrow({ where: { key: "paques" } });
     expect(pim.imageUrl).toBe(a);
 
@@ -183,21 +202,23 @@ describe("l'opération du commerce, porteur de la médiathèque", () => {
   });
 });
 
-/** Une opération du référentiel — ses routes restent ouvertes jusqu'à la bascule (lot 3). */
+/** Une opération du référentiel, préparée interrupteur fermé — ouvert, ses routes refusent (lot 3). */
 async function pimOperationShowing(key: string, url: string): Promise<void> {
-  await staff()
-    .post("/pim/operations")
-    .send({
-      key,
-      name: { fr: "Pâques" },
-      lede: null,
-      image: { url, alt: "" },
-      announceFrom: daysAgo(-30),
-      orderFrom: daysAgo(-45),
-      orderUntil: daysAgo(-80),
-      pickupFrom: serviceDay(78),
-      pickupUntil: serviceDay(84),
-      audience: "both",
-    })
-    .expect(201);
+  await config.closedFor(() =>
+    staff()
+      .post("/pim/operations")
+      .send({
+        key,
+        name: { fr: "Pâques" },
+        lede: null,
+        image: { url, alt: "" },
+        announceFrom: daysAgo(-30),
+        orderFrom: daysAgo(-45),
+        orderUntil: daysAgo(-80),
+        pickupFrom: serviceDay(78),
+        pickupUntil: serviceDay(84),
+        audience: "both",
+      })
+      .expect(201),
+  );
 }

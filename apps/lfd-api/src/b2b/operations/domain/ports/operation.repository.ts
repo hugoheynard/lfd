@@ -16,9 +16,11 @@ export abstract class OperationRepository {
   abstract load(key: string): Promise<Operation | null>;
 
   /**
-   * Les opérations NON ARCHIVÉES qui montrent cette image — celles qu'un
-   * remplacement ou un nouveau point focal de la médiathèque doit suivre. Une
-   * opération archivée ne change plus : l'agrégat la refuserait.
+   * Les opérations qui montrent cette image, **archivées comprises** — celles
+   * qu'un remplacement de la médiathèque doit suivre : l'image d'une archivée
+   * reste protégée, et son historique ne doit pas pointer vers une adresse
+   * disparue (plan, « Après le lot 2 »). Le recadrage, lui, laisse les
+   * archivées à leur point : l'agrégat les refuserait.
    */
   abstract loadShowingImage(url: string): Promise<readonly Operation[]>;
 

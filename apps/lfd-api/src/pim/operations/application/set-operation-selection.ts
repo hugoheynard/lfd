@@ -5,7 +5,8 @@ import { PIM_EVENTS, PimJournal } from "../../journal/pim-journal.js";
 import { UnknownOperationSkusError } from "../domain/errors/operation-errors.js";
 import { OperationSkuCatalogue } from "../domain/ports/operation-sku.catalogue.js";
 import { OperationRepository } from "../domain/ports/operation.repository.js";
-import { requireOperation } from "./operation-support.js";
+import { ensureReferentialWriting, requireOperation } from "./operation-support.js";
+import { ReferentialOperationWriting } from "../domain/ports/referential-operation-writing.js";
 
 export class SetOperationSelectionCommand {
   constructor(
@@ -36,9 +37,11 @@ export class SetOperationSelectionHandler implements ICommandHandler<
     private readonly catalogue: OperationSkuCatalogue,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
+    private readonly writing: ReferentialOperationWriting,
   ) {}
 
   async execute(command: SetOperationSelectionCommand): Promise<void> {
+    ensureReferentialWriting(this.writing);
     const operation = await requireOperation(this.operations, command.key);
     const from = operation.snapshot().skus;
     operation.select(command.skus);

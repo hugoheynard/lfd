@@ -329,5 +329,6 @@
   "test/staff-agent-tools.e2e-spec.ts": 13270,
   "test/pickup-lists-by-audience.e2e-spec.ts": 12000,
   "test/operations-image-at-commerce.e2e-spec.ts": 9000,
-  "test/operations-image-closed.e2e-spec.ts": 11000
+  "test/operations-image-closed.e2e-spec.ts": 11000,
+  "test/operations-switch.e2e-spec.ts": 12000
 }

@@ -30,8 +30,12 @@ import {
 const AUDIENCES = ["pro", "public", "both"] as const;
 const audience = () => z.enum(AUDIENCES);
 
-/** L'image : son URL et son texte alternatif. */
-const image = () => payload({ url: z.string(), alt: z.string() });
+/**
+ * L'image : son URL. `alt` n'est plus écrit depuis le lot 3 — le texte
+ * alternatif est celui de la médiathèque — et reste lisible dans les faits
+ * d'avant.
+ */
+const image = () => payload({ url: z.string(), alt: z.string().optional() });
 
 /** Les cinq dates (D2) : trois instants, deux jours de retrait. */
 const schedule = {
@@ -85,4 +89,21 @@ export const COMMERCE_OPERATION_FACTS = {
   ),
   /** Archivée : retirée pour toujours, sa clé reste prise. */
   "catalog_operation.archived": named(),
+  /**
+   * **La restriction de la réception, versée dans l'opération** à la migration
+   * depuis le référentiel (lot 3, « Ce que devient chaque champ de la
+   * surcharge ») : qui avait restreint quoi, et quand. Un fait par opération
+   * restreinte ; écrit par la migration, au nom de qui l'applique.
+   */
+  "catalog_operation.restriction_carried_over": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      decidedBy: z.string().nullable(),
+      decidedAt: instant(),
+      isHidden: z.boolean(),
+      orderUntil: instant().nullable(),
+      audience: audience().nullable(),
+      hiddenSkus: z.array(z.string()),
+    }),
+  ),
 } as const satisfies JournalFactFamily;

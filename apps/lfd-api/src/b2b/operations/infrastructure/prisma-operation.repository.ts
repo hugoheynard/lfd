@@ -66,7 +66,7 @@ export class PrismaOperationRepository extends OperationRepository {
 
   async loadShowingImage(url: string): Promise<readonly Operation[]> {
     const rows = await this.prisma.catalogOperation.findMany({
-      where: { imageUrl: url, withdrawnAt: null },
+      where: { imageUrl: url },
       include: ITEMS_IN_ORDER,
       orderBy: { key: "asc" },
     });

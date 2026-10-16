@@ -33,4 +33,12 @@ export interface LibraryImage {
 export abstract class OperationImageLibrary {
   /** L'image, ou `null` si le fonds ne la connaît pas — jamais une description vide. */
   abstract describe(url: string): Promise<LibraryImage | null>;
+
+  /**
+   * Plusieurs images d'un coup — pour les LECTURES (lot 3) : le texte
+   * alternatif d'une opération est celui de la médiathèque, relu à chaque
+   * affichage, et une boutique qui montre trois opérations ne fait qu'une
+   * lecture. Une URL que le fonds ne connaît pas est ABSENTE de la table.
+   */
+  abstract describeMany(urls: readonly string[]): Promise<ReadonlyMap<string, LibraryImage>>;
 }

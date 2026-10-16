@@ -7,7 +7,13 @@ import { PIM_EVENTS, PimJournal } from "../../journal/pim-journal.js";
 import { Operation } from "../domain/entities/operation.js";
 import { OperationKeyTakenError } from "../domain/errors/operation-errors.js";
 import { OperationRepository } from "../domain/ports/operation.repository.js";
-import { ensureImageKnown, scheduleInputOf, scheduleText } from "./operation-support.js";
+import {
+  ensureImageKnown,
+  ensureReferentialWriting,
+  scheduleInputOf,
+  scheduleText,
+} from "./operation-support.js";
+import { ReferentialOperationWriting } from "../domain/ports/referential-operation-writing.js";
 
 export class PrepareOperationCommand {
   constructor(readonly payload: PrepareOperationPayload) {}
@@ -33,9 +39,11 @@ export class PrepareOperationHandler implements ICommandHandler<PrepareOperation
     private readonly images: ImageCatalogue,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
+    private readonly writing: ReferentialOperationWriting,
   ) {}
 
   async execute(command: PrepareOperationCommand): Promise<string> {
+    ensureReferentialWriting(this.writing);
     const { payload } = command;
     const operation = Operation.prepare({
       key: payload.key,

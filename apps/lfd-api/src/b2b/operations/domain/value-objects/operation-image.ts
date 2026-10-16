@@ -12,14 +12,12 @@ export interface OperationFocal {
 /** L'image telle qu'on la donne : le point focal est facultatif — absent, on recadre au centre. */
 export interface OperationImageInput {
   readonly url: string;
-  readonly alt: string;
   readonly focal?: OperationFocal | null | undefined;
 }
 
-/** L'image d'une opération, jugée : son adresse, son texte alternatif, son point focal. */
+/** L'image d'une opération, jugée : son adresse et son point focal. */
 export interface OperationImage {
   readonly url: string;
-  readonly alt: string;
   /** `null` : personne ne s'est prononcé à la médiathèque — la boutique recadre au centre. */
   readonly focal: OperationFocal | null;
 }
@@ -27,9 +25,13 @@ export interface OperationImage {
 /**
  * **L'image d'une opération**, ou rien.
  *
- * Le texte alternatif peut être vide — une image décorative n'a rien à dire à
- * un lecteur d'écran —, l'adresse jamais : une image sans adresse n'affiche
- * rien, et compterait pourtant comme « une image » à l'écran.
+ * L'adresse ne peut pas être vide : une image sans adresse n'affiche rien, et
+ * compterait pourtant comme « une image » à l'écran.
+ *
+ * Pas de texte alternatif ici (Hugo, 2026-10-16, « Après le lot 2 » du plan) :
+ * il vient de la MÉDIATHÈQUE, comme pour les fiches (`set-product-media.ts`,
+ * ni étiquette ni texte alternatif sur la fiche depuis le 2026-09-23). Les
+ * lectures le demandent à `OperationImageLibrary` ; l'opération ne le garde pas.
  *
  * Le point focal est celui de la MÉDIATHÈQUE (lot 2 du plan, O3) : le cas
  * d'usage le lit au choix de l'image, et le suit quand la médiathèque le
@@ -49,7 +51,7 @@ export function operationImage(raw: OperationImageInput | null): OperationImage 
   if (url === "") {
     throw new InvalidOperationImageError();
   }
-  return { url, alt: raw.alt.trim(), focal: operationFocal(raw.focal ?? null) };
+  return { url, focal: operationFocal(raw.focal ?? null) };
 }
 
 /** @throws {InvalidOperationFocalError} une coordonnée hors de [0, 1], ou qui n'est pas un nombre. */

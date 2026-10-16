@@ -14,6 +14,7 @@ import { OperationKeyTakenError } from "../../domain/errors/operation-errors.js"
 import { OperationSkuCatalogue } from "../../domain/ports/operation-sku.catalogue.js";
 import { OperationReader } from "../../domain/ports/operation.reader.js";
 import { OperationRepository } from "../../domain/ports/operation.repository.js";
+import { ReferentialOperationWriting } from "../../domain/ports/referential-operation-writing.js";
 
 /**
  * Les doubles des suites d'application des opérations — des objets qui
@@ -169,8 +170,21 @@ export class TableSkuCatalogue extends OperationSkuCatalogue {
   }
 }
 
+/** L'écriture au référentiel, ouverte ou fermée à la main (`OPERATIONS_AT_COMMERCE`). */
+export class FixedReferentialWriting extends ReferentialOperationWriting {
+  constructor(private readonly open: boolean) {
+    super();
+  }
+
+  isOpen(): boolean {
+    return this.open;
+  }
+}
+
 export interface Doubles {
   readonly operations: InMemoryOperations;
+  /** Ouverte : la bascule au commerce n'a pas eu lieu. */
+  readonly writing: FixedReferentialWriting;
   readonly images: TableImageCatalogue;
   readonly skus: TableSkuCatalogue;
   readonly journal: RecordingJournal;
@@ -181,6 +195,7 @@ export interface Doubles {
 export function doubles(): Doubles {
   return {
     operations: new InMemoryOperations(),
+    writing: new FixedReferentialWriting(true),
     images: new TableImageCatalogue(),
     skus: new TableSkuCatalogue(),
     journal: new RecordingJournal(),

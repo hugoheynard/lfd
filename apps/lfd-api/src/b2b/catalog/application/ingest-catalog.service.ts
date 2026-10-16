@@ -153,12 +153,22 @@ export class IngestCatalogService {
    * sélection se restreint à la réception par la surcharge, pas par un envoi
    * accepté à moitié.
    *
+   * 🔴 **Interrupteur `OPERATIONS_AT_COMMERCE` ouvert, il ne touche à RIEN**
+   * (lot 3 de `plan-l-operation-passe-au-commerce.md`, « Une seule bascule ») :
+   * l'opération vit au commerce, et un envoi réécrirait chaque opération reçue
+   * et retirerait celles qui manquent — y compris celles nées au commerce.
+   * Les opérations d'un envoi sont alors ignorées, sans bruit : le référentiel
+   * les porte encore jusqu'au lot 4.
+   *
    * @returns les clés marquées retirées par cet envoi.
    */
   private async applyOperations(
     snapshot: StoredCatalogSnapshot,
     receivedAt: Date,
   ): Promise<readonly string[]> {
+    if (this.config.operationsAtCommerce()) {
+      return [];
+    }
     const incoming = (snapshot.operations ?? []).map((operation) =>
       operationFactsOf(operation, receivedAt),
     );

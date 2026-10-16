@@ -25,7 +25,7 @@ import {
 } from "./operation-doubles.js";
 
 function prepare(d: Doubles): PrepareOperationHandler {
-  return new PrepareOperationHandler(d.operations, d.images, d.journal, d.uow);
+  return new PrepareOperationHandler(d.operations, d.images, d.journal, d.uow, d.writing);
 }
 
 /** Une opération déjà là, préparée par le domaine — jamais une ligne écrite à la main. */
@@ -108,6 +108,7 @@ describe("EditOperationHandler", () => {
       d.uow,
       durable,
       new CountingPimIds(),
+      d.writing,
     );
   const NAME = { fr: "Noël 2026" };
   const LEDE = { fr: "Les bûches sont là." };
@@ -243,7 +244,8 @@ describe("EditOperationHandler", () => {
 });
 
 describe("RescheduleOperationHandler", () => {
-  const reschedule = (d: Doubles) => new RescheduleOperationHandler(d.operations, d.journal, d.uow);
+  const reschedule = (d: Doubles) =>
+    new RescheduleOperationHandler(d.operations, d.journal, d.uow, d.writing);
 
   /** « Qui a avancé la clôture de Noël » : la réponse ne doit pas se noyer dans les dates restées. */
   it("ne trace que les dates qui ont bougé, en texte", async () => {

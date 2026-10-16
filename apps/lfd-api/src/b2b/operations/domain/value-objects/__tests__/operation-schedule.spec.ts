@@ -125,3 +125,19 @@ describe("OperationSchedule — l'ouverture et l'extinction", () => {
     expect(toussaint.endsAt).toEqual(at("2026-10-25T23:00:00.000Z"));
   });
 });
+
+describe("OperationSchedule.stateAt — où en est l'opération (lot 3)", () => {
+  const noel = OperationSchedule.of(NOEL);
+
+  it.each([
+    ["2026-10-31T22:59:59.999Z", "preparing"],
+    ["2026-10-31T23:00:00.000Z", "announced"],
+    ["2026-11-14T23:00:00.000Z", "open"],
+    ["2026-12-21T11:00:00.000Z", "closed"],
+    // Minuit, heure de Paris, le lendemain du dernier retrait : c'est fini.
+    ["2026-12-24T22:59:59.999Z", "closed"],
+    ["2026-12-24T23:00:00.000Z", "ended"],
+  ])("à %s : %s", (now, state) => {
+    expect(noel.stateAt(at(now))).toBe(state);
+  });
+});

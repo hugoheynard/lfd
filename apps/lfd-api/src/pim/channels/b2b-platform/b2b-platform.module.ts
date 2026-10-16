@@ -21,6 +21,8 @@ import { B2bCatalogFeedPreview } from "./products/feed-preview.js";
 import { B2bCatalogFeedProjection } from "./products/feed-projection.service.js";
 import { GetB2bProductDeliveryHandler } from "./products/product-delivery.js";
 import { B2bProductDeliveryController } from "./products/product-delivery.controller.js";
+import { PimReferentialOperations } from "./operations/pim-referential-operations.js";
+import { ReferentialOperations } from "./operations/referential-operations.js";
 import { B2bPushController } from "./products/push.controller.js";
 import { B2bCatalogPushService } from "./products/push.service.js";
 
@@ -78,10 +80,13 @@ import { B2bCatalogPushService } from "./products/push.service.js";
     // relié par la racine de composition, seule à connaître les deux côtés.
     DryRunB2bCatalogDriver,
     { provide: B2bCatalogFeedPreview, useClass: B2bCatalogFeedProjection },
+    // La migration des opérations au commerce (lot 3 du plan
+    // `plan-l-operation-passe-au-commerce.md`) : lecture seule, une fois.
+    { provide: ReferentialOperations, useClass: PimReferentialOperations },
   ],
   // Le port de LECTURE sort d'ici : la plateforme s'en sert pour vérifier que
   // son miroir n'a pas dérivé de sa source. Le port d'écriture, lui, ne sort
   // pas — publier reste une décision du référentiel.
-  exports: [B2bMembershipService, B2bCatalogFeedPreview],
+  exports: [B2bMembershipService, B2bCatalogFeedPreview, ReferentialOperations],
 })
 export class B2bPlatformModule {}

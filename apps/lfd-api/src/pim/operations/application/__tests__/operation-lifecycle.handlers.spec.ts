@@ -28,7 +28,7 @@ function seed(d: Doubles, over: Parameters<typeof prepared>[0] = {}): void {
 
 describe("SetOperationSelectionHandler", () => {
   const select = (d: Doubles) =>
-    new SetOperationSelectionHandler(d.operations, d.skus, d.journal, d.uow);
+    new SetOperationSelectionHandler(d.operations, d.skus, d.journal, d.uow, d.writing);
 
   it("pose la sélection dans l'ordre, et trace l'avant et l'après", async () => {
     const d = doubles();
@@ -79,7 +79,8 @@ describe("SetOperationSelectionHandler", () => {
 });
 
 describe("ChangeOperationAudienceHandler", () => {
-  const change = (d: Doubles) => new ChangeOperationAudienceHandler(d.operations, d.journal, d.uow);
+  const change = (d: Doubles) =>
+    new ChangeOperationAudienceHandler(d.operations, d.journal, d.uow, d.writing);
 
   /** Chaque clientèle du contrat passe le catalogue des faits, strict : les deux listes s'accordent. */
   it.each(OPERATION_AUDIENCES.filter((audience) => audience !== "both"))(
@@ -109,7 +110,7 @@ describe("ChangeOperationAudienceHandler", () => {
 
 describe("ArchiveOperationHandler", () => {
   const archive = (d: Doubles) =>
-    new ArchiveOperationHandler(d.operations, d.journal, d.clock, d.uow);
+    new ArchiveOperationHandler(d.operations, d.journal, d.clock, d.uow, d.writing);
 
   it("archive à l'heure de l'horloge, et le trace", async () => {
     const d = doubles();

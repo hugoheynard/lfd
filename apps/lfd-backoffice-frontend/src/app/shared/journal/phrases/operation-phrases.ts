@@ -96,6 +96,12 @@ export const COMMERCE_OPERATION_PHRASES = {
   'catalog_operation.shown': onSubject('a de nouveau affiché', OPERATION),
   'catalog_operation.selection_saved': selectionSaved,
   'catalog_operation.archived': onSubject('a archivé', OPERATION),
+  // La migration au commerce (lot 3) : qui l'applique a versé la restriction de
+  // la réception dans l'opération ; le détail dit qui avait restreint quoi.
+  'catalog_operation.restriction_carried_over': onSubject(
+    'a repris au commerce, avec la restriction de la réception,',
+    OPERATION,
+  ),
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;
 
 export const OPERATION_PHRASES = {

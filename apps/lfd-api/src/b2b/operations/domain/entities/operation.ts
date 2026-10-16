@@ -1,11 +1,13 @@
-import { OperationArchivedError } from "../errors/operation-errors.js";
+import {
+  OperationAlreadyAtCommerceError,
+  OperationArchivedError,
+  OperationAwaitingMigrationError,
+} from "../errors/operation-errors.js";
 import { operationAudience, type OperationAudience } from "../value-objects/operation-audience.js";
 import {
   operationFocal,
   operationImage,
   type OperationFocal,
-  type OperationImage,
-  type OperationImageInput,
 } from "../value-objects/operation-image.js";
 import { OperationKey } from "../value-objects/operation-key.js";
 import {
@@ -13,64 +15,26 @@ import {
   type OperationScheduleInput,
 } from "../value-objects/operation-schedule.js";
 import { OperationSelection } from "../value-objects/operation-selection.js";
-import {
-  operationText,
-  type OperationText,
-  type OperationTextInput,
-} from "../value-objects/operation-text.js";
+import type {
+  OperationPresentation,
+  OperationPresentationInput,
+  OperationRecord,
+  OperationSnapshot,
+  PrepareOperation,
+  ReferentialOperation,
+  WriteStamp,
+} from "./operation-shapes.js";
+import { operationText } from "../value-objects/operation-text.js";
 
-/** Ce que l'annonce affiche, tel qu'on le donne : le nom, l'accroche, l'image. */
-export interface OperationPresentationInput {
-  readonly name: OperationTextInput;
-  readonly lede: OperationTextInput | null;
-  readonly image: OperationImageInput | null;
-}
-
-/** Ce que l'annonce affiche, une fois jugé. */
-export interface OperationPresentation {
-  readonly name: OperationText;
-  readonly lede: OperationText | null;
-  readonly image: OperationImage | null;
-}
-
-/**
- * **Qui écrit, et quand** — chaque geste du commerce le porte. `by` est un
- * `StaffUser.id`, `null` hors requête.
- */
-export interface WriteStamp {
-  readonly by: string | null;
-  readonly at: Date;
-}
-
-/** Ce qu'il faut pour préparer une opération. La sélection commence vide. */
-export interface PrepareOperation extends OperationPresentationInput {
-  readonly key: string;
-  readonly schedule: OperationScheduleInput;
-  readonly audience: string;
-}
-
-/** L'état tel que la base le rend, jours et clientèle encore bruts. */
-export interface OperationRecord extends OperationPresentationInput {
-  readonly key: string;
-  readonly schedule: OperationScheduleInput;
-  readonly audience: string;
-  readonly skus: readonly string[];
-  readonly hidden: boolean;
-  readonly archivedAt: Date | null;
-  /** `null` : jamais écrite au commerce — une ligne reçue du référentiel seulement. */
-  readonly lastWrite: WriteStamp | null;
-}
-
-/** L'état complet, tel que le dépôt l'écrit. */
-export interface OperationSnapshot extends OperationPresentation {
-  readonly key: string;
-  readonly schedule: OperationSchedule;
-  readonly audience: OperationAudience;
-  readonly skus: readonly string[];
-  readonly hidden: boolean;
-  readonly archivedAt: Date | null;
-  readonly lastWrite: WriteStamp | null;
-}
+export type {
+  OperationPresentation,
+  OperationPresentationInput,
+  OperationRecord,
+  OperationSnapshot,
+  PrepareOperation,
+  ReferentialOperation,
+  WriteStamp,
+} from "./operation-shapes.js";
 
 /** L'état qui change d'un geste à l'autre — tout sauf la clé. */
 interface OperationState {
@@ -136,6 +100,33 @@ export class Operation {
     });
   }
 
+  /**
+   * **Née de la migration** : une opération du référentiel que le commerce
+   * n'avait jamais reçue (plan, O4.2). Signée de qui migre.
+   */
+  static fromReferential(values: ReferentialOperation, stamp: WriteStamp): Operation {
+    return new Operation(OperationKey.of(values.key).value, stateOf(values, stamp));
+  }
+
+  /**
+   * **La migration reprend une copie reçue** : l'opération prend les valeurs
+   * du référentiel restreintes par la surcharge, et devient celle du commerce.
+   *
+   * Une seule fois : une opération déjà écrite au commerce a pu y être
+   * modifiée depuis, et la migration l'écraserait — c'est ce qui la rend
+   * rejouable sans dommage.
+   *
+   * @throws {OperationAlreadyAtCommerceError} le commerce l'a déjà écrite.
+   * @throws {OperationArchivedError} retirée : elle ne change plus.
+   */
+  adoptReferential(values: ReferentialOperation, stamp: WriteStamp): void {
+    if (this.state.lastWrite !== null) {
+      throw new OperationAlreadyAtCommerceError(this.key);
+    }
+    this.ensureActive();
+    this.state = stateOf({ ...values, key: this.key }, stamp);
+  }
+
   /** Réécrit le nom, l'accroche et l'image. @throws {OperationArchivedError} */
   edit(presentation: OperationPresentationInput, stamp: WriteStamp): void {
     this.write(stamp, { presentation: presentationOf(presentation) });
@@ -185,24 +176,31 @@ export class Operation {
   /**
    * **La médiathèque remplace `from` par `to`** (« Remplacer », §2 de
    * `documentation/mediatheque/mediatheque.md`) : l'image change d'adresse,
-   * le texte alternatif reste celui de l'opération, et le point focal revient
-   * au centre — il décrivait une autre image ; celui de `to` arrive par
-   * {@link refocusImage} quand la médiathèque l'annonce.
+   * et le point focal revient au centre — il décrivait une autre image ; celui
+   * de `to` arrive par {@link refocusImage} quand la médiathèque l'annonce.
    *
-   * Signé de qui remplace : c'est son geste qui a changé ce que l'annonce
-   * montre.
+   * 🔴 **Ce n'est pas une édition de l'opération** (plan, « Après le lot 2 ») :
+   * c'est l'image qui a changé d'adresse dans le fonds, et l'opération la
+   * SUIT. D'où deux différences avec les gestes du staff :
+   *
+   * - **permis sur une archivée** : son image reste protégée à la médiathèque
+   *   (elle compte comme porteuse), et l'historique ne doit pas pointer vers
+   *   une adresse qui n'existe plus ;
+   * - **non signé** : l'auteur de la dernière écriture ne change pas —
+   *   personne n'a recomposé l'opération, et la décision est tracée à la
+   *   médiathèque (`media_asset.replaced`), comme pour le point focal. C'est
+   *   aussi ce qui laisse « jamais écrite au commerce » une copie que la
+   *   migration n'a pas encore reprise.
    *
    * @returns `false` si l'opération ne montre pas `from` — rien à écrire.
-   * @throws {OperationArchivedError} une opération archivée ne change plus.
    */
-  repointImage(from: string, to: string, stamp: WriteStamp): boolean {
-    this.ensureActive();
+  followImageReplacement(from: string, to: string): boolean {
     const { image } = this.state.presentation;
     if (image === null || image.url !== from) {
       return false;
     }
-    const replaced = operationImage({ url: to, alt: image.alt, focal: null });
-    this.write(stamp, { presentation: { ...this.state.presentation, image: replaced } });
+    const replaced = operationImage({ url: to, focal: null });
+    this.state = { ...this.state, presentation: { ...this.state.presentation, image: replaced } };
     return true;
   }
 
@@ -239,9 +237,16 @@ export class Operation {
     return { key: this.key, ...presentation, ...rest, skus: selection.skus };
   }
 
-  /** Le seul chemin d'une écriture : refusée si archivée, signée sinon. */
+  /**
+   * Le seul chemin d'une écriture du staff : refusée si archivée, ou si la
+   * migration n'a pas encore repris cette copie — l'écrire d'abord ferait
+   * tomber la restriction de la réception qu'elle doit y verser. Signée sinon.
+   */
   private write(stamp: WriteStamp, change: Partial<OperationState>): void {
     this.ensureActive();
+    if (this.state.lastWrite === null) {
+      throw new OperationAwaitingMigrationError(this.key);
+    }
     this.state = { ...this.state, ...change, lastWrite: stamp };
   }
 
@@ -250,6 +255,18 @@ export class Operation {
       throw new OperationArchivedError(this.key);
     }
   }
+}
+
+function stateOf(values: ReferentialOperation, stamp: WriteStamp): OperationState {
+  return {
+    presentation: presentationOf(values),
+    schedule: OperationSchedule.of(values.schedule),
+    audience: operationAudience(values.audience),
+    selection: OperationSelection.of(values.skus),
+    hidden: values.hidden,
+    archivedAt: values.archivedAt,
+    lastWrite: stamp,
+  };
 }
 
 function presentationOf(raw: OperationPresentationInput): OperationPresentation {

@@ -2,8 +2,12 @@ import type { OperationSchedulePayload, OperationView } from "@lfd/pim-contracts
 
 import { UnknownImageError, type ImageCatalogue } from "../../channels/media/image-catalogue.js";
 import type { Operation, OperationSnapshot } from "../domain/entities/operation.js";
-import { OperationNotFoundError } from "../domain/errors/operation-errors.js";
+import {
+  OperationNotFoundError,
+  OperationsMovedToCommerceError,
+} from "../domain/errors/operation-errors.js";
 import type { OperationRepository } from "../domain/ports/operation.repository.js";
+import type { ReferentialOperationWriting } from "../domain/ports/referential-operation-writing.js";
 import type {
   OperationSchedule,
   OperationScheduleInput,
@@ -13,6 +17,18 @@ import type {
  * Ce que plusieurs cas d'usage des opérations partagent : charger ou refuser,
  * traduire les dates du contrat, dire une opération au journal et à l'écran.
  */
+
+/**
+ * **Fermé depuis la bascule** — le premier geste de chaque écriture, avant
+ * toute lecture.
+ *
+ * @throws {OperationsMovedToCommerceError} les opérations vivent au commerce.
+ */
+export function ensureReferentialWriting(writing: ReferentialOperationWriting): void {
+  if (!writing.isOpen()) {
+    throw new OperationsMovedToCommerceError();
+  }
+}
 
 /** @throws {OperationNotFoundError} aucune opération ne porte cette clé. */
 export async function requireOperation(

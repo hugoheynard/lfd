@@ -25,10 +25,10 @@ describe("operationText", () => {
 });
 
 describe("operationImage", () => {
-  it("rogne l'adresse et le texte alternatif, qui peut être vide", () => {
-    expect(operationImage({ url: " https://media.test/buche.webp ", alt: "  " })).toEqual({
+  /** Lot 3 (« Après le lot 2 ») : le texte alternatif est celui de la médiathèque, l'image n'en garde pas. */
+  it("rogne l'adresse, et ne garde aucun texte alternatif", () => {
+    expect(operationImage({ url: " https://media.test/buche.webp " })).toEqual({
       url: "https://media.test/buche.webp",
-      alt: "",
       focal: null,
     });
     expect(operationImage(null)).toBeNull();
@@ -36,7 +36,7 @@ describe("operationImage", () => {
 
   it("garde le point focal de la médiathèque, bornes comprises", () => {
     expect(
-      operationImage({ url: "https://media.test/a.webp", alt: "", focal: { x: 0, y: 1 } })?.focal,
+      operationImage({ url: "https://media.test/a.webp", focal: { x: 0, y: 1 } })?.focal,
     ).toEqual({ x: 0, y: 1 });
   });
 
@@ -45,15 +45,13 @@ describe("operationImage", () => {
     { x: 0.5, y: 1.01 },
     { x: Number.NaN, y: 0.5 },
   ])("refuse un point focal hors de l'image (%o)", (focal) => {
-    expect(() => operationImage({ url: "https://media.test/a.webp", alt: "", focal })).toThrow(
+    expect(() => operationImage({ url: "https://media.test/a.webp", focal })).toThrow(
       InvalidOperationFocalError,
     );
   });
 
   it("refuse une image sans adresse", () => {
-    expect(() => operationImage({ url: "  ", alt: "Une bûche" })).toThrow(
-      InvalidOperationImageError,
-    );
+    expect(() => operationImage({ url: "  " })).toThrow(InvalidOperationImageError);
   });
 });
 

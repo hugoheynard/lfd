@@ -15,6 +15,30 @@ export class OpenOperationsAtCommerceConfig extends AppConfig {
   }
 }
 
+/**
+ * L'interrupteur, basculable PENDANT la suite (lot 3) : ouvert au démarrage —
+ * les porteurs de la médiathèque se composent une fois —, puis refermé le
+ * temps de préparer au référentiel ce que la migration reprendra. Les routes
+ * du référentiel et l'ingestion relisent l'interrupteur à chaque appel.
+ */
+export class SwitchableOperationsConfig extends AppConfig {
+  atCommerce = true;
+
+  override operationsAtCommerce(): boolean {
+    return this.atCommerce;
+  }
+
+  /** Le temps d'un geste au référentiel, comme avant la bascule. */
+  async closedFor<T>(gesture: () => Promise<T>): Promise<T> {
+    this.atCommerce = false;
+    try {
+      return await gesture();
+    } finally {
+      this.atCommerce = true;
+    }
+  }
+}
+
 export const OPERATIONS = "/admin/operations";
 
 /** Le jeton porteur EST le `sub` : plusieurs personnes dans une même suite. */

@@ -3,7 +3,8 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { PIM_EVENTS, PimJournal } from "../../journal/pim-journal.js";
 import { OperationRepository } from "../domain/ports/operation.repository.js";
-import { requireOperation } from "./operation-support.js";
+import { ensureReferentialWriting, requireOperation } from "./operation-support.js";
+import { ReferentialOperationWriting } from "../domain/ports/referential-operation-writing.js";
 
 export class ChangeOperationAudienceCommand {
   constructor(
@@ -26,9 +27,11 @@ export class ChangeOperationAudienceHandler implements ICommandHandler<
     private readonly operations: OperationRepository,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
+    private readonly writing: ReferentialOperationWriting,
   ) {}
 
   async execute(command: ChangeOperationAudienceCommand): Promise<void> {
+    ensureReferentialWriting(this.writing);
     const operation = await requireOperation(this.operations, command.key);
     const from = operation.snapshot().audience;
     operation.changeAudience(command.audience);

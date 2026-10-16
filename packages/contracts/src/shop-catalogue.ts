@@ -222,8 +222,24 @@ export interface ShopOperationView {
    * Les SKU **produit** du rayon, dans l'ordre du référentiel, restreints aux
    * articles que {@link ShopCatalogueView.items} porte — donc jamais un SKU
    * que la vitrine ne saurait pas afficher.
+   *
+   * ⚠️ Peut être VIDE depuis la bascule des opérations au commerce (lot 3 de
+   * `plan-l-operation-passe-au-commerce.md`) : pendant l'annonce, le rayon
+   * paraît sur son seul encart ; commandes ouvertes, voir `awaitingProducts`.
+   * Avant la bascule, jamais vide.
    */
   readonly skus: readonly string[];
+  /**
+   * Instant ISO de l'annonce — « Commandes à partir du… » se lit sur
+   * `orderFrom`. Présent seulement une fois les opérations au commerce
+   * (`OPERATIONS_AT_COMMERCE`) ; absent avant, comme la vitrine l'a toujours reçu.
+   */
+  readonly announceFrom?: string;
+  /**
+   * `true` : commandes ouvertes et rayon vide — l'encart dit « Les produits
+   * arrivent bientôt ». Présent seulement une fois les opérations au commerce.
+   */
+  readonly awaitingProducts?: boolean;
 }
 
 /**

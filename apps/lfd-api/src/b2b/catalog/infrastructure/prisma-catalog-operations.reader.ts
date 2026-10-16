@@ -1,26 +1,39 @@
 import { Injectable } from "@nestjs/common";
 
+import { AppConfig } from "../../../platform/config/app-config.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
-import { effectiveOperation } from "../domain/effective-operation.js";
+import { OperationImageLibrary } from "../../operations/channels/media/operation-image-library.js";
+import { operationAsHeld } from "../domain/effective-operation.js";
 import {
   CatalogOperationsReader,
   type SellableOperation,
 } from "../domain/ports/catalog-operations.reader.js";
 import { ITEMS_IN_ORDER, toOperationState, toOverrideState } from "./catalog-operation-rows.js";
+import { withLibraryAlts } from "./operation-library-alts.js";
 import { operationOnlySkusOf } from "./prisma-catalog.reader.js";
 
 /**
- * Ce que les vendeurs appliqueront au lot 3 : les opérations TENUES, la
- * surcharge combinée (`effectiveOperation`), et sans celles qu'on ne tient
- * pas — masquées, ou dont la clientèle ne recouvre plus personne.
+ * Ce que les vendeurs appliquent : les opérations TENUES, et sans celles qu'on
+ * ne tient pas — masquées, ou dont la clientèle ne recouvre plus personne.
+ *
+ * Interrupteur `OPERATIONS_AT_COMMERCE` fermé : la surcharge combinée
+ * (`effectiveOperation`), exactement comme avant. Ouvert (lot 3 de
+ * `plan-l-operation-passe-au-commerce.md`) : ce que le commerce tient
+ * (`operationAsHeld` — `hidden`, et la surcharge déjà versée par la
+ * migration), et le texte alternatif de l'image lu à la médiathèque.
  */
 @Injectable()
 export class PrismaCatalogOperationsReader extends CatalogOperationsReader {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly config: AppConfig,
+    private readonly library: OperationImageLibrary,
+  ) {
     super();
   }
 
   async sellableOperations(): Promise<readonly SellableOperation[]> {
+    const atCommerce = this.config.operationsAtCommerce();
     const rows = await this.prisma.catalogOperation.findMany({
       where: { withdrawnAt: null },
       include: { ...ITEMS_IN_ORDER, override: true },
@@ -30,8 +43,12 @@ export class PrismaCatalogOperationsReader extends CatalogOperationsReader {
     for (const row of rows) {
       const { facts } = toOperationState(row);
       const override = row.override === null ? null : toOverrideState(row.override);
-      const effective = effectiveOperation(facts, override?.restriction ?? null);
-      if (effective.isHidden || effective.audience === "none") {
+      const held = operationAsHeld(
+        facts,
+        override?.restriction ?? null,
+        atCommerce ? { hidden: row.hidden, writtenAt: row.writtenAt } : null,
+      );
+      if (held.isHidden || held.audience === "none") {
         continue;
       }
       sellable.push({
@@ -41,14 +58,14 @@ export class PrismaCatalogOperationsReader extends CatalogOperationsReader {
         image: facts.image,
         announceFrom: facts.announceFrom,
         orderFrom: facts.orderFrom,
-        orderUntil: effective.orderUntil,
+        orderUntil: held.orderUntil,
         pickupFrom: facts.pickupFrom,
         pickupUntil: facts.pickupUntil,
-        audience: effective.audience,
-        skus: effective.skus,
+        audience: held.audience,
+        skus: held.skus,
       });
     }
-    return sellable;
+    return atCommerce ? withLibraryAlts(this.library, sellable) : sellable;
   }
 
   operationOnlySkus(): Promise<ReadonlySet<string>> {

@@ -13,6 +13,21 @@ import {
  * de Paris (`JJ/MM/AAAA à HH:MM`), jamais en ISO — c'est ce que l'écran saisit.
  */
 
+/**
+ * Les opérations sont passées au commerce (`OPERATIONS_AT_COMMERCE`, lot 3 de
+ * `plan-l-operation-passe-au-commerce.md`) : le référentiel ne les écrit
+ * plus. 409 — la demande est bien formée, c'est la bascule qui s'y oppose.
+ */
+export class OperationsMovedToCommerceError extends BusinessError {
+  constructor() {
+    super(
+      "pim.operation.moved_to_commerce",
+      "Les opérations datées se tiennent désormais au commerce : préparez-les et " +
+        "modifiez-les dans « Opérations » (Gestion Boutique). Le référentiel ne les écrit plus.",
+    );
+  }
+}
+
 /** La clé n'a pas la forme d'une identité : minuscules, chiffres, tirets. 400. */
 export class InvalidOperationKeyError extends DomainError {
   constructor(readonly key: string) {

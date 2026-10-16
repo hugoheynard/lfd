@@ -6,12 +6,13 @@ import {
   type OperationMediaUsageEntry,
 } from "../channels/media/operation-media-usage.js";
 
-/** Les opérations dont l'image compte : toutes celles qui ne sont pas archivées. */
-const NOT_ARCHIVED = { withdrawnAt: null } as const;
-
 /**
  * Adaptateur Prisma des images des opérations du commerce, sur
  * `catalog_operations` — la table que ce contexte écrit.
+ *
+ * Toutes comptent, **archivées comprises** (plan, « Après le lot 2 ») : comme
+ * au référentiel, l'image d'une opération archivée reste protégée, pour que
+ * l'historique ne pointe pas vers une image disparue.
  */
 @Injectable()
 export class PrismaOperationMediaUsage extends OperationMediaUsage {
@@ -25,7 +26,7 @@ export class PrismaOperationMediaUsage extends OperationMediaUsage {
     }
     const rows = await this.prisma.catalogOperation.groupBy({
       by: ["imageUrl"],
-      where: { ...NOT_ARCHIVED, imageUrl: { in: [...urls] } },
+      where: { imageUrl: { in: [...urls] } },
       _count: { _all: true },
     });
     const counts = new Map<string, number>();
@@ -39,7 +40,7 @@ export class PrismaOperationMediaUsage extends OperationMediaUsage {
 
   async usagesOf(url: string): Promise<readonly OperationMediaUsageEntry[]> {
     const rows = await this.prisma.catalogOperation.findMany({
-      where: { ...NOT_ARCHIVED, imageUrl: url },
+      where: { imageUrl: url },
       select: { key: true, name: true },
       orderBy: { key: "asc" },
     });

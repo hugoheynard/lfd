@@ -4,7 +4,7 @@ import type { WriteTicket } from "../../../../platform/journal/scoped-journal.js
 export interface OperationImageChange {
   readonly from: string;
   readonly to: string;
-  /** La fiche INTERNE du staff — l'opération l'inscrit comme dernier auteur. */
+  /** La fiche INTERNE du staff — tracée par la médiathèque ; l'opération ne s'en signe pas. */
   readonly staffId: string;
   readonly at: Date;
 }
@@ -15,9 +15,10 @@ export interface OperationImageChange {
  * ports et pas un (ISP) : compter sert au ramassage et au retrait, qui n'ont
  * rien à faire d'un port qui réécrit les opérations.
  *
- * 🔴 Il passe par l'AGRÉGAT (charger, `repointImage`, sauver — CLAUDE.md
- * §3.1), jamais par un `UPDATE` de colonne : une opération archivée ne change
- * plus, et c'est l'agrégat qui le dit.
+ * 🔴 Il passe par l'AGRÉGAT (charger, `followImageReplacement`, sauver —
+ * CLAUDE.md §3.1), jamais par un `UPDATE` de colonne. L'archivée suit aussi :
+ * c'est le seul geste que l'agrégat lui permet, parce que ce n'est pas une
+ * édition (plan, « Après le lot 2 »).
  *
  * Exige le laissez-passer du journal : c'est la médiathèque qui trace le
  * remplacement (`media_asset.replaced`) ; l'opération n'inscrit pas de fait
@@ -25,8 +26,8 @@ export interface OperationImageChange {
  */
 export abstract class OperationImageRepointing {
   /**
-   * Remplace `from` par `to` dans les opérations non archivées, dans la
-   * transaction ambiante. Rend combien d'opérations ont changé.
+   * Remplace `from` par `to` dans les opérations, archivées comprises, dans
+   * la transaction ambiante. Rend combien d'opérations ont changé.
    */
   abstract repoint(change: OperationImageChange, ticket: WriteTicket): Promise<number>;
 }

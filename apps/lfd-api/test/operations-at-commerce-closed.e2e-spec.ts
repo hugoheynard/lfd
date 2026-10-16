@@ -1,5 +1,11 @@
 import type { StoredCatalogSnapshot, SyncOperation } from "@lfd/catalog-sync";
-import type { PendingDeliveryView, ReceivedOperationView } from "@lfd/contracts";
+import type {
+  OperationsMigrationReport,
+  PendingDeliveryView,
+  ReceivedOperationView,
+  ShopCatalogueView,
+} from "@lfd/contracts";
+import request from "supertest";
 
 import { CatalogDelivery } from "../src/b2b/catalog/domain/entities/catalog-delivery.js";
 import { CatalogDeliveryRepository } from "../src/b2b/catalog/domain/ports/catalog-delivery.repository.js";
@@ -200,5 +206,100 @@ describe("rien de servi ne change", () => {
       override: { isHidden: true, audience: "pro" },
       effective: { isHidden: true, audience: "pro", skus: ["VIE-001-1"] },
     });
+  });
+});
+
+/**
+ * Lot 3 : tout ce que la bascule ajoute est derrière l'interrupteur — fermé,
+ * l'écran ne lit rien, la migration ne s'applique pas, et la vitrine sert
+ * EXACTEMENT ce qu'elle servait.
+ */
+describe("lot 3, interrupteur fermé", () => {
+  /** Annoncée depuis hier, commandes dans cinq jours — par défaut, aucun article au rayon. */
+  async function pushAnnounced(skus: readonly string[] = []): Promise<void> {
+    const noel: SyncOperation = {
+      key: "noel-2026",
+      name: { fr: "Noël" },
+      lede: null,
+      image: null,
+      announceFrom: daysAgo(1),
+      orderFrom: daysAgo(-5),
+      orderUntil: daysAgo(-20),
+      pickupFrom: SCHEDULE.pickupFrom,
+      pickupUntil: SCHEDULE.pickupUntil,
+      audience: "both",
+      skus: [...skus],
+    };
+    await ctx.app.get(CatalogDeliveryRepository).deliver(
+      CatalogDelivery.receive({
+        id: "d_closed_empty",
+        revisionId: "rev_closed_empty",
+        snapshot: snapshotOf([{ sku: "VIE-001", priceMillicents: 210_000 }], [], [noel]),
+        fingerprint: "empreinte-closed-empty",
+        receivedAt: new Date(daysAgo(0)),
+      }),
+    );
+    const pending = jsonBody<PendingDeliveryView>(
+      await staff().get("/admin/catalog/delivery").expect(200),
+    );
+    await staff()
+      .post("/admin/catalog/delivery/accept")
+      .send({ deliveryId: pending.id, excludedSkus: [] })
+      .expect(201);
+  }
+
+  it("l'écran ne lit rien : 409, il ouvre avec la bascule", async () => {
+    await pushNoel();
+
+    for (const path of [OPERATIONS, `${OPERATIONS}/noel-2026`]) {
+      const refused = await staff().get(path).expect(409);
+      expect(refused.body).toMatchObject({ code: "operations.not_at_commerce" });
+    }
+  });
+
+  it("l'aperçu de la migration se relit, l'application refuse et n'écrit rien", async () => {
+    await pushNoel();
+    const pushed = await mirrorRow();
+
+    const report = jsonBody<OperationsMigrationReport>(
+      await staff().get(`${OPERATIONS}/migration`).expect(200),
+    );
+    const refused = await staff().post(`${OPERATIONS}/migration`).expect(409);
+
+    expect(report.counts).toMatchObject({ referential: 0, mirror: 1, mirrorOnly: 1 });
+    expect(refused.body).toMatchObject({ code: "operations.writing_closed" });
+    expect(await mirrorRow()).toEqual(pushed);
+  });
+
+  it("la vitrine ne montre pas un rayon d'opération vide, et sa vue n'a pas un champ de plus", async () => {
+    await pushAnnounced();
+
+    const shop = jsonBody<ShopCatalogueView>(
+      await request(ctx.app.getHttpServer()).get("/shop/catalogue").expect(200),
+    );
+
+    expect(shop.operations).toEqual([]);
+  });
+
+  it("un rayon peuplé se sert comme avant, sans date d'annonce ni attente", async () => {
+    await pushAnnounced(["VIE-001-1"]);
+
+    const shop = jsonBody<ShopCatalogueView>(
+      await request(ctx.app.getHttpServer()).get("/shop/catalogue").expect(200),
+    );
+
+    expect(shop.operations).toHaveLength(1);
+    expect(Object.keys(shop.operations[0] ?? {}).sort()).toEqual([
+      "image",
+      "key",
+      "lede",
+      "name",
+      "orderFrom",
+      "orderUntil",
+      "pickupFrom",
+      "pickupUntil",
+      "skus",
+      "state",
+    ]);
   });
 });

@@ -89,6 +89,10 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   days: 'Jours',
   daysBefore: 'Jours avant',
   debtorReference: 'Référence du débiteur',
+  // La restriction de la réception, versée dans l'opération à sa migration au
+  // commerce (`catalog_operation.restriction_carried_over`, lot 3).
+  decidedAt: 'Restreinte le',
+  decidedBy: 'Restreinte par',
   declared: 'Fiche réglementaire',
   deliveryAddress: 'Adresse de livraison',
   deliveryAddressId: 'Adresse de livraison',

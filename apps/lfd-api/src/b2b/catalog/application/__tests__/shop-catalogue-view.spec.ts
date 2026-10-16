@@ -119,3 +119,59 @@ describe("shopCatalogueOf — les opérations datées", () => {
     expect(view.operations).toEqual([]);
   });
 });
+
+/**
+ * Lot 3 de `plan-l-operation-passe-au-commerce.md`, « Une opération sans
+ * article » : une fois les opérations au commerce, le rayon s'ouvre sur son
+ * encart — même vide pendant l'annonce, et `awaitingProducts` commandes
+ * ouvertes. Fermé, rien ne change (cas précédent).
+ */
+describe("shopCatalogueOf — les opérations au commerce (OPERATIONS_AT_COMMERCE)", () => {
+  const empty = { operations: [noel({ skus: [] })], operationsAtCommerce: true };
+
+  it("pendant l'annonce, le rayon paraît sur son seul encart, avec sa date d'annonce", () => {
+    const view = shopCatalogueOf(SELLABLE, sale(new Date("2026-11-05T00:00:00.000Z"), empty));
+
+    expect(view.operations).toEqual([
+      expect.objectContaining({
+        key: "noel-2026",
+        state: "announced",
+        skus: [],
+        announceFrom: ANNOUNCE.toISOString(),
+        awaitingProducts: false,
+      }),
+    ]);
+  });
+
+  it("commandes ouvertes et rayon vide : l'encart attend ses produits", () => {
+    const view = shopCatalogueOf(SELLABLE, sale(new Date("2026-12-01T00:00:00.000Z"), empty));
+
+    expect(view.operations[0]).toMatchObject({ state: "open", awaitingProducts: true });
+  });
+
+  it("commandes closes et rayon vide : il s'efface, il n'y a rien à retirer", () => {
+    const view = shopCatalogueOf(SELLABLE, sale(ORDER_UNTIL, empty));
+
+    expect(view.operations).toEqual([]);
+  });
+
+  it("un rayon peuplé porte aussi l'annonce, et n'attend rien", () => {
+    const view = shopCatalogueOf(
+      SELLABLE,
+      sale(new Date("2026-12-01T00:00:00.000Z"), { operationsAtCommerce: true }),
+    );
+
+    expect(view.operations[0]).toMatchObject({
+      skus: ["PAT-002", "VIE-001"],
+      announceFrom: ANNOUNCE.toISOString(),
+      awaitingProducts: false,
+    });
+  });
+
+  it("interrupteur fermé, la vue n'a pas un champ de plus", () => {
+    const view = shopCatalogueOf(SELLABLE, sale(new Date("2026-12-01T00:00:00.000Z")));
+
+    expect(Object.keys(view.operations[0] ?? {})).not.toContain("announceFrom");
+    expect(Object.keys(view.operations[0] ?? {})).not.toContain("awaitingProducts");
+  });
+});

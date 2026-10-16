@@ -5,10 +5,9 @@ import type {
   OperationImageInput,
 } from "../../domain/value-objects/operation-image.js";
 
-/** L'image telle que l'écran la choisit : une image du fonds, et le texte alternatif de l'opération. */
+/** L'image telle que l'écran la choisit : une image du fonds, par son adresse. */
 export interface ChosenImage {
   readonly url: string;
-  readonly alt: string;
 }
 
 /**
@@ -18,9 +17,9 @@ export interface ChosenImage {
  * familles, que le référentiel appliquait déjà aux opérations.
  *
  * L'adresse est l'identité de l'image ; la médiathèque la décrit et donne son
- * point focal. Le texte alternatif reste celui de l'OPÉRATION, comme au
- * référentiel (`mediatheque.md` §7 bis : « l'alternative de l'opération ») :
- * la même image peut se dire autrement dans une autre annonce.
+ * point focal. Le texte alternatif aussi est le sien, et il n'est pas copié :
+ * les lectures le lui demandent (plan, « Après le lot 2 », Hugo 2026-10-16 —
+ * comme pour les fiches depuis le 2026-09-23).
  *
  * Seulement si l'image CHANGE : la même adresse garde son point (que
  * `refocusImage` tient à jour), et une image retirée du fonds depuis
@@ -39,23 +38,23 @@ export async function imageFromLibrary(
   }
   const url = chosen.url.trim();
   if (url === "") {
-    return chosen;
+    return { url };
   }
   if (current !== null && current.url === url) {
-    return { url, alt: chosen.alt, focal: current.focal };
+    return { url, focal: current.focal };
   }
   const described = await library.describe(url);
   if (described === null) {
     throw new UnknownOperationImageError(url);
   }
-  return { url, alt: chosen.alt, focal: described.focal };
+  return { url, focal: described.focal };
 }
 
 /**
- * L'image telle que le journal la dit : l'adresse et le texte alternatif.
- * Le point focal n'y entre pas — c'est une décision de la médiathèque,
- * tracée chez elle (`media_asset.described`), pas un geste sur l'opération.
+ * L'image telle que le journal la dit : son adresse. Ni le point focal ni le
+ * texte alternatif n'y entrent — ce sont des décisions de la médiathèque,
+ * tracées chez elle (`media_asset.described`), pas des gestes sur l'opération.
  */
 export function journalImage(image: OperationImage | null): ChosenImage | null {
-  return image === null ? null : { url: image.url, alt: image.alt };
+  return image === null ? null : { url: image.url };
 }

@@ -4,7 +4,8 @@ import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { PIM_EVENTS, PimJournal } from "../../journal/pim-journal.js";
 import { OperationRepository } from "../domain/ports/operation.repository.js";
-import { requireOperation } from "./operation-support.js";
+import { ensureReferentialWriting, requireOperation } from "./operation-support.js";
+import { ReferentialOperationWriting } from "../domain/ports/referential-operation-writing.js";
 
 export class ArchiveOperationCommand {
   constructor(readonly key: string) {}
@@ -22,9 +23,11 @@ export class ArchiveOperationHandler implements ICommandHandler<ArchiveOperation
     private readonly journal: PimJournal,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
+    private readonly writing: ReferentialOperationWriting,
   ) {}
 
   async execute(command: ArchiveOperationCommand): Promise<void> {
+    ensureReferentialWriting(this.writing);
     const operation = await requireOperation(this.operations, command.key);
     operation.archive(this.clock.now());
     const archived = operation.snapshot();

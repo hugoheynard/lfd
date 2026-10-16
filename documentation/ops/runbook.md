@@ -631,6 +631,101 @@ Les colonnes et tables posées par les faits (`catalog_entries`,
 `catalog_items.variant_id`/`audience`) restent en base : aucun lecteur hors des
 récepteurs des faits et de `servedTo`.
 
+## Basculer les opérations au commerce — l'ordre, et le retour
+
+Lot 3 de [`plan-l-operation-passe-au-commerce.md`](../operations-datees/plan-l-operation-passe-au-commerce.md)
+(« Corrections après vitruve » : une seule bascule, la migration repart du
+référentiel). **Le code est déployé fermé** : tant que la Variable
+`OPERATIONS_AT_COMMERCE` n'est pas à `true`, rien de servi ne change. Ce qui
+suit est le geste qui l'ouvre — il appartient à Hugo.
+
+Ce que l'ouverture fait, d'un coup (un seul déploiement) :
+
+- le push **ignore** les opérations : il ne les réécrit ni ne les retire ;
+- les routes d'écriture `/pim/operations` répondent 409
+  `pim.operation.moved_to_commerce` (les lectures restent) ;
+- le fait `pim.operation_image_changed` est acquitté sans rien écrire ;
+- l'écran « Opérations » (`/admin/operations`) lit et écrit au commerce ;
+- la boutique lit l'opération du commerce : son `hidden`, son texte
+  alternatif **lu à la médiathèque**, et — c'est nouveau — le rayon d'une
+  opération **paraît sur son seul encart** pendant l'annonce, même sans
+  article, et dit `awaitingProducts` commandes ouvertes sans article.
+
+Une copie que la migration n'a pas encore reprise continue d'être servie avec
+sa surcharge de réception : aucune restriction ne tombe entre l'étape 4 et
+l'étape 5. Elle refuse en revanche toute écriture à l'écran (409
+`operations.awaiting_migration`).
+
+**1. Déployer** le code (fermé). Rien ne change.
+
+**2. L'aperçu, relu par Hugo** — lecture seule, utilisable fermé, sous
+`lfc_operations:write` (le superadmin l'a d'office) :
+
+```http
+GET /admin/operations/migration
+```
+
+- `blocked` doit être `false`. Une ligne `blocked` nomme son problème
+  (`problems`) : une fenêtre de commande que la surcharge vide, ou un écart
+  que rien n'explique. Corriger au référentiel ou à la réception, relire ;
+- `fields[].explanation` : `referential_newer` = le référentiel a été modifié
+  depuis le dernier push (la migration prend le référentiel — c'est voulu) ;
+  `restricted: true` = la surcharge l'a restreint ;
+- `droppedSkus` : des articles de la sélection que le commerce ne connaît
+  pas — écartés, comme le push les écartait ;
+- `mirror_only` : une clé du miroir absente du référentiel — listée, pas
+  inventée ; elle reste une copie, non modifiable à l'écran.
+
+Garder ce JSON : c'est l'état d'avant.
+
+**3. Ouvrir l'interrupteur** :
+
+```bash
+gh variable set OPERATIONS_AT_COMMERCE --body true
+```
+
+**4. Redéployer.** À partir d'ici, le référentiel n'écrit plus d'opération.
+
+**5. Appliquer** — rend le relevé APRÈS, rejouable sans dommage :
+
+```http
+POST /admin/operations/migration
+```
+
+Tout ou rien : une seule ligne bloquée, et rien n'est écrit (409
+`operations.migration_blocked`, qui les nomme). Un fait
+`catalog_operation.restriction_carried_over` par opération restreinte dit qui
+avait restreint quoi.
+
+**6. Le relevé.** Dans la réponse : `counts.toWrite` à 0, `blocked` à
+`false`, chaque opération du référentiel en `already_at_commerce` (ou
+`archived_unchanged`). En base, aucune copie ne reste à reprendre :
+
+```sql
+select key from public.catalog_operations
+ where written_at is null and withdrawn_at is null;
+```
+
+Zéro ligne, hors les clés `mirror_only` de l'aperçu.
+
+**7. Accorder `lfc_operations`** à qui prépare les opérations, à l'écran
+`/admin/staff-roles` — jamais par migration.
+
+Rien n'est supprimé : `pim.operations`, `pim.operation_items` et
+`catalog_operation_overrides` restent en base, plus lues ni écrites.
+
+### Le retour arrière
+
+- **Avant l'étape 5** : `gh variable set OPERATIONS_AT_COMMERCE --body false`,
+  redéployer. Rien n'a été écrit au commerce : on est exactement avant.
+- **Après l'étape 5** : la même Variable à `false`, redéployer, puis **un
+  push**. Le push réécrit chaque opération depuis le référentiel (qui n'a pas
+  bougé depuis l'étape 4), et la surcharge, restée en base, s'applique de
+  nouveau. ⚠️ Ce qui a été fait au commerce depuis est perdu : une opération
+  **préparée** au commerce est absente du référentiel, et le push la marque
+  retirée ; une modification est écrasée. Et jusqu'à ce push, une opération
+  reprise sert un texte alternatif vide (la migration n'en écrit plus).
+
 ## Déployer le lot D — le prix ne se décide plus sur la plateforme
 
 Lot D de [`plan-catalogue-synchronise-par-audience.md`](../pim/plan-catalogue-synchronise-par-audience.md)

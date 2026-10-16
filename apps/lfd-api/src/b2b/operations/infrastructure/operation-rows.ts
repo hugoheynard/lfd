@@ -41,10 +41,7 @@ export function toRecord(row: OperationRow): OperationRecord {
     key: row.key,
     name: readText(row.name, "catalog_operations.name"),
     lede: row.lede === null ? null : readText(row.lede, "catalog_operations.lede"),
-    image:
-      row.imageUrl === null
-        ? null
-        : { url: row.imageUrl, alt: row.imageAlt ?? "", focal: focalOf(row) },
+    image: row.imageUrl === null ? null : { url: row.imageUrl, focal: focalOf(row) },
     schedule: {
       announceFrom: row.announceFrom,
       orderFrom: row.orderFrom,
@@ -63,8 +60,9 @@ export function toRecord(row: OperationRow): OperationRecord {
 /**
  * Les colonnes que l'agrégat écrit — la sélection à part.
  *
- * Ni `received_at` ni `image_gesture_id` : ils sont au miroir, que le push
- * et le fait `pim.operation_image_changed` tiennent encore jusqu'à la bascule.
+ * Ni `received_at` ni `image_gesture_id` : `received_at` ne bouge qu'à la
+ * naissance et à la migration (`PrismaOperationAdoption`), et le geste
+ * d'image n'est plus écrit par personne une fois la bascule faite.
  * Le point focal, si (lot 2) : l'agrégat le lit à la médiathèque au choix de
  * l'image et le suit quand elle le redécrit.
  */
@@ -74,7 +72,10 @@ export function operationColumns(snapshot: OperationSnapshot) {
     // `DbNull` : une colonne `Json?` distingue le NULL SQL du `null` JSON.
     lede: snapshot.lede === null ? Prisma.DbNull : { ...snapshot.lede },
     imageUrl: snapshot.image?.url ?? null,
-    imageAlt: snapshot.image?.alt ?? null,
+    // Le texte alternatif vient de la médiathèque, relu à chaque lecture
+    // (plan, « Après le lot 2 ») : l'opération n'en garde plus. La colonne
+    // reste (§0) ; celle d'une copie reçue garde ce que le référentiel disait.
+    imageAlt: null,
     imageFocalX: snapshot.image?.focal?.x ?? null,
     imageFocalY: snapshot.image?.focal?.y ?? null,
     announceFrom: snapshot.schedule.announceFrom,

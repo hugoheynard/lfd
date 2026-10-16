@@ -31,6 +31,61 @@ export class OperationWritingClosedError extends BusinessError {
   }
 }
 
+/**
+ * Les opérations ne sont pas encore au commerce sur ce déploiement : l'écran
+ * qui les LIT ouvre avec l'écriture (`OPERATIONS_AT_COMMERCE`). 409.
+ */
+export class OperationsNotAtCommerceError extends BusinessError {
+  constructor() {
+    super(
+      "operations.not_at_commerce",
+      "Les opérations sont encore tenues au référentiel (« Opérations datées ») sur ce " +
+        "déploiement : cet écran ouvre avec la bascule (OPERATIONS_AT_COMMERCE).",
+    );
+  }
+}
+
+/**
+ * Une copie reçue du référentiel que la migration n'a pas encore reprise. 409 :
+ * l'écrire d'abord ferait tomber la restriction de la réception, qu'elle
+ * verse dans l'opération.
+ */
+export class OperationAwaitingMigrationError extends BusinessError {
+  constructor(readonly key: string) {
+    super(
+      "operations.awaiting_migration",
+      `L'opération « ${key} » n'a pas encore été reprise du référentiel : appliquez la ` +
+        `migration des opérations (runbook, « Bascule des opérations »), puis recommencez.`,
+    );
+  }
+}
+
+/** La migration ne reprend pas une opération que le commerce a déjà écrite. 409. */
+export class OperationAlreadyAtCommerceError extends BusinessError {
+  constructor(readonly key: string) {
+    super(
+      "operations.already_at_commerce",
+      `L'opération « ${key} » est déjà tenue au commerce : la migration ne la reprend pas, ` +
+        `elle écraserait ce qui y a été modifié depuis.`,
+    );
+  }
+}
+
+/**
+ * L'aperçu de la migration porte au moins une ligne bloquée : rien n'est
+ * écrit. 409 — c'est l'état des données qui s'y oppose.
+ */
+export class OperationsMigrationBlockedError extends BusinessError {
+  constructor(readonly blocked: readonly string[]) {
+    super(
+      "operations.migration_blocked",
+      `La migration des opérations est bloquée par ${String(blocked.length)} opération(s) : ` +
+        `${blocked.join(", ")}. Relisez l'aperçu (GET /admin/operations/migration), corrigez ` +
+        `au référentiel ou à la réception, puis relancez — rien n'a été écrit.`,
+    );
+  }
+}
+
 /** La clé n'a pas la forme d'une identité : minuscules, chiffres, tirets. 400. */
 export class InvalidOperationKeyError extends DomainError {
   constructor(readonly key: string) {

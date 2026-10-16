@@ -10,7 +10,12 @@ import { PIM_EVENTS, PimJournal } from "../../journal/pim-journal.js";
 import type { OperationSnapshot } from "../domain/entities/operation.js";
 import { OperationRepository } from "../domain/ports/operation.repository.js";
 import { announceOperationImages } from "./operation-image-announcement.js";
-import { ensureImageKnown, requireOperation } from "./operation-support.js";
+import {
+  ensureImageKnown,
+  ensureReferentialWriting,
+  requireOperation,
+} from "./operation-support.js";
+import { ReferentialOperationWriting } from "../domain/ports/referential-operation-writing.js";
 
 export class EditOperationCommand {
   constructor(
@@ -41,9 +46,11 @@ export class EditOperationHandler implements ICommandHandler<EditOperationComman
     private readonly uow: UnitOfWork,
     private readonly durable: DurablePublisher,
     private readonly ids: UuidGenerator,
+    private readonly writing: ReferentialOperationWriting,
   ) {}
 
   async execute(command: EditOperationCommand): Promise<void> {
+    ensureReferentialWriting(this.writing);
     const operation = await requireOperation(this.operations, command.key);
     const before = presentation(operation.snapshot());
     operation.edit(command.payload);

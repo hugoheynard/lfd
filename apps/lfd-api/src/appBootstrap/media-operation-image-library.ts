@@ -25,16 +25,23 @@ export class MediaOperationImageLibrary extends OperationImageLibrary {
   }
 
   async describe(url: string): Promise<LibraryImage | null> {
-    const image = (await this.images.describe([url])).get(url);
-    if (image === undefined) {
-      return null;
+    return (await this.describeMany([url])).get(url) ?? null;
+  }
+
+  async describeMany(urls: readonly string[]): Promise<ReadonlyMap<string, LibraryImage>> {
+    const described = new Map<string, LibraryImage>();
+    if (urls.length === 0) {
+      return described;
     }
-    return {
-      url: image.url,
-      alt: image.alt.fr,
-      width: image.width,
-      height: image.height,
-      focal: image.focal,
-    };
+    for (const image of (await this.images.describe([...new Set(urls)])).values()) {
+      described.set(image.url, {
+        url: image.url,
+        alt: image.alt.fr,
+        width: image.width,
+        height: image.height,
+        focal: image.focal,
+      });
+    }
+    return described;
   }
 }

@@ -39,7 +39,8 @@ export class RefocusOperationImageHandler implements ICommandHandler<
     return this.uow.run(async () => {
       const showing = await this.operations.loadShowingImage(command.url);
       let refocused = 0;
-      for (const operation of showing) {
+      // Une archivée garde son point : elle suit un remplacement, pas un recadrage.
+      for (const operation of showing.filter((candidate) => !candidate.isArchived)) {
         if (operation.refocusImage(command.url, command.focal)) {
           await this.operations.save(operation);
           refocused += 1;

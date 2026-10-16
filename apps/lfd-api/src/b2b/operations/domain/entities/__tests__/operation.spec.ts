@@ -1,4 +1,6 @@
 import {
+  OperationAlreadyAtCommerceError,
+  OperationAwaitingMigrationError,
   InvalidOperationAudienceError,
   InvalidOperationImageError,
   InvalidOperationKeyError,
@@ -9,6 +11,7 @@ import {
   Operation,
   type OperationRecord,
   type PrepareOperation,
+  type ReferentialOperation,
   type WriteStamp,
 } from "../operation.js";
 
@@ -18,7 +21,7 @@ function noel(over: Partial<PrepareOperation> = {}): PrepareOperation {
     key: "noel-2026",
     name: { fr: "Noël 2026", en: "Christmas 2026" },
     lede: { fr: "Les bûches sont là." },
-    image: { url: "https://media.test/buche.webp", alt: "Une bûche" },
+    image: { url: "https://media.test/buche.webp" },
     schedule: {
       announceFrom: new Date("2026-10-31T23:00:00.000Z"),
       orderFrom: new Date("2026-11-14T23:00:00.000Z"),
@@ -60,7 +63,7 @@ describe("Operation.prepare", () => {
     expect(prepare({ key: "Noël" })).toThrow(InvalidOperationKeyError);
     expect(prepare({ name: { fr: "  " } })).toThrow(InvalidOperationTextError);
     expect(prepare({ audience: "tous" })).toThrow(InvalidOperationAudienceError);
-    expect(prepare({ image: { url: " ", alt: "" } })).toThrow(InvalidOperationImageError);
+    expect(prepare({ image: { url: " " } })).toThrow(InvalidOperationImageError);
   });
 
   it("refuse des dates qui se contredisent (D2)", () => {
@@ -169,27 +172,28 @@ describe("l'image suit la médiathèque", () => {
   const MEDIA: WriteStamp = { by: "staff_media", at: new Date("2026-10-03T09:00:00.000Z") };
 
   function showingA(): Operation {
-    return Operation.prepare(
-      noel({ image: { url: A, alt: "Une bûche", focal: { x: 0.3, y: 0.6 } } }),
-      PREPARED,
-    );
+    return Operation.prepare(noel({ image: { url: A, focal: { x: 0.3, y: 0.6 } } }), PREPARED);
   }
 
-  it("un remplacement change l'adresse, garde le texte, recentre le point, et signe", () => {
+  /**
+   * Lot 3 (« Après le lot 2 ») : suivre un remplacement n'est pas une édition —
+   * la médiathèque le trace, l'opération ne s'en signe pas.
+   */
+  it("un remplacement change l'adresse, recentre le point, et ne signe pas", () => {
     const operation = showingA();
 
-    expect(operation.repointImage(A, B, MEDIA)).toBe(true);
+    expect(operation.followImageReplacement(A, B)).toBe(true);
 
     expect(operation.snapshot()).toMatchObject({
-      image: { url: B, alt: "Une bûche", focal: null },
-      lastWrite: MEDIA,
+      image: { url: B, focal: null },
+      lastWrite: PREPARED,
     });
   });
 
   it("un remplacement d'une AUTRE image ne touche rien", () => {
     const operation = showingA();
 
-    expect(operation.repointImage(B, A, MEDIA)).toBe(false);
+    expect(operation.followImageReplacement(B, A)).toBe(false);
     expect(operation.snapshot()).toMatchObject({ image: { url: A }, lastWrite: PREPARED });
   });
 
@@ -206,11 +210,61 @@ describe("l'image suit la médiathèque", () => {
     });
   });
 
-  it("une opération archivée ne suit plus : elle ne change plus", () => {
+  /**
+   * Lot 3 (« Après le lot 2 », Hugo 2026-10-16) : l'image d'une archivée reste
+   * protégée, et son historique ne doit pas pointer vers une adresse disparue.
+   * Le remplacement la suit ; une édition et un recadrage, non.
+   */
+  it("une opération archivée suit un remplacement, et refuse toujours d'être éditée", () => {
     const operation = showingA();
     operation.archive(LATER);
 
-    expect(() => operation.repointImage(A, B, MEDIA)).toThrow(OperationArchivedError);
-    expect(() => operation.refocusImage(A, null)).toThrow(OperationArchivedError);
+    expect(operation.followImageReplacement(A, B)).toBe(true);
+    expect(operation.snapshot()).toMatchObject({ image: { url: B }, lastWrite: LATER });
+    expect(() => operation.refocusImage(B, null)).toThrow(OperationArchivedError);
+    expect(() => operation.edit({ name: { fr: "Noël" }, lede: null, image: null }, MEDIA)).toThrow(
+      OperationArchivedError,
+    );
+  });
+});
+
+describe("la migration depuis le référentiel (lot 3)", () => {
+  /** Les valeurs du référentiel, déjà restreintes par la surcharge de la réception. */
+  function fromReferential(over: Partial<ReferentialOperation> = {}): ReferentialOperation {
+    const { lastWrite, ...values } = received({ skus: ["BUC-001"], hidden: true, ...over });
+    expect(lastWrite).toBeNull();
+    return values;
+  }
+
+  it("une copie reçue ne s'écrit pas avant d'avoir été reprise", () => {
+    const copy = Operation.reconstitute(received());
+
+    expect(() => copy.select(["BUC-001"], LATER)).toThrow(OperationAwaitingMigrationError);
+    expect(() => copy.archive(LATER)).toThrow(OperationAwaitingMigrationError);
+    expect(copy.snapshot().lastWrite).toBeNull();
+  });
+
+  it("la reprend une fois, signée de qui migre, puis la laisse s'écrire", () => {
+    const copy = Operation.reconstitute(received());
+
+    copy.adoptReferential(fromReferential(), LATER);
+
+    expect(copy.snapshot()).toMatchObject({ skus: ["BUC-001"], hidden: true, lastWrite: LATER });
+    expect(() => copy.adoptReferential(fromReferential(), LATER)).toThrow(
+      OperationAlreadyAtCommerceError,
+    );
+    copy.select([], LATER);
+    expect(copy.snapshot().skus).toEqual([]);
+  });
+
+  it("ne reprend pas une copie retirée, et fait naître celle qui n'avait jamais été envoyée", () => {
+    const withdrawn = Operation.reconstitute(received({ archivedAt: PREPARED.at }));
+
+    expect(() => withdrawn.adoptReferential(fromReferential(), LATER)).toThrow(
+      OperationArchivedError,
+    );
+    expect(
+      Operation.fromReferential(fromReferential({ archivedAt: PREPARED.at }), LATER).snapshot(),
+    ).toMatchObject({ archivedAt: PREPARED.at, lastWrite: LATER, skus: ["BUC-001"] });
   });
 });

@@ -57,3 +57,49 @@ function earliest(received: Date, restricted: Date | null): Date {
   }
   return restricted.getTime() < received.getTime() ? restricted : received;
 }
+
+/**
+ * **Ce que le commerce tient lui-même d'une opération**, interrupteur
+ * `OPERATIONS_AT_COMMERCE` OUVERT (lot 3 de
+ * `documentation/operations-datees/plan-l-operation-passe-au-commerce.md`).
+ *
+ * `writtenAt` dit si l'agrégat du commerce a déjà écrit la ligne : la
+ * migration depuis le référentiel l'écrit pour chaque opération, et c'est
+ * l'instant où la surcharge cesse de compter — elle est alors DANS
+ * l'opération (sélection, fenêtre, clientèle, `hidden`).
+ */
+export interface CommerceHolding {
+  readonly hidden: boolean;
+  /** `null` : jamais écrite au commerce — encore une copie reçue du référentiel. */
+  readonly writtenAt: Date | null;
+}
+
+/**
+ * **L'opération telle que la boutique l'applique, des deux côtés de la bascule.**
+ *
+ * - `holding === null` (interrupteur fermé) — exactement `effectiveOperation` :
+ *   rien de servi ne change ;
+ * - ouvert, ligne ÉCRITE au commerce — ses propres champs, `hidden` compris,
+ *   et la surcharge ignorée : elle a été versée dans l'opération par la
+ *   migration, la réappliquer retirerait une seconde fois ce que le commerce
+ *   aurait remis ;
+ * - ouvert, ligne JAMAIS écrite au commerce (entre le redéploiement et
+ *   l'application de la migration) — encore `effectiveOperation` : aucune
+ *   restriction ne tombe pendant la bascule.
+ */
+export function operationAsHeld(
+  received: CatalogOperationFacts,
+  restriction: OperationRestriction | null,
+  holding: CommerceHolding | null,
+): EffectiveOperation {
+  if (holding === null || holding.writtenAt === null) {
+    return effectiveOperation(received, restriction);
+  }
+  return {
+    key: received.key,
+    isHidden: holding.hidden,
+    orderUntil: received.orderUntil,
+    audience: received.audience,
+    skus: [...received.skus],
+  };
+}

@@ -36,6 +36,11 @@ import { SetOperationSelectionCommand } from "../application/set-operation-selec
  *
  * Surface murée par `@AdminSurface("pim_catalog")` : préparer Noël, c'est
  * choisir des articles et fixer des dates — le travail du catalogue (D1).
+ *
+ * 🔴 **Les écritures répondent 409 `pim.operation.moved_to_commerce`** dès
+ * que `OPERATIONS_AT_COMMERCE` est ouvert (lot 3 de
+ * `plan-l-operation-passe-au-commerce.md`) : l'opération vit alors au
+ * commerce. Les lectures restent — la migration et l'historique les lisent.
  */
 @AdminSurface("pim_catalog")
 @Controller("operations")

@@ -14,7 +14,9 @@ import { OperationImageUsage } from "./domain/ports/operation-image-usage.js";
 import { OperationSkuCatalogue } from "./domain/ports/operation-sku.catalogue.js";
 import { OperationReader } from "./domain/ports/operation.reader.js";
 import { OperationRepository } from "./domain/ports/operation.repository.js";
+import { ReferentialOperationWriting } from "./domain/ports/referential-operation-writing.js";
 import { OperationController } from "./http/operation.controller.js";
+import { ConfigReferentialOperationWriting } from "./infrastructure/config-referential-operation-writing.js";
 import { PrismaOperationImageUsage } from "./infrastructure/prisma-operation-image-usage.js";
 import { PrismaOperationSkuCatalogue } from "./infrastructure/prisma-operation-sku.catalogue.js";
 import { PrismaOperationReader } from "./infrastructure/prisma-operation.reader.js";
@@ -38,6 +40,9 @@ import { PrismaOperationRepository } from "./infrastructure/prisma-operation.rep
     { provide: OperationRepository, useClass: PrismaOperationRepository },
     { provide: OperationReader, useClass: PrismaOperationReader },
     { provide: OperationSkuCatalogue, useClass: PrismaOperationSkuCatalogue },
+    // Fermée à la bascule (lot 3 de `plan-l-operation-passe-au-commerce.md`) :
+    // les opérations s'écrivent alors au commerce.
+    { provide: ReferentialOperationWriting, useClass: ConfigReferentialOperationWriting },
     PrepareOperationHandler,
     EditOperationHandler,
     RescheduleOperationHandler,

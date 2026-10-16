@@ -8,11 +8,10 @@
  * `b2b/storefront/channels/media/` : le commerce n'importe pas la médiathèque,
  * et la médiathèque ne lit pas ses tables.
  *
- * Comptent les opérations NON ARCHIVÉES, masquées et finies comprises : une
- * opération masquée revient en boutique d'un geste, son image doit être encore
- * là ; et trier sur l'horloge ferait dépendre la sûreté d'un effacement d'un
- * calcul de date (même règle que `PrismaCatalogMediaCopies`, lue le
- * 2026-10-15).
+ * Comptent TOUTES les opérations — masquées, finies et **archivées**
+ * comprises (plan, « Après le lot 2 », Hugo 2026-10-16) : une masquée revient
+ * en boutique d'un geste, une archivée garde son historique, et trier sur
+ * l'horloge ferait dépendre la sûreté d'un effacement d'un calcul de date.
  *
  * ⚠️ Branché seulement interrupteur OUVERT (`OPERATIONS_AT_COMMERCE`) : fermé,
  * la même table est comptée comme COPIE (`CatalogMediaCopies`), et la compter
