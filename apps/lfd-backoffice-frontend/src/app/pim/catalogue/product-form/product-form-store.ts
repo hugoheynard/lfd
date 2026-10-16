@@ -1492,12 +1492,38 @@ export class ProductFormStore {
         ...(weight === null ? {} : { weightGrams: weight }),
         ...(description === '' ? {} : { descriptionFr: description }),
       });
+      // Les photos n'existent que dans le brouillon de l'écran : la route de
+      // création ne les porte pas, et la page suivante relit la fiche au
+      // serveur. Sans cet envoi, elles disparaissaient à la navigation
+      // (signalé par Hugo le 2026-10-16). Même geste « Créer », jamais avant.
+      await this.saveCreatedMedia(created.id);
       return created.id;
     } catch (caught) {
       this.error.set(messageOf(caught));
       return null;
     } finally {
       this.busy.set(false);
+    }
+  }
+
+  /**
+   * Enregistre les photos choisies avant la création, sur la fiche qui vient
+   * de naître.
+   *
+   * Un échec ici ne remonte PAS comme un échec de création : la fiche existe,
+   * et rendre `null` laisserait l'écran de création ouvert — un second clic
+   * sur « Créer » ferait un doublon. La page navigue donc quand même ; les
+   * photos sont à reprendre sur la fiche.
+   */
+  private async saveCreatedMedia(id: string): Promise<void> {
+    const media = this.media();
+    if (media.length === 0) {
+      return;
+    }
+    try {
+      await this.products.saveMedia(id, media);
+    } catch (caught) {
+      this.error.set(messageOf(caught));
     }
   }
 
