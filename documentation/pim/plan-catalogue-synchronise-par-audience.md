@@ -216,13 +216,13 @@ nouvelles places (favoris), avant les gardes.
 
 ## 3. Lots
 
-| Lot   | Contenu                                                                                                                                  | Donne                             |
-| ----- | ---------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
-| **1** | Comptage ; colonnes d'audience ; activer/désactiver avec le refus complet (C1) ; refus sur fiche active                                  | l'agrégat tient la règle          |
-| **2** | Faits fiche + famille, verrou et `seq` (C3, C4) ; récepteur conditionné ; `servedTo` ; réémettre tout                                    | **créer → la plateforme le voit** |
-| **3** | Écrans : bouton Activer, audience famille et fiche, vue « Catalogue publié » déplacée en Gestion Boutique (H9), route unique de masquage | **le parcours en trois gestes**   |
-| **4** | Opérations en faits ; émissions en lot (TVA, limites, rapport pro) ; révisions automatiques                                              | plus aucun besoin du push         |
-| **5** | Retraits (C5) ; estampille de commande par `seq`                                                                                         | le ménage                         |
+| Lot   | Contenu                                                                                                                                                    | Donne                             |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| **1** | Comptage ; colonnes d'audience ; activer/désactiver avec le refus complet (C1) ; refus sur fiche active                                                    | l'agrégat tient la règle          |
+| **2** | Faits fiche + famille, verrou et `seq` (C3, C4) ; récepteur conditionné ; `servedTo` ; réémettre tout                                                      | **créer → la plateforme le voit** |
+| **3** | Écrans : bouton Activer, audience famille et fiche, vue « Catalogue publié » déplacée en Gestion Boutique (H9), route unique de masquage                   | **le parcours en trois gestes**   |
+| **4** | ~~Opérations en faits~~ (elles passent au commerce) ; émissions en lot (TVA, limites ; le rapport pro est déjà réémis, cf. lot S) ; révisions automatiques | plus aucun besoin du push         |
+| **5** | Retraits (C5) ; estampille de commande par `seq`                                                                                                           | le ménage                         |
 
 **Le push est coupé dès que le lot 2 est en service.** Il envoie un
 instantané complet et efface ce qui n'y figure pas — il effacerait les fiches
@@ -621,6 +621,114 @@ complétude de 2b en dépend.
 **Ce qui ne change pas** : les prix décidés par la plateforme
 (`catalog_item_overrides.price_millicents`) priment toujours sur le prix
 reçu ; les mercuriales et paliers s'appliquent par-dessus comme aujourd'hui.
+
+### Lot S — le prix pro saisi seul, le rapport devient une suggestion (décidé le 2026-10-16)
+
+> 📐 **Doc-first, rien n'est bâti** (rédigé le 2026-10-16). Touche l'argent :
+> contredit par `vitruve` le même jour ; ses corrections, en fin de section,
+> priment sur la table.
+
+> « Le rapport pro public devrait devenir une suggestion plutôt qu'un
+> problème, je veux qu'on valorise en premier l'écriture directe du prix
+> pro. » — Hugo, 2026-10-16. Puis : « oui écris-le ».
+
+Ouvert avant d'écrire (2026-10-16) :
+
+- `proPriceOf` (`packages/pim-contracts/src/accounting-rules.ts:215-234`) sert
+  déjà la saisie dès qu'elle existe ; le rapport ne fixe plus un prix que
+  pour une déclinaison **sans saisie**, et seulement sous `ratio_ttc` ;
+- `ratio_ttc` est la valeur d'un réglage muet
+  (`ProPriceMethodSetting.ratioTtc()`, appelé par
+  `accounting-rules.ts:45`) ;
+- changer le rapport (`set-pro-price-ratio.ts`) ou la méthode
+  (`choose-pro-price-method.ts`) réémet **déjà** tout le catalogue par
+  `CatalogReemission`. Le « rapport pro » de la ligne 4 du tableau des lots
+  est donc déjà couvert ; ce qu'en disait l'état du 2026-10-16 était faux ;
+- le pré-remplissage existe (P5, `pro-price-prefill.ts`, aperçu puis
+  écriture là où rien n'est saisi, contrôle au millicentime).
+
+| #   | Quoi                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| S1  | **Le prix pro saisi est la seule source.** Sous la règle cible, une déclinaison sans saisie est incomplète (`gaps: pro_price`, P4) : jamais vendue aux pros, et « Activer » la refuse en le nommant. Concrètement, c'est la méthode `entered`, déjà bâtie : rien de neuf dans la porte du prix.                                                                                                                                                                                                                                                                     |
+| S2  | **Le défaut d'une base vierge devient `entered`** (`AccountingRules`, réglage muet). Une base existante garde sa valeur jusqu'au geste S5 : aucune migration ne change une méthode en place.                                                                                                                                                                                                                                                                                                                                                                        |
+| S3  | **Le rapport est une suggestion.** Dans la fiche, sous « Prix pro HT » : « Suggéré : x,xxxxx € HT (rapport de y %) » et un bouton « Reprendre », qui remplit le champ sans enregistrer. Le calcul est celui de `ratioTtcProPrice` au taux `b2b` de la fiche — le même que le pré-remplissage, pour que la suggestion et le pré-remplissage ne divergent jamais. Sans taux `b2b`, pas de suggestion, et la phrase dit pourquoi.                                                                                                                                      |
+| S4  | **_Règles comptables_** : le choix de méthode disparaît de l'écran. Le rapport y reste, renommé « Rapport suggéré », avec une phrase : il ne change aucun prix vendu, il propose. Le pré-remplissage y reste, avec son aperçu. Sur une base encore en `ratio_ttc`, un encart dit ce qui reste à faire : pré-remplir, puis « Passer au prix saisi », qui est le geste existant `choose-pro-price-method` vers `entered`. Une fois en `entered`, l'encart disparaît et le retour à `ratio_ttc` ne s'offre plus à l'écran (la route reste : le code n'est pas effacé). |
+| S5  | **La bascule, geste de Hugo, écrit au runbook** : (1) aperçu du pré-remplissage, relu — y compris la liste des déclinaisons sans taux `b2b`, qu'il ne remplit pas ; (2) écriture ; (3) « Passer au prix saisi ». Entre (2) et (3), rien de servi ne change (le contrôle de P5 le garantit) ; après (3), seule une déclinaison sans saisie sort du catalogue pro.                                                                                                                                                                                                    |
+| S6  | **Changer le rapport sous `entered` ne réémet plus rien** : il ne change aucun prix servi. Le handler le sait par la méthode lue dans la même transaction. Sous `ratio_ttc`, inchangé.                                                                                                                                                                                                                                                                                                                                                                              |
+
+**Ce qui ne change pas** : la porte `proPriceOf` et ses deux branches ; le
+code de `ratio_ttc` (Hugo, 2026-10-15 : « n'efface pas le code ») ; les
+mercuriales et paliers par-dessus le prix reçu.
+
+**Ce que ça retire au lot 4** : rien à bâtir pour le rapport (déjà réémis,
+et sans effet sur les prix après S5). Le lot 4 garde la TVA et les limites.
+
+## Contradiction de `vitruve` — lot S (2026-10-16), qui prime sur S1–S6
+
+Les trois BLOQUANT ont été rouverts dans le code avant d'être intégrés.
+
+- **Le rapport ne doit plus rien verrouiller** (BLOQUANT, S2 était vide).
+  Sans ligne de règles, `policy` vaut `null`, et **tout** s'arrête, saisies
+  comprises : le push refuse (`ProPriceRatioNotSetError`,
+  `feed-projection.service.ts:84-87`), les faits ne vendent rien
+  (`catalog-facts.ts:182-186`), « Activer » refuse (`PRO_PRICE_RULE_GAP`,
+  `variant-completeness.ts:104-105`), la fiche n'affiche pas la saisie
+  (`product-form-store.ts:933`, `:976`). **Correction** : une base sans
+  règles vaut `entered` sans rapport. `ProPricePolicy` porte un `ratioBp`
+  nullable, réservé à `ratio_ttc`. Sous `entered`, un rapport absent ne
+  coûte que la suggestion. `PRO_PRICE_RULE_GAP` ne subsiste que pour
+  `ratio_ttc` sans rapport, et `ProPriceRatioNotSetError` aussi. Le JSDoc
+  d'`AccountingRules.open` (« un déploiement ne change jamais un prix »)
+  est réécrit : c'est vrai pour une base existante, et une base vierge n'a
+  aucun prix à préserver.
+- **Le pré-remplissage sous `entered`** (BLOQUANT). Son contrôle compare le
+  HT servi au HT pré-rempli (`pro-price-prefill.ts:66`) ; sous `entered`,
+  une déclinaison sans saisie n'est pas servie, donc toute ligne serait en
+  écart et `apply` refuserait toujours (`apply-pro-price-prefill.ts:51-53`).
+  **Correction** : le contrôle au millicentime ne vaut que sous
+  `ratio_ttc`, où il prouve que rien de servi ne bouge. Sous `entered`,
+  l'aperçu dit l'autre vérité : « ces déclinaisons deviendront vendables aux
+  pros à ce prix », et `apply` l'écrit après confirmation.
+- **Ouvrir les règles réémet toujours** (BLOQUANT, S6). Le premier rapport
+  posé sur une base vierge fait aujourd'hui passer `policy` de `null` à une
+  valeur. Avec la correction ci-dessus, il ne change plus rien sous
+  `entered`, mais S6 se limite quand même à : **ne pas réémettre si la
+  méthode était `entered` avant ET après, et que la ligne existait**. La
+  méthode est lue **dans** le `uow.run` (aujourd'hui lue avant,
+  `set-pro-price-ratio.ts:59`) ; `choose-pro-price-method.ts:70-79` a le
+  même schéma et réémet toujours, ce qui couvre la course.
+- **Le vrai basculement est S5-(2), pas S5-(3)** (SÉRIEUX). Une fois le
+  pré-remplissage écrit, chaque déclinaison a sa saisie, et « la saisie
+  prime » : le rapport est déjà inerte. Surtout, **monter un prix public ne
+  monte plus le prix pro**, sur tout le catalogue. C'est l'objet du lot
+  (Hugo veut le prix pro écrit, pas déduit), mais le runbook et l'écran le
+  disent : l'aperçu du pré-remplissage porte la phrase, et la fiche affiche
+  l'écart constaté avec la suggestion à côté.
+- **Le retour à `ratio_ttc` est illusoire après S5-(2)** (SÉRIEUX) : il ne
+  toucherait que les déclinaisons sans saisie. L'écran ne l'offre pas, et le
+  runbook dit que le retour arrière d'un prix pro est une **saisie**, fiche
+  par fiche (ou l'effacement de la saisie, qui rend le repli).
+- **La suggestion passe par la porte** (SÉRIEUX) : `ratioTtcProPrice` est
+  privée (`accounting-rules.ts:241`). S3 appelle
+  `proPriceOf(prix, { method: "ratio_ttc", ratioBp }, taux, null)`, comme
+  `pro-price-prefill.ts:53`. Un appelant de plus au JSDoc qui les compte.
+- **Les alignées** (SÉRIEUX) : une déclinaison qui suit le défaut sort du
+  catalogue pro si le défaut n'a pas pu être pré-rempli (sans prix public ou
+  sans taux `b2b`), sous le motif `variant_sans_prix_pro`
+  (`projection.ts:245-247`) alors que la cause est l'absence de taux.
+  L'aperçu les liste sous leur défaut, avec la vraie cause ; le motif du
+  push dit « sans taux pro » quand c'est le cas.
+- **À corriger au passage** (MINEUR) : le JSDoc de `proPriceOf`
+  (`accounting-rules.ts:205-210`) annonce six appelants et cite
+  `prefill-pro-prices.ts`, qui n'existe pas ; celui de
+  `choose-pro-price-method.ts:47-49` (« sans objet tant qu'il n'y a qu'une
+  méthode ») ; le commentaire de `vat.prisma:68-80` (« une seule valeur »).
+
+**Non vérifié par `vitruve`, à ouvrir au premier jour du lot** : la
+résolution du prix pro d'une alignée (`variant.ts`), la source des
+révisions, `prisma-catalog.reader.ts:297`, le comportement de
+`CatalogReemission.everything()` en échec partiel, et l'existence d'une
+procédure dans `documentation/ops/runbook.md`.
 
 ### Lot W — le webhook de la vitrine (décidé le 2026-10-15)
 
