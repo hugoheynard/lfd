@@ -2,7 +2,7 @@
 
 **Prescriptif.** Ce document dit ce que chaque écran du cycle **doit** montrer et
 offrir. Il ne décrit pas l'état du code : le descriptif est
-[`cycle-catalogue-du-pim-a-la-vente.md`](cycle-catalogue-du-pim-a-la-vente.md).
+[`../catalogue/cycle-catalogue-du-pim-a-la-vente.md`](../catalogue/cycle-catalogue-du-pim-a-la-vente.md).
 Quand les deux divergent, c'est le code qu'on corrige — et le §11 tient la liste
 des écarts ouverts.
 
@@ -464,6 +464,6 @@ retirée sans trace se refait.
 
 ## Références
 
-- [`cycle-catalogue-du-pim-a-la-vente.md`](cycle-catalogue-du-pim-a-la-vente.md) — comment le code marche aujourd'hui
+- [`../catalogue/cycle-catalogue-du-pim-a-la-vente.md`](../catalogue/cycle-catalogue-du-pim-a-la-vente.md) — comment le code marche aujourd'hui
 - [`../ci-cd/pipelines.md`](../ci-cd/pipelines.md) — étendre → basculer → resserrer
 - [`../langue-du-code.md`](../langue-du-code.md) — le lexique

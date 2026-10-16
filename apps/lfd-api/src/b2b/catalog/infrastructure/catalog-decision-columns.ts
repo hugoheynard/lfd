@@ -4,7 +4,7 @@
  *
  * 🔴 Les deux colonnes de prix décidé (`price_millicents`,
  * `decided_public_ttc_cents`) n'y sont pas, et c'est le but : depuis le lot D
- * de `documentation/pim/plan-catalogue-synchronise-par-audience.md`
+ * de `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`
  * (2026-10-15), le prix servi est celui du référentiel. Les colonnes restent
  * en base (CLAUDE.md §0), ni lues ni écrites. Un `include: { override: true }`
  * les relirait sans que rien ne le dise ; tous les lecteurs de l'override

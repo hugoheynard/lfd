@@ -97,7 +97,7 @@ centime.
 ## L'import, et ce qu'il a révélé
 
 > ⚠️ **Retiré le 2026-10-15** (lot D de
-> [`plan-catalogue-synchronise-par-audience.md`](plan-catalogue-synchronise-par-audience.md)) :
+> [`../catalogue/plan-catalogue-synchronise-par-audience.md`](../catalogue/plan-catalogue-synchronise-par-audience.md)) :
 > la plateforme ne décide plus de prix, `SetB2bPrice` n'existe plus, et le
 > script import-mercuriale (retiré au lot D) est supprimé avec lui. Les 89 couples
 > restent dans `prisma/mercuriale/plaquette-hiver-2026.ts` ; les reporter se

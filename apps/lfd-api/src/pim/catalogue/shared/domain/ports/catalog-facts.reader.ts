@@ -23,7 +23,7 @@ export interface CatalogFamilyRecord {
 
 /**
  * **Ce que les faits du catalogue relisent** (lot 2a de
- * `documentation/pim/plan-catalogue-synchronise-par-audience.md`).
+ * `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`).
  *
  * Port de lecture à part de `CatalogueReader` (ISP) : celui-là sert le push et
  * ses aperçus, et n'a pas à savoir lire une fiche archivée ni l'audience d'une

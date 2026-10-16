@@ -1,6 +1,6 @@
 /**
  * E2E — **les faits du catalogue**, du référentiel à la plateforme, en
- * processus (lot 2a de `documentation/pim/plan-catalogue-synchronise-par-audience.md`).
+ * processus (lot 2a de `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`).
  *
  * Ce que seul ce niveau prouve : l'écriture conditionnée sur `applied_seq`
  * contre le vrai SQL, la clé étrangère d'une fiche arrivée avant sa famille,

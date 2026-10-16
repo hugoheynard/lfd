@@ -194,5 +194,5 @@ Chacune a déjà été enfreinte une fois, et chaque infraction a coûté.
 - **La facturation** — l'émission des documents comptables :
   [`../b2b/architecture-facturation.md`](../b2b/architecture-facturation.md).
 - **Le catalogue** — comment les articles arrivent du référentiel :
-  [`../b2b/architecture-catalogue-synchronise.md`](../b2b/architecture-catalogue-synchronise.md).
+  [`../catalogue/architecture-catalogue-synchronise.md`](../catalogue/architecture-catalogue-synchronise.md).
 - **Le paiement** — Stripe, mandats SEPA, termes négociés : `../b2b/`.

@@ -1,7 +1,7 @@
 /**
  * **Réémettre plusieurs fiches HORS de la transaction du geste** — une
  * transaction par fiche (lot 2a de
- * `documentation/pim/plan-catalogue-synchronise-par-audience.md`, C3 et les
+ * `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`, C3 et les
  * corrections après `vitruve`).
  *
  * Port à part de `CatalogEmitter` (ISP) : un geste qui touche UNE fiche émet

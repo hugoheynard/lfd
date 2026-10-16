@@ -1,6 +1,6 @@
 /**
  * **Le verrou et le numéro d'ordre** des faits du catalogue (C4 de
- * `documentation/pim/plan-catalogue-synchronise-par-audience.md`).
+ * `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`).
  *
  * Deux gestes simultanés sur la même fiche émettent deux instantanés. Pour que
  * le plus récent gagne côté plateforme, le numéro doit suivre l'ordre des

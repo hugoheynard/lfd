@@ -80,7 +80,7 @@ En dev : 95 fiches publiées, 95 liées au canal, 0 publiée sans lien. Les levi
   [`plan-publication-par-faits-versionnes.md`](plan-publication-par-faits-versionnes.md) P6.
 - **Le vocabulaire Shopify** sur `sales_context` (`handle_suffix`,
   `shopify_projected`) : son canal a quitté le dépôt le 2026-09-21. Déjà
-  inventorié dans [`todo-le-vocabulaire-shopify-survit-au-canal.md`](todo-le-vocabulaire-shopify-survit-au-canal.md).
+  inventorié dans [`../pim/todo-le-vocabulaire-shopify-survit-au-canal.md`](../pim/todo-le-vocabulaire-shopify-survit-au-canal.md).
 
 ### 1.5 Le modèle à copier existe : les opérations
 

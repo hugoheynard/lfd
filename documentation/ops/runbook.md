@@ -507,7 +507,7 @@ remplace) — cf. « Sans retour » dans le plan.
 
 ## Basculer le catalogue vers les faits (lot 2b) — l'ordre, et le retour
 
-Lot 2b de [`plan-catalogue-synchronise-par-audience.md`](../pim/plan-catalogue-synchronise-par-audience.md)
+Lot 2b de [`plan-catalogue-synchronise-par-audience.md`](../catalogue/plan-catalogue-synchronise-par-audience.md)
 (C7, §4 bis). Le push cesse d'écrire fiches et familles ; la plateforme les
 reçoit fiche par fiche (`pim.catalog_product_changed`), famille par famille, et
 les limites de commande en règles (`pim.catalog_rules_changed`). **Le code est
@@ -635,7 +635,7 @@ récepteurs des faits et de `servedTo`.
 
 ## Passer au prix pro saisi (lot S) — l'ordre, et le retour
 
-Lot S de [`plan-catalogue-synchronise-par-audience.md`](../pim/plan-catalogue-synchronise-par-audience.md).
+Lot S de [`plan-catalogue-synchronise-par-audience.md`](../catalogue/plan-catalogue-synchronise-par-audience.md).
 Le prix pro HT **saisi** par déclinaison devient la seule source ; le rapport
 pro / public n'est plus qu'une suggestion. Le code est déployé sans rien
 changer de servi : une base qui a déjà une ligne de règles garde sa méthode
@@ -792,7 +792,7 @@ Rien n'est supprimé : `pim.operations`, `pim.operation_items` et
 
 ## Déployer le lot D — le prix ne se décide plus sur la plateforme
 
-Lot D de [`plan-catalogue-synchronise-par-audience.md`](../pim/plan-catalogue-synchronise-par-audience.md)
+Lot D de [`plan-catalogue-synchronise-par-audience.md`](../catalogue/plan-catalogue-synchronise-par-audience.md)
 (2026-10-15). Les routes `PUT|DELETE admin/catalog/:sku/price` et
 `:sku/public-price` disparaissent ; le prix servi devient celui du
 référentiel. **Aucune migration** : les colonnes

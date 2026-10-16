@@ -29,7 +29,7 @@ model ProductNorm {
 }
 
 // ---------------------------------------------------------------------------
-// Catalogue REÇU du PIM — cf. documentation/b2b/architecture-catalogue-synchronise.md
+// Catalogue REÇU du PIM — cf. documentation/catalogue/architecture-catalogue-synchronise.md
 //
 // Deux tables, et c'est LA décision de structure de ce chantier. Le miroir est
 // remplacé en entier à chaque push ; l'override porte les décisions prises ici.
@@ -546,7 +546,7 @@ model CatalogItemOverride {
 }
 
 /// **Une fiche du référentiel, telle que la plateforme la connaît** — vendue ou
-/// non (lot 2a, `documentation/pim/plan-catalogue-synchronise-par-audience.md`).
+/// non (lot 2a, `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`).
 ///
 /// `catalog_items` reste la table de ce qui SE VEND ; celle-ci porte ce qui
 /// manquait : une fiche inactive, une déclinaison incomplète (`gaps`),
@@ -579,7 +579,7 @@ model CatalogEntry {
 }
 
 /// **Les règles globales du catalogue, telles que le référentiel les a
-/// apportées** (lot 2b, `documentation/pim/plan-catalogue-synchronise-par-audience.md`).
+/// apportées** (lot 2b, `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`).
 ///
 /// Une ligne par sorte de règle — aujourd'hui l'échelle des limites de
 /// commande (`order_time_limits`), au format du fil (`SyncOrderTimeLimitRule[]`).

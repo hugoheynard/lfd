@@ -1,7 +1,7 @@
 /**
  * **Émettre les règles globales du catalogue vers la plateforme** — dans la
  * transaction du geste qui les change (lot 2b de
- * `documentation/pim/plan-catalogue-synchronise-par-audience.md`, C3).
+ * `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`, C3).
  *
  * Les limites de commande voyagent comme RÈGLES, pas recopiées par fiche : un
  * réglage global réémettrait sinon tout le catalogue. Ce contexte DÉCLARE le

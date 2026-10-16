@@ -7,7 +7,7 @@ import { jsonBody } from "./e2e-harness.js";
 
 /**
  * La scène des faits du catalogue (lot 2a de
- * `documentation/pim/plan-catalogue-synchronise-par-audience.md`) : une
+ * `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`) : une
  * configuration aux faits OUVERTS, et les gestes du référentiel qui rendent
  * une fiche vendable — par l'API, comme le staff les fait.
  */

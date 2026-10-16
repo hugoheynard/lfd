@@ -20,7 +20,7 @@ import { PublicationSequence } from "./products/publication-sequence.js";
 
 /**
  * **Le branchement des faits du catalogue** (lot 2a de
- * `documentation/pim/plan-catalogue-synchronise-par-audience.md`).
+ * `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`).
  *
  * Le catalogue — et les référentiels qui changent un instantané : taux,
  * contextes, allergènes, réglages comptables — DÉCLARENT `CatalogEmitter` et

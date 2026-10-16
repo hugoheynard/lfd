@@ -11,7 +11,7 @@ import { PublicationSequence } from "./publication-sequence.js";
 
 /**
  * **L'émetteur unique des faits du catalogue** (2a2 de
- * `documentation/pim/plan-catalogue-synchronise-par-audience.md`, C4).
+ * `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`, C4).
  *
  * Dans la transaction du geste, en dernière instruction : verrouille les
  * lignes (triées), relit et projette, tire un numéro par fait, écrit dans la

@@ -4,7 +4,7 @@ import type { JournalFact, JournaledEvent } from "../../../../platform/journal/j
 
 /**
  * **Le fait du retraçage des prix** (lot D de
- * `documentation/pim/plan-catalogue-synchronise-par-audience.md`,
+ * `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`,
  * 2026-10-15) : l'historique des prix a reçu le prix du référentiel pour ces
  * articles, parce que leur dernière trace était un prix qui n'est plus servi.
  *

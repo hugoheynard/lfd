@@ -23,7 +23,7 @@ l'élargissent :
    (`analyse-boutique-publique.md` § 1, qui y voyait une contradiction) ; la
    portée est donc écrite plutôt que sous-entendue. **Le public ne reçoit pas de
    facture : il reçoit un bon de commande chiffré** (Hugo, 2026-09-21,
-   [`plan-un-seul-canal-deux-prix.md`](../pim/plan-un-seul-canal-deux-prix.md)).
+   [`plan-un-seul-canal-deux-prix.md`](../catalogue/plan-un-seul-canal-deux-prix.md)).
 
 2. **Factur-X dès le départ.** Le document cible n'est pas un PDF, c'est un
    **PDF/A-3 porteur d'un XML structuré**. Concevoir un PDF maison en 2026 puis

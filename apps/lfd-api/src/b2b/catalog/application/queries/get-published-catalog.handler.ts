@@ -7,7 +7,7 @@ import { publishedCatalogViewOf } from "./published-catalog-view.js";
 
 /**
  * **La vue « Catalogue publié »** (lot 3 de
- * `documentation/pim/plan-catalogue-synchronise-par-audience.md`, H6, H9) :
+ * `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`, H6, H9) :
  * une lecture, la composition dans `published-catalog-view.ts`.
  */
 @QueryHandler(GetPublishedCatalogQuery)

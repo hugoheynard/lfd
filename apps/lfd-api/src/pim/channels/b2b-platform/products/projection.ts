@@ -464,7 +464,7 @@ export function projectCatalog(
  * il porte l'audience, et `servedTo` décide.
  *
  * ⚠️ **Il tombe avec le push** (lot 5 du plan
- * `documentation/pim/plan-catalogue-synchronise-par-audience.md`).
+ * `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`).
  */
 function soldPercents(percents: CategoryVatPercents, channels: SalesChannels): CategoryVatPercents {
   return Object.fromEntries(

@@ -493,7 +493,7 @@ export function optionalPublicationEnabled(): boolean {
  *
  * `CATALOG_FACTS_ENABLED=true` l'ouvre ; toute autre valeur, et l'absence, la
  * ferment. **Fermé par défaut** (lot 2a de
- * `documentation/pim/plan-catalogue-synchronise-par-audience.md`) : les rails
+ * `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`) : les rails
  * se déploient sans rien changer de servi. Fermé, aucun fait fiche ni famille
  * ne s'écrit, et le push reste le seul écrivain des articles. Ouvert, les
  * faits deviennent l'écrivain, et le push ne touche plus ni fiches ni

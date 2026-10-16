@@ -4,7 +4,7 @@ import type { ReceivedCatalogFamily } from "./catalog-family-facts.projection.js
 
 /**
  * **Ce que le fait d'une fiche écrit sur la plateforme** (2a4 de
- * `documentation/pim/plan-catalogue-synchronise-par-audience.md`).
+ * `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`).
  *
  * Une PROJECTION d'un fait d'un autre contexte, pas un agrégat : aucune règle
  * de la plateforme ne peut refuser ce que le référentiel dit de sa fiche. Ce

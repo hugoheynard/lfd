@@ -11,7 +11,7 @@ export class ApplyAudienceSwitchCommand {}
 
 /**
  * **Appliquer la bascule vers l'audience** (2b1 de
- * `documentation/pim/plan-catalogue-synchronise-par-audience.md`, H7) :
+ * `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`, H7) :
  * désactive les fiches publiées mais invisibles aujourd'hui — non liées au
  * canal B2B, ou dont la case `b2b` effective est fermée. C'est le second temps
  * de l'aperçu (`GetAudienceSwitchPreviewQuery`), qui les liste sous

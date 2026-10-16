@@ -2,7 +2,7 @@ import type { CatalogItemAudience } from "./catalog-admin.js";
 
 /**
  * **La vue « Catalogue publié »** (`GET admin/catalog/published`) — lot 3 de
- * `documentation/pim/plan-catalogue-synchronise-par-audience.md` (H6, H9) et
+ * `documentation/catalogue/plan-catalogue-synchronise-par-audience.md` (H6, H9) et
  * D7 de `plan-audience-par-heritage.md`.
  *
  * Elle part des **fiches** reçues du référentiel (`catalog_entries`), pas des

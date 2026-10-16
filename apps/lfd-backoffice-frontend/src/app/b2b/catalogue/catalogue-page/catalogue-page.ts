@@ -37,7 +37,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 /**
  * **Catalogue publié** — ce que le référentiel a envoyé, ce que chaque audience
  * en voit, et à quel prix (lot 3 de
- * `documentation/pim/plan-catalogue-synchronise-par-audience.md`, H6 et H9 ;
+ * `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`, H6 et H9 ;
  * D7 de `plan-audience-par-heritage.md`).
  *
  * Elle s'appelait « Catalogue actuel en ligne » et ne montrait que les

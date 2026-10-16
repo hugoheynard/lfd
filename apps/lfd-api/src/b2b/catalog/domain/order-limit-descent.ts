@@ -25,7 +25,7 @@ export interface OrderLimitChange {
 
 /**
  * **Descend l'échelle des limites de commande sur des articles** (lot 2b de
- * `documentation/pim/plan-catalogue-synchronise-par-audience.md`) — pure, par
+ * `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`) — pure, par
  * la même implémentation que l'ingestion du push (`snapshot-limits.ts`) et que
  * le référentiel (`@lfd/catalog-sync`) : une descente par rive finirait par
  * diverger, sur la seule règle qui refuse une commande en retard.

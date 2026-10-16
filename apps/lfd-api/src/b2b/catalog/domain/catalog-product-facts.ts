@@ -16,7 +16,7 @@ export type CatalogEntryStatus = "inactive" | "active" | "archived";
 
 /**
  * **Une fiche telle qu'un fait du référentiel l'apporte** (lot 2a de
- * `documentation/pim/plan-catalogue-synchronise-par-audience.md`).
+ * `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`).
  *
  * `items` porte les déclinaisons COMPLÈTES, déjà converties en faits
  * d'articles ; `gaps` dit ce qui manque aux autres. Une fiche inactive porte

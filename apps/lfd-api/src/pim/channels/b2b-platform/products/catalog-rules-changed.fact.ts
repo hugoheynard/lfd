@@ -16,7 +16,7 @@ const payloadSchema = z.object({
 /**
  * **Les règles globales du catalogue ont changé** — fait DURABLE que le
  * référentiel DÉCLARE dans son canal vers la plateforme (lot 2b de
- * `documentation/pim/plan-catalogue-synchronise-par-audience.md`, C3 —
+ * `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`, C3 —
  * remonté du lot 4).
  *
  * Il porte l'ÉCHELLE ENTIÈRE des limites de commande, comme le fil du push

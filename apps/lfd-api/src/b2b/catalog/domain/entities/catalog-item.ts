@@ -16,7 +16,7 @@ import { audienceIncludes, type CatalogAudience } from "../served-to.js";
  *   prise ici, et qui doit survivre au push.
  *
  * 🔴 **Le prix ne s'y décide plus** (lot D de
- * `documentation/pim/plan-catalogue-synchronise-par-audience.md`, 2026-10-15) :
+ * `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`, 2026-10-15) :
  * le prix servi est celui du référentiel, qui porte depuis le lot P un prix pro
  * HT saisi. Les colonnes `price_millicents` et `decided_public_ttc_cents`
  * restent en base, ni lues ni écrites.

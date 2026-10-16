@@ -4,7 +4,7 @@ import type { OrderLimitChange, OrderLimitTarget } from "../order-limit-descent.
 
 /**
  * **Ce que la descente des limites de commande lit et écrit sur la
- * plateforme** (lot 2b de `documentation/pim/plan-catalogue-synchronise-par-audience.md`).
+ * plateforme** (lot 2b de `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`).
  *
  * Une projection, pas un agrégat : la limite d'un article est un fait du
  * référentiel, résolu ici depuis ses règles, et aucune décision locale ne

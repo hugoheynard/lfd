@@ -1,6 +1,11 @@
 # Plan — un catalogue synchronisé, activé par audience
 
-> 📐 **Doc-first, rien n'est bâti** (rédigé le 2026-10-15). Remplace deux
+> 🟡 **État au 2026-10-16** : bâtis et commités — lots 1, 2a, 2b (sauf 2b4,
+> l'ouverture de `CATALOG_FACTS_ENABLED`, geste de Hugo), P, S, D et 3.
+> Restent : W (webhook de la vitrine), 4 (TVA, limites, révisions
+> automatiques), 5 (le ménage). Rangé dans `catalogue/` le même jour.
+>
+> ~~📐 Doc-first, rien n'est bâti (rédigé le 2026-10-15).~~ Remplace deux
 > plans, qui restent en place avec un bandeau :
 > [`plan-audience-par-heritage.md`](plan-audience-par-heritage.md) (même jour)
 > et [`plan-publication-par-faits-versionnes.md`](plan-publication-par-faits-versionnes.md)

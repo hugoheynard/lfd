@@ -209,7 +209,7 @@ vient d'une mesure du 2026-09-02 sur la base de dev. La production peut dire
 autre chose.
 
 ⓘ La **contamination croisée d'atelier** est tranchée ailleurs et non
-implémentée : [`05-allergenes-gs1-inco.md`](data-model/05-allergenes-gs1-inco.md)
+implémentée : [`05-allergenes-gs1-inco.md`](../pim/data-model/05-allergenes-gs1-inco.md)
 § D7 — elle se déclare une fois et **ajoute**, elle ne remplace pas.
 
 ### 3.9 R9 — les trois questions techniques
@@ -292,7 +292,7 @@ contredit ce qu'on allait recommander.
 ## Annexe — ce que ce document ne porte pas
 
 - **L'assortiment sur la matrice.**
-  [`ecrans-du-cycle-catalogue.md`](ecrans-du-cycle-catalogue.md) § 3 le porte
+  [`../pim/ecrans-du-cycle-catalogue.md`](../pim/ecrans-du-cycle-catalogue.md) § 3 le porte
   mieux, avec un retrait **irréversible au troisième déploiement**.
   ⚠️ Deux pièges à ne pas perdre : le compteur `candidates`
   (`feed-projection.service.ts`) est compté **avant** le filtre de matrice — s'il

@@ -2,7 +2,7 @@ import type { ShopAudience } from "./ports/catalog.reader.js";
 
 /**
  * À qui un article se vend, tel que le référentiel le dit (C2 de
- * `documentation/pim/plan-catalogue-synchronise-par-audience.md`). Une VALEUR
+ * `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`). Une VALEUR
  * de donnée, recopiée du fait de la fiche.
  */
 export type CatalogAudience = "pro" | "public" | "both";

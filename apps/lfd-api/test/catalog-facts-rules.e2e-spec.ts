@@ -1,6 +1,6 @@
 /**
  * E2E — **les règles et les familles sur la plateforme**, en processus (lot
- * 2b de `documentation/pim/plan-catalogue-synchronise-par-audience.md`).
+ * 2b de `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`).
  *
  * Ce que seul ce niveau prouve : l'échelle des limites de commande voyage en
  * RÈGLES (`pim.catalog_rules_changed`), se range sous condition `applied_seq`

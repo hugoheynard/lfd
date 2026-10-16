@@ -782,8 +782,8 @@ serait tenté.
 
 ## Références
 
-Docs liés : [`flux-catalogue-et-versionnement.md`](flux-catalogue-et-versionnement.md)
+Docs liés : [`../pim/flux-catalogue-et-versionnement.md`](../pim/flux-catalogue-et-versionnement.md)
 (la couche PIM et son versionnement),
-[`audit-fiche-produit-2026-09-01.md`](audit-fiche-produit-2026-09-01.md),
+[`../pim/audit-fiche-produit-2026-09-01.md`](../pim/audit-fiche-produit-2026-09-01.md),
 [`../pricing/architecture-resolution-de-prix.md`](../pricing/architecture-resolution-de-prix.md),
 [`../ops/runbook.md`](../ops/runbook.md).

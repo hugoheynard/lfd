@@ -1,7 +1,7 @@
 /**
  * E2E — **l'audience du catalogue et l'activation**, sur un vrai Postgres.
  *
- * Lot 1 de `documentation/pim/plan-catalogue-synchronise-par-audience.md` :
+ * Lot 1 de `documentation/catalogue/plan-catalogue-synchronise-par-audience.md` :
  * l'audience se règle par l'API et se relit (colonnes `audience`, `CHECK` en
  * base), et l'aperçu de bascule mesure ce que la bascule toucherait — sans
  * rien écrire. Lot 2b : activer exige UNE déclinaison complète (un taux pour

@@ -1,6 +1,6 @@
 /**
  * **La saisie du prix pro HT** (lot P de
- * `documentation/pim/plan-catalogue-synchronise-par-audience.md`) — lue et
+ * `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`) — lue et
  * réécrite en TEXTE, jamais par un flottant.
  *
  * Le serveur reste juge (`ProPriceHt` refuse une sixième décimale) ; cette

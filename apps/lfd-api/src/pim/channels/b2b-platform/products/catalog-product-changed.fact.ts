@@ -38,7 +38,7 @@ const payloadSchema = z.object({
 /**
  * **Une fiche du référentiel a changé** — fait DURABLE que le référentiel
  * DÉCLARE dans son canal vers la plateforme (lot 2a de
- * `documentation/pim/plan-catalogue-synchronise-par-audience.md`, C3, C4).
+ * `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`, C3, C4).
  *
  * Il porte l'**instantané complet** de la fiche, relu en base sous verrou par
  * `CatalogEmitter` en fin de transaction — pas un diff : il se rejoue seul, et

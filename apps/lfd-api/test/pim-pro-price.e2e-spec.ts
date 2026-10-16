@@ -1,7 +1,7 @@
 /**
  * E2E — **le prix pro HT saisi**, sur un vrai Postgres.
  *
- * Lot P de `documentation/pim/plan-catalogue-synchronise-par-audience.md` :
+ * Lot P de `documentation/catalogue/plan-catalogue-synchronise-par-audience.md` :
  * la saisie (cinq décimales, colonne `pro_price_millicents`), l'activation
  * sous la méthode `entered`, la bascule de méthode journalisée (le `CHECK`
  * élargi), et le pré-remplissage — aperçu exact, `apply` qui n'écrit que là

@@ -1,7 +1,7 @@
 /**
  * E2E — **la validation avant la boutique publique, le masquage par audience
  * et la vue « Catalogue publié »** (lot 3 de
- * `documentation/pim/plan-catalogue-synchronise-par-audience.md`).
+ * `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`).
  *
  * Ce que seul ce niveau prouve : que le drapeau naît à la création de la ligne
  * dans le vrai `upsert` du récepteur et nulle part ailleurs, que la boutique

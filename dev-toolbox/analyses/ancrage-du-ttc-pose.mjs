@@ -3,7 +3,7 @@
  * telle quelle ?
  *
  * Ouverte le 2026-09-21 pour
- * [`documentation/pim/plan-un-seul-canal-deux-prix.md`](../../documentation/pim/plan-un-seul-canal-deux-prix.md)
+ * [`documentation/catalogue/plan-un-seul-canal-deux-prix.md`](../../documentation/catalogue/plan-un-seul-canal-deux-prix.md)
  * § D12, quand le lot a proposé une colonne « prix public TTC » modifiable.
  *
  * ```bash

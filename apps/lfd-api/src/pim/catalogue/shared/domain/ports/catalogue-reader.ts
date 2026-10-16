@@ -12,7 +12,7 @@ import type { ProductRecord } from "../../../product/domain/ports/product.reposi
  * 🔴 **Le test de validation a été PASSÉ pour de vrai le 2026-09-21.** Ce
  * commentaire posait l'expérience en hypothèse — « si on supprimait le module
  * Shopify, le catalogue compilerait encore ». Ce module a été supprimé
- * ([`plan-un-seul-canal-deux-prix.md`](../../../../../../../documentation/pim/plan-un-seul-canal-deux-prix.md)),
+ * ([`plan-un-seul-canal-deux-prix.md`](../../../../../../../documentation/catalogue/plan-un-seul-canal-deux-prix.md)),
  * et le catalogue a compilé sans qu'une ligne y change. Une découpe qui tient
  * n'est plus une intention, c'est un fait mesuré.
  *

@@ -16,7 +16,7 @@ const EURO_AMOUNT = /^(\d+)(?:[.,](\d+))?$/u;
 
 /**
  * **Le prix professionnel HORS TAXE saisi** — lot P de
- * `documentation/pim/plan-catalogue-synchronise-par-audience.md` (P2).
+ * `documentation/catalogue/plan-catalogue-synchronise-par-audience.md` (P2).
  *
  * Saisi en euros avec **au plus cinq décimales**, rangé en millicentimes
  * entiers. La conversion se fait sur le TEXTE, chiffre par chiffre, et jamais

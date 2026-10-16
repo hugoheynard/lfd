@@ -11,7 +11,7 @@ import { B2bIntegration } from '../b2b-integration/b2b-integration';
  * en a porté deux, Shopify et la boutique B2B, et son en-tête défendait l'ordre :
  * « la boutique B2B en premier, et c'est un ordre de vérité : c'est elle qui
  * facture ». Shopify est sorti le 2026-09-21
- * ([`plan-un-seul-canal-deux-prix.md`](../../../../../../documentation/pim/plan-un-seul-canal-deux-prix.md)),
+ * ([`plan-un-seul-canal-deux-prix.md`](../../../../../../documentation/catalogue/plan-un-seul-canal-deux-prix.md)),
  * et une barre d'onglets à un onglet est un choix qu'on n'offre pas.
  *
  * L'autre moitié de cet en-tête reste vraie et vaut d'être gardée : **un

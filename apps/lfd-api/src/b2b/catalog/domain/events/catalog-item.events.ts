@@ -101,7 +101,7 @@ export class CatalogItemUnfeaturedEvent extends CatalogItemFlagEvent {
 
 /**
  * Fait : **l'article est validé pour la boutique publique** (lot 3 de
- * `documentation/pim/plan-catalogue-synchronise-par-audience.md`). Arrivé du
+ * `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`). Arrivé du
  * référentiel, il n'était servi qu'aux pros ; le public le voit désormais,
  * s'il n'est pas masqué.
  */

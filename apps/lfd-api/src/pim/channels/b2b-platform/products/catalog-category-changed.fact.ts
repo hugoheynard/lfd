@@ -31,7 +31,7 @@ const payloadSchema = z.object({
 /**
  * **Une famille du référentiel a changé** — fait DURABLE que le référentiel
  * DÉCLARE dans son canal vers la plateforme (lot 2a de
- * `documentation/pim/plan-catalogue-synchronise-par-audience.md`, C3).
+ * `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`, C3).
  *
  * Écrit dans la transaction du geste, par `CatalogEmitter`, après le verrou de
  * la ligne : son `seq` dit l'ordre dans lequel les écritures ont été validées,

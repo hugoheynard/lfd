@@ -1,7 +1,7 @@
 /**
  * **Émettre l'instantané d'une fiche ou d'une famille vers la plateforme** —
  * dans la transaction du geste (lot 2a de
- * `documentation/pim/plan-catalogue-synchronise-par-audience.md`, C3 et C4).
+ * `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`, C3 et C4).
  *
  * Le catalogue le DÉCLARE ; le canal de la plateforme l'implémente. Le
  * catalogue ne connaît pas ses canaux (ADR-13) : il dit « cette fiche a

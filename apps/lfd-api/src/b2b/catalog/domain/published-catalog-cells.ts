@@ -3,7 +3,7 @@ import { audienceIncludes, type CatalogAudience } from "./served-to.js";
 
 /**
  * L'état d'une déclinaison pour une audience, dans la vue « Catalogue
- * publié » (lot 3 de `documentation/pim/plan-catalogue-synchronise-par-audience.md`,
+ * publié » (lot 3 de `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`,
  * D7 de `plan-audience-par-heritage.md`). Des VALEURS de donnée.
  */
 export type PublishedCellState =

@@ -91,7 +91,7 @@ export function htMillicentsOf(ttcCents: number, ratePercent: number | null): nu
  * (au plus proche, la moitié s'éloignant de zéro), un seul arrondi en sortie.
  *
  * Arrivé avec le prix pro saisi (lot P de
- * `documentation/pim/plan-catalogue-synchronise-par-audience.md`) : là, c'est
+ * `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`) : là, c'est
  * le HT qui fait foi, et ce TTC n'est qu'un affichage. Ne jamais en redériver
  * un HT — il perdrait les décimales saisies.
  */

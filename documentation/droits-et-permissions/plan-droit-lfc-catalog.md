@@ -118,14 +118,12 @@ du catalogue sous `lfc_operations`.
 - **Les outils agent** des droits lisent la liste des ressources : la
   nouvelle y entre d'elle-même ; l'ancienne en sort.
 
-## 5. Questions à Hugo
+## 5. Questions à Hugo — tranchées le 2026-10-16
 
-1. Le libellé « Catalogue publié » vous va-t-il ?
-2. Faut-il un geste de transfert en masse plutôt que l'aperçu et l'écran ?
-   La proposition est non (C2).
-3. Les notifications encore non lues sous `b2b_catalog:*` au moment de
-   L2 : les laisser perdues (proposition, si l'aperçu en compte zéro ou
-   peu), ou les réadresser ?
+1. **Libellé « Catalogue publié »** : oui.
+2. **Pas de transfert en masse** : oui, l'aperçu et l'écran.
+3. **Les notifications non lues sous `b2b_catalog:*`** à la bascule :
+   perdues, sans réadressage.
 
 ## Contradiction de `vitruve` (2026-10-16), qui prime sur C1–C5
 

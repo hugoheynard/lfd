@@ -5,7 +5,7 @@ import type { SalesContext } from "../value-objects/sales-context.js";
  * ceux qui ne font que les compter (ISP).
  *
  * La règle de complétude d'une fiche (lot 2b de
- * `documentation/pim/plan-catalogue-synchronise-par-audience.md`) exige un
+ * `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`) exige un
  * taux pour chacun : l'activation et les faits du catalogue ne lisent que
  * cette liste, et n'ont pas à dépendre du registre entier (racine, usage par
  * les lieux, contextes hors service).

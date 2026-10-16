@@ -17,7 +17,7 @@ export class ReemitCatalogCommand {
 }
 
 /**
- * **Réémettre** (2a6 de `documentation/pim/plan-catalogue-synchronise-par-audience.md`) :
+ * **Réémettre** (2a6 de `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`) :
  * le filet des faits du catalogue. Un fait perdu laisse une fiche en retard ;
  * la parité le montre, ceci le répare. « Tout » est aussi le geste qui remplit
  * la plateforme à l'ouverture des faits (2b4).

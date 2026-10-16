@@ -1,7 +1,7 @@
 /**
  * Port d'**écriture** de l'historique des prix : retracer le prix du
  * référentiel (lot D de
- * `documentation/pim/plan-catalogue-synchronise-par-audience.md`, correction
+ * `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`, correction
  * BLOQUANT de `vitruve`, 2026-10-15).
  *
  * Le tarificateur lit les prix passés dans `catalog_price_history`

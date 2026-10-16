@@ -19,7 +19,7 @@ export const PROJECT_CATALOG_PRODUCT = "catalog.project-catalog-product";
 
 /**
  * **Une fiche du référentiel arrive sur la plateforme, vendue ou non** (2a4
- * de `documentation/pim/plan-catalogue-synchronise-par-audience.md`).
+ * de `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`).
  *
  * Dans la transaction de la livraison, qui porte aussi son reçu :
  *

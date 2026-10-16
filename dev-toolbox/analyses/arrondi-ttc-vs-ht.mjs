@@ -2,7 +2,7 @@
  * **Mesure D6** — l'étiquette TTC survit-elle à la chaîne de calcul ?
  *
  * Ouverte le 2026-09-21 pour
- * [`documentation/pim/plan-un-seul-canal-deux-prix.md`](../../documentation/pim/plan-un-seul-canal-deux-prix.md) § A.4.
+ * [`documentation/catalogue/plan-un-seul-canal-deux-prix.md`](../../documentation/catalogue/plan-un-seul-canal-deux-prix.md) § A.4.
  *
  * ## Pourquoi un script et pas un chiffre dans un document
  *

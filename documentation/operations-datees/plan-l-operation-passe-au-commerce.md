@@ -69,7 +69,7 @@ production). Trois choses ont changé :
   la même opération ;
 - **le référentiel a été recentré** aujourd'hui sur ce qu'est un produit, à
   qui il est destiné et combien il coûte
-  ([`plan-catalogue-synchronise-par-audience.md`](../pim/plan-catalogue-synchronise-par-audience.md)) ;
+  ([`plan-catalogue-synchronise-par-audience.md`](../catalogue/plan-catalogue-synchronise-par-audience.md)) ;
   le faire voyager demanderait un lot entier de faits (le lot 4), pour une
   donnée qui ne sert qu'à vendre.
 

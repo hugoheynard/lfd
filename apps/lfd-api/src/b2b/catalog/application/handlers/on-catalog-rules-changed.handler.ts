@@ -17,7 +17,7 @@ export const PROJECT_CATALOG_RULES = "catalog.project-catalog-rules";
 
 /**
  * **Les règles globales du référentiel arrivent sur la plateforme** (lot 2b
- * de `documentation/pim/plan-catalogue-synchronise-par-audience.md`, C3).
+ * de `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`, C3).
  *
  * Dans la transaction de la livraison : l'échelle des limites de commande est
  * rangée **si ce fait est plus récent** que celle tenue (`applied_seq`), puis

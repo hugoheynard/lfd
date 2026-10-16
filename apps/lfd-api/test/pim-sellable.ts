@@ -5,7 +5,7 @@ import { jsonBody } from "./e2e-harness.js";
  * **Rendre une fiche activable**, pour les suites dont le sujet est ailleurs
  * (allergènes, cycle de vie, signature).
  *
- * Depuis le lot 2b de `documentation/pim/plan-catalogue-synchronise-par-audience.md`,
+ * Depuis le lot 2b de `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`,
  * activer exige une déclinaison complète : un prix, un taux pour CHAQUE
  * contexte de vente en service (b2b, à emporter, sur place), et un rapport pro
  * réglé. Ces suites ne parlent ni de prix ni de TVA : elles posent ici le

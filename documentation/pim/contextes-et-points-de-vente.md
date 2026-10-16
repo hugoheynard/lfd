@@ -1,7 +1,7 @@
 # Contextes de vente, points de vente et TVA
 
 > 🔴 **Shopify est sorti du dépôt le 2026-09-21**
-> ([`plan-un-seul-canal-deux-prix.md`](plan-un-seul-canal-deux-prix.md)).
+> ([`../catalogue/plan-un-seul-canal-deux-prix.md`](../catalogue/plan-un-seul-canal-deux-prix.md)).
 > Ce document décrit le modèle des **contextes de vente**, qui ne bouge pas et
 > devient au contraire plus central — c'est lui qui portera la TVA par contexte
 > sur le fil. Les passages qui décrivaient la projection vers la boutique en

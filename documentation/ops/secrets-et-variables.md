@@ -171,7 +171,7 @@ directe vise déjà la même base.
 - **`LFD_PRODUCTION_DATABASE_URL` n'est ni un secret GitHub ni une ligne du
   `.env`.** ⚠️ Plus aucun outil ne la lit depuis le 2026-10-15 : son seul
   lecteur, l’import de la mercuriale, est supprimé avec le prix décidé
-  (lot D de `pim/plan-catalogue-synchronise-par-audience.md`). Ce qui suit
+  (lot D de `catalogue/plan-catalogue-synchronise-par-audience.md`). Ce qui suit
   décrit l'état d'avant. Seul import-mercuriale (retiré au lot D) la lisait — l'unique outil de
   `prisma/` destiné à la production, qui ne lit jamais `DATABASE_LFD_URL`. Elle
   se pose dans l'environnement du terminal pour l'occasion, depuis le

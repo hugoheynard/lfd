@@ -8,7 +8,7 @@ import { theSubject } from './referential-support';
 
 /**
  * **L'audience du catalogue** — à qui une famille ou une fiche vend (lot 1 de
- * `documentation/pim/plan-catalogue-synchronise-par-audience.md`). Les mots
+ * `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`). Les mots
  * sont ceux des opérations : une même liste de clientèles.
  */
 

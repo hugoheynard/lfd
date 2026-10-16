@@ -12,8 +12,8 @@
 >
 > Ce plan vit dans `pim/` parce que l'émission (brouillon/publié, faits,
 > révisions) est au référentiel ; le côté plateforme (réception) est décrit
-> aujourd'hui dans [`b2b/architecture-catalogue-synchronise.md`](../b2b/architecture-catalogue-synchronise.md)
-> et [`b2b/push-catalogue-pim-vers-boutique.md`](../b2b/push-catalogue-pim-vers-boutique.md).
+> aujourd'hui dans [`catalogue/architecture-catalogue-synchronise.md`](architecture-catalogue-synchronise.md)
+> et [`catalogue/push-catalogue-pim-vers-boutique.md`](push-catalogue-pim-vers-boutique.md).
 
 ## 0. Le souhait (Hugo, 2026-10-13)
 
@@ -78,7 +78,7 @@ projection ≠ empreinte du dernier fait émis), et le bouton devient
 part donc jamais ; elle part au geste, qui repasse le refus de l'agrégat.
 
 Conséquence : `b2b_channel_binding` cesse d'être la liste d'appartenance
-(doublon déjà signalé par [`ecrans-du-cycle-catalogue.md`](ecrans-du-cycle-catalogue.md)) —
+(doublon déjà signalé par [`../pim/ecrans-du-cycle-catalogue.md`](../pim/ecrans-du-cycle-catalogue.md)) —
 est émise une fiche **publiée ET cochée sur la carte `b2b`**. Décocher la
 carte d'une fiche publiée = un fait « retirée ».
 
@@ -137,7 +137,7 @@ archivée. Renommer une famille émet sa nouvelle version. → Q2.
 ### P4 — Les révisions en retour arrière
 
 - La révision reste une photographie du catalogue entier identifiée par son
-  empreinte ([`mecanique-revisions-catalogue.md`](mecanique-revisions-catalogue.md)).
+  empreinte ([`../pim/mecanique-revisions-catalogue.md`](../pim/mecanique-revisions-catalogue.md)).
   Proposition : **prise automatiquement** au premier geste de publication de
   chaque journée **et** à la main avec un nom ; plus de révision anonyme par push.
 - « Revenir à R » : pour chaque fiche, réémet le snapshot que R portait comme
@@ -230,12 +230,12 @@ Migrations : `catalog_publication_seq` (pim), `catalog_items.applied_seq`
 
 [`cycle-catalogue-du-pim-a-la-vente.md`](cycle-catalogue-du-pim-a-la-vente.md),
 [`du-catalogue-a-la-vente.md`](du-catalogue-a-la-vente.md),
-[`mecanique-revisions-catalogue.md`](mecanique-revisions-catalogue.md) (en partie),
-[`flux-catalogue-et-versionnement.md`](flux-catalogue-et-versionnement.md),
-[`contextes-et-points-de-vente.md`](contextes-et-points-de-vente.md),
-[`ecrans-du-cycle-catalogue.md`](ecrans-du-cycle-catalogue.md),
-[`b2b/push-catalogue-pim-vers-boutique.md`](../b2b/push-catalogue-pim-vers-boutique.md),
-[`b2b/architecture-catalogue-synchronise.md`](../b2b/architecture-catalogue-synchronise.md).
+[`../pim/mecanique-revisions-catalogue.md`](../pim/mecanique-revisions-catalogue.md) (en partie),
+[`../pim/flux-catalogue-et-versionnement.md`](../pim/flux-catalogue-et-versionnement.md),
+[`../pim/contextes-et-points-de-vente.md`](../pim/contextes-et-points-de-vente.md),
+[`../pim/ecrans-du-cycle-catalogue.md`](../pim/ecrans-du-cycle-catalogue.md),
+[`catalogue/push-catalogue-pim-vers-boutique.md`](push-catalogue-pim-vers-boutique.md),
+[`catalogue/architecture-catalogue-synchronise.md`](architecture-catalogue-synchronise.md).
 Chacun reçoit un bandeau daté au lot qui le périme, pas avant.
 
 ## Contradiction de `vitruve` (2026-10-13) — non intégrée

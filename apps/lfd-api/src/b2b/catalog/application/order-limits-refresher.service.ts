@@ -6,7 +6,7 @@ import { CatalogOrderLimits } from "../domain/ports/catalog-order-limits.js";
 /**
  * **Redescend les limites de commande** sur les articles en vente, depuis
  * l'échelle reçue du référentiel (lot 2b de
- * `documentation/pim/plan-catalogue-synchronise-par-audience.md`).
+ * `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`).
  *
  * Appelé par les trois récepteurs des faits du catalogue, chacun après son
  * écriture et seulement si elle a eu lieu :
