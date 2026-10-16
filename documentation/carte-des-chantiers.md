@@ -233,6 +233,15 @@ supprimé, sauf si un `migration.sql` le cite — alors bandeau daté) :
 
 ## 8. Mon conseil d'ordre
 
+> **En file, décidé par Hugo le 2026-10-16** — après les chantiers en cours
+> (retrait fermé à une clientèle, réparation de `dev-scenario-stability`) :
+>
+> 1. **Les photos d'une fiche neuve se perdent avant le premier
+>    enregistrement** — `pim/todo.md` § 6 ;
+> 2. **le lot 3 des opérations au commerce** (encart d'annonce, écran,
+>    image et texte alternatif de la médiathèque, bascule) —
+>    `operations-datees/plan-l-operation-passe-au-commerce.md`.
+
 1. **Les échéances du § 1**, parce qu'elles ont une date.
 2. **Le § 3 de haut en bas**, sans attendre personne — en commençant par les
    trois lignes de sécurité (1, 2) et le durable (3 à 6).
