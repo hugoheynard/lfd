@@ -119,11 +119,11 @@ deux colonnes du contexte de vente ont survécu au canal, et une garde peut
       le filtre est alors une facette d'écran, sans aller-retour de plus.
 
       La quatrième demande une décision : une **publication** est aujourd'hui une
-                  `modification` comme une autre. La sortir en catégorie propre veut dire
-                  qu'un article qui change de statut ET de prix apparaît dans **deux**
-                  facettes, ou qu'on choisit laquelle l'emporte. ⚠️ Trancher avant d'écrire :
-                  un article qui disparaît d'un filtre parce qu'il a aussi changé de prix est
-                  le genre d'absence qu'on ne remarque pas.
+                          `modification` comme une autre. La sortir en catégorie propre veut dire
+                          qu'un article qui change de statut ET de prix apparaît dans **deux**
+                          facettes, ou qu'on choisit laquelle l'emporte. ⚠️ Trancher avant d'écrire :
+                          un article qui disparaît d'un filtre parce qu'il a aussi changé de prix est
+                          le genre d'absence qu'on ne remarque pas.
 
 - [ ] **Purger les contenus orphelins** — un `catalog_content` que plus aucune
       révision ne référence ne disparaît pas (clé étrangère `RESTRICT`, à dessein).
@@ -144,12 +144,23 @@ rejouable ni retour arrière de publication depuis le retrait du canal Shopify
       `fold-empty-state` « Écran à venir ».
 
       Ce qui vient ici est le **vocabulaire** — les types de conditionnement et ce
-                  qu'ils nomment. Combien d'unités dans le carton d'un produit donné reste sur
-                  la fiche : c'est une propriété de ce produit.
+                          qu'ils nomment. Combien d'unités dans le carton d'un produit donné reste sur
+                          la fiche : c'est une propriété de ce produit.
 
-                  Le point qui justifie l'écran : un conditionnement porte sa **propre
-                  référence**. Le professionnel commande « le carton de 24 », pas « 24 fois
-                  l'article » — c'est ce qui en fait autre chose qu'une quantité.
+                          Le point qui justifie l'écran : un conditionnement porte sa **propre
+                          référence**. Le professionnel commande « le carton de 24 », pas « 24 fois
+                          l'article » — c'est ce qui en fait autre chose qu'une quantité.
+
+- [ ] **Les photos d'une fiche neuve se perdent avant le premier
+      enregistrement** (signalé par Hugo, 2026-10-16). Sur une fiche en cours de
+      création, les photos ajoutées ne restent pas tant que la fiche n'a pas été
+      enregistrée une fois. Non diagnostiqué : la section Visuels écrit
+      peut-être par une route qui exige l'identifiant de la fiche
+      (`set-product-media.ts`), qui n'existe qu'après création, et l'état local
+      de l'écran ne les retient pas. À trancher en le corrigeant : garder les
+      photos dans le brouillon de l'écran et les envoyer avec la création, ou
+      créer la fiche dès la première photo. Un test de non-régression nommé
+      d'après le symptôme.
 
 ---
 
