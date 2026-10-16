@@ -3,8 +3,8 @@
  * telle quelle ?
  *
  * Ouverte le 2026-09-21 pour
- * [`documentation/catalogue/plan-un-seul-canal-deux-prix.md`](../../documentation/catalogue/plan-un-seul-canal-deux-prix.md)
- * § D12, quand le lot a proposé une colonne « prix public TTC » modifiable.
+ * le plan « un seul canal, deux prix » (2026-09-21, retiré le 2026-10-16 — texte dans l'historique git), § D12 — décision reprise dans
+ * [`catalogue-synchronise.md`](../../documentation/catalogue/catalogue-synchronise.md) §5, quand le lot a proposé une colonne « prix public TTC » modifiable.
  *
  * ```bash
  * pnpm --filter @lfd/money build

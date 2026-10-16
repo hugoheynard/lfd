@@ -1,7 +1,8 @@
 # Le chemin du prix — du référentiel au rayon, et au panier
 
 > **2026-09-21.** Décrit le code des lots **A1** et **A2** de
-> [`plan-un-seul-canal-deux-prix.md`](../catalogue/plan-un-seul-canal-deux-prix.md).
+> le plan « un seul canal, deux prix » (retiré le 2026-10-16 ; ses décisions
+> encore vraies sont dans [`catalogue-synchronise.md`](../catalogue/catalogue-synchronise.md) §5).
 >
 > ✅ **À jour au 2026-09-21, fin de journée.** La chaîne est complète : le
 > référentiel pose une étiquette, la plateforme peut en poser une autre, le

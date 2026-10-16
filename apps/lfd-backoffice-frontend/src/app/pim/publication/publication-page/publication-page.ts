@@ -12,7 +12,7 @@ import { PublicationB2b } from '../publication-b2b/publication-b2b';
  * canal savait pousser côté serveur — prix, taux de TVA et publications
  * n'avaient donc aucun chemin jusqu'à la boutique depuis cet écran ». L'ancien
  * canal de vente en ligne est sorti le 2026-09-21
- * ([`plan-un-seul-canal-deux-prix.md`](../../../../../../documentation/catalogue/plan-un-seul-canal-deux-prix.md)),
+ * (le plan « un seul canal, deux prix » (2026-09-21, retiré le 2026-10-16 — texte dans l'historique git)),
  * et c'est le canal qui facture qui reste seul.
  *
  * ⚠️ Avec lui partent les **collections de taxe**, qui n'étaient pas une notion

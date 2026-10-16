@@ -29,7 +29,7 @@ flowchart TB
         VAT["tva_rate"]
         CTX["sales_context<br/><i>carte de capacité</i>"]
         POS["point_of_sale<br/>point_of_sale_context"]
-        ACC["accounting_rules<br/><i>rapport pro / public</i>"]
+        ACC["accounting_rules<br/><i>méthode du prix pro</i>"]
     end
 
     subgraph C["② Le catalogue — ce qu'on vend"]
@@ -130,19 +130,21 @@ flowchart LR
     end
 
     PIM --> MB
-    ACCR["accounting_rules<br/><i>rapport pro</i>"] --> PJ
+    ACCR["accounting_rules<br/><i>méthode du prix pro</i>"] --> PJ
 ```
 
 **Ce que la projection B2B fabrique** — et c'est la chaîne entière du prix :
 
 ```
-prix public TTC (product_variant.price_cents)
-  × rapport pro        → prix pro TTC, arrondi au centime
-  ÷ (1 + taux du canal) → hors taxe en millicentimes
+prix public TTC (product_variant.price_cents)        → le prix public
+prix pro HT saisi (par déclinaison), sinon dérivé    → le prix pro, par proPriceOf
 ```
 
-Le rapport est une **précondition** : sans lui, le push est refusé plutôt
-qu'émis au plein tarif. Un snapshot vide serait ingéré et viderait la boutique.
+Le prix pro sort d'une seule porte, `proPriceOf` (`apps/lfd-api/src/pim/channels/b2b-platform/products/projection.ts:228`) :
+la saisie prime ; le rapport ne dérive un prix que sous la méthode `ratio_ttc`,
+et n'est sinon qu'une suggestion à l'écran (lot S, 2026-10-16). Le push ne se
+refuse plus que sous `ratio_ttc` sans rapport
+(`feed-projection.service.ts:91-93`, vérifié le 2026-10-16).
 
 ## 5. Ce qui est versionné aujourd'hui — l'inventaire honnête
 
@@ -240,8 +242,10 @@ La décision laisse une question qu'il vaut mieux poser maintenant : capture-t-o
 l'état **canonique** (les lignes telles qu'elles sont écrites) ou l'état
 **résolu** (ce qu'un canal recevrait) ?
 
-Le canonique seul a un trou, et il est large. Le prix professionnel se dérive du
-prix public par `accounting_rules.ratio_bp` — une ligne **globale**. Le jour où
+Le canonique seul a un trou, et il est large. Sous la méthode `ratio_ttc`, le
+prix professionnel se dérive du prix public par `accounting_rules.ratio_bp` —
+une ligne **globale** (sous `entered`, la méthode par défaut depuis le lot S, le
+prix pro est saisi par déclinaison et ce trou-là se ferme). Le jour où
 la remise passe de 10 % à 12 %, aucune ligne de produit ne bouge, et un diff
 canonique dirait donc **« rien n'a changé »** alors que toutes les factures
 professionnelles viennent de changer. Le même raisonnement vaut pour un taux de
@@ -251,7 +255,7 @@ Une révision porte donc **deux étages** :
 
 | Étage        | Contenu                                                                                                                                     | Pourquoi                                    |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
-| **En-tête**  | le rapport pro, les taux par contexte en vigueur                                                                                            | ce qui change tout sans que rien ne bouge   |
+| **En-tête**  | la méthode et le rapport pro, les taux par contexte                                                                                         | ce qui change tout sans que rien ne bouge   |
 | **Articles** | par déclinaison vendable : sku, sku produit, nom, famille, prix public TTC, poids, allergènes, canaux effectifs, taux effectif par contexte | ce qu'on vend, résolu — héritages appliqués |
 
 Les **héritages sont résolus** à la capture. Garder « ce produit hérite de sa
@@ -393,10 +397,10 @@ qui a changé entre deux.
 - **« Rien n'a été posé » est un message**, pas un silence. Le serveur rend
   `created: false` sur un catalogue inchangé, et l'écran le dit — annoncer
   « posée » ferait croire à une version de plus.
-- **L'en-tête du diff vient en PREMIER.** Il porte le rapport professionnel, qui
-  bouge sans qu'aucun article ne change : plus bas, il se manquerait sur un diff
-  long, alors que c'est le seul changement qui touche toutes les factures d'un
-  coup.
+- **L'en-tête du diff vient en PREMIER.** Il porte la méthode et le rapport
+  professionnels, qui bougent sans qu'aucun article ne change : plus bas, ils
+  se manqueraient sur un diff long. Sous `ratio_ttc`, le rapport touche toutes
+  les factures d'un coup ; sous `entered`, il n'est qu'une suggestion.
 - **Trois natures, trois blocs** — entré, retiré, modifié. Une liste unique
   obligerait le lecteur à trier lui-même deux questions qui ne se posent pas
   ensemble : « qu'est-ce qu'on vend en plus » n'est pas « qu'est-ce qui a changé
@@ -499,8 +503,8 @@ envoyer.
 > 🔴 **Ce dernier paragraphe est périmé depuis le 2026-09-01 : le bouton est
 > retiré.** Le §14 lui avait ôté son rôle de déclencheur en lui gardant celui de
 > point de reprise ; ce reste-là ne survit pas.
-> [`../catalogue/cycle-catalogue-du-pim-a-la-vente.md`](../catalogue/cycle-catalogue-du-pim-a-la-vente.md)
-> §4.1 bis montre pourquoi : `latest()` rend la dernière ancre **posée**, sans
+> [`../catalogue/catalogue-synchronise.md`](../catalogue/catalogue-synchronise.md)
+> §6 bis montre pourquoi : `latest()` rend la dernière ancre **posée**, sans
 > regarder si elle a été publiée. Une ancre manuelle devient donc la référence de
 > tous les diffs — « N changements depuis la dernière révision » se calcule
 > contre une version qu'aucun canal n'a reçue, et rien à l'écran ne l'en

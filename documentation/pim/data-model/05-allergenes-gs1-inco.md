@@ -772,8 +772,8 @@ ne remplace rien, et ne remplit aucun `null`.**
 
 C'est le point qui justifie d'écrire cette décision plutôt que de la bâtir tout
 de suite, parce que le raccourci est tentant : **94 fiches attendent leur
-déclaration** (cf. [`plan-un-seul-canal-deux-prix.md`](../../catalogue/plan-un-seul-canal-deux-prix.md),
-chantier C), et une case à cocher règlerait la journée.
+déclaration** (compte du 2026-09-02, base de dev — cf. [`plan-catalogue-synchronise-par-audience.md`](../../catalogue/plan-catalogue-synchronise-par-audience.md),
+« Repris du plan un seul canal, deux prix »), et une case à cocher règlerait la journée.
 
 Elle ne la règle pas. `publish()` refuse une fiche dont une déclinaison active
 n'a pas de fiche réglementaire, et « on ne met pas en vente ce qu'on ne peut pas

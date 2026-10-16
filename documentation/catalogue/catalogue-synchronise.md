@@ -356,6 +356,38 @@ créer, modifier ou supprimer un taux déplacerait le maximum et retarifierait
 tout le catalogue professionnel sans qu'une ligne ne bouge — de l'action à
 distance sur de l'argent, la pire classe de défaut du dépôt.
 
+### Le prix public — ce qui fait foi (décisions du 2026-09-21, encore vraies)
+
+Reprises du plan « un seul canal, deux prix », retiré le 2026-10-16 ; elles
+expliquent des garde-fous encore en place (vérifié ce jour-là) :
+
+- **D6 — le hors taxe fait foi.** La dérive d'un centime entre l'étiquette et
+  le TTC encaissé est bornée, orientée et acceptée — tranchée sur mesure
+  ([`arrondi-ttc-vs-ht.mjs`](../../dev-toolbox/analyses/arrondi-ttc-vs-ht.mjs),
+  qui a renversé la recommandation qu'on allait faire). La déduction du hors
+  taxe vit à un seul endroit, `packages/money/src/tax.ts`.
+- **D12 — un prix posé est une ENTRÉE, pas un affichage** : ce qui se montre
+  est le TTC **encaissé**, par `ttcCentsOf` (`packages/money/src/vat.ts:241`)
+  — mesuré par [`ancrage-du-ttc-pose.mjs`](../../dev-toolbox/analyses/ancrage-du-ttc-pose.mjs).
+- **D13 — le rayon d'un particulier est en TTC, celui d'un pro en hors
+  taxe.** Le panier public dit le TTC de la vignette au même centime (e2e
+  « dit la pièce au MÊME centime que le rayon »,
+  `apps/lfd-api/test/shop-quote.e2e-spec.ts:167`), et le bon de commande
+  bascule ses colonnes en « PU TTC » quand toutes ses lignes portent un TTC
+  (`sheetShowsTtc`, `apps/lfd-api/src/b2b/orders/domain/services/order-sheet.ts:193`).
+- 🔴 **Les lignes TTC ne s'additionnent pas en le total.** `ventilateVat`
+  arrondit une fois par taux sur l'assiette entière ; le pied reste un
+  décompte hors taxe puis TVA. Un test fixe la propriété
+  (`packages/money/src/__tests__/vat.spec.ts:206`) pour que personne ne
+  « répare » le panier en sommant ses lignes. C'est le point à regarder si un
+  client se plaint.
+- **D7** — la boutique publique expose `takeaway`, et rien d'autre
+  (`PUBLIC_SALES_CONTEXT`, `apps/lfd-api/src/b2b/catalog/domain/public-context.ts:30`).
+- **D9** — pas de facture pour le public : un bon de commande chiffré.
+- **D10 — on ouvre sur ce qui est déclaré**, décision de ne rien bâtir :
+  `Product.activate` refuse déjà une fiche sans allergènes déclarés (ci-dessus).
+  L'ordre de saisie des déclarations manquantes est une décision commerciale.
+
 ## 6. Les interrupteurs
 
 Deux variables, **fermées par défaut**, et il faut les deux pour émettre :
@@ -403,9 +435,8 @@ projette les fiches **publiées**, l'arrivée attend dans la boîte de réceptio
 de la plateforme, et un humain l'accepte
 (`POST admin/catalog/delivery/accept`, `apps/lfd-api/src/b2b/catalog/http/admin-catalog-delivery.controller.ts:53`),
 ce qui l'applique par les agrégats (`ingest-catalog.service.ts:82-130`). Ce
-cycle — révisions, empreinte, réception, versions, santé — est décrit dans
-[`cycle-catalogue-du-pim-a-la-vente.md`](cycle-catalogue-du-pim-a-la-vente.md),
-qui disparaîtra avec lui au lot 5.
+cycle — révisions, empreinte, réception, versions, santé — est décrit au
+§6 bis ; il disparaîtra au lot 5.
 
 Le port `B2bCatalogDriver`, déclaré par le référentiel et implémenté par la
 plateforme, a survécu au rapprochement des deux processus : il coûte une
@@ -422,6 +453,97 @@ et l'attente du déploiement compare la révision du code, satisfaite du premier
 coup sur le même commit. Un changement de variable voyage avec un **commit**
 qui touche `apps/lfd-api/**` ou `packages/**` — sinon le filtre de chemins ne
 déclenche pas le déploiement de l'API, et il faut un `workflow_dispatch`.
+
+## 6 bis. Tant que les faits sont fermés
+
+Repris le 2026-10-16 de « Le cycle du catalogue — du référentiel à la vente »
+(retiré ce jour-là), en ne gardant que ce que le code tient encore ; chaque
+mécanisme a été retrouvé à l'endroit cité. Tout ceci part au lot 5.
+
+### Côté référentiel — l'ancre, l'empreinte, le refus
+
+- **Une ancre** (`catalog_revision`) est posée **par le push**, jamais à la
+  main. Son `hash` est `@unique` (`apps/lfd-api/prisma/schema/pim/revisions.prisma:46`) :
+  une ancre est un **contenu**, pas un moment. La pose demande « cette ancre
+  existe-t-elle ? » (`byHash`, `apps/lfd-api/src/pim/catalogue/revision/application/take-catalog-revision.ts:97`),
+  et le perdant d'une course relit l'ancre du gagnant (`:146`) au lieu de
+  tomber. Posée **avant** l'envoi : un échec en laisse une sans publication,
+  que le nouvel essai retrouve.
+- **La référence des diffs** est l'ancre de la dernière publication réussie
+  (`lastPublished`, `prisma-catalog-revision.repository.ts:62`), lue depuis la
+  publication (`mode = 'live'` et `outcome = 'sent'`), pas depuis la date de
+  pose : après un aller-retour A → B → A, trier les ancres rendrait B.
+- **Une ancre archive, l'empreinte de projection garantit.** Le refus de
+  dérive porte sur la projection canonique (sans `generatedAt`, triée avec `<`
+  et non `localeCompare`) : la simulation la produit, l'envoi la relit, et un
+  écart lève `ProjectionDriftError` — **avant** le court-circuit « aucun
+  candidat », sans quoi un catalogue vidé passerait pour un succès
+  (`apps/lfd-api/src/pim/channels/b2b-platform/products/push.service.ts:107-118`).
+  Une simulation n'écrit rien. Le refus ne dit pas ce qui a bougé ; comparer
+  deux ancres ne le dirait pas non plus (elles ne hachent pas la projection).
+- La publication s'inscrit dans les trois cas — succès, échec, simulation ;
+  c'est le lecteur qui trie.
+
+### Côté plateforme — la réception, derrière `B2B_DELIVERY_INBOX`
+
+Lu au démarrage (`apps/lfd-api/src/platform/config/env-readers.ts:540`) :
+fermé, l'ingestion écrit directement ; ouvert, la livraison dépose une arrivée
+(`catalog_delivery`) qu'un humain valide. Un retour arrière coûte un
+déploiement ; fermé, la table n'a aucun lecteur.
+
+- **Une seule arrivée en attente**, tenue par Postgres (index partiel
+  `catalog_delivery_une_seule_en_attente`, migration
+  `20260902170000_reception_du_catalogue`) ; une arrivée remplacée sans
+  lecture est `superseded`, pas acceptée.
+- **Le diff se calcule à la lecture** (`diffDelivery`,
+  `apps/lfd-api/src/b2b/catalog/domain/delivery-diff.ts:280`), par SKU et par
+  champ nommé : le miroir bouge entre-temps.
+- **On écarte un SKU, pas une ligne** : écarter un changement garde les faits
+  courants, écarter un ajout le laisse dehors, écarter un **retrait** le
+  laisse en vente. La garde « refuser un SKU absent de l'arrivée » serait
+  fausse : un retrait EST une absence.
+- **L'ordre de la validation** : clore d'abord (`where status = 'pending'`, le
+  verrou), appliquer, puis photographier le miroir **relu** en version — les
+  trois dans une transaction.
+- **L'ingestion voit les retirés** (`loadAllIncludingWithdrawn`,
+  `apps/lfd-api/src/b2b/catalog/application/ingest-catalog.service.ts:101`),
+  seule échappatoire de `lint:withdrawn-filter` : un SKU réintroduit doit être
+  reconnu, sans quoi sa décision locale serait perdue. Un `upsert` filtré par
+  `STILL_SOLD` ferait tomber le push (la clé primaire refuse la création).
+
+### Les versions, et ce qu'une commande fige
+
+- Une **version** (`catalog_versions`) photographie le miroir **complet**
+  après validation, au prix **reçu** ; elle est immuable par construction —
+  le port n'a qu'un `append` (`apps/lfd-api/src/b2b/catalog/domain/ports/catalog-version.repository.ts:13`).
+  Faute de boîte ouverte, aucune version n'est posée.
+- **`orders.catalog_version_id`** dit d'où venaient les articles, jamais le
+  prix (figé sur la ligne). Il est lu **avant** la résolution des lignes
+  (`apps/lfd-api/src/b2b/orders/application/services/order-drafting.service.ts:174`) :
+  une validation concurrente ne peut rendre qu'une estampille ancienne.
+  `NULL` est une réponse.
+- Les allergènes de la ligne figent codes **et** libellés ; `codes: null` =
+  pas de fiche réglementaire, `codes: []` = déclarée sans allergène.
+
+### La santé
+
+`compareToReference` (`apps/lfd-api/src/b2b/catalog/domain/catalog-parity.ts:76`)
+est pure ; ses deux appelants diffèrent par le **référent** : la parité
+(`admin/catalog/parity`, écart attendu) et la santé
+(`admin/ops/catalog-health`, `ops-catalog-health.controller.ts:30`, lue par
+`ops_catalog_parity.yml`). Elle lit le miroir **reçu**
+(`CatalogAdminReader.list()`), pas le vendable : un article masqué n'est pas
+un décrochage. ⚠️ Tant que `B2B_DELIVERY_INBOX` est fermé, il n'y a aucune
+version validée, et le job sort vert **sans avoir rien contrôlé**.
+
+### Ce qu'on a perdu, et qu'il faut savoir
+
+- **Aucun retour arrière** : l'ancien canal portait le seul ; défaire une
+  publication se fait en republiant.
+- **Le référentiel n'a pas de point de reprise** : une ancre ne porte ni
+  `variant.id`, ni `options`, ni `nutrition`, ni le conditionnement ; ce n'est
+  pas une sauvegarde. Les sauvegardes de l'infra donnent une archive à lire,
+  jamais un retour en arrière en place (une seule base).
 
 ## 7. Les écrans
 
@@ -490,12 +612,15 @@ Tous décrits dans [`plan-catalogue-synchronise-par-audience.md`](plan-catalogue
 Remplacés par celui-ci ; ce qui avait encore de la valeur y est repris, leur
 texte est dans l'historique git :
 
-| Document retiré                                  | Repris ici                                                                |
-| ------------------------------------------------ | ------------------------------------------------------------------------- |
-| « Le catalogue synchronisé — le PIM pousse »     | reçu ≠ décidé (§4), la v7 et les règles qui traversent (§2)               |
-| « Le push catalogue, de bout en bout »           | le port qui survit au même processus (§6)                                 |
-| « Du catalogue à la vente — la chaîne complète » | le piège de la révision neuve (§6)                                        |
-| « L'écran Catalogue B2B »                        | l'écran devenu « Catalogue publié » (§7)                                  |
-| Plan « l'audience par héritage »                 | D1, D3, D7 : héritage (§5), `servedTo` (§4), route unique et vue (§4, §7) |
-| Plan « la publication par faits versionnés »     | absorbé par le plan qui fait foi ; faits et séquence (§2)                 |
-| Plan « deux méthodes de remise professionnelle » | le taux figé de `ratio_ttc` (§5)                                          |
+| Document retiré                                       | Repris ici                                                                |
+| ----------------------------------------------------- | ------------------------------------------------------------------------- |
+| « Le catalogue synchronisé — le PIM pousse »          | reçu ≠ décidé (§4), la v7 et les règles qui traversent (§2)               |
+| « Le push catalogue, de bout en bout »                | le port qui survit au même processus (§6)                                 |
+| « Du catalogue à la vente — la chaîne complète »      | le piège de la révision neuve (§6)                                        |
+| « L'écran Catalogue B2B »                             | l'écran devenu « Catalogue publié » (§7)                                  |
+| Plan « l'audience par héritage »                      | D1, D3, D7 : héritage (§5), `servedTo` (§4), route unique et vue (§4, §7) |
+| Plan « la publication par faits versionnés »          | absorbé par le plan qui fait foi ; faits et séquence (§2)                 |
+| Plan « deux méthodes de remise professionnelle »      | le taux figé de `ratio_ttc` (§5)                                          |
+| « Audit catalogue boutique / B2B »                    | rien — photo du 2026-08-04, toute périmée                                 |
+| Plan « un seul canal, deux prix »                     | D6, D7, D9, D10, D12, D13 (§5) ; ses restes ouverts au plan qui fait foi  |
+| « Le cycle du catalogue — du référentiel à la vente » | le chemin faits fermés (§6 bis)                                           |

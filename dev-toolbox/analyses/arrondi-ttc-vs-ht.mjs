@@ -2,7 +2,8 @@
  * **Mesure D6** — l'étiquette TTC survit-elle à la chaîne de calcul ?
  *
  * Ouverte le 2026-09-21 pour
- * [`documentation/catalogue/plan-un-seul-canal-deux-prix.md`](../../documentation/catalogue/plan-un-seul-canal-deux-prix.md) § A.4.
+ * le plan « un seul canal, deux prix » (2026-09-21, retiré le 2026-10-16 — texte dans l'historique git) § A.4 ;
+ * décision D6 reprise dans [`catalogue-synchronise.md`](../../documentation/catalogue/catalogue-synchronise.md) §5.
  *
  * ## Pourquoi un script et pas un chiffre dans un document
  *

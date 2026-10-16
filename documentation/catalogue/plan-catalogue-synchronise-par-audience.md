@@ -1026,6 +1026,25 @@ perdre une ligne.
   date, comme un article.
 - Un fait **plus ancien** que la ligne ne l'écrase pas (`applied_seq`, C4).
 
+## Repris du plan un seul canal, deux prix (2026-10-16)
+
+Le plan « un seul canal, deux prix » (2026-09-21) est retiré ce jour-là ; ses
+restes ont été rouverts dans le code. Faits depuis : le bon de commande public
+en TTC (`sheetShowsTtc`, `apps/lfd-api/src/b2b/orders/domain/services/order-sheet-pdf.ts:206-208`),
+le schéma de l'ancien canal (migration `20260921220000`), le TTC stocké sur la
+ligne de commande (`apps/lfd-api/prisma/schema/public/orders.prisma:401`, `:407`),
+la porte qui lit le prix d'une audience (`order-line-pricing.service.ts:138-139`).
+Sans objet : l'assortiment sur la matrice (la matrice part au lot 5). Ce qui
+reste :
+
+| Reste                                        | Pourquoi                                                                                                                                                                                                                                   | Où, dans le code                                                                                                                                                                                                                                                                                                        |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **L'export CSV tait le prix public**         | la vue porte `publicTtcCents` (`packages/contracts/src/catalog-admin.ts:53`), le fichier ne l'écrit pas ; et depuis le lot D « Tarif PIM » et « Prix appliqué » portent la même valeur                                                     | `apps/lfd-api/src/b2b/catalog/domain/services/catalog-csv.ts:48-56`, `:66-79`                                                                                                                                                                                                                                           |
+| **Le filtre du vendable exige le taux PRO**  | `listSellable` demande `vatRatePercent NOT NULL` avant de regarder l'audience : un article servi au seul public, sans taux pro, disparaîtrait de la vitrine sans qu'on sache pourquoi. Latent tant que le référentiel pousse les deux taux | `apps/lfd-api/src/b2b/catalog/infrastructure/prisma-catalog.reader.ts:159`                                                                                                                                                                                                                                              |
+| **La parité devis/commande pour les pros**   | `quote-order-parity` ne joue que l'audience publique (`companyId: null` partout) ; une parité verte ne prouve d'ailleurs qu'un accord, pas un montant juste                                                                                | `apps/lfd-api/test/quote-order-parity.e2e-spec.ts:181-460`                                                                                                                                                                                                                                                              |
+| **Les écrans de doc internes**               | ils décrivent encore des intégrations et des collections de TVA ; une décision de forme attend Hugo (« Intégrations » disparaît-elle ? « collection datée » = la date du push, ou un contenu daté article par article ?)                   | `apps/lfd-backoffice-frontend/src/app/pim/pim.routes.ts:198`, `documentation/pim/bricks-page/bricks-page.html:18`, `documentation/catalogue-to-tool-diagram/catalogue-to-tool-diagram.html:59`, `documentation/pim/general-settings-page/general-settings-page.html:191` (sous `apps/lfd-backoffice-frontend/src/app/`) |
+| **Les déclarations d'allergènes manquantes** | de la saisie, pas du code : « Activer » refuse déjà une fiche sans déclaration. Le compte (« 94 ») date du 2026-09-02 sur la base de dev, à recompter en production                                                                        | —                                                                                                                                                                                                                                                                                                                       |
+
 ## 5. Questions ouvertes
 
 1. ~~**Q1**~~ — **À la main suffit (Hugo, 2026-10-15)** : restaurer une fiche

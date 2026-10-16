@@ -1,11 +1,10 @@
 # Vendre le variant, pas le produit — plan
 
-> 🕰️ **Relu le 2026-10-16** — **Toujours non bâti** : l'adaptateur présente
-> encore la déclinaison par défaut sous le SKU produit
-> (`apps/lfd-api/src/b2b/catalog/infrastructure/catalog-backed-product-catalog.ts:23`). Le
-> blocage du §10 (noms de déclinaison) n'a pas été revérifié, ni les comptes du
-> §3. Le prix B2B à clé de variant qu'il cite a disparu au lot D (`apps/lfd-api/prisma/schema/public/catalog.prisma:510`) : un
-> mur de moins au §5 bis.
+> **Non bâti** (vérifié le 2026-10-16) : l'adaptateur présente encore la
+> déclinaison par défaut sous le SKU produit
+> (`apps/lfd-api/src/b2b/catalog/infrastructure/catalog-backed-product-catalog.ts:64`,
+> `:81`). Les comptes du §3 et du §10 sont ceux du 2026-09-13, sur la base de
+> dev.
 
 > Écrit le 2026-09-13, **réécrit le même jour**.
 >
@@ -50,17 +49,16 @@ Le même fichier annonçait la bascule : « elles s'ouvriront avec le front clie
 
 ## 3. L'état, mesuré le 2026-09-13
 
-| Ce qui porte un SKU                        | Volume                    | Forme aujourd'hui                |
-| ------------------------------------------ | ------------------------- | -------------------------------- |
-| `public.catalog_items`                     | 94 articles / 92 produits | **variant** (clé primaire)       |
-| `public.catalog_item_overrides` (prix B2B) | —                         | **variant**                      |
-| `public.catalog_price_history`             | 122 lignes / 94 SKU       | **variant**                      |
-| `public.order_lines`                       | **118 lignes, 27 SKU**    | produit                          |
-| `public.subscription_lines`                | **0**                     | —                                |
-| `public.product_norms`                     | **0**                     | —                                |
-| `production.production_order_line`         | 6                         | produit (recopié de la commande) |
-| `production.production_count`              | 6                         | produit                          |
-| `production.production_container`          | 0                         | produit (neuf)                   |
+| Ce qui porte un SKU                | Volume                    | Forme aujourd'hui                |
+| ---------------------------------- | ------------------------- | -------------------------------- |
+| `public.catalog_items`             | 94 articles / 92 produits | **variant** (clé primaire)       |
+| `public.catalog_price_history`     | 122 lignes / 94 SKU       | **variant**                      |
+| `public.order_lines`               | **118 lignes, 27 SKU**    | produit                          |
+| `public.subscription_lines`        | **0**                     | —                                |
+| `public.product_norms`             | **0**                     | —                                |
+| `production.production_order_line` | 6                         | produit (recopié de la commande) |
+| `production.production_count`      | 6                         | produit                          |
+| `production.production_container`  | 0                         | produit (neuf)                   |
 
 > 🔴 **Ce paragraphe affirmait le contraire, et c'était faux** (relevé par le
 > contradicteur le 2026-09-13) : « tout ce qui touche au prix est déjà à clé de
@@ -75,8 +73,8 @@ Le même fichier annonçait la bascule : « elles s'ouvriront avec le front clie
 > elle vendra les déclinaisons » (`canonical-price-history.reader.ts`). Le plan
 > ne l'avait pas ouvert.
 
-**Ce qui est à clé de variant** : la table du catalogue, celle des prix B2B, et
-le stockage de l'historique. **Ce qui est à clé de produit** : la lecture datée
+**Ce qui est à clé de variant** : la table du catalogue et le stockage de
+l'historique (le prix ne se décide plus sur la plateforme depuis le lot D). **Ce qui est à clé de produit** : la lecture datée
 du prix, **toutes les décisions tarifaires** (mercuriales, planchers, paliers,
 engagements de volume — voir §5 bis), la ligne de commande et ce qui en descend.
 
@@ -182,7 +180,8 @@ il tombera en panne **muette**, l'article sortant au prix canonique.
   résolution doit passer avant l'empreinte, l'empreinte change de définition
   pour les clés déjà posées.
 - **`ProductNorm` à zéro ligne ne prouve rien** : elle est recalculée par
-  `GROUP BY ol.sku` sur une fenêtre glissante. À cheval sur la bascule, le même
+  SKU de ligne de commande sur une fenêtre glissante (lignes lues par `sku`,
+  découpées en mémoire — `apps/lfd-api/src/b2b/alerts/infrastructure/prisma-order-history.reader.ts:52-56`). À cheval sur la bascule, le même
   article existe sous deux clés, la médiane se calcule sur deux populations
   coupées, et les alertes de déviation se taisent ou crient.
 

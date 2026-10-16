@@ -378,9 +378,9 @@ est **négocié par client**, pas dérivé d'une grille unique.
 
 **Conséquence** : le référentiel ne décide **pas** du prix d'un professionnel. Il
 pose un prix de liste ; la mercuriale, le dégressif et les promotions viennent
-par-dessus, dans la plateforme. ⚠️ `CatalogItemOverride` est clé par **SKU** et
-non par société : c'est le prix de liste du canal B2B, **pas** un prix négocié.
-Les confondre ferait chercher le tarif d'un client au mauvais endroit.
+par-dessus, dans la plateforme. Depuis le lot D (2026-10-15),
+`CatalogItemOverride` ne porte plus de prix — seulement le masquage et la mise
+en avant — et le prix de liste pro est celui que le référentiel pose.
 
 ## ADR-19 — Le plan de production est consolidé tout seul, mais arrêté à la main (clôt D2)
 

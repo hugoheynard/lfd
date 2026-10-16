@@ -722,7 +722,7 @@ describe("projectCatalog — les allergènes", () => {
 
 /**
  * 🔴 **Le prix PUBLIC traverse depuis la v9** (lot A1,
- * [`plan-un-seul-canal-deux-prix.md`](../../../../../../../documentation/catalogue/plan-un-seul-canal-deux-prix.md)).
+ * le plan « un seul canal, deux prix » (2026-09-21, retiré le 2026-10-16 — texte dans l'historique git)).
  *
  * Il arrivait jusqu'ici et s'y arrêtait : seul son dérivé professionnel partait
  * sur le fil, si bien qu'un particulier servi par la boutique payait le tarif

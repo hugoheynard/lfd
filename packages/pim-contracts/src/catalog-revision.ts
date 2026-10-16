@@ -17,8 +17,7 @@
  * juste, la DIRECTION ne l'était pas : la réconciliation d'un canal est partie
  * avec ce canal, les révisions restent, et un type que le socle lit ne peut pas
  * vivre chez un consommateur (déplacé le 2026-09-21,
- * [`plan-un-seul-canal-deux-prix.md`](../../../documentation/catalogue/plan-un-seul-canal-deux-prix.md)
- * § B.2).
+ * le plan « un seul canal, deux prix » (2026-09-21, retiré le 2026-10-16 — texte dans l'historique git)).
  *
  * Rien dedans n'est propre à un canal : trois chaînes, un avant, un après.
  */

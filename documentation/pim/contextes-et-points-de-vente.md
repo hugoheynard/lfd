@@ -1,7 +1,7 @@
 # Contextes de vente, points de vente et TVA
 
 > 🔴 **L'ancien canal de vente en ligne est sorti du dépôt le 2026-09-21**
-> ([`../catalogue/plan-un-seul-canal-deux-prix.md`](../catalogue/plan-un-seul-canal-deux-prix.md)).
+> ([`../catalogue/catalogue-synchronise.md`](../catalogue/catalogue-synchronise.md)).
 > Ce document décrit le modèle des **contextes de vente**, qui ne bouge pas et
 > devient au contraire plus central — c'est lui qui portera la TVA par contexte
 > sur le fil. Les passages qui décrivaient la projection vers la boutique en

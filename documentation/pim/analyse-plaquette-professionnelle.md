@@ -71,21 +71,11 @@ membre est le prix — très bas — de cette option.
 
 ## Ce qu'il faut faire de la plaquette
 
-**C'est une grille de prix négociés, pas un calcul.** La plateforme sait déjà
-la porter : le prix négocié par article vit dans `catalog_item_overrides`, et le
-lecteur le préfère au prix poussé par le référentiel —
-`unitPriceMillicents: row.override?.priceMillicents ?? pimPriceMillicents`
-(`b2b/catalog/infrastructure/prisma-catalog.reader.ts`).
-
-> ⚠️ **Ce paragraphe citait un champ `localPrice` qui n'a jamais existé** (aucun
-> commit du dépôt ne le porte, vérifié le 2026-09-22). Le mécanisme décrit était
-> juste ; le nom donné pour le retrouver était inventé — et un nom inventé coûte
-> plus qu'une absence de nom, parce qu'on le cherche.
-
-La voie recommandée est donc d'**importer les 89 prix tels quels**. Le
-référentiel continue de calculer son propre prix professionnel en dessous ; la
-grille le recouvre là où elle existe, et seuls les articles absents de la
-plaquette suivent la règle. **Rien n'est bâti de ce côté à ce jour.**
+**C'est une grille de prix, pas un calcul.** Depuis le lot P (2026-10-15), le
+référentiel porte un **prix pro HT saisi** par déclinaison, qui prime sur toute
+règle (`proPriceOf`, `packages/pim-contracts/src/accounting-rules.ts`), et la
+plateforme ne décide plus de prix (lot D). La voie est donc de **saisir les
+89 prix tels quels** dans les fiches du référentiel (section suivante).
 
 ## Méthode
 

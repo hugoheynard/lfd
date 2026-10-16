@@ -7,7 +7,7 @@ import { fromMillicents, roundToMillicents } from "./millicents.js";
  * 🔴 **Il a vécu dans `@lfd/pim-contracts` jusqu'au 2026-09-21**, et il en est
  * sorti le jour où un SECOND site a eu besoin de la même déduction : la
  * plateforme B2B, qui convertit en hors taxe un prix public posé à la main
- * (plan `plan-un-seul-canal-deux-prix.md`, D12).
+ * (D12, `documentation/catalogue/catalogue-synchronise.md` §5).
  *
  * Deux sites qui arrondissent de l'argent ne sont tolérables que s'ils
  * appellent la **même fonction** ; deux copies d'une formule divergent le jour
