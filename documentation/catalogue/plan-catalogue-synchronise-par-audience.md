@@ -180,6 +180,12 @@ base** (`WHERE applied_seq < :seq`), comme `showIfNewer`.
 - Le lien au canal B2B, la matrice des canaux, le point de vente sauf sa
   grille de tables (plan d'audience, D5 et Q4).
 - Les deux routes de masquage, remplacées par une (H5, plan d'audience D7).
+- 🔴 **Les contextes de vente restent** (`takeaway`, `eatIn`, `b2b` — Hugo,
+  2026-10-16 : « je pense à ma TVA par contexte »). Le taux d'un article se
+  résout par contexte, et le prix pro au taux du contexte `b2b` : le lot 5 n'y
+  touche pas. Le retrait de l'ancien canal ne leur a ôté que ses deux champs.
+  Que le sur place devienne une **capacité d'un site** reste une idée ouverte
+  (même jour), sans lot.
 - **Les tables restent en base** (CLAUDE.md §0), plus lues ni écrites.
 
 **Et l'espace E-commerce du back-office (Hugo, 2026-10-15)** : une fois
