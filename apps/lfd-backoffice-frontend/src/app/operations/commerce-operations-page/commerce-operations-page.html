@@ -1,4 +1,4 @@
-<fold-page-layout icon="gift" title="Opérations au commerce">
+<fold-page-layout icon="gift" title="Opérations">
   <p description>
     Les opérations datées — Noël, Pâques, la galette — telles que le commerce les tient : où chacune
     en est, et ce que le client en voit en boutique.
@@ -87,7 +87,7 @@
 <ng-template #row let-operation>
   <li class="operation">
     <div class="operation-head">
-      <a class="operation-name" [routerLink]="['/operations-commerce', operation.key]">
+      <a class="operation-name" [routerLink]="['/operations', operation.key]">
         {{ operation.name.fr }}
       </a>
       <fold-badge

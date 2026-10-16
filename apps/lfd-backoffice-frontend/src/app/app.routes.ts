@@ -56,46 +56,31 @@ export const routes: Routes = [
   // un identifiant de société, et la page afficherait « Société introuvable ».
   ...nouveauCompteRoutes,
   {
-    // LES OPÉRATIONS DATÉES — Noël, Pâques, la galette
-    // (`documentation/operations-datees/architecture-operations-datees.md`).
-    // Premier niveau depuis le 2026-10-13 (Hugo), sans le rail du référentiel :
-    // on y vient depuis Gestion Boutique. Même mur que le catalogue (D1).
+    // LES OPÉRATIONS DATÉES — Noël, Pâques, la galette — tenues au commerce
+    // (`documentation/operations-datees/plan-l-operation-passe-au-commerce.md`,
+    // lot 3 bis), sous LEUR droit (`lfc_operations`, Q2). L'écran du
+    // référentiel qui tenait cette adresse est retiré le 2026-10-16.
     // `:key` est ciblé par la médiathèque (`carrier-destinations.ts`).
     path: 'operations',
-    canActivate: [permissionGuard('pim_catalog:read')],
-    title: 'Opérations datées — LFC B2B admin',
-    loadComponent: () =>
-      import('./pim/operations/operations-page/operations-page').then((m) => m.OperationsPage),
-  },
-  {
-    path: 'operations/:key',
-    canActivate: [permissionGuard('pim_catalog:read')],
-    title: 'Opération — LFC B2B admin',
-    loadComponent: () =>
-      import('./pim/operations/operation-page/operation-page').then((m) => m.OperationPage),
-  },
-  {
-    // LES OPÉRATIONS TENUES AU COMMERCE (plan-l-operation-passe-au-commerce.md,
-    // lot 3), sous LEUR droit (`lfc_operations`, Q2). À côté de l'écran du
-    // référentiel tant que la bascule n'est pas faite : fermées, ses lectures
-    // le disent (409 `operations.not_at_commerce`).
-    path: 'operations-commerce',
     canActivate: [permissionGuard('lfc_operations:read')],
-    title: 'Opérations au commerce — LFC B2B admin',
+    title: 'Opérations — LFC B2B admin',
     loadComponent: () =>
       import('./operations/commerce-operations-page/commerce-operations-page').then(
         (m) => m.CommerceOperationsPage,
       ),
   },
   {
-    path: 'operations-commerce/:key',
+    path: 'operations/:key',
     canActivate: [permissionGuard('lfc_operations:read')],
-    title: 'Opération au commerce — LFC B2B admin',
+    title: 'Opération — LFC B2B admin',
     loadComponent: () =>
       import('./operations/commerce-operation-page/commerce-operation-page').then(
         (m) => m.CommerceOperationPage,
       ),
   },
+  // L'adresse provisoire du lot 3 (avant le retrait) : elle vit dans des favoris.
+  { path: 'operations-commerce', pathMatch: 'full', redirectTo: '/operations' },
+  { path: 'operations-commerce/:key', redirectTo: '/operations/:key' },
   {
     // LES PROMOTIONS — l'ancienne « Tarification B2B », premier niveau depuis
     // le 2026-10-13 (Hugo), sans le rail de l'e-commerce : on y vient depuis

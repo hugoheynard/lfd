@@ -238,7 +238,8 @@
              (Hugo, 2026-10-13 ; le catalogue publié depuis le 2026-10-15) : les opérations datées, venues du rail du Catalogue,
              et les promotions (l'ancienne « Tarification B2B »), venues de
              celui de l'E-commerce. Chaque entrée garde le droit de sa route ;
-             les anciennes adresses `/pim/operations` et `/b2b/tarification` redirigent,
+             les anciennes adresses `/pim/operations`, `/operations-commerce` et
+             `/b2b/tarification` redirigent,
              elles vivent dans des favoris. -->
         <fold-menu-section
           label="Gestion Boutique"
@@ -261,24 +262,12 @@
               (click)="mobileNavOpen.set(false)"
             ></a>
           }
-          @if (canSeePim()) {
-            <a
-              fold-menu-item
-              icon="gift"
-              label="Opérations datées"
-              routerLink="/operations"
-              routerLinkActive
-              #operationsRla="routerLinkActive"
-              [active]="operationsRla.isActive"
-              (click)="mobileNavOpen.set(false)"
-            ></a>
-          }
           @if (canSeeCommerceOperations()) {
             <a
               fold-menu-item
               icon="gift"
-              label="Opérations au commerce"
-              routerLink="/operations-commerce"
+              label="Opérations"
+              routerLink="/operations"
               routerLinkActive
               #commerceOperationsRla="routerLinkActive"
               [active]="commerceOperationsRla.isActive"
@@ -925,24 +914,12 @@
               (click)="mobileNavOpen.set(false)"
             ></a>
           }
-          @if (canSeePim()) {
-            <a
-              fold-nav-tile
-              icon="gift"
-              label="Opérations datées"
-              routerLink="/operations"
-              routerLinkActive
-              #operationsTile="routerLinkActive"
-              [active]="operationsTile.isActive"
-              (click)="mobileNavOpen.set(false)"
-            ></a>
-          }
           @if (canSeeCommerceOperations()) {
             <a
               fold-nav-tile
               icon="gift"
-              label="Opérations au commerce"
-              routerLink="/operations-commerce"
+              label="Opérations"
+              routerLink="/operations"
               routerLinkActive
               #commerceOperationsTile="routerLinkActive"
               [active]="commerceOperationsTile.isActive"

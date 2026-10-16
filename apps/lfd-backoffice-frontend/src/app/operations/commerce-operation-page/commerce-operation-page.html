@@ -1,10 +1,5 @@
 <fold-page-layout [title]="operation()?.name?.fr ?? 'Opération'" headerBleed separator>
-  <fold-back-link
-    pageEyebrow
-    icon="arrow-back"
-    label="Opérations au commerce"
-    routerLink="/operations-commerce"
-  />
+  <fold-back-link pageEyebrow icon="arrow-back" label="Opérations" routerLink="/operations" />
 
   @if (badge(); as current) {
     <fold-badge

@@ -308,13 +308,13 @@ export class App {
 
   /**
    * La section **Gestion Boutique** (Hugo, 2026-10-13) : les opérations
-   * datées, sous le mur du référentiel (`pim_catalog:read`, celui de
-   * `/pim`), et les promotions, sous celui de l'espace E-commerce
+   * datées, sous leur droit (`lfc_operations:read`, depuis le retrait de
+   * l'écran du référentiel le 2026-10-16), et les promotions, sous celui de l'espace E-commerce
    * (`b2b_settings:read`, celui de `/b2b`). Elle existe dès que l'une de ses
    * entrées est ouverte ; chacune garde le droit de sa route.
    */
   protected readonly canSeeShopManagement = computed(
-    () => this.canSeePim() || this.canSeeSettings() || this.canSeeCommerceOperations(),
+    () => this.canSeeSettings() || this.canSeeCommerceOperations(),
   );
   /** Les opérations tenues au commerce : leur droit à elles (`lfc_operations`, Q2). */
   protected readonly canSeeCommerceOperations = computed(() =>

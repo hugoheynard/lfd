@@ -112,7 +112,7 @@ export class CommerceOperationsPage {
   protected prepare(): void {
     void this.panels.open<string>(PrepareCommerceOperationPanel).closed.then((key) => {
       if (key !== undefined) {
-        void this.router.navigate(['/operations-commerce', key]);
+        void this.router.navigate(['/operations', key]);
       }
     });
   }

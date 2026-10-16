@@ -517,7 +517,8 @@ export const PIM_VIEWS: readonly WorkspaceView[] = [
   // « Opérations » est partie en Gestion Boutique le 2026-10-13 (Hugo :
   // « une section Gestion Boutique dans laquelle on met opérations datées ») :
   // elle est au rail principal et au lanceur mobile, dans `app.html`, sous
-  // « Opérations datées ». La route est `/operations` depuis le 2026-10-13, sous le mur du PIM.
+  // « Opérations ». La route est `/operations` depuis le 2026-10-13 ; l'écran du
+  // commerce l'a prise le 2026-10-16, sous `lfc_operations:read`.
   {
     key: 'revisions',
     label: 'Révisions',

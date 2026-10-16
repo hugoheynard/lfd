@@ -73,11 +73,9 @@ const SCAN_ROOTS = [
   // 2026-10-15) : son agrégat reprend la saisie au fuseau de Paris et `fin(jour)`
   // par `localToInstant` — le plan demande que la porte couvre son dossier.
   "apps/lfd-api/src/b2b/operations",
-  // L'écran de préparation (lot front) : il saisit ces instants en heure de
-  // Paris, par `localToInstant` — c'est lui qui transforme un jour en instant.
-  "apps/lfd-backoffice-frontend/src/app/pim/operations",
   // L'écran du commerce (lot 3 bis, 2026-10-16) : la saisie au fuseau de Paris
   // (`operation-schedule.ts`) y a déménagé, et ses formulaires l'emploient.
+  // L'écran du référentiel (`pim/operations`) est retiré le même jour.
   "apps/lfd-backoffice-frontend/src/app/operations",
   // La surcharge des opérations à la réception (lot 2, écran) : la clôture
   // plus précoce s'y saisit en heure de Paris, et le serveur la compare à

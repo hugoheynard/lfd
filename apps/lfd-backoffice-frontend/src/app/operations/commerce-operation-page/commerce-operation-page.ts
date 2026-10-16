@@ -46,7 +46,7 @@ type LoadState = 'loading' | 'error' | 'closed' | 'ready';
 type Gesture = 'audience' | 'visibility' | 'archive';
 
 /**
- * **Une opération, écrite au commerce** — `/operations-commerce/:key`
+ * **Une opération, écrite au commerce** — `/operations/:key`
  * (`plan-l-operation-passe-au-commerce.md`, lot 3 bis).
  *
  * Une carte par sujet, un `PUT` par carte, puis la page relit : l'état, ce

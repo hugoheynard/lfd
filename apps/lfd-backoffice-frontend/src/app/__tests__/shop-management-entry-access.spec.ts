@@ -103,25 +103,14 @@ function tile(link: string): string {
 }
 
 describe('App — Gestion Boutique', () => {
-  it('montre « Opérations datées » sous pim_catalog:read, dans les deux arbres', () => {
+  it('montre « Opérations » sous lfc_operations:read, dans les deux arbres', () => {
     const link = '/operations';
-    expect(render(['pim_catalog:read']).querySelector(rail(link))?.getAttribute('label')).toBe(
-      'Opérations datées',
-    );
-    expect(
-      render(['pim_catalog:read'], true).querySelector(tile(link))?.getAttribute('label'),
-    ).toBe('Opérations datées');
-    expect(render(['b2b_settings:read']).querySelector(rail(link))).toBeNull();
-  });
-
-  it('montre « Opérations au commerce » sous lfc_operations:read, dans les deux arbres', () => {
-    const link = '/operations-commerce';
     const entry = render(['lfc_operations:read']).querySelector(rail(link));
-    expect(entry?.getAttribute('label')).toBe('Opérations au commerce');
+    expect(entry?.getAttribute('label')).toBe('Opérations');
     expect(entry?.closest('fold-menu-section')?.getAttribute('label')).toBe('Gestion Boutique');
     expect(
       render(['lfc_operations:read'], true).querySelector(tile(link))?.getAttribute('label'),
-    ).toBe('Opérations au commerce');
+    ).toBe('Opérations');
     expect(render(['pim_catalog:read']).querySelector(rail(link))).toBeNull();
   });
 
