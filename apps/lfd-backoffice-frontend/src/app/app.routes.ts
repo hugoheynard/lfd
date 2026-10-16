@@ -75,6 +75,28 @@ export const routes: Routes = [
       import('./pim/operations/operation-page/operation-page').then((m) => m.OperationPage),
   },
   {
+    // LES OPÉRATIONS TENUES AU COMMERCE (plan-l-operation-passe-au-commerce.md,
+    // lot 3), sous LEUR droit (`lfc_operations`, Q2). À côté de l'écran du
+    // référentiel tant que la bascule n'est pas faite : fermées, ses lectures
+    // le disent (409 `operations.not_at_commerce`).
+    path: 'operations-commerce',
+    canActivate: [permissionGuard('lfc_operations:read')],
+    title: 'Opérations au commerce — LFC B2B admin',
+    loadComponent: () =>
+      import('./operations/commerce-operations-page/commerce-operations-page').then(
+        (m) => m.CommerceOperationsPage,
+      ),
+  },
+  {
+    path: 'operations-commerce/:key',
+    canActivate: [permissionGuard('lfc_operations:read')],
+    title: 'Opération au commerce — LFC B2B admin',
+    loadComponent: () =>
+      import('./operations/commerce-operation-page/commerce-operation-page').then(
+        (m) => m.CommerceOperationPage,
+      ),
+  },
+  {
     // LES PROMOTIONS — l'ancienne « Tarification B2B », premier niveau depuis
     // le 2026-10-13 (Hugo), sans le rail de l'e-commerce : on y vient depuis
     // Gestion Boutique. Même mur que l'espace qu'elles ont quitté.

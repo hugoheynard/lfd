@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1332 textes
+## Sommaire — 1336 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -18,7 +18,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Accueil — la carte d'événement](#espace-event) | `event` | 5 |
 | [Connexion et création de compte](#espace-signup) | `signup` | 24 |
 | [Commander — l'écran d'entrée de la commande](#espace-commande) | `commande` | 39 |
-| [Rayon / boutique](#espace-shop) | `shop` | 37 |
+| [Rayon / boutique](#espace-shop) | `shop` | 41 |
 | [Rayon — la fiche produit](#espace-product) | `product` | 12 |
 | [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 23 |
 | [Choix du lieu — la maison](#espace-housepicker) | `housePicker` | 8 |
@@ -46,7 +46,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
-| **Total** | | **1332** |
+| **Total** | | **1336** |
 
 ## Le parcours de commande
 
@@ -286,7 +286,7 @@ Source : `fr.ts · en.ts · it.ts` · 39 textes.
 
 ### Rayon / boutique — `shop`
 
-Source : `fr.ts · en.ts · it.ts` · 37 textes.
+Source : `fr.ts · en.ts · it.ts` · 41 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -327,6 +327,10 @@ Source : `fr.ts · en.ts · it.ts` · 37 textes.
 | `shop.operationBadgeFrom` | Dès le {date} | From {date} | Dal {date} | `{date}` |
 | `shop.operationBadgeDays` | J‑{days} | D‑{days} | G‑{days} | `{days}` |
 | `shop.operationBadgeLastDay` | Dernier jour | Last day | Ultimo giorno |  |
+| `shop.operationOrderFrom` | Commandes à partir du {date} | Orders open on {date} | Ordini a partire dal {date} | `{date}` |
+| `shop.operationOrderUntil` | Commandez avant le {date} | Order before {date} | Ordinate entro il {date} | `{date}` |
+| `shop.operationPickupWindow` | Retrait {span} | Collection {span} | Ritiro {span} | `{span}` |
+| `shop.operationAwaitingProducts` | Les produits arrivent bientôt | Products are coming soon | I prodotti arrivano presto |  |
 
 <a id="espace-product"></a>
 

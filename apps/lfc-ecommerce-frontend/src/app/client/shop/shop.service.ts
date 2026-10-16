@@ -83,6 +83,20 @@ export class Shop {
     return items.filter((item) => item.shelfId === shelf);
   });
 
+  /**
+   * L'opération dont le rayon est ouvert, quand elle porte son encart
+   * (`announceFrom` présent : opérations tenues au commerce) ; `null` pendant
+   * une recherche, qui traverse les rayons, et pour une famille.
+   */
+  readonly operationNotice = computed(() => {
+    if (this.term() !== '') {
+      return null;
+    }
+    const operationKey = operationKeyOf(this.store.shelf());
+    const operation = operationKey === null ? null : this.catalogue.operationOf(operationKey);
+    return operation?.announceFrom === undefined ? null : operation;
+  });
+
   /** Le titre de la grille : le rayon, ou ce qu'on vient de chercher. */
   readonly heading = computed(() => {
     const c = this.t().shop;

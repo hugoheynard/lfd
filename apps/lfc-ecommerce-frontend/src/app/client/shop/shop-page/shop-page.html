@@ -59,13 +59,30 @@
       </fold-empty-state>
     }
     @case ('ready') {
-      <app-shelf-grid
-        class="grid"
-        [products]="shop.products()"
-        [page]="page()"
-        (opened)="openPiece.set($event)"
-        (shelfOpened)="shop.browse($event)"
-      />
+      <!-- L'ENCART d'un rayon d'opération : pendant l'annonce, il EST le rayon,
+           même sans article — la grille vide n'ajoute alors rien qu'un « vide »
+           qui contredirait l'annonce. -->
+      @if (shop.operationNotice(); as operation) {
+        <div class="grid shelf">
+          <app-operation-notice [operation]="operation" />
+          @if (shop.products().length > 0) {
+            <app-shelf-grid
+              [products]="shop.products()"
+              [page]="page()"
+              (opened)="openPiece.set($event)"
+              (shelfOpened)="shop.browse($event)"
+            />
+          }
+        </div>
+      } @else {
+        <app-shelf-grid
+          class="grid"
+          [products]="shop.products()"
+          [page]="page()"
+          (opened)="openPiece.set($event)"
+          (shelfOpened)="shop.browse($event)"
+        />
+      }
     }
     @default {
       <fold-loading class="grid" [message]="t().shop.loading" />

@@ -32,6 +32,7 @@ import { OrderDoors } from '../order-doors';
 import { CartBar } from '../../cart/cart-bar/cart-bar';
 import { ClientBannerOutlet } from '../../nav/client-banner';
 import { ProductSheet } from '../product-sheet/product-sheet';
+import { OperationNotice } from '../operation-notice/operation-notice';
 import { ShelfGrid } from './shelf-grid/shelf-grid';
 import { ShelfNav } from './shelf-nav/shelf-nav';
 
@@ -67,6 +68,7 @@ import { ShelfNav } from './shelf-nav/shelf-nav';
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
     FoldSearchComponent,
+    OperationNotice,
     ProductSheet,
     ShelfGrid,
     ShelfNav,

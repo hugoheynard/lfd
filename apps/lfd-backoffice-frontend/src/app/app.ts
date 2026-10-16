@@ -314,7 +314,11 @@ export class App {
    * entrées est ouverte ; chacune garde le droit de sa route.
    */
   protected readonly canSeeShopManagement = computed(
-    () => this.canSeePim() || this.canSeeSettings(),
+    () => this.canSeePim() || this.canSeeSettings() || this.canSeeCommerceOperations(),
+  );
+  /** Les opérations tenues au commerce : leur droit à elles (`lfc_operations`, Q2). */
+  protected readonly canSeeCommerceOperations = computed(() =>
+    this.permissions.can('lfc_operations:read'),
   );
   /** La teinte de la section Gestion Boutique : une sarcelle fold. */
   protected readonly shopManagementTint = 'var(--fold-ref-teal-550)';

@@ -454,6 +454,18 @@ export interface ClientCopy {
     readonly operationBadgeFrom: string;
     readonly operationBadgeDays: string;
     readonly operationBadgeLastDay: string;
+    /**
+     * L'encart qui ouvre le rayon d'une opération (plan
+     * `plan-l-operation-passe-au-commerce.md`, « Une opération sans article ») :
+     * ses dates dites en clair. `{date}` = un instant court, localisé, à
+     * l'heure de Paris (« 15 nov. ») ; `{span}` = la période de retrait
+     * ({@link product.operationPickupSpan} ou {@link product.operationPickupDay}).
+     */
+    readonly operationOrderFrom: string;
+    readonly operationOrderUntil: string;
+    readonly operationPickupWindow: string;
+    /** Commandes ouvertes et rayon encore vide : l'encart le dit. */
+    readonly operationAwaitingProducts: string;
   };
   readonly product: {
     /** La pastille d'un article mis en avant (`isFeatured`). */

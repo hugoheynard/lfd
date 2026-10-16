@@ -140,4 +140,39 @@ describe('Shop — ce que la boutique montre', () => {
     // Chaque pièce reste celle du catalogue : même prix, même fiche.
     expect(shop.products()[1]).toBe(TEST_ITEMS[0]);
   });
+
+  describe("l'encart d'un rayon d'opération", () => {
+    function withOperation(announceFrom: string | undefined): void {
+      const view = operationCatalogue('announced');
+      const [operation] = view.operations;
+      if (operation === undefined) {
+        throw new Error('fixture sans opération');
+      }
+      hydrateWith(TestBed.inject(ShopCatalogue), {
+        ...view,
+        operations: [
+          announceFrom === undefined ? operation : { ...operation, announceFrom, skus: [] },
+        ],
+      });
+    }
+
+    it("paraît quand l'opération est tenue au commerce (announceFrom présent)", () => {
+      withOperation('2026-11-01T08:00:00.000Z');
+      shop.browse(operationShelfId(TEST_OPERATION_KEY));
+      expect(shop.operationNotice()?.key).toBe(TEST_OPERATION_KEY);
+    });
+
+    it("ne paraît pas avant la bascule, ni pendant une recherche, ni hors d'un rayon d'opération", () => {
+      withOperation(undefined);
+      shop.browse(operationShelfId(TEST_OPERATION_KEY));
+      expect(shop.operationNotice()).toBeNull();
+
+      withOperation('2026-11-01T08:00:00.000Z');
+      store.query.set('pain');
+      expect(shop.operationNotice()).toBeNull();
+
+      shop.browse(ALL_SHELVES);
+      expect(shop.operationNotice()).toBeNull();
+    });
+  });
 });

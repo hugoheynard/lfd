@@ -256,6 +256,10 @@ export const EN: ClientCopy = {
     operationBadgeFrom: 'From {date}',
     operationBadgeDays: 'D‑{days}',
     operationBadgeLastDay: 'Last day',
+    operationOrderFrom: 'Orders open on {date}',
+    operationOrderUntil: 'Order before {date}',
+    operationPickupWindow: 'Collection {span}',
+    operationAwaitingProducts: 'Products are coming soon',
   },
   product: {
     bestSeller: 'Best-seller',

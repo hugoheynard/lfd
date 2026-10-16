@@ -273,6 +273,18 @@
               (click)="mobileNavOpen.set(false)"
             ></a>
           }
+          @if (canSeeCommerceOperations()) {
+            <a
+              fold-menu-item
+              icon="gift"
+              label="Opérations au commerce"
+              routerLink="/operations-commerce"
+              routerLinkActive
+              #commerceOperationsRla="routerLinkActive"
+              [active]="commerceOperationsRla.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
           @if (canSeeSettings()) {
             <a
               fold-menu-item
@@ -922,6 +934,18 @@
               routerLinkActive
               #operationsTile="routerLinkActive"
               [active]="operationsTile.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
+          @if (canSeeCommerceOperations()) {
+            <a
+              fold-nav-tile
+              icon="gift"
+              label="Opérations au commerce"
+              routerLink="/operations-commerce"
+              routerLinkActive
+              #commerceOperationsTile="routerLinkActive"
+              [active]="commerceOperationsTile.isActive"
               (click)="mobileNavOpen.set(false)"
             ></a>
           }

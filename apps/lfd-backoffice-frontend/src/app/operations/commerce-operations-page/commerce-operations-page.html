@@ -1,0 +1,123 @@
+<fold-page-layout icon="gift" title="Opérations au commerce">
+  <p description>
+    Les opérations datées — Noël, Pâques, la galette — telles que le commerce les tient : où chacune
+    en est, et ce que le client en voit en boutique.
+  </p>
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Chargement des opérations…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Impossible de charger les opérations">
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('closed') {
+      <fold-callout appearance="inset" variant="info">
+        Les opérations sont encore tenues au référentiel sur ce déploiement (« Opérations datées »).
+        Cet écran les montrera une fois la bascule faite (interrupteur
+        <code>OPERATIONS_AT_COMMERCE</code>).
+      </fold-callout>
+    }
+    @default {
+      @if (live().length === 0 && archived().length === 0) {
+        <fold-empty-state
+          title="Aucune opération"
+          subtitle="Le commerce ne tient encore aucune opération."
+        >
+          <fold-icon empty-icon name="gift" [size]="28" />
+        </fold-empty-state>
+      } @else {
+        @if (live().length > 0) {
+          <fold-card>
+            <div class="section">
+              <fold-element-title variant="title" title="En cours et à venir" />
+              <ul class="operations">
+                @for (operation of live(); track operation.key) {
+                  <ng-container
+                    [ngTemplateOutlet]="row"
+                    [ngTemplateOutletContext]="{ $implicit: operation }"
+                  />
+                }
+              </ul>
+            </div>
+          </fold-card>
+        }
+        @if (archived().length > 0) {
+          <fold-card>
+            <div class="section">
+              <fold-element-title
+                variant="title"
+                title="Archivées"
+                subtitle="Retirées : elles se lisent, rien n'en paraît en boutique."
+              />
+              <ul class="operations">
+                @for (operation of archived(); track operation.key) {
+                  <ng-container
+                    [ngTemplateOutlet]="row"
+                    [ngTemplateOutletContext]="{ $implicit: operation }"
+                  />
+                }
+              </ul>
+            </div>
+          </fold-card>
+        }
+      }
+    }
+  }
+
+  @if (canMigrate()) {
+    <app-operations-migration-card [switchOpen]="state() === 'ready'" (applied)="load()" />
+  }
+</fold-page-layout>
+
+<ng-template #row let-operation>
+  <li class="operation">
+    <div class="operation-head">
+      <a class="operation-name" [routerLink]="['/operations-commerce', operation.key]">
+        {{ operation.name.fr }}
+      </a>
+      <fold-badge
+        [content]="badgeLabel(operation)"
+        [variant]="badgeVariant(operation)"
+        radius="pill"
+      />
+      @if (operation.hidden) {
+        <fold-badge content="Masquée" variant="neutral" radius="pill" />
+      }
+    </div>
+    @if (operation.image; as image) {
+      <app-operation-image [image]="image" />
+    }
+    <p class="shop-display">{{ shopDisplay(operation) }}</p>
+    @if (operation.awaitingProducts) {
+      <fold-callout appearance="inset" variant="warning">
+        Commandes ouvertes et aucun article en vente : en boutique, l'encart dit « Les produits
+        arrivent bientôt ». Probablement un oubli dans la sélection.
+      </fold-callout>
+    } @else if (operation.withoutSellingArticle && operation.archivedAt === null) {
+      <fold-callout appearance="inset" variant="info">
+        Aucun article de la sélection n'est en vente : l'encart paraîtra seul.
+      </fold-callout>
+    }
+    <dl class="operation-dates">
+      <div>
+        <dt>Annonce</dt>
+        <dd>{{ announce(operation) }}</dd>
+      </div>
+      <div>
+        <dt>Dernière commande</dt>
+        <dd>{{ until(operation) }}</dd>
+      </div>
+      <div>
+        <dt>Retrait</dt>
+        <dd>{{ pickup(operation) }}</dd>
+      </div>
+      <div>
+        <dt>Clientèle</dt>
+        <dd>{{ audience(operation) }}</dd>
+      </div>
+    </dl>
+  </li>
+</ng-template>

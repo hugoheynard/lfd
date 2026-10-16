@@ -1,0 +1,15 @@
+<figure class="figure">
+  <img
+    class="picture"
+    [src]="image().url"
+    [alt]="image().alt"
+    [style.object-position]="position()"
+  />
+  <figcaption class="caption">
+    @if (image().alt === '') {
+      Aucun texte alternatif : écrivez-le à la médiathèque.
+    } @else {
+      Texte alternatif : « {{ image().alt }} »
+    }
+  </figcaption>
+</figure>

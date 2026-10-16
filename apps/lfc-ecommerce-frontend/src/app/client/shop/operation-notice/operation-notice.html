@@ -1,0 +1,25 @@
+<fold-card>
+  <div class="notice">
+    @if (image(); as image) {
+      <img
+        class="picture"
+        [src]="image.src"
+        [attr.srcset]="image.srcset === '' ? null : image.srcset"
+        [alt]="image.alt"
+        [style.object-position]="image.position"
+      />
+    }
+    <fold-element-title variant="title" [title]="title()" />
+    @if (lede() !== '') {
+      <p class="lede">{{ lede() }}</p>
+    }
+    <ul class="dates">
+      @for (line of dates(); track line) {
+        <li>{{ line }}</li>
+      }
+    </ul>
+    @if (awaiting()) {
+      <fold-callout appearance="inset" variant="info">{{ awaitingText() }}</fold-callout>
+    }
+  </div>
+</fold-card>

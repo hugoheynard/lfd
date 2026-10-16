@@ -21,6 +21,13 @@
   grid-area: grid;
 }
 
+/* Le rayon d'une opération : son encart, puis ses articles. */
+.shelf {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--fold-space-md);
+}
+
 /* 🔴 LES TERMES SONT À CHEVAL SUR LA COUTURE — moitié sur l'encre de la
    descente, moitié sur la crème de la page. C'est ce qui en fait le lien entre
    ce qu'on vient de décider et ce qu'on va composer, plutôt qu'un pied de

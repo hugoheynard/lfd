@@ -1488,6 +1488,34 @@
           "en": "Last day",
           "it": "Ultimo giorno",
           "variables": []
+        },
+        {
+          "key": "shop.operationOrderFrom",
+          "fr": "Commandes à partir du {date}",
+          "en": "Orders open on {date}",
+          "it": "Ordini a partire dal {date}",
+          "variables": ["date"]
+        },
+        {
+          "key": "shop.operationOrderUntil",
+          "fr": "Commandez avant le {date}",
+          "en": "Order before {date}",
+          "it": "Ordinate entro il {date}",
+          "variables": ["date"]
+        },
+        {
+          "key": "shop.operationPickupWindow",
+          "fr": "Retrait {span}",
+          "en": "Collection {span}",
+          "it": "Ritiro {span}",
+          "variables": ["span"]
+        },
+        {
+          "key": "shop.operationAwaitingProducts",
+          "fr": "Les produits arrivent bientôt",
+          "en": "Products are coming soon",
+          "it": "I prodotti arrivano presto",
+          "variables": []
         }
       ],
       "unrecorded": []

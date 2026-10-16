@@ -114,6 +114,17 @@ describe('App — Gestion Boutique', () => {
     expect(render(['b2b_settings:read']).querySelector(rail(link))).toBeNull();
   });
 
+  it('montre « Opérations au commerce » sous lfc_operations:read, dans les deux arbres', () => {
+    const link = '/operations-commerce';
+    const entry = render(['lfc_operations:read']).querySelector(rail(link));
+    expect(entry?.getAttribute('label')).toBe('Opérations au commerce');
+    expect(entry?.closest('fold-menu-section')?.getAttribute('label')).toBe('Gestion Boutique');
+    expect(
+      render(['lfc_operations:read'], true).querySelector(tile(link))?.getAttribute('label'),
+    ).toBe('Opérations au commerce');
+    expect(render(['pim_catalog:read']).querySelector(rail(link))).toBeNull();
+  });
+
   it('montre « Promotions » sous b2b_settings:read, dans les deux arbres', () => {
     const link = '/promotions';
     expect(render(['b2b_settings:read']).querySelector(rail(link))?.getAttribute('label')).toBe(

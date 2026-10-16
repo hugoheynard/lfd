@@ -1,0 +1,26 @@
+.notice {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.picture {
+  width: 100%;
+  aspect-ratio: 21 / 9;
+  object-fit: cover;
+  border-radius: var(--fold-radius-md);
+}
+
+.lede {
+  margin: 0;
+}
+
+.dates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs) var(--fold-space-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--fold-color-text-muted);
+}

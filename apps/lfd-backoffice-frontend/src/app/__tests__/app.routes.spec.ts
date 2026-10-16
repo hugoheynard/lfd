@@ -178,6 +178,9 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // (`pim_catalog`) ; la frise LIT la même chose que la grille (`b2b_settings`).
   operations: 'pim_catalog:read',
   'operations/:key': 'pim_catalog:read',
+  // **Opérations au commerce** — sous LEUR droit (Q2 du plan de bascule).
+  'operations-commerce': 'lfc_operations:read',
+  'operations-commerce/:key': 'lfc_operations:read',
   promotions: 'b2b_settings:read',
   // **Catalogue publié** — parti de l'espace E-commerce le 2026-10-15 (H9),
   // sous le mur qu'il y avait : le paramétrage de ce que la boutique vend.

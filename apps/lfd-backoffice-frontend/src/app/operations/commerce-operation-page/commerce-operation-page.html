@@ -1,0 +1,144 @@
+<fold-page-layout [title]="operation()?.name?.fr ?? 'Opération'" headerBleed separator>
+  <fold-back-link
+    pageEyebrow
+    icon="arrow-back"
+    label="Opérations au commerce"
+    routerLink="/operations-commerce"
+  />
+
+  @if (badge(); as current) {
+    <fold-badge
+      titleBadge
+      [content]="badgeLabel(current)"
+      [variant]="badgeVariant(current)"
+      radius="pill"
+    />
+  }
+
+  @if (operation(); as operation) {
+    <span pageSubtitle>Clé {{ operation.key }}</span>
+  }
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Lecture de l'opération…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Opération illisible" [subtitle]="failure()">
+        <button foldButton (click)="load(key())">Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('closed') {
+      <fold-callout appearance="inset" variant="info">
+        Les opérations sont encore tenues au référentiel sur ce déploiement (« Opérations datées »).
+        Cette page les montrera une fois la bascule faite (interrupteur
+        <code>OPERATIONS_AT_COMMERCE</code>).
+      </fold-callout>
+    }
+    @default {
+      @if (operation(); as operation) {
+        @if (operation.archivedAt !== null) {
+          <fold-callout appearance="inset" variant="neutral">
+            Archivée le {{ instant(operation.archivedAt) }} : elle se lit, rien n'en paraît en
+            boutique.
+          </fold-callout>
+        }
+        @if (operation.awaitingProducts) {
+          <fold-callout appearance="inset" variant="warning">
+            Commandes ouvertes et aucun article en vente : en boutique, l'encart dit « Les produits
+            arrivent bientôt ». Probablement un oubli dans la sélection.
+          </fold-callout>
+        } @else if (operation.withoutSellingArticle && operation.archivedAt === null) {
+          <fold-callout appearance="inset" variant="info">
+            Aucun article de la sélection n'est en vente : l'encart paraîtra seul.
+          </fold-callout>
+        }
+        @if (!operation.heldAtCommerce) {
+          <fold-callout appearance="inset" variant="warning">
+            Copie reçue du référentiel, pas encore reprise : elle ne se modifie pas avant
+            l'application de la reprise.
+          </fold-callout>
+        }
+
+        <fold-card>
+          <div class="card">
+            <fold-element-title
+              variant="title"
+              title="L'annonce"
+              [subtitle]="shopDisplay(operation)"
+            />
+            @if (operation.hidden) {
+              <p class="said">Masquée : rien n'en paraît en boutique.</p>
+            }
+            @if (operation.image; as image) {
+              <app-operation-image [image]="image" />
+            }
+            <p class="said">
+              @if (operation.lede; as lede) {
+                {{ lede.fr }}
+              } @else {
+                Pas de chapeau.
+              }
+            </p>
+          </div>
+        </fold-card>
+
+        <fold-card>
+          <div class="card">
+            <fold-element-title variant="title" title="Calendrier" />
+            <dl class="facts">
+              <div>
+                <dt>Annonce</dt>
+                <dd>{{ instant(operation.announceFrom) }}</dd>
+              </div>
+              <div>
+                <dt>Ouverture des commandes</dt>
+                <dd>
+                  {{
+                    operation.orderFrom === null ? "Dès l'annonce" : instant(operation.orderFrom)
+                  }}
+                </dd>
+              </div>
+              <div>
+                <dt>Dernière commande</dt>
+                <dd>{{ instant(operation.orderUntil) }}</dd>
+              </div>
+              <div>
+                <dt>Retrait</dt>
+                <dd>{{ pickup(operation) }}</dd>
+              </div>
+              <div>
+                <dt>Clientèle</dt>
+                <dd>{{ audience(operation) }}</dd>
+              </div>
+            </dl>
+          </div>
+        </fold-card>
+
+        <fold-card>
+          <div class="card">
+            <fold-element-title
+              variant="title"
+              title="Sélection"
+              [subtitle]="operation.sellingSkus.length + ' en vente sur ' + operation.skus.length"
+            />
+            @if (selection().length === 0) {
+              <p class="said">Aucun article choisi.</p>
+            } @else {
+              <ul class="selection">
+                @for (line of selection(); track line.sku) {
+                  <li class="article">
+                    <span>{{ line.sku }}</span>
+                    @if (!line.selling) {
+                      <fold-badge content="Pas en vente" variant="warning" radius="pill" />
+                    }
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+        </fold-card>
+      }
+    }
+  }
+</fold-page-layout>
