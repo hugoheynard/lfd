@@ -30,10 +30,10 @@ export type ServiceMode = 'pickup' | 'delivery';
  * Ce sont les deux portes de l'accueil (`ServiceDoors`), avec leurs textes :
  * une seconde forme du même arbitrage finirait par dire autre chose.
  *
- * ⚠️ Il ne s'ouvre que si le coursier est ouvert à la clientèle
- * (`OrderDoors.deliveryOpen`) — sinon il n'y a rien à arbitrer, et
- * `OrderDoors.choose` va droit au retrait. La porte du coursier y est donc
- * toujours `open`.
+ * ⚠️ Il ne s'ouvre que si le coursier ET le retrait sont ouverts à la
+ * clientèle (`OrderDoors.deliveryOpen`, `OrderDoors.pickupOpen` — 2026-10-16)
+ * — sinon il n'y a rien à arbitrer, et `OrderDoors.choose` va droit à la
+ * seule porte ouverte. Ses deux portes y sont donc toujours ouvertes.
  */
 @Component({
   selector: 'app-service-mode-dialog',

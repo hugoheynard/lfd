@@ -39,11 +39,6 @@ export class EmptyOrderError extends DomainError {
 }
 
 /**
- * Un **retrait** est demandé mais aucun point de retrait n'est configuré (l'adresse
- * labo dans les Réglages). Refus **métier** (409) : la demande est bien formée,
- * mais l'état de la plateforme ne permet pas ce mode d'acheminement.
- */
-/**
  * La tranche demandée tombe hors des heures du point. **Business** et non
  * technique : rien n'est cassé, c'est le client qui demande une heure où la
  * porte est close — et il doit pouvoir en choisir une autre.
@@ -64,27 +59,60 @@ const AUDIENCE_NAMES: Readonly<Record<CustomerAudience, string>> = {
 };
 
 /**
- * Le site choisi (ou le défaut) ne remet pas à cette clientèle (Hugo,
- * 2026-10-15) — la même règle pour le client et pour l'équipe qui saisit.
- * Ce n'est pas une question d'heure : aucun créneau ne l'ouvre.
+ * Le geste de sortie quand AUCUN site ne remet à la clientèle : le client
+ * prend la livraison ou appelle, l'équipe rouvre un site à l'écran.
+ */
+const NO_PICKUP_EXIT =
+  "Choisissez la livraison, ou appelez-nous ; l'équipe ouvre un site au retrait dans Réglages › Sites.";
+
+/**
+ * Le site choisi ne remet pas à cette clientèle (Hugo, 2026-10-15) — la même
+ * règle pour le client et pour l'équipe qui saisit. Ce n'est pas une question
+ * d'heure : aucun créneau ne l'ouvre.
+ *
+ * `othersOpen` à `false` (2026-10-16) : aucun site ne remet à la clientèle.
+ * « Choisissez un autre point » enverrait alors chercher un point qui
+ * n'existe pas ; le message dit que le retrait ne lui est pas proposé. Le code
+ * reste le même : c'est le même refus, nommé plus juste.
  */
 export class PickupClosedForAudienceError extends BusinessError {
   constructor(
     readonly siteLabel: string,
     readonly audience: CustomerAudience,
+    readonly othersOpen = true,
   ) {
     super(
       PICKUP_CLOSED_FOR_AUDIENCE,
-      `Le retrait à « ${siteLabel} » n'est pas ouvert ${AUDIENCE_NAMES[audience]}. Choisissez un autre point de retrait, ou la livraison.`,
+      othersOpen
+        ? `Le retrait à « ${siteLabel} » n'est pas ouvert ${AUDIENCE_NAMES[audience]}. Choisissez un autre point de retrait, ou la livraison.`
+        : `Le retrait n'est pas proposé ${AUDIENCE_NAMES[audience]} : aucun site, « ${siteLabel} » compris, ne leur est ouvert. ${NO_PICKUP_EXIT}`,
     );
   }
 }
 
+/**
+ * Un **retrait** est demandé mais le point n'existe pas. Refus **métier**
+ * (409) : la demande est bien formée, mais l'état de la plateforme ne permet
+ * pas ce mode d'acheminement.
+ */
 export class PickupNotConfiguredError extends BusinessError {
-  constructor() {
+  constructor(
+    message = "Le retrait n'est pas disponible : aucun point de retrait n'est configuré.",
+  ) {
+    super("orders.pickup.not_configured", message);
+  }
+}
+
+/**
+ * Un retrait sans point choisi, alors qu'aucun site ne remet à la clientèle
+ * (2026-10-16 — depuis la fin du site par défaut, rien ne garantit qu'il en
+ * reste un). Même code que {@link PickupNotConfiguredError}, dont c'est le cas
+ * le plus fréquent : seul le message nomme la clientèle et la sortie.
+ */
+export class PickupNotOfferedToAudienceError extends PickupNotConfiguredError {
+  constructor(readonly audience: CustomerAudience) {
     super(
-      "orders.pickup.not_configured",
-      "Le retrait n'est pas disponible : aucun point de retrait n'est configuré.",
+      `Le retrait n'est pas proposé ${AUDIENCE_NAMES[audience]} : aucun site ne leur est ouvert. ${NO_PICKUP_EXIT}`,
     );
   }
 }

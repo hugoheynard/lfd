@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { type CompanyView, PERSONAL_WORKSPACE } from '@lfd/contracts';
+import { type CompanyView, type PickupAddressView, PERSONAL_WORKSPACE } from '@lfd/contracts';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { provideRecognised } from './client-orders.fixture';
@@ -23,6 +23,20 @@ const AU_LABO: ServiceChoice = {
   slot: '7 h – 8 h',
   window: { start: '07:00', end: '08:00' },
   date: '2026-09-07',
+};
+
+/** Le point du retrait {@link AU_LABO}, tel que le serveur le sert. */
+const LABO_POINT: PickupAddressView = {
+  id: 'pick_labo',
+  label: 'Le Labo',
+  ligne1: 'Route de la Balme',
+  ligne2: '',
+  codePostal: '73150',
+  ville: 'Val d’Isère',
+  pays: 'France',
+  discount: null,
+  discountAudiences: { b2b: true, b2c: true },
+  opening: { proPickup: null, publicOpening: null },
 };
 
 function boot(
@@ -134,7 +148,12 @@ describe('OrderContextStore — la livraison et la clientèle', () => {
 
   it('garde le retrait, que la livraison soit fermée ou non', () => {
     const { store } = boot(PERSONAL_WORKSPACE);
-    TestBed.inject(ServicePoints).receive([], [], [], { openToB2b: false, openToB2c: false });
+    // Le point retenu est servi : depuis le 2026-10-16, une liste servie vide
+    // efface le retrait (suite plus bas) — ce n'est pas le sujet ici.
+    TestBed.inject(ServicePoints).receive([LABO_POINT], [], [], {
+      openToB2b: false,
+      openToB2c: false,
+    });
     store.choice.set(AU_LABO);
     TestBed.tick();
 
@@ -162,6 +181,53 @@ describe('OrderContextStore — la livraison et la clientèle', () => {
     workspace.current.set(ACTIVE.id);
     TestBed.tick();
     expect(store.choice()?.mode).toBe('delivery');
+  });
+});
+
+/**
+ * 2026-10-16 : plus de site par défaut — le dernier site ouvert à une
+ * clientèle peut lui être retiré. Un retrait relu du navigateur sur un point
+ * que la liste servie ne porte plus mènerait au refus de la caisse.
+ */
+describe('OrderContextStore — le retrait et la liste servie', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it('efface un retrait quand la liste servie pour cet espace est vide', () => {
+    const { store } = boot(PERSONAL_WORKSPACE);
+    TestBed.inject(ServicePoints).receive([], [], []);
+    store.choice.set(AU_LABO);
+    TestBed.tick();
+
+    expect(store.choice()).toBeNull();
+  });
+
+  it('efface un retrait sur un point que la liste ne porte plus', () => {
+    const { store } = boot(PERSONAL_WORKSPACE);
+    TestBed.inject(ServicePoints).receive([{ ...LABO_POINT, id: 'pick_village' }], [], []);
+    store.choice.set(AU_LABO);
+    TestBed.tick();
+
+    expect(store.choice()).toBeNull();
+  });
+
+  it('garde le retrait sur un point servi', () => {
+    const { store } = boot(PERSONAL_WORKSPACE);
+    TestBed.inject(ServicePoints).receive([LABO_POINT], [], []);
+    store.choice.set(AU_LABO);
+    TestBed.tick();
+
+    expect(store.choice()?.mode).toBe('pickup');
+  });
+
+  /** Une liste pas encore lue ne dit rien : elle n'efface pas. */
+  it('n’efface rien tant que la liste n’a pas été servie', () => {
+    const { store } = boot(PERSONAL_WORKSPACE);
+    store.choice.set(AU_LABO);
+    TestBed.tick();
+
+    expect(store.choice()?.mode).toBe('pickup');
   });
 });
 

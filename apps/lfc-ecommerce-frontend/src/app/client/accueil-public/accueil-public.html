@@ -84,9 +84,15 @@
          moment » demeure, là où la SPEC le fait disparaître au profit de la
          gallery. -->
     @if (pro()) {
+      <!-- Ni retrait ni livraison pour lui (2026-10-16) : on le dit avant
+           les portes, plutôt que de le laisser buter sur un refus. -->
+      @if (!serviceOffered()) {
+        <fold-callout variant="alert">{{ t().shop.noService }}</fold-callout>
+      }
       <app-service-doors
         [pickupCopy]="pickupDoor()"
         [courierCopy]="courierDoor()"
+        [pickupOffered]="pickupOffered()"
         [courierState]="courierState()"
         (pickupChosen)="openPickupDoor()"
         (courierChosen)="openCourierDoor()"
@@ -153,9 +159,23 @@
               <!-- Aucune maison : on le dit. Le magasin laisse ses listes vides
                quand la lecture échoue, « plutôt qu'une station de
                démonstration ». -->
+              <!-- 2026-10-16 : la liste SERVIE vide veut dire que le retrait
+               n'est pas proposé à cette clientèle. On mène alors au coursier
+               s'il est ouvert, et sinon on dit qu'on ne peut pas servir. -->
               <div class="empty">
-                <span class="empty-title">{{ c().empty.title }}</span>
-                <span class="empty-text">{{ c().empty.subtitle }}</span>
+                @if (pickupOffered()) {
+                  <span class="empty-title">{{ c().empty.title }}</span>
+                  <span class="empty-text">{{ c().empty.subtitle }}</span>
+                } @else if (deliveryOffered()) {
+                  <span class="empty-title">{{ c().empty.title }}</span>
+                  <span class="empty-text">{{ c().empty.deliverySubtitle }}</span>
+                  <button class="browse-cta" type="button" (click)="openCourierDoor()">
+                    {{ c().empty.deliveryCta }}
+                  </button>
+                } @else {
+                  <span class="empty-title">{{ c().empty.noServiceTitle }}</span>
+                  <span class="empty-text">{{ c().empty.noServiceSubtitle }}</span>
+                }
               </div>
             } @else {
               <div class="rail">

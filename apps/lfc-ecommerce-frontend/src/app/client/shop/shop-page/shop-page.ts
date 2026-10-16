@@ -262,7 +262,9 @@ export class ShopPage {
   protected async pay(): Promise<void> {
     // Sans service, on le pose ICI, en dialogues, puis on enchaîne : fermer
     // sans choisir laisse le panier tel quel.
-    if (this.needsService() && !(await this.doors.choose())) {
+    // Rien à choisir (2026-10-16) : le panier dit pourquoi, plutôt qu'un clic
+    // qui n'ouvre rien.
+    if (this.needsService() && this.doors.serviceOffered() && !(await this.doors.choose())) {
       return;
     }
     await this.openCart();

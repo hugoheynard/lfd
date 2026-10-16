@@ -209,6 +209,15 @@ export class AccueilPublic {
    * ⚠️ Cacher n'est pas fermer : le devis et la commande refusent la même chose
    * en 409. Cet état-ci évite de montrer une porte qui mène à un refus.
    */
+  /**
+   * Les portes que la boutique propose à qui regarde (2026-10-16) : le retrait
+   * se ferme quand aucun site ne lui est servi, et quand aucune des deux
+   * n'est ouverte, l'écran le dit au lieu d'un parcours qui mène au refus.
+   */
+  protected readonly pickupOffered = computed(() => this.doors.pickupOpen());
+  protected readonly deliveryOffered = computed(() => this.doors.deliveryOpen());
+  protected readonly serviceOffered = computed(() => this.doors.serviceOffered());
+
   protected readonly courierState = computed<'open' | 'pending'>(() =>
     this.doors.deliveryOpen() ? 'open' : 'pending',
   );

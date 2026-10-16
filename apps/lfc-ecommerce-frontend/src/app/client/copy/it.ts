@@ -223,6 +223,8 @@ export const IT: ClientCopy = {
     changeService: 'Cambia',
     pickService: 'Dove viene servito?',
     pickServiceHint: 'Prezzo e orario dipendono da questo — lo dica prima di pagare.',
+    noService:
+      'Al momento non possiamo servirla: né ritiro né consegna le sono proposti. Ci chiami, troveremo una soluzione.',
     loading: 'Il reparto sta arrivando…',
     loadFailedTitle: 'La bottega non si è caricata',
     loadFailedHint: 'La rete non ha risposto. Niente è perduto: il carrello ti aspetta.',

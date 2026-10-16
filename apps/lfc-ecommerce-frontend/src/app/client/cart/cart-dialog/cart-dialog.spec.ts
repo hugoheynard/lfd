@@ -60,6 +60,8 @@ interface Monde {
   readonly panier?: boolean;
   /** Le réglage « Ouverture de la boutique » ; absent = pas encore lu (ouvert). */
   readonly opening?: { readonly ordersOpenToB2b: boolean; readonly ordersOpenToB2c: boolean };
+  /** Ni retrait ni coursier proposés à qui regarde (2026-10-16) ; absent = servi. */
+  readonly unservable?: boolean;
 }
 
 /** Le mode de règlement passé à `place()` — `null` = « le serveur décide ». */
@@ -80,6 +82,7 @@ function boot({
   granted = [],
   blocked = false,
   opening,
+  unservable = false,
 }: Monde = {}): ComponentFixture<CartDialog> {
   localStorage.clear();
   TestBed.resetTestingModule();
@@ -129,6 +132,7 @@ function boot({
       {
         provide: OrderDoors,
         useValue: {
+          serviceOffered: signal(!unservable),
           choose: (): Promise<boolean> => {
             ouvertes.push('choose');
             return Promise.resolve(false);
@@ -479,5 +483,30 @@ describe('le panier exige un créneau choisi', () => {
 
     expect(bouton(fixture)?.disabled).toBe(false);
     expect(el(fixture).querySelector('[data-slot-missing]')).toBeNull();
+  });
+});
+
+/**
+ * 2026-10-16 : plus de site par défaut — le retrait peut être fermé à une
+ * clientèle. Sans retrait ni coursier, le panier le dit au lieu de poser une
+ * question dont toutes les réponses mènent au refus.
+ */
+describe('CartDialog — ni retrait ni livraison', () => {
+  it('🔴 dit qu’on ne peut pas servir, et grise le règlement', () => {
+    const fixture = boot({ service: null, unservable: true });
+
+    expect(el(fixture).querySelector('[data-no-service]')?.textContent).toContain(
+      FR.shop.noService,
+    );
+    expect(el(fixture).querySelector('.ask')).toBeNull();
+    const pay = el(fixture).querySelector<HTMLButtonElement>('button.pay');
+    expect(pay?.disabled).toBe(true);
+  });
+
+  it('pose la question quand une porte est ouverte', () => {
+    const fixture = boot({ service: null });
+
+    expect(el(fixture).querySelector('[data-no-service]')).toBeNull();
+    expect(el(fixture).querySelector('.ask')).not.toBeNull();
   });
 });

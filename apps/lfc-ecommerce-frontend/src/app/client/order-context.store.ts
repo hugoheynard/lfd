@@ -272,5 +272,28 @@ export class OrderContextStore {
         this.choice.set(null);
       }
     });
+
+    /**
+     * 🔴 **Un retrait devenu impossible s'efface** (2026-10-16).
+     *
+     * Plus de site par défaut : le dernier site ouvert à une clientèle peut
+     * lui être retiré. Un retrait relu du navigateur sur un point que la liste
+     * servie pour CET espace ne porte plus mènerait au refus de la caisse.
+     * Rien ne s'efface tant que la liste n'a pas été servie pour qui regarde.
+     */
+    effect(() => {
+      const choice = this.choice();
+      if (choice?.mode !== 'pickup' || !this.points.pickupsKnown()) {
+        return;
+      }
+      const offered = this.points.pickups();
+      const gone =
+        offered.length === 0 ||
+        (choice.pickupAddressId !== null &&
+          !offered.some((point) => point.id === choice.pickupAddressId));
+      if (gone) {
+        this.choice.set(null);
+      }
+    });
   }
 }

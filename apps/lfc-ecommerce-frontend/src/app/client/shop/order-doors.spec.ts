@@ -2,16 +2,44 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import type { PickupAddressView } from '@lfd/contracts';
 import type { PublicDeliveryAvailabilityView } from '@lfd/contracts/shop-values';
 import { FoldPanelHostService } from 'fold-ng';
+import { of } from 'rxjs';
 import { describe, expect, it, vi } from 'vitest';
+
+import { AuthFacade } from '../../auth/auth.facade';
 
 import { ClientAudience } from '../client-audience.service';
 import { matchMediaAt } from '../mon-compte/account.fixture';
+import { DeliveryAddressDialog } from './delivery-address-dialog/delivery-address-dialog';
 import { OrderDoors } from './order-doors';
 import { ServicePoints } from './pickup-points.store';
 import { PublicHousePickerDialog } from './public-house-picker-dialog/public-house-picker-dialog';
 import { ServiceModeDialog } from './service-mode-dialog/service-mode-dialog';
+
+/**
+ * Un visiteur : la liste posée par `receive` vaut pour lui. Sans session
+ * déclarée, aucun lecteur n'est connu et une liste vide ne dit rien.
+ */
+const VISITOR_AUTH = {
+  provide: AuthFacade,
+  useValue: { isAuthenticated: signal(false), accessToken$: () => of('jeton') },
+};
+
+/** Un point servi à qui regarde : le retrait est ouvert. */
+const LABO: PickupAddressView = {
+  id: 'pick_labo',
+  label: 'Le Labo',
+  ligne1: 'Route de la Balme',
+  ligne2: '',
+  codePostal: '73150',
+  ville: 'Val d’Isère',
+  pays: 'France',
+  discount: null,
+  discountAudiences: { b2b: true, b2c: true },
+  opening: { proPickup: null, publicOpening: null },
+};
 
 /** Le réglage « Livraison » tel que l'admin le pose, sans le mode de fenêtre. */
 type Availability = Pick<PublicDeliveryAvailabilityView, 'openToB2b' | 'openToB2c'>;
@@ -94,7 +122,10 @@ describe('OrderDoors — à qui la livraison est ouverte', () => {
  * seulement quand le coursier est ouvert à la clientèle.
  */
 describe('OrderDoors.choose — rien de choisi', () => {
-  function opened(availability: Availability): Promise<readonly unknown[]> {
+  function opened(
+    availability: Availability,
+    pickups: readonly PickupAddressView[] = [LABO],
+  ): Promise<readonly unknown[]> {
     const names: unknown[] = [];
     // `dialogSide()` lit `matchMedia` pour choisir le côté du panneau.
     vi.stubGlobal('matchMedia', matchMediaAt(false));
@@ -113,9 +144,10 @@ describe('OrderDoors.choose — rien de choisi', () => {
           },
         },
         { provide: ClientAudience, useValue: { shown: signal('b2b') } },
+        VISITOR_AUTH,
       ],
     });
-    TestBed.inject(ServicePoints).receive([], [], [], availability);
+    TestBed.inject(ServicePoints).receive(pickups, [], [], availability);
     return TestBed.inject(OrderDoors)
       .choose()
       .then(() => names);
@@ -127,5 +159,67 @@ describe('OrderDoors.choose — rien de choisi', () => {
 
   it('va droit au retrait quand le coursier est fermé à la clientèle', async () => {
     expect(await opened({ openToB2b: false, openToB2c: true })).toEqual([PublicHousePickerDialog]);
+  });
+
+  /** 2026-10-16 : aucun site ouvert à la clientèle — droit au coursier. */
+  it('🔴 va droit au coursier quand la liste servie des points est vide', async () => {
+    expect(await opened({ openToB2b: true, openToB2c: true }, [])).toEqual([DeliveryAddressDialog]);
+  });
+
+  it('🔴 n’ouvre rien quand ni le retrait ni le coursier ne sont proposés', async () => {
+    expect(await opened({ openToB2b: false, openToB2c: true }, [])).toEqual([]);
+  });
+});
+
+/**
+ * **La porte du retrait** (Hugo, 2026-10-16) : plus de site par défaut, rien
+ * ne garantit qu'un site reste ouvert à une clientèle. Fermée quand la liste
+ * SERVIE est vide ; ouverte tant que rien n'est servi.
+ */
+describe('OrderDoors — à qui le retrait est ouvert', () => {
+  function doors(
+    pickups: readonly PickupAddressView[] | null,
+    availability: Availability | null = null,
+  ): OrderDoors {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: FoldPanelHostService, useValue: {} },
+        { provide: ClientAudience, useValue: { shown: signal('b2c') } },
+        VISITOR_AUTH,
+      ],
+    });
+    if (pickups !== null) {
+      TestBed.inject(ServicePoints).receive(pickups, [], [], availability);
+    }
+    return TestBed.inject(OrderDoors);
+  }
+
+  it('reste ouverte tant que la liste n’est pas servie', () => {
+    expect(doors(null).pickupOpen()).toBe(true);
+  });
+
+  it('🔴 se ferme quand la liste servie est vide', () => {
+    expect(doors([]).pickupOpen()).toBe(false);
+  });
+
+  it('reste ouverte quand un point est servi', () => {
+    expect(doors([LABO]).pickupOpen()).toBe(true);
+  });
+
+  it('dit qu’on peut servir tant qu’une des deux portes est ouverte', () => {
+    expect(doors([], { openToB2b: true, openToB2c: true }).serviceOffered()).toBe(true);
+    expect(doors([LABO], { openToB2b: true, openToB2c: false }).serviceOffered()).toBe(true);
+  });
+
+  it('🔴 dit qu’on ne peut pas servir sans retrait ni coursier', () => {
+    expect(doors([], { openToB2b: true, openToB2c: false }).serviceOffered()).toBe(false);
+  });
+
+  /** `FoldPanelHostService` est vide : un dialogue ouvert par erreur ferait tomber le test. */
+  it('🔴 n’ouvre aucun dialogue quand elle est fermée', async () => {
+    await expect(doors([]).pickup(null)).resolves.toBe(false);
   });
 });

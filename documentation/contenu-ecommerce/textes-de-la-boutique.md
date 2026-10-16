@@ -4,21 +4,21 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1327 textes
+## Sommaire — 1332 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
 | Espace | Clé | Textes |
 | --- | --- | --- |
 | **Parcours de commande** | | |
-| [Accueil public — le visiteur sans compte](#espace-accueilpublic) | `accueilPublic` | 57 |
+| [Accueil public — le visiteur sans compte](#espace-accueilpublic) | `accueilPublic` | 61 |
 | [Les trois étapes du parcours (où, quand, quoi)](#espace-steps) | `steps` | 13 |
 | [Accueil — l'en-tête de bienvenue](#espace-hero) | `hero` | 4 |
 | [Accueil — les portes d'entrée](#espace-doors) | `doors` | 23 |
 | [Accueil — la carte d'événement](#espace-event) | `event` | 5 |
 | [Connexion et création de compte](#espace-signup) | `signup` | 24 |
 | [Commander — l'écran d'entrée de la commande](#espace-commande) | `commande` | 39 |
-| [Rayon / boutique](#espace-shop) | `shop` | 36 |
+| [Rayon / boutique](#espace-shop) | `shop` | 37 |
 | [Rayon — la fiche produit](#espace-product) | `product` | 12 |
 | [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 23 |
 | [Choix du lieu — la maison](#espace-housepicker) | `housePicker` | 8 |
@@ -46,7 +46,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
-| **Total** | | **1327** |
+| **Total** | | **1332** |
 
 ## Le parcours de commande
 
@@ -54,7 +54,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 
 ### Accueil public — le visiteur sans compte — `accueilPublic`
 
-Source : `screens/accueil-public.copy.ts` · 57 textes.
+Source : `screens/accueil-public.copy.ts` · 61 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -115,6 +115,10 @@ Source : `screens/accueil-public.copy.ts` · 57 textes.
 | `accueilPublic.events.cta` | Voir le rayon | See the range | Vedi il reparto |  |
 | `accueilPublic.empty.title` | Aucune maison ouverte | No bakery open | Nessuna bottega aperta |  |
 | `accueilPublic.empty.subtitle` | Nous ne pouvons pas proposer de retrait pour l’instant. Revenez un peu plus tard. | We can’t offer pickup at the moment. Please come back a little later. | Al momento non possiamo offrire il ritiro. Tornate un po’ più tardi. |  |
+| `accueilPublic.empty.deliverySubtitle` | Le retrait n’est pas proposé pour l’instant — nous pouvons vous livrer. | Pickup is not offered at the moment — we can deliver to you. | Al momento il ritiro non è proposto — possiamo consegnarvi. |  |
+| `accueilPublic.empty.deliveryCta` | Me faire livrer | Have it delivered | Fatemelo consegnare |  |
+| `accueilPublic.empty.noServiceTitle` | Commande indisponible | Ordering unavailable | Ordine non disponibile |  |
+| `accueilPublic.empty.noServiceSubtitle` | Ni retrait ni livraison ne vous sont proposés pour l’instant. Appelez-nous, juste en dessous. | Neither pickup nor delivery is offered to you at the moment. Call us, just below. | Né ritiro né consegna vi sono proposti al momento. Chiamateci, qui sotto. |  |
 
 <a id="espace-steps"></a>
 
@@ -282,13 +286,14 @@ Source : `fr.ts · en.ts · it.ts` · 39 textes.
 
 ### Rayon / boutique — `shop`
 
-Source : `fr.ts · en.ts · it.ts` · 36 textes.
+Source : `fr.ts · en.ts · it.ts` · 37 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
 | `shop.changeService` | Changer | Change | Cambia |  |
 | `shop.pickService` | Où êtes-vous servi ? | Where are you served? | Dove viene servito? |  |
 | `shop.pickServiceHint` | Le prix et l’heure en dépendent — dites-le avant de régler. | Price and time depend on it — say so before paying. | Prezzo e orario dipendono da questo — lo dica prima di pagare. |  |
+| `shop.noService` | Nous ne pouvons pas vous servir pour l’instant : ni retrait ni livraison ne vous sont proposés. Appelez-nous, nous trouverons une solution. | We can’t serve you at the moment: neither pickup nor delivery is offered to you. Call us and we’ll find a way. | Al momento non possiamo servirla: né ritiro né consegna le sono proposti. Ci chiami, troveremo una soluzione. |  |
 | `shop.loading` | Le rayon arrive… | Loading the shelves… | Il reparto sta arrivando… |  |
 | `shop.loadFailedTitle` | La boutique n’a pas pu se charger | The shop could not load | La bottega non si è caricata |  |
 | `shop.loadFailedHint` | Le réseau n’a pas répondu. Rien n’est perdu : votre panier vous attend. | The network did not answer. Nothing is lost — your basket is waiting. | La rete non ha risposto. Niente è perduto: il carrello ti aspetta. |  |

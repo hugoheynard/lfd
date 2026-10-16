@@ -84,15 +84,41 @@ export class OrderDoors {
   );
 
   /**
+   * **La porte du retrait est-elle ouverte à qui regarde ?** (Hugo,
+   * 2026-10-16 : plus de site par défaut, rien ne garantit qu'un site reste
+   * ouvert au retrait d'une clientèle — on le laisse fermer, et on le montre.)
+   *
+   * Le serveur filtre déjà la liste par clientèle : elle est fermée quand
+   * cette liste, SERVIE pour qui regarde, est vide. Pas encore lue ou en
+   * échec, elle reste ouverte — le défaut d'hier, et la caisse refuse de toute
+   * façon un retrait sans site.
+   */
+  readonly pickupOpen = computed(
+    () => !this.points.pickupsKnown() || this.points.pickups().length > 0,
+  );
+
+  /**
+   * **Peut-on servir qui regarde ?** Faux quand ni le retrait ni le coursier
+   * ne lui sont proposés : l'écran le dit, au lieu d'ouvrir un parcours qui
+   * finirait sur un refus.
+   */
+  readonly serviceOffered = computed(() => this.pickupOpen() || this.deliveryOpen());
+
+  /**
    * **Rien n'est choisi : retrait ou coursier ?** puis la porte choisie.
    *
    * 🔴 Régression (Hugo, 2026-10-13, O6) : sans service posé, « Régler » et
    * « Choisir » ouvraient le retrait d'office, et un pro entré par la boutique
    * ne se voyait jamais proposer la livraison. La question ne se pose que si
    * le coursier est ouvert à qui regarde ({@link deliveryOpen}) : sinon il n'y
-   * a rien à arbitrer, et l'on va droit au retrait.
+   * a rien à arbitrer, et l'on va droit au retrait. Symétrique depuis le
+   * 2026-10-16 : sans retrait ({@link pickupOpen}), droit au coursier ; sans
+   * l'un ni l'autre, rien ne s'ouvre et l'on rend `false`.
    */
   async choose(): Promise<boolean> {
+    if (!this.pickupOpen()) {
+      return this.delivery(null);
+    }
     if (!this.deliveryOpen()) {
       return this.pickup(null);
     }
@@ -110,11 +136,17 @@ export class OrderDoors {
    * existent. L'écart avec la maquette est assumé et signalé ailleurs ;
    * l'enchaînement est le même pour qui l'utilise.
    *
+   * ⚠️ Elle ne s'ouvre PAS quand {@link pickupOpen} est faux.
+   *
    * Fermer le second sans prendre d'heure ne retient RIEN, pas même la maison :
    * un point de retrait sans créneau n'est pas un mode de service, et
    * l'enregistrer à moitié ferait croire la question répondue.
    */
   async pickup(currentId: string | null = null): Promise<boolean> {
+    // Fermée, elle ne s'ouvre pas — comme celle du coursier.
+    if (!this.pickupOpen()) {
+      return false;
+    }
     const point = await PublicHousePickerDialog.open(this.panels, { currentId }).closed;
     if (point === undefined) {
       return false;

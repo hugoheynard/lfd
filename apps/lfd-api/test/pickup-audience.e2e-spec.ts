@@ -275,6 +275,41 @@ describe("un site réservé aux pros", () => {
   });
 });
 
+/**
+ * 2026-10-16 : sans site par défaut, rien ne garantit qu'un site reste ouvert
+ * au retrait d'une clientèle. Le refus le dit, et nomme la sortie.
+ */
+describe("aucun site ouvert au retrait d'une clientèle", () => {
+  it("dit au visiteur que le retrait ne lui est pas proposé, au devis comme à la commande", async () => {
+    const site = await seedSite();
+    await reserve(site, { b2b: true, b2c: false }).expect(204);
+
+    const unchosen = await ctx
+      .http()
+      .post("/shop/quote")
+      .send({ lines: LINES, fulfillment: { method: "pickup", pickupAddressId: null } })
+      .expect(409);
+    expect(refusal(unchosen.body).code).toBe("orders.pickup.not_configured");
+    expect(refusal(unchosen.body).message).toContain(
+      "Le retrait n'est pas proposé aux particuliers",
+    );
+
+    const placed = await ctx.http().post("/shop/orders").send(guestOrder(site)).expect(409);
+    expect(refusal(placed.body).code).toBe(PICKUP_CLOSED_FOR_AUDIENCE);
+    expect(refusal(placed.body).message).toContain("Le retrait n'est pas proposé aux particuliers");
+    expect(refusal(placed.body).message).toContain("Choisissez la livraison");
+  });
+
+  it("renvoie vers un autre point quand un autre site lui est ouvert", async () => {
+    const reservedSite = await seedSite();
+    await reserve(reservedSite, { b2b: true, b2c: false }).expect(204);
+    await seedSite();
+
+    const placed = await ctx.http().post("/shop/orders").send(guestOrder(reservedSite)).expect(409);
+    expect(refusal(placed.body).message).toContain("Choisissez un autre point de retrait");
+  });
+});
+
 describe("le réglage du site", () => {
   it("refuse un retrait ouvert à personne, et garde ce qui était enregistré", async () => {
     const site = await seedSite();

@@ -220,6 +220,8 @@ export const EN: ClientCopy = {
     changeService: 'Change',
     pickService: 'Where are you served?',
     pickServiceHint: 'Price and time depend on it — say so before paying.',
+    noService:
+      'We can’t serve you at the moment: neither pickup nor delivery is offered to you. Call us and we’ll find a way.',
     loading: 'Loading the shelves…',
     loadFailedTitle: 'The shop could not load',
     loadFailedHint: 'The network did not answer. Nothing is lost — your basket is waiting.',

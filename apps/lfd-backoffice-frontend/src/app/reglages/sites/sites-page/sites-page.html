@@ -17,6 +17,11 @@
       </fold-empty-state>
     }
     @case ('ready') {
+      @for (gap of gaps(); track gap.audience) {
+        <fold-callout [variant]="gap.variant" [attr.data-gap]="gap.audience">{{
+          gap.message
+        }}</fold-callout>
+      }
       <div class="points">
         @for (point of addresses(); track point.id) {
           <fold-card class="point">

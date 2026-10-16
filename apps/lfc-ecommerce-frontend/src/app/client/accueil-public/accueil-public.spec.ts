@@ -23,6 +23,7 @@ import { ClientIdentity } from '../client-identity.service';
 import { ClientWorkspace } from '../client-workspace.service';
 import { ClientCart } from '../cart/client-cart.service';
 import { ACCUEIL_PUBLIC_FR } from '../copy/screens/accueil-public.copy';
+import { FR } from '../copy/fr';
 import { ClientOrderHistory } from '../mes-commandes/client-order-history.service';
 import { LIVE_PICKUP } from '../mes-commandes/order-view.fixture';
 import { ServicePoints } from '../shop/pickup-points.store';
@@ -75,6 +76,11 @@ class FakePoints {
    * l'audit B5 (2026-10-07) ; ce qui la ferme s'éprouve dans `order-doors.spec.ts`.
    */
   readonly deliveryAvailability = signal(DEFAULT_DELIVERY_AVAILABILITY);
+  /**
+   * La liste a-t-elle été SERVIE pour qui regarde ? Faux par défaut : une
+   * liste vide ne ferme alors pas le retrait (2026-10-16).
+   */
+  readonly pickupsKnown = signal(false);
   hydrate(): Promise<void> {
     return Promise.resolve();
   }
@@ -790,5 +796,85 @@ describe('AccueilPublic — la vitrine de l’Accueil (L6)', () => {
     expect((fixture.nativeElement as HTMLElement).querySelector('.screen-lede')?.textContent).toBe(
       'Choisissez, on prépare.',
     );
+  });
+});
+
+/**
+ * 2026-10-16 : plus de site par défaut — le serveur peut servir une liste
+ * VIDE à une clientèle. Le retrait ne lui est alors pas proposé ; sans
+ * livraison non plus, l'accueil le dit au lieu d'un parcours qui mène au refus.
+ */
+describe('AccueilPublic — quand le retrait n’est pas proposé', () => {
+  const EMPTY = ACCUEIL_PUBLIC_FR.empty;
+
+  async function unserved(
+    who: Regard,
+    availability: Partial<Pick<DeliveryAvailabilityView, 'openToB2b' | 'openToB2c'>> = {},
+  ): Promise<ComponentFixture<AccueilPublic>> {
+    const store = new FakePoints();
+    store.pickupsKnown.set(true);
+    store.deliveryAvailability.set({ ...DEFAULT_DELIVERY_AVAILABILITY, ...availability });
+    const boutique = new FakeShop([]);
+    TestBed.configureTestingModule({
+      imports: [AccueilPublic],
+      providers: [
+        provideRouter([]),
+        { provide: ServicePoints, useValue: store },
+        {
+          provide: ClientAudience,
+          useValue: { shown: signal(who === 'pro' ? ('b2b' as const) : ('b2c' as const)) },
+        },
+        { provide: ClientOrderHistory, useValue: { orders: signal([]) } },
+        { provide: ShopCatalogue, useValue: boutique },
+        { provide: CartFulfillmentDays, useValue: {} },
+        { provide: ClientCart, useValue: boutique },
+        ...(who === 'pro' ? whoProviders('pro', 'active') : whoProviders(who)),
+      ],
+    });
+    const fixture = TestBed.createComponent(AccueilPublic);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    return fixture;
+  }
+
+  const text = (fixture: ComponentFixture<AccueilPublic>): string =>
+    (fixture.nativeElement as HTMLElement).textContent ?? '';
+
+  it('🔴 mène un visiteur au coursier quand seul le retrait est fermé', async () => {
+    const fixture = await unserved('visiteur');
+
+    expect(text(fixture)).toContain(EMPTY.deliverySubtitle);
+    expect(text(fixture)).toContain(EMPTY.deliveryCta);
+    expect(text(fixture)).not.toContain(EMPTY.noServiceTitle);
+  });
+
+  it('🔴 dit à un visiteur qu’on ne peut pas le servir, sans retrait ni livraison', async () => {
+    const fixture = await unserved('visiteur', { openToB2c: false });
+
+    expect(text(fixture)).toContain(EMPTY.noServiceTitle);
+    expect(text(fixture)).toContain(EMPTY.noServiceSubtitle);
+    expect(text(fixture)).not.toContain(EMPTY.deliveryCta);
+  });
+
+  it('🔴 retire la porte du retrait d’un pro, et garde celle du coursier', async () => {
+    const fixture = await unserved('pro');
+    const host = fixture.nativeElement as HTMLElement;
+
+    expect(host.querySelector('.door-pickup')).toBeNull();
+    expect(host.querySelector('.door-courier')).not.toBeNull();
+    expect(host.querySelector('fold-callout')).toBeNull();
+  });
+
+  it('🔴 dit à un pro qu’on ne peut pas le servir, sans retrait ni livraison', async () => {
+    const fixture = await unserved('pro', { openToB2b: false });
+
+    expect(text(fixture)).toContain(FR.shop.noService);
+  });
+
+  it('garde le texte d’hier tant que la liste vide n’est pas une réponse', async () => {
+    const fixture = await mount([]);
+
+    expect(text(fixture)).toContain(EMPTY.subtitle);
   });
 });

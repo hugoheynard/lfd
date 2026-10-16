@@ -51,6 +51,13 @@ export class ServiceDoors {
    */
   readonly courierState = input.required<'open' | 'pending'>();
 
+  /**
+   * La porte du retrait est-elle proposée ? Fausse quand aucun site n'est
+   * servi à cette clientèle (Hugo, 2026-10-16) : elle DISPARAÎT — un retrait
+   * fermé n'est pas « en attente », personne ne l'ouvre en validant un dossier.
+   */
+  readonly pickupOffered = input(true);
+
   readonly pickupChosen = output<void>();
   readonly courierChosen = output<void>();
 }

@@ -264,6 +264,16 @@ export interface AccueilPublicCopy {
   readonly empty: {
     readonly title: string;
     readonly subtitle: string;
+    /**
+     * Aucun point, mais la livraison est proposée (2026-10-16) : le retrait
+     * n'est pas proposé à cette clientèle, et l'on mène au coursier plutôt
+     * qu'à une impasse.
+     */
+    readonly deliverySubtitle: string;
+    readonly deliveryCta: string;
+    /** Ni retrait ni livraison : la boutique le dit, au lieu d'un parcours qui mène au refus. */
+    readonly noServiceTitle: string;
+    readonly noServiceSubtitle: string;
   };
 }
 
@@ -352,6 +362,11 @@ export const ACCUEIL_PUBLIC_FR: AccueilPublicCopy = {
   empty: {
     title: 'Aucune maison ouverte',
     subtitle: 'Nous ne pouvons pas proposer de retrait pour l’instant. Revenez un peu plus tard.',
+    deliverySubtitle: 'Le retrait n’est pas proposé pour l’instant — nous pouvons vous livrer.',
+    deliveryCta: 'Me faire livrer',
+    noServiceTitle: 'Commande indisponible',
+    noServiceSubtitle:
+      'Ni retrait ni livraison ne vous sont proposés pour l’instant. Appelez-nous, juste en dessous.',
   },
 };
 
@@ -440,6 +455,11 @@ export const ACCUEIL_PUBLIC_EN: AccueilPublicCopy = {
   empty: {
     title: 'No bakery open',
     subtitle: 'We can’t offer pickup at the moment. Please come back a little later.',
+    deliverySubtitle: 'Pickup is not offered at the moment — we can deliver to you.',
+    deliveryCta: 'Have it delivered',
+    noServiceTitle: 'Ordering unavailable',
+    noServiceSubtitle:
+      'Neither pickup nor delivery is offered to you at the moment. Call us, just below.',
   },
 };
 
@@ -528,6 +548,10 @@ export const ACCUEIL_PUBLIC_IT: AccueilPublicCopy = {
   empty: {
     title: 'Nessuna bottega aperta',
     subtitle: 'Al momento non possiamo offrire il ritiro. Tornate un po’ più tardi.',
+    deliverySubtitle: 'Al momento il ritiro non è proposto — possiamo consegnarvi.',
+    deliveryCta: 'Fatemelo consegnare',
+    noServiceTitle: 'Ordine non disponibile',
+    noServiceSubtitle: 'Né ritiro né consegna vi sono proposti al momento. Chiamateci, qui sotto.',
   },
 };
 

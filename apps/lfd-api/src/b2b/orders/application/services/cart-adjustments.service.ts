@@ -19,6 +19,7 @@ import {
   NoDeliveryZoneForPostalCodeError,
   PickupClosedForAudienceError,
   PickupNotConfiguredError,
+  PickupNotOfferedToAudienceError,
 } from "../../domain/errors/order-errors.js";
 import { PickupChoiceRequiredError } from "../../domain/errors/pickup-choice-errors.js";
 import { PreferredPickupReader } from "../../domain/ports/preferred-pickup.reader.js";
@@ -112,7 +113,8 @@ export class CartAdjustments {
    * pour que le devis et les trois passations — client, boutique, équipe —
    * opposent le même refus : le panier ne promet pas ce que la caisse refuse.
    *
-   * @throws {PickupNotConfiguredError} le point n'existe pas, ou aucun n'est ouvert.
+   * @throws {PickupNotConfiguredError} le point n'existe pas.
+   * @throws {PickupNotOfferedToAudienceError} aucun point choisi, et aucun n'est ouvert.
    * @throws {PickupChoiceRequiredError} aucun point choisi, et aucun ne s'impose.
    * @throws {PickupClosedForAudienceError} le site ne remet pas à cette clientèle.
    */
@@ -130,7 +132,10 @@ export class CartAdjustments {
       throw new PickupNotConfiguredError();
     }
     if (!pickupOpenTo(point, audience)) {
-      throw new PickupClosedForAudienceError(point.label, audience);
+      // Lu sur le refus seul : sans autre site ouvert, « choisissez un autre
+      // point » enverrait chercher ce qui n'existe pas.
+      const others = await this.pickups.list(audience);
+      throw new PickupClosedForAudienceError(point.label, audience, others.length > 0);
     }
     const discount = pickupDiscountFor(point, audience);
     return {
@@ -144,9 +149,9 @@ export class CartAdjustments {
   }
 
   /**
-   * Le point qui s'impose sans choix, parmi ceux ouverts à la clientèle ;
-   * `null` s'il n'y en a aucun.
+   * Le point qui s'impose sans choix, parmi ceux ouverts à la clientèle.
    *
+   * @throws {PickupNotOfferedToAudienceError} aucun n'est ouvert à la clientèle.
    * @throws {PickupChoiceRequiredError} plusieurs, et aucun préféré parmi eux.
    */
   private async preselected(
@@ -158,7 +163,7 @@ export class CartAdjustments {
       companyId === null ? null : this.preferences.preferredPickupOf(companyId),
     ]);
     if (offered.length === 0) {
-      return null;
+      throw new PickupNotOfferedToAudienceError(audience);
     }
     const id = preselectedPickupId(offered, preferred);
     if (id === null) {

@@ -133,6 +133,38 @@ Ce qui le remplace :
 - **L'archivage** : le premier site n'est plus protégé ; seul le site qui
   livre refuse d'être archivé. « Au moins un site » n'est plus tenu.
 
+### Une clientèle sans site de retrait (Hugo, 2026-10-16)
+
+Sans site par défaut, rien ne garantit qu'un site reste ouvert au retrait
+d'une clientèle. **On ne bloque pas** — ni l'archivage, ni une case décochée :
+on laisse fermer le retrait à une clientèle, et on le montre.
+
+- **La boutique** lit la liste servie (`/pickup-addresses` pour un visiteur,
+  `/pickup-addresses/mine` pour un client) : SERVIE pour qui regarde et vide,
+  le retrait n'est pas proposé (`ServicePoints.pickupsKnown`,
+  `OrderDoors.pickupOpen`). Pas encore lue ou en échec, elle ne ferme rien.
+  Le choix du mode va alors droit au coursier ; la porte « Retrait » d'un pro
+  disparaît (`ServiceDoors.pickupOffered`) ; le bandeau d'un visiteur mène à
+  la livraison ; un retrait gardé dans le navigateur sur un point que la liste
+  ne porte plus s'efface (`OrderContextStore`). Ni retrait ni livraison
+  (`OrderDoors.serviceOffered`) : l'accueil et le panier le disent, et le
+  règlement est grisé.
+- **Le serveur** refusait déjà ; ses messages nomment désormais le cas. Sans
+  point choisi : `PickupNotOfferedToAudienceError` (code inchangé,
+  `orders.pickup.not_configured`) — « Le retrait n'est pas proposé aux
+  particuliers : aucun site ne leur est ouvert. Choisissez la livraison, ou
+  appelez-nous ; l'équipe ouvre un site au retrait dans Réglages › Sites. »
+  Sur un site fermé à la clientèle sans autre site ouvert,
+  `PickupClosedForAudienceError` garde son code et dit la même chose en
+  nommant le site, au lieu de « choisissez un autre point ».
+- **Réglages › Sites** pose un `fold-callout` par clientèle sans aucun site
+  actif (retrait coché, non archivé) ouvert au retrait — « Aucun site de
+  retrait pour les particuliers : le retrait ne leur est pas proposé. » ; en
+  alerte quand le réglage Livraison (`GET /delivery-availability`, lu comme
+  la carte des rôles) la lui ferme aussi : « Les particuliers ne peuvent plus
+  commander : ni retrait, ni livraison. » Règle :
+  `apps/lfd-backoffice-frontend/src/app/reglages/sites/pickup-coverage.ts`, la même que le `where` du serveur.
+
 Le vocabulaire a été renommé le 2026-10-13 (Hugo, lexique `CLAUDE.md` §8) :
 `handsOver` → `pickup`, `dispatches` → `deliveryDeparture` ; « Remet » →
 « Retrait », « Expédie » → « Livraison » à l'écran. La migration

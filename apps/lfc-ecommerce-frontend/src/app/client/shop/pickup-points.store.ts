@@ -63,6 +63,8 @@ export class ServicePoints {
   private readonly zoneList = signal<readonly DeliveryZoneView[]>([]);
   private readonly dayList = signal<readonly FulfillmentDayView[]>([]);
   private readonly settingsHeld = signal<PublicDeliveryAvailabilityView | null>(null);
+  /** Le lecteur pour qui {@link pickupList} a été RÉELLEMENT servie, ou `null`. */
+  private readonly servedFor = signal<string | null>(null);
   private asked = false;
 
   /**
@@ -87,6 +89,17 @@ export class ServicePoints {
    * plus elle-même ; la caisse refuse de toute façon un site fermé.
    */
   readonly pickups = this.pickupList.asReadonly();
+
+  /**
+   * Vrai quand {@link pickups} est la réponse du serveur POUR qui regarde
+   * maintenant (2026-10-16). Une liste vide ne ferme le retrait qu'à ce
+   * prix : pas lue, échouée, ou lue pour un autre espace, elle ne dit rien —
+   * le retrait reste alors proposé, et la caisse garde le refus.
+   */
+  readonly pickupsKnown = computed(() => {
+    const reader = this.servedFor();
+    return reader !== null && reader === this.readerKey();
+  });
 
   readonly zones = this.zoneList.asReadonly();
 
@@ -172,6 +185,7 @@ export class ServicePoints {
     // La liste posée vaut pour le lecteur du moment : sans quoi l'effet la
     // remplacerait par un appel que la suite n'attend pas.
     this.pickupsReader = this.readerKey();
+    this.servedFor.set(this.pickupsReader);
   }
 
   /**
@@ -204,6 +218,7 @@ export class ServicePoints {
       if (pickups !== null) {
         this.pickupList.set(pickups.map(servedPickup));
         this.pickupsReader = reader;
+        this.servedFor.set(reader);
       }
       this.zoneList.set(zones);
       this.dayList.set(days);
@@ -231,6 +246,7 @@ export class ServicePoints {
       const pickups = await this.pickupsOf(reader);
       if (this.pickupsReader === reader) {
         this.pickupList.set(pickups.map(servedPickup));
+        this.servedFor.set(reader);
       }
     } catch {
       // La liste connue reste : voir plus haut.

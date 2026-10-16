@@ -2,19 +2,21 @@
      symétriques : le retrait est le geste par défaut — c'est lui qui porte la
      remise — et le coursier le service en plus. Les peindre pareil ferait de
      l'arbitrage un tirage au sort. -->
-<button class="door door-pickup" type="button" (click)="pickupChosen.emit()">
-  <span class="door-tag">{{ pickupCopy().tag }}</span>
-  <span class="door-title">{{ pickupCopy().title }}</span>
-  <span class="door-intro">{{ pickupCopy().intro }}</span>
-  <span class="door-foot">
-    <span class="door-cta">{{ pickupCopy().cta }}</span>
-    <!-- ⚠️ La mention DISPARAÎT quand elle est vide — cet écran ne dit pas
-         « jusqu'à −0 % ». Voir `pickupDoor()` dans l'accueil. -->
-    @if (pickupCopy().note) {
-      <span class="door-note">{{ pickupCopy().note }}</span>
-    }
-  </span>
-</button>
+@if (pickupOffered()) {
+  <button class="door door-pickup" type="button" (click)="pickupChosen.emit()">
+    <span class="door-tag">{{ pickupCopy().tag }}</span>
+    <span class="door-title">{{ pickupCopy().title }}</span>
+    <span class="door-intro">{{ pickupCopy().intro }}</span>
+    <span class="door-foot">
+      <span class="door-cta">{{ pickupCopy().cta }}</span>
+      <!-- ⚠️ La mention DISPARAÎT quand elle est vide — cet écran ne dit pas
+           « jusqu'à −0 % ». Voir `pickupDoor()` dans l'accueil. -->
+      @if (pickupCopy().note) {
+        <span class="door-note">{{ pickupCopy().note }}</span>
+      }
+    </span>
+  </button>
+}
 
 <!-- 🔴 EN ATTENTE, ELLE RESTE ENTIÈRE : même carte, même titre, même promesse.
      Seul son PIED change — la mention de la porte laisse place à ce qui la

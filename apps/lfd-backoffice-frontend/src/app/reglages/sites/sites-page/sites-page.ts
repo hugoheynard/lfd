@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import type { SiteView } from '@lfd/contracts';
 import { AddressView } from '@lfd/b2b-ui/address';
@@ -9,6 +9,7 @@ import type { PostalAddress } from '@lfd/b2b-ui/address';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
+  FoldCalloutComponent,
   FoldButtonIconComponent,
   FoldCardComponent,
   FoldEmptyStateComponent,
@@ -17,8 +18,10 @@ import {
   FoldPageLayoutComponent,
 } from 'fold-ng';
 
+import { DeliveryAvailabilityService } from '../../../b2b/reglages/delivery-availability.service';
 import { discountAudienceSuffix } from '../../../b2b/reglages/pickup-discount-audience';
 import { openingRows } from '../../../b2b/reglages/pickup-opening.model';
+import { type DeliveryOpenness, pickupGaps } from '../pickup-coverage';
 import { roleLabels } from '../site-role-labels';
 import { SITES_PATH } from '../sites-path';
 import { SitesService } from '../sites.service';
@@ -57,6 +60,7 @@ type LoadState = 'loading' | 'ready' | 'error';
     HoursView,
     FoldCardComponent,
     FoldBadgeComponent,
+    FoldCalloutComponent,
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
     FoldButtonComponent,
@@ -70,9 +74,23 @@ type LoadState = 'loading' | 'ready' | 'error';
 export class SitesPage {
   private readonly sites = inject(SitesService);
   private readonly router = inject(Router);
+  private readonly availability = inject(DeliveryAvailabilityService);
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly addresses = signal<readonly SiteView[]>([]);
+
+  /**
+   * À qui la livraison est proposée, lu par la route PUBLIQUE (aucun droit de
+   * plus que l'écran) ; `null` tant qu'elle n'a pas répondu ou si elle échoue.
+   */
+  private readonly delivery = signal<DeliveryOpenness | null>(null);
+
+  /**
+   * Une alerte par clientèle sans aucun site actif ouvert au retrait (Hugo,
+   * 2026-10-16) : on laisse fermer le retrait, et on le montre — en alerte
+   * quand la livraison lui est fermée aussi.
+   */
+  protected readonly gaps = computed(() => pickupGaps(this.addresses(), this.delivery()));
   protected readonly roles = roleLabels;
 
   /** Les plages d'ouverture déclarées, lisibles. Vide = aucune heure opposée. */
@@ -99,6 +117,10 @@ export class SitesPage {
 
   constructor() {
     void this.load();
+    this.availability.readPublic().then(
+      (view) => this.delivery.set({ b2b: view.openToB2b, b2c: view.openToB2c }),
+      () => this.delivery.set(null),
+    );
   }
 
   protected async load(): Promise<void> {

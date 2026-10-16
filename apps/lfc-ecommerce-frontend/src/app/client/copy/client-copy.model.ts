@@ -371,6 +371,11 @@ export interface ClientCopy {
     /** Pour qui visite le rayon AVANT d'avoir dit où il est servi. */
     readonly pickService: string;
     readonly pickServiceHint: string;
+    /**
+     * Ni retrait ni livraison ne sont proposés à qui regarde (2026-10-16) :
+     * on le dit au panier, au lieu d'un parcours qui mène au refus.
+     */
+    readonly noService: string;
     /** Les trois états du chargement de la vitrine — cf. `ShopCatalogue`. */
     readonly loading: string;
     readonly loadFailedTitle: string;

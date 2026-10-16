@@ -21,13 +21,19 @@ const COURIER: DoorCopy = {
   pending: { tag: 'Bientôt', hint: 'Votre dossier est en cours de validation.' },
 };
 
-function boot(courierState: 'open' | 'pending'): ComponentFixture<ServiceDoors> {
+function boot(
+  courierState: 'open' | 'pending',
+  pickupOffered: boolean | null = null,
+): ComponentFixture<ServiceDoors> {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({ imports: [ServiceDoors] });
   const fixture = TestBed.createComponent(ServiceDoors);
   fixture.componentRef.setInput('pickupCopy', PICKUP);
   fixture.componentRef.setInput('courierCopy', COURIER);
   fixture.componentRef.setInput('courierState', courierState);
+  if (pickupOffered !== null) {
+    fixture.componentRef.setInput('pickupOffered', pickupOffered);
+  }
   fixture.detectChanges();
   return fixture;
 }
@@ -37,6 +43,18 @@ const doors = (fixture: ComponentFixture<ServiceDoors>): readonly Element[] => [
 ];
 
 describe('ServiceDoors', () => {
+  /** 2026-10-16 : aucun site servi à la clientèle — le retrait n'est pas proposé. */
+  it('🔴 retire la porte du retrait quand il n’est pas proposé', () => {
+    const fixture = boot('open', false);
+
+    expect(doors(fixture)).toHaveLength(1);
+    expect(doors(fixture)[0]?.classList.contains('door-courier')).toBe(true);
+  });
+
+  it('montre la porte du retrait par défaut', () => {
+    expect(doors(boot('open', true))).toHaveLength(2);
+  });
+
   it('ouvre les deux portes quand la livraison est offerte', () => {
     const fixture = boot('open');
 

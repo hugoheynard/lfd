@@ -400,6 +400,34 @@
           "en": "We can’t offer pickup at the moment. Please come back a little later.",
           "it": "Al momento non possiamo offrire il ritiro. Tornate un po’ più tardi.",
           "variables": []
+        },
+        {
+          "key": "accueilPublic.empty.deliverySubtitle",
+          "fr": "Le retrait n’est pas proposé pour l’instant — nous pouvons vous livrer.",
+          "en": "Pickup is not offered at the moment — we can deliver to you.",
+          "it": "Al momento il ritiro non è proposto — possiamo consegnarvi.",
+          "variables": []
+        },
+        {
+          "key": "accueilPublic.empty.deliveryCta",
+          "fr": "Me faire livrer",
+          "en": "Have it delivered",
+          "it": "Fatemelo consegnare",
+          "variables": []
+        },
+        {
+          "key": "accueilPublic.empty.noServiceTitle",
+          "fr": "Commande indisponible",
+          "en": "Ordering unavailable",
+          "it": "Ordine non disponibile",
+          "variables": []
+        },
+        {
+          "key": "accueilPublic.empty.noServiceSubtitle",
+          "fr": "Ni retrait ni livraison ne vous sont proposés pour l’instant. Appelez-nous, juste en dessous.",
+          "en": "Neither pickup nor delivery is offered to you at the moment. Call us, just below.",
+          "it": "Né ritiro né consegna vi sono proposti al momento. Chiamateci, qui sotto.",
+          "variables": []
         }
       ],
       "unrecorded": []
@@ -1227,6 +1255,13 @@
           "fr": "Le prix et l’heure en dépendent — dites-le avant de régler.",
           "en": "Price and time depend on it — say so before paying.",
           "it": "Prezzo e orario dipendono da questo — lo dica prima di pagare.",
+          "variables": []
+        },
+        {
+          "key": "shop.noService",
+          "fr": "Nous ne pouvons pas vous servir pour l’instant : ni retrait ni livraison ne vous sont proposés. Appelez-nous, nous trouverons une solution.",
+          "en": "We can’t serve you at the moment: neither pickup nor delivery is offered to you. Call us and we’ll find a way.",
+          "it": "Al momento non possiamo servirla: né ritiro né consegna le sono proposti. Ci chiami, troveremo una soluzione.",
           "variables": []
         },
         {

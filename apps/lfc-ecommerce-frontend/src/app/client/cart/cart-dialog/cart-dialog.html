@@ -79,11 +79,15 @@
       @if (lateNotice(); as notice) {
         <fold-callout variant="warning" data-late-day>{{ notice }}</fold-callout>
       }
-    } @else {
+    } @else if (serviceOffered()) {
       <button class="ask" type="button" (click)="pickService()">
         <span class="ask-title">{{ t().shop.pickService }}</span>
         <span class="ask-hint">{{ t().shop.pickServiceHint }}</span>
       </button>
+    } @else {
+      <!-- Ni retrait ni livraison pour cette clientèle (2026-10-16) : on le
+           dit, au lieu d'une question dont toutes les réponses mènent au refus. -->
+      <fold-callout variant="alert" data-no-service>{{ t().shop.noService }}</fold-callout>
     }
 
     <app-cart-summary />

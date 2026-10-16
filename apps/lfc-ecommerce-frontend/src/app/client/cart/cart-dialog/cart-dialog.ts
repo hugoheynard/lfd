@@ -202,7 +202,11 @@ export class CartDialog {
    * complète — et que le créneau soit choisi.
    */
   protected readonly payBlocked = computed(
-    () => this.slotMissing() || (this.identityNeeded() && this.guest() === null),
+    () =>
+      this.slotMissing() ||
+      (this.identityNeeded() && this.guest() === null) ||
+      // Rien à choisir (2026-10-16) : le bouton ne mène pas à une question vide.
+      (this.choice() === null && !this.cart.isEmpty() && !this.serviceOffered()),
   );
 
   /**
@@ -245,6 +249,9 @@ export class CartDialog {
     }
     return fill(this.t().cart.pay, { total: formatCents(this.cart.totals().totalCents) });
   });
+
+  /** Faux quand ni retrait ni coursier ne sont proposés à qui regarde (2026-10-16). */
+  protected readonly serviceOffered = computed(() => this.doors.serviceOffered());
 
   /**
    * **Le mode de service se choisit ICI, en dialogues** (2026-09-21).

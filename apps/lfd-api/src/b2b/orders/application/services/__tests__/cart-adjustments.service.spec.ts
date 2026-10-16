@@ -18,6 +18,7 @@ import {
   NoDeliveryZoneForPostalCodeError,
   PickupClosedForAudienceError,
   PickupNotConfiguredError,
+  PickupNotOfferedToAudienceError,
 } from "../../../domain/errors/order-errors.js";
 import { PickupChoiceRequiredError } from "../../../domain/errors/pickup-choice-errors.js";
 import { PreferredPickupReader } from "../../../domain/ports/preferred-pickup.reader.js";
@@ -165,22 +166,49 @@ describe("CartAdjustments — la remise du point, par clientèle", () => {
 
 /** Hugo, 2026-10-15 : un site peut être réservé au retrait d'une clientèle. */
 describe("CartAdjustments — le retrait, par clientèle du site", () => {
-  function reserved(pickupAudiences: PickupDiscountAudiences): CartAdjustments {
+  function reserved(
+    pickupAudiences: PickupDiscountAudiences,
+    ...others: readonly PickupAddressView[]
+  ): CartAdjustments {
     return new CartAdjustments(
-      new OnePoint({ ...point({ b2b: true, b2c: true }), pickupAudiences }),
+      new Points({ ...point({ b2b: true, b2c: true }), pickupAudiences }, ...others),
       new OneZone(),
       OPEN,
       new Preferences(),
     );
   }
 
+  /** Un autre site, ouvert aux deux : le geste « un autre point » existe. */
+  const ELSEWHERE: PickupAddressView = { ...point({ b2b: true, b2c: true }), id: "pickup_2" };
+
   it("refuse un pro sur un site réservé aux particuliers, en nommant le site et le geste", async () => {
-    const refusal = reserved({ b2b: false, b2c: true }).forPickup("pickup_1", 5_000, "b2b", null);
+    const refusal = reserved({ b2b: false, b2c: true }, ELSEWHERE).forPickup(
+      "pickup_1",
+      5_000,
+      "b2b",
+      null,
+    );
 
     await expect(refusal).rejects.toBeInstanceOf(PickupClosedForAudienceError);
     await expect(refusal).rejects.toMatchObject({ code: PICKUP_CLOSED_FOR_AUDIENCE });
     await expect(refusal).rejects.toThrow(
       /« Labo ».*aux professionnels.*Choisissez un autre point/u,
+    );
+  });
+
+  /**
+   * 2026-10-16 : sans aucun site ouvert à la clientèle, « choisissez un autre
+   * point » envoyait chercher un point qui n'existe pas.
+   */
+  it("dit que le retrait n'est pas proposé quand aucun autre site n'est ouvert", async () => {
+    const refusal = reserved({ b2b: false, b2c: true }).forPickup("pickup_1", 5_000, "b2b", null);
+
+    await expect(refusal).rejects.toMatchObject({
+      code: PICKUP_CLOSED_FOR_AUDIENCE,
+      othersOpen: false,
+    });
+    await expect(refusal).rejects.toThrow(
+      /Le retrait n'est pas proposé aux professionnels.*« Labo ».*Choisissez la livraison.*Réglages › Sites/u,
     );
   });
 
@@ -271,6 +299,16 @@ describe("CartAdjustments — un retrait sans point choisi", () => {
     await expect(
       adjustments(new Points(PROS_ONLY)).forPickup(null, 5_000, "b2c", null),
     ).rejects.toBeInstanceOf(PickupNotConfiguredError);
+  });
+
+  it("nomme la clientèle et la sortie quand aucun point ne lui est ouvert", async () => {
+    const refusal = adjustments(new Points(PROS_ONLY)).forPickup(null, 5_000, "b2c", null);
+
+    await expect(refusal).rejects.toBeInstanceOf(PickupNotOfferedToAudienceError);
+    await expect(refusal).rejects.toMatchObject({ code: "orders.pickup.not_configured" });
+    await expect(refusal).rejects.toThrow(
+      /Le retrait n'est pas proposé aux particuliers.*Choisissez la livraison/u,
+    );
   });
 
   it("ne lit pas la préférence d'un visiteur ni quand un point est choisi", async () => {

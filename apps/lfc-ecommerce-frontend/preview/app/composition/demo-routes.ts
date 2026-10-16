@@ -8,6 +8,7 @@ import type {
   ShopCartResponse,
   ShopCartView,
 } from '@lfd/contracts';
+import { audienceOf, pickupOpenTo } from '@lfd/contracts/shop-values';
 
 import { DEMO_CATALOGUE } from '../demo-data/demo-catalogue';
 import {
@@ -120,6 +121,18 @@ export const DEMO_ROUTES: readonly DemoRoute[] = [
     pattern: /^\/pickup-addresses$/u,
     serves: 'deux maisons de démonstration',
     answer: () => ok(DEMO_PICKUP_ADDRESSES),
+  },
+  {
+    method: 'GET',
+    pattern: /^\/pickup-addresses\/mine$/u,
+    serves: 'les maisons de démonstration ouvertes à la clientèle de la scène',
+    // Depuis ba8ed5302, un client reconnu lit ses points ici : filtrés par sa
+    // clientèle, comme le serveur (une société active = pro).
+    answer: (_request, _match, world) => {
+      const status = world.account?.companies[0]?.status ?? null;
+      const audience = audienceOf(status);
+      return ok(DEMO_PICKUP_ADDRESSES.filter((point) => pickupOpenTo(point, audience)));
+    },
   },
   {
     method: 'GET',
