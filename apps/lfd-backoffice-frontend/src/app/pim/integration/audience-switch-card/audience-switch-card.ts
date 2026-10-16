@@ -28,7 +28,8 @@ import {
 
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { NotifyService } from '../../../notify.service';
-import { AudienceSwitchApi, type ReemissionReportView } from '../audience-switch-api';
+import type { ReemissionReportView } from '@lfd/pim-contracts';
+import { AudienceSwitchApi } from '../audience-switch-api';
 
 type LoadState = 'loading' | 'ready' | 'error';
 

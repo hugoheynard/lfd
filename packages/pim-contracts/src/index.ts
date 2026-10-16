@@ -239,6 +239,7 @@ export type {
   AudienceSwitchPreviewView,
   AudienceSwitchIncompleteView,
   AudienceSwitchAppliedView,
+  ReemissionReportView,
   B2bExclusionReason,
   B2bExclusionView,
   B2bIngestionReportView,

@@ -1,22 +1,13 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import type { AudienceSwitchAppliedView, AudienceSwitchPreviewView } from '@lfd/pim-contracts';
+import type {
+  AudienceSwitchAppliedView,
+  AudienceSwitchPreviewView,
+  ReemissionReportView,
+} from '@lfd/pim-contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { API_BASE_URL } from '../data/api';
-
-/**
- * Le compte rendu de « réémettre ».
- *
- * ⚠️ Recopié du port `ReemissionReport` de l'API
- * (`apps/lfd-api/src/pim/catalogue/shared/domain/ports/catalog-reemission.ts`),
- * qui n'est publié dans aucun paquet de contrats (vérifié le 2026-10-16).
- */
-export interface ReemissionReportView {
-  readonly categories: number;
-  readonly products: number;
-  readonly failedProducts: readonly string[];
-}
 
 /**
  * Les trois routes de la bascule du catalogue vers les faits (lot 2b,

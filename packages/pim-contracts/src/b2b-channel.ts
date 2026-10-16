@@ -272,3 +272,17 @@ export interface AudienceSwitchVariantView {
   /** Le nom français de la déclinaison. */
   readonly name: string;
 }
+
+/**
+ * La réponse de `POST /pim/channels/b2b/reemit` — ce qu'une réémission a fait.
+ *
+ * Même forme que le port `ReemissionReport` de l'API
+ * (`pim/catalogue/shared/domain/ports/catalog-reemission.ts`) : publiée ici pour
+ * que l'écran ne la recopie pas (2026-10-16).
+ */
+export interface ReemissionReportView {
+  readonly categories: number;
+  readonly products: number;
+  /** Les fiches dont la transaction a échoué, par identifiant. */
+  readonly failedProducts: readonly string[];
+}
