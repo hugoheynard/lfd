@@ -9,6 +9,19 @@
 > `lfc_loyalty` dans `staff-access.ts` (schéma, libellé « Fidélité », graine
 > `write` à l'administrateur seul) et `staff-resource-scopes.ts`. Les gardes
 > restent sur `b2b_accounting`. Reste : le geste de Hugo à l'écran, puis F2.
+>
+> ✅ **F2 bâti le 2026-10-16** (non commité à l'écriture de ce bandeau) :
+> `admin-loyalty.controller.ts` sous `@AdminSurface("lfc_loyalty")`, route
+> `admin/loyalty` (le service du back-office et les neuf e2e repointés) ;
+> l'écran déménagé dans `src/app/fidelite/`, route `/fidelite` sous
+> `lfc_loyalty:read`, entrée « Fidélité » en Gestion Boutique (rail et
+> tuiles), retirée de l'espace Comptabilité ; `/comptabilite/fidelite`
+> redirige vers `/fidelite` hors de la coquille comptable ; gestes sous
+> `lfc_loyalty:write`. **Révision de l'ordre (Hugo, 2026-10-16)** : F1 et F2
+> partent **ensemble** sur `main` ; entre le déploiement et l'accord à
+> l'écran, seul le superadmin ouvre la fidélité — c'est accepté. Le geste est
+> au runbook (`documentation/ops/runbook.md`, « Déployer la fidélité en
+> Gestion Boutique »).
 
 ## 0. La demande (Hugo, 2026-10-16)
 
@@ -73,7 +86,7 @@ Le mot est `loyalty` (le contexte serveur est `src/b2b/loyalty/`).
   réparable à l'écran ; aucun accès ne peut être gagné. Deux rôles semés la
   tiennent (admin et comptabilité, en écriture).
 - **Les lecteurs de la route** (SÉRIEUX) : le front
-  (`comptabilite/loyalty.service.ts:27`) et neuf e2e, dont six qui s'en
+  (`fidelite/loyalty.service.ts`, rangé en comptabilité avant F2) et neuf e2e, dont six qui s'en
   servent pour se mettre en place (`loyalty`, `loyalty-me`,
   `loyalty-earning`, `loyalty-welcome`, `loyalty-voucher-order`,
   `guest-account-claim`, `handover-durable`, `order-staff-cancel`, et la

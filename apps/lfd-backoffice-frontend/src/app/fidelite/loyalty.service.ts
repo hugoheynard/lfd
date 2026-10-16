@@ -24,7 +24,7 @@ import { B2B_API_BASE } from '../api/api-config';
 @Injectable({ providedIn: 'root' })
 export class LoyaltyService {
   private readonly http = inject(HttpClient);
-  private readonly base = `${B2B_API_BASE}/admin/accounting/loyalty`;
+  private readonly base = `${B2B_API_BASE}/admin/loyalty`;
 
   async readSettings(): Promise<LoyaltySettingsView> {
     return firstValueFrom(this.http.get<LoyaltySettingsView>(`${this.base}/settings`));

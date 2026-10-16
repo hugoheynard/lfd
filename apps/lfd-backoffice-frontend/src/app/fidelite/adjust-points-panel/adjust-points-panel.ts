@@ -11,8 +11,8 @@ import {
 
 import { httpErrorMessage } from '@lfd/endpoints';
 
-import { formatPoints, holderName } from '../../loyalty-format';
-import { LoyaltyService } from '../../loyalty.service';
+import { formatPoints, holderName } from '../loyalty-format';
+import { LoyaltyService } from '../loyalty.service';
 
 /** Charge d'ouverture : le titulaire visé et son solde tel que la liste le montre. */
 export interface AdjustPointsPanelData {

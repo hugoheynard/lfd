@@ -3,9 +3,9 @@ import { By } from '@angular/platform-browser';
 import { FoldPanelHostService } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
 
-import { PermissionsStore } from '../../auth/permissions.store';
-import { NotifyService } from '../../notify.service';
-import { LoyaltyService } from '../loyalty.service';
+import { PermissionsStore } from '../auth/permissions.store';
+import { NotifyService } from '../notify.service';
+import { LoyaltyService } from './loyalty.service';
 import { FidelitePage } from './fidelite-page';
 
 /** L'onglet choisit ce qui est chargé : un seul sujet à l'écran à la fois. */

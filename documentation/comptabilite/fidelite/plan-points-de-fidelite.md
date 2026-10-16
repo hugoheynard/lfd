@@ -1,5 +1,12 @@
 # Plan — les points de fidélité
 
+> 🔀 **L'écran a déménagé le 2026-10-16** : ce plan dit « Comptabilité ›
+> Fidélité » sous `b2b_accounting` ; c'est désormais **Gestion Boutique ›
+> Fidélité** (`/fidelite`), sous le droit `lfc_loyalty`, et la route serveur
+> est `admin/loyalty`. Cf.
+> [`plan-fidelite-en-gestion-boutique.md`](plan-fidelite-en-gestion-boutique.md), F2.
+> Le texte ci-dessous reste celui de la décision d'origine.
+
 > 📘 **Ce qui est bâti est décrit à l'affirmative dans
 > [`points-de-fidelite.md`](points-de-fidelite.md)** (2026-09-26), qui fait
 > foi. Ce plan reste l'**histoire de la décision** : la demande, les deux

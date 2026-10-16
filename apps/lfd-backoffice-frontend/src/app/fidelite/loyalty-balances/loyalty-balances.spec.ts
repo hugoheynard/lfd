@@ -4,15 +4,15 @@ import { describe, expect, it } from 'vitest';
 
 import type { LoyaltyBalanceView, StaffPermission } from '@lfd/contracts';
 
-import { PermissionsStore } from '../../../auth/permissions.store';
-import { NotifyService } from '../../../notify.service';
-import { LoyaltyService } from '../../loyalty.service';
+import { PermissionsStore } from '../../auth/permissions.store';
+import { NotifyService } from '../../notify.service';
+import { LoyaltyService } from '../loyalty.service';
 import { LoyaltyBalances } from './loyalty-balances';
 
 /**
  * Ce que ces cas tiennent : un titulaire se nomme sans jamais emprunter une
  * adresse, l'ajustement ouvre le panneau sur le bon titulaire et relit la
- * liste après un succès, et sans `b2b_accounting:write` aucun geste.
+ * liste après un succès, et sans `lfc_loyalty:write` aucun geste.
  */
 
 const BALANCES: readonly LoyaltyBalanceView[] = [
@@ -32,7 +32,7 @@ class FakeApi {
 
 async function render(
   api: FakeApi,
-  permissions: readonly StaffPermission[] = ['b2b_accounting:read', 'b2b_accounting:write'],
+  permissions: readonly StaffPermission[] = ['lfc_loyalty:read', 'lfc_loyalty:write'],
   opened: unknown[] = [],
   result: boolean | undefined = undefined,
 ): Promise<ComponentFixture<LoyaltyBalances>> {
@@ -108,7 +108,7 @@ describe('LoyaltyBalances', () => {
   });
 
   it('sans droit d’écriture, aucun ajustement', async () => {
-    const fixture = await render(new FakeApi(), ['b2b_accounting:read']);
+    const fixture = await render(new FakeApi(), ['lfc_loyalty:read']);
     expect(buttons(fixture, 'Ajuster')).toHaveLength(0);
   });
 

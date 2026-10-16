@@ -286,6 +286,20 @@
               (click)="mobileNavOpen.set(false)"
             ></a>
           }
+          @if (canSeeLoyalty()) {
+            <!-- La FIDÉLITÉ, venue de la Comptabilité le 2026-10-16 (Hugo), sous
+                 son droit `lfc_loyalty`. -->
+            <a
+              fold-menu-item
+              icon="star"
+              label="Fidélité"
+              routerLink="/fidelite"
+              routerLinkActive
+              #loyaltyRla="routerLinkActive"
+              [active]="loyaltyRla.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
         </fold-menu-section>
       }
 
@@ -935,6 +949,20 @@
               routerLinkActive
               #promotionsTile="routerLinkActive"
               [active]="promotionsTile.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
+          @if (canSeeLoyalty()) {
+            <!-- La FIDÉLITÉ, venue de la Comptabilité le 2026-10-16 (Hugo), sous
+                 son droit `lfc_loyalty`. -->
+            <a
+              fold-nav-tile
+              icon="star"
+              label="Fidélité"
+              routerLink="/fidelite"
+              routerLinkActive
+              #loyaltyTile="routerLinkActive"
+              [active]="loyaltyTile.isActive"
               (click)="mobileNavOpen.set(false)"
             ></a>
           }

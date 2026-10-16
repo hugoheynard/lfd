@@ -18,10 +18,10 @@ import {
 import { formatCents, formatOrderDate } from '@lfd/b2b-ui/order';
 import { httpErrorMessage } from '@lfd/endpoints';
 
-import { PermissionsStore } from '../../../auth/permissions.store';
-import { NotifyService } from '../../../notify.service';
-import { formatPoints, formatRatio, holderName, voucherStatusBadge } from '../../loyalty-format';
-import { LoyaltyService } from '../../loyalty.service';
+import { PermissionsStore } from '../../auth/permissions.store';
+import { NotifyService } from '../../notify.service';
+import { formatPoints, formatRatio, holderName, voucherStatusBadge } from '../loyalty-format';
+import { LoyaltyService } from '../loyalty.service';
 import { CancelVoucherPanel } from '../cancel-voucher-panel/cancel-voucher-panel';
 
 const BASE_COLUMNS: readonly FoldTableColumn[] = [
@@ -39,7 +39,7 @@ const BASE_COLUMNS: readonly FoldTableColumn[] = [
  * maintenant : un bon dont la date limite est passée se lit « expiré ».
  *
  * Seul un bon **disponible** s'annule (plan D7), et le geste demande
- * `b2b_accounting:write` : sans lui, la colonne d'actions disparaît. Un bon
+ * `lfc_loyalty:write` : sans lui, la colonne d'actions disparaît. Un bon
  * engagé sur une commande (`reserved`, lot C) dit laquelle — « utilisé sur … »
  * — et ne s'annule pas ici : c'est un geste sur la commande.
  */
@@ -72,7 +72,7 @@ export class LoyaltyVouchers {
   protected readonly loadError = signal<string | null>(null);
   protected readonly actionError = signal<string | null>(null);
 
-  protected readonly canWrite = computed(() => this.permissions.can('b2b_accounting:write'));
+  protected readonly canWrite = computed(() => this.permissions.can('lfc_loyalty:write'));
 
   protected readonly columns = computed<readonly FoldTableColumn[]>(() =>
     this.canWrite() ? [...BASE_COLUMNS, { key: 'actions', label: '' }] : BASE_COLUMNS,

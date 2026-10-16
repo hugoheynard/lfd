@@ -21,8 +21,10 @@ const TABS: readonly FoldTabItem<LoyaltyTab>[] = [
 ];
 
 /**
- * **Comptabilité › Fidélité** — le réglage du programme de points, les soldes
- * par titulaire et les bons de fidélité émis.
+ * **Gestion Boutique › Fidélité** — le réglage du programme de points, les
+ * soldes par titulaire et les bons de fidélité émis. Sortie de la comptabilité
+ * le 2026-10-16, sous son droit `lfc_loyalty` (plan
+ * `documentation/comptabilite/fidelite/plan-fidelite-en-gestion-boutique.md`, F2).
  *
  * Chaque onglet charge ce qu'il montre, à l'ouverture : un solde relu après
  * l'annulation d'un bon est donc à jour sans qu'un onglet prévienne l'autre.

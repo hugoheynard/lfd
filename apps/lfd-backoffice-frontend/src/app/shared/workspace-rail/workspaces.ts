@@ -797,13 +797,9 @@ export const COMPTABILITE_VIEWS: readonly WorkspaceView[] = [
     icon: 'credit-card',
     needs: 'b2b_accounting:read',
   },
-  {
-    key: 'fidelite',
-    label: 'Fidélité',
-    link: '/comptabilite/fidelite',
-    icon: 'gift',
-    needs: 'b2b_accounting:read',
-  },
+  // « Fidélité » est partie en Gestion Boutique le 2026-10-16 (Hugo), sous
+  // son droit `lfc_loyalty` : elle est au rail principal et au lanceur mobile,
+  // dans `app.html`. `/comptabilite/fidelite` redirige vers `/fidelite`.
   {
     // Son propre droit : les limites relèvent de `lfc_price_limits`, pas de la
     // comptabilité (plan `limites-de-prix.md`).

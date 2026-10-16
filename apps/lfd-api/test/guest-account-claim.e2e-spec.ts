@@ -89,11 +89,7 @@ function enter(subject: string, emailVerified = true, email = ADDRESS) {
 }
 
 async function openProgram(): Promise<void> {
-  await ctx
-    .asSub(E2E_STAFF_SUB)
-    .put("/admin/accounting/loyalty/settings")
-    .send(SETTINGS)
-    .expect(204);
+  await ctx.asSub(E2E_STAFF_SUB).put("/admin/loyalty/settings").send(SETTINGS).expect(204);
 }
 
 /** Une commande publique de l'invité, rendue définitive (réglée puis remise). */

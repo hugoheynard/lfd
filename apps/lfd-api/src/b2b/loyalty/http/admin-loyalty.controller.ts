@@ -23,13 +23,15 @@ import { ListLoyaltyBalancesQuery } from "../application/queries/list-loyalty-ba
 import { ListLoyaltyVouchersQuery } from "../application/queries/list-loyalty-vouchers.query.js";
 
 /**
- * **Comptabilité › Fidélité** (plan `plan-points-de-fidelite.md`, lot B) : le
- * réglage du programme, les soldes, les bons, l'ajustement motivé et
- * l'annulation d'un bon. Droit `b2b_accounting` ; l'action se déduit du verbe
- * (`GET` → lecture, le reste → écriture).
+ * **Gestion Boutique › Fidélité** (plan `plan-points-de-fidelite.md`, lot B) :
+ * le réglage du programme, les soldes, les bons, l'ajustement motivé et
+ * l'annulation d'un bon. Droit `lfc_loyalty` depuis le 2026-10-16 (plan
+ * `plan-fidelite-en-gestion-boutique.md`, F2) : la comptabilité ne la garde
+ * pas, et la route a quitté `admin/accounting/` — le chemin aurait menti.
+ * L'action se déduit du verbe (`GET` → lecture, le reste → écriture).
  */
-@Controller("admin/accounting/loyalty")
-@AdminSurface("b2b_accounting")
+@Controller("admin/loyalty")
+@AdminSurface("lfc_loyalty")
 export class AdminLoyaltyController {
   constructor(
     private readonly queries: QueryBus,

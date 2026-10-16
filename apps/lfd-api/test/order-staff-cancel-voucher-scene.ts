@@ -58,15 +58,11 @@ export async function fidelity(points = 3_000): Promise<string> {
     select: { id: true },
   });
   pickupId = point.id;
-  await ctx
-    .asSub(E2E_STAFF_SUB)
-    .put("/admin/accounting/loyalty/settings")
-    .send(SETTINGS)
-    .expect(204);
+  await ctx.asSub(E2E_STAFF_SUB).put("/admin/loyalty/settings").send(SETTINGS).expect(204);
   const user = await createUser(ctx.prisma, { auth0Sub: CLIENT, firstName: "Léa" });
   await ctx
     .asSub(E2E_STAFF_SUB)
-    .post("/admin/accounting/loyalty/adjustments")
+    .post("/admin/loyalty/adjustments")
     .send({ holderKind: "user", holderId: user.id, points, reason: "reprise" })
     .expect(204);
   return user.id;

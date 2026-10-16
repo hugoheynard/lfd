@@ -153,7 +153,19 @@ describe('App — Gestion Boutique', () => {
     }
   });
 
-  it('est absente sans aucun des deux droits', () => {
+  /** Partie de la Comptabilité le 2026-10-16 (F2) : son droit seul l'ouvre. */
+  it('montre « Fidélité » sous lfc_loyalty:read, dans les deux arbres', () => {
+    const link = '/fidelite';
+    const entry = render(['lfc_loyalty:read']).querySelector(rail(link));
+    expect(entry?.getAttribute('label')).toBe('Fidélité');
+    expect(entry?.closest('fold-menu-section')?.getAttribute('label')).toBe('Gestion Boutique');
+    expect(
+      render(['lfc_loyalty:read'], true).querySelector(tile(link))?.getAttribute('label'),
+    ).toBe('Fidélité');
+    expect(render(['b2b_accounting:read']).querySelector(rail(link))).toBeNull();
+  });
+
+  it('est absente sans aucun de ses droits', () => {
     const host = render(['b2b_orders:read']);
     expect(host.querySelector('fold-menu-section[label="Gestion Boutique"]')).toBeNull();
   });

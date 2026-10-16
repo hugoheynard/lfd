@@ -16,13 +16,13 @@ import {
 
 import { httpErrorMessage } from '@lfd/endpoints';
 
-import { PermissionsStore } from '../../../auth/permissions.store';
-import { NotifyService } from '../../../notify.service';
-import { centsField, centsOf } from '../../cents-field';
+import { PermissionsStore } from '../../auth/permissions.store';
+import { NotifyService } from '../../notify.service';
+import { centsField, centsOf } from '../../comptabilite/cents-field';
 import { formatCents } from '@lfd/b2b-ui/order';
 
-import { formatPoints, formatRatio } from '../../loyalty-format';
-import { LoyaltyService } from '../../loyalty.service';
+import { formatPoints, formatRatio } from '../loyalty-format';
+import { LoyaltyService } from '../loyalty.service';
 
 /** Ce que le premier enregistrement propose : un an (plan D5, décidé par Hugo). */
 export const DEFAULT_VOUCHER_VALIDITY_DAYS = 365;
@@ -131,7 +131,7 @@ export class LoyaltySettings {
   /** Vide (`null`) = aucun bonus de bienvenue. */
   protected readonly welcomeBonusPoints = signal<number | null>(null);
 
-  protected readonly canWrite = computed(() => this.permissions.can('b2b_accounting:write'));
+  protected readonly canWrite = computed(() => this.permissions.can('lfc_loyalty:write'));
 
   protected readonly pointsInvalid = computed(() => positiveInt(this.pointsPerStep()) === null);
   protected readonly stepValueInvalid = computed(() => centsOf(this.stepValueInput()) === null);

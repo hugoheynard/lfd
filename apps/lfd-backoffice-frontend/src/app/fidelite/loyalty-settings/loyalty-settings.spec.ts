@@ -7,9 +7,9 @@ import type {
   StaffPermission,
 } from '@lfd/contracts';
 
-import { PermissionsStore } from '../../../auth/permissions.store';
-import { NotifyService } from '../../../notify.service';
-import { LoyaltyService } from '../../loyalty.service';
+import { PermissionsStore } from '../../auth/permissions.store';
+import { NotifyService } from '../../notify.service';
+import { LoyaltyService } from '../loyalty.service';
 import { cashbackPercent, LoyaltySettings } from './loyalty-settings';
 
 /**
@@ -17,7 +17,7 @@ import { cashbackPercent, LoyaltySettings } from './loyalty-settings';
  * fermé et le premier enregistrement propose 365 jours ; la valeur part en
  * centimes entiers ; les pros restent fermés ; changer le RATIO d'un programme
  * réglé demande une confirmation qui dit ce que ça change ; sans
- * `b2b_accounting:write`, rien ne s'enregistre.
+ * `lfc_loyalty:write`, rien ne s'enregistre.
  */
 
 const SET: NonNullable<LoyaltySettingsView['settings']> = {
@@ -43,7 +43,7 @@ class FakeApi {
   }
 }
 
-const WRITE: readonly StaffPermission[] = ['b2b_accounting:read', 'b2b_accounting:write'];
+const WRITE: readonly StaffPermission[] = ['lfc_loyalty:read', 'lfc_loyalty:write'];
 
 async function render(
   api: FakeApi,
@@ -230,7 +230,7 @@ describe('LoyaltySettings', () => {
   });
 
   it('sans droit d’écriture et sans réglage : « Programme fermé », aucun geste', async () => {
-    const fixture = await render(new FakeApi(), ['b2b_accounting:read']);
+    const fixture = await render(new FakeApi(), ['lfc_loyalty:read']);
 
     expect(text(fixture)).toContain('Programme fermé');
     expect(hasButton(fixture, 'Ouvrir le programme')).toBe(false);
@@ -239,7 +239,7 @@ describe('LoyaltySettings', () => {
   it('sans droit d’écriture, un réglage posé se lit sans pouvoir s’enregistrer', async () => {
     const api = new FakeApi();
     api.settings = SET;
-    const fixture = await render(api, ['b2b_accounting:read']);
+    const fixture = await render(api, ['lfc_loyalty:read']);
 
     expect(text(fixture)).toMatch(/1\s000 points = 5,00\s€/u);
     expect(hasButton(fixture, 'Enregistrer')).toBe(false);

@@ -82,6 +82,19 @@ export const routes: Routes = [
   { path: 'operations-commerce', pathMatch: 'full', redirectTo: '/operations' },
   { path: 'operations-commerce/:key', redirectTo: '/operations/:key' },
   {
+    // LA FIDÉLITÉ — le programme de points, ses soldes, ses bons — en Gestion
+    // Boutique depuis le 2026-10-16, sous SON droit (`lfc_loyalty`) : la
+    // comptabilité ne la garde pas (plan-fidelite-en-gestion-boutique.md, F2).
+    path: 'fidelite',
+    canActivate: [permissionGuard('lfc_loyalty:read')],
+    title: 'Fidélité — LFC B2B admin',
+    loadComponent: () => import('./fidelite/fidelite-page').then((m) => m.FidelitePage),
+  },
+  // L'ancienne adresse, dans des favoris. ORDRE : avant `comptabiliteRoutes`,
+  // dont la coquille exige `b2b_accounting:read` — y loger la redirection
+  // refuserait qui n'a que `lfc_loyalty`.
+  { path: 'comptabilite/fidelite', pathMatch: 'full', redirectTo: '/fidelite' },
+  {
     // LES PROMOTIONS — l'ancienne « Tarification B2B », premier niveau depuis
     // le 2026-10-13 (Hugo), sans le rail de l'e-commerce : on y vient depuis
     // Gestion Boutique. Même mur que l'espace qu'elles ont quitté.

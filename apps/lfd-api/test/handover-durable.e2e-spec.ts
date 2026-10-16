@@ -83,11 +83,7 @@ afterAll(async () => {
 beforeEach(async () => {
   await ctx.reset();
   settings.failuresLeft = 0;
-  await ctx
-    .asSub(E2E_STAFF_SUB)
-    .put("/admin/accounting/loyalty/settings")
-    .send(SETTINGS)
-    .expect(204);
+  await ctx.asSub(E2E_STAFF_SUB).put("/admin/loyalty/settings").send(SETTINGS).expect(204);
 });
 
 /** Une commande prête au comptoir, carte déjà encaissée. */

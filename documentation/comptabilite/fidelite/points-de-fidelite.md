@@ -17,7 +17,7 @@
 Une commande **remise et payée** crédite ses points à son **titulaire**, à
 raison d'un point par centime de marchandises **hors taxe**. Les points se convertissent
 en **bons de fidélité** par paliers entiers, à un ratio réglé dans
-**Comptabilité › Fidélité**. Tant que ce réglage n'est pas enregistré, le
+**Gestion Boutique › Fidélité**. Tant que ce réglage n'est pas enregistré, le
 programme est **fermé** : rien ne se gagne, et rien ne se convertit.
 
 ```mermaid
@@ -385,9 +385,12 @@ une seule fois), ou rien à émettre. Le passage de nuit ne relit que les bons
 
 ## 7. Le back-office
 
-**Comptabilité › Fidélité**
-(`apps/lfd-backoffice-frontend/src/app/comptabilite/fidelite/`), sous le droit
-`b2b_accounting` : la lecture pour voir, l'écriture pour agir.
+**Gestion Boutique › Fidélité** (`/fidelite`,
+`apps/lfd-backoffice-frontend/src/app/fidelite/`), sous le droit
+`lfc_loyalty` : la lecture pour voir, l'écriture pour agir. Jusqu'au
+2026-10-16, l'écran vivait en Comptabilité sous `b2b_accounting` ; il en est
+sorti par [`plan-fidelite-en-gestion-boutique.md`](plan-fidelite-en-gestion-boutique.md)
+(F2), et `/comptabilite/fidelite` redirige vers `/fidelite`.
 
 | Onglet               | Ce qu'on y fait                                                                                                                                                                                                                                                                                                 |
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -395,7 +398,8 @@ une seule fois), ou rien à émettre. Le passage de nuit ne relit que les bons
 | **Soldes**           | le solde de chaque titulaire, et un ajustement ± motivé                                                                                                                                                                                                                                                         |
 | **Bons de fidélité** | chaque bon avec son état et son ratio figé, et l'annulation motivée d'un bon disponible                                                                                                                                                                                                                         |
 
-Les routes (`admin/accounting/loyalty`, `@AdminSurface("b2b_accounting")`) :
+Les routes (`admin/loyalty`, `@AdminSurface("lfc_loyalty")` — `admin/accounting/loyalty`
+sous `b2b_accounting` jusqu'au 2026-10-16) :
 
 | Verbe  | Chemin                | Commande ou requête           |
 | ------ | --------------------- | ----------------------------- |
@@ -518,11 +522,11 @@ runtime Cloudflare. Son premier passage en production en sera la preuve.
 
 ## 11. Où c'est éprouvé
 
-| Fichier                                                         | Ce qu'il prouve                                                                                                                                                                            |
-| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `src/b2b/loyalty/domain/**/__tests__/`                          | ratio, titulaire, motif, grand livre, bon, règle de gain                                                                                                                                   |
-| `src/b2b/loyalty/application/commands/__tests__/`               | chaque commande avec ses ports doublés, dont le refus d'ouvrir les pros                                                                                                                    |
-| `test/loyalty.e2e-spec.ts`                                      | deux conversions concurrentes (une seule passe), `CHECK` du titulaire, paliers entiers, programme fermé, annulation qui recrédite une seule fois, journal                                  |
-| `test/loyalty-earning.e2e-spec.ts`                              | crédit dans les deux ordres, jamais deux fois, `not_required`, `pending`, invité, société disparue, programme fermé, port et surtaxe exclus, rattrapage, 401 sans jeton                    |
-| `test/loyalty-welcome.e2e-spec.ts`                              | bonus à l'inscription par code et au rattachement, une seule ligne, bonus allumé après coup → rien, adresse prouvée plus tard → la nuit crédite, deux passages simultanés, solde du relevé |
-| `apps/lfd-backoffice-frontend/src/app/comptabilite/fidelite/**` | l'écran : réglage, soldes, bons, lecture seule sans le droit d'écriture                                                                                                                    |
+| Fichier                                            | Ce qu'il prouve                                                                                                                                                                            |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/b2b/loyalty/domain/**/__tests__/`             | ratio, titulaire, motif, grand livre, bon, règle de gain                                                                                                                                   |
+| `src/b2b/loyalty/application/commands/__tests__/`  | chaque commande avec ses ports doublés, dont le refus d'ouvrir les pros                                                                                                                    |
+| `test/loyalty.e2e-spec.ts`                         | deux conversions concurrentes (une seule passe), `CHECK` du titulaire, paliers entiers, programme fermé, annulation qui recrédite une seule fois, journal                                  |
+| `test/loyalty-earning.e2e-spec.ts`                 | crédit dans les deux ordres, jamais deux fois, `not_required`, `pending`, invité, société disparue, programme fermé, port et surtaxe exclus, rattrapage, 401 sans jeton                    |
+| `test/loyalty-welcome.e2e-spec.ts`                 | bonus à l'inscription par code et au rattachement, une seule ligne, bonus allumé après coup → rien, adresse prouvée plus tard → la nuit crédite, deux passages simultanés, solde du relevé |
+| `apps/lfd-backoffice-frontend/src/app/fidelite/**` | l'écran : réglage, soldes, bons, lecture seule sans le droit d'écriture                                                                                                                    |

@@ -5,15 +5,15 @@ import { describe, expect, it } from 'vitest';
 
 import type { LoyaltyVoucherView, StaffPermission } from '@lfd/contracts';
 
-import { PermissionsStore } from '../../../auth/permissions.store';
-import { NotifyService } from '../../../notify.service';
-import { LoyaltyService } from '../../loyalty.service';
+import { PermissionsStore } from '../../auth/permissions.store';
+import { NotifyService } from '../../notify.service';
+import { LoyaltyService } from '../loyalty.service';
 import { LoyaltyVouchers } from './loyalty-vouchers';
 
 /**
  * Ce que ces cas tiennent : chaque bon montre son montant, son coût, son
  * ratio figé et son état ; seul un bon disponible s'annule ; le motif d'une
- * annulation reste lisible ; sans `b2b_accounting:write`, aucun geste.
+ * annulation reste lisible ; sans `lfc_loyalty:write`, aucun geste.
  */
 
 function voucher(over: Partial<LoyaltyVoucherView> = {}): LoyaltyVoucherView {
@@ -56,7 +56,7 @@ class FakeApi {
 
 async function render(
   api: FakeApi,
-  permissions: readonly StaffPermission[] = ['b2b_accounting:read', 'b2b_accounting:write'],
+  permissions: readonly StaffPermission[] = ['lfc_loyalty:read', 'lfc_loyalty:write'],
   opened: unknown[] = [],
 ): Promise<ComponentFixture<LoyaltyVouchers>> {
   TestBed.configureTestingModule({
@@ -140,7 +140,7 @@ describe('LoyaltyVouchers', () => {
   });
 
   it('sans droit d’écriture, aucune annulation', async () => {
-    const fixture = await render(new FakeApi(), ['b2b_accounting:read']);
+    const fixture = await render(new FakeApi(), ['lfc_loyalty:read']);
     expect(buttons(fixture, 'Annuler')).toHaveLength(0);
   });
 });

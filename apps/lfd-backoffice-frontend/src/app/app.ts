@@ -314,8 +314,10 @@ export class App {
    * entrées est ouverte ; chacune garde le droit de sa route.
    */
   protected readonly canSeeShopManagement = computed(
-    () => this.canSeeSettings() || this.canSeeCommerceOperations(),
+    () => this.canSeeSettings() || this.canSeeCommerceOperations() || this.canSeeLoyalty(),
   );
+  /** La fidélité : son droit à elle (`lfc_loyalty`, 2026-10-16), pas la comptabilité. */
+  protected readonly canSeeLoyalty = computed(() => this.permissions.can('lfc_loyalty:read'));
   /** Les opérations tenues au commerce : leur droit à elles (`lfc_operations`, Q2). */
   protected readonly canSeeCommerceOperations = computed(() =>
     this.permissions.can('lfc_operations:read'),

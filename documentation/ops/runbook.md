@@ -847,6 +847,32 @@ Après L2, redéployer L1 rouvre les gardes sur `b2b_catalog` — qui n'est plus
 porté par personne : il faut le réaccorder à l'écran (l'écran de L1 le
 propose encore ; celui de L2 non).
 
+## Déployer la fidélité en Gestion Boutique (`lfc_loyalty`) — F1 et F2 ensemble
+
+Plan : [`plan-fidelite-en-gestion-boutique.md`](../comptabilite/fidelite/plan-fidelite-en-gestion-boutique.md).
+F1 (migration `20261016230000_le_droit_de_la_fidelite`, valeur d'enum seule,
+aucun droit accordé) et F2 (l'écran `/fidelite`, la route `admin/loyalty`,
+toutes les gardes sur `lfc_loyalty`) partent **ensemble** sur `main` (Hugo,
+2026-10-16).
+
+**1. Déployer.** Dès lors, la fidélité n'est plus en Comptabilité :
+`b2b_accounting` garde tout le reste, mais **n'ouvre plus la fidélité**.
+
+**2. Juste après, à l'écran `/admin/staff-roles`** : accorder « Fidélité »
+(`lfc_loyalty`) aux rôles qui **gèrent la boutique** — lecture pour voir,
+écriture pour régler, ajuster un solde, annuler un bon. Jamais par migration.
+⚠️ **La comptabilité ne la garde pas** (Hugo, 2026-10-16) : ne pas l'accorder
+au rôle comptable par réflexe.
+
+⚠️ **La fenêtre est ACCEPTÉE** (Hugo, 2026-10-16) : entre le déploiement et
+cet accord, **seul le superadmin ouvre la fidélité**. Rien n'est perdu ni
+gagné — un rôle sans le droit voit l'entrée disparaître et reçoit 403 sur
+`admin/loyalty` ; le gain de points et le passage de nuit
+(`admin/loyalty/sweep`) ne dépendent d'aucun droit staff et continuent.
+
+**Retour arrière** : redéployer l'état d'avant F2 rouvre la fidélité sous
+`b2b_accounting`. La valeur d'enum reste, inutilisée.
+
 ## Déployer le lot D — le prix ne se décide plus sur la plateforme
 
 Lot D de [`plan-catalogue-synchronise-par-audience.md`](../catalogue/plan-catalogue-synchronise-par-audience.md)

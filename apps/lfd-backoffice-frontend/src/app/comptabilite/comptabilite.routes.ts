@@ -95,15 +95,11 @@ export const comptabiliteRoutes: Routes = [
         loadComponent: () =>
           import('./liens-de-paiement/liens-de-paiement-page').then((m) => m.LiensDePaiementPage),
       },
-      {
-        // Le programme de fidélité : son réglage, les soldes, les bons. Les
-        // gestes (régler, ajuster, annuler un bon) demandent
-        // `b2b_accounting:write` ; l'écran les masque sans ce droit.
-        // Plan : documentation/comptabilite/fidelite/plan-points-de-fidelite.md, lot B.
-        path: 'fidelite',
-        title: 'Fidélité — LFC B2B admin',
-        loadComponent: () => import('./fidelite/fidelite-page').then((m) => m.FidelitePage),
-      },
+      // La FIDÉLITÉ a quitté cet espace le 2026-10-16 pour Gestion Boutique,
+      // sous son droit `lfc_loyalty` : son écran est `/fidelite`, et
+      // `/comptabilite/fidelite` y redirige HORS de cette coquille (dans
+      // `app.routes.ts`) — sans quoi qui n'a que `lfc_loyalty` serait refusé.
+      // Plan : documentation/comptabilite/fidelite/plan-fidelite-en-gestion-boutique.md, F2.
       {
         // Les limites de prix, pro et publiques. Elles relèvent de
         // `lfc_price_limits`, PAS de `b2b_accounting` : la vue porte donc son

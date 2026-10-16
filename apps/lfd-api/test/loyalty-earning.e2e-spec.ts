@@ -71,11 +71,7 @@ beforeEach(async () => {
 });
 
 async function openProgram(settings: SetLoyaltySettingsPayload = SETTINGS): Promise<void> {
-  await ctx
-    .asSub(E2E_STAFF_SUB)
-    .put("/admin/accounting/loyalty/settings")
-    .send(settings)
-    .expect(204);
+  await ctx.asSub(E2E_STAFF_SUB).put("/admin/loyalty/settings").send(settings).expect(204);
 }
 
 /**

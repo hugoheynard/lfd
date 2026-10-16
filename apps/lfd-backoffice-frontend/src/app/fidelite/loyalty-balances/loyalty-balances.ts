@@ -16,10 +16,10 @@ import {
 
 import { httpErrorMessage } from '@lfd/endpoints';
 
-import { PermissionsStore } from '../../../auth/permissions.store';
-import { NotifyService } from '../../../notify.service';
-import { formatPoints, holderKindLabel, holderName } from '../../loyalty-format';
-import { LoyaltyService } from '../../loyalty.service';
+import { PermissionsStore } from '../../auth/permissions.store';
+import { NotifyService } from '../../notify.service';
+import { formatPoints, holderKindLabel, holderName } from '../loyalty-format';
+import { LoyaltyService } from '../loyalty.service';
 import {
   AdjustPointsPanel,
   type AdjustPointsPanelData,
@@ -36,7 +36,7 @@ const BASE_COLUMNS: readonly FoldTableColumn[] = [
  * personne pour un particulier (plan D1). Un solde est la somme du grand
  * livre ; il n'est stocké nulle part.
  *
- * L'ajustement motivé demande `b2b_accounting:write` : sans lui, la colonne
+ * L'ajustement motivé demande `lfc_loyalty:write` : sans lui, la colonne
  * d'actions disparaît, et le serveur refuse de toute façon.
  */
 @Component({
@@ -67,7 +67,7 @@ export class LoyaltyBalances {
   protected readonly loadError = signal<string | null>(null);
   protected readonly actionError = signal<string | null>(null);
 
-  protected readonly canWrite = computed(() => this.permissions.can('b2b_accounting:write'));
+  protected readonly canWrite = computed(() => this.permissions.can('lfc_loyalty:write'));
 
   protected readonly columns = computed<readonly FoldTableColumn[]>(() =>
     this.canWrite() ? [...BASE_COLUMNS, { key: 'actions', label: '' }] : BASE_COLUMNS,

@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import { LOYALTY_REASON_MAX, type LoyaltyVoucherView } from '@lfd/contracts';
 
-import { LoyaltyService } from '../../loyalty.service';
+import { LoyaltyService } from '../loyalty.service';
 import { CancelVoucherPanel } from './cancel-voucher-panel';
 
 /**

@@ -125,11 +125,7 @@ beforeEach(async () => {
     select: { id: true },
   });
   pickupId = point.id;
-  await ctx
-    .asSub(E2E_STAFF_SUB)
-    .put("/admin/accounting/loyalty/settings")
-    .send(SETTINGS)
-    .expect(204);
+  await ctx.asSub(E2E_STAFF_SUB).put("/admin/loyalty/settings").send(SETTINGS).expect(204);
 });
 
 /** Une personne, et un bon de `steps` paliers à son nom — par la vraie conversion. */
@@ -140,7 +136,7 @@ async function holderWithVoucher(
   const user = await createUser(ctx.prisma, { auth0Sub: sub, firstName: "Léa" });
   await ctx
     .asSub(E2E_STAFF_SUB)
-    .post("/admin/accounting/loyalty/adjustments")
+    .post("/admin/loyalty/adjustments")
     .send({ holderKind: "user", holderId: user.id, points: steps * 1_000, reason: "reprise" })
     .expect(204);
   const voucherId = await ctx.app

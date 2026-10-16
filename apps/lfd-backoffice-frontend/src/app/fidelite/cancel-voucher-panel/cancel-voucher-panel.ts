@@ -11,8 +11,8 @@ import {
 import { formatCents } from '@lfd/b2b-ui/order';
 import { httpErrorMessage } from '@lfd/endpoints';
 
-import { formatPoints, holderName } from '../../loyalty-format';
-import { LoyaltyService } from '../../loyalty.service';
+import { formatPoints, holderName } from '../loyalty-format';
+import { LoyaltyService } from '../loyalty.service';
 
 /**
  * **Annuler un bon disponible, en disant pourquoi** (plan D7). Le bon passe à

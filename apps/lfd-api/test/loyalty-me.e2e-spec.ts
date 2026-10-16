@@ -80,7 +80,7 @@ beforeEach(async () => {
 const staff = (): ReturnType<E2eContext["asSub"]> => ctx.asSub(E2E_STAFF_SUB);
 
 async function openProgram(settings: SetLoyaltySettingsPayload = SETTINGS): Promise<void> {
-  await staff().put("/admin/accounting/loyalty/settings").send(settings).expect(204);
+  await staff().put("/admin/loyalty/settings").send(settings).expect(204);
 }
 
 /** Une personne, et `points` à son livre par un ajustement motivé. */
@@ -88,7 +88,7 @@ async function personWith(sub: string, points: number): Promise<string> {
   const user = await createUser(ctx.prisma, { auth0Sub: sub, firstName: "Léa" });
   if (points !== 0) {
     await staff()
-      .post("/admin/accounting/loyalty/adjustments")
+      .post("/admin/loyalty/adjustments")
       .send({ holderKind: "user", holderId: user.id, points, reason: "reprise du carnet papier" })
       .expect(204);
   }

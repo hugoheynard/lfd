@@ -1,6 +1,6 @@
 /**
  * E2E de la **fidélité** (plan `documentation/comptabilite/fidelite/plan-points-de-fidelite.md`,
- * lots A et B) — `/admin/accounting/loyalty`, et la conversion par le bus.
+ * lots A et B) — `/admin/loyalty`, et la conversion par le bus.
  *
  * Ce que seul le vrai SQL prouve :
  * - le verrou consultatif : deux conversions concurrentes ne font jamais
@@ -43,7 +43,7 @@ import {
 } from "./e2e-harness.js";
 import { createCompany, createUser } from "./factories.js";
 
-const BASE = "/admin/accounting/loyalty";
+const BASE = "/admin/loyalty";
 const SETTINGS: SetLoyaltySettingsPayload = {
   pointsPerStep: 1_000,
   stepValueCents: 500,

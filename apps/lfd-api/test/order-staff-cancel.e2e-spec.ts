@@ -255,7 +255,7 @@ describe("le bon de fidélité", () => {
     });
     await ctx
       .asSub(E2E_STAFF_SUB)
-      .put("/admin/accounting/loyalty/settings")
+      .put("/admin/loyalty/settings")
       .send({
         pointsPerStep: 1_000,
         stepValueCents: 500,
@@ -268,7 +268,7 @@ describe("le bon de fidélité", () => {
     const user = await createUser(ctx.prisma, { auth0Sub: CLIENT, firstName: "Léa" });
     await ctx
       .asSub(E2E_STAFF_SUB)
-      .post("/admin/accounting/loyalty/adjustments")
+      .post("/admin/loyalty/adjustments")
       .send({ holderKind: "user", holderId: user.id, points: 1_000, reason: "reprise" })
       .expect(204);
     const voucherId = await ctx.app

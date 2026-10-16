@@ -75,7 +75,6 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'comptabilite/prelevement-du-mois': null,
   'comptabilite/arretes-de-facturation/:id': null,
   'comptabilite/factures/:id': null,
-  'comptabilite/fidelite': null,
   'comptabilite/limites-de-prix': 'lfc_price_limits:read',
   // Son propre droit, venu des Réglages le 2026-09-29 : ni `b2b_settings`, que
   // le commercial lit, ni `b2b_accounting`.
@@ -179,6 +178,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // Les opérations sont tenues au commerce, sous LEUR droit (Q2 du plan de
   // bascule) depuis le retrait de l'écran du référentiel (2026-10-16).
   operations: 'lfc_operations:read',
+  fidelite: 'lfc_loyalty:read',
   'operations/:key': 'lfc_operations:read',
   promotions: 'b2b_settings:read',
   // **Catalogue publié** — parti de l'espace E-commerce le 2026-10-15 (H9),
@@ -510,6 +510,18 @@ describe("l'arbre de routes du back-office", () => {
       '/catalogue-publie',
     );
     expect(children.find((child) => child.path === '')?.redirectTo).toBe('reception');
+  });
+
+  it('renvoie l’ancienne adresse de la fidélité vers Gestion Boutique, HORS de la coquille comptable', () => {
+    // Partie le 2026-10-16 (F2) : la redirection vit au premier niveau, AVANT
+    // l'espace Comptabilité dont la coquille exige `b2b_accounting:read` — y
+    // loger la redirection refuserait qui n'a que `lfc_loyalty`.
+    const paths = routes.map((route) => route.path);
+    const legacy = routes.find((route) => route.path === 'comptabilite/fidelite');
+
+    expect(legacy?.redirectTo).toBe('/fidelite');
+    expect(legacy?.canActivate).toBeUndefined();
+    expect(paths.indexOf('comptabilite/fidelite')).toBeLessThan(paths.indexOf('comptabilite'));
   });
 
   it('renvoie l’ancienne adresse du pied de page vers la section Communication', () => {

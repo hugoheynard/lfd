@@ -70,7 +70,7 @@ async function enter(subject: string, emailVerified = true): Promise<string> {
 async function setSettings(welcomeBonusPoints: number | null): Promise<void> {
   await ctx
     .asSub(E2E_STAFF_SUB)
-    .put("/admin/accounting/loyalty/settings")
+    .put("/admin/loyalty/settings")
     .send({ ...SETTINGS, welcomeBonusPoints })
     .expect(204);
 }

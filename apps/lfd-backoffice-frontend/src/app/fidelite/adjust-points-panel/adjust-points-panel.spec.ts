@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import { type AdjustLoyaltyPointsPayload, LOYALTY_REASON_MAX } from '@lfd/contracts';
 
-import { LoyaltyService } from '../../loyalty.service';
+import { LoyaltyService } from '../loyalty.service';
 import { AdjustPointsPanel } from './adjust-points-panel';
 
 /**
