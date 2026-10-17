@@ -257,6 +257,17 @@ des push sans effet (R2), les suites e2e (R7), le retour arrière (§2).
 
 ## Décisions de Hugo (2026-10-16 au soir)
 
+- **R4 — la parité et la santé du catalogue partent** (Hugo, 2026-10-17) :
+  routes, services, carte de la page Intégrations, `ops_catalog_parity.yml`.
+  Elles vérifiaient que le push n'avait pas dérivé ; les faits s'appliquent
+  fiche par fiche, dans l'ordre. En X2.
+- **Q5 — la surcharge des opérations reçues part** (Hugo, 2026-10-17) :
+  `admin-catalog-operations.controller.ts`, `CatalogOperationOverride` (la
+  table reste), la section « Opérations reçues » et son panneau, et la
+  combinaison dans `effective-operation.ts`. Les opérations s'écrivent au
+  commerce. En X2.
+- **X1 lancé le 2026-10-17** (Hugo : « lance X1 »).
+
 - **Q1 — `PIM_PUBLICATION_ENABLED` part aussi** : « ça ne sert plus à rien, moins
   on a de variables mieux c'est ». Il sort avec les deux autres interrupteurs
   (X1) : l'émetteur, la réémission, la bascule et leurs routes émettent
