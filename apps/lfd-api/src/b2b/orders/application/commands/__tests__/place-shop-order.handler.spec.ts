@@ -16,7 +16,6 @@ import { RecordingPublisher } from "../../../../../platform/events/__tests__/rec
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { InvalidEmailError } from "../../../../account/domain/errors/account-errors.js";
 import { CanonicalPriceHistoryReader } from "../../../../catalog/domain/ports/canonical-price-history.reader.js";
-import { CatalogVersionReader } from "../../../../catalog/domain/ports/catalog-version.reader.js";
 import { UnknownSkuError } from "../../../../catalog/domain/errors/unknown-sku.error.js";
 import { InMemoryProductCatalog } from "../../../../catalog/infrastructure/in-memory-product-catalog.js";
 import { type UnsealedCatalogItem } from "../../../../catalog/domain/ports/product-catalog.reader.js";
@@ -203,10 +202,6 @@ const noCompanies: CompanyStatusReader = {
   companyStatusOf: (): Promise<OrderCompanyStatus | null> => Promise.resolve(null),
 };
 
-function versionsAt(id: string | null): CatalogVersionReader {
-  return { currentId: () => Promise.resolve(id), byId: () => Promise.resolve(null) };
-}
-
 const LABO_POINT: PickupAddressView = {
   id: "pickup_1",
   label: "Labo",
@@ -275,7 +270,6 @@ function drafting(
       ),
       new FixedClock(PRICED_AT),
     ),
-    versionsAt("cver_courante"),
     new CartAdjustments(pickups(), zones(), deliveryAvailability(delivery), noPreferredPickup),
     noDeliveryDefaults,
     noOrderCutoffs,

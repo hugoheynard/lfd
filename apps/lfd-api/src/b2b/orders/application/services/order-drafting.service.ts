@@ -12,7 +12,6 @@ import {
 } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
-import { CatalogVersionReader } from "../../../catalog/domain/ports/catalog-version.reader.js";
 import { CartAdjustments } from "./cart-adjustments.service.js";
 import { CustomerAudiences } from "./customer-audiences.service.js";
 import { type DeliveryContact, type FulfillmentWindow, type WindowMode } from "@lfd/contracts";
@@ -121,7 +120,6 @@ interface ResolvedFulfillment {
 export class OrderDrafting {
   constructor(
     private readonly linePricing: OrderLinePricing,
-    private readonly catalogVersions: CatalogVersionReader,
     private readonly adjustments: CartAdjustments,
     private readonly deliveryDefaults: DeliveryDefaultsReader,
     private readonly cutoffs: OrderCutoffReader,
@@ -165,13 +163,6 @@ export class OrderDrafting {
     // refusé ici, tôt et sans verrou ; `holdPlan` le reprend sous verrou. La
     // saisie de l'équipe passe, et sera reçue « hors plan » (§8.3).
     await this.ensureDayOpen(content.requestedDeliveryDate, parties);
-    // Lue AVANT la résolution, et l'ordre est un choix. Une validation qui
-    // tomberait pile entre les deux ne peut alors que rendre l'estampille
-    // ANCIENNE de ce que les lignes portent — jamais l'inverse. Une estampille
-    // en retard sous-entend « au moins cette version-là » ; une estampille en
-    // avance affirmerait que la ligne vient d'une livraison qu'elle n'a pas vue.
-    // La seconde est un mensonge, la première une borne.
-    const catalogVersionId = await this.catalogVersions.currentId();
     const resolved = await this.linePricing.resolve(content.lines, parties, "checkout");
     const lines = resolved.map((entry) => entry.line);
     // Le sous-total est un MONTANT : arrondi au centime, une fois par ligne,
@@ -240,7 +231,13 @@ export class OrderDrafting {
         ? new Date(content.requestedDeliveryDate)
         : null,
       note: content.note,
-      catalogVersionId,
+      // 🔴 Plus d'estampille de version (Q2, Hugo, 2026-10-17 — plan
+      // documentation/catalogue/plan-sans-interrupteurs.md, X0). Faits du
+      // catalogue ouverts, plus aucune version ne se crée : lire la dernière
+      // posée aurait cité une livraison que les lignes n'ont pas vue. Les lignes
+      // portent leur snapshot (prix, nom, TVA) ; la colonne reste en base et
+      // les commandes passées gardent la leur.
+      catalogVersionId: null,
       lines,
       discountCents: acheminement.discountCents,
       discountAdjustment: acheminement.discountAdjustment,

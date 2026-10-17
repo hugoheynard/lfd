@@ -88,7 +88,6 @@ import { Pricer } from "../../../../pricing/application/pricer.js";
 import { PricingMaterialsLoader } from "../../../../pricing/application/pricing-materials.loader.js";
 import { VolumeCommitmentReader } from "../../../../pricing/domain/ports/volume-commitment.reader.js";
 import { CustomerVolumeReader } from "../../../../pricing/domain/ports/customer-volume.reader.js";
-import { CatalogVersionReader } from "../../../../catalog/domain/ports/catalog-version.reader.js";
 
 /**
  * Aucun réglage d'adresse : tout ce que la commande porte y est donc un choix.
@@ -233,21 +232,6 @@ const noCustomerVolumes: CustomerVolumeReader = {
   volumesFor: () => Promise.resolve(new Map<string, number>()),
   committedVolumesFor: () => Promise.resolve(new Map<string, number>()),
 };
-
-/**
- * La version courante du catalogue, telle que la passation l'estampille.
- *
- * Un double **qui rend une valeur**, et pas `null` : c'est la seule façon de
- * distinguer « l'estampille est reportée » de « le champ est resté vide », qui
- * se ressemblent trait pour trait tant que le double se tait.
- */
-const CURRENT_VERSION = "cver_courante";
-function versionsAt(id: string | null): CatalogVersionReader {
-  return {
-    currentId: () => Promise.resolve(id),
-    byId: () => Promise.resolve(null),
-  };
-}
 
 const CATALOG: Record<string, UnsealedCatalogItem> = {
   "VIE-001": {
@@ -428,7 +412,6 @@ function deliveryAvailability(
 function drafting(
   pickupsDouble: PickupAddressRepository,
   zonesDouble: DeliveryZoneRepository,
-  versions: CatalogVersionReader = versionsAt(CURRENT_VERSION),
   audience: {
     readonly status?: CompanyStatusOf | null;
     readonly delivery?: DeliveryAvailabilityView;
@@ -464,7 +447,6 @@ function drafting(
       ),
       new FixedClock(PRICED_AT),
     ),
-    versions,
     new CartAdjustments(
       pickupsDouble,
       zonesDouble,
@@ -580,45 +562,15 @@ function payload(over: Partial<PlaceOrderPayload> = {}): PlaceOrderPayload {
 
 describe("PlaceOrderHandler", () => {
   /**
-   * 🔴 Ce que la commande retient du catalogue, c'est **d'où venaient** ses
-   * articles — jamais leur prix, qui est figé sur la ligne avec sa TVA et sa
-   * trace de résolution. Sans cette estampille, une commande relue six mois plus
-   * tard ne peut plus être rapportée à la livraison qui l'a rendue possible.
+   * Régression (X0, 2026-10-17) : faits du catalogue ouverts, la passation
+   * citait la DERNIÈRE version poussée alors que ses lignes venaient des faits —
+   * une provenance fausse. Une commande neuve ne fige plus aucune version (Q2).
    */
-  it("estampille la version du catalogue en vigueur", async () => {
+  it("ne fige plus aucune version de catalogue sur une commande neuve", async () => {
     const sink = { placed: null as OrderToPlace | null };
     const handler = new PlaceOrderHandler(
       guard(null, null),
       drafting(pickups(LABO_POINT), zones()),
-      capturingRepo(sink),
-      payments(),
-      events(),
-      noWaivers,
-      new FixedClock(PRICED_AT),
-      freeKeys,
-      noReader,
-      directWork,
-      new FixedVoucherQuotes(),
-      new RecordingRedemption(),
-      new RecordingDurable(),
-      intakeAt(),
-    );
-
-    await handler.execute(new PlaceOrderCommand("u1", payload(), null));
-
-    expect(sink.placed?.catalogVersionId).toBe(CURRENT_VERSION);
-  });
-
-  /**
-   * Avant la première validation, il n'y a rien à citer. `null` est alors la
-   * réponse juste : inventer une version rendrait une provenance à une commande
-   * qui n'en a pas.
-   */
-  it("passe sans estampille quand aucune version n’existe encore", async () => {
-    const sink = { placed: null as OrderToPlace | null };
-    const handler = new PlaceOrderHandler(
-      guard(null, null),
-      drafting(pickups(LABO_POINT), zones(), versionsAt(null)),
       capturingRepo(sink),
       payments(),
       events(),
@@ -992,7 +944,7 @@ describe("PlaceOrderHandler", () => {
     };
     const handler = new PlaceOrderHandler(
       guard("orders", "pending", "none"),
-      drafting(pickups(point), zones(), versionsAt(CURRENT_VERSION), { status: "pending" }),
+      drafting(pickups(point), zones(), { status: "pending" }),
       capturingRepo(sink),
       payments(),
       events(),
@@ -1018,7 +970,7 @@ describe("PlaceOrderHandler", () => {
     const sink = { placed: null as OrderToPlace | null };
     const handler = new PlaceOrderHandler(
       guard(null, null, "none"),
-      drafting(pickups(), zones(TARENTAISE), versionsAt(CURRENT_VERSION), {
+      drafting(pickups(), zones(TARENTAISE), {
         delivery: { ...DEFAULT_DELIVERY_AVAILABILITY, openToB2c: false },
       }),
       capturingRepo(sink),
@@ -1106,7 +1058,7 @@ describe("PlaceOrderHandler", () => {
     const deliveryVat = new FixedDeliveryVat("follows_goods");
     const handler = new PlaceOrderHandler(
       guard("orders", "active"),
-      drafting(pickups(), zones(TARENTAISE), versionsAt(CURRENT_VERSION), { deliveryVat }),
+      drafting(pickups(), zones(TARENTAISE), { deliveryVat }),
       capturingRepo(sink),
       payments(),
       events(),
@@ -1146,7 +1098,7 @@ describe("PlaceOrderHandler", () => {
       const sink = { placed: null as OrderToPlace | null };
       const handler = new PlaceOrderHandler(
         guard("orders", "active"),
-        drafting(pickups(), zones(TARENTAISE), versionsAt(CURRENT_VERSION), {
+        drafting(pickups(), zones(TARENTAISE), {
           book: new WalledAddressBook("addr_c1", "c1"),
         }),
         capturingRepo(sink),
@@ -1354,7 +1306,7 @@ describe("PlaceOrderHandler — un article d'opération datée", () => {
     });
     return new PlaceOrderHandler(
       guard(null, null),
-      drafting(pickups(LABO_POINT), zones(), versionsAt(CURRENT_VERSION), { sale }),
+      drafting(pickups(LABO_POINT), zones(), { sale }),
       capturingRepo(sink),
       payments(),
       events(),
@@ -1413,7 +1365,7 @@ describe("PlaceOrderHandler — un article d'opération datée", () => {
     });
     const handler = new PlaceOrderHandler(
       guard(null, null),
-      drafting(pickups(LABO_POINT), zones(), versionsAt(CURRENT_VERSION), { sale }),
+      drafting(pickups(LABO_POINT), zones(), { sale }),
       capturingRepo(sink),
       payments(),
       events(),
@@ -1657,7 +1609,7 @@ describe("PlaceOrderHandler — créneau ou échéance", () => {
     const sink = { placed: null as OrderToPlace | null };
     const handler = new PlaceOrderHandler(
       guard("orders", "active"),
-      drafting(pickups(), zones(TARENTAISE), versionsAt(CURRENT_VERSION), {
+      drafting(pickups(), zones(TARENTAISE), {
         delivery: { ...DEFAULT_DELIVERY_AVAILABILITY, windowMode: options.global ?? "slot" },
         ...(options.book === undefined ? {} : { book: options.book }),
       }),
@@ -1779,7 +1731,7 @@ describe("PlaceOrderHandler — un site facturé à son principal", () => {
     };
     return new PlaceOrderHandler(
       payerGuard,
-      drafting(pickups(LABO_POINT), zones(), versionsAt(CURRENT_VERSION), { payers }),
+      drafting(pickups(LABO_POINT), zones(), { payers }),
       capturingRepo(sink),
       payments({ intent: null }),
       events(),
@@ -1957,7 +1909,7 @@ describe("PlaceOrderHandler — l'arrêt du plan", () => {
     const cancelled = over.cancelled ?? [];
     return new PlaceOrderHandler(
       guard(null, null),
-      drafting(pickups(LABO_POINT), zones(), versionsAt(CURRENT_VERSION), { plans: over.plans }),
+      drafting(pickups(LABO_POINT), zones(), { plans: over.plans }),
       capturingRepo(over.sink),
       {
         createIntent: (params) => gateway.createIntent(params),
@@ -2065,7 +2017,7 @@ describe("PlaceOrderHandler — les CGV en vigueur", () => {
     const sink = { placed: null as OrderToPlace | null };
     const handler = new PlaceOrderHandler(
       guard("orders", status),
-      drafting(pickups(LABO_POINT), zones(), versionsAt(CURRENT_VERSION), { status, salesTerms }),
+      drafting(pickups(LABO_POINT), zones(), { status, salesTerms }),
       capturingRepo(sink),
       payments(),
       events(),

@@ -56,7 +56,6 @@ import { Pricer } from "../../../../pricing/application/pricer.js";
 import { PricingMaterialsLoader } from "../../../../pricing/application/pricing-materials.loader.js";
 import { VolumeCommitmentReader } from "../../../../pricing/domain/ports/volume-commitment.reader.js";
 import { CustomerVolumeReader } from "../../../../pricing/domain/ports/customer-volume.reader.js";
-import { CatalogVersionReader } from "../../../../catalog/domain/ports/catalog-version.reader.js";
 
 /**
  * Aucun réglage d'adresse : tout ce que la commande porte y est donc un choix.
@@ -312,16 +311,6 @@ function payload(over: Partial<AdminPlaceOrderPayload> = {}): AdminPlaceOrderPay
   };
 }
 
-/**
- * La version du catalogue sous laquelle les lignes ont été résolues. Ces suites
- * n'éprouvent pas l'estampille — elles ont besoin qu'elle existe pour que la
- * composition soit possible ; son report est vérifié côté `place-order`.
- */
-const currentCatalogVersion: CatalogVersionReader = {
-  currentId: () => Promise.resolve("cver_courante"),
-  byId: () => Promise.resolve(null),
-};
-
 function handler(
   guardDouble: OrderGuardReader,
   sink: { placed: OrderToPlace | null },
@@ -365,7 +354,6 @@ function handler(
         ),
         new FixedClock(PRICED_AT),
       ),
-      currentCatalogVersion,
       new CartAdjustments(
         pickups,
         zones,
@@ -715,7 +703,6 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
           ),
           new FixedClock(PRICED_AT),
         ),
-        currentCatalogVersion,
         new CartAdjustments(pickups, zones, deliveryAvailability(), noPreferredPickup),
         noDeliveryDefaults(),
         noOrderCutoffs,

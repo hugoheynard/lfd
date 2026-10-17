@@ -592,12 +592,13 @@ describe("un SKU n'apparaît qu'une fois par commande", () => {
  * mercuriale d'un concurrent en devinant son identifiant.
  */
 /**
- * **De quelle version du catalogue venaient les articles.**
+ * **Une commande neuve ne fige plus de version du catalogue** (Q2, Hugo,
+ * 2026-10-17 — documentation/catalogue/plan-sans-interrupteurs.md, X0).
  *
- * Jamais « à quel prix » : celui-là est figé sur la ligne, avec sa TVA, son nom
- * et sa trace. L'estampille répond à l'autre question — celle qu'on pose quand
- * une réclamation arrive et qu'il faut retrouver la livraison qui a produit ce
- * que le client a vu.
+ * Faits du catalogue ouverts, plus aucune version ne se crée : citer la
+ * dernière posée attribuait aux lignes une livraison qu'elles n'avaient pas
+ * vue. Les lignes portent leur snapshot (prix, nom, TVA, trace) ; la colonne
+ * reste, et les commandes passées gardent la leur.
  */
 describe("l'estampille de version sur la commande", () => {
   /** Pose une version réelle : la photographie du miroir tel qu'il est. */
@@ -618,44 +619,19 @@ describe("l'estampille de version sur la commande", () => {
     );
   }
 
-  it("porte la version en vigueur au moment de la passation", async () => {
-    const companyId = await seedCompany("active");
-    await seedPickup();
-    await seedVersion("cver_1");
-
-    const placed = jsonBody<PlacedOrderResponse>(
-      await ctx.asSub(MEMBER).post(`/orders`).send(pickupOrder(companyId)).expect(201),
-    );
-
+  async function stampOf(orderId: string): Promise<string | null> {
     const row = await ctx.prisma.order.findUniqueOrThrow({
-      where: { id: placed.id },
+      where: { id: orderId },
       select: { catalogVersionId: true },
     });
-    expect(row.catalogVersionId).toBe("cver_1");
-  });
+    return row.catalogVersionId;
+  }
 
   /**
-   * 🔴 `NULL` est une RÉPONSE — « on ne sait pas » —, pas un trou. C'est l'état
-   * de toute commande antérieure à la première validation, et fabriquer une
-   * version par défaut inventerait une provenance qui n'a jamais existé.
+   * Régression (X0) : la passation lisait la DERNIÈRE version poussée, et une
+   * commande passée faits ouverts emportait donc `cver_2` sans en venir.
    */
-  it("laisse l'estampille vide tant qu'aucune version n'a été posée", async () => {
-    const companyId = await seedCompany("active");
-    await seedPickup();
-
-    const placed = jsonBody<PlacedOrderResponse>(
-      await ctx.asSub(MEMBER).post(`/orders`).send(pickupOrder(companyId)).expect(201),
-    );
-
-    const row = await ctx.prisma.order.findUniqueOrThrow({
-      where: { id: placed.id },
-      select: { catalogVersionId: true },
-    });
-    expect(row.catalogVersionId).toBeNull();
-  });
-
-  /** La DERNIÈRE posée, pas la première : une commande cite ce qui est en vente. */
-  it("cite la plus récente quand plusieurs versions existent", async () => {
+  it("n'emporte pas l'identifiant de la dernière version poussée", async () => {
     const companyId = await seedCompany("active");
     await seedPickup();
     await seedVersion("cver_1");
@@ -665,11 +641,29 @@ describe("l'estampille de version sur la commande", () => {
       await ctx.asSub(MEMBER).post(`/orders`).send(pickupOrder(companyId)).expect(201),
     );
 
-    const row = await ctx.prisma.order.findUniqueOrThrow({
-      where: { id: placed.id },
-      select: { catalogVersionId: true },
+    expect(await stampOf(placed.id)).toBeNull();
+  });
+
+  /**
+   * La colonne reste : une commande d'avant X0 garde la version qu'elle citait,
+   * même quand une version plus récente est posée ensuite.
+   */
+  it("ne réécrit pas l'estampille d'une commande passée", async () => {
+    const companyId = await seedCompany("active");
+    await seedPickup();
+    await seedVersion("cver_1");
+    const earlier = jsonBody<PlacedOrderResponse>(
+      await ctx.asSub(MEMBER).post(`/orders`).send(pickupOrder(companyId)).expect(201),
+    );
+    // L'état d'une commande d'avant X0 : aucun chemin du domaine ne l'écrit plus.
+    await ctx.prisma.order.update({
+      where: { id: earlier.id },
+      data: { catalogVersionId: "cver_1" },
     });
-    expect(row.catalogVersionId).toBe("cver_2");
+
+    await seedVersion("cver_2");
+
+    expect(await stampOf(earlier.id)).toBe("cver_1");
   });
 });
 

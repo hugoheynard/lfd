@@ -10,6 +10,24 @@
 > été faite **à la main** le soir même. Ses trois objections bloquantes
 > portaient sur la bascule ; elles sont rappelées au §5.
 
+> ✅ **X0 bâti le 2026-10-17** (non commité au moment d'écrire). Q2 tranchée par
+> Hugo : **plus d'estampille**. `OrderDrafting` ne lit plus
+> `CatalogVersionReader` et pose `catalogVersionId: null` sur toute commande
+> neuve ; la colonne, le champ de l'agrégat et le port restent (le port sert
+> encore `check-catalog-health`, R4). Aucun lecteur de `catalogVersionId` hors
+> de la persistance (factures, devis, journal, exports, fronts, `packages/` :
+> aucun, vérifié le 2026-10-17). Régression : `test/orders.e2e-spec.ts`
+> (« n'emporte pas l'identifiant de la dernière version poussée », « ne réécrit
+> pas l'estampille d'une commande passée ») et `place-order.handler.spec.ts`.
+> `ops_catalog_parity.yml` désarmé (`if: false`, commentaire daté) ; la route
+> reste.
+>
+> **Écarts** : le workflow n'avait **pas** de `schedule` — seulement
+> `workflow_dispatch` ; l'objection « la santé sonnera dès maintenant » ne
+> valait que pour un lancement à la main, et c'est lui qui est coupé. L'écran
+> « Intégrations » du back-office (`b2b-integration.ts`) lit toujours la santé :
+> il montrera le même écart, à traiter avec R4.
+
 ## 0. La demande (Hugo, 2026-10-16)
 
 > « Et donc ensuite on peut se débarrasser de l'ancien système ? » — puis :

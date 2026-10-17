@@ -59,6 +59,15 @@ permissions:
 
 jobs:
   parity:
+    # 🔴 DÉSARMÉ le 2026-10-17 (lot X0 de
+    # documentation/catalogue/plan-sans-interrupteurs.md). Faits du catalogue
+    # ouverts en production depuis le 2026-10-16, plus aucune version ne se
+    # crée : `catalog-health` compare le miroir à une version qui ne bouge plus,
+    # et rougirait sur chaque fiche modifiée depuis. Le workflow n'a jamais eu
+    # de `schedule` (vérifié ce jour) — c'est le lancement à la main qui est
+    # coupé. La route reste ; R4 du plan tranche : nouveau référent (le fait le
+    # plus récent de chaque fiche) ou retrait.
+    if: ${{ false }}
     runs-on: ubuntu-latest
     steps:
       - name: Vérifier que le miroir porte ce qui a été validé
