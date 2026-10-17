@@ -82,13 +82,6 @@
       }
     </ng-template>
 
-    <ng-template foldCell="channels" let-c>
-      <ng-container
-        [ngTemplateOutlet]="channelBadges"
-        [ngTemplateOutletContext]="{ $implicit: c }"
-      />
-    </ng-template>
-
     <!-- Les trois points nus : une AFFORDANCE, pas un bouton.
          `clickable` fait de la LIGNE entière la commande — elle prend le focus,
          répond à Entrée et à Espace, et porte le curseur. Y laisser un `<button>`
@@ -117,42 +110,10 @@
           <fold-badge class="cat-card-count" [content]="ficheLabel(c)" variant="neutral" />
           <fold-icon class="cat-card-more" name="more-vertical" size="sm" aria-hidden="true" />
         </span>
-        <span class="cat-card-channels">
-          <ng-container
-            [ngTemplateOutlet]="channelBadges"
-            [ngTemplateOutletContext]="{ $implicit: c }"
-          />
-        </span>
         @if (c.parentId !== null) {
           <span class="cat-card-meta">dans {{ parentName(c) }}</span>
         }
       </button>
     </ng-template>
   </fold-data-table>
-
-  <!-- Les mêmes pastilles dans la colonne et dans la carte. Dupliquées, leurs
-       conditions divergent : c'est comme ça qu'une famille vendue seulement en
-       B2B s'est retrouvée « aucun canal ».
-
-       Le B2B d'abord : c'est le canal de CET écran, et le seul qui ne se
-       décline pas par boutique — le lire après une liste d'emplacements le
-       noierait. -->
-  <ng-template #channelBadges let-c>
-    <span class="chan-pills">
-      @if (sellsB2b(c)) {
-        <fold-badge content="B2B" variant="success" />
-      }
-      @if (presetEmporter(c).length > 0) {
-        <fold-badge [content]="'Emporter ' + presetEmporter(c).join(' · ')" variant="accent" />
-      }
-      @if (presetSurPlace(c).length > 0) {
-        <fold-badge [content]="'Salle ' + presetSurPlace(c).join(' · ')" variant="info" />
-      }
-      @if (!sellsB2b(c) && presetEmporter(c).length === 0 && presetSurPlace(c).length === 0) {
-        <!-- « aucun » seul se lisait sous l'en-tête de colonne, qui fournissait
-             le nom ; la carte n'a pas d'en-tête, il fallait le porter ici. -->
-        <span class="muted">Aucun canal</span>
-      }
-    </span>
-  </ng-template>
 </fold-page-layout>

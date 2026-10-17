@@ -64,7 +64,6 @@ class FakeApi {
         status: 'draft',
         variants: [DEFAULT_VARIANT],
         vatByContext: {},
-        channelsOverride: null,
         priceEur: 2.5,
         weightGrams: 100,
         proPriceMillicents: null,
@@ -126,7 +125,6 @@ async function render(): Promise<Rendered> {
                 parentId: null,
                 position: 1,
                 isArchived: false,
-                channelPreset: [],
                 vatByContext: {},
                 activeProductCount: 1,
               },
@@ -192,7 +190,8 @@ describe('le filtre par famille de la fiche produit', () => {
 
     expect(titles(root)).toContain('Allergènes');
     expect(titles(root)).toContain('Visuels');
-    expect(titles(root)).toContain('Diffusion par canal');
+    // « Diffusion par canal » est partie en X4 : plus aucune section hors familles.
+    expect(titles(root)).not.toContain('Diffusion par canal');
 
     expect(familyBadge(root, 'Allergènes')?.textContent?.trim()).toBe('Réglementaire');
     expect(familyBadge(root, 'Visuels')?.textContent?.trim()).toBe('Communication');
@@ -211,8 +210,6 @@ describe('le filtre par famille de la fiche produit', () => {
     expect(shown).toContain('Ingrédients');
     expect(shown).not.toContain('Visuels');
     expect(shown).not.toContain('Tarif & TVA');
-    // Hors familles, et donc réservée à « Tout ».
-    expect(shown).not.toContain('Diffusion par canal');
   });
 
   it('ne répète pas le filtre en pastille sur une liste déjà homogène', async () => {

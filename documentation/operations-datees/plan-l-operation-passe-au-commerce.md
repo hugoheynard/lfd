@@ -80,7 +80,7 @@ DEFAULT true` (migration additive `20261016220000`, sans réécriture).
 | Pièce                    | Où                                                                                                                                                                                                                                                           | Ce qu'elle fait                                                                                                         |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
 | L'opération, source      | `pim.operations`, `pim.operation_items` (`prisma/schema/pim/operations.prisma`) ; `src/pim/operations/` (préparer, éditer, replanifier, changer l'audience, choisir la sélection, archiver) ; `@AdminSurface("pim_catalog")`                                 | nom, chapeau, image (URL), fenêtres d'annonce / de commande / de retrait, audience, articles ordonnés                   |
-| Le voyage                | `pim/channels/b2b-platform/products/operation-projection.ts` (dans le push) ; `operation-image-changed.fact.ts` (fait durable de l'image)                                                                                                                    | le commerce reçoit l'opération par l'instantané et son image par un fait                                                |
+| Le voyage                | operation-projection.ts (retiré en X4) (dans le push) ; operation-image-changed.fact.ts (retiré en X4) (fait durable de l'image)                                                                                                                             | le commerce reçoit l'opération par l'instantané et son image par un fait                                                |
 | Le miroir, au commerce   | `public.catalog_operations`, `catalog_operation_items` (`prisma/schema/public/catalog-operations.prisma`)                                                                                                                                                    | même clé (`key`) que le PIM, écrit à la réception                                                                       |
 | La surcharge du commerce | `catalog_operation_overrides` ; set-operation-override.handler.ts (retiré en X2), `effective-operation.ts` ; `@AdminSurface("b2b_catalog")`                                                                                                                  | masquer, fermer plus tôt, restreindre l'audience, retirer des articles — **une seconde décision** sur la même opération |
 | Les lecteurs             | `b2b/catalog/*` (vitrine, rayons `op:<key>`, prix en boutique), `b2b/storefront/*` (annonce liée à une opération, `operation-link.ts`), `b2b/orders/*` (`order-operations.service.ts`, `order-operation-guard.ts` : fenêtre de commande et jours de retrait) | tous lisent **le miroir du commerce**, jamais le PIM                                                                    |
@@ -152,7 +152,7 @@ Le fait `pim.operation_image_changed` et son abonné disparaissent.
 
 ### O5 — Le push ne porte plus les opérations
 
-`operation-projection.ts` sort de la projection ; l'ingestion ne touche plus
+operation-projection.ts (retiré en X4) sort de la projection ; l'ingestion ne touche plus
 aux opérations. C'était le dernier contenu du push après la bascule des
 faits : **le lot 4 du plan de synchronisation disparaît**, et le lot 5 peut
 retirer le push, l'aperçu et l'écran « Réception » dès la bascule faite.
@@ -219,8 +219,8 @@ Aucune colonne n'est supprimée ni renommée.
 migration, accordée à l'écran, jamais par migration.
 
 **Ce qui sort du PIM au lot 4**, nommé : `src/pim/operations/**`,
-`operation-projection.ts` et son appel dans feed-projection.service.ts (retiré en X2) et
-canonical-projection.ts (retiré en X2), `operation-image-changed.fact.ts` et son abonné,
+operation-projection.ts (retiré en X4) et son appel dans feed-projection.service.ts (retiré en X2) et
+canonical-projection.ts (retiré en X2), operation-image-changed.fact.ts (retiré en X4) et son abonné,
 `on-media-asset-described.ts` des opérations, la branche `pim.operation` de
 `PrismaMediaCarriers`, les entrées `operation.*` de `pim-journal.ts` (les
 faits passés restent lisibles), `b2b-platform.module.ts`. Tables gardées.

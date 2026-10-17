@@ -65,9 +65,8 @@ describe('backendToProduct', () => {
     expect(product.priceEur).toBeUndefined();
   });
 
-  it('neutralise channelsOverride et workflowFlags (différés)', () => {
+  it('neutralise workflowFlags (différés)', () => {
     const product = backendToProduct(backendProduct());
-    expect(product.channelsOverride).toBeNull();
     expect(product.workflowFlags).toEqual([]);
   });
 

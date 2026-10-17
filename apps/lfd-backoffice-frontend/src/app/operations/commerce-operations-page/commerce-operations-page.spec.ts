@@ -1,32 +1,13 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import type {
-  CommerceOperationView,
-  OperationsMigrationReport,
-  StaffPermission,
-} from '@lfd/contracts';
+import type { CommerceOperationView, StaffPermission } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { commerceOperation } from '../commerce-operation.testing';
 import { CommerceOperationsService } from '../commerce-operations.service';
 import { CommerceOperationsPage } from './commerce-operations-page';
-
-const EMPTY_REPORT: OperationsMigrationReport = {
-  readAt: '2026-10-16T08:00:00.000Z',
-  counts: {
-    referential: 0,
-    mirror: 0,
-    restrictions: 0,
-    toWrite: 0,
-    alreadyAtCommerce: 0,
-    mirrorOnly: 0,
-    blocked: 0,
-  },
-  blocked: false,
-  operations: [],
-};
 
 async function render(
   list: () => Promise<readonly CommerceOperationView[]>,
@@ -38,7 +19,7 @@ async function render(
       provideRouter([]),
       {
         provide: CommerceOperationsService,
-        useValue: { list, previewMigration: async () => EMPTY_REPORT },
+        useValue: { list },
       },
       {
         provide: PermissionsStore,
@@ -108,14 +89,5 @@ describe('CommerceOperationsPage', () => {
     TestBed.resetTestingModule();
     const reader = await render(async () => []);
     expect(reader.textContent).not.toContain('Préparer une opération');
-  });
-
-  it("ne montre la reprise qu'à qui peut l'appliquer", async () => {
-    expect(
-      (await render(async () => [])).querySelector('app-operations-migration-card'),
-    ).toBeNull();
-    TestBed.resetTestingModule();
-    const writer = await render(async () => [], ['lfc_operations:read', 'lfc_operations:write']);
-    expect(writer.querySelector('app-operations-migration-card')).not.toBeNull();
   });
 });

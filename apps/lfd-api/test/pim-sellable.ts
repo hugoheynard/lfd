@@ -9,9 +9,10 @@ import { jsonBody } from "./e2e-harness.js";
  * activer exige une déclinaison complète : un prix, un taux pour CHAQUE
  * contexte de vente en service (b2b, à emporter, sur place), et un rapport pro
  * réglé. Ces suites ne parlent ni de prix ni de TVA : elles posent ici le
- * minimum — la famille vendue aux pros seuls, ouverte à chaque contexte (un
- * comptoir pour les deux contextes de boutique), un taux à chacun, le rapport
- * pro, un prix au défaut — par les vraies routes, sans écrire en base. Les
+ * minimum — la famille vendue aux pros seuls, un taux à chaque contexte, le
+ * rapport pro, un prix au défaut — par les vraies routes, sans écrire en base.
+ * (La famille s'ouvrait aussi à chaque contexte dans la matrice des canaux,
+ * pour le push ; matrice et push sont partis en X2/X4.) Les
  * allergènes restent l'affaire de chaque suite.
  */
 
@@ -61,19 +62,6 @@ export async function makeActivatable(
   const category = `${CATEGORIES}/${detail.categoryId}`;
   const rateId = await foodRate(staff);
   await staff().put(`${category}/audience`).send({ audience: "pro" }).expect(200);
-  // La famille s'ouvre à chaque contexte : le push ne sert que les contextes
-  // vendus (`soldPercents`, 2026-10-15), même si un taux se règle sans canal.
-  // `pos_b2b` n'est pas une boutique : c'est la ligne de la plateforme dans
-  // la matrice, et elle existe sans avoir été créée.
-  const shopId = await counterFor(staff, productId);
-  await staff()
-    .put(`${category}/channels`)
-    .send([
-      { pointOfSaleId: "pos_b2b", context: "b2b" },
-      { pointOfSaleId: shopId, context: "takeaway" },
-      { pointOfSaleId: shopId, context: "eatIn" },
-    ])
-    .expect(200);
   await staff()
     .put(`${category}/vat`)
     .send({ vatByContext: { b2b: rateId, takeaway: rateId, eatIn: rateId } })
@@ -101,19 +89,4 @@ async function ratioRules(staff: Staff): Promise<void> {
     .put("/pim/accounting-rules/pro-price-method")
     .send({ method: "ratio_ttc" })
     .expect(200);
-}
-
-/** Un comptoir qui vend à emporter et sur place — le lieu des deux contextes de boutique. */
-async function counterFor(staff: Staff, productId: string): Promise<string> {
-  const shop = await staff()
-    .post("/pim/points-of-sale")
-    .send({
-      kind: "shop",
-      label: `Comptoir ${productId}`,
-      contexts: ["takeaway", "eatIn"],
-      baseUrl: "",
-      tableCount: 0,
-    })
-    .expect(201);
-  return jsonBody<{ id: string }>(shop).id;
 }

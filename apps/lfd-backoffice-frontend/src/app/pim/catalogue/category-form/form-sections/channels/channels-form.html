@@ -1,12 +1,3 @@
-<app-channel-matrix
-  [channels]="store.channels()"
-  [pointsOfSale]="pointsOfSale()"
-  [unreadable]="pointsOfSaleError()"
-  [showState]="false"
-  (channelsChange)="store.channels.set($event)"
-/>
-<p class="muted">Les fiches de la famille en héritent, sauf réglage propre.</p>
-
 <section class="block">
   <fold-element-title variant="eyebrow" icon="tax" title="Taux de TVA" />
 

@@ -3,17 +3,14 @@ import type {
   CommerceOperationShopDisplay,
   CommerceOperationState,
   CommerceOperationView,
-  OperationMigrationExplanation,
-  OperationMigrationFieldName,
-  OperationMigrationOutcome,
 } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import type { FoldBadgeVariant, FoldSelectOption } from 'fold-ng';
 
 /**
- * Ce que l'écran « Opérations » dit d'une opération du commerce et de sa
- * reprise depuis le référentiel. Rien n'est recalculé ici : l'état, ce que
- * verra le client et les avertissements viennent du serveur, à SON horloge.
+ * Ce que l'écran « Opérations » dit d'une opération du commerce. Rien n'est
+ * recalculé ici : l'état, ce que verra le client et les avertissements
+ * viennent du serveur, à SON horloge.
  */
 
 /** `archived` passe avant l'état calculé : une archivée garde ses dates, pas sa vie. */
@@ -79,56 +76,6 @@ export function splitArchived(views: readonly CommerceOperationView[]): {
     live: views.filter((view) => view.archivedAt === null),
     archived: views.filter((view) => view.archivedAt !== null),
   };
-}
-
-const OUTCOMES: Readonly<
-  Record<OperationMigrationOutcome, { readonly label: string; readonly variant: FoldBadgeVariant }>
-> = {
-  create: { label: 'Sera créée', variant: 'info' },
-  adopt: { label: 'Sera reprise', variant: 'info' },
-  already_at_commerce: { label: 'Déjà au commerce', variant: 'success' },
-  archived_unchanged: { label: 'Archivée, inchangée', variant: 'neutral' },
-  mirror_only: { label: 'Absente du référentiel', variant: 'warning' },
-  blocked: { label: 'Bloquée', variant: 'alert' },
-};
-
-export function outcomeLabel(outcome: OperationMigrationOutcome): string {
-  return OUTCOMES[outcome].label;
-}
-
-export function outcomeVariant(outcome: OperationMigrationOutcome): FoldBadgeVariant {
-  return OUTCOMES[outcome].variant;
-}
-
-const FIELDS: Readonly<Record<OperationMigrationFieldName, string>> = {
-  name: 'Nom',
-  lede: 'Chapeau',
-  image: 'Image',
-  announceFrom: 'Annonce',
-  orderFrom: 'Ouverture des commandes',
-  orderUntil: 'Clôture des commandes',
-  pickupFrom: 'Premier jour de retrait',
-  pickupUntil: 'Dernier jour de retrait',
-  audience: 'Clientèle',
-  skus: 'Sélection',
-  hidden: 'Masquée',
-  archived: 'Archivée',
-};
-
-export function fieldLabel(field: OperationMigrationFieldName): string {
-  return FIELDS[field];
-}
-
-const EXPLANATIONS: Readonly<Record<OperationMigrationExplanation, string>> = {
-  same: 'Identique',
-  referential_newer: 'Le référentiel a changé depuis le dernier envoi',
-  not_in_mirror: 'Jamais envoyée à la boutique',
-  held_at_commerce: 'Non comparé : déjà tenu au commerce',
-  unexplained: 'Écart inexpliqué',
-};
-
-export function explanationLabel(explanation: OperationMigrationExplanation): string {
-  return EXPLANATIONS[explanation];
 }
 
 /**

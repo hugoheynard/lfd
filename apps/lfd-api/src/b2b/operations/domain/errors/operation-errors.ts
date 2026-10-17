@@ -16,42 +16,17 @@ import {
  */
 
 /**
- * Une copie reçue du référentiel que la migration n'a pas encore reprise. 409 :
- * l'écrire d'abord ferait tomber la restriction de la réception, qu'elle
- * verse dans l'opération.
+ * Une copie reçue de l'ancien référentiel, que la reprise n'a jamais versée au
+ * commerce. 409 : la reprise est partie en X4
+ * (`documentation/catalogue/plan-sans-interrupteurs.md`) — l'écrire la ferait
+ * passer pour une opération du commerce, sans personne pour l'avoir décidé.
  */
 export class OperationAwaitingMigrationError extends BusinessError {
   constructor(readonly key: string) {
     super(
       "operations.awaiting_migration",
-      `L'opération « ${key} » n'a pas encore été reprise du référentiel : appliquez la ` +
-        `migration des opérations (runbook, « Bascule des opérations »), puis recommencez.`,
-    );
-  }
-}
-
-/** La migration ne reprend pas une opération que le commerce a déjà écrite. 409. */
-export class OperationAlreadyAtCommerceError extends BusinessError {
-  constructor(readonly key: string) {
-    super(
-      "operations.already_at_commerce",
-      `L'opération « ${key} » est déjà tenue au commerce : la migration ne la reprend pas, ` +
-        `elle écraserait ce qui y a été modifié depuis.`,
-    );
-  }
-}
-
-/**
- * L'aperçu de la migration porte au moins une ligne bloquée : rien n'est
- * écrit. 409 — c'est l'état des données qui s'y oppose.
- */
-export class OperationsMigrationBlockedError extends BusinessError {
-  constructor(readonly blocked: readonly string[]) {
-    super(
-      "operations.migration_blocked",
-      `La migration des opérations est bloquée par ${String(blocked.length)} opération(s) : ` +
-        `${blocked.join(", ")}. Relisez l'aperçu (GET /admin/operations/migration), corrigez ` +
-        `au référentiel ou à la réception, puis relancez — rien n'a été écrit.`,
+      `L'opération « ${key} » est une copie reçue de l'ancien référentiel, jamais reprise au ` +
+        `commerce : elle ne se modifie plus. Préparez-en une nouvelle sous une autre clé.`,
     );
   }
 }

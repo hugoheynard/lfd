@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 
 import { FoldPageLayoutComponent } from 'fold-ng';
 
-import { AudienceSwitchCard } from '../audience-switch-card/audience-switch-card';
 import { B2bIntegration } from '../b2b-integration/b2b-integration';
 
 /**
@@ -19,11 +18,15 @@ import { B2bIntegration } from '../b2b-integration/b2b-integration';
  * nouveau canal s'ajoute en onglet, pas en promesse.** L'écran a porté un
  * onglet « Autres » qui inventoriait des canaux à la main — il mentait dès
  * qu'un canal arrivait. La barre revient avec le deuxième canal, pas avant.
+ *
+ * La carte de la bascule vers l'audience est partie en X4
+ * (`plan-sans-interrupteurs.md`) : la bascule était faite, et le lien au canal
+ * qu'elle comparait est retiré.
  */
 @Component({
   selector: 'app-integration-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldPageLayoutComponent, B2bIntegration, AudienceSwitchCard],
+  imports: [FoldPageLayoutComponent, B2bIntegration],
   templateUrl: './integration-page.html',
 })
 export class IntegrationPage {}

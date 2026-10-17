@@ -40,10 +40,6 @@ function withFamily(store: ProductFormStore): void {
       parentId: null,
       position: 1,
       isArchived: false,
-      channelPreset: [
-        { pointOfSaleId: 'emp_rivoli', context: 'takeaway' },
-        { pointOfSaleId: 'pos_b2b', context: 'b2b' },
-      ],
       vatByContext: { takeaway: 'tva_55', eatIn: 'tva_55', b2b: 'tva_20' },
       activeProductCount: 0,
       audience: 'both',
@@ -94,29 +90,16 @@ describe('PricingForm', () => {
     expect(text).toContain('5,5 %');
   });
 
-  it('offre de REDÉFINIR les canaux — la fiche peut ne pas suivre sa famille', () => {
-    // Ce test disait l'inverse : « n'offre pas de Redéfinir, l'API neutralise
-    // l'override ». Il avait raison tant que rien ne portait la décision. Ce
-    // n'est plus le cas — et un écran qui refuse un geste que le serveur accepte
-    // est aussi faux que l'inverse.
+  /** La matrice des canaux est partie en X4 : plus de geste pour la redéfinir. */
+  it('n’offre plus de redéfinir les canaux', () => {
     const store = setup();
     withFamily(store);
     const fixture = TestBed.createComponent(PricingForm);
     fixture.detectChanges();
 
-    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Redéfinir les canaux');
-  });
-
-  it('dit que les canaux sont redéfinis, plutôt que de parler d’héritage', () => {
-    const store = setup();
-    withFamily(store);
-    store.channelsOverride.set([{ pointOfSaleId: 'pos_b2b', context: 'b2b' }]);
-    const fixture = TestBed.createComponent(PricingForm);
-    fixture.detectChanges();
-
-    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
-    expect(text).toContain('redéfinis pour cette fiche');
-    expect(text).not.toContain('Hérité de la famille');
+    expect((fixture.nativeElement as HTMLElement).textContent).not.toContain(
+      'Redéfinir les canaux',
+    );
   });
 
   /**
@@ -190,35 +173,11 @@ describe('PricingForm — la dérogation de la fiche', () => {
   });
 });
 
-describe('PricingForm — la fiche qui ne suit plus sa famille', () => {
-  it('lit les LIGNES sur la matrice de la fiche', () => {
-    // La famille vend au comptoir ET en B2B ; cette fiche-là ne se vend qu'aux
-    // pros. Sans résolution, l'encadré afficherait des boutiques où elle n'est
-    // pas vendue — et un taux pour un canal qu'elle a fermé.
+/** Régression : jusqu'au 2026-10-15, un contexte non vendu cachait son taux. */
+describe('PricingForm — la TVA de chaque contexte', () => {
+  it('montre et laisse régler le taux de chaque contexte en service', () => {
     const store = setup();
     withFamily(store);
-    store.channelsOverride.set([{ pointOfSaleId: 'pos_b2b', context: 'b2b' }]);
-    const fixture = TestBed.createComponent(PricingForm);
-    fixture.detectChanges();
-
-    const rows = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.inherit-row')];
-    const emporter = rows.find((row) =>
-      row.querySelector('dt')?.textContent?.includes('À emporter'),
-    );
-    const b2b = rows.find((row) => row.querySelector('dt')?.textContent?.includes('B2B'));
-
-    expect(emporter?.textContent).toContain('non proposé');
-    expect(b2b?.textContent).toContain('20 %');
-  });
-
-  /**
-   * Régression : jusqu'au 2026-10-15, un contexte non vendu cachait son taux
-   * et le geste de dérogation. La TVA ne dépend plus des canaux.
-   */
-  it('montre et laisse régler le taux d’un contexte que la fiche ne vend pas', () => {
-    const store = setup();
-    withFamily(store);
-    store.channelsOverride.set([{ pointOfSaleId: 'pos_b2b', context: 'b2b' }]);
     const fixture = TestBed.createComponent(PricingForm);
     fixture.detectChanges();
 
@@ -227,6 +186,7 @@ describe('PricingForm — la fiche qui ne suit plus sa famille', () => {
     ].find((row) => row.querySelector('dt')?.textContent?.includes('À emporter'));
 
     expect(emporter?.textContent).toContain('5,5 %');
+    expect(emporter?.textContent).not.toContain('non proposé');
     expect(emporter?.querySelector('fold-button-icon')).not.toBeNull();
   });
 });

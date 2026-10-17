@@ -34,7 +34,6 @@ function detail(status: ProductStatus) {
       status,
       variants: [],
       vatByContext: {},
-      channelsOverride: null,
       audience: null,
     },
     editorial: { descriptionShort: null },

@@ -5,18 +5,8 @@ import { AllergensModule } from "../../allergens/allergens.module.js";
 import { CatalogueModule } from "../../catalogue/catalogue.module.js";
 import { OrderTimeLimitationModule } from "../../order-time-limitation/order-time-limitation.module.js";
 import { PimDatabaseModule } from "../../infra/database/pim-database.module.js";
-import { OperationsModule } from "../../operations/operations.module.js";
 import { ReemitCatalogHandler } from "./application/reemit-catalog.js";
 import { B2bReemitController } from "./products/reemit.controller.js";
-import { B2bMembershipController } from "./membership/membership.controller.js";
-import { AudienceSwitchPreviewController } from "./membership/audience-switch-preview.controller.js";
-import { GetAudienceSwitchPreviewHandler } from "./application/audience-switch-preview.js";
-import { ApplyAudienceSwitchHandler } from "./application/apply-audience-switch.js";
-import { AudienceSwitchController } from "./membership/audience-switch.controller.js";
-import { SalesContextsModule } from "../../sales-contexts/sales-contexts.module.js";
-import { B2bMembershipService } from "./membership/membership.service.js";
-import { PimReferentialOperations } from "./operations/pim-referential-operations.js";
-import { ReferentialOperations } from "./operations/referential-operations.js";
 
 /**
  * Adaptateur du canal **plateforme B2B** — le second canal, après l'ancien canal de vente en ligne.
@@ -25,45 +15,23 @@ import { ReferentialOperations } from "./operations/referential-operations.js";
  * Supprimer ce module ne casserait rien en amont ; c'est le test qui dit que la
  * frontière tient.
  *
- * Un canal de plus est un module de plus, pas une branche de plus dans le canal
- * existant — c'est ce que l'OCP demande, et c'est ce qui permettait à l'ancien canal de vente en ligne
- * et au B2B de diverger sans se gêner.
+ * Il ne porte plus que la **réémission** des faits du catalogue. Partis en X4
+ * (`documentation/catalogue/plan-sans-interrupteurs.md`) : l'appartenance au
+ * canal par fiche, la bascule vers l'audience qui la lisait, et le port des
+ * opérations que le commerce lisait pour les reprendre.
  *
  * Préfixe monté par `AppModule` via `RouterModule` (`channels/b2b`) : les
  * contrôleurs ne déclarent que leur sous-chemin.
  */
 @Module({
-  // `AllergensModule` fournit le lecteur du référentiel : la projection y prend
-  // les mentions d'étiquette une fois par push (D6), parce que le récepteur n'a
-  // plus de quoi les fabriquer.
   imports: [
     OrderTimeLimitationModule,
     PimDatabaseModule,
     CatalogueModule,
     AccountingRulesModule,
     AllergensModule,
-    // Le port de LECTURE des opérations datées, projetées dans le fil v11.
-    OperationsModule,
-    // Les contextes en service : l'aperçu de bascule juge la complétude (2b).
-    SalesContextsModule,
   ],
-  controllers: [
-    B2bMembershipController,
-    AudienceSwitchPreviewController,
-    AudienceSwitchController,
-    B2bReemitController,
-  ],
-  providers: [
-    B2bMembershipService,
-    ReemitCatalogHandler,
-    // L'aperçu de la bascule vers l'audience (lot 1, 1f) : lecture seule.
-    GetAudienceSwitchPreviewHandler,
-    // Son second temps (2b1) : désactive ce que l'aperçu liste invisible (H7).
-    ApplyAudienceSwitchHandler,
-    // La migration des opérations au commerce (lot 3 du plan
-    // `plan-l-operation-passe-au-commerce.md`) : lecture seule, une fois.
-    { provide: ReferentialOperations, useClass: PimReferentialOperations },
-  ],
-  exports: [B2bMembershipService, ReferentialOperations],
+  controllers: [B2bReemitController],
+  providers: [ReemitCatalogHandler],
 })
 export class B2bPlatformModule {}

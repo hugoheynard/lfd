@@ -63,7 +63,7 @@ export function toRecord(row: OperationRow): OperationRecord {
  * Les colonnes que l'agrégat écrit — la sélection à part.
  *
  * Ni `received_at` ni `image_gesture_id` : `received_at` ne bouge qu'à la
- * naissance et à la migration (`PrismaOperationAdoption`), et le geste
+ * naissance (la migration qui l'écrivait aussi est partie en X4), et le geste
  * d'image n'est plus écrit par personne une fois la bascule faite.
  * Le point focal, si (lot 2) : l'agrégat le lit à la médiathèque au choix de
  * l'image et le suit quand elle le redécrit.

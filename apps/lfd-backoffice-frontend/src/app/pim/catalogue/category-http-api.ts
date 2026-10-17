@@ -7,7 +7,6 @@ import type {
   CategoryView,
   LocalizedText,
   OperationAudience,
-  SalesChannels,
   SetCategoryAudiencePayload,
 } from '@lfd/pim-contracts';
 import { firstValueFrom } from 'rxjs';
@@ -29,7 +28,6 @@ function toCategory(row: CategoryView): Category {
     parentId: row.parentId,
     position: row.position,
     isArchived: row.isArchived,
-    channelPreset: row.channelPreset,
     vatByContext: row.vatByContext,
     activeProductCount: row.activeProductCount,
     audience: row.audience,
@@ -112,10 +110,6 @@ export class CategoryHttpApi {
 
   archive(id: string): Promise<void> {
     return this.put(`categories/${id}/archive`, {});
-  }
-
-  setChannels(id: string, channels: SalesChannels): Promise<void> {
-    return this.put(`categories/${id}/channels`, channels);
   }
 
   /**

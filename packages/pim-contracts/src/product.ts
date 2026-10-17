@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-import { salesChannelsSchema } from "./category.js";
 import { operationAudienceSchema, type OperationAudience } from "./operation.js";
 
 import { localizedTextSchema, optionalLocalizedTextSchema } from "./localized.js";
@@ -444,18 +443,6 @@ export type ProductDetailView = ProductView & {
  * vend pas le contexte : déroger là où rien ne se vend, c'est décider d'un prix
  * pour une vente qui n'a pas lieu.
  */
-/**
- * Où une fiche se vend, quand elle ne suit PAS sa famille.
- *
- * `null` la rend à sa famille — c'est une valeur, pas une omission, et c'est ce
- * qui rend le geste réversible. Sinon la matrice entière : tout-ou-rien, parce
- * qu'une matrice à moitié redéfinie ne se lit pas.
- */
-export const setProductChannelsPayloadSchema = z.object({
-  channels: salesChannelsSchema.nullable(),
-});
-export type SetProductChannelsPayload = z.infer<typeof setProductChannelsPayloadSchema>;
-
 /**
  * Réserver la fiche aux opérations datées, ou la rendre à la vente courante
  * (`PUT /pim/catalogue/products/:id/operation-only`). Le booléen entier plutôt

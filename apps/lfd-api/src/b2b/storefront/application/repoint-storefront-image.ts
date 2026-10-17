@@ -25,8 +25,8 @@ export class RepointStorefrontImage extends StorefrontImageRepointing {
    * `_ticket` n'est pas lu, et c'est son rôle : il PROUVE que l'appelant a
    * tracé `media_asset.replaced` avant d'écrire ici. Le port l'exige pour que
    * `lint:journal-tracked` refuse un appelant qui ne journalise pas ; la
-   * vitrine n'a rien à y inscrire (même forme que les dépôts de
-   * `pim/operations/`, vérifié le 2026-10-11).
+   * vitrine n'a rien à y inscrire (même forme qu'avaient les dépôts des
+   * opérations du référentiel, partis en X4).
    */
   async repoint(change: StorefrontImageChange, _ticket: WriteTicket): Promise<number> {
     const storefront = await this.storefronts.load();

@@ -283,48 +283,4 @@ describe('PublishRail — la déclaration « publiable »', () => {
       expect(readyButton(host)?.disabled).toBe(false);
     });
   });
-
-  /**
-   * Ce que la complétude ne mesure pas, et ne mesurera pas : où la fiche se
-   * vend. Elle compte ce que la fiche PORTE — un nom, un prix, des allergènes,
-   * un visuel. Une fiche pouvait donc être à 10/10, signée, « En ligne », et
-   * n'apparaître dans aucun contexte : tout juste, et rien ne se passe
-   * (audit 2026-09-01, §11).
-   */
-  describe('quand la fiche n’est vendue nulle part', () => {
-    /** Un lieu qui vend, sans quoi le garde « le référentiel a répondu » ferme. */
-    function sellSomewhere(store: ProductFormStore): void {
-      store.channelsOverride.set([{ pointOfSaleId: 'pos_b2b', context: 'b2b' }]);
-    }
-
-    it('le dit, sur une fiche par ailleurs complète', () => {
-      const store = setup();
-      fill(store);
-
-      expect(store.soldNowhere()).toBe(true);
-      expect(text(render())).toContain('aucun contexte');
-    });
-
-    it('se tait dès qu’un contexte la vend', () => {
-      const store = setup();
-      fill(store);
-      sellSomewhere(store);
-
-      expect(store.soldNowhere()).toBe(false);
-      expect(text(render())).not.toContain('aucun contexte');
-    });
-
-    /**
-     * ⚠️ Un avertissement, jamais un blocage : préparer une fiche avant
-     * d'ouvrir ses canaux est un usage normal, et l'interdire coûterait plus
-     * que le silence qu'on répare.
-     */
-    it('n’empêche NI de signer, NI de publier au catalogue', () => {
-      const store = setup();
-      fill(store);
-
-      expect(store.soldNowhere()).toBe(true);
-      expect(readyButton(render())?.disabled).toBe(false);
-    });
-  });
 });

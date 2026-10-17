@@ -3,12 +3,6 @@ import { FoldButtonIconComponent, FoldPanelHostService } from 'fold-ng';
 
 import { formatPercent } from '../../../../data/channels';
 import { ProductFormStore, type ChannelInheritance } from '../../product-form-store';
-import { PointOfSaleStore } from '../../../../points-of-sale/point-of-sale-store';
-import {
-  ChannelsOverridePanel,
-  type ChannelsOverridePanelData,
-  type ChannelsOverridePanelResult,
-} from './channels-override-panel/channels-override-panel';
 import {
   VatOverridePanel,
   type VatOverridePanelData,
@@ -16,9 +10,11 @@ import {
 } from './vat-override-panel/vat-override-panel';
 
 /**
- * Panneau Canaux & TVA — **lecture seule**. Rend explicite l'héritage par
- * famille (canaux desservis + taux de TVA). L'override par produit relève du
- * futur contexte commerce.
+ * Panneau TVA par contexte — rend explicite l'héritage par famille et la
+ * dérogation de la fiche, ligne par ligne. Les canaux desservis (la matrice,
+ * et sa redéfinition par fiche) sont partis en X4
+ * (`documentation/catalogue/plan-sans-interrupteurs.md`) ; les contextes de
+ * vente et leur TVA restent.
  *
  * Les lignes viennent du magasin, qui les tient du registre : cet écran ne
  * connaît plus « à emporter / sur place / B2B ».
@@ -65,31 +61,6 @@ export class ChannelsForm {
     ).closed;
     if (chosen !== undefined) {
       this.store.setVatOverride(row.key, chosen.rateId);
-    }
-  }
-
-  private readonly pointStore = inject(PointOfSaleStore);
-
-  /**
-   * Ouvre la matrice de la fiche.
-   *
-   * Un seul geste pour toute la matrice, là où les taux se redéfinissent ligne
-   * par ligne : une matrice à moitié redéfinie ne se lit pas, alors que deux
-   * taux sont deux faits indépendants.
-   */
-  protected async redefineChannels(): Promise<void> {
-    const data: ChannelsOverridePanelData = {
-      current: this.store.channelsOverride(),
-      inherited: this.store.familyChannels(),
-      pointsOfSale: this.pointStore.items(),
-      unreadable: this.pointStore.loadError(),
-    };
-    const chosen = await this.panelHost.open<
-      ChannelsOverridePanelData,
-      ChannelsOverridePanelResult
-    >(ChannelsOverridePanel, { data }).closed;
-    if (chosen !== undefined) {
-      this.store.channelsOverride.set(chosen.channels);
     }
   }
 

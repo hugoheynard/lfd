@@ -4,7 +4,6 @@ import {
   CategorySelfParentError,
   CategoryUnknownContextError,
 } from "../../errors/category-errors.js";
-import type { SalesChannels } from "../../../../shared/domain/value-objects/sales-channels.js";
 import type { SalesContext } from "../../../../../sales-contexts/domain/value-objects/sales-context.js";
 
 /**
@@ -36,18 +35,6 @@ const CONTEXTS: readonly SalesContext[] = [
 ];
 
 const OPEN = { id: "cat_1", name: { fr: "Chocolats fins" }, parentId: null, position: 0 };
-
-/** Une grille de canaux : un ENSEMBLE DE PAIRES (lieu, contexte). */
-function channels(sold: SalesChannels = []): SalesChannels {
-  return sold;
-}
-
-/** Une famille qui vend le mode demandé, prête à porter un taux. */
-function selling(sold: SalesChannels): Category {
-  const category = Category.open(OPEN);
-  category.setChannels(channels(sold));
-  return category;
-}
 
 describe("l’agrégat Category", () => {
   describe("le slug suit le nom, toujours", () => {
@@ -89,17 +76,6 @@ describe("l’agrégat Category", () => {
       category.archive();
       return category;
     };
-
-    it("refuse les canaux", () => {
-      expect(() =>
-        archived().setChannels(
-          channels([
-            { pointOfSaleId: "emp_1", context: "takeaway" },
-            { pointOfSaleId: "emp_1", context: "eatIn" },
-          ]),
-        ),
-      ).toThrow(CategoryFrozenError);
-    });
 
     it("refuse la TVA", () => {
       expect(() => archived().setVat({ takeaway: "tva_5" }, CONTEXTS)).toThrow(CategoryFrozenError);
@@ -144,24 +120,14 @@ describe("l’agrégat Category", () => {
   describe("un taux se règle pour tout contexte connu, vendu ou non", () => {
     /** Régression : `refuseVatWithoutChannel` refusait ce geste jusqu'au 2026-10-15. */
     it("un taux se pose pour un contexte que la famille ne vend pas", () => {
-      const category = selling([{ pointOfSaleId: "emp_1", context: "takeaway" }]);
+      const category = Category.open(OPEN);
       category.setVat({ takeaway: "tva_55", eatIn: "tva_10" }, CONTEXTS);
       expect(category.vatByContext).toEqual({ takeaway: "tva_55", eatIn: "tva_10" });
     });
 
     it("traite le B2B comme un contexte à part entière", () => {
-      const category = selling([{ pointOfSaleId: "pos_b2b", context: "b2b" }]);
+      const category = Category.open(OPEN);
       category.setVat({ b2b: "tva_55" }, CONTEXTS);
-      expect(category.vatOf("b2b")).toBe("tva_55");
-    });
-
-    /** Régression : `forgetVatOfClosedChannels` effaçait ce taux jusqu'au 2026-10-15. */
-    it("fermer un canal n’efface plus le taux de son contexte", () => {
-      const category = selling([{ pointOfSaleId: "pos_b2b", context: "b2b" }]);
-      category.setVat({ b2b: "tva_55" }, CONTEXTS);
-
-      category.setChannels(channels([]));
-
       expect(category.vatOf("b2b")).toBe("tva_55");
     });
 
@@ -169,7 +135,7 @@ describe("l’agrégat Category", () => {
       // Accepter la clé la persisterait sans ligne de registre en face, et
       // personne ne saurait plus dire, six mois après, ce que « traiteur »
       // facturait.
-      const category = selling([{ pointOfSaleId: "emp_1", context: "takeaway" }]);
+      const category = Category.open(OPEN);
       expect(() => category.setVat({ traiteur: "tva_10" }, CONTEXTS)).toThrow(
         CategoryUnknownContextError,
       );

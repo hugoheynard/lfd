@@ -8,7 +8,6 @@ import { PrismaCatalogPriceRetracer } from "./infrastructure/prisma-catalog-pric
 import { SetMaskingHandler } from "./application/commands/set-masking.handler.js";
 import { ApproveReviewHandler } from "./application/commands/approve-review.handler.js";
 import { SetCatalogFeaturedHandler } from "./application/commands/set-catalog-featured.handler.js";
-import { OnOperationImageChangedHandler } from "./application/handlers/on-operation-image-changed.handler.js";
 import { OnProductMediaChangedHandler } from "./application/handlers/on-product-media-changed.handler.js";
 import { OnCatalogProductChangedHandler } from "./application/handlers/on-catalog-product-changed.handler.js";
 import { OnCatalogCategoryChangedHandler } from "./application/handlers/on-catalog-category-changed.handler.js";
@@ -99,8 +98,6 @@ import { PrismaCatalogColdReader } from "./infrastructure/prisma-catalog-cold.re
     // Les règles globales du référentiel (lot 2b) : rangées, puis descendues.
     OnCatalogRulesChangedHandler,
     OrderLimitsRefresher,
-    // Même chose pour l'image d'une opération reçue (mediatheque.md §7 bis).
-    OnOperationImageChangedHandler,
     ListCatalogHandler,
     GetCatalogSummaryHandler,
     GetPublishedCatalogHandler,

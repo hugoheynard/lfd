@@ -21,13 +21,12 @@ const stubAdminVerifier = {
     Promise.resolve({ subject: E2E_STAFF_SUB, scopes: [] }),
 };
 
-/** Une par famille de contrôleurs : catalogue, commerce, locations, canaux. */
+/** Une par famille de contrôleurs : catalogue, taux, points de vente. (Le canal B2B ne garde que la réémission, en POST.) */
 const ROUTES = [
   "/pim/catalogue/products",
   "/pim/catalogue/categories",
   "/pim/vat-rates",
   "/pim/points-of-sale",
-  "/pim/channels/b2b/products",
 ] as const;
 
 let ctx: E2eContext;

@@ -55,7 +55,10 @@ déclarés par l'écran
 | `pim_product_set_identity`  | nom, référence, famille, nature                   |
 | `pim_product_set_editorial` | récit, provenance, SEO                            |
 | `pim_variant_set_nutrition` | valeurs de l'annexe XV, par déclinaison           |
-| `pim_product_set_channels`  | où la fiche se vend                               |
+
+`pim_product_set_channels` (où la fiche se vend) est parti en X4
+(`documentation/catalogue/plan-sans-interrupteurs.md`) avec la matrice des
+canaux.
 
 **Le nombre n'est pas recopié dans l'écran** : la liste affichée est rendue par
 la déclaration elle-même. Une liste écrite à la main survivrait à un outil

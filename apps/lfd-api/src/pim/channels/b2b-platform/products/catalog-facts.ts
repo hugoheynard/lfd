@@ -120,9 +120,9 @@ export function projectFamilyFact(
 }
 
 /**
- * **Projette une fiche en instantané** — pure, comme `projectCatalog`, dont
- * elle reprend la conversion de chaque déclinaison (`projectVariant`) pour
- * qu'un prix poussé et un prix émis ne puissent pas diverger.
+ * **Projette une fiche en instantané** — pure, comme l'était la projection du
+ * push (partie en X4), dont elle reprend la conversion de chaque déclinaison
+ * (`projectVariant`).
  *
  * Ce qu'elle fait de plus que le push : elle **n'écarte rien en silence**. Une
  * déclinaison incomplète part dans `gaps`, avec ce qui lui manque — c'est C1 :

@@ -1,44 +1,27 @@
 @if (store.channelsInheritance(); as inh) {
   <div class="inherit">
     <!-- La provenance en tête du bloc, pas en légende dessous : elle vaut pour
-         toutes les lignes qui suivent, et lue après elles il faudrait relire.
-         Chaque ligne qui DÉROGE le dit ensuite pour elle-même. -->
+         toutes les lignes qui suivent. Chaque ligne qui DÉROGE le dit ensuite
+         pour elle-même. Le bouton « Redéfinir les canaux » est parti en X4 avec
+         la matrice. -->
     <p class="inherit-head">
-      @if (inh.channelsSource === 'inherited') {
-        <span
-          >Hérité de la famille <strong>{{ inh.categoryName }}</strong></span
-        >
-      } @else {
-        <!-- La fiche ne suit plus sa famille : le bandeau doit le dire, sinon
-             l'encadré affirme un héritage qui n'a plus lieu. -->
-        <span>Canaux <strong>redéfinis pour cette fiche</strong></span>
-      }
-      <button type="button" class="inherit-redefine" (click)="redefineChannels()">
-        @if (inh.channelsSource === 'inherited') {
-          Redéfinir les canaux
-        } @else {
-          Modifier
-        }
-      </button>
+      <span
+        >Hérité de la famille <strong>{{ inh.categoryName }}</strong></span
+      >
     </p>
-    <!-- Trois colonnes, chacune de son poids : le canal nomme la ligne, les
-         boutiques s'effacent, le taux se lit en un coup d'œil à droite. Sur une
-         seule ligne — « Labo · Village — TVA Réduit · 5,5 % » — tout pesait
-         pareil, et le chiffre qu'on cherche se perdait au bout d'une phrase. Le
-         mot « TVA » disparaît : l'encadré ne parle que de ça. -->
+    <!-- Trois colonnes, chacune de son poids : le contexte nomme la ligne, la
+         dérogation s'efface, le taux se lit en un coup d'œil à droite. Le mot
+         « TVA » disparaît : l'encadré ne parle que de ça. -->
     <dl class="inherit-rows">
       @for (row of rows(); track row.key) {
         <div class="inherit-row" [class.is-overridden]="row.source === 'overridden'">
           <dt>{{ row.label }}</dt>
-          <!-- Le taux se lit et se règle pour TOUT contexte en service, vendu ou
-               non : la TVA ne dépend plus des canaux (2026-10-15). Seule la
-               colonne « où » dit encore si le contexte est proposé. -->
+          <!-- La colonne « où » (boutiques, « non proposé ») lisait la matrice
+               des canaux, partie en X4 : seule la dérogation se signale. -->
           @if (row.source === 'overridden') {
             <dd class="inherit-where"><span class="inherit-mark">Redéfini</span></dd>
-          } @else if (row.sold) {
-            <dd class="inherit-where">{{ row.boutiques.join(' · ') }}</dd>
           } @else {
-            <dd class="inherit-where muted">non proposé</dd>
+            <dd class="inherit-where"></dd>
           }
           <dd class="inherit-rate">
             @if (row.rate; as rate) {

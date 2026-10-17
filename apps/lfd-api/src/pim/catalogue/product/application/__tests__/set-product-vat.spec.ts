@@ -1,8 +1,5 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
-import {
-  KnownPointsOfSale,
-  KnownVatRates,
-} from "../../../shared/application/__tests__/journal-name-doubles.js";
+import { KnownVatRates } from "../../../shared/application/__tests__/journal-name-doubles.js";
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
 import { VatRateNotFoundError } from "../../../../vat-rates/domain/errors/vat-rate-errors.js";
 import { VatRateRepository } from "../../../../vat-rates/domain/ports/vat-rate.repository.js";
@@ -12,9 +9,6 @@ import { SalesContextRegistry } from "../../../../sales-contexts/domain/ports/sa
 import { ProductUnknownContextError } from "../../domain/errors/product-errors.js";
 import { Product, type ProductSnapshot } from "../../domain/entities/product.js";
 import { ProductRepository } from "../../domain/ports/product.repository.js";
-import { UnknownPointOfSaleError } from "../../../shared/domain/errors/channel-errors.js";
-import { PointOfSaleOfferReader } from "../../../shared/domain/ports/point-of-sale-offer.reader.js";
-import { SetProductChannelsCommand, SetProductChannelsHandler } from "../set-product-channels.js";
 import { SetProductVatCommand, SetProductVatHandler } from "../set-product-vat.js";
 import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
 
@@ -84,17 +78,6 @@ function snapshot(
   };
 }
 
-/** Tous les points de vente cités existent, et offrent tout. */
-const allPointsOfSaleOffer: PointOfSaleOfferReader = {
-  offersOf: (ids: readonly string[]) =>
-    Promise.resolve(new Map(ids.map((id) => [id, new Set(["takeaway", "eatIn", "b2b"])]))),
-};
-
-/** Aucun n'existe : la fiche cite un point de vente fantôme. */
-const noPointOfSaleKnown: PointOfSaleOfferReader = {
-  offersOf: () => Promise.resolve(new Map()),
-};
-
 /** Reconstitue à chaque lecture : un test ne doit pas passer parce qu'il tient
  *  la même instance que le handler — ce que la vraie base ne fera jamais. */
 class FakeProducts extends ProductRepository {
@@ -130,12 +113,6 @@ function rates(): VatRateRepository {
     tva_20: { name: "Normal", percent: 20 },
   });
 }
-
-/** Les points de vente que les matrices citent, nommés comme le journal les fige. */
-const POINTS_OF_SALE = new KnownPointsOfSale({
-  emp_1: "Boutique du Village",
-  pos_b2b: "Plateforme pro",
-});
 
 describe("SetProductVatHandler", () => {
   it("fait DÉROGER la fiche au taux de sa famille", async () => {
@@ -245,85 +222,7 @@ describe("SetProductVatHandler", () => {
   });
 });
 
-describe("SetProductChannelsHandler", () => {
-  it("redéfinit où la fiche se vend, et le journal le note", async () => {
-    const products = new FakeProducts(snapshot());
-    const journal = new RecordingJournal();
-
-    await new SetProductChannelsHandler(
-      products,
-      allPointsOfSaleOffer,
-      registry,
-      POINTS_OF_SALE,
-      journal,
-      new DirectUnitOfWork(),
-      new RecordingCatalogEmitter(),
-    ).execute(
-      new SetProductChannelsCommand("prd_1", [{ pointOfSaleId: "pos_b2b", context: "b2b" }]),
-    );
-
-    expect(products.saved.channelOverride).toEqual([{ pointOfSaleId: "pos_b2b", context: "b2b" }]);
-    expect(journal.types()).toEqual(["product.channels_changed"]);
-  });
-
-  it("rend la fiche à sa famille avec `null`", async () => {
-    const products = new FakeProducts(snapshot({}, [{ pointOfSaleId: "pos_b2b", context: "b2b" }]));
-
-    await new SetProductChannelsHandler(
-      products,
-      allPointsOfSaleOffer,
-      registry,
-      POINTS_OF_SALE,
-      new RecordingJournal(),
-      new DirectUnitOfWork(),
-      new RecordingCatalogEmitter(),
-    ).execute(new SetProductChannelsCommand("prd_1", null));
-
-    expect(products.saved.channelOverride).toBeNull();
-  });
-
-  it("refuse un emplacement qui n’existe pas", async () => {
-    // La grille est du `jsonb` : aucune clé étrangère ne tient la référence. Un
-    // emplacement fantôme serait accepté, persisté, puis rendu INVISIBLE par
-    // l'écran, qui ignore les clés inconnues.
-    const products = new FakeProducts(snapshot());
-
-    await expect(
-      new SetProductChannelsHandler(
-        products,
-        noPointOfSaleKnown,
-        registry,
-        POINTS_OF_SALE,
-        new RecordingJournal(),
-        new DirectUnitOfWork(),
-        new RecordingCatalogEmitter(),
-      ).execute(
-        new SetProductChannelsCommand("prd_1", [
-          { pointOfSaleId: "emp_fantome", context: "takeaway" },
-        ]),
-      ),
-    ).rejects.toBeInstanceOf(UnknownPointOfSaleError);
-  });
-
-  /** Régression : jusqu'au 2026-10-15, fermer le canal effaçait ce taux. */
-  it("garde le taux d’un canal que la fiche vient de fermer", async () => {
-    const products = new FakeProducts(snapshot({ b2b: "tva_20" }));
-
-    await new SetProductChannelsHandler(
-      products,
-      allPointsOfSaleOffer,
-      registry,
-      POINTS_OF_SALE,
-      new RecordingJournal(),
-      new DirectUnitOfWork(),
-      new RecordingCatalogEmitter(),
-    ).execute(
-      new SetProductChannelsCommand("prd_1", [{ pointOfSaleId: "emp_1", context: "takeaway" }]),
-    );
-
-    expect(products.saved.vatByContext).toEqual({ b2b: "tva_20" });
-  });
-
+describe("SetProductVatHandler — sur une fiche à la matrice figée", () => {
   /** Régression : refusé jusqu'au 2026-10-15 — la fiche avait fermé le B2B. */
   it("un taux se pose pour un contexte que la fiche a elle-même fermé", async () => {
     const products = new FakeProducts(snapshot({}, []));

@@ -129,13 +129,6 @@
         }
       </p>
 
-      @if (store.soldNowhere()) {
-        <fold-callout appearance="inset" variant="warning">
-          Vendue dans <strong>aucun contexte</strong>&nbsp;: réglez-le dans «&nbsp;Tarif &amp;
-          TVA&nbsp;», ou sur la famille dont elle hérite.
-        </fold-callout>
-      }
-
       <!-- Le refus d'activer nomme chaque déclinaison et ce qui lui manque :
            une ligne par déclinaison, sous le bouton qui l'a provoqué. -->
       @if (store.activationRefusal(); as refusal) {

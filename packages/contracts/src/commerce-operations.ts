@@ -24,11 +24,8 @@ import { z } from "zod";
  * - `GET  /admin/operations` → `CommerceOperationView[]` (archivées comprises)
  * - `GET  /admin/operations/:key` → `CommerceOperationView`
  *
- * La migration depuis le référentiel (lot 3, `lfc_operations:write`), en deux
- * temps — utilisable interrupteur OUVERT seulement :
- *
- * - `GET  /admin/operations/migration` → `OperationsMigrationReport` (l'aperçu)
- * - `POST /admin/operations/migration` → `OperationsMigrationReport` (le relevé APRÈS)
+ * La migration depuis le référentiel (`/admin/operations/migration`) est
+ * partie en X4 (`documentation/catalogue/plan-sans-interrupteurs.md`).
  */
 
 /** Les trois clientèles d'une opération (D7). */
@@ -188,111 +185,10 @@ export interface CommerceOperationView {
   /** Commandes ouvertes et aucun article vendu : l'encart dit « Les produits arrivent bientôt ». */
   readonly awaitingProducts: boolean;
   /**
-   * `false` : une copie reçue du référentiel que la migration n'a pas encore
-   * reprise — elle ne s'écrit pas avant (409 `operations.awaiting_migration`).
+   * `false` : une copie reçue de l'ancien référentiel, jamais reprise — elle ne
+   * s'écrit plus (409 `operations.awaiting_migration`).
    */
   readonly heldAtCommerce: boolean;
   /** Qui l'a écrite en dernier au commerce (`StaffUser.id`), et quand. */
   readonly lastWrite: { readonly by: string | null; readonly at: string } | null;
-}
-
-/** Les champs que la migration compare, un par un. */
-export type OperationMigrationFieldName =
-  | "name"
-  | "lede"
-  | "image"
-  | "announceFrom"
-  | "orderFrom"
-  | "orderUntil"
-  | "pickupFrom"
-  | "pickupUntil"
-  | "audience"
-  | "skus"
-  | "hidden"
-  | "archived";
-
-/**
- * Pourquoi le résultat diffère de ce que la boutique appliquait (le miroir,
- * surcharge combinée) :
- *
- * - `same` — il ne diffère pas ;
- * - `referential_newer` — le référentiel a changé depuis le dernier envoi ;
- * - `not_in_mirror` — l'opération n'a jamais été envoyée ;
- * - `held_at_commerce` — non comparé : le commerce la tient déjà (écrite
- *   par la migration ou depuis), la migration ne la touche plus ;
- * - `unexplained` — rien ne l'explique : **bloque** l'application.
- */
-export type OperationMigrationExplanation =
-  "same" | "referential_newer" | "not_in_mirror" | "held_at_commerce" | "unexplained";
-
-/** Un champ, aux trois endroits — valeurs rendues en texte (ISO, `AAAA-MM-JJ`, SKU séparés par `, `). */
-export interface OperationMigrationFieldView {
-  readonly field: OperationMigrationFieldName;
-  /** Ce que dit le référentiel, la source de la migration ; `null` = absente du référentiel. */
-  readonly referential: string | null;
-  /** Ce que la boutique appliquait (miroir + surcharge) ; `null` = absente du miroir. */
-  readonly mirror: string | null;
-  /** Ce que le commerce tiendra. */
-  readonly result: string;
-  /** `true` : la surcharge de la réception l'a restreint. */
-  readonly restricted: boolean;
-  readonly explanation: OperationMigrationExplanation;
-}
-
-/**
- * Ce que la migration fait d'une opération :
- *
- * - `create` — au référentiel, jamais envoyée : écrite au commerce ;
- * - `adopt` — copie reçue, reprise avec les valeurs du référentiel restreintes ;
- * - `already_at_commerce` — déjà écrite au commerce : laissée telle quelle
- *   (c'est ce qui rend l'application rejouable) ;
- * - `archived_unchanged` — retirée des deux côtés : figée ;
- * - `mirror_only` — au miroir, absente du référentiel : listée, pas inventée ;
- * - `blocked` — un problème l'empêche (`problems`) : l'application refuse tout.
- */
-export type OperationMigrationOutcome =
-  "create" | "adopt" | "already_at_commerce" | "archived_unchanged" | "mirror_only" | "blocked";
-
-/** Ce que la réception avait décidé — versé dans l'opération, tracé au journal. */
-export interface OperationMigrationRestrictionView {
-  readonly isHidden: boolean;
-  readonly orderUntil: string | null;
-  readonly audience: CommerceOperationAudience | null;
-  readonly hiddenSkus: readonly string[];
-  readonly decidedBy: string | null;
-  readonly decidedAt: string;
-}
-
-/** Une opération dans l'aperçu ou le relevé. */
-export interface OperationMigrationLineView {
-  readonly key: string;
-  /** Le nom français, la clé à défaut. */
-  readonly name: string;
-  readonly outcome: OperationMigrationOutcome;
-  readonly fields: readonly OperationMigrationFieldView[];
-  /** Les SKU de la sélection que le commerce ne connaît pas — écartés, comme le push le faisait. */
-  readonly droppedSkus: readonly string[];
-  readonly restriction: OperationMigrationRestrictionView | null;
-  /** Ce qui bloque, en clair. Vide sauf `blocked`. */
-  readonly problems: readonly string[];
-}
-
-/** L'aperçu (avant) ou le relevé (après) de la migration des opérations. */
-export interface OperationsMigrationReport {
-  /** Instant ISO de la lecture. */
-  readonly readAt: string;
-  readonly counts: {
-    readonly referential: number;
-    readonly mirror: number;
-    /** Surcharges qui restreignent quelque chose. */
-    readonly restrictions: number;
-    /** `create` + `adopt` : ce qu'une application écrirait. */
-    readonly toWrite: number;
-    readonly alreadyAtCommerce: number;
-    readonly mirrorOnly: number;
-    readonly blocked: number;
-  };
-  /** `true` : au moins une ligne `blocked` — l'application refuse (409). */
-  readonly blocked: boolean;
-  readonly operations: readonly OperationMigrationLineView[];
 }

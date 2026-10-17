@@ -9,15 +9,9 @@ import {
   type LibraryImage,
 } from "../../../channels/media/operation-image-library.js";
 import { OperationKeyTakenError } from "../../../domain/errors/operation-errors.js";
-import { MirroredOperationsReader } from "../../../domain/ports/mirrored-operations.reader.js";
-import { OperationAdoption } from "../../../domain/ports/operation-adoption.js";
 import { OperationReader } from "../../../domain/ports/operation.reader.js";
 import { OperationRepository } from "../../../domain/ports/operation.repository.js";
 import { OperationSaleReader } from "../../../domain/ports/operation-sale.reader.js";
-import type {
-  MigrationRestriction,
-  MirroredOperation,
-} from "../../../domain/services/operation-migration.js";
 import { OperationSkuCatalogue } from "../../../domain/ports/operation-sku.catalogue.js";
 
 /**
@@ -196,43 +190,5 @@ export class SellingSkus extends OperationSaleReader {
 
   sellingAmong(skus: readonly string[]): Promise<ReadonlySet<string>> {
     return Promise.resolve(new Set(skus.filter((sku) => this.selling.includes(sku))));
-  }
-}
-
-/**
- * Le miroir lu sur le dépôt en mémoire — la table que la migration écrit —,
- * avec les surcharges posées à la main : relire après l'application montre
- * donc ce qu'elle a écrit.
- */
-export class MirrorOfOperations extends MirroredOperationsReader {
-  constructor(
-    private readonly operations: InMemoryOperations,
-    private readonly restrictions: ReadonlyMap<string, MigrationRestriction> = new Map(),
-  ) {
-    super();
-  }
-
-  list(): Promise<readonly MirroredOperation[]> {
-    return Promise.resolve(
-      [...this.operations.rows.values()].map((operation) => ({
-        record: recordOf(operation),
-        restriction: this.restrictions.get(operation.key) ?? null,
-      })),
-    );
-  }
-}
-
-/** La migration écrit dans le même dépôt en mémoire ; compte ses écritures. */
-export class InMemoryAdoption extends OperationAdoption {
-  adopted: string[] = [];
-
-  constructor(private readonly operations: InMemoryOperations) {
-    super();
-  }
-
-  adopt(operation: Operation): Promise<void> {
-    this.adopted.push(operation.key);
-    this.operations.rows.set(operation.key, Operation.reconstitute(recordOf(operation)));
-    return Promise.resolve();
   }
 }

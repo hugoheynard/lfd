@@ -16,12 +16,11 @@ export type {
   Product,
   ProductKind,
   ProductStatus,
-  SalesChannels,
   VatRate,
   Variant,
 } from '../data/models';
 
-import type { Category, Product, ProductKind, SalesChannels, VatRate } from '../data/models';
+import type { Category, Product, ProductKind, VatRate } from '../data/models';
 
 /**
  * Façade catalogue — délègue au backend Prisma via des **stores réactifs**
@@ -71,14 +70,12 @@ export class CatalogueApi {
     categoryId: string;
     allergens?: string[];
     mayContain?: string[];
-    channelsOverride?: SalesChannels | null;
     priceEur?: number;
     weightGrams?: number;
     handleFr?: string;
     descriptionFr?: string;
   }): Promise<{ id: string }> {
-    // `channelsOverride` / `handleFr` différés : les canaux relèvent du contexte
-    // commerce et le slug est dérivé côté backend.
+    // `handleFr` différé : le slug est dérivé côté backend.
     return this.productsApi.create({
       name: payload.name,
       kind: payload.kind,

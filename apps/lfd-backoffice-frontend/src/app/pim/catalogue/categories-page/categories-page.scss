@@ -1,9 +1,3 @@
-.chan-pills {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-}
-
 .muted {
   color: var(--fold-color-text-muted);
   font-size: var(--fold-text-md);
@@ -62,10 +56,6 @@
 .cat-card-more {
   flex: none;
   color: var(--fold-color-text-muted);
-}
-
-.cat-card-channels {
-  display: block;
 }
 
 .cat-card-meta {

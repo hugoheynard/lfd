@@ -71,10 +71,6 @@
       }
     }
   }
-
-  @if (canWrite()) {
-    <app-operations-migration-card (applied)="load()" />
-  }
 </fold-page-layout>
 
 <ng-template #row let-operation>

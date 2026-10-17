@@ -127,11 +127,11 @@ describe('CommerceOperationPage', () => {
     expect(api.writes).toEqual([]);
   });
 
-  it('une copie pas encore reprise ne se modifie pas', async () => {
+  it('une copie jamais reprise ne se modifie pas', async () => {
     const api = new FakeOperations();
     api.row = commerceOperation({ heldAtCommerce: false });
     const { page, root } = await render(api);
-    expect(root.textContent).toContain('pas encore reprise');
+    expect(root.textContent).toContain('jamais reprise');
     expect(page['locked']()).toBe(true);
   });
 

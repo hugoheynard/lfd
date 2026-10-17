@@ -12,8 +12,10 @@
 > interrupteurs sont retirés du code par X1 de
 > [`plan-sans-interrupteurs.md`](plan-sans-interrupteurs.md) (§6), puis le
 > push, la réception, les versions, la parité, la santé et la surcharge des
-> opérations par X2 (2026-10-17, §6).
-> **Pas bâti** : W, 4, 5 (§9).
+> opérations par X2 (2026-10-17, §6), puis les opérations du référentiel, le
+> lien au canal par fiche et l'édition de la matrice des canaux par X4
+> (2026-10-17, §6).
+> **Pas bâti** : W, 4, et ce qui reste du lot 5 (§9).
 
 ## En une phrase
 
@@ -156,15 +158,15 @@ verrouiller le catalogue entier. Elle est appelée **après** le `uow.run`, et
 une fiche en échec est journalisée et listée sans faire échouer le geste,
 déjà validé (`apps/lfd-api/src/pim/channels/b2b-platform/products/catalog-reemission.service.ts:66-80`).
 
-| Déclencheur                                                                 | Appel                                                                                                                                                               |
-| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| audience, taux, canaux d'une famille                                        | `productsOfCategories` (`apps/lfd-api/src/pim/catalogue/category/application/set-category-audience.ts:50`, `set-category-vat.ts:57`, `set-category-channels.ts:63`) |
-| modifier ou retirer un taux de TVA                                          | `everything` (`apps/lfd-api/src/pim/vat-rates/application/update-vat-rate.ts:51`, `remove-vat-rate.ts:43`)                                                          |
-| modifier ou retirer un contexte de vente                                    | `everything` (`apps/lfd-api/src/pim/sales-contexts/application/update-sales-context.ts:63`, `remove-sales-context.ts:55`)                                           |
-| le référentiel d'allergènes (7 gestes)                                      | `everything` (par exemple `apps/lfd-api/src/pim/allergens/application/revise-allergen-entry.ts:74`)                                                                 |
-| changer la méthode du prix pro                                              | `everything` (`apps/lfd-api/src/pim/accounting-rules/application/choose-pro-price-method.ts:81`)                                                                    |
-| changer le rapport pro — **seulement** au premier réglage ou hors `entered` | `everything` (`apps/lfd-api/src/pim/accounting-rules/application/set-pro-price-ratio.ts:71-75`)                                                                     |
-| `POST /pim/channels/b2b/reemit` — une fiche, ou tout                        | `apps/lfd-api/src/pim/channels/b2b-platform/products/reemit.controller.ts:27-35`                                                                                    |
+| Déclencheur                                                                 | Appel                                                                                                                                                                         |
+| --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| audience, taux d'une famille (ses canaux, jusqu'à X4)                       | `productsOfCategories` (`apps/lfd-api/src/pim/catalogue/category/application/set-category-audience.ts:50`, `set-category-vat.ts:57`, set-category-channels.ts (retiré en X4)) |
+| modifier ou retirer un taux de TVA                                          | `everything` (`apps/lfd-api/src/pim/vat-rates/application/update-vat-rate.ts:51`, `remove-vat-rate.ts:43`)                                                                    |
+| modifier ou retirer un contexte de vente                                    | `everything` (`apps/lfd-api/src/pim/sales-contexts/application/update-sales-context.ts:63`, `remove-sales-context.ts:55`)                                                     |
+| le référentiel d'allergènes (7 gestes)                                      | `everything` (par exemple `apps/lfd-api/src/pim/allergens/application/revise-allergen-entry.ts:74`)                                                                           |
+| changer la méthode du prix pro                                              | `everything` (`apps/lfd-api/src/pim/accounting-rules/application/choose-pro-price-method.ts:81`)                                                                              |
+| changer le rapport pro — **seulement** au premier réglage ou hors `entered` | `everything` (`apps/lfd-api/src/pim/accounting-rules/application/set-pro-price-ratio.ts:71-75`)                                                                               |
+| `POST /pim/channels/b2b/reemit` — une fiche, ou tout                        | `apps/lfd-api/src/pim/channels/b2b-platform/products/reemit.controller.ts:27-35`                                                                                              |
 
 « Tout » émet les familles d'abord, puis les fiches, puis les règles en
 dernier : c'est le fait d'une fiche qui apprend à la plateforme l'identifiant
@@ -424,8 +426,9 @@ répondent 404, comme toute route inconnue.
 **Restent en base, sans écrivain** : `catalog_deliveries`, `catalog_versions`
 et `orders.catalog_version_id` (les commandes passées gardent la leur),
 `catalog_operation_overrides`, `catalog_revision_publications` (plus lue non plus depuis le 2026-10-17),
-`b2b_channel_binding.last_pushed_at`. La liste des tables mortes est l'objet
-de X5.
+`b2b_channel_binding.last_pushed_at` — et depuis X4, `b2b_channel_binding`
+entière, `pim.operation` et `pim.operation_item`, sans lecteur ni écrivain.
+La liste des tables mortes est l'objet de X5.
 
 **Ce qui reste du push, et pourquoi** :
 
@@ -440,9 +443,40 @@ de X5.
 - **La frise d'une fiche** (`GET /pim/channels/b2b/products/:id/delivery`, son
   écran et son port de retour vers le miroir) est **retirée le 2026-10-17** :
   la route répond 404.
-- **`projectCatalog`** (la projection d'un instantané entier) n'a plus
-  d'appelant de production ; ses tests couvrent encore `projectVariant`, que
-  les faits emploient.
+- **`projectCatalog`** (la projection d'un instantané entier) est **retirée
+  en X4** ; `projectVariant`, que les faits emploient, reste avec sa suite.
+
+### Ce que X4 a retiré (2026-10-17)
+
+- **Les opérations au référentiel** : `pim/operations/**` (agrégat, gestes,
+  routes `/pim/operations`, dépôts, refus permanent posé par X1), la
+  projection des opérations du push, le fait `pim.operation_image_changed` et
+  son abonné inerte côté commerce, le port qui exposait les opérations du
+  référentiel au commerce, la **reprise** (`GET`/`POST
+/admin/operations/migration`, ses lecteurs, sa combinaison de la
+  surcharge, sa carte sur l'écran « Opérations ») et l'agrégat
+  `CatalogOperation` (recevoir, rafraîchir, retirer) qui n'avait plus
+  d'écrivain. Une copie reçue jamais reprise reste en lecture seule (409
+  `operations.awaiting_migration`, message réécrit).
+- **Le lien au canal par fiche** : `GET`/`PUT /pim/channels/b2b/products`,
+  `B2bMembershipService`, la colonne « Boutique B2B » et le menu « Vendre sur
+  la boutique B2B » de la liste des produits, l'encart « Diffusion par canal »
+  (`integrations-form`) de la fiche, et la **bascule vers l'audience**
+  (`/pim/channels/b2b/audience-switch(-preview)` et sa carte sur la page
+  Intégrations), qui comparait ce lien à la matrice — elle était faite.
+- **L'édition de la matrice des canaux** : `PUT /pim/catalogue/categories/:id/channels`
+  et `PUT /pim/catalogue/products/:id/channels`, leurs gestes, la garde
+  « ce point de vente offre-t-il ce contexte ? », l'éditeur (`ChannelMatrix`),
+  la redéfinition par fiche, les colonnes « Canaux » des listes, « Vendue
+  depuis » et « Au moins un canal » du rail d'une famille, l'avertissement
+  « vendue dans aucun contexte » du rail d'une fiche.
+
+**Reste, en lecture seule** : la matrice **figée** en base
+(`category_channel`, `product_channel_override`, `product_channel`). La
+révision la lit encore pour son champ `soldContexts` ; le point de vente la
+lit pour compter ses usages et refuser de cesser d'offrir un contexte encore
+coché — décision attendue de Hugo (X4, rapport). **Les contextes de vente et
+la TVA par contexte ne bougent pas.**
 
 ## 7. Les écrans
 
@@ -488,11 +522,11 @@ Tous décrits dans [`plan-catalogue-synchronise-par-audience.md`](plan-catalogue
   changé, puis le laisser relire `GET /shop/catalogue`. Rien n'existe ;
 - **lot 4** — émissions en lot (TVA, limites) et révisions automatiques.
   Les opérations ne passent pas en faits : elles passent au commerce ;
-- **lot 5** — le ménage : le push et la réception sont partis (X2) ; restent
-  la matrice des canaux et le point de vente (encore là :
-  `apps/lfd-api/src/pim/channels/b2b-platform/membership/membership.controller.ts`,
-  `apps/lfd-api/src/pim/points-of-sale/points-of-sale.module.ts`). Il est
-  repris par X4 et X5 de [`plan-sans-interrupteurs.md`](plan-sans-interrupteurs.md).
+- **lot 5** — le ménage : le push et la réception sont partis (X2), le lien
+  au canal et l'édition de la matrice (X4). Restent la matrice figée en base
+  (lue par la révision et par le point de vente, §6) et le point de vente
+  (`apps/lfd-api/src/pim/points-of-sale/points-of-sale.module.ts`), dont le
+  sort est à décider ; puis X5 de [`plan-sans-interrupteurs.md`](plan-sans-interrupteurs.md).
 
 ## 10. Ce qui n'est pas vérifié
 

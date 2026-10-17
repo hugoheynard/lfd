@@ -18,7 +18,6 @@ const stubAdminVerifier = {
 };
 
 const SHOPS = "/pim/points-of-sale";
-const CATEGORIES = "/pim/catalogue/categories";
 
 let ctx: E2eContext;
 
@@ -141,59 +140,17 @@ describe("le nom d'un point de vente est unique", () => {
   });
 });
 
+/**
+ * Le compte se lit dans la matrice des canaux, qui ne s'écrit plus depuis X4
+ * (`plan-sans-interrupteurs.md`) : les cas qui cochaient un point de vente
+ * avant de le compter ou de le supprimer sont partis avec la route. Reste ce
+ * qu'un point de vente neuf rend.
+ */
 describe("l'usage d'un point de vente voyage avec la liste", () => {
-  /**
-   * Le compte se lit dans les grilles `jsonb` des familles. Aucun test unitaire
-   * ne touche ce parcours : les doubles rendent une carte fixée par le test.
-   */
-  it("compte les familles qui le cochent, et rend 0 sinon", async () => {
+  it("rend 0 pour un point de vente qu'aucune famille ne coche, et le laisse supprimer", async () => {
     const location = await openShop({ label: "Village" });
-    const other = await openShop({ label: "Labo" });
-    const category = jsonBody<{ id: string }>(
-      await staff()
-        .post(CATEGORIES)
-        .send({ name: { fr: "Viennoiseries" } }),
-    ).id;
-    await staff()
-      .put(`${CATEGORIES}/${category}/channels`)
-      .send([{ pointOfSaleId: location, context: "takeaway" }])
-      .expect(200);
 
-    expect((await readShop(location)).usedByCategories).toBe(1);
-    expect((await readShop(other)).usedByCategories).toBe(0);
-  });
-
-  it("refuse de supprimer un point de vente encore coché", async () => {
-    const location = await openShop({ label: "Village" });
-    const category = jsonBody<{ id: string }>(
-      await staff()
-        .post(CATEGORIES)
-        .send({ name: { fr: "Viennoiseries" } }),
-    ).id;
-    await staff()
-      .put(`${CATEGORIES}/${category}/channels`)
-      .send([{ pointOfSaleId: location, context: "takeaway" }])
-      .expect(200);
-
-    const response = await staff().delete(`${SHOPS}/${location}`);
-
-    expect(response.status).toBe(409);
-    expect(jsonBody<{ code: string }>(response).code).toBe("points_of_sale.point_of_sale.in_use");
-  });
-
-  it("accepte la suppression une fois décoché", async () => {
-    const location = await openShop({ label: "Village" });
-    const category = jsonBody<{ id: string }>(
-      await staff()
-        .post(CATEGORIES)
-        .send({ name: { fr: "Viennoiseries" } }),
-    ).id;
-    await staff()
-      .put(`${CATEGORIES}/${category}/channels`)
-      .send([{ pointOfSaleId: location, context: "takeaway" }])
-      .expect(200);
-    await staff().put(`${CATEGORIES}/${category}/channels`).send([]).expect(200);
-
+    expect((await readShop(location)).usedByCategories).toBe(0);
     await staff().delete(`${SHOPS}/${location}`).expect(200);
   });
 });
@@ -335,66 +292,6 @@ describe("les jetons de QR d'une table", () => {
  * étrangère `Restrict` de `category_channel`, l'index que le dépôt des
  * familles écrit dans la même transaction que la colonne `channel_preset`.
  */
-describe("la matrice de canaux suit la grille", () => {
-  it("se vide quand la famille décoche, et laisse alors supprimer", async () => {
-    // Les DEUX modes : depuis p-2, on ne vend pas un contexte là où le point de
-    // vente ne l'offre pas — recocher « sur place » sur une boutique sans salle
-    // est refusé, et c'est le mur qu'on veut.
-    const location = await openShop({ label: "Village", contexts: ["takeaway", "eatIn"] });
-    const category = jsonBody<{ id: string }>(
-      await staff()
-        .post(CATEGORIES)
-        .send({ name: { fr: "Viennoiseries" } }),
-    ).id;
-    const channels = (sold: { pointOfSaleId: string; context: string }[]) =>
-      staff().put(`${CATEGORIES}/${category}/channels`).send(sold).expect(200);
-
-    await channels([{ pointOfSaleId: location, context: "takeaway" }]);
-    expect(await refCount(location)).toBe(1);
-
-    // Recocher le MÊME point de vente dans un autre contexte ne doit pas doubler
-    // la référence : le dépôt efface puis réécrit, il n'ajoute pas.
-    await channels([{ pointOfSaleId: location, context: "eatIn" }]);
-    expect(await refCount(location)).toBe(1);
-
-    await channels([]);
-    expect(await refCount(location)).toBe(0);
-    await staff().delete(`${SHOPS}/${location}`).expect(200);
-  });
-
-  /**
-   * Supprimer la famille emporte ses références (`Cascade`) — sans quoi une
-   * famille disparue continuerait de bloquer la suppression d'un point de vente,
-   * et rien à l'écran ne dirait pourquoi.
-   */
-  it("disparaît avec la famille qui le portait", async () => {
-    const location = await openShop({ label: "Village" });
-    const category = jsonBody<{ id: string }>(
-      await staff()
-        .post(CATEGORIES)
-        .send({ name: { fr: "Viennoiseries" } }),
-    ).id;
-    await staff()
-      .put(`${CATEGORIES}/${category}/channels`)
-      .send([{ pointOfSaleId: location, context: "takeaway" }])
-      .expect(200);
-
-    await ctx.prisma.category.delete({ where: { id: category } });
-
-    expect(await refCount(location)).toBe(0);
-    await staff().delete(`${SHOPS}/${location}`).expect(200);
-  });
-});
-
-/** Combien de FAMILLES vendent depuis ce lieu — pas combien de lignes. */
-async function refCount(pointOfSaleId: string): Promise<number> {
-  const rows = await ctx.prisma.categoryChannel.groupBy({
-    by: ["categoryId"],
-    where: { pointOfSaleId },
-  });
-  return rows.length;
-}
-
 /**
  * L'**offre** — ce que ce point de vente propose.
  *

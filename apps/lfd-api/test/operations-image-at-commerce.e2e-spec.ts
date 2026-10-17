@@ -1,20 +1,11 @@
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { ReferentialOperationWriting } from "../src/pim/operations/domain/ports/referential-operation-writing.js";
 import { MediaStore } from "../src/platform/storage/media-store.js";
-import {
-  bootstrapE2e,
-  daysAgo,
-  E2E_STAFF_SUB,
-  jsonBody,
-  serviceDay,
-  type E2eContext,
-} from "./e2e-harness.js";
+import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { InMemoryMediaStore } from "./in-memory-media-store.js";
 import {
   depositImage,
   noelBody,
   OPERATIONS,
-  SwitchableReferentialWriting,
   stubAdminVerifier,
 } from "./operations-at-commerce-scene.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
@@ -26,19 +17,17 @@ import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
  *
  * Ce que seul ce niveau prouve : que les fils sont BRANCHÉS — le port
  * « décris-moi cette image » sur le vrai fonds, le porteur du commerce dans le
- * composite de la médiathèque à la place des copies, le porteur des
- * opérations du référentiel retiré, et l'abonné du point focal sur la vraie
- * boîte d'envoi.
+ * composite de la médiathèque à la place des copies, et l'abonné du point
+ * focal sur la vraie boîte d'envoi. (Les opérations du référentiel, et leur
+ * porteur, sont parties en X4 de `plan-sans-interrupteurs.md`.)
  */
 
 let ctx: E2eContext;
-const referential = new SwitchableReferentialWriting();
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
-      { token: ReferentialOperationWriting, value: referential },
       { token: MediaStore, value: new InMemoryMediaStore() },
     ],
   });
@@ -152,26 +141,11 @@ describe("l'opération du commerce, porteur de la médiathèque", () => {
       .expect(409);
   });
 
-  /**
-   * 🔴 Ouvert, `pim.operation` est une table qu'on ne sert plus : la compter
-   * garderait « employée » une image que personne n'affiche.
-   */
-  it("ne compte plus les opérations du référentiel", async () => {
-    const a = await depositImage(ctx, 1001, null);
-    await pimOperationShowing("paques", a);
-
-    expect(await carriersOf(a)).toEqual([]);
-    await staff()
-      .delete(`/media?url=${encodeURIComponent(a)}`)
-      .expect(204);
-  });
-
   /** Lot 3 : suivre un remplacement n'est pas une édition — la médiathèque le trace, l'opération ne s'en signe pas. */
-  it("un remplacement ÉCRIT l'opération du commerce (sans la signer), et laisse le référentiel", async () => {
+  it("un remplacement ÉCRIT l'opération du commerce, sans la signer", async () => {
     const a = await depositImage(ctx, 1001, { x: 0.2, y: 0.8 });
     const b = await depositImage(ctx, 1002, { x: 0.6, y: 0.4 });
     await noelShowing(a);
-    await pimOperationShowing("paques", a);
     await ctx.prisma.catalogOperation.update({
       where: { key: "noel-2026" },
       data: { writtenBy: null },
@@ -180,8 +154,6 @@ describe("l'opération du commerce, porteur de la médiathèque", () => {
     await staff().post("/media/replace").send({ from: a, to: b }).expect(204);
 
     expect(await noel()).toMatchObject({ imageUrl: b, imageAlt: null, writtenBy: null });
-    const pim = await ctx.prisma.operation.findUniqueOrThrow({ where: { key: "paques" } });
-    expect(pim.imageUrl).toBe(a);
 
     // Le point de B arrive par `media.asset_described`, comme pour la vitrine.
     await settle();
@@ -201,24 +173,3 @@ describe("l'opération du commerce, porteur de la médiathèque", () => {
     expect(await noel()).toMatchObject({ imageFocalX: 0.9, imageFocalY: 0.1 });
   });
 });
-
-/** Une opération du référentiel, préparée interrupteur fermé — ouvert, ses routes refusent (lot 3). */
-async function pimOperationShowing(key: string, url: string): Promise<void> {
-  await referential.openFor(() =>
-    staff()
-      .post("/pim/operations")
-      .send({
-        key,
-        name: { fr: "Pâques" },
-        lede: null,
-        image: { url, alt: "" },
-        announceFrom: daysAgo(-30),
-        orderFrom: daysAgo(-45),
-        orderUntil: daysAgo(-80),
-        pickupFrom: serviceDay(78),
-        pickupUntil: serviceDay(84),
-        audience: "both",
-      })
-      .expect(201),
-  );
-}

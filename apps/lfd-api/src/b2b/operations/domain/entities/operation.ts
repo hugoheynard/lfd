@@ -1,5 +1,4 @@
 import {
-  OperationAlreadyAtCommerceError,
   OperationArchivedError,
   OperationAwaitingMigrationError,
 } from "../errors/operation-errors.js";
@@ -19,7 +18,6 @@ import type {
   OperationRecord,
   OperationSnapshot,
   PrepareOperation,
-  ReferentialOperation,
   WriteStamp,
 } from "./operation-shapes.js";
 import { operationText } from "../value-objects/operation-text.js";
@@ -31,7 +29,6 @@ export type {
   OperationRecord,
   OperationSnapshot,
   PrepareOperation,
-  ReferentialOperation,
   WriteStamp,
 } from "./operation-shapes.js";
 
@@ -100,33 +97,6 @@ export class Operation {
       archivedAt: record.archivedAt,
       lastWrite: record.lastWrite,
     });
-  }
-
-  /**
-   * **Née de la migration** : une opération du référentiel que le commerce
-   * n'avait jamais reçue (plan, O4.2). Signée de qui migre.
-   */
-  static fromReferential(values: ReferentialOperation, stamp: WriteStamp): Operation {
-    return new Operation(OperationKey.of(values.key).value, stateOf(values, stamp));
-  }
-
-  /**
-   * **La migration reprend une copie reçue** : l'opération prend les valeurs
-   * du référentiel restreintes par la surcharge, et devient celle du commerce.
-   *
-   * Une seule fois : une opération déjà écrite au commerce a pu y être
-   * modifiée depuis, et la migration l'écraserait — c'est ce qui la rend
-   * rejouable sans dommage.
-   *
-   * @throws {OperationAlreadyAtCommerceError} le commerce l'a déjà écrite.
-   * @throws {OperationArchivedError} retirée : elle ne change plus.
-   */
-  adoptReferential(values: ReferentialOperation, stamp: WriteStamp): void {
-    if (this.state.lastWrite !== null) {
-      throw new OperationAlreadyAtCommerceError(this.key);
-    }
-    this.ensureActive();
-    this.state = stateOf({ ...values, key: this.key }, stamp);
   }
 
   /** Réécrit le nom, l'accroche et l'image. @throws {OperationArchivedError} */
@@ -266,20 +236,6 @@ export class Operation {
       throw new OperationArchivedError(this.key);
     }
   }
-}
-
-function stateOf(values: ReferentialOperation, stamp: WriteStamp): OperationState {
-  return {
-    presentation: presentationOf(values),
-    schedule: OperationSchedule.of(values.schedule),
-    // Le référentiel ne connaît pas ce réglage : la reprise prend le défaut.
-    showsOrderUntilTime: true,
-    audience: operationAudience(values.audience),
-    selection: OperationSelection.of(values.skus),
-    hidden: values.hidden,
-    archivedAt: values.archivedAt,
-    lastWrite: stamp,
-  };
 }
 
 function presentationOf(raw: OperationPresentationInput): OperationPresentation {

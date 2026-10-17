@@ -9,7 +9,6 @@ import {
 } from "../../../shared/domain/value-objects/localized-text.js";
 import {
   emptySalesChannels,
-  normalizeSalesChannels,
   type SalesChannels,
 } from "../../../shared/domain/value-objects/sales-channels.js";
 import type { SalesContext } from "../../../../sales-contexts/domain/value-objects/sales-context.js";
@@ -69,7 +68,7 @@ export class Category {
     private parentIdValue: string | null,
     private positionValue: number,
     private archivedValue: boolean,
-    private channelPresetValue: SalesChannels,
+    private readonly channelPresetValue: SalesChannels,
     private vatByContextValue: ContextVat,
     private audienceValue: Audience,
   ) {}
@@ -146,10 +145,10 @@ export class Category {
   }
 
   /**
-   * Ce que la famille vend — lu, jamais modifié d'ici.
-   *
-   * Une fiche qui veut déroger au taux de sa famille doit savoir si le contexte
-   * est vendu ; elle ne voit pas sa famille, donc quelqu'un le lui montre.
+   * Ce que la famille vendait — **figé** : la matrice des canaux ne s'écrit
+   * plus depuis X4 (`documentation/catalogue/plan-sans-interrupteurs.md`).
+   * Seule la révision la lit encore (`soldContexts`), en attendant que son
+   * sort soit tranché.
    */
   get channelPreset(): SalesChannels {
     return this.channelPresetValue;
@@ -199,18 +198,6 @@ export class Category {
   placeAt(position: number): void {
     this.refuseIfArchived();
     this.positionValue = position;
-  }
-
-  /**
-   * Change ce qui est vendu — et **ne touche à aucun taux**.
-   *
-   * Les taux ne dépendent plus des canaux (Hugo, 2026-10-15 : « n'importe
-   * quelle fiche devrait être en capacité de servir n'importe quel contexte ») :
-   * fermer un canal n'efface plus rien, et le rouvrir retrouve le taux posé.
-   */
-  setChannels(channels: SalesChannels): void {
-    this.refuseIfArchived();
-    this.channelPresetValue = normalizeSalesChannels(channels);
   }
 
   /**

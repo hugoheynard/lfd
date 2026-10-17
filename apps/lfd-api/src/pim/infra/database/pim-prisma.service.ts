@@ -66,16 +66,12 @@ export abstract class PimPrismaService {
   abstract readonly mediaAsset: PrismaService["mediaAsset"];
   abstract readonly productMedia: PrismaService["productMedia"];
   abstract readonly categoryMedia: PrismaService["categoryMedia"];
-  abstract readonly b2bChannelBinding: PrismaService["b2bChannelBinding"];
   abstract readonly appellation: PrismaService["appellation"];
   abstract readonly ingredient: PrismaService["ingredient"];
   abstract readonly productIngredient: PrismaService["productIngredient"];
   abstract readonly allergenCategory: PrismaService["allergenCategory"];
   abstract readonly allergenEntry: PrismaService["allergenEntry"];
   abstract readonly ingredientAllergen: PrismaService["ingredientAllergen"];
-  /** Les opérations datées et leur sélection (`pim/operations/`, 2026-09-24). */
-  abstract readonly operation: PrismaService["operation"];
-  abstract readonly operationItem: PrismaService["operationItem"];
 
   /**
    * Le SQL écrit à la main — pour **un seul usage** à ce jour (vérifié le

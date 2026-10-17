@@ -306,17 +306,13 @@ describe("la tranche fiscale — ce que la comptabilité relit", () => {
  * le fait tel que le handler l'écrit, pas tel qu'une fixture l'imagine.
  */
 describe("la tranche fiscale — ce qui touche au taux, par les gestes réels", () => {
-  /** Une famille vendue en B2B — le contexte et son point de vente sont semés. */
+  /** Une famille — le contexte `b2b` est semé ; la matrice des canaux ne s'écrit plus (X4). */
   async function familySoldToProfessionals(): Promise<string> {
     const response = await as("staff-e2e")
       .post(CATEGORIES)
       .send({ name: { fr: "Viennoiseries" } })
       .expect(201);
     const id = jsonBody<{ id: string }>(response).id;
-    await as("staff-e2e")
-      .put(`${CATEGORIES}/${id}/channels`)
-      .send([{ pointOfSaleId: "pos_b2b", context: "b2b" }])
-      .expect(200);
     return id;
   }
 
@@ -396,30 +392,6 @@ describe("la tranche fiscale — ce qui touche au taux, par les gestes réels", 
     expect(scope.events[0]).toMatchObject({
       type: "vat_rate.rate_changed",
       payload: { blast: { families: { b2b: 1 } }, contextLabels: { b2b: "B2B" } },
-    });
-  });
-
-  /**
-   * Régression de règle : fermer un canal effaçait le taux du contexte fermé,
-   * et la tranche fiscale en rendait la trace. Depuis le 2026-10-15, la TVA ne
-   * dépend plus des canaux (`plan-catalogue-synchronise-par-audience.md`) :
-   * fermer un canal ne touche à aucun taux, et la tranche fiscale n'a rien à
-   * rendre — `channels_changed`, qui ne porte que les canaux, reste dehors.
-   */
-  it("ne rend rien quand on ferme un canal : le taux reste, aucun fait fiscal", async () => {
-    const category = await familySoldToProfessionals();
-    const rate = await rateWrittenByAccountant("Réduit", 5.5);
-    await as("staff-e2e")
-      .put(`${CATEGORIES}/${category}/vat`)
-      .send({ vatByContext: { b2b: rate } })
-      .expect(200);
-
-    await as("staff-e2e").put(`${CATEGORIES}/${category}/channels`).send([]).expect(200);
-
-    const page = await readTax({ subjectType: "product_category", subjectId: category });
-    expect(typesOf(page.events)).toEqual(["product_category.vat_changed"]);
-    expect(page.events[0]?.payload).toMatchObject({
-      vatByContext: { b2b: { from: null, to: { id: rate, name: "Réduit" } } },
     });
   });
 

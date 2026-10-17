@@ -1,11 +1,7 @@
-import { PointOfSaleReader } from "../../../points-of-sale/domain/ports/point-of-sale.reader.js";
 import { contextLabelsOf } from "../../../sales-contexts/application/context-labels.js";
-import { SalesContextNotFoundError } from "../../../sales-contexts/domain/errors/sales-context-errors.js";
 import { SalesContextRegistry } from "../../../sales-contexts/domain/ports/sales-context.registry.js";
 import { VatRateNotFoundError } from "../../../vat-rates/domain/errors/vat-rate-errors.js";
 import { VatRateRepository } from "../../../vat-rates/domain/ports/vat-rate.repository.js";
-import { UnknownPointOfSaleError } from "../domain/errors/channel-errors.js";
-import type { SalesChannels } from "../domain/value-objects/sales-channels.js";
 
 /**
  * **Les noms que les faits du catalogue figent** (D5 du plan des phrases du
@@ -13,9 +9,9 @@ import type { SalesChannels } from "../domain/value-objects/sales-channels.js";
  * le journal dit ce qui était vrai quand c'est arrivé. Un taux renommé depuis
  * se lit sous son ancien nom sur les lignes d'avant.
  *
- * Partagé par les familles et les fiches, qui citent les mêmes taux et la
- * même matrice : deux façons de les nommer finiraient par raconter deux
- * histoires.
+ * Partagé par les familles et les fiches, qui citent les mêmes taux : deux
+ * façons de les nommer finiraient par raconter deux histoires. (La matrice
+ * des canaux, qu'elles citaient aussi, ne s'écrit plus depuis X4.)
  *
  * Un objet cité introuvable est un **refus**, pas un nom inventé : la base
  * refuserait de toute façon l'écriture qui le cite (clé étrangère), et un
@@ -93,41 +89,4 @@ export async function vatChangePayload(
     vatByContext: await namedVatChange(change, rates),
     contextLabels: await contextLabelsOf(contexts, Object.keys(change)),
   };
-}
-
-/** Une ligne de la matrice des canaux, nommée. */
-export interface NamedChannel {
-  readonly pointOfSale: NamedRef;
-  readonly context: NamedRef;
-}
-
-/**
- * De quoi nommer une matrice de canaux — lu UNE fois par geste, même quand il
- * nomme l'avant et l'après.
- *
- * L'`id` d'un contexte est sa **clé** : c'est sous elle que le contexte écrit
- * ses propres faits au journal.
- */
-export async function channelNamer(
-  points: PointOfSaleReader,
-  contexts: SalesContextRegistry,
-): Promise<(channels: SalesChannels) => readonly NamedChannel[]> {
-  const [allPoints, allContexts] = await Promise.all([points.listAll(), contexts.all()]);
-  const pointNames = new Map(allPoints.map((point) => [point.id, point.label] as const));
-  const contextNames = new Map(allContexts.map((context) => [context.key, context.label] as const));
-  return (channels) =>
-    channels.map((channel) => {
-      const point = pointNames.get(channel.pointOfSaleId);
-      if (point === undefined) {
-        throw new UnknownPointOfSaleError(channel.pointOfSaleId);
-      }
-      const context = contextNames.get(channel.context);
-      if (context === undefined) {
-        throw new SalesContextNotFoundError(channel.context);
-      }
-      return {
-        pointOfSale: { id: channel.pointOfSaleId, name: point },
-        context: { id: channel.context, name: context },
-      };
-    });
 }

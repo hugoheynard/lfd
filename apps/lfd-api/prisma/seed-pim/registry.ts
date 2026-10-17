@@ -1,17 +1,15 @@
 import type { CommandBus } from "@nestjs/cqrs";
 
 import { CreateCategoryCommand } from "../../src/pim/catalogue/category/application/create-category.js";
-import { SetCategoryChannelsCommand } from "../../src/pim/catalogue/category/application/set-category-channels.js";
 import { SetCategoryVatCommand } from "../../src/pim/catalogue/category/application/set-category-vat.js";
 import { OpenPointOfSaleCommand } from "../../src/pim/points-of-sale/application/open-point-of-sale.js";
 import { CreateSalesContextCommand } from "../../src/pim/sales-contexts/application/create-sales-context.js";
 import { ChooseProPriceMethodCommand } from "../../src/pim/accounting-rules/application/choose-pro-price-method.js";
 import { SetProPriceRatioCommand } from "../../src/pim/accounting-rules/application/set-pro-price-ratio.js";
 import { CreateVatRateCommand } from "../../src/pim/vat-rates/application/create-vat-rate.js";
-import type { SalesChannels } from "../../src/pim/catalogue/shared/domain/value-objects/sales-channels.js";
 import type { ContextVat } from "../../src/pim/catalogue/shared/domain/value-objects/context-vat.js";
 import type { PrismaService } from "../../src/platform/database/prisma.service.js";
-import type { CatalogueCorpus, CorpusChannel } from "./corpus.js";
+import type { CatalogueCorpus } from "./corpus.js";
 
 /**
  * Le **référentiel transverse** — contextes de vente, points de vente, taux,
@@ -197,16 +195,16 @@ async function seedCategories(
     }
   }
 
-  await applyCategoryMatrices(bus, corpus, { ...registry, categoriesByName: known });
+  await applyCategoryVat(bus, corpus, { ...registry, categoriesByName: known });
   return created;
 }
 
 /**
- * La matrice des familles est posée **après** que toutes existent : elle cite
- * des points de vente et des contextes, et l'ordre de création des familles ne
- * doit pas décider de ce qu'une famille vend.
+ * Les taux des familles, posés **après** que toutes existent. Leur matrice
+ * des canaux, que le corpus porte encore, n'est plus rejouée : elle ne s'écrit
+ * plus depuis X4 (`documentation/catalogue/plan-sans-interrupteurs.md`).
  */
-async function applyCategoryMatrices(
+async function applyCategoryVat(
   bus: CommandBus,
   corpus: CatalogueCorpus,
   registry: Registry,
@@ -216,33 +214,11 @@ async function applyCategoryMatrices(
     if (id === undefined) {
       continue;
     }
-    await bus.execute<SetCategoryChannelsCommand, void>(
-      new SetCategoryChannelsCommand(id, toSalesChannels(category.channels, registry)),
-    );
     const vat = toContextVat(category.vat, registry);
     if (Object.keys(vat).length > 0) {
       await bus.execute<SetCategoryVatCommand, void>(new SetCategoryVatCommand(id, vat));
     }
   }
-}
-
-/**
- * Une case dont le point de vente ou le contexte est inconnu de la cible est
- * **écartée**, pas devinée. Elle ferait échouer la commande à la première
- * vérification, et le seed s'arrêterait sur une famille au lieu de rejouer le
- * reste — or un référentiel partiel se complète, il ne se bloque pas.
- */
-export function toSalesChannels(
-  channels: readonly CorpusChannel[],
-  registry: Registry,
-): SalesChannels {
-  return channels.flatMap((cell) => {
-    const pointOfSaleId = registry.pointsByLabel.get(cell.pointOfSaleLabel);
-    if (pointOfSaleId === undefined || !registry.contextKeys.has(cell.context)) {
-      return [];
-    }
-    return [{ pointOfSaleId, context: cell.context }];
-  });
 }
 
 /** Même règle : un taux dont le nom est inconnu ne se remplace pas par un voisin. */

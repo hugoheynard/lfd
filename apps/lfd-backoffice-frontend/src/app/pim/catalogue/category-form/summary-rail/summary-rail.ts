@@ -3,7 +3,6 @@ import { ChangeDetectionStrategy, Component, computed, inject, output } from '@a
 import { LOCALES, SOURCE_LOCALE, type Locale } from '@lfd/pim-contracts';
 
 import {
-  FoldBadgeComponent,
   FoldCalloutComponent,
   FoldCardComponent,
   FoldChecklistComponent,
@@ -16,7 +15,6 @@ import {
 } from 'fold-ng';
 
 import { LOCALE_NAMES } from '../../../../shared/lang-switch/locale-names';
-import { PointOfSaleStore } from '../../../points-of-sale/point-of-sale-store';
 import { CategoryFormStore } from '../category-form-store';
 
 /** Les langues à traduire — toutes sauf la source, qui n'est pas une traduction. */
@@ -51,7 +49,6 @@ const STATE_LABELS: Readonly<Record<FoldChecklistState, string>> = {
   selector: 'app-category-summary-rail',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FoldBadgeComponent,
     FoldCalloutComponent,
     FoldCardComponent,
     FoldChecklistComponent,
@@ -64,7 +61,6 @@ const STATE_LABELS: Readonly<Record<FoldChecklistState, string>> = {
 })
 export class CategorySummaryRail {
   protected readonly store = inject(CategoryFormStore);
-  private readonly points = inject(PointOfSaleStore);
   protected readonly stateLabels = STATE_LABELS;
 
   /** L'archivage demandé — la page navigue, le rail ne connaît pas la route. */
@@ -78,13 +74,6 @@ export class CategorySummaryRail {
     this.ficheCount() === 1 ? 'fiche active' : 'fiches actives',
   );
 
-  /** Les points de vente qui vendent cette famille — NOMMÉS. « 2 points de
-   *  vente » oblige à ouvrir la section pour savoir lesquels. */
-  protected readonly sellingPoints = computed(() => {
-    const ids = new Set(this.store.channels().map((channel) => channel.pointOfSaleId));
-    return this.points.items().filter((point) => ids.has(point.id));
-  });
-
   // ── Complétude ────────────────────────────────────────────────────────────
 
   /** Ce qui rend une famille UTILISABLE. Rien d'autre ne pèse dans la barre. */
@@ -93,7 +82,6 @@ export class CategorySummaryRail {
     const vat = this.store.vat();
     return [
       { label: 'Nom', state: this.store.name.filled() ? 'done' : 'todo' },
-      { label: 'Au moins un canal', state: this.store.channels().length > 0 ? 'done' : 'todo' },
       {
         // Un taux PAR contexte en service, vendu ou non (2026-10-15) : un seul
         // manquant et la fiche ne peut pas servir ce contexte-là.

@@ -1,5 +1,4 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
-import { KnownPointsOfSale } from "../../../shared/application/__tests__/journal-name-doubles.js";
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
 import { VatRateNotFoundError } from "../../../../vat-rates/domain/errors/vat-rate-errors.js";
 import { VatRate } from "../../../../vat-rates/domain/entities/vat-rate.js";
@@ -9,11 +8,9 @@ import {
 } from "../../../../vat-rates/domain/ports/vat-rate.repository.js";
 import { UuidGenerator } from "../../../../../platform/id/uuid-generator.js";
 import { Category, type CategorySnapshot } from "../../domain/entities/category.js";
-import { UnknownPointOfSaleError } from "../../../shared/domain/errors/channel-errors.js";
 import {
   CategoryArchivedParentError,
   CategoryCycleError,
-  CategoryFrozenError,
   CategoryHasActiveChildrenError,
   CategoryHasActiveProductsError,
   CategoryNotFoundError,
@@ -29,22 +26,13 @@ import { CategoryEditorialRepository } from "../../domain/ports/category-editori
 import { CategoryRepository } from "../../domain/ports/category.repository.js";
 import type { CategoryEditorial } from "../../domain/value-objects/category-editorial.js";
 import type { MediaItem } from "../../../shared/domain/value-objects/media.js";
-import { PointOfSaleOfferReader } from "../../../shared/domain/ports/point-of-sale-offer.reader.js";
 import { ProductCountReader } from "../../domain/ports/product-count.reader.js";
-import type {
-  SalesChannels,
-  SoldChannel,
-} from "../../../shared/domain/value-objects/sales-channels.js";
 import { ArchiveCategoryCommand, ArchiveCategoryHandler } from "../archive-category.js";
 import { CreateCategoryCommand, CreateCategoryHandler } from "../create-category.js";
 import { ListCategoriesHandler } from "../list-categories.js";
 import { MoveCategoryCommand, MoveCategoryHandler } from "../move-category.js";
 import { RenameCategoryCommand, RenameCategoryHandler } from "../rename-category.js";
 import { ReorderCategoriesCommand, ReorderCategoriesHandler } from "../reorder-categories.js";
-import {
-  SetCategoryChannelsCommand,
-  SetCategoryChannelsHandler,
-} from "../set-category-channels.js";
 import { SetCategoryMediaCommand, SetCategoryMediaHandler } from "../set-category-media.js";
 import { SetCategoryVatCommand, SetCategoryVatHandler } from "../set-category-vat.js";
 import { SalesContextRegistry } from "../../../../sales-contexts/domain/ports/sales-context.registry.js";
@@ -167,30 +155,6 @@ class StubProductCounts extends ProductCountReader {
   }
 }
 
-/**
- * Un référentiel de points de vente qui offre TOUT ce qu'on lui cite — le cas
- * nominal. Il dit oui parce que le test n'éprouve pas l'offre ici ; celle-ci a
- * ses propres cas, juste en dessous.
- */
-function allPointsOfSaleOffer(): PointOfSaleOfferReader {
-  return new (class extends PointOfSaleOfferReader {
-    offersOf(ids: readonly string[]): Promise<ReadonlyMap<string, ReadonlySet<string>>> {
-      return Promise.resolve(
-        new Map(ids.map((id) => [id, new Set(["takeaway", "eatIn", "b2b", "traiteur"])])),
-      );
-    }
-  })();
-}
-
-/** Un référentiel VIDE : aucun point de vente cité n'existe. */
-function noPointOfSaleKnown(): PointOfSaleOfferReader {
-  return new (class extends PointOfSaleOfferReader {
-    offersOf(): Promise<ReadonlyMap<string, ReadonlySet<string>>> {
-      return Promise.resolve(new Map());
-    }
-  })();
-}
-
 class InMemoryRegimes extends VatRateRepository {
   private readonly rows: VatRate[] = [];
 
@@ -221,20 +185,6 @@ class InMemoryRegimes extends VatRateRepository {
     return Promise.resolve();
   }
 }
-
-/** Un ordre stable pour comparer deux ensembles de paires. */
-const byPair = (a: SoldChannel, b: SoldChannel): number =>
-  `${a.pointOfSaleId} ${a.context}`.localeCompare(`${b.pointOfSaleId} ${b.context}`);
-
-/** Les points de vente que les matrices citent, nommés comme le journal les fige. */
-const POINTS_OF_SALE = new KnownPointsOfSale({ emp_village: "Le Village", emp_val: "Le Val" });
-
-/** Deux emplacements quelconques : ce sont des ids, plus des clés fixes. */
-const ALL_OPEN: SalesChannels = [
-  { pointOfSaleId: "emp_village", context: "takeaway" },
-  { pointOfSaleId: "emp_village", context: "eatIn" },
-  { pointOfSaleId: "emp_val", context: "takeaway" },
-];
 
 class SequentialIds extends UuidGenerator {
   private count = 0;
@@ -322,20 +272,6 @@ const registry: SalesContextRegistry = {
   ensureRootContext: () => Promise.resolve(),
   offeredByLocations: () => Promise.resolve(new Map()),
 };
-
-function setChannels(repo: InMemoryCategories): SetCategoryChannelsHandler {
-  return new SetCategoryChannelsHandler(
-    repo,
-    allPointsOfSaleOffer(),
-    registry,
-    POINTS_OF_SALE,
-    new RecordingJournal(),
-
-    new DirectUnitOfWork(),
-    new RecordingCatalogEmitter(),
-    new RecordingCatalogReemission(),
-  );
-}
 
 describe("CreateCategoryHandler", () => {
   it("crée une famille avec un slug dérivé", async () => {
@@ -459,105 +395,10 @@ describe("ArchiveCategoryHandler", () => {
   });
 });
 
-describe("SetCategoryChannelsHandler", () => {
-  it("remplace les canaux hérités de la famille", async () => {
-    const repo = new InMemoryCategories();
-    const [id] = await openRoots(repo, 1);
-
-    await setChannels(repo).execute(new SetCategoryChannelsCommand(id!, ALL_OPEN));
-
-    // Comparaison SANS ordre : l'agrégat normalise, et l'ordre n'a pas de sens
-    // métier — il n'en a que pour comparer deux états dans le journal.
-    expect([...repo.at(id!).channelPreset].sort(byPair)).toEqual([...ALL_OPEN].sort(byPair));
-  });
-
-  it("refuse une famille inexistante", async () => {
-    const repo = new InMemoryCategories();
-    await expect(
-      setChannels(repo).execute(new SetCategoryChannelsCommand("absent", ALL_OPEN)),
-    ).rejects.toBeInstanceOf(CategoryNotFoundError);
-  });
-
-  /**
-   * Le mur avait une seule face : `RemoveLocation` refuse de supprimer sous
-   * une famille qui coche, mais rien n'empêchait d'écrire un preset citant un
-   * emplacement qui n’existe pas. L'écran l'aurait rendu invisible — il ignore
-   * les clés inconnues — au lieu de le rendre faux.
-   */
-  it("refuse un emplacement qui n’existe pas", async () => {
-    const repo = new InMemoryCategories();
-    const [id] = await openRoots(repo, 1);
-
-    await expect(
-      new SetCategoryChannelsHandler(
-        repo,
-        noPointOfSaleKnown(),
-        registry,
-        POINTS_OF_SALE,
-        new RecordingJournal(),
-
-        new DirectUnitOfWork(),
-        new RecordingCatalogEmitter(),
-        new RecordingCatalogReemission(),
-      ).execute(new SetCategoryChannelsCommand(id!, ALL_OPEN)),
-    ).rejects.toBeInstanceOf(UnknownPointOfSaleError);
-  });
-
-  /** L'écriture est refusée EN ENTIER : pas de preset à moitié posé. */
-  it("n’écrit rien quand un seul point de vente est inconnu", async () => {
-    const repo = new InMemoryCategories();
-    const [id] = await openRoots(repo, 1);
-    const before = repo.at(id!).channelPreset;
-
-    await expect(
-      new SetCategoryChannelsHandler(
-        repo,
-        noPointOfSaleKnown(),
-        registry,
-        POINTS_OF_SALE,
-        new RecordingJournal(),
-
-        new DirectUnitOfWork(),
-        new RecordingCatalogEmitter(),
-        new RecordingCatalogReemission(),
-      ).execute(new SetCategoryChannelsCommand(id!, ALL_OPEN)),
-    ).rejects.toBeInstanceOf(UnknownPointOfSaleError);
-    expect(repo.at(id!).channelPreset).toEqual(before);
-  });
-
-  /** La décision « archivée = gelée » : les réglages sont refusés. */
-  it("refuse de régler les canaux d’une famille archivée", async () => {
-    const repo = new InMemoryCategories();
-    const [id] = await openRoots(repo, 1);
-    await archive(repo).execute(new ArchiveCategoryCommand(id!));
-
-    await expect(
-      setChannels(repo).execute(new SetCategoryChannelsCommand(id!, ALL_OPEN)),
-    ).rejects.toBeInstanceOf(CategoryFrozenError);
-  });
-
-  /** …mais le renommage, lui, reste permis : corriger une faute de frappe. */
-  it("laisse renommer une famille archivée", async () => {
-    const repo = new InMemoryCategories();
-    const [id] = await openRoots(repo, 1);
-    await archive(repo).execute(new ArchiveCategoryCommand(id!));
-
-    await new RenameCategoryHandler(
-      repo,
-      new RecordingJournal(),
-      new DirectUnitOfWork(),
-      new RecordingCatalogEmitter(),
-    ).execute(new RenameCategoryCommand(id!, { name: { fr: "Chocolats" } }));
-
-    expect(repo.at(id!).name.fr).toBe("Chocolats");
-  });
-});
-
 describe("SetCategoryVatHandler", () => {
   /** Une famille qui vend, donc capable de porter un taux (invariant agrégat). */
   async function sellingCategory(categories: InMemoryCategories): Promise<string> {
     const [id] = await openRoots(categories, 1);
-    await setChannels(categories).execute(new SetCategoryChannelsCommand(id!, ALL_OPEN));
     return id!;
   }
 
@@ -992,16 +833,6 @@ describe("Ce que les familles inscrivent au journal", () => {
     await new ReorderCategoriesHandler(repo, journal, uow, new RecordingCatalogEmitter()).execute(
       new ReorderCategoriesCommand(null, [parent]),
     );
-    await new SetCategoryChannelsHandler(
-      repo,
-      allPointsOfSaleOffer(),
-      registry,
-      POINTS_OF_SALE,
-      journal,
-      uow,
-      new RecordingCatalogEmitter(),
-      new RecordingCatalogReemission(),
-    ).execute(new SetCategoryChannelsCommand(child, ALL_OPEN));
     await new ArchiveCategoryHandler(
       repo,
       new StubProductCounts(),
@@ -1016,7 +847,6 @@ describe("Ce que les familles inscrivent au journal", () => {
       "product_category.renamed",
       "product_category.moved",
       "product_category.reordered",
-      "product_category.channels_changed",
       "product_category.archived",
     ]);
   });

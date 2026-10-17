@@ -52,7 +52,7 @@ type Gesture = 'audience' | 'visibility' | 'archive';
  * que verra le client et les avertissements sont toujours ceux du serveur.
  *
  * Les cartes se lisent sans s'écrire quand l'opération est archivée, quand
- * c'est une copie que la reprise n'a pas encore faite (409
+ * c'est une copie de l'ancien référentiel jamais reprise (409
  * `operations.awaiting_migration`), ou sans `lfc_operations:write`. Les
  * refus du serveur s'affichent tels quels : ils nomment le cas.
  */

@@ -1,4 +1,3 @@
-import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 
 import {
@@ -26,17 +25,15 @@ import {
 
 import { LangSwitch } from '../../../shared/lang-switch/lang-switch';
 import { LOCALE_NAMES } from '../../../shared/lang-switch/locale-names';
-import { pointsOfSaleSelling, sellsContext } from '../../data/channels';
 import { Router, RouterLink } from '@angular/router';
 
 import { CategoryStore } from '../category-store';
-import { PointOfSaleStore } from '../../points-of-sale/point-of-sale-store';
 import type { Category } from '../catalogue-api';
 
 /**
- * Catégories (= familles = gammes). Chaque catégorie porte les **défauts de
- * canaux** et les **taux de TVA** (à emporter / sur place) dont héritent ses
- * produits.
+ * Catégories (= familles = gammes). Chaque catégorie porte les **taux de
+ * TVA** par contexte de vente dont héritent ses produits. (Ses défauts de
+ * canaux, et leur colonne, sont partis en X4 avec la matrice.)
  *
  * La page ne fait plus que **lister**. Créer, régler — nom, canaux, taux — et
  * archiver passent tous par le MÊME side-panel : les trois points d'une ligne
@@ -61,7 +58,6 @@ import type { Category } from '../catalogue-api';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     // Un seul gabarit de pastilles pour la colonne ET la carte.
-    NgTemplateOutlet,
     RouterLink,
     FoldPageLayoutComponent,
     FoldElementTitleComponent,
@@ -82,15 +78,12 @@ import type { Category } from '../catalogue-api';
 })
 export class CategoriesPage {
   private readonly categoryStore = inject(CategoryStore);
-  private readonly pointStore = inject(PointOfSaleStore);
   private readonly router = inject(Router);
 
   /** Lectures réactives : le panneau écrit dans les stores, la table suit. */
   protected readonly categories = this.categoryStore.items;
   /** Les archivées sont hors de vue tant qu'on ne les rappelle pas. */
   protected readonly showArchived = signal(false);
-  /** Les noms affichés dans les pastilles viennent du référentiel. */
-  protected readonly pointsOfSale = this.pointStore.items;
 
   /**
    * La langue dans laquelle le tableau LIT les noms. Une lecture, jamais une
@@ -139,16 +132,10 @@ export class CategoriesPage {
   /** Le nom de la langue lue, pour la marque des lignes non traduites. */
   protected readonly langName = computed(() => LOCALE_NAMES[this.lang()]);
 
-  /** La plateforme professionnelle vend-elle cette famille ? */
-  protected sellsB2b(category: Category): boolean {
-    return sellsContext(category.channelPreset, 'b2b');
-  }
-
   protected readonly columns: readonly FoldTableColumn[] = [
     { key: 'name', label: 'Nom' },
     { key: 'parent', label: 'Parent' },
     { key: 'products', label: 'Fiches', width: '8rem' },
-    { key: 'channels', label: 'Canaux par défaut' },
     { key: 'actions', label: '', align: 'right', width: '5rem' },
   ];
 
@@ -213,14 +200,6 @@ export class CategoriesPage {
   protected ficheLabel(category: Category): string {
     const count = category.activeProductCount;
     return count === 0 ? 'Aucune fiche' : `${count} fiche(s)`;
-  }
-
-  protected presetEmporter(category: Category): string[] {
-    return pointsOfSaleSelling(category.channelPreset, 'takeaway', this.pointsOfSale());
-  }
-
-  protected presetSurPlace(category: Category): string[] {
-    return pointsOfSaleSelling(category.channelPreset, 'eatIn', this.pointsOfSale());
   }
 
   /**

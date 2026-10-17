@@ -237,24 +237,6 @@ describe("Déclaration publiable", () => {
 
       expect(isStale(await detail(id))).toBe(true);
     });
-
-    /**
-     * Régression : les canaux vivent dans `ProductChannelOverride`, une table
-     * satellite que le `max` d'horodatages ne regardait pas. Fermer un canal —
-     * donc retirer la fiche d'un contexte de vente — ne périmait rien
-     * (audit 2026-09-01, §6).
-     */
-    it("sur les canaux, que le max d’horodatages ne voyait pas", async () => {
-      const id = await aProduct();
-      await declareReady(id);
-
-      const response = await staff()
-        .put(`${PRODUCTS}/${id}/channels`)
-        .send({ channels: [{ pointOfSaleId: "pos_b2b", context: "b2b" }] });
-      expect(response.status).toBe(200);
-
-      expect(isStale(await detail(id))).toBe(true);
-    });
   });
 
   /**

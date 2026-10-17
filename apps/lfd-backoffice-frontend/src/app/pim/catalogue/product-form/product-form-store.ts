@@ -55,11 +55,9 @@ import {
 
 import { httpErrorMessage } from '@lfd/endpoints';
 
-import { NO_CHANNELS, formatPercent, pointsOfSaleSelling, sellsContext } from '../../data/channels';
-import type { SalesChannels } from '../../data/models';
+import { formatPercent } from '../../data/channels';
 import { AccountingRulesStore } from '../../accounting-rules/accounting-rules.store';
 import { formatDiscount } from '../../accounting-rules/pro-discount';
-import { PointOfSaleStore } from '../../points-of-sale/point-of-sale-store';
 import { SalesContextStore } from '../../sales-contexts/sales-context-store';
 import type {
   AllergenEntry,
@@ -209,16 +207,6 @@ export interface ChannelInheritance {
    * se défend pas devant quelqu'un qui le conteste.
    */
   readonly source: 'inherited' | 'overridden';
-  /**
-   * Le contexte est-il vendu ? **Distinct** de la liste de noms ci-dessous :
-   * savoir qu'un mode se vend et savoir nommer les boutiques sont deux faits, et
-   * le second peut manquer (référentiel pas encore chargé) sans que le premier
-   * soit faux. L'écran affichait « non proposé » dès que les noms manquaient, et
-   * cachait la TVA derrière eux.
-   */
-  readonly sold: boolean;
-  /** Vide pour un contexte sans comptoir — le B2B se vend depuis la plateforme. */
-  readonly boutiques: readonly string[];
   readonly rate: RateView | null;
   /**
    * L'autre face du prix, pour CE contexte — `null` sans prix ou sans taux.
@@ -239,8 +227,6 @@ export interface ChannelInheritance {
 
 export interface CategoryInheritanceView {
   readonly categoryName: string;
-  /** La matrice affichée vient-elle de la famille, ou de la fiche ? */
-  readonly channelsSource: 'inherited' | 'overridden';
   readonly channels: readonly ChannelInheritance[];
 }
 
@@ -532,13 +518,9 @@ interface VariantDraft {
 export class ProductFormStore {
   private readonly products = inject(ProductHttpApi);
   private readonly api = inject(CatalogueApi);
-  private readonly pointStore = inject(PointOfSaleStore);
   /** Le rapport prix public / prix pro — réglé une fois, lu partout. */
   private readonly accounting = inject(AccountingRulesStore);
   private readonly contextStore = inject(SalesContextStore);
-
-  /** Les noms des points de vente — lus au référentiel, jamais codés en dur. */
-  readonly pointsOfSale = this.pointStore.items;
   private readonly reference = inject(ReferenceApi);
   private readonly pendingCreatedMedia = inject(PendingCreatedMedia);
 
@@ -660,14 +642,6 @@ export class ProductFormStore {
    */
   readonly vatOverride = signal<Readonly<Record<string, string>>>({});
 
-  /**
-   * Où la fiche se vend quand elle ne suit PAS sa famille. `null` = elle hérite.
-   *
-   * Tout-ou-rien, à la différence des taux : une matrice à moitié redéfinie ne
-   * se lit pas — devant une case vide, on ne saurait pas dire si la fiche n'est
-   * pas vendue là ou si sa famille ne l'y vendait pas.
-   */
-  readonly channelsOverride = signal<SalesChannels | null>(null);
   /**
    * Vendu seulement pendant une opération (D3). Hors des sections : sa carte
    * l'écrit seule, sur sa propre route, comme la limite de commande.
@@ -1030,41 +1004,6 @@ export class ProductFormStore {
     () => this.selectedCategory()?.vatByContext ?? {},
   );
 
-  /** La matrice de la FAMILLE — l'héritage nu, celui auquel on peut revenir. */
-  readonly familyChannels = computed<SalesChannels>(
-    () => this.selectedCategory()?.channelPreset ?? NO_CHANNELS,
-  );
-
-  /**
-   * Où la fiche se vend RÉELLEMENT : sa matrice si elle en a une, celle de sa
-   * famille sinon. La même règle qu'au serveur, et pour la même raison — deux
-   * écritures finiraient par ne plus dire la même chose.
-   */
-  readonly effectiveChannels = computed<SalesChannels>(
-    () => this.channelsOverride() ?? this.familyChannels(),
-  );
-
-  /**
-   * **La fiche n'est vendue nulle part.**
-   *
-   * Le trou que la complétude ne peut pas boucher : elle mesure ce que la fiche
-   * PORTE — un nom, un prix, des allergènes, un visuel — et rien de tout ça ne
-   * dit où on la vend. Une fiche pouvait donc être à 10/10, signée, « En
-   * ligne », et n'apparaître dans aucun contexte : tout était juste, et il ne se
-   * passait rien. Rien à l'écran ne le disait (audit 2026-09-01, §11).
-   *
-   * ⚠️ Ce n'est **pas** une condition de complétude, et c'est délibéré :
-   * préparer une fiche avant d'ouvrir ses canaux est un usage normal, et la
-   * rendre bloquante l'interdirait. C'est un avertissement, posé là où le geste
-   * se fait — le bloc de mise en vente.
-   *
-   * Lu sur les CANAUX et non sur les contextes résolus : résoudre demande le
-   * référentiel des points de vente, et tant qu'il n'a pas répondu toute fiche
-   * paraîtrait vendue nulle part. Le couple (lieu, contexte) est là ou il n'y
-   * est pas — la question ne dépend d'aucun chargement.
-   */
-  readonly soldNowhere = computed(() => this.effectiveChannels().length === 0);
-
   readonly channelsInheritance = computed<CategoryInheritanceView | null>(() => {
     const category = this.selectedCategory();
     if (category === undefined) {
@@ -1078,9 +1017,6 @@ export class ProductFormStore {
     // famille ensuite. Contexte par contexte — on peut déroger en B2B et suivre
     // sa famille au comptoir.
     const override = this.vatOverride();
-    // Les canaux EFFECTIFS : une fiche qui a redéfini où elle se vend se lit
-    // sur les siens, pas sur ceux de sa famille.
-    const channels = this.effectiveChannels();
     const rateIdOf = (contextKey: string): string | undefined =>
       override[contextKey] ?? category.vatByContext[contextKey];
     const rateOf = (contextKey: string): RateView | null => viewOf(rateIdOf(contextKey));
@@ -1092,15 +1028,9 @@ export class ProductFormStore {
       categoryName: category.name.fr,
       // UNE ligne par contexte du registre : un contexte de plus en base est une
       // ligne de plus ici, sans livrer de front.
-      channelsSource: this.channelsOverride() === null ? 'inherited' : 'overridden',
       channels: this.orderedContexts().map((context) => ({
         key: context.key,
         label: context.label,
-        // Plus aucune branche, ni sur le nom d'un contexte ni sur sa forme :
-        // « est-il vendu ? » et « par qui ? » se lisent pareil pour tous. La
-        // plateforme professionnelle se nomme comme une boutique se nomme.
-        sold: sellsContext(channels, context.key),
-        boutiques: pointsOfSaleSelling(channels, context.key, this.pointsOfSale()),
         rate: rateOf(context.key),
         counterpart: counterpartFor(context.key),
         discounted: this.basePriceEurFor(context.key) !== this.priceEur(),
@@ -1237,7 +1167,8 @@ export class ProductFormStore {
       case 'tarif':
         this.priceEur.set(value[0] as number | null);
         this.vatOverride.set(value[1] as Readonly<Record<string, string>>);
-        this.channelsOverride.set(value[2] as SalesChannels | null);
+        // `value[2]` portait la matrice des canaux, partie en X4 : la place
+        // reste, pour qu'un brouillon d'avant se relise sans décalage.
         this.proPriceHtText.set(String(value[4] ?? ''));
         return;
       case 'allergenes':
@@ -1639,10 +1570,6 @@ export class ProductFormStore {
       // et enregistrer l'un sans l'autre laisserait l'écran vert sur une moitié
       // de décision.
       await this.products.saveVat(this.productId(), this.vatOverride());
-      // Les canaux partent avec : fermer un canal efface les taux qu'on y avait
-      // posés, et les envoyer séparément laisserait une fenêtre où l'un des deux
-      // gestes est passé et l'autre non.
-      await this.products.saveChannels(this.productId(), this.channelsOverride());
       // Corriger le tarif du DÉFAUT change ce que voient celles qui le suivent.
       if (this.editingDefault()) {
         await this.reloadVariants();
@@ -2159,7 +2086,9 @@ export class ProductFormStore {
         return JSON.stringify([
           this.priceEur(),
           this.vatOverride(),
-          this.channelsOverride(),
+          // L'ancienne place de la matrice des canaux (partie en X4) : gardée
+          // vide pour que les positions lues par la restauration ne bougent pas.
+          null,
           this.pricingAligned(),
           // Le prix pro HT (lot P) : une saisie qui bouge EST une modification
           // de la section, sans quoi le bouton d'enregistrement n'apparaît pas.
@@ -2283,7 +2212,6 @@ export class ProductFormStore {
     // Le prix, le poids et la fiche réglementaire appartiennent à un ARTICLE :
     // ils se lisent sur la déclinaison ouverte, plus sur le produit aplati.
     this.vatOverride.set(product.vatByContext);
-    this.channelsOverride.set(product.channelsOverride);
     this.operationOnly.set(product.operationOnly);
     this.requiresCold.set(product.requiresCold);
     this.audience.set(product.audience);

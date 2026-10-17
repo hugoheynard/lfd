@@ -20,21 +20,6 @@
       <span class="sr-figure-value">{{ ficheCount() }}</span>
       <span class="sr-figure-unit">{{ ficheWord() }}</span>
     </p>
-
-    <div class="sr-sub">
-      <span class="sr-sub-label">Vendue depuis</span>
-      @if (sellingPoints().length === 0) {
-        <span class="sr-none">Aucun point de vente</span>
-      } @else {
-        <!-- Les NOMS, pas le compte : « 2 points de vente » oblige à ouvrir la
-             section pour savoir lesquels. -->
-        <span class="sr-chips">
-          @for (point of sellingPoints(); track point.id) {
-            <fold-badge [content]="point.label" variant="neutral" />
-          }
-        </span>
-      }
-    </div>
   </fold-card>
 </section>
 
@@ -73,7 +58,7 @@
       } @else {
         <p>
           La famille sortira des listes&nbsp;: elle ne portera plus de nouvelle fiche et disparaîtra
-          des choix de parent. Ses réglages — canaux et taux — sont conservés.
+          des choix de parent. Ses réglages — ses taux — sont conservés.
         </p>
       }
     </fold-danger-zone>

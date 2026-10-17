@@ -3,7 +3,7 @@ import { Injectable, PLATFORM_ID, inject, signal } from '@angular/core';
 
 import { LOCALES, type LocalizedText } from '@lfd/pim-contracts';
 
-import type { Category, SalesChannels } from '../data/models';
+import type { Category } from '../data/models';
 import { CategoryHttpApi, type CategoryVatDraft } from './category-http-api';
 import { ListLoadState } from '../data/list-load-state';
 
@@ -77,14 +77,7 @@ export class CategoryStore {
     await this.reload();
   }
 
-  /** La matrice de canaux d'une famille. */
-  async setChannels(id: string, channels: SalesChannels): Promise<void> {
-    await this.api.setChannels(id, channels);
-    await this.reload();
-  }
-
-  /** Les taux, par clé de contexte. À écrire APRÈS les canaux : fermer un canal
-   *  efface son taux côté référentiel. */
+  /** Les taux, par clé de contexte. */
   async setVat(id: string, vat: CategoryVatDraft): Promise<void> {
     await this.api.setVat(id, vat);
     await this.reload();

@@ -34,7 +34,6 @@ import { productStatusLabel, productStatusVariant } from '../product-status';
 import { CommunicationForm } from './form-sections/communication/communication-form';
 import { CreatedMediaCallout } from './created-media-callout/created-media-callout';
 import { IdentityForm } from './form-sections/identity/identity-form';
-import { IntegrationsForm } from './form-sections/integrations/integrations-form';
 import { PricingForm } from './form-sections/pricing/pricing-form';
 import { OperationOnlyForm } from './form-sections/operation-only/operation-only-form';
 import { ColdRequirementForm } from './form-sections/cold-requirement/cold-requirement-form';
@@ -137,7 +136,6 @@ interface PageSection {
     IngredientsForm,
     CommunicationForm,
     VisualsForm,
-    IntegrationsForm,
   ],
   templateUrl: './product-form-page.html',
   styleUrl: './product-form-page.scss',

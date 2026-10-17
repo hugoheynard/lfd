@@ -17,7 +17,6 @@ function category(overrides: Partial<Category> = {}): Category {
     parentId: null,
     position: 0,
     isArchived: false,
-    channelPreset: [],
     vatByContext: {},
     activeProductCount: 0,
     audience: 'both',
@@ -168,22 +167,6 @@ describe('CategoriesPage — la langue de lecture', () => {
     // traduite qu'on ne peut pas voir n'appelle aucun geste.
     const { host } = await render([traduite, category({ id: 'cat_3', isArchived: true })]);
     expect(avertissement(host)).toBeNull();
-  });
-});
-
-describe('CategoriesPage — les canaux par défaut', () => {
-  it('affiche la pastille B2B d’une famille vendue en B2B', async () => {
-    // Le gabarit lisait `channelPreset.b2b` — une propriété sur un TABLEAU
-    // depuis que la matrice est une liste de paires, donc toujours `undefined`.
-    // La pastille ne s'affichait jamais, et une famille vendue uniquement en
-    // B2B se lisait « Aucun canal ». Le typage ne l'a pas vu : le contexte d'un
-    // `ng-template` est `any`.
-    const { host } = await render([
-      category({ channelPreset: [{ pointOfSaleId: 'pos_b2b', context: 'b2b' }] }),
-    ]);
-
-    expect(rows(host)[0]).toContain('B2B');
-    expect(rows(host)[0]).not.toContain('Aucun canal');
   });
 });
 

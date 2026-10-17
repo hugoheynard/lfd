@@ -310,30 +310,6 @@
             </fold-card>
           }
         }
-
-        <!-- Une section en lecture seule : elle n'a pas d'enregistrement
-             propre, donc pas d'indicateur d'état. N'appartenant à AUCUNE des
-             quatre familles (elle ne se saisit pas, elle rapporte ce que chaque
-             canal publie), elle ne se montre que sur « Tout » — la ranger de
-             force dans une famille affirmerait un classement que personne n'a
-             décidé. -->
-        @if (activeFilter() === 'all') {
-          <fold-card>
-            <fold-page-section
-              title="Diffusion par canal"
-              separator
-              collapsible
-              [open]="sectionOpen('diffusion')()"
-              (openChange)="setSectionOpen('diffusion', $event)"
-            >
-              <span sectionSubtitle>
-                Champs propres à chaque canal. Deux blocs côte à côte, pas un troisième niveau
-                d'onglets.
-              </span>
-              <app-integrations-form />
-            </fold-page-section>
-          </fold-card>
-        }
       </div>
 
       <app-publish-rail

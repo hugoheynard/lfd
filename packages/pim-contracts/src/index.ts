@@ -135,10 +135,7 @@ export {
   moveCategoryPayloadSchema,
   renameCategoryPayloadSchema,
   reorderCategoriesPayloadSchema,
-  setCategoryChannelsPayloadSchema,
   createSalesContextPayloadSchema,
-  salesChannelsSchema,
-  soldChannelSchema,
   updateSalesContextPayloadSchema,
   setCategoryVatPayloadSchema,
   setCategoryAudiencePayloadSchema,
@@ -150,7 +147,6 @@ export type {
   MoveCategoryPayload,
   RenameCategoryPayload,
   ReorderCategoriesPayload,
-  SetCategoryChannelsPayload,
   SetCategoryVatPayload,
   SetCategoryAudiencePayload,
   CategoryView,
@@ -189,7 +185,6 @@ export {
   saveVariantAllergensPayloadSchema,
   saveVariantNutritionPayloadSchema,
   setProductMediaPayloadSchema,
-  setProductChannelsPayloadSchema,
   setProductOperationOnlyPayloadSchema,
   setProductColdRequirementPayloadSchema,
   setProductAudiencePayloadSchema,
@@ -217,7 +212,6 @@ export type {
   ProductReadinessView,
   ProductMediaView,
   SetProductMediaPayload,
-  SetProductChannelsPayload,
   SetProductOperationOnlyPayload,
   SetProductColdRequirementPayload,
   SetProductAudiencePayload,
@@ -228,20 +222,7 @@ export type {
   VariantAspect,
 } from "./product.js";
 
-export { setB2bMembershipPayloadSchema, setB2bMembershipsPayloadSchema } from "./b2b-channel.js";
-export type {
-  SetB2bMembershipPayload,
-  SetB2bMembershipsPayload,
-  B2bMembershipView,
-  B2bMembershipBatchResult,
-  AudienceSwitchItemView,
-  AudienceSwitchVariantView,
-  AudienceSwitchPreviewView,
-  AudienceSwitchIncompleteView,
-  AudienceSwitchAppliedView,
-  ReemissionReportView,
-  B2bExclusionReason,
-} from "./b2b-channel.js";
+export type { ReemissionReportView } from "./b2b-channel.js";
 
 export type {
   FieldDiffView,
@@ -316,28 +297,5 @@ export type {
   ProductHistoryPageView,
 } from "./product-history.js";
 
-export {
-  OPERATION_AUDIENCES,
-  OPERATION_STATES,
-  operationAudienceSchema,
-  operationImageSchema,
-  operationScheduleSchema,
-  prepareOperationPayloadSchema,
-  editOperationPayloadSchema,
-  rescheduleOperationPayloadSchema,
-  setOperationAudiencePayloadSchema,
-  setOperationSelectionPayloadSchema,
-} from "./operation.js";
-export type {
-  OperationAudience,
-  OperationState,
-  OperationImage,
-  OperationSchedulePayload,
-  PrepareOperationPayload,
-  EditOperationPayload,
-  RescheduleOperationPayload,
-  SetOperationAudiencePayload,
-  SetOperationSelectionPayload,
-  OperationKeyResponse,
-  OperationView,
-} from "./operation.js";
+export { OPERATION_AUDIENCES, operationAudienceSchema } from "./operation.js";
+export type { OperationAudience } from "./operation.js";

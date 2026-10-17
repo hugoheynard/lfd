@@ -22,7 +22,6 @@ import { PrismaCategoryEditorialRepository } from "./category/infrastructure/pri
 import { MoveCategoryHandler } from "./category/application/move-category.js";
 import { ReorderCategoriesHandler } from "./category/application/reorder-categories.js";
 import { RenameCategoryHandler } from "./category/application/rename-category.js";
-import { SetCategoryChannelsHandler } from "./category/application/set-category-channels.js";
 import { SetCategoryVatHandler } from "./category/application/set-category-vat.js";
 import { SaveVariantAllergensHandler } from "./product/application/save-variant-allergens.js";
 import { SaveVariantNutritionHandler } from "./product/application/save-variant-nutrition.js";
@@ -39,7 +38,6 @@ import { SetProductMediaHandler } from "./product/application/set-product-media.
 import { OnMediaAssetDescribedHandler } from "./product/application/on-media-asset-described.js";
 import { ProductImageUsage } from "./product/domain/ports/product-image-usage.js";
 import { PrismaProductImageUsage } from "./product/infrastructure/prisma-product-image-usage.js";
-import { SetProductChannelsHandler } from "./product/application/set-product-channels.js";
 import { SetProductOperationOnlyHandler } from "./product/application/set-product-operation-only.js";
 import { SetProductColdRequirementHandler } from "./product/application/set-product-cold-requirement.js";
 import { SetProductVatHandler } from "./product/application/set-product-vat.js";
@@ -55,7 +53,6 @@ import { RepositoryCatalogFactsReader } from "./shared/infrastructure/repository
 import { SalesContextsModule } from "../sales-contexts/sales-contexts.module.js";
 import { PointsOfSaleModule } from "../points-of-sale/points-of-sale.module.js";
 import { CategoryRepository } from "./category/domain/ports/category.repository.js";
-import { PointOfSaleOfferReader } from "./shared/domain/ports/point-of-sale-offer.reader.js";
 import { ProductCountReader } from "./category/domain/ports/product-count.reader.js";
 import { AccountingRulesModule } from "../accounting-rules/accounting-rules.module.js";
 import { CatalogRevisionRepository } from "./revision/domain/ports/catalog-revision.repository.js";
@@ -79,7 +76,6 @@ import { ProductController } from "./product/http/product.controller.js";
 import { ReferenceController } from "./shared/http/reference.controller.js";
 import { PrismaCatalogueReader } from "./shared/infrastructure/prisma-catalogue-reader.js";
 import { PrismaCategoryRepository } from "./category/infrastructure/prisma-category.repository.js";
-import { PrismaPointOfSaleOfferReader } from "./shared/infrastructure/prisma-point-of-sale-offer.reader.js";
 import { PrismaProductCountReader } from "./category/infrastructure/prisma-product-count.reader.js";
 import { PrismaEditorialReader } from "./product/infrastructure/prisma-editorial-reader.js";
 import { PrismaReadinessRepository } from "./product/infrastructure/prisma-readiness.repository.js";
@@ -130,7 +126,6 @@ import {
     // Familles (CQRS) — un handler par cas.
     CreateCategoryHandler,
     RenameCategoryHandler,
-    SetCategoryChannelsHandler,
     SetCategoryVatHandler,
     ArchiveCategoryHandler,
     ListCategoriesHandler,
@@ -150,7 +145,6 @@ import {
     RenameProductVariantHandler,
     SetProductMediaHandler,
     OnMediaAssetDescribedHandler,
-    SetProductChannelsHandler,
     SetProductOperationOnlyHandler,
     SetProductColdRequirementHandler,
     SetProductVatHandler,
@@ -175,7 +169,6 @@ import {
     // interroge les produits, l'existence d'un emplacement interroge les
     // emplacements. Ni l'un ni l'autre n'est la persistance d'une famille.
     { provide: ProductCountReader, useClass: PrismaProductCountReader },
-    { provide: PointOfSaleOfferReader, useClass: PrismaPointOfSaleOfferReader },
     // La LECTURE de la bibliothèque est un port à part de son écriture : l'écran
     // de la médiathèque parcourt, il ne ramasse pas d'orphelins.
     { provide: ProductRepository, useClass: PrismaProductRepository },

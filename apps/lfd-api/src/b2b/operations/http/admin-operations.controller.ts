@@ -7,7 +7,6 @@ import {
   setCommerceOperationVisibilityPayloadSchema,
   type CommerceOperationKeyResponse,
   type CommerceOperationView,
-  type OperationsMigrationReport,
   type EditCommerceOperationPayload,
   type PrepareCommerceOperationPayload,
   type RescheduleCommerceOperationPayload,
@@ -18,10 +17,9 @@ import {
 import { Body, Controller, Get, Param, Post, Put } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
-import { AdminSurface, RequirePermission } from "../../../platform/auth/admin-surface.decorator.js";
+import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
-import { ApplyOperationsMigrationCommand } from "../application/commands/apply-operations-migration.command.js";
 import { ArchiveOperationCommand } from "../application/commands/archive-operation.command.js";
 import { ChangeOperationAudienceCommand } from "../application/commands/change-operation-audience.command.js";
 import { EditOperationCommand } from "../application/commands/edit-operation.command.js";
@@ -31,7 +29,6 @@ import { SetOperationSelectionCommand } from "../application/commands/set-operat
 import { SetOperationVisibilityCommand } from "../application/commands/set-operation-visibility.command.js";
 import { GetOperationQuery } from "../application/queries/get-operation.query.js";
 import { ListOperationsQuery } from "../application/queries/list-operations.query.js";
-import { PreviewOperationsMigrationQuery } from "../application/queries/preview-operations-migration.query.js";
 import { calendarOf, scheduleOf } from "./operation-payloads.js";
 
 /**
@@ -46,9 +43,9 @@ import { calendarOf, scheduleOf } from "./operation-payloads.js";
  * Sous `lfc_operations` (Q2, Hugo) : un droit à lui, ni `pim_catalog` ni
  * `lfc_catalog`.
  *
- * La migration depuis le référentiel se joue en deux temps sous
- * `lfc_operations:write` : l'aperçu, puis l'application, qui rend le relevé
- * APRÈS. Ses routes sont déclarées avant `:key`, qui les avalerait.
+ * La reprise depuis le référentiel (`GET`/`POST /admin/operations/migration`)
+ * est partie en X4 (`documentation/catalogue/plan-sans-interrupteurs.md`) :
+ * elle n'avait rien eu à reprendre.
  */
 @Controller("admin/operations")
 @AdminSurface("lfc_operations")
@@ -62,26 +59,6 @@ export class AdminOperationsController {
   list(): Promise<readonly CommerceOperationView[]> {
     return this.queries.execute<ListOperationsQuery, readonly CommerceOperationView[]>(
       new ListOperationsQuery(),
-    );
-  }
-
-  /** L'aperçu : ce que la migration écrirait. Sous `:write` — c'est l'antichambre d'une écriture. */
-  @Get("migration")
-  @RequirePermission("lfc_operations:write")
-  previewMigration(): Promise<OperationsMigrationReport> {
-    return this.queries.execute<PreviewOperationsMigrationQuery, OperationsMigrationReport>(
-      new PreviewOperationsMigrationQuery(),
-    );
-  }
-
-  /** Applique, puis relit : le relevé rendu est celui d'APRÈS. Rejouable. */
-  @Post("migration")
-  async applyMigration(@StaffUserId() staffUserId: string): Promise<OperationsMigrationReport> {
-    await this.commands.execute<ApplyOperationsMigrationCommand, void>(
-      new ApplyOperationsMigrationCommand(staffUserId),
-    );
-    return this.queries.execute<PreviewOperationsMigrationQuery, OperationsMigrationReport>(
-      new PreviewOperationsMigrationQuery(),
     );
   }
 

@@ -59,7 +59,6 @@ function detailWith(variants: readonly Variant[]): ProductDetail {
       categoryId: 'c1',
       status: 'draft',
       variants: [...variants],
-      channelsOverride: null,
       vatByContext: {},
       operationOnly: false,
       requiresCold: false,

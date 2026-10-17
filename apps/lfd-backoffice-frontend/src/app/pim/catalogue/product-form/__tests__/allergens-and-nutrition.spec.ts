@@ -81,7 +81,6 @@ class FakeApi {
         status: 'draft',
         variants: this.variants,
         vatByContext: {},
-        channelsOverride: null,
         priceEur: 2.5,
         weightGrams: 100,
         proPriceMillicents: null,
@@ -123,9 +122,6 @@ class FakeApi {
   saveVat() {
     return Promise.resolve();
   }
-  saveChannels() {
-    return Promise.resolve();
-  }
   citedAllergens() {
     return Promise.resolve([]);
   }
@@ -150,7 +146,6 @@ async function setup(api = new FakeApi()): Promise<{ store: ProductFormStore; ap
                 parentId: null,
                 position: 1,
                 isArchived: false,
-                channelPreset: [],
                 vatByContext: {},
                 activeProductCount: 1,
               },

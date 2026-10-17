@@ -19,10 +19,7 @@ import {
   slugify,
   type LocalizedText,
 } from "../../../shared/domain/value-objects/localized-text.js";
-import {
-  normalizeSalesChannels,
-  type SalesChannels,
-} from "../../../shared/domain/value-objects/sales-channels.js";
+import { type SalesChannels } from "../../../shared/domain/value-objects/sales-channels.js";
 import type { SalesContext } from "../../../../sales-contexts/domain/value-objects/sales-context.js";
 import type { ContextVat } from "../../../shared/domain/value-objects/context-vat.js";
 import type { AllergenDeclaration } from "../value-objects/nutrition-declaration.js";
@@ -141,7 +138,7 @@ export class Product {
     private statusValue: ProductStatus,
     private readonly variantList: Variant[],
     private vatByContextValue: ContextVat,
-    private channelOverrideValue: SalesChannels | null,
+    private readonly channelOverrideValue: SalesChannels | null,
     private operationOnlyValue: boolean,
     private requiresColdValue: boolean,
     private audienceValue: Audience | null,
@@ -212,19 +209,12 @@ export class Product {
     return this.vatByContextValue;
   }
 
-  /** Sa matrice propre, ou `null` s'il suit sa famille. */
+  /**
+   * Sa matrice propre, ou `null` s'il suit sa famille — **figée** depuis X4,
+   * comme celle de la famille (`Category.channelPreset`).
+   */
   get channelOverride(): SalesChannels | null {
     return this.channelOverrideValue;
-  }
-
-  /**
-   * Redéfinit où la fiche se vend — ou la rend à sa famille avec `null`.
-   *
-   * **Aucun taux n'est effacé** : la TVA ne dépend plus des canaux (Hugo,
-   * 2026-10-15), une fiche doit pouvoir servir n'importe quel contexte.
-   */
-  setChannels(channels: SalesChannels | null): void {
-    this.channelOverrideValue = channels === null ? null : normalizeSalesChannels(channels);
   }
 
   /**

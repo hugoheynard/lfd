@@ -27,7 +27,6 @@ import {
 } from '../commerce-operation-format';
 import { CommerceOperationsService } from '../commerce-operations.service';
 import { OperationImage } from '../operation-image/operation-image';
-import { OperationsMigrationCard } from '../operations-migration-card/operations-migration-card';
 import { PrepareCommerceOperationPanel } from '../prepare-commerce-operation-panel/prepare-commerce-operation-panel';
 
 type LoadState = 'loading' | 'error' | 'ready';
@@ -37,10 +36,9 @@ type LoadState = 'loading' | 'error' | 'ready';
  * chacune en est, et ce que le client en voit
  * (`plan-l-operation-passe-au-commerce.md`, lot 3).
  *
- * La reprise depuis le référentiel et « Préparer une opération » (lot 3 bis)
- * ne sont offertes qu'à `lfc_operations:write`. Interrupteur fermé, le bouton
- * reste visible mais fermé, et le callout dit pourquoi ; l'aperçu de la
- * reprise se lit, c'est lui qu'on relit avant d'ouvrir.
+ * « Préparer une opération » (lot 3 bis) n'est offert qu'à
+ * `lfc_operations:write`. La carte de la reprise depuis le référentiel est
+ * partie en X4 (`plan-sans-interrupteurs.md`) : elle n'avait rien à reprendre.
  */
 @Component({
   selector: 'app-commerce-operations-page',
@@ -57,7 +55,6 @@ type LoadState = 'loading' | 'error' | 'ready';
     FoldPageLayoutComponent,
     NgTemplateOutlet,
     OperationImage,
-    OperationsMigrationCard,
     RouterLink,
   ],
   templateUrl: './commerce-operations-page.html',
@@ -75,7 +72,7 @@ export class CommerceOperationsPage {
   protected readonly live = computed(() => this.split().live);
   protected readonly archived = computed(() => this.split().archived);
 
-  /** La reprise et la préparation écrivent : elles ne sont montrées qu'à qui peut écrire. */
+  /** La préparation écrit : elle n'est montrée qu'à qui peut écrire. */
   protected readonly canWrite = computed(() => this.permissions.can('lfc_operations:write'));
 
   protected readonly badgeLabel = (view: CommerceOperationView): string =>

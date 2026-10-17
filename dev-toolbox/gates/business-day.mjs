@@ -59,11 +59,9 @@ const SCAN_ROOTS = [
   "apps/lfd-backoffice-frontend/src/app/commercial/tarification",
   "apps/lfd-backoffice-frontend/src/app/fiche-client/tarifs",
   "apps/lfd-api/src/b2b/pricing",
-  // Les opérations datées (2026-09-24, lot 1 du plan
-  // `documentation/operations-datees/architecture-operations-datees.md`, D2) : leurs cinq
-  // dates décident de quand on vend, et `fin(pickupUntil)` se compare à
-  // l'horloge — la même question que la tarification, la même réponse.
-  "apps/lfd-api/src/pim/operations",
+  // Les opérations datées du référentiel (`pim/operations`, 2026-09-24) y
+  // figuraient : parties en X4 (2026-10-17) — elles s'écrivent au commerce,
+  // couvert plus bas.
   // Le miroir des opérations au commerce, et sa surcharge à la réception (lot 2
   // du même plan, 2026-09-24) : la clôture effective y est `min(PIM,
   // surcharge)`, et le lot 3 y comparera un jour de retrait aux bornes d'une

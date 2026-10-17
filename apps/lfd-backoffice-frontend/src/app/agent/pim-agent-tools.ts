@@ -1,5 +1,4 @@
 import { declareExperimentalWebMcpTool, inject } from '@angular/core';
-import type { SalesChannels } from '@lfd/pim-contracts';
 
 import { CategoryStore } from '../pim/catalogue/category-store';
 import { ProductHttpApi } from '../pim/catalogue/product-http-api';
@@ -295,49 +294,6 @@ export function declarePimAgentTools(): readonly string[] {
       }),
   });
 
-  void declareExperimentalWebMcpTool({
-    name: 'pim_product_set_channels',
-    description:
-      'Règle où la fiche se vend. mode=inherit rend les canaux à la famille ; mode=override impose la liste fournie (une paire pointOfSaleId + context par canal vendu).',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        productId: { type: 'string' },
-        mode: { type: 'string', enum: ['inherit', 'override'] },
-        channels: {
-          type: 'array',
-          items: {
-            type: 'object',
-            properties: {
-              pointOfSaleId: { type: 'string' },
-              context: { type: 'string' },
-            },
-            required: ['pointOfSaleId', 'context'],
-            additionalProperties: false,
-          },
-        },
-      },
-      required: ['productId', 'mode'],
-      additionalProperties: false,
-    },
-    execute: (args) =>
-      said('Écriture des canaux', async () => {
-        // `null` = hérité de la famille ; `[]` = vendu nulle part. Les deux
-        // s'écrivent, et ce n'est pas la même phrase — d'où `mode` explicite
-        // plutôt qu'un tableau vide qu'on aurait interprété.
-        if (args.mode === 'inherit') {
-          await products.saveChannels(args.productId, null);
-          return `Canaux rendus à la famille sur ${args.productId}.`;
-        }
-        const channels: SalesChannels = (args.channels ?? []).map((channel) => ({
-          pointOfSaleId: channel.pointOfSaleId,
-          context: channel.context,
-        }));
-        await products.saveChannels(args.productId, channels);
-        return `${channels.length} canal(aux) posé(s) sur ${args.productId}.`;
-      }),
-  });
-
   return [
     'pim_categories_list',
     'pim_products_list',
@@ -346,6 +302,5 @@ export function declarePimAgentTools(): readonly string[] {
     'pim_product_set_identity',
     'pim_product_set_editorial',
     'pim_variant_set_nutrition',
-    'pim_product_set_channels',
   ];
 }

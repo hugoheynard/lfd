@@ -1,18 +1,11 @@
 import { Module } from "@nestjs/common";
 
-import { B2bPlatformModule } from "../../pim/channels/b2b-platform/b2b-platform.module.js";
 import { CatalogModule } from "../catalog/catalog.module.js";
-import { ApplyOperationsMigrationHandler } from "./application/commands/apply-operations-migration.handler.js";
 import { GetOperationHandler } from "./application/queries/get-operation.handler.js";
 import { ListOperationsHandler } from "./application/queries/list-operations.handler.js";
-import { PreviewOperationsMigrationHandler } from "./application/queries/preview-operations-migration.handler.js";
-import { MirroredOperationsReader } from "./domain/ports/mirrored-operations.reader.js";
-import { OperationAdoption } from "./domain/ports/operation-adoption.js";
 import { OperationReader } from "./domain/ports/operation.reader.js";
 import { OperationSaleReader } from "./domain/ports/operation-sale.reader.js";
 import { CatalogBackedOperationSaleReader } from "./infrastructure/catalog-backed-operation-sale.reader.js";
-import { PrismaMirroredOperationsReader } from "./infrastructure/prisma-mirrored-operations.reader.js";
-import { PrismaOperationAdoption } from "./infrastructure/prisma-operation-adoption.js";
 import { PrismaOperationReader } from "./infrastructure/prisma-operation.reader.js";
 import { ArchiveOperationHandler } from "./application/commands/archive-operation.handler.js";
 import { ChangeOperationAudienceHandler } from "./application/commands/change-operation-audience.handler.js";
@@ -49,13 +42,13 @@ import { PrismaOperationSkuCatalogue } from "./infrastructure/prisma-operation-s
  * (`OperationImageLibrary`) lui est fourni par `OperationImageLibraryModule`,
  * global. Les lectures du miroir ne changent pas.
  *
- * Lot 3 — les lectures de l'écran, et la migration depuis le référentiel :
- * `B2bPlatformModule` pour le SEUL port que le référentiel publie pour elle
- * (`ReferentialOperations`, la surface `b2b → pim` permise), `CatalogModule`
- * pour « en vente » (`CatalogAdminReader`).
+ * Lot 3 — les lectures de l'écran : `CatalogModule` pour « en vente »
+ * (`CatalogAdminReader`). La migration depuis le référentiel, et le port
+ * qu'elle lisait chez lui, sont partis en X4
+ * (`documentation/catalogue/plan-sans-interrupteurs.md`).
  */
 @Module({
-  imports: [B2bPlatformModule, CatalogModule],
+  imports: [CatalogModule],
   controllers: [AdminOperationsController],
   providers: [
     { provide: OperationRepository, useClass: PrismaOperationRepository },
@@ -72,10 +65,6 @@ import { PrismaOperationSkuCatalogue } from "./infrastructure/prisma-operation-s
     { provide: OperationSaleReader, useClass: CatalogBackedOperationSaleReader },
     ListOperationsHandler,
     GetOperationHandler,
-    { provide: MirroredOperationsReader, useClass: PrismaMirroredOperationsReader },
-    { provide: OperationAdoption, useClass: PrismaOperationAdoption },
-    PreviewOperationsMigrationHandler,
-    ApplyOperationsMigrationHandler,
     { provide: OperationMediaUsage, useClass: PrismaOperationMediaUsage },
     { provide: OperationImageRepointing, useClass: RepointOperationImage },
   ],

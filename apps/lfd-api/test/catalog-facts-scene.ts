@@ -76,25 +76,7 @@ export async function anActiveFiche(
     .send({ allergens: [] })
     .expect(200);
   const rateId = await foodRate(staff);
-  const shop = await staff()
-    .post("/pim/points-of-sale")
-    .send({
-      kind: "shop",
-      label: `Comptoir ${name}`,
-      contexts: ["takeaway", "eatIn"],
-      baseUrl: "",
-      tableCount: 0,
-    })
-    .expect(201);
   const category = `${CATEGORIES}/${fiche.categoryId}`;
-  await staff()
-    .put(`${category}/channels`)
-    .send([
-      { pointOfSaleId: "pos_b2b", context: "b2b" },
-      { pointOfSaleId: jsonBody<{ id: string }>(shop).id, context: "takeaway" },
-      { pointOfSaleId: jsonBody<{ id: string }>(shop).id, context: "eatIn" },
-    ])
-    .expect(200);
   await staff()
     .put(`${category}/vat`)
     .send({ vatByContext: { b2b: rateId, takeaway: rateId, eatIn: rateId } })

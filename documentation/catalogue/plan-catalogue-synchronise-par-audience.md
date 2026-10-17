@@ -571,7 +571,7 @@ entier, jamais un flottant.
   `packages/contracts/src/journal-facts/referential-settings.ts:61`, que le
   fait de changement de méthode valide (l. 209). Sans elle, la bascule de
   méthode échoue à la journalisation.
-- **Cinq appelants de `proPriceOf`** (BLOQUANT) : `projection.ts:242`,
+- **Cinq appelants de `proPriceOf`** (BLOQUANT) : projection.ts:242 (la projection du push, retirée en X4),
   `catalog-facts.ts` (`sellableVariant`), `accounting-rules-page.ts:217` et `:254`,
   `product-form-store.ts:887` et `:916`. Nouvelle signature :
   `proPriceOf(publicTtcCents, policy, articleVatPercent, enteredHtMillicents: number | null)`.

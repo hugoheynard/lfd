@@ -55,32 +55,6 @@ export interface VatRate {
  */
 export type VatRateUsage = Readonly<Record<string, number>>;
 
-/** Un canal **vendu** : un contexte, et le point de vente qui le vend. */
-export interface SoldChannel {
-  /**
-   * Jamais `null`. C'était `locationId`, où `null` voulait dire « le B2B » — un
-   * `NULL` porteur de sens, donc une ligne absente quelque part. La plateforme
-   * professionnelle est un point de vente comme un autre.
-   */
-  pointOfSaleId: string;
-  /** La clé du contexte, telle que le registre la porte. */
-  context: string;
-}
-
-/**
- * Où et comment un produit se vend — un **ensemble de paires**.
- *
- * Les emplacements étaient déjà une donnée (la carte était indexée par
- * identifiant, après avoir été `{ b1, b2 }` avec des libellés en dur qui avaient
- * fini par désigner une boutique absente du référentiel). Les **modes**, eux,
- * ne l'étaient pas : `{ emporter, surPlace }` plus un drapeau `b2b`. L'écran ne
- * pouvait donc pas afficher un quatrième contexte de vente sans qu'on le livre.
- *
- * Les paires suppriment la distinction. Une paire absente n'est pas un faux :
- * on ne garde que ce qui est vendu.
- */
-export type SalesChannels = readonly SoldChannel[];
-
 /**
  * Valeurs nutritionnelles pour 100 g ; `null` = non renseigné.
  *
@@ -181,8 +155,6 @@ export interface Product {
   categoryId: string;
   status: ProductStatus;
   variants: Variant[];
-  /** `null` = canaux hérités de la gamme ; sinon override tout-ou-rien. */
-  channelsOverride: SalesChannels | null;
   /**
    * La **dérogation** de cette fiche au taux de sa famille, par clé de contexte.
    * Vide = elle hérite. Ce n'est PAS le taux effectif : l'écran compose les deux
@@ -222,8 +194,6 @@ export interface Category {
   parentId: string | null;
   position: number;
   isArchived: boolean;
-  /** Défauts dont héritent les produits de la catégorie (sauf override). */
-  channelPreset: SalesChannels;
   /** Taux de TVA appliqué par canal de vente. `''` = non réglé. */
   /**
    * Les taux visés, **par clé de contexte de vente**. Clé absente = non réglé.

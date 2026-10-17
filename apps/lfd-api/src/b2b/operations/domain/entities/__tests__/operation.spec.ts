@@ -1,5 +1,4 @@
 import {
-  OperationAlreadyAtCommerceError,
   OperationAwaitingMigrationError,
   InvalidOperationAudienceError,
   InvalidOperationImageError,
@@ -11,7 +10,6 @@ import {
   Operation,
   type OperationRecord,
   type PrepareOperation,
-  type ReferentialOperation,
   type WriteStamp,
 } from "../operation.js";
 
@@ -257,60 +255,17 @@ describe("l'image suit la médiathèque", () => {
   });
 });
 
-describe("la migration depuis le référentiel (lot 3)", () => {
-  /** Les valeurs du référentiel, déjà restreintes par la surcharge de la réception. */
-  function fromReferential(over: Partial<ReferentialOperation> = {}): ReferentialOperation {
-    const { lastWrite, showsOrderUntilTime, ...values } = received({
-      skus: ["BUC-001"],
-      hidden: true,
-      ...over,
-    });
-    expect(lastWrite).toBeNull();
-    expect(showsOrderUntilTime).toBe(true);
-    return values;
-  }
-
-  it("une copie reçue ne s'écrit pas avant d'avoir été reprise", () => {
+/**
+ * Une copie reçue de l'ancien référentiel, jamais reprise au commerce : la
+ * reprise est partie en X4 (`documentation/catalogue/plan-sans-interrupteurs.md`),
+ * la garde reste — écrire la copie la ferait passer pour une opération du commerce.
+ */
+describe("une copie reçue du référentiel", () => {
+  it("ne s'écrit pas", () => {
     const copy = Operation.reconstitute(received());
 
     expect(() => copy.select(["BUC-001"], LATER)).toThrow(OperationAwaitingMigrationError);
     expect(() => copy.archive(LATER)).toThrow(OperationAwaitingMigrationError);
     expect(copy.snapshot().lastWrite).toBeNull();
-  });
-
-  it("la reprend une fois, signée de qui migre, puis la laisse s'écrire", () => {
-    const copy = Operation.reconstitute(received());
-
-    copy.adoptReferential(fromReferential(), LATER);
-
-    expect(copy.snapshot()).toMatchObject({ skus: ["BUC-001"], hidden: true, lastWrite: LATER });
-    expect(() => copy.adoptReferential(fromReferential(), LATER)).toThrow(
-      OperationAlreadyAtCommerceError,
-    );
-    copy.select([], LATER);
-    expect(copy.snapshot().skus).toEqual([]);
-  });
-
-  it("ne reprend pas une copie retirée, et fait naître celle qui n'avait jamais été envoyée", () => {
-    const withdrawn = Operation.reconstitute(received({ archivedAt: PREPARED.at }));
-
-    expect(() => withdrawn.adoptReferential(fromReferential(), LATER)).toThrow(
-      OperationArchivedError,
-    );
-    expect(
-      Operation.fromReferential(fromReferential({ archivedAt: PREPARED.at }), LATER).snapshot(),
-    ).toMatchObject({ archivedAt: PREPARED.at, lastWrite: LATER, skus: ["BUC-001"] });
-  });
-
-  /** Le référentiel ne connaît pas ce réglage : la reprise affiche l'heure, comme une préparation. */
-  it("la reprise affiche l'heure de clôture, même sur une copie qui l'avait éteinte", () => {
-    const copy = Operation.reconstitute(received({ showsOrderUntilTime: false }));
-
-    copy.adoptReferential(fromReferential(), LATER);
-
-    expect(copy.snapshot().showsOrderUntilTime).toBe(true);
-    expect(Operation.fromReferential(fromReferential(), LATER).snapshot().showsOrderUntilTime).toBe(
-      true,
-    );
   });
 });

@@ -53,7 +53,6 @@
  */
 import "dotenv/config";
 
-import { openB2bChannel, type B2bChannelReport } from "./seed-pim/b2b-channel.js";
 import { CATALOGUE } from "./seed-pim/catalogue.js";
 import { refuseNonLocalTarget } from "./local-target.js";
 import { bootstrapHarness, SEED_STAFF } from "./seed-pim/harness.js";
@@ -83,11 +82,8 @@ async function main(): Promise<void> {
     const report = await harness.runAt(now, SEED_STAFF, () =>
       replayProducts(harness.commands, harness.prisma, CATALOGUE.products, registry),
     );
-    const channel = await harness.runAt(now, SEED_STAFF, () =>
-      openB2bChannel(harness.membership, harness.prisma, CATALOGUE),
-    );
     const facts = await harness.runAt(now, SEED_STAFF, () => deliverCatalogFacts(harness.relay));
-    summarize(counts, report, channel, facts);
+    summarize(counts, report, facts);
   } finally {
     await harness.close();
   }
@@ -104,12 +100,7 @@ function announce(): void {
   );
 }
 
-function summarize(
-  counts: RegistryCounts,
-  report: ReplayReport,
-  channel: B2bChannelReport,
-  facts: FactsReport,
-): void {
+function summarize(counts: RegistryCounts, report: ReplayReport, facts: FactsReport): void {
   process.stdout.write(
     "✔ seed du référentiel terminé\n" +
       `  référentiel — contextes=+${counts.contextsCreated} points de vente=+${counts.pointsCreated} ` +
@@ -117,8 +108,6 @@ function summarize(
       `  fiches — créées=${report.created} retrouvées=${report.updated} ` +
       `mises en vente=${report.published} signées=${report.signed} ` +
       `archivées=${report.archived}\n` +
-      `  canal B2B — vendues aux pros par la matrice=${channel.sold}, ` +
-      `en vente sur le canal=${channel.opened}\n` +
       `  faits du catalogue — livrés=${facts.delivered} en échec=${facts.failed} ` +
       `(les articles attendent leur relecture avant d'être servis)\n`,
   );

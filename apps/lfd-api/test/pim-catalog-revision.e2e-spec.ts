@@ -379,17 +379,6 @@ describe("Diff entre deux ancres", () => {
       .expect(201);
     const rateId = jsonBody<{ id: string }>(created).id;
     const categoryId = await aCategory();
-    // Un taux ne se déroge que là où la famille VEND : déroger sur un contexte
-    // fermé serait décider d'un prix pour une vente qui n'a pas lieu, et le
-    // serveur le refuse en 409. On ouvre donc le comptoir d'abord.
-    const shop = await staff()
-      .post("/pim/points-of-sale")
-      .send({ kind: "shop", label: "Comptoir", contexts: ["takeaway"], baseUrl: "", tableCount: 0 })
-      .expect(201);
-    await staff()
-      .put(`${CATEGORIES}/${categoryId}/channels`)
-      .send([{ pointOfSaleId: jsonBody<{ id: string }>(shop).id, context: "takeaway" }])
-      .expect(200);
     await staff()
       .put(`${CATEGORIES}/${categoryId}/vat`)
       .send({ vatByContext: { takeaway: rateId } })
@@ -533,30 +522,25 @@ describe("Diff entre deux ancres", () => {
 });
 
 /**
- * Un produit **inscrit au canal** B2B — l'appartenance, et rien de plus.
+ * Un produit et le rapport pro. Il s'inscrivait aussi au canal B2B ; le lien
+ * au canal est parti en X4 (`plan-sans-interrupteurs.md`).
  */
 async function aSoldProduct(): Promise<string> {
   const { id } = await aProduct("Croissant");
-  await staff().put(`/pim/channels/b2b/products/${id}`).send({ published: true }).expect(200);
   await staff().put("/pim/accounting-rules/pro-price-ratio").send({ ratioBp: 9_000 }).expect(200);
   return id;
 }
 
 /**
- * Une fiche **complète pour le canal** : prix, taux B2B, contexte
- * professionnel dans la matrice de sa famille, déclaration d'allergènes.
+ * Une fiche **complète pour le canal** : prix, taux B2B, déclaration
+ * d'allergènes. (La matrice de sa famille et le lien au canal ne s'écrivent
+ * plus depuis X4.)
  */
 async function aDeliverableProduct(): Promise<{ id: string; variantId: string; sku: string }> {
   const rateId = jsonBody<{ id: string }>(
     await staff().post("/pim/vat-rates").send({ name: "Alimentaire", percent: 5.5 }).expect(201),
   ).id;
   const category = await aCategory();
-  // `pos_b2b` n'est pas une boutique : c'est la ligne de la plateforme dans la
-  // matrice, et elle existe sans avoir été créée.
-  await staff()
-    .put(`${CATEGORIES}/${category}/channels`)
-    .send([{ pointOfSaleId: "pos_b2b", context: "b2b" }])
-    .expect(200);
   await staff()
     .put(`${CATEGORIES}/${category}/vat`)
     .send({ vatByContext: { b2b: rateId } })
@@ -573,7 +557,6 @@ async function aDeliverableProduct(): Promise<{ id: string; variantId: string; s
     .put(`${PRODUCTS}/${id}/variants/${variantId}/allergens`)
     .send({ allergens: [] })
     .expect(200);
-  await staff().put(`/pim/channels/b2b/products/${id}`).send({ published: true }).expect(200);
   // Ce décor vend au RAPPORT (le repli d'origine) ; depuis le lot S, une ligne
   // neuve naît sur « prix saisi », d'où la méthode posée explicitement.
   await staff().put("/pim/accounting-rules/pro-price-ratio").send({ ratioBp: 9_000 }).expect(200);

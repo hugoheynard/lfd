@@ -13,7 +13,6 @@ import {
   type UpdateProductIdentityPayload,
   type UpdateVariantPricingPayload,
   setProductMediaPayloadSchema,
-  setProductChannelsPayloadSchema,
   setProductOperationOnlyPayloadSchema,
   setProductColdRequirementPayloadSchema,
   setProductVatPayloadSchema,
@@ -22,7 +21,6 @@ import {
   addProductVariantPayloadSchema,
   alignVariantPayloadSchema,
   type SetProductMediaPayload,
-  type SetProductChannelsPayload,
   type SetProductOperationOnlyPayload,
   type SetProductColdRequirementPayload,
   type SetProductVatPayload,
@@ -53,7 +51,6 @@ import { ActivateProductCommand } from "../application/activate-product.js";
 import { RestoreProductCommand } from "../application/restore-product.js";
 import { DeactivateProductCommand } from "../application/deactivate-product.js";
 import { SetProductMediaCommand } from "../application/set-product-media.js";
-import { SetProductChannelsCommand } from "../application/set-product-channels.js";
 import { SetProductOperationOnlyCommand } from "../application/set-product-operation-only.js";
 import { SetProductColdRequirementCommand } from "../application/set-product-cold-requirement.js";
 import { SetProductVatCommand } from "../application/set-product-vat.js";
@@ -140,21 +137,6 @@ export class ProductController {
   ) {
     await this.commands.execute<SetProductMediaCommand, void>(
       new SetProductMediaCommand(id, body.media),
-    );
-    return { id };
-  }
-
-  /**
-   * Section **Canaux** : où cette fiche se vend, quand elle ne suit pas sa
-   * famille. `null` la rend à sa famille.
-   */
-  @Put(":id/channels")
-  async setProductChannels(
-    @Param("id") id: string,
-    @Body(new ZodBody(setProductChannelsPayloadSchema)) body: SetProductChannelsPayload,
-  ) {
-    await this.commands.execute<SetProductChannelsCommand, void>(
-      new SetProductChannelsCommand(id, body.channels),
     );
     return { id };
   }

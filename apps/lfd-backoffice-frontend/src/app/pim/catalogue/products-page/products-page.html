@@ -1,7 +1,7 @@
 <fold-page-layout icon="product" title="Produits">
   <p description>
     La référence est <strong>proposée</strong> si on la laisse vide — modifiable ensuite. Chaque
-    produit naît avec sa déclinaison par défaut et hérite des canaux de sa gamme.
+    produit naît avec sa déclinaison par défaut.
   </p>
 
   <div pageActions>
@@ -28,8 +28,6 @@
     [columns]="columns"
     [rows]="pagedProducts()"
     [rowKey]="rowKey"
-    [rowTone]="rowTone"
-    [rowNote]="hasFaults"
     [sort]="sort()"
     (sortChange)="onSortChange($event)"
     clickable
@@ -60,17 +58,6 @@
         >
           Actions ({{ selectedCount() }})
         </button>
-        <!-- Ce menu ne porte que des DÉCISIONS sur la fiche : où elle se vend,
-             et si elle est au catalogue.
-
-             Ouvrir un canal se fait une fois, sur tout un catalogue : le geste
-             unitaire seul aurait demandé quatre-vingt-quinze clics. -->
-        <fold-dropdown-item icon="shopping-bag" (selected)="setB2bSelected(true)">
-          Vendre sur la boutique B2B
-        </fold-dropdown-item>
-        <fold-dropdown-item icon="eye-off" (selected)="setB2bSelected(false)">
-          Retirer de la boutique B2B
-        </fold-dropdown-item>
         <!-- UN seul item, et il dit ce qui se passe. « Supprimer la sélection »
              vivait ici à côté, avec une poubelle et un ton danger — et appelait
              exactement la même route. Qui voulait retirer une fiche cliquait
@@ -100,60 +87,12 @@
       {{ categoryName(p.categoryId) }}
     </ng-template>
 
-    <!-- TOUS les contextes du registre, pas deux clés écrites en dur. La colonne
-         n'interrogeait que `takeaway` et `eatIn` : une fiche vendue en B2B —
-         le canal principal de la plateforme — s'y affichait « aucun ». Le
-         libellé et l'ordre viennent du registre, donc un contexte ajouté à
-         l'écran des contextes apparaît ici sans toucher au code.
-
-         Une seule teinte : avec N contextes, la couleur ne peut plus porter
-         l'identité, et deux pastilles de la même couleur sous des libellés
-         différents mentent moins qu'une palette qu'on épuise au troisième. -->
-    <ng-template foldCell="channels" let-p>
-      <span class="chan-pills">
-        @for (sold of rowSoldContexts(p); track sold.key) {
-          <fold-badge [content]="sold.label + ' ' + sold.locations.join(' · ')" variant="info" />
-        } @empty {
-          <span class="muted">aucun</span>
-        }
-      </span>
-    </ng-template>
-
     <!-- La pastille passe par la table partagée avec la fiche produit. Elle
          peignait `p.status` — la valeur d'enum, en anglais — et donnait le vert
          à tout ce qui n'est pas archivé : un brouillon s'affichait donc comme un
          produit en ligne. -->
     <ng-template foldCell="status" let-p>
       <fold-badge [content]="statusLabel(p.status)" [variant]="statusVariant(p.status)" />
-    </ng-template>
-
-    <!-- « hors canal » n'est pas une panne : c'est le défaut d'une fiche neuve.
-         La colonne s'arrête à l'appartenance : dire « en vente » demanderait
-         d'interroger la plateforme fiche par fiche, ce que la frise de la fiche
-         produit fait, et pas un tableau. -->
-    <ng-template foldCell="b2b" let-p>
-      <fold-badge [content]="b2bLabel(p)" [variant]="b2bVariant(p)" />
-    </ng-template>
-
-    <!-- LA NOTE DE LIGNE — toujours visible, jamais derrière un chevron.
-         `foldRowDetail` aurait caché un avertissement jusqu'à ce qu'on pense à
-         le demander, ce qui revient à ne pas l'afficher. Elle dit ce qui MANQUE
-         pour partir ; « non vendue aux pros » n'y figure pas, c'est une
-         décision et le badge de la colonne B2B la porte déjà. -->
-    <ng-template foldRowNote let-p>
-      <fold-callout appearance="inset" variant="warning">
-        Ne partira pas vers la boutique professionnelle —
-        @for (fault of rowFaults(p); track fault.sku) {
-          @if (!$first) {
-            <span aria-hidden="true"> · </span>
-          }
-          @if (fault.wholeProduct) {
-            {{ fault.label }}
-          } @else {
-            <strong>{{ fault.sku }}</strong> : {{ fault.label }}
-          }
-        }
-      </fold-callout>
     </ng-template>
 
     <!-- 🔴 `stopPropagation` OBLIGATOIRE depuis que la ligne est cliquable. Le
@@ -170,23 +109,6 @@
           <fold-dropdown-item icon="edit" (selected)="openProduct(p)">
             Ouvrir la fiche
           </fold-dropdown-item>
-          <!-- 🔴 Le geste qui manquait. La projection du canal démarre sur cette
-               appartenance : une fiche qui n'y est pas n'est JAMAIS candidate au
-               push, et aucun écran ne l'écrivait. « Vendre sur » et non
-               « publier » — ce dernier désigne déjà deux autres gestes. -->
-          @if (onB2bChannel(p.id)) {
-            <fold-dropdown-item icon="eye-off" [disabled]="busy()" (selected)="setB2b(p, false)">
-              Retirer de la boutique B2B
-            </fold-dropdown-item>
-          } @else {
-            <fold-dropdown-item
-              icon="shopping-bag"
-              [disabled]="busy()"
-              (selected)="setB2b(p, true)"
-            >
-              Vendre sur la boutique B2B
-            </fold-dropdown-item>
-          }
           @if (p.status === 'draft') {
             <fold-dropdown-item icon="check" [disabled]="busy()" (selected)="publish(p)">
               Activer

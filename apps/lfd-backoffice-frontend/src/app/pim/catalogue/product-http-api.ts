@@ -5,7 +5,6 @@ import type {
   ProductIngredientAllergensView,
   ProductReadinessView,
   ProductEditorialView,
-  SalesChannels,
   ProductView,
   VariantNutritionView,
   VariantView,
@@ -185,9 +184,6 @@ export function backendToProduct(
     categoryId: product.categoryId,
     status: product.status,
     variants: product.variants.map(toVariant),
-    // Le vestige devient RÉEL : il valait `null` en dur depuis la greffe, et
-    // l'écran affirmait donc un héritage qu'il n'avait pas lu.
-    channelsOverride: product.channelOverride,
     vatByContext: product.vatByContext,
     operationOnly: product.operationOnly,
     requiresCold: product.requiresCold,
@@ -379,14 +375,6 @@ export class ProductHttpApi {
    */
   saveVat(id: string, vatByContext: Readonly<Record<string, string>>): Promise<void> {
     return this.put(`products/${id}/vat`, { vatByContext });
-  }
-
-  /**
-   * Où la fiche se vend, quand elle ne suit pas sa famille. `null` la rend à sa
-   * famille — une valeur, pas une omission.
-   */
-  saveChannels(id: string, channels: SalesChannels | null): Promise<void> {
-    return this.put(`products/${id}/channels`, { channels });
   }
 
   saveMedia(id: string, media: readonly MediaSlot[]): Promise<void> {

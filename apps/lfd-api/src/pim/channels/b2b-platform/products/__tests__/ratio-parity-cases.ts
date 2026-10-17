@@ -5,9 +5,7 @@ import type {
   ProductRecord,
   VariantRecord,
 } from "../../../../catalogue/product/domain/ports/product.repository.js";
-import type { ChannelCategory } from "../../../../catalogue/shared/domain/ports/catalogue-reader.js";
 import { projectProductFact } from "../catalog-facts.js";
-import { projectCatalog } from "../projection.js";
 
 /**
  * **La grille de parité du lot P** — ce que le fil vend sous `ratio_ttc`, sur
@@ -21,7 +19,6 @@ export const PRICES = [0, 1, 99, 199, 455, 1_200, 3_200, 99_999] as const;
 export const RATES = [2.1, 5.5, 10, 20] as const;
 export const RATIOS = [10_000, 9_000, 8_750, 9_333] as const;
 
-const AT = "2026-08-17T08:00:00.000Z";
 const INCO = IncoProjector.from([], "fr");
 
 function variantAt(rateIndex: number, price: number, entered: number | null): VariantRecord {
@@ -62,21 +59,18 @@ function productAt(rateIndex: number, entered: (price: number) => number | null)
   };
 }
 
-const CATEGORY: ChannelCategory = {
-  id: "cat_par",
-  name: { fr: "Parité" },
-  slug: { fr: "parite" },
-  parentId: null,
-  position: 0,
-  vatByContext: {},
-};
-
-/** `ratio|taux|prix` → `[HT poussé, HT émis, TTC public poussé]`. */
+/**
+ * `ratio|taux|prix` → `[HT poussé, HT émis, TTC public poussé]`.
+ *
+ * Le push est parti en X2 et sa projection en X4
+ * (`documentation/catalogue/plan-sans-interrupteurs.md`) : les deux premières
+ * colonnes de l'empreinte valaient le même nombre, et le fait seul les remplit
+ * désormais — l'empreinte d'avant le lot P ne bouge pas.
+ */
 export type ParityGrid = Readonly<Record<string, readonly [number, number, number]>>;
 
 /**
- * Projette toute la grille sous `ratio_ttc` — par le push (`projectCatalog`)
- * ET par le fait (`projectProductFact`). `entered` fabrique le prix pro saisi
+ * Projette toute la grille sous `ratio_ttc` par le fait (`projectProductFact`). `entered` fabrique le prix pro saisi
  * de chaque déclinaison : sous `ratio_ttc`, il ne doit rien changer.
  */
 export function projectGrid(entered: (price: number) => number | null): ParityGrid {
@@ -86,18 +80,6 @@ export function projectGrid(entered: (price: number) => number | null): ParityGr
     RATES.forEach((rate, rateIndex) => {
       const percents = { b2b: rate, takeaway: rate };
       const product = productAt(rateIndex, entered);
-      const pushed = projectCatalog(
-        [product],
-        [CATEGORY],
-        new Map([[product.id, percents]]),
-        new Map([[product.id, [{ pointOfSaleId: "pos_b2b", context: "b2b" }]]]),
-        policy,
-        [],
-        INCO,
-        new Map(),
-        [],
-        AT,
-      ).snapshot.products[0]?.variants;
       const emitted = projectProductFact({
         product,
         family: {
@@ -119,12 +101,11 @@ export function projectGrid(entered: (price: number) => number | null): ParityGr
       }).variants;
       for (const price of PRICES) {
         const sku = `PAR-${rateIndex}-${price}`;
-        const push = pushed?.find((v) => v.sku === sku);
         const fact = emitted.find((v) => v.sku === sku);
         grid[`${ratioBp}|${rate}|${price}`] = [
-          push?.priceMillicents ?? -1,
           fact?.priceMillicents ?? -1,
-          push?.publicTtcCents ?? -1,
+          fact?.priceMillicents ?? -1,
+          fact?.publicTtcCents ?? -1,
         ];
       }
     });

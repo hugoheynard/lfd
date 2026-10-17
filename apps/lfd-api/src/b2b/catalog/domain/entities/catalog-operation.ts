@@ -55,69 +55,16 @@ export interface CatalogOperationFacts {
   readonly receivedAt: Date;
 }
 
-/** L'état persisté : les faits, et le retrait éventuel. */
+/**
+ * L'état persisté : les faits, et le retrait éventuel.
+ *
+ * L'agrégat qui l'écrivait (`CatalogOperation` : recevoir, rafraîchir,
+ * retirer) est parti en X4 (`documentation/catalogue/plan-sans-interrupteurs.md`) :
+ * plus aucun envoi ne l'écrivait depuis le push. Ces formes restent — les
+ * lecteurs du miroir les rendent, et les opérations du commerce vivent dans les
+ * mêmes tables.
+ */
 export interface CatalogOperationState {
   readonly facts: CatalogOperationFacts;
   readonly withdrawnAt: Date | null;
-}
-
-/**
- * **Une opération reçue du référentiel** — le miroir, pas l'original.
- *
- * Le commerce ne crée pas d'opération et n'y ajoute rien (D1) : il la reçoit,
- * la rafraîchit au push suivant, et la **marque retirée** quand un envoi
- * accepté ne la porte plus. Jamais supprimée : une clé ne se réemploie pas, et
- * la surcharge de la réception doit garder son parent (D9).
- *
- * Même cycle que `CatalogItem` : `receive` / `refreshFromPim` / `withdraw`,
- * puis le port. Une opération qui REVIENT dans un envoi est remise en tenue par
- * le rafraîchissement lui-même — sans quoi elle resterait retirée pour
- * toujours, et rien ne le dirait.
- */
-export class CatalogOperation {
-  private constructor(
-    private readonly facts: CatalogOperationFacts,
-    private withdrawnAt: Date | null,
-  ) {}
-
-  /** Une opération que le miroir ne connaissait pas. */
-  static receive(facts: CatalogOperationFacts): CatalogOperation {
-    return new CatalogOperation(facts, null);
-  }
-
-  static reconstitute(state: CatalogOperationState): CatalogOperation {
-    return new CatalogOperation(state.facts, state.withdrawnAt);
-  }
-
-  /** Les faits d'un envoi plus récent — et la remise en tenue si elle était retirée. */
-  refreshFromPim(facts: CatalogOperationFacts): CatalogOperation {
-    return new CatalogOperation(facts, null);
-  }
-
-  /**
-   * Retirée par un envoi qui ne la porte plus. Idempotent : un second retrait
-   * garde la date du premier, qui est celle qu'on cherchera.
-   */
-  withdraw(at: Date): void {
-    if (this.withdrawnAt === null) {
-      this.withdrawnAt = at;
-    }
-  }
-
-  get key(): string {
-    return this.facts.key;
-  }
-
-  get isWithdrawn(): boolean {
-    return this.withdrawnAt !== null;
-  }
-
-  /** Ce que le référentiel a dit — ce que photographie une version. */
-  get received(): CatalogOperationFacts {
-    return this.facts;
-  }
-
-  toPersistence(): CatalogOperationState {
-    return { facts: this.facts, withdrawnAt: this.withdrawnAt };
-  }
 }

@@ -1,15 +1,9 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 
-import type {
-  CategoryMediaView,
-  LocalizedText,
-  OperationAudience,
-  SalesChannels,
-} from '@lfd/pim-contracts';
+import type { CategoryMediaView, LocalizedText, OperationAudience } from '@lfd/pim-contracts';
 
 import { localizedField } from '../../../shared/lang-switch/localized-field';
 import { NotifyService } from '../../../notify.service';
-import { NO_CHANNELS } from '../../data/channels';
 import { SalesContextStore } from '../../sales-contexts/sales-context-store';
 import { CategoryHttpApi, type CategoryDetail, type CategoryVatDraft } from '../category-http-api';
 import { CategoryStore } from '../category-store';
@@ -67,7 +61,6 @@ export class CategoryFormStore implements SectionEditing {
 
   /** `''` = la racine. */
   readonly parentId = signal('');
-  readonly channels = signal<SalesChannels>(NO_CHANNELS);
   readonly vat = signal<CategoryVatDraft>({});
   /**
    * À qui la famille vend — une écriture à part (`PUT …/audience`), hors des
@@ -138,7 +131,6 @@ export class CategoryFormStore implements SectionEditing {
     this.saved.set(category);
     this.savedName.set(category?.name ?? { fr: '' });
     this.parentId.set(category?.parentId ?? '');
-    this.channels.set(category?.channelPreset ?? NO_CHANNELS);
     this.vat.set({ ...(category?.vatByContext ?? {}) });
     this.audience.set(category?.audience ?? null);
     this.editorial.adopt(category?.editorial ?? null);
@@ -155,7 +147,9 @@ export class CategoryFormStore implements SectionEditing {
       case 'identite':
         return JSON.stringify([this.name.text(), this.parentId()]);
       case 'canaux':
-        return JSON.stringify([sortedChannels(this.channels()), this.vat()]);
+        // `[0]` portait la matrice des canaux, partie en X4 : la place reste,
+        // pour que {@link revert} relise les mêmes positions.
+        return JSON.stringify([null, this.vat()]);
       case 'communication':
         return JSON.stringify(this.editorial.texts());
       case 'visuels':
@@ -202,7 +196,6 @@ export class CategoryFormStore implements SectionEditing {
       this.parentId.set(String(value[1] ?? ''));
       return;
     }
-    this.channels.set(value[0] as SalesChannels);
     this.vat.set(value[1] as CategoryVatDraft);
   }
 
@@ -214,7 +207,7 @@ export class CategoryFormStore implements SectionEditing {
 
   /**
    * Enregistre UNE section. Le référentiel découpe par verbe (un pour le nom,
-   * un pour le parent, un pour les canaux, un pour les taux) ; l'ordre de ces
+   * un pour le parent, un pour les taux) ; l'ordre de ces
    * écritures est une affaire de persistance, pas d'écran.
    */
   async saveOne(section: CategorySection): Promise<void> {
@@ -235,9 +228,6 @@ export class CategoryFormStore implements SectionEditing {
         await this.api.setMedia(id, this.media.items());
         return;
       }
-      // Les canaux AVANT les taux : fermer un canal efface son taux côté
-      // référentiel, donc l'inverse écraserait ce qu'on vient de régler.
-      await this.categories.setChannels(id, this.channels());
       await this.categories.setVat(id, this.vatToSave());
     });
   }
@@ -310,13 +300,6 @@ export class CategoryFormStore implements SectionEditing {
         .filter(([, rateId]) => rateId !== ''),
     );
   }
-}
-
-/** L'ordre d'une matrice est un accident d'écriture, pas une donnée. */
-function sortedChannels(channels: SalesChannels): SalesChannels {
-  return [...channels].sort((a, b) =>
-    `${a.pointOfSaleId}|${a.context}`.localeCompare(`${b.pointOfSaleId}|${b.context}`),
-  );
 }
 
 /** Le jeton d'édition parle `string` ; on rétrécit au bord, sans conversion. */

@@ -5,7 +5,6 @@ import {
   moveCategoryPayloadSchema,
   renameCategoryPayloadSchema,
   reorderCategoriesPayloadSchema,
-  setCategoryChannelsPayloadSchema,
   setCategoryVatPayloadSchema,
   setCategoryAudiencePayloadSchema,
   type SetCategoryAudiencePayload,
@@ -18,7 +17,6 @@ import {
   type MoveCategoryPayload,
   type RenameCategoryPayload,
   type ReorderCategoriesPayload,
-  type SetCategoryChannelsPayload,
   type SetCategoryMediaPayload,
   type SetCategoryVatPayload,
 } from "@lfd/pim-contracts";
@@ -34,7 +32,6 @@ import { UpdateCategoryEditorialCommand } from "../application/update-category-e
 import { MoveCategoryCommand } from "../application/move-category.js";
 import { ReorderCategoriesCommand } from "../application/reorder-categories.js";
 import { RenameCategoryCommand } from "../application/rename-category.js";
-import { SetCategoryChannelsCommand } from "../application/set-category-channels.js";
 import { SetCategoryVatCommand } from "../application/set-category-vat.js";
 import { SetCategoryAudienceCommand } from "../application/set-category-audience.js";
 
@@ -87,18 +84,6 @@ export class CategoryController {
     @Body(new ZodBody(renameCategoryPayloadSchema)) body: RenameCategoryPayload,
   ) {
     await this.commands.execute<RenameCategoryCommand, void>(new RenameCategoryCommand(id, body));
-    return { id };
-  }
-
-  @Put(":id/channels")
-  async setChannels(
-    @Param("id") id: string,
-    @Body(new ZodBody(setCategoryChannelsPayloadSchema))
-    body: SetCategoryChannelsPayload,
-  ) {
-    await this.commands.execute<SetCategoryChannelsCommand, void>(
-      new SetCategoryChannelsCommand(id, body),
-    );
     return { id };
   }
 

@@ -110,7 +110,7 @@ candidats vient du binding
 (feed-projection.service.ts:48 (retiré en X2)),
 puis chaque fiche est écartée pour `canal_ferme` si sa matrice effective ne vend
 pas le contexte `b2b`
-([`projection.ts:254`](../../apps/lfd-api/src/pim/channels/b2b-platform/products/projection.ts)).
+([projection.ts:254 (la projection du push, retirée en X4)](../../apps/lfd-api/src/pim/channels/b2b-platform/products/projection.ts)).
 
 **Deux portes pour une seule question.** Elles ont divergé — mesuré sur la base
 de dev le 2026-09-02 :
@@ -180,8 +180,8 @@ table en double survit.
   retire un rayon entier à la poussée suivante. La contrepartie est réelle et
   c'est le meilleur argument du §3 — la matrice est **journalisée**
   (`productChannelsChanged`, `productCategoryChannelsChanged`) là où
-  `membership.service.ts:71` écrit sans aucun fait.
-- **Le retrait touche huit appelants**, pas un : `b2b-channel-api.ts`,
+  membership.service.ts (retiré en X4) écrit sans aucun fait.
+- **Le retrait touche huit appelants**, pas un : b2b-channel-api.ts (retiré en X4),
   `products-page.ts`, **b2b-delivery.ts:201** (le bouton de la fiche ; la frise est retirée le 2026-10-17),
   deux montages e2e, `pim-wall.e2e-spec.ts` (couverture du mur pour `pim_channels`),
   plus deux registres tenus à la main — `schema-ops.counter.ts:166` et

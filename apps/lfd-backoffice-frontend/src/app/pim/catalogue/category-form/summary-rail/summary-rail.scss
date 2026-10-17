@@ -24,37 +24,6 @@
   color: var(--fold-color-text-secondary);
 }
 
-/* Le second fait, sous un filet : il appartient à la même carte que le chiffre
-   — c'est la même famille qu'on décrit — mais il ne se lit pas d'un coup d'œil,
-   et le poser sur la même ligne les mettrait à égalité. */
-.sr-sub {
-  margin-top: var(--fold-space-md);
-  padding-top: var(--fold-space-md);
-  border-top: 1px solid var(--fold-color-border-subtle);
-}
-
-.sr-sub-label {
-  display: block;
-  margin-bottom: var(--fold-space-xs);
-  font-family: var(--fold-font-label);
-  font-size: var(--fold-text-2xs);
-  font-weight: var(--fold-weight-semibold);
-  letter-spacing: var(--fold-tracking-wide);
-  text-transform: uppercase;
-  color: var(--fold-color-text-muted);
-}
-
-.sr-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--fold-space-xs);
-}
-
-.sr-none {
-  font-size: var(--fold-text-sm);
-  color: var(--fold-color-text-muted);
-}
-
 /* La barre respire au-dessus de la liste qu'elle résume. */
 .sr-meter {
   display: block;

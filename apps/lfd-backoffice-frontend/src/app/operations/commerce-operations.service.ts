@@ -5,7 +5,6 @@ import type {
   CommerceOperationKeyResponse,
   CommerceOperationView,
   EditCommerceOperationPayload,
-  OperationsMigrationReport,
   PrepareCommerceOperationPayload,
   RescheduleCommerceOperationPayload,
 } from '@lfd/contracts';
@@ -32,16 +31,6 @@ export class CommerceOperationsService {
 
   get(key: string): Promise<CommerceOperationView> {
     return firstValueFrom(this.http.get<CommerceOperationView>(this.url(encodeURIComponent(key))));
-  }
-
-  /** L'aperçu : ce que la reprise écrirait. Sous `lfc_operations:write`. */
-  previewMigration(): Promise<OperationsMigrationReport> {
-    return firstValueFrom(this.http.get<OperationsMigrationReport>(this.url('migration')));
-  }
-
-  /** Applique la reprise, et rend le relevé d'APRÈS. Rejouable. */
-  applyMigration(): Promise<OperationsMigrationReport> {
-    return firstValueFrom(this.http.post<OperationsMigrationReport>(this.url('migration'), {}));
   }
 
   /** Préparer : rend la clé, l'identité qui ne changera plus. */

@@ -1,33 +1,17 @@
 import type {
-  CatalogSnapshot,
   SyncAllergenLabels,
-  SyncCategory,
-  SyncMedia,
-  SyncProduct,
-  SyncOrderTimeLimitRule,
   SyncContextPrice,
+  SyncMedia,
   SyncVariant,
 } from "@lfd/catalog-sync";
-import { CATALOG_SNAPSHOT_VERSION } from "@lfd/catalog-sync";
-import {
-  htMillicentsOf,
-  proPriceOf,
-  type B2bExclusionReason,
-  type ProPricePolicy,
-} from "@lfd/pim-contracts";
+import { htMillicentsOf } from "@lfd/pim-contracts";
 
 import type {
   IncoProjection,
   IncoProjector,
 } from "../../../allergens/domain/services/inco-projector.js";
-import type {
-  CategoryVatPercents,
-  ChannelCategory,
-} from "../../../catalogue/shared/domain/ports/catalogue-reader.js";
-import {
-  sellsContext,
-  type SalesChannels,
-} from "../../../catalogue/shared/domain/value-objects/sales-channels.js";
+import type { CategoryVatPercents } from "../../../catalogue/shared/domain/ports/catalogue-reader.js";
+import type { VariantRecord } from "../../../catalogue/product/domain/ports/product.repository.js";
 
 /**
  * La clé du contexte que CE canal facture. Une constante nommée plutôt qu'une
@@ -35,36 +19,18 @@ import {
  * ne désigne plus rien, il n'y a qu'un endroit à corriger.
  */
 const B2B_CONTEXT_KEY = "b2b";
-import type {
-  ProductRecord,
-  VariantRecord,
-} from "../../../catalogue/product/domain/ports/product.repository.js";
-import type { OperationSnapshot } from "../../../operations/domain/entities/operation.js";
-import { projectOperations } from "./operation-projection.js";
 
 /**
- * Projection catalogue → snapshot de la plateforme B2B. **Pure et testable** :
- * aucun appel réseau, aucune dépendance Nest, aucune horloge — l'instant
- * d'émission est **passé**, jamais lu ici.
+ * **La conversion d'une déclinaison vers le fil** — pure : aucun appel réseau,
+ * aucune dépendance Nest, aucune horloge.
  *
- * C'est la pièce qui a de la valeur. Le transport changera ; ce que signifie
- * « ce produit, vendu aux pros » ne changera pas.
+ * Ce fichier portait aussi la projection du catalogue entier pour le push
+ * (`projectCatalog`, son tri des déclinaisons, ses exclusions et ses
+ * opérations datées) ; elle est partie avec le push et les opérations du
+ * référentiel (X4 de `documentation/catalogue/plan-sans-interrupteurs.md`).
+ * Reste ce que les faits du catalogue réemploient (`catalog-facts.ts`) :
+ * convertir une déclinaison, et le taux du contexte `b2b`.
  */
-
-/**
- * Pourquoi quelque chose n'est **pas** parti. Nommé, jamais tu.
- *
- * Le motif vient du CONTRAT (`B2bExclusionReason`) au lieu d'être redéclaré
- * ici. C'était un synonyme, et il avait dérivé : le domaine produisait
- * `canal_ferme` que le contrat ignorait, donc l'écran de publication affichait
- * un motif vide pour une fiche écartée. Un alias, lui, ne peut pas diverger —
- * c'est le compilateur qui tient les deux bouts.
- */
-export interface Exclusion {
-  /** SKU du produit ou de la déclinaison concernée. */
-  readonly sku: string;
-  readonly reason: B2bExclusionReason;
-}
 
 /**
  * **Ce qu'une vitrine montre d'une fiche** : une ligne et une pièce.
@@ -80,18 +46,6 @@ export interface Showcase {
   readonly image: SyncMedia | null;
   /** La vignette de rayon — `null` si la fiche n'en désigne pas. */
   readonly thumbnail: SyncMedia | null;
-}
-
-export interface Projection {
-  readonly snapshot: CatalogSnapshot;
-  /**
-   * Ce qui a été écarté, avec son motif.
-   *
-   * Un push qui tait ses exclusions laisse croire que 92 produits sont partis
-   * quand 89 le sont. Le silence sur une troncature est le mensonge le plus
-   * facile à écrire et le plus long à découvrir.
-   */
-  readonly excluded: readonly Exclusion[];
 }
 
 /** Le français est la langue de la plateforme ; l'aplatissement se fait ici. */
@@ -187,292 +141,6 @@ function labelsOf(projection: IncoProjection): SyncAllergenLabels {
 }
 
 /**
- * Trie les déclinaisons d'un produit entre vendables et écartées, et **convertit
- * en hors taxe** au passage.
- *
- * Trois motifs, distincts à dessein : une déclinaison **arrêtée** est une
- * décision produit, une déclinaison **sans prix** est un oubli de saisie, et une
- * déclinaison **ancrée au TTC sans taux** est un prix qu'on ne sait pas
- * convertir. Les confondre priverait l'écran de la seule information
- * actionnable des trois — et le dernier envoie ouvrir un autre écran que les
- * deux premiers.
- *
- * La conversion se fait ICI plutôt qu'en aval : c'est le dernier endroit qui
- * connaît encore l'assiette. Passé ce point, tout est HT — y compris pour la
- * comparaison de parité, qui rejoue cette même projection.
- */
-function sortVariants(
-  product: ProductRecord,
-  percents: CategoryVatPercents,
-  policy: ProPricePolicy,
-  inco: IncoProjector,
-): {
-  sellable: SyncVariant[];
-  excluded: Exclusion[];
-} {
-  const sellable: SyncVariant[] = [];
-  const excluded: Exclusion[] = [];
-  const vatRatePercent = vatOf(percents);
-
-  for (const variant of product.variants) {
-    if (variant.isDiscontinued) {
-      excluded.push({ sku: variant.sku, reason: "variant_arretee" });
-      continue;
-    }
-    const priceCents = variant.priceCents;
-    if (priceCents === null) {
-      excluded.push({ sku: variant.sku, reason: "variant_sans_prix" });
-      continue;
-    }
-    // **La chaîne, dans son ordre — et l'ordre dépend maintenant de la MÉTHODE.**
-    // `proPriceOf` la porte, et c'est l'unique porte du dépôt : la brancher ici
-    // et la rebrancher à l'écran garantirait qu'un jour l'un montre une méthode
-    // pendant que l'autre en pousse une autre.
-    //
-    // Le réglage est **passé**, jamais lu. Ce module promet en tête d'être pur —
-    // aucun appel réseau, aucune dépendance Nest, aucune horloge — et le taux
-    // figé de la plaquette est exactement le genre de valeur qu'on serait tenté
-    // d'aller chercher au référentiel depuis ici.
-    //
-    // Un prix d'étiquette sans taux ne se déduit pas. On l'écarte plutôt que
-    // d'inventer un taux : une conversion approximative facturerait un montant
-    // que personne n'a décidé, et rien ne le signalerait ensuite. ⚠️ Le refus
-    // vaut pour les DEUX méthodes, y compris celle de la plaquette où le hors
-    // taxe ne dépend plus du taux de l'article : il sert toujours à FACTURER.
-    // Sous `entered` (lot P), la saisie de la déclinaison — résolue par
-    // l'instantané : une alignée porte celle du défaut. Sans saisie, le motif
-    // le dit, pour qu'on aille ouvrir le tarif et pas l'écran des taux.
-    //
-    // 🔴 **Le taux d'abord** (lot S, contradiction de `vitruve`) : une
-    // déclinaison sans saisie ET sans taux `b2b` — typiquement une alignée dont
-    // le défaut n'a pas pu être pré-rempli faute de taux — partait sous
-    // `variant_sans_prix_pro`, qui envoyait saisir un prix alors que la cause
-    // est le taux. Rien ne change sous `ratio_ttc` : sans taux, la porte rendait
-    // déjà `null`, donc `variant_sans_taux`.
-    if (vatRatePercent === null) {
-      excluded.push({ sku: variant.sku, reason: "variant_sans_taux" });
-      continue;
-    }
-    if (policy.method === "entered" && variant.proPriceMillicents === null) {
-      excluded.push({ sku: variant.sku, reason: "variant_sans_prix_pro" });
-      continue;
-    }
-    const proPrice = proPriceOf(priceCents, policy, vatRatePercent, variant.proPriceMillicents);
-    if (proPrice === null) {
-      excluded.push({ sku: variant.sku, reason: "variant_sans_taux" });
-      continue;
-    }
-    // 🔴 **Sans déclaration d'allergènes, rien ne part** (lot 2b, 2b3). Le
-    // refus vivait à l'activation, fiche entière ; il est désormais ici, par
-    // déclinaison, comme dans les faits du catalogue — sans quoi assouplir
-    // l'activation (« au moins une déclinaison complète ») aurait mis en vente
-    // par cet envoi une déclinaison qu'on ne sait pas étiqueter. Et le push ne
-    // regarde pas le statut : un brouillon lié au canal partait déjà sans
-    // déclaration (`b2b-exclusions.ts` côté écran, vérifié le 2026-10-15).
-    //
-    // Testé EN DERNIER : une déclinaison déjà écartée pour un autre motif garde
-    // le sien, et aucune autre sortie de cette projection ne change.
-    if (variant.allergenSheet === null) {
-      excluded.push({ sku: variant.sku, reason: "variant_sans_allergenes" });
-      continue;
-    }
-    const htMillicents = proPrice.htMillicents;
-    // Absence dans la carte = aucune limite. Une carte plutôt qu'un `null`
-    // explicite par déclinaison : l'immense majorité des articles n'en a pas, et
-    // une entrée par article ne dirait rien de plus.
-    sellable.push(
-      projectVariant(variant, htMillicents, vatRatePercent, priceCents, percents, inco),
-    );
-  }
-
-  return { sellable, excluded };
-}
-
-/**
- * Construit le snapshot à partir des produits **déjà filtrés** par l'appartenance
- * au canal.
- *
- * Ce qui n'entre pas :
- * - une déclinaison arrêtée ou non tarifée ;
- * - un produit dont plus aucune déclinaison n'est vendable ;
- * - un produit dont la famille est **inconnue** — on ne range pas au hasard.
- *
- * Ce qui entre malgré tout : une famille **sans taux de TVA**. Le taux part à
- * `null` plutôt que d'exclure le produit, parce que le prix canonique a de la
- * valeur sans lui — un écran de paramétrage n'a pas besoin de savoir facturer.
- * Le refus n'a pas disparu, il est déplacé là où il compte : la plateforme
- * écarte de sa BOUTIQUE tout article sans taux, plutôt qu'un défaut à 5,5 %.
- *
- * Les familles rendues sont **celles réellement utilisées** : pousser un rayon
- * vide oblige la plateforme à en gérer l'affichage sans jamais rien y ranger.
- */
-export function projectCatalog(
-  products: readonly ProductRecord[],
-  categories: readonly ChannelCategory[],
-  /**
-   * Le taux effectif **par produit**, résolu en amont (dérogation de la fiche
-   * par-dessus celle de sa famille). Passé plutôt que recalculé : la règle
-   * n'a qu'une écriture, et cette fonction reste pure.
-   */
-  vatByProduct: ReadonlyMap<string, CategoryVatPercents>,
-  /**
-   * Où chaque fiche se vend **réellement**, résolu en amont de la même façon.
-   *
-   * Ce que ce canal en fait : il écarte ce qui n'est pas vendu chez lui. Écarté
-   * du snapshot, l'article est **retiré de la boutique** au push suivant —
-   * l'ingestion supprime ce qui n'arrive plus.
-   */
-  channelsByProduct: ReadonlyMap<string, SalesChannels>,
-  /**
-   * **La politique du prix pro** — méthode et rapport (suggéré).
-   *
-   * Obligatoire, et sans valeur de repli inventée : c'est l'APPELANT qui la
-   * résout (`AccountingRules.effectivePolicy` — prix saisi sans rapport quand
-   * rien n'est réglé, lot S) et qui refuse de pousser sous `ratio_ttc` sans
-   * rapport (`B2bCatalogFeedProjection`). Un rapport à 10 000 par défaut
-   * affirmerait « le pro paie le prix public », que personne n'a prononcé.
-   */
-  policy: ProPricePolicy,
-  /**
-   * **L'échelle des limites de commande**, telle quelle.
-   *
-   * Depuis la v7 du fil, ce sont les RÈGLES qui traversent et non leur
-   * résolution : une règle globale se recopiait sur N articles, et un diff qui
-   * compare des SKU n'avait rien à dire d'un changement qui n'est pas par SKU.
-   * Cette projection ne descend donc plus l'échelle — elle la transporte.
-   */
-  orderTimeLimits: readonly SyncOrderTimeLimitRule[],
-  /**
-   * Le référentiel d'allergènes, lu **une fois par push** et passé ici (D6) —
-   * reçu plutôt que cherché, comme le taux et le rapport pro, ce qui garde
-   * cette projection pure. Le récepteur n'a plus de quoi traduire un code GS1
-   * en mention d'étiquette : le référentiel est une donnée du PIM.
-   */
-  inco: IncoProjector,
-  /**
-   * La ligne et le visuel de chaque fiche, par identifiant de produit.
-   *
-   * Absent de la carte = la fiche n'en porte aucun, ce que le fil transporte
-   * comme `null` — et non comme une chaîne vide, qui dirait « effacé ».
-   */
-  showcase: ReadonlyMap<string, Showcase>,
-  /**
-   * **Les opérations datées du référentiel**, archivées comprises — c'est la
-   * projection qui les trie (fil v11, `operation-projection.ts`). Passées
-   * comme le reste : lues une fois par push, jamais cherchées d'ici.
-   */
-  operations: readonly OperationSnapshot[],
-  generatedAt: string,
-): Projection {
-  const byId = new Map(categories.map((category) => [category.id, category]));
-  const excluded: Exclusion[] = [];
-  const kept: SyncProduct[] = [];
-  /** Familles réellement utilisées : pousser un rayon vide n'apprend rien. */
-  const usedCategories = new Set<string>();
-
-  for (const product of products) {
-    const category = byId.get(product.categoryId);
-    if (category === undefined) {
-      excluded.push({ sku: product.sku, reason: "famille_inconnue" });
-      continue;
-    }
-    // La matrice DÉCIDE, elle ne se contente plus de décrire : une fiche qu'on
-    // ne vend pas aux professionnels n'entre pas dans leur boutique, et celle
-    // qui y était en sort au push suivant.
-    const channels = channelsByProduct.get(product.id) ?? [];
-    if (!sellsContext(channels, B2B_CONTEXT_KEY)) {
-      excluded.push({ sku: product.sku, reason: "canal_ferme" });
-      continue;
-    }
-    // Résolu ICI, une fois par produit : chaque article part avec SON taux,
-    // et le récepteur n'a plus à rejoindre une famille pour savoir facturer.
-    const { sellable, excluded: rejected } = sortVariants(
-      product,
-      soldPercents(vatByProduct.get(product.id) ?? {}, channels),
-      policy,
-      inco,
-    );
-    excluded.push(...rejected);
-
-    if (sellable.length === 0) {
-      excluded.push({
-        sku: product.sku,
-        reason: "produit_sans_variante_vendable",
-      });
-      continue;
-    }
-
-    usedCategories.add(category.id);
-    const shown = showcase.get(product.id);
-    kept.push({
-      id: product.id,
-      sku: product.sku,
-      name: frenchOf(product.name),
-      categoryId: product.categoryId,
-      kind: product.kind,
-      variants: sellable,
-      note: shown?.note ?? null,
-      image: shown?.image ?? null,
-      thumbnail: shown?.thumbnail ?? null,
-      // Le drapeau de la FICHE (D3) : le récepteur le descend sur chacun de
-      // ses articles, comme la ligne et les visuels.
-      operationOnly: product.operationOnly,
-      // Le froid de la FICHE (fil v12) : le récepteur le descend sur ses
-      // articles et le relaie à la livraison.
-      requiresCold: product.requiresCold,
-    });
-  }
-
-  // Les opérations APRÈS les produits : leurs SKU se filtrent sur ce que cet
-  // envoi porte réellement, et on ne le sait qu'ici.
-  const shipped = new Set(
-    kept.flatMap((product) => product.variants.map((variant) => variant.sku)),
-  );
-  const dated = projectOperations(operations, shipped);
-  excluded.push(...dated.excluded);
-
-  return {
-    snapshot: {
-      version: CATALOG_SNAPSHOT_VERSION,
-      generatedAt,
-      categories: categories
-        .filter((category) => usedCategories.has(category.id))
-        .map(projectCategory),
-      products: kept,
-      orderTimeLimits: [...orderTimeLimits],
-      operations: [...dated.operations],
-    },
-    excluded,
-  };
-}
-
-/**
- * Les taux des seuls contextes que la fiche **vend** — le filtre du push.
- *
- * 🔴 **Pourquoi il existe (2026-10-15).** Le push ne porte pas l'audience : la
- * plateforme range l'article en `both`, et c'est l'entrée `takeaway` de
- * `publicByContext` qui décide s'il entre dans la boutique publique
- * (`servedPriceOf`, `b2b/catalog/infrastructure/prisma-catalog.reader.ts`,
- * vérifié le 2026-10-15). Jusqu'à ce jour, la matrice garantissait qu'un
- * contexte non vendu n'avait pas de taux. La TVA s'en est découplée — un taux
- * se pose pour n'importe quel contexte en service — et sans ce filtre, poser
- * un taux à emporter sur une famille vendue seulement en B2B la ferait entrer
- * dans la boutique publique au push suivant.
- *
- * Le contexte B2B passe toujours : la fiche n'arrive ici que s'il est vendu
- * (`canal_ferme`). Le chemin des faits (`catalog-facts.ts`) n'est PAS filtré :
- * il porte l'audience, et `servedTo` décide.
- *
- * ⚠️ **Il tombe avec le push** (lot 5 du plan
- * `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`).
- */
-function soldPercents(percents: CategoryVatPercents, channels: SalesChannels): CategoryVatPercents {
-  return Object.fromEntries(
-    Object.entries(percents).filter(([key]) => sellsContext(channels, key)),
-  );
-}
-
-/**
  * Le taux du contexte **B2B** — cette projection EST ce canal, donc elle nomme
  * sa clé. Elle lisait le taux « à emporter » faute de mieux : un emprunt que
  * rien ne signalait et qu'aucun écran ne permettait de corriger.
@@ -482,16 +150,4 @@ function soldPercents(percents: CategoryVatPercents, channels: SalesChannels): C
  */
 export function vatOf(percents: CategoryVatPercents): number | null {
   return percents[B2B_CONTEXT_KEY] ?? null;
-}
-
-/** Le taux part tel quel, `null` compris — on ne remplit jamais un trou de TVA. */
-function projectCategory(category: ChannelCategory): SyncCategory {
-  return {
-    id: category.id,
-    name: frenchOf(category.name),
-    slug: frenchOf(category.slug),
-    parentId: category.parentId,
-    position: category.position,
-    vatRatePercent: vatOf(category.vatByContext),
-  };
 }

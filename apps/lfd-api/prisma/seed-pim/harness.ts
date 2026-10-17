@@ -5,7 +5,6 @@ import { AppModule } from "../../src/appBootstrap/app.module.js";
 import type { Actor } from "../../src/platform/context/request-context.js";
 import { runWithRequestContext } from "../../src/platform/context/request-context.store.js";
 import { newTraceId } from "../../src/platform/context/trace-context.js";
-import { B2bMembershipService } from "../../src/pim/channels/b2b-platform/membership/membership.service.js";
 import { OutboxRelay } from "../../src/platform/outbox/outbox-relay.js";
 import { PrismaService } from "../../src/platform/database/prisma.service.js";
 import { DocumentStore } from "../../src/platform/storage/document-store.js";
@@ -43,8 +42,6 @@ import { refuseNonLocalTarget } from "../local-target.js";
 export interface SeedHarness {
   readonly commands: CommandBus;
   readonly prisma: PrismaService;
-  /** Le canal B2B n'a pas de commande — cf. `b2b-channel.ts`. */
-  readonly membership: B2bMembershipService;
   /** Le relais de la boîte d'envoi : livrer les faits émis — cf. `facts.ts`. */
   readonly relay: OutboxRelay;
   /** Exécute dans un contexte de requête **daté** — le `Clock` lit ce `now`. */
@@ -75,7 +72,6 @@ export async function bootstrapHarness(): Promise<SeedHarness> {
   return {
     commands: module.get(CommandBus, { strict: false }),
     prisma: module.get(PrismaService, { strict: false }),
-    membership: module.get(B2bMembershipService, { strict: false }),
     relay: module.get(OutboxRelay, { strict: false }),
     runAt: <T>(now: Date, actor: Actor, fn: () => Promise<T>): Promise<T> =>
       runWithRequestContext({ now, traceId: newTraceId(), actor }, fn),

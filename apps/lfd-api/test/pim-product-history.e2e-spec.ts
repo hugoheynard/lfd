@@ -73,10 +73,6 @@ async function createCategory(nameFr: string, parentId?: string): Promise<string
 /** Une famille qui vend en B2B et y vise `rate`. */
 async function sellInB2b(categoryId: string, rate: string): Promise<void> {
   await staff()
-    .put(`${CATEGORIES}/${categoryId}/channels`)
-    .send([{ pointOfSaleId: "pos_b2b", context: "b2b" }])
-    .expect(200);
-  await staff()
     .put(`${CATEGORIES}/${categoryId}/vat`)
     .send({ vatByContext: { b2b: rate } })
     .expect(200);

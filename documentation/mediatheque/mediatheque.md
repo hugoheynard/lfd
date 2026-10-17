@@ -504,7 +504,7 @@ sequenceDiagram
 - **Entre deux push, l'image d'une opération suit la médiathèque.** Le
   remplacement repointe l'opération au référentiel dans sa transaction ;
   `OnMediaAssetDescribedForOperationsHandler`
-  (`apps/lfd-api/src/pim/operations/application/on-media-asset-described.ts`, abonné durable
+  (on-media-asset-described.ts des opérations du référentiel (retiré en X4), abonné durable
   `pim.reannounce-operation-media`) écoute `media.asset_described`, relit les
   opérations qui affichent l'URL (archivées comprises, tant que leur copie
   vit) et le point courant, et publie pour chacune
@@ -521,12 +521,12 @@ sequenceDiagram
 - **Une image changée sur l'opération elle-même** (édition au référentiel :
   posée, changée, retirée, ou son alternative réécrite) suit aussi sans
   push. `EditOperationHandler`
-  (`apps/lfd-api/src/pim/operations/application/edit-operation.ts`) publie
+  (edit-operation.ts du référentiel (retiré en X4)) publie
   le même fait dans SA transaction, à côté de l'écriture et de la trace —
   seulement si l'image ou son alternative a changé ; un nom ou une accroche
   seuls ne publient rien. Les deux émetteurs partagent une seule
   construction de la charge utile (`announceOperationImages`,
-  `apps/lfd-api/src/pim/operations/application/operation-image-announcement.ts`) : l'URL et l'alternative de
+  operation-image-announcement.ts (retiré en X4)) : l'URL et l'alternative de
   l'opération, le point relu à la médiathèque. Une image **retirée** part en
   `image: null`, sous le même ordre par geste, et le commerce efface
   `image_url`, `image_alt` et le point : la boutique sert l'opération sans

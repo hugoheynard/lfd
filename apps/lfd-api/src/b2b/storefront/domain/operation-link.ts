@@ -2,10 +2,10 @@ import { InvalidStorefrontError } from "./storefront-errors.js";
 
 /**
  * La forme d'une clé d'opération — minuscules, chiffres, tirets, sans tiret en
- * tête, en queue ni doublé. La MÊME que celle du référentiel
- * (`pim/operations/domain/value-objects/operation-key.ts`, vérifié le
- * 2026-09-24), recopiée et non importée : la vitrine ne lit pas le PIM
- * (CLAUDE.md §1), elle en garde l'identifiant.
+ * tête, en queue ni doublé. La MÊME que celle des opérations du commerce
+ * (`b2b/operations/domain/value-objects/operation-key.ts`, vérifié le
+ * 2026-10-17 ; celle du référentiel, dont elle était recopiée, est partie en
+ * X4), recopiée et non importée : la vitrine en garde l'identifiant.
  */
 const KEY_SHAPE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u;
 const KEY_MAX = 64;

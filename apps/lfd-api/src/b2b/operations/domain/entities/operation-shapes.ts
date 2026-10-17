@@ -62,12 +62,6 @@ export interface OperationRecord extends OperationPresentationInput {
   readonly lastWrite: WriteStamp | null;
 }
 
-/**
- * **Une opération telle que la migration l'apporte du référentiel** (lot 3) :
- * ses valeurs, déjà restreintes par la surcharge de la réception.
- */
-export type ReferentialOperation = Omit<OperationRecord, "lastWrite" | "showsOrderUntilTime">;
-
 /** L'état complet, tel que le dépôt l'écrit. */
 export interface OperationSnapshot extends OperationPresentation {
   readonly key: string;

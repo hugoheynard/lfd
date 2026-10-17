@@ -63,22 +63,11 @@ code {
   }
 }
 
-.chan-pills {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-}
-
 .row-actions {
   display: flex;
   gap: 0.4rem;
   justify-content: flex-end;
   white-space: nowrap;
-}
-
-.muted {
-  color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-md);
 }
 
 .products-paginator {

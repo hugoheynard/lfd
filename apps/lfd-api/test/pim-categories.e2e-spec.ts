@@ -43,7 +43,6 @@ async function depositImage(width = 800, height = 600): Promise<string> {
   expect(response.status).toBe(201);
   return jsonBody<{ url: string }>(response).url;
 }
-const SHOPS = "/pim/points-of-sale";
 const RATES = "/pim/vat-rates";
 
 let ctx: E2eContext;
@@ -73,14 +72,6 @@ async function createCategory(nameFr: string, parentId?: string): Promise<string
   return jsonBody<{ id: string }>(response).id;
 }
 
-async function openShop(label: string): Promise<string> {
-  const response = await staff()
-    .post(SHOPS)
-    .send({ kind: "shop", label, contexts: ["takeaway"], baseUrl: "", tableCount: 0 });
-  expect(response.status).toBe(201);
-  return jsonBody<{ id: string }>(response).id;
-}
-
 async function createRate(name: string, percent: number): Promise<string> {
   const response = await staff().post(RATES).send({ name, percent });
   expect(response.status).toBe(201);
@@ -91,10 +82,6 @@ async function createRate(name: string, percent: number): Promise<string> {
 interface CategoryRow {
   readonly id: string;
   readonly slug: { readonly fr: string };
-  readonly channelPreset: readonly {
-    readonly pointOfSaleId: string;
-    readonly context: string;
-  }[];
   readonly vatByContext: Readonly<Record<string, string>>;
 }
 
@@ -177,41 +164,6 @@ describe("le slug d'une famille est unique", () => {
   });
 });
 
-describe("un preset ne cite que des points de vente qui existent", () => {
-  it("accepte un point de vente du référentiel", async () => {
-    const category = await createCategory("Viennoiseries");
-    const location = await openShop("Village");
-
-    const response = await staff()
-      .put(`${CATEGORIES}/${category}/channels`)
-      .send([{ pointOfSaleId: location, context: "takeaway" }]);
-
-    expect(response.status).toBe(200);
-    expect((await readCategory(category)).channelPreset).toEqual([
-      { pointOfSaleId: location, context: "takeaway" },
-    ]);
-  });
-
-  /**
-   * Aucune clé étrangère ne peut tenir une référence posée dans du `jsonb` :
-   * c'est pour ça que la suppression d'un emplacement se refuse à la main. Le
-   * sens inverse se refuse ici.
-   */
-  it("refuse un identifiant qui ne désigne rien, et n'écrit pas", async () => {
-    const category = await createCategory("Viennoiseries");
-
-    const response = await staff()
-      .put(`${CATEGORIES}/${category}/channels`)
-      .send([{ pointOfSaleId: "emp_fantome", context: "takeaway" }]);
-
-    expect(response.status).toBe(409);
-    expect(jsonBody<{ code: string }>(response).code).toBe(
-      "catalogue.channels.unknown_point_of_sale",
-    );
-    expect((await readCategory(category)).channelPreset).toEqual([]);
-  });
-});
-
 /**
  * La TVA ne dépend plus des canaux (Hugo, 2026-10-15). Jusque-là, un taux se
  * refusait sans canal (`catalogue.category.tva_without_channel`) et fermer un
@@ -229,31 +181,6 @@ describe("un taux ne dépend plus des canaux", () => {
       .expect(200);
 
     expect((await readCategory(category)).vatByContext).toEqual({ takeaway: rate });
-  });
-
-  /** Régression : le taux B2B était effacé en base à la fermeture du canal. */
-  it("fermer un canal garde son taux en base et n'écrit que le fait des canaux", async () => {
-    const category = await createCategory("Viennoiseries");
-    const rate = await createRate("Réduit", 5.5);
-    await staff()
-      .put(`${CATEGORIES}/${category}/channels`)
-      .send([{ pointOfSaleId: "pos_b2b", context: "b2b" }])
-      .expect(200);
-    await staff()
-      .put(`${CATEGORIES}/${category}/vat`)
-      .send({ vatByContext: { b2b: rate } })
-      .expect(200);
-
-    await staff().put(`${CATEGORIES}/${category}/channels`).send([]).expect(200);
-
-    expect((await readCategory(category)).vatByContext).toEqual({ b2b: rate });
-    const facts = await ctx.prisma.activityEvent.findMany({
-      where: { subjectType: "product_category", subjectId: category },
-      orderBy: { id: "asc" },
-      select: { type: true },
-    });
-    expect(facts.at(-1)?.type).toBe("product_category.channels_changed");
-    expect(facts.filter((fact) => fact.type === "product_category.vat_changed")).toHaveLength(1);
   });
 });
 

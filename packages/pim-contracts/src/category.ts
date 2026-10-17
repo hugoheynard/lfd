@@ -25,36 +25,6 @@ export const renameCategoryPayloadSchema = z.object({
 });
 export type RenameCategoryPayload = z.infer<typeof renameCategoryPayloadSchema>;
 
-/** Un canal vendu : un contexte, et le point de vente qui le vend. */
-export const soldChannelSchema = z.object({
-  /**
-   * Jamais `null` : la plateforme professionnelle est un point de vente comme
-   * un autre depuis p-0 (`documentation/pim/contextes-et-points-de-vente.md`). Le champ
-   * s'appelait `locationId` et acceptait `null` pour dire « le B2B ».
-   */
-  pointOfSaleId: z.string().min(1),
-  /** La clé du contexte, telle que le registre la porte. */
-  context: z.string(),
-});
-export type SoldChannelPayload = z.infer<typeof soldChannelSchema>;
-
-/**
- * La matrice de vente, telle qu'elle voyage — un **ensemble de paires**.
- *
- * C'était `{ boutiques: Record<id, { emporter, surPlace }>, b2b }`. Les
- * emplacements y étaient déjà une donnée ; les **modes** étaient deux champs
- * nommés, et le B2B un drapeau. Un écran ne pouvait donc pas afficher un
- * quatrième contexte sans qu'on le livre — la promesse « une ligne, zéro code »
- * s'arrêtait au fil.
- *
- * Nommée à part parce qu'une FICHE la porte aussi : deux copies du même schéma
- * finiraient par ne plus accepter les mêmes formes.
- */
-export const salesChannelsSchema = z.array(soldChannelSchema);
-
-export const setCategoryChannelsPayloadSchema = salesChannelsSchema;
-export type SetCategoryChannelsPayload = z.infer<typeof setCategoryChannelsPayloadSchema>;
-
 /**
  * Les taux **d'un bloc**, indexés par **clé de contexte de vente**.
  *

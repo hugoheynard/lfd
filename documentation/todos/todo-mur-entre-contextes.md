@@ -47,13 +47,13 @@ main. C'est arrivé deux fois, et ça reste la brèche ouverte.
 _(Relevé le 2026-09-02. Cinq imports `b2b → pim` en tout, hors tests ; **deux**
 seulement sont à corriger.)_
 
-| Import                                                                                         | Verdict                                                                                                                   |
-| ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| catalog/infrastructure/in-process-catalog.driver.ts:4 (retiré en X2) → `B2bCatalogDriver`      | ✅ **port** — classe abstraite publiée par `pim`, le motif de référence                                                   |
-| catalog/application/check-catalog-parity.service.ts:3 (retiré en X2) → `B2bCatalogFeedPreview` | ✅ **port** — classe abstraite elle aussi, et son JSDoc le dit : « `b2b` lit un port publié par `pim`, jamais une table » |
-| `catalog/catalog.module.ts:3` → `B2bPlatformModule`                                            | ✅ câblage Nest — le module n'exporte que les deux ports ci-dessus (`b2b-platform.module.ts:46`)                          |
-| `catalog/infrastructure/prisma-catalog-admin.reader.ts:4` → `findMapping`                      | 🔴 **fonction concrète**                                                                                                  |
-| `catalog/infrastructure/prisma-catalog-admin.reader.ts:5` → `toInco`                           | 🔴 **fonction concrète**                                                                                                  |
+| Import                                                                                         | Verdict                                                                                                                               |
+| ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| catalog/infrastructure/in-process-catalog.driver.ts:4 (retiré en X2) → `B2bCatalogDriver`      | ✅ **port** — classe abstraite publiée par `pim`, le motif de référence                                                               |
+| catalog/application/check-catalog-parity.service.ts:3 (retiré en X2) → `B2bCatalogFeedPreview` | ✅ **port** — classe abstraite elle aussi, et son JSDoc le dit : « `b2b` lit un port publié par `pim`, jamais une table »             |
+| `catalog/catalog.module.ts:3` → `B2bPlatformModule`                                            | ✅ câblage Nest — le module n'exporte que les deux ports ci-dessus (`b2b-platform.module.ts` (l'import des opérations, retiré en X4)) |
+| `catalog/infrastructure/prisma-catalog-admin.reader.ts:4` → `findMapping`                      | 🔴 **fonction concrète**                                                                                                              |
+| `catalog/infrastructure/prisma-catalog-admin.reader.ts:5` → `toInco`                           | 🔴 **fonction concrète**                                                                                                              |
 
 ✅ **Les deux derniers sont partis le 2026-09-03**, et ce n'était pas une
 entorse de forme. `catalog-item.ts` affirmait que les mentions d'étiquette sont

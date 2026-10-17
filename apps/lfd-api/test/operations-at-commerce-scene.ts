@@ -1,41 +1,11 @@
 import type { PrepareCommerceOperationPayload } from "@lfd/contracts";
 
-import { ReferentialOperationWriting } from "../src/pim/operations/domain/ports/referential-operation-writing.js";
 import { daysAgo, E2E_STAFF_SUB, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 
 /**
  * La scène des opérations écrites AU COMMERCE (lot 1 de
  * `documentation/operations-datees/plan-l-operation-passe-au-commerce.md`).
  */
-
-/**
- * L'écriture des opérations AU RÉFÉRENTIEL, rouverte le temps d'un geste —
- * fermée pour de bon en production depuis le 2026-10-17 (X1 de
- * `plan-sans-interrupteurs.md`). Seules les suites qui préparent au
- * référentiel ce que la migration reprendra, ou qui éprouvent l'opération du
- * référentiel elle-même, la doublent ; elles partent avec `pim/operations/**`
- * (X4).
- */
-export class SwitchableReferentialWriting extends ReferentialOperationWriting {
-  private open = false;
-
-  isOpen(): boolean {
-    return this.open;
-  }
-
-  /** Le temps d'un geste au référentiel, comme avant la bascule. */
-  async openFor<T>(gesture: () => Promise<T>): Promise<T> {
-    this.open = true;
-    try {
-      return await gesture();
-    } finally {
-      this.open = false;
-    }
-  }
-}
-
-/** Le référentiel ouvert pendant toute la suite : l'opération du PIM est son sujet. */
-export const OPEN_REFERENTIAL_WRITING = { isOpen: (): boolean => true };
 
 export const OPERATIONS = "/admin/operations";
 

@@ -21,7 +21,6 @@ function category(overrides: Partial<Category> = {}): Category {
     parentId: null,
     position: 0,
     isArchived: false,
-    channelPreset: [{ pointOfSaleId: 'emp_village', context: 'takeaway' }],
     vatByContext: { takeaway: 'tva_55' },
     activeProductCount: 0,
     audience: 'both',
@@ -472,10 +471,10 @@ describe('CategoryFormPage — le rail', () => {
     expect(unit?.textContent?.trim()).toBe('fiches actives');
   });
 
-  it('NOMME les points de vente au lieu de les compter', async () => {
-    // « 2 points de vente » oblige à ouvrir la section pour savoir lesquels.
+  /** « Vendue depuis » lisait la matrice des canaux, partie en X4. */
+  it('ne dit plus d’où la famille est vendue', async () => {
     const { host } = await edit(category());
-    expect(carries(host)).toContain('Village');
+    expect(carries(host)).not.toContain('Vendue depuis');
   });
 
   /**
@@ -489,11 +488,11 @@ describe('CategoryFormPage — le rail', () => {
       category({ vatByContext: { takeaway: 'tva_55', eatIn: 'tva_55', b2b: 'tva_55' } }),
     );
 
-    // Trois lignes requises — nom, canal, TVA — toutes remplies par la fixture.
-    // Six lignes AU TOTAL dans la liste : la barre en ignore trois.
+    // Deux lignes requises — nom, TVA — toutes remplies par la fixture (« Au
+    // moins un canal » est parti en X4 avec la matrice). La barre ignore le reste.
     const meter = host.querySelector('fold-meter');
-    expect((meter?.textContent ?? '').replace(/\s+/g, '')).toContain('3/3');
-    expect(checklist(host).length).toBeGreaterThan(3);
+    expect((meter?.textContent ?? '').replace(/\s+/g, '')).toContain('2/2');
+    expect(checklist(host).length).toBeGreaterThan(2);
     // Les traductions manquantes sont pourtant BIEN listées, sans peser.
     expect(checklist(host).some((row) => row.includes('anglais'))).toBe(true);
   });

@@ -100,8 +100,8 @@ export class CategoryFormPage {
     },
     {
       key: 'canaux',
-      label: 'Canaux & TVA',
-      description: 'Ce que la famille vend, d’où, et à quel taux. Ses fiches en héritent.',
+      label: 'TVA',
+      description: 'Le taux de chaque contexte de vente. Ses fiches en héritent.',
     },
     {
       key: 'communication',

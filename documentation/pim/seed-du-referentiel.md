@@ -88,7 +88,7 @@ et `pim.b2b_channel_binding`. La projection consulte **les deux**. Sans
 alignement, un catalogue rejoué donne un PIM juste et un miroir vide, ce qui
 ressemble à une panne du canal alors que c'est un désaccord entre deux tables.
 
-`seed-pim/b2b-channel.ts` aligne la copie sur l'original : la matrice fait foi.
+seed-pim/b2b-channel.ts (retiré en X4) aligne la copie sur l'original : la matrice fait foi.
 Le jour où la table disparaît (cf.
 [`ecrans-du-cycle-catalogue.md`](ecrans-du-cycle-catalogue.md)), ce fichier
 disparaît avec elle.

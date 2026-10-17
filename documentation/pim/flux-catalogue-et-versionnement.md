@@ -140,7 +140,7 @@ prix public TTC (product_variant.price_cents)        → le prix public
 prix pro HT saisi (par déclinaison), sinon dérivé    → le prix pro, par proPriceOf
 ```
 
-Le prix pro sort d'une seule porte, `proPriceOf` (`apps/lfd-api/src/pim/channels/b2b-platform/products/projection.ts:228`) :
+Le prix pro sort d'une seule porte, `proPriceOf` (projection.ts:228 (la projection du push, retirée en X4)) :
 la saisie prime ; le rapport ne dérive un prix que sous la méthode `ratio_ttc`,
 et n'est sinon qu'une suggestion à l'écran (lot S, 2026-10-16). Le push ne se
 refuse plus que sous `ratio_ttc` sans rapport

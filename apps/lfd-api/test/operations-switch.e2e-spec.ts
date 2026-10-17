@@ -23,15 +23,15 @@ import {
  * E2E — **les opérations au commerce, après la bascule** (lot 3 de
  * `documentation/operations-datees/plan-l-operation-passe-au-commerce.md`).
  *
- * Ce que seul ce niveau prouve, sur le vrai module et la vraie base : le
- * référentiel refuse d'écrire — pour de bon depuis X1 (2026-10-17), sans
- * double —, et la boutique lit l'opération du commerce : son encart sans
+ * Ce que seul ce niveau prouve, sur le vrai module et la vraie base : la
+ * boutique lit l'opération du commerce : son encart sans
  * article pendant l'annonce, `awaitingProducts`, le texte alternatif de la
  * médiathèque.
  *
  * La migration depuis le référentiel et ce que la bascule coupait au push
  * s'éprouvaient sur un miroir de COPIES que le push écrivait : depuis X1, plus
- * rien ne peut produire cet état, et leurs cas sont partis avec lui.
+ * rien ne peut produire cet état, et leurs cas sont partis avec lui. Le refus
+ * du référentiel d'écrire une opération est parti en X4, avec ses routes.
  */
 
 let ctx: E2eContext;
@@ -54,38 +54,6 @@ beforeEach(async () => {
 });
 
 const staff = (): ReturnType<E2eContext["http"]> => ctx.asSub(E2E_STAFF_SUB);
-
-/** Annoncée dans un mois, ouverte à six semaines, close à onze, retirée la semaine d'après. */
-const ANNOUNCE = daysAgo(-30);
-const ORDER_FROM = daysAgo(-45);
-const ORDER_UNTIL = daysAgo(-80);
-const PICKUP_FROM = serviceDay(78);
-const PICKUP_UNTIL = serviceDay(84);
-
-function pimNoel(over: Record<string, unknown> = {}): Record<string, unknown> {
-  return {
-    key: "noel-2026",
-    name: { fr: "Noël" },
-    lede: { fr: "La bûche revient" },
-    image: null,
-    announceFrom: ANNOUNCE,
-    orderFrom: ORDER_FROM,
-    orderUntil: ORDER_UNTIL,
-    pickupFrom: PICKUP_FROM,
-    pickupUntil: PICKUP_UNTIL,
-    audience: "both",
-    ...over,
-  };
-}
-
-describe("ce que la bascule coupe", () => {
-  it("le référentiel refuse d'écrire une opération", async () => {
-    const refused = await staff().post("/pim/operations").send(pimNoel()).expect(409);
-
-    expect(refused.body).toMatchObject({ code: "pim.operation.moved_to_commerce" });
-    expect(await ctx.prisma.operation.count()).toBe(0);
-  });
-});
 
 describe("les lectures de l'écran et la boutique", () => {
   const shop = async (): Promise<ShopCatalogueView> =>

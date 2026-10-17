@@ -7,7 +7,6 @@ import { SaveVariantNutritionCommand } from "../../src/pim/catalogue/product/app
 import { DeclareProductReadyCommand } from "../../src/pim/catalogue/product/application/declare-product-ready.js";
 import { ActivateProductCommand } from "../../src/pim/catalogue/product/application/activate-product.js";
 import { ProductNotActivatableError } from "../../src/pim/catalogue/product/domain/errors/product-errors.js";
-import { SetProductChannelsCommand } from "../../src/pim/catalogue/product/application/set-product-channels.js";
 import { SetProductVatCommand } from "../../src/pim/catalogue/product/application/set-product-vat.js";
 import { UpdateProductEditorialCommand } from "../../src/pim/catalogue/product/application/update-product-editorial.js";
 import { UpdateVariantPricingCommand } from "../../src/pim/catalogue/product/application/update-variant-pricing.js";
@@ -15,12 +14,12 @@ import type { NutritionValues } from "../../src/pim/catalogue/product/domain/val
 import type { PrismaService } from "../../src/platform/database/prisma.service.js";
 import type { CorpusNutrition, CorpusProduct } from "./corpus.js";
 import { declarationFor } from "./declarations.js";
-import { toContextVat, toSalesChannels, type Registry } from "./registry.js";
+import { toContextVat, type Registry } from "./registry.js";
 
 /**
  * Le rejeu d'une fiche — **le cycle complet, dans l'ordre où un humain le
  * parcourt** : ouvrir, tarifer, décrire, déclarer la fiche réglementaire,
- * placer sur la matrice, régler les taux, signer, mettre en vente.
+ * régler les taux, signer, mettre en vente.
  *
  * ## Aucune écriture directe
  *
@@ -93,7 +92,7 @@ async function replayProduct(
 
   await fillVariant(bus, prisma, productId, product, declaration);
   await describeProduct(bus, productId, product);
-  await placeOnMatrix(bus, productId, product, registry);
+  await setOwnVat(bus, productId, product, registry);
   await settle(bus, productId, product, declaration !== null, report, alreadySigned);
 }
 
@@ -196,22 +195,16 @@ async function describeProduct(
 }
 
 /**
- * La matrice de la fiche et ses taux. `channels === null` rend la fiche à sa
- * famille — un geste, pas une absence de geste : le rejeu doit pouvoir effacer
- * une dérogation posée par un rejeu précédent.
+ * Les taux de la fiche. Sa matrice des canaux, que le corpus porte encore,
+ * n'est plus rejouée : elle ne s'écrit plus depuis X4
+ * (`documentation/catalogue/plan-sans-interrupteurs.md`).
  */
-async function placeOnMatrix(
+async function setOwnVat(
   bus: CommandBus,
   productId: string,
   product: CorpusProduct,
   registry: Registry,
 ): Promise<void> {
-  await bus.execute<SetProductChannelsCommand, void>(
-    new SetProductChannelsCommand(
-      productId,
-      product.channels === null ? null : toSalesChannels(product.channels, registry),
-    ),
-  );
   await bus.execute<SetProductVatCommand, void>(
     new SetProductVatCommand(productId, toContextVat(product.vat, registry)),
   );
@@ -228,7 +221,7 @@ async function placeOnMatrix(
  * `DeclareProductReadyCommand` n'est PAS idempotente, et elle a raison de ne
  * pas l'être : re-signer redate, et une signature qu'on redate perd la seule
  * chose qu'elle porte — depuis quand quelqu'un affirme que cette fiche est
- * juste. C'est l'argument de `B2bMembershipService.publish`, au mot près.
+ * juste. (C'était aussi l'argument de l'appartenance au canal, partie en X4.)
  *
  * L'idempotence est donc ici, dans l'appelant : le seed signe ce qui n'est pas
  * signé, et rien d'autre. Deux passages inscrivaient 190 signatures pour 95
