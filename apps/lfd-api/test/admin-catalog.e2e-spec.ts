@@ -847,3 +847,63 @@ describe("GET /admin/catalog/published", () => {
     expect(variant?.public.state).toBe("masque");
   });
 });
+
+/**
+ * Régression : valider 64 SKU × 2 audiences en un appel rendait 500 en
+ * production — la transaction interactive expirait (P2028, 2026-10-17).
+ *
+ * ⚠️ Le Postgres local répond trop vite pour reproduire l'expiration : ce test
+ * tient le lot de bout en bout (tout validé, un fait par article et par
+ * audience) ; le nombre de requêtes est tenu par le test applicatif.
+ */
+describe("POST /admin/catalog/review/approve — un lot", () => {
+  const COUNT = 70;
+  const skus = Array.from({ length: COUNT }, (_, index) => `LOT-${String(index)}-1`);
+
+  function batchSnapshot(): CatalogSnapshot {
+    const [model] = snapshot(200_000).products;
+    if (model === undefined) {
+      throw new RangeError("l'instantané de référence n'a pas de produit");
+    }
+    return {
+      ...snapshot(200_000),
+      products: skus.map((sku, index) => ({
+        ...model,
+        id: `prd_lot_${String(index)}`,
+        sku: `LOT-${String(index)}`,
+        name: `Article ${String(index)}`,
+        variants: model.variants.map((variant) => ({
+          ...variant,
+          id: `var_lot_${String(index)}`,
+          sku,
+        })),
+      })),
+    };
+  }
+
+  it(`valide ${String(COUNT)} articles pour les deux audiences en un appel`, async () => {
+    await deliverAsFacts(ctx, batchSnapshot(), { reviewed: false });
+    expect(
+      await ctx.prisma.catalogItem.count({
+        where: { sku: { in: skus }, publicReviewPending: true },
+      }),
+    ).toBe(COUNT);
+
+    await asStaff()
+      .post("/admin/catalog/review/approve")
+      .send({ skus, audiences: ["pro", "public"] })
+      .expect(204);
+
+    const stillPending = await ctx.prisma.catalogItem.count({
+      where: {
+        sku: { in: skus },
+        OR: [{ publicReviewPending: true }, { proReviewPending: true }],
+      },
+    });
+    expect(stillPending).toBe(0);
+    const approved = await ctx.prisma.activityEvent.count({
+      where: { subjectId: { in: skus }, type: { endsWith: "_review_approved" } },
+    });
+    expect(approved).toBe(COUNT * 2);
+  });
+});

@@ -26,4 +26,17 @@ export abstract class ActivityRecorder {
    * erreur.
    */
   abstract recordOrFail(input: RecordActivityInput): Promise<void>;
+
+  /**
+   * {@link recordOrFail} pour un lot, bloquant et idempotent de même.
+   *
+   * Par défaut, un par un : un adaptateur qui sait écrire en lot le
+   * surcharge. Ajouté le 2026-10-17, après qu'une validation de 64 articles a
+   * fait expirer sa transaction (P2028) à raison de deux allers-retours par fait.
+   */
+  async recordAllOrFail(inputs: readonly RecordActivityInput[]): Promise<void> {
+    for (const input of inputs) {
+      await this.recordOrFail(input);
+    }
+  }
 }

@@ -45,6 +45,28 @@ export async function loadOrFail(items: CatalogItemRepository, sku: string): Pro
   return item;
 }
 
+/**
+ * La même garde, pour un lot, en **une** lecture : tout ou rien, et le refus
+ * nomme le premier SKU manquant, dans l'ordre demandé. Rend les articles dans
+ * cet ordre, chacun une fois.
+ *
+ * @throws {CatalogItemNotFoundError} un des SKU n'est plus au catalogue.
+ */
+export async function loadManyOrFail(
+  items: CatalogItemRepository,
+  skus: readonly string[],
+): Promise<CatalogItem[]> {
+  const wanted = [...new Set(skus)];
+  const bySku = new Map((await items.loadMany(wanted)).map((item) => [item.sku, item]));
+  return wanted.map((sku) => {
+    const item = bySku.get(sku);
+    if (item === undefined) {
+      throw new CatalogItemNotFoundError(sku);
+    }
+    return item;
+  });
+}
+
 /** L'article tel qu'un fait le cite : son SKU et son nom du moment (lot B du plan des phrases). */
 export function subjectOf(item: CatalogItem): CatalogItemSubject {
   return { sku: item.sku, name: item.name };

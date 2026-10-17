@@ -23,4 +23,17 @@ export abstract class Journal {
    * `ActivityRecorder.record`).
    */
   abstract append(fact: JournalFact): Promise<void>;
+
+  /**
+   * Inscrit plusieurs faits, **bloquant** et tout ou rien comme {@link append}.
+   *
+   * Par défaut, un par un : un adaptateur qui sait écrire en lot le
+   * surcharge. Ajouté le 2026-10-17, après qu'une validation de 64 articles a
+   * fait expirer sa transaction (P2028) à raison de deux allers-retours par fait.
+   */
+  async appendAll(facts: readonly JournalFact[]): Promise<void> {
+    for (const fact of facts) {
+      await this.append(fact);
+    }
+  }
 }

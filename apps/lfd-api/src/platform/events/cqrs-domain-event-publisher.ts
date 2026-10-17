@@ -33,4 +33,12 @@ export class CqrsDomainEventPublisher extends DomainEventPublisher {
     await this.journal.append(event.journalFact());
     this.eventBus.publish(event);
   }
+
+  /** Le même ordre que {@link publishTraced} : tout le lot au journal, PUIS le bus. */
+  override async publishTracedAll(events: readonly JournaledEvent[]): Promise<void> {
+    await this.journal.appendAll(events.map((event) => event.journalFact()));
+    for (const event of events) {
+      this.eventBus.publish(event);
+    }
+  }
 }

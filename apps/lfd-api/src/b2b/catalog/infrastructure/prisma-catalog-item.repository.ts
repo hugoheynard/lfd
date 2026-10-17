@@ -12,6 +12,7 @@ import { lastRecordedPrices, priceTraceRows } from "./catalog-price-trace.js";
 import { pimFactsColumns } from "./catalog-item-columns.js";
 import { catalogAudienceOf } from "../domain/served-to.js";
 import { DECISION_COLUMNS } from "./catalog-decision-columns.js";
+import { writeReviewStates } from "./catalog-review-states.js";
 
 /** La ligne telle que Prisma la rend, décision jointe. Aucun type `Prisma.*` exporté. */
 interface ItemRow {
@@ -84,6 +85,21 @@ export class PrismaCatalogItemRepository extends CatalogItemRepository {
       include: { override: { select: DECISION_COLUMNS } },
     });
     return row === null ? null : toDomain(row);
+  }
+
+  async loadMany(skus: readonly string[]): Promise<CatalogItem[]> {
+    if (skus.length === 0) {
+      return [];
+    }
+    const rows = await this.prisma.catalogItem.findMany({
+      where: { sku: { in: [...skus] }, ...STILL_SOLD },
+      include: { override: { select: DECISION_COLUMNS } },
+    });
+    return rows.map(toDomain);
+  }
+
+  async saveReviewStates(items: readonly CatalogItem[]): Promise<void> {
+    await writeReviewStates(this.prisma, items);
   }
 
   async loadAll(): Promise<CatalogItem[]> {

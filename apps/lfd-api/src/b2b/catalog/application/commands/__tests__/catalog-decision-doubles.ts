@@ -20,9 +20,9 @@ export const NEGOTIATED = 190_000;
 /** Le nom de l'article, que chaque fait fige en `subjectLabel` (lot B du plan des phrases). */
 export const NAME = "Croissant";
 
-function article(placement: Placement): CatalogItem {
+function article(placement: Placement, sku: string = SKU): CatalogItem {
   const facts: PimFacts = {
-    sku: SKU,
+    sku,
     productId: "p_VIE-001",
     productSku: "VIE-001",
     name: NAME,
@@ -70,10 +70,24 @@ class InMemoryCatalog extends CatalogItemRepository {
     return this.rows.get(sku);
   }
 
+  /** Les lectures demandées au dépôt, une entrée par appel. */
+  readonly reads: string[] = [];
+
   load(sku: string): Promise<CatalogItem | null> {
+    this.reads.push(`load:${sku}`);
     const row = this.rows.get(sku);
     return Promise.resolve(
       row === undefined ? null : CatalogItem.reconstitute(row.toPersistence()),
+    );
+  }
+
+  loadMany(skus: readonly string[]): Promise<CatalogItem[]> {
+    this.reads.push(`loadMany:${skus.join(",")}`);
+    return Promise.resolve(
+      skus.flatMap((sku) => {
+        const row = this.rows.get(sku);
+        return row === undefined ? [] : [CatalogItem.reconstitute(row.toPersistence())];
+      }),
     );
   }
 
@@ -97,6 +111,10 @@ class InMemoryCatalog extends CatalogItemRepository {
     }
     return Promise.resolve();
   }
+
+  saveReviewStates(items: readonly CatalogItem[]): Promise<void> {
+    return this.saveMany(items);
+  }
 }
 
 /** Le publieur partagé, qui note QUAND le fait part parmi les écritures. */
@@ -115,6 +133,7 @@ class StepRecordingPublisher extends RecordingPublisher {
 export function build(
   seed: (item: CatalogItem) => void = () => undefined,
   placement: Placement = PUSHED,
+  extraSkus: readonly string[] = [],
 ) {
   const steps: string[] = [];
   const items = new InMemoryCatalog(steps);
@@ -123,6 +142,9 @@ export function build(
   const item = article(placement);
   seed(item);
   items.put(item);
+  for (const sku of extraSkus) {
+    items.put(article(placement, sku));
+  }
   return { steps, items, events, uow };
 }
 

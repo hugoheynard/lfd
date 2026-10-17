@@ -2,6 +2,7 @@ import { Global, Injectable, Module } from "@nestjs/common";
 
 import { GrowthModule } from "../b2b/growth/growth.module.js";
 import { ActivityRecorder } from "../b2b/growth/domain/ports/activity-recorder.js";
+import type { RecordActivityInput } from "../b2b/growth/domain/activity-event.js";
 import { Journal } from "../platform/journal/journal.js";
 import type { JournalFact } from "../platform/journal/journal-fact.js";
 import {
@@ -43,14 +44,24 @@ class ActivityJournal extends Journal {
    * l'écriture.
    */
   async append(fact: JournalFact): Promise<void> {
-    await this.recorder.recordOrFail({
-      type: fact.type,
-      subjectType: fact.subjectType,
-      subjectId: fact.subjectId,
-      payload: fact.payload,
-      ...(fact.occurredAt === undefined ? {} : { occurredAt: fact.occurredAt }),
-    });
+    await this.recorder.recordOrFail(inputOf(fact));
   }
+
+  /** Le lot passe au recorder d'un bloc : il l'écrit en une insertion. */
+  override async appendAll(facts: readonly JournalFact[]): Promise<void> {
+    await this.recorder.recordAllOrFail(facts.map(inputOf));
+  }
+}
+
+/** Le fait de la plateforme, dans la forme qu'attend le journal de `growth`. */
+function inputOf(fact: JournalFact): RecordActivityInput {
+  return {
+    type: fact.type,
+    subjectType: fact.subjectType,
+    subjectId: fact.subjectId,
+    payload: fact.payload,
+    ...(fact.occurredAt === undefined ? {} : { occurredAt: fact.occurredAt }),
+  };
 }
 
 /**

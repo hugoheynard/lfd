@@ -34,4 +34,17 @@ export abstract class DomainEventPublisher {
    * le lui a donné ».
    */
   abstract publishTraced(event: JournaledEvent): Promise<void>;
+
+  /**
+   * {@link publishTraced} pour un lot de faits d'un même geste, dans l'ordre.
+   *
+   * Par défaut, un par un : un adaptateur qui sait écrire en lot le
+   * surcharge. Ajouté le 2026-10-17, après qu'une validation de 64 articles a
+   * fait expirer sa transaction (P2028) à raison de deux allers-retours par fait.
+   */
+  async publishTracedAll(events: readonly JournaledEvent[]): Promise<void> {
+    for (const event of events) {
+      await this.publishTraced(event);
+    }
+  }
 }

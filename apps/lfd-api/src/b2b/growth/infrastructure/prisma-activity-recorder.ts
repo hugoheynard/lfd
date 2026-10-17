@@ -78,30 +78,61 @@ export class PrismaActivityRecorder extends ActivityRecorder {
    * `idempotencyKey`, émission rejouée) est un no-op, jamais une erreur.
    */
   private async append(input: RecordActivityInput): Promise<void> {
+    await this.appendAll([input]);
+  }
+
+  /**
+   * Bloquant comme {@link recordOrFail}, en **deux** requêtes quel que soit le
+   * lot : l'auteur est résolu une fois (un lot est l'acte d'UNE personne, dans
+   * une requête) et toutes les lignes partent en une insertion.
+   */
+  override async recordAllOrFail(inputs: readonly RecordActivityInput[]): Promise<void> {
+    for (const input of inputs) {
+      this.facts.verify(input.type, input.payload);
+    }
+    await this.appendAll(inputs);
+  }
+
+  private async appendAll(inputs: readonly RecordActivityInput[]): Promise<void> {
+    if (inputs.length === 0) {
+      return;
+    }
     const context = currentRequestContext();
-    const actorType = input.bySystem === true ? "system" : (context?.actor.type ?? "system");
-    const actorId = input.bySystem === true ? null : (context?.actor.id ?? null);
-    const actor = await this.describeOrNothing(actorType, actorId);
-    const row = buildActivityEventRow(input, {
-      id: this.ids.next(),
-      now: this.clock.now(),
-      traceId: context?.traceId ?? newTraceId(),
-      actorType,
-      actorId,
-      // Figés ici, pas résolus à la lecture : le journal doit dire qui a agi ce
-      // jour-là et à quel titre, pas qui porte ce nom et ce rôle aujourd'hui.
-      actorName: actor.name,
-      actorRole: actor.role,
-    });
+    const traceId = context?.traceId ?? newTraceId();
+    const authors = new Map<boolean, Promise<Author>>();
+    const rows = [];
+    for (const input of inputs) {
+      const bySystem = input.bySystem === true;
+      const author = authors.get(bySystem) ?? this.authorOf(bySystem);
+      authors.set(bySystem, author);
+      const { actorType, actorId, actor } = await author;
+      const row = buildActivityEventRow(input, {
+        id: this.ids.next(),
+        now: this.clock.now(),
+        traceId,
+        actorType,
+        actorId,
+        // Figés ici, pas résolus à la lecture : le journal doit dire qui a agi ce
+        // jour-là et à quel titre, pas qui porte ce nom et ce rôle aujourd'hui.
+        actorName: actor.name,
+        actorRole: actor.role,
+      });
+      rows.push({ ...row, payload: row.payload as Prisma.InputJsonValue });
+    }
     // `skipDuplicates` = `INSERT … ON CONFLICT DO NOTHING` : un fait rejoué
     // (même `idempotency_key`) n'écrit rien, SANS erreur Postgres. Attraper le
     // P2002 après coup ne suffisait pas : dans une `UnitOfWork`, l'`INSERT`
     // refusé met la transaction en échec, et le geste qu'on voulait épargner
     // était annulé au commit (TODO du doublon, corrigé le 2026-09-18).
-    await this.prisma.activityEvent.createMany({
-      data: [{ ...row, payload: row.payload as Prisma.InputJsonValue }],
-      skipDuplicates: true,
-    });
+    await this.prisma.activityEvent.createMany({ data: rows, skipDuplicates: true });
+  }
+
+  /** Qui agit — le contexte de requête, ou le système —, nommé une fois. */
+  private async authorOf(bySystem: boolean): Promise<Author> {
+    const context = currentRequestContext();
+    const actorType = bySystem ? "system" : (context?.actor.type ?? "system");
+    const actorId = bySystem ? null : (context?.actor.id ?? null);
+    return { actorType, actorId, actor: await this.describeOrNothing(actorType, actorId) };
   }
 
   /**
@@ -119,6 +150,13 @@ export class PrismaActivityRecorder extends ActivityRecorder {
       return { name: null, role: null };
     }
   }
+}
+
+/** L'auteur d'un fait, tel qu'il est figé dans sa ligne. */
+interface Author {
+  readonly actorType: "customer" | "staff" | "system";
+  readonly actorId: string | null;
+  readonly actor: ActorIdentity;
 }
 
 /** Message lisible d'une erreur inconnue, sans exposer la stack. */

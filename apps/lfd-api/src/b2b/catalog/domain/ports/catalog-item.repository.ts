@@ -14,6 +14,17 @@ export abstract class CatalogItemRepository {
   abstract load(sku: string): Promise<CatalogItem | null>;
 
   /**
+   * Charge des articles **en vente** désignés, en UNE lecture. Les SKU absents
+   * (inconnus ou retirés) manquent simplement du résultat, dans un ordre
+   * quelconque : c'est à l'appelant de refuser, il sait ce qu'il attendait.
+   *
+   * Un geste de lot qui chargeait article par article ouvrait autant
+   * d'allers-retours que de SKU dans sa transaction, et l'a fait expirer en
+   * production (P2028, 64 SKU, 2026-10-17).
+   */
+  abstract loadMany(skus: readonly string[]): Promise<CatalogItem[]>;
+
+  /**
    * Charge tout le catalogue **en vente**, agrégats compris.
    *
    * Une lecture en bloc, pas un raccourci d'écriture : l'ingestion a besoin des
@@ -77,4 +88,19 @@ export abstract class CatalogItemRepository {
    * « transaction script » que le CLAUDE.md §3.1 interdit.
    */
   abstract saveMany(items: readonly CatalogItem[]): Promise<void>;
+
+  /**
+   * Persiste **l'attente de validation** d'agrégats déjà chargés, et rien
+   * d'autre — en un nombre de requêtes qui ne dépend pas de leur nombre.
+   *
+   * Prend des agrégats, pas des primitives : c'est `CatalogItem.approveFor`
+   * qui a décidé de la lever, et l'adaptateur ne fait que lire l'état qu'il
+   * porte. Elle existe parce que valider ne change QUE ces deux colonnes, et
+   * que {@link saveMany} réécrit par article les faits, la décision et la
+   * trace du tarif : 64 SKU y faisaient expirer la transaction (P2028,
+   * 2026-10-17).
+   *
+   * ⚠️ Un appelant qui a muté autre chose que l'attente veut {@link saveMany}.
+   */
+  abstract saveReviewStates(items: readonly CatalogItem[]): Promise<void>;
 }
