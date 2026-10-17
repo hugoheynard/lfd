@@ -14,7 +14,11 @@
 > push, la réception, les versions, la parité, la santé et la surcharge des
 > opérations par X2 (2026-10-17, §6), puis les opérations du référentiel, le
 > lien au canal par fiche et l'édition de la matrice des canaux par X4
-> (2026-10-17, §6).
+> (2026-10-17, §6), puis les contextes de vente des révisions (`81b192e59`).
+> **Relue le 2026-10-17 pour X5** : chaque fichier cité rouvert, les lignes
+> recalées ; la validation par ligne et les écritures de lot y sont ajoutées
+> (§4). Les tables restées en base sont listées dans
+> [`tables-mortes.md`](tables-mortes.md).
 > **Pas bâti** : W, 4, et ce qui reste du lot 5 (§9).
 
 ## En une phrase
@@ -67,22 +71,23 @@ sequenceDiagram
 Le catalogue **déclare** `CatalogEmitter` (`apps/lfd-api/src/pim/catalogue/shared/domain/ports/catalog-emitter.ts:21`) :
 il dit « cette fiche a changé », jamais « envoie-la à la plateforme ». Le
 canal `pim/channels/b2b-platform/` l'implémente
-(`apps/lfd-api/src/pim/channels/b2b-platform/products/catalog-facts.emitter.ts:28`)
+(`apps/lfd-api/src/pim/channels/b2b-platform/products/catalog-facts.emitter.ts:24`)
 et le branche par un module global
 (`apps/lfd-api/src/pim/channels/b2b-platform/catalog-facts.module.ts:46-53`) —
 global parce que le canal importe le catalogue, jamais l'inverse.
 
-Le contrat (`catalog-emitter.ts:10-19`) :
+Le contrat (`catalog-emitter.ts:10-17`) :
 
 - appelé en **dernière instruction** du `uow.run` du geste. L'instantané
   n'est pas pris dans l'agrégat en mémoire : il est **relu en base** sous
   verrou, satellites compris (allergènes, rédactionnel, visuels), qui ne
   passent pas par `save` ;
-- fermé, il ne fait **rien** — ni verrou, ni lecture (`catalog-facts.emitter.ts:40-42`, `:75-77`) ;
-- ouvert, il lève hors d'une unité de travail : un fait sans transaction
+- il est **toujours ouvert** depuis X1 : plus aucun interrupteur ne le
+  ferme (`catalog-facts.emitter.ts:19-21`) ;
+- il lève hors d'une unité de travail : un fait sans transaction
   survivrait à une écriture annulée (`apps/lfd-api/src/platform/outbox/durable-publisher.ts:12-13`).
 
-Au 2026-10-16, **35 fichiers** du référentiel appellent `emitter.emitProducts`
+Au 2026-10-17, **33 fichiers** (hors tests) du référentiel appellent `emitter.emitProducts`
 ou `emitter.emitCategories` — toutes les écritures de fiche et de famille
 (par exemple `apps/lfd-api/src/pim/catalogue/product/application/create-product.ts:172`,
 `apps/lfd-api/src/pim/catalogue/product/application/update-product-identity.ts:102`,
@@ -90,7 +95,7 @@ ou `emitter.emitCategories` — toutes les écritures de fiche et de famille
 
 ### Verrou, puis numéro
 
-L'ordre est la garantie (`catalog-facts.emitter.ts:43-54`) :
+L'ordre est la garantie (`catalog-facts.emitter.ts:34-50`) :
 
 1. `SELECT id … ORDER BY id FOR UPDATE` sur les fiches visées, triées et sans
    doublon — le seul ordre de verrou du mécanisme
@@ -158,22 +163,26 @@ verrouiller le catalogue entier. Elle est appelée **après** le `uow.run`, et
 une fiche en échec est journalisée et listée sans faire échouer le geste,
 déjà validé (`apps/lfd-api/src/pim/channels/b2b-platform/products/catalog-reemission.service.ts:66-80`).
 
-| Déclencheur                                                                 | Appel                                                                                                                                                                         |
-| --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| audience, taux d'une famille (ses canaux, jusqu'à X4)                       | `productsOfCategories` (`apps/lfd-api/src/pim/catalogue/category/application/set-category-audience.ts:50`, `set-category-vat.ts:57`, set-category-channels.ts (retiré en X4)) |
-| modifier ou retirer un taux de TVA                                          | `everything` (`apps/lfd-api/src/pim/vat-rates/application/update-vat-rate.ts:51`, `remove-vat-rate.ts:43`)                                                                    |
-| modifier ou retirer un contexte de vente                                    | `everything` (`apps/lfd-api/src/pim/sales-contexts/application/update-sales-context.ts:63`, `remove-sales-context.ts:55`)                                                     |
-| le référentiel d'allergènes (7 gestes)                                      | `everything` (par exemple `apps/lfd-api/src/pim/allergens/application/revise-allergen-entry.ts:74`)                                                                           |
-| changer la méthode du prix pro                                              | `everything` (`apps/lfd-api/src/pim/accounting-rules/application/choose-pro-price-method.ts:81`)                                                                              |
-| changer le rapport pro — **seulement** au premier réglage ou hors `entered` | `everything` (`apps/lfd-api/src/pim/accounting-rules/application/set-pro-price-ratio.ts:71-75`)                                                                               |
-| `POST /pim/channels/b2b/reemit` — une fiche, ou tout                        | `apps/lfd-api/src/pim/channels/b2b-platform/products/reemit.controller.ts:27-35`                                                                                              |
+| Déclencheur                                                                 | Appel                                                                                                                                |
+| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| audience, taux d'une famille                                                | `productsOfCategories` (`apps/lfd-api/src/pim/catalogue/category/application/set-category-audience.ts:50`, `set-category-vat.ts:57`) |
+| modifier ou retirer un taux de TVA                                          | `everything` (`apps/lfd-api/src/pim/vat-rates/application/update-vat-rate.ts:51`, `remove-vat-rate.ts:43`)                           |
+| modifier ou retirer un contexte de vente                                    | `everything` (`apps/lfd-api/src/pim/sales-contexts/application/update-sales-context.ts:60`, `remove-sales-context.ts:55`)            |
+| le référentiel d'allergènes (7 gestes)                                      | `everything` (par exemple `apps/lfd-api/src/pim/allergens/application/revise-allergen-entry.ts:74`)                                  |
+| changer la méthode du prix pro                                              | `everything` (`apps/lfd-api/src/pim/accounting-rules/application/choose-pro-price-method.ts:81`)                                     |
+| changer le rapport pro — **seulement** au premier réglage ou hors `entered` | `everything` (`apps/lfd-api/src/pim/accounting-rules/application/set-pro-price-ratio.ts:71-75`)                                      |
+| `POST /pim/channels/b2b/reemit` — une fiche, ou tout                        | `apps/lfd-api/src/pim/channels/b2b-platform/products/reemit.controller.ts:23-30`                                                     |
 
 « Tout » émet les familles d'abord, puis les fiches, puis les règles en
 dernier : c'est le fait d'une fiche qui apprend à la plateforme l'identifiant
-de déclinaison qu'une règle de ce rang vise (`catalog-reemission.service.ts:46-64`).
-La route `reemit` refuse quand les faits sont fermés — « 0 fiche réémise » se
-lirait comme un succès (`apps/lfd-api/src/pim/channels/b2b-platform/application/reemit-catalog.ts:46-48`, `:63-71`).
-C'est le **filet** : un fait perdu laisse une fiche en retard, « Catalogue
+de déclinaison qu'une règle de ce rang vise (`catalog-reemission.service.ts:40-56`).
+Une fiche inconnue répond 404 (`apps/lfd-api/src/pim/channels/b2b-platform/application/reemit-catalog.ts:44-48`).
+
+⚠️ **La réémission n'a plus d'écran** depuis X4 (2026-10-17) : ses deux
+boutons (« Réémettre tout », « Réémettre cette fiche ») vivaient dans la carte
+de bascule vers l'audience de la page Intégrations, retirée avec elle
+(`d66b331f0`). Le geste est un appel à la route, sous la surface
+`pim_channels` (runbook, « Réémettre le catalogue »). C'est le **filet** : un fait perdu laisse une fiche en retard, « Catalogue
 publié » le montre, la réémission le répare.
 
 ## 3. Le transport durable
@@ -225,19 +234,23 @@ UPDATE … WHERE applied_seq < EXCLUDED.applied_seq`
    (`catalog_items`, upsert par SKU). Une ligne **neuve** naît « à valider »
    pour chaque audience qu'elle sert ; une ligne existante n'y repasse jamais,
    ni sur une modification ni sur un élargissement d'audience
-   (`prisma-catalog-product-facts.projection.ts:94-120`) ;
+   (`putOnSale`, `prisma-catalog-product-facts.projection.ts:96-128`). **Un
+   seul upsert pour toutes les déclinaisons** de la fiche, en SQL
+   (`apps/lfd-api/src/b2b/catalog/infrastructure/catalog-item-upsert.ts`) :
+   une instruction par article allongeait la transaction de la livraison
+   avec la taille de la fiche (P2028, `ee8ba0e75`, 2026-10-17) ;
 4. **tout autre SKU de la fiche** encore en vente est retiré — fiche inactive
    ou archivée, déclinaison devenue incomplète, SKU renommé — par un
-   `updateMany` conditionné sur `STILL_SOLD` (`:122-131`). Retiré, pas
+   `updateMany` conditionné sur `STILL_SOLD` (`withdrawOthers`, `:130-139`). Retiré, pas
    supprimé : la ligne reste ;
 5. les limites de commande des articles de la fiche sont redescendues de
    l'échelle reçue.
 
 Le prix reçu est tracé dans `catalog_price_history` par la règle partagée —
-le prix du référentiel seul (`:133-153`).
+le prix du référentiel seul, en une écriture par lot (`tracePrices`, `:141-161`).
 
 🔴 **Le récepteur n'écrit jamais `catalog_item_overrides`**
-(`prisma-catalog-product-facts.projection.ts:23-27`) et ne passe pas par
+(`prisma-catalog-product-facts.projection.ts:24-27`) et ne passe pas par
 `saveMany`, qui supprimerait une décision quand l'agrégat n'en porte plus. Un
 fait réécrit les colonnes reçues du référentiel, rien d'autre. C'est la
 décision de structure la plus ancienne du catalogue, et elle tient toujours :
@@ -274,14 +287,31 @@ vendrait ce que les autres cachent.
 
 | Décide encore                                                                                                                                                                                                | Route                                                                                                  |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
-| **masquer** un article pour une audience, ou l'y remettre — refusé hors de l'audience du référentiel (`MaskingOutsideAudienceError`, `apps/lfd-api/src/b2b/catalog/domain/entities/catalog-item.ts:605-611`) | `PUT admin/catalog/:sku/masking` (`apps/lfd-api/src/b2b/catalog/http/admin-catalog.controller.ts:154`) |
-| **mettre en avant**                                                                                                                                                                                          | `PUT admin/catalog/:sku/featured` (`admin-catalog.controller.ts:166`)                                  |
-| **valider une arrivée**, par article et par audience, tout ou rien, journalisé                                                                                                                               | `POST admin/catalog/review/approve` (`admin-catalog.controller.ts:138`)                                |
+| **masquer** un article pour une audience, ou l'y remettre — refusé hors de l'audience du référentiel (`MaskingOutsideAudienceError`, `apps/lfd-api/src/b2b/catalog/domain/entities/catalog-item.ts:605-611`) | `PUT admin/catalog/:sku/masking` (`apps/lfd-api/src/b2b/catalog/http/admin-catalog.controller.ts:155`) |
+| **mettre en avant**                                                                                                                                                                                          | `PUT admin/catalog/:sku/featured` (`admin-catalog.controller.ts:167`)                                  |
+| **valider une arrivée**, par article et par audience, tout ou rien, journalisé                                                                                                                               | `POST admin/catalog/review/approve` (`admin-catalog.controller.ts:139`)                                |
+
+**Valider une arrivée** se fait **sous sa ligne**, dans la table du
+« Catalogue publié » (`4c55f02db`, 2026-10-17 ; la note de ligne
+`apps/lfd-backoffice-frontend/src/app/b2b/catalogue/review-row-note/review-row-note.ts`) :
+un bouton par audience attendue, « Valider » pour les deux d'un geste. L'encart
+de tête ne liste plus les articles ; il garde le compte, le filtre « En
+attente » et « Tout valider ». Côté serveur, la validation d'un lot coûte
+**un nombre de requêtes qui ne croît pas avec le lot** — une lecture
+(`loadManyOrFail`), les écritures d'attente groupées (`saveReviewStates`), le
+journal en une écriture (`publishTracedAll`)
+(`apps/lfd-api/src/b2b/catalog/application/commands/approve-review.handler.ts:33-36`,
+`565ec8dd1`) : 64 SKU × 2 audiences traités un par un avaient fait expirer la
+transaction en production (P2028). L'écriture d'un lot d'articles par
+l'agrégat (`saveMany`, `apps/lfd-api/src/b2b/catalog/infrastructure/prisma-catalog-item.repository.ts:115`)
+suit la même règle depuis `ee8ba0e75` : un upsert de faits et une écriture de
+décisions pour tout le lot (`catalog-item-upsert.ts`, `catalog-decision-writes.ts`),
+qui ne réécrivent jamais les deux colonnes de prix décidé.
 
 La route de masquage est **unique** depuis le 2026-10-15 (Hugo : « une seule
 route qui définisse le masquage ») : les deux routes d'avant, une par
 audience (`:sku/visibility`, `:sku/public-visibility`), sont retirées
-(`admin-catalog.controller.ts:148-153`).
+(`admin-catalog.controller.ts:149-154`).
 
 **Le prix ne se décide plus sur la plateforme** (lot D). Le remplacement d'un
 prix existait parce que le référentiel ne savait que dériver le prix pro par
@@ -314,7 +344,7 @@ Les routes `/publish` et `/unpublish` et la valeur de journal
 `product.published` n'ont pas changé de nom.
 
 Le refus appartient à l'agrégat (`Product.activate`,
-`apps/lfd-api/src/pim/catalogue/product/domain/entities/product.ts:357-371`) :
+`apps/lfd-api/src/pim/catalogue/product/domain/entities/product.ts:327-341`) :
 
 - une fiche **archivée** se restaure d'abord ;
 - il faut **au moins une déclinaison non arrêtée complète**
@@ -325,7 +355,7 @@ Le refus appartient à l'agrégat (`Product.activate`,
   mêmes clés que les `gaps` du fait, par la même fonction (`variantGaps`).
 
 Les valeurs nutritionnelles n'y entrent pas : le règlement (UE) n° 1169/2011
-les exempte dans les deux cas de vente (`product.ts:344-348`). Le handler
+les exempte dans les deux cas de vente (`product.ts:315-318`). Le handler
 montre à l'agrégat ce qu'il ne voit pas — taux résolus, contextes en service,
 règle du prix pro (`activate-product.ts:69-77`).
 
@@ -423,12 +453,13 @@ avant push ; la **surcharge des opérations reçues**
 (`/admin/catalog/operations`, sa section et son panneau). Leurs routes
 répondent 404, comme toute route inconnue.
 
-**Restent en base, sans écrivain** : `catalog_deliveries`, `catalog_versions`
-et `orders.catalog_version_id` (les commandes passées gardent la leur),
-`catalog_operation_overrides`, `catalog_revision_publications` (plus lue non plus depuis le 2026-10-17),
-`b2b_channel_binding.last_pushed_at` — et depuis X4, `b2b_channel_binding`
-entière, `pim.operation` et `pim.operation_item`, sans lecteur ni écrivain.
-La liste des tables mortes est l'objet de X5.
+**Restent en base** les tables de ce chemin, sans lecteur ni écrivain —
+`catalog_delivery`, `catalog_versions`, `catalog_operation_overrides`,
+`pim.catalog_revision_publication`, `pim.b2b_channel_binding`,
+`pim.operations`, `pim.operation_items` — et `orders.catalog_version_id`,
+écrite `NULL` à chaque commande neuve et jamais relue. Leur liste prouvée, leurs
+clés étrangères et l'ordre proposé pour les supprimer :
+[`tables-mortes.md`](tables-mortes.md) (X5, pour un ordre de Hugo).
 
 **Ce qui reste du push, et pourquoi** :
 
@@ -471,11 +502,20 @@ La liste des tables mortes est l'objet de X5.
   depuis » et « Au moins un canal » du rail d'une famille, l'avertissement
   « vendue dans aucun contexte » du rail d'une fiche.
 
-**Reste, en lecture seule** : la matrice **figée** en base
-(`category_channel`, `product_channel_override`, `product_channel`). La
-révision la lit encore pour son champ `soldContexts` ; le point de vente la
-lit pour compter ses usages et refuser de cesser d'offrir un contexte encore
-coché — décision attendue de Hugo (X4, rapport). **Les contextes de vente et
+**Les révisions ne photographient plus les contextes de vente** (`81b192e59`,
+Hugo, 2026-10-17, option a) : `soldContexts` est sorti de la source des
+révisions, `effectiveChannels` du lecteur du catalogue, et la matrice des
+agrégats, de leurs dépôts et des vues `@lfd/pim-contracts`. Comparer une
+révision d'avant à une d'après montre « Contextes de vente » sorti, une fois.
+Le point de vente a quitté le référentiel (`63bb374a8`, L3 de
+[`../sites/plan-sur-place-capacite-de-site.md`](../sites/plan-sur-place-capacite-de-site.md)).
+
+**Reste, figée en base et lue par un seul endroit** : `category_channel` et
+`product_channel` alimentent le compte « vendu par » de la liste des contextes
+de vente, `point_of_sale_context` le compte « offert par »
+(`apps/lfd-api/src/pim/sales-contexts/infrastructure/prisma-sales-context.repository.ts:110-115`,
+`prisma-sales-context.registry.ts:89`) — jusqu'à L4 du plan du sur place.
+`product_channel_override` n'est plus lue du tout. **Les contextes de vente et
 la TVA par contexte ne bougent pas.**
 
 ## 7. Les écrans
@@ -523,11 +563,12 @@ Tous décrits dans [`plan-catalogue-synchronise-par-audience.md`](plan-catalogue
 - **lot 4** — émissions en lot (TVA, limites) et révisions automatiques.
   Les opérations ne passent pas en faits : elles passent au commerce ;
 - **lot 5** — le ménage : le push et la réception sont partis (X2), le lien
-  au canal et l'édition de la matrice (X4). Restent la matrice figée en base
-  (lue par la révision et par le point de vente, §6) et le point de vente,
-  dont le code est retiré le 2026-10-17 (points-of-sale.module.ts, retiré en
-  L3 de [`../sites/plan-sur-place-capacite-de-site.md`](../sites/plan-sur-place-capacite-de-site.md)) —
-  ses tables restent en base ; puis X5 de [`plan-sans-interrupteurs.md`](plan-sans-interrupteurs.md).
+  au canal et l'édition de la matrice (X4), la matrice des révisions
+  (`81b192e59`), le point de vente (L3 de
+  [`../sites/plan-sur-place-capacite-de-site.md`](../sites/plan-sur-place-capacite-de-site.md)).
+  Restent la matrice figée, lue par le seul compte d'usage des contextes
+  (§6, jusqu'à L4), et les tables en base, listées pour décision dans
+  [`tables-mortes.md`](tables-mortes.md) — aucune n'est supprimée.
 
 ## 10. Ce qui n'est pas vérifié
 
@@ -539,7 +580,9 @@ Tous décrits dans [`plan-catalogue-synchronise-par-audience.md`](plan-catalogue
 - La séquence du diagramme du §1 regroupe la relecture et la projection en
   une étape : le détail est dans `catalog-facts.source.ts`, non relu ligne à
   ligne.
-- La liste des 35 fichiers émetteurs est un compte par recherche, pas une
+- La réémission n'a plus d'écran depuis X4 (§2) : le filet existe, mais il
+  ne se lance que par l'API.
+- La liste des 33 fichiers émetteurs est un compte par recherche, pas une
   revue de chaque geste.
 
 ## Documents retirés le 2026-10-16

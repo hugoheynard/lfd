@@ -17,7 +17,8 @@ export class ReemitCatalogCommand {
 /**
  * **Réémettre** (2a6 de `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`) :
  * le filet des faits du catalogue. Un fait perdu laisse une fiche en retard ;
- * la parité le montre, ceci le répare. « Tout » est aussi le geste qui remplit
+ * rien ne le signale depuis que la parité est partie (X2, 2026-10-17) —
+ * c'est un écart constaté à l'écran ; ceci le répare. « Tout » est aussi le geste qui remplit
  * la plateforme à l'ouverture des faits (2b4).
  *
  * Rend un compte-rendu, comme le push dont il prend la place : celui qui

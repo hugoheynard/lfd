@@ -435,7 +435,7 @@ ci-dessus :**
 >     rangeait pas) ; « réémettre tout » émet les règles en dernier ;
 > - **la famille** : `catalog_categories.withdrawn_at` et `audience`
 >   (`20261015400000`) ; une restauration remet la date à `NULL`.
-> - le geste est au runbook (« Basculer le catalogue vers les faits »).
+> - le geste est au runbook (« Réémettre le catalogue », titre depuis X5).
 
 | #   | Quoi                                                                                                                 |
 | --- | -------------------------------------------------------------------------------------------------------------------- |

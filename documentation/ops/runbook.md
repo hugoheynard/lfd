@@ -465,18 +465,38 @@ mentions d'allergènes sur le catalogue B2B » décrivaient des gestes du push
 retirés du code le 2026-10-17 (X2 de
 [`plan-sans-interrupteurs.md`](../catalogue/plan-sans-interrupteurs.md)) : le
 catalogue descend par ses faits, fiche par fiche. Le geste qui les remplace
-est la **réémission** (Intégrations → « Réémettre tout », ou une fiche seule) ;
-le contrôle, l'écran « Catalogue publié ». Leur texte est dans l'historique
+est la **réémission** (ci-dessous) ; le contrôle, l'écran « Catalogue
+publié ». Leur texte est dans l'historique
 git.
 
-## Basculer le catalogue vers les faits (lot 2b) — l'ordre, et le retour
+## Réémettre le catalogue — une fiche, ou tout
 
-**Fait les 2026-10-16/17** (bascule d'audience : 0 fiche désactivée ;
-réémission : 293 articles). L'interrupteur `CATALOG_FACTS_ENABLED` est retiré
-du code le 2026-10-17 (X1 de
-[`plan-sans-interrupteurs.md`](../catalogue/plan-sans-interrupteurs.md)) :
-il n'y a plus de bascule à faire, et le retour arrière est un revert suivi
-d'un redéploiement.
+Le **filet** des faits du catalogue
+([`catalogue-synchronise.md`](../catalogue/catalogue-synchronise.md) §2) :
+une fiche en retard sur la plateforme — vue sur « Catalogue publié » — se
+répare en réémettant son fait. La bascule vers les faits (lot 2b) est faite
+depuis les 2026-10-16/17 et n'a plus d'interrupteur (X1) ; ce geste est ce
+qui en reste.
+
+⚠️ **Plus d'écran depuis X4** (2026-10-17) : les boutons vivaient dans la
+carte de bascule de la page Intégrations, retirée. C'est un appel à l'API,
+sous la surface `pim_channels` :
+
+```http
+POST /pim/channels/b2b/reemit
+{ "productId": "<id de la fiche>" }
+```
+
+- une fiche : `productId` ; une fiche inconnue répond 404 ;
+- **tout** : `productId` absent ou `null` — familles, puis fiches (une
+  transaction chacune), puis les règles. Le 2026-10-17, 293 articles en ~73 s :
+  la réponse peut se perdre côté client avant la fin, le travail continue ;
+- la réponse compte familles et fiches, et nomme les fiches en échec
+  (`failedProducts`) — chacune se réémet seule ensuite.
+
+Contrôle : la fiche sur « Catalogue publié », et la carte de santé `ops`
+(boîte d'envoi vide, aucune lettre morte). **Retour arrière** : sans objet —
+réémettre ne fait que republier l'état du référentiel, le plus récent gagne.
 
 ## Passer au prix pro saisi (lot S) — l'ordre, et le retour
 
@@ -544,10 +564,9 @@ prix public bouge le prix pro ».
 
 **Fait le 2026-10-16** (0 opération au référentiel, rien à reprendre).
 L'interrupteur `OPERATIONS_AT_COMMERCE` est retiré du code le 2026-10-17 (X1 de
-[`plan-sans-interrupteurs.md`](../catalogue/plan-sans-interrupteurs.md)) : les
-routes d'écriture de `/pim/operations` refusent pour de bon (409
-`pim.operation.moved_to_commerce`), et le retour arrière est un revert suivi
-d'un redéploiement.
+[`plan-sans-interrupteurs.md`](../catalogue/plan-sans-interrupteurs.md)), et
+`/pim/operations` entier par X4 le même jour : ses routes répondent 404. Le
+retour arrière est un revert suivi d'un redéploiement.
 
 ## Transférer le droit du catalogue (`b2b_catalog` → `lfc_catalog`) — l'ordre, et la condition de L2
 
