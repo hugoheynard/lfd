@@ -407,3 +407,101 @@ Décisions de Hugo, « bâtis » :
   jusqu'à la suppression des tables. Et **`pos_b2b` est une ligne morte** :
   elle entre dans la liste des tables mortes de X5
   ([`plan-sans-interrupteurs.md`](../catalogue/plan-sans-interrupteurs.md)).
+
+## L4 — retrait du point de vente et de la matrice figée (Hugo, 2026-10-17 : « lance le lot 4 »)
+
+> Écrit le 2026-10-17 après lecture du code ; contredit par `vitruve` avant
+> Hugo (suppression de tables). Prérelease : le code et la migration partent
+> **dans le même déploiement** (décision du 2026-10-04, §0 de `CLAUDE.md`).
+
+### Ce qui lit encore (vérifié le 2026-10-17)
+
+- `PrismaSalesContextRepository.usageByKey`
+  (`apps/lfd-api/src/pim/sales-contexts/infrastructure/prisma-sales-context.repository.ts:107`)
+  compte `soldBy` sur `category_channel` + `product_channel` et `offeredBy`
+  sur `point_of_sale_context`.
+- `PrismaSalesContextRegistry.offeredByLocations`
+  (`prisma-sales-context.registry.ts:88`), lu par
+  `list-sales-contexts.ts:27` → `SalesContextAdminView.offeredByLocations`
+  (`packages/pim-contracts/src/category.ts:80`) → colonne « point(s) de
+  vente » de l'écran des contextes.
+- `SalesContextAdminView.soldBy` (`category.ts:82`) → colonne « vendu par ».
+- Rien ne lit `point_of_sale`, `point_of_sale_table`, `product_channel_override`
+  (`documentation/catalogue/tables-mortes.md` §1, §2).
+
+### Le lot
+
+1. **Code** : retirer `offeredByLocations()` (port + Prisma), `soldBy` et
+   `offeredBy` de `SalesContextUsage` ; ce qui retient un contexte se réduit
+   aux **taux** (`ratedBy`) et au fait d'être racine. Contrat :
+   `offeredByLocations` et `soldBy` quittent `SalesContextAdminView` ; l'écran
+   perd ses deux colonnes et son message de refus ne cite plus que les taux.
+   Les suites qui semaient un point de vente ou une matrice
+   (`test/pim-sales-contexts.e2e-spec.ts:233` et celles que `tables-mortes.md`
+   nomme) cessent de le faire.
+2. **Schéma** : retirer les modèles `PointOfSale`, `PointOfSaleContext`,
+   `PointOfSaleTable`, l'enum `PointOfSaleKind`, `CategoryChannel`,
+   `ProductChannel`, `ProductChannelOverride`, et leurs champs de relation chez
+   les modèles vivants (`Product.channelOverrideRows`, ceux de `Category`,
+   `SalesContext`) ; les accesseurs de `pim-prisma.service.ts`.
+3. **Migration** : `DROP TABLE` dans l'ordre de `tables-mortes.md` §2 —
+   `product_channel` → `product_channel_override` → `category_channel` →
+   `point_of_sale_context` → `point_of_sale_table` → `point_of_sale` (avec
+   `pos_b2b`) — puis `DROP TYPE` de l'enum. Aucune donnée n'est recopiée : la
+   matrice est figée depuis X4, la grille vit au site depuis L2 (0 table en
+   production, mesure de Hugo), `pos_b2b` est morte.
+
+### Ce que ça détruit
+
+Les lignes figées de la matrice (aucune n'est relue pour vendre depuis X4),
+les points de vente et leurs rattachements aux contextes. Le retour arrière
+est une restauration de sauvegarde. Les faits passés `point_of_sale.*` restent
+au journal (catalogue de `@lfd/contracts`).
+
+### À mesurer avant (Hugo, lecture seule)
+
+```sql
+SELECT
+  (SELECT count(*) FROM pim.point_of_sale)          AS points_de_vente,
+  (SELECT count(*) FROM pim.point_of_sale_context)  AS rattachements,
+  (SELECT count(*) FROM pim.point_of_sale_table)    AS tables,
+  (SELECT count(*) FROM pim.category_channel)       AS matrice_familles,
+  (SELECT count(*) FROM pim.product_channel)        AS matrice_fiches,
+  (SELECT count(*) FROM pim.product_channel_override) AS redefinitions;
+```
+
+### Contradiction de `vitruve` (2026-10-17), intégrée
+
+- **BLOQUANT — un contexte deviendrait supprimable avec ses taux, effacés en
+  cascade.** Le refus de suppression ne vient pas du compte affiché mais de
+  la base (`prisma-sales-context.repository.ts:90-98` : FK violée →
+  `SalesContextInUseError`). Les seules FK en RESTRICT vers `sales_context`
+  sont celles des trois tables que L4 supprime ; celles des taux
+  (`category_context_tva`, `20260824150000…:46-49` ; `product_context_tva`,
+  `20260824170000…:26-29`) sont en **CASCADE**. **Correction** : la même
+  migration repasse ces deux FK en `ON DELETE RESTRICT` (inexprimable plutôt
+  que vérifié). `SalesContextInUseError` reste vivante, son message dit
+  désormais « des taux de TVA y sont réglés — retirez-les d'abord », et un
+  test e2e de non-régression prouve qu'un contexte qui porte un taux ne se
+  supprime pas et que le taux reste.
+- **Consommateurs à retirer, nommés** : `schema-ops.counter.ts:157-166` (et
+  `schema-parity.spec.ts`), le panneau `sales-context-panel.ts:87-99`,
+  `sales-contexts-page.ts:93` et sa spec, `sales-context-queries.spec.ts`,
+  l'e2e `pim-sales-contexts.e2e-spec.ts` (l.44-45, 187-191, 233, 281), les
+  quatre accesseurs de `pim-prisma.service.ts:40-43`, et les relations
+  `SalesContext.offeredBy/categoryChannels/productChannels`
+  (`sales-contexts.prisma:96,100-101`), `Category.channels`
+  (`categories.prisma:34`), `Product.channelOverrideRows`.
+- **Semis** : les cases de matrice de `prisma/seed-pim` (`corpus.ts`,
+  `catalogue.ts`, `pointOfSaleLabel`) partent avec le lot.
+- **Commentaires devenus faux** à corriger dans le même commit :
+  `sales-context.entity.ts:110-111`, `remove-sales-context.ts:21-25`,
+  `prisma-category.repository.ts:29`, `get-product-detail.ts:35` ; et
+  `tables-mortes.md` (§2, ligne `pos_b2b`, chaîne du §3).
+- **Type SQL** : `DROP TYPE "pim"."point_of_sale_kind"` (nom réel,
+  `20260826220000_point_de_vente/migration.sql:15`).
+- **Export avant le DROP** (même règle que `catalog_versions`) : Hugo range
+  hors du dépôt le résultat de
+  `SELECT json_build_object('pos', (SELECT json_agg(t) FROM pim.point_of_sale t), 'pos_context', (SELECT json_agg(t) FROM pim.point_of_sale_context t), 'pos_table', (SELECT json_agg(t) FROM pim.point_of_sale_table t), 'category_channel', (SELECT json_agg(t) FROM pim.category_channel t), 'product_channel', (SELECT json_agg(t) FROM pim.product_channel t), 'override', (SELECT json_agg(t) FROM pim.product_channel_override t));`
+  — **seuil d'arrêt** : `point_of_sale_table` doit valoir 0 (la grille vit au
+  site) ; sinon on s'arrête et on regarde.
