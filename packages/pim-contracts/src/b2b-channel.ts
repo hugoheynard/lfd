@@ -117,44 +117,6 @@ export type B2bExclusionReason =
    */
   | "operation_article_absent";
 
-export interface B2bExclusionView {
-  readonly sku: string;
-  readonly reason: B2bExclusionReason;
-}
-
-/** Ce que la plateforme a réellement enregistré. */
-export interface B2bIngestionReportView {
-  readonly acceptedProducts: number;
-  readonly acceptedVariants: number;
-  readonly acceptedCategories: number;
-  /** Les SKU retirés de la vente par ce push — nommés, pas comptés. */
-  readonly removedSkus: readonly string[];
-  readonly appliedAt: string;
-}
-
-/**
- * Le compte rendu d'un push.
- *
- * `mode` n'est pas décoratif : c'est le serveur qui tranche entre simulation et
- * envoi réel, et l'écran doit le redire à chaque fois — sans quoi on croit
- * pousser pour de vrai.
- */
-export interface B2bPushSummaryView {
-  readonly mode: "dry-run" | "live";
-  readonly candidates: number;
-  readonly report: B2bIngestionReportView | null;
-  readonly excluded: readonly B2bExclusionView[];
-  /**
-   * L'**empreinte** de ce qui vient d'être projeté — le jeton qui relie la
-   * relecture à l'envoi.
-   *
-   * L'écran la garde de sa simulation et la redonne au push réel ; si le
-   * catalogue a bougé entre les deux, le serveur refuse en `409` plutôt que
-   * d'envoyer autre chose que ce qui a été relu.
-   */
-  readonly fingerprint: string;
-}
-
 /**
  * ── La frise : où en est CETTE fiche sur la plateforme ───────────────────────
  *

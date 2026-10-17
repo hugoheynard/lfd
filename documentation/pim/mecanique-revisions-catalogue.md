@@ -108,8 +108,8 @@ sequenceDiagram
 > même document disait déjà qu'il était périmé — un document qui se contredit
 > d'une section à l'autre trompe le lecteur qui s'arrête à la première.
 
-**Le nom vient de l'APPELANT.** `push.service.ts` prend `label: string | null` en
-paramètre, et `push.controller.ts` le lit dans le corps de la requête. Le `null`
+**Le nom vient de l'APPELANT.** push.service.ts (retiré en X2) prend `label: string | null` en
+paramètre, et push.controller.ts (retiré en X2) le lit dans le corps de la requête. Le `null`
 en dur qui vivait là **a produit** les révisions sans nom existantes ; il ne
 survient plus.
 
@@ -266,7 +266,7 @@ quelqu'un doit relire et accepter, SKU par SKU s'il le faut.
 1. ~~**Le push fabrique une ancre anonyme.**~~ **Tranché le 2026-09-10** : le
    nom remonte de l'écran de publication, à l'endroit et au moment où quelqu'un
    décide de publier — avec « Ce que cet envoi changerait » sous les yeux. Le
-   `null` en dur de `push.service.ts` a disparu.
+   `null` en dur de push.service.ts (retiré en X2) a disparu.
 2. **La règle est tenue par l'ÉCRAN, pas encore par le serveur.** `label` reste
    optionnel côté API, et c'est une étape, pas un état final : le front en ligne
    appelle la route sans lui, et une API resserrée avant ce déploiement
@@ -374,13 +374,13 @@ couvrir les modifications de tout le monde par l'intention du premier qui a
 
 ## Où ça vit
 
-| Quoi                       | Où                                                                              |
-| -------------------------- | ------------------------------------------------------------------------------- |
-| Le domaine de la révision  | `apps/lfd-api/src/pim/catalogue/revision/domain/revision.ts`                    |
-| La pose                    | `apps/lfd-api/src/pim/catalogue/revision/application/take-catalog-revision.ts`  |
-| L'état du catalogue        | `apps/lfd-api/src/pim/catalogue/revision/application/get-catalog-overview.ts`   |
-| Le diff entre deux ancres  | `apps/lfd-api/src/pim/catalogue/revision/application/diff-catalog-revisions.ts` |
-| Le push (et son ancre)     | `apps/lfd-api/src/pim/channels/b2b-platform/products/push.service.ts`           |
-| La projection et ses refus | `apps/lfd-api/src/pim/channels/b2b-platform/products/projection.ts`             |
-| L'écran Révisions          | `apps/lfd-backoffice-frontend/src/app/pim/revisions/`                           |
-| La fiche produit           | `apps/lfd-backoffice-frontend/src/app/pim/catalogue/product-form/`              |
+| Quoi                       | Où                                                                                 |
+| -------------------------- | ---------------------------------------------------------------------------------- |
+| Le domaine de la révision  | `apps/lfd-api/src/pim/catalogue/revision/domain/revision.ts`                       |
+| La pose                    | `apps/lfd-api/src/pim/catalogue/revision/application/take-catalog-revision.ts`     |
+| L'état du catalogue        | `apps/lfd-api/src/pim/catalogue/revision/application/get-catalog-overview.ts`      |
+| Le diff entre deux ancres  | `apps/lfd-api/src/pim/catalogue/revision/application/diff-catalog-revisions.ts`    |
+| Le push (et son ancre)     | apps/lfd-api/src/pim/channels/b2b-platform/products/push.service.ts (retiré en X2) |
+| La projection et ses refus | `apps/lfd-api/src/pim/channels/b2b-platform/products/projection.ts`                |
+| L'écran Révisions          | `apps/lfd-backoffice-frontend/src/app/pim/revisions/`                              |
+| La fiche produit           | `apps/lfd-backoffice-frontend/src/app/pim/catalogue/product-form/`                 |

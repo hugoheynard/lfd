@@ -47,7 +47,7 @@ viennoiserie`, etc. Trois lecteurs l'appellent : le catalogue pro
   (`pim.order_time_limit`, résolues par `prisma.category` dans
   `target-labels.ts`) — et elles suivent la **hiérarchie** : le commerce les lit
   par `categoryPathOf(snapshot.categories, product.categoryId)`
-  (`snapshot-limits.ts`). La vitrine range ses objets par `line.categoryId`
+  (snapshot-limits.ts (retiré en X2)). La vitrine range ses objets par `line.categoryId`
   (`storefront_object_shelf.shelf_key`). Ce plan ne touche ni l'un ni l'autre :
   c'est le modèle qu'il rejoint.
 - **Des clés de famille dans le journal et les instantanés** : un fait de

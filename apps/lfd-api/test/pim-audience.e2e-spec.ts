@@ -8,10 +8,9 @@
  * chaque contexte en service, quelle que soit l'audience), et la bascule
  * désactive les fiches publiées invisibles — rien d'autre.
  */
-import { B2bCatalogFeedPreview } from "../src/pim/channels/b2b-platform/products/feed-preview.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { makeActivatable } from "./pim-sellable.js";
-import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -320,65 +319,5 @@ describe("la bascule (2b1) désactive les fiches invisibles, et rien d'autre", (
       [id, false],
     ]);
     expect(Object.values(preview.activeIncomplete[0]?.gaps ?? {})).toEqual([["vat:eatIn"]]);
-  });
-});
-
-/**
- * **La TVA ne dépend plus des canaux, et le push garde son sens** (2026-10-15).
- *
- * Le push ne porte pas l'audience : côté plateforme, c'est l'entrée `takeaway`
- * de `publicByContext` qui ouvre la boutique publique. Il filtre donc sur les
- * contextes vendus (`soldPercents`, `projection.ts`), jusqu'à son retrait
- * (lot 5) ; le taux, lui, reste en base.
- */
-describe("le push ne sert que les contextes vendus", () => {
-  const B2B_ONLY = [{ pointOfSaleId: "pos_b2b", context: "b2b" }];
-
-  /** Une fiche active, liée au canal pro, vendue et taxée dans chaque contexte. */
-  async function aPushedFamily(): Promise<string> {
-    const { id, categoryId } = await aProduct("Croissant");
-    await declareNoAllergen(id);
-    await makeActivatable(staff, id);
-    await staff().put(`${PRODUCTS}/${id}/publish`).send({}).expect(200);
-    await staff().put(`/pim/channels/b2b/products/${id}`).send({ published: true }).expect(200);
-    return `${CATEGORIES}/${categoryId}`;
-  }
-
-  async function vatOf(category: string): Promise<Record<string, string>> {
-    return jsonBody<{ vatByContext: Record<string, string> }>(
-      await staff().get(category).expect(200),
-    ).vatByContext;
-  }
-
-  /** Les contextes que le push porte pour la déclinaison poussée. */
-  async function pushedContexts(): Promise<string[]> {
-    const preview = await ctx.app.get(B2bCatalogFeedPreview).preview(daysAgo(0));
-    const variant = preview.snapshot.products[0]?.variants[0];
-    return Object.keys(variant?.publicByContext ?? {}).sort();
-  }
-
-  it("poser un taux à emporter sur une famille vendue seulement en B2B ne la fait pas entrer dans la boutique publique par le push", async () => {
-    const category = await aPushedFamily();
-    await staff().put(`${category}/channels`).send(B2B_ONLY).expect(200);
-    const rate = (await vatOf(category))["b2b"];
-
-    await staff()
-      .put(`${category}/vat`)
-      .send({ vatByContext: { b2b: rate, takeaway: rate } })
-      .expect(200);
-
-    expect(Object.keys(await vatOf(category)).sort()).toEqual(["b2b", "takeaway"]);
-    expect(await pushedContexts()).toEqual(["b2b"]);
-  });
-
-  it("fermer le canal à emporter garde le taux en base mais retire l'entrée à emporter du push", async () => {
-    const category = await aPushedFamily();
-    expect(await pushedContexts()).toEqual(["b2b", "eatIn", "takeaway"]);
-    const before = await vatOf(category);
-
-    await staff().put(`${category}/channels`).send(B2B_ONLY).expect(200);
-
-    expect(await vatOf(category)).toEqual(before);
-    expect(await pushedContexts()).toEqual(["b2b"]);
   });
 });

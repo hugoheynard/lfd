@@ -154,11 +154,6 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // que les réglages d'où ses écrans viennent : décider d'un prix de vente est
   // du paramétrage, pas une ressource à part.
   b2b: 'b2b_settings:read',
-  // La RÉCEPTION porte son propre droit, et pas celui de l'espace : valider ce
-  // qui entre en vente est le métier du commercial, régler la plateforme ne
-  // l'est pas. C'est la séparation que le découpage des droits par outil a
-  // rendue exprimable — la ranger sous `b2b_settings` la lui reprendrait.
-  'b2b/reception': 'lfc_catalog:read',
   // Les réglages de l'e-commerce sont TOUS partis le 2026-10-13 : les points
   // de retrait vers les sites, l'heure limite, l'ouverture et l'annulation
   // vers Réglages › Commandes. Il ne reste ici que des redirections.
@@ -241,7 +236,6 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // Le diff vivant : même mur que les ancres elles-mêmes — c'est une LECTURE du
   // catalogue, elle ne pose rien et ne publie rien.
   'pim/revisions/en-attente': null,
-  'pim/publication': null,
   // La famille se règle sur SA page depuis c-0 : même droit que la liste, elle
   // n'ouvre rien de plus — le référentiel garde chaque écriture de son côté.
   'pim/categories/nouveau': null,
@@ -509,7 +503,7 @@ describe("l'arbre de routes du back-office", () => {
     expect(children.find((child) => child.path === 'catalogue')?.redirectTo).toBe(
       '/catalogue-publie',
     );
-    expect(children.find((child) => child.path === '')?.redirectTo).toBe('reception');
+    expect(children.find((child) => child.path === '')?.redirectTo).toBe('demandes');
   });
 
   it('renvoie l’ancienne adresse de la fidélité vers Gestion Boutique, HORS de la coquille comptable', () => {

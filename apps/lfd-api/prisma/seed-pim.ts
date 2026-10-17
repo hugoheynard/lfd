@@ -6,15 +6,9 @@
  * Il rejoue le catalogue du dépôt (`seed-pim/catalogue.ts`) **commande par
  * commande**, dans l'ordre où un humain parcourt le cycle : ouvrir la fiche,
  * tarifer, décrire, déclarer les allergènes, placer sur la matrice, régler les
- * taux, signer, mettre en vente — **puis pousser vers la plateforme**.
- *
- * Cette dernière phase manquait, et son absence ne ressemblait pas à ce qu'elle
- * était : le référentiel portait ses 82 lignes de vitrine, et
- * `GET /shop/catalogue` en rendait zéro. Rien n'était cassé ; personne n'avait
- * poussé. Un seed qui s'arrête avant le canal laisse un miroir périmé, ce qui
- * est plus déroutant qu'un miroir vide — et il en va de même de la boîte de
- * réception, qu'il faut valider pour que la boutique voie quoi que ce soit
- * (cf. `seed-pim/push.ts`).
+ * taux, signer, mettre en vente — **puis livrer les faits émis à la
+ * plateforme** (cf. `seed-pim/facts.ts`). Un seed qui s'arrête avant le relais
+ * laisse un miroir périmé, ce qui est plus déroutant qu'un miroir vide.
  *
  * **Aucune base n'est lue pour fabriquer la donnée.** Le catalogue est du code,
  * relu en revue et modifié à la main. Un outil qui irait le chercher dans une
@@ -64,7 +58,7 @@ import { CATALOGUE } from "./seed-pim/catalogue.js";
 import { refuseNonLocalTarget } from "./local-target.js";
 import { bootstrapHarness, SEED_STAFF } from "./seed-pim/harness.js";
 import { syntheticSheetsEnabled } from "./seed-pim/declarations.js";
-import { pushToPlatform, type PushReport } from "./seed-pim/push.js";
+import { deliverCatalogFacts, type FactsReport } from "./seed-pim/facts.js";
 import { seedRegistry, type RegistryCounts } from "./seed-pim/registry.js";
 import { replayProducts, type ReplayReport } from "./seed-pim/replay.js";
 
@@ -92,10 +86,8 @@ async function main(): Promise<void> {
     const channel = await harness.runAt(now, SEED_STAFF, () =>
       openB2bChannel(harness.membership, harness.prisma, CATALOGUE),
     );
-    const pushed = await harness.runAt(now, SEED_STAFF, () =>
-      pushToPlatform(harness.push, harness.deliveries, harness.commands),
-    );
-    summarize(counts, report, channel, pushed);
+    const facts = await harness.runAt(now, SEED_STAFF, () => deliverCatalogFacts(harness.relay));
+    summarize(counts, report, channel, facts);
   } finally {
     await harness.close();
   }
@@ -116,7 +108,7 @@ function summarize(
   counts: RegistryCounts,
   report: ReplayReport,
   channel: B2bChannelReport,
-  pushed: PushReport,
+  facts: FactsReport,
 ): void {
   process.stdout.write(
     "✔ seed du référentiel terminé\n" +
@@ -127,21 +119,9 @@ function summarize(
       `archivées=${report.archived}\n` +
       `  canal B2B — vendues aux pros par la matrice=${channel.sold}, ` +
       `en vente sur le canal=${channel.opened}\n` +
-      `  push — candidats=${pushed.candidates} fiches reçues=${pushed.acceptedProducts} ` +
-      `déclinaisons=${pushed.acceptedVariants} retirées=${pushed.removed.length}\n` +
-      `  réception — ${pushed.acceptedDeliveryId === null ? "aucune arrivée à valider" : `arrivée ${pushed.acceptedDeliveryId} validée`}\n`,
+      `  faits du catalogue — livrés=${facts.delivered} en échec=${facts.failed} ` +
+      `(les articles attendent leur relecture avant d'être servis)\n`,
   );
-  if (pushed.excluded.length > 0) {
-    // Un article qu'aucune vitrine ne montrera doit se voir ICI, pas se
-    // découvrir en ouvrant la boutique.
-    process.stdout.write(`  ${pushed.excluded.length} écarté(s) du miroir :\n`);
-    for (const line of pushed.excluded.slice(0, 10)) {
-      process.stdout.write(`    · ${line}\n`);
-    }
-    if (pushed.excluded.length > 10) {
-      process.stdout.write(`    … et ${pushed.excluded.length - 10} autres\n`);
-    }
-  }
   if (report.refused.length > 0) {
     process.stdout.write(`  ${report.refused.length} refus :\n`);
     for (const line of report.refused.slice(0, 20)) {

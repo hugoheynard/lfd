@@ -36,11 +36,11 @@ export const b2bRoutes: Routes = [
     title: 'E-commerce LFC — LFC B2B admin',
     loadComponent: () => import('./b2b-page/b2b-page').then((m) => m.B2bPage),
     children: [
-      // L'entrée de l'espace : la réception, seule vue qui reste à son rail
-      // depuis que le pied de page et le contact sont partis en Communication
-      // (2026-10-15). Elle a son propre droit : qui ne tient que
-      // `b2b_settings` y rebondit sur le refus de son garde.
-      { path: '', pathMatch: 'full', redirectTo: 'reception' },
+      // L'entrée de l'espace : les demandes clients, seule page qui y reste
+      // depuis le départ de la réception (X2, 2026-10-17). Elle a son propre
+      // droit : qui ne tient que `b2b_settings` y rebondit sur le refus de son
+      // garde, comme il le faisait sur la réception.
+      { path: '', pathMatch: 'full', redirectTo: 'demandes' },
       {
         // LES ANCIENNES ADRESSES DU CONTENU DE PLATEFORME. Tout ce qu'il portait
         // est parti : la vitrine, les mentions, puis le pied de page (2026-10-15,
@@ -173,14 +173,10 @@ export const b2bRoutes: Routes = [
         loadComponent: () =>
           import('./demandes/demandes-page/demandes-page').then((m) => m.DemandesPage),
       },
-      {
-        // LA BOÎTE DE RÉCEPTION — avant le catalogue dans la lecture comme dans
-        // le temps : ce qui attend d'être validé précède ce qui est en vente.
-        path: 'reception',
-        title: 'Réception du catalogue — LFC B2B admin',
-        canActivate: [permissionGuard('lfc_catalog:read')],
-        loadComponent: () => import('./reception/reception-page').then((m) => m.ReceptionPage),
-      },
+      // LA BOÎTE DE RÉCEPTION est partie en X2 (2026-10-17) avec le push : les
+      // faits du catalogue s'appliquent fiche par fiche. L'adresse vit dans des
+      // favoris ; absolue, la redirection s'applique AVANT les gardes.
+      { path: 'reception', pathMatch: 'full', redirectTo: '/catalogue-publie' },
       // LE CATALOGUE PUBLIÉ (l'ancien « Catalogue actuel en ligne ») a quitté
       // cet espace le 2026-10-15 pour Gestion Boutique, `/catalogue-publie`
       // (H9 de plan-catalogue-synchronise-par-audience.md). L'ancienne adresse

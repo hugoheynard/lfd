@@ -158,12 +158,10 @@ export const pimRoutes: Routes = [
             (m) => m.AppellationsPage,
           ),
       },
-      {
-        path: 'publication',
-        title: 'Publication — LFC B2B admin',
-        loadComponent: () =>
-          import('./publication/publication-page/publication-page').then((m) => m.PublicationPage),
-      },
+      // L'écran « Publication » (le push) est parti en X2 (2026-10-17) : les
+      // faits du catalogue partent d'eux-mêmes. L'adresse vit dans des
+      // favoris ; elle mène aux Intégrations, où se réémet le catalogue.
+      { path: 'publication', pathMatch: 'full', redirectTo: '/pim/integration' },
       // `nouveau` AVANT `:id`, sinon le paramètre l'avale et la création
       // ouvrirait une famille dont l'identifiant serait « nouveau ».
       {

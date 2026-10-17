@@ -241,9 +241,6 @@ export type {
   AudienceSwitchAppliedView,
   ReemissionReportView,
   B2bExclusionReason,
-  B2bExclusionView,
-  B2bIngestionReportView,
-  B2bPushSummaryView,
   B2bDeliveryFactsView,
   B2bProductDeliveryView,
 } from "./b2b-channel.js";

@@ -427,7 +427,7 @@ entendre.** Une rédaction antérieure affirmait que « les quatre gestes marqu�
 `@PublicationGesture()` » traversent `publish()` : c'est faux, aucun des quatre
 n'appelle `PublishProductCommand` — ce décorateur marque l'interrupteur de
 déploiement, pas le statut. Seul le fil B2B filtre sur les produits publiés
-(`feed-projection.service.ts`) ; une **révision de catalogue** fige encore une
+(feed-projection.service.ts (retiré en X2)) ; une **révision de catalogue** fige encore une
 fiche contredite. ⚠️ Ce passage opposait ici **la projection de l'ancien canal, qui ne
 transportait aucun allergène** ; ce canal est sorti le 2026-09-21, et l'objection
 tombe avec lui. Ce
@@ -497,7 +497,7 @@ Le second cas ne se rattrape que par un **balayage**. La sonde de contradiction
 de la couche 4 cesse donc d'être un confort : elle est la condition de
 l'intention n°3 de ce chantier — _« qu'une fiche dont la composition les
 contredit ne puisse pas rester fausse »_. Elle recalcule les contradictions sur
-les produits **publiés**, sur le modèle de `ops_catalog_parity.yml`.
+les produits **publiés**, sur le modèle de ops_catalog_parity.yml (retiré en X2).
 
 Elle **rapporte, elle ne dépublie pas.** Retirer de la vente d'autorité, sur une
 donnée que ce plan reconnaît lui-même comme non exhaustive, ferait plus de dégâts
@@ -692,7 +692,7 @@ fonctions pures.
 ⚠️ Pas dans `B2bCatalogPushService`, comme une première rédaction le disait :
 le push ne projette pas, il délègue à `B2bCatalogFeedPreview.preview()`. Y faire
 entrer le référentiel aurait demandé de changer la signature de ce port — dont
-le second consommateur est `b2b/catalog/application/check-catalog-parity.service.ts`,
+le second consommateur est b2b/catalog/application/check-catalog-parity.service.ts (retiré en X2),
 qui aurait alors dû se procurer le projecteur PIM. C'est-à-dire exactement ce
 que D6 interdit. La lecture vit donc dans ce qui projette.
 
@@ -922,7 +922,7 @@ le semis ne sert pas de trafic.
 encore**, et elle n'est dans aucun lot du découpage. C'est la seule des quatre
 couches qui regarde la production, et la seule qui reste à écrire. Sur le modèle
 de
-`ops_catalog_parity.yml` : 30 entrées et 15 catégories officielles, et chaque
+ops_catalog_parity.yml (retiré en X2) : 30 entrées et 15 catégories officielles, et chaque
 entrée officielle rattachée à une catégorie officielle. C'est la seule des
 quatre qui regarde la production.
 

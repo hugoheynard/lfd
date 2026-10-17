@@ -10,10 +10,7 @@
  * contrainte SQL qui refuse précisément le fait attendu.
  */
 import { CATALOG_SNAPSHOT_VERSION, type CatalogSnapshot } from "@lfd/catalog-sync";
-import type { PendingDeliveryView } from "@lfd/contracts";
 
-import { CatalogDelivery } from "../src/b2b/catalog/domain/entities/catalog-delivery.js";
-import { CatalogDeliveryRepository } from "../src/b2b/catalog/domain/ports/catalog-delivery.repository.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { deliverAsFacts } from "./catalog-facts-delivery.js";
 import {
@@ -21,7 +18,6 @@ import {
   daysAgo,
   E2E_STAFF_ID,
   E2E_STAFF_SUB,
-  jsonBody,
   type E2eContext,
 } from "./e2e-harness.js";
 
@@ -110,20 +106,6 @@ function snapshot(skus: readonly string[]): CatalogSnapshot {
 /** Met le miroir dans un état connu, par le chemin direct du référentiel. */
 async function sell(delivered: CatalogSnapshot): Promise<void> {
   await deliverAsFacts(ctx, delivered);
-}
-
-/** Dépose une arrivée par le port — le drapeau de la boîte n'est pas ouvert en test. */
-async function toInbox(delivered: CatalogSnapshot): Promise<PendingDeliveryView> {
-  await ctx.app.get(CatalogDeliveryRepository).deliver(
-    CatalogDelivery.receive({
-      id: "d_journal",
-      revisionId: "rev_journal",
-      snapshot: delivered,
-      fingerprint: "empreinte-journal",
-      receivedAt: new Date(RECEIVED),
-    }),
-  );
-  return jsonBody<PendingDeliveryView>(await staff().get("/admin/catalog/delivery").expect(200));
 }
 
 /** Le journal refuse d'écrire CE type de fait — une panne d'append, la vraie. */
@@ -292,53 +274,5 @@ describe("la visibilité et la mise en avant", () => {
 
     expect(response.status).toBeGreaterThanOrEqual(500);
     expect(await decision()).toBeNull();
-  });
-});
-
-describe("la validation d'une arrivée", () => {
-  it("un fait sur l'arrivée : révision, version posée, écartés, sous la fiche staff", async () => {
-    const pending = await toInbox(snapshot(["VIE-001", "PAT-002"]));
-
-    await staff()
-      .post("/admin/catalog/delivery/accept")
-      .send({ deliveryId: pending.id, excludedSkus: ["PAT-002-1"] })
-      .expect(201);
-
-    const version = await ctx.prisma.catalogVersion.findFirstOrThrow({
-      where: { deliveryId: pending.id },
-      select: { id: true },
-    });
-    expect(await facts("catalog_delivery.accepted")).toEqual([
-      {
-        subjectType: "catalog_delivery",
-        subjectId: pending.id,
-        actorType: "staff",
-        actorId: E2E_STAFF_ID,
-        payload: {
-          deliveryId: pending.id,
-          revisionId: "rev_journal",
-          versionId: version.id,
-          excludedSkus: ["PAT-002-1"],
-        },
-      },
-    ]);
-  });
-
-  it("ANNULE la validation quand le journal refuse d'écrire — l'arrivée attend toujours", async () => {
-    const pending = await toInbox(snapshot(["VIE-001", "PAT-002"]));
-    await breakJournal("catalog_delivery.accepted");
-
-    const response = await staff()
-      .post("/admin/catalog/delivery/accept")
-      .send({ deliveryId: pending.id, excludedSkus: [] });
-
-    expect(response.status).toBeGreaterThanOrEqual(500);
-    expect(await ctx.prisma.catalogDelivery.count({ where: { status: "pending" } })).toBe(1);
-    expect(await ctx.prisma.catalogVersion.count({ where: { deliveryId: pending.id } })).toBe(0);
-    // Le semis porte déjà `PAT-002-1`, retiré par le push du `beforeEach` : la
-    // validation annulée ne l'a pas remis en vente.
-    expect(
-      await ctx.prisma.catalogItem.count({ where: { sku: "PAT-002-1", withdrawnAt: null } }),
-    ).toBe(0);
   });
 });

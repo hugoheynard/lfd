@@ -1,4 +1,4 @@
-import type { CommerceOperationView, ReceivedOperationView } from "@lfd/contracts";
+import type { CommerceOperationView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { MediaStore } from "../src/platform/storage/media-store.js";
@@ -71,7 +71,7 @@ async function factTypes(): Promise<string[]> {
 }
 
 describe("préparer au commerce", () => {
-  it("écrit l'opération, son auteur, et la journalise ; le miroir la lit déjà", async () => {
+  it("écrit l'opération, son auteur, et la journalise", async () => {
     await prepareNoel();
 
     expect(await row()).toMatchObject({
@@ -83,10 +83,6 @@ describe("préparer au commerce", () => {
       items: [],
     });
     expect(await factTypes()).toEqual(["catalog_operation.prepared"]);
-    const [shown] = jsonBody<ReceivedOperationView[]>(
-      await staff().get("/admin/catalog/operations").expect(200),
-    );
-    expect(shown).toMatchObject({ key: "noel-2026", withdrawn: false, override: null });
   });
 
   it("refuse une clé déjà prise en 409, et une clé mal formée en 400", async () => {
@@ -232,10 +228,6 @@ describe("composer, masquer, archiver", () => {
       .send({ hidden: true })
       .expect(409);
     expect(refused.body).toMatchObject({ code: "operations.archived" });
-    const [shown] = jsonBody<ReceivedOperationView[]>(
-      await staff().get("/admin/catalog/operations").expect(200),
-    );
-    expect(shown).toMatchObject({ key: "noel-2026", withdrawn: true });
   });
 
   it("répond 404 sur une opération inconnue", async () => {

@@ -893,7 +893,7 @@ lecture, un secret de signature) : **`vitruve` avant de bâtir**.
 >   lecteurs sélectionnent les colonnes de décision (`DECISION_COLUMNS`) au
 >   lieu de relire la ligne entière ;
 > - D5 : la parité et la santé ne comparaient déjà que le prix reçu
->   (`catalog-parity.ts`) — rien à changer ;
+>   (catalog-parity.ts (retiré en X2)) — rien à changer ;
 > - runbook : « Déployer le lot D » (`ops/runbook.md`).
 
 > « Est-ce qu'on garde poser un prix sur Catalogue publié ou on se base
@@ -929,7 +929,7 @@ align-public-on-pim.handler (retiré au lot D) ; elle est **lue** au prix servi
   une décision devenue neutre retire la ligne (`catalog-item.ts:779-787`,
   `untouched` ; `prisma-catalog-item.repository.ts:158-161`, `deleteMany`),
   et tout geste admin qui charge puis sauve l'agrégat y passe (masquer,
-  mettre en avant, `accept-delivery.handler.ts:67`). Retirer le prix de
+  mettre en avant, accept-delivery.handler.ts:67 (retiré en X2)). Retirer le prix de
   l'agrégat ferait partir, en production et sans ordre, les lignes « prix
   seul ». Donc : la branche `deleteMany` disparaît ; une décision neutre
   écrit ses drapeaux à `false` ; les colonnes de prix ne sont **plus jamais
@@ -975,7 +975,7 @@ et reporte ceux qu'il veut garder en prix pro saisi au référentiel.
 - **Une faute de prix vendue tout de suite** (H3, choisi en connaissance de
   cause). Filets : masquage en un clic, révisions.
 - **Un fait perdu** laisse une fiche en retard : la parité
-  (`check-catalog-parity.service.ts`) devient le filet, « réémettre la
+  (check-catalog-parity.service.ts (retiré en X2)) devient le filet, « réémettre la
   fiche » la réparation.
 - **Les allergènes** : l'acceptation humaine disparaît ; le garde est la
   projection (C1). Un e2e le prouve : vider les allergènes d'une déclinaison

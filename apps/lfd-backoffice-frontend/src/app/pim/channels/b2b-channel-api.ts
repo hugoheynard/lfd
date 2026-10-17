@@ -1,89 +1,30 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import type { B2bPushPreviewView } from '@lfd/contracts';
 import type {
   B2bMembershipBatchResult,
   B2bMembershipView,
   B2bProductDeliveryView,
-  B2bPushSummaryView,
 } from '@lfd/pim-contracts';
 import { firstValueFrom } from 'rxjs';
 
-import { B2B_API_BASE } from '../../api/api-config';
 import { API_BASE_URL } from '../data/api';
 
-export type { B2bPushPreviewItem, B2bPushPreviewView } from '@lfd/contracts';
 export type {
   B2bExclusionReason,
-  B2bExclusionView,
-  B2bIngestionReportView,
-  B2bPushSummaryView,
   B2bDeliveryFactsView,
   B2bProductDeliveryView,
   B2bMembershipView,
 } from '@lfd/pim-contracts';
 
 /**
- * Canal **boutique B2B** — pousse le catalogue vers la plateforme marchande.
- *
- * Le serveur décide seul entre simulation et envoi réel ; le front demande,
- * il ne simule rien. `dryRun` est **vrai par défaut côté serveur** : un bouton
- * qui pousse le catalogue vendu ne doit pas partir sur un appel mal formé.
+ * Canal **boutique B2B** — l'appartenance des fiches au canal, et la frise
+ * d'une fiche. Le push et son aperçu sont partis en X2 (2026-10-17) : les
+ * faits du catalogue partent d'eux-mêmes.
  */
 @Injectable({ providedIn: 'root' })
 export class B2bChannelApi {
   private readonly http = inject(HttpClient);
   private readonly base = inject(API_BASE_URL);
-
-  /**
-   * **Ce que l'envoi ferait, s'il partait maintenant** — une LECTURE.
-   *
-   * Servie par la plateforme (`admin/catalog`) et non par le référentiel, parce
-   * qu'elle a besoin des deux côtés : la projection du PIM et l'état du canal.
-   * La frontière l'impose — `pim` ne lit jamais `b2b`, alors que `b2b` lit un
-   * port publié par `pim`. C'est déjà le chemin qu'emprunte le contrôle de
-   * parité.
-   *
-   * Elle remplace le clic « Simuler » : celui-ci appelait `push({dryRun:true})`,
-   * qui traverse la tuyauterie d'envoi et **pose une ancre de révision** à
-   * chaque regard.
-   */
-  preview(): Promise<B2bPushPreviewView> {
-    return firstValueFrom(
-      this.http.get<B2bPushPreviewView>(`${B2B_API_BASE}/admin/catalog/push-preview`),
-    );
-  }
-
-  /**
-   * @param label **l'intention de cet envoi**, qui devient le nom de l'ancre.
-   *   Le push en posait une anonyme à chaque fois : c'est la cause directe des
-   *   révisions sans intention. Une ancre déjà nommée garde le sien.
-   * @param note le POURQUOI, en clair. Facultatif même quand le nom ne l'est
-   *   pas : un envoi de routine se nomme en cinq mots et n'a rien de plus à
-   *   dire.
-   * @param fingerprint l'empreinte rendue par l'aperçu qu'on vient de lire.
-   *   Le serveur refuse en `409` si le catalogue a bougé depuis — c'est ce qui
-   *   empêche d'envoyer autre chose que ce qui a été relu. Omise en simulation :
-   *   c'est elle qui la produit.
-   */
-  push(
-    dryRun: boolean,
-    fingerprint?: string,
-    label?: string,
-    note?: string | null,
-  ): Promise<B2bPushSummaryView> {
-    return firstValueFrom(
-      // `base` porte déjà le préfixe `/pim` (cf. data/api.ts).
-      this.http.post<B2bPushSummaryView>(`${this.base}/channels/b2b/push`, {
-        dryRun,
-        ...(fingerprint === undefined ? {} : { fingerprint }),
-        // L'INTENTION de cet envoi : elle devient le nom de l'ancre. Omise en
-        // simulation, qui ne pose rien.
-        ...(label === undefined ? {} : { label }),
-        ...(note === undefined || note === null ? {} : { note }),
-      }),
-    );
-  }
 
   /**
    * **Où en est cette fiche sur la plateforme** : la décision, l'envoi,

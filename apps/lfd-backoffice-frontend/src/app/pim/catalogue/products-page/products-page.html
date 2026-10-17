@@ -10,29 +10,11 @@
         Créer un produit
       </button>
     }
-    <!-- 🔴 Un « Tout pousser » a vécu ici, et envoyait EN RÉEL sans relecture :
-         deux portes vers le même envoi, dont une qui contournait la garde de
-         dérive. Envoyer reste un geste de la page Publication — on y simule,
-         puis on envoie ce qu'on a relu. La leçon vaut pour le canal qui reste
-         (note conservée au retrait de l'ancien canal de vente en ligne, 2026-09-21). -->
-    <button foldButton emphasis="outline" intent="neutral" routerLink="/pim/publication">
-      Publier vers les canaux
-    </button>
   </div>
 
   @if (error(); as message) {
     <fold-callout appearance="inset" variant="alert" announce>
       {{ message }}
-    </fold-callout>
-  }
-
-  <!-- Un échec PARTIEL : la liste est là, l'enrichissement manque. Le taire
-       ferait lire l'absence de notes comme « rien ne bloque », ce qui est la
-       façon la plus coûteuse de se tromper sur cet écran. -->
-  @if (previewFailed()) {
-    <fold-callout appearance="inset" variant="warning">
-      L'aperçu d'envoi B2B n'a pas pu être lu : cette liste ne signale donc pas ce qui empêche une
-      fiche de partir. La page <a routerLink="/pim/publication">Publication</a> en dira la raison.
     </fold-callout>
   }
 
@@ -79,8 +61,7 @@
           Actions ({{ selectedCount() }})
         </button>
         <!-- Ce menu ne porte que des DÉCISIONS sur la fiche : où elle se vend,
-             et si elle est au catalogue. Envoyer n'en est pas une — c'est un
-             geste de la page Publication, qui se relit avant de partir.
+             et si elle est au catalogue.
 
              Ouvrir un canal se fait une fois, sur tout un catalogue : le geste
              unitaire seul aurait demandé quatre-vingt-quinze clics. -->
@@ -147,10 +128,9 @@
     </ng-template>
 
     <!-- « hors canal » n'est pas une panne : c'est le défaut d'une fiche neuve.
-         « jamais poussée » l'est davantage — la décision est prise, le catalogue
-         ne l'a pas emportée. La colonne s'arrête là : dire « en vente »
-         demanderait d'interroger la plateforme fiche par fiche, ce que la frise
-         de la fiche produit fait, et pas un tableau. -->
+         La colonne s'arrête à l'appartenance : dire « en vente » demanderait
+         d'interroger la plateforme fiche par fiche, ce que la frise de la fiche
+         produit fait, et pas un tableau. -->
     <ng-template foldCell="b2b" let-p>
       <fold-badge [content]="b2bLabel(p)" [variant]="b2bVariant(p)" />
     </ng-template>

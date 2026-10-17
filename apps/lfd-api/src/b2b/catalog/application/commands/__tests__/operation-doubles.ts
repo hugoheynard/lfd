@@ -1,15 +1,9 @@
-import {
-  CatalogOperation,
-  type CatalogOperationFacts,
-} from "../../../domain/entities/catalog-operation.js";
-import { CatalogOperationOverride } from "../../../domain/entities/catalog-operation-override.js";
-import { CatalogOperationOverrideRepository } from "../../../domain/ports/catalog-operation-override.repository.js";
-import { CatalogOperationRepository } from "../../../domain/ports/catalog-operation.repository.js";
+import type { CatalogOperationFacts } from "../../../domain/entities/catalog-operation.js";
 
 /**
- * Les doubles des opérations reçues, partagés par les suites des commandes et
- * des lectures. Ils héritent des ports et RECONSTITUENT à chaque lecture,
- * comme les adaptateurs : une mutation non sauvée ne survit pas.
+ * L'opération reçue de référence, partagée par les suites qui lisent le
+ * miroir des opérations. Ses doubles de dépôt sont partis avec la surcharge
+ * (X2, 2026-10-17).
  */
 
 /** Noël tel que reçu. Dates comparées entre elles seulement, jamais à l'horloge. */
@@ -29,49 +23,4 @@ export function receivedNoel(over: Partial<CatalogOperationFacts> = {}): Catalog
     receivedAt: new Date("2026-09-01T00:00:00.000Z"),
     ...over,
   };
-}
-
-export class InMemoryOperations extends CatalogOperationRepository {
-  private readonly rows = new Map<string, ReturnType<CatalogOperation["toPersistence"]>>();
-
-  constructor(operations: readonly CatalogOperation[] = []) {
-    super();
-    for (const operation of operations) {
-      this.rows.set(operation.key, operation.toPersistence());
-    }
-  }
-
-  load(key: string): Promise<CatalogOperation | null> {
-    const row = this.rows.get(key);
-    return Promise.resolve(row === undefined ? null : CatalogOperation.reconstitute(row));
-  }
-
-  loadAllIncludingWithdrawn(): Promise<CatalogOperation[]> {
-    return Promise.resolve(
-      [...this.rows.values()].map((row) => CatalogOperation.reconstitute(row)),
-    );
-  }
-
-  saveMany(operations: readonly CatalogOperation[]): Promise<void> {
-    for (const operation of operations) {
-      this.rows.set(operation.key, operation.toPersistence());
-    }
-    return Promise.resolve();
-  }
-}
-
-export class InMemoryOverrides extends CatalogOperationOverrideRepository {
-  readonly rows = new Map<string, ReturnType<CatalogOperationOverride["toPersistence"]>>();
-  saves = 0;
-
-  load(operationKey: string): Promise<CatalogOperationOverride | null> {
-    const row = this.rows.get(operationKey);
-    return Promise.resolve(row === undefined ? null : CatalogOperationOverride.reconstitute(row));
-  }
-
-  save(override: CatalogOperationOverride): Promise<void> {
-    this.saves += 1;
-    this.rows.set(override.operationKey, override.toPersistence());
-    return Promise.resolve();
-  }
 }

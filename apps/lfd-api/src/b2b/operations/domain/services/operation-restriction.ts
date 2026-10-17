@@ -24,8 +24,8 @@ export function restricts(restriction: MigrationRestriction | null): boolean {
 }
 
 /**
- * Les valeurs restreintes — le calcul d'`effectiveOperation`
- * (`b2b/catalog/domain/effective-operation.ts`), versé dans l'opération.
+ * Les valeurs restreintes — le calcul que portait `effectiveOperation`
+ * côté catalogue (retiré en X2, 2026-10-17), versé dans l'opération.
  */
 export function restrictedValues(
   values: ReferentialOperation,

@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-import type { CatalogParityView } from "./catalog-parity.js";
-
 /**
  * Le catalogue **vu du paramétrage** — ce que le PIM envoie ET ce que la
  * plateforme décide (masquage, mise en avant), côte à côte.
@@ -194,120 +192,6 @@ export const setCatalogFeaturedPayloadSchema = z.object({
 });
 export type SetCatalogFeaturedPayload = z.infer<typeof setCatalogFeaturedPayloadSchema>;
 
-/** Ce qu'une arrivée fait à un SKU, tel que l'écran de validation le montre. */
-export interface DeliveryChangeView {
-  readonly sku: string;
-  readonly kind: "added" | "removed" | "changed";
-  /**
-   * Les champs qui diffèrent, **nommés**. Un écran qui dirait « a changé » sans
-   * dire quoi obligerait le relecteur à comparer deux catalogues à la main —
-   * c'est-à-dire à ne pas relire.
-   */
-  readonly fields: readonly string[];
-  /** Le libellé de l'article, pour que la ligne se lise sans aller le chercher. */
-  readonly name: string | null;
-}
-
-/**
- * L'arrivée en attente, et ce qu'elle changerait.
- *
- * `null` côté route quand il n'y a rien à valider : c'est l'état normal, pas une
- * erreur.
- */
-export interface PendingDeliveryView {
-  readonly id: string;
-  /** L'ancre du référentiel d'où vient cette livraison. */
-  readonly revisionId: string;
-  readonly receivedAt: string;
-  readonly changes: readonly DeliveryChangeView[];
-  /**
-   * L'arrivée touche-t-elle une **déclaration d'allergène** ?
-   *
-   * Le seul motif qui fasse sonner la cloche à la réception : une arrivée peut
-   * attendre indéfiniment sans que rien ne casse, sauf une correction
-   * d'allergène qui dormirait.
-   */
-  readonly carriesAllergenChange: boolean;
-  /**
-   * 🔴 L'arrivée touche-t-elle un **taux de TVA PUBLIC** ?
-   *
-   * Le second motif qui fait sonner la cloche, et il a la même forme que le
-   * premier : une arrivée peut attendre indéfiniment sans que rien ne casse,
-   * sauf quand ce qu'elle porte a un effet qu'on ne veut pas laisser dormir.
-   *
-   * Un allergène qui dort est un risque pour quelqu'un ; un taux qui dort est
-   * de l'argent facturé au mauvais taux, sur chaque vente publique d'ici la
-   * validation.
-   *
-   * ⚠️ Distinct du champ `vatRate` d'un changement, qui porte le taux
-   * **professionnel** — le seul qui traversait le fil avant la v9.
-   */
-  readonly carriesPublicVatChange: boolean;
-}
-
-/**
- * Ce que la validation demande.
- *
- * `excludedSkus` porte la troisième voie entre deux mauvaises réponses : le
- * tout-ou-rien bloque sur un seul article faux, la validation étalée laisse des
- * restes qu'une livraison suivante détruit. Ici un prix faux s'écarte, les
- * autres passent, et l'arrivée est close en une fois.
- */
-export const acceptDeliveryPayloadSchema = z.object({
-  /**
-   * L'arrivée qu'on vient de relire — pas « la courante ». Elle a pu être
-   * remplacée entre l'affichage et le clic, et c'est précisément ce que le
-   * serveur doit pouvoir refuser.
-   */
-  deliveryId: z.string().min(1),
-  excludedSkus: z.array(z.string().min(1)).default([]),
-});
-export type AcceptDeliveryPayload = z.infer<typeof acceptDeliveryPayloadSchema>;
-
-/**
- * ── L'état de santé du catalogue vendu ───────────────────────────────────────
- *
- * L'écran confondait **trois** constats sous un seul « écart ». Ils n'ont ni la
- * même cause, ni le même responsable, ni la même urgence :
- *
- * | Ce qu'on constate                     | Ce que ça veut dire                    | Alarme ? |
- * | ------------------------------------- | -------------------------------------- | -------- |
- * | R+1 ≠ R côté PIM                      | on travaille, rien n'est poussé        | non      |
- * | une arrivée attend validation         | le PIM a poussé, personne n'a validé   | non      |
- * | le miroir ≠ la dernière version       | **rien n'explique cet écart**          | **oui**  |
- *
- * Les deux premières se **lisent** ailleurs — côté PIM pour l'une, dans la boîte
- * de réception pour l'autre. Seule la troisième est une comparaison, et c'est
- * elle que cette vue porte : la seule ligne qui doit réveiller quelqu'un cesse
- * d'être noyée par les deux qui ne le doivent pas.
- */
-
-/** La version à laquelle le miroir est comparé. */
-export interface CatalogHealthVersionView {
-  readonly id: string;
-  /** L'ancre PIM d'où venait la livraison validée. */
-  readonly revisionId: string;
-  readonly createdAt: string;
-  readonly itemCount: number;
-}
-
-export interface CatalogHealthView {
-  /**
-   * La dernière version validée, ou `null` si aucune ne l'a été.
-   *
-   * `null` n'est pas une panne : c'est l'état d'une plateforme dont la boîte de
-   * réception n'a jamais été ouverte. Il n'y a alors **rien à quoi comparer**,
-   * et l'écran doit le dire au lieu d'annoncer un catalogue sain.
-   */
-  readonly version: CatalogHealthVersionView | null;
-  /**
-   * L'écart entre le miroir et cette version. `null` quand il n'y a pas de
-   * version — inventer un rapport vide dirait « tout va bien » d'un contrôle qui
-   * n'a pas eu lieu.
-   */
-  readonly drift: CatalogParityView | null;
-}
-
 /**
  * Ce que le tableau de bord de la comptabilité doit savoir du catalogue, en une
  * lecture.
@@ -323,10 +207,8 @@ export interface CatalogHealthView {
  * - `hidden` : ce qu'on a retiré de la vente exprès, à ne pas confondre avec le
  *   précédent.
  *
- * Ce qu'elle NE porte pas : l'arrivée en attente. `GET admin/catalog/delivery`
- * la rend déjà, et l'écran la lit par le magasin qui existe. La recopier ici
- * ferait deux réponses à la même question, dont l'une finirait par vieillir —
- * et c'est celle du tableau de bord qu'on croirait.
+ * La boîte de réception qu'elle laissait de côté est partie en X2
+ * (2026-10-17) : les faits du catalogue s'appliquent fiche par fiche.
  */
 export interface CatalogSummaryView {
   readonly onSale: number;

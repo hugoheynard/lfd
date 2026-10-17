@@ -93,7 +93,7 @@ gâteau demande : `daysBefore`, `time`, `graceMinutes`, sur l'échelle
 `global → famille → produit → déclinaison`, avec un **héritage champ par champ**
 (un rang pose ce qu'il change et hérite du reste).
 
-Elle traverse jusqu'au panier : `snapshot-limits.ts` descend l'échelle côté
+Elle traverse jusqu'au panier : snapshot-limits.ts (retiré en X2) descend l'échelle côté
 plateforme depuis la v7 du fil, et `order-cutoff-guard.ts` l'oppose ligne par
 ligne. **Rien n'est à construire pour le gâteau** — il suffit de ne pas
 l'effacer, ce que la version précédente de ce plan faisait.

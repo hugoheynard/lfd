@@ -97,8 +97,8 @@ choisit sa sélection dans `GET /admin/catalog`, gardé par `b2b_catalog`.
   la citent qu'en commentaire (`ops-catalog-health`, `admin-storefront`,
   `check-catalog-parity.service`, `admin-operations`).
 - **Le front** : `permissionGuard('b2b_catalog:read')` (`b2b.routes.ts:181`),
-  l'entrée du rail (`workspaces.ts:676`), deux `*appCan` (`b2b-page.html:13`,
-  `received-operations.html:29`), et des commentaires.
+  l'entrée du rail (`workspaces.ts:676`), deux `*appCan` (`b2b-page.html`,
+  received-operations.html:29 (retiré en X2)), et des commentaires.
 - **Le précédent** : `lfc_legal` et `lfc_operations` ont été ajoutés
   (migrations `20261015500000_le_droit_du_legal`,
   `20261015800000_le_droit_des_operations`) par un `ALTER TYPE … ADD VALUE`,
@@ -226,8 +226,8 @@ Les deux BLOQUANT ont été rouverts dans le code avant d'être intégrés.
   retrait non recopié compte comme un écart. Le §4 « aucun accès gagné »
   n'était vrai qu'à cette condition.
 - **L'inventaire de L2** (SÉRIEUX) s'ajoute :
-  `packages/contracts/src/catalog-operations.ts:10`,
-  `received-operations.service.ts:13`, `storefront.service.ts:25`
+  packages/contracts/src/catalog-operations.ts:10 (retiré en X2),
+  received-operations.service.ts:13 (retiré en X2), `storefront.service.ts:25`
   (commentaires porteurs, à redater) ; trois e2e qui sèment le droit
   (`catalog-delivery-review`, `storefront-catalog`,
   `operations-at-commerce-closed`) ; les specs front `resource-tools`,

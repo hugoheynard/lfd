@@ -12,7 +12,6 @@ import {
   Operation,
   type OperationSnapshot,
 } from "../../../../operations/domain/entities/operation.js";
-import { projectionFingerprint } from "../../../shared/domain/canonical-projection.js";
 import { projectCatalog } from "../projection.js";
 
 const AT = "2026-08-17T08:00:00.000Z";
@@ -897,17 +896,6 @@ describe("le fil v11 — les opérations datées et le drapeau de la fiche", () 
       { sku: "VIE-001", reason: "canal_ferme" },
       { sku: "VIE-001-1", reason: "operation_article_absent" },
     ]);
-  });
-
-  /** L'empreinte relie la relecture à l'envoi : une opération qui bouge doit la changer. */
-  it("fait entrer l'opération dans l'empreinte", () => {
-    const without = project([product()], NO_OPERATIONS).snapshot;
-    const withNoel = project([product()], [noel()]).snapshot;
-    const reordered = project([product()], [noel(["PAT-9-1", "VIE-001-1"])]).snapshot;
-
-    expect(projectionFingerprint(withNoel)).not.toBe(projectionFingerprint(without));
-    // Même sélection partie (seul VIE-001-1 est dans l'envoi) : même empreinte.
-    expect(projectionFingerprint(reordered)).toBe(projectionFingerprint(withNoel));
   });
 });
 

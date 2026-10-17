@@ -1,11 +1,8 @@
-import { Prisma } from "../../../platform/database/client/client.js";
 import type {
-  CatalogOperationFacts,
   CatalogOperationState,
   OperationFocal,
   OperationText,
 } from "../domain/entities/catalog-operation.js";
-import type { CatalogOperationOverrideState } from "../domain/entities/catalog-operation-override.js";
 import { UnreadableOperationColumnError } from "../domain/errors/catalog-operation-errors.js";
 import { catalogOperationAudience } from "../domain/operation-audience.js";
 import { operationText } from "./archived-operations.js";
@@ -28,17 +25,6 @@ export interface OperationRow {
   readonly receivedAt: Date;
   readonly withdrawnAt: Date | null;
   readonly items: readonly { readonly sku: string }[];
-}
-
-/** Une ligne de surcharge telle que Prisma la rend. */
-export interface OverrideRow {
-  readonly operationKey: string;
-  readonly isHidden: boolean;
-  readonly orderUntil: Date | null;
-  readonly audience: string | null;
-  readonly hiddenSkus: readonly string[];
-  readonly decidedBy: string | null;
-  readonly decidedAt: Date;
 }
 
 /** La sélection, dans l'ordre du rayon. */
@@ -78,44 +64,6 @@ export function toOperationState(row: OperationRow): CatalogOperationState {
   };
 }
 
-/** Les colonnes de `catalog_operations` — la sélection à part. */
-export function operationColumns(state: CatalogOperationState) {
-  const { facts } = state;
-  return {
-    name: { ...facts.name },
-    // `DbNull` : une colonne `Json?` distingue le NULL SQL du `null` JSON.
-    lede: facts.lede === null ? Prisma.DbNull : { ...facts.lede },
-    imageUrl: facts.image?.url ?? null,
-    imageAlt: facts.image?.alt ?? null,
-    imageFocalX: facts.image?.focal?.x ?? null,
-    imageFocalY: facts.image?.focal?.y ?? null,
-    announceFrom: facts.announceFrom,
-    orderFrom: facts.orderFrom,
-    orderUntil: facts.orderUntil,
-    // Un jour `AAAA-MM-JJ` seul se lit en minuit UTC, et Prisma n'écrit que la
-    // date d'un `DATE` : le jour stocké est celui qu'on a reçu.
-    pickupFrom: new Date(facts.pickupFrom),
-    pickupUntil: new Date(facts.pickupUntil),
-    audience: facts.audience,
-    receivedAt: facts.receivedAt,
-    withdrawnAt: state.withdrawnAt,
-  };
-}
-
-export function toOverrideState(row: OverrideRow): CatalogOperationOverrideState {
-  return {
-    operationKey: row.operationKey,
-    restriction: {
-      isHidden: row.isHidden,
-      orderUntil: row.orderUntil,
-      audience: row.audience === null ? null : catalogOperationAudience(row.audience),
-      hiddenSkus: [...row.hiddenSkus],
-    },
-    decidedBy: row.decidedBy,
-    decidedAt: row.decidedAt,
-  };
-}
-
 /** Le texte relu depuis le `jsonb` — une forme inattendue échoue bruyamment. */
 function readText(raw: unknown, column: string): OperationText {
   if (!isRecord(raw)) {
@@ -147,9 +95,4 @@ function focalOf(x: number | null, y: number | null): OperationFocal | null {
 
 function dayOf(date: Date): string {
   return date.toISOString().slice(0, 10);
-}
-
-/** Les faits, prêts pour la table des items. */
-export function itemRows(facts: CatalogOperationFacts) {
-  return facts.skus.map((sku, position) => ({ operationKey: facts.key, sku, position }));
 }

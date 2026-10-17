@@ -62,19 +62,10 @@ const ROOT = process.cwd();
 /** Les contrôleurs dont la dette est purgée. En ajouter un = l'avoir drainé. */
 const SCOPE = [
   "apps/lfd-api/src/pim/ingredients/http/ingredient.controller.ts",
-  // Drainé le 2026-09-02 : il injectait `B2bCatalogPushService` en direct, que
-  // le suffixe de port ne voyait pas. Le geste passe désormais par
-  // `PushB2bCatalogCommand`. Il entre ici pour que le retour en arrière échoue,
-  // faute de quoi le nettoyage ne tient qu'à la mémoire de celui qui l'a fait.
-  "apps/lfd-api/src/pim/channels/b2b-platform/products/push.controller.ts",
   // Né drainé le 2026-09-02 : la frise de livraison passe par
   // `GetB2bProductDeliveryQuery`. Il entre ici le jour de sa naissance parce
   // qu'un contrôleur neuf n'a aucune raison d'arriver avec une dette.
   "apps/lfd-api/src/pim/channels/b2b-platform/products/product-delivery.controller.ts",
-  // Drainé le 2026-09-02 : il injectait `CheckCatalogParityService` en direct.
-  // Les deux lectures ont désormais un nom — `CheckCatalogParityQuery` et
-  // `CheckCatalogHealthQuery` —, et le référent de chacune se lit dans son nom.
-  "apps/lfd-api/src/b2b/catalog/http/admin-catalog-parity.controller.ts",
   // Drainé le 2026-09-10 : il injectait `CatalogAdminReader` en direct, et la
   // lecture qu'il servait n'avait donc PAS de nom. Ça s'est payé le jour où le
   // tableau de bord de la comptabilité a eu besoin de la même liste, sous deux
@@ -83,9 +74,6 @@ const SCOPE = [
   // contrôleur n'injecte plus que ses bus, et il entre ici pour que le retour
   // en arrière échoue.
   "apps/lfd-api/src/b2b/catalog/http/admin-catalog.controller.ts",
-  // Né drainé le 2026-09-02 : la porte machine du contrôle de santé sert la
-  // MÊME requête que la porte staff, par le même bus. Deux serrures, une lecture.
-  "apps/lfd-api/src/b2b/catalog/http/ops-catalog-health.controller.ts",
   // Drainé le 2026-09-09 (dernière tranche de R21) : `PricingBoardReader`, `BoardComparisonService`,
   // `PriceProjectionQuery` et `Clock` — l'horloge est descendue dans le handler
   // de la projection, un contrôleur ne décide pas d'un instant.

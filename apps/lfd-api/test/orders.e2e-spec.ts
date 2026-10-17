@@ -16,9 +16,6 @@ import type { CompanyStatus } from "../src/platform/database/client/client.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import type { BillingAddressPayload, CustomerOrderView, PlacedOrderResponse } from "@lfd/contracts";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
-import { CatalogVersion } from "../src/b2b/catalog/domain/entities/catalog-version.js";
-import { CatalogItemRepository } from "../src/b2b/catalog/domain/ports/catalog-item.repository.js";
-import { CatalogVersionRepository } from "../src/b2b/catalog/domain/ports/catalog-version.repository.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { lineTotalCents } from "@lfd/money";
@@ -601,24 +598,6 @@ describe("un SKU n'apparaît qu'une fois par commande", () => {
  * reste, et les commandes passées gardent la leur.
  */
 describe("l'estampille de version sur la commande", () => {
-  /** Pose une version réelle : la photographie du miroir tel qu'il est. */
-  async function seedVersion(id: string): Promise<void> {
-    const mirror = await ctx.app.get(CatalogItemRepository).loadAll();
-    await ctx.app.get(CatalogVersionRepository).append(
-      CatalogVersion.photograph({
-        id,
-        deliveryId: `d_${id}`,
-        revisionId: `rev_${id}`,
-        fingerprint: `empreinte-${id}`,
-        excludedSkus: [],
-        createdAt: new Date(),
-        createdBy: "staff_e2e",
-        mirror,
-        operations: [],
-      }),
-    );
-  }
-
   async function stampOf(orderId: string): Promise<string | null> {
     const row = await ctx.prisma.order.findUniqueOrThrow({
       where: { id: orderId },
@@ -629,41 +608,21 @@ describe("l'estampille de version sur la commande", () => {
 
   /**
    * Régression (X0) : la passation lisait la DERNIÈRE version poussée, et une
-   * commande passée faits ouverts emportait donc `cver_2` sans en venir.
+   * commande passée faits ouverts l'emportait sans en venir. Depuis X2
+   * (2026-10-17), le code des versions est parti : plus aucun chemin ne pose
+   * ni ne lit de version, et la commande neuve n'en porte aucune. Le cas « une
+   * commande passée garde la sienne » est parti avec la fabrique des versions :
+   * aucun chemin du domaine n'écrit plus la colonne.
    */
-  it("n'emporte pas l'identifiant de la dernière version poussée", async () => {
+  it("ne fige aucune version sur une commande neuve", async () => {
     const companyId = await seedCompany("active");
     await seedPickup();
-    await seedVersion("cver_1");
-    await seedVersion("cver_2");
 
     const placed = jsonBody<PlacedOrderResponse>(
       await ctx.asSub(MEMBER).post(`/orders`).send(pickupOrder(companyId)).expect(201),
     );
 
     expect(await stampOf(placed.id)).toBeNull();
-  });
-
-  /**
-   * La colonne reste : une commande d'avant X0 garde la version qu'elle citait,
-   * même quand une version plus récente est posée ensuite.
-   */
-  it("ne réécrit pas l'estampille d'une commande passée", async () => {
-    const companyId = await seedCompany("active");
-    await seedPickup();
-    await seedVersion("cver_1");
-    const earlier = jsonBody<PlacedOrderResponse>(
-      await ctx.asSub(MEMBER).post(`/orders`).send(pickupOrder(companyId)).expect(201),
-    );
-    // L'état d'une commande d'avant X0 : aucun chemin du domaine ne l'écrit plus.
-    await ctx.prisma.order.update({
-      where: { id: earlier.id },
-      data: { catalogVersionId: "cver_1" },
-    });
-
-    await seedVersion("cver_2");
-
-    expect(await stampOf(earlier.id)).toBe("cver_1");
   });
 });
 

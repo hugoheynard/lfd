@@ -7,7 +7,7 @@ import {
   CatalogOperationsReader,
   type SellableOperation,
 } from "../domain/ports/catalog-operations.reader.js";
-import { ITEMS_IN_ORDER, toOperationState, toOverrideState } from "./catalog-operation-rows.js";
+import { ITEMS_IN_ORDER, toOperationState } from "./catalog-operation-rows.js";
 import { withLibraryAlts } from "./operation-library-alts.js";
 import { operationOnlySkusOf } from "./prisma-catalog.reader.js";
 
@@ -15,9 +15,8 @@ import { operationOnlySkusOf } from "./prisma-catalog.reader.js";
  * Ce que les vendeurs appliquent : les opérations TENUES, et sans celles qu'on
  * ne tient pas — masquées, ou dont la clientèle ne recouvre plus personne.
  *
- * Ce que le commerce tient (lot 3 de `plan-l-operation-passe-au-commerce.md`)
- * (`operationAsHeld` — `hidden`, et la surcharge déjà versée par la
- * migration), et le texte alternatif de l'image lu à la médiathèque.
+ * Ce que le commerce tient (`operationAsHeld` — ses champs et son `hidden`),
+ * et le texte alternatif de l'image lu à la médiathèque.
  */
 @Injectable()
 export class PrismaCatalogOperationsReader extends CatalogOperationsReader {
@@ -31,17 +30,13 @@ export class PrismaCatalogOperationsReader extends CatalogOperationsReader {
   async sellableOperations(): Promise<readonly SellableOperation[]> {
     const rows = await this.prisma.catalogOperation.findMany({
       where: { withdrawnAt: null },
-      include: { ...ITEMS_IN_ORDER, override: true },
+      include: ITEMS_IN_ORDER,
       orderBy: [{ announceFrom: "desc" }, { key: "asc" }],
     });
     const sellable: SellableOperation[] = [];
     for (const row of rows) {
       const { facts } = toOperationState(row);
-      const override = row.override === null ? null : toOverrideState(row.override);
-      const held = operationAsHeld(facts, override?.restriction ?? null, {
-        hidden: row.hidden,
-        writtenAt: row.writtenAt,
-      });
+      const held = operationAsHeld(facts, row.hidden);
       if (held.isHidden || held.audience === "none") {
         continue;
       }

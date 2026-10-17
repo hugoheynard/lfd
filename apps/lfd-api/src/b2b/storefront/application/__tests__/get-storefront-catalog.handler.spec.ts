@@ -85,8 +85,7 @@ function received(over: Partial<ReceivedOperation> = {}): ReceivedOperation {
   return {
     received: NOEL,
     withdrawnAt: null,
-    override: null,
-    held: { hidden: false, writtenAt: null },
+    hidden: false,
     ...over,
   };
 }
@@ -192,16 +191,8 @@ describe("GetStorefrontCatalogHandler", () => {
     expect(view.shelves.map((shelf) => shelf.key)).toEqual(["bread"]);
   });
 
-  it("dit l'état de l'opération à l'horloge du serveur, et la clôture effective", async () => {
-    const earlier = new Date(NOEL.orderUntil.getTime() - DAY_MS);
-    const hidden = received({
-      override: {
-        operationKey: "noel-2026",
-        restriction: { isHidden: true, orderUntil: earlier, audience: null, hiddenSkus: [] },
-        decidedBy: "staff_1",
-        decidedAt: NOEL.receivedAt,
-      },
-    });
+  it("dit l'état de l'opération à l'horloge du serveur, et sa clôture", async () => {
+    const hidden = received({ hidden: true });
     const before = new Date(NOEL.announceFrom.getTime() - DAY_MS);
     const after = new Date(NOEL.orderUntil.getTime() + 30 * DAY_MS);
 
@@ -212,7 +203,7 @@ describe("GetStorefrontCatalogHandler", () => {
     expect((await stateAt(received(), after))?.state).toBe("ended");
     expect(await stateAt(hidden, DURING_ANNOUNCE)).toMatchObject({
       state: "hidden",
-      orderUntil: earlier.toISOString(),
+      orderUntil: NOEL.orderUntil.toISOString(),
     });
   });
 });

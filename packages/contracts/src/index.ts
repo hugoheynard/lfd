@@ -987,7 +987,6 @@ export {
   approveReviewPayloadSchema,
   REVIEW_BATCH_MAX,
   setCatalogFeaturedPayloadSchema,
-  acceptDeliveryPayloadSchema,
 } from "./catalog-admin.js";
 export type {
   CatalogAdminItemView,
@@ -996,11 +995,6 @@ export type {
   SetMaskingPayload,
   ApproveReviewPayload,
   SetCatalogFeaturedPayload,
-  AcceptDeliveryPayload,
-  DeliveryChangeView,
-  PendingDeliveryView,
-  CatalogHealthVersionView,
-  CatalogHealthView,
   CatalogSummaryView,
 } from "./catalog-admin.js";
 export {
@@ -1643,15 +1637,6 @@ export type {
   ActivityPageView,
 } from "./activity-journal.js";
 
-export type { CatalogParityGap, CatalogParityView } from "./catalog-parity.js";
-export type {
-  B2bPushChange,
-  B2bPushOperationChange,
-  B2bPushPreviewOperation,
-  B2bPushPreviewExclusion,
-  B2bPushPreviewItem,
-  B2bPushPreviewView,
-} from "./catalog-push-preview.js";
 export {
   contentLocaleSchema,
   socialLinkSchema,
@@ -2035,10 +2020,6 @@ export type {
   StorefrontView,
 } from "./storefront.js";
 export {
-  RECEIVED_OPERATION_AUDIENCES,
-  setOperationOverridePayloadSchema,
-} from "./catalog-operations.js";
-export {
   COMMERCE_OPERATION_AUDIENCES,
   commerceOperationScheduleSchema,
   editCommerceOperationPayloadSchema,
@@ -2068,14 +2049,6 @@ export type {
   SetCommerceOperationSelectionPayload,
   SetCommerceOperationVisibilityPayload,
 } from "./commerce-operations.js";
-export type {
-  EffectiveOperationView,
-  OperationOverrideView,
-  ReceivedOperationAudience,
-  ReceivedOperationText,
-  ReceivedOperationView,
-  SetOperationOverridePayload,
-} from "./catalog-operations.js";
 export {
   counterCustomerCardSchema,
   counterCustomerBuyerSchema,

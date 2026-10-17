@@ -8,14 +8,14 @@ commerce, commandes sans estampille de version. **Ce qui reste est du ménage** 
 retirer du code qui ne sert plus ; un oubli s'y voit en test rouge, pas en
 panne.
 
-| Lot | Contenu                                                                                                                             | État                                                     | Taille                                                                                  |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| X0  | La commande ne fige plus de version ; la sonde de santé est désarmée                                                                | ✅ en production (`9bcab005e`)                           | —                                                                                       |
-| X1  | Les trois interrupteurs disparaissent (`CATALOG_FACTS_ENABLED`, `OPERATIONS_AT_COMMERCE`, `PIM_PUBLICATION_ENABLED`)                | 🟡 bâti (`3fe321cac`), CI de `dev` en cours, puis `main` | —                                                                                       |
-| X3  | Ce que fige la commande                                                                                                             | ✅ réglé par X0 : plus rien                              | —                                                                                       |
-| X2  | Retirer le push, la réception, les versions du catalogue, la parité, la santé, la surcharge des opérations, et `B2B_DELIVERY_INBOX` | à faire                                                  | le plus gros — du code, des écrans, des suites e2e à basculer ; aucune décision ouverte |
-| X4  | Retirer le code des opérations au PIM et la matrice des canaux (les contextes de vente restent)                                     | à faire                                                  | moyen — **une question** : le « point de vente » du lot 5                               |
-| X5  | La doc d'état à jour, et la liste des tables mortes pour un ordre de Hugo                                                           | à faire                                                  | petit                                                                                   |
+| Lot | Contenu                                                                                                                             | État                                                    | Taille                                                    |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- | --------------------------------------------------------- |
+| X0  | La commande ne fige plus de version ; la sonde de santé est désarmée                                                                | ✅ en production (`9bcab005e`)                          | —                                                         |
+| X1  | Les trois interrupteurs disparaissent (`CATALOG_FACTS_ENABLED`, `OPERATIONS_AT_COMMERCE`, `PIM_PUBLICATION_ENABLED`)                | ✅ en production (`3fe321cac`, `9703cd863`)             | —                                                         |
+| X3  | Ce que fige la commande                                                                                                             | ✅ réglé par X0 : plus rien                             | —                                                         |
+| X2  | Retirer le push, la réception, les versions du catalogue, la parité, la santé, la surcharge des opérations, et `B2B_DELIVERY_INBOX` | 🟡 bâti le 2026-10-17, non commité (bandeau ci-dessous) | trois questions ouvertes en sortie (bandeau X2)           |
+| X4  | Retirer le code des opérations au PIM et la matrice des canaux (les contextes de vente restent)                                     | à faire                                                 | moyen — **une question** : le « point de vente » du lot 5 |
+| X5  | La doc d'état à jour, et la liste des tables mortes pour un ordre de Hugo                                                           | à faire                                                 | petit                                                     |
 
 **Gestes de Hugo après X1 en production** : supprimer les Variables GitHub
 `CATALOG_FACTS_ENABLED`, `OPERATIONS_AT_COMMERCE`, `PIM_PUBLICATION_ENABLED`
@@ -24,7 +24,7 @@ panne.
 
 **À corriger au passage** : la carte « Réémettre tout » ne montre pas son
 compte rendu (l'appel dure ~73 s, la réponse se perd) ; la page Intégrations
-affiche encore la santé désarmée (part en X2) ; `account-alerts` avait une
+affichait encore la santé désarmée (partie en X2) ; `account-alerts` avait une
 sonde d'une seconde, rouge sous la charge de la CI (porté à 5 s, `9703cd863`).
 
 > 🟡 **En cours** — l'état au §« Où on en est » ci-dessus. ~~📐 Doc-first~~ (réécrit le 2026-10-16 au soir, après la
@@ -46,7 +46,7 @@ sonde d'une seconde, rouge sous la charge de la CI (porté à 5 s, `9703cd863`).
 > aucun, vérifié le 2026-10-17). Régression : `test/orders.e2e-spec.ts`
 > (« n'emporte pas l'identifiant de la dernière version poussée », « ne réécrit
 > pas l'estampille d'une commande passée ») et `place-order.handler.spec.ts`.
-> `ops_catalog_parity.yml` désarmé (`if: false`, commentaire daté) ; la route
+> ops_catalog_parity.yml (retiré en X2) désarmé (`if: false`, commentaire daté) ; la route
 > reste.
 >
 > **Écarts** : le workflow n'avait **pas** de `schedule` — seulement
@@ -54,6 +54,37 @@ sonde d'une seconde, rouge sous la charge de la CI (porté à 5 s, `9703cd863`).
 > valait que pour un lancement à la main, et c'est lui qui est coupé. L'écran
 > « Intégrations » du back-office (`b2b-integration.ts`) lit toujours la santé :
 > il montrera le même écart, à traiter avec R4.
+
+> 🟡 **X2 bâti le 2026-10-17** (non commité au moment d'écrire). Partis :
+> le push (commande, service, contrôleur, port `B2bCatalogDriver` et son
+> pilote en processus), l'écran « Publication » et le bouton « Publier vers
+> les canaux » ; la réception (entité, dépôt, événements, validation, route,
+> lecteur de l'arrivée, écran « Réception », bandeau de l'espace B2B,
+> `B2B_DELIVERY_INBOX` dans `AppConfig`, le conteneur et le workflow) ; les
+> versions (entité, dépôt, lecteurs) ; la parité, la santé, l'aperçu avant
+> push, leurs routes, le workflow `ops_catalog_parity` et les cartes de la
+> page Intégrations ; la surcharge des opérations reçues (route, commande,
+> entité, dépôt, combinaison, section et panneau). Les contrats perdent les
+> vues correspondantes ; `seed:delivery` part, `seed:pim` livre ses faits par
+> le relais au lieu de pousser. Aucune migration : les tables restent.
+>
+> **Écarts au plan** : `appBootstrap/delivery-feed.module.ts` et
+> `catalog-delivery-products.reader.ts` sont **restés** — ce sont les fils de
+> la LIVRAISON (tournées, bacs), pas la boîte d'arrivée du catalogue. Le
+> lecteur `in-process-delivery-facts.reader.ts` est **resté**, réduit au
+> miroir (`awaitingSince` toujours `null`) : la frise d'une fiche le lit, et
+> son retrait n'était pas demandé. Le lecteur des opérations reçues reste pour
+> l'éditeur de vitrine, sans la surcharge.
+>
+> **Questions ouvertes** : (1) la **référence des révisions** — « depuis la
+> dernière publication » lit la dernière publication réussie, que seul le
+> push écrivait : elle est figée sur le dernier push ; aucun retour en
+> arrière ne republiait par le push (il n'en existe pas). (2) La colonne
+> « Boutique B2B » de la liste des produits ne dit plus que l'appartenance
+> (« hors canal » / « sur le canal ») : « jamais poussée », « poussée » et
+> « non vendue aux pros » venaient du push et de son aperçu. (3) L'espace
+> « E-commerce LFC » n'a plus aucune vue au rail ; son entrée mène aux
+> demandes clients.
 
 > ✅ **X1 bâti le 2026-10-17** (non commité au moment d'écrire). Les trois
 > interrupteurs — `CATALOG_FACTS_ENABLED`, `OPERATIONS_AT_COMMERCE`,
@@ -133,7 +164,7 @@ referme `CATALOG_FACTS_ENABLED` et une révision neuve le rouvre.
 Le code suit toujours le chemin ouvert. Lecteurs à retirer (relevé du
 2026-10-16, `catalogFactsEnabled()` / `operationsAtCommerce()`) :
 `platform/config/app-config.ts`, `appBootstrap/media-carriers.module.ts`,
-`b2b/catalog/application/ingest-catalog.service.ts`,
+b2b/catalog/application/ingest-catalog.service.ts (retiré en X2),
 `b2b/catalog/application/shop-catalogue-pricing.service.ts`,
 `b2b/catalog/application/handlers/on-operation-image-changed.handler.ts`,
 `b2b/catalog/infrastructure/prisma-catalog-operations.reader.ts`,
@@ -155,18 +186,18 @@ sans plateforme) ou part — question à Hugo (§4).
 
 ### R2 — Le push et la réception partent
 
-Référentiel : `push-b2b-catalog.ts`, `push.service.ts`, `push.controller.ts`,
-le pilote `driver.ts` et sa liaison, l'écran « Publication »
+Référentiel : push-b2b-catalog.ts (retiré en X2), push.service.ts (retiré en X2), push.controller.ts (retiré en X2),
+le pilote driver.ts (retiré en X2) et sa liaison, l'écran « Publication »
 (`pim/publication/**`) et le bouton « Publier vers les canaux » de la liste des
 produits. Les **révisions** du référentiel restent (photographies, retour en
 arrière d'une fiche) ; seule leur **publication** part.
 
-Plateforme : `ingest-catalog.service.ts`, la boîte d'arrivée
+Plateforme : ingest-catalog.service.ts (retiré en X2), la boîte d'arrivée
 (`catalog-delivery` : entité, dépôt, événements, `accept-delivery`,
-`get-pending-delivery`, `admin-catalog-delivery.controller.ts`,
-`in-process-catalog.driver.ts`, `catalog-delivery-products.reader.ts`,
+`get-pending-delivery`, admin-catalog-delivery.controller.ts (retiré en X2),
+in-process-catalog.driver.ts (retiré en X2), `catalog-delivery-products.reader.ts`,
 `in-process-delivery-facts.reader.ts`, `appBootstrap/delivery-feed.module.ts`),
-`preview-catalog-push.handler.ts`, et `B2B_DELIVERY_INBOX`. Front : l'écran
+preview-catalog-push.handler.ts (retiré en X2), et `B2B_DELIVERY_INBOX`. Front : l'écran
 « Réception » (`b2b/reception/**`) — **sa section « Opérations reçues »**
 sert encore la surcharge des opérations : à vérifier avant de la retirer.
 
@@ -184,7 +215,7 @@ prix, nom et TVA). La colonne reste en base.
 
 `check-catalog-health` compare le miroir à la dernière version acceptée : sans
 versions, elle n'a plus de référent. `check-catalog-parity` et
-`ops_catalog_parity.yml` comparent le référentiel au miroir : à garder si on
+ops_catalog_parity.yml (retiré en X2) comparent le référentiel au miroir : à garder si on
 leur donne le bon référent (le fait le plus récent de chaque fiche), sinon à
 retirer. Décision §4.
 
@@ -266,7 +297,7 @@ des push sans effet (R2), les suites e2e (R7), le retour arrière (§2).
   prisma-operation-media-carriers (retiré en X1), `apply-audience-switch.ts` et
   `pim/operations/**`. X1 part d'un `grep` refait au premier jour, pas de la
   liste du §3.
-- **La santé sonnera dès maintenant** (BLOQUANT) : `ops_catalog_parity.yml:71`
+- **La santé sonnera dès maintenant** (BLOQUANT) : ops_catalog_parity.yml:71 (retiré en X2)
   interroge `admin/ops/catalog-health`, qui compare le miroir à la dernière
   version acceptée — un référent qui ne bouge plus. **Correction** : X0 désarme
   ce cron (ou lui donne le fait le plus récent comme référent) ; R4 tranche ensuite.
@@ -283,7 +314,7 @@ des push sans effet (R2), les suites e2e (R7), le retour arrière (§2).
   publication-switch (retiré en X1), publication.controller (retiré en X1), le
   conteneur et le workflow, avec sa suite la suite e2e de l'interrupteur de publication (retirée en X1).
   Si `pim/publication/**` part en R2, la question Q1 est déjà à moitié tranchée.
-- **La surcharge des opérations** (SÉRIEUX) : `admin-catalog-operations.controller.ts`,
+- **La surcharge des opérations** (SÉRIEUX) : admin-catalog-operations.controller.ts (retiré en X2),
   `CatalogOperationOverride`, `operation-override-panel`, `received-operations*`
   et `effective-operation.ts` la servent encore. Opérations écrites au
   commerce, elle n'a plus d'objet : à **trancher** (Q5), pas « à vérifier ».
@@ -303,11 +334,11 @@ des push sans effet (R2), les suites e2e (R7), le retour arrière (§2).
 ## Décisions de Hugo (2026-10-16 au soir)
 
 - **R4 — la parité et la santé du catalogue partent** (Hugo, 2026-10-17) :
-  routes, services, carte de la page Intégrations, `ops_catalog_parity.yml`.
+  routes, services, carte de la page Intégrations, ops_catalog_parity.yml (retiré en X2).
   Elles vérifiaient que le push n'avait pas dérivé ; les faits s'appliquent
   fiche par fiche, dans l'ordre. En X2.
 - **Q5 — la surcharge des opérations reçues part** (Hugo, 2026-10-17) :
-  `admin-catalog-operations.controller.ts`, `CatalogOperationOverride` (la
+  admin-catalog-operations.controller.ts (retiré en X2), `CatalogOperationOverride` (la
   table reste), la section « Opérations reçues » et son panneau, et la
   combinaison dans `effective-operation.ts`. Les opérations s'écrivent au
   commerce. En X2.

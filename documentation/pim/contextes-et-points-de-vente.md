@@ -447,9 +447,9 @@ d'aucune plateforme. Pour chaque outil branché dessus, deux pièces distinctes 
 
 C'est vérifiable dans le code, la séparation est physique :
 
-| Cible          | Adaptateur (pur)                               | Intégration (transport)                    |
-| -------------- | ---------------------------------------------- | ------------------------------------------ |
-| Plateforme pro | `channels/b2b-platform/products/projection.ts` | `channels/b2b-platform/products/driver.ts` |
+| Cible          | Adaptateur (pur)                               | Intégration (transport)                                 |
+| -------------- | ---------------------------------------------- | ------------------------------------------------------- |
+| Plateforme pro | `channels/b2b-platform/products/projection.ts` | channels/b2b-platform/products/driver.ts (retiré en X2) |
 
 L'adaptateur est la pièce qui a de la valeur : le transport changera, ce que
 _signifie_ « ce produit, sur ce canal » ne changera pas.
@@ -655,18 +655,18 @@ façon ; `channel_key`, lui, bloquait l'ajout d'une simple ligne de donnée.
 
 ## 11. Où c'est écrit
 
-| Sujet                                            | Fichier                                                              |
-| ------------------------------------------------ | -------------------------------------------------------------------- |
-| Le schéma (toutes les tables citées ici)         | `apps/lfd-api/prisma/schema/pim/sales-contexts.prisma`, schéma `pim` |
-| La carte — agrégat, racine, invariants           | `pim/sales-contexts/`                                                |
-| Le point de vente — genres, offre, tables        | `pim/points-of-sale/`                                                |
-| Le référentiel des taux                          | `pim/vat-rates/`                                                     |
-| La matrice — forme, normalisation, lectures      | `pim/catalogue/shared/domain/value-objects/sales-channels.ts`        |
-| Le mur « offert ici ? »                          | `pim/catalogue/shared/application/sellable-channels.ts`              |
-| La résolution du taux (fiche par-dessus famille) | `pim/catalogue/shared/domain/value-objects/context-vat.ts`           |
-| Les invariants de la famille                     | `pim/catalogue/category/domain/entities/category.ts`                 |
-| Adaptateur plateforme pro (pur) / transport      | `pim/channels/b2b-platform/products/projection.ts` · `driver.ts`     |
-| Taux facturé côté boutique pro                   | `b2b/catalog/infrastructure/prisma-catalog.reader.ts`                |
-| TVA d'une commande, livraison comprise           | `b2b/orders/domain/services/vat.ts`                                  |
+| Sujet                                            | Fichier                                                                       |
+| ------------------------------------------------ | ----------------------------------------------------------------------------- |
+| Le schéma (toutes les tables citées ici)         | `apps/lfd-api/prisma/schema/pim/sales-contexts.prisma`, schéma `pim`          |
+| La carte — agrégat, racine, invariants           | `pim/sales-contexts/`                                                         |
+| Le point de vente — genres, offre, tables        | `pim/points-of-sale/`                                                         |
+| Le référentiel des taux                          | `pim/vat-rates/`                                                              |
+| La matrice — forme, normalisation, lectures      | `pim/catalogue/shared/domain/value-objects/sales-channels.ts`                 |
+| Le mur « offert ici ? »                          | `pim/catalogue/shared/application/sellable-channels.ts`                       |
+| La résolution du taux (fiche par-dessus famille) | `pim/catalogue/shared/domain/value-objects/context-vat.ts`                    |
+| Les invariants de la famille                     | `pim/catalogue/category/domain/entities/category.ts`                          |
+| Adaptateur plateforme pro (pur) / transport      | `pim/channels/b2b-platform/products/projection.ts` · driver.ts (retiré en X2) |
+| Taux facturé côté boutique pro                   | `b2b/catalog/infrastructure/prisma-catalog.reader.ts`                         |
+| TVA d'une commande, livraison comprise           | `b2b/orders/domain/services/vat.ts`                                           |
 
 Les chemins backend sont relatifs à `apps/lfd-api/src/`.

@@ -6,15 +6,14 @@ import {
   ReceivedOperationsReader,
   type ReceivedOperation,
 } from "../domain/ports/received-operations.reader.js";
-import { ITEMS_IN_ORDER, toOperationState, toOverrideState } from "./catalog-operation-rows.js";
+import { ITEMS_IN_ORDER, toOperationState } from "./catalog-operation-rows.js";
 import { withLibraryAlts } from "./operation-library-alts.js";
 
 /**
- * L'écran de réception et l'éditeur de vitrine : tout le miroir, retirées
- * comprises, surcharge jointe.
+ * L'éditeur de vitrine : tout le miroir, retirées comprises.
  *
- * Chaque opération dit aussi ce que le commerce en tient (`held`), et son image prend le texte
- * alternatif de la médiathèque.
+ * Chaque opération dit aussi si le commerce la masque (`hidden`), et son image
+ * prend le texte alternatif de la médiathèque.
  */
 @Injectable()
 export class PrismaReceivedOperationsReader extends ReceivedOperationsReader {
@@ -27,17 +26,15 @@ export class PrismaReceivedOperationsReader extends ReceivedOperationsReader {
 
   async list(): Promise<readonly ReceivedOperation[]> {
     const rows = await this.prisma.catalogOperation.findMany({
-      include: { ...ITEMS_IN_ORDER, override: true },
+      include: ITEMS_IN_ORDER,
       orderBy: [{ announceFrom: "desc" }, { key: "asc" }],
     });
     const operations = rows.map((row): ReceivedOperation => {
       const state = toOperationState(row);
-      const override = row.override === null ? null : toOverrideState(row.override);
       return {
         received: state.facts,
         withdrawnAt: state.withdrawnAt,
-        override,
-        held: { hidden: row.hidden, writtenAt: row.writtenAt },
+        hidden: row.hidden,
       };
     });
     const facts = await withLibraryAlts(

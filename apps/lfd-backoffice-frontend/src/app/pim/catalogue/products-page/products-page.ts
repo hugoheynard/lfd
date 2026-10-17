@@ -29,13 +29,7 @@ import { PointOfSaleStore } from '../../points-of-sale/point-of-sale-store';
 import { SalesContextStore } from '../../sales-contexts/sales-context-store';
 import { soldContexts, type SoldContext } from '../sold-contexts';
 import { B2bChannelApi, type B2bMembershipView } from '../../channels/b2b-channel-api';
-import {
-  blockersOf,
-  exclusionIndex,
-  faultsOf,
-  isChannelClosed,
-  type Blocker,
-} from '../../channels/b2b-exclusions';
+import { blockersOf, faultsOf, type Blocker } from '../../channels/b2b-exclusions';
 
 import {
   CatalogueApi,
@@ -49,71 +43,34 @@ import type { ProductStatus } from '../../data/models';
 import { nextSort, sortRows } from './products-sort';
 
 /**
- * **Où en est une fiche sur la boutique professionnelle**, vue de la liste.
+ * **Où en est une fiche sur la boutique professionnelle**, vue de la liste :
+ * son appartenance au canal, et rien d'autre.
  *
- * L'acceptation par la plateforme demande un appel par fiche (le port de
- * retour), donc elle vit sur la FRISE de la fiche produit. Annoncer ici « en
- * vente » sans l'avoir vérifié serait dire ce qu'on ne sait pas.
- *
- * 🔴 `non_vendue_pro` est le cas qui manquait, et son absence faisait MENTIR la
- * colonne. Elle lisait la seule **appartenance** au canal — une ligne de
- * liaison, écrite par « Vendre sur la boutique B2B » — alors que la projection
- * décide sur la **matrice des contextes de vente**, et son commentaire le dit
- * en toutes lettres : « la matrice DÉCIDE, elle ne se contente plus de
- * décrire » (`projection.ts:292`, vérifié le 2026-09-13). Une fiche dont
- * l'appartenance est ouverte et la matrice fermée s'affichait donc « jamais
- * poussée » en orange — c'est-à-dire « la décision est prise, le catalogue ne
- * l'a pas emportée », quand la vérité est l'inverse exact : rien ne l'emportera
- * jamais. Le badge promettait un retard là où il y a un refus.
- *
- * L'état vient de l'aperçu d'envoi, pas d'une seconde lecture de la matrice :
- * c'est le même fait, dit par celui qui le décide.
+ * La colonne disait aussi « jamais poussée » / « poussée » et « non vendue aux
+ * pros », lus sur l'aperçu d'envoi. Le push et son aperçu sont partis en X2
+ * (2026-10-17, `documentation/catalogue/plan-sans-interrupteurs.md`) : les
+ * faits du catalogue partent d'eux-mêmes, et ce que la plateforme en a fait se
+ * lit sur « Catalogue publié » et sur la frise de la fiche.
  */
-type B2bChannelState = 'hors_canal' | 'non_vendue_pro' | 'jamais_poussee' | 'poussee';
+type B2bChannelState = 'hors_canal' | 'sur_le_canal';
 
-/**
- * L'état du badge, **dérivé et rien d'autre** — donc éprouvable sans monter la
- * page. C'est la règle que le correctif a changée : elle mérite un test qui
- * échouait avant lui, et un `TestBed` avec six injections n'en aurait pas été un.
- *
- * @param membered la fiche a-t-elle une appartenance au canal ?
- * @param pushedAt la date du dernier envoi, `null` si jamais parti.
- */
-export function b2bChannelState(
-  membered: boolean,
-  pushedAt: string | null,
-  blockers: readonly Blocker[],
-): B2bChannelState {
-  if (!membered) {
-    return 'hors_canal';
-  }
-  // Avant la date de push, et c'est tout le correctif : une fiche que la
-  // projection refuse n'est pas « en attente d'envoi », elle ne partira pas.
-  // Lire l'aperçu d'abord évite de peindre une étape sur un refus.
-  if (isChannelClosed(blockers)) {
-    return 'non_vendue_pro';
-  }
-  return pushedAt === null ? 'jamais_poussee' : 'poussee';
+/** L'état du badge, **dérivé et rien d'autre** — donc éprouvable sans monter la page. */
+export function b2bChannelState(membered: boolean): B2bChannelState {
+  return membered ? 'sur_le_canal' : 'hors_canal';
 }
 
 const B2B_LABELS: Record<B2bChannelState, string> = {
   hors_canal: 'hors canal',
-  non_vendue_pro: 'non vendue aux pros',
-  jamais_poussee: 'jamais poussée',
-  poussee: 'poussée',
+  sur_le_canal: 'sur le canal',
 };
 
 const B2B_VARIANTS: Record<B2bChannelState, FoldBadgeVariant> = {
   hors_canal: 'neutral',
-  // Le canal est ouvert pour elle et elle ne partira pourtant jamais : il faut
-  // aller rouvrir sa matrice. Rouge, parce que c'est une contradiction entre
-  // deux réglages, pas une étape qui reste à faire.
-  non_vendue_pro: 'alert',
-  // Décidée mais jamais partie : l'écart que le commercial doit voir, et le seul
-  // que cette colonne sache signaler.
-  jamais_poussee: 'warning',
-  poussee: 'success',
+  sur_le_canal: 'info',
 };
+
+/** Aucun refus de projection à lire : seul le brouillon vendu se signale encore. */
+const NO_EXCLUSIONS: ReadonlyMap<string, string> = new Map();
 
 @Component({
   selector: 'app-products-page',
@@ -155,18 +112,6 @@ export class ProductsPage {
   protected readonly error = signal<string | null>(null);
   protected readonly busy = signal(false);
   protected readonly memberships = signal<B2bMembershipView[]>([]);
-  /**
-   * Ce que l'envoi B2B écarterait, par SKU — la source des notes de ligne.
-   *
-   * Vide quand l'aperçu n'a pas pu être lu, et c'est **délibéré** : il réclame
-   * un rapport pro réglé et traverse les deux côtés du canal, donc il échoue là
-   * où la liste des produits marche très bien. Le faire tomber avec elle
-   * priverait d'un écran entier pour un enrichissement. On perd les notes, on
-   * garde le catalogue — et `previewFailed` le dit plutôt que de laisser croire
-   * que tout est en ordre.
-   */
-  private readonly exclusions = signal<ReadonlyMap<string, string>>(new Map());
-  protected readonly previewFailed = signal(false);
   protected readonly rates = signal<VatRate[]>([]);
   protected readonly query = signal('');
   protected readonly page = signal(1);
@@ -282,14 +227,14 @@ export class ProductsPage {
   protected readonly rowKey = (product: Product): string => product.id;
 
   /**
-   * Les refus de l'aperçu rangés par fiche, calculés une fois par chargement.
+   * Ce qui se signale par fiche, calculé une fois par chargement — depuis X2,
+   * le seul brouillon vendu aux pros.
    *
    * Un `computed` plutôt qu'un appel par ligne : `rowNote`, `rowTone` et le
    * gabarit de la note interrogent tous les trois la même fiche, et fold les
    * appelle à chaque rendu.
    */
   private readonly blockersById = computed(() => {
-    const index = this.exclusions();
     const membres = this.membershipById();
     return new Map(
       this.products().map((product) => [
@@ -297,7 +242,7 @@ export class ProductsPage {
         // L'appartenance au canal est passée : un brouillon HORS canal ne part
         // nulle part et n'a rien à signaler. C'est le couple « brouillon » ET
         // « canal ouvert » qui est l'anomalie.
-        blockersOf(product, index, membres.has(product.id)),
+        blockersOf(product, NO_EXCLUSIONS, membres.has(product.id)),
       ]),
     );
   });
@@ -376,12 +321,7 @@ export class ProductsPage {
   );
 
   protected b2bState(product: Product): B2bChannelState {
-    const found = this.membershipById().get(product.id);
-    return b2bChannelState(
-      found !== undefined,
-      found?.lastPushedAt ?? null,
-      this.blockersById().get(product.id) ?? [],
-    );
+    return b2bChannelState(this.membershipById().has(product.id));
   }
 
   protected b2bLabel(product: Product): string {
@@ -392,13 +332,7 @@ export class ProductsPage {
     return B2B_VARIANTS[this.b2bState(product)];
   }
 
-  /**
-   * L'**appartenance** au canal, et elle seule — c'est ce que le menu bascule.
-   *
-   * Elle passait par `b2bState`, qui répond maintenant à une autre question
-   * (« que montre le badge »). Une fiche refusée par la matrice garde son
-   * appartenance : le menu doit donc toujours offrir de la retirer.
-   */
+  /** L'**appartenance** au canal — c'est ce que le menu bascule. */
   protected onB2bChannel(productId: string): boolean {
     return this.membershipById().has(productId);
   }
@@ -557,26 +491,6 @@ export class ProductsPage {
       this.categories.set(categories.filter((category) => !category.isArchived));
     } catch (caught) {
       this.error.set(caught instanceof Error ? caught.message : 'Erreur inattendue.');
-    }
-    await this.reloadPreview();
-  }
-
-  /**
-   * L'aperçu d'envoi, **à part et après** le reste.
-   *
-   * Hors du `Promise.all` à dessein : il a ses propres préconditions (le rapport
-   * pro réglé) et traverse les deux côtés du canal. Le joindre aux autres
-   * lectures ferait tomber la liste des produits entière le jour où l'une
-   * d'elles manque — pour un enrichissement dont on peut se passer.
-   */
-  private async reloadPreview(): Promise<void> {
-    try {
-      const preview = await this.b2b.preview();
-      this.exclusions.set(exclusionIndex(preview.excluded));
-      this.previewFailed.set(false);
-    } catch {
-      this.exclusions.set(new Map());
-      this.previewFailed.set(true);
     }
   }
 }

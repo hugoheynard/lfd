@@ -243,16 +243,6 @@ jobs:
           VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
           VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
           VAPID_SUBJECT: ${{ vars.VAPID_SUBJECT }}
-          # La livraison du référentiel entre-t-elle dans une BOÎTE DE RÉCEPTION
-          # plutôt que dans les faits de vente ? Fermée par défaut : sans cette
-          # Variable, un push met en vente comme il l'a toujours fait.
-          #
-          # ⚠️ Elle est lue au DÉMARRAGE — `AppConfig` lit l'environnement dans
-          # son constructeur. L'ouvrir comme la refermer coûte un redéploiement,
-          # pas un clic. Ne l'ouvrir qu'une fois l'écran de validation en ligne :
-          # ouverte sans lui, le catalogue B2B se fige sur son état courant, en
-          # silence.
-          B2B_DELIVERY_INBOX: ${{ vars.B2B_DELIVERY_INBOX }}
           # 🔴 La clé du coffre de champs — elle scelle les IBAN de nos clients au
           # repos (AES-256-GCM, 32 octets en base64).
           #
@@ -306,7 +296,6 @@ jobs:
                       CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_ANALYTICS_TOKEN \
                       VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY VAPID_SUBJECT \
                       RECOMPUTE_TOKEN \
-                      B2B_DELIVERY_INBOX \
                       FIELD_ENCRYPTION_KEY BAN_GEOCODER_URL ROUTE_PLANNER_URL ROUTE_PLANNER_TOKEN; do
             value="${!name}"
             if [ -n "$value" ]; then

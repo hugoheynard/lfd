@@ -1,22 +1,21 @@
 import type { CatalogOperationFacts } from "../entities/catalog-operation.js";
-import type { CatalogOperationOverrideState } from "../entities/catalog-operation-override.js";
-import type { CommerceHolding } from "../effective-operation.js";
 
-/** Une opération du miroir, sa date de retrait, et ce que la réception en a décidé. */
+/** Une opération du miroir, sa date de retrait, et ce que le commerce en tient. */
 export interface ReceivedOperation {
   readonly received: CatalogOperationFacts;
-  /** `null` = tenue ; sinon l'instant de l'envoi qui ne la portait plus. */
+  /** `null` = tenue ; sinon l'instant de son retrait. */
   readonly withdrawnAt: Date | null;
-  readonly override: CatalogOperationOverrideState | null;
-  /** Ce que le commerce tient lui-même (`hidden`, et s'il l'a déjà écrite). */
-  readonly held: CommerceHolding;
+  /** Masquée par le commerce. */
+  readonly hidden: boolean;
 }
 
 /**
- * Port de **lecture** de l'écran de réception : TOUTES les opérations reçues,
- * retirées comprises (l'écran les dit « opération retirée »), avec leur
- * surcharge. Distinct du dépôt (ISP) : l'écran n'écrit rien, et il ne lit pas
- * ce qu'un vendeur lit.
+ * Port de **lecture** de l'éditeur de vitrine : TOUTES les opérations du
+ * miroir, retirées comprises. Distinct de `CatalogOperationsReader` (ISP) :
+ * l'éditeur ne lit pas ce qu'un vendeur lit.
+ *
+ * Il servait aussi l'écran de réception et sa surcharge, partis en X2
+ * (2026-10-17).
  */
 export abstract class ReceivedOperationsReader {
   /** L'annonce la plus récente d'abord. */

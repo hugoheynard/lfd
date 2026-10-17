@@ -6,7 +6,6 @@ import { CatalogueModule } from "../../catalogue/catalogue.module.js";
 import { OrderTimeLimitationModule } from "../../order-time-limitation/order-time-limitation.module.js";
 import { PimDatabaseModule } from "../../infra/database/pim-database.module.js";
 import { OperationsModule } from "../../operations/operations.module.js";
-import { PushB2bCatalogHandler } from "./application/push-b2b-catalog.js";
 import { ReemitCatalogHandler } from "./application/reemit-catalog.js";
 import { B2bReemitController } from "./products/reemit.controller.js";
 import { B2bMembershipController } from "./membership/membership.controller.js";
@@ -16,15 +15,10 @@ import { ApplyAudienceSwitchHandler } from "./application/apply-audience-switch.
 import { AudienceSwitchController } from "./membership/audience-switch.controller.js";
 import { SalesContextsModule } from "../../sales-contexts/sales-contexts.module.js";
 import { B2bMembershipService } from "./membership/membership.service.js";
-import { DryRunB2bCatalogDriver } from "./products/driver.js";
-import { B2bCatalogFeedPreview } from "./products/feed-preview.js";
-import { B2bCatalogFeedProjection } from "./products/feed-projection.service.js";
 import { GetB2bProductDeliveryHandler } from "./products/product-delivery.js";
 import { B2bProductDeliveryController } from "./products/product-delivery.controller.js";
 import { PimReferentialOperations } from "./operations/pim-referential-operations.js";
 import { ReferentialOperations } from "./operations/referential-operations.js";
-import { B2bPushController } from "./products/push.controller.js";
-import { B2bCatalogPushService } from "./products/push.service.js";
 
 /**
  * Adaptateur du canal **plateforme B2B** — le second canal, après l'ancien canal de vente en ligne.
@@ -57,7 +51,6 @@ import { B2bCatalogPushService } from "./products/push.service.js";
   ],
   controllers: [
     B2bMembershipController,
-    B2bPushController,
     B2bProductDeliveryController,
     AudienceSwitchPreviewController,
     AudienceSwitchController,
@@ -65,8 +58,6 @@ import { B2bCatalogPushService } from "./products/push.service.js";
   ],
   providers: [
     B2bMembershipService,
-    B2bCatalogPushService,
-    PushB2bCatalogHandler,
     ReemitCatalogHandler,
     // L'aperçu de la bascule vers l'audience (lot 1, 1f) : lecture seule.
     GetAudienceSwitchPreviewHandler,
@@ -76,17 +67,10 @@ import { B2bCatalogPushService } from "./products/push.service.js";
     // ici : il est publié par ce module et relié par la racine de composition,
     // seule à connaître les deux côtés du fil.
     GetB2bProductDeliveryHandler,
-    // La simulation est fournie ici ; l'envoi réel (`B2bCatalogDriver`) est
-    // relié par la racine de composition, seule à connaître les deux côtés.
-    DryRunB2bCatalogDriver,
-    { provide: B2bCatalogFeedPreview, useClass: B2bCatalogFeedProjection },
     // La migration des opérations au commerce (lot 3 du plan
     // `plan-l-operation-passe-au-commerce.md`) : lecture seule, une fois.
     { provide: ReferentialOperations, useClass: PimReferentialOperations },
   ],
-  // Le port de LECTURE sort d'ici : la plateforme s'en sert pour vérifier que
-  // son miroir n'a pas dérivé de sa source. Le port d'écriture, lui, ne sort
-  // pas — publier reste une décision du référentiel.
-  exports: [B2bMembershipService, B2bCatalogFeedPreview, ReferentialOperations],
+  exports: [B2bMembershipService, ReferentialOperations],
 })
 export class B2bPlatformModule {}

@@ -10,7 +10,7 @@ import { ScopedJournal } from "../../platform/journal/scoped-journal.js";
  * l'appeler directement — la matrice des frontières lui interdit de voir `b2b`
  * — et surtout il ne devrait pas avoir à le connaître. Il déclare donc son
  * port, que la racine de composition branche sur le journal réel : le même
- * montage que `B2bCatalogDriver`, pour la même raison.
+ * montage que `B2bDeliveryFactsReader`, pour la même raison.
  *
  * ✅ **C'est fait le 2026-09-23.** Ce fichier disait « quand promouvoir le
  * journal en `platform/` : au troisième bloc émetteur ». La médiathèque est le

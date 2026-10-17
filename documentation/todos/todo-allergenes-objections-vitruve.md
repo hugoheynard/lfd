@@ -114,7 +114,7 @@ visible de tout le processus. `ingredients.module.ts` écrit déjà le chemin
 prévu : « il exportera un lecteur — et ce jour-là seulement ».
 
 **S6 — la sonde n'a ni cadence ni destinataire.** Le modèle cité,
-`ops_catalog_parity.yml`, est `on: workflow_dispatch:` **seul** et se déclare
+ops_catalog_parity.yml (retiré en X2), est `on: workflow_dispatch:` **seul** et se déclare
 temporaire ; aucun workflow `ops_*` du dépôt n'a de `schedule`. L'intention n°3
 reposerait donc sur un bouton que personne n'est tenu de presser. Rapporter
 plutôt que dépublier est défendable ; rapporter sans cadence ni destinataire ne

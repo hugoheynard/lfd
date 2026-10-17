@@ -1,6 +1,5 @@
 import { Module } from "@nestjs/common";
 
-import { B2bPlatformModule } from "../../pim/channels/b2b-platform/b2b-platform.module.js";
 import { PricerModule } from "../pricing/pricer.module.js";
 
 import { RetracePricesFromReferentialHandler } from "./application/commands/retrace-prices-from-referential.handler.js";
@@ -9,7 +8,6 @@ import { PrismaCatalogPriceRetracer } from "./infrastructure/prisma-catalog-pric
 import { SetMaskingHandler } from "./application/commands/set-masking.handler.js";
 import { ApproveReviewHandler } from "./application/commands/approve-review.handler.js";
 import { SetCatalogFeaturedHandler } from "./application/commands/set-catalog-featured.handler.js";
-import { IngestCatalogService } from "./application/ingest-catalog.service.js";
 import { OnOperationImageChangedHandler } from "./application/handlers/on-operation-image-changed.handler.js";
 import { OnProductMediaChangedHandler } from "./application/handlers/on-product-media-changed.handler.js";
 import { OnCatalogProductChangedHandler } from "./application/handlers/on-catalog-product-changed.handler.js";
@@ -26,56 +24,31 @@ import { PrismaCatalogProductFactsProjection } from "./infrastructure/prisma-cat
 import { PrismaCatalogFamilyFactsProjection } from "./infrastructure/prisma-catalog-family-facts.projection.js";
 import { CatalogAdminReader } from "./domain/ports/catalog-admin.reader.js";
 import { CatalogCategoryProjection } from "./domain/ports/catalog-category.projection.js";
-import { AcceptDeliveryHandler } from "./application/commands/accept-delivery.handler.js";
-import { GetPendingDeliveryHandler } from "./application/queries/get-pending-delivery.handler.js";
-import { CatalogDeliveryRepository } from "./domain/ports/catalog-delivery.repository.js";
 import { CatalogItemRepository } from "./domain/ports/catalog-item.repository.js";
 import { CatalogVisualsProjection } from "./domain/ports/catalog-visuals.projection.js";
-import { CatalogVersionReader } from "./domain/ports/catalog-version.reader.js";
-import { CatalogVersionRepository } from "./domain/ports/catalog-version.repository.js";
 import { CanonicalPriceHistoryModule } from "./canonical-price-history.module.js";
 import { CatalogReader } from "./domain/ports/catalog.reader.js";
 import { ProductCatalogReader } from "./domain/ports/product-catalog.reader.js";
 import { CatalogBackedProductCatalog } from "./infrastructure/catalog-backed-product-catalog.js";
 import { PrismaCatalogAdminReader } from "./infrastructure/prisma-catalog-admin.reader.js";
 import { PrismaCatalogCategoryProjection } from "./infrastructure/prisma-catalog-category.projection.js";
-import { PrismaCatalogDeliveryRepository } from "./infrastructure/prisma-catalog-delivery.repository.js";
 import { PrismaCatalogItemRepository } from "./infrastructure/prisma-catalog-item.repository.js";
 import { PrismaCatalogVisualsProjection } from "./infrastructure/prisma-catalog-visuals.projection.js";
-import {
-  PrismaCatalogVersionReader,
-  PrismaCatalogVersionRepository,
-} from "./infrastructure/prisma-catalog-version.repository.js";
 import { PrismaCatalogReader } from "./infrastructure/prisma-catalog.reader.js";
 import { AdminCatalogController } from "./http/admin-catalog.controller.js";
-import { AdminCatalogDeliveryController } from "./http/admin-catalog-delivery.controller.js";
-import { AdminCatalogParityController } from "./http/admin-catalog-parity.controller.js";
-import { OpsCatalogHealthController } from "./http/ops-catalog-health.controller.js";
 import { ShopCatalogueController } from "./http/shop-catalogue.controller.js";
 import { ReadShopCatalogueHandler } from "./application/queries/read-shop-catalogue.js";
 import { SaleOperations } from "./application/sale-operations.service.js";
 import { ShopCataloguePricing } from "./application/shop-catalogue-pricing.service.js";
-import { CheckCatalogParityService } from "./application/check-catalog-parity.service.js";
-import { CheckCatalogHealthService } from "./application/check-catalog-health.service.js";
-import { CheckCatalogHealthHandler } from "./application/queries/check-catalog-health.handler.js";
 import { ExportCatalogCsvHandler } from "./application/queries/export-catalog-csv.handler.js";
 import { GetCatalogSummaryHandler } from "./application/queries/get-catalog-summary.handler.js";
 import { GetPublishedCatalogHandler } from "./application/queries/get-published-catalog.handler.js";
 import { PublishedCatalogReader } from "./domain/ports/published-catalog.reader.js";
 import { PrismaPublishedCatalogReader } from "./infrastructure/prisma-published-catalog.reader.js";
 import { ListCatalogHandler } from "./application/queries/list-catalog.handler.js";
-import { CheckCatalogParityHandler } from "./application/queries/check-catalog-parity.handler.js";
-import { PreviewCatalogPushHandler } from "./application/queries/preview-catalog-push.handler.js";
-import { SetOperationOverrideHandler } from "./application/commands/set-operation-override.handler.js";
-import { ListReceivedOperationsHandler } from "./application/queries/list-received-operations.handler.js";
-import { CatalogOperationRepository } from "./domain/ports/catalog-operation.repository.js";
-import { CatalogOperationOverrideRepository } from "./domain/ports/catalog-operation-override.repository.js";
 import { CatalogOperationsReader } from "./domain/ports/catalog-operations.reader.js";
 import { ReceivedOperationsReader } from "./domain/ports/received-operations.reader.js";
 import { CatalogColdReader } from "./domain/ports/catalog-cold.reader.js";
-import { AdminCatalogOperationsController } from "./http/admin-catalog-operations.controller.js";
-import { PrismaCatalogOperationRepository } from "./infrastructure/prisma-catalog-operation.repository.js";
-import { PrismaCatalogOperationOverrideRepository } from "./infrastructure/prisma-catalog-operation-override.repository.js";
 import { PrismaCatalogOperationsReader } from "./infrastructure/prisma-catalog-operations.reader.js";
 import { PrismaReceivedOperationsReader } from "./infrastructure/prisma-received-operations.reader.js";
 import { PrismaCatalogColdReader } from "./infrastructure/prisma-catalog-cold.reader.js";
@@ -100,32 +73,20 @@ import { PrismaCatalogColdReader } from "./infrastructure/prisma-catalog-cold.re
  * - `CanonicalPriceHistoryReader` relit le tarif à une date. Il n'a **pas** de
  *   jumeau en écriture : la trace est posée dans la transaction qui sauve
  *   l'article, au seul endroit par lequel les deux chemins de changement passent ;
- * - `CatalogDeliveryRepository` tient la boîte de réception ;
- * - `CatalogVersionRepository` / `CatalogVersionReader` posent et relisent les
- *   archives. Séparés parce que poser est un geste du catalogue et citer un
- *   geste des commandes — et parce qu'une version, une fois posée, n'a plus
- *   d'écriture du tout.
+ * - la boîte de réception, les versions, la parité, la santé et la surcharge
+ *   des opérations reçues sont parties en X2 (2026-10-17) : les faits du
+ *   référentiel s'appliquent fiche par fiche, et les opérations s'écrivent au
+ *   commerce. Leurs tables restent en base.
  */
 @Module({
-  // `B2bPlatformModule` pour le SEUL port de lecture du fil : le contrôle de
-  // parité a besoin de savoir ce que le référentiel publierait. C'est le
-  // franchissement `b2b → pim` que la matrice autorise — un port, jamais une
-  // table.
   // `PricerModule` parce que la vitrine TARIFE depuis le 2026-09-09 : elle
   // servait le canonique, donc une promotion publique n'apparaissait qu'au
   // panier (R22). Elle passe par LA porte du prix, et non par le chargeur —
   // c'est ce qui a fait retirer les entrées par SKU de la porte, qui la
   // faisaient dépendre du catalogue et fermaient le cycle.
-  imports: [B2bPlatformModule, PricerModule, CanonicalPriceHistoryModule],
+  imports: [PricerModule, CanonicalPriceHistoryModule],
   controllers: [
     AdminCatalogController,
-    AdminCatalogParityController,
-    AdminCatalogDeliveryController,
-    // Les opérations datées reçues et leur surcharge à la réception (D9).
-    AdminCatalogOperationsController,
-    // La porte MACHINE du contrôle de santé : même requête, serrure partagée.
-    // Le workflow d'ops ne pouvait pas passer par la surface staff.
-    OpsCatalogHealthController,
     // La vitrine, sans jeton : on visite d'abord, on s'identifie pour régler.
     ShopCatalogueController,
   ],
@@ -140,14 +101,6 @@ import { PrismaCatalogColdReader } from "./infrastructure/prisma-catalog-cold.re
     OrderLimitsRefresher,
     // Même chose pour l'image d'une opération reçue (mediatheque.md §7 bis).
     OnOperationImageChangedHandler,
-    IngestCatalogService,
-    CheckCatalogParityService,
-    // Le contrôle de SANTÉ : même comparateur, autre référent — la dernière
-    // version validée, et non la projection du moment.
-    CheckCatalogHealthService,
-    CheckCatalogParityHandler,
-    PreviewCatalogPushHandler,
-    CheckCatalogHealthHandler,
     ListCatalogHandler,
     GetCatalogSummaryHandler,
     GetPublishedCatalogHandler,
@@ -180,44 +133,20 @@ import { PrismaCatalogColdReader } from "./infrastructure/prisma-catalog-cold.re
     { provide: ProductCatalogReader, useClass: CatalogBackedProductCatalog },
     { provide: CatalogAdminReader, useClass: PrismaCatalogAdminReader },
     { provide: PublishedCatalogReader, useClass: PrismaPublishedCatalogReader },
-    // La boîte de réception. Déclarée AVANT d'avoir un lecteur : l'ingestion
-    // continue d'écrire les faits en direct, et la bascule est un déploiement
-    // séparé, derrière un drapeau `B2B_DELIVERY_INBOX`.
-    { provide: CatalogDeliveryRepository, useClass: PrismaCatalogDeliveryRepository },
-    // Les versions : deux ports pour deux questions (ISP). Écrire n'a qu'un
-    // geste — `append` —, parce qu'une archive ne se modifie pas ; lire sert la
-    // passation d'une commande, qui n'écrit jamais de version.
-    { provide: CatalogVersionRepository, useClass: PrismaCatalogVersionRepository },
-    { provide: CatalogVersionReader, useClass: PrismaCatalogVersionReader },
-    AcceptDeliveryHandler,
-    GetPendingDeliveryHandler,
-    // Les opérations datées (fil v11, lot 2 du plan des opérations datées) :
-    // le miroir que l'ingestion écrit, la surcharge que la réception pose, et
-    // deux lecteurs pour deux questions (ISP) — l'écran de réception voit tout,
-    // les vendeurs du lot 3 ne voient que ce qui s'applique.
-    { provide: CatalogOperationRepository, useClass: PrismaCatalogOperationRepository },
-    {
-      provide: CatalogOperationOverrideRepository,
-      useClass: PrismaCatalogOperationOverrideRepository,
-    },
+    // Les opérations datées, deux lecteurs pour deux questions (ISP) :
+    // l'éditeur de vitrine voit tout le miroir, les vendeurs du lot 3 ne
+    // voient que ce qui s'applique.
     { provide: ReceivedOperationsReader, useClass: PrismaReceivedOperationsReader },
     { provide: CatalogOperationsReader, useClass: PrismaCatalogOperationsReader },
     // Ce que les vendeurs par SKU produit appliquent (lot 3) : la caisse, le
     // devis, les jours proposés, les abonnements.
     SaleOperations,
-    SetOperationOverrideHandler,
-    ListReceivedOperationsHandler,
     // Le froid des produits (fil v12, lot 4 bis) : un lecteur à lui, que seul
     // le relais vers la livraison lit.
     { provide: CatalogColdReader, useClass: PrismaCatalogColdReader },
   ],
   // L'historique sort d'ici parce que l'écran de tarification en a besoin : sa
   // lecture datée doit rendre le tarif de CE jour-là, pas celui d'aujourd'hui.
-  //
-  // `IngestCatalogService` sort pour une raison différente : c'est l'entrée du
-  // fil catalogue. Elle était une route ; elle est devenue un service que
-  // l'adaptateur du port branche à la racine de composition. Exporter, ici,
-  // c'est le geste explicite qui remplace le `@Public()` d'un contrôleur.
   exports: [
     CatalogReader,
     // Pour la caisse, le tarificateur et la projection : tous trois résolvent un
@@ -239,17 +168,6 @@ import { PrismaCatalogColdReader } from "./infrastructure/prisma-catalog-cold.re
     // dont il n'est pas le propriétaire, et il le dit au BOOT, pas à la
     // compilation.
     CanonicalPriceHistoryModule,
-    IngestCatalogService,
-    CheckCatalogParityService,
-    // Exporté pour la racine de composition : c'est elle qui relie le driver du
-    // canal, et celui-ci dépose désormais une arrivée quand la réception est
-    // ouverte. Sans cet export, le module de composition ne peut pas construire
-    // le driver — et l'échec est un refus de démarrage, pas une panne discrète.
-    CatalogDeliveryRepository,
-    // Exporté pour les commandes : une commande estampille la version sous
-    // laquelle elle a été passée. En lecture seule — le contexte marchand ne
-    // pose pas de version, il en cite une.
-    CatalogVersionReader,
     // Pour l'éditeur de vitrine : il désigne des rayons et des articles, et
     // les lit par ce port plutôt que par la route du paramétrage, que la
     // communication ne peut pas ouvrir. Son adaptateur n'en garde ni prix ni

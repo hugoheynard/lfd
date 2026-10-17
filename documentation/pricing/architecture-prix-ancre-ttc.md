@@ -176,8 +176,8 @@ paramétrage avant le premier push réel.
 
 ## B.5 Couverture
 
-Le garde du rapport est tenu par `feed-projection.service.spec.ts` (unitaire).
-**Aucun e2e ne le traverse** — `catalog-parity.e2e-spec.ts` double `FeedPreview`,
+Le garde du rapport est tenu par feed-projection.service.spec.ts (retiré en X2) (unitaire).
+**Aucun e2e ne le traverse** — catalog-parity.e2e-spec.ts (retiré en X2) double `FeedPreview`,
 donc la chaîne réelle n'est exercée nulle part au niveau e2e. C'est un trou
 connu, écrit ici plutôt que découvert.
 
@@ -427,6 +427,6 @@ parité tombe lui aussi, sur un message qui parle de règles comptables. C'est
 cohérent — il ne peut pas comparer à une référence qu'il ne sait pas calculer —
 mais le lien n'est pas évident depuis cet écran-là.
 
-**Couverture** : le garde est tenu par `feed-projection.service.spec.ts`
-(unitaire). Aucun e2e ne le traverse — `catalog-parity.e2e-spec.ts` double
+**Couverture** : le garde est tenu par feed-projection.service.spec.ts (retiré en X2)
+(unitaire). Aucun e2e ne le traverse — catalog-parity.e2e-spec.ts (retiré en X2) double
 `FeedPreview`, donc la chaîne réelle n'est exercée nulle part au niveau e2e.

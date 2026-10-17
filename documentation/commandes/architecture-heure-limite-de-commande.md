@@ -1016,7 +1016,7 @@ Deux écarts subsistent, et ils sont assumés :
 | `ProductKind` = daily / made_to_order / resale                               | `public/pricing.prisma:17`                                                                                                |
 | Snapshot en version 7 — l'échelle traverse, plus sa résolution               | `packages/catalog-sync/src/snapshot.ts` ; `__tests__/snapshot.spec.ts`                                                    |
 | Une arrivée v6 en file garde sa limite résolue à la relecture                | `storedCatalogSnapshotSchema` ; `packages/catalog-sync/src/__tests__/snapshot.spec.ts`                                    |
-| Un changement de limite apparaît au diff d'arrivée                           | `ChangedField` « orderLimit » ; `src/b2b/catalog/domain/__tests__/delivery-diff.spec.ts`                                  |
+| Un changement de limite apparaît au diff d'arrivée                           | `ChangedField` « orderLimit » ; src/b2b/catalog/domain/**tests**/delivery-diff.spec.ts (retiré en X2)                     |
 | `total = max(0, subtotal − discount) + deliveryFee + lateFee + vat`          | `src/b2b/orders/domain/entities/order.ts`                                                                                 |
 | `CartAdjustmentMode` sert déjà à `DeliveryZone` et `PickupAddress`           | `public/orders.prisma:14, 1040, 1104`                                                                                     |
 | `DELIVERY_VAT_RATE = 20`, terme non-marchandise à son taux                   | `src/b2b/orders/domain/services/vat.ts`                                                                                   |

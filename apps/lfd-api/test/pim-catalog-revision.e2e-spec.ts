@@ -9,9 +9,11 @@
  */
 import type { B2bProductDeliveryView } from "@lfd/pim-contracts";
 
+import { CatalogRevisionRepository } from "../src/pim/catalogue/revision/domain/ports/catalog-revision.repository.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
   bootstrapE2e,
+  daysAgo,
   E2E_STAFF_ID,
   E2E_STAFF_SUB,
   jsonBody,
@@ -534,137 +536,47 @@ describe("Diff entre deux ancres", () => {
 });
 
 /**
- * **Une révision est le sous-produit d'une publication**, pas une photographie
- * qu'on pense à prendre.
- *
- * C'est le renversement qui compte : le bouton « poser » faisait de l'ancre une
- * corvée à ne pas oublier, et une ancre oubliée ne vaut rien. Accrochée au
- * push, elle se pose d'elle-même, et elle sait où elle est partie.
- */
-/**
  * Un produit **inscrit au canal** B2B — l'appartenance, et rien de plus.
- *
- * ⚠️ Ça suffit à faire compter un candidat, donc à poser une ancre et une
- * publication ; ça ne suffit PAS à faire partir l'article. La projection
- * l'écarte encore, faute de prix, de taux B2B et de contexte professionnel dans
- * la matrice de sa famille — voir {@link aDeliverableProduct} quand c'est ce
- * qui PART qu'on mesure. La phrase inverse a figuré ici, et elle a rendu vert
- * un test qui poussait un catalogue vide.
  */
 async function aSoldProduct(): Promise<string> {
   const { id } = await aProduct("Croissant");
   await staff().put(`/pim/channels/b2b/products/${id}`).send({ published: true }).expect(200);
-  // Sans rapport professionnel, le push REFUSE plutôt que d'envoyer le plein
-  // tarif : le garde est voulu, et il faut donc le satisfaire ici.
   await staff().put("/pim/accounting-rules/pro-price-ratio").send({ ratioBp: 9_000 }).expect(200);
   return id;
 }
 
-describe("L'empreinte relie la relecture à l'envoi", () => {
-  /**
-   * 🔴 Le bout en bout de la garde. Ce que seul ce niveau prouve : que le refus
-   * **sort en 409** et qu'aucune trace n'est écrite — un `BusinessError` mal
-   * catégorisé rendrait 500, et un refus qui laisserait une publication
-   * derrière lui raconterait un envoi qui n'a pas eu lieu.
-   */
-  it("rend 409 et n'inscrit rien quand l'empreinte a bougé", async () => {
-    await aSoldProduct();
-
-    await staff()
-      .post("/pim/channels/b2b/push")
-      .send({ dryRun: false, fingerprint: "une-empreinte-d-avant" })
-      .expect(409);
-    await ctx.drain();
-
-    expect(await ctx.prisma.catalogRevisionPublication.count()).toBe(0);
-    expect(await ctx.prisma.catalogRevision.count()).toBe(0);
-  });
-
-  it("laisse partir le push dont l'empreinte vient de la relecture", async () => {
-    await aSoldProduct();
-
-    const relu = jsonBody<{ fingerprint: string }>(
-      await staff().post("/pim/channels/b2b/push").send({ dryRun: true }).expect(201),
-    );
-    const empreinte = relu.fingerprint;
-    expect(typeof empreinte).toBe("string");
-
-    await staff()
-      .post("/pim/channels/b2b/push")
-      .send({ dryRun: false, fingerprint: empreinte })
-      .expect(201);
-    await ctx.drain();
-
-    // UNE publication, pas deux : la relecture n'en inscrit aucune. Ce cas en
-    // attendait deux — il datait du temps où regarder écrivait.
-    expect(await ctx.prisma.catalogRevisionPublication.count()).toBe(1);
-  });
-});
+/** Le rang de la prochaine publication : chacune une seconde après la précédente. */
+let publicationRank = 0;
 
 /**
- * **L'empreinte de projection, jusqu'en base.**
+ * **L'état qu'un push d'avant X2 laissait** : une ancre posée, puis sa
+ * publication réussie vers `b2b`.
  *
- * Ce que seul ce niveau prouve : que la valeur rendue par la route est
- * exactement celle que la colonne porte. Un mapper qui la perdrait en chemin
- * laisserait un `NULL` que rien ne distingue d'une ligne écrite avant la
- * colonne — et la lecture qui viendra s'y fier lirait « jamais publié » d'un
- * canal à jour.
+ * Le push est parti en X2 (2026-10-17) ; plus aucun chemin n'écrit de
+ * publication, et la référence du diff vivant (`lastPublished`) reste celle
+ * que la production porte. Ces cas l'éprouvent en inscrivant la publication
+ * par le PORT des révisions, comme le faisait le push — la question du
+ * nouveau référent est remontée au plan.
  */
-describe("L'empreinte de projection s'inscrit sur la publication", () => {
-  it("inscrit sur la ligne l'empreinte que la route vient de rendre", async () => {
-    await aDeliverableProduct();
-
-    const parti = jsonBody<{ fingerprint: string }>(
-      await staff().post("/pim/channels/b2b/push").send({ dryRun: false }).expect(201),
-    );
-    await ctx.drain();
-
-    const publications = await ctx.prisma.catalogRevisionPublication.findMany();
-    expect(publications).toHaveLength(1);
-    expect(publications[0]).toMatchObject({
-      channel: "b2b",
-      mode: "live",
-      outcome: "sent",
-      projectionFingerprint: parti.fingerprint,
-    });
+async function published(label: string | null = null): Promise<Taken> {
+  const taken = await take(label);
+  publicationRank += 1;
+  await ctx.app.get(CatalogRevisionRepository).recordPublication({
+    revisionId: taken.id,
+    channel: "b2b",
+    mode: "live",
+    outcome: "sent",
+    report: null,
+    projectionFingerprint: `empreinte-${taken.id}`,
+    publishedAt: new Date(Date.parse(daysAgo(1)) + publicationRank * 1_000),
+    publishedBy: E2E_STAFF_ID,
   });
-
-  /**
-   * 🔴 **Une simulation n'inscrit plus rien.**
-   *
-   * Ce cas affirmait l'inverse : elle portait son empreinte sous son propre
-   * mode, ce qui obligeait toute lecture de « l'empreinte reçue » à filtrer
-   * `mode = 'live'` — sans quoi une simulation lancée après le dernier envoi
-   * serait devenue la référence du canal.
-   *
-   * Le filtre reste bon ; ce qui a disparu, c'est ce qu'il devait écarter.
-   * Regarder a désormais sa propre route en lecture, et une simulation ne pose
-   * plus d'ancre — donc plus de publication, qui pendait à cette ancre.
-   */
-  it("n'inscrit rien pour une simulation, mais rend quand même son empreinte", async () => {
-    await aDeliverableProduct();
-
-    const vu = jsonBody<{ fingerprint: string; revisionId: string | null }>(
-      await staff().post("/pim/channels/b2b/push").send({ dryRun: true }).expect(201),
-    );
-    await ctx.drain();
-
-    expect(await ctx.prisma.catalogRevisionPublication.count()).toBe(0);
-    expect(await ctx.prisma.catalogRevision.count()).toBe(0);
-    expect(typeof vu.fingerprint).toBe("string");
-    expect(vu.revisionId).toBeNull();
-  });
-});
+  return taken;
+}
 
 /**
- * Une fiche que le push emporte **vraiment**.
- *
- * ⚠️ `aSoldProduct` n'y suffit pas, et la nuance coûte cher à découvrir : elle
- * ouvre l'appartenance au canal, mais la projection écarte encore la fiche —
- * pas de prix, pas de taux B2B, et surtout aucun contexte professionnel dans la
- * matrice de sa famille. Un push sur cette fixture-là pose l'ancre d'un
- * catalogue VIDE, ce qui ressemble trait pour trait à un push réussi : `201`,
- * une révision, une publication. Rien ne part pourtant.
+ * Une fiche **complète pour le canal** : prix, taux B2B, contexte
+ * professionnel dans la matrice de sa famille, déclaration d'allergènes.
  */
 async function aDeliverableProduct(): Promise<{ id: string; variantId: string; sku: string }> {
   const rateId = jsonBody<{ id: string }>(
@@ -762,8 +674,6 @@ describe("GET /pim/channels/b2b/products/:id/delivery", () => {
 describe("l'ancre de référence : publiée, pas posée", () => {
   const OVERVIEW = `${REVISIONS}/overview`;
 
-  const pushLive = () => staff().post("/pim/channels/b2b/push").send({ dryRun: false }).expect(201);
-
   async function priced(product: string, variant: string, priceCents: number): Promise<void> {
     await staff()
       .put(`${PRODUCTS}/${product}/variants/${variant}/pricing`)
@@ -780,11 +690,11 @@ describe("l'ancre de référence : publiée, pas posée", () => {
    */
   it("rend l'ancre d'origine, et ne signale rien après un aller-retour", async () => {
     const { id, variantId } = await aDeliverableProduct();
-    await pushLive();
+    await published();
     await priced(id, variantId, 300);
-    await pushLive();
+    await published();
     await priced(id, variantId, 200);
-    await pushLive();
+    await published();
     await ctx.drain();
 
     // DEUX ancres, pas trois : le retour à A ne pose rien.
@@ -803,75 +713,18 @@ describe("l'ancre de référence : publiée, pas posée", () => {
   });
 
   /**
-   * Une simulation ne pose plus d'ancre du tout : il n'y a donc **rien à
-   * ignorer**, et le compte le prouve mieux qu'un filtre.
-   *
-   * Ce cas attendait deux ancres pour un seul envoi, la seconde venant du
-   * regard. C'était exactement l'accumulation qu'on a supprimée — un catalogue
-   * regardé cent fois portait cent ancres pour une publication.
-   */
-  it("ne pose aucune ancre pour une simulation, même après un changement", async () => {
-    const { id, variantId } = await aDeliverableProduct();
-    await pushLive();
-    const partie = await ctx.prisma.catalogRevision.findFirstOrThrow();
-    await priced(id, variantId, 300);
-    await staff().post("/pim/channels/b2b/push").send({ dryRun: true }).expect(201);
-    await ctx.drain();
-
-    const vue = jsonBody<{ lastRevision: { reference: string } | null }>(
-      await staff().get(OVERVIEW).expect(200),
-    );
-
-    expect(await ctx.prisma.catalogRevision.count()).toBe(1);
-    expect(vue.lastRevision?.reference).toBe(partie.reference);
-  });
-
-  /**
-   * Rien n'est jamais parti : il n'y a pas de référence, et l'écran le dit.
-   * C'est exact — se comparer à une ancre que personne n'a reçue donnerait un
-   * écart de zéro sur un catalogue qui n'est en vente nulle part.
-   */
-  it("n'a AUCUNE référence tant que rien n'a été publié", async () => {
-    await aDeliverableProduct();
-    await staff().post("/pim/channels/b2b/push").send({ dryRun: true }).expect(201);
-    await ctx.drain();
-
-    const vue = jsonBody<{ lastRevision: unknown; sinceLastRevision: unknown }>(
-      await staff().get(OVERVIEW).expect(200),
-    );
-
-    // Zéro, et non plus une : le regard qui la posait n'écrit plus.
-    expect(await ctx.prisma.catalogRevision.count()).toBe(0);
-    expect(vue.lastRevision).toBeNull();
-    expect(vue.sinceLastRevision).toBeNull();
-  });
-
-  /**
-   * 🔴 L'ancre ORPHELINE, adoptée. Une ancre est posée AVANT l'envoi — l'ordre
-   * est délibéré — donc un push échoué en laisse une sans publication. La garde
-   * par empreinte la retrouve et la publication réussie s'inscrit dessus. Avec
-   * l'ancienne garde, le doublon n'était évité que par chance : la référence
-   * était la dernière ancre posée, orpheline comprise.
-   *
-   * L'orpheline est ici posée à la main, ce qui produit exactement le même état
-   * qu'un envoi échoué — une ancre, aucune publication — sans avoir à faire
-   * tomber le pilote.
-   */
-  /**
    * 🔴 **C'est la BASE qui refuse**, et c'est le seul niveau où ça se prouve.
    *
-   * La garde applicative lit hors transaction : deux pushs simultanés la passent
+   * La garde applicative lit hors transaction : deux poses simultanées la passent
    * tous les deux. Aucune rédaction du handler n'y changerait quoi que ce soit —
    * seule la contrainte ferme la course.
    *
    * L'insertion est faite en Prisma direct, à dessein : passer par le domaine
-   * éprouverait la garde, pas l'index. C'est le même geste que pour l'unicité de
-   * l'arrivée en attente, et pour la même raison.
+   * éprouverait la garde, pas l'index.
    */
   it("refuse en BASE une seconde ancre de même empreinte", async () => {
     await aDeliverableProduct();
-    await pushLive();
-    await ctx.drain();
+    await take();
     const posee = await ctx.prisma.catalogRevision.findFirstOrThrow();
 
     await expect(
@@ -889,66 +742,6 @@ describe("l'ancre de référence : publiée, pas posée", () => {
     ).rejects.toThrow();
 
     expect(await ctx.prisma.catalogRevision.count()).toBe(1);
-  });
-
-  it("adopte l'ancre orpheline au lieu d'en poser une seconde", async () => {
-    await aDeliverableProduct();
-    const orpheline = await take();
-    expect(orpheline.created).toBe(true);
-
-    await pushLive();
-    await ctx.drain();
-
-    expect(await ctx.prisma.catalogRevision.count()).toBe(1);
-    const publications = await ctx.prisma.catalogRevisionPublication.findMany();
-    expect(publications).toHaveLength(1);
-    expect(publications[0]?.revisionId).toBe(orpheline.id);
-  });
-});
-
-describe("Le push pose et inscrit sa révision", () => {
-  it("fige une révision avant d'envoyer, puis y inscrit sa destination", async () => {
-    await aSoldProduct();
-
-    // Sur un envoi RÉEL : c'est le seul qui ancre désormais. Ce cas passait par
-    // une simulation, plus commode à écrire — et c'est ainsi qu'un chemin de
-    // lecture s'est retrouvé couvert par les tests de l'écriture.
-    await staff().post("/pim/channels/b2b/push").send({ dryRun: false }).expect(201);
-    await ctx.drain();
-
-    const revisions = await ctx.prisma.catalogRevision.findMany({
-      include: { publications: true },
-    });
-    expect(revisions).toHaveLength(1);
-    expect(revisions[0]?.publications).toHaveLength(1);
-    expect(revisions[0]?.publications[0]).toMatchObject({
-      channel: "b2b",
-      mode: "live",
-      outcome: "sent",
-    });
-  });
-
-  /**
-   * Deux envois d'un catalogue INCHANGÉ sont deux publications d'UNE révision —
-   * ce qu'ils sont. Poser une seconde ancre identique remplirait l'histoire de
-   * doublons qu'aucun diff ne saurait distinguer.
-   */
-  it("n'ajoute pas d'ancre quand le catalogue n'a pas bougé, mais bien une publication", async () => {
-    await aSoldProduct();
-
-    await staff().post("/pim/channels/b2b/push").send({ dryRun: false }).expect(201);
-    await staff().post("/pim/channels/b2b/push").send({ dryRun: false }).expect(201);
-    await ctx.drain();
-
-    expect(await ctx.prisma.catalogRevision.count()).toBe(1);
-    expect(await ctx.prisma.catalogRevisionPublication.count()).toBe(2);
-  });
-
-  /** Rien à envoyer : rien n'est figé non plus. */
-  it("ne fige rien quand aucun produit n'est publié sur le canal", async () => {
-    await staff().post("/pim/channels/b2b/push").send({ dryRun: true }).expect(201);
-
-    expect(await ctx.prisma.catalogRevision.count()).toBe(0);
   });
 });
 
@@ -981,7 +774,7 @@ describe("Diff vivant — depuis la dernière ancre publiée", () => {
 
   it("montre le champ qui a bougé depuis la publication, avec son auteur", async () => {
     const id = await aSoldProduct();
-    await staff().post("/pim/channels/b2b/push").send({ dryRun: false }).expect(201);
+    await published();
     await ctx.drain();
 
     await staff()
@@ -1015,7 +808,7 @@ describe("Diff vivant — depuis la dernière ancre publiée", () => {
    */
   it("dit exactement ce que le compteur de l'état du catalogue annonce", async () => {
     const id = await aSoldProduct();
-    await staff().post("/pim/channels/b2b/push").send({ dryRun: false }).expect(201);
+    await published();
     await ctx.drain();
 
     const { variantId } = await aProduct("Chausson");
@@ -1047,30 +840,14 @@ describe("Diff vivant — depuis la dernière ancre publiée", () => {
 /**
  * **Le nom d'une ancre.**
  *
- * Ce que seul ce niveau prouve : que le nom traverse le push jusqu'à la ligne,
+ * Ce que seul ce niveau prouve : que le nom traverse la pose jusqu'à la ligne,
  * et que le refus de renommer sort en 409 plutôt qu'en 500. Un `BusinessError`
  * mal catégorisé rendrait une panne là où il y a une règle.
  */
 describe("Le nom d'une ancre", () => {
-  it("prend le nom que le push lui donne", async () => {
-    await aSoldProduct();
-
-    await staff()
-      .post("/pim/channels/b2b/push")
-      .send({ dryRun: false, label: "catalogue de la rentrée" })
-      .expect(201);
-    await ctx.drain();
-
-    const [reference] = await twoLatest();
-    const rows = jsonBody<{ reference: string; label: string | null }[]>(
-      await staff().get(REVISIONS).expect(200),
-    );
-    expect(rows.find((row) => row.reference === reference)?.label).toBe("catalogue de la rentrée");
-  });
-
   /**
    * 🔴 **Une ancre MUETTE prend le nom qu'on lui apporte.** Le cas est banal :
-   * un « préparer » sans nom, puis un push qui, lui, a une intention. Refuser
+   * un « préparer » sans nom, puis une pose qui, elle, a une intention. Refuser
    * laisserait une ancre anonyme partir une fois de plus — ce qu'on veut
    * précisément faire cesser.
    */
@@ -1079,10 +856,7 @@ describe("Le nom d'une ancre", () => {
     const posed = await take(null);
     expect(posed.created).toBe(true);
 
-    await staff()
-      .post("/pim/channels/b2b/push")
-      .send({ dryRun: false, label: "mise en ligne de la rentrée" })
-      .expect(201);
+    await take("mise en ligne de la rentrée");
     await ctx.drain();
 
     const rows = jsonBody<{ reference: string; label: string | null }[]>(
@@ -1094,17 +868,14 @@ describe("Le nom d'une ancre", () => {
 
   /**
    * Le PREMIER nom gagne. Le nom dit avec quelle intention un catalogue est
-   * parti chez des clients ; le réécrire au passage d'un push le raconterait
+   * parti chez des clients ; le réécrire au passage d'une pose le raconterait
    * autrement, sans que personne ne l'ait demandé.
    */
   it("laisse son nom à une ancre qui en a déjà un", async () => {
     await aSoldProduct();
     await take("le vrai nom");
 
-    await staff()
-      .post("/pim/channels/b2b/push")
-      .send({ dryRun: false, label: "un autre nom" })
-      .expect(201);
+    await take("un autre nom");
     await ctx.drain();
 
     const rows = jsonBody<{ label: string | null }[]>(await staff().get(REVISIONS).expect(200));

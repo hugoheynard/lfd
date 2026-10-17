@@ -21,9 +21,10 @@ function configure(): void {
       {
         provide: PermissionsStore,
         useValue: {
-          // `lfc_catalog:read` : la réception est la seule vue restée au rail
-          // depuis le départ du pied de page et du contact (2026-10-15) ; sans
-          // elle le rail serait vide, et `every()` vrai sur une liste vide.
+          // `lfc_catalog:read` : le droit de la réception, dernière vue du
+          // rail, partie en X2 (2026-10-17). Le rail est désormais VIDE, et
+          // les cas le disent plutôt que de compter sur `every()`, vrai sur
+          // une liste vide.
           can: (p: StaffPermission) =>
             p === 'b2b_contact:read' || p === 'b2b_settings:read' || p === 'lfc_catalog:read',
         },
@@ -40,14 +41,14 @@ function b2bRail() {
 describe('le rail du B2B, sans la boîte des demandes', () => {
   it('ne montre plus « Demandes clients », même à qui en a les droits', () => {
     configure();
-    expect(b2bRail().length).toBeGreaterThan(0);
     expect(b2bRail().map((view) => view.link)).not.toContain('/b2b/demandes');
     expect(b2bRail().map((view) => view.label)).not.toContain('Demandes clients');
   });
 
-  it('ne pose le compte des demandes sur aucune entrée', () => {
+  /** Depuis X2 : plus aucune vue, donc aucune entrée pour porter un compte. */
+  it('n’a plus aucune vue, et donc aucun compte posé', () => {
     configure();
     TestBed.inject(CustomerRequestsInbox).set(4);
-    expect(b2bRail().every((view) => view.badge === undefined)).toBe(true);
+    expect(b2bRail()).toEqual([]);
   });
 });

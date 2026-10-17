@@ -77,10 +77,8 @@ const SCAN_ROOTS = [
   // (`operation-schedule.ts`) y a déménagé, et ses formulaires l'emploient.
   // L'écran du référentiel (`pim/operations`) est retiré le même jour.
   "apps/lfd-backoffice-frontend/src/app/operations",
-  // La surcharge des opérations à la réception (lot 2, écran) : la clôture
-  // plus précoce s'y saisit en heure de Paris, et le serveur la compare à
-  // l'horloge (`min(PIM, surcharge)`).
-  "apps/lfd-backoffice-frontend/src/app/b2b/reception",
+  // La surcharge des opérations à la réception (`b2b/reception`) y figurait :
+  // partie en X2 (2026-10-17) avec son écran.
   // La vitrine liée aux opérations (lot 5 du même plan, D11, 2026-09-24) :
   // la pastille « J‑18 » y compte les jours de Paris jusqu'à la clôture —
   // dans l'éditeur (`contenu/storefront-operations.ts`) comme en boutique

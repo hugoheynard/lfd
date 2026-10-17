@@ -1,8 +1,8 @@
 /**
  * **Le port de RETOUR du canal plateforme B2B** — et le seul.
  *
- * L'aller était en place : le référentiel projette, pousse, et ignore ce que la
- * plateforme en fait. Le retour manquait, et il est le vrai piège de cette
+ * L'aller passe par les faits du catalogue (le push est parti en X2,
+ * 2026-10-17) ; le référentiel ignore ce que la plateforme en fait. Le retour manquait, et il est le vrai piège de cette
  * frontière : la fiche produit veut dire « poussée le 28, acceptée le 30 », donc
  * le référentiel a besoin d'un fait de l'aval — que la matrice interdit
  * (`pim → b2b` : ✗).
@@ -16,8 +16,7 @@
  * imports. Une frontière qu'on ne franchit qu'en SQL est franchie quand même,
  * et rien ici ne l'attraperait.
  *
- * Le port renverse donc la dépendance comme {@link B2bCatalogDriver} le fait
- * dans l'autre sens : `pim` déclare, `b2b` **se conforme**, et la racine de
+ * Le port renverse donc la dépendance : `pim` déclare, `b2b` **se conforme**, et la racine de
  * composition relie les deux. Le référentiel ne sait toujours ni qui le
  * consomme, ni sous quelle forme la plateforme range ce qu'elle a reçu.
  *

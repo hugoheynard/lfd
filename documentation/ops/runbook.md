@@ -457,53 +457,17 @@ prévient le commercial.
 **Retour arrière** : aucun. Retirer `invited_at` / `accepted_at` rouvrirait
 le trou que la migration ferme.
 
-## Avant de déployer le fil v11 (les opérations datées)
+## Le push et la réception du catalogue — partis en X2
 
-Lot 2 de [`architecture-operations-datees.md`](../operations-datees/architecture-operations-datees.md)
-(D10, 2026-09-24). Le fil catalogue passe en **v11** : il transporte les
-opérations datées (Noël, Pâques, la galette) et le drapeau « vendu seulement
-pendant une opération » des fiches. Les lots 2 et 3 partent **dans le même
-merge** — le drapeau et la garde qui refuse la vente vont ensemble.
-
-**Le seul piège : un envoi v10 encore en attente dans la boîte de réception.**
-Il reste lisible après le déploiement, et il s'accepte — mais il se lit « aucune
-opération » : l'accepter **marque retirées toutes les opérations** du commerce
-jusqu'à l'envoi suivant. Ce n'est pas dangereux (aucun article n'y est réservé
-aux opérations, donc rien d'exclusif ne se vend), mais l'écran de réception
-montrerait Noël « opération retirée » pendant ce temps.
-
-**Avant le merge, lire en production** :
-
-```sql
-select id, snapshot->>'version' as version, received_at
-  from public.catalog_delivery
- where status = 'pending';
-```
-
-- **Zéro ligne ⇒ déployer.**
-- **Une ligne en version `10` ⇒** au choix, et dire lequel à l'équipe du
-  catalogue :
-  1. la faire **accepter avant** le déploiement (écran « Réception » du
-     back-office), puis déployer ;
-  2. ou déployer, puis **demander un envoi neuf** au référentiel juste après
-     (« Publier » côté PIM) : il remplace l'arrivée v10 en attente, qui passe
-     `superseded` sans jamais être appliquée.
-
-**Après le déploiement**, un envoi accepté doit remplir le miroir :
-
-```sql
-select key, withdrawn_at from public.catalog_operations order by key;
-```
-
-Une opération préparée au PIM (non archivée) et présente dans le dernier envoi
-accepté a `withdrawn_at` à `NULL`. Si elle manque, relire les exclusions du
-dernier push : un article de la sélection non publié est nommé
-`operation_article_absent`.
-
-🔴 **Sans retour une fois un envoi v11 posé** : le code v10 ne relit pas une
-arrivée v11 en attente. Revenir en arrière après ce point demande d'abord de
-vider la boîte de réception (faire accepter, ou attendre un envoi v10 qui la
-remplace) — cf. « Sans retour » dans le plan.
+Les sections « Avant de déployer le fil v11 » et « Faire descendre les
+mentions d'allergènes sur le catalogue B2B » décrivaient des gestes du push
+(« Publier ») et de la boîte de réception (« Réception »). Les deux sont
+retirés du code le 2026-10-17 (X2 de
+[`plan-sans-interrupteurs.md`](../catalogue/plan-sans-interrupteurs.md)) : le
+catalogue descend par ses faits, fiche par fiche. Le geste qui les remplace
+est la **réémission** (Intégrations → « Réémettre tout », ou une fiche seule) ;
+le contrôle, l'écran « Catalogue publié ». Leur texte est dans l'historique
+git.
 
 ## Basculer le catalogue vers les faits (lot 2b) — l'ordre, et le retour
 
@@ -562,8 +526,8 @@ PUT /pim/accounting-rules/pro-price-method
 
 Le catalogue est réémis. Après (3), seule une déclinaison **sans saisie** sort
 du catalogue pro (motif `variant_sans_prix_pro`, ou `variant_sans_taux` quand
-c'est le taux qui manque). Contrôle : `GET /admin/catalog/parity`, puis relire
-l'aperçu — `toPrefill` à `0`.
+c'est le taux qui manque). Contrôle : l'écran « Catalogue publié » (la
+parité est partie en X2), puis relire l'aperçu — `toPrefill` à `0`.
 
 ### Le retour arrière
 
@@ -849,66 +813,6 @@ Ce qui se casse si on l'oublie :
   `ingredient_allergen` refusera si un ingrédient le cite déjà, et une
   déclaration produit qui porte ce code en `Json` n'a, elle, aucune clé
   étrangère pour la protéger — elle deviendra un code inconnu à la projection.
-
-## Faire descendre les mentions d'allergènes sur le catalogue B2B
-
-Symptôme : après le déploiement de la v5 du fil catalogue, l'écran
-d'administration du catalogue B2B affiche « sans fiche » sur des articles qui
-déclarent pourtant des allergènes.
-
-Ce n'est pas une panne, c'est l'état intermédiaire prévu. La colonne
-`public.catalog_items.allergen_labels` naît à `NULL` : aucune migration ne peut
-la garnir, la traduction d'un code GS1 en mention d'étiquette demande le
-référentiel PIM (D6 de
-[`documentation/pim/data-model/05-allergenes-gs1-inco.md`](../pim/data-model/05-allergenes-gs1-inco.md)).
-C'est un **push complet** qui la remplit — la republication écrit tous les
-articles, décisions commerciales conservées.
-
-La bascule se fait en **trois temps**, et l'ordre compte :
-
-1. **Déployer.** Le PIM projette et envoie `allergenLabels` ; la plateforme
-   l'ingère et le stocke. `allergens` (les codes) ne bouge pas — il reste le
-   stockage canonique, et l'écran continue de le projeter lui-même.
-2. **Pousser tout le catalogue**, une fois, depuis le back-office : _Référentiel
-   → Canaux → Plateforme B2B → Publier_ (`POST /pim/channels/b2b/push`,
-   `dryRun: false`). Vérifier ensuite qu'il ne reste plus d'article sans
-   mentions parmi ceux qui déclarent une fiche :
-
-   ```sql
-   SELECT count(*) FROM public.catalog_items
-   WHERE allergens IS NOT NULL AND allergen_labels IS NULL;
-   ```
-
-   Attendu : `0`. Tant que ce compte n'est pas nul, **ne pas passer au temps 3**.
-
-3. **Seulement alors**, retirer `toInco` / `findMapping` du lecteur B2B
-   (`src/b2b/catalog/infrastructure/prisma-catalog-admin.reader.ts`) et servir
-   `allergen_labels`.
-
-   🔴 **Le code du temps 3 est écrit et mergé sur `dev` depuis le 2026-09-03.**
-   Il ne doit donc pas atteindre `main` avant que la requête du temps 2 rende
-   `0` **en production** — le faire avant priverait de mentions tous les
-   articles reçus avant le push.
-
-   Ce que ces articles affichent alors, si l'ordre n'est pas tenu : ni les
-   mentions, ni « sans allergène », mais le badge rouge **« fiche incomplète »**.
-   L'écran dit « une fiche existe et je ne sais pas la rendre », ce qui est vrai.
-   C'est gênant et voyant — délibérément : un état intermédiaire qui se voit se
-   corrige, un état intermédiaire discret s'installe.
-
-Entre le temps 1 et le temps 3, l'écran projette encore lui-même et n'a donc pas
-de trou. Après le temps 3 sans le temps 2, il en a un — d'où l'ordre.
-
-**Pourquoi ce temps 3 n'est pas cosmétique.** Tant qu'il n'est pas fait, la même
-affirmation réglementaire a **deux sources** : la boutique lit ce que le PIM a
-projeté depuis le référentiel administrable, le back-office le recalcule depuis
-une table de 30 codes figée dans le TypeScript (`allergen-mapping.ts`). Le
-runbook recommande par ailleurs de créer des **entrées maison**
-(`official = false`) — que cette table ne connaîtra jamais. Un article les
-déclarant s'affiche correctement en boutique et « fiche incomplète » en rouge au
-back-office : l'écran accuse d'un oubli causé par une table que le staff n'a pas
-le droit de modifier. Le libellé diverge de même — nom de la catégorie en base
-d'un côté, `INCO_LABELS` gelé de l'autre.
 
 ## Retirer le référentiel d'allergènes — l'ordre de démontage
 

@@ -14,8 +14,6 @@ import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { OutboxRelayTrigger } from "../src/platform/outbox/outbox-relay-trigger.js";
-import { B2bCatalogDriver } from "../src/pim/channels/b2b-platform/products/driver.js";
-import { CATALOG_SNAPSHOT_VERSION } from "@lfd/catalog-sync";
 import {
   aDraftFiche,
   anActiveFiche,
@@ -297,33 +295,6 @@ describe("l'audience décide à qui l'article se vend (servedTo)", () => {
       await ctx.http().get("/shop/catalogue").expect(200),
     );
     expect(shop.items.map((entry) => entry.sku)).toContain(fiche.sku);
-  });
-});
-
-/**
- * Correction `vitruve` « un seul écrivain à la fois » : faits ouverts, le push
- * ne touche plus fiches ni familles. Il retirerait sinon tout ce qui manque à
- * son instantané — les fiches inactives que les faits posent, sans numéro.
- */
-describe("faits ouverts, le push n'écrit plus les articles", () => {
-  it("un instantané vide ne retire rien de ce que les faits ont posé", async () => {
-    const fiche = await anActiveFiche(staff, "Madeleine");
-    await relayAll(ctx);
-
-    const report = await ctx.app.get(B2bCatalogDriver).send(
-      {
-        version: CATALOG_SNAPSHOT_VERSION,
-        generatedAt: new Date(Date.UTC(2030, 0, 1)).toISOString(),
-        categories: [],
-        products: [],
-        orderTimeLimits: [],
-        operations: [],
-      },
-      { revisionId: "rev_e2e", fingerprint: "empreinte-e2e" },
-    );
-
-    expect(report.removedSkus).toEqual([]);
-    expect((await itemOf(fiche.variantSku))?.withdrawnAt).toBeNull();
   });
 });
 

@@ -522,13 +522,6 @@ export const PIM_VIEWS: readonly WorkspaceView[] = [
   // citées dans le regroupement demandé ; les laisser sans section les aurait
   // fait flotter sous des groupes titrés, ce qui se lit comme un oubli.
   {
-    key: 'publication',
-    label: 'Publication',
-    link: '/pim/publication',
-    icon: 'publish',
-    section: 'Diffusion',
-  },
-  {
     key: 'integration',
     label: 'Intégrations',
     link: '/pim/integration',
@@ -654,17 +647,9 @@ export const B2B_VIEWS: readonly WorkspaceView[] = [
   // LA BOÎTE DES DEMANDES CLIENTS n'est plus au rail (Hugo, 2026-10-13) : elle
   // faisait doublon avec son entrée du menu principal, sous Commandes, qui
   // porte le même compteur (`app.html`).
-  {
-    // En TÊTE de la section catalogue : ce qui attend une décision passe avant
-    // ce qui est déjà en vente. Une arrivée non validée ne coûte rien tant
-    // qu'on la voit ; c'est de ne pas la voir qui coûte.
-    key: 'reception',
-    label: 'Réception',
-    link: '/b2b/reception',
-    icon: 'inbox',
-    section: 'Catalogue',
-    needs: 'lfc_catalog:read',
-  },
+  // « Réception » est partie en X2 (2026-10-17) avec le push : les faits du
+  // catalogue s'appliquent fiche par fiche, rien n'attend plus de validation.
+  // `/b2b/reception` redirige vers « Catalogue publié ».
   // « Catalogue actuel en ligne » est parti en Gestion Boutique le 2026-10-15
   // (H9 de plan-catalogue-synchronise-par-audience.md), renommé « Catalogue
   // publié » : il est au rail principal et au lanceur mobile, dans `app.html`.

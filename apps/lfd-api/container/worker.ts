@@ -122,15 +122,6 @@ const RUNTIME_KEYS = [
   "VAPID_PUBLIC_KEY",
   "VAPID_PRIVATE_KEY",
   "VAPID_SUBJECT",
-  // La boîte de réception du catalogue : livrer cesse d'être mettre en vente.
-  // Fermée par défaut : un déploiement qui ne s'est pas prononcé continue de
-  // faire ce qu'il faisait.
-  //
-  // Elle doit TRAVERSER : sans elle ici, la poser dans Cloudflare ne
-  // l'ouvrirait pas. Le Worker la recevrait, le container jamais,
-  // et RIEN ne le dirait — c'est le mode de panne que ce test existe pour
-  // fermer.
-  "B2B_DELIVERY_INBOX",
   // 🔴 La clé du coffre de champs, qui scelle les IBAN de nos clients au repos.
   //
   // Sans elle dans cette liste, le container ne la recevrait JAMAIS — et comme

@@ -1,8 +1,14 @@
 # Les écrans du cycle catalogue — ce que chaque page doit porter
 
+> ⚠️ **Périmé en partie depuis le 2026-10-17** : X2 de
+> [`plan-sans-interrupteurs.md`](../catalogue/plan-sans-interrupteurs.md) a
+> retiré le push, l'écran « Publication », la réception, la parité et la
+> santé. Ce que ce document prescrit de ces écrans-là n'a plus d'objet ; le
+> reste n'a pas été relu. La refonte est l'objet de X5.
+
 **Prescriptif.** Ce document dit ce que chaque écran du cycle **doit** montrer et
 offrir. Il ne décrit pas l'état du code : le descriptif est
-[`../catalogue/catalogue-synchronise.md`](../catalogue/catalogue-synchronise.md) (§6 bis).
+[`../catalogue/catalogue-synchronise.md`](../catalogue/catalogue-synchronise.md) (§6).
 Quand les deux divergent, c'est le code qu'on corrige — et le §11 tient la liste
 des écarts ouverts.
 
@@ -101,7 +107,7 @@ Le référentiel écrit la décision **deux fois** :
 
 Et la projection du canal les consulte **toutes les deux** : la liste des
 candidats vient du binding
-([`feed-projection.service.ts:48`](../../apps/lfd-api/src/pim/channels/b2b-platform/products/feed-projection.service.ts)),
+(feed-projection.service.ts:48 (retiré en X2)),
 puis chaque fiche est écartée pour `canal_ferme` si sa matrice effective ne vend
 pas le contexte `b2b`
 ([`projection.ts:254`](../../apps/lfd-api/src/pim/channels/b2b-platform/products/projection.ts)).
@@ -154,7 +160,7 @@ table en double survit.
   Le §3 avant le §4 ouvre donc exactement la fenêtre que l'invariant 7 ferme, sur
   le canal qui facture. Avec le §4 posé d'abord, le §3 fait passer 1 à 1.
 - 🔴 **`candidates` doit se compter APRÈS le filtre de matrice.**
-  [`push.service.ts:102`](../../apps/lfd-api/src/pim/channels/b2b-platform/products/push.service.ts)
+  push.service.ts:102 (retiré en X2)
   court-circuite sur `candidates === 0`, et ce compteur vient aujourd'hui du
   binding. Si les candidats deviennent `publishable()` avec le filtre de matrice
   laissé en aval, on obtient `candidates = 95` pour `snapshot.products = []` : le
@@ -162,7 +168,7 @@ table en double survit.
   ouvert une fois — l'e2e qui le ferme porte le commentaire « elle a rendu vert un
   test qui poussait un catalogue vide ».
 - **`last_pushed_at` n'aurait plus personne pour l'écrire.** `stamp()` fait un
-  `updateMany` (`push.service.ts:186`) : sans ligne préexistante il n'estampille
+  `updateMany` (push.service.ts:186 (retiré en X2)) : sans ligne préexistante il n'estampille
   rien. « La ligne naît du push » demande un `upsert`, et la suppression au retrait
   doit être portée par le push aussi — sinon une fiche sortie de la matrice garde
   son horodatage et la frise dira « poussée » d'un article qui vient d'être retiré.
@@ -370,14 +376,14 @@ Elle répond à **« qu'est-ce qui part »**. C'est le seul écran qui envoie.
   marque chaque article entrant / changé / inchangé.
   ⚠️ Ce document a d'abord écrit « aucun écran ne le montre » : **c'est faux**.
   `GET /b2b/admin/catalog/parity` rend `stale` — « dans le miroir, plus publiés »
-  ([`catalog-parity.ts`](../../packages/contracts/src/catalog-parity.ts)) — calculé
+  (catalog-parity.ts (retiré en X2)) — calculé
   à partir du **même** `B2bCatalogFeedPreview` que le push, et `/pim/integration`
   l'affiche aujourd'hui. La prescription n'est donc pas d'inventer le calcul mais
   de l'amener **là où on appuie sur Envoyer**, avec les SKU nommés plutôt que deux
   compteurs.
   ⚠️ Deux surfaces d'autorisation : le push est `@AdminSurface("pim_channels")`, la
   parité `@AdminSurface("b2b_catalog")`. Un refus ne doit pas être avalé en
-  `catch {}` comme aujourd'hui (`b2b-integration.ts:142`) — l'écran le plus
+  `catch {}` comme aujourd'hui (`b2b-integration.ts`) — l'écran le plus
   dangereux du cycle afficherait « rien en vente » sans dire pourquoi.
 - Les **collections de taxe** avant le tableau des produits : une fiche ne peut
   pas se rattacher à une collection qui n'existe pas encore.

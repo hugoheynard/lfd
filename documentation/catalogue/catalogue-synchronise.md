@@ -10,7 +10,9 @@
 > foi, [`plan-catalogue-synchronise-par-audience.md`](plan-catalogue-synchronise-par-audience.md).
 > 2b4 — l'ouverture en production — fait les 2026-10-16/17 ; les
 > interrupteurs sont retirés du code par X1 de
-> [`plan-sans-interrupteurs.md`](plan-sans-interrupteurs.md) (§6).
+> [`plan-sans-interrupteurs.md`](plan-sans-interrupteurs.md) (§6), puis le
+> push, la réception, les versions, la parité, la santé et la surcharge des
+> opérations par X2 (2026-10-17, §6).
 > **Pas bâti** : W, 4, 5 (§9).
 
 ## En une phrase
@@ -19,7 +21,7 @@ Chaque écriture du catalogue dans le référentiel écrit, **dans sa propre
 transaction**, l'instantané complet de la fiche (ou de la famille) dans la
 boîte d'envoi ; la plateforme s'y abonne par un `@DurableHandler` et ne
 l'applique que s'il est **plus récent** que ce qu'elle tient. Personne ne
-pousse plus rien : le push existe encore, mais n'écrit plus rien (§6).
+pousse plus rien : le push est retiré du code depuis X2 (§6).
 
 ## 1. Le flux d'une écriture de fiche
 
@@ -169,8 +171,8 @@ dernier : c'est le fait d'une fiche qui apprend à la plateforme l'identifiant
 de déclinaison qu'une règle de ce rang vise (`catalog-reemission.service.ts:46-64`).
 La route `reemit` refuse quand les faits sont fermés — « 0 fiche réémise » se
 lirait comme un succès (`apps/lfd-api/src/pim/channels/b2b-platform/application/reemit-catalog.ts:46-48`, `:63-71`).
-C'est le **filet** : un fait perdu laisse une fiche en retard, la parité le
-montre, la réémission le répare. Ce n'est pas le push.
+C'est le **filet** : un fait perdu laisse une fiche en retard, « Catalogue
+publié » le montre, la réémission le répare.
 
 ## 3. Le transport durable
 
@@ -400,123 +402,52 @@ bascule d'audience émettent toujours ; plus aucun geste ne répond
 `catalogue.publication.closed` ni `catalogue.facts.closed`. Le retour arrière
 n'est plus un réglage : c'est un revert et un redéploiement.
 
-**Jamais deux écrivains.** L'ingestion d'un push n'écrit plus rien — ni fiche,
-ni famille, ni opération : elle rend un compte-rendu vide
-(`apps/lfd-api/src/b2b/catalog/application/ingest-catalog.service.ts`). La
-raison : le push envoie un instantané complet sans numéro et **retire tout ce
-qui n'y figure pas** — il effacerait les fiches inactives que les faits posent,
-et les opérations nées au commerce.
+**Un seul écrivain.** Les faits sont le seul chemin par lequel une fiche,
+une famille ou une règle entre sur la plateforme ; les opérations datées
+s'écrivent au commerce (`/admin/operations`).
 
-### Le push — l'ancien chemin, encore là sans effet
+### Ce que X2 a retiré (2026-10-17)
 
-`POST /pim/channels/b2b/push` projette toujours les fiches publiées, et une
-arrivée s'accepte toujours (`POST admin/catalog/delivery/accept`) ; accepter
-n'applique plus rien. Le cycle — révisions, empreinte, réception, versions,
-santé — est décrit au §6 bis ; il part avec X2 de
-[`plan-sans-interrupteurs.md`](plan-sans-interrupteurs.md).
+Le **push** (la route `POST /pim/channels/b2b/push`, sa commande, son service,
+le port `B2bCatalogDriver` et son implémentation en processus), l'écran
+« Publication » et le bouton « Publier vers les canaux » ; la **réception**
+(l'arrivée en attente, sa validation, `GET /admin/catalog/delivery`, l'écran
+« Réception » et son bandeau, la variable `B2B_DELIVERY_INBOX`) ; les
+**versions du catalogue** (plus aucune n'est posée ni lue — X0 avait déjà
+retiré l'estampille des commandes neuves) ; la **parité**
+(`GET /admin/catalog/parity`), la **santé** (`GET /admin/catalog/health`,
+`GET /admin/ops/catalog-health`, le workflow qui l'interrogeait) et l'aperçu
+avant push ; la **surcharge des opérations reçues**
+(`/admin/catalog/operations`, sa section et son panneau). Leurs routes
+répondent 404, comme toute route inconnue.
 
-Le port `B2bCatalogDriver`, déclaré par le référentiel et implémenté par la
-plateforme, a survécu au rapprochement des deux processus : il coûte une
-indirection, et achète le droit de les re-séparer sans réécrire ni l'émetteur
-ni le récepteur. Les faits gardent la même forme de frontière — déclarés dans
-le canal, écoutés par le commerce.
+**Restent en base, sans écrivain** : `catalog_deliveries`, `catalog_versions`
+et `orders.catalog_version_id` (les commandes passées gardent la leur),
+`catalog_operation_overrides`, `catalog_revision_publications`,
+`b2b_channel_binding.last_pushed_at`. La liste des tables mortes est l'objet
+de X5.
 
-## 6 bis. L'ancien chemin, tant qu'il est dans le code
+**Ce qui reste du push, et pourquoi** :
 
-Repris le 2026-10-16 de « Le cycle du catalogue — du référentiel à la vente »
-(retiré ce jour-là), en ne gardant que ce que le code tient encore ; chaque
-mécanisme a été retrouvé à l'endroit cité. Tout ceci part au lot 5.
-
-### Côté référentiel — l'ancre, l'empreinte, le refus
-
-- **Une ancre** (`catalog_revision`) est posée **par le push**, jamais à la
-  main. Son `hash` est `@unique` (`apps/lfd-api/prisma/schema/pim/revisions.prisma:46`) :
-  une ancre est un **contenu**, pas un moment. La pose demande « cette ancre
-  existe-t-elle ? » (`byHash`, `apps/lfd-api/src/pim/catalogue/revision/application/take-catalog-revision.ts:97`),
-  et le perdant d'une course relit l'ancre du gagnant (`:146`) au lieu de
-  tomber. Posée **avant** l'envoi : un échec en laisse une sans publication,
-  que le nouvel essai retrouve.
-- **La référence des diffs** est l'ancre de la dernière publication réussie
-  (`lastPublished`, `prisma-catalog-revision.repository.ts:62`), lue depuis la
-  publication (`mode = 'live'` et `outcome = 'sent'`), pas depuis la date de
-  pose : après un aller-retour A → B → A, trier les ancres rendrait B.
-- **Une ancre archive, l'empreinte de projection garantit.** Le refus de
-  dérive porte sur la projection canonique (sans `generatedAt`, triée avec `<`
-  et non `localeCompare`) : la simulation la produit, l'envoi la relit, et un
-  écart lève `ProjectionDriftError` — **avant** le court-circuit « aucun
-  candidat », sans quoi un catalogue vidé passerait pour un succès
-  (`apps/lfd-api/src/pim/channels/b2b-platform/products/push.service.ts:107-118`).
-  Une simulation n'écrit rien. Le refus ne dit pas ce qui a bougé ; comparer
-  deux ancres ne le dirait pas non plus (elles ne hachent pas la projection).
-- La publication s'inscrit dans les trois cas — succès, échec, simulation ;
-  c'est le lecteur qui trie.
-
-### Côté plateforme — la réception, derrière `B2B_DELIVERY_INBOX`
-
-Lu au démarrage (`apps/lfd-api/src/platform/config/env-readers.ts:540`) :
-fermé, l'ingestion écrit directement ; ouvert, la livraison dépose une arrivée
-(`catalog_delivery`) qu'un humain valide. Un retour arrière coûte un
-déploiement ; fermé, la table n'a aucun lecteur.
-
-- **Une seule arrivée en attente**, tenue par Postgres (index partiel
-  `catalog_delivery_une_seule_en_attente`, migration
-  `20260902170000_reception_du_catalogue`) ; une arrivée remplacée sans
-  lecture est `superseded`, pas acceptée.
-- **Le diff se calcule à la lecture** (`diffDelivery`,
-  `apps/lfd-api/src/b2b/catalog/domain/delivery-diff.ts:280`), par SKU et par
-  champ nommé : le miroir bouge entre-temps.
-- **On écarte un SKU, pas une ligne** : écarter un changement garde les faits
-  courants, écarter un ajout le laisse dehors, écarter un **retrait** le
-  laisse en vente. La garde « refuser un SKU absent de l'arrivée » serait
-  fausse : un retrait EST une absence.
-- **L'ordre de la validation** : clore d'abord (`where status = 'pending'`, le
-  verrou), appliquer, puis photographier le miroir **relu** en version — les
-  trois dans une transaction.
-- **L'ingestion voyait les retirés** (`loadAllIncludingWithdrawn`) : un SKU
-  réintroduit devait être reconnu, sans quoi sa décision locale aurait été
-  perdue. Sans objet depuis le 2026-10-17 : l'ingestion n'écrit plus rien
-  (X1 de [`plan-sans-interrupteurs.md`](plan-sans-interrupteurs.md)).
-
-### Les versions, et ce qu'une commande fige
-
-- Une **version** (`catalog_versions`) photographie le miroir **complet**
-  après validation, au prix **reçu** ; elle est immuable par construction —
-  le port n'a qu'un `append` (`apps/lfd-api/src/b2b/catalog/domain/ports/catalog-version.repository.ts:13`).
-  Faute de boîte ouverte, aucune version n'est posée.
-- **`orders.catalog_version_id`** dit d'où venaient les articles, jamais le
-  prix (figé sur la ligne). Il est lu **avant** la résolution des lignes
-  (`apps/lfd-api/src/b2b/orders/application/services/order-drafting.service.ts:174`) :
-  une validation concurrente ne peut rendre qu'une estampille ancienne.
-  `NULL` est une réponse.
-- Les allergènes de la ligne figent codes **et** libellés ; `codes: null` =
-  pas de fiche réglementaire, `codes: []` = déclarée sans allergène.
-
-### La santé
-
-`compareToReference` (`apps/lfd-api/src/b2b/catalog/domain/catalog-parity.ts:76`)
-est pure ; ses deux appelants diffèrent par le **référent** : la parité
-(`admin/catalog/parity`, écart attendu) et la santé
-(`admin/ops/catalog-health`, `ops-catalog-health.controller.ts:30`, lue par
-`ops_catalog_parity.yml`). Elle lit le miroir **reçu**
-(`CatalogAdminReader.list()`), pas le vendable : un article masqué n'est pas
-un décrochage. ⚠️ Tant que `B2B_DELIVERY_INBOX` est fermé, il n'y a aucune
-version validée, et le job sort vert **sans avoir rien contrôlé**.
-
-### Ce qu'on a perdu, et qu'il faut savoir
-
-- **Aucun retour arrière** : l'ancien canal portait le seul ; défaire une
-  publication se fait en republiant.
-- **Le référentiel n'a pas de point de reprise** : une ancre ne porte ni
-  `variant.id`, ni `options`, ni `nutrition`, ni le conditionnement ; ce n'est
-  pas une sauvegarde. Les sauvegardes de l'infra donnent une archive à lire,
-  jamais un retour en arrière en place (une seule base).
+- **Les révisions du référentiel** (photographies, diff, noms) restent. Aucun
+  retour en arrière ne republiait par le push — il n'en existe pas. Mais la
+  **référence** de « Depuis la dernière publication » est la dernière
+  publication réussie (`lastPublished`), et seul le push en écrivait : elle
+  est figée sur le dernier push. Le nouveau référent est une question ouverte
+  du plan.
+- **La frise d'une fiche** (`GET /pim/channels/b2b/products/:id/delivery`)
+  lit le miroir par le port `B2bDeliveryFactsReader` ; `awaitingSince` y vaut
+  toujours `null`, et `lastPushedAt` ne bouge plus.
+- **`projectCatalog`** (la projection d'un instantané entier) n'a plus
+  d'appelant de production ; ses tests couvrent encore `projectVariant`, que
+  les faits emploient.
 
 ## 7. Les écrans
 
 | Écran                                   | Où                                                                                   | Ce qu'il fait                                                                                                                                          |
 | --------------------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **La fiche** (référentiel)              | `apps/lfd-backoffice-frontend/src/app/pim/catalogue/product-form/`                   | audience (héritée ou propre), prix pro HT saisi et sa suggestion, « Activer » et ce qui manque                                                         |
-| **Catalogue publié** (Gestion Boutique) | `/catalogue-publie` (`apps/lfd-backoffice-frontend/src/app/app.routes.ts:115-119`)   | une ligne par article, une colonne par audience ; masquer, mettre en avant, valider une arrivée. `/b2b/catalogue` y redirige                           |
+| **Catalogue publié** (Gestion Boutique) | `/catalogue-publie` (`apps/lfd-backoffice-frontend/src/app/app.routes.ts:115-119`)   | une ligne par article, une colonne par audience ; masquer, mettre en avant, relire. `/b2b/catalogue` et `/b2b/reception` y redirigent                  |
 | **Règles comptables** (référentiel)     | `regles-comptables` (`apps/lfd-backoffice-frontend/src/app/pim/pim.routes.ts:57-61`) | « Rapport suggéré » (ne change aucun prix vendu), pré-remplissage avec aperçu, et sur une base encore en `ratio_ttc` le geste « Passer au prix saisi » |
 
 Dans « Catalogue publié », chaque cellule d'audience a un état parmi
@@ -549,21 +480,19 @@ Tous décrits dans [`plan-catalogue-synchronise-par-audience.md`](plan-catalogue
   changé, puis le laisser relire `GET /shop/catalogue`. Rien n'existe ;
 - **lot 4** — émissions en lot (TVA, limites) et révisions automatiques.
   Les opérations ne passent pas en faits : elles passent au commerce ;
-- **lot 5** — le ménage : retrait du push, de la réception, de la matrice des
-  canaux et du point de vente (encore là :
+- **lot 5** — le ménage : le push et la réception sont partis (X2) ; restent
+  la matrice des canaux et le point de vente (encore là :
   `apps/lfd-api/src/pim/channels/b2b-platform/membership/membership.controller.ts`,
-  `apps/lfd-api/src/pim/points-of-sale/points-of-sale.module.ts`), estampille
-  de commande par `seq`. Il est repris par X2 à X5 de
-  [`plan-sans-interrupteurs.md`](plan-sans-interrupteurs.md).
+  `apps/lfd-api/src/pim/points-of-sale/points-of-sale.module.ts`). Il est
+  repris par X4 et X5 de [`plan-sans-interrupteurs.md`](plan-sans-interrupteurs.md).
 
 ## 10. Ce qui n'est pas vérifié
 
 - **Rien n'a été mesuré en production** ; les comptes du plan viennent de la
   base de dev.
-- La **parité** (`GET admin/catalog/parity`, `apps/lfd-api/src/b2b/catalog/http/admin-catalog-parity.controller.ts:49`)
-  et le job `ops_catalog_parity.yml` comparent une projection au miroir ; leur
-  sens exact faits ouverts — ce qu'ils appellent un écart quand c'est un fait,
-  et non une arrivée validée, qui a posé la ligne — n'a pas été rouvert.
+- Plus rien ne compare le miroir à sa source depuis X2 (décision de Hugo,
+  2026-10-17) : un fait perdu se voit sur « Catalogue publié », et se répare
+  par la réémission (§2).
 - La séquence du diagramme du §1 regroupe la relecture et la projection en
   une étape : le détail est dans `catalog-facts.source.ts`, non relu ligne à
   ligne.
@@ -578,12 +507,12 @@ texte est dans l'historique git :
 | Document retiré                                       | Repris ici                                                                |
 | ----------------------------------------------------- | ------------------------------------------------------------------------- |
 | « Le catalogue synchronisé — le PIM pousse »          | reçu ≠ décidé (§4), la v7 et les règles qui traversent (§2)               |
-| « Le push catalogue, de bout en bout »                | le port qui survit au même processus (§6)                                 |
-| « Du catalogue à la vente — la chaîne complète »      | le piège de la révision neuve (§6)                                        |
+| « Le push catalogue, de bout en bout »                | rien — le push est parti en X2 (§6)                                       |
+| « Du catalogue à la vente — la chaîne complète »      | rien — la réception est partie en X2 (§6)                                 |
 | « L'écran Catalogue B2B »                             | l'écran devenu « Catalogue publié » (§7)                                  |
 | Plan « l'audience par héritage »                      | D1, D3, D7 : héritage (§5), `servedTo` (§4), route unique et vue (§4, §7) |
 | Plan « la publication par faits versionnés »          | absorbé par le plan qui fait foi ; faits et séquence (§2)                 |
 | Plan « deux méthodes de remise professionnelle »      | le taux figé de `ratio_ttc` (§5)                                          |
 | « Audit catalogue boutique / B2B »                    | rien — photo du 2026-08-04, toute périmée                                 |
 | Plan « un seul canal, deux prix »                     | D6, D7, D9, D10, D12, D13 (§5) ; ses restes ouverts au plan qui fait foi  |
-| « Le cycle du catalogue — du référentiel à la vente » | le chemin faits fermés (§6 bis)                                           |
+| « Le cycle du catalogue — du référentiel à la vente » | rien — le chemin faits fermés est parti en X2 (§6)                        |
