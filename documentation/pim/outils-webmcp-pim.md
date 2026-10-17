@@ -39,7 +39,7 @@ lit.
 
 ---
 
-## 2. Les huit outils livrés
+## 2. Les quatorze outils livrés
 
 Ils vivent dans
 [`agent/pim-agent-tools.ts`](../../apps/lfd-backoffice-frontend/src/app/agent/pim-agent-tools.ts)
@@ -55,6 +55,16 @@ déclarés par l'écran
 | `pim_product_set_identity`  | nom, référence, famille, nature                   |
 | `pim_product_set_editorial` | récit, provenance, SEO                            |
 | `pim_variant_set_nutrition` | valeurs de l'annexe XV, par déclinaison           |
+| `pim_variant_set_pricing`   | prix public, poids, prix pro HT d'une déclinaison |
+| `pim_vat_rates_list`        | liste les taux de TVA                             |
+| `pim_set_vat`               | TVA par contexte, sur une famille ou une fiche    |
+| `pim_product_set_media`     | usages des visuels d'une fiche                    |
+| `pim_product_readiness`     | ce qui manque pour qu'une fiche soit vendable     |
+| `pim_product_publish`       | met une fiche en vente                            |
+| `pim_product_unpublish`     | la rend au brouillon                              |
+
+Les sept derniers vivent dans [`agent/pim-agent-commerce-tools.ts`](../../apps/lfd-backoffice-frontend/src/app/agent/pim-agent-commerce-tools.ts) et
+[`agent/pim-agent-readiness-tools.ts`](../../apps/lfd-backoffice-frontend/src/app/agent/pim-agent-readiness-tools.ts) (ajoutés le 2026-10-17, sans route neuve).
 
 `pim_product_set_channels` (où la fiche se vend) est parti en X4
 (`documentation/catalogue/plan-sans-interrupteurs.md`) avec la matrice des
@@ -125,16 +135,17 @@ silencieux, un agent qui relit ce qu'il a écrit pour se vérifier constaterait
 autre chose que ce qu'il a demandé. **L'outil doit relire et rendre l'état
 réel** — exactement comme `pim_variant_set_nutrition` le fait déjà.
 
-### 🔴 L'argent — exclu, et ça demande une décision
+### 🔴 L'argent et la publication — rouverts par Hugo le 2026-10-17
 
-Ni `:id/vat`, ni `:id/variants/:v/pricing`. Un plan qui touche à l'argent relève
-de `vitruve` d'office (CLAUDE.md §9 bis) ; celui-ci s'y soustrait en n'y touchant
-pas. **Le rouvrir est un chantier à part**, pas une tranche de plus.
+Exclus jusque-là (« l'argent ne s'écrit pas par un outil, publier reste une
+décision humaine »). Hugo a décidé le 2026-10-17 d'ouvrir le tarif, la TVA,
+les visuels et `publish`/`unpublish`, par les routes existantes et sans
+changement serveur. Restent exclus : `ready` et `archive`.
 
-### 🔵 Le cycle de vie — exclu, et c'est la décision de Hugo
-
-Ni `ready`, ni `publish`, ni `archive`. **Publier est une décision** ; elle reste
-au clic.
+Ce que les outils tiennent eux-mêmes : un champ omis garde sa valeur (le tarif
+et la TVA relisent la fiche ou la famille avant d'écrire) ; une déclinaison qui
+suit le tarif du défaut est **refusée**, comme pour la nutrition, parce que le
+tarif servi est résolu ; un seul `hero` et une seule `thumbnail` par fiche.
 
 ### Les trous que ce chantier ne comble pas, et qu'il note
 

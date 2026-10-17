@@ -5,6 +5,8 @@ import { ProductHttpApi } from '../pim/catalogue/product-http-api';
 import type { NutritionValues } from '../pim/data/models';
 
 import { said } from './agent-tool-text';
+import { declarePimCommerceAgentTools } from './pim-agent-commerce-tools';
+import { declarePimReadinessAgentTools } from './pim-agent-readiness-tools';
 
 /**
  * **Les outils WebMCP du référentiel** — ce qu'un agent peut faire sur le PIM
@@ -302,5 +304,7 @@ export function declarePimAgentTools(): readonly string[] {
     'pim_product_set_identity',
     'pim_product_set_editorial',
     'pim_variant_set_nutrition',
+    ...declarePimCommerceAgentTools(),
+    ...declarePimReadinessAgentTools(),
   ];
 }

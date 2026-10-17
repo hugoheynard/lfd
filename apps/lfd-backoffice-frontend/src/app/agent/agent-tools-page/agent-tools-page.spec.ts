@@ -72,13 +72,13 @@ describe('AgentToolsPage', () => {
     expect(listed.length).toBeGreaterThan(1);
   });
 
-  it("n'annonce AUCUN outil d'argent ni de publication", () => {
+  it("n'annonce ni signature « publiable » ni archivage", () => {
     const { root } = render();
     const listed = [...root.querySelectorAll('code')].map((el) => el.textContent?.trim() ?? '');
 
-    // Exclusions décidées au plan (§6), et vérifiées ici plutôt que promises :
-    // l'argent ne s'écrit pas par un outil, publier reste une décision humaine.
-    for (const forbidden of ['pricing', 'vat', 'publish', 'archive', 'ready']) {
+    // Le tarif, la TVA et la publication ont été ouverts par Hugo le
+    // 2026-10-17 ; la signature et l'archivage restent au clic.
+    for (const forbidden of ['archive', 'ready']) {
       expect(listed.some((name) => name.includes(forbidden))).toBe(false);
     }
   });
