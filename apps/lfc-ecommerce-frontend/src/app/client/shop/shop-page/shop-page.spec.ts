@@ -21,6 +21,13 @@ import { NOEL, storefrontObject } from '../storefront/storefront.fixture';
 import { ClientOrders } from '../../client-orders.service';
 import { ShopPage } from './shop-page';
 
+// `matchMedia` pour TOUS les cas du fichier : « Régler » ouvre le panier par
+// `dialogSide()`, qui le lit au clic ; un cas qui ne le simulait pas laissait
+// une erreur non gérée, qui fait sortir la suite en échec (CI de X2, 2026-10-17).
+beforeEach(() => {
+  vi.stubGlobal('matchMedia', matchMediaAt(false));
+});
+
 describe('ShopPage', () => {
   let fixture: ComponentFixture<ShopPage>;
   let cart: ClientCart;
