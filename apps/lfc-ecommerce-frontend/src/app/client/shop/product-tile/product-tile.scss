@@ -35,7 +35,19 @@
   background: var(--fold-color-surface-band);
 }
 
+/**
+ * 🔴 La photo est POSÉE sur la case, elle n'entre pas dans son calcul.
+ *
+ * En flux, `height: 100%` d'une case dont la hauteur vient d'`aspect-ratio`
+ * se résout en `auto` : l'image reprend sa hauteur naturelle, et la taille
+ * minimale automatique de `.media` (enfant de flex) la laisse gagner. Une
+ * photo portrait (736 × 920) étirait ainsi la tuile en 244 × 305 au lieu de
+ * 244 × 183 — constaté en production le 2026-10-17, dès que les vignettes
+ * sont arrivées. Hors du flux, seul le ratio décide.
+ */
 .photo {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
