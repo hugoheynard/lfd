@@ -1,5 +1,14 @@
 # Contextes de vente, points de vente et TVA
 
+> 🔴 **Le point de vente a quitté le référentiel le 2026-10-17** (lot L3 de
+> [`../sites/plan-sur-place-capacite-de-site.md`](../sites/plan-sur-place-capacite-de-site.md)) :
+> son code, ses routes `/pim/points-of-sale` et l'écran « Points de vente »
+> (`/pim/emplacements`) sont retirés ; la grille de tables vit sur le site
+> (« Sur place »). Les tables `pim.point_of_sale*` **restent en base** (L4,
+> sur ordre de Hugo), et l'écran des contextes compte encore les lignes de
+> `point_of_sale_context` qui retiennent une carte. Ce qui suit sur l'écran
+> et le code du point de vente décrit l'état d'avant.
+
 > 🔴 **L'ancien canal de vente en ligne est sorti du dépôt le 2026-09-21**
 > ([`../catalogue/catalogue-synchronise.md`](../catalogue/catalogue-synchronise.md)).
 > Ce document décrit le modèle des **contextes de vente**, qui ne bouge pas et
@@ -604,18 +613,16 @@ l'atteindre — un appel direct, si.
 
 ## 9. Ce que chaque écran possède
 
-| Écran                             | Route               | Étage | Ce qu'on y fait                                                           |
-| --------------------------------- | ------------------- | ----- | ------------------------------------------------------------------------- |
-| **Contextes de vente**            | `/pim/contextes`    | 1     | ouvrir, régler, mettre hors service une carte ; la racine ne s'efface pas |
-| **Points de vente**               | `/pim/emplacements` | 1 + 2 | ouvrir une boutique ou une plateforme, cocher son offre, équiper les QR   |
-| **TVA**                           | `/pim/tva`          | 1     | le référentiel des taux                                                   |
-| **Familles** (panneau)            | `/pim/categories`   | 3     | la matrice (point de vente × carte) et les taux par carte                 |
-| **Fiche produit**                 | `/pim/produits/:id` | 3     | la dérogation — même grille, même sémantique                              |
-| **Publication de l'ancien canal** | `/pim/publication`  | 4     | ce que la projection produit                                              |
+| Écran                              | Route               | Étage | Ce qu'on y fait                                                           |
+| ---------------------------------- | ------------------- | ----- | ------------------------------------------------------------------------- |
+| **Contextes de vente**             | `/pim/contextes`    | 1     | ouvrir, régler, mettre hors service une carte ; la racine ne s'efface pas |
+| ~~Points de vente~~ (retiré en L3) | —                   | —     | —                                                                         |
+| **TVA**                            | `/pim/tva`          | 1     | le référentiel des taux                                                   |
+| **Familles** (panneau)             | `/pim/categories`   | 3     | la matrice (point de vente × carte) et les taux par carte                 |
+| **Fiche produit**                  | `/pim/produits/:id` | 3     | la dérogation — même grille, même sémantique                              |
+| **Publication de l'ancien canal**  | `/pim/publication`  | 4     | ce que la projection produit                                              |
 
-L'écran des points de vente garde l'URL `/pim/emplacements` alors qu'il s'appelle
-« Points de vente » : renommer un chemin casse les liens déjà partagés, et un mot
-d'interface n'a pas à traîner l'espace d'URL avec lui.
+L'écran des points de vente (`/pim/emplacements`) est retiré depuis le 2026-10-17.
 
 L'écran des contextes rend **tout**, hors service compris : le registre décide de
 ce qu'on peut vendre, et une donnée qu'on ne peut pas voir n'est pas pilotable.
@@ -659,7 +666,7 @@ façon ; `channel_key`, lui, bloquait l'ajout d'une simple ligne de donnée.
 | ------------------------------------------------ | ----------------------------------------------------------------------------- |
 | Le schéma (toutes les tables citées ici)         | `apps/lfd-api/prisma/schema/pim/sales-contexts.prisma`, schéma `pim`          |
 | La carte — agrégat, racine, invariants           | `pim/sales-contexts/`                                                         |
-| Le point de vente — genres, offre, tables        | `pim/points-of-sale/`                                                         |
+| Le point de vente — genres, offre, tables        | points-of-sale (retiré en L3)                                                 |
 | Le référentiel des taux                          | `pim/vat-rates/`                                                              |
 | La matrice — forme, normalisation, lectures      | sales-channels.ts (retiré en X4)                                              |
 | Le mur « offert ici ? »                          | sellable-channels.ts (retiré en X4)                                           |

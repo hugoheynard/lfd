@@ -229,7 +229,6 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'pim/categories/nouveau': null,
   'pim/categories/:id': null,
   'pim/categories': null,
-  'pim/emplacements': null,
   // Le registre décide de ce qu'on peut VENDRE, mais ne porte aucun taux :
   // `catalog:read` suffit, et `tax:read` serait un mur pour rien.
   'pim/contextes': null,

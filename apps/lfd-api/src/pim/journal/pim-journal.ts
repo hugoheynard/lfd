@@ -24,14 +24,15 @@ import { ScopedJournal } from "../../platform/journal/scoped-journal.js";
  * demander la permission d'avoir une histoire.
  */
 
-/** La chose dont l'événement parle — treize sujets, énumérés plutôt que comptés. */
+/** La chose dont l'événement parle — douze sujets, énumérés plutôt que comptés. */
 // ⚠️ « treize » n'était plus vrai depuis le départ de `media_asset` (douze) ;
-// il le redevient avec `operation`, le 2026-09-24 (compté ce jour-là).
+// il l'est redevenu avec `operation`, le 2026-09-24, et retombe à douze avec le
+// départ de `point_of_sale` le 2026-10-17 (compté ce jour-là). Ses faits passés
+// se relisent par le catalogue de `@lfd/contracts`, pas par ce type d'écriture.
 export type PimSubjectType =
   | "vat_rate"
   | "product"
   | "product_category"
-  | "point_of_sale"
   | "sales_context"
   | "accounting_rules"
   | "catalog_revision"
@@ -281,31 +282,6 @@ export const PIM_EVENTS = {
    * réécrit pas.
    */
   productReclassified: "product.reclassified",
-  /**
-   * **Le point de vente** — boutique ou plateforme, son offre et sa grille de
-   * tables.
-   *
-   * Il entre dans le journal du référentiel parce qu'il en fait partie : les
-   * familles citent les points de vente dans leur matrice de canaux, et
-   * supprimer un point de vente est refusé tant qu'une famille y vend. Un
-   * journal qui expliquerait les canaux sans expliquer les points de vente
-   * qu'ils citent s'arrêterait juste avant la réponse.
-   *
-   * ⚠️ Ces clés s'appelaient `location.*`. Elles ont été traduites EN BASE par
-   * `20260826240000_resserrer_point_de_vente` : ce sont des données, pas des
-   * identifiants de code, et un journal où la moitié des gestes portent le nom
-   * d'une table disparue n'explique plus rien.
-   */
-  pointOfSaleCreated: "point_of_sale.created",
-  pointOfSaleUpdated: "point_of_sale.updated",
-  pointOfSaleDeleted: "point_of_sale.deleted",
-  /**
-   * Un QR de table **émis** ou **retiré**. Le jeton n'est PAS dans la charge :
-   * il vaut accès à la commande à table, et un journal se lit plus largement
-   * que la table qui le porte. On trace le geste, pas le secret.
-   */
-  pointOfSaleTableQrGenerated: "point_of_sale.table_qr_generated",
-  pointOfSaleTableQrRemoved: "point_of_sale.table_qr_removed",
   /**
    * **Le contexte de vente** — une manière de vendre qui a son propre taux.
    *

@@ -51,7 +51,6 @@ import { CatalogueReader } from "./shared/domain/ports/catalogue-reader.js";
 import { CatalogFactsReader } from "./shared/domain/ports/catalog-facts.reader.js";
 import { RepositoryCatalogFactsReader } from "./shared/infrastructure/repository-catalog-facts.reader.js";
 import { SalesContextsModule } from "../sales-contexts/sales-contexts.module.js";
-import { PointsOfSaleModule } from "../points-of-sale/points-of-sale.module.js";
 import { CategoryRepository } from "./category/domain/ports/category.repository.js";
 import { ProductCountReader } from "./category/domain/ports/product-count.reader.js";
 import { AccountingRulesModule } from "../accounting-rules/accounting-rules.module.js";
@@ -109,7 +108,6 @@ import {
     VatRatesModule,
     SalesContextsModule,
     AccountingRulesModule,
-    PointsOfSaleModule,
   ],
   controllers: [
     CatalogRevisionController,

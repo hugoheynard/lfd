@@ -524,9 +524,10 @@ Tous décrits dans [`plan-catalogue-synchronise-par-audience.md`](plan-catalogue
   Les opérations ne passent pas en faits : elles passent au commerce ;
 - **lot 5** — le ménage : le push et la réception sont partis (X2), le lien
   au canal et l'édition de la matrice (X4). Restent la matrice figée en base
-  (lue par la révision et par le point de vente, §6) et le point de vente
-  (`apps/lfd-api/src/pim/points-of-sale/points-of-sale.module.ts`), dont le
-  sort est à décider ; puis X5 de [`plan-sans-interrupteurs.md`](plan-sans-interrupteurs.md).
+  (lue par la révision et par le point de vente, §6) et le point de vente,
+  dont le code est retiré le 2026-10-17 (points-of-sale.module.ts, retiré en
+  L3 de [`../sites/plan-sur-place-capacite-de-site.md`](../sites/plan-sur-place-capacite-de-site.md)) —
+  ses tables restent en base ; puis X5 de [`plan-sans-interrupteurs.md`](plan-sans-interrupteurs.md).
 
 ## 10. Ce qui n'est pas vérifié
 

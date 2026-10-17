@@ -8,7 +8,6 @@ import { CategoryFormPage } from '../category-form-page';
 import { CategoryFormStore } from '../category-form-store';
 import { CategoryHttpApi } from '../../category-http-api';
 import { CategoryStore } from '../../category-store';
-import { PointOfSaleHttpApi } from '../../../points-of-sale/point-of-sale-http-api';
 import { VatRateHttpApi } from '../../vat-rates/vat-http-api';
 import { provideTestSalesContexts } from '../../../sales-contexts/sales-context-store.testing';
 import type { Category } from '../../../data/models';
@@ -90,14 +89,6 @@ async function mount(rows: Category[], id: string | null): Promise<Mounted> {
       provideFoldInlineConfirmLabels({ confirm: 'Confirmer', cancel: 'Annuler' }),
       { provide: CategoryHttpApi, useValue: http },
       { provide: VatRateHttpApi, useValue: { list: async () => [] } },
-      {
-        provide: PointOfSaleHttpApi,
-        useValue: {
-          list: async () => [
-            { id: 'emp_village', label: 'Village', kind: 'shop', contexts: ['takeaway'] },
-          ],
-        },
-      },
       { provide: FoldPanelHostService, useValue: { open: () => undefined } },
       {
         provide: ActivatedRoute,

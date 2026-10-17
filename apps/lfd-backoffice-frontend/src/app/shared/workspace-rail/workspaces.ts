@@ -621,15 +621,6 @@ export const PIM_VIEWS: readonly WorkspaceView[] = [
     needs: 'pim_tax:write',
     section: 'Général',
   },
-  // L'URL reste `emplacements` : renommer un chemin casse les liens déjà
-  // partagés, et le mot d'interface n'a pas à traîner l'espace d'URL avec lui.
-  {
-    key: 'locations',
-    label: 'Points de vente',
-    link: '/pim/emplacements',
-    icon: 'places',
-    section: 'Général',
-  },
   {
     key: 'contexts',
     label: 'Contextes de vente',

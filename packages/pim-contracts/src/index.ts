@@ -155,21 +155,6 @@ export type {
 } from "./category.js";
 
 export {
-  MAX_TABLES,
-  openPointOfSalePayloadSchema,
-  pointOfSaleKindSchema,
-  updatePointOfSalePayloadSchema,
-} from "./points-of-sale.js";
-export type {
-  OpenPointOfSalePayload,
-  PointOfSaleKindView,
-  PointOfSaleView,
-  TableQrResponse,
-  TableView,
-  UpdatePointOfSalePayload,
-} from "./points-of-sale.js";
-
-export {
   productKindSchema,
   createProductPayloadSchema,
   updateProductIdentityPayloadSchema,

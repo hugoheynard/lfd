@@ -12,9 +12,12 @@
 > Chaque affirmation sur l'existant cite `fichier:ligne`, ouvert le
 > 2026-10-17. Chemins relatifs à `apps/lfd-api/` sauf mention.
 
-> ✅ **L1 et L2 bâtis le 2026-10-17** (non commités à l'écriture de cette
-> ligne) — voir « Mesure de production et simplification » ci-dessous, qui
-> prime sur §4, §7 et §8.
+> ✅ **L1 et L2 bâtis le 2026-10-17** (commit `63da84243`) — voir « Mesure de
+> production et simplification » ci-dessous, qui prime sur §4, §7 et §8.
+>
+> ✅ **L3 bâti le 2026-10-17** (non commité à l'écriture de cette ligne) —
+> voir « Ce qui est bâti (L3) » en fin de document : deux objections de
+> `vitruve` y sont tranchées d'une façon que Hugo doit relire.
 
 ## 0. Ce qui est convenu, et ce qui ne bouge pas
 
@@ -61,11 +64,11 @@
 - La matrice y pointe : `categories.prisma:64-65` et `product.prisma:67-68`
   (`point_of_sale_id`, relation sans `onDelete` ⇒ Restrict).
 - Code : `src/pim/points-of-sale/` (agrégat
-  `domain/entities/point-of-sale.ts:58`, cas `generate-table-qr.ts`,
-  `remove-table-qr.ts`, …), contrôleur `http/point-of-sale.controller.ts:31`
+  domain/entities/point-of-sale.ts:58 (retiré en L3), cas generate-table-qr.ts (retiré en L3),
+  remove-table-qr.ts (retiré en L3), …), contrôleur http/point-of-sale.controller.ts:31 (retiré en L3)
   — `GET`, `POST`, `PUT :id`, `DELETE :id`, `POST|DELETE :id/tables/:number/qr`
   (`:38-86`). Toutes sous `/pim`, staff.
-- Le QR : `generate-table-qr.ts:18-19` — l'URL imprimée dérive
+- Le QR : generate-table-qr.ts:18-19 (retiré en L3) — l'URL imprimée dérive
   `…?table=N&k=token`. **Aucune route publique ne lit ce jeton** : grep de
   `tableToken`, `table-token`, `/t/` hors `points-of-sale` dans `src/` et
   `gateway/` → vide (2026-10-17).
@@ -81,7 +84,7 @@
 - Front : `apps/lfd-backoffice-frontend/src/app/pim/points-of-sale/` (page,
   store, panneau), route dans `pim.routes.ts`, et les phrases du journal
   (`shared/journal/phrases/referential-settings-phrases.ts`).
-- L'agrégat dit lui-même (`point-of-sale.ts:43-50`) que la grille est de
+- L'agrégat dit lui-même (point-of-sale.ts:43-50 (retiré en L3)) que la grille est de
   **l'équipement**, distinct du fait de servir en salle.
 
 ### 1.3 Contextes de vente et TVA
@@ -128,11 +131,11 @@
 
 Sur `Site` (schéma `public`, bloc `b2b/sites`) :
 
-| Champ (proposé) | Type                    | Règle de l'agrégat                                                                                                               |
-| --------------- | ----------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| `eatIn`         | `boolean`, défaut false | aucune règle croisée proposée (Q2)                                                                                               |
-| `eatInOpening`  | non, pas dans ce plan   | les horaires du retrait (`opening`) suffisent tant que rien ne vend sur place, Q3                                                |
-| tables (§4)     | table liée              | une grille n'est permise que sur un site `eatIn` (recommandé, Q4) — l'agrégat du PIM disait l'inverse (`point-of-sale.ts:43-50`) |
+| Champ (proposé) | Type                    | Règle de l'agrégat                                                                                                                            |
+| --------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `eatIn`         | `boolean`, défaut false | aucune règle croisée proposée (Q2)                                                                                                            |
+| `eatInOpening`  | non, pas dans ce plan   | les horaires du retrait (`opening`) suffisent tant que rien ne vend sur place, Q3                                                             |
+| tables (§4)     | table liée              | une grille n'est permise que sur un site `eatIn` (recommandé, Q4) — l'agrégat du PIM disait l'inverse (point-of-sale.ts:43-50 (retiré en L3)) |
 
 - `SiteRoles` gagne `eatIn` ; `assignRoles` le pose ; fait de journal
   `pickup_address.roles_set` le porte déjà par construction (même charge).
@@ -163,11 +166,11 @@ flowchart LR
   `pickup_addresses` — même schéma, légitime.
 - Agrégat : la grille devient une **collection de l'agrégat `Site`** ou un
   petit agrégat `SiteTables` à part. Recommandation : **à part**, chargé par
-  site — la grille a jusqu'à 200 lignes (`point-of-sale.ts:64`) et ne doit pas
+  site — la grille a jusqu'à 200 lignes (point-of-sale.ts:64 (retiré en L3)) et ne doit pas
   être relue à chaque lecture de site (checkout compris).
 - Cas : `SetSiteTableCount`, `GenerateSiteTableQr`, `RemoveSiteTableQr` (B2B,
   fichiers command/handler séparés, §4 de `CLAUDE.md`). Le générateur de jeton
-  (`uuid-table-token-generator.ts`) se recopie côté `b2b` — `b2b → pim`
+  (uuid-table-token-generator.ts (retiré en L3)) se recopie côté `b2b` — `b2b → pim`
   n'est permis que par le canal (§3), et ce n'est pas un fait du référentiel.
 - **Matrice §3 : inchangée.** Tout vit dans `b2b` ; aucune arête nouvelle.
 - Faits de journal neufs : `pickup_address.table_qr_generated`,
@@ -271,7 +274,7 @@ _Objections de `vitruve` : à ajouter ici après son passage._
 
 - **Le harnais e2e et le démarrage appellent le point de vente** (BLOQUANT) :
   `test/e2e-harness.ts` appelle `ensureRootPointOfSale()` à chaque `reset()`,
-  et le module sème `pos_b2b` au démarrage (`bootstrap-point-of-sale.ts`) ;
+  et le module sème `pos_b2b` au démarrage (bootstrap-point-of-sale.ts (retiré en L3)) ;
   s'y ajoutent `pim-prisma.service.ts` et quatre suites e2e. L4 doit dire qui
   garantit `pos_b2b` tant que la matrice vit en base — peut-être personne, plus
   aucune écriture de matrice n'existant : à trancher, pas à taire.
@@ -324,12 +327,12 @@ Décisions de Hugo, « bâtis » :
 
 ### Les lots, renumérotés (remplacent le tableau du §8)
 
-| Lot | Contenu                                                                                  | État                                                                    |
-| --- | ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| L1  | La case « Sur place » d'un site : colonne `eat_in`, `SiteRoles.eatIn`, journal, écran    | **bâti** (2026-10-17)                                                   |
-| L2  | La grille de tables sur un site « Sur place » : `public.site_table` dans `b2b/sites`, QR | **bâti** (2026-10-17)                                                   |
-| L3  | Retrait du point de vente du référentiel (code, écran, `offeredByLocations`)             | à faire — objections §vitruve (harnais, `pos_b2b`, registre) à trancher |
-| L4  | Suppression des tables `pim.point_of_sale*`                                              | plus tard, sur ordre de Hugo                                            |
+| Lot | Contenu                                                                                  | État                                                               |
+| --- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| L1  | La case « Sur place » d'un site : colonne `eat_in`, `SiteRoles.eatIn`, journal, écran    | **bâti** (2026-10-17)                                              |
+| L2  | La grille de tables sur un site « Sur place » : `public.site_table` dans `b2b/sites`, QR | **bâti** (2026-10-17)                                              |
+| L3  | Retrait du point de vente du référentiel (code, écran, `offeredByLocations`)             | **bâti** (2026-10-17), sauf `offeredByLocations` — voir ci-dessous |
+| L4  | Suppression des tables `pim.point_of_sale*`                                              | plus tard, sur ordre de Hugo                                       |
 
 ### Ce qui est bâti (L1, L2)
 
@@ -366,6 +369,36 @@ Décisions de Hugo, « bâtis » :
   `baseUrl` ni de `?table=N` (objection BLOQUANTE de `vitruve` levée). Sans
   `CLIENT_BASE_URL`, l'adresse est `null` et l'écran le dit. **Aucune route ne
   la sert encore** : la commande à table reste hors plan.
+- **Validé par Hugo le 2026-10-17** : on ne retire pas « Sur place » à un site
+  qui a des tables ; le jeton reste un ULID (pas de secret entièrement
+  aléatoire) ; `CLIENT_BASE_URL` est bien la racine de la boutique.
 - **Écran** Réglages › Sites : case « Sur place » dans la carte Rôles ; carte
   « Tables » (`site-tables-card/`) visible seulement pour un site « Sur place »
   enregistré — nombre, QR par table, export SVG.
+
+### Ce qui est bâti (L3)
+
+- **Retiré** : `apps/lfd-api/src/pim/points-of-sale/` entier (agrégat, cas,
+  contrôleur `/pim/points-of-sale`, générateur UUID, semis de `pos_b2b` au
+  démarrage), le contrat points-of-sale.ts (retiré en L3) de `@lfd/pim-contracts`, l'écran
+  « Points de vente » (`/pim/emplacements`, entrée du rail), les deux suites
+  e2e du point de vente, la phase « points de vente » de `seed:pim`, et les
+  constantes `point_of_sale.*` de `PIM_EVENTS`. Les **faits passés**
+  `point_of_sale.*` restent au catalogue de `@lfd/contracts` et dans les
+  phrases du journal : ils se relisent.
+- **En base, rien ne bouge** : les tables `pim.point_of_sale*` et leurs lignes
+  (dont `pos_b2b`) restent (L4).
+- **`pos_b2b` n'est plus garanti par personne** (objection BLOQUANTE de
+  `vitruve`, tranchée par vérification) : la matrice ne s'écrit plus depuis X4
+  (`d66b331f0`) — aucun écrivain de `category_channel` / `product_channel`
+  dans `src/` (grep du 2026-10-17) —, donc plus rien n'a besoin de sa cible.
+  Le harnais e2e ne le resème plus, et le test « compte la plateforme parmi
+  les points de vente qui offrent le B2B » est retiré avec lui.
+- **Le registre des contextes garde son compte** (objection SÉRIEUSE, laissée
+  à Hugo) : `point_of_sale_context` reste en base et sa clé étrangère retient
+  toujours la suppression d'une carte offerte. Retirer `offeredByLocations()`
+  ferait annoncer « rien ne la retient » puis refuser — le cas que l'écran
+  existe pour éviter. Le compte, la colonne « point(s) de vente » de l'écran
+  des contextes et leurs tests sont donc **gardés**. Les deux sorties : vider
+  `point_of_sale_context` (une suppression de données, sur ordre de Hugo), ou
+  attendre L4.

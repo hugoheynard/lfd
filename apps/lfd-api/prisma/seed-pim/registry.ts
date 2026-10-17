@@ -2,7 +2,6 @@ import type { CommandBus } from "@nestjs/cqrs";
 
 import { CreateCategoryCommand } from "../../src/pim/catalogue/category/application/create-category.js";
 import { SetCategoryVatCommand } from "../../src/pim/catalogue/category/application/set-category-vat.js";
-import { OpenPointOfSaleCommand } from "../../src/pim/points-of-sale/application/open-point-of-sale.js";
 import { CreateSalesContextCommand } from "../../src/pim/sales-contexts/application/create-sales-context.js";
 import { ChooseProPriceMethodCommand } from "../../src/pim/accounting-rules/application/choose-pro-price-method.js";
 import { SetProPriceRatioCommand } from "../../src/pim/accounting-rules/application/set-pro-price-ratio.js";
@@ -12,7 +11,7 @@ import type { PrismaService } from "../../src/platform/database/prisma.service.j
 import type { CatalogueCorpus } from "./corpus.js";
 
 /**
- * Le **référentiel transverse** — contextes de vente, points de vente, taux,
+ * Le **référentiel transverse** — contextes de vente, taux,
  * familles — posé avant la première fiche, et la table de correspondance qui
  * traduit les clés portables du corpus en identifiants de la base cible.
  *
@@ -21,8 +20,8 @@ import type { CatalogueCorpus } from "./corpus.js";
  * Chaque création passe par sa commande, donc par `PimIdGenerator` : les ULID
  * de la cible ne sont **pas** ceux de la source, et ils ne peuvent pas l'être
  * sans court-circuiter le générateur. Le corpus désigne donc par nom, et c'est
- * ici qu'on rattache. Le prix à payer est visible : un point de vente renommé
- * dans la source produit un second point de vente à la cible. C'est le bon
+ * ici qu'on rattache. Le prix à payer est visible : une famille renommée
+ * dans la source produit une seconde famille à la cible. C'est le bon
  * arbitrage — un doublon se voit, un identifiant frappé à la main ne se voit pas.
  *
  * ## Idempotence
@@ -33,7 +32,6 @@ import type { CatalogueCorpus } from "./corpus.js";
  * complexité sans rien tenir de plus.
  */
 export interface Registry {
-  readonly pointsByLabel: ReadonlyMap<string, string>;
   readonly ratesByName: ReadonlyMap<string, string>;
   readonly categoriesByName: ReadonlyMap<string, string>;
   readonly contextKeys: ReadonlySet<string>;
@@ -41,7 +39,6 @@ export interface Registry {
 
 export interface RegistryCounts {
   readonly contextsCreated: number;
-  readonly pointsCreated: number;
   readonly ratesCreated: number;
   readonly categoriesCreated: number;
 }
@@ -68,7 +65,6 @@ export async function seedRegistry(
     new ChooseProPriceMethodCommand("ratio_ttc"),
   );
   const contextsCreated = await seedContexts(bus, prisma, corpus);
-  const pointsCreated = await seedPointsOfSale(bus, prisma, corpus);
   const ratesCreated = await seedVatRates(bus, prisma, corpus);
 
   const registry = await snapshot(prisma);
@@ -76,7 +72,7 @@ export async function seedRegistry(
 
   return {
     registry: await snapshot(prisma),
-    counts: { contextsCreated, pointsCreated, ratesCreated, categoriesCreated },
+    counts: { contextsCreated, ratesCreated, categoriesCreated },
   };
 }
 
@@ -96,31 +92,6 @@ async function seedContexts(
         key: context.key,
         label: context.label,
         active: context.active,
-      }),
-    );
-    created += 1;
-  }
-  return created;
-}
-
-async function seedPointsOfSale(
-  bus: CommandBus,
-  prisma: PrismaService,
-  corpus: CatalogueCorpus,
-): Promise<number> {
-  const existing = new Set((await prisma.pointOfSale.findMany()).map((row) => row.label));
-  let created = 0;
-  for (const point of corpus.pointsOfSale) {
-    if (existing.has(point.label)) {
-      continue;
-    }
-    await bus.execute<OpenPointOfSaleCommand, string>(
-      new OpenPointOfSaleCommand({
-        kind: point.kind,
-        label: point.label,
-        baseUrl: point.baseUrl,
-        contexts: [...point.contexts],
-        tableCount: point.tableCount,
       }),
     );
     created += 1;
@@ -237,14 +208,12 @@ export function toContextVat(
 }
 
 async function snapshot(prisma: PrismaService): Promise<Registry> {
-  const [points, rates, categories, contexts] = await Promise.all([
-    prisma.pointOfSale.findMany(),
+  const [rates, categories, contexts] = await Promise.all([
     prisma.vatRate.findMany(),
     prisma.category.findMany({ where: { isArchived: false } }),
     prisma.salesContext.findMany(),
   ]);
   return {
-    pointsByLabel: new Map(points.map((row) => [row.label, row.id])),
     ratesByName: new Map(rates.map((row) => [row.name, row.id])),
     categoriesByName: new Map(
       categories.flatMap((row) => {

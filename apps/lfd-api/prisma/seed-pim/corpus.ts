@@ -26,7 +26,6 @@ export interface CatalogueCorpus {
    */
   readonly proPriceRatioBp: number;
   readonly salesContexts: readonly CorpusSalesContext[];
-  readonly pointsOfSale: readonly CorpusPointOfSale[];
   readonly vatRates: readonly CorpusVatRate[];
   readonly categories: readonly CorpusCategory[];
   readonly products: readonly CorpusProduct[];
@@ -36,14 +35,6 @@ export interface CorpusSalesContext {
   readonly key: string;
   readonly label: string;
   readonly active: boolean;
-}
-
-export interface CorpusPointOfSale {
-  readonly label: string;
-  readonly kind: "shop" | "platform";
-  readonly baseUrl: string;
-  readonly contexts: readonly string[];
-  readonly tableCount: number;
 }
 
 export interface CorpusVatRate {

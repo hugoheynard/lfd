@@ -42,7 +42,6 @@ import { BackgroundWork } from "../src/platform/events/background-work.js";
 import { PrismaService } from "../src/platform/database/prisma.service.js";
 import { AppErrorFilter } from "../src/platform/shared/http/app-error.filter.js";
 import type { VerifiedToken } from "../src/platform/auth/principal.js";
-import { PointOfSaleReader } from "../src/pim/points-of-sale/domain/ports/point-of-sale.reader.js";
 import { PricingMaterialsCache } from "../src/b2b/pricing/infrastructure/pricing-materials.cache.js";
 import { CachedPublishedShopCopyReader } from "../src/b2b/shop-copy/infrastructure/cached-published-shop-copy.reader.js";
 import { StaffAccessResolver } from "../src/platform/auth/staff-access.resolver.js";
@@ -226,12 +225,6 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
         // partout, qui accuserait le mur au lieu du harnais. Ils sont remis AVANT
         // l'opérateur des suites, que la clé étrangère `role_key` y rattache.
         await ensureStaffRoleDefinitions(prisma);
-        // La plateforme professionnelle est semée au BOOT, donc une seule fois —
-        // et le `TRUNCATE` ci-dessus l'emporte à chaque remise à zéro. On rejoue
-        // la fonction de PRODUCTION plutôt qu'un double : un double dériverait,
-        // et c'est exactement ce qui a fait passer au vert un B2B « vendu depuis
-        // un lieu » quand une colonne a été ajoutée sans arriver ici.
-        await app.get(PointOfSaleReader).ensureRootPointOfSale();
         // Le référentiel d'allergènes est posé par migration, comme les contextes
         // de vente, et préservé par le `TRUNCATE` pour la même raison. Ne reste
         // donc qu'à effacer ce qu'un TEST y aurait ajouté.

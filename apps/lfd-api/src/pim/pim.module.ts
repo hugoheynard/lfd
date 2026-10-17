@@ -9,7 +9,6 @@ import { CatalogFactsModule } from "./channels/b2b-platform/catalog-facts.module
 import { IngredientsModule } from "./ingredients/ingredients.module.js";
 import { OrderTimeLimitationModule } from "./order-time-limitation/order-time-limitation.module.js";
 import { VatRatesModule } from "./vat-rates/vat-rates.module.js";
-import { PointsOfSaleModule } from "./points-of-sale/points-of-sale.module.js";
 import { SalesContextsModule } from "./sales-contexts/sales-contexts.module.js";
 
 /**
@@ -40,7 +39,6 @@ import { SalesContextsModule } from "./sales-contexts/sales-contexts.module.js";
     AllergensModule,
     VatRatesModule,
     AccountingRulesModule,
-    PointsOfSaleModule,
     SalesContextsModule,
     IngredientsModule,
     OrderTimeLimitationModule,
@@ -59,7 +57,6 @@ import { SalesContextsModule } from "./sales-contexts/sales-contexts.module.js";
           AllergensModule,
           VatRatesModule,
           AccountingRulesModule,
-          PointsOfSaleModule,
           SalesContextsModule,
           IngredientsModule,
           OrderTimeLimitationModule,

@@ -52,29 +52,6 @@ export const CATALOGUE: CatalogueCorpus = {
       active: true,
     },
   ],
-  pointsOfSale: [
-    {
-      label: "Village",
-      kind: "shop",
-      baseUrl: "",
-      contexts: ["takeaway", "eatIn"],
-      tableCount: 1,
-    },
-    {
-      label: "Labo",
-      kind: "shop",
-      baseUrl: "",
-      contexts: ["takeaway", "eatIn"],
-      tableCount: 1,
-    },
-    {
-      label: "B2B",
-      kind: "platform",
-      baseUrl: "",
-      contexts: ["b2b"],
-      tableCount: 0,
-    },
-  ],
   vatRates: [
     {
       name: "Réduit",

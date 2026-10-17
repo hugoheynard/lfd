@@ -32,7 +32,7 @@ import { PrismaSalesContextRepository } from "./infrastructure/prisma-sales-cont
  * - `CatalogueModule` devait **ré-exporter** le registre, avec un commentaire
  *   qui l'avouait (« le registre sort AVEC le lecteur : les canaux itèrent les
  *   contextes ») ;
- * - `points-of-sale` allait chercher `ROOT_CONTEXT_KEY` par un chemin relatif
+ * - points-of-sale (retiré en L3) allait chercher `ROOT_CONTEXT_KEY` par un chemin relatif
  *   **dans les entrailles** d'un voisin — le seul import de ce genre du
  *   référentiel.
  *

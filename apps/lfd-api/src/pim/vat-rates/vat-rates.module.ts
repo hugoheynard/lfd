@@ -16,7 +16,7 @@ import { PrismaVatRateRepository } from "./infrastructure/prisma-vat-rate.reposi
  * Il s'appelait `commerce/`, un nom qui promettait un domaine et n'a jamais
  * tenu que ça : quinze fichiers, tous des taux. Un dossier fourre-tout attire
  * ce qui n'a pas de place ailleurs ; celui-ci est nommé d'après ce qu'il
- * contient, comme `sales-contexts/` et `points-of-sale/`.
+ * contient, comme `sales-contexts/` (et feu points-of-sale, retiré en L3).
  *
  * ⚠️ Les **codes d'erreur** restent `commerce.*` : ils voyagent sur le fil,
  * l'écran des taux en teste un, et les renommer serait un changement de contrat

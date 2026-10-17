@@ -103,7 +103,7 @@ function announce(): void {
 function summarize(counts: RegistryCounts, report: ReplayReport, facts: FactsReport): void {
   process.stdout.write(
     "✔ seed du référentiel terminé\n" +
-      `  référentiel — contextes=+${counts.contextsCreated} points de vente=+${counts.pointsCreated} ` +
+      `  référentiel — contextes=+${counts.contextsCreated} ` +
       `taux=+${counts.ratesCreated} familles=+${counts.categoriesCreated}\n` +
       `  fiches — créées=${report.created} retrouvées=${report.updated} ` +
       `mises en vente=${report.published} signées=${report.signed} ` +

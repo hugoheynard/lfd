@@ -92,17 +92,6 @@ describe("la surface d'administration montre le registre entier", () => {
 
     expect(rows.filter((row) => row.root).map((row) => row.key)).toEqual(["b2b"]);
   });
-
-  /**
-   * Le B2B est offert par la PLATEFORME, qui n'est pas un emplacement. Le
-   * compte se lisait sur `location_context`, qui ne la connaît pas : l'écran
-   * annonçait « 0 » puis la suppression échouait sur une clé étrangère.
-   */
-  it("compte la plateforme parmi les points de vente qui offrent le B2B", async () => {
-    const b2b = (await list()).find((row) => row.key === "b2b");
-
-    expect(b2b?.offeredByLocations).toBe(1);
-  });
 });
 
 describe("le contexte racine est ineffaçable", () => {
@@ -113,12 +102,9 @@ describe("le contexte racine est ineffaçable", () => {
    * panne silencieuse qui justifie la garde, pas la crainte d'un clic.
    */
   it("réapparaît au boot après une suppression directe en base", async () => {
-    // L'offre d'abord : depuis p-0, la plateforme professionnelle OFFRE le
-    // contexte racine, et cette clé étrangère est en `Restrict` — même une
-    // suppression directe en base ne passe pas par-dessus. C'est le mur qu'on
-    // voulait ; on le contourne ici pour éprouver la garde qui vient APRÈS.
-    // Le `reset` de la suite suivante resème la paire.
-    await ctx.prisma.pointOfSaleContext.deleteMany({ where: { contextKey: "b2b" } });
+    // Plus de plateforme semée qui OFFRE la racine (le point de vente a quitté
+    // le référentiel le 2026-10-17, lot L3) : rien ne retient la suppression
+    // directe, et c'est la garde qui vient APRÈS qu'on éprouve.
     await ctx.prisma.salesContext.delete({ where: { key: "b2b" } });
     expect((await list()).map((row) => row.key)).not.toContain("b2b");
 

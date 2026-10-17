@@ -50,7 +50,10 @@ export const PUSH_MODE = domain('mode d’envoi', {
   'dry-run': 'Simulation',
 });
 
-/** Les mêmes mots que la liste des points de vente (`point-of-sale-list.html`). */
+/**
+ * Les mêmes mots que l'ancienne liste des points de vente (retirée en L3) :
+ * les faits passés `point_of_sale.*` se relisent encore.
+ */
 export const POINT_OF_SALE_KIND = domain('genre de point de vente', {
   shop: 'Boutique',
   platform: 'Plateforme',
