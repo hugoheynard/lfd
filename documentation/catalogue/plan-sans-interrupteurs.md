@@ -111,12 +111,12 @@ Le code suit toujours le chemin ouvert. Lecteurs à retirer (relevé du
 `b2b/catalog/application/handlers/on-operation-image-changed.handler.ts`,
 `b2b/catalog/infrastructure/prisma-catalog-operations.reader.ts`,
 `b2b/catalog/infrastructure/prisma-received-operations.reader.ts`,
-`b2b/operations/infrastructure/config-operation-writing.switch.ts` (et son
+config-operation-writing.switch (retiré en X1) (et son
 port), `b2b/storefront/infrastructure/catalog-backed-storefront-operations.reader.ts`,
 `pim/channels/b2b-platform/products/catalog-facts.emitter.ts`,
 `catalog-reemission.service.ts`, `catalog-rules.emitter.ts`,
 `pim/channels/b2b-platform/application/reemit-catalog.ts`,
-`pim/operations/infrastructure/config-referential-operation-writing.ts`.
+config-referential-operation-writing (retiré en X1).
 Les deux variables sortent d'`AppConfig`, de `container/worker.ts`, du
 workflow `deploy_lfd_api.yml` et de `ops/secrets-et-variables.md` ; les
 erreurs qui nomment l'interrupteur (`OperationWritingClosedError`,
@@ -230,13 +230,13 @@ des push sans effet (R2), les suites e2e (R7), le retour arrière (§2).
   pas d'activité commerciale (week-end), aucune commande n'est attendue.
 - **La liste de R1 est incomplète de moitié** (BLOQUANT) : une trentaine de
   fichiers de production lisent les interrupteurs, dont `env-readers.ts`,
-  `operation-media-focus.ts`, `operation-carriers-by-switch.ts`,
+  `operation-media-focus.ts`, operation-carriers-by-switch (retiré en X1),
   `commerce-operation-media-carriers.ts`, `shop-catalogue-operations.ts`,
   `effective-operation.ts`, `received-operations.reader.ts`,
   `operation-library-alts.ts`, `storefront-catalog-operations.ts`, le
   contrôleur, les vues, la migration et les erreurs de `b2b/operations`, et
   côté PIM `catalogue.module.ts`, `catalog-emitter.ts`,
-  `prisma-operation-media-carriers.ts`, `apply-audience-switch.ts` et
+  prisma-operation-media-carriers (retiré en X1), `apply-audience-switch.ts` et
   `pim/operations/**`. X1 part d'un `grep` refait au premier jour, pas de la
   liste du §3.
 - **La santé sonnera dès maintenant** (BLOQUANT) : `ops_catalog_parity.yml:71`
@@ -253,8 +253,8 @@ des push sans effet (R2), les suites e2e (R7), le retour arrière (§2).
 - **`PIM_PUBLICATION_ENABLED`** (SÉRIEUX) est lu aussi par
   `catalog-rules.emitter.ts`, `catalog-reemission.service.ts`,
   `reemit.controller.ts`, `audience-switch.controller.ts`,
-  `pim/publication/publication-switch.ts`, `publication.controller.ts`, le
-  conteneur et le workflow, avec sa suite `pim-publication-switch.e2e-spec.ts`.
+  publication-switch (retiré en X1), publication.controller (retiré en X1), le
+  conteneur et le workflow, avec sa suite la suite e2e de l'interrupteur de publication (retirée en X1).
   Si `pim/publication/**` part en R2, la question Q1 est déjà à moitié tranchée.
 - **La surcharge des opérations** (SÉRIEUX) : `admin-catalog-operations.controller.ts`,
   `CatalogOperationOverride`, `operation-override-panel`, `received-operations*`
@@ -264,7 +264,7 @@ des push sans effet (R2), les suites e2e (R7), le retour arrière (§2).
   annoncés) ; `test/orders.e2e-spec.ts:632-672` affirme `catalogVersionId` et
   dépend de Q2 ; les deux suites `*-closed` et leurs scènes partent avec X1.
 - **L'ordre X1 / X4** : X1 retire la garde d'écriture des opérations au PIM
-  (`config-referential-operation-writing.ts`) ; le contrôleur PIM écrirait
+  (config-referential-operation-writing (retiré en X1)) ; le contrôleur PIM écrirait
   alors jusqu'à X4. **Correction** : la garde reste en refus permanent en X1,
   ou `pim/operations/http` part dès X1.
 - **Les révisions du référentiel** : vérifier si leur retour en arrière
@@ -289,7 +289,7 @@ des push sans effet (R2), les suites e2e (R7), le retour arrière (§2).
 - **Q1 — `PIM_PUBLICATION_ENABLED` part aussi** : « ça ne sert plus à rien, moins
   on a de variables mieux c'est ». Il sort avec les deux autres interrupteurs
   (X1) : l'émetteur, la réémission, la bascule et leurs routes émettent
-  toujours ; `pim/publication/publication-switch.ts` et sa suite
-  `pim-publication-switch.e2e-spec.ts` partent ; la variable sort du conteneur,
+  toujours ; publication-switch (retiré en X1) et sa suite
+  la suite e2e de l'interrupteur de publication (retirée en X1) partent ; la variable sort du conteneur,
   du workflow et de `ops/secrets-et-variables.md`. `B2B_DELIVERY_INBOX` part avec
   la réception (X2).

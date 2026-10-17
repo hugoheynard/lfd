@@ -189,7 +189,7 @@ bloque. Le même relevé est rendu après, en production — un e2e ne prouve ri
 d'une migration qui ne joue qu'une fois.
 
 **L'image : partir de ce qui existe** (BLOQUANT). Le commerce est **déjà**
-porteur d'images (`CatalogCopyMediaCarriers`, `appBootstrap/catalog-copy-media-carriers.ts`,
+porteur d'images (`CatalogCopyMediaCarriers`, catalog-copy-media-carriers (retiré en X1),
 branché dans `CompositeMediaCarriers`, `media-carriers.module.ts:52-58`), et
 son `repoint()` rend 0 parce que le PIM réannonce l'image par
 `pim.operation_image_changed`. À la bascule : ce porteur devient celui de

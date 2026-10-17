@@ -103,7 +103,7 @@ société, sans le lui dire.** C'est ce qui justifie une porte pro distincte.
 - « **c'est la route API qu'on coupe, pas le bouton** ».
 
 **Le précédent codé est `PublicationEnabledGuard`**
-(`pim/publication/publication-switch.ts`). Un décorateur marque les routes
+(publication-switch (retiré en X1)). Un décorateur marque les routes
 concernées, une garde globale (`APP_GUARD`, `app.module.ts:152`) les refuse par
 une `BusinessError` 409. La raison y est écrite : « ce n'est pas une
 autorisation […] d'où un refus métier (409) et non un 403, qui ferait chercher un
