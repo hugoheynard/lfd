@@ -480,7 +480,7 @@ qui en reste.
 
 ⚠️ **Plus d'écran depuis X4** (2026-10-17) : les boutons vivaient dans la
 carte de bascule de la page Intégrations, retirée. C'est un appel à l'API,
-sous la surface `pim_channels` :
+qui demande le droit **`pim_channels:write`** (403 sinon) :
 
 ```http
 POST /pim/channels/b2b/reemit
@@ -489,13 +489,26 @@ POST /pim/channels/b2b/reemit
 
 - une fiche : `productId` ; une fiche inconnue répond 404 ;
 - **tout** : `productId` absent ou `null` — familles, puis fiches (une
-  transaction chacune), puis les règles. Le 2026-10-17, 293 articles en ~73 s :
-  la réponse peut se perdre côté client avant la fin, le travail continue ;
-- la réponse compte familles et fiches, et nomme les fiches en échec
-  (`failedProducts`) — chacune se réémet seule ensuite.
+  transaction chacune), puis les règles. Le 2026-10-17, 293 articles en ~73 s.
 
-Contrôle : la fiche sur « Catalogue publié », et la carte de santé `ops`
-(boîte d'envoi vide, aucune lettre morte). **Retour arrière** : sans objet —
+**Lire le compte rendu** (`catalog-reemission.service.ts`, lu le 2026-10-17) :
+
+- `products` compte les fiches **tentées**, échecs compris ; `failedProducts`
+  nomme celles en échec — chacune se réémet seule ensuite ;
+- une **famille** en échec fait lever toute la réémission, **avant** la
+  première fiche : rien n'est parti, on relance ;
+- les **règles** partent en dernier, sans filet : un 500 peut arriver alors
+  que toutes les fiches sont parties. Relancer est sans risque ;
+- si la réponse se perd côté client (~73 s), le travail continue, mais les
+  fiches en échec ne sont plus que dans les journaux, sous « Réémission de la
+  fiche <id> en échec » (`catalog-reemission.service.ts:66`) : les lire par
+  [Lire les journaux de l'application](#lire-les-journaux-de-lapplication)
+  (workflow `ops_logs`).
+
+**Contrôle** : une fiche vue sur « Catalogue publié » prouve **cette** fiche.
+Pour « tout », comparer le nombre de fiches publiées au référentiel au nombre
+d'articles servis sur « Catalogue publié » ; et la carte de santé `ops` (boîte
+d'envoi vide, aucune lettre morte). **Retour arrière** : sans objet —
 réémettre ne fait que republier l'état du référentiel, le plus récent gagne.
 
 ## Passer au prix pro saisi (lot S) — l'ordre, et le retour
@@ -565,7 +578,8 @@ prix public bouge le prix pro ».
 **Fait le 2026-10-16** (0 opération au référentiel, rien à reprendre).
 L'interrupteur `OPERATIONS_AT_COMMERCE` est retiré du code le 2026-10-17 (X1 de
 [`plan-sans-interrupteurs.md`](../catalogue/plan-sans-interrupteurs.md)), et
-`/pim/operations` entier par X4 le même jour : ses routes répondent 404. Le
+`/pim/operations` entier par X4 le même jour : la route n'existe plus
+(aucun contrôleur ne la déclare, vérifié le 2026-10-17). Le
 retour arrière est un revert suivi d'un redéploiement.
 
 ## Transférer le droit du catalogue (`b2b_catalog` → `lfc_catalog`) — l'ordre, et la condition de L2

@@ -34,21 +34,73 @@ fabriquerait le nom d'une table par concaténation lui échapperait. Aucun n'a
 
 ## 1. Mortes : ni lues ni écrites par le code
 
-| Table / colonne                                                                       | Qui la lisait                                                                      | Plus personne depuis                           | FK sortantes                                                          | FK entrantes                                  | Geste proposé                                                                                                                      |
-| ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ---------------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `pim.b2b_channel_binding`                                                             | le lien au canal par fiche, le push (`last_pushed_at`), la bascule vers l'audience | `d66b331f0` (X4, 2026-10-17)                   | `product_id` → `pim.product` (Cascade)                                | aucune                                        | `DROP` seul, dans un ordre quelconque                                                                                              |
-| `pim.operation_items`                                                                 | les opérations au référentiel (`pim/operations/**`)                                | `d66b331f0` (X4)                               | `operation_key` → `pim.operations` (Restrict)                         | aucune                                        | `DROP` **avant** `pim.operations`                                                                                                  |
-| `pim.operations`                                                                      | idem                                                                               | `d66b331f0` (X4)                               | aucune                                                                | `pim.operation_items`                         | `DROP` après sa sélection                                                                                                          |
-| `pim.catalog_revision_publication`                                                    | le push (écriture), « depuis la dernière publication » (lecture)                   | `fd4b0b789` (suite de X2, 2026-10-17)          | `revision_id` → `pim.catalog_revision` (Cascade)                      | aucune                                        | retirer l'accesseur abstrait de `PimPrismaService` (`pim-prisma.service.ts:62`, déclaré, jamais appelé), puis `DROP`               |
-| `public.catalog_delivery`                                                             | la réception (boîte d'arrivée)                                                     | `181b0621f` (X2, 2026-10-17)                   | aucune (`catalog_versions.delivery_id` est une chaîne, sans relation) | aucune                                        | `DROP` seul                                                                                                                        |
-| `public.catalog_versions`                                                             | la validation d'une arrivée (écriture), la santé, la passation avant X0 (lecture)  | `181b0621f` (X2) ; écriture des commandes : X0 | aucune                                                                | `public.orders.catalog_version_id` (Restrict) | **trois temps**, voir §3                                                                                                           |
-| `public.catalog_operation_overrides`                                                  | la surcharge des opérations reçues                                                 | `181b0621f` (X2)                               | `operation_key` → `public.catalog_operations` (Restrict)              | aucune                                        | `DROP` seul. `catalog_operations` **vit** (le commerce y écrit ses opérations)                                                     |
-| `pim.nutrition_declaration`                                                           | la fiche réglementaire en une ligne                                                | `427f21912` (2026-09-22)                       | `variant_id` → `pim.product_variant`                                  | aucune                                        | `DROP` seul — c'est le lot 7 de [`../pim/plan-separer-allergenes-et-nutrition.md`](../pim/plan-separer-allergenes-et-nutrition.md) |
-| `pim.point_of_sale_table`                                                             | l'écran « Points de vente » (grille de tables, QR)                                 | `63bb374a8` (L3 du sur place, 2026-10-17)      | `point_of_sale_id` → `pim.point_of_sale` (Cascade)                    | aucune                                        | `DROP` seul ; la salle et ses tables vivent au site                                                                                |
-| `pim.product_channel_override`                                                        | la redéfinition de matrice par fiche (lecture par le dépôt des fiches)             | `81b192e59` (2026-10-17)                       | `product_id` → `pim.product` (Cascade)                                | `pim.product_channel` (Cascade)               | **bloquée** par `product_channel`, encore lue (§2) ; accesseur abstrait à retirer (`pim-prisma.service.ts:42`)                     |
-| colonnes `public.catalog_item_overrides.price_millicents`, `decided_public_ttc_cents` | le prix décidé sur la plateforme                                                   | `b145ffcd0` (lot D, 2026-10-15)                | —                                                                     | —                                             | colonnes nullables : `DROP COLUMN`, seules                                                                                         |
-| colonne `public.orders.catalog_version_id`                                            | la passation (estampille), avant X0                                                | **écrite `NULL`**, jamais lue — voir §3        | → `catalog_versions` (Restrict)                                       | —                                             | trois temps, §3                                                                                                                    |
-| ligne `pim.point_of_sale` `pos_b2b`                                                   | la matrice (le canal pro), semée au démarrage                                      | `63bb374a8` (plus semée)                       | —                                                                     | —                                             | **ligne morte** (Hugo, 2026-10-17) ; part avec sa table, §2                                                                        |
+| Table / colonne                                                                       | Qui la lisait                                                                      | Plus personne depuis                           | FK sortantes                                                          | FK entrantes                                  | Geste proposé                                                                                                                                               |
+| ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | ---------------------------------------------- | --------------------------------------------------------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pim.b2b_channel_binding`                                                             | le lien au canal par fiche, le push (`last_pushed_at`), la bascule vers l'audience | `d66b331f0` (X4, 2026-10-17)                   | `product_id` → `pim.product` (Cascade)                                | aucune                                        | démontage §1 bis (`Product.b2bBinding`)                                                                                                                     |
+| `pim.operation_items`                                                                 | les opérations au référentiel (`pim/operations/**`)                                | `d66b331f0` (X4)                               | `operation_key` → `pim.operations` (Restrict)                         | aucune                                        | démontage §1 bis, **avant** `pim.operations`                                                                                                                |
+| `pim.operations`                                                                      | idem                                                                               | `d66b331f0` (X4)                               | aucune                                                                | `pim.operation_items`                         | démontage §1 bis (`Operation.items`), après                                                                                                                 |
+| `pim.catalog_revision_publication`                                                    | le push (écriture), « depuis la dernière publication » (lecture)                   | `fd4b0b789` (suite de X2, 2026-10-17)          | `revision_id` → `pim.catalog_revision` (Cascade)                      | aucune                                        | accesseur abstrait de `PimPrismaService` (`pim-prisma.service.ts:62`) puis démontage §1 bis (`CatalogRevision.publications`) ; **registre RGPD**            |
+| `public.catalog_delivery`                                                             | la réception (boîte d'arrivée)                                                     | `181b0621f` (X2, 2026-10-17)                   | aucune (`catalog_versions.delivery_id` est une chaîne, sans relation) | aucune                                        | démontage §1 bis (aucune relation) ; **registre RGPD**                                                                                                      |
+| `public.catalog_versions`                                                             | la validation d'une arrivée (écriture), la santé, la passation avant X0 (lecture)  | `181b0621f` (X2) ; écriture des commandes : X0 | aucune                                                                | `public.orders.catalog_version_id` (Restrict) | **trois temps** + choix de Hugo, §3 ; **registre RGPD**                                                                                                     |
+| `public.catalog_operation_overrides`                                                  | la surcharge des opérations reçues                                                 | `181b0621f` (X2)                               | `operation_key` → `public.catalog_operations` (Restrict)              | aucune                                        | démontage §1 bis (`CatalogOperation.override`) ; **registre RGPD**. `catalog_operations` **vit**                                                            |
+| `pim.nutrition_declaration`                                                           | la fiche réglementaire en une ligne                                                | `427f21912` (2026-09-22)                       | `variant_id` → `pim.product_variant`                                  | aucune                                        | démontage §1 bis (`ProductVariant.nutrition`) — lot 7 de [`../pim/plan-separer-allergenes-et-nutrition.md`](../pim/plan-separer-allergenes-et-nutrition.md) |
+| `pim.point_of_sale_table`                                                             | l'écran « Points de vente » (grille de tables, QR)                                 | `63bb374a8` (L3 du sur place, 2026-10-17)      | `point_of_sale_id` → `pim.point_of_sale` (Cascade)                    | aucune                                        | démontage §1 bis (`PointOfSale.tables`) ; la salle vit au site                                                                                              |
+| `pim.product_channel_override`                                                        | la redéfinition de matrice par fiche (lecture par le dépôt des fiches)             | `81b192e59` (2026-10-17)                       | `product_id` → `pim.product` (Cascade)                                | `pim.product_channel` (Cascade)               | **bloquée** par `product_channel`, encore lue (§2) ; accesseur abstrait à retirer (`pim-prisma.service.ts:42`)                                              |
+| colonnes `public.catalog_item_overrides.price_millicents`, `decided_public_ttc_cents` | le prix décidé sur la plateforme                                                   | `b145ffcd0` (lot D, 2026-10-15)                | —                                                                     | —                                             | le champ quitte le schéma **avant ou avec** la colonne, §1 bis                                                                                              |
+| colonne `public.orders.catalog_version_id`                                            | la passation (estampille), avant X0                                                | **écrite `NULL`**, jamais lue — voir §3        | → `catalog_versions` (Restrict)                                       | —                                             | trois temps, §3                                                                                                                                             |
+| ligne `pim.point_of_sale` `pos_b2b`                                                   | la matrice (le canal pro), semée au démarrage                                      | `63bb374a8` (plus semée)                       | —                                                                     | —                                             | **ligne morte** (Hugo, 2026-10-17) ; part avec sa table, §2                                                                                                 |
+
+## 1 bis. Le geste réel : pas de `DROP` seul
+
+Une table qui part d'une migration mais reste au schéma Prisma fait mentir le
+client généré. Le geste du dépôt, pour chaque ligne du §1, est :
+
+1. retirer le **modèle** du schéma (`apps/lfd-api/prisma/schema/`) **et** ses
+   champs de relation chez les modèles qui vivent ;
+2. régénérer le client ;
+3. écrire la migration (`DROP`), relue par `lecteur-de-migrations`.
+
+Ce qui bouge dans le schéma, par table (lu le 2026-10-17) :
+
+| Table                                   | Modèle retiré                | Champ de relation retiré chez un modèle vivant                                                                           |
+| --------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `pim.b2b_channel_binding`               | `B2bChannelBinding`          | `Product.b2bBinding` (`pim/product.prisma:153`)                                                                          |
+| `pim.operation_items`, `pim.operations` | `OperationItem`, `Operation` | aucun hors d'eux (`Operation.items`, `pim/operations.prisma:45`)                                                         |
+| `pim.catalog_revision_publication`      | `CatalogRevisionPublication` | `CatalogRevision.publications` (`pim/revisions.prisma:57`)                                                               |
+| `public.catalog_delivery`               | `CatalogDelivery`            | aucun                                                                                                                    |
+| `public.catalog_versions`               | `CatalogVersion`             | `Order.catalogVersion` + `Order.catalogVersionId` (`public/orders.prisma:132`) — §3                                      |
+| `public.catalog_operation_overrides`    | `CatalogOperationOverride`   | `CatalogOperation.override` (`public/catalog-operations.prisma:69`)                                                      |
+| `pim.nutrition_declaration`             | `NutritionDeclaration`       | `ProductVariant.nutrition` (`pim/product.prisma:277`)                                                                    |
+| `pim.point_of_sale_table`               | `PointOfSaleTable`           | `PointOfSale.tables` (`pim/sales-contexts.prisma:153`)                                                                   |
+| `pim.product_channel_override`          | `ProductChannelOverride`     | `Product.channelOverrideRows` (`pim/product.prisma:150`) ; `ProductChannel.override` (`:64`) part avec `product_channel` |
+
+**Les deux colonnes de prix de `catalog_item_overrides`**
+(`public/catalog.prisma:510`, `:521`) : les champs `priceMillicents` et
+`decidedPublicTtcCents` quittent le schéma **avant ou avec** la colonne,
+jamais après. Une colonne retirée en base alors que le champ reste au schéma
+fait tomber en 500 tout `upsert` sans `select` sur la table, puisque Prisma
+relit toutes les colonnes qu'il connaît.
+
+### Les auteurs staff : le registre RGPD part dans le même commit
+
+Quatre de ces tables portent l'auteur d'un geste, inscrit au registre
+[`../legal/rgpd-registre.json`](../legal/rgpd-registre.json) :
+
+| Colonne                                         | Registre | Inventaire des auteurs |
+| ----------------------------------------------- | -------- | ---------------------- |
+| `pim.catalog_revision_publication.published_by` | l. 471   | l. 37                  |
+| `public.catalog_delivery.accepted_by`           | l. 777   | l. 31                  |
+| `public.catalog_operation_overrides.decided_by` | l. 795   | absente                |
+| `public.catalog_versions.created_by`            | l. 813   | l. 39                  |
+
+Le démontage de chacune **retire son entrée du registre dans le même commit** :
+`lint:rgpd-staff` (`dev-toolbox/gates/rgpd-staff.mjs`) refuse une entrée dont
+la colonne a disparu. Il retire aussi sa ligne de
+[`../staff/requetes/inventaire-des-auteurs-staff.sql`](../staff/requetes/inventaire-des-auteurs-staff.sql),
+qui échouerait sur une table absente (la ligne 29, `b2b_channel_binding.published_by`,
+suit le même sort). Le texte d'information du livreur, qui lit le registre,
+est à **relire** après : une donnée qui n'est plus tenue ne doit plus y être
+annoncée.
 
 ## 2. Figées, mais encore LUES — pas mortes
 
@@ -75,26 +127,54 @@ deux colonnes de prix de `catalog_item_overrides`, puis `operation_items` →
 `point_of_sale_context` → `point_of_sale` (avec `pos_b2b`).
 
 **`catalog_versions`, en trois temps** — la seule table encore tenue par une
-colonne que le code écrit :
+colonne que le code écrit.
+
+🔴 **L'invariant que ce démontage défait** est écrit dans la migration qui l'a
+posé (`20260902190000_versions_du_catalogue/migration.sql:30-37`) : la clé
+étrangère est en `RESTRICT` parce qu'« une version citée par une commande est
+immortelle » — purger l'archive ne peut pas rendre une commande
+inintelligible. Retirer la table, c'est renoncer à cette promesse.
+
+**Choix à Hugo, avant tout geste :**
+
+- **(a)** la colonne `orders.catalog_version_id` part avec la table : les
+  commandes d'avant X0 perdent leur estampille ;
+- **(b)** l'archive (versions, articles et opérations reçus) est **exportée**
+  avant, puis la table et la colonne partent.
+
+**La mesure qui décide**, en lecture seule, à lancer par Hugo sur la
+production :
+
+```sql
+SELECT count(*) FROM public.orders WHERE catalog_version_id IS NOT NULL;
+```
+
+Zéro : (a) ne perd rien. Sinon, c'est le nombre de commandes dont l'estampille
+disparaît sous (a).
+
+Les temps, une fois le choix fait :
 
 1. **code** : `Order` cesse de porter `catalogVersionId` (aujourd'hui posé à
    `null` par `order-drafting.service.ts:240`, écrit à la création par
-   `prisma-order.repository.ts:100`, jamais relu) ;
-2. **migration** : retirer la clé étrangère `orders.catalog_version_id` →
-   `catalog_versions`, et la colonne si Hugo l'ordonne — les commandes passées
-   avant X0 y portent leur estampille, c'est une donnée d'archive ;
-3. **migration** : `DROP TABLE catalog_versions`. Ses photographies (articles
-   et opérations reçus) disparaissent avec elle : c'est une perte d'archive, à
-   décider en connaissance de cause.
+   `prisma-order.repository.ts:100`, jamais relu) ; le schéma perd
+   `Order.catalogVersion` et `Order.catalogVersionId` ;
+2. **migration** : retirer la clé étrangère `orders_catalog_version_id_fkey`,
+   et la colonne selon le choix ;
+3. **migration** : `DROP TABLE catalog_versions` (et le modèle
+   `CatalogVersion`), avec son entrée du registre RGPD (§1 bis).
 
 ## 4. Ce qui n'est pas prouvé
 
 - Les **comptes de lignes** en production ne sont pas mesurés ici ; une table
   morte peut porter de la donnée d'archive (`catalog_versions`,
   `catalog_delivery`, `catalog_revision_publication`).
-- Les FK sont celles du schéma Prisma ; une contrainte posée en SQL seul et
-  absente du schéma ne s'y voit pas. Seules `nutrition_declaration_variant_id_fkey`
-  et `operation_items_operation_key_fkey` ont été recoupées dans les
-  `migration.sql`.
+- Les FK de ces tables ont **toutes** été recoupées dans les `migration.sql`
+  le 2026-10-17 (vitruve). À ajouter à la liste : `catalog_operation_items` →
+  `catalog_operations` (`RESTRICT`,
+  `20260924180000_les_operations_traversent_le_fil/migration.sql:63-66`) —
+  `catalog_operations` vit, mais elle reste retenue par ses articles.
+- Les faits passés `catalog_delivery.accepted` gardent leur `deliveryId` : il
+  ne pointera plus nulle part une fois la table partie. C'est acceptable — un
+  fait passé ne se réécrit pas, et aucun lecteur ne suit plus ce lien (la phrase du journal ne lit que `excludedSkus`, `commerce-phrases.ts:105`, vérifié le 2026-10-17).
 - `apps/lfd-api/test/pim-sales-contexts.e2e-spec.ts:233` écrit encore un
   `pointOfSale` pour éprouver le compte d'usage : il partira avec L4.
