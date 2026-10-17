@@ -79,18 +79,45 @@ export class PrismaCatalogOrderLimits extends CatalogOrderLimits {
     }));
   }
 
+  /**
+   * Un `updateMany` par limite DISTINCTE, pas par article : une échelle
+   * descendue sur tout le catalogue faisait autant d'écritures que
+   * d'articles dans la transaction de la livraison (P2028, 2026-10-17). Le
+   * nombre de limites distinctes est celui des règles, pas celui du lot.
+   */
   async write(changes: readonly OrderLimitChange[]): Promise<void> {
-    for (const change of changes) {
-      await this.prisma.catalogItem.update({
-        where: { sku: change.sku },
+    for (const group of orderLimitGroups(changes)) {
+      await this.prisma.catalogItem.updateMany({
+        where: { sku: { in: group.skus } },
         data: {
-          orderLimitDaysBefore: change.limit?.daysBefore ?? null,
-          orderLimitTime: change.limit?.time ?? null,
-          orderLimitGraceMinutes: change.limit?.graceMinutes ?? null,
+          orderLimitDaysBefore: group.limit?.daysBefore ?? null,
+          orderLimitTime: group.limit?.time ?? null,
+          orderLimitGraceMinutes: group.limit?.graceMinutes ?? null,
         },
       });
     }
   }
+}
+
+/** Une limite (ou son absence), et les SKU qui la reçoivent. */
+export interface OrderLimitGroup {
+  readonly limit: OrderLimitChange["limit"];
+  readonly skus: string[];
+}
+
+/** Les changements regroupés par limite identique — l'ordre d'arrivée des groupes est gardé. */
+export function orderLimitGroups(changes: readonly OrderLimitChange[]): OrderLimitGroup[] {
+  const groups = new Map<string, OrderLimitGroup>();
+  for (const change of changes) {
+    const key =
+      change.limit === null
+        ? "none"
+        : `${String(change.limit.daysBefore)}|${change.limit.time}|${String(change.limit.graceMinutes)}`;
+    const group = groups.get(key) ?? { limit: change.limit, skus: [] };
+    group.skus.push(change.sku);
+    groups.set(key, group);
+  }
+  return [...groups.values()];
 }
 
 /** L'échelle rangée ne se relit pas : faute de l'écrivain, pas du référentiel. */

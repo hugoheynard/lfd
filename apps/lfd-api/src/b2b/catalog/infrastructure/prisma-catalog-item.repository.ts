@@ -2,65 +2,17 @@ import { Injectable } from "@nestjs/common";
 
 import { Clock } from "../../../platform/time/clock.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
-import { allergenLabelsOf } from "./allergen-labels.js";
-import { publicByContextOf } from "./public-by-context.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
-import { CatalogItem, type CatalogItemState } from "../domain/entities/catalog-item.js";
+import type { CatalogItem, CatalogItemState } from "../domain/entities/catalog-item.js";
 import { CatalogItemRepository } from "../domain/ports/catalog-item.repository.js";
 import { STILL_SOLD } from "./sellable-filter.js";
 import { lastRecordedPrices, priceTraceRows } from "./catalog-price-trace.js";
 import { pimFactsColumns } from "./catalog-item-columns.js";
-import { catalogAudienceOf } from "../domain/served-to.js";
 import { DECISION_COLUMNS } from "./catalog-decision-columns.js";
 import { writeReviewStates } from "./catalog-review-states.js";
-
-/** La ligne telle que Prisma la rend, décision jointe. Aucun type `Prisma.*` exporté. */
-interface ItemRow {
-  readonly sku: string;
-  readonly productId: string;
-  readonly productSku: string;
-  readonly name: string;
-  readonly kind: string;
-  readonly categoryId: string;
-  readonly priceMillicents: number;
-  readonly weightGrams: number | null;
-  readonly isDefault: boolean;
-  readonly position: number;
-  readonly vatRatePercent: { toNumber(): number } | null;
-  readonly publicTtcCents: number | null;
-  readonly publicByContext: unknown;
-  readonly allergens: unknown;
-  readonly allergenLabels: unknown;
-  readonly note: string | null;
-  readonly imageUrl: string | null;
-  readonly thumbnailUrl: string | null;
-  readonly thumbnailAlt: string | null;
-  readonly thumbnailWidth: number | null;
-  readonly thumbnailHeight: number | null;
-  readonly imageAlt: string | null;
-  readonly imageWidth: number | null;
-  readonly imageHeight: number | null;
-  readonly imageFocalX: number | null;
-  readonly imageFocalY: number | null;
-  readonly thumbnailFocalX: number | null;
-  readonly thumbnailFocalY: number | null;
-  readonly orderLimitDaysBefore: number | null;
-  readonly orderLimitTime: string | null;
-  readonly orderLimitGraceMinutes: number | null;
-  readonly operationOnly: boolean;
-  readonly requiresCold: boolean;
-  readonly receivedAt: Date;
-  readonly withdrawnAt: Date | null;
-  readonly audience: string | null;
-  readonly publicReviewPending: boolean;
-  readonly proReviewPending: boolean;
-  readonly override: {
-    readonly isHidden: boolean;
-    readonly isHiddenPublic: boolean;
-    readonly isFeatured: boolean;
-    readonly decidedBy: string | null;
-  } | null;
-}
+import { toDomain } from "./catalog-item-rows.js";
+import { upsertCatalogItems, type ItemUpsertRow } from "./catalog-item-upsert.js";
+import { writeDecisions } from "./catalog-decision-writes.js";
 
 /**
  * Adaptateur d'écriture : il porte **les deux mappers** et rien d'autre.
@@ -150,35 +102,34 @@ export class PrismaCatalogItemRepository extends CatalogItemRepository {
   }
 
   /**
-   * Écrit les agrégats **dans une transaction**.
+   * Écrit les agrégats **dans une transaction**, en un nombre de requêtes qui
+   * ne croît pas avec le lot : une lecture des prix tracés, un upsert des
+   * articles, deux écritures de décision au plus, une de trace au plus.
    *
    * Un catalogue à moitié écrit vend des articles à des prix qui n'ont jamais
-   * été décidés ensemble ; l'atomicité n'est pas un confort ici.
+   * été décidés ensemble ; l'atomicité n'est pas un confort ici. Un `upsert`
+   * et une décision PAR ARTICLE allongeaient la transaction interactive avec
+   * le lot — ce qui a fait expirer la validation en production (P2028,
+   * 2026-10-17).
    */
   async saveMany(items: readonly CatalogItem[]): Promise<void> {
-    if (items.length === 0) {
+    // Un agrégat cité deux fois ne s'écrit qu'une — le dernier, comme la
+    // boucle d'avant le laissait en base.
+    const states = [...new Map(items.map((item) => [item.sku, item.toPersistence()])).values()];
+    if (states.length === 0) {
       return;
     }
-    const states = items.map((item) => item.toPersistence());
     // Le prix déjà tracé, par SKU : c'est à lui qu'on compare pour
     // n'écrire une ligne d'historique que sur un vrai changement.
     const recorded = await lastRecordedPrices(
       this.prisma,
       states.map((state) => state.facts.sku),
     );
-    const recordedAt = this.clock.now();
+    const now = this.clock.now();
 
     await this.prisma.$transaction(async (tx) => {
-      for (const state of states) {
-        const facts = factsRow(state);
-        await tx.catalogItem.upsert({
-          where: { sku: state.facts.sku },
-          create: { sku: state.facts.sku, ...facts },
-          update: facts,
-        });
-
-        await writeDecision(tx, state);
-      }
+      await upsertCatalogItems(tx, states.map(factsRow));
+      await writeDecisions(tx, states, now);
 
       // **La trace du tarif, dans la MÊME transaction que le prix.**
       //
@@ -199,7 +150,7 @@ export class PrismaCatalogItemRepository extends CatalogItemRepository {
         })),
         recorded,
         () => this.ids.next(),
-        recordedAt,
+        now,
       );
       if (changes.length > 0) {
         await tx.catalogPriceHistory.createMany({ data: changes });
@@ -208,158 +159,10 @@ export class PrismaCatalogItemRepository extends CatalogItemRepository {
   }
 }
 
-/**
- * Les trois colonnes de limite ↔ un objet, ou `null`.
- *
- * **Tout ou rien** : il suffit qu'une des trois manque pour qu'il n'y ait pas de
- * limite. Une limite sans heure ne se compare à rien, et reconstruire un objet
- * partiel donnerait au commerce une règle qu'il croirait pouvoir appliquer.
- * L'ingestion les écrit ensemble ; cette lecture-ci refuse de recoller ce qui
- * aurait été séparé à la main.
- */
-function orderTimeLimitOf(row: ItemRow) {
-  const { orderLimitDaysBefore, orderLimitTime, orderLimitGraceMinutes } = row;
-  if (orderLimitDaysBefore === null || orderLimitTime === null || orderLimitGraceMinutes === null) {
-    return null;
-  }
-  return {
-    daysBefore: orderLimitDaysBefore,
-    time: orderLimitTime,
-    graceMinutes: orderLimitGraceMinutes,
-  };
-}
-
-/**
- * Le packshot, ou `null`.
- *
- * L'URL commande : sans elle il n'y a rien à afficher, et les trois autres
- * colonnes ne décrivent alors plus rien. Les dimensions, elles, restent
- * légitimement nulles — « pas mesuré » est un état, pas un trou.
- */
-function imageOf(row: ItemRow) {
-  if (row.imageUrl === null) {
-    return null;
-  }
-  return {
-    url: row.imageUrl,
-    alt: row.imageAlt ?? "",
-    width: row.imageWidth,
-    height: row.imageHeight,
-    focal: focalOf(row.imageFocalX, row.imageFocalY),
-  };
-}
-
-/**
- * La vignette de rayon, ou `null`. Même mécanique et même raison que le
- * packshot : l'URL commande.
- */
-function thumbnailOf(row: ItemRow) {
-  if (row.thumbnailUrl === null) {
-    return null;
-  }
-  return {
-    url: row.thumbnailUrl,
-    alt: row.thumbnailAlt ?? "",
-    width: row.thumbnailWidth,
-    height: row.thumbnailHeight,
-    focal: focalOf(row.thumbnailFocalX, row.thumbnailFocalY),
-  };
-}
-
-/** Ligne ↔ agrégat. La décision absente devient « rien décidé », pas `undefined`. */
-function toDomain(row: ItemRow): CatalogItem {
-  return CatalogItem.reconstitute({
-    facts: {
-      sku: row.sku,
-      productId: row.productId,
-      productSku: row.productSku,
-      name: row.name,
-      kind: row.kind,
-      categoryId: row.categoryId,
-      priceMillicents: row.priceMillicents,
-      weightGrams: row.weightGrams,
-      isDefault: row.isDefault,
-      position: row.position,
-      // `Decimal` → `number` : le domaine ne connaît pas le type de l'ORM.
-      vatRatePercent: row.vatRatePercent === null ? null : row.vatRatePercent.toNumber(),
-      publicTtcCents: row.publicTtcCents,
-      publicByContext: publicByContextOf(row.publicByContext),
-      allergens: allergensOf(row.allergens),
-      allergenLabels: allergenLabelsOf(row.allergenLabels),
-      orderTimeLimit: orderTimeLimitOf(row),
-      note: row.note,
-      image: imageOf(row),
-      thumbnail: thumbnailOf(row),
-      operationOnly: row.operationOnly,
-      requiresCold: row.requiresCold,
-      receivedAt: row.receivedAt,
-    },
-    withdrawnAt: row.withdrawnAt,
-    placement: {
-      audience: catalogAudienceOf(row.audience),
-      publicReviewPending: row.publicReviewPending,
-      proReviewPending: row.proReviewPending,
-    },
-    decision:
-      row.override === null
-        ? null
-        : {
-            isHidden: row.override.isHidden,
-            isHiddenPublic: row.override.isHiddenPublic,
-            isFeatured: row.override.isFeatured,
-            decidedBy: row.override.decidedBy,
-          },
-  });
-}
-
-/** Le client de transaction, tel que `saveMany` le reçoit — jamais exporté. */
-type Tx = Parameters<Parameters<PrismaService["$transaction"]>[0]>[0];
-
-/**
- * **La décision, écrite sans jamais supprimer de ligne** (lot D,
- * correction BLOQUANT de `vitruve`, 2026-10-15).
- *
- * Une ligne d'override porte peut-être un ancien prix décidé
- * (`price_millicents`, `decided_public_ttc_cents`) : plus lu, plus écrit, mais
- * conservé — rien ne se supprime en production sans ordre (CLAUDE.md §0).
- * Avant le lot D, une décision devenue neutre retirait la ligne ; tout geste
- * qui charge puis sauve l'agrégat (masquer, mettre en avant, valider une
- * arrivée) aurait alors effacé ces prix sans que personne l'ait demandé.
- *
- * - décision posée → `upsert` des seuls drapeaux ;
- * - plus rien de décidé → aucune ligne créée, et les drapeaux d'une ligne
- *   existante remis à `false` — seulement s'il y en avait un de levé, pour ne
- *   pas réécrire `decided_at` à chaque push.
- */
-async function writeDecision(tx: Tx, state: CatalogItemState): Promise<void> {
-  const sku = state.facts.sku;
-  if (state.decision === null) {
-    await tx.catalogItemOverride.updateMany({
-      where: { sku, OR: [{ isHidden: true }, { isHiddenPublic: true }, { isFeatured: true }] },
-      data: { isHidden: false, isHiddenPublic: false, isFeatured: false },
-    });
-    return;
-  }
-  // 🔴 **Cet objet est le seul endroit du dépôt où un champ oublié COMPILE et
-  // perd une donnée en silence.** Les champs d'un `create`/`update` Prisma sont
-  // tous optionnels : une décision absente d'ici n'est simplement jamais
-  // écrite, et rien — ni `tsc`, ni ESLint, ni une porte — ne peut le dire.
-  //
-  // Il est donc l'agrégat ÉTALÉ : une décision ajoutée à `LocalDecision` part
-  // automatiquement en base, et si elle n'a pas de colonne, Prisma refuse la
-  // clé inconnue. ⚠️ Les deux colonnes de prix n'y figurent plus (lot D) : elles
-  // ne sont donc jamais écrites, et gardent ce qu'elles portaient.
-  const decision = { ...state.decision };
-  await tx.catalogItemOverride.upsert({
-    where: { sku },
-    create: { sku, ...decision },
-    update: decision,
-  });
-}
-
 /** Les colonnes de faits, et le retrait — celles qu'un push remplace, et elles seules. */
-function factsRow(state: CatalogItemState) {
+function factsRow(state: CatalogItemState): ItemUpsertRow {
   return {
+    sku: state.facts.sku,
     ...pimFactsColumns(state.facts),
     // 🔴 Écrit à CHAQUE upsert, et c'est ce qui remet en rayon un article qui
     // revient. Le miroir ne rend plus les retirés, donc un SKU réintroduit
@@ -374,23 +177,4 @@ function factsRow(state: CatalogItemState) {
     publicReviewPending: state.placement.publicReviewPending,
     proReviewPending: state.placement.proReviewPending,
   };
-}
-
-/**
- * La colonne `jsonb` relue en liste de codes.
- *
- * Tout ce qui n'est pas un tableau de chaînes rend `null` — « pas de fiche »
- * plutôt qu'une fiche vide. Sur un champ réglementé, la valeur par défaut doit
- * être celle qui n'affirme RIEN.
- */
-function allergensOf(raw: unknown): readonly string[] | null {
-  if (!Array.isArray(raw)) {
-    return null;
-  }
-  return raw.filter((code): code is string => typeof code === "string");
-}
-
-/** Les deux colonnes du point focal, ou `null` : une moitié de point ne désigne rien. */
-function focalOf(x: number | null, y: number | null): { x: number; y: number } | null {
-  return x === null || y === null ? null : { x, y };
 }

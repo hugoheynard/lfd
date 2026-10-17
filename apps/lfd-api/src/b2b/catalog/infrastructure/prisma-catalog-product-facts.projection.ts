@@ -14,6 +14,7 @@ import type { ReceivedCatalogFamily } from "../domain/ports/catalog-family-facts
 import { CatalogProductFactsProjection } from "../domain/ports/catalog-product-facts.projection.js";
 import type { CatalogAudience } from "../domain/served-to.js";
 import { pimFactsColumns } from "./catalog-item-columns.js";
+import { upsertCatalogItems } from "./catalog-item-upsert.js";
 import { lastRecordedPrices, priceTraceRows } from "./catalog-price-trace.js";
 import { STILL_SOLD } from "./sellable-filter.js";
 
@@ -21,8 +22,9 @@ import { STILL_SOLD } from "./sellable-filter.js";
  * L'adaptateur du récepteur des faits d'une fiche.
  *
  * 🔴 **Il n'écrit JAMAIS `catalog_item_overrides`**, et ne passe pas par
- * `PrismaCatalogItemRepository.saveMany`, qui supprime une décision quand
- * l'agrégat n'en porte plus (H10, §4 bis du plan) : un fait réécrit les
+ * `PrismaCatalogItemRepository.saveMany`, qui réécrit les décisions locales
+ * de l'agrégat (les remet à faux quand il n'en porte plus, sans supprimer de
+ * ligne depuis le lot D — vérifié le 2026-10-17) : un fait réécrit les
  * colonnes reçues du référentiel, rien d'autre. Les colonnes viennent de
  * `pimFactsColumns`, la liste partagée avec l'agrégat.
  *
@@ -95,27 +97,33 @@ export class PrismaCatalogProductFactsProjection extends CatalogProductFactsProj
     if (items.length === 0) {
       return;
     }
-    for (const facts of items) {
-      const { orderLimitDaysBefore, orderLimitTime, orderLimitGraceMinutes, ...columns } =
-        pimFactsColumns(facts);
-      const row = { ...columns, audience, variantId: facts.variantId, withdrawnAt: null };
-      await this.prisma.catalogItem.upsert({
-        where: { sku: facts.sku },
-        create: {
-          sku: facts.sku,
-          ...row,
-          // 🔴 À la CRÉATION seulement — premier SKU arrivé (lot 3) : l'`update`
-          // ne les porte pas, donc rien de ce qui existe ne repasse en attente,
-          // ni une modification ni un élargissement d'audience.
-          publicReviewPending: awaitsReview(audience, "public"),
-          proReviewPending: awaitsReview(audience, "pro"),
-          orderLimitDaysBefore,
-          orderLimitTime,
-          orderLimitGraceMinutes,
-        },
-        update: row,
-      });
-    }
+    // UN upsert pour toutes les déclinaisons : une instruction par article
+    // allongeait la transaction de la livraison avec la fiche (P2028,
+    // 2026-10-17). Les limites et l'attente ne s'écrivent qu'à la création.
+    await upsertCatalogItems(
+      this.prisma,
+      items.map((facts) => ({
+        sku: facts.sku,
+        ...pimFactsColumns(facts),
+        audience,
+        variantId: facts.variantId,
+        withdrawnAt: null,
+        publicReviewPending: awaitsReview(audience, "public"),
+        proReviewPending: awaitsReview(audience, "pro"),
+      })),
+      // 🔴 À la CRÉATION seulement — premier SKU arrivé (lot 3) : un conflit ne
+      // les réécrit pas, donc rien de ce qui existe ne repasse en attente, ni
+      // une modification ni un élargissement d'audience. Les limites non plus :
+      // elles descendent des règles (`OrderLimitsRefresher`), et les remettre
+      // à `null` ici effacerait ce que le push a posé.
+      [
+        "publicReviewPending",
+        "proReviewPending",
+        "orderLimitDaysBefore",
+        "orderLimitTime",
+        "orderLimitGraceMinutes",
+      ],
+    );
     await this.tracePrices(items);
   }
 

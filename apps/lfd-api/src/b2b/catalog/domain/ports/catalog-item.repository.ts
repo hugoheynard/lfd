@@ -86,6 +86,8 @@ export abstract class CatalogItemRepository {
    * Retirer devient alors muter un état — `CatalogItem.withdraw()` — et une
    * méthode qui écrit une colonne à partir de primitives redeviendrait le
    * « transaction script » que le CLAUDE.md §3.1 interdit.
+   *
+   * Un nombre de requêtes qui ne croît pas avec le lot (P2028, 2026-10-17).
    */
   abstract saveMany(items: readonly CatalogItem[]): Promise<void>;
 
@@ -96,9 +98,9 @@ export abstract class CatalogItemRepository {
    * Prend des agrégats, pas des primitives : c'est `CatalogItem.approveFor`
    * qui a décidé de la lever, et l'adaptateur ne fait que lire l'état qu'il
    * porte. Elle existe parce que valider ne change QUE ces deux colonnes, et
-   * que {@link saveMany} réécrit par article les faits, la décision et la
-   * trace du tarif : 64 SKU y faisaient expirer la transaction (P2028,
-   * 2026-10-17).
+   * que {@link saveMany} réécrit aussi les faits, la décision et la trace du
+   * tarif — en lot depuis le 2026-10-17, mais réécrire des faits ne ferait
+   * qu'élargir la fenêtre où un fait concurrent du référentiel serait écrasé.
    *
    * ⚠️ Un appelant qui a muté autre chose que l'attente veut {@link saveMany}.
    */

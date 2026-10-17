@@ -165,7 +165,8 @@ function familyOf(category: SyncCategory): CatalogFamilyFactBody {
   return { ...category, audience: "both", archived: false };
 }
 
-function productBody(
+/** Le corps du fait d'une fiche ACTIVE, aux deux clientèles, complète. */
+export function productBody(
   product: SyncProduct,
   families: ReadonlyMap<string, SyncCategory>,
 ): CatalogProductFactBody {

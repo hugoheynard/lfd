@@ -27,6 +27,7 @@
   "test/billing-modes.e2e-spec.ts": 7498,
   "test/billing-statements.e2e-spec.ts": 6751,
   "test/card-invoices.e2e-spec.ts": 9150,
+  "test/catalog-batch-writes.e2e-spec.ts": 9500,
   "test/catalog-ingest-facts.e2e-spec.ts": 5356,
   "test/catalog-ingest.e2e-spec.ts": 5616,
   "test/catalog-journal.e2e-spec.ts": 8103,
