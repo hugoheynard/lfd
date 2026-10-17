@@ -1,0 +1,109 @@
+<fold-card>
+  <fold-page-section title="Tables" separator>
+    <span sectionSubtitle
+      >La grille de la salle, numérotée de 1 à N. Chaque table peut porter un QR ; le régénérer
+      invalide le code déjà imprimé.</span
+    >
+
+    @switch (state()) {
+      @case ('loading') {
+        <fold-loading message="Chargement des tables…" />
+      }
+      @case ('error') {
+        <fold-empty-state tone="alert" title="Impossible de charger les tables">
+          <button foldButton (click)="load(site().id)">Réessayer</button>
+        </fold-empty-state>
+      }
+      @default {
+        @if (refusal(); as message) {
+          <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+        }
+
+        <div class="st-count">
+          <fold-number-input
+            label="Nombre de tables"
+            hint="on en ajoute ou on en retire en fin de grille ; une table retirée perd son QR"
+            integer
+            [min]="0"
+            [max]="maxTables"
+            [step]="1"
+            [readOnly]="readOnly()"
+            [value]="count()"
+            (valueChange)="count.set($event)"
+          />
+          @if (!readOnly()) {
+            <button
+              foldButton
+              size="sm"
+              [disabled]="!canSaveCount()"
+              [loading]="busy()"
+              (click)="saveCount()"
+            >
+              Enregistrer le nombre
+            </button>
+          }
+        </div>
+
+        @if (tables().length === 0) {
+          <fold-empty-state
+            title="Aucune table"
+            subtitle="Saisissez leur nombre : chaque table pourra ensuite recevoir son QR."
+          />
+        } @else {
+          <div class="st-cards">
+            @for (table of tables(); track table.number) {
+              <div class="st-card">
+                <span class="st-card-title">Table {{ table.number }}</span>
+                @if (table.hasQr) {
+                  @if (table.qrUrl; as url) {
+                    <app-qr-code [url]="url" />
+                  } @else {
+                    <p class="st-muted">
+                      QR actif, adresse inconnue : la racine de la boutique n'est pas configurée.
+                    </p>
+                  }
+                  @if (!readOnly()) {
+                    <div class="st-card-actions">
+                      @if (table.qrUrl !== null) {
+                        <button
+                          foldButton
+                          emphasis="soft"
+                          intent="neutral"
+                          size="sm"
+                          (click)="exportQr(table)"
+                        >
+                          Exporter (SVG)
+                        </button>
+                      }
+                      <fold-inline-confirm
+                        intent="danger"
+                        message="Retirer ce QR ?"
+                        (confirmed)="removeQr(table.number)"
+                      >
+                        <button foldButton emphasis="soft" intent="danger" size="sm">
+                          Retirer
+                        </button>
+                      </fold-inline-confirm>
+                    </div>
+                  }
+                } @else if (!readOnly()) {
+                  <button
+                    foldButton
+                    emphasis="outline"
+                    size="sm"
+                    [disabled]="busy()"
+                    (click)="generateQr(table.number)"
+                  >
+                    Générer le QR
+                  </button>
+                } @else {
+                  <p class="st-muted">Sans QR</p>
+                }
+              </div>
+            }
+          </div>
+        }
+      }
+    }
+  </fold-page-section>
+</fold-card>

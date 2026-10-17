@@ -1,0 +1,41 @@
+.st-count {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--fold-space-sm);
+}
+
+/* Une carte par table : numéro, QR, actions. */
+.st-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: var(--fold-space-sm);
+}
+
+.st-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-md);
+  border: 0.5px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-raised);
+  text-align: center;
+}
+
+.st-card-title {
+  font-weight: var(--fold-weight-semibold);
+  font-size: var(--fold-text-md);
+}
+
+.st-card-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
+.st-muted {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-md);
+}

@@ -32,6 +32,7 @@ import { SiteDiscountCard } from './site-discount-card/site-discount-card';
 import { SiteHoursCard } from './site-hours-card/site-hours-card';
 import { SiteIdentityCard } from './site-identity-card/site-identity-card';
 import { SiteRolesCard } from './site-roles-card/site-roles-card';
+import { SiteTablesCard } from './site-tables-card/site-tables-card';
 
 const NOT_FOUND = 404;
 
@@ -76,6 +77,7 @@ const NOT_FOUND = 404;
     SiteHoursCard,
     SiteIdentityCard,
     SiteRolesCard,
+    SiteTablesCard,
     FoldBackLinkComponent,
     FoldBadgeComponent,
     FoldButtonComponent,

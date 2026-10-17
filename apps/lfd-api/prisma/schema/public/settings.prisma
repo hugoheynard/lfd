@@ -83,6 +83,12 @@ model Site {
   /// la marge de retrait (§4.6). ≥ 0, tenu par l'agrégat et par un CHECK.
   counterSetupMinutes Int @default(0) @map("counter_setup_minutes")
 
+  /// On peut y consommer SUR PLACE — une salle (Hugo, 2026-10-17, plan
+  /// `documentation/sites/plan-sur-place-capacite-de-site.md`, L1). Aucune
+  /// règle croisée avec les autres rôles (Q2). Ne fixe AUCUN taux : rien ne
+  /// vend encore sur place. Une grille de tables n'existe que sur un tel site.
+  eatIn Boolean @default(false) @map("eat_in")
+
   /// Les couleurs de la logistique, LIBRES (`#rrggbb`, Hugo 2026-10-13) :
   /// aucune teinte refusée, seule la forme est vérifiée (`SiteColor` et CHECK). `NULL`
   /// = aucune couleur, pour de bon : une couleur posée peut être retirée, et le
@@ -103,7 +109,33 @@ model Site {
   publicSlotRules PublicPickupSlotRule[]
   publicClosures  PublicPickupClosure[]
 
+  /// La grille de tables de la salle (L2) — vide sauf sur un site `eatIn`.
+  tables SiteTable[]
+
   @@map("pickup_addresses")
+  @@schema("public")
+}
+
+/// Une **table** de la salle d'un site (Hugo, 2026-10-17, plan
+/// `documentation/sites/plan-sur-place-capacite-de-site.md`, L2). Le `number`
+/// est l'identité imprimée ; la grille va de 1 à N, tenue par l'agrégat
+/// `SiteTables`. Remplace, en naissant vide, la grille du point de vente du
+/// référentiel : la production n'y portait aucune table (mesure du 2026-10-17).
+model SiteTable {
+  siteId String @map("site_id")
+  site   Site   @relation(fields: [siteId], references: [id])
+  number Int
+
+  /// Le jeton du QR — un secret aléatoire, UNIQUE dans toute la base : il
+  /// désigne à lui seul le site et la table. `NULL` = aucun QR. Le régénérer
+  /// invalide le code imprimé.
+  token String? @unique
+
+  /// Quand le QR actuel a été généré ; `NULL` avec le jeton.
+  qrCreatedAt DateTime? @map("qr_created_at") @db.Timestamptz(3)
+
+  @@id([siteId, number])
+  @@map("site_table")
   @@schema("public")
 }
 

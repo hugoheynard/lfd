@@ -53,6 +53,15 @@
       <app-site-roles-card [site]="current" [readOnly]="archived()" (saved)="reload()" />
     }
 
+    <!-- La salle (Hugo, 2026-10-17) : sa grille ne se montre que pour un site
+         « Sur place » ENREGISTRÉ — cocher la case sans l'enregistrer ne
+         l'ouvre pas, le serveur refuserait les tables. -->
+    @if (site(); as current) {
+      @if (current.eatIn) {
+        <app-site-tables-card [site]="current" [readOnly]="archived()" />
+      }
+    }
+
     <!-- « Paramétrage du retrait » : une carte, trois sous-cartes
          (`fold-card surface="sunken"`, la forme des incidents et des
          décisions de la livraison), chacune avec son enregistrement. Pour un

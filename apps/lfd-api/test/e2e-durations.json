@@ -280,6 +280,7 @@
   "test/shop-quote.e2e-spec.ts": 6182,
   "test/shop-state-carry-over-migration.e2e-spec.ts": 3000,
   "test/site-deadlines.e2e-spec.ts": 8354,
+  "test/site-tables.e2e-spec.ts": 9635,
   "test/sites.e2e-spec.ts": 9836,
   "test/staff-access.e2e-spec.ts": 14397,
   "test/staff-author-columns.e2e-spec.ts": 2505,

@@ -150,6 +150,10 @@ export const SETTINGS_PHRASES = {
   'pickup_address.archived': onSetting('a archivé', PICKUP),
   'pickup_address.roles_set': onSetting('a réglé les rôles', OF_PICKUP),
   'pickup_address.colors_set': onSetting('a réglé les couleurs', OF_PICKUP),
+  // La salle d'un site (Hugo, 2026-10-17) : le NUMÉRO de table, jamais le jeton.
+  'pickup_address.tables_set': onSetting('a réglé le nombre de tables', OF_PICKUP),
+  'pickup_address.table_qr_generated': onSetting('a généré le QR d’une table', OF_PICKUP),
+  'pickup_address.table_qr_removed': onSetting('a retiré le QR d’une table', OF_PICKUP),
   'pickup_address.default_set': (fact) =>
     byActor(
       fact,

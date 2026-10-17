@@ -30,6 +30,7 @@ function site(id: string, overrides: Partial<StoredSiteView> = {}): StoredSiteVi
     deliveryDeparture: false,
     transferMode: "integrated",
     counterSetupMinutes: 0,
+    eatIn: false,
     gps: null,
     archivedAt: null,
     pickupColorB2b: null,

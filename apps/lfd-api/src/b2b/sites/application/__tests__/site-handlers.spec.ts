@@ -19,7 +19,13 @@ import { SetSiteColorsCommand } from "../set-site-colors.command.js";
 import { SetSiteColorsHandler } from "../set-site-colors.handler.js";
 import { SetSiteRolesCommand } from "../set-site-roles.command.js";
 import { SetSiteRolesHandler } from "../set-site-roles.handler.js";
-import { FixedDepartureSite, InMemorySites, PLACE, storedSite } from "./site-doubles.js";
+import {
+  FixedDepartureSite,
+  InMemorySites,
+  InMemorySiteTables,
+  PLACE,
+  storedSite,
+} from "./site-doubles.js";
 
 const ROLES = {
   pickup: true,
@@ -27,6 +33,7 @@ const ROLES = {
   deliveryDeparture: false,
   transferMode: "integrated",
   counterSetupMinutes: 15,
+  eatIn: false,
 } as const;
 
 /** L'existant : le retrait ouvert aux deux clientèles. */
@@ -67,6 +74,7 @@ describe("SetSiteRolesHandler", () => {
       events,
       new DirectUnitOfWork(),
       new FixedDepartureSite(),
+      new InMemorySiteTables(),
     ).execute(new SetSiteRolesCommand("site_village", ROLES));
 
     // Les clientèles du retrait, absentes de la charge, restent celles du site.
@@ -91,6 +99,7 @@ describe("SetSiteRolesHandler", () => {
       events,
       new DirectUnitOfWork(),
       new FixedDepartureSite(),
+      new InMemorySiteTables(),
     ).execute(
       new SetSiteRolesCommand("site_village", {
         ...ROLES,
@@ -117,6 +126,7 @@ describe("SetSiteRolesHandler", () => {
       new RecordingPublisher(),
       new DirectUnitOfWork(),
       new FixedDepartureSite(),
+      new InMemorySiteTables(),
     ).execute(new SetSiteRolesCommand("site_village", ROLES));
 
     expect(sites.stateOf("site_village")?.roles.pickupAudiences).toEqual({ b2b: false, b2c: true });
@@ -132,6 +142,7 @@ describe("SetSiteRolesHandler", () => {
         events,
         new DirectUnitOfWork(),
         new FixedDepartureSite(),
+        new InMemorySiteTables(),
       ).execute(
         new SetSiteRolesCommand("site_village", {
           ...ROLES,
@@ -153,6 +164,7 @@ describe("SetSiteRolesHandler", () => {
         events,
         new DirectUnitOfWork(),
         new FixedDepartureSite(),
+        new InMemorySiteTables(),
       ).execute(new SetSiteRolesCommand("site_village", { ...ROLES, pickup: false })),
     ).rejects.toBeInstanceOf(SiteTransferWithoutHandoverError);
     expect(sites.saved).toEqual([]);
@@ -169,6 +181,7 @@ describe("SetSiteRolesHandler", () => {
         events,
         new DirectUnitOfWork(),
         new FixedDepartureSite(),
+        new InMemorySiteTables(),
       ).execute(
         new SetSiteRolesCommand("site_village", {
           ...ROLES,
@@ -188,6 +201,7 @@ describe("SetSiteRolesHandler", () => {
       new RecordingPublisher(),
       new DirectUnitOfWork(),
       new FixedDepartureSite(),
+      new InMemorySiteTables(),
     ).execute(
       new SetSiteRolesCommand("site_village", {
         ...ROLES,
@@ -206,6 +220,7 @@ describe("SetSiteRolesHandler", () => {
         new RecordingPublisher(),
         new DirectUnitOfWork(),
         new FixedDepartureSite(),
+        new InMemorySiteTables(),
       ).execute(new SetSiteRolesCommand("site_village", ROLES)),
     ).rejects.toBeInstanceOf(SiteTransferWithoutGpsError);
     expect(sites.saved).toEqual([]);
@@ -218,6 +233,7 @@ describe("SetSiteRolesHandler", () => {
       new RecordingPublisher(),
       new DirectUnitOfWork(),
       new FixedDepartureSite(),
+      new InMemorySiteTables(),
     ).execute(new SetSiteRolesCommand("site_village", { ...ROLES, gps: GPS }));
     expect(sites.stateOf("site_village")?.place.gps).toEqual(GPS);
   });
@@ -236,6 +252,7 @@ describe("SetSiteRolesHandler", () => {
         new RecordingPublisher(),
         new DirectUnitOfWork(),
         departure,
+        new InMemorySiteTables(),
       ).execute(new SetSiteRolesCommand("site_bakery", { ...ROLES, supply: "on_site" })),
     ).rejects.toBeInstanceOf(DepartureSiteMustDeliverError);
     expect(sites.saved).toEqual([]);
@@ -253,6 +270,7 @@ describe("SetSiteRolesHandler", () => {
       new RecordingPublisher(),
       new DirectUnitOfWork(),
       new FixedDepartureSite("site_bakery"),
+      new InMemorySiteTables(),
     ).execute(new SetSiteRolesCommand("site_village", { ...ROLES, supply: "on_site" }));
     expect(sites.stateOf("site_village")?.roles.deliveryDeparture).toBe(false);
   });
@@ -264,6 +282,7 @@ describe("SetSiteRolesHandler", () => {
       new RecordingPublisher(),
       new DirectUnitOfWork(),
       departure,
+      new InMemorySiteTables(),
     ).execute(new SetSiteRolesCommand("site_village", ROLES));
     expect(departure.reads).toBe(0);
   });
@@ -275,6 +294,7 @@ describe("SetSiteRolesHandler", () => {
         new RecordingPublisher(),
         new DirectUnitOfWork(),
         new FixedDepartureSite(),
+        new InMemorySiteTables(),
       ).execute(new SetSiteRolesCommand("site_absent", ROLES)),
     ).rejects.toBeInstanceOf(PickupAddressNotFoundError);
   });

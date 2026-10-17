@@ -15,9 +15,12 @@ export const SITE_FACTS = {
   archived: "pickup_address.archived",
   rolesSet: "pickup_address.roles_set",
   colorsSet: "pickup_address.colors_set",
+  tablesSet: "pickup_address.tables_set",
+  tableQrGenerated: "pickup_address.table_qr_generated",
+  tableQrRemoved: "pickup_address.table_qr_removed",
 } as const satisfies Readonly<Record<string, JournalFactType>>;
 
-const SUBJECT_TYPE = "pickup_address";
+export const SUBJECT_TYPE = "pickup_address";
 
 /** Le site a été archivé : plus proposé, toujours résolu par id. */
 export class SiteArchivedEvent implements JournaledEvent {
@@ -64,6 +67,7 @@ export class SiteRolesSetEvent implements JournaledEvent {
         deliveryDeparture: this.roles.deliveryDeparture,
         transferMode: this.roles.transferMode,
         counterSetupMinutes: this.roles.counterSetupMinutes,
+        eatIn: this.roles.eatIn,
         gps: this.gps,
       },
     };

@@ -16,6 +16,7 @@ export function rolesOf(site: SiteView): SiteRolesPayload {
     deliveryDeparture: site.deliveryDeparture,
     transferMode: site.transferMode,
     counterSetupMinutes: site.counterSetupMinutes,
+    eatIn: site.eatIn,
   };
 }
 

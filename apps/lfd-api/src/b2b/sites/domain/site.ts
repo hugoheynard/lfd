@@ -5,6 +5,7 @@ import type { SiteColor } from "./site-color.js";
 import {
   ArchivedSiteError,
   DepartureSiteMustDeliverError,
+  EatInSiteWithTablesError,
   DeliveryDepartureSiteArchiveError,
   SiteCounterSetupError,
   SiteDeliveryDepartureFromTransferError,
@@ -52,6 +53,12 @@ export interface SiteRoles {
   readonly deliveryDeparture: boolean;
   readonly transferMode: SiteTransferMode;
   readonly counterSetupMinutes: number;
+  /**
+   * On peut y consommer sur place — une salle (Hugo, 2026-10-17). Aucune
+   * règle croisée avec les autres rôles (Q2 du plan
+   * `documentation/sites/plan-sur-place-capacite-de-site.md`).
+   */
+  readonly eatIn: boolean;
 }
 
 /** Les quatre couleurs de la logistique ; `null` = pas encore saisie. */
@@ -79,6 +86,7 @@ const NEW_SITE_ROLES: SiteRoles = {
   deliveryDeparture: false,
   transferMode: "integrated",
   counterSetupMinutes: 0,
+  eatIn: false,
 };
 
 const NO_COLORS: SiteColors = {
@@ -167,6 +175,11 @@ export class Site {
     return this.state.place.label;
   }
 
+  /** Le site a une salle : une grille de tables peut y exister. */
+  get eatIn(): boolean {
+    return this.state.roles.eatIn;
+  }
+
   get isArchived(): boolean {
     return this.state.archivedAt !== null;
   }
@@ -193,6 +206,8 @@ export class Site {
    * Les rôles, et le point GPS qui se saisit avec eux (Hugo, 2026-10-13) —
    * `undefined` le laisse tel quel, `null` l'efface. `isDeparture` est un fait
    * que la livraison détient (`DepartureSiteReader`) : le handler le lit.
+   * `tableCount` est la taille de la grille (`SiteTables`), que le handler
+   * lit aussi : une salle qui a des tables ne se ferme pas en silence.
    *
    * @throws {ArchivedSiteError} le site est archivé.
    * @throws {SiteTransferWithoutHandoverError}
@@ -202,12 +217,16 @@ export class Site {
    * @throws {SiteDeliveryDepartureWithoutGpsError} « Livraison » cochée sans point, ou point effacé.
    * @throws {SiteTransferWithoutGpsError} « par transfert » sans point, ou point effacé.
    * @throws {DepartureSiteMustDeliverError} « Livraison » retirée au départ des tournées.
+   * @throws {EatInSiteWithTablesError} « Sur place » retiré à un site qui a des tables.
    */
-  assignRoles(roles: SiteRoles, gps?: GpsPoint | null, isDeparture = false): void {
+  assignRoles(roles: SiteRoles, gps?: GpsPoint | null, isDeparture = false, tableCount = 0): void {
     this.assertActive();
     checkRoles(roles);
     if (isDeparture && !roles.deliveryDeparture) {
       throw new DepartureSiteMustDeliverError(this.label);
+    }
+    if (!roles.eatIn && tableCount > 0) {
+      throw new EatInSiteWithTablesError(this.label, tableCount);
     }
     const before = this.state.place.gps;
     const after = gps === undefined ? before : gps;

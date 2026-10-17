@@ -42,6 +42,7 @@ function toDomain(row: SiteRow): Site {
       deliveryDeparture: row.deliveryDeparture,
       transferMode: row.transferMode,
       counterSetupMinutes: row.counterSetupMinutes,
+      eatIn: row.eatIn,
     },
     colors: {
       pickupB2b: colorOf(row.pickupColorB2b),
@@ -82,6 +83,7 @@ function toPersistence(site: Site): Prisma.SiteUncheckedCreateInput {
     deliveryDeparture: roles.deliveryDeparture,
     transferMode: roles.transferMode,
     counterSetupMinutes: roles.counterSetupMinutes,
+    eatIn: roles.eatIn,
     pickupColorB2b: hexOf(colors, "pickupB2b"),
     pickupColorB2c: hexOf(colors, "pickupB2c"),
     deliveryColorB2b: hexOf(colors, "deliveryB2b"),

@@ -15,6 +15,9 @@ export function roleLabels(site: SiteView): readonly string[] {
   if (site.deliveryDeparture) {
     labels.push('Livraison');
   }
+  if (site.eatIn) {
+    labels.push('Sur place');
+  }
   return labels;
 }
 

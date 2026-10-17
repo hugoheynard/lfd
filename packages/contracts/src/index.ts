@@ -609,6 +609,8 @@ export type {
   SiteView,
   StoredSiteView,
 } from "./site.js";
+export { siteTableCountPayloadSchema } from "./site-tables.js";
+export type { SiteTableCountPayload, SiteTableView, SiteTablesView } from "./site-tables.js";
 export { orderLineAllergensSchema } from "./order.js";
 export { adminOrdersQuerySchema, adminOrderClienteleSchema } from "./admin-order-list.js";
 export { vatShareSchema, vatSharesSchema } from "./order.js";

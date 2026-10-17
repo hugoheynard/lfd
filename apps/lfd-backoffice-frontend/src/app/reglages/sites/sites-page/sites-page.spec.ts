@@ -30,6 +30,7 @@ const LABO: SiteView = {
   deliveryDeparture: true,
   transferMode: 'integrated',
   counterSetupMinutes: 0,
+  eatIn: false,
   pickupColorB2b: null,
   pickupColorB2c: null,
   deliveryColorB2b: null,

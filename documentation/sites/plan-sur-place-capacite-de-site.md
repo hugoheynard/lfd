@@ -12,6 +12,10 @@
 > Chaque affirmation sur l'existant cite `fichier:ligne`, ouvert le
 > 2026-10-17. Chemins relatifs à `apps/lfd-api/` sauf mention.
 
+> ✅ **L1 et L2 bâtis le 2026-10-17** (non commités à l'écriture de cette
+> ligne) — voir « Mesure de production et simplification » ci-dessous, qui
+> prime sur §4, §7 et §8.
+
 ## 0. Ce qui est convenu, et ce qui ne bouge pas
 
 - **Le contexte de vente `eatIn` reste.** Il porte le taux de TVA « sur place »
@@ -297,3 +301,71 @@ _Objections de `vitruve` : à ajouter ici après son passage._
 - Mineurs : « eatIn jamais facturé » est vrai pour tout le code du commerce
   (pas seulement la boutique) ; citer le constructeur d'URL ; §0 et L5 se
   contredisent sur la dépendance à l'autre chantier.
+
+## Mesure de production et simplification (Hugo, 2026-10-17)
+
+**Mesure de Hugo en production, 2026-10-17** : les trois points de vente
+(`pos_b2b` « B2B », « L'Adroit », « Village ») ont **0 table, 0 QR actif,
+aucun jeton**. Il n'y a donc **rien à recopier** : le lot de copie disparaît,
+et avec lui les objections de `vitruve` sur les jetons gardés, la date
+inventée (`qr_created_at`), le gel des anciennes lignes et la trace de la
+copie. Q1 tombe. **La grille de tables naît vide sur les sites.**
+
+Décisions de Hugo, « bâtis » :
+
+- **Q4 : une grille est refusée sur un site sans « Sur place »** — et, son
+  corollaire, on ne retire pas « Sur place » à un site qui a des tables
+  (ramener d'abord leur nombre à 0).
+- **Q3 : pas d'horaires propres** au sur place.
+- **Jetons UNIQUES** en base (on part de zéro, rien à concilier) ;
+  `qr_created_at` nullable, `NULL` avec le jeton.
+- **Le journal du site porte `eatIn`** : `site.events.ts` énumère la charge
+  champ par champ, le champ y est ajouté à la main (objection de `vitruve`).
+
+### Les lots, renumérotés (remplacent le tableau du §8)
+
+| Lot | Contenu                                                                                  | État                                                                    |
+| --- | ---------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| L1  | La case « Sur place » d'un site : colonne `eat_in`, `SiteRoles.eatIn`, journal, écran    | **bâti** (2026-10-17)                                                   |
+| L2  | La grille de tables sur un site « Sur place » : `public.site_table` dans `b2b/sites`, QR | **bâti** (2026-10-17)                                                   |
+| L3  | Retrait du point de vente du référentiel (code, écran, `offeredByLocations`)             | à faire — objections §vitruve (harnais, `pos_b2b`, registre) à trancher |
+| L4  | Suppression des tables `pim.point_of_sale*`                                              | plus tard, sur ordre de Hugo                                            |
+
+### Ce qui est bâti (L1, L2)
+
+- **Migration** `20261017090000_le_sur_place_et_les_tables_du_site`,
+  additive : `pickup_addresses.eat_in BOOLEAN NOT NULL DEFAULT false`, et la
+  table `public.site_table (site_id, number, token, qr_created_at)` — clé
+  `(site_id, number)`, `token` UNIQUE nullable, `CHECK (number >= 1)`, FK vers
+  `pickup_addresses` sans cascade. Rien n'est copié, rien n'est retiré.
+- **L1** — `Site.eatIn` ; `assignRoles` le pose, sans règle croisée (Q2), et
+  refuse de le retirer quand la grille a des tables
+  (`EatInSiteWithTablesError`, 409). Le contrat `SiteRolesPayload.eatIn` est
+  **facultatif** (absent = inchangé, comme `pickupAudiences`) ;
+  `StoredSiteView.eatIn` est toujours rendu. Le fait
+  `pickup_address.roles_set` porte `eatIn` (facultatif dans le catalogue pour
+  les faits antérieurs).
+- **L2** — agrégat **à part** `SiteTables` (`apps/lfd-api/src/b2b/sites/domain/site-tables.ts`),
+  deux ports (`SiteTablesRepository`, `SiteTablesReader`). Tables numérotées
+  de 1 à N, 0 à 200 ; changer le nombre ajoute ou retire en fin de grille et
+  garde les QR des autres. Refus : `SiteTablesWithoutEatInError` (409),
+  `SiteTableCountError` (400), `SiteTableNotFoundError` (404),
+  `ArchivedSiteError` (409). Cas B2B séparés : `SetSiteTableCount`,
+  `GenerateSiteTableQr`, `RemoveSiteTableQr`, `GetSiteTables`. Routes sous
+  `lfc_site_settings` : `GET|PUT admin/sites/:id/tables`,
+  `POST|DELETE admin/sites/:id/tables/:number/qr`. Faits
+  `pickup_address.tables_set` (`count`, `before`),
+  `.table_qr_generated` / `.table_qr_removed` (`table`) — le **numéro**, jamais
+  le jeton.
+- **Le jeton** vient du port d'identifiants (`IdGenerator`, un ULID : 80 bits
+  aléatoires derrière l'horodatage). Le générateur UUID v4 du référentiel
+  n'est pas recopié.
+- **Ce que contient le QR** : `<CLIENT_BASE_URL>/table/<jeton>`, composé par
+  l'adaptateur de lecture (`PrismaSiteTablesReader`). Le jeton, unique en
+  base, désigne **à lui seul** le site et la table — plus besoin de
+  `baseUrl` ni de `?table=N` (objection BLOQUANTE de `vitruve` levée). Sans
+  `CLIENT_BASE_URL`, l'adresse est `null` et l'écran le dit. **Aucune route ne
+  la sert encore** : la commande à table reste hors plan.
+- **Écran** Réglages › Sites : case « Sur place » dans la carte Rôles ; carte
+  « Tables » (`site-tables-card/`) visible seulement pour un site « Sur place »
+  enregistré — nombre, QR par table, export SVG.

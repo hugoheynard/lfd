@@ -1,4 +1,8 @@
-import { BusinessError, DomainError } from "../../../platform/shared/errors/app-error.js";
+import {
+  BusinessError,
+  DomainError,
+  ResourceNotFoundError,
+} from "../../../platform/shared/errors/app-error.js";
 
 /**
  * Les refus de l'agrégat `Site` — doc
@@ -119,6 +123,52 @@ export class ArchivedSiteError extends BusinessError {
     super(
       "site.archived",
       `« ${label} » est archivé : il ne se modifie plus. Créez un nouveau site si ce lieu reprend du service.`,
+    );
+  }
+}
+
+/**
+ * Retirer « Sur place » à un site qui a des tables (**409**, Hugo,
+ * 2026-10-17) : une grille n'existe que dans une salle.
+ */
+export class EatInSiteWithTablesError extends BusinessError {
+  constructor(label: string, tableCount: number) {
+    super(
+      "site.eat_in.has_tables",
+      `« ${label} » a ${String(tableCount)} table(s) : ramenez leur nombre à 0 dans la carte « Tables » avant de retirer « Sur place ».`,
+    );
+  }
+}
+
+/**
+ * Une grille de tables sur un site sans salle (**409**, Hugo, 2026-10-17,
+ * Q4 du plan `documentation/sites/plan-sur-place-capacite-de-site.md`).
+ */
+export class SiteTablesWithoutEatInError extends BusinessError {
+  constructor(label: string) {
+    super(
+      "site.tables.without_eat_in",
+      `« ${label} » n'a pas de salle : cochez « Sur place » dans ses rôles avant de lui donner des tables.`,
+    );
+  }
+}
+
+/** Un nombre de tables hors de la grille admise (**400**). */
+export class SiteTableCountError extends DomainError {
+  constructor(count: number, max: number) {
+    super(
+      "site.tables.count",
+      `${String(count)} table(s) ne se comptent pas : saisissez un nombre entier entre 0 et ${String(max)}.`,
+    );
+  }
+}
+
+/** Un QR demandé pour une table qui n'existe pas (**404**). */
+export class SiteTableNotFoundError extends ResourceNotFoundError {
+  constructor(label: string, tableNumber: number) {
+    super(
+      "site.tables.not_found",
+      `« ${label} » n'a pas de table ${String(tableNumber)} : augmentez d'abord le nombre de tables.`,
     );
   }
 }

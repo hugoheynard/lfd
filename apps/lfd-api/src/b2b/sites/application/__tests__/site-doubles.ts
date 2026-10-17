@@ -2,6 +2,8 @@ import { DepartureSiteReader } from "../../../../delivery/channels/commerce/inde
 import { PickupDiscount } from "../../../pickup-addresses/domain/pickup-discount.js";
 import { Site, type SitePlace, type SiteState } from "../../domain/site.js";
 import { SiteRepository } from "../../domain/site.repository.js";
+import { SiteTables, type SiteTablesState } from "../../domain/site-tables.js";
+import { SiteTablesRepository } from "../../domain/site-tables.repository.js";
 
 /** Un lieu valide, sans remise. */
 export const PLACE: SitePlace = {
@@ -70,5 +72,39 @@ export class FixedDepartureSite extends DepartureSiteReader {
   currentSiteId(): Promise<string | null> {
     this.reads += 1;
     return Promise.resolve(this.siteId);
+  }
+}
+
+/**
+ * **Les grilles de tables en mémoire** — un double du port d'écriture. Chaque
+ * `load` rend une COPIE ; une grille jamais enregistrée se lit vide, comme en base.
+ */
+export class InMemorySiteTables extends SiteTablesRepository {
+  readonly saved: string[] = [];
+  private readonly rows = new Map<string, SiteTablesState>();
+
+  constructor(...grids: readonly SiteTables[]) {
+    super();
+    for (const grid of grids) {
+      this.rows.set(grid.siteId, grid.snapshot());
+    }
+  }
+
+  load(siteId: string): Promise<SiteTables> {
+    const row = this.rows.get(siteId);
+    return Promise.resolve(
+      row === undefined ? SiteTables.empty(siteId) : SiteTables.rehydrate(row),
+    );
+  }
+
+  save(tables: SiteTables): Promise<void> {
+    this.rows.set(tables.siteId, tables.snapshot());
+    this.saved.push(tables.siteId);
+    return Promise.resolve();
+  }
+
+  /** La grille enregistrée d'un site — pour les assertions. */
+  stateOf(siteId: string): SiteTablesState | undefined {
+    return this.rows.get(siteId);
   }
 }

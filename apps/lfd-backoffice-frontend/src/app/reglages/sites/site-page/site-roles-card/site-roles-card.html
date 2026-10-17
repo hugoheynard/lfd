@@ -119,6 +119,17 @@
       />
     }
 
+    <!-- Une salle (Hugo, 2026-10-17) : aucune règle croisée avec les autres
+         rôles. Cochée et enregistrée, la carte « Tables » apparaît ; le
+         serveur refuse de la décocher tant que la salle a des tables. -->
+    <fold-checkbox
+      label="Sur place"
+      hint="on peut y consommer en salle ; sa grille de tables se règle dans la carte « Tables »"
+      [disabled]="readOnly()"
+      [checked]="draft().eatIn ?? false"
+      (checkedChange)="set('eatIn', $event)"
+    />
+
     @for (issue of issues(); track issue) {
       <fold-callout variant="warning">{{ issue }}</fold-callout>
     }

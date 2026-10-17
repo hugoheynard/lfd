@@ -4,6 +4,7 @@ import { weekdaySchema } from "../address.js";
 import { CUSTOMER_CANCELLATION_REASON_CODES } from "../customer-cancellation.values.js";
 import { WINDOW_MODES } from "../delivery-availability.values.js";
 import { DELIVERY_BIN_FACTS } from "./delivery-bins.js";
+import { SITE_TABLE_FACTS } from "./site-tables.js";
 import { DELIVERY_LOADING_FACTS } from "./delivery-loading.js";
 import { DELIVERY_PURCHASE_LIBRARY_FACTS } from "./delivery-purchase-library.js";
 import { DELIVERY_ROUND_FACTS } from "./delivery-rounds.js";
@@ -415,6 +416,8 @@ export const ORDERS_PRODUCTION_FACTS = {
        */
       pickupForB2b: z.boolean().optional(),
       pickupForB2c: z.boolean().optional(),
+      /** La salle (Hugo, 2026-10-17). Absente des faits écrits avant ce jour. */
+      eatIn: z.boolean().optional(),
     }),
   ),
   /**
@@ -541,6 +544,7 @@ export const ORDERS_PRODUCTION_FACTS = {
   /** **Les scénarios du simulateur** (lot 9) — dans son propre fichier, même famille. */
   ...DELIVERY_SIMULATION_FACTS,
   ...DELIVERY_BIN_FACTS,
+  ...SITE_TABLE_FACTS,
   /** **La bibliothèque d'achat** (lot B1) — dans son propre fichier, même famille. */
   ...DELIVERY_PURCHASE_LIBRARY_FACTS,
   /** **Les pièces de remise effacées** (purge câblée, non planifiée) — même famille. */

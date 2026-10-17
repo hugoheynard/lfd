@@ -41,6 +41,12 @@ export const siteRolesPayloadSchema = z.object({
   supply: siteSupplySchema,
   /** Livraisons et transferts peuvent en partir. */
   deliveryDeparture: z.boolean(),
+  /**
+   * On peut y consommer sur place — une salle (Hugo, 2026-10-17). **Absent =
+   * inchangé**, comme `pickupAudiences` : le champ arrive sur un contrat servi.
+   * Ne fixe aucun taux ; une grille de tables n'existe que sur un tel site.
+   */
+  eatIn: z.boolean().optional(),
   transferMode: siteTransferModeSchema,
   /** La mise en place au comptoir après le colisage, en minutes. */
   counterSetupMinutes: z.number().int(),
@@ -74,7 +80,12 @@ export interface SiteView extends StoredSiteView {
 
 /** Un site tel que la base le porte, sans ce que la livraison en dit. */
 export interface StoredSiteView
-  extends PickupAddressView, Omit<SiteRolesPayload, "pickupAudiences">, SiteColorsPayload {
+  extends
+    PickupAddressView,
+    Omit<SiteRolesPayload, "pickupAudiences" | "eatIn">,
+    SiteColorsPayload {
+  /** Toujours rendu : `false` = aucune salle. */
+  readonly eatIn: boolean;
   /** Toujours rendu : `null` = pas saisi (le trajet ne se calcule pas sans lui). */
   readonly gps: GpsPoint | null;
   /** ISO 8601, ou `null` : un site archivé n'est plus proposé. */

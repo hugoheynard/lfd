@@ -6,6 +6,7 @@ import { DepartureSiteReader } from "../../../delivery/channels/commerce/index.j
 import { PickupAddressNotFoundError } from "../../pickup-addresses/domain/pickup-errors.js";
 import { SiteRolesSetEvent } from "../domain/site.events.js";
 import { SiteRepository } from "../domain/site.repository.js";
+import { SiteTablesRepository } from "../domain/site-tables.repository.js";
 import { SetSiteRolesCommand } from "./set-site-roles.command.js";
 
 /**
@@ -20,6 +21,7 @@ export class SetSiteRolesHandler implements ICommandHandler<SetSiteRolesCommand,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
     private readonly departure: DepartureSiteReader,
+    private readonly tables: SiteTablesRepository,
   ) {}
 
   /**
@@ -32,6 +34,7 @@ export class SetSiteRolesHandler implements ICommandHandler<SetSiteRolesCommand,
    * @throws {SiteDeliveryDepartureWithoutGpsError} « Livraison » cochée sans point, ou point effacé.
    * @throws {SiteTransferWithoutGpsError} « par transfert » sans point, ou point effacé.
    * @throws {DepartureSiteMustDeliverError} « Livraison » retirée au départ des tournées.
+   * @throws {EatInSiteWithTablesError} « Sur place » retiré à un site qui a des tables.
    */
   async execute(command: SetSiteRolesCommand): Promise<void> {
     await this.uow.run(async () => {
@@ -39,16 +42,21 @@ export class SetSiteRolesHandler implements ICommandHandler<SetSiteRolesCommand,
       if (site === null) {
         throw new PickupAddressNotFoundError(command.siteId);
       }
-      const { gps, pickupAudiences, ...rest } = command.payload;
+      const { gps, pickupAudiences, eatIn, ...rest } = command.payload;
+      const current = site.snapshot().roles;
       // Absentes = inchangées : un onglet d'avant les cases ne rouvre rien.
       const roles = {
         ...rest,
-        pickupAudiences: pickupAudiences ?? site.snapshot().roles.pickupAudiences,
+        pickupAudiences: pickupAudiences ?? current.pickupAudiences,
+        eatIn: eatIn ?? current.eatIn,
       };
       // La livraison ne se demande que si « Livraison » est retirée.
-      const stops = site.snapshot().roles.deliveryDeparture && !roles.deliveryDeparture;
+      const stops = current.deliveryDeparture && !roles.deliveryDeparture;
       const isDeparture = stops && (await this.departure.currentSiteId()) === site.id;
-      site.assignRoles(roles, gps, isDeparture);
+      // La grille ne se compte que si « Sur place » est retiré.
+      const closes = current.eatIn && !roles.eatIn;
+      const tableCount = closes ? (await this.tables.load(site.id)).count : 0;
+      site.assignRoles(roles, gps, isDeparture, tableCount);
       await this.sites.save(site);
       await this.events.publishTraced(
         new SiteRolesSetEvent(

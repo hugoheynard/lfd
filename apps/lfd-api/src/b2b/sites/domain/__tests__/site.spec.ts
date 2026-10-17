@@ -32,6 +32,7 @@ const ROLES: SiteRoles = {
   deliveryDeparture: false,
   transferMode: "integrated",
   counterSetupMinutes: 0,
+  eatIn: false,
 };
 
 const NO_COLORS: SiteColors = {

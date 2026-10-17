@@ -10,6 +10,7 @@ import type {
   PublicPickupScheduleView,
   SiteColorsPayload,
   SiteRolesPayload,
+  SiteTablesView,
   SiteView,
 } from '@lfd/contracts';
 
@@ -66,6 +67,33 @@ export class SitesService {
   /** Archiver : il n'y a pas de suppression. Le serveur refuse celui qui expédie. */
   async archive(id: string): Promise<void> {
     await firstValueFrom(this.http.post<void>(`${SITES}/${encodeURIComponent(id)}/archive`, null));
+  }
+
+  /** La grille de tables d'un site « Sur place », avec l'adresse de chaque QR. */
+  tables(id: string): Promise<SiteTablesView> {
+    return firstValueFrom(
+      this.http.get<SiteTablesView>(`${SITES}/${encodeURIComponent(id)}/tables`),
+    );
+  }
+
+  /** Le nombre de tables : le serveur en ajoute ou en retire en fin de grille. */
+  async setTableCount(id: string, count: number): Promise<void> {
+    await firstValueFrom(
+      this.http.put<void>(`${SITES}/${encodeURIComponent(id)}/tables`, { count }),
+    );
+  }
+
+  /** (Re)génère le QR d'une table : l'ancien code imprimé ne vaut plus. */
+  async generateTableQr(id: string, tableNumber: number): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(`${SITES}/${encodeURIComponent(id)}/tables/${tableNumber}/qr`, null),
+    );
+  }
+
+  async removeTableQr(id: string, tableNumber: number): Promise<void> {
+    await firstValueFrom(
+      this.http.delete<void>(`${SITES}/${encodeURIComponent(id)}/tables/${tableNumber}/qr`),
+    );
   }
 
   /** L'horaire PUBLIC du site : plages de créneaux et fermetures. */
