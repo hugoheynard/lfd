@@ -163,7 +163,10 @@ function staff(): ReturnType<E2eContext["asSub"]> {
  * jamais compter sur l'ordre.
  */
 async function eventually<T>(read: () => Promise<T>, until: (value: T) => boolean): Promise<T> {
-  for (let attempt = 0; attempt < 40; attempt += 1) {
+  // 200 × 25 ms = 5 s. Une seconde ne suffisait pas sous la charge de la CI
+  // (rouge le 2026-10-17 sur la tranche 17/20, vert 2/2 en local) : le délai
+  // borne une attente, il ne dit rien du comportement.
+  for (let attempt = 0; attempt < 200; attempt += 1) {
     const value = await read();
     if (until(value)) {
       return value;
