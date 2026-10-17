@@ -7,8 +7,7 @@ import type { LocalizedText } from "@lfd/pim-contracts";
  * ## Aucun identifiant ne traverse
  *
  * Tout se désigne par **clé portable** : le nom d'une famille, la clé d'un
- * contexte, le libellé d'un point de vente, le nom d'un taux, le SKU d'une
- * fiche. Jamais par `id` — le rejeu passe par les commandes, qui assignent
+ * contexte, le nom d'un taux, le SKU d'une fiche. Jamais par `id` — le rejeu passe par les commandes, qui assignent
  * leurs propres ULID, et un identifiant recopié serait un identifiant que le
  * domaine n'a pas frappé.
  *
@@ -47,16 +46,8 @@ export interface CorpusCategory {
   readonly name: LocalizedText;
   /** Le nom source de la famille parente, ou `null` à la racine. */
   readonly parentName: string | null;
-  /** Matrice de la famille — l'héritage dont les fiches partent. */
-  readonly channels: readonly CorpusChannel[];
   /** Taux par clé de contexte, désigné par le **nom** du taux. */
   readonly vat: Readonly<Record<string, string>>;
-}
-
-/** Une case de la matrice, désignée par le libellé du point de vente. */
-export interface CorpusChannel {
-  readonly pointOfSaleLabel: string;
-  readonly context: string;
 }
 
 export interface CorpusProduct {
@@ -76,8 +67,6 @@ export interface CorpusProduct {
    * explicitement (cf. `declarations.ts`).
    */
   readonly declaration: CorpusDeclaration | null;
-  /** `null` = la fiche suit sa famille ; sinon, sa dérogation. */
-  readonly channels: readonly CorpusChannel[] | null;
   readonly vat: Readonly<Record<string, string>>;
 }
 

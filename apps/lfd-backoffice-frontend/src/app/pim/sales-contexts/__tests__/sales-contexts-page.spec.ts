@@ -44,7 +44,7 @@ describe('SalesContextsPage', () => {
                 position: 3,
                 active: true,
                 root: true,
-                offeredByLocations: 0,
+                ratedBy: 0,
               },
             ],
             loadError: () => null,
@@ -70,7 +70,7 @@ describe('SalesContextsPage', () => {
   it('projette une cellule par colonne jusqu’au tableau', () => {
     const data = table();
 
-    for (const key of ['label', 'scope', 'state']) {
+    for (const key of ['label', 'state']) {
       expect(data.cellTemplate(key), `cellule « ${key} » absente`).not.toBeNull();
     }
   });

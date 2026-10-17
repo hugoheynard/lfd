@@ -510,12 +510,13 @@ révision d'avant à une d'après montre « Contextes de vente » sorti, une foi
 Le point de vente a quitté le référentiel (`63bb374a8`, L3 de
 [`../sites/plan-sur-place-capacite-de-site.md`](../sites/plan-sur-place-capacite-de-site.md)).
 
-**Reste, figée en base et lue par un seul endroit** : `category_channel` et
-`product_channel` alimentent le compte « vendu par » de la liste des contextes
-de vente, `point_of_sale_context` le compte « offert par »
-(`apps/lfd-api/src/pim/sales-contexts/infrastructure/prisma-sales-context.repository.ts:110-115`,
-`prisma-sales-context.registry.ts:89`) — jusqu'à L4 du plan du sur place.
-`product_channel_override` n'est plus lue du tout. **Les contextes de vente et
+**Plus rien en base** depuis L4 du plan du sur place (2026-10-17) : la
+matrice (`category_channel`, `product_channel`, `product_channel_override`) et
+le point de vente (`point_of_sale*`) sont supprimés par la migration
+`20261017120000_retrait_du_point_de_vente_et_de_la_matrice`, avec les comptes
+« vendu par » et « offert par » de la liste des contextes de vente. Ce qui
+retient un contexte se réduit à ses taux, dont les clés étrangères sont
+repassées en `RESTRICT` dans la même migration. **Les contextes de vente et
 la TVA par contexte ne bougent pas.**
 
 ## 7. Les écrans

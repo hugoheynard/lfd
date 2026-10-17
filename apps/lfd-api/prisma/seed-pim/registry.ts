@@ -171,9 +171,7 @@ async function seedCategories(
 }
 
 /**
- * Les taux des familles, posés **après** que toutes existent. Leur matrice
- * des canaux, que le corpus porte encore, n'est plus rejouée : elle ne s'écrit
- * plus depuis X4 (`documentation/catalogue/plan-sans-interrupteurs.md`).
+ * Les taux des familles, posés **après** que toutes existent.
  */
 async function applyCategoryVat(
   bus: CommandBus,

@@ -153,17 +153,8 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   // n'est renseigné.
   CategoryEditorial: "pim",
   CategoryMedia: "pim",
-  // La matrice de canaux en table (C0-d) : une ligne par (lieu, contexte).
-  CategoryChannel: "pim",
-  ProductChannelOverride: "pim",
-  ProductChannel: "pim",
   ProductContextVat: "pim",
   SalesContext: "pim",
-  // D'où l'on vend (p-0) : les boutiques ET la plateforme professionnelle,
-  // qui n'était jusqu'ici qu'un `NULL` dans la matrice.
-  PointOfSale: "pim",
-  PointOfSaleContext: "pim",
-  PointOfSaleTable: "pim",
   VatRate: "pim",
   // Les décisions comptables globales de la maison (le rapport prix pro /
   // prix public). Singleton, comme `BookingPolicySettings`.

@@ -29,8 +29,7 @@ import type { CatalogueCorpus } from "./corpus.js";
  * ## Comment le modifier
  *
  * À la main, comme n'importe quelle donnée de référence. Les entités se
- * désignent par **clé portable** — nom de famille, libellé de point de vente,
- * clé de contexte, nom de taux, SKU — jamais par identifiant : le rejeu passe
+ * désignent par **clé portable** — nom de famille, clé de contexte, nom de taux, SKU — jamais par identifiant : le rejeu passe
  * par les commandes, qui frappent leurs propres ULID.
  */
 export const CATALOGUE: CatalogueCorpus = {
@@ -75,28 +74,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Viennoiseries",
       },
       parentName: null,
-      channels: [
-        {
-          pointOfSaleLabel: "B2B",
-          context: "b2b",
-        },
-        {
-          pointOfSaleLabel: "Village",
-          context: "takeaway",
-        },
-        {
-          pointOfSaleLabel: "Labo",
-          context: "takeaway",
-        },
-        {
-          pointOfSaleLabel: "Village",
-          context: "eatIn",
-        },
-        {
-          pointOfSaleLabel: "Labo",
-          context: "eatIn",
-        },
-      ],
       vat: {
         takeaway: "Réduit",
         eatIn: "Intermédiaire",
@@ -108,20 +85,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Pains",
       },
       parentName: null,
-      channels: [
-        {
-          pointOfSaleLabel: "B2B",
-          context: "b2b",
-        },
-        {
-          pointOfSaleLabel: "Village",
-          context: "takeaway",
-        },
-        {
-          pointOfSaleLabel: "Labo",
-          context: "takeaway",
-        },
-      ],
       vat: {
         takeaway: "Réduit",
         b2b: "Réduit",
@@ -142,20 +105,6 @@ export const CATALOGUE: CatalogueCorpus = {
       // vitrine publique ne montrait donc que 37 des 92 articles du corpus,
       // sans que rien ne le dise non plus. Une famille de pâtisseries qu'une
       // boulangerie ne vendrait pas à son comptoir n'existe pas.
-      channels: [
-        {
-          pointOfSaleLabel: "B2B",
-          context: "b2b",
-        },
-        {
-          pointOfSaleLabel: "Village",
-          context: "takeaway",
-        },
-        {
-          pointOfSaleLabel: "Labo",
-          context: "takeaway",
-        },
-      ],
       vat: {
         takeaway: "Réduit",
         b2b: "Réduit",
@@ -168,20 +117,6 @@ export const CATALOGUE: CatalogueCorpus = {
       parentName: null,
       // Ouverte aux pros le 2026-09-13, au comptoir le 2026-09-21 — même geste
       // que « Pâtisseries », et pour la même raison.
-      channels: [
-        {
-          pointOfSaleLabel: "B2B",
-          context: "b2b",
-        },
-        {
-          pointOfSaleLabel: "Village",
-          context: "takeaway",
-        },
-        {
-          pointOfSaleLabel: "Labo",
-          context: "takeaway",
-        },
-      ],
       vat: {
         takeaway: "Réduit",
         b2b: "Réduit",
@@ -199,20 +134,6 @@ export const CATALOGUE: CatalogueCorpus = {
       // selon la forme — c'est un arbitrage de dev posé faute de source, pas
       // une position fiscale de la maison. À reprendre avec la comptabilité
       // avant que ce canal serve ailleurs qu'en démonstration.
-      channels: [
-        {
-          pointOfSaleLabel: "B2B",
-          context: "b2b",
-        },
-        {
-          pointOfSaleLabel: "Village",
-          context: "takeaway",
-        },
-        {
-          pointOfSaleLabel: "Labo",
-          context: "takeaway",
-        },
-      ],
       vat: {
         // Le MÊME taux qu'au canal pro, et pas 5,5 % : l'arbitrage ci-dessus
         // porte sur la nature du produit, pas sur le canal par lequel il part.
@@ -255,28 +176,6 @@ export const CATALOGUE: CatalogueCorpus = {
           glycemicIndex: null,
         },
       },
-      channels: [
-        {
-          pointOfSaleLabel: "Village",
-          context: "eatIn",
-        },
-        {
-          pointOfSaleLabel: "Village",
-          context: "takeaway",
-        },
-        {
-          pointOfSaleLabel: "Labo",
-          context: "eatIn",
-        },
-        {
-          pointOfSaleLabel: "Labo",
-          context: "takeaway",
-        },
-        {
-          pointOfSaleLabel: "B2B",
-          context: "b2b",
-        },
-      ],
       vat: {
         eatIn: "Normal",
         b2b: "Intermédiaire",
@@ -296,7 +195,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Amandes caramélisées et chocolat noir, format généreux.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -313,7 +211,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Tablette de chocolat au lait tempéré à l'atelier.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -330,7 +227,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Sablé et gianduja, le duo noisette-chocolat.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -344,7 +240,6 @@ export const CATALOGUE: CatalogueCorpus = {
       priceCents: 1300,
       weightGrams: 150,
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -361,7 +256,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Assortiment de sablés au gianduja.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -378,7 +272,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Florentins en boîte, à offrir ou à garder.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -392,7 +285,6 @@ export const CATALOGUE: CatalogueCorpus = {
       priceCents: 1700,
       weightGrams: 150,
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -409,7 +301,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Œufs en chocolat fourrés praliné.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -426,7 +317,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Petites meringues à la noisette, croquantes et légères.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -440,7 +330,6 @@ export const CATALOGUE: CatalogueCorpus = {
       priceCents: 3000,
       weightGrams: 250,
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -457,7 +346,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Guimauve maison enrobée de chocolat, la spécialité de la maison.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -474,7 +362,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Mendiants au chocolat et fruits secs.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -488,7 +375,6 @@ export const CATALOGUE: CatalogueCorpus = {
       priceCents: null,
       weightGrams: null,
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -502,7 +388,6 @@ export const CATALOGUE: CatalogueCorpus = {
       priceCents: null,
       weightGrams: null,
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -516,7 +401,6 @@ export const CATALOGUE: CatalogueCorpus = {
       priceCents: null,
       weightGrams: null,
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -533,7 +417,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Farine française, levain nourri chaque jour, croûte qui chante a la sortie du four.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -550,7 +433,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Baguette de fabrication artisanale, mie alvéolée et croûte fine.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -567,7 +449,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Baguette de plateau, format pratique pour la table.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -584,7 +465,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Pain aux céréales, dense et rustique, parfait avec les fromages.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -601,7 +481,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Petit pain au Beaufort, un classique savoyard.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -618,7 +497,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Pain aux graines, mie souple et gout de céréales grillees.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -635,7 +513,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Flûte de village, croûte dorée et mie moelleuse.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -652,7 +529,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Pain de campagne au levain, il tient toute la journée.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -669,7 +545,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Baguette de campagne aux graines.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -686,7 +561,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Petit format, beaucoup de croûte.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -703,7 +577,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Flûte artisanale, mie alvéolée.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -720,7 +593,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Flûte de tradition francaise, fermentation lente.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -737,7 +609,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Pain complet à la farine française, riche en fibres.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -754,7 +625,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Pain de seigle dense, idéal avec les huîtres et les fromages.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -771,7 +641,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Pain aux graines et fruits secs, vendu au kilo.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -788,7 +657,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Pain de campagne rustique, vendu au kilo.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -805,7 +673,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Pavé garni de noix, le compagnon du plateau de fromages.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -822,7 +689,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Pain de mie frais en carré, mie régulière et moelleuse.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -839,7 +705,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Myrtilles sauvages de nos alpages sur une pâte sablée.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -856,7 +721,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Le flan pâtissier à l'ancienne, vanille et texture fondante.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -873,7 +737,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Framboises fraîches et crème pâtissière sur pâte sablée.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -887,7 +750,6 @@ export const CATALOGUE: CatalogueCorpus = {
       priceCents: 400,
       weightGrams: null,
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -904,7 +766,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Pâte à choux, crème pâtissière au chocolat et glacage brillant.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -921,7 +782,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Creme au citron acidulée sur une pâte sablée croustillante.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -938,7 +798,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Pâte à choux et crème au café, le classique intemporel.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -955,7 +814,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Pâte à choux garnie de crème à la vanille.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -972,7 +830,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Citron acidulé et meringue dorée au chalumeau.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -989,7 +846,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Framboises et pâte à crumble beurrée, servi en part.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1003,7 +859,6 @@ export const CATALOGUE: CatalogueCorpus = {
       priceCents: 400,
       weightGrams: null,
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1017,7 +872,6 @@ export const CATALOGUE: CatalogueCorpus = {
       priceCents: 500,
       weightGrams: null,
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1034,7 +888,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Caramel tendre et noix torréfiées sur pâte sablée.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1051,7 +904,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Mousse au chocolat aérienne, servie en part individuelle.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1068,7 +920,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "La tarte aux myrtilles sauvages en format à partager, 4 personnes.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1085,7 +936,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Vermicelles de crème de marron, meringue et chantilly.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1102,7 +952,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Poires fondantes sur une base d'amandes.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1119,7 +968,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Abricots et pâte sablée, la tarte de saison à l'ancienne.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1136,7 +984,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Jambon blanc et Beaufort sur pain maison.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1153,7 +1000,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Tourte généreuse au Beaufort, servie en part.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1170,7 +1016,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Quiche lorraine a l'appareil crème et lardons, part individuelle.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1187,7 +1032,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Le pan bagnat garni au thon, version montagne.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1204,7 +1048,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Part de pizza maison, pâte levée sur place.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1221,7 +1064,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Club sandwich au poulet, en trois étages.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1238,7 +1080,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Poulet et pain aux graines, croquant et rassasiant.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1255,7 +1096,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Jambon cru et tomme de Savoie sur pain maison.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1269,7 +1109,6 @@ export const CATALOGUE: CatalogueCorpus = {
       priceCents: 700,
       weightGrams: null,
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1286,7 +1125,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Le jambon-beurre, avec les cornichons qui vont avec.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1303,7 +1141,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Poireaux fondants et chèvre, part individuelle.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1320,7 +1157,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Salade Cesar en barquette, prête à emporter.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1337,7 +1173,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Tranche garnie tomate et mozzarella.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1354,7 +1189,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Saumon et épinards dans un appareil crèmeux.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1371,7 +1205,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Lentilles vertes en barquette, assaisonnées maison.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1388,7 +1221,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Tranche garnie chèvre et miel.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1405,7 +1237,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Quiche aux légumes de saison, part individuelle.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1422,7 +1253,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Rosette et beurre sur pain maison.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1439,7 +1269,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Fougasse aux saveurs du Sud.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1456,7 +1285,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Croque végétarien à la courgette.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1473,7 +1301,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Croque-monsieur sur pain de campagne, jambon et fromage.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1490,7 +1317,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Tranche garnie de légumes de saison.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1507,7 +1333,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Sandwich végétarien aux légumes croquants.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1524,7 +1349,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "La tartiflette en part individuelle, pommes de terre et reblochon.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1541,7 +1365,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Le pur beurre, le vrai : un tourage patient et un feuilletage qui craque à la première bouchée.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1558,7 +1381,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Feuilletage généreux et deux barres de chocolat qui ne font pas semblant.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1572,7 +1394,6 @@ export const CATALOGUE: CatalogueCorpus = {
       priceCents: 300,
       weightGrams: null,
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1589,7 +1410,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Spirale de crème pâtissière et raisins moelleux, roulée à la main.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1606,7 +1426,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Feuilletage doré et pommes fondantes, comme à la sortie du four.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1623,7 +1442,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Brioche moelleuse et pralines roses, la gourmandise version alpine.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1640,7 +1458,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Mie filante et pépites de chocolat généreusement reparties.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1657,7 +1474,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "La brioche simple et bien faite, croustillante de sucre sur le dessus.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1674,7 +1490,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Mie douce et moelleuse, le classique du goûter.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1691,7 +1506,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "La brioche parisienne traditionnelle, façonnée a la main.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1708,7 +1522,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Grande brioche à partager, mie filante et croûte dorée.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1722,7 +1535,6 @@ export const CATALOGUE: CatalogueCorpus = {
       priceCents: 250,
       weightGrams: null,
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1739,7 +1551,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Feuilletage garni de chocolat et de banane, une association qui claque.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1756,7 +1567,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Pain de mie brioche, mie filante, idéal pour le petit-déjeuner et le goûter.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1770,7 +1580,6 @@ export const CATALOGUE: CatalogueCorpus = {
       priceCents: 300,
       weightGrams: null,
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1787,7 +1596,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Pâte sablée, crème pâtissière et pepites de chocolat.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1804,7 +1612,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Croissant garni de crème d'amandes et repassé au four, amandes effilees dessus.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1821,7 +1628,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Pain au chocolat garni de crème d'amandes, gratiné aux amandes effilees.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
     {
@@ -1838,7 +1644,6 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Cookie généreux, cœur moelleux et bords croustillants.",
       },
       declaration: null,
-      channels: null,
       vat: {},
     },
   ],

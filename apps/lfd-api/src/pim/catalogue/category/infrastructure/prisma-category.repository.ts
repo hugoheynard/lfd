@@ -26,9 +26,8 @@ interface CategoryRow {
 }
 
 /**
- * Les taux viennent de la jointure. `category_channel` n'est plus ni lue ni
- * écrite par la famille depuis que la révision ne photographie plus
- * `soldContexts` (2026-10-17, suite de X4) : la table reste, figée.
+ * Les taux viennent de la jointure. La matrice des canaux (`category_channel`)
+ * n'existe plus : figée depuis X4, supprimée en base par `20261017120000`.
  */
 const CATEGORY_WITH_VAT = {
   contextVat: { select: { vatRateId: true, context: { select: { key: true } } } },

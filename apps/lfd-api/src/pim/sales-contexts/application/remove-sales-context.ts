@@ -19,9 +19,9 @@ export class RemoveSalesContextCommand {
  * - **la racine** est refusée par l'agrégat, parce que c'est une règle du
  *   domaine qu'aucune base ne connaît. Sans le contexte B2B, la plateforme
  *   professionnelle cesse de facturer sans qu'une erreur soit levée ;
- * - **ce qui le retient** est refusé par la BASE. Trois tables le citent par
- *   clé étrangère et deux par identifiant ; une lecture préalable ne tiendrait
- *   pas, puisqu'une grille peut se mettre à le vendre entre le compte et la
+ * - **ce qui le retient** est refusé par la BASE : les taux de TVA, famille et
+ *   fiche, le citent par clé étrangère en `RESTRICT`. Une lecture préalable ne
+ *   tiendrait pas, puisqu'un taux peut y être réglé entre le compte et la
  *   suppression.
  *
  * Le ticket est pris avant la suppression, mais dans la MÊME transaction : un

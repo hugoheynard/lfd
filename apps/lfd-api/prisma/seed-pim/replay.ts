@@ -195,9 +195,7 @@ async function describeProduct(
 }
 
 /**
- * Les taux de la fiche. Sa matrice des canaux, que le corpus porte encore,
- * n'est plus rejouée : elle ne s'écrit plus depuis X4
- * (`documentation/catalogue/plan-sans-interrupteurs.md`).
+ * Les taux de la fiche.
  */
 async function setOwnVat(
   bus: CommandBus,

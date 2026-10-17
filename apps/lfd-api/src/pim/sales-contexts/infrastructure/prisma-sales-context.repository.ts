@@ -77,10 +77,11 @@ export class PrismaSalesContextRepository extends SalesContextRepository {
   /**
    * Le **dernier mot** sur « un contexte encore cité ne disparaît pas ».
    *
-   * Trois tables le citent par clé étrangère — `location_context`,
-   * `category_channel`, `product_channel` — et deux autres par identifiant, les
-   * taux. Aucune lecture préalable ne tiendrait : entre le compte et la
-   * suppression, une grille peut se mettre à le vendre.
+   * Deux tables le citent par clé étrangère en `RESTRICT` — les taux,
+   * `category_context_tva` et `product_context_tva` (repassées de `CASCADE` en
+   * `RESTRICT` par `20261017120000`, quand la matrice et le point de vente
+   * sont tombés). Aucune lecture préalable ne tiendrait : entre le compte et la
+   * suppression, un taux peut y être réglé.
    *
    * **Sans recompter.** La suppression part dans la transaction du handler ;
    * une fois l'ordre en échec, Postgres a avorté la transaction et toute
@@ -99,46 +100,27 @@ export class PrismaSalesContextRepository extends SalesContextRepository {
   }
 
   /**
-   * Ce qui retient chaque contexte — trois comptes, trois `groupBy`.
+   * Ce qui retient chaque contexte — les taux, famille et fiche, deux `groupBy`.
    *
-   * Comptés côté base : charger les grilles pour n'en garder que des nombres
+   * Comptés côté base : charger les taux pour n'en garder que des nombres
    * ferait voyager tout le catalogue pour peupler une colonne d'écran.
    */
   async usageByKey(): Promise<ReadonlyMap<string, SalesContextUsage>> {
-    const [byCategory, byProduct, byLocation, ratedCategory, ratedProduct, contexts] =
-      await Promise.all([
-        this.prisma.categoryChannel.groupBy({ by: ["contextKey"], _count: { _all: true } }),
-        this.prisma.productChannel.groupBy({ by: ["contextKey"], _count: { _all: true } }),
-        // `point_of_sale_context` et non `location_context` : la plateforme
-        // professionnelle offre le contexte racine et n'a pas de ligne dans la
-        // seconde. Cf. `PrismaSalesContextRegistry.offeredByLocations`.
-        this.prisma.pointOfSaleContext.groupBy({ by: ["contextKey"], _count: { _all: true } }),
-        this.prisma.categoryContextVat.groupBy({ by: ["contextId"], _count: { _all: true } }),
-        this.prisma.productContextVat.groupBy({ by: ["contextId"], _count: { _all: true } }),
-        this.prisma.salesContext.findMany({ select: { id: true, key: true } }),
-      ]);
+    const [ratedCategory, ratedProduct, contexts] = await Promise.all([
+      this.prisma.categoryContextVat.groupBy({ by: ["contextId"], _count: { _all: true } }),
+      this.prisma.productContextVat.groupBy({ by: ["contextId"], _count: { _all: true } }),
+      this.prisma.salesContext.findMany({ select: { id: true, key: true } }),
+    ]);
 
-    // Les taux joignent par IDENTIFIANT ; tout le reste par clé. On traduit une
+    // Les taux joignent par IDENTIFIANT ; l'écran parle en clé. On traduit une
     // fois plutôt que de faire porter la traduction à chaque lecteur.
     const keyById = new Map(contexts.map((context) => [context.id, context.key]));
-    const usage = new Map<string, { soldBy: number; offeredBy: number; ratedBy: number }>();
-    const bump = (key: string | undefined, field: keyof SalesContextUsage, by: number): void => {
-      if (key === undefined) {
-        return;
-      }
-      const current = usage.get(key) ?? { soldBy: 0, offeredBy: 0, ratedBy: 0 };
-      current[field] += by;
-      usage.set(key, current);
-    };
-
-    for (const row of [...byCategory, ...byProduct]) {
-      bump(row.contextKey, "soldBy", row._count._all);
-    }
-    for (const row of byLocation) {
-      bump(row.contextKey, "offeredBy", row._count._all);
-    }
+    const usage = new Map<string, SalesContextUsage>();
     for (const row of [...ratedCategory, ...ratedProduct]) {
-      bump(keyById.get(row.contextId), "ratedBy", row._count._all);
+      const key = keyById.get(row.contextId);
+      if (key !== undefined) {
+        usage.set(key, { ratedBy: (usage.get(key)?.ratedBy ?? 0) + row._count._all });
+      }
     }
     return usage;
   }

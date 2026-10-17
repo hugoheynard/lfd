@@ -67,7 +67,6 @@ export class SalesContextsPage {
 
   private readonly allColumns: readonly FoldTableColumn[] = [
     { key: 'label', label: 'Contexte' },
-    { key: 'scope', label: 'Vendu depuis', width: '14rem' },
     { key: 'state', label: 'État', width: '9rem' },
     { key: 'actions', label: '', width: '3.5rem' },
   ];
@@ -80,19 +79,6 @@ export class SalesContextsPage {
   );
 
   protected readonly rowKey = (row: SalesContextAdminView): string => row.key;
-
-  /**
-   * « 2 points de vente » — combien l'OFFRENT, plateforme comprise.
-   *
-   * Il y avait ici une branche : un contexte « global » affichait « Partout —
-   * aucun lieu requis » au lieu d'un compte. Elle est tombée avec
-   * `perLocation` (p-2). Le B2B compte désormais 1 : la plateforme
-   * professionnelle l'offre, et elle est un point de vente comme un autre.
-   */
-  protected scopeLabel(context: SalesContextAdminView): string {
-    const count = context.offeredByLocations;
-    return count === 0 ? 'Aucun point de vente' : `${count} point(s) de vente`;
-  }
 
   protected readonly rootCount = computed(
     () => this.contexts().filter((context) => context.root).length,

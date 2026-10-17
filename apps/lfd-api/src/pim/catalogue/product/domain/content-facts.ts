@@ -83,8 +83,9 @@ const CONTENT_FACTS: Readonly<Record<string, boolean>> = {
   [PIM_EVENTS.productDeclarationSaved]: true,
   [PIM_EVENTS.productEditorialSaved]: true,
   // Taux et canaux : invisibles de l'ancienne mesure, parce qu'ils vivent dans
-  // `ProductContextVat` et `ProductChannelOverride`. Ils changent le prix servi
-  // et les contextes de vente — exactement ce qu'on relit avant de signer.
+  // `ProductContextVat` et feu la dérogation de canaux (table retirée en L4).
+  // Ils changent le prix servi — exactement ce qu'on relit avant de signer ;
+  // le fait `channels_changed` reste au catalogue pour les faits passés.
   [PIM_EVENTS.productVatChanged]: true,
   [PIM_EVENTS.productChannelsChanged]: true,
   // Réserver la fiche aux opérations change QUAND elle se vend, comme les

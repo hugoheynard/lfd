@@ -35,9 +35,6 @@ class RegistryDouble extends SalesContextRegistry {
   ensureRootContext(): Promise<void> {
     return Promise.resolve();
   }
-  offeredByLocations(): Promise<ReadonlyMap<string, number>> {
-    return Promise.resolve(new Map([[RETIRED.key, 3]]));
-  }
 }
 
 /** Seul `usageByKey` est lu : les écritures ne sont pas le sujet. */
@@ -58,9 +55,7 @@ class UsageDouble extends SalesContextRepository {
     return Promise.resolve();
   }
   usageByKey(): Promise<ReadonlyMap<string, SalesContextUsage>> {
-    return Promise.resolve(
-      new Map([[ROOT.key, { soldBy: 12, offeredBy: 0, ratedBy: 4 } satisfies SalesContextUsage]]),
-    );
+    return Promise.resolve(new Map([[ROOT.key, { ratedBy: 4 } satisfies SalesContextUsage]]));
   }
 }
 
@@ -84,18 +79,20 @@ describe("ListSalesContextsHandler", () => {
         key: ROOT_CONTEXT_KEY,
         root: true,
         active: true,
-        offeredByLocations: 0,
-        soldBy: 12,
         ratedBy: 4,
       }),
       expect.objectContaining({
         key: "eat_in",
         root: false,
         active: false,
-        offeredByLocations: 3,
-        soldBy: 0,
         ratedBy: 0,
       }),
     ]);
+    // Seuls les taux retiennent un contexte depuis L4 : la matrice et le point
+    // de vente sont tombés, leurs comptes avec eux.
+    for (const view of views) {
+      expect(view).not.toHaveProperty("soldBy");
+      expect(view).not.toHaveProperty("offeredByLocations");
+    }
   });
 });

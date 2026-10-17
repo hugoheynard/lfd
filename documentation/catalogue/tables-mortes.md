@@ -44,11 +44,11 @@ fabriquerait le nom d'une table par concaténation lui échapperait. Aucun n'a
 | `public.catalog_versions`                                                             | la validation d'une arrivée (écriture), la santé, la passation avant X0 (lecture)  | `181b0621f` (X2) ; écriture des commandes : X0 | aucune                                                                | `public.orders.catalog_version_id` (Restrict) | **trois temps** + choix de Hugo, §3 ; **registre RGPD**                                                                                                     |
 | `public.catalog_operation_overrides`                                                  | la surcharge des opérations reçues                                                 | `181b0621f` (X2)                               | `operation_key` → `public.catalog_operations` (Restrict)              | aucune                                        | démontage §1 bis (`CatalogOperation.override`) ; **registre RGPD**. `catalog_operations` **vit**                                                            |
 | `pim.nutrition_declaration`                                                           | la fiche réglementaire en une ligne                                                | `427f21912` (2026-09-22)                       | `variant_id` → `pim.product_variant`                                  | aucune                                        | démontage §1 bis (`ProductVariant.nutrition`) — lot 7 de [`../pim/plan-separer-allergenes-et-nutrition.md`](../pim/plan-separer-allergenes-et-nutrition.md) |
-| `pim.point_of_sale_table`                                                             | l'écran « Points de vente » (grille de tables, QR)                                 | `63bb374a8` (L3 du sur place, 2026-10-17)      | `point_of_sale_id` → `pim.point_of_sale` (Cascade)                    | aucune                                        | démontage §1 bis (`PointOfSale.tables`) ; la salle vit au site                                                                                              |
-| `pim.product_channel_override`                                                        | la redéfinition de matrice par fiche (lecture par le dépôt des fiches)             | `81b192e59` (2026-10-17)                       | `product_id` → `pim.product` (Cascade)                                | `pim.product_channel` (Cascade)               | **bloquée** par `product_channel`, encore lue (§2) ; accesseur abstrait à retirer (`pim-prisma.service.ts:42`)                                              |
+| `pim.point_of_sale_table`                                                             | l'écran « Points de vente » (grille de tables, QR)                                 | `63bb374a8` (L3 du sur place, 2026-10-17)      | `point_of_sale_id` → `pim.point_of_sale` (Cascade)                    | aucune                                        | **supprimée** le 2026-10-17 par `20261017120000_retrait_du_point_de_vente_et_de_la_matrice` (L4)                                                            |
+| `pim.product_channel_override`                                                        | la redéfinition de matrice par fiche (lecture par le dépôt des fiches)             | `81b192e59` (2026-10-17)                       | `product_id` → `pim.product` (Cascade)                                | `pim.product_channel` (Cascade)               | **supprimée** le 2026-10-17 par `20261017120000_retrait_du_point_de_vente_et_de_la_matrice` (L4)                                                            |
 | colonnes `public.catalog_item_overrides.price_millicents`, `decided_public_ttc_cents` | le prix décidé sur la plateforme                                                   | `b145ffcd0` (lot D, 2026-10-15)                | —                                                                     | —                                             | le champ quitte le schéma **avant ou avec** la colonne, §1 bis                                                                                              |
 | colonne `public.orders.catalog_version_id`                                            | la passation (estampille), avant X0                                                | **écrite `NULL`**, jamais lue — voir §3        | → `catalog_versions` (Restrict)                                       | —                                             | trois temps, §3                                                                                                                                             |
-| ligne `pim.point_of_sale` `pos_b2b`                                                   | la matrice (le canal pro), semée au démarrage                                      | `63bb374a8` (plus semée)                       | —                                                                     | —                                             | **ligne morte** (Hugo, 2026-10-17) ; part avec sa table, §2                                                                                                 |
+| ligne `pim.point_of_sale` `pos_b2b`                                                   | la matrice (le canal pro), semée au démarrage                                      | `63bb374a8` (plus semée)                       | —                                                                     | —                                             | **supprimée** avec sa table le 2026-10-17 (`20261017120000_retrait_du_point_de_vente_et_de_la_matrice`, L4)                                                 |
 
 ## 1 bis. Le geste réel : pas de `DROP` seul
 
@@ -62,17 +62,17 @@ client généré. Le geste du dépôt, pour chaque ligne du §1, est :
 
 Ce qui bouge dans le schéma, par table (lu le 2026-10-17) :
 
-| Table                                   | Modèle retiré                | Champ de relation retiré chez un modèle vivant                                                                           |
-| --------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `pim.b2b_channel_binding`               | `B2bChannelBinding`          | `Product.b2bBinding` (`pim/product.prisma:153`)                                                                          |
-| `pim.operation_items`, `pim.operations` | `OperationItem`, `Operation` | aucun hors d'eux (`Operation.items`, `pim/operations.prisma:45`)                                                         |
-| `pim.catalog_revision_publication`      | `CatalogRevisionPublication` | `CatalogRevision.publications` (`pim/revisions.prisma:57`)                                                               |
-| `public.catalog_delivery`               | `CatalogDelivery`            | aucun                                                                                                                    |
-| `public.catalog_versions`               | `CatalogVersion`             | `Order.catalogVersion` + `Order.catalogVersionId` (`public/orders.prisma:132`) — §3                                      |
-| `public.catalog_operation_overrides`    | `CatalogOperationOverride`   | `CatalogOperation.override` (`public/catalog-operations.prisma:69`)                                                      |
-| `pim.nutrition_declaration`             | `NutritionDeclaration`       | `ProductVariant.nutrition` (`pim/product.prisma:277`)                                                                    |
-| `pim.point_of_sale_table`               | `PointOfSaleTable`           | `PointOfSale.tables` (`pim/sales-contexts.prisma:153`)                                                                   |
-| `pim.product_channel_override`          | `ProductChannelOverride`     | `Product.channelOverrideRows` (`pim/product.prisma:150`) ; `ProductChannel.override` (`:64`) part avec `product_channel` |
+| Table                                          | Modèle retiré                | Champ de relation retiré chez un modèle vivant                                                                      |
+| ---------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `pim.b2b_channel_binding`                      | `B2bChannelBinding`          | `Product.b2bBinding` (`pim/product.prisma:153`)                                                                     |
+| `pim.operation_items`, `pim.operations`        | `OperationItem`, `Operation` | aucun hors d'eux (`Operation.items`, `pim/operations.prisma:45`)                                                    |
+| `pim.catalog_revision_publication`             | `CatalogRevisionPublication` | `CatalogRevision.publications` (`pim/revisions.prisma:57`)                                                          |
+| `public.catalog_delivery`                      | `CatalogDelivery`            | aucun                                                                                                               |
+| `public.catalog_versions`                      | `CatalogVersion`             | `Order.catalogVersion` + `Order.catalogVersionId` (`public/orders.prisma:132`) — §3                                 |
+| `public.catalog_operation_overrides`           | `CatalogOperationOverride`   | `CatalogOperation.override` (`public/catalog-operations.prisma:69`)                                                 |
+| `pim.nutrition_declaration`                    | `NutritionDeclaration`       | `ProductVariant.nutrition` (`pim/product.prisma:277`)                                                               |
+| `pim.point_of_sale_table` — **fait (L4)**      | `PointOfSaleTable`           | `PointOfSale.tables` (retiré en L4)                                                                                 |
+| `pim.product_channel_override` — **fait (L4)** | `ProductChannelOverride`     | `Product.channelOverrideRows` (retiré en L4) ; `ProductChannel.override` part avec `product_channel` (retiré en L4) |
 
 **Les deux colonnes de prix de `catalog_item_overrides`**
 (`public/catalog.prisma:510`, `:521`) : les champs `priceMillicents` et
@@ -102,29 +102,38 @@ suit le même sort). Le texte d'information du livreur, qui lit le registre,
 est à **relire** après : une donnée qui n'est plus tenue ne doit plus y être
 annoncée.
 
-## 2. Figées, mais encore LUES — pas mortes
+## 2. Figées, mais encore LUES — supprimées en L4
 
-| Table                       | Qui la lit encore (2026-10-17)                                                                                                                                                                        | Écrite par personne depuis | Ce qui la libère                                                                                                                             |
-| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pim.category_channel`      | `usageByKey` (`apps/lfd-api/src/pim/sales-contexts/infrastructure/prisma-sales-context.repository.ts:110`) — le compte « vendu par » de la liste des contextes de vente (`list-sales-contexts.ts:28`) | `d66b331f0` (X4)           | retirer ce compte (L4 de [`../sites/plan-sur-place-capacite-de-site.md`](../sites/plan-sur-place-capacite-de-site.md))                       |
-| `pim.product_channel`       | `usageByKey` (`prisma-sales-context.repository.ts:111`), même compte                                                                                                                                  | `d66b331f0` (X4)           | idem                                                                                                                                         |
-| `pim.point_of_sale_context` | `usageByKey` (`:115`) et `offeredByLocations` (`apps/lfd-api/src/pim/sales-contexts/infrastructure/prisma-sales-context.registry.ts:89`) — le registre des contextes                                  | `63bb374a8` (L3)           | **reste lue jusqu'à L4** (Hugo, 2026-10-17 : « on attend L4 ») ; sa FK retient aussi la suppression d'un contexte (`SalesContextInUseError`) |
-| `pim.point_of_sale`         | **aucun code** ne la lit (`pointOfSale` absent de `src/`), mais elle est la cible des FK des trois tables ci-dessus et de `point_of_sale_table`                                                       | `63bb374a8` (L3)           | part en dernier, avec `pos_b2b`                                                                                                              |
-
-`category_channel` et `product_channel` pointent vers `point_of_sale` **sans
-`onDelete`** (Restrict) : supprimer le point de vente avant la matrice échoue.
+> ✅ **Supprimées le 2026-10-17** par `20261017120000_retrait_du_point_de_vente_et_de_la_matrice`
+> (L4 de [`../sites/plan-sur-place-capacite-de-site.md`](../sites/plan-sur-place-capacite-de-site.md)) :
+> `pim.product_channel`, `pim.product_channel_override`, `pim.category_channel`,
+> `pim.point_of_sale_context`, `pim.point_of_sale_table`, `pim.point_of_sale`
+> (avec `pos_b2b`) et le type `pim.point_of_sale_kind`. Leurs derniers
+> lecteurs — `usageByKey` (comptes « vendu par » et « offert par ») et
+> `offeredByLocations` — sont partis dans le même lot ; ce qui retient un
+> contexte de vente se réduit aux **taux**.
+>
+> Mesure de production avant le `DROP` (Hugo, 2026-10-17) : 3 points de vente,
+> 5 rattachements, 0 table, 25 lignes `category_channel`, 0 `product_channel`,
+> 0 redéfinition. Contenu exporté en JSON par Hugo, rangé hors du dépôt.
+>
+> 🔴 **La même migration repasse en `RESTRICT`** les FK
+> `category_context_tva_context_id_fkey` et `product_context_tva_context_id_fkey`
+> (elles étaient en `CASCADE`) : sans quoi, la matrice partie, supprimer un
+> contexte aurait effacé ses taux en silence (objection de `vitruve`).
 
 ## 3. L'ordre, et le seul cas en trois temps
 
 **Indépendants**, dans n'importe quel ordre : `b2b_channel_binding`,
 `catalog_delivery`, `catalog_operation_overrides`, `nutrition_declaration`,
-`point_of_sale_table`, `catalog_revision_publication` (après l'accesseur), les
+`catalog_revision_publication` (après l'accesseur), les
 deux colonnes de prix de `catalog_item_overrides`, puis `operation_items` →
 `operations`.
 
-**Après L4 du sur place** (le compte d'usage retiré du code) :
+**Fait en L4 du sur place** (2026-10-17, dans cet ordre) :
 `product_channel` → `product_channel_override` → `category_channel` →
-`point_of_sale_context` → `point_of_sale` (avec `pos_b2b`).
+`point_of_sale_context` → `point_of_sale_table` → `point_of_sale` (avec
+`pos_b2b`), puis le type `point_of_sale_kind` — §2.
 
 **`catalog_versions`, en trois temps** — la seule table encore tenue par une
 colonne que le code écrit.
@@ -185,5 +194,5 @@ Les temps, une fois le choix fait :
 - Les faits passés `catalog_delivery.accepted` gardent leur `deliveryId` : il
   ne pointera plus nulle part une fois la table partie. C'est acceptable — un
   fait passé ne se réécrit pas, et aucun lecteur ne suit plus ce lien (la phrase du journal ne lit que `excludedSkus`, `commerce-phrases.ts:105`, vérifié le 2026-10-17).
-- `apps/lfd-api/test/pim-sales-contexts.e2e-spec.ts:233` écrit encore un
-  `pointOfSale` pour éprouver le compte d'usage : il partira avec L4.
+- L'e2e `pim-sales-contexts` n'écrit plus de point de vente depuis L4 : il
+  éprouve le refus par un taux réglé (famille et fiche).

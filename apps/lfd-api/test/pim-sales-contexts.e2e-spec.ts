@@ -5,6 +5,8 @@
  * une suppression directe en base, et que la surface d'administration rend
  * aussi les contextes hors service — les deux touchent la base, pas le domaine.
  */
+import type { Response } from "supertest";
+
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { SalesContextRegistry } from "../src/pim/sales-contexts/domain/ports/sales-context.registry.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
@@ -41,8 +43,6 @@ interface ContextRow {
   readonly active: boolean;
   readonly position: number;
   readonly root: boolean;
-  readonly offeredByLocations: number;
-  readonly soldBy: number;
   readonly ratedBy: number;
 }
 
@@ -102,9 +102,9 @@ describe("le contexte racine est ineffaçable", () => {
    * panne silencieuse qui justifie la garde, pas la crainte d'un clic.
    */
   it("réapparaît au boot après une suppression directe en base", async () => {
-    // Plus de plateforme semée qui OFFRE la racine (le point de vente a quitté
-    // le référentiel le 2026-10-17, lot L3) : rien ne retient la suppression
-    // directe, et c'est la garde qui vient APRÈS qu'on éprouve.
+    // Aucun taux n'est réglé sur la racine dans une base remise à zéro : rien
+    // ne retient la suppression directe, et c'est la garde qui vient APRÈS
+    // qu'on éprouve.
     await ctx.prisma.salesContext.delete({ where: { key: "b2b" } });
     expect((await list()).map((row) => row.key)).not.toContain("b2b");
 
@@ -162,8 +162,8 @@ describe("ouvrir un contexte de vente", () => {
   });
 
   it("refuse une clé qui n'est pas une identité", async () => {
-    // La clé est citée par trois clés étrangères et voyage dans les taux. Un
-    // espace ou un accent en ferait deux identités pour un seul contexte.
+    // La clé voyage dans les taux et les prix publics. Un espace ou un accent
+    // en ferait deux identités pour un seul contexte.
     const response = await staff()
       .post(CONTEXTS)
       .send({ ...NEW_CONTEXT, key: "à emporter" });
@@ -180,16 +180,7 @@ describe("ouvrir un contexte de vente", () => {
 
     const row = await rowOf("traiteur");
     expect(Object.keys(row ?? {}).sort()).toEqual(
-      [
-        "active",
-        "key",
-        "label",
-        "offeredByLocations",
-        "position",
-        "ratedBy",
-        "root",
-        "soldBy",
-      ].sort(),
+      ["active", "key", "label", "position", "ratedBy", "root"].sort(),
     );
   });
 });
@@ -223,22 +214,41 @@ describe("régler un contexte de vente", () => {
   });
 });
 
+const CATEGORIES = "/pim/catalogue/categories";
+const PRODUCTS = "/pim/catalogue/products";
+const RATES = "/pim/vat-rates";
+
+async function createdId(pending: PromiseLike<Response>): Promise<string> {
+  const response = await pending;
+  expect(response.status).toBe(201);
+  return jsonBody<{ id: string }>(response).id;
+}
+
 /**
- * Ouvre une boutique qui OFFRE un contexte donné, en base directe.
- *
- * Directe pour rester au plus près de ce qu'on éprouve ici — le mur de la clé
- * étrangère — sans faire dépendre cette suite de la route des points de vente.
+ * Règle un taux sur `contextKey` — à la famille ET à une fiche de cette
+ * famille —, par les vraies routes. Rend la famille et la fiche.
  */
-async function openShopOffering(contextKey: string): Promise<void> {
-  await ctx.prisma.pointOfSale.create({
-    data: {
-      id: "emp_test",
-      kind: "shop",
-      label: "Village",
-      baseUrl: "",
-      contexts: { create: [{ contextKey }] },
-    },
-  });
+async function rateEverywhere(contextKey: string): Promise<{ category: string; product: string }> {
+  const rate = await createdId(staff().post(RATES).send({ name: "Alimentaire", percent: 5.5 }));
+  const category = await createdId(
+    staff()
+      .post(CATEGORIES)
+      .send({ name: { fr: "Traiteur" } }),
+  );
+  await staff()
+    .put(`${CATEGORIES}/${category}/vat`)
+    .send({ vatByContext: { [contextKey]: rate } })
+    .expect(200);
+  const product = await createdId(
+    staff()
+      .post(PRODUCTS)
+      .send({ name: { fr: "Quiche" }, kind: "daily", categoryId: category }),
+  );
+  await staff()
+    .put(`${PRODUCTS}/${product}/vat`)
+    .send({ vatByContext: { [contextKey]: rate } })
+    .expect(200);
+  return { category, product };
 }
 
 describe("effacer un contexte de vente", () => {
@@ -261,23 +271,39 @@ describe("effacer un contexte de vente", () => {
   });
 
   /**
-   * Le mur est une clé étrangère, pas une lecture : entre un compte et la
-   * suppression, une grille peut se mettre à vendre le contexte.
+   * Régression évitée (L4, 2026-10-17) : les FK des taux vers `sales_context`
+   * étaient en CASCADE, et la matrice tombée, supprimer le contexte aurait
+   * effacé en silence les taux réglés dessus.
    */
-  it("REFUSE celui qu'un point de vente offre encore", async () => {
+  it("REFUSE celui qui porte un taux, à la famille comme à la fiche, et le taux reste", async () => {
     await staff().post(CONTEXTS).send(NEW_CONTEXT).expect(201);
-    await openShopOffering("traiteur");
+    const { category, product } = await rateEverywhere("traiteur");
 
     const response = await staff().delete(`${CONTEXTS}/traiteur`);
 
     expect(response.status).toBe(409);
     expect(jsonBody<{ code: string }>(response).code).toBe("catalogue.sales_context.in_use");
+    expect(await rowOf("traiteur")).toMatchObject({ ratedBy: 2 });
+    expect(await ctx.prisma.categoryContextVat.count({ where: { categoryId: category } })).toBe(1);
+    expect(await ctx.prisma.productContextVat.count({ where: { productId: product } })).toBe(1);
+  });
+
+  /**
+   * Le mur est la BASE, pas le compte affiché : une suppression directe, sans
+   * passer par la route, est refusée elle aussi.
+   */
+  it("la base refuse elle-même d'effacer un contexte qui porte un taux", async () => {
+    await staff().post(CONTEXTS).send(NEW_CONTEXT).expect(201);
+    await rateEverywhere("traiteur");
+
+    await expect(ctx.prisma.salesContext.delete({ where: { key: "traiteur" } })).rejects.toThrow();
+    expect(await ctx.prisma.categoryContextVat.count()).toBe(1);
   });
 
   it("dit ce qui retient chaque contexte, AVANT le geste", async () => {
     await staff().post(CONTEXTS).send(NEW_CONTEXT).expect(201);
-    await openShopOffering("traiteur");
+    await rateEverywhere("traiteur");
 
-    expect(await rowOf("traiteur")).toMatchObject({ offeredByLocations: 1, soldBy: 0 });
+    expect(await rowOf("traiteur")).toMatchObject({ ratedBy: 2 });
   });
 });

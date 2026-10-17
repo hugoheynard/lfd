@@ -36,48 +36,6 @@ model SkuRegistry {
   @@schema("pim")
 }
 
-/// **La dérogation de canaux d'une fiche EXISTE** — sa présence est la donnée.
-///
-/// Sans cette ligne parente, « déroge et ne vend nulle part » et « hérite de sa
-/// famille » seraient tous deux zéro ligne, donc indistinguables. Un booléen sur
-/// le produit aurait laissé atteignable l'état impossible « pas de dérogation,
-/// mais des cellules » ; ici la cascade le rend inatteignable.
-model ProductChannelOverride {
-  productId String  @id @map("product_id")
-  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-
-  cells ProductChannel[]
-
-  createdAt DateTime @default(now()) @map("created_at")
-
-  @@map("product_channel_override")
-  @@schema("pim")
-}
-
-/// ⚠️ Idem : `product_channel_unique` vit en SQL.
-
-/// Une cellule de la dérogation d'une fiche. Elle **cascade** depuis
-/// `ProductChannelOverride` : elle ne peut pas exister sans elle.
-model ProductChannel {
-  id        String                 @id @default(cuid())
-  productId String                 @map("product_id")
-  override  ProductChannelOverride @relation(fields: [productId], references: [productId], onDelete: Cascade)
-
-  /// Idem `CategoryChannel.pointOfSaleId`.
-  pointOfSaleId String      @map("point_of_sale_id")
-  pointOfSale   PointOfSale @relation(fields: [pointOfSaleId], references: [id])
-
-  contextKey String       @map("context_key")
-  context    SalesContext @relation(fields: [contextKey], references: [key])
-
-  createdAt DateTime @default(now()) @map("created_at")
-
-  @@index([pointOfSaleId])
-  @@index([contextKey])
-  @@map("product_channel")
-  @@schema("pim")
-}
-
 model Product {
   id         String        @id
   sku        String        @unique
@@ -145,10 +103,6 @@ model Product {
   /// la liste réglementaire d'ingrédients (voir `ProductIngredient`).
   ingredients ProductIngredient[]
 
-  /// La dérogation en TABLE — voir `ProductChannelOverride`. Seule source depuis
-  /// d-2 ; la colonne `jsonb` qui la précédait est tombée en d-3.
-  channelOverrideRows ProductChannelOverride?
-
   /// Relation virtuelle — la clé étrangère est portée par le binding (ADR-13).
   b2bBinding B2bChannelBinding?
 
@@ -169,7 +123,8 @@ model ProductContextVat {
   productId String       @map("product_id")
   product   Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
   contextId String       @map("context_id")
-  context   SalesContext @relation(fields: [contextId], references: [id], onDelete: Cascade)
+  /// `Restrict` : un contexte qui porte un taux ne se supprime pas sous lui.
+  context   SalesContext @relation(fields: [contextId], references: [id], onDelete: Restrict)
   vatRateId String       @map("tva_rate_id")
   /// `Restrict` : un taux visé par un produit ne disparaît pas sous lui.
   vatRate   VatRate      @relation(fields: [vatRateId], references: [id])

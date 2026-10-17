@@ -107,8 +107,8 @@ export class SalesContextAggregate {
 }
 
 /**
- * La clé est citée par `location_context`, `category_channel` et
- * `product_channel`, et les taux voyagent par elle. Une forme stricte évite
+ * La clé est l'identité que le reste du référentiel cite (les prix publics
+ * par contexte voyagent par elle). Une forme stricte évite
  * qu'un espace ou une majuscule en fasse deux identités pour un seul contexte.
  */
 const KEY_SHAPE = /^[a-z][a-zA-Z0-9-]*$/u;

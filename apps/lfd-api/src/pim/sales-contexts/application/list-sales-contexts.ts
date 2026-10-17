@@ -22,9 +22,8 @@ export class ListSalesContextsHandler implements IQueryHandler<
   ) {}
 
   async execute(): Promise<SalesContextAdminView[]> {
-    const [contexts, offered, usage] = await Promise.all([
+    const [contexts, usage] = await Promise.all([
       this.contexts.all(),
-      this.contexts.offeredByLocations(),
       this.repository.usageByKey(),
     ]);
     return contexts.map((context) => ({
@@ -33,12 +32,8 @@ export class ListSalesContextsHandler implements IQueryHandler<
       position: context.position,
       active: context.active,
       root: isRootContext(context.key),
-      // Un contexte global n'est offert par aucun lieu, et ce zéro-là n'est pas
-      // un manque : l'écran le sait par `perLocation` et n'affiche pas le compte.
-      offeredByLocations: offered.get(context.key) ?? 0,
       // Ce qui le RETIENT — l'écran doit le dire avant le geste, plutôt que de
       // laisser le refus l'apprendre après le clic.
-      soldBy: usage.get(context.key)?.soldBy ?? 0,
       ratedBy: usage.get(context.key)?.ratedBy ?? 0,
     }));
   }

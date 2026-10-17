@@ -270,7 +270,6 @@ const registry: SalesContextRegistry = {
   // mentirait plus qu'il n'aiderait.
   all: () => Promise.resolve(CONTEXTS),
   ensureRootContext: () => Promise.resolve(),
-  offeredByLocations: () => Promise.resolve(new Map()),
 };
 
 describe("CreateCategoryHandler", () => {

@@ -53,13 +53,13 @@ export class RootSalesContextProtectedError extends BusinessError {
   }
 }
 
-/** Le contexte est encore vendu, ou encore offert par un lieu : on refuse de l'effacer. */
+/** Des taux de TVA sont encore réglés sur le contexte : on refuse de l'effacer. */
 export class SalesContextInUseError extends BusinessError {
   constructor(key: string) {
     super(
       "catalogue.sales_context.in_use",
-      `« ${key} » est encore vendu ou réglé quelque part. Retirez-le des grilles ` +
-        `de canaux et des taux avant de le supprimer — ou mettez-le hors service.`,
+      `« ${key} » porte encore des taux de TVA, réglés sur une famille ou une fiche. ` +
+        `Retirez-les d'abord avant de le supprimer — ou mettez-le hors service.`,
     );
   }
 }

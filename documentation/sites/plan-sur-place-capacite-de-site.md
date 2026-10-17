@@ -19,6 +19,14 @@
 > voir « Ce qui est bâti (L3) » en fin de document : deux objections de
 > `vitruve` y sont tranchées d'une façon que Hugo doit relire.
 
+> ✅ **L4 bâti le 2026-10-17** (non commité à l'écriture de cette ligne) —
+> migration `20261017120000_retrait_du_point_de_vente_et_de_la_matrice` : les
+> FK des taux vers `sales_context` repassent en `RESTRICT`, puis les six
+> tables `pim.point_of_sale*` / matrice et le type `point_of_sale_kind`
+> tombent. `offeredByLocations`, `soldBy`/`offeredBy` et la colonne « Vendu
+> depuis » de l'écran des contextes sont retirés ; seul un taux retient
+> désormais un contexte. Voir « L4 » en fin de document.
+
 ## 0. Ce qui est convenu, et ce qui ne bouge pas
 
 - **Le contexte de vente `eatIn` reste.** Il porte le taux de TVA « sur place »
@@ -54,7 +62,7 @@
 
 ### 1.2 Le point de vente du référentiel (bloc `pim`, schéma `pim`)
 
-- `PointOfSale` : `prisma/schema/pim/sales-contexts.prisma:137` — `kind`
+- `PointOfSale` : prisma/schema/pim/sales-contexts.prisma:137 (retiré en L4) — `kind`
   (`shop`|`platform`, enum `PointOfSaleKind` juste au-dessus), `label`, `baseUrl` (boutique
   seulement, contrainte SQL `point_of_sale_shop_has_base_url`), `contexts`
   `:149`, `tables` `:153`, et **`categoryChannels`/`productChannels` `:157-158`**.
@@ -75,7 +83,7 @@
 - Lecteurs hors du module : le registre des contextes —
   `src/pim/sales-contexts/application/list-sales-contexts.ts:27-28`
   (`offeredByLocations()`, `usageByKey()`), implémentés
-  `infrastructure/prisma-sales-context.registry.ts:88` et
+  infrastructure/prisma-sales-context.registry.ts:88 (retiré en L4) et
   `prisma-sales-context.repository.ts:107`. Le journal :
   `src/pim/journal/pim-journal.ts:299-308` (`point_of_sale.*`), et
   `src/b2b/growth/domain/activity-module.ts:33` (préfixe). Le compteur de
@@ -205,7 +213,7 @@ Quand un mode sur place sera vendu (hors de ce plan, Q5) :
 - Retirer `kind`, `baseUrl`, `PointOfSaleContext` du code, l'écran « Points de
   vente » et sa route.
 - Registre des contextes : retirer `offeredByLocations()` (port
-  `sales-context.registry.ts:39`) et la part « point de vente » de
+  sales-context.registry.ts:39 (retiré en L4)) et la part « point de vente » de
   `usageByKey()` ; la colonne « offert par N lieux » de l'écran tombe.
 - Tables `pim.point_of_sale*` : **gardées en base** (`CLAUDE.md` §0) jusqu'à la
   mort de la matrice, puis supprimées sur ordre de Hugo.
@@ -332,7 +340,7 @@ Décisions de Hugo, « bâtis » :
 | L1  | La case « Sur place » d'un site : colonne `eat_in`, `SiteRoles.eatIn`, journal, écran    | **bâti** (2026-10-17)                                              |
 | L2  | La grille de tables sur un site « Sur place » : `public.site_table` dans `b2b/sites`, QR | **bâti** (2026-10-17)                                              |
 | L3  | Retrait du point de vente du référentiel (code, écran, `offeredByLocations`)             | **bâti** (2026-10-17), sauf `offeredByLocations` — voir ci-dessous |
-| L4  | Suppression des tables `pim.point_of_sale*`                                              | plus tard, sur ordre de Hugo                                       |
+| L4  | Suppression des tables `pim.point_of_sale*`                                              | **bâti** (2026-10-17)                                              |
 
 ### Ce qui est bâti (L1, L2)
 
@@ -421,7 +429,7 @@ Décisions de Hugo, « bâtis » :
   compte `soldBy` sur `category_channel` + `product_channel` et `offeredBy`
   sur `point_of_sale_context`.
 - `PrismaSalesContextRegistry.offeredByLocations`
-  (`prisma-sales-context.registry.ts:88`), lu par
+  (prisma-sales-context.registry.ts:88, retiré en L4), lu par
   `list-sales-contexts.ts:27` → `SalesContextAdminView.offeredByLocations`
   (`packages/pim-contracts/src/category.ts:80`) → colonne « point(s) de
   vente » de l'écran des contextes.

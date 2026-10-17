@@ -3,10 +3,6 @@ import type { SalesContextAggregate } from "../entities/sales-context.entity.js"
 
 /** Ce qui retient un contexte, et l'empêche d'être effacé. */
 export interface SalesContextUsage {
-  /** Familles et fiches qui le vendent — la matrice de canaux. */
-  readonly soldBy: number;
-  /** Points de vente qui l'offrent. */
-  readonly offeredBy: number;
   /** Taux réglés dessus, famille ou fiche. */
   readonly ratedBy: number;
 }

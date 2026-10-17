@@ -32,7 +32,7 @@ export interface SalesContextPanelData {
  * Deux champs y sont particuliers, et le panneau doit le DIRE plutôt que de le
  * subir :
  *
- * - la **clé** est une identité que trois tables citent. Saisissable à
+ * - la **clé** est une identité que le référentiel cite. Saisissable à
  *   l'ouverture, verrouillée ensuite — la renommer serait le chemin en deux
  *   temps vers une autre ligne ;
  * - la **portée** décide de la forme des lignes déjà écrites. Elle se choisit
@@ -84,7 +84,7 @@ export class SalesContextPanel {
     if (target === undefined) {
       return 0;
     }
-    return target.soldBy + target.ratedBy + target.offeredByLocations;
+    return target.ratedBy;
   });
 
   protected readonly heldLabel = computed(() => {
@@ -92,15 +92,7 @@ export class SalesContextPanel {
     if (target === undefined) {
       return '';
     }
-    return [
-      target.soldBy > 0 ? `${String(target.soldBy)} vente(s)` : null,
-      target.ratedBy > 0 ? `${String(target.ratedBy)} taux réglé(s)` : null,
-      target.offeredByLocations > 0
-        ? `${String(target.offeredByLocations)} point(s) de vente`
-        : null,
-    ]
-      .filter((part) => part !== null)
-      .join(' · ');
+    return target.ratedBy > 0 ? `${String(target.ratedBy)} taux réglé(s)` : '';
   });
 
   /** Pour supprimer, la clé retapée doit correspondre exactement. */

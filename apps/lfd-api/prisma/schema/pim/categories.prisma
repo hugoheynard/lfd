@@ -28,11 +28,6 @@ model Category {
   /// migration et du code dans cinq fichiers. Une ligne suffit désormais.
   contextVat CategoryContextVat[]
 
-  /// Ce que cette famille vend, une ligne par (lieu, contexte) — voir
-  /// `CategoryChannel`. Seule source depuis d-2 ; la colonne `jsonb` qui la
-  /// précédait est tombée en d-3.
-  channels CategoryChannel[]
-
   /// Les textes de la famille. Satellite OPTIONNEL (ADR-13) : rien de
   /// renseigné ⇒ pas de ligne, et non une ligne de colonnes nulles.
   editorial CategoryEditorial?
@@ -44,34 +39,6 @@ model Category {
 
   @@index([parentId])
   @@map("category")
-  @@schema("pim")
-}
-
-/// **Ce qu'une famille vend** — une ligne par (point de vente, contexte).
-///
-/// Remplace la carte imbriquée de `channel_preset`. Deux gains qu'un `jsonb` ne
-/// pouvait pas donner : la lecture n'a plus de branche à faire selon le
-/// contexte, et une clé étrangère porte enfin le mur qui empêche de supprimer
-/// un point de vente encore vendeur.
-model CategoryChannel {
-  id         String   @id @default(cuid())
-  categoryId String   @map("category_id")
-  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-
-  /// **D'où l'on vend.** Elle remplace `location_id`, et le `NULL` porteur de
-  /// sens avec elle : la plateforme professionnelle a sa ligne, donc tout canal
-  /// se vend depuis un point de vente — sans exception à retenir.
-  pointOfSaleId String      @map("point_of_sale_id")
-  pointOfSale   PointOfSale @relation(fields: [pointOfSaleId], references: [id])
-
-  contextKey String       @map("context_key")
-  context    SalesContext @relation(fields: [contextKey], references: [key])
-
-  createdAt DateTime @default(now()) @map("created_at")
-
-  @@index([pointOfSaleId])
-  @@index([contextKey])
-  @@map("category_channel")
   @@schema("pim")
 }
 
@@ -120,7 +87,8 @@ model CategoryContextVat {
   categoryId String       @map("category_id")
   category   Category     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   contextId  String       @map("context_id")
-  context    SalesContext @relation(fields: [contextId], references: [id], onDelete: Cascade)
+  /// `Restrict` : un contexte qui porte un taux ne se supprime pas sous lui.
+  context    SalesContext @relation(fields: [contextId], references: [id], onDelete: Restrict)
   vatRateId  String       @map("tva_rate_id")
   /// `Restrict` (défaut) : un taux visé par une famille ne peut pas disparaître.
   vatRate    VatRate      @relation(fields: [vatRateId], references: [id])

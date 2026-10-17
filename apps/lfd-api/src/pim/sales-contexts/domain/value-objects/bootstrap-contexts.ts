@@ -30,8 +30,8 @@ export const ROOT_CONTEXT_KEY = "b2b";
  * **en ligne**, sur facture, sans consommation sur place — et c'est ça qui lui
  * vaut son propre traitement de TVA.
  *
- * La CLÉ, elle, reste `b2b` : trois tables la citent par clé étrangère, le
- * projecteur de la plateforme la cite, et `pos_b2b` la reprend. La renommer est
+ * La CLÉ, elle, reste `b2b` : le projecteur de la plateforme la cite, et les
+ * prix publics par contexte voyagent par elle. La renommer est
  * une migration de données ; le libellé, lui, se change à l'écran sans rien
  * livrer. C'est exactement la séparation que le registre existe pour offrir.
  *

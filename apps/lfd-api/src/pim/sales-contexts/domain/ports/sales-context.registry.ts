@@ -26,15 +26,4 @@ export abstract class SalesContextRegistry extends ActiveSalesContextsReader {
    * `ensureBootstrapAdmin`, pour la même raison.
    */
   abstract ensureRootContext(): Promise<void>;
-
-  /**
-   * Combien de points de vente offrent chaque contexte, en une lecture.
-   *
-   * Une **projection**, pas un état du registre : un contexte ignore les lieux
-   * qui le servent. Elle existe pour que l'écran puisse dire ce qu'une
-   * désactivation emporterait, avant le geste plutôt qu'après.
-   *
-   * Les contextes que personne n'offre sont **absents** : un lecteur lit `?? 0`.
-   */
-  abstract offeredByLocations(): Promise<ReadonlyMap<string, number>>;
 }

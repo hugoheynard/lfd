@@ -72,9 +72,6 @@ class KnownContexts extends SalesContextRegistry {
   ensureRootContext(): Promise<void> {
     return Promise.resolve();
   }
-  offeredByLocations(): Promise<ReadonlyMap<string, number>> {
-    return Promise.resolve(new Map());
-  }
 }
 
 function context(key: string, label: string, active: boolean): SalesContext {

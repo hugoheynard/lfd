@@ -1,8 +1,8 @@
 <fold-panel-header [title]="heading()" />
 
 <div class="body">
-  <!-- La clé est une IDENTITÉ : trois tables la citent par clé étrangère, et
-       les taux voyagent par elle. Saisissable une fois, lue ensuite — la
+  <!-- La clé est une IDENTITÉ : les prix publics par contexte voyagent par
+       elle. Saisissable une fois, lue ensuite — la
        renommer serait le chemin en deux temps vers une autre ligne. -->
   <fold-input
     label="Clé"
@@ -48,15 +48,15 @@
           <fold-callout appearance="inset" variant="warning">
             <strong>Suppression impossible.</strong> «&nbsp;{{ context()?.label }}&nbsp;» est encore
             retenu par <strong>{{ heldLabel() }}</strong
-            >. Retirez-le des grilles de canaux et des taux d'abord&nbsp;: tant qu'une seule ligne
-            le cite, la base refuse.
+            >. Des taux de TVA y sont réglés&nbsp;: retirez-les d'abord, sur les familles et les
+            fiches. Tant qu'un seul taux le cite, la base refuse.
             <br />
             Vous pouvez en revanche le mettre <strong>hors service</strong> — il cesse de facturer
             sans que rien ne soit effacé.
           </fold-callout>
         } @else {
           <fold-callout appearance="inset" variant="alert">
-            <strong>Action irréversible.</strong> Rien ne vend ni ne règle «&nbsp;{{
+            <strong>Action irréversible.</strong> Aucun taux n'est réglé sur «&nbsp;{{
               context()?.key
             }}&nbsp;», donc rien ne perd sa référence. L'historique du journal, lui, garde la trace
             de son existence.

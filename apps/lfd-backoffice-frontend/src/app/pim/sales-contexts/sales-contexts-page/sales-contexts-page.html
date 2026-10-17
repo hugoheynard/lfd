@@ -1,9 +1,9 @@
 <fold-page-layout icon="places" title="Contextes de vente">
   <p description>
     Le <strong>vocabulaire</strong> du catalogue : chaque manière de vendre qui a son propre
-    traitement de TVA. Une famille règle un taux par contexte, la matrice de canaux dit où on le
-    vend. En ouvrir un est une ligne de plus ici, et rien d'autre — c'est ce que le référentiel
-    promettait, et qui s'arrêtait au bord de cet écran.
+    traitement de TVA. Une famille ou une fiche règle un taux par contexte. En ouvrir un est une
+    ligne de plus ici, et rien d'autre — c'est ce que le référentiel promettait, et qui s'arrêtait
+    au bord de cet écran.
   </p>
 
   @if (canWrite()) {
@@ -48,10 +48,6 @@
         }
       </ng-template>
 
-      <ng-template foldCell="scope" let-c>
-        <span class="scope">{{ scopeLabel(c) }}</span>
-      </ng-template>
-
       <ng-template foldCell="state" let-c>
         @if (c.active) {
           <fold-badge content="en service" variant="success" />
@@ -93,7 +89,6 @@
               <fold-badge content="hors service" variant="warning" />
             }
           </span>
-          <span class="ctx-card-line">{{ scopeLabel(c) }}</span>
         </div>
       </ng-template>
     </fold-data-table>

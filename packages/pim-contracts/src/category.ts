@@ -76,11 +76,7 @@ export interface SalesContextAdminView extends SalesContextView {
    * laisse croire qu'il existe une façon de l'activer.
    */
   readonly root: boolean;
-  /** Combien de points de vente l'offrent. Toujours 0 pour un contexte global. */
-  readonly offeredByLocations: number;
-  /** Familles et fiches qui le vendent — ce qui empêche de l'effacer. */
-  readonly soldBy: number;
-  /** Taux réglés dessus, famille ou fiche. Idem. */
+  /** Taux réglés dessus, famille ou fiche — ce qui empêche de l'effacer. */
   readonly ratedBy: number;
 }
 

@@ -32,7 +32,8 @@ export type ProductDetail = ProductRecord &
      *   {@link ProductDetail.readinessStale}. Elle lit `product.updated_at`, un
      *   `@updatedAt` posé sur la ligne qui porte `status` : **mettre en vente
      *   périmait donc la signature qui justifiait la mise en vente**. Et elle
-     *   ignore `ProductContextVat` / `ProductChannelOverride`, si bien qu'un
+     *   ignore `ProductContextVat` et la dérogation de canaux (table retirée
+     *   en L4), si bien qu'un
      *   changement de taux ou de canal ne périmait rien.
      *
      *   Le champ reste servi UN déploiement, le temps que les fronts en ligne
