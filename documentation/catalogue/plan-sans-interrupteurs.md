@@ -1,6 +1,33 @@
 # Plan — retirer l'ancien chemin du catalogue et des opérations
 
-> 📐 **Doc-first, rien n'est bâti** (réécrit le 2026-10-16 au soir, après la
+## Où on en est (2026-10-17, midi)
+
+La **bascule** est faite et tient en production : faits du catalogue ouverts
+(réémission du 2026-10-17, 293 articles, aucune lettre morte), opérations au
+commerce, commandes sans estampille de version. **Ce qui reste est du ménage** :
+retirer du code qui ne sert plus ; un oubli s'y voit en test rouge, pas en
+panne.
+
+| Lot | Contenu                                                                                                                             | État                                                     | Taille                                                                                  |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| X0  | La commande ne fige plus de version ; la sonde de santé est désarmée                                                                | ✅ en production (`9bcab005e`)                           | —                                                                                       |
+| X1  | Les trois interrupteurs disparaissent (`CATALOG_FACTS_ENABLED`, `OPERATIONS_AT_COMMERCE`, `PIM_PUBLICATION_ENABLED`)                | 🟡 bâti (`3fe321cac`), CI de `dev` en cours, puis `main` | —                                                                                       |
+| X3  | Ce que fige la commande                                                                                                             | ✅ réglé par X0 : plus rien                              | —                                                                                       |
+| X2  | Retirer le push, la réception, les versions du catalogue, la parité, la santé, la surcharge des opérations, et `B2B_DELIVERY_INBOX` | à faire                                                  | le plus gros — du code, des écrans, des suites e2e à basculer ; aucune décision ouverte |
+| X4  | Retirer le code des opérations au PIM et la matrice des canaux (les contextes de vente restent)                                     | à faire                                                  | moyen — **une question** : le « point de vente » du lot 5                               |
+| X5  | La doc d'état à jour, et la liste des tables mortes pour un ordre de Hugo                                                           | à faire                                                  | petit                                                                                   |
+
+**Gestes de Hugo après X1 en production** : supprimer les Variables GitHub
+`CATALOG_FACTS_ENABLED`, `OPERATIONS_AT_COMMERCE`, `PIM_PUBLICATION_ENABLED`
+(et les secrets Cloudflare du même nom) ; accorder à l'écran `lfc_operations`,
+`lfc_catalog`, `lfc_loyalty`, `lfc_legal`, et retirer `b2b_catalog`.
+
+**À corriger au passage** : la carte « Réémettre tout » ne montre pas son
+compte rendu (l'appel dure ~73 s, la réponse se perd) ; la page Intégrations
+affiche encore la santé désarmée (part en X2) ; `account-alerts` avait une
+sonde d'une seconde, rouge sous la charge de la CI (porté à 5 s, `9703cd863`).
+
+> 🟡 **En cours** — l'état au §« Où on en est » ci-dessus. ~~📐 Doc-first~~ (réécrit le 2026-10-16 au soir, après la
 > bascule en production). Retire du code qui écrit en base et finira dans le
 > **runbook** : `vitruve` d'office avant de bâtir (CLAUDE.md §9 bis). Contredit
 > le même soir ; ses corrections, en fin de document, priment.
