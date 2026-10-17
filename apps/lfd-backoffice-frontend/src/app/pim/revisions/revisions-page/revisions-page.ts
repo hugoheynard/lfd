@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import type { CatalogRevisionRowView } from '@lfd/pim-contracts';
 import {
   FoldButtonComponent,
@@ -53,7 +52,6 @@ const WHEN = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium', timeStyle: 
     FoldOptionComponent,
     FoldPageLayoutComponent,
     FoldPageSectionComponent,
-    RouterLink,
     RevisionDiff,
   ],
   templateUrl: './revisions-page.html',

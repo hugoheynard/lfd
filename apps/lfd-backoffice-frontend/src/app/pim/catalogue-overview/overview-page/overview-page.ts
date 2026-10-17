@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import type { CatalogOverviewView } from '@lfd/pim-contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
@@ -11,11 +11,7 @@ import {
   FoldPageSectionComponent,
 } from 'fold-ng';
 
-import { staffAuthor } from '../../../shared/staff-author';
 import { CatalogueOverviewHttpApi } from '../catalogue-overview-http-api';
-
-/** Le format d'une date d'ancre : le jour ET l'heure — on en pose plusieurs par jour. */
-const WHEN = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium', timeStyle: 'short' });
 
 /**
  * **Où en est le catalogue** — l'accueil du référentiel.
@@ -52,26 +48,8 @@ export class CatalogueOverviewPage {
   protected readonly error = signal<string | null>(null);
   protected readonly loading = signal(true);
 
-  /**
-   * Le catalogue a-t-il bougé depuis la dernière ancre ?
-   *
-   * `false` sans aucune ancre : il n'y a alors rien à soustraire, et annoncer
-   * « rien n'a changé » sur un catalogue jamais figé serait faux.
-   */
-  protected readonly moved = computed(() => {
-    const since = this.overview()?.sinceLastRevision;
-    return since !== undefined && since !== null && since.added + since.removed + since.changed > 0;
-  });
-
-  /** Le nom de qui a posé la révision, ou la valeur brute d'un marqueur. */
-  protected readonly author = staffAuthor;
-
   constructor() {
     void this.load();
-  }
-
-  protected when(iso: string): string {
-    return WHEN.format(new Date(iso));
   }
 
   private async load(): Promise<void> {

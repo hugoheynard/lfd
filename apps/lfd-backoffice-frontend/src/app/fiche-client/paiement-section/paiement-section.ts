@@ -266,8 +266,7 @@ export class PaiementSection {
   /**
    * **La frise : les coordonnées, l'autorisation, l'ouverture.**
    *
-   * Même idiome que la frise de livraison d'une fiche produit
-   * (`pim/catalogue/product-form/b2b-delivery`) : rail **vertical**, aucune
+   * Rail **vertical**, aucune
    * icône de statut, et ce sont les **libellés qui portent l'état** — « Aucun RIB
    * enregistré » plutôt qu'une pastille éteinte à côté de « RIB ». Un libellé
    * qui change se lit sans avoir appris le code couleur, et il reste lisible

@@ -627,57 +627,6 @@ export const PIM_VIEWS: readonly WorkspaceView[] = [
 ];
 
 /**
- * Les vues de l'**espace B2B** — ce que la plateforme client vend, et à quel
- * prix. Toutes deux sous `settings:read`, le droit qui ouvre déjà l'espace :
- * le répéter serait une condition toujours vraie, donc jamais relue.
- */
-/**
- * Les vues du **B2B**, rangées par SECTION.
- *
- * Le contenu de plateforme y entre plutôt que d'ouvrir un espace à lui : ce
- * qu'on édite ici, ce sont les textes de la VITRINE B2B — le même contexte que
- * son catalogue et sa tarification. Un espace séparé aurait fait deux portes
- * pour une seule maison.
- *
- * Quatre sections. Elles ne sont pas décoratives : elles disent les natures de
- * ce qu'on règle ici — ce qu'on vend, à quel prix, ce qu'on en dit, et comment
- * on le remet — et chacune grandira de son côté.
- */
-export const B2B_VIEWS: readonly WorkspaceView[] = [
-  // LA BOÎTE DES DEMANDES CLIENTS n'est plus au rail (Hugo, 2026-10-13) : elle
-  // faisait doublon avec son entrée du menu principal, sous Commandes, qui
-  // porte le même compteur (`app.html`).
-  // « Réception » est partie en X2 (2026-10-17) avec le push : les faits du
-  // catalogue s'appliquent fiche par fiche, rien n'attend plus de validation.
-  // `/b2b/reception` redirige vers « Catalogue publié ».
-  // « Catalogue actuel en ligne » est parti en Gestion Boutique le 2026-10-15
-  // (H9 de plan-catalogue-synchronise-par-audience.md), renommé « Catalogue
-  // publié » : il est au rail principal et au lanceur mobile, dans `app.html`.
-  // `/b2b/catalogue` redirige vers `/catalogue-publie`.
-  // « Tarification B2B » est partie en Gestion Boutique le 2026-10-13 (Hugo),
-  // renommée « Promotions » : elle est au rail principal et au lanceur mobile,
-  // dans `app.html`. La section « Tarification » du rail, vide sans elle, a
-  // disparu. L'écran est `/promotions` depuis le 2026-10-13 ; `/b2b/tarification` y redirige.
-  // « App footer » et « Contact » ont quitté cet espace le 2026-10-15 (Hugo)
-  // pour la section Communication, comme la vitrine et ses textes avant eux :
-  // « Pied de page » (`/pied-de-page`, `b2b_settings:read`) et « Contact »
-  // (`/contact`, `b2b_contact:read`) sont au rail principal et au lanceur
-  // mobile, dans `app.html`. La section « Contenu », vide sans eux, a disparu ;
-  // les anciennes adresses redirigent.
-  // « Vitrine boutique » et « Textes de la boutique » ont quitté cet espace le
-  // 2026-10-12 (Hugo : « en primary menu, dans une section Communication ») :
-  // ils sont au rail principal et au lanceur mobile, dans `app.html`.
-  // LES CINQ MENTIONS LÉGALES sont parties en Réglages › Légal le 2026-10-15
-  // (Hugo), sous le même droit : elles sont dans EXPLOITATION_VIEWS, donc au
-  // rail des Réglages ET au lanceur mobile. `/b2b/contenu/mentions/<clé>`
-  // redirige.
-  // La section « Réglages » de l'E-commerce a disparu le 2026-10-13
-  // (plan-reglages-commandes.md §3.3, Q8) : « Points de retrait » est devenu
-  // « Sites », l'ouverture, l'heure limite et l'annulation sont parties en
-  // Réglages › Commandes (EXPLOITATION_VIEWS), chacune sous son droit.
-];
-
-/**
  * Les vues de l'**Admin**. Chacune porte le droit qui l'ouvre : ranger deux
  * écrans sous un même titre ne leur donne pas le même mur. Montrée sans le
  * droit, l'entrée offrait une porte fermée à clé — on cliquait, la page
@@ -908,9 +857,9 @@ export const WORKSPACES = {
   // « Catalogue » : le libellé seul (Hugo, 2026-10-10). La clé et les adresses
   // `/pim/…` restent, comme pour l'E-commerce LFC.
   pim: { key: 'pim', title: 'Catalogue', icon: 'catalog', views: PIM_VIEWS },
-  // « E-commerce LFC » : le libellé seul. La clé et les adresses `/b2b/…`
-  // restent — elles vivent dans des favoris (précédent `journee`, redirigé vers `/fournil` le 2026-10-06).
-  b2b: { key: 'b2b', title: 'E-commerce LFC', icon: 'store', views: B2B_VIEWS },
+  // L'espace « E-commerce LFC » (`b2b`) a été supprimé le 2026-10-17 (Hugo) :
+  // il n'avait plus aucune vue. Ses anciennes adresses `/b2b/…` redirigent
+  // (`b2b/b2b.routes.ts`).
   comptabilite: {
     key: 'comptabilite',
     title: 'Comptabilité',

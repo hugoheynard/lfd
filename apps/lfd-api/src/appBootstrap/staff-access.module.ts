@@ -9,7 +9,7 @@ import { StaffUsersModule } from "../staff/staff.module.js";
  * brancher le port déclaré par la couche technique sur l'adaptateur qui lit
  * l'annuaire.
  *
- * Même forme que `CatalogFeedModule`, et pour la même raison : le consommateur
+ * Même forme que `ProductionFeedModule`, et pour la même raison : le consommateur
  * du port est `StaffAccessGuard`, qui vit dans `infra/auth` et ne peut pas
  * importer le bloc `staff` sans renverser la matrice des frontières. Seule la
  * racine de composition a le droit de voir les deux côtés.

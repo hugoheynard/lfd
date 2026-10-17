@@ -62,10 +62,6 @@ const ROOT = process.cwd();
 /** Les contrôleurs dont la dette est purgée. En ajouter un = l'avoir drainé. */
 const SCOPE = [
   "apps/lfd-api/src/pim/ingredients/http/ingredient.controller.ts",
-  // Né drainé le 2026-09-02 : la frise de livraison passe par
-  // `GetB2bProductDeliveryQuery`. Il entre ici le jour de sa naissance parce
-  // qu'un contrôleur neuf n'a aucune raison d'arriver avec une dette.
-  "apps/lfd-api/src/pim/channels/b2b-platform/products/product-delivery.controller.ts",
   // Drainé le 2026-09-10 : il injectait `CatalogAdminReader` en direct, et la
   // lecture qu'il servait n'avait donc PAS de nom. Ça s'est payé le jour où le
   // tableau de bord de la comptabilité a eu besoin de la même liste, sous deux

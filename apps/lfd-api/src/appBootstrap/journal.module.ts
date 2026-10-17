@@ -18,7 +18,7 @@ import { PrismaProductHistoryJournal } from "./product-history.journal.js";
 /**
  * Branche le journal **de la plateforme** sur le journal d'activité réel.
  *
- * Comme `CatalogFeedModule`, et pour la même raison : la matrice des frontières
+ * Comme `ProductionFeedModule`, et pour la même raison : la matrice des frontières
  * interdit à `pim` (et à qui n'est pas `b2b`) de voir `growth`, et seule la
  * racine de composition a le droit de connaître les deux côtés. `@Global` parce
  * que les émetteurs sont dispersés — handlers du référentiel, handlers des

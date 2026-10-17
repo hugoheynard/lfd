@@ -155,7 +155,6 @@ export class App {
   protected readonly exploitationViews = this.catalogue.views('exploitation');
   protected readonly comptoirViews = this.catalogue.views('comptoir');
   protected readonly pimViews = this.catalogue.views('pim');
-  protected readonly b2bViews = this.catalogue.views('b2b');
   protected readonly adminViews = this.catalogue.views('admin');
   protected readonly comptabiliteViews = this.catalogue.views('comptabilite');
   protected readonly documentationViews = this.catalogue.views('documentation');

@@ -182,7 +182,7 @@ table en double survit.
   (`productChannelsChanged`, `productCategoryChannelsChanged`) là où
   `membership.service.ts:71` écrit sans aucun fait.
 - **Le retrait touche huit appelants**, pas un : `b2b-channel-api.ts`,
-  `products-page.ts`, **`b2b-delivery.ts:201`** (le bouton de la fiche),
+  `products-page.ts`, **b2b-delivery.ts:201** (le bouton de la fiche ; la frise est retirée le 2026-10-17),
   deux montages e2e, `pim-wall.e2e-spec.ts` (couverture du mur pour `pim_channels`),
   plus deux registres tenus à la main — `schema-ops.counter.ts:166` et
   `pim-prisma.service.ts:65`.
@@ -426,18 +426,18 @@ l'ancien canal.
 
 ## 11. Récapitulatif des écarts ouverts
 
-| №   | Écart                                                                                                                                                  | Écran                                 | Gravité |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------- | ------- |
-| 1   | La décision « vendu aux pros » est écrite deux fois (matrice **et** binding), et les deux ont divergé — 41 contre 1                                    | modèle + `/pim/produits`              | 🔴      |
-| 2   | La projection B2B ne consulte le statut nulle part : un brouillon est vendu aux professionnels (l'ancien canal, lui, garde déjà)                       | modèle                                | 🔴      |
-| 3   | ~~La simulation ne NOMME pas ce que l'envoi va retirer là où on appuie sur Envoyer~~ — **corrigé** : `GET push-preview`, chargé à l'ouverture          | `/pim/publication`                    | ✅      |
-| 4   | La colonne `B2B`, les actions _Vendre sur / Retirer_ de la liste **et le bouton de la fiche** (`b2b-delivery.ts:201`) partent avec le binding          | `/pim/produits` · `/pim/produits/:id` | 🟠      |
-| 5   | ~~Le clic sur la ligne n'ouvre pas la fiche~~ — **corrigé** : `fold-data-table` porte `clickable` + `(rowClick)`, qui navigue vers `/pim/produits/:id` | `/pim/produits`                       | ✅      |
-| 6   | La chaîne est coupée entre la Vue d'ensemble et Intégrations                                                                                           | `/pim/catalogue`                      | 🟠      |
-| 7   | ~~La colonne `sync` (l'ancien canal)~~ — **caduc** : la liste a cessé de lire l'ancien canal le 2026-09-21 (`a339a1617`), et le canal est sorti        | `/pim/produits`                       | ✅      |
-| 8   | Renommer une fiche déjà poussée déplace son URL publique sans avertir                                                                                  | `/pim/produits/:id`                   | 🟠      |
-| 9   | 94 fiches sur 95 sont impubliables (invariant 7 : allergènes non déclarés) — ce n'est pas un défaut d'écran, c'est du travail de saisie                | référentiel                           | 🟡      |
-| 10  | L'aperçu de push ne montre pas le contenu, donc un refus pour dérive ne se diagnostique pas                                                            | `/pim/publication`                    | 🟡      |
+| №   | Écart                                                                                                                                                             | Écran                                 | Gravité |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- | ------- |
+| 1   | La décision « vendu aux pros » est écrite deux fois (matrice **et** binding), et les deux ont divergé — 41 contre 1                                               | modèle + `/pim/produits`              | 🔴      |
+| 2   | La projection B2B ne consulte le statut nulle part : un brouillon est vendu aux professionnels (l'ancien canal, lui, garde déjà)                                  | modèle                                | 🔴      |
+| 3   | ~~La simulation ne NOMME pas ce que l'envoi va retirer là où on appuie sur Envoyer~~ — **corrigé** : `GET push-preview`, chargé à l'ouverture                     | `/pim/publication`                    | ✅      |
+| 4   | La colonne `B2B`, les actions _Vendre sur / Retirer_ de la liste **et le bouton de la fiche** (b2b-delivery.ts:201, retiré le 2026-10-17) partent avec le binding | `/pim/produits` · `/pim/produits/:id` | 🟠      |
+| 5   | ~~Le clic sur la ligne n'ouvre pas la fiche~~ — **corrigé** : `fold-data-table` porte `clickable` + `(rowClick)`, qui navigue vers `/pim/produits/:id`            | `/pim/produits`                       | ✅      |
+| 6   | La chaîne est coupée entre la Vue d'ensemble et Intégrations                                                                                                      | `/pim/catalogue`                      | 🟠      |
+| 7   | ~~La colonne `sync` (l'ancien canal)~~ — **caduc** : la liste a cessé de lire l'ancien canal le 2026-09-21 (`a339a1617`), et le canal est sorti                   | `/pim/produits`                       | ✅      |
+| 8   | Renommer une fiche déjà poussée déplace son URL publique sans avertir                                                                                             | `/pim/produits/:id`                   | 🟠      |
+| 9   | 94 fiches sur 95 sont impubliables (invariant 7 : allergènes non déclarés) — ce n'est pas un défaut d'écran, c'est du travail de saisie                           | référentiel                           | 🟡      |
+| 10  | L'aperçu de push ne montre pas le contenu, donc un refus pour dérive ne se diagnostique pas                                                                       | `/pim/publication`                    | 🟡      |
 
 ---
 

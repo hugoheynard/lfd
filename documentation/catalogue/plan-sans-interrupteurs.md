@@ -8,14 +8,14 @@ commerce, commandes sans estampille de version. **Ce qui reste est du ménage** 
 retirer du code qui ne sert plus ; un oubli s'y voit en test rouge, pas en
 panne.
 
-| Lot | Contenu                                                                                                                                                                                                                                                                                                               | État                                                    | Taille                                                    |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- | --------------------------------------------------------- |
-| X0  | La commande ne fige plus de version ; la sonde de santé est désarmée                                                                                                                                                                                                                                                  | ✅ en production (`9bcab005e`)                          | —                                                         |
-| X1  | Les trois interrupteurs disparaissent (`CATALOG_FACTS_ENABLED`, `OPERATIONS_AT_COMMERCE`, `PIM_PUBLICATION_ENABLED`)                                                                                                                                                                                                  | ✅ en production (`3fe321cac`, `9703cd863`)             | —                                                         |
-| X3  | Ce que fige la commande                                                                                                                                                                                                                                                                                               | ✅ réglé par X0 : plus rien                             | —                                                         |
-| X2  | Retirer le push, la réception, les versions du catalogue, la parité, la santé, la surcharge des opérations, et `B2B_DELIVERY_INBOX`                                                                                                                                                                                   | 🟡 bâti le 2026-10-17, non commité (bandeau ci-dessous) | trois questions ouvertes en sortie (bandeau X2)           |
-| X4  | Retirer le code des opérations au PIM et la matrice des canaux (les contextes de vente restent), avec « Sur la plateforme professionnelle » du rail de la fiche et l'encart « Intégrations » de la fiche (Hugo, 2026-10-17 : deux réglages pour une même question, dont un mort — « Activer » et l'audience décident) | à faire                                                 | moyen — **une question** : le « point de vente » du lot 5 |
-| X5  | La doc d'état à jour, et la liste des tables mortes pour un ordre de Hugo                                                                                                                                                                                                                                             | à faire                                                 | petit                                                     |
+| Lot | Contenu                                                                                                                                                                                                                                                                                                               | État                                                                                                  | Taille                                                    |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| X0  | La commande ne fige plus de version ; la sonde de santé est désarmée                                                                                                                                                                                                                                                  | ✅ en production (`9bcab005e`)                                                                        | —                                                         |
+| X1  | Les trois interrupteurs disparaissent (`CATALOG_FACTS_ENABLED`, `OPERATIONS_AT_COMMERCE`, `PIM_PUBLICATION_ENABLED`)                                                                                                                                                                                                  | ✅ en production (`3fe321cac`, `9703cd863`)                                                           | —                                                         |
+| X3  | Ce que fige la commande                                                                                                                                                                                                                                                                                               | ✅ réglé par X0 : plus rien                                                                           | —                                                         |
+| X2  | Retirer le push, la réception, les versions du catalogue, la parité, la santé, la surcharge des opérations, et `B2B_DELIVERY_INBOX`                                                                                                                                                                                   | ✅ bâti (`181b0621f`) ; sa suite (repère, frise, espace E-commerce) bâtie le 2026-10-17, non commitée | une question : la place des demandes clients (bandeau X2) |
+| X4  | Retirer le code des opérations au PIM et la matrice des canaux (les contextes de vente restent), avec « Sur la plateforme professionnelle » du rail de la fiche et l'encart « Intégrations » de la fiche (Hugo, 2026-10-17 : deux réglages pour une même question, dont un mort — « Activer » et l'audience décident) | à faire                                                                                               | moyen — **une question** : le « point de vente » du lot 5 |
+| X5  | La doc d'état à jour, et la liste des tables mortes pour un ordre de Hugo                                                                                                                                                                                                                                             | à faire                                                                                               | petit                                                     |
 
 **Gestes de Hugo après X1 en production** : supprimer les Variables GitHub
 `CATALOG_FACTS_ENABLED`, `OPERATIONS_AT_COMMERCE`, `PIM_PUBLICATION_ENABLED`
@@ -85,6 +85,25 @@ sonde d'une seconde, rouge sous la charge de la CI (porté à 5 s, `9703cd863`).
 > « non vendue aux pros » venaient du push et de son aperçu. (3) L'espace
 > « E-commerce LFC » n'a plus aucune vue au rail ; son entrée mène aux
 > demandes clients.
+>
+> **Suite de X2, tranchée par Hugo le 2026-10-17 et bâtie le même jour** (non
+> commitée au moment d'écrire) :
+> (1) **« Depuis la dernière publication » est supprimé** — le compteur de
+> l'état du catalogue (« Vue d'ensemble »), la page `/pim/revisions/en-attente`
+> et sa lecture `since-last`, la lecture de la dernière ancre publiée et
+> l'inscription des publications sur le port des révisions. Les révisions
+> restent (poser, lister, nommer, comparer deux ancres) ; la table
+> `catalog_revision_publications` reste en base, sans lecteur ni écrivain.
+> (2) **La frise d'une fiche est retirée** — la route
+> `GET /pim/channels/b2b/products/:id/delivery`, son écran sur la fiche, son
+> port de retour, l'adaptateur qui lisait le miroir et le module de la racine
+> qui les reliait (il n'avait pas d'autre objet).
+> (3) **L'espace « E-commerce LFC » est supprimé** — son entrée au rail et au
+> lanceur, sa coquille, ses vues ; `/b2b/…` ne porte plus que des
+> redirections, hors de toute coquille. **Une question reste** : la boîte des
+> demandes clients vit encore à `/b2b/demandes` (même adresse, mêmes deux
+> droits, entrée « Demandes clients » sous Commandes inchangée). Sa place —
+> Gestion Boutique ou Commercial — est à décider par Hugo.
 
 > ✅ **X1 bâti le 2026-10-17** (non commité au moment d'écrire). Les trois
 > interrupteurs — `CATALOG_FACTS_ENABLED`, `OPERATIONS_AT_COMMERCE`,

@@ -20,26 +20,26 @@ export function legacyLegalMentionRedirect({
 }
 
 /**
- * Les routes de l'**espace B2B** — le catalogue vendu et sa tarification.
+ * Les anciennes adresses `/b2b/…`, et la boîte des demandes clients.
  *
- * Elles vivaient sous `/reglages`. Les anciennes URL restent servies par des
- * redirections (`app.routes.ts`) : elles sont dans les favoris, dans des liens
- * collés, et une adresse qui tombe en 404 après un rangement est un rangement
- * qui coûte à celui qui ne l'a pas fait.
+ * L'**espace « E-commerce LFC »** a été supprimé le 2026-10-17 (Hugo) : plus
+ * d'entrée au rail ni au lanceur, plus de coquille. Ses écrans étaient tous
+ * partis ailleurs ; il ne reste ici que leurs redirections — elles vivent dans
+ * des favoris, et une adresse qui tombe en 404 après un rangement coûte à celui
+ * qui ne l'a pas fait. Le parent n'a ni composant ni garde : une redirection
+ * s'applique avant tout mur.
+ *
+ * ⚠️ `/b2b/demandes` reste un ÉCRAN, à sa même adresse, en attendant que Hugo
+ * lui choisisse une place (Gestion Boutique ou Commercial). Il garde les DEUX
+ * droits qu'il avait sous l'espace (`b2b_settings:read`, hérité du mur de la
+ * coquille, et `b2b_contact:read`) : l'entrée « Demandes clients » du menu les
+ * lit tous les deux (`app.ts`, `canSeeCustomerRequests`).
  */
 export const b2bRoutes: Routes = [
   {
     path: 'b2b',
-    canActivate: [permissionGuard('b2b_settings:read')],
-    // Le titre suit le libellé de l'espace (« E-commerce LFC ») ; la clé et les
-    // adresses `/b2b/…` restent, elles vivent dans des favoris.
-    title: 'E-commerce LFC — LFC B2B admin',
-    loadComponent: () => import('./b2b-page/b2b-page').then((m) => m.B2bPage),
     children: [
-      // L'entrée de l'espace : les demandes clients, seule page qui y reste
-      // depuis le départ de la réception (X2, 2026-10-17). Elle a son propre
-      // droit : qui ne tient que `b2b_settings` y rebondit sur le refus de son
-      // garde, comme il le faisait sur la réception.
+      // L'ancienne entrée de l'espace menait aux demandes clients.
       { path: '', pathMatch: 'full', redirectTo: 'demandes' },
       {
         // LES ANCIENNES ADRESSES DU CONTENU DE PLATEFORME. Tout ce qu'il portait
@@ -169,7 +169,7 @@ export const b2bRoutes: Routes = [
         // `?demande=<id>` vient du courriel à l'équipe.
         path: 'demandes',
         title: 'Demandes clients — LFC B2B admin',
-        canActivate: [permissionGuard('b2b_contact:read')],
+        canActivate: [permissionGuard('b2b_settings:read'), permissionGuard('b2b_contact:read')],
         loadComponent: () =>
           import('./demandes/demandes-page/demandes-page').then((m) => m.DemandesPage),
       },

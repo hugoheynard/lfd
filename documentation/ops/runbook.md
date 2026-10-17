@@ -1130,9 +1130,9 @@ vente avec un suffixe et « projeté ». Les chiffres sont gardés dans
 **La fenêtre** : la migration passe avant le `wrangler deploy`
 (`deploy_lfd_api.yml`). Pendant ces secondes, l'ancien code peut lire une
 colonne disparue (500 sur l'écran des points de vente). Accepté en
-pré-release ; ça se résorbe avec le déploiement. Si la dernière publication
-réussie visait l'ancien canal, la « dernière publication » affichée devient la
-dernière vers la plateforme.
+pré-release ; ça se résorbe avec le déploiement. (La « dernière publication »
+que citait ici une phrase n'est plus affichée nulle part depuis le
+2026-10-17 : le repère est retiré.)
 
 **Après** : ouvrir un point de vente existant au back-office, l'enregistrer,
 puis ouvrir son historique — il doit se lire sans fait brut.

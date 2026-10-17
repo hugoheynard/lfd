@@ -26,8 +26,7 @@ import {
  * **Le fil du fournil, relié.** Un module dont c'est le seul objet : brancher le
  * port publié par la production sur l'adaptateur fourni par le commerce.
  *
- * Même motif et même raison que `CatalogFeedModule` : la racine de composition
- * est le seul endroit autorisé à connaître les deux côtés à la fois. La matrice
+ * La racine de composition est le seul endroit autorisé à connaître les deux côtés à la fois. La matrice
  * interdit à `production` de voir `b2b` — le fournil DÉCLARE ce dont il a
  * besoin, il ne va pas le chercher.
  *

@@ -8,10 +8,8 @@ import { CatalogueOverviewHttpApi } from '../catalogue-overview-http-api';
 import { CatalogueOverviewPage } from '../overview-page/overview-page';
 
 /**
- * Ce que la synthèse PROMET, et qu'un coup d'œil ne vérifie pas : elle dit
- * quand le catalogue a bougé depuis la dernière ancre, et elle distingue « il
- * n'a pas bougé » de « il n'y a aucune ancre ». Les confondre annoncerait
- * « rien n'a changé » sur un catalogue jamais figé.
+ * Ce que la synthèse PROMET : les chiffres du catalogue, et rien sur « la
+ * dernière publication » — ce repère est parti le 2026-10-17.
  */
 function overview(over: Partial<CatalogOverviewView> = {}): CatalogOverviewView {
   return {
@@ -20,18 +18,6 @@ function overview(over: Partial<CatalogOverviewView> = {}): CatalogOverviewView 
     drafts: 3,
     signed: 6,
     articles: 12,
-    lastRevision: {
-      id: 'rev_1',
-      reference: 'R-TEST4',
-      label: 'rentrée',
-      note: null,
-      hash: 'h',
-      takenAt: '2026-08-31T09:00:00.000Z',
-      takenBy: 'staff_hugo',
-      takenByName: null,
-      articles: 12,
-    },
-    sinceLastRevision: { added: 0, removed: 0, changed: 0 },
     ...over,
   };
 }
@@ -68,19 +54,7 @@ describe('CatalogueOverviewPage', () => {
 
     const host = await render();
     expect(text(host)).toContain('Fiches');
-    expect(text(host)).toContain('R-TEST4');
-    expect(text(host)).toContain('rentrée');
-  });
-
-  it('nomme qui a posé la dernière révision, sans montrer son identifiant', async () => {
-    const base = overview();
-    const lastRevision =
-      base.lastRevision === null ? null : { ...base.lastRevision, takenByName: 'Hugo Heynard' };
-    setup({ ...base, lastRevision });
-
-    const shown = text(await render());
-    expect(shown).toContain('par Hugo Heynard');
-    expect(shown).not.toContain('staff_hugo');
+    expect(text(host)).toContain('Articles');
   });
 
   it('dit combien de fiches ne sont pas validées', async () => {
@@ -89,39 +63,16 @@ describe('CatalogueOverviewPage', () => {
     expect(text(await render())).toContain('4 fiche(s) sans validation');
   });
 
-  it('annonce que le catalogue a bougé, et de combien', async () => {
-    setup(overview({ sinceLastRevision: { added: 1, removed: 0, changed: 2 } }));
-
-    const rendu = text(await render());
-    expect(rendu).toContain('Le catalogue a bougé depuis');
-    expect(rendu).toContain('1 entré(s)');
-    expect(rendu).toContain('2 modifié(s)');
-  });
-
-  it('dit qu’un push ne poserait rien quand rien n’a bougé', async () => {
-    setup(overview({ sinceLastRevision: { added: 0, removed: 0, changed: 0 } }));
-
-    expect(text(await render())).toContain("n'a pas bougé depuis");
-  });
-
   /**
-   * Sans référence, il n'y a rien à soustraire : annoncer « rien n'a changé »
-   * serait faux sur un catalogue jamais publié.
-   *
-   * 🔴 « PUBLIÉE », et non « posée ». La référence est l'ancre de la dernière
-   * publication réussie : des ancres peuvent exister — une simulation en pose
-   * une — sans qu'aucune ne soit partie. L'écran disait « aucune révision
-   * posée », ce qui est faux dès le premier dry-run, et renvoyait de surcroît à
-   * un bouton de pose manuelle qui n'existe plus.
+   * Régression : l'écran comptait « depuis la dernière publication » ce que le
+   * push n'avait pas encore envoyé ; le push parti, ce compte était figé sur le
+   * dernier push (retiré le 2026-10-17).
    */
-  it('distingue « aucune ancre publiée » de « rien n’a bougé »', async () => {
-    setup(overview({ lastRevision: null, sinceLastRevision: null }));
+  it('ne parle plus de la dernière publication', async () => {
+    setup(overview());
 
     const rendu = text(await render());
-    expect(rendu).toContain('Aucune révision');
-    expect(rendu).toContain('publiée');
-    expect(rendu).not.toContain('posée');
-    expect(rendu).not.toContain('en préparant une publication');
-    expect(rendu).not.toContain("n'a pas bougé depuis");
+    expect(rendu).not.toContain('dernière publication');
+    expect(rendu).not.toContain('a bougé');
   });
 });

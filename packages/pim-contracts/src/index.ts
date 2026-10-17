@@ -241,8 +241,6 @@ export type {
   AudienceSwitchAppliedView,
   ReemissionReportView,
   B2bExclusionReason,
-  B2bDeliveryFactsView,
-  B2bProductDeliveryView,
 } from "./b2b-channel.js";
 
 export type {
@@ -251,7 +249,6 @@ export type {
   CatalogRevisionRowView,
   CatalogRevisionItemDiffView,
   CatalogRevisionDiffView,
-  CatalogPendingDiffView,
   CatalogRevisionTakenView,
   AttributedFieldDiffView,
   CatalogRevisionCauseView,

@@ -105,7 +105,7 @@ La frontière autorise déjà la lecture : la matrice du `CLAUDE.md` §3 dit
 motif est **déjà en service**, pas à inventer :
 
 ```
-b2b/catalog/infrastructure/in-process-delivery-facts.reader.ts
+b2b/catalog/infrastructure/in-process-delivery-facts.reader.ts   (retiré le 2026-10-17)
 b2b/catalog/infrastructure/in-process-catalog.driver.ts
 ```
 

@@ -6,7 +6,6 @@ import { UuidGenerator } from "../../../../platform/id/uuid-generator.js";
 import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js";
 import {
   CatalogRevisionRepository,
-  type RevisionPublication,
   type RevisionRecord,
 } from "../domain/ports/catalog-revision.repository.js";
 import { RevisionHashAlreadyTakenError } from "../domain/errors/revision-errors.js";
@@ -37,42 +36,6 @@ export class PrismaCatalogRevisionRepository extends CatalogRevisionRepository {
     private readonly ids: UuidGenerator,
   ) {
     super();
-  }
-
-  /**
-   * 🔴 **On part de la PUBLICATION, pas de l'ancre**, et l'ordre de lecture est
-   * tout le sujet.
-   *
-   * La rédaction évidente — les ancres qui ont `some` publication réussie,
-   * triées par `takenAt` — rejoue exactement le bug qu'on ferme. Après un
-   * aller-retour A → B → A, l'ancre A reçoit une seconde publication mais son
-   * `takenAt` reste le plus ancien : le tri par pose rendrait **B**, et l'écran
-   * annoncerait des changements sur un catalogue qu'on vient de republier
-   * entier. Les deux rédactions sont à un tri près, et une seule est juste.
-   *
-   * D'où deux requêtes plutôt qu'une jointure triée : la dernière publication
-   * réussie, puis l'ancre qu'elle désigne. La table est petite — quelques lignes
-   * par push — et la seconde lecture est une clé primaire.
-   *
-   * Les DEUX filtres, et pas seulement `outcome` : une simulation s'inscrit
-   * aussi en `sent`, délibérément — c'est ce qui distingue « jamais tenté » de
-   * « tenté à blanc ». Oublier `mode` ferait d'un dry-run la référence du
-   * catalogue.
-   */
-  async lastPublished(): Promise<RevisionRecord | null> {
-    const publication = await this.prisma.catalogRevisionPublication.findFirst({
-      where: { mode: "live", outcome: "sent" },
-      orderBy: { publishedAt: "desc" },
-      select: { revisionId: true },
-    });
-    if (publication === null) {
-      return null;
-    }
-    const row = await this.prisma.catalogRevision.findUnique({
-      where: { id: publication.revisionId },
-      include: { _count: { select: { items: true } } },
-    });
-    return row === null ? null : toRecord(row);
   }
 
   /**
@@ -173,27 +136,6 @@ export class PrismaCatalogRevisionRepository extends CatalogRevisionRepository {
         },
       ]),
     );
-  }
-
-  async recordPublication(publication: RevisionPublication): Promise<void> {
-    await this.prisma.catalogRevisionPublication.create({
-      data: {
-        id: this.ids.next(),
-        revisionId: publication.revisionId,
-        channel: publication.channel,
-        mode: publication.mode,
-        outcome: publication.outcome,
-        // `report` traverse tel quel : c'est ce que la destination a répondu, et
-        // le réinterpréter ici ferait dire à l'ancre autre chose que ce qui a
-        // été reçu.
-        ...(publication.report === undefined || publication.report === null
-          ? {}
-          : { report: toJsonObject(asRecord(publication.report)) }),
-        projectionFingerprint: publication.projectionFingerprint,
-        publishedAt: publication.publishedAt,
-        publishedBy: publication.publishedBy,
-      },
-    });
   }
 
   async payloadsOf(

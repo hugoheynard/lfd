@@ -1,9 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import type {
-  CatalogPendingDiffView,
-  CatalogRevisionDiffView,
-  CatalogRevisionRowView,
-} from '@lfd/pim-contracts';
+import type { CatalogRevisionDiffView, CatalogRevisionRowView } from '@lfd/pim-contracts';
 
 import { httpErrorMessage } from '@lfd/endpoints';
 
@@ -43,17 +39,6 @@ export class RevisionsStore {
   private readonly lastTakeValue = signal<string | null>(null);
   readonly lastTake = this.lastTakeValue.asReadonly();
 
-  /**
-   * **Ce qui a bougé depuis la dernière publication**, en détail.
-   *
-   * `null` = pas encore demandé. Il ne se charge pas avec la liste : il coûte
-   * un payload par article modifié plus une lecture de journal par produit,
-   * alors que la liste ne coûte qu'une requête. Le faire d'office ferait payer
-   * ce prix à qui vient seulement comparer deux ancres.
-   */
-  private readonly pendingValue = signal<CatalogPendingDiffView | null>(null);
-  readonly pending = this.pendingValue.asReadonly();
-
   /** Deux ancres au moins : sans quoi il n'y a rien à comparer. */
   readonly comparable = computed(() => this.items().length >= 2);
 
@@ -84,13 +69,6 @@ export class RevisionsStore {
           : `Le catalogue n'a pas bougé depuis ${taken.reference} : rien n'a été préparé.`,
       );
       this.items.set(await this.api.list());
-    });
-  }
-
-  /** Charge le détail vivant. Le compteur de l'état du catalogue l'annonce déjà. */
-  async loadPending(): Promise<void> {
-    await this.run(async () => {
-      this.pendingValue.set(await this.api.sinceLast());
     });
   }
 

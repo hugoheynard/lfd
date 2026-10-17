@@ -3,31 +3,6 @@ import type { RevisionIndex } from "../diff.js";
 import type { JsonObject } from "../fingerprint.js";
 import type { Revision } from "../revision.js";
 
-/** Une publication d'une révision vers une destination. */
-export interface RevisionPublication {
-  readonly revisionId: string;
-  /** `b2b`. Le registre des canaux vit chez qui les pousse. */
-  readonly channel: string;
-  /** `live` ou `dry-run` — une simulation se trace aussi. */
-  readonly mode: string;
-  /** `sent` ou `failed`. L'échec s'inscrit : sinon on ne raconte que les bons jours. */
-  readonly outcome: string;
-  readonly report: unknown;
-  /**
-   * L'empreinte de la **projection** partie sur ce canal — jamais celle de
-   * l'ancre. L'ancre archive le catalogue ; la projection est ce qu'un canal en
-   * tire, et c'est elle seule qui répond à « le canal a-t-il reçu ce que le
-   * référentiel produirait aujourd'hui ? ».
-   *
-   * `null` pour un canal qui n'en produit pas. Une lecture qui cherche
-   * « l'empreinte reçue » filtre `mode = 'live'` **et** `outcome = 'sent'` : une
-   * simulation et un échec laissent une ligne eux aussi.
-   */
-  readonly projectionFingerprint: string | null;
-  readonly publishedAt: Date;
-  readonly publishedBy: string | null;
-}
-
 /** Une révision posée, telle qu'on la relit. */
 export interface RevisionRecord {
   readonly id: string;
@@ -50,36 +25,6 @@ export interface RevisionRecord {
 }
 
 export abstract class CatalogRevisionRepository {
-  /**
-   * L'ancre de la **dernière publication réussie**, ou `null` s'il n'y en a
-   * aucune.
-   *
-   * C'est la référence du diff : « 3 articles ont changé depuis R-7WT4NA ». Elle
-   * s'appelait `latest()` et rendait la dernière ancre **posée**, ce qui n'est
-   * pas la même chose et rendait l'écran faux dans un cas banal — un catalogue
-   * qui va de A à B puis revient à A comparait à B, sur un catalogue qu'on
-   * venait de republier entier.
-   *
-   * 🔴 **« Publiée » filtre `mode = 'live'` ET `outcome = 'sent'`.** Une ligne de
-   * publication existe aussi pour une simulation et pour un échec ; sans le
-   * filtre, un dry-run lancé après le dernier envoi deviendrait la référence.
-   *
-   * ⚠️ **La dernière PUBLICATION, pas la dernière ancre publiée.** La nuance
-   * décide du cas qui motive tout : après un aller-retour A → B → A, l'ancre A
-   * reçoit une seconde publication mais garde sa date de pose. Trier les ancres
-   * publiées par leur pose rendrait B — et rejouerait le bug.
-   *
-   * ⚖️ **Au moins une**, pas toutes. Le modèle définit R comme un consensus —
-   * publiée sur TOUS les canaux. Appliqué ici, le diff
-   * perdrait sa référence dès qu'un canal est en retard, c'est-à-dire souvent.
-   * Le consensus reste une information d'écran (« tel canal est deux ancres
-   * en arrière ») ; ce qui informe ne doit pas devenir le dénominateur de tout.
-   *
-   * Conséquence assumée : un catalogue que l'on n'a jamais fait que **simuler**
-   * n'a pas de référence, et l'écran le dit. C'est exact — rien n'est parti.
-   */
-  abstract lastPublished(): Promise<RevisionRecord | null>;
-
   /**
    * L'ancre portant cette empreinte, ou `null`.
    *
@@ -158,16 +103,6 @@ export abstract class CatalogRevisionRepository {
    * Les ancres absentes ne sont pas dans la carte rendue.
    */
   abstract indexesOf(revisionIds: readonly string[]): Promise<ReadonlyMap<string, RevisionIndex>>;
-
-  /**
-   * Inscrit une publication SUR une révision : où elle est partie, et l'issue.
-   *
-   * Séparé de `save` parce que les deux actes sont séparés dans le temps : on
-   * fige d'abord ce qu'on s'apprête à envoyer, on envoie ensuite, et l'envoi
-   * peut échouer. Les fondre obligerait à connaître l'issue avant de figer,
-   * c'est-à-dire à ne rien figer du tout.
-   */
-  abstract recordPublication(publication: RevisionPublication): Promise<void>;
 
   /** Les payloads de quelques SKU — ceux que le plan a désignés, et eux seuls. */
   abstract payloadsOf(

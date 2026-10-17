@@ -1,8 +1,5 @@
 <fold-page-layout icon="product" title="Catalogue" separator>
-  <p description>
-    Où en est le référentiel : ce qu'il contient, ce qui est validé, et ce qui a bougé depuis la
-    dernière publication.
-  </p>
+  <p description>Où en est le référentiel : ce qu'il contient et ce qui est validé.</p>
 
   @if (error(); as message) {
     <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
@@ -41,50 +38,9 @@
             fiche relue&nbsp;: quelqu'un doit affirmer que les informations sont justes.
           </p>
         }
-      </fold-page-section>
-    </fold-card>
-
-    <fold-card>
-      <fold-page-section title="Depuis la dernière publication" separator>
-        @if (o.lastRevision === null) {
-          <!-- « PUBLIÉE », pas « posée » : la référence est l'ancre de la
-               dernière publication réussie. Des ancres peuvent exister sans
-               qu'aucune ne soit partie — un envoi qui échoue en laisse une.
-               Cette phrase disait « aucune révision posée » et mentionnait un
-               bouton de pose manuelle qui n'existe plus ; elle citait aussi la
-               simulation comme poseuse d'ancre, ce qui a cessé d'être vrai le
-               jour où regarder est devenu une lecture. -->
-          <p class="ov-note">
-            Aucune révision <strong>publiée</strong>. La référence apparaîtra au premier envoi réel
-            vers un canal&nbsp;: une simulation ne compte pas.
-          </p>
-        } @else {
-          <p class="ov-last">
-            <strong>{{ o.lastRevision.reference }}</strong>
-            {{ o.lastRevision.label ?? 'sans nom' }} · {{ o.lastRevision.articles }} articles ·
-            {{ when(o.lastRevision.takenAt) }} par
-            {{ author(o.lastRevision.takenBy, o.lastRevision.takenByName) }}
-          </p>
-          @if (o.sinceLastRevision; as since) {
-            @if (moved()) {
-              <!-- Ce compte se calcule comme une capture qu'on ne pose PAS : la
-                   même mécanique que le push, donc aucun écart possible entre
-                   ce qu'on annonce ici et ce qui partirait. -->
-              <!-- NEUTRE, pas « warning » : du travail non poussé est l'état
-                   normal d'un catalogue vivant. Le rendre alarmant ferait sonner
-                   l'écran tous les jours — donc jamais. Même ton que la première
-                   ligne de l'écran de santé, pour le même fait. -->
-              <fold-callout appearance="inset" variant="neutral">
-                Le catalogue a bougé depuis&nbsp;: {{ since.added }} entré(s),
-                {{ since.removed }} retiré(s), {{ since.changed }} modifié(s).
-              </fold-callout>
-            } @else {
-              <p class="ov-note">
-                Le catalogue n'a pas bougé depuis. Un push ne poserait aucune nouvelle révision.
-              </p>
-            }
-          }
-        }
+        <!-- « Depuis la dernière publication » est parti le 2026-10-17 (Hugo) :
+             il comptait ce que le push n'avait pas encore envoyé ; avec les
+             faits, tout part à l'enregistrement. -->
         <div class="ov-actions">
           <button foldButton emphasis="outline" routerLink="/pim/revisions">
             Voir les révisions

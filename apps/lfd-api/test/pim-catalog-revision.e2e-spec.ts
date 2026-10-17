@@ -7,13 +7,10 @@
  * SQL — une transaction, un `skipDuplicates`, une comparaison d'empreintes — et
  * un test unitaire les montrerait séparément, jamais ensemble.
  */
-import type { B2bProductDeliveryView } from "@lfd/pim-contracts";
 
-import { CatalogRevisionRepository } from "../src/pim/catalogue/revision/domain/ports/catalog-revision.repository.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
   bootstrapE2e,
-  daysAgo,
   E2E_STAFF_ID,
   E2E_STAFF_SUB,
   jsonBody,
@@ -545,35 +542,6 @@ async function aSoldProduct(): Promise<string> {
   return id;
 }
 
-/** Le rang de la prochaine publication : chacune une seconde après la précédente. */
-let publicationRank = 0;
-
-/**
- * **L'état qu'un push d'avant X2 laissait** : une ancre posée, puis sa
- * publication réussie vers `b2b`.
- *
- * Le push est parti en X2 (2026-10-17) ; plus aucun chemin n'écrit de
- * publication, et la référence du diff vivant (`lastPublished`) reste celle
- * que la production porte. Ces cas l'éprouvent en inscrivant la publication
- * par le PORT des révisions, comme le faisait le push — la question du
- * nouveau référent est remontée au plan.
- */
-async function published(label: string | null = null): Promise<Taken> {
-  const taken = await take(label);
-  publicationRank += 1;
-  await ctx.app.get(CatalogRevisionRepository).recordPublication({
-    revisionId: taken.id,
-    channel: "b2b",
-    mode: "live",
-    outcome: "sent",
-    report: null,
-    projectionFingerprint: `empreinte-${taken.id}`,
-    publishedAt: new Date(Date.parse(daysAgo(1)) + publicationRank * 1_000),
-    publishedBy: E2E_STAFF_ID,
-  });
-  return taken;
-}
-
 /**
  * Une fiche **complète pour le canal** : prix, taux B2B, contexte
  * professionnel dans la matrice de sa famille, déclaration d'allergènes.
@@ -621,59 +589,14 @@ async function aDeliverableProduct(): Promise<{ id: string; variantId: string; s
 }
 
 /**
- * **La frise : ce que la plateforme répond au référentiel.**
+ * **Une ancre est un CONTENU, pas un moment.** Un catalogue qui va de A à B puis
+ * revient à A ne pose pas de troisième ancre : l'unicité de l'empreinte le
+ * tient, et rien ici ne tient sans le vrai SQL.
  *
- * Le trou qu'elle ferme est étroit et coûteux : l'écran savait dire « publiée »
- * et « poussée le 28 », jamais si la plateforme avait **accepté**. Une fiche
- * poussée que personne n'a validée s'affichait exactement comme une fiche en
- * vente.
- *
- * Ce que seul ce niveau prouve : que le fait traverse le PORT — donc qu'il vient
- * de l'autre contexte, et non d'un `findMany` que le même schéma Postgres
- * rendrait possible sans qu'aucune porte ne le voie.
+ * Ce bloc éprouvait aussi la référence « dernière publication » de l'état du
+ * catalogue ; ce repère a été retiré le 2026-10-17 (Hugo, après X2).
  */
-describe("GET /pim/channels/b2b/products/:id/delivery", () => {
-  // « La décision, l'envoi et l'acceptation » éprouvait un push ACCEPTÉ qui
-  // écrivait le miroir : depuis X1 (2026-10-17), l'ingestion n'écrit plus
-  // rien, et la frise du push part avec lui (X2).
-
-  /**
-   * 🔴 LE cas qui vaut la tranche. Publiée au canal, jamais poussée : la
-   * plateforme n'en sait rien. C'est l'état qu'aucun écran ne savait montrer, et
-   * celui où un commercial croit vendre quelque chose qui n'est nulle part.
-   */
-  it("distingue « publiée » de « acceptée » quand rien n'est encore parti", async () => {
-    const { id } = await aDeliverableProduct();
-
-    const frise = jsonBody<B2bProductDeliveryView>(
-      await staff().get(`/pim/channels/b2b/products/${id}/delivery`).expect(200),
-    );
-
-    expect(frise.publishedAt).not.toBeNull();
-    expect(frise.lastPushedAt).toBeNull();
-    expect(frise.variants[0]).toMatchObject({
-      accepted: false,
-      factsReceivedAt: null,
-      awaitingSince: null,
-    });
-  });
-
-  it("refuse une fiche inconnue plutôt que de rendre une frise vide", async () => {
-    await staff().get("/pim/channels/b2b/products/prd_inconnu/delivery").expect(404);
-  });
-});
-
-/**
- * **La référence du diff est la dernière PUBLICATION, pas la dernière pose.**
- *
- * Les deux se ressemblent au point qu'on les a confondues pendant tout le
- * chantier, et l'écart se voit sur le cas le plus banal qui soit : un catalogue
- * qui va de A à B puis revient à A. Rien ici ne tient sans le vrai SQL — c'est
- * l'ordre de deux tables qui décide.
- */
-describe("l'ancre de référence : publiée, pas posée", () => {
-  const OVERVIEW = `${REVISIONS}/overview`;
-
+describe("l'aller-retour ne pose pas d'ancre de plus", () => {
   async function priced(product: string, variant: string, priceCents: number): Promise<void> {
     await staff()
       .put(`${PRODUCTS}/${product}/variants/${variant}/pricing`)
@@ -681,35 +604,17 @@ describe("l'ancre de référence : publiée, pas posée", () => {
       .expect(200);
   }
 
-  /**
-   * 🔴 L'aller-retour. Avec l'ancienne garde — « est-ce la dernière ancre ? » —
-   * le retour à A posait une SECONDE ancre A. Avec l'unicité seule, il aurait été
-   * refusé mais la référence serait restée B, et l'écran aurait annoncé des
-   * changements sur un catalogue qu'on venait de republier entier. Les deux
-   * pièces ensemble, et seulement ensemble, donnent la bonne réponse.
-   */
-  it("rend l'ancre d'origine, et ne signale rien après un aller-retour", async () => {
+  it("ne pose que deux ancres pour A → B → A", async () => {
     const { id, variantId } = await aDeliverableProduct();
-    await published();
+    await take();
     await priced(id, variantId, 300);
-    await published();
+    await take();
     await priced(id, variantId, 200);
-    await published();
+    const back = await take();
     await ctx.drain();
 
-    // DEUX ancres, pas trois : le retour à A ne pose rien.
+    expect(back.created).toBe(false);
     expect(await ctx.prisma.catalogRevision.count()).toBe(2);
-
-    const premiere = await ctx.prisma.catalogRevision.findFirstOrThrow({
-      orderBy: { takenAt: "asc" },
-    });
-    const vue = jsonBody<{
-      lastRevision: { reference: string } | null;
-      sinceLastRevision: { added: number; removed: number; changed: number } | null;
-    }>(await staff().get(OVERVIEW).expect(200));
-
-    expect(vue.lastRevision?.reference).toBe(premiere.reference);
-    expect(vue.sinceLastRevision).toEqual({ added: 0, removed: 0, changed: 0 });
   });
 
   /**
@@ -742,98 +647,6 @@ describe("l'ancre de référence : publiée, pas posée", () => {
     ).rejects.toThrow();
 
     expect(await ctx.prisma.catalogRevision.count()).toBe(1);
-  });
-});
-
-/**
- * **Le diff VIVANT** — ce qui a bougé depuis la dernière ancre publiée, sans en
- * poser une nouvelle.
- *
- * Ce que seul ce niveau prouve, et qui est tout l'intérêt de la lecture : que le
- * détail vivant et le COMPTEUR de l'état du catalogue disent la même chose du
- * même changement. Ils traversent le même `planDiff`, mais par deux chemins
- * différents — l'un compte, l'autre charge les payloads et interroge le journal.
- * Les faire diverger est exactement la panne qu'on veut rendre impossible, et
- * elle ne se voit qu'en les comparant sur une vraie base.
- */
-describe("Diff vivant — depuis la dernière ancre publiée", () => {
-  it("n'a AUCUNE référence tant que rien n'est parti", async () => {
-    await aProduct("Croissant");
-    // Une ancre POSÉE ne suffit pas : la référence est la dernière PUBLIÉE.
-    await take("un repère");
-
-    const view = jsonBody<{ from: unknown; changed: unknown[] }>(
-      await staff().get(`${REVISIONS}/since-last`).expect(200),
-    );
-
-    expect(view.from).toBeNull();
-    // 🔴 Et les listes vides ne veulent PAS dire « rien n'a changé » : elles
-    // disent qu'il n'y a rien à quoi se comparer. C'est `from` qui tranche.
-    expect(view.changed).toEqual([]);
-  });
-
-  it("montre le champ qui a bougé depuis la publication, avec son auteur", async () => {
-    const id = await aSoldProduct();
-    await published();
-    await ctx.drain();
-
-    await staff()
-      .put(`${PRODUCTS}/${id}/identity`)
-      .send({ name: { fr: "Pain au chocolat" }, kind: "daily", categoryId: await aCategory() })
-      .expect(200);
-    await ctx.drain();
-
-    const view = jsonBody<{
-      from: { reference: string } | null;
-      changed: {
-        sku: string;
-        fields: { field: string; attributed: boolean; by: string | null }[];
-      }[];
-    }>(await staff().get(`${REVISIONS}/since-last`).expect(200));
-
-    expect(view.from).not.toBeNull();
-    expect(view.changed).toHaveLength(1);
-    const name = view.changed[0]?.fields.find((field) => field.field === "name");
-    expect(name?.attributed).toBe(true);
-    expect(name?.by).not.toBeNull();
-  });
-
-  /**
-   * 🔴 **Le détail et le compteur ne peuvent pas diverger.**
-   *
-   * L'état du catalogue rend trois nombres, le diff vivant rend les lignes. Ils
-   * répondent à la même question par deux chemins ; si l'un se met à voir un
-   * changement que l'autre ignore, l'écran qui affiche « 3 changements » puis
-   * n'en montre que deux devient impossible à croire — sur tout le reste aussi.
-   */
-  it("dit exactement ce que le compteur de l'état du catalogue annonce", async () => {
-    const id = await aSoldProduct();
-    await published();
-    await ctx.drain();
-
-    const { variantId } = await aProduct("Chausson");
-    await staff()
-      .put(`${PRODUCTS}/${id}/identity`)
-      .send({ name: { fr: "Pain au chocolat" }, kind: "daily", categoryId: await aCategory() })
-      .expect(200);
-    await ctx.drain();
-
-    const overview = jsonBody<{
-      sinceLastRevision: { added: number; removed: number; changed: number } | null;
-    }>(await staff().get(`${REVISIONS}/overview`).expect(200));
-    const view = jsonBody<{
-      added: string[];
-      removed: string[];
-      changed: unknown[];
-    }>(await staff().get(`${REVISIONS}/since-last`).expect(200));
-
-    expect(typeof variantId).toBe("string");
-    expect(view.added).toHaveLength(overview.sinceLastRevision?.added ?? -1);
-    expect(view.removed).toHaveLength(overview.sinceLastRevision?.removed ?? -1);
-    expect(view.changed).toHaveLength(overview.sinceLastRevision?.changed ?? -1);
-    // Le cas ne vaut que s'il y a quelque chose à comparer : un produit entré,
-    // un produit renommé.
-    expect(view.added.length + view.changed.length).toBeGreaterThan(1);
   });
 });
 

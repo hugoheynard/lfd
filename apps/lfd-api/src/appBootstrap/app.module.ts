@@ -51,7 +51,6 @@ import { ImageCatalogueModule } from "./image-catalogue.module.js";
 import { MediaLibraryCensusModule } from "./media-library-census.module.js";
 import { MediaCarriersModule } from "./media-carriers.module.js";
 import { OperationImageLibraryModule } from "./operation-image-library.module.js";
-import { CatalogFeedModule } from "./catalog-feed.module.js";
 import { JournalModule } from "./journal.module.js";
 import { StaffAccessModule } from "./staff-access.module.js";
 import { PickupAddressesModule } from "../b2b/pickup-addresses/pickup-addresses.module.js";
@@ -149,7 +148,6 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     PimModule,
     // Le fil entre les deux, relié ici : le port est au PIM, l'adaptateur à la
     // plateforme, et seule la racine a le droit de les voir tous les deux.
-    CatalogFeedModule,
     // Le fil des images : le port que le référentiel déclare, branché sur
     // l'adaptateur de la médiathèque.
     ImageCatalogueModule,

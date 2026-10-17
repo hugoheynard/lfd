@@ -150,16 +150,12 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'reglages/commandes/heure-limite': 'lfc_order_settings:read',
   'reglages/commandes/annulation': 'lfc_order_settings:read',
 
-  // L'ESPACE B2B — ce que la plateforme client vend, et à quel prix. Même mur
-  // que les réglages d'où ses écrans viennent : décider d'un prix de vente est
-  // du paramétrage, pas une ressource à part.
-  b2b: 'b2b_settings:read',
-  // Les réglages de l'e-commerce sont TOUS partis le 2026-10-13 : les points
-  // de retrait vers les sites, l'heure limite, l'ouverture et l'annulation
-  // vers Réglages › Commandes. Il ne reste ici que des redirections.
-  // La boîte des demandes clients : le droit du contact
-  // (demandes-clients.md, §6.8).
-  'b2b/demandes': 'b2b_contact:read',
+  // L'ESPACE « E-commerce LFC » est supprimé (2026-10-17, Hugo) : `/b2b` n'est
+  // plus un écran, seulement des redirections. La boîte des demandes clients
+  // y reste en attendant sa place, sous les DEUX droits qu'elle avait — le mur
+  // de l'ancienne coquille (`b2b_settings`) et celui du contact
+  // (demandes-clients.md, §6.8) —, que son entrée de menu lit aussi.
+  'b2b/demandes': ['b2b_settings:read', 'b2b_contact:read'],
 
   // **Médiathèque** — hors de `pim/`, derrière SA ressource : le mur que la
   // route serveur oppose (`@AdminSurface("media_library")`). Elle a eu la
@@ -235,7 +231,6 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'pim/revisions': null,
   // Le diff vivant : même mur que les ancres elles-mêmes — c'est une LECTURE du
   // catalogue, elle ne pose rien et ne publie rien.
-  'pim/revisions/en-attente': null,
   // La famille se règle sur SA page depuis c-0 : même droit que la liste, elle
   // n'ouvre rien de plus — le référentiel garde chaque écriture de son côté.
   'pim/categories/nouveau': null,
@@ -495,9 +490,8 @@ describe("l'arbre de routes du back-office", () => {
   });
 
   it('renvoie l’ancienne adresse du catalogue vers « Catalogue publié », en Gestion Boutique', () => {
-    // Partie le 2026-10-15 (H9) : un favori. Absolue, elle s'applique avant le
-    // mur de l'espace — et l'entrée de l'espace ne la vise plus, sans quoi
-    // ouvrir « E-commerce LFC » ferait sortir de l'espace.
+    // Partie le 2026-10-15 (H9) : un favori. Absolue, elle s'applique avant
+    // tout mur.
     const b2b = routes.find((route) => route.path === 'b2b');
     const children = b2b?.children ?? [];
     expect(children.find((child) => child.path === 'catalogue')?.redirectTo).toBe(

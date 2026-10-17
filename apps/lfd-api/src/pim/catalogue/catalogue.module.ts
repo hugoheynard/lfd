@@ -61,7 +61,6 @@ import { AccountingRulesModule } from "../accounting-rules/accounting-rules.modu
 import { CatalogRevisionRepository } from "./revision/domain/ports/catalog-revision.repository.js";
 import { CatalogRevisionSource } from "./revision/domain/ports/catalog-revision.source.js";
 import { DiffCatalogRevisionsHandler } from "./revision/application/diff-catalog-revisions.js";
-import { DiffCatalogSinceLastHandler } from "./revision/application/diff-catalog-since-last.js";
 import { GetCatalogOverviewHandler } from "./revision/application/get-catalog-overview.js";
 import { RenameCatalogRevisionHandler } from "./revision/application/rename-catalog-revision.js";
 import { ListCatalogRevisionsHandler } from "./revision/application/list-catalog-revisions.js";
@@ -193,7 +192,6 @@ import {
     TakeCatalogRevisionHandler,
     ListCatalogRevisionsHandler,
     DiffCatalogRevisionsHandler,
-    DiffCatalogSinceLastHandler,
     GetCatalogOverviewHandler,
     RenameCatalogRevisionHandler,
     { provide: ReadinessRepository, useClass: PrismaReadinessRepository },
@@ -206,18 +204,9 @@ import {
   // Le registre des contextes n'y est plus : il a son propre module. Il sortait
   // d'ici parce qu'il y était rangé, pas parce qu'il en dépendait — et le
   // commentaire qui l'expliquait décrivait le symptôme, pas la raison.
-  // Le dépôt des révisions sort d'ici : le canal B2B inscrit sa publication SUR
-  // l'ancre qu'il vient de figer, et c'est le seul moyen qu'une ancre sache où
-  // elle est partie. Le reste de la mécanique (source, capture) ne sort pas.
   // `EditorialReader` sort depuis la v8 du fil : le canal B2B emporte la ligne
   // de vitrine et le packshot, et les lit en LOT pour tout le catalogue. Il
   // sort en lecture seule — l'écriture reste ici.
-  exports: [
-    PrismaMediaCarriers,
-    CatalogueReader,
-    CatalogFactsReader,
-    CatalogRevisionRepository,
-    EditorialReader,
-  ],
+  exports: [PrismaMediaCarriers, CatalogueReader, CatalogFactsReader, EditorialReader],
 })
 export class CatalogueModule {}

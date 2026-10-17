@@ -15,8 +15,6 @@ import { ApplyAudienceSwitchHandler } from "./application/apply-audience-switch.
 import { AudienceSwitchController } from "./membership/audience-switch.controller.js";
 import { SalesContextsModule } from "../../sales-contexts/sales-contexts.module.js";
 import { B2bMembershipService } from "./membership/membership.service.js";
-import { GetB2bProductDeliveryHandler } from "./products/product-delivery.js";
-import { B2bProductDeliveryController } from "./products/product-delivery.controller.js";
 import { PimReferentialOperations } from "./operations/pim-referential-operations.js";
 import { ReferentialOperations } from "./operations/referential-operations.js";
 
@@ -51,7 +49,6 @@ import { ReferentialOperations } from "./operations/referential-operations.js";
   ],
   controllers: [
     B2bMembershipController,
-    B2bProductDeliveryController,
     AudienceSwitchPreviewController,
     AudienceSwitchController,
     B2bReemitController,
@@ -63,10 +60,6 @@ import { ReferentialOperations } from "./operations/referential-operations.js";
     GetAudienceSwitchPreviewHandler,
     // Son second temps (2b1) : désactive ce que l'aperçu liste invisible (H7).
     ApplyAudienceSwitchHandler,
-    // La frise. Son port de RETOUR (`B2bDeliveryFactsReader`) n'est pas fourni
-    // ici : il est publié par ce module et relié par la racine de composition,
-    // seule à connaître les deux côtés du fil.
-    GetB2bProductDeliveryHandler,
     // La migration des opérations au commerce (lot 3 du plan
     // `plan-l-operation-passe-au-commerce.md`) : lecture seule, une fois.
     { provide: ReferentialOperations, useClass: PimReferentialOperations },

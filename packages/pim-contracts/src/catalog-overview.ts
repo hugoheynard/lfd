@@ -1,5 +1,3 @@
-import type { CatalogRevisionSummaryView } from "./catalog-revision.js";
-
 /**
  * **Le catalogue vu comme un tout** — l'écran d'accueil du référentiel.
  *
@@ -21,20 +19,4 @@ export interface CatalogOverviewView {
   readonly signed: number;
   /** Déclinaisons vendables — l'unité qu'un canal reçoit. */
   readonly articles: number;
-
-  /** La dernière ancre posée. `null` = aucune. */
-  readonly lastRevision: CatalogRevisionSummaryView | null;
-
-  /**
-   * Ce qui a bougé **depuis** cette ancre, sans en poser une nouvelle.
-   *
-   * `null` quand il n'y a aucune ancre — il n'y a alors rien à soustraire. Tout
-   * à zéro veut dire que le catalogue n'a pas bougé, et c'est une réponse : elle
-   * dit qu'une capture ne poserait rien.
-   */
-  readonly sinceLastRevision: {
-    readonly added: number;
-    readonly removed: number;
-    readonly changed: number;
-  } | null;
 }

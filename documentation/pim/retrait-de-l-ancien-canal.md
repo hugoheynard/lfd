@@ -46,7 +46,8 @@ flowchart LR
 écrire : aucune clé étrangère ne pointe vers ces tables, aucun hachage ni
 chaînage ne porte sur `payload`, et `lastPublished` ne filtre pas sur
 `channel` — la « dernière publication » devient la dernière vers la
-plateforme.
+plateforme. (Cette lecture est retirée le 2026-10-17, avec le repère
+« depuis la dernière publication ».)
 
 ## Ce qui reste en base
 

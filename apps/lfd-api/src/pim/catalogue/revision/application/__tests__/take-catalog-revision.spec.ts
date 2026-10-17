@@ -73,10 +73,6 @@ class RacingRepository extends CatalogRevisionRepository {
     return Promise.reject(new RevisionHashAlreadyTakenError("empreinte"));
   }
 
-  lastPublished(): Promise<RevisionRecord | null> {
-    throw new Error("La pose ne lit jamais la dernière publication.");
-  }
-
   list(): Promise<readonly RevisionRecord[]> {
     throw new Error("Non utilisé.");
   }
@@ -94,10 +90,6 @@ class RacingRepository extends CatalogRevisionRepository {
   }
 
   indexOf(): never {
-    throw new Error("Non utilisé.");
-  }
-
-  recordPublication(): Promise<void> {
     throw new Error("Non utilisé.");
   }
 

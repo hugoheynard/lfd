@@ -203,7 +203,7 @@ au lieu de garder l'ancien décompte, frais de coursier compris.
   `__tests__/app.routes.spec.ts` (registre des écrans et table exacte des
   redirections), la spec des onglets de `/reglages` (retirée le 2026-10-10
   avec la page : les Réglages n'ont plus d'écran),
-  `b2b/b2b-page/b2b-page.spec.ts`. **Docs** qui citent l'ancien chemin :
+  b2b/b2b-page/b2b-page.spec.ts (retirée le 2026-10-17). **Docs** qui citent l'ancien chemin :
   `documentation/commandes/architecture-heure-limite-de-commande.md`,
   `documentation/commandes/demontage-order-cutoff.md`,
   `documentation/plan-demo-2026-09-19.md` (vitruve, S7).

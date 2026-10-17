@@ -215,24 +215,6 @@
         ></a>
       }
 
-      @if (canSeeSettings()) {
-        <!-- B2B — ce que la plateforme client VEND, et à quel prix. Ses deux
-             écrans vivaient dans les Réglages, entre les heures de retrait et
-             la facturation : on n'y va pas pour travailler, alors qu'on reprend
-             le catalogue et la tarification tous les jours. Sous le PIM, parce
-             que c'est ce que le PIM y publie qu'on y règle. -->
-        <a
-          fold-menu-item
-          icon="store"
-          label="E-commerce LFC"
-          routerLink="/b2b"
-          routerLinkActive
-          #b2bRla="routerLinkActive"
-          [active]="b2bRla.isActive"
-          (click)="mobileNavOpen.set(false)"
-        ></a>
-      }
-
       @if (canSeeShopManagement()) {
         <!-- GESTION BOUTIQUE — ce qu'on vend, ce qu'on met en avant, et quand
              (Hugo, 2026-10-13 ; le catalogue publié depuis le 2026-10-15) : les opérations datées, venues du rail du Catalogue,
@@ -892,27 +874,6 @@
         </fold-nav-group>
       }
 
-      @if (canSeeSettings()) {
-        <!-- LE B2B, qui n'avait AUCUNE tuile : ses vues n'existaient qu'au rail
-             secondaire, donc nulle part en mobile. Les deux arbres ne partagent
-             pas leur modèle — une entrée posée d'un seul côté est invisible de
-             l'autre. -->
-        <fold-nav-group icon="store" label="E-commerce LFC" [entryCountLabel]="entriesLabel">
-          @for (view of b2bViews(); track view.key) {
-            <a
-              fold-nav-tile
-              [icon]="view.icon"
-              [label]="view.label"
-              [badge]="view.badge"
-              [routerLink]="view.link"
-              routerLinkActive
-              #b2bTile="routerLinkActive"
-              [active]="b2bTile.isActive"
-              (click)="mobileNavOpen.set(false)"
-            ></a>
-          }
-        </fold-nav-group>
-      }
       @if (canSeeShopManagement()) {
         <!-- La MÊME section qu'au rail : les deux arbres ne partagent pas leur modèle. -->
         <fold-nav-group icon="tag" label="Gestion Boutique" [entryCountLabel]="entriesLabel">

@@ -423,21 +423,23 @@ répondent 404, comme toute route inconnue.
 
 **Restent en base, sans écrivain** : `catalog_deliveries`, `catalog_versions`
 et `orders.catalog_version_id` (les commandes passées gardent la leur),
-`catalog_operation_overrides`, `catalog_revision_publications`,
+`catalog_operation_overrides`, `catalog_revision_publications` (plus lue non plus depuis le 2026-10-17),
 `b2b_channel_binding.last_pushed_at`. La liste des tables mortes est l'objet
 de X5.
 
 **Ce qui reste du push, et pourquoi** :
 
-- **Les révisions du référentiel** (photographies, diff, noms) restent. Aucun
-  retour en arrière ne republiait par le push — il n'en existe pas. Mais la
-  **référence** de « Depuis la dernière publication » est la dernière
-  publication réussie (`lastPublished`), et seul le push en écrivait : elle
-  est figée sur le dernier push. Le nouveau référent est une question ouverte
-  du plan.
-- **La frise d'une fiche** (`GET /pim/channels/b2b/products/:id/delivery`)
-  lit le miroir par le port `B2bDeliveryFactsReader` ; `awaitingSince` y vaut
-  toujours `null`, et `lastPushedAt` ne bouge plus.
+- **Les révisions du référentiel** (poser, lister, nommer, comparer deux
+  ancres) restent. Aucun retour en arrière ne republiait par le push — il n'en
+  existe pas. Le repère « Depuis la dernière publication » (le compteur de
+  l'état du catalogue, la page `/pim/revisions/en-attente` et sa lecture
+  `GET /pim/catalogue/revisions/since-last`) est **retiré le 2026-10-17**
+  (Hugo) : il comptait ce que le push n'avait pas encore envoyé, et tout part
+  désormais à l'enregistrement. Plus rien ne lit ni n'écrit
+  `catalog_revision_publications`.
+- **La frise d'une fiche** (`GET /pim/channels/b2b/products/:id/delivery`, son
+  écran et son port de retour vers le miroir) est **retirée le 2026-10-17** :
+  la route répond 404.
 - **`projectCatalog`** (la projection d'un instantané entier) n'a plus
   d'appelant de production ; ses tests couvrent encore `projectVariant`, que
   les faits emploient.
@@ -449,6 +451,12 @@ de X5.
 | **La fiche** (référentiel)              | `apps/lfd-backoffice-frontend/src/app/pim/catalogue/product-form/`                   | audience (héritée ou propre), prix pro HT saisi et sa suggestion, « Activer » et ce qui manque                                                         |
 | **Catalogue publié** (Gestion Boutique) | `/catalogue-publie` (`apps/lfd-backoffice-frontend/src/app/app.routes.ts:115-119`)   | une ligne par article, une colonne par audience ; masquer, mettre en avant, relire. `/b2b/catalogue` et `/b2b/reception` y redirigent                  |
 | **Règles comptables** (référentiel)     | `regles-comptables` (`apps/lfd-backoffice-frontend/src/app/pim/pim.routes.ts:57-61`) | « Rapport suggéré » (ne change aucun prix vendu), pré-remplissage avec aperçu, et sur une base encore en `ratio_ttc` le geste « Passer au prix saisi » |
+
+L'**espace « E-commerce LFC »** du back-office est supprimé le 2026-10-17
+(Hugo) : il n'avait plus de vue. Ses anciennes adresses `/b2b/…` redirigent
+vers les nouvelles places (`apps/lfd-backoffice-frontend/src/app/b2b/b2b.routes.ts`),
+hors de toute coquille ; seule la boîte des demandes clients y vit encore,
+à `/b2b/demandes`, en attendant que sa place soit décidée.
 
 Dans « Catalogue publié », chaque cellule d'audience a un état parmi
 `inactif`, `en_vente`, `masque`, `pas_vendu`, `en_attente_validation`,

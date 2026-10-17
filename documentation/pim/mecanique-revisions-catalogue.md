@@ -7,6 +7,15 @@ puisse décider ensuite.
 > Vérifié en ouvrant chaque fichier cité, pas de mémoire. Les affirmations sur
 > des comptes viennent de la base de développement au 2026-09-10.
 
+> ⚠️ **Périmé en partie le 2026-10-17** (suite de X2,
+> [`plan-sans-interrupteurs.md`](../catalogue/plan-sans-interrupteurs.md)).
+> Le push est parti, et avec lui le repère « depuis la dernière publication » :
+> la lecture `since-last`, la page `/pim/revisions/en-attente`, le compteur
+> de `overview` (qui ne rend plus que les chiffres du catalogue), la lecture
+> de la dernière ancre publiée et l'inscription des publications. La frise de
+> la fiche (§6) est retirée aussi. **Restent** : la pose, la liste, le nom et
+> le diff entre deux ancres. Le §5 ci-dessous décrit l'état du 2026-09-10.
+
 ---
 
 ## 1. Trois objets, et c'est là que le flou commence
@@ -160,12 +169,12 @@ flowchart LR
     style E fill:#fef7e0,stroke:#f9ab00
 ```
 
-| Lecture                              | Compare                                                 | Rend                                          |
-| ------------------------------------ | ------------------------------------------------------- | --------------------------------------------- |
-| `catalogue/revisions/:from/diff/:to` | deux ancres figées                                      | le détail, champ par champ, avec attribution  |
-| `catalogue/revisions/overview`       | **le catalogue vivant** ↔ la dernière ancre **publiée** | **trois nombres** : ajoutés, retirés, changés |
-| `catalogue/revisions/since-last`     | **le catalogue vivant** ↔ la dernière ancre **publiée** | le détail, champ par champ, avec attribution  |
-| `admin/catalog/push-preview`         | la projection ↔ le miroir B2B                           | le détail de ce que l'envoi changerait        |
+| Lecture                              | Compare                                                                    | Rend                                                           |
+| ------------------------------------ | -------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| `catalogue/revisions/:from/diff/:to` | deux ancres figées                                                         | le détail, champ par champ, avec attribution                   |
+| `catalogue/revisions/overview`       | ~~le catalogue vivant ↔ la dernière ancre publiée~~ (retiré le 2026-10-17) | ~~trois nombres~~ — ne rend plus que les chiffres du catalogue |
+| ~~`catalogue/revisions/since-last`~~ | retirée le 2026-10-17                                                      | —                                                              |
+| `admin/catalog/push-preview`         | la projection ↔ le miroir B2B                                              | le détail de ce que l'envoi changerait                         |
 
 🔴 **Le diff vivant construit en mémoire la révision du catalogue tel qu'il
 est** (`buildRevision`, exactement la même mécanique que la pose) et la compare
@@ -224,7 +233,7 @@ La fiche produit ne sait **rien** des révisions. Elle affiche :
 - son statut (`draft` / `published` / `archived`) ;
 - sa **signature** (`readyAt` / `readyBy`) et si elle est **périmée**
   (`readinessStale`, calculé sur les faits du journal, pas sur un horodatage) ;
-- ce que la plateforme B2B en a fait (`app-b2b-delivery` : acceptée, écartée…).
+- ~~ce que la plateforme B2B en a fait (la frise : acceptée, écartée…)~~ — retirée le 2026-10-17.
 
 Elle n'affiche pas, et ne sait pas calculer :
 

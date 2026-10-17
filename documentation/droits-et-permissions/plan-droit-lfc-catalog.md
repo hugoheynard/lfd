@@ -97,7 +97,7 @@ choisit sa sélection dans `GET /admin/catalog`, gardé par `b2b_catalog`.
   la citent qu'en commentaire (`ops-catalog-health`, `admin-storefront`,
   `check-catalog-parity.service`, `admin-operations`).
 - **Le front** : `permissionGuard('b2b_catalog:read')` (`b2b.routes.ts:181`),
-  l'entrée du rail (`workspaces.ts:676`), deux `*appCan` (`b2b-page.html`,
+  l'entrée du rail (`workspaces.ts:676`), deux `*appCan` (b2b-page.html (retiré le 2026-10-17),
   received-operations.html:29 (retiré en X2)), et des commentaires.
 - **Le précédent** : `lfc_legal` et `lfc_operations` ont été ajoutés
   (migrations `20261015500000_le_droit_du_legal`,
@@ -231,7 +231,7 @@ Les deux BLOQUANT ont été rouverts dans le code avant d'être intégrés.
   (commentaires porteurs, à redater) ; trois e2e qui sèment le droit
   (`catalog-delivery-review`, `storefront-catalog`,
   `operations-at-commerce-closed`) ; les specs front `resource-tools`,
-  `workspace-counter`, `b2b-page`, `app.routes`.
+  `workspace-counter`, b2b-page (retirée le 2026-10-17), `app.routes`.
 - **Les notifications par audience** (SÉRIEUX) : L2 adresse les nouvelles
   sous `lfc_catalog:*`. Les anciennes sous `b2b_catalog:*` ne sont plus
   visibles ; l'aperçu compte celles qui restent **non lues** — question à

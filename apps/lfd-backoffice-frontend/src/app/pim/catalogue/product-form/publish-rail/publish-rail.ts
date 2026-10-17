@@ -14,7 +14,6 @@ import {
 } from 'fold-ng';
 
 import { staffAuthor } from '../../../../shared/staff-author';
-import { B2bDelivery } from '../b2b-delivery/b2b-delivery';
 import { ProductFormStore } from '../product-form-store';
 import { completenessOf, measure, type CompletenessCheck } from './completeness';
 
@@ -93,7 +92,6 @@ const STATE_LABELS: Readonly<Record<FoldChecklistState, string>> = {
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    B2bDelivery,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,
