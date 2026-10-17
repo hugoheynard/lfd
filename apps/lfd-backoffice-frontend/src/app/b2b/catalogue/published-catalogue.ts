@@ -103,6 +103,23 @@ export function keptBy(row: PublishedRow, filter: PublishedFilter): boolean {
   }
 }
 
+/**
+ * Les audiences qui attendent la validation de cette ligne, dans l'ordre pros
+ * puis boutique — vide quand elle n'attend rien. Lu sur l'état des cellules,
+ * comme le filtre « En attente » : la note sous la ligne et le filtre ne
+ * peuvent pas se contredire.
+ */
+export function pendingAudiences(row: PublishedRow): readonly ('pro' | 'public')[] {
+  const audiences: ('pro' | 'public')[] = [];
+  if (row.variant.pro.state === 'en_attente_validation') {
+    audiences.push('pro');
+  }
+  if (row.variant.public.state === 'en_attente_validation') {
+    audiences.push('public');
+  }
+  return audiences;
+}
+
 /** La fiche n'est pas active : la ligne se grise, ses cellules disent « inactive ». */
 export function isInactive(row: PublishedRow): boolean {
   return row.entry.status !== 'active';

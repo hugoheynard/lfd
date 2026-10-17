@@ -7,19 +7,24 @@ import {
   FoldBadgeComponent,
   FoldDataTableCellDirective,
   FoldDataTableComponent,
+  FoldDataTableRowNoteDirective,
   FoldPageSectionComponent,
   type FoldTableColumn,
   type FoldTableEmpty,
+  type FoldTableRowNote,
   type FoldTableTone,
 } from 'fold-ng';
 
 import type { ShopAudience } from '../catalogue.service';
 import { PublishedCell } from '../published-cell/published-cell';
+import type { ReviewApproval } from '../review-callout/review-callout';
+import { ReviewRowNote } from '../review-row-note/review-row-note';
 import {
   audienceLabel,
   audienceOrigin,
   countsLabel,
   isInactive,
+  pendingAudiences,
   rowName,
   type PublishedRow,
   type PublishedShelf,
@@ -53,6 +58,10 @@ import {
  * Les allergènes et le taux restent au contrat : c'est l'écran qui ne les
  * montre plus, pas le serveur qui ne les envoie plus.
  *
+ * **La validation d'une arrivée se fait sous sa ligne** (Hugo, 2026-10-17) :
+ * une note `foldRowNote` porte les boutons utiles. L'encart de tête ne garde
+ * que le compte et « Tout valider ».
+ *
  * Ce composant ne décide rien : il rend le rayon et remonte les gestes.
  */
 @Component({
@@ -62,8 +71,10 @@ import {
     FoldBadgeComponent,
     FoldDataTableComponent,
     FoldDataTableCellDirective,
+    FoldDataTableRowNoteDirective,
     FoldPageSectionComponent,
     PublishedCell,
+    ReviewRowNote,
     RouterLink,
   ],
   templateUrl: './shelf-catalogue.html',
@@ -74,6 +85,22 @@ export class ShelfCatalogue {
 
   /** L'interrupteur d'une cellule d'audience — la route unique `/masking`. */
   readonly maskToggled = output<{ row: PublishedRow; audience: ShopAudience }>();
+
+  /** Une validation est en vol : les boutons des notes attendent. */
+  readonly busy = input(false);
+
+  /** La validation d'une ligne, pour les audiences choisies. */
+  readonly approve = output<ReviewApproval>();
+
+  protected readonly pendingOf = pendingAudiences;
+
+  /** Seule une ligne en attente porte une note — les autres n'émettent aucun `<tr>`. */
+  protected readonly hasNote: FoldTableRowNote<PublishedRow> = (row) =>
+    pendingAudiences(row).length > 0;
+
+  protected approveRow(row: PublishedRow, audiences: readonly ShopAudience[]): void {
+    this.approve.emit({ skus: [row.variant.sku], audiences });
+  }
 
   protected readonly euros = formatEuros;
   protected readonly name = rowName;

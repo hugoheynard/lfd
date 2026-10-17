@@ -81,6 +81,7 @@
             [pending]="pending()"
             [busy]="approving()"
             (approve)="approve($event)"
+            (showPending)="filter.set('pending')"
           />
         }
 
@@ -126,7 +127,12 @@
         }
 
         @for (shelf of shelves(); track shelf.id) {
-          <app-shelf-catalogue [shelf]="shelf" (maskToggled)="toggleMasking($event)" />
+          <app-shelf-catalogue
+            [shelf]="shelf"
+            [busy]="approving()"
+            (maskToggled)="toggleMasking($event)"
+            (approve)="approve($event)"
+          />
         }
       </fold-page-layout>
     }

@@ -1,0 +1,48 @@
+<fold-callout variant="info" appearance="flat">
+  {{ message() }}
+  <!-- Un seul conteneur projeté : un bloc de contrôle à plusieurs racines
+       ne se projette pas dans un slot nommé. -->
+  <ng-container actions>
+    @if (single(); as audience) {
+      <button
+        foldButton
+        size="sm"
+        type="button"
+        [loading]="busy()"
+        [attr.aria-label]="approveLabel(audience) + ' : ' + name()"
+        (click)="approve.emit([audience])"
+      >
+        {{ approveLabel(audience) }}
+      </button>
+    } @else {
+      <button
+        foldButton
+        size="sm"
+        type="button"
+        [loading]="busy()"
+        [attr.aria-label]="'Valider pour les pros et la boutique : ' + name()"
+        (click)="approve.emit(audiences())"
+      >
+        Valider
+      </button>
+      <fold-dropdown [ariaLabel]="'Valider une seule audience : ' + name()">
+        <button
+          foldButton
+          foldPopoverTrigger="menu"
+          size="sm"
+          type="button"
+          emphasis="outline"
+          intent="neutral"
+          [disabled]="busy()"
+        >
+          Une seule…
+        </button>
+        @for (audience of audiences(); track audience) {
+          <fold-dropdown-item (selected)="approve.emit([audience])">
+            {{ onlyLabel(audience) }}
+          </fold-dropdown-item>
+        }
+      </fold-dropdown>
+    }
+  </ng-container>
+</fold-callout>

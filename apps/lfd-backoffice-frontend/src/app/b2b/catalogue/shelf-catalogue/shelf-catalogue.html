@@ -19,6 +19,7 @@
     [rows]="shelf().rows"
     [rowKey]="rowKey"
     [rowTone]="rowTone"
+    [rowNote]="hasNote"
     [empty]="empty"
   >
     <!--
@@ -126,6 +127,16 @@
         [productId]="row.entry.productId"
         [name]="name(row)"
         (maskToggled)="maskToggled.emit({ row, audience: 'public' })"
+      />
+    </ng-template>
+
+    <!-- La validation d'une arrivée, sous sa ligne (Hugo, 2026-10-17). -->
+    <ng-template foldRowNote let-row>
+      <app-review-row-note
+        [name]="name(row)"
+        [audiences]="pendingOf(row)"
+        [busy]="busy()"
+        (approve)="approveRow(row, $event)"
       />
     </ng-template>
   </fold-data-table>

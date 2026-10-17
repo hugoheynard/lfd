@@ -508,6 +508,15 @@ ont été ajoutés, les afficher dans la boutique ».
   boutique » par ligne et « Tout afficher » ; la cellule public dit « en
   attente de validation ». Une route pour lever le drapeau (une ou plusieurs
   lignes), journalisée.
+  > **Révisé le 2026-10-17 (Hugo).** La validation passe DANS la table : sous
+  > chaque ligne en attente, une note `foldRowNote` (`review-row-note/`) porte
+  > les seuls boutons utiles — « Valider pour les pros » ou « Valider pour la
+  > boutique » quand une seule audience attend ; « Valider » (les deux) et un
+  > menu « Seulement les pros / Seulement la boutique » quand les deux
+  > attendent. Deux décisions par audience, comme décidé le 2026-10-15
+  > (option 2). L'encart de tête (`review-callout/`) ne liste plus les
+  > articles : il garde le compte, « Tout valider » et « Voir les articles en
+  > attente », qui active le filtre « En attente ». Route inchangée.
 - **La vitrine** (lot W) ne voit pas un article en attente : elle lit la vue
   publique.
 - **La bascule** : « tout renvoyer » ne pose le drapeau que sur les SKU qui

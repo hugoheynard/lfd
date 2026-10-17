@@ -514,43 +514,141 @@ describe('CataloguePage — la validation des arrivées', () => {
     };
   }
 
-  it('ne montre aucun callout quand rien n’attend', async () => {
-    const fixture = await render(new FakeCatalogue());
-    expect((fixture.nativeElement as HTMLElement).querySelector('app-review-callout')).toBeNull();
-  });
+  const WAITING = { state: 'en_attente_validation' } as const;
 
-  it('annonce les arrivées et valide UNE ligne pour une audience', async () => {
+  /**
+   * Deux arrivées : le croissant attend les deux audiences, le pain au
+   * chocolat la seule boutique — les cellules et la liste disent la même chose.
+   */
+  function arrivals(): FakeCatalogue {
     const api = new FakeCatalogue();
+    api.items = [
+      item(),
+      item({ sku: 'VIE-002-1', productSku: 'VIE-002', name: 'Pain au chocolat' }),
+    ];
+    const base = viewOf(api.items);
     api.view = {
-      ...viewOf(api.items),
+      ...base,
+      entries: [
+        entry({
+          variants: [
+            variantView({
+              pro: { ...WAITING, htMillicents: 170_616 },
+              public: { ...WAITING, ttcCents: 225 },
+            }),
+          ],
+        }),
+        entry({
+          productId: 'prd_vie_002',
+          productSku: 'VIE-002',
+          name: 'Pain au chocolat',
+          variants: [
+            variantView({
+              sku: 'VIE-002-1',
+              name: 'Pain au chocolat',
+              public: { ...WAITING, ttcCents: 225 },
+            }),
+          ],
+        }),
+      ],
       pendingReview: [
         pendingOf(),
         pendingOf({ sku: 'VIE-002-1', name: 'Pain au chocolat', audiences: ['public'] }),
       ],
     };
-    const fixture = await render(api);
+    return api;
+  }
+
+  function byText(fixture: ComponentFixture<CataloguePage>, label: string): HTMLButtonElement {
+    const found = [...(fixture.nativeElement as HTMLElement).querySelectorAll('button')].find(
+      (candidate) => candidate.textContent?.trim() === label,
+    );
+    if (found === undefined) {
+      throw new Error(`bouton « ${label} » absent de l'écran`);
+    }
+    return found;
+  }
+
+  it('ne montre ni encart ni note quand rien n’attend', async () => {
+    const fixture = await render(new FakeCatalogue());
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelector('app-review-callout')).toBeNull();
+    expect(host.querySelector('app-review-row-note')).toBeNull();
+  });
+
+  it('l’encart garde le compte, sans lister les articles', async () => {
+    const fixture = await render(arrivals());
+    const callout = (fixture.nativeElement as HTMLElement).querySelector('app-review-callout');
 
     expect(text(fixture)).toContain('2 nouveaux articles attendent votre validation');
-    expect(() => button(fixture, 'Valider pour les pros : Pain au chocolat')).toThrow();
+    expect(callout?.textContent).not.toContain('Pain au chocolat');
+  });
 
-    button(fixture, 'Valider pour la boutique : Croissant').click();
+  it('une seule audience attendue : un seul bouton, qui la nomme', async () => {
+    const api = arrivals();
+    const fixture = await render(api);
+
+    expect(() => button(fixture, 'Valider pour les pros : Pain au chocolat')).toThrow();
+    button(fixture, 'Valider pour la boutique : Pain au chocolat').click();
     await fixture.whenStable();
 
-    expect(api.approvals).toEqual([{ skus: ['VIE-001-1'], audiences: ['public'] }]);
+    expect(api.approvals).toEqual([{ skus: ['VIE-002-1'], audiences: ['public'] }]);
+  });
+
+  it('deux audiences attendues : « Valider » lève les deux', async () => {
+    const api = arrivals();
+    const fixture = await render(api);
+
+    button(fixture, 'Valider pour les pros et la boutique : Croissant').click();
+    await fixture.whenStable();
+
+    expect(api.approvals).toEqual([{ skus: ['VIE-001-1'], audiences: ['pro', 'public'] }]);
+  });
+
+  it('deux audiences attendues : le choix secondaire n’en valide qu’une', async () => {
+    const api = arrivals();
+    const fixture = await render(api);
+
+    byText(fixture, 'Une seule…').click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    byText(fixture, 'Seulement les pros').click();
+    await fixture.whenStable();
+
+    expect(api.approvals).toEqual([{ skus: ['VIE-001-1'], audiences: ['pro'] }]);
+  });
+
+  it('« Voir les articles en attente » active le filtre « En attente »', async () => {
+    const api = arrivals();
+    api.items = [...api.items, item({ sku: 'VIE-003-1', productSku: 'VIE-003', name: 'Brioche' })];
+    api.view = {
+      ...(api.view ?? viewOf(api.items)),
+      entries: [
+        ...(api.view?.entries ?? []),
+        entry({
+          productId: 'prd_vie_003',
+          productSku: 'VIE-003',
+          name: 'Brioche',
+          variants: [variantView({ sku: 'VIE-003-1', name: 'Brioche' })],
+        }),
+      ],
+    };
+    const fixture = await render(api);
+    expect(text(fixture)).toContain('Brioche');
+
+    byText(fixture, 'Voir les articles en attente').click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(text(fixture)).not.toContain('Brioche');
+    expect(text(fixture)).toContain('Pain au chocolat');
   });
 
   it('« Tout valider » envoie toute la liste, pour les deux audiences', async () => {
-    const api = new FakeCatalogue();
-    api.view = {
-      ...viewOf(api.items),
-      pendingReview: [pendingOf(), pendingOf({ sku: 'VIE-002-1', audiences: ['pro'] })],
-    };
+    const api = arrivals();
     const fixture = await render(api);
 
-    const all = [...(fixture.nativeElement as HTMLElement).querySelectorAll('button')].find(
-      (candidate) => candidate.textContent?.trim() === 'Tout valider',
-    );
-    all?.click();
+    byText(fixture, 'Tout valider').click();
     await fixture.whenStable();
 
     expect(api.approvals).toEqual([
