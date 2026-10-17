@@ -81,12 +81,10 @@ describe('App — la coquille', () => {
     );
   }
 
-  it('montre « Demandes clients » juste sous « Commandes », avec les deux droits de sa route', () => {
-    const labels = railLabels(['b2b_orders:read', 'b2b_contact:read', 'b2b_settings:read']);
-    expect(labels.indexOf('Demandes clients')).toBe(labels.indexOf('Commandes') + 1);
-  });
-
-  it('cache « Demandes clients » sans le mur `b2b_settings` de l’espace', () => {
-    expect(railLabels(['b2b_orders:read', 'b2b_contact:read'])).not.toContain('Demandes clients');
+  it('ne double plus « Demandes clients » au menu principal : l’entrée vit dans le Commercial', () => {
+    // Partie le 2026-10-17 (Hugo) : une seconde entrée ferait doublon.
+    expect(railLabels(['b2b_orders:read', 'b2b_contact:read', 'b2b_settings:read'])).not.toContain(
+      'Demandes clients',
+    );
   });
 });

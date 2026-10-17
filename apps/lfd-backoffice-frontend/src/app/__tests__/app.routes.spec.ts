@@ -150,13 +150,6 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'reglages/commandes/heure-limite': 'lfc_order_settings:read',
   'reglages/commandes/annulation': 'lfc_order_settings:read',
 
-  // L'ESPACE « E-commerce LFC » est supprimé (2026-10-17, Hugo) : `/b2b` n'est
-  // plus un écran, seulement des redirections. La boîte des demandes clients
-  // y reste en attendant sa place, sous les DEUX droits qu'elle avait — le mur
-  // de l'ancienne coquille (`b2b_settings`) et celui du contact
-  // (demandes-clients.md, §6.8) —, que son entrée de menu lit aussi.
-  'b2b/demandes': ['b2b_settings:read', 'b2b_contact:read'],
-
   // **Médiathèque** — hors de `pim/`, derrière SA ressource : le mur que la
   // route serveur oppose (`@AdminSurface("media_library")`). Elle a eu la
   // sienne le 2026-09-23 ; cette ligne a suivi le 2026-10-02.
@@ -351,6 +344,10 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'commercial/prospects': 'b2b_growth:read',
   analytics: 'b2b_growth:read',
   'commercial/calendrier': 'b2b_growth:read',
+  // LES DEMANDES CLIENTS, venues de `/b2b/demandes` le 2026-10-17 (Hugo) : le
+  // droit du contact (demandes-clients.md, §6.8). Le mur `b2b_settings` de
+  // l'ancienne coquille E-commerce tombe ; celui du Commercial s'y ajoute.
+  'commercial/demandes': 'b2b_contact:read',
   // Les réglages du commercial (2026-10-13) — venus de l'Exploitation, passés
   // par l'espace Commercial, rangés en Réglages › Commercial le même jour.
   'reglages/commercial/disponibilite': 'b2b_commercial_appointment:read',
@@ -497,7 +494,19 @@ describe("l'arbre de routes du back-office", () => {
     expect(children.find((child) => child.path === 'catalogue')?.redirectTo).toBe(
       '/catalogue-publie',
     );
-    expect(children.find((child) => child.path === '')?.redirectTo).toBe('demandes');
+    expect(children.find((child) => child.path === '')?.redirectTo).toBe('/commercial/demandes');
+  });
+
+  it('renvoie l’ancienne boîte des demandes clients vers le Commercial', () => {
+    // Partie le 2026-10-17 (Hugo) : favoris, notifications et courriels déjà
+    // partis. Absolue, elle s'applique avant tout mur.
+    const children = routes.find((route) => route.path === 'b2b')?.children ?? [];
+    expect(children.find((child) => child.path === 'demandes')?.redirectTo).toBe(
+      '/commercial/demandes',
+    );
+    expect(children.find((child) => child.path === 'contact/messages')?.redirectTo).toBe(
+      '/commercial/demandes',
+    );
   });
 
   it('renvoie l’ancienne adresse de la fidélité vers Gestion Boutique, HORS de la coquille comptable', () => {

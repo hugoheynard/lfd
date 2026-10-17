@@ -9,16 +9,16 @@
 
 ## 1. Ce que voit chacun
 
-| Qui                   | Où                                              | Ce qu'il fait                                                                                                |
-| --------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Visiteur, client      | Boutique — la carte de contact                  | surtitre (s'il est réglé), titre, phrase ; « Appeler » ; « Écrire »                                          |
-| Visiteur, client      | Boutique — « Nous appeler »                     | la liste des numéros de son public (s'il y en a plus d'un) ; chaque ligne lance l'appel                      |
-| Visiteur, client      | Boutique — « Nous écrire »                      | motif `contact`, nom, e-mail, téléphone facultatif, message                                                  |
-| Client connecté       | Mes commandes — « Signaler un problème »        | sur une commande **retirée ou livrée** seulement : motif `order_problem`, un mot, jusqu'à 3 photos           |
-| Staff (`b2b_contact`) | Back-office › E-commerce LFC › Demandes clients | toutes les demandes, filtres type / priorité / état, photos, commande liée, « Marquer traité »               |
-| Staff (`b2b_contact`) | Commercial › Réglages › Motifs des demandes     | un onglet par formulaire : « Nous écrire », « Signaler un problème »                                         |
-| Staff (`b2b_contact`) | Réglages › Contact                              | la carte (surtitre, titre, phrase par public et par langue) et les numéros                                   |
-| Équipe destinataire   | Sa boîte mail                                   | un courriel par demande (référence de commande, nombre de photos, lien vers la boîte), `Reply-To` = l'auteur |
+| Qui                   | Où                                          | Ce qu'il fait                                                                                                |
+| --------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Visiteur, client      | Boutique — la carte de contact              | surtitre (s'il est réglé), titre, phrase ; « Appeler » ; « Écrire »                                          |
+| Visiteur, client      | Boutique — « Nous appeler »                 | la liste des numéros de son public (s'il y en a plus d'un) ; chaque ligne lance l'appel                      |
+| Visiteur, client      | Boutique — « Nous écrire »                  | motif `contact`, nom, e-mail, téléphone facultatif, message                                                  |
+| Client connecté       | Mes commandes — « Signaler un problème »    | sur une commande **retirée ou livrée** seulement : motif `order_problem`, un mot, jusqu'à 3 photos           |
+| Staff (`b2b_contact`) | Back-office › Commercial › Demandes clients | toutes les demandes, filtres type / priorité / état, photos, commande liée, « Marquer traité »               |
+| Staff (`b2b_contact`) | Commercial › Réglages › Motifs des demandes | un onglet par formulaire : « Nous écrire », « Signaler un problème »                                         |
+| Staff (`b2b_contact`) | Réglages › Contact                          | la carte (surtitre, titre, phrase par public et par langue) et les numéros                                   |
+| Équipe destinataire   | Sa boîte mail                               | un courriel par demande (référence de commande, nombre de photos, lien vers la boîte), `Reply-To` = l'auteur |
 
 Le compteur du menu « Demandes clients » et la cloche disent les demandes à
 traiter, tous types.
@@ -113,9 +113,11 @@ la priorité, la cloche, le compteur et l'anonymisation ne bougent pas.
 | `GET /admin/customer-requests?status=&kind=`, `POST …/:id/handled`, `GET …/:id/photos/:photoId` | `b2b_contact`                                                         |
 | `GET                                                                                            | PUT /admin/contact/settings`, `GET                                    | POST /admin/contact/phones`, … | `b2b_contact` |
 
-Back-office : `/b2b/demandes` (l'ancienne `/b2b/contact/messages` y redirige ;
-`?demande=<id>` ouvre la demande) et `/b2b/contact`, sous `/b2b`, gardé par
-`b2b_settings:read` : il faut les deux droits. Les motifs vivent depuis le
+Back-office : `/commercial/demandes` depuis le 2026-10-17 (Hugo), une vue du
+Commercial sous `b2b_contact:read` (plus le mur `b2b_companies:read` de la
+coquille ; celui de `b2b_settings` est tombé avec l'espace E-commerce). Les
+anciennes `/b2b/demandes` et `/b2b/contact/messages` y redirigent, et
+`?demande=<id>` ouvre la demande. La carte de contact vit à `/contact`. Les motifs vivent depuis le
 2026-10-13 dans **Réglages › Commercial**,
 `/reglages/commercial/motifs-des-demandes` (les anciennes
 `/b2b/reglages/motifs-des-demandes` et `/commercial/reglages/motifs-des-demandes`

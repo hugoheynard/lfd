@@ -49,13 +49,13 @@ export class RevisionsStore {
   }
 
   /**
-   * Prépare une publication — fige le catalogue — et rafraîchit la liste.
+   * Prend une révision — photographie le catalogue — et rafraîchit la liste.
    *
-   * Le geste est le MÊME que celui d'un push, qui fige de lui-même avant
-   * d'envoyer. Il reste ici pour figer avant une modification risquée, sans
-   * rien publier.
+   * Elle ne publie rien : depuis X2, les faits du catalogue partent à
+   * l'enregistrement. Une révision sert à comparer, typiquement avant une
+   * modification risquée.
    *
-   * Le message distingue les deux issues du serveur : une révision préparée, ou
+   * Le message distingue les deux issues du serveur : une révision prise, ou
    * un catalogue inchangé. Les confondre en « c'est fait » ferait croire à une
    * version de plus qui n'existe pas.
    */
@@ -65,8 +65,8 @@ export class RevisionsStore {
       const taken = await this.api.take(trimmed === '' ? null : trimmed);
       this.lastTakeValue.set(
         taken.created
-          ? `Révision ${taken.reference} préparée.`
-          : `Le catalogue n'a pas bougé depuis ${taken.reference} : rien n'a été préparé.`,
+          ? `Révision ${taken.reference} prise.`
+          : `Le catalogue n'a pas bougé depuis ${taken.reference} : rien n'a été pris.`,
       );
       this.items.set(await this.api.list());
     });

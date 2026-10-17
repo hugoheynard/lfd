@@ -136,7 +136,7 @@ describe("RingCustomerRequestReceived — la cloche", () => {
       audience: "b2b_contact:read",
       idempotencyKey: "notification:customer_request.received:q1",
     });
-    expect(CUSTOMER_REQUESTS_LINK).toBe("/b2b/demandes");
+    expect(CUSTOMER_REQUESTS_LINK).toBe("/commercial/demandes");
     expect(JSON.stringify(notice)).not.toMatch(/Jean|exemple\.fr|écrasé/u);
   });
 });

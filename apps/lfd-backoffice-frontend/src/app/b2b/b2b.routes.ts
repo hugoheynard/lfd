@@ -1,7 +1,6 @@
 import { type Routes } from '@angular/router';
 import { legalMentionOrder } from '@lfd/contracts/content-values';
 
-import { permissionGuard } from '../auth/permission.guard';
 import { LEGAL_MENTION_SLUGS } from '../reglages/legal-mention-slugs';
 
 /**
@@ -20,7 +19,7 @@ export function legacyLegalMentionRedirect({
 }
 
 /**
- * Les anciennes adresses `/b2b/…`, et la boîte des demandes clients.
+ * Les anciennes adresses `/b2b/…`.
  *
  * L'**espace « E-commerce LFC »** a été supprimé le 2026-10-17 (Hugo) : plus
  * d'entrée au rail ni au lanceur, plus de coquille. Ses écrans étaient tous
@@ -28,19 +27,16 @@ export function legacyLegalMentionRedirect({
  * des favoris, et une adresse qui tombe en 404 après un rangement coûte à celui
  * qui ne l'a pas fait. Le parent n'a ni composant ni garde : une redirection
  * s'applique avant tout mur.
- *
- * ⚠️ `/b2b/demandes` reste un ÉCRAN, à sa même adresse, en attendant que Hugo
- * lui choisisse une place (Gestion Boutique ou Commercial). Il garde les DEUX
- * droits qu'il avait sous l'espace (`b2b_settings:read`, hérité du mur de la
- * coquille, et `b2b_contact:read`) : l'entrée « Demandes clients » du menu les
- * lit tous les deux (`app.ts`, `canSeeCustomerRequests`).
+
+ * Le dernier écran, la boîte des demandes clients, est parti dans le
+ * Commercial le 2026-10-17 (Hugo) : `/commercial/demandes`.
  */
 export const b2bRoutes: Routes = [
   {
     path: 'b2b',
     children: [
       // L'ancienne entrée de l'espace menait aux demandes clients.
-      { path: '', pathMatch: 'full', redirectTo: 'demandes' },
+      { path: '', pathMatch: 'full', redirectTo: '/commercial/demandes' },
       {
         // LES ANCIENNES ADRESSES DU CONTENU DE PLATEFORME. Tout ce qu'il portait
         // est parti : la vitrine, les mentions, puis le pied de page (2026-10-15,
@@ -161,18 +157,12 @@ export const b2bRoutes: Routes = [
         redirectTo: '/reglages/commercial/motifs-des-demandes',
       },
       // L'ancienne adresse de la cloche : un courriel déjà parti la porte encore.
-      { path: 'contact/messages', pathMatch: 'full', redirectTo: 'demandes' },
-      {
-        // LA BOÎTE DES DEMANDES CLIENTS — « Nous écrire » et les problèmes de
-        // commande. Son droit est celui du contact : répondre aux clients
-        // n'est pas régler la vente (demandes-clients.md, §6.8).
-        // `?demande=<id>` vient du courriel à l'équipe.
-        path: 'demandes',
-        title: 'Demandes clients — LFC B2B admin',
-        canActivate: [permissionGuard('b2b_settings:read'), permissionGuard('b2b_contact:read')],
-        loadComponent: () =>
-          import('./demandes/demandes-page/demandes-page').then((m) => m.DemandesPage),
-      },
+      { path: 'contact/messages', pathMatch: 'full', redirectTo: '/commercial/demandes' },
+      // LA BOÎTE DES DEMANDES CLIENTS est partie dans le Commercial le
+      // 2026-10-17 (Hugo), `/commercial/demandes`. Favoris, notifications et
+      // courriels déjà partis portent l'ancienne adresse ; la redirection garde
+      // `?demande=<id>`. Absolue, elle s'applique AVANT les gardes.
+      { path: 'demandes', pathMatch: 'full', redirectTo: '/commercial/demandes' },
       // LA BOÎTE DE RÉCEPTION est partie en X2 (2026-10-17) avec le push : les
       // faits du catalogue s'appliquent fiche par fiche. L'adresse vit dans des
       // favoris ; absolue, la redirection s'applique AVANT les gardes.

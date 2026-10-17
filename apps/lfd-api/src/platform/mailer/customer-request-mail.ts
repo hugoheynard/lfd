@@ -72,10 +72,10 @@ export function renderCustomerRequestMail(
       body: message === "" ? lines : `${lines}\n\n« ${message} »`,
       cta: {
         label: "Ouvrir la demande",
-        url: `${backOfficeUrl}/b2b/demandes?demande=${encodeURIComponent(data.requestId)}`,
+        url: `${backOfficeUrl}/commercial/demandes?demande=${encodeURIComponent(data.requestId)}`,
       },
       footer:
-        "Répondre à ce courriel écrit directement à son auteur. La demande est rangée au back-office, sous E-commerce LFC › Demandes clients.",
+        "Répondre à ce courriel écrit directement à son auteur. La demande est rangée au back-office, sous Commercial › Demandes clients.",
     }),
   };
 }

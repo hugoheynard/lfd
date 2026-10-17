@@ -80,7 +80,7 @@ export class RevisionsPage {
 
   protected readonly empty: FoldTableEmpty = {
     title: 'Aucune révision posée',
-    subtitle: "La première apparaîtra au premier envoi vers un canal, ou dès qu'on en prépare une.",
+    subtitle: "La première apparaîtra dès qu'on en prend une.",
   };
 
   protected readonly rowKey = (row: CatalogRevisionRowView): string => row.id;

@@ -61,6 +61,20 @@ export const commercialRoutes: Routes = [
         title: 'Calendrier — LFC B2B admin',
         loadComponent: () => import('./calendrier/calendrier-page').then((m) => m.CalendrierPage),
       },
+      {
+        // LA BOÎTE DES DEMANDES CLIENTS — « Nous écrire » et les problèmes de
+        // commande. Venue de `/b2b/demandes` le 2026-10-17 (Hugo) ; l'ancienne
+        // adresse redirige. Son droit est celui du contact : répondre aux
+        // clients n'est pas régler la vente (demandes-clients.md, §6.8). Le mur
+        // `b2b_settings` qu'elle héritait de l'ancienne coquille E-commerce
+        // tombe : la coquille du Commercial a le sien (`b2b_companies:read`).
+        // `?demande=<id>` vient du courriel à l'équipe.
+        path: 'demandes',
+        canActivate: [permissionGuard('b2b_contact:read')],
+        title: 'Demandes clients — LFC B2B admin',
+        loadComponent: () =>
+          import('../b2b/demandes/demandes-page/demandes-page').then((m) => m.DemandesPage),
+      },
       // Deux LISTES et non deux vues du même objet : un gabarit de mercuriale se
       // pose chez un client, un gabarit de devis sert à chiffrer. Même écran,
       // parce qu'ils portent la même grille ; deux routes, parce qu'on ne les

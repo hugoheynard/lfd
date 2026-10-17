@@ -52,6 +52,6 @@ describe("le courriel d'une demande client", () => {
     expect(rendered.subject).toContain("Signaler un problème — Produit abîmé · CMD-0001");
     expect(rendered.html).toContain("Commande : CMD-0001");
     expect(rendered.html).toContain("2 — à voir au back-office");
-    expect(rendered.html).toContain("https://bo.lfc.test/b2b/demandes?demande=q1");
+    expect(rendered.html).toContain("https://bo.lfc.test/commercial/demandes?demande=q1");
   });
 });

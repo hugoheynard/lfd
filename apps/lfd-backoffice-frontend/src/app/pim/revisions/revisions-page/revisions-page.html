@@ -9,11 +9,12 @@
   }
 
   <fold-card>
-    <fold-page-section title="Préparer une publication" separator>
+    <fold-page-section title="Prendre une révision" separator>
       <span sectionSubtitle>
-        Fige le catalogue tel qu'il est, avant de l'envoyer. Un push le fait de lui-même : ce bouton
-        sert à figer <strong>avant</strong> une modification risquée. Sur un catalogue inchangé,
-        rien n'est préparé — la dernière révision fait déjà foi.
+        Photographie le catalogue tel qu'il est. Les modifications partent d'elles-mêmes à
+        l'enregistrement : une révision ne publie rien, elle sert à comparer. Prenez-en une
+        <strong>avant</strong> une modification risquée pour voir ensuite ce qu'elle a changé. Sur
+        un catalogue inchangé, rien n'est pris — la dernière révision le décrit déjà.
       </span>
       <div class="rp-take">
         <fold-input
@@ -22,7 +23,7 @@
           [value]="label()"
           (valueChange)="label.set($event)"
         />
-        <button foldButton [loading]="store.busy()" (click)="take()">Préparer</button>
+        <button foldButton [loading]="store.busy()" (click)="take()">Prendre</button>
       </div>
       @if (store.lastTake(); as message) {
         <p class="rp-said">{{ message }}</p>
@@ -135,7 +136,7 @@
               }
             </span>
           } @else {
-            <!-- 🔴 « sans nom » n'est PAS un blanc : le push a longtemps posé
+            <!-- 🔴 « sans nom » n'est PAS un blanc : le push (retiré en X2) a longtemps posé
                  des ancres anonymes, et le dire est la seule façon de savoir
                  lesquelles restent à réparer. Rien ne leur invente un nom. -->
             <span class="rp-unnamed-row">

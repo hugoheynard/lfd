@@ -94,6 +94,19 @@ export const COMMERCIAL_VIEWS: readonly CommercialView[] = [
     description: 'Les rendez-vous posés — cliquez-en un pour ouvrir son dossier.',
   },
   {
+    // Venue de `/b2b/demandes` le 2026-10-17 (Hugo) : répondre aux clients est
+    // le travail du commercial. Le droit de la route, et le compte « à
+    // traiter » sur l'entrée.
+    key: 'demandes',
+    label: 'Demandes clients',
+    link: '/commercial/demandes',
+    icon: 'inbox',
+    needs: 'b2b_contact:read',
+    counter: 'requests-pending',
+    description:
+      "Les messages « Nous écrire » et les problèmes de commande signalés depuis la boutique. Chaque demande est aussi partie par e-mail à l'adresse de son motif ; « Marquer traité » dit à l'équipe que quelqu'un a répondu.",
+  },
+  {
     key: 'tarification',
     label: 'Tarification',
     // Le lien mène à la première des deux listes ; l'en-tête reste sur la vue,

@@ -73,8 +73,8 @@ export interface FulfillmentChoice {
  * panier du client.
  *
  * L'écran de saisie ne proposait que le retrait, en s'appuyant sur un fait qui
- * n'en est plus un : LFC livre, ses zones se règlent dans E-commerce LFC →
- * Réglages → Livraison, et le panier client offre les deux depuis le pivot « zéro friction ».
+ * n'en est plus un : LFC livre, ses zones se règlent dans Réglages →
+ * Livraison → Zones de livraison, et le panier client offre les deux depuis le pivot « zéro friction ».
  * Un back-office qui ne sait pas commander ce que le client sait commander force
  * le commercial à raccrocher.
  *
@@ -143,8 +143,8 @@ export class AcheminementCommande {
       return null;
     }
     return this.audience() === 'b2b'
-      ? 'La livraison n’est pas proposée aux pros (E-commerce LFC → Réglages → Livraison).'
-      : 'Ce compte n’est pas actif : il suit les règles des particuliers, à qui la livraison n’est pas proposée (E-commerce LFC → Réglages → Livraison).';
+      ? 'La livraison n’est pas proposée aux pros (Réglages → Livraison → Zones de livraison).'
+      : 'Ce compte n’est pas actif : il suit les règles des particuliers, à qui la livraison n’est pas proposée (Réglages → Livraison → Zones de livraison).';
   });
 
   protected readonly methods = computed<readonly FoldViewToggleOption[]>(() => [
@@ -296,7 +296,7 @@ export class AcheminementCommande {
    */
   private windowIssue(): string | null {
     if (this.slots().length === 0) {
-      return 'Ce point n’a aucune heure d’ouverture déclarée — impossible de convenir d’un créneau (E-commerce LFC → Réglages → Points de retrait).';
+      return 'Ce point n’a aucune heure d’ouverture déclarée — impossible de convenir d’un créneau (Réglages → Sites).';
     }
     return this.slotId() === '' ? 'Créneau de retrait à choisir.' : null;
   }

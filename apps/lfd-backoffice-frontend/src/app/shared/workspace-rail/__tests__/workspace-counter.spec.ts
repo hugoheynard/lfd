@@ -22,3 +22,18 @@ describe("l'espace E-commerce LFC", () => {
     expect(links.filter((link) => link.startsWith('/b2b'))).toEqual([]);
   });
 });
+
+/**
+ * **La boîte des demandes clients vit dans le Commercial** (Hugo, 2026-10-17),
+ * sous le droit de sa route et avec le compte « à traiter » sur l'entrée.
+ */
+describe('les demandes clients au Commercial', () => {
+  it('sont une vue du Commercial, gardée par le contact, qui porte le compteur', () => {
+    const view = WORKSPACES.commercial.views.find((v) => v.key === 'demandes');
+    expect(view).toMatchObject({
+      link: '/commercial/demandes',
+      needs: 'b2b_contact:read',
+      counter: 'requests-pending',
+    });
+  });
+});

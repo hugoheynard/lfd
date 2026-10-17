@@ -22,7 +22,6 @@ import {
   FoldEmptyStateComponent,
   FoldIconComponent,
   FoldLoadingStateComponent,
-  FoldPageLayoutComponent,
   FoldViewToggleComponent,
   type FoldViewToggleOption,
 } from 'fold-ng';
@@ -60,8 +59,9 @@ function pick<T extends string>(value: string, among: readonly T[]): T | undefin
 }
 
 /**
- * **E-commerce LFC › Demandes clients** — les messages « Nous écrire » et les
- * problèmes de commande, dans une seule boîte
+ * **Commercial › Demandes clients** — les messages « Nous écrire » et les
+ * problèmes de commande, dans une seule boîte. Une vue de la coquille du
+ * Commercial depuis le 2026-10-17 (Hugo) : le titre et l'intro sont les siens
  * (`documentation/contenu-ecommerce/demandes-clients.md`, §3.3).
  *
  * L'état et le type vont au serveur ; la priorité filtre la liste reçue, dont
@@ -81,7 +81,6 @@ function pick<T extends string>(value: string, among: readonly T[]): T | undefin
     FoldEmptyStateComponent,
     FoldIconComponent,
     FoldLoadingStateComponent,
-    FoldPageLayoutComponent,
     FoldViewToggleComponent,
   ],
   templateUrl: './demandes-page.html',

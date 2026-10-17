@@ -29,7 +29,7 @@ import { GetCustomerRequestPhotoQuery } from "../application/queries/get-custome
 import { ListCustomerRequestsQuery } from "../application/queries/list-customer-requests.query.js";
 
 /**
- * La boîte **« Demandes clients »** au back-office (`/b2b/demandes`), sous
+ * La boîte **« Demandes clients »** au back-office (`/commercial/demandes`), sous
  * `b2b_contact` : la liste filtrée par état et type, « Marquer traité », et
  * les photos — servies ICI, jamais publiques (`demandes-clients.md`, §7).
  */

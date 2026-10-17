@@ -9,12 +9,13 @@ import { CustomerRequestReceivedEvent } from "../../domain/customer-request.even
 import { presentationOf } from "./request-mail-details.js";
 
 /**
- * La boîte « Demandes clients » au back-office, route `/b2b/demandes` de
- * `lfd-backoffice-frontend` (`demandes-clients.md`, §6.8 ; route à
- * bâtir par le lot front — non vérifiée dans `b2b.routes.ts` le 2026-10-09).
+ * La boîte « Demandes clients » au back-office, route `/commercial/demandes`
+ * de `lfd-backoffice-frontend` (`demandes-clients.md`, §6.8 ; vérifiée dans
+ * `commercial.routes.ts` le 2026-10-17 — `/b2b/demandes` y redirige, pour
+ * les cloches déjà sonnées).
  * La cloche y mène.
  */
-export const CUSTOMER_REQUESTS_LINK = "/b2b/demandes";
+export const CUSTOMER_REQUESTS_LINK = "/commercial/demandes";
 
 /**
  * **La cloche des demandes clients**, adressée par droit à qui lit
