@@ -84,7 +84,7 @@ model Site {
   counterSetupMinutes Int @default(0) @map("counter_setup_minutes")
 
   /// On peut y consommer SUR PLACE — une salle (Hugo, 2026-10-17, plan
-  /// `documentation/sites/plan-sur-place-capacite-de-site.md`, L1). Aucune
+  /// `documentation/sites/sites.md` §6 bis). Aucune
   /// règle croisée avec les autres rôles (Q2). Ne fixe AUCUN taux : rien ne
   /// vend encore sur place. Une grille de tables n'existe que sur un tel site.
   eatIn Boolean @default(false) @map("eat_in")
@@ -117,7 +117,7 @@ model Site {
 }
 
 /// Une **table** de la salle d'un site (Hugo, 2026-10-17, plan
-/// `documentation/sites/plan-sur-place-capacite-de-site.md`, L2). Le `number`
+/// `documentation/sites/sites.md` §6 bis). Le `number`
 /// est l'identité imprimée ; la grille va de 1 à N, tenue par l'agrégat
 /// `SiteTables`. Remplace, en naissant vide, la grille du point de vente du
 /// référentiel : la production n'y portait aucune table (mesure du 2026-10-17).

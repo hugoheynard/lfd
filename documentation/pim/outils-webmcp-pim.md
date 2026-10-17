@@ -89,12 +89,12 @@ porte que l'écran**, validations serveur comprises.
 
 Éprouvé dans un navigateur contre l'API locale, pont posé à la main :
 
-| Ce qui était supposé                  | Ce qui a été constaté                            |
-| ------------------------------------- | ------------------------------------------------ |
-| Les outils s'enregistrent à l'arrivée | **huit** noms dans le registre                   |
-| `DestroyRef` les retire à la sortie   | **zéro** après avoir quitté l'écran              |
-| Une fiche se crée de bout en bout     | famille lue, fiche créée, éditorial écrit, relue |
-| Un refus se rend en texte             | « Aucune fiche pour l'identifiant nawak. »       |
+| Ce qui était supposé                  | Ce qui a été constaté                                                          |
+| ------------------------------------- | ------------------------------------------------------------------------------ |
+| Les outils s'enregistrent à l'arrivée | **huit** noms dans le registre (au 2026-09-22 ; quatorze depuis le 2026-10-17) |
+| `DestroyRef` les retire à la sortie   | **zéro** après avoir quitté l'écran                                            |
+| Une fiche se crée de bout en bout     | famille lue, fiche créée, éditorial écrit, relue                               |
+| Un refus se rend en texte             | « Aucune fiche pour l'identifiant nawak. »                                     |
 
 **Deux surprises, et elles ont changé le code :**
 

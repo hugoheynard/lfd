@@ -32,7 +32,7 @@ const MAX_TABLES = 200;
 
 /**
  * **Les tables de la salle d'un site** (Hugo, 2026-10-17, plan
- * `documentation/sites/plan-sur-place-capacite-de-site.md`, L2) — montrée
+ * `documentation/sites/sites.md` §6 bis) — montrée
  * seulement pour un site « Sur place », avec SA sauvegarde.
  *
  * Le nombre de tables s'enregistre seul ; chaque QR se génère ou se retire

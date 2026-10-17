@@ -1,12 +1,12 @@
 # Contextes de vente, points de vente et TVA
 
 > 🔴 **Le point de vente a quitté le référentiel le 2026-10-17** (lot L3 de
-> [`../sites/plan-sur-place-capacite-de-site.md`](../sites/plan-sur-place-capacite-de-site.md)) :
+> [`../sites/sites.md`](../sites/sites.md) §6 bis) :
 > son code, ses routes `/pim/points-of-sale` et l'écran « Points de vente »
 > (`/pim/emplacements`) sont retirés ; la grille de tables vit sur le site
-> (« Sur place »). Les tables `pim.point_of_sale*` **restent en base** (L4,
-> sur ordre de Hugo), et l'écran des contextes compte encore les lignes de
-> `point_of_sale_context` qui retiennent une carte. Ce qui suit sur l'écran
+> (« Sur place »). Les tables `pim.point_of_sale*` et la matrice ont été
+> **supprimées de la base** le même jour (L4), et un contexte n'est plus
+> retenu que par ses taux. Ce qui suit sur l'écran
 > et le code du point de vente décrit l'état d'avant.
 
 > 🔴 **L'ancien canal de vente en ligne est sorti du dépôt le 2026-09-21**

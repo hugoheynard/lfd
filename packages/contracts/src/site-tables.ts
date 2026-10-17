@@ -2,7 +2,7 @@ import { z } from "zod";
 
 /**
  * **La grille de tables d'un site** (Hugo, 2026-10-17, plan
- * `documentation/sites/plan-sur-place-capacite-de-site.md`, L2).
+ * `documentation/sites/sites.md` §6 bis).
  *
  * Ces schémas ne tiennent que la FORME. Les règles — une grille seulement sur
  * un site « Sur place », de 0 à 200 tables, un QR seulement sur une table qui

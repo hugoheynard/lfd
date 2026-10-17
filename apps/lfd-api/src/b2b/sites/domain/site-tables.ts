@@ -27,7 +27,7 @@ export interface SiteTablesState {
 
 /**
  * **La grille de tables d'un site** (Hugo, 2026-10-17, plan
- * `documentation/sites/plan-sur-place-capacite-de-site.md`, L2).
+ * `documentation/sites/sites.md` §6 bis).
  *
  * Un agrégat À PART de `Site` : jusqu'à {@link MAX_SITE_TABLES} lignes, qu'aucune
  * lecture du site (checkout compris) n'a à relire. Il garde ses invariants —

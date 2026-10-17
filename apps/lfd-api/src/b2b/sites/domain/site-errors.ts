@@ -142,7 +142,7 @@ export class EatInSiteWithTablesError extends BusinessError {
 
 /**
  * Une grille de tables sur un site sans salle (**409**, Hugo, 2026-10-17,
- * Q4 du plan `documentation/sites/plan-sur-place-capacite-de-site.md`).
+ * `documentation/sites/sites.md` §6 bis).
  */
 export class SiteTablesWithoutEatInError extends BusinessError {
   constructor(label: string) {

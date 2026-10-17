@@ -32,7 +32,7 @@ import { PrismaSiteTablesRepository } from "./infrastructure/prisma-site-tables.
  * `DepartureDeliveryColors` (plan du tri et des couleurs, L5) : la lecture
  * que les ports de couleur de la livraison et du retrait adaptent.
  *
- * La grille de tables (plan `documentation/sites/plan-sur-place-capacite-de-site.md`,
+ * La grille de tables (`documentation/sites/sites.md` §6 bis,
  * L2) a ses deux ports à elle, et n'est pas exportée : personne d'autre ne la lit.
  */
 @Module({

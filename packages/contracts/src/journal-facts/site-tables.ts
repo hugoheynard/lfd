@@ -7,7 +7,7 @@ const table = (): z.ZodType => z.number().int().min(1);
 
 /**
  * **La grille de tables d'un site** (Hugo, 2026-10-17, plan
- * `documentation/sites/plan-sur-place-capacite-de-site.md`, L2).
+ * `documentation/sites/sites.md` §6 bis).
  *
  * Le sujet reste `pickup_address`, comme tous les faits du site : une valeur
  * n'est pas un nom. Le NUMÉRO de table, jamais le jeton : il vaut accès à la

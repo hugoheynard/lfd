@@ -1,6 +1,6 @@
 /**
  * E2E de la **salle d'un site** (plan
- * `documentation/sites/plan-sur-place-capacite-de-site.md`, L1 et L2) : la case
+ * `documentation/sites/sites.md` §6 bis) : la case
  * « Sur place » dans les rôles, la grille de tables sous `admin/sites/:id/tables`,
  * ses QR, et les refus qui les lient — sur le vrai Postgres.
  */

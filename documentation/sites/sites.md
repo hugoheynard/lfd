@@ -53,7 +53,7 @@ n'a changé de table.
 | **Mise en place au comptoir** | `counterSetupMinutes` (entier ≥ 0, défaut 0)      | lu par le futur calcul de l'heure requise (lot T0 du transfert)                                 |
 | **Livraison**                 | `deliveryDeparture: boolean`                      | les livraisons (et demain les transferts) peuvent en partir ; porte les couleurs de livraison   |
 | **départ des tournées**       | `DeliveryDeparture` (bloc `delivery`)             | LE site d'où partent les tournées, choisi en Livraison › Point de départ parmi ceux qui livrent |
-| **vend**                      | non modélisé                                      | c'est `PointOfSale` du référentiel (§5, ligne 10) ; Q-S3                                        |
+| **vend**                      | non modélisé                                      | retiré le 2026-10-17 ; la salle est `Site.eatIn` (§6 bis)                                       |
 
 ### Le retrait réservé à une clientèle (Hugo, 2026-10-15)
 
@@ -358,7 +358,7 @@ ou en a l'air, et ce qu'il est par rapport au site :
 | 7   | `DeliveryDeparture.pickupAddressId`             | `delivery.prisma`                        | d'où partent les tournées ; absent = le seul site qui livre, sinon aucun ; id **opaque**                            | `delivery`   | référence opaque au site, lue par `delivery/channels/commerce/`                                                    |
 | 8   | `production_order.pickup_label` (+ `address_*`) | `production.prisma`                      | snapshot imprimé sur le bon ; `site_id` opaque depuis S2                                                            | `production` | référence opaque au site, figée à l'arrêt (S2)                                                                     |
 | 9   | Onglets du comptoir (`pickupTabs`)              | `handover-shop/handover-queue.ts`        | « tous les points connus », **par id** (S2), repli libellé                                                          | front        | repli sur le libellé à retirer (S3r)                                                                               |
-| 10  | `PointOfSale` (`kind: shop / platform`)         | `pim/sales-contexts.prisma`              | « d'où l'on vend » pour le catalogue ; `platform` n'a aucun lieu                                                    | `pim`        | **à part** : canal de vente, pas un lieu ; le fusionner ferait lire le PIM hors de son canal. Lien éventuel : Q-S3 |
+| 10  | ~~`PointOfSale`~~ (retiré le 2026-10-17)        | `pim/sales-contexts.prisma`              | « d'où l'on vend » pour le catalogue ; `platform` n'a aucun lieu                                                    | `pim`        | **à part** : canal de vente, pas un lieu ; le fusionner ferait lire le PIM hors de son canal. Q-S3 tombée (§6 bis) |
 | 11  | `CategoryChannel.pointOfSaleId`                 | `pim/categories.prisma`                  | ce que l'on vend où                                                                                                 | `pim`        | à part (même raison)                                                                                               |
 | 12  | `LegalEntity` (adresse)                         | `public/accounting.prisma`               | siège sur les mentions légales                                                                                      | `b2b`        | à part : adresse **juridique**, figée sur les documents émis                                                       |
 | 13  | `DeliveryZone`                                  | `public/settings.prisma`                 | préfixes postaux **chez le client** + frais                                                                         | `b2b`        | à part : un secteur de clients (rattachement à un site de départ : Q-S4)                                           |
@@ -385,6 +385,85 @@ même endroit. Les autres blocs le lisent par les canaux qu'ils déclarent :
 | `handover`   | `handover/channels/commerce/`                       | sites qui remettent (onglets) ; couleurs de livraison du départ (`RunSheetColorsReader`) | couleurs ✅ (2026-10-13) ; onglets : route publique                       |
 | `production` | `production/channels/commerce/` (`DayOrdersReader`) | `siteId` dans le snapshot `ProducibleOrder`                                              | ✅ (S2)                                                                   |
 | `packing`    | faits du fournil (`production/channels/packing/`)   | `siteId` recopié                                                                         | ✅ (2026-10-13, `packing_order.site_id`) ; `packing → b2b` reste interdit |
+
+## 6 bis. Sur place et tables (2026-10-17, en production)
+
+Bâti en quatre lots le 2026-10-17 (`63da84243`, `63bb374a8`, `93013804e`) ;
+le plan qui les décrivait est supprimé, cette section le remplace.
+
+**« Sur place » est une capacité du site, pas un taux.** `Site.eatIn`
+(colonne `pickup_addresses.eat_in`, défaut `false`) dit qu'on peut consommer
+dans ce lieu, une salle. Il ne fixe aucun taux et n'a aucune règle croisée
+avec les autres rôles. Il se coche dans la carte des rôles et passe dans la
+charge de `pickup_address.roles_set`. Le **contexte de vente** `eatIn` du
+référentiel reste, lui, ce qui porte le taux de TVA.
+
+🔴 On ne retire pas « Sur place » à un site qui a des tables :
+`EatInSiteWithTablesError` (`site.ts`). Il faut d'abord ramener leur nombre à 0.
+
+**La grille de tables** est l'agrégat `SiteTables` (`b2b/sites/domain/site-tables.ts`,
+table `public.site_table`). Il est séparé de `Site` parce qu'aucune lecture du
+site, checkout compris, n'a à relire jusqu'à 200 lignes :
+
+- de **0 à 200** tables (`MAX_SITE_TABLES`), numérotées de 1 à N. Le numéro
+  est l'identité imprimée : changer le nombre ajoute ou retire **en fin** de
+  grille, et les autres tables gardent leur QR (`SiteTableCountError`) ;
+- refusée sur un site sans « Sur place » (`SiteTablesWithoutEatInError`) ou
+  archivé (`ArchivedSiteError`) ;
+- un QR par table au plus. Son jeton est un ULID (`IdGenerator`), **unique
+  dans toute la base**, et désigne seul le site et la table. Le régénérer
+  invalide l'ancien code imprimé. Le retirer remet le jeton et
+  `qr_created_at` à `NULL` ;
+- l'adresse du QR est composée par le serveur (`prisma-site-tables.reader.ts`) :
+  `<CLIENT_BASE_URL>/table/<jeton>`. L'écran ne la fabrique pas.
+  **Aucune route ne la sert encore.**
+
+| Route (`lfc_site_settings`)                | Geste                                       |
+| ------------------------------------------ | ------------------------------------------- |
+| `GET admin/sites/:id/tables`               | la grille, avec l'adresse de chaque QR      |
+| `PUT admin/sites/:id/tables`               | le nombre de tables (`{ count }`), 204      |
+| `POST admin/sites/:id/tables/:number/qr`   | (re)générer le QR d'une table, 204          |
+| `DELETE admin/sites/:id/tables/:number/qr` | retirer le QR (le jeton, pas la table), 204 |
+
+Faits du journal, sujet `pickup_address` : `pickup_address.tables_set`
+(`count`, `before`), `pickup_address.table_qr_generated` et
+`pickup_address.table_qr_removed` (`table`). Ils portent le **numéro**, jamais
+le jeton : le jeton vaut accès à la table, et un journal se relit plus
+largement que la grille.
+
+**Écran** : Réglages › Sites › un site, carte « Tables » (`site-tables-card`).
+Elle n'est montrée que pour un site « Sur place », et a sa propre sauvegarde.
+
+```mermaid
+flowchart LR
+  R["Carte des rôles<br/>coche « Sur place »"] --> S["Site.eatIn = true"]
+  S --> T["PUT …/tables<br/>SiteTables.setCount(N)"]
+  T --> Q["POST …/tables/:n/qr<br/>jeton ULID unique"]
+  Q --> U["&lt;CLIENT_BASE_URL&gt;/table/&lt;jeton&gt;<br/>(aucune route ne la sert)"]
+  T -. "N > 0" .-> X["retirer « Sur place »<br/>refusé : EatInSiteWithTablesError"]
+```
+
+**Le point de vente du référentiel n'existe plus.** Son code, ses routes
+`/pim/points-of-sale` et l'écran « Points de vente » sont retirés (L3). Ses
+tables (`pim.point_of_sale`, `point_of_sale_context`, `point_of_sale_table`,
+type `point_of_sale_kind`) et la matrice figée (`category_channel`,
+`product_channel`, `product_channel_override`) sont supprimées par
+`20261017120000_retrait_du_point_de_vente_et_de_la_matrice` (L4). Production
+mesurée avant le `DROP` : 3 points de vente, 0 table. Le contenu a été exporté
+en JSON par Hugo, hors du dépôt. Aucune grille n'a été recopiée : celle des
+sites est née vide.
+
+**Le registre des contextes de vente** ne retient plus un contexte que par ses
+**taux** de TVA, famille et fiche. La même migration a repassé leurs clés
+étrangères en `ON DELETE RESTRICT` : c'est la base qui refuse de retirer un
+contexte encore cité (`remove-sales-context.ts`).
+
+**Reste à faire** — la commande à table. Rien ne sert le QR : aucune route ne
+lit le jeton. Il faudrait un mode de service `eat_in`, le taux `eatIn` figé sur
+la ligne, un paiement et un écran de salle. Un article sans taux `eatIn` serait
+invendable sur place, jamais servi au taux à emporter. C'est un plan à part, à
+passer par `vitruve` (argent). Pas d'horaires propres au sur place, et pas de
+sur place pour les pros (décidé le 2026-10-17).
 
 ## 7. Reste à faire
 
@@ -430,7 +509,7 @@ même endroit. Les autres blocs le lisent par les canaux qu'ils déclarent :
 
 **Questions ouvertes** : Q-S1 (garder la table `pickup_addresses` sous le
 modèle `Site` — c'est l'état actuel), Q-S3 (relier un `PointOfSale` à un
-site), Q-S4 (un second fournil ?). Tranchées : Q-S2 (pas de rattrapage),
+site — tombée : le point de vente est retiré, §6 bis), Q-S4 (un second fournil ?). Tranchées : Q-S2 (pas de rattrapage),
 Q-S5 (`lfc_site_settings`), Q-S6 (pas de palette, couleurs libres), Q3
 (« Adroit » est un site, saisi en admin).
 

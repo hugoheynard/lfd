@@ -27,7 +27,7 @@ import { SetSiteTableCountCommand } from "../application/set-site-table-count.co
 /**
  * **Réglages › Sites › Tables** — la grille de la salle d'un site, sous
  * `lfc_site_settings` comme le reste de la page (plan
- * `documentation/sites/plan-sur-place-capacite-de-site.md`, L2).
+ * `documentation/sites/sites.md` §6 bis).
  *
  * Les écritures ne rendent rien : l'écran relit la grille, qui porte
  * l'adresse de chaque QR.

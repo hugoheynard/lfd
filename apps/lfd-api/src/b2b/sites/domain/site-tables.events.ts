@@ -3,7 +3,7 @@ import { SITE_FACTS, SUBJECT_TYPE } from "./site.events.js";
 
 /**
  * **Les faits de la grille de tables** (Hugo, 2026-10-17, plan
- * `documentation/sites/plan-sur-place-capacite-de-site.md`, L2).
+ * `documentation/sites/sites.md` §6 bis).
  *
  * Le sujet reste le site (`pickup_address`). Ils portent le NUMÉRO de table,
  * jamais le jeton : il vaut accès à la table, et un journal se relit plus

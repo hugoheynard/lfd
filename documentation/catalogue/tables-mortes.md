@@ -105,7 +105,7 @@ annoncée.
 ## 2. Figées, mais encore LUES — supprimées en L4
 
 > ✅ **Supprimées le 2026-10-17** par `20261017120000_retrait_du_point_de_vente_et_de_la_matrice`
-> (L4 de [`../sites/plan-sur-place-capacite-de-site.md`](../sites/plan-sur-place-capacite-de-site.md)) :
+> (L4 de [`../sites/sites.md`](../sites/sites.md) §6 bis) :
 > `pim.product_channel`, `pim.product_channel_override`, `pim.category_channel`,
 > `pim.point_of_sale_context`, `pim.point_of_sale_table`, `pim.point_of_sale`
 > (avec `pos_b2b`) et le type `pim.point_of_sale_kind`. Leurs derniers

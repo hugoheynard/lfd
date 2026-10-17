@@ -56,7 +56,7 @@ export interface SiteRoles {
   /**
    * On peut y consommer sur place — une salle (Hugo, 2026-10-17). Aucune
    * règle croisée avec les autres rôles (Q2 du plan
-   * `documentation/sites/plan-sur-place-capacite-de-site.md`).
+   * `documentation/sites/sites.md` §6 bis).
    */
   readonly eatIn: boolean;
 }

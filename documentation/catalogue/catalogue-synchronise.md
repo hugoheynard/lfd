@@ -508,7 +508,7 @@ révisions, `effectiveChannels` du lecteur du catalogue, et la matrice des
 agrégats, de leurs dépôts et des vues `@lfd/pim-contracts`. Comparer une
 révision d'avant à une d'après montre « Contextes de vente » sorti, une fois.
 Le point de vente a quitté le référentiel (`63bb374a8`, L3 de
-[`../sites/plan-sur-place-capacite-de-site.md`](../sites/plan-sur-place-capacite-de-site.md)).
+[`../sites/sites.md`](../sites/sites.md) §6 bis).
 
 **Plus rien en base** depuis L4 du plan du sur place (2026-10-17) : la
 matrice (`category_channel`, `product_channel`, `product_channel_override`) et
@@ -566,7 +566,7 @@ Tous décrits dans [`plan-catalogue-synchronise-par-audience.md`](plan-catalogue
 - **lot 5** — le ménage : le push et la réception sont partis (X2), le lien
   au canal et l'édition de la matrice (X4), la matrice des révisions
   (`81b192e59`), le point de vente (L3 de
-  [`../sites/plan-sur-place-capacite-de-site.md`](../sites/plan-sur-place-capacite-de-site.md)).
+  [`../sites/sites.md`](../sites/sites.md) §6 bis).
   Restent la matrice figée, lue par le seul compte d'usage des contextes
   (§6, jusqu'à L4), et les tables en base, listées pour décision dans
   [`tables-mortes.md`](tables-mortes.md) — aucune n'est supprimée.

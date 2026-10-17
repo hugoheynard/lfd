@@ -8,16 +8,16 @@ commerce, commandes sans estampille de version. **Ce qui reste est du ménage** 
 retirer du code qui ne sert plus ; un oubli s'y voit en test rouge, pas en
 panne.
 
-| Lot    | Contenu                                                                                                                                                                                                                                                                                                               | État                                                                                                                                                                          | Taille                                                                                                                  |
-| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| X0     | La commande ne fige plus de version ; la sonde de santé est désarmée                                                                                                                                                                                                                                                  | ✅ en production (`9bcab005e`)                                                                                                                                                | —                                                                                                                       |
-| X1     | Les trois interrupteurs disparaissent (`CATALOG_FACTS_ENABLED`, `OPERATIONS_AT_COMMERCE`, `PIM_PUBLICATION_ENABLED`)                                                                                                                                                                                                  | ✅ en production (`3fe321cac`, `9703cd863`)                                                                                                                                   | —                                                                                                                       |
-| X3     | Ce que fige la commande                                                                                                                                                                                                                                                                                               | ✅ réglé par X0 : plus rien                                                                                                                                                   | —                                                                                                                       |
-| X2     | Retirer le push, la réception, les versions du catalogue, la parité, la santé, la surcharge des opérations, et `B2B_DELIVERY_INBOX`                                                                                                                                                                                   | ✅ bâti (`181b0621f`) ; sa suite (repère, frise, espace E-commerce) bâtie le 2026-10-17, non commitée                                                                         | une question : la place des demandes clients (bandeau X2)                                                               |
-| X4     | Retirer le code des opérations au PIM et la matrice des canaux (les contextes de vente restent), avec « Sur la plateforme professionnelle » du rail de la fiche et l'encart « Intégrations » de la fiche (Hugo, 2026-10-17 : deux réglages pour une même question, dont un mort — « Activer » et l'audience décident) | 🟡 bâti le 2026-10-17, non commité — bandeau ci-dessous                                                                                                                       | trois questions : le « point de vente », `soldContexts` des révisions, la garde du point de vente sur une matrice figée |
-| ~~X5~~ | ~~La doc d'état à jour, et la liste des tables mortes pour un ordre de Hugo~~                                                                                                                                                                                                                                         | ✅ bâti le 2026-10-17, non commité — [`catalogue-synchronise.md`](catalogue-synchronise.md) relue, runbook « Réémettre le catalogue », [`tables-mortes.md`](tables-mortes.md) | aucune table supprimée : la liste attend l'ordre de Hugo                                                                |
+| Lot    | Contenu                                                                                                                                                                                                                                                                                                               | État                                                                                                                                                                                        | Taille                                                                                                                  |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| X0     | La commande ne fige plus de version ; la sonde de santé est désarmée                                                                                                                                                                                                                                                  | ✅ en production (`9bcab005e`)                                                                                                                                                              | —                                                                                                                       |
+| X1     | Les trois interrupteurs disparaissent (`CATALOG_FACTS_ENABLED`, `OPERATIONS_AT_COMMERCE`, `PIM_PUBLICATION_ENABLED`)                                                                                                                                                                                                  | ✅ en production (`3fe321cac`, `9703cd863`)                                                                                                                                                 | —                                                                                                                       |
+| X3     | Ce que fige la commande                                                                                                                                                                                                                                                                                               | ✅ réglé par X0 : plus rien                                                                                                                                                                 | —                                                                                                                       |
+| X2     | Retirer le push, la réception, les versions du catalogue, la parité, la santé, la surcharge des opérations, et `B2B_DELIVERY_INBOX`                                                                                                                                                                                   | ✅ bâti (`181b0621f`) ; sa suite (repère, frise, espace E-commerce) bâtie le 2026-10-17 (`a585b93eb`, en production)                                                                        | une question : la place des demandes clients (bandeau X2)                                                               |
+| X4     | Retirer le code des opérations au PIM et la matrice des canaux (les contextes de vente restent), avec « Sur la plateforme professionnelle » du rail de la fiche et l'encart « Intégrations » de la fiche (Hugo, 2026-10-17 : deux réglages pour une même question, dont un mort — « Activer » et l'audience décident) | ✅ bâti le 2026-10-17 (`d66b331f0`, en production) — bandeau ci-dessous                                                                                                                     | trois questions : le « point de vente », `soldContexts` des révisions, la garde du point de vente sur une matrice figée |
+| ~~X5~~ | ~~La doc d'état à jour, et la liste des tables mortes pour un ordre de Hugo~~                                                                                                                                                                                                                                         | ✅ bâti le 2026-10-17 (`7007a8657`, `525803894`) — [`catalogue-synchronise.md`](catalogue-synchronise.md) relue, runbook « Réémettre le catalogue », [`tables-mortes.md`](tables-mortes.md) | aucune table supprimée : la liste attend l'ordre de Hugo                                                                |
 
-> ✅ **X5 bâti le 2026-10-17** (non commité au moment d'écrire). R8 :
+> ✅ **X5 bâti le 2026-10-17**. R8 :
 > `catalogue-synchronise.md` relue contre le code (plus de branche « fermé »,
 > réémission sans écran depuis X4, révisions sans contextes de vente,
 > validation par ligne, écritures de lot) ; le runbook perd « Basculer le
@@ -48,7 +48,7 @@ sonde d'une seconde, rouge sous la charge de la CI (porté à 5 s, `9703cd863`).
 > été faite **à la main** le soir même. Ses trois objections bloquantes
 > portaient sur la bascule ; elles sont rappelées au §5.
 
-> ✅ **X0 bâti le 2026-10-17** (non commité au moment d'écrire). Q2 tranchée par
+> ✅ **X0 bâti le 2026-10-17**. Q2 tranchée par
 > Hugo : **plus d'estampille**. `OrderDrafting` ne lit plus
 > `CatalogVersionReader` et pose `catalogVersionId: null` sur toute commande
 > neuve ; la colonne, le champ de l'agrégat et le port restent (le port sert
@@ -66,7 +66,7 @@ sonde d'une seconde, rouge sous la charge de la CI (porté à 5 s, `9703cd863`).
 > « Intégrations » du back-office (`b2b-integration.ts`) lit toujours la santé :
 > il montrera le même écart, à traiter avec R4.
 
-> 🟡 **X4 bâti le 2026-10-17** (non commité au moment d'écrire). Partis :
+> 🟡 **X4 bâti le 2026-10-17**. Partis :
 > **R5** — `pim/operations/**` (agrégat, gestes, routes, dépôts, le refus
 > permanent de X1), la projection des opérations du push et `projectCatalog`
 > (`projectVariant` reste, les faits l'emploient), le fait
@@ -98,7 +98,7 @@ sonde d'une seconde, rouge sous la charge de la CI (porté à 5 s, `9703cd863`).
 > rapport de X4.
 >
 > ✅ **Suite de X4, tranchée par Hugo le 2026-10-17 (option a) et bâtie le
-> même jour** (non commitée au moment d'écrire). `soldContexts` **sort des
+> même jour** (81b192e59). `soldContexts` **sort des
 > révisions** : la source ne le photographie plus, `effectiveChannels` a
 > quitté le lecteur du catalogue, et `channelPreset` / `channelOverride` ont
 > quitté les agrégats, leurs dépôts (ni lus ni réécrits) et les vues
@@ -114,7 +114,7 @@ sonde d'une seconde, rouge sous la charge de la CI (porté à 5 s, `9703cd863`).
 > `usageByKey` du registre des contextes — le plan du point de vente les
 > reprendra. Les tables restent.
 
-> 🟡 **X2 bâti le 2026-10-17** (non commité au moment d'écrire). Partis :
+> 🟡 **X2 bâti le 2026-10-17**. Partis :
 > le push (commande, service, contrôleur, port `B2bCatalogDriver` et son
 > pilote en processus), l'écran « Publication » et le bouton « Publier vers
 > les canaux » ; la réception (entité, dépôt, événements, validation, route,
@@ -164,7 +164,7 @@ sonde d'une seconde, rouge sous la charge de la CI (porté à 5 s, `9703cd863`).
 > droits, entrée « Demandes clients » sous Commandes inchangée). Sa place —
 > Gestion Boutique ou Commercial — est à décider par Hugo.
 
-> ✅ **X1 bâti le 2026-10-17** (non commité au moment d'écrire). Les trois
+> ✅ **X1 bâti le 2026-10-17**. Les trois
 > interrupteurs — `CATALOG_FACTS_ENABLED`, `OPERATIONS_AT_COMMERCE`,
 > `PIM_PUBLICATION_ENABLED` — sont sortis d'`AppConfig`, du conteneur, du
 > workflow, du `.env.example` et du `.env.development` ; le code suit le
