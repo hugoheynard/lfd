@@ -661,7 +661,7 @@ façon ; `channel_key`, lui, bloquait l'ajout d'une simple ligne de donnée.
 | La carte — agrégat, racine, invariants           | `pim/sales-contexts/`                                                         |
 | Le point de vente — genres, offre, tables        | `pim/points-of-sale/`                                                         |
 | Le référentiel des taux                          | `pim/vat-rates/`                                                              |
-| La matrice — forme, normalisation, lectures      | `pim/catalogue/shared/domain/value-objects/sales-channels.ts`                 |
+| La matrice — forme, normalisation, lectures      | sales-channels.ts (retiré en X4)                                              |
 | Le mur « offert ici ? »                          | sellable-channels.ts (retiré en X4)                                           |
 | La résolution du taux (fiche par-dessus famille) | `pim/catalogue/shared/domain/value-objects/context-vat.ts`                    |
 | Les invariants de la famille                     | `pim/catalogue/category/domain/entities/category.ts`                          |
