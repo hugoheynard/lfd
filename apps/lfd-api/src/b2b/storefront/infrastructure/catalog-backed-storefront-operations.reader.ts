@@ -1,6 +1,5 @@
 import { Injectable } from "@nestjs/common";
 
-import { AppConfig } from "../../../platform/config/app-config.js";
 import {
   opensAt,
   operationStateAt,
@@ -19,22 +18,18 @@ import {
  * La fenêtre et la clientèle se tranchent par les fonctions du catalogue, les
  * mêmes que le rayon `op:<key>` (`shop-catalogue-operations.ts`).
  *
- * Une sélection effective vide (tous ses articles retirés à la réception)
- * n'est pas montrée : l'annonce ouvrirait un rayon vide. Un rayon dont les
+ * Un rayon dont les
  * articles ne sont plus en vente (dépubliés) n'est PAS détecté ici — il
  * faudrait relire tout le catalogue sur la route anonyme.
  *
- * Interrupteur `OPERATIONS_AT_COMMERCE` ouvert (lot 3), la règle suit celle
- * du rayon : une sélection vide ne cache plus l'annonce pendant l'annonce ni
- * commandes ouvertes — le rayon s'ouvre alors sur son encart (plan, « Une
- * opération sans article ») ; commandes closes, elle s'efface.
+ * La règle suit celle du rayon : une sélection vide ne cache pas l'annonce
+ * pendant l'annonce ni commandes ouvertes — le rayon s'ouvre alors sur son
+ * encart (plan, « Une opération sans article ») ; commandes closes, elle
+ * s'efface.
  */
 @Injectable()
 export class CatalogBackedStorefrontOperationsReader extends StorefrontOperationsReader {
-  constructor(
-    private readonly operations: CatalogOperationsReader,
-    private readonly config: AppConfig,
-  ) {
+  constructor(private readonly operations: CatalogOperationsReader) {
     super();
   }
 
@@ -43,13 +38,12 @@ export class CatalogBackedStorefrontOperationsReader extends StorefrontOperation
     now: Date,
   ): Promise<ReadonlyMap<string, ShownOperation>> {
     const shown = new Map<string, ShownOperation>();
-    const atCommerce = this.config.operationsAtCommerce();
     for (const operation of await this.operations.sellableOperations()) {
       const state = operationStateAt(operation, now);
       if (state === null || !reachesAudience(operation, audience)) {
         continue;
       }
-      if (operation.skus.length === 0 && (!atCommerce || state === "closed")) {
+      if (operation.skus.length === 0 && state === "closed") {
         continue;
       }
       shown.set(operation.key, {

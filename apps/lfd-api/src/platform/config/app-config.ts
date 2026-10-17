@@ -12,7 +12,6 @@ import {
 import {
   optionalAdminDevBypass,
   optionalAnalyticsConfig,
-  optionalCatalogFactsEnabled,
   optionalDeliveryInboxEnabled,
   optionalDevImpersonation,
   optionalFieldEncryptionKey,
@@ -20,9 +19,7 @@ import {
   optionalMailerConfig,
   optionalManagementCredentials,
   optionalMediaPublicBaseUrl,
-  optionalOperationsAtCommerce,
   optionalPort,
-  optionalPublicationEnabled,
   optionalR2Storage,
   optionalString,
   optionalStripeConfig,
@@ -68,9 +65,6 @@ const DEFAULT_AUTH0_STAFF_CONNECTION = "lfc-staff";
 @Injectable()
 export class AppConfig {
   private readonly database: string;
-  private readonly publicationValue: boolean;
-  private readonly catalogFactsValue: boolean;
-  private readonly operationsAtCommerceValue: boolean;
   private readonly deliveryInboxValue: boolean;
   private readonly journalStrictFactsValue: boolean;
   private readonly auth0DomainValue: string;
@@ -121,9 +115,6 @@ export class AppConfig {
       optionalString("BOOTSTRAP_ADMIN_EMAIL") ?? "",
     );
     this.adminBypass = optionalAdminDevBypass();
-    this.publicationValue = optionalPublicationEnabled();
-    this.catalogFactsValue = optionalCatalogFactsEnabled();
-    this.operationsAtCommerceValue = optionalOperationsAtCommerce();
     this.deliveryInboxValue = optionalDeliveryInboxEnabled();
     this.journalStrictFactsValue = optionalJournalStrictFacts();
     this.recomputeTokenValue = optionalString("RECOMPUTE_TOKEN");
@@ -432,48 +423,6 @@ export class AppConfig {
    */
   adminDevBypass(): boolean {
     return this.adminBypass || this.impersonation !== null;
-  }
-
-  /**
-   * La **publication du catalogue** est-elle ouverte ici ?
-   *
-   * Elle ferme les gestes qui envoient le catalogue DEHORS — pousser vers la
-   * boutique, vers la plateforme professionnelle, et poser l'ancre qui les
-   * précède. Elle ne ferme rien de la saisie : une fiche s'écrit, se signe et
-   * se met en vente au référentiel exactement comme avant.
-   *
-   * **Fermée par défaut** (cf. `optionalPublicationEnabled`) : un déploiement
-   * qui ne s'est pas prononcé ne publie pas.
-   */
-  publicationEnabled(): boolean {
-    return this.publicationValue;
-  }
-
-  /**
-   * Les **faits du catalogue** sont-ils ouverts ici ?
-   *
-   * Ouverts, chaque écriture d'une fiche ou d'une famille émet son instantané
-   * vers la plateforme, et le push cesse d'écrire fiches et familles. Fermés —
-   * le défaut —, rien ne s'émet et le push reste seul : c'est l'état qui se
-   * déploie sans rien changer de servi (cf. `optionalCatalogFactsEnabled`).
-   *
-   * ⚠️ Ils ne partent que si la publication est AUSSI ouverte : un fait de
-   * catalogue envoie le catalogue dehors.
-   */
-  catalogFactsEnabled(): boolean {
-    return this.catalogFactsValue;
-  }
-
-  /**
-   * Les opérations datées **s'écrivent-elles au commerce** ici ?
-   *
-   * Fermé — le défaut —, les routes d'écriture de `/admin/operations`
-   * refusent : les opérations se préparent au référentiel et arrivent par le
-   * push, comme avant (cf. `optionalOperationsAtCommerce`). S'ouvre avec la
-   * bascule, jamais avant.
-   */
-  operationsAtCommerce(): boolean {
-    return this.operationsAtCommerceValue;
   }
 
   /**

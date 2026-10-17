@@ -4,7 +4,6 @@ import { describe, expect, it } from 'vitest';
 import {
   badgeLabel,
   badgeOf,
-  isNotAtCommerce,
   shopDisplayPhrase,
   splitArchived,
 } from '../commerce-operation-format';
@@ -33,13 +32,5 @@ describe('commerce-operation-format', () => {
     const { live, archived } = splitArchived(views);
     expect(live.map((view) => view.key)).toEqual(['a', 'c']);
     expect(archived.map((view) => view.key)).toEqual(['b']);
-  });
-
-  it("reconnaît l'interrupteur fermé à son code, pas à son message", () => {
-    expect(isNotAtCommerce({ error: { code: 'operations.not_at_commerce', message: '…' } })).toBe(
-      true,
-    );
-    expect(isNotAtCommerce({ error: { code: 'operations.writing_closed' } })).toBe(false);
-    expect(isNotAtCommerce(new Error('boom'))).toBe(false);
   });
 });

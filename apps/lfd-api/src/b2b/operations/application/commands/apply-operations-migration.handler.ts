@@ -12,11 +12,9 @@ import { MirroredOperationsReader } from "../../domain/ports/mirrored-operations
 import { OperationAdoption } from "../../domain/ports/operation-adoption.js";
 import { OperationRepository } from "../../domain/ports/operation.repository.js";
 import { OperationSkuCatalogue } from "../../domain/ports/operation-sku.catalogue.js";
-import { OperationWritingSwitch } from "../../domain/ports/operation-writing-switch.js";
 import type { MigrationLine } from "../../domain/services/operation-migration.js";
 import { readMigration } from "../migration/migration-sources.js";
 import { ApplyOperationsMigrationCommand } from "./apply-operations-migration.command.js";
-import { ensureWritingOpen } from "./operation-writing.js";
 
 /**
  * **Écrit au commerce les opérations du référentiel**, restreintes par la
@@ -24,8 +22,6 @@ import { ensureWritingOpen } from "./operation-writing.js";
  * `documentation/operations-datees/plan-l-operation-passe-au-commerce.md`, O4
  * et « La migration repart du PIM »).
  *
- * - **Interrupteur ouvert seulement** : fermé, le push écrit encore les
- *   opérations et écraserait ce qu'elle écrit.
  * - **Tout ou rien** : relit le plan dans la transaction ; une ligne bloquée
  *   et rien n'est écrit.
  * - **Par l'agrégat** : `fromReferential` pour une opération jamais envoyée,
@@ -49,18 +45,15 @@ export class ApplyOperationsMigrationHandler implements ICommandHandler<
     private readonly library: OperationImageLibrary,
     private readonly operations: OperationRepository,
     private readonly adoption: OperationAdoption,
-    private readonly writing: OperationWritingSwitch,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
     private readonly clock: Clock,
   ) {}
 
   /**
-   * @throws {OperationWritingClosedError} interrupteur fermé.
    * @throws {OperationsMigrationBlockedError} une ligne au moins est bloquée.
    */
   async execute(command: ApplyOperationsMigrationCommand): Promise<void> {
-    ensureWritingOpen(this.writing);
     const stamp: WriteStamp = { by: command.appliedBy, at: this.clock.now() };
     await this.uow.run(async () => {
       const { lines } = await readMigration(

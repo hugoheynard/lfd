@@ -20,7 +20,7 @@ import { doubles, FixedReferentialWriting, prepared, type Doubles } from "./oper
 /**
  * **La bascule ferme le référentiel** (lot 3 de
  * `documentation/operations-datees/plan-l-operation-passe-au-commerce.md`) :
- * interrupteur `OPERATIONS_AT_COMMERCE` ouvert, chaque geste refuse AVANT
+ * chaque geste refuse AVANT
  * toute lecture, et rien n'est écrit ni journalisé.
  */
 function closed(): Doubles {

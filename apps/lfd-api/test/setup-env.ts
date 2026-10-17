@@ -105,16 +105,6 @@ process.env["AUTH0_CUSTOMER_CLIENT_ID"] = "spa-boutique-de-test";
 // `AdminTokenVerifier` (cf. `admin-companies.e2e-spec.ts`).
 process.env["AUTH_DEV_IMPERSONATE"] = "false";
 process.env["AUTH_ADMIN_DEV_BYPASS"] = "false";
-// Les faits du catalogue : FERMÉS en e2e, quoi que dise le `.env` local. Un
-// poste qui les a ouverts pour essayer la synchronisation faisait échouer les
-// onze suites du push, qui ne touche plus fiches ni familles faits ouverts
-// (2026-10-15). Les suites des faits les ouvrent elles-mêmes, par leur scène
-// (`catalog-facts-scene.ts`).
-process.env["CATALOG_FACTS_ENABLED"] = "false";
-// L'écriture des opérations au commerce : FERMÉE en e2e, quoi que dise le
-// `.env` local — c'est l'état qui se déploie. La suite qui l'éprouve ouverte
-// l'ouvre par sa scène (`operations-at-commerce.e2e-spec.ts`).
-process.env["OPERATIONS_AT_COMMERCE"] = "false";
 
 /**
  * Stockage objet des e2e : le MinIO du conteneur de dev (`lfd-dev-minio`, port
@@ -212,20 +202,6 @@ process.env["STRIPE_PUBLISHABLE_KEY"] = "pk_test_e2e";
  */
 export const TEST_RECOMPUTE_TOKEN = "test-recompute-secret";
 process.env["RECOMPUTE_TOKEN"] = TEST_RECOMPUTE_TOKEN;
-
-/**
- * La publication du catalogue est **ouverte** dans les tests.
- *
- * Écrasement dur, et c'est le régime qui compte : ce drapeau est fermé par
- * défaut sur un déploiement, et ce qu'on mesure ici est le produit ENTIER — les
- * suites de push et d'ancrage doivent exercer ce qu'elles décrivent, pas la
- * moitié qui reste allumée. Un `.env` local qui le fermerait rendrait ces
- * suites vertes en ne mesurant rien.
- *
- * La suite qui éprouve le drapeau LUI-MÊME le referme dans son propre
- * amorçage — c'est le seul endroit où sa valeur est le sujet.
- */
-process.env["PIM_PUBLICATION_ENABLED"] = "true";
 
 /**
  * La **boîte de réception du catalogue est fermée** dans les tests.

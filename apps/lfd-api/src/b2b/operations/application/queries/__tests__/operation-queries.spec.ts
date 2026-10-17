@@ -1,12 +1,8 @@
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { Operation } from "../../../domain/entities/operation.js";
-import {
-  OperationNotFoundError,
-  OperationsNotAtCommerceError,
-} from "../../../domain/errors/operation-errors.js";
+import { OperationNotFoundError } from "../../../domain/errors/operation-errors.js";
 import {
   FixedImageLibrary,
-  FixedWritingSwitch,
   InMemoryOperationReader,
   InMemoryOperations,
   libraryImage,
@@ -23,11 +19,10 @@ const SCHEDULE = noel().schedule;
 /** Les commandes sont ouvertes : après l'annonce (1er nov.), avant la clôture (21 déc.). */
 const ORDERS_OPEN = new Date("2026-12-01T08:00:00.000Z");
 
-function scene(operations: readonly Operation[], open = true) {
+function scene(operations: readonly Operation[]) {
   const store = new InMemoryOperations(operations);
   const ports = [
     new InMemoryOperationReader(store),
-    new FixedWritingSwitch(open),
     new FixedImageLibrary([libraryImage(IMAGE, { x: 0.2, y: 0.8 }, "Une bûche roulée")]),
     new SellingSkus(["BUC-001-1"]),
     new FixedClock(ORDERS_OPEN),
@@ -42,15 +37,6 @@ function composed(skus: readonly string[], key = "noel-2026"): Operation {
 }
 
 describe("les lectures de l'écran « Opérations »", () => {
-  it("interrupteur fermé : 409, l'écran ouvre avec la bascule", async () => {
-    const { list, get } = scene([composed([])], false);
-
-    await expect(list.execute()).rejects.toThrow(OperationsNotAtCommerceError);
-    await expect(get.execute(new GetOperationQuery("noel-2026"))).rejects.toThrow(
-      OperationsNotAtCommerceError,
-    );
-  });
-
   it("dit l'image avec le texte alternatif DE LA MÉDIATHÈQUE, et ce que verra le client", async () => {
     const { get } = scene([composed(["BUC-001-1", "GAL-002-1"])]);
 

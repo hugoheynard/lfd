@@ -12,8 +12,8 @@
  */
 import { type CatalogSnapshot, type SyncOrderTimeLimitRule } from "@lfd/catalog-sync";
 
-import { B2bCatalogDriver } from "../src/pim/channels/b2b-platform/products/driver.js";
 import { CATEGORY, snapshotOf } from "./catalog-ingest-fixtures.js";
+import { deliverAsFacts } from "./catalog-facts-delivery.js";
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
 
 let ctx: E2eContext;
@@ -36,11 +36,9 @@ beforeEach(async () => {
   await ctx.prisma.catalogCategory.deleteMany();
 });
 
-function push(body: CatalogSnapshot) {
-  return ctx.app.get(B2bCatalogDriver).send(body, {
-    revisionId: "rev_e2e",
-    fingerprint: "empreinte-e2e",
-  });
+/** Le catalogue du référentiel, livré en faits (X1, 2026-10-17 : le push n'écrit plus). */
+function push(body: CatalogSnapshot): Promise<void> {
+  return deliverAsFacts(ctx, body);
 }
 
 describe("le taux de TVA arrive sur l’ARTICLE", () => {

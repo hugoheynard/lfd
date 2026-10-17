@@ -89,7 +89,7 @@ class FrozenClock extends Clock {
 }
 
 function held(facts: CatalogOperationFacts, withdrawnAt: Date | null = null): ReceivedOperation {
-  return { received: facts, withdrawnAt, override: null };
+  return { received: facts, withdrawnAt, override: null, held: { hidden: false, writtenAt: null } };
 }
 
 async function operationsOf(

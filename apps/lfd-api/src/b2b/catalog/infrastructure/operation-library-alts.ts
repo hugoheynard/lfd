@@ -2,9 +2,8 @@ import type { OperationImageLibrary } from "../../operations/channels/media/oper
 import type { OperationImageFacts } from "../domain/entities/catalog-operation.js";
 
 /**
- * **Le texte alternatif d'une image d'opération, lu à la médiathèque** —
- * interrupteur `OPERATIONS_AT_COMMERCE` ouvert (lot 3 de
- * `plan-l-operation-passe-au-commerce.md`, « Après le lot 2 ») : l'opération
+ * **Le texte alternatif d'une image d'opération, lu à la médiathèque** (lot 3
+ * de `plan-l-operation-passe-au-commerce.md`, « Après le lot 2 ») : l'opération
  * du commerce n'en garde plus, comme une fiche depuis le 2026-09-23.
  *
  * Une seule lecture du fonds pour toutes les images. Une image que le fonds

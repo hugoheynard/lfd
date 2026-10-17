@@ -1,16 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import type { StoredCatalogSnapshot } from "@lfd/catalog-sync";
 
-import { AppConfig } from "../../../platform/config/app-config.js";
-import { CatalogItem, type PimFacts } from "../domain/entities/catalog-item.js";
-import { CatalogOperation } from "../domain/entities/catalog-operation.js";
-import { snapshotLimitReader } from "../domain/snapshot-limits.js";
-import { CatalogCategoryProjection } from "../domain/ports/catalog-category.projection.js";
-import { CatalogItemRepository } from "../domain/ports/catalog-item.repository.js";
-import { CatalogOperationRepository } from "../domain/ports/catalog-operation.repository.js";
-import { operationFactsOf } from "./operation-facts.js";
-import { pimImageOf } from "./pim-image.js";
-
 /** Ce qu'une ingestion a réellement changé, pour que l'appelant puisse le dire. */
 export interface IngestionOutcome {
   readonly acceptedProducts: number;
@@ -29,212 +19,30 @@ export interface IngestionOutcome {
 }
 
 /**
- * Applique un snapshot du PIM, **par les agrégats**.
+ * Applique un snapshot du PIM — et n'écrit **plus rien** depuis le 2026-10-17.
  *
- * Le cycle est celui de la maison, appliqué en lot : charger, muter par une
- * méthode métier (`refreshFromPim` / `receive`), rendre au port. Aucune colonne
- * n'est écrite depuis ici, et c'est ce qui met l'invariant hors de portée : un
- * article existant est **rafraîchi**, et `refreshFromPim` reporte sa décision
- * sans avoir le pouvoir de la modifier.
+ * Les faits du catalogue tiennent fiches et familles (sous `applied_seq`), et
+ * les opérations s'écrivent au commerce : le push n'a plus rien à poser. Avant
+ * X1 (`documentation/catalogue/plan-sans-interrupteurs.md`), c'était le
+ * comportement interrupteurs OUVERTS ; l'ancien écrivain retirait tout ce qui
+ * n'était pas dans son instantané, fiches inactives des faits comprises, et
+ * réécrivait les opérations nées au commerce.
  *
- * La version précédente écrivait en `upsert` direct, avec le contrat « ne jamais
- * supprimer puis recréer » posé en commentaire. Le commentaire était juste ; il
- * ne protégeait rien — le prochain appelant n'avait qu'à l'ignorer.
+ * Il reste jusqu'au retrait du push et de la réception (X2) : un envoi
+ * accepté rend un compte-rendu vide, sans bruit.
  */
 @Injectable()
 export class IngestCatalogService {
-  constructor(
-    private readonly items: CatalogItemRepository,
-    private readonly categories: CatalogCategoryProjection,
-    private readonly operations: CatalogOperationRepository,
-    private readonly config: AppConfig,
-  ) {}
-
-  async apply(
-    snapshot: StoredCatalogSnapshot,
-    excludedSkus: readonly string[] = [],
+  apply(
+    _snapshot: StoredCatalogSnapshot,
+    _excludedSkus: readonly string[] = [],
   ): Promise<IngestionOutcome> {
-    // 🔴 Un SKU écarté garde ses faits COURANTS — il n'a simplement pas changé.
-    //
-    // Ça vaut dans les DEUX sens, et c'est ce qui rend le geste uniforme : un
-    // changement écarté ne s'écrit pas, et un RETRAIT écarté ne s'applique pas.
-    // On n'écarte donc pas une ligne mais un SKU, ce qui rend exprimable le
-    // refus d'un retrait — impossible autrement, un retrait n'étant qu'une
-    // absence dans le snapshot.
-    const excluded = new Set(excludedSkus);
-    const receivedAt = new Date(snapshot.generatedAt);
-
-    // 🔴 **Un seul écrivain à la fois** (lot 2a, corrections après `vitruve`).
-    // Faits ouverts, ce sont eux qui tiennent fiches et familles, sous
-    // `applied_seq` ; le push, lui, retire tout ce qui n'est pas dans son
-    // instantané et n'a pas de numéro — il effacerait les fiches inactives
-    // que les faits posent. Il ne porte plus alors que les opérations.
-    if (this.config.catalogFactsEnabled()) {
-      return {
-        acceptedProducts: 0,
-        acceptedVariants: 0,
-        acceptedCategories: 0,
-        removedSkus: [],
-        withdrawnOperations: await this.applyOperations(snapshot, receivedAt),
-      };
-    }
-
-    // Les familles d'abord : les articles y font référence.
-    await this.categories.replaceAll(
-      snapshot.categories.map((category) => ({
-        id: category.id,
-        name: category.name,
-        slug: category.slug,
-        parentId: category.parentId,
-        position: category.position,
-        vatRatePercent: category.vatRatePercent,
-        receivedAt,
-      })),
-    );
-
-    const incoming = factsOf(snapshot, receivedAt);
-    // 🔴 Les RETIRÉS compris, et c'est indispensable : un SKU réintroduit doit
-    // être reconnu comme connu pour que son prix négocié lui revienne. Vu par
-    // `loadAll()`, il serait absent, donc reçu à neuf — et `saveMany`
-    // supprimerait l'override d'un article qu'on vient de remettre en vente.
-    const existing = new Map(
-      (await this.items.loadAllIncludingWithdrawn()).map((item) => [item.sku, item]),
-    );
-
-    const toSave = incoming
-      .filter((facts) => !excluded.has(facts.sku))
-      .map((facts) => {
-        const known = existing.get(facts.sku);
-        return known === undefined ? CatalogItem.receive(facts) : known.refreshFromPim(facts);
-      });
-
-    // 🔴 Le retrait MARQUE, il ne supprime plus — et il passe donc par l'agrégat.
-    //
-    // `removeMany(skus)` écrivait une colonne à partir de primitives : c'est le
-    // « transaction script » que le §3.1 interdit, et il n'était acceptable que
-    // parce que « supprimer » n'est pas muter un état. Marquer, si.
-    //
-    // Le même instant pour tout le lot, et il vient du snapshot : c'est la
-    // livraison qui retire, pas l'horloge de celui qui l'applique.
-    const arriving = new Set(incoming.map((facts) => facts.sku));
-    const withdrawn = [...existing.entries()]
-      // `!item.isWithdrawn` : sans lui, chaque push réécrirait toute la liste
-      // des articles jamais retirés — un coût qui croît pour un résultat
-      // identique, `withdraw()` étant idempotent.
-      .filter(([sku, item]) => !arriving.has(sku) && !excluded.has(sku) && !item.isWithdrawn)
-      .map(([, item]) => {
-        item.withdraw(receivedAt);
-        return item;
-      });
-
-    await this.items.saveMany([...toSave, ...withdrawn]);
-    const withdrawnOperations = await this.applyOperations(snapshot, receivedAt);
-
-    return {
-      acceptedProducts: snapshot.products.length,
-      acceptedVariants: toSave.length,
-      acceptedCategories: snapshot.categories.length,
-      removedSkus: withdrawn.map((item) => item.sku),
-      withdrawnOperations,
-    };
+    return Promise.resolve({
+      acceptedProducts: 0,
+      acceptedVariants: 0,
+      acceptedCategories: 0,
+      removedSkus: [],
+      withdrawnOperations: [],
+    });
   }
-
-  /**
-   * **Les opérations datées** (fil v11, D10) : reçues, rafraîchies, ou
-   * MARQUÉES retirées — jamais supprimées. Une clé ne se réemploie pas, et la
-   * surcharge de la réception doit garder son parent (D9).
-   *
-   * ⚠️ Un envoi v10 (champ absent) se lit « aucune opération » : il marque donc
-   * retirées toutes celles que le miroir tenait. C'est voulu (D10) — aucun
-   * article n'y est réservé aux opérations, donc rien d'exclusif n'est vendu —,
-   * et le runbook dit comment l'éviter au déploiement.
-   *
-   * Les SKU écartés à la validation ne touchent pas aux opérations : la
-   * sélection se restreint à la réception par la surcharge, pas par un envoi
-   * accepté à moitié.
-   *
-   * 🔴 **Interrupteur `OPERATIONS_AT_COMMERCE` ouvert, il ne touche à RIEN**
-   * (lot 3 de `plan-l-operation-passe-au-commerce.md`, « Une seule bascule ») :
-   * l'opération vit au commerce, et un envoi réécrirait chaque opération reçue
-   * et retirerait celles qui manquent — y compris celles nées au commerce.
-   * Les opérations d'un envoi sont alors ignorées, sans bruit : le référentiel
-   * les porte encore jusqu'au lot 4.
-   *
-   * @returns les clés marquées retirées par cet envoi.
-   */
-  private async applyOperations(
-    snapshot: StoredCatalogSnapshot,
-    receivedAt: Date,
-  ): Promise<readonly string[]> {
-    if (this.config.operationsAtCommerce()) {
-      return [];
-    }
-    const incoming = (snapshot.operations ?? []).map((operation) =>
-      operationFactsOf(operation, receivedAt),
-    );
-    const existing = new Map(
-      (await this.operations.loadAllIncludingWithdrawn()).map((operation) => [
-        operation.key,
-        operation,
-      ]),
-    );
-    const received = incoming.map(
-      (facts) => existing.get(facts.key)?.refreshFromPim(facts) ?? CatalogOperation.receive(facts),
-    );
-    const arriving = new Set(incoming.map((facts) => facts.key));
-    // `!isWithdrawn` : une opération déjà retirée garde la date de son retrait.
-    const withdrawn = [...existing.values()].filter(
-      (operation) => !arriving.has(operation.key) && !operation.isWithdrawn,
-    );
-    for (const operation of withdrawn) {
-      operation.withdraw(receivedAt);
-    }
-    await this.operations.saveMany([...received, ...withdrawn]);
-    return withdrawn.map((operation) => operation.key);
-  }
-}
-
-/** Aplatit produits × déclinaisons en faits d'articles, dans l'ordre reçu. */
-function factsOf(snapshot: StoredCatalogSnapshot, receivedAt: Date): PimFacts[] {
-  const limitOf = snapshotLimitReader(snapshot);
-  return snapshot.products.flatMap((product) =>
-    product.variants.map((variant) => ({
-      sku: variant.sku,
-      productId: product.id,
-      productSku: product.sku,
-      name: variant.name,
-      kind: product.kind,
-      categoryId: product.categoryId,
-      priceMillicents: variant.priceMillicents,
-      weightGrams: variant.weightGrams,
-      isDefault: variant.isDefault,
-      position: variant.position,
-      vatRatePercent: variant.vatRatePercent,
-      // Depuis la v9 du fil. `?? null` couvre une arrivée d'avant — elle ne
-      // portait pas le prix public, et `null` dit « on ne sait pas », jamais
-      // « gratuit ».
-      publicTtcCents: variant.publicTtcCents ?? null,
-      publicByContext: variant.publicByContext ?? null,
-      allergens: variant.allergens,
-      // Projetées par le PIM (D6) : la plateforme n'a plus le référentiel
-      // réglementaire, elle range ce qu'on lui envoie.
-      allergenLabels: variant.allergenLabels,
-      // Résolue ICI depuis la v7 du fil (cf. `limitReader`).
-      orderTimeLimit: limitOf(product, variant),
-      // Le référentiel les range sur le PRODUIT ; le miroir les descend sur
-      // l'article, qui est ce que la boutique montre. `?? null` couvre une
-      // arrivée d'avant la v8, qui n'en portait aucun.
-      note: product.note ?? null,
-      image: pimImageOf(product.image),
-      // `?? null` couvre une arrivée d'avant la v10 : la vignette de rayon ne
-      // traversait pas le fil. Une absence, jamais un défaut inventé.
-      thumbnail: pimImageOf(product.thumbnail),
-      // Absent avant la v11 : aucun article n'était réservé aux opérations, et
-      // `false` le dit — c'est la version qui décide de la lecture (D10).
-      operationOnly: product.operationOnly ?? false,
-      // Absent avant la v12 : aucun article n'était déclaré froid.
-      requiresCold: product.requiresCold ?? false,
-      receivedAt,
-    })),
-  );
 }

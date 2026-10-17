@@ -1,6 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
 
-import { AppConfig } from "../../../../platform/config/app-config.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { CatalogEmitter } from "../../../catalogue/shared/domain/ports/catalog-emitter.js";
 import { CatalogFactsReader } from "../../../catalogue/shared/domain/ports/catalog-facts.reader.js";
@@ -10,8 +9,6 @@ import {
   type ReemissionReport,
 } from "../../../catalogue/shared/domain/ports/catalog-reemission.js";
 
-const NOTHING: ReemissionReport = { categories: 0, products: 0, failedProducts: [] };
-
 /**
  * **Réémettre, une transaction par fiche** (C3, et « réémettre tout » de 2a6).
  *
@@ -19,15 +16,12 @@ const NOTHING: ReemissionReport = { categories: 0, products: 0, failedProducts: 
  * ligne à la fois, et un geste qui touche quarante fiches ne bloque pas la
  * saisie des quarante autres. Le prix : une réémission interrompue laisse des
  * fiches en retard — la parité les montre, « réémettre » les répare.
- *
- * Fermé (mêmes interrupteurs que l'émetteur), il ne lit même pas la liste.
  */
 @Injectable()
 export class B2bCatalogReemission extends CatalogReemission {
   private readonly logger = new Logger(B2bCatalogReemission.name);
 
   constructor(
-    private readonly config: AppConfig,
     private readonly facts: CatalogFactsReader,
     private readonly emitter: CatalogEmitter,
     private readonly uow: UnitOfWork,
@@ -37,16 +31,13 @@ export class B2bCatalogReemission extends CatalogReemission {
   }
 
   async productsOfCategories(categoryIds: readonly string[]): Promise<void> {
-    if (!this.open() || categoryIds.length === 0) {
+    if (categoryIds.length === 0) {
       return;
     }
     await this.emitEach(await this.facts.productIdsOfFamilies(categoryIds));
   }
 
   async everything(): Promise<ReemissionReport> {
-    if (!this.open()) {
-      return NOTHING;
-    }
     // Les familles D'ABORD : une fiche apporte la sienne si la plateforme ne
     // la connaît pas, mais seule la famille émise pour elle-même porte son
     // propre numéro et la met à jour.
@@ -77,9 +68,5 @@ export class B2bCatalogReemission extends CatalogReemission {
       }
     }
     return failed;
-  }
-
-  private open(): boolean {
-    return this.config.catalogFactsEnabled() && this.config.publicationEnabled();
   }
 }

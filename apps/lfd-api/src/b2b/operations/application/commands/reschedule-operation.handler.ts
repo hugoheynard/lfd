@@ -6,13 +6,7 @@ import { changesBetween } from "../../../../platform/journal/changes.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { OperationRescheduledEvent } from "../../domain/events/operation.events.js";
 import { OperationRepository } from "../../domain/ports/operation.repository.js";
-import { OperationWritingSwitch } from "../../domain/ports/operation-writing-switch.js";
-import {
-  calendarText,
-  ensureWritingOpen,
-  requireOperation,
-  subjectOf,
-} from "./operation-writing.js";
+import { calendarText, requireOperation, subjectOf } from "./operation-writing.js";
 import { RescheduleOperationCommand } from "./reschedule-operation.command.js";
 
 /**
@@ -31,14 +25,12 @@ export class RescheduleOperationHandler implements ICommandHandler<
 > {
   constructor(
     private readonly operations: OperationRepository,
-    private readonly writing: OperationWritingSwitch,
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
   ) {}
 
   async execute(command: RescheduleOperationCommand): Promise<void> {
-    ensureWritingOpen(this.writing);
     const operation = await requireOperation(this.operations, command.key);
     const before = calendarText(operation.snapshot());
     operation.reschedule(command.calendar, { by: command.writtenBy, at: this.clock.now() });

@@ -4,8 +4,8 @@ import type { CatalogHealthView, PendingDeliveryView } from "@lfd/contracts";
 import { CatalogDelivery } from "../src/b2b/catalog/domain/entities/catalog-delivery.js";
 import { CatalogDeliveryRepository } from "../src/b2b/catalog/domain/ports/catalog-delivery.repository.js";
 import { CatalogVersionReader } from "../src/b2b/catalog/domain/ports/catalog-version.reader.js";
-import { B2bCatalogDriver } from "../src/pim/channels/b2b-platform/products/driver.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import { deliverAsFacts } from "./catalog-facts-delivery.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 
 /**
@@ -135,10 +135,7 @@ function sellable(): Promise<number> {
 
 /** Met le miroir dans un état connu — le chemin direct, celui d'aujourd'hui. */
 async function sell(snapshotToApply: CatalogSnapshot): Promise<void> {
-  await ctx.app.get(B2bCatalogDriver).send(snapshotToApply, {
-    revisionId: "rev_seed",
-    fingerprint: "empreinte-seed",
-  });
+  await deliverAsFacts(ctx, snapshotToApply);
 }
 
 describe("GET /admin/catalog/delivery", () => {
@@ -185,22 +182,6 @@ describe("la relecture d'une arrivée", () => {
 });
 
 describe("POST /admin/catalog/delivery/accept", () => {
-  it("promeut les faits — la boutique vend enfin ce qui a été relu", async () => {
-    await sell(snapshot([{ sku: "VIE-001" }]));
-    await toInbox(snapshot([{ sku: "VIE-001" }, { sku: "PAT-002" }]));
-    const pending = jsonBody<PendingDeliveryView>(
-      await staff().get("/admin/catalog/delivery").expect(200),
-    );
-
-    await staff()
-      .post("/admin/catalog/delivery/accept")
-      .send({ deliveryId: pending.id, excludedSkus: [] })
-      .expect(201);
-
-    expect(await sellable()).toBe(2);
-    expect(await ctx.prisma.catalogDelivery.count({ where: { status: "accepted" } })).toBe(1);
-  });
-
   /**
    * 🔴 Écarter un SKU **absent de l'arrivée**, c'est refuser son RETRAIT. La
    * garde naïve — « refuser ce qui n'est pas dans l'arrivée » — aurait rendu ce
@@ -236,12 +217,18 @@ describe("POST /admin/catalog/delivery/accept", () => {
     const body = { deliveryId: pending.id, excludedSkus: [] };
 
     await staff().post("/admin/catalog/delivery/accept").send(body).expect(201);
+    const before = await sellable();
     await staff().post("/admin/catalog/delivery/accept").send(body).expect(409);
 
-    expect(await sellable()).toBe(2);
+    expect(await sellable()).toBe(before);
   });
 
-  it("pose UNE version, photographie de ce que la boutique vend désormais", async () => {
+  /**
+   * Depuis X1 (2026-10-17), accepter n'applique plus rien : la version
+   * photographie le miroir tel que les faits le tiennent — sans la bûche de
+   * l'arrivée. Elle part avec les versions (X2).
+   */
+  it("pose UNE version, photographie du miroir tel qu'il est", async () => {
     await sell(snapshot([{ sku: "VIE-001" }]));
     await toInbox(snapshot([{ sku: "VIE-001" }, { sku: "PAT-002" }]));
     const pending = jsonBody<PendingDeliveryView>(
@@ -256,7 +243,7 @@ describe("POST /admin/catalog/delivery/accept", () => {
     const rows = await ctx.prisma.catalogVersion.findMany();
     expect(rows).toHaveLength(1);
     const version = await ctx.app.get(CatalogVersionReader).byId(rows[0]?.id ?? "");
-    expect(version?.lines.map((line) => line.sku).sort()).toEqual(["PAT-002-1", "VIE-001-1"]);
+    expect(version?.lines.map((line) => line.sku).sort()).toEqual(["VIE-001-1"]);
     expect(version?.revisionId).toBe(pending.revisionId);
   });
 
@@ -342,23 +329,6 @@ describe("GET /admin/catalog/health", () => {
     const vue = jsonBody<CatalogHealthView>(await staff().get("/admin/catalog/health").expect(200));
 
     expect(vue).toEqual({ version: null, drift: null });
-  });
-
-  it("ne signale rien quand le miroir porte ce qui a été validé", async () => {
-    await sell(snapshot([{ sku: "VIE-001" }]));
-    await toInbox(snapshot([{ sku: "VIE-001" }, { sku: "PAT-002" }]));
-    const pending = jsonBody<PendingDeliveryView>(
-      await staff().get("/admin/catalog/delivery").expect(200),
-    );
-    await staff()
-      .post("/admin/catalog/delivery/accept")
-      .send({ deliveryId: pending.id, excludedSkus: [] })
-      .expect(201);
-
-    const vue = jsonBody<CatalogHealthView>(await staff().get("/admin/catalog/health").expect(200));
-
-    expect(vue.version).toMatchObject({ revisionId: pending.revisionId, itemCount: 2 });
-    expect(vue.drift?.inSync).toBe(true);
   });
 
   /**

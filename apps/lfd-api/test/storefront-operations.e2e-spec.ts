@@ -11,8 +11,7 @@
  * 🔴 Toutes les dates d'opération sont RELATIVES à maintenant : la lecture
  * les compare à l'horloge.
  */
-import { randomUUID } from "node:crypto";
-
+import { CommandBus } from "@nestjs/cqrs";
 import type { SyncOperation } from "@lfd/catalog-sync";
 import type {
   PublicStorefrontContent,
@@ -23,8 +22,13 @@ import type {
 
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { B2bCatalogDriver } from "../src/pim/channels/b2b-platform/products/driver.js";
+import { ArchiveOperationCommand } from "../src/b2b/operations/application/commands/archive-operation.command.js";
+import { MediaStore } from "../src/platform/storage/media-store.js";
+import { deliverAsFacts } from "./catalog-facts-delivery.js";
 import { snapshotOf } from "./catalog-ingest-fixtures.js";
+import { InMemoryMediaStore } from "./in-memory-media-store.js";
+import { depositImage } from "./operations-at-commerce-scene.js";
+import { prepareAtCommerce } from "./operations-at-commerce-seed.js";
 import {
   bootstrapE2e,
   daysAgo,
@@ -47,7 +51,10 @@ let companyId = "";
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
-    overrides: [{ token: AdminTokenVerifier, value: stubAdminVerifier }],
+    overrides: [
+      { token: AdminTokenVerifier, value: stubAdminVerifier },
+      { token: MediaStore, value: new InMemoryMediaStore() },
+    ],
   });
 });
 
@@ -83,14 +90,41 @@ function noel(over: Partial<SyncOperation> = {}): SyncOperation {
   };
 }
 
-async function receive(operations: readonly SyncOperation[]): Promise<void> {
-  await ctx.app
-    .get(B2bCatalogDriver)
-    .send(snapshotOf([{ sku: "VIE-001", priceMillicents: 210_000 }], [], operations), {
-      revisionId: `rev_${randomUUID()}`,
-      fingerprint: `empreinte-${randomUUID()}`,
-    });
+/**
+ * Le croissant, livré en faits, et les opérations, écrites AU COMMERCE — leur
+ * seul chemin depuis X1 (2026-10-17). L'image d'une opération vient du fonds
+ * de la médiathèque : elle y est déposée d'abord, décrite par le texte
+ * alternatif et le point focal de la fixture ; l'URL est celle du fonds.
+ */
+async function receive(
+  operations: readonly SyncOperation[],
+  options: { readonly hidden?: boolean } = {},
+): Promise<void> {
+  await deliverAsFacts(ctx, snapshotOf([{ sku: "VIE-001", priceMillicents: 210_000 }]));
+  for (const operation of operations) {
+    const image = operation.image === null ? null : { url: await deposit(operation.image) };
+    await prepareAtCommerce(
+      ctx,
+      { ...operation, image: image === null ? null : { ...image, alt: "" } },
+      options,
+    );
+  }
 }
+
+/** Dépose l'image de Noël au fonds, la décrit, et rend son URL. */
+async function deposit(image: NonNullable<SyncOperation["image"]>): Promise<string> {
+  const url = await depositImage(ctx, NOEL_IMAGE_WIDTH, null);
+  await staff()
+    .put("/media")
+    .send({ url, name: "noel", alt: { fr: image.alt }, tags: [], focal: image.focal ?? null })
+    .expect(200);
+  noelImageUrl = url;
+  return url;
+}
+
+/** L'image de Noël au fonds : la largeur fait l'image (l'URL est le hachage). */
+const NOEL_IMAGE_WIDTH = 1201;
+let noelImageUrl = "";
 
 type ContentInput = StorefrontPayloadInput["objects"][number]["contents"][number];
 
@@ -236,7 +270,7 @@ describe("la lecture publique", () => {
       ...LINKED,
       title: { fr: "Noël", en: "Christmas" },
       lede: { fr: "Bûches et chocolats" },
-      image: { url: "https://cdn.example/noel.jpg", alt: { fr: "Une bûche" }, focal: null },
+      image: { url: noelImageUrl, alt: { fr: "Une bûche" }, focal: null },
       operation: {
         key: "noel",
         state: "announced",
@@ -248,13 +282,17 @@ describe("la lecture publique", () => {
     });
   });
 
-  it("l'image héritée porte le point focal que le push a lu à la médiathèque (L10)", async () => {
-    const image = { url: "https://cdn.example/noel.jpg", alt: "", focal: { x: 0.3, y: 0.6 } };
+  it("l'image héritée porte le point focal lu à la médiathèque (L10)", async () => {
+    const image = {
+      url: "https://cdn.example/noel.jpg",
+      alt: "Une bûche",
+      focal: { x: 0.3, y: 0.6 },
+    };
     await receive([noel({ image })]);
     await compose([LINKED]);
 
     const [content] = await publicContents();
-    expect(content).toMatchObject({ image: { url: image.url, focal: { x: 0.3, y: 0.6 } } });
+    expect(content).toMatchObject({ image: { url: noelImageUrl, focal: { x: 0.3, y: 0.6 } } });
   });
 
   it("un champ rempli surcharge l'héritage", async () => {
@@ -296,20 +334,16 @@ describe("la lecture publique", () => {
     ]);
   });
 
-  it("masquée à la réception, elle s'éteint", async () => {
-    await receive([noel()]);
-    await staff()
-      .put("/admin/catalog/operations/noel/override")
-      .send({ isHidden: true, orderUntil: null, audience: null, hiddenSkus: [] })
-      .expect(204);
+  it("masquée au commerce, elle s'éteint", async () => {
+    await receive([noel()], { hidden: true });
     await compose([LINKED]);
 
     expect(await publicContents()).toEqual([]);
   });
 
-  it("retirée du dernier envoi, elle s'éteint", async () => {
+  it("archivée au commerce, elle s'éteint", async () => {
     await receive([noel()]);
-    await receive([]);
+    await ctx.app.get(CommandBus).execute(new ArchiveOperationCommand("noel", null));
     await compose([LINKED]);
 
     expect(await publicContents()).toEqual([]);

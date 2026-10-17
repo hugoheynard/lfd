@@ -1,6 +1,5 @@
 import { Injectable } from "@nestjs/common";
 
-import { AppConfig } from "../../../../platform/config/app-config.js";
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { CatalogEmitter } from "../../../catalogue/shared/domain/ports/catalog-emitter.js";
@@ -18,16 +17,13 @@ import { PublicationSequence } from "./publication-sequence.js";
  * boîte d'envoi. Le relais ne livre qu'après la validation ; un rollback
  * emporte le fait avec le geste.
  *
- * ## Fermé, il ne fait rien
- *
- * Deux interrupteurs, et il faut les deux : `CATALOG_FACTS_ENABLED` (les rails
- * du lot 2a, fermés par défaut) et `PIM_PUBLICATION_ENABLED` (un fait envoie le
- * catalogue dehors). Fermé, ni verrou ni lecture : le geste ne paie rien.
+ * Toujours ouvert depuis le 2026-10-17 (X1 de
+ * `documentation/catalogue/plan-sans-interrupteurs.md`) : les interrupteurs
+ * `CATALOG_FACTS_ENABLED` et `PIM_PUBLICATION_ENABLED` sont retirés.
  */
 @Injectable()
 export class B2bCatalogFactsEmitter extends CatalogEmitter {
   constructor(
-    private readonly config: AppConfig,
     private readonly sequence: PublicationSequence,
     private readonly source: CatalogSnapshots,
     private readonly durable: DurablePublisher,
@@ -37,7 +33,7 @@ export class B2bCatalogFactsEmitter extends CatalogEmitter {
   }
 
   async emitProducts(productIds: readonly string[]): Promise<void> {
-    if (!this.open() || productIds.length === 0) {
+    if (productIds.length === 0) {
       return;
     }
     const locked = await this.sequence.lockProducts(sortedUnique(productIds));
@@ -55,7 +51,7 @@ export class B2bCatalogFactsEmitter extends CatalogEmitter {
   }
 
   async emitCategories(categoryIds: readonly string[]): Promise<void> {
-    if (!this.open() || categoryIds.length === 0) {
+    if (categoryIds.length === 0) {
       return;
     }
     const locked = await this.sequence.lockCategories(sortedUnique(categoryIds));
@@ -70,10 +66,6 @@ export class B2bCatalogFactsEmitter extends CatalogEmitter {
         );
       }
     }
-  }
-
-  private open(): boolean {
-    return this.config.catalogFactsEnabled() && this.config.publicationEnabled();
   }
 }
 

@@ -17,10 +17,6 @@ import { ITEMS_IN_ORDER, itemRows, operationColumns, toRecord } from "./operatio
  * Il ne connaît que l'agrégat : l'état entier part par `add` ou `save`, et la
  * sélection est RÉÉCRITE à chaque fois, dans la transaction du fait de
  * journal. Des lignes de rattachement, pas une histoire : le journal la porte.
- *
- * ⚠️ Il partage la table avec l'ingestion du push (`PrismaCatalogOperationRepository`)
- * jusqu'à la bascule. Les routes qui l'atteignent sont fermées tant que le
- * push écrit les opérations (`OPERATIONS_AT_COMMERCE`).
  */
 @Injectable()
 export class PrismaOperationRepository extends OperationRepository {

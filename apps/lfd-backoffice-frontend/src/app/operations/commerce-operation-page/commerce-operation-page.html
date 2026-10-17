@@ -23,13 +23,6 @@
         <button foldButton (click)="load(key())">Réessayer</button>
       </fold-empty-state>
     }
-    @case ('closed') {
-      <fold-callout appearance="inset" variant="info">
-        Les opérations sont encore tenues au référentiel sur ce déploiement (« Opérations datées »).
-        Cette page les montrera, et les modifiera, une fois la bascule faite (interrupteur
-        <code>OPERATIONS_AT_COMMERCE</code>).
-      </fold-callout>
-    }
     @default {
       @if (operation(); as operation) {
         @if (operation.archivedAt !== null) {

@@ -22,7 +22,6 @@ import {
   badgeLabel,
   badgeOf,
   badgeVariant,
-  isNotAtCommerce,
   shopDisplayPhrase,
   splitArchived,
 } from '../commerce-operation-format';
@@ -31,8 +30,7 @@ import { OperationImage } from '../operation-image/operation-image';
 import { OperationsMigrationCard } from '../operations-migration-card/operations-migration-card';
 import { PrepareCommerceOperationPanel } from '../prepare-commerce-operation-panel/prepare-commerce-operation-panel';
 
-/** `closed` : l'interrupteur `OPERATIONS_AT_COMMERCE` est fermé — un état, pas une panne. */
-type LoadState = 'loading' | 'error' | 'closed' | 'ready';
+type LoadState = 'loading' | 'error' | 'ready';
 
 /**
  * **Les opérations, tenues au commerce** — Noël, Pâques, la galette : où
@@ -103,8 +101,8 @@ export class CommerceOperationsPage {
     try {
       this.operations.set(await this.api.list());
       this.state.set('ready');
-    } catch (error: unknown) {
-      this.state.set(isNotAtCommerce(error) ? 'closed' : 'error');
+    } catch {
+      this.state.set('error');
     }
   }
 

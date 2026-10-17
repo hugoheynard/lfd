@@ -1,4 +1,3 @@
-import { AppConfig } from "../../../../../platform/config/app-config.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { tarte } from "../../../../catalogue/product/application/__tests__/audience-doubles.js";
 import { ProductNotFoundError } from "../../../../catalogue/product/domain/errors/product-errors.js";
@@ -11,22 +10,9 @@ import {
   CatalogFactsReader,
   type CatalogFamilyRecord,
 } from "../../../../catalogue/shared/domain/ports/catalog-facts.reader.js";
-import {
-  CatalogFactsClosedError,
-  ReemitCatalogCommand,
-  ReemitCatalogHandler,
-} from "../reemit-catalog.js";
+import { ReemitCatalogCommand, ReemitCatalogHandler } from "../reemit-catalog.js";
 
-/** « Réémettre » (2a6) : une fiche, ou tout ; refusé, et nommé, quand les faits sont fermés. */
-
-class Switches extends AppConfig {
-  constructor(private readonly open: boolean) {
-    super();
-  }
-  override catalogFactsEnabled(): boolean {
-    return this.open;
-  }
-}
+/** « Réémettre » (2a6) : une fiche, ou tout. */
 
 class OneFiche extends CatalogFactsReader {
   products(ids: readonly string[]): Promise<ProductRecord[]> {
@@ -46,11 +32,10 @@ class OneFiche extends CatalogFactsReader {
   }
 }
 
-function setup(open: boolean) {
+function setup() {
   const emitter = new RecordingCatalogEmitter();
   const reemission = new RecordingCatalogReemission();
   const handler = new ReemitCatalogHandler(
-    new Switches(open),
     new OneFiche(),
     emitter,
     reemission,
@@ -60,19 +45,8 @@ function setup(open: boolean) {
 }
 
 describe("ReemitCatalogHandler", () => {
-  /** Un « 0 fiche réémise » se lirait comme un succès : le refus nomme l'interrupteur. */
-  it("refuse quand les faits sont fermés", async () => {
-    const { handler, emitter, reemission } = setup(false);
-
-    await expect(handler.execute(new ReemitCatalogCommand(null))).rejects.toBeInstanceOf(
-      CatalogFactsClosedError,
-    );
-    expect(emitter.products).toEqual([]);
-    expect(reemission.everythingCalls).toBe(0);
-  });
-
   it("réémet une fiche dans sa transaction", async () => {
-    const { handler, emitter } = setup(true);
+    const { handler, emitter } = setup();
 
     const report = await handler.execute(new ReemitCatalogCommand("prd_tarte"));
 
@@ -81,7 +55,7 @@ describe("ReemitCatalogHandler", () => {
   });
 
   it("refuse une fiche inconnue", async () => {
-    const { handler } = setup(true);
+    const { handler } = setup();
 
     await expect(handler.execute(new ReemitCatalogCommand("prd_absent"))).rejects.toBeInstanceOf(
       ProductNotFoundError,
@@ -89,7 +63,7 @@ describe("ReemitCatalogHandler", () => {
   });
 
   it("délègue « tout » à la réémission", async () => {
-    const { handler, reemission } = setup(true);
+    const { handler, reemission } = setup();
 
     await handler.execute(new ReemitCatalogCommand(null));
 

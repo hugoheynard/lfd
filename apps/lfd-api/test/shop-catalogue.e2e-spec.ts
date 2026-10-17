@@ -9,11 +9,11 @@
 import type { ShopCatalogueView, ShopQuoteView } from "@lfd/contracts";
 import request from "supertest";
 
-import { B2bCatalogDriver } from "../src/pim/channels/b2b-platform/products/driver.js";
 import { ProductMediaChangedFact } from "../src/pim/channels/b2b-platform/products/product-media-changed.fact.js";
 import { UuidV7Generator } from "../src/platform/id/uuid-generator.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { DurablePublisher } from "../src/platform/outbox/durable-publisher.js";
+import { deliverAsFacts } from "./catalog-facts-delivery.js";
 import { CATEGORY, PUBLIC_LABEL, snapshotOf } from "./catalog-ingest-fixtures.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 
@@ -43,11 +43,9 @@ const SHOT = {
   height: 800,
 };
 
-function push(products: Parameters<typeof snapshotOf>[0]) {
-  return ctx.app.get(B2bCatalogDriver).send(snapshotOf(products), {
-    revisionId: "rev_shop",
-    fingerprint: "empreinte-shop",
-  });
+/** Le catalogue du référentiel, livré en faits (X1, 2026-10-17 : le push n'écrit plus). */
+function push(products: Parameters<typeof snapshotOf>[0]): Promise<void> {
+  return deliverAsFacts(ctx, snapshotOf(products));
 }
 
 /** Sans jeton : c'est tout l'objet de cette route. */

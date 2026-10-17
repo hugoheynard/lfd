@@ -3,7 +3,6 @@ import {
   Component,
   computed,
   inject,
-  input,
   output,
   signal,
 } from '@angular/core';
@@ -59,8 +58,6 @@ type LoadState = 'loading' | 'error' | 'ready';
 export class OperationsMigrationCard {
   private readonly api = inject(CommerceOperationsService);
 
-  /** L'interrupteur `OPERATIONS_AT_COMMERCE` est-il ouvert ? Fermé, on lit sans appliquer. */
-  readonly switchOpen = input.required<boolean>();
   /** La reprise a écrit : la liste se relit. */
   readonly applied = output();
 
@@ -73,7 +70,7 @@ export class OperationsMigrationCard {
 
   protected readonly canApply = computed(() => {
     const report = this.report();
-    return this.switchOpen() && report !== null && !report.blocked && report.counts.toWrite > 0;
+    return report !== null && !report.blocked && report.counts.toWrite > 0;
   });
 
   protected readonly readAt = computed(() => {

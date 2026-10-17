@@ -82,7 +82,13 @@ function handlerOver(
 }
 
 function received(over: Partial<ReceivedOperation> = {}): ReceivedOperation {
-  return { received: NOEL, withdrawnAt: null, override: null, ...over };
+  return {
+    received: NOEL,
+    withdrawnAt: null,
+    override: null,
+    held: { hidden: false, writtenAt: null },
+    ...over,
+  };
 }
 
 describe("GetStorefrontCatalogHandler", () => {

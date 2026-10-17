@@ -11,8 +11,9 @@ import { ProductCatalogReader } from "../src/b2b/catalog/domain/ports/product-ca
 import { OrderOperations } from "../src/b2b/orders/application/services/order-operations.service.js";
 import { OperationDayRequiredError } from "../src/b2b/orders/domain/errors/order-operation-errors.js";
 import { WorkshopShelvesReader } from "../src/production/channels/commerce/workshop-shelves.reader.js";
-import { B2bCatalogDriver } from "../src/pim/channels/b2b-platform/products/driver.js";
+import { deliverAsFacts } from "./catalog-facts-delivery.js";
 import { snapshotOf } from "./catalog-ingest-fixtures.js";
+import { prepareAtCommerce } from "./operations-at-commerce-seed.js";
 import { bootstrapE2e, daysAgo, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
@@ -20,9 +21,9 @@ import { attachTo, createCompany, createUser } from "./factories.js";
  * **Le drapeau `operationOnly` devient une règle de vente** (lot 3 de
  * `documentation/operations-datees/architecture-operations-datees.md`).
  *
- * Ce que seul ce niveau prouve : une bûche reçue par un VRAI envoi v11 est
+ * Ce que seul ce niveau prouve : une bûche reçue par son fait de fiche est
  * écartée du rayon et refusée à la caisse hors de son opération, sur le vrai
- * miroir et la vraie surcharge ; la fiche atelier et la tarification la voient
+ * miroir et l'opération du commerce ; la fiche atelier et la tarification la voient
  * toujours ; le croissant de la même opération reste commandable après sa
  * clôture.
  *
@@ -31,7 +32,6 @@ import { attachTo, createCompany, createUser } from "./factories.js";
  */
 
 const MEMBER = "auth0|op-member";
-const STAFF = "staff-e2e";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -110,19 +110,25 @@ function noel(over: Partial<SyncOperation> = {}): SyncOperation {
   };
 }
 
-/** Un envoi v11 accepté : le croissant courant, la bûche réservée aux opérations. */
-async function receive(operations: readonly SyncOperation[]): Promise<void> {
-  await ctx.app.get(B2bCatalogDriver).send(
-    snapshotOf(
-      [
-        { sku: "VIE-001", priceMillicents: 210_000 },
-        { sku: "PAT-002", priceMillicents: 2_900_000, operationOnly: true },
-      ],
-      [],
-      operations,
-    ),
-    { revisionId: `rev_${randomUUID()}`, fingerprint: `empreinte-${randomUUID()}` },
+/**
+ * Le croissant courant et la bûche réservée aux opérations, livrés en faits ;
+ * les opérations, écrites AU COMMERCE — leur seul chemin depuis X1
+ * (2026-10-17, `plan-sans-interrupteurs.md`).
+ */
+async function receive(
+  operations: readonly SyncOperation[],
+  options: { readonly hidden?: boolean } = {},
+): Promise<void> {
+  await deliverAsFacts(
+    ctx,
+    snapshotOf([
+      { sku: "VIE-001", priceMillicents: 210_000 },
+      { sku: "PAT-002", priceMillicents: 2_900_000, operationOnly: true },
+    ]),
   );
+  for (const operation of operations) {
+    await prepareAtCommerce(ctx, operation, options);
+  }
 }
 
 async function publicShelf(): Promise<ShopCatalogueView> {
@@ -155,13 +161,6 @@ function order(sku: string, day: string) {
       lines: [{ sku, quantity: 1 }],
     });
 }
-
-const restrict = (body: Record<string, unknown>) =>
-  ctx
-    .asSub(STAFF)
-    .put("/admin/catalog/operations/noel/override")
-    .send({ isHidden: false, orderUntil: null, audience: null, hiddenSkus: [], ...body })
-    .expect(204);
 
 describe("hors de toute fenêtre", () => {
   beforeEach(async () => {
@@ -282,27 +281,17 @@ describe("avant l'ouverture, après la clôture", () => {
   });
 });
 
-describe("la surcharge de la réception (D9)", () => {
-  it("une clôture avancée à hier ferme la commande", async () => {
-    await receive([noel()]);
-    await restrict({ orderUntil: daysAgo(1) });
-
-    const response = await order("PAT-002", PICKUP_FROM).expect(409);
-    expect(response.body).toMatchObject({ code: "orders.operation.closed" });
-  });
-
+describe("ce que le commerce décide de l'opération", () => {
   it("une opération masquée rend la bûche absente — jamais libre", async () => {
-    await receive([noel()]);
-    await restrict({ isHidden: true });
+    await receive([noel()], { hidden: true });
 
     expect(skusOf(await publicShelf())).toEqual(["VIE-001"]);
     const response = await order("PAT-002", PICKUP_FROM).expect(409);
     expect(response.body).toMatchObject({ code: "orders.operation.absent" });
   });
 
-  it("un article retiré de la sélection devient absent", async () => {
-    await receive([noel()]);
-    await restrict({ hiddenSkus: ["PAT-002-1"] });
+  it("un article hors de la sélection est absent", async () => {
+    await receive([noel({ skus: ["VIE-001-1"] })]);
 
     expect(skusOf(await publicShelf())).toEqual(["VIE-001"]);
     await order("PAT-002", PICKUP_FROM).expect(409);

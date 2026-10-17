@@ -11,8 +11,8 @@ import { millicentsFromCents } from "@lfd/money";
 import { CATALOG_SNAPSHOT_VERSION, type CatalogSnapshot } from "@lfd/catalog-sync";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import { deliverAsFacts } from "./catalog-facts-delivery.js";
 import { bootstrapE2e, E2E_STAFF_ID, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { B2bCatalogDriver } from "../src/pim/channels/b2b-platform/products/driver.js";
 
 /** Staff doublé : accepte n'importe quel jeton porteur comme staff synthétique. */
 const stubAdminVerifier = {
@@ -109,10 +109,7 @@ function snapshot(priceMillicents: number, sheet: SheetOnWire = NO_SHEET): Catal
  * part sur le fil en millicentimes, l'unité des prix unitaires.
  */
 function push(cents: number, sheet: SheetOnWire = NO_SHEET) {
-  return ctx.app.get(B2bCatalogDriver).send(snapshot(millicentsFromCents(cents), sheet), {
-    revisionId: "rev_e2e",
-    fingerprint: "empreinte-e2e",
-  });
+  return deliverAsFacts(ctx, snapshot(millicentsFromCents(cents), sheet), { alone: true });
 }
 
 /** Le staff appelle avec un jeton quelconque : le verifier est doublé. */
@@ -168,16 +165,13 @@ describe("GET /admin/catalog", () => {
    * repli couvrait.
    */
   it("rend un taux NUL quand l'article n'en porte pas, même si sa famille en a un", async () => {
-    await ctx.app.get(B2bCatalogDriver).send(
-      {
-        ...snapshot(200_000, NO_SHEET),
-        products: snapshot(200_000, NO_SHEET).products.map((product) => ({
-          ...product,
-          variants: product.variants.map((variant) => ({ ...variant, vatRatePercent: null })),
-        })),
-      },
-      { revisionId: "rev_sans_taux", fingerprint: "empreinte-sans-taux" },
-    );
+    await deliverAsFacts(ctx, {
+      ...snapshot(200_000, NO_SHEET),
+      products: snapshot(200_000, NO_SHEET).products.map((product) => ({
+        ...product,
+        variants: product.variants.map((variant) => ({ ...variant, vatRatePercent: null })),
+      })),
+    });
 
     const item = await listOne();
 
@@ -644,53 +638,50 @@ describe("GET /admin/catalog — l'ordre du rayon", () => {
    * le départage, la seule façon d'obtenir cet ordre serait la chance.
    */
   it("départage par SKU les articles de même position", async () => {
-    await ctx.app.get(B2bCatalogDriver).send(
-      {
-        version: CATALOG_SNAPSHOT_VERSION,
-        generatedAt: "2026-08-17T08:00:00.000Z",
-        categories: [
+    await deliverAsFacts(ctx, {
+      version: CATALOG_SNAPSHOT_VERSION,
+      generatedAt: "2026-08-17T08:00:00.000Z",
+      categories: [
+        {
+          id: "fam-vien",
+          name: "Viennoiseries",
+          slug: "viennoiseries",
+          parentId: null,
+          position: 0,
+          vatRatePercent: 5.5,
+        },
+      ],
+      products: ["VIE-003", "VIE-001", "VIE-002"].map((sku, index) => ({
+        id: `prd_${sku}`,
+        sku,
+        name: sku,
+        categoryId: "fam-vien",
+        kind: "daily",
+        variants: [
           {
-            id: "fam-vien",
-            name: "Viennoiseries",
-            slug: "viennoiseries",
-            parentId: null,
+            ...NO_SHEET,
+            id: `var_${sku}`,
+            sku: `${sku}-1`,
+            name: sku,
+            priceMillicents: millicentsFromCents(200 + index),
+            publicTtcCents: 250,
+            publicByContext: { takeaway: { vatRatePercent: 5.5, htMillicents: 236_967 } },
+            weightGrams: null,
+            isDefault: true,
+            // Le point du test : tous à la MÊME position, comme en vrai.
             position: 0,
             vatRatePercent: 5.5,
           },
         ],
-        products: ["VIE-003", "VIE-001", "VIE-002"].map((sku, index) => ({
-          id: `prd_${sku}`,
-          sku,
-          name: sku,
-          categoryId: "fam-vien",
-          kind: "daily",
-          variants: [
-            {
-              ...NO_SHEET,
-              id: `var_${sku}`,
-              sku: `${sku}-1`,
-              name: sku,
-              priceMillicents: millicentsFromCents(200 + index),
-              publicTtcCents: 250,
-              publicByContext: { takeaway: { vatRatePercent: 5.5, htMillicents: 236_967 } },
-              weightGrams: null,
-              isDefault: true,
-              // Le point du test : tous à la MÊME position, comme en vrai.
-              position: 0,
-              vatRatePercent: 5.5,
-            },
-          ],
-          note: null,
-          image: null,
-          thumbnail: null,
-          operationOnly: false,
-          requiresCold: false,
-        })),
-        orderTimeLimits: [],
-        operations: [],
-      },
-      { revisionId: "rev_ordre", fingerprint: "empreinte-ordre" },
-    );
+        note: null,
+        image: null,
+        thumbnail: null,
+        operationOnly: false,
+        requiresCold: false,
+      })),
+      orderTimeLimits: [],
+      operations: [],
+    });
 
     const response = await asStaff().get("/admin/catalog");
     const items = jsonBody<{ sku: string }[]>(response);
@@ -812,19 +803,17 @@ describe("GET /admin/catalog/sellable", () => {
 });
 
 /**
- * Lot 3 : la vue « Catalogue publié » remplacera `/b2b/catalogue` en
- * production AVANT l'ouverture des faits (2b4). Faits fermés, le catalogue
- * vient du seul push et `catalog_entries` est vide : la vue doit le rendre
- * entier, sans quoi l'écran serait vide.
+ * Lot 3 : la vue « Catalogue publié ». Depuis X1 (2026-10-17), le catalogue
+ * arrive en faits : la fiche y est une entrée de `catalog_entries`.
  */
-describe("GET /admin/catalog/published — faits fermés, catalogue du push", () => {
+describe("GET /admin/catalog/published", () => {
   async function published(): Promise<PublishedCatalogView> {
     return jsonBody<PublishedCatalogView>(
       await asStaff().get("/admin/catalog/published").expect(200),
     );
   }
 
-  it("rend la fiche du push en entrée active, vendue aux deux audiences", async () => {
+  it("rend la fiche reçue en entrée active, vendue aux deux audiences", async () => {
     const view = await published();
 
     expect(view.entries).toHaveLength(1);
@@ -833,7 +822,7 @@ describe("GET /admin/catalog/published — faits fermés, catalogue du push", ()
       productSku: "VIE-001",
       status: "active",
       audience: "both",
-      audienceInherited: null,
+      audienceInherited: true,
     });
     expect(view.entries[0]?.variants).toEqual([
       expect.objectContaining({

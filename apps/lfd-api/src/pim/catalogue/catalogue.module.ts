@@ -3,7 +3,6 @@ import { Module } from "@nestjs/common";
 import { AllergensModule } from "../allergens/allergens.module.js";
 import { VatRatesModule } from "../vat-rates/vat-rates.module.js";
 import { PrismaMediaCarriers } from "./shared/infrastructure/prisma-media-carriers.js";
-import { PrismaOperationMediaCarriers } from "./shared/infrastructure/prisma-operation-media-carriers.js";
 import { PimDatabaseModule } from "../infra/database/pim-database.module.js";
 import { ArchiveCategoryHandler } from "./category/application/archive-category.js";
 import { ArchiveProductHandler } from "./product/application/archive-product.js";
@@ -129,9 +128,6 @@ import {
     // L'adaptateur du canal que la MÉDIATHÈQUE déclare. Exporté, pas fourni
     // sous son token : c'est la racine qui relie les deux côtés.
     PrismaMediaCarriers,
-    // Ses opérations datées, à part : la racine les retire une fois
-    // l'opération passée au commerce (OPERATIONS_AT_COMMERCE).
-    PrismaOperationMediaCarriers,
     // Familles (CQRS) — un handler par cas.
     CreateCategoryHandler,
     RenameCategoryHandler,
@@ -218,7 +214,6 @@ import {
   // sort en lecture seule — l'écriture reste ici.
   exports: [
     PrismaMediaCarriers,
-    PrismaOperationMediaCarriers,
     CatalogueReader,
     CatalogFactsReader,
     CatalogRevisionRepository,

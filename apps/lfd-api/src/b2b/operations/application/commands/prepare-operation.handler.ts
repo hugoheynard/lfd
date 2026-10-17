@@ -8,9 +8,8 @@ import { Operation } from "../../domain/entities/operation.js";
 import { OperationKeyTakenError } from "../../domain/errors/operation-errors.js";
 import { OperationPreparedEvent } from "../../domain/events/operation.events.js";
 import { OperationRepository } from "../../domain/ports/operation.repository.js";
-import { OperationWritingSwitch } from "../../domain/ports/operation-writing-switch.js";
 import { imageFromLibrary, journalImage } from "./operation-image-choice.js";
-import { ensureWritingOpen, scheduleText, subjectOf } from "./operation-writing.js";
+import { scheduleText, subjectOf } from "./operation-writing.js";
 import { PrepareOperationCommand } from "./prepare-operation.command.js";
 
 /**
@@ -33,7 +32,6 @@ import { PrepareOperationCommand } from "./prepare-operation.command.js";
 export class PrepareOperationHandler implements ICommandHandler<PrepareOperationCommand, string> {
   constructor(
     private readonly operations: OperationRepository,
-    private readonly writing: OperationWritingSwitch,
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
@@ -41,7 +39,6 @@ export class PrepareOperationHandler implements ICommandHandler<PrepareOperation
   ) {}
 
   async execute(command: PrepareOperationCommand): Promise<string> {
-    ensureWritingOpen(this.writing);
     const image = await imageFromLibrary(this.library, command.operation.image, null);
     const operation = Operation.prepare(
       { ...command.operation, image },

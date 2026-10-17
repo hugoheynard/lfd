@@ -82,25 +82,21 @@ describe("l'opération effective — le référentiel, restreint par la récepti
   });
 });
 
-/** Lot 3 de `plan-l-operation-passe-au-commerce.md` : des deux côtés de la bascule. */
-describe("operationAsHeld — ce que la boutique applique, des deux côtés de la bascule", () => {
+/** Lot 3 de `plan-l-operation-passe-au-commerce.md`. */
+describe("operationAsHeld — ce que la boutique applique", () => {
   const restriction: OperationRestriction = {
     ...nothing,
     audience: "pro",
     hiddenSkus: ["PAT-7-1"],
   };
 
-  it("interrupteur fermé : exactement l'opération effective", () => {
-    expect(operationAsHeld(noel, restriction, null)).toEqual(effectiveOperation(noel, restriction));
-  });
-
-  it("ouvert, copie pas encore reprise : la surcharge s'applique encore — rien ne tombe", () => {
+  it("copie pas encore reprise : la surcharge s'applique encore — rien ne tombe", () => {
     expect(operationAsHeld(noel, restriction, { hidden: true, writtenAt: null })).toEqual(
       effectiveOperation(noel, restriction),
     );
   });
 
-  it("ouvert, écrite au commerce : ses champs et son `hidden`, la surcharge ignorée", () => {
+  it("écrite au commerce : ses champs et son `hidden`, la surcharge ignorée", () => {
     const held = operationAsHeld(noel, restriction, {
       hidden: true,
       writtenAt: new Date("2026-10-16T08:00:00.000Z"),

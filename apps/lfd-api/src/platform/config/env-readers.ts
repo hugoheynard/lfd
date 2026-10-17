@@ -472,55 +472,6 @@ export function optionalAnalyticsConfig(): AnalyticsConfig | null {
 }
 
 /**
- * La **publication du catalogue** est-elle ouverte sur ce déploiement ?
- *
- * `PIM_PUBLICATION_ENABLED=true` l'ouvre ; toute autre valeur, et l'absence, la
- * ferment. **Fermée par défaut**, et c'est le sens qui compte : ces gestes
- * envoient le catalogue à l'extérieur — une boutique en ligne, une plateforme
- * professionnelle — et l'extérieur ne se rattrape pas. Un déploiement qui a
- * oublié de se prononcer ne doit pas publier ; il doit se taire.
- *
- * Le développement et les suites de test l'ouvrent explicitement : ce qu'on
- * mesure est le produit entier, drapeau compris, pas la moitié qui reste
- * allumée.
- */
-export function optionalPublicationEnabled(): boolean {
-  return process.env["PIM_PUBLICATION_ENABLED"]?.trim().toLowerCase() === "true";
-}
-
-/**
- * Les **faits du catalogue** partent-ils vers la plateforme ?
- *
- * `CATALOG_FACTS_ENABLED=true` l'ouvre ; toute autre valeur, et l'absence, la
- * ferment. **Fermé par défaut** (lot 2a de
- * `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`) : les rails
- * se déploient sans rien changer de servi. Fermé, aucun fait fiche ni famille
- * ne s'écrit, et le push reste le seul écrivain des articles. Ouvert, les
- * faits deviennent l'écrivain, et le push ne touche plus ni fiches ni
- * familles — jamais les deux à la fois.
- */
-export function optionalCatalogFactsEnabled(): boolean {
-  return process.env["CATALOG_FACTS_ENABLED"]?.trim().toLowerCase() === "true";
-}
-
-/**
- * Les opérations datées s'**écrivent-elles au commerce** ?
- *
- * `OPERATIONS_AT_COMMERCE=true` l'ouvre ; toute autre valeur, et l'absence,
- * la ferment. **Fermé par défaut** (lot 1 de
- * `documentation/operations-datees/plan-l-operation-passe-au-commerce.md`) :
- * l'agrégat et ses routes se déploient FERMÉS, et rien de servi ne change —
- * les opérations se préparent au référentiel et arrivent par le push.
- *
- * 🔴 Ne l'ouvrir qu'avec la bascule (lot 3), qui sort d'abord les opérations
- * de l'ingestion : tant que le push les écrit, il écraserait ou retirerait ce
- * que le commerce aurait écrit (`IngestCatalogService.applyOperations`).
- */
-export function optionalOperationsAtCommerce(): boolean {
-  return process.env["OPERATIONS_AT_COMMERCE"]?.trim().toLowerCase() === "true";
-}
-
-/**
  * La livraison du PIM entre-t-elle dans une **boîte de réception** plutôt que
  * dans les faits de vente ?
  *

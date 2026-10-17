@@ -23,8 +23,7 @@ export class ApplyAudienceSwitchCommand {}
  * Le seul statut de ces fiches, par le geste « désactiver » du catalogue
  * (`DeactivateProductCommand`) : une transaction par fiche, un fait
  * `product.unpublished` au journal par fiche, l'émetteur des faits du
- * catalogue appelé dans la même transaction (sans effet tant que
- * `CATALOG_FACTS_ENABLED` est fermé). Aucun contenu de fiche n'est touché
+ * catalogue appelé dans la même transaction. Aucun contenu de fiche n'est touché
  * (H10) ; la liste rendue sert au retour arrière (réactiver).
  *
  * Le canal ne charge pas l'agrégat lui-même : le dépôt des fiches ne sort pas

@@ -1,4 +1,3 @@
-import { AppConfig } from "../src/platform/config/app-config.js";
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { OutboxRelay } from "../src/platform/outbox/outbox-relay.js";
 import { OnCatalogProductChangedHandler } from "../src/b2b/catalog/application/handlers/on-catalog-product-changed.handler.js";
@@ -7,17 +6,10 @@ import { jsonBody } from "./e2e-harness.js";
 
 /**
  * La scène des faits du catalogue (lot 2a de
- * `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`) : une
- * configuration aux faits OUVERTS, et les gestes du référentiel qui rendent
- * une fiche vendable — par l'API, comme le staff les fait.
+ * `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`) : les
+ * gestes du référentiel qui rendent une fiche vendable — par l'API, comme le
+ * staff les fait. Les faits sont toujours ouverts depuis le 2026-10-17 (X1).
  */
-
-/** La configuration réelle, faits du catalogue OUVERTS — fermés par défaut. */
-export class OpenCatalogFactsConfig extends AppConfig {
-  override catalogFactsEnabled(): boolean {
-    return true;
-  }
-}
 
 /** Le réveil du relais coupé : rien ne part tant que le test ne balaie pas. */
 export const SILENT_TRIGGER = { wake: (): void => undefined };
@@ -157,6 +149,9 @@ async function foodRate(staff: Staff): Promise<string> {
  */
 export async function relayAll(ctx: E2eContext): Promise<void> {
   const relay = ctx.app.get(OutboxRelay);
+  // Le réveil du relais après validation livre en tâche de fond, sous bail :
+  // l'attendre d'abord, sans quoi un balayage ne trouverait rien à prendre.
+  await ctx.drain();
   for (;;) {
     const report = await relay.sweep();
     if (report.failed > 0) {

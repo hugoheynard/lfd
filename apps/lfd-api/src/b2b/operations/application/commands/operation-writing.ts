@@ -1,29 +1,11 @@
 import type { Operation, OperationSnapshot } from "../../domain/entities/operation.js";
-import {
-  OperationNotFoundError,
-  OperationWritingClosedError,
-} from "../../domain/errors/operation-errors.js";
+import { OperationNotFoundError } from "../../domain/errors/operation-errors.js";
 import type { OperationRepository } from "../../domain/ports/operation.repository.js";
-import type { OperationWritingSwitch } from "../../domain/ports/operation-writing-switch.js";
 import type { OperationSchedule } from "../../domain/value-objects/operation-schedule.js";
 
 /**
- * Ce que les gestes d'écriture des opérations partagent : la porte fermée,
- * charger ou refuser, dire les dates au journal.
+ * Ce que les gestes d'écriture des opérations partagent : charger ou refuser, dire les dates au journal.
  */
-
-/**
- * **Fermé tant que la bascule n'a pas eu lieu** — le premier geste de chaque
- * cas d'usage, avant toute lecture : un refus qui dépend du déploiement ne
- * doit rien coûter, ni rien laisser entendre de l'état d'une opération.
- *
- * @throws {OperationWritingClosedError} `OPERATIONS_AT_COMMERCE` est fermé.
- */
-export function ensureWritingOpen(writing: OperationWritingSwitch): void {
-  if (!writing.isOpen()) {
-    throw new OperationWritingClosedError();
-  }
-}
 
 /** @throws {OperationNotFoundError} aucune opération ne porte cette clé. */
 export async function requireOperation(

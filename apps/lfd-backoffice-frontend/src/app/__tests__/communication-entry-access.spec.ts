@@ -7,7 +7,6 @@ import type { StaffPermission } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { App } from '../app';
-import { PimCapabilitiesStore } from '../pim/capabilities/pim-capabilities.store';
 import { PermissionsStore } from '../auth/permissions.store';
 import { StaffAuth } from '../auth/staff-auth';
 import { NavCountsService } from '../nav-counts.service';
@@ -54,7 +53,6 @@ function mount(granted: readonly StaffPermission[], mobile: boolean): HTMLElemen
     imports: [App],
     providers: [
       provideRouter([{ path: '**', component: Blank }]),
-      { provide: PimCapabilitiesStore, useValue: { publication: () => true } },
       {
         provide: StaffAuth,
         useValue: {

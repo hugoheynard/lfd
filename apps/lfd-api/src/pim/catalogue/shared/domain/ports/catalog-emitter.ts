@@ -13,9 +13,7 @@
  *   n'est jamais pris dans l'agrégat en mémoire, il est **relu en base** sous
  *   verrou, après toutes les écritures du geste — satellites compris
  *   (allergènes, rédactionnel, visuels), qui ne passent pas par `save`.
- * - Fermé (`CATALOG_FACTS_ENABLED` ou la publication), il ne fait **rien** : ni
- *   verrou, ni lecture. Un geste ne paie rien tant que les rails dorment.
- * - Ouvert, il lève hors d'une unité de travail : un fait sans transaction
+ * - Il lève hors d'une unité de travail : un fait sans transaction
  *   survivrait à une écriture annulée.
  */
 export abstract class CatalogEmitter {

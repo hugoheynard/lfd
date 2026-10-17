@@ -122,35 +122,15 @@ const RUNTIME_KEYS = [
   "VAPID_PUBLIC_KEY",
   "VAPID_PRIVATE_KEY",
   "VAPID_SUBJECT",
-  // La publication du catalogue. ABSENTE = fermée, et c'est le comportement
-  // voulu : l'extérieur ne se rattrape pas, et un déploiement qui ne s'est pas
-  // prononcé doit se taire. Elle doit tout de même TRAVERSER — sans elle dans
-  // cette liste, la poser dans Cloudflare ne l'ouvrirait pas, et rien ne le
-  // dirait.
-  "PIM_PUBLICATION_ENABLED",
   // La boîte de réception du catalogue : livrer cesse d'être mettre en vente.
-  // Fermée par défaut, pour la même raison que la précédente — un déploiement
-  // qui ne s'est pas prononcé continue de faire ce qu'il faisait.
+  // Fermée par défaut : un déploiement qui ne s'est pas prononcé continue de
+  // faire ce qu'il faisait.
   //
-  // Elle traverse pour la même raison aussi : sans elle ici, la poser dans
-  // Cloudflare ne l'ouvrirait pas. Le Worker la recevrait, le container jamais,
+  // Elle doit TRAVERSER : sans elle ici, la poser dans Cloudflare ne
+  // l'ouvrirait pas. Le Worker la recevrait, le container jamais,
   // et RIEN ne le dirait — c'est le mode de panne que ce test existe pour
   // fermer.
   "B2B_DELIVERY_INBOX",
-  // Les faits du catalogue (lot 2a du catalogue synchronisé) : chaque écriture
-  // d'une fiche part vers la plateforme, et le push cesse d'écrire les
-  // articles. FERMÉS par défaut — les rails se déploient sans rien changer de
-  // servi. Elle traverse pour la même raison que les deux précédentes.
-  // OUVERTE en production le 2026-10-16, après la bascule d'audience (0 fiche
-  // désactivée) ; relue par une révision neuve, comme les opérations.
-  "CATALOG_FACTS_ENABLED",
-  // L'écriture des opérations datées au commerce (lot 1 de
-  // `plan-l-operation-passe-au-commerce.md`) : FERMÉE par défaut, l'agrégat et
-  // ses routes se déploient sans rien changer de servi. Elle traverse pour la
-  // même raison que les précédentes. OUVERTE en production le 2026-10-16 ;
-  // un `workflow_dispatch` sur le même commit ne l'avait pas fait relire
-  // (constaté à l'écran ce jour-là) : il a fallu une révision neuve.
-  "OPERATIONS_AT_COMMERCE",
   // 🔴 La clé du coffre de champs, qui scelle les IBAN de nos clients au repos.
   //
   // Sans elle dans cette liste, le container ne la recevrait JAMAIS — et comme
@@ -181,8 +161,8 @@ function pickEnv(env: Env): Record<string, string> {
     }
   }
   // Les NOMS reçus, jamais les valeurs : ce que le container a vraiment eu au
-  // démarrage. Ajouté le 2026-10-17 : `CATALOG_FACTS_ENABLED`, posé et téléversé
-  // à 17 h 03 la veille, n'était pas vu par l'instance créée à 17 h 03 min 58 —
+  // démarrage. Ajouté le 2026-10-17 : un interrupteur (retiré depuis), posé et
+  // téléversé à 17 h 03 la veille, n'était pas vu par l'instance créée à 17 h 03 min 58 —
   // sans cette trace, rien ne disait ce que l'objet avait passé.
   out["LFD_RUNTIME_KEYS"] = Object.keys(out).sort().join(",");
   return out;

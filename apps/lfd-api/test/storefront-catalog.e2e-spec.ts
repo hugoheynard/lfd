@@ -14,8 +14,9 @@ import {
   type SyncOperation,
 } from "@lfd/catalog-sync";
 
-import { B2bCatalogDriver } from "../src/pim/channels/b2b-platform/products/driver.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import { deliverAsFacts } from "./catalog-facts-delivery.js";
+import { prepareAtCommerce } from "./operations-at-commerce-seed.js";
 import {
   bootstrapE2e,
   daysAgo,
@@ -46,10 +47,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
-  await ctx.app.get(B2bCatalogDriver).send(snapshot(), {
-    revisionId: "rev_e2e",
-    fingerprint: "empreinte-e2e",
-  });
+  await deliverAsFacts(ctx, snapshot());
 });
 
 function product(id: string, sku: string, name: string): CatalogSnapshot["products"][number] {
@@ -184,11 +182,8 @@ describe("GET /admin/storefront/catalog", () => {
     expect(view.items).toContainEqual(expect.objectContaining({ sku: "VIE-001", served: true }));
   });
 
-  it("propose le rayon op:<key> d'une opération reçue, et l'opération comme cible d'annonce", async () => {
-    await ctx.app.get(B2bCatalogDriver).send(snapshot([NOEL]), {
-      revisionId: "rev_e2e_op",
-      fingerprint: "empreinte-e2e-op",
-    });
+  it("propose le rayon op:<key> d'une opération du commerce, et l'opération comme cible d'annonce", async () => {
+    await prepareAtCommerce(ctx, NOEL);
     const sub = await person("communication");
 
     const view = jsonBody<StorefrontCatalogView>(await ctx.asSub(sub).get(ROUTE).expect(200));

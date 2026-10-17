@@ -56,15 +56,7 @@ async function render(
 }
 
 describe('CommerceOperationsPage', () => {
-  it("dit l'interrupteur fermé en callout, pas en erreur", async () => {
-    const root = await render(async () => {
-      throw { status: 409, error: { code: 'operations.not_at_commerce', message: '…' } };
-    });
-    expect(root.querySelector('fold-callout')?.textContent).toContain('OPERATIONS_AT_COMMERCE');
-    expect(root.textContent).not.toContain('Impossible de charger');
-  });
-
-  it('une autre panne se dit en alerte, avec Réessayer', async () => {
+  it('une panne se dit en alerte, avec Réessayer', async () => {
     const root = await render(async () => {
       throw new Error('réseau');
     });
@@ -97,18 +89,17 @@ describe('CommerceOperationsPage', () => {
     expect(root.textContent).toContain('Les produits arrivent bientôt');
   });
 
-  it('Préparer reste visible mais fermé quand l’interrupteur est fermé', async () => {
+  it('Préparer reste visible mais fermé tant que la liste ne se lit pas', async () => {
     const root = await render(async () => {
-      throw { status: 409, error: { code: 'operations.not_at_commerce', message: '…' } };
+      throw new Error('réseau');
     }, ['lfc_operations:read', 'lfc_operations:write']);
     const prepare = [...root.querySelectorAll('button')].find((button) =>
       button.textContent?.includes('Préparer une opération'),
     );
     expect(prepare?.disabled).toBe(true);
-    expect(root.querySelector('fold-callout')?.textContent).toContain('en préparer');
   });
 
-  it('Préparer est ouvert une fois les opérations au commerce, et absent sans droit', async () => {
+  it('Préparer est ouvert une fois la liste lue, et absent sans droit', async () => {
     const writer = await render(async () => [], ['lfc_operations:read', 'lfc_operations:write']);
     const prepare = [...writer.querySelectorAll('button')].find((button) =>
       button.textContent?.includes('Préparer une opération'),

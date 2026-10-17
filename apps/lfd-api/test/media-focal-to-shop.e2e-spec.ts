@@ -12,8 +12,9 @@ import request from "supertest";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { MediaStore } from "../src/platform/storage/media-store.js";
-import { B2bCatalogDriver } from "../src/pim/channels/b2b-platform/products/driver.js";
 import { snapshotOf } from "./catalog-ingest-fixtures.js";
+import { deliverAsFacts } from "./catalog-facts-delivery.js";
+import { anActiveFiche, relayAll } from "./catalog-facts-scene.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { InMemoryMediaStore } from "./in-memory-media-store.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
@@ -66,28 +67,18 @@ async function deposit(): Promise<string> {
   return jsonBody<{ url: string }>(response).url;
 }
 
-/** Une fiche du référentiel, et le commerce qui la connaît sous le même identifiant. */
+/**
+ * Une fiche ACTIVE du référentiel, que le commerce a reçue par son fait et
+ * que le staff a relue — depuis X1 (2026-10-17), le seul chemin.
+ */
 async function aProductKnownToCommerce(): Promise<string> {
-  const category = await staff()
-    .post("/pim/catalogue/categories")
-    .send({ name: { fr: "Viennoiseries" } });
-  const product = await staff()
-    .post("/pim/catalogue/products")
-    .send({
-      name: { fr: "Croissant" },
-      kind: "daily",
-      categoryId: jsonBody<{ id: string }>(category).id,
-    });
-  const productId = jsonBody<{ id: string }>(product).id;
-  const snapshot = snapshotOf([{ sku: "VIE-001", priceMillicents: 140_000 }]);
-  await ctx.app.get(B2bCatalogDriver).send(
-    {
-      ...snapshot,
-      products: snapshot.products.map((item) => ({ ...item, id: productId })),
-    },
-    { revisionId: "rev_focal", fingerprint: "empreinte-focal" },
-  );
-  return productId;
+  const fiche = await anActiveFiche(staff, "Croissant");
+  await relayAll(ctx);
+  await staff()
+    .post("/admin/catalog/review/approve")
+    .send({ skus: [fiche.variantSku], audiences: ["pro", "public"] })
+    .expect(204);
+  return fiche.id;
 }
 
 /** Livre tout ce qui attend dans la boîte d'envoi — y compris les faits en cascade. */
@@ -131,14 +122,14 @@ describe("le point focal voyage jusqu'à la vitrine", () => {
     expect((await catalogue()).items[0]?.thumbnail?.focal).toEqual({ x: 0.2, y: 0.7 });
   });
 
-  it("un push porte le point focal, et son absence se lit « au centre »", async () => {
+  it("un fait de fiche porte le point focal, et son absence se lit « au centre »", async () => {
     const SHOT = { url: "https://media.example/c.jpg", alt: "Croissant", width: 800, height: 600 };
-    await ctx.app.get(B2bCatalogDriver).send(
+    await deliverAsFacts(
+      ctx,
       snapshotOf([
         { sku: "VIE-001", priceMillicents: 140_000, image: { ...SHOT, focal: { x: 0.1, y: 0.9 } } },
         { sku: "VIE-002", priceMillicents: 140_000, image: SHOT },
       ]),
-      { revisionId: "rev_push", fingerprint: "empreinte-push" },
     );
 
     const items = (await catalogue()).items;

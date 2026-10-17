@@ -15,7 +15,6 @@ import { RefocusOperationImageCommand } from "../refocus-operation-image.command
 import { RefocusOperationImageHandler } from "../refocus-operation-image.handler.js";
 import {
   FixedImageLibrary,
-  FixedWritingSwitch,
   InMemoryOperations,
   libraryImage,
   noel,
@@ -33,17 +32,11 @@ class SilentJournal extends ScopedJournal<string> {
 }
 const TICKET = new SilentJournal().untraced("remplacement tracé par la médiathèque");
 
-function scene(seed = [preparedNoel()], open = true) {
+function scene(seed = [preparedNoel()]) {
   const operations = new InMemoryOperations(seed);
   const events = new RecordingPublisher();
   const library = new FixedImageLibrary([libraryImage(A, { x: 0.2, y: 0.8 }), libraryImage(B)]);
-  const ports = [
-    operations,
-    new FixedWritingSwitch(open),
-    new FixedClock(NOW),
-    events,
-    new DirectUnitOfWork(),
-  ] as const;
+  const ports = [operations, new FixedClock(NOW), events, new DirectUnitOfWork()] as const;
   return { operations, events, library, ports };
 }
 
@@ -165,9 +158,9 @@ describe("RepointOperationImage — la médiathèque remplace une image", () => 
 describe("RefocusOperationImageHandler — le point focal suit", () => {
   it("recadre les opérations qui montrent l'image, sans changer leur auteur", async () => {
     const { operations, ports } = scene([preparedNoel({ image: { url: A } })]);
-    const [repository, writing, , , uow] = ports;
+    const [repository, , , uow] = ports;
 
-    const count = await new RefocusOperationImageHandler(repository, writing, uow).execute(
+    const count = await new RefocusOperationImageHandler(repository, uow).execute(
       new RefocusOperationImageCommand(A, { x: 0.5, y: 0.1 }),
     );
 
@@ -180,23 +173,10 @@ describe("RefocusOperationImageHandler — le point focal suit", () => {
 
   it("n'écrit rien quand le point ne change pas", async () => {
     const { operations, ports } = scene([preparedNoel({ image: { url: A } })]);
-    const [repository, writing, , , uow] = ports;
+    const [repository, , , uow] = ports;
 
-    const count = await new RefocusOperationImageHandler(repository, writing, uow).execute(
+    const count = await new RefocusOperationImageHandler(repository, uow).execute(
       new RefocusOperationImageCommand(A, null),
-    );
-
-    expect(count).toBe(0);
-    expect(operations.saves).toBe(0);
-  });
-
-  /** Fermé, c'est `pim.operation_image_changed` qui porte le point : un abonné durable ne doit pas lever. */
-  it("interrupteur fermé : ne fait rien et rend 0, sans lever", async () => {
-    const { operations, ports } = scene([preparedNoel({ image: { url: A } })], false);
-    const [repository, writing, , , uow] = ports;
-
-    const count = await new RefocusOperationImageHandler(repository, writing, uow).execute(
-      new RefocusOperationImageCommand(A, { x: 0.5, y: 0.1 }),
     );
 
     expect(count).toBe(0);
@@ -207,9 +187,9 @@ describe("RefocusOperationImageHandler — le point focal suit", () => {
     const archived = preparedNoel({ image: { url: A } });
     archived.archive({ by: "s", at: NOW });
     const { operations, ports } = scene([archived]);
-    const [repository, writing, , , uow] = ports;
+    const [repository, , , uow] = ports;
 
-    const count = await new RefocusOperationImageHandler(repository, writing, uow).execute(
+    const count = await new RefocusOperationImageHandler(repository, uow).execute(
       new RefocusOperationImageCommand(A, { x: 0.5, y: 0.1 }),
     );
 

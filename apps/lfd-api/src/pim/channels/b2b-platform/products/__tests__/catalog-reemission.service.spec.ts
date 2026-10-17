@@ -1,4 +1,3 @@
-import { AppConfig } from "../../../../../platform/config/app-config.js";
 import { UnitOfWork } from "../../../../../platform/database/unit-of-work.js";
 import type { ProductRecord } from "../../../../catalogue/product/domain/ports/product.repository.js";
 import { tarte } from "../../../../catalogue/product/application/__tests__/audience-doubles.js";
@@ -14,18 +13,6 @@ import { B2bCatalogReemission } from "../catalog-reemission.service.js";
  * Réémettre (C3, 2a6) : une transaction par fiche, les familles d'abord, et
  * une fiche en échec n'arrête pas les autres.
  */
-
-class Switches extends AppConfig {
-  constructor(private readonly open: boolean) {
-    super();
-  }
-  override catalogFactsEnabled(): boolean {
-    return this.open;
-  }
-  override publicationEnabled(): boolean {
-    return true;
-  }
-}
 
 /** Chaque `run` est une transaction : le test compte ce qui s'émet DANS chacune. */
 class CountingUnitOfWork extends UnitOfWork {
@@ -97,10 +84,9 @@ class TableFacts extends CatalogFactsReader {
   }
 }
 
-function setup(open: boolean, failing: readonly string[] = []) {
+function setup(failing: readonly string[] = []) {
   const uow = new CountingUnitOfWork();
   const reemission = new B2bCatalogReemission(
-    new Switches(open),
     new TableFacts(["p_1", "p_2", "p_3"], ["cat_1", "cat_2"]),
     new TracingEmitter(uow, new Set(failing)),
     uow,
@@ -110,18 +96,8 @@ function setup(open: boolean, failing: readonly string[] = []) {
 }
 
 describe("B2bCatalogReemission", () => {
-  it("ne fait rien, pas même lire la liste, quand les faits sont fermés", async () => {
-    const { uow, reemission } = setup(false);
-
-    await reemission.productsOfCategories(["cat_1"]);
-    const report = await reemission.everything();
-
-    expect(uow.transactions).toEqual([]);
-    expect(report).toEqual({ categories: 0, products: 0, failedProducts: [] });
-  });
-
   it("réémet les fiches d'une famille, une transaction chacune", async () => {
-    const { uow, reemission } = setup(true);
+    const { uow, reemission } = setup();
 
     await reemission.productsOfCategories(["cat_1"]);
 
@@ -129,7 +105,7 @@ describe("B2bCatalogReemission", () => {
   });
 
   it("émet tout : les familles d'abord, puis chaque fiche, puis les règles", async () => {
-    const { uow, reemission } = setup(true);
+    const { uow, reemission } = setup();
 
     const report = await reemission.everything();
 
@@ -148,7 +124,7 @@ describe("B2bCatalogReemission", () => {
 
   /** Le geste qui a demandé la réémission est déjà validé : lever le ferait rejouer. */
   it("nomme la fiche en échec et continue avec les suivantes", async () => {
-    const { uow, reemission } = setup(true, ["p_2"]);
+    const { uow, reemission } = setup(["p_2"]);
 
     const report = await reemission.everything();
 

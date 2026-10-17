@@ -36,11 +36,12 @@ const override = (
 });
 
 async function view(
-  operation: ReceivedOperation,
+  operation: Omit<ReceivedOperation, "held">,
   staff: FixedStaffAuthorDirectory = new FixedStaffAuthorDirectory(),
 ) {
   const [first] = await new ListReceivedOperationsHandler(
-    new FixedReceived([operation]),
+    // Une copie que le commerce n'a pas encore écrite : la surcharge s'y applique.
+    new FixedReceived([{ ...operation, held: { hidden: false, writtenAt: null } }]),
     staff,
   ).execute();
   return first;

@@ -10,12 +10,7 @@ import { readMigration, reportOf } from "../migration/migration-sources.js";
 import { PreviewOperationsMigrationQuery } from "./preview-operations-migration.query.js";
 
 /**
- * **Ce que la migration écrirait** — à relire AVANT d'ouvrir l'interrupteur
- * (runbook, « Bascule des opérations »), et à relire encore après : c'est le
- * même relevé que l'application rend.
- *
- * Utilisable interrupteur fermé : c'est l'aperçu que Hugo relit avant de
- * poser `OPERATIONS_AT_COMMERCE=true`. L'APPLICATION, elle, exige l'ouverture.
+ * **Ce que la migration écrirait** — le même relevé que l'application rend.
  */
 @QueryHandler(PreviewOperationsMigrationQuery)
 export class PreviewOperationsMigrationHandler implements IQueryHandler<

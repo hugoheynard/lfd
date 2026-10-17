@@ -14,8 +14,8 @@ import type { PendingDeliveryView } from "@lfd/contracts";
 
 import { CatalogDelivery } from "../src/b2b/catalog/domain/entities/catalog-delivery.js";
 import { CatalogDeliveryRepository } from "../src/b2b/catalog/domain/ports/catalog-delivery.repository.js";
-import { B2bCatalogDriver } from "../src/pim/channels/b2b-platform/products/driver.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import { deliverAsFacts } from "./catalog-facts-delivery.js";
 import {
   bootstrapE2e,
   daysAgo,
@@ -109,10 +109,7 @@ function snapshot(skus: readonly string[]): CatalogSnapshot {
 
 /** Met le miroir dans un état connu, par le chemin direct du référentiel. */
 async function sell(delivered: CatalogSnapshot): Promise<void> {
-  await ctx.app.get(B2bCatalogDriver).send(delivered, {
-    revisionId: "rev_seed",
-    fingerprint: "empreinte-seed",
-  });
+  await deliverAsFacts(ctx, delivered);
 }
 
 /** Dépose une arrivée par le port — le drapeau de la boîte n'est pas ouvert en test. */

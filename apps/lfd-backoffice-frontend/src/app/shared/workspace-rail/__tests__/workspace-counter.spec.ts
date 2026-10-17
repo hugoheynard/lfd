@@ -5,7 +5,6 @@ import { describe, expect, it } from 'vitest';
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { CustomerRequestsInbox } from '../../../b2b/demandes/customer-requests-inbox.store';
 import { CustomerRequestsService } from '../../../b2b/demandes/customer-requests.service';
-import { PimCapabilitiesStore } from '../../../pim/capabilities/pim-capabilities.store';
 import { WorkspaceCatalogue } from '../workspaces';
 
 /**
@@ -29,7 +28,6 @@ function configure(): void {
             p === 'b2b_contact:read' || p === 'b2b_settings:read' || p === 'lfc_catalog:read',
         },
       },
-      { provide: PimCapabilitiesStore, useValue: { publication: () => true } },
       { provide: CustomerRequestsService, useValue: {} },
     ],
   });

@@ -1,6 +1,5 @@
 import type { OrderTimeLimitView } from "@lfd/pim-contracts";
 
-import { AppConfig } from "../../../../../platform/config/app-config.js";
 import {
   TransactionalDurablePublisher,
   TransactionalUnitOfWork,
@@ -16,24 +15,11 @@ import { B2bCatalogRulesEmitter } from "../catalog-rules.emitter.js";
 import { PublicationSequence } from "../publication-sequence.js";
 
 /**
- * L'émetteur des règles globales (lot 2b, C3) : fermé il ne fait rien ;
- * ouvert, il verrouille, tire un numéro, RELIT l'échelle et l'écrit dans la
+ * L'émetteur des règles globales (lot 2b, C3) : il verrouille, tire un numéro, RELIT l'échelle et l'écrit dans la
  * boîte d'envoi de la transaction — sans l'identifiant ni le nom des règles.
  */
 
 const NOW = new Date(Date.UTC(2030, 0, 1, 9));
-
-class Switches extends AppConfig {
-  constructor(private readonly open: boolean) {
-    super();
-  }
-  override catalogFactsEnabled(): boolean {
-    return this.open;
-  }
-  override publicationEnabled(): boolean {
-    return true;
-  }
-}
 
 class RecordingSequence extends PublicationSequence {
   readonly calls: string[] = [];
@@ -81,11 +67,10 @@ class TableLimits extends OrderTimeLimitRepository {
   }
 }
 
-function setup(open: boolean) {
+function setup() {
   const uow = new TransactionalUnitOfWork();
   const sequence = new RecordingSequence();
   const emitter = new B2bCatalogRulesEmitter(
-    new Switches(open),
     sequence,
     new TableLimits(sequence),
     new TransactionalDurablePublisher(uow),
@@ -95,17 +80,8 @@ function setup(open: boolean) {
 }
 
 describe("B2bCatalogRulesEmitter", () => {
-  it("ne verrouille ni ne lit rien quand les faits sont fermés", async () => {
-    const { uow, sequence, emitter } = setup(false);
-
-    await uow.run(() => emitter.emitRules());
-
-    expect(sequence.calls).toEqual([]);
-    expect(uow.committed).toEqual([]);
-  });
-
   it("verrouille, tire le numéro, PUIS relit l'échelle", async () => {
-    const { uow, sequence, emitter } = setup(true);
+    const { uow, sequence, emitter } = setup();
 
     await uow.run(() => emitter.emitRules());
 

@@ -6,9 +6,12 @@
 > instantané, prix décidé sur la plateforme, publication par canal (liste en
 > fin de document).
 >
-> **Bâti et commité** : lots 1, 2a, 2b (sauf 2b4), 3, P, S, D du plan qui fait
+> **Bâti et commité** : lots 1, 2a, 2b, 3, P, S, D du plan qui fait
 > foi, [`plan-catalogue-synchronise-par-audience.md`](plan-catalogue-synchronise-par-audience.md).
-> **Pas bâti** : W, 4, 5, et 2b4 — l'ouverture en production (§9).
+> 2b4 — l'ouverture en production — fait les 2026-10-16/17 ; les
+> interrupteurs sont retirés du code par X1 de
+> [`plan-sans-interrupteurs.md`](plan-sans-interrupteurs.md) (§6).
+> **Pas bâti** : W, 4, 5 (§9).
 
 ## En une phrase
 
@@ -16,8 +19,7 @@ Chaque écriture du catalogue dans le référentiel écrit, **dans sa propre
 transaction**, l'instantané complet de la fiche (ou de la famille) dans la
 boîte d'envoi ; la plateforme s'y abonne par un `@DurableHandler` et ne
 l'applique que s'il est **plus récent** que ce qu'elle tient. Personne ne
-pousse plus rien — quand l'interrupteur `CATALOG_FACTS_ENABLED` est ouvert.
-Fermé (le défaut), c'est encore le push qui tourne (§6).
+pousse plus rien : le push existe encore, mais n'écrit plus rien (§6).
 
 ## 1. Le flux d'une écriture de fiche
 
@@ -388,55 +390,30 @@ expliquent des garde-fous encore en place (vérifié ce jour-là) :
   `Product.activate` refuse déjà une fiche sans allergènes déclarés (ci-dessus).
   L'ordre de saisie des déclarations manquantes est une décision commerciale.
 
-## 6. Les interrupteurs
+## 6. Plus d'interrupteur
 
-Deux variables, **fermées par défaut**, et il faut les deux pour émettre :
+`PIM_PUBLICATION_ENABLED`, `CATALOG_FACTS_ENABLED` et `OPERATIONS_AT_COMMERCE`
+ont été ouverts en production les 2026-10-16/17, puis **retirés du code** le
+2026-10-17 (X1 de [`plan-sans-interrupteurs.md`](plan-sans-interrupteurs.md)) :
+le code suit toujours le chemin ouvert. L'émetteur, la réémission et la
+bascule d'audience émettent toujours ; plus aucun geste ne répond
+`catalogue.publication.closed` ni `catalogue.facts.closed`. Le retour arrière
+n'est plus un réglage : c'est un revert et un redéploiement.
 
-| Variable                  | Lecture                                                   | Fermée                                                                                                                                                                                       |
-| ------------------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `PIM_PUBLICATION_ENABLED` | `apps/lfd-api/src/platform/config/env-readers.ts:487-489` | tout **geste de publication** refuse (`PublicationClosedError`, `apps/lfd-api/src/pim/publication/publication-switch.ts:9`) : push, réémission, bascule d'audience ; et aucun fait ne s'émet |
-| `CATALOG_FACTS_ENABLED`   | `env-readers.ts:502-504`                                  | aucun fait fiche, famille ni règles ne s'écrit ; le push reste le seul écrivain des articles                                                                                                 |
+**Jamais deux écrivains.** L'ingestion d'un push n'écrit plus rien — ni fiche,
+ni famille, ni opération : elle rend un compte-rendu vide
+(`apps/lfd-api/src/b2b/catalog/application/ingest-catalog.service.ts`). La
+raison : le push envoie un instantané complet sans numéro et **retire tout ce
+qui n'y figure pas** — il effacerait les fiches inactives que les faits posent,
+et les opérations nées au commerce.
 
-```mermaid
-stateDiagram-v2
-    direction LR
-    state "Publication fermée" as Pf
-    state "Publication ouverte, faits fermés" as Push
-    state "Publication et faits ouverts" as Faits
-    [*] --> Pf
-    Pf --> Push : PIM_PUBLICATION_ENABLED=true
-    Push --> Faits : CATALOG_FACTS_ENABLED=true puis réémettre tout (2b4)
-    Faits --> Push : redéployer faits fermés
-    note right of Pf
-        rien ne sort, aucun verrou pris
-    end note
-    note right of Push
-        le push écrit fiches, familles, opérations
-        par la réception et sa validation
-    end note
-    note right of Faits
-        les faits écrivent fiches, familles, règles
-        le push ne porte plus que les opérations
-    end note
-```
+### Le push — l'ancien chemin, encore là sans effet
 
-**Jamais deux écrivains à la fois.** Faits ouverts, l'ingestion d'un push
-n'écrit plus ni fiche ni famille : elle rend un compte-rendu vide et n'applique
-que les opérations (`apps/lfd-api/src/b2b/catalog/application/ingest-catalog.service.ts:67-80`).
-La raison : le push envoie un instantané complet sans numéro et **retire tout
-ce qui n'y figure pas** — il effacerait les fiches inactives que les faits
-posent.
-
-### Le push — l'ancien chemin, encore servi faits fermés
-
-Faits fermés, le catalogue arrive comme avant : `POST /pim/channels/b2b/push`
-(`apps/lfd-api/src/pim/channels/b2b-platform/products/push.controller.ts:65-70`)
-projette les fiches **publiées**, l'arrivée attend dans la boîte de réception
-de la plateforme, et un humain l'accepte
-(`POST admin/catalog/delivery/accept`, `apps/lfd-api/src/b2b/catalog/http/admin-catalog-delivery.controller.ts:53`),
-ce qui l'applique par les agrégats (`ingest-catalog.service.ts:82-130`). Ce
-cycle — révisions, empreinte, réception, versions, santé — est décrit au
-§6 bis ; il disparaîtra au lot 5.
+`POST /pim/channels/b2b/push` projette toujours les fiches publiées, et une
+arrivée s'accepte toujours (`POST admin/catalog/delivery/accept`) ; accepter
+n'applique plus rien. Le cycle — révisions, empreinte, réception, versions,
+santé — est décrit au §6 bis ; il part avec X2 de
+[`plan-sans-interrupteurs.md`](plan-sans-interrupteurs.md).
 
 Le port `B2bCatalogDriver`, déclaré par le référentiel et implémenté par la
 plateforme, a survécu au rapprochement des deux processus : il coûte une
@@ -444,17 +421,7 @@ indirection, et achète le droit de les re-séparer sans réécrire ni l'émette
 ni le récepteur. Les faits gardent la même forme de frontière — déclarés dans
 le canal, écoutés par le commerce.
 
-### 🔴 Ouvrir un interrupteur demande une révision neuve
-
-Poser la variable et relancer le déploiement sur le même commit **ne change
-rien** (constaté le 2026-09-23) : le conteneur fige ses variables à la
-construction, un cron le tient éveillé donc il ne se reconstruit jamais seul,
-et l'attente du déploiement compare la révision du code, satisfaite du premier
-coup sur le même commit. Un changement de variable voyage avec un **commit**
-qui touche `apps/lfd-api/**` ou `packages/**` — sinon le filtre de chemins ne
-déclenche pas le déploiement de l'API, et il faut un `workflow_dispatch`.
-
-## 6 bis. Tant que les faits sont fermés
+## 6 bis. L'ancien chemin, tant qu'il est dans le code
 
 Repris le 2026-10-16 de « Le cycle du catalogue — du référentiel à la vente »
 (retiré ce jour-là), en ne gardant que ce que le code tient encore ; chaque
@@ -505,11 +472,10 @@ déploiement ; fermé, la table n'a aucun lecteur.
 - **L'ordre de la validation** : clore d'abord (`where status = 'pending'`, le
   verrou), appliquer, puis photographier le miroir **relu** en version — les
   trois dans une transaction.
-- **L'ingestion voit les retirés** (`loadAllIncludingWithdrawn`,
-  `apps/lfd-api/src/b2b/catalog/application/ingest-catalog.service.ts:101`),
-  seule échappatoire de `lint:withdrawn-filter` : un SKU réintroduit doit être
-  reconnu, sans quoi sa décision locale serait perdue. Un `upsert` filtré par
-  `STILL_SOLD` ferait tomber le push (la clé primaire refuse la création).
+- **L'ingestion voyait les retirés** (`loadAllIncludingWithdrawn`) : un SKU
+  réintroduit devait être reconnu, sans quoi sa décision locale aurait été
+  perdue. Sans objet depuis le 2026-10-17 : l'ingestion n'écrit plus rien
+  (X1 de [`plan-sans-interrupteurs.md`](plan-sans-interrupteurs.md)).
 
 ### Les versions, et ce qu'une commande fige
 
@@ -579,9 +545,6 @@ Ce mur-là repose sur la revue, et les JSDoc des deux côtés le disent.
 
 Tous décrits dans [`plan-catalogue-synchronise-par-audience.md`](plan-catalogue-synchronise-par-audience.md) :
 
-- **2b4 — l'ouverture en production.** `CATALOG_FACTS_ENABLED` n'y est pas
-  ouvert : la production sert encore le push. Le geste est de Hugo ; il
-  s'achève par « réémettre tout », qui remplit la plateforme ;
 - **lot W** — le webhook de la vitrine : notifier un tiers qu'un contenu a
   changé, puis le laisser relire `GET /shop/catalogue`. Rien n'existe ;
 - **lot 4** — émissions en lot (TVA, limites) et révisions automatiques.
@@ -590,8 +553,8 @@ Tous décrits dans [`plan-catalogue-synchronise-par-audience.md`](plan-catalogue
   canaux et du point de vente (encore là :
   `apps/lfd-api/src/pim/channels/b2b-platform/membership/membership.controller.ts`,
   `apps/lfd-api/src/pim/points-of-sale/points-of-sale.module.ts`), estampille
-  de commande par `seq`. Jusque-là, un retour arrière se fait en redéployant
-  faits fermés : le code du push est encore là.
+  de commande par `seq`. Il est repris par X2 à X5 de
+  [`plan-sans-interrupteurs.md`](plan-sans-interrupteurs.md).
 
 ## 10. Ce qui n'est pas vérifié
 

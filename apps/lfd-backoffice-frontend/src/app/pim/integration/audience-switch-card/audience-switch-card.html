@@ -10,9 +10,8 @@
       L'ordre du runbook : <strong>1.</strong> prendre une révision « avant la bascule » (écran
       <a routerLink="/pim/revisions">Révisions</a>) ; <strong>2.</strong> relire l'aperçu ci-dessous
       ; <strong>3.</strong> appliquer la bascule d'audience et garder la liste des fiches
-      désactivées ; <strong>4.</strong> passer la variable <code>CATALOG_FACTS_ENABLED</code> à
-      <code>true</code> et déployer une révision neuve de l'API ; <strong>5.</strong> réémettre
-      tout. « Réémettre » n'a d'effet que les faits ouverts.
+      désactivées ; <strong>4.</strong> réémettre tout. Les faits du catalogue sont toujours ouverts
+      depuis le 2026-10-17 : il n'y a plus de variable à poser.
     </fold-callout>
 
     <section class="step">
@@ -181,7 +180,7 @@
       @if (canReemit()) {
         <fold-inline-confirm
           intent="primary"
-          message="Réémet les familles, puis chaque fiche (une transaction chacune), puis les règles de limite de commande. Sans effet tant que les faits sont fermés."
+          message="Réémet les familles, puis chaque fiche (une transaction chacune), puis les règles de limite de commande."
           [loading]="reemitting() === 'all'"
           (confirmed)="reemitAll()"
         >

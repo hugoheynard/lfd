@@ -18,13 +18,8 @@ import { B2B_API_BASE } from '../api/api-config';
  * (`documentation/operations-datees/plan-l-operation-passe-au-commerce.md`,
  * lot 3), sous `lfc_operations`.
  *
- * Interrupteur `OPERATIONS_AT_COMMERCE` fermé, les lectures répondent 409
- * `operations.not_at_commerce` : c'est un état du déploiement, pas une panne,
- * et l'écran le dit comme tel. L'aperçu de la reprise, lui, se lit fermé.
- *
  * Les écritures (lot 3 bis, sous `lfc_operations:write`) : une section de
- * l'écran = un `PUT`, chacune rend la clé et l'écran relit. Fermées, elles
- * répondent 409 `operations.writing_closed`.
+ * l'écran = un `PUT`, chacune rend la clé et l'écran relit.
  */
 @Injectable({ providedIn: 'root' })
 export class CommerceOperationsService {

@@ -14,11 +14,9 @@ import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js"
  * Ce que le RÉFÉRENTIEL répond à la médiathèque : combien de ses fiches et de
  * ses familles affichent chacune de ces images.
  *
- * Ses opérations datées répondent à part depuis le 2026-10-15
- * (`PrismaOperationMediaCarriers`, lot 2 de
- * `documentation/operations-datees/plan-l-operation-passe-au-commerce.md`) :
- * la racine ne les compte plus une fois l'opération passée au commerce, sans
- * quoi une image resterait « employée » par une table que plus rien ne sert.
+ * Ses opérations datées ne répondent plus depuis le 2026-10-17 (X1 de
+ * `documentation/catalogue/plan-sans-interrupteurs.md`) : l'opération vit au
+ * commerce, et `pim.operation` est une table que plus rien ne sert.
  *
  * Le comptage se fait par `media_url` et non par l'identifiant d'actif : c'est
  * l'URL qui est l'identité d'une image, et c'est elle que la bibliothèque
@@ -186,8 +184,7 @@ export class PrismaMediaCarriers extends MediaCarriers {
  *
  * Le repli est l'identifiant et non une chaîne creuse : une ligne sans mot ne
  * se clique pas, et « (sans nom) » ne dit pas laquelle des trois c'est. Un
- * identifiant est laid mais il désigne. Partagé avec les opérations
- * (`PrismaOperationMediaCarriers`).
+ * identifiant est laid mais il désigne.
  *
  * ⚠️ En langue SOURCE, sans négociation : cette liste sert le staff du
  * back-office, pas un client. Y faire entrer une langue demanderait de la

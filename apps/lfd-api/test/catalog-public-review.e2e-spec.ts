@@ -14,13 +14,11 @@ import type { PublishedCatalogView } from "@lfd/contracts";
 
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { AppConfig } from "../src/platform/config/app-config.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { OutboxRelayTrigger } from "../src/platform/outbox/outbox-relay-trigger.js";
 import {
   aDraftFiche,
   anActiveFiche,
-  OpenCatalogFactsConfig,
   relayAll,
   SILENT_TRIGGER,
   type Fiche,
@@ -56,7 +54,6 @@ beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
-      { token: AppConfig, value: new OpenCatalogFactsConfig() },
       { token: OutboxRelayTrigger, value: SILENT_TRIGGER },
       { token: PaymentGateway, value: fakeGateway },
     ],

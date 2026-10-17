@@ -5,7 +5,6 @@ import type { FoldIconName } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { CustomerRequestsInbox } from '../../b2b/demandes/customer-requests-inbox.store';
-import { PimCapabilitiesStore } from '../../pim/capabilities/pim-capabilities.store';
 import { legalMentionLink, legalMentionMenuLabel } from '../../reglages/legal-mention-slugs';
 import { BRAND_PINK_TINT } from '../menu-tints';
 import type { WorkspaceRail, WorkspaceRailItem } from './workspace-rail.store';
@@ -18,14 +17,6 @@ export interface WorkspaceView extends WorkspaceRailItem {
    * dire exactement ce que la route laissera passer.
    */
   readonly needs?: StaffPermission | readonly StaffPermission[];
-  /**
-   * La vue n'existe que si le déploiement OUVRE la publication.
-   *
-   * Distinct de `needs`, et pas par symétrie : `needs` parle de la personne,
-   * ceci parle de l'installation. Une vue fermée par le drapeau l'est pour tout
-   * le monde, administrateur compris — il n'y a pas de droit qui la rouvre.
-   */
-  readonly needsPublication?: boolean;
   /**
    * La source du compte affiché sur l'entrée, par son nom. Un nom et non une
    * fonction : la table reste une donnée, et le catalogue, qui a l'injection,
@@ -532,7 +523,6 @@ export const PIM_VIEWS: readonly WorkspaceView[] = [
   // fait flotter sous des groupes titrés, ce qui se lit comme un oubli.
   {
     key: 'publication',
-    needsPublication: true,
     label: 'Publication',
     link: '/pim/publication',
     icon: 'publish',
@@ -540,7 +530,6 @@ export const PIM_VIEWS: readonly WorkspaceView[] = [
   },
   {
     key: 'integration',
-    needsPublication: true,
     label: 'Intégrations',
     link: '/pim/integration',
     icon: 'integrations',
@@ -968,7 +957,6 @@ export type WorkspaceKey = keyof typeof WORKSPACES;
 @Injectable({ providedIn: 'root' })
 export class WorkspaceCatalogue {
   private readonly permissions = inject(PermissionsStore);
-  private readonly capabilities = inject(PimCapabilitiesStore);
   private readonly requestsInbox = inject(CustomerRequestsInbox);
 
   /** Les vues d'un espace que la route laissera ouvrir. */
@@ -976,8 +964,7 @@ export class WorkspaceCatalogue {
     return computed(() =>
       WORKSPACES[key].views
         .filter((view) => this.grants(view.needs))
-        .filter((view) => view.needsPublication !== true || this.capabilities.publication())
-        .map(({ needs, needsPublication, counter, ...view }) => {
+        .map(({ needs, counter, ...view }) => {
           const count = counter === undefined ? null : this.count(counter);
           return count === null || count <= 0 ? view : { ...view, badge: count };
         }),

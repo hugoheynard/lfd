@@ -1,4 +1,3 @@
-import { AppConfig } from "../../../../../platform/config/app-config.js";
 import {
   TransactionalDurablePublisher,
   TransactionalUnitOfWork,
@@ -18,28 +17,12 @@ import { CatalogSnapshots } from "../catalog-snapshots.js";
 import { PublicationSequence } from "../publication-sequence.js";
 
 /**
- * L'émetteur (2a2, C4) : fermé il ne fait rien ; ouvert, il verrouille trié,
+ * L'émetteur (2a2, C4) : il verrouille trié,
  * relit APRÈS le verrou, tire un numéro par fait et écrit dans la boîte
  * d'envoi de la transaction.
  */
 
 const NOW = new Date(Date.UTC(2030, 0, 1, 9));
-
-/** La configuration réelle, aux deux interrupteurs près. */
-class Switches extends AppConfig {
-  constructor(
-    private readonly facts: boolean,
-    private readonly publication: boolean,
-  ) {
-    super();
-  }
-  override catalogFactsEnabled(): boolean {
-    return this.facts;
-  }
-  override publicationEnabled(): boolean {
-    return this.publication;
-  }
-}
 
 /** Le journal des appels, dans l'ordre : c'est l'ordre qui est le sujet. */
 class RecordingSequence extends PublicationSequence {
@@ -116,11 +99,10 @@ class TableSnapshots extends CatalogSnapshots {
   }
 }
 
-function setup(open: { facts: boolean; publication: boolean }, existing: readonly string[]) {
+function setup(existing: readonly string[]) {
   const uow = new TransactionalUnitOfWork();
   const sequence = new RecordingSequence(new Set(existing));
   const emitter = new B2bCatalogFactsEmitter(
-    new Switches(open.facts, open.publication),
     sequence,
     new TableSnapshots(sequence),
     new TransactionalDurablePublisher(uow),
@@ -129,24 +111,9 @@ function setup(open: { facts: boolean; publication: boolean }, existing: readonl
   return { uow, sequence, emitter };
 }
 
-const OPEN = { facts: true, publication: true };
-
 describe("B2bCatalogFactsEmitter", () => {
-  it.each([
-    ["faits fermés", { facts: false, publication: true }],
-    ["publication fermée", { facts: true, publication: false }],
-  ])("ne verrouille ni ne lit rien quand %s", async (_label, open) => {
-    const { uow, sequence, emitter } = setup(open, ["p1"]);
-
-    await uow.run(() => emitter.emitProducts(["p1"]));
-    await uow.run(() => emitter.emitCategories(["p1"]));
-
-    expect(sequence.calls).toEqual([]);
-    expect(uow.committed).toEqual([]);
-  });
-
   it("verrouille trié et sans doublon, relit, PUIS tire un numéro par fait", async () => {
-    const { uow, sequence, emitter } = setup(OPEN, ["p_a", "p_b"]);
+    const { uow, sequence, emitter } = setup(["p_a", "p_b"]);
 
     await uow.run(() => emitter.emitProducts(["p_b", "p_a", "p_b"]));
 
@@ -168,7 +135,7 @@ describe("B2bCatalogFactsEmitter", () => {
 
   /** Lot 3 : un fait resté dans la boîte avant le champ se lit encore — « on ne sait pas ». */
   it("relit un fait émis avant `audienceInherited` en le disant inconnu", async () => {
-    const { uow, emitter } = setup(OPEN, ["p_a"]);
+    const { uow, emitter } = setup(["p_a"]);
     await uow.run(() => emitter.emitProducts(["p_a"]));
     const { audienceInherited: _dropped, ...older } = uow.of(PIM_CATALOG_PRODUCT_CHANGED)[0]
       ?.payload ?? { audienceInherited: null };
@@ -177,7 +144,7 @@ describe("B2bCatalogFactsEmitter", () => {
   });
 
   it("ignore une fiche que le verrou ne trouve pas, sans tirer de numéro pour elle", async () => {
-    const { uow, sequence, emitter } = setup(OPEN, ["p_a"]);
+    const { uow, sequence, emitter } = setup(["p_a"]);
 
     await uow.run(() => emitter.emitProducts(["p_a", "p_gone"]));
 
@@ -186,7 +153,7 @@ describe("B2bCatalogFactsEmitter", () => {
   });
 
   it("émet une famille sous son propre numéro, avec sa forme de fil", async () => {
-    const { uow, emitter } = setup(OPEN, ["cat_1"]);
+    const { uow, emitter } = setup(["cat_1"]);
 
     await uow.run(() => emitter.emitCategories(["cat_1"]));
 
@@ -197,7 +164,7 @@ describe("B2bCatalogFactsEmitter", () => {
 
   /** Un fait sans transaction survivrait à une écriture annulée. */
   it("refuse d'émettre hors d'une unité de travail", async () => {
-    const { emitter } = setup(OPEN, ["p_a"]);
+    const { emitter } = setup(["p_a"]);
 
     await expect(emitter.emitProducts(["p_a"])).rejects.toThrow(RangeError);
   });

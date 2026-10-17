@@ -45,9 +45,7 @@ interface GapLine {
  * faisable à l'écran.
  *
  * L'écran ne décide rien : il lit l'aperçu, déclenche les deux gestes, et
- * affiche ce que le serveur rend — refus compris, mot pour mot. Les deux
- * gestes sont des gestes de publication : le serveur les refuse (409) quand la
- * publication est fermée, et la page entière est déjà derrière ce garde.
+ * affiche ce que le serveur rend — refus compris, mot pour mot.
  */
 @Component({
   selector: 'app-audience-switch-card',

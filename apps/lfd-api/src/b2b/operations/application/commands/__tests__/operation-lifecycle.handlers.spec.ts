@@ -8,20 +8,14 @@ import { ChangeOperationAudienceCommand } from "../change-operation-audience.com
 import { ChangeOperationAudienceHandler } from "../change-operation-audience.handler.js";
 import { SetOperationVisibilityCommand } from "../set-operation-visibility.command.js";
 import { SetOperationVisibilityHandler } from "../set-operation-visibility.handler.js";
-import { FixedWritingSwitch, InMemoryOperations, preparedNoel } from "./operation-doubles.js";
+import { InMemoryOperations, preparedNoel } from "./operation-doubles.js";
 
 const NOW = new Date("2026-10-15T09:00:00.000Z");
 
 function scene() {
   const operations = new InMemoryOperations([preparedNoel()]);
   const events = new RecordingPublisher();
-  const ports = [
-    operations,
-    new FixedWritingSwitch(true),
-    new FixedClock(NOW),
-    events,
-    new DirectUnitOfWork(),
-  ] as const;
+  const ports = [operations, new FixedClock(NOW), events, new DirectUnitOfWork()] as const;
   return { operations, events, ports };
 }
 

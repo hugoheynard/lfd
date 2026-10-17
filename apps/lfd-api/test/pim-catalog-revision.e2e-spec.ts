@@ -721,21 +721,9 @@ async function aDeliverableProduct(): Promise<{ id: string; variantId: string; s
  * rendrait possible sans qu'aucune porte ne le voie.
  */
 describe("GET /pim/channels/b2b/products/:id/delivery", () => {
-  it("dit la décision, l'envoi et l'acceptation — les trois dates", async () => {
-    const { id, sku } = await aDeliverableProduct();
-    await staff().post("/pim/channels/b2b/push").send({ dryRun: false }).expect(201);
-    await ctx.drain();
-
-    const frise = jsonBody<B2bProductDeliveryView>(
-      await staff().get(`/pim/channels/b2b/products/${id}/delivery`).expect(200),
-    );
-
-    expect(frise.publishedAt).not.toBeNull();
-    expect(frise.lastPushedAt).not.toBeNull();
-    expect(frise.variants).toHaveLength(1);
-    expect(frise.variants[0]).toMatchObject({ sku, accepted: true, awaitingSince: null });
-    expect(typeof frise.variants[0]?.factsReceivedAt).toBe("string");
-  });
+  // « La décision, l'envoi et l'acceptation » éprouvait un push ACCEPTÉ qui
+  // écrivait le miroir : depuis X1 (2026-10-17), l'ingestion n'écrit plus
+  // rien, et la frise du push part avec lui (X2).
 
   /**
    * 🔴 LE cas qui vaut la tranche. Publiée au canal, jamais poussée : la

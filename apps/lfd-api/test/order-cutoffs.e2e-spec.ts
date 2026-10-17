@@ -22,8 +22,7 @@ import {
   DeferredTerm,
 } from "../src/platform/database/client/client.js";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
-import { B2bCatalogDriver } from "../src/pim/channels/b2b-platform/products/driver.js";
-import { snapshotOf } from "./catalog-ingest-fixtures.js";
+import { anActiveFiche, relayAll } from "./catalog-facts-scene.js";
 import { bootstrapE2e, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
@@ -284,14 +283,6 @@ describe("le rattrapage, quand il est réglé", () => {
  * dérivation se fait ici — l'écrire à l'envers ferait chercher une ligne qui
  * n'existe pas, ce qui est exactement ce qui est arrivé en écrivant ce test.
  */
-/** Pousse un snapshot comme le référentiel le pousse — même port, même origine. */
-function push(body: Parameters<B2bCatalogDriver["send"]>[0]) {
-  return ctx.app.get(B2bCatalogDriver).send(body, {
-    revisionId: "rev_cutoffs",
-    fingerprint: "empreinte-cutoffs",
-  });
-}
-
 async function seedArticleLimit(
   orderSku: string,
   limit: { daysBefore: number; time: string; graceMinutes: number } | null,
@@ -317,32 +308,37 @@ describe("la limite portée par l'ARTICLE, reçue du référentiel", () => {
    * et c'est exactement là qu'une v7 se casse — un identifiant de déclinaison
    * qui ne correspond à rien, une règle rangée sous un rang qui ne vise pas.
    *
-   * Il pousse un catalogue à UN article, ce qui retire les autres : sans
-   * importance, ce cas ne commande que celui-là, et le harnais resème à chaque
-   * test.
+   * Depuis X1 (2026-10-17, `plan-sans-interrupteurs.md`), la règle et la
+   * fiche voyagent en FAITS, plus par le push : la règle est posée au
+   * référentiel, la fiche y est activée, et la boîte d'envoi les livre.
    */
-  it("refuse une commande à partir d'une règle poussée par le fil", async () => {
-    await push(
-      snapshotOf(
-        [{ sku: "VIE-001", priceMillicents: 200_000 }],
-        [
-          // Le rang global, celui qui ne vise personne en particulier : il doit
-          // atteindre un article qu'aucune règle ne nomme.
-          {
-            scope: { type: "global", id: null },
-            daysBefore: 60,
-            time: "23:59",
-            graceMinutes: null,
-          },
-        ],
-      ),
-    );
+  it("refuse une commande à partir d'une règle posée au référentiel", async () => {
+    // Le rang global, celui qui ne vise personne en particulier : il doit
+    // atteindre un article qu'aucune règle ne nomme. Quatorze jours, le plus
+    // long préavis que le référentiel accepte, pour une remise dans dix.
+    await ctx
+      .asSub(STAFF)
+      .put("/pim/order-time-limits")
+      .send({
+        scope: { type: "global", id: null },
+        daysBefore: 14,
+        time: "23:59",
+        graceMinutes: null,
+      })
+      .expect(200);
+    const fiche = await anActiveFiche(() => ctx.asSub(STAFF), "Croissant du fil");
+    await relayAll(ctx);
+    await ctx
+      .asSub(STAFF)
+      .post("/admin/catalog/review/approve")
+      .send({ skus: [fiche.variantSku], audiences: ["pro", "public"] })
+      .expect(204);
 
     const response = await ctx
       .asSub(MEMBER)
       .post("/orders")
       .send(
-        order({ requestedDeliveryDate: serviceDay(30), lines: [{ sku: "VIE-001", quantity: 1 }] }),
+        order({ requestedDeliveryDate: serviceDay(10), lines: [{ sku: fiche.sku, quantity: 1 }] }),
       )
       .expect(409);
 

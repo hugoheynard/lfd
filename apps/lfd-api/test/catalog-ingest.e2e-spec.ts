@@ -6,17 +6,16 @@
  * « table rase » les effacerait. C'est le piège de ce chantier, et il ne se voit
  * qu'avec les vraies clés étrangères.
  *
- * L'entrée n'est plus une route : le fil est passé par le port
- * `B2bCatalogDriver`, relié par la racine de composition. La suite l'appelle
- * donc comme le référentiel l'appelle. Ce qui a disparu avec le HTTP, ce sont
- * les deux tests de secret partagé — il n'y a plus de secret, plus de porte, et
- * plus rien à refuser : c'est le gain, pas un trou de couverture.
+ * L'entrée est le FAIT de fiche depuis X1 (2026-10-17,
+ * `plan-sans-interrupteurs.md`) : l'ingestion d'un push n'écrit plus rien, et
+ * le compte-rendu qu'elle rendait (compteurs, SKU retirés) n'a plus de sujet.
+ * Les mêmes propriétés tiennent sur le chemin des faits.
  */
 import { type CatalogSnapshot } from "@lfd/catalog-sync";
 
 import { CanonicalPriceHistoryReader } from "../src/b2b/catalog/domain/ports/canonical-price-history.reader.js";
-import { B2bCatalogDriver } from "../src/pim/channels/b2b-platform/products/driver.js";
 import { CATEGORY, snapshotOf } from "./catalog-ingest-fixtures.js";
+import { deliverAsFacts } from "./catalog-facts-delivery.js";
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
 
 let ctx: E2eContext;
@@ -40,26 +39,15 @@ beforeEach(async () => {
   await ctx.prisma.catalogCategory.deleteMany();
 });
 
-function push(body: CatalogSnapshot) {
-  // L'origine voyage avec le snapshot depuis que la plateforme peut le RECEVOIR
-  // au lieu de l'appliquer : elle a besoin de l'ancre et de l'empreinte, qu'elle
-  // ne peut pas aller lire chez le référentiel.
-  return ctx.app.get(B2bCatalogDriver).send(body, {
-    revisionId: "rev_e2e",
-    fingerprint: "empreinte-e2e",
-  });
+/** Le catalogue du référentiel, livré en faits : une fiche absente part « archivée ». */
+function push(body: CatalogSnapshot): Promise<void> {
+  return deliverAsFacts(ctx, body);
 }
 
 describe("le fil catalogue, côté plateforme", () => {
-  it("écrit le catalogue et rend des compteurs", async () => {
-    const report = await push(snapshotOf([{ sku: "VIE-001", priceMillicents: 200_000 }]));
+  it("écrit le catalogue", async () => {
+    await push(snapshotOf([{ sku: "VIE-001", priceMillicents: 200_000 }]));
 
-    expect(report).toMatchObject({
-      acceptedProducts: 1,
-      acceptedVariants: 1,
-      acceptedCategories: 1,
-      removedSkus: [],
-    });
     expect(await ctx.prisma.catalogItem.count()).toBe(1);
   });
 
@@ -97,7 +85,7 @@ describe("le fil catalogue, côté plateforme", () => {
     expect(item.override?.decidedBy).toBe("cecile");
   });
 
-  it("retire ce qui a disparu du snapshot, et le NOMME", async () => {
+  it("retire ce qui a disparu, sans supprimer la ligne", async () => {
     await push(
       snapshotOf([
         { sku: "VIE-001", priceMillicents: 200_000 },
@@ -105,9 +93,8 @@ describe("le fil catalogue, côté plateforme", () => {
       ]),
     );
 
-    const report = await push(snapshotOf([{ sku: "VIE-001", priceMillicents: 200_000 }]));
+    await push(snapshotOf([{ sku: "VIE-001", priceMillicents: 200_000 }]));
 
-    expect(report).toMatchObject({ removedSkus: ["VIE-002-1"] });
     // La LIGNE reste — le retrait marque. Ce qui disparaît, c'est la vente :
     // le catalogue vendable n'en compte plus qu'un.
     expect(await ctx.prisma.catalogItem.count()).toBe(2);

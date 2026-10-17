@@ -44,7 +44,7 @@ function report(patch: Partial<OperationsMigrationReport> = {}): OperationsMigra
   };
 }
 
-async function render(switchOpen: boolean, preview: OperationsMigrationReport) {
+async function render(preview: OperationsMigrationReport) {
   const applyMigration = vi.fn(async () => report({ counts: { ...preview.counts, toWrite: 0 } }));
   TestBed.configureTestingModule({
     imports: [OperationsMigrationCard],
@@ -56,29 +56,27 @@ async function render(switchOpen: boolean, preview: OperationsMigrationReport) {
     ],
   });
   const fixture = TestBed.createComponent(OperationsMigrationCard);
-  fixture.componentRef.setInput('switchOpen', switchOpen);
   await fixture.whenStable();
   fixture.detectChanges();
   return { fixture, root: fixture.nativeElement as HTMLElement, applyMigration };
 }
 
 describe('OperationsMigrationCard', () => {
-  it("se lit interrupteur fermé, sans offrir de l'appliquer", async () => {
-    const { root } = await render(false, report());
+  it('dit ce que la reprise écrirait, champ par champ', async () => {
+    const { root } = await render(report());
     expect(root.textContent).toContain('Sera reprise');
     expect(root.textContent).toContain('Clôture des commandes');
     expect(root.textContent).toContain('Le référentiel a changé depuis le dernier envoi');
-    expect(root.querySelector('fold-inline-confirm')).toBeNull();
   });
 
   it('ne propose rien quand une ligne est bloquée', async () => {
-    const { root } = await render(true, report({ blocked: true }));
+    const { root } = await render(report({ blocked: true }));
     expect(root.querySelector('fold-inline-confirm')).toBeNull();
     expect(root.textContent).toContain('la reprise refusera tout');
   });
 
-  it('interrupteur ouvert, applique après confirmation et montre le relevé après', async () => {
-    const { fixture, root, applyMigration } = await render(true, report());
+  it('applique après confirmation et montre le relevé après', async () => {
+    const { fixture, root, applyMigration } = await render(report());
     const applied = vi.fn();
     fixture.componentInstance.applied.subscribe(applied);
     expect(root.querySelector('fold-inline-confirm')).not.toBeNull();

@@ -25,10 +25,6 @@ export const REFOCUS_COMMERCE_OPERATION_IMAGES = "operations.refocus-images";
  *
  * 🔴 Ici, dans `appBootstrap/` : `b2b → media` est hors de la matrice. Durable
  * pour la raison de la vitrine (`lint:durable-cross-block`).
- *
- * ⚠️ Interrupteur `OPERATIONS_AT_COMMERCE` fermé, la commande ne fait rien et
- * rend 0 : c'est encore `pim.operation_image_changed` qui porte le point. Le
- * reçu s'écrit quand même — un abonné ne se branche pas selon la config.
  */
 @Injectable()
 @DurableHandler({ type: MEDIA_ASSET_DESCRIBED, subscriber: REFOCUS_COMMERCE_OPERATION_IMAGES })

@@ -12,7 +12,6 @@ import { randomUUID } from "node:crypto";
 
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { AppConfig } from "../src/platform/config/app-config.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { OutboxRelayTrigger } from "../src/platform/outbox/outbox-relay-trigger.js";
 import { B2bCatalogDriver } from "../src/pim/channels/b2b-platform/products/driver.js";
@@ -21,7 +20,6 @@ import {
   aDraftFiche,
   anActiveFiche,
   deliverDirectly,
-  OpenCatalogFactsConfig,
   productFactsOf,
   relayAll,
   SILENT_TRIGGER,
@@ -59,7 +57,6 @@ beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
-      { token: AppConfig, value: new OpenCatalogFactsConfig() },
       { token: OutboxRelayTrigger, value: SILENT_TRIGGER },
       { token: PaymentGateway, value: fakeGateway },
     ],

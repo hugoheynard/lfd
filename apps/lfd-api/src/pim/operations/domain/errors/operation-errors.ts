@@ -14,7 +14,7 @@ import {
  */
 
 /**
- * Les opérations sont passées au commerce (`OPERATIONS_AT_COMMERCE`, lot 3 de
+ * Les opérations sont passées au commerce (lot 3 de
  * `plan-l-operation-passe-au-commerce.md`) : le référentiel ne les écrit
  * plus. 409 — la demande est bien formée, c'est la bascule qui s'y oppose.
  */

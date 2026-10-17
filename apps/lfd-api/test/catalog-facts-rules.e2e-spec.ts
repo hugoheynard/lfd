@@ -10,15 +10,8 @@
  * étrangère en cascade emporterait ses articles.
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { AppConfig } from "../src/platform/config/app-config.js";
 import { OutboxRelayTrigger } from "../src/platform/outbox/outbox-relay-trigger.js";
-import {
-  aDraftFiche,
-  anActiveFiche,
-  OpenCatalogFactsConfig,
-  relayAll,
-  SILENT_TRIGGER,
-} from "./catalog-facts-scene.js";
+import { aDraftFiche, anActiveFiche, relayAll, SILENT_TRIGGER } from "./catalog-facts-scene.js";
 import { bootstrapE2e, E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
 
 const stubAdminVerifier = {
@@ -35,7 +28,6 @@ beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
-      { token: AppConfig, value: new OpenCatalogFactsConfig() },
       { token: OutboxRelayTrigger, value: SILENT_TRIGGER },
     ],
   });

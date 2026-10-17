@@ -3,7 +3,6 @@ import { lineTotalCents, ttcCentsOf } from "@lfd/money";
 import { Injectable } from "@nestjs/common";
 
 import { Pricer } from "../../pricing/application/pricer.js";
-import { AppConfig } from "../../../platform/config/app-config.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { CatalogOperationsReader } from "../domain/ports/catalog-operations.reader.js";
 import { CatalogReader } from "../domain/ports/catalog.reader.js";
@@ -80,7 +79,6 @@ export class ShopCataloguePricing {
     private readonly pricer: Pricer,
     private readonly operations: CatalogOperationsReader,
     private readonly clock: Clock,
-    private readonly config: AppConfig,
   ) {}
 
   /**
@@ -108,8 +106,6 @@ export class ShopCataloguePricing {
       operationOnlySkus,
       audience,
       now: this.clock.now(),
-      // Le rayon d'une opération paraît sur son seul encart après la bascule (lot 3).
-      operationsAtCommerce: this.config.operationsAtCommerce(),
     });
     if (catalogue.items.length === 0) {
       return catalogue;

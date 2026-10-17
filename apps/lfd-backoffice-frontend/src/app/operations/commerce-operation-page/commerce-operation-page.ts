@@ -31,7 +31,6 @@ import {
   badgeLabel,
   badgeOf,
   badgeVariant,
-  isNotAtCommerce,
   refusalOf,
 } from '../commerce-operation-format';
 import { CommerceOperationsService } from '../commerce-operations.service';
@@ -40,7 +39,7 @@ import { CommerceScheduleCard } from '../commerce-schedule-card/commerce-schedul
 import { CommerceSelectionCard } from '../commerce-selection-card/commerce-selection-card';
 import { formatInstant } from '../operation-schedule';
 
-type LoadState = 'loading' | 'error' | 'closed' | 'ready';
+type LoadState = 'loading' | 'error' | 'ready';
 
 /** Un geste de section qui n'a pas sa carte : clientèle, visibilité, archivage. */
 type Gesture = 'audience' | 'visibility' | 'archive';
@@ -133,10 +132,6 @@ export class CommerceOperationPage {
       this.show(await this.api.get(key));
       this.state.set('ready');
     } catch (error: unknown) {
-      if (isNotAtCommerce(error)) {
-        this.state.set('closed');
-        return;
-      }
       this.failure.set(refusalOf(error, "L'opération n'a pas pu être lue."));
       this.state.set('error');
     }

@@ -16,36 +16,6 @@ import {
  */
 
 /**
- * L'écriture des opérations au commerce est FERMÉE sur ce déploiement
- * (`OPERATIONS_AT_COMMERCE`). 409 : la demande est bien formée, c'est l'état
- * du déploiement qui s'y oppose — elle ouvre à la bascule (lot 3 du plan).
- */
-export class OperationWritingClosedError extends BusinessError {
-  constructor() {
-    super(
-      "operations.writing_closed",
-      "L'écriture des opérations au commerce ouvre à la bascule (OPERATIONS_AT_COMMERCE) : " +
-        "d'ici là, une opération se prépare au référentiel (« Opérations datées ») et se " +
-        "restreint à la réception du catalogue.",
-    );
-  }
-}
-
-/**
- * Les opérations ne sont pas encore au commerce sur ce déploiement : l'écran
- * qui les LIT ouvre avec l'écriture (`OPERATIONS_AT_COMMERCE`). 409.
- */
-export class OperationsNotAtCommerceError extends BusinessError {
-  constructor() {
-    super(
-      "operations.not_at_commerce",
-      "Les opérations sont encore tenues au référentiel (« Opérations datées ») sur ce " +
-        "déploiement : cet écran ouvre avec la bascule (OPERATIONS_AT_COMMERCE).",
-    );
-  }
-}
-
-/**
  * Une copie reçue du référentiel que la migration n'a pas encore reprise. 409 :
  * l'écrire d'abord ferait tomber la restriction de la réception, qu'elle
  * verse dans l'opération.

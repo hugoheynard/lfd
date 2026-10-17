@@ -7,7 +7,7 @@ import type {
   OperationMigrationFieldName,
   OperationMigrationOutcome,
 } from '@lfd/contracts';
-import { httpErrorCode, httpErrorMessage } from '@lfd/endpoints';
+import { httpErrorMessage } from '@lfd/endpoints';
 import type { FoldBadgeVariant, FoldSelectOption } from 'fold-ng';
 
 /**
@@ -15,14 +15,6 @@ import type { FoldBadgeVariant, FoldSelectOption } from 'fold-ng';
  * reprise depuis le référentiel. Rien n'est recalculé ici : l'état, ce que
  * verra le client et les avertissements viennent du serveur, à SON horloge.
  */
-
-/** Le refus qui dit « interrupteur fermé » — un état du déploiement, pas une panne. */
-export const NOT_AT_COMMERCE = 'operations.not_at_commerce';
-
-/** Le refus est-il celui de l'interrupteur fermé ? */
-export function isNotAtCommerce(error: unknown): boolean {
-  return httpErrorCode(error) === NOT_AT_COMMERCE;
-}
 
 /** `archived` passe avant l'état calculé : une archivée garde ses dates, pas sa vie. */
 export type CommerceOperationBadge = CommerceOperationState | 'archived';
@@ -142,9 +134,8 @@ export function explanationLabel(explanation: OperationMigrationExplanation): st
 /**
  * Un refus du serveur, TEL QUEL : les erreurs des opérations du commerce
  * nomment déjà le cas et le geste de sortie, en français
- * (`b2b/operations/domain/errors/operation-errors.ts`, lu le 2026-10-16) —
- * y compris l'interrupteur fermé (`operations.writing_closed`). Le repli ne
- * sert qu'à une panne sans enveloppe.
+ * (`b2b/operations/domain/errors/operation-errors.ts`, lu le 2026-10-16). Le
+ * repli ne sert qu'à une panne sans enveloppe.
  */
 export function refusalOf(error: unknown, fallback: string): string {
   return httpErrorMessage(error, fallback);

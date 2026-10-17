@@ -79,12 +79,12 @@ describe('AudienceSwitchCard', () => {
 
     void fixture.componentInstance.apply();
     expectOne(http, 'POST', 'audience-switch').flush(
-      { message: 'La publication est fermée sur ce déploiement.' },
+      { message: 'La fiche « Baguette » refuse la désactivation.' },
       { status: 409, statusText: 'Conflict' },
     );
     await settle(fixture);
 
-    expect(el.textContent).toContain('La publication est fermée sur ce déploiement.');
+    expect(el.textContent).toContain('La fiche « Baguette » refuse la désactivation.');
   });
 
   it('montre les fiches désactivées puis relit l’aperçu', async () => {

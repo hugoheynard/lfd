@@ -13,8 +13,8 @@
 import type { ShopCatalogueView, ShopQuotePayload, ShopQuoteView } from "@lfd/contracts";
 import request from "supertest";
 
-import { B2bCatalogDriver } from "../src/pim/channels/b2b-platform/products/driver.js";
 import { snapshotOf } from "./catalog-ingest-fixtures.js";
+import { deliverAsFacts } from "./catalog-facts-delivery.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 
 let ctx: E2eContext;
@@ -49,7 +49,8 @@ beforeEach(async () => {
  * c'est `htMillicents` — ce que le fil transporte — qui fait foi.
  */
 async function seedCatalogue(): Promise<void> {
-  await ctx.app.get(B2bCatalogDriver).send(
+  await deliverAsFacts(
+    ctx,
     snapshotOf([
       {
         sku: "VIE-001",
@@ -63,7 +64,6 @@ async function seedCatalogue(): Promise<void> {
         publicPrice: { ttcCents: 330, vatRatePercent: 10, htMillicents: 300_000 },
       },
     ]),
-    { revisionId: "rev_quote", fingerprint: "empreinte-quote" },
   );
 }
 

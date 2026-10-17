@@ -7,7 +7,6 @@ import { describe, expect, it } from 'vitest';
 import type { PermissionGuard } from '../auth/permission.guard';
 import { PermissionsStore } from '../auth/permissions.store';
 import { pimRoutes } from '../pim/pim.routes';
-import { PimCapabilitiesStore } from '../pim/capabilities/pim-capabilities.store';
 import { WorkspaceCatalogue } from '../shared/workspace-rail/workspaces';
 
 /**
@@ -31,10 +30,7 @@ function storeFor(role: StaffRole): Pick<PermissionsStore, 'ensureLoaded' | 'can
 function configure(role: StaffRole): void {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
-    providers: [
-      { provide: PermissionsStore, useValue: storeFor(role) },
-      { provide: PimCapabilitiesStore, useValue: { publication: () => true } },
-    ],
+    providers: [{ provide: PermissionsStore, useValue: storeFor(role) }],
   });
 }
 

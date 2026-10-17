@@ -1,5 +1,5 @@
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { AppConfig } from "../src/platform/config/app-config.js";
+import { ReferentialOperationWriting } from "../src/pim/operations/domain/ports/referential-operation-writing.js";
 import { MediaStore } from "../src/platform/storage/media-store.js";
 import {
   bootstrapE2e,
@@ -14,7 +14,7 @@ import {
   depositImage,
   noelBody,
   OPERATIONS,
-  SwitchableOperationsConfig,
+  SwitchableReferentialWriting,
   stubAdminVerifier,
 } from "./operations-at-commerce-scene.js";
 import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
@@ -32,13 +32,13 @@ import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
  */
 
 let ctx: E2eContext;
-const config = new SwitchableOperationsConfig();
+const referential = new SwitchableReferentialWriting();
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
-      { token: AppConfig, value: config },
+      { token: ReferentialOperationWriting, value: referential },
       { token: MediaStore, value: new InMemoryMediaStore() },
     ],
   });
@@ -204,7 +204,7 @@ describe("l'opération du commerce, porteur de la médiathèque", () => {
 
 /** Une opération du référentiel, préparée interrupteur fermé — ouvert, ses routes refusent (lot 3). */
 async function pimOperationShowing(key: string, url: string): Promise<void> {
-  await config.closedFor(() =>
+  await referential.openFor(() =>
     staff()
       .post("/pim/operations")
       .send({

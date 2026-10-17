@@ -6,9 +6,8 @@ import { OperationImageLibrary } from "../../channels/media/operation-image-libr
 import { OperationNotFoundError } from "../../domain/errors/operation-errors.js";
 import { OperationReader } from "../../domain/ports/operation.reader.js";
 import { OperationSaleReader } from "../../domain/ports/operation-sale.reader.js";
-import { OperationWritingSwitch } from "../../domain/ports/operation-writing-switch.js";
 import { GetOperationQuery } from "./get-operation.query.js";
-import { ensureReadingOpen, operationViews } from "./operation-view.js";
+import { operationViews } from "./operation-view.js";
 
 /** **Une opération du commerce**, telle que l'écran l'ouvre. */
 @QueryHandler(GetOperationQuery)
@@ -18,18 +17,15 @@ export class GetOperationHandler implements IQueryHandler<
 > {
   constructor(
     private readonly operations: OperationReader,
-    private readonly writing: OperationWritingSwitch,
     private readonly library: OperationImageLibrary,
     private readonly sale: OperationSaleReader,
     private readonly clock: Clock,
   ) {}
 
   /**
-   * @throws {OperationsNotAtCommerceError} interrupteur fermé.
    * @throws {OperationNotFoundError} aucune opération ne porte cette clé.
    */
   async execute(query: GetOperationQuery): Promise<CommerceOperationView> {
-    ensureReadingOpen(this.writing);
     const operation = await this.operations.find(query.key);
     if (operation === null) {
       throw new OperationNotFoundError(query.key);

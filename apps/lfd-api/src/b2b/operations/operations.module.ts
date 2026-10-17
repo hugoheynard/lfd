@@ -27,9 +27,7 @@ import { OperationImageRepointing } from "./channels/media/operation-image-repoi
 import { OperationMediaUsage } from "./channels/media/operation-media-usage.js";
 import { OperationRepository } from "./domain/ports/operation.repository.js";
 import { OperationSkuCatalogue } from "./domain/ports/operation-sku.catalogue.js";
-import { OperationWritingSwitch } from "./domain/ports/operation-writing-switch.js";
 import { AdminOperationsController } from "./http/admin-operations.controller.js";
-import { ConfigOperationWritingSwitch } from "./infrastructure/config-operation-writing.switch.js";
 import { PrismaOperationMediaUsage } from "./infrastructure/prisma-operation-media-usage.js";
 import { PrismaOperationRepository } from "./infrastructure/prisma-operation.repository.js";
 import { PrismaOperationSkuCatalogue } from "./infrastructure/prisma-operation-sku.catalogue.js";
@@ -46,8 +44,8 @@ import { PrismaOperationSkuCatalogue } from "./infrastructure/prisma-operation-s
  * la source : aucune table neuve.
  *
  * N'exporte que son canal vers la médiathèque (lot 2, O3) : compter et
- * repointer ses images, que `appBootstrap/media-carriers.module.ts` ne
- * branche qu'interrupteur OUVERT. Le port « décris-moi cette image »
+ * repointer ses images, que `appBootstrap/media-carriers.module.ts` branche.
+ * Le port « décris-moi cette image »
  * (`OperationImageLibrary`) lui est fourni par `OperationImageLibraryModule`,
  * global. Les lectures du miroir ne changent pas.
  *
@@ -62,7 +60,6 @@ import { PrismaOperationSkuCatalogue } from "./infrastructure/prisma-operation-s
   providers: [
     { provide: OperationRepository, useClass: PrismaOperationRepository },
     { provide: OperationSkuCatalogue, useClass: PrismaOperationSkuCatalogue },
-    { provide: OperationWritingSwitch, useClass: ConfigOperationWritingSwitch },
     PrepareOperationHandler,
     EditOperationHandler,
     RescheduleOperationHandler,

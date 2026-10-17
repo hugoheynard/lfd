@@ -270,7 +270,6 @@ export {
   setProductIngredientsPayloadSchema,
   setIngredientAllergensPayloadSchema,
 } from "./ingredient.js";
-export type { PimCapabilitiesView } from "./catalog-overview.js";
 export type {
   AppellationView,
   IngredientView,

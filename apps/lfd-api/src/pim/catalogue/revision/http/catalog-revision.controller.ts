@@ -2,7 +2,6 @@ import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post } from 
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { z } from "zod";
 
-import { PublicationGesture } from "../../../publication/publication-switch.js";
 import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.js";
 import { ZodBody } from "../../../../platform/shared/http/zod-body.pipe.js";
 import type {
@@ -140,10 +139,6 @@ export class CatalogRevisionController {
     );
   }
 
-  // Poser une ancre ne publie rien à elle seule — mais elle n'existe QUE pour
-  // précéder une publication, et la lecture des ancres déjà posées reste
-  // ouverte. Un catalogue qu'on ne publie pas n'a rien à photographier.
-  @PublicationGesture()
   @Post()
   take(
     @Body(new ZodBody(takeRevisionPayloadSchema)) body: TakeRevisionPayload,

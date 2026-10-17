@@ -83,14 +83,6 @@ async function render(api: FakeOperations, granted: readonly StaffPermission[] =
 }
 
 describe('CommerceOperationPage', () => {
-  it("dit l'interrupteur fermé en callout", async () => {
-    const api = new FakeOperations();
-    api.failure = { status: 409, error: { code: 'operations.not_at_commerce', message: '…' } };
-    const { root } = await render(api);
-    expect(root.querySelector('fold-callout')?.textContent).toContain('OPERATIONS_AT_COMMERCE');
-    expect(root.querySelector('fold-empty-state')).toBeNull();
-  });
-
   it("dit le refus du serveur quand l'opération est illisible", async () => {
     const api = new FakeOperations();
     api.failure = { status: 404, error: { code: 'operations.not_found', message: 'Introuvable.' } };
@@ -119,10 +111,10 @@ describe('CommerceOperationPage', () => {
   it('un refus reste sous son geste, tel que le serveur le dit', async () => {
     const api = new FakeOperations();
     const { page } = await render(api);
-    api.refusal = { status: 409, error: { code: 'operations.writing_closed', message: 'Fermé.' } };
+    api.refusal = { status: 409, error: { code: 'operations.archived', message: 'Archivée.' } };
     page['audience'].set('pro');
     await page['saveAudience']();
-    expect(page['refusal']('audience')).toBe('Fermé.');
+    expect(page['refusal']('audience')).toBe('Archivée.');
     expect(page['refusal']('archive')).toBeNull();
   });
 

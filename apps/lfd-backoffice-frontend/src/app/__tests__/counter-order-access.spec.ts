@@ -7,7 +7,6 @@ import { describe, expect, it } from 'vitest';
 import { routes } from '../app.routes';
 import type { PermissionGuard } from '../auth/permission.guard';
 import { PermissionsStore } from '../auth/permissions.store';
-import { PimCapabilitiesStore } from '../pim/capabilities/pim-capabilities.store';
 import { WorkspaceCatalogue } from '../shared/workspace-rail/workspaces';
 
 /**
@@ -32,7 +31,6 @@ function configure(role: StaffRole): void {
           can: (permission) => permissions.includes(permission),
         } satisfies Pick<PermissionsStore, 'ensureLoaded' | 'can'>,
       },
-      { provide: PimCapabilitiesStore, useValue: { publication: () => true } },
     ],
   });
 }

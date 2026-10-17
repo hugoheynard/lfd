@@ -30,7 +30,6 @@ import { AcceptDeliveryHandler } from "./application/commands/accept-delivery.ha
 import { GetPendingDeliveryHandler } from "./application/queries/get-pending-delivery.handler.js";
 import { CatalogDeliveryRepository } from "./domain/ports/catalog-delivery.repository.js";
 import { CatalogItemRepository } from "./domain/ports/catalog-item.repository.js";
-import { CatalogOperationImageProjection } from "./domain/ports/catalog-operation-image.projection.js";
 import { CatalogVisualsProjection } from "./domain/ports/catalog-visuals.projection.js";
 import { CatalogVersionReader } from "./domain/ports/catalog-version.reader.js";
 import { CatalogVersionRepository } from "./domain/ports/catalog-version.repository.js";
@@ -42,7 +41,6 @@ import { PrismaCatalogAdminReader } from "./infrastructure/prisma-catalog-admin.
 import { PrismaCatalogCategoryProjection } from "./infrastructure/prisma-catalog-category.projection.js";
 import { PrismaCatalogDeliveryRepository } from "./infrastructure/prisma-catalog-delivery.repository.js";
 import { PrismaCatalogItemRepository } from "./infrastructure/prisma-catalog-item.repository.js";
-import { PrismaCatalogOperationImageProjection } from "./infrastructure/prisma-catalog-operation-image.projection.js";
 import { PrismaCatalogVisualsProjection } from "./infrastructure/prisma-catalog-visuals.projection.js";
 import {
   PrismaCatalogVersionReader,
@@ -81,8 +79,6 @@ import { PrismaCatalogOperationOverrideRepository } from "./infrastructure/prism
 import { PrismaCatalogOperationsReader } from "./infrastructure/prisma-catalog-operations.reader.js";
 import { PrismaReceivedOperationsReader } from "./infrastructure/prisma-received-operations.reader.js";
 import { PrismaCatalogColdReader } from "./infrastructure/prisma-catalog-cold.reader.js";
-import { CatalogMediaCopies } from "./channels/media/catalog-media-copies.js";
-import { PrismaCatalogMediaCopies } from "./infrastructure/prisma-catalog-media-copies.js";
 
 /**
  * **Le catalogue de la plateforme** : ce que le PIM pousse, plus ce qu'on décide
@@ -174,7 +170,6 @@ import { PrismaCatalogMediaCopies } from "./infrastructure/prisma-catalog-media-
     { provide: CatalogFamilyFactsProjection, useClass: PrismaCatalogFamilyFactsProjection },
     { provide: CatalogRulesProjection, useClass: PrismaCatalogRulesProjection },
     { provide: CatalogOrderLimits, useClass: PrismaCatalogOrderLimits },
-    { provide: CatalogOperationImageProjection, useClass: PrismaCatalogOperationImageProjection },
     { provide: CatalogCategoryProjection, useClass: PrismaCatalogCategoryProjection },
     { provide: CatalogReader, useClass: PrismaCatalogReader },
     // 🔴 **L'autorité de prix du checkout**, ramenée là d'où vient sa donnée le
@@ -215,10 +210,6 @@ import { PrismaCatalogMediaCopies } from "./infrastructure/prisma-catalog-media-
     // Le froid des produits (fil v12, lot 4 bis) : un lecteur à lui, que seul
     // le relais vers la livraison lit.
     { provide: CatalogColdReader, useClass: PrismaCatalogColdReader },
-    // Les copies d'images que la médiathèque doit compter (depuis le 2026-10-10,
-    // `documentation/mediatheque/mediatheque.md` §2) : le canal
-    // est lu par `appBootstrap/`, jamais par `media/`.
-    { provide: CatalogMediaCopies, useClass: PrismaCatalogMediaCopies },
   ],
   // L'historique sort d'ici parce que l'écran de tarification en a besoin : sa
   // lecture datée doit rendre le tarif de CE jour-là, pas celui d'aujourd'hui.
@@ -228,8 +219,6 @@ import { PrismaCatalogMediaCopies } from "./infrastructure/prisma-catalog-media-
   // l'adaptateur du port branche à la racine de composition. Exporter, ici,
   // c'est le geste explicite qui remplace le `@Public()` d'un contrôleur.
   exports: [
-    // Pour le porteur des copies que `appBootstrap/` branche à la médiathèque.
-    CatalogMediaCopies,
     CatalogReader,
     // Pour la caisse, le tarificateur et la projection : tous trois résolvent un
     // SKU avant de tarifer, et aucun n'a de raison de passer par `orders` pour ça.

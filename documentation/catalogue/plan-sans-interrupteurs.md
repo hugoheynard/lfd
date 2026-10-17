@@ -28,6 +28,24 @@
 > « Intégrations » du back-office (`b2b-integration.ts`) lit toujours la santé :
 > il montrera le même écart, à traiter avec R4.
 
+> ✅ **X1 bâti le 2026-10-17** (non commité au moment d'écrire). Les trois
+> interrupteurs — `CATALOG_FACTS_ENABLED`, `OPERATIONS_AT_COMMERCE`,
+> `PIM_PUBLICATION_ENABLED` — sont sortis d'`AppConfig`, du conteneur, du
+> workflow, du `.env.example` et du `.env.development` ; le code suit le
+> chemin ouvert. Partis avec eux : `PublicationEnabledGuard` /
+> `@PublicationGesture` et la route `GET /pim/capabilities` (son seul objet,
+> avec le garde et le magasin du back-office), le port
+> `OperationWritingSwitch`, les erreurs `OperationWritingClosedError`,
+> `OperationsNotAtCommerceError`, `CatalogFactsClosedError`,
+> `PublicationClosedError`, et le code mort des branches fermées (porteurs
+> d'images des copies du push et des opérations du référentiel, projection
+> de l'image d'opération). L'ingestion d'un push n'écrit plus rien.
+> **Garde du PIM** : refus PERMANENT (`ClosedReferentialOperationWriting`),
+> le plus petit des deux gestes ; `pim/operations/http` reste jusqu'à X4.
+> Les Variables GitHub des trois interrupteurs (et les secrets Cloudflare
+> déjà téléversés) deviennent inutiles après déploiement : **à supprimer par
+> Hugo**. Le compte des portes ne change pas.
+
 ## 0. La demande (Hugo, 2026-10-16)
 
 > « Et donc ensuite on peut se débarrasser de l'ancien système ? » — puis :

@@ -14,9 +14,6 @@ import { GetB2bProductDeliveryQuery } from "./product-delivery.js";
  * mode de défaillance. La greffer sur la fiche ferait tomber l'édition d'un
  * produit le jour où la plateforme répond mal.
  *
- * Elle ne porte **pas** `@PublicationGesture()` : c'est une lecture. Le
- * commutateur ferme ce qui SORT du référentiel, pas ce qui s'y consulte.
- *
  * Surface staff murée par `@AdminSurface("pim_channels")` — le même périmètre
  * que le reste du canal.
  */

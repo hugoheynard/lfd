@@ -3,7 +3,6 @@ import { CommandBus } from "@nestjs/cqrs";
 import type { AudienceSwitchAppliedView } from "@lfd/pim-contracts";
 
 import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.js";
-import { PublicationGesture } from "../../../publication/publication-switch.js";
 import { ApplyAudienceSwitchCommand } from "../application/apply-audience-switch.js";
 
 /**
@@ -14,16 +13,13 @@ import { ApplyAudienceSwitchCommand } from "../application/apply-audience-switch
  * Murée par `@AdminSurface("pim_catalog")` : un `POST`, donc la permission
  * d'ÉCRITURE du référentiel — le geste change le statut de fiches.
  *
- * Un **geste de publication** : fermé tant que `PIM_PUBLICATION_ENABLED`
- * l'est, comme « réémettre ». La bascule est un geste de déploiement, pas un
- * réglage du quotidien.
+ * La bascule est un geste de déploiement, pas un réglage du quotidien.
  */
 @AdminSurface("pim_catalog")
 @Controller("audience-switch")
 export class AudienceSwitchController {
   constructor(private readonly commands: CommandBus) {}
 
-  @PublicationGesture()
   @Post()
   @HttpCode(HttpStatus.OK)
   apply(): Promise<AudienceSwitchAppliedView> {

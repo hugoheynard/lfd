@@ -18,7 +18,6 @@ import { SetOperationSelectionCommand } from "../set-operation-selection.command
 import { SetOperationSelectionHandler } from "../set-operation-selection.handler.js";
 import {
   FixedImageLibrary,
-  FixedWritingSwitch,
   InMemoryOperations,
   KnownSkus,
   noel,
@@ -32,13 +31,7 @@ const library = new FixedImageLibrary();
 function scene(seed = [preparedNoel()]) {
   const operations = new InMemoryOperations(seed);
   const events = new RecordingPublisher();
-  const ports = [
-    operations,
-    new FixedWritingSwitch(true),
-    new FixedClock(NOW),
-    events,
-    new DirectUnitOfWork(),
-  ] as const;
+  const ports = [operations, new FixedClock(NOW), events, new DirectUnitOfWork()] as const;
   return { operations, events, ports };
 }
 
@@ -201,11 +194,10 @@ describe("RescheduleOperationHandler", () => {
 describe("SetOperationSelectionHandler", () => {
   function selecting(known: readonly string[]) {
     const { operations, events, ports } = scene();
-    const [repository, writing, clock, publisher, uow] = ports;
+    const [repository, clock, publisher, uow] = ports;
     const handler = new SetOperationSelectionHandler(
       repository,
       new KnownSkus(known),
-      writing,
       clock,
       publisher,
       uow,

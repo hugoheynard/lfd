@@ -1,6 +1,5 @@
 import { Injectable } from "@nestjs/common";
 
-import { AppConfig } from "../../../../platform/config/app-config.js";
 import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { CatalogRulesEmitter } from "../../../order-time-limitation/domain/ports/catalog-rules.emitter.js";
@@ -17,13 +16,10 @@ import { PublicationSequence } from "./publication-sequence.js";
  * Le verrou PUIS le numéro, comme pour une fiche (C4) : deux réglages
  * simultanés émettent deux échelles, et celle qui porte le plus grand numéro
  * contient forcément l'écriture de l'autre.
- *
- * Fermé — mêmes interrupteurs que l'émetteur des fiches —, il ne fait rien.
  */
 @Injectable()
 export class B2bCatalogRulesEmitter extends CatalogRulesEmitter {
   constructor(
-    private readonly config: AppConfig,
     private readonly sequence: PublicationSequence,
     private readonly limits: OrderTimeLimitRepository,
     private readonly durable: DurablePublisher,
@@ -33,9 +29,6 @@ export class B2bCatalogRulesEmitter extends CatalogRulesEmitter {
   }
 
   async emitRules(): Promise<void> {
-    if (!this.config.catalogFactsEnabled() || !this.config.publicationEnabled()) {
-      return;
-    }
     await this.sequence.lockRules();
     const seq = await this.sequence.next();
     const rules = (await this.limits.list()).map(toSyncRule);

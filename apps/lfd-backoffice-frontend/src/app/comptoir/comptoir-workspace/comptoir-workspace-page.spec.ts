@@ -10,7 +10,6 @@ import { PermissionsStore } from '../../auth/permissions.store';
 import { DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
 import { HandoverQueueService } from '../../handover-shop/handover-queue.service';
 import { CustomerRequestsService } from '../../b2b/demandes/customer-requests.service';
-import { PimCapabilitiesStore } from '../../pim/capabilities/pim-capabilities.store';
 import { WorkspaceRailStore } from '../../shared/workspace-rail/workspace-rail.store';
 import { comptoirLanding } from '../comptoir-landing';
 import { ComptoirWorkspacePage } from './comptoir-workspace-page';
@@ -83,7 +82,6 @@ async function open(
           ensureLoaded: () => Promise.resolve(),
         },
       },
-      { provide: PimCapabilitiesStore, useValue: { publication: () => true } },
       { provide: CustomerRequestsService, useValue: {} },
       { provide: HandoverQueueService, useValue: queue },
       { provide: DayVersionWatcher, useValue: { watch: () => undefined } },

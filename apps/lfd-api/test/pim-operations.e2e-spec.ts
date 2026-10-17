@@ -14,8 +14,10 @@
  * Aucune date absolue comparée à l'horloge : les dates dérivent de
  * `daysAgo` / `serviceDay`, l'intention (« dans un mois ») plutôt que le jour.
  */
+import { ReferentialOperationWriting } from "../src/pim/operations/domain/ports/referential-operation-writing.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, daysAgo, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
+import { OPEN_REFERENTIAL_WRITING } from "./operations-at-commerce-scene.js";
 
 /** Le jeton porteur EST le `sub` : deux personnes distinctes dans une même suite. */
 const stubAdminVerifier = {
@@ -34,7 +36,12 @@ let ctx: E2eContext;
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
-    overrides: [{ token: AdminTokenVerifier, value: stubAdminVerifier }],
+    overrides: [
+      { token: AdminTokenVerifier, value: stubAdminVerifier },
+      // L'opération du RÉFÉRENTIEL est le sujet : son écriture, fermée en
+      // production depuis le 2026-10-17 (X1), est rouverte ici jusqu'à X4.
+      { token: ReferentialOperationWriting, value: OPEN_REFERENTIAL_WRITING },
+    ],
   });
 });
 
@@ -301,22 +308,6 @@ describe("la base tient ce que l'agrégat garantit", () => {
         data: { orderUntil: new Date(inDays(20)) },
       }),
     ).rejects.toThrow(/operations_order_window/u);
-  });
-});
-
-describe("la médiathèque compte l'opération parmi les porteurs", () => {
-  it("refuse de retirer l'image d'une opération, et la nomme", async () => {
-    const image = await depositImage();
-    await staff()
-      .post(OPERATIONS)
-      .send(noel({ image: { url: image, alt: "Une bûche" } }))
-      .expect(201);
-
-    const carriers = await staff().get(`${MEDIA}/carriers`).query({ url: image }).expect(200);
-    expect(jsonBody<unknown>(carriers)).toEqual([
-      { kind: "operation", id: "noel-2026", label: "Noël" },
-    ]);
-    expect((await staff().delete(`${MEDIA}?url=${encodeURIComponent(image)}`)).status).toBe(409);
   });
 });
 

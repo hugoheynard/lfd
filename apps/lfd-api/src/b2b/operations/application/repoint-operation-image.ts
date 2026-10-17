@@ -15,10 +15,6 @@ import { OperationRepository } from "../domain/ports/operation.repository.js";
  *
  * Pas de fait `catalog_operation.*` : le geste est `media_asset.replaced`,
  * tracé par la médiathèque avant d'appeler (le laissez-passer en témoigne).
- *
- * ⚠️ Branché seulement interrupteur OUVERT (`appBootstrap/media-carriers.module.ts`) :
- * fermé, le push et le fait `pim.operation_image_changed` écrivent encore ces
- * lignes, et un second écrivain les contredirait.
  */
 @Injectable()
 export class RepointOperationImage extends OperationImageRepointing {

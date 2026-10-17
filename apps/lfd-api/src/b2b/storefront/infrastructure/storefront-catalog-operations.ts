@@ -19,8 +19,7 @@ import { OPERATION_SHELF_PREFIX } from "../domain/operation-link.js";
  * l'annonce, « terminée » après. Masquée à la réception, ou sans clientèle :
  * `hidden`, quelle que soit la date.
  *
- * Interrupteur `OPERATIONS_AT_COMMERCE` ouvert (lot 3), une opération écrite
- * au commerce se lit sur ses propres champs (`held`, `operationAsHeld`) : son
+ * Une opération écrite au commerce se lit sur ses propres champs (`held`, `operationAsHeld`) : son
  * `hidden`, et la surcharge déjà versée en elle par la migration.
  */
 export function storefrontOperationsOf(
@@ -30,7 +29,7 @@ export function storefrontOperationsOf(
   return received
     .filter((operation) => operation.withdrawnAt === null)
     .map(({ received: facts, override, held }) => {
-      const effective = operationAsHeld(facts, override?.restriction ?? null, held ?? null);
+      const effective = operationAsHeld(facts, override?.restriction ?? null, held);
       const dated = { ...facts, orderUntil: effective.orderUntil };
       return {
         key: facts.key,

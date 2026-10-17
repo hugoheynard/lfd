@@ -19,7 +19,6 @@ import type {
   MirroredOperation,
 } from "../../../domain/services/operation-migration.js";
 import { OperationSkuCatalogue } from "../../../domain/ports/operation-sku.catalogue.js";
-import { OperationWritingSwitch } from "../../../domain/ports/operation-writing-switch.js";
 
 /**
  * Le dépôt en mémoire. Il garde des INSTANTANÉS et rend des agrégats neufs :
@@ -83,17 +82,6 @@ export class KnownSkus extends OperationSkuCatalogue {
 
   unknownAmong(skus: readonly string[]): Promise<readonly string[]> {
     return Promise.resolve(skus.filter((sku) => !this.known.includes(sku)));
-  }
-}
-
-/** L'interrupteur, posé à la main. */
-export class FixedWritingSwitch extends OperationWritingSwitch {
-  constructor(private readonly open: boolean) {
-    super();
-  }
-
-  isOpen(): boolean {
-    return this.open;
   }
 }
 

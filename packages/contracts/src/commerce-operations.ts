@@ -9,9 +9,7 @@ import { z } from "zod";
  * cinq dates, un jour qui existe, une sélection sans doublon sont tenus par
  * l'agrégat `Operation` du commerce.
  *
- * Routes (surface `lfc_operations`) — **FERMÉES** tant que l'interrupteur
- * `OPERATIONS_AT_COMMERCE` ne l'est pas : elles répondent 409
- * `operations.writing_closed`.
+ * Routes (surface `lfc_operations`) :
  *
  * - `POST /admin/operations` ← `PrepareCommerceOperationPayload` → `{ key }`
  * - `PUT  /admin/operations/:key/presentation` ← `EditCommerceOperationPayload`
@@ -21,8 +19,7 @@ import { z } from "zod";
  * - `PUT  /admin/operations/:key/selection` ← `SetCommerceOperationSelectionPayload`
  * - `PUT  /admin/operations/:key/archive` → `{ key }`
  *
- * Lectures (lot 3, `lfc_operations:read`) — 409 `operations.not_at_commerce`
- * interrupteur fermé :
+ * Lectures (lot 3, `lfc_operations:read`) :
  *
  * - `GET  /admin/operations` → `CommerceOperationView[]` (archivées comprises)
  * - `GET  /admin/operations/:key` → `CommerceOperationView`

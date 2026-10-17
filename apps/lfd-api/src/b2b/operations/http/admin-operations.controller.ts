@@ -39,11 +39,6 @@ import { calendarOf, scheduleOf } from "./operation-payloads.js";
  * (`documentation/operations-datees/plan-l-operation-passe-au-commerce.md`,
  * lot 1).
  *
- * 🔴 **FERMÉES** tant que `OPERATIONS_AT_COMMERCE` l'est : chaque geste répond
- * 409 `operations.writing_closed`, avant toute lecture. Le push écrit encore
- * les opérations, et il écraserait ce que ces routes écriraient ; elles
- * s'ouvrent avec la bascule (lot 3), qui l'arrête d'abord.
- *
  * La clé est dans l'URL : c'est l'identité, choisie par le staff, et elle ne
  * change jamais. Une section de l'écran = un `PUT`, comme au référentiel. Pas
  * de `DELETE` : on archive (D9).
@@ -51,12 +46,9 @@ import { calendarOf, scheduleOf } from "./operation-payloads.js";
  * Sous `lfc_operations` (Q2, Hugo) : un droit à lui, ni `pim_catalog` ni
  * `lfc_catalog`.
  *
- * Les lectures (lot 3) sont fermées comme les écritures (409
- * `operations.not_at_commerce`). La migration depuis le référentiel se joue
- * en deux temps sous `lfc_operations:write` : l'aperçu se lit interrupteur
- * fermé — c'est lui qu'on relit avant d'ouvrir —, l'application exige
- * l'ouverture et rend le relevé APRÈS. Ses routes sont déclarées avant
- * `:key`, qui les avalerait.
+ * La migration depuis le référentiel se joue en deux temps sous
+ * `lfc_operations:write` : l'aperçu, puis l'application, qui rend le relevé
+ * APRÈS. Ses routes sont déclarées avant `:key`, qui les avalerait.
  */
 @Controller("admin/operations")
 @AdminSurface("lfc_operations")

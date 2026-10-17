@@ -2,28 +2,13 @@ import type { CommerceOperationView } from "@lfd/contracts";
 
 import type { OperationImageLibrary } from "../../channels/media/operation-image-library.js";
 import type { OperationSnapshot } from "../../domain/entities/operation.js";
-import { OperationsNotAtCommerceError } from "../../domain/errors/operation-errors.js";
 import type { OperationSaleReader } from "../../domain/ports/operation-sale.reader.js";
-import type { OperationWritingSwitch } from "../../domain/ports/operation-writing-switch.js";
 import { shopDisplayOf } from "../../domain/services/operation-shop-display.js";
 import { scheduleText } from "../commands/operation-writing.js";
 
 /**
- * Ce que les deux lectures de l'écran partagent : la porte, et la
- * traduction d'une opération en vue.
+ * Ce que les deux lectures de l'écran partagent : la traduction d'une opération en vue.
  */
-
-/**
- * L'écran lit au commerce seulement une fois les opérations au commerce :
- * avant, la table est une copie que le push réécrit, et l'écran mentirait.
- *
- * @throws {OperationsNotAtCommerceError} `OPERATIONS_AT_COMMERCE` est fermé.
- */
-export function ensureReadingOpen(writing: OperationWritingSwitch): void {
-  if (!writing.isOpen()) {
-    throw new OperationsNotAtCommerceError();
-  }
-}
 
 /** Ce que la vue lit autour de l'opération : la médiathèque, le catalogue, l'heure. */
 export interface ViewSources {

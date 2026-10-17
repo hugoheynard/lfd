@@ -76,12 +76,12 @@ describe('PrepareCommerceOperationPanel', () => {
     const { panel, closed } = setup(async () => {
       throw new HttpErrorResponse({
         status: 409,
-        error: { code: 'operations.writing_closed', message: "L'écriture ouvre à la bascule." },
+        error: { code: 'operations.key_taken', message: 'La clé « noel-2026 » est déjà prise.' },
       });
     });
     fill(panel);
     await panel['submit']();
     expect(closed).toEqual([]);
-    expect(panel['refusal']()).toBe("L'écriture ouvre à la bascule.");
+    expect(panel['refusal']()).toBe('La clé « noel-2026 » est déjà prise.');
   });
 });

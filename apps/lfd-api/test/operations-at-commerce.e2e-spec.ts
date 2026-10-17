@@ -1,7 +1,6 @@
 import type { CommerceOperationView, ReceivedOperationView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { AppConfig } from "../src/platform/config/app-config.js";
 import { MediaStore } from "../src/platform/storage/media-store.js";
 import {
   bootstrapE2e,
@@ -14,7 +13,6 @@ import { InMemoryMediaStore } from "./in-memory-media-store.js";
 import {
   depositImage,
   noelBody,
-  OpenOperationsAtCommerceConfig,
   OPERATIONS,
   stubAdminVerifier,
 } from "./operations-at-commerce-scene.js";
@@ -36,7 +34,6 @@ beforeAll(async () => {
   ctx = await bootstrapE2e({
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
-      { token: AppConfig, value: new OpenOperationsAtCommerceConfig() },
       { token: MediaStore, value: new InMemoryMediaStore() },
     ],
   });

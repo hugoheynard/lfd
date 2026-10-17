@@ -2,7 +2,6 @@ import { Body, Controller, Post } from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
 import { z } from "zod";
 
-import { PublicationGesture } from "../../../publication/publication-switch.js";
 import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.js";
 import { ZodBody } from "../../../../platform/shared/http/zod-body.pipe.js";
 import { PushB2bCatalogCommand } from "../application/push-b2b-catalog.js";
@@ -66,7 +65,6 @@ const pushPayload = z.object({
 export class B2bPushController {
   constructor(private readonly commands: CommandBus) {}
 
-  @PublicationGesture()
   @Post()
   push(@Body(new ZodBody(pushPayload)) body: z.infer<typeof pushPayload>): Promise<B2bPushSummary> {
     return this.commands.execute<PushB2bCatalogCommand, B2bPushSummary>(

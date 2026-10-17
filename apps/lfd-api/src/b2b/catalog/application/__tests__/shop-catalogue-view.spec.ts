@@ -80,6 +80,9 @@ describe("shopCatalogueOf — les opérations datées", () => {
         pickupUntil: "2026-12-24",
         // SKU PRODUIT, dans l'ordre du référentiel, restreints à ce que la vitrine sert.
         skus: ["PAT-002", "VIE-001"],
+        announceFrom: ANNOUNCE.toISOString(),
+        awaitingProducts: false,
+        showsOrderUntilTime: true,
       },
     ]);
   });
@@ -109,25 +112,16 @@ describe("shopCatalogueOf — les opérations datées", () => {
     expect(view.items.map((item) => item.sku)).toEqual(["VIE-001"]);
     expect(view.operations).toEqual([]);
   });
-
-  it("une opération dont aucun article n'est en rayon n'ouvre pas de rayon vide", () => {
-    const view = shopCatalogueOf(
-      SELLABLE,
-      sale(new Date("2026-12-01T00:00:00.000Z"), { operations: [noel({ skus: ["HORS-1"] })] }),
-    );
-
-    expect(view.operations).toEqual([]);
-  });
 });
 
 /**
  * Lot 3 de `plan-l-operation-passe-au-commerce.md`, « Une opération sans
  * article » : une fois les opérations au commerce, le rayon s'ouvre sur son
  * encart — même vide pendant l'annonce, et `awaitingProducts` commandes
- * ouvertes. Fermé, rien ne change (cas précédent).
+ * ouvertes.
  */
-describe("shopCatalogueOf — les opérations au commerce (OPERATIONS_AT_COMMERCE)", () => {
-  const empty = { operations: [noel({ skus: [] })], operationsAtCommerce: true };
+describe("shopCatalogueOf — les opérations au commerce", () => {
+  const empty = { operations: [noel({ skus: [] })] };
 
   it("pendant l'annonce, le rayon paraît sur son seul encart, avec sa date d'annonce", () => {
     const view = shopCatalogueOf(SELLABLE, sale(new Date("2026-11-05T00:00:00.000Z"), empty));
@@ -156,10 +150,7 @@ describe("shopCatalogueOf — les opérations au commerce (OPERATIONS_AT_COMMERC
   });
 
   it("un rayon peuplé porte aussi l'annonce, et n'attend rien", () => {
-    const view = shopCatalogueOf(
-      SELLABLE,
-      sale(new Date("2026-12-01T00:00:00.000Z"), { operationsAtCommerce: true }),
-    );
+    const view = shopCatalogueOf(SELLABLE, sale(new Date("2026-12-01T00:00:00.000Z")));
 
     expect(view.operations[0]).toMatchObject({
       skus: ["PAT-002", "VIE-001"],
@@ -171,24 +162,15 @@ describe("shopCatalogueOf — les opérations au commerce (OPERATIONS_AT_COMMERC
   /** Hugo, 2026-10-16 : « Commandez avant le… » dit l'heure, sauf si l'opération l'éteint. */
   it("dit si l'encart affiche l'heure de clôture — oui quand le lecteur ne dit rien", () => {
     const at = new Date("2026-12-01T00:00:00.000Z");
-    const silent = shopCatalogueOf(SELLABLE, sale(at, { operationsAtCommerce: true }));
+    const silent = shopCatalogueOf(SELLABLE, sale(at));
     const off = shopCatalogueOf(
       SELLABLE,
       sale(at, {
         operations: [noel({ showsOrderUntilTime: false })],
-        operationsAtCommerce: true,
       }),
     );
 
     expect(silent.operations[0]).toMatchObject({ showsOrderUntilTime: true });
     expect(off.operations[0]).toMatchObject({ showsOrderUntilTime: false });
-  });
-
-  it("interrupteur fermé, la vue n'a pas un champ de plus", () => {
-    const view = shopCatalogueOf(SELLABLE, sale(new Date("2026-12-01T00:00:00.000Z")));
-
-    expect(Object.keys(view.operations[0] ?? {})).not.toContain("announceFrom");
-    expect(Object.keys(view.operations[0] ?? {})).not.toContain("awaitingProducts");
-    expect(Object.keys(view.operations[0] ?? {})).not.toContain("showsOrderUntilTime");
   });
 });

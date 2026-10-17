@@ -8,10 +8,9 @@ import { OperationImageLibrary } from "../../channels/media/operation-image-libr
 import type { OperationSnapshot } from "../../domain/entities/operation.js";
 import { OperationEditedEvent } from "../../domain/events/operation.events.js";
 import { OperationRepository } from "../../domain/ports/operation.repository.js";
-import { OperationWritingSwitch } from "../../domain/ports/operation-writing-switch.js";
 import { EditOperationCommand } from "./edit-operation.command.js";
 import { imageFromLibrary, journalImage } from "./operation-image-choice.js";
-import { ensureWritingOpen, requireOperation, subjectOf } from "./operation-writing.js";
+import { requireOperation, subjectOf } from "./operation-writing.js";
 
 /**
  * **Réécrit ce que l'annonce affiche.** La clé n'en fait pas partie — elle ne
@@ -28,7 +27,6 @@ import { ensureWritingOpen, requireOperation, subjectOf } from "./operation-writ
 export class EditOperationHandler implements ICommandHandler<EditOperationCommand, void> {
   constructor(
     private readonly operations: OperationRepository,
-    private readonly writing: OperationWritingSwitch,
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
@@ -36,7 +34,6 @@ export class EditOperationHandler implements ICommandHandler<EditOperationComman
   ) {}
 
   async execute(command: EditOperationCommand): Promise<void> {
-    ensureWritingOpen(this.writing);
     const operation = await requireOperation(this.operations, command.key);
     const current = operation.snapshot();
     const image = await imageFromLibrary(this.library, command.presentation.image, current.image);

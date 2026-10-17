@@ -12,7 +12,6 @@
  *
  * - Appelé en **dernière instruction** du `uow.run` du geste : les règles sont
  *   relues en base sous verrou, après l'écriture — jamais prises en mémoire.
- * - Fermé (`CATALOG_FACTS_ENABLED` ou la publication), il ne fait **rien**.
  */
 export abstract class CatalogRulesEmitter {
   /** Émet l'ensemble des règles en vigueur, sous un numéro d'ordre. */

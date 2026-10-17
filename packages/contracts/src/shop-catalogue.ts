@@ -231,8 +231,8 @@ export interface ShopOperationView {
   readonly skus: readonly string[];
   /**
    * Instant ISO de l'annonce — « Commandes à partir du… » se lit sur
-   * `orderFrom`. Présent seulement une fois les opérations au commerce
-   * (`OPERATIONS_AT_COMMERCE`) ; absent avant, comme la vitrine l'a toujours reçu.
+   * `orderFrom`. Toujours servi depuis le 2026-10-17 (opérations au
+   * commerce) ; optionnel pour lire une réponse d'avant.
    */
   readonly announceFrom?: string;
   /**

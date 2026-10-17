@@ -12,10 +12,6 @@
  * comprises (plan, « Après le lot 2 », Hugo 2026-10-16) : une masquée revient
  * en boutique d'un geste, une archivée garde son historique, et trier sur
  * l'horloge ferait dépendre la sûreté d'un effacement d'un calcul de date.
- *
- * ⚠️ Branché seulement interrupteur OUVERT (`OPERATIONS_AT_COMMERCE`) : fermé,
- * la même table est comptée comme COPIE (`CatalogMediaCopies`), et la compter
- * deux fois ferait dire « 2 emplois » pour une seule annonce.
  */
 export abstract class OperationMediaUsage {
   /** Combien d'opérations portent chacune de ces URL. Une URL que personne ne porte est ABSENTE. */

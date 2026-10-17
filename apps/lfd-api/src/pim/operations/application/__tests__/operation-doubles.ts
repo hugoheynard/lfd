@@ -170,7 +170,7 @@ export class TableSkuCatalogue extends OperationSkuCatalogue {
   }
 }
 
-/** L'écriture au référentiel, ouverte ou fermée à la main (`OPERATIONS_AT_COMMERCE`). */
+/** L'écriture au référentiel, ouverte ou fermée à la main. */
 export class FixedReferentialWriting extends ReferentialOperationWriting {
   constructor(private readonly open: boolean) {
     super();

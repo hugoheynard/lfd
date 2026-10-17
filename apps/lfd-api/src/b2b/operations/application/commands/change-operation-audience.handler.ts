@@ -5,9 +5,8 @@ import { DomainEventPublisher } from "../../../../platform/events/domain-event-p
 import { Clock } from "../../../../platform/time/clock.js";
 import { OperationAudienceChangedEvent } from "../../domain/events/operation.events.js";
 import { OperationRepository } from "../../domain/ports/operation.repository.js";
-import { OperationWritingSwitch } from "../../domain/ports/operation-writing-switch.js";
 import { ChangeOperationAudienceCommand } from "./change-operation-audience.command.js";
-import { ensureWritingOpen, requireOperation, subjectOf } from "./operation-writing.js";
+import { requireOperation, subjectOf } from "./operation-writing.js";
 
 /**
  * **Change la clientèle** d'une opération (D7). Élargir est permis : il n'y a
@@ -21,14 +20,12 @@ export class ChangeOperationAudienceHandler implements ICommandHandler<
 > {
   constructor(
     private readonly operations: OperationRepository,
-    private readonly writing: OperationWritingSwitch,
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
   ) {}
 
   async execute(command: ChangeOperationAudienceCommand): Promise<void> {
-    ensureWritingOpen(this.writing);
     const operation = await requireOperation(this.operations, command.key);
     const from = operation.snapshot().audience;
     operation.changeAudience(command.audience, { by: command.writtenBy, at: this.clock.now() });

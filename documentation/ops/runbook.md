@@ -507,131 +507,12 @@ remplace) — cf. « Sans retour » dans le plan.
 
 ## Basculer le catalogue vers les faits (lot 2b) — l'ordre, et le retour
 
-Lot 2b de [`plan-catalogue-synchronise-par-audience.md`](../catalogue/plan-catalogue-synchronise-par-audience.md)
-(C7, §4 bis). Le push cesse d'écrire fiches et familles ; la plateforme les
-reçoit fiche par fiche (`pim.catalog_product_changed`), famille par famille, et
-les limites de commande en règles (`pim.catalog_rules_changed`). **Le code est
-déployé fermé** : rien de servi ne change tant que la Variable
-`CATALOG_FACTS_ENABLED` n'est pas à `true`. Ce qui suit est le geste qui
-l'ouvre — il appartient à Hugo.
-
-🔴 **Ce que la bascule retire de la vente, à lire AVANT** : une déclinaison
-n'est vendue par les faits que **complète** — un prix, ses allergènes, un prix
-pro résolu, et **un taux pour chaque contexte de vente en service** (b2b, à
-emporter, sur place), quelle que soit l'audience. Le push, lui, n'exigeait que
-le taux `b2b`. Toute fiche listée sous `activeIncomplete` dans l'aperçu perd
-les déclinaisons nommées à l'ouverture ; `keepsSelling: false` = la fiche ne
-vend plus rien.
-
-**1. La boîte de réception est vide.** Une livraison en attente serait
-acceptée par le push, qui ne touche plus fiches ni familles une fois les faits
-ouverts :
-
-```sql
-select id, received_at from public.catalog_delivery where status = 'pending';
-```
-
-Zéro ligne, ou la faire accepter (écran « Réception ») d'abord.
-
-**2. Une révision nommée « avant la bascule »** — la photographie à laquelle
-revenir (§4 bis). Rien ne la prend automatiquement :
-
-```http
-POST /pim/catalogue/revisions
-{ "label": "avant la bascule" }
-```
-
-**3. L'aperçu, relu par Hugo** — lecture seule :
-
-```http
-GET /pim/channels/b2b/audience-switch-preview
-```
-
-- `publishedUnbound` et `publishedB2bClosed` : les fiches que l'étape 4
-  désactive (H7) ;
-- `boundUnpublished` : liées mais pas en vente — la projection les écarte déjà,
-  rien ne change pour elles ;
-- `soldWithoutAllergens` : déclinaisons qui sortent de la vente (elles en sont
-  déjà sorties du push depuis le déploiement du lot 2b, motif
-  `variant_sans_allergenes`) ;
-- `activeIncomplete` : voir l'avertissement ci-dessus. **Compléter les taux
-  manquants avant l'étape 6** (famille ou fiche), ou accepter la sortie.
-
-**4. Appliquer la bascule** — `@PublicationGesture()`, droit d'écriture du
-référentiel :
-
-```http
-POST /pim/channels/b2b/audience-switch
-```
-
-La réponse liste `deactivated` et `failed`. 🔴 **Garder `deactivated`** : c'est
-la liste du retour arrière. Rejouer le geste ne retouche que les fiches encore
-publiées et invisibles. Un fait `product.unpublished` par fiche au journal ;
-aucun autre champ n'est écrit.
-
-**5. Pré-remplir le prix pro (P5), si voulu** — aperçu puis écriture (la
-procédure complète, et ce qu'elle change, est « Passer au prix pro saisi
-(lot S) » plus bas) :
-
-```http
-GET  /pim/accounting-rules/pro-price-prefill
-POST /pim/accounting-rules/pro-price-prefill
-```
-
-L'écriture est refusée au moindre écart entre le HT servi et le HT pré-rempli.
-
-**6. Ouvrir.** Variable GitHub `CATALOG_FACTS_ENABLED=true`, puis redéployer
-(cf. « Après avoir changé une variable GitHub ») :
-
-```bash
-gh variable set CATALOG_FACTS_ENABLED --body true
-gh workflow run deploy_lfd_api.yml --ref main
-```
-
-**7. Réémettre tout** — familles, puis chaque fiche (une transaction chacune),
-puis les règles de limite de commande, **dans cet ordre** : une règle de rang
-« déclinaison » vise un identifiant que seul le fait d'une fiche apporte.
-
-```http
-POST /pim/channels/b2b/reemit
-{}
-```
-
-`failedProducts` non vide ⇒ réémettre chaque fiche nommée :
-`{ "productId": "<id>" }`. Puis vérifier que la boîte d'envoi s'est vidée
-(carte de santé, lettres mortes à zéro).
-
-**8. Contrôle de parité** — `GET /admin/catalog/parity`. Écarts **attendus**,
-et seulement eux : les fiches de `boundUnpublished` (le push les vendait sans
-regarder le statut, les faits non) et les déclinaisons de `activeIncomplete`
-non complétées. Tout autre écart : réémettre la fiche, puis relire.
-
-```sql
--- Les limites ont été rangées et descendues :
-select applied_seq, jsonb_array_length(rules) from public.catalog_rules;
-select count(*) from public.catalog_items where withdrawn_at is null and variant_id is null;
-```
-
-La seconde requête rend `0` : tout article en vente est passé par le fait de
-sa fiche.
-
-### Le retour arrière
-
-Avant le lot 5, le code du push est toujours là.
-
-1. `gh variable set CATALOG_FACTS_ENABLED --body false`, puis redéployer : le
-   push réécrit fiches et familles, les faits ne s'émettent plus.
-2. Réactiver chaque fiche de la liste `deactivated` de l'étape 4 (« Activer »
-   sur la fiche, ou `PUT /pim/catalogue/products/<id>/publish`). Elles étaient
-   vendues avant la bascule ; une fiche refusée nomme ce qui lui manque.
-3. Un push : il remet en vente ce que son instantané porte, et retire le
-   reste — sans rien supprimer. Les décisions de prix (`catalog_item_overrides`)
-   n'ont été touchées à aucune étape.
-
-Les colonnes et tables posées par les faits (`catalog_entries`,
-`catalog_rules`, `catalog_categories.withdrawn_at`/`audience`,
-`catalog_items.variant_id`/`audience`) restent en base : aucun lecteur hors des
-récepteurs des faits et de `servedTo`.
+**Fait les 2026-10-16/17** (bascule d'audience : 0 fiche désactivée ;
+réémission : 293 articles). L'interrupteur `CATALOG_FACTS_ENABLED` est retiré
+du code le 2026-10-17 (X1 de
+[`plan-sans-interrupteurs.md`](../catalogue/plan-sans-interrupteurs.md)) :
+il n'y a plus de bascule à faire, et le retour arrière est un revert suivi
+d'un redéploiement.
 
 ## Passer au prix pro saisi (lot S) — l'ordre, et le retour
 
@@ -697,98 +578,12 @@ prix public bouge le prix pro ».
 
 ## Basculer les opérations au commerce — l'ordre, et le retour
 
-Lot 3 de [`plan-l-operation-passe-au-commerce.md`](../operations-datees/plan-l-operation-passe-au-commerce.md)
-(« Corrections après vitruve » : une seule bascule, la migration repart du
-référentiel). **Le code est déployé fermé** : tant que la Variable
-`OPERATIONS_AT_COMMERCE` n'est pas à `true`, rien de servi ne change. Ce qui
-suit est le geste qui l'ouvre — il appartient à Hugo.
-
-Ce que l'ouverture fait, d'un coup (un seul déploiement) :
-
-- le push **ignore** les opérations : il ne les réécrit ni ne les retire ;
-- les routes d'écriture `/pim/operations` répondent 409
-  `pim.operation.moved_to_commerce` (les lectures restent) ;
-- le fait `pim.operation_image_changed` est acquitté sans rien écrire ;
-- l'écran « Opérations » (`/admin/operations`) lit et écrit au commerce ;
-- la boutique lit l'opération du commerce : son `hidden`, son texte
-  alternatif **lu à la médiathèque**, et — c'est nouveau — le rayon d'une
-  opération **paraît sur son seul encart** pendant l'annonce, même sans
-  article, et dit `awaitingProducts` commandes ouvertes sans article.
-
-Une copie que la migration n'a pas encore reprise continue d'être servie avec
-sa surcharge de réception : aucune restriction ne tombe entre l'étape 4 et
-l'étape 5. Elle refuse en revanche toute écriture à l'écran (409
-`operations.awaiting_migration`).
-
-**1. Déployer** le code (fermé). Rien ne change.
-
-**2. L'aperçu, relu par Hugo** — lecture seule, utilisable fermé, sous
-`lfc_operations:write` (le superadmin l'a d'office) :
-
-```http
-GET /admin/operations/migration
-```
-
-- `blocked` doit être `false`. Une ligne `blocked` nomme son problème
-  (`problems`) : une fenêtre de commande que la surcharge vide, ou un écart
-  que rien n'explique. Corriger au référentiel ou à la réception, relire ;
-- `fields[].explanation` : `referential_newer` = le référentiel a été modifié
-  depuis le dernier push (la migration prend le référentiel — c'est voulu) ;
-  `restricted: true` = la surcharge l'a restreint ;
-- `droppedSkus` : des articles de la sélection que le commerce ne connaît
-  pas — écartés, comme le push les écartait ;
-- `mirror_only` : une clé du miroir absente du référentiel — listée, pas
-  inventée ; elle reste une copie, non modifiable à l'écran.
-
-Garder ce JSON : c'est l'état d'avant.
-
-**3. Ouvrir l'interrupteur** :
-
-```bash
-gh variable set OPERATIONS_AT_COMMERCE --body true
-```
-
-**4. Redéployer.** À partir d'ici, le référentiel n'écrit plus d'opération.
-
-**5. Appliquer** — rend le relevé APRÈS, rejouable sans dommage :
-
-```http
-POST /admin/operations/migration
-```
-
-Tout ou rien : une seule ligne bloquée, et rien n'est écrit (409
-`operations.migration_blocked`, qui les nomme). Un fait
-`catalog_operation.restriction_carried_over` par opération restreinte dit qui
-avait restreint quoi.
-
-**6. Le relevé.** Dans la réponse : `counts.toWrite` à 0, `blocked` à
-`false`, chaque opération du référentiel en `already_at_commerce` (ou
-`archived_unchanged`). En base, aucune copie ne reste à reprendre :
-
-```sql
-select key from public.catalog_operations
- where written_at is null and withdrawn_at is null;
-```
-
-Zéro ligne, hors les clés `mirror_only` de l'aperçu.
-
-**7. Accorder `lfc_operations`** à qui prépare les opérations, à l'écran
-`/admin/staff-roles` — jamais par migration.
-
-Rien n'est supprimé : `pim.operations`, `pim.operation_items` et
-`catalog_operation_overrides` restent en base, plus lues ni écrites.
-
-### Le retour arrière
-
-- **Avant l'étape 5** : `gh variable set OPERATIONS_AT_COMMERCE --body false`,
-  redéployer. Rien n'a été écrit au commerce : on est exactement avant.
-- **Après l'étape 5** : la même Variable à `false`, redéployer, puis **un
-  push**. Le push réécrit chaque opération depuis le référentiel (qui n'a pas
-  bougé depuis l'étape 4), et la surcharge, restée en base, s'applique de
-  nouveau. ⚠️ Ce qui a été fait au commerce depuis est perdu : une opération
-  **préparée** au commerce est absente du référentiel, et le push la marque
-  retirée ; une modification est écrasée. Et jusqu'à ce push, une opération
-  reprise sert un texte alternatif vide (la migration n'en écrit plus).
+**Fait le 2026-10-16** (0 opération au référentiel, rien à reprendre).
+L'interrupteur `OPERATIONS_AT_COMMERCE` est retiré du code le 2026-10-17 (X1 de
+[`plan-sans-interrupteurs.md`](../catalogue/plan-sans-interrupteurs.md)) : les
+routes d'écriture de `/pim/operations` refusent pour de bon (409
+`pim.operation.moved_to_commerce`), et le retour arrière est un revert suivi
+d'un redéploiement.
 
 ## Transférer le droit du catalogue (`b2b_catalog` → `lfc_catalog`) — l'ordre, et la condition de L2
 

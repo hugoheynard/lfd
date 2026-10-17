@@ -7,8 +7,7 @@ import { UnknownOperationSkusError } from "../../domain/errors/operation-errors.
 import { OperationSelectionSavedEvent } from "../../domain/events/operation.events.js";
 import { OperationRepository } from "../../domain/ports/operation.repository.js";
 import { OperationSkuCatalogue } from "../../domain/ports/operation-sku.catalogue.js";
-import { OperationWritingSwitch } from "../../domain/ports/operation-writing-switch.js";
-import { ensureWritingOpen, requireOperation, subjectOf } from "./operation-writing.js";
+import { requireOperation, subjectOf } from "./operation-writing.js";
 import { SetOperationSelectionCommand } from "./set-operation-selection.command.js";
 
 /**
@@ -28,14 +27,12 @@ export class SetOperationSelectionHandler implements ICommandHandler<
   constructor(
     private readonly operations: OperationRepository,
     private readonly catalogue: OperationSkuCatalogue,
-    private readonly writing: OperationWritingSwitch,
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
   ) {}
 
   async execute(command: SetOperationSelectionCommand): Promise<void> {
-    ensureWritingOpen(this.writing);
     const operation = await requireOperation(this.operations, command.key);
     const from = operation.snapshot().skus;
     operation.select(command.skus, { by: command.writtenBy, at: this.clock.now() });

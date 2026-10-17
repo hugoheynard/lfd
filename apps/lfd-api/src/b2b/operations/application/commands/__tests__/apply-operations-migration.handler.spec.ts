@@ -6,17 +6,13 @@ import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/dir
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { Operation } from "../../../domain/entities/operation.js";
-import {
-  OperationsMigrationBlockedError,
-  OperationWritingClosedError,
-} from "../../../domain/errors/operation-errors.js";
+import { OperationsMigrationBlockedError } from "../../../domain/errors/operation-errors.js";
 import type { MigrationRestriction } from "../../../domain/services/operation-migration.js";
 import { PreviewOperationsMigrationHandler } from "../../queries/preview-operations-migration.handler.js";
 import { ApplyOperationsMigrationCommand } from "../apply-operations-migration.command.js";
 import { ApplyOperationsMigrationHandler } from "../apply-operations-migration.handler.js";
 import {
   FixedImageLibrary,
-  FixedWritingSwitch,
   InMemoryAdoption,
   InMemoryOperations,
   KnownSkus,
@@ -95,7 +91,6 @@ function scene(options: {
   readonly referential: readonly ReferentialOperation[];
   readonly mirror: readonly Operation[];
   readonly restrictions?: ReadonlyMap<string, MigrationRestriction>;
-  readonly open?: boolean;
 }) {
   const operations = new InMemoryOperations(options.mirror);
   const adoption = new InMemoryAdoption(operations);
@@ -110,7 +105,6 @@ function scene(options: {
     ...readers,
     operations,
     adoption,
-    new FixedWritingSwitch(options.open ?? true),
     events,
     new DirectUnitOfWork(),
     new FixedClock(NOW),
@@ -122,13 +116,6 @@ function scene(options: {
 const migrate = (by = "staff_hugo") => new ApplyOperationsMigrationCommand(by);
 
 describe("ApplyOperationsMigrationHandler", () => {
-  it("interrupteur fermé : refuse avant toute lecture, rien d'écrit", async () => {
-    const { apply, adoption } = scene({ referential: [pim()], mirror: [], open: false });
-
-    await expect(apply.execute(migrate())).rejects.toThrow(OperationWritingClosedError);
-    expect(adoption.adopted).toEqual([]);
-  });
-
   it("verse la surcharge dans l'opération, signe, et trace qui avait restreint quoi", async () => {
     const { apply, operations, events } = scene({
       referential: [pim()],

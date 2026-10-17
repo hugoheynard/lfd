@@ -77,7 +77,6 @@ import { SecurityModule } from "../platform/security/security.module.js";
 import { APP_GUARD } from "@nestjs/core";
 import { AuthGuard } from "../platform/auth/auth.guard.js";
 import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
-import { PublicationEnabledGuard } from "../pim/publication/publication-switch.js";
 
 @Module({
   imports: [
@@ -226,9 +225,6 @@ import { PublicationEnabledGuard } from "../pim/publication/publication-switch.j
     // racine a le droit de connaître les deux.
     DevImpersonation,
     { provide: APP_GUARD, useClass: AuthGuard },
-    // APRÈS l'authentification : refuser un geste de publication à qui n'est
-    // même pas identifié dirait au passage que ce déploiement en a un.
-    { provide: APP_GUARD, useClass: PublicationEnabledGuard },
     // La garde de la boutique (`FeatureAccessGuard`, clé `shop`) a été retirée
     // le 2026-10-09 avec la clé : la boutique est toujours ouverte à la commande.
   ],

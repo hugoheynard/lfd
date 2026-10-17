@@ -14,11 +14,9 @@ import type { WriteTicket } from "../platform/journal/scoped-journal.js";
  * `documentation/operations-datees/plan-l-operation-passe-au-commerce.md`,
  * « L'image : partir de ce qui existe »).
  *
- * Il prend la place de `CatalogCopyMediaCarriers` quand l'interrupteur
- * `OPERATIONS_AT_COMMERCE` est OUVERT : même table, mais ce ne sont plus des
- * copies — le commerce est la source, son `repoint()` écrit l'agrégat
- * (charger, muter, sauver) au lieu de rendre 0 en attendant le fait du
- * référentiel.
+ * Le commerce est la source de `catalog_operations` : son `repoint()` écrit
+ * l'agrégat (charger, muter, sauver). Il a remplacé les copies du push le
+ * 2026-10-17 (X1 de `documentation/catalogue/plan-sans-interrupteurs.md`).
  *
  * Ici, dans `appBootstrap/`, pour la raison de `StorefrontMediaCarriers` : la
  * ligne `b2b` de la matrice n'a pas `media`.
