@@ -71,7 +71,7 @@ sonde d'une seconde, rouge sous la charge de la CI (porté à 5 s, `9703cd863`).
 > **Écarts au plan** : `appBootstrap/delivery-feed.module.ts` et
 > `catalog-delivery-products.reader.ts` sont **restés** — ce sont les fils de
 > la LIVRAISON (tournées, bacs), pas la boîte d'arrivée du catalogue. Le
-> lecteur `in-process-delivery-facts.reader.ts` est **resté**, réduit au
+> lecteur in-process-delivery-facts.reader (retiré le 2026-10-17) est **resté**, réduit au
 > miroir (`awaitingSince` toujours `null`) : la frise d'une fiche le lit, et
 > son retrait n'était pas demandé. Le lecteur des opérations reçues reste pour
 > l'éditeur de vitrine, sans la surcharge.
@@ -215,7 +215,7 @@ Plateforme : ingest-catalog.service.ts (retiré en X2), la boîte d'arrivée
 (`catalog-delivery` : entité, dépôt, événements, `accept-delivery`,
 `get-pending-delivery`, admin-catalog-delivery.controller.ts (retiré en X2),
 in-process-catalog.driver.ts (retiré en X2), `catalog-delivery-products.reader.ts`,
-`in-process-delivery-facts.reader.ts`, `appBootstrap/delivery-feed.module.ts`),
+in-process-delivery-facts.reader (retiré le 2026-10-17), `appBootstrap/delivery-feed.module.ts`),
 preview-catalog-push.handler.ts (retiré en X2), et `B2B_DELIVERY_INBOX`. Front : l'écran
 « Réception » (`b2b/reception/**`) — **sa section « Opérations reçues »**
 sert encore la surcharge des opérations : à vérifier avant de la retirer.
