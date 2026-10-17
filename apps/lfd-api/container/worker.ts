@@ -180,6 +180,11 @@ function pickEnv(env: Env): Record<string, string> {
       out[key] = value;
     }
   }
+  // Les NOMS reçus, jamais les valeurs : ce que le container a vraiment eu au
+  // démarrage. Ajouté le 2026-10-17 : `CATALOG_FACTS_ENABLED`, posé et téléversé
+  // à 17 h 03 la veille, n'était pas vu par l'instance créée à 17 h 03 min 58 —
+  // sans cette trace, rien ne disait ce que l'objet avait passé.
+  out["LFD_RUNTIME_KEYS"] = Object.keys(out).sort().join(",");
   return out;
 }
 
