@@ -152,6 +152,15 @@ SELECT count(*) FROM public.orders WHERE catalog_version_id IS NOT NULL;
 Zéro : (a) ne perd rien. Sinon, c'est le nombre de commandes dont l'estampille
 disparaît sous (a).
 
+> **Mesuré en production et tranché par Hugo le 2026-10-17.** 24 commandes sur
+> 24 portent une estampille, toutes vers **une seule** version (1 en base) ; la
+> dernière date du 2026-10-14, avant X0. **Choix : (b) puis (a)** — l'unique
+> version est exportée hors du dépôt (`SELECT row_to_json(v) FROM
+public.catalog_versions v;`, rangée par Hugo), puis la colonne part avec la
+> table. Les 24 commandes restent explicables sans elle : chaque ligne porte
+> nom, prix, TVA et trace du prix. Démontage en trois temps ci-dessous, plan
+> contredit par `vitruve` avant Hugo, rien sans son ordre.
+
 Les temps, une fois le choix fait :
 
 1. **code** : `Order` cesse de porter `catalogVersionId` (aujourd'hui posé à
