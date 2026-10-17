@@ -402,3 +402,8 @@ Décisions de Hugo, « bâtis » :
   des contextes et leurs tests sont donc **gardés**. Les deux sorties : vider
   `point_of_sale_context` (une suppression de données, sur ordre de Hugo), ou
   attendre L4.
+- **Tranché par Hugo le 2026-10-17 : on attend L4.** `point_of_sale_context`
+  n'est pas vidée ; le compte et la colonne de l'écran des contextes restent
+  jusqu'à la suppression des tables. Et **`pos_b2b` est une ligne morte** :
+  elle entre dans la liste des tables mortes de X5
+  ([`plan-sans-interrupteurs.md`](../catalogue/plan-sans-interrupteurs.md)).
