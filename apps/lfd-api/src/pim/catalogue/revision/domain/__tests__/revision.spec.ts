@@ -25,7 +25,6 @@ function item(over: Partial<RevisionItemInput> = {}): RevisionItemInput {
     allergens: ["AW"],
     nutrition: null,
     vatByContext: { takeaway: 5.5, b2b: 20 },
-    soldContexts: ["takeaway", "b2b"],
     editorial: { descriptionShort: { fr: "Pur beurre" } },
     media: [{ role: "gallery", url: "https://cdn.test/a.jpg", alt: { fr: "Un croissant" } }],
     readyAt: null,

@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { localizedTextSchema, optionalLocalizedTextSchema } from "./localized.js";
 import { setMediaPayloadSchema, type AttachedMediaView } from "./attached-media.js";
-import type { LocalizedText, SalesChannels } from "./shared.js";
+import type { LocalizedText } from "./shared.js";
 import { operationAudienceSchema, type OperationAudience } from "./operation.js";
 
 /**
@@ -113,7 +113,6 @@ export interface CategoryView {
   readonly parentId: string | null;
   readonly position: number;
   readonly isArchived: boolean;
-  readonly channelPreset: SalesChannels;
   /** Les taux visés, par clé de contexte. Clé absente = non réglé. */
   readonly vatByContext: Readonly<Record<string, string>>;
   /** À qui la famille vend — ses fiches en héritent, sauf dérogation. */

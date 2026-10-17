@@ -22,7 +22,6 @@ const product = (id: string): ProductRecord => ({
   status: "published",
   variants: [],
   vatByContext: {},
-  channelOverride: null,
   operationOnly: false,
   requiresCold: false,
   audience: null,

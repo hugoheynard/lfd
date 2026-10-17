@@ -50,7 +50,6 @@ function productAt(rateIndex: number, entered: (price: number) => number | null)
     kind: "daily",
     categoryId: "cat_par",
     status: "published",
-    channelOverride: null,
     operationOnly: false,
     requiresCold: false,
     audience: null,

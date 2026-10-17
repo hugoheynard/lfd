@@ -67,7 +67,6 @@ function buche(operationOnly: boolean): OneProduct {
       },
     ],
     vatByContext: {},
-    channelOverride: null,
     operationOnly,
     requiresCold: false,
     audience: null,

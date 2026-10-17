@@ -7,10 +7,6 @@ import {
   slugify,
   type LocalizedText,
 } from "../../../shared/domain/value-objects/localized-text.js";
-import {
-  emptySalesChannels,
-  type SalesChannels,
-} from "../../../shared/domain/value-objects/sales-channels.js";
 import type { SalesContext } from "../../../../sales-contexts/domain/value-objects/sales-context.js";
 import type { ContextVat } from "../../../shared/domain/value-objects/context-vat.js";
 import type { Audience } from "../../../shared/domain/value-objects/audience.js";
@@ -27,7 +23,7 @@ import type { Audience } from "../../../shared/domain/value-objects/audience.js"
  * - une famille **n'est jamais sa propre parente** ;
  * - un taux **ne se règle que pour un contexte connu** — et pour tout contexte
  *   connu, vendu ou non : la TVA ne dépend plus des canaux (2026-10-15) ;
- * - une famille **archivée est gelée** : ses réglages — canaux, TVA, place
+ * - une famille **archivée est gelée** : ses réglages — TVA, place
  *   dans l'arbre — sont refusés. Seul le **renommage** reste permis, parce
  *   qu'une faute de frappe doit pouvoir se corriger sans ressusciter une
  *   famille qui ne vend plus rien.
@@ -45,7 +41,6 @@ export interface CategorySnapshot {
   readonly parentId: string | null;
   readonly position: number;
   readonly isArchived: boolean;
-  readonly channelPreset: SalesChannels;
   /** Les taux visés, **par clé de contexte**. Clé absente = non réglé. */
   readonly vatByContext: ContextVat;
   /** À qui la famille vend — ses fiches en héritent tant qu'elles ne dérogent pas. */
@@ -68,12 +63,11 @@ export class Category {
     private parentIdValue: string | null,
     private positionValue: number,
     private archivedValue: boolean,
-    private readonly channelPresetValue: SalesChannels,
     private vatByContextValue: ContextVat,
     private audienceValue: Audience,
   ) {}
 
-  /** Ouvre une famille : vivante, sans canal vendu, sans TVA réglée. */
+  /** Ouvre une famille : vivante, sans TVA réglée. */
   static open(input: NewCategoryInput): Category {
     if (input.parentId === input.id) {
       throw new CategorySelfParentError(input.id);
@@ -85,7 +79,6 @@ export class Category {
       input.parentId,
       input.position,
       false,
-      emptySalesChannels(),
       {},
       // `both` : c'est ce que faisait toute famille avant que l'audience
       // existe (1a du plan d'audience), et le défaut de la colonne.
@@ -102,7 +95,6 @@ export class Category {
       snapshot.parentId,
       snapshot.position,
       snapshot.isArchived,
-      snapshot.channelPreset,
       snapshot.vatByContext,
       snapshot.audience,
     );
@@ -142,16 +134,6 @@ export class Category {
    */
   get vatByContext(): ContextVat {
     return this.vatByContextValue;
-  }
-
-  /**
-   * Ce que la famille vendait — **figé** : la matrice des canaux ne s'écrit
-   * plus depuis X4 (`documentation/catalogue/plan-sans-interrupteurs.md`).
-   * Seule la révision la lit encore (`soldContexts`), en attendant que son
-   * sort soit tranché.
-   */
-  get channelPreset(): SalesChannels {
-    return this.channelPresetValue;
   }
 
   get audience(): Audience {
@@ -232,7 +214,6 @@ export class Category {
       parentId: this.parentIdValue,
       position: this.positionValue,
       isArchived: this.archivedValue,
-      channelPreset: this.channelPresetValue,
       vatByContext: this.vatByContextValue,
       audience: this.audienceValue,
     };

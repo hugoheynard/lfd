@@ -85,6 +85,23 @@ sonde d'une seconde, rouge sous la charge de la CI (porté à 5 s, `9703cd863`).
 > vendu ici » — dont le message envoie décocher une matrice qui ne s'édite
 > plus. Il n'est pas touché (question du lot) ; il est décrit dans le
 > rapport de X4.
+>
+> ✅ **Suite de X4, tranchée par Hugo le 2026-10-17 (option a) et bâtie le
+> même jour** (non commitée au moment d'écrire). `soldContexts` **sort des
+> révisions** : la source ne le photographie plus, `effectiveChannels` a
+> quitté le lecteur du catalogue, et `channelPreset` / `channelOverride` ont
+> quitté les agrégats, leurs dépôts (ni lus ni réécrits) et les vues
+> `@lfd/pim-contracts` (avec `SalesChannels` / `SoldChannel`). Le refus
+> `context_still_sold` du point de vente **disparaît** — il ne comptait que
+> la matrice figée, donc ne se levait plus jamais ou se levait pour
+> toujours. **Effet assumé** : comparer une révision d'avant à une d'après
+> montre « Contextes de vente » sorti sur chaque article, **une fois** ; le
+> libellé reste à l'écran pour ça, et l'attribution garde les deux faits de
+> canaux (plus émis) comme auteurs des changements d'avant. Restent sur la
+> matrice figée, hors de cette suite : le compte d'usage du point de vente
+> (et la clé étrangère `Restrict` qui en refuse la suppression) et
+> `usageByKey` du registre des contextes — le plan du point de vente les
+> reprendra. Les tables restent.
 
 > 🟡 **X2 bâti le 2026-10-17** (non commité au moment d'écrire). Partis :
 > le push (commande, service, contrôleur, port `B2bCatalogDriver` et son

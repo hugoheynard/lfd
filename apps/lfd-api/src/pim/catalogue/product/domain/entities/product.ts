@@ -19,7 +19,6 @@ import {
   slugify,
   type LocalizedText,
 } from "../../../shared/domain/value-objects/localized-text.js";
-import { type SalesChannels } from "../../../shared/domain/value-objects/sales-channels.js";
 import type { SalesContext } from "../../../../sales-contexts/domain/value-objects/sales-context.js";
 import type { ContextVat } from "../../../shared/domain/value-objects/context-vat.js";
 import type { AllergenDeclaration } from "../value-objects/nutrition-declaration.js";
@@ -61,14 +60,6 @@ export interface ProductSnapshot {
    * famille. Clé absente = il hérite, et c'est le cas courant.
    */
   readonly vatByContext: ContextVat;
-  /**
-   * Où la fiche se vend quand elle ne suit pas sa famille. `null` = elle hérite.
-   *
-   * Tout-ou-rien, à la différence des taux : une matrice à moitié redéfinie ne
-   * se lit pas. Les taux, eux, sont des faits indépendants — déroger en B2B et
-   * suivre sa famille au comptoir est le cas courant.
-   */
-  readonly channelOverride: SalesChannels | null;
   /**
    * **Vendu seulement pendant une opération** — la bûche, pas le croissant
    * (D3 de `documentation/operations-datees/architecture-operations-datees.md`).
@@ -138,7 +129,6 @@ export class Product {
     private statusValue: ProductStatus,
     private readonly variantList: Variant[],
     private vatByContextValue: ContextVat,
-    private readonly channelOverrideValue: SalesChannels | null,
     private operationOnlyValue: boolean,
     private requiresColdValue: boolean,
     private audienceValue: Audience | null,
@@ -158,7 +148,6 @@ export class Product {
       // Un produit naît SANS dérogation : il suit sa famille jusqu'à ce que
       // quelqu'un décide le contraire, et cette décision se voit.
       {},
-      null,
       // Un produit naît COURANT : le réserver aux opérations est une décision
       // qu'on prend en le sachant, et qui se lit au journal.
       false,
@@ -181,7 +170,6 @@ export class Product {
       snapshot.status,
       snapshot.variants.map((variant) => Variant.reconstitute(variant)),
       snapshot.vatByContext,
-      snapshot.channelOverride,
       snapshot.operationOnly,
       snapshot.requiresCold,
       snapshot.audience,
@@ -207,14 +195,6 @@ export class Product {
   /** Les taux propres au produit — sa dérogation. Vide = il hérite. */
   get vatByContext(): ContextVat {
     return this.vatByContextValue;
-  }
-
-  /**
-   * Sa matrice propre, ou `null` s'il suit sa famille — **figée** depuis X4,
-   * comme celle de la famille (`Category.channelPreset`).
-   */
-  get channelOverride(): SalesChannels | null {
-    return this.channelOverrideValue;
   }
 
   /**
@@ -626,7 +606,6 @@ export class Product {
       categoryId: this.categoryIdValue,
       status: this.statusValue,
       vatByContext: this.vatByContextValue,
-      channelOverride: this.channelOverrideValue,
       operationOnly: this.operationOnlyValue,
       requiresCold: this.requiresColdValue,
       audience: this.audienceValue,

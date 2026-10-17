@@ -8,7 +8,7 @@ import {
   setMediaPayloadSchema,
   type AttachedMediaView,
 } from "./attached-media.js";
-import type { LocalizedText, SalesChannels } from "./shared.js";
+import type { LocalizedText } from "./shared.js";
 
 /**
  * Contrat de fil des **produits** (catalogue). L'édition se fait **par section**
@@ -296,14 +296,6 @@ export interface ProductView {
    * le moyen de dire « ce taux-là vient d'ici ».
    */
   readonly vatByContext: Readonly<Record<string, string>>;
-  /**
-   * Où la fiche se vend quand elle ne suit pas sa famille. `null` = elle hérite.
-   *
-   * La vue rend la DÉROGATION, pas les canaux effectifs : l'écran a déjà la
-   * matrice de la famille, et rendre les deux fusionnés lui retirerait le moyen
-   * de dire « ceci vient d'ici » — donc de proposer d'y renoncer.
-   */
-  readonly channelOverride: SalesChannels | null;
   /**
    * **Vendu seulement pendant une opération** (D3 du plan des opérations
    * datées). `false` = article courant, le cas de toute fiche d'avant le lot 2.

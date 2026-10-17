@@ -200,9 +200,9 @@ export const PIM_EVENTS = {
    * Change le parent — sa place dans l'arbre, et rien de ce qu'elle facture.
    *
    * ⚠️ Ce commentaire disait « donc l'héritage de TVA et de canaux en aval ».
-   * C'est faux : une famille ne tient ni sa TVA ni ses canaux de son parent —
-   * `effectiveVat` ne lit que la famille directe d'une fiche, et le lecteur du
-   * catalogue ne lit que son `channelPreset` (vérifié le 2026-09-19).
+   * C'est faux : une famille ne tient pas sa TVA de son parent —
+   * `effectiveVat` ne lit que la famille directe d'une fiche (vérifié le
+   * 2026-09-19). Les canaux ne se lisent plus du tout depuis le 2026-10-17.
    */
   productCategoryMoved: "product_category.moved",
   productCategoryArchived: "product_category.archived",

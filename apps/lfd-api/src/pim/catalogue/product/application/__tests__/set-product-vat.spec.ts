@@ -3,7 +3,6 @@ import { KnownVatRates } from "../../../shared/application/__tests__/journal-nam
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
 import { VatRateNotFoundError } from "../../../../vat-rates/domain/errors/vat-rate-errors.js";
 import { VatRateRepository } from "../../../../vat-rates/domain/ports/vat-rate.repository.js";
-import type { SalesChannels } from "../../../shared/domain/value-objects/sales-channels.js";
 import type { SalesContext } from "../../../../sales-contexts/domain/value-objects/sales-context.js";
 import { SalesContextRegistry } from "../../../../sales-contexts/domain/ports/sales-context.registry.js";
 import { ProductUnknownContextError } from "../../domain/errors/product-errors.js";
@@ -39,10 +38,7 @@ const registry: SalesContextRegistry = {
   offeredByLocations: () => Promise.resolve(new Map()),
 };
 
-function snapshot(
-  vatByContext: Readonly<Record<string, string>> = {},
-  channelOverride: SalesChannels | null = null,
-): ProductSnapshot {
+function snapshot(vatByContext: Readonly<Record<string, string>> = {}): ProductSnapshot {
   return {
     id: "prd_1",
     sku: "TAR-1",
@@ -71,7 +67,6 @@ function snapshot(
       },
     ],
     vatByContext,
-    channelOverride,
     operationOnly: false,
     requiresCold: false,
     audience: null,
@@ -219,23 +214,5 @@ describe("SetProductVatHandler", () => {
     ).execute(new SetProductVatCommand("prd_1", { b2b: "tva_20" }));
 
     expect(journal.types()).toEqual([]);
-  });
-});
-
-describe("SetProductVatHandler — sur une fiche à la matrice figée", () => {
-  /** Régression : refusé jusqu'au 2026-10-15 — la fiche avait fermé le B2B. */
-  it("un taux se pose pour un contexte que la fiche a elle-même fermé", async () => {
-    const products = new FakeProducts(snapshot({}, []));
-
-    await new SetProductVatHandler(
-      products,
-      rates(),
-      registry,
-      new RecordingJournal(),
-      new DirectUnitOfWork(),
-      new RecordingCatalogEmitter(),
-    ).execute(new SetProductVatCommand("prd_1", { b2b: "tva_20" }));
-
-    expect(products.saved.vatByContext).toEqual({ b2b: "tva_20" });
   });
 });

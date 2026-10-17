@@ -23,6 +23,9 @@ const GLOBAL_CAUSES: Readonly<Record<string, readonly string[]>> = {
   [PIM_EVENTS.vatRateRateChanged]: ["vatByContext"],
   [PIM_EVENTS.vatRateDeleted]: ["vatByContext"],
   [PIM_EVENTS.productCategoryVatChanged]: ["vatByContext"],
+  // Plus émis depuis X4, et `soldContexts` n'est plus photographié depuis le
+  // 2026-10-17 : gardé pour les ancres d'avant, qui le portent encore et dont
+  // le changement a bien eu cette cause.
   [PIM_EVENTS.productCategoryChannelsChanged]: ["soldContexts"],
   // Cause posée au-dessus du diff, sans champ couvert : l'audience n'entre
   // dans aucun champ de révision (`RevisionItemInput`, vérifié le 2026-10-15),
@@ -30,12 +33,14 @@ const GLOBAL_CAUSES: Readonly<Record<string, readonly string[]>> = {
   [PIM_EVENTS.productCategoryAudienceChanged]: [],
   [PIM_EVENTS.productCategoryRenamed]: ["categoryName"],
   [PIM_EVENTS.productCategoryMoved]: ["categoryId", "categoryName"],
-  // Un contexte de vente qu'on ouvre, ferme ou renomme change les CLÉS des
-  // deux cartes : un article peut gagner ou perdre une ligne sans que personne
-  // n'ait touché à sa fiche.
-  [PIM_EVENTS.salesContextCreated]: ["vatByContext", "soldContexts"],
-  [PIM_EVENTS.salesContextUpdated]: ["vatByContext", "soldContexts"],
-  [PIM_EVENTS.salesContextDeleted]: ["vatByContext", "soldContexts"],
+  // Un contexte de vente qu'on ouvre, ferme ou renomme change les CLÉS de la
+  // carte des taux : un article peut gagner ou perdre une ligne sans que
+  // personne n'ait touché à sa fiche. `soldContexts` n'en est plus : il n'est
+  // plus photographié (2026-10-17), et un fait vivant ne s'attribue pas un
+  // champ que les ancres à venir ne portent pas.
+  [PIM_EVENTS.salesContextCreated]: ["vatByContext"],
+  [PIM_EVENTS.salesContextUpdated]: ["vatByContext"],
+  [PIM_EVENTS.salesContextDeleted]: ["vatByContext"],
 };
 
 /** Les types de faits à relire pour trouver des causes. */

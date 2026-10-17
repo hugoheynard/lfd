@@ -1,11 +1,4 @@
-export type {
-  LocalizedText,
-  Locale,
-  TranslatedLocale,
-  SoldChannel,
-  SalesChannels,
-  CreatedIdResponse,
-} from "./shared.js";
+export type { LocalizedText, Locale, TranslatedLocale, CreatedIdResponse } from "./shared.js";
 export {
   LOCALES,
   SOURCE_LOCALE,

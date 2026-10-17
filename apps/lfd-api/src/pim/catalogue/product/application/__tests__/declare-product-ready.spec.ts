@@ -41,7 +41,6 @@ function snapshot(status: ProductSnapshot["status"]): ProductSnapshot {
     categoryId: "cat_1",
     status,
     vatByContext: {},
-    channelOverride: null,
     operationOnly: false,
     requiresCold: false,
     audience: null,

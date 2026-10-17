@@ -6,7 +6,6 @@ import {
   type ChannelCategory,
 } from "../../../shared/domain/ports/catalogue-reader.js";
 import type { Audience } from "../../../shared/domain/value-objects/audience.js";
-import type { SalesChannels } from "../../../shared/domain/value-objects/sales-channels.js";
 import { Product, type ProductSnapshot } from "../../domain/entities/product.js";
 import type { VariantSnapshot } from "../../domain/entities/variant.js";
 import type { ProductEditorialView } from "../../domain/ports/editorial-reader.js";
@@ -61,7 +60,6 @@ export function tarte(over: Partial<ProductSnapshot> = {}): ProductSnapshot {
     status: "draft",
     variants: [SELLABLE_VARIANT],
     vatByContext: {},
-    channelOverride: null,
     operationOnly: false,
     requiresCold: false,
     audience: null,
@@ -93,8 +91,6 @@ export class OneProduct extends ProductRepository {
   }
 }
 
-const NO_CHANNELS: SalesChannels = [];
-
 /** Une famille, à l'audience donnée. */
 export function family(audience: Audience, isArchived = false): Category {
   return Category.reconstitute({
@@ -104,7 +100,6 @@ export function family(audience: Audience, isArchived = false): Category {
     parentId: null,
     position: 0,
     isArchived,
-    channelPreset: NO_CHANNELS,
     vatByContext: {},
     audience,
   });
@@ -166,9 +161,6 @@ export class FixedVatPercents extends CatalogueReader {
   }
   byIds(): Promise<ProductRecord[]> {
     return Promise.resolve([]);
-  }
-  effectiveChannels(): Promise<ReadonlyMap<string, SalesChannels>> {
-    return Promise.resolve(new Map());
   }
   channelCategories(): Promise<ChannelCategory[]> {
     return Promise.resolve([]);

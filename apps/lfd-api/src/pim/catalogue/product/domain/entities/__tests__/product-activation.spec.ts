@@ -47,7 +47,6 @@ function product(over: Partial<ProductSnapshot> = {}): Product {
     status: "draft",
     variants: [variant()],
     vatByContext: {},
-    channelOverride: null,
     operationOnly: false,
     requiresCold: false,
     audience: null,

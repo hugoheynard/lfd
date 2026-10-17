@@ -11,7 +11,6 @@ import { UuidGenerator } from "../../../../../platform/id/uuid-generator.js";
 import { Category } from "../../../category/domain/entities/category.js";
 import { CategoryArchivedError } from "../../../category/domain/errors/category-errors.js";
 import { CategoryRepository } from "../../../category/domain/ports/category.repository.js";
-import type { SalesChannels } from "../../../shared/domain/value-objects/sales-channels.js";
 import { Product, type ProductSnapshot } from "../../domain/entities/product.js";
 import { EditorialRepository } from "../../domain/ports/editorial.repository.js";
 import { NutritionValuesRepository } from "../../domain/ports/nutrition-values.repository.js";
@@ -25,8 +24,6 @@ import {
   type CreateProductInput,
 } from "../create-product.js";
 import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
-
-const NO_CHANNELS: SalesChannels = [];
 
 class FakeProductRepository extends ProductRepository {
   readonly written: ProductSnapshot[] = [];
@@ -68,7 +65,6 @@ class FakeCategoryRepository extends CategoryRepository {
       parentId: null,
       position: 0,
       isArchived,
-      channelPreset: NO_CHANNELS,
       vatByContext: {},
       audience: "both",
     });

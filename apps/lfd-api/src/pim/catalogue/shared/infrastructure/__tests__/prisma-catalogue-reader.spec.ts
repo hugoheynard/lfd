@@ -34,7 +34,6 @@ function product(vatByContext: Readonly<Record<string, string>> = {}): ProductSn
     status: "published",
     variants: [],
     vatByContext,
-    channelOverride: null,
     operationOnly: false,
     requiresCold: false,
     audience: null,

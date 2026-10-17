@@ -18,7 +18,6 @@ import {
   readStringArrayColumn,
   readStringMapColumn,
 } from "../../shared/infrastructure/json-readers.js";
-import { normalizeSalesChannels } from "../../shared/domain/value-objects/sales-channels.js";
 import { audience } from "../../shared/domain/value-objects/audience.js";
 
 /** La moitié « sécurité » : ce que la déclinaison contient, et ses traces. */
@@ -70,17 +69,14 @@ interface ProductRow {
   audience: string | null;
   variants: VariantRow[];
   contextVat: readonly { vatRateId: string; context: { key: string } }[];
-  channelOverrideRows: {
-    readonly cells: readonly { pointOfSaleId: string; contextKey: string }[];
-  } | null;
 }
 
 /**
  * Les dérogations voyagent AVEC le produit : elles sont à lui.
  *
- * Celle des canaux est une **ligne parente plus ses cellules**, et non une
- * colonne : c'est ce qui distingue « déroge et ne vend nulle part » (parente
- * présente, zéro cellule) de « hérite de sa famille » (pas de parente).
+ * Celle des canaux n'est plus lue ni écrite depuis que la révision ne
+ * photographie plus `soldContexts` (2026-10-17, suite de X4) : ses tables
+ * restent, figées.
  */
 const PRODUCT_INCLUDE = {
   // Les DEUX tables de la fiche réglementaire depuis le 2026-09-22, et plus
@@ -91,7 +87,6 @@ const PRODUCT_INCLUDE = {
     include: { allergenSheet: true, nutritionValues: true },
   },
   contextVat: { select: { vatRateId: true, context: { select: { key: true } } } },
-  channelOverrideRows: { select: { cells: { select: { pointOfSaleId: true, contextKey: true } } } },
 } as const;
 
 function toVariant(row: VariantRow): VariantSnapshot {
@@ -174,17 +169,6 @@ function toProduct(row: ProductRow): Product {
     vatByContext: Object.fromEntries(
       row.contextVat.map((line) => [line.context.key, line.vatRateId]),
     ),
-    // L'ABSENCE de ligne parente est « la fiche hérite » ; une parente sans
-    // cellule est « elle déroge, et ne vend nulle part ». Les deux se lisent.
-    channelOverride:
-      row.channelOverrideRows === null
-        ? null
-        : normalizeSalesChannels(
-            row.channelOverrideRows.cells.map((cell) => ({
-              pointOfSaleId: cell.pointOfSaleId,
-              context: cell.contextKey,
-            })),
-          ),
   });
 }
 
@@ -320,7 +304,6 @@ export class PrismaProductRepository extends ProductRepository {
           },
         }),
       ),
-      ...this.overrideOperations(snapshot),
       // `upsert` et non `update` : une déclinaison AJOUTÉE par ce passage
       // n'existe pas encore en base, et un `update` échouerait sur elle. La
       // réservation de sa référence part avec, dans la même transaction — sans
@@ -367,44 +350,5 @@ export class PrismaProductRepository extends ProductRepository {
         }),
       ),
     ]);
-  }
-
-  /**
-   * Écrit la dérogation de canaux **en table** — la forme cible (C0-d, d-1).
-   *
-   * La ligne parente porte l'EXISTENCE de la dérogation, ses cellules ce
-   * qu'elle contient. C'est ce qui distingue « déroge et ne vend nulle part »
-   * de « hérite de sa famille » : sans elle, les deux seraient zéro ligne, donc
-   * indistinguables.
-   *
-   * Le `deleteMany` sur la parente emporte les cellules par cascade — rien à
-   * nettoyer avant de réécrire, et surtout aucune cellule ne peut survivre à la
-   * dérogation qui la portait.
-   *
-   * `point_of_sale_id` est la seule colonne de lieu depuis p-3.
-   */
-  private overrideOperations(snapshot: ProductSnapshot) {
-    const remove = this.prisma.productChannelOverride.deleteMany({
-      where: { productId: snapshot.id },
-    });
-    if (snapshot.channelOverride === null) {
-      return [remove];
-    }
-    const sold = snapshot.channelOverride;
-    return [
-      remove,
-      this.prisma.productChannelOverride.create({ data: { productId: snapshot.id } }),
-      ...(sold.length === 0
-        ? []
-        : [
-            this.prisma.productChannel.createMany({
-              data: sold.map((channel) => ({
-                productId: snapshot.id,
-                pointOfSaleId: channel.pointOfSaleId,
-                contextKey: channel.context,
-              })),
-            }),
-          ]),
-    ];
   }
 }

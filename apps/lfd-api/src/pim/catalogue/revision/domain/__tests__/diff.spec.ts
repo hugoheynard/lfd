@@ -83,6 +83,17 @@ describe("diffItem", () => {
     ]);
   });
 
+  /**
+   * L'effet assumé du 2026-10-17 : `soldContexts` n'est plus photographié. Une
+   * ancre d'avant le porte, une d'après non — la ligne sort, une fois, et dit
+   * « disparu » plutôt que de se taire.
+   */
+  it("montre la sortie de `soldContexts` entre une ancre d'avant et une d'après", () => {
+    const diff = diffItem("VIE-1", { ...before, soldContexts: ["takeaway"] }, before);
+
+    expect(diff.fields).toEqual([{ field: "soldContexts", before: '["takeaway"]', after: "—" }]);
+  });
+
   it("ne signale que les champs qui ont bougé", () => {
     const diff = diffItem("VIE-1", before, { ...before, priceCents: 130 });
 

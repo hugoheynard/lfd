@@ -99,13 +99,10 @@ describe("l’agrégat Category", () => {
     });
   });
 
-  it("naît vivante, sans canal vendu ni TVA réglée", () => {
+  it("naît vivante, sans TVA réglée", () => {
     const snapshot = Category.open(OPEN).snapshot();
     expect(snapshot.isArchived).toBe(false);
     expect(snapshot.vatByContext).toEqual({});
-    // Une carte VIDE, pas deux boutiques à zéro : les emplacements sont une
-    // donnée, et une famille neuve n'en coche aucun.
-    expect(snapshot.channelPreset).toEqual([]);
   });
 
   it("se reconstitue à l’identique depuis son instantané", () => {

@@ -45,7 +45,6 @@ function snapshot(second: Partial<VariantSnapshot> = {}): ProductSnapshot {
     categoryId: "cat_1",
     status: "draft",
     vatByContext: {},
-    channelOverride: null,
     operationOnly: false,
     requiresCold: false,
     audience: null,

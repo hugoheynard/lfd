@@ -17,7 +17,6 @@ import {
 } from "../../../category/domain/errors/category-errors.js";
 import { Category } from "../../../category/domain/entities/category.js";
 import { CategoryRepository } from "../../../category/domain/ports/category.repository.js";
-import type { SalesChannels } from "../../../shared/domain/value-objects/sales-channels.js";
 import {
   EditorialReader,
   type ProductEditorialView,
@@ -64,7 +63,6 @@ function seedProduct(): ProductSnapshot {
     categoryId: "cat_active",
     status: "draft",
     vatByContext: {},
-    channelOverride: null,
     operationOnly: false,
     requiresCold: false,
     audience: null,
@@ -127,7 +125,6 @@ class FakeProductRepository extends ProductRepository {
 
 /** Rien de vendu. Les emplacements sont une DONNÉE : la carte est vide, elle
  *  ne porte pas deux boutiques codées en dur à zéro. */
-const NO_CHANNELS: SalesChannels = [];
 
 class FakeCategoryRepository extends CategoryRepository {
   /** Deux familles suffisent aux verbes produit : une vivante, une archivée. */
@@ -139,7 +136,6 @@ class FakeCategoryRepository extends CategoryRepository {
       parentId: null,
       position: 0,
       isArchived,
-      channelPreset: NO_CHANNELS,
       vatByContext: {},
       audience: "both",
     });

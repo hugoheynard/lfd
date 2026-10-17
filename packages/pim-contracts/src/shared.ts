@@ -8,8 +8,7 @@
  * ce qui suit en dérive, et ouvrir une langue est une entrée de plus ici — pas
  * un champ de plus dans dix types, ni une migration.
  *
- * Le même principe que `SalesChannels.boutiques` plus bas, pour la même raison :
- * une dimension qui grandit se pilote par la donnée, jamais par des clés fixes.
+ * Une dimension qui grandit se pilote par la donnée, jamais par des clés fixes.
  * `nameFr` / `nameEn` étaient exactement ces clés fixes, et une troisième langue
  * demandait de les retrouver aux quatre coins du monorepo.
  */
@@ -81,32 +80,6 @@ export function missingLocales(text: LocalizedText): readonly Locale[] {
   const filled = filledLocales(text);
   return LOCALES.filter((locale) => !filled.includes(locale));
 }
-
-/** Un canal **vendu** : un contexte, et le lieu depuis lequel il se vend. */
-export interface SoldChannel {
-  /**
-   * Le point de vente qui vend ce contexte. **Jamais `null`** : c'était
-   * `locationId`, où `null` voulait dire « le B2B » — un `NULL` porteur de
-   * sens, donc une ligne absente quelque part. La plateforme professionnelle a
-   * la sienne depuis p-0.
-   */
-  readonly pointOfSaleId: string;
-  /** La clé du contexte, telle que le registre la porte. */
-  readonly context: string;
-}
-
-/**
- * Où et comment une gamme se vend — un **ensemble de paires**.
- *
- * Les emplacements ÉTAIENT déjà une donnée ; les **modes** ne l'étaient pas. La
- * carte s'écrivait `{ boutiques: Record<id, { emporter, surPlace }>, b2b }`, si
- * bien qu'un écran ne pouvait pas afficher un quatrième contexte de vente sans
- * qu'on le livre. Les paires suppriment la distinction : un contexte de plus
- * est une ligne de plus au registre, de bout en bout.
- *
- * Une paire absente n'est pas un faux : on n'écrit que ce qui est vendu.
- */
-export type SalesChannels = readonly SoldChannel[];
 
 /** Réponse standard d'une création : l'identifiant assigné par la commande (R1). */
 export interface CreatedIdResponse {

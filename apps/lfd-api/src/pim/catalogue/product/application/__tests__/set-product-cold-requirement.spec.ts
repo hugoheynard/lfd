@@ -67,7 +67,6 @@ function tarte(requiresCold: boolean): OneProduct {
       },
     ],
     vatByContext: {},
-    channelOverride: null,
     operationOnly: false,
     requiresCold,
     audience: null,

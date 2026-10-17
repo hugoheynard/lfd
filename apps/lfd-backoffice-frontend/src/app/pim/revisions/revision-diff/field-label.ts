@@ -12,6 +12,10 @@
  * pour ça que l'inconnu retombe sur la clé brute au lieu d'un « champ » vague —
  * un nom technique qu'on ne comprend pas se cherche, un libellé générique ne se
  * cherche pas.
+ *
+ * Elle garde aussi les clés que les ancres D'AVANT portent encore :
+ * `soldContexts` n'est plus photographié depuis le 2026-10-17, et comparer une
+ * ancre d'avant à une d'après le montre sorti, une fois, sur chaque article.
  */
 const LABELS: Readonly<Record<string, string>> = {
   sku: "Référence de l'article",

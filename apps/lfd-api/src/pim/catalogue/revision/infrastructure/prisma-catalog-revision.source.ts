@@ -38,24 +38,17 @@ export class PrismaCatalogRevisionSource extends CatalogRevisionSource {
       return [];
     }
     const ids = products.map((product) => product.id);
-    const [categories, vatByProduct, channelsByProduct, editorials, mediaByProduct, signatures] =
-      await Promise.all([
-        this.catalogue.channelCategories(),
-        this.catalogue.vatPercents(products),
-        this.catalogue.effectiveChannels(products),
-        this.editorials.findByProducts(ids),
-        this.mediaOf(ids),
-        this.readiness.readMany(ids),
-      ]);
+    const [categories, vatByProduct, editorials, mediaByProduct, signatures] = await Promise.all([
+      this.catalogue.channelCategories(),
+      this.catalogue.vatPercents(products),
+      this.editorials.findByProducts(ids),
+      this.mediaOf(ids),
+      this.readiness.readMany(ids),
+    ]);
     const categoryName = new Map(categories.map((category) => [category.id, category.name]));
 
     return products.flatMap((product) => {
       const vat = vatByProduct.get(product.id) ?? {};
-      // Les contextes réellement vendus, résolus : une ancre ne garde pas
-      // « hérite de sa famille », elle garde la réponse.
-      const sold = [...new Set((channelsByProduct.get(product.id) ?? []).map((c) => c.context))]
-        .sort()
-        .map((context) => context);
       const editorial = editorials.get(product.id) ?? null;
       const media = mediaByProduct.get(product.id) ?? [];
       // La signature est portée par le PRODUIT : ses déclinaisons partagent
@@ -85,7 +78,6 @@ export class PrismaCatalogRevisionSource extends CatalogRevisionSource {
         allergens: variant.allergenSheet === null ? null : [...variant.allergenSheet.declared],
         nutrition: nutritionOf(variant.nutrition),
         vatByContext: { ...vat },
-        soldContexts: sold,
         editorial: editorial === null ? null : { ...editorial },
         media,
         readyAt: signed === null ? null : signed.readyAt.toISOString(),

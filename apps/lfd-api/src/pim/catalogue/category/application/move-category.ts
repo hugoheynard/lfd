@@ -60,10 +60,9 @@ export class MoveCategoryHandler implements ICommandHandler<MoveCategoryCommand,
         subjectType: "product_category",
         subjectId: category.id,
         // Le parent AVANT et APRÈS : la place de la famille dans l'arbre. Elle
-        // ne tient de lui ni sa TVA ni ses canaux — `effectiveVat` ne lit que
-        // la famille directe d'une fiche, et les canaux se lisent sur son seul
-        // `channelPreset` (vérifié le 2026-09-19 ; ce commentaire affirmait
-        // l'inverse). Déplacer une famille ne change donc aucun taux.
+        // ne tient pas de lui sa TVA — `effectiveVat` ne lit que la famille
+        // directe d'une fiche (vérifié le 2026-09-19 ; ce commentaire
+        // affirmait l'inverse). Déplacer une famille ne change donc aucun taux.
         payload: {
           subjectLabel: category.name.fr,
           parent: { from: namedCategory(from), to: namedCategory(parent) },

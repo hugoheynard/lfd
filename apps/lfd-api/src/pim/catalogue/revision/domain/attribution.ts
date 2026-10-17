@@ -53,9 +53,12 @@ const TOUCHES: Readonly<Record<string, readonly string[] | "changes" | "*">> = {
   // pas par champ : ses clés ne sont donc pas lisibles comme des champs, et la
   // correspondance s'écrit.
   [PIM_EVENTS.productVatChanged]: ["vatByContext"],
+  // Plus émis depuis X4, et `soldContexts` n'est plus photographié depuis le
+  // 2026-10-17 : gardé, comme l'ancêtre des allergènes plus haut, pour rester
+  // l'auteur des changements qu'il a écrits entre deux ancres d'avant.
   [PIM_EVENTS.productChannelsChanged]: ["soldContexts"],
-  // La famille, et elle seule : `vatByContext` et `soldContexts` d'une révision
-  // sont EFFECTIFS, et un reclassement a pu les changer — ou non, si les deux
+  // La famille, et elle seule : `vatByContext` d'une révision est EFFECTIF
+  // (`soldContexts` l'était aussi, tant qu'il était photographié), et un reclassement a pu les changer — ou non, si les deux
   // familles règlent pareil, ou pour une autre cause dans le même intervalle.
   // Il n'a donc que PU en être l'auteur, et ce module n'attribue pas un
   // possible (cf. les causes globales, plus bas).

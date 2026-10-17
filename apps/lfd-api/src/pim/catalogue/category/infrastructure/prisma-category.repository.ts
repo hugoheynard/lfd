@@ -12,10 +12,6 @@ import {
   readLocalizedColumn,
   violatedConstraint,
 } from "../../shared/infrastructure/json-readers.js";
-import {
-  normalizeSalesChannels,
-  type SalesChannels,
-} from "../../shared/domain/value-objects/sales-channels.js";
 import { audience } from "../../shared/domain/value-objects/audience.js";
 
 interface CategoryRow {
@@ -27,31 +23,16 @@ interface CategoryRow {
   isArchived: boolean;
   audience: string;
   contextVat: readonly { vatRateId: string; context: { key: string } }[];
-  channels: readonly { pointOfSaleId: string; contextKey: string }[];
 }
 
 /**
- * Les taux viennent de la jointure, les canaux de `category_channel`. Les deux
- * colonnes qui les portaient — trois taux nommés, une matrice `jsonb` — ont
- * disparu de la lecture ; la seconde reste ÉCRITE jusqu'à d-3.
+ * Les taux viennent de la jointure. `category_channel` n'est plus ni lue ni
+ * écrite par la famille depuis que la révision ne photographie plus
+ * `soldContexts` (2026-10-17, suite de X4) : la table reste, figée.
  */
 const CATEGORY_WITH_VAT = {
   contextVat: { select: { vatRateId: true, context: { select: { key: true } } } },
-  channels: { select: { pointOfSaleId: true, contextKey: true } },
 } as const;
-
-/**
- * Les lignes de `category_channel` en paires du domaine.
- *
- * Normalisées à la lecture, pas seulement à l'écriture : la base ne garantit
- * aucun ordre, et un « avant/après » de journal comparerait alors deux
- * ensembles identiques rangés différemment.
- */
-function toChannels(rows: readonly { pointOfSaleId: string; contextKey: string }[]): SalesChannels {
-  return normalizeSalesChannels(
-    rows.map((row) => ({ pointOfSaleId: row.pointOfSaleId, context: row.contextKey })),
-  );
-}
 
 function toCategory(row: CategoryRow): Category {
   const vatByContext: Record<string, string> = {};
@@ -65,7 +46,6 @@ function toCategory(row: CategoryRow): Category {
     parentId: row.parentId,
     position: row.position,
     isArchived: row.isArchived,
-    channelPreset: toChannels(row.channels),
     vatByContext,
     // Revalidée : une ligne relue n'est pas passée par le contrat.
     audience: audience(row.audience),
@@ -130,7 +110,6 @@ export class PrismaCategoryRepository extends CategoryRepository {
       this.prisma.$transaction([
         this.prisma.category.create({ data: { id: snapshot.id, ...toColumns(snapshot) } }),
         ...this.vatOperations(snapshot),
-        ...this.channelOperations(snapshot),
       ]),
     );
   }
@@ -141,7 +120,6 @@ export class PrismaCategoryRepository extends CategoryRepository {
       this.prisma.$transaction([
         this.prisma.category.update({ where: { id: snapshot.id }, data: toColumns(snapshot) }),
         ...this.vatOperations(snapshot),
-        ...this.channelOperations(snapshot),
       ]),
     );
   }
@@ -178,7 +156,6 @@ export class PrismaCategoryRepository extends CategoryRepository {
             data: toColumns(snapshot),
           }),
           ...this.vatOperations(snapshot),
-          ...this.channelOperations(snapshot),
         ];
       }),
     ]);
@@ -209,38 +186,6 @@ export class PrismaCategoryRepository extends CategoryRepository {
           },
         }),
       ),
-    ];
-  }
-
-  /**
-   * Écrit ce que la famille vend, **une ligne par (lieu, contexte)** — la forme
-   * cible de la matrice (C0-d, tranche d-1).
-   *
-   * Dans la MÊME transaction que la colonne dont elle dérive, comme les taux et
-   * l'index de référence : hors transaction, l'une des deux pourrait manquer, et
-   * la table deviendrait une seconde vérité au lieu d'un miroir.
-   *
-   * Elle est LUE depuis d-2 : c'est la matrice elle-même, plus un miroir de
-   * `jsonb`.
-   *
-   * `point_of_sale_id` est la seule colonne de lieu depuis p-3 : `location_id`
-   * a disparu, et le `NULL` qui voulait dire « le B2B » avec elle.
-   */
-  private channelOperations(snapshot: CategorySnapshot) {
-    const sold = snapshot.channelPreset;
-    return [
-      this.prisma.categoryChannel.deleteMany({ where: { categoryId: snapshot.id } }),
-      ...(sold.length === 0
-        ? []
-        : [
-            this.prisma.categoryChannel.createMany({
-              data: sold.map((channel) => ({
-                categoryId: snapshot.id,
-                pointOfSaleId: channel.pointOfSaleId,
-                contextKey: channel.context,
-              })),
-            }),
-          ]),
     ];
   }
 
