@@ -1,0 +1,27 @@
+.vnp-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.vnp-subject {
+  margin: 0;
+  font-weight: var(--fold-weight-semibold);
+}
+
+.vnp-viewer {
+  display: flex;
+  min-height: 0;
+}
+
+.vnp-frame {
+  flex: 1;
+  height: 28rem;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+}
+
+.vnp-recipients {
+  margin: 0;
+  padding-inline-start: var(--fold-space-lg);
+}

@@ -2,6 +2,11 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import type {
   CreateVitrineSubscriberPayload,
+  SendVitrineNoticePayload,
+  VitrineNoticeDraftPayload,
+  VitrineNoticePreviewView,
+  VitrineNoticeSentView,
+  VitrineNoticeView,
   UpdateVitrineSubscriberIdentityPayload,
   VitrineContent,
   VitrineCredentialsView,
@@ -76,6 +81,24 @@ export class VitrineWebhookService {
         null,
       ),
     );
+  }
+
+  /** L'e-mail tel qu'il partira, et à qui — rien n'est écrit ni envoyé. */
+  previewNotice(payload: VitrineNoticeDraftPayload): Promise<VitrineNoticePreviewView> {
+    return firstValueFrom(
+      this.http.post<VitrineNoticePreviewView>(`${this.base}/notices/preview`, payload),
+    );
+  }
+
+  /** Envoie l'annonce ; la même clé rend la même annonce sans rien renvoyer. */
+  sendNotice(payload: SendVitrineNoticePayload): Promise<string> {
+    return firstValueFrom(
+      this.http.post<VitrineNoticeSentView>(`${this.base}/notices`, payload),
+    ).then((created) => created.id);
+  }
+
+  notices(): Promise<readonly VitrineNoticeView[]> {
+    return firstValueFrom(this.http.get<VitrineNoticeView[]>(`${this.base}/notices`));
   }
 
   private subscriber(id: string): string {

@@ -1,0 +1,112 @@
+<fold-panel-header
+  title="Notifier les abonnés"
+  [subtitle]="
+    preview() === null
+      ? 'Un e-mail à chaque contact, sans les autres en copie'
+      : 'Aperçu — rien n’est encore parti'
+  "
+  closeLabel="Fermer"
+/>
+
+<fold-panel-body>
+  <div class="vnp-body">
+    @if (preview(); as shown) {
+      <fold-callout variant="info" data-preview-notice>
+        Relisez l’e-mail tel qu’il partira. Il ne part qu’à « Envoyer », un message par adresse.
+      </fold-callout>
+      <p class="vnp-subject" data-preview-subject>Objet : {{ shown.subject }}</p>
+      <div class="vnp-viewer">
+        @if (frame(); as source) {
+          <iframe class="vnp-frame" title="Aperçu de l’e-mail" sandbox="" [src]="source"></iframe>
+        }
+      </div>
+      <fold-fieldset legend="Destinataires" [hint]="shown.recipients.length + ' adresse(s)'">
+        <ul class="vnp-recipients" data-preview-recipients>
+          @for (recipient of shown.recipients; track recipient.subscriberId) {
+            <li>{{ recipient.name }} — {{ recipient.contactEmail }}</li>
+          }
+        </ul>
+      </fold-fieldset>
+    } @else {
+      <fold-input
+        label="Objet"
+        required
+        placeholder="Le catalogue d’automne est en ligne"
+        [value]="subject()"
+        (valueChange)="subject.set($event)"
+        data-subject
+      />
+      <fold-textarea
+        label="Message"
+        required
+        hint="Texte brut : il part tel quel, sans mise en forme."
+        [rows]="8"
+        [value]="message()"
+        (valueChange)="message.set($event)"
+        data-message
+      />
+      <fold-fieldset
+        legend="Destinataires"
+        hint="Un abonné coupé reste joignable. Sans contact, il ne peut pas être choisi : saisissez-en un par « Modifier »."
+      >
+        @for (subscriber of data(); track subscriber.id) {
+          <fold-checkbox
+            [label]="subscriber.name"
+            [hint]="subscriber.contactEmail ?? 'Sans contact'"
+            [checked]="selected().has(subscriber.id)"
+            [disabled]="subscriber.contactEmail === null"
+            (checkedChange)="toggle(subscriber.id, $event)"
+            [attr.data-recipient]="subscriber.id"
+          />
+        }
+      </fold-fieldset>
+      @if (issue() !== '') {
+        <fold-callout variant="warning" data-issue>{{ issue() }}</fold-callout>
+      }
+    }
+    @if (refusal(); as text) {
+      <fold-callout variant="alert" announce>{{ text }}</fold-callout>
+    }
+  </div>
+</fold-panel-body>
+
+<fold-panel-footer align="end">
+  @if (preview() === null) {
+    <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
+      Annuler
+    </button>
+    <button
+      foldButton
+      intent="primary"
+      type="button"
+      [disabled]="issue() !== ''"
+      [loading]="working()"
+      (click)="showPreview()"
+      data-preview
+    >
+      Voir l’aperçu
+    </button>
+  } @else {
+    <button
+      foldButton
+      emphasis="outline"
+      intent="neutral"
+      type="button"
+      [disabled]="working()"
+      (click)="edit()"
+      data-edit
+    >
+      Modifier
+    </button>
+    <button
+      foldButton
+      intent="primary"
+      type="button"
+      [loading]="working()"
+      (click)="send()"
+      data-send
+    >
+      Envoyer
+    </button>
+  }
+</fold-panel-footer>

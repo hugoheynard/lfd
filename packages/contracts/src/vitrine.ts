@@ -30,6 +30,9 @@ import type { ShopItemView, ShopOperationView, ShopShelfView } from "./shop-cata
  * - `POST /admin/vitrine/subscribers/:id/test` → `{ id }` (« Envoyer un test »)
  * - `GET  /admin/vitrine/subscribers/:id/deliveries` → `VitrineDeliveryView[]`
  * - `POST /admin/vitrine/deliveries/:id/resend` (« renvoyer »)
+ * - `POST /admin/vitrine/notices/preview` ← `VitrineNoticeDraftPayload` → `VitrineNoticePreviewView`
+ * - `POST /admin/vitrine/notices` ← `SendVitrineNoticePayload` → `VitrineNoticeSentView` (« Notifier les abonnés »)
+ * - `GET  /admin/vitrine/notices` → `VitrineNoticeView[]` (les dernières annonces)
  */
 
 /**
@@ -44,7 +47,7 @@ export type VitrineContent = (typeof vitrineContents)[number];
 export const VITRINE_KEY_HEADER = "x-vitrine-key";
 /** L'en-tête de signature d'une livraison : `t=<secondes>,v1=<hex>`. */
 export const VITRINE_SIGNATURE_HEADER = "vitrine-signature";
-/** L'en-tête qui porte l'id de la livraison — stable d'un essai à l'autre. */
+/** L'en-tête qui porte l'identifiant d'envoi : stable d'un essai à l'autre, neuf quand la livraison absorbe d'autres changements. */
 export const VITRINE_DELIVERY_HEADER = "vitrine-delivery";
 
 /**
@@ -166,3 +169,70 @@ export const setVitrineSubscriberActivePayloadSchema = z.strictObject({ active: 
 export type SetVitrineSubscriberActivePayload = z.infer<
   typeof setVitrineSubscriberActivePayloadSchema
 >;
+
+// ── Les annonces aux abonnés (e-mail, Hugo 2026-10-18) ────────────────────────
+
+/** Les bornes, répétées pour l'écran ; l'agrégat `VitrineNotice` les tient. */
+export const VITRINE_NOTICE_SUBJECT_MAX_LENGTH = 150;
+export const VITRINE_NOTICE_MESSAGE_MAX_LENGTH = 5000;
+
+/**
+ * Le brouillon d'une annonce. `subscriberIds` `null` = tous les abonnés qui ont
+ * un contact ; sinon la sélection.
+ */
+export const vitrineNoticeDraftPayloadSchema = z.strictObject({
+  subject: z.string(),
+  message: z.string(),
+  subscriberIds: z.array(z.string()).nullable(),
+});
+export type VitrineNoticeDraftPayload = z.infer<typeof vitrineNoticeDraftPayloadSchema>;
+
+/**
+ * L'envoi : le brouillon relu, et une clé d'idempotence tirée par l'écran à
+ * l'ouverture de l'aperçu — un double clic retrouve la même annonce.
+ */
+export const sendVitrineNoticePayloadSchema = vitrineNoticeDraftPayloadSchema.extend({
+  idempotencyKey: z.string().uuid("clé d'idempotence attendue (UUID)"),
+});
+export type SendVitrineNoticePayload = z.infer<typeof sendVitrineNoticePayloadSchema>;
+
+/** L'annonce envoyée — ou celle qu'un premier clic avait déjà envoyée. */
+export interface VitrineNoticeSentView {
+  readonly id: string;
+}
+
+export interface VitrineNoticeAddresseeView {
+  readonly subscriberId: string;
+  readonly name: string;
+  readonly contactEmail: string;
+}
+
+/** L'e-mail tel qu'il partira, et à qui. Rien n'est écrit. */
+export interface VitrineNoticePreviewView {
+  readonly subject: string;
+  readonly html: string;
+  readonly recipients: readonly VitrineNoticeAddresseeView[];
+}
+
+export interface VitrineNoticeRecipientView {
+  readonly subscriberId: string;
+  /** Le nom de l'abonné AUJOURD'HUI ; l'adresse, elle, est celle de l'envoi. */
+  readonly subscriberName: string;
+  readonly contactEmail: string;
+  /**
+   * `true` : le fournisseur a ACCEPTÉ l'e-mail — pas qu'il est arrivé.
+   * `false` : refusé, ou mailer à blanc. `null` : pas encore tenté.
+   */
+  readonly mailSent: boolean | null;
+  readonly attemptedAt: string | null;
+}
+
+export interface VitrineNoticeView {
+  readonly id: string;
+  /** L'id du membre du staff qui l'a envoyée. */
+  readonly authorStaffId: string;
+  readonly subject: string;
+  readonly message: string;
+  readonly createdAt: string;
+  readonly recipients: readonly VitrineNoticeRecipientView[];
+}

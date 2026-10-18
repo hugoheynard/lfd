@@ -35,6 +35,7 @@ import {
 import { MANDATE_TO_SIGN_WORDING, type MandateMailScheme } from "./mandate-to-sign-wording.js";
 import { type OrderSheetMailDocument, withAttachments } from "./order-sheet-mail-document.js";
 import { qrPng } from "./qr-image.js";
+import { renderVitrineNoticeMail, type VitrineNoticeMailData } from "./vitrine-notice-mail.js";
 
 /**
  * Les **e-mails de la plateforme B2B** — la carte et le registre que
@@ -377,6 +378,8 @@ export interface B2bMails {
   };
   /** Une demande client (« Nous écrire », « Signaler un problème »). Cf. `customer-request-mail.ts`. */
   "staff.customer-request": CustomerRequestMailData;
+  /** **Une annonce aux abonnés de la vitrine.** Destinataire : le contact de l'agence. */
+  "agency.vitrine-notice": VitrineNoticeMailData;
 }
 
 /** Le corps d'un e-mail interne : des lignes « Libellé : valeur », puis le message. */
@@ -859,6 +862,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
       }),
     }),
     "staff.production-dossier": (data) => renderProductionDossierMail(data, staffMail),
+    "agency.vitrine-notice": (data) => renderVitrineNoticeMail(data, staffMail),
     "staff.customer-request": (data) =>
       renderCustomerRequestMail(data, staffMail, brand.backOfficeUrl),
     "staff.password-reset": (data) => ({

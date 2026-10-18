@@ -49,6 +49,7 @@ model VitrineSubscriber {
 
   fingerprints VitrineFingerprint[]
   deliveries   VitrineDelivery[]
+  notices      VitrineNoticeRecipient[]
 
   @@map("vitrine_subscribers")
   @@schema("public")
@@ -109,5 +110,48 @@ model VitrineDelivery {
   @@index([state, nextAttemptAt])
   @@index([subscriberId, createdAt])
   @@map("vitrine_deliveries")
+  @@schema("public")
+}
+
+/// **Une annonce aux abonnés** (plan vitrine §7, Hugo 2026-10-18) : un e-mail
+/// écrit à l'écran, envoyé à chaque contact choisi, un message par adresse.
+/// Journal : jamais supprimé, jamais modifié après coup.
+model VitrineNotice {
+  id             String @id
+  /// Qui l'a envoyée — l'id du staff, jamais son nom recopié.
+  authorStaffId  String @map("author_staff_id")
+  /// 150 caractères au plus (`CHECK`), texte brut.
+  subject        String
+  /// 5000 caractères au plus (`CHECK`), texte brut.
+  message        String
+  /// Fournie par l'écran (UUID) : un double clic retrouve la même annonce.
+  idempotencyKey String @unique @map("idempotency_key")
+
+  createdAt DateTime @map("created_at") @db.Timestamptz(3)
+
+  recipients VitrineNoticeRecipient[]
+
+  @@index([createdAt])
+  @@map("vitrine_notices")
+  @@schema("public")
+}
+
+/// **Un destinataire d'une annonce** : l'adresse telle qu'elle était à
+/// l'envoi (l'abonné peut en changer ensuite), et ce que le fournisseur a dit.
+model VitrineNoticeRecipient {
+  noticeId     String    @map("notice_id")
+  subscriberId String    @map("subscriber_id")
+  /// Copie de l'adresse du contact au moment de l'envoi — au registre RGPD.
+  contactEmail String    @map("contact_email")
+  /// `NULL` : pas encore tenté · `true` : le fournisseur a ACCEPTÉ (pas
+  /// « arrivé ») · `false` : refusé, ou mailer à blanc.
+  mailSent     Boolean?  @map("mail_sent")
+  attemptedAt  DateTime? @map("attempted_at") @db.Timestamptz(3)
+
+  notice     VitrineNotice     @relation(fields: [noticeId], references: [id], onDelete: Restrict)
+  subscriber VitrineSubscriber @relation(fields: [subscriberId], references: [id], onDelete: Restrict)
+
+  @@id([noticeId, subscriberId])
+  @@map("vitrine_notice_recipients")
   @@schema("public")
 }

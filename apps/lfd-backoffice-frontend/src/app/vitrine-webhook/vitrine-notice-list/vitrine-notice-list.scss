@@ -1,0 +1,31 @@
+.vnl-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.vnl-note {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+}
+
+.vnl-message {
+  margin: 0;
+  white-space: pre-line;
+}
+
+.vnl-recipients {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--fold-space-sm);
+  }
+}

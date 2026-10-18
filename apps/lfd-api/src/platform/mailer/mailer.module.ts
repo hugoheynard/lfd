@@ -12,6 +12,7 @@ import { PrismaMailJournal } from "./journal/prisma-mail-journal.js";
 import { ReceiveResendEventHandler } from "./webhook/receive-resend-event.handler.js";
 import { ResendWebhookChecker } from "./webhook/resend-webhook.checker.js";
 import { ResendWebhookController } from "./webhook/resend-webhook.controller.js";
+import { mailBrandingOf } from "./mail-branding.js";
 import { b2bMailTemplates, type B2bMails } from "./mail-templates.js";
 import { MAILER, type B2bMailer } from "./mailer.tokens.js";
 
@@ -61,10 +62,7 @@ export type { B2bMailer };
           // l'adresse de recours est l'admin RACINE, la seule que le domaine
           // protège de toute suppression ou renommage. Une adresse de support
           // qui disparaît envoie quelqu'un attendre.
-          registry: b2bMailTemplates({
-            supportEmail: config.bootstrapAdminEmail(),
-            backOfficeUrl: config.adminBaseUrl() ?? "",
-          }),
+          registry: b2bMailTemplates(mailBrandingOf(config)),
           fromAddress: mailer.fromAddress,
           replyTo: mailer.replyTo,
           logger: nestLogger(),

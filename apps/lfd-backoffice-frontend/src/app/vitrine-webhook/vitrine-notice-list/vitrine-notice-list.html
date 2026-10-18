@@ -1,0 +1,29 @@
+<div class="vnl-list">
+  <p class="vnl-note">
+    « Accepté par l’envoi » signifie que le service d’envoi a pris l’e-mail en charge, pas qu’il est
+    arrivé dans la boîte de l’agence.
+  </p>
+  @for (notice of notices(); track notice.id) {
+    <fold-card data-notice>
+      <fold-element-title
+        variant="title"
+        [title]="notice.subject"
+        [subtitle]="
+          (notice.createdAt | date: 'dd/MM/yyyy HH:mm') + ' — par ' + notice.authorStaffId
+        "
+      />
+      <p class="vnl-message">{{ notice.message }}</p>
+      <ul class="vnl-recipients">
+        @for (recipient of notice.recipients; track recipient.subscriberId) {
+          <li data-notice-recipient>
+            <span>{{ recipient.subscriberName }} — {{ recipient.contactEmail }}</span>
+            <fold-badge
+              [variant]="variants[outcome(recipient.mailSent)]"
+              [content]="labels[outcome(recipient.mailSent)]"
+            />
+          </li>
+        }
+      </ul>
+    </fold-card>
+  }
+</div>

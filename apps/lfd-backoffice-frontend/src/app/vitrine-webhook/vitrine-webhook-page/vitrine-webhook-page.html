@@ -21,6 +21,16 @@
     <div pageActions>
       <button
         foldButton
+        emphasis="outline"
+        icon="mail"
+        [disabled]="state() !== 'ready' || !anyContact()"
+        (click)="notifySubscribers()"
+        data-notify
+      >
+        Notifier les abonnés
+      </button>
+      <button
+        foldButton
         icon="plus"
         [disabled]="state() !== 'ready'"
         (click)="create()"
@@ -63,6 +73,28 @@
           </fold-empty-state>
         }
       </div>
+
+      <section class="vwp-notices" aria-labelledby="vwp-notices-title">
+        <h2 id="vwp-notices-title" class="vwp-section-title">Dernières annonces</h2>
+        @if (noticesFailed()) {
+          <fold-callout variant="alert" data-notices-error>
+            Les dernières annonces n’ont pas pu être chargées.
+            <button foldButton emphasis="outline" size="sm" (click)="loadNotices()">
+              Réessayer
+            </button>
+          </fold-callout>
+        } @else if (notices().length === 0) {
+          <fold-empty-state
+            title="Aucune annonce"
+            subtitle="« Notifier les abonnés » écrit un e-mail aux contacts des agences."
+            data-notices-empty
+          >
+            <fold-icon empty-icon name="mail" />
+          </fold-empty-state>
+        } @else {
+          <app-vitrine-notice-list [notices]="notices()" />
+        }
+      </section>
     }
   }
 </fold-page-layout>

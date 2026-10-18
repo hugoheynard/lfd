@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 /**
  * Gate : **toute colonne qui porte une donnée personnelle du staff, d'un
- * réceptionnaire ou d'une personne qui nous écrit (`contact` — une demande client) est au registre — et le registre ne cite que des colonnes qui
- * existent.**
+ * réceptionnaire, d'une personne qui nous écrit (`contact` — une demande client)
+ * ou d'un tiers (`tiers` — prestataire, partenaire, agence) est au registre — et
+ * le registre ne cite que des colonnes qui existent.**
  *
  * ## Le trou que cette porte ferme
  *
@@ -53,8 +54,12 @@ const REGISTRY_PATH = "documentation/legal/rgpd-registre.json";
  * visiteur ou client connecté. Ni du staff ni un réceptionnaire, mais ses
  * données vivent ici pour la même raison : une colonne personnelle qu'aucun
  * inventaire ne cite n'a ni durée ni purge.
+ *
+ * `tiers` (Hugo, 2026-10-18) : une personne d'un prestataire, d'un partenaire
+ * ou d'une agence — le contact de l'agence de la vitrine, d'abord. Catégorie
+ * générique : le prochain partenaire n'en demandera pas une de plus.
  */
-const PERSONS = ["livreur", "staff", "receptionnaire", "contact"];
+const PERSONS = ["livreur", "staff", "receptionnaire", "contact", "tiers"];
 const DURATION_WORDS = ["aucune-limite-decidee", "a-decider"];
 
 /** Motifs valables dans tout schéma : un auteur, un livreur, une preuve. */
@@ -82,6 +87,15 @@ const ALL_PERSONAL_TABLES = new Set(["public.customer_request", "public.customer
  */
 const POSITION_PATTERNS = [/_lat$/u, /_lng$/u, /_accuracy_m$/u];
 const POSITION_SCHEMA = "delivery";
+
+/**
+ * Une adresse e-mail n'est candidate que dans les tables d'un TIERS
+ * (2026-10-18) : le contact d'un abonné de la vitrine, et sa copie dans les
+ * annonces. Partout ailleurs un `*_email` est celui d'un client, que ce
+ * registre ne couvre pas — l'élargir serait un autre chantier.
+ */
+const THIRD_PARTY_TABLE = /^public\.vitrine_/u;
+const THIRD_PARTY_PATTERNS = [/(^|_)email$/u];
 
 /** Les colonnes du schéma, `schema.table.colonne`, telles que Postgres les nomme. */
 export function columnsOf(source) {
@@ -128,6 +142,9 @@ export function isCandidate(qualified) {
   const [schema, table, column] = qualified.split(".");
   if (ALL_PERSONAL_TABLES.has(`${schema}.${table}`)) return true;
   if (NAME_PATTERNS.some((pattern) => pattern.test(column))) return true;
+  if (THIRD_PARTY_TABLE.test(`${schema}.${table}`)) {
+    if (THIRD_PARTY_PATTERNS.some((p) => p.test(column))) return true;
+  }
   return schema === POSITION_SCHEMA && POSITION_PATTERNS.some((p) => p.test(column));
 }
 
@@ -259,7 +276,7 @@ function main() {
     process.exit(1);
   }
   console.log(
-    "✓ rgpd-staff : chaque donnée personnelle du staff, des réceptionnaires et des contacts est au registre.",
+    "✓ rgpd-staff : chaque donnée personnelle du staff, des réceptionnaires, des contacts et des tiers est au registre.",
   );
   for (const line of debtLines(registry)) console.log(line);
 }

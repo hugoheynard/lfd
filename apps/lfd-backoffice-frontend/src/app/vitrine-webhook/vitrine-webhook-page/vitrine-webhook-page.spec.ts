@@ -1,7 +1,12 @@
 import { provideRouter } from '@angular/router';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import type { StaffPermission, VitrineContent, VitrineSubscriberView } from '@lfd/contracts';
+import type {
+  StaffPermission,
+  VitrineContent,
+  VitrineNoticeView,
+  VitrineSubscriberView,
+} from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { PermissionsStore } from '../../auth/permissions.store';
@@ -27,7 +32,12 @@ function subscriber(overrides: Partial<VitrineSubscriberView> = {}): VitrineSubs
 class FakeApi {
   subscribers: readonly VitrineSubscriberView[] = [subscriber()];
   failList = false;
+  noticeList: readonly VitrineNoticeView[] = [];
   readonly calls: string[] = [];
+
+  notices(): Promise<readonly VitrineNoticeView[]> {
+    return Promise.resolve(this.noticeList);
+  }
 
   list(): Promise<readonly VitrineSubscriberView[]> {
     return this.failList ? Promise.reject(new Error('réseau')) : Promise.resolve(this.subscribers);
@@ -127,5 +137,44 @@ describe('VitrineWebhookPage', () => {
     const api = new FakeApi();
     api.subscribers = [];
     expect((await render(api)).textContent).toContain('Aucun abonné');
+  });
+
+  it('« Notifier les abonnés » attend un contact ; les annonces se lisent avec leur issue', async () => {
+    const api = new FakeApi();
+    let root = await render(api);
+    expect(root.querySelector<HTMLButtonElement>('button[data-notify]')?.disabled).toBe(true);
+    expect(root.querySelector('[data-notices-empty]')).not.toBeNull();
+
+    api.subscribers = [subscriber({ contactEmail: 'web@agence.example' })];
+    api.noticeList = [
+      {
+        id: 'n1',
+        authorStaffId: 'staff_1',
+        subject: 'Le catalogue d’automne',
+        message: 'Bonjour',
+        createdAt: '2026-10-18T08:00:00.000Z',
+        recipients: [
+          {
+            subscriberId: 'sub_1',
+            subscriberName: 'Agence du site',
+            contactEmail: 'web@agence.example',
+            mailSent: true,
+            attemptedAt: '2026-10-18T08:00:01.000Z',
+          },
+        ],
+      },
+    ];
+    root = await render(api);
+    expect(root.querySelector<HTMLButtonElement>('button[data-notify]')?.disabled).toBe(false);
+    expect(root.querySelector('[data-notice]')?.textContent).toContain('Le catalogue d’automne');
+    expect(root.querySelector('[data-notice-recipient]')?.textContent).toContain(
+      'Accepté par l’envoi',
+    );
+    expect(root.textContent).toContain('pas qu’il');
+  });
+
+  it('sans l’écriture, pas de « Notifier les abonnés »', async () => {
+    const root = await render(new FakeApi(), ['shop_vitrine:read']);
+    expect(root.querySelector('button[data-notify]')).toBeNull();
   });
 });

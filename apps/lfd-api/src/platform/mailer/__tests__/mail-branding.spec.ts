@@ -26,12 +26,13 @@ const REGISTRY = b2bMailTemplates({
 });
 
 /**
- * Trois publics, pas deux : `customer.` (le client), `staff.` (l'équipe) et
- * `ops.` (l'exploitation — un courrier de contrôle que le déploiement s'envoie
- * à lui-même). Seul le premier voit l'enseigne de la boutique ; les deux autres
- * sont internes et relèvent de la maison.
+ * Quatre publics : `customer.` (le client), `staff.` (l'équipe), `ops.`
+ * (l'exploitation — un courrier de contrôle que le déploiement s'envoie à
+ * lui-même) et, depuis le 2026-10-18, `agency.` (un tiers qui travaille pour
+ * la maison — l'agence de la vitrine). Seul le premier voit l'enseigne de la
+ * boutique ; les autres relèvent de la maison.
  */
-const AUDIENCES = ["customer.", "staff.", "ops."] as const;
+const AUDIENCES = ["customer.", "staff.", "ops.", "agency."] as const;
 
 /** L'enseigne attendue, déduite du seul préfixe de la clé. */
 function expectedBrand(key: string): string {

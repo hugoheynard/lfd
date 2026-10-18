@@ -1,5 +1,12 @@
 import {
   createVitrineSubscriberPayloadSchema,
+  sendVitrineNoticePayloadSchema,
+  vitrineNoticeDraftPayloadSchema,
+  type SendVitrineNoticePayload,
+  type VitrineNoticeDraftPayload,
+  type VitrineNoticePreviewView,
+  type VitrineNoticeSentView,
+  type VitrineNoticeView,
   setVitrineContentsPayloadSchema,
   setVitrineSubscriberActivePayloadSchema,
   updateVitrineSubscriberIdentityPayloadSchema,
@@ -15,17 +22,21 @@ import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Put } from "@
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
+import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { CreateVitrineSubscriberCommand } from "../application/commands/create-vitrine-subscriber.command.js";
 import { ResendVitrineDeliveryCommand } from "../application/commands/resend-vitrine-delivery.command.js";
 import { ResyncVitrineSubscriberCommand } from "../application/commands/resync-vitrine-subscriber.command.js";
 import { RotateVitrineCredentialsCommand } from "../application/commands/rotate-vitrine-credentials.command.js";
 import { SendVitrineTestCommand } from "../application/commands/send-vitrine-test.command.js";
+import { SendVitrineNoticeCommand } from "../application/commands/send-vitrine-notice.command.js";
 import { SetVitrineContentsCommand } from "../application/commands/set-vitrine-contents.command.js";
 import { SetVitrineSubscriberActiveCommand } from "../application/commands/set-vitrine-subscriber-active.command.js";
 import { UpdateVitrineSubscriberIdentityCommand } from "../application/commands/update-vitrine-subscriber-identity.command.js";
 import { ListVitrineDeliveriesQuery } from "../application/queries/list-vitrine-deliveries.query.js";
+import { ListVitrineNoticesQuery } from "../application/queries/list-vitrine-notices.query.js";
 import { ListVitrineSubscribersQuery } from "../application/queries/list-vitrine-subscribers.query.js";
+import { PreviewVitrineNoticeQuery } from "../application/queries/preview-vitrine-notice.query.js";
 
 /**
  * **Les abonnés du webhook de la vitrine** au back-office, Gestion Boutique
@@ -139,6 +150,41 @@ export class AdminVitrineController {
   async resend(@Param("id") id: string): Promise<void> {
     await this.commands.execute<ResendVitrineDeliveryCommand, void>(
       new ResendVitrineDeliveryCommand(id),
+    );
+  }
+
+  /** L'aperçu d'une annonce — une lecture en `POST` parce qu'elle porte un brouillon. */
+  @Post("notices/preview")
+  @HttpCode(HttpStatus.OK)
+  previewNotice(
+    @Body(new ZodBody(vitrineNoticeDraftPayloadSchema)) body: VitrineNoticeDraftPayload,
+  ): Promise<VitrineNoticePreviewView> {
+    return this.queries.execute<PreviewVitrineNoticeQuery, VitrineNoticePreviewView>(
+      new PreviewVitrineNoticeQuery(body.subject, body.message, body.subscriberIds),
+    );
+  }
+
+  @Post("notices")
+  async sendNotice(
+    @StaffUserId() staffUserId: string,
+    @Body(new ZodBody(sendVitrineNoticePayloadSchema)) body: SendVitrineNoticePayload,
+  ): Promise<VitrineNoticeSentView> {
+    const id = await this.commands.execute<SendVitrineNoticeCommand, string>(
+      new SendVitrineNoticeCommand(
+        staffUserId,
+        body.subject,
+        body.message,
+        body.subscriberIds,
+        body.idempotencyKey,
+      ),
+    );
+    return { id };
+  }
+
+  @Get("notices")
+  notices(): Promise<readonly VitrineNoticeView[]> {
+    return this.queries.execute<ListVitrineNoticesQuery, readonly VitrineNoticeView[]>(
+      new ListVitrineNoticesQuery(),
     );
   }
 }

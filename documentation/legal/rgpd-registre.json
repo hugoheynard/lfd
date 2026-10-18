@@ -1,5 +1,5 @@
 {
-  "$commentaire": "Registre machine des données personnelles du staff, des réceptionnaires et des personnes qui écrivent par « Nous contacter » (`contact`). Tenu par `pnpm lint:rgpd-staff` (dev-toolbox/gates/rgpd-staff.mjs) contre apps/lfd-api/prisma/schema. Prose et raisons : documentation/legal/rgpd-livreur.md §8. Pas un avis juridique.",
+  "$commentaire": "Registre machine des données personnelles du staff, des réceptionnaires et des personnes qui écrivent par « Nous contacter » (`contact`), et des tiers — prestataire, partenaire, agence (`tiers`, 2026-10-18). Tenu par `pnpm lint:rgpd-staff` (dev-toolbox/gates/rgpd-staff.mjs) contre apps/lfd-api/prisma/schema. Prose et raisons : documentation/legal/rgpd-livreur.md §8. Pas un avis juridique.",
   "texteInformation": {
     "version": 2,
     "empreinte": "84c2108d32430d44"
@@ -1711,6 +1711,33 @@
         "jours": 365
       },
       "purge": "apps/lfd-api/src/b2b/contact/application/commands/anonymize-customer-requests.handler.ts",
+      "information": false
+    },
+    {
+      "colonne": "public.vitrine_subscribers.contact_email",
+      "personne": "tiers",
+      "categorie": "coordonnees",
+      "finalite": "L'adresse de contact de l'agence abonnée au webhook de la vitrine, facultative et possiblement nominative : lui écrire les annonces de mise à jour (plan-webhook-vitrine.md §7).",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.vitrine_notice_recipients.contact_email",
+      "personne": "tiers",
+      "categorie": "coordonnees",
+      "finalite": "Copie de l'adresse de contact d'un abonné de la vitrine au moment d'une annonce : savoir à qui l'annonce a été écrite et si le fournisseur l'a acceptée (plan-webhook-vitrine.md §7).",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.vitrine_notices.author_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a envoyé une annonce aux abonnés de la vitrine (plan-webhook-vitrine.md §7).",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
       "information": false
     }
   ],

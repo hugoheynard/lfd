@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import type { VitrineSubscriberView } from '@lfd/contracts';
+import type { VitrineNoticeView, VitrineSubscriberView } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldButtonComponent,
@@ -19,6 +19,8 @@ import {
   VitrineJournalPanel,
   type VitrineJournalData,
 } from '../vitrine-journal-panel/vitrine-journal-panel';
+import { VitrineNoticeList } from '../vitrine-notice-list/vitrine-notice-list';
+import { VitrineNoticePanel } from '../vitrine-notice-panel/vitrine-notice-panel';
 import {
   VitrineSubscriberCard,
   type VitrineSubscriberGesture,
@@ -46,6 +48,7 @@ type LoadState = 'loading' | 'error' | 'ready';
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
     RouterLink,
+    VitrineNoticeList,
     VitrineSubscriberCard,
   ],
   templateUrl: './vitrine-webhook-page.html',
@@ -62,12 +65,18 @@ export class VitrineWebhookPage {
   protected readonly subscribers = signal<readonly VitrineSubscriberView[]>([]);
   protected readonly busy = signal<string | null>(null);
   protected readonly refusal = signal<string | null>(null);
+  protected readonly notices = signal<readonly VitrineNoticeView[]>([]);
+  protected readonly noticesFailed = signal(false);
+  protected readonly anyContact = computed(() =>
+    this.subscribers().some((subscriber) => subscriber.contactEmail !== null),
+  );
 
   constructor() {
     void this.load();
   }
 
   protected async load(): Promise<void> {
+    void this.loadNotices();
     try {
       this.subscribers.set(await this.api.list());
       this.state.set('ready');
@@ -81,6 +90,23 @@ export class VitrineWebhookPage {
     if ((await ref.closed) !== undefined) {
       this.notify.success('Abonné créé.');
       await this.load();
+    }
+  }
+
+  protected async loadNotices(): Promise<void> {
+    try {
+      this.notices.set(await this.api.notices());
+      this.noticesFailed.set(false);
+    } catch {
+      this.noticesFailed.set(true);
+    }
+  }
+
+  protected async notifySubscribers(): Promise<void> {
+    const ref = this.panels.open(VitrineNoticePanel, { data: this.subscribers() });
+    if ((await ref.closed) !== undefined) {
+      this.notify.success('Annonce envoyée : l’issue de chaque e-mail est aux dernières annonces.');
+      await this.loadNotices();
     }
   }
 
