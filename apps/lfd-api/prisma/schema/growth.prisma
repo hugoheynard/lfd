@@ -400,3 +400,37 @@ model BookingPolicySettings {
   @@map("booking_policy_settings")
   @@schema("growth")
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ProductAudienceCounter — les compteurs d'AUDIENCE anonymes (schéma `growth`)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// **Combien de fois, ce jour-là, cet article a été regardé, ajouté, suggéré**
+/// (R5 bis de `documentation/recommandation-produit/plan-recommandation-de-produits.md`).
+///
+/// 🔴 **Aucun identifiant de visiteur, de client ni d'IP — par construction** :
+/// la clé est `(jour, sku, événement, emplacement)` et la seule valeur un
+/// nombre. C'est ce qui en fait une mesure d'audience exemptée de consentement
+/// (historique-du-particulier.md §1 bis). Ajouter une colonne qui désigne
+/// quelqu'un changerait le régime du traitement, pas seulement le schéma.
+///
+/// Dans `growth` (Hugo, 2026-10-18) : analytique et dérivée comme le journal,
+/// donc déménageable avec lui. Écrite par `b2b/recommendations` seul, par un
+/// `INSERT … ON CONFLICT DO UPDATE` (incrément sans perte sous concurrence).
+/// Les CHECK (événements admis, emplacement, compte positif) vivent dans la
+/// migration `20261018140000_les_compteurs_d_audience`.
+model ProductAudienceCounter {
+  /// Le jour MÉTIER (Europe/Paris), pas le jour UTC.
+  day       DateTime @db.Date
+  sku       String
+  /// `product_viewed`, `added_to_cart`, `suggestion_shown`, `suggestion_clicked`, `suggestion_added`.
+  event     String
+  /// L'emplacement d'une suggestion ; `none` pour une vue ou un ajout hors suggestion.
+  placement String   @default("none")
+  count     Int
+
+  @@id([day, sku, event, placement])
+  @@index([day])
+  @@map("product_audience_counters")
+  @@schema("growth")
+}

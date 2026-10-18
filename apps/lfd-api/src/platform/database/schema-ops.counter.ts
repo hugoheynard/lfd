@@ -136,6 +136,7 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   AvailabilityException: "growth",
   Appointment: "growth",
   BookingPolicySettings: "growth",
+  ProductAudienceCounter: "growth",
   NodeStatusLog: "ops",
   MailSend: "ops",
   WebhookEvent: "ops",

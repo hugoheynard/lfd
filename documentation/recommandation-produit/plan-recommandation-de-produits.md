@@ -13,6 +13,22 @@
 > public (§6, RGPD) — si Hugo tranche Q1 « public d'abord », ce point mérite
 > une contradiction avant de bâtir.
 
+> 🔨 **R0 bâti le 2026-10-18 (non commité à cette date)** — contexte
+> `apps/lfd-api/src/b2b/recommendations/` : le filtre R4
+> (`application/services/recommendation-filter.ts`, règle pure
+> `domain/orderable-today.ts`), les compteurs anonymes R5 bis dans
+> `growth.product_audience_counters` (migration
+> `20261018140000_les_compteurs_d_audience`, Hugo : schéma `growth`),
+> `POST /shop/audience` (publique, lot ≤ 50, 30 lots/min/IP, corps JSON ou
+> `text/plain` de `sendBeacon`), `GET /admin/product-audience?from=&to=` sous
+> `b2b_growth`. Boutique : vue de fiche et entrée au panier depuis le rayon
+> (`client/audience/`). **Pas encore** : `PurchaseHistoryReader` et
+> `CoPurchaseReader` (R1, R2), les gestes `suggestion_*` côté boutique (aucune
+> suggestion n'est affichée). Écart au texte de R4 : `servedTo` n'est pas
+> appelé après `resolveMany` — il y est déjà appliqué, et `CatalogItem` ne
+> porte pas les champs de masquage. La politique de confidentialité n'est pas
+> modifiée (à Hugo et au cabinet).
+
 > **Ordre revu le 2026-10-18 (Hugo)** : le collectif (« souvent pris avec »,
 > « les plus commandés ») passe AVANT « vos habituels » — il sert tout le monde,
 > invités compris, sous un seuil d'anonymat ; voir

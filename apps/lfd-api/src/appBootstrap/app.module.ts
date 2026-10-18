@@ -10,6 +10,7 @@ import { ClientNotesModule } from "../b2b/client-notes/client-notes.module.js";
 import { DeliveryZonesModule } from "../b2b/delivery-zones/delivery-zones.module.js";
 import { DeliveryAvailabilityModule } from "../b2b/delivery-availability/delivery-availability.module.js";
 import { ContactModule } from "../b2b/contact/contact.module.js";
+import { RecommendationsModule } from "../b2b/recommendations/recommendations.module.js";
 import { OrderOpeningModule } from "../b2b/order-opening/order-opening.module.js";
 import { CommerceOperationsModule } from "../b2b/operations/operations.module.js";
 import { FeatureAccessModule } from "../b2b/feature-access/feature-access.module.js";
@@ -127,6 +128,7 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     OrderOpeningModule,
     // « Nous écrire » : objets, carte de contact, messages (demandes-clients.md).
     ContactModule,
+    RecommendationsModule,
     // L'accès aux fonctionnalités : ce qu'on peut faire de la boutique, réglé en admin.
     FeatureAccessModule,
     PlatformContentModule,

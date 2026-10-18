@@ -31,6 +31,7 @@ import { OrderBar } from '../order-bar/order-bar';
 import { OrderDoors } from '../order-doors';
 import { CartBar } from '../../cart/cart-bar/cart-bar';
 import { ClientBannerOutlet } from '../../nav/client-banner';
+import { ProductAudience } from '../../audience/product-audience.service';
 import { ProductSheet } from '../product-sheet/product-sheet';
 import { OperationNotice } from '../operation-notice/operation-notice';
 import { ShelfGrid } from './shelf-grid/shelf-grid';
@@ -99,6 +100,7 @@ export class ShopPage {
   protected readonly status = this.catalogue.status;
 
   private readonly storefront = inject(ShopStorefront);
+  private readonly audience = inject(ProductAudience);
 
   /**
    * L'état de la page de vitrine du rayon affiché — `null` pendant une
@@ -161,11 +163,23 @@ export class ShopPage {
     if (id === null) {
       return;
     }
+    if (this.cart.quantityOf(id) === 0 && quantity > 0) {
+      this.audience.record(id, 'added_to_cart');
+    }
     this.cart.setQuantity(id, quantity);
     this.openPiece.set(null);
   }
 
   constructor() {
+    // La vue d'une fiche est comptée, anonymement, à son ouverture (R5 bis).
+    effect(() => {
+      const id = this.openPiece();
+      if (id !== null) {
+        untracked(() => {
+          this.audience.record(id, 'product_viewed');
+        });
+      }
+    });
     // Les jours proposés suivent les articles d'opération du panier (D6) :
     // les deux écrans qui ouvrent le choix de l'heure le démarrent.
     inject(CartFulfillmentDays);

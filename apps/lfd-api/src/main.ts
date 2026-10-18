@@ -10,6 +10,8 @@ import { RecordingLogger } from "./platform/logging/recording-logger.js";
 
 /** Plafond de taille du corps JSON : borne un vecteur de déni de service (payload géant). */
 const JSON_BODY_LIMIT = "512kb";
+/** Un lot de 50 gestes tient en quelques Ko. */
+const BEACON_BODY_LIMIT = "16kb";
 
 async function bootstrap(): Promise<void> {
   // Logger de démarrage silencieux : masque l'énumération des routes/modules
@@ -47,6 +49,10 @@ async function bootstrap(): Promise<void> {
   // la limite. Les uploads KBIS passent par multer (multipart), non concernés ici.
   app.useBodyParser("json", { limit: JSON_BODY_LIMIT });
   app.useBodyParser("urlencoded", { limit: JSON_BODY_LIMIT, extended: true });
+  // `text/plain` : la mesure d'audience de la boutique part par `sendBeacon`, qui
+  // n'a droit qu'à un type « simple » (pas de pré-vol CORS). Seule
+  // `POST /shop/audience` lit un corps texte, et le relit en JSON (`BeaconBody`).
+  app.useBodyParser("text", { limit: BEACON_BODY_LIMIT });
 
   // Traduction des catégories d'erreur en statuts — le seul point qui connaît HTTP.
   // Hors prod, le filtre joint le détail technique des 500 (le message reste neutre).

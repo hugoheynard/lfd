@@ -3,6 +3,7 @@ import { outputFromObservable, takeUntilDestroyed } from '@angular/core/rxjs-int
 import type { PublicStorefrontPageView, ShopItemView } from '@lfd/contracts';
 import { GRID_COLUMNS, MOBILE_COLUMNS } from '@lfd/storefront-layout';
 
+import { ProductAudience } from '../../../audience/product-audience.service';
 import { ClientCart } from '../../../cart/client-cart.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
 import { ProductTile } from '../../product-tile/product-tile';
@@ -67,6 +68,7 @@ export class ShelfGrid {
   protected readonly t = inject(ClientCopyService).t;
   protected readonly cart = inject(ClientCart);
   private readonly catalogue = inject(ShopCatalogue);
+  private readonly audience = inject(ProductAudience);
 
   /** Ce que le catalogue sert — un objet peut montrer un article d'un autre rayon. */
   private readonly served = computed(() => new Set(this.catalogue.items().map((item) => item.sku)));
@@ -97,9 +99,20 @@ export class ShelfGrid {
   protected readonly fullWidth = GRID_COLUMNS;
   protected readonly pileWidth = MOBILE_COLUMNS;
 
+  /**
+   * Ajoute une pièce, et compte l'ENTRÉE au panier (R5 bis) — le passage de
+   * zéro à une pièce, pas chaque « + » : c'est ce que mesure un taux d'ajout.
+   */
+  protected addPiece(sku: string): void {
+    if (this.cart.quantityOf(sku) === 0) {
+      this.audience.record(sku, 'added_to_cart');
+    }
+    this.cart.add(sku);
+  }
+
   constructor() {
     this.actions.productAdded.pipe(takeUntilDestroyed()).subscribe((sku) => {
-      this.cart.add(sku);
+      this.addPiece(sku);
     });
     this.actions.productRemoved.pipe(takeUntilDestroyed()).subscribe((sku) => {
       this.cart.remove(sku);

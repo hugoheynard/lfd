@@ -60,3 +60,8 @@ export {
 } from "./pickup-audiences.values.js";
 export { PERSONAL_WORKSPACE, WORKSPACE_HEADER } from "./workspace.js";
 export { exposedHandoverToken, isSettled } from "./order-settlement.values.js";
+export {
+  MAX_AUDIENCE_EVENTS_PER_BATCH,
+  type ProductAudienceBatchPayload,
+  type ProductAudienceEvent,
+} from "./product-audience.values.js";

@@ -37,7 +37,7 @@
           [product]="piece"
           [quantity]="cart.quantityOf(piece.sku)"
           (opened)="actions.productOpened.next(piece.sku)"
-          (added)="cart.add(piece.sku)"
+          (added)="addPiece(piece.sku)"
           (removed)="cart.remove(piece.sku)"
         />
       }
@@ -56,7 +56,7 @@
       [product]="piece"
       [quantity]="cart.quantityOf(piece.sku)"
       (opened)="actions.productOpened.next(piece.sku)"
-      (added)="cart.add(piece.sku)"
+      (added)="addPiece(piece.sku)"
       (removed)="cart.remove(piece.sku)"
     />
   }

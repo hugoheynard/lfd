@@ -2157,3 +2157,15 @@ export type {
   OrderTransferView,
   ReceiveTransferPayload,
 } from "./delivery-transfers.js";
+export {
+  MAX_AUDIENCE_EVENTS_PER_BATCH,
+  NO_AUDIENCE_PLACEMENT,
+  PRODUCT_AUDIENCE_EVENTS,
+  productAudienceBatchSchema,
+  productAudienceCountersQuerySchema,
+  type ProductAudienceBatchPayload,
+  type ProductAudienceCounterView,
+  type ProductAudienceCountersQuery,
+  type ProductAudienceEvent,
+  type ProductAudienceEventInput,
+} from "./product-audience.js";

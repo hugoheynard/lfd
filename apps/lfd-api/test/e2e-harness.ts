@@ -30,6 +30,7 @@
 
 import type { INestApplication, Type } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
+import type { NestExpressApplication } from "@nestjs/platform-express";
 import request from "supertest";
 import type { App } from "supertest/types";
 
@@ -158,11 +159,15 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
   // est absent, toute signature échoue, et la suite éprouverait une application
   // qui n'est pas celle qu'on déploie — en donnant raison au code pour de
   // mauvaises raisons.
-  const app: INestApplication<App> = moduleRef.createNestApplication({ rawBody: true });
+  const expressApp = moduleRef.createNestApplication<NestExpressApplication>({ rawBody: true });
+  const app: INestApplication<App> = expressApp;
   // Même middleware d'ingress que `main.ts` : pose le RequestContext (instant +
   // traceId + acteur) autour de chaque requête. Sans lui, le journal d'événements
   // testerait une autre application (acteur toujours `system`).
   app.use(requestContextMiddleware);
+  // Même analyseur `text/plain` que `main.ts` : la mesure d'audience arrive
+  // par `sendBeacon`, en texte.
+  expressApp.useBodyParser("text", { limit: "16kb" });
   // Même filtre global que `main.ts` : sinon les e2e verraient des 500 là où la
   // prod renvoie 400/404/409, et testeraient une autre application.
   app.useGlobalFilters(new AppErrorFilter());
