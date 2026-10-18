@@ -20,6 +20,7 @@ import { AuthFacade } from '../auth/auth.facade';
 import { NotifyService } from '../notify.service';
 import { ClientCart } from './cart/client-cart.service';
 import { LOYALTY_REFUSAL_PREFIX, VoucherChoice } from './cart/voucher-choice.service';
+import { ClientLocale, type LocaleCode } from './client-locale.service';
 import { ClientWorkspace } from './client-workspace.service';
 import { OrderContextStore, type ServiceChoice } from './order-context.store';
 import { clearLocal, isRecord, readLocal, readNumber, readString, writeLocal } from './local-store';
@@ -264,6 +265,7 @@ export class ClientOrders {
   private readonly notify = inject(NotifyService);
   private readonly workspace = inject(ClientWorkspace);
   private readonly voucher = inject(VoucherChoice);
+  private readonly locale = inject(ClientLocale);
 
   /** Les commandes gardées pour l'espace COURANT — vide tant qu'il n'est pas connu. */
   private readonly placed = signal<readonly PlacedOrder[]>([]);
@@ -426,7 +428,7 @@ export class ClientOrders {
       return null;
     }
     const payload: PlaceShopOrderPayload = {
-      ...guestContentOf(service, lines, this.attemptKey(GUEST_WORKSPACE)),
+      ...guestContentOf(service, lines, this.attemptKey(GUEST_WORKSPACE), this.locale.current()),
       buyer,
     };
     const placed = await this.sendAsGuest(payload);
@@ -637,7 +639,13 @@ export class ClientOrders {
       return null;
     }
     const payload: PlaceOrderPayload = {
-      ...payloadOf(service, lines, this.attemptKey(workspace, voucherId), settlement),
+      ...payloadOf(
+        service,
+        lines,
+        this.attemptKey(workspace, voucherId),
+        settlement,
+        this.locale.current(),
+      ),
       // Omis sans bon, jamais `null` : le contrat le déclare facultatif.
       ...(voucherId === null ? {} : { voucherId }),
     };
@@ -701,6 +709,7 @@ function payloadOf(
   lines: readonly { product: { sku: string }; quantity: number }[],
   idempotencyKey: string,
   settlement: OrderSettlement | null,
+  locale: LocaleCode,
 ): PlaceOrderPayload {
   const content = {
     // 🔴 **Plus de `companyId` ici, et ce n'est plus au navigateur d'en parler.**
@@ -719,6 +728,10 @@ function payloadOf(
     // passer. Un en-tête facultatif n'aurait protégé que les appelants qui y
     // pensent, et c'est le navigateur qu'il fallait protéger.
     idempotencyKey,
+    // La langue de l'interface AU MOMENT du clic (lot A3 des audiences) : la
+    // commande la garde, la personne non. Elle sert à estimer le profil de
+    // séjour, en agrégé seulement.
+    locale,
     requestedDeliveryDate: service.date,
     note: '',
     lines: lines.map((line) => ({ sku: line.product.sku, quantity: line.quantity })),
@@ -763,8 +776,9 @@ function guestContentOf(
   service: ServiceChoice,
   lines: readonly { product: { sku: string }; quantity: number }[],
   idempotencyKey: string,
+  locale: LocaleCode,
 ): Omit<PlaceOrderPayload, 'settlement'> {
-  const { settlement, ...content } = payloadOf(service, lines, idempotencyKey, null);
+  const { settlement, ...content } = payloadOf(service, lines, idempotencyKey, null, locale);
   // Un visiteur n'a pas de carnet : aucun identifiant d'adresse ne part d'ici,
   // quoi que porte le choix stocké.
   return { ...content, deliveryAddressId: null };

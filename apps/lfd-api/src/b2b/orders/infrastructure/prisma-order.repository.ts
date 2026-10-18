@@ -90,6 +90,8 @@ export class PrismaOrderRepository extends OrderRepository {
         // Qui commande, déduit par l'agrégat et figé : jamais relu depuis la
         // société, qui peut changer ou disparaître après la passation.
         clientele: state.clientele,
+        // La langue de la boutique à la passation (lot A3) ; `null` = pas dite.
+        locale: state.locale,
         placedByUserId: state.placedByUserId,
         placedByStaffId: state.placedByStaffId,
         placedOffPlan: state.placedOffPlan,

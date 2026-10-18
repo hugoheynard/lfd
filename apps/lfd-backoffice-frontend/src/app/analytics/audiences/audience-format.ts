@@ -46,6 +46,16 @@ export const DIMENSION_TEXTS: Readonly<
     title: 'Moment de commande',
     subtitle: 'Jour et tranche horaire de passation, à l’heure de Paris.',
   },
+  order_locale: {
+    title: 'Langue de la commande',
+    subtitle:
+      'La langue de la boutique quand le client a commandé. « Non renseignée » : commandes d’avant le 18 octobre 2026 et saisies de l’équipe.',
+  },
+  stay_profile: {
+    title: 'Profil de séjour (estimé)',
+    subtitle:
+      'Estimé, jamais déclaré, particuliers seulement : vacancier si une commande est dans une autre langue que le français ou si son téléphone a un indicatif étranger, et que toutes ses commandes tiennent en 10 jours ; sinon résident s’il a commandé sur 3 semaines distinctes ou plus — saisonnier si l’un de ces signaux étrangers est là ; indéterminé sinon.',
+  },
 };
 
 /** La phrase qui annonce la règle d'anonymat, avec le seuil que le serveur applique. */

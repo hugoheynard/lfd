@@ -20,6 +20,7 @@ import { OrderReader } from "../../domain/ports/order.reader.js";
 import { ShopOrderIdempotencyStore } from "../../domain/ports/shop-order-idempotency.store.js";
 import { orderFingerprint } from "../../domain/services/order-fingerprint.js";
 import { GuestIdentity } from "../../domain/value-objects/guest-identity.js";
+import { OrderLocale } from "../../domain/value-objects/order-locale.js";
 import { OrderDrafting } from "../services/order-drafting.service.js";
 import { OrderIntake } from "../services/order-intake.service.js";
 import { PlaceShopOrderCommand, type PlaceShopOrderResult } from "./place-shop-order.command.js";
@@ -146,6 +147,7 @@ export class PlaceShopOrderHandler implements ICommandHandler<
       payload,
       // Un invité n'a pas de bons : son contrat n'en nomme aucun (plan des points, C3).
       null,
+      OrderLocale.ofOptional(payload.locale),
     );
 
     const intent = await this.settle(order);

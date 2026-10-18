@@ -8,6 +8,7 @@ import type {
   FulfillmentMethod,
   PickupSnapshot,
   LateFeeAdjustment,
+  ContentLocale,
   OrderClientele,
   PaymentStatus,
   SalesTermsDocument,
@@ -15,6 +16,7 @@ import type {
 import type { VatShare } from "@lfd/money";
 
 import type { OrderLineInput, OrderLineSnapshot } from "../value-objects/order-line.js";
+import type { OrderLocale } from "../value-objects/order-locale.js";
 
 // Les formes d'entrée et de sortie de l'agrégat `Order` — sorties de `order.ts`
 // pour le garder lisible, réexportées par lui : on les importe d'où l'on veut.
@@ -119,6 +121,11 @@ export interface DraftOrderInput {
    * fige : une révision écrite demain ne réécrit pas ce que la commande portait.
    */
   readonly salesTerms: OrderSalesTerms;
+  /**
+   * La langue de la boutique quand le CLIENT a commandé (lot A3), ou `null` :
+   * saisie du staff, ou boutique qui ne l'a pas envoyée. Jamais devinée.
+   */
+  readonly locale: OrderLocale | null;
 }
 
 /** État de la commande sérialisé pour la persistance — aucun type Prisma ici. */
@@ -167,6 +174,8 @@ export interface OrderToPlace {
   readonly stripePaymentIntentId: string | null;
   /** Les CGV figées (cf. {@link DraftOrderInput.salesTerms}). */
   readonly salesTerms: OrderSalesTerms;
+  /** La langue de la passation (cf. {@link DraftOrderInput.locale}). */
+  readonly locale: ContentLocale | null;
   readonly lines: readonly OrderLineSnapshot[];
 }
 

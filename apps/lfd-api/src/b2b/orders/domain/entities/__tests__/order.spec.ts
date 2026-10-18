@@ -1,3 +1,5 @@
+import { StaffOrderLocaleError } from "../../errors/order-locale-errors.js";
+import { OrderLocale } from "../../value-objects/order-locale.js";
 import { BilledWithoutCompanyError } from "../../errors/order-payer-errors.js";
 import { ProductionPlanClosedError } from "../../errors/production-plan-closed.error.js";
 import type { BillingAddressPayload } from "@lfd/contracts";
@@ -71,6 +73,7 @@ function draftInput(over: Partial<DraftOrderInput> = {}): DraftOrderInput {
     deliveryVatMode: "standard",
     voucher: null,
     salesTerms: { document: "salesTerms", revision: null, fileId: null },
+    locale: null,
     ...over,
   };
 }
@@ -601,5 +604,25 @@ describe("Order — reçue hors plan", () => {
     expect(() => order.receiveOffPlan("2026-10-15")).toThrow(ProductionPlanClosedError);
     order.deferPayment();
     expect(order.toPersistence().placedOffPlan).toBe(false);
+  });
+});
+
+describe("Order — la langue de la commande (lot A3)", () => {
+  it("fige la langue que la boutique a envoyée", () => {
+    expect(deferred({ locale: OrderLocale.of("en") }).locale).toBe("en");
+  });
+
+  it("garde null quand rien n'a été envoyé — aucun « fr » par défaut", () => {
+    expect(deferred().locale).toBeNull();
+  });
+
+  it("refuse une langue sur une saisie de l'équipe", () => {
+    expect(() =>
+      Order.draft(draftInput({ placedByStaffId: "staff_1", locale: OrderLocale.of("fr") })),
+    ).toThrow(StaffOrderLocaleError);
+  });
+
+  it("laisse passer une saisie de l'équipe sans langue", () => {
+    expect(deferred({ placedByStaffId: "staff_1" }).locale).toBeNull();
   });
 });

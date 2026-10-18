@@ -408,6 +408,18 @@ const noWaivers: OrderCutoffWaiverGate = {
   consume: () => Promise.resolve(),
 };
 
+describe("PlaceOrderForCustomerHandler — la langue", () => {
+  it("n'enregistre aucune langue : l'écran du back-office ne dit rien du client (lot A3)", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+
+    await handler(guard("orders", "active", "granted"), sink).execute(
+      new PlaceOrderForCustomerCommand("staff_1", payload()),
+    );
+
+    expect(sink.placed?.locale).toBeNull();
+  });
+});
+
 describe("PlaceOrderForCustomerHandler — le mur", () => {
   it("vérifie l'appartenance de L'ACHETEUR, pas celle du commercial", async () => {
     // Le piège de cette surface : un commercial n'est membre d'aucune société

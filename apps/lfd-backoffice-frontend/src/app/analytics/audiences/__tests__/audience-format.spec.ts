@@ -5,6 +5,7 @@ import {
   audiencePeriodOf,
   audienceRowOf,
   AUDIENCE_PERIOD_OPTIONS,
+  DIMENSION_TEXTS,
   TOO_FEW_CLIENTS,
 } from '../audience-format';
 
@@ -13,6 +14,18 @@ describe('la mise en mots des audiences', () => {
     expect(AUDIENCE_PERIOD_OPTIONS.map((option) => option.value)).toEqual(['7', '30', '90']);
     expect(audiencePeriodOf('90')).toBe(90);
     expect(audiencePeriodOf('14')).toBeNull();
+  });
+
+  it('annonce le profil de séjour comme une ESTIMATION, avec sa règle (A3)', () => {
+    const text = DIMENSION_TEXTS.stay_profile;
+    expect(text.title).toBe('Profil de séjour (estimé)');
+    expect(text.subtitle).toContain('Estimé, jamais déclaré');
+    expect(text.subtitle).toContain('10 jours');
+    expect(text.subtitle).toContain('3 semaines');
+  });
+
+  it('nomme la coupe de la langue de la commande (A3)', () => {
+    expect(DIMENSION_TEXTS.order_locale.title).toBe('Langue de la commande');
   });
 
   it('dit le seuil que le serveur applique', () => {

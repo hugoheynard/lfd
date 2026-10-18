@@ -43,6 +43,7 @@ import { OrderOperations } from "./order-operations.service.js";
 import { OrderPlanGate } from "./order-plan-gate.service.js";
 import { OrderLinePricing, type ResolvedOrderLine } from "./order-line-pricing.service.js";
 import type { OrderParties } from "./order-parties.js";
+import type { OrderLocale } from "../../domain/value-objects/order-locale.js";
 import { lineTotalCents } from "@lfd/money";
 
 /** Ce qu'un panier demande, quelle que soit la porte par laquelle il arrive. */
@@ -153,6 +154,9 @@ export class OrderDrafting {
     parties: OrderParties,
     content: OrderContent,
     voucher: OrderVoucher | null,
+    // La langue du CLIENT à la passation (lot A3) ; `null` pour la saisie du
+    // staff et pour une boutique qui ne l'a pas envoyée.
+    locale: OrderLocale | null,
   ): Promise<DraftedOrder> {
     // 🔴 Le payeur se décide ICI, et en premier : c'est le seul chemin que les
     // trois portes de passation partagent (client, saisie staff, boutique), et
@@ -252,6 +256,7 @@ export class OrderDrafting {
       deliveryVatMode,
       voucher,
       salesTerms: await this.salesTermsIn(salesTermsOf(audience)),
+      locale,
     });
     return { order, waiverUsed };
   }

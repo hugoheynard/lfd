@@ -561,6 +561,38 @@ function payload(over: Partial<PlaceOrderPayload> = {}): PlaceOrderPayload {
 }
 
 describe("PlaceOrderHandler", () => {
+  it.each([
+    ["en", "en"],
+    [undefined, null],
+  ] as const)(
+    "fige la langue envoyée (%s → %s), sans en inventer une (lot A3)",
+    async (sent, kept) => {
+      const sink = { placed: null as OrderToPlace | null };
+      const handler = new PlaceOrderHandler(
+        guard(null, null),
+        drafting(pickups(LABO_POINT), zones()),
+        capturingRepo(sink),
+        payments(),
+        events(),
+        noWaivers,
+        new FixedClock(PRICED_AT),
+        freeKeys,
+        noReader,
+        directWork,
+        new FixedVoucherQuotes(),
+        new RecordingRedemption(),
+        new RecordingDurable(),
+        intakeAt(),
+      );
+
+      await handler.execute(
+        new PlaceOrderCommand("u1", payload(sent === undefined ? {} : { locale: sent }), null),
+      );
+
+      expect(sink.placed?.locale).toBe(kept);
+    },
+  );
+
   /**
    * Régression (X0, 2026-10-17) : faits du catalogue ouverts, la passation
    * citait la DERNIÈRE version poussée alors que ses lignes venaient des faits —

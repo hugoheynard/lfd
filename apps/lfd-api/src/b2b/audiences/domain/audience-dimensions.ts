@@ -3,6 +3,8 @@ import type { AudienceDimension } from "@lfd/contracts";
 import { ACTIVITY_FAMILIES, activityFamilyOf } from "./activity-families.js";
 import { LOYALTY_TIERS } from "./loyalty-tiers.js";
 import { allMomentCells, momentCell } from "./order-moments.js";
+import { ORDER_LOCALE_CELLS } from "./order-locales.js";
+import { STAY_PROFILES, stayProfileOf, staySignalsOf } from "./stay-profiles.js";
 
 /** Une case d'une coupe : sa clé stable et son libellé. */
 export interface DimensionCell {
@@ -47,7 +49,7 @@ function indexedRule(cells: readonly DimensionCell[]): AudienceDimensionRule {
 }
 
 /**
- * Les règles des sept coupes. Une table et non un `switch` : une coupe de
+ * Les règles des neuf coupes. Une table et non un `switch` : une coupe de
  * plus est une entrée de plus (et son expression dans l'adaptateur).
  */
 export const AUDIENCE_DIMENSION_RULES: Readonly<Record<AudienceDimension, AudienceDimensionRule>> =
@@ -87,6 +89,21 @@ export const AUDIENCE_DIMENSION_RULES: Readonly<Record<AudienceDimension, Audien
       cellOf: (rawKey) => {
         const [day, slice] = rawKey.split("-").map(Number);
         return momentCell(day ?? 0, slice ?? -1) ?? UNKNOWN_CELL;
+      },
+    },
+    // La base rend `""` pour une commande sans langue : la case « non renseignée ».
+    order_locale: {
+      canonical: ORDER_LOCALE_CELLS,
+      cellOf: (rawKey) =>
+        ORDER_LOCALE_CELLS.find((cell) => cell.key === (rawKey === "" ? "unknown" : rawKey)) ??
+        UNKNOWN_CELL,
+    },
+    stay_profile: {
+      canonical: STAY_PROFILES,
+      cellOf: (rawKey) => {
+        const signals = staySignalsOf(rawKey);
+        const profile = signals === null ? null : stayProfileOf(signals);
+        return STAY_PROFILES.find((cell) => cell.key === profile) ?? UNKNOWN_CELL;
       },
     },
   };

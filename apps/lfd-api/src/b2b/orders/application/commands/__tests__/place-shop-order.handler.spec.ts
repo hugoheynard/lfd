@@ -539,6 +539,22 @@ describe("PlaceShopOrderHandler — le porteur", () => {
 });
 
 describe("PlaceShopOrderHandler — la commande produite", () => {
+  it("fige la langue de la boutique envoyée avec la commande (lot A3)", async () => {
+    const { handler, sink } = scene();
+
+    await handler.execute(new PlaceShopOrderCommand(payload({ locale: "en" })));
+
+    expect(sink.placed?.locale).toBe("en");
+  });
+
+  it("laisse la langue à null quand la boutique ne l'a pas envoyée — jamais « fr » par défaut", async () => {
+    const { handler, sink } = scene();
+
+    await handler.execute(new PlaceShopOrderCommand(payload()));
+
+    expect(sink.placed?.locale).toBeNull();
+  });
+
   it("est PUBLIQUE et sans société", async () => {
     // D5 : `OrderClientele` vaut `pro | public`, et l'agrégat la déduit de
     // l'absence de société. Elle est figée à la passation — jamais relue depuis

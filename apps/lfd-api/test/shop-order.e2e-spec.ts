@@ -262,6 +262,32 @@ describe("la commande sans compte — la commande produite", () => {
     expect(order.paymentStatus).toBe("pending");
   });
 
+  it("enregistre la langue de la boutique, et null quand elle n'est pas dite (lot A3)", async () => {
+    const english = await place({ locale: "en" });
+    const silent = await place({
+      buyer: { firstName: "Léa", email: "lea@visiteur.fr", phone: "0611111111" },
+    });
+
+    const rows = await ctx.prisma.order.findMany({
+      where: { id: { in: [english.id, silent.id] } },
+      select: { id: true, locale: true },
+    });
+
+    expect(new Map(rows.map((row) => [row.id, row.locale]))).toEqual(
+      new Map([
+        [english.id, "en"],
+        [silent.id, null],
+      ]),
+    );
+  });
+
+  it("la base refuse elle aussi une langue inconnue (CHECK de la migration)", async () => {
+    const placed = await place();
+    await expect(
+      ctx.prisma.$executeRaw`UPDATE "orders" SET "locale" = 'de' WHERE "id" = ${placed.id}`,
+    ).rejects.toThrow(/orders_locale_check/);
+  });
+
   it("rend de quoi payer, à la première passation", async () => {
     const placed = await place();
 

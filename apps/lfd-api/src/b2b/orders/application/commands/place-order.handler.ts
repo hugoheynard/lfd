@@ -22,6 +22,7 @@ import { OrderReader } from "../../domain/ports/order.reader.js";
 import { OrderRepository, type PlacedOrder } from "../../domain/ports/order.repository.js";
 import { ensureOrderMember } from "../../domain/services/order-access.js";
 import { orderFingerprint } from "../../domain/services/order-fingerprint.js";
+import { OrderLocale } from "../../domain/value-objects/order-locale.js";
 import { OrderDrafting } from "../services/order-drafting.service.js";
 import { OrderIntake } from "../services/order-intake.service.js";
 import { settleOrder, type CreatedIntent } from "../services/order-settlement.js";
@@ -143,6 +144,7 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
       { companyId, placedByUserId: command.actorUserId, placedByStaffId: null },
       payload,
       voucher,
+      OrderLocale.ofOptional(payload.locale),
     );
 
     const intent = await settleOrder(

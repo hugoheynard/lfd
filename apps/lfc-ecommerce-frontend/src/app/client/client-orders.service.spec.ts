@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { AuthFacade } from '../auth/auth.facade';
 import { ClientCart } from './cart/client-cart.service';
 import { ClientOrders } from './client-orders.service';
+import { ClientLocale } from './client-locale.service';
 import {
   CARD_DUE,
   placeOrder,
@@ -201,6 +202,41 @@ describe('passer commande', () => {
     await placing;
 
     expect(body.deliveryAddressId).toBeNull();
+  });
+
+  it('envoie la langue de l’interface au moment du clic (audiences, A3)', async () => {
+    const http = boot();
+    TestBed.inject(ClientLocale).current.set('en');
+    TestBed.inject(OrderContextStore).choice.set(AU_LABO);
+    TestBed.inject(ClientCart).add('VIE-001');
+
+    const placing = TestBed.inject(ClientOrders).place();
+    await Promise.resolve();
+    await Promise.resolve();
+    const body = sentBody(http);
+    await placing;
+
+    expect(body.locale).toBe('en');
+  });
+
+  it('un visiteur envoie lui aussi la langue de l’interface', async () => {
+    const http = boot();
+    TestBed.inject(ClientLocale).current.set('it');
+    TestBed.inject(OrderContextStore).choice.set(AU_LABO);
+    TestBed.inject(ClientCart).add('VIE-001');
+    const asGuest = TestBed.inject(ClientOrders).placeAsGuest({
+      firstName: 'Jean',
+      email: 'jean@example.com',
+      phone: '0600000000',
+    });
+    await Promise.resolve();
+    await Promise.resolve();
+    const guest = http.expectOne((r) => r.url.endsWith('/shop/orders'));
+    const guestBody = guest.request.body as PlaceOrderPayload;
+    guest.flush({ id: 'ord_2', orderNumber: 'CMD-0008' });
+    await asGuest;
+
+    expect(guestBody.locale).toBe('it');
   });
 
   /** Les points qu'un compte aurait rapportés suivent la commande du visiteur. */

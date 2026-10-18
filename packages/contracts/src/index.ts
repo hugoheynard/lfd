@@ -923,6 +923,7 @@ export {
   deliveryAddressIssue,
   placeOrderPayloadSchema,
   orderSettlementSchema,
+  orderLocaleSchema,
   orderOriginSchema,
   ORDER_ORIGIN_LABELS,
   recurringDeltasSchema,

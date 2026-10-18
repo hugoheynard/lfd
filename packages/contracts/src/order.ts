@@ -15,6 +15,7 @@ import type { DeliveryVatMode } from "./order-delivery-vat.js";
 import type { LateFeeAdjustment } from "./order-late-fee.js";
 import type { SettlementRegime } from "./order-sheet.js";
 import { exposedHandoverToken } from "./order-settlement.values.js";
+import { contentLocales } from "./platform-content.defaults.js";
 
 /**
  * Contrat de fil des **commandes** B2B.
@@ -351,6 +352,17 @@ export const orderSettlementSchema = z.enum(["card", "account"]);
 export type OrderSettlement = z.infer<typeof orderSettlementSchema>;
 
 /**
+ * **La langue d'interface du client au moment où il commande** (lot A3,
+ * `documentation/recommandation-produit/plan-audiences.md`, Q3 tranchée par
+ * Hugo le 2026-10-18) — une des trois langues de la vitrine.
+ *
+ * FACULTATIVE, et l'absence a un sens : la commande ne la porte pas (`NULL` en
+ * base), rien ne la devine. La saisie du staff n'a pas ce champ : la langue
+ * d'un écran du back-office ne dit rien du client.
+ */
+export const orderLocaleSchema = z.enum(contentLocales, "langue de commande inconnue");
+
+/**
  * 🔴 **Aucun `companyId` ici, et c'est le point.**
  *
  * La société pour laquelle la commande est passée est **résolue au serveur**, à
@@ -374,6 +386,8 @@ export const placeOrderPayloadSchema = z
      * portent ce champ.
      */
     voucherId: z.string().min(1).optional(),
+    /** La langue de la boutique à la passation, ou absente. Cf. {@link orderLocaleSchema}. */
+    locale: orderLocaleSchema.optional(),
     ...orderContentShape,
   })
   .refine(hasAddressWhenDelivered, deliveryAddressIssue())

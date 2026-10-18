@@ -22,7 +22,7 @@ import { said } from './agent-tool-text';
 export const AUDIENCE_TOOLS = ['audiences_read'] as const;
 
 /**
- * **Les outils WebMCP des audiences** (2026-10-18, lot A1 de
+ * **Les outils WebMCP des audiences** (2026-10-18, lots A1 et A3 de
  * `plan-audiences.md`) — Analytics › Audiences, sans le clic. Même route que
  * l'écran (`GET admin/audiences`, sous `b2b_growth:read`), donc le même seuil
  * d'anonymat, appliqué par le serveur : une case masquée n'arrive jamais avec
@@ -34,7 +34,7 @@ export function declareAudienceAgentTools(): readonly string[] {
   void declareExperimentalWebMcpTool({
     name: 'audiences_read',
     description:
-      'Les audiences de la clientèle, comme l’écran Analytics › Audiences : sur `days` jours (7, 30 ou 90 ; 30 par défaut, aujourd’hui compris), pour chaque coupe (`dimension` : clientele = pros ou particuliers, activity = activité du pro d’après son code NAF, fulfillment = retrait ou livraison, pickup_site = point de retrait, delivery_zone = code postal livré, loyalty = nombre de commandes d’un même client, moment = jour et tranche horaire à Paris ; toutes si omise), une ligne par case : clients distincts, commandes, panier moyen HT et TTC, chiffre d’affaires HT et TTC, familles en tête. Une case sous le seuil d’anonymat ne porte AUCUN chiffre (« trop peu de clients »). Aucun client n’est nommé. Lecture seule.',
+      'Les audiences de la clientèle, comme l’écran Analytics › Audiences : sur `days` jours (7, 30 ou 90 ; 30 par défaut, aujourd’hui compris), pour chaque coupe (`dimension` : clientele = pros ou particuliers, activity = activité du pro d’après son code NAF, fulfillment = retrait ou livraison, pickup_site = point de retrait, delivery_zone = code postal livré, loyalty = nombre de commandes d’un même client, moment = jour et tranche horaire à Paris, order_locale = langue de la boutique à la commande (fr, en, it, ou non renseignée), stay_profile = profil de séjour ESTIMÉ des particuliers (résident, saisonnier, vacancier, indéterminé — une estimation d’après la langue, l’indicatif téléphonique et le rythme des commandes, jamais une déclaration) ; toutes si omise), une ligne par case : clients distincts, commandes, panier moyen HT et TTC, chiffre d’affaires HT et TTC, familles en tête. Une case sous le seuil d’anonymat ne porte AUCUN chiffre (« trop peu de clients »). Aucun client n’est nommé. Lecture seule.',
     inputSchema: {
       type: 'object',
       properties: {

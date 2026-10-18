@@ -117,6 +117,17 @@ model Order {
   /// ne la réécrit pas non plus (plan, D4 et D7).
   clientele OrderClientele?
 
+  /// **La langue d'interface du CLIENT au moment où il a commandé** (lot A3,
+  /// `documentation/recommandation-produit/plan-audiences.md`) : `fr`, `en` ou
+  /// `it`, tenus par un CHECK. Posée par l'agrégat depuis le contrat de
+  /// passation de la boutique.
+  ///
+  /// `NULL` = la langue n'a pas été dite : commande saisie par l'équipe,
+  /// boutique qui ne l'a pas envoyée, et **toutes les commandes d'avant la
+  /// colonne, pour toujours** — rien ne permet de la retrouver, et l'inventer
+  /// (`fr`) fausserait l'estimation qu'elle nourrit.
+  locale String?
+
   /// **De quelle version du catalogue venaient ces articles.**
   ///
   /// Répond à « d'où venait cet article », JAMAIS à « quel prix » : celui-là est

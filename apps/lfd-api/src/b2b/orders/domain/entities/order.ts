@@ -12,6 +12,7 @@ import type {
 
 import { EmptyOrderError, InvalidOrderPaymentError } from "../errors/order-errors.js";
 import { BilledWithoutCompanyError } from "../errors/order-payer-errors.js";
+import { StaffOrderLocaleError } from "../errors/order-locale-errors.js";
 import type { VatShare } from "@lfd/money";
 
 import {
@@ -30,6 +31,7 @@ import type {
 import { settlementRegimeOf } from "../services/settlement-regime.js";
 import { computeOrderTotals } from "../services/vat.js";
 import { OrderLine } from "../value-objects/order-line.js";
+import type { OrderLocale } from "../value-objects/order-locale.js";
 
 export type {
   DraftOrderInput,
@@ -78,6 +80,7 @@ export class Order {
     private readonly vatSharesValue: readonly VatShare[],
     private readonly totalCentsValue: number,
     private readonly salesTerms: OrderSalesTerms,
+    private readonly locale: OrderLocale | null,
   ) {}
 
   /** Compose une commande : valide, fige les lignes et calcule tous les montants. */
@@ -88,6 +91,9 @@ export class Order {
     // L'image du CHECK `order_billed_needs_company` : refusé ici, avant la base.
     if (input.companyId === null && input.billedCompanyId !== null) {
       throw new BilledWithoutCompanyError();
+    }
+    if (input.placedByStaffId !== null && input.locale !== null) {
+      throw new StaffOrderLocaleError();
     }
     if (input.discountCents < 0 || input.deliveryFeeCents < 0 || input.lateFeeCents < 0) {
       throw new InvalidOrderPaymentError("Remise, frais et surtaxe doivent être positifs.");
@@ -155,6 +161,7 @@ export class Order {
       vatShares,
       totalCents,
       input.salesTerms,
+      input.locale,
     );
   }
 
@@ -269,6 +276,7 @@ export class Order {
       paymentStatus: this.payment.status,
       stripePaymentIntentId: this.payment.intentId,
       salesTerms: this.salesTerms,
+      locale: this.locale?.code ?? null,
       lines: this.lines.map((line) => line.toSnapshot()),
     };
   }

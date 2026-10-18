@@ -15,6 +15,11 @@
 > [`audiences.md`](audiences.md). Ce qui a été lu pour le bâtir est au §8 ;
 > le regroupement NAF y attend la décision de Hugo (Q4). A2–A4 restent.
 >
+> ✅ **A3 bâti le 2026-10-18** (non commité à l'écriture de ces lignes) : la
+> langue de la commande et le profil de séjour **estimé**, décrits au présent
+> dans [`audiences.md`](audiences.md) §2 bis ; les décisions prises au lot sont
+> au §9. A2 et A4 restent.
+>
 > **Relu le 2026-10-18 au soir** : R0, dont dépend A1, est bâti (les compteurs
 > d'audience anonymes de `growth`) ; rien de ce plan ne l'était alors. Ne pas confondre
 > ces segments de **clientèle** avec l'**audience d'un article** (`pro`,
@@ -46,14 +51,18 @@ de ce qu'elle achète.
 | **Site de retrait, zone de livraison** | **lu au lot A1 (§8)** : le site dans `pickupAddress` (`orders.prisma:153`, `siteId`), la commune dans `deliveryAddressSnapshot` (`:151`) ; `fulfillment` (`:186`) ne porte aucun lieu | **sûre** (site : absent des commandes d'avant les sites)                         |
 | **Fidèle / régulier / de passage**     | nombre de commandes par personne ou société sur la période                                                                                                                            | **sûre** (dérivée)                                                               |
 | **Moment** (jour, heure, créneau)      | `Order.createdAt` et le jour de retrait                                                                                                                                               | **sûre**                                                                         |
-| **Résident / saisonnier / vacancier**  | **rien de fiable aujourd'hui** — voir §3                                                                                                                                              | à construire                                                                     |
+| **Résident / saisonnier / vacancier**  | **estimé** depuis A3 (§9) : `orders.locale`, `users.phone`, rythme des commandes ; la réponse déclarée (A2) reste à construire                                                        | estimation, affichée comme telle                                                 |
 
 ## 3. Résident, saisonnier ou vacancier — le segment qui compte le plus
 
 À Val d'Isère, c'est sans doute la coupe la plus utile, et c'est la seule
 qu'on n'a pas.
 
-**Ce qu'on n'a pas** : la langue choisie dans la boutique n'est enregistrée
+> **Depuis A3 (2026-10-18)**, la langue de chaque commande est enregistrée
+> (`orders.locale`) — pour les commandes passées à partir de ce jour-là
+> seulement. Le paragraphe qui suit décrit l'état d'avant.
+
+**Ce qu'on n'avait pas** : la langue choisie dans la boutique n'est enregistrée
 nulle part (aucune colonne `locale` dans les schémas `public`, seul
 `shop-copy.prisma:35` en porte une, pour les textes ; vérifié le 2026-10-18).
 L'indicatif du téléphone est dans `users.phone` (`account.prisma:389`), texte
@@ -104,7 +113,7 @@ libre.
 | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
 | **A1** | Lire le contenu de `fulfillment` et de l'adresse figée ; tableau de bord des segments **sûrs** (pro/particulier, activité, retrait/livraison, site/zone, fidélité, moment) ; seuil d'affichage | R0        |
 | **A2** | La question facultative « résident · saisonnier · vacancier », posée **plus tard par e-mail ou notification** (Hugo, 2026-10-18), modifiable dans Mon profil + la phrase de la politique       | campagne  |
-| **A3** | La langue de la commande (colonne additive) et l'estimation affichée « estimé »                                                                                                                | Q3        |
+| **A3** | ✅ bâti le 2026-10-18 — la langue de la commande (colonne additive) et l'estimation affichée « estimé » (§9)                                                                                   | Q3        |
 | **A4** | Les suggestions collectives par segment (« souvent pris avec, chez les pros »), sous le seuil                                                                                                  | A1, R2    |
 
 ## 7. Questions à Hugo
@@ -178,3 +187,58 @@ fait ; et **56.21Z** (traiteurs) en restauration plutôt qu'à part.
   colonne, la présence d'une société.
 - **Moment** : cinq tranches (nuit 0–7 h, matin 7–11 h, midi 11–14 h,
   après-midi 14–18 h, soir 18 h–minuit).
+
+## 9. Le lot A3 — la règle d'estimation, et ce qui n'est pas rattrapé
+
+Bâti le 2026-10-18 ; l'état est dans [`audiences.md`](audiences.md) §2 bis.
+
+### 9.1 La langue de la commande
+
+- `orders.locale` (`TEXT NULL`, CHECK `fr` | `en` | `it`, migration
+  `20261018210000_la_langue_de_la_commande`), portée par l'agrégat `Order`
+  (value object `OrderLocale`).
+- Posée à la passation depuis le contrat : champ **facultatif** `locale` de
+  `POST /orders` (client connecté, particulier ou pro) et de
+  `POST /shop/orders` (invité). La boutique envoie la langue de son interface
+  (`ClientLocale`) au moment du clic.
+- **`NULL`** : saisie de l'équipe (le contrat staff n'a pas le champ, et
+  l'agrégat refuse une langue sur une commande saisie par l'équipe), boutique
+  qui ne l'envoie pas, et **toutes les commandes d'avant le 2026-10-18 —
+  jamais rattrapées** : rien ne permet de retrouver leur langue, et `fr` par
+  défaut fausserait l'estimation.
+- Hors de l'empreinte d'idempotence (une façon de dire, pas ce qu'on achète)
+  et hors du fait de journal `order.placed`, qui ne porte que l'identité de la
+  commande et son total — ni la clientèle, ni l'acheminement.
+
+### 9.2 Le profil de séjour estimé — la règle
+
+Par **particulier** (une société ne séjourne pas) et sur la période affichée,
+trois signaux calculés dans l'agrégat SQL, jamais stockés :
+
+- **signal étranger** : une commande dans une autre langue que le français,
+  OU un `users.phone` qui commence par `+` ou `00` suivi d'un autre indicatif
+  que `33`. Un numéro sans indicatif (`06…`) ne dit rien ; une langue absente
+  non plus. ⚠️ Le téléphone lu est celui d'**aujourd'hui**, pas celui du jour
+  de la commande ;
+- **écart** : jours entre la première et la dernière commande de la période ;
+- **semaines** : semaines ISO distinctes où il a commandé.
+
+Dans cet ordre : **vacancier** = signal étranger ET écart ≤ 10 jours ;
+**saisonnier** = 3 semaines distinctes ou plus ET signal étranger ;
+**résident** = 3 semaines distinctes ou plus sans signal étranger ;
+**indéterminé** sinon. Constantes dans
+`apps/lfd-api/src/b2b/audiences/domain/stay-profiles.ts`.
+
+**Le saisonnier est la case la plus fragile, et c'est dit à l'écran** : sur
+90 jours au plus, un saisonnier et un résident se ressemblent, et seul le
+signal étranger les sépare — un résident étranger à l'année y tombe aussi.
+Sur 7 jours, personne n'atteint 3 semaines : seuls vacancier et indéterminé
+peuvent s'y remplir.
+
+### 9.3 Décisions prises au lot, faute de les trouver dans le plan
+
+- **Particuliers seulement** pour le profil de séjour (un hôtel qui commande
+  en anglais n'est pas en vacances). Une ligne à changer dans l'adaptateur si
+  Hugo veut y voir les pros.
+- **Saisonnier** = la règle ci-dessus, plutôt qu'un rangement avec
+  « indéterminé » ; à revoir avec la réponse déclarée (A2).

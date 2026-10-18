@@ -6,6 +6,7 @@ import {
   hasPickupPointWhenPickedUp,
   idempotencyKeySchema,
   orderContentShape,
+  orderLocaleSchema,
   pickupPointIssue,
 } from "./order.js";
 
@@ -98,6 +99,8 @@ export const placeShopOrderPayloadSchema = z
   .object({
     idempotencyKey: idempotencyKeySchema,
     buyer: guestBuyerSchema,
+    /** La langue de la boutique à la passation, ou absente (`orderLocaleSchema`, lot A3). */
+    locale: orderLocaleSchema.optional(),
     ...orderContentShape,
   })
   .refine(hasAddressWhenDelivered, deliveryAddressIssue())

@@ -7,7 +7,8 @@ import { z } from "zod";
  * décrite par ce qu'elle FAIT, en segments **sûrs** (pro / particulier,
  * activité du pro, retrait / livraison, site de retrait, zone de livraison,
  * fidélité, moment de passation), sur une période glissante finissant
- * aujourd'hui (jour métier).
+ * aujourd'hui (jour métier). Depuis le lot A3 : la langue de la commande, et
+ * le profil de séjour — **estimé**, jamais stocké (`stay_profile`).
  *
  * 🔴 **Aucun identifiant de client ne sort.** Une case qui compte moins de
  * `minClients` clients distincts ne porte AUCUN chiffre (`too_few_clients`) :
@@ -28,8 +29,9 @@ export const DEFAULT_AUDIENCE_PERIOD: AudiencePeriod = 30;
 /**
  * Les coupes de la clientèle, dans l'ordre où l'écran les montre. Chacune
  * partage les commandes de la période autrement ; une commande compte dans
- * une case de chaque coupe (sauf `activity`, qui ne voit que les pros, et
- * `pickup_site` / `delivery_zone`, qui ne voient que leur mode).
+ * une case de chaque coupe (sauf `activity`, qui ne voit que les pros,
+ * `stay_profile`, qui ne voit que les particuliers, et `pickup_site` /
+ * `delivery_zone`, qui ne voient que leur mode).
  */
 export const AUDIENCE_DIMENSIONS = [
   "clientele",
@@ -39,6 +41,8 @@ export const AUDIENCE_DIMENSIONS = [
   "delivery_zone",
   "loyalty",
   "moment",
+  "order_locale",
+  "stay_profile",
 ] as const;
 export type AudienceDimension = (typeof AUDIENCE_DIMENSIONS)[number];
 
@@ -105,7 +109,7 @@ export interface AudiencesView {
   /**
    * Les commandes nées d'un abonnement, À PART : leur moment est celui du
    * planificateur et leur fidélité est automatique — mêlées aux coupes,
-   * elles en fausseraient deux sur sept. Même seuil.
+   * elles en fausseraient deux (moment, fidélité). Même seuil.
    */
   readonly subscriptions: AudienceCell;
 }

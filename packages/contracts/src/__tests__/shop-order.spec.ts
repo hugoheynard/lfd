@@ -129,3 +129,17 @@ describe("placeShopOrderPayloadSchema — le panier reste celui de la caisse", (
     expect(() => placeShopOrderPayloadSchema.parse(payload({ lines: [] }))).toThrow();
   });
 });
+
+describe("placeShopOrderPayloadSchema — la langue de la commande (lot A3)", () => {
+  it("accepte une des trois langues de la boutique", () => {
+    expect(placeShopOrderPayloadSchema.parse(payload({ locale: "it" })).locale).toBe("it");
+  });
+
+  it("laisse la langue absente — aucun défaut posé", () => {
+    expect(placeShopOrderPayloadSchema.parse(payload()).locale).toBeUndefined();
+  });
+
+  it("REFUSE une langue que la boutique ne propose pas", () => {
+    expect(() => placeShopOrderPayloadSchema.parse(payload({ locale: "de" }))).toThrow();
+  });
+});

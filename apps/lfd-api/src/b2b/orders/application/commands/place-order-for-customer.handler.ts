@@ -77,6 +77,8 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
       payload,
       // Le staff ne dépense pas le bon d'un client : son contrat n'en nomme aucun (plan des points, C3).
       null,
+      // Ni de langue : celle de l'écran du back-office ne dit rien du client (lot A3).
+      null,
     );
 
     const intent = await this.settle(order, payload.settlement, companyId);
