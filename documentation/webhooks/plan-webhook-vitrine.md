@@ -142,3 +142,51 @@ lecture, un secret de signature) : **`vitruve` avant de bâtir**.
    dans le premier lot, ou un abonné réglé à la main suffit-il pour démarrer ?
 4. **L'agence a-t-elle une préférence** de format (signature, en-têtes,
    délai) ? À lui demander avant de figer W5.
+
+## 4. Contradiction de `vitruve` (2026-10-18), qui prime sur le §2
+
+Le §2 reste lisible pour la trace, mais **ce §4 fait foi** là où il le
+contredit. En particulier, la phrase du §2 « W se bâtit après 2a (il en
+écoute les faits) … une notification par push accepté suffit » est
+**périmée** : W3′ n'écoute rien, il compare des empreintes.
+
+**Ce que la vitrine recevrait réellement** (vérifié dans le code le
+2026-10-18) — par article : `sku`, `name`, `note`, `image` et `thumbnail`
+(url, alt, dimensions, point focal), `unitPriceMillicents` (HT public résolu),
+`unitPriceTtcCents`, `catalogPriceMillicents` (l'étiquette avant promotion,
+présente seulement si une promotion baisse le prix), `vatRatePercent`,
+`shelfId`, `isFeatured` (mise en avant **publique**), `operation` ; et les
+opérations publiques. Sont exclus par construction : l'audience `pro`, les
+masqués au public, les arrivées non validées (`servedTo`), le prix pro, la
+mise en avant pro, les opérations réservées aux pros. Un test devra
+l'éprouver **sur la route `/vitrine` elle-même**.
+
+| #   | Objection                                                                                                                                                                                                                              | Proposition                                                                                                                                                                                                                                                                                                                           |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| B1  | **L'audience ne sort pas de la vue publique** : `ShopItemView` n'a pas de champ d'audience, et l'e2e de la boutique fige ses clés.                                                                                                     | **Q5 à Hugo** : (a) ajouter l'audience (`public` / `both`) à la vue publique, que la boutique exposerait aussi — sans risque, c'est l'information « aussi pour les professionnels » ; ou (b) renoncer à la faire sortir. Recommandation : **(a)**.                                                                                    |
+| B2  | **« Décocher les promotions » ne retire rien** : la promotion est déjà dans le prix ; l'enlever demande un second chemin de prix. Même chose pour les photos (réécrire des champs).                                                    | **Retirer les cases `promotions` et `photos`.** Les cases restantes retirent des **ensembles** entiers : `catalogue` (articles et rayons), `operations`, `textes`. Le prix sort toujours tel que le client le paie, avec l'étiquette d'avant promotion quand il y en a une.                                                           |
+| B3  | **Une agence en panne fait diverger le balayage sans fin** (une livraison toutes les 5 min, 10 essais chacune, puis plus rien n'avance).                                                                                               | Comparer à la dernière empreinte **émise** (table `vitrine_fingerprints`, une ligne par abonné et par élément) ; **une seule livraison en vol** par abonné (la suivante remplace celle en attente) ; après les relances, l'abonné passe **« en échec »** visible à l'écran, plus rien ne part ; à la reprise, « tout renvoyer » (W7). |
+| S1  | **Les textes non modifiés n'arrivent pas** : `shop/copy` ne sert que les remplacements publiés ; les textes par défaut vivent dans les dictionnaires du front.                                                                         | `GET /vitrine/textes` sert **le texte effectif** de chaque clé : le publié s'il existe, sinon le défaut — la copie du manifeste que `pnpm copy:digest` dépose déjà côté API. À vérifier au lot.                                                                                                                                       |
+| S2  | **SSRF par rebinding DNS** si l'on vérifie l'adresse puis qu'on reconnecte ; pas de délai ni de taille de réponse bornés.                                                                                                              | Un adaptateur sortant dans `platform/` qui **épingle l'adresse vérifiée** pour la connexion, `https` seul, sans redirection, délai court (5 s) et réponse lue bornée (quelques ko).                                                                                                                                                   |
+| S3  | **Coût** : la vue complète ne dépend pas de l'abonné.                                                                                                                                                                                  | Calculer la vue **une fois par balayage**, puis filtrer par abonné ; **aucun calcul** sans abonné actif.                                                                                                                                                                                                                              |
+| S4  | **La passerelle route par déployable**, pas par chemin ; une limite « par clé » à l'edge s'esquive en changeant de clé.                                                                                                                | Pas de route dédiée à la passerelle : `/vitrine/*` passe par `/api/lfd` comme le reste ; la limite de débit est un `@Throttle` côté API, par IP. La vue étant publique, la clé **identifie** l'abonné, elle ne protège rien.                                                                                                          |
+| S5  | **Le contrat devient celui d'un tiers dès le premier envoi** (corps, signature, identifiants).                                                                                                                                         | La question 4 (préférences de l'agence) se tranche **avant** de bâtir l'envoi, pas pendant.                                                                                                                                                                                                                                           |
+| M1  | Détails : `/vitrine/produits/:id` contre `/vitrine/articles/:sku` ; `ShopCopyPublication` n'est pas un nom du code ; une URL d'abonné avec un jeton en query serait affichée ; décocher une famille déclenche-t-il un retrait massif ? | Route retenue : `/vitrine/articles/:sku`. URL d'abonné **sans query string** (refusée à la saisie). Décocher une famille : **aucune** notification de retrait ; l'agence relit le catalogue complet si elle le souhaite. Le JSDoc de `catalogPriceMillicents` (« tarif catalogue pro ») est à corriger au lot.                        |
+
+**Non vérifié, à éprouver au lot** : le comportement du moteur de prix à
+`companyId: null` sur les règles « toute audience » ; la stabilité des URL
+d'images pour un tiers qui les garde en cache ; la **langue** de `name` et
+`note` (la vue publique n'a pas de paramètre de langue — l'agence recevra le
+français) ; la durée réelle d'un balayage sous le cron du Worker.
+
+### Questions à Hugo, mises à jour
+
+1. **Les cases** : `catalogue`, `operations`, `textes` seulement (B2) ?
+2. **Les pages éditoriales de la boutique** : hors du webhook pour l'instant ?
+3. **Un seul abonné réglé à la main** pour démarrer, ou l'écran multi-abonnés
+   dès le premier lot ?
+4. **L'agence** : ses préférences de format, **avant** de bâtir l'envoi (S5).
+5. **L'audience** dans la vue publique (B1) : (a) ou (b) ?
+6. **Les langues** : l'agence a-t-elle besoin de l'anglais et de l'italien des
+   fiches ? (Le référentiel a des noms traduits ; la vue publique ne sert que
+   le français.)
