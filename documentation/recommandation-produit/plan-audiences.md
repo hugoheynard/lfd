@@ -91,11 +91,19 @@ libre.
 | Lot    | Contenu                                                                                                                                                                                        | Dépend de |
 | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
 | **A1** | Lire le contenu de `fulfillment` et de l'adresse figée ; tableau de bord des segments **sûrs** (pro/particulier, activité, retrait/livraison, site/zone, fidélité, moment) ; seuil d'affichage | R0        |
-| **A2** | La question facultative « résident · saisonnier · vacancier » (inscription ou après la 1ʳᵉ commande, Mon profil) + la phrase de la politique                                                   | Q1, Q2    |
+| **A2** | La question facultative « résident · saisonnier · vacancier », posée **plus tard par e-mail ou notification** (Hugo, 2026-10-18), modifiable dans Mon profil + la phrase de la politique       | campagne  |
 | **A3** | La langue de la commande (colonne additive) et l'estimation affichée « estimé »                                                                                                                | Q3        |
 | **A4** | Les suggestions collectives par segment (« souvent pris avec, chez les pros »), sous le seuil                                                                                                  | A1, R2    |
 
 ## 7. Questions à Hugo
+
+> **Tranché le 2026-10-18 (Hugo) — Q1 et Q2** : **pas de question dans le
+> parcours** (ni à l'inscription, ni après la première commande). La question
+> « résident · saisonnier · vacancier » viendra **plus tard**, par une
+> **campagne d'e-mails** ou une **notification ponctuelle** dans l'application.
+> A2 change donc de forme : un canal à choisir le moment venu, la même réponse
+> facultative et modifiable dans Mon profil, la même phrase dans la politique.
+> D'ici là, le segment n'existe qu'**estimé** (A3), affiché comme tel.
 
 1. **La question « résident · saisonnier · vacancier » : oui ?** _Recommandation :
    oui, facultative._ C'est le seul moyen fiable, et elle ne coûte qu'un clic.
