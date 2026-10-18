@@ -18,7 +18,10 @@ import { VitrineDeliveryReader } from "../../../domain/ports/vitrine-delivery.re
 import { VitrineDeliveryRepository } from "../../../domain/ports/vitrine-delivery.repository.js";
 import { VitrineFingerprintStore } from "../../../domain/ports/vitrine-fingerprint.store.js";
 import { VitrineShowcaseSource } from "../../../domain/ports/vitrine-showcase.source.js";
-import { VitrineSubscriberReader } from "../../../domain/ports/vitrine-subscriber.reader.js";
+import {
+  type VitrineReadKeyHolder,
+  VitrineSubscriberReader,
+} from "../../../domain/ports/vitrine-subscriber.reader.js";
 import { VitrineSubscriberRepository } from "../../../domain/ports/vitrine-subscriber.repository.js";
 import type { VitrineElementPrint } from "../../../domain/services/vitrine-fingerprints.js";
 import { hashVitrineReadKey } from "../../../domain/services/vitrine-read-key.js";
@@ -70,19 +73,19 @@ export class MemorySubscribers extends VitrineSubscriberRepository {
 }
 
 export class KeyedSubscribers extends VitrineSubscriberReader {
-  constructor(private readonly byKey: ReadonlyMap<string, VitrineContents>) {
+  constructor(private readonly byKey: ReadonlyMap<string, VitrineReadKeyHolder>) {
     super();
   }
 
-  static of(readKey: string, contents: VitrineContents): KeyedSubscribers {
-    return new KeyedSubscribers(new Map([[hashVitrineReadKey(readKey), contents]]));
+  static of(readKey: string, contents: VitrineContents, active = true): KeyedSubscribers {
+    return new KeyedSubscribers(new Map([[hashVitrineReadKey(readKey), { contents, active }]]));
   }
 
   list(): Promise<readonly VitrineSubscriberView[]> {
     return Promise.resolve([]);
   }
 
-  contentsForReadKey(readKeyHash: string): Promise<VitrineContents | null> {
+  holderOfReadKey(readKeyHash: string): Promise<VitrineReadKeyHolder | null> {
     return Promise.resolve(this.byKey.get(readKeyHash) ?? null);
   }
 }

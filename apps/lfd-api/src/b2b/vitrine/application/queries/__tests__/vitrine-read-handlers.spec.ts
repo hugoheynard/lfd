@@ -39,6 +39,24 @@ describe("les lectures de l'agence", () => {
     },
   );
 
+  it("refuse la clé d'un abonné coupé, comme une clé inconnue — et la rend rallumé", async () => {
+    const read = (active: boolean) =>
+      new ReadVitrineCatalogueHandler(
+        KeyedSubscribers.of(KEY, VitrineContents.of(["catalogue"]), active),
+        new StaticShowcase(),
+      ).execute(new ReadVitrineCatalogueQuery(KEY, "fr"));
+    const cut = await read(false).catch((error: unknown) => error);
+    const unknown = await new ReadVitrineCatalogueHandler(
+      KeyedSubscribers.of(KEY, VitrineContents.of(["catalogue"])),
+      new StaticShowcase(),
+    )
+      .execute(new ReadVitrineCatalogueQuery("vtrkey_INCONNUE", "fr"))
+      .catch((error: unknown) => error);
+    expect(cut).toBeInstanceOf(VitrineReadKeyRefusedError);
+    expect(cut).toEqual(unknown);
+    await expect(read(true)).resolves.toMatchObject({ language: "fr" });
+  });
+
   it("un article pro ou hors des cases est introuvable", async () => {
     const shop = new StaticShowcase();
     shop.view = catalogue({ items: [item("PUB-01"), item("PRO-01", { audience: "pro" })] });

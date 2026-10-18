@@ -8,6 +8,10 @@ import type { VitrineContents } from "../domain/vitrine-contents.js";
  * protège pas : la vue est publique (S4). Une clé absente ou inconnue est
  * refusée quand même — sans abonné, on ne saurait pas quelles cases appliquer.
  *
+ * Un abonné **coupé** ne lit plus (décision de Hugo, 2026-10-18) : sa clé est
+ * refusée par la même erreur qu'une clé inconnue, sans indice qu'elle a
+ * existé. Le rallumer lui rend la lecture, avec la même clé.
+ *
  * @throws {VitrineReadKeyRefusedError}
  */
 export async function contentsOfReadKey(
@@ -17,9 +21,9 @@ export async function contentsOfReadKey(
   if (readKey === undefined || readKey === "") {
     throw new VitrineReadKeyRefusedError();
   }
-  const contents = await subscribers.contentsForReadKey(hashVitrineReadKey(readKey));
-  if (contents === null) {
+  const holder = await subscribers.holderOfReadKey(hashVitrineReadKey(readKey));
+  if (holder === null || !holder.active) {
     throw new VitrineReadKeyRefusedError();
   }
-  return contents;
+  return holder.contents;
 }

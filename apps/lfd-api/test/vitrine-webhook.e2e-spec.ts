@@ -356,6 +356,25 @@ describe("GET /vitrine — ce qui sort, sur la route elle-même", () => {
     await ctx.http().get("/vitrine/articles/PUB-001").set("x-vitrine-key", readKey).expect(404);
   });
 
+  it("un abonné coupé ne lit plus, comme une clé inconnue ; rallumé, il relit", async () => {
+    const { id, readKey } = await subscribe();
+    const unknown = await ctx
+      .http()
+      .get("/vitrine/catalogue")
+      .set("x-vitrine-key", "vtrkey_INCONNUE");
+    await staff()
+      .put(`/admin/vitrine/subscribers/${id}/active`)
+      .send({ active: false })
+      .expect(204);
+    const cut = await ctx.http().get("/vitrine/catalogue").set("x-vitrine-key", readKey);
+    expect(cut.status).toBe(unknown.status);
+    type Refusal = { readonly code: string; readonly message: string };
+    const { code, message } = jsonBody<Refusal>(unknown);
+    expect(jsonBody<Refusal>(cut)).toMatchObject({ code, message });
+    await staff().put(`/admin/vitrine/subscribers/${id}/active`).send({ active: true }).expect(204);
+    await readCatalogue(readKey);
+  });
+
   it("refuse une clé absente ou remplacée par une rotation", async () => {
     const { id, readKey } = await subscribe();
     await ctx.http().get("/vitrine/catalogue").expect(403);
