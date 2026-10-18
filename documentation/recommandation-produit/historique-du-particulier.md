@@ -48,7 +48,7 @@ neuve, jamais une réconciliation par adresse »
 (`apps/lfd-api/src/b2b/orders/domain/ports/guest-buyer.registrar.ts`, JSDoc de
 `register`), alors que son adaptateur **réutilise** la fiche invité de même
 adresse (`prisma-guest-buyer.registrar.ts`, `guestFor`, vérifié le
-2026-10-18). Le code fait foi ; la phrase du port est périmée et doit suivre.
+2026-10-18). Le code fait foi ; la phrase du port a été corrigée le 2026-10-18.
 Relu le 2026-10-18 au soir : la phrase du port n'a pas bougé. Ça compte ici :
 l'historique d'un invité **s'accumule** déjà sur une seule
 fiche par adresse.
@@ -138,14 +138,14 @@ relie pas à un clic, d'où des résultats **estimés**
 
 ## 4. Ce qu'il faut, récapitulé
 
-| #   | Quoi                                                                          | Qui           | Bloque le lot R3 ? |
-| --- | ----------------------------------------------------------------------------- | ------------- | ------------------ |
-| 1   | Base légale : intérêt légitime ou consentement                                | cabinet, Hugo | oui                |
-| 2   | Phrase « Vous proposer vos produits habituels » dans la politique             | Hugo, cabinet | oui                |
-| 3   | Interrupteur « Suggestions personnalisées » dans Mon profil (colonne + écran) | à bâtir       | oui                |
-| 4   | Aucune recommandation à un invité                                             | décidé (code) | —                  |
-| 5   | Mesure anonymisée pour le public                                              | bâti (R0)     | non                |
-| 6   | Corriger la phrase périmée du port `GuestBuyerRegistrar`                      | à faire       | non                |
+| #   | Quoi                                                                          | Qui               | Bloque le lot R3 ? |
+| --- | ----------------------------------------------------------------------------- | ----------------- | ------------------ |
+| 1   | Base légale : intérêt légitime ou consentement                                | cabinet, Hugo     | oui                |
+| 2   | Phrase « Vous proposer vos produits habituels » dans la politique             | Hugo, cabinet     | oui                |
+| 3   | Interrupteur « Suggestions personnalisées » dans Mon profil (colonne + écran) | à bâtir           | oui                |
+| 4   | Aucune recommandation à un invité                                             | décidé (code)     | —                  |
+| 5   | Mesure anonymisée pour le public                                              | bâti (R0)         | non                |
+| 6   | Corriger la phrase périmée du port `GuestBuyerRegistrar`                      | fait (2026-10-18) | non                |
 
 Le reste — lire l'historique, le filtrer par ce qui est servi aujourd'hui —
 est déjà prévu par le plan et ne dépend pas du public.

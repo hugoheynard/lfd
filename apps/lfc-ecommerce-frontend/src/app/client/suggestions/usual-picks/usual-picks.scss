@@ -1,0 +1,23 @@
+:host {
+  display: block;
+}
+
+.usuals {
+  display: grid;
+  gap: var(--fold-space-sm);
+}
+
+/* Le titre de la rangée : la voix des titres de l'accueil, à la taille d'une carte. */
+.usuals-title {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--lfc-weight-black);
+}
+
+/* Comme « Notre sélection » : côte à côte dès qu'il y a la place, l'une sous l'autre sinon. */
+.usuals-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--fold-space-sm);
+}

@@ -1,11 +1,12 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
-import type { CartSuggestionReason, CartSuggestionView } from '@lfd/contracts';
+import type { SuggestionReason, SuggestionView } from '@lfd/contracts';
 import { FoldIconComponent } from 'fold-ng';
 
 import { ProductAudience } from '../../audience/product-audience.service';
 import { CartEntries } from '../../cart/cart-entries';
 import { ClientCart } from '../../cart/client-cart.service';
 import { ClientLocale } from '../../client-locale.service';
+import type { ClientCopy } from '../../copy/client-copy.model';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { PieceRequest } from '../../shop/piece-request.service';
 import { shelfPriceLabel, ShopPriceBasis } from '../../shop/shop-price-basis.service';
@@ -29,9 +30,15 @@ import { shelfPriceLabel, ShopPriceBasis } from '../../shop/shop-price-basis.ser
  * titre dit sa raison, « Souvent pris avec … » et le nom de l'article du
  * panier (`shop.boughtWith`) — jamais combien de clients.
  *
+ * Un HABITUEL d'un pro (R1, à l'accueil) a la même carte encore : son titre
+ * est sa raison, « Tous les mardis » ou « Commandé 6 fois ».
+ *
  * Générique sur la vue : la fiche et l'accueil, qui ne servent que le
  * décidé, reçoivent leurs propres vues en retour.
  */
+/** Les textes de la boutique qui mettent une raison calculée en phrase. */
+type ReasonCopy = Pick<ClientCopy['shop'], 'boughtWith' | 'usualEvery' | 'usualOrdered'>;
+
 @Component({
   selector: 'app-staff-suggestion-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -39,7 +46,7 @@ import { shelfPriceLabel, ShopPriceBasis } from '../../shop/shop-price-basis.ser
   templateUrl: './staff-suggestion-card.html',
   styleUrl: './staff-suggestion-card.scss',
 })
-export class StaffSuggestionCard<V extends CartSuggestionView = CartSuggestionView> {
+export class StaffSuggestionCard<V extends SuggestionView = SuggestionView> {
   readonly view = input.required<V>();
   /** Le titre quand la règle n'a pas de phrase dans la langue du client. */
   readonly fallbackTitle = input.required<string>();
@@ -62,7 +69,7 @@ export class StaffSuggestionCard<V extends CartSuggestionView = CartSuggestionVi
     const shop = this.t().shop;
     const ttc = this.basis.showsTtc();
     return {
-      title: this.titleOf(view.reason, shop.boughtWith),
+      title: this.titleOf(view.reason, shop),
       line: view.item.name,
       price: shelfPriceLabel(view.item, ttc),
       suffix: ttc ? shop.ttcSuffix : shop.htSuffix,
@@ -70,11 +77,18 @@ export class StaffSuggestionCard<V extends CartSuggestionView = CartSuggestionVi
     };
   });
 
-  private titleOf(reason: CartSuggestionReason, boughtWith: string): string {
-    if (reason.source === 'data') {
-      return fill(boughtWith, { name: reason.withName });
+  private titleOf(reason: SuggestionReason, shop: ReasonCopy): string {
+    if (reason.source === 'staff') {
+      return reason.phrase?.[this.locale.current()] ?? this.fallbackTitle();
     }
-    return reason.phrase?.[this.locale.current()] ?? this.fallbackTitle();
+    switch (reason.kind) {
+      case 'bought_with':
+        return fill(shop.boughtWith, { name: reason.withName });
+      case 'weekly_rhythm':
+        return shop.usualEvery[reason.weekday];
+      case 'frequent':
+        return fill(shop.usualOrdered, { count: String(reason.orderCount) });
+    }
   }
 
   protected open(): void {

@@ -1,0 +1,15 @@
+@if (picks.current().length > 0) {
+  <section class="usuals" [attr.aria-label]="t().shop.usuals">
+    <h2 class="usuals-title">{{ t().shop.usuals }}</h2>
+    <div class="usuals-cards">
+      @for (view of picks.current(); track view.sku) {
+        <app-staff-suggestion-card
+          [view]="view"
+          [fallbackTitle]="t().shop.usuals"
+          (opened)="picks.opened($event)"
+          (taken)="picks.taken($event)"
+        />
+      }
+    </div>
+  </section>
+}

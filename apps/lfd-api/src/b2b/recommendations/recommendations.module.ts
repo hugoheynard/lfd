@@ -65,6 +65,8 @@ import { ShopHomeSuggestionsController } from "./http/shop-home-suggestions.cont
 import { ReadHomeSuggestionsHandler } from "./application/queries/read-home-suggestions.handler.js";
 import { PreviewStaffSuggestionsHandler } from "./application/queries/preview-staff-suggestions.handler.js";
 import { ReadProductSuggestionsHandler } from "./application/queries/read-product-suggestions.handler.js";
+import { ListMyUsualsHandler } from "./application/queries/list-my-usuals.handler.js";
+import { MyShopUsualSuggestionsController } from "./http/my-shop-usual-suggestions.controller.js";
 import { BoughtWithShowcase } from "./application/services/bought-with-showcase.js";
 import { StaffSuggestionShowcase } from "./application/services/staff-suggestion-showcase.js";
 import { ReadCartSuggestionsHandler } from "./application/queries/read-cart-suggestions.handler.js";
@@ -88,9 +90,9 @@ import {
  *
  * Lit le catalogue servi (`CatalogModule`) et l'heure limite du commerce
  * (`OrderCutoffsModule`) par leurs ports. Écrit seul la table
- * `growth.product_audience_counters`. N'exporte rien : le calculé (R1, R2),
- * quand il existera, vivra ici et emploiera `RecommendationFilter` (vérifié
- * le 2026-10-18 : `exports` absent du module).
+ * `growth.product_audience_counters`. N'exporte rien (vérifié le 2026-10-18 :
+ * `exports` absent du module) ; le calculé — R2 « souvent pris avec », R1
+ * « vos habituels » — vit ici et passe par `RecommendationFilter`.
  *
  * Les suggestions DÉCIDÉES par le staff
  * (`documentation/recommandation-produit/suggestions-du-staff.md`) — l'agrégat `StaffSuggestionRule`, le réglage de
@@ -125,6 +127,11 @@ import {
  * (`BoughtWithShowcase`). Les paires se lisent par `CoPurchaseReader`,
  * déclaré ici et implémenté par la commande (`OrdersModule` l'exporte) : des
  * comptes de paires sous un seuil d'anonymat, jamais un client.
+ *
+ * R1 : « vos habituels » à l'accueil d'un pro (`POST /shop/suggestions/usuals/mine`,
+ * sans route publique). L'historique de la société se lit par
+ * `PurchaseHistoryReader`, déclaré ici et implémenté par la commande
+ * (`OrdersModule` l'exporte), sous le mur `company_id`.
  */
 @Module({
   imports: [CatalogModule, OrderCutoffsModule, OrdersModule, SitesModule],
@@ -138,6 +145,7 @@ import {
     MyShopProductSuggestionsController,
     ShopHomeSuggestionsController,
     MyShopHomeSuggestionsController,
+    MyShopUsualSuggestionsController,
   ],
   providers: [
     RecordProductAudienceHandler,
@@ -177,6 +185,7 @@ import {
     ReadProductSuggestionsHandler,
     ReadHomeSuggestionsHandler,
     PreviewStaffSuggestionsHandler,
+    ListMyUsualsHandler,
   ],
 })
 export class RecommendationsModule {}

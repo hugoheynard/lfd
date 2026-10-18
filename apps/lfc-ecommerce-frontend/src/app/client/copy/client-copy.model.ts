@@ -442,6 +442,24 @@ export interface ClientCopy {
      * l'article du panier avec lequel d'autres clients l'ont pris.
      */
     readonly boughtWith: string;
+    /** Le titre de la rangée des habituels d'un PRO, à l'accueil (R1). */
+    readonly usuals: string;
+    /**
+     * La raison d'un habituel commandé surtout un jour de la semaine (R1) —
+     * « Tous les mardis ». Une phrase par jour : l'accord du jour ne se
+     * compose pas dans les trois langues.
+     */
+    readonly usualEvery: {
+      readonly mon: string;
+      readonly tue: string;
+      readonly wed: string;
+      readonly thu: string;
+      readonly fri: string;
+      readonly sat: string;
+      readonly sun: string;
+    };
+    /** La raison d'un habituel sans jour qui revient (R1) — `{count}` vaut 3 au moins. */
+    readonly usualOrdered: string;
     /** Le bref retour après un ajout au panier, quand il propose une suggestion (RS7). */
     readonly addedToCart: string;
     /**

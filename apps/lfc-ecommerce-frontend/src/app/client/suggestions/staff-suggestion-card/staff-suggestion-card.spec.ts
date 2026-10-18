@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import type { CartSuggestionView, StaffSuggestionView } from '@lfd/contracts';
+import type { StaffSuggestionView, SuggestionView } from '@lfd/contracts';
 
 import { ProductAudience } from '../../audience/product-audience.service';
 import { ClientCart } from '../../cart/client-cart.service';
@@ -26,8 +26,8 @@ const VIEW: StaffSuggestionView = {
 describe('StaffSuggestionCard', () => {
   let fixture: ComponentFixture<StaffSuggestionCard>;
   let recorded: { sku: string; event: string }[];
-  let taken: CartSuggestionView[];
-  let opened: CartSuggestionView[];
+  let taken: SuggestionView[];
+  let opened: SuggestionView[];
   let asked: string[];
   const showsTtc = signal(true);
 
@@ -36,7 +36,7 @@ describe('StaffSuggestionCard', () => {
   const pitch = (): HTMLButtonElement | null => root().querySelector('button.pitch');
   const plus = (): HTMLButtonElement | null => root().querySelector('button.add');
 
-  function mount(view: CartSuggestionView, fallbackTitle: string): void {
+  function mount(view: SuggestionView, fallbackTitle: string): void {
     TestBed.resetTestingModule();
     localStorage.clear();
     recorded = [];
@@ -94,6 +94,33 @@ describe('StaffSuggestionCard', () => {
 
     expect(card()?.textContent).toContain('Souvent pris avec Croissant');
     expect(card()?.textContent).not.toContain('Notre conseil');
+  });
+
+  it('R1 : un habituel au rythme hebdomadaire dit « Tous les mardis », jamais le titre de la rangée', () => {
+    mount(
+      {
+        sku: 'PAI-001',
+        item: BAGUETTE,
+        reason: { source: 'data', kind: 'weekly_rhythm', weekday: 'tue' },
+      },
+      'Vos habituels',
+    );
+
+    expect(card()?.textContent).toContain('Tous les mardis');
+    expect(card()?.textContent).not.toContain('Vos habituels');
+  });
+
+  it('R1 : un habituel fréquent dit combien de fois la société l’a commandé', () => {
+    mount(
+      {
+        sku: 'PAI-001',
+        item: BAGUETTE,
+        reason: { source: 'data', kind: 'frequent', orderCount: 6 },
+      },
+      'Vos habituels',
+    );
+
+    expect(card()?.textContent).toContain('Commandé 6 fois');
   });
 
   it('un clic sur la carte ouvre la fiche de l’article, et n’ajoute rien', () => {

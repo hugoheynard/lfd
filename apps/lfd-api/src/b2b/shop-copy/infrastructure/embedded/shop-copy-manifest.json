@@ -1462,6 +1462,69 @@
           "variables": ["name"]
         },
         {
+          "key": "shop.usuals",
+          "fr": "Vos habituels",
+          "en": "Your usuals",
+          "it": "I vostri abituali",
+          "variables": []
+        },
+        {
+          "key": "shop.usualEvery.mon",
+          "fr": "Tous les lundis",
+          "en": "Every Monday",
+          "it": "Ogni lunedì",
+          "variables": []
+        },
+        {
+          "key": "shop.usualEvery.tue",
+          "fr": "Tous les mardis",
+          "en": "Every Tuesday",
+          "it": "Ogni martedì",
+          "variables": []
+        },
+        {
+          "key": "shop.usualEvery.wed",
+          "fr": "Tous les mercredis",
+          "en": "Every Wednesday",
+          "it": "Ogni mercoledì",
+          "variables": []
+        },
+        {
+          "key": "shop.usualEvery.thu",
+          "fr": "Tous les jeudis",
+          "en": "Every Thursday",
+          "it": "Ogni giovedì",
+          "variables": []
+        },
+        {
+          "key": "shop.usualEvery.fri",
+          "fr": "Tous les vendredis",
+          "en": "Every Friday",
+          "it": "Ogni venerdì",
+          "variables": []
+        },
+        {
+          "key": "shop.usualEvery.sat",
+          "fr": "Tous les samedis",
+          "en": "Every Saturday",
+          "it": "Ogni sabato",
+          "variables": []
+        },
+        {
+          "key": "shop.usualEvery.sun",
+          "fr": "Tous les dimanches",
+          "en": "Every Sunday",
+          "it": "Ogni domenica",
+          "variables": []
+        },
+        {
+          "key": "shop.usualOrdered",
+          "fr": "Commandé {count} fois",
+          "en": "Ordered {count} times",
+          "it": "Ordinato {count} volte",
+          "variables": ["count"]
+        },
+        {
           "key": "shop.addedToCart",
           "fr": "Ajouté !",
           "en": "Added!",

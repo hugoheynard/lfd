@@ -6,6 +6,8 @@ import type {
   HomeSuggestionView,
   ProductSuggestionsPayload,
   ProductSuggestionView,
+  UsualSuggestionsPayload,
+  UsualSuggestionView,
 } from '@lfd/contracts';
 import { firstValueFrom, type Observable } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
@@ -54,6 +56,28 @@ export function fetchStaffSuggestions(
     token.pipe(
       switchMap((bearer) =>
         http.post<CartSuggestionView[]>(`${route}/mine`, payload, {
+          headers: { Authorization: `Bearer ${bearer}` },
+        }),
+      ),
+    ),
+  );
+}
+
+/**
+ * **« Vos habituels »** (R1) — la route murée SEULE : il n'y a pas de route
+ * publique, et l'appelant ne demande qu'avec une société dans l'espace
+ * courant. Même morceau que les autres suggestions : rien à charger de plus.
+ */
+export function fetchUsualSuggestions(
+  http: HttpClient,
+  payload: UsualSuggestionsPayload,
+  token: Observable<string>,
+): Promise<readonly UsualSuggestionView[]> {
+  const route = `${AUTH_CONFIG.apiBaseUrl}/shop/suggestions/usuals/mine`;
+  return firstValueFrom(
+    token.pipe(
+      switchMap((bearer) =>
+        http.post<UsualSuggestionView[]>(route, payload, {
           headers: { Authorization: `Bearer ${bearer}` },
         }),
       ),

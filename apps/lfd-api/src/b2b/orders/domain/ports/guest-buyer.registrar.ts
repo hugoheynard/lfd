@@ -40,11 +40,12 @@ export abstract class GuestBuyerRegistrar {
   /**
    * Inscrit l'invité et rend son identifiant.
    *
-   * 🔴 **Toujours une ligne neuve**, jamais une réconciliation par adresse :
-   * D2 tranche « deux lignes, deux histoires », et c'est cohérent avec
-   * l'existant — `email` n'a aucune unicité en base. Rapprocher deux commandes
-   * sur la seule foi d'une adresse tapée au panier reviendrait à décider que le
-   * second visiteur est le premier.
+   * ⚠️ Cette phrase disait « toujours une ligne neuve, jamais une
+   * réconciliation par adresse » (D2). Ce n'est plus vrai : l'adaptateur
+   * réutilise la fiche invité de même adresse, **sans identité de connexion**
+   * (`PrismaGuestBuyerRegistrar.guestFor`, vérifié le 2026-10-18), ce qui
+   * n'ouvre d'accès à personne. Un compte connectable n'est jamais retrouvé
+   * par son adresse depuis une surface publique.
    */
   abstract register(buyer: GuestBuyer): Promise<string>;
 }

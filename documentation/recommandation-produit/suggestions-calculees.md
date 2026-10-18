@@ -1,8 +1,9 @@
 # Les suggestions calculées — ce qui est bâti
 
-> **Doc d'état** (2026-10-18, lot R2 de
+> **Doc d'état** (2026-10-18, lots R2 et R1 de
 > [`plan-recommandation-de-produits.md`](plan-recommandation-de-produits.md)).
-> Elle décrit ce qui existe : « souvent pris avec », au panier. Le décidé (les
+> Elle décrit ce qui existe : « souvent pris avec », au panier (§1–§7), et
+> « vos habituels » d'un pro, à l'accueil (§8). Le décidé (les
 > règles du staff) est dans [`suggestions-du-staff.md`](suggestions-du-staff.md) ;
 > l'ensemble du sujet dans [`README.md`](README.md). Éprouvé aux trois niveaux
 > (domaine, application, e2e) ; pas encore regardé dans un navigateur contre
@@ -144,7 +145,8 @@ aussi (« Puis, calculée : … »). La fiche et l'accueil n'en ont pas.
   par case, le plafond entre ce qui a fait ajouter un article — y faire entrer
   le calculé changerait les chiffres déjà affichés des règles du staff. Décision
   à prendre avant de bâtir.
-- La fiche, l'accueil, « vos habituels » (R1, R3) : voir le plan.
+- La fiche, et « vos habituels » d'un particulier (R3) : voir le plan.
+  « Vos habituels » d'un pro est bâti (§8).
 
 ## 7. La vie privée
 
@@ -152,3 +154,104 @@ aussi (« Puis, calculée : … »). La fiche et l'accueil n'en ont pas.
 le collectif ne vise personne. Rien n'est stocké — ni paire, ni client —, la
 requête ne rend que des comptes au-dessus de cinq clients distincts, et la
 réponse au client n'en porte aucun.
+
+## 8. « Vos habituels » — l'accueil d'un pro (R1)
+
+Bâti le 2026-10-18. Éprouvé aux trois niveaux ; pas encore regardé dans un
+navigateur contre l'API locale.
+
+Ce que **la société** du lecteur commande régulièrement, montré à elle seule.
+Ce n'est pas le régime du collectif : c'est l'historique d'**un** client,
+montré à ce client — celui qu'il voit déjà dans « Mes commandes » (plan §6).
+D'où deux bornes : **pros seulement** (un particulier attend l'avis du
+cabinet, lot R3, [`historique-du-particulier.md`](historique-du-particulier.md)),
+et **route murée seule**.
+
+Code : `apps/lfd-api/src/b2b/recommendations/` (`domain/services/usuals.ts`,
+`domain/ports/purchase-history.reader.ts`, `application/queries/list-my-usuals.*`,
+`http/my-shop-usual-suggestions.controller.ts`), l'adaptateur
+`apps/lfd-api/src/b2b/orders/infrastructure/prisma-purchase-history.reader.ts`,
+la rangée de la boutique (`client/suggestions/usual-picks/`). Contrat :
+`packages/contracts/src/usual-suggestions.ts`.
+
+```mermaid
+flowchart TD
+    R["POST /shop/suggestions/usuals/mine<br/>société de l'espace courant (résolue en base)"] -->|"sans société"| V0["liste vide"]
+    R --> H["PurchaseHistoryReader (b2b/orders)<br/>company_id dans le WHERE · 12 mois<br/>un jour par commande et par article"]
+    H --> K["rankUsuals : 3 commandes au moins<br/>plus repris, plus récent, SKU<br/>sans le panier"]
+    K --> F{"Filtre commun R4<br/>servi au pro · commandable au jour visé ·<br/>absent du panier"}
+    F -->|non| X["cède la place"]
+    F -->|oui| S["Vitrine au prix de la société"]
+    S --> P["8 places au plus<br/>« Tous les mardis » / « Commandé 6 fois »"]
+    P -->|"shown · clicked · added"| C["Compteurs anonymes<br/>source data, emplacement weekly_rhythm / frequent"]
+```
+
+### 8.1 Le calcul
+
+| Réglage              | Valeur                                                      | Constante                       |
+| -------------------- | ----------------------------------------------------------- | ------------------------------- |
+| Fenêtre glissante    | 12 mois de passation, même quantième un an plus tôt (Paris) | `USUALS_WINDOW_MONTHS`          |
+| Seuil d'une habitude | **3** commandes de la société qui portent l'article         | `USUALS_MIN_ORDERS`             |
+| Minimum d'un rythme  | **3** commandes le même jour de la semaine                  | `WEEKLY_RHYTHM_MIN_OCCURRENCES` |
+| Places à l'accueil   | **8** au plus, jamais de remplissage en dessous             | `USUALS_PLACES`                 |
+
+- **Le mur** : `company_id` de la société de l'espace courant, résolue en base
+  par `AuthGuard` (jamais reçue du corps), dans le `WHERE` de la seule requête,
+  agrégat compris. L'e2e le prouve, y compris quand deux commandes de A et
+  deux de B porteraient ensemble l'article au seuil.
+- **Le jour d'une commande** est celui pour lequel elle est passée
+  (`requested_delivery_date` : retrait ou livraison), sinon son jour de
+  passation à Paris. « Tous les mardis » dit quand la société reçoit. La
+  **fenêtre**, elle, se compte sur la passation, comme les habitudes du
+  back-office (`CustomerSkuReader`).
+- **Les commandes qui comptent** : le périmètre des commandes prises de §2.1
+  — ni brouillon, ni annulée, ni carte non encaissée ; les saisies du staff
+  comptent ; **pas** les commandes nées d'un abonnement (leur rythme est celui
+  du planificateur, et proposer d'en rajouter doublerait ce qui arrive déjà).
+- **Le classement** : le plus repris (commandes distinctes), puis le plus
+  récent, puis le SKU — l'habitude, pas le prix.
+
+### 8.2 La raison, typée
+
+```ts
+{ source: "data", kind: "weekly_rhythm", weekday: "tue" }
+{ source: "data", kind: "frequent", orderCount: 6 }
+```
+
+`weekly_rhythm` exige un jour qui revient **au moins trois fois et plus
+souvent qu'aucun autre** : deux mardis, ou trois mardis et trois jeudis, ne
+font pas « tous les mardis » — l'article reste un habituel, dit `frequent`.
+`orderCount` est un compte de SES commandes, qu'elle voit déjà ; ce n'est pas
+le compte d'autres clients que §3 interdit d'exposer.
+
+La boutique met la phrase : **« Tous les mardis »** (`shop.usualEvery.<jour>`,
+une phrase par jour, l'accord ne se composant pas dans les trois langues) et
+**« Commandé {count} fois »** (`shop.usualOrdered`) ; la rangée s'intitule
+**« Vos habituels »** (`shop.usuals`). FR / EN / IT, glossaire du back-office,
+recueil régénéré par `pnpm copy:digest`.
+
+### 8.3 À l'accueil
+
+- **Une rangée au-dessus de « Notre sélection »**, pour un pro connecté dont
+  l'espace courant est une société ; rien pour un invité, un particulier ou
+  l'espace perso — la boutique ne demande même pas. Absente sans habituel.
+- **La même carte** que le décidé et « souvent pris avec »
+  (`StaffSuggestionCard`) : son titre est la raison, un clic ouvre la fiche
+  (`PieceRequest`), le « + » ajoute ; un article entré au panier cède sa place.
+- **Un appel de plus à l'accueil d'un pro** : la route est à part de celle de
+  « Notre sélection » (`/shop/suggestions/home`), qui sert aussi les visiteurs.
+  Une seule requête serveur par appel.
+- **Les compteurs** : `suggestion_shown`, `suggestion_clicked`,
+  `suggestion_added`, source **`data`**, emplacement **`weekly_rhythm`** ou
+  **`frequent`** — permis par les `CHECK` de
+  `growth.product_audience_counters` sans migration (l'emplacement y est libre,
+  la source `data` déjà admise).
+
+### 8.4 Ce qui n'est pas bâti
+
+- **L'aperçu du staff** (RS5) ne montre pas « vos habituels » : il faudrait y
+  choisir une société, donc lire l'historique d'un client sous le droit
+  `lfc_suggestions:read`, qui ne le donne pas aujourd'hui. Quel droit le
+  permet est une décision de périmètre, pas prise.
+- Les chiffres du calculé (comme pour §6).
+- Aucune route publique, et c'est voulu jusqu'au lot R3.

@@ -2227,6 +2227,16 @@ export {
   type HomeSuggestionView,
 } from "./home-suggestions.js";
 export {
+  usualSuggestionsPayloadSchema,
+  type FrequentSuggestionReason,
+  type SuggestionReason,
+  type SuggestionView,
+  type UsualSuggestionReason,
+  type UsualSuggestionsPayload,
+  type UsualSuggestionView,
+  type WeeklyRhythmSuggestionReason,
+} from "./usual-suggestions.js";
+export {
   STAFF_SUGGESTION_REFUSALS,
   staffSuggestionPreviewPayloadSchema,
   type StaffSuggestionPreviewItem,
