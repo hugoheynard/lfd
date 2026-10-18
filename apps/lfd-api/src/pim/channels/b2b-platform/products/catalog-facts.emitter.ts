@@ -18,7 +18,7 @@ import { PublicationSequence } from "./publication-sequence.js";
  * emporte le fait avec le geste.
  *
  * Toujours ouvert depuis le 2026-10-17 (X1 de
- * `documentation/catalogue/plan-sans-interrupteurs.md`) : les interrupteurs
+ * `documentation/catalogue/catalogue-synchronise.md` §6) : les interrupteurs
  * `CATALOG_FACTS_ENABLED` et `PIM_PUBLICATION_ENABLED` sont retirés.
  */
 @Injectable()

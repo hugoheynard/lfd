@@ -195,7 +195,7 @@ page et le contact en Communication, les mentions en Réglages › Légal. Le
 lot 5 le supprime : son entrée au rail et au lanceur, b2b/b2b-page,
 `B2B_VIEWS` ; `/b2b` et ses anciennes adresses redirigent vers leurs
 nouvelles places (favoris), avant les gardes. **Fait le 2026-10-17** (suite de
-X2, `plan-sans-interrupteurs.md`) ; seules les demandes clients vivent encore
+X2, `catalogue-synchronise.md` §6) ; seules les demandes clients vivent encore
 à `/b2b/demandes`, en attendant leur place.
 
 ### C6 — Ce qui reste

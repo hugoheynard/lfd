@@ -257,7 +257,7 @@ describe("l'image suit la médiathèque", () => {
 
 /**
  * Une copie reçue de l'ancien référentiel, jamais reprise au commerce : la
- * reprise est partie en X4 (`documentation/catalogue/plan-sans-interrupteurs.md`),
+ * reprise est partie en X4 (`documentation/catalogue/catalogue-synchronise.md` §6),
  * la garde reste — écrire la copie la ferait passer pour une opération du commerce.
  */
 describe("une copie reçue du référentiel", () => {

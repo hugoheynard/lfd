@@ -232,7 +232,7 @@ export class OrderDrafting {
         : null,
       note: content.note,
       // 🔴 Plus d'estampille de version (Q2, Hugo, 2026-10-17 — plan
-      // documentation/catalogue/plan-sans-interrupteurs.md, X0). Faits du
+      // documentation/catalogue/catalogue-synchronise.md §6, X0). Faits du
       // catalogue ouverts, plus aucune version ne se crée : lire la dernière
       // posée aurait cité une livraison que les lignes n'ont pas vue. Les lignes
       // portent leur snapshot (prix, nom, TVA) ; la colonne reste en base et

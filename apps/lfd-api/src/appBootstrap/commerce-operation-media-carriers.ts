@@ -16,7 +16,7 @@ import type { WriteTicket } from "../platform/journal/scoped-journal.js";
  *
  * Le commerce est la source de `catalog_operations` : son `repoint()` écrit
  * l'agrégat (charger, muter, sauver). Il a remplacé les copies du push le
- * 2026-10-17 (X1 de `documentation/catalogue/plan-sans-interrupteurs.md`).
+ * 2026-10-17 (X1 de `documentation/catalogue/catalogue-synchronise.md` §6).
  *
  * Ici, dans `appBootstrap/`, pour la raison de `StorefrontMediaCarriers` : la
  * ligne `b2b` de la matrice n'a pas `media`.

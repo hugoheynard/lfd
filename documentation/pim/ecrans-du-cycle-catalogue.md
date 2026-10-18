@@ -1,7 +1,7 @@
 # Les écrans du cycle catalogue — ce que chaque page doit porter
 
 > ⚠️ **Périmé en partie depuis le 2026-10-17** : X2 de
-> [`plan-sans-interrupteurs.md`](../catalogue/plan-sans-interrupteurs.md) a
+> [`catalogue-synchronise.md`](../catalogue/catalogue-synchronise.md) §6 a
 > retiré le push, l'écran « Publication », la réception, la parité et la
 > santé. Ce que ce document prescrit de ces écrans-là n'a plus d'objet ; le
 > reste n'a pas été relu. La refonte est l'objet de X5.

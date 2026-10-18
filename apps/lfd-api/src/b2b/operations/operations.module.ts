@@ -45,7 +45,7 @@ import { PrismaOperationSkuCatalogue } from "./infrastructure/prisma-operation-s
  * Lot 3 — les lectures de l'écran : `CatalogModule` pour « en vente »
  * (`CatalogAdminReader`). La migration depuis le référentiel, et le port
  * qu'elle lisait chez lui, sont partis en X4
- * (`documentation/catalogue/plan-sans-interrupteurs.md`).
+ * (`documentation/catalogue/catalogue-synchronise.md` §6).
  */
 @Module({
   imports: [CatalogModule],

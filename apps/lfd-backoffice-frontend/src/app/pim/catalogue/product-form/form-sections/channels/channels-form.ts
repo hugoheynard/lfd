@@ -13,7 +13,7 @@ import {
  * Panneau TVA par contexte — rend explicite l'héritage par famille et la
  * dérogation de la fiche, ligne par ligne. Les canaux desservis (la matrice,
  * et sa redéfinition par fiche) sont partis en X4
- * (`documentation/catalogue/plan-sans-interrupteurs.md`) ; les contextes de
+ * (`documentation/catalogue/catalogue-synchronise.md` §6) ; les contextes de
  * vente et leur TVA restent.
  *
  * Les lignes viennent du magasin, qui les tient du registre : cet écran ne

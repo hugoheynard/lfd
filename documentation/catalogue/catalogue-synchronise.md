@@ -9,8 +9,8 @@
 > **Bâti et commité** : lots 1, 2a, 2b, 3, P, S, D du plan qui fait
 > foi, [`plan-catalogue-synchronise-par-audience.md`](plan-catalogue-synchronise-par-audience.md).
 > 2b4 — l'ouverture en production — fait les 2026-10-16/17 ; les
-> interrupteurs sont retirés du code par X1 de
-> [`plan-sans-interrupteurs.md`](plan-sans-interrupteurs.md) (§6), puis le
+> interrupteurs sont retirés du code par X1 du plan « sans interrupteurs »
+> (fini le 2026-10-17, fondu au §6), puis le
 > push, la réception, les versions, la parité, la santé et la surcharge des
 > opérations par X2 (2026-10-17, §6), puis les opérations du référentiel, le
 > lien au canal par fiche et l'édition de la matrice des canaux par X4
@@ -428,7 +428,7 @@ expliquent des garde-fous encore en place (vérifié ce jour-là) :
 
 `PIM_PUBLICATION_ENABLED`, `CATALOG_FACTS_ENABLED` et `OPERATIONS_AT_COMMERCE`
 ont été ouverts en production les 2026-10-16/17, puis **retirés du code** le
-2026-10-17 (X1 de [`plan-sans-interrupteurs.md`](plan-sans-interrupteurs.md)) :
+2026-10-17 (lot X1 du plan « sans interrupteurs », fini et fondu ici) :
 le code suit toujours le chemin ouvert. L'émetteur, la réémission et la
 bascule d'audience émettent toujours ; plus aucun geste ne répond
 `catalogue.publication.closed` ni `catalogue.facts.closed`. Le retour arrière
@@ -437,6 +437,40 @@ n'est plus un réglage : c'est un revert et un redéploiement.
 **Un seul écrivain.** Les faits sont le seul chemin par lequel une fiche,
 une famille ou une règle entre sur la plateforme ; les opérations datées
 s'écrivent au commerce (`/admin/operations`).
+
+### Ce qui a été retiré, et pourquoi
+
+Le plan « sans interrupteurs » (2026-10-16/17, lots X0 à X5, tous en
+production) a retiré l'ancien chemin une fois la bascule constatée. Ses
+décisions, qui expliquent l'état actuel :
+
+- **La commande ne fige plus de version** (Q2, Hugo, 2026-10-17). Faits
+  ouverts, plus aucune version ne se crée : lire la dernière posée aurait
+  cité une livraison que les lignes n'ont pas vue. Les lignes portent leur
+  snapshot (prix, nom, TVA) ; `catalogVersionId` est écrit `null`
+  (`b2b/orders/application/services/order-drafting.service.ts`), la colonne
+  reste, les commandes passées gardent la leur.
+- **Un prix s'explique par la trace des lignes**, pas par une version :
+  `catalog_price_history`, écrite à la réception de chaque fait (§4).
+- **Les trois interrupteurs partent, `PIM_PUBLICATION_ENABLED` compris**
+  (Q1, Hugo : « moins on a de variables mieux c'est ») ; avec eux
+  `B2B_DELIVERY_INBOX`, parti avec la réception.
+- **La parité et la santé du catalogue partent** (R4, Hugo, 2026-10-17) :
+  elles vérifiaient que le push n'avait pas dérivé ; les faits s'appliquent
+  fiche par fiche, dans l'ordre. Un fait perdu se voit sur « Catalogue
+  publié » et se répare par la réémission.
+- **La surcharge des opérations reçues part** (Q5, Hugo, 2026-10-17) : les
+  opérations s'écrivent au commerce, il n'y a plus rien à surcharger.
+- **« Depuis la dernière publication », la frise d'une fiche et l'espace
+  « E-commerce LFC » partent** (Hugo, 2026-10-17) : ils décrivaient le push.
+- **Les révisions ne photographient plus les contextes de vente** (option a,
+  Hugo, 2026-10-17) : la matrice n'avait plus d'écrivain, la garder l'aurait
+  figée dans chaque empreinte.
+- **La réémission se lance par l'API seulement**
+  (`pim/channels/b2b-platform/products/reemit.controller.ts`) : sa carte est
+  partie avec la page qui la portait ; le geste est au runbook.
+- **Aucune table supprimée** : la liste attend un ordre de Hugo
+  ([`tables-mortes.md`](tables-mortes.md)).
 
 ### Ce que X2 a retiré (2026-10-17)
 

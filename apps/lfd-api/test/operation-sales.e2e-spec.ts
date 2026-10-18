@@ -113,7 +113,7 @@ function noel(over: Partial<SyncOperation> = {}): SyncOperation {
 /**
  * Le croissant courant et la bûche réservée aux opérations, livrés en faits ;
  * les opérations, écrites AU COMMERCE — leur seul chemin depuis X1
- * (2026-10-17, `plan-sans-interrupteurs.md`).
+ * (2026-10-17, `catalogue-synchronise.md` §6).
  */
 async function receive(
   operations: readonly SyncOperation[],

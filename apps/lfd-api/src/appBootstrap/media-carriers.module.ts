@@ -30,7 +30,7 @@ import { RefocusStorefrontOnMediaDescribed } from "./storefront-media-focus.js";
  * `documentation/operations-datees/plan-l-operation-passe-au-commerce.md`), un
  * troisième : les opérations DU COMMERCE. Les copies du push et les
  * opérations du référentiel ne répondent plus depuis le 2026-10-17 (X1 de
- * `documentation/catalogue/plan-sans-interrupteurs.md`) : l'opération vit au
+ * `documentation/catalogue/catalogue-synchronise.md` §6) : l'opération vit au
  * commerce.
  *
  * `@Global` pour la raison des autres fils : le consommateur du port est

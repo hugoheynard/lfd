@@ -1,7 +1,7 @@
 # Les tables mortes du catalogue — une liste pour décision
 
 > 📐 **Liste pour un ordre de Hugo, pas une exécution** (X5 de
-> [`plan-sans-interrupteurs.md`](plan-sans-interrupteurs.md), 2026-10-17).
+> [`catalogue-synchronise.md`](catalogue-synchronise.md) §6, 2026-10-17).
 > **Aucune migration n'est écrite.** Supprimer une table est un `DROP`, et le
 > déploiement applique les migrations tout seul : chaque geste ci-dessous se
 > décide à part (`CLAUDE.md` §0 — « pas de suppression en production sans

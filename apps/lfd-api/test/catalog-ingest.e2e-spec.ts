@@ -7,7 +7,7 @@
  * qu'avec les vraies clés étrangères.
  *
  * L'entrée est le FAIT de fiche depuis X1 (2026-10-17,
- * `plan-sans-interrupteurs.md`) : l'ingestion d'un push n'écrit plus rien, et
+ * `catalogue-synchronise.md` §6) : l'ingestion d'un push n'écrit plus rien, et
  * le compte-rendu qu'elle rendait (compteurs, SKU retirés) n'a plus de sujet.
  * Les mêmes propriétés tiennent sur le chemin des faits.
  */

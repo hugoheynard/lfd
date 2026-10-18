@@ -44,7 +44,7 @@ import { calendarOf, scheduleOf } from "./operation-payloads.js";
  * `lfc_catalog`.
  *
  * La reprise depuis le référentiel (`GET`/`POST /admin/operations/migration`)
- * est partie en X4 (`documentation/catalogue/plan-sans-interrupteurs.md`) :
+ * est partie en X4 (`documentation/catalogue/catalogue-synchronise.md` §6) :
  * elle n'avait rien eu à reprendre.
  */
 @Controller("admin/operations")

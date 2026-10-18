@@ -64,7 +64,7 @@ function catalogueOf(store: AllergenStore) {
 
 /**
  * **La conversion d'une déclinaison vers le fil** — ce qui reste du push
- * depuis X4 (`documentation/catalogue/plan-sans-interrupteurs.md`) : les faits
+ * depuis X4 (`documentation/catalogue/catalogue-synchronise.md` §6) : les faits
  * du catalogue la réemploient. Les cas de `projectCatalog` (tri, exclusions,
  * matrice, opérations) sont partis avec lui ; ceux-ci parlent de la seule
  * conversion.

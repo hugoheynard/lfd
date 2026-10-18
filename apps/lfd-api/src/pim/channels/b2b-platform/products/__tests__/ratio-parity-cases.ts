@@ -62,7 +62,7 @@ function productAt(rateIndex: number, entered: (price: number) => number | null)
  * `ratio|taux|prix` → `[HT poussé, HT émis, TTC public poussé]`.
  *
  * Le push est parti en X2 et sa projection en X4
- * (`documentation/catalogue/plan-sans-interrupteurs.md`) : les deux premières
+ * (`documentation/catalogue/catalogue-synchronise.md` §6) : les deux premières
  * colonnes de l'empreinte valaient le même nombre, et le fait seul les remplit
  * désormais — l'empreinte d'avant le lot P ne bouge pas.
  */

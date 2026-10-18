@@ -463,7 +463,7 @@ Les sections « Avant de déployer le fil v11 » et « Faire descendre les
 mentions d'allergènes sur le catalogue B2B » décrivaient des gestes du push
 (« Publier ») et de la boîte de réception (« Réception »). Les deux sont
 retirés du code le 2026-10-17 (X2 de
-[`plan-sans-interrupteurs.md`](../catalogue/plan-sans-interrupteurs.md)) : le
+[`catalogue-synchronise.md`](../catalogue/catalogue-synchronise.md) §6) : le
 catalogue descend par ses faits, fiche par fiche. Le geste qui les remplace
 est la **réémission** (ci-dessous) ; le contrôle, l'écran « Catalogue
 publié ». Leur texte est dans l'historique
@@ -577,7 +577,7 @@ prix public bouge le prix pro ».
 
 **Fait le 2026-10-16** (0 opération au référentiel, rien à reprendre).
 L'interrupteur `OPERATIONS_AT_COMMERCE` est retiré du code le 2026-10-17 (X1 de
-[`plan-sans-interrupteurs.md`](../catalogue/plan-sans-interrupteurs.md)), et
+[`catalogue-synchronise.md`](../catalogue/catalogue-synchronise.md) §6), et
 `/pim/operations` entier par X4 le même jour : la route n'existe plus
 (aucun contrôleur ne la déclare, vérifié le 2026-10-17). Le
 retour arrière est un revert suivi d'un redéploiement.

@@ -8,7 +8,7 @@ puisse décider ensuite.
 > des comptes viennent de la base de développement au 2026-09-10.
 
 > ⚠️ **Périmé en partie le 2026-10-17** (suite de X2,
-> [`plan-sans-interrupteurs.md`](../catalogue/plan-sans-interrupteurs.md)).
+> [`catalogue-synchronise.md`](../catalogue/catalogue-synchronise.md) §6).
 > Le push est parti, et avec lui le repère « depuis la dernière publication » :
 > la lecture `since-last`, la page `/pim/revisions/en-attente`, le compteur
 > de `overview` (qui ne rend plus que les chiffres du catalogue), la lecture

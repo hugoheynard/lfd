@@ -18,7 +18,7 @@ import {
 /**
  * Une copie reçue de l'ancien référentiel, que la reprise n'a jamais versée au
  * commerce. 409 : la reprise est partie en X4
- * (`documentation/catalogue/plan-sans-interrupteurs.md`) — l'écrire la ferait
+ * (`documentation/catalogue/catalogue-synchronise.md` §6) — l'écrire la ferait
  * passer pour une opération du commerce, sans personne pour l'avoir décidé.
  */
 export class OperationAwaitingMigrationError extends BusinessError {

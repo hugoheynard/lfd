@@ -19,7 +19,7 @@ import type { E2eContext } from "./e2e-harness.js";
 
 /**
  * **Un instantané du référentiel, livré EN FAITS** — ce que le commerce reçoit
- * depuis X1 (2026-10-17, `documentation/catalogue/plan-sans-interrupteurs.md`),
+ * depuis X1 (2026-10-17, `documentation/catalogue/catalogue-synchronise.md` §6),
  * où l'ingestion d'un push n'écrit plus rien.
  *
  * Les suites qui semaient leur catalogue par un push gardent leurs fixtures

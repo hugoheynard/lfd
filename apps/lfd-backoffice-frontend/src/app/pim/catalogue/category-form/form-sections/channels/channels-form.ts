@@ -11,7 +11,7 @@ import { CategoryFormStore } from '../../category-form-store';
 /**
  * Les taux de TVA de la famille, un par contexte de vente en service. La
  * section portait aussi la matrice des canaux (`ChannelMatrix`), partie en X4
- * (`documentation/catalogue/plan-sans-interrupteurs.md`) : les contextes de
+ * (`documentation/catalogue/catalogue-synchronise.md` §6) : les contextes de
  * vente et leur TVA restent.
  */
 @Component({

@@ -16,7 +16,7 @@ import {
  * **Les opérations datées du référentiel** — Noël, Pâques, la galette
  * (`documentation/operations-datees/architecture-operations-datees.md`, lot 1). Écrits
  * par les handlers des opérations du référentiel, par `PimJournal.trace()` —
- * partis en X4 (`documentation/catalogue/plan-sans-interrupteurs.md`) : ce
+ * partis en X4 (`documentation/catalogue/catalogue-synchronise.md` §6) : ce
  * sont désormais des faits passés, que le journal relit.
  *
  * Le sujet est l'opération, son `subjectId` sa **clé** (`noel-2026`) : une clé

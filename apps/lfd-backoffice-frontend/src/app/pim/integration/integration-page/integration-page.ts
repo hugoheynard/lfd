@@ -20,7 +20,7 @@ import { B2bIntegration } from '../b2b-integration/b2b-integration';
  * qu'un canal arrivait. La barre revient avec le deuxième canal, pas avant.
  *
  * La carte de la bascule vers l'audience est partie en X4
- * (`plan-sans-interrupteurs.md`) : la bascule était faite, et le lien au canal
+ * (`catalogue-synchronise.md` §6) : la bascule était faite, et le lien au canal
  * qu'elle comparait est retiré.
  */
 @Component({

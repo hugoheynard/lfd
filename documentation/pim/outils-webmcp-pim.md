@@ -67,7 +67,7 @@ Les sept derniers vivent dans [`agent/pim-agent-commerce-tools.ts`](../../apps/l
 [`agent/pim-agent-readiness-tools.ts`](../../apps/lfd-backoffice-frontend/src/app/agent/pim-agent-readiness-tools.ts) (ajoutés le 2026-10-17, sans route neuve).
 
 `pim_product_set_channels` (où la fiche se vend) est parti en X4
-(`documentation/catalogue/plan-sans-interrupteurs.md`) avec la matrice des
+(`documentation/catalogue/catalogue-synchronise.md` §6) avec la matrice des
 canaux.
 
 **Le nombre n'est pas recopié dans l'écran** : la liste affichée est rendue par

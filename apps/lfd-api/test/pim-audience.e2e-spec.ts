@@ -5,7 +5,7 @@
  * l'audience se règle par l'API et se relit (colonnes `audience`, `CHECK` en
  * base). Lot 2b : activer exige UNE déclinaison complète (un taux pour chaque
  * contexte en service, quelle que soit l'audience). La bascule vers l'audience
- * et son aperçu sont partis en X4 (`plan-sans-interrupteurs.md`), avec le lien
+ * et son aperçu sont partis en X4 (`catalogue-synchronise.md` §6), avec le lien
  * au canal qu'ils comparaient.
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";

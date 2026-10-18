@@ -59,7 +59,7 @@ export interface CatalogOperationFacts {
  * L'état persisté : les faits, et le retrait éventuel.
  *
  * L'agrégat qui l'écrivait (`CatalogOperation` : recevoir, rafraîchir,
- * retirer) est parti en X4 (`documentation/catalogue/plan-sans-interrupteurs.md`) :
+ * retirer) est parti en X4 (`documentation/catalogue/catalogue-synchronise.md` §6) :
  * plus aucun envoi ne l'écrivait depuis le push. Ces formes restent — les
  * lecteurs du miroir les rendent, et les opérations du commerce vivent dans les
  * mêmes tables.

@@ -129,7 +129,7 @@ export interface RevisionItemInput {
   // `soldContexts` (la matrice des canaux résolue) n'est plus photographié
   // depuis le 2026-10-17 : la matrice ne s'écrit plus depuis X4. Les ancres
   // d'avant le portent encore dans leur payload, et le diff le lit comme une
-  // clé quelconque (`documentation/catalogue/plan-sans-interrupteurs.md`).
+  // clé quelconque (`documentation/catalogue/catalogue-synchronise.md` §6).
   readonly editorial: Readonly<Record<string, unknown>> | null;
   readonly media: readonly RevisionMedia[];
   /**

@@ -9,7 +9,7 @@ import type { OutboxRelay } from "../../src/platform/outbox/outbox-relay.js";
  * restait sur l'état d'avant.
  *
  * Il remplace le push (parti en X2, 2026-10-17,
- * `documentation/catalogue/plan-sans-interrupteurs.md`), qui écrivait le
+ * `documentation/catalogue/catalogue-synchronise.md` §6), qui écrivait le
  * miroir d'un bloc puis validait l'arrivée. Ce qu'il ne fait pas : la
  * relecture. Un article arrivé par un fait attend la relecture du staff avant
  * d'être servi, en développement comme en production.

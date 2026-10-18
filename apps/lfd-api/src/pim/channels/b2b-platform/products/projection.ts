@@ -27,7 +27,7 @@ const B2B_CONTEXT_KEY = "b2b";
  * Ce fichier portait aussi la projection du catalogue entier pour le push
  * (`projectCatalog`, son tri des déclinaisons, ses exclusions et ses
  * opérations datées) ; elle est partie avec le push et les opérations du
- * référentiel (X4 de `documentation/catalogue/plan-sans-interrupteurs.md`).
+ * référentiel (X4 de `documentation/catalogue/catalogue-synchronise.md` §6).
  * Reste ce que les faits du catalogue réemploient (`catalog-facts.ts`) :
  * convertir une déclinaison, et le taux du contexte `b2b`.
  */

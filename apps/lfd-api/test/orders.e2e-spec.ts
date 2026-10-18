@@ -590,7 +590,7 @@ describe("un SKU n'apparaît qu'une fois par commande", () => {
  */
 /**
  * **Une commande neuve ne fige plus de version du catalogue** (Q2, Hugo,
- * 2026-10-17 — documentation/catalogue/plan-sans-interrupteurs.md, X0).
+ * 2026-10-17 — documentation/catalogue/catalogue-synchronise.md §6, X0).
  *
  * Faits du catalogue ouverts, plus aucune version ne se crée : citer la
  * dernière posée attribuait aux lignes une livraison qu'elles n'avaient pas

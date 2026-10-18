@@ -3,7 +3,7 @@
  * avec son backend au sujet du canal.
  *
  * Il ne porte plus que la réémission. Partis en X4
- * (`documentation/catalogue/plan-sans-interrupteurs.md`) : l'appartenance au
+ * (`documentation/catalogue/catalogue-synchronise.md` §6) : l'appartenance au
  * canal par fiche, la bascule vers l'audience, et les motifs d'exclusion du
  * push (`B2bExclusionReason`).
  */

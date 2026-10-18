@@ -38,7 +38,7 @@ type LoadState = 'loading' | 'error' | 'ready';
  *
  * « Préparer une opération » (lot 3 bis) n'est offert qu'à
  * `lfc_operations:write`. La carte de la reprise depuis le référentiel est
- * partie en X4 (`plan-sans-interrupteurs.md`) : elle n'avait rien à reprendre.
+ * partie en X4 (`catalogue-synchronise.md` §6) : elle n'avait rien à reprendre.
  */
 @Component({
   selector: 'app-commerce-operations-page',

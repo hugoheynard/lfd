@@ -15,7 +15,7 @@ import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js"
  * ses familles affichent chacune de ces images.
  *
  * Ses opérations datées ne répondent plus depuis le 2026-10-17 (X1 de
- * `documentation/catalogue/plan-sans-interrupteurs.md`) : l'opération vit au
+ * `documentation/catalogue/catalogue-synchronise.md` §6) : l'opération vit au
  * commerce, et `pim.operation` est une table que plus rien ne sert.
  *
  * Le comptage se fait par `media_url` et non par l'identifiant d'actif : c'est

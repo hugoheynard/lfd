@@ -25,7 +25,7 @@ import { z } from "zod";
  * - `GET  /admin/operations/:key` → `CommerceOperationView`
  *
  * La migration depuis le référentiel (`/admin/operations/migration`) est
- * partie en X4 (`documentation/catalogue/plan-sans-interrupteurs.md`).
+ * partie en X4 (`documentation/catalogue/catalogue-synchronise.md` §6).
  */
 
 /** Les trois clientèles d'une opération (D7). */

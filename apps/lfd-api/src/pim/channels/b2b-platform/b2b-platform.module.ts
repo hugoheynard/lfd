@@ -16,7 +16,7 @@ import { B2bReemitController } from "./products/reemit.controller.js";
  * frontière tient.
  *
  * Il ne porte plus que la **réémission** des faits du catalogue. Partis en X4
- * (`documentation/catalogue/plan-sans-interrupteurs.md`) : l'appartenance au
+ * (`documentation/catalogue/catalogue-synchronise.md` §6) : l'appartenance au
  * canal par fiche, la bascule vers l'audience qui la lisait, et le port des
  * opérations que le commerce lisait pour les reprendre.
  *

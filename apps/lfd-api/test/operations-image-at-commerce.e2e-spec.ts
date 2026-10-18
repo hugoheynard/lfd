@@ -19,7 +19,7 @@ import { TEST_RECOMPUTE_TOKEN } from "./setup-env.js";
  * « décris-moi cette image » sur le vrai fonds, le porteur du commerce dans le
  * composite de la médiathèque à la place des copies, et l'abonné du point
  * focal sur la vraie boîte d'envoi. (Les opérations du référentiel, et leur
- * porteur, sont parties en X4 de `plan-sans-interrupteurs.md`.)
+ * porteur, sont parties en X4 de `catalogue-synchronise.md` §6.)
  */
 
 let ctx: E2eContext;

@@ -308,7 +308,7 @@ describe("la limite portée par l'ARTICLE, reçue du référentiel", () => {
    * et c'est exactement là qu'une v7 se casse — un identifiant de déclinaison
    * qui ne correspond à rien, une règle rangée sous un rang qui ne vise pas.
    *
-   * Depuis X1 (2026-10-17, `plan-sans-interrupteurs.md`), la règle et la
+   * Depuis X1 (2026-10-17, `catalogue-synchronise.md` §6), la règle et la
    * fiche voyagent en FAITS, plus par le push : la règle est posée au
    * référentiel, la fiche y est activée, et la boîte d'envoi les livre.
    */

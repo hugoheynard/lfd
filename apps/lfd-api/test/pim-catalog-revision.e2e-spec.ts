@@ -523,7 +523,7 @@ describe("Diff entre deux ancres", () => {
 
 /**
  * Un produit et le rapport pro. Il s'inscrivait aussi au canal B2B ; le lien
- * au canal est parti en X4 (`plan-sans-interrupteurs.md`).
+ * au canal est parti en X4 (`catalogue-synchronise.md` §6).
  */
 async function aSoldProduct(): Promise<string> {
   const { id } = await aProduct("Croissant");
