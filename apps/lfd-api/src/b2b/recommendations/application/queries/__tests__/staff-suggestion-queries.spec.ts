@@ -3,7 +3,7 @@ import { instantToLocal, type ProductAudienceCounterView } from "@lfd/contracts"
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { StaffSuggestionRule } from "../../../domain/entities/staff-suggestion-rule.js";
 import { InvalidAudiencePeriodError } from "../../../domain/errors/recommendation-errors.js";
-import { AudienceCounterReader } from "../../../domain/ports/audience-counter.reader.js";
+import { StaffSuggestionCounterReader } from "../../../domain/ports/staff-suggestion-counter.reader.js";
 import {
   croissantInput,
   InMemoryRuleReader,
@@ -39,7 +39,7 @@ function storeOfTwo(): RuleStore {
   return store;
 }
 
-class FixedCounters extends AudienceCounterReader {
+class FixedCounters extends StaffSuggestionCounterReader {
   constructor(private readonly rows: readonly ProductAudienceCounterView[]) {
     super();
   }

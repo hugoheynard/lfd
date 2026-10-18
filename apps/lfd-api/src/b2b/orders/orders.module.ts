@@ -161,6 +161,8 @@ import { ShopCartRepository } from "./domain/ports/shop-cart.repository.js";
 import { OrderIdempotencyStore } from "./domain/ports/order-idempotency.store.js";
 import { OrderRepository } from "./domain/ports/order.repository.js";
 import { PrismaCustomerSkuReader } from "./infrastructure/prisma-customer-sku.reader.js";
+import { PrismaSuggestedSkuSalesReader } from "./infrastructure/prisma-suggested-sku-sales.reader.js";
+import { SuggestedSkuSalesReader } from "../recommendations/domain/ports/suggested-sku-sales.reader.js";
 import { PrismaOrderGuardReader } from "./infrastructure/prisma-order-guard.reader.js";
 import { PrismaPreferredPickupReader } from "./infrastructure/prisma-preferred-pickup.reader.js";
 import { PrismaOrderPayerReader } from "./infrastructure/prisma-order-payer.reader.js";
@@ -460,6 +462,9 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     { provide: CompanyStatusReader, useExisting: OrderGuardReader },
     { provide: PreferredPickupReader, useClass: PrismaPreferredPickupReader },
     { provide: CustomerSkuReader, useClass: PrismaCustomerSkuReader },
+    // Les ventes par jour × article, que la recommandation déclare pour estimer
+    // ce que ses suggestions ont fait commander (RS6) : des totaux, aucun client.
+    { provide: SuggestedSkuSalesReader, useClass: PrismaSuggestedSkuSalesReader },
     { provide: OrderRepository, useClass: PrismaOrderRepository },
     // Le registre des clés de passation : un double clic ne fait qu'une commande.
     { provide: OrderIdempotencyStore, useClass: PrismaOrderIdempotencyStore },
@@ -510,6 +515,8 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // Les numéros des commandes qui ont rapporté des points, que l'historique
     // du client montre (plan des points, E1.1).
     OrderNumberReader,
+    // Les ventes par jour × article, lues par la recommandation (RS6).
+    SuggestedSkuSalesReader,
   ],
 })
 export class OrdersModule {}

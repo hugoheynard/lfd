@@ -248,7 +248,13 @@ describe('AgentToolsPage', () => {
     const { root } = render(['lfc_suggestions:read']);
     const listed = [...root.querySelectorAll('code')].map((el) => el.textContent?.trim() ?? '');
 
-    expect(listed).toEqual(['suggestion_list', 'suggestion_order_get']);
+    // RS5 a ajouté l'aperçu, RS6 les résultats (2026-10-18) : la liste entière des lectures.
+    expect(listed).toEqual([
+      'suggestion_list',
+      'suggestion_order_get',
+      'suggestion_preview',
+      'suggestion_results',
+    ]);
     expect(root.textContent).toContain('pas le droit de modifier les suggestions');
   });
 

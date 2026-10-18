@@ -2,11 +2,12 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import type {
   StaffSuggestionChoicesView,
-  StaffSuggestionCountersView,
   StaffSuggestionOrder,
   StaffSuggestionOrderView,
   StaffSuggestionPreviewPayload,
   StaffSuggestionPreviewView,
+  StaffSuggestionResultPeriod,
+  StaffSuggestionResultsView,
   StaffSuggestionRuleIdResponse,
   StaffSuggestionRulePayload,
   StaffSuggestionRuleView,
@@ -18,7 +19,7 @@ import { B2B_API_BASE } from '../api/api-config';
 /**
  * **Les suggestions décidées par le staff** — `/admin/suggestions`
  * (`documentation/recommandation-produit/plan-suggestions-du-staff.md`, RS1
- * et RS3), sous `lfc_suggestions`. Les écritures rendent l'id ; l'écran relit.
+ * RS3 et RS6), sous `lfc_suggestions`. Les écritures rendent l'id ; l'écran relit.
  */
 @Injectable({ providedIn: 'root' })
 export class StaffSuggestionsService {
@@ -60,11 +61,15 @@ export class StaffSuggestionsService {
     return firstValueFrom(this.http.get<StaffSuggestionChoicesView>(this.url('choices')));
   }
 
-  /** Affichée, cliquée, ajoutée, par règle, de `from` à `to` (jours métier, compris). */
-  counters(from: string, to: string): Promise<readonly StaffSuggestionCountersView[]> {
+  /**
+   * Par règle, sur les `days` derniers jours métier (RS6) : affichée,
+   * cliquée, ajoutée, taux d'ajout, puis commandées et chiffre d'affaires HT
+   * ESTIMÉS.
+   */
+  results(days: StaffSuggestionResultPeriod): Promise<StaffSuggestionResultsView> {
     return firstValueFrom(
-      this.http.get<readonly StaffSuggestionCountersView[]>(this.url('counters'), {
-        params: { from, to },
+      this.http.get<StaffSuggestionResultsView>(this.url('results'), {
+        params: { days: String(days) },
       }),
     );
   }

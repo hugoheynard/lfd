@@ -59,6 +59,7 @@ function armTools(canWrite = true) {
     | 'order'
     | 'setOrder'
     | 'preview'
+    | 'results'
   > = {
     list: () => Promise.resolve([...wire.rules]),
     choices: () => Promise.resolve(CHOICES),
@@ -103,6 +104,21 @@ function armTools(canWrite = true) {
           items: [],
         })),
       }),
+    results: (days) =>
+      Promise.resolve({
+        days,
+        from: '2026-10-12',
+        to: '2026-10-18',
+        rules: wire.rules.map((rule) => ({
+          ruleId: rule.id,
+          shown: 8,
+          clicked: 3,
+          added: 2,
+          orderedEstimate: 2,
+          addRateBasisPoints: 2500,
+          revenueEstimateCents: 240,
+        })),
+      }),
     order: () => Promise.resolve({ order: wire.order, updatedAt: null }),
     setOrder: (order) => {
       wire.order = order;
@@ -131,7 +147,12 @@ afterEach(() => Reflect.deleteProperty(document, 'modelContext'));
 describe('declareSuggestionAgentTools', () => {
   it('sans le droit d’écriture, ne déclare QUE la lecture', () => {
     const { names, registered } = armTools(false);
-    const reads = ['suggestion_list', 'suggestion_order_get', 'suggestion_preview'];
+    const reads = [
+      'suggestion_list',
+      'suggestion_order_get',
+      'suggestion_preview',
+      'suggestion_results',
+    ];
     expect(names).toEqual(reads);
     expect([...registered.keys()]).toEqual(reads);
   });
@@ -217,5 +238,19 @@ describe('payloadOf', () => {
       kind: 'everywhere',
       ref: null,
     });
+  });
+});
+
+describe('suggestion_results', () => {
+  it('rend, par règle, les chiffres comptés et les estimés, avec l’aide', async () => {
+    const { tool, wire } = armTools(false);
+    wire.rules.push(staffSuggestion());
+    const text = (await tool('suggestion_results').execute({ days: 7 })).replace(/\s/gu, ' ');
+    expect(text).toContain('(7 jours)');
+    expect(text).toContain('une commande ne se relie pas à un clic');
+    expect(text).toContain('id 01JRULE');
+    expect(text).toContain('taux d’ajout 25 %');
+    expect(text).toContain('commandées (estimé) 2');
+    expect(text).toContain('CA HT apporté (estimé) 2,40 €');
   });
 });

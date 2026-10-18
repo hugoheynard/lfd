@@ -7,10 +7,12 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import type {
-  StaffSuggestionChoicesView,
-  StaffSuggestionCountersView,
-  StaffSuggestionRuleView,
+import {
+  DEFAULT_STAFF_SUGGESTION_RESULT_PERIOD,
+  type StaffSuggestionChoicesView,
+  type StaffSuggestionResultPeriod,
+  type StaffSuggestionResultRow,
+  type StaffSuggestionRuleView,
 } from '@lfd/contracts';
 import {
   FoldBadgeComponent,
@@ -24,6 +26,7 @@ import {
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
   FoldPanelHostService,
+  FoldViewToggleComponent,
 } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
@@ -33,7 +36,14 @@ import { SuggestionOrderCard } from '../suggestion-order-card/suggestion-order-c
 import { SuggestionPanel, type SuggestionPanelData } from '../suggestion-panel/suggestion-panel';
 import { SuggestionPreviewCard } from '../suggestion-preview-card/suggestion-preview-card';
 import { previewSetupOf } from '../suggestion-preview';
-import { countersWindow, refusalOf, splitArchived } from '../suggestion-format';
+import { refusalOf, splitArchived } from '../suggestion-format';
+import {
+  addRateLabel,
+  ESTIMATE_HELP,
+  RESULT_PERIOD_OPTIONS,
+  resultPeriodOf,
+  revenueLabel,
+} from '../suggestion-results';
 import { ruleSummary, STATE_BADGES, stateOf } from '../suggestion-summary';
 
 type LoadState = 'loading' | 'error' | 'ready';
@@ -46,7 +56,9 @@ type LoadState = 'loading' | 'error' | 'ready';
  *
  * Les chiffres (affichée, cliquée, ajoutée) sont lus dans les compteurs
  * anonymes ; tant que la boutique n'affiche pas ces suggestions (RS2), ils
- * sont à zéro, et l'écran le dit au lieu d'inventer une tendance. Une panne
+ * sont à zéro, et l'écran le dit au lieu d'inventer une tendance. Commandées
+ * et chiffre d'affaires (RS6) sont ESTIMÉS côté serveur, et l'écran dit
+ * comment, sur la période choisie (7, 30 ou 90 jours). Une panne
  * des chiffres ou du catalogue n'efface pas la liste : elle se dit à côté.
  *
  * L'aperçu (RS5) se lit sous `lfc_suggestions:read`, comme la liste : il
@@ -69,6 +81,7 @@ type LoadState = 'loading' | 'error' | 'ready';
     FoldInlineConfirmComponent,
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
+    FoldViewToggleComponent,
     NgTemplateOutlet,
     SuggestionOrderCard,
     SuggestionPreviewCard,
@@ -85,8 +98,28 @@ export class SuggestionsPage {
   protected readonly rules = signal<readonly StaffSuggestionRuleView[]>([]);
   protected readonly choices = signal<StaffSuggestionChoicesView | null>(null);
   private readonly preview = viewChild(SuggestionPreviewCard);
-  private readonly counters = signal<ReadonlyMap<string, StaffSuggestionCountersView> | null>(null);
-  protected readonly partialFailure = signal<string | null>(null);
+  private readonly counters = signal<ReadonlyMap<string, StaffSuggestionResultRow> | null>(null);
+  /** La période des chiffres (RS6) : 7, 30 ou 90 jours métier, aujourd'hui compris. */
+  protected readonly days = signal<StaffSuggestionResultPeriod>(
+    DEFAULT_STAFF_SUGGESTION_RESULT_PERIOD,
+  );
+  protected readonly periodOptions = RESULT_PERIOD_OPTIONS;
+  protected readonly periodValue = computed(() => String(this.days()));
+  protected readonly estimateHelp = ESTIMATE_HELP;
+  protected readonly addRateLabel = addRateLabel;
+  protected readonly revenueLabel = revenueLabel;
+  private readonly catalogueFailed = signal(false);
+  private readonly resultsFailed = signal(false);
+  /** Le catalogue ou les chiffres manquent : la liste reste, la panne se dit. */
+  protected readonly partialFailure = computed(() => {
+    const problems = [
+      ...(this.catalogueFailed()
+        ? ['le catalogue n’a pas pu être lu : les articles se disent par leur référence']
+        : []),
+      ...(this.resultsFailed() ? ['les chiffres n’ont pas pu être lus'] : []),
+    ];
+    return problems.length === 0 ? null : `Affichage partiel : ${problems.join(' ; ')}.`;
+  });
   protected readonly actionFailure = signal<string | null>(null);
   protected readonly pending = signal<string | null>(null);
 
@@ -107,9 +140,8 @@ export class SuggestionsPage {
     ruleSummary(rule, this.choices());
   protected readonly badgeOf = (rule: StaffSuggestionRuleView) =>
     STATE_BADGES[stateOf(rule, parisToday())];
-  protected readonly countsOf = (
-    rule: StaffSuggestionRuleView,
-  ): StaffSuggestionCountersView | null => this.counters()?.get(rule.id) ?? null;
+  protected readonly countsOf = (rule: StaffSuggestionRuleView): StaffSuggestionResultRow | null =>
+    this.counters()?.get(rule.id) ?? null;
 
   constructor() {
     void this.load();
@@ -129,23 +161,35 @@ export class SuggestionsPage {
 
   /** Le catalogue (pour nommer) et les chiffres : leur panne laisse la liste à l'écran. */
   private async loadAround(): Promise<void> {
-    const problems: string[] = [];
     try {
       this.choices.set(await this.api.choices());
+      this.catalogueFailed.set(false);
     } catch {
-      problems.push('le catalogue n’a pas pu être lu : les articles se disent par leur référence');
+      this.catalogueFailed.set(true);
     }
-    const window = countersWindow(this.rules(), parisToday());
+    await this.loadResults();
+  }
+
+  /** Les chiffres de la période choisie ; leur panne se dit à côté de la liste. */
+  private async loadResults(): Promise<void> {
     try {
-      const rows = window === null ? [] : await this.api.counters(window.from, window.to);
-      this.counters.set(new Map(rows.map((row) => [row.ruleId, row])));
+      const view = await this.api.results(this.days());
+      this.counters.set(new Map(view.rules.map((row) => [row.ruleId, row])));
+      this.resultsFailed.set(false);
     } catch {
       this.counters.set(null);
-      problems.push('les chiffres n’ont pas pu être lus');
+      this.resultsFailed.set(true);
     }
-    this.partialFailure.set(
-      problems.length === 0 ? null : `Affichage partiel : ${problems.join(' ; ')}.`,
-    );
+  }
+
+  /** Une autre période : seuls les chiffres se relisent. */
+  protected async choosePeriod(value: string): Promise<void> {
+    const days = resultPeriodOf(value);
+    if (days === null || days === this.days()) {
+      return;
+    }
+    this.days.set(days);
+    await this.loadResults();
   }
 
   protected async edit(rule: StaffSuggestionRuleView | null): Promise<void> {

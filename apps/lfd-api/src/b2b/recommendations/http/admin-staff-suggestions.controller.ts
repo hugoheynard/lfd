@@ -1,9 +1,11 @@
 import {
+  DEFAULT_STAFF_SUGGESTION_RESULT_PERIOD,
   setStaffSuggestionActivePayloadSchema,
   setStaffSuggestionOrderPayloadSchema,
   staffSuggestionApplicableQuerySchema,
   staffSuggestionCountersQuerySchema,
   staffSuggestionPreviewPayloadSchema,
+  staffSuggestionResultsQuerySchema,
   staffSuggestionRulePayloadSchema,
   type SetStaffSuggestionActivePayload,
   type SetStaffSuggestionOrderPayload,
@@ -14,6 +16,8 @@ import {
   type StaffSuggestionOrderView,
   type StaffSuggestionPreviewPayload,
   type StaffSuggestionPreviewView,
+  type StaffSuggestionResultsQuery,
+  type StaffSuggestionResultsView,
   type StaffSuggestionRuleIdResponse,
   type StaffSuggestionRulePayload,
   type StaffSuggestionRuleView,
@@ -43,6 +47,7 @@ import { GetStaffSuggestionOrderQuery } from "../application/queries/get-staff-s
 import { ListApplicableStaffSuggestionsQuery } from "../application/queries/list-applicable-staff-suggestions.query.js";
 import { ListStaffSuggestionChoicesQuery } from "../application/queries/list-staff-suggestion-choices.query.js";
 import { ListStaffSuggestionCountersQuery } from "../application/queries/list-staff-suggestion-counters.query.js";
+import { ListStaffSuggestionResultsQuery } from "../application/queries/list-staff-suggestion-results.query.js";
 import { ListStaffSuggestionsQuery } from "../application/queries/list-staff-suggestions.query.js";
 import { PreviewStaffSuggestionsQuery } from "../application/queries/preview-staff-suggestions.query.js";
 
@@ -52,7 +57,8 @@ import { PreviewStaffSuggestionsQuery } from "../application/queries/preview-sta
  * et RS3). Sous `lfc_suggestions`, un droit à lui ; l'action se déduit du
  * verbe. Pas de `DELETE` : on archive.
  *
- * Les chemins nommés (`order`, `applicable`, `choices`, `counters`, `preview`) sont
+ * Les chemins nommés (`order`, `applicable`, `choices`, `counters`, `results`,
+ * `preview`) sont
  * déclarés AVANT `:id` : Nest prend la première route qui correspond.
  */
 @Controller("admin/suggestions")
@@ -116,6 +122,19 @@ export class AdminStaffSuggestionsController {
       ListStaffSuggestionCountersQuery,
       readonly StaffSuggestionCountersView[]
     >(new ListStaffSuggestionCountersQuery(query.from, query.to));
+  }
+
+  /**
+   * Les résultats par règle (RS6) : les chiffres comptés, puis commandées et
+   * chiffre d'affaires HT ESTIMÉS, sur 7, 30 (défaut) ou 90 jours métier.
+   */
+  @Get("results")
+  results(
+    @Query(new ZodQuery(staffSuggestionResultsQuerySchema)) query: StaffSuggestionResultsQuery,
+  ): Promise<StaffSuggestionResultsView> {
+    return this.queries.execute<ListStaffSuggestionResultsQuery, StaffSuggestionResultsView>(
+      new ListStaffSuggestionResultsQuery(query.days ?? DEFAULT_STAFF_SUGGESTION_RESULT_PERIOD),
+    );
   }
 
   /**

@@ -1,3 +1,31 @@
+> 🟡 **RS6 bâti le 2026-10-18** (non commité à l'écriture ; Hugo : « je veux
+> tout ce que tu as écrit comme amélioration »). La query
+> `ListStaffSuggestionResultsQuery`, servie par
+> `GET /admin/suggestions/results?days=7|30|90` (30 par défaut, jours métier,
+> aujourd'hui compris) sous `lfc_suggestions:read` — contrat
+> `packages/contracts/src/staff-suggestion-results.ts`. Par règle : affichée,
+> cliquée, ajoutée (comptées), taux d'ajout (ajoutées ÷ affichées, en points
+> de base, `null` sans affichage), puis **commandées (estimé)** et **CA HT
+> apporté (estimé)**, en centimes. Les compteurs étant anonymes, une commande
+> ne se relie pas à un clic : l'estimation (`attributeOrders`,
+> `domain/services/suggestion-attribution.ts`) se fait par jour métier × article
+> — le plus petit des ajouts depuis les suggestions et de la quantité
+> commandée ce jour-là ; si plusieurs règles ont fait ajouter le même article
+> le même jour, ce plafond se **partage** au prorata de leurs ajouts (plus fort
+> reste), pour qu'une pièce ne soit jamais comptée deux fois ; le CA vaut cette
+> quantité au prix HT moyen payé ce jour-là (total HT des lignes ÷ quantité),
+> arrondi au centime par part. Les ventes se lisent par
+> `SuggestedSkuSalesReader`, déclaré par la recommandation et implémenté par
+> la commande (`PrismaSuggestedSkuSalesReader`, un `GROUP BY` jour × article
+> sur le jour de passation à Paris ; ni brouillon, ni annulée, ni saisie par
+> le staff, ni née d'un abonnement) ; aucun identifiant de commande ni de
+> client ne sort. Les compteurs `staff` se lisent filtrés en base
+> (`StaffSuggestionCounterReader`), RS3 compris. Limite dite à l'écran : un
+> panier commandé le lendemain de l'ajout ne compte pas. Écran : bloc
+> « Chiffres » de Gestion Boutique › Suggestions (période 7 / 30 / 90 jours,
+> aide « estimé »), et trois chiffres de plus par règle ; outil agent
+> `suggestion_results` ([`outils-agent-suggestions.md`](outils-agent-suggestions.md)).
+
 > 🟡 **RS5 bâti le 2026-10-18** (non commité à l'écriture ; Hugo : « lance
 > l'aperçu »). La query `PreviewStaffSuggestionsQuery`, servie par
 > `POST /admin/suggestions/preview` sous `lfc_suggestions:read` (un `POST`
@@ -229,4 +257,4 @@ niveau top ? » — l'inventaire, dans l'ordre retenu :
 | **RS10** | **Alerte** : une règle active dont l'article ne se vend plus (retiré, masqué, jamais commandable sur sa période) est signalée dans la liste                                                                                                                                                                                                                                       | une règle vide ne doit pas passer inaperçue                              |
 
 Ordre : RS5, RS6, RS7 — ce qui rend l'outil utilisable au quotidien ; RS8 à
-l'usage. **RS5 lancé le 2026-10-18.**
+l'usage. **RS5 lancé le 2026-10-18, RS6 bâti le même jour.**

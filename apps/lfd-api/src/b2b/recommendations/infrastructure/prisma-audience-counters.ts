@@ -2,6 +2,7 @@ import {
   PRODUCT_AUDIENCE_EVENTS,
   PRODUCT_AUDIENCE_SOURCES,
   type ProductAudienceCounterView,
+  type ProductAudienceSource,
 } from "@lfd/contracts";
 import { Injectable, Logger } from "@nestjs/common";
 
@@ -10,6 +11,7 @@ import { PrismaService } from "../../../platform/database/prisma.service.js";
 import type { AudienceIncrement } from "../domain/audience-event-batch.js";
 import { AudienceCounterReader } from "../domain/ports/audience-counter.reader.js";
 import { AudienceCounterWriter } from "../domain/ports/audience-counter.writer.js";
+import { StaffSuggestionCounterReader } from "../domain/ports/staff-suggestion-counter.reader.js";
 
 /**
  * L'écrivain des compteurs : **une** instruction pour tout le lot.
@@ -71,11 +73,36 @@ export class PrismaAudienceCounterReader extends AudienceCounterReader {
       FROM "growth"."product_audience_counters"
       WHERE "day" BETWEEN ${from}::date AND ${to}::date
       ORDER BY "day", "sku", "event", "placement", "source"`;
-    return rows.flatMap((row) => {
-      // Les CHECK en base tiennent les énumérations ; une valeur inconnue ne se rend pas.
-      const event = PRODUCT_AUDIENCE_EVENTS.find((known) => known === row.event);
-      const source = PRODUCT_AUDIENCE_SOURCES.find((known) => known === row.source);
-      return event === undefined || source === undefined ? [] : [{ ...row, event, source }];
-    });
+    return rows.flatMap(toView);
   }
+}
+
+/** La source des gestes sur une suggestion décidée (§6 du plan). */
+const STAFF_SOURCE: ProductAudienceSource = "staff";
+
+/**
+ * Le lecteur des compteurs des suggestions DÉCIDÉES : la source `staff`
+ * filtrée dans le `WHERE`, pas en mémoire (RS6).
+ */
+@Injectable()
+export class PrismaStaffSuggestionCounterReader extends StaffSuggestionCounterReader {
+  constructor(private readonly prisma: PrismaService) {
+    super();
+  }
+
+  async between(from: string, to: string): Promise<readonly ProductAudienceCounterView[]> {
+    const rows = await this.prisma.$queryRaw<CounterRow[]>`
+      SELECT to_char("day", 'YYYY-MM-DD') AS "day", "sku", "event", "placement", "source", "count"
+      FROM "growth"."product_audience_counters"
+      WHERE "day" BETWEEN ${from}::date AND ${to}::date AND "source" = ${STAFF_SOURCE}
+      ORDER BY "day", "sku", "event", "placement"`;
+    return rows.flatMap(toView);
+  }
+}
+
+/** Les CHECK en base tiennent les énumérations ; une valeur inconnue ne se rend pas. */
+function toView(row: CounterRow): ProductAudienceCounterView[] {
+  const event = PRODUCT_AUDIENCE_EVENTS.find((known) => known === row.event);
+  const source = PRODUCT_AUDIENCE_SOURCES.find((known) => known === row.source);
+  return event === undefined || source === undefined ? [] : [{ ...row, event, source }];
 }

@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { CatalogModule } from "../catalog/catalog.module.js";
+import { OrdersModule } from "../orders/orders.module.js";
 import { OrderCutoffsModule } from "../order-cutoffs/order-cutoffs.module.js";
 import { OrderCutoffsInForce } from "../order-cutoffs/domain/order-cutoffs-in-force.js";
 import { ArchiveStaffSuggestionHandler } from "./application/commands/archive-staff-suggestion.handler.js";
@@ -12,7 +13,9 @@ import { GetStaffSuggestionOrderHandler } from "./application/queries/get-staff-
 import { ListApplicableStaffSuggestionsHandler } from "./application/queries/list-applicable-staff-suggestions.handler.js";
 import { ListStaffSuggestionChoicesHandler } from "./application/queries/list-staff-suggestion-choices.handler.js";
 import { ListStaffSuggestionCountersHandler } from "./application/queries/list-staff-suggestion-counters.handler.js";
+import { ListStaffSuggestionResultsHandler } from "./application/queries/list-staff-suggestion-results.handler.js";
 import { ListStaffSuggestionsHandler } from "./application/queries/list-staff-suggestions.handler.js";
+import { StaffSuggestionCounterReader } from "./domain/ports/staff-suggestion-counter.reader.js";
 import { StaffSuggestionRuleReader } from "./domain/ports/staff-suggestion-rule.reader.js";
 import { StaffSuggestionRuleRepository } from "./domain/ports/staff-suggestion-rule.repository.js";
 import { SuggestionChoicesReader } from "./domain/ports/suggestion-choices.reader.js";
@@ -59,6 +62,7 @@ import { CatalogAudienceSkuReader } from "./infrastructure/catalog-audience-sku.
 import {
   PrismaAudienceCounterReader,
   PrismaAudienceCounterWriter,
+  PrismaStaffSuggestionCounterReader,
 } from "./infrastructure/prisma-audience-counters.js";
 
 /**
@@ -84,9 +88,15 @@ import {
  * RS5 : `POST /admin/suggestions/preview` déroule la même vitrine pas à pas,
  * pour une clientèle et un jour choisis, et dit pourquoi chaque règle
  * s'affiche ou non.
+ *
+ * RS6 : `GET /admin/suggestions/results` rend, par règle, les chiffres
+ * comptés et les commandées / chiffre d'affaires ESTIMÉS. Les ventes se
+ * lisent par `SuggestedSkuSalesReader`, déclaré ici et implémenté par la
+ * commande (`OrdersModule` l'exporte) : des totaux par jour et article,
+ * jamais une commande ni un client.
  */
 @Module({
-  imports: [CatalogModule, OrderCutoffsModule],
+  imports: [CatalogModule, OrderCutoffsModule, OrdersModule],
   controllers: [
     ShopProductAudienceController,
     AdminProductAudienceController,
@@ -120,6 +130,8 @@ import {
     ListApplicableStaffSuggestionsHandler,
     ListStaffSuggestionChoicesHandler,
     ListStaffSuggestionCountersHandler,
+    ListStaffSuggestionResultsHandler,
+    { provide: StaffSuggestionCounterReader, useClass: PrismaStaffSuggestionCounterReader },
     { provide: CartFamilyReader, useClass: CatalogCartFamilyReader },
     { provide: SuggestedArticleReader, useClass: ShopSuggestedArticleReader },
     StaffSuggestionShowcase,

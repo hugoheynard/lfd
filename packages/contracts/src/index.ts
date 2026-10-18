@@ -2227,3 +2227,12 @@ export {
   type StaffSuggestionPreviewView,
   type StaffSuggestionRefusal,
 } from "./staff-suggestion-preview.js";
+export {
+  DEFAULT_STAFF_SUGGESTION_RESULT_PERIOD,
+  STAFF_SUGGESTION_RESULT_PERIODS,
+  staffSuggestionResultsQuerySchema,
+  type StaffSuggestionResultPeriod,
+  type StaffSuggestionResultRow,
+  type StaffSuggestionResultsQuery,
+  type StaffSuggestionResultsView,
+} from "./staff-suggestion-results.js";

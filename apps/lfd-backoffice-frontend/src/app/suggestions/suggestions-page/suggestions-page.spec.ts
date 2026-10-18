@@ -2,7 +2,9 @@ import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import type {
   StaffPermission,
-  StaffSuggestionCountersView,
+  StaffSuggestionResultPeriod,
+  StaffSuggestionResultRow,
+  StaffSuggestionResultsView,
   StaffSuggestionRuleView,
 } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
@@ -22,7 +24,8 @@ const CHOICES = {
 
 class FakeApi {
   rules: readonly StaffSuggestionRuleView[] = [];
-  rows: readonly StaffSuggestionCountersView[] = [];
+  rows: readonly StaffSuggestionResultRow[] = [];
+  readonly periods: StaffSuggestionResultPeriod[] = [];
   failList = false;
   failCounters = false;
   readonly toggled: { readonly id: string; readonly active: boolean }[] = [];
@@ -33,8 +36,11 @@ class FakeApi {
   choices() {
     return Promise.resolve(CHOICES);
   }
-  counters(): Promise<readonly StaffSuggestionCountersView[]> {
-    return this.failCounters ? Promise.reject(new Error('réseau')) : Promise.resolve(this.rows);
+  results(days: StaffSuggestionResultPeriod): Promise<StaffSuggestionResultsView> {
+    this.periods.push(days);
+    return this.failCounters
+      ? Promise.reject(new Error('réseau'))
+      : Promise.resolve({ days, from: '2026-09-19', to: '2026-10-18', rules: this.rows });
   }
   order() {
     return Promise.resolve({ order: 'recent' as const, updatedAt: null });
@@ -70,6 +76,16 @@ async function render(
   return fixture.nativeElement as HTMLElement;
 }
 
+const zeroRow: StaffSuggestionResultRow = {
+  ruleId: '01JRULE',
+  shown: 0,
+  clicked: 0,
+  added: 0,
+  orderedEstimate: 0,
+  addRateBasisPoints: null,
+  revenueEstimateCents: 0,
+};
+
 describe('SuggestionsPage', () => {
   it('une panne se dit en alerte, avec Réessayer', async () => {
     const api = new FakeApi();
@@ -84,7 +100,7 @@ describe('SuggestionsPage', () => {
       staffSuggestion(),
       staffSuggestion({ id: 'OLD', archivedAt: '2026-10-01T08:00:00.000Z', phrase: null }),
     ];
-    api.rows = [{ ruleId: '01JRULE', shown: 0, clicked: 0, added: 0 }];
+    api.rows = [zeroRow];
     const root = await render(api);
 
     const cards = root.querySelectorAll('fold-card');
@@ -96,6 +112,31 @@ describe('SuggestionsPage', () => {
     expect(root.textContent).toContain('Affichée');
     expect(root.textContent).toContain('les chiffres restent à zéro');
     expect(cards.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it('dit le taux d’ajout, les commandées et le CA estimés, avec l’aide, sur 30 jours par défaut', async () => {
+    const api = new FakeApi();
+    api.rules = [staffSuggestion()];
+    api.rows = [
+      {
+        ...zeroRow,
+        shown: 8,
+        clicked: 3,
+        added: 2,
+        orderedEstimate: 2,
+        addRateBasisPoints: 2500,
+        revenueEstimateCents: 240,
+      },
+    ];
+    const root = await render(api);
+    const text = (root.textContent ?? '').replace(/\s/gu, ' ');
+    expect(api.periods).toEqual([30]);
+    expect(text).toContain("Taux d'ajout");
+    expect(text).toContain('25 %');
+    expect(text).toContain('Commandées (estimé)');
+    expect(text).toContain('2,40 €');
+    expect(text).toContain('une commande ne se relie pas à un clic');
+    expect(text).not.toContain('les chiffres restent à zéro');
   });
 
   it('une panne des chiffres laisse la liste et le dit', async () => {

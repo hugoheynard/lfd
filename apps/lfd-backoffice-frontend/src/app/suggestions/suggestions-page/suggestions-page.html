@@ -50,6 +50,23 @@
             zéro tant que la boutique ne les affiche pas.
           </fold-callout>
         }
+        <fold-card>
+          <div class="section">
+            <fold-element-title
+              variant="title"
+              title="Chiffres"
+              subtitle="Par suggestion, sur la période choisie, aujourd'hui compris."
+            />
+            <fold-view-toggle
+              ariaLabel="Période des chiffres"
+              size="sm"
+              [options]="periodOptions"
+              [value]="periodValue()"
+              (valueChange)="choosePeriod($event)"
+            />
+            <p class="estimate-help">{{ estimateHelp }}</p>
+          </div>
+        </fold-card>
         @if (live().length > 0) {
           <fold-card>
             <div class="section">
@@ -117,6 +134,18 @@
         <div>
           <dt>Ajoutée</dt>
           <dd>{{ counts.added }}</dd>
+        </div>
+        <div>
+          <dt>Taux d'ajout</dt>
+          <dd>{{ addRateLabel(counts) }}</dd>
+        </div>
+        <div>
+          <dt>Commandées (estimé)</dt>
+          <dd>{{ counts.orderedEstimate }}</dd>
+        </div>
+        <div>
+          <dt>CA HT apporté (estimé)</dt>
+          <dd>{{ revenueLabel(counts) }}</dd>
         </div>
       }
     </dl>

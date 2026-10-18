@@ -179,22 +179,6 @@ export function splitArchived(rules: readonly StaffSuggestionRuleView[]): {
   };
 }
 
-/**
- * La période des chiffres (RS3) : du premier jour de la plus ancienne règle
- * jusqu'à aujourd'hui. `null` : aucune règle n'a encore commencé — il n'y a
- * rien à compter.
- */
-export function countersWindow(
-  rules: readonly StaffSuggestionRuleView[],
-  today: string,
-): { readonly from: string; readonly to: string } | null {
-  const started = rules.map((rule) => rule.startsOn).filter((day) => day <= today);
-  if (started.length === 0) {
-    return null;
-  }
-  return { from: started.reduce((first, day) => (day < first ? day : first)), to: today };
-}
-
 export function refusalOf(error: unknown, fallback: string): string {
   return httpErrorMessage(error, fallback);
 }
