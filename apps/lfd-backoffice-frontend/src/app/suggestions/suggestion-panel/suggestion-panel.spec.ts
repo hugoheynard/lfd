@@ -26,6 +26,9 @@ class FakeApi {
     this.revised.push({ id, payload });
     return Promise.resolve({ id });
   }
+  order() {
+    return Promise.resolve({ order: 'recent' as const, updatedAt: null });
+  }
   create() {
     return Promise.resolve({ id: 'NEW' });
   }
@@ -90,5 +93,47 @@ describe('SuggestionPanel', () => {
     fixture.detectChanges();
     expect(ref.closedWith).toBeNull();
     expect(root.querySelector('fold-callout[variant="alert"]')).not.toBeNull();
+  });
+
+  it('l’aperçu recompose la règle en une phrase, et suit le brouillon', async () => {
+    const { root, fixture } = await render(new FakeApi(), {
+      rule: staffSuggestion({ audience: 'public', startsOn: '2026-10-20', endsOn: '2026-10-31' }),
+      choices: CHOICES,
+    });
+    expect(root.textContent).toContain(
+      'Quand Croissant est dans le panier, proposer Baguette au panier, aux particuliers, du 20 au 31 octobre.',
+    );
+    fixture.componentRef.setInput('data', {
+      rule: staffSuggestion({ trigger: { kind: 'category_in_cart', ref: 'fam-vien' } }),
+      choices: CHOICES,
+    });
+    fixture.detectChanges();
+    expect(root.textContent).toContain(
+      'Quand un article de la famille Viennoiseries est dans le panier, proposer Baguette',
+    );
+  });
+
+  it('pose une question par groupe, et dit le réglage d’ordre sous la priorité', async () => {
+    const { root, fixture } = await render(new FakeApi(), { rule: null, choices: CHOICES });
+    await fixture.whenStable();
+    fixture.detectChanges();
+    const legends = [...root.querySelectorAll('fold-fieldset')].map((one) =>
+      one.getAttribute('legend'),
+    );
+    expect(legends).toEqual([
+      'Quand la proposer ?',
+      'Que proposer ?',
+      'Où l’afficher ?',
+      'Pour qui ?',
+      'Pendant quelle période ?',
+      'Comment la présenter ?',
+      'Priorité',
+    ]);
+    expect(
+      [...root.querySelectorAll('fold-fieldset')].every(
+        (one) => one.getAttribute('appearance') === 'border',
+      ),
+    ).toBe(true);
+    expect(root.textContent).toContain('Il est aujourd’hui sur « La plus récente »');
   });
 });

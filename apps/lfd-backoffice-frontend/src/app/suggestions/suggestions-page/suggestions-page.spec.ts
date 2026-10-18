@@ -88,7 +88,9 @@ describe('SuggestionsPage', () => {
     const root = await render(api);
 
     const cards = root.querySelectorAll('fold-card');
-    expect(root.textContent).toContain('Article au panier : Croissant → Baguette');
+    expect(root.textContent).toContain(
+      'Quand Croissant est dans le panier, proposer Baguette au panier, aux professionnels et aux particuliers, du 18 au 25 octobre.',
+    );
     expect(root.textContent).toContain('Notre conseil');
     expect(root.textContent).toContain('Archivées');
     expect(root.textContent).toContain('Affichée');

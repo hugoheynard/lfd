@@ -2,32 +2,19 @@ import type { StaffSuggestionRuleView } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { staffSuggestion } from '../staff-suggestion.testing';
-import { countersWindow, periodLabel, suggestedLabel, triggerLabel } from '../suggestion-format';
-
-const CHOICES = {
-  articles: [
-    { sku: 'VIE-001', name: 'Croissant', familyId: 'fam-vien' },
-    { sku: 'PAI-001', name: 'Baguette', familyId: 'fam-pains' },
-  ],
-  families: [{ id: 'fam-vien', name: 'Viennoiseries' }],
-};
+import { countersWindow, placementOptions } from '../suggestion-format';
 
 describe('ce que l’écran dit d’une suggestion', () => {
-  it('nomme le déclencheur et les articles, et garde la référence de ce que le catalogue ne sert plus', () => {
-    const rule = staffSuggestion({ suggestedSkus: ['PAI-001', 'OLD-404'] });
-    expect(triggerLabel(rule, CHOICES)).toBe('Article au panier : Croissant');
-    expect(suggestedLabel(rule, CHOICES)).toBe('Baguette, OLD-404');
-    expect(triggerLabel({ trigger: { kind: 'category_in_cart', ref: 'fam-vien' } }, CHOICES)).toBe(
-      'Famille au panier : Viennoiseries',
+  it('ferme les emplacements que le « Quand » rend impossibles, en disant pourquoi', () => {
+    const options = placementOptions('product_in_cart');
+    expect(options.map((one) => one.value)).toEqual(['home', 'cart', 'product']);
+    expect(options.find((one) => one.value === 'cart')?.disabled).toBeUndefined();
+    const home = options.find((one) => one.value === 'home');
+    expect(home?.disabled).toBe(true);
+    expect(home?.label).toBe(
+      'Sur l’accueil — impossible ici : l’accueil ne montre ni panier ni fiche',
     );
-    expect(triggerLabel({ trigger: { kind: 'everywhere', ref: null } }, null)).toBe('Partout');
-  });
-
-  it('dit la période en jours français', () => {
-    expect(periodLabel({ startsOn: '2026-10-18', endsOn: '2026-10-25' })).toBe(
-      'Du 18/10/2026 au 25/10/2026',
-    );
-    expect(periodLabel({ startsOn: '2026-10-18', endsOn: '2026-10-18' })).toBe('Le 18/10/2026');
+    expect(placementOptions('everywhere').every((one) => one.disabled !== true)).toBe(true);
   });
 
   it('compte depuis la plus ancienne règle commencée, et rien si aucune ne l’est', () => {

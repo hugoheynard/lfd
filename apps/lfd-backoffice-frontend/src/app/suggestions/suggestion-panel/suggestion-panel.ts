@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import type {
   StaffSuggestionChoicesView,
+  StaffSuggestionOrder,
   StaffSuggestionRuleView,
   StaffSuggestionTriggerKind,
 } from '@lfd/contracts';
@@ -17,6 +18,7 @@ import {
   FoldButtonIconComponent,
   FoldCalloutComponent,
   FoldDateComponent,
+  FoldFieldsetComponent,
   FoldInputComponent,
   FoldListboxComponent,
   FoldNumberInputComponent,
@@ -44,10 +46,13 @@ import {
 } from '../suggestion-draft';
 import {
   AUDIENCE_OPTIONS,
+  orderLabel,
   placementOptions,
   refusalOf,
+  TRIGGER_EXAMPLES,
   TRIGGER_OPTIONS,
 } from '../suggestion-format';
+import { summaryOf } from '../suggestion-summary';
 
 /** Ce que le panneau reçoit : la règle à réécrire (`null` = une neuve), et le catalogue servi. */
 export interface SuggestionPanelData {
@@ -72,6 +77,7 @@ export interface SuggestionPanelData {
     FoldButtonIconComponent,
     FoldCalloutComponent,
     FoldDateComponent,
+    FoldFieldsetComponent,
     FoldInputComponent,
     FoldListboxComponent,
     FoldNumberInputComponent,
@@ -130,6 +136,31 @@ export class SuggestionPanel {
     })),
   );
   protected readonly missing = computed(() => missingOf(this.draft()));
+  protected readonly example = computed(() => TRIGGER_EXAMPLES[this.draft().triggerKind]);
+  /** L'aperçu : la règle relue en une phrase, à chaque frappe. */
+  protected readonly summary = computed(() =>
+    summaryOf(this.draft(), this.data()?.choices ?? null),
+  );
+  /** Le réglage d'ordre de la boutique — `null` tant qu'il n'est pas lu, ou s'il ne l'a pas été. */
+  private readonly order = signal<StaffSuggestionOrder | null>(null);
+  protected readonly priorityHint = computed(() => {
+    const order = this.order();
+    const rule =
+      'De 0 à 999, la plus haute passe d’abord. Elle ne sert que si le réglage « Quand plusieurs suggestions s’appliquent » est « Par priorité ».';
+    if (order === null) {
+      return `${rule} Le réglage n’a pas pu être lu.`;
+    }
+    return order === 'priority'
+      ? `${rule} C’est le cas aujourd’hui : elle compte.`
+      : `${rule} Il est aujourd’hui sur « ${orderLabel(order)} » : elle ne compte pas pour l’instant.`;
+  });
+
+  constructor() {
+    this.api.order().then(
+      (view) => this.order.set(view.order),
+      () => this.order.set(null),
+    );
+  }
 
   protected set<K extends keyof SuggestionDraft>(key: K, value: SuggestionDraft[K]): void {
     this.draft.update((draft) => ({ ...draft, [key]: value }));

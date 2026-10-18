@@ -24,16 +24,8 @@ import { parisToday } from '../../shared/paris-today';
 import { StaffSuggestionsService } from '../staff-suggestions.service';
 import { SuggestionOrderCard } from '../suggestion-order-card/suggestion-order-card';
 import { SuggestionPanel, type SuggestionPanelData } from '../suggestion-panel/suggestion-panel';
-import {
-  audienceLabel,
-  countersWindow,
-  periodLabel,
-  placementLabel,
-  refusalOf,
-  splitArchived,
-  suggestedLabel,
-  triggerLabel,
-} from '../suggestion-format';
+import { countersWindow, refusalOf, splitArchived } from '../suggestion-format';
+import { ruleSummary, STATE_BADGES, stateOf } from '../suggestion-summary';
 
 type LoadState = 'loading' | 'error' | 'ready';
 
@@ -95,16 +87,12 @@ export class SuggestionsPage {
   });
 
   protected readonly phrase = (rule: StaffSuggestionRuleView): string =>
-    rule.phrase?.fr ?? 'Notre conseil';
-  protected readonly trigger = (rule: StaffSuggestionRuleView): string =>
-    triggerLabel(rule, this.choices());
-  protected readonly suggested = (rule: StaffSuggestionRuleView): string =>
-    suggestedLabel(rule, this.choices());
-  protected readonly period = periodLabel;
-  protected readonly placement = (rule: StaffSuggestionRuleView): string =>
-    placementLabel(rule.placement);
-  protected readonly audience = (rule: StaffSuggestionRuleView): string =>
-    audienceLabel(rule.audience);
+    rule.phrase === null ? '« Notre conseil »' : `« ${rule.phrase.fr} »`;
+  /** La règle en une phrase — la même que l'aperçu du panneau. */
+  protected readonly summary = (rule: StaffSuggestionRuleView): string =>
+    ruleSummary(rule, this.choices());
+  protected readonly badgeOf = (rule: StaffSuggestionRuleView) =>
+    STATE_BADGES[stateOf(rule, parisToday())];
   protected readonly countsOf = (
     rule: StaffSuggestionRuleView,
   ): StaffSuggestionCountersView | null => this.counters()?.get(rule.id) ?? null;

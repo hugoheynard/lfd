@@ -5,6 +5,10 @@
       title="Quand plusieurs suggestions s'appliquent"
       subtitle="Au même endroit et au même moment, laquelle passe d'abord."
     />
+    <p class="current">
+      La plus récente : la dernière règle créée passe d'abord. Par priorité : la priorité la plus
+      haute d'abord, puis la plus récente.
+    </p>
     @if (order() !== null) {
       @if (canWrite()) {
         <fold-view-toggle
@@ -15,7 +19,7 @@
           (valueChange)="choose($event)"
         />
       } @else {
-        <p class="current">{{ label() }}</p>
+        <p class="current">Réglage actuel : {{ label() }}.</p>
       }
     }
     @if (failure(); as message) {

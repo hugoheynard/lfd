@@ -91,28 +91,14 @@
 <ng-template #row let-rule>
   <li class="rule">
     <div class="rule-head">
-      <span class="rule-phrase">{{ phrase(rule) }}</span>
-      @if (rule.archivedAt !== null) {
-        <fold-badge content="Archivée" variant="neutral" radius="pill" />
-      } @else if (rule.active) {
-        <fold-badge content="Active" variant="success" radius="pill" />
-      } @else {
-        <fold-badge content="Coupée" variant="warning" radius="pill" />
-      }
+      <span class="rule-summary">{{ summary(rule) }}</span>
+      @let badge = badgeOf(rule);
+      <fold-badge [content]="badge.label" [variant]="badge.variant" radius="pill" />
     </div>
-    <p class="rule-flow">{{ trigger(rule) }} → {{ suggested(rule) }}</p>
     <dl class="rule-facts">
       <div>
-        <dt>Période</dt>
-        <dd>{{ period(rule) }}</dd>
-      </div>
-      <div>
-        <dt>Emplacement</dt>
-        <dd>{{ placement(rule) }}</dd>
-      </div>
-      <div>
-        <dt>Audience</dt>
-        <dd>{{ audience(rule) }}</dd>
+        <dt>Présentée par</dt>
+        <dd>{{ phrase(rule) }}</dd>
       </div>
       <div>
         <dt>Priorité</dt>
