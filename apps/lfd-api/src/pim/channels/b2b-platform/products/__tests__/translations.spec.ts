@@ -1,4 +1,8 @@
-import { catalogTranslationsSchema, translationsOf } from "../translations.js";
+import {
+  catalogTranslationsSchema,
+  translationsOf,
+  variantNameTranslationsOf,
+} from "../translations.js";
 
 /**
  * Les traductions d'un texte du référentiel, telles qu'un fait du catalogue
@@ -18,6 +22,36 @@ describe("translationsOf", () => {
 
   it("rend un objet vide pour un texte qui n'existe pas", () => {
     expect(translationsOf(null)).toEqual({});
+  });
+});
+
+/** Régression 2026-10-18 : les noms traduits sur la fiche ne descendaient pas. */
+describe("variantNameTranslationsOf", () => {
+  it("prend la traduction de la fiche pour une déclinaison au même nom, non traduite", () => {
+    expect(
+      variantNameTranslationsOf(
+        { fr: "Roulé à la cannelle" },
+        { fr: "Roulé à la cannelle", en: "Cinnamon rolls" },
+      ),
+    ).toEqual({ en: "Cinnamon rolls" });
+  });
+
+  it("ne colle rien de la fiche sur une déclinaison au nom différent", () => {
+    expect(
+      variantNameTranslationsOf(
+        { fr: "Pain aux olives 2 kg" },
+        { fr: "Pain aux olives", en: "Olive bread" },
+      ),
+    ).toEqual({});
+  });
+
+  it("préfère la traduction de la déclinaison, langue par langue", () => {
+    expect(
+      variantNameTranslationsOf(
+        { fr: "Croissant", en: "Butter croissant" },
+        { fr: "Croissant", en: "Croissant", it: "Cornetto" },
+      ),
+    ).toEqual({ en: "Butter croissant", it: "Cornetto" });
   });
 });
 

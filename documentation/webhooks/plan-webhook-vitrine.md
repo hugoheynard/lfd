@@ -290,9 +290,19 @@ l'écran des canaux) les remplit — à lancer une fois le lot déployé.
   brancher `ClientLocale` demande de recharger à chaque changement de langue,
   sur les deux routes. Laissé pour plus tard ; le paquet initial n'a pas
   bougé.
-- **Le nom de l'article est celui de sa déclinaison par défaut** — c'est lui
-  qui est traduit. Le nom traduit de la _fiche_ ne descend pas : aucune vue
-  ne le lit.
+- ~~Le nom traduit de la _fiche_ ne descend pas.~~ **Corrigé le 2026-10-18**
+  (constat en production après la réémission : aucun nom anglais servi, le
+  staff traduit la fiche, pas sa déclinaison). Règle de repli, langue par
+  langue, dans le canal du référentiel (`variantNameTranslationsOf`,
+  `apps/lfd-api/src/pim/channels/b2b-platform/products/translations.ts`) :
+  la traduction de la déclinaison si elle existe, **sinon celle de la fiche
+  quand le nom français de la déclinaison est identique à celui de la
+  fiche**. Une déclinaison au nom différent (« Pain aux olives 2 kg ») ne
+  reçoit rien de la fiche — on n'invente pas « Olive bread » à la place
+  d'un nom qui dit le poids : elle sert le français. Le champ du fait garde
+  sa forme ; la boutique et le récepteur n'ont pas bougé. La ligne (`note`)
+  vient déjà de l'éditorial de la fiche. Une réémission complète est à
+  relancer après déploiement.
 - **Les textes alternatifs des images** (`alt`) restent en français.
 - **W** décide comment il lit les trois langues (6.2) et doit l'éprouver sur
   `/vitrine` elle-même.

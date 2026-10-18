@@ -16,7 +16,11 @@ import {
   type Audience,
 } from "../../../catalogue/shared/domain/value-objects/audience.js";
 import { projectVariant, vatOf, type Showcase } from "./projection.js";
-import { translationsOf, type CatalogTranslations } from "./translations.js";
+import {
+  translationsOf,
+  variantNameTranslationsOf,
+  type CatalogTranslations,
+} from "./translations.js";
 
 export type { CatalogTranslations };
 
@@ -215,7 +219,7 @@ function sellableVariant(variant: VariantOf, input: ProductFactInput): CatalogVa
       input.percents,
       input.inco,
     ),
-    nameTranslations: translationsOf(variant.name),
+    nameTranslations: variantNameTranslationsOf(variant.name, input.product.name),
   };
 }
 

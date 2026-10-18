@@ -140,6 +140,28 @@ describe("la vitrine publique dans les trois langues", () => {
     expect(await shop("fr")).toEqual(view);
   });
 
+  /**
+   * Régression (production, 2026-10-18) : le staff traduit le nom de la FICHE,
+   * pas celui de sa déclinaison unique — et la vitrine anglaise restait en
+   * français sur les 292 fiches.
+   */
+  it("sert la traduction de la fiche quand la déclinaison porte son nom sans traduction", async () => {
+    const fiche = await anActiveFiche(staff, "Roulé à la cannelle");
+    await staff()
+      .put(`${PRODUCTS}/${fiche.id}/identity`)
+      .send({
+        name: { fr: "Roulé à la cannelle", en: "Cinnamon rolls" },
+        kind: "daily",
+        categoryId: fiche.categoryId,
+      })
+      .expect(200);
+    await relayAll(ctx);
+    await approve([fiche]);
+
+    expect(itemOf(await shop("en"), fiche)?.name).toBe("Cinnamon rolls");
+    expect(itemOf(await shop("it"), fiche)?.name).toBe("Roulé à la cannelle");
+  });
+
   it("refuse une langue que la boutique ne sert pas, en la nommant", async () => {
     const refusal = await ctx.http().get("/shop/catalogue?lang=de").expect(400);
 
