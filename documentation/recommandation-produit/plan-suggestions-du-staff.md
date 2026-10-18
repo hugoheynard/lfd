@@ -99,6 +99,14 @@ commandes, comme pour le calculé.
 
 ## 8. Questions à Hugo
 
+> **Q3 tranchée le 2026-10-18 (Hugo)** : « il faut coder priorité, et mettre un
+> switch pour que l'admin décide récente ou priorité ». Chaque règle porte une
+> **priorité** (entier, plus haut = d'abord) ; un **réglage de la boutique**,
+> unique, choisit l'ordre appliqué entre règles concurrentes : `recent` (la
+> plus récente d'abord) ou `priority` (la priorité, puis la plus récente à
+> égalité). Le réglage vit dans l'écran Suggestions, sous le même droit
+> `lfc_suggestions` ; son changement est journalisé. Les deux sont au lot RS1.
+
 1. **Combien de places pour le décidé ?** _Recommandation : 1 sur 3 au
    panier et sur la fiche, 2 sur 3 à l'accueil._ Assez pour pousser, pas assez
    pour écraser ce que les clients font.
