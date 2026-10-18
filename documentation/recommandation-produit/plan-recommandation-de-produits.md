@@ -162,7 +162,20 @@ de commande du jour. Un article qui ne passe pas **disparaît** ; une liste vide
 rend une **carte absente**, jamais un remplissage inventé (mémoire « pas de
 valeur inventée »). Les articles déjà au panier sont exclus.
 
-**R5 — La mesure passe par `ActivityRecorder.record()`, best-effort.**
+**R5 bis — La mesure est un compteur anonyme, pas un fait par personne
+(Hugo, 2026-10-18 ; remplace R5 ci-dessous).** Une table de compteurs
+`(jour, sku, événement, emplacement) → nombre`, sans identifiant de visiteur ni
+de client : `product_viewed`, `added_to_cart`, `suggestion_shown`,
+`suggestion_clicked`, `suggestion_added`. Incrémentée côté serveur, par lot,
+best-effort (une mesure perdue ne casse jamais un geste du client). « Commandée »
+se lit dans les commandes. C'est la mesure d'audience exemptée de consentement
+(CNIL : statistiques anonymes, pour le seul éditeur, sans croisement) — voir
+[`historique-du-particulier.md`](historique-du-particulier.md) §1 bis. Elle
+nourrit aussi les suggestions collectives (« les plus regardés »). Un outil de
+marketing (Plausible ou Matomo) viendra plus tard, pour l'acquisition et les
+parcours ; il ne remplace pas ce compteur.
+
+**R5 — (remplacé par R5 bis) La mesure passe par `ActivityRecorder.record()`, best-effort.**
 Trois faits : `recommendation.shown`, `recommendation.clicked`,
 `recommendation.added` (au panier) ; « commandée » se **déduit** en rejoignant
 la commande passée, sans fait de plus. Clé idempotente
@@ -216,14 +229,14 @@ flowchart LR
 
 ## 5. Lots
 
-| Lot    | Contenu                                                                                     | Dépend de |
-| ------ | ------------------------------------------------------------------------------------------- | --------- |
-| **R0** | contexte `b2b/recommendations/`, ports, filtre R4, faits de mesure R5 ; tests aux 3 niveaux | —         |
-| **R1** | « Vos habituels » (pros), rythme hebdomadaire + fréquence ; rangée d'accueil                | R0        |
-| **R2** | « Souvent pris avec » au panier, remplace `CartUpsell`                                      | R0        |
-| **R3** | « Vos habituels » pour le particulier connecté (`placedByUserId`), après Q1 et §6           | R1        |
-| **R4** | « Jamais essayé » au back-office (sociétés du même secteur)                                 | R1        |
-| **R5** | « Nouveau / De saison » si la mise en avant manuelle ne suffit pas (Q4)                     | R0        |
+| Lot    | Contenu                                                                                                                                                                                                    | Dépend de |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| **R0** | contexte `b2b/recommendations/`, ports, filtre R4, **compteurs anonymes R5 bis** (table, écriture par lot, route de la boutique, premiers émetteurs : vue de fiche, ajout au panier) ; tests aux 3 niveaux | —         |
+| **R1** | « Vos habituels » (pros), rythme hebdomadaire + fréquence ; rangée d'accueil                                                                                                                               | R0        |
+| **R2** | « Souvent pris avec » au panier, remplace `CartUpsell`                                                                                                                                                     | R0        |
+| **R3** | « Vos habituels » pour le particulier connecté (`placedByUserId`), après Q1 et §6                                                                                                                          | R1        |
+| **R4** | « Jamais essayé » au back-office (sociétés du même secteur)                                                                                                                                                | R1        |
+| **R5** | « Nouveau / De saison » si la mise en avant manuelle ne suffit pas (Q4)                                                                                                                                    | R0        |
 
 ## 6. Risques
 
