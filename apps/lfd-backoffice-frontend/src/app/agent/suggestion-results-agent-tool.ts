@@ -8,7 +8,12 @@ import {
 } from '@lfd/contracts';
 
 import type { StaffSuggestionsService } from '../suggestions/staff-suggestions.service';
-import { addRateLabel, ESTIMATE_HELP, revenueLabel } from '../suggestions/suggestion-results';
+import {
+  addRateLabel,
+  COMPUTED_RESULT_LABELS,
+  ESTIMATE_HELP,
+  revenueLabel,
+} from '../suggestions/suggestion-results';
 
 import { said } from './agent-tool-text';
 
@@ -22,7 +27,7 @@ export function declareSuggestionResultsTool(api: StaffSuggestionsService): void
   void declareExperimentalWebMcpTool({
     name: 'suggestion_results',
     description:
-      'Les résultats des suggestions décidées, comme le bloc « Chiffres » de l’écran : sur `days` jours (7, 30 ou 90 ; 30 par défaut, aujourd’hui compris), pour CHAQUE règle (archivées comprises) : affichée, cliquée, ajoutée (comptées par la boutique), taux d’ajout (ajoutées ÷ affichées), commandées et chiffre d’affaires HT apporté — ces deux-là ESTIMÉS, faute de pouvoir relier une commande à un clic anonyme (l’estimation est expliquée en tête de réponse). Lecture seule.',
+      'Les résultats des suggestions décidées, comme le bloc « Chiffres » de l’écran : sur `days` jours (7, 30 ou 90 ; 30 par défaut, aujourd’hui compris), pour CHAQUE règle (archivées comprises), puis pour les deux lignes du calculé (« Calculé : souvent pris avec », « Calculé : vos habituels ») : affichée, cliquée, ajoutée (comptées par la boutique), taux d’ajout (ajoutées ÷ affichées), commandées et chiffre d’affaires HT apporté — ces deux-là ESTIMÉS, faute de pouvoir relier une commande à un clic anonyme, et partagés entre règles et calculé sans compter deux fois une pièce (l’estimation est expliquée en tête de réponse). Lecture seule.',
     inputSchema: {
       type: 'object',
       properties: { days: { type: 'integer', enum: STAFF_SUGGESTION_RESULT_PERIODS } },
@@ -39,7 +44,7 @@ export function declareSuggestionResultsTool(api: StaffSuggestionsService): void
   });
 }
 
-/** Les résultats en texte : la période et l'aide, puis une ligne par règle. */
+/** Les résultats en texte : la période et l'aide, une ligne par règle, puis le calculé. */
 export function resultsText(
   view: StaffSuggestionResultsView,
   rules: readonly StaffSuggestionRuleView[],
@@ -54,8 +59,13 @@ export function resultsText(
     (row) =>
       `id ${row.ruleId} — ${phraseOf.get(row.ruleId) ?? '(règle inconnue)'} · affichée ${String(row.shown)} · cliquée ${String(row.clicked)} · ajoutée ${String(row.added)} · taux d’ajout ${addRateLabel(row)} · commandées (estimé) ${String(row.orderedEstimate)} · CA HT apporté (estimé) ${revenueLabel(row)}`,
   );
+  const computed = view.computed.map(
+    (row) =>
+      `${COMPUTED_RESULT_LABELS[row.kind]} · affichée ${String(row.shown)} · cliquée ${String(row.clicked)} · ajoutée ${String(row.added)} · taux d’ajout ${addRateLabel(row)} · commandées (estimé) ${String(row.orderedEstimate)} · CA HT apporté (estimé) ${revenueLabel(row)}`,
+  );
   return [
     `Du ${view.from} au ${view.to} (${String(view.days)} jours). ${ESTIMATE_HELP}`,
     lines.length === 0 ? 'Aucune suggestion décidée.' : lines.join('\n'),
+    ...computed,
   ].join('\n');
 }

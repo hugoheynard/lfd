@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 import {
   DEFAULT_STAFF_SUGGESTION_RESULT_PERIOD,
+  type ComputedSuggestionResultRow,
   type StaffSuggestionChoicesView,
   type StaffSuggestionResultPeriod,
   type StaffSuggestionResultRow,
@@ -30,6 +31,7 @@ import {
 import { PermissionsStore } from '../../auth/permissions.store';
 import { parisToday } from '../../shared/paris-today';
 import { StaffSuggestionsService } from '../staff-suggestions.service';
+import { SuggestionComputedResults } from '../suggestion-computed-results/suggestion-computed-results';
 import { SuggestionOrderCard } from '../suggestion-order-card/suggestion-order-card';
 import { SuggestionPanel, type SuggestionPanelData } from '../suggestion-panel/suggestion-panel';
 import { SuggestionPreviewCard } from '../suggestion-preview-card/suggestion-preview-card';
@@ -51,7 +53,9 @@ type LoadState = 'loading' | 'error' | 'ready';
  * anonymes ; tant que la boutique n'affiche pas ces suggestions (RS2), ils
  * sont à zéro, et l'écran le dit au lieu d'inventer une tendance. Commandées
  * et chiffre d'affaires (RS6) sont ESTIMÉS côté serveur, et l'écran dit
- * comment, sur la période choisie (7, 30 ou 90 jours). Une panne
+ * comment, sur la période choisie (7, 30 ou 90 jours). Sous les règles,
+ * les deux lignes « Calculé » (souvent pris avec, vos habituels) : leurs
+ * commandées sortent du même partage que celles des règles. Une panne
  * des chiffres ou du catalogue n'efface pas la liste : elle se dit à côté.
  *
  * Les alertes (RS10) disent, sous la phrase d'une règle vivante, quel article
@@ -80,6 +84,7 @@ type LoadState = 'loading' | 'error' | 'ready';
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
     FoldViewToggleComponent,
+    SuggestionComputedResults,
     SuggestionOrderCard,
     SuggestionPreviewCard,
     SuggestionRuleList,
@@ -97,6 +102,7 @@ export class SuggestionsPage {
   protected readonly choices = signal<StaffSuggestionChoicesView | null>(null);
   private readonly preview = viewChild(SuggestionPreviewCard);
   protected readonly counters = signal<ReadonlyMap<string, StaffSuggestionResultRow> | null>(null);
+  protected readonly computedResults = signal<readonly ComputedSuggestionResultRow[] | null>(null);
   /** La période des chiffres (RS6) : 7, 30 ou 90 jours métier, aujourd'hui compris. */
   protected readonly days = signal<StaffSuggestionResultPeriod>(
     DEFAULT_STAFF_SUGGESTION_RESULT_PERIOD,
@@ -173,9 +179,11 @@ export class SuggestionsPage {
     try {
       const view = await this.api.results(this.days());
       this.counters.set(new Map(view.rules.map((row) => [row.ruleId, row])));
+      this.computedResults.set(view.computed);
       this.resultsFailed.set(false);
     } catch {
       this.counters.set(null);
+      this.computedResults.set(null);
       this.resultsFailed.set(true);
     }
   }

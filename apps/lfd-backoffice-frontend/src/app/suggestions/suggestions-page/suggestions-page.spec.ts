@@ -1,6 +1,7 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import type {
+  ComputedSuggestionResultRow,
   StaffPermission,
   StaffSuggestionRuleAlert,
   StaffSuggestionResultPeriod,
@@ -27,6 +28,7 @@ const CHOICES = {
 class FakeApi {
   rules: readonly StaffSuggestionRuleView[] = [];
   rows: readonly StaffSuggestionResultRow[] = [];
+  computed: readonly ComputedSuggestionResultRow[] = [];
   readonly periods: StaffSuggestionResultPeriod[] = [];
   failList = false;
   failCounters = false;
@@ -44,7 +46,13 @@ class FakeApi {
     this.periods.push(days);
     return this.failCounters
       ? Promise.reject(new Error('réseau'))
-      : Promise.resolve({ days, from: '2026-09-19', to: '2026-10-18', rules: this.rows });
+      : Promise.resolve({
+          days,
+          from: '2026-09-19',
+          to: '2026-10-18',
+          rules: this.rows,
+          computed: this.computed,
+        });
   }
   alerts() {
     return this.failAlerts
@@ -153,6 +161,30 @@ describe('SuggestionsPage', () => {
     expect(text).toContain('2,40 €');
     expect(text).toContain('une commande ne se relie pas à un clic');
     expect(text).not.toContain('les chiffres restent à zéro');
+  });
+
+  it('dit les deux lignes « Calculé » sous les règles, et l’aide dit que le partage les inclut', async () => {
+    const api = new FakeApi();
+    api.rules = [staffSuggestion()];
+    api.rows = [zeroRow];
+    const counts = {
+      shown: 0,
+      clicked: 0,
+      added: 0,
+      orderedEstimate: 0,
+      addRateBasisPoints: null,
+      revenueEstimateCents: 0,
+    };
+    api.computed = [
+      { ...counts, kind: 'bought_with', shown: 4, added: 1, orderedEstimate: 1 },
+      { ...counts, kind: 'usuals' },
+    ];
+    const root = await render(api);
+    const text = (root.textContent ?? '').replace(/\s/gu, ' ');
+    const rulesAt = text.indexOf('Notre conseil');
+    expect(text.indexOf('Calculé : souvent pris avec')).toBeGreaterThan(rulesAt);
+    expect(text).toContain('Calculé : vos habituels');
+    expect(text).toContain('règles de l’équipe comme suggestions calculées');
   });
 
   it('une panne des chiffres laisse la liste et le dit', async () => {

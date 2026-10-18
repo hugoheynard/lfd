@@ -87,13 +87,17 @@ async function applicable(query: string): Promise<readonly string[]> {
 }
 
 /** Des gestes `staff` sur une règle, envoyés comme la boutique les envoie (sans jeton). */
-async function beacon(ruleId: string, sku: string, event: string, times: number): Promise<void> {
-  const events = Array.from({ length: times }, () => ({
-    sku,
-    event,
-    placement: ruleId.toLowerCase(),
+async function beacon(
+  ruleId: string,
+  sku: string,
+  event: string,
+  times: number,
+  origin: { readonly source: "staff" | "data"; readonly placement: string } = {
     source: "staff",
-  }));
+    placement: ruleId.toLowerCase(),
+  },
+): Promise<void> {
+  const events = Array.from({ length: times }, () => ({ sku, event, ...origin }));
   await request(ctx.app.getHttpServer()).post("/shop/audience").send({ events }).expect(204);
 }
 
@@ -259,6 +263,30 @@ describe("les suggestions décidées", () => {
         revenueEstimateCents: 240,
       },
     ]);
+    expect(view.computed.map((row) => [row.kind, row.orderedEstimate])).toEqual([
+      ["bought_with", 0],
+      ["usuals", 0],
+    ]);
+  });
+
+  it("partage une pièce entre une règle et « souvent pris avec » le même jour : 1 pièce, pas 2", async () => {
+    const id = await create(croissantRule());
+    const boughtWith = { source: "data", placement: "bought_with" } as const;
+    await beacon(id, "PAI-001", "suggestion_shown", 1);
+    await beacon(id, "PAI-001", "suggestion_added", 1);
+    await beacon(id, "PAI-001", "suggestion_shown", 2, boughtWith);
+    await beacon(id, "PAI-001", "suggestion_added", 1, boughtWith);
+    await seedSale("PAI-001", 1, 120_000);
+
+    const view = jsonBody<StaffSuggestionResultsView>(
+      await admin().get(`${SUGGESTIONS}/results?days=7`).expect(200),
+    );
+
+    const rule = view.rules.find((row) => row.ruleId === id);
+    const computed = view.computed.find((row) => row.kind === "bought_with");
+    expect(computed).toMatchObject({ shown: 2, clicked: 0, added: 1, addRateBasisPoints: 5000 });
+    expect((rule?.orderedEstimate ?? 0) + (computed?.orderedEstimate ?? 0)).toBe(1);
+    expect((rule?.revenueEstimateCents ?? 0) + (computed?.revenueEstimateCents ?? 0)).toBe(120);
   });
 
   it("rend 30 jours par défaut et refuse une autre période", async () => {

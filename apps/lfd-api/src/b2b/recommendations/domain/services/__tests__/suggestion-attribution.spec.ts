@@ -1,7 +1,7 @@
 import {
   addRateBasisPoints,
   attributeOrders,
-  type RuleDayAdds,
+  type SuggestionDayAdds,
   type SkuDaySales,
 } from "../suggestion-attribution.js";
 
@@ -9,8 +9,8 @@ import {
 const DAY = "2026-10-10";
 const NEXT = "2026-10-11";
 
-const adds = (ruleId: string, added: number, day = DAY, sku = "CAF-001"): RuleDayAdds => ({
-  ruleId,
+const adds = (claimant: string, added: number, day = DAY, sku = "CAF-001"): SuggestionDayAdds => ({
+  claimant,
   day,
   sku,
   added,
@@ -80,6 +80,47 @@ describe("attributeOrders", () => {
       [sales(1, 150, DAY), sales(1, 170, NEXT), sales(4, 1200, DAY, "PAI-001")],
     );
     expect(result.get("R1")).toEqual({ orderedEstimate: 4, revenueEstimateCents: 920 });
+  });
+});
+
+describe("attributeOrders — le staff et le calculé dans le même partage", () => {
+  // Les ids de règle sont des ULID, le calculé une clé préfixée : jamais la même.
+  const BOUGHT_WITH = "data:bought_with";
+  const USUALS = "data:usuals";
+
+  it("une règle et le calculé, une pièce commandée : une seule pièce attribuée, pas deux", () => {
+    const result = attributeOrders([adds("R1", 1), adds(BOUGHT_WITH, 1)], [sales(1, 150)]);
+    const total =
+      (result.get("R1")?.orderedEstimate ?? 0) + (result.get(BOUGHT_WITH)?.orderedEstimate ?? 0);
+    expect(total).toBe(1);
+    // À égalité de reste, la clé la plus petite au sens de `localeCompare` : « data:… » avant « R1 ».
+    expect(result.get(BOUGHT_WITH)).toEqual({ orderedEstimate: 1, revenueEstimateCents: 150 });
+    expect(result.get("R1")).toEqual({ orderedEstimate: 0, revenueEstimateCents: 0 });
+  });
+
+  it("partage au prorata et au plus fort reste entre une règle et deux genres du calculé", () => {
+    // 1 + 3 + 2 ajouts pour 4 pièces : 0,67 / 2 / 1,33 → 0 / 2 / 1, une pièce au plus fort reste (R1).
+    const result = attributeOrders(
+      [adds("R1", 1), adds(BOUGHT_WITH, 3), adds(USUALS, 2)],
+      [sales(4, 800)],
+    );
+    expect(result.get("R1")?.orderedEstimate).toBe(1);
+    expect(result.get(BOUGHT_WITH)?.orderedEstimate).toBe(2);
+    expect(result.get(USUALS)?.orderedEstimate).toBe(1);
+  });
+
+  it("le calculé seul se chiffre comme une règle", () => {
+    const result = attributeOrders([adds(USUALS, 3)], [sales(2, 300)]);
+    expect(result.get(USUALS)).toEqual({ orderedEstimate: 2, revenueEstimateCents: 300 });
+  });
+
+  it("la règle seule garde sa part : rien du calculé ce jour-là ne la réduit", () => {
+    const result = attributeOrders(
+      [adds("R1", 2), adds(BOUGHT_WITH, 5, NEXT)],
+      [sales(2, 300), sales(1, 150, NEXT)],
+    );
+    expect(result.get("R1")).toEqual({ orderedEstimate: 2, revenueEstimateCents: 300 });
+    expect(result.get(BOUGHT_WITH)).toEqual({ orderedEstimate: 1, revenueEstimateCents: 150 });
   });
 });
 

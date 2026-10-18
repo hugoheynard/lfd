@@ -1,0 +1,42 @@
+<fold-card>
+  <div class="section">
+    <fold-element-title
+      variant="title"
+      title="Suggestions calculées"
+      subtitle="Calculées sur les commandes, sur la même période."
+    />
+    <ul class="computed-rows">
+      @for (row of rows(); track row.kind) {
+        <li>
+          <span class="computed-label">{{ labels[row.kind] }}</span>
+          <dl class="computed-facts">
+            <div>
+              <dt>Affichée</dt>
+              <dd>{{ row.shown }}</dd>
+            </div>
+            <div>
+              <dt>Cliquée</dt>
+              <dd>{{ row.clicked }}</dd>
+            </div>
+            <div>
+              <dt>Ajoutée</dt>
+              <dd>{{ row.added }}</dd>
+            </div>
+            <div>
+              <dt>Taux d'ajout</dt>
+              <dd>{{ addRateLabel(row) }}</dd>
+            </div>
+            <div>
+              <dt>Commandées (estimé)</dt>
+              <dd>{{ row.orderedEstimate }}</dd>
+            </div>
+            <div>
+              <dt>CA HT apporté (estimé)</dt>
+              <dd>{{ revenueLabel(row) }}</dd>
+            </div>
+          </dl>
+        </li>
+      }
+    </ul>
+  </div>
+</fold-card>

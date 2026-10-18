@@ -121,6 +121,26 @@ function armTools(canWrite = true) {
           addRateBasisPoints: 2500,
           revenueEstimateCents: 240,
         })),
+        computed: [
+          {
+            kind: 'bought_with' as const,
+            shown: 4,
+            clicked: 1,
+            added: 1,
+            orderedEstimate: 1,
+            addRateBasisPoints: 2500,
+            revenueEstimateCents: 120,
+          },
+          {
+            kind: 'usuals' as const,
+            shown: 0,
+            clicked: 0,
+            added: 0,
+            orderedEstimate: 0,
+            addRateBasisPoints: null,
+            revenueEstimateCents: 0,
+          },
+        ],
       }),
     alerts: () =>
       Promise.resolve({
@@ -294,6 +314,8 @@ describe('suggestion_results', () => {
     expect(text).toContain('taux d’ajout 25 %');
     expect(text).toContain('commandées (estimé) 2');
     expect(text).toContain('CA HT apporté (estimé) 2,40 €');
+    expect(text).toContain('Calculé : souvent pris avec · affichée 4');
+    expect(text).toContain('Calculé : vos habituels · affichée 0');
   });
 });
 

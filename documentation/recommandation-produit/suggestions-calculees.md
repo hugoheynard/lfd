@@ -137,14 +137,33 @@ et une ligne qui dit d'où il vient. La fenêtre finit aujourd'hui ; le jour
 choisi ne sert qu'à l'heure limite. L'outil agent `suggestion_preview` le dit
 aussi (« Puis, calculée : … »). La fiche et l'accueil n'en ont pas.
 
-## 6. Ce qui n'est pas bâti
+## 6. La mesure — les chiffres du calculé
 
-- **Les chiffres du calculé** (RS6, « Calculé : souvent pris avec ») : les
-  compteurs `data` sont écrits, mais l'écran des résultats ne les lit pas.
-  L'ajouter n'est pas qu'une ligne : l'estimation des commandes partage, case
-  par case, le plafond entre ce qui a fait ajouter un article — y faire entrer
-  le calculé changerait les chiffres déjà affichés des règles du staff. Décision
-  à prendre avant de bâtir.
+Décidé par Hugo le 2026-10-18, bâti le même jour. L'écran des résultats
+(`GET /admin/suggestions/results`, champ `computed` de
+`StaffSuggestionResultsView`) rend deux lignes sous les règles :
+**« Calculé : souvent pris avec »** (emplacement `bought_with`) et
+**« Calculé : vos habituels »** (`weekly_rhythm` et `frequent` réunis), avec
+les six chiffres d'une règle — affichées, cliquées, ajoutées, taux, commandées
+(estimé), CA HT (estimé). Les compteurs `data` se lisent par leur propre port
+(`ComputedSuggestionCounterReader`, source filtrée dans le `WHERE`), distinct
+de celui du staff.
+
+**Le calculé entre dans le MÊME partage que les règles du staff**
+(`attributeOrders`, `suggestions-du-staff.md` §8.2) : par jour × article, le
+plafond min(ajouts depuis des suggestions, quantité commandée) se partage au
+prorata des ajouts de chaque prétendant — une règle, ou un genre du calculé —,
+au plus fort reste. Une pièce n'est jamais comptée deux fois. Conséquence
+voulue : les chiffres d'une règle **baissent** quand le calculé a aussi fait
+ajouter l'article ce jour-là. À égalité de reste, la clé la plus petite au sens
+de `localeCompare` l'emporte (un genre du calculé porte la clé
+`data:<genre>`, une règle son id).
+
+Le back-office (page Suggestions) et l'outil agent `suggestion_results` les
+rendent, l'aide « estimé » dit que le partage inclut le calculé.
+
+## 6 bis. Ce qui n'est pas bâti
+
 - La fiche, et « vos habituels » d'un particulier (R3) : voir le plan.
   « Vos habituels » d'un pro est bâti (§8).
 
@@ -240,7 +259,9 @@ recueil régénéré par `pnpm copy:digest`.
   (`PieceRequest`), le « + » ajoute ; un article entré au panier cède sa place.
 - **Un appel de plus à l'accueil d'un pro** : la route est à part de celle de
   « Notre sélection » (`/shop/suggestions/home`), qui sert aussi les visiteurs.
-  Une seule requête serveur par appel.
+  Une seule requête serveur par appel. **Décision de Hugo, 2026-10-18 :
+  l'accueil d'un pro garde ces deux appels** (« Vos habituels » + « Notre
+  sélection ») ; on ne les fusionne pas.
 - **Les compteurs** : `suggestion_shown`, `suggestion_clicked`,
   `suggestion_added`, source **`data`**, emplacement **`weekly_rhythm`** ou
   **`frequent`** — permis par les `CHECK` de
@@ -253,5 +274,4 @@ recueil régénéré par `pnpm copy:digest`.
   choisir une société, donc lire l'historique d'un client sous le droit
   `lfc_suggestions:read`, qui ne le donne pas aujourd'hui. Quel droit le
   permet est une décision de périmètre, pas prise.
-- Les chiffres du calculé (comme pour §6).
 - Aucune route publique, et c'est voulu jusqu'au lot R3.

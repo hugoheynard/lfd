@@ -12,10 +12,11 @@ import { z } from "zod";
  * geste × emplacement × source), aucun ne nomme un client. Une commande ne se
  * relie donc pas à un clic. L'estimation, jour par jour et article par
  * article : la quantité commandée ce jour-là, **plafonnée** par les ajouts
- * depuis les suggestions ; si plusieurs règles ont fait ajouter le même
- * article le même jour, le plafond se partage entre elles au prorata de leurs
- * ajouts. Le chiffre d'affaires vaut cette quantité au prix HT moyen payé
- * pour l'article ce jour-là.
+ * depuis les suggestions ; si plusieurs suggestions — règles du staff ET
+ * calculé — ont fait ajouter le même article le même jour, le plafond se
+ * partage entre elles au prorata de leurs ajouts (Hugo, 2026-10-18 : une
+ * pièce n'est jamais comptée deux fois). Le chiffre d'affaires vaut cette
+ * quantité au prix HT moyen payé pour l'article ce jour-là.
  *
  * - `GET /admin/suggestions/results?days=7|30|90` → `StaffSuggestionResultsView`
  *   (sous `lfc_suggestions:read` ; 30 jours par défaut)
@@ -56,6 +57,19 @@ export interface StaffSuggestionResultRow {
   readonly revenueEstimateCents: number;
 }
 
+/**
+ * Les genres du calculé que l'écran chiffre : « souvent pris avec » (R2) et
+ * « vos habituels » (R1, qui regroupe les emplacements `weekly_rhythm` et
+ * `frequent`). Une VALEUR de donnée, pas un libellé.
+ */
+export const COMPUTED_SUGGESTION_RESULT_KINDS = ["bought_with", "usuals"] as const;
+export type ComputedSuggestionResultKind = (typeof COMPUTED_SUGGESTION_RESULT_KINDS)[number];
+
+/** Les chiffres d'un genre du calculé — les mêmes que ceux d'une règle. */
+export interface ComputedSuggestionResultRow extends Omit<StaffSuggestionResultRow, "ruleId"> {
+  readonly kind: ComputedSuggestionResultKind;
+}
+
 export interface StaffSuggestionResultsView {
   readonly days: StaffSuggestionResultPeriod;
   /** Premier et dernier jour métier `AAAA-MM-JJ` de la période, compris. */
@@ -63,4 +77,6 @@ export interface StaffSuggestionResultsView {
   readonly to: string;
   /** Une ligne par règle connue, archivées comprises. */
   readonly rules: readonly StaffSuggestionResultRow[];
+  /** Une ligne par genre du calculé, dans l'ordre de `COMPUTED_SUGGESTION_RESULT_KINDS`. */
+  readonly computed: readonly ComputedSuggestionResultRow[];
 }

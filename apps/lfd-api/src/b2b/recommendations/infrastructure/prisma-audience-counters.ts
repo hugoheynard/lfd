@@ -11,6 +11,7 @@ import { PrismaService } from "../../../platform/database/prisma.service.js";
 import type { AudienceIncrement } from "../domain/audience-event-batch.js";
 import { AudienceCounterReader } from "../domain/ports/audience-counter.reader.js";
 import { AudienceCounterWriter } from "../domain/ports/audience-counter.writer.js";
+import { ComputedSuggestionCounterReader } from "../domain/ports/computed-suggestion-counter.reader.js";
 import { StaffSuggestionCounterReader } from "../domain/ports/staff-suggestion-counter.reader.js";
 
 /**
@@ -90,14 +91,41 @@ export class PrismaStaffSuggestionCounterReader extends StaffSuggestionCounterRe
     super();
   }
 
-  async between(from: string, to: string): Promise<readonly ProductAudienceCounterView[]> {
-    const rows = await this.prisma.$queryRaw<CounterRow[]>`
-      SELECT to_char("day", 'YYYY-MM-DD') AS "day", "sku", "event", "placement", "source", "count"
-      FROM "growth"."product_audience_counters"
-      WHERE "day" BETWEEN ${from}::date AND ${to}::date AND "source" = ${STAFF_SOURCE}
-      ORDER BY "day", "sku", "event", "placement"`;
-    return rows.flatMap(toView);
+  between(from: string, to: string): Promise<readonly ProductAudienceCounterView[]> {
+    return countersOfSource(this.prisma, from, to, STAFF_SOURCE);
   }
+}
+
+/** La source des gestes sur une suggestion calculée (`suggestions-calculees.md`). */
+const DATA_SOURCE: ProductAudienceSource = "data";
+
+/**
+ * Le lecteur des compteurs des suggestions CALCULÉES : la source `data`
+ * filtrée dans le `WHERE` (RS6, attribution partagée avec le staff).
+ */
+@Injectable()
+export class PrismaComputedSuggestionCounterReader extends ComputedSuggestionCounterReader {
+  constructor(private readonly prisma: PrismaService) {
+    super();
+  }
+
+  between(from: string, to: string): Promise<readonly ProductAudienceCounterView[]> {
+    return countersOfSource(this.prisma, from, to, DATA_SOURCE);
+  }
+}
+
+async function countersOfSource(
+  prisma: PrismaService,
+  from: string,
+  to: string,
+  source: ProductAudienceSource,
+): Promise<readonly ProductAudienceCounterView[]> {
+  const rows = await prisma.$queryRaw<CounterRow[]>`
+    SELECT to_char("day", 'YYYY-MM-DD') AS "day", "sku", "event", "placement", "source", "count"
+    FROM "growth"."product_audience_counters"
+    WHERE "day" BETWEEN ${from}::date AND ${to}::date AND "source" = ${source}
+    ORDER BY "day", "sku", "event", "placement"`;
+  return rows.flatMap(toView);
 }
 
 /** Les CHECK en base tiennent les énumérations ; une valeur inconnue ne se rend pas. */

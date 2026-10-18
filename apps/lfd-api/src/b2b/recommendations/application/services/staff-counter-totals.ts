@@ -4,7 +4,7 @@ import type {
   StaffSuggestionCountersView,
 } from "@lfd/contracts";
 
-import type { RuleDayAdds } from "../../domain/services/suggestion-attribution.js";
+import type { SuggestionDayAdds } from "../../domain/services/suggestion-attribution.js";
 
 /** Le geste compté → la colonne de l'écran. Les vues et ajouts directs n'en sont pas. */
 const COLUMN_OF: Partial<
@@ -20,7 +20,7 @@ export interface StaffCounterTally {
   /** Une ligne par règle, dans l'ordre reçu ; des zéros pour une règle jamais comptée. */
   readonly totals: readonly StaffSuggestionCountersView[];
   /** Les ajouts, jour par jour et article par article — la matière de l'attribution (RS6). */
-  readonly adds: readonly RuleDayAdds[];
+  readonly adds: readonly SuggestionDayAdds[];
 }
 
 /**
@@ -36,7 +36,7 @@ export function tallyStaffCounters(
   const totals = new Map(
     ruleIds.map((ruleId) => [ruleId.toLowerCase(), { ruleId, shown: 0, clicked: 0, added: 0 }]),
   );
-  const adds: RuleDayAdds[] = [];
+  const adds: SuggestionDayAdds[] = [];
   for (const row of rows) {
     const column = COLUMN_OF[row.event];
     const total = totals.get(row.placement);
@@ -45,7 +45,7 @@ export function tallyStaffCounters(
     }
     total[column] += row.count;
     if (column === "added") {
-      adds.push({ ruleId: total.ruleId, day: row.day, sku: row.sku, added: row.count });
+      adds.push({ claimant: total.ruleId, day: row.day, sku: row.sku, added: row.count });
     }
   }
   return { totals: [...totals.values()], adds };

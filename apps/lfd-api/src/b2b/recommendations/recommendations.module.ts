@@ -27,6 +27,7 @@ import { ListStaffSuggestionAlertsHandler } from "./application/queries/list-sta
 import { NotServedCauseReader } from "./domain/ports/not-served-cause.reader.js";
 import { CatalogNotServedCauseReader } from "./infrastructure/catalog-not-served-cause.reader.js";
 import { ListStaffSuggestionsHandler } from "./application/queries/list-staff-suggestions.handler.js";
+import { ComputedSuggestionCounterReader } from "./domain/ports/computed-suggestion-counter.reader.js";
 import { StaffSuggestionCounterReader } from "./domain/ports/staff-suggestion-counter.reader.js";
 import { StaffSuggestionRuleReader } from "./domain/ports/staff-suggestion-rule.reader.js";
 import { StaffSuggestionRuleRepository } from "./domain/ports/staff-suggestion-rule.repository.js";
@@ -80,6 +81,7 @@ import { CatalogAudienceSkuReader } from "./infrastructure/catalog-audience-sku.
 import {
   PrismaAudienceCounterReader,
   PrismaAudienceCounterWriter,
+  PrismaComputedSuggestionCounterReader,
   PrismaStaffSuggestionCounterReader,
 } from "./infrastructure/prisma-audience-counters.js";
 
@@ -177,6 +179,7 @@ import {
     ListStaffSuggestionAlertsHandler,
     { provide: NotServedCauseReader, useClass: CatalogNotServedCauseReader },
     { provide: StaffSuggestionCounterReader, useClass: PrismaStaffSuggestionCounterReader },
+    { provide: ComputedSuggestionCounterReader, useClass: PrismaComputedSuggestionCounterReader },
     { provide: CartFamilyReader, useClass: CatalogCartFamilyReader },
     { provide: SuggestedArticleReader, useClass: ShopSuggestedArticleReader },
     StaffSuggestionShowcase,

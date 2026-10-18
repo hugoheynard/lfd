@@ -330,9 +330,14 @@ jour métier × un article :
 
 1. le plafond est le plus petit de deux nombres : les ajouts depuis des
    suggestions ce jour-là, et la quantité commandée ce jour-là ;
-2. si plusieurs règles ont fait ajouter le même article le même jour, ce
-   plafond se **partage** au prorata de leurs ajouts (plus fort reste, entiers)
-   — une pièce n'est jamais comptée deux fois ;
+2. si plusieurs suggestions ont fait ajouter le même article le même jour,
+   ce plafond se **partage** au prorata de leurs ajouts (plus fort reste,
+   entiers) — une pièce n'est jamais comptée deux fois. **Depuis le
+   2026-10-18 (Hugo), le calculé entre dans ce partage** : « souvent pris
+   avec » et « vos habituels » y sont deux prétendants de plus, à côté des
+   règles (compteurs source `data`, `suggestions-calculees.md` §6). Les
+   chiffres d'une règle **baissent** quand le calculé a aussi fait ajouter
+   l'article ce jour-là ; c'est voulu ;
 3. le CA vaut cette quantité au **prix HT moyen payé ce jour-là** (total HT des
    lignes ÷ quantité), arrondi au centime par part.
 
@@ -367,7 +372,9 @@ sous `b2b_growth`.
 `lfc_suggestions:read`, entrée de menu dans `app.html`) :
 
 - **Chiffres** : la période (7 / 30 / 90 jours), l'aide « estimé », et par
-  règle les six chiffres du §8.2 ;
+  règle les six chiffres du §8.2 ; sous la liste des règles, les deux lignes
+  « Calculé : souvent pris avec » et « Calculé : vos habituels »
+  (`suggestion-computed-results/`), mêmes six chiffres ;
 - **Aperçu** (`suggestion-preview-card/`) : la carte du client et le sort de
   chaque règle, à l'un des trois emplacements ; chaque règle a un bouton
   « Ouvrir l'aperçu » ;

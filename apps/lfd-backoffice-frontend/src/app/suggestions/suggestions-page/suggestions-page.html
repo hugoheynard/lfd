@@ -76,6 +76,9 @@
           [pending]="pending()"
           (gesture)="onGesture($event)"
         />
+        @if (computedResults(); as rows) {
+          <app-suggestion-computed-results [rows]="rows" />
+        }
       }
     }
   }

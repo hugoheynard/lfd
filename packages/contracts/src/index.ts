@@ -2262,8 +2262,11 @@ export {
   type AudienceTopFamily,
 } from "./audiences.js";
 export {
+  COMPUTED_SUGGESTION_RESULT_KINDS,
   DEFAULT_STAFF_SUGGESTION_RESULT_PERIOD,
   STAFF_SUGGESTION_RESULT_PERIODS,
+  type ComputedSuggestionResultKind,
+  type ComputedSuggestionResultRow,
   staffSuggestionResultsQuerySchema,
   type StaffSuggestionResultPeriod,
   type StaffSuggestionResultRow,

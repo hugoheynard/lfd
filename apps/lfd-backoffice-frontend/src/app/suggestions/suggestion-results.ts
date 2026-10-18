@@ -1,6 +1,7 @@
 import { formatCents } from '@lfd/b2b-ui/order';
 import {
   STAFF_SUGGESTION_RESULT_PERIODS,
+  type ComputedSuggestionResultKind,
   type StaffSuggestionResultPeriod,
   type StaffSuggestionResultRow,
 } from '@lfd/contracts';
@@ -25,9 +26,16 @@ export const ESTIMATE_HELP =
   'Commandées et chiffre d’affaires sont estimés : la boutique compte les gestes sans savoir qui les fait, ' +
   'donc une commande ne se relie pas à un clic. Chaque jour, pour chaque article, on retient le plus petit ' +
   'de deux nombres : les ajouts au panier depuis la suggestion, et la quantité commandée ce jour-là ' +
-  '(commandes de la boutique, hors annulées) ; si plusieurs suggestions ont fait ajouter le même article, ' +
-  'ce nombre se partage entre elles. Le chiffre d’affaires vaut cette quantité au prix HT moyen payé ' +
+  '(commandes de la boutique, hors annulées) ; si plusieurs suggestions ont fait ajouter le même article — ' +
+  'règles de l’équipe comme suggestions calculées —, ce nombre se partage entre elles au prorata de leurs ' +
+  'ajouts, pour qu’une pièce ne soit jamais comptée deux fois. Le chiffre d’affaires vaut cette quantité au prix HT moyen payé ' +
   'ce jour-là. Un panier commandé le lendemain ne compte pas.';
+
+/** Le nom d'une ligne du calculé, sous les règles (RS6, Hugo, 2026-10-18). */
+export const COMPUTED_RESULT_LABELS: Readonly<Record<ComputedSuggestionResultKind, string>> = {
+  bought_with: 'Calculé : souvent pris avec',
+  usuals: 'Calculé : vos habituels',
+};
 
 /** Ajoutées ÷ affichées, « 12,5 % » ; un tiret sans affichage. */
 export function addRateLabel(row: Pick<StaffSuggestionResultRow, 'addRateBasisPoints'>): string {

@@ -6,7 +6,7 @@
 > | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 > | **R0** — socle                      | ✅ bâti : contexte `b2b/recommendations/`, filtre R4, compteurs d'audience anonymes (R5 bis)                                                                                                                    |
 > | **RS** — suggestions du staff       | 🟡 en cours : panier, fiche, accueil, après-ajout, aperçu, chiffres bâtis ([`suggestions-du-staff.md`](suggestions-du-staff.md)) ; la suite dans [`plan-suggestions-du-staff.md`](plan-suggestions-du-staff.md) |
-> | **R2** — « souvent pris avec »      | ✅ bâti le 2026-10-18 au panier ([`suggestions-calculees.md`](suggestions-calculees.md)) ; restent les chiffres du calculé à l'écran des résultats, la fiche et l'accueil                                       |
+> | **R2** — « souvent pris avec »      | ✅ bâti le 2026-10-18 au panier ([`suggestions-calculees.md`](suggestions-calculees.md)) ; chiffres du calculé bâtis (question tranchée le 2026-10-18 : dans le même partage) ; restent la fiche et l'accueil   |
 > | **A1** — tableau des audiences      | à faire ([`plan-audiences.md`](plan-audiences.md))                                                                                                                                                              |
 > | **R1** — « vos habituels » (pros)   | ✅ bâti le 2026-10-18 à l'accueil d'un pro ([`suggestions-calculees.md`](suggestions-calculees.md) §8) ; l'aperçu du staff ne le montre pas                                                                     |
 > | **R3** — « vos habituels » (public) | après l'avis du cabinet ([`historique-du-particulier.md`](historique-du-particulier.md))                                                                                                                        |
@@ -281,7 +281,9 @@ Dans l'ordre retenu le 2026-10-18 :
   client. C'est le point qui justifierait `vitruve` (cf. en-tête).
 - **Performance.** « Vos habituels » est borné par un index ; les paires
   croissent en carré du panier moyen. Mesurer avant de précalculer (R2). Le
-  front ne doit faire **qu'un** appel par écran (mémoire « le front multiplie »).
+  front ne doit faire **qu'un** appel par écran (mémoire « le front multiplie »)
+  — sauf l'accueil d'un pro, qui en garde deux, « Vos habituels » et « Notre
+  sélection » (Hugo, 2026-10-18 ; `suggestions-calculees.md` §8.3).
 - **Démarrage vide.** Pré-release, sans activité réelle (CLAUDE.md §0) : il n'y
   a pas d'historique. Les cartes seront **absentes**, pas fausses ; la mise en
   avant manuelle couvre l'amorçage. Un seuil (ex. 3 commandes, comme

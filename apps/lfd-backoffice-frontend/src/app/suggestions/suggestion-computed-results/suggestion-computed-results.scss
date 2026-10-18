@@ -1,0 +1,46 @@
+.section,
+.computed-rows,
+.computed-rows li {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.computed-rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.computed-rows li {
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-md);
+  border: 1px solid var(--fold-color-border-subtle);
+  border-radius: var(--fold-radius-md);
+}
+
+.computed-label {
+  font-weight: var(--fold-weight-medium);
+}
+
+.computed-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-lg);
+  margin: 0;
+}
+
+.computed-facts div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.computed-facts dt {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+}
+
+.computed-facts dd {
+  margin: 0;
+}
