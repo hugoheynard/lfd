@@ -190,3 +190,25 @@ français) ; la durée réelle d'un balayage sous le cron du Worker.
 6. **Les langues** : l'agence a-t-elle besoin de l'anglais et de l'italien des
    fiches ? (Le référentiel a des noms traduits ; la vue publique ne sert que
    le français.)
+
+## 5. Décisions de Hugo (2026-10-18), qui priment
+
+1. **Les cases** : `catalogue`, `operations`, `textes` **et** `incontournables`
+   (la mise en avant publique : sans elle, `isFeatured` ne sort pas).
+2. **Les pages éditoriales** (les pages composées de la boutique —
+   `apps/lfd-api/src/b2b/storefront/`, Gestion Boutique › Vitrine : blocs,
+   images et annonces placés à la main au-dessus des rayons) : réponse en
+   attente, après explication.
+3. **Un seul abonné, réglé à la main**, pour démarrer ; l'écran multi-abonnés
+   viendra ensuite.
+4. **Format : JSON.** L'agence accepte aussi XML ; on ne sert que du JSON tant
+   qu'elle n'en a pas besoin.
+5. **L'audience sort** (option a de B1) : elle est ajoutée à la vue publique,
+   que la boutique expose aussi.
+6. **Le prix sort tel qu'il est aujourd'hui**, promotions comprises (B2) ; il
+   n'y a pas de case `promotions`.
+7. **Les trois langues** (fr, en, it) : la vitrine sert les noms et les notes
+   dans les trois langues. À bâtir : la vue publique ne sert aujourd'hui que le
+   français ; il faut lire ce que le commerce reçoit du référentiel en langues
+   et, si les traductions ne descendent pas, les faire descendre (lot à part,
+   avant W).
