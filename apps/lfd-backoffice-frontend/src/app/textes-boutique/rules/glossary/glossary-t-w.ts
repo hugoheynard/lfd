@@ -48,8 +48,6 @@ export const GLOSSARY_T_W: Readonly<Record<string, string>> = {
   unknown: 'Introuvable',
   unset: 'Où et quand ? (non choisi)',
   update: 'Mettre à jour',
-  upsell: 'Suggestion — titre',
-  upsellLine: 'Suggestion — texte',
   urgenceCta: 'Urgence — bouton',
   urgencePitch: 'Urgence — accroche',
   urgenceTitle: 'Urgence — titre',
