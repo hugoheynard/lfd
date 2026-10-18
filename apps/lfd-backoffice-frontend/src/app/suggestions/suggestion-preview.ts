@@ -3,6 +3,7 @@ import type {
   StaffSuggestionChoicesView,
   StaffSuggestionOrder,
   StaffSuggestionPreviewItem,
+  StaffSuggestionPlacement,
   StaffSuggestionPreviewPayload,
   StaffSuggestionReader,
   StaffSuggestionRuleView,
@@ -38,9 +39,16 @@ export function dayAndMonth(day: string): string {
   return `${Number(date)} ${name}`;
 }
 
+/** Les titres par défaut de la boutique, en français (`shop.staffAdvice`, `alsoLike`, `ourPicks`). */
+const DEFAULT_CARD_TITLES: Readonly<Record<StaffSuggestionPlacement, string>> = {
+  cart: 'Notre conseil',
+  product: 'Vous aimerez aussi',
+  home: 'Notre sélection',
+};
+
 /** Le titre de la carte quand la règle n'a pas de phrase — celui de la boutique, selon l'emplacement. */
-export function defaultCardTitle(placement: 'cart' | 'product'): string {
-  return placement === 'cart' ? 'Notre conseil' : 'Vous aimerez aussi';
+export function defaultCardTitle(placement: StaffSuggestionPlacement): string {
+  return DEFAULT_CARD_TITLES[placement];
 }
 
 /** Le prix tel que la carte l'écrit : HT à un pro, TTC à un particulier, arrondi au centime comme le rayon. */
@@ -90,7 +98,7 @@ function triggerFalse(rule: StaffSuggestionRuleView, ctx: ReasonContext): string
 
 function outranked(owner: string, by: string | null, ctx: ReasonContext): string {
   if (by === owner) {
-    return 'Pas de place : la boutique ne montre qu’une suggestion à cet endroit';
+    return 'Pas de place : les places de cet emplacement sont déjà prises';
   }
   const how = ctx.order === 'priority' ? 'priorité' : 'plus récente';
   return `Battue par ${ruleName(by === null ? undefined : ctx.rules.get(by), ctx)} (${how})`;
@@ -137,7 +145,7 @@ export function previewReason(
 
 /** Ce que l'aperçu demande, côté écran : le payload sans sa forme discriminée. */
 export interface PreviewSetup {
-  readonly placement: 'cart' | 'product';
+  readonly placement: StaffSuggestionPlacement;
   readonly cart: readonly string[];
   readonly viewedSku: string | null;
   readonly audience: StaffSuggestionReader;
@@ -152,8 +160,8 @@ export function previewPayload(setup: PreviewSetup): StaffSuggestionPreviewPaylo
     day: setup.day,
     pickupAddressId: null,
   };
-  if (setup.placement === 'cart') {
-    return { placement: 'cart', ...common };
+  if (setup.placement !== 'product') {
+    return { placement: setup.placement, ...common };
   }
   return setup.viewedSku === null
     ? null
@@ -164,16 +172,13 @@ export function previewPayload(setup: PreviewSetup): StaffSuggestionPreviewPaylo
  * **L'aperçu ouvert depuis une règle** : son emplacement, sa clientèle, un
  * jour de sa période, et un déclencheur qui la rend vraie — l'article qui
  * déclenche, un article de la famille, ou la fiche d'un article qu'elle ne
- * suggère pas. `null` pour l'accueil, que l'aperçu ne montre pas encore.
+ * suggère pas. À l'accueil, seul « partout » vaut : un panier vide.
  */
 export function previewSetupOf(
   rule: StaffSuggestionRuleView,
   choices: StaffSuggestionChoicesView | null,
   today: string,
-): PreviewSetup | null {
-  if (rule.placement === 'home') {
-    return null;
-  }
+): PreviewSetup {
   const { kind, ref } = rule.trigger;
   const articles = choices?.articles ?? [];
   const inFamily = articles.find((article) => article.familyId === ref)?.sku;

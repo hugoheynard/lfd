@@ -2218,6 +2218,11 @@ export {
   type ProductSuggestionView,
 } from "./product-suggestions.js";
 export {
+  homeSuggestionsPayloadSchema,
+  type HomeSuggestionsPayload,
+  type HomeSuggestionView,
+} from "./home-suggestions.js";
+export {
   STAFF_SUGGESTION_REFUSALS,
   staffSuggestionPreviewPayloadSchema,
   type StaffSuggestionPreviewItem,

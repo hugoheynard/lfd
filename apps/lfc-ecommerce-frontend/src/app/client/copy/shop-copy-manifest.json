@@ -1448,6 +1448,20 @@
           "variables": []
         },
         {
+          "key": "shop.ourPicks",
+          "fr": "Notre sélection",
+          "en": "Our picks",
+          "it": "La nostra selezione",
+          "variables": []
+        },
+        {
+          "key": "shop.addedToCart",
+          "fr": "Ajouté !",
+          "en": "Added!",
+          "it": "Aggiunto!",
+          "variables": []
+        },
+        {
           "key": "shop.operationOpensOn",
           "fr": "Ouvre le {date}",
           "en": "Opens {date}",

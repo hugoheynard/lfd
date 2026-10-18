@@ -1,6 +1,6 @@
 /**
  * E2E des **suggestions décidées par le staff** (RS1 et RS3 de
- * `documentation/recommandation-produit/plan-suggestions-du-staff.md`).
+ * `documentation/recommandation-produit/suggestions-du-staff.md`).
  *
  * Ce qu'aucun test unitaire ne prouve : la ligne écrite et relue (tableau de
  * SKU, jours en `DATE`, phrase en trois colonnes), les CHECK, le fait de

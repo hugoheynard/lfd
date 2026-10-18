@@ -39,7 +39,7 @@ interface RuleState {
 
 /**
  * **Une suggestion décidée par le staff** — « quand le client fait ceci,
- * montre-lui cela » (`documentation/recommandation-produit/plan-suggestions-du-staff.md`, §2).
+ * montre-lui cela » (`documentation/recommandation-produit/suggestions-du-staff.md`, §2).
  *
  * Elle tient ce qu'une règle peut refuser seule : un déclencheur qui nomme ce
  * qu'il doit nommer, un emplacement où il peut être vrai, 1 à 3 articles
@@ -129,7 +129,7 @@ export class StaffSuggestionRule {
     this.state = { ...this.state, archivedAt: stamp.at, lastWrite: stamp };
   }
 
-  /** L'emplacement d'un compteur d'audience `staff` de cette règle : son id en minuscules (§6). */
+  /** L'emplacement d'un compteur d'audience `staff` de cette règle : son id en minuscules (`suggestions-du-staff.md` §8.1). */
   get audienceKey(): string {
     return this.id.toLowerCase();
   }

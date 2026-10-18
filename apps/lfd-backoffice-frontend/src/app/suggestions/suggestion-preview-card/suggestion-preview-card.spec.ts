@@ -96,4 +96,31 @@ describe('SuggestionPreviewCard', () => {
     expect(text).toContain('Affichée');
     expect(text).toContain('Finie le 18 octobre');
   });
+
+  it('à l’accueil : la demande porte « home », la carte prend « Notre sélection »', async () => {
+    const api = new FakeApi();
+    TestBed.configureTestingModule({
+      imports: [SuggestionPreviewCard],
+      providers: [{ provide: StaffSuggestionsService, useValue: api }],
+    });
+    const fixture = TestBed.createComponent(SuggestionPreviewCard);
+    fixture.componentRef.setInput('rules', [SHOWN, ENDED]);
+    fixture.componentRef.setInput('choices', CHOICES);
+    const root = fixture.nativeElement as HTMLElement;
+    root.scrollIntoView = () => undefined;
+    fixture.detectChanges();
+
+    await fixture.componentInstance.openFor({
+      placement: 'home',
+      cart: [],
+      viewedSku: null,
+      audience: 'public',
+      day: '2026-10-20',
+    });
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(api.asked.map((payload) => payload.placement)).toEqual(['home']);
+    expect((root.textContent ?? '').replace(/\s+/gu, ' ')).toContain('Notre sélection');
+  });
 });

@@ -1,6 +1,6 @@
 /**
  * E2E de l'**aperçu des suggestions décidées** (RS5 de
- * `documentation/recommandation-produit/plan-suggestions-du-staff.md`).
+ * `documentation/recommandation-produit/suggestions-du-staff.md`).
  *
  * Ce qu'aucun test unitaire ne prouve : la règle écrite par l'écran, relue
  * par l'aperçu à travers le vrai catalogue servi et la vraie vitrine, au même

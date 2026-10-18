@@ -6,7 +6,7 @@ import type { StaffSuggestionRuleSnapshot } from "../entities/staff-suggestion-r
 /**
  * **Les faits des suggestions décidées** — un par geste
  * (`staff_suggestion.*` de `@lfd/contracts/journal-facts`, RS1 du plan
- * `documentation/recommandation-produit/plan-suggestions-du-staff.md`).
+ * `documentation/recommandation-produit/suggestions-du-staff.md`).
  *
  * Le sujet est la règle par son id ; `subjectLabel` sa phrase française du
  * moment, sinon les articles qu'elle montre. Les charges disent les jours en

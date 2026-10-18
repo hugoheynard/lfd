@@ -253,6 +253,8 @@ export const IT: ClientCopy = {
       'Carrello vuoto. L’infornata del mattino va via in fretta — lo sci al pralinato non arriva mai al pomeriggio.',
     staffAdvice: 'Il nostro consiglio',
     alsoLike: 'Potrebbe piacerti anche',
+    ourPicks: 'La nostra selezione',
+    addedToCart: 'Aggiunto!',
     operationOpensOn: 'Apre il {date}',
     operationNotOpen: 'Non ancora aperto',
     operationClosed: 'Ordini chiusi',

@@ -49,11 +49,14 @@ import { ListStaffSuggestionChoicesQuery } from "../application/queries/list-sta
 import { ListStaffSuggestionCountersQuery } from "../application/queries/list-staff-suggestion-counters.query.js";
 import { ListStaffSuggestionResultsQuery } from "../application/queries/list-staff-suggestion-results.query.js";
 import { ListStaffSuggestionsQuery } from "../application/queries/list-staff-suggestions.query.js";
-import { PreviewStaffSuggestionsQuery } from "../application/queries/preview-staff-suggestions.query.js";
+import {
+  PreviewStaffSuggestionsQuery,
+  type PreviewPlace,
+} from "../application/queries/preview-staff-suggestions.query.js";
 
 /**
  * **Les suggestions décidées par le staff** — `/admin/suggestions`
- * (`documentation/recommandation-produit/plan-suggestions-du-staff.md`, RS1
+ * (`documentation/recommandation-produit/suggestions-du-staff.md`, RS1
  * et RS3). Sous `lfc_suggestions`, un droit à lui ; l'action se déduit du
  * verbe. Pas de `DELETE` : on archive.
  *
@@ -148,10 +151,10 @@ export class AdminStaffSuggestionsController {
   preview(
     @Body(new ZodBody(staffSuggestionPreviewPayloadSchema)) body: StaffSuggestionPreviewPayload,
   ): Promise<StaffSuggestionPreviewView> {
-    const place =
-      body.placement === "cart"
-        ? ({ placement: "cart" } as const)
-        : ({ placement: "product", viewedSku: body.viewedSku } as const);
+    const place: PreviewPlace =
+      body.placement === "product"
+        ? { placement: "product", viewedSku: body.viewedSku }
+        : { placement: body.placement };
     return this.queries.execute<PreviewStaffSuggestionsQuery, StaffSuggestionPreviewView>(
       new PreviewStaffSuggestionsQuery(
         place,

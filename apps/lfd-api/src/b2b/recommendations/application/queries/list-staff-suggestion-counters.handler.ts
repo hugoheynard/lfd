@@ -10,7 +10,7 @@ import { ListStaffSuggestionCountersQuery } from "./list-staff-suggestion-counte
 /**
  * **Les chiffres par règle** (RS3) : affichée, cliquée, ajoutée — relus dans
  * les compteurs d'audience anonymes, source `staff`, dont l'emplacement est
- * l'id de la règle en minuscules (§6 du plan).
+ * l'id de la règle en minuscules (`suggestions-du-staff.md` §8.1).
  *
  * Une règle sans compteur rend des zéros : c'est ce que la boutique a compté,
  * pas une estimation. Les résultats estimés (commandées, chiffre d'affaires)

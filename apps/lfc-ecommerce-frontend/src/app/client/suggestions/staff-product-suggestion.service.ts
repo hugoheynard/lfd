@@ -26,7 +26,7 @@ interface Opening {
 
 /**
  * **La suggestion du staff sur la fiche d'un article** (RS2, fiche, de
- * `documentation/recommandation-produit/plan-suggestions-du-staff.md`).
+ * `documentation/recommandation-produit/suggestions-du-staff.md`).
  *
  * Une requête par ouverture de fiche — le panier et le jour visé sont lus au
  * moment où elle part, pas suivis ; rien en SSR ; la requête vit dans un

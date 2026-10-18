@@ -5,7 +5,7 @@ import type { CartSuggestionView } from "./cart-suggestions.js";
 /**
  * ── Les suggestions de la FICHE d'un article ────────────────────────────────
  *
- * RS2, fiche (`documentation/recommandation-produit/plan-suggestions-du-staff.md`).
+ * RS2, fiche (`documentation/recommandation-produit/suggestions-du-staff.md`).
  * Forme seule, comme le panier (`cart-suggestions.ts`) : le déclencheur, le
  * filtre et la place sont tenus par le commerce.
  *

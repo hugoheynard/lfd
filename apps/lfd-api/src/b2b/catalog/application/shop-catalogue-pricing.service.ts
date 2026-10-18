@@ -97,7 +97,7 @@ export class ShopCataloguePricing {
 
   /**
    * La vitrine d'une audience **sans société** — pour l'aperçu des
-   * suggestions du staff (RS5, `plan-suggestions-du-staff.md`), qui n'a pas de
+   * suggestions du staff (RS5, `suggestions-du-staff.md`), qui n'a pas de
    * client. À `public`, c'est exactement `priced(null)`. À `pro`, le rayon des
    * pros au prix sans rien de négocié : ni mercuriale, ni tarif de canal — ce
    * qu'aucun pro réel ne voit tout à fait, et que l'aperçu dit. La boutique ne

@@ -1,7 +1,9 @@
 import { declareExperimentalWebMcpTool } from '@angular/core';
 import {
+  STAFF_SUGGESTION_PLACEMENTS,
   STAFF_SUGGESTION_READERS,
   type StaffSuggestionChoicesView,
+  type StaffSuggestionPlacement,
   type StaffSuggestionPreviewView,
   type StaffSuggestionReader,
   type StaffSuggestionRuleView,
@@ -20,7 +22,7 @@ import { said } from './agent-tool-text';
 
 /** Ce que l'outil reçoit — les entrées de l'aperçu de l'écran. */
 interface PreviewArgs {
-  readonly placement: 'cart' | 'product';
+  readonly placement: StaffSuggestionPlacement;
   readonly cartSkus?: readonly string[] | undefined;
   readonly viewedSku?: string | undefined;
   readonly audience: StaffSuggestionReader;
@@ -40,11 +42,11 @@ export function declareSuggestionPreviewTool(
   void declareExperimentalWebMcpTool({
     name: 'suggestion_preview',
     description:
-      'Aperçu des suggestions décidées, comme le bloc « Aperçu » de l’écran : pour un emplacement (`placement` : cart, avec `cartSkus` les SKU au panier ; ou product, avec `viewedSku` l’article de la fiche et `cartSkus` facultatif), une clientèle (`audience` : public ou pro) et un jour (`day` AAAA-MM-JJ), rend la carte EXACTE que verrait le client (titre, articles, prix HT pour pro, TTC pour particulier ; aux pros, la vitrine sans tarif de société), puis CHAQUE règle non archivée avec « Affichée » ou la raison (finie, pas commencée, coupée, clientèle, emplacement, déclencheur faux, article non servi / non commandable ce jour-là / déjà au panier / article de la fiche, battue par une autre). Lecture seule.',
+      'Aperçu des suggestions décidées, comme le bloc « Aperçu » de l’écran : pour un emplacement (`placement` : cart, avec `cartSkus` les SKU au panier ; ou product, avec `viewedSku` l’article de la fiche et `cartSkus` facultatif ; ou home, l’accueil, où seul « partout » vaut et `cartSkus` écarte ce qui est déjà au panier), une clientèle (`audience` : public ou pro) et un jour (`day` AAAA-MM-JJ), rend la carte EXACTE que verrait le client (titre, articles, prix HT pour pro, TTC pour particulier ; aux pros, la vitrine sans tarif de société), puis CHAQUE règle non archivée avec « Affichée » ou la raison (finie, pas commencée, coupée, clientèle, emplacement, déclencheur faux, article non servi / non commandable ce jour-là / déjà au panier / article de la fiche, battue par une autre). Lecture seule.',
     inputSchema: {
       type: 'object',
       properties: {
-        placement: { type: 'string', enum: ['cart', 'product'] },
+        placement: { type: 'string', enum: STAFF_SUGGESTION_PLACEMENTS },
         cartSkus: { type: 'array', items: { type: 'string' } },
         viewedSku: { type: 'string' },
         audience: { type: 'string', enum: STAFF_SUGGESTION_READERS },

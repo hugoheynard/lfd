@@ -1,6 +1,6 @@
 /**
  * E2E des **suggestions de la fiche** (RS2, fiche, de
- * `documentation/recommandation-produit/plan-suggestions-du-staff.md`).
+ * `documentation/recommandation-produit/suggestions-du-staff.md`).
  *
  * Ce qu'aucun test unitaire ne prouve : la règle « sur la fiche de X → Y »
  * écrite par l'écran du staff, relue par la route publique de la boutique, et

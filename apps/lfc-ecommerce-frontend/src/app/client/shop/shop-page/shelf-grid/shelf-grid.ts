@@ -4,6 +4,7 @@ import type { PublicStorefrontPageView, ShopItemView } from '@lfd/contracts';
 import { GRID_COLUMNS, MOBILE_COLUMNS } from '@lfd/storefront-layout';
 
 import { ProductAudience } from '../../../audience/product-audience.service';
+import { CartEntries } from '../../../cart/cart-entries';
 import { ClientCart } from '../../../cart/client-cart.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
 import { ProductTile } from '../../product-tile/product-tile';
@@ -69,6 +70,7 @@ export class ShelfGrid {
   protected readonly cart = inject(ClientCart);
   private readonly catalogue = inject(ShopCatalogue);
   private readonly audience = inject(ProductAudience);
+  private readonly entries = inject(CartEntries);
 
   /** Ce que le catalogue sert — un objet peut montrer un article d'un autre rayon. */
   private readonly served = computed(() => new Set(this.catalogue.items().map((item) => item.sku)));
@@ -102,12 +104,17 @@ export class ShelfGrid {
   /**
    * Ajoute une pièce, et compte l'ENTRÉE au panier (R5 bis) — le passage de
    * zéro à une pièce, pas chaque « + » : c'est ce que mesure un taux d'ajout.
+   * La même entrée s'annonce à l'après-ajout (`CartEntries`, RS7).
    */
   protected addPiece(sku: string): void {
-    if (this.cart.quantityOf(sku) === 0) {
+    const entering = this.cart.quantityOf(sku) === 0;
+    if (entering) {
       this.audience.record(sku, 'added_to_cart');
     }
     this.cart.add(sku);
+    if (entering && this.cart.quantityOf(sku) > 0) {
+      this.entries.entered(sku);
+    }
   }
 
   constructor() {

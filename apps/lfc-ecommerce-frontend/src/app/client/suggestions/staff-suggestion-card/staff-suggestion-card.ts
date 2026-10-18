@@ -3,6 +3,7 @@ import type { CartSuggestionView } from '@lfd/contracts';
 import { FoldIconComponent } from 'fold-ng';
 
 import { ProductAudience } from '../../audience/product-audience.service';
+import { CartEntries } from '../../cart/cart-entries';
 import { ClientCart } from '../../cart/client-cart.service';
 import { ClientLocale } from '../../client-locale.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
@@ -39,6 +40,7 @@ export class StaffSuggestionCard {
   private readonly basis = inject(ShopPriceBasis);
   private readonly cart = inject(ClientCart);
   private readonly audience = inject(ProductAudience);
+  private readonly entries = inject(CartEntries);
 
   protected readonly card = computed(() => {
     const view = this.view();
@@ -55,9 +57,13 @@ export class StaffSuggestionCard {
   protected take(): void {
     const view = this.view();
     this.taken.emit(view);
-    if (this.cart.quantityOf(view.sku) === 0) {
+    const entering = this.cart.quantityOf(view.sku) === 0;
+    if (entering) {
       this.audience.record(view.sku, 'added_to_cart');
     }
     this.cart.add(view.sku);
+    if (entering && this.cart.quantityOf(view.sku) > 0) {
+      this.entries.entered(view.sku);
+    }
   }
 }

@@ -77,7 +77,7 @@ export class PrismaAudienceCounterReader extends AudienceCounterReader {
   }
 }
 
-/** La source des gestes sur une suggestion décidée (§6 du plan). */
+/** La source des gestes sur une suggestion décidée (`suggestions-du-staff.md` §8.1). */
 const STAFF_SOURCE: ProductAudienceSource = "staff";
 
 /**

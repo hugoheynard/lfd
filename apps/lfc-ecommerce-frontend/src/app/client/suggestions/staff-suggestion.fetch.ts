@@ -2,6 +2,7 @@ import type { HttpClient } from '@angular/common/http';
 import type {
   CartSuggestionsPayload,
   CartSuggestionView,
+  HomeSuggestionsPayload,
   ProductSuggestionsPayload,
 } from '@lfd/contracts';
 import { firstValueFrom, type Observable } from 'rxjs';
@@ -13,17 +14,17 @@ import { AUTH_CONFIG } from '../../auth/auth.config';
 interface SuggestionAsks {
   readonly cart: CartSuggestionsPayload;
   readonly product: ProductSuggestionsPayload;
+  readonly home: HomeSuggestionsPayload;
 }
 
 /**
- * **La requête des suggestions du staff** (panier, fiche), dans un morceau
+ * **La requête des suggestions du staff** (panier, fiche, accueil), dans un morceau
  * chargé à la demande : le paquet initial de la boutique est près de son
- * plafond, et rien de ceci ne sert avant qu'un panier ou une fiche s'ouvre.
+ * plafond, et rien de ceci ne sert avant qu'un panier, une fiche ou l'accueil s'ouvre.
  *
  * Reconnu (`token` fourni), la route murée — l'espace part dans l'en-tête que
  * pose `workspaceInterceptor`, comme pour la vitrine et le devis ; sinon la
- * route publique, lecteur particulier. Le panier et la fiche rendent la même
- * vue.
+ * route publique, lecteur particulier. Les trois rendent la même vue.
  */
 export function fetchStaffSuggestions<P extends keyof SuggestionAsks>(
   http: HttpClient,

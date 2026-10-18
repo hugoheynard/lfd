@@ -48,6 +48,9 @@ import { MyShopCartSuggestionsController } from "./http/my-shop-cart-suggestions
 import { ShopCartSuggestionsController } from "./http/shop-cart-suggestions.controller.js";
 import { MyShopProductSuggestionsController } from "./http/my-shop-product-suggestions.controller.js";
 import { ShopProductSuggestionsController } from "./http/shop-product-suggestions.controller.js";
+import { MyShopHomeSuggestionsController } from "./http/my-shop-home-suggestions.controller.js";
+import { ShopHomeSuggestionsController } from "./http/shop-home-suggestions.controller.js";
+import { ReadHomeSuggestionsHandler } from "./application/queries/read-home-suggestions.handler.js";
 import { PreviewStaffSuggestionsHandler } from "./application/queries/preview-staff-suggestions.handler.js";
 import { ReadProductSuggestionsHandler } from "./application/queries/read-product-suggestions.handler.js";
 import { StaffSuggestionShowcase } from "./application/services/staff-suggestion-showcase.js";
@@ -72,21 +75,23 @@ import {
  *
  * Lit le catalogue servi (`CatalogModule`) et l'heure limite du commerce
  * (`OrderCutoffsModule`) par leurs ports. Écrit seul la table
- * `growth.product_audience_counters`. N'exporte rien pour l'instant : les
- * queries de suggestion (R1, R2) vivront ici et emploieront `RecommendationFilter`.
+ * `growth.product_audience_counters`. N'exporte rien : le calculé (R1, R2),
+ * quand il existera, vivra ici et emploiera `RecommendationFilter` (vérifié
+ * le 2026-10-18 : `exports` absent du module).
  *
- * RS1 et RS3 (`plan-suggestions-du-staff.md`, 2026-10-18) : les suggestions
- * DÉCIDÉES par le staff — l'agrégat `StaffSuggestionRule`, le réglage de
+ * Les suggestions DÉCIDÉES par le staff
+ * (`documentation/recommandation-produit/suggestions-du-staff.md`) — l'agrégat `StaffSuggestionRule`, le réglage de
  * l'ordre, les règles applicables et leurs chiffres, sous `lfc_suggestions`.
  * Elles écrivent `staff_suggestion_rules` et `staff_suggestion_order_settings`.
  *
  * RS2, panier : `/shop/suggestions/cart` (et `/mine`) rend la suggestion
  * décidée d'un panier, au prix de la vitrine (`ShopCataloguePricing`) ; RS2,
- * fiche : `/shop/suggestions/product` (et `/mine`) celle de la fiche ouverte.
- * Les deux passent par `StaffSuggestionShowcase`.
+ * fiche : `/shop/suggestions/product` (et `/mine`) celle de la fiche ouverte ;
+ * RS7, accueil : `/shop/suggestions/home` (et `/mine`), « partout » seulement,
+ * deux places. Les trois passent par `StaffSuggestionShowcase`.
  *
  * RS5 : `POST /admin/suggestions/preview` déroule la même vitrine pas à pas,
- * pour une clientèle et un jour choisis, et dit pourquoi chaque règle
+ * à l'un des trois emplacements, pour une clientèle et un jour choisis, et dit pourquoi chaque règle
  * s'affiche ou non.
  *
  * RS6 : `GET /admin/suggestions/results` rend, par règle, les chiffres
@@ -105,6 +110,8 @@ import {
     MyShopCartSuggestionsController,
     ShopProductSuggestionsController,
     MyShopProductSuggestionsController,
+    ShopHomeSuggestionsController,
+    MyShopHomeSuggestionsController,
   ],
   providers: [
     RecordProductAudienceHandler,
@@ -137,6 +144,7 @@ import {
     StaffSuggestionShowcase,
     ReadCartSuggestionsHandler,
     ReadProductSuggestionsHandler,
+    ReadHomeSuggestionsHandler,
     PreviewStaffSuggestionsHandler,
   ],
 })

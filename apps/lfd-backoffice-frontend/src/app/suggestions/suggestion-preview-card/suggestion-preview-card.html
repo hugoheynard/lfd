@@ -24,11 +24,19 @@
       <fold-date label="Jour" [(value)]="day" required />
     </div>
 
-    @if (placement() === 'cart') {
+    @if (placement() !== 'product') {
       <div class="pick">
         <p class="pick-title">Dans le panier</p>
+        @if (placement() === 'home') {
+          <p class="muted">
+            À l’accueil, seules les suggestions « partout » paraissent ; le panier écarte ce qu’il
+            contient déjà.
+          </p>
+        }
         @if (cartItems().length === 0) {
-          <p class="muted">Panier vide : seules les suggestions « partout » peuvent paraître.</p>
+          @if (placement() === 'cart') {
+            <p class="muted">Panier vide : seules les suggestions « partout » peuvent paraître.</p>
+          }
         } @else {
           <ul class="cart">
             @for (item of cartItems(); track item.sku) {

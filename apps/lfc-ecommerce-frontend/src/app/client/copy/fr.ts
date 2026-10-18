@@ -248,6 +248,8 @@ export const FR: ClientCopy = {
       'Panier vide. La fournée du matin part vite — le ski praliné ne fait jamais l’après-midi.',
     staffAdvice: 'Notre conseil',
     alsoLike: 'Vous aimerez aussi',
+    ourPicks: 'Notre sélection',
+    addedToCart: 'Ajouté !',
     operationOpensOn: 'Ouvre le {date}',
     operationNotOpen: 'Pas encore ouvert',
     operationClosed: 'Commandes closes',

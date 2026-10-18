@@ -2,15 +2,15 @@
 
 > **Où on en est (2026-10-18)**
 >
-> | Lot                                 | État                                                                                                                                                                                              |
-> | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-> | **R0** — socle                      | ✅ bâti : contexte `b2b/recommendations/`, filtre R4, compteurs d'audience anonymes (R5 bis)                                                                                                      |
-> | **RS** — suggestions du staff       | 🟡 en cours : panier, fiche, aperçu, chiffres bâtis ([`suggestions-du-staff.md`](suggestions-du-staff.md)) ; accueil et suite dans [`plan-suggestions-du-staff.md`](plan-suggestions-du-staff.md) |
-> | **R2** — « souvent pris avec »      | à faire, après RS                                                                                                                                                                                 |
-> | **A1** — tableau des audiences      | à faire ([`plan-audiences.md`](plan-audiences.md))                                                                                                                                                |
-> | **R1** — « vos habituels » (pros)   | à faire                                                                                                                                                                                           |
-> | **R3** — « vos habituels » (public) | après l'avis du cabinet ([`historique-du-particulier.md`](historique-du-particulier.md))                                                                                                          |
-> | **R4**, **R5** (lots)               | plus tard                                                                                                                                                                                         |
+> | Lot                                 | État                                                                                                                                                                                                            |
+> | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+> | **R0** — socle                      | ✅ bâti : contexte `b2b/recommendations/`, filtre R4, compteurs d'audience anonymes (R5 bis)                                                                                                                    |
+> | **RS** — suggestions du staff       | 🟡 en cours : panier, fiche, accueil, après-ajout, aperçu, chiffres bâtis ([`suggestions-du-staff.md`](suggestions-du-staff.md)) ; la suite dans [`plan-suggestions-du-staff.md`](plan-suggestions-du-staff.md) |
+> | **R2** — « souvent pris avec »      | à faire, après RS                                                                                                                                                                                               |
+> | **A1** — tableau des audiences      | à faire ([`plan-audiences.md`](plan-audiences.md))                                                                                                                                                              |
+> | **R1** — « vos habituels » (pros)   | à faire                                                                                                                                                                                                         |
+> | **R3** — « vos habituels » (public) | après l'avis du cabinet ([`historique-du-particulier.md`](historique-du-particulier.md))                                                                                                                        |
+> | **R4**, **R5** (lots)               | plus tard                                                                                                                                                                                                       |
 >
 > Vue d'ensemble du dossier : [`README.md`](README.md).
 

@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1337 textes
+## Sommaire — 1339 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -18,7 +18,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Accueil — la carte d'événement](#espace-event) | `event` | 5 |
 | [Connexion et création de compte](#espace-signup) | `signup` | 24 |
 | [Commander — l'écran d'entrée de la commande](#espace-commande) | `commande` | 39 |
-| [Rayon / boutique](#espace-shop) | `shop` | 42 |
+| [Rayon / boutique](#espace-shop) | `shop` | 44 |
 | [Rayon — la fiche produit](#espace-product) | `product` | 12 |
 | [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 23 |
 | [Choix du lieu — la maison](#espace-housepicker) | `housePicker` | 8 |
@@ -46,7 +46,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
-| **Total** | | **1337** |
+| **Total** | | **1339** |
 
 ## Le parcours de commande
 
@@ -286,7 +286,7 @@ Source : `fr.ts · en.ts · it.ts` · 39 textes.
 
 ### Rayon / boutique — `shop`
 
-Source : `fr.ts · en.ts · it.ts` · 42 textes.
+Source : `fr.ts · en.ts · it.ts` · 44 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -321,6 +321,8 @@ Source : `fr.ts · en.ts · it.ts` · 42 textes.
 | `shop.cartEmpty` | Panier vide. La fournée du matin part vite — le ski praliné ne fait jamais l’après-midi. | Empty basket. The morning batch goes fast — the praline ski never sees the afternoon. | Carrello vuoto. L’infornata del mattino va via in fretta — lo sci al pralinato non arriva mai al pomeriggio. |  |
 | `shop.staffAdvice` | Notre conseil | Our advice | Il nostro consiglio |  |
 | `shop.alsoLike` | Vous aimerez aussi | You may also like | Potrebbe piacerti anche |  |
+| `shop.ourPicks` | Notre sélection | Our picks | La nostra selezione |  |
+| `shop.addedToCart` | Ajouté ! | Added! | Aggiunto! |  |
 | `shop.operationOpensOn` | Ouvre le {date} | Opens {date} | Apre il {date} | `{date}` |
 | `shop.operationNotOpen` | Pas encore ouvert | Not open yet | Non ancora aperto |  |
 | `shop.operationClosed` | Commandes closes | Orders closed | Ordini chiusi |  |

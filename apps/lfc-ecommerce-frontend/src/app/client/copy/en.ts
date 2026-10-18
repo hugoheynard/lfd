@@ -250,6 +250,8 @@ export const EN: ClientCopy = {
       'Empty basket. The morning batch goes fast — the praline ski never sees the afternoon.',
     staffAdvice: 'Our advice',
     alsoLike: 'You may also like',
+    ourPicks: 'Our picks',
+    addedToCart: 'Added!',
     operationOpensOn: 'Opens {date}',
     operationNotOpen: 'Not open yet',
     operationClosed: 'Orders closed',

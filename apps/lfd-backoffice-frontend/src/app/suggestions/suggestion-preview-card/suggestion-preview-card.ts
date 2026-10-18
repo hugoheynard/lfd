@@ -10,6 +10,7 @@ import {
 import type {
   StaffSuggestionChoicesView,
   StaffSuggestionOrder,
+  StaffSuggestionPlacement,
   StaffSuggestionPreviewView,
   StaffSuggestionReader,
   StaffSuggestionRuleView,
@@ -43,6 +44,7 @@ import {
 const PLACEMENT_OPTIONS: readonly FoldViewToggleOption[] = [
   { value: 'cart', label: 'Au panier' },
   { value: 'product', label: 'Sur une fiche' },
+  { value: 'home', label: 'À l’accueil' },
 ];
 
 const AUDIENCE_OPTIONS: readonly FoldViewToggleOption[] = [
@@ -51,7 +53,8 @@ const AUDIENCE_OPTIONS: readonly FoldViewToggleOption[] = [
 ];
 
 /**
- * **L'aperçu** (RS5, `plan-suggestions-du-staff.md` §9) : un emplacement,
+ * **L'aperçu** (RS5, `suggestions-du-staff.md` §7) : un emplacement — panier,
+ * fiche ou accueil (RS7) —,
  * une clientèle, un jour → la carte que verrait le client, puis chaque règle
  * avec « affichée » ou la raison pour laquelle elle ne l'est pas.
  *
@@ -86,7 +89,7 @@ export class SuggestionPreviewCard {
   protected readonly placementOptions = PLACEMENT_OPTIONS;
   protected readonly audienceOptions = AUDIENCE_OPTIONS;
 
-  protected readonly placement = signal<'cart' | 'product'>('cart');
+  protected readonly placement = signal<StaffSuggestionPlacement>('cart');
   protected readonly audience = signal<StaffSuggestionReader>('public');
   protected readonly day = signal(parisToday());
   protected readonly cart = signal<readonly string[]>([]);
@@ -110,7 +113,7 @@ export class SuggestionPreviewCard {
     this.cart().map((sku) => ({ sku, name: this.nameOf(sku) })),
   );
   protected readonly canPreview = computed(
-    () => this.day() !== '' && (this.placement() === 'cart' || this.viewedSku() !== null),
+    () => this.day() !== '' && (this.placement() !== 'product' || this.viewedSku() !== null),
   );
   private readonly byId = computed(() => new Map(this.rules().map((rule) => [rule.id, rule])));
   private readonly context = computed<ReasonContext>(() => ({
@@ -179,7 +182,7 @@ export class SuggestionPreviewCard {
   }
 
   protected choosePlacement(value: string): void {
-    if (value === 'cart' || value === 'product') {
+    if (value === 'cart' || value === 'product' || value === 'home') {
       this.placement.set(value);
       this.result.set(null);
     }

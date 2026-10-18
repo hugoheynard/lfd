@@ -18,7 +18,7 @@ import { B2B_API_BASE } from '../api/api-config';
 
 /**
  * **Les suggestions décidées par le staff** — `/admin/suggestions`
- * (`documentation/recommandation-produit/plan-suggestions-du-staff.md`, RS1
+ * (`documentation/recommandation-produit/suggestions-du-staff.md`, RS1
  * RS3 et RS6), sous `lfc_suggestions`. Les écritures rendent l'id ; l'écran relit.
  */
 @Injectable({ providedIn: 'root' })

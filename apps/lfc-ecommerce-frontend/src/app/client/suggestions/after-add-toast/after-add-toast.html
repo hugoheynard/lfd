@@ -1,0 +1,16 @@
+@if (offer.current(); as view) {
+  <fold-toast
+    class="after-add"
+    variant="success"
+    dismissible
+    [duration]="duration"
+    (dismiss)="offer.dismiss()"
+  >
+    <span class="added">{{ t().shop.addedToCart }}</span>
+    <app-staff-suggestion-card
+      [view]="view"
+      [fallbackTitle]="t().shop.staffAdvice"
+      (taken)="offer.taken($event)"
+    />
+  </fold-toast>
+}

@@ -209,6 +209,11 @@
 
   <router-outlet />
 
+  <!-- L'APRÈS-AJOUT (RS7) : « Ajouté ! » et la suggestion du panier, quand
+       un article entre au panier. L'hôte ne charge le retour qu'à la première
+       entrée : rien dans le paquet initial que lui, rien au rendu serveur. -->
+  <app-after-add-host />
+
   <!-- Le bandeau d'installation : en fin de flux, collé au bas en défilant
        (todo-installation-app-cliente.md). Rien au rendu serveur, rien en
        app installée. -->

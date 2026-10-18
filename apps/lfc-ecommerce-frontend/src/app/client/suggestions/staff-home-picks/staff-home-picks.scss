@@ -1,0 +1,10 @@
+:host {
+  display: block;
+}
+
+/* Deux cartes côte à côte dès qu'il y a la place, l'une sous l'autre sinon. */
+.picks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--fold-space-sm);
+}

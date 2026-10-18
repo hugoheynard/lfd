@@ -1,5 +1,6 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 
+import { CartEntries } from '../../../cart/cart-entries';
 import { ClientCart } from '../../../cart/client-cart.service';
 import { FR } from '../../../copy/fr';
 import { provideHttpClient } from '@angular/common/http';
@@ -65,6 +66,24 @@ describe('ShelfGrid', () => {
     tiles()[0]?.querySelector<HTMLButtonElement>('.quick.less')?.click();
     fixture.detectChanges();
     expect(cart.quantityOf(first?.sku ?? '')).toBe(0);
+  });
+
+  /**
+   * L'après-ajout (RS7) répond à une ENTRÉE au panier : le premier « + » en est
+   * une, le second n'est qu'une pièce de plus.
+   */
+  it('annonce l’entrée au panier une fois, pas un « + » de quantité', () => {
+    const entries = TestBed.inject(CartEntries);
+    const first = TEST_ITEMS[0]?.sku ?? '';
+    const plus = () => tiles()[0]?.querySelector<HTMLButtonElement>('.quick:not(.less)');
+
+    plus()?.click();
+    fixture.detectChanges();
+    plus()?.click();
+    fixture.detectChanges();
+
+    expect(cart.quantityOf(first)).toBe(2);
+    expect(entries.latest()).toEqual({ id: 1, sku: first });
   });
 
   /** La fiche, elle, est un état de l'ÉCRAN — la grille ne fait que le signaler. */

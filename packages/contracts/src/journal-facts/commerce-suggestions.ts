@@ -19,7 +19,7 @@ import {
 
 /**
  * **Les suggestions décidées par le staff**
- * (`documentation/recommandation-produit/plan-suggestions-du-staff.md`, RS1).
+ * (`documentation/recommandation-produit/suggestions-du-staff.md`, RS1).
  * Écrits par les handlers de `b2b/recommendations/`, par `publishTraced`.
  * Rangés dans la famille `commerce` : décider ce que la boutique conseille est
  * le même métier que la vitrine et la mise en avant.

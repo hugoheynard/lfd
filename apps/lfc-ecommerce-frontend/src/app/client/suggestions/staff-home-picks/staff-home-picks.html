@@ -1,0 +1,11 @@
+@if (picks.current().length > 0) {
+  <section class="picks" [attr.aria-label]="t().shop.ourPicks">
+    @for (view of picks.current(); track view.sku) {
+      <app-staff-suggestion-card
+        [view]="view"
+        [fallbackTitle]="t().shop.ourPicks"
+        (taken)="picks.taken($event)"
+      />
+    }
+  </section>
+}

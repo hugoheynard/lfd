@@ -25,7 +25,7 @@ export interface StaffCounterTally {
 
 /**
  * Rattache les compteurs `staff` à leur règle : l'emplacement d'un geste
- * `staff` est l'id de la règle en minuscules (§6 du plan). Un compteur d'une
+ * `staff` est l'id de la règle en minuscules (`suggestions-du-staff.md` §8.1). Un compteur d'une
  * autre source, ou dont l'emplacement ne nomme aucune règle connue, est
  * ignoré : il ne se rattache à rien.
  */

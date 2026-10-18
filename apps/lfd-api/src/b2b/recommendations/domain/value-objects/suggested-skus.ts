@@ -3,7 +3,7 @@ import {
   SuggestedCountError,
 } from "../errors/staff-suggestion-errors.js";
 
-/** Une suggestion montre trois articles au plus (§2 du plan). */
+/** Une suggestion montre trois articles au plus (`suggestions-du-staff.md` §2). */
 export const MAX_SUGGESTED_SKUS = 3;
 
 /**

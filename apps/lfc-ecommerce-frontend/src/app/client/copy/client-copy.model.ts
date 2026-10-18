@@ -435,6 +435,10 @@ export interface ClientCopy {
     readonly staffAdvice: string;
     /** La même, sur la FICHE d'un article (Hugo, 2026-10-18). */
     readonly alsoLike: string;
+    /** La même, à l'ACCUEIL (RS7) — titre de la rangée. */
+    readonly ourPicks: string;
+    /** Le bref retour après un ajout au panier, quand il propose une suggestion (RS7). */
+    readonly addedToCart: string;
     /**
      * À la place du « + » d'un article réservé à une opération datée, tant que
      * sa commande n'est pas ouverte (D8 de `architecture-operations-datees.md`).

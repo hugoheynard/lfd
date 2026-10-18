@@ -20,6 +20,7 @@ export const GLOSSARY_A_B: Readonly<Record<string, string>> = {
   addAria: 'Ajouter — lecteur d’écran',
   addCount: 'Ajouter n pièces',
   addStep: 'Ajouter une étape',
+  addedToCart: 'Retour bref après un ajout au panier — « Ajouté ! »',
   address: 'Adresse de la maison',
   addressActionFailed: 'Carnet d’adresses — échec',
   addressAdd: 'Ajouter une adresse',

@@ -17,6 +17,7 @@ import {
 } from 'fold-ng';
 
 import { formatCents } from '../../../client/format-money';
+import { CartEntries } from '../../cart/cart-entries';
 import { ClientCart } from '../../cart/client-cart.service';
 import { ClientChrome } from '../../../client/client-chrome.service';
 import { OrderContextStore } from '../../../client/order-context.store';
@@ -101,6 +102,7 @@ export class ShopPage {
 
   private readonly storefront = inject(ShopStorefront);
   private readonly audience = inject(ProductAudience);
+  private readonly entries = inject(CartEntries);
 
   /**
    * L'état de la page de vitrine du rayon affiché — `null` pendant une
@@ -163,10 +165,14 @@ export class ShopPage {
     if (id === null) {
       return;
     }
-    if (this.cart.quantityOf(id) === 0 && quantity > 0) {
+    const entering = this.cart.quantityOf(id) === 0 && quantity > 0;
+    if (entering) {
       this.audience.record(id, 'added_to_cart');
     }
     this.cart.setQuantity(id, quantity);
+    if (entering && this.cart.quantityOf(id) > 0) {
+      this.entries.entered(id);
+    }
     this.openPiece.set(null);
   }
 

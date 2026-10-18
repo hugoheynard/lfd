@@ -4,7 +4,7 @@ import { z } from "zod";
  * ── Les suggestions DÉCIDÉES par le staff ────────────────────────────────────
  *
  * « Quand le client fait ceci, montre-lui cela » : une règle posée par le
- * staff (`documentation/recommandation-produit/plan-suggestions-du-staff.md`,
+ * staff (`documentation/recommandation-produit/suggestions-du-staff.md`,
  * lots RS1 et RS3). Ce contrat ne valide que la **forme** : le déclencheur
  * cohérent avec l'emplacement, les suggérés distincts et différents du
  * déclencheur, la période, la phrase bornée et l'article connu du catalogue
@@ -109,7 +109,7 @@ export interface StaffSuggestionRuleView {
   readonly id: string;
   /**
    * L'emplacement que porte un compteur d'audience `staff` de cette règle :
-   * son id en minuscules (§6 du plan).
+   * son id en minuscules (`suggestions-du-staff.md` §8.1).
    */
   readonly audienceKey: string;
   readonly trigger: StaffSuggestionTrigger;

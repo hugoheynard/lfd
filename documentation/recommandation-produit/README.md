@@ -11,11 +11,11 @@ décision du catalogue).
 
 ## 1. Trois sources d'une suggestion
 
-| Source                                                  | Qui décide                                                                    | Où on la voit                                                     | État                                                       |
-| ------------------------------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------- |
-| **Décidée par le staff**                                | une règle « quand le client fait ceci, montre-lui cela », datée, par audience | carte au panier et sur la fiche ; l'accueil est à faire           | 🟡 panier, fiche, aperçu, chiffres bâtis ; accueil à faire |
-| **Mise en avant « Incontournable »**                    | une case par article et par audience (pros, particuliers)                     | la pastille sur la vignette du rayon, selon l'audience du lecteur | ✅ bâtie                                                   |
-| **Calculée** (« souvent pris avec », « vos habituels ») | nos propres commandes, agrégées                                               | panier, accueil                                                   | à faire (R2, puis R1 ; R3 après le cabinet)                |
+| Source                                                  | Qui décide                                                                    | Où on la voit                                                     | État                                                           |
+| ------------------------------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------- | -------------------------------------------------------------- |
+| **Décidée par le staff**                                | une règle « quand le client fait ceci, montre-lui cela », datée, par audience | carte au panier, sur la fiche, à l'accueil et après un ajout      | 🟡 panier, fiche, accueil, après-ajout, aperçu, chiffres bâtis |
+| **Mise en avant « Incontournable »**                    | une case par article et par audience (pros, particuliers)                     | la pastille sur la vignette du rayon, selon l'audience du lecteur | ✅ bâtie                                                       |
+| **Calculée** (« souvent pris avec », « vos habituels ») | nos propres commandes, agrégées                                               | panier, accueil                                                   | à faire (R2, puis R1 ; R3 après le cabinet)                    |
 
 La décidée passe **avant** la calculée, dans une place bornée ; les deux
 passent le **même filtre** (servi à ce lecteur, commandable au jour visé,
@@ -48,7 +48,7 @@ Le mot sert à trois choses, à ne pas confondre :
 | Doc                                                                        | Nature     | À quoi elle sert                                                                                                     |
 | -------------------------------------------------------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------- |
 | [`suggestions-du-staff.md`](suggestions-du-staff.md)                       | doc d'état | ce qui est bâti des suggestions du staff : la règle, l'ordre, l'affichage, le filtre, l'aperçu, les chiffres estimés |
-| [`plan-suggestions-du-staff.md`](plan-suggestions-du-staff.md)             | plan       | ce qui reste aux suggestions du staff : accueil et après-ajout (RS7), RS8, RS9, RS10, RS4                            |
+| [`plan-suggestions-du-staff.md`](plan-suggestions-du-staff.md)             | plan       | ce qui reste aux suggestions du staff : RS8, RS9, RS10, RS4                                                          |
 | [`plan-recommandation-de-produits.md`](plan-recommandation-de-produits.md) | plan       | le plan général : l'existant d'origine, les décisions R1–R5 bis, l'ordre des lots (R0, RS, R2, A1, R1, R3)           |
 | [`historique-du-particulier.md`](historique-du-particulier.md)             | analyse    | ce qu'il faut pour recommander à un particulier : finalité, base légale, interrupteur, rien pour un invité           |
 | [`plan-audiences.md`](plan-audiences.md)                                   | plan       | les segments de clientèle, leurs sources, le seuil de 5 clients, lots A1–A4                                          |

@@ -1,8 +1,10 @@
 import type { StaffSuggestionReader } from "@lfd/contracts";
 
-/** L'emplacement prévisualisé : le panier, ou la fiche d'un article. */
+/** L'emplacement prévisualisé : le panier, la fiche d'un article, ou l'accueil. */
 export type PreviewPlace =
-  { readonly placement: "cart" } | { readonly placement: "product"; readonly viewedSku: string };
+  | { readonly placement: "cart" }
+  | { readonly placement: "product"; readonly viewedSku: string }
+  | { readonly placement: "home" };
 
 /**
  * **L'aperçu des suggestions décidées** (RS5) : ce que la boutique afficherait

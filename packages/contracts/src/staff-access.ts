@@ -361,7 +361,7 @@ export const staffResourceSchema = z.enum([
   /**
    * **Les suggestions décidées** — « quand le client fait ceci, montre-lui
    * cela » : les règles du staff, leur ordre et leurs chiffres
-   * (`documentation/recommandation-produit/plan-suggestions-du-staff.md`, RS1,
+   * (`documentation/recommandation-produit/suggestions-du-staff.md`, RS1,
    * Hugo, 2026-10-18). Un droit à lui, en Gestion Boutique. Elle s'accorde à
    * l'écran ; la graine ne la donne qu'à l'administrateur.
    */

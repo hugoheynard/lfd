@@ -6,7 +6,7 @@ import {
 
 /**
  * Les refus des **suggestions décidées par le staff**
- * (`documentation/recommandation-produit/plan-suggestions-du-staff.md`, §2).
+ * (`documentation/recommandation-produit/suggestions-du-staff.md`, §2).
  *
  * Chaque message est lu par du personnel qui n'a pas le code sous les yeux :
  * il nomme le cas réel et le geste de sortie. Les jours y sont dits

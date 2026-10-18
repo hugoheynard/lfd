@@ -22,7 +22,7 @@ export interface SuggestionPhraseInput {
 const LANGUAGES = { fr: "français", en: "anglais", it: "italien" } as const;
 
 /**
- * **La raison affichée** (§3.4 du plan). `null` = pas de phrase : la boutique
+ * **La raison affichée** (`suggestions-du-staff.md` §4). `null` = pas de phrase : la boutique
  * dit « Notre conseil ». Une phrase rognée ENTIÈREMENT vide vaut aussi `null`
  * — un champ effacé à l'écran n'est pas une phrase. Une traduction vide
  * disparaît.

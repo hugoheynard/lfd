@@ -87,7 +87,7 @@ describe('previewSetupOf', () => {
     });
   });
 
-  it('une famille : un de ses articles ; une fiche « partout » : un article qu’elle ne suggère pas', () => {
+  it('une famille : un de ses articles ; une fiche « partout » : un article qu’elle ne suggère pas ; l’accueil : un panier vide', () => {
     const family = staffSuggestion({ trigger: { kind: 'category_in_cart', ref: 'fam-vien' } });
     const everywhere = staffSuggestion({
       trigger: { kind: 'everywhere', ref: null },
@@ -95,9 +95,25 @@ describe('previewSetupOf', () => {
       suggestedSkus: ['VIE-001'],
     });
 
-    expect(previewSetupOf(family, CHOICES, TODAY)?.cart).toEqual(['VIE-001']);
-    expect(previewSetupOf(everywhere, CHOICES, TODAY)?.viewedSku).toBe('PAI-001');
-    expect(previewSetupOf(staffSuggestion({ placement: 'home' }), CHOICES, TODAY)).toBeNull();
+    expect(previewSetupOf(family, CHOICES, TODAY).cart).toEqual(['VIE-001']);
+    expect(previewSetupOf(everywhere, CHOICES, TODAY).viewedSku).toBe('PAI-001');
+    expect(
+      previewSetupOf(
+        staffSuggestion({
+          placement: 'home',
+          trigger: { kind: 'everywhere', ref: null },
+          startsOn: '2026-10-20',
+        }),
+        CHOICES,
+        TODAY,
+      ),
+    ).toEqual({
+      placement: 'home',
+      cart: [],
+      viewedSku: null,
+      audience: 'public',
+      day: '2026-10-20',
+    });
   });
 });
 
@@ -123,9 +139,13 @@ describe('la carte', () => {
   it('prend le titre de l’emplacement sans phrase, et ne demande rien sans article de fiche', () => {
     expect(defaultCardTitle('cart')).toBe('Notre conseil');
     expect(defaultCardTitle('product')).toBe('Vous aimerez aussi');
+    expect(defaultCardTitle('home')).toBe('Notre sélection');
     expect(dayAndMonth('2026-01-05')).toBe('5 janvier');
     const setup = { cart: [], audience: 'public', day: '2026-10-18' } as const;
     expect(previewPayload({ ...setup, placement: 'product', viewedSku: null })).toBeNull();
+    expect(previewPayload({ ...setup, placement: 'home', viewedSku: null })?.placement).toBe(
+      'home',
+    );
     expect(previewPayload({ ...setup, placement: 'cart', viewedSku: null })).toEqual({
       placement: 'cart',
       skus: [],

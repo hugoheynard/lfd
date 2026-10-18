@@ -1,6 +1,6 @@
 /**
  * **L'attribution des commandes aux suggestions décidées** (RS6,
- * `plan-suggestions-du-staff.md` §9) — pure, sans horloge ni base.
+ * `suggestions-du-staff.md` §8.2) — pure, sans horloge ni base.
  *
  * Les compteurs d'audience sont anonymes : aucun ne dit QUI a ajouté. Une
  * commande ne se relie donc pas à un ajout, et l'attribution est une

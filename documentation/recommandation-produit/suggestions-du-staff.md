@@ -1,8 +1,8 @@
 # Les suggestions décidées par le staff — ce qui est bâti
 
-> **Doc d'état** (2026-10-18, relue contre le code au commit `651b446d3`). Elle
-> décrit ce qui existe. Ce qui reste à faire (l'accueil, l'après-ajout, des
-> règles plus fines, les gestes du staff, l'alerte, la mise en avant dans les
+> **Doc d'état** (2026-10-18, relue contre le code au commit `651b446d3` ;
+> l'accueil et l'après-ajout, RS7, ajoutés le même jour). Elle décrit ce qui
+> existe. Ce qui reste à faire (des règles plus fines, les gestes du staff, l'alerte, la mise en avant dans les
 > règles) est dans [`plan-suggestions-du-staff.md`](plan-suggestions-du-staff.md).
 > L'ensemble du sujet (calculé, décidé, mis en avant) est présenté dans
 > [`README.md`](README.md).
@@ -18,7 +18,7 @@ Code : `apps/lfd-api/src/b2b/recommendations/` (backend),
 `apps/lfc-ecommerce-frontend/src/app/client/suggestions/` et
 `client/cart/staff-cart-suggestion.service.ts` (boutique). Contrats :
 `packages/contracts/src/staff-suggestions.ts`, `cart-suggestions.ts`,
-`product-suggestions.ts`, `staff-suggestion-preview.ts`,
+`product-suggestions.ts`, `home-suggestions.ts`, `staff-suggestion-preview.ts`,
 `staff-suggestion-results.ts`.
 
 ## 1. Le parcours
@@ -27,12 +27,12 @@ Code : `apps/lfd-api/src/b2b/recommendations/` (backend),
 flowchart TD
     R["Règle du staff<br/>StaffSuggestionRule"] --> A{"Applicable ?<br/>période · active ·<br/>audience · emplacement"}
     A -->|non| X1["écartée<br/>(ended, inactive…)"]
-    A -->|oui, dans l'ordre réglé| D{"Déclencheur vrai ?<br/>panier ou fiche ouverte"}
+    A -->|oui, dans l'ordre réglé| D{"Déclencheur vrai ?<br/>panier, fiche ouverte,<br/>accueil : « partout » seul"}
     D -->|non| X2["trigger_false"]
     D -->|oui| F{"Filtre commun<br/>servi · commandable au jour visé ·<br/>absent du panier · pas l'article de la fiche"}
     F -->|non| X3["item_not_served,<br/>item_in_cart…"]
     F -->|oui| V["Vitrine : prix du rayon<br/>HT pro · TTC particulier"]
-    V --> P["Place : 1 article"]
+    V --> P["Places : 1 au panier et en fiche,<br/>2 à l'accueil"]
     P --> C["Carte en boutique<br/>phrase ou titre par défaut"]
     C -->|"shown · clicked · added"| K["Compteurs anonymes<br/>growth.product_audience_counters<br/>source staff, emplacement = id de la règle"]
     K --> RES["Résultats par règle<br/>comptés + commandées et CA estimés"]
@@ -94,17 +94,19 @@ règles revient à la première ; la seconde est « battue » (`outranked_by`).
 
 ## 4. Où elle s'affiche
 
-| Emplacement | Déclencheurs qui y valent                           | Titre sans phrase dans la langue du client | Places | Bâti                                                     |
-| ----------- | --------------------------------------------------- | ------------------------------------------ | ------ | -------------------------------------------------------- |
-| **Panier**  | `everywhere`, `product_in_cart`, `category_in_cart` | « Notre conseil » (`shop.staffAdvice`)     | 1      | oui                                                      |
-| **Fiche**   | `everywhere`, `product_viewed` sur l'article ouvert | « Vous aimerez aussi » (`shop.alsoLike`)   | 1      | oui                                                      |
-| **Accueil** | `everywhere`                                        | —                                          | —      | **non** : la règle s'enregistre, rien ne s'affiche (RS7) |
+| Emplacement | Déclencheurs qui y valent                           | Titre sans phrase dans la langue du client | Places |
+| ----------- | --------------------------------------------------- | ------------------------------------------ | ------ |
+| **Panier**  | `everywhere`, `product_in_cart`, `category_in_cart` | « Notre conseil » (`shop.staffAdvice`)     | 1      |
+| **Fiche**   | `everywhere`, `product_viewed` sur l'article ouvert | « Vous aimerez aussi » (`shop.alsoLike`)   | 1      |
+| **Accueil** | `everywhere` seulement                              | « Notre sélection » (`shop.ourPicks`)      | 2      |
 
-Les places sont des constantes du domaine, `STAFF_CART_PLACES` et
-`STAFF_PRODUCT_PLACES` (`domain/services/cart-suggestions.ts`,
-`product-suggestions.ts`). Hugo a tranché **une place au panier** le
-2026-10-18 ; la fiche a pris la même valeur, à confirmer. Le calculé qui
-remplirait les places suivantes n'existe pas encore.
+Les places sont des constantes du domaine, `STAFF_CART_PLACES`,
+`STAFF_PRODUCT_PLACES` et `STAFF_HOME_PLACES` (`domain/services/cart-suggestions.ts`,
+`product-suggestions.ts`, `home-suggestions.ts`). Hugo a tranché **une place
+au panier** le 2026-10-18 ; la fiche a pris la même valeur, à confirmer.
+L'accueil en a **deux** — la recommandation d'origine (« 2 sur 3 »), retenue
+pour bâtir RS7 et à confirmer. Le calculé qui remplirait les places suivantes
+n'existe pas encore.
 
 **Au panier**, la carte remplace la relance codée en dur d'avant
 (cart-upsell.service.ts et sa liste `TREATS`, retirés le 2026-10-18 par Hugo,
@@ -116,9 +118,32 @@ visé, après un court délai.
 (`StaffProductSuggestion`) : une requête par ouverture, le panier et le jour
 visé lus au départ.
 
-Des deux côtés : rien en SSR, la requête vit dans un morceau chargé à la
-demande (le paquet initial de la boutique est près de son plafond), et la carte
-est un composant partagé, `client/suggestions/staff-suggestion-card/`.
+**À l'accueil**, la rangée « Notre sélection » (`StaffHomePicksRow`, service
+`StaffHomePicks`) se pose sur `/bienvenue` (`AccueilPublic`), juste au-dessus
+de la vitrine composée de l'accueil : c'est la page que la boutique appelle
+`home`, celle où tombe la racine du site. Le rayon « Tout » de `/boutique` n'a
+pas été retenu : c'est un rayon, il a déjà la fiche et le panier pour suggérer.
+Une requête par affichage de l'accueil ; le panier courant n'y sert qu'à
+exclure ce qu'il contient. Une carte par article, côte à côte au bureau ; sans
+règle, ni rangée ni titre.
+
+**Après un ajout** (« Ajouté ! »), ce n'est pas un quatrième emplacement : la
+suggestion du **panier** (mêmes règles, `placement` `cart`, même route),
+recalculée avec l'article qui vient d'entrer. Elle répond à une **entrée** au
+panier — le passage de zéro à une pièce depuis une tuile, la fiche ou une
+carte de suggestion (`CartEntries`, annoncée là où `added_to_cart` est compté) ;
+un « + » sur un article déjà présent n'en est pas une, une reprise du panier
+gardé en base non plus. Elle paraît dans un `fold-toast` (`AfterAddToast`, au
+bas de l'écran, refermable, 6 s, suspendu au survol), ne bloque rien et
+n'ouvre pas le panier ; elle se tait panier ouvert, où la carte du panier parle
+déjà. Sans règle applicable, rien ne paraît : la tuile et la pastille du
+panier disent déjà que l'article est entré. Un hôte du shell (`AfterAddHost`)
+ne charge le retour qu'à la première entrée, par import à la demande.
+
+Partout : rien en SSR, la requête vit dans un morceau chargé à la demande (le
+paquet initial de la boutique est près de son plafond — RS7 l'a porté de
+1 304,91 kB à 1 306,16 kB, plafond 1 400 kB, le 2026-10-18), et la carte est un
+composant partagé, `client/suggestions/staff-suggestion-card/`.
 
 ## 5. Le filtre
 
@@ -135,7 +160,8 @@ suggestion, sans repli :
    (`domain/orderable-today.ts`) ;
 3. **absent du panier**.
 
-Sur la fiche, l'article ouvert n'est jamais proposé. Un candidat qui ne passe
+Sur la fiche, l'article ouvert n'est jamais proposé ; à l'accueil, le panier
+courant sert à cette seule exclusion. Un candidat qui ne passe
 pas **disparaît** : une règle ne force jamais la vente d'un article
 indisponible, et une liste vide rend une carte absente.
 
@@ -153,7 +179,8 @@ décider (un pro y reçoit son tarif de société).
 
 `POST /admin/suggestions/preview` (un `POST` parce que le corps porte un
 panier ; lecture seule, droit `lfc_suggestions:read`). On choisit un
-emplacement (panier avec ses articles, ou fiche d'un article), une clientèle
+emplacement (panier avec ses articles, fiche d'un article, ou accueil — dont
+le panier n'écarte que ce qu'il contient), une clientèle
 (`public` ou `pro`) et un jour — qui sert à la fois à la période et à l'heure
 limite. Aux professionnels, l'aperçu montre la vitrine pro **sans tarif de
 société** (`pricedWithoutCompany`) : ni mercuriale, ni tarif négocié.
@@ -178,8 +205,8 @@ vocabulaire fermé (`domain/services/suggestion-diagnosis.ts`) :
 Une règle ne reçoit qu'une raison de porte, la première dans l'ordre période →
 interrupteur → audience → emplacement ; une règle déclenchée reçoit un verdict
 par article. Rien n'est rejugé : chaque raison est celle qu'une porte de la
-chaîne de la boutique a rendue. L'accueil n'a pas d'aperçu tant qu'il n'a pas
-d'affichage.
+chaîne de la boutique a rendue. Chaque règle non archivée, d'accueil comprise,
+a son bouton « Ouvrir l'aperçu ».
 
 ## 8. Les chiffres
 
@@ -191,7 +218,7 @@ des compteurs d'audience (`(jour métier, sku, événement, emplacement, source)
 `POST /shop/audience` :
 
 - `suggestion_shown` une fois par article et par ouverture (du panier, de la
-  fiche) ;
+  fiche, de l'accueil), et une fois par proposition de l'après-ajout ;
 - `suggestion_clicked` et `suggestion_added` ensemble, au « + » — aujourd'hui
   la carte n'a pas d'autre geste, les deux chiffres sont donc égaux ;
 - `added_to_cart` **aussi**, au passage de zéro à une pièce (Hugo,
@@ -258,14 +285,15 @@ sous `b2b_growth`.
 - **Chiffres** : la période (7 / 30 / 90 jours), l'aide « estimé », et par
   règle les six chiffres du §8.2 ;
 - **Aperçu** (`suggestion-preview-card/`) : la carte du client et le sort de
-  chaque règle ; chaque règle hors accueil a un bouton « Ouvrir l'aperçu » ;
+  chaque règle, à l'un des trois emplacements ; chaque règle a un bouton
+  « Ouvrir l'aperçu » ;
 - **Ordre** (`suggestion-order-card/`) : `recent` ou `priority` ;
 - **Suggestions** : la liste (active, période, déclencheur → suggérés,
   emplacement, audience), le panneau d'édition (`suggestion-panel/`) ;
 - **Archivées** : lisibles, plus rien n'en paraît en boutique.
 
 Une règle neuve est préremplie « partout, à l'accueil, pour tous, aujourd'hui
-seulement » (`suggestion-draft.ts`).
+seulement » (`suggestion-draft.ts`) — un défaut qui s'affiche depuis RS7.
 
 ## 11. Les outils agent
 
@@ -294,12 +322,14 @@ Neuf outils WebMCP sous `lfc_suggestions`, déclarés par l'écran
 | `POST /shop/suggestions/cart/mine`    | connecté                | la carte du panier, lecteur de l'espace courant     |
 | `POST /shop/suggestions/product`      | publique (60/min)       | la carte de la fiche, lecteur particulier           |
 | `POST /shop/suggestions/product/mine` | connecté                | la carte de la fiche, lecteur de l'espace courant   |
+| `POST /shop/suggestions/home`         | publique (60/min)       | la rangée de l'accueil, lecteur particulier         |
+| `POST /shop/suggestions/home/mine`    | connecté                | la rangée de l'accueil, lecteur de l'espace courant |
 | `POST /shop/audience`                 | publique (30 lots/min)  | compte un lot de gestes (≤ 50)                      |
 
 Pas de `DELETE` : on archive. Les chemins nommés sont déclarés avant `:id`.
 
 ## 13. Ce qui reste à faire
 
-Dans [`plan-suggestions-du-staff.md`](plan-suggestions-du-staff.md) : l'accueil
-et l'après-ajout (RS7), des règles plus fines (RS8), les gestes du staff (RS9),
+Dans [`plan-suggestions-du-staff.md`](plan-suggestions-du-staff.md) : des
+règles plus fines (RS8), les gestes du staff (RS9),
 l'alerte sur une règle vide (RS10), et la mise en avant dans les règles (RS4).

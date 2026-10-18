@@ -54,6 +54,7 @@ import { sizedMedia, SHEET_WIDTHS } from '../shop/media-source';
 import { objectPositionOf } from '../shop/shelf-display';
 import { ShopStorefront } from '../shop/storefront/shop-storefront.store';
 import { HOME_PAGE } from '@lfd/storefront-layout';
+import { StaffHomePicksRow } from '../suggestions/staff-home-picks/staff-home-picks';
 import { HomeStorefront } from './home-storefront/home-storefront';
 
 /**
@@ -115,6 +116,7 @@ interface House {
     PublicSteps,
     ServiceDoors,
     ShopShortcuts,
+    StaffHomePicksRow,
   ],
   templateUrl: './accueil-public.html',
   styleUrl: './accueil-public.scss',

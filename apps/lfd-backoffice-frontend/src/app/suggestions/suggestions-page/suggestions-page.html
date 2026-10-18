@@ -149,20 +149,18 @@
         </div>
       }
     </dl>
-    @if (rule.archivedAt === null && (canWrite() || previewable(rule))) {
+    @if (rule.archivedAt === null) {
       <div class="rule-actions">
-        @if (previewable(rule)) {
-          <button
-            foldButton
-            size="sm"
-            emphasis="soft"
-            intent="neutral"
-            icon="eye"
-            (click)="openPreview(rule)"
-          >
-            Ouvrir l’aperçu
-          </button>
-        }
+        <button
+          foldButton
+          size="sm"
+          emphasis="soft"
+          intent="neutral"
+          icon="eye"
+          (click)="openPreview(rule)"
+        >
+          Ouvrir l’aperçu
+        </button>
         @if (canWrite()) {
           <button
             foldButton

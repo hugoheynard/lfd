@@ -35,7 +35,7 @@ import { StaffSuggestionsService } from '../staff-suggestions.service';
 import { SuggestionOrderCard } from '../suggestion-order-card/suggestion-order-card';
 import { SuggestionPanel, type SuggestionPanelData } from '../suggestion-panel/suggestion-panel';
 import { SuggestionPreviewCard } from '../suggestion-preview-card/suggestion-preview-card';
-import { previewSetupOf } from '../suggestion-preview';
+import { defaultCardTitle, previewSetupOf } from '../suggestion-preview';
 import { refusalOf, splitArchived } from '../suggestion-format';
 import {
   addRateLabel,
@@ -50,7 +50,7 @@ type LoadState = 'loading' | 'error' | 'ready';
 
 /**
  * **Gestion Boutique › Suggestions** — les règles que le staff décide
- * (`documentation/recommandation-produit/plan-suggestions-du-staff.md`, RS1
+ * (`documentation/recommandation-produit/suggestions-du-staff.md`, RS1
  * et RS3) : ce qui les déclenche, ce qu'elles montrent, où, à qui, quand, et
  * leurs chiffres.
  *
@@ -127,14 +127,14 @@ export class SuggestionsPage {
   protected readonly live = computed(() => this.split().live);
   protected readonly archived = computed(() => this.split().archived);
   protected readonly canWrite = computed(() => this.permissions.can('lfc_suggestions:write'));
-  /** Aucune règle n'a encore été montrée : la boutique ne les affiche pas encore (RS2). */
+  /** Aucune règle n'a encore été montrée en boutique : les chiffres restent à zéro. */
   protected readonly nothingCounted = computed(() => {
     const counted = this.counters();
     return counted !== null && [...counted.values()].every((row) => row.shown === 0);
   });
 
   protected readonly phrase = (rule: StaffSuggestionRuleView): string =>
-    rule.phrase === null ? '« Notre conseil »' : `« ${rule.phrase.fr} »`;
+    `« ${rule.phrase?.fr ?? defaultCardTitle(rule.placement)} »`;
   /** La règle en une phrase — la même que l'aperçu du panneau. */
   protected readonly summary = (rule: StaffSuggestionRuleView): string =>
     ruleSummary(rule, this.choices());
@@ -208,16 +208,9 @@ export class SuggestionsPage {
     }
   }
 
-  /** L'aperçu ne montre pas encore l'accueil (RS7) : pas de bouton pour une règle d'accueil. */
-  protected readonly previewable = (rule: StaffSuggestionRuleView): boolean =>
-    rule.placement !== 'home';
-
   /** « Ouvrir l'aperçu » : l'emplacement, la clientèle et un déclencheur qui rendent la règle vraie. */
   protected async openPreview(rule: StaffSuggestionRuleView): Promise<void> {
-    const setup = previewSetupOf(rule, this.choices(), parisToday());
-    if (setup !== null) {
-      await this.preview()?.openFor(setup);
-    }
+    await this.preview()?.openFor(previewSetupOf(rule, this.choices(), parisToday()));
   }
 
   protected toggle(rule: StaffSuggestionRuleView): Promise<void> {

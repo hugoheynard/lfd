@@ -9,7 +9,7 @@ const DAY_SHAPE = /^\d{4}-\d{2}-\d{2}$/u;
 
 /**
  * **La période d'une suggestion** : deux jours métier `AAAA-MM-JJ`, bornes
- * comprises, l'un et l'autre obligatoires (§2 du plan). Des jours et non des
+ * comprises, l'un et l'autre obligatoires (`suggestions-du-staff.md` §2). Des jours et non des
  * instants : la boutique dit « cette semaine », et le jour se lit à Paris
  * (`instantToLocal`) au moment d'afficher.
  */

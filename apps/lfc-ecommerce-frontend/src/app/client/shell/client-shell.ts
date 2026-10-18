@@ -22,6 +22,7 @@ import { IdentityConflictNotice } from '../../auth/identity-conflict';
 import { InvitationExpiredNotice } from '../../auth/invitation-expired';
 import { SIGN_IN_FAILURE_PATH } from '../../auth/auth.providers';
 import { ClientChrome } from '../client-chrome.service';
+import { AfterAddHost } from '../suggestions/after-add-host/after-add-host';
 import { AccountMenu } from './account-menu/account-menu';
 import { ClientFoot } from '../foot/client-foot';
 import { ClientMenu } from '../nav/client-menu/client-menu';
@@ -51,6 +52,7 @@ import { InstallBanner } from '../install-banner/install-banner';
   host: { 'data-theme': 'lfc-app', '[class.bar-narrow-only]': '!chrome.barOnDesktop()' },
   imports: [
     AccountMenu,
+    AfterAddHost,
     ClientBand,
     ClientCartPill,
     ClientFoot,

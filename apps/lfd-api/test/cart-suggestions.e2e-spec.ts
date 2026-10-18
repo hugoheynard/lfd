@@ -1,6 +1,6 @@
 /**
  * E2E des **suggestions du panier** (RS2, panier, de
- * `documentation/recommandation-produit/plan-suggestions-du-staff.md`).
+ * `documentation/recommandation-produit/suggestions-du-staff.md`).
  *
  * Ce qu'aucun test unitaire ne prouve : la règle écrite par l'écran du staff
  * et relue par la route publique de la boutique, son déclencheur jugé contre

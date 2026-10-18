@@ -3,8 +3,8 @@ import { z } from "zod";
 /**
  * ── Les RÉSULTATS des suggestions décidées ──────────────────────────────────
  *
- * RS6 (`documentation/recommandation-produit/plan-suggestions-du-staff.md`,
- * §9) : par règle, sur une période glissante finissant aujourd'hui (jour
+ * RS6 (`documentation/recommandation-produit/suggestions-du-staff.md`,
+ * §8.2) : par règle, sur une période glissante finissant aujourd'hui (jour
  * métier), affichée, cliquée, ajoutée — comptées —, puis commandées et chiffre
  * d'affaires HT — **estimés**.
  *

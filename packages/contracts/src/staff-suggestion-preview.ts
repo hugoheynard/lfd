@@ -6,8 +6,8 @@ import { STAFF_SUGGESTION_READERS } from "./staff-suggestions.js";
 /**
  * ── L'APERÇU des suggestions décidées ───────────────────────────────────────
  *
- * RS5 (`documentation/recommandation-produit/plan-suggestions-du-staff.md`,
- * §9) : ce que la boutique afficherait à un emplacement, pour une clientèle et
+ * RS5 (`documentation/recommandation-produit/suggestions-du-staff.md`,
+ * §7) : ce que la boutique afficherait à un emplacement, pour une clientèle et
  * un jour, et pour CHAQUE règle non archivée, pourquoi elle s'affiche ou non.
  * Forme seule : le diagnostic se calcule dans le commerce, par la même chaîne
  * que la boutique.
@@ -35,6 +35,8 @@ const previewCommon = {
 
 export const staffSuggestionPreviewPayloadSchema = z.discriminatedUnion("placement", [
   z.strictObject({ placement: z.literal("cart"), ...previewCommon }),
+  /** L'accueil (RS7) : seul « partout » y vaut, le panier n'y sert qu'à exclure. */
+  z.strictObject({ placement: z.literal("home"), ...previewCommon }),
   z.strictObject({
     placement: z.literal("product"),
     /** Le SKU de la fiche ouverte. */

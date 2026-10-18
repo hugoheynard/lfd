@@ -1,0 +1,22 @@
+/* Au bas de l'écran, au-dessus du pied de la boutique ; il ne couvre rien
+   qu'on ne puisse atteindre en le fermant. */
+:host {
+  position: fixed;
+  inset-inline: var(--fold-space-md);
+  bottom: calc(var(--fold-space-xl) * 3);
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.after-add {
+  pointer-events: auto;
+  width: min(100%, 420px);
+}
+
+.added {
+  display: block;
+  margin-block-end: var(--fold-space-xs);
+  font-weight: var(--fold-weight-bold);
+}

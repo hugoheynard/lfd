@@ -19,11 +19,12 @@ export interface ApplicableSuggestionsAsk {
 
 /**
  * **Les règles qui s'appliquent** à un emplacement, aujourd'hui, pour ce
- * lecteur — dans l'ordre réglé (§3.1 et Q3 du plan).
+ * lecteur — dans l'ordre réglé (`suggestions-du-staff.md` §3).
  *
- * Ni le déclencheur (le panier ou la fiche ouverte, connus à l'affichage
- * seulement), ni le filtre de ce qui se commande (`RecommendationFilter`, R0)
- * ne s'appliquent ici : l'un et l'autre sont de RS2. Une règle suggérant un
+ * Ni le déclencheur (le panier, la fiche ouverte ou l'accueil, connus à
+ * l'affichage seulement), ni le filtre de ce qui se commande
+ * (`RecommendationFilter`) ne s'appliquent ici : la vitrine commune
+ * (`StaffSuggestionShowcase`) les déroule ensuite. Une règle suggérant un
  * article indisponible sort donc d'ici et disparaît à l'affichage.
  *
  * L'ordre : `recent`, la plus récemment CRÉÉE d'abord — la réécrire ne la

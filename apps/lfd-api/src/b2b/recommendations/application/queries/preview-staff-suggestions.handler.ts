@@ -2,16 +2,27 @@ import { instantToLocal, type StaffSuggestionPreviewView } from "@lfd/contracts"
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../../platform/time/clock.js";
+import type { ShopAudience } from "../../../catalog/domain/ports/catalog.reader.js";
 import { CartFamilyReader } from "../../domain/ports/cart-family.reader.js";
 import { cartTriggering, STAFF_CART_PLACES } from "../../domain/services/cart-suggestions.js";
+import { homeTriggering, STAFF_HOME_PLACES } from "../../domain/services/home-suggestions.js";
 import {
   productTriggering,
   STAFF_PRODUCT_PLACES,
 } from "../../domain/services/product-suggestions.js";
 import type { SuggestionTriggering } from "../../domain/services/suggestion-candidates.js";
 import { StaffSuggestionShowcase } from "../services/staff-suggestion-showcase.js";
-import { PreviewStaffSuggestionsQuery } from "./preview-staff-suggestions.query.js";
+import {
+  PreviewStaffSuggestionsQuery,
+  type PreviewPlace,
+} from "./preview-staff-suggestions.query.js";
 import { staffSuggestionPreviewView } from "./staff-suggestion-preview-view.js";
+
+/** Ce qu'un emplacement apporte à l'aperçu : sa place, et son déclencheur. */
+interface PlaceSetup {
+  readonly places: number;
+  readonly triggeringOf: (audience: ShopAudience) => Promise<SuggestionTriggering>;
+}
 
 /**
  * L'aperçu passe par la vitrine commune (`StaffSuggestionShowcase.diagnose`),
@@ -42,18 +53,29 @@ export class PreviewStaffSuggestionsHandler implements IQueryHandler<
       day,
       inCart: query.skus,
       target: { date: day, pickupAddressId: query.pickupAddressId },
-      places: place.placement === "cart" ? STAFF_CART_PLACES : STAFF_PRODUCT_PLACES,
-      triggeringOf: (audience) =>
-        place.placement === "cart"
-          ? this.cartTriggering(query.skus, audience)
-          : Promise.resolve(productTriggering(place.viewedSku)),
+      ...this.setupOf(place, query.skus),
     });
     return staffSuggestionPreviewView(day, diagnosis);
   }
 
+  /** La place et le déclencheur de chaque emplacement, ceux de son handler de boutique. */
+  private setupOf(place: PreviewPlace, skus: readonly string[]): PlaceSetup {
+    if (place.placement === "product") {
+      const triggering = productTriggering(place.viewedSku);
+      return { places: STAFF_PRODUCT_PLACES, triggeringOf: () => Promise.resolve(triggering) };
+    }
+    if (place.placement === "home") {
+      return { places: STAFF_HOME_PLACES, triggeringOf: () => Promise.resolve(homeTriggering()) };
+    }
+    return {
+      places: STAFF_CART_PLACES,
+      triggeringOf: (audience) => this.cartTriggering(skus, audience),
+    };
+  }
+
   private async cartTriggering(
     skus: readonly string[],
-    audience: "pro" | "public",
+    audience: ShopAudience,
   ): Promise<SuggestionTriggering> {
     const familyPaths = await this.families.pathsOf(skus, audience);
     return cartTriggering({ skus, familyPaths });

@@ -93,7 +93,7 @@ export const routes: Routes = [
   {
     // LES SUGGESTIONS DÉCIDÉES — « quand le client fait ceci, montre-lui
     // cela » — en Gestion Boutique, sous LEUR droit (`lfc_suggestions`,
-    // plan-suggestions-du-staff.md, RS1, 2026-10-18).
+    // suggestions-du-staff.md, RS1, 2026-10-18).
     path: 'suggestions',
     canActivate: [permissionGuard('lfc_suggestions:read')],
     title: 'Suggestions — LFC B2B admin',

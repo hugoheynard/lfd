@@ -6,7 +6,7 @@ import type { StaffSuggestionPhrase } from "./staff-suggestions.js";
 /**
  * ── Les suggestions du PANIER ────────────────────────────────────────────────
  *
- * RS2, panier seulement (`documentation/recommandation-produit/plan-suggestions-du-staff.md`).
+ * RS2, panier seulement (`documentation/recommandation-produit/suggestions-du-staff.md`).
  * Ce contrat ne valide que la **forme** : quelles règles s'appliquent, le
  * déclencheur, le filtre de ce qui se commande et la place bornée sont tenus
  * par le commerce (`b2b/recommendations`).
@@ -39,7 +39,7 @@ export type CartSuggestionsPayload = z.infer<typeof cartSuggestionsPayloadSchema
 /** Pourquoi cet article est montré. Le calculé (`data`) viendra avec R1/R2. */
 export interface CartSuggestionReason {
   readonly source: "staff";
-  /** L'id de la règle en minuscules — l'emplacement des compteurs `staff` (§6). */
+  /** L'id de la règle en minuscules — l'emplacement des compteurs `staff` (`suggestions-du-staff.md` §8.1). */
   readonly ruleId: string;
   /** La phrase du staff, dans ses langues ; `null` = la boutique dit « Notre conseil ». */
   readonly phrase: StaffSuggestionPhrase | null;

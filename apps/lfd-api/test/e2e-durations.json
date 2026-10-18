@@ -30,6 +30,7 @@
   "test/cart-suggestions.e2e-spec.ts": 7409,
   "test/product-suggestions.e2e-spec.ts": 6000,
   "test/staff-suggestion-preview.e2e-spec.ts": 6000,
+  "test/home-suggestions.e2e-spec.ts": 7035,
   "test/catalog-batch-writes.e2e-spec.ts": 9500,
   "test/catalog-ingest-facts.e2e-spec.ts": 5356,
   "test/catalog-ingest.e2e-spec.ts": 5616,

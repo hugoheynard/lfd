@@ -250,6 +250,29 @@ describe("PreviewStaffSuggestionsHandler", () => {
     expect(statuses(view.rules)).toEqual([["SHEET", "item_is_the_product"]]);
   });
 
+  it("à l'accueil : deux places, ce qui est au panier écarté, une règle du panier hors de place", async () => {
+    const { preview } = harness([
+      [
+        "HOME",
+        {
+          trigger: { kind: "everywhere", ref: null },
+          placement: "home",
+          suggestedSkus: ["VIE-001", "BOI-001", "PAI-001"],
+        },
+        0,
+      ],
+      ["CART", {}, 5],
+    ]);
+
+    const view = await preview({ placement: "home" }, ["VIE-001"]);
+
+    expect(view.shown.map(({ sku }) => sku)).toEqual(["BOI-001", "PAI-001"]);
+    expect(statuses(view.rules)).toEqual([
+      ["HOME", "shown"],
+      ["CART", "wrong_placement"],
+    ]);
+  });
+
   it("à un pro : la vitrine pro sans société, et les règles « pro » s'appliquent", async () => {
     const { preview, shelf } = harness([["PRO", { audience: "pro" }, 0]]);
 

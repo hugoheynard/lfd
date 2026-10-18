@@ -8,7 +8,7 @@ import { onSubject, onSubjectChanges } from './referential-support';
 
 /**
  * **Les suggestions décidées par le staff** (`staff_suggestion.*`, famille
- * `commerce`, plan `documentation/recommandation-produit/plan-suggestions-du-staff.md`,
+ * `commerce`, plan `documentation/recommandation-produit/suggestions-du-staff.md`,
  * RS1, 2026-10-18). La phrase nomme le geste et la suggestion ; le détail dit
  * le déclencheur, les articles, l'emplacement, la période.
  */

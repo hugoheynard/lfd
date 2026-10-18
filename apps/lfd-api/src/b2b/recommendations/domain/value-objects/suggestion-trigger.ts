@@ -13,7 +13,7 @@ import {
 } from "../errors/staff-suggestion-errors.js";
 
 /**
- * **Ce qui déclenche une suggestion** (§2 du plan) : partout, un article au
+ * **Ce qui déclenche une suggestion** (`suggestions-du-staff.md` §2) : partout, un article au
  * panier, une famille au panier, une fiche d'article ouverte. `ref` est le SKU
  * ou l'id de la famille ; `null` pour « partout », et seulement pour lui.
  */

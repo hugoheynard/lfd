@@ -22,7 +22,7 @@ interface SuggestionRequest {
 
 /**
  * **La suggestion du staff au panier** (RS2, panier, de
- * `documentation/recommandation-produit/plan-suggestions-du-staff.md`).
+ * `documentation/recommandation-produit/suggestions-du-staff.md`).
  *
  * Sans règle applicable, le panier ne montre rien (la relance codée en dur,
  * `CartUpsell`, est retirée le 2026-10-18). Rien en SSR ; une requête par ouverture du panier et
@@ -49,6 +49,9 @@ export class StaffCartSuggestion {
   private shownThisOpening = new Set<string>();
   private timer: ReturnType<typeof setTimeout> | null = null;
   private asked: string | null = null;
+
+  /** Le panier est ouvert : l'après-ajout s'y tait, la carte du panier y parle déjà. */
+  readonly isOpen = computed(() => this.openings() > 0);
 
   /** Ce que le panier montre — jamais un article qu'il contient déjà. */
   readonly current = computed(() => {

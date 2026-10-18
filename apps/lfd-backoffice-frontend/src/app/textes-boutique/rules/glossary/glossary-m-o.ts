@@ -119,6 +119,7 @@ export const GLOSSARY_M_O: Readonly<Record<string, string>> = {
   other: 'Autre heure',
   otherGroup: 'Autre adresse',
   otherLabel: 'Autre heure — libellé',
+  ourPicks: 'Suggestion du staff à l’accueil — « Notre sélection »',
   outOfZone: 'Hors zone de livraison',
   outOfZoneNote: 'Hors zone de livraison — note',
   oven: 'Fournée',
