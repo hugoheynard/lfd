@@ -6,7 +6,7 @@
 > éprouvé dans un navigateur contre l'API locale, comme la trousse de la flotte
 > ([`../livraisons/chargement/outils-agent-vehicules.md`](../livraisons/chargement/outils-agent-vehicules.md)).
 
-Une septième trousse WebMCP, déclarée par l'écran **`/outils-agent`** selon les
+Une trousse WebMCP (la septième à son ouverture ; huit depuis A1, le 2026-10-18), déclarée par l'écran **`/outils-agent`** selon les
 mêmes règles que les autres : l'écran est l'interrupteur, les outils n'existent
 que tant qu'il est ouvert, et ils sont inertes tant qu'aucun agent ne pose
 `document.modelContext`. Demande de Hugo (2026-10-18) : « on peut faire tout

@@ -1,0 +1,48 @@
+<fold-page-layout icon="stats" title="Audiences">
+  <p description>
+    La clientèle décrite par ce qu’elle fait : qui commande, comment, où, à quel rythme et à quel
+    moment — en chiffres agrégés, jamais client par client.
+  </p>
+
+  <div pageActions>
+    <fold-view-toggle
+      ariaLabel="Période des audiences"
+      size="sm"
+      [options]="periodOptions"
+      [value]="period().toString()"
+      (valueChange)="choosePeriod($event)"
+    />
+  </div>
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Chargement des audiences…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Impossible de charger les audiences">
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @default {
+      @if (view(); as audiences) {
+        <fold-callout appearance="inset" variant="info">
+          Du {{ audiences.from }} au {{ audiences.to }}. {{ anonymityHelp(audiences.minClients) }}
+        </fold-callout>
+        <div class="segments">
+          @for (segmentation of audiences.segmentations; track segmentation.dimension) {
+            <app-audience-segment-card
+              [title]="texts[segmentation.dimension].title"
+              [subtitle]="texts[segmentation.dimension].subtitle"
+              [cells]="segmentation.cells"
+            />
+          }
+          <app-audience-segment-card
+            title="Abonnements, à part"
+            subtitle="Les commandes nées d’un abonnement : leur moment est celui du planificateur, leur rythme est automatique."
+            [cells]="[audiences.subscriptions]"
+          />
+        </div>
+      }
+    }
+  }
+</fold-page-layout>

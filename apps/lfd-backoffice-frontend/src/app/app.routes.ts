@@ -251,8 +251,9 @@ export const routes: Routes = [
     // LECTURE des droits pour la trousse « Droits » (2026-10-15), dont les
     // outils d'écriture ne se déclarent qu'avec `staff_access:write` ; la
     // LECTURE des suggestions décidées (2026-10-18), dont les outils
-    // d'écriture ne se déclarent qu'avec `lfc_suggestions:write`.
-    // L'un des sept suffit : la
+    // d'écriture ne se déclarent qu'avec `lfc_suggestions:write` ; la LECTURE
+    // de la croissance pour les audiences (2026-10-18, A1), en lecture seule.
+    // L'un des huit suffit : la
     // page ne déclare que les trousses dont le compte a le droit.
     path: 'outils-agent',
     canActivate: [
@@ -264,6 +265,7 @@ export const routes: Routes = [
         'delivery_settings:read',
         'staff_access:read',
         'lfc_suggestions:read',
+        'b2b_growth:read',
       ),
     ],
     title: 'Outils agent — LFC B2B admin',
@@ -369,6 +371,18 @@ export const routes: Routes = [
   ...ficheClientRoutes,
   ...adminRoutes,
   ...reglagesRoutes,
+  {
+    // Les AUDIENCES de la clientèle (plan-audiences.md, A1, 2026-10-18) — la
+    // deuxième vue d'Analytics, sous le même droit que la croissance : des
+    // chiffres agrégés, lus pour comprendre. Déclarée AVANT `analytics`, qui
+    // n'a pas d'enfant : la croissance garde son adresse, et c'est le rail
+    // qui en fait une section.
+    path: 'analytics/audiences',
+    canActivate: [permissionGuard('b2b_growth:read')],
+    title: 'Audiences — LFC B2B admin',
+    loadComponent: () =>
+      import('./analytics/audiences/audiences-page/audiences-page').then((m) => m.AudiencesPage),
+  },
   {
     // ANALYTICS — le module qui lit ce que le parc raconte.
     //

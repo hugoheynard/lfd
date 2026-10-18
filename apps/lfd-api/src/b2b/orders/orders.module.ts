@@ -163,6 +163,8 @@ import { OrderRepository } from "./domain/ports/order.repository.js";
 import { PrismaCustomerSkuReader } from "./infrastructure/prisma-customer-sku.reader.js";
 import { PrismaSuggestedSkuSalesReader } from "./infrastructure/prisma-suggested-sku-sales.reader.js";
 import { SuggestedSkuSalesReader } from "../recommendations/domain/ports/suggested-sku-sales.reader.js";
+import { AudienceOrderReader } from "../audiences/domain/ports/audience-order.reader.js";
+import { PrismaAudienceOrderReader } from "./infrastructure/prisma-audience-order.reader.js";
 import { PrismaOrderGuardReader } from "./infrastructure/prisma-order-guard.reader.js";
 import { PrismaPreferredPickupReader } from "./infrastructure/prisma-preferred-pickup.reader.js";
 import { PrismaOrderPayerReader } from "./infrastructure/prisma-order-payer.reader.js";
@@ -465,6 +467,9 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // Les ventes par jour × article, que la recommandation déclare pour estimer
     // ce que ses suggestions ont fait commander (RS6) : des totaux, aucun client.
     { provide: SuggestedSkuSalesReader, useClass: PrismaSuggestedSkuSalesReader },
+    // Les commandes en agrégats par segment, que les audiences déclarent (A1) :
+    // une ligne par case, aucun client.
+    { provide: AudienceOrderReader, useClass: PrismaAudienceOrderReader },
     { provide: OrderRepository, useClass: PrismaOrderRepository },
     // Le registre des clés de passation : un double clic ne fait qu'une commande.
     { provide: OrderIdempotencyStore, useClass: PrismaOrderIdempotencyStore },
@@ -517,6 +522,8 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     OrderNumberReader,
     // Les ventes par jour × article, lues par la recommandation (RS6).
     SuggestedSkuSalesReader,
+    // Les agrégats par segment, lus par les audiences (A1).
+    AudienceOrderReader,
   ],
 })
 export class OrdersModule {}

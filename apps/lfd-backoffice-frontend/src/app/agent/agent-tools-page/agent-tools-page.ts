@@ -11,6 +11,7 @@ import { FoldCalloutComponent, FoldPageLayoutComponent } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { declareAccessAgentTools } from '../access-agent-tools';
+import { declareAudienceAgentTools } from '../audience-agent-tools';
 import { declareCustomerAgentTools } from '../customer-agent-tools';
 import { declareMediaAgentTools } from '../media-agent-tools';
 import { declareOpsAgentTools } from '../ops-agent-tools';
@@ -154,8 +155,15 @@ export class AgentToolsPage {
   protected readonly suggestionTools = signal<readonly string[]>([]);
 
   /**
+   * La trousse des audiences (2026-10-18, A1) — vide sans `b2b_growth:read`,
+   * le droit de `admin/audiences`. Elle ne fait que lire, et ne dit rien de
+   * plus que l'écran : le seuil d'anonymat est appliqué par le serveur.
+   */
+  protected readonly audienceTools = signal<readonly string[]>([]);
+
+  /**
    * Lus une fois : la garde de la route a déjà chargé les permissions. Elle
-   * laisse passer l'un des sept droits ; chaque trousse suit le sien, et la
+   * laisse passer l'un des huit droits ; chaque trousse suit le sien, et la
    * page dit laquelle manque.
    */
   private readonly permissions = inject(PermissionsStore);
@@ -170,6 +178,7 @@ export class AgentToolsPage {
   protected readonly accessWritable = this.permissions.can('staff_access:write');
   protected readonly suggestionsAllowed = this.permissions.can('lfc_suggestions:read');
   protected readonly suggestionsWritable = this.permissions.can('lfc_suggestions:write');
+  protected readonly audiencesAllowed = this.permissions.can('b2b_growth:read');
 
   /** Un agent est-il branché ? Un signal, puisque la réponse change. */
   protected readonly bridged = signal(false);
@@ -219,7 +228,7 @@ export class AgentToolsPage {
     return true;
   }
 
-  /** Déclare les sept trousses ; à appeler dans le contexte d'injection du composant. */
+  /** Déclare les huit trousses ; à appeler dans le contexte d'injection du composant. */
   private declareAll(): void {
     this.tools.set(this.pimAllowed ? declarePimAgentTools(this.reemitAllowed) : []);
     this.mediaTools.set(this.mediaAllowed ? declareMediaAgentTools() : []);
@@ -232,5 +241,6 @@ export class AgentToolsPage {
     this.suggestionTools.set(
       this.suggestionsAllowed ? declareSuggestionAgentTools(this.suggestionsWritable) : [],
     );
+    this.audienceTools.set(this.audiencesAllowed ? declareAudienceAgentTools() : []);
   }
 }

@@ -351,9 +351,10 @@ export class App {
    * rendrait 403 — et la route, elle, le refuserait de toute façon
    * (`app.routes.ts`, `anyPermissionGuard('pim_catalog:write',
    * 'media_library:write', 'ops_health:read', 'b2b_companies:read', 'delivery_settings:read',
-   * 'staff_access:read', 'lfc_suggestions:read')`).
+   * 'staff_access:read', 'lfc_suggestions:read', 'b2b_growth:read')`).
    */
-  // Le même « l'un des sept » que la garde de `/outils-agent` (2026-10-18) :
+  // Le même « l'un des huit » que la garde de `/outils-agent` (2026-10-18,
+  // les audiences en huitième) :
   // l'entrée suit la route, sinon un compte médiathèque ou exploitation seul
   // aurait un écran ouvert que rien n'annonce.
   protected readonly canUseAgentTools = computed(
@@ -364,7 +365,8 @@ export class App {
       this.permissions.can('b2b_companies:read') ||
       this.permissions.can('delivery_settings:read') ||
       this.permissions.can('staff_access:read') ||
-      this.permissions.can('lfc_suggestions:read'),
+      this.permissions.can('lfc_suggestions:read') ||
+      this.permissions.can('b2b_growth:read'),
   );
 
   /**

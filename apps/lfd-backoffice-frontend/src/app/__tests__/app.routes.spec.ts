@@ -202,6 +202,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // Cinq depuis le 2026-10-14 : la flotte, en lecture (`delivery_settings:read`).
   // Six depuis le 2026-10-15 : les droits, en lecture (`staff_access:read`).
   // Sept depuis le 2026-10-18 : les suggestions, en lecture (`lfc_suggestions:read`).
+  // Huit le même jour : les audiences, en lecture de la croissance (`b2b_growth:read`).
   'outils-agent': {
     anyOf: [
       'pim_catalog:write',
@@ -211,6 +212,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
       'delivery_settings:read',
       'staff_access:read',
       'lfc_suggestions:read',
+      'b2b_growth:read',
     ],
   },
 
@@ -348,6 +350,8 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'commercial/cockpit': 'b2b_growth:read',
   'commercial/prospects': 'b2b_growth:read',
   analytics: 'b2b_growth:read',
+  // Les audiences de la clientèle (plan-audiences.md, A1, 2026-10-18).
+  'analytics/audiences': 'b2b_growth:read',
   'commercial/calendrier': 'b2b_growth:read',
   // LES DEMANDES CLIENTS, venues de `/b2b/demandes` le 2026-10-17 (Hugo) : le
   // droit du contact (demandes-clients.md, §6.8). Le mur `b2b_settings` de

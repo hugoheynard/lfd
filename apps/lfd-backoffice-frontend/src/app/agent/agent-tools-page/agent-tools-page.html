@@ -208,4 +208,25 @@
       estimés — les compteurs de la boutique ne nomment personne.
     </p>
   </section>
+
+  <section class="tools">
+    <h2>Audiences de la clientèle</h2>
+    @if (audiencesAllowed) {
+      <ul>
+        @for (tool of audienceTools(); track tool) {
+          <li>
+            <code>{{ tool }}</code>
+          </li>
+        }
+      </ul>
+    } @else {
+      <p class="excluded">
+        Non déclarés&nbsp;: votre compte n'a pas le droit de lire la croissance.
+      </p>
+    }
+    <p class="excluded">
+      <strong>À savoir&nbsp;:</strong> des chiffres agrégés seulement — une case de moins de cinq
+      clients n'en porte aucun, et aucun client n'est nommé.
+    </p>
+  </section>
 </fold-page-layout>

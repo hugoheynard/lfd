@@ -10,8 +10,13 @@
 > de `vitruve` d'office (CLAUDE.md §9 bis). Le seul point sensible est le
 > passage de l'agrégé à la personne (§5) — il est exclu de ce plan.
 >
+> ✅ **A1 bâti le 2026-10-18** (non commité à l'écriture de ces lignes) :
+> le tableau des segments sûrs, décrit au présent dans
+> [`audiences.md`](audiences.md). Ce qui a été lu pour le bâtir est au §8 ;
+> le regroupement NAF y attend la décision de Hugo (Q4). A2–A4 restent.
+>
 > **Relu le 2026-10-18 au soir** : R0, dont dépend A1, est bâti (les compteurs
-> d'audience anonymes de `growth`) ; rien de ce plan ne l'est. Ne pas confondre
+> d'audience anonymes de `growth`) ; rien de ce plan ne l'était alors. Ne pas confondre
 > ces segments de **clientèle** avec l'**audience d'un article** (`pro`,
 > `public`, `both`), qui dit à qui il est vendu, ni avec celle d'une règle du
 > staff ([`suggestions-du-staff.md`](suggestions-du-staff.md)), qui dit à qui
@@ -33,15 +38,15 @@ de ce qu'elle achète.
 
 ## 2. Les segments, et d'où ils viennent
 
-| Segment                                | Source aujourd'hui                                                                                                                                                                              | Fiabilité                                                                        |
-| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| **Pro / particulier**                  | `Order.companyId` optionnel : présent = commande d'entreprise (`apps/lfd-api/prisma/schema/public/orders.prisma`, bloc « Tenancy »)                                                             | **sûre**                                                                         |
-| **Activité du pro**                    | `Company.nafCode`, résolu depuis le SIRET, vide par défaut (`public/account.prisma:106-109`)                                                                                                    | sûre quand renseignée ; regroupement NAF → « hôtel, restaurant, café… » à écrire |
-| **Retrait / livraison**                | `Order.fulfillmentMethod` (`orders.prisma:143`)                                                                                                                                                 | **sûre**                                                                         |
-| **Site de retrait, zone de livraison** | le détail du retrait ou de la livraison, `Order.fulfillment` (Json, `orders.prisma:186`) et l'adresse figée `deliveryAddressSnapshot` (`:151`) — leur contenu exact **non vérifié** (au lot A1) | sûre une fois lue                                                                |
-| **Fidèle / régulier / de passage**     | nombre de commandes par personne ou société sur la période                                                                                                                                      | **sûre** (dérivée)                                                               |
-| **Moment** (jour, heure, créneau)      | `Order.createdAt` et le jour de retrait                                                                                                                                                         | **sûre**                                                                         |
-| **Résident / saisonnier / vacancier**  | **rien de fiable aujourd'hui** — voir §3                                                                                                                                                        | à construire                                                                     |
+| Segment                                | Source aujourd'hui                                                                                                                                                                    | Fiabilité                                                                        |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| **Pro / particulier**                  | `Order.companyId` optionnel : présent = commande d'entreprise (`apps/lfd-api/prisma/schema/public/orders.prisma`, bloc « Tenancy »)                                                   | **sûre**                                                                         |
+| **Activité du pro**                    | `Company.nafCode`, résolu depuis le SIRET, vide par défaut (`public/account.prisma:106-109`)                                                                                          | sûre quand renseignée ; regroupement NAF → « hôtel, restaurant, café… » à écrire |
+| **Retrait / livraison**                | `Order.fulfillmentMethod` (`orders.prisma:143`)                                                                                                                                       | **sûre**                                                                         |
+| **Site de retrait, zone de livraison** | **lu au lot A1 (§8)** : le site dans `pickupAddress` (`orders.prisma:153`, `siteId`), la commune dans `deliveryAddressSnapshot` (`:151`) ; `fulfillment` (`:186`) ne porte aucun lieu | **sûre** (site : absent des commandes d'avant les sites)                         |
+| **Fidèle / régulier / de passage**     | nombre de commandes par personne ou société sur la période                                                                                                                            | **sûre** (dérivée)                                                               |
+| **Moment** (jour, heure, créneau)      | `Order.createdAt` et le jour de retrait                                                                                                                                               | **sûre**                                                                         |
+| **Résident / saisonnier / vacancier**  | **rien de fiable aujourd'hui** — voir §3                                                                                                                                              | à construire                                                                     |
 
 ## 3. Résident, saisonnier ou vacancier — le segment qui compte le plus
 
@@ -113,7 +118,8 @@ libre.
 > D'ici là, le segment n'existe qu'**estimé** (A3), affiché comme tel.
 >
 > **Q3 tranchée le 2026-10-18 (Hugo) : oui**, la langue de chaque commande est
-> enregistrée (A3). **Q4** : décidée au lot A1.
+> enregistrée (A3). **Q4** : une **proposition** est écrite au lot A1 (§8.2),
+> bâtie telle quelle ; elle attend la validation de Hugo.
 
 1. **La question « résident · saisonnier · vacancier » : oui ?** _Recommandation :
    oui, facultative._ C'est le seul moyen fiable, et elle ne coûte qu'un clic.
@@ -126,3 +132,45 @@ libre.
    client).
 4. **Le regroupement des codes NAF** en familles d'activité (hôtellerie,
    restauration, café-bar, commerce…) : on le décide ensemble au lot A1.
+
+## 8. Le lot A1 — ce qui a été lu, et la proposition NAF
+
+### 8.1 Ce que portent les colonnes figées (lu le 2026-10-18)
+
+| Colonne                                   | Ce qu'elle porte                                                                                                                                                               | Lu dans                                                                                                                                                                   |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `orders.fulfillment` (Json)               | **aucun lieu** : la tranche demandée, le contact et l'exigence de signature, chacun avec sa provenance (`default` / `override`)                                                | `packages/contracts/src/order.ts:545-563` (`OrderFulfillment`, `orderFulfillmentSchema`) ; écrit par `prisma-order.repository.ts:109`                                     |
+| `orders.pickup_address` (Json)            | les champs postaux du point (`label`, `ligne1`, `ligne2`, `codePostal`, `ville`, `pays`) **et `siteId`**, facultatif : absent des commandes d'avant le lot S2, jamais rattrapé | `packages/contracts/src/pickup.ts:115-117` (`pickupSnapshotSchema`), `address.ts:258-268` ; écrit par `order-drafting.service.ts:486` et `prisma-order.repository.ts:107` |
+| `orders.delivery_address_snapshot` (Json) | les champs postaux livrés (`label`, `ligne1`, `ligne2`, `codePostal`, `ville`, `pays`) ; la zone tarifée (`delivery_zone_id`) se **déduit** du code postal                     | `packages/contracts/src/address.ts:258-268` (`billingAddressPayloadSchema`) ; écrit par `order-drafting.service.ts:497-512` et `prisma-order.repository.ts:103`           |
+| `companies.naf_code`                      | le code NAF résolu depuis le SIRET (`56.10A`), vide tant qu'inconnu                                                                                                            | `apps/lfd-api/prisma/schema/public/account.prisma:106-109`                                                                                                                |
+| `order_lines.line_total_cents`            | le total HT de la ligne en **centimes** (le prix unitaire est en millicentimes, et n'est pas lu)                                                                               | `orders.prisma`, modèle `OrderLine`                                                                                                                                       |
+
+Donc : le **site de retrait** se lit sur `pickup_address->>'siteId'` (nommé par
+son `label`), la **zone de livraison** sur `delivery_address_snapshot->>'codePostal'`
+(nommée par sa `ville`). `fulfillment` ne sert à aucune coupe.
+
+### 8.2 Le regroupement NAF proposé (Q4, à valider)
+
+| Famille                 | Codes NAF rév. 2                                           |
+| ----------------------- | ---------------------------------------------------------- |
+| Hôtellerie              | 55.xx — hôtels, hébergement touristique, campings          |
+| Restauration            | 56.1x, 56.2x — restaurants, rapide, traiteurs, cantines    |
+| Café, bar               | 56.30Z — débits de boissons                                |
+| Commerce alimentaire    | 47.11, 47.2x — magasins ; 10.71 — boulangeries-pâtisseries |
+| Autre activité          | tout autre code renseigné                                  |
+| Activité non renseignée | code vide, ou commande pro sans société                    |
+
+Deux choix à confirmer : **10.71** (boulangerie artisanale, section
+« industrie ») rangé en commerce alimentaire, parce que c'est un revendeur de
+fait ; et **56.21Z** (traiteurs) en restauration plutôt qu'à part.
+
+### 8.3 Décisions prises au lot, faute de les trouver dans le plan
+
+- **Commandes saisies par l'équipe : gardées** (RS6 les écarte : elles n'ont vu
+  aucune suggestion ; ici elles disent qui commande).
+- **Règlement** : une carte en attente, refusée ou remboursée est écartée,
+  comme dans le CA de la croissance — le tableau chiffre un CA.
+- **Pro ou particulier** : `orders.clientele`, et pour une commande d'avant la
+  colonne, la présence d'une société.
+- **Moment** : cinq tranches (nuit 0–7 h, matin 7–11 h, midi 11–14 h,
+  après-midi 14–18 h, soir 18 h–minuit).

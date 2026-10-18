@@ -1,0 +1,21 @@
+<fold-card>
+  <fold-element-title variant="title" [title]="title()" [subtitle]="subtitle()" />
+  <fold-data-table
+    narrowLayout="cards"
+    [caption]="title()"
+    [columns]="columns"
+    [rows]="rows()"
+    [rowKey]="rowKey"
+    [empty]="empty"
+  >
+    <!-- `fold-data-table` n'a aucun rendu par défaut : chaque colonne a son gabarit. -->
+    <ng-template foldCell="label" let-row>{{ row.label }}</ng-template>
+    <ng-template foldCell="clients" let-row>
+      <span [class.masked]="row.masked">{{ row.clients }}</span>
+    </ng-template>
+    <ng-template foldCell="orders" let-row>{{ row.orders }}</ng-template>
+    <ng-template foldCell="averageBasket" let-row>{{ row.averageBasket }}</ng-template>
+    <ng-template foldCell="revenue" let-row>{{ row.revenue }}</ng-template>
+    <ng-template foldCell="topFamilies" let-row>{{ row.topFamilies }}</ng-template>
+  </fold-data-table>
+</fold-card>

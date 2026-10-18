@@ -36,6 +36,8 @@ export interface CompanySeed {
   /** Absent ⇒ repris du SIRET quand son préfixe est un SIREN valide, vide sinon. */
   readonly siren?: string;
   readonly status?: CompanyStatus;
+  /** Le code NAF résolu (`56.10A`) ; absent ⇒ vide, comme une société dont le SIRET n'a pas encore été lu. */
+  readonly nafCode?: string;
 }
 
 /** Ce qu'un test peut vouloir imposer sur une personne. */
@@ -77,6 +79,7 @@ export function createCompany(prisma: PrismaService, seed: CompanySeed = {}): Pr
       contactNom: "Durand",
       contactEmail: "camille@test.fr",
       status: seed.status ?? CompanyStatus.active,
+      nafCode: seed.nafCode ?? "",
     },
   });
 }

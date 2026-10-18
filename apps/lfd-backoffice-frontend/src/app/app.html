@@ -436,16 +436,38 @@
              fait. La croissance y a été sortie de Commercial : on l'ouvrait au
              milieu du cockpit et des prospects, alors qu'on ne la consulte pas
              pour agir sur un dossier mais pour comprendre un mouvement. -->
-        <a
-          fold-menu-item
-          icon="stats"
+        <!-- Une section depuis le 2026-10-18 : les AUDIENCES de la clientèle
+             (plan-audiences.md, A1) en sont la deuxième vue, sous le même droit.
+             La croissance garde son adresse `/analytics` ; `exact` l'éteint
+             quand on est sur les audiences, qui vivent sous elle. -->
+        <fold-menu-section
           label="Analytics"
-          routerLink="/analytics"
-          routerLinkActive
-          #analyticsRla="routerLinkActive"
-          [active]="analyticsRla.isActive"
-          (click)="mobileNavOpen.set(false)"
-        ></a>
+          collapsible
+          [collapsed]="menuFolded('analytics')"
+          (collapsedChange)="foldMenu('analytics', $event)"
+        >
+          <a
+            fold-menu-item
+            icon="stats"
+            label="Croissance"
+            routerLink="/analytics"
+            routerLinkActive
+            [routerLinkActiveOptions]="{ exact: true }"
+            #analyticsRla="routerLinkActive"
+            [active]="analyticsRla.isActive"
+            (click)="mobileNavOpen.set(false)"
+          ></a>
+          <a
+            fold-menu-item
+            icon="team"
+            label="Audiences"
+            routerLink="/analytics/audiences"
+            routerLinkActive
+            #audiencesRla="routerLinkActive"
+            [active]="audiencesRla.isActive"
+            (click)="mobileNavOpen.set(false)"
+          ></a>
+        </fold-menu-section>
       }
 
       @if (canSeeOps()) {
@@ -1064,16 +1086,30 @@
         </fold-nav-group>
       }
       @if (canSeeAnalytics()) {
-        <a
-          fold-nav-tile
-          icon="stats"
-          label="Analytics"
-          routerLink="/analytics"
-          routerLinkActive
-          #analyticsTile="routerLinkActive"
-          [active]="analyticsTile.isActive"
-          (click)="mobileNavOpen.set(false)"
-        ></a>
+        <!-- La MÊME section qu'au rail : les deux arbres ne partagent pas leur modèle. -->
+        <fold-nav-group icon="stats" label="Analytics" [entryCountLabel]="entriesLabel">
+          <a
+            fold-nav-tile
+            icon="stats"
+            label="Croissance"
+            routerLink="/analytics"
+            routerLinkActive
+            [routerLinkActiveOptions]="{ exact: true }"
+            #analyticsTile="routerLinkActive"
+            [active]="analyticsTile.isActive"
+            (click)="mobileNavOpen.set(false)"
+          ></a>
+          <a
+            fold-nav-tile
+            icon="team"
+            label="Audiences"
+            routerLink="/analytics/audiences"
+            routerLinkActive
+            #audiencesTile="routerLinkActive"
+            [active]="audiencesTile.isActive"
+            (click)="mobileNavOpen.set(false)"
+          ></a>
+        </fold-nav-group>
       }
       @if (canSeeOps()) {
         <a

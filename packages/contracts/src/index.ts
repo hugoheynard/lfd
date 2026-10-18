@@ -2234,6 +2234,21 @@ export {
   type StaffSuggestionRefusal,
 } from "./staff-suggestion-preview.js";
 export {
+  AUDIENCE_DIMENSIONS,
+  AUDIENCE_PERIODS,
+  audiencesQuerySchema,
+  DEFAULT_AUDIENCE_PERIOD,
+  type AudienceCell,
+  type AudienceDimension,
+  type AudienceMaskedCell,
+  type AudiencePeriod,
+  type AudienceSegmentation,
+  type AudienceShownCell,
+  type AudiencesQuery,
+  type AudiencesView,
+  type AudienceTopFamily,
+} from "./audiences.js";
+export {
   DEFAULT_STAFF_SUGGESTION_RESULT_PERIOD,
   STAFF_SUGGESTION_RESULT_PERIODS,
   staffSuggestionResultsQuerySchema,

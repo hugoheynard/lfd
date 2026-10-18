@@ -265,4 +265,14 @@ describe('AgentToolsPage', () => {
     expect(listed).toContain('suggestion_create');
     expect(listed).toContain('suggestion_order_set');
   });
+
+  it('ne déclare QUE les audiences, en lecture, pour un compte qui n’a que `b2b_growth:read`', () => {
+    const { root } = render(['b2b_growth:read']);
+    const listed = [...root.querySelectorAll('code')].map((el) => el.textContent?.trim() ?? '');
+    expect(listed).toEqual(['audiences_read']);
+    TestBed.resetTestingModule();
+
+    const without = render(['pim_catalog:write']);
+    expect(without.root.textContent).toContain('pas le droit de lire la croissance');
+  });
 });
