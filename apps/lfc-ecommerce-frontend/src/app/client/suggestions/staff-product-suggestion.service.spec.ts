@@ -107,17 +107,31 @@ describe('StaffProductSuggestion', () => {
     ]);
   });
 
-  it('compte le clic et l’ajout, à la règle', async () => {
+  it('l’ouverture de la fiche compte le clic, le « + » l’ajout — chacun le sien, à la règle', async () => {
     const { pick, http, audience } = boot();
     pick.open('VIE-001');
     await answer(http, [STAFF_PICK]);
 
+    pick.opened(STAFF_PICK);
     pick.taken(STAFF_PICK);
 
     expect(audience.events.map(({ event, origin }) => [event, origin?.placement])).toEqual([
       ['suggestion_shown', '01jrule'],
       ['suggestion_clicked', '01jrule'],
       ['suggestion_added', '01jrule'],
+    ]);
+  });
+
+  it('le « + » seul ne compte pas de clic', async () => {
+    const { pick, http, audience } = boot();
+    pick.open('VIE-001');
+    await answer(http, [STAFF_PICK]);
+
+    pick.taken(STAFF_PICK);
+
+    expect(audience.events.map(({ event }) => event)).toEqual([
+      'suggestion_shown',
+      'suggestion_added',
     ]);
   });
 

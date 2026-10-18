@@ -58,6 +58,7 @@
           <app-staff-suggestion-card
             [view]="view"
             [fallbackTitle]="t().shop.alsoLike"
+            (opened)="staffPick.opened($event)"
             (taken)="staffPick.taken($event)"
           />
         }

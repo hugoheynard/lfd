@@ -1,5 +1,12 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import {
   FoldIconComponent,
   FoldPanelHostService,
@@ -12,6 +19,7 @@ import { formatCents } from '../../format-money';
 import { CartSummary } from '../cart-summary/cart-summary';
 import { ClientCart } from '../client-cart.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
+import { PieceRequest } from '../../shop/piece-request.service';
 
 /**
  * Le panier, dans la barre d'app.
@@ -61,6 +69,19 @@ export class ClientCartPill {
   protected readonly t = inject(ClientCopyService).t;
 
   protected readonly open = signal(false);
+
+  constructor() {
+    // La suggestion du popover ouvre la fiche de son article (Hugo,
+    // 2026-10-18) : le popover se referme pour qu'elle se voie.
+    const pieces = inject(PieceRequest);
+    const before = pieces.rank();
+    effect(() => {
+      const ask = pieces.latest();
+      if (ask !== null && ask.id > before) {
+        this.open.set(false);
+      }
+    });
+  }
 
   protected readonly total = computed(() => formatCents(this.cart.totals().totalCents));
 

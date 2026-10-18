@@ -157,9 +157,9 @@ règles revient à la première ; la seconde est « battue » (`outranked_by`).
 Les places sont des constantes du domaine, `STAFF_CART_PLACES`,
 `STAFF_PRODUCT_PLACES` et `STAFF_HOME_PLACES` (`domain/services/cart-suggestions.ts`,
 `product-suggestions.ts`, `home-suggestions.ts`). Hugo a tranché **une place
-au panier** le 2026-10-18 ; la fiche a pris la même valeur, à confirmer.
-L'accueil en a **deux** — la recommandation d'origine (« 2 sur 3 »), retenue
-pour bâtir RS7 et à confirmer. Le calculé qui remplirait les places suivantes
+au panier** le 2026-10-18, et validé le même jour la même valeur sur la fiche
+et **deux** places à l'accueil — la recommandation d'origine (« 2 sur 3 »),
+avec « Notre sélection » pour titre par défaut. Le calculé qui remplirait les places suivantes
 n'existe pas encore.
 
 **Au panier**, la carte remplace la relance codée en dur d'avant
@@ -182,7 +182,8 @@ Une requête par affichage de l'accueil ; le panier courant n'y sert qu'à
 exclure ce qu'il contient. Une carte par article, côte à côte au bureau ; sans
 règle, ni rangée ni titre.
 
-**Après un ajout** (« Ajouté ! »), ce n'est pas un quatrième emplacement : la
+**Après un ajout** (« Ajouté ! »), ce n'est pas un quatrième emplacement
+(Hugo, 2026-10-18) : la
 suggestion du **panier** (mêmes règles, `placement` `cart`, même route),
 recalculée avec l'article qui vient d'entrer. Elle répond à une **entrée** au
 panier — le passage de zéro à une pièce depuis une tuile, la fiche ou une
@@ -194,6 +195,17 @@ n'ouvre pas le panier ; elle se tait panier ouvert, où la carte du panier parle
 déjà. Sans règle applicable, rien ne paraît : la tuile et la pastille du
 panier disent déjà que l'article est entré. Un hôte du shell (`AfterAddHost`)
 ne charge le retour qu'à la première entrée, par import à la demande.
+
+**La carte a deux gestes** (Hugo, 2026-10-18). Un clic sur la carte — un
+bouton, nommé par ce qu'il montre — **ouvre la fiche** de l'article suggéré ;
+seul le **« + »**, un second bouton à côté (« Ajouter … »), l'ajoute au panier.
+La fiche vit dans la boutique : la demande passe par `PieceRequest`
+(`client/shop/piece-request.service.ts`), qui mène à `/boutique` quand on n'y
+est pas (depuis l'accueil, ou le retour « Ajouté ! » posé ailleurs), et que
+`ShopPage` consomme une fois, comme le toucher d'une tuile. Ce qui couvrirait
+la fiche s'efface : le dialogue du panier et son popover se referment, le
+retour « Ajouté ! » aussi. Sur une fiche ouverte, la fiche passe à l'article
+suggéré. Pas de « ne plus proposer » au retour « Ajouté ! » (Hugo, même jour).
 
 Partout : rien en SSR, la requête vit dans un morceau chargé à la demande (le
 paquet initial de la boutique est près de son plafond — RS7 l'a porté de
@@ -286,8 +298,11 @@ des compteurs d'audience (`(jour métier, sku, événement, emplacement, source)
 
 - `suggestion_shown` une fois par article et par ouverture (du panier, de la
   fiche, de l'accueil), et une fois par proposition de l'après-ajout ;
-- `suggestion_clicked` et `suggestion_added` ensemble, au « + » — aujourd'hui
-  la carte n'a pas d'autre geste, les deux chiffres sont donc égaux ;
+- `suggestion_clicked` quand un clic sur la carte ouvre la fiche, et
+  `suggestion_added` au « + » — deux gestes distincts depuis le 2026-10-18
+  (Hugo) : le « + » ne compte pas de clic, et cliquées ≠ ajoutées. Avant,
+  les deux partaient ensemble au « + » : sur les jours antérieurs, les deux
+  chiffres sont égaux ;
 - `added_to_cart` **aussi**, au passage de zéro à une pièce (Hugo,
   2026-10-18 : le taux d'ajout global inclut les suggestions).
 
@@ -459,7 +474,7 @@ longue n'est regardée que jusque-là, et la vue le dit (`window.capped`,
 « la suite de la période n'est pas regardée ») ; une règle qui commence
 au-delà n'est pas jugée sur ce point. Sans point de retrait : la règle
 générale du commerce, celle de la livraison — une heure limite propre à un
-point de retrait n'est pas regardée.
+point de retrait n'est pas regardée (validé par Hugo le 2026-10-18).
 
 **Le déclencheur** : un article (au panier, fiche ouverte) qu'aucune
 clientèle de la règle ne reçoit, ou une famille que le catalogue servi ne
@@ -477,7 +492,9 @@ d'une semaine et n'en dit rien. La vue porte ces raisons dans `conditions`
 **Gravité** : un article passe s'il est servi et commandable pour au moins
 une clientèle de la règle. Aucun ne passe, un déclencheur mort, ou une
 condition qui ne peut plus être vraie : **Vide**
-(badge alerte). Sinon, la moindre raison : **Partielle** (avertissement).
+(badge alerte). Sinon, la moindre raison : **Partielle** (avertissement) —
+ainsi un article servi aux seuls professionnels, dans une règle qui vise les
+deux clientèles, la rend Partielle (validé par Hugo le 2026-10-18).
 
 Domaine pur : `domain/services/suggestion-alerts.ts` (`watchedRules`,
 `alertWindow`, `ruleAlert`) ; cas d'usage :

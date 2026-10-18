@@ -28,7 +28,8 @@ interface Offer {
  * n'est chargé qu'à la première entrée). Une entrée plus récente remplace la proposition en cours.
  *
  * Il compte comme le panier : `suggestion_shown` une fois par proposition,
- * `suggestion_clicked` et `suggestion_added` au geste — source `staff`,
+ * `suggestion_clicked` quand la carte ouvre la fiche, `suggestion_added`
+ * quand son « + » ajoute (Hugo, 2026-10-18 : deux gestes, deux compteurs) — source `staff`,
  * emplacement = l'id de la règle.
  */
 @Injectable({ providedIn: 'root' })
@@ -73,9 +74,14 @@ export class AfterAddSuggestion {
     });
   }
 
-  /** Le client prend la suggestion : la carte est cliquée, l'article ajouté. */
-  taken(view: CartSuggestionView): void {
+  /** Le client ouvre la fiche de l'article suggéré, sans l'ajouter. */
+  opened(view: CartSuggestionView): void {
     this.count(view, 'suggestion_clicked');
+    this.offer.set(null);
+  }
+
+  /** Le client ajoute l'article suggéré par le « + ». */
+  taken(view: CartSuggestionView): void {
     this.count(view, 'suggestion_added');
     this.offer.set(null);
   }

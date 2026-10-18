@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
 import { Router } from '@angular/router';
 import { instantToLocal } from '@lfd/contracts';
 import {
@@ -30,6 +38,7 @@ import { dialogSide } from '../../panel-side';
 import { CartSummary } from '../cart-summary/cart-summary';
 import { OrderDoors } from '../../shop/order-doors';
 import { OrderOpeningStore } from '../../shop/order-opening.store';
+import { PieceRequest } from '../../shop/piece-request.service';
 import { ServiceDayNotice } from '../../shop/service-day-notice';
 
 /**
@@ -137,6 +146,16 @@ export class CartDialog {
 
   constructor() {
     void this.opening.hydrate();
+    // La suggestion du panier ouvre la fiche de son article (Hugo,
+    // 2026-10-18) : le panier s'efface pour qu'elle se voie.
+    const pieces = inject(PieceRequest);
+    const openedAfter = pieces.rank();
+    effect(() => {
+      const ask = pieces.latest();
+      if (ask !== null && ask.id > openedAfter) {
+        this.ref.close();
+      }
+    });
   }
 
   /**

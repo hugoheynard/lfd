@@ -1,7 +1,12 @@
-<button class="suggestion" type="button" (click)="take()">
-  <span class="sign" aria-hidden="true"><fold-icon name="plus" /></span>
-  <span class="pitch">
+<!-- Deux boutons côte à côte, jamais l'un dans l'autre (Hugo, 2026-10-18) :
+     la carte ouvre la fiche de l'article, le « + » seul l'ajoute. Le nom du
+     premier est ce qu'il montre ; le second a le sien. -->
+<div class="suggestion">
+  <button class="add" type="button" [attr.aria-label]="card().addLabel" (click)="take()">
+    <fold-icon name="plus" />
+  </button>
+  <button class="pitch" type="button" (click)="open()">
     <span class="pitch-title">{{ card().title }}</span>
     <span class="pitch-line">{{ card().line }} · {{ card().price }} {{ card().suffix }}</span>
-  </span>
-</button>
+  </button>
+</div>

@@ -38,7 +38,8 @@ interface SuggestionRequest {
  * à la demande.
  *
  * Elle compte ce qu'elle montre : `suggestion_shown` une fois par article et
- * par ouverture, `suggestion_clicked` et `suggestion_added` au geste — source
+ * par ouverture, `suggestion_clicked` quand la carte ouvre la fiche, `suggestion_added`
+ * quand son « + » ajoute (Hugo, 2026-10-18 : deux gestes, deux compteurs) — source
  * `staff`, emplacement = l'id de la règle.
  */
 @Injectable({ providedIn: 'root' })
@@ -111,9 +112,13 @@ export class StaffCartSuggestion {
     this.openings.update((count) => Math.max(0, count - 1));
   }
 
-  /** Le client prend la suggestion : la carte est cliquée, l'article ajouté. */
-  taken(view: CartSuggestionView): void {
+  /** Le client ouvre la fiche de l'article suggéré, sans l'ajouter. */
+  opened(view: CartSuggestionView): void {
     this.count(view, 'suggestion_clicked');
+  }
+
+  /** Le client ajoute l'article suggéré par le « + ». */
+  taken(view: CartSuggestionView): void {
     this.count(view, 'suggestion_added');
   }
 

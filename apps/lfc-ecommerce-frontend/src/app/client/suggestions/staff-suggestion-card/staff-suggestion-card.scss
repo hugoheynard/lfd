@@ -3,7 +3,8 @@
 }
 
 /* La suggestion du staff : une PROPOSITION, pas une ligne de panier. D'où le beurre pâle,
-   qui la distingue de ce qui est déjà commandé. */
+   qui la distingue de ce qui est déjà commandé. Le cadre n'est plus un bouton : il porte
+   deux gestes, la fiche et le « + ». */
 .suggestion {
   display: flex;
   align-items: center;
@@ -13,12 +14,13 @@
   border: 1px solid var(--lfc-color-accent-border);
   border-radius: var(--fold-radius-md);
   background: var(--lfc-color-accent-surface);
-  text-align: left;
-  cursor: pointer;
 }
 
-.sign {
+.add {
   flex: none;
+  padding: 0;
+  border: 0;
+  cursor: pointer;
   display: grid;
   place-items: center;
   width: 26px;
@@ -34,7 +36,14 @@
 }
 
 .pitch {
+  flex: 1;
   min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
   display: flex;
   flex-direction: column;
   gap: 1px;

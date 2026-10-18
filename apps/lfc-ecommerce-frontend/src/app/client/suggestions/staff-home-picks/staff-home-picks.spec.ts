@@ -5,6 +5,8 @@ import type { HomeSuggestionView } from '@lfd/contracts';
 import type { ProductAudienceEvent } from '@lfd/contracts/shop-values';
 import { of } from 'rxjs';
 
+import { Router } from '@angular/router';
+
 import { AuthFacade } from '../../../auth/auth.facade';
 import type { AudienceOrigin } from '../../audience/product-audience-queue';
 import { ProductAudience } from '../../audience/product-audience.service';
@@ -12,6 +14,7 @@ import { ClientCart } from '../../cart/client-cart.service';
 import { provideWorkspace, workspaceDouble } from '../../client-workspace.fixture';
 import { FR } from '../../copy/fr';
 import { hydrateWith, TEST_CATALOGUE, TEST_ITEMS } from '../../shop/shop-catalogue.fixture';
+import { PieceRequest } from '../../shop/piece-request.service';
 import { ShopCatalogue } from '../../shop/shop-catalogue.store';
 import { StaffHomePicksRow } from './staff-home-picks';
 
@@ -111,15 +114,31 @@ describe('StaffHomePicksRow', () => {
     const { cart, http, audience } = boot();
     const { root } = await mount(http, [pick('PAI-001')]);
 
-    root.querySelector<HTMLButtonElement>('app-staff-suggestion-card button')?.click();
+    root.querySelector<HTMLButtonElement>('app-staff-suggestion-card button.add')?.click();
     TestBed.tick();
 
     expect(cart.quantityOf('PAI-001')).toBe(1);
     expect(audience.events.map(({ event }) => event)).toEqual([
       'suggestion_shown',
-      'suggestion_clicked',
       'suggestion_added',
       'added_to_cart',
+    ]);
+  });
+
+  it('un clic sur la carte mène à la fiche de l’article dans la boutique, sans l’ajouter', async () => {
+    const { cart, http, audience } = boot();
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    const { root } = await mount(http, [pick('PAI-001')]);
+
+    root.querySelector<HTMLButtonElement>('app-staff-suggestion-card button.pitch')?.click();
+    TestBed.tick();
+
+    expect(navigate).toHaveBeenCalledWith(['/boutique']);
+    expect(TestBed.inject(PieceRequest).latest()?.sku).toBe('PAI-001');
+    expect(cart.quantityOf('PAI-001')).toBe(0);
+    expect(audience.events.map(({ event }) => event)).toEqual([
+      'suggestion_shown',
+      'suggestion_clicked',
     ]);
   });
 });

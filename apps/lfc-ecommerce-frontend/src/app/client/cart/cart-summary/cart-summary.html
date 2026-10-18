@@ -20,6 +20,7 @@
     <app-staff-suggestion-card
       [view]="view"
       [fallbackTitle]="t().shop.staffAdvice"
+      (opened)="staffPick.opened($event)"
       (taken)="staffPick.taken($event)"
     />
   }

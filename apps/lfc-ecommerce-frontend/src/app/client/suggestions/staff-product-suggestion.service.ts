@@ -33,7 +33,8 @@ interface Opening {
  * morceau chargé à la demande. Sans règle applicable, rien.
  *
  * Elle compte ce qu'elle montre : `suggestion_shown` une fois par ouverture,
- * `suggestion_clicked` et `suggestion_added` au geste — source `staff`,
+ * `suggestion_clicked` quand la carte ouvre la fiche, `suggestion_added`
+ * quand son « + » ajoute (Hugo, 2026-10-18 : deux gestes, deux compteurs) — source `staff`,
  * emplacement = l'id de la règle.
  */
 @Injectable({ providedIn: 'root' })
@@ -107,9 +108,13 @@ export class StaffProductSuggestion {
     this.opening.set(null);
   }
 
-  /** Le client prend la suggestion : la carte est cliquée, l'article ajouté. */
-  taken(view: ProductSuggestionView): void {
+  /** Le client ouvre la fiche de l'article suggéré, sans l'ajouter. */
+  opened(view: ProductSuggestionView): void {
     this.count(view, 'suggestion_clicked');
+  }
+
+  /** Le client ajoute l'article suggéré par le « + ». */
+  taken(view: ProductSuggestionView): void {
     this.count(view, 'suggestion_added');
   }
 

@@ -34,6 +34,7 @@ import { CartBar } from '../../cart/cart-bar/cart-bar';
 import { ClientBannerOutlet } from '../../nav/client-banner';
 import { ProductAudience } from '../../audience/product-audience.service';
 import { ProductSheet } from '../product-sheet/product-sheet';
+import { PieceRequest } from '../piece-request.service';
 import { OperationNotice } from '../operation-notice/operation-notice';
 import { ShelfGrid } from './shelf-grid/shelf-grid';
 import { ShelfNav } from './shelf-nav/shelf-nav';
@@ -177,6 +178,17 @@ export class ShopPage {
   }
 
   constructor() {
+    // Une fiche demandée d'ailleurs — une suggestion du staff à l'accueil, au
+    // panier, dans « Ajouté ! » ou sur une autre fiche (Hugo, 2026-10-18) —
+    // s'ouvre ici, une fois, comme si sa tuile avait été touchée.
+    const pieces = inject(PieceRequest);
+    effect(() => {
+      pieces.latest();
+      const sku = untracked(() => pieces.take());
+      if (sku !== null) {
+        this.openPiece.set(sku);
+      }
+    });
     // La vue d'une fiche est comptée, anonymement, à son ouverture (R5 bis).
     effect(() => {
       const id = this.openPiece();

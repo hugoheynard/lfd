@@ -10,6 +10,7 @@
     <app-staff-suggestion-card
       [view]="view"
       [fallbackTitle]="t().shop.staffAdvice"
+      (opened)="offer.opened($event)"
       (taken)="offer.taken($event)"
     />
   </fold-toast>

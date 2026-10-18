@@ -40,7 +40,7 @@ describe('AfterAddSuggestion', () => {
     http.expectNone(CART_ROUTE);
   });
 
-  it('prendre la suggestion la compte et ferme le retour', async () => {
+  it('le « + » compte l’ajout, pas de clic, et ferme le retour', async () => {
     const { entries, http, audience } = bootAfterAdd();
     const offer = TestBed.inject(AfterAddSuggestion);
     entries.entered('VIE-001');
@@ -51,8 +51,22 @@ describe('AfterAddSuggestion', () => {
     expect(offer.current()).toBeNull();
     expect(audience.events.map(({ event }) => event)).toEqual([
       'suggestion_shown',
-      'suggestion_clicked',
       'suggestion_added',
+    ]);
+  });
+
+  it('ouvrir la fiche compte le clic, sans ajout, et ferme le retour', async () => {
+    const { entries, http, audience } = bootAfterAdd();
+    const offer = TestBed.inject(AfterAddSuggestion);
+    entries.entered('VIE-001');
+    await answerCart(http, [cartPick('PAI-001')]);
+
+    offer.opened(cartPick('PAI-001'));
+
+    expect(offer.current()).toBeNull();
+    expect(audience.events.map(({ event }) => event)).toEqual([
+      'suggestion_shown',
+      'suggestion_clicked',
     ]);
   });
 });

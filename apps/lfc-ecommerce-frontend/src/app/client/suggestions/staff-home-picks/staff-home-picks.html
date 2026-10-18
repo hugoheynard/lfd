@@ -4,6 +4,7 @@
       <app-staff-suggestion-card
         [view]="view"
         [fallbackTitle]="t().shop.ourPicks"
+        (opened)="picks.opened($event)"
         (taken)="picks.taken($event)"
       />
     }

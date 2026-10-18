@@ -31,6 +31,9 @@ import { shelfPriceLabel, ShopPriceBasis } from '../../shop/shop-price-basis.ser
 import { VoucherChoice } from '../voucher-choice.service';
 import { hydrateWith, TEST_CATALOGUE } from '../../shop/shop-catalogue.fixture';
 import { ShopCatalogue } from '../../shop/shop-catalogue.store';
+import { Router } from '@angular/router';
+
+import { PieceRequest } from '../../shop/piece-request.service';
 import { CartSummary } from './cart-summary';
 
 describe('CartSummary', () => {
@@ -514,6 +517,7 @@ describe('CartSummary — un pro au compte (F5)', () => {
 class StaffPickDouble {
   readonly current = signal<CartSuggestionView | null>(null);
   readonly taken: CartSuggestionView[] = [];
+  readonly clicked: CartSuggestionView[] = [];
   opened = 0;
   open(): void {
     this.opened += 1;
@@ -533,8 +537,10 @@ describe('CartSummary — la carte de suggestion (RS2)', () => {
   /** L'assiette du rayon, réglée à la main : la règle elle-même est éprouvée par la vignette. */
   const showsTtc = signal(true);
 
-  const card = (): HTMLButtonElement | null =>
-    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('button.suggestion');
+  const card = (): HTMLElement | null =>
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('.suggestion');
+  const button = (name: 'add' | 'pitch'): HTMLButtonElement | null =>
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(`.suggestion .${name}`);
 
   beforeEach(() => {
     localStorage.clear();
@@ -553,6 +559,7 @@ describe('CartSummary — la carte de suggestion (RS2)', () => {
             open: () => pick.open(),
             close: () => pick.close(),
             taken: (view: CartSuggestionView) => pick.take(view),
+            opened: (view: CartSuggestionView) => pick.clicked.push(view),
           },
         },
         { provide: ShopPriceBasis, useValue: { showsTtc } },
@@ -578,7 +585,7 @@ describe('CartSummary — la carte de suggestion (RS2)', () => {
     expect(recorded).toEqual([]);
   });
 
-  it('montre la suggestion du staff, avec sa phrase, et l’ajoute au clic', () => {
+  it('montre la suggestion du staff, avec sa phrase, et l’ajoute au « + »', () => {
     const baguette = TestBed.inject(ShopCatalogue).itemOf('PAI-001');
     if (baguette === null) {
       throw new RangeError('la fixture du catalogue n’a plus de PAI-001');
@@ -598,12 +605,36 @@ describe('CartSummary — la carte de suggestion (RS2)', () => {
     expect(card()?.textContent).toContain('Avec un croissant, la baguette');
     // Un visiteur lit le TTC servi, comme sur la vignette.
     expect(card()?.textContent).toContain(`${formatCents(baguette.unitPriceTtcCents)} TTC`);
-    card()?.click();
+    button('add')?.click();
 
     expect(pick.taken).toEqual([view]);
+    expect(pick.clicked).toEqual([]);
     // Le taux d'ajout global inclut les suggestions (Hugo, 2026-10-18).
     expect(recorded).toEqual([{ sku: 'PAI-001', event: 'added_to_cart' }]);
     expect(TestBed.inject(ClientCart).quantityOf('PAI-001')).toBe(1);
+  });
+
+  it('un clic sur la carte demande la fiche de l’article, sans l’ajouter', () => {
+    vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    const baguette = TestBed.inject(ShopCatalogue).itemOf('PAI-001');
+    if (baguette === null) {
+      throw new RangeError('la fixture du catalogue n’a plus de PAI-001');
+    }
+    const view: CartSuggestionView = {
+      sku: 'PAI-001',
+      item: baguette,
+      reason: { source: 'staff', ruleId: '01jrule', phrase: null },
+    };
+    pick.current.set(view);
+    fixture.detectChanges();
+
+    button('pitch')?.click();
+
+    expect(pick.clicked).toEqual([view]);
+    expect(pick.taken).toEqual([]);
+    expect(TestBed.inject(PieceRequest).latest()?.sku).toBe('PAI-001');
+    expect(TestBed.inject(ClientCart).quantityOf('PAI-001')).toBe(0);
+    expect(recorded).toEqual([]);
   });
 
   it('écrit le prix HT à un pro, comme la vignette', () => {

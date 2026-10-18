@@ -19,6 +19,9 @@ import { ShopCatalogue } from '../shop-catalogue.store';
 import type { ShopOperationState } from '@lfd/contracts';
 import { ProductAudience } from '../../audience/product-audience.service';
 import { StaffProductSuggestion } from '../../suggestions/staff-product-suggestion.service';
+import { Router } from '@angular/router';
+
+import { PieceRequest } from '../piece-request.service';
 import { ProductSheet } from './product-sheet';
 
 /** La suggestion de la fiche, servie à la main : aucune requête ne part des specs. */
@@ -26,6 +29,7 @@ class StaffPickDouble {
   readonly current = signal<ShopSuggestion | null>(null);
   readonly opened: (string | null)[] = [];
   readonly taken: ShopSuggestion[] = [];
+  readonly clicked: ShopSuggestion[] = [];
   open(sku: string): void {
     this.opened.push(sku);
   }
@@ -45,6 +49,7 @@ function providePick(pick: StaffPickDouble) {
       open: (sku: string) => pick.open(sku),
       close: () => pick.close(),
       taken: (view: ShopSuggestion) => pick.take(view),
+      opened: (view: ShopSuggestion) => pick.clicked.push(view),
     },
   };
 }
@@ -251,8 +256,10 @@ describe('ProductSheet — la suggestion du staff (RS2, fiche)', () => {
   let pick: StaffPickDouble;
   let recorded: { sku: string; event: string }[];
 
-  const card = (): HTMLButtonElement | null =>
-    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('button.suggestion');
+  const card = (): HTMLElement | null =>
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('.suggestion');
+  const button = (name: 'add' | 'pitch'): HTMLButtonElement | null =>
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(`.suggestion .${name}`);
 
   const croissant = TEST_ITEMS[0] as ShopItemView;
   const other = TEST_ITEMS.find((item) => item.sku !== croissant.sku);
@@ -299,16 +306,30 @@ describe('ProductSheet — la suggestion du staff (RS2, fiche)', () => {
     expect(card()).toBeNull();
   });
 
-  it('montre la suggestion, « Vous aimerez aussi » sans phrase, et l’ajoute au clic', () => {
+  it('montre la suggestion, « Vous aimerez aussi » sans phrase, et l’ajoute au « + »', () => {
     pick.current.set(VIEW);
     fixture.detectChanges();
 
     expect(card()?.textContent).toContain(FR.shop.alsoLike);
     expect(card()?.textContent).toContain(other.name);
-    card()?.click();
+    button('add')?.click();
 
     expect(pick.taken).toEqual([VIEW]);
+    expect(pick.clicked).toEqual([]);
     expect(recorded).toEqual([{ sku: other.sku, event: 'added_to_cart' }]);
+  });
+
+  it('un clic sur la carte demande la fiche de l’article suggéré, sans l’ajouter', () => {
+    vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    pick.current.set(VIEW);
+    fixture.detectChanges();
+
+    button('pitch')?.click();
+
+    expect(pick.clicked).toEqual([VIEW]);
+    expect(pick.taken).toEqual([]);
+    expect(TestBed.inject(PieceRequest).latest()?.sku).toBe(other.sku);
+    expect(recorded).toEqual([]);
   });
 
   it('ne se suggère jamais la pièce ouverte', () => {

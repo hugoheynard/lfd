@@ -4,7 +4,7 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import { of } from 'rxjs';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { AuthFacade } from '../../../auth/auth.facade';
 import { ClientCart } from '../client-cart.service';
@@ -19,6 +19,7 @@ import { hydrateWith, TEST_CATALOGUE } from '../../shop/shop-catalogue.fixture';
 import { ShopCatalogue } from '../../shop/shop-catalogue.store';
 import { FoldPanelRef } from 'fold-ng';
 
+import { PieceRequest } from '../../shop/piece-request.service';
 import { CartDialog } from './cart-dialog';
 
 const AU_LABO: ServiceChoice = {
@@ -508,5 +509,19 @@ describe('CartDialog — ni retrait ni livraison', () => {
 
     expect(el(fixture).querySelector('[data-no-service]')).toBeNull();
     expect(el(fixture).querySelector('.ask')).not.toBeNull();
+  });
+});
+
+describe('CartDialog — la suggestion ouvre une fiche', () => {
+  it('se referme quand une fiche est demandée après son ouverture, pour qu’elle se voie', () => {
+    const fixture = boot();
+    vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    fermetures = [];
+
+    TestBed.inject(PieceRequest).open('PAI-001');
+    TestBed.tick();
+    fixture.detectChanges();
+
+    expect(fermetures).toEqual([true]);
   });
 });

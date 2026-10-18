@@ -19,6 +19,7 @@ import { OrderDoors } from '../order-doors';
 import { provideWorkspace, workspaceDouble } from '../../client-workspace.fixture';
 import { NOEL, storefrontObject } from '../storefront/storefront.fixture';
 import { ClientOrders } from '../../client-orders.service';
+import { PieceRequest } from '../piece-request.service';
 import { ShopPage } from './shop-page';
 
 // `matchMedia` pour TOUS les cas du fichier : « Régler » ouvre le panier par
@@ -86,6 +87,23 @@ describe('ShopPage', () => {
 
   it('montre toutes les références du catalogue', () => {
     expect(tiles().length).toBe(TEST_ITEMS.length);
+  });
+
+  it('ouvre la fiche qu’une suggestion demande, une seule fois', () => {
+    const item = TEST_ITEMS[0];
+    if (item === undefined) {
+      throw new RangeError('la fixture du catalogue est vide');
+    }
+    const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
+    const pieces = TestBed.inject(PieceRequest);
+
+    pieces.open(item.sku);
+    TestBed.tick();
+    fixture.detectChanges();
+
+    expect(navigate).toHaveBeenCalledWith(['/boutique']);
+    expect(el().querySelector('app-product-sheet')?.textContent).toContain(item.name);
+    expect(pieces.take()).toBeNull();
   });
 
   /**
