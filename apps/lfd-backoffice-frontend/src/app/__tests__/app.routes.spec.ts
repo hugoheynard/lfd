@@ -164,6 +164,9 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   operations: 'lfc_operations:read',
   fidelite: 'lfc_loyalty:read',
   suggestions: 'lfc_suggestions:read',
+  // La mise en avant par audience (2026-10-18), sous le droit que la route
+  // serveur oppose (`@AdminSurface("lfc_catalog")`).
+  'mise-en-avant': 'lfc_catalog:read',
   'operations/:key': 'lfc_operations:read',
   promotions: 'b2b_settings:read',
   // **Catalogue publié** — parti de l'espace E-commerce le 2026-10-15 (H9),
