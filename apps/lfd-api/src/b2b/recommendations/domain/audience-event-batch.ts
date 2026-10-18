@@ -1,16 +1,21 @@
 import {
   MAX_AUDIENCE_EVENTS_PER_BATCH,
   NO_AUDIENCE_PLACEMENT,
+  NO_AUDIENCE_SOURCE,
   PRODUCT_AUDIENCE_EVENTS,
+  PRODUCT_AUDIENCE_SOURCES,
   type ProductAudienceEvent,
+  type ProductAudienceSource,
 } from "@lfd/contracts";
 
 import {
   AudienceBatchTooLargeError,
   AudiencePlacementMismatchError,
+  AudienceSourceMismatchError,
   EmptyAudienceBatchError,
   InvalidAudiencePlacementError,
   UnknownAudienceEventError,
+  UnknownAudienceSourceError,
 } from "./errors/recommendation-errors.js";
 
 /** Un geste tel que la boutique le décrit, avant validation. */
@@ -18,6 +23,7 @@ export interface RawAudienceEvent {
   readonly sku: string;
   readonly event: string;
   readonly placement?: string | undefined;
+  readonly source?: string | undefined;
 }
 
 /** Une ligne de compteur à ajouter : la clé et ce qu'elle gagne. */
@@ -25,6 +31,7 @@ export interface AudienceIncrement {
   readonly sku: string;
   readonly event: ProductAudienceEvent;
   readonly placement: string;
+  readonly source: ProductAudienceSource;
   readonly count: number;
 }
 
@@ -55,6 +62,8 @@ export class AudienceEventBatch {
    * @throws {UnknownAudienceEventError} un geste hors de l'énumération.
    * @throws {AudiencePlacementMismatchError} emplacement incohérent avec le geste.
    * @throws {InvalidAudiencePlacementError} emplacement mal formé.
+   * @throws {UnknownAudienceSourceError} une source hors de l'énumération.
+   * @throws {AudienceSourceMismatchError} source incohérente avec le geste.
    */
   static of(events: readonly RawAudienceEvent[]): AudienceEventBatch {
     if (events.length === 0) {
@@ -66,7 +75,7 @@ export class AudienceEventBatch {
     const tally = new Map<string, AudienceIncrement>();
     for (const raw of events) {
       const increment = validated(raw);
-      const key = `${increment.sku}\u0000${increment.event}\u0000${increment.placement}`;
+      const key = `${increment.sku}\u0000${increment.event}\u0000${increment.placement}\u0000${increment.source}`;
       const previous = tally.get(key);
       tally.set(key, { ...increment, count: (previous?.count ?? 0) + 1 });
     }
@@ -91,5 +100,20 @@ function validated(raw: RawAudienceEvent): AudienceIncrement {
   if (DIRECT_EVENTS.has(event) !== (placement === NO_AUDIENCE_PLACEMENT)) {
     throw new AudiencePlacementMismatchError(event, placement);
   }
-  return { sku: raw.sku, event, placement, count: 1 };
+  return { sku: raw.sku, event, placement, source: validatedSource(event, raw.source), count: 1 };
+}
+
+/** `none` pour un geste direct, `data` ou `staff` pour une suggestion — comme le CHECK en base. */
+function validatedSource(
+  event: ProductAudienceEvent,
+  raw: string | undefined,
+): ProductAudienceSource {
+  const source = PRODUCT_AUDIENCE_SOURCES.find((known) => known === (raw ?? NO_AUDIENCE_SOURCE));
+  if (source === undefined) {
+    throw new UnknownAudienceSourceError(raw ?? "");
+  }
+  if (DIRECT_EVENTS.has(event) !== (source === NO_AUDIENCE_SOURCE)) {
+    throw new AudienceSourceMismatchError(event, source);
+  }
+  return source;
 }

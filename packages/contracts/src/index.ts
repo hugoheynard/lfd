@@ -2160,7 +2160,9 @@ export type {
 export {
   MAX_AUDIENCE_EVENTS_PER_BATCH,
   NO_AUDIENCE_PLACEMENT,
+  NO_AUDIENCE_SOURCE,
   PRODUCT_AUDIENCE_EVENTS,
+  PRODUCT_AUDIENCE_SOURCES,
   productAudienceBatchSchema,
   productAudienceCountersQuerySchema,
   type ProductAudienceBatchPayload,
@@ -2168,4 +2170,5 @@ export {
   type ProductAudienceCountersQuery,
   type ProductAudienceEvent,
   type ProductAudienceEventInput,
+  type ProductAudienceSource,
 } from "./product-audience.js";

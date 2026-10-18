@@ -45,8 +45,8 @@ describe('ProductAudienceQueue', () => {
     expect(transport.sent.map((body) => JSON.parse(body))).toEqual([
       {
         events: [
-          { sku: 'VIE-001', event: 'product_viewed' },
-          { sku: 'VIE-001', event: 'added_to_cart' },
+          { sku: 'VIE-001', event: 'product_viewed', source: 'none' },
+          { sku: 'VIE-001', event: 'added_to_cart', source: 'none' },
         ],
       },
     ]);

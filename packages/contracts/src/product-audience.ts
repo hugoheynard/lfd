@@ -4,6 +4,7 @@ import {
   MAX_AUDIENCE_EVENTS_PER_BATCH,
   PRODUCT_AUDIENCE_EVENTS,
 } from "./product-audience.values.js";
+import { PRODUCT_AUDIENCE_SOURCES } from "./product-audience-sources.values.js";
 
 /**
  * Contrat de fil des **compteurs d'audience anonymes** : la FORME du lot et de
@@ -19,6 +20,11 @@ export {
   type ProductAudienceEvent,
   type ProductAudienceEventInput,
 } from "./product-audience.values.js";
+export {
+  NO_AUDIENCE_SOURCE,
+  PRODUCT_AUDIENCE_SOURCES,
+  type ProductAudienceSource,
+} from "./product-audience-sources.values.js";
 
 /** Longueur d'un SKU ou d'un emplacement : borne de forme, pas règle métier. */
 const MAX_TOKEN_LENGTH = 64;
@@ -30,6 +36,7 @@ export const productAudienceBatchSchema = z.object({
         sku: z.string().min(1).max(MAX_TOKEN_LENGTH),
         event: z.enum(PRODUCT_AUDIENCE_EVENTS),
         placement: z.string().min(1).max(MAX_TOKEN_LENGTH).optional(),
+        source: z.enum(PRODUCT_AUDIENCE_SOURCES).optional(),
       }),
     )
     .min(1)

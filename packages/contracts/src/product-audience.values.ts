@@ -10,6 +10,8 @@
  * d'audience exemptée de consentement.
  */
 
+import type { ProductAudienceSource } from "./product-audience-sources.values.js";
+
 /** Les gestes comptés. Une VALEUR de donnée, écrite telle quelle en base. */
 export const PRODUCT_AUDIENCE_EVENTS = [
   "product_viewed",
@@ -27,11 +29,12 @@ export const NO_AUDIENCE_PLACEMENT = "none";
 /** Au plus autant d'événements par lot : au-delà, le lot est refusé entier. */
 export const MAX_AUDIENCE_EVENTS_PER_BATCH = 50;
 
-/** Un geste observé par la boutique. `placement` absent = `none`. */
+/** Un geste observé par la boutique. `placement` ou `source` absent = `none`. */
 export interface ProductAudienceEventInput {
   readonly sku: string;
   readonly event: ProductAudienceEvent;
   readonly placement?: string | undefined;
+  readonly source?: ProductAudienceSource | undefined;
 }
 
 /** Ce que la boutique envoie : un lot, jamais un geste à la fois. */
@@ -45,5 +48,6 @@ export interface ProductAudienceCounterView {
   readonly sku: string;
   readonly event: ProductAudienceEvent;
   readonly placement: string;
+  readonly source: ProductAudienceSource;
   readonly count: number;
 }

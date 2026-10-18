@@ -22,6 +22,7 @@ describe("ListProductAudienceCountersHandler", () => {
     sku: "CRO",
     event: "product_viewed",
     placement: "none",
+    source: "none",
     count: 3,
   };
 

@@ -409,7 +409,7 @@ model BookingPolicySettings {
 /// (R5 bis de `documentation/recommandation-produit/plan-recommandation-de-produits.md`).
 ///
 /// 🔴 **Aucun identifiant de visiteur, de client ni d'IP — par construction** :
-/// la clé est `(jour, sku, événement, emplacement)` et la seule valeur un
+/// la clé est `(jour, sku, événement, emplacement, source)` et la seule valeur un
 /// nombre. C'est ce qui en fait une mesure d'audience exemptée de consentement
 /// (historique-du-particulier.md §1 bis). Ajouter une colonne qui désigne
 /// quelqu'un changerait le régime du traitement, pas seulement le schéma.
@@ -418,7 +418,8 @@ model BookingPolicySettings {
 /// donc déménageable avec lui. Écrite par `b2b/recommendations` seul, par un
 /// `INSERT … ON CONFLICT DO UPDATE` (incrément sans perte sous concurrence).
 /// Les CHECK (événements admis, emplacement, compte positif) vivent dans la
-/// migration `20261018140000_les_compteurs_d_audience`.
+/// migration `20261018140000_les_compteurs_d_audience` ; ceux de la source
+/// dans `20261018160000_la_source_des_compteurs_d_audience`.
 model ProductAudienceCounter {
   /// Le jour MÉTIER (Europe/Paris), pas le jour UTC.
   day       DateTime @db.Date
@@ -427,9 +428,11 @@ model ProductAudienceCounter {
   event     String
   /// L'emplacement d'une suggestion ; `none` pour une vue ou un ajout hors suggestion.
   placement String   @default("none")
+  /// `data` (calcul) ou `staff` (conseil décidé) pour une suggestion ; `none` sinon (§2 bis).
+  source    String   @default("none")
   count     Int
 
-  @@id([day, sku, event, placement])
+  @@id([day, sku, event, placement, source])
   @@index([day])
   @@map("product_audience_counters")
   @@schema("growth")

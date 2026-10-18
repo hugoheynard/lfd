@@ -4,6 +4,7 @@ import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import type { AudienceIncrement } from "../../../domain/audience-event-batch.js";
 import {
   AudienceBatchTooLargeError,
+  AudienceSourceMismatchError,
   UnknownAudienceSkuError,
 } from "../../../domain/errors/recommendation-errors.js";
 import { AudienceCounterWriter } from "../../../domain/ports/audience-counter.writer.js";
@@ -58,7 +59,9 @@ describe("RecordProductAudienceHandler", () => {
     expect(counters.writes).toEqual([
       {
         day: TODAY,
-        increments: [{ sku: "CRO", event: "product_viewed", placement: "none", count: 2 }],
+        increments: [
+          { sku: "CRO", event: "product_viewed", placement: "none", source: "none", count: 2 },
+        ],
       },
     ]);
   });
@@ -94,6 +97,24 @@ describe("RecordProductAudienceHandler", () => {
     await expect(handler.execute(new RecordProductAudienceCommand(events))).rejects.toThrow(
       AudienceBatchTooLargeError,
     );
+    expect(counters.writes).toEqual([]);
+  });
+
+  it("refuse une suggestion qui ne dit pas sa source, sans rien écrire", async () => {
+    const counters = new RecordingCounters();
+    const handler = new RecordProductAudienceHandler(
+      new KnownSkus(["CRO"]),
+      counters,
+      clockAt(TODAY, "10:00"),
+    );
+
+    await expect(
+      handler.execute(
+        new RecordProductAudienceCommand([
+          { sku: "CRO", event: "suggestion_clicked", placement: "cart" },
+        ]),
+      ),
+    ).rejects.toThrow(AudienceSourceMismatchError);
     expect(counters.writes).toEqual([]);
   });
 });

@@ -1,7 +1,7 @@
 /**
  * E2E des **compteurs d'audience anonymes** (R0 du plan de recommandation) :
  * un lot de gestes sans jeton → des compteurs agrégés par (jour, sku,
- * événement, emplacement), relus par le staff.
+ * événement, emplacement, source), relus par le staff.
  *
  * Ce qu'aucun test unitaire ne prouve : l'incrément `ON CONFLICT` sous
  * concurrence, les CHECK de la table, et le corps `text/plain` d'un
@@ -58,22 +58,39 @@ async function counters(): Promise<readonly ProductAudienceCounterView[]> {
 }
 
 describe("les compteurs d'audience", () => {
-  it("agrège un lot de gestes par article, geste et emplacement, sur le jour métier", async () => {
+  it("agrège un lot de gestes par article, geste, emplacement et source, sur le jour métier", async () => {
     await send({
       events: [
         { sku: "VIE-001", event: "product_viewed" },
         { sku: "VIE-001", event: "product_viewed" },
         { sku: "VIE-001", event: "added_to_cart" },
-        { sku: "VIE-002", event: "suggestion_shown", placement: "cart" },
+        { sku: "VIE-002", event: "suggestion_shown", placement: "cart", source: "data" },
+        { sku: "VIE-002", event: "suggestion_shown", placement: "cart", source: "staff" },
+        { sku: "VIE-002", event: "suggestion_shown", placement: "cart", source: "staff" },
       ],
     }).expect(204);
     await send({ events: [{ sku: "VIE-001", event: "product_viewed" }] }).expect(204);
 
     const day = today();
     expect(await counters()).toEqual([
-      { day, sku: "VIE-001", event: "added_to_cart", placement: "none", count: 1 },
-      { day, sku: "VIE-001", event: "product_viewed", placement: "none", count: 3 },
-      { day, sku: "VIE-002", event: "suggestion_shown", placement: "cart", count: 1 },
+      { day, sku: "VIE-001", event: "added_to_cart", placement: "none", source: "none", count: 1 },
+      { day, sku: "VIE-001", event: "product_viewed", placement: "none", source: "none", count: 3 },
+      {
+        day,
+        sku: "VIE-002",
+        event: "suggestion_shown",
+        placement: "cart",
+        source: "data",
+        count: 1,
+      },
+      {
+        day,
+        sku: "VIE-002",
+        event: "suggestion_shown",
+        placement: "cart",
+        source: "staff",
+        count: 2,
+      },
     ]);
   });
 
@@ -103,6 +120,15 @@ describe("les compteurs d'audience", () => {
     const events = Array.from({ length: 51 }, () => ({ sku: "VIE-001", event: "product_viewed" }));
 
     expect((await send({ events })).status).toBe(400);
+    expect(await counters()).toEqual([]);
+  });
+
+  it("refuse une suggestion sans source, sans rien compter", async () => {
+    const response = await send({
+      events: [{ sku: "VIE-002", event: "suggestion_shown", placement: "cart" }],
+    });
+
+    expect(response.status).toBe(400);
     expect(await counters()).toEqual([]);
   });
 

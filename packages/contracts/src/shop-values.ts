@@ -64,4 +64,6 @@ export {
   MAX_AUDIENCE_EVENTS_PER_BATCH,
   type ProductAudienceBatchPayload,
   type ProductAudienceEvent,
+  type ProductAudienceEventInput,
 } from "./product-audience.values.js";
+export type { ProductAudienceSource } from "./product-audience-sources.values.js";

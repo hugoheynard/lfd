@@ -1,4 +1,8 @@
-import { PRODUCT_AUDIENCE_EVENTS, type ProductAudienceCounterView } from "@lfd/contracts";
+import {
+  PRODUCT_AUDIENCE_EVENTS,
+  PRODUCT_AUDIENCE_SOURCES,
+  type ProductAudienceCounterView,
+} from "@lfd/contracts";
 import { Injectable, Logger } from "@nestjs/common";
 
 import { Prisma } from "../../../platform/database/client/client.js";
@@ -28,13 +32,14 @@ export class PrismaAudienceCounterWriter extends AudienceCounterWriter {
       return;
     }
     const rows = increments.map(
-      (row) => Prisma.sql`(${day}::date, ${row.sku}, ${row.event}, ${row.placement}, ${row.count})`,
+      (row) =>
+        Prisma.sql`(${day}::date, ${row.sku}, ${row.event}, ${row.placement}, ${row.source}, ${row.count})`,
     );
     try {
       await this.prisma.$executeRaw`
-        INSERT INTO "growth"."product_audience_counters" ("day", "sku", "event", "placement", "count")
+        INSERT INTO "growth"."product_audience_counters" ("day", "sku", "event", "placement", "source", "count")
         VALUES ${Prisma.join(rows)}
-        ON CONFLICT ("day", "sku", "event", "placement")
+        ON CONFLICT ("day", "sku", "event", "placement", "source")
         DO UPDATE SET "count" = "product_audience_counters"."count" + EXCLUDED."count"`;
     } catch (error) {
       // Best-effort : une mesure perdue ne fait pas échouer la boutique.
@@ -49,6 +54,7 @@ interface CounterRow {
   readonly sku: string;
   readonly event: string;
   readonly placement: string;
+  readonly source: string;
   readonly count: number;
 }
 
@@ -61,14 +67,15 @@ export class PrismaAudienceCounterReader extends AudienceCounterReader {
 
   async between(from: string, to: string): Promise<readonly ProductAudienceCounterView[]> {
     const rows = await this.prisma.$queryRaw<CounterRow[]>`
-      SELECT to_char("day", 'YYYY-MM-DD') AS "day", "sku", "event", "placement", "count"
+      SELECT to_char("day", 'YYYY-MM-DD') AS "day", "sku", "event", "placement", "source", "count"
       FROM "growth"."product_audience_counters"
       WHERE "day" BETWEEN ${from}::date AND ${to}::date
-      ORDER BY "day", "sku", "event", "placement"`;
+      ORDER BY "day", "sku", "event", "placement", "source"`;
     return rows.flatMap((row) => {
-      // Le CHECK en base tient l'énumération ; une valeur inconnue ne se rend pas.
+      // Les CHECK en base tiennent les énumérations ; une valeur inconnue ne se rend pas.
       const event = PRODUCT_AUDIENCE_EVENTS.find((known) => known === row.event);
-      return event === undefined ? [] : [{ ...row, event }];
+      const source = PRODUCT_AUDIENCE_SOURCES.find((known) => known === row.source);
+      return event === undefined || source === undefined ? [] : [{ ...row, event, source }];
     });
   }
 }

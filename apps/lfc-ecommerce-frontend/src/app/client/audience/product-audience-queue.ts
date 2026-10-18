@@ -1,11 +1,23 @@
 import type { HttpClient } from '@angular/common/http';
 import { MAX_AUDIENCE_EVENTS_PER_BATCH } from '@lfd/contracts/shop-values';
-import type { ProductAudienceBatchPayload, ProductAudienceEvent } from '@lfd/contracts/shop-values';
+import type {
+  ProductAudienceBatchPayload,
+  ProductAudienceEvent,
+  ProductAudienceEventInput,
+  ProductAudienceSource,
+} from '@lfd/contracts/shop-values';
 
 import { AUTH_CONFIG } from '../../auth/auth.config';
 
 /** Au plus un envoi toutes les cinq secondes : un geste n'attend pas le réseau. */
 export const AUDIENCE_FLUSH_DELAY_MS = 5_000;
+
+/**
+ * La source d'un geste qui ne vient d'aucune suggestion. Écrite ici plutôt
+ * qu'importée (`NO_AUDIENCE_SOURCE`) : le paquet initial est à son plafond, et
+ * importer la valeur la rangeait dans un morceau initial partagé (2026-10-18).
+ */
+const DIRECT_SOURCE: ProductAudienceSource = 'none';
 
 /** Ce que la file sait faire du réseau — doublé dans les tests. */
 export interface AudienceTransport {
@@ -30,7 +42,7 @@ export interface AudienceTimer {
  * et la perdre ne doit jamais coûter un geste au client.
  */
 export class ProductAudienceQueue {
-  private pending: { readonly sku: string; readonly event: ProductAudienceEvent }[] = [];
+  private pending: ProductAudienceEventInput[] = [];
   private armed = false;
 
   constructor(
@@ -38,8 +50,9 @@ export class ProductAudienceQueue {
     private readonly timer: AudienceTimer,
   ) {}
 
+  /** Les émetteurs d'aujourd'hui (vue, ajout) ne viennent d'aucune suggestion. */
   record(sku: string, event: ProductAudienceEvent): void {
-    this.pending.push({ sku, event });
+    this.pending.push({ sku, event, source: DIRECT_SOURCE });
     if (this.pending.length >= MAX_AUDIENCE_EVENTS_PER_BATCH) {
       this.flush(false);
     } else if (!this.armed) {

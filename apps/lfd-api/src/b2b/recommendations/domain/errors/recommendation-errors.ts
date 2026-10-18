@@ -53,6 +53,29 @@ export class InvalidAudiencePlacementError extends DomainError {
   }
 }
 
+/** Une source que la mesure ne connaît pas. */
+export class UnknownAudienceSourceError extends DomainError {
+  constructor(source: string) {
+    super(
+      "recommendations.audience.unknown_source",
+      `La source « ${source} » n'est pas une source de suggestion connue (none, data, staff) : rien n'a été compté.`,
+    );
+  }
+}
+
+/**
+ * Une source incohérente avec le geste : une suggestion vient du calcul
+ * (`data`) ou du staff (`staff`), une vue ou un ajout direct d'aucune (`none`).
+ */
+export class AudienceSourceMismatchError extends DomainError {
+  constructor(event: string, source: string) {
+    super(
+      "recommendations.audience.source_mismatch",
+      `Le geste « ${event} » ne va pas avec la source « ${source} » : une suggestion vient du calcul (data) ou du staff (staff), une vue ou un ajout direct d'aucune (none).`,
+    );
+  }
+}
+
 /** Un SKU que le catalogue ne sert à personne : on ne compte pas ce qu'on ne vend pas. */
 export class UnknownAudienceSkuError extends DomainError {
   constructor(skus: readonly string[]) {
