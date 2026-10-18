@@ -43,6 +43,7 @@ import { CONTACT_CARD_DEFAULTS } from '@lfd/contracts/shop-values';
 import { ContactBand } from '../shop/contact-band/contact-band';
 import { ContactSettingsStore, localizedOr, phonesFor } from '../shop/contact-settings.store';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
+import { ShopWarmup } from '../shop/warmup/shop-warmup';
 import { datedEventOf, featuredOperation, type DatedEvent } from '../shop/operation-event';
 import { ShopShortcuts, type ShortcutCard } from '../shop/shop-shortcuts/shop-shortcuts';
 import { orderLinesSummary, orderPlaceLabel, orderWeekday } from '../shop/last-order-summary';
@@ -577,6 +578,9 @@ export class AccueilPublic {
     // Les opérations datées voyagent avec le catalogue public. Un échec laisse
     // la liste vide : le bloc « En ce moment » n'existe alors pas.
     void this.catalogue.hydrate();
+    // L'avance sur la boutique — son morceau, la connexion, les photos du
+    // premier écran — le temps que cet écran vit, et pas au-delà.
+    inject(ShopWarmup).start(inject(DestroyRef));
     const chrome = inject(ClientChrome);
     chrome.kicker.set(this.c().kicker);
     // Le menu suit la RECONNAISSANCE. Un visiteur n'en a pas : la barre lui

@@ -29,6 +29,7 @@ import { LIVE_PICKUP } from '../mes-commandes/order-view.fixture';
 import { ServicePoints } from '../shop/pickup-points.store';
 import { CartFulfillmentDays } from '../shop/cart-fulfillment-days.service';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
+import { ShopWarmup } from '../shop/warmup/shop-warmup';
 import type { PublicContactSettingsView } from '@lfd/contracts/shop-values';
 import { ContactSettingsStore, NO_CONTACT_SETTINGS } from '../shop/contact-settings.store';
 import type { StorefrontPageState } from '../shop/storefront/shop-storefront.store';
@@ -198,6 +199,8 @@ async function mount(
       { provide: ShopCatalogue, useValue: boutique },
       // Les jours bornés par le panier ne sont pas le sujet de l'accueil.
       { provide: CartFulfillmentDays, useValue: {} },
+      // L'avance sur la boutique n'est pas le sujet de l'accueil.
+      { provide: ShopWarmup, useValue: { start: () => undefined } },
       { provide: ClientCart, useValue: boutique },
       // Le réglage de contact NE SE LIT PAS au réseau ici : sans double, la
       // suite lisait la carte réglée sur l'API de dev du poste (2026-10-09).
@@ -318,6 +321,8 @@ describe('AccueilPublic — ce qu’il refuse de dire', () => {
         { provide: ClientOrderHistory, useValue: { orders: signal([]) } },
         { provide: ShopCatalogue, useValue: new FakeShop([]) },
         { provide: CartFulfillmentDays, useValue: {} },
+        // L'avance sur la boutique n'est pas le sujet de l'accueil.
+        { provide: ShopWarmup, useValue: { start: () => undefined } },
         { provide: ClientCart, useValue: new FakeShop([]) },
         ...whoProviders('visiteur'),
       ],
@@ -584,6 +589,8 @@ describe('AccueilPublic — ce que dit la porte du coursier quand elle attend', 
         { provide: ClientOrderHistory, useValue: { orders: signal([]) } },
         { provide: ShopCatalogue, useValue: boutique },
         { provide: CartFulfillmentDays, useValue: {} },
+        // L'avance sur la boutique n'est pas le sujet de l'accueil.
+        { provide: ShopWarmup, useValue: { start: () => undefined } },
         { provide: ClientCart, useValue: boutique },
         ...(status === null ? whoProviders('visiteur') : whoProviders('pro', status)),
       ],
@@ -827,6 +834,8 @@ describe('AccueilPublic — quand le retrait n’est pas proposé', () => {
         { provide: ClientOrderHistory, useValue: { orders: signal([]) } },
         { provide: ShopCatalogue, useValue: boutique },
         { provide: CartFulfillmentDays, useValue: {} },
+        // L'avance sur la boutique n'est pas le sujet de l'accueil.
+        { provide: ShopWarmup, useValue: { start: () => undefined } },
         { provide: ClientCart, useValue: boutique },
         ...(who === 'pro' ? whoProviders('pro', 'active') : whoProviders(who)),
       ],
