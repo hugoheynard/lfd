@@ -29,3 +29,44 @@ model B2bChannelBinding {
   @@map("b2b_channel_binding")
   @@schema("pim")
 }
+
+/// **Une réémission du catalogue, suivie comme un travail** (2026-10-18,
+/// décision de Hugo : rendre un geste à la réémission).
+///
+/// La réémission de « tout » dure plus d'une minute : rendue dans la réponse
+/// HTTP, elle se perdait avec la connexion, et les fiches en échec n'étaient
+/// plus que dans les journaux. Elle tourne désormais en arrière-plan, et SON
+/// compte rendu vit ici — tentées, réussies, échecs nommés, ou l'erreur qui a
+/// tout arrêté.
+///
+/// État de suivi, pas un fait métier : rien ne s'y lit pour vendre. Une ligne
+/// par travail, jamais supprimée.
+model CatalogReemissionJob {
+  id        String  @id
+  /// `all` (familles, fiches, règles) ou `product` (une fiche).
+  scope     String
+  /// La fiche visée — `NULL` pour `all`. Pas de clé étrangère : le compte
+  /// rendu survit à ce qu'il décrit.
+  productId String? @map("product_id")
+
+  startedAt  DateTime  @map("started_at")
+  finishedAt DateTime? @map("finished_at")
+  /// `running` → `done` | `failed`. Un seul `all` en cours : index partiel
+  /// `catalog_reemission_job_one_running_all` (migration, Prisma ne l'exprime pas).
+  status     String
+
+  productsAttempted Int @default(0) @map("products_attempted")
+  productsSucceeded Int @default(0) @map("products_succeeded")
+  /// `[{ productId, name, reason }]` — chaque fiche en échec, nommée.
+  failures          Json @default("[]")
+  /// Ce qui a arrêté le travail entier (une famille, les règles, un
+  /// redémarrage). `NULL` tant qu'il tourne ou s'il a fini.
+  error             String?
+
+  /// L'id de la fiche staff qui a lancé le geste.
+  startedBy String @map("started_by")
+
+  @@index([startedAt])
+  @@map("catalog_reemission_job")
+  @@schema("pim")
+}

@@ -152,6 +152,7 @@ export class AgentToolsPage {
    */
   private readonly permissions = inject(PermissionsStore);
   protected readonly pimAllowed = this.permissions.can('pim_catalog:write');
+  protected readonly reemitAllowed = this.permissions.can('pim_channels:write');
   protected readonly mediaAllowed = this.permissions.can('media_library:write');
   protected readonly opsAllowed = this.permissions.can('ops_health:read');
   protected readonly customersAllowed = this.permissions.can('b2b_companies:read');
@@ -210,7 +211,7 @@ export class AgentToolsPage {
 
   /** Déclare les six trousses ; à appeler dans le contexte d'injection du composant. */
   private declareAll(): void {
-    this.tools.set(this.pimAllowed ? declarePimAgentTools() : []);
+    this.tools.set(this.pimAllowed ? declarePimAgentTools(this.reemitAllowed) : []);
     this.mediaTools.set(this.mediaAllowed ? declareMediaAgentTools() : []);
     this.opsTools.set(this.opsAllowed ? declareOpsAgentTools() : []);
     this.customerTools.set(this.customersAllowed ? declareCustomerAgentTools() : []);

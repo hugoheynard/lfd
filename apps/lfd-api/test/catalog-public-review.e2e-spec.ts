@@ -193,7 +193,7 @@ describe("la validation avant la boutique publique", () => {
     await relayAll(ctx);
     await approve([fiche.variantSku]).expect(204);
 
-    await staff().post("/pim/channels/b2b/reemit").send({}).expect(201);
+    await staff().post("/pim/channels/b2b/reemit").send({}).expect(202);
     await relayAll(ctx);
 
     expect(await pendingOf(fiche.variantSku)).toEqual(NONE);

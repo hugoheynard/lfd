@@ -7,6 +7,7 @@ import type { NutritionValues } from '../pim/data/models';
 import { said } from './agent-tool-text';
 import { declarePimCommerceAgentTools } from './pim-agent-commerce-tools';
 import { declarePimReadinessAgentTools } from './pim-agent-readiness-tools';
+import { declarePimReemissionAgentTools } from './pim-agent-reemission-tools';
 
 /**
  * **Les outils WebMCP du référentiel** — ce qu'un agent peut faire sur le PIM
@@ -37,8 +38,11 @@ import { declarePimReadinessAgentTools } from './pim-agent-readiness-tools';
  * `app.config.ts` : les fournisseurs de la racine s'exécutent au démarrage,
  * avant qu'un agent ait pu poser `document.modelContext`. Un outil déclaré là
  * ne s'enregistrerait jamais (plan §4).
+ *
+ * `canReemit` : `pim_channels:write`, le droit de la réémission — distinct
+ * de `pim_catalog:write`, qui garde la trousse entière.
  */
-export function declarePimAgentTools(): readonly string[] {
+export function declarePimAgentTools(canReemit: boolean): readonly string[] {
   const products = inject(ProductHttpApi);
   const categories = inject(CategoryStore);
 
@@ -306,5 +310,6 @@ export function declarePimAgentTools(): readonly string[] {
     'pim_variant_set_nutrition',
     ...declarePimCommerceAgentTools(),
     ...declarePimReadinessAgentTools(),
+    ...(canReemit ? declarePimReemissionAgentTools() : []),
   ];
 }

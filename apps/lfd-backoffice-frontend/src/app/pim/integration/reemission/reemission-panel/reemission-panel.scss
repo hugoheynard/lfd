@@ -1,0 +1,27 @@
+/* Sans le droit, le panneau ne rend rien (un commentaire d'ancrage) : il ne
+   doit pas non plus prendre sa place dans la colonne de son parent. */
+:host:empty {
+  display: none;
+}
+
+.reemission {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--fold-space-sm);
+}
+
+.said {
+  margin: 0;
+}
+
+.failures {
+  margin: var(--fold-space-xs) 0 0;
+  padding-left: var(--fold-space-md);
+}

@@ -7,6 +7,11 @@ import {
   type CatalogFamilyRecord,
 } from "../../../../catalogue/shared/domain/ports/catalog-facts.reader.js";
 import { CatalogRulesEmitter } from "../../../../order-time-limitation/domain/ports/catalog-rules.emitter.js";
+import { ReemissionProgress } from "../../../../catalogue/shared/domain/ports/catalog-reemission.js";
+import {
+  FamilyReemissionFailedError,
+  RulesReemissionFailedError,
+} from "../../domain/errors/reemission-errors.js";
 import { B2bCatalogReemission } from "../catalog-reemission.service.js";
 
 /**
@@ -45,16 +50,25 @@ class TracingEmitter extends CatalogEmitter {
     return Promise.resolve();
   }
   emitCategories(ids: readonly string[]): Promise<void> {
+    if (ids.some((id) => this.failing.has(id))) {
+      return Promise.reject(new RangeError("famille refusée"));
+    }
     this.uow.current?.push(...ids.map((id) => `category:${id}`));
     return Promise.resolve();
   }
 }
 
 class TracingRules extends CatalogRulesEmitter {
-  constructor(private readonly uow: CountingUnitOfWork) {
+  constructor(
+    private readonly uow: CountingUnitOfWork,
+    private readonly failing = false,
+  ) {
     super();
   }
   emitRules(): Promise<void> {
+    if (this.failing) {
+      return Promise.reject(new RangeError("règles refusées"));
+    }
     this.uow.current?.push("rules");
     return Promise.resolve();
   }
@@ -84,13 +98,26 @@ class TableFacts extends CatalogFactsReader {
   }
 }
 
-function setup(failing: readonly string[] = []) {
+/** Note ce que la réémission dit en avançant, dans l'ordre. */
+class NotedProgress extends ReemissionProgress {
+  readonly notes: string[] = [];
+  productEmitted(productId: string): Promise<void> {
+    this.notes.push(`ok:${productId}`);
+    return Promise.resolve();
+  }
+  productFailed(productId: string, cause: unknown): Promise<void> {
+    this.notes.push(`ko:${productId}:${cause instanceof Error ? cause.message : ""}`);
+    return Promise.resolve();
+  }
+}
+
+function setup(failing: readonly string[] = [], rulesFail = false) {
   const uow = new CountingUnitOfWork();
   const reemission = new B2bCatalogReemission(
     new TableFacts(["p_1", "p_2", "p_3"], ["cat_1", "cat_2"]),
     new TracingEmitter(uow, new Set(failing)),
     uow,
-    new TracingRules(uow),
+    new TracingRules(uow, rulesFail),
   );
   return { uow, reemission };
 }
@@ -129,6 +156,32 @@ describe("B2bCatalogReemission", () => {
     const report = await reemission.everything();
 
     expect(report.failedProducts).toEqual(["p_2"]);
+    expect(uow.transactions).toContainEqual(["product:p_3"]);
+  });
+
+  it("dit chaque fiche à l'observateur, partie ou en échec, dans l'ordre", async () => {
+    const { reemission } = setup(["p_2"]);
+    const progress = new NotedProgress();
+
+    await reemission.everything(progress);
+
+    expect(progress.notes).toEqual(["ok:p_1", "ko:p_2:verrou refusé", "ok:p_3"]);
+  });
+
+  /** Une famille en échec arrête tout AVANT la première fiche : rien n'est parti. */
+  it("s'arrête sur une famille en échec, en la nommant, sans émettre de fiche", async () => {
+    const { uow, reemission } = setup(["cat_2"]);
+
+    await expect(reemission.everything()).rejects.toBeInstanceOf(FamilyReemissionFailedError);
+    await expect(setup(["cat_2"]).reemission.everything()).rejects.toThrow(/cat_2/u);
+    expect(uow.transactions.flat().some((entry) => entry.startsWith("product:"))).toBe(false);
+  });
+
+  /** Les règles partent en dernier : leur échec arrive après toutes les fiches. */
+  it("lève une erreur nommée quand les règles échouent, après les fiches", async () => {
+    const { uow, reemission } = setup([], true);
+
+    await expect(reemission.everything()).rejects.toBeInstanceOf(RulesReemissionFailedError);
     expect(uow.transactions).toContainEqual(["product:p_3"]);
   });
 });

@@ -66,6 +66,8 @@ export abstract class PimPrismaService {
   abstract readonly allergenCategory: PrismaService["allergenCategory"];
   abstract readonly allergenEntry: PrismaService["allergenEntry"];
   abstract readonly ingredientAllergen: PrismaService["ingredientAllergen"];
+  /** Les réémissions du catalogue, suivies comme des travaux (2026-10-18). */
+  abstract readonly catalogReemissionJob: PrismaService["catalogReemissionJob"];
 
   /**
    * Le SQL écrit à la main — pour **un seul usage** à ce jour (vérifié le

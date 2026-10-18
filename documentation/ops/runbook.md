@@ -474,36 +474,53 @@ git.
 Le **filet** des faits du catalogue
 ([`catalogue-synchronise.md`](../catalogue/catalogue-synchronise.md) §2) :
 une fiche en retard sur la plateforme — vue sur « Catalogue publié » — se
-répare en réémettant son fait. La bascule vers les faits (lot 2b) est faite
-depuis les 2026-10-16/17 et n'a plus d'interrupteur (X1) ; ce geste est ce
-qui en reste.
+répare en réémettant son fait. Depuis le 2026-10-18, c'est un **geste à
+l'écran**, suivi comme un travail. Il demande **`pim_channels:write`** : sans
+ce droit, les boutons ne s'affichent pas.
 
-⚠️ **Plus d'écran depuis X4** (2026-10-17) : les boutons vivaient dans la
-carte de bascule de la page Intégrations, retirée. C'est un appel à l'API,
-qui demande le droit **`pim_channels:write`** (403 sinon) :
+**Le geste** :
+
+- **une fiche** : la fiche du référentiel, rail « Publication », carte
+  « Réémettre vers la plateforme », bouton **Réémettre** ;
+- **tout** : Référentiel › **Intégrations** (`/pim/integration`), carte
+  « Réémettre le catalogue », bouton **Tout réémettre** — familles, puis
+  fiches (une transaction chacune), puis les règles. Le 2026-10-17, 293
+  articles en ~73 s.
+
+La réponse part tout de suite ; l'écran relit le travail toutes les 1,5 s
+jusqu'à ce qu'il soit **Terminée** ou **Arrêtée**. Fermer l'écran n'arrête
+pas la réémission : la page Intégrations montre en s'ouvrant la dernière, et
+la suit si elle tourne encore.
+
+**Lire le compte rendu** (sur la carte, ou `GET /pim/channels/b2b/reemit/latest`) :
+
+- **Fiches tentées** compte les fiches essayées, échecs compris ; **Fiches
+  réussies** celles parties ;
+- **Terminée** avec des fiches en échec : chacune est nommée avec sa raison,
+  et mène à sa fiche — la réémettre seule depuis là ;
+- **Arrêtée** : la raison est écrite sous l'état —
+  - une **famille** en échec : avant la première fiche, rien n'est parti ;
+    relancer ;
+  - les **règles** en échec : toutes les fiches comptées sont parties ;
+    relancer est sans risque ;
+  - « **Interrompu par un redémarrage** du serveur » : le processus qui
+    tenait le travail s'est arrêté (déploiement, plantage) ; les fiches
+    comptées sont parties, relancer.
+- « Une réémission de tout le catalogue est déjà en cours » (409) : en
+  attendre l'issue sur la page Intégrations. Une fiche seule, elle, part
+  même pendant un « tout ».
+
+Sans écran (agent, ou API directe), le même geste :
 
 ```http
 POST /pim/channels/b2b/reemit
-{ "productId": "<id de la fiche>" }
+{ "productId": "<id de la fiche>" }      → 202 { "id": "<travail>" }
+GET  /pim/channels/b2b/reemit/<travail>  → le compte rendu
 ```
 
-- une fiche : `productId` ; une fiche inconnue répond 404 ;
-- **tout** : `productId` absent ou `null` — familles, puis fiches (une
-  transaction chacune), puis les règles. Le 2026-10-17, 293 articles en ~73 s.
-
-**Lire le compte rendu** (`catalog-reemission.service.ts`, lu le 2026-10-17) :
-
-- `products` compte les fiches **tentées**, échecs compris ; `failedProducts`
-  nomme celles en échec — chacune se réémet seule ensuite ;
-- une **famille** en échec fait lever toute la réémission, **avant** la
-  première fiche : rien n'est parti, on relance ;
-- les **règles** partent en dernier, sans filet : un 500 peut arriver alors
-  que toutes les fiches sont parties. Relancer est sans risque ;
-- si la réponse se perd côté client (~73 s), le travail continue, mais les
-  fiches en échec ne sont plus que dans les journaux, sous « Réémission de la
-  fiche <id> en échec » (`catalog-reemission.service.ts:66`) : les lire par
-  [Lire les journaux de l'application](#lire-les-journaux-de-lapplication)
-  (workflow `ops_logs`).
+`productId` absent ou `null` = tout ; une fiche inconnue répond 404. Pour un
+agent : `pim_catalog_reemit` puis `pim_catalog_reemission_status`
+([`outils-webmcp-pim.md`](../pim/outils-webmcp-pim.md)).
 
 **Contrôle** : une fiche vue sur « Catalogue publié » prouve **cette** fiche.
 Pour « tout », comparer le nombre de fiches publiées au référentiel au nombre

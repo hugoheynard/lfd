@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { FoldPageLayoutComponent } from 'fold-ng';
 
 import { B2bIntegration } from '../b2b-integration/b2b-integration';
+import { ReemissionPanel } from '../reemission/reemission-panel/reemission-panel';
 
 /**
  * Hub des **intégrations** — les canaux branchés sur le catalogue.
@@ -21,12 +22,13 @@ import { B2bIntegration } from '../b2b-integration/b2b-integration';
  *
  * La carte de la bascule vers l'audience est partie en X4
  * (`catalogue-synchronise.md` §6) : la bascule était faite, et le lien au canal
- * qu'elle comparait est retiré.
+ * qu'elle comparait est retiré. Ses boutons de réémission y reviennent le
+ * 2026-10-18, sous la forme d'un travail suivi (`ReemissionPanel`).
  */
 @Component({
   selector: 'app-integration-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldPageLayoutComponent, B2bIntegration],
+  imports: [FoldPageLayoutComponent, B2bIntegration, ReemissionPanel],
   templateUrl: './integration-page.html',
 })
 export class IntegrationPage {}

@@ -74,3 +74,15 @@ export function attachCompany(companyId: string | null): void {
     holder.companyId = companyId;
   }
 }
+
+/**
+ * Exécute `fn` (et toute sa descendance async) **hors** de la requête courante.
+ *
+ * Pour un travail de fond qui survit à sa requête et dure : sans cela, il
+ * hériterait de son `now` gelé, et un compte rendu fini une minute plus tard
+ * porterait l'instant de son lancement. Hors contexte, `Clock` lit l'heure
+ * système — comme un cron.
+ */
+export function outsideRequestContext<T>(fn: () => T): T {
+  return storage.exit(fn);
+}

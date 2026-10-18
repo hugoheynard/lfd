@@ -200,7 +200,13 @@ export type {
   VariantAspect,
 } from "./product.js";
 
-export type { ReemissionReportView } from "./b2b-channel.js";
+export type {
+  CatalogReemissionFailureView,
+  CatalogReemissionScope,
+  CatalogReemissionStatus,
+  CatalogReemissionView,
+  LatestCatalogReemissionView,
+} from "./b2b-channel.js";
 
 export type {
   FieldDiffView,

@@ -1,5 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 
+import { outsideRequestContext } from "../context/request-context.store.js";
+
 /**
  * Le **travail de fond lancé sur un événement** — celui que personne n'attend.
  *
@@ -33,6 +35,16 @@ export class BackgroundWork {
       });
     this.pending.add(guarded);
     return guarded;
+  }
+
+  /**
+   * Lance et suit une tâche **détachée de la requête** qui la lance : elle
+   * tourne hors de son contexte, donc sous l'heure système et non sous
+   * l'instant gelé de la requête. Pour un travail qui dure au-delà de la
+   * réponse (la réémission du catalogue, 2026-10-18).
+   */
+  detach(work: () => Promise<void>, label: string): Promise<void> {
+    return outsideRequestContext(() => this.track(work(), label));
   }
 
   /**

@@ -161,7 +161,7 @@ réémet plusieurs fiches **hors** de la transaction du geste, une transaction
 par fiche : un geste qui change le prix ou le taux de cent fiches ne doit pas
 verrouiller le catalogue entier. Elle est appelée **après** le `uow.run`, et
 une fiche en échec est journalisée et listée sans faire échouer le geste,
-déjà validé (`apps/lfd-api/src/pim/channels/b2b-platform/products/catalog-reemission.service.ts:66-80`).
+déjà validé (`apps/lfd-api/src/pim/channels/b2b-platform/products/catalog-reemission.service.ts:72-91`).
 
 | Déclencheur                                                                 | Appel                                                                                                                                |
 | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
@@ -171,19 +171,73 @@ déjà validé (`apps/lfd-api/src/pim/channels/b2b-platform/products/catalog-ree
 | le référentiel d'allergènes (7 gestes)                                      | `everything` (par exemple `apps/lfd-api/src/pim/allergens/application/revise-allergen-entry.ts:74`)                                  |
 | changer la méthode du prix pro                                              | `everything` (`apps/lfd-api/src/pim/accounting-rules/application/choose-pro-price-method.ts:81`)                                     |
 | changer le rapport pro — **seulement** au premier réglage ou hors `entered` | `everything` (`apps/lfd-api/src/pim/accounting-rules/application/set-pro-price-ratio.ts:71-75`)                                      |
-| `POST /pim/channels/b2b/reemit` — une fiche, ou tout                        | `apps/lfd-api/src/pim/channels/b2b-platform/products/reemit.controller.ts:23-30`                                                     |
+| `POST /pim/channels/b2b/reemit` — une fiche, ou tout                        | `apps/lfd-api/src/pim/channels/b2b-platform/http/reemit.controller.ts`                                                               |
 
 « Tout » émet les familles d'abord, puis les fiches, puis les règles en
 dernier : c'est le fait d'une fiche qui apprend à la plateforme l'identifiant
-de déclinaison qu'une règle de ce rang vise (`catalog-reemission.service.ts:40-56`).
-Une fiche inconnue répond 404 (`apps/lfd-api/src/pim/channels/b2b-platform/application/reemit-catalog.ts:44-48`).
+de déclinaison qu'une règle de ce rang vise (`catalog-reemission.service.ts`).
+Une famille en échec arrête tout avant la première fiche
+(`FamilyReemissionFailedError`) ; les règles en échec arrêtent tout après les
+fiches (`RulesReemissionFailedError`).
 
-⚠️ **La réémission n'a plus d'écran** depuis X4 (2026-10-17) : ses deux
-boutons (« Réémettre tout », « Réémettre cette fiche ») vivaient dans la carte
-de bascule vers l'audience de la page Intégrations, retirée avec elle
-(`d66b331f0`). Le geste est un appel à la route, sous la surface
-`pim_channels` (runbook, « Réémettre le catalogue »). C'est le **filet** : un fait perdu laisse une fiche en retard, « Catalogue
-publié » le montre, la réémission le répare.
+#### Un travail suivi (2026-10-18)
+
+La réémission demandée par le personnel est un **travail** : `POST` rend
+`202` et l'identifiant tout de suite, la réémission tourne en arrière-plan
+dans le processus (`BackgroundWork.detach`, hors du contexte de la requête :
+l'heure de fin est celle du mur, pas l'instant gelé du lancement), et son
+compte rendu s'écrit **fiche par fiche** dans `pim.catalog_reemission_job`
+(migration `20261018090000_la_reemission_suivie`).
+
+```mermaid
+sequenceDiagram
+  participant E as Écran / agent
+  participant C as B2bReemitController
+  participant S as StartCatalogReemissionHandler
+  participant R as CatalogReemissionRunner
+  participant T as pim.catalog_reemission_job
+  E->>C: POST /reemit { productId? }
+  C->>S: StartCatalogReemissionCommand
+  S->>T: running (404 fiche inconnue, 409 si un « tout » tourne)
+  S-->>E: 202 { id }
+  S-)R: detach(run)
+  loop chaque fiche
+    R->>T: tentées / réussies / échec nommé
+  end
+  R->>T: done, ou failed + erreur
+  E->>C: GET /reemit/:id (toutes les 1,5 s)
+  C-->>E: compte rendu
+```
+
+- **Lectures** : `GET /pim/channels/b2b/reemit/latest` (`{ job: null }` s'il
+  n'y en a jamais eu) et `GET /pim/channels/b2b/reemit/:id` (404 inconnu),
+  sous `pim_channels:read`.
+- **Un seul « tout » à la fois** : refus `catalogue.reemission.already_running`
+  (409), tenu par la garde du lanceur **et** par l'index partiel
+  `catalog_reemission_job_one_running_all` pour deux clics simultanés. Une
+  fiche seule part même pendant un « tout ».
+- **Le compte rendu** : `done` = chaque fiche a été tentée, les échecs sont
+  nommés (`failures` : identifiant, nom source, raison) ; `failed` = arrêté
+  en route, `error` dit pourquoi, les comptes gardent ce qui est parti.
+- **Au démarrage**, un travail resté `running` passe `failed` avec la raison
+  « Interrompu par un redémarrage du serveur avant la fin… »
+  (`ReemissionRecoveryOnBoot`) : rien ne le finira, et il bloquerait le
+  prochain « tout ».
+- `started_by` est l'id de la fiche staff, au registre RGPD.
+
+**Les écrans** : « Tout réémettre » sur la page **Intégrations** du
+référentiel (`/pim/integration`) — c'est le canal que le filet répare, et
+l'ancienne adresse « Publication » y redirige déjà ; « Réémettre » dans le
+rail « Publication » de **la fiche**. Les deux suivent le travail jusqu'à son
+issue et affichent tentées, réussies, échecs nommés (chacun mène à sa fiche).
+Visibles seulement avec `pim_channels:write`
+(`apps/lfd-backoffice-frontend/src/app/pim/integration/reemission/`). C'est
+le **filet** : un fait perdu laisse une fiche en retard, « Catalogue publié »
+le montre, la réémission le répare.
+
+Les **déclencheurs automatiques** du tableau ci-dessus (taux, contextes,
+allergènes, prix pro) appellent toujours `CatalogReemission` directement,
+après leur geste : ils ne créent pas de travail suivi.
 
 ## 3. Le transport durable
 
@@ -466,9 +520,9 @@ décisions, qui expliquent l'état actuel :
 - **Les révisions ne photographient plus les contextes de vente** (option a,
   Hugo, 2026-10-17) : la matrice n'avait plus d'écrivain, la garder l'aurait
   figée dans chaque empreinte.
-- **La réémission se lance par l'API seulement**
-  (`pim/channels/b2b-platform/products/reemit.controller.ts`) : sa carte est
-  partie avec la page qui la portait ; le geste est au runbook.
+- **La réémission s'est lancée par l'API seulement** de X4 au 2026-10-18 :
+  sa carte était partie avec la page qui la portait. Elle a retrouvé un
+  geste le 2026-10-18 (Hugo), sous la forme d'un travail suivi (§2).
 - **Aucune table supprimée** : la liste attend un ordre de Hugo
   ([`tables-mortes.md`](tables-mortes.md)).
 
@@ -615,8 +669,10 @@ Tous décrits dans [`plan-catalogue-synchronise-par-audience.md`](plan-catalogue
 - La séquence du diagramme du §1 regroupe la relecture et la projection en
   une étape : le détail est dans `catalog-facts.source.ts`, non relu ligne à
   ligne.
-- La réémission n'a plus d'écran depuis X4 (§2) : le filet existe, mais il
-  ne se lance que par l'API.
+- La réémission suivie (§2) tient son travail **dans le processus** : la
+  reprise au démarrage suppose une seule instance de l'API. Avec deux, le
+  démarrage de l'une clorait en échec le travail que l'autre tient encore
+  (non vérifié : le nombre d'instances en production n'a pas été relu).
 - La liste des 33 fichiers émetteurs est un compte par recherche, pas une
   revue de chaque geste.
 

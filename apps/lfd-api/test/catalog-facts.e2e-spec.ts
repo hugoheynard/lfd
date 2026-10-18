@@ -10,10 +10,19 @@
  */
 import { randomUUID } from "node:crypto";
 
+import type { CatalogReemissionView } from "@lfd/pim-contracts";
+
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import {
+  CatalogReemissionJob,
+  INTERRUPTED_BY_RESTART,
+} from "../src/pim/channels/b2b-platform/domain/entities/catalog-reemission-job.js";
+import { ReemissionJobRepository } from "../src/pim/channels/b2b-platform/domain/ports/reemission-job.repository.js";
+import { ReemissionRecoveryOnBoot } from "../src/pim/channels/b2b-platform/infrastructure/reemission-recovery.on-boot.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { OutboxRelayTrigger } from "../src/platform/outbox/outbox-relay-trigger.js";
+import { Clock } from "../src/platform/time/clock.js";
 import {
   aDraftFiche,
   anActiveFiche,
@@ -24,6 +33,7 @@ import {
 } from "./catalog-facts-scene.js";
 import {
   bootstrapE2e,
+  E2E_STAFF_ID,
   E2E_STAFF_SUB,
   jsonBody,
   serviceDay,
@@ -298,21 +308,53 @@ describe("l'audience décide à qui l'article se vend (servedTo)", () => {
   });
 });
 
-/** 2a6 : le filet. Un fait perdu laisse une fiche en retard ; réémettre la répare. */
+/**
+ * 2a6 : le filet. Un fait perdu laisse une fiche en retard ; réémettre la répare.
+ * Depuis le 2026-10-18, c'est un travail suivi : `POST` rend 202 et un
+ * identifiant, le compte rendu se relit.
+ */
 describe("réémettre", () => {
-  it("« tout » rend à la plateforme une fiche qu'elle avait perdue, famille d'abord", async () => {
+  const REEMIT = "/pim/channels/b2b/reemit";
+
+  async function reportOf(id: string): Promise<CatalogReemissionView> {
+    return jsonBody<CatalogReemissionView>(await staff().get(`${REEMIT}/${id}`).expect(200));
+  }
+
+  async function aRunningEverything(): Promise<string> {
+    const job = CatalogReemissionJob.start({
+      id: randomUUID(),
+      productId: null,
+      startedAt: ctx.app.get(Clock).now(),
+      startedBy: E2E_STAFF_ID,
+    });
+    await ctx.app.get(ReemissionJobRepository).save(job);
+    return job.id;
+  }
+
+  it("« tout » rend 202, puis un compte rendu fini, et rend la fiche perdue", async () => {
     const fiche = await aDraftFiche(staff, "Cannelé");
     await relayAll(ctx);
     // La perte simulée : la ligne disparaît côté plateforme, le référentiel n'a pas bougé.
     await ctx.prisma.catalogEntry.delete({ where: { productId: fiche.id } });
 
-    const report = await staff().post("/pim/channels/b2b/reemit").send({}).expect(201);
+    const started = await staff().post(REEMIT).send({}).expect(202);
     await relayAll(ctx);
 
-    expect(jsonBody<{ products: number; failedProducts: string[] }>(report)).toMatchObject({
-      products: 1,
-      failedProducts: [],
+    const { id } = jsonBody<{ id: string }>(started);
+    expect(await reportOf(id)).toMatchObject({
+      scope: "all",
+      status: "done",
+      productsAttempted: 1,
+      productsSucceeded: 1,
+      failures: [],
+      error: null,
+      startedBy: E2E_STAFF_ID,
     });
+    expect((await reportOf(id)).finishedAt).not.toBeNull();
+    const latest = jsonBody<{ job: { id: string } | null }>(
+      await staff().get(`${REEMIT}/latest`).expect(200),
+    );
+    expect(latest.job?.id).toBe(id);
     expect((await entryOf(fiche.id))?.status).toBe("inactive");
   });
 
@@ -321,9 +363,60 @@ describe("réémettre", () => {
     await relayAll(ctx);
     const before = (await entryOf(fiche.id))?.appliedSeq ?? 0n;
 
-    await staff().post("/pim/channels/b2b/reemit").send({ productId: fiche.id }).expect(201);
+    const started = await staff().post(REEMIT).send({ productId: fiche.id }).expect(202);
     await relayAll(ctx);
 
     expect((await entryOf(fiche.id))?.appliedSeq).toBeGreaterThan(before);
+    expect(await reportOf(jsonBody<{ id: string }>(started).id)).toMatchObject({
+      scope: "product",
+      productId: fiche.id,
+      status: "done",
+      productsSucceeded: 1,
+    });
+  });
+
+  it("refuse un second « tout » pendant qu'un premier tourne, en le nommant", async () => {
+    await aRunningEverything();
+
+    const refused = await staff().post(REEMIT).send({}).expect(409);
+
+    expect(jsonBody<{ code: string }>(refused).code).toBe("catalogue.reemission.already_running");
+    expect(await ctx.prisma.catalogReemissionJob.count()).toBe(1);
+  });
+
+  it("nomme dans le compte rendu une fiche qui n'a pas pu partir", async () => {
+    const fiche = await aDraftFiche(staff, "Kouign-amann");
+    // L'échec simulé : le nom de SA famille devient illisible, la projection
+    // de la fiche échoue, et le nom de la fiche reste lisible. Rien dans le
+    // domaine ne sait produire une telle ligne — c'est précisément une corruption.
+    await ctx.prisma.category.update({ where: { id: fiche.categoryId }, data: { name: 42 } });
+
+    const started = await staff().post(REEMIT).send({ productId: fiche.id }).expect(202);
+    await ctx.drain();
+
+    const report = await reportOf(jsonBody<{ id: string }>(started).id);
+    expect(report).toMatchObject({
+      status: "done",
+      productsAttempted: 1,
+      productsSucceeded: 0,
+      failures: [{ productId: fiche.id, name: "Kouign-amann" }],
+    });
+    expect(report.failures[0]?.reason).not.toBe("");
+  });
+
+  it("au démarrage, un travail resté en cours passe en échec, raison écrite", async () => {
+    const id = await aRunningEverything();
+
+    await ctx.app.get(ReemissionRecoveryOnBoot).onApplicationBootstrap();
+
+    expect(await reportOf(id)).toMatchObject({ status: "failed", error: INTERRUPTED_BY_RESTART });
+    // Le « tout » orphelin ne bloque plus le suivant.
+    await staff().post(REEMIT).send({}).expect(202);
+    await ctx.drain();
+  });
+
+  it("refuse une fiche inconnue (404) et un travail inconnu (404)", async () => {
+    await staff().post(REEMIT).send({ productId: "prd_absent" }).expect(404);
+    await staff().get(`${REEMIT}/inconnu`).expect(404);
   });
 });

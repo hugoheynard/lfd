@@ -1,0 +1,79 @@
+@if (canWrite) {
+  <section class="reemission" aria-labelledby="reemission-title">
+    <fold-element-title
+      headingId="reemission-title"
+      [title]="everything() ? 'Réémettre le catalogue' : 'Réémettre vers la plateforme'"
+    />
+    <fold-card>
+      <div class="body">
+        <p class="said">
+          @if (everything()) {
+            Renvoie à la boutique B2B toutes les familles, toutes les fiches, puis les règles de
+            commande. Le filet quand «&nbsp;Catalogue publié&nbsp;» montre des fiches en
+            retard&nbsp;: rien ne change au référentiel, le plus récent gagne.
+          } @else {
+            Renvoie cette fiche à la boutique B2B, telle qu'elle est enregistrée. Utile quand
+            «&nbsp;Catalogue publié&nbsp;» la montre en retard.
+          }
+        </p>
+
+        <button
+          foldButton
+          emphasis="outline"
+          intent="neutral"
+          [loading]="tracker.starting() || tracker.running()"
+          [disabled]="tracker.running()"
+          (click)="launch()"
+        >
+          {{ everything() ? 'Tout réémettre' : 'Réémettre' }}
+        </button>
+
+        @if (tracker.error(); as message) {
+          <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+        }
+
+        @if (tracker.job(); as job) {
+          @if (job.status === 'running') {
+            <fold-loading
+              [message]="'Réémission en cours — ' + job.productsAttempted + ' fiche(s) tentée(s)…'"
+            />
+          }
+
+          <fold-field-list>
+            <fold-field label="État">
+              @if (badge(); as shown) {
+                <fold-status-badge [status]="shown.status" [label]="shown.label" />
+              }
+            </fold-field>
+            <fold-field label="Lancée">{{ startedLine(job) }}</fold-field>
+            <fold-field label="Fiches tentées">{{ job.productsAttempted }}</fold-field>
+            <fold-field label="Fiches réussies">{{ job.productsSucceeded }}</fold-field>
+          </fold-field-list>
+
+          @if (job.error; as stopped) {
+            <fold-callout appearance="inset" variant="alert">{{ stopped }}</fold-callout>
+          }
+
+          @if (job.failures.length > 0) {
+            <fold-callout appearance="inset" variant="warning">
+              <p class="said">
+                {{ job.failures.length }} fiche(s) en échec. Chacune se réémet seule, depuis sa
+                fiche.
+              </p>
+              <ul class="failures">
+                @for (failure of job.failures; track failure.productId) {
+                  <li>
+                    <a [routerLink]="['/pim/produits', failure.productId]">{{
+                      failure.name ?? failure.productId
+                    }}</a>
+                    — {{ failure.reason }}
+                  </li>
+                }
+              </ul>
+            </fold-callout>
+          }
+        }
+      </div>
+    </fold-card>
+  </section>
+}

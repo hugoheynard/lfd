@@ -459,6 +459,15 @@
       "information": false
     },
     {
+      "colonne": "pim.catalog_reemission_job.started_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a lancé une réémission du catalogue (`started_by`) sur `catalog_reemission_job`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "pim.catalog_revision.taken_by",
       "personne": "staff",
       "categorie": "auteur-geste",

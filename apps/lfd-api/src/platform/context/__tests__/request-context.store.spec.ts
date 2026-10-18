@@ -1,6 +1,7 @@
 import {
   attachActor,
   currentRequestContext,
+  outsideRequestContext,
   runWithRequestContext,
 } from "../request-context.store.js";
 
@@ -18,6 +19,18 @@ describe("request-context store", () => {
       expect(context).not.toBeNull();
       expect(context?.now).toBe(NOW);
       expect(context?.traceId).toBe("trace-1");
+    });
+  });
+
+  /** Un travail détaché ne doit pas hériter de l'instant gelé de sa requête. */
+  it("sort du contexte, descendance async comprise", async () => {
+    await runWithRequestContext({ now: NOW, traceId: "t" }, async () => {
+      const seen = await outsideRequestContext(async () => {
+        await Promise.resolve();
+        return currentRequestContext();
+      });
+      expect(seen).toBeNull();
+      expect(currentRequestContext()?.now).toBe(NOW);
     });
   });
 

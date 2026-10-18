@@ -127,7 +127,7 @@ function armTools(detail: ProductDetail | null) {
     ],
   });
   const injector = TestBed.inject(Injector);
-  runInInjectionContext(injector, () => declarePimAgentTools());
+  runInInjectionContext(injector, () => declarePimAgentTools(false));
 
   const nutritionTool = registered.find((tool) => tool.name === 'pim_variant_set_nutrition');
   if (nutritionTool === undefined) {

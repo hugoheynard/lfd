@@ -14,6 +14,7 @@ import {
 } from 'fold-ng';
 
 import { staffAuthor } from '../../../../shared/staff-author';
+import { ReemissionPanel } from '../../../integration/reemission/reemission-panel/reemission-panel';
 import { ProductFormStore } from '../product-form-store';
 import { completenessOf, measure, type CompletenessCheck } from './completeness';
 
@@ -100,6 +101,7 @@ const STATE_LABELS: Readonly<Record<FoldChecklistState, string>> = {
     FoldDisclosureComponent,
     FoldElementTitleComponent,
     FoldMeterComponent,
+    ReemissionPanel,
   ],
   templateUrl: './publish-rail.html',
   styleUrl: './publish-rail.scss',

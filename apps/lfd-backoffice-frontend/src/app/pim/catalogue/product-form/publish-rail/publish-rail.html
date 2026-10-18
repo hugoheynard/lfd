@@ -174,3 +174,10 @@
     }
   </fold-card>
 </section>
+
+<!-- LE FILET (2026-10-18) : renvoyer cette fiche à la plateforme quand
+     « Catalogue publié » la montre en retard. Rien qu'une fiche enregistrée
+     ne peut être réémise ; le panneau se tait sans \`pim_channels:write\`. -->
+@if (store.isEdit()) {
+  <app-reemission-panel class="pr-block" [productId]="store.productId()" />
+}

@@ -39,32 +39,43 @@ lit.
 
 ---
 
-## 2. Les quatorze outils livrés
+## 2. Les seize outils livrés
 
 Ils vivent dans
 [`agent/pim-agent-tools.ts`](../../apps/lfd-backoffice-frontend/src/app/agent/pim-agent-tools.ts)
 déclarés par l'écran
 [`agent/agent-tools-page/`](../../apps/lfd-backoffice-frontend/src/app/agent/agent-tools-page/).
 
-| Outil                       | Ce qu'il fait                                     |
-| --------------------------- | ------------------------------------------------- |
-| `pim_categories_list`       | liste les familles — pour choisir un rattachement |
-| `pim_products_list`         | liste les fiches                                  |
-| `pim_product_read`          | lit une fiche entière                             |
-| `pim_product_create`        | crée une fiche, avec sa déclinaison par défaut    |
-| `pim_product_set_identity`  | nom, référence, famille, nature                   |
-| `pim_product_set_editorial` | récit, provenance, SEO                            |
-| `pim_variant_set_nutrition` | valeurs de l'annexe XV, par déclinaison           |
-| `pim_variant_set_pricing`   | prix public, poids, prix pro HT d'une déclinaison |
-| `pim_vat_rates_list`        | liste les taux de TVA                             |
-| `pim_set_vat`               | TVA par contexte, sur une famille ou une fiche    |
-| `pim_product_set_media`     | usages des visuels d'une fiche                    |
-| `pim_product_readiness`     | ce qui manque pour qu'une fiche soit vendable     |
-| `pim_product_publish`       | met une fiche en vente                            |
-| `pim_product_unpublish`     | la rend au brouillon                              |
+| Outil                           | Ce qu'il fait                                             |
+| ------------------------------- | --------------------------------------------------------- |
+| `pim_categories_list`           | liste les familles — pour choisir un rattachement         |
+| `pim_products_list`             | liste les fiches                                          |
+| `pim_product_read`              | lit une fiche entière                                     |
+| `pim_product_create`            | crée une fiche, avec sa déclinaison par défaut            |
+| `pim_product_set_identity`      | nom, référence, famille, nature                           |
+| `pim_product_set_editorial`     | récit, provenance, SEO                                    |
+| `pim_variant_set_nutrition`     | valeurs de l'annexe XV, par déclinaison                   |
+| `pim_variant_set_pricing`       | prix public, poids, prix pro HT d'une déclinaison         |
+| `pim_vat_rates_list`            | liste les taux de TVA                                     |
+| `pim_set_vat`                   | TVA par contexte, sur une famille ou une fiche            |
+| `pim_product_set_media`         | usages des visuels d'une fiche                            |
+| `pim_product_readiness`         | ce qui manque pour qu'une fiche soit vendable             |
+| `pim_product_publish`           | met une fiche en vente                                    |
+| `pim_product_unpublish`         | la rend au brouillon                                      |
+| `pim_catalog_reemit`            | réémet une fiche, ou tout, vers la boutique B2B           |
+| `pim_catalog_reemission_status` | lit le compte rendu d'une réémission (dernière ou par id) |
 
 Les sept derniers vivent dans [`agent/pim-agent-commerce-tools.ts`](../../apps/lfd-backoffice-frontend/src/app/agent/pim-agent-commerce-tools.ts) et
 [`agent/pim-agent-readiness-tools.ts`](../../apps/lfd-backoffice-frontend/src/app/agent/pim-agent-readiness-tools.ts) (ajoutés le 2026-10-17, sans route neuve).
+
+Les deux outils de réémission (2026-10-18) vivent dans
+[`agent/pim-agent-reemission-tools.ts`](../../apps/lfd-backoffice-frontend/src/app/agent/pim-agent-reemission-tools.ts)
+et visent `ReemissionHttpApi`, la même porte que le panneau de l'écran
+(`/pim/channels/b2b/reemit`, [`../catalogue/catalogue-synchronise.md`](../catalogue/catalogue-synchronise.md) §2).
+Ils ne sont déclarés qu'avec **`pim_channels:write`** en plus de
+`pim_catalog:write` qui garde la trousse : c'est le droit que la route
+oppose. `pim_catalog_reemit` rend l'identifiant du travail tout de suite ;
+`pim_catalog_reemission_status` se relit jusqu'à `done` ou `failed`.
 
 `pim_product_set_channels` (où la fiche se vend) est parti en X4
 (`documentation/catalogue/catalogue-synchronise.md` §6) avec la matrice des

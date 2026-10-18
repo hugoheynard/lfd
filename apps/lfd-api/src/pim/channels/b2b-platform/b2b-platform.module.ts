@@ -5,8 +5,17 @@ import { AllergensModule } from "../../allergens/allergens.module.js";
 import { CatalogueModule } from "../../catalogue/catalogue.module.js";
 import { OrderTimeLimitationModule } from "../../order-time-limitation/order-time-limitation.module.js";
 import { PimDatabaseModule } from "../../infra/database/pim-database.module.js";
-import { ReemitCatalogHandler } from "./application/reemit-catalog.js";
-import { B2bReemitController } from "./products/reemit.controller.js";
+import { CatalogReemissionRunner } from "./application/catalog-reemission-runner.js";
+import { GetCatalogReemissionHandler } from "./application/get-catalog-reemission.js";
+import { GetLatestCatalogReemissionHandler } from "./application/get-latest-catalog-reemission.js";
+import { InterruptOrphanReemissionsHandler } from "./application/interrupt-orphan-reemissions.js";
+import { StartCatalogReemissionHandler } from "./application/start-catalog-reemission.js";
+import { ReemissionJobReader } from "./domain/ports/reemission-job.reader.js";
+import { ReemissionJobRepository } from "./domain/ports/reemission-job.repository.js";
+import { B2bReemitController } from "./http/reemit.controller.js";
+import { PrismaReemissionJobReader } from "./infrastructure/prisma-reemission-job.reader.js";
+import { PrismaReemissionJobRepository } from "./infrastructure/prisma-reemission-job.repository.js";
+import { ReemissionRecoveryOnBoot } from "./infrastructure/reemission-recovery.on-boot.js";
 
 /**
  * Adaptateur du canal **plateforme B2B** — le second canal, après l'ancien canal de vente en ligne.
@@ -15,7 +24,8 @@ import { B2bReemitController } from "./products/reemit.controller.js";
  * Supprimer ce module ne casserait rien en amont ; c'est le test qui dit que la
  * frontière tient.
  *
- * Il ne porte plus que la **réémission** des faits du catalogue. Partis en X4
+ * Il ne porte plus que la **réémission** des faits du catalogue — un travail
+ * suivi depuis le 2026-10-18, rangé dans `pim.catalog_reemission_job`. Partis en X4
  * (`documentation/catalogue/catalogue-synchronise.md` §6) : l'appartenance au
  * canal par fiche, la bascule vers l'audience qui la lisait, et le port des
  * opérations que le commerce lisait pour les reprendre.
@@ -32,6 +42,15 @@ import { B2bReemitController } from "./products/reemit.controller.js";
     AllergensModule,
   ],
   controllers: [B2bReemitController],
-  providers: [ReemitCatalogHandler],
+  providers: [
+    { provide: ReemissionJobRepository, useClass: PrismaReemissionJobRepository },
+    { provide: ReemissionJobReader, useClass: PrismaReemissionJobReader },
+    CatalogReemissionRunner,
+    StartCatalogReemissionHandler,
+    InterruptOrphanReemissionsHandler,
+    GetLatestCatalogReemissionHandler,
+    GetCatalogReemissionHandler,
+    ReemissionRecoveryOnBoot,
+  ],
 })
 export class B2bPlatformModule {}
