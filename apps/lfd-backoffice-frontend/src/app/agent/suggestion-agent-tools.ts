@@ -12,10 +12,15 @@ import {
 import { StaffSuggestionsService } from '../suggestions/staff-suggestions.service';
 
 import { said } from './agent-tool-text';
+import { declareSuggestionPreviewTool } from './suggestion-preview-agent-tool';
 import { orderText, suggestionText } from './suggestion-agent-text';
 
 /** Les outils de lecture — déclarés avec `lfc_suggestions:read`. */
-export const SUGGESTION_READ_TOOLS = ['suggestion_list', 'suggestion_order_get'] as const;
+export const SUGGESTION_READ_TOOLS = [
+  'suggestion_list',
+  'suggestion_order_get',
+  'suggestion_preview',
+] as const;
 /** Les outils d'écriture — déclarés en plus avec `lfc_suggestions:write`. */
 export const SUGGESTION_WRITE_TOOLS = [
   'suggestion_create',
@@ -117,6 +122,8 @@ export function declareSuggestionAgentTools(canWrite: boolean): readonly string[
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
     execute: () => said('Lecture de l’ordre', async () => orderText(await api.order())),
   });
+
+  declareSuggestionPreviewTool(api, choices);
 
   if (!canWrite) {
     return SUGGESTION_READ_TOOLS;

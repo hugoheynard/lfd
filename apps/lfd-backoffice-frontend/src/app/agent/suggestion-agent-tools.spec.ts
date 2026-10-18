@@ -50,7 +50,15 @@ function armTools(canWrite = true) {
   const wire: Wire = { rules: [], created: [], revised: [], order: 'recent' };
   const api: Pick<
     StaffSuggestionsService,
-    'list' | 'choices' | 'create' | 'revise' | 'setActive' | 'archive' | 'order' | 'setOrder'
+    | 'list'
+    | 'choices'
+    | 'create'
+    | 'revise'
+    | 'setActive'
+    | 'archive'
+    | 'order'
+    | 'setOrder'
+    | 'preview'
   > = {
     list: () => Promise.resolve([...wire.rules]),
     choices: () => Promise.resolve(CHOICES),
@@ -84,6 +92,17 @@ function armTools(canWrite = true) {
       return Promise.resolve({ id });
     },
     archive: (id) => Promise.resolve({ id }),
+    preview: (payload) =>
+      Promise.resolve({
+        day: payload.day ?? '',
+        shown: [],
+        rules: wire.rules.map((rule) => ({
+          ruleId: rule.id,
+          status: 'ended' as const,
+          outrankedBy: null,
+          items: [],
+        })),
+      }),
     order: () => Promise.resolve({ order: wire.order, updatedAt: null }),
     setOrder: (order) => {
       wire.order = order;
@@ -112,8 +131,9 @@ afterEach(() => Reflect.deleteProperty(document, 'modelContext'));
 describe('declareSuggestionAgentTools', () => {
   it('sans le droit d’écriture, ne déclare QUE la lecture', () => {
     const { names, registered } = armTools(false);
-    expect(names).toEqual(['suggestion_list', 'suggestion_order_get']);
-    expect([...registered.keys()]).toEqual(['suggestion_list', 'suggestion_order_get']);
+    const reads = ['suggestion_list', 'suggestion_order_get', 'suggestion_preview'];
+    expect(names).toEqual(reads);
+    expect([...registered.keys()]).toEqual(reads);
   });
 
   it('suggestion_list nomme chaque règle et le catalogue où choisir', async () => {
@@ -162,6 +182,32 @@ describe('declareSuggestionAgentTools', () => {
     expect(await tool('suggestion_order_set').execute({ order: 'priority' })).toContain(
       '[priority]',
     );
+  });
+});
+
+describe('suggestion_preview', () => {
+  it('rend la carte vide et la raison de chaque règle, en clair et en code', async () => {
+    const { tool, wire } = armTools(false);
+    wire.rules.push(staffSuggestion({ id: 'R1', endsOn: '2026-10-18' }));
+    const text = await tool('suggestion_preview').execute({
+      placement: 'cart',
+      cartSkus: ['VIE-001'],
+      audience: 'public',
+      day: '2026-10-20',
+    });
+    expect(text).toContain('Le 2026-10-20, le client ne verrait aucune suggestion décidée.');
+    expect(text).toContain('id R1 [ended] — Finie le 18 octobre');
+  });
+
+  it('refuse une fiche sans article', async () => {
+    const { tool } = armTools(false);
+    expect(
+      await tool('suggestion_preview').execute({
+        placement: 'product',
+        audience: 'pro',
+        day: '2026-10-20',
+      }),
+    ).toContain('REFUSÉ');
   });
 });
 

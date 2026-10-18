@@ -1,5 +1,9 @@
 import type { StaffSuggestionRuleSnapshot } from "../entities/staff-suggestion-rule.js";
-import { triggeredCandidates, type SuggestionCandidate } from "./suggestion-candidates.js";
+import {
+  triggeredCandidates,
+  type SuggestionCandidate,
+  type SuggestionTriggering,
+} from "./suggestion-candidates.js";
 
 /**
  * **Combien d'articles décidés la fiche montre** — la même hypothèse que le
@@ -30,4 +34,9 @@ export function productCandidates(
   viewedSku: string,
 ): readonly SuggestionCandidate[] {
   return triggeredCandidates(ordered, (rule) => triggeredByProduct(rule, viewedSku), [viewedSku]);
+}
+
+/** Ce que la fiche apporte à la chaîne commune : son déclencheur, et elle-même exclue. */
+export function productTriggering(viewedSku: string): SuggestionTriggering {
+  return { triggered: (rule) => triggeredByProduct(rule, viewedSku), excluded: [viewedSku] };
 }

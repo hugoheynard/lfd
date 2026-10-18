@@ -36,19 +36,37 @@ export function applicableSuggestions(
   ask: ApplicableSuggestionsAsk,
 ): readonly StaffSuggestionRuleSnapshot[] {
   return rules
-    .filter(
-      (rule) =>
-        rule.archivedAt === null &&
-        rule.active &&
-        rule.placement === ask.placement &&
-        periodCovers(rule.period, ask.today) &&
-        reaches(rule, ask.reader),
-    )
+    .filter((rule) => rule.archivedAt === null && ruleGate(rule, ask) === null)
     .sort((left, right) =>
       ask.order === "priority"
         ? right.priority - left.priority || byRecent(left, right)
         : byRecent(left, right),
     );
+}
+
+/** Ce qui écarte une règle avant tout déclencheur — l'aperçu (RS5) le nomme. */
+export type RuleGate = "ended" | "not_started" | "inactive" | "wrong_audience" | "wrong_placement";
+
+/**
+ * **Pourquoi une règle non archivée ne s'applique pas**, ou `null` si elle
+ * s'applique. Une seule raison, la première dans cet ordre : la période, puis
+ * l'interrupteur, puis l'audience, puis l'emplacement. `applicableSuggestions`
+ * ne garde que les `null` : l'aperçu et la boutique lisent la même règle.
+ */
+export function ruleGate(
+  rule: StaffSuggestionRuleSnapshot,
+  ask: Pick<ApplicableSuggestionsAsk, "placement" | "today" | "reader">,
+): RuleGate | null {
+  if (!periodCovers(rule.period, ask.today)) {
+    return ask.today > rule.period.endsOn ? "ended" : "not_started";
+  }
+  if (!rule.active) {
+    return "inactive";
+  }
+  if (!reaches(rule, ask.reader)) {
+    return "wrong_audience";
+  }
+  return rule.placement === ask.placement ? null : "wrong_placement";
 }
 
 function reaches(rule: StaffSuggestionRuleSnapshot, reader: StaffSuggestionReader | null): boolean {

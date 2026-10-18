@@ -1,3 +1,24 @@
+> 🟡 **RS5 bâti le 2026-10-18** (non commité à l'écriture ; Hugo : « lance
+> l'aperçu »). La query `PreviewStaffSuggestionsQuery`, servie par
+> `POST /admin/suggestions/preview` sous `lfc_suggestions:read` (un `POST`
+> parce que le corps porte un panier) — contrat
+> `packages/contracts/src/staff-suggestion-preview.ts`. Elle passe par la
+> **même** chaîne que la boutique : `StaffSuggestionShowcase.diagnose` déroule
+> pas à pas ce que `show` rend (portes de la règle `ruleGate`, déclenchement
+> `traceCandidates`, filtre `RecommendationFilter.judge`, vitrine, place), et
+> `diagnoseRules` lit cette trace règle par règle, article par article. Raisons
+> en vocabulaire fermé : `ended`, `not_started`, `inactive`, `wrong_audience`,
+> `wrong_placement`, `trigger_false`, `item_not_served`,
+> `item_not_orderable_that_day`, `item_in_cart`, `item_is_the_product`,
+> `outranked_by` (la règle gagnante dans `outrankedBy`). Le jour choisi sert à
+> la fois à la période et à l'heure limite (jour visé) ; aux professionnels,
+> la vitrine pro **sans tarif de société** (`ShopCataloguePricing.pricedWithoutCompany`) :
+> ni mercuriale, ni tarif négocié. Écran : bloc « Aperçu » de Gestion
+> Boutique › Suggestions (`suggestion-preview-card/`), bouton « Ouvrir
+> l'aperçu » sur chaque règle hors accueil ; outil agent `suggestion_preview`
+> ([`outils-agent-suggestions.md`](outils-agent-suggestions.md)). L'accueil
+> n'a pas d'aperçu tant qu'il n'a pas d'affichage (RS7).
+
 > 🟡 **RS2 bâti pour le PANIER le 2026-10-18** (non commité à l'écriture ;
 > Hugo : « au moins pour le panier »). Ce qui existe : la query
 > `ReadCartSuggestionsQuery` (`b2b/recommendations/application/queries/`),

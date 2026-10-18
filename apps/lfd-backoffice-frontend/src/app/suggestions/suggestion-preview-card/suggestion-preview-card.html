@@ -1,0 +1,128 @@
+<fold-card>
+  <div class="card">
+    <fold-element-title
+      variant="title"
+      title="Aperçu"
+      subtitle="Ce que verrait le client, et pourquoi une suggestion paraît ou non."
+    />
+
+    <div class="controls">
+      <fold-view-toggle
+        ariaLabel="Emplacement de l’aperçu"
+        size="sm"
+        [options]="placementOptions"
+        [value]="placement()"
+        (valueChange)="choosePlacement($event)"
+      />
+      <fold-view-toggle
+        ariaLabel="Clientèle de l’aperçu"
+        size="sm"
+        [options]="audienceOptions"
+        [value]="audience()"
+        (valueChange)="chooseAudience($event)"
+      />
+      <fold-date label="Jour" [(value)]="day" required />
+    </div>
+
+    @if (placement() === 'cart') {
+      <div class="pick">
+        <p class="pick-title">Dans le panier</p>
+        @if (cartItems().length === 0) {
+          <p class="muted">Panier vide : seules les suggestions « partout » peuvent paraître.</p>
+        } @else {
+          <ul class="cart">
+            @for (item of cartItems(); track item.sku) {
+              <li class="cart-item">
+                <span>{{ item.name }}</span>
+                <fold-button-icon
+                  icon="close"
+                  size="sm"
+                  tooltip="Retirer du panier"
+                  (clicked)="removeFromCart(item.sku)"
+                />
+              </li>
+            }
+          </ul>
+        }
+        <app-storefront-product-picker [products]="products()" (picked)="addToCart($event)" />
+      </div>
+    } @else {
+      <div class="pick">
+        <p class="pick-title">La fiche ouverte</p>
+        <app-storefront-product-picker
+          [products]="products()"
+          [sku]="viewedSku()"
+          (picked)="viewedSku.set($event)"
+        />
+      </div>
+    }
+
+    <div>
+      <button
+        foldButton
+        icon="eye"
+        [loading]="busy()"
+        [disabled]="!canPreview() || busy()"
+        (click)="run()"
+      >
+        Voir l’aperçu
+      </button>
+    </div>
+
+    @if (failure(); as message) {
+      <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+    }
+
+    @if (result(); as view) {
+      @if (card(); as shown) {
+        <div class="client-card">
+          <fold-element-title variant="title" [title]="shown.title" />
+          <ul class="client-items">
+            @for (item of shown.items; track item.sku) {
+              <li class="client-item">
+                <span>{{ item.name }}</span>
+                <span class="price">{{ item.price }}</span>
+              </li>
+            }
+          </ul>
+        </div>
+      } @else {
+        <fold-callout appearance="inset" variant="info">
+          Le client ne verrait aucune suggestion décidée ici.
+        </fold-callout>
+      }
+      @if (audience() === 'pro') {
+        <p class="muted">
+          Aux professionnels, le prix est celui de la vitrine pro sans tarif de société : ni
+          mercuriale, ni tarif négocié.
+        </p>
+      }
+
+      @if (diagnosis().length === 0) {
+        <p class="muted">Aucune suggestion en cours.</p>
+      } @else {
+        <ul class="verdicts">
+          @for (row of diagnosis(); track row.id) {
+            <li class="verdict">
+              <div class="verdict-head">
+                <span class="verdict-name">{{ row.name }}</span>
+                <fold-badge
+                  [content]="row.shown ? 'Affichée' : row.reason"
+                  [variant]="row.shown ? 'success' : 'neutral'"
+                  radius="pill"
+                />
+              </div>
+              @if (row.items.length > 0) {
+                <ul class="verdict-items">
+                  @for (item of row.items; track item.sku) {
+                    <li>{{ item.name }} — {{ item.shown ? 'affiché' : item.reason }}</li>
+                  }
+                </ul>
+              }
+            </li>
+          }
+        </ul>
+      }
+    }
+  </div>
+</fold-card>

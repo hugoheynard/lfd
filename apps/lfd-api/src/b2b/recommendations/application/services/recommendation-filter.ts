@@ -4,7 +4,7 @@ import { Clock } from "../../../../platform/time/clock.js";
 import type { CatalogItem } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import type { ShopAudience } from "../../../catalog/domain/ports/catalog.reader.js";
-import { keepOrderable, type FulfillmentTarget } from "../../domain/orderable-today.js";
+import { judgeOrderable, type FulfillmentTarget } from "../../domain/orderable-today.js";
 import { RecommendationCutoffReader } from "../../domain/ports/recommendation-cutoff.reader.js";
 
 /** Ce qu'on demande au filtre : des candidats déjà classés, pour un lecteur. */
@@ -39,23 +39,55 @@ export class RecommendationFilter {
   ) {}
 
   async keep(input: RecommendationFilterInput): Promise<readonly CatalogItem[]> {
+    return (await this.judge(input)).kept;
+  }
+
+  /**
+   * Le même filtre, raisons comprises : ce qui est gardé, et pour chaque SKU
+   * écarté la porte qui l'a arrêté. `keep` n'en lit que les gardés ; l'aperçu
+   * du staff (RS5) lit le reste.
+   */
+  async judge(input: RecommendationFilterInput): Promise<FilterJudgement> {
     if (input.candidates.length === 0) {
-      return [];
+      return { kept: [], refused: new Map() };
     }
     const [served, fallback] = await Promise.all([
       this.catalog.resolveMany(input.candidates, input.audience),
       input.target === null ? Promise.resolve([]) : this.cutoffs.list(),
     ]);
+    const refused = new Map<string, FilterRefusal>();
     const resolved = input.candidates.flatMap((sku) => {
       const item = served.get(sku);
-      return item === undefined ? [] : [item];
+      if (item === undefined) {
+        refused.set(sku, "item_not_served");
+        return [];
+      }
+      return [item];
     });
-    return keepOrderable({
+    const kept: CatalogItem[] = [];
+    const verdicts = judgeOrderable({
       candidates: resolved,
       inCart: new Set(input.inCart),
       target: input.target,
       fallback,
       now: this.clock.now(),
     });
+    for (const { candidate, refusal } of verdicts) {
+      if (refusal === null) {
+        kept.push(candidate);
+      } else if (refusal !== "duplicate") {
+        refused.set(candidate.sku, refusal);
+      }
+    }
+    return { kept, refused };
   }
+}
+
+/** Pourquoi le filtre écarte un SKU. */
+export type FilterRefusal = "item_not_served" | "item_in_cart" | "item_not_orderable_that_day";
+
+/** Ce que le filtre garde, et ce qu'il écarte avec sa raison. */
+export interface FilterJudgement {
+  readonly kept: readonly CatalogItem[];
+  readonly refused: ReadonlyMap<string, FilterRefusal>;
 }

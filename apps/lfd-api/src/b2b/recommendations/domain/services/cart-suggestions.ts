@@ -1,5 +1,9 @@
 import type { StaffSuggestionRuleSnapshot } from "../entities/staff-suggestion-rule.js";
-import { triggeredCandidates, type SuggestionCandidate } from "./suggestion-candidates.js";
+import {
+  triggeredCandidates,
+  type SuggestionCandidate,
+  type SuggestionTriggering,
+} from "./suggestion-candidates.js";
 
 /**
  * **Combien d'articles décidés le panier montre** — Q1 du plan, tranchée par
@@ -47,4 +51,9 @@ export function cartCandidates(
   cart: CartContents,
 ): readonly SuggestionCandidate[] {
   return triggeredCandidates(ordered, (rule) => triggeredByCart(rule, cart));
+}
+
+/** Ce que le panier apporte à la chaîne commune : son déclencheur, rien d'exclu. */
+export function cartTriggering(cart: CartContents): SuggestionTriggering {
+  return { triggered: (rule) => triggeredByCart(rule, cart), excluded: [] };
 }

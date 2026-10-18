@@ -2,7 +2,7 @@ import type { CartSuggestionView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { CartFamilyReader } from "../../domain/ports/cart-family.reader.js";
-import { cartCandidates, STAFF_CART_PLACES } from "../../domain/services/cart-suggestions.js";
+import { cartTriggering, STAFF_CART_PLACES } from "../../domain/services/cart-suggestions.js";
 import { StaffSuggestionShowcase } from "../services/staff-suggestion-showcase.js";
 import { ReadCartSuggestionsQuery } from "./read-cart-suggestions.query.js";
 
@@ -29,9 +29,9 @@ export class ReadCartSuggestionsHandler implements IQueryHandler<
       inCart: query.skus,
       target: query.target,
       places: STAFF_CART_PLACES,
-      candidatesOf: async (ordered, audience) => {
+      triggeringOf: async (audience) => {
         const familyPaths = await this.families.pathsOf(query.skus, audience);
-        return cartCandidates(ordered, { skus: query.skus, familyPaths });
+        return cartTriggering({ skus: query.skus, familyPaths });
       },
     });
   }

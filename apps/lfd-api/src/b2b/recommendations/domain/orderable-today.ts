@@ -33,25 +33,47 @@ export interface OrderableCandidate {
  * ce que fait la passation, qui ne juge l'heure que lorsqu'il y a une date.
  * Une liste vide reste vide — jamais de remplissage.
  */
-export function keepOrderable<T extends OrderableCandidate>(input: {
+export function keepOrderable<T extends OrderableCandidate>(
+  input: OrderableInput<T>,
+): readonly T[] {
+  return judgeOrderable(input).flatMap((verdict) =>
+    verdict.refusal === null ? [verdict.candidate] : [],
+  );
+}
+
+/** Ce que `keepOrderable` reçoit. */
+export interface OrderableInput<T extends OrderableCandidate> {
   readonly candidates: readonly T[];
   readonly inCart: ReadonlySet<string>;
   readonly target: FulfillmentTarget | null;
   readonly fallback: readonly OrderCutoffView[];
   readonly now: Date;
-}): readonly T[] {
+}
+
+/** Pourquoi un candidat servi n'est pas gardé — `duplicate` ne se montre jamais. */
+export type OrderableRefusal = "item_in_cart" | "item_not_orderable_that_day" | "duplicate";
+
+/**
+ * Le sort de chaque candidat, dans l'ordre reçu : gardé (`refusal === null`)
+ * ou écarté, avec sa raison. `keepOrderable` n'en garde que les gardés ;
+ * l'aperçu du staff (RS5) lit les raisons.
+ */
+export function judgeOrderable<T extends OrderableCandidate>(
+  input: OrderableInput<T>,
+): readonly { readonly candidate: T; readonly refusal: OrderableRefusal | null }[] {
   const seen = new Set<string>();
-  const kept: T[] = [];
-  for (const candidate of input.candidates) {
-    if (seen.has(candidate.sku) || input.inCart.has(candidate.sku)) {
-      continue;
+  return input.candidates.map((candidate) => {
+    if (input.inCart.has(candidate.sku)) {
+      return { candidate, refusal: "item_in_cart" as const };
+    }
+    if (seen.has(candidate.sku)) {
+      return { candidate, refusal: "duplicate" as const };
     }
     seen.add(candidate.sku);
-    if (input.target === null || isOpen(candidate, input.target, input.fallback, input.now)) {
-      kept.push(candidate);
-    }
-  }
-  return kept;
+    const open =
+      input.target === null || isOpen(candidate, input.target, input.fallback, input.now);
+    return { candidate, refusal: open ? null : ("item_not_orderable_that_day" as const) };
+  });
 }
 
 function isOpen(

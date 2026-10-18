@@ -5,7 +5,7 @@ import { Injectable } from "@nestjs/common";
 import { Pricer } from "../../pricing/application/pricer.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { CatalogOperationsReader } from "../domain/ports/catalog-operations.reader.js";
-import { CatalogReader } from "../domain/ports/catalog.reader.js";
+import { CatalogReader, type ShopAudience } from "../domain/ports/catalog.reader.js";
 import { catalogueArticle } from "../domain/catalogue-article.js";
 import { shopCatalogueOf } from "./shop-catalogue-view.js";
 
@@ -92,7 +92,25 @@ export class ShopCataloguePricing {
     // veut dire « sans rien de négocié » : ni mercuriale, ni tarif de canal — et
     // donc le prix d'étiquette. La déduction est la même que celle qui pilotait
     // déjà la mercuriale ; elle nomme simplement ce qu'elle voulait dire.
-    const audience = companyId === null ? "public" : "pro";
+    return this.pricedFor(companyId === null ? "public" : "pro", companyId);
+  }
+
+  /**
+   * La vitrine d'une audience **sans société** — pour l'aperçu des
+   * suggestions du staff (RS5, `plan-suggestions-du-staff.md`), qui n'a pas de
+   * client. À `public`, c'est exactement `priced(null)`. À `pro`, le rayon des
+   * pros au prix sans rien de négocié : ni mercuriale, ni tarif de canal — ce
+   * qu'aucun pro réel ne voit tout à fait, et que l'aperçu dit. La boutique ne
+   * l'appelle jamais : la déduction de `priced` reste la seule pour un client.
+   */
+  pricedWithoutCompany(audience: ShopAudience): Promise<ShopCatalogueView> {
+    return this.pricedFor(audience, null);
+  }
+
+  private async pricedFor(
+    audience: ShopAudience,
+    companyId: string | null,
+  ): Promise<ShopCatalogueView> {
     // Les opérations datées se lisent avec le rayon (D5) : deux lectures de
     // plus sur la route anonyme, sans cache — le miroir des opérations tient
     // en quelques lignes, et une clôture doit s'appliquer à la minute.

@@ -3,6 +3,7 @@ import {
   setStaffSuggestionOrderPayloadSchema,
   staffSuggestionApplicableQuerySchema,
   staffSuggestionCountersQuerySchema,
+  staffSuggestionPreviewPayloadSchema,
   staffSuggestionRulePayloadSchema,
   type SetStaffSuggestionActivePayload,
   type SetStaffSuggestionOrderPayload,
@@ -11,6 +12,8 @@ import {
   type StaffSuggestionCountersQuery,
   type StaffSuggestionCountersView,
   type StaffSuggestionOrderView,
+  type StaffSuggestionPreviewPayload,
+  type StaffSuggestionPreviewView,
   type StaffSuggestionRuleIdResponse,
   type StaffSuggestionRulePayload,
   type StaffSuggestionRuleView,
@@ -28,7 +31,7 @@ import {
 } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
-import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
+import { AdminSurface, RequirePermission } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody, ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
 import { ArchiveStaffSuggestionCommand } from "../application/commands/archive-staff-suggestion.command.js";
@@ -41,6 +44,7 @@ import { ListApplicableStaffSuggestionsQuery } from "../application/queries/list
 import { ListStaffSuggestionChoicesQuery } from "../application/queries/list-staff-suggestion-choices.query.js";
 import { ListStaffSuggestionCountersQuery } from "../application/queries/list-staff-suggestion-counters.query.js";
 import { ListStaffSuggestionsQuery } from "../application/queries/list-staff-suggestions.query.js";
+import { PreviewStaffSuggestionsQuery } from "../application/queries/preview-staff-suggestions.query.js";
 
 /**
  * **Les suggestions décidées par le staff** — `/admin/suggestions`
@@ -48,7 +52,7 @@ import { ListStaffSuggestionsQuery } from "../application/queries/list-staff-sug
  * et RS3). Sous `lfc_suggestions`, un droit à lui ; l'action se déduit du
  * verbe. Pas de `DELETE` : on archive.
  *
- * Les chemins nommés (`order`, `applicable`, `choices`, `counters`) sont
+ * Les chemins nommés (`order`, `applicable`, `choices`, `counters`, `preview`) sont
  * déclarés AVANT `:id` : Nest prend la première route qui correspond.
  */
 @Controller("admin/suggestions")
@@ -112,6 +116,32 @@ export class AdminStaffSuggestionsController {
       ListStaffSuggestionCountersQuery,
       readonly StaffSuggestionCountersView[]
     >(new ListStaffSuggestionCountersQuery(query.from, query.to));
+  }
+
+  /**
+   * L'aperçu (RS5) : ce que la boutique afficherait, et pourquoi chaque règle
+   * s'affiche ou non. Un `POST` parce que le corps porte un panier ; il ne
+   * fait que lire, d'où le droit de lecture.
+   */
+  @Post("preview")
+  @HttpCode(HttpStatus.OK)
+  @RequirePermission("lfc_suggestions:read")
+  preview(
+    @Body(new ZodBody(staffSuggestionPreviewPayloadSchema)) body: StaffSuggestionPreviewPayload,
+  ): Promise<StaffSuggestionPreviewView> {
+    const place =
+      body.placement === "cart"
+        ? ({ placement: "cart" } as const)
+        : ({ placement: "product", viewedSku: body.viewedSku } as const);
+    return this.queries.execute<PreviewStaffSuggestionsQuery, StaffSuggestionPreviewView>(
+      new PreviewStaffSuggestionsQuery(
+        place,
+        body.skus,
+        body.audience,
+        body.day,
+        body.pickupAddressId,
+      ),
+    );
   }
 
   @Post()

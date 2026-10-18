@@ -31,6 +31,7 @@
       @if (actionFailure(); as message) {
         <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
       }
+      <app-suggestion-preview-card [rules]="rules()" [choices]="choices()" />
       @if (live().length === 0 && archived().length === 0) {
         <fold-empty-state
           title="Aucune suggestion"
@@ -119,46 +120,60 @@
         </div>
       }
     </dl>
-    @if (canWrite() && rule.archivedAt === null) {
+    @if (rule.archivedAt === null && (canWrite() || previewable(rule))) {
       <div class="rule-actions">
-        <button
-          foldButton
-          size="sm"
-          emphasis="soft"
-          intent="neutral"
-          [disabled]="pending() !== null"
-          (click)="edit(rule)"
-        >
-          Modifier
-        </button>
-        <button
-          foldButton
-          size="sm"
-          emphasis="soft"
-          intent="neutral"
-          [loading]="pending() === rule.id"
-          [disabled]="pending() !== null"
-          (click)="toggle(rule)"
-        >
-          {{ rule.active ? 'Couper' : 'Rallumer' }}
-        </button>
-        <fold-inline-confirm
-          intent="danger"
-          message="Archiver cette suggestion ? Elle ne paraîtra plus jamais, et ne se modifiera plus."
-          [labels]="{ confirm: 'Archiver' }"
-          [loading]="pending() === rule.id"
-          (confirmed)="archive(rule)"
-        >
+        @if (previewable(rule)) {
           <button
             foldButton
             size="sm"
             emphasis="soft"
-            intent="danger"
-            [disabled]="pending() !== null"
+            intent="neutral"
+            icon="eye"
+            (click)="openPreview(rule)"
           >
-            Archiver
+            Ouvrir l’aperçu
           </button>
-        </fold-inline-confirm>
+        }
+        @if (canWrite()) {
+          <button
+            foldButton
+            size="sm"
+            emphasis="soft"
+            intent="neutral"
+            [disabled]="pending() !== null"
+            (click)="edit(rule)"
+          >
+            Modifier
+          </button>
+          <button
+            foldButton
+            size="sm"
+            emphasis="soft"
+            intent="neutral"
+            [loading]="pending() === rule.id"
+            [disabled]="pending() !== null"
+            (click)="toggle(rule)"
+          >
+            {{ rule.active ? 'Couper' : 'Rallumer' }}
+          </button>
+          <fold-inline-confirm
+            intent="danger"
+            message="Archiver cette suggestion ? Elle ne paraîtra plus jamais, et ne se modifiera plus."
+            [labels]="{ confirm: 'Archiver' }"
+            [loading]="pending() === rule.id"
+            (confirmed)="archive(rule)"
+          >
+            <button
+              foldButton
+              size="sm"
+              emphasis="soft"
+              intent="danger"
+              [disabled]="pending() !== null"
+            >
+              Archiver
+            </button>
+          </fold-inline-confirm>
+        }
       </div>
     }
   </li>

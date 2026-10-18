@@ -1,5 +1,12 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import type {
   StaffSuggestionChoicesView,
   StaffSuggestionCountersView,
@@ -24,6 +31,8 @@ import { parisToday } from '../../shared/paris-today';
 import { StaffSuggestionsService } from '../staff-suggestions.service';
 import { SuggestionOrderCard } from '../suggestion-order-card/suggestion-order-card';
 import { SuggestionPanel, type SuggestionPanelData } from '../suggestion-panel/suggestion-panel';
+import { SuggestionPreviewCard } from '../suggestion-preview-card/suggestion-preview-card';
+import { previewSetupOf } from '../suggestion-preview';
 import { countersWindow, refusalOf, splitArchived } from '../suggestion-format';
 import { ruleSummary, STATE_BADGES, stateOf } from '../suggestion-summary';
 
@@ -39,6 +48,9 @@ type LoadState = 'loading' | 'error' | 'ready';
  * anonymes ; tant que la boutique n'affiche pas ces suggestions (RS2), ils
  * sont à zéro, et l'écran le dit au lieu d'inventer une tendance. Une panne
  * des chiffres ou du catalogue n'efface pas la liste : elle se dit à côté.
+ *
+ * L'aperçu (RS5) se lit sous `lfc_suggestions:read`, comme la liste : il
+ * dit ce que la boutique montrerait, et pourquoi une règle reste muette.
  *
  * Écrire (créer, modifier, couper, archiver, régler l'ordre) demande
  * `lfc_suggestions:write`.
@@ -59,6 +71,7 @@ type LoadState = 'loading' | 'error' | 'ready';
     FoldPageLayoutComponent,
     NgTemplateOutlet,
     SuggestionOrderCard,
+    SuggestionPreviewCard,
   ],
   templateUrl: './suggestions-page.html',
   styleUrl: './suggestions-page.scss',
@@ -69,8 +82,9 @@ export class SuggestionsPage {
   private readonly panels = inject(FoldPanelHostService);
 
   protected readonly state = signal<LoadState>('loading');
-  private readonly rules = signal<readonly StaffSuggestionRuleView[]>([]);
-  private readonly choices = signal<StaffSuggestionChoicesView | null>(null);
+  protected readonly rules = signal<readonly StaffSuggestionRuleView[]>([]);
+  protected readonly choices = signal<StaffSuggestionChoicesView | null>(null);
+  private readonly preview = viewChild(SuggestionPreviewCard);
   private readonly counters = signal<ReadonlyMap<string, StaffSuggestionCountersView> | null>(null);
   protected readonly partialFailure = signal<string | null>(null);
   protected readonly actionFailure = signal<string | null>(null);
@@ -147,6 +161,18 @@ export class SuggestionsPage {
     }).closed;
     if (saved !== undefined) {
       await this.reload();
+    }
+  }
+
+  /** L'aperçu ne montre pas encore l'accueil (RS7) : pas de bouton pour une règle d'accueil. */
+  protected readonly previewable = (rule: StaffSuggestionRuleView): boolean =>
+    rule.placement !== 'home';
+
+  /** « Ouvrir l'aperçu » : l'emplacement, la clientèle et un déclencheur qui rendent la règle vraie. */
+  protected async openPreview(rule: StaffSuggestionRuleView): Promise<void> {
+    const setup = previewSetupOf(rule, this.choices(), parisToday());
+    if (setup !== null) {
+      await this.preview()?.openFor(setup);
     }
   }
 

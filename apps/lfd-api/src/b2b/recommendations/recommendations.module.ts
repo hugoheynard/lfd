@@ -45,6 +45,7 @@ import { MyShopCartSuggestionsController } from "./http/my-shop-cart-suggestions
 import { ShopCartSuggestionsController } from "./http/shop-cart-suggestions.controller.js";
 import { MyShopProductSuggestionsController } from "./http/my-shop-product-suggestions.controller.js";
 import { ShopProductSuggestionsController } from "./http/shop-product-suggestions.controller.js";
+import { PreviewStaffSuggestionsHandler } from "./application/queries/preview-staff-suggestions.handler.js";
 import { ReadProductSuggestionsHandler } from "./application/queries/read-product-suggestions.handler.js";
 import { StaffSuggestionShowcase } from "./application/services/staff-suggestion-showcase.js";
 import { ReadCartSuggestionsHandler } from "./application/queries/read-cart-suggestions.handler.js";
@@ -79,6 +80,10 @@ import {
  * décidée d'un panier, au prix de la vitrine (`ShopCataloguePricing`) ; RS2,
  * fiche : `/shop/suggestions/product` (et `/mine`) celle de la fiche ouverte.
  * Les deux passent par `StaffSuggestionShowcase`.
+ *
+ * RS5 : `POST /admin/suggestions/preview` déroule la même vitrine pas à pas,
+ * pour une clientèle et un jour choisis, et dit pourquoi chaque règle
+ * s'affiche ou non.
  */
 @Module({
   imports: [CatalogModule, OrderCutoffsModule],
@@ -120,6 +125,7 @@ import {
     StaffSuggestionShowcase,
     ReadCartSuggestionsHandler,
     ReadProductSuggestionsHandler,
+    PreviewStaffSuggestionsHandler,
   ],
 })
 export class RecommendationsModule {}

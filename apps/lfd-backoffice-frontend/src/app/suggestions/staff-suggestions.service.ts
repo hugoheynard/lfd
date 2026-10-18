@@ -5,6 +5,8 @@ import type {
   StaffSuggestionCountersView,
   StaffSuggestionOrder,
   StaffSuggestionOrderView,
+  StaffSuggestionPreviewPayload,
+  StaffSuggestionPreviewView,
   StaffSuggestionRuleIdResponse,
   StaffSuggestionRulePayload,
   StaffSuggestionRuleView,
@@ -65,6 +67,11 @@ export class StaffSuggestionsService {
         params: { from, to },
       }),
     );
+  }
+
+  /** L'aperçu (RS5) : ce que la boutique afficherait, et pourquoi chaque règle s'affiche ou non. */
+  preview(payload: StaffSuggestionPreviewPayload): Promise<StaffSuggestionPreviewView> {
+    return firstValueFrom(this.http.post<StaffSuggestionPreviewView>(this.url('preview'), payload));
   }
 
   private put(tail: string, body: object): Promise<StaffSuggestionRuleIdResponse> {

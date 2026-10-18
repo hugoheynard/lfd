@@ -2,7 +2,7 @@ import type { ProductSuggestionView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import {
-  productCandidates,
+  productTriggering,
   STAFF_PRODUCT_PLACES,
 } from "../../domain/services/product-suggestions.js";
 import { StaffSuggestionShowcase } from "../services/staff-suggestion-showcase.js";
@@ -28,7 +28,7 @@ export class ReadProductSuggestionsHandler implements IQueryHandler<
       inCart: query.skus,
       target: query.target,
       places: STAFF_PRODUCT_PLACES,
-      candidatesOf: (ordered) => Promise.resolve(productCandidates(ordered, query.viewedSku)),
+      triggeringOf: () => Promise.resolve(productTriggering(query.viewedSku)),
     });
   }
 }
