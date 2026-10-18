@@ -198,6 +198,35 @@ la commande passée, sans fait de plus. Clé idempotente
 `(sujet, emplacement, sku, jour)` comme `reco.shown`. Le journal ne porte que
 des identifiants, jamais une coordonnée (règle du cockpit, `get-cockpit.handler.ts:22-25`).
 
+## 2 bis. Deux sources : calculée et décidée (Hugo, 2026-10-18)
+
+« Il faut distinguer les recos data driven et business driven — le staff
+décrète une suggestion. » Une suggestion a donc une **source** :
+
+| Source      | Exemple                                                         | Raison affichée                         |
+| ----------- | --------------------------------------------------------------- | --------------------------------------- |
+| **`data`**  | « souvent pris avec », « vos habituels », « les plus regardés » | la raison calculée (R3)                 |
+| **`staff`** | « avec un croissant, le café », « cette semaine, la galette »   | « Notre conseil » ou la phrase du staff |
+
+**Une suggestion décidée** : un **déclencheur** (un article ou une famille au
+panier, une fiche ouverte, ou partout), les **articles suggérés**, un
+**emplacement** (panier, fiche, accueil), une **audience** (pros, public, les
+deux ; un segment du plan des audiences plus tard), une **période** (début et
+fin obligatoires : une offre de Noël ne survit pas en janvier) et une
+**phrase** facultative. C'est un agrégat (une règle peut refuser une écriture :
+période inversée, article inconnu, déclencheur vide), dans
+`b2b/recommendations/`, réglé dans Gestion Boutique.
+
+**Combinaison** : le décidé passe **en premier**, dans une place **bornée**
+(1 ou 2 cartes sur 3, à régler) ; le calculé remplit le reste. **Même filtre
+R4** pour les deux. La mise en avant existante (`SetCatalogFeaturedCommand`)
+devient le cas « partout, sans déclencheur, sans date ».
+
+**Mesure** : les compteurs portent la **source** (`none` pour une vue ou un
+ajout ordinaire, `data` ou `staff` pour un événement `suggestion_*`) — ajoutée
+le 2026-10-18, tant que la table était vide. On compare ainsi ce que
+convertissent les conseils du staff et le calcul.
+
 ## 3. Le modèle
 
 Aucune écriture métier : que des **queries** CQRS (B2B, fichiers séparés, §4).
@@ -245,14 +274,15 @@ flowchart LR
 
 ## 5. Lots
 
-| Lot    | Contenu                                                                                                                                                                                                    | Dépend de |
-| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| **R0** | contexte `b2b/recommendations/`, ports, filtre R4, **compteurs anonymes R5 bis** (table, écriture par lot, route de la boutique, premiers émetteurs : vue de fiche, ajout au panier) ; tests aux 3 niveaux | —         |
-| **R1** | « Vos habituels » (pros), rythme hebdomadaire + fréquence ; rangée d'accueil                                                                                                                               | R0        |
-| **R2** | « Souvent pris avec » au panier, remplace `CartUpsell`                                                                                                                                                     | R0        |
-| **R3** | « Vos habituels » pour le particulier connecté (`placedByUserId`), après Q1 et §6                                                                                                                          | R1        |
-| **R4** | « Jamais essayé » au back-office (sociétés du même secteur)                                                                                                                                                | R1        |
-| **R5** | « Nouveau / De saison » si la mise en avant manuelle ne suffit pas (Q4)                                                                                                                                    | R0        |
+| Lot    | Contenu                                                                                                                                                                                                                                                                  | Dépend de |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------- |
+| **R0** | contexte `b2b/recommendations/`, ports, filtre R4, **compteurs anonymes R5 bis** (table, écriture par lot, route de la boutique, premiers émetteurs : vue de fiche, ajout au panier) ; tests aux 3 niveaux                                                               | —         |
+| **R1** | « Vos habituels » (pros), rythme hebdomadaire + fréquence ; rangée d'accueil                                                                                                                                                                                             | R0        |
+| **RS** | **Suggestions décidées par le staff** (§2 bis) : règle déclencheur → articles suggérés, emplacement, audience, période, phrase ; écran « Suggestions » en Gestion Boutique ; passe avant le calculé, dans une place bornée ; la mise en avant devient un cas particulier | R0        |
+| **R2** | « Souvent pris avec » au panier, remplace `CartUpsell`                                                                                                                                                                                                                   | R0        |
+| **R3** | « Vos habituels » pour le particulier connecté (`placedByUserId`), après Q1 et §6                                                                                                                                                                                        | R1        |
+| **R4** | « Jamais essayé » au back-office (sociétés du même secteur)                                                                                                                                                                                                              | R1        |
+| **R5** | « Nouveau / De saison » si la mise en avant manuelle ne suffit pas (Q4)                                                                                                                                                                                                  | R0        |
 
 ## 6. Risques
 
