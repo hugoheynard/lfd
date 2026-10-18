@@ -143,6 +143,9 @@ Garde-fous : ne recommander que ce qui se vend à CE client ; mesurer l'effet
   [`plan-suggestions-du-staff.md`](plan-suggestions-du-staff.md)), sinon
   **rien** — pas de remplissage. L'usage 2 viendra s'ajouter au même
   emplacement, avec la même règle « jamais un produit déjà dedans ».
+- **La fiche d'un article** montre aussi la suggestion du staff depuis le
+  2026-10-18 (RS2, fiche) : sous l'article, la même carte que le panier,
+  rien sans règle.
 - L'accueil public a sa vitrine (`client/accueil-public/home-storefront/`) ; la
   route `boutique` existe (`apps/lfc-ecommerce-frontend/src/app/app.routes.ts:271`),
   comme `accueil` (`…:345`). Leur gabarit n'a **pas été ouvert** : l'emplacement

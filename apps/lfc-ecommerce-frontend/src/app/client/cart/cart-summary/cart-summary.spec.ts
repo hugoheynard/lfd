@@ -635,5 +635,7 @@ describe('CartSummary — la carte de suggestion (RS2)', () => {
     fixture.detectChanges();
 
     expect(card()?.textContent).toContain('Notre conseil');
+    // « Vous aimerez aussi » est le défaut de la FICHE, pas du panier (Hugo, 2026-10-18).
+    expect(card()?.textContent).not.toContain('Vous aimerez aussi');
   });
 });

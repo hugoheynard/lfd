@@ -1,7 +1,11 @@
 import { provideHttpClient } from '@angular/common/http';
 import { signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import type { CompanyView, ShopItemView } from '@lfd/contracts';
+import type {
+  CompanyView,
+  ProductSuggestionView as ShopSuggestion,
+  ShopItemView,
+} from '@lfd/contracts';
 
 import { ClientCompany } from '../../client-company.service';
 import { FR } from '../../copy/fr';
@@ -13,7 +17,37 @@ import {
 } from '../shop-catalogue.fixture';
 import { ShopCatalogue } from '../shop-catalogue.store';
 import type { ShopOperationState } from '@lfd/contracts';
+import { ProductAudience } from '../../audience/product-audience.service';
+import { StaffProductSuggestion } from '../../suggestions/staff-product-suggestion.service';
 import { ProductSheet } from './product-sheet';
+
+/** La suggestion de la fiche, servie à la main : aucune requête ne part des specs. */
+class StaffPickDouble {
+  readonly current = signal<ShopSuggestion | null>(null);
+  readonly opened: (string | null)[] = [];
+  readonly taken: ShopSuggestion[] = [];
+  open(sku: string): void {
+    this.opened.push(sku);
+  }
+  close(): void {
+    this.opened.push(null);
+  }
+  take(view: ShopSuggestion): void {
+    this.taken.push(view);
+  }
+}
+
+function providePick(pick: StaffPickDouble) {
+  return {
+    provide: StaffProductSuggestion,
+    useValue: {
+      current: pick.current,
+      open: (sku: string) => pick.open(sku),
+      close: () => pick.close(),
+      taken: (view: ShopSuggestion) => pick.take(view),
+    },
+  };
+}
 
 /** 1,40 € HT servi, 1,5556 € HT au tarif boutique : 10 % d'écart. */
 const NEGOTIATED: ShopItemView = {
@@ -39,6 +73,7 @@ describe('ProductSheet', () => {
       imports: [ProductSheet],
       providers: [
         provideHttpClient(),
+        providePick(new StaffPickDouble()),
         ...(pro
           ? [
               {
@@ -208,5 +243,78 @@ describe('ProductSheet', () => {
       expect(cta()).not.toBeNull();
       expect(facts().some((fact) => fact.startsWith(FR.product.operationPickup))).toBe(false);
     });
+  });
+});
+
+describe('ProductSheet — la suggestion du staff (RS2, fiche)', () => {
+  let fixture: ComponentFixture<ProductSheet>;
+  let pick: StaffPickDouble;
+  let recorded: { sku: string; event: string }[];
+
+  const card = (): HTMLButtonElement | null =>
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('button.suggestion');
+
+  const croissant = TEST_ITEMS[0] as ShopItemView;
+  const other = TEST_ITEMS.find((item) => item.sku !== croissant.sku);
+  if (other === undefined) {
+    throw new RangeError('la fixture du catalogue n’a qu’un article');
+  }
+  const VIEW: ShopSuggestion = {
+    sku: other.sku,
+    item: other,
+    reason: { source: 'staff', ruleId: '01jrule', phrase: null },
+  };
+
+  beforeEach(() => {
+    localStorage.clear();
+    TestBed.resetTestingModule();
+    pick = new StaffPickDouble();
+    recorded = [];
+    TestBed.configureTestingModule({
+      imports: [ProductSheet],
+      providers: [
+        provideHttpClient(),
+        providePick(pick),
+        {
+          provide: ProductAudience,
+          useValue: { record: (sku: string, event: string) => recorded.push({ sku, event }) },
+        },
+      ],
+    });
+    fixture = TestBed.createComponent(ProductSheet);
+    fixture.componentRef.setInput('product', croissant);
+    fixture.detectChanges();
+  });
+
+  it('ouvre la demande pour la pièce ouverte, et la ferme avec la fiche', () => {
+    expect(pick.opened).toEqual([croissant.sku]);
+
+    fixture.componentRef.setInput('product', null);
+    fixture.detectChanges();
+
+    expect(pick.opened).toEqual([croissant.sku, null]);
+  });
+
+  it('sans règle applicable, aucune carte', () => {
+    expect(card()).toBeNull();
+  });
+
+  it('montre la suggestion, « Vous aimerez aussi » sans phrase, et l’ajoute au clic', () => {
+    pick.current.set(VIEW);
+    fixture.detectChanges();
+
+    expect(card()?.textContent).toContain(FR.shop.alsoLike);
+    expect(card()?.textContent).toContain(other.name);
+    card()?.click();
+
+    expect(pick.taken).toEqual([VIEW]);
+    expect(recorded).toEqual([{ sku: other.sku, event: 'added_to_cart' }]);
+  });
+
+  it('ne se suggère jamais la pièce ouverte', () => {
+    pick.current.set({ ...VIEW, sku: croissant.sku, item: croissant });
+    fixture.detectChanges();
+
+    expect(card()).toBeNull();
   });
 });

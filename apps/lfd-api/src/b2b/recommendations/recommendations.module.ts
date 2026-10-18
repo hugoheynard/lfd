@@ -43,6 +43,10 @@ import { AdminProductAudienceController } from "./http/admin-product-audience.co
 import { ShopProductAudienceController } from "./http/shop-product-audience.controller.js";
 import { MyShopCartSuggestionsController } from "./http/my-shop-cart-suggestions.controller.js";
 import { ShopCartSuggestionsController } from "./http/shop-cart-suggestions.controller.js";
+import { MyShopProductSuggestionsController } from "./http/my-shop-product-suggestions.controller.js";
+import { ShopProductSuggestionsController } from "./http/shop-product-suggestions.controller.js";
+import { ReadProductSuggestionsHandler } from "./application/queries/read-product-suggestions.handler.js";
+import { StaffSuggestionShowcase } from "./application/services/staff-suggestion-showcase.js";
 import { ReadCartSuggestionsHandler } from "./application/queries/read-cart-suggestions.handler.js";
 import { CartFamilyReader } from "./domain/ports/cart-family.reader.js";
 import { SuggestedArticleReader } from "./domain/ports/suggested-article.reader.js";
@@ -72,7 +76,9 @@ import {
  * Elles écrivent `staff_suggestion_rules` et `staff_suggestion_order_settings`.
  *
  * RS2, panier : `/shop/suggestions/cart` (et `/mine`) rend la suggestion
- * décidée d'un panier, au prix de la vitrine (`ShopCataloguePricing`).
+ * décidée d'un panier, au prix de la vitrine (`ShopCataloguePricing`) ; RS2,
+ * fiche : `/shop/suggestions/product` (et `/mine`) celle de la fiche ouverte.
+ * Les deux passent par `StaffSuggestionShowcase`.
  */
 @Module({
   imports: [CatalogModule, OrderCutoffsModule],
@@ -82,6 +88,8 @@ import {
     AdminStaffSuggestionsController,
     ShopCartSuggestionsController,
     MyShopCartSuggestionsController,
+    ShopProductSuggestionsController,
+    MyShopProductSuggestionsController,
   ],
   providers: [
     RecordProductAudienceHandler,
@@ -109,7 +117,9 @@ import {
     ListStaffSuggestionCountersHandler,
     { provide: CartFamilyReader, useClass: CatalogCartFamilyReader },
     { provide: SuggestedArticleReader, useClass: ShopSuggestedArticleReader },
+    StaffSuggestionShowcase,
     ReadCartSuggestionsHandler,
+    ReadProductSuggestionsHandler,
   ],
 })
 export class RecommendationsModule {}

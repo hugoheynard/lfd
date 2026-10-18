@@ -2212,3 +2212,8 @@ export {
   type CartSuggestionsPayload,
   type CartSuggestionView,
 } from "./cart-suggestions.js";
+export {
+  productSuggestionsPayloadSchema,
+  type ProductSuggestionsPayload,
+  type ProductSuggestionView,
+} from "./product-suggestions.js";

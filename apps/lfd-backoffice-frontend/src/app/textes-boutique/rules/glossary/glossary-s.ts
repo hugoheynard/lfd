@@ -23,7 +23,7 @@ export const GLOSSARY_S: Readonly<Record<string, string>> = {
   settleAction: 'Régler maintenant',
   settleCard: 'Règlement — paiement direct',
   settleTitle: 'Règlement — question',
-  staffAdvice: 'Suggestion du staff — « Notre conseil »',
+  staffAdvice: 'Suggestion du staff au panier — « Notre conseil »',
   shelvesGroup: 'Les rayons',
   shop: 'Boutique',
   shopPrice: 'Prix boutique',

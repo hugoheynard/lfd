@@ -57,59 +57,6 @@
   }
 }
 
-/* La suggestion du staff : une PROPOSITION, pas une ligne de panier. D'où le beurre pâle,
-   qui la distingue de ce qui est déjà commandé. */
-.suggestion {
-  display: flex;
-  align-items: center;
-  gap: var(--fold-space-sm);
-  width: 100%;
-  padding: 11px 14px;
-  border: 1px solid var(--lfc-color-accent-border);
-  border-radius: var(--fold-radius-md);
-  background: var(--lfc-color-accent-surface);
-  text-align: left;
-  cursor: pointer;
-}
-
-.sign {
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  border-radius: var(--fold-space-sm);
-  background: var(--lfc-color-accent);
-  color: var(--lfc-color-on-accent);
-
-  fold-icon {
-    width: 15px;
-    height: 15px;
-  }
-}
-
-.pitch {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.pitch-title {
-  font-family: var(--fold-font-label);
-  font-size: var(--fold-text-sm);
-  font-weight: var(--fold-weight-extrabold);
-  letter-spacing: 0.01em;
-  text-transform: uppercase;
-  color: var(--lfc-color-on-accent);
-}
-
-.pitch-line {
-  font-size: var(--fold-text-xs);
-  line-height: var(--lfc-leading-tight);
-  color: var(--lfc-color-accent-text);
-}
-
 .count {
   display: flex;
   flex-direction: column;

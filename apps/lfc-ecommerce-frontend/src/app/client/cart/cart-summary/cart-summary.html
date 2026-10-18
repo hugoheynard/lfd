@@ -16,14 +16,12 @@
     </ul>
   }
 
-  @if (pitch(); as card) {
-    <button class="suggestion" type="button" (click)="addPitch()">
-      <span class="sign" aria-hidden="true"><fold-icon name="plus" /></span>
-      <span class="pitch">
-        <span class="pitch-title">{{ card.title }}</span>
-        <span class="pitch-line">{{ card.line }} · {{ card.price }} {{ card.suffix }}</span>
-      </span>
-    </button>
+  @if (staffPick.current(); as view) {
+    <app-staff-suggestion-card
+      [view]="view"
+      [fallbackTitle]="t().shop.staffAdvice"
+      (taken)="staffPick.taken($event)"
+    />
   }
 }
 

@@ -51,6 +51,7 @@ export const GLOSSARY_A_B: Readonly<Record<string, string>> = {
   allShelves: 'Tous les rayons — onglet',
   allShelvesTitle: 'Tous les rayons — titre',
   allowances: 'Remises (facture)',
+  alsoLike: 'Suggestion du staff sur la fiche — « Vous aimerez aussi »',
   alreadyLead: 'Déjà client — question',
   alreadyLink: 'Déjà client — lien de connexion',
   alreadySub: 'Déjà client — sous-titre',

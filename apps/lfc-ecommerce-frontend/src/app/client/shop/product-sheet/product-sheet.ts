@@ -2,10 +2,13 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   inject,
   input,
+  effect,
   linkedSignal,
   output,
+  untracked,
 } from '@angular/core';
 
 import { formatCents } from '../../../client/format-money';
@@ -21,6 +24,8 @@ import { mediaSrcset, sizedMedia, SHEET_WIDTHS } from '../media-source';
 import { ShopCatalogue } from '../shop-catalogue.store';
 import { ShopPriceBasis } from '../shop-price-basis.service';
 import { QuantityRail } from '../quantity-rail/quantity-rail';
+import { StaffProductSuggestion } from '../../suggestions/staff-product-suggestion.service';
+import { StaffSuggestionCard } from '../../suggestions/staff-suggestion-card/staff-suggestion-card';
 
 /** Les lots qu'un professionnel commande d'un geste (handoff boutique, SPEC §6). */
 const BATCHES: readonly number[] = [6, 12, 24];
@@ -50,7 +55,7 @@ export type SheetCtaState = 'add' | 'update' | 'inCart';
 @Component({
   selector: 'app-product-sheet',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ClientDialog, QuantityRail],
+  imports: [ClientDialog, QuantityRail, StaffSuggestionCard],
   templateUrl: './product-sheet.html',
   styleUrl: './product-sheet.scss',
 })
@@ -70,6 +75,23 @@ export class ProductSheet {
   private readonly basis = inject(ShopPriceBasis);
   private readonly catalogue = inject(ShopCatalogue);
   private readonly locale = inject(ClientLocale);
+
+  /**
+   * La suggestion du staff sous l'article (RS2, fiche) : demandée une fois
+   * par ouverture, rien sans règle applicable, jamais la pièce ouverte.
+   */
+  protected readonly staffPick = inject(StaffProductSuggestion);
+
+  /** L'article ouvert, par son SKU : un catalogue relu ne rouvre pas la fiche. */
+  private readonly openSku = computed(() => this.product()?.sku ?? null);
+
+  constructor() {
+    effect(() => {
+      const sku = this.openSku();
+      untracked(() => (sku === null ? this.staffPick.close() : this.staffPick.open(sku)));
+    });
+    inject(DestroyRef).onDestroy(() => this.staffPick.close());
+  }
 
   /** L'opération datée qui rend la pièce vendable, ou `null` : un article courant. */
   private readonly operation = computed(() => {

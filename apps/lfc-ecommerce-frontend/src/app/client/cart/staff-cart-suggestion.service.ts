@@ -7,6 +7,7 @@ import { AuthFacade } from '../../auth/auth.facade';
 import { ProductAudience } from '../audience/product-audience.service';
 import { ClientWorkspace } from '../client-workspace.service';
 import { OrderContextStore } from '../order-context.store';
+import { cartSkus, suggestionTarget } from '../suggestions/suggestion-target';
 import { CartStore } from './cart.store';
 
 /** Le panier se compose au clic : on attend qu'il se pose avant de demander. */
@@ -112,19 +113,10 @@ export class StaffCartSuggestion {
   }
 
   private payload(): CartSuggestionsPayload {
-    const quantities = this.store.quantities();
-    const skus = Object.keys(quantities)
-      .filter((sku) => (quantities[sku] ?? 0) > 0)
-      .sort();
-    const choice = this.order.choice();
-    const target =
-      choice === null
-        ? null
-        : {
-            date: choice.date,
-            pickupAddressId: choice.mode === 'pickup' ? choice.pickupAddressId : null,
-          };
-    return { skus, target };
+    return {
+      skus: cartSkus(this.store.quantities()),
+      target: suggestionTarget(this.order.choice()),
+    };
   }
 
   private cancel(): void {
@@ -149,8 +141,8 @@ export class StaffCartSuggestion {
     this.asked = key;
     const token = authenticated ? this.auth.accessToken$() : null;
     try {
-      const { fetchCartSuggestions } = await import('./staff-cart-suggestion.fetch');
-      const views = await fetchCartSuggestions(this.http, payload, token);
+      const { fetchStaffSuggestions } = await import('../suggestions/staff-suggestion.fetch');
+      const views = await fetchStaffSuggestions(this.http, 'cart', payload, token);
       if (this.asked === key) {
         this.served.set(views[0] ?? null);
       }

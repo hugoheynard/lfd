@@ -7,18 +7,12 @@ import {
   input,
   type OnInit,
 } from '@angular/core';
-import {
-  FoldCalloutComponent,
-  FoldIconComponent,
-  FoldListboxComponent,
-  type FoldSelectItem,
-} from 'fold-ng';
+import { FoldCalloutComponent, FoldListboxComponent, type FoldSelectItem } from 'fold-ng';
 
 import { formatCents, formatRate } from '../../format-money';
 import { CartProductLine } from '../cart-product-line/cart-product-line';
 import { StaffCartSuggestion } from '../staff-cart-suggestion.service';
-import { ProductAudience } from '../../audience/product-audience.service';
-import { shelfPriceLabel, ShopPriceBasis } from '../../shop/shop-price-basis.service';
+import { StaffSuggestionCard } from '../../suggestions/staff-suggestion-card/staff-suggestion-card';
 import { ClientCart } from '../client-cart.service';
 import { ClientLocale } from '../../client-locale.service';
 import { ClientWorkspace } from '../../client-workspace.service';
@@ -47,7 +41,7 @@ import { SHOP_TIME_ZONE } from '../../shop-time-zone';
 @Component({
   selector: 'app-cart-summary',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CartProductLine, FoldCalloutComponent, FoldIconComponent, FoldListboxComponent],
+  imports: [CartProductLine, FoldCalloutComponent, FoldListboxComponent, StaffSuggestionCard],
   templateUrl: './cart-summary.html',
   styleUrl: './cart-summary.scss',
 })
@@ -57,10 +51,12 @@ export class CartSummary implements OnInit {
 
   protected readonly t = inject(ClientCopyService).t;
   protected readonly cart = inject(ClientCart);
-  private readonly staffPick = inject(StaffCartSuggestion);
-  private readonly audience = inject(ProductAudience);
-  /** L'assiette du rayon : la carte écrit le prix comme la vignette (HT pro, TTC particulier). */
-  private readonly basis = inject(ShopPriceBasis);
+  /**
+   * La suggestion du staff (RS2), montrée par la carte partagée avec la
+   * fiche ; sans règle applicable, RIEN — la relance codée en dur
+   * (`CartUpsell`) est retirée le 2026-10-18 (Hugo).
+   */
+  protected readonly staffPick = inject(StaffCartSuggestion);
   private readonly destroyRef = inject(DestroyRef);
   private readonly order = inject(OrderContextStore);
   private readonly locale = inject(ClientLocale);
@@ -266,27 +262,6 @@ export class CartSummary implements OnInit {
     return rest > 0 ? fill(this.t().cart.voucherRemainder, { value: formatCents(rest) }) : null;
   });
 
-  /**
-   * La carte de suggestion : celle du staff (RS2), sa phrase dans la langue
-   * du client ou « Notre conseil ». Sans règle applicable, RIEN — la relance
-   * codée en dur (`CartUpsell`) est retirée le 2026-10-18 (Hugo).
-   */
-  protected readonly pitch = computed(() => {
-    const staff = this.staffPick.current();
-    if (staff === null) {
-      return null;
-    }
-    const shop = this.t().shop;
-    const phrase = staff.reason.phrase?.[this.locale.current()] ?? null;
-    const ttc = this.basis.showsTtc();
-    return {
-      title: phrase ?? shop.staffAdvice,
-      line: staff.item.name,
-      price: shelfPriceLabel(staff.item, ttc),
-      suffix: ttc ? shop.ttcSuffix : shop.htSuffix,
-    };
-  });
-
   /** Le panier montré avec ses lignes est un panier ouvert : la suggestion s'y demande. */
   ngOnInit(): void {
     if (this.linesShown()) {
@@ -298,22 +273,5 @@ export class CartSummary implements OnInit {
   /** Les totaux arrivent en centimes ; le gabarit ne connaît que des libellés. */
   protected money(cents: number): string {
     return formatCents(cents);
-  }
-
-  /**
-   * Le « + » de la carte : la suggestion compte son clic et son ajout, et
-   * l'entrée au panier compte AUSSI `added_to_cart` (Hugo, 2026-10-18 : le
-   * taux d'ajout global inclut les suggestions) — comme le rayon, au passage
-   * de zéro à une pièce.
-   */
-  protected addPitch(): void {
-    const staff = this.staffPick.current();
-    if (staff !== null) {
-      this.staffPick.taken(staff);
-      if (this.cart.quantityOf(staff.sku) === 0) {
-        this.audience.record(staff.sku, 'added_to_cart');
-      }
-      this.cart.add(staff.sku);
-    }
   }
 }

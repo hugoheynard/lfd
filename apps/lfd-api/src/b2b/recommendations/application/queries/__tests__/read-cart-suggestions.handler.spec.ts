@@ -18,6 +18,7 @@ import {
 } from "../../commands/__tests__/staff-suggestion-doubles.js";
 import { CatalogCartFamilyReader } from "../../../infrastructure/catalog-cart-suggestions.js";
 import { RecommendationFilter } from "../../services/recommendation-filter.js";
+import { StaffSuggestionShowcase } from "../../services/staff-suggestion-showcase.js";
 import { ReadCartSuggestionsHandler } from "../read-cart-suggestions.handler.js";
 import { ReadCartSuggestionsQuery } from "../read-cart-suggestions.query.js";
 
@@ -90,14 +91,14 @@ function harness(rules: readonly [string, Partial<StaffSuggestionRuleInput>, num
   }
   const shelf = new Shelf();
   const clock = new FixedClock(NOW);
-  const handler = new ReadCartSuggestionsHandler(
+  const showcase = new StaffSuggestionShowcase(
     new InMemoryRuleReader(store),
     new OrderReader(new OrderSetting()),
-    new CatalogCartFamilyReader(CATALOG),
     new RecommendationFilter(CATALOG, new NoCutoffs(), clock),
     shelf,
     clock,
   );
+  const handler = new ReadCartSuggestionsHandler(showcase, new CatalogCartFamilyReader(CATALOG));
   const read = async (skus: readonly string[], companyId: string | null = null, date?: string) =>
     handler.execute(
       new ReadCartSuggestionsQuery(

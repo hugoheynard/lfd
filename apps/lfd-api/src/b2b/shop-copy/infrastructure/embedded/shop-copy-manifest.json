@@ -1441,6 +1441,13 @@
           "variables": []
         },
         {
+          "key": "shop.alsoLike",
+          "fr": "Vous aimerez aussi",
+          "en": "You may also like",
+          "it": "Potrebbe piacerti anche",
+          "variables": []
+        },
+        {
           "key": "shop.operationOpensOn",
           "fr": "Ouvre le {date}",
           "en": "Opens {date}",

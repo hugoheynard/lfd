@@ -1,4 +1,5 @@
 import type { StaffSuggestionRuleSnapshot } from "../entities/staff-suggestion-rule.js";
+import { triggeredCandidates, type SuggestionCandidate } from "./suggestion-candidates.js";
 
 /**
  * **Combien d'articles décidés le panier montre** — Q1 du plan, tranchée par
@@ -12,12 +13,6 @@ export interface CartContents {
   readonly skus: readonly string[];
   /** SKU → lignée de sa famille (elle-même d'abord). Absent = famille inconnue. */
   readonly familyPaths: ReadonlyMap<string, readonly string[]>;
-}
-
-/** Un article candidat, et la règle qui le propose. */
-export interface CartCandidate {
-  readonly sku: string;
-  readonly rule: StaffSuggestionRuleSnapshot;
 }
 
 /**
@@ -44,27 +39,12 @@ export function triggeredByCart(rule: StaffSuggestionRuleSnapshot, cart: CartCon
 }
 
 /**
- * **Les candidats du panier**, dans l'ordre des règles déjà classées puis
- * celui des suggérés de chaque règle. Un article proposé par deux règles
- * revient à la première — c'est elle que l'ordre réglé met devant. Le filtre
- * de ce qui se commande (R4) passe ensuite : ici, rien n'est encore borné.
+ * **Les candidats du panier** : les suggérés des règles dont le déclencheur
+ * est vrai pour ce panier (`triggeredCandidates`).
  */
 export function cartCandidates(
   ordered: readonly StaffSuggestionRuleSnapshot[],
   cart: CartContents,
-): readonly CartCandidate[] {
-  const seen = new Set<string>();
-  const candidates: CartCandidate[] = [];
-  for (const rule of ordered) {
-    if (!triggeredByCart(rule, cart)) {
-      continue;
-    }
-    for (const sku of rule.suggestedSkus) {
-      if (!seen.has(sku)) {
-        seen.add(sku);
-        candidates.push({ sku, rule });
-      }
-    }
-  }
-  return candidates;
+): readonly SuggestionCandidate[] {
+  return triggeredCandidates(ordered, (rule) => triggeredByCart(rule, cart));
 }

@@ -52,6 +52,16 @@
           <span class="discount">{{ discount }}</span>
         }
       </div>
+
+      @if (staffPick.current(); as view) {
+        @if (view.sku !== piece.sku) {
+          <app-staff-suggestion-card
+            [view]="view"
+            [fallbackTitle]="t().shop.alsoLike"
+            (taken)="staffPick.taken($event)"
+          />
+        }
+      }
     </div>
 
     <div dialog-foot class="foot">
