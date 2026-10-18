@@ -1,0 +1,72 @@
+:host {
+  display: block;
+}
+
+.diagram {
+  width: 100%;
+  height: auto;
+}
+
+.root {
+  fill: var(--fold-color-primary-surface);
+  stroke: var(--fold-color-primary-border);
+}
+
+.box {
+  fill: var(--fold-color-surface-card);
+  stroke: var(--fold-color-border);
+}
+
+/* Les deux boîtes servies À PART du catalogue : un fond distinct le dit. */
+.alt {
+  fill: var(--fold-color-surface-sunken);
+}
+
+.title {
+  fill: var(--fold-color-text);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-semibold);
+  text-anchor: middle;
+}
+
+.sub {
+  fill: var(--fold-color-text-secondary);
+  font-size: var(--fold-text-xs);
+  text-anchor: middle;
+}
+
+.field {
+  fill: var(--fold-color-text-secondary);
+  font-size: var(--fold-text-xs);
+  font-family: var(--fold-font-mono);
+}
+
+.has {
+  stroke: var(--fold-color-text-muted);
+  stroke-width: 1.5;
+}
+
+.ref {
+  stroke: var(--fold-color-primary);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+}
+
+.head {
+  fill: var(--fold-color-primary);
+}
+
+.ref-label {
+  fill: var(--fold-color-primary-text);
+  font-size: var(--fold-text-xs);
+  text-anchor: middle;
+}
+
+.rule {
+  stroke: var(--fold-color-border);
+}
+
+.legend {
+  fill: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+}

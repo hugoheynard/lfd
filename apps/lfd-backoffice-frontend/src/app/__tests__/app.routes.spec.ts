@@ -133,6 +133,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // Documentation, les réglages commerciaux une vue de l'Exploitation.
   'documentation/facturation': OPEN,
   'documentation/mediatheque': OPEN,
+  'documentation/webhook-vitrine': OPEN,
   exploitation: OPEN,
   // La même coquille, pour Réglages › Sites (S1, 2026-10-13) : elle ne
   // dessine rien, chaque écran porte son garde.

@@ -232,3 +232,26 @@ body {
   padding-left: env(safe-area-inset-left, 0px);
   padding-right: env(safe-area-inset-right, 0px);
 }
+
+/*
+ * Imprimer UNE page sans le menu de l'app (guide de l'agence vitrine,
+ * 2026-10-18). L'hôte routé porte `print-standalone` ; à l'impression, tout ce
+ * qui n'est ni lui, ni un de ses ancêtres, ni dans lui disparaît, et ses
+ * ancêtres perdent leur mise en page de coquille (grille, défilement, hauteur
+ * fixe) qui couperait le papier à la première page.
+ */
+@media print {
+  body:has(.print-standalone)
+    *:not(:has(.print-standalone)):not(.print-standalone):not(.print-standalone *) {
+    display: none !important;
+  }
+
+  body:has(.print-standalone) *:has(.print-standalone) {
+    display: block !important;
+    position: static !important;
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    width: auto !important;
+  }
+}

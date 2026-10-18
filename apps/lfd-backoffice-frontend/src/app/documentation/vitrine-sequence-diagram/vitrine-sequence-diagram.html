@@ -1,0 +1,66 @@
+<svg
+  class="diagram"
+  viewBox="0 0 760 400"
+  role="img"
+  aria-label="La Folie Coffee envoie une notification signée à votre adresse ; vous répondez 2xx, puis vous relisez les éléments nommés avec votre clé de lecture"
+>
+  <defs>
+    <marker
+      id="vsd-arrow"
+      viewBox="0 0 10 10"
+      refX="9"
+      refY="5"
+      markerWidth="7"
+      markerHeight="7"
+      orient="auto-start-reverse"
+    >
+      <path class="head" d="M0,0 L10,5 L0,10 z" />
+    </marker>
+  </defs>
+
+  <!-- Les deux acteurs et leurs lignes de vie -->
+  <rect class="actor" x="40" y="12" width="220" height="44" rx="8" />
+  <text class="actor-label" x="150" y="40">La Folie Coffee (serveur)</text>
+  <rect class="actor" x="500" y="12" width="220" height="44" rx="8" />
+  <text class="actor-label" x="610" y="40">Votre site</text>
+  <line class="life" x1="150" y1="56" x2="150" y2="392" />
+  <line class="life" x1="610" y1="56" x2="610" y2="392" />
+
+  <!-- 1. Le balayage -->
+  <rect class="note" x="20" y="72" width="260" height="34" rx="6" />
+  <text class="note-label" x="150" y="94">
+    ① toutes les 5 min au plus : qu'est-ce qui a changé ?
+  </text>
+
+  <!-- 2. La notification -->
+  <line class="msg" x1="150" y1="134" x2="606" y2="134" marker-end="url(#vsd-arrow)" />
+  <text class="msg-label" x="380" y="126">② POST signé — Vitrine-Signature, Vitrine-Delivery</text>
+  <text class="msg-sub" x="380" y="150">corps : les clés changées et retirées, pas le contenu</text>
+
+  <!-- 3. La réponse -->
+  <line class="reply" x1="610" y1="180" x2="154" y2="180" marker-end="url(#vsd-arrow)" />
+  <text class="msg-label" x="380" y="172">③ 2xx en moins de 5 s</text>
+
+  <!-- 4. La relecture -->
+  <line class="msg" x1="610" y1="226" x2="154" y2="226" marker-end="url(#vsd-arrow)" />
+  <text class="msg-label" x="380" y="218">④ GET /vitrine/… ?lang= — X-Vitrine-Key</text>
+  <line class="reply" x1="150" y1="262" x2="606" y2="262" marker-end="url(#vsd-arrow)" />
+  <text class="msg-label" x="380" y="254">⑤ JSON — la vue publique, filtrée par vos cases</text>
+
+  <line class="rule" x1="20" y1="290" x2="740" y2="290" />
+
+  <!-- La branche d'échec -->
+  <text class="fail-title" x="20" y="316">
+    Si ③ n'arrive pas (autre statut, redirection, délai dépassé) :
+  </text>
+  <text class="fail" x="20" y="340">
+    nouvel essai de la MÊME livraison (même Vitrine-Delivery), au plus tôt après 30 s, 1 min, 2 min…
+    en doublant ;
+  </text>
+  <text class="fail" x="20" y="362">
+    au 10ᵉ échec, l'abonnement passe « en échec » et plus rien ne part, jusqu'à ce que La Folie
+  </text>
+  <text class="fail" x="20" y="384">
+    clique « Tout renvoyer » : la notification suivante nomme alors TOUT comme changé.
+  </text>
+</svg>

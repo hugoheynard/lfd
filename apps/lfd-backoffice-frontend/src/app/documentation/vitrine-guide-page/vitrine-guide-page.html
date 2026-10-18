@@ -1,0 +1,390 @@
+<fold-page-layout icon="globe" title="Webhook vitrine — guide de l'agence">
+  <p description>
+    Pour le développeur du site vitrine&nbsp;: comment La Folie Coffee vous prévient qu'un élément
+    du catalogue a changé, comment vérifier que l'appel vient bien de nous, puis comment relire ce
+    qui a changé. Toutes les données servies sont <strong>publiques</strong>&nbsp;: les mêmes que
+    sur la boutique en ligne.
+  </p>
+  <button
+    pageActions
+    foldButton
+    emphasis="outline"
+    intent="neutral"
+    size="sm"
+    icon="print"
+    class="vg-no-print"
+    (click)="print()"
+    data-print
+  >
+    Imprimer ou enregistrer en PDF
+  </button>
+
+  <div class="doc-stack">
+    <fold-callout appearance="inset" variant="info">
+      <strong
+        >Ce que vous recevez de nous, une fois, à la création de votre abonnement&nbsp;:</strong
+      >
+      l'adresse de base de l'API, une <strong>clé de lecture</strong> et un
+      <strong>secret de signature</strong>. Les deux derniers ne sont montrés qu'une fois&nbsp;:
+      rangez-les comme des mots de passe. Si nous les régénérons, les anciens cessent aussitôt de
+      valoir.
+    </fold-callout>
+
+    <!-- 1. LE PRINCIPE -->
+    <fold-card class="doc-card">
+      <fold-element-title
+        variant="title"
+        icon="integrations"
+        iconTone="primary"
+        title="1. Le principe : on vous prévient, vous relisez"
+        subtitle="deux sens, deux mécanismes"
+      />
+      <app-vitrine-sequence-diagram />
+      <ul class="doc-list">
+        <li>
+          <strong>De nous vers vous — la notification.</strong> Au plus tard cinq minutes après un
+          changement, nous envoyons un <code>POST</code> signé à l'adresse <code>https</code> que
+          vous nous avez donnée. Il ne contient <strong>pas</strong> les données&nbsp;: seulement
+          les clés de ce qui a changé et de ce qui a disparu.
+        </li>
+        <li>
+          <strong>De vous vers nous — la relecture.</strong> Vous relisez ensuite les éléments
+          nommés (ou tout le catalogue) avec votre clé de lecture, dans la langue de votre choix.
+        </li>
+        <li>
+          Vous ne recevez que les ensembles cochés pour vous&nbsp;: <em>catalogue</em> (articles et
+          rayons), <em>opérations</em>, <em>textes</em>, <em>Incontournables</em>. Un ensemble non
+          coché est vide dans nos réponses et n'apparaît jamais dans une notification.
+        </li>
+      </ul>
+    </fold-card>
+
+    <!-- 2. L'AUTHENTIFICATION -->
+    <fold-card class="doc-card">
+      <fold-element-title
+        variant="title"
+        icon="lock"
+        iconTone="primary"
+        title="2. Authentification"
+        subtitle="une clé pour lire, un secret pour vérifier"
+      />
+      <ul class="doc-list">
+        <li>
+          <strong>La clé de lecture</strong> accompagne chacune de vos lectures, dans l'en-tête
+          <code>X-Vitrine-Key</code>. Elle vous identifie et applique vos ensembles cochés. Absente,
+          inconnue, régénérée ou abonnement coupé de notre côté&nbsp;: réponse <code>403</code>.
+        </li>
+        <li>
+          <strong>Le secret de signature</strong> ne voyage jamais&nbsp;: il vous sert à vérifier
+          que chaque notification vient de nous et n'a pas été modifiée.
+        </li>
+      </ul>
+      <p>
+        Chaque notification porte l'en-tête
+        <code>Vitrine-Signature: t=&lt;horodatage&gt;,v1=&lt;signature&gt;</code>&nbsp;:
+      </p>
+      <ol class="doc-steps">
+        <li>
+          <code>t</code> est l'instant de l'envoi en <strong>secondes</strong> depuis le 1ᵉʳ janvier
+          1970 (UTC).
+        </li>
+        <li>
+          La chaîne signée est exactement <code>&lt;t&gt;.&lt;corps brut&gt;</code>&nbsp;: la valeur
+          de <code>t</code>, un point, puis le corps de la requête <strong>tel que reçu</strong>,
+          octet pour octet (UTF-8). Ne re-sérialisez jamais le JSON avant de vérifier.
+        </li>
+        <li>
+          <code>v1</code> est le <strong>HMAC-SHA256</strong> de cette chaîne, avec votre secret
+          pour clé, écrit en hexadécimal minuscule.
+        </li>
+        <li>
+          Comparez à <strong>temps constant</strong>, et refusez un <code>t</code> qui s'écarte de
+          plus de <strong>300 secondes</strong> de votre horloge&nbsp;: c'est ce qui rend un rejeu
+          inutile.
+        </li>
+      </ol>
+      <div class="vg-sample">
+        <span class="vg-label">Node.js</span>
+        <pre class="vg-code"><code>{{ samples.nodeVerify }}</code></pre>
+      </div>
+      <div class="vg-sample">
+        <span class="vg-label">PHP</span>
+        <pre class="vg-code"><code>{{ samples.phpVerify }}</code></pre>
+      </div>
+    </fold-card>
+
+    <!-- 3. LA NOTIFICATION -->
+    <fold-card class="doc-card">
+      <fold-element-title
+        variant="title"
+        icon="mail"
+        iconTone="primary"
+        title="3. La notification"
+        subtitle="ce que nous POSTons à votre adresse"
+      />
+      <div class="vg-sample">
+        <span class="vg-label">En-têtes</span>
+        <pre class="vg-code"><code>{{ samples.requestHeaders }}</code></pre>
+      </div>
+      <ul class="doc-list">
+        <li><code>Content-Type</code> vaut toujours <code>application/json</code>.</li>
+        <li><code>Vitrine-Signature</code>&nbsp;: voir la section 2. Recalculée à chaque essai.</li>
+        <li>
+          <code>Vitrine-Delivery</code>&nbsp;: l'identifiant de la livraison,
+          <strong>identique d'un essai à l'autre</strong>.
+        </li>
+      </ul>
+      <div class="vg-sample">
+        <span class="vg-label">Corps</span>
+        <pre class="vg-code"><code>{{ samples.notificationJson }}</code></pre>
+      </div>
+      <fold-data-table
+        caption="Le corps de la notification"
+        narrowLayout="scroll"
+        density="compact"
+        [columns]="fieldColumns"
+        [rows]="notificationFields"
+        [rowKey]="fieldKey"
+      >
+        <ng-template foldCell="field" let-row>
+          <code>{{ row.field }}</code>
+        </ng-template>
+      </fold-data-table>
+      <fold-data-table
+        caption="changed et removed — les clés, par ensemble"
+        narrowLayout="scroll"
+        density="compact"
+        [columns]="fieldColumns"
+        [rows]="elementKeyFields"
+        [rowKey]="fieldKey"
+      >
+        <ng-template foldCell="field" let-row>
+          <code>{{ row.field }}</code>
+        </ng-template>
+      </fold-data-table>
+      <fold-element-title variant="caps" title="Répondre" />
+      <ul class="doc-list">
+        <li>
+          Répondez <strong>2xx</strong> (200 ou 204) en <strong>moins de 5 secondes</strong>, puis
+          relisez en tâche de fond. Tout le reste compte comme un échec&nbsp;: un autre statut, une
+          <strong>redirection</strong> (jamais suivie — donnez-nous l'adresse finale), un délai
+          dépassé, un certificat refusé.
+        </li>
+        <li>Le corps de votre réponse n'est pas lu.</li>
+        <li>
+          Signature invalide ou <code>t</code> hors fenêtre&nbsp;: refusez (401, par exemple) et ne
+          traitez rien.
+        </li>
+      </ul>
+      <fold-element-title variant="caps" title="Échecs et relances" />
+      <ul class="doc-list">
+        <li>
+          Après un échec, la <strong>même</strong> livraison repart au plus tôt 30 s plus tard, puis
+          1 min, 2 min, 4 min… le délai doublant à chaque fois. <strong>Dix essais</strong> en tout,
+          étalés sur environ quatre heures.
+        </li>
+        <li>
+          Tant qu'une livraison attend, les changements suivants s'y ajoutent&nbsp;: même
+          <code>Vitrine-Delivery</code>, même <code>sequence</code>, mais un contenu qui peut avoir
+          grossi.
+        </li>
+        <li>
+          Au dixième échec, votre abonnement passe <strong>en échec</strong>&nbsp;: plus rien ne
+          vous est envoyé. Une fois votre adresse réparée, nous déclenchons « Tout renvoyer »&nbsp;:
+          la notification suivante nomme alors <strong>tout</strong> votre contenu comme changé.
+        </li>
+        <li>
+          Un <strong>essai</strong> envoyé depuis notre écran porte <code>"test": true</code> et
+          <code>"sequence": 0</code>, des listes vides, et n'est jamais relancé.
+        </li>
+      </ul>
+      <fold-element-title variant="caps" title="Séquence et doublons" />
+      <ul class="doc-list">
+        <li>
+          <code>sequence</code> croît d'une livraison à l'autre pour votre abonnement. Une livraison
+          renvoyée à la main par notre équipe garde sa séquence d'origine&nbsp;: ne supposez pas un
+          ordre d'arrivée strict.
+        </li>
+        <li>
+          Un même envoi peut vous parvenir <strong>deux fois</strong> (un essai que vous avez traité
+          mais auquel la réponse est arrivée trop tard, par exemple). Le plus sûr&nbsp;: traiter
+          chaque notification comme un signal de relecture — relire deux fois ne coûte rien. Si vous
+          écartez les doublons sur <code>Vitrine-Delivery</code>, gardez en tête qu'un même
+          identifiant peut revenir avec plus de clés.
+        </li>
+      </ul>
+    </fold-card>
+
+    <!-- 4. LES LECTURES -->
+    <fold-card class="doc-card">
+      <fold-element-title
+        variant="title"
+        icon="download"
+        iconTone="primary"
+        title="4. Les lectures"
+        subtitle="relire ce qui a changé"
+      />
+      <div class="vg-sample">
+        <span class="vg-label">Requête</span>
+        <pre class="vg-code"><code>{{ samples.read }}</code></pre>
+      </div>
+      <fold-data-table
+        caption="Les routes de lecture"
+        narrowLayout="scroll"
+        density="compact"
+        [columns]="routeColumns"
+        [rows]="routes"
+        [rowKey]="rowKey"
+      >
+        <ng-template foldCell="a" let-row>
+          <code>{{ row.a }}</code>
+        </ng-template>
+      </fold-data-table>
+      <ul class="doc-list">
+        <li>
+          <strong>Langue</strong>&nbsp;: <code>?lang=fr</code>, <code>en</code> ou <code>it</code> —
+          <code>fr</code> sans paramètre. Un nom ou une ligne non traduits sont servis
+          <strong>en français</strong>, texte par texte&nbsp;; la forme de la réponse ne change pas.
+          Les opérations portent leurs langues elles-mêmes et ne dépendent pas du paramètre.
+        </li>
+        <li>
+          <strong>Débit</strong>&nbsp;: 60 requêtes par minute et par adresse IP. Après une
+          notification, une seule relecture du catalogue suffit le plus souvent.
+        </li>
+        <li>
+          Les erreurs répondent en JSON&nbsp;: un <code>code</code> stable, un
+          <code>message</code> en français, un <code>requestId</code> à nous transmettre si vous
+          nous écrivez.
+        </li>
+      </ul>
+      <div class="vg-sample">
+        <span class="vg-label">Erreur</span>
+        <pre class="vg-code"><code>{{ samples.error }}</code></pre>
+      </div>
+      <fold-data-table
+        caption="Les erreurs"
+        narrowLayout="scroll"
+        density="compact"
+        [columns]="errorColumns"
+        [rows]="errors"
+        [rowKey]="rowKey"
+      >
+        <ng-template foldCell="a" let-row>
+          <code>{{ row.a }}</code>
+        </ng-template>
+      </fold-data-table>
+    </fold-card>
+
+    <!-- 5. LE SCHÉMA DE DONNÉES -->
+    <fold-card class="doc-card">
+      <fold-element-title
+        variant="title"
+        icon="catalog"
+        iconTone="primary"
+        title="5. Le schéma de données"
+        subtitle="les entités servies, et ce qui les relie"
+      />
+      <app-vitrine-schema-diagram />
+      <fold-callout appearance="inset" variant="warning">
+        <strong>Les prix sont des entiers, et pas tous dans la même unité.</strong>
+        <code>unitPriceMillicents</code> et <code>catalogPriceMillicents</code> sont
+        <strong>hors taxe</strong>, en <strong>millicentimes</strong>&nbsp;: 1&nbsp;€ =
+        100&nbsp;000. <code>unitPriceTtcCents</code> est <strong>toutes taxes comprises</strong>, en
+        <strong>centimes</strong>&nbsp;: 1&nbsp;€ = 100. Au particulier, affichez
+        <code>unitPriceTtcCents</code> tel quel&nbsp;: le recalculer depuis le hors taxe et le taux
+        peut décaler d'un centime. Il n'y a pas de prix à barrer TTC.
+      </fold-callout>
+      <ul class="doc-list">
+        <li>
+          <strong>Promotions</strong>&nbsp;: elles ne sont pas une entité à part. Le prix servi les
+          inclut déjà, et <code>catalogPriceMillicents</code> (le prix à barrer) n'est présent que
+          lorsqu'une promotion rend le prix plus bas.
+        </li>
+        <li>
+          <strong>Incontournables</strong>&nbsp;: le booléen <code>isFeatured</code> d'un article.
+        </li>
+        <li>
+          <strong>Absent</strong> et <strong>null</strong> ne sont pas la même chose&nbsp;: un champ
+          « peut être absent » n'apparaît pas du tout dans le JSON&nbsp;; un champ « peut valoir
+          null » est présent, à <code>null</code>.
+        </li>
+      </ul>
+      <div class="vg-sample">
+        <span class="vg-label">Un article (JSON)</span>
+        <pre class="vg-code"><code>{{ samples.itemJson }}</code></pre>
+      </div>
+    </fold-card>
+
+    @for (entity of entities; track entity.key) {
+      <fold-card class="doc-card vg-entity">
+        <fold-element-title variant="title" [title]="entity.title" [subtitle]="entity.subtitle" />
+        <fold-data-table
+          narrowLayout="scroll"
+          density="compact"
+          [caption]="entity.title"
+          [columns]="fieldColumns"
+          [rows]="entity.fields"
+          [rowKey]="fieldKey"
+        >
+          <ng-template foldCell="field" let-row>
+            <code>{{ row.field }}</code>
+          </ng-template>
+        </fold-data-table>
+      </fold-card>
+    }
+
+    <!-- 6. LE XML — contrat écrit, serveur pas encore bâti (cf. VITRINE_XML_AVAILABLE). -->
+    <fold-card class="doc-card" data-xml>
+      <fold-element-title
+        variant="title"
+        icon="contracts"
+        iconTone="primary"
+        title="6. Format XML"
+        subtitle="la même ressource, en XML"
+      >
+        @if (!xmlAvailable) {
+          <fold-badge
+            titleAction
+            variant="warning"
+            content="Disponible prochainement"
+            data-xml-soon
+          />
+        }
+      </fold-element-title>
+      @if (!xmlAvailable) {
+        <fold-callout appearance="inset" variant="warning">
+          Ce format n'est <strong>pas encore servi</strong>&nbsp;: il est décrit ici pour que vous
+          puissiez le préparer. D'ici là, nos réponses sont en JSON.
+        </fold-callout>
+      }
+      <ul class="doc-list">
+        <li>
+          Chaque lecture existe en XML, demandée par l'en-tête
+          <code>Accept: application/xml</code> ou par le paramètre <code>?format=xml</code>.
+        </li>
+        <li>Le schéma XSD se télécharge à <code>GET /vitrine/schema.xsd</code>.</li>
+        <li>
+          Les éléments portent <strong>exactement</strong> le nom des champs JSON, en camelCase.
+        </li>
+        <li>
+          Un tableau devient un élément au pluriel contenant des éléments au singulier&nbsp;:
+          <code>items</code> → <code>item</code>, <code>shelves</code> → <code>shelf</code>,
+          <code>operations</code> → <code>operation</code>, <code>skus</code> → <code>sku</code>.
+        </li>
+        <li>Une valeur <code>null</code> ne produit <strong>aucun</strong> élément.</li>
+        <li>Un texte traduit est un élément simple, dans la langue demandée.</li>
+        <li>La notification, elle, reste en JSON.</li>
+      </ul>
+      <div class="vg-pair">
+        <div class="vg-sample">
+          <span class="vg-label">JSON</span>
+          <pre class="vg-code"><code>{{ samples.itemJson }}</code></pre>
+        </div>
+        <div class="vg-sample">
+          <span class="vg-label">XML</span>
+          <pre class="vg-code"><code>{{ samples.itemXml }}</code></pre>
+        </div>
+      </div>
+    </fold-card>
+  </div>
+</fold-page-layout>

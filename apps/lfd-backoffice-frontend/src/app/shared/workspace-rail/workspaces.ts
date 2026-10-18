@@ -840,6 +840,14 @@ export const DOCUMENTATION_VIEWS: readonly WorkspaceView[] = [
     icon: 'image',
     section: 'Médiathèque',
   },
+  // Le guide de l'agence qui consomme le webhook de la vitrine (Hugo, 2026-10-18).
+  {
+    key: 'webhook-vitrine',
+    label: 'Webhook vitrine — guide de l’agence',
+    link: '/documentation/webhook-vitrine',
+    icon: 'globe',
+    section: 'Commerce',
+  },
 ];
 
 /** Le catalogue, par clé. */

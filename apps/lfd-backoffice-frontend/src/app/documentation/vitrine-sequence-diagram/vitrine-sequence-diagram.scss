@@ -1,0 +1,80 @@
+:host {
+  display: block;
+}
+
+.diagram {
+  width: 100%;
+  height: auto;
+}
+
+.actor {
+  fill: var(--fold-color-primary-surface);
+  stroke: var(--fold-color-primary-border);
+}
+
+.actor-label {
+  fill: var(--fold-color-text);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-semibold);
+  text-anchor: middle;
+}
+
+.life {
+  stroke: var(--fold-color-border);
+  stroke-dasharray: 4 4;
+}
+
+.note {
+  fill: var(--fold-color-surface-sunken);
+  stroke: var(--fold-color-border-subtle);
+}
+
+.note-label {
+  fill: var(--fold-color-text-secondary);
+  font-size: var(--fold-text-xs);
+  text-anchor: middle;
+}
+
+.msg {
+  stroke: var(--fold-color-primary);
+  stroke-width: 1.5;
+}
+
+/* Une réponse se lit en pointillé, comme dans tout diagramme de séquence. */
+.reply {
+  stroke: var(--fold-color-text-muted);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 4;
+}
+
+.head {
+  fill: var(--fold-color-text-secondary);
+}
+
+.msg-label {
+  fill: var(--fold-color-text);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-semibold);
+  text-anchor: middle;
+}
+
+.msg-sub {
+  fill: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+  text-anchor: middle;
+}
+
+.rule {
+  stroke: var(--fold-color-border);
+}
+
+.fail-title {
+  fill: var(--fold-color-alert-text);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-semibold);
+}
+
+.fail {
+  fill: var(--fold-color-text-secondary);
+  font-size: var(--fold-text-xs);
+}

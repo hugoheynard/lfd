@@ -507,6 +507,16 @@ export const routes: Routes = [
             (m) => m.DocMediaLibraryPage,
           ),
       },
+      {
+        // Pour l'agence du site vitrine (Hugo, 2026-10-18) : Hugo l'imprime en
+        // PDF et l'envoie. L'écran des abonnés y renvoie depuis son en-tête.
+        path: 'webhook-vitrine',
+        title: 'Webhook vitrine — guide de l’agence — LFC B2B admin',
+        loadComponent: () =>
+          import('./documentation/vitrine-guide-page/vitrine-guide-page').then(
+            (m) => m.DocVitrineGuidePage,
+          ),
+      },
     ],
   },
   // LE COURSIER (2026-10-03) : la page du livreur, espace de PREMIER niveau,
