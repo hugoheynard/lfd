@@ -1,3 +1,4 @@
+import type { CatalogTranslations } from "../catalog-translations.js";
 import type { CatalogAudience } from "../served-to.js";
 import type { CatalogCategoryFacts } from "./catalog-category.projection.js";
 
@@ -9,6 +10,8 @@ export interface ReceivedCatalogFamily extends CatalogCategoryFacts {
   readonly audience: CatalogAudience;
   /** Archivée au référentiel : la plateforme pose une date, jamais une suppression. */
   readonly archived: boolean;
+  /** Les traductions du nom (lot des langues) — `null` sur un fait d'avant elles. */
+  readonly nameTranslations: CatalogTranslations | null;
 }
 
 /**

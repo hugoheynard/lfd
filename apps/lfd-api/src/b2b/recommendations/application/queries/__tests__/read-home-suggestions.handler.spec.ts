@@ -66,6 +66,7 @@ function shopItem(sku: string): ShopItemView {
     vatRatePercent: 5.5,
     shelfId: "fam-epicerie",
     isFeatured: false,
+    audience: "both",
   };
 }
 

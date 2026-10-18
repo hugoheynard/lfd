@@ -1,13 +1,18 @@
-import type { ShopCatalogueView, ShopItemView } from "@lfd/contracts";
+import type { ContentLocale, ShopCatalogueView, ShopItemView } from "@lfd/contracts";
 import { lineTotalCents, ttcCentsOf } from "@lfd/money";
 import { Injectable } from "@nestjs/common";
 
 import { Pricer } from "../../pricing/application/pricer.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { CatalogOperationsReader } from "../domain/ports/catalog-operations.reader.js";
-import { CatalogReader, type ShopAudience } from "../domain/ports/catalog.reader.js";
+import {
+  CatalogReader,
+  type ResolvedCatalogItem,
+  type ShopAudience,
+} from "../domain/ports/catalog.reader.js";
 import { catalogueArticle } from "../domain/catalogue-article.js";
-import { shopCatalogueOf } from "./shop-catalogue-view.js";
+import { CATALOG_SOURCE_LANGUAGE } from "../domain/catalog-translations.js";
+import { inShopLanguage, shopCatalogueOf } from "./shop-catalogue-view.js";
 
 /**
  * **La vitrine à son prix — la même logique pour le visiteur et pour le client.**
@@ -86,13 +91,16 @@ export class ShopCataloguePricing {
    *
    * @param companyId `null` = un visiteur. Le tarif public, promotions
    * comprises, et aucune mercuriale lue — il n'y a rien à négocier sans client.
+   * @param language la langue des noms, lignes et rayons (lot des langues) —
+   * le français quand le référentiel n'a rien traduit. Ni le rangement ni le
+   * prix n'en dépendent.
    */
-  async priced(companyId: string | null): Promise<ShopCatalogueView> {
+  async priced(companyId: string | null, language: ContentLocale): Promise<ShopCatalogueView> {
     // 🔴 **L'audience se déduit ICI, et c'est le seul endroit.** « Sans société »
     // veut dire « sans rien de négocié » : ni mercuriale, ni tarif de canal — et
     // donc le prix d'étiquette. La déduction est la même que celle qui pilotait
     // déjà la mercuriale ; elle nomme simplement ce qu'elle voulait dire.
-    return this.pricedFor(companyId === null ? "public" : "pro", companyId);
+    return this.pricedFor(companyId === null ? "public" : "pro", companyId, language);
   }
 
   /**
@@ -104,12 +112,13 @@ export class ShopCataloguePricing {
    * l'appelle jamais : la déduction de `priced` reste la seule pour un client.
    */
   pricedWithoutCompany(audience: ShopAudience): Promise<ShopCatalogueView> {
-    return this.pricedFor(audience, null);
+    return this.pricedFor(audience, null, CATALOG_SOURCE_LANGUAGE);
   }
 
   private async pricedFor(
     audience: ShopAudience,
     companyId: string | null,
+    language: ContentLocale,
   ): Promise<ShopCatalogueView> {
     // Les opérations datées se lisent avec le rayon (D5) : deux lectures de
     // plus sur la route anonyme, sans cache — le miroir des opérations tient
@@ -128,7 +137,16 @@ export class ShopCataloguePricing {
     if (catalogue.items.length === 0) {
       return catalogue;
     }
+    const priced = await this.withPrices(catalogue, sellable, companyId);
+    return inShopLanguage(priced, sellable, language);
+  }
 
+  /** La vitrine au prix résolu, tarif barré quand une résolution le baisse. */
+  private async withPrices(
+    catalogue: ShopCatalogueView,
+    sellable: readonly ResolvedCatalogItem[],
+    companyId: string | null,
+  ): Promise<ShopCatalogueView> {
     // 🔴 La LIGNÉE de la famille, lue sur l'article du catalogue et non sur la
     // vue : `ShopItemView.shelfId` ne porte que la famille elle-même, et une
     // règle posée sur une parente ne mordrait pas.

@@ -283,6 +283,7 @@
   "test/resend-webhook.e2e-spec.ts": 3520,
   "test/schema.e2e-spec.ts": 3429,
   "test/shop-cart.e2e-spec.ts": 6279,
+  "test/shop-catalogue-languages.e2e-spec.ts": 10435,
   "test/shop-catalogue.e2e-spec.ts": 7754,
   "test/shop-copy.e2e-spec.ts": 8102,
   "test/shop-order.e2e-spec.ts": 5551,

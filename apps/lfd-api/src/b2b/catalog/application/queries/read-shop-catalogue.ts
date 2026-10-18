@@ -1,4 +1,4 @@
-import type { ShopCatalogueView } from "@lfd/contracts";
+import type { ContentLocale, ShopCatalogueView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { ShopCataloguePricing } from "../shop-catalogue-pricing.service.js";
@@ -10,7 +10,10 @@ import { ShopCataloguePricing } from "../shop-catalogue-pricing.service.js";
  * cas d'usage — hydrater la boutique — et il doit se tester, se réutiliser et se
  * journaliser sans passer par HTTP.
  */
-export class ReadShopCatalogueQuery {}
+export class ReadShopCatalogueQuery {
+  /** @param language la langue des noms, lignes et rayons — le français par défaut à la route. */
+  constructor(readonly language: ContentLocale) {}
+}
 
 @QueryHandler(ReadShopCatalogueQuery)
 export class ReadShopCatalogueHandler implements IQueryHandler<ReadShopCatalogueQuery> {
@@ -30,7 +33,7 @@ export class ReadShopCatalogueHandler implements IQueryHandler<ReadShopCatalogue
    * l'identique. Deux implémentations auraient divergé — c'est exactement
    * comment ce trou s'est ouvert.
    */
-  async execute(): Promise<ShopCatalogueView> {
-    return this.pricing.priced(null);
+  async execute(query: ReadShopCatalogueQuery): Promise<ShopCatalogueView> {
+    return this.pricing.priced(null, query.language);
   }
 }

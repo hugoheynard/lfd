@@ -15,6 +15,7 @@ function item(sku: string, name: string): ShopItemView {
     vatRatePercent: 5.5,
     shelfId: 'fam-pains',
     isFeatured: false,
+    audience: 'both',
   };
 }
 

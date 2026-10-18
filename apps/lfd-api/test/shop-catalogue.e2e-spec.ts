@@ -88,6 +88,7 @@ describe("la vitrine publique", () => {
       vatRatePercent: PUBLIC_LABEL.vatRatePercent,
       shelfId: CATEGORY.id,
       isFeatured: false,
+      audience: "both",
     });
   });
 
@@ -123,6 +124,11 @@ describe("la vitrine publique", () => {
     // jamais : hors fenêtre, la liste est vide.
     expect(Object.keys(body).sort()).toEqual(["items", "operations", "shelves"]);
     expect(Object.keys(body.items[0] ?? {}).sort()).toEqual([
+      // ⚠️ **Un élargissement ASSUMÉ** (2026-10-18, Hugo, option a de B1 —
+      // `documentation/webhooks/plan-webhook-vitrine.md` §5 point 5) : à qui
+      // l'article se vend, `public` ou `both` sur cette route — « aussi pour
+      // les professionnels ». Rien que le rayon pro ne montre déjà.
+      "audience",
       "image",
       "isFeatured",
       "name",

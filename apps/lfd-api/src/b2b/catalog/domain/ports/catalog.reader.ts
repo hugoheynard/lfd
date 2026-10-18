@@ -1,6 +1,8 @@
 import type { OrderLineAllergens } from "@lfd/contracts";
 
 import type { CatalogFamily } from "../catalog-family.js";
+import type { CatalogTranslations } from "../catalog-translations.js";
+import type { CatalogAudience } from "../served-to.js";
 
 /** Un article vendable, prix **résolu** : la décision locale a déjà gagné. */
 export interface ResolvedCatalogItem {
@@ -33,6 +35,22 @@ export interface ResolvedCatalogItem {
   } | null;
   readonly categoryId: string;
   readonly categoryName: string;
+  /**
+   * **À qui l'article se vend**, tel que le référentiel le dit — `both` pour
+   * une ligne jamais reçue par un fait (cf. `servedTo`). Une lecture publique
+   * ne rend jamais `pro` : `servedTo` l'a écarté avant.
+   */
+  readonly audience: CatalogAudience;
+  /**
+   * Les traductions de `name`, `note` et `categoryName` (lot des langues,
+   * 2026-10-18). Vides tant que rien n'est reçu : la vitrine sert alors le
+   * français (`inLanguage`).
+   */
+  readonly translations: {
+    readonly name: CatalogTranslations;
+    readonly note: CatalogTranslations;
+    readonly categoryName: CatalogTranslations;
+  };
   /**
    * Sa famille, lignée comprise — ce que la tarification vise et ce par quoi
    * un écran range. `categoryId` et `categoryName` en sont la tête, gardés pour

@@ -110,6 +110,7 @@ function piece(over: Partial<ShopItemView> = {}): ShopItemView {
     vatRatePercent: 5.5,
     shelfId: 'cat_vien',
     isFeatured: false,
+    audience: 'both',
     ...over,
   };
 }

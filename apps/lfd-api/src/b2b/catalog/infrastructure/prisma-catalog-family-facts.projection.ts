@@ -20,17 +20,23 @@ export class PrismaCatalogFamilyFactsProjection extends CatalogFamilyFactsProjec
 
   async applyIfNewer(family: ReceivedCatalogFamily, seq: number): Promise<boolean> {
     const withdrawnAt = family.archived ? family.receivedAt : null;
+    // `null` = un fait d'avant le lot des langues : la colonne repasse à NULL,
+    // « on ne sait pas », et le rayon se nomme en français.
+    const translations =
+      family.nameTranslations === null ? null : JSON.stringify(family.nameTranslations);
     // `applied_seq IS NULL` : posée par un push ou apportée par une fiche, la
     // famille n'a encore reçu aucun fait d'elle-même — le premier s'applique.
     const written = await this.prisma.$executeRaw`
       INSERT INTO public.catalog_categories
-        (id, name, slug, parent_id, position, vat_rate_percent, received_at, applied_seq,
-         audience, withdrawn_at)
-      VALUES (${family.id}, ${family.name}, ${family.slug}, ${family.parentId}, ${family.position},
+        (id, name, name_translations, slug, parent_id, position, vat_rate_percent, received_at,
+         applied_seq, audience, withdrawn_at)
+      VALUES (${family.id}, ${family.name}, ${translations}::jsonb, ${family.slug},
+              ${family.parentId}, ${family.position},
               ${family.vatRatePercent}, ${family.receivedAt}, ${seq},
               ${family.audience}, ${withdrawnAt})
       ON CONFLICT (id) DO UPDATE SET
         name = EXCLUDED.name,
+        name_translations = EXCLUDED.name_translations,
         slug = EXCLUDED.slug,
         parent_id = EXCLUDED.parent_id,
         position = EXCLUDED.position,

@@ -16,6 +16,9 @@ import {
   type Audience,
 } from "../../../catalogue/shared/domain/value-objects/audience.js";
 import { projectVariant, vatOf, type Showcase } from "./projection.js";
+import { translationsOf, type CatalogTranslations } from "./translations.js";
+
+export type { CatalogTranslations };
 
 /**
  * L'état d'une fiche **dans les mots de l'écran** (C1) : la valeur d'enum du
@@ -34,6 +37,8 @@ const STATUS_OF: Readonly<Record<ProductStatus, CatalogEntryStatus>> = {
 export interface CatalogFamilyFactBody {
   readonly id: string;
   readonly name: string;
+  /** Les traductions du nom — `null` sur un fait d'avant le lot des langues. */
+  readonly nameTranslations: CatalogTranslations | null;
   readonly slug: string;
   readonly parentId: string | null;
   readonly position: number;
@@ -51,11 +56,22 @@ export interface CatalogProductHead {
   readonly categoryId: string;
   readonly kind: ProductRecord["kind"];
   readonly note: string | null;
+  /** Les traductions de la ligne de vitrine — `null` sur un fait d'avant le lot des langues. */
+  readonly noteTranslations: CatalogTranslations | null;
   readonly image: SyncMedia | null;
   readonly thumbnail: SyncMedia | null;
   readonly operationOnly: boolean;
   readonly requiresCold: boolean;
 }
+
+/**
+ * Une déclinaison telle qu'un fait la porte : celle du fil, plus les
+ * traductions de son nom — le nom d'un article en boutique est celui de sa
+ * déclinaison. `null` sur un fait d'avant le lot des langues.
+ */
+export type CatalogVariantFact = SyncVariant & {
+  readonly nameTranslations: CatalogTranslations | null;
+};
 
 /**
  * **L'instantané d'une fiche**, tel que `pim.catalog_product_changed` le porte
@@ -77,7 +93,7 @@ export interface CatalogProductFactBody {
    * service. Ce sont les seules qu'une fiche ACTIVE vend ; une
    * fiche inactive les porte aussi, et la plateforme ne les vend pas.
    */
-  readonly variants: readonly SyncVariant[];
+  readonly variants: readonly CatalogVariantFact[];
   /** SKU de déclinaison → ce qui lui manque. Une déclinaison arrêtée n'y est pas : rien ne lui manque, elle ne se vend plus. */
   readonly gaps: Readonly<Record<string, readonly string[]>>;
   /** La famille de la fiche : la plateforme la crée si elle ne la connaît pas encore. */
@@ -110,6 +126,7 @@ export function projectFamilyFact(
   return {
     id: family.id,
     name: family.name.fr,
+    nameTranslations: translationsOf(family.name),
     slug: family.slug.fr,
     parentId: family.parentId,
     position: family.position,
@@ -135,7 +152,7 @@ export function projectFamilyFact(
 export function projectProductFact(input: ProductFactInput): CatalogProductFactBody {
   const { product, family, showcase } = input;
   const audience = effectiveAudience(product.audience, family.audience);
-  const variants: SyncVariant[] = [];
+  const variants: CatalogVariantFact[] = [];
   const gaps: Record<string, readonly string[]> = {};
   for (const variant of product.variants) {
     if (variant.isDiscontinued) {
@@ -159,6 +176,7 @@ export function projectProductFact(input: ProductFactInput): CatalogProductFactB
       categoryId: product.categoryId,
       kind: product.kind,
       note: showcase?.note ?? null,
+      noteTranslations: showcase?.noteTranslations ?? {},
       image: showcase?.image ?? null,
       thumbnail: showcase?.thumbnail ?? null,
       operationOnly: product.operationOnly,
@@ -178,7 +196,7 @@ type VariantOf = ProductRecord["variants"][number];
  * @throws {IncompleteVariantProjectedError} appelée sur une déclinaison
  *   incomplète — faute de cette projection, `variantGaps` devait l'avoir écartée.
  */
-function sellableVariant(variant: VariantOf, input: ProductFactInput): SyncVariant {
+function sellableVariant(variant: VariantOf, input: ProductFactInput): CatalogVariantFact {
   const vatRatePercent = vatOf(input.percents);
   const { policy } = input.rules;
   const proPrice =
@@ -188,14 +206,17 @@ function sellableVariant(variant: VariantOf, input: ProductFactInput): SyncVaria
   if (proPrice === null || variant.priceCents === null) {
     throw new IncompleteVariantProjectedError(variant.sku);
   }
-  return projectVariant(
-    variant,
-    proPrice.htMillicents,
-    vatRatePercent,
-    variant.priceCents,
-    input.percents,
-    input.inco,
-  );
+  return {
+    ...projectVariant(
+      variant,
+      proPrice.htMillicents,
+      vatRatePercent,
+      variant.priceCents,
+      input.percents,
+      input.inco,
+    ),
+    nameTranslations: translationsOf(variant.name),
+  };
 }
 
 /** Une déclinaison sans prix pro est arrivée jusqu'à la conversion : faute de la projection. */

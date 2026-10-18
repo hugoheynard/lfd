@@ -2,6 +2,7 @@ import type { ShopItemView } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { ShopCataloguePricing } from "../../catalog/application/shop-catalogue-pricing.service.js";
+import { CATALOG_SOURCE_LANGUAGE } from "../../catalog/domain/catalog-translations.js";
 import type { ShopAudience } from "../../catalog/domain/ports/catalog.reader.js";
 import { ProductCatalogReader } from "../../catalog/domain/ports/product-catalog.reader.js";
 import { CartFamilyReader } from "../domain/ports/cart-family.reader.js";
@@ -59,7 +60,7 @@ export class ShopSuggestedArticleReader extends SuggestedArticleReader {
     const shelf =
       companyId === null
         ? await this.pricing.pricedWithoutCompany(audience)
-        : await this.pricing.priced(companyId);
+        : await this.pricing.priced(companyId, CATALOG_SOURCE_LANGUAGE);
     return new Map(
       shelf.items.filter((item) => wanted.has(item.sku)).map((item) => [item.sku, item]),
     );

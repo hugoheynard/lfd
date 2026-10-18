@@ -162,7 +162,7 @@ function next(): number {
 }
 
 function familyOf(category: SyncCategory): CatalogFamilyFactBody {
-  return { ...category, audience: "both", archived: false };
+  return { ...category, audience: "both", archived: false, nameTranslations: {} };
 }
 
 /** Le corps du fait d'une fiche ACTIVE, aux deux clientèles, complète. */
@@ -179,8 +179,8 @@ export function productBody(
     status: "active",
     audience: "both",
     audienceInherited: true,
-    product: head,
-    variants,
+    product: { ...head, noteTranslations: {} },
+    variants: variants.map((variant) => ({ ...variant, nameTranslations: {} })),
     gaps: {},
     family: familyOf(family),
   };

@@ -1,6 +1,7 @@
-import type { ShopCatalogueView, ShopItemView, ShopShelfView } from "@lfd/contracts";
+import type { ContentLocale, ShopCatalogueView, ShopItemView, ShopShelfView } from "@lfd/contracts";
 import { lineTotalCents, ttcCentsOf } from "@lfd/money";
 
+import { CATALOG_SOURCE_LANGUAGE, inLanguage } from "../domain/catalog-translations.js";
 import type { ResolvedCatalogItem } from "../domain/ports/catalog.reader.js";
 import {
   itemOperationOf,
@@ -75,6 +76,55 @@ function toItem(item: ResolvedCatalogItem): ShopItemView {
     vatRatePercent: item.vatRate,
     shelfId: item.categoryId,
     isFeatured: item.isFeatured,
+    // À qui l'article se vend (Hugo, 2026-10-18, option a) : « aussi pour les
+    // professionnels » se lit `both`. La route publique ne rend jamais `pro` —
+    // `servedTo` l'a écarté au lecteur.
+    audience: item.audience,
+  };
+}
+
+/**
+ * **La vitrine dans une langue** — noms, lignes et rayons traduits quand le
+ * référentiel les a traduits, en français sinon (lot des langues, 2026-10-18).
+ *
+ * Appliquée APRÈS la composition et le prix, sur la vue finie : rien de ce
+ * qui se range, se vend ou se tarife ne dépend de la langue, et la frappe que
+ * la tarification scelle reste celle du français. Les opérations portent déjà
+ * leurs trois langues (`ShopOperationText`) et ne sont pas touchées.
+ *
+ * En français, la vue est rendue telle quelle : c'est la langue de `name` et
+ * `note`, et la boutique d'avant ce lot n'en demandait pas d'autre.
+ */
+export function inShopLanguage(
+  view: ShopCatalogueView,
+  sellable: readonly ResolvedCatalogItem[],
+  language: ContentLocale,
+): ShopCatalogueView {
+  if (language === CATALOG_SOURCE_LANGUAGE) {
+    return view;
+  }
+  const byProductSku = new Map(
+    sellable.filter((item) => item.isDefault).map((item) => [item.productSku, item]),
+  );
+  const byFamily = new Map(sellable.map((item) => [item.categoryId, item]));
+  return {
+    ...view,
+    items: view.items.map((item) => {
+      const source = byProductSku.get(item.sku);
+      return source === undefined
+        ? item
+        : {
+            ...item,
+            name: inLanguage(item.name, source.translations.name, language),
+            note: inLanguage(item.note, source.translations.note, language),
+          };
+    }),
+    shelves: view.shelves.map((shelf) => {
+      const source = byFamily.get(shelf.id);
+      return source === undefined
+        ? shelf
+        : { ...shelf, name: inLanguage(shelf.name, source.translations.categoryName, language) };
+    }),
   };
 }
 

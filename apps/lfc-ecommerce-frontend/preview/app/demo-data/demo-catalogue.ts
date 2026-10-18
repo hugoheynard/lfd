@@ -48,6 +48,7 @@ function item(
     vatRatePercent: DEMO_VAT_RATE_PERCENT,
     shelfId,
     isFeatured,
+    audience: 'both',
   };
 }
 

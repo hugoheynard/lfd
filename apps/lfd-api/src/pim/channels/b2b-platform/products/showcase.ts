@@ -7,6 +7,7 @@ import type {
 import type { ProductRecord } from "../../../catalogue/product/domain/ports/product.repository.js";
 import type { SyncMedia } from "@lfd/catalog-sync";
 
+import { translationsOf } from "./translations.js";
 import type { Showcase } from "./projection.js";
 
 /**
@@ -46,8 +47,10 @@ export function showcaseOf(
 ): ReadonlyMap<string, Showcase> {
   const showcase = new Map<string, Showcase>();
   for (const product of products) {
+    const note = notes.get(product.id)?.descriptionShort ?? null;
     showcase.set(product.id, {
-      note: notes.get(product.id)?.descriptionShort?.[SOURCE_LOCALE] ?? null,
+      note: note?.[SOURCE_LOCALE] ?? null,
+      noteTranslations: translationsOf(note),
       image: mediaOf(medias.get(product.id) ?? [], SHOWCASE_ROLE),
       thumbnail: mediaOf(medias.get(product.id) ?? [], THUMBNAIL_ROLE),
     });

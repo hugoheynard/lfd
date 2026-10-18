@@ -12,6 +12,7 @@ import { PUBLIC_SALES_CONTEXT } from "../domain/public-context.js";
 import { catalogAudienceOf, servedTo } from "../domain/served-to.js";
 import { publicByContextOf } from "./public-by-context.js";
 import { STILL_SOLD } from "./sellable-filter.js";
+import { translationsColumnOf } from "./catalog-translations-column.js";
 import { DECISION_COLUMNS } from "./catalog-decision-columns.js";
 
 /**
@@ -39,6 +40,8 @@ interface ItemRow {
   readonly allergens: unknown;
   readonly allergenLabels: unknown;
   readonly note: string | null;
+  readonly nameTranslations: unknown;
+  readonly noteTranslations: unknown;
   readonly imageUrl: string | null;
   readonly thumbnailUrl: string | null;
   readonly thumbnailAlt: string | null;
@@ -66,6 +69,7 @@ interface ItemRow {
   readonly category: {
     readonly id: string;
     readonly name: string;
+    readonly nameTranslations: unknown;
     readonly slug: string;
     readonly parentId: string | null;
     readonly position: number;
@@ -347,6 +351,13 @@ function resolve(
     vatRate: served.vatRate,
     categoryId: row.category.id,
     categoryName: row.category.name,
+    // `NULL` lu `both`, comme `servedTo` le lit : une ligne jamais reçue par un fait.
+    audience: catalogAudienceOf(row.audience) ?? "both",
+    translations: {
+      name: translationsColumnOf(row.nameTranslations),
+      note: translationsColumnOf(row.noteTranslations),
+      categoryName: translationsColumnOf(row.category.nameTranslations),
+    },
     family: {
       id: row.category.id,
       name: row.category.name,

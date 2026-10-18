@@ -52,6 +52,25 @@ const editorial = (over: Partial<ProductEditorialView> = {}): ProductEditorialVi
 });
 
 describe("showcaseOf", () => {
+  /** Lot des langues (2026-10-18) : la ligne voyage aussi traduite, le français à part. */
+  it("emporte les traductions de la ligne, sans le français", () => {
+    const shown = showcaseOf(
+      [product("prd_1")],
+      new Map([
+        [
+          "prd_1",
+          editorial({ descriptionShort: { fr: "Tourage patient", it: "Sfogliatura paziente" } }),
+        ],
+      ]),
+      new Map(),
+    );
+
+    expect(shown.get("prd_1")).toMatchObject({
+      note: "Tourage patient",
+      noteTranslations: { it: "Sfogliatura paziente" },
+    });
+  });
+
   it("emporte la ligne courte et le packshot", () => {
     const shown = showcaseOf(
       [product("prd_1")],
@@ -61,6 +80,7 @@ describe("showcaseOf", () => {
 
     expect(shown.get("prd_1")).toEqual({
       note: "Tourage patient",
+      noteTranslations: {},
       image: {
         url: "https://media.example/croissant.jpg",
         alt: "Un croissant doré",
@@ -160,7 +180,12 @@ describe("showcaseOf", () => {
   it("rend `null` — pas la chaîne vide — quand aucun éditorial n'existe", () => {
     const shown = showcaseOf([product("prd_1")], new Map(), new Map());
 
-    expect(shown.get("prd_1")).toEqual({ note: null, image: null, thumbnail: null });
+    expect(shown.get("prd_1")).toEqual({
+      note: null,
+      noteTranslations: {},
+      image: null,
+      thumbnail: null,
+    });
   });
 
   it("rend `null` quand l'éditorial existe sans ligne courte", () => {

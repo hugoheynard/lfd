@@ -1,3 +1,4 @@
+import type { CatalogTranslations } from "./catalog-translations.js";
 import type { PimFacts } from "./entities/catalog-item.js";
 import type { ShopAudience } from "./ports/catalog.reader.js";
 import { audienceIncludes, type CatalogAudience } from "./served-to.js";
@@ -9,6 +10,13 @@ import { audienceIncludes, type CatalogAudience } from "./served-to.js";
  */
 export interface ReceivedCatalogItem extends PimFacts {
   readonly variantId: string;
+  /**
+   * Les traductions du nom de la déclinaison et de la ligne de la fiche (lot
+   * des langues). `null` = fait émis avant elles : on ne sait pas, et la
+   * vitrine sert le français.
+   */
+  readonly nameTranslations: CatalogTranslations | null;
+  readonly noteTranslations: CatalogTranslations | null;
 }
 
 /** L'état d'une fiche reçue, dans les mots de l'écran. */

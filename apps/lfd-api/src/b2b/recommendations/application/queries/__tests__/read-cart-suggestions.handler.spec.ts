@@ -94,6 +94,7 @@ function shopItem(sku: string): ShopItemView {
     vatRatePercent: 5.5,
     shelfId: "fam-boissons",
     isFeatured: false,
+    audience: "both",
   };
 }
 

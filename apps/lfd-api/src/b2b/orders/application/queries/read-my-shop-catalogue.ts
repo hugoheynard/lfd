@@ -2,6 +2,7 @@ import type { ShopCatalogueView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { ShopCataloguePricing } from "../../../catalog/application/shop-catalogue-pricing.service.js";
+import { CATALOG_SOURCE_LANGUAGE } from "../../../catalog/domain/catalog-translations.js";
 
 /**
  * **La vitrine au prix du client** — le second chemin annoncé par
@@ -70,6 +71,8 @@ export class ReadMyShopCatalogueHandler implements IQueryHandler<
   constructor(private readonly pricing: ShopCataloguePricing) {}
 
   async execute(query: ReadMyShopCatalogueQuery): Promise<ShopCatalogueView> {
-    return this.pricing.priced(query.companyId);
+    // En français : la route reconnue n'a pas encore de paramètre de langue
+    // (lot des langues, 2026-10-18 — seule la vue publique en a reçu un).
+    return this.pricing.priced(query.companyId, CATALOG_SOURCE_LANGUAGE);
   }
 }

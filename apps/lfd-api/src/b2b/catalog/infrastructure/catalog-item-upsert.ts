@@ -13,7 +13,9 @@ export type ItemColumn =
   | "publicReviewPending"
   | "proReviewPending"
   | "audience"
-  | "variantId";
+  | "variantId"
+  | "nameTranslations"
+  | "noteTranslations";
 
 /** Une ligne à écrire : ses colonnes, sous leur nom de modèle. */
 export type ItemUpsertRow = Readonly<Partial<Record<ItemColumn, unknown>>> & {
@@ -68,6 +70,8 @@ const SQL_NAMES = {
   proReviewPending: "pro_review_pending",
   audience: "audience",
   variantId: "variant_id",
+  nameTranslations: "name_translations",
+  noteTranslations: "note_translations",
 } as const satisfies Record<ItemColumn, string>;
 
 /** Les colonnes `jsonb` : leur valeur part sérialisée, et castée. */
@@ -75,10 +79,12 @@ const JSON_COLUMNS: ReadonlySet<ItemColumn> = new Set([
   "allergens",
   "publicByContext",
   "allergenLabels",
+  "nameTranslations",
+  "noteTranslations",
 ]);
 
 /**
- * Au plus tant de lignes par instruction : 39 colonnes × 1 000 restent loin
+ * Au plus tant de lignes par instruction : 41 colonnes × 1 000 restent loin
  * de la borne des 65 535 paramètres d'une requête Postgres.
  */
 export const UPSERT_CHUNK = 1_000;

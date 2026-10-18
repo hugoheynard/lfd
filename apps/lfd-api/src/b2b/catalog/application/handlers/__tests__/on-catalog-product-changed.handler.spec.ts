@@ -1,5 +1,3 @@
-import type { SyncVariant } from "@lfd/catalog-sync";
-
 import {
   CatalogCategoryChangedFact,
   CatalogFactPayloadError,
@@ -7,6 +5,7 @@ import {
 import type {
   CatalogFamilyFactBody,
   CatalogProductFactBody,
+  CatalogVariantFact,
 } from "../../../../../pim/channels/b2b-platform/products/catalog-facts.js";
 import { CatalogProductChangedFact } from "../../../../../pim/channels/b2b-platform/products/catalog-product-changed.fact.js";
 import type {
@@ -42,9 +41,10 @@ const FAMILY: CatalogFamilyFactBody = {
   vatRatePercent: 5.5,
   audience: "both",
   archived: false,
+  nameTranslations: {},
 };
 
-const VARIANT: SyncVariant = {
+const VARIANT: CatalogVariantFact = {
   id: "var_1",
   sku: "VIE-1-1",
   name: "Croissant",
@@ -57,6 +57,7 @@ const VARIANT: SyncVariant = {
   vatRatePercent: 5.5,
   allergens: ["UW"],
   allergenLabels: { labels: [{ category: "gluten", label: "Gluten" }], incomplete: false },
+  nameTranslations: { en: "Butter croissant" },
 };
 
 function productFact(
@@ -74,6 +75,7 @@ function productFact(
       categoryId: FAMILY.id,
       kind: "daily",
       note: null,
+      noteTranslations: {},
       image: null,
       thumbnail: null,
       operationOnly: false,
@@ -237,6 +239,7 @@ describe("OnCatalogCategoryChangedHandler", () => {
         receivedAt: new Date(EMITTED),
         audience: "both",
         archived: false,
+        nameTranslations: {},
       },
     });
   });

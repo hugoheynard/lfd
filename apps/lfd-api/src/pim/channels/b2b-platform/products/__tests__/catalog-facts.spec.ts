@@ -161,6 +161,8 @@ describe("projectProductFact", () => {
     expect(body.family).toEqual({
       id: "cat_patisserie",
       name: "Pâtisserie",
+      // Lot des langues : rien de traduit, on le sait — `{}`, pas `null`.
+      nameTranslations: {},
       slug: "patisserie",
       parentId: null,
       position: 2,
@@ -191,6 +193,45 @@ describe("projectProductFact", () => {
     );
     expect(inherited.audienceInherited).toBe(true);
     expect(own.audienceInherited).toBe(false);
+  });
+});
+
+/** Lot des langues (2026-10-18) : les traductions descendent, le français reste à sa place. */
+describe("projectProductFact — les langues", () => {
+  it("porte les traductions du nom de chaque déclinaison vendue", () => {
+    const variant = bareVariant({
+      ...SELLABLE_VARIANT,
+      name: { fr: "Tarte au citron", en: "Lemon tart", it: "Crostata al limone" },
+    });
+    const body = projectProductFact(input({ product: tarte({ variants: [variant] }) }));
+
+    expect(body.variants[0]).toMatchObject({
+      name: "Tarte au citron",
+      nameTranslations: { en: "Lemon tart", it: "Crostata al limone" },
+    });
+  });
+
+  it("porte la ligne traduite reçue de la vitrine, et un objet vide sans vitrine", () => {
+    const shown = projectProductFact(
+      input({
+        showcase: {
+          note: "Acidulée",
+          noteTranslations: { en: "Tangy" },
+          image: null,
+          thumbnail: null,
+        },
+      }),
+    );
+    const bare = projectProductFact(input());
+
+    expect(shown.product).toMatchObject({ note: "Acidulée", noteTranslations: { en: "Tangy" } });
+    expect(bare.product).toMatchObject({ note: null, noteTranslations: {} });
+  });
+
+  it("porte le nom traduit de la famille, sans le français", () => {
+    const fact = projectFamilyFact(family({ name: { fr: "Pâtisserie", en: "Pastry" } }), PRO_ONLY);
+
+    expect(fact).toMatchObject({ name: "Pâtisserie", nameTranslations: { en: "Pastry" } });
   });
 });
 

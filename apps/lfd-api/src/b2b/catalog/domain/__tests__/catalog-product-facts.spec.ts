@@ -29,6 +29,8 @@ function product(status: ReceivedCatalogProduct["status"]): ReceivedCatalogProdu
 function fact(): ReceivedCatalogItem {
   return {
     variantId: "var_1",
+    nameTranslations: null,
+    noteTranslations: null,
     sku: ITEM.sku,
     productId: "p1",
     productSku: "VIE-1",

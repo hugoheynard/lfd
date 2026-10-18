@@ -87,10 +87,13 @@ model CatalogPriceHistory {
 model CatalogCategory {
   id String @id
 
-  name     String
-  slug     String
-  parentId String? @map("parent_id")
-  position Int     @default(0)
+  name             String
+  /// Les traductions du nom (lot des langues, 2026-10-18) : `{ "en": …, "it": … }`.
+  /// `NULL` = pas encore reçues ; le rayon se nomme alors en français.
+  nameTranslations Json?   @map("name_translations")
+  slug             String
+  parentId         String? @map("parent_id")
+  position         Int     @default(0)
 
   /// Taux de TVA en %, résolu par le PIM depuis le taux **B2B** de la famille.
   /// Reçu plutôt que déduit : la plateforme codait 5,5 % en dur pour tout, y
@@ -237,6 +240,14 @@ model CatalogItem {
   /// `NULL` n'est pas la chaîne vide : rien d'écrit n'est pas une ligne effacée,
   /// et l'écran de réception doit pouvoir dire lequel des deux vient d'arriver.
   note String?
+
+  /// **Les traductions du nom et de la ligne** (lot des langues, 2026-10-18 —
+  /// `documentation/webhooks/plan-webhook-vitrine.md` §6) : `{ "en": …, "it": … }`,
+  /// le français restant dans `name` et `note`. Reçues du fait de la fiche ;
+  /// `NULL` = pas encore reçues (ligne d'avant le lot, ou fait d'avant lui) — la
+  /// vitrine sert alors le français, et une réémission les remplit.
+  nameTranslations Json? @map("name_translations")
+  noteTranslations Json? @map("note_translations")
 
   /// Le **packshot** — les quatre colonnes ne servent qu'ensemble.
   ///

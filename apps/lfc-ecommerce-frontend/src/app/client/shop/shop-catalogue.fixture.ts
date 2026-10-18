@@ -41,6 +41,7 @@ function item(over: Partial<ShopItemView> & Pick<ShopItemView, 'sku' | 'name'>):
     vatRatePercent: 5.5,
     shelfId: 'cat_vien',
     isFeatured: false,
+    audience: 'both',
     ...over,
   };
 }

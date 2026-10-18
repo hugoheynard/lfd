@@ -136,6 +136,7 @@ describe('la carte', () => {
     vatRatePercent: 5.5,
     shelfId: 'fam-boissons',
     isFeatured: false,
+    audience: 'both',
   };
 
   it('écrit le prix HT au pro, arrondi au centime, et TTC au particulier', () => {

@@ -5,6 +5,7 @@ import { z } from "zod";
 import type { DurableEvent, DurableFact } from "../../../../platform/outbox/durable-event.js";
 import { TechnicalError } from "../../../../platform/shared/errors/app-error.js";
 import type { CatalogFamilyFactBody } from "./catalog-facts.js";
+import { catalogTranslationsSchema } from "./translations.js";
 
 /** Nom STABLE du fait, clé de routage vers `@DurableHandler`. */
 export const PIM_CATALOG_CATEGORY_CHANGED = "pim.catalog_category_changed";
@@ -19,6 +20,8 @@ export const PIM_CATALOG_CATEGORY_CHANGED = "pim.catalog_category_changed";
 export const catalogFamilyFactSchema = syncCategorySchema.extend({
   audience: operationAudienceSchema,
   archived: z.boolean(),
+  // Lot des langues (2026-10-18) : absent d'un fait émis avant lui, lu `null`.
+  nameTranslations: catalogTranslationsSchema,
 });
 
 const payloadSchema = z.object({

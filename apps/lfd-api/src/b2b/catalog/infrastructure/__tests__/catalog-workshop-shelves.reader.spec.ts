@@ -1,3 +1,4 @@
+import { NO_TRANSLATIONS } from "../../domain/catalog-translations.js";
 import type { CatalogFamily } from "../../domain/catalog-family.js";
 import { CatalogReader, type ResolvedCatalogItem } from "../../domain/ports/catalog.reader.js";
 import { family, PAINS, VIENNOISERIES } from "../../domain/__tests__/families.fixture.js";
@@ -18,6 +19,8 @@ function item(productSku: string, of: CatalogFamily): ResolvedCatalogItem {
     vatRate: 5.5,
     categoryId: of.id,
     categoryName: of.name,
+    audience: "both",
+    translations: { name: NO_TRANSLATIONS, note: NO_TRANSLATIONS, categoryName: NO_TRANSLATIONS },
     family: of,
     isDefault: true,
     isFeatured: false,

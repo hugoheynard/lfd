@@ -1,10 +1,23 @@
-import type { ShopCatalogueView } from "@lfd/contracts";
-import { Controller, Get } from "@nestjs/common";
+import { contentLocales, type ContentLocale, type ShopCatalogueView } from "@lfd/contracts";
+import { Controller, Get, Query } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
 import { Throttle } from "@nestjs/throttler";
+import { z } from "zod";
 
 import { Public } from "../../../platform/auth/public.decorator.js";
+import { ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
 import { ReadShopCatalogueQuery } from "../application/queries/read-shop-catalogue.js";
+import { CATALOG_SOURCE_LANGUAGE } from "../domain/catalog-translations.js";
+
+/**
+ * `?lang=fr|en|it`, facultatif — absent, le français : la vue d'avant le lot
+ * des langues, que la boutique déployée lit encore. Une langue inconnue est un
+ * 400 qui la nomme, pas un repli muet : un lecteur qui demande `de` doit
+ * apprendre qu'on ne la sert pas.
+ */
+const languageQuerySchema = z
+  .enum(contentLocales, `langue inconnue : « lang » accepte ${contentLocales.join(", ")}`)
+  .default(CATALOG_SOURCE_LANGUAGE);
 
 /**
  * **Le catalogue de la boutique**, en un appel et sans jeton.
@@ -33,6 +46,10 @@ import { ReadShopCatalogueQuery } from "../application/queries/read-shop-catalog
  * voyagent ensemble : deux routes rendraient possible un état où la vitrine
  * connaît des articles dont elle ignore le rayon, et doubleraient le coût d'une
  * ouverture de boutique.
+ *
+ * `?lang=en|it` (lot des langues, 2026-10-18) : noms, lignes et rayons dans
+ * cette langue, en français quand le référentiel ne les a pas traduits. La
+ * vitrine de l'agence (lot W) relira la même vue dans les trois langues.
  */
 @Controller("shop/catalogue")
 @Public()
@@ -41,9 +58,11 @@ export class ShopCatalogueController {
   constructor(private readonly queries: QueryBus) {}
 
   @Get()
-  read(): Promise<ShopCatalogueView> {
+  read(
+    @Query("lang", new ZodQuery(languageQuerySchema)) language: ContentLocale,
+  ): Promise<ShopCatalogueView> {
     return this.queries.execute<ReadShopCatalogueQuery, ShopCatalogueView>(
-      new ReadShopCatalogueQuery(),
+      new ReadShopCatalogueQuery(language),
     );
   }
 }

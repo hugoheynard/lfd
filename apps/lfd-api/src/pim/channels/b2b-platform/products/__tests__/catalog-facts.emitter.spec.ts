@@ -60,6 +60,7 @@ const FAMILY: CatalogFamilyFactBody = {
   vatRatePercent: 5.5,
   audience: "both",
   archived: false,
+  nameTranslations: {},
 };
 
 function body(id: string): CatalogProductFactBody {
@@ -74,6 +75,7 @@ function body(id: string): CatalogProductFactBody {
       categoryId: FAMILY.id,
       kind: "daily",
       note: null,
+      noteTranslations: {},
       image: null,
       thumbnail: null,
       operationOnly: false,

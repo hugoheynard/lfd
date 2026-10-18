@@ -669,6 +669,7 @@ export type {
   ShopImageFocal,
   ShopImageView,
   ShopItemOperationView,
+  ShopItemAudience,
   ShopItemView,
   ShopOperationState,
   ShopOperationText,

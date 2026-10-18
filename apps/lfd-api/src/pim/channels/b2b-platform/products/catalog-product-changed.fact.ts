@@ -8,6 +8,7 @@ import {
   catalogFamilyFactSchema,
 } from "./catalog-category-changed.fact.js";
 import type { CatalogProductFactBody } from "./catalog-facts.js";
+import { catalogTranslationsSchema } from "./translations.js";
 
 /** Nom STABLE du fait, clé de routage vers `@DurableHandler`. */
 export const PIM_CATALOG_PRODUCT_CHANGED = "pim.catalog_product_changed";
@@ -29,8 +30,12 @@ const payloadSchema = z.object({
   audience: operationAudienceSchema,
   // Lot 3 : absent d'un fait émis avant lui, lu `null` — « on ne sait pas ».
   audienceInherited: z.boolean().nullable().default(null),
-  product: syncProductSchema.omit({ variants: true }),
-  variants: z.array(syncVariantSchema),
+  // Lot des langues (2026-10-18) : les traductions sont absentes d'un fait
+  // émis avant lui, et lues `null` — le récepteur sert alors le français.
+  product: syncProductSchema
+    .omit({ variants: true })
+    .extend({ noteTranslations: catalogTranslationsSchema }),
+  variants: z.array(syncVariantSchema.extend({ nameTranslations: catalogTranslationsSchema })),
   gaps: z.record(z.string(), z.array(z.string().min(1))),
   family: catalogFamilyFactSchema,
 });

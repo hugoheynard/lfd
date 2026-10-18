@@ -10,6 +10,7 @@ import type {
   IncoProjection,
   IncoProjector,
 } from "../../../allergens/domain/services/inco-projector.js";
+import type { CatalogTranslations } from "./translations.js";
 import type { CategoryVatPercents } from "../../../catalogue/shared/domain/ports/catalogue-reader.js";
 import type { VariantRecord } from "../../../catalogue/product/domain/ports/product.repository.js";
 
@@ -43,6 +44,8 @@ const B2B_CONTEXT_KEY = "b2b";
 export interface Showcase {
   /** `null` = aucun éditorial saisi. La chaîne vide serait une ligne effacée. */
   readonly note: string | null;
+  /** Les traductions de la ligne — vides quand rien n'est traduit, ou rien d'écrit. */
+  readonly noteTranslations: CatalogTranslations;
   readonly image: SyncMedia | null;
   /** La vignette de rayon — `null` si la fiche n'en désigne pas. */
   readonly thumbnail: SyncMedia | null;

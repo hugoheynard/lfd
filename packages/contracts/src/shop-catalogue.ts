@@ -16,9 +16,26 @@
  * servie sans jeton ; ce qu'on y ajoute est public le jour du déploiement.
  */
 
+/**
+ * **Les langues de la vue** (lot des langues, 2026-10-18 —
+ * `documentation/webhooks/plan-webhook-vitrine.md` §6).
+ *
+ * `GET /shop/catalogue?lang=en` rend `name` et `note` des articles et `name`
+ * des rayons dans la langue demandée, **en français quand le référentiel ne
+ * les a pas traduits** ; sans paramètre, en français — la vue d'avant ce lot.
+ * La FORME ne change pas avec la langue : un paramètre plutôt que des champs
+ * traduits en plus, pour que la boutique ne télécharge que la langue qu'elle
+ * affiche et qu'un lecteur d'avant ne voie aucune différence. Les opérations
+ * portent déjà leurs trois langues ({@link ShopOperationText}) et ne changent
+ * pas avec le paramètre.
+ *
+ * Les valeurs sont celles de `contentLocales` (`fr`, `en`, `it`).
+ */
+
 /** Un rayon, tel que la vitrine le range. */
 export interface ShopShelfView {
   readonly id: string;
+  /** Dans la langue demandée (`?lang=`), en français sinon. */
   readonly name: string;
   /** L'ordre voulu par le référentiel — la vitrine ne trie pas elle-même. */
   readonly position: number;
@@ -62,8 +79,12 @@ export interface ShopItemView {
    * que la caisse refuse.
    */
   readonly sku: string;
+  /** Dans la langue demandée (`?lang=`), en français quand le référentiel ne l'a pas traduit. */
   readonly name: string;
-  /** La ligne sous le nom. `null` = le référentiel n'en a pas écrit. */
+  /**
+   * La ligne sous le nom. `null` = le référentiel n'en a pas écrit — dans
+   * toutes les langues. Traduite comme {@link name}.
+   */
   readonly note: string | null;
   readonly image: ShopImageView | null;
   /**
@@ -121,8 +142,14 @@ export interface ShopItemView {
    */
   readonly unitPriceTtcCents: number;
   /**
-   * **Le tarif catalogue pro, à barrer** — **absent** quand il n'y a rien à
-   * barrer.
+   * **Le tarif à barrer** — l'étiquette publique sur la route publique, le
+   * tarif du canal pro sur la route reconnue — **absent** quand il n'y a rien
+   * à barrer.
+   *
+   * ⚠️ Ce JSDoc disait « le tarif catalogue pro » pour les deux routes jusqu'au
+   * 2026-10-18 (relevé par `vitruve`) : sur `GET /shop/catalogue`, le tarif
+   * est l'étiquette publique d'avant promotion (`servedPriceOf`, audience
+   * `public`), jamais un tarif pro.
    *
    * Optionnel, donc **absent DU FIL** quand il n'y a rien à barrer, plutôt que
    * présent à `null`. Ce n'est pas une coquetterie : un e2e énumère les clés de
@@ -150,8 +177,21 @@ export interface ShopItemView {
   /** Le taux applicable, en pourcentage (5.5, 10). Un article sans taux ne sort pas d'ici. */
   readonly vatRatePercent: number;
   readonly shelfId: string;
-  /** La pièce qui ne doit pas se noyer dans son rayon. */
+  /** La pièce qui ne doit pas se noyer dans son rayon — mise en avant POUR CE LECTEUR. */
   readonly isFeatured: boolean;
+  /**
+   * **À qui l'article se vend**, tel que le référentiel le dit (Hugo,
+   * 2026-10-18, option a de B1 — `plan-webhook-vitrine.md` §5 point 5) :
+   * `both` se lit « aussi pour les professionnels ».
+   *
+   * 🔴 La route publique ne rend que `public` ou `both` : un article réservé
+   * aux pros n'y sort pas (`servedTo`). `pro` n'apparaît que sur la route
+   * reconnue d'un client pro (`/shop/catalogue/mine`), qui partage cette vue.
+   *
+   * ⚠️ **Un élargissement ASSUMÉ** de la surface publique : il ne dit rien que
+   * le rayon pro ne montre déjà, et l'e2e qui énumère les clés le nomme.
+   */
+  readonly audience: ShopItemAudience;
   /**
    * **L'opération datée qui rend cet article vendable**, pour un article
    * « vendu seulement pendant une opération » (D3, D8 de
@@ -168,6 +208,9 @@ export interface ShopItemView {
    */
   readonly operation?: ShopItemOperationView;
 }
+
+/** À qui un article se vend — une VALEUR du référentiel, recopiée telle quelle. */
+export type ShopItemAudience = "public" | "pro" | "both";
 
 /** L'état d'une opération montrée, calculé à l'horloge du serveur (D2). */
 export type ShopOperationState = "announced" | "open" | "closed";

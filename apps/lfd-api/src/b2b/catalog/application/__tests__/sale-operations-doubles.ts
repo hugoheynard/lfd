@@ -1,3 +1,4 @@
+import { NO_TRANSLATIONS } from "../../domain/catalog-translations.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import {
   CatalogOperationsReader,
@@ -31,6 +32,8 @@ export function catalogItem(
     orderTimeLimit: null,
     categoryId: "fam-patisseries",
     categoryName: "Pâtisseries",
+    audience: "both",
+    translations: { name: NO_TRANSLATIONS, note: NO_TRANSLATIONS, categoryName: NO_TRANSLATIONS },
     family: {
       id: "fam-patisseries",
       name: "Pâtisseries",

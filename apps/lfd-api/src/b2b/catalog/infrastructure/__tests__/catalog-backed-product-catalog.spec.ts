@@ -1,3 +1,4 @@
+import { NO_TRANSLATIONS } from "../../domain/catalog-translations.js";
 import { CatalogReader, type ResolvedCatalogItem } from "../../domain/ports/catalog.reader.js";
 import { family, PAINS, VIENNOISERIES } from "../../domain/__tests__/families.fixture.js";
 import { CatalogBackedProductCatalog } from "../catalog-backed-product-catalog.js";
@@ -21,6 +22,8 @@ const CROISSANT: ResolvedCatalogItem = {
   vatRate: 5.5,
   categoryId: VIENNOISERIES.id,
   categoryName: VIENNOISERIES.name,
+  audience: "both",
+  translations: { name: NO_TRANSLATIONS, note: NO_TRANSLATIONS, categoryName: NO_TRANSLATIONS },
   family: VIENNOISERIES,
   isDefault: true,
   isFeatured: false,

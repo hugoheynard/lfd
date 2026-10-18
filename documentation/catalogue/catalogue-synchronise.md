@@ -114,21 +114,29 @@ d'appliquer les migrations (`prisma-publication-sequence.ts:57-65`).
 
 | Fait                           | Clé                                       | Porte                                                                                                                                                                   |
 | ------------------------------ | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pim.catalog_product_changed`  | `…:<productId>:<seq>`                     | `status`, `audience` effective, `audienceInherited`, la fiche, ses déclinaisons **complètes**, `gaps` des autres, sa famille                                            |
-| `pim.catalog_category_changed` | `…:<categoryId>:<seq>`                    | la famille : nom, parent, position, taux, `audience`, `archived`                                                                                                        |
+| `pim.catalog_product_changed`  | `…:<productId>:<seq>`                     | `status`, `audience` effective, `audienceInherited`, la fiche, ses déclinaisons **complètes**, `gaps` des autres, sa famille ; les traductions (ci-dessous)             |
+| `pim.catalog_category_changed` | `…:<categoryId>:<seq>`                    | la famille : nom (et ses traductions), parent, position, taux, `audience`, `archived`                                                                                   |
 | `pim.catalog_rules_changed`    | (règles globales, un numéro par émission) | l'échelle entière des limites de commande, relue en base sous verrou consultatif (`apps/lfd-api/src/pim/channels/b2b-platform/products/catalog-rules.emitter.ts:35-45`) |
 
-Formes : `apps/lfd-api/src/pim/channels/b2b-platform/products/catalog-product-changed.fact.ts:24-36`,
-`apps/lfd-api/src/pim/channels/b2b-platform/products/catalog-category-changed.fact.ts:19-29`.
+Formes : `apps/lfd-api/src/pim/channels/b2b-platform/products/catalog-product-changed.fact.ts:25-41`,
+`apps/lfd-api/src/pim/channels/b2b-platform/products/catalog-category-changed.fact.ts:20-32`.
 Elles reprennent les schémas du fil du push (`@lfd/catalog-sync`) : un article
 émis et un article poussé se valident par les mêmes règles. Deux écarts
 voulus : zéro déclinaison est admis (une fiche inactive s'émet quand même), et
 la fiche porte statut, audience, manques et famille.
 
+**Les traductions** (lot des langues, 2026-10-18 —
+[`plan-webhook-vitrine.md`](../webhooks/plan-webhook-vitrine.md) §6) : le
+français reste dans `name` et `note` ; à côté, `nameTranslations` sur chaque
+déclinaison et sur la famille, `noteTranslations` sur la fiche, `{ en?, it? }`
+(`apps/lfd-api/src/pim/channels/b2b-platform/products/translations.ts:24`).
+Un fait émis avant le lot n'en porte pas : le champ se lit `null`, « on ne
+sait pas » (`translations.ts:47`), et le fait reste lisible.
+
 Ce qu'un fait **n'est pas** :
 
 - **un diff** — c'est l'instantané complet ; il se rejoue seul, et le plus
-  récent gagne (`catalog-product-changed.fact.ts:43-45`) ;
+  récent gagne (`catalog-product-changed.fact.ts:48-50`) ;
 - **une entrée de journal** — le référentiel trace déjà la décision
   (`product.*`) ; le fait en est la conséquence (`:49-50`) ;
 - **le porteur des règles globales** — une limite de commande change en une
@@ -142,12 +150,12 @@ Ce qu'un fait **n'est pas** :
 
 Les faits vivent **dans le canal**, pas dans le catalogue : un fait qu'un autre
 bloc consomme fait partie de la surface publiée, au même titre qu'un port
-(`catalog-product-changed.fact.ts:56-60`). `pim → b2b` reste interdit ; la
+(`catalog-product-changed.fact.ts:61-65`). `pim → b2b` reste interdit ; la
 plateforme écoute un fait du canal.
 
 ### La projection : ce qui est complet part, le reste est nommé
 
-`projectProductFact` (`apps/lfd-api/src/pim/channels/b2b-platform/products/catalog-facts.ts:135-170`)
+`projectProductFact` (`apps/lfd-api/src/pim/channels/b2b-platform/products/catalog-facts.ts:152-189`)
 écarte les déclinaisons arrêtées, et range chaque déclinaison incomplète dans
 `gaps` avec ce qui lui manque, **au lieu de l'écarter en silence** comme le
 push. Les clés de manque (`apps/lfd-api/src/pim/catalogue/product/domain/services/variant-completeness.ts:8-22`) :
@@ -277,10 +285,10 @@ dans la transaction de la livraison :
 1. **la famille** est créée si la plateforme ne la connaît pas —
    `ON CONFLICT DO NOTHING`, jamais une mise à jour : la fiche peut arriver
    avant le fait de sa famille, et seul celui-ci la met à jour sous son
-   numéro (`apps/lfd-api/src/b2b/catalog/infrastructure/prisma-catalog-product-facts.projection.ts:73-92`) ;
+   numéro (`apps/lfd-api/src/b2b/catalog/infrastructure/prisma-catalog-product-facts.projection.ts:76-96`) ;
 2. **l'entrée** `catalog_entries` s'écrit par un `INSERT … ON CONFLICT DO
 UPDATE … WHERE applied_seq < EXCLUDED.applied_seq`
-   (`prisma-catalog-product-facts.projection.ts:45-71`). La ligne est
+   (`prisma-catalog-product-facts.projection.ts:48-74`). La ligne est
    verrouillée par l'`ON CONFLICT` : deux livraisons de la même fiche passent
    l'une après l'autre. **Zéro ligne écrite, et rien d'autre ne s'écrit** — un
    fait ancien rejoué, ou livré deux fois, est inerte ;
@@ -288,23 +296,23 @@ UPDATE … WHERE applied_seq < EXCLUDED.applied_seq`
    (`catalog_items`, upsert par SKU). Une ligne **neuve** naît « à valider »
    pour chaque audience qu'elle sert ; une ligne existante n'y repasse jamais,
    ni sur une modification ni sur un élargissement d'audience
-   (`putOnSale`, `prisma-catalog-product-facts.projection.ts:96-128`). **Un
+   (`putOnSale`, `prisma-catalog-product-facts.projection.ts:98-135`). **Un
    seul upsert pour toutes les déclinaisons** de la fiche, en SQL
    (`apps/lfd-api/src/b2b/catalog/infrastructure/catalog-item-upsert.ts`) :
    une instruction par article allongeait la transaction de la livraison
    avec la taille de la fiche (P2028, `ee8ba0e75`, 2026-10-17) ;
 4. **tout autre SKU de la fiche** encore en vente est retiré — fiche inactive
    ou archivée, déclinaison devenue incomplète, SKU renommé — par un
-   `updateMany` conditionné sur `STILL_SOLD` (`withdrawOthers`, `:130-139`). Retiré, pas
+   `updateMany` conditionné sur `STILL_SOLD` (`withdrawOthers`, `:137-146`). Retiré, pas
    supprimé : la ligne reste ;
 5. les limites de commande des articles de la fiche sont redescendues de
    l'échelle reçue.
 
 Le prix reçu est tracé dans `catalog_price_history` par la règle partagée —
-le prix du référentiel seul, en une écriture par lot (`tracePrices`, `:141-161`).
+le prix du référentiel seul, en une écriture par lot (`tracePrices`, `:149-168`).
 
 🔴 **Le récepteur n'écrit jamais `catalog_item_overrides`**
-(`prisma-catalog-product-facts.projection.ts:24-27`) et ne passe pas par
+(`prisma-catalog-product-facts.projection.ts:25-28`) et ne passe pas par
 `saveMany`, qui supprimerait une décision quand l'agrégat n'en porte plus. Un
 fait réécrit les colonnes reçues du référentiel, rien d'autre. C'est la
 décision de structure la plus ancienne du catalogue, et elle tient toujours :
@@ -320,6 +328,29 @@ référentiel n'est jamais supprimée : elle pose `withdrawn_at` ; ses articles
 sortent de la vente par les faits de leurs fiches. Appliquée, elle fait
 redescendre les limites de **tous** les articles — un déplacement de famille
 change la lignée de ses descendantes.
+
+### Les langues reçues, et la vue publique (2026-10-18)
+
+Le récepteur range les traductions dans trois colonnes `jsonb` nullables —
+`catalog_items.name_translations`, `note_translations`,
+`catalog_categories.name_translations` (migration additive
+`20261018220000_les_langues_du_catalogue`) —, réécrites à chaque fait
+(`prisma-catalog-product-facts.projection.ts:84`, `:115-116` ;
+`prisma-catalog-family-facts.projection.ts:26`). `NULL` = pas encore reçues :
+une ligne d'avant le lot sert le français jusqu'à une réémission.
+
+`GET /shop/catalogue?lang=fr|en|it` (`fr` par défaut, autre valeur refusée
+en 400) rend `name`, `note` et le nom des rayons dans la langue demandée, en
+français texte par texte quand rien n'est traduit
+(`apps/lfd-api/src/b2b/catalog/domain/catalog-translations.ts:33-52`,
+`application/shop-catalogue-view.ts:98`). La forme de la vue ne change pas
+avec la langue ; les opérations portent déjà leurs trois langues. La route
+reconnue (`/shop/catalogue/mine`) sert le français.
+
+Chaque article de la vue porte aussi son **audience**
+(`ShopItemView.audience`, `packages/contracts/src/shop-catalogue.ts:194`) :
+`public` ou `both` sur la route publique, `pro` possible sur la route
+reconnue.
 
 ### `servedTo` — la règle unique de ce qui est servi
 
@@ -400,7 +431,7 @@ La famille porte une audience obligatoire, la fiche une audience
 **nullable** : `null` hérite de la famille (`effectiveAudience`,
 `apps/lfd-api/src/pim/catalogue/shared/domain/value-objects/audience.ts:35-40`).
 Le fait porte l'audience **effective** et dit si elle est héritée
-(`catalog-facts.ts:137`, `:154`). Changer l'audience d'une famille émet la
+(`catalog-facts.ts:154`, `:171`). Changer l'audience d'une famille émet la
 famille dans la transaction, puis réémet ses fiches
 (`set-category-audience.ts:41-51`). Changer celle d'une fiche ne refuse rien,
 même sur une fiche active : l'audience se juge à l'activation.

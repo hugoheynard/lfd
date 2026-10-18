@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
+import { Prisma } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { Clock } from "../../../platform/time/clock.js";
@@ -80,6 +81,7 @@ export class PrismaCatalogProductFactsProjection extends CatalogProductFactsProj
         {
           id: family.id,
           name: family.name,
+          nameTranslations: family.nameTranslations ?? Prisma.DbNull,
           slug: family.slug,
           parentId: family.parentId,
           position: family.position,
@@ -107,6 +109,11 @@ export class PrismaCatalogProductFactsProjection extends CatalogProductFactsProj
         ...pimFactsColumns(facts),
         audience,
         variantId: facts.variantId,
+        // Les traductions (lot des langues) : réécrites à chaque fait, `null`
+        // compris — un fait d'avant elles dit « on ne sait pas », et la
+        // vitrine sert alors le français jusqu'au suivant.
+        nameTranslations: facts.nameTranslations,
+        noteTranslations: facts.noteTranslations,
         withdrawnAt: null,
         publicReviewPending: awaitsReview(audience, "public"),
         proReviewPending: awaitsReview(audience, "pro"),

@@ -1,7 +1,8 @@
 # Plan — le webhook de la vitrine (lot W)
 
-> 📐 **Doc-first, rien n'est bâti** (décidé le 2026-10-15, rassemblé ici le
-> 2026-10-18). Le texte d'origine du lot W, contredit par `vitruve` le
+> 📐 **Doc-first : le lot W n'est pas bâti** (décidé le 2026-10-15, rassemblé
+> ici le 2026-10-18). Seul son **lot préalable des langues** l'est (§6,
+> 2026-10-18, non commité à l'écriture de ces lignes). Le texte d'origine du lot W, contredit par `vitruve` le
 > 2026-10-15, est repris **mot pour mot** au §2 ; le §1 dit ce qui a changé
 > dans le dépôt depuis, relu le 2026-10-18. **Frontière de sécurité** (données
 > vers un tiers, une clé de lecture, un secret de signature) : `vitruve` à
@@ -25,7 +26,7 @@ Webhook **léger** : il prévient, l'agence relit.
 | Le cron `*/5` existe toujours (`apps/lfd-api/container/worker.ts:472`, `KEEP_WARM_CRON`)                       | Le battement de W3′ est disponible.                                                                                                                                                                                                                                               |
 | La politique de relance de l'outbox existe (`apps/lfd-api/src/platform/outbox/retry-policy.ts`)                | W2′ la reprend.                                                                                                                                                                                                                                                                   |
 
-La vue que la vitrine lirait est `ShopCatalogueView` (`packages/contracts/src/shop-catalogue.ts:258` :
+La vue que la vitrine lirait est `ShopCatalogueView` (`packages/contracts/src/shop-catalogue.ts:301` :
 `shelves`, `items`, `operations`), celle de `GET /shop/catalogue`, publique.
 
 ## 2. Le lot W tel que décidé et contredit le 2026-10-15
@@ -177,7 +178,7 @@ l'éprouver **sur la route `/vitrine` elle-même**.
 `companyId: null` sur les règles « toute audience » ; la stabilité des URL
 d'images pour un tiers qui les garde en cache ; la **langue** de `name` et
 `note` (la vue publique n'a pas de paramètre de langue — l'agence recevra le
-français) ; la durée réelle d'un balayage sous le cron du Worker.
+français ; ⚠️ **périmé le 2026-10-18** : `?lang=` existe, cf. §6) ; la durée réelle d'un balayage sous le cron du Worker.
 
 ### Questions à Hugo, mises à jour
 
@@ -215,3 +216,83 @@ français) ; la durée réelle d'un balayage sous le cron du Worker.
    français ; il faut lire ce que le commerce reçoit du référentiel en langues
    et, si les traductions ne descendent pas, les faire descendre (lot à part,
    avant W).
+
+## 6. Les langues — ce qui a été lu, et le lot préalable bâti (2026-10-18)
+
+Lot à part, avant W (décision 7 du §5) : faire descendre les traductions du
+référentiel jusqu'à la vue publique. **Bâti le 2026-10-18** ; ce qui suit dit
+d'abord l'état lu AVANT le lot (fichiers au commit `ccfa6b53f`), puis ce qui a
+été fait.
+
+### 6.1 Ce qui a été lu (au commit `ccfa6b53f`)
+
+| Où                                                | Ce qui s'y trouvait                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Le référentiel                                    | Tout est `LocalizedText` (`{ fr, en?, it? }`, `packages/pim-contracts/src/shared.ts:15-37`) : le nom de la fiche (`apps/lfd-api/src/pim/catalogue/product/domain/entities/product.ts:52`), celui de la déclinaison (`entities/variant.ts:101`), celui de la famille (`catalogue/shared/domain/ports/catalog-facts.reader.ts:15`), la ligne courte (`descriptionShort`, `catalogue/product/domain/ports/editorial-reader.ts:16`). |
+| Les faits (`pim/channels/b2b-platform/products/`) | **Tout aplati en français.** Famille : `name: family.name.fr` (`catalog-facts.ts:112`). Fiche : `name: product.name.fr` (`:158`), `note: showcase?.note` (`:161`), elle-même `descriptionShort?.[SOURCE_LOCALE]` (`showcase.ts:50`). Déclinaison : `name: frenchOf(variant.name)` (`projection.ts:89`). Les schémas du fil le disent (`packages/catalog-sync/src/snapshot.ts:34-37`, `:366`, `:384`).                            |
+| Le récepteur du commerce                          | Recopie ces chaînes : `name: variant.name`, `note: product.note` (`apps/lfd-api/src/b2b/catalog/application/handlers/catalog-fact-mapping.ts:37`, `:50`), `name: family.name` (`:72`).                                                                                                                                                                                                                                           |
+| Ce que le commerce range                          | Une colonne texte, française : `catalog_categories.name`, `catalog_items.name`, `catalog_items.note` (`apps/lfd-api/prisma/schema/public/catalog.prisma:90`, `:140`, `:239`).                                                                                                                                                                                                                                                    |
+| `GET /shop/catalogue`                             | `ShopItemView.name` / `note` et `ShopShelfView.name` sont des chaînes, recopiées (`apps/lfd-api/src/b2b/catalog/application/shop-catalogue-view.ts:65-66`, `:103`). Aucun paramètre de langue.                                                                                                                                                                                                                                   |
+| Les opérations                                    | **Déjà localisées** : `ShopOperationView.name` / `lede` sont des `ShopOperationText` `{ fr, en?, it? }` (`packages/contracts/src/shop-catalogue.ts:182`, `:200`), saisies au commerce. Rien à faire.                                                                                                                                                                                                                             |
+| Les textes de la boutique                         | Déjà en trois langues : dictionnaires `apps/lfc-ecommerce-frontend/src/app/client/copy/fr.ts`, `en.ts`, `it.ts`, et les remplacements publiés de `shop/copy`. Rien à faire ici ; c'est `GET /vitrine/textes` (W1′, S1) qui les servira.                                                                                                                                                                                          |
+
+**Conclusion lue** : les traductions existaient au référentiel et ne
+descendaient pas ; le commerce ne savait que le français.
+
+### 6.2 Ce qui a été bâti
+
+- **Les faits portent les traductions**, dans des champs ajoutés, la source
+  restant dans `name` / `note` : `nameTranslations` sur chaque déclinaison et
+  sur la famille, `noteTranslations` sur la fiche — `{ en?, it? }`
+  (`apps/lfd-api/src/pim/channels/b2b-platform/products/translations.ts:24`,
+  `catalog-facts.ts:129`, `:179`, `:218`). **Un fait d'avant le lot reste
+  lisible** : le champ absent se lit `null`, « on ne sait pas »
+  (`translations.ts:47`, `catalog-product-changed.fact.ts:37-38`,
+  `catalog-category-changed.fact.ts:24`). Une langue inconnue ou le français
+  y sont refusés.
+- **Le commerce les range** dans trois colonnes `jsonb` nullables, par une
+  migration additive (`20261018220000_les_langues_du_catalogue`) :
+  `catalog_items.name_translations`, `note_translations`,
+  `catalog_categories.name_translations`. Écrites par le seul récepteur
+  (`prisma-catalog-product-facts.projection.ts:84`, `:115-116` ;
+  `prisma-catalog-family-facts.projection.ts:26`). Frontière tenue : le
+  commerce lit un fait du canal, jamais la base du référentiel.
+- **La vue publique les sert par un paramètre** : `GET /shop/catalogue?lang=en`
+  (`fr` par défaut, `de` refusé en 400) rend `name`, `note` et le nom des
+  rayons dans la langue demandée, **en français texte par texte** quand le
+  référentiel n'a pas traduit (`inLanguage`,
+  `apps/lfd-api/src/b2b/catalog/domain/catalog-translations.ts:33-52` ;
+  `inShopLanguage`, `application/shop-catalogue-view.ts:98`). Appliquée après
+  le prix : rien de ce qui se range, se vend ou se tarife ne dépend de la
+  langue.
+- **Pourquoi un paramètre et pas des champs traduits en plus** : la forme de
+  la vue ne change pas (l'e2e qui fige les clés n'a gagné que `audience`) ;
+  la boutique déployée, qui n'envoie rien, lit exactement la même chose ; elle
+  ne téléchargera que la langue qu'elle affiche quand elle la demandera. Le
+  prix pour W : **trois lectures** au lieu d'une pour un balayage, ou une
+  composition à trois langues du même calcul — à trancher au lot W, sans
+  changer la vue.
+- **L'audience sort** (décision 5) : `ShopItemView.audience`
+  (`packages/contracts/src/shop-catalogue.ts:194`), `public` ou `both` sur la
+  route publique ; la boutique la reçoit aussi. Le JSDoc de
+  `catalogPriceMillicents` dit désormais « l'étiquette publique » sur la route
+  publique (M1).
+
+**Le passé** : les lignes existantes restent à `NULL` et servent le français.
+Un **« tout réémettre »** (`POST /pim/channels/b2b/reemit`, le bouton de
+l'écran des canaux) les remplit — à lancer une fois le lot déployé.
+
+### 6.3 Ce qui reste, pour W ou après
+
+- **La boutique ne demande pas encore sa langue.** `ShopCatalogueStore` ne
+  recharge qu'à un changement de lecteur, et la route reconnue
+  (`/shop/catalogue/mine`) n'a pas de paramètre (elle sert le français) :
+  brancher `ClientLocale` demande de recharger à chaque changement de langue,
+  sur les deux routes. Laissé pour plus tard ; le paquet initial n'a pas
+  bougé.
+- **Le nom de l'article est celui de sa déclinaison par défaut** — c'est lui
+  qui est traduit. Le nom traduit de la _fiche_ ne descend pas : aucune vue
+  ne le lit.
+- **Les textes alternatifs des images** (`alt`) restent en français.
+- **W** décide comment il lit les trois langues (6.2) et doit l'éprouver sur
+  `/vitrine` elle-même.
