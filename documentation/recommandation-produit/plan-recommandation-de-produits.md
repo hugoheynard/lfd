@@ -13,6 +13,9 @@
 > public (§6, RGPD) — si Hugo tranche Q1 « public d'abord », ce point mérite
 > une contradiction avant de bâtir.
 
+> **Le public** : ce qu'il faut pour recommander à un particulier est dans
+> [`historique-du-particulier.md`](historique-du-particulier.md) (2026-10-18).
+
 ## 0. La demande
 
 Hugo, 2026-10-17 : « un plan pour la recommandation de produit ».
