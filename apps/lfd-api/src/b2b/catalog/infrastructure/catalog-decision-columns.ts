@@ -6,14 +6,16 @@
  * `decided_public_ttc_cents`) n'y sont pas, et c'est le but : depuis le lot D
  * de `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`
  * (2026-10-15), le prix servi est celui du référentiel. Les colonnes restent
- * en base (CLAUDE.md §0), ni lues ni écrites. Un `include: { override: true }`
+ * en base (CLAUDE.md §0), ni lues ni écrites — comme `is_featured`, morte
+ * depuis le 2026-10-18 (une décision par audience l'a remplacée). Un `include: { override: true }`
  * les relirait sans que rien ne le dise ; tous les lecteurs de l'override
  * passent donc par cette sélection.
  */
 export const DECISION_COLUMNS = {
   isHidden: true,
   isHiddenPublic: true,
-  isFeatured: true,
+  isFeaturedPro: true,
+  isFeaturedPublic: true,
   decidedBy: true,
   decidedAt: true,
 } as const;

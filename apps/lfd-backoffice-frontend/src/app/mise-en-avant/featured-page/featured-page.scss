@@ -1,0 +1,51 @@
+.badge-copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.badge-texts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-lg);
+  margin: 0;
+}
+
+.badge-texts div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.badge-texts dt {
+  color: var(--fold-color-text-muted);
+}
+
+.badge-texts dd {
+  margin: 0;
+  font-weight: var(--fold-weight-medium);
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--fold-space-md);
+}
+
+.filter-search {
+  flex: 1 1 16rem;
+}
+
+.filter-family {
+  flex: 0 1 16rem;
+}
+
+.name {
+  display: block;
+  font-weight: var(--fold-weight-medium);
+}
+
+.muted {
+  color: var(--fold-color-text-muted);
+}

@@ -9,12 +9,14 @@ import type { CatalogItemState, LocalDecision } from "../domain/entities/catalog
  * `upsert`, et il en garde la propriété : une décision ajoutée à
  * `LocalDecision` sans colonne ici ne compile pas (`satisfies`). Les deux
  * colonnes de prix décidé n'y sont pas (lot D, 2026-10-15) : jamais écrites,
- * elles gardent ce qu'elles portaient.
+ * elles gardent ce qu'elles portaient. `is_featured` non plus depuis le
+ * 2026-10-18 : recopiée vers ses deux audiences, colonne morte.
  */
 const DECISION_SQL_NAMES = {
   isHidden: "is_hidden",
   isHiddenPublic: "is_hidden_public",
-  isFeatured: "is_featured",
+  isFeaturedPro: "is_featured_pro",
+  isFeaturedPublic: "is_featured_public",
   decidedBy: "decided_by",
 } as const satisfies Record<keyof LocalDecision, string>;
 
@@ -100,9 +102,19 @@ export async function writeDecisions(
     await db.catalogItemOverride.updateMany({
       where: {
         sku: { in: [...cleared] },
-        OR: [{ isHidden: true }, { isHiddenPublic: true }, { isFeatured: true }],
+        OR: [
+          { isHidden: true },
+          { isHiddenPublic: true },
+          { isFeaturedPro: true },
+          { isFeaturedPublic: true },
+        ],
       },
-      data: { isHidden: false, isHiddenPublic: false, isFeatured: false },
+      data: {
+        isHidden: false,
+        isHiddenPublic: false,
+        isFeaturedPro: false,
+        isFeaturedPublic: false,
+      },
     });
   }
   if (posed.length > 0) {

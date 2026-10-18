@@ -35,8 +35,10 @@ export const CATALOG_ITEM_FACTS = {
   shown: "catalog_item.shown",
   hiddenPublic: "catalog_item.hidden_public",
   shownPublic: "catalog_item.shown_public",
-  featured: "catalog_item.featured",
-  unfeatured: "catalog_item.unfeatured",
+  featuredPro: "catalog_item.featured_pro",
+  unfeaturedPro: "catalog_item.unfeatured_pro",
+  featuredPublic: "catalog_item.featured_public",
+  unfeaturedPublic: "catalog_item.unfeatured_public",
   publicReviewApproved: "catalog_item.public_review_approved",
   proReviewApproved: "catalog_item.pro_review_approved",
 } as const satisfies Readonly<Record<string, JournalFactType>>;
@@ -81,7 +83,7 @@ export class CatalogItemShownEvent extends CatalogItemFlagEvent {
   protected readonly type = CATALOG_ITEM_FACTS.shown;
 }
 
-/** Fait : **l'article est mis en avant** dans la boutique. */
+/** Fait : **l'article sort de la boutique publique**. */
 export class CatalogItemHiddenPublicEvent extends CatalogItemFlagEvent {
   protected readonly type = CATALOG_ITEM_FACTS.hiddenPublic;
 }
@@ -90,13 +92,31 @@ export class CatalogItemShownPublicEvent extends CatalogItemFlagEvent {
   protected readonly type = CATALOG_ITEM_FACTS.shownPublic;
 }
 
-export class CatalogItemFeaturedEvent extends CatalogItemFlagEvent {
-  protected readonly type = CATALOG_ITEM_FACTS.featured;
+/**
+ * Fait : **l'article est mis en avant chez les pros**.
+ *
+ * ⚠️ Les faits d'avant le 2026-10-18 (`catalog_item.featured` /
+ * `unfeatured`) ne disaient pas d'audience : ils restent au catalogue des
+ * faits, retirés, pour que le journal passé se lise. Un fait par audience
+ * plutôt qu'une charge `audience` : c'est la convention du masquage.
+ */
+export class CatalogItemFeaturedProEvent extends CatalogItemFlagEvent {
+  protected readonly type = CATALOG_ITEM_FACTS.featuredPro;
 }
 
-/** Fait : **l'article n'est plus mis en avant**. */
-export class CatalogItemUnfeaturedEvent extends CatalogItemFlagEvent {
-  protected readonly type = CATALOG_ITEM_FACTS.unfeatured;
+/** Fait : **l'article n'est plus mis en avant chez les pros**. */
+export class CatalogItemUnfeaturedProEvent extends CatalogItemFlagEvent {
+  protected readonly type = CATALOG_ITEM_FACTS.unfeaturedPro;
+}
+
+/** Fait : **l'article est mis en avant en boutique publique**. */
+export class CatalogItemFeaturedPublicEvent extends CatalogItemFlagEvent {
+  protected readonly type = CATALOG_ITEM_FACTS.featuredPublic;
+}
+
+/** Fait : **l'article n'est plus mis en avant en boutique publique**. */
+export class CatalogItemUnfeaturedPublicEvent extends CatalogItemFlagEvent {
+  protected readonly type = CATALOG_ITEM_FACTS.unfeaturedPublic;
 }
 
 /**

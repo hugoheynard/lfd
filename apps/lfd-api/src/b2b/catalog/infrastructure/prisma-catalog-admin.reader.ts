@@ -40,7 +40,8 @@ interface AdminRow {
   readonly override: {
     readonly isHidden: boolean;
     readonly isHiddenPublic: boolean;
-    readonly isFeatured: boolean;
+    readonly isFeaturedPro: boolean;
+    readonly isFeaturedPublic: boolean;
     readonly decidedBy: string | null;
     readonly decidedAt: Date;
   } | null;
@@ -123,7 +124,8 @@ function toView(row: AdminRow, authors: StaffAuthors): CatalogAdminItemView {
     audience: catalogAudienceOf(row.audience),
     publicReviewPending: row.publicReviewPending,
     proReviewPending: row.proReviewPending,
-    isFeatured: row.override?.isFeatured ?? false,
+    isFeaturedPro: row.override?.isFeaturedPro ?? false,
+    isFeaturedPublic: row.override?.isFeaturedPublic ?? false,
     operationOnly: row.operationOnly,
     decidedBy: row.override?.decidedBy ?? null,
     decidedByName: authors.nameOf(row.override?.decidedBy ?? null),

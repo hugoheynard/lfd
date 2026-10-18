@@ -170,6 +170,21 @@ describe('ProductTile', () => {
   });
 
   /**
+   * « Les incontournables » (Hugo, 2026-10-18) : la pastille dit
+   * « Incontournable » par défaut, plus « Best-seller ». Le texte reste
+   * redéfinissable dans Textes de la boutique (clé `product.bestSeller`).
+   */
+  it('dit « Incontournable » sur la pastille par défaut', () => {
+    const el = fixture.nativeElement as HTMLElement;
+
+    fixture.componentRef.setInput('product', { ...TEST_ITEMS[0], isFeatured: true });
+    fixture.detectChanges();
+
+    expect(el.querySelector('.badge')?.textContent).toContain('Incontournable');
+    expect(el.querySelector('.badge')?.textContent).not.toContain('Best-seller');
+  });
+
+  /**
    * Le texte court est sur TOUTES les cartes depuis le 2026-09-24 — il était
    * réservé au best-seller. Sans texte au référentiel, rien : pas de ligne vide.
    */

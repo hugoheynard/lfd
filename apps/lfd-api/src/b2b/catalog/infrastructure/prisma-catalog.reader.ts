@@ -73,7 +73,8 @@ interface ItemRow {
   readonly override: {
     readonly isHidden: boolean;
     readonly isHiddenPublic: boolean;
-    readonly isFeatured: boolean;
+    readonly isFeaturedPro: boolean;
+    readonly isFeaturedPublic: boolean;
   } | null;
 }
 
@@ -99,7 +100,7 @@ export class PrismaCatalogReader extends CatalogReader {
       return null;
     }
     const served = servedPriceOf(row, "pro");
-    return served === null ? null : resolve(row, served, await this.lineage([row]));
+    return served === null ? null : resolve(row, served, await this.lineage([row]), "pro");
   }
 
   /** Une seule ligne visée par index, jamais le catalogue entier chargé puis filtré. */
@@ -115,7 +116,7 @@ export class PrismaCatalogReader extends CatalogReader {
       return null;
     }
     const served = servedPriceOf(row, audience);
-    return served === null ? null : resolve(row, served, await this.lineage([row]));
+    return served === null ? null : resolve(row, served, await this.lineage([row]), audience);
   }
 
   async listDefaultsByProductSkus(
@@ -136,7 +137,7 @@ export class PrismaCatalogReader extends CatalogReader {
       if (!servedToViewer(row, audience) || served === null) {
         continue;
       }
-      resolved.set(row.productSku, resolve(row, served, lineage));
+      resolved.set(row.productSku, resolve(row, served, lineage, audience));
     }
     return resolved;
   }
@@ -177,7 +178,7 @@ export class PrismaCatalogReader extends CatalogReader {
         return [];
       }
       const served = servedPriceOf(row, audience);
-      return served === null ? [] : [resolve(row, served, lineage)];
+      return served === null ? [] : [resolve(row, served, lineage, audience)];
     });
   }
 
@@ -327,7 +328,16 @@ function billableRate(row: ItemRow): number | null {
  * pas dire « prix PIM 2,40 € · prix B2B 2,10 € », et un prix sans provenance ne
  * se défend pas devant un client qui le conteste.
  */
-function resolve(row: ItemRow, served: ServedPrice, lineage: Lineage): ResolvedCatalogItem {
+function featuredFor(row: ItemRow, viewer: ShopAudience): boolean {
+  return (viewer === "pro" ? row.override?.isFeaturedPro : row.override?.isFeaturedPublic) ?? false;
+}
+
+function resolve(
+  row: ItemRow,
+  served: ServedPrice,
+  lineage: Lineage,
+  viewer: ShopAudience,
+): ResolvedCatalogItem {
   return {
     sku: row.sku,
     productSku: row.productSku,
@@ -345,7 +355,9 @@ function resolve(row: ItemRow, served: ServedPrice, lineage: Lineage): ResolvedC
       path: lineage(row.category.id),
     },
     isDefault: row.isDefault,
-    isFeatured: row.override?.isFeatured ?? false,
+    // Mis en avant POUR CE LECTEUR (2026-10-18) : la tuile d'un pro ne dit
+    // « Incontournable » que de ce qu'on a mis en avant chez les pros.
+    isFeatured: featuredFor(row, viewer),
     allergens: frozenAllergens(row),
     orderTimeLimit: orderTimeLimitOf(row),
     note: row.note,

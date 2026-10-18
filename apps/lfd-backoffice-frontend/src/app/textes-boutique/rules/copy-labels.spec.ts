@@ -41,6 +41,12 @@ describe('copy-labels — un nom lisible pour chaque clé', () => {
     expect(name('proAccount.door.proof.1').label).toBe('Élément 2');
   });
 
+  it('nomme la pastille des incontournables, plus « meilleure vente » (2026-10-18)', () => {
+    expect(name('product.bestSeller').label).toBe(
+      'Pastille « incontournable » (article mis en avant)',
+    );
+  });
+
   it('se replie encore sur un rôle en fin de nom, puis sur les mots du segment', () => {
     expect(name('x.inconnuTitle').label).toBe('Titre — inconnu');
     expect(name('x.inconnu').label).toBe('Inconnu');

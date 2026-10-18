@@ -1,5 +1,6 @@
 import {
   CannotFeatureHiddenItemError,
+  FeaturingOutsideAudienceError,
   MaskingOutsideAudienceError,
 } from "../errors/catalog-errors.js";
 import type { ShopAudience } from "../ports/catalog.reader.js";
@@ -248,7 +249,15 @@ export interface LocalDecision {
    * était masqué le reste des deux côtés.
    */
   readonly isHiddenPublic: boolean;
-  readonly isFeatured: boolean;
+  /**
+   * Mis en avant **chez les pros** — une décision par audience depuis le
+   * 2026-10-18 (Hugo : « on peut mettre en avant public et pro »). Le
+   * booléen unique d'avant (`is_featured`) a été recopié vers les audiences
+   * que l'article servait, et reste en base, ni lu ni écrit.
+   */
+  readonly isFeaturedPro: boolean;
+  /** Mis en avant **en boutique publique**, indépendamment du précédent. */
+  readonly isFeaturedPublic: boolean;
   readonly decidedBy: string | null;
 }
 
@@ -256,7 +265,8 @@ export interface LocalDecision {
 const NO_DECISION: LocalDecision = {
   isHidden: false,
   isHiddenPublic: false,
-  isFeatured: false,
+  isFeaturedPro: false,
+  isFeaturedPublic: false,
   decidedBy: null,
 };
 
@@ -460,8 +470,9 @@ export class CatalogItem {
     return this.decision.isHiddenPublic;
   }
 
-  get isFeatured(): boolean {
-    return this.decision.isFeatured;
+  /** Mis en avant pour ce lecteur ? */
+  isFeaturedFor(viewer: ShopAudience): boolean {
+    return viewer === "pro" ? this.decision.isFeaturedPro : this.decision.isFeaturedPublic;
   }
 
   /**
@@ -559,7 +570,7 @@ export class CatalogItem {
    * l'inverse ({@link feature} sur un masqué) qui l'est.
    */
   hide(decidedBy: string | null): void {
-    this.decision = { ...this.decision, isHidden: true, isFeatured: false, decidedBy };
+    this.decision = { ...this.decision, isHidden: true, isFeaturedPro: false, decidedBy };
   }
 
   /** Remet l'article en vente **chez les pros**. */
@@ -570,14 +581,12 @@ export class CatalogItem {
   /**
    * **Retire l'article de la vitrine PUBLIQUE**, sans toucher au canal pro.
    *
-   * ⚠️ **Il n'éteint PAS la mise en avant**, à la différence de son voisin, et
-   * ce n'est pas un oubli : `isFeatured` n'a plus d'écran de réglage et son
-   * audience n'est pas tranchée. L'éteindre ici trancherait par effet de bord
-   * une question que personne n'a posée. Son voisin garde le couplage parce
-   * qu'il l'avait déjà — on ne l'étend pas, on ne le retire pas.
+   * Éteint la mise en avant PUBLIQUE, comme son voisin éteint la pro. Jusqu'au
+   * 2026-10-18 il ne le faisait pas, faute d'audience à la mise en avant ;
+   * elle en a une depuis, et le couplage est le même des deux côtés.
    */
   hidePublic(decidedBy: string | null): void {
-    this.decision = { ...this.decision, isHiddenPublic: true, decidedBy };
+    this.decision = { ...this.decision, isHiddenPublic: true, isFeaturedPublic: false, decidedBy };
   }
 
   /** Remet l'article en vitrine publique. */
@@ -586,16 +595,25 @@ export class CatalogItem {
   }
 
   /**
-   * **Met l'article en avant** dans la boutique.
+   * **Met l'article en avant pour une audience** (2026-10-18).
    *
-   * @throws {CannotFeatureHiddenItemError} l'article est masqué — sinon un
-   *   commercial croirait avoir mis en vitrine un produit que personne ne voit.
+   * @throws {FeaturingOutsideAudienceError} le référentiel ne vend pas
+   *   l'article à ce lecteur : la mise en avant ne se verrait nulle part.
+   * @throws {CannotFeatureHiddenItemError} l'article est masqué pour ce
+   *   lecteur — sinon un commercial croirait avoir mis en vitrine un produit
+   *   que personne ne voit.
    */
-  feature(decidedBy: string | null): void {
-    if (this.decision.isHidden) {
-      throw new CannotFeatureHiddenItemError(this.facts.sku);
+  feature(viewer: ShopAudience, decidedBy: string | null): void {
+    if (!audienceIncludes(this.placement.audience, viewer)) {
+      throw new FeaturingOutsideAudienceError(this.facts.sku, viewer);
     }
-    this.decision = { ...this.decision, isFeatured: true, decidedBy };
+    if (this.isMaskedFor(viewer)) {
+      throw new CannotFeatureHiddenItemError(this.facts.sku, viewer);
+    }
+    this.decision =
+      viewer === "pro"
+        ? { ...this.decision, isFeaturedPro: true, decidedBy }
+        : { ...this.decision, isFeaturedPublic: true, decidedBy };
   }
 
   /**
@@ -660,9 +678,12 @@ export class CatalogItem {
     return true;
   }
 
-  /** Retire la mise en avant. */
-  unfeature(decidedBy: string | null): void {
-    this.decision = { ...this.decision, isFeatured: false, decidedBy };
+  /** Retire la mise en avant d'une audience. Jamais refusé : retirer ne montre rien. */
+  unfeature(viewer: ShopAudience, decidedBy: string | null): void {
+    this.decision =
+      viewer === "pro"
+        ? { ...this.decision, isFeaturedPro: false, decidedBy }
+        : { ...this.decision, isFeaturedPublic: false, decidedBy };
   }
 
   /**
@@ -678,7 +699,10 @@ export class CatalogItem {
     // remettrait à `false` AU PROCHAIN PUSH du PIM — loin du geste, donc loin
     // de sa cause. Aucun type ne le voit.
     const untouched =
-      !this.decision.isHidden && !this.decision.isHiddenPublic && !this.decision.isFeatured;
+      !this.decision.isHidden &&
+      !this.decision.isHiddenPublic &&
+      !this.decision.isFeaturedPro &&
+      !this.decision.isFeaturedPublic;
     return {
       facts: this.facts,
       withdrawnAt: this.withdrawnAt,

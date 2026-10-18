@@ -100,6 +100,16 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./suggestions/suggestions-page/suggestions-page').then((m) => m.SuggestionsPage),
   },
+  {
+    // LA MISE EN AVANT — les incontournables, par audience (Hugo, 2026-10-18),
+    // en Gestion Boutique sous `lfc_catalog` : le droit que la route serveur
+    // oppose, et dont le libellé nomme déjà la mise en avant.
+    path: 'mise-en-avant',
+    canActivate: [permissionGuard('lfc_catalog:read')],
+    title: 'Mise en avant — LFC B2B admin',
+    loadComponent: () =>
+      import('./mise-en-avant/featured-page/featured-page').then((m) => m.FeaturedPage),
+  },
   // L'ancienne adresse, dans des favoris. ORDRE : avant `comptabiliteRoutes`,
   // dont la coquille exige `b2b_accounting:read` — y loger la redirection
   // refuserait qui n'a que `lfc_loyalty`.

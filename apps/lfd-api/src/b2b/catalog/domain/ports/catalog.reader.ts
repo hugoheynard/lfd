@@ -48,6 +48,10 @@ export interface ResolvedCatalogItem {
    * par produit, et le rapport annonce qu'un croissant coûte 60 €.
    */
   readonly isDefault: boolean;
+  /**
+   * Mis en avant **pour le lecteur de cette lecture** (2026-10-18) : la
+   * décision pro pour une lecture pro, la publique pour une lecture publique.
+   */
   readonly isFeatured: boolean;
   /**
    * Ce que le référentiel déclare pour cet article — codes **et** mentions.

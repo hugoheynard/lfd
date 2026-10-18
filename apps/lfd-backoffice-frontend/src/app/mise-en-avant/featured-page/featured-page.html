@@ -1,0 +1,137 @@
+<fold-page-layout icon="award" title="Mise en avant">
+  <p description>
+    Les incontournables : les articles que la boutique marque d'une pastille, pour les pros et pour
+    les particuliers, chacun à part. Un article masqué ou non vendu à une audience ne peut pas y
+    être mis en avant.
+  </p>
+
+  @if (canReadCopy()) {
+    <fold-card>
+      <div class="badge-copy">
+        <fold-element-title variant="title" title="Le libellé de la pastille" />
+        @if (badge(); as copy) {
+          <dl class="badge-texts">
+            <div>
+              <dt>FR</dt>
+              <dd>{{ copy.texts.fr }}</dd>
+            </div>
+            <div>
+              <dt>EN</dt>
+              <dd>{{ copy.texts.en }}</dd>
+            </div>
+            <div>
+              <dt>IT</dt>
+              <dd>{{ copy.texts.it }}</dd>
+            </div>
+          </dl>
+          @if (copy.pendingDraft) {
+            <fold-callout appearance="inset" variant="info">
+              Une modification de ce libellé attend « Publier » dans Textes de la boutique.
+            </fold-callout>
+          }
+        } @else {
+          <p class="muted">Le libellé n'a pas pu être lu.</p>
+        }
+        <div>
+          <a
+            foldButton
+            emphasis="outline"
+            size="sm"
+            icon="edit"
+            routerLink="/textes-boutique"
+            [queryParams]="{ cle: badgeKey }"
+          >
+            Modifier dans Textes de la boutique
+          </a>
+        </div>
+      </div>
+    </fold-card>
+  }
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Chargement du catalogue…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Impossible de charger le catalogue">
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @default {
+      @if (actionFailure(); as message) {
+        <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+      }
+      @if (rows().length === 0) {
+        <fold-empty-state
+          title="Aucun article au catalogue"
+          subtitle="Le référentiel n'a encore rien diffusé à la boutique."
+        />
+      } @else {
+        <div class="filters">
+          <fold-search
+            class="filter-search"
+            placeholder="Nom ou SKU…"
+            ariaLabel="Chercher un article"
+            size="sm"
+            [resultCount]="shown().length"
+            [(value)]="query"
+          />
+          <fold-select
+            class="filter-family"
+            size="sm"
+            label="Famille"
+            [value]="familyId()"
+            (valueChange)="familyId.set($event)"
+          >
+            <option [value]="allFamilies">Toutes les familles</option>
+            @for (family of families(); track family.id) {
+              <option [value]="family.id">{{ family.name }}</option>
+            }
+          </fold-select>
+        </div>
+
+        <fold-data-table
+          caption="Articles mis en avant, par audience"
+          narrowLayout="cards"
+          [columns]="columns()"
+          [rows]="shown()"
+          [rowKey]="rowKey"
+          [empty]="nothingFound"
+        >
+          <ng-template foldCell="name" let-row>
+            <span class="name">{{ row.name }}</span>
+            <span class="muted">{{ row.sku }}</span>
+          </ng-template>
+          <ng-template foldCell="family" let-row>{{ row.familyName }}</ng-template>
+          <ng-template foldCell="pro" let-row>
+            <ng-container
+              [ngTemplateOutlet]="toggleCell"
+              [ngTemplateOutletContext]="{ $implicit: row, audience: 'pro', label: 'Pros' }"
+            />
+          </ng-template>
+          <ng-template foldCell="public" let-row>
+            <ng-container
+              [ngTemplateOutlet]="toggleCell"
+              [ngTemplateOutletContext]="{
+                $implicit: row,
+                audience: 'public',
+                label: 'Particuliers',
+              }"
+            />
+          </ng-template>
+        </fold-data-table>
+      }
+    }
+  }
+</fold-page-layout>
+
+<ng-template #toggleCell let-row let-audience="audience" let-label="label">
+  <fold-checkbox
+    size="sm"
+    [ariaLabel]="label + ' — ' + row.name"
+    [checked]="cell(row, audience).featured"
+    [disabled]="disabled(row, audience)"
+    [hint]="cell(row, audience).reason ?? undefined"
+    (checkedChange)="toggle(row, audience, $event)"
+  />
+</ng-template>

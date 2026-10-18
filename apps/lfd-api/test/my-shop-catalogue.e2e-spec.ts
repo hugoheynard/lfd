@@ -258,6 +258,41 @@ describe("la vitrine publique", () => {
   });
 });
 
+describe("la mise en avant par audience", () => {
+  /**
+   * Hugo, 2026-10-18 : « on peut mettre en avant public et pro ». Un
+   * incontournable des pros ne se marque pas en boutique publique — la tuile
+   * lit la décision de SON lecteur.
+   */
+  it("mis en avant chez les pros seulement : vu par le pro, pas par le public", async () => {
+    await staff()
+      .put(`/admin/catalog/${SKU}-1/featured`)
+      .send({ audience: "pro", featured: true })
+      .expect(204);
+
+    const publique = jsonBody<ShopCatalogueView>(
+      await ctx.http().get("/shop/catalogue").expect(200),
+    );
+
+    expect(itemOf(await mine(), SKU)?.isFeatured).toBe(true);
+    expect(itemOf(publique, SKU)?.isFeatured).toBe(false);
+  });
+
+  it("mis en avant au public seulement : vu par le public, pas par le pro", async () => {
+    await staff()
+      .put(`/admin/catalog/${SKU}-1/featured`)
+      .send({ audience: "public", featured: true })
+      .expect(204);
+
+    const publique = jsonBody<ShopCatalogueView>(
+      await ctx.http().get("/shop/catalogue").expect(200),
+    );
+
+    expect(itemOf(await mine(), SKU)?.isFeatured).toBe(false);
+    expect(itemOf(publique, SKU)?.isFeatured).toBe(true);
+  });
+});
+
 /**
  * **Le règlement choisi** — la contrepartie de la vitrine au prix du client.
  *

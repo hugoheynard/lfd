@@ -36,8 +36,12 @@ describe("le catalogue des faits", () => {
       // synchronisé, 2026-10-15) : ses quatre faits restent lisibles.
       "catalog_item.b2b_price_cleared",
       "catalog_item.b2b_price_set",
+      // La mise en avant sans audience (2026-10-18) : un fait par audience
+      // l'a remplacée (`featured_pro`, `featured_public`…).
+      "catalog_item.featured",
       "catalog_item.public_price_cleared",
       "catalog_item.public_price_set",
+      "catalog_item.unfeatured",
       "company.delivery_procedure_edited_by_staff",
       "company.kbis_uploaded_by_staff",
       // Le rythme UNIQUE de l'entité (R2), retiré en M1 (2026-10-12) : les dates

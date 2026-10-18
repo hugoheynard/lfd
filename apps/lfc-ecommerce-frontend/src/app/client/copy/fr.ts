@@ -261,7 +261,7 @@ export const FR: ClientCopy = {
     operationAwaitingProducts: 'Les produits arrivent bientôt',
   },
   product: {
-    bestSeller: 'Best-seller',
+    bestSeller: 'Incontournable',
     oven: 'Fournée',
     operationPickup: 'Retrait',
     operationPickupSpan: 'du {from} au {until}',

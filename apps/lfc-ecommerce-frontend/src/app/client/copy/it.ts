@@ -266,7 +266,7 @@ export const IT: ClientCopy = {
     operationAwaitingProducts: 'I prodotti arrivano presto',
   },
   product: {
-    bestSeller: 'Best-seller',
+    bestSeller: 'Imperdibile',
     oven: 'Sfornata',
     operationPickup: 'Ritiro',
     operationPickupSpan: 'dal {from} al {until}',

@@ -336,6 +336,17 @@ export const COMMERCE_PHRASES = {
   'catalog_item.pro_review_approved': onArticle('a validé ', ' pour les professionnels'),
   'catalog_item.featured': onArticle('a mis en avant ', ' dans le catalogue professionnel'),
   'catalog_item.unfeatured': onArticle('a cessé de mettre en avant ', ''),
+  // Par audience depuis le 2026-10-18 ; les deux d'avant restent pour le journal passé.
+  'catalog_item.featured_pro': onArticle('a mis en avant ', ' chez les professionnels'),
+  'catalog_item.unfeatured_pro': onArticle(
+    'a cessé de mettre en avant ',
+    ' chez les professionnels',
+  ),
+  'catalog_item.featured_public': onArticle('a mis en avant ', ' en boutique publique'),
+  'catalog_item.unfeatured_public': onArticle(
+    'a cessé de mettre en avant ',
+    ' en boutique publique',
+  ),
   'catalog_delivery.accepted': deliveryAccepted,
   'catalog_price_history.retraced': pricesRetraced,
   // La surcharge d'une opération datée reçue (D9, lot 2 du plan des opérations

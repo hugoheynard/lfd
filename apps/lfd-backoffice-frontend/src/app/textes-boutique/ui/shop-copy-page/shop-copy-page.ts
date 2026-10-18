@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, type OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
@@ -84,8 +85,20 @@ export class ShopCopyPage implements OnInit {
   protected readonly localeOptions = LOCALE_OPTIONS;
   protected readonly localeNames = LOCALE_NAMES;
 
+  private readonly route = inject(ActivatedRoute);
+
+  /**
+   * `?cle=<clé>` ouvre ce texte une fois la lecture faite — le lien
+   * « Modifier » de Gestion Boutique › Mise en avant (2026-10-18), qui renvoie
+   * ici plutôt que d'écrire ailleurs : Publier est global à cet écran.
+   */
   ngOnInit(): void {
-    void this.store.load();
+    const key = this.route.snapshot.queryParamMap.get('cle');
+    void this.store.load().then(() => {
+      if (key !== null) {
+        this.navigation.openKey(key);
+      }
+    });
   }
 
   /** Publier envoie d'abord la frappe en attente : on publie ce qu'on voit. */

@@ -533,8 +533,15 @@ model CatalogItemOverride {
   /// faire en vitrine publique, une pièce à l'unité n'intéresse pas un pro. Le
   /// backfill a recopié `is_hidden` pour que rien ne change au passage.
   isHiddenPublic Boolean @default(false) @map("is_hidden_public")
-  /// Mis en avant dans la boutique.
+  /// ⚠️ **Colonne MORTE depuis le 2026-10-18** — ni lue ni écrite. La mise en avant
+  /// est une décision par audience (les deux colonnes suivantes) ; la migration
+  /// `20261018190000_la_mise_en_avant_par_audience` y a recopié celle-ci. Gardée en base :
+  /// rien ne se supprime sans ordre (CLAUDE.md §0).
   isFeatured     Boolean @default(false) @map("is_featured")
+  /// Mis en avant **chez les pros** : la tuile pro dit « Incontournable ».
+  isFeaturedPro    Boolean @default(false) @map("is_featured_pro")
+  /// Mis en avant **en boutique publique**, indépendamment du précédent.
+  isFeaturedPublic Boolean @default(false) @map("is_featured_public")
 
   /// Qui a décidé, et quand. La question posée six mois plus tard est toujours
   /// « qui a accordé ce prix ».

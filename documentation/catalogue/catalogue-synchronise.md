@@ -339,11 +339,11 @@ vendrait ce que les autres cachent.
 
 ### Ce que la plateforme décide encore, et ce qu'elle ne décide plus
 
-| Décide encore                                                                                                                                                                                                | Route                                                                                                  |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
-| **masquer** un article pour une audience, ou l'y remettre — refusé hors de l'audience du référentiel (`MaskingOutsideAudienceError`, `apps/lfd-api/src/b2b/catalog/domain/entities/catalog-item.ts:605-611`) | `PUT admin/catalog/:sku/masking` (`apps/lfd-api/src/b2b/catalog/http/admin-catalog.controller.ts:155`) |
-| **mettre en avant**                                                                                                                                                                                          | `PUT admin/catalog/:sku/featured` (`admin-catalog.controller.ts:167`)                                  |
-| **valider une arrivée**, par article et par audience, tout ou rien, journalisé                                                                                                                               | `POST admin/catalog/review/approve` (`admin-catalog.controller.ts:139`)                                |
+| Décide encore                                                                                                                                                                                                                                                     | Route                                                                                                  |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| **masquer** un article pour une audience, ou l'y remettre — refusé hors de l'audience du référentiel (`MaskingOutsideAudienceError`, `apps/lfd-api/src/b2b/catalog/domain/entities/catalog-item.ts:605-611`)                                                      | `PUT admin/catalog/:sku/masking` (`apps/lfd-api/src/b2b/catalog/http/admin-catalog.controller.ts:155`) |
+| **mettre en avant** un article **pour une audience** (2026-10-18) — refusé hors de l'audience du référentiel (`FeaturingOutsideAudienceError`) et sur un article masqué pour elle (`CannotFeatureHiddenItemError`) ; masquer une audience éteint sa mise en avant | `PUT admin/catalog/:sku/featured`, `{ audience, featured }` (`admin-catalog.controller.ts:167`)        |
+| **valider une arrivée**, par article et par audience, tout ou rien, journalisé                                                                                                                                                                                    | `POST admin/catalog/review/approve` (`admin-catalog.controller.ts:139`)                                |
 
 **Valider une arrivée** se fait **sous sa ligne**, dans la table du
 « Catalogue publié » (`4c55f02db`, 2026-10-17 ; la note de ligne
@@ -361,6 +361,22 @@ l'agrégat (`saveMany`, `apps/lfd-api/src/b2b/catalog/infrastructure/prisma-cata
 suit la même règle depuis `ee8ba0e75` : un upsert de faits et une écriture de
 décisions pour tout le lot (`catalog-item-upsert.ts`, `catalog-decision-writes.ts`),
 qui ne réécrivent jamais les deux colonnes de prix décidé.
+
+**La mise en avant est une décision par audience** depuis le 2026-10-18
+(Hugo : « on peut mettre en avant public et pro » ; la boutique l'appelle
+« les incontournables »). Deux colonnes, `is_featured_pro` et
+`is_featured_public` ; la migration `20261018190000_la_mise_en_avant_par_audience`
+y a recopié l'ancien `is_featured` pour chaque audience que l'article servait
+et où il n'était pas masqué, et `is_featured` reste en base, ni lu ni écrit.
+Le lecteur de vente rend `isFeatured` **pour l'audience du lecteur**
+(`prisma-catalog.reader.ts`, `featuredFor`) : la boutique publique et
+`/shop/catalogue/mine` d'un pro ne marquent pas les mêmes articles. Les faits
+sont un par audience (`catalog_item.featured_pro`, `unfeatured_pro`,
+`featured_public`, `unfeatured_public`) ; `catalog_item.featured` /
+`unfeatured` sont retirés, lisibles pour le journal passé. Le libellé de la
+pastille est la clé `product.bestSeller` des textes de la boutique
+(« Incontournable » / « Must-have » / « Imperdibile » par défaut),
+redéfinissable dans Textes de la boutique.
 
 La route de masquage est **unique** depuis le 2026-10-15 (Hugo : « une seule
 route qui définisse le masquage ») : les deux routes d'avant, une par
@@ -609,11 +625,12 @@ la TVA par contexte ne bougent pas.**
 
 ## 7. Les écrans
 
-| Écran                                   | Où                                                                                   | Ce qu'il fait                                                                                                                                          |
-| --------------------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **La fiche** (référentiel)              | `apps/lfd-backoffice-frontend/src/app/pim/catalogue/product-form/`                   | audience (héritée ou propre), prix pro HT saisi et sa suggestion, « Activer » et ce qui manque                                                         |
-| **Catalogue publié** (Gestion Boutique) | `/catalogue-publie` (`apps/lfd-backoffice-frontend/src/app/app.routes.ts:115-119`)   | une ligne par article, une colonne par audience ; masquer, mettre en avant, relire. `/b2b/catalogue` et `/b2b/reception` y redirigent                  |
-| **Règles comptables** (référentiel)     | `regles-comptables` (`apps/lfd-backoffice-frontend/src/app/pim/pim.routes.ts:57-61`) | « Rapport suggéré » (ne change aucun prix vendu), pré-remplissage avec aperçu, et sur une base encore en `ratio_ttc` le geste « Passer au prix saisi » |
+| Écran                                   | Où                                                                                     | Ce qu'il fait                                                                                                                                                                                                                                                               |
+| --------------------------------------- | -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **La fiche** (référentiel)              | `apps/lfd-backoffice-frontend/src/app/pim/catalogue/product-form/`                     | audience (héritée ou propre), prix pro HT saisi et sa suggestion, « Activer » et ce qui manque                                                                                                                                                                              |
+| **Catalogue publié** (Gestion Boutique) | `/catalogue-publie` (`apps/lfd-backoffice-frontend/src/app/app.routes.ts:115-119`)     | une ligne par article, une colonne par audience ; masquer, valider, relire. `/b2b/catalogue` et `/b2b/reception` y redirigent                                                                                                                                               |
+| **Mise en avant** (Gestion Boutique)    | `/mise-en-avant` (`apps/lfd-backoffice-frontend/src/app/mise-en-avant/featured-page/`) | une ligne par article, une case par audience (« Pros », « Particuliers »), fermée avec sa raison quand l'audience n'est pas servie ou que l'article y est masqué ; en tête, le libellé de la pastille et le lien vers sa clé dans Textes de la boutique. Sous `lfc_catalog` |
+| **Règles comptables** (référentiel)     | `regles-comptables` (`apps/lfd-backoffice-frontend/src/app/pim/pim.routes.ts:57-61`)   | « Rapport suggéré » (ne change aucun prix vendu), pré-remplissage avec aperçu, et sur une base encore en `ratio_ttc` le geste « Passer au prix saisi »                                                                                                                      |
 
 L'**espace « E-commerce LFC »** du back-office est supprimé le 2026-10-17
 (Hugo) : il n'avait plus de vue. Ses anciennes adresses `/b2b/…` redirigent

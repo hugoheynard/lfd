@@ -87,6 +87,14 @@ describe('le catalogue professionnel', () => {
       'a mis en avant « Tarte citron » (TAR-001) dans le catalogue professionnel',
     ],
     ['catalog_item.unfeatured', 'a cessé de mettre en avant « Tarte citron » (TAR-001)'],
+    [
+      'catalog_item.featured_pro',
+      'a mis en avant « Tarte citron » (TAR-001) chez les professionnels',
+    ],
+    [
+      'catalog_item.unfeatured_public',
+      'a cessé de mettre en avant « Tarte citron » (TAR-001) en boutique publique',
+    ],
   ])('dit la vitrine : %s', (type, said) => {
     expect(sentence(item(type, { subjectLabel: 'Tarte citron', sku: 'TAR-001' }))).toBe(
       `Colette Martin ${said}`,

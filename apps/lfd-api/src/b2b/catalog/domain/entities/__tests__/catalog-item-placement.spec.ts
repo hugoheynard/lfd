@@ -78,7 +78,8 @@ describe("CatalogItem — le masquage par audience", () => {
       decision: {
         isHidden: false,
         isHiddenPublic: true,
-        isFeatured: false,
+        isFeaturedPro: false,
+        isFeaturedPublic: false,
         decidedBy: "cecile",
       },
       placement: { audience: "pro", publicReviewPending: false, proReviewPending: false },

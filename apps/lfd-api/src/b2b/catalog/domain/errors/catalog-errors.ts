@@ -6,6 +6,9 @@ import { BusinessError } from "../../../../platform/shared/errors/app-error.js";
 // partis avec leurs gestes au lot D (2026-10-15) : le prix ne se décide plus
 // sur la plateforme.
 
+/** Les mots d'une audience dans un message lu par le staff. */
+const AUDIENCE_WORDS = { pro: "aux professionnels", public: "au public" } as const;
+
 /**
  * On a voulu mettre en avant un article **masqué**.
  *
@@ -15,10 +18,14 @@ import { BusinessError } from "../../../../platform/shared/errors/app-error.js";
  * refuse et on nomme les deux gestes.
  */
 export class CannotFeatureHiddenItemError extends BusinessError {
-  constructor(readonly sku: string) {
+  constructor(
+    readonly sku: string,
+    readonly viewer: "pro" | "public",
+  ) {
     super(
       "catalog.item.featured_while_hidden",
-      "Cet article est masqué du catalogue : réaffichez-le avant de le mettre en avant.",
+      `L'article ${sku} est masqué ${AUDIENCE_WORDS[viewer]} : ` +
+        "réaffichez-le pour cette audience avant de l'y mettre en avant.",
     );
   }
 }
@@ -65,9 +72,6 @@ export class UnknownExcludedSkuError extends BusinessError {
   }
 }
 
-/** Les mots d'une audience dans un message lu par le staff. */
-const AUDIENCE_WORDS = { pro: "aux professionnels", public: "au public" } as const;
-
 /**
  * On a voulu masquer un article pour une audience à laquelle le référentiel
  * ne le vend pas (H5, D7 du plan d'audience).
@@ -84,6 +88,25 @@ export class MaskingOutsideAudienceError extends BusinessError {
     super(
       "catalog.item.masking_outside_audience",
       `L'article ${sku} n'est pas vendu ${AUDIENCE_WORDS[viewer]} : il n'y a rien à masquer. ` +
+        "Pour changer à qui il se vend, modifiez son audience dans le référentiel.",
+    );
+  }
+}
+
+/**
+ * On a voulu mettre un article en avant pour une audience à laquelle le
+ * référentiel ne le vend pas (2026-10-18). La mise en avant ne se verrait
+ * nulle part : accepter écrirait une décision sans effet, que l'écran
+ * afficherait comme un geste pris.
+ */
+export class FeaturingOutsideAudienceError extends BusinessError {
+  constructor(
+    readonly sku: string,
+    readonly viewer: "pro" | "public",
+  ) {
+    super(
+      "catalog.item.featuring_outside_audience",
+      `L'article ${sku} n'est pas vendu ${AUDIENCE_WORDS[viewer]} : il ne peut pas y être mis en avant. ` +
         "Pour changer à qui il se vend, modifiez son audience dans le référentiel.",
     );
   }

@@ -85,7 +85,7 @@ export const GLOSSARY_A_B: Readonly<Record<string, string>> = {
   batchAria: 'Fournée — lecteur d’écran',
   before: 'Avant (heure)',
   best: 'Pastille « le plus avantageux »',
-  bestSeller: 'Pastille « meilleure vente »',
+  bestSeller: 'Pastille « incontournable » (article mis en avant)',
   bic: 'BIC',
   billing: 'Rôle facturation',
   billingEdit: 'Modifier la facturation',

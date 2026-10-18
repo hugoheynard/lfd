@@ -471,7 +471,11 @@ export interface ClientCopy {
     readonly operationAwaitingProducts: string;
   };
   readonly product: {
-    /** La pastille d'un article mis en avant (`isFeatured`). */
+    /**
+     * La pastille d'un article mis en avant (`isFeatured`, pour l'audience du
+     * lecteur) — « les incontournables » (Hugo, 2026-10-18). La clé garde son
+     * nom : une valeur n'est pas un nom.
+     */
     readonly bestSeller: string;
     /** La ligne de fiche qui dit quand la pièce sort du four. */
     readonly oven: string;

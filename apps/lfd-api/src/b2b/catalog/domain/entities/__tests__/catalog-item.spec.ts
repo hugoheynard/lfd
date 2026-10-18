@@ -67,7 +67,8 @@ describe("CatalogItem — le prix", () => {
 
     expect(Object.keys(item.toPersistence().decision ?? {}).sort()).toEqual([
       "decidedBy",
-      "isFeatured",
+      "isFeaturedPro",
+      "isFeaturedPublic",
       "isHidden",
       "isHiddenPublic",
     ]);
@@ -85,11 +86,11 @@ describe("CatalogItem — la visibilité", () => {
 
   it("masquer éteint la mise en avant — les deux ensemble se contrediraient", () => {
     const item = CatalogItem.receive(facts());
-    item.feature("cecile");
+    item.feature("pro", "cecile");
 
     item.hide("cecile");
 
-    expect(item.isFeatured).toBe(false);
+    expect(item.isFeaturedFor("pro")).toBe(false);
   });
 
   /**
@@ -100,7 +101,7 @@ describe("CatalogItem — la visibilité", () => {
     const item = CatalogItem.receive(facts());
     item.hide("cecile");
 
-    expect(() => item.feature("cecile")).toThrow(CannotFeatureHiddenItemError);
+    expect(() => item.feature("pro", "cecile")).toThrow(CannotFeatureHiddenItemError);
   });
 
   it("réafficher puis mettre en avant fonctionne", () => {
@@ -108,9 +109,9 @@ describe("CatalogItem — la visibilité", () => {
     item.hide("cecile");
 
     item.show("cecile");
-    item.feature("cecile");
+    item.feature("pro", "cecile");
 
-    expect(item.isFeatured).toBe(true);
+    expect(item.isFeaturedFor("pro")).toBe(true);
   });
 });
 
@@ -224,8 +225,8 @@ describe("CatalogItem — la décision neutre", () => {
   it("🔴 retient la décision quand la mise en avant est la SEULE", () => {
     const item = CatalogItem.receive(facts());
 
-    item.feature("cecile");
+    item.feature("pro", "cecile");
 
-    expect(item.toPersistence().decision).toMatchObject({ isFeatured: true });
+    expect(item.toPersistence().decision).toMatchObject({ isFeaturedPro: true });
   });
 });

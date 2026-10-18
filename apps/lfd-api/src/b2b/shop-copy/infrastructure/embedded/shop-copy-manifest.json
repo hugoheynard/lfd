@@ -1535,9 +1535,9 @@
       "entries": [
         {
           "key": "product.bestSeller",
-          "fr": "Best-seller",
-          "en": "Best-seller",
-          "it": "Best-seller",
+          "fr": "Incontournable",
+          "en": "Must-have",
+          "it": "Imperdibile",
           "variables": []
         },
         {

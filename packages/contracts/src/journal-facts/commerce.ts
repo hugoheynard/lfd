@@ -90,8 +90,17 @@ export const COMMERCE_FACTS = {
   "catalog_item.shown": labelled(skuOnly().shape),
   "catalog_item.hidden_public": labelled(skuOnly().shape),
   "catalog_item.shown_public": labelled(skuOnly().shape),
-  "catalog_item.featured": labelled(skuOnly().shape),
-  "catalog_item.unfeatured": labelled(skuOnly().shape),
+  // La mise en avant sans audience, retirée le 2026-10-18 : elle valait pour
+  // les deux boutiques. Ses faits restent lisibles.
+  "catalog_item.featured": retiredLabelled(skuOnly().shape),
+  "catalog_item.unfeatured": retiredLabelled(skuOnly().shape),
+  // Un fait par audience, comme le masquage (Hugo, 2026-10-18).
+  "catalog_item.featured_pro": fact(payload({ subjectLabel: subjectLabel(), sku: z.string() })),
+  "catalog_item.unfeatured_pro": fact(payload({ subjectLabel: subjectLabel(), sku: z.string() })),
+  "catalog_item.featured_public": fact(payload({ subjectLabel: subjectLabel(), sku: z.string() })),
+  "catalog_item.unfeatured_public": fact(
+    payload({ subjectLabel: subjectLabel(), sku: z.string() }),
+  ),
   // Lot 3 du plan du catalogue synchronisé : l'article arrivé récemment est
   // validé pour la boutique publique. Né avec sa forme labellisée, sans historique.
   "catalog_item.public_review_approved": fact(

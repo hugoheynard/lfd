@@ -121,7 +121,13 @@ export interface CatalogAdminItemView {
    * les pros tant que personne ne l'a validé pour eux.
    */
   readonly proReviewPending: boolean;
-  readonly isFeatured: boolean;
+  /**
+   * **Mis en avant, par audience** (2026-10-18) — ce que la tuile du lecteur
+   * marque « Incontournable ». Le booléen unique d'avant (`isFeatured`) est
+   * retiré : son seul lecteur était le back-office.
+   */
+  readonly isFeaturedPro: boolean;
+  readonly isFeaturedPublic: boolean;
   /**
    * Vendu **seulement pendant une opération** (fil v11), tel que reçu. Porté ici
    * parce que ce port est le miroir que le contrôle de parité confronte.
@@ -182,12 +188,15 @@ export const approveReviewPayloadSchema = z.object({
 export type ApproveReviewPayload = z.infer<typeof approveReviewPayloadSchema>;
 
 /**
- * Mettre en avant, ou retirer la mise en avant.
+ * Mettre en avant pour une audience, ou l'en retirer
+ * (`PUT admin/catalog/:sku/featured`, 2026-10-18).
  *
- * Le serveur refuse de mettre en avant un article **masqué** : les deux états
- * ensemble diraient « ne pas le montrer » et « le montrer en premier ».
+ * Le serveur refuse de mettre en avant un article **masqué** pour cette
+ * audience (409, `catalog.item.featured_while_hidden`), ou qu'il ne lui vend
+ * pas (409, `catalog.item.featuring_outside_audience`).
  */
 export const setCatalogFeaturedPayloadSchema = z.object({
+  audience: z.enum(["pro", "public"]),
   featured: z.boolean(),
 });
 export type SetCatalogFeaturedPayload = z.infer<typeof setCatalogFeaturedPayloadSchema>;

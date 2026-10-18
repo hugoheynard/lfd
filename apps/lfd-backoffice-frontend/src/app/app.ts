@@ -304,8 +304,11 @@ export class App {
       this.canSeeSettings() ||
       this.canSeeCommerceOperations() ||
       this.canSeeLoyalty() ||
-      this.canSeeSuggestions(),
+      this.canSeeSuggestions() ||
+      this.canSeeFeatured(),
   );
+  /** La mise en avant : le droit du catalogue publié (`lfc_catalog`, 2026-10-18). */
+  protected readonly canSeeFeatured = computed(() => this.permissions.can('lfc_catalog:read'));
   /** Les suggestions décidées : leur droit à elles (`lfc_suggestions`, 2026-10-18, RS1). */
   protected readonly canSeeSuggestions = computed(() =>
     this.permissions.can('lfc_suggestions:read'),

@@ -229,6 +229,20 @@
               (click)="mobileNavOpen.set(false)"
             ></a>
           }
+          @if (canSeeFeatured()) {
+            <!-- La MISE EN AVANT — les incontournables, par audience (Hugo,
+                 2026-10-18), sous `lfc_catalog`. -->
+            <a
+              fold-menu-item
+              icon="award"
+              label="Mise en avant"
+              routerLink="/mise-en-avant"
+              routerLinkActive
+              #featuredRla="routerLinkActive"
+              [active]="featuredRla.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
           @if (canSeeCommerceOperations()) {
             <a
               fold-menu-item
@@ -870,6 +884,19 @@
               routerLinkActive
               #publishedTile="routerLinkActive"
               [active]="publishedTile.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
+          @if (canSeeFeatured()) {
+            <!-- La MISE EN AVANT : la même entrée qu'au rail (deux arbres). -->
+            <a
+              fold-nav-tile
+              icon="award"
+              label="Mise en avant"
+              routerLink="/mise-en-avant"
+              routerLinkActive
+              #featuredTile="routerLinkActive"
+              [active]="featuredTile.isActive"
               (click)="mobileNavOpen.set(false)"
             ></a>
           }

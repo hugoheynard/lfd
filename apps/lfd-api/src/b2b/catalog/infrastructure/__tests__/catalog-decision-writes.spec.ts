@@ -13,7 +13,8 @@ import { decisionWritesOf, posedDecisionsStatement } from "../catalog-decision-w
 const HIDDEN: LocalDecision = {
   isHidden: true,
   isHiddenPublic: false,
-  isFeatured: false,
+  isFeaturedPro: false,
+  isFeaturedPublic: false,
   decidedBy: "staff_1",
 };
 
@@ -73,7 +74,9 @@ describe("posedDecisionsStatement", () => {
 
     expect(statement.sql.match(/INSERT INTO/g)).toHaveLength(1);
     expect(statement.sql).toContain('"decided_at" = EXCLUDED."decided_at"');
-    expect(statement.values).toHaveLength(70 * 6);
+    // sku, quatre drapeaux, l'auteur, decided_at (deux drapeaux de mise en
+    // avant depuis le 2026-10-18, au lieu d'un).
+    expect(statement.values).toHaveLength(70 * 7);
   });
 
   /** Lot D : les prix décidés restent en base, ni lus ni écrits. */
@@ -82,5 +85,14 @@ describe("posedDecisionsStatement", () => {
 
     expect(statement.sql).not.toContain("price_millicents");
     expect(statement.sql).not.toContain("decided_public_ttc_cents");
+  });
+
+  /** 2026-10-18 : la mise en avant s'écrit par audience ; `is_featured` est morte. */
+  it("écrit les deux mises en avant, jamais l'ancienne colonne", () => {
+    const statement = posedDecisionsStatement([{ sku: "A", decision: HIDDEN }], new Date(0));
+
+    expect(statement.sql).toContain('"is_featured_pro"');
+    expect(statement.sql).toContain('"is_featured_public"');
+    expect(statement.sql).not.toContain('"is_featured"');
   });
 });

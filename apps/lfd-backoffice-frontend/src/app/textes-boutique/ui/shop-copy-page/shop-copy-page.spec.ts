@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
+import { ActivatedRoute, convertToParamMap } from '@angular/router';
 import type { StaffPermission } from '@lfd/contracts';
 import { FoldPanelHostService } from 'fold-ng';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -23,6 +24,7 @@ const VIEW = adminView([
 async function render(
   api: Partial<Record<keyof ShopCopyService, unknown>>,
   permissions: readonly StaffPermission[],
+  queryParams: Readonly<Record<string, string>> = {},
 ) {
   const panels = { open: vi.fn() };
   TestBed.configureTestingModule({
@@ -36,6 +38,10 @@ async function render(
         useValue: { can: (p: StaffPermission) => permissions.includes(p) },
       },
       { provide: FoldPanelHostService, useValue: panels },
+      {
+        provide: ActivatedRoute,
+        useValue: { snapshot: { queryParamMap: convertToParamMap(queryParams) } },
+      },
     ],
   });
   const fixture = TestBed.createComponent(ShopCopyPage);
@@ -62,6 +68,14 @@ describe('ShopCopyPage — Contenu › Textes de la boutique', () => {
     expect(buttonLabels(element)).toContain('Publier');
     expect(element.textContent).toContain('Aperçu indisponible');
     expect(element.textContent).toContain('Choisissez un écran dans la liste complète');
+  });
+
+  it('`?cle=` ouvre ce texte — le lien « Modifier » de Mise en avant', async () => {
+    const { fixture } = await render({ load: () => Promise.resolve(VIEW) }, [], {
+      cle: 'nav.home',
+    });
+    const navigation = fixture.debugElement.injector.get(CopyNavigation);
+    expect(navigation.selectedKey()).toBe('nav.home');
   });
 
   it('sans aperçu, « Voir tous les textes » ouvre la liste de la clientèle', async () => {

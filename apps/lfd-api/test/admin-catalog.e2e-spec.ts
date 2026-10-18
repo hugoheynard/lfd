@@ -484,7 +484,8 @@ describe("masquage par audience", () => {
     expect(await ctx.prisma.catalogItemOverride.findUnique({ where: { sku: SKU } })).toMatchObject({
       isHidden: false,
       isHiddenPublic: false,
-      isFeatured: false,
+      isFeaturedPro: false,
+      isFeaturedPublic: false,
     });
   });
 });
@@ -510,20 +511,34 @@ describe("visibilité et mise en avant", () => {
       .send({ audience: "pro", hidden: true })
       .expect(204);
 
-    const response = await asStaff().put(`/admin/catalog/${SKU}/featured`).send({ featured: true });
+    const response = await asStaff()
+      .put(`/admin/catalog/${SKU}/featured`)
+      .send({ audience: "pro", featured: true });
 
     expect(response.status).toBe(409);
   });
 
-  it("masquer éteint la mise en avant", async () => {
-    await asStaff().put(`/admin/catalog/${SKU}/featured`).send({ featured: true }).expect(204);
+  it("met en avant pour une audience, et la liste le dit par audience", async () => {
+    await asStaff()
+      .put(`/admin/catalog/${SKU}/featured`)
+      .send({ audience: "public", featured: true })
+      .expect(204);
+
+    expect(await listOne()).toMatchObject({ isFeaturedPro: false, isFeaturedPublic: true });
+  });
+
+  it("masquer chez les pros éteint la mise en avant pro", async () => {
+    await asStaff()
+      .put(`/admin/catalog/${SKU}/featured`)
+      .send({ audience: "pro", featured: true })
+      .expect(204);
 
     await asStaff()
       .put(`/admin/catalog/${SKU}/masking`)
       .send({ audience: "pro", hidden: true })
       .expect(204);
 
-    expect((await listOne())?.isFeatured).toBe(false);
+    expect((await listOne())?.isFeaturedPro).toBe(false);
   });
 });
 

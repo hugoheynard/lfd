@@ -245,17 +245,18 @@ describe("la visibilité et la mise en avant", () => {
     expect(await facts("catalog_item.hidden")).toHaveLength(1);
   });
 
-  it("mettre en avant puis retirer : deux faits, sous la fiche staff", async () => {
-    await staff().put(`${ITEM}/featured`).send({ featured: true }).expect(204);
-    await staff().put(`${ITEM}/featured`).send({ featured: false }).expect(204);
+  it("mettre en avant chez les pros puis retirer : deux faits pro, sous la fiche staff", async () => {
+    await staff().put(`${ITEM}/featured`).send({ audience: "pro", featured: true }).expect(204);
+    await staff().put(`${ITEM}/featured`).send({ audience: "pro", featured: false }).expect(204);
 
     const expected = {
       ...byStaff,
       actorId: E2E_STAFF_ID,
       payload: { subjectLabel: ARTICLE, sku: SKU },
     };
-    expect(await facts("catalog_item.featured")).toEqual([expected]);
-    expect(await facts("catalog_item.unfeatured")).toEqual([expected]);
+    expect(await facts("catalog_item.featured_pro")).toEqual([expected]);
+    expect(await facts("catalog_item.unfeatured_pro")).toEqual([expected]);
+    expect(await facts("catalog_item.featured_public")).toEqual([]);
   });
 
   it("ANNULE le masquage quand le journal refuse d'écrire", async () => {
@@ -268,9 +269,11 @@ describe("la visibilité et la mise en avant", () => {
   });
 
   it("ANNULE la mise en avant quand le journal refuse d'écrire", async () => {
-    await breakJournal("catalog_item.featured");
+    await breakJournal("catalog_item.featured_public");
 
-    const response = await staff().put(`${ITEM}/featured`).send({ featured: true });
+    const response = await staff()
+      .put(`${ITEM}/featured`)
+      .send({ audience: "public", featured: true });
 
     expect(response.status).toBeGreaterThanOrEqual(500);
     expect(await decision()).toBeNull();

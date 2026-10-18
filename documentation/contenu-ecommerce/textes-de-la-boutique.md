@@ -341,7 +341,7 @@ Source : `fr.ts · en.ts · it.ts` · 12 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
-| `product.bestSeller` | Best-seller | Best-seller | Best-seller |  |
+| `product.bestSeller` | Incontournable | Must-have | Imperdibile |  |
 | `product.oven` | Fournée | Baked | Sfornata |  |
 | `product.operationPickup` | Retrait | Collection | Ritiro |  |
 | `product.operationPickupSpan` | du {from} au {until} | {from} to {until} | dal {from} al {until} | `{from}` `{until}` |

@@ -46,7 +46,8 @@ export interface ItemRow {
   readonly override: {
     readonly isHidden: boolean;
     readonly isHiddenPublic: boolean;
-    readonly isFeatured: boolean;
+    readonly isFeaturedPro: boolean;
+    readonly isFeaturedPublic: boolean;
     readonly decidedBy: string | null;
   } | null;
 }
@@ -149,7 +150,8 @@ export function toDomain(row: ItemRow): CatalogItem {
         : {
             isHidden: row.override.isHidden,
             isHiddenPublic: row.override.isHiddenPublic,
-            isFeatured: row.override.isFeatured,
+            isFeaturedPro: row.override.isFeaturedPro,
+            isFeaturedPublic: row.override.isFeaturedPublic,
             decidedBy: row.override.decidedBy,
           },
   });

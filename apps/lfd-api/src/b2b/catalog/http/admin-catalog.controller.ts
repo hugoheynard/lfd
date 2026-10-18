@@ -172,7 +172,7 @@ export class AdminCatalogController {
     @StaffUserId() staffUserId: string,
   ): Promise<void> {
     await this.commands.execute<SetCatalogFeaturedCommand, void>(
-      new SetCatalogFeaturedCommand(sku, payload.featured, staffUserId),
+      new SetCatalogFeaturedCommand(sku, payload.audience, payload.featured, staffUserId),
     );
   }
 }
