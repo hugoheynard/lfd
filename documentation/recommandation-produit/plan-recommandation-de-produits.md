@@ -136,7 +136,7 @@ Garde-fous : ne recommander que ce qui se vend à CE client ; mesurer l'effet
 ### 1.5 Ce que la boutique affiche déjà
 
 - **La relance codée en dur est retirée le 2026-10-18** (Hugo). `CartUpsell`
-  (`client/cart/cart-upsell.service.ts`, retiré le 2026-10-18) proposait la
+  (fichier cart-upsell.service.ts, supprimé) proposait la
   première gourmandise absente du panier sur une liste de rayons en dur
   (`TREATS`), sans historique ni raison. Le panier montre désormais la
   suggestion du staff si une règle s'applique (RS2,
