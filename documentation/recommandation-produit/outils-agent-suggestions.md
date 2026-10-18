@@ -30,26 +30,39 @@ textes dans [`agent/suggestion-agent-text.ts`](../../apps/lfd-backoffice-fronten
 refus par `said` (`agent-tool-text.ts`, partagé). Client : `StaffSuggestionsService`,
 celui de l'écran Gestion Boutique › Suggestions.
 
-| Outil                   | Route                                                | Ce qu'il fait                                                                                  |
-| ----------------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `suggestion_list`       | `GET admin/suggestions` (+ `choices`)                | chaque règle (id, état, phrase, déclencheur, articles…), puis le catalogue servi               |
-| `suggestion_order_get`  | `GET admin/suggestions/order`                        | l'ordre entre règles concurrentes : `recent` ou `priority`                                     |
-| `suggestion_preview`    | `POST admin/suggestions/preview`                     | l'aperçu (RS5) : la carte que verrait le client, puis chaque règle « Affichée » ou sa raison   |
-| `suggestion_results`    | `GET admin/suggestions/results`                      | les chiffres (RS6) sur 7, 30 ou 90 jours : comptés, taux d'ajout, commandées et CA estimés     |
-| `suggestion_alerts`     | `GET admin/suggestions/alerts` (+ `list`, `choices`) | les règles à corriger (RS10) : « Vide » / « Partielle », codes de raison et phrases de l'écran |
-| `suggestion_create`     | `POST admin/suggestions`                             | crée une règle, née active, et la rend relue                                                   |
-| `suggestion_update`     | `GET` puis `PUT admin/suggestions/:id`               | réécrit par `id` : un champ omis garde sa valeur                                               |
-| `suggestion_set_active` | `PUT admin/suggestions/:id/active`                   | coupe ou rallume, sans rien supprimer                                                          |
-| `suggestion_archive`    | `PUT admin/suggestions/:id/archive`                  | retire pour toujours ; une archivée ne se modifie plus                                         |
-| `suggestion_order_set`  | `PUT admin/suggestions/order`                        | règle l'ordre, journalisé                                                                      |
+| Outil                   | Route                                                | Ce qu'il fait                                                                                                                 |
+| ----------------------- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `suggestion_list`       | `GET admin/suggestions` (+ `choices`)                | chaque règle (id, état, phrase, déclencheur, articles, conditions…), puis le catalogue servi et les points de retrait ouverts |
+| `suggestion_order_get`  | `GET admin/suggestions/order`                        | l'ordre entre règles concurrentes : `recent` ou `priority`                                                                    |
+| `suggestion_preview`    | `POST admin/suggestions/preview`                     | l'aperçu (RS5) : la carte que verrait le client, puis chaque règle « Affichée » ou sa raison                                  |
+| `suggestion_results`    | `GET admin/suggestions/results`                      | les chiffres (RS6) sur 7, 30 ou 90 jours : comptés, taux d'ajout, commandées et CA estimés                                    |
+| `suggestion_alerts`     | `GET admin/suggestions/alerts` (+ `list`, `choices`) | les règles à corriger (RS10) : « Vide » / « Partielle », codes de raison et phrases de l'écran                                |
+| `suggestion_create`     | `POST admin/suggestions`                             | crée une règle, née active, et la rend relue                                                                                  |
+| `suggestion_update`     | `GET` puis `PUT admin/suggestions/:id`               | réécrit par `id` : un champ omis garde sa valeur                                                                              |
+| `suggestion_set_active` | `PUT admin/suggestions/:id/active`                   | coupe ou rallume, sans rien supprimer                                                                                         |
+| `suggestion_archive`    | `PUT admin/suggestions/:id/archive`                  | retire pour toujours ; une archivée ne se modifie plus                                                                        |
+| `suggestion_order_set`  | `PUT admin/suggestions/order`                        | règle l'ordre, journalisé                                                                                                     |
 
 Les refus sont ceux de l'agrégat `StaffSuggestionRule`, rendus mot pour mot :
 déclencheur suggéré, emplacement où le déclencheur ne peut pas être vrai, fin
-déjà passée à la création, article ou famille hors du catalogue servi.
+déjà passée à la création, article ou famille hors du catalogue servi, et
+depuis RS8 les conditions refusées (plage qui passe minuit, seuil hors panier,
+point de retrait fermé…).
+
+**Les conditions (RS8, 2026-10-18)** : `suggestion_create` et
+`suggestion_update` acceptent six champs à plat — `weekdays` (`mon`…`sun`),
+`hoursFrom` et `hoursTo` (`HH:MM`, Paris), `minCartTotalCents`,
+`cartWithoutFamilyId`, `pickupAddressIds`. Comme la phrase : un champ OMIS
+garde la valeur de la règle, un champ VIDE (`[]`, `""`, `0`) retire la
+condition. Le sens de chacune est celui de
+[`suggestions-du-staff.md`](suggestions-du-staff.md) §2.1. Code :
+[`agent/suggestion-agent-conditions.ts`](../../apps/lfd-backoffice-frontend/src/app/agent/suggestion-agent-conditions.ts).
 
 `suggestion_preview` (RS5, 2026-10-18) prend un emplacement (`cart` avec
 `cartSkus`, ou `product` avec `viewedSku`), une clientèle (`public` ou `pro`)
-et un jour ; il rend la carte exacte (titre, articles, prix HT au pro, TTC au
+et un jour — et pour les conditions (RS8) l'heure (`time`, omise =
+maintenant), le total du panier (`cartTotalCents`, omis = pas chiffré) et le
+point de retrait (`pickupAddressId`, omis = pas encore choisi) ; il rend la carte exacte (titre, articles, prix HT au pro, TTC au
 particulier — au pro, la vitrine sans tarif de société), puis une ligne par
 règle non archivée avec son statut en code (`[ended]`, `[outranked_by]`…) et
 en clair. Code : [`agent/suggestion-preview-agent-tool.ts`](../../apps/lfd-backoffice-frontend/src/app/agent/suggestion-preview-agent-tool.ts).
@@ -64,7 +77,8 @@ Code : [`agent/suggestion-results-agent-tool.ts`](../../apps/lfd-backoffice-fron
 
 `suggestion_alerts` (RS10, 2026-10-18) ne prend rien et rend, par règle à
 corriger, sa gravité (`[empty]` ou `[partial]`), ses codes
-(`[PAI-001:hidden_for_audience]`, `trigger_withdrawn`) et les phrases mêmes
+(`[PAI-001:hidden_for_audience]`, `trigger_withdrawn`, et depuis RS8
+`site_closed:<id>`, `no_weekday_left`) et les phrases mêmes
 de l'écran (`alertLines`). Le calcul est décrit dans
 [`suggestions-du-staff.md`](suggestions-du-staff.md) §13.
 Code : [`agent/suggestion-alerts-agent-tool.ts`](../../apps/lfd-backoffice-frontend/src/app/agent/suggestion-alerts-agent-tool.ts).

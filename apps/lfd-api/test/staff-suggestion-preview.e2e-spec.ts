@@ -6,11 +6,12 @@
  * par l'aperçu à travers le vrai catalogue servi et la vraie vitrine, au même
  * prix que la route de la boutique — et la route fermée à qui n'a pas le droit.
  */
-import type {
-  CartSuggestionView,
-  StaffSuggestionPreviewPayload,
-  StaffSuggestionPreviewView,
-  StaffSuggestionRulePayload,
+import {
+  NO_STAFF_SUGGESTION_CONDITIONS,
+  type CartSuggestionView,
+  type StaffSuggestionPreviewPayload,
+  type StaffSuggestionPreviewView,
+  type StaffSuggestionRulePayload,
 } from "@lfd/contracts";
 import request from "supertest";
 
@@ -113,5 +114,36 @@ describe("l'aperçu des suggestions décidées", () => {
     ]);
     await ctx.asSub(outsider).post(PREVIEW).send(cartPreview(null)).expect(403);
     await ctx.asSub(reader).post(PREVIEW).send(cartPreview(null)).expect(200);
+  });
+});
+
+describe("l'aperçu — les conditions (RS8)", () => {
+  it("dit « hors créneau » à l'heure choisie, « affichée » dans la plage", async () => {
+    const id = await create({
+      ...croissantRule(),
+      conditions: { ...NO_STAFF_SUGGESTION_CONDITIONS, hours: { from: "07:00", to: "11:00" } },
+    });
+
+    const late = await preview({ ...cartPreview(serviceDay(1)), time: "11:00" });
+    const early = await preview({ ...cartPreview(serviceDay(1)), time: "07:00" });
+
+    expect(late.time).toBe("11:00");
+    expect(late.shown).toEqual([]);
+    expect(late.rules).toEqual([
+      { ruleId: id, status: "outside_hours", outrankedBy: null, items: [] },
+    ]);
+    expect(early.rules.map(({ status }) => status)).toEqual(["shown"]);
+  });
+
+  it("dit « sous le seuil » au montant choisi", async () => {
+    const threshold = await create({
+      ...croissantRule(),
+      conditions: { ...NO_STAFF_SUGGESTION_CONDITIONS, minCartTotalCents: 2_000 },
+    });
+
+    const below = await preview({ ...cartPreview(serviceDay(1)), cartTotalCents: 1_500 });
+    expect(below.rules).toEqual([
+      { ruleId: threshold, status: "cart_below_threshold", outrankedBy: null, items: [] },
+    ]);
   });
 });

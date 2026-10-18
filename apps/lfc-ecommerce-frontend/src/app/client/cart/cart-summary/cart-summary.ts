@@ -14,6 +14,7 @@ import { CartProductLine } from '../cart-product-line/cart-product-line';
 import { StaffCartSuggestion } from '../staff-cart-suggestion.service';
 import { StaffSuggestionCard } from '../../suggestions/staff-suggestion-card/staff-suggestion-card';
 import { ClientCart } from '../client-cart.service';
+import { shownCartTotalCents } from '../shown-cart-total';
 import { ClientLocale } from '../../client-locale.service';
 import { ClientWorkspace } from '../../client-workspace.service';
 import { ClientCompany } from '../../client-company.service';
@@ -170,13 +171,9 @@ export class CartSummary implements OnInit {
   });
 
   /** Le total montré : HT au compte (total moins TVA du devis), TTC sinon. */
-  protected readonly shownTotalCents = computed(() => {
-    const totals = this.totals();
-    if (!this.onAccount()) {
-      return totals.totalCents;
-    }
-    return totals.totalCents - totals.vat.reduce((sum, share) => sum + share.amountCents, 0);
-  });
+  protected readonly shownTotalCents = computed(() =>
+    shownCartTotalCents(this.totals(), this.onAccount()),
+  );
 
   protected readonly vatLines = computed(() => {
     const c = this.t().cart;

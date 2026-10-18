@@ -32,6 +32,7 @@ const ALERT: StaffSuggestionRuleAlert = {
   ruleId: 'LIVE',
   severity: 'empty',
   triggerWithdrawn: false,
+  conditions: [],
   items: [{ sku: 'PAI-001', audience: 'public', reason: 'hidden_for_audience' }],
   window: { from: TODAY, to: addDays(TODAY, 3), capped: false },
 };

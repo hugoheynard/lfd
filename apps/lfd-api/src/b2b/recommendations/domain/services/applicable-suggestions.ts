@@ -6,6 +6,11 @@ import type {
 
 import type { StaffSuggestionRuleSnapshot } from "../entities/staff-suggestion-rule.js";
 import { periodCovers } from "../value-objects/suggestion-period.js";
+import {
+  conditionGate,
+  type ConditionContext,
+  type ConditionGate,
+} from "./suggestion-conditions-gate.js";
 
 /** Ce qu'on demande : un emplacement, un jour métier, et le lecteur s'il est connu. */
 export interface ApplicableSuggestionsAsk {
@@ -15,6 +20,12 @@ export interface ApplicableSuggestionsAsk {
   /** `null` = lecteur inconnu : seules les règles `both` le concernent sûrement. */
   readonly reader: StaffSuggestionReader | null;
   readonly order: StaffSuggestionOrder;
+  /**
+   * Ce que l'affichage sait pour juger les conditions (RS8) ; `null` = elles
+   * ne sont pas jugées (la liste des applicables de l'écran, qui n'a ni heure
+   * ni panier).
+   */
+  readonly context: ConditionContext | null;
 }
 
 /**
@@ -46,17 +57,19 @@ export function applicableSuggestions(
 }
 
 /** Ce qui écarte une règle avant tout déclencheur — l'aperçu (RS5) le nomme. */
-export type RuleGate = "ended" | "not_started" | "inactive" | "wrong_audience" | "wrong_placement";
+export type RuleGate =
+  "ended" | "not_started" | "inactive" | "wrong_audience" | "wrong_placement" | ConditionGate;
 
 /**
  * **Pourquoi une règle non archivée ne s'applique pas**, ou `null` si elle
  * s'applique. Une seule raison, la première dans cet ordre : la période, puis
- * l'interrupteur, puis l'audience, puis l'emplacement. `applicableSuggestions`
+ * l'interrupteur, puis l'audience, puis l'emplacement, puis les conditions
+ * (`conditionGate` : jour de la semaine, heure, point de retrait, montant). `applicableSuggestions`
  * ne garde que les `null` : l'aperçu et la boutique lisent la même règle.
  */
 export function ruleGate(
   rule: StaffSuggestionRuleSnapshot,
-  ask: Pick<ApplicableSuggestionsAsk, "placement" | "today" | "reader">,
+  ask: Pick<ApplicableSuggestionsAsk, "placement" | "today" | "reader" | "context">,
 ): RuleGate | null {
   if (!periodCovers(rule.period, ask.today)) {
     return ask.today > rule.period.endsOn ? "ended" : "not_started";
@@ -67,7 +80,10 @@ export function ruleGate(
   if (!reaches(rule, ask.reader)) {
     return "wrong_audience";
   }
-  return rule.placement === ask.placement ? null : "wrong_placement";
+  if (rule.placement !== ask.placement) {
+    return "wrong_placement";
+  }
+  return ask.context === null ? null : conditionGate(rule.conditions, ask.context);
 }
 
 function reaches(rule: StaffSuggestionRuleSnapshot, reader: StaffSuggestionReader | null): boolean {

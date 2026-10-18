@@ -1,14 +1,18 @@
 import type {
   StaffSuggestionAudience,
   StaffSuggestionChoicesView,
+  StaffSuggestionConditions,
   StaffSuggestionPlacement,
   StaffSuggestionRuleView,
   StaffSuggestionTriggerKind,
 } from '@lfd/contracts';
 
+import { conditionsParts } from './suggestion-conditions';
+
 /**
  * **La règle dite en une phrase** — « Quand un croissant est dans le panier,
- * proposer Café au panier, aux particuliers, du 20 au 31 octobre. » La même
+ * proposer Café au panier, aux particuliers, du 20 au 31 octobre, du lundi au
+ * vendredi, de 7 h à 11 h, si le panier atteint 20 €. » La même
  * phrase sert d'aperçu en direct dans le panneau et de résumé dans la liste :
  * le staff relit ce qu'il a décidé dans ses mots, pas dans ceux du contrat.
  */
@@ -22,6 +26,8 @@ export interface SuggestionSummaryInput {
   readonly audience: StaffSuggestionAudience;
   readonly startsOn: string;
   readonly endsOn: string;
+  /** Les conditions de RS8, dites après la période ; `null` = aucune. */
+  readonly conditions: StaffSuggestionConditions | null;
 }
 
 const WHERE: Readonly<Record<StaffSuggestionPlacement, string>> = {
@@ -116,7 +122,9 @@ export function summaryOf(
     input.suggestedSkus.length === 0
       ? '(les articles à choisir)'
       : input.suggestedSkus.map((sku) => nameOf(choices, 'sku', sku)).join(', ');
-  return `${whenOf(input, choices)}, proposer ${what} ${WHERE[input.placement]}, ${WHO[input.audience]}, ${frenchPeriod(input.startsOn, input.endsOn)}.`;
+  const conditions = input.conditions === null ? [] : conditionsParts(input.conditions, choices);
+  const tail = conditions.map((part) => `, ${part}`).join('');
+  return `${whenOf(input, choices)}, proposer ${what} ${WHERE[input.placement]}, ${WHO[input.audience]}, ${frenchPeriod(input.startsOn, input.endsOn)}${tail}.`;
 }
 
 /** Une règle servie, ramenée à la phrase. */
@@ -133,6 +141,7 @@ export function ruleSummary(
       audience: rule.audience,
       startsOn: rule.startsOn,
       endsOn: rule.endsOn,
+      conditions: rule.conditions,
     },
     choices,
   );

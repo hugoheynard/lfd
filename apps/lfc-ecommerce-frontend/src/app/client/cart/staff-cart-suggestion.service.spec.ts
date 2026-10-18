@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import type { CartSuggestionView } from '@lfd/contracts';
+import type { CartSuggestionView, ShopQuoteView } from '@lfd/contracts';
 import type { ProductAudienceEvent } from '@lfd/contracts/shop-values';
 import { of } from 'rxjs';
 
@@ -155,4 +155,39 @@ describe('StaffCartSuggestion', () => {
 
     expect(pick.current()).toBeNull();
   });
+
+  it('RS8 : envoie le total que le client lit, seulement une fois le panier chiffré', async () => {
+    const { pick, cart, http } = boot();
+    pick.open();
+    cart.add('VIE-001');
+    await settle();
+    expect(await answer(http, [])).toEqual({ skus: ['VIE-001'], target: null });
+
+    const quote = await vi.waitFor(() => http.expectOne(QUOTE));
+    quote.flush(PRICED);
+    await vi.advanceTimersByTimeAsync(0);
+    await settle();
+
+    expect(await answer(http, [])).toEqual({
+      skus: ['VIE-001'],
+      target: null,
+      cartTotalCents: PRICED.totalCents,
+    });
+  });
 });
+
+const QUOTE = (request: { url: string }): boolean =>
+  request.url.endsWith('/shop/quote') || request.url.endsWith('/shop/quote/mine');
+
+/** Un panier chiffré : TTC pour un client qui ne règle pas au compte. */
+const PRICED: ShopQuoteView = {
+  lines: [],
+  subtotalHtCents: 2_000,
+  discountCents: 0,
+  discountAdjustment: null,
+  voucherDiscountCents: 0,
+  deliveryFeeCents: 0,
+  deliveryVatMode: 'standard',
+  vat: [{ rate: 5.5, amountCents: 110 }],
+  totalCents: 2_110,
+};

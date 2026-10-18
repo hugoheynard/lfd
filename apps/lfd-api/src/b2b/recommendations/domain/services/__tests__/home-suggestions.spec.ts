@@ -5,6 +5,7 @@ import {
 } from "../../entities/staff-suggestion-rule.js";
 import { homeTriggering, STAFF_HOME_PLACES, triggeredAtHome } from "../home-suggestions.js";
 import { traceCandidates } from "../suggestion-candidates.js";
+import { NO_SUGGESTION_CONDITIONS } from "../../value-objects/suggestion-conditions.js";
 
 /** Aucune date n'est comparée à l'horloge ici : la période n'est pas jugée. */
 function rule(
@@ -22,6 +23,7 @@ function rule(
     endsOn: "2026-10-30",
     phrase: null,
     priority: 0,
+    conditions: NO_SUGGESTION_CONDITIONS,
     ...over,
     active: true,
     created: { by: null, at },

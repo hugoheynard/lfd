@@ -10,6 +10,7 @@ import {
   productTriggering,
   STAFF_PRODUCT_PLACES,
 } from "../../domain/services/product-suggestions.js";
+import { shopSiteOf } from "../../domain/services/suggestion-conditions-gate.js";
 import type { SuggestionTriggering } from "../../domain/services/suggestion-candidates.js";
 import { StaffSuggestionShowcase } from "../services/staff-suggestion-showcase.js";
 import {
@@ -29,7 +30,8 @@ interface PlaceSetup {
  * avec le déclencheur et la place de l'emplacement choisi — ceux mêmes des
  * handlers de la boutique. Le jour choisi sert deux fois : la période des
  * règles s'y juge, et l'heure limite s'y oppose (jour visé), comme une
- * boutique ouverte ce jour-là pour ce jour-là.
+ * boutique ouverte ce jour-là pour ce jour-là. L'heure choisie (sinon celle de
+ * maintenant) juge les créneaux de RS8, le montant donné le seuil de panier.
  *
  * Sans société : à un pro, la vitrine pro sans tarif de société.
  */
@@ -45,17 +47,28 @@ export class PreviewStaffSuggestionsHandler implements IQueryHandler<
   ) {}
 
   async execute(query: PreviewStaffSuggestionsQuery): Promise<StaffSuggestionPreviewView> {
-    const day = query.day ?? instantToLocal(this.clock.now()).day;
+    const now = instantToLocal(this.clock.now());
+    const day = query.day ?? now.day;
+    const time = query.time ?? now.time;
     const { place } = query;
     const diagnosis = await this.showcase.diagnose({
       placement: place.placement,
       audience: query.audience,
       day,
+      time,
       inCart: query.skus,
       target: { date: day, pickupAddressId: query.pickupAddressId },
+      // Sans point choisi, l'aperçu joue le client qui n'a pas encore choisi :
+      // l'heure limite suit la règle générale, une règle à points ne paraît pas.
+      site: shopSiteOf(
+        query.pickupAddressId === null
+          ? null
+          : { date: day, pickupAddressId: query.pickupAddressId },
+      ),
+      cartTotalCents: place.placement === "cart" ? query.cartTotalCents : null,
       ...this.setupOf(place, query.skus),
     });
-    return staffSuggestionPreviewView(day, diagnosis);
+    return staffSuggestionPreviewView(day, time, diagnosis);
   }
 
   /** La place et le déclencheur de chaque emplacement, ceux de son handler de boutique. */

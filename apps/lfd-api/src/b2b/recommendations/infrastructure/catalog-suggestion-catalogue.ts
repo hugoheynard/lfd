@@ -39,7 +39,7 @@ export class CatalogSuggestionChoicesReader extends SuggestionChoicesReader {
     super();
   }
 
-  async choices(): Promise<StaffSuggestionChoicesView> {
+  async choices(): Promise<Omit<StaffSuggestionChoicesView, "sites">> {
     const items = await servedDefaults(this.catalog);
     const articles: StaffSuggestionArticleChoice[] = items
       .map((item) => ({ sku: item.productSku, name: item.name, familyId: item.family.id }))

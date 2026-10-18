@@ -14,6 +14,7 @@ const CHOICES = {
     { sku: 'PAI-001', name: 'Baguette', familyId: 'fam-pains' },
   ],
   families: [{ id: 'fam-vien', name: 'Viennoiseries' }],
+  sites: [],
 };
 
 class FakeApi {
@@ -131,6 +132,7 @@ describe('SuggestionPanel', () => {
       'Pendant quelle période ?',
       'Comment la présenter ?',
       'Priorité',
+      'Conditions (facultatives)',
     ]);
     expect(
       [...root.querySelectorAll('fold-fieldset')].every(

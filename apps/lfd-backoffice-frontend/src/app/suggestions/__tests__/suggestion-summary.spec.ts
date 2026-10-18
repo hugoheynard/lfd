@@ -10,6 +10,7 @@ const CHOICES = {
     { sku: 'CAF-001', name: 'Café', familyId: 'fam-boissons' },
   ],
   families: [{ id: 'fam-vien', name: 'Viennoiseries' }],
+  sites: [],
 };
 
 describe('la règle dite en une phrase', () => {
@@ -31,7 +32,7 @@ describe('la règle dite en une phrase', () => {
       triggerKind: 'product_viewed' as const,
       placement: 'product' as const,
     };
-    expect(summaryOf(draft, CHOICES)).toBe(
+    expect(summaryOf({ ...draft, conditions: null }, CHOICES)).toBe(
       'Quand on regarde la fiche de l’article à choisir, proposer (les articles à choisir) sur la fiche de l’article, aux professionnels et aux particuliers, le 20 octobre.',
     );
   });
@@ -49,6 +50,25 @@ describe('la règle dite en une phrase', () => {
     expect(stateOf({ ...rule, active: false }, '2026-10-25')).toBe('cut');
     expect(stateOf({ ...rule, archivedAt: '2026-10-21T00:00:00.000Z' }, '2026-10-25')).toBe(
       'archived',
+    );
+  });
+});
+
+describe('summaryOf — les conditions (RS8)', () => {
+  it('les dit après la période : « du lundi au vendredi, de 7 h à 11 h, si le panier atteint 20 € »', () => {
+    const rule = staffSuggestion({
+      startsOn: '2026-10-20',
+      endsOn: '2026-10-31',
+      conditions: {
+        weekdays: ['mon', 'tue', 'wed', 'thu', 'fri'],
+        hours: { from: '07:00', to: '11:00' },
+        minCartTotalCents: 2_000,
+        cartWithoutFamilyId: null,
+        pickupAddressIds: null,
+      },
+    });
+    expect(ruleSummary(rule, CHOICES)).toBe(
+      'Quand Croissant est dans le panier, proposer PAI-001 au panier, aux professionnels et aux particuliers, du 20 au 31 octobre, du lundi au vendredi, de 7 h à 11 h, si le panier atteint 20 €.',
     );
   });
 });

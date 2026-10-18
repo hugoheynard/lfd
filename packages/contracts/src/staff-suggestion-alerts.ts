@@ -32,7 +32,26 @@ export const STAFF_SUGGESTION_ALERT_REASONS = [
 ] as const;
 export type StaffSuggestionAlertReason = (typeof STAFF_SUGGESTION_ALERT_REASONS)[number];
 
-/** `empty` : aucun article ne passe, ou le déclencheur est mort ; `partial` sinon. */
+/**
+ * Pourquoi une CONDITION (RS8) empêche la règle de s'afficher — des VALEURS :
+ *
+ * - `site_closed` : un point de retrait choisi est archivé ou ne remet plus
+ *   (`siteId` le nomme) ; s'ils le sont tous, la règle ne s'affiche plus ;
+ * - `no_weekday_left` : aucun des jours de la semaine choisis ne tombe dans
+ *   ce qui reste de la période.
+ */
+export const STAFF_SUGGESTION_CONDITION_ALERT_REASONS = ["site_closed", "no_weekday_left"] as const;
+export type StaffSuggestionConditionAlertReason =
+  (typeof STAFF_SUGGESTION_CONDITION_ALERT_REASONS)[number];
+
+/** Une condition qui rend la règle impossible, en tout ou en partie. */
+export interface StaffSuggestionConditionAlert {
+  readonly reason: StaffSuggestionConditionAlertReason;
+  /** Avec `site_closed` seulement : le point de retrait. */
+  readonly siteId: string | null;
+}
+
+/** `empty` : aucun article ne passe, le déclencheur est mort, ou une condition ne peut plus être vraie ; `partial` sinon. */
 export const STAFF_SUGGESTION_ALERT_SEVERITIES = ["empty", "partial"] as const;
 export type StaffSuggestionAlertSeverity = (typeof STAFF_SUGGESTION_ALERT_SEVERITIES)[number];
 
@@ -66,6 +85,8 @@ export interface StaffSuggestionRuleAlert {
   /** Le déclencheur nomme un article ou une famille que le catalogue servi ne connaît plus. */
   readonly triggerWithdrawn: boolean;
   readonly items: readonly StaffSuggestionItemAlert[];
+  /** Les conditions (RS8) qui l'empêchent de s'afficher ; vide si aucune. */
+  readonly conditions: readonly StaffSuggestionConditionAlert[];
   /** `null` quand aucun jour de la période ne tombe dans l'horizon. */
   readonly window: StaffSuggestionAlertWindow | null;
 }

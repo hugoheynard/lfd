@@ -19,8 +19,10 @@ import {
   croissantInput,
   InMemoryRuleReader,
   KnownFamilies,
+  OpenSites,
   RuleStore,
 } from "../../commands/__tests__/staff-suggestion-doubles.js";
+import { NO_SUGGESTION_CONDITIONS } from "../../../domain/value-objects/suggestion-conditions.js";
 import { RecommendationFilter } from "../../services/recommendation-filter.js";
 import { ListStaffSuggestionAlertsHandler } from "../list-staff-suggestion-alerts.handler.js";
 
@@ -122,6 +124,7 @@ function setup(
     filter,
     new Causes({ "BOI-001": "not_for_audience", MASKED: "hidden_for_audience" }),
     new KnownFamilies(["fam-viennoiserie"]),
+    new OpenSites(["site-centre"]),
     clock,
   );
 }
@@ -145,6 +148,7 @@ describe("ListStaffSuggestionAlertsHandler", () => {
         ruleId: "R",
         severity: "partial",
         triggerWithdrawn: false,
+        conditions: [],
         items: [{ sku: "BOI-001", audience: "public", reason: "not_for_audience" }],
         window: { from: TODAY, to: addDays(TODAY, 6), capped: false },
       },
@@ -166,6 +170,7 @@ describe("ListStaffSuggestionAlertsHandler", () => {
       ruleId: "R",
       severity: "empty",
       triggerWithdrawn: false,
+      conditions: [],
       items: [
         { sku: "GONE", audience: null, reason: "withdrawn" },
         { sku: "MASKED", audience: "public", reason: "hidden_for_audience" },
@@ -246,5 +251,30 @@ describe("ListStaffSuggestionAlertsHandler", () => {
       capped: false,
     });
     expect(view.rules[0]?.severity).toBe("empty");
+  });
+});
+
+describe("ListStaffSuggestionAlertsHandler — les conditions (RS8)", () => {
+  it("vide : son seul point de retrait est fermé ; partielle s'il en reste un ouvert", async () => {
+    const withSites = (id: string, pickupAddressIds: readonly string[]) => ({
+      id,
+      ...croissantInput(TODAY, {
+        suggestedSkus: ["PAI-001"],
+        ...week,
+        conditions: { ...NO_SUGGESTION_CONDITIONS, pickupAddressIds },
+      }),
+    });
+
+    const view = await setup([
+      withSites("CLOSED", ["site-ferme"]),
+      withSites("HALF", ["site-centre", "site-ferme"]),
+    ]).execute();
+
+    expect(
+      view.rules.map(({ ruleId, severity, conditions }) => [ruleId, severity, conditions]),
+    ).toEqual([
+      ["CLOSED", "empty", [{ reason: "site_closed", siteId: "site-ferme" }]],
+      ["HALF", "partial", [{ reason: "site_closed", siteId: "site-ferme" }]],
+    ]);
   });
 });

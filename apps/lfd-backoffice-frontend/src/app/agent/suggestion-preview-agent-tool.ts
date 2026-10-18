@@ -18,6 +18,8 @@ import {
   type ReasonContext,
 } from '../suggestions/suggestion-preview';
 
+import { centsField } from '../comptabilite/cents-field';
+
 import { said } from './agent-tool-text';
 
 /** Ce que l'outil reçoit — les entrées de l'aperçu de l'écran. */
@@ -27,6 +29,9 @@ interface PreviewArgs {
   readonly viewedSku?: string | undefined;
   readonly audience: StaffSuggestionReader;
   readonly day: string;
+  readonly time?: string | undefined;
+  readonly cartTotalCents?: number | undefined;
+  readonly pickupAddressId?: string | undefined;
 }
 
 /**
@@ -42,7 +47,7 @@ export function declareSuggestionPreviewTool(
   void declareExperimentalWebMcpTool({
     name: 'suggestion_preview',
     description:
-      'Aperçu des suggestions décidées, comme le bloc « Aperçu » de l’écran : pour un emplacement (`placement` : cart, avec `cartSkus` les SKU au panier ; ou product, avec `viewedSku` l’article de la fiche et `cartSkus` facultatif ; ou home, l’accueil, où seul « partout » vaut et `cartSkus` écarte ce qui est déjà au panier), une clientèle (`audience` : public ou pro) et un jour (`day` AAAA-MM-JJ), rend la carte EXACTE que verrait le client (titre, articles, prix HT pour pro, TTC pour particulier ; aux pros, la vitrine sans tarif de société), puis CHAQUE règle non archivée avec « Affichée » ou la raison (finie, pas commencée, coupée, clientèle, emplacement, déclencheur faux, article non servi / non commandable ce jour-là / déjà au panier / article de la fiche, battue par une autre). Lecture seule.',
+      'Aperçu des suggestions décidées, comme le bloc « Aperçu » de l’écran : pour un emplacement (`placement` : cart, avec `cartSkus` les SKU au panier ; ou product, avec `viewedSku` l’article de la fiche et `cartSkus` facultatif ; ou home, l’accueil, où seul « partout » vaut et `cartSkus` écarte ce qui est déjà au panier), une clientèle (`audience` : public ou pro) et un jour (`day` AAAA-MM-JJ) — et, pour les conditions, l’heure (`time` HH:MM, Paris ; omise = maintenant), le total du panier (`cartTotalCents`, centimes ; omis = pas encore chiffré) et le point de retrait (`pickupAddressId` ; omis = pas encore choisi) —, rend la carte EXACTE que verrait le client (titre, articles, prix HT pour pro, TTC pour particulier ; aux pros, la vitrine sans tarif de société), puis CHAQUE règle non archivée avec « Affichée » ou la raison (finie, pas commencée, coupée, clientèle, emplacement, jour de la semaine, heure, point de retrait pas encore choisi ou autre, panier sous le seuil ou contenant la famille exclue, déclencheur faux, article non servi / non commandable ce jour-là / déjà au panier / article de la fiche, battue par une autre). Lecture seule.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -51,6 +56,9 @@ export function declareSuggestionPreviewTool(
         viewedSku: { type: 'string' },
         audience: { type: 'string', enum: STAFF_SUGGESTION_READERS },
         day: { type: 'string' },
+        time: { type: 'string' },
+        cartTotalCents: { type: 'integer' },
+        pickupAddressId: { type: 'string' },
       },
       required: ['placement', 'audience', 'day'],
       additionalProperties: false,
@@ -63,6 +71,9 @@ export function declareSuggestionPreviewTool(
           viewedSku: args.viewedSku ?? null,
           audience: args.audience,
           day: args.day,
+          time: args.time ?? '',
+          cartTotal: args.cartTotalCents === undefined ? '' : centsField(args.cartTotalCents),
+          siteId: args.pickupAddressId ?? null,
         });
         if (payload === null) {
           return 'Aperçu des suggestions — REFUSÉ : sur une fiche, `viewedSku` (le SKU de la fiche) est obligatoire.';

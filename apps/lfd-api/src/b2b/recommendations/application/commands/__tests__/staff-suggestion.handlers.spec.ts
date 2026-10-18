@@ -11,6 +11,8 @@ import {
   UnknownSuggestionCatalogueError,
   UnknownSuggestionOrderError,
 } from "../../../domain/errors/staff-suggestion-errors.js";
+import { UnknownSuggestionSiteError } from "../../../domain/errors/suggestion-condition-errors.js";
+import { NO_SUGGESTION_CONDITIONS } from "../../../domain/value-objects/suggestion-conditions.js";
 import { ArchiveStaffSuggestionCommand } from "../archive-staff-suggestion.command.js";
 import { ArchiveStaffSuggestionHandler } from "../archive-staff-suggestion.handler.js";
 import { CreateStaffSuggestionCommand } from "../create-staff-suggestion.command.js";
@@ -25,6 +27,7 @@ import {
   croissantInput,
   InMemoryRules,
   KnownFamilies,
+  OpenSites,
   OrderReader,
   OrderSetting,
   OrderWriter,
@@ -46,12 +49,21 @@ function scene() {
     rules,
     skus,
     families,
+    new OpenSites(["site-centre"]),
     new FixedIdGenerator("rule"),
     clock,
     events,
     uow,
   );
-  const revise = new ReviseStaffSuggestionHandler(rules, skus, families, clock, events, uow);
+  const revise = new ReviseStaffSuggestionHandler(
+    rules,
+    skus,
+    families,
+    new OpenSites(["site-centre"]),
+    clock,
+    events,
+    uow,
+  );
   const setActive = new SetStaffSuggestionActiveHandler(rules, clock, events, uow);
   const archive = new ArchiveStaffSuggestionHandler(rules, clock, events, uow);
   return { rules, events, create, revise, setActive, archive };
@@ -210,5 +222,56 @@ describe("SetStaffSuggestionOrderHandler", () => {
     await expect(
       handler.execute(new SetStaffSuggestionOrderCommand("random", null)),
     ).rejects.toThrow(UnknownSuggestionOrderError);
+  });
+});
+
+describe("les conditions à l'écriture (RS8)", () => {
+  const conditions = (over: Partial<typeof NO_SUGGESTION_CONDITIONS>) => ({
+    conditions: { ...NO_SUGGESTION_CONDITIONS, ...over },
+  });
+
+  it("refuse un point de retrait fermé ou inconnu, et une famille exclue inconnue — rien n'est écrit", async () => {
+    const { rules, create } = scene();
+
+    await expect(
+      create.execute(
+        new CreateStaffSuggestionCommand(
+          croissantInput(TODAY, conditions({ pickupAddressIds: ["site-centre", "site-ferme"] })),
+          "staff_1",
+        ),
+      ),
+    ).rejects.toThrow(UnknownSuggestionSiteError);
+    await expect(
+      create.execute(
+        new CreateStaffSuggestionCommand(
+          croissantInput(TODAY, conditions({ cartWithoutFamilyId: "fam-inconnue" })),
+          "staff_1",
+        ),
+      ),
+    ).rejects.toThrow(UnknownSuggestionCatalogueError);
+    expect(rules.store.adds).toBe(0);
+  });
+
+  it("une réécriture qui ne change que les conditions s'écrit, et le journal le dit", async () => {
+    const { rules, events, create, revise } = scene();
+    const id = await create.execute(
+      new CreateStaffSuggestionCommand(croissantInput(TODAY), "staff_1"),
+    );
+    const morning = conditions({
+      hours: { from: "07:00", to: "11:00" },
+      minCartTotalCents: 2_000,
+      pickupAddressIds: ["site-centre"],
+      cartWithoutFamilyId: "cat_vie",
+    });
+
+    await revise.execute(
+      new ReviseStaffSuggestionCommand(id, croissantInput(TODAY, morning), "staff_2"),
+    );
+
+    expect(rules.store.saves).toBe(1);
+    expect(rules.store.stored(id).conditions).toEqual(morning.conditions);
+    expect(events.traced[1]?.journalFact().payload["changes"]).toEqual({
+      conditions: { from: NO_SUGGESTION_CONDITIONS, to: morning.conditions },
+    });
   });
 });

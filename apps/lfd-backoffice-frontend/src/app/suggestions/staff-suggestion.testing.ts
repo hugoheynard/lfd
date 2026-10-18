@@ -15,6 +15,13 @@ export function staffSuggestion(
     endsOn: '2026-10-25',
     phrase: { fr: 'Avec un croissant, la baguette' },
     priority: 0,
+    conditions: {
+      weekdays: null,
+      hours: null,
+      minCartTotalCents: null,
+      cartWithoutFamilyId: null,
+      pickupAddressIds: null,
+    },
     active: true,
     archivedAt: null,
     createdAt: '2026-10-18T08:00:00.000Z',

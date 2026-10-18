@@ -20,5 +20,9 @@ export class PreviewStaffSuggestionsQuery {
     /** `AAAA-MM-JJ` ; `null` = le jour métier d'aujourd'hui. */
     readonly day: string | null,
     readonly pickupAddressId: string | null,
+    /** `HH:MM` ; `null` = l'heure de maintenant (RS8, créneau). */
+    readonly time: string | null = null,
+    /** Le total du panier en centimes ; `null` = pas encore chiffré (RS8, seuil). */
+    readonly cartTotalCents: number | null = null,
   ) {}
 }

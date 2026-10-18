@@ -31,7 +31,12 @@ export class ShopCartSuggestionsController {
     @Body(new ZodBody(cartSuggestionsPayloadSchema)) payload: CartSuggestionsPayload,
   ): Promise<readonly CartSuggestionView[]> {
     return this.queries.execute<ReadCartSuggestionsQuery, readonly CartSuggestionView[]>(
-      new ReadCartSuggestionsQuery(null, payload.skus, payload.target),
+      new ReadCartSuggestionsQuery(
+        null,
+        payload.skus,
+        payload.target,
+        payload.cartTotalCents ?? null,
+      ),
     );
   }
 }

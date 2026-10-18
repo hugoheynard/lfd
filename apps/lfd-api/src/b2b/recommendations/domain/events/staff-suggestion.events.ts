@@ -2,6 +2,7 @@ import type { StaffSuggestionOrder } from "@lfd/contracts";
 
 import type { JournalFact, JournaledEvent } from "../../../../platform/journal/journal-fact.js";
 import type { StaffSuggestionRuleSnapshot } from "../entities/staff-suggestion-rule.js";
+import { plainConditions } from "../value-objects/suggestion-conditions.js";
 
 /**
  * **Les faits des suggestions décidées** — un par geste
@@ -25,6 +26,7 @@ export function journalRule(rule: StaffSuggestionRuleSnapshot): Readonly<Record<
     endsOn: rule.period.endsOn,
     phrase: rule.phrase === null ? null : { ...rule.phrase },
     priority: rule.priority,
+    conditions: plainConditions(rule.conditions),
   };
 }
 

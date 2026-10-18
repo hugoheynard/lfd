@@ -12,6 +12,12 @@ import {
 import { StaffSuggestionsService } from '../suggestions/staff-suggestions.service';
 
 import { said } from './agent-tool-text';
+import {
+  CONDITION_FIELDS,
+  type ConditionFields,
+  conditionsOf,
+  CONDITIONS_HELP,
+} from './suggestion-agent-conditions';
 import { declareSuggestionAlertsTool } from './suggestion-alerts-agent-tool';
 import { declareSuggestionPreviewTool } from './suggestion-preview-agent-tool';
 import { declareSuggestionResultsTool } from './suggestion-results-agent-tool';
@@ -47,13 +53,15 @@ const RULE_FIELDS = {
   phraseEn: { type: 'string' },
   phraseIt: { type: 'string' },
   priority: { type: 'integer' },
+  ...CONDITION_FIELDS,
 } as const;
 
 const FIELDS_HELP =
-  '`triggerKind` : everywhere (partout, sans triggerRef), product_in_cart ou product_viewed (triggerRef = SKU), category_in_cart (triggerRef = id de famille). `suggestedSkus` : 1 à 3 SKU distincts, jamais celui qui déclenche. `placement` : home, cart ou product — product_in_cart et category_in_cart seulement au panier (cart), product_viewed seulement en fiche (product), everywhere partout. `audience` : pro, public ou both. `startsOn` et `endsOn` : jours AAAA-MM-JJ, compris, fin ≥ début, fin pas déjà passée à la création. `phraseFr` (90 caractères au plus ; vide = « Notre conseil »), `phraseEn`, `phraseIt` facultatives, jamais sans français. `priority` : entier de 0 à 999, lu quand l’ordre est « priority ». Les SKU et familles se lisent par suggestion_list (catalogue servi en fin de réponse).';
+  '`triggerKind` : everywhere (partout, sans triggerRef), product_in_cart ou product_viewed (triggerRef = SKU), category_in_cart (triggerRef = id de famille). `suggestedSkus` : 1 à 3 SKU distincts, jamais celui qui déclenche. `placement` : home, cart ou product — product_in_cart et category_in_cart seulement au panier (cart), product_viewed seulement en fiche (product), everywhere partout. `audience` : pro, public ou both. `startsOn` et `endsOn` : jours AAAA-MM-JJ, compris, fin ≥ début, fin pas déjà passée à la création. `phraseFr` (90 caractères au plus ; vide = « Notre conseil »), `phraseEn`, `phraseIt` facultatives, jamais sans français. `priority` : entier de 0 à 999, lu quand l’ordre est « priority ». Les SKU et familles se lisent par suggestion_list (catalogue servi en fin de réponse). ' +
+  CONDITIONS_HELP;
 
 /** Ce qu'un outil reçoit pour une règle — tous facultatifs à la correction. */
-interface RuleFields {
+interface RuleFields extends ConditionFields {
   readonly triggerKind?: StaffSuggestionRulePayload['trigger']['kind'] | undefined;
   readonly triggerRef?: string | undefined;
   readonly suggestedSkus?: readonly string[] | undefined;
@@ -102,7 +110,7 @@ export function declareSuggestionAgentTools(canWrite: boolean): readonly string[
   void declareExperimentalWebMcpTool({
     name: 'suggestion_list',
     description:
-      'Les suggestions décidées par l’équipe (« quand le client fait ceci, montre-lui cela ») : chacune avec son id, son état (active, coupée, archivée), sa phrase, son déclencheur, les articles montrés, l’emplacement, l’audience, la période et la priorité ; puis le catalogue servi (SKU, nom) et ses familles (id, nom), où se choisissent les références. Lecture seule.',
+      'Les suggestions décidées par l’équipe (« quand le client fait ceci, montre-lui cela ») : chacune avec son id, son état (active, coupée, archivée), sa phrase, son déclencheur, les articles montrés, l’emplacement, l’audience, la période, la priorité et ses conditions ; puis le catalogue servi (SKU, nom), ses familles (id, nom) et les points de retrait ouverts (id, nom), où se choisissent les références. Lecture seule.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
     execute: () =>
       said('Lecture des suggestions', async () => {
@@ -111,7 +119,7 @@ export function declareSuggestionAgentTools(canWrite: boolean): readonly string[
         const catalogue =
           known === null
             ? 'Catalogue servi : illisible pour l’instant.'
-            : `Catalogue servi : ${known.articles.map((article) => `${article.sku} ${article.name}`).join(' ; ')}\nFamilles : ${known.families.map((family) => `${family.id} ${family.name}`).join(' ; ')}`;
+            : `Catalogue servi : ${known.articles.map((article) => `${article.sku} ${article.name}`).join(' ; ')}\nFamilles : ${known.families.map((family) => `${family.id} ${family.name}`).join(' ; ')}\nPoints de retrait ouverts : ${known.sites.map((site) => `${site.id} ${site.label}`).join(' ; ')}`;
         return [
           lines.length === 0 ? 'Aucune suggestion décidée.' : lines.join('\n'),
           catalogue,
@@ -251,5 +259,6 @@ export function payloadOf(
         ? null
         : { fr, ...(en === '' ? {} : { en }), ...(it === '' ? {} : { it }) },
     priority: given.priority ?? rule?.priority ?? 0,
+    conditions: conditionsOf(given, rule),
   };
 }

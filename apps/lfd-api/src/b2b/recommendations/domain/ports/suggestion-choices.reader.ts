@@ -6,5 +6,5 @@ import type { StaffSuggestionChoicesView } from "@lfd/contracts";
  * (ISP) : refuser une saisie n'a pas à lister le catalogue.
  */
 export abstract class SuggestionChoicesReader {
-  abstract choices(): Promise<StaffSuggestionChoicesView>;
+  abstract choices(): Promise<Omit<StaffSuggestionChoicesView, "sites">>;
 }

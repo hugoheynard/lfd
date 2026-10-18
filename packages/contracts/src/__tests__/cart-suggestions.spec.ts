@@ -22,4 +22,12 @@ describe("cartSuggestionsPayloadSchema", () => {
       false,
     );
   });
+
+  it("RS8 : le total du panier, facultatif, en centimes entiers et positifs", () => {
+    const ok = (body: unknown) => cartSuggestionsPayloadSchema.safeParse(body).success;
+    expect(ok({ skus: [], target: null, cartTotalCents: 0 })).toBe(true);
+    expect(ok({ skus: [], target: null, cartTotalCents: 2_450 })).toBe(true);
+    expect(ok({ skus: [], target: null, cartTotalCents: 24.5 })).toBe(false);
+    expect(ok({ skus: [], target: null, cartTotalCents: -1 })).toBe(false);
+  });
 });

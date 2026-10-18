@@ -21,6 +21,7 @@ const CHOICES = {
     { sku: 'PAI-001', name: 'Baguette', familyId: 'fam-pains' },
   ],
   families: [{ id: 'fam-vien', name: 'Viennoiseries' }],
+  sites: [],
 };
 
 class FakeApi {
@@ -188,6 +189,7 @@ describe('SuggestionsPage', () => {
       ruleId: 'EMPTY',
       severity: 'empty',
       triggerWithdrawn: false,
+      conditions: [],
       items: [{ sku: 'PAI-001', audience: 'public', reason: 'hidden_for_audience' }],
       window: { from: '2026-10-18', to: '2026-10-25', capped: false },
     };

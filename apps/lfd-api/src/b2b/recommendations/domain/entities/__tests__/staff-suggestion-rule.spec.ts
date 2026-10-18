@@ -15,6 +15,11 @@ import {
   UnknownSuggestionTriggerError,
 } from "../../errors/staff-suggestion-errors.js";
 import { StaffSuggestionRule, type StaffSuggestionRuleInput } from "../staff-suggestion-rule.js";
+import { NO_SUGGESTION_CONDITIONS } from "../../value-objects/suggestion-conditions.js";
+import {
+  SuggestionCartConditionPlacementError,
+  SuggestionFamilyContradictionError,
+} from "../../errors/suggestion-condition-errors.js";
 
 /**
  * Les jours ne sont comparés qu'à `TODAY`, passé en argument : la fixture ne
@@ -34,6 +39,7 @@ function input(over: Partial<StaffSuggestionRuleInput> = {}): StaffSuggestionRul
     endsOn: "2026-10-25",
     phrase: { fr: "Avec un croissant, le café du matin" },
     priority: 0,
+    conditions: NO_SUGGESTION_CONDITIONS,
     ...over,
   };
 }
@@ -203,5 +209,40 @@ describe("StaffSuggestionRule — gestes", () => {
     expect(() => StaffSuggestionRule.reconstitute({ ...record, suggestedSkus: [] })).toThrow(
       SuggestedCountError,
     );
+  });
+});
+
+describe("StaffSuggestionRule — les conditions (RS8)", () => {
+  const morningNoDrink = {
+    ...NO_SUGGESTION_CONDITIONS,
+    weekdays: ["mon", "tue", "wed", "thu", "fri"],
+    hours: { from: "07:00", to: "11:00" },
+    minCartTotalCents: 2_000,
+    cartWithoutFamilyId: "fam-boissons",
+    pickupAddressIds: ["site-centre"],
+  };
+
+  it("les porte, jugées, et une réécriture les remplace", () => {
+    const rule = declare({ conditions: morningNoDrink });
+    expect(rule.snapshot().conditions).toEqual(morningNoDrink);
+
+    rule.revise(input(), LATER);
+    expect(rule.snapshot().conditions).toEqual(NO_SUGGESTION_CONDITIONS);
+  });
+
+  it("refuse le seuil hors du panier, et la contradiction avec son déclencheur", () => {
+    expect(() =>
+      declare({
+        trigger: { kind: "everywhere", ref: null },
+        placement: "home",
+        conditions: { ...NO_SUGGESTION_CONDITIONS, minCartTotalCents: 2_000 },
+      }),
+    ).toThrow(SuggestionCartConditionPlacementError);
+    expect(() =>
+      declare({
+        trigger: { kind: "category_in_cart", ref: "fam-vien" },
+        conditions: { ...NO_SUGGESTION_CONDITIONS, cartWithoutFamilyId: "fam-vien" },
+      }),
+    ).toThrow(SuggestionFamilyContradictionError);
   });
 });

@@ -19,6 +19,11 @@ import {
   type SuggestionTriggering,
 } from "../../domain/services/suggestion-candidates.js";
 import {
+  shopSiteOf,
+  type ConditionContext,
+  type ShopSite,
+} from "../../domain/services/suggestion-conditions-gate.js";
+import {
   diagnoseRules,
   type ItemRefusal,
   type RuleDiagnosis,
@@ -34,6 +39,11 @@ export interface ShowcaseAsk {
   /** Les SKU au panier : jamais suggérés. */
   readonly inCart: readonly string[];
   readonly target: FulfillmentTarget | null;
+  /**
+   * Le total que le client lit au panier, en centimes, s'il est connu (RS8,
+   * seuil) ; `null` hors du panier ou pas encore chiffré.
+   */
+  readonly cartTotalCents: number | null;
   /** Combien d'articles décidés l'emplacement montre (Q1). */
   readonly places: number;
   /**
@@ -51,6 +61,10 @@ export interface ShowcasePreviewAsk extends Omit<ShowcaseAsk, "companyId"> {
   readonly audience: ShopAudience;
   /** Le jour métier jugé, `AAAA-MM-JJ`. */
   readonly day: string;
+  /** L'heure jugée, `HH:MM` (Paris) — celle des créneaux (RS8). */
+  readonly time: string;
+  /** Le point de retrait jugé par les conditions (RS8) — l'aperçu peut dire « pas encore choisi ». */
+  readonly site: ShopSite;
 }
 
 /** Ce que l'aperçu rend : l'affichage exact, et chaque règle diagnostiquée. */
@@ -63,12 +77,15 @@ export interface ShowcaseDiagnosis {
 interface ShowcaseRun extends Omit<ShowcaseAsk, "companyId"> {
   readonly reader: ShelfReader;
   readonly day: string;
+  readonly time: string;
+  readonly site: ShopSite;
 }
 
 /**
  * **La vitrine des suggestions du staff**, commune au panier et à la fiche
  * (RS2) : les règles applicables à l'emplacement (période au jour métier,
- * audience, interrupteur, ordre réglé), puis celles que l'emplacement
+ * audience, interrupteur, conditions de RS8 à l'heure de l'affichage, ordre
+ * réglé), puis celles que l'emplacement
  * déclenche, puis le filtre commun (servi, commandable au jour visé, absent
  * du panier), et la place bornée. L'article sort à son prix de vitrine.
  *
@@ -93,8 +110,9 @@ export class StaffSuggestionShowcase {
   async show(ask: ShowcaseAsk): Promise<readonly CartSuggestionView[]> {
     const audience = ask.companyId === null ? "public" : "pro";
     const reader: ShelfReader = { companyId: ask.companyId, audience };
-    const day = instantToLocal(this.clock.now()).day;
-    return (await this.run({ ...ask, reader, day })).shown;
+    const { day, time } = instantToLocal(this.clock.now());
+    const site = shopSiteOf(ask.target);
+    return (await this.run({ ...ask, reader, day, time, site })).shown;
   }
 
   /**
@@ -112,7 +130,12 @@ export class StaffSuggestionShowcase {
   ): Promise<{ readonly shown: readonly CartSuggestionView[]; readonly trace: ShowcaseTrace }> {
     const { audience } = ask.reader;
     const [live, order] = await Promise.all([this.rules.listLive(), this.order.current()]);
-    const gate = { placement: ask.placement, today: ask.day, reader: audience };
+    const gate = {
+      placement: ask.placement,
+      today: ask.day,
+      reader: audience,
+      context: contextOf(ask),
+    };
     const gateOf = (rule: StaffSuggestionRuleSnapshot) => ruleGate(rule, gate);
     const ordered = applicableSuggestions(live, { ...gate, order: order.order });
     const empty: ShowcaseTrace = { live, gateOf, traced: [], refused: new Map(), shown: [] };
@@ -174,6 +197,16 @@ export class StaffSuggestionShowcase {
 interface ShelfReader {
   readonly companyId: string | null;
   readonly audience: ShopAudience;
+}
+
+/** Ce que l'affichage sait pour juger les conditions (RS8). */
+function contextOf(ask: ShowcaseRun): ConditionContext {
+  return {
+    day: ask.day,
+    time: ask.time,
+    site: ask.site,
+    cartTotalCents: ask.cartTotalCents,
+  };
 }
 
 /** L'id réel de la règle d'un article affiché — la raison le porte en minuscules. */

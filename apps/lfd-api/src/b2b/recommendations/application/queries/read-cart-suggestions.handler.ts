@@ -28,6 +28,7 @@ export class ReadCartSuggestionsHandler implements IQueryHandler<
       companyId: query.companyId,
       inCart: query.skus,
       target: query.target,
+      cartTotalCents: query.cartTotalCents,
       places: STAFF_CART_PLACES,
       triggeringOf: async (audience) => {
         const familyPaths = await this.families.pathsOf(query.skus, audience);

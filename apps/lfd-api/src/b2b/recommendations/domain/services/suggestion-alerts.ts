@@ -1,6 +1,8 @@
 import {
   addDays,
   STAFF_SUGGESTION_ALERT_HORIZON_DAYS,
+  weekdayOfDate,
+  type StaffSuggestionConditionAlert,
   type StaffSuggestionAlertWindow,
   type StaffSuggestionItemAlert,
   type StaffSuggestionReader,
@@ -65,10 +67,51 @@ export function alertWindow(rule: StaffSuggestionRuleSnapshot, today: string): A
   return { from, to, capped, days };
 }
 
+/** Ce que les conditions (RS8) disent d'une règle : leurs alertes, et si elles l'éteignent. */
+export interface ConditionFindings {
+  readonly alerts: readonly StaffSuggestionConditionAlert[];
+  /** Une condition ne peut plus être vraie : la règle ne s'affichera plus. */
+  readonly blocking: boolean;
+}
+
+export const NO_CONDITION_FINDINGS: ConditionFindings = { alerts: [], blocking: false };
+
+/**
+ * **Les conditions qui rendent une règle impossible** (RS8) : un point de
+ * retrait choisi qui n'est plus ouvert (tous fermés : elle s'éteint), ou des
+ * jours de la semaine dont aucun ne tombe dans la fenêtre regardée. Une
+ * fenêtre absente ou plafonnée n'en dit rien sur les jours : plafonnée, elle
+ * couvre plus d'une semaine.
+ */
+export function conditionFindings(
+  rule: StaffSuggestionRuleSnapshot,
+  openSites: ReadonlySet<string>,
+  window: AlertWindow | null,
+): ConditionFindings {
+  const sites = rule.conditions.pickupAddressIds ?? [];
+  const closed = sites.filter((id) => !openSites.has(id));
+  const alerts: StaffSuggestionConditionAlert[] = closed.map((siteId) => ({
+    reason: "site_closed",
+    siteId,
+  }));
+  const weekdays = rule.conditions.weekdays;
+  const noWeekdayLeft =
+    weekdays !== null &&
+    window !== null &&
+    !window.capped &&
+    !window.days.some((day) => weekdays.includes(weekdayOfDate(day)));
+  if (noWeekdayLeft) {
+    alerts.push({ reason: "no_weekday_left", siteId: null });
+  }
+  const allClosed = sites.length > 0 && closed.length === sites.length;
+  return { alerts, blocking: allClosed || noWeekdayLeft };
+}
+
 /**
  * **L'alerte d'une règle**, ou `null` si elle est saine. Un article « passe »
  * s'il est servi ET commandable pour au moins une des clientèles de la règle ;
- * aucun ne passe, ou un déclencheur mort : `empty`. Sinon, la moindre raison
+ * aucun ne passe, un déclencheur mort, ou une condition qui ne peut plus être
+ * vraie : `empty`. Sinon, la moindre raison
  * suffit à `partial`. Un retrait vaut pour tous : une seule ligne, sans
  * clientèle.
  */
@@ -77,9 +120,10 @@ export function ruleAlert(
   triggerWithdrawn: boolean,
   facts: readonly AudienceFacts[],
   window: StaffSuggestionAlertWindow | null,
+  conditions: ConditionFindings = NO_CONDITION_FINDINGS,
 ): StaffSuggestionRuleAlert | null {
   const items = rule.suggestedSkus.flatMap((sku) => itemAlerts(sku, facts));
-  if (items.length === 0 && !triggerWithdrawn) {
+  if (items.length === 0 && !triggerWithdrawn && conditions.alerts.length === 0) {
     return null;
   }
   const anyPasses = rule.suggestedSkus.some((sku) =>
@@ -87,9 +131,10 @@ export function ruleAlert(
   );
   return {
     ruleId: rule.id,
-    severity: triggerWithdrawn || !anyPasses ? "empty" : "partial",
+    severity: triggerWithdrawn || !anyPasses || conditions.blocking ? "empty" : "partial",
     triggerWithdrawn,
     items,
+    conditions: conditions.alerts,
     window: window === null ? null : { from: window.from, to: window.to, capped: window.capped },
   };
 }

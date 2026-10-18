@@ -3,12 +3,16 @@ import { isPlatformBrowser } from '@angular/common';
 import { computed, effect, inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
 import type { CartSuggestionsPayload, CartSuggestionView } from '@lfd/contracts';
 
+import { settlesOnAccount } from '../../account/settles-on-account';
 import { AuthFacade } from '../../auth/auth.facade';
 import { ProductAudience } from '../audience/product-audience.service';
+import { ClientCompany } from '../client-company.service';
 import { ClientWorkspace } from '../client-workspace.service';
 import { OrderContextStore } from '../order-context.store';
 import { cartSkus, suggestionTarget } from '../suggestions/suggestion-target';
 import { CartStore } from './cart.store';
+import { ClientCart } from './client-cart.service';
+import { shownCartTotalCents } from './shown-cart-total';
 
 /** Le panier se compose au clic : on attend qu'il se pose avant de demander. */
 export const CART_SUGGESTION_DEBOUNCE_MS = 400;
@@ -23,6 +27,9 @@ interface SuggestionRequest {
 /**
  * **La suggestion du staff au panier** (RS2, panier, de
  * `documentation/recommandation-produit/suggestions-du-staff.md`).
+ *
+ * Elle envoie le panier, le jour visé et son point de retrait, et le total
+ * que le client lit quand il est chiffré (RS8 : créneau, seuil, point).
  *
  * Sans règle applicable, le panier ne montre rien (la relance codée en dur,
  * `CartUpsell`, est retirée le 2026-10-18). Rien en SSR ; une requête par ouverture du panier et
@@ -43,6 +50,8 @@ export class StaffCartSuggestion {
   private readonly order = inject(OrderContextStore);
   private readonly store = inject(CartStore);
   private readonly audience = inject(ProductAudience);
+  private readonly cart = inject(ClientCart);
+  private readonly firm = inject(ClientCompany);
 
   private readonly openings = signal(0);
   private readonly served = signal<CartSuggestionView | null>(null);
@@ -116,10 +125,24 @@ export class StaffCartSuggestion {
   }
 
   private payload(): CartSuggestionsPayload {
+    const total = this.shownTotalCents();
     return {
       skus: cartSkus(this.store.quantities()),
       target: suggestionTarget(this.order.choice()),
+      ...(total === null ? {} : { cartTotalCents: total }),
     };
+  }
+
+  /**
+   * Le total que le client lit au panier (RS8, seuil), seulement quand le
+   * serveur l'a chiffré pour CE panier : pendant un nouveau décompte, l'ancien
+   * total mentirait. Sans total, une règle à seuil ne paraît pas.
+   */
+  private shownTotalCents(): number | null {
+    if (this.cart.pricing() !== 'ready') {
+      return null;
+    }
+    return shownCartTotalCents(this.cart.totals(), settlesOnAccount(this.firm.company()));
   }
 
   private cancel(): void {

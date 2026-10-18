@@ -2,17 +2,19 @@ import type {
   StaffSuggestionAlertReason,
   StaffSuggestionAlertSeverity,
   StaffSuggestionChoicesView,
+  StaffSuggestionConditionAlert,
   StaffSuggestionReader,
   StaffSuggestionRuleAlert,
 } from '@lfd/contracts';
 
+import { sitesText } from './suggestion-conditions';
 import { frenchPeriod } from './suggestion-summary';
 
 /**
  * **Les alertes d'une règle, dites en français** (RS10,
  * `documentation/recommandation-produit/suggestions-du-staff.md` §13) : une
- * règle vivante dont un article ne se vend plus. Le serveur juge ; l'écran ne
- * fait que dire.
+ * règle vivante dont un article ne se vend plus, ou dont une condition (RS8)
+ * ne peut plus être vraie. Le serveur juge ; l'écran ne fait que dire.
  */
 
 export const ALERT_BADGES: Readonly<
@@ -92,6 +94,19 @@ function untilOf(alert: StaffSuggestionRuleAlert): string {
   return alert.window.capped ? `${until} (la suite de la période n’est pas regardée)` : until;
 }
 
+/** Une condition de RS8 qui ne peut plus être vraie, dite. */
+function conditionLine(
+  condition: StaffSuggestionConditionAlert,
+  choices: StaffSuggestionChoicesView | null,
+): string {
+  switch (condition.reason) {
+    case 'site_closed':
+      return `Le point de retrait ${sitesText(choices, [condition.siteId ?? ''])} est archivé ou ne remet plus : la suggestion n’y paraîtra pas.`;
+    case 'no_weekday_left':
+      return 'Aucun des jours de la semaine choisis ne tombe dans ce qui reste de la période : elle ne paraîtra plus.';
+  }
+}
+
 /** Les phrases d'une alerte, le déclencheur d'abord. */
 export function alertLines(
   alert: StaffSuggestionRuleAlert,
@@ -102,7 +117,11 @@ export function alertLines(
         'Le déclencheur nomme un article ou une famille qui n’est plus au catalogue : la suggestion ne peut plus se déclencher.',
       ]
     : [];
-  return [...trigger, ...group(alert).map((grouped) => line(grouped, alert, choices))];
+  return [
+    ...trigger,
+    ...group(alert).map((grouped) => line(grouped, alert, choices)),
+    ...alert.conditions.map((condition) => conditionLine(condition, choices)),
+  ];
 }
 
 /** Le filtre de la liste : toutes, ou seulement celles à corriger. */

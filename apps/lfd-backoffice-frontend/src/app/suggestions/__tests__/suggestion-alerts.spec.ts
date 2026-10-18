@@ -9,6 +9,7 @@ const CHOICES = {
     { sku: 'GAL-001', name: 'Galette', familyId: 'fam-vien' },
   ],
   families: [],
+  sites: [{ id: 'site-gare', label: 'Gare' }],
 };
 
 function alert(over: Partial<StaffSuggestionRuleAlert> = {}): StaffSuggestionRuleAlert {
@@ -16,6 +17,7 @@ function alert(over: Partial<StaffSuggestionRuleAlert> = {}): StaffSuggestionRul
     ruleId: 'R',
     severity: 'partial',
     triggerWithdrawn: false,
+    conditions: [],
     items: [],
     window: { from: '2026-10-18', to: '2026-10-25', capped: false },
     ...over,
@@ -67,5 +69,24 @@ describe('les alertes d’une suggestion', () => {
     expect(alertFilterOf('to_fix')).toBe('to_fix');
     expect(alertFilterOf('all')).toBe('all');
     expect(alertFilterOf('autre')).toBeNull();
+  });
+});
+
+describe('les alertes d’une condition (RS8)', () => {
+  it('un point de retrait fermé, nommé ; aucun jour choisi dans la période', () => {
+    const lines = alertLines(
+      alert({
+        severity: 'empty',
+        conditions: [
+          { reason: 'site_closed', siteId: 'site-gare' },
+          { reason: 'no_weekday_left', siteId: null },
+        ],
+      }),
+      CHOICES,
+    );
+    expect(lines).toEqual([
+      'Le point de retrait Gare est archivé ou ne remet plus : la suggestion n’y paraîtra pas.',
+      'Aucun des jours de la semaine choisis ne tombe dans ce qui reste de la période : elle ne paraîtra plus.',
+    ]);
   });
 });

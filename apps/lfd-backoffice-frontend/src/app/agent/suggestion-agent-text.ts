@@ -11,6 +11,7 @@ import {
   suggestedLabel,
   triggerLabel,
 } from '../suggestions/suggestion-format';
+import { conditionsParts } from '../suggestions/suggestion-conditions';
 
 /**
  * **Les suggestions décidées en texte**, pour un agent — ce que l'écran
@@ -39,7 +40,17 @@ export function suggestionText(
     `audience : ${audienceLabel(rule.audience)} [${rule.audience}]`,
     `période : ${periodLabel(rule)} [${rule.startsOn} → ${rule.endsOn}]`,
     `priorité : ${rule.priority}`,
+    `conditions : ${conditionsLabel(rule, choices)}`,
   ].join(' · ');
+}
+
+/** Les conditions de RS8 en clair, puis leurs valeurs brutes ; « aucune » sans condition. */
+function conditionsLabel(
+  rule: StaffSuggestionRuleView,
+  choices: StaffSuggestionChoicesView | null,
+): string {
+  const parts = conditionsParts(rule.conditions, choices);
+  return parts.length === 0 ? 'aucune' : `${parts.join(', ')} ${JSON.stringify(rule.conditions)}`;
 }
 
 /** L'ordre réglé, dit en clair. */

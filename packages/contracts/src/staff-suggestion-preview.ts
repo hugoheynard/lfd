@@ -31,6 +31,13 @@ const previewCommon = {
   day: isoDay.nullable(),
   /** Le point de retrait, s'il compte pour l'heure limite ; `null` = la règle générale. */
   pickupAddressId: z.string().min(1).nullable(),
+  /** L'heure jugée `HH:MM` (Paris) ; absent = l'heure de maintenant (RS8, créneau). */
+  time: z
+    .string()
+    .regex(/^([01]\d|2[0-3]):[0-5]\d$/u, "heure attendue au format HH:MM")
+    .optional(),
+  /** Le total du panier en centimes, tel que le client le lit ; absent = pas encore chiffré (RS8). */
+  cartTotalCents: z.number().int().min(0).optional(),
 };
 
 export const staffSuggestionPreviewPayloadSchema = z.discriminatedUnion("placement", [
@@ -57,7 +64,13 @@ export const STAFF_SUGGESTION_REFUSALS = [
   "inactive",
   "wrong_audience",
   "wrong_placement",
+  "outside_weekdays",
+  "outside_hours",
+  "no_site_yet",
+  "wrong_site",
+  "cart_below_threshold",
   "trigger_false",
+  "cart_has_family",
   "item_not_served",
   "item_not_orderable_that_day",
   "item_in_cart",
@@ -90,6 +103,8 @@ export interface StaffSuggestionPreviewRule {
 export interface StaffSuggestionPreviewView {
   /** Le jour jugé, résolu (le jour métier si la demande n'en portait pas). */
   readonly day: string;
+  /** L'heure jugée `HH:MM`, résolue (l'heure de maintenant si la demande n'en portait pas). */
+  readonly time: string;
   /**
    * EXACTEMENT ce que la boutique afficherait. Pour un pro : la vitrine pro
    * SANS tarif de société (ni mercuriale, ni tarif négocié) — un aperçu n'a

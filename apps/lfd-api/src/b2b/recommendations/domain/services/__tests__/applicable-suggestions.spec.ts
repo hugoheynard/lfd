@@ -4,6 +4,7 @@ import {
   type StaffSuggestionRuleSnapshot,
 } from "../../entities/staff-suggestion-rule.js";
 import { applicableSuggestions, type ApplicableSuggestionsAsk } from "../applicable-suggestions.js";
+import { NO_SUGGESTION_CONDITIONS } from "../../value-objects/suggestion-conditions.js";
 
 /** Les jours ne sont comparés qu'à `TODAY`, passé à la fonction. */
 const TODAY = "2026-10-18";
@@ -28,6 +29,7 @@ function rule(
     endsOn: "2026-10-30",
     phrase: null,
     priority: 0,
+    conditions: NO_SUGGESTION_CONDITIONS,
     ...fields,
     active,
     created: { by: null, at },
@@ -42,6 +44,7 @@ const ASK: ApplicableSuggestionsAsk = {
   today: TODAY,
   reader: "pro",
   order: "recent",
+  context: null,
 };
 
 const ids = (rules: readonly StaffSuggestionRuleSnapshot[]) => rules.map((one) => one.id);

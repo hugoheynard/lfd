@@ -11,8 +11,10 @@ import type { StaffSuggestionRuleSnapshot } from "../../domain/entities/staff-su
 import { NotServedCauseReader } from "../../domain/ports/not-served-cause.reader.js";
 import { StaffSuggestionRuleReader } from "../../domain/ports/staff-suggestion-rule.reader.js";
 import { SuggestionFamilyReader } from "../../domain/ports/suggestion-family.reader.js";
+import { SuggestionSiteReader } from "../../domain/ports/suggestion-site.reader.js";
 import {
   alertWindow,
+  conditionFindings,
   readersOf,
   ruleAlert,
   watchedRules,
@@ -30,7 +32,8 @@ import { ListStaffSuggestionAlertsQuery } from "./list-staff-suggestion-alerts.q
  * la boutique (`RecommendationFilter.judgeOver`, qui déroule
  * `judgeOrderable` jour par jour), la cause d'un refus est lue au
  * paramétrage du catalogue, la famille d'un déclencheur au catalogue servi
- * comme à l'écriture de la règle. Le domaine (`ruleAlert`) ne fait que
+ * comme à l'écriture de la règle, les points de retrait d'une condition
+ * (RS8) aux sites. Le domaine (`ruleAlert`, `conditionFindings`) ne fait que
  * réunir et graduer.
  */
 @QueryHandler(ListStaffSuggestionAlertsQuery)
@@ -43,6 +46,7 @@ export class ListStaffSuggestionAlertsHandler implements IQueryHandler<
     private readonly filter: RecommendationFilter,
     private readonly causes: NotServedCauseReader,
     private readonly families: SuggestionFamilyReader,
+    private readonly sites: SuggestionSiteReader,
     private readonly clock: Clock,
   ) {}
 
@@ -61,11 +65,13 @@ export class ListStaffSuggestionAlertsHandler implements IQueryHandler<
     today: string,
   ): Promise<StaffSuggestionRuleAlert | null> {
     const window = alertWindow(rule, today);
-    const [facts, triggerWithdrawn] = await Promise.all([
+    const [facts, triggerWithdrawn, openSites] = await Promise.all([
       Promise.all(readersOf(rule).map((audience) => this.factsFor(rule, audience, window))),
       this.triggerWithdrawn(rule),
+      this.sites.openAmong(rule.conditions.pickupAddressIds ?? []),
     ]);
-    return ruleAlert(rule, triggerWithdrawn, facts, window);
+    const conditions = conditionFindings(rule, openSites, window);
+    return ruleAlert(rule, triggerWithdrawn, facts, window, conditions);
   }
 
   private async factsFor(

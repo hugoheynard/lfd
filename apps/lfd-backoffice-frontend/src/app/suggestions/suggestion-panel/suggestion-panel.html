@@ -160,6 +160,13 @@
       />
     </fold-fieldset>
 
+    <app-suggestion-conditions-fieldset
+      [conditions]="draft().conditions"
+      [placement]="draft().placement"
+      [choices]="data()?.choices ?? null"
+      (conditionsChange)="setConditions($event)"
+    />
+
     @if (refusal(); as message) {
       <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
     } @else if (missing(); as message) {

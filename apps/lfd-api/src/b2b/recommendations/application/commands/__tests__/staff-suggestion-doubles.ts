@@ -12,6 +12,8 @@ import { StaffSuggestionRuleRepository } from "../../../domain/ports/staff-sugge
 import { SuggestionFamilyReader } from "../../../domain/ports/suggestion-family.reader.js";
 import { SuggestionOrderReader } from "../../../domain/ports/suggestion-order.reader.js";
 import { SuggestionOrderWriter } from "../../../domain/ports/suggestion-order.writer.js";
+import { SuggestionSiteReader } from "../../../domain/ports/suggestion-site.reader.js";
+import { NO_SUGGESTION_CONDITIONS } from "../../../domain/value-objects/suggestion-conditions.js";
 
 /**
  * Le dépôt ET le lecteur en mémoire — deux classes sur le même stockage, comme
@@ -97,6 +99,17 @@ export class KnownFamilies extends SuggestionFamilyReader {
   }
 }
 
+/** Les points de retrait ouverts. */
+export class OpenSites extends SuggestionSiteReader {
+  constructor(private readonly open: readonly string[] = []) {
+    super();
+  }
+
+  openAmong(ids: readonly string[]): Promise<ReadonlySet<string>> {
+    return Promise.resolve(new Set(ids.filter((id) => this.open.includes(id))));
+  }
+}
+
 /** Le réglage de l'ordre en mémoire, lecteur et écrivain sur la même case. */
 export class OrderSetting {
   view: StaffSuggestionOrderView = { order: "recent", updatedAt: null };
@@ -137,6 +150,7 @@ export function recordOf(rule: StaffSuggestionRuleSnapshot) {
     endsOn: rule.period.endsOn,
     phrase: rule.phrase,
     priority: rule.priority,
+    conditions: rule.conditions,
     active: rule.active,
     created: rule.created,
     lastWrite: rule.lastWrite,
@@ -158,6 +172,7 @@ export function croissantInput(
     endsOn: today,
     phrase: { fr: "Avec un croissant, le café" },
     priority: 0,
+    conditions: NO_SUGGESTION_CONDITIONS,
     ...over,
   };
 }

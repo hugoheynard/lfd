@@ -53,6 +53,8 @@ import {
   TRIGGER_EXAMPLES,
   TRIGGER_OPTIONS,
 } from '../suggestion-format';
+import { type ConditionsDraft, conditionsPayloadOf } from '../suggestion-conditions';
+import { SuggestionConditionsFieldset } from '../suggestion-conditions-fieldset/suggestion-conditions-fieldset';
 import { summaryOf } from '../suggestion-summary';
 
 /**
@@ -68,7 +70,8 @@ export interface SuggestionPanelData {
 
 /**
  * **Créer ou réécrire une suggestion** — un sujet, lu de haut en bas : ce qui
- * la déclenche, ce qu'elle montre, où, à qui, quand, et ce qu'elle dit.
+ * la déclenche, ce qu'elle montre, où, à qui, quand, ce qu'elle dit, et ses
+ * conditions facultatives (RS8).
  *
  * Les articles et les familles se choisissent dans le catalogue SERVI
  * (`/admin/suggestions/choices`) : l'écran ne propose que ce que le serveur
@@ -91,6 +94,7 @@ export interface SuggestionPanelData {
     FoldPanelFooterComponent,
     FoldPanelHeaderComponent,
     StorefrontProductPicker,
+    SuggestionConditionsFieldset,
   ],
   templateUrl: './suggestion-panel.html',
   styleUrl: './suggestion-panel.scss',
@@ -156,9 +160,11 @@ export class SuggestionPanel {
   protected readonly missing = computed(() => missingOf(this.draft()));
   protected readonly example = computed(() => TRIGGER_EXAMPLES[this.draft().triggerKind]);
   /** L'aperçu : la règle relue en une phrase, à chaque frappe. */
-  protected readonly summary = computed(() =>
-    summaryOf(this.draft(), this.data()?.choices ?? null),
-  );
+  protected readonly summary = computed(() => {
+    const draft = this.draft();
+    const conditions = conditionsPayloadOf(draft.conditions, draft.placement);
+    return summaryOf({ ...draft, conditions }, this.data()?.choices ?? null);
+  });
   /** Le réglage d'ordre de la boutique — `null` tant qu'il n'est pas lu, ou s'il ne l'a pas été. */
   private readonly order = signal<StaffSuggestionOrder | null>(null);
   protected readonly priorityHint = computed(() => {
@@ -182,6 +188,10 @@ export class SuggestionPanel {
 
   protected set<K extends keyof SuggestionDraft>(key: K, value: SuggestionDraft[K]): void {
     this.draft.update((draft) => ({ ...draft, [key]: value }));
+  }
+
+  protected setConditions(conditions: ConditionsDraft): void {
+    this.set('conditions', conditions);
   }
 
   protected setTrigger(kind: StaffSuggestionTriggerKind): void {

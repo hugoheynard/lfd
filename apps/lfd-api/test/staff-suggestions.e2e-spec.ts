@@ -284,3 +284,44 @@ describe("les suggestions décidées", () => {
     await ctx.asSub(reader).put(`${SUGGESTIONS}/order`).send({ order: "priority" }).expect(403);
   });
 });
+
+describe("les conditions d'une règle (RS8)", () => {
+  const conditions = {
+    weekdays: ["mon", "tue", "wed", "thu", "fri"] as ("mon" | "tue" | "wed" | "thu" | "fri")[],
+    hours: { from: "07:00", to: "11:00" },
+    minCartTotalCents: 2_000,
+    cartWithoutFamilyId: E2E_FAMILIES.VIE.id,
+    pickupAddressIds: null,
+  };
+
+  it("s'écrivent, se relisent telles quelles, et une règle d'avant n'en a aucune", async () => {
+    const posed = await create(croissantRule({ conditions }));
+    const bare = await create(croissantRule({ suggestedSkus: ["PAT-001"] }));
+
+    const rules = await list();
+
+    expect(rules.find((rule) => rule.id === posed)?.conditions).toEqual(conditions);
+    expect(rules.find((rule) => rule.id === bare)?.conditions).toEqual({
+      weekdays: null,
+      hours: null,
+      minCartTotalCents: null,
+      cartWithoutFamilyId: null,
+      pickupAddressIds: null,
+    });
+  });
+
+  it("refuse un point de retrait inconnu et une plage qui passe minuit, sans rien écrire", async () => {
+    const unknownSite = await admin()
+      .post(SUGGESTIONS)
+      .send(croissantRule({ conditions: { ...conditions, pickupAddressIds: ["site-inconnu"] } }))
+      .expect(400);
+    const overnight = await admin()
+      .post(SUGGESTIONS)
+      .send(croissantRule({ conditions: { ...conditions, hours: { from: "22:00", to: "02:00" } } }))
+      .expect(400);
+
+    expect(unknownSite.body).toMatchObject({ code: "suggestions.site_unknown" });
+    expect(overnight.body).toMatchObject({ code: "suggestions.hours_reversed" });
+    expect(await list()).toEqual([]);
+  });
+});

@@ -1,0 +1,69 @@
+<fold-fieldset
+  legend="Conditions (facultatives)"
+  legendVariant="heading"
+  appearance="border"
+  hint="Sans condition, la suggestion vaut à toute heure, pour tout panier, partout. Chaque condition posée s’ajoute aux autres : toutes doivent être vraies au moment où le client regarde."
+>
+  <fold-callout appearance="inset" variant="neutral">
+    Exemples : « le matin, du lundi au vendredi, de 7 h à 11 h » pour le café du petit-déjeuner ; «
+    si le panier atteint 20 € » pour proposer une douceur à un gros panier ; « si le panier n’a
+    aucune boisson » pour proposer le jus ; « en retrait à la boutique de la gare » pour ce qui ne
+    se trouve que là-bas.
+  </fold-callout>
+
+  <fold-multiselect
+    label="Jours de la semaine"
+    placeholder="Tous les jours"
+    hint="Le jour où le client regarde la boutique, pas le jour de retrait."
+    [options]="weekdayOptions"
+    [value]="conditions().weekdays"
+    (valueChange)="setWeekdays($event)"
+  />
+
+  <div class="hours">
+    <fold-time
+      label="À partir de"
+      optional
+      [value]="conditions().hoursFrom"
+      (valueChange)="patch('hoursFrom', $event)"
+    />
+    <fold-time
+      label="Jusqu’à"
+      optional
+      hint="Heure de Paris, fin exclue : « 11:00 » s’arrête à 10 h 59. Une plage ne passe pas minuit."
+      [value]="conditions().hoursTo"
+      (valueChange)="patch('hoursTo', $event)"
+    />
+  </div>
+
+  @if (atCart()) {
+    <fold-input
+      label="Montant minimum du panier (€)"
+      placeholder="20"
+      optional
+      hint="Le total que le client lit dans son panier : hors taxe pour un professionnel au compte, toutes taxes sinon. Tant que le panier n’est pas chiffré, la suggestion ne s’affiche pas."
+      [value]="conditions().minCartEuros"
+      (valueChange)="patch('minCartEuros', $event)"
+    />
+    <fold-listbox
+      label="Seulement si le panier n’a aucun article de la famille"
+      [options]="familyOptions()"
+      [value]="conditions().cartWithoutFamilyId"
+      (selectionChange)="patch('cartWithoutFamilyId', $event)"
+    />
+  } @else {
+    <fold-callout appearance="inset" variant="neutral">
+      Le montant et les familles du panier ne se jugent qu’au panier : choisissez l’emplacement « Au
+      panier » pour les poser.
+    </fold-callout>
+  }
+
+  <fold-multiselect
+    label="Points de retrait"
+    placeholder="Tous, et la livraison"
+    hint="Choisir des points réserve la suggestion au retrait à l’un d’eux : tant que le client n’a pas choisi son point, et en livraison, elle ne s’affiche pas."
+    [options]="siteOptions()"
+    [value]="conditions().pickupAddressIds"
+    (valueChange)="setSites($event)"
+  />
+</fold-fieldset>

@@ -4,9 +4,11 @@ import {
   type StaffSuggestionRuleSnapshot,
 } from "../../entities/staff-suggestion-rule.js";
 import { ruleGate } from "../applicable-suggestions.js";
+import { cartTriggering } from "../cart-suggestions.js";
 import { productTriggering } from "../product-suggestions.js";
 import { traceCandidates } from "../suggestion-candidates.js";
 import { diagnoseRules } from "../suggestion-diagnosis.js";
+import { NO_SUGGESTION_CONDITIONS } from "../../value-objects/suggestion-conditions.js";
 
 /** Les jours ne sont comparés qu'entre eux (la période contre `today`), jamais à l'horloge. */
 const TODAY = "2026-10-18";
@@ -27,6 +29,7 @@ function rule(
     endsOn: "2026-10-30",
     phrase: null,
     priority: 0,
+    conditions: NO_SUGGESTION_CONDITIONS,
     ...over,
     active,
     created: { by: null, at },
@@ -36,7 +39,7 @@ function rule(
 }
 
 describe("ruleGate", () => {
-  const ask = { placement: "cart", today: TODAY, reader: "public" } as const;
+  const ask = { placement: "cart", today: TODAY, reader: "public", context: null } as const;
 
   it("nomme la première porte fermée : période, interrupteur, audience, emplacement", () => {
     expect(ruleGate(rule("A", { endsOn: "2026-10-17" }), ask)).toBe("ended");
@@ -90,7 +93,7 @@ describe("diagnoseRules", () => {
     const shown = rule("SHOWN", { suggestedSkus: ["BOI-001", "BOI-002", "BOI-003"] });
     const muted = rule("MUTED", { trigger: { kind: "product_in_cart", ref: "VIE-001" } });
     const ended = rule("ENDED", { endsOn: "2026-10-17" });
-    const ask = { placement: "cart", today: TODAY, reader: "public" } as const;
+    const ask = { placement: "cart", today: TODAY, reader: "public", context: null } as const;
     const { rules: traced } = traceCandidates([shown, muted], {
       triggered: (candidate) => candidate.id !== "MUTED",
       excluded: [],
@@ -135,5 +138,44 @@ describe("diagnoseRules", () => {
     });
 
     expect(diagnosed?.verdict).toEqual({ kind: "item_in_cart" });
+  });
+});
+
+describe("diagnoseRules — les conditions (RS8)", () => {
+  it("une condition de contexte se lit comme une porte ; la famille exclue après le déclencheur", () => {
+    const context = {
+      day: TODAY,
+      time: "06:00",
+      site: { kind: "unknown" } as const,
+      cartTotalCents: null,
+    };
+    const ask = { placement: "cart", today: TODAY, reader: "public", context } as const;
+    const morning = rule("MORNING", {
+      conditions: { ...NO_SUGGESTION_CONDITIONS, hours: { from: "07:00", to: "11:00" } },
+    });
+    const noDrink = rule("NODRINK", {
+      conditions: { ...NO_SUGGESTION_CONDITIONS, cartWithoutFamilyId: "fam-boissons" },
+    });
+
+    expect(ruleGate(morning, ask)).toBe("outside_hours");
+    expect(ruleGate(noDrink, ask)).toBeNull();
+
+    const triggering = cartTriggering({
+      skus: ["COCA"],
+      familyPaths: new Map([["COCA", ["fam-boissons"]]]),
+    });
+    const { rules: traced } = traceCandidates([noDrink], triggering);
+    const diagnosed = diagnoseRules({
+      live: [morning, noDrink],
+      gateOf: (candidate) => ruleGate(candidate, ask),
+      traced,
+      refused: new Map(),
+      shown: [],
+    });
+
+    expect(diagnosed.map(({ rule: one, verdict }) => [one.id, verdict.kind])).toEqual([
+      ["NODRINK", "cart_has_family"],
+      ["MORNING", "outside_hours"],
+    ]);
   });
 });

@@ -6,11 +6,15 @@
  * et relue par la route publique de la boutique, son déclencheur jugé contre
  * le catalogue servi, et l'article rendu au prix de la vitrine.
  */
-import type {
-  CartSuggestionView,
-  CartSuggestionsPayload,
-  ShopCatalogueView,
-  StaffSuggestionRulePayload,
+import {
+  instantToLocal,
+  NO_STAFF_SUGGESTION_CONDITIONS,
+  type CreatedPickupResponse,
+  type StaffSuggestionConditions,
+  type CartSuggestionView,
+  type CartSuggestionsPayload,
+  type ShopCatalogueView,
+  type StaffSuggestionRulePayload,
 } from "@lfd/contracts";
 import request from "supertest";
 
@@ -121,5 +125,87 @@ describe("les suggestions du panier", () => {
       .post("/shop/suggestions/cart")
       .send({ skus: "VIE-001", target: null })
       .expect(400);
+  });
+});
+
+/** Une règle « croissant → baguette » avec ces seules conditions (RS8). */
+function withConditions(over: Partial<StaffSuggestionConditions>): StaffSuggestionRulePayload {
+  return croissantRule({ conditions: { ...NO_STAFF_SUGGESTION_CONDITIONS, ...over } });
+}
+
+/** Le panier, avec son jour visé (point de retrait, ou livraison) et son total lu. */
+async function suggestionsFor(
+  target: CartSuggestionsPayload["target"],
+  cartTotalCents?: number,
+): Promise<readonly string[]> {
+  const payload: CartSuggestionsPayload = {
+    skus: ["VIE-001"],
+    target,
+    ...(cartTotalCents === undefined ? {} : { cartTotalCents }),
+  };
+  const response = await request(ctx.app.getHttpServer())
+    .post("/shop/suggestions/cart")
+    .send(payload)
+    .expect(200);
+  return jsonBody<CartSuggestionView[]>(response).map(({ sku }) => sku);
+}
+
+async function seedPoint(label: string): Promise<string> {
+  const response = await ctx
+    .asSub(E2E_STAFF_SUB)
+    .post("/admin/pickup-addresses")
+    .send({
+      label,
+      ligne1: "5 rue du Four",
+      ligne2: "",
+      codePostal: "75002",
+      ville: "Paris",
+      pays: "France",
+      isDefault: false,
+    })
+    .expect(201);
+  return jsonBody<CreatedPickupResponse>(response).id;
+}
+
+/**
+ * Une plage d'heures qui NE contient PAS l'heure de Paris du moment, à une
+ * heure au moins de distance : l'autre moitié de la journée.
+ */
+function hoursAwayFromNow(): { readonly from: string; readonly to: string } {
+  const hour = Number(instantToLocal(new Date()).time.slice(0, 2));
+  return hour < 12 ? { from: "13:00", to: "23:00" } : { from: "01:00", to: "11:00" };
+}
+
+describe("les suggestions du panier — les conditions (RS8)", () => {
+  it("une règle hors de sa plage horaire ne s'affiche pas", async () => {
+    await create(withConditions({ hours: hoursAwayFromNow() }));
+
+    expect(await suggestions(["VIE-001"])).toEqual([]);
+  });
+
+  it("le seuil : atteint par le total lu, jamais sans total", async () => {
+    await create(withConditions({ minCartTotalCents: 2_000 }));
+
+    expect(await suggestionsFor(null)).toEqual([]);
+    expect(await suggestionsFor(null, 1_999)).toEqual([]);
+    expect(await suggestionsFor(null, 2_000)).toEqual(["PAI-001"]);
+  });
+
+  it("sans cette famille : un croissant au panier écarte la règle « sans viennoiserie »", async () => {
+    await create(withConditions({ cartWithoutFamilyId: E2E_FAMILIES.VIE.id }));
+
+    expect(await suggestions(["VIE-001"])).toEqual([]);
+  });
+
+  it("le point de retrait : ni avant le choix, ni en livraison, ni à un autre point", async () => {
+    const centre = await seedPoint("Centre");
+    const gare = await seedPoint("Gare");
+    await create(withConditions({ pickupAddressIds: [centre] }));
+    const day = serviceDay(1);
+
+    expect(await suggestionsFor(null)).toEqual([]);
+    expect(await suggestionsFor({ date: day, pickupAddressId: null })).toEqual([]);
+    expect(await suggestionsFor({ date: day, pickupAddressId: gare })).toEqual([]);
+    expect(await suggestionsFor({ date: day, pickupAddressId: centre })).toEqual(["PAI-001"]);
   });
 });

@@ -6,6 +6,7 @@ import {
   STAFF_SUGGESTION_PLACEMENTS,
   STAFF_SUGGESTION_TRIGGERS,
 } from "../staff-suggestions.js";
+import { staffSuggestionConditionsSchema } from "../staff-suggestion-conditions.js";
 import {
   changes,
   day,
@@ -41,6 +42,8 @@ const rule = {
   endsOn: day(),
   phrase: localizedText().nullable(),
   priority: z.number().int(),
+  /** Les conditions facultatives (RS8) ; absentes des faits écrits avant elles. */
+  conditions: staffSuggestionConditionsSchema.optional(),
 };
 
 /** Le geste nu : la règle seule, nommée. */

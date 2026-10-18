@@ -55,6 +55,7 @@ import {
   PreviewStaffSuggestionsQuery,
   type PreviewPlace,
 } from "../application/queries/preview-staff-suggestions.query.js";
+import { ruleInputOf } from "./staff-suggestion-rule-input.js";
 
 /**
  * **Les suggestions décidées par le staff** — `/admin/suggestions`
@@ -175,6 +176,8 @@ export class AdminStaffSuggestionsController {
         body.audience,
         body.day,
         body.pickupAddressId,
+        body.time ?? null,
+        body.cartTotalCents ?? null,
       ),
     );
   }
@@ -185,7 +188,7 @@ export class AdminStaffSuggestionsController {
     @StaffUserId() staffUserId: string,
   ): Promise<StaffSuggestionRuleIdResponse> {
     const id = await this.commands.execute<CreateStaffSuggestionCommand, string>(
-      new CreateStaffSuggestionCommand(body, staffUserId),
+      new CreateStaffSuggestionCommand(ruleInputOf(body), staffUserId),
     );
     return { id };
   }
@@ -198,7 +201,7 @@ export class AdminStaffSuggestionsController {
     @StaffUserId() staffUserId: string,
   ): Promise<StaffSuggestionRuleIdResponse> {
     await this.commands.execute<ReviseStaffSuggestionCommand, void>(
-      new ReviseStaffSuggestionCommand(id, body, staffUserId),
+      new ReviseStaffSuggestionCommand(id, ruleInputOf(body), staffUserId),
     );
     return { id };
   }

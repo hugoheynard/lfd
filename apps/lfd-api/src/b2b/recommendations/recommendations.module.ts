@@ -4,6 +4,15 @@ import { CatalogModule } from "../catalog/catalog.module.js";
 import { OrdersModule } from "../orders/orders.module.js";
 import { OrderCutoffsModule } from "../order-cutoffs/order-cutoffs.module.js";
 import { OrderCutoffsInForce } from "../order-cutoffs/domain/order-cutoffs-in-force.js";
+import { SitesModule } from "../sites/sites.module.js";
+import {
+  SuggestionSiteChoicesReader,
+  SuggestionSiteReader,
+} from "./domain/ports/suggestion-site.reader.js";
+import {
+  SiteSuggestionSiteChoicesReader,
+  SiteSuggestionSiteReader,
+} from "./infrastructure/site-suggestion-site.reader.js";
 import { ArchiveStaffSuggestionHandler } from "./application/commands/archive-staff-suggestion.handler.js";
 import { CreateStaffSuggestionHandler } from "./application/commands/create-staff-suggestion.handler.js";
 import { ReviseStaffSuggestionHandler } from "./application/commands/revise-staff-suggestion.handler.js";
@@ -106,9 +115,13 @@ import {
  * RS10 : `GET /admin/suggestions/alerts` signale les règles vivantes dont un
  * article ne se vend plus ; la cause d'un refus se lit au paramétrage du
  * catalogue (`CatalogAdminReader`, exporté par `CatalogModule`).
+ *
+ * RS8 : les conditions facultatives d'une règle (jours, heures, seuil et
+ * familles du panier, points de retrait). Les points se lisent aux sites
+ * (`SitesModule` exporte `SiteReader`).
  */
 @Module({
-  imports: [CatalogModule, OrderCutoffsModule, OrdersModule],
+  imports: [CatalogModule, OrderCutoffsModule, OrdersModule, SitesModule],
   controllers: [
     ShopProductAudienceController,
     AdminProductAudienceController,
@@ -134,6 +147,8 @@ import {
     { provide: SuggestionOrderWriter, useClass: PrismaSuggestionOrderWriter },
     { provide: SuggestionFamilyReader, useClass: CatalogSuggestionFamilyReader },
     { provide: SuggestionChoicesReader, useClass: CatalogSuggestionChoicesReader },
+    { provide: SuggestionSiteReader, useClass: SiteSuggestionSiteReader },
+    { provide: SuggestionSiteChoicesReader, useClass: SiteSuggestionSiteChoicesReader },
     CreateStaffSuggestionHandler,
     ReviseStaffSuggestionHandler,
     SetStaffSuggestionActiveHandler,

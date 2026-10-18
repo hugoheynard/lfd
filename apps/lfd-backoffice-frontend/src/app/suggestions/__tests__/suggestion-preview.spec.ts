@@ -19,6 +19,7 @@ const CHOICES = {
     { sku: 'BOI-001', name: 'Café', familyId: 'fam-boissons' },
   ],
   families: [{ id: 'fam-vien', name: 'Viennoiseries' }],
+  sites: [],
 };
 
 const RULE = staffSuggestion({ endsOn: '2026-10-18', startsOn: '2026-10-12' });
@@ -84,6 +85,9 @@ describe('previewSetupOf', () => {
       viewedSku: null,
       audience: 'pro',
       day: '2026-10-20',
+      time: '',
+      cartTotal: '',
+      siteId: null,
     });
   });
 
@@ -113,6 +117,9 @@ describe('previewSetupOf', () => {
       viewedSku: null,
       audience: 'public',
       day: '2026-10-20',
+      time: '',
+      cartTotal: '',
+      siteId: null,
     });
   });
 });
@@ -141,7 +148,14 @@ describe('la carte', () => {
     expect(defaultCardTitle('product')).toBe('Vous aimerez aussi');
     expect(defaultCardTitle('home')).toBe('Notre sélection');
     expect(dayAndMonth('2026-01-05')).toBe('5 janvier');
-    const setup = { cart: [], audience: 'public', day: '2026-10-18' } as const;
+    const setup = {
+      cart: [],
+      audience: 'public',
+      day: '2026-10-18',
+      time: '',
+      cartTotal: '',
+      siteId: null,
+    } as const;
     expect(previewPayload({ ...setup, placement: 'product', viewedSku: null })).toBeNull();
     expect(previewPayload({ ...setup, placement: 'home', viewedSku: null })?.placement).toBe(
       'home',
@@ -152,6 +166,72 @@ describe('la carte', () => {
       audience: 'public',
       day: '2026-10-18',
       pickupAddressId: null,
+    });
+  });
+});
+
+describe('les conditions dans l’aperçu (RS8)', () => {
+  const conditioned = staffSuggestion({
+    startsOn: '2026-10-17',
+    endsOn: '2026-10-31',
+    conditions: {
+      weekdays: ['mon', 'tue'],
+      hours: { from: '07:00', to: '11:00' },
+      minCartTotalCents: 2_000,
+      cartWithoutFamilyId: 'fam-vien',
+      pickupAddressIds: ['site-centre'],
+    },
+  });
+  const ctx: ReasonContext = {
+    ...CTX,
+    choices: { ...CHOICES, sites: [{ id: 'site-centre', label: 'Centre' }] },
+  };
+  const reason = (status: StaffSuggestionPreviewStatus) =>
+    previewReason(conditioned, { status, outrankedBy: null }, ctx);
+
+  it('dit chaque condition non tenue avec ce qu’elle demande', () => {
+    expect(reason('outside_weekdays')).toBe('Pas ce jour-là : elle vaut le lundi et le mardi');
+    expect(reason('outside_hours')).toBe('Pas à cette heure : elle vaut de 7 h à 11 h');
+    expect(reason('no_site_yet')).toContain('Aucun point de retrait choisi');
+    expect(reason('wrong_site')).toBe(
+      'Pas pour ce point de retrait : elle vaut en retrait à Centre',
+    );
+    expect(reason('cart_below_threshold')).toContain('n’atteint pas 20 €');
+    expect(reason('cart_has_family')).toBe(
+      'Le panier contient un article de la famille « Viennoiseries »',
+    );
+  });
+
+  it('ouverte depuis la règle : un jour choisi, le début de la plage, le seuil, le premier point', () => {
+    // Le 2026-10-17 est un samedi : le premier jour choisi qui suit est le lundi 19.
+    expect(previewSetupOf(conditioned, CHOICES, '2026-10-15')).toMatchObject({
+      day: '2026-10-19',
+      time: '07:00',
+      cartTotal: '20,00',
+      siteId: 'site-centre',
+    });
+  });
+
+  it('envoie l’heure, le total en centimes et le point quand ils sont donnés', () => {
+    expect(
+      previewPayload({
+        placement: 'cart',
+        cart: [],
+        viewedSku: null,
+        audience: 'public',
+        day: '2026-10-19',
+        time: '07:30',
+        cartTotal: '20',
+        siteId: 'site-centre',
+      }),
+    ).toEqual({
+      placement: 'cart',
+      skus: [],
+      audience: 'public',
+      day: '2026-10-19',
+      pickupAddressId: 'site-centre',
+      time: '07:30',
+      cartTotalCents: 2_000,
     });
   });
 });

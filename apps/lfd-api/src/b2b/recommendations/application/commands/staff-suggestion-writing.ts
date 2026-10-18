@@ -9,6 +9,8 @@ import {
 import type { AudienceSkuReader } from "../../domain/ports/audience-sku.reader.js";
 import type { StaffSuggestionRuleRepository } from "../../domain/ports/staff-suggestion-rule.repository.js";
 import type { SuggestionFamilyReader } from "../../domain/ports/suggestion-family.reader.js";
+import type { SuggestionSiteReader } from "../../domain/ports/suggestion-site.reader.js";
+import { UnknownSuggestionSiteError } from "../../domain/errors/suggestion-condition-errors.js";
 import { triggerSku } from "../../domain/value-objects/suggestion-trigger.js";
 
 /**
@@ -32,15 +34,19 @@ export async function requireRule(
 export interface SuggestionCatalogue {
   readonly skus: AudienceSkuReader;
   readonly families: SuggestionFamilyReader;
+  /** Les points de retrait ouverts — la condition de RS8. */
+  readonly sites: SuggestionSiteReader;
 }
 
 /**
  * **Tout ce que nomme la règle existe au catalogue servi** — l'article qui
- * déclenche, ceux qu'elle montre, la famille. Un SKU mal tapé serait sinon
+ * déclenche, ceux qu'elle montre, la famille qui déclenche ou que le panier
+ * ne doit pas contenir (RS8) — et ses points de retrait sont ouverts. Un SKU mal tapé serait sinon
  * écrit sans bruit, et la suggestion ne paraîtrait jamais sans que personne
  * sache pourquoi. Jugé après l'agrégat : c'est lui qui a rogné les valeurs.
  *
  * @throws {UnknownSuggestionCatalogueError}
+ * @throws {UnknownSuggestionSiteError}
  */
 export async function ensureInCatalogue(
   catalogue: SuggestionCatalogue,
@@ -53,10 +59,39 @@ export async function ensureInCatalogue(
   if (unknownSkus.length > 0) {
     throw new UnknownSuggestionCatalogueError("articles", unknownSkus);
   }
-  if (rule.trigger.kind === "category_in_cart" && rule.trigger.ref !== null) {
-    const known = await catalogue.families.knownAmong([rule.trigger.ref]);
-    if (!known.has(rule.trigger.ref)) {
-      throw new UnknownSuggestionCatalogueError("familles", [rule.trigger.ref]);
-    }
+  await ensureFamiliesKnown(catalogue.families, familiesOf(rule));
+  await ensureSitesOpen(catalogue.sites, rule.conditions.pickupAddressIds ?? []);
+}
+
+/** Les familles que nomme la règle : celle qui déclenche, celle que le panier exclut. */
+function familiesOf(rule: StaffSuggestionRuleSnapshot): readonly string[] {
+  const triggering = rule.trigger.kind === "category_in_cart" ? rule.trigger.ref : null;
+  return [triggering, rule.conditions.cartWithoutFamilyId].filter(
+    (family): family is string => family !== null,
+  );
+}
+
+async function ensureFamiliesKnown(
+  families: SuggestionFamilyReader,
+  ids: readonly string[],
+): Promise<void> {
+  if (ids.length === 0) {
+    return;
+  }
+  const known = await families.knownAmong(ids);
+  const unknown = ids.filter((id) => !known.has(id));
+  if (unknown.length > 0) {
+    throw new UnknownSuggestionCatalogueError("familles", unknown);
+  }
+}
+
+async function ensureSitesOpen(sites: SuggestionSiteReader, ids: readonly string[]): Promise<void> {
+  if (ids.length === 0) {
+    return;
+  }
+  const open = await sites.openAmong(ids);
+  const closed = ids.filter((id) => !open.has(id));
+  if (closed.length > 0) {
+    throw new UnknownSuggestionSiteError(closed);
   }
 }

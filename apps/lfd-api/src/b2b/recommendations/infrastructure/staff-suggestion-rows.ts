@@ -3,6 +3,10 @@ import type {
   StaffSuggestionRuleRecord,
   StaffSuggestionRuleSnapshot,
 } from "../domain/entities/staff-suggestion-rule.js";
+import type {
+  SuggestionConditions,
+  SuggestionConditionsInput,
+} from "../domain/value-objects/suggestion-conditions.js";
 
 /**
  * Ligne ↔ règle. Les jours sont rangés en `DATE` : Prisma les rend à minuit
@@ -28,6 +32,7 @@ export function toRecord(row: StaffSuggestionRuleRow): StaffSuggestionRuleRecord
             ...(row.phraseIt === null ? {} : { it: row.phraseIt }),
           },
     priority: row.priority,
+    conditions: conditionsOf(row),
     active: row.active,
     created: { by: row.createdBy, at: row.createdAt },
     lastWrite: { by: row.updatedBy, at: row.updatedAt },
@@ -49,12 +54,39 @@ export function ruleColumns(rule: StaffSuggestionRuleSnapshot) {
     phraseEn: rule.phrase?.en ?? null,
     phraseIt: rule.phrase?.it ?? null,
     priority: rule.priority,
+    ...conditionColumns(rule.conditions),
     active: rule.active,
     createdAt: rule.created.at,
     createdBy: rule.created.by,
     updatedAt: rule.lastWrite.at,
     updatedBy: rule.lastWrite.by,
     archivedAt: rule.archivedAt,
+  };
+}
+
+/** Une liste vide en base = la condition n'est pas posée. */
+function conditionsOf(row: StaffSuggestionRuleRow): SuggestionConditionsInput {
+  return {
+    weekdays: row.conditionWeekdays.length === 0 ? null : row.conditionWeekdays,
+    hours:
+      row.conditionHoursFrom === null || row.conditionHoursTo === null
+        ? null
+        : { from: row.conditionHoursFrom, to: row.conditionHoursTo },
+    minCartTotalCents: row.conditionMinCartTotalCents,
+    cartWithoutFamilyId: row.conditionCartWithoutFamilyId,
+    pickupAddressIds:
+      row.conditionPickupAddressIds.length === 0 ? null : row.conditionPickupAddressIds,
+  };
+}
+
+function conditionColumns(conditions: SuggestionConditions) {
+  return {
+    conditionWeekdays: [...(conditions.weekdays ?? [])],
+    conditionHoursFrom: conditions.hours?.from ?? null,
+    conditionHoursTo: conditions.hours?.to ?? null,
+    conditionMinCartTotalCents: conditions.minCartTotalCents,
+    conditionCartWithoutFamilyId: conditions.cartWithoutFamilyId,
+    conditionPickupAddressIds: [...(conditions.pickupAddressIds ?? [])],
   };
 }
 

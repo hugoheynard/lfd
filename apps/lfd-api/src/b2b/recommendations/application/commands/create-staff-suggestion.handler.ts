@@ -10,6 +10,7 @@ import { StaffSuggestionCreatedEvent } from "../../domain/events/staff-suggestio
 import { AudienceSkuReader } from "../../domain/ports/audience-sku.reader.js";
 import { StaffSuggestionRuleRepository } from "../../domain/ports/staff-suggestion-rule.repository.js";
 import { SuggestionFamilyReader } from "../../domain/ports/suggestion-family.reader.js";
+import { SuggestionSiteReader } from "../../domain/ports/suggestion-site.reader.js";
 import { CreateStaffSuggestionCommand } from "./create-staff-suggestion.command.js";
 import { ensureInCatalogue } from "./staff-suggestion-writing.js";
 
@@ -29,6 +30,7 @@ export class CreateStaffSuggestionHandler implements ICommandHandler<
     private readonly rules: StaffSuggestionRuleRepository,
     private readonly skus: AudienceSkuReader,
     private readonly families: SuggestionFamilyReader,
+    private readonly sites: SuggestionSiteReader,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
@@ -44,7 +46,10 @@ export class CreateStaffSuggestionHandler implements ICommandHandler<
       instantToLocal(now).day,
     );
     const created = rule.snapshot();
-    await ensureInCatalogue({ skus: this.skus, families: this.families }, created);
+    await ensureInCatalogue(
+      { skus: this.skus, families: this.families, sites: this.sites },
+      created,
+    );
 
     await this.uow.run(async () => {
       await this.rules.add(rule);

@@ -3,7 +3,9 @@ import {
   SuggestionPeriodOverError,
   SuggestionRuleArchivedError,
 } from "../errors/staff-suggestion-errors.js";
+import { SuggestionFamilyContradictionError } from "../errors/suggestion-condition-errors.js";
 import { suggestionAudience } from "../value-objects/suggestion-audience.js";
+import { suggestionConditions } from "../value-objects/suggestion-conditions.js";
 import { suggestionPeriod } from "../value-objects/suggestion-period.js";
 import { suggestionPhrase } from "../value-objects/suggestion-phrase.js";
 import { suggestionPriority } from "../value-objects/suggestion-priority.js";
@@ -44,7 +46,8 @@ interface RuleState {
  * Elle tient ce qu'une règle peut refuser seule : un déclencheur qui nomme ce
  * qu'il doit nommer, un emplacement où il peut être vrai, 1 à 3 articles
  * distincts dont aucun n'est celui qui déclenche, une période dans l'ordre,
- * une phrase française bornée, une priorité entière. Qu'un article ou une
+ * une phrase française bornée, une priorité entière, des conditions
+ * facultatives cohérentes (RS8). Qu'un article ou une
  * famille EXISTE dépend du catalogue : c'est aux cas d'usage de le demander.
  *
  * Une règle naît allumée. Elle se coupe et se rallume (`setActive`), se
@@ -150,6 +153,8 @@ export class StaffSuggestionRule {
  * Juge une règle entière.
  *
  * @throws {SuggestedEqualsTriggerError} un article montré est celui qui déclenche.
+ * @throws {SuggestionFamilyContradictionError} « famille au panier » et « sans
+ * cette famille » sur la même : la règle ne serait jamais vraie.
  */
 function bodyOf(input: StaffSuggestionRuleInput): StaffSuggestionRuleBody {
   const trigger = suggestionTrigger(input.trigger);
@@ -159,6 +164,10 @@ function bodyOf(input: StaffSuggestionRuleInput): StaffSuggestionRuleBody {
   if (triggering !== null && skus.includes(triggering)) {
     throw new SuggestedEqualsTriggerError(triggering);
   }
+  const conditions = suggestionConditions(input.conditions, placement);
+  if (trigger.kind === "category_in_cart" && trigger.ref === conditions.cartWithoutFamilyId) {
+    throw new SuggestionFamilyContradictionError(trigger.ref ?? "");
+  }
   return {
     trigger,
     suggestedSkus: skus,
@@ -167,5 +176,6 @@ function bodyOf(input: StaffSuggestionRuleInput): StaffSuggestionRuleBody {
     period: suggestionPeriod(input.startsOn, input.endsOn),
     phrase: suggestionPhrase(input.phrase),
     priority: suggestionPriority(input.priority),
+    conditions,
   };
 }

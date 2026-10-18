@@ -7,6 +7,13 @@ import type {
 } from '@lfd/contracts';
 import { addDays } from '@lfd/contracts';
 
+import {
+  type ConditionsDraft,
+  conditionsDraftOf,
+  conditionsMissing,
+  conditionsPayloadOf,
+  EMPTY_CONDITIONS,
+} from './suggestion-conditions';
 import { PLACEMENTS_OF } from './suggestion-format';
 
 /** Une suggestion montre trois articles au plus — la borne de l'agrégat. */
@@ -26,6 +33,8 @@ export interface SuggestionDraft {
   readonly phraseEn: string;
   readonly phraseIt: string;
   readonly priority: number | null;
+  /** Les conditions facultatives (RS8). */
+  readonly conditions: ConditionsDraft;
 }
 
 /** Une règle neuve : partout, à l'accueil, pour tous, aujourd'hui seulement. */
@@ -42,6 +51,7 @@ export function emptyDraft(today: string): SuggestionDraft {
     phraseEn: '',
     phraseIt: '',
     priority: 0,
+    conditions: EMPTY_CONDITIONS,
   };
 }
 
@@ -59,6 +69,7 @@ export function draftOf(rule: StaffSuggestionRuleView): SuggestionDraft {
     phraseEn: rule.phrase?.en ?? '',
     phraseIt: rule.phrase?.it ?? '',
     priority: rule.priority,
+    conditions: conditionsDraftOf(rule.conditions),
   };
 }
 
@@ -75,7 +86,7 @@ function daysFrom(from: string, to: string): number {
 
 /**
  * **La copie d'une règle, à enregistrer comme une NOUVELLE** (RS9) : mêmes
- * déclencheur, articles, emplacement, clientèle, phrase et priorité. La
+ * déclencheur, articles, emplacement, clientèle, phrase, priorité et conditions. La
  * période garde sa durée et commence au plus tôt aujourd'hui — une règle
  * finie se décline pour la saison suivante sans revivre dans le passé ; une
  * règle à venir garde ses jours, pour en faire une variante (une autre
@@ -135,7 +146,7 @@ export function missingOf(draft: SuggestionDraft): string | null {
   if (draft.priority === null) {
     return 'Donnez une priorité (0 si elle ne compte pas).';
   }
-  return null;
+  return conditionsMissing(draft.conditions, draft.placement);
 }
 
 /**
@@ -163,5 +174,6 @@ export function payloadOf(draft: SuggestionDraft): StaffSuggestionRulePayload {
     endsOn: draft.endsOn,
     phrase,
     priority: draft.priority ?? 0,
+    conditions: conditionsPayloadOf(draft.conditions, draft.placement),
   };
 }

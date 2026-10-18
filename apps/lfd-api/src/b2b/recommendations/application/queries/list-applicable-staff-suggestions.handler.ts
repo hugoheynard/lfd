@@ -10,8 +10,8 @@ import { staffSuggestionView } from "./staff-suggestion-view.js";
 
 /**
  * Applique la période (jour métier de Paris, lu au `Clock`), l'audience,
- * l'interrupteur et l'ordre réglé. **Sans** le déclencheur ni le filtre de ce
- * qui se commande (R0) : tous deux s'appliquent à l'affichage (RS2).
+ * l'interrupteur et l'ordre réglé. **Sans** le déclencheur, les conditions
+ * (RS8) ni le filtre de ce qui se commande (R0) : tous deux s'appliquent à l'affichage (RS2).
  */
 @QueryHandler(ListApplicableStaffSuggestionsQuery)
 export class ListApplicableStaffSuggestionsHandler implements IQueryHandler<
@@ -33,6 +33,9 @@ export class ListApplicableStaffSuggestionsHandler implements IQueryHandler<
       today: instantToLocal(this.clock.now()).day,
       reader: query.reader,
       order: order.order,
+      // Ni heure, ni panier, ni point de retrait ici : les conditions (RS8)
+      // se jugent à l'affichage, comme le déclencheur.
+      context: null,
     }).map(staffSuggestionView);
   }
 }

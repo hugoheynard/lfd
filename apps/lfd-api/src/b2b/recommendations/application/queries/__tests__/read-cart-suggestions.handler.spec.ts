@@ -1,4 +1,4 @@
-import { addDays, instantToLocal, type ShopItemView } from "@lfd/contracts";
+import { addDays, instantToLocal, weekdayOfDate, type ShopItemView } from "@lfd/contracts";
 
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import type { UnsealedCatalogItem } from "../../../../catalog/domain/ports/product-catalog.reader.js";
@@ -7,6 +7,10 @@ import {
   StaffSuggestionRule,
   type StaffSuggestionRuleInput,
 } from "../../../domain/entities/staff-suggestion-rule.js";
+import {
+  NO_SUGGESTION_CONDITIONS,
+  type SuggestionConditionsInput,
+} from "../../../domain/value-objects/suggestion-conditions.js";
 import { RecommendationCutoffReader } from "../../../domain/ports/recommendation-cutoff.reader.js";
 import { SuggestedArticleReader } from "../../../domain/ports/suggested-article.reader.js";
 import {
@@ -107,7 +111,21 @@ function harness(rules: readonly [string, Partial<StaffSuggestionRuleInput>, num
         date === undefined ? null : { date, pickupAddressId: null },
       ),
     );
-  return { read, shelf };
+  /** RS8 : le jour visé avec son point de retrait (`null` = livraison), et le total lu. */
+  const readWith = async (
+    skus: readonly string[],
+    target: { readonly pickupAddressId: string | null } | null,
+    cartTotalCents: number | null,
+  ) =>
+    handler.execute(
+      new ReadCartSuggestionsQuery(
+        null,
+        skus,
+        target === null ? null : { date: TODAY, pickupAddressId: target.pickupAddressId },
+        cartTotalCents,
+      ),
+    );
+  return { read, readWith, shelf };
 }
 
 describe("ReadCartSuggestionsHandler", () => {
@@ -178,5 +196,67 @@ describe("ReadCartSuggestionsHandler", () => {
 
     expect(await read(["VIE-001"])).toEqual([]);
     expect(shelf.asked).toEqual([]);
+  });
+});
+
+/** Une règle « croissant au panier → café » avec ces seules conditions (RS8). */
+function only(conditions: Partial<SuggestionConditionsInput>): Partial<StaffSuggestionRuleInput> {
+  return { conditions: { ...NO_SUGGESTION_CONDITIONS, ...conditions } };
+}
+
+/** L'heure de `NOW` à Paris, et une plage qui la contient ou non — jamais une heure du calendrier. */
+const NOW_TIME = instantToLocal(NOW).time;
+
+describe("ReadCartSuggestionsHandler — les conditions (RS8)", () => {
+  it("le jour de la semaine : affichée le jour de l'affichage, pas un autre", async () => {
+    const today = weekdayOfDate(TODAY);
+    const other = today === "mon" ? "tue" : "mon";
+    const { read } = harness([
+      ["IN", only({ weekdays: [today] }), 0],
+      ["OUT", { ...only({ weekdays: [other] }), suggestedSkus: ["BOI-002"] }, 5],
+    ]);
+
+    expect((await read(["VIE-001"])).map(({ reason }) => reason.ruleId)).toEqual(["in"]);
+  });
+
+  it("la plage horaire : début compris, fin exclue, à l'heure de Paris du Clock", async () => {
+    const startsNow = harness([["A", only({ hours: { from: NOW_TIME, to: "23:59" } }), 0]]);
+    const endsNow = harness([["A", only({ hours: { from: "00:00", to: NOW_TIME } }), 0]]);
+
+    expect(await startsNow.read(["VIE-001"])).toHaveLength(1);
+    expect(await endsNow.read(["VIE-001"])).toEqual([]);
+  });
+
+  it("le seuil : atteint au centime près, jamais sur un panier pas encore chiffré", async () => {
+    const { readWith } = harness([["A", only({ minCartTotalCents: 2_000 }), 0]]);
+
+    expect(await readWith(["VIE-001"], null, 2_000)).toHaveLength(1);
+    expect(await readWith(["VIE-001"], null, 1_999)).toEqual([]);
+    expect(await readWith(["VIE-001"], null, null)).toEqual([]);
+  });
+
+  it("sans cette famille : un article de la famille (ou d'une sous-famille) au panier l'écarte", async () => {
+    const { read } = harness([
+      [
+        "A",
+        {
+          ...only({ cartWithoutFamilyId: "fam-vien" }),
+          trigger: { kind: "everywhere", ref: null },
+        },
+        0,
+      ],
+    ]);
+
+    expect(await read(["VIE-001"])).toEqual([]);
+    expect((await read(["BOI-002"])).map(({ sku }) => sku)).toEqual(["BOI-001"]);
+  });
+
+  it("le point de retrait : ni avant le choix, ni en livraison, ni ailleurs", async () => {
+    const { readWith } = harness([["A", only({ pickupAddressIds: ["site-centre"] }), 0]]);
+
+    expect(await readWith(["VIE-001"], null, null)).toEqual([]);
+    expect(await readWith(["VIE-001"], { pickupAddressId: null }, null)).toEqual([]);
+    expect(await readWith(["VIE-001"], { pickupAddressId: "site-gare" }, null)).toEqual([]);
+    expect(await readWith(["VIE-001"], { pickupAddressId: "site-centre" }, null)).toHaveLength(1);
   });
 });

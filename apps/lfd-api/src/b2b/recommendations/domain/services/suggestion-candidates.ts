@@ -13,7 +13,15 @@ export interface SuggestionCandidate {
 export interface SuggestionTriggering {
   readonly triggered: (rule: StaffSuggestionRuleSnapshot) => boolean;
   readonly excluded: readonly string[];
+  /**
+   * Ce que le contenu de l'emplacement écarte une fois la règle déclenchée
+   * (RS8 : « le panier n'a aucun article de cette famille ») ; absent = rien.
+   */
+  readonly blocked?: (rule: StaffSuggestionRuleSnapshot) => ContentRefusal | null;
 }
+
+/** Une condition sur le contenu du panier qui n'est pas tenue. */
+export type ContentRefusal = "cart_has_family";
 
 /** Pourquoi un suggéré d'une règle déclenchée ne devient pas candidat. */
 export type CandidateRefusal =
@@ -30,6 +38,8 @@ export interface CandidateTrace {
 export interface RuleCandidateTrace {
   readonly rule: StaffSuggestionRuleSnapshot;
   readonly triggered: boolean;
+  /** Déclenchée, mais écartée par une condition sur le contenu ; `null` sinon. */
+  readonly blocked: ContentRefusal | null;
   readonly items: readonly CandidateTrace[];
 }
 
@@ -52,7 +62,11 @@ export function traceCandidates(
   const candidates: SuggestionCandidate[] = [];
   const rules = ordered.map((rule): RuleCandidateTrace => {
     if (!triggering.triggered(rule)) {
-      return { rule, triggered: false, items: [] };
+      return { rule, triggered: false, blocked: null, items: [] };
+    }
+    const blocked = triggering.blocked?.(rule) ?? null;
+    if (blocked !== null) {
+      return { rule, triggered: true, blocked, items: [] };
     }
     const items = rule.suggestedSkus.map((sku): CandidateTrace => {
       if (excluded.has(sku)) {
@@ -66,7 +80,7 @@ export function traceCandidates(
       candidates.push({ sku, rule });
       return { sku, refusal: null };
     });
-    return { rule, triggered: true, items };
+    return { rule, triggered: true, blocked: null, items };
   });
   return { candidates, rules };
 }

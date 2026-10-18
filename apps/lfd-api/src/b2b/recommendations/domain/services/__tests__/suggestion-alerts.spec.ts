@@ -1,4 +1,4 @@
-import { addDays } from "@lfd/contracts";
+import { addDays, weekdayOfDate } from "@lfd/contracts";
 
 import {
   StaffSuggestionRule,
@@ -7,11 +7,13 @@ import {
 } from "../../entities/staff-suggestion-rule.js";
 import {
   alertWindow,
+  conditionFindings,
   readersOf,
   ruleAlert,
   watchedRules,
   type AudienceFacts,
 } from "../suggestion-alerts.js";
+import { NO_SUGGESTION_CONDITIONS } from "../../value-objects/suggestion-conditions.js";
 
 /** Les jours ne sont comparés qu'à `TODAY`, passé aux fonctions. */
 const TODAY = "2026-10-18";
@@ -35,6 +37,7 @@ function rule(
     endsOn: addDays(TODAY, 5),
     phrase: null,
     priority: 0,
+    conditions: NO_SUGGESTION_CONDITIONS,
     ...fields,
     active,
     created: { by: null, at },
@@ -111,6 +114,7 @@ describe("ruleAlert", () => {
       ruleId: "R",
       severity: "partial",
       triggerWithdrawn: false,
+      conditions: [],
       items: [{ sku: "BOI-001", audience: "public", reason: "not_for_audience" }],
       window,
     });
@@ -156,8 +160,58 @@ describe("ruleAlert", () => {
       ruleId: "R",
       severity: "empty",
       triggerWithdrawn: true,
+      conditions: [],
       items: [],
       window: null,
     });
+  });
+});
+
+describe("conditionFindings — RS8", () => {
+  const withSites = (ids: readonly string[]) =>
+    rule("R", { conditions: { ...NO_SUGGESTION_CONDITIONS, pickupAddressIds: ids } });
+
+  it("un point fermé sur deux : signalé, la règle vit encore", () => {
+    const found = conditionFindings(withSites(["site-a", "site-b"]), new Set(["site-a"]), null);
+    expect(found).toEqual({
+      alerts: [{ reason: "site_closed", siteId: "site-b" }],
+      blocking: false,
+    });
+  });
+
+  it("tous les points fermés : la règle est vide", () => {
+    const r = withSites(["site-a"]);
+    const found = conditionFindings(r, new Set(), null);
+    expect(found.blocking).toBe(true);
+    expect(ruleAlert(r, false, [facts("pro"), facts("public")], null, found)?.severity).toBe(
+      "empty",
+    );
+  });
+
+  it("aucun des jours choisis dans ce qui reste de la période : vide ; un seul suffit", () => {
+    const today = weekdayOfDate(TODAY);
+    const tomorrow = weekdayOfDate(addDays(TODAY, 1));
+    const oneDay = (weekdays: readonly string[]) =>
+      rule("R", {
+        endsOn: TODAY,
+        conditions: { ...NO_SUGGESTION_CONDITIONS, weekdays },
+      });
+    const window = (r: StaffSuggestionRuleSnapshot) => alertWindow(r, TODAY);
+
+    const missed = oneDay([tomorrow]);
+    expect(conditionFindings(missed, new Set(), window(missed))).toEqual({
+      alerts: [{ reason: "no_weekday_left", siteId: null }],
+      blocking: true,
+    });
+    const hit = oneDay([today]);
+    expect(conditionFindings(hit, new Set(), window(hit)).alerts).toEqual([]);
+  });
+
+  it("une fenêtre plafonnée couvre la semaine : rien n'est dit des jours", () => {
+    const long = rule("R", {
+      endsOn: addDays(TODAY, 90),
+      conditions: { ...NO_SUGGESTION_CONDITIONS, weekdays: ["mon"] },
+    });
+    expect(conditionFindings(long, new Set(), alertWindow(long, TODAY)).alerts).toEqual([]);
   });
 });

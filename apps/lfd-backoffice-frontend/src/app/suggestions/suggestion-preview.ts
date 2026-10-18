@@ -8,8 +8,12 @@ import type {
   StaffSuggestionReader,
   StaffSuggestionRuleView,
 } from '@lfd/contracts';
+import { addDays, weekdayOfDate } from '@lfd/contracts';
 import { formatEuros } from '@lfd/catalog-ui';
 import { MILLICENTS_PER_CENT, unitPriceCents } from '@lfd/money';
+
+import { centsField, centsOf } from '../comptabilite/cents-field';
+import { eurosText, hoursText, sitesText, weekdaysText } from './suggestion-conditions';
 
 /**
  * **L'aperçu dit en clair** (RS5) — ce que l'écran et l'agent écrivent d'un
@@ -104,6 +108,40 @@ function outranked(owner: string, by: string | null, ctx: ReasonContext): string
   return `Battue par ${ruleName(by === null ? undefined : ctx.rules.get(by), ctx)} (${how})`;
 }
 
+/** Une condition de RS8 qui n'est pas tenue, dite avec ce qu'elle demande. */
+function conditionReason(
+  rule: StaffSuggestionRuleView,
+  status:
+    | 'outside_weekdays'
+    | 'outside_hours'
+    | 'no_site_yet'
+    | 'wrong_site'
+    | 'cart_below_threshold'
+    | 'cart_has_family',
+  ctx: ReasonContext,
+): string {
+  const { weekdays, hours, minCartTotalCents, cartWithoutFamilyId, pickupAddressIds } =
+    rule.conditions;
+  switch (status) {
+    case 'outside_weekdays':
+      return `Pas ce jour-là : elle vaut ${weekdaysText(weekdays ?? [])}`;
+    case 'outside_hours':
+      return hours === null
+        ? 'Hors de sa plage horaire'
+        : `Pas à cette heure : elle vaut ${hoursText(hours.from, hours.to)}`;
+    case 'no_site_yet':
+      return 'Aucun point de retrait choisi : elle attend que le client en choisisse un';
+    case 'wrong_site':
+      return `Pas pour ce point de retrait : elle vaut en retrait à ${sitesText(ctx.choices, pickupAddressIds ?? [])}`;
+    case 'cart_below_threshold':
+      return minCartTotalCents === null
+        ? 'Le panier n’atteint pas son montant'
+        : `Le panier n’atteint pas ${eurosText(minCartTotalCents)} (ou n’est pas encore chiffré)`;
+    case 'cart_has_family':
+      return `Le panier contient un article de la famille ${quoted(ctx.choices, cartWithoutFamilyId ?? '', true)}`;
+  }
+}
+
 /**
  * Le statut d'une règle ou d'un de ses articles, en français. `sku` est
  * l'article jugé (absent pour une raison de règle).
@@ -128,6 +166,13 @@ export function previewReason(
       return 'Pas pour cette clientèle';
     case 'wrong_placement':
       return 'Pas à cet emplacement';
+    case 'outside_weekdays':
+    case 'outside_hours':
+    case 'no_site_yet':
+    case 'wrong_site':
+    case 'cart_below_threshold':
+    case 'cart_has_family':
+      return conditionReason(rule, verdict.status, ctx);
     case 'trigger_false':
       return triggerFalse(rule, ctx);
     case 'item_not_served':
@@ -150,15 +195,24 @@ export interface PreviewSetup {
   readonly viewedSku: string | null;
   readonly audience: StaffSuggestionReader;
   readonly day: string;
+  /** `HH:MM` (Paris), ou vide : l'heure de maintenant (RS8). */
+  readonly time: string;
+  /** Le total du panier en euros, tel que tapé, ou vide : pas encore chiffré (RS8). */
+  readonly cartTotal: string;
+  /** Le point de retrait choisi, ou `null` : pas encore choisi (RS8). */
+  readonly siteId: string | null;
 }
 
 /** Le payload envoyé ; `null` tant qu'une fiche n'a pas d'article choisi. */
 export function previewPayload(setup: PreviewSetup): StaffSuggestionPreviewPayload | null {
+  const cents = setup.cartTotal.trim() === '' ? null : centsOf(setup.cartTotal);
   const common = {
     skus: [...setup.cart],
     audience: setup.audience,
     day: setup.day,
-    pickupAddressId: null,
+    pickupAddressId: setup.siteId,
+    ...(setup.time === '' ? {} : { time: setup.time }),
+    ...(cents === null || setup.placement !== 'cart' ? {} : { cartTotalCents: cents }),
   };
   if (setup.placement !== 'product') {
     return { placement: setup.placement, ...common };
@@ -195,6 +249,27 @@ export function previewSetupOf(
     viewedSku:
       rule.placement === 'product' ? (kind === 'product_viewed' ? ref : (other ?? null)) : null,
     audience: rule.audience === 'pro' ? 'pro' : 'public',
-    day: rule.startsOn > today ? rule.startsOn : today,
+    ...conditionsSetupOf(rule, rule.startsOn > today ? rule.startsOn : today),
+  };
+}
+
+/**
+ * Un jour, une heure, un total et un point qui rendent ses conditions vraies
+ * (RS8) : le premier jour choisi de la semaine à partir du début, le début de
+ * sa plage, son seuil, son premier point de retrait.
+ */
+function conditionsSetupOf(
+  rule: StaffSuggestionRuleView,
+  from: string,
+): Pick<PreviewSetup, 'day' | 'time' | 'cartTotal' | 'siteId'> {
+  const { weekdays, hours, minCartTotalCents, pickupAddressIds } = rule.conditions;
+  const week = Array.from({ length: 7 }, (_, offset) => addDays(from, offset));
+  const day =
+    weekdays === null ? from : (week.find((one) => weekdays.includes(weekdayOfDate(one))) ?? from);
+  return {
+    day,
+    time: hours?.from ?? '',
+    cartTotal: minCartTotalCents === null ? '' : centsField(minCartTotalCents),
+    siteId: pickupAddressIds?.[0] ?? null,
   };
 }

@@ -23,6 +23,10 @@ import {
   FoldCardComponent,
   FoldDateComponent,
   FoldElementTitleComponent,
+  FoldInputComponent,
+  FoldListboxComponent,
+  type FoldSelectOption,
+  FoldTimeComponent,
   FoldViewToggleComponent,
   type FoldViewToggleOption,
 } from 'fold-ng';
@@ -73,6 +77,9 @@ const AUDIENCE_OPTIONS: readonly FoldViewToggleOption[] = [
     FoldCardComponent,
     FoldDateComponent,
     FoldElementTitleComponent,
+    FoldInputComponent,
+    FoldListboxComponent,
+    FoldTimeComponent,
     FoldViewToggleComponent,
     StorefrontProductPicker,
   ],
@@ -94,6 +101,14 @@ export class SuggestionPreviewCard {
   protected readonly day = signal(parisToday());
   protected readonly cart = signal<readonly string[]>([]);
   protected readonly viewedSku = signal<string | null>(null);
+  /** RS8 : l'heure jugée (vide = maintenant), le total lu (vide = pas chiffré), le point choisi. */
+  protected readonly time = signal('');
+  protected readonly cartTotal = signal('');
+  protected readonly siteId = signal<string | null>(null);
+  protected readonly siteOptions = computed<readonly FoldSelectOption<string>[]>(() => [
+    { value: '', label: 'Pas encore choisi' },
+    ...(this.choices()?.sites ?? []).map((site) => ({ value: site.id, label: site.label })),
+  ]);
 
   protected readonly result = signal<StaffSuggestionPreviewView | null>(null);
   private readonly order = signal<StaffSuggestionOrder | null>(null);
@@ -177,6 +192,9 @@ export class SuggestionPreviewCard {
     this.day.set(setup.day);
     this.cart.set(setup.cart);
     this.viewedSku.set(setup.viewedSku);
+    this.time.set(setup.time);
+    this.cartTotal.set(setup.cartTotal);
+    this.siteId.set(setup.siteId);
     this.host.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
     await this.run();
   }
@@ -211,6 +229,9 @@ export class SuggestionPreviewCard {
       viewedSku: this.viewedSku(),
       audience: this.audience(),
       day: this.day(),
+      time: this.time(),
+      cartTotal: this.cartTotal(),
+      siteId: this.siteId(),
     });
     if (payload === null) {
       return;

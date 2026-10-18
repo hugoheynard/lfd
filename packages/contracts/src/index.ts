@@ -2203,6 +2203,7 @@ export {
   type StaffSuggestionRuleIdResponse,
   type StaffSuggestionRulePayload,
   type StaffSuggestionRuleView,
+  type StaffSuggestionSiteChoice,
   type StaffSuggestionTrigger,
   type StaffSuggestionTriggerKind,
 } from "./staff-suggestions.js";
@@ -2242,6 +2243,17 @@ export {
   type StaffSuggestionResultsView,
 } from "./staff-suggestion-results.js";
 export {
+  NO_STAFF_SUGGESTION_CONDITIONS,
+  STAFF_SUGGESTION_WEEKDAYS,
+  staffSuggestionConditionsSchema,
+  staffSuggestionHoursSchema,
+  type StaffSuggestionConditions,
+  type StaffSuggestionHours,
+} from "./staff-suggestion-conditions.js";
+export {
+  STAFF_SUGGESTION_CONDITION_ALERT_REASONS,
+  type StaffSuggestionConditionAlert,
+  type StaffSuggestionConditionAlertReason,
   STAFF_SUGGESTION_ALERT_HORIZON_DAYS,
   STAFF_SUGGESTION_ALERT_REASONS,
   STAFF_SUGGESTION_ALERT_SEVERITIES,

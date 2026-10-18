@@ -10,6 +10,7 @@ import {
 } from "../../../domain/entities/staff-suggestion-rule.js";
 import { RecommendationCutoffReader } from "../../../domain/ports/recommendation-cutoff.reader.js";
 import { SuggestedArticleReader } from "../../../domain/ports/suggested-article.reader.js";
+import { NO_SUGGESTION_CONDITIONS } from "../../../domain/value-objects/suggestion-conditions.js";
 import { CatalogCartFamilyReader } from "../../../infrastructure/catalog-cart-suggestions.js";
 import {
   croissantInput,
@@ -44,7 +45,9 @@ function served(sku: string, over: Partial<UnsealedCatalogItem> = {}): UnsealedC
 
 /** Le thé se commande la veille avant 00:01 : fermé pour aujourd'hui comme pour demain matin. */
 const CATALOG = new InMemoryProductCatalog([
-  served("VIE-001"),
+  served("VIE-001", {
+    family: { id: "fam-vien", name: "Viennoiseries", position: 0, slug: "v", path: ["fam-vien"] },
+  }),
   served("BOI-001"),
   served("BOI-002"),
   served("PAI-001"),
@@ -114,7 +117,13 @@ function harness(rules: readonly Seed[]) {
   const preview = (
     place: PreviewPlace,
     skus: readonly string[],
-    options: { audience?: "pro" | "public"; day?: string } = {},
+    options: {
+      audience?: "pro" | "public";
+      day?: string;
+      time?: string;
+      site?: string;
+      cartTotalCents?: number;
+    } = {},
   ) =>
     handler.execute(
       new PreviewStaffSuggestionsQuery(
@@ -122,7 +131,9 @@ function harness(rules: readonly Seed[]) {
         skus,
         options.audience ?? "public",
         options.day ?? null,
-        null,
+        options.site ?? null,
+        options.time ?? null,
+        options.cartTotalCents ?? null,
       ),
     );
   return { preview, shelf };
@@ -280,5 +291,45 @@ describe("PreviewStaffSuggestionsHandler", () => {
 
     expect(statuses(view.rules)).toEqual([["PRO", "shown"]]);
     expect(shelf.asked).toEqual([[null, "pro"]]);
+  });
+});
+
+describe("PreviewStaffSuggestionsHandler — les conditions (RS8)", () => {
+  const conditions = (over: Partial<typeof NO_SUGGESTION_CONDITIONS>) => ({
+    conditions: { ...NO_SUGGESTION_CONDITIONS, ...over },
+  });
+
+  it("l'heure choisie juge le créneau ; sans heure, celle de maintenant", async () => {
+    const { preview } = harness([
+      ["MORNING", conditions({ hours: { from: "07:00", to: "11:00" } }), 0],
+    ]);
+
+    expect(statuses((await preview(CART, ["VIE-001"], { time: "11:00" })).rules)).toEqual([
+      ["MORNING", "outside_hours"],
+    ]);
+    expect(statuses((await preview(CART, ["VIE-001"], { time: "07:00" })).rules)).toEqual([
+      ["MORNING", "shown"],
+    ]);
+    expect((await preview(CART, ["VIE-001"])).time).toBe(instantToLocal(NOW).time);
+  });
+
+  it("le seuil et le point de retrait se disent, l'un après l'autre", async () => {
+    const { preview } = harness([
+      ["R", conditions({ minCartTotalCents: 2_000, pickupAddressIds: ["site-centre"] }), 0],
+    ]);
+
+    const noSite = await preview(CART, ["VIE-001"], { cartTotalCents: 5_000 });
+    const below = await preview(CART, ["VIE-001"], { site: "site-centre", cartTotalCents: 1_999 });
+    const shown = await preview(CART, ["VIE-001"], { site: "site-centre", cartTotalCents: 2_000 });
+
+    expect(statuses(noSite.rules)).toEqual([["R", "no_site_yet"]]);
+    expect(statuses(below.rules)).toEqual([["R", "cart_below_threshold"]]);
+    expect(statuses(shown.rules)).toEqual([["R", "shown"]]);
+  });
+
+  it("la famille exclue au panier : « cart_has_family »", async () => {
+    const { preview } = harness([["R", conditions({ cartWithoutFamilyId: "fam-vien" }), 0]]);
+
+    expect(statuses((await preview(CART, ["VIE-001"])).rules)).toEqual([["R", "cart_has_family"]]);
   });
 });

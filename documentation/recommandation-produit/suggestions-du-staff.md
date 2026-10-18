@@ -1,9 +1,9 @@
 # Les suggestions décidées par le staff — ce qui est bâti
 
 > **Doc d'état** (2026-10-18, relue contre le code au commit `651b446d3` ;
-> l'accueil et l'après-ajout, RS7, les alertes, RS10, et les gestes du staff,
-> RS9, ajoutés le même jour).
-> Elle décrit ce qui existe. Ce qui reste à faire (des règles plus fines, la
+> l'accueil et l'après-ajout, RS7, les alertes, RS10, les gestes du staff,
+> RS9, et les conditions facultatives, RS8, ajoutés le même jour).
+> Elle décrit ce qui existe. Ce qui reste à faire (les segments, la
 > recherche dans le champ article, la mise en avant dans les règles) est dans [`plan-suggestions-du-staff.md`](plan-suggestions-du-staff.md).
 > L'ensemble du sujet (calculé, décidé, mis en avant) est présenté dans
 > [`README.md`](README.md).
@@ -20,16 +20,18 @@ Code : `apps/lfd-api/src/b2b/recommendations/` (backend),
 `client/cart/staff-cart-suggestion.service.ts` (boutique). Contrats :
 `packages/contracts/src/staff-suggestions.ts`, `cart-suggestions.ts`,
 `product-suggestions.ts`, `home-suggestions.ts`, `staff-suggestion-preview.ts`,
-`staff-suggestion-results.ts`, `staff-suggestion-alerts.ts`.
+`staff-suggestion-results.ts`, `staff-suggestion-alerts.ts`,
+`staff-suggestion-conditions.ts`.
 
 ## 1. Le parcours
 
 ```mermaid
 flowchart TD
-    R["Règle du staff<br/>StaffSuggestionRule"] --> A{"Applicable ?<br/>période · active ·<br/>audience · emplacement"}
+    R["Règle du staff<br/>StaffSuggestionRule"] --> A{"Applicable ?<br/>période · active ·<br/>audience · emplacement ·<br/>conditions (jour, heure, point, montant)"}
     A -->|non| X1["écartée<br/>(ended, inactive…)"]
     A -->|oui, dans l'ordre réglé| D{"Déclencheur vrai ?<br/>panier, fiche ouverte,<br/>accueil : « partout » seul"}
     D -->|non| X2["trigger_false"]
+    D -->|"oui, mais la famille exclue est au panier"| X4["cart_has_family"]
     D -->|oui| F{"Filtre commun<br/>servi · commandable au jour visé ·<br/>absent du panier · pas l'article de la fiche"}
     F -->|non| X3["item_not_served,<br/>item_in_cart…"]
     F -->|oui| V["Vitrine : prix du rayon<br/>HT pro · TTC particulier"]
@@ -63,6 +65,7 @@ est une **décision** du commerce, `growth` porte ce qu'on **observe**.
 | **Phrase**      | facultative ; le français d'abord, anglais et italien facultatifs ; 90 caractères par langue                                                                        | une traduction sans français ; une langue au-delà de 90 caractères                                                        |
 | **Priorité**    | entier de 0 à 999, plus haut = d'abord                                                                                                                              | hors borne ou non entier                                                                                                  |
 | **Active**      | interrupteur ; une règle naît active                                                                                                                                | —                                                                                                                         |
+| **Conditions**  | facultatives, toutes en ET avec le reste (§2.1)                                                                                                                     | voir §2.1                                                                                                                 |
 
 Les refus sont nommés dans `domain/errors/staff-suggestion-errors.ts`
 (`suggestions.*`), écrits pour le personnel : ils disent le cas et le geste de
@@ -79,6 +82,56 @@ clé étrangère : un article retiré ne fait pas disparaître la règle qui le 
 Chaque geste est journalisé : `staff_suggestion.created`, `.revised`,
 `.activated`, `.deactivated`, `.archived`, `staff_suggestion_order.changed`
 (`packages/contracts/src/journal-facts/commerce-suggestions.ts`).
+
+### 2.1 Les conditions facultatives (RS8)
+
+Bâties le 2026-10-18 (Hugo : « je veux tout ce que tu as écrit comme
+amélioration »). Chacune est **facultative** ; posées, elles valent **en ET**
+entre elles et avec la période, la clientèle, l'emplacement et le
+déclencheur. Value object `domain/value-objects/suggestion-conditions.ts`,
+porte `domain/services/suggestion-conditions-gate.ts`, refus
+`domain/errors/suggestion-condition-errors.ts`.
+
+| Condition                      | Ce qu'elle porte                                                                                             | Jugée…                                                                                          | Refusée si…                                                                   |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| **Jours de la semaine**        | un sous-ensemble de lundi–dimanche ; les sept valent « aucune condition »                                    | au jour métier de l'**affichage** (Paris, `Clock`), pas au jour de retrait                      | liste vide, jour inconnu, doublon                                             |
+| **Plage horaire**              | `HH:MM` → `HH:MM`, heure de Paris, début compris, fin exclue                                                 | à l'heure de l'affichage (`instantToLocal(clock.now())`)                                        | heure mal formée ; fin pas après le début — **pas de plage qui passe minuit** |
+| **Montant minimum du panier**  | des **centimes** entiers, de 0,01 € à 10 000 €                                                               | contre le total que le client **lit** au panier ; un panier pas encore chiffré ne l'atteint pas | non entier, ≤ 0, au-delà ; posé ailleurs qu'au panier                         |
+| **Sans article d'une famille** | un id de famille du catalogue servi (« sans boisson »), sous-familles comprises                              | sur la lignée des articles du panier, après le déclencheur                                      | famille inconnue ; ailleurs qu'au panier ; la même que celle qui déclenche    |
+| **Points de retrait**          | 1 à 20 ids de `pickup_addresses` (les sites du commerce, `b2b/sites`), ouverts (non archivés, qui remettent) | au point du jour visé ; **pas encore choisi** ou **en livraison** : la règle ne paraît pas      | liste vide, doublon, plus de 20 ; point inconnu, archivé ou qui ne remet pas  |
+
+**Le montant, tranché à la règle d'affichage du panier.** Le panier ne
+multiplie rien : ses montants viennent du devis du serveur (`/shop/quote`). Le
+seuil se compare au chiffre de la ligne **« Total »** : **HT pour un
+professionnel au compte, TTC sinon** — remise, bon et port compris
+(`shownCartTotalCents`, `client/cart/shown-cart-total.ts`, la fonction même de
+`CartSummary`). Le staff écrit « si le panier atteint 20 € » en pensant à ce
+que le client voit. La boutique n'envoie ce total que lorsque le devis est
+`ready` pour CE panier ; pendant un nouveau décompte, ou dans le retour
+« Ajouté ! » (l'article vient d'entrer, rien n'est encore chiffré), la règle à
+seuil ne paraît pas. Ni flottant ni conversion : des centimes du serveur.
+
+**Panier seulement.** Le montant et la famille exclue ne se jugent qu'à
+l'emplacement `cart` : ni la fiche ni l'accueil ne connaissent le total, et la
+fiche ne juge pas de famille. L'agrégat le refuse (et un `CHECK`).
+
+**Le point de retrait** est celui que la boutique envoie déjà avec le jour
+visé (`target.pickupAddressId`) : `target` absent = **pas encore choisi**,
+`pickupAddressId` nul = **livraison**. Une règle à points ne paraît ni dans
+l'un ni dans l'autre cas. Les points se lisent aux sites
+(`SuggestionSiteReader`, adaptateur sur `SiteReader`) — à l'écriture, et pour
+les alertes (§13).
+
+**En base** : six colonnes ajoutées à `staff_suggestion_rules` (migration
+`20261018200000_les_conditions_des_suggestions`, additive) — listes vides
+(`condition_weekdays`, `condition_pickup_address_ids`) ou nulles
+(`condition_hours_from`/`_to`, `condition_min_cart_total_cents`,
+`condition_cart_without_family_id`) pour « pas posée ». Les `CHECK` tiennent
+les jours connus, la plage dans l'ordre, le seuil positif et les conditions
+du panier au panier. Les règles d'avant n'ont aucune condition ; un client qui
+n'envoie pas `conditions` en crée une sans — et une réécriture sans elles les
+retire (un `PUT` remplace tout). Les faits `staff_suggestion.created` /
+`.revised` portent `conditions` (facultatif dans les faits d'avant).
 
 ## 3. L'ordre entre règles
 
@@ -112,8 +165,9 @@ n'existe pas encore.
 **Au panier**, la carte remplace la relance codée en dur d'avant
 (cart-upsell.service.ts et sa liste `TREATS`, retirés le 2026-10-18 par Hugo,
 sans repli) : sans règle applicable, le panier ne montre **rien**. Une requête
-par ouverture du panier et par changement de son contenu, du lecteur ou du jour
-visé, après un court délai.
+par ouverture du panier et par changement de son contenu, du lecteur, du jour
+visé ou de son total chiffré (RS8 : le panier envoie `cartTotalCents` quand le
+devis est prêt), après un court délai.
 
 **Sur la fiche**, la carte se pose sous l'article de `ProductSheet`
 (`StaffProductSuggestion`) : une requête par ouverture, le panier et le jour
@@ -143,7 +197,7 @@ ne charge le retour qu'à la première entrée, par import à la demande.
 
 Partout : rien en SSR, la requête vit dans un morceau chargé à la demande (le
 paquet initial de la boutique est près de son plafond — RS7 l'a porté de
-1 304,91 kB à 1 306,16 kB, plafond 1 400 kB, le 2026-10-18), et la carte est un
+1 304,91 kB à 1 306,16 kB, RS8 à 1 306,37 kB, plafond 1 400 kB, le 2026-10-18), et la carte est un
 composant partagé, `client/suggestions/staff-suggestion-card/`.
 
 ## 5. Le filtre
@@ -183,7 +237,12 @@ panier ; lecture seule, droit `lfc_suggestions:read`). On choisit un
 emplacement (panier avec ses articles, fiche d'un article, ou accueil — dont
 le panier n'écarte que ce qu'il contient), une clientèle
 (`public` ou `pro`) et un jour — qui sert à la fois à la période et à l'heure
-limite. Aux professionnels, l'aperçu montre la vitrine pro **sans tarif de
+limite —, puis pour les conditions (RS8) une **heure** (`time`, vide =
+maintenant), un **point de retrait** (vide = « pas encore choisi » : l'heure
+limite suit alors la règle générale) et, au panier, un **total du panier**
+(`cartTotalCents`, vide = pas encore chiffré). « Ouvrir l'aperçu » depuis une
+règle conditionnée pose un jour de ses jours, le début de sa plage, son seuil
+et son premier point : elle y paraît si rien d'autre ne l'écarte. Aux professionnels, l'aperçu montre la vitrine pro **sans tarif de
 société** (`pricedWithoutCompany`) : ni mercuriale, ni tarif négocié.
 
 Il rend la carte exacte, puis chaque règle non archivée avec son sort, en
@@ -196,7 +255,13 @@ vocabulaire fermé (`domain/services/suggestion-diagnosis.ts`) :
 | `inactive`                    | coupée                                             |
 | `wrong_audience`              | pas pour cette clientèle                           |
 | `wrong_placement`             | pas pour cet emplacement                           |
+| `outside_weekdays`            | pas ce jour de la semaine (RS8)                    |
+| `outside_hours`               | pas à cette heure (RS8)                            |
+| `no_site_yet`                 | aucun point de retrait choisi (RS8)                |
+| `wrong_site`                  | autre point, ou livraison (RS8)                    |
+| `cart_below_threshold`        | panier sous le seuil, ou pas chiffré (RS8)         |
 | `trigger_false`               | déclencheur faux pour ce panier ou cette fiche     |
+| `cart_has_family`             | la famille exclue est au panier (RS8)              |
 | `item_not_served`             | article non servi à cette clientèle                |
 | `item_not_orderable_that_day` | article non commandable ce jour-là                 |
 | `item_in_cart`                | déjà au panier                                     |
@@ -204,7 +269,8 @@ vocabulaire fermé (`domain/services/suggestion-diagnosis.ts`) :
 | `outranked_by`                | battue par une règle mieux classée (`outrankedBy`) |
 
 Une règle ne reçoit qu'une raison de porte, la première dans l'ordre période →
-interrupteur → audience → emplacement ; une règle déclenchée reçoit un verdict
+interrupteur → audience → emplacement → jour de la semaine → heure → point de
+retrait → montant ; la famille exclue se juge après le déclencheur ; une règle déclenchée reçoit un verdict
 par article. Rien n'est rejugé : chaque raison est celle qu'une porte de la
 chaîne de la boutique a rendue. Chaque règle non archivée, d'accueil comprise,
 a son bouton « Ouvrir l'aperçu ».
@@ -314,6 +380,18 @@ sous `b2b_growth`.
 Une règle neuve est préremplie « partout, à l'accueil, pour tous, aujourd'hui
 seulement » (`suggestion-draft.ts`) — un défaut qui s'affiche depuis RS7.
 
+**Les conditions** (RS8) ferment le panneau, dans un encadré
+**« Conditions (facultatives) »** (`suggestion-conditions-fieldset/`) : une
+phrase qui dit qu'elles se cumulent, des exemples (« le matin, du lundi au
+vendredi, de 7 h à 11 h » ; « si le panier atteint 20 € » ; « si le panier n'a
+aucune boisson » ; « en retrait à la boutique de la gare »), puis les jours,
+la plage, et — au panier seulement — le montant en euros et la famille
+exclue, enfin les points de retrait ouverts (`/admin/suggestions/choices`
+rend désormais `sites`). La phrase d'aperçu du panneau et le résumé de la
+liste les disent à la suite de la période : « …, du 20 au 31 octobre, du
+lundi au vendredi, de 7 h à 11 h, si le panier atteint 20 €. »
+(`suggestion-conditions.ts`, `conditionsParts`).
+
 ## 11. Les outils agent
 
 Dix outils WebMCP sous `lfc_suggestions`, déclarés par l'écran
@@ -324,28 +402,28 @@ Dix outils WebMCP sous `lfc_suggestions`, déclarés par l'écran
 
 ## 12. Les routes
 
-| Route                                 | Droit                   | Rend                                                |
-| ------------------------------------- | ----------------------- | --------------------------------------------------- |
-| `GET /admin/suggestions`              | `lfc_suggestions:read`  | toutes les règles, archivées comprises              |
-| `GET /admin/suggestions/choices`      | `lfc_suggestions:read`  | les articles et familles du catalogue servi         |
-| `GET /admin/suggestions/applicable`   | `lfc_suggestions:read`  | les règles applicables à un emplacement aujourd'hui |
-| `GET /admin/suggestions/order`        | `lfc_suggestions:read`  | l'ordre réglé                                       |
-| `GET /admin/suggestions/counters`     | `lfc_suggestions:read`  | affichée, cliquée, ajoutée par règle                |
-| `GET /admin/suggestions/results`      | `lfc_suggestions:read`  | les résultats du §8.2                               |
-| `GET /admin/suggestions/alerts`       | `lfc_suggestions:read`  | les alertes du §13                                  |
-| `POST /admin/suggestions/preview`     | `lfc_suggestions:read`  | l'aperçu du §7                                      |
-| `POST /admin/suggestions`             | `lfc_suggestions:write` | crée une règle                                      |
-| `PUT /admin/suggestions/order`        | `lfc_suggestions:write` | règle l'ordre                                       |
-| `PUT /admin/suggestions/:id`          | `lfc_suggestions:write` | réécrit la règle entière                            |
-| `PUT /admin/suggestions/:id/active`   | `lfc_suggestions:write` | coupe ou rallume                                    |
-| `PUT /admin/suggestions/:id/archive`  | `lfc_suggestions:write` | archive                                             |
-| `POST /shop/suggestions/cart`         | publique (60/min)       | la carte du panier, lecteur particulier             |
-| `POST /shop/suggestions/cart/mine`    | connecté                | la carte du panier, lecteur de l'espace courant     |
-| `POST /shop/suggestions/product`      | publique (60/min)       | la carte de la fiche, lecteur particulier           |
-| `POST /shop/suggestions/product/mine` | connecté                | la carte de la fiche, lecteur de l'espace courant   |
-| `POST /shop/suggestions/home`         | publique (60/min)       | la rangée de l'accueil, lecteur particulier         |
-| `POST /shop/suggestions/home/mine`    | connecté                | la rangée de l'accueil, lecteur de l'espace courant |
-| `POST /shop/audience`                 | publique (30 lots/min)  | compte un lot de gestes (≤ 50)                      |
+| Route                                 | Droit                   | Rend                                                                                |
+| ------------------------------------- | ----------------------- | ----------------------------------------------------------------------------------- |
+| `GET /admin/suggestions`              | `lfc_suggestions:read`  | toutes les règles, archivées comprises                                              |
+| `GET /admin/suggestions/choices`      | `lfc_suggestions:read`  | les articles et familles du catalogue servi, et les points de retrait ouverts (RS8) |
+| `GET /admin/suggestions/applicable`   | `lfc_suggestions:read`  | les règles applicables à un emplacement aujourd'hui                                 |
+| `GET /admin/suggestions/order`        | `lfc_suggestions:read`  | l'ordre réglé                                                                       |
+| `GET /admin/suggestions/counters`     | `lfc_suggestions:read`  | affichée, cliquée, ajoutée par règle                                                |
+| `GET /admin/suggestions/results`      | `lfc_suggestions:read`  | les résultats du §8.2                                                               |
+| `GET /admin/suggestions/alerts`       | `lfc_suggestions:read`  | les alertes du §13                                                                  |
+| `POST /admin/suggestions/preview`     | `lfc_suggestions:read`  | l'aperçu du §7                                                                      |
+| `POST /admin/suggestions`             | `lfc_suggestions:write` | crée une règle                                                                      |
+| `PUT /admin/suggestions/order`        | `lfc_suggestions:write` | règle l'ordre                                                                       |
+| `PUT /admin/suggestions/:id`          | `lfc_suggestions:write` | réécrit la règle entière                                                            |
+| `PUT /admin/suggestions/:id/active`   | `lfc_suggestions:write` | coupe ou rallume                                                                    |
+| `PUT /admin/suggestions/:id/archive`  | `lfc_suggestions:write` | archive                                                                             |
+| `POST /shop/suggestions/cart`         | publique (60/min)       | la carte du panier, lecteur particulier                                             |
+| `POST /shop/suggestions/cart/mine`    | connecté                | la carte du panier, lecteur de l'espace courant                                     |
+| `POST /shop/suggestions/product`      | publique (60/min)       | la carte de la fiche, lecteur particulier                                           |
+| `POST /shop/suggestions/product/mine` | connecté                | la carte de la fiche, lecteur de l'espace courant                                   |
+| `POST /shop/suggestions/home`         | publique (60/min)       | la rangée de l'accueil, lecteur particulier                                         |
+| `POST /shop/suggestions/home/mine`    | connecté                | la rangée de l'accueil, lecteur de l'espace courant                                 |
+| `POST /shop/audience`                 | publique (30 lots/min)  | compte un lot de gestes (≤ 50)                                                      |
 
 Pas de `DELETE` : on archive. Les chemins nommés sont déclarés avant `:id`.
 
@@ -388,8 +466,17 @@ clientèle de la règle ne reçoit, ou une famille que le catalogue servi ne
 connaît plus (`SuggestionFamilyReader`, celui de l'écriture) — la règle ne
 peut plus se déclencher (`triggerWithdrawn`).
 
+**Les conditions** (RS8) : un point de retrait choisi qui n'est plus
+ouvert — archivé, ou qui ne remet plus — est signalé (`site_closed`, avec
+`siteId`) ; s'ils le sont **tous**, la règle ne peut plus paraître. Des jours
+de la semaine dont aucun ne tombe dans la fenêtre regardée
+(`no_weekday_left`) l'éteignent aussi ; une fenêtre plafonnée couvre plus
+d'une semaine et n'en dit rien. La vue porte ces raisons dans `conditions`
+(`STAFF_SUGGESTION_CONDITION_ALERT_REASONS`) ; domaine `conditionFindings`.
+
 **Gravité** : un article passe s'il est servi et commandable pour au moins
-une clientèle de la règle. Aucun ne passe, ou un déclencheur mort : **Vide**
+une clientèle de la règle. Aucun ne passe, un déclencheur mort, ou une
+condition qui ne peut plus être vraie : **Vide**
 (badge alerte). Sinon, la moindre raison : **Partielle** (avertissement).
 
 Domaine pur : `domain/services/suggestion-alerts.ts` (`watchedRules`,
@@ -399,6 +486,6 @@ Domaine pur : `domain/services/suggestion-alerts.ts` (`watchedRules`,
 
 ## 14. Ce qui reste à faire
 
-Dans [`plan-suggestions-du-staff.md`](plan-suggestions-du-staff.md) : des
-règles plus fines (RS8), la recherche dans le champ article (reste de RS9,
+Dans [`plan-suggestions-du-staff.md`](plan-suggestions-du-staff.md) : les
+segments (le reste de RS8, qui attend le lot A1 des audiences), la recherche dans le champ article (reste de RS9,
 attend un combobox de fold-ng), et la mise en avant dans les règles (RS4).

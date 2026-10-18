@@ -33,6 +33,12 @@ export const cartSuggestionsPayloadSchema = z.strictObject({
       pickupAddressId: z.string().min(1).nullable(),
     })
     .nullable(),
+  /**
+   * Le total du panier en centimes, tel que le client le lit au panier (HT au
+   * compte, TTC sinon), s'il est connu (RS8, seuil de panier). Absent = pas
+   * encore chiffré : une règle à seuil ne s'affiche pas.
+   */
+  cartTotalCents: z.number().int().min(0).optional(),
 });
 export type CartSuggestionsPayload = z.infer<typeof cartSuggestionsPayloadSchema>;
 

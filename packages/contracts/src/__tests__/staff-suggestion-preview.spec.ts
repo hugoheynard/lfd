@@ -21,4 +21,12 @@ describe("staffSuggestionPreviewPayloadSchema", () => {
     expect(ok({ placement: "cart", ...common, viewedSku: "PAI-001" })).toBe(false);
     expect(ok({ placement: "cart", ...common, day: "18/10/2026" })).toBe(false);
   });
+
+  it("RS8 : l'heure et le montant sont facultatifs, d'une forme stricte", () => {
+    expect(ok({ placement: "cart", ...common, time: "07:30", cartTotalCents: 2_000 })).toBe(true);
+    expect(ok({ placement: "cart", ...common, time: "7:30" })).toBe(false);
+    expect(ok({ placement: "cart", ...common, time: "24:00" })).toBe(false);
+    expect(ok({ placement: "cart", ...common, cartTotalCents: 20.5 })).toBe(false);
+    expect(ok({ placement: "cart", ...common, cartTotalCents: -1 })).toBe(false);
+  });
 });

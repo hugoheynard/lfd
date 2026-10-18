@@ -1,4 +1,5 @@
 import type { StaffSuggestionRuleSnapshot } from "../entities/staff-suggestion-rule.js";
+import { cartHasExcludedFamily } from "./suggestion-conditions-gate.js";
 import {
   triggeredCandidates,
   type SuggestionCandidate,
@@ -53,7 +54,18 @@ export function cartCandidates(
   return triggeredCandidates(ordered, (rule) => triggeredByCart(rule, cart));
 }
 
-/** Ce que le panier apporte à la chaîne commune : son déclencheur, rien d'exclu. */
+/**
+ * Ce que le panier apporte à la chaîne commune : son déclencheur, rien
+ * d'exclu, et la condition « sans cette famille » (RS8), jugée sur la même
+ * lignée que le déclencheur.
+ */
 export function cartTriggering(cart: CartContents): SuggestionTriggering {
-  return { triggered: (rule) => triggeredByCart(rule, cart), excluded: [] };
+  return {
+    triggered: (rule) => triggeredByCart(rule, cart),
+    excluded: [],
+    blocked: (rule) =>
+      cartHasExcludedFamily(rule.conditions, cart.skus, cart.familyPaths)
+        ? "cart_has_family"
+        : null,
+  };
 }

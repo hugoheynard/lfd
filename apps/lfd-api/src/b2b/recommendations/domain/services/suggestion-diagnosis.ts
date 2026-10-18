@@ -1,6 +1,6 @@
 import type { StaffSuggestionRuleSnapshot } from "../entities/staff-suggestion-rule.js";
 import type { RuleGate } from "./applicable-suggestions.js";
-import type { RuleCandidateTrace } from "./suggestion-candidates.js";
+import type { ContentRefusal, RuleCandidateTrace } from "./suggestion-candidates.js";
 
 /** Pourquoi un candidat ne passe pas le filtre ou la vitrine. */
 export type ItemRefusal = "item_not_served" | "item_in_cart" | "item_not_orderable_that_day";
@@ -8,7 +8,10 @@ export type ItemRefusal = "item_not_served" | "item_in_cart" | "item_not_orderab
 /** Le sort d'une règle ou d'un article, dans le vocabulaire fermé de l'aperçu (RS5). */
 export type SuggestionVerdict =
   | { readonly kind: "shown" }
-  | { readonly kind: RuleGate | "trigger_false" | ItemRefusal | "item_is_the_product" }
+  | {
+      readonly kind:
+        RuleGate | "trigger_false" | ContentRefusal | ItemRefusal | "item_is_the_product";
+    }
   | { readonly kind: "outranked_by"; readonly ruleId: string };
 
 export interface ItemDiagnosis {
@@ -71,6 +74,9 @@ function tracedRule(
 ): RuleDiagnosis {
   if (!traced.triggered) {
     return { rule: traced.rule, verdict: { kind: "trigger_false" }, items: [] };
+  }
+  if (traced.blocked !== null) {
+    return { rule: traced.rule, verdict: { kind: traced.blocked }, items: [] };
   }
   const items = traced.items.map(({ sku, refusal }): ItemDiagnosis => {
     if (refusal === null) {

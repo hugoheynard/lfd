@@ -11,6 +11,7 @@ import {
 import { AudienceSkuReader } from "../../domain/ports/audience-sku.reader.js";
 import { StaffSuggestionRuleRepository } from "../../domain/ports/staff-suggestion-rule.repository.js";
 import { SuggestionFamilyReader } from "../../domain/ports/suggestion-family.reader.js";
+import { SuggestionSiteReader } from "../../domain/ports/suggestion-site.reader.js";
 import { ReviseStaffSuggestionCommand } from "./revise-staff-suggestion.command.js";
 import { ensureInCatalogue, requireRule } from "./staff-suggestion-writing.js";
 
@@ -29,6 +30,7 @@ export class ReviseStaffSuggestionHandler implements ICommandHandler<
     private readonly rules: StaffSuggestionRuleRepository,
     private readonly skus: AudienceSkuReader,
     private readonly families: SuggestionFamilyReader,
+    private readonly sites: SuggestionSiteReader,
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
@@ -43,7 +45,7 @@ export class ReviseStaffSuggestionHandler implements ICommandHandler<
     if (Object.keys(changes).length === 0) {
       return;
     }
-    await ensureInCatalogue({ skus: this.skus, families: this.families }, after);
+    await ensureInCatalogue({ skus: this.skus, families: this.families, sites: this.sites }, after);
 
     await this.uow.run(async () => {
       await this.rules.save(rule);

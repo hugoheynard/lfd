@@ -23,7 +23,7 @@ export function declareSuggestionAlertsTool(
   void declareExperimentalWebMcpTool({
     name: 'suggestion_alerts',
     description:
-      'Les suggestions décidées À CORRIGER, comme le filtre « À corriger » de l’écran : chaque règle active (non archivée, allumée, en cours ou à venir) dont un article suggéré ne se vend plus — retiré du catalogue, pas vendu à sa clientèle, masqué pour elle, ou commandable aucun jour d’ici la fin de sa période (regardée sur 31 jours au plus) — ou dont le déclencheur n’existe plus au catalogue. « Vide » : plus rien ne s’affiche ; « Partielle » : une partie seulement. Codes de raison entre crochets. Lecture seule.',
+      'Les suggestions décidées À CORRIGER, comme le filtre « À corriger » de l’écran : chaque règle active (non archivée, allumée, en cours ou à venir) dont un article suggéré ne se vend plus — retiré du catalogue, pas vendu à sa clientèle, masqué pour elle, ou commandable aucun jour d’ici la fin de sa période (regardée sur 31 jours au plus) — ou dont le déclencheur n’existe plus au catalogue, ou dont une condition ne peut plus être vraie (point de retrait archivé, aucun jour choisi dans la période restante). « Vide » : plus rien ne s’affiche ; « Partielle » : une partie seulement. Codes de raison entre crochets. Lecture seule.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
     execute: () =>
       said('Lecture des alertes des suggestions', async () => {
@@ -52,6 +52,9 @@ export function alertsText(
     const codes = [
       ...(alert.triggerWithdrawn ? ['trigger_withdrawn'] : []),
       ...alert.items.map((item) => `${item.sku}:${item.reason}`),
+      ...alert.conditions.map((condition) =>
+        condition.siteId === null ? condition.reason : `${condition.reason}:${condition.siteId}`,
+      ),
     ];
     return [
       `id ${alert.ruleId} — ${phraseOf.get(alert.ruleId) ?? '(règle inconnue)'} · ${ALERT_BADGES[alert.severity].label} [${alert.severity}] [${codes.join(', ')}]`,

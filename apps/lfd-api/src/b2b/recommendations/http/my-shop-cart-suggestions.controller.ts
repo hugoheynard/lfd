@@ -28,7 +28,12 @@ export class MyShopCartSuggestionsController {
     @ActingCompany() companyId: string | null,
   ): Promise<readonly CartSuggestionView[]> {
     return this.queries.execute<ReadCartSuggestionsQuery, readonly CartSuggestionView[]>(
-      new ReadCartSuggestionsQuery(companyId, payload.skus, payload.target),
+      new ReadCartSuggestionsQuery(
+        companyId,
+        payload.skus,
+        payload.target,
+        payload.cartTotalCents ?? null,
+      ),
     );
   }
 }

@@ -12,6 +12,7 @@ const CHOICES = {
     { sku: 'PAI-001', name: 'Baguette', familyId: 'fam-pains' },
   ],
   families: [],
+  sites: [],
 };
 
 const SHOWN = staffSuggestion({ id: '01JSHOWN', phrase: null });
@@ -23,6 +24,7 @@ class FakeApi {
     this.asked.push(payload);
     return Promise.resolve({
       day: payload.day ?? '',
+      time: payload.time ?? '09:00',
       shown: [
         {
           sku: 'PAI-001',
@@ -77,6 +79,9 @@ describe('SuggestionPreviewCard', () => {
       viewedSku: null,
       audience: 'public',
       day: '2026-10-20',
+      time: '',
+      cartTotal: '',
+      siteId: null,
     });
     fixture.detectChanges();
     await fixture.whenStable();
@@ -116,6 +121,9 @@ describe('SuggestionPreviewCard', () => {
       viewedSku: null,
       audience: 'public',
       day: '2026-10-20',
+      time: '',
+      cartTotal: '',
+      siteId: null,
     });
     fixture.detectChanges();
     await fixture.whenStable();

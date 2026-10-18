@@ -27,6 +27,7 @@ export class ReadProductSuggestionsHandler implements IQueryHandler<
       companyId: query.companyId,
       inCart: query.skus,
       target: query.target,
+      cartTotalCents: null,
       places: STAFF_PRODUCT_PLACES,
       triggeringOf: () => Promise.resolve(productTriggering(query.viewedSku)),
     });

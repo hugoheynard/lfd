@@ -52,6 +52,24 @@ model StaffSuggestionRule {
   createdBy String? @map("created_by")
   updatedBy String? @map("updated_by")
 
+  /// ── Les conditions facultatives (RS8, 2026-10-18), toutes en ET. ──────
+  /// Les jours de la semaine où elle vaut (`mon`…`sun`) ; VIDE = tous (`CHECK`).
+  conditionWeekdays            String[] @default([]) @map("condition_weekdays")
+  /// La plage d'heures de Paris, `HH:MM`, début compris, fin exclue, sans
+  /// passer minuit ; les deux, ou aucune (`CHECK`).
+  conditionHoursFrom           String?  @map("condition_hours_from")
+  conditionHoursTo             String?  @map("condition_hours_to")
+  /// Le total que le client lit au panier, en centimes, à partir duquel elle
+  /// vaut (> 0, `CHECK`). Panier seulement (`CHECK`).
+  conditionMinCartTotalCents   Int?     @map("condition_min_cart_total_cents")
+  /// Elle ne vaut que si le panier n'a aucun article de cette famille. Panier
+  /// seulement (`CHECK`). Identifiant opaque, sans clé étrangère.
+  conditionCartWithoutFamilyId String?  @map("condition_cart_without_family_id")
+  /// Les points de retrait (`pickup_addresses.id`) où elle vaut ; VIDE = tous.
+  /// Sans clé étrangère : un site archivé ne fait pas disparaître la règle, il
+  /// la signale (RS10).
+  conditionPickupAddressIds    String[] @default([]) @map("condition_pickup_address_ids")
+
   @@index([archivedAt, startsOn, endsOn])
   @@map("staff_suggestion_rules")
   @@schema("public")

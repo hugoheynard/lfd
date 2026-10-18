@@ -22,6 +22,25 @@
         (valueChange)="chooseAudience($event)"
       />
       <fold-date label="Jour" [(value)]="day" required />
+      <fold-time label="Heure" optional hint="Vide : l’heure de maintenant." [(value)]="time" />
+    </div>
+
+    <div class="controls">
+      <fold-listbox
+        label="Point de retrait"
+        [options]="siteOptions()"
+        [value]="siteId() ?? ''"
+        (selectionChange)="siteId.set($event === '' ? null : $event)"
+      />
+      @if (placement() === 'cart') {
+        <fold-input
+          label="Total du panier (€)"
+          placeholder="20"
+          optional
+          hint="Vide : pas encore chiffré."
+          [(value)]="cartTotal"
+        />
+      }
     </div>
 
     @if (placement() !== 'product') {

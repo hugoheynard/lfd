@@ -1,5 +1,9 @@
 import type { StaffSuggestionAudience, StaffSuggestionPlacement } from "@lfd/contracts";
 
+import type {
+  SuggestionConditions,
+  SuggestionConditionsInput,
+} from "../value-objects/suggestion-conditions.js";
 import type { SuggestionPeriod } from "../value-objects/suggestion-period.js";
 import type {
   SuggestionPhrase,
@@ -26,6 +30,8 @@ export interface StaffSuggestionRuleInput {
   readonly endsOn: string;
   readonly phrase: SuggestionPhraseInput | null;
   readonly priority: number;
+  /** Les conditions facultatives (RS8) ; chacune `null` si elle n'est pas posée. */
+  readonly conditions: SuggestionConditionsInput;
 }
 
 /** Le corps d'une règle, jugé : tout ce qu'une réécriture peut changer. */
@@ -37,6 +43,7 @@ export interface StaffSuggestionRuleBody {
   readonly period: SuggestionPeriod;
   readonly phrase: SuggestionPhrase | null;
   readonly priority: number;
+  readonly conditions: SuggestionConditions;
 }
 
 /** L'état d'une règle, tel qu'on le lit et qu'on l'écrit. */

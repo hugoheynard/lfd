@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+import {
+  staffSuggestionConditionsSchema,
+  type StaffSuggestionConditions,
+} from "./staff-suggestion-conditions.js";
+
 /**
  * ── Les suggestions DÉCIDÉES par le staff ────────────────────────────────────
  *
@@ -80,6 +85,8 @@ export const staffSuggestionRulePayloadSchema = z.strictObject({
   endsOn: z.string(),
   phrase: staffSuggestionPhraseSchema.nullable(),
   priority: z.number().int(),
+  /** Les conditions facultatives (RS8) ; absent = aucune, comme une règle d'avant. */
+  conditions: staffSuggestionConditionsSchema.optional(),
 });
 export type StaffSuggestionRulePayload = z.infer<typeof staffSuggestionRulePayloadSchema>;
 
@@ -122,6 +129,8 @@ export interface StaffSuggestionRuleView {
   readonly endsOn: string;
   readonly phrase: StaffSuggestionPhrase | null;
   readonly priority: number;
+  /** Les conditions facultatives (RS8) ; chacune `null` si elle n'est pas posée. */
+  readonly conditions: StaffSuggestionConditions;
   readonly active: boolean;
   /** Instant ISO, ou `null` tant qu'elle ne l'est pas. */
   readonly archivedAt: string | null;
@@ -152,10 +161,17 @@ export interface StaffSuggestionFamilyChoice {
   readonly name: string;
 }
 
-/** Ce que l'éditeur propose : le catalogue servi, ses familles. */
+/** Un point de retrait qu'une condition peut nommer (RS8) : ouvert, et qui remet. */
+export interface StaffSuggestionSiteChoice {
+  readonly id: string;
+  readonly label: string;
+}
+
+/** Ce que l'éditeur propose : le catalogue servi, ses familles, les points de retrait ouverts. */
 export interface StaffSuggestionChoicesView {
   readonly articles: readonly StaffSuggestionArticleChoice[];
   readonly families: readonly StaffSuggestionFamilyChoice[];
+  readonly sites: readonly StaffSuggestionSiteChoice[];
 }
 
 /** Les chiffres d'une règle sur une période (RS3) : relus des compteurs anonymes. */

@@ -12,5 +12,7 @@ export class ReadCartSuggestionsQuery {
     readonly skus: readonly string[],
     /** Le jour visé, si la boutique le connaît. */
     readonly target: FulfillmentTarget | null,
+    /** Le total que le client lit au panier, en centimes, s'il est chiffré (RS8). */
+    readonly cartTotalCents: number | null = null,
   ) {}
 }

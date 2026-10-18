@@ -33,6 +33,7 @@ const CHOICES = {
     { sku: 'PAI-001', name: 'Baguette', familyId: 'fam-pains' },
   ],
   families: [{ id: 'fam-vien', name: 'Viennoiseries' }],
+  sites: [],
 };
 
 function armTools(canWrite = true) {
@@ -97,6 +98,7 @@ function armTools(canWrite = true) {
     preview: (payload) =>
       Promise.resolve({
         day: payload.day ?? '',
+        time: payload.time ?? '09:00',
         shown: [],
         rules: wire.rules.map((rule) => ({
           ruleId: rule.id,
@@ -127,6 +129,7 @@ function armTools(canWrite = true) {
           ruleId: rule.id,
           severity: 'empty' as const,
           triggerWithdrawn: false,
+          conditions: [],
           items: [
             { sku: 'PAI-001', audience: 'public' as const, reason: 'hidden_for_audience' as const },
           ],
@@ -218,6 +221,30 @@ describe('declareSuggestionAgentTools', () => {
     expect(await tool('suggestion_order_set').execute({ order: 'priority' })).toContain(
       '[priority]',
     );
+  });
+
+  it('RS8 : la création porte les conditions, la correction garde celles qu’on ne nomme pas', async () => {
+    const { tool, wire } = armTools();
+    wire.rules.push(
+      staffSuggestion({
+        id: 'R1',
+        conditions: {
+          weekdays: ['mon'],
+          hours: null,
+          minCartTotalCents: 2_000,
+          cartWithoutFamilyId: null,
+          pickupAddressIds: null,
+        },
+      }),
+    );
+    await tool('suggestion_update').execute({ id: 'R1', hoursFrom: '07:00', hoursTo: '11:00' });
+    expect(wire.revised[0]?.payload.conditions).toEqual({
+      weekdays: ['mon'],
+      hours: { from: '07:00', to: '11:00' },
+      minCartTotalCents: 2_000,
+      cartWithoutFamilyId: null,
+      pickupAddressIds: null,
+    });
   });
 });
 
