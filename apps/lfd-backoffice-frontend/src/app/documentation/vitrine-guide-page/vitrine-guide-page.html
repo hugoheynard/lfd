@@ -130,8 +130,8 @@
         <li><code>Content-Type</code> vaut toujours <code>application/json</code>.</li>
         <li><code>Vitrine-Signature</code>&nbsp;: voir la section 2. Recalculée à chaque essai.</li>
         <li>
-          <code>Vitrine-Delivery</code>&nbsp;: l'identifiant de la livraison,
-          <strong>identique d'un essai à l'autre</strong>.
+          <code>Vitrine-Delivery</code>&nbsp;: l'identifiant de l'envoi,
+          <strong>identique d'un essai à l'autre</strong> tant que le contenu ne change pas.
         </li>
       </ul>
       <div class="vg-sample">
@@ -185,8 +185,8 @@
         </li>
         <li>
           Tant qu'une livraison attend, les changements suivants s'y ajoutent&nbsp;: même
-          <code>Vitrine-Delivery</code>, même <code>sequence</code>, mais un contenu qui peut avoir
-          grossi.
+          <code>sequence</code>, mais un contenu qui a grossi, donc un <strong>nouveau</strong>
+          <code>Vitrine-Delivery</code>.
         </li>
         <li>
           Au dixième échec, votre abonnement passe <strong>en échec</strong>&nbsp;: plus rien ne
@@ -209,8 +209,9 @@
           Un même envoi peut vous parvenir <strong>deux fois</strong> (un essai que vous avez traité
           mais auquel la réponse est arrivée trop tard, par exemple). Le plus sûr&nbsp;: traiter
           chaque notification comme un signal de relecture — relire deux fois ne coûte rien. Si vous
-          écartez les doublons sur <code>Vitrine-Delivery</code>, gardez en tête qu'un même
-          identifiant peut revenir avec plus de clés.
+          écartez les doublons sur <code>Vitrine-Delivery</code>, vous ne perdez rien&nbsp;: un même
+          identifiant revient toujours avec le même contenu, et un contenu grossi arrive sous un
+          identifiant neuf.
         </li>
       </ul>
     </fold-card>
@@ -333,7 +334,7 @@
       </fold-card>
     }
 
-    <!-- 6. LE XML — contrat écrit, serveur pas encore bâti (cf. VITRINE_XML_AVAILABLE). -->
+    <!-- 6. LE XML — servi depuis le 2026-10-18 (cf. VITRINE_XML_AVAILABLE). -->
     <fold-card class="doc-card" data-xml>
       <fold-element-title
         variant="title"
@@ -360,19 +361,45 @@
       <ul class="doc-list">
         <li>
           Chaque lecture existe en XML, demandée par l'en-tête
-          <code>Accept: application/xml</code> ou par le paramètre <code>?format=xml</code>.
+          <code>Accept: application/xml</code> ou par le paramètre <code>?format=xml</code>. La
+          réponse porte <code>Content-Type: application/xml; charset=utf-8</code> et commence par la
+          déclaration <code>&lt;?xml version="1.0" encoding="UTF-8"?&gt;</code>.
         </li>
-        <li>Le schéma XSD se télécharge à <code>GET /vitrine/schema.xsd</code>.</li>
+        <li>
+          <code>?format=json</code> est le défaut, et le paramètre l'emporte sur l'en-tête. Toute
+          autre valeur est refusée en <strong>400</strong>, code <code>http.payload.invalid</code>.
+          Les erreurs, elles, restent en JSON.
+        </li>
+        <li>
+          Le schéma XSD se télécharge à <code>GET /vitrine/schema.xsd</code>, sans clé. Les
+          racines&nbsp;: <code>&lt;catalogue&gt;</code>, <code>&lt;item&gt;</code> pour un article,
+          <code>&lt;texts&gt;</code>. Sans espace de noms&nbsp;; l'ordre des éléments d'un objet
+          n'est pas promis.
+        </li>
         <li>
           Les éléments portent <strong>exactement</strong> le nom des champs JSON, en camelCase.
         </li>
         <li>
           Un tableau devient un élément au pluriel contenant des éléments au singulier&nbsp;:
           <code>items</code> → <code>item</code>, <code>shelves</code> → <code>shelf</code>,
-          <code>operations</code> → <code>operation</code>, <code>skus</code> → <code>sku</code>.
+          <code>operations</code> → <code>operation</code>, <code>skus</code> → <code>sku</code>. Un
+          tableau vide reste un élément vide (<code>&lt;shelves/&gt;</code>).
         </li>
         <li>Une valeur <code>null</code> ne produit <strong>aucun</strong> élément.</li>
-        <li>Un texte traduit est un élément simple, dans la langue demandée.</li>
+        <li>
+          Un texte traduit est un élément simple, dans la langue demandée. Ce qui porte ses langues
+          dans le JSON les porte aussi en XML&nbsp;: le nom d'une opération s'écrit
+          <code>&lt;name&gt;&lt;fr&gt;…&lt;/fr&gt;&lt;en&gt;…&lt;/en&gt;&lt;/name&gt;</code>.
+        </li>
+        <li>
+          Les textes de la boutique&nbsp;: un
+          <code>&lt;text key="product.bestSeller"&gt;…&lt;/text&gt;</code> par texte, dans
+          <code>&lt;texts&gt;</code>.
+        </li>
+        <li>
+          Les caractères qu'XML 1.0 interdit (caractères de contrôle invisibles) sont retirés des
+          textes&nbsp;; le reste est échappé.
+        </li>
         <li>La notification, elle, reste en JSON.</li>
       </ul>
       <div class="vg-pair">

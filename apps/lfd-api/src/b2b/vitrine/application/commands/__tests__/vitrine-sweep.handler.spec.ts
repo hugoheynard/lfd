@@ -145,6 +145,25 @@ describe("le balayage de la vitrine", () => {
     expect(poster.received).toHaveLength(MAX_DELIVERY_ATTEMPTS);
   });
 
+  /**
+   * Régression (2026-10-18) : l'absorption gardait l'identifiant d'envoi, et
+   * l'agence qui écarte les doublons par `Vitrine-Delivery` perdait les ajouts.
+   */
+  it("une livraison qui absorbe de nouveaux changements repart sous un Vitrine-Delivery neuf", async () => {
+    const { sweep, poster, shop, clock } = world(declared().subscriber);
+    poster.outcome = { kind: "rejected", status: 504 };
+    await sweep.execute();
+    shop.view = catalogue({ items: [item("CRO-01"), item("PAI-01"), item("NEW-01")] });
+    clock.advanceMs(retryDelayMs(1));
+    await sweep.execute();
+
+    const [first, second] = poster.received;
+    const firstId = first?.headers["vitrine-delivery"];
+    expect(firstId).toBeDefined();
+    expect(second?.headers["vitrine-delivery"]).not.toBe(firstId);
+    expect(JSON.parse(second?.body ?? "{}")).toMatchObject({ sequence: 1 });
+  });
+
   it("un secret illisible (clé de chiffrement changée) échoue en le disant, sans rien poster", async () => {
     const { subscriber } = declared(testCipher());
     const { sweep, poster, deliveries } = world(subscriber);

@@ -82,6 +82,9 @@ model VitrineFingerprint {
 model VitrineDelivery {
   id           String @id
   subscriberId String @map("subscriber_id")
+  /// L'identifiant d'ENVOI (en-tête `Vitrine-Delivery`) : stable d'un essai à
+  /// l'autre, neuf à chaque absorption de changements. `id` reste la ligne.
+  dispatchId   String @map("dispatch_id")
 
   /// `change` · `test` (`CHECK`). Un essai ne compte ni dans la séquence, ni
   /// dans l'échec de l'abonné.

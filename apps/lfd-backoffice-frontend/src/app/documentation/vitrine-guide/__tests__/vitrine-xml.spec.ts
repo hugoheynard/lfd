@@ -1,6 +1,31 @@
 import { SAMPLE_ITEM, SAMPLE_ITEM_XML } from '../vitrine-guide-samples';
 import { toVitrineXml } from '../vitrine-xml';
 
+const SERVER_ITEM_XML = `<?xml version="1.0" encoding="UTF-8"?>
+<item>
+  <sku>VIE-001</sku>
+  <name>Croissant au beurre</name>
+  <note>Beurre AOP Charentes-Poitou</note>
+  <image>
+    <url>https://…/croissant.jpg</url>
+    <alt>Croissant doré sur une planche</alt>
+    <width>1600</width>
+    <height>1200</height>
+    <focal>
+      <x>0.5</x>
+      <y>0.4</y>
+    </focal>
+  </image>
+  <unitPriceMillicents>120000</unitPriceMillicents>
+  <unitPriceTtcCents>127</unitPriceTtcCents>
+  <catalogPriceMillicents>135000</catalogPriceMillicents>
+  <vatRatePercent>5.5</vatRatePercent>
+  <shelfId>cat_viennoiseries</shelfId>
+  <isFeatured>true</isFeatured>
+  <audience>both</audience>
+</item>
+`;
+
 describe('toVitrineXml', () => {
   it('nomme chaque élément comme le champ JSON, en camelCase', () => {
     expect(toVitrineXml('item', { unitPriceTtcCents: 127 })).toContain(
@@ -23,10 +48,19 @@ describe('toVitrineXml', () => {
     expect(() => toVitrineXml('x', { tags: ['a'] })).toThrow(/tags/);
   });
 
-  it('échappe le texte', () => {
-    expect(toVitrineXml('item', { name: 'Pain & <sel>' })).toContain(
-      '<name>Pain &amp; &lt;sel&gt;</name>',
+  it('échappe le texte comme le serveur', () => {
+    expect(toVitrineXml('item', { name: `Pain & <sel> "l'ami"\u0007` })).toContain(
+      '<name>Pain &amp; &lt;sel&gt; &quot;l&apos;ami&quot;</name>',
     );
+  });
+
+  /**
+   * Le même texte que `GUIDE_ITEM_XML` de la spec du serveur
+   * (`apps/lfd-api/src/b2b/vitrine/http/xml/__tests__/vitrine-xml.spec.ts`) :
+   * l'exemple du guide EST la sortie servie, à l'octet.
+   */
+  it("l'exemple XML du guide est la sortie exacte du serveur", () => {
+    expect(SAMPLE_ITEM_XML).toBe(SERVER_ITEM_XML);
   });
 
   it("l'exemple XML du guide est dérivé de l'exemple JSON", () => {

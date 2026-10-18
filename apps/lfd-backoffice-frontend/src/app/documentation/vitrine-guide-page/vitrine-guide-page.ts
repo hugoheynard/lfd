@@ -31,13 +31,12 @@ import { VitrineSchemaDiagram } from '../vitrine-schema-diagram/vitrine-schema-d
 import { VitrineSequenceDiagram } from '../vitrine-sequence-diagram/vitrine-sequence-diagram';
 
 /**
- * 🚩 **Le XML n'est pas encore servi** (Hugo, 2026-10-18 : le serveur le
- * bâtira juste après, selon le contrat que la page décrit). Passer à `true`
- * le jour où `Accept: application/xml`, `?format=xml` et
- * `GET /vitrine/schema.xsd` répondent : le badge « Disponible prochainement »
- * et l'avertissement disparaissent, le reste de la section est déjà écrit.
+ * 🚩 **Le XML est servi** depuis le 2026-10-18 : `Accept: application/xml`,
+ * `?format=xml` et `GET /vitrine/schema.xsd` répondent
+ * (`apps/lfd-api/src/b2b/vitrine/http/vitrine.controller.ts`). Le drapeau
+ * reste pour qu'un retrait se fasse en une ligne.
  */
-export const VITRINE_XML_AVAILABLE = false;
+export const VITRINE_XML_AVAILABLE = true;
 
 /** Une ligne d'un tableau qui n'est pas un champ : une route, une erreur, un en-tête. */
 interface DocRow {
@@ -125,6 +124,12 @@ export class DocVitrineGuidePage {
       b: 'Les textes',
       c: 'Les textes de la boutique dans la langue demandée.',
     },
+    {
+      key: 'schema',
+      a: 'GET /vitrine/schema.xsd',
+      b: 'Le schéma XSD',
+      c: 'Décrit les trois lectures en XML. Sans clé.',
+    },
   ];
 
   protected readonly errorColumns = docColumns('Statut', 'code', 'Cas');
@@ -133,7 +138,7 @@ export class DocVitrineGuidePage {
       key: '400',
       a: '400',
       b: 'http.payload.invalid',
-      c: 'lang inconnue (autre que fr, en, it).',
+      c: 'lang inconnue (autre que fr, en, it), ou format inconnu (autre que json, xml).',
     },
     {
       key: '403',

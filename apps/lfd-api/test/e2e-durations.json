@@ -336,5 +336,6 @@
   "test/operations-switch.e2e-spec.ts": 12000,
   "test/product-audience.e2e-spec.ts": 10313,
   "test/vitrine-webhook.e2e-spec.ts": 12223,
+  "test/vitrine-xml.e2e-spec.ts": 6000,
   "test/vitrine-notices.e2e-spec.ts": 8341
 }

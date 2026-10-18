@@ -1,17 +1,22 @@
 /**
- * **Le XML de la vitrine, tel qu'il est PROMIS** — pas encore servi.
+ * **Le XML de la vitrine, pour l'exemple du guide** — le serveur le sert
+ * depuis le 2026-10-18 (`apps/lfd-api/src/b2b/vitrine/http/xml/`).
  *
  * Écrit pour que l'exemple XML du guide de l'agence soit DÉRIVÉ de l'exemple
- * JSON plutôt que recopié à la main : les deux ne peuvent pas diverger. Les
- * règles sont celles que Hugo a fixées le 2026-10-18 pour le serveur à venir :
+ * JSON plutôt que recopié à la main. Les règles sont celles que Hugo a fixées
+ * le 2026-10-18, et celles du sérialiseur du serveur :
  *
  * - un élément par champ, nommé exactement comme le champ JSON (camelCase) ;
  * - un tableau devient un élément au pluriel qui contient des éléments au
  *   singulier (`items` → `item`) ;
- * - une valeur `null` ou absente ne produit aucun élément.
+ * - une valeur `null` ou absente ne produit aucun élément ;
+ * - échappement des cinq caractères réservés, retrait de ceux qu'XML 1.0
+ *   interdit.
  *
- * Le jour où le serveur sert le XML, c'est SA sortie qui fait foi : cette
- * fonction ne sert qu'à l'exemple.
+ * C'est la sortie du SERVEUR qui fait foi : sa spec
+ * (`http/xml/__tests__/vitrine-xml.spec.ts`) rend le même article que
+ * `SAMPLE_ITEM` et le compare au même texte que celle de ce fichier — si l'un
+ * des deux sérialiseurs dérive, une des deux suites rougit.
  */
 
 /**
@@ -80,10 +85,22 @@ function scalar(value: VitrineJson): string {
     : '';
 }
 
+/** Ce qu'XML 1.0 admet : tabulation, sauts de ligne, et tout hors contrôles et U+FFFE/U+FFFF. */
+function isXmlChar(character: string): boolean {
+  const code = character.codePointAt(0) ?? 0;
+  if (code < 0x20) {
+    return code === 0x09 || code === 0x0a || code === 0x0d;
+  }
+  return !(code >= 0xd800 && code <= 0xdfff) && code !== 0xfffe && code !== 0xffff;
+}
+
 function escapeXml(text: string): string {
-  return text
+  return [...text]
+    .filter(isXmlChar)
+    .join('')
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;');
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&apos;');
 }

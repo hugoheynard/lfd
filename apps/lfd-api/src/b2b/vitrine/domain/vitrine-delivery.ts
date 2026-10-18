@@ -16,6 +16,12 @@ const MAX_ERROR_LENGTH = 300;
 
 export interface VitrineDeliveryRecord {
   readonly id: string;
+  /**
+   * **L'identifiant d'ENVOI**, celui de l'en-tête `Vitrine-Delivery` : stable
+   * d'un essai à l'autre, NEUF à chaque absorption. Distinct de `id`, qui
+   * reste celui de la ligne du journal (« Renvoyer » la retrouve par lui).
+   */
+  readonly dispatchId: string;
   readonly subscriberId: string;
   readonly kind: VitrineDeliveryKind;
   /** Croissante par abonné pour `change` ; `null` pour `test`. */
@@ -62,7 +68,12 @@ export class VitrineDelivery {
     if (input.changes.isEmpty) {
       throw new VitrineDeliveryEmptyError();
     }
-    return new VitrineDelivery({ ...pendingAt(input.at), ...input, kind: "change" });
+    return new VitrineDelivery({
+      ...pendingAt(input.at),
+      ...input,
+      dispatchId: input.id,
+      kind: "change",
+    });
   }
 
   /** « Envoyer un test » : un corps vide, `test: true`, un seul essai. */
@@ -74,6 +85,7 @@ export class VitrineDelivery {
     return new VitrineDelivery({
       ...pendingAt(input.at),
       id: input.id,
+      dispatchId: input.id,
       subscriberId: input.subscriberId,
       kind: "test",
       sequence: null,
@@ -91,13 +103,24 @@ export class VitrineDelivery {
    * essais — sans quoi un abonné en panne qui change toutes les cinq minutes
    * ne passerait jamais « en échec » (B3).
    *
+   * 🔴 **Elle change d'identifiant d'envoi** (`dispatchId`). Un essai refusé
+   * peut avoir été TRAITÉ chez l'agence (réponse arrivée trop tard) ; si le
+   * contenu grossi repartait sous le même `Vitrine-Delivery`, une agence qui
+   * écarte les doublons par lui perdrait les ajouts (bug corrigé le
+   * 2026-10-18). Un contenu différent est un envoi différent.
+   *
    * @throws {VitrineDeliveryNotPendingError}
    */
-  absorb(changes: VitrineChanges, at: Date): void {
+  absorb(changes: VitrineChanges, at: Date, dispatchId: string): void {
     if (this.state.state !== "pending" || this.state.kind !== "change") {
       throw new VitrineDeliveryNotPendingError(this.state.id);
     }
-    this.state = { ...this.state, changes: this.state.changes.merge(changes), updatedAt: at };
+    this.state = {
+      ...this.state,
+      dispatchId,
+      changes: this.state.changes.merge(changes),
+      updatedAt: at,
+    };
   }
 
   recordSuccess(status: number, at: Date): void {
@@ -166,6 +189,11 @@ export class VitrineDelivery {
 
   get id(): string {
     return this.state.id;
+  }
+
+  /** La valeur de l'en-tête `Vitrine-Delivery`. */
+  get dispatchId(): string {
+    return this.state.dispatchId;
   }
 
   get subscriberId(): string {

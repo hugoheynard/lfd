@@ -81,7 +81,7 @@ export class SweepVitrineHandler implements ICommandHandler<
       }
       const pending = await this.deliveries.pendingChangeOf(subscriber.id);
       if (pending !== null) {
-        pending.absorb(changes, now);
+        pending.absorb(changes, now, this.ids.next());
         await this.deliveries.save(pending);
       } else {
         const sequence = subscriber.takeSequence(now);

@@ -72,7 +72,7 @@ export class VitrineRelay {
       body,
       headers: {
         [VITRINE_SIGNATURE_HEADER]: signVitrineBody(secret, body, seconds),
-        [VITRINE_DELIVERY_HEADER]: delivery.id,
+        [VITRINE_DELIVERY_HEADER]: delivery.dispatchId,
       },
     });
   }

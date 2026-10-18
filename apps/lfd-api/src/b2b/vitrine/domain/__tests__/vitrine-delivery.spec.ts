@@ -51,6 +51,7 @@ describe("une livraison à un abonné", () => {
     delivery.absorb(
       VitrineChanges.of({ changed: { ...NONE, texts: ["t"] }, removed: NONE }),
       LATER,
+      "d1-bis",
     );
     expect(delivery.attempts).toBe(1);
     expect(delivery.notification()).toMatchObject({
@@ -59,12 +60,28 @@ describe("une livraison à un abonné", () => {
     });
   });
 
+  /**
+   * Régression (2026-10-18) : une livraison qui absorbait de nouveaux
+   * changements repartait sous le même `Vitrine-Delivery` — l'agence qui
+   * écarte les doublons par lui perdait les ajouts.
+   */
+  it("une agence qui écarte les doublons par Vitrine-Delivery ne perd plus les ajouts absorbés", () => {
+    const delivery = prepared();
+    expect(delivery.dispatchId).toBe("d1");
+    delivery.recordFailure({ status: 504, reason: "délai" }, LATER, AT);
+    delivery.absorb(SOME, LATER, "d1-bis");
+    expect(delivery.dispatchId).toBe("d1-bis");
+    // La ligne du journal et la séquence restent.
+    expect(delivery.id).toBe("d1");
+    expect(delivery.notification().sequence).toBe(3);
+  });
+
   it("épuisée, passe en échec ; partie, n'absorbe plus", () => {
     const delivery = prepared();
     delivery.recordFailure({ status: null, reason: "x".repeat(500) }, null, LATER);
     expect(delivery.isFailed).toBe(true);
     expect(delivery.toPersistence().lastError).toHaveLength(300);
-    expect(() => delivery.absorb(SOME, LATER)).toThrow(VitrineDeliveryNotPendingError);
+    expect(() => delivery.absorb(SOME, LATER, "d2")).toThrow(VitrineDeliveryNotPendingError);
   });
 
   it("se renvoie une fois partie, essais remis à zéro ; jamais pendant qu'elle attend", () => {

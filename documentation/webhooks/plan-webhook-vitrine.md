@@ -204,8 +204,17 @@ français ; ⚠️ **périmé le 2026-10-18** : `?lang=` existe, cf. §6) ; la d
    2026-10-18 : « non, directement une page multi-abonnés ») : Gestion
    Boutique, liste des abonnés, création, cases, rotation du secret et de la
    clé, journal des envois.
-4. **Format : JSON.** L'agence accepte aussi XML ; on ne sert que du JSON tant
-   qu'elle n'en a pas besoin.
+4. **Format : JSON, et XML depuis le 2026-10-18.** ~~L'agence accepte aussi
+   XML ; on ne sert que du JSON tant qu'elle n'en a pas besoin.~~ Corrigé le
+   2026-10-18 (Hugo : « servir la vitrine en XML ») : les trois lectures
+   `/vitrine/*` servent la même ressource en XML sur `Accept: application/xml`
+   ou `?format=xml` (`json` par défaut, toute autre valeur en 400
+   `http.payload.invalid`), décrite par `GET /vitrine/schema.xsd`. Le XSD et
+   le sérialiseur sont dérivés des mêmes formes, typées contre le contrat
+   (`apps/lfd-api/src/b2b/vitrine/http/xml/`). Les notifications restent en
+   JSON. Le même jour : une livraison qui absorbe de nouveaux changements
+   repart sous un `Vitrine-Delivery` NEUF (colonne `dispatch_id`), pour
+   qu'une agence qui écarte les doublons par lui ne perde pas les ajouts.
 5. **L'audience sort** (option a de B1) : elle est ajoutée à la vue publique,
    que la boutique expose aussi.
 6. **Le prix sort tel qu'il est aujourd'hui**, promotions comprises (B2) ; il
@@ -357,7 +366,7 @@ l'unité et par l'e2e.
 **Nom, description et contact** (demande de Hugo, 2026-10-18). Un abonné se
 renomme, porte une **description** facultative (à quoi il sert, 500 caractères
 au plus) et un **contact** facultatif (adresse e-mail de l'agence, pour les
-e-mails de mise à jour — **aucun envoi n'existe encore**). Saisis à la création
+e-mails de mise à jour — cf. « Notifier les abonnés » ci-dessous). Saisis à la création
 ou par « Modifier » sur la carte (`PUT /admin/vitrine/subscribers/:id/identity`,
 `UpdateVitrineSubscriberIdentityCommand`) ; les bornes vivent dans l'agrégat
 (`rename`, `describe`, `setContact` — `EmailAddress` du compte, en minuscules)
@@ -365,7 +374,49 @@ et dans des `CHECK` (migration additive `20261018240000_la_description_d_un_abon
 Ni l'un ni l'autre ne sort vers l'agence : absents de `/vitrine/*` et du corps
 du webhook, éprouvé par l'e2e. ⚠️ Le contact peut être **nominatif** et n'est
 **pas** encore au registre RGPD : le registre ne connaît pas de personne
-« agence » (cf. rapport du lot, en attente de décision).
+« agence » (cf. rapport du lot, en attente de décision). **Inscrit le
+2026-10-18** sous la catégorie générique `tiers` (décision de Hugo), avec sa
+copie dans les annonces ; `lint:rgpd-staff` réclame désormais toute colonne
+`*email` d'une table `public.vitrine_*`. Conservation non décidée (dette
+comptée).
+
+**Notifier les abonnés** (décision de Hugo, 2026-10-18). Sous `shop_vitrine`
+en écriture, l'écran écrit un e-mail aux contacts : objet (150 caractères,
+une ligne) et message (5000, texte brut), destinataires = tous ceux qui ont un
+contact ou une sélection — un abonné **coupé reste notifiable**, un abonné
+sans contact est signalé et ne se choisit pas. Un **aperçu** rendu par le
+serveur (`POST /admin/vitrine/notices/preview`, même gabarit
+`agency.vitrine-notice` et même marque que l'envoi, sous la coquille de la
+maison) montre l'e-mail et les adresses ; rien ne part avant « Envoyer »
+(`POST /admin/vitrine/notices`, clé d'idempotence UUID tirée par l'écran à
+l'aperçu). Un e-mail par adresse, jamais les autres en copie, clé Resend
+`vitrine-notice:<annonce>:<abonné>`.
+
+- **Agrégat** `VitrineNotice` : texte valide (`VitrineNoticeText`), au moins un
+  destinataire, issue d'un envoi consignée une fois (`recordAttempt`). Le choix
+  des destinataires (`selectVitrineNoticeAddressees`) est partagé par l'aperçu
+  et l'envoi.
+- **Journal** : `vitrine_notices` (auteur = id du staff, objet, message, clé
+  unique) et `vitrine_notice_recipients` (adresse **à l'envoi**, `mail_sent`
+  `NULL` pas tenté · `true` accepté par le fournisseur · `false` refusé ou
+  mailer à blanc), migration additive
+  `20261018250000_les_annonces_aux_abonnes_vitrine`, clés en `RESTRICT`, pas de
+  DELETE. L'annonce est rangée **avant** le premier envoi : deux clics
+  simultanés se départagent sur l'index unique de la clé, le second n'envoie
+  rien et rend l'id du premier.
+- **Écran** : « Notifier les abonnés » (désactivé sans aucun contact), puis
+  « Dernières annonces » (20) avec l'issue par destinataire et la phrase
+  « accepté ≠ arrivé ». L'auteur s'affiche par son **id** de staff.
+- **Jamais** l'adresse dans un log ni un message d'erreur : le refus d'un
+  abonné sans contact le nomme par son nom.
+- **Preuves** : domaine (`vitrine-notice.spec.ts`), application
+  (`vitrine-notice-handlers.spec.ts`, mailer doublé), gabarit
+  (`vitrine-notice-mail.spec.ts`), e2e `test/vitrine-notices.e2e-spec.ts`
+  (aperçu sans écriture, double clic simultané, coupé notifié, refus nommé),
+  écran (`vitrine-notice-panel.spec.ts`, page).
+- **Non éprouvé** : l'arrivée réelle chez Resend (mailer doublé), et une
+  reprise d'une annonce interrompue au milieu de ses envois — les
+  destinataires restent « pas tentés », aucun geste ne les relance.
 
 **Ce qui reste, ou n'est pas éprouvé :**
 
@@ -380,5 +431,5 @@ du webhook, éprouvé par l'e2e. ⚠️ Le contact peut être **nominatif** et n
   (trois lectures du catalogue par passage dès qu'un abonné existe).
 - **La stabilité des URL d'images** pour un tiers qui les garde en cache, et
   les `alt` en français seulement (§6.3), sont inchangées.
-- **L'agence** n'a pas confirmé le format (§3, question 4) : JSON seulement,
-  signature à la Stripe.
+- **L'agence** n'a pas confirmé le format (§3, question 4) : JSON et, depuis
+  le 2026-10-18, XML (§5 point 4) ; signature à la Stripe.

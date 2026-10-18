@@ -13,6 +13,7 @@ import { VitrineDeliveryUnreadableError } from "./vitrine-delivery-unreadable.er
 /** La ligne `vitrine_deliveries`, telle que Prisma la rend. */
 export interface VitrineDeliveryRowShape {
   readonly id: string;
+  readonly dispatchId: string;
   readonly subscriberId: string;
   readonly kind: string;
   readonly sequence: number | null;
@@ -56,6 +57,7 @@ export function deliveryToView(row: VitrineDeliveryRowShape): VitrineDeliveryVie
 /** Agrégat → colonnes (sans l'id ni l'abonné, que l'appelant place). */
 export function deliveryToRow(record: VitrineDeliveryRecord) {
   return {
+    dispatchId: record.dispatchId,
     kind: record.kind,
     sequence: record.sequence,
     changes: changesJson(record.changes.toShape()),

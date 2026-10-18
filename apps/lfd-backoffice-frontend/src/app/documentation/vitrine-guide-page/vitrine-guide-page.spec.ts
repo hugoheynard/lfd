@@ -17,9 +17,15 @@ describe('DocVitrineGuidePage', () => {
     expect(host.classList).toContain('print-standalone');
   });
 
-  it('annonce le XML comme disponible prochainement tant que le drapeau est baissé', async () => {
+  it('présente le XML comme servi : ni badge « prochainement », et le XSD nommé', async () => {
     const host = await render();
-    expect(host.querySelector('[data-xml-soon]')).not.toBeNull();
+    expect(host.querySelector('[data-xml-soon]')).toBeNull();
+    expect(host.querySelector('[data-xml]')?.textContent).toContain('/vitrine/schema.xsd');
+  });
+
+  it("dit qu'un contenu grossi arrive sous un Vitrine-Delivery neuf", async () => {
+    const text = (await render()).textContent ?? '';
+    expect(text).toContain('un contenu grossi arrive sous');
   });
 
   it('dit les unités exactes des prix', async () => {

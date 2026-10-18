@@ -6,9 +6,10 @@ import {
   type VitrineItemView,
   type VitrineTextsView,
 } from "@lfd/contracts";
-import { Controller, Get, Headers, Param, Query } from "@nestjs/common";
+import { Controller, Get, Headers, Param, Query, Res, StreamableFile } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
 import { Throttle } from "@nestjs/throttler";
+import type { Response } from "express";
 import { z } from "zod";
 
 import { Public } from "../../../platform/auth/public.decorator.js";
@@ -16,6 +17,13 @@ import { ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
 import { ReadVitrineArticleQuery } from "../application/queries/read-vitrine-article.query.js";
 import { ReadVitrineCatalogueQuery } from "../application/queries/read-vitrine-catalogue.query.js";
 import { ReadVitrineTextsQuery } from "../application/queries/read-vitrine-texts.query.js";
+import {
+  formatQuerySchema,
+  VITRINE_XSD,
+  vitrineRepresentation,
+  xmlFile,
+  type VitrineFormat,
+} from "./vitrine-representation.js";
 
 /** `?lang=fr|en|it`, le français par défaut — comme `GET /shop/catalogue`. */
 const languageQuerySchema = z
@@ -31,6 +39,9 @@ const languageQuerySchema = z
  * de l'en-tête `X-Vitrine-Key` IDENTIFIE l'abonné et applique ses cases, elle
  * ne protège rien. Le débit est borné par IP, comme la boutique — la
  * passerelle route par déployable, pas par chemin.
+ *
+ * Chaque lecture se sert aussi en XML (Hugo, 2026-10-18) : `Accept:
+ * application/xml` ou `?format=xml`, décrit par `GET /vitrine/schema.xsd`.
  */
 @Controller("vitrine")
 @Public()
@@ -39,33 +50,51 @@ export class VitrineController {
   constructor(private readonly queries: QueryBus) {}
 
   @Get("catalogue")
-  catalogue(
+  async catalogue(
     @Headers(VITRINE_KEY_HEADER) readKey: string | undefined,
+    @Headers("accept") accept: string | undefined,
     @Query("lang", new ZodQuery(languageQuerySchema)) language: ContentLocale,
-  ): Promise<VitrineCatalogueView> {
-    return this.queries.execute<ReadVitrineCatalogueQuery, VitrineCatalogueView>(
+    @Query("format", new ZodQuery(formatQuerySchema)) format: VitrineFormat,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<VitrineCatalogueView | StreamableFile> {
+    const view = await this.queries.execute<ReadVitrineCatalogueQuery, VitrineCatalogueView>(
       new ReadVitrineCatalogueQuery(readKey, language),
     );
+    return vitrineRepresentation(view, "catalogue", { format, accept }, response);
   }
 
   @Get("articles/:sku")
-  article(
+  async article(
     @Headers(VITRINE_KEY_HEADER) readKey: string | undefined,
+    @Headers("accept") accept: string | undefined,
     @Param("sku") sku: string,
     @Query("lang", new ZodQuery(languageQuerySchema)) language: ContentLocale,
-  ): Promise<VitrineItemView> {
-    return this.queries.execute<ReadVitrineArticleQuery, VitrineItemView>(
+    @Query("format", new ZodQuery(formatQuerySchema)) format: VitrineFormat,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<VitrineItemView | StreamableFile> {
+    const view = await this.queries.execute<ReadVitrineArticleQuery, VitrineItemView>(
       new ReadVitrineArticleQuery(readKey, sku, language),
     );
+    return vitrineRepresentation(view, "item", { format, accept }, response);
   }
 
   @Get("textes")
-  texts(
+  async texts(
     @Headers(VITRINE_KEY_HEADER) readKey: string | undefined,
+    @Headers("accept") accept: string | undefined,
     @Query("lang", new ZodQuery(languageQuerySchema)) language: ContentLocale,
-  ): Promise<VitrineTextsView> {
-    return this.queries.execute<ReadVitrineTextsQuery, VitrineTextsView>(
+    @Query("format", new ZodQuery(formatQuerySchema)) format: VitrineFormat,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<VitrineTextsView | StreamableFile> {
+    const view = await this.queries.execute<ReadVitrineTextsQuery, VitrineTextsView>(
       new ReadVitrineTextsQuery(readKey, language),
     );
+    return vitrineRepresentation(view, "texts", { format, accept }, response);
+  }
+
+  /** Le schéma des trois lectures XML. Sans clé : un schéma ne dit rien de personne. */
+  @Get("schema.xsd")
+  schema(@Res({ passthrough: true }) response: Response): StreamableFile {
+    return xmlFile(VITRINE_XSD, response);
   }
 }
