@@ -1,41 +1,34 @@
 # Plan — la recommandation de produits
 
-> 📐 **Doc-first, rien n'est bâti** (ouvert le 2026-10-17). Chaque affirmation
-> sur l'existant est citée `fichier:ligne` et a été **ouverte ce jour** ; ce qui
-> n'a pas été ouvert est dit « non vérifié ».
+> **Où on en est (2026-10-18)**
 >
-> **Ce plan ne touche pas l'argent** : il ne change aucun prix, aucune TVA,
-> aucune facture — il choisit QUELS articles montrer, et le prix affiché reste
-> celui que la boutique résout déjà. Il ne porte pas de migration de données
-> (au plus une table neuve, additive) et ne déplace pas le mur tenant : il s'y
-> appuie. Donc **pas de `vitruve` d'office** (CLAUDE.md §9 bis). Un seul point
-> pourrait le justifier : R1 lit un historique **par personne** pour un client
-> public (§6, RGPD) — si Hugo tranche Q1 « public d'abord », ce point mérite
-> une contradiction avant de bâtir.
+> | Lot                                 | État                                                                                                                                                                                              |
+> | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+> | **R0** — socle                      | ✅ bâti : contexte `b2b/recommendations/`, filtre R4, compteurs d'audience anonymes (R5 bis)                                                                                                      |
+> | **RS** — suggestions du staff       | 🟡 en cours : panier, fiche, aperçu, chiffres bâtis ([`suggestions-du-staff.md`](suggestions-du-staff.md)) ; accueil et suite dans [`plan-suggestions-du-staff.md`](plan-suggestions-du-staff.md) |
+> | **R2** — « souvent pris avec »      | à faire, après RS                                                                                                                                                                                 |
+> | **A1** — tableau des audiences      | à faire ([`plan-audiences.md`](plan-audiences.md))                                                                                                                                                |
+> | **R1** — « vos habituels » (pros)   | à faire                                                                                                                                                                                           |
+> | **R3** — « vos habituels » (public) | après l'avis du cabinet ([`historique-du-particulier.md`](historique-du-particulier.md))                                                                                                          |
+> | **R4**, **R5** (lots)               | plus tard                                                                                                                                                                                         |
+>
+> Vue d'ensemble du dossier : [`README.md`](README.md).
 
-> 🔨 **R0 bâti le 2026-10-18 (non commité à cette date)** — contexte
-> `apps/lfd-api/src/b2b/recommendations/` : le filtre R4
-> (`application/services/recommendation-filter.ts`, règle pure
-> `domain/orderable-today.ts`), les compteurs anonymes R5 bis dans
-> `growth.product_audience_counters` (migration
-> `20261018140000_les_compteurs_d_audience`, Hugo : schéma `growth`),
-> `POST /shop/audience` (publique, lot ≤ 50, 30 lots/min/IP, corps JSON ou
-> `text/plain` de `sendBeacon`), `GET /admin/product-audience?from=&to=` sous
-> `b2b_growth`. Boutique : vue de fiche et entrée au panier depuis le rayon
-> (`client/audience/`). **Pas encore** : `PurchaseHistoryReader` et
-> `CoPurchaseReader` (R1, R2), les gestes `suggestion_*` côté boutique (aucune
-> suggestion n'est affichée). Écart au texte de R4 : `servedTo` n'est pas
-> appelé après `resolveMany` — il y est déjà appliqué, et `CatalogItem` ne
-> porte pas les champs de masquage. La politique de confidentialité n'est pas
-> modifiée (à Hugo et au cabinet).
+> Ouvert le 2026-10-17 en doc-first. Les affirmations du §1 sur l'existant
+> ont été ouvertes ce jour-là et citées `fichier:ligne` ; elles décrivent
+> l'état **d'avant** R0 et n'ont pas été relues depuis, sauf le §1.5.
+>
+> **Ce plan ne touche pas l'argent** : il choisit QUELS articles montrer, et
+> le prix affiché reste celui que la boutique résout déjà. Pas de migration de
+> données, pas de déplacement du mur tenant : **pas de `vitruve` d'office**
+> (CLAUDE.md §9 bis). Un seul point pourrait le justifier : R3 lit un
+> historique **par personne** pour un client public (§6, RGPD).
 
 > **Ordre revu le 2026-10-18 (Hugo)** : le collectif (« souvent pris avec »,
 > « les plus commandés ») passe AVANT « vos habituels » — il sert tout le monde,
-> invités compris, sous un seuil d'anonymat ; voir
-> [`historique-du-particulier.md`](historique-du-particulier.md) §1 bis.
->
-> **Le public** : ce qu'il faut pour recommander à un particulier est dans
-> [`historique-du-particulier.md`](historique-du-particulier.md) (2026-10-18).
+> invités compris, sous un seuil d'anonymat
+> ([`historique-du-particulier.md`](historique-du-particulier.md) §1 bis). Et
+> les suggestions décidées par le staff (RS) passent avant tout le calculé.
 
 ## 0. La demande
 
@@ -125,8 +118,11 @@ Garde-fous : ne recommander que ce qui se vend à CE client ; mesurer l'effet
   (`apps/lfd-api/src/b2b/catalog/domain/ports/product-catalog.reader.ts:110`)
   résout un lot de SKU pour une audience ; `CatalogItem.orderTimeLimit` porte la
   limite de commande de l'article (`…:38-47`).
-- **La mise en avant existe** : `SetCatalogFeaturedCommand(sku, featured, decidedBy)`
-  (`apps/lfd-api/src/b2b/catalog/application/commands/set-catalog-featured.command.ts:2-8`).
+- **La mise en avant existe** : `SetCatalogFeaturedCommand(sku, audience, featured, decidedBy)`
+  (`apps/lfd-api/src/b2b/catalog/application/commands/set-catalog-featured.command.ts`),
+  une décision **par audience** depuis le 2026-10-18 — la pastille
+  « Incontournable », page Gestion Boutique › Mise en avant
+  ([`catalogue-synchronise.md`](../catalogue/catalogue-synchronise.md)).
   L'usage 3 « Nouveau / De saison » a donc déjà son geste manuel ; reste à
   savoir s'il suffit (Q4).
 - La rupture et l'heure limite par jour : leurs lecteurs (`b2b/order-cutoffs`,
@@ -135,17 +131,12 @@ Garde-fous : ne recommander que ce qui se vend à CE client ; mesurer l'effet
 
 ### 1.5 Ce que la boutique affiche déjà
 
-- **La relance codée en dur est retirée le 2026-10-18** (Hugo). `CartUpsell`
-  (fichier cart-upsell.service.ts, supprimé) proposait la
-  première gourmandise absente du panier sur une liste de rayons en dur
-  (`TREATS`), sans historique ni raison. Le panier montre désormais la
-  suggestion du staff si une règle s'applique (RS2,
-  [`plan-suggestions-du-staff.md`](plan-suggestions-du-staff.md)), sinon
-  **rien** — pas de remplissage. L'usage 2 viendra s'ajouter au même
-  emplacement, avec la même règle « jamais un produit déjà dedans ».
-- **La fiche d'un article** montre aussi la suggestion du staff depuis le
-  2026-10-18 (RS2, fiche) : sous l'article, la même carte que le panier,
-  rien sans règle.
+- **Le panier et la fiche** montrent la suggestion du staff depuis le
+  2026-10-18 ([`suggestions-du-staff.md`](suggestions-du-staff.md)), et
+  **rien** sans règle applicable. La relance codée en dur d'avant
+  (cart-upsell.service.ts et sa liste `TREATS`, une gourmandise absente du
+  panier, sans raison) est retirée le même jour par Hugo, sans repli. L'usage 2
+  viendra s'ajouter au même emplacement, après la place du staff.
 - L'accueil public a sa vitrine (`client/accueil-public/home-storefront/`) ; la
   route `boutique` existe (`apps/lfc-ecommerce-frontend/src/app/app.routes.ts:271`),
   comme `accueil` (`…:345`). Leur gabarit n'a **pas été ouvert** : l'emplacement
@@ -183,56 +174,31 @@ rend une **carte absente**, jamais un remplissage inventé (mémoire « pas de
 valeur inventée »). Les articles déjà au panier sont exclus.
 
 **R5 bis — La mesure est un compteur anonyme, pas un fait par personne
-(Hugo, 2026-10-18 ; remplace R5 ci-dessous).** Une table de compteurs
-`(jour, sku, événement, emplacement) → nombre`, sans identifiant de visiteur ni
-de client : `product_viewed`, `added_to_cart`, `suggestion_shown`,
+(Hugo, 2026-10-18).** Bâti en R0 : `growth.product_audience_counters`,
+`(jour, sku, événement, emplacement, source) → nombre`, sans identifiant de
+visiteur ni de client — `product_viewed`, `added_to_cart`, `suggestion_shown`,
 `suggestion_clicked`, `suggestion_added`. Incrémentée côté serveur, par lot,
-best-effort (une mesure perdue ne casse jamais un geste du client). « Commandée »
-se lit dans les commandes. C'est la mesure d'audience exemptée de consentement
-(CNIL : statistiques anonymes, pour le seul éditeur, sans croisement) — voir
-[`historique-du-particulier.md`](historique-du-particulier.md) §1 bis. Elle
-nourrit aussi les suggestions collectives (« les plus regardés »). Un outil de
-marketing (Plausible ou Matomo) viendra plus tard, pour l'acquisition et les
-parcours ; il ne remplace pas ce compteur.
-
-**R5 — (remplacé par R5 bis) La mesure passe par `ActivityRecorder.record()`, best-effort.**
-Trois faits : `recommendation.shown`, `recommendation.clicked`,
-`recommendation.added` (au panier) ; « commandée » se **déduit** en rejoignant
-la commande passée, sans fait de plus. Clé idempotente
-`(sujet, emplacement, sku, jour)` comme `reco.shown`. Le journal ne porte que
-des identifiants, jamais une coordonnée (règle du cockpit, `get-cockpit.handler.ts:22-25`).
+best-effort (`POST /shop/audience`) ; lue sous `b2b_growth`
+(`GET /admin/product-audience`). La **source** (`none`, `data`, `staff`)
+sépare le geste ordinaire, le calculé et le décidé. « Commandée » se lit dans
+les commandes, par une estimation jour × article (méthode dans
+[`suggestions-du-staff.md`](suggestions-du-staff.md) §8.2). C'est la mesure
+d'audience exemptée de consentement (statistiques anonymes, pour le seul
+éditeur, sans croisement — [`historique-du-particulier.md`](historique-du-particulier.md)
+§1 bis). Elle a remplacé la mesure nominative d'abord proposée (des faits
+`recommendation.*` au journal d'activité, par personne). Un outil de marketing
+(Plausible ou Matomo) viendra plus tard, pour l'acquisition ; il ne remplace
+pas ce compteur.
 
 ## 2 bis. Deux sources : calculée et décidée (Hugo, 2026-10-18)
 
-> Le détail du décidé est dans
-> [`plan-suggestions-du-staff.md`](plan-suggestions-du-staff.md), qui prime.
-
 « Il faut distinguer les recos data driven et business driven — le staff
-décrète une suggestion. » Une suggestion a donc une **source** :
-
-| Source      | Exemple                                                         | Raison affichée                         |
-| ----------- | --------------------------------------------------------------- | --------------------------------------- |
-| **`data`**  | « souvent pris avec », « vos habituels », « les plus regardés » | la raison calculée (R3)                 |
-| **`staff`** | « avec un croissant, le café », « cette semaine, la galette »   | « Notre conseil » ou la phrase du staff |
-
-**Une suggestion décidée** : un **déclencheur** (un article ou une famille au
-panier, une fiche ouverte, ou partout), les **articles suggérés**, un
-**emplacement** (panier, fiche, accueil), une **audience** (pros, public, les
-deux ; un segment du plan des audiences plus tard), une **période** (début et
-fin obligatoires : une offre de Noël ne survit pas en janvier) et une
-**phrase** facultative. C'est un agrégat (une règle peut refuser une écriture :
-période inversée, article inconnu, déclencheur vide), dans
-`b2b/recommendations/`, réglé dans Gestion Boutique.
-
-**Combinaison** : le décidé passe **en premier**, dans une place **bornée**
-(1 ou 2 cartes sur 3, à régler) ; le calculé remplit le reste. **Même filtre
-R4** pour les deux. La mise en avant existante (`SetCatalogFeaturedCommand`)
-devient le cas « partout, sans déclencheur, sans date ».
-
-**Mesure** : les compteurs portent la **source** (`none` pour une vue ou un
-ajout ordinaire, `data` ou `staff` pour un événement `suggestion_*`) — ajoutée
-le 2026-10-18, tant que la table était vide. On compare ainsi ce que
-convertissent les conseils du staff et le calcul.
+décrète une suggestion. » Une suggestion a une **source** : `data` (calculée :
+« souvent pris avec », « vos habituels ») ou `staff` (une règle décidée, avec
+sa phrase ou un titre par défaut). Le décidé passe **en premier**, dans une
+place bornée ; le calculé remplira le reste ; **le même filtre R4** vaut pour
+les deux. Le décidé est bâti et décrit dans
+[`suggestions-du-staff.md`](suggestions-du-staff.md).
 
 ## 3. Le modèle
 
@@ -250,8 +216,8 @@ compris** les agrégats (CLAUDE.md §3). Pour un particulier, `placedByUserId`.
 Les co-occurrences sont **anonymes par construction** : des comptes de paires,
 jamais « qui » — elles traversent les comptes sans traverser le mur.
 
-Une seule commande : `RecordRecommendationEventCommand` (clic, ajout), qui
-n'écrit que le journal.
+La mesure n'est pas une commande de ce modèle : elle passe par les compteurs
+anonymes déjà bâtis (`RecordProductAudienceCommand`, R5 bis).
 
 ```mermaid
 flowchart LR
@@ -262,8 +228,8 @@ flowchart LR
     C --> Q
     Q --> S["resolveMany + servedTo<br/>+ limite du jour − panier"]
     S --> UI["Boutique : habituels / pris avec<br/>Back-office : jamais essayé"]
-    UI -->|"shown · clicked · added"| J["ActivityRecorder.record()<br/>(journal, best-effort)"]
-    J -.->|"jointure à la commande passée"| M["Mesure : affichée → cliquée → commandée"]
+    UI -->|"shown · clicked · added"| J["Compteurs anonymes<br/>growth.product_audience_counters"]
+    J -.->|"estimation jour × article"| M["Mesure : affichée → ajoutée → commandée"]
 ```
 
 ## 4. Les écrans
@@ -271,25 +237,28 @@ flowchart LR
 - **Boutique, accueil** — une rangée « Vos habituels » au-dessus des rayons,
   chaque carte avec sa raison en une ligne et l'ajout au panier. Absente si
   vide, absente pour un invité.
-- **Boutique, panier** — « Souvent pris avec », raison comprise, dans la
-  carte de suggestion où le staff passe d'abord. Plus de repli : `TREATS` est
-  retiré le 2026-10-18 (Hugo).
+- **Boutique, panier** — « Souvent pris avec », raison comprise, après la
+  place de la suggestion du staff. Pas de repli.
 - **Back-office, fiche client** — un encart « Jamais essayé » à côté des
   habitudes déjà affichées par `ListCustomerSkus` (lot 4).
-- **Back-office, mesure** — un compteur par emplacement (affichées, cliquées,
-  commandées) ; rien de plus tant que les volumes sont faibles.
+- **Back-office, mesure** — les chiffres par règle du staff existent
+  (Gestion Boutique › Suggestions) ; ceux du calculé suivront, par source
+  `data`.
 
 ## 5. Lots
 
-| Lot    | Contenu                                                                                                                                                                                                                                                                  | Dépend de |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------- |
-| **R0** | contexte `b2b/recommendations/`, ports, filtre R4, **compteurs anonymes R5 bis** (table, écriture par lot, route de la boutique, premiers émetteurs : vue de fiche, ajout au panier) ; tests aux 3 niveaux                                                               | —         |
-| **R1** | « Vos habituels » (pros), rythme hebdomadaire + fréquence ; rangée d'accueil                                                                                                                                                                                             | R0        |
-| **RS** | **Suggestions décidées par le staff** (§2 bis) : règle déclencheur → articles suggérés, emplacement, audience, période, phrase ; écran « Suggestions » en Gestion Boutique ; passe avant le calculé, dans une place bornée ; la mise en avant devient un cas particulier | R0        |
-| **R2** | « Souvent pris avec » au panier (la relance `CartUpsell` est retirée le 2026-10-18)                                                                                                                                                                                      | R0        |
-| **R3** | « Vos habituels » pour le particulier connecté (`placedByUserId`), après Q1 et §6                                                                                                                                                                                        | R1        |
-| **R4** | « Jamais essayé » au back-office (sociétés du même secteur)                                                                                                                                                                                                              | R1        |
-| **R5** | « Nouveau / De saison » si la mise en avant manuelle ne suffit pas (Q4)                                                                                                                                                                                                  | R0        |
+Dans l'ordre retenu le 2026-10-18 :
+
+| Lot    | Contenu                                                                                                                            | Dépend de   | État                                                                         |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------------------------------------------------------------------------- |
+| **R0** | contexte `b2b/recommendations/`, filtre R4, compteurs anonymes R5 bis (table, route de la boutique, vue de fiche, ajout au panier) | —           | ✅ bâti                                                                      |
+| **RS** | suggestions décidées par le staff (§2 bis)                                                                                         | R0          | 🟡 en cours — [`plan-suggestions-du-staff.md`](plan-suggestions-du-staff.md) |
+| **R2** | « Souvent pris avec » au panier, après la place du staff, sous le seuil d'anonymat                                                 | R0, RS      | à faire                                                                      |
+| **A1** | tableau de bord des audiences ([`plan-audiences.md`](plan-audiences.md))                                                           | R0          | à faire                                                                      |
+| **R1** | « Vos habituels » (pros), rythme hebdomadaire + fréquence ; rangée d'accueil                                                       | R0          | à faire                                                                      |
+| **R3** | « Vos habituels » pour le particulier connecté (`placedByUserId`)                                                                  | R1, cabinet | après l'avis du cabinet                                                      |
+| **R4** | « Jamais essayé » au back-office (sociétés du même secteur)                                                                        | R1          | plus tard                                                                    |
+| **R5** | « Nouveau / De saison » si la mise en avant manuelle ne suffit pas (Q4)                                                            | R0          | plus tard                                                                    |
 
 ## 6. Risques
 
@@ -315,13 +284,16 @@ flowchart LR
 
 ## 7. Questions à Hugo
 
+> Q1 et Q2 sont **dépassées** par l'ordre du 2026-10-18 (le staff, puis le
+> collectif, puis « vos habituels » des pros, puis le public après le
+> cabinet). Gardées pour leur raisonnement.
+
 1. **Pour qui d'abord — pros ou public ?** _Recommandation : les pros._ Leur
    historique existe et est déjà lu sous le mur (§1.1), le rythme y est réel
    (commandes régulières), et il n'y a pas de question RGPD nouvelle.
 2. **Où d'abord — accueil ou panier ?** _Recommandation : l'accueil (« vos
    habituels »)._ Il raccourcit la commande récurrente, ce qui sert le client ;
-   le panier a la suggestion du staff (RS2) ; la relance `CartUpsell` est
-   retirée le 2026-10-18.
+   le panier a la suggestion du staff (RS).
 3. **La ligne du commercial maintenant ou plus tard ?** _Recommandation : plus
    tard (R4)._ « Jamais essayé » demande des sociétés semblables, donc du volume ;
    les habitudes, elles, sont déjà affichées au back-office.

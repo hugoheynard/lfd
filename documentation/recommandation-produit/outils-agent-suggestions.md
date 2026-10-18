@@ -1,7 +1,8 @@
 # Les outils agent des suggestions décidées
 
-> **État : bâti, éprouvé par des tests unitaires** (2026-10-18, lot RS1 de
-> [`plan-suggestions-du-staff.md`](plan-suggestions-du-staff.md)). Pas encore
+> **État : bâti, éprouvé par des tests unitaires** (2026-10-18 ; les
+> suggestions qu'ils pilotent sont décrites dans
+> [`suggestions-du-staff.md`](suggestions-du-staff.md)). Pas encore
 > éprouvé dans un navigateur contre l'API locale, comme la trousse de la flotte
 > ([`../livraisons/chargement/outils-agent-vehicules.md`](../livraisons/chargement/outils-agent-vehicules.md)).
 
@@ -56,6 +57,6 @@ en clair. Code : [`agent/suggestion-preview-agent-tool.ts`](../../apps/lfd-backo
 défaut) et rend la période, l'aide qui explique l'estimation, puis une ligne
 par règle : affichée, cliquée, ajoutée, taux d'ajout, **commandées (estimé)**
 et **CA HT apporté (estimé)** en euros. L'estimation est celle de l'écran,
-décrite au bandeau RS6 de [`plan-suggestions-du-staff.md`](plan-suggestions-du-staff.md) :
+décrite dans [`suggestions-du-staff.md`](suggestions-du-staff.md) §8.2 :
 les compteurs ne nomment personne, une commande ne se relie pas à un clic.
 Code : [`agent/suggestion-results-agent-tool.ts`](../../apps/lfd-backoffice-frontend/src/app/agent/suggestion-results-agent-tool.ts).

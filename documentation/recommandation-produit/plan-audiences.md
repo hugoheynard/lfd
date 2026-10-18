@@ -9,6 +9,13 @@
 > **Hors argent, hors migration de données, hors frontière de sécurité** : pas
 > de `vitruve` d'office (CLAUDE.md §9 bis). Le seul point sensible est le
 > passage de l'agrégé à la personne (§5) — il est exclu de ce plan.
+>
+> **Relu le 2026-10-18 au soir** : R0, dont dépend A1, est bâti (les compteurs
+> d'audience anonymes de `growth`) ; rien de ce plan ne l'est. Ne pas confondre
+> ces segments de **clientèle** avec l'**audience d'un article** (`pro`,
+> `public`, `both`), qui dit à qui il est vendu, ni avec celle d'une règle du
+> staff ([`suggestions-du-staff.md`](suggestions-du-staff.md)), qui dit à qui
+> elle s'adresse.
 
 ## 1. Ce qu'on veut
 
@@ -26,15 +33,15 @@ de ce qu'elle achète.
 
 ## 2. Les segments, et d'où ils viennent
 
-| Segment                                | Source aujourd'hui                                                                                                                                                         | Fiabilité                                                                        |
-| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| **Pro / particulier**                  | `Order.companyId` optionnel : présent = commande d'entreprise (`apps/lfd-api/prisma/schema/public/orders.prisma`, bloc « Tenancy »)                                        | **sûre**                                                                         |
-| **Activité du pro**                    | `Company.nafCode`, résolu depuis le SIRET, vide par défaut (`public/account.prisma:106-109`)                                                                               | sûre quand renseignée ; regroupement NAF → « hôtel, restaurant, café… » à écrire |
-| **Retrait / livraison**                | `Order.fulfillmentMethod` (`orders.prisma:143`)                                                                                                                            | **sûre**                                                                         |
-| **Site de retrait, zone de livraison** | le détail de remise `Order.fulfillment` (Json, `orders.prisma:186`) et l'adresse figée `deliveryAddressSnapshot` (`:151`) — leur contenu exact **non vérifié** (au lot A1) | sûre une fois lue                                                                |
-| **Fidèle / régulier / de passage**     | nombre de commandes par personne ou société sur la période                                                                                                                 | **sûre** (dérivée)                                                               |
-| **Moment** (jour, heure, créneau)      | `Order.createdAt` et la date de remise                                                                                                                                     | **sûre**                                                                         |
-| **Résident / saisonnier / vacancier**  | **rien de fiable aujourd'hui** — voir §3                                                                                                                                   | à construire                                                                     |
+| Segment                                | Source aujourd'hui                                                                                                                                                                              | Fiabilité                                                                        |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| **Pro / particulier**                  | `Order.companyId` optionnel : présent = commande d'entreprise (`apps/lfd-api/prisma/schema/public/orders.prisma`, bloc « Tenancy »)                                                             | **sûre**                                                                         |
+| **Activité du pro**                    | `Company.nafCode`, résolu depuis le SIRET, vide par défaut (`public/account.prisma:106-109`)                                                                                                    | sûre quand renseignée ; regroupement NAF → « hôtel, restaurant, café… » à écrire |
+| **Retrait / livraison**                | `Order.fulfillmentMethod` (`orders.prisma:143`)                                                                                                                                                 | **sûre**                                                                         |
+| **Site de retrait, zone de livraison** | le détail du retrait ou de la livraison, `Order.fulfillment` (Json, `orders.prisma:186`) et l'adresse figée `deliveryAddressSnapshot` (`:151`) — leur contenu exact **non vérifié** (au lot A1) | sûre une fois lue                                                                |
+| **Fidèle / régulier / de passage**     | nombre de commandes par personne ou société sur la période                                                                                                                                      | **sûre** (dérivée)                                                               |
+| **Moment** (jour, heure, créneau)      | `Order.createdAt` et le jour de retrait                                                                                                                                                         | **sûre**                                                                         |
+| **Résident / saisonnier / vacancier**  | **rien de fiable aujourd'hui** — voir §3                                                                                                                                                        | à construire                                                                     |
 
 ## 3. Résident, saisonnier ou vacancier — le segment qui compte le plus
 

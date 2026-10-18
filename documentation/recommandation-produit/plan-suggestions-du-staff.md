@@ -1,260 +1,59 @@
-> 🟡 **RS6 bâti le 2026-10-18** (non commité à l'écriture ; Hugo : « je veux
-> tout ce que tu as écrit comme amélioration »). La query
-> `ListStaffSuggestionResultsQuery`, servie par
-> `GET /admin/suggestions/results?days=7|30|90` (30 par défaut, jours métier,
-> aujourd'hui compris) sous `lfc_suggestions:read` — contrat
-> `packages/contracts/src/staff-suggestion-results.ts`. Par règle : affichée,
-> cliquée, ajoutée (comptées), taux d'ajout (ajoutées ÷ affichées, en points
-> de base, `null` sans affichage), puis **commandées (estimé)** et **CA HT
-> apporté (estimé)**, en centimes. Les compteurs étant anonymes, une commande
-> ne se relie pas à un clic : l'estimation (`attributeOrders`,
-> `domain/services/suggestion-attribution.ts`) se fait par jour métier × article
-> — le plus petit des ajouts depuis les suggestions et de la quantité
-> commandée ce jour-là ; si plusieurs règles ont fait ajouter le même article
-> le même jour, ce plafond se **partage** au prorata de leurs ajouts (plus fort
-> reste), pour qu'une pièce ne soit jamais comptée deux fois ; le CA vaut cette
-> quantité au prix HT moyen payé ce jour-là (total HT des lignes ÷ quantité),
-> arrondi au centime par part. Les ventes se lisent par
-> `SuggestedSkuSalesReader`, déclaré par la recommandation et implémenté par
-> la commande (`PrismaSuggestedSkuSalesReader`, un `GROUP BY` jour × article
-> sur le jour de passation à Paris ; ni brouillon, ni annulée, ni saisie par
-> le staff, ni née d'un abonnement) ; aucun identifiant de commande ni de
-> client ne sort. Les compteurs `staff` se lisent filtrés en base
-> (`StaffSuggestionCounterReader`), RS3 compris. Limite dite à l'écran : un
-> panier commandé le lendemain de l'ajout ne compte pas. Écran : bloc
-> « Chiffres » de Gestion Boutique › Suggestions (période 7 / 30 / 90 jours,
-> aide « estimé »), et trois chiffres de plus par règle ; outil agent
-> `suggestion_results` ([`outils-agent-suggestions.md`](outils-agent-suggestions.md)).
+# Plan — les suggestions décidées par le staff : ce qui reste
 
-> 🟡 **RS5 bâti le 2026-10-18** (non commité à l'écriture ; Hugo : « lance
-> l'aperçu »). La query `PreviewStaffSuggestionsQuery`, servie par
-> `POST /admin/suggestions/preview` sous `lfc_suggestions:read` (un `POST`
-> parce que le corps porte un panier) — contrat
-> `packages/contracts/src/staff-suggestion-preview.ts`. Elle passe par la
-> **même** chaîne que la boutique : `StaffSuggestionShowcase.diagnose` déroule
-> pas à pas ce que `show` rend (portes de la règle `ruleGate`, déclenchement
-> `traceCandidates`, filtre `RecommendationFilter.judge`, vitrine, place), et
-> `diagnoseRules` lit cette trace règle par règle, article par article. Raisons
-> en vocabulaire fermé : `ended`, `not_started`, `inactive`, `wrong_audience`,
-> `wrong_placement`, `trigger_false`, `item_not_served`,
-> `item_not_orderable_that_day`, `item_in_cart`, `item_is_the_product`,
-> `outranked_by` (la règle gagnante dans `outrankedBy`). Le jour choisi sert à
-> la fois à la période et à l'heure limite (jour visé) ; aux professionnels,
-> la vitrine pro **sans tarif de société** (`ShopCataloguePricing.pricedWithoutCompany`) :
-> ni mercuriale, ni tarif négocié. Écran : bloc « Aperçu » de Gestion
-> Boutique › Suggestions (`suggestion-preview-card/`), bouton « Ouvrir
-> l'aperçu » sur chaque règle hors accueil ; outil agent `suggestion_preview`
-> ([`outils-agent-suggestions.md`](outils-agent-suggestions.md)). L'accueil
-> n'a pas d'aperçu tant qu'il n'a pas d'affichage (RS7).
-
-> 🟡 **RS2 bâti pour le PANIER le 2026-10-18** (non commité à l'écriture ;
-> Hugo : « au moins pour le panier »). Ce qui existe : la query
-> `ReadCartSuggestionsQuery` (`b2b/recommendations/application/queries/`),
-> servie par `POST /shop/suggestions/cart` (publique, lecteur particulier) et
-> `POST /shop/suggestions/cart/mine` (l'espace courant décide du lecteur, comme
-> `/shop/catalogue/mine`) — contrat `packages/contracts/src/cart-suggestions.ts`.
-> Elle prend les règles applicables, garde celles dont le déclencheur est vrai
-> pour ce panier (`everywhere`, `product_in_cart`, `category_in_cart` — la
-> famille lue au catalogue servi, lignée comprise), passe `RecommendationFilter`,
-> et rend l'article à son prix de vitrine (`ShopCataloguePricing`) avec la
-> raison `{ source: 'staff', ruleId, phrase }`. Côté boutique,
-> `StaffCartSuggestion` (`client/cart/`) montre la suggestion du staff, et
-> **rien** sans règle applicable : la relance codée en dur `CartUpsell` (et sa
-> liste `TREATS`) est **retirée** le 2026-10-18 (Hugo), sans repli. La requête
-> vit dans un morceau chargé à la demande ; les compteurs
-> `suggestion_shown|clicked|added` partent en source `staff`, emplacement = id
-> de la règle en minuscules.
+> **Ce qui est bâti se lit dans [`suggestions-du-staff.md`](suggestions-du-staff.md)**
+> (doc d'état, 2026-10-18) : la règle, l'ordre, le panier et la fiche, le
+> filtre, l'aperçu, les chiffres estimés, l'écran, les outils agent. RS1, RS2
+> (panier et fiche), RS3, RS5 et RS6 y sont fondus ; ce plan ne garde que ce
+> qui reste, et les décisions qui s'y rattachent.
 >
-> **Tranché par Hugo le 2026-10-18** : **1 place** pour le décidé au panier
-> (`STAFF_CART_PLACES`, Q1) ; une langue sans phrase dit « Notre conseil »
-> traduit (Q2) ; un ajout depuis une suggestion compte AUSSI `added_to_cart`
-> (taux d'ajout global inclusif) ; la carte écrit le **prix** de l'article dans
-> l'assiette du rayon — HT à un pro, TTC à un particulier — par la même
-> fonction que la vignette (`shelfPriceLabel`, `client/shop/shop-price-basis.service.ts`).
-> Le calculé qui remplirait le reste n'existe pas encore. **L'accueil reste
-> à faire** (RS2), comme RS4.
-
-> 🟡 **RS2 bâti pour la FICHE le 2026-10-18** (non commité à l'écriture ;
-> Hugo : « est-ce qu'on fait sur la fiche de l'article ? » → oui). La query
-> `ReadProductSuggestionsQuery`, servie par `POST /shop/suggestions/product`
-> (publique) et `POST /shop/suggestions/product/mine` — contrat
-> `packages/contracts/src/product-suggestions.ts`, même vue d'article que le
-> panier. Le panier et la fiche passent par le même service applicatif,
-> `StaffSuggestionShowcase` (règles applicables, filtre R4, prix de vitrine,
-> place bornée) ; chacun n'apporte que son déclencheur
-> (`domain/services/cart-suggestions.ts`, `product-suggestions.ts`). Sur la
-> fiche : `everywhere`, et `product_viewed` sur l'article ouvert ; un
-> déclencheur de panier n'y vaut jamais ; l'article de la fiche n'est jamais
-> proposé ; **1 place** (`STAFF_PRODUCT_PLACES`, même hypothèse que le
-> panier — à confirmer par Hugo). Côté boutique, la carte est un composant
-> partagé (`client/suggestions/staff-suggestion-card/`), posée sous l'article
-> de `ProductSheet` par `StaffProductSuggestion` : une requête par ouverture
-> de fiche (panier et jour visé lus au départ), rien en SSR, morceau chargé à
-> la demande, mêmes compteurs `suggestion_*` source `staff` et
-> `added_to_cart` à l'ajout.
->
-> **Tranché par Hugo le 2026-10-18** : sur la fiche, une règle sans phrase
-> dans la langue du client dit **« Vous aimerez aussi »** (`shop.alsoLike` ;
-> EN « You may also like », IT « Potrebbe piacerti anche ») ; « Notre
-> conseil » reste le défaut du panier. La carte reçoit son titre par défaut
-> de l'emplacement.
-
-# Plan — les suggestions décidées par le staff
-
-> 🟡 **RS1 et RS3 bâtis le 2026-10-18** (non commités à l'écriture de ce
-> bandeau ; Hugo : « on peut faire tout l'admin recommandation staff »). Ce qui
-> existe : l'agrégat `StaffSuggestionRule` et le réglage de l'ordre dans
-> `apps/lfd-api/src/b2b/recommendations/` (tables `public.staff_suggestion_rules`
-> et `public.staff_suggestion_order_settings`), le droit `lfc_suggestions`
-> (accordé à l'écran, jamais en migration), les routes `/admin/suggestions`,
-> la lecture des règles applicables (période, audience, interrupteur, ordre —
-> **sans** déclencheur ni filtre R0, qui sont de RS2), l'écran Gestion
-> Boutique › Suggestions avec ses chiffres par règle, et la trousse
-> [`outils-agent-suggestions.md`](outils-agent-suggestions.md). **RS2 et RS4
-> restent à faire.**
->
-> Pris pour bâtir, à confirmer par Hugo : **Q2** — phrase française
-> obligatoire s'il y a phrase, anglais et italien facultatifs ; **Q4** — la
-> mise en avant reste hors des règles ; **Q1** — ne concerne que l'affichage
-> (RS2). Et quatre valeurs que le plan laissait ouvertes : la phrase est bornée
-> à **90 caractères** par langue ; la priorité va de **0 à 999** ; « la plus
-> récente » est la plus récemment **créée** (une réécriture ne la fait pas
-> passer devant) ; « une fiche ouverte ne déclenche pas au panier » est
-> généralisé — un déclencheur de panier ne vaut qu'au panier, une fiche
-> ouverte qu'en fiche, « partout » partout.
-
-> 📐 **Doc-first, rien n'est bâti** (Hugo, 2026-10-18 : « il faut qu'on
-> distingue les recos data driven et business driven — le staff décrète une
-> suggestion », puis « j'ai besoin d'une doc à part pour la reco staff »).
 > C'est le lot **RS** de
 > [`plan-recommandation-de-produits.md`](plan-recommandation-de-produits.md),
-> placé **avant** « souvent pris avec » (R2) ; ce document en est le détail et
-> prime sur le §2 bis du plan général pour tout ce qui concerne le staff.
->
-> Hors argent (aucun prix ne bouge : la suggestion montre un article au prix
-> que la boutique résout déjà), hors migration de données (une table neuve),
-> hors frontière de sécurité : pas de `vitruve` d'office (CLAUDE.md §9 bis).
+> placé avant « souvent pris avec » (R2). Hors argent (aucun prix ne bouge),
+> hors migration de données, hors frontière de sécurité : pas de `vitruve`
+> d'office (CLAUDE.md §9 bis).
 
-## 1. Ce que c'est
+## 1. Les décisions déjà prises (Hugo, 2026-10-18)
 
-Une suggestion **décidée** est une règle posée par le staff : « quand le client
-fait ceci, montre-lui cela ». Elle dit ce que la maison **veut** vendre — un
-accord produit, la saison, une nouveauté, un stock à écouler, une marge — là où
-la suggestion **calculée** dit ce que les clients **font**.
+Elles valent pour tout ce qui suit.
 
-| Exemple                                          | Déclencheur            | Suggéré          | Où      |
-| ------------------------------------------------ | ---------------------- | ---------------- | ------- |
-| « Avec un croissant, le café du matin »          | croissant au panier    | café             | panier  |
-| « Cette semaine, la galette »                    | partout                | galette          | accueil |
-| « Sur la fiche du pain de campagne, la terrine » | fiche pain de campagne | terrine des amis | fiche   |
-| « Aux pros, la nouvelle tarte »                  | partout, audience pros | tarte            | accueil |
+- **Deux sources** : « il faut qu'on distingue les recos data driven et
+  business driven — le staff décrète une suggestion ». Le décidé passe avant le
+  calculé, dans une place bornée ; le calculé remplira le reste quand il
+  existera (R2, R1).
+- **Ordre réglable** : « il faut coder priorité, et mettre un switch pour que
+  l'admin décide récente ou priorité ».
+- **Une place au panier** (Q1) ; la fiche a pris la même, **à confirmer**. Pour
+  l'accueil, la recommandation d'origine était 2 places sur 3 — à trancher
+  avec RS7.
+- **Titres par défaut** : « Notre conseil » au panier, « Vous aimerez aussi »
+  sur la fiche. Celui de l'accueil est à choisir avec RS7.
+- **Un ajout depuis une suggestion compte aussi `added_to_cart`** : le taux
+  d'ajout global inclut les suggestions.
+- **Pas de repli** : la relance codée en dur du panier est retirée, sans
+  remplacement ; sans règle applicable, rien ne s'affiche.
 
-## 2. La règle
+Pris pour bâtir et non confirmés : la phrase française obligatoire s'il y a
+phrase (Q2), 90 caractères par langue, une priorité de 0 à 999, « la plus
+récente » = la plus récemment **créée**.
 
-| Champ           | Ce qu'il porte                                                                              | Refusé si…                                                                    |
-| --------------- | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| **Déclencheur** | `everywhere` · `product_in_cart(sku)` · `category_in_cart(famille)` · `product_viewed(sku)` | il nomme un article ou une famille inconnus                                   |
-| **Suggérés**    | 1 à 3 articles (SKU), dans l'ordre voulu                                                    | vide, ou un article égal au déclencheur                                       |
-| **Emplacement** | `cart` · `product` · `home`                                                                 | incohérent avec le déclencheur (une fiche ouverte ne déclenche pas au panier) |
-| **Audience**    | `pro` · `public` · `both` ; un segment du [plan des audiences](plan-audiences.md) plus tard | —                                                                             |
-| **Période**     | début **et** fin, obligatoires                                                              | fin avant début, ou fin passée à la création                                  |
-| **Phrase**      | facultative, en FR (EN et IT si renseignées) — sinon « Notre conseil »                      | trop longue (borne à fixer)                                                   |
-| **Active**      | interrupteur, pour couper sans supprimer                                                    | —                                                                             |
+## 2. Ce qui reste
 
-C'est un **agrégat** (des règles peuvent refuser une écriture), dans
-`apps/lfd-api/src/b2b/recommendations/`, le contexte ouvert par R0
-(commit `2bab7e355`). Pas de suppression physique : une règle s'archive.
+| Lot      | Quoi                                                                                                                                                                                                                                                                   | Pourquoi                                                                            |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| **RS7**  | **L'accueil** — le dernier emplacement : une règle `home` s'enregistre déjà et ne s'affiche nulle part ; son aperçu suit. Puis **l'après-ajout** (« Ajouté ! Vous aimerez aussi… »)                                                                                    | l'instant où une suggestion convertit le mieux                                      |
+| **RS8**  | **Règles plus fines** : créneau horaire / jours de la semaine, seuil de panier (montant, « sans boisson »), site de retrait, segments ([plan des audiences](plan-audiences.md))                                                                                        | quand l'usage le demandera                                                          |
+| **RS9**  | **Gestes du staff** : dupliquer une règle ; liste regroupée « à venir / en cours / finies » ; recherche dans le champ article (attend un combobox dans fold-ng)                                                                                                        | décliner une saison sans ressaisir                                                  |
+| **RS10** | **Alerte** : une règle active dont l'article ne se vend plus (retiré, masqué, jamais commandable sur sa période) est signalée dans la liste                                                                                                                            | une règle vide ne doit pas passer inaperçue                                         |
+| **RS4**  | **La mise en avant entre dans les règles** (Q4) — « partout, sans déclencheur, sans date ». Elle est une décision par audience depuis le 2026-10-18 (« Incontournable », [`catalogue-synchronise.md`](../catalogue/catalogue-synchronise.md)) et reste hors des règles | une fois l'écran des suggestions éprouvé, pour ne pas toucher deux écrans à la fois |
 
-## 3. À l'affichage
+Ordre retenu : RS7, puis RS9 et RS10 ; RS8 à l'usage ; RS4 en dernier.
 
-Pour un emplacement et un lecteur donnés :
+## 3. Ce que RS7 doit trancher
 
-1. **Les règles qui s'appliquent** : actives, dans leur période (jour métier,
-   port `Clock`), de la bonne audience, dont le déclencheur est vrai (panier
-   ou fiche ouverte).
-2. **Le même filtre que le calculé** — `RecommendationFilter` de R0 : servi à
-   ce lecteur, commandable au jour visé, absent du panier. Une suggestion
-   décidée sur un article qui ne passe pas **disparaît** ; elle ne force jamais
-   la vente d'un article indisponible.
-3. **Le décidé d'abord, dans une place bornée** (Q1), le calculé remplit le
-   reste. Plusieurs règles en concurrence : la plus **récente** d'abord (Q3).
-4. **La raison** affichée : la phrase du staff, sinon « Notre conseil ».
-
-## 4. La mise en avant existante
-
-`SetCatalogFeaturedCommand(sku, featured, decidedBy)`
-(`apps/lfd-api/src/b2b/catalog/application/commands/set-catalog-featured.command.ts`)
-est déjà une suggestion décidée — la plus simple : partout, sans déclencheur,
-sans date. Elle **reste** au lot RS (le catalogue l'affiche déjà en rayon) ;
-la faire entrer dans les règles est un lot suivant, pour ne pas toucher deux
-écrans à la fois (Q4).
-
-## 5. L'écran
-
-**Gestion Boutique › Suggestions**, à côté des Opérations, des Promotions et de
-la Fidélité (les Opérations y sont depuis le 2026-10-13,
-`apps/lfd-backoffice-frontend/src/app/shared/workspace-rail/workspaces.ts:521`).
-Une liste des règles (active, période, déclencheur → suggérés, emplacement,
-audience), un panneau d'édition fold, et pour chaque règle ses chiffres :
-affichée, cliquée, ajoutée.
-
-**Droit** : une ressource staff neuve (`lfc_suggestions`), lecture et
-écriture. Elle s'**accorde à l'écran** (`/admin/staff-roles`), jamais par
-migration (`lint:no-role-grants-in-migrations`).
-
-## 6. La mesure
-
-Les compteurs anonymes de R0 portent la **source** (`staff` pour une règle,
-`data` pour le calculé — en cours d'ajout le 2026-10-18) et l'**emplacement**.
-Pour comparer les règles entre elles, l'emplacement d'un événement `staff`
-porte l'**identifiant de la règle** (`[a-z0-9_]{1,32}`, ce que le domaine de
-R0 admet déjà ; un ULID en minuscules y tient). « Commandée » se lit dans les
-commandes, comme pour le calculé.
-
-## 7. Lots
-
-| Lot     | Contenu                                                                                                                                                                                                                                                                              |
-| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **RS1** | Agrégat, écran Gestion Boutique › Suggestions, droit `lfc_suggestions`, lecture par emplacement                                                                                                                                                                                      |
-| **RS2** | Affichage dans la boutique : panier (la relance `CartUpsell` est retirée le 2026-10-18, sans repli), fiche, accueil ; événements `suggestion_*` source `staff` — le plafond du paquet initial est relevé à 1,40 Mo depuis le 2026-10-18 ; les requêtes restent chargées à la demande |
-| **RS3** | Chiffres par règle dans l'écran                                                                                                                                                                                                                                                      |
-| **RS4** | La mise en avant entre dans les règles (Q4)                                                                                                                                                                                                                                          |
-
-## 8. Questions à Hugo
-
-> **Q3 tranchée le 2026-10-18 (Hugo)** : « il faut coder priorité, et mettre un
-> switch pour que l'admin décide récente ou priorité ». Chaque règle porte une
-> **priorité** (entier, plus haut = d'abord) ; un **réglage de la boutique**,
-> unique, choisit l'ordre appliqué entre règles concurrentes : `recent` (la
-> plus récente d'abord) ou `priority` (la priorité, puis la plus récente à
-> égalité). Le réglage vit dans l'écran Suggestions, sous le même droit
-> `lfc_suggestions` ; son changement est journalisé. Les deux sont au lot RS1.
-
-1. **Combien de places pour le décidé ?** _Recommandation : 1 sur 3 au
-   panier et sur la fiche, 2 sur 3 à l'accueil._ Assez pour pousser, pas assez
-   pour écraser ce que les clients font.
-2. **La phrase : en trois langues ?** _Recommandation : FR obligatoire si
-   phrase, EN et IT facultatives_ — la boutique parle trois langues, le reste
-   tombe sur « Notre conseil » traduit.
-3. **Plusieurs règles en concurrence : la plus récente, ou une priorité
-   réglable ?** _Recommandation : la plus récente_ ; une priorité ne vaut que
-   le jour où il y a beaucoup de règles.
-4. **La mise en avant devient-elle une règle ?** _Recommandation : plus tard
-   (RS4)_, une fois l'écran des suggestions éprouvé.
-
-## 9. Pour être au meilleur niveau (Hugo, 2026-10-18)
-
-« Qu'est-ce qui nous manque dans les suggestions staff, pour que ce soit au
-niveau top ? » — l'inventaire, dans l'ordre retenu :
-
-| Lot      | Quoi                                                                                                                                                                                                                                                                                                                                                                              | Pourquoi                                                                 |
-| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| **RS5**  | **Aperçu dans l'admin** : choisir un emplacement (panier avec ses articles, ou fiche), une audience, un jour → la carte exacte que verrait le client ; et **pourquoi une règle ne s'affiche pas** (finie, pas encore commencée, coupée, mauvaise audience, déclencheur faux, article non servi / non commandable ce jour-là / déjà au panier, battue par une règle mieux classée) | aujourd'hui une règle muette ne dit rien — constaté en dev le 2026-10-18 |
-| **RS6**  | **« Commandées »** par règle : les commandes passées qui contiennent l'article suggéré après un ajout par la suggestion (jointure compteurs × lignes de commande, sans identifiant de personne), taux d'ajout et **chiffre d'affaires apporté**                                                                                                                                   | le vrai résultat, au-delà du clic                                        |
-| **RS7**  | **L'accueil** (dernier emplacement) et **l'après-ajout** (« Ajouté ! Vous aimerez aussi… »)                                                                                                                                                                                                                                                                                       | l'instant où une suggestion convertit le mieux                           |
-| **RS8**  | **Règles plus fines** : créneau horaire / jours de la semaine, seuil de panier (montant, « sans boisson »), site de retrait, segments ([plan des audiences](plan-audiences.md))                                                                                                                                                                                                   | quand l'usage le demandera                                               |
-| **RS9**  | **Gestes du staff** : dupliquer une règle ; liste regroupée « à venir / en cours / finies » ; recherche dans le champ article (attend un combobox dans fold-ng)                                                                                                                                                                                                                   | décliner une saison sans ressaisir                                       |
-| **RS10** | **Alerte** : une règle active dont l'article ne se vend plus (retiré, masqué, jamais commandable sur sa période) est signalée dans la liste                                                                                                                                                                                                                                       | une règle vide ne doit pas passer inaperçue                              |
-
-Ordre : RS5, RS6, RS7 — ce qui rend l'outil utilisable au quotidien ; RS8 à
-l'usage. **RS5 lancé le 2026-10-18, RS6 bâti le même jour.**
+1. **Combien de places à l'accueil ?** _Recommandation d'origine : 2 sur 3._
+2. **Quel titre par défaut à l'accueil** quand la règle n'a pas de phrase ?
+3. **L'après-ajout** est-il un emplacement de plus (avec ses règles) ou la
+   carte de la fiche réutilisée ? Un emplacement de plus est une query de plus
+   qui apporte son déclencheur à `StaffSuggestionShowcase` — pas une branche.
+4. **Le paquet initial** : comme le panier et la fiche, la requête doit vivre
+   dans un morceau chargé à la demande.

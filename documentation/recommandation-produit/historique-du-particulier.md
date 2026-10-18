@@ -4,7 +4,8 @@
 > pour expliquer ce qu'il nous faut »). Elle prépare la question Q1 et le lot
 > R3 de [`plan-recommandation-de-produits.md`](plan-recommandation-de-produits.md).
 > Chaque affirmation sur l'existant a été **ouverte le 2026-10-18** ; ce qui ne
-> l'a pas été est dit « non vérifié ». Rien n'est bâti.
+> l'a pas été est dit « non vérifié ». Rien n'est bâti de « vos habituels » ;
+> la mesure anonyme (§3.7) l'est.
 
 ## 1. En une phrase
 
@@ -48,7 +49,8 @@ neuve, jamais une réconciliation par adresse »
 `register`), alors que son adaptateur **réutilise** la fiche invité de même
 adresse (`prisma-guest-buyer.registrar.ts`, `guestFor`, vérifié le
 2026-10-18). Le code fait foi ; la phrase du port est périmée et doit suivre.
-Ça compte ici : l'historique d'un invité **s'accumule** déjà sur une seule
+Relu le 2026-10-18 au soir : la phrase du port n'a pas bougé. Ça compte ici :
+l'historique d'un invité **s'accumule** déjà sur une seule
 fiche par adresse.
 
 Ce que l'historique contient déjà : articles, quantités, dates, montants, mode
@@ -124,12 +126,15 @@ quand ce plan sera bâti — non vérifié aujourd'hui.
 
 ### 3.7 La mesure
 
-Les faits `recommendation.shown / clicked / added` du plan (R5) portent un
-**identifiant de personne** pour un particulier. Ils passent par le journal
-d'activité, best-effort. À inscrire dans le texte (« nous mesurons l'usage de
-ces suggestions pour les améliorer ») ou à **anonymiser** pour le public
-(compter par emplacement et par jour, sans sujet). Recommandation :
-anonymiser — on n'a pas besoin de savoir _qui_ a cliqué pour savoir si ça sert.
+Tranché et bâti le 2026-10-18 : la mesure est **anonyme** pour tout le monde.
+Les faits nominatifs `recommendation.shown / clicked / added` d'abord proposés
+(plan, ancienne décision R5) sont remplacés par des **compteurs** par jour,
+article, geste, emplacement et source, sans identifiant de personne
+(`growth.product_audience_counters`, R5 bis du
+[plan](plan-recommandation-de-produits.md)). On n'a pas besoin de savoir _qui_
+a cliqué pour savoir si ça sert ; la contrepartie est qu'une commande ne se
+relie pas à un clic, d'où des résultats **estimés**
+([`suggestions-du-staff.md`](suggestions-du-staff.md) §8.2).
 
 ## 4. Ce qu'il faut, récapitulé
 
@@ -139,7 +144,7 @@ anonymiser — on n'a pas besoin de savoir _qui_ a cliqué pour savoir si ça se
 | 2   | Phrase « Vous proposer vos produits habituels » dans la politique             | Hugo, cabinet | oui                |
 | 3   | Interrupteur « Suggestions personnalisées » dans Mon profil (colonne + écran) | à bâtir       | oui                |
 | 4   | Aucune recommandation à un invité                                             | décidé (code) | —                  |
-| 5   | Mesure anonymisée pour le public                                              | à bâtir (R0)  | non                |
+| 5   | Mesure anonymisée pour le public                                              | bâti (R0)     | non                |
 | 6   | Corriger la phrase périmée du port `GuestBuyerRegistrar`                      | à faire       | non                |
 
 Le reste — lire l'historique, le filtrer par ce qui est servi aujourd'hui —
