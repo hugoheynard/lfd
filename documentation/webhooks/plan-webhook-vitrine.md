@@ -199,8 +199,10 @@ français) ; la durée réelle d'un balayage sous le cron du Worker.
    `apps/lfd-api/src/b2b/storefront/`, Gestion Boutique › Vitrine : blocs,
    images et annonces placés à la main au-dessus des rayons) : réponse en
    attente, après explication.
-3. **Un seul abonné, réglé à la main**, pour démarrer ; l'écran multi-abonnés
-   viendra ensuite.
+3. **L'écran multi-abonnés dès le premier lot** (corrigé par Hugo le
+   2026-10-18 : « non, directement une page multi-abonnés ») : Gestion
+   Boutique, liste des abonnés, création, cases, rotation du secret et de la
+   clé, journal des envois.
 4. **Format : JSON.** L'agence accepte aussi XML ; on ne sert que du JSON tant
    qu'elle n'en a pas besoin.
 5. **L'audience sort** (option a de B1) : elle est ajoutée à la vue publique,
