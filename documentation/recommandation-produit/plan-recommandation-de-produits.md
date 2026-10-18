@@ -13,6 +13,11 @@
 > public (§6, RGPD) — si Hugo tranche Q1 « public d'abord », ce point mérite
 > une contradiction avant de bâtir.
 
+> **Ordre revu le 2026-10-18 (Hugo)** : le collectif (« souvent pris avec »,
+> « les plus commandés ») passe AVANT « vos habituels » — il sert tout le monde,
+> invités compris, sous un seuil d'anonymat ; voir
+> [`historique-du-particulier.md`](historique-du-particulier.md) §1 bis.
+>
 > **Le public** : ce qu'il faut pour recommander à un particulier est dans
 > [`historique-du-particulier.md`](historique-du-particulier.md) (2026-10-18).
 

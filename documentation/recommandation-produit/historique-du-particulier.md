@@ -13,6 +13,27 @@ manque n'est pas technique, c'est **le droit de s'en servir pour recommander** :
 une finalité annoncée, une base légale, un moyen de refuser, et une règle pour
 l'invité.
 
+## 1 bis. Trois sources, trois régimes (Hugo, 2026-10-18)
+
+« L'intégralité des comportements clients devrait donner des suggestions —
+c'est de l'analytics. » D'accord, à condition de séparer ce qui vise **tout le
+monde** de ce qui vise **une personne** :
+
+| Source                                                         | Exemple                                                     | Pour qui                       | Ce qu'il faut                                                                                                                                                                |
+| -------------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Le collectif**, toutes les commandes agrégées                | « souvent pris avec », « les plus commandés cette semaine » | tout le monde, invités compris | **un seuil d'anonymat** (une association ne s'affiche que si au moins 5 clients distincts l'ont faite) et des comptes sans identifiant stockés ; pas de base légale nouvelle |
+| **L'audience**, vues, clics, recherches                        | « le plus regardé », taux d'ajout au panier                 | tout le monde                  | des **compteurs anonymes côté serveur** (par produit et par jour, sans identifiant de visiteur) ; suivre un visiteur d'une page à l'autre = traceur, consentement            |
+| **L'individu**, l'historique d'une personne montré à elle-même | « vos habituels »                                           | le client connecté             | §3 ci-dessous : finalité annoncée, base légale, interrupteur                                                                                                                 |
+
+**Ordre retenu** : le collectif d'abord (il sert tout le monde dès le départ),
+puis les compteurs d'audience anonymes, puis « vos habituels » après l'avis du
+cabinet. **Pas** de suivi individuel des visiteurs (« vous avez regardé ») :
+bannière obligatoire, gain faible à notre échelle.
+
+⚠️ En prérelease, les volumes sont faibles : le seuil masquera la plupart des
+associations au début. C'est voulu — sans lui, « souvent pris avec » trahirait
+le panier d'une seule personne.
+
 ## 2. Ce que la base sait déjà d'un particulier
 
 | Qui                      | Ce qui le relie à ses commandes                                                                                                                                                                                                                                                                    | Lisible pour recommander ?                                                |
