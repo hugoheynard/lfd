@@ -104,6 +104,9 @@ libre.
 > A2 change donc de forme : un canal à choisir le moment venu, la même réponse
 > facultative et modifiable dans Mon profil, la même phrase dans la politique.
 > D'ici là, le segment n'existe qu'**estimé** (A3), affiché comme tel.
+>
+> **Q3 tranchée le 2026-10-18 (Hugo) : oui**, la langue de chaque commande est
+> enregistrée (A3). **Q4** : décidée au lot A1.
 
 1. **La question « résident · saisonnier · vacancier » : oui ?** _Recommandation :
    oui, facultative._ C'est le seul moyen fiable, et elle ne coûte qu'un clic.
