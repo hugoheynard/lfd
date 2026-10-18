@@ -9,12 +9,10 @@
     <app-vitrine-credentials [credentials]="credentials" />
   } @else {
     <div class="vsp-fields">
-      <fold-input
-        label="Nom"
-        placeholder="Agence du site vitrine"
-        [value]="name()"
-        (valueChange)="name.set($event)"
-        data-name
+      <app-vitrine-identity-fields
+        [(name)]="name"
+        [(description)]="description"
+        [(contactEmail)]="contactEmail"
       />
       <fold-input
         label="Adresse de réception"

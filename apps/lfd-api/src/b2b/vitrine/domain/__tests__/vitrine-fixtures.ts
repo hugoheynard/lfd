@@ -71,6 +71,8 @@ export function subscriber(
   return VitrineSubscriber.declare({
     id: overrides.id ?? "sub_agence",
     name: "Agence du site",
+    description: null,
+    contactEmail: null,
     endpointUrl: "https://agence.example/hooks/lfc",
     contents: overrides.contents ?? ALL_CONTENTS,
     credentials: { signingSecretSealed: "scelle", readKeyHash: "empreinte" },

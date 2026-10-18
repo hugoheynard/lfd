@@ -12,3 +12,10 @@
   flex-direction: column;
   gap: var(--fold-space-md);
 }
+
+.vsc-description,
+.vsc-contact {
+  margin: 0;
+  white-space: pre-line;
+  color: var(--fold-color-text-secondary);
+}

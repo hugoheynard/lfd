@@ -8,6 +8,7 @@ import { RotateVitrineCredentialsHandler } from "./application/commands/rotate-v
 import { SendVitrineTestHandler } from "./application/commands/send-vitrine-test.handler.js";
 import { SetVitrineContentsHandler } from "./application/commands/set-vitrine-contents.handler.js";
 import { SetVitrineSubscriberActiveHandler } from "./application/commands/set-vitrine-subscriber-active.handler.js";
+import { UpdateVitrineSubscriberIdentityHandler } from "./application/commands/update-vitrine-subscriber-identity.handler.js";
 import { SweepVitrineHandler } from "./application/commands/sweep-vitrine.handler.js";
 import { ListVitrineDeliveriesHandler } from "./application/queries/list-vitrine-deliveries.handler.js";
 import { ListVitrineSubscribersHandler } from "./application/queries/list-vitrine-subscribers.handler.js";
@@ -59,6 +60,7 @@ import { PrismaVitrineSubscriberRepository } from "./infrastructure/prisma-vitri
     RotateVitrineCredentialsHandler,
     SetVitrineContentsHandler,
     SetVitrineSubscriberActiveHandler,
+    UpdateVitrineSubscriberIdentityHandler,
     ResyncVitrineSubscriberHandler,
     SendVitrineTestHandler,
     ResendVitrineDeliveryHandler,

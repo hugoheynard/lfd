@@ -1,0 +1,34 @@
+<fold-fieldset
+  legend="L’abonné"
+  hint="La description et le contact restent au back-office : ils ne sont jamais envoyés à l’agence."
+>
+  <fold-input
+    label="Nom"
+    required
+    placeholder="Agence du site vitrine"
+    [value]="name()"
+    (valueChange)="name.set($event)"
+    data-name
+  />
+  <fold-textarea
+    label="Description"
+    optional
+    optionalLabel="facultatif"
+    [rows]="3"
+    placeholder="À quoi sert cet abonné : le site public, une préproduction…"
+    [value]="description()"
+    (valueChange)="description.set($event)"
+    data-description
+  />
+  <fold-input
+    label="Contact"
+    type="email"
+    optional
+    optionalLabel="facultatif"
+    hint="L’adresse où écrire à l’agence pour les mises à jour."
+    placeholder="web@agence.example"
+    [value]="contactEmail()"
+    (valueChange)="contactEmail.set($event)"
+    data-contact
+  />
+</fold-fieldset>

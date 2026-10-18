@@ -10,6 +10,15 @@ model VitrineSubscriber {
   id   String @id
   name String
 
+  /// À quoi sert cet abonné — pour le staff seulement, jamais envoyé à
+  /// l'agence ni servi sur `/vitrine/*`. 500 caractères au plus (`CHECK`).
+  description String?
+
+  /// L'adresse où écrire à l'agence (e-mails de mise à jour) — facultative,
+  /// peut être NOMINATIVE : au registre RGPD. Jamais servie sur `/vitrine/*`,
+  /// jamais dans le corps du webhook, jamais dans un log.
+  contactEmail String? @map("contact_email")
+
   /// `https://…`, sans requête ni fragment ni identifiants (refusés par le
   /// domaine à la saisie ; un jeton en requête serait affiché à l'écran).
   endpointUrl String @map("endpoint_url")

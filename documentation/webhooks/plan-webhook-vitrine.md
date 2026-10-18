@@ -354,6 +354,19 @@ existé). Rallumer rend la lecture avec la même clé. La règle vit dans la
 résolution de la clé (`application/vitrine-read-support.ts`) ; éprouvée à
 l'unité et par l'e2e.
 
+**Nom, description et contact** (demande de Hugo, 2026-10-18). Un abonné se
+renomme, porte une **description** facultative (à quoi il sert, 500 caractères
+au plus) et un **contact** facultatif (adresse e-mail de l'agence, pour les
+e-mails de mise à jour — **aucun envoi n'existe encore**). Saisis à la création
+ou par « Modifier » sur la carte (`PUT /admin/vitrine/subscribers/:id/identity`,
+`UpdateVitrineSubscriberIdentityCommand`) ; les bornes vivent dans l'agrégat
+(`rename`, `describe`, `setContact` — `EmailAddress` du compte, en minuscules)
+et dans des `CHECK` (migration additive `20261018240000_la_description_d_un_abonne_vitrine`).
+Ni l'un ni l'autre ne sort vers l'agence : absents de `/vitrine/*` et du corps
+du webhook, éprouvé par l'e2e. ⚠️ Le contact peut être **nominatif** et n'est
+**pas** encore au registre RGPD : le registre ne connaît pas de personne
+« agence » (cf. rapport du lot, en attente de décision).
+
 **Ce qui reste, ou n'est pas éprouvé :**
 
 - **Le relais épinglé réel n'est pas traversé par l'e2e** : l'agence de test

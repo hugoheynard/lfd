@@ -2,9 +2,11 @@ import {
   createVitrineSubscriberPayloadSchema,
   setVitrineContentsPayloadSchema,
   setVitrineSubscriberActivePayloadSchema,
+  updateVitrineSubscriberIdentityPayloadSchema,
   type CreateVitrineSubscriberPayload,
   type SetVitrineContentsPayload,
   type SetVitrineSubscriberActivePayload,
+  type UpdateVitrineSubscriberIdentityPayload,
   type VitrineCredentialsView,
   type VitrineDeliveryView,
   type VitrineSubscriberView,
@@ -21,6 +23,7 @@ import { RotateVitrineCredentialsCommand } from "../application/commands/rotate-
 import { SendVitrineTestCommand } from "../application/commands/send-vitrine-test.command.js";
 import { SetVitrineContentsCommand } from "../application/commands/set-vitrine-contents.command.js";
 import { SetVitrineSubscriberActiveCommand } from "../application/commands/set-vitrine-subscriber-active.command.js";
+import { UpdateVitrineSubscriberIdentityCommand } from "../application/commands/update-vitrine-subscriber-identity.command.js";
 import { ListVitrineDeliveriesQuery } from "../application/queries/list-vitrine-deliveries.query.js";
 import { ListVitrineSubscribersQuery } from "../application/queries/list-vitrine-subscribers.query.js";
 
@@ -50,7 +53,30 @@ export class AdminVitrineController {
     @Body(new ZodBody(createVitrineSubscriberPayloadSchema)) body: CreateVitrineSubscriberPayload,
   ): Promise<VitrineCredentialsView> {
     return this.commands.execute<CreateVitrineSubscriberCommand, VitrineCredentialsView>(
-      new CreateVitrineSubscriberCommand(body.name, body.endpointUrl, body.contents),
+      new CreateVitrineSubscriberCommand(
+        body.name,
+        body.endpointUrl,
+        body.contents,
+        body.description ?? null,
+        body.contactEmail ?? null,
+      ),
+    );
+  }
+
+  @Put("subscribers/:id/identity")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async updateIdentity(
+    @Param("id") id: string,
+    @Body(new ZodBody(updateVitrineSubscriberIdentityPayloadSchema))
+    body: UpdateVitrineSubscriberIdentityPayload,
+  ): Promise<void> {
+    await this.commands.execute<UpdateVitrineSubscriberIdentityCommand, void>(
+      new UpdateVitrineSubscriberIdentityCommand(
+        id,
+        body.name,
+        body.description,
+        body.contactEmail,
+      ),
     );
   }
 

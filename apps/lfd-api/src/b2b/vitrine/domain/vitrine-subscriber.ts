@@ -1,14 +1,19 @@
 import type { VitrineContent } from "@lfd/contracts";
 
 import {
+  VitrineSubscriberDescriptionTooLongError,
   VitrineSubscriberInactiveError,
   VitrineSubscriberNameInvalidError,
 } from "./errors/vitrine-errors.js";
+import { EmailAddress } from "../../account/domain/value-objects/email-address.js";
 import { VitrineContents } from "./vitrine-contents.js";
 import { VitrineEndpoint } from "./vitrine-endpoint.js";
 
 /** Le nom de l'agence, pas une description. */
 export const VITRINE_SUBSCRIBER_NAME_MAX = 120;
+
+/** À quoi sert l'abonné, pour le staff : quelques phrases, pas un dossier. */
+export const VITRINE_SUBSCRIBER_DESCRIPTION_MAX = 500;
 
 /**
  * Ce qu'on range d'un secret et d'une clé : le secret SCELLÉ (il faut le
@@ -22,6 +27,8 @@ export interface StoredVitrineCredentials {
 export interface VitrineSubscriberState extends StoredVitrineCredentials {
   readonly id: string;
   readonly name: string;
+  readonly description: string | null;
+  readonly contactEmail: EmailAddress | null;
   readonly endpoint: VitrineEndpoint;
   readonly contents: VitrineContents;
   readonly active: boolean;
@@ -32,7 +39,11 @@ export interface VitrineSubscriberState extends StoredVitrineCredentials {
 }
 
 /** L'état tel que la base le rend : URL et cases en clair, revalidées. */
-export type VitrineSubscriberRow = Omit<VitrineSubscriberState, "endpoint" | "contents"> & {
+export type VitrineSubscriberRow = Omit<
+  VitrineSubscriberState,
+  "endpoint" | "contents" | "contactEmail"
+> & {
+  readonly contactEmail: string | null;
   readonly endpointUrl: string;
   readonly contents: readonly string[];
 };
@@ -40,6 +51,8 @@ export type VitrineSubscriberRow = Omit<VitrineSubscriberState, "endpoint" | "co
 export interface DeclareVitrineSubscriber {
   readonly id: string;
   readonly name: string;
+  readonly description: string | null;
+  readonly contactEmail: string | null;
   readonly endpointUrl: string;
   readonly contents: readonly string[];
   readonly credentials: StoredVitrineCredentials;
@@ -66,6 +79,8 @@ export class VitrineSubscriber {
     return new VitrineSubscriber({
       id: input.id,
       name: validName(input.name),
+      description: validDescription(input.description),
+      contactEmail: validContact(input.contactEmail),
       endpoint: VitrineEndpoint.of(input.endpointUrl),
       contents: VitrineContents.of(input.contents),
       signingSecretSealed: input.credentials.signingSecretSealed,
@@ -82,9 +97,33 @@ export class VitrineSubscriber {
   static rehydrate(row: VitrineSubscriberRow): VitrineSubscriber {
     return new VitrineSubscriber({
       ...row,
+      contactEmail: validContact(row.contactEmail),
       endpoint: VitrineEndpoint.of(row.endpointUrl),
       contents: VitrineContents.of(row.contents),
     });
+  }
+
+  /** @throws {VitrineSubscriberNameInvalidError} */
+  rename(name: string, at: Date): void {
+    this.state = { ...this.state, name: validName(name), updatedAt: at };
+  }
+
+  /**
+   * Une description vide vaut « aucune » : l'effacer est un geste admis.
+   *
+   * @throws {VitrineSubscriberDescriptionTooLongError}
+   */
+  describe(description: string | null, at: Date): void {
+    this.state = { ...this.state, description: validDescription(description), updatedAt: at };
+  }
+
+  /**
+   * L'adresse où écrire à l'agence ; vide ou `null` l'efface.
+   *
+   * @throws {InvalidEmailError}
+   */
+  setContact(contactEmail: string | null, at: Date): void {
+    this.state = { ...this.state, contactEmail: validContact(contactEmail), updatedAt: at };
   }
 
   /** Un secret et une clé neufs : les anciens cessent de valoir à l'instant. */
@@ -155,6 +194,14 @@ export class VitrineSubscriber {
     return this.state.name;
   }
 
+  get description(): string | null {
+    return this.state.description;
+  }
+
+  get contactEmail(): string | null {
+    return this.state.contactEmail?.value ?? null;
+  }
+
   get endpointUrl(): string {
     return this.state.endpoint.value;
   }
@@ -168,8 +215,13 @@ export class VitrineSubscriber {
   }
 
   toPersistence(): VitrineSubscriberRow {
-    const { endpoint, contents, ...rest } = this.state;
-    return { ...rest, endpointUrl: endpoint.value, contents: contents.list() };
+    const { endpoint, contents, contactEmail, ...rest } = this.state;
+    return {
+      ...rest,
+      contactEmail: contactEmail?.value ?? null,
+      endpointUrl: endpoint.value,
+      contents: contents.list(),
+    };
   }
 }
 
@@ -179,4 +231,20 @@ function validName(name: string): string {
     throw new VitrineSubscriberNameInvalidError(VITRINE_SUBSCRIBER_NAME_MAX);
   }
   return trimmed;
+}
+
+function validDescription(description: string | null): string | null {
+  const trimmed = description?.trim() ?? "";
+  if (trimmed === "") {
+    return null;
+  }
+  if (trimmed.length > VITRINE_SUBSCRIBER_DESCRIPTION_MAX) {
+    throw new VitrineSubscriberDescriptionTooLongError(VITRINE_SUBSCRIBER_DESCRIPTION_MAX);
+  }
+  return trimmed;
+}
+
+function validContact(contactEmail: string | null): EmailAddress | null {
+  const trimmed = contactEmail?.trim() ?? "";
+  return trimmed === "" ? null : EmailAddress.create(trimmed);
 }

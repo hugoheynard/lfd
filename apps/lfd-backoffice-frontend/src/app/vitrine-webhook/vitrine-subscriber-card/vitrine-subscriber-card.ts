@@ -17,6 +17,7 @@ import {
 
 /** Ce qu'une carte demande à la page ; la page fait l'appel et recharge. */
 export type VitrineSubscriberGesture =
+  | { readonly kind: 'edit' }
   | { readonly kind: 'contents'; readonly contents: readonly VitrineContent[] }
   | { readonly kind: 'active'; readonly active: boolean }
   | { readonly kind: 'test' }
@@ -25,7 +26,7 @@ export type VitrineSubscriberGesture =
   | { readonly kind: 'resync' };
 
 /**
- * **Un abonné** : son adresse, son état, ses cases et ses gestes. Elle
+ * **Un abonné** : son adresse, sa description et son contact, son état, ses cases et ses gestes. Elle
  * n'appelle rien : elle émet le geste, la page l'exécute — un seul endroit
  * pour l'attente et le refus.
  */

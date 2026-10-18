@@ -1,3 +1,4 @@
+import { provideRouter } from '@angular/router';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import type { StaffPermission, VitrineContent, VitrineSubscriberView } from '@lfd/contracts';
@@ -11,6 +12,8 @@ function subscriber(overrides: Partial<VitrineSubscriberView> = {}): VitrineSubs
   return {
     id: 'sub_1',
     name: 'Agence du site',
+    description: null,
+    contactEmail: null,
     endpointUrl: 'https://agence.example/hook',
     contents: ['catalogue', 'texts'],
     state: 'active',
@@ -55,6 +58,7 @@ async function render(
   TestBed.configureTestingModule({
     imports: [VitrineWebhookPage],
     providers: [
+      provideRouter([]),
       { provide: VitrineWebhookService, useValue: api },
       {
         provide: PermissionsStore,

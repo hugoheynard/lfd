@@ -24,6 +24,12 @@
   </fold-element-title>
 
   <div class="vsc-body">
+    @if (subscriber().description; as description) {
+      <p class="vsc-description" data-description>{{ description }}</p>
+    }
+    @if (subscriber().contactEmail; as contact) {
+      <p class="vsc-contact" data-contact>Contact : {{ contact }}</p>
+    }
     <div class="vsc-contents">
       @for (content of contentChoices; track content) {
         <fold-checkbox
@@ -52,6 +58,17 @@
             Tout renvoyer
           </button>
         }
+        <button
+          foldButton
+          emphasis="outline"
+          size="sm"
+          type="button"
+          [disabled]="busy()"
+          (click)="gesture.emit({ kind: 'edit' })"
+          data-edit
+        >
+          Modifier
+        </button>
         <button
           foldButton
           emphasis="outline"

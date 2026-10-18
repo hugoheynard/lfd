@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import type { VitrineSubscriberView } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
@@ -22,6 +23,7 @@ import {
   VitrineSubscriberCard,
   type VitrineSubscriberGesture,
 } from '../vitrine-subscriber-card/vitrine-subscriber-card';
+import { VitrineSubscriberEditPanel } from '../vitrine-subscriber-edit-panel/vitrine-subscriber-edit-panel';
 import { VitrineSubscriberPanel } from '../vitrine-subscriber-panel/vitrine-subscriber-panel';
 import { VitrineWebhookService } from '../vitrine-webhook.service';
 
@@ -43,6 +45,7 @@ type LoadState = 'loading' | 'error' | 'ready';
     FoldIconComponent,
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
+    RouterLink,
     VitrineSubscriberCard,
   ],
   templateUrl: './vitrine-webhook-page.html',
@@ -90,6 +93,8 @@ export class VitrineWebhookPage {
         return this.openJournal(subscriber);
       case 'rotate':
         return this.openRotation(subscriber);
+      case 'edit':
+        return this.openEdit(subscriber);
       case 'contents':
         return this.act(
           subscriber,
@@ -121,6 +126,14 @@ export class VitrineWebhookPage {
     const data: VitrineJournalData = { subscriber, canWrite: this.canWrite() };
     await this.panels.open(VitrineJournalPanel, { data }).closed;
     await this.load();
+  }
+
+  private async openEdit(subscriber: VitrineSubscriberView): Promise<void> {
+    const ref = this.panels.open(VitrineSubscriberEditPanel, { data: subscriber });
+    if ((await ref.closed) !== undefined) {
+      this.notify.success('Abonné modifié.');
+      await this.load();
+    }
   }
 
   private async openRotation(subscriber: VitrineSubscriberView): Promise<void> {

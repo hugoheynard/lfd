@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import type {
   CreateVitrineSubscriberPayload,
+  UpdateVitrineSubscriberIdentityPayload,
   VitrineContent,
   VitrineCredentialsView,
   VitrineDeliveryView,
@@ -30,6 +31,10 @@ export class VitrineWebhookService {
     return firstValueFrom(
       this.http.post<VitrineCredentialsView>(`${this.base}/subscribers`, payload),
     );
+  }
+
+  updateIdentity(id: string, payload: UpdateVitrineSubscriberIdentityPayload): Promise<void> {
+    return firstValueFrom(this.http.put<void>(`${this.subscriber(id)}/identity`, payload));
   }
 
   setContents(id: string, contents: readonly VitrineContent[]): Promise<void> {

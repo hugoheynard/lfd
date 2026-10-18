@@ -1,0 +1,34 @@
+<fold-panel-header title="Modifier l’abonné" [subtitle]="data().endpointUrl" closeLabel="Fermer" />
+
+<fold-panel-body>
+  <div class="vsep-fields">
+    <app-vitrine-identity-fields
+      [(name)]="name"
+      [(description)]="description"
+      [(contactEmail)]="contactEmail"
+    />
+    @if (issue() !== '') {
+      <fold-callout variant="warning" data-issue>{{ issue() }}</fold-callout>
+    }
+    @if (refusal(); as message) {
+      <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+    }
+  </div>
+</fold-panel-body>
+
+<fold-panel-footer align="end">
+  <button foldButton emphasis="outline" intent="neutral" type="button" (click)="cancel()">
+    Annuler
+  </button>
+  <button
+    foldButton
+    intent="primary"
+    type="button"
+    [disabled]="issue() !== ''"
+    [loading]="saving()"
+    (click)="submit()"
+    data-submit
+  >
+    Enregistrer
+  </button>
+</fold-panel-footer>

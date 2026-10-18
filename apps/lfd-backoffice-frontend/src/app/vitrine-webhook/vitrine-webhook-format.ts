@@ -79,3 +79,40 @@ export function deliverySummary(delivery: VitrineDeliveryView): string {
 export function deliveryTitle(delivery: VitrineDeliveryView): string {
   return delivery.sequence === null ? 'Essai' : `Envoi n° ${String(delivery.sequence)}`;
 }
+
+/** Les bornes du domaine (`VitrineSubscriber`), dites avant l'envoi. */
+export const VITRINE_NAME_MAX = 120;
+export const VITRINE_DESCRIPTION_MAX = 500;
+
+/** Une forme d'adresse e-mail, permissive comme celle du serveur, qui reste juge. */
+const EMAIL_SHAPE = /^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/;
+
+/** Le nom, la description et le contact d'un abonné, tels qu'ils se saisissent. */
+export interface VitrineIdentityDraft {
+  readonly name: string;
+  readonly description: string;
+  readonly contactEmail: string;
+}
+
+/** Ce qui empêche d'enregistrer l'identité, en clair — ou `''`. */
+export function vitrineIdentityIssue(draft: VitrineIdentityDraft): string {
+  const name = draft.name.trim();
+  if (name === '') return 'Le nom de l’abonné est obligatoire.';
+  if (name.length > VITRINE_NAME_MAX) {
+    return `Le nom tient en ${String(VITRINE_NAME_MAX)} caractères au plus.`;
+  }
+  if (draft.description.trim().length > VITRINE_DESCRIPTION_MAX) {
+    return `La description tient en ${String(VITRINE_DESCRIPTION_MAX)} caractères au plus.`;
+  }
+  const contact = draft.contactEmail.trim();
+  if (contact !== '' && !EMAIL_SHAPE.test(contact)) {
+    return 'Le contact n’est pas une adresse e-mail : vérifiez l’arobase et le domaine.';
+  }
+  return '';
+}
+
+/** Une saisie vide vaut « aucune ». */
+export function blankToNull(value: string): string | null {
+  const trimmed = value.trim();
+  return trimmed === '' ? null : trimmed;
+}

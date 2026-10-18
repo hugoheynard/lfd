@@ -107,6 +107,25 @@ describe('VitrineSubscriberPanel', () => {
     expect(wire.closes).toEqual(['created']);
   });
 
+  it('envoie la description et le contact s’ils sont dits, et refuse un contact mal formé', async () => {
+    const fixture = await boot();
+    type(fixture, 'data-name', 'Agence');
+    type(fixture, 'data-url', 'https://agence.example/hook');
+    type(fixture, 'data-contact', 'pas-une-adresse');
+    expect(host(fixture).querySelector('[data-issue]')?.textContent).toContain('adresse e-mail');
+    type(fixture, 'data-contact', ' web@agence.example ');
+    const area = host(fixture).querySelector('[data-description] textarea');
+    if (!(area instanceof HTMLTextAreaElement)) throw new Error('Description absente.');
+    area.value = 'Le site public.';
+    area.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    await submit(fixture);
+    expect(wire.creates[0]).toMatchObject({
+      description: 'Le site public.',
+      contactEmail: 'web@agence.example',
+    });
+  });
+
   it('dit le refus du serveur et garde le panneau ouvert', async () => {
     const fixture = await boot();
     wire.refuse = 'L’adresse de l’abonné doit commencer par https://';

@@ -22,6 +22,7 @@ import type { ShopItemView, ShopOperationView, ShopShelfView } from "./shop-cata
  *
  * - `GET  /admin/vitrine/subscribers` → `VitrineSubscriberView[]`
  * - `POST /admin/vitrine/subscribers` ← `CreateVitrineSubscriberPayload` → `VitrineCredentialsView`
+ * - `PUT  /admin/vitrine/subscribers/:id/identity` ← `UpdateVitrineSubscriberIdentityPayload`
  * - `PUT  /admin/vitrine/subscribers/:id/contents` ← `SetVitrineContentsPayload`
  * - `PUT  /admin/vitrine/subscribers/:id/active` ← `SetVitrineSubscriberActivePayload`
  * - `POST /admin/vitrine/subscribers/:id/rotate` → `VitrineCredentialsView`
@@ -98,6 +99,10 @@ export type VitrineSubscriberState = "active" | "inactive" | "failing";
 export interface VitrineSubscriberView {
   readonly id: string;
   readonly name: string;
+  /** Pour le staff : à quoi sert l'abonné. Jamais envoyée à l'agence. */
+  readonly description: string | null;
+  /** L'adresse où écrire à l'agence. Peut être nominative : jamais servie à l'agence. */
+  readonly contactEmail: string | null;
   readonly endpointUrl: string;
   readonly contents: readonly VitrineContent[];
   readonly state: VitrineSubscriberState;
@@ -137,8 +142,20 @@ export const createVitrineSubscriberPayloadSchema = z.strictObject({
   name: z.string(),
   endpointUrl: z.string(),
   contents: vitrineContentsSchema,
+  description: z.string().nullable().optional(),
+  contactEmail: z.string().nullable().optional(),
 });
 export type CreateVitrineSubscriberPayload = z.infer<typeof createVitrineSubscriberPayloadSchema>;
+
+/** Le nom, la description et le contact ; vide ou `null` efface les deux derniers. */
+export const updateVitrineSubscriberIdentityPayloadSchema = z.strictObject({
+  name: z.string(),
+  description: z.string().nullable(),
+  contactEmail: z.string().nullable(),
+});
+export type UpdateVitrineSubscriberIdentityPayload = z.infer<
+  typeof updateVitrineSubscriberIdentityPayloadSchema
+>;
 
 export const setVitrineContentsPayloadSchema = z.strictObject({
   contents: vitrineContentsSchema,

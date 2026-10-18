@@ -50,6 +50,8 @@ function declared(cipher = testCipher(), id = "sub_agence") {
   const subscriber = VitrineSubscriber.declare({
     id,
     name: "Agence",
+    description: null,
+    contactEmail: null,
     endpointUrl: "https://agence.example/hook",
     contents: ["catalogue", "operations", "texts", "featured"],
     credentials: minted.stored,

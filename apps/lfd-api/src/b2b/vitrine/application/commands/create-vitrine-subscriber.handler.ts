@@ -36,6 +36,8 @@ export class CreateVitrineSubscriberHandler implements ICommandHandler<
     const subscriber = VitrineSubscriber.declare({
       id: this.ids.next(),
       name: command.name,
+      description: command.description,
+      contactEmail: command.contactEmail,
       endpointUrl: command.endpointUrl,
       contents: command.contents,
       credentials: credentials.stored,

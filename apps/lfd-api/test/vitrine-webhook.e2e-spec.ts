@@ -383,6 +383,90 @@ describe("GET /vitrine — ce qui sort, sur la route elle-même", () => {
   });
 });
 
+describe("le nom, la description et le contact d'un abonné", () => {
+  const DESCRIPTION = "Le site public de la boutique, refait par l'agence.";
+  const CONTACT = "web@agence.e2e.test";
+
+  it("se saisissent à la création, se modifient, et se relisent à l'écran", async () => {
+    const created = jsonBody<VitrineCredentialsView>(
+      await staff()
+        .post("/admin/vitrine/subscribers")
+        .send({
+          name: "Agence",
+          endpointUrl: "https://agence.e2e.test/hook",
+          contents: ALL,
+          description: "Première version",
+          contactEmail: "Equipe@Agence.E2e.Test",
+        })
+        .expect(201),
+    );
+    expect(await subscriberView(created.id)).toMatchObject({
+      description: "Première version",
+      contactEmail: "equipe@agence.e2e.test",
+    });
+
+    await staff()
+      .put(`/admin/vitrine/subscribers/${created.id}/identity`)
+      .send({ name: "Agence Lumière", description: DESCRIPTION, contactEmail: CONTACT })
+      .expect(204);
+    expect(await subscriberView(created.id)).toMatchObject({
+      name: "Agence Lumière",
+      description: DESCRIPTION,
+      contactEmail: CONTACT,
+    });
+
+    await staff()
+      .put(`/admin/vitrine/subscribers/${created.id}/identity`)
+      .send({ name: "Agence Lumière", description: "", contactEmail: null })
+      .expect(204);
+    expect(await subscriberView(created.id)).toMatchObject({
+      description: null,
+      contactEmail: null,
+    });
+  });
+
+  it("refuse un nom vide et un contact mal formé, sans rien changer", async () => {
+    const { id } = await subscribe();
+    const blank = await staff()
+      .put(`/admin/vitrine/subscribers/${id}/identity`)
+      .send({ name: "  ", description: DESCRIPTION, contactEmail: null })
+      .expect(400);
+    expect(jsonBody<{ code: string }>(blank).code).toBe("vitrine.subscriber.name_invalid");
+    await staff()
+      .put(`/admin/vitrine/subscribers/${id}/identity`)
+      .send({ name: "Agence", description: null, contactEmail: "pas-une-adresse" })
+      .expect(400);
+    expect(await subscriberView(id)).toMatchObject({
+      name: "Agence du site",
+      description: null,
+      contactEmail: null,
+    });
+  });
+
+  it("ne sortent jamais vers l'agence : ni sur /vitrine, ni dans la notification", async () => {
+    await push([{ sku: "VIE-001", priceMillicents: 140_000 }]);
+    const { id, readKey } = await subscribe();
+    await staff()
+      .put(`/admin/vitrine/subscribers/${id}/identity`)
+      .send({ name: "Agence", description: DESCRIPTION, contactEmail: CONTACT })
+      .expect(204);
+
+    await sweep();
+
+    const served = [
+      (await ctx.http().get("/vitrine/catalogue").set("x-vitrine-key", readKey).expect(200)).text,
+      (await ctx.http().get("/vitrine/textes").set("x-vitrine-key", readKey).expect(200)).text,
+      (await ctx.http().get("/vitrine/articles/VIE-001").set("x-vitrine-key", readKey)).text,
+      ...agency.received.map((sent) => sent.body),
+    ];
+    expect(agency.received.length).toBeGreaterThan(0);
+    for (const text of served) {
+      expect(text).not.toContain(DESCRIPTION);
+      expect(text).not.toContain(CONTACT);
+    }
+  });
+});
+
 describe("le droit `shop_vitrine`", () => {
   it("ferme l'écran à qui ne l'a pas", async () => {
     await ctx

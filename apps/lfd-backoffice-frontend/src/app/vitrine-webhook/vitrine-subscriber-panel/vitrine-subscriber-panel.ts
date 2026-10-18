@@ -14,15 +14,21 @@ import {
 } from 'fold-ng';
 
 import { VitrineCredentials } from '../vitrine-credentials/vitrine-credentials';
+import { VitrineIdentityFields } from '../vitrine-identity-fields/vitrine-identity-fields';
 import { VitrineWebhookService } from '../vitrine-webhook.service';
-import { VITRINE_CONTENT_HINTS, VITRINE_CONTENT_LABELS } from '../vitrine-webhook-format';
+import {
+  blankToNull,
+  VITRINE_CONTENT_HINTS,
+  VITRINE_CONTENT_LABELS,
+  vitrineIdentityIssue,
+} from '../vitrine-webhook-format';
 
 /** Une forme d'adresse, dite avant l'envoi ; le serveur reste juge. */
 const HTTPS_SHAPE = /^https:\/\/[^\s?#@]+$/;
 
 /**
- * **Déclarer un abonné** — le nom de l'agence, son adresse et ce qu'elle
- * reçoit. Sur un succès, le panneau ne se ferme pas : il montre le secret et la
+ * **Déclarer un abonné** — le nom de l'agence, sa description et son contact
+ * facultatifs, son adresse et ce qu'elle reçoit. Sur un succès, le panneau ne se ferme pas : il montre le secret et la
  * clé, une seule fois, et se ferme quand on dit les avoir notés.
  */
 @Component({
@@ -37,6 +43,7 @@ const HTTPS_SHAPE = /^https:\/\/[^\s?#@]+$/;
     FoldPanelFooterComponent,
     FoldPanelHeaderComponent,
     VitrineCredentials,
+    VitrineIdentityFields,
   ],
   templateUrl: './vitrine-subscriber-panel.html',
   styleUrl: './vitrine-subscriber-panel.scss',
@@ -51,6 +58,8 @@ export class VitrineSubscriberPanel {
   protected readonly labels = VITRINE_CONTENT_LABELS;
   protected readonly hints = VITRINE_CONTENT_HINTS;
   protected readonly name = signal('');
+  protected readonly description = signal('');
+  protected readonly contactEmail = signal('');
   protected readonly endpointUrl = signal('');
   protected readonly contents = signal<ReadonlySet<VitrineContent>>(new Set(vitrineContents));
   protected readonly saving = signal(false);
@@ -59,7 +68,12 @@ export class VitrineSubscriberPanel {
 
   /** Ce qui empêche l'envoi, en clair — ou `''`. */
   protected readonly issue = computed(() => {
-    if (this.name().trim() === '') return 'Le nom de l’abonné est obligatoire.';
+    const identity = vitrineIdentityIssue({
+      name: this.name(),
+      description: this.description(),
+      contactEmail: this.contactEmail(),
+    });
+    if (identity !== '') return identity;
     const url = this.endpointUrl().trim();
     if (url === '') return 'Saisissez l’adresse que l’agence vous a donnée.';
     if (!HTTPS_SHAPE.test(url)) {
@@ -87,6 +101,7 @@ export class VitrineSubscriberPanel {
           name: this.name().trim(),
           endpointUrl: this.endpointUrl().trim(),
           contents: vitrineContents.filter((content) => this.contents().has(content)),
+          ...this.optionalIdentity(),
         }),
       );
     } catch (error) {
@@ -94,6 +109,16 @@ export class VitrineSubscriberPanel {
     } finally {
       this.saving.set(false);
     }
+  }
+
+  /** La description et le contact ne partent que s'ils sont dits. */
+  private optionalIdentity(): { description?: string; contactEmail?: string } {
+    const description = blankToNull(this.description());
+    const contactEmail = blankToNull(this.contactEmail());
+    return {
+      ...(description === null ? {} : { description }),
+      ...(contactEmail === null ? {} : { contactEmail }),
+    };
   }
 
   protected close(): void {

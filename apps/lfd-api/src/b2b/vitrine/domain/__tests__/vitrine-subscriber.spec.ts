@@ -1,9 +1,11 @@
+import { InvalidEmailError } from "../../../account/domain/errors/account-errors.js";
 import {
   VitrineContentUnknownError,
+  VitrineSubscriberDescriptionTooLongError,
   VitrineSubscriberInactiveError,
   VitrineSubscriberNameInvalidError,
 } from "../errors/vitrine-errors.js";
-import { VitrineSubscriber } from "../vitrine-subscriber.js";
+import { VITRINE_SUBSCRIBER_DESCRIPTION_MAX, VitrineSubscriber } from "../vitrine-subscriber.js";
 import { AT, LATER, subscriber } from "./vitrine-fixtures.js";
 
 describe("un abonné de la vitrine", () => {
@@ -24,6 +26,8 @@ describe("un abonné de la vitrine", () => {
       VitrineSubscriber.declare({
         id: "s",
         name: "  ",
+        description: null,
+        contactEmail: null,
         endpointUrl: "https://a.example/",
         contents: [],
         credentials: { signingSecretSealed: "x", readKeyHash: "y" },
@@ -68,5 +72,36 @@ describe("un abonné de la vitrine", () => {
   it("se réhydrate en revalidant l'adresse", () => {
     const row = { ...subscriber().toPersistence(), endpointUrl: "http://a.example/" };
     expect(() => VitrineSubscriber.rehydrate(row)).toThrow();
+  });
+
+  it("se renomme et se décrit ; une description blanche vaut « aucune »", () => {
+    const declared = subscriber();
+    declared.rename("  Agence Lumière  ", LATER);
+    declared.describe("  Le site public de la boutique. ", LATER);
+    expect(declared.toPersistence()).toMatchObject({
+      name: "Agence Lumière",
+      description: "Le site public de la boutique.",
+      updatedAt: LATER,
+    });
+    declared.describe("   ", LATER);
+    expect(declared.description).toBeNull();
+  });
+
+  it("range un contact en minuscules, l'efface sur une saisie vide, refuse une adresse mal formée", () => {
+    const declared = subscriber();
+    declared.setContact(" Equipe@Agence.Example ", LATER);
+    expect(declared.toPersistence().contactEmail).toBe("equipe@agence.example");
+    expect(() => declared.setContact("pas-une-adresse", LATER)).toThrow(InvalidEmailError);
+    declared.setContact("", LATER);
+    expect(declared.contactEmail).toBeNull();
+  });
+
+  it("refuse un nom vide au renommage et une description trop longue", () => {
+    const declared = subscriber();
+    expect(() => declared.rename(" ", LATER)).toThrow(VitrineSubscriberNameInvalidError);
+    expect(() =>
+      declared.describe("x".repeat(VITRINE_SUBSCRIBER_DESCRIPTION_MAX + 1), LATER),
+    ).toThrow(VitrineSubscriberDescriptionTooLongError);
+    expect(declared.toPersistence()).toMatchObject({ name: "Agence du site", description: null });
   });
 });

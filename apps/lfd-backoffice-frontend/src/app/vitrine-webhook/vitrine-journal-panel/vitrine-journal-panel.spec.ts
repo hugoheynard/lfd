@@ -27,6 +27,8 @@ const DATA: VitrineJournalData = {
   subscriber: {
     id: 'sub_1',
     name: 'Agence',
+    description: null,
+    contactEmail: null,
     endpointUrl: 'https://agence.example/hook',
     contents: ['catalogue'],
     state: 'failing',

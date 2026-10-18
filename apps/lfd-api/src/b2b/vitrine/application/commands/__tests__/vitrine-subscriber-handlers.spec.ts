@@ -8,6 +8,7 @@ import {
   VitrineEndpointCarriesSecretError,
   VitrineSubscriberFailingError,
   VitrineSubscriberInactiveError,
+  VitrineSubscriberNameInvalidError,
   VitrineSubscriberNotFoundError,
 } from "../../../domain/errors/vitrine-errors.js";
 import { hashVitrineReadKey } from "../../../domain/services/vitrine-read-key.js";
@@ -27,6 +28,8 @@ import { SendVitrineTestCommand } from "../send-vitrine-test.command.js";
 import { SendVitrineTestHandler } from "../send-vitrine-test.handler.js";
 import { SetVitrineContentsCommand } from "../set-vitrine-contents.command.js";
 import { SetVitrineContentsHandler } from "../set-vitrine-contents.handler.js";
+import { UpdateVitrineSubscriberIdentityCommand } from "../update-vitrine-subscriber-identity.command.js";
+import { UpdateVitrineSubscriberIdentityHandler } from "../update-vitrine-subscriber-identity.handler.js";
 import {
   MemoryDeliveries,
   MemoryPrints,
@@ -57,6 +60,28 @@ describe("déclarer un abonné", () => {
     expect(stored?.signingSecretSealed).not.toContain(shown.signingSecret);
     expect(cipher.open(stored?.signingSecretSealed ?? "")).toBe(shown.signingSecret);
     expect(stored?.readKeyHash).toBe(hashVitrineReadKey(shown.readKey));
+  });
+
+  it("range la description facultative donnée à la création", async () => {
+    const store = new MemorySubscribers();
+    const shown = await new CreateVitrineSubscriberHandler(
+      store,
+      testMint(),
+      new FixedIdGenerator("sub"),
+      new FixedClock(AT),
+    ).execute(
+      new CreateVitrineSubscriberCommand(
+        "Agence",
+        "https://a.example/hook",
+        [],
+        "Le site public.",
+        "web@agence.example",
+      ),
+    );
+    expect((await store.load(shown.id))?.toPersistence()).toMatchObject({
+      description: "Le site public.",
+      contactEmail: "web@agence.example",
+    });
   });
 
   it("refuse une adresse avec un jeton en requête : rien n'est rangé", async () => {
@@ -95,6 +120,29 @@ describe("régler un abonné", () => {
     await expect(handler.execute(new SetVitrineContentsCommand("inconnu", []))).rejects.toThrow(
       VitrineSubscriberNotFoundError,
     );
+  });
+
+  it("renomme et décrit ; un nom vide est refusé sans rien ranger", async () => {
+    const store = new MemorySubscribers(subscriber());
+    const handler = new UpdateVitrineSubscriberIdentityHandler(store, new FixedClock(LATER));
+    await handler.execute(
+      new UpdateVitrineSubscriberIdentityCommand(
+        "sub_agence",
+        "Agence Lumière",
+        "Le site public.",
+        "web@agence.example",
+      ),
+    );
+    expect((await store.load("sub_agence"))?.toPersistence()).toMatchObject({
+      name: "Agence Lumière",
+      description: "Le site public.",
+      contactEmail: "web@agence.example",
+    });
+    const saves = store.saves;
+    await expect(
+      handler.execute(new UpdateVitrineSubscriberIdentityCommand("sub_agence", " ", null, null)),
+    ).rejects.toThrow(VitrineSubscriberNameInvalidError);
+    expect(store.saves).toBe(saves);
   });
 
   it("« tout renvoyer » lève l'échec et oublie les empreintes émises", async () => {

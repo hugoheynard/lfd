@@ -7,6 +7,8 @@ import { VitrineContents } from "../domain/vitrine-contents.js";
 export interface VitrineSubscriberRowShape {
   readonly id: string;
   readonly name: string;
+  readonly description: string | null;
+  readonly contactEmail: string | null;
   readonly endpointUrl: string;
   readonly signingSecretSealed: string;
   readonly readKeyHash: string;
@@ -28,6 +30,8 @@ export function subscriberToView(row: VitrineSubscriberRowShape): VitrineSubscri
   return {
     id: row.id,
     name: row.name,
+    description: row.description,
+    contactEmail: row.contactEmail,
     endpointUrl: row.endpointUrl,
     contents: VitrineContents.of(row.contents).list(),
     state: !row.active ? "inactive" : row.failedAt !== null ? "failing" : "active",

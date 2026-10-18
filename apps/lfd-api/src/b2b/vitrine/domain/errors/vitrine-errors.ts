@@ -50,6 +50,16 @@ export class VitrineSubscriberNameInvalidError extends DomainError {
   }
 }
 
+/** Une description au-delà de la borne. */
+export class VitrineSubscriberDescriptionTooLongError extends DomainError {
+  constructor(max: number) {
+    super(
+      "vitrine.subscriber.description_too_long",
+      `La description de l'abonné tient en ${String(max)} caractères au plus : dire en quelques phrases à quoi il sert, le reste a sa place dans la documentation.`,
+    );
+  }
+}
+
 /** Une case que le webhook ne connaît pas. */
 export class VitrineContentUnknownError extends DomainError {
   constructor(content: string) {
