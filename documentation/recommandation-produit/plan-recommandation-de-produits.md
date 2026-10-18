@@ -200,6 +200,9 @@ des identifiants, jamais une coordonnée (règle du cockpit, `get-cockpit.handle
 
 ## 2 bis. Deux sources : calculée et décidée (Hugo, 2026-10-18)
 
+> Le détail du décidé est dans
+> [`plan-suggestions-du-staff.md`](plan-suggestions-du-staff.md), qui prime.
+
 « Il faut distinguer les recos data driven et business driven — le staff
 décrète une suggestion. » Une suggestion a donc une **source** :
 
