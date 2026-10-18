@@ -1,0 +1,104 @@
+/// **Les abonnés de la vitrine** — ceux qu'on prévient quand le catalogue
+/// publié change (`documentation/webhooks/plan-webhook-vitrine.md`, lot W,
+/// 2026-10-18). L'agrégat `VitrineSubscriber` de `b2b/vitrine` en est le seul
+/// écrivain.
+///
+/// Un abonné est une ORGANISATION (l'agence web) : un nom et une adresse,
+/// aucun contact nominatif. Jamais supprimé : on le coupe (`active`).
+model VitrineSubscriber {
+  /// L'id de l'`IdGenerator` (ULID).
+  id   String @id
+  name String
+
+  /// `https://…`, sans requête ni fragment ni identifiants (refusés par le
+  /// domaine à la saisie ; un jeton en requête serait affiché à l'écran).
+  endpointUrl String @map("endpoint_url")
+
+  /// Le secret de signature, SCELLÉ (`FieldCipher`, `FIELD_ENCRYPTION_KEY`) :
+  /// il faut le relire pour signer. Une rotation de la clé le rend illisible —
+  /// le runbook dit de régénérer les secrets d'abonnés.
+  signingSecretSealed String @map("signing_secret_sealed")
+
+  /// La clé de lecture, HACHÉE (SHA-256, hex) : elle identifie l'abonné sur
+  /// `/vitrine/*`, et n'a jamais besoin d'être relue.
+  readKeyHash String @unique @map("read_key_hash")
+
+  /// Les ensembles reçus : `catalogue` · `operations` · `texts` · `featured`
+  /// (`CHECK`). Une case ne fait que RETIRER.
+  contents String[]
+
+  active   Boolean
+  /// Posé quand une livraison a épuisé ses essais : plus rien ne part tant
+  /// qu'on n'a pas « tout renvoyé ».
+  failedAt DateTime? @map("failed_at") @db.Timestamptz(3)
+
+  /// La dernière séquence attribuée à une livraison de changements.
+  lastSequence Int @default(0) @map("last_sequence")
+
+  createdAt DateTime @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @map("updated_at") @db.Timestamptz(3)
+
+  fingerprints VitrineFingerprint[]
+  deliveries   VitrineDelivery[]
+
+  @@map("vitrine_subscribers")
+  @@schema("public")
+}
+
+/// **La dernière empreinte ÉMISE** d'un élément, par abonné (W3′, B3) : ce à
+/// quoi le balayage compare la vue du moment. Une table de suivi, pas un
+/// agrégat : la ligne d'un élément retiré de la vue disparaît avec la
+/// notification de son retrait.
+model VitrineFingerprint {
+  subscriberId String @map("subscriber_id")
+  /// `item` (sku) · `operation` (key) · `shelf` (id) · `text` (clé) — `CHECK`.
+  kind         String
+  elementKey   String @map("element_key")
+  /// SHA-256 (hex) de l'élément dans les trois langues servies.
+  fingerprint  String
+
+  emittedAt DateTime @map("emitted_at") @db.Timestamptz(3)
+
+  subscriber VitrineSubscriber @relation(fields: [subscriberId], references: [id], onDelete: Restrict)
+
+  @@id([subscriberId, kind, elementKey])
+  @@map("vitrine_fingerprints")
+  @@schema("public")
+}
+
+/// **Les livraisons** à un abonné (W2′). 🔴 UNE seule livraison de
+/// changements en attente par abonné — index unique partiel, posé par la
+/// migration : la suivante absorbe celle qui attend au lieu de s'empiler.
+model VitrineDelivery {
+  id           String @id
+  subscriberId String @map("subscriber_id")
+
+  /// `change` · `test` (`CHECK`). Un essai ne compte ni dans la séquence, ni
+  /// dans l'échec de l'abonné.
+  kind     String
+  /// Croissante par abonné pour `change` ; `NULL` pour `test`.
+  sequence Int?
+
+  /// Les changements : `{ changed: {items,operations,shelves,texts}, removed: {…} }`.
+  changes Json
+
+  /// `pending` · `delivered` · `failed` (`CHECK`).
+  state         String
+  attempts      Int       @default(0)
+  nextAttemptAt DateTime? @map("next_attempt_at") @db.Timestamptz(3)
+  /// Le dernier refus, en clair pour l'écran — jamais le corps de la réponse.
+  lastError     String?   @map("last_error")
+  lastStatus    Int?      @map("last_status")
+
+  createdAt   DateTime  @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime  @map("updated_at") @db.Timestamptz(3)
+  deliveredAt DateTime? @map("delivered_at") @db.Timestamptz(3)
+
+  subscriber VitrineSubscriber @relation(fields: [subscriberId], references: [id], onDelete: Restrict)
+
+  @@unique([subscriberId, sequence])
+  @@index([state, nextAttemptAt])
+  @@index([subscriberId, createdAt])
+  @@map("vitrine_deliveries")
+  @@schema("public")
+}

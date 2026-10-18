@@ -447,6 +447,22 @@ async function triggerOrderRefundSweep(env: Env): Promise<void> {
 }
 
 /**
+ * Réveille le container et passe le balayage de la vitrine : la vue publique
+ * comparée, par abonné, à la dernière empreinte émise, puis les notifications
+ * dues envoyées, signées (plan `documentation/webhooks/plan-webhook-vitrine.md`,
+ * W3′). Sur le cron de RAFRAÎCHISSEMENT : l'agence est prévenue en cinq
+ * minutes au plus. Même porte et même jeton que la boîte d'envoi ; sans
+ * abonné allumé, le backend ne calcule rien.
+ */
+async function triggerVitrineSweep(env: Env): Promise<void> {
+  const token = env.RECOMPUTE_TOKEN;
+  if (!token) {
+    return;
+  }
+  await postSweep(env, token, "admin/vitrine/sweep");
+}
+
+/**
  * Les balayages du cron de rafraîchissement, chacun pour soi : un échec de
  * l'un (container qui répond mal, réseau) ne prive pas les suivants de leur
  * tour. Le prochain passage est dans cinq minutes ; l'échec ne fait pas
@@ -460,6 +476,7 @@ async function refreshSweeps(env: Env): Promise<void> {
     triggerRoundsGapBell(env),
     triggerUnsettledShopOrderExpiry(env),
     triggerOrderRefundSweep(env),
+    triggerVitrineSweep(env),
   ]);
 }
 

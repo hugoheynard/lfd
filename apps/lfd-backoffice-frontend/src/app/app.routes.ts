@@ -101,6 +101,18 @@ export const routes: Routes = [
       import('./suggestions/suggestions-page/suggestions-page').then((m) => m.SuggestionsPage),
   },
   {
+    // LE WEBHOOK DE LA VITRINE — les abonnés (l'agence du site vitrine), leurs
+    // cases et le journal des envois, en Gestion Boutique, sous SON droit
+    // (`shop_vitrine`, plan-webhook-vitrine.md, 2026-10-18).
+    path: 'webhook-vitrine',
+    canActivate: [permissionGuard('shop_vitrine:read')],
+    title: 'Webhook vitrine — LFC B2B admin',
+    loadComponent: () =>
+      import('./vitrine-webhook/vitrine-webhook-page/vitrine-webhook-page').then(
+        (m) => m.VitrineWebhookPage,
+      ),
+  },
+  {
     // LA MISE EN AVANT — les incontournables, par audience (Hugo, 2026-10-18),
     // en Gestion Boutique sous `lfc_catalog` : le droit que la route serveur
     // oppose, et dont le libellé nomme déjà la mise en avant.

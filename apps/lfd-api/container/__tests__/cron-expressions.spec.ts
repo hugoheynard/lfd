@@ -52,4 +52,9 @@ describe("les crons du Worker et de wrangler.jsonc", () => {
     expect(workerCrons().get("MONTHLY_INVOICE_CRON")).toBe("55 21,22 * * *");
     expect(WORKER).toContain('"admin/accounting/monthly-invoices/autopilot"');
   });
+
+  it("la vitrine passe au cron de rafraîchissement, avec les autres balayages (W3′)", () => {
+    expect(WORKER).toContain('"admin/vitrine/sweep"');
+    expect(WORKER).toMatch(/refreshSweeps[\s\S]*triggerVitrineSweep\(env\)/);
+  });
 });

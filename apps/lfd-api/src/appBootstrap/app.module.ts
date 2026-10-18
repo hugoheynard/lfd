@@ -16,6 +16,7 @@ import { OrderOpeningModule } from "../b2b/order-opening/order-opening.module.js
 import { CommerceOperationsModule } from "../b2b/operations/operations.module.js";
 import { FeatureAccessModule } from "../b2b/feature-access/feature-access.module.js";
 import { PlatformContentModule } from "../b2b/content/content.module.js";
+import { VitrineModule } from "../b2b/vitrine/vitrine.module.js";
 import { ShopCopyModule } from "../b2b/shop-copy/shop-copy.module.js";
 import { GrowthModule } from "../b2b/growth/growth.module.js";
 import { OrdersModule } from "../b2b/orders/orders.module.js";
@@ -135,6 +136,7 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     FeatureAccessModule,
     PlatformContentModule,
     ShopCopyModule,
+    VitrineModule,
     // Annuaire back-office (isolé, source de vérité locale).
     StaffUsersModule,
     // La résolution d'accès staff, reliée : le port est technique, l'adaptateur

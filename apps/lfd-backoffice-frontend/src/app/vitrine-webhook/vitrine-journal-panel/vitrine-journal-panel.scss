@@ -1,0 +1,16 @@
+.vjp-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.vjp-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+.vjp-detail {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+}

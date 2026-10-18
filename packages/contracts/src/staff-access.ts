@@ -367,6 +367,14 @@ export const staffResourceSchema = z.enum([
    */
   "lfc_suggestions",
   /**
+   * **Le webhook de la vitrine** — les abonnés (l'agence du site vitrine),
+   * leurs cases, la rotation de leur secret et de leur clé, le journal des
+   * envois (`documentation/webhooks/plan-webhook-vitrine.md`, Hugo,
+   * 2026-10-18). Un droit à lui, en Gestion Boutique. Il s'accorde à
+   * l'écran ; la graine ne le donne qu'à l'administrateur.
+   */
+  "shop_vitrine",
+  /**
    * **La vitrine** — composer les pages de la boutique : formes, positions,
    * rayons, contenus, gabarits (`documentation/commandes/boutique-rayon-layout.md`,
    * D7).
@@ -733,6 +741,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   lfc_order_opening: "Ouverture des commandes",
   lfc_loyalty: "Fidélité",
   lfc_suggestions: "Suggestions de la boutique",
+  shop_vitrine: "Webhook de la vitrine",
   staff_access: "Équipe et accès",
   staff_notifications: "Notifications internes",
   ops_health: "Santé de l'écosystème",
@@ -865,6 +874,9 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // L'administrateur seul (2026-10-18, plan des suggestions du staff, RS1) :
     // en production, accordée à l'écran.
     lfc_suggestions: "write",
+    // L'administrateur seul (2026-10-18, plan du webhook de la vitrine) : en
+    // production, accordée à l'écran.
+    shop_vitrine: "write",
     // La graine seule (2026-10-13, réglages commerciaux) : en production,
     // ces deux droits s'accordent à l'écran.
     b2b_commercial_appointment: "write",

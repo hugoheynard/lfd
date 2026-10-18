@@ -1,12 +1,11 @@
 # Plan — le webhook de la vitrine (lot W)
 
-> 📐 **Doc-first : le lot W n'est pas bâti** (décidé le 2026-10-15, rassemblé
-> ici le 2026-10-18). Seul son **lot préalable des langues** l'est (§6,
-> 2026-10-18, non commité à l'écriture de ces lignes). Le texte d'origine du lot W, contredit par `vitruve` le
-> 2026-10-15, est repris **mot pour mot** au §2 ; le §1 dit ce qui a changé
-> dans le dépôt depuis, relu le 2026-10-18. **Frontière de sécurité** (données
-> vers un tiers, une clé de lecture, un secret de signature) : `vitruve` à
-> nouveau avant de bâtir (CLAUDE.md §9 bis).
+> ✅ **Bâti le 2026-10-18** (non commité à l'écriture de ces lignes) — l'état
+> de ce qui existe est au **§7**, avec ce qui reste. Les §0 à §6 sont la trace
+> de la conception : le §5 (décisions de Hugo) et le §4 (contradiction de
+> `vitruve`) y priment sur le §2, et le §7 dit où le code s'en écarte.
+> Décidé le 2026-10-15, contredit par `vitruve` le 2026-10-15 puis le
+> 2026-10-18 ; lot préalable des langues bâti le 2026-10-18 (§6).
 
 ## 0. La demande
 
@@ -306,3 +305,60 @@ l'écran des canaux) les remplit — à lancer une fois le lot déployé.
 - **Les textes alternatifs des images** (`alt`) restent en français.
 - **W** décide comment il lit les trois langues (6.2) et doit l'éprouver sur
   `/vitrine` elle-même.
+
+## 7. Ce qui est bâti (2026-10-18)
+
+```mermaid
+sequenceDiagram
+    participant W as Worker (cron */5)
+    participant API as lfd-api — b2b/vitrine
+    participant DB as public.vitrine_*
+    participant A as Agence (site vitrine)
+    W->>API: POST /admin/vitrine/sweep (RecomputeGuard)
+    API->>DB: abonnés allumés, pas en échec
+    alt aucun
+        API-->>W: rien calculé
+    else au moins un
+        API->>API: vue publique + textes effectifs, ×3 langues (une fois)
+        API->>DB: par abonné : empreintes émises ↔ vue filtrée
+        API->>DB: une livraison ouverte, ou celle qui attend complétée
+        API->>A: POST signé (Vitrine-Signature: t=…,v1=…)
+        A-->>API: 2xx / autre
+        API->>DB: livré · relance (retry-policy) · en échec
+    end
+    A->>API: GET /vitrine/catalogue?lang= (X-Vitrine-Key)
+```
+
+**Où vit le code.** `apps/lfd-api/src/b2b/vitrine/` (B2B, commande et handler
+séparés) ; le relais sortant dans `apps/lfd-api/src/platform/outbound/` ; les
+contrats dans `packages/contracts/src/vitrine.ts` ; l'écran dans
+`apps/lfd-backoffice-frontend/src/app/vitrine-webhook/` (Gestion Boutique ›
+« Webhook vitrine », rail ET lanceur mobile, route `/webhook-vitrine`).
+
+| Sujet                | Ce qui existe                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tables               | `vitrine_subscribers`, `vitrine_fingerprints`, `vitrine_deliveries` (migration additive `20261018230100_les_abonnes_de_la_vitrine`) ; un index unique partiel tient **une seule livraison de changements en attente par abonné**. Droit `shop_vitrine` ajouté seul (`20261018230000_le_droit_de_la_vitrine`), **accordé à l'écran** (runbook).                                                                                         |
+| Abonné               | Agrégat `VitrineSubscriber` : URL `https` sans `?`, `#` ni identifiants (refus nommés) ; secret de signature **scellé** (`FieldCipher`) ; clé de lecture **hachée** (SHA-256) ; secret et clé montrés une fois, à la création et à la rotation. « En échec » n'est levé que par « Tout renvoyer ». Jamais supprimé : coupé.                                                                                                            |
+| Cases                | `catalogue` (articles + rayons), `operations`, `texts`, `featured` (« Incontournables » : sans elle, `isFeatured` ne sort pas). Les **valeurs** sont en anglais (lexique) ; l'écran dit les mots du §5. Décocher retire l'ensemble, `operation` d'un article compris, et n'envoie **aucun** retrait.                                                                                                                                   |
+| Empreintes           | Une par élément (article `sku`, opération `key`, rayon `id`, texte clé), calculée sur ses **trois langues à la fois** (une ligne, pas une par langue) ; comparée à la dernière **émise**. Vue publique et textes lus **une fois par balayage et par langue** (trois lectures de `ReadShopCatalogueQuery`, le choix laissé au lot par le §6.2), **aucune** lecture sans abonné livrable.                                                |
+| Livraison            | Corps `{ subscriber, sequence, at, changed, removed }` ; un essai porte `sequence: 0, test: true`. En-têtes `Vitrine-Signature: t=<s>,v1=<hex HMAC-SHA256 de « t.corps »>` (à la Stripe) et `Vitrine-Delivery: <id>`. Une livraison qui attend **absorbe** les changements suivants (même séquence, mêmes essais) ; relances par `retry-policy.ts` (la même fonction) ; épuisée → abonné « en échec », plus rien ne part.              |
+| Relais sortant       | `PinnedHttpsWebhookPoster` : `https` seul ; le nom est résolu et **toutes** ses adresses vérifiées (bouclage, privées, CGNAT, lien local, métadonnées, réservées, IPv4 embarquée dans IPv6) ; l'adresse vérifiée est **épinglée** pour la connexion (`lookup`), certificat vérifié sur le nom ; aucune redirection ; 5 s en tout ; réponse coupée au-delà de 4 Kio ; pas d'agent partagé.                                              |
+| Lectures de l'agence | `GET /vitrine/catalogue`, `/vitrine/articles/:sku`, `/vitrine/textes`, `?lang=fr                                                                                                                                                                                                                                                                                                                                                       | en  | it`(repli`fr`), en-tête `X-Vitrine-Key`;`@Public()`+`@Throttle` 60/min par IP. Textes **effectifs** : publié sinon texte du code (`GetEffectiveShopCopyQuery`, sur la copie du manifeste embarquée). |
+| Écran                | Liste, création (secret et clé montrés une fois), cases, rotation, couper/rallumer, « Envoyer un test », journal des envois (livré / en attente / en échec, « Renvoyer », « Tout renvoyer »).                                                                                                                                                                                                                                          |
+| Preuves              | Domaine (`b2b/vitrine/domain/**/__tests__`), application (doubles hérités des ports), relais (`platform/outbound/__tests__` : refus de chaque classe d'adresse, sans réseau), e2e `test/vitrine-webhook.e2e-spec.ts` : livraison signée vers un serveur local, rejeu détecté, panne → une seule livraison puis « en échec », « tout renvoyer », et sur `/vitrine` même : ni prix pro, ni article pro, ni masqué, ni mise en avant pro. |
+
+**Ce qui reste, ou n'est pas éprouvé :**
+
+- **Le relais épinglé réel n'est pas traversé par l'e2e** : l'agence de test
+  écoute en clair sur 127.0.0.1, ce que le relais refuse ; l'e2e double le port
+  `WebhookPoster`. Le refus des adresses est prouvé à l'unité ; la connexion
+  TLS épinglée réelle ne l'est par aucun test.
+- **Deux balayages simultanés** (un passage de plus de cinq minutes) pourraient
+  envoyer deux fois la même livraison : pas de bail. L'agence l'écarte par
+  `Vitrine-Delivery` ; un bail est à ajouter si les passages s'allongent.
+- **La durée réelle d'un balayage** sous le cron du Worker n'est pas mesurée
+  (trois lectures du catalogue par passage dès qu'un abonné existe).
+- **La stabilité des URL d'images** pour un tiers qui les garde en cache, et
+  les `alt` en français seulement (§6.3), sont inchangées.
+- **L'agence** n'a pas confirmé le format (§3, question 4) : JSON seulement,
+  signature à la Stripe.

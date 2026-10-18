@@ -1,0 +1,68 @@
+<fold-panel-header
+  title="Nouvel abonné"
+  subtitle="L’agence qui reçoit les changements du catalogue publié"
+  closeLabel="Fermer"
+/>
+
+<fold-panel-body>
+  @if (created(); as credentials) {
+    <app-vitrine-credentials [credentials]="credentials" />
+  } @else {
+    <div class="vsp-fields">
+      <fold-input
+        label="Nom"
+        placeholder="Agence du site vitrine"
+        [value]="name()"
+        (valueChange)="name.set($event)"
+        data-name
+      />
+      <fold-input
+        label="Adresse de réception"
+        type="url"
+        placeholder="https://agence.example/webhooks/lfc"
+        hint="https seulement, sans paramètre : la signature authentifie chaque envoi."
+        [value]="endpointUrl()"
+        (valueChange)="endpointUrl.set($event)"
+        data-url
+      />
+      @for (content of contentChoices; track content) {
+        <fold-checkbox
+          [label]="labels[content]"
+          [hint]="hints[content]"
+          [checked]="contents().has(content)"
+          (checkedChange)="toggle(content, $event)"
+          [attr.data-content]="content"
+        />
+      }
+      @if (!pristine() && issue() !== '') {
+        <fold-callout variant="warning" data-issue>{{ issue() }}</fold-callout>
+      }
+      @if (refusal(); as message) {
+        <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+      }
+    </div>
+  }
+</fold-panel-body>
+
+<fold-panel-footer align="end">
+  @if (created()) {
+    <button foldButton intent="primary" type="button" (click)="close()" data-done>
+      J’ai noté le secret et la clé
+    </button>
+  } @else {
+    <button foldButton emphasis="outline" intent="neutral" type="button" (click)="close()">
+      Annuler
+    </button>
+    <button
+      foldButton
+      intent="primary"
+      type="button"
+      [disabled]="issue() !== ''"
+      [loading]="saving()"
+      (click)="submit()"
+      data-submit
+    >
+      Créer l’abonné
+    </button>
+  }
+</fold-panel-footer>

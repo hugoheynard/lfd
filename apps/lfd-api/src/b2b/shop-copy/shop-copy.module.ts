@@ -5,6 +5,7 @@ import { ApplyShopCopyRenames } from "./application/apply-shop-copy-renames.js";
 import { PublishShopCopyHandler } from "./application/commands/publish-shop-copy.handler.js";
 import { ResetShopCopyDraftHandler } from "./application/commands/reset-shop-copy-draft.handler.js";
 import { SaveShopCopyDraftHandler } from "./application/commands/save-shop-copy-draft.handler.js";
+import { GetEffectiveShopCopyHandler } from "./application/queries/get-effective-shop-copy.handler.js";
 import { GetPublishedShopCopyHandler } from "./application/queries/get-published-shop-copy.handler.js";
 import { GetShopCopyAdminHandler } from "./application/queries/get-shop-copy-admin.handler.js";
 import { GetShopCopyHistoryHandler } from "./application/queries/get-shop-copy-history.handler.js";
@@ -61,6 +62,7 @@ import { ShopCopyRenamesOnBoot } from "./infrastructure/shop-copy-renames.on-boo
     ResetShopCopyDraftHandler,
     PublishShopCopyHandler,
     GetPublishedShopCopyHandler,
+    GetEffectiveShopCopyHandler,
     GetShopCopyAdminHandler,
     GetShopCopyHistoryHandler,
   ],

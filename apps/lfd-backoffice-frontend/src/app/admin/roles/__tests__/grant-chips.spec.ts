@@ -118,9 +118,10 @@ describe('grantGroups', () => {
    * `lfc_loyalty`, la fidélité, détachée de `b2b_accounting`
    * (comptabilite/fidelite/plan-fidelite-en-gestion-boutique.md, F1). 60 le
    * 2026-10-18 : `lfc_suggestions`, les suggestions décidées par l'équipe
-   * (recommandation-produit/suggestions-du-staff.md, RS1).
+   * (recommandation-produit/suggestions-du-staff.md, RS1). 61 le même jour :
+   * `shop_vitrine`, le webhook de la vitrine (webhooks/plan-webhook-vitrine.md).
    */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(60);
+    expect(RESOURCE_COUNT).toBe(61);
   });
 });

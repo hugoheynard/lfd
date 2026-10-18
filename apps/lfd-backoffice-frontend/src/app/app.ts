@@ -305,6 +305,7 @@ export class App {
       this.canSeeCommerceOperations() ||
       this.canSeeLoyalty() ||
       this.canSeeSuggestions() ||
+      this.canSeeVitrineWebhook() ||
       this.canSeeFeatured(),
   );
   /** La mise en avant : le droit du catalogue publié (`lfc_catalog`, 2026-10-18). */
@@ -312,6 +313,10 @@ export class App {
   /** Les suggestions décidées : leur droit à elles (`lfc_suggestions`, 2026-10-18, RS1). */
   protected readonly canSeeSuggestions = computed(() =>
     this.permissions.can('lfc_suggestions:read'),
+  );
+  /** Le webhook de la vitrine : son droit à lui (`shop_vitrine`, 2026-10-18). */
+  protected readonly canSeeVitrineWebhook = computed(() =>
+    this.permissions.can('shop_vitrine:read'),
   );
   /** La fidélité : son droit à elle (`lfc_loyalty`, 2026-10-16), pas la comptabilité. */
   protected readonly canSeeLoyalty = computed(() => this.permissions.can('lfc_loyalty:read'));

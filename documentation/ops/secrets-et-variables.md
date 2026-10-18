@@ -149,6 +149,11 @@ re-sceller les IBAN) rend tous ces liens « introuvables » : les invités passe
 alors par la boutique, rien d'autre ne casse. Changer l'étiquette a le même
 effet. Ne la tourner que sur fuite.
 
+**Elle scelle aussi le secret de signature des abonnés de la vitrine**
+(2026-10-18, [`plan-webhook-vitrine.md`](../webhooks/plan-webhook-vitrine.md)) :
+une rotation le rend illisible, et chaque abonné doit être régénéré à l'écran
+— le geste est au [runbook](runbook.md) (« Le webhook de la vitrine »).
+
 **La base a deux URL, et c'est voulu** (sortie d'Accelerate, 2026-09-19). Le
 container joint le **pooler mutualisé** ; une migration tient des verrous et
 enchaîne des instructions sur une même session, et ne passe donc **pas** par un

@@ -1,0 +1,92 @@
+<fold-card data-subscriber>
+  <fold-element-title
+    variant="title"
+    [title]="subscriber().name"
+    [subtitle]="subscriber().endpointUrl"
+  >
+    <div titleAction class="vsc-actions">
+      <fold-badge
+        [variant]="stateVariants[subscriber().state]"
+        [content]="stateLabels[subscriber().state]"
+        data-state
+      />
+      <button
+        foldButton
+        emphasis="outline"
+        size="sm"
+        type="button"
+        (click)="gesture.emit({ kind: 'journal' })"
+        data-journal
+      >
+        Journal des envois
+      </button>
+    </div>
+  </fold-element-title>
+
+  <div class="vsc-body">
+    <div class="vsc-contents">
+      @for (content of contentChoices; track content) {
+        <fold-checkbox
+          [label]="labels[content]"
+          [hint]="hints[content]"
+          [checked]="receives(content)"
+          [disabled]="!canWrite() || busy()"
+          (checkedChange)="toggle(content, $event)"
+          [attr.data-content]="content"
+        />
+      }
+    </div>
+
+    @if (canWrite()) {
+      <div class="vsc-gestures">
+        @if (subscriber().state === 'failing') {
+          <button
+            foldButton
+            intent="primary"
+            size="sm"
+            type="button"
+            [disabled]="busy()"
+            (click)="gesture.emit({ kind: 'resync' })"
+            data-resync
+          >
+            Tout renvoyer
+          </button>
+        }
+        <button
+          foldButton
+          emphasis="outline"
+          size="sm"
+          type="button"
+          [disabled]="busy() || subscriber().state === 'inactive'"
+          (click)="gesture.emit({ kind: 'test' })"
+          data-test
+        >
+          Envoyer un test
+        </button>
+        <button
+          foldButton
+          emphasis="outline"
+          size="sm"
+          type="button"
+          [disabled]="busy()"
+          (click)="gesture.emit({ kind: 'rotate' })"
+          data-rotate
+        >
+          Régénérer le secret et la clé
+        </button>
+        <button
+          foldButton
+          emphasis="outline"
+          intent="neutral"
+          size="sm"
+          type="button"
+          [disabled]="busy()"
+          (click)="gesture.emit({ kind: 'active', active: subscriber().state === 'inactive' })"
+          data-active
+        >
+          {{ subscriber().state === 'inactive' ? 'Rallumer' : 'Couper' }}
+        </button>
+      </div>
+    }
+  </div>
+</fold-card>

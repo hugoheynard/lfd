@@ -334,5 +334,6 @@
   "test/pickup-lists-by-audience.e2e-spec.ts": 12000,
   "test/operations-image-at-commerce.e2e-spec.ts": 9000,
   "test/operations-switch.e2e-spec.ts": 12000,
-  "test/product-audience.e2e-spec.ts": 10313
+  "test/product-audience.e2e-spec.ts": 10313,
+  "test/vitrine-webhook.e2e-spec.ts": 12223
 }

@@ -202,6 +202,11 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     write:
       "Créer, réécrire, couper, rallumer ou archiver une suggestion, et choisir l'ordre entre suggestions concurrentes — ce que la boutique conseille à chaque client.",
   },
+  shop_vitrine: {
+    read: "Voir les abonnés du webhook de la vitrine — leur adresse, ce qu'ils reçoivent — et le journal des envois.",
+    write:
+      "Créer un abonné, choisir ce qu'il reçoit, régénérer son secret et sa clé, le couper ou le rallumer, renvoyer un envoi — ce qui part chez l'agence du site vitrine.",
+  },
   b2b_storefront: {
     read: "Voir la composition des pages de la boutique.",
     write: "Composer la vitrine — formes, positions, rayons, contenus — et l'enregistrer.",

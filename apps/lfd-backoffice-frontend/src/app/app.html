@@ -295,6 +295,21 @@
               (click)="mobileNavOpen.set(false)"
             ></a>
           }
+          @if (canSeeVitrineWebhook()) {
+            <!-- Le WEBHOOK DE LA VITRINE — les abonnés (l'agence du site
+                 vitrine) et leurs envois (2026-10-18, plan-webhook-vitrine.md),
+                 sous son droit `shop_vitrine`. -->
+            <a
+              fold-menu-item
+              icon="globe"
+              label="Webhook vitrine"
+              routerLink="/webhook-vitrine"
+              routerLinkActive
+              #vitrineWebhookRla="routerLinkActive"
+              [active]="vitrineWebhookRla.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
         </fold-menu-section>
       }
 
@@ -970,6 +985,19 @@
               routerLinkActive
               #suggestionsTile="routerLinkActive"
               [active]="suggestionsTile.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
+          @if (canSeeVitrineWebhook()) {
+            <!-- Le WEBHOOK DE LA VITRINE : la même entrée qu'au rail (deux arbres). -->
+            <a
+              fold-nav-tile
+              icon="globe"
+              label="Webhook vitrine"
+              routerLink="/webhook-vitrine"
+              routerLinkActive
+              #vitrineWebhookTile="routerLinkActive"
+              [active]="vitrineWebhookTile.isActive"
               (click)="mobileNavOpen.set(false)"
             ></a>
           }

@@ -175,6 +175,18 @@ describe('App — Gestion Boutique', () => {
     expect(render(['lfc_loyalty:read']).querySelector(rail(link))).toBeNull();
   });
 
+  /** Le webhook de la vitrine (2026-10-18) : son droit seul l'ouvre. */
+  it('montre « Webhook vitrine » sous shop_vitrine:read, dans les deux arbres', () => {
+    const link = '/webhook-vitrine';
+    const entry = render(['shop_vitrine:read']).querySelector(rail(link));
+    expect(entry?.getAttribute('label')).toBe('Webhook vitrine');
+    expect(entry?.closest('fold-menu-section')?.getAttribute('label')).toBe('Gestion Boutique');
+    expect(
+      render(['shop_vitrine:read'], true).querySelector(tile(link))?.getAttribute('label'),
+    ).toBe('Webhook vitrine');
+    expect(render(['b2b_storefront:read']).querySelector(rail(link))).toBeNull();
+  });
+
   it('est absente sans aucun de ses droits', () => {
     const host = render(['b2b_orders:read']);
     expect(host.querySelector('fold-menu-section[label="Gestion Boutique"]')).toBeNull();

@@ -164,6 +164,9 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   operations: 'lfc_operations:read',
   fidelite: 'lfc_loyalty:read',
   suggestions: 'lfc_suggestions:read',
+  // Le webhook de la vitrine (2026-10-18), sous le droit que ses routes
+  // serveur opposent (`@AdminSurface("shop_vitrine")`).
+  'webhook-vitrine': 'shop_vitrine:read',
   // La mise en avant par audience (2026-10-18), sous le droit que la route
   // serveur oppose (`@AdminSurface("lfc_catalog")`).
   'mise-en-avant': 'lfc_catalog:read',

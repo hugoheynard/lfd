@@ -1,0 +1,14 @@
+.vsc-actions,
+.vsc-gestures {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+.vsc-body,
+.vsc-contents {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}

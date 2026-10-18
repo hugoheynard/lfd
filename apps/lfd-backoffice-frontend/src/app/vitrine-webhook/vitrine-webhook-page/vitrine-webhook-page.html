@@ -1,0 +1,56 @@
+<fold-page-layout icon="globe" title="Webhook vitrine">
+  <p description>
+    L’agence du site vitrine est prévenue, en cinq minutes au plus, de ce qui change au catalogue
+    publié ; elle relit ensuite ce qu’elle reçoit. Seule la vue publique sort — jamais un prix pro,
+    un client ni un article réservé aux pros. Une case ne fait que retirer.
+  </p>
+
+  @if (canWrite()) {
+    <div pageActions>
+      <button
+        foldButton
+        icon="plus"
+        [disabled]="state() !== 'ready'"
+        (click)="create()"
+        data-create
+      >
+        Nouvel abonné
+      </button>
+    </div>
+  }
+
+  @if (refusal(); as message) {
+    <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+  }
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Chargement des abonnés…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Impossible de charger les abonnés">
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @default {
+      <div class="vwp-list">
+        @for (subscriber of subscribers(); track subscriber.id) {
+          <app-vitrine-subscriber-card
+            [subscriber]="subscriber"
+            [canWrite]="canWrite()"
+            [busy]="busy() === subscriber.id"
+            (gesture)="run(subscriber, $event)"
+          />
+        } @empty {
+          <fold-empty-state
+            title="Aucun abonné"
+            subtitle="Sans abonné, rien n’est calculé et rien ne part."
+            data-empty
+          >
+            <fold-icon empty-icon name="globe" />
+          </fold-empty-state>
+        }
+      </div>
+    }
+  }
+</fold-page-layout>

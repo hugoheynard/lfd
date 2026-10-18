@@ -1057,6 +1057,45 @@ au journal (« … n'a pas été noté »), jamais en erreur chez Stripe — un 
 ne le rendrait pas plus vrai. Un remboursement sur un paiement qu'aucune
 commande ne porte (un lien libre) sonne aussi la cloche, sans rien écrire.
 
+## Le webhook de la vitrine — mise en service, abonné en échec, rotation de clé
+
+> Bâti le 2026-10-18 (lot W,
+> [`plan-webhook-vitrine.md`](../webhooks/plan-webhook-vitrine.md)). Écran :
+> Gestion Boutique › **Webhook vitrine** (`/webhook-vitrine`), sous le droit
+> `shop_vitrine`.
+
+**Après le déploiement : accorder `shop_vitrine`.** La migration
+`20261018230000_le_droit_de_la_vitrine` ajoute la ressource **sans l'accorder à
+personne** (`lint:no-role-grants-in-migrations`) : tant que rien n'est fait,
+l'entrée n'apparaît chez personne et `/admin/vitrine/*` répond 403,
+administrateur compris. Le geste : `/admin/staff-roles`, rôle
+« Administrateur », ressource « Webhook de la vitrine » → écriture.
+
+**Déclarer l'agence** : « Nouvel abonné », son adresse `https://…` (sans `?`
+ni `#` : refusée à la saisie), ses cases. Le **secret de signature** et la
+**clé de lecture** ne s'affichent qu'à ce moment : les lui transmettre par un
+canal sûr. Puis « Envoyer un test » : le journal des envois dit « Livré » si
+l'agence a répondu 2xx. Sans abonné allumé, le balayage du cron (`*/5`,
+`POST /admin/vitrine/sweep`) ne calcule rien.
+
+**Un abonné « En échec »** : une notification a épuisé ses dix essais (de
+30 s à 6 h, la politique de l'outbox). Plus rien ne lui part, et rien ne se
+perd : le balayage continue de ne rien comparer pour lui. Le journal des envois
+dit pourquoi (`HTTP 503`, « injoignable », « envoi refusé : … désigne une
+adresse de réseau privé »). Quand l'agence répond à nouveau : **« Tout
+renvoyer »** — l'échec est levé et le prochain passage (cinq minutes au plus)
+annonce TOUT comme changé, en une notification. « Rallumer » seul ne lève pas
+l'échec.
+
+**🔴 Tourner `FIELD_ENCRYPTION_KEY` rend illisibles les secrets de signature
+des abonnés** (scellés sous cette clé, comme les IBAN). Les envois échouent
+alors avec « secret de signature illisible (la clé de chiffrement a changé) »,
+puis l'abonné passe en échec. Le geste, juste après la rotation, pour CHAQUE
+abonné : « Régénérer le secret et la clé », transmettre les neufs à l'agence,
+puis « Tout renvoyer » s'il est passé en échec. La clé de lecture, elle, est
+hachée et ne dépend pas de la clé de chiffrement — mais la régénération la
+remplace aussi : l'agence doit mettre à jour les deux.
+
 ## Verrouiller les PDF des factures pour dix ans
 
 > 📐 **À faire, pas fait** (2026-10-08, lot E3b de
