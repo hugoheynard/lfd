@@ -79,6 +79,12 @@ import {
   type MediaSlot,
   type NutritionValues,
 } from '../product-http-api';
+import {
+  flattenMediaImages,
+  groupMediaByImage,
+  persistedMedia,
+  withMediaRoles,
+} from '../media-usages';
 import { PendingCreatedMedia, type CreatedMediaFailure } from '../pending-created-media';
 
 // Réexporté : les panneaux le tenaient d'ici, et il vit maintenant au niveau de
@@ -376,7 +382,7 @@ const SAVEABLE: readonly SectionRef[] = [
 
 /**
  * Le rôle d'un visuel neuf : `gallery`, le neutre — « une image du produit »,
- * sans prétention d'usage. C'est {@link ProductFormStore.setMainVisual} qui
+ * sans prétention d'usage. C'est {@link ProductFormStore.setMediaRoles} qui
  * promeut, jamais le dépôt.
  *
  * 🔴 **Ce commentaire a affirmé le contraire jusqu'au 2026-09-23**, et il a
@@ -398,12 +404,6 @@ const SAVEABLE: readonly SectionRef[] = [
 const DEFAULT_MEDIA_ROLE = 'gallery';
 
 /**
- * Le rôle du **packshot** — le visuel que les canaux montrent quand ils n'en
- * montrent qu'un.
- */
-const MAIN_MEDIA_ROLE = 'hero';
-
-/**
  * Les cinq usages d'un visuel, et leur libellé.
  *
  * Ils existent dans le domaine depuis l'origine (`MEDIA_ROLES`) ; aucun écran
@@ -413,15 +413,6 @@ const MAIN_MEDIA_ROLE = 'hero';
 export const MEDIA_ROLE_LABELS: Readonly<Record<string, string>> = Object.fromEntries(
   Object.entries(MEDIA_ROLE_FORMATS).map(([role, entry]) => [role, roleLabel(entry)]),
 );
-
-/**
- * Les rôles dont il ne peut exister **qu'un seul par fiche**.
- *
- * Même liste que `SINGLE_ROLES` du domaine, et le serveur refuse le second
- * (`DuplicateMediaRoleError`). L'écran ne se contente pas d'éviter le refus :
- * il rend le doublon **inexprimable**, en dégradant celui qui portait le rôle.
- */
-const SINGLE_MEDIA_ROLES: readonly string[] = [MAIN_MEDIA_ROLE, 'thumbnail'];
 
 const EMPTY_NUTRITION: NutritionValues = {
   energyKcal: null,
@@ -1272,58 +1263,35 @@ export class ProductFormStore {
    * médiathèque porte le geste — voir `addFromLibrary`, seule entrée restante.
    */
 
-  removeMedia(index: number): void {
-    this.media.update((current) => current.filter((_, position) => position !== index));
-  }
+  /**
+   * Les images de la fiche, UNE fois chacune, avec tous leurs usages.
+   *
+   * 🔴 `media` reste la liste PLATE (une entrée par couple image × usage) : c'est
+   * la forme du serveur, de l'instantané de section et du brouillon rangé. La
+   * galerie lit ce regroupement, recalculé — jamais une seconde source.
+   */
+  readonly mediaImages = computed(() => groupMediaByImage(this.media()));
 
-  /** Le rang du visuel principal, `-1` si la fiche n'en désigne aucun. */
-  mainVisualIndex(): number {
-    return this.media().findIndex((slot) => slot.role === MAIN_MEDIA_ROLE);
+  /** Les images décochées de partout : elles ne s'enregistreront pas, et l'écran le dit. */
+  readonly unassignedMedia = computed(() =>
+    this.mediaImages().filter((image) => image.roles.length === 0),
+  );
+
+  /** Retire une image de la fiche, tous usages compris — pas de la bibliothèque. */
+  removeMediaImage(url: string): void {
+    this.media.update((current) => current.filter((slot) => slot.url !== url));
   }
 
   /**
-   * Désigne **le** visuel principal — ou retire la désignation.
+   * Donne à une image EXACTEMENT ces usages (cf. `withMediaRoles`).
    *
-   * 🔴 **Un seul par fiche, et c'est le GESTE qui le garantit**, pas une règle
-   * vérifiée après coup : une seule mise à jour repasse sur toute la liste, met
-   * `hero` sur le rang visé et rend les autres à `gallery`. Deux principaux
-   * sont donc inexprimables, plutôt qu'interdits — « une donnée peut être
-   * fausse ; une structure, non ».
-   *
-   * ⚠️ N'en désigner **aucun** reste légal, et c'est l'état de toutes les fiches
-   * jusqu'au 2026-09-23. La vitrine du canal ne montre alors rien, ce qu'elle
-   * préfère à montrer n'importe laquelle.
+   * 🔴 Depuis le 2026-10-18, une image porte plusieurs usages. L'unicité de
+   * l'ouverture et de la vignette appartient au verbe : les cocher ici les
+   * retire de l'image qui les portait, dans la même mise à jour.
    */
-  setMainVisual(index: number, isMain: boolean): void {
-    this.setMediaRole(index, isMain ? MAIN_MEDIA_ROLE : DEFAULT_MEDIA_ROLE);
-  }
-
-  /**
-   * Donne son USAGE à un visuel.
-   *
-   * 🔴 **L'unicité appartient au verbe.** Poser un rôle à titulaire unique
-   * (`hero`, `thumbnail`) rend à la galerie celui qui le portait, en une seule
-   * mise à jour : deux ouvertures sont inexprimables, pas interdites.
-   *
-   * ⚠️ **Seul le PORTEUR DU MÊME RÔLE est dégradé**, et c'est une correction du
-   * 2026-09-23 : `setMainVisual` rendait TOUS les autres à `gallery`, ce qui
-   * était sans conséquence tant qu'aucun écran ne proposait les trois autres
-   * usages. Désigner une ouverture aurait désormais effacé une mise en
-   * situation et un tirage papier au passage.
-   */
-  setMediaRole(index: number, role: string): void {
+  setMediaRoles(url: string, roles: readonly string[]): void {
     this.media.update((current) =>
-      current.map((slot, position) => {
-        if (position === index) {
-          return slot.role === role ? slot : { ...slot, role };
-        }
-        // Un rôle pluriel ne déloge personne : une fiche peut porter dix
-        // images de galerie et trois mises en situation.
-        if (!SINGLE_MEDIA_ROLES.includes(role) || slot.role !== role) {
-          return slot;
-        }
-        return { ...slot, role: DEFAULT_MEDIA_ROLE };
-      }),
+      flattenMediaImages(withMediaRoles(groupMediaByImage(current), url, roles)),
     );
   }
 
@@ -1475,7 +1443,7 @@ export class ProductFormStore {
    * fiche créée l'affiche et propose de le renvoyer.
    */
   private async saveCreatedMedia(id: string): Promise<void> {
-    const media = this.media();
+    const media = persistedMedia(this.media());
     if (media.length === 0) {
       return;
     }
@@ -1510,7 +1478,7 @@ export class ProductFormStore {
     const merged = [...current, ...missing];
     this.retryingCreatedMedia.set(true);
     try {
-      await this.products.saveMedia(id, merged);
+      await this.products.saveMedia(id, persistedMedia(merged));
       this.media.set(merged);
       this.baseline.update((base) => ({ ...base, visuels: this.snapshot('visuels') }));
       this.pendingCreatedMedia.clear(id);
@@ -1704,7 +1672,9 @@ export class ProductFormStore {
 
   /** Section Visuels — la liste entière, dans son ordre : c'est un remplacement. */
   saveMedia(): Promise<void> {
-    return this.save('visuels', () => this.products.saveMedia(this.productId(), this.media()));
+    return this.save('visuels', () =>
+      this.products.saveMedia(this.productId(), persistedMedia(this.media())),
+    );
   }
 
   saveCommunication(): Promise<void> {

@@ -10,7 +10,14 @@
     rayon pour qu'il paraisse en boutique.
   </fold-callout>
 }
-<app-media-gallery [slots]="store.media()" (edit)="editMedia($event)" />
+<!-- Décochée de partout, une image reste ici au lieu de disparaître : on dit
+     qu'elle ne partira pas, plutôt que de la perdre à l'enregistrement. -->
+@if (store.unassignedMedia().length > 0) {
+  <fold-callout variant="warning">
+    {{ unassignedSentence() }}
+  </fold-callout>
+}
+<app-media-gallery [slots]="store.mediaImages()" (edit)="editMedia($event)" />
 
 <!-- 🔴 Le seul geste d'ajout depuis le 2026-09-23. Il était en second, à côté
      d'un dépôt ; le dépôt est parti dans le panneau, et ce bouton est devenu

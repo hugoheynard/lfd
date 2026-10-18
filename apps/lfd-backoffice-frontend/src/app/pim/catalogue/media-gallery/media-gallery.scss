@@ -67,16 +67,12 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* La désignation de packshot — discrète, dans la légende. Elle DIT un état,
-   elle ne se clique pas : le geste vit dans le panneau, là où l'on voit
-   l'image en grand. */
-.media-main {
-  flex: none;
-  padding: 0 var(--fold-space-xs);
-  border-radius: var(--fold-radius-pill);
-  background: var(--fold-color-surface-sunken);
-  color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-2xs);
+/* Les usages, en pastilles qui passent à la ligne : une image peut en porter
+   plusieurs, et la tuile est étroite. */
+.media-roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
 }
 
 /* Rangée 1 : le nom, et le menu au bout. Le menu est DANS la légende et non
@@ -120,6 +116,7 @@
 }
 
 .media-menu,
+.media-unassigned,
 .media-unpublished,
 .media-format-gap {
   flex: none;
@@ -139,24 +136,7 @@
   color: var(--fold-color-text-muted);
 }
 
-.media-missing {
-  font-size: var(--fold-text-xs);
-  font-weight: var(--fold-weight-semibold);
-  color: var(--fold-color-warning-text);
-}
-
 .media-empty {
   margin: 0;
   grid-column: 1 / -1;
-}
-
-/* La dernière tuile est le dépôt : il vit DANS la galerie, à la place qu'aurait
-   l'image suivante, plutôt qu'en bas de section où il faut aller le chercher.
-
-   Exactement la forme d'un aperçu — même ratio, même cadre : une case qui ne
-   ressemble pas aux autres se lit comme un intrus dans la grille, pas comme la
-   suivante. */
-.media-drop {
-  align-self: start;
-  aspect-ratio: 4 / 3;
 }

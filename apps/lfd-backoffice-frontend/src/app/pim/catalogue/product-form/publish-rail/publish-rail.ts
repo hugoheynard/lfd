@@ -15,6 +15,7 @@ import {
 
 import { staffAuthor } from '../../../../shared/staff-author';
 import { ReemissionPanel } from '../../../integration/reemission/reemission-panel/reemission-panel';
+import { persistedMedia } from '../../media-usages';
 import { ProductFormStore } from '../product-form-store';
 import { completenessOf, measure, type CompletenessCheck } from './completeness';
 
@@ -134,7 +135,8 @@ export class PublishRail {
       priceSet: this.store.priceEur() !== null,
       allergensDeclared: this.store.declaresNone() || this.store.selected().length > 0,
       description: this.store.editorial().descriptionShort ?? null,
-      mediaCount: this.store.media().length,
+      // Une image sans usage ne part pas au serveur : elle ne compte pas.
+      mediaCount: persistedMedia(this.store.media()).length,
     }),
   );
 

@@ -1,6 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 
+import type { MediaSlot } from '../product-http-api';
+import {
+  flattenMediaImages,
+  groupMediaByImage,
+  persistedMedia,
+  withMediaRoles,
+} from '../media-usages';
 import { type GallerySlot, MediaGallery } from './media-gallery';
 
 function render(slots: readonly GallerySlot[]): HTMLElement {
@@ -14,7 +21,11 @@ function badges(host: HTMLElement): number {
   return host.querySelectorAll('.media-caption fold-badge.media-unpublished').length;
 }
 
-const slot = (role?: string): GallerySlot => ({ url: '', name: 'croissant', role });
+const slot = (role?: string): GallerySlot => ({
+  url: '',
+  name: 'croissant',
+  roles: role === undefined ? undefined : [role],
+});
 
 describe('MediaGallery — usage non publié', () => {
   it('une image en galerie se dit non publiée', () => {
@@ -27,6 +38,10 @@ describe('MediaGallery — usage non publié', () => {
 
   it("ne marque ni l'ouverture ni la vignette de rayon", () => {
     expect(badges(render([slot('hero'), slot('thumbnail')]))).toBe(0);
+  });
+
+  it('ne marque pas une image publiée par un de ses usages, même en galerie aussi', () => {
+    expect(badges(render([{ url: '', name: 'c', roles: ['gallery', 'hero'] }]))).toBe(0);
   });
 
   it("ne dit rien d'un visuel sans rôle — une famille n'en a pas la notion", () => {
@@ -46,7 +61,7 @@ describe('MediaGallery — format signalé', () => {
   const sized = (role: string, width: number, height: number): GallerySlot => ({
     url: '',
     name: 'croissant',
-    role,
+    roles: [role],
     width,
     height,
   });
@@ -61,5 +76,53 @@ describe('MediaGallery — format signalé', () => {
     expect(
       gaps(render([sized('hero', 1600, 1200), sized('gallery', 3000, 1000), slot('hero')])),
     ).toBe(0);
+  });
+});
+
+const flat = (url: string, role: string): MediaSlot => ({ role, url, name: url });
+
+describe('MediaGallery — une image, plusieurs usages', () => {
+  it('regroupe à la lecture : ouverture et vignette sur la même URL font UNE tuile', () => {
+    // 150 fiches portent hero + thumbnail sur la même url depuis le 2026-10-17.
+    const host = render(groupMediaByImage([flat('a', 'hero'), flat('a', 'thumbnail')]));
+    expect(host.querySelectorAll('.media-tile')).toHaveLength(1);
+    const roles = [...host.querySelectorAll('.media-roles fold-badge')].map((badge) =>
+      badge.textContent?.trim(),
+    );
+    expect(roles).toEqual(['Ouverture', 'Vignette de rayon']);
+  });
+
+  it('rend exactement la même liste plate à l’aller-retour', () => {
+    const read = [flat('a', 'hero'), flat('a', 'thumbnail'), flat('b', 'gallery')];
+    expect(persistedMedia(flattenMediaImages(groupMediaByImage(read)))).toEqual(read);
+  });
+
+  it("cocher l'ouverture la retire de l'autre image, qui garde ses autres usages", () => {
+    const images = groupMediaByImage([
+      flat('a', 'hero'),
+      flat('a', 'thumbnail'),
+      flat('b', 'print'),
+    ]);
+    const after = withMediaRoles(images, 'b', ['print', 'hero']);
+    expect(after.map((image) => image.roles)).toEqual([['thumbnail'], ['print', 'hero']]);
+    expect(persistedMedia(flattenMediaImages(after)).filter((s) => s.role === 'hero')).toHaveLength(
+      1,
+    );
+  });
+
+  it("une image sans usage reste à l'écran, se dit, et ne s'enregistre pas", () => {
+    const images = withMediaRoles(groupMediaByImage([flat('a', 'hero'), flat('b', 'hero')]), 'b', [
+      'hero',
+    ]);
+    const host = render(images);
+    expect(host.querySelectorAll('.media-tile')).toHaveLength(2);
+    expect(host.querySelectorAll('fold-badge.media-unassigned')).toHaveLength(1);
+    expect(persistedMedia(flattenMediaImages(images))).toEqual([flat('b', 'hero')]);
+  });
+
+  it("ne dit rien d'usage pour un porteur qui n'en a pas la notion", () => {
+    const host = render([slot()]);
+    expect(host.querySelector('.media-unassigned')).toBeNull();
+    expect(host.querySelector('.media-roles')).toBeNull();
   });
 });

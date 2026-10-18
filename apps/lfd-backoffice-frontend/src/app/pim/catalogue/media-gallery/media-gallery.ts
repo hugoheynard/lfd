@@ -7,9 +7,6 @@ import { FoldBadgeComponent, FoldButtonIconComponent } from 'fold-ng';
 import { formatGap, MEDIA_ROLE_FORMATS } from '../media-formats';
 import { isPublishedMediaRole } from '../media-roles';
 
-/** Le rôle que la vitrine du canal B2B cherche (`showcase.ts`). */
-const MAIN_ROLE = 'hero';
-
 /**
  * Un visuel tel que la galerie l'affiche — le plus PETIT dénominateur des deux
  * porteurs. `alt` est facultatif parce qu'une fiche peut en manquer ; une
@@ -19,14 +16,15 @@ export interface GallerySlot {
   readonly url: string;
   readonly name: string;
   /**
-   * Le rôle du visuel chez son porteur. Absent = le porteur n'en a pas la
-   * notion — une famille, par exemple, dont aucun canal ne lit le rôle.
+   * Les usages du visuel chez son porteur — plusieurs depuis le 2026-10-18 :
+   * une image paraît UNE fois, avec chacun en pastille. Absent = le porteur
+   * n'en a pas la notion — une famille, dont aucun canal ne lit le rôle. Vide =
+   * aucun usage coché : l'image ne s'enregistrera pas, et la tuile le dit.
    *
-   * La galerie ne s'en sert que pour **montrer** lequel est le packshot :
-   * l'état existait déjà en base et ne se voyait nulle part, ce qui obligeait à
-   * ouvrir chaque panneau pour savoir lequel les canaux prendraient.
+   * La galerie ne s'en sert que pour **montrer** : l'état existait en base et
+   * ne se voyait nulle part, ce qui obligeait à ouvrir chaque panneau.
    */
-  readonly role?: string | undefined;
+  readonly roles?: readonly string[] | undefined;
   readonly alt?: LocalizedText | undefined;
   readonly width?: number | null;
   readonly height?: number | null;
@@ -95,26 +93,35 @@ export class MediaGallery {
     return this.incomplete().includes(index);
   }
 
-  /** Le packshot — celui que les canaux montrent quand ils n'en montrent qu'un. */
-  protected isMain(slot: GallerySlot): boolean {
-    return slot.role === MAIN_ROLE;
+  /** Le libellé d'un usage, tel que la table des formats le nomme. */
+  protected labelOf(role: string): string {
+    return MEDIA_ROLE_FORMATS[role]?.label ?? role;
+  }
+
+  /** Le porteur a la notion d'usage, et aucun n'est coché. */
+  protected isUnassigned(slot: GallerySlot): boolean {
+    return slot.roles !== undefined && slot.roles.length === 0;
   }
 
   /**
-   * Un usage qu'aucun canal ne montre. Rôle absent = le porteur n'en a pas la
-   * notion (une famille) : rien à dire, donc rien dit.
+   * Des usages, et AUCUN qu'un canal montre : l'image ne paraît nulle part.
+   * Rôles absents = le porteur n'en a pas la notion (une famille) : rien à
+   * dire, donc rien dit.
    */
   protected isUnpublished(slot: GallerySlot): boolean {
-    return slot.role !== undefined && !isPublishedMediaRole(slot.role);
+    const roles = slot.roles ?? [];
+    return roles.length > 0 && !roles.some((role) => isPublishedMediaRole(role));
   }
 
   /**
-   * L'image s'écarte du format que son usage attend (cf. `media-formats.ts`).
-   * Rôle absent ou sans format, dimensions inconnues : rien à dire.
+   * L'image s'écarte du format qu'un de ses usages attend (cf. `media-formats.ts`).
+   * Sans usage à format, dimensions inconnues : rien à dire.
    */
   protected hasFormatGap(slot: GallerySlot): boolean {
-    const entry = slot.role === undefined ? undefined : MEDIA_ROLE_FORMATS[slot.role];
-    return entry !== undefined && formatGap(slot.width, slot.height, entry.format) !== null;
+    return (slot.roles ?? []).some((role) => {
+      const entry = MEDIA_ROLE_FORMATS[role];
+      return entry !== undefined && formatGap(slot.width, slot.height, entry.format) !== null;
+    });
   }
 
   /** L'alternative dans la langue lue — repli sur la source, jamais du vide. */

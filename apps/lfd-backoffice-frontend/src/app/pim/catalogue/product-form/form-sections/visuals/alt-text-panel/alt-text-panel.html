@@ -10,26 +10,30 @@
     <img class="preview" [src]="data().url" alt="" (load)="measure($event)" />
   }
 
-  @if (role(); as chosen) {
-    <!-- Les cinq USAGES, et leur ratio dit dans le libellé : c'est au moment
-         de choisir qu'on a besoin de savoir quelle forme le canal attend, pas
-         dans une documentation qu'on ira lire un autre jour. -->
-    <fold-listbox label="Usage" [value]="chosen" (selectionChange)="role.set($event)">
-      @for (entry of roles | keyvalue; track entry.key) {
-        <fold-option [value]="entry.key">{{ entry.value }}</fold-option>
+  @if (roles(); as chosen) {
+    <!-- Les cinq USAGES, en cases : une même image peut en porter plusieurs
+         (2026-10-18). Le ratio est dit dans le libellé, au moment de choisir. -->
+    <fold-fieldset legend="Usages">
+      @for (choice of choices; track choice.value) {
+        <fold-checkbox
+          [label]="choice.label"
+          [hint]="hintOf(choice.value)"
+          [checked]="isChecked(choice.value)"
+          (checkedChange)="toggle(choice.value, $event)"
+        />
       }
-    </fold-listbox>
-    <!-- Dit au moment du choix : une image en galerie a passé pour une panne
-         (2026-10-10), faute que l'écran dise qu'elle ne paraît nulle part. -->
-    @if (!isPublished(chosen)) {
-      <p class="note">
-        Cet usage n'est publié sur aucun canal : la boutique ne montre que l'ouverture et la
-        vignette de rayon.
-      </p>
+    </fold-fieldset>
+    <!-- Une image sans usage n'est pas perdue en silence : elle reste à
+         l'écran, et on dit qu'elle ne partira pas avec la fiche. -->
+    @if (chosen.length === 0) {
+      <fold-callout variant="warning">
+        Sans usage, cette image ne s'enregistrera pas avec la fiche. Cochez-en au moins un, ou
+        retirez-la.
+      </fold-callout>
     }
     <!-- Dit au moment du choix, jamais refusé : la coupe est celle de la
          boutique, et le point focal décide ce qu'elle garde. -->
-    @if (formatWarning(); as warning) {
+    @for (warning of formatWarnings(); track warning) {
       <fold-callout variant="warning">{{ warning }}</fold-callout>
     }
   }

@@ -7,16 +7,15 @@ import { ProductFormStore, type MediaSlot } from '../product-form-store';
 import type { PickedMedia } from '../../library-picker/library-picker';
 
 /**
- * **Les cinq usages, et l'unicité de ceux qui n'en admettent qu'un.**
+ * **Les usages d'une image, et l'unicité de ceux qui n'en admettent qu'un.**
  *
- * `hero` et `thumbnail` sont uniques par porteur — le domaine le dit
- * (`SINGLE_ROLES`) et le serveur refuse le second. L'écran ne se contente pas
- * d'éviter ce refus : il rend le doublon **inexprimable**.
+ * Depuis le 2026-10-18, une image porte plusieurs usages (décision de Hugo).
+ * `hero` et `thumbnail` restent uniques par fiche — le domaine le dit
+ * (`SINGLE_ROLES`) et le serveur refuse le second. L'écran rend le doublon
+ * **inexprimable** : cocher l'un le retire de l'image qui le portait.
  *
- * 🔴 Et il ne doit déloger QUE le porteur du même rôle. `setMainVisual`
- * rendait tous les autres à `gallery`, ce qui était sans conséquence tant
- * qu'aucun écran ne proposait les trois autres usages — et qui aurait effacé
- * une mise en situation dès le lot 5.
+ * 🔴 Ces cas remplacent ceux de `setMainVisual` / `setMediaRole`, retirés le
+ * même jour : ils supposaient un usage par image.
  */
 
 function store(): ProductFormStore {
@@ -31,48 +30,68 @@ function slot(url: string, role = 'gallery'): MediaSlot {
   return { role, url, name: '' };
 }
 
-function rolesOf(form: ProductFormStore): readonly string[] {
-  return form.media().map((item) => item.role);
+function pairs(form: ProductFormStore): readonly string[] {
+  return form.media().map((item) => `${item.url}:${item.role}`);
 }
 
 describe('les usages d’un visuel', () => {
-  it('déloge le porteur du MÊME rôle unique, et lui seul', () => {
+  it('donne plusieurs usages à une même image, dans l’ordre de la galerie', () => {
     const form = store();
-    form.media.set([slot('a', 'hero'), slot('b', 'lifestyle'), slot('c')]);
+    form.media.set([slot('a'), slot('b')]);
 
-    form.setMediaRole(2, 'hero');
+    form.setMediaRoles('a', ['hero', 'thumbnail']);
+
+    expect(pairs(form)).toEqual(['a:hero', 'a:thumbnail', 'b:gallery']);
+    expect(form.mediaImages()).toHaveLength(2);
+  });
+
+  it('déloge le porteur du MÊME usage unique, et lui seul', () => {
+    const form = store();
+    form.media.set([slot('a', 'hero'), slot('a', 'lifestyle'), slot('c')]);
+
+    form.setMediaRoles('c', ['hero']);
 
     // `lifestyle` est intact : ce n'est pas le même rôle, et il est pluriel.
-    expect(rolesOf(form)).toEqual(['gallery', 'lifestyle', 'hero']);
+    expect(pairs(form)).toEqual(['a:lifestyle', 'c:hero']);
   });
 
-  it('laisse cohabiter plusieurs visuels d’un rôle PLURIEL', () => {
+  it('laisse cohabiter plusieurs visuels d’un usage PLURIEL', () => {
     const form = store();
-    form.media.set([slot('a'), slot('b'), slot('c')]);
+    form.media.set([slot('a'), slot('b')]);
 
-    form.setMediaRole(0, 'lifestyle');
-    form.setMediaRole(1, 'lifestyle');
+    form.setMediaRoles('a', ['lifestyle']);
+    form.setMediaRoles('b', ['lifestyle']);
 
-    expect(rolesOf(form)).toEqual(['lifestyle', 'lifestyle', 'gallery']);
+    expect(pairs(form)).toEqual(['a:lifestyle', 'b:lifestyle']);
   });
 
-  it('tient l’unicité de la vignette de rayon comme celle de l’ouverture', () => {
+  it('garde à l’écran une image délogée de son seul usage, sans l’enregistrer', () => {
     const form = store();
     form.media.set([slot('a', 'thumbnail'), slot('b')]);
 
-    form.setMediaRole(1, 'thumbnail');
+    form.setMediaRoles('b', ['thumbnail']);
 
-    expect(rolesOf(form)).toEqual(['gallery', 'thumbnail']);
+    expect(form.mediaImages().map((image) => image.url)).toEqual(['a', 'b']);
+    expect(form.unassignedMedia().map((image) => image.url)).toEqual(['a']);
   });
 
-  it('ne recrée pas les entrées qu’il ne change pas', () => {
+  it('relit sans rien changer une fiche à ouverture et vignette sur la même image', () => {
     const form = store();
-    const untouched = slot('a', 'lifestyle');
-    form.media.set([untouched, slot('b')]);
+    const read = [slot('a', 'hero'), slot('a', 'thumbnail'), slot('b')];
+    form.media.set(read);
 
-    form.setMediaRole(1, 'print');
+    form.setMediaRoles('a', ['hero', 'thumbnail']);
 
-    expect(form.media()[0]).toBe(untouched);
+    expect(form.media()).toEqual(read);
+  });
+
+  it('retire une image avec tous ses usages', () => {
+    const form = store();
+    form.media.set([slot('a', 'hero'), slot('a', 'thumbnail'), slot('b')]);
+
+    form.removeMediaImage('a');
+
+    expect(pairs(form)).toEqual(['b:gallery']);
   });
 });
 

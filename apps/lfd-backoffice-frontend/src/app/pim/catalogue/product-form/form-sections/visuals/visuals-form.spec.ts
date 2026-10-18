@@ -247,7 +247,7 @@ describe('VisualsForm', () => {
         picked('https://media.test/a.png'),
         picked('https://media.test/b.png'),
       ]);
-      store.setMediaRole(1, 'thumbnail');
+      store.setMediaRoles('https://media.test/b.png', ['thumbnail']);
       expect(callout()).toBeNull();
     });
 

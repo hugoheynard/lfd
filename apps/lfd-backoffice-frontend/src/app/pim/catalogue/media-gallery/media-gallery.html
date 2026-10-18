@@ -25,8 +25,8 @@
                pastille posée sur une photo quelconque a déjà été retirée ici
                pour illisibilité, et la remettre au même endroit rejouerait la
                même faute. -->
-          @if (isMain(slot)) {
-            <span class="media-main">Principal</span>
+          @if (isUnassigned(slot)) {
+            <fold-badge class="media-unassigned" variant="warning" content="Sans usage" />
           }
           @if (isUnpublished(slot)) {
             <fold-badge class="media-unpublished" variant="warning" content="Non publié" />
@@ -42,6 +42,16 @@
             (clicked)="edit.emit($index)"
           />
         </div>
+
+        <!-- Ses usages, un par pastille : une image peut en porter plusieurs
+             (2026-10-18), et elle ne paraît qu'une fois. -->
+        @if (slot.roles?.length) {
+          <div class="media-roles">
+            @for (role of slot.roles; track role) {
+              <fold-badge class="media-role" variant="neutral" [content]="labelOf(role)" />
+            }
+          </div>
+        }
 
         <span class="media-meta">{{ metaOf(slot) }}</span>
 

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 
 import { FoldButtonComponent, FoldCalloutComponent, FoldPanelHostService } from 'fold-ng';
 
@@ -14,6 +14,7 @@ import {
   type LibraryPickerData,
   type PickedMedia,
 } from '../../../library-picker/library-picker';
+import { singleRoleHolders } from '../../../media-usages';
 import { ProductFormStore } from '../../product-form-store';
 
 /**
@@ -50,6 +51,14 @@ export class VisualsForm {
   protected readonly store = inject(ProductFormStore);
   private readonly panels = inject(FoldPanelHostService);
 
+  /** Les images décochées de partout, dites — elles ne partent pas au serveur. */
+  protected readonly unassignedSentence = computed(() => {
+    const count = this.store.unassignedMedia().length;
+    return count === 1
+      ? "Une image n'a aucun usage : elle ne s'enregistrera pas avec la fiche. Donnez-lui un usage ou retirez-la."
+      : `${String(count)} images n'ont aucun usage : elles ne s'enregistreront pas avec la fiche. Donnez-leur un usage ou retirez-les.`;
+  });
+
   /**
    * Ouvre le panneau d'un visuel : son USAGE, et son retrait.
    *
@@ -58,28 +67,37 @@ export class VisualsForm {
    * changeait silencieusement ce qu'une autre fiche affichait. Ils se
    * saisissent dans la médiathèque, qui en est le seul point.
    *
+   * Une image paraît UNE fois (2026-10-18) : l'index est celui de la galerie
+   * regroupée, et le panneau rend la liste entière de ses usages.
+   *
    * Le panneau rend `undefined` quand on annule, et c'est la différence qui
    * compte : renoncer ne doit rien écrire.
    */
   protected editMedia(index: number): void {
-    const slot = this.store.media()[index];
-    if (slot === undefined) {
+    const image = this.store.mediaImages()[index];
+    if (image === undefined) {
       return;
     }
     void this.panels
       .open<AltTextPanelData, AltTextPanelResult>(AltTextPanel, {
-        data: { url: slot.url, role: slot.role, width: slot.width, height: slot.height },
+        data: {
+          url: image.url,
+          roles: image.roles,
+          holders: singleRoleHolders(this.store.mediaImages(), image.url),
+          width: image.width,
+          height: image.height,
+        },
       })
       .closed.then((result) => {
         if (result === undefined) {
           return;
         }
         if (result.removed === true) {
-          this.store.removeMedia(index);
+          this.store.removeMediaImage(image.url);
           return;
         }
-        if (result.role !== undefined) {
-          this.store.setMediaRole(index, result.role);
+        if (result.roles !== undefined) {
+          this.store.setMediaRoles(image.url, result.roles);
         }
       });
   }
