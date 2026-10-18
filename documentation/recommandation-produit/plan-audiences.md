@@ -118,8 +118,8 @@ libre.
 > D'ici là, le segment n'existe qu'**estimé** (A3), affiché comme tel.
 >
 > **Q3 tranchée le 2026-10-18 (Hugo) : oui**, la langue de chaque commande est
-> enregistrée (A3). **Q4** : une **proposition** est écrite au lot A1 (§8.2),
-> bâtie telle quelle ; elle attend la validation de Hugo.
+> enregistrée (A3). **Q4** : le regroupement du lot A1 (§8.2) est **validé par Hugo le
+> 2026-10-18** ; Q4 est close.
 
 1. **La question « résident · saisonnier · vacancier » : oui ?** _Recommandation :
    oui, facultative._ C'est le seul moyen fiable, et elle ne coûte qu'un clic.
@@ -149,7 +149,11 @@ Donc : le **site de retrait** se lit sur `pickup_address->>'siteId'` (nommé par
 son `label`), la **zone de livraison** sur `delivery_address_snapshot->>'codePostal'`
 (nommée par sa `ville`). `fulfillment` ne sert à aucune coupe.
 
-### 8.2 Le regroupement NAF proposé (Q4, à valider)
+### 8.2 Le regroupement NAF proposé (Q4, validé le 2026-10-18)
+
+> **Validé par Hugo le 2026-10-18** (« je valide le NAF ») : le regroupement
+> ci-dessous fait foi, boulangerie artisanale (10.71) en commerce alimentaire
+> et traiteurs (56.21Z) en restauration compris. Q4 est close.
 
 | Famille                 | Codes NAF rév. 2                                           |
 | ----------------------- | ---------------------------------------------------------- |
