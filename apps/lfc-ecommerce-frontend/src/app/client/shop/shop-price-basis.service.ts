@@ -1,6 +1,10 @@
 import { computed, inject, Injectable } from '@angular/core';
 
+import type { ShopItemView } from '@lfd/contracts';
+import { unitPriceCents } from '@lfd/money';
+
 import { ClientCompany } from '../client-company.service';
+import { formatCents } from '../format-money';
 
 /**
  * **Dans quelle assiette le rayon affiche ses prix** — hors taxe ou taxe
@@ -32,4 +36,16 @@ export class ShopPriceBasis {
 
   /** Vrai pour un visiteur anonyme comme pour un compte personnel. */
   readonly showsTtc = computed(() => this.company.company() === null);
+}
+
+/**
+ * **Le prix unitaire d'un article tel que le rayon l'écrit**, dans l'assiette
+ * choisie : le TTC servi, ou le HT arrondi au centime. Lu par la vignette et
+ * par la carte de suggestion du panier — une seule mise en forme, pour qu'un
+ * même article ne s'affiche pas à deux prix.
+ */
+export function shelfPriceLabel(item: ShopItemView, showsTtc: boolean): string {
+  return showsTtc
+    ? formatCents(item.unitPriceTtcCents)
+    : formatCents(unitPriceCents(item.unitPriceMillicents));
 }

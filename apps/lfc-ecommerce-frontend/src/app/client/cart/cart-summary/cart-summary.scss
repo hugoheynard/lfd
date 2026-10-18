@@ -57,9 +57,9 @@
   }
 }
 
-/* La relance : une PROPOSITION, pas une ligne de panier. D'où le beurre pâle,
+/* La suggestion du staff : une PROPOSITION, pas une ligne de panier. D'où le beurre pâle,
    qui la distingue de ce qui est déjà commandé. */
-.upsell {
+.suggestion {
   display: flex;
   align-items: center;
   gap: var(--fold-space-sm);

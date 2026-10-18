@@ -251,8 +251,7 @@ export const IT: ClientCopy = {
     cartTitle: 'Il suo carrello',
     cartEmpty:
       'Carrello vuoto. L’infornata del mattino va via in fretta — lo sci al pralinato non arriva mai al pomeriggio.',
-    upsell: '{name} insieme?',
-    upsellLine: 'La golosità che si rimpiange di non aver preso.',
+    staffAdvice: 'Il nostro consiglio',
     operationOpensOn: 'Apre il {date}',
     operationNotOpen: 'Non ancora aperto',
     operationClosed: 'Ordini chiusi',

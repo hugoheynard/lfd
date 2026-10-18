@@ -2206,3 +2206,9 @@ export {
   type StaffSuggestionTrigger,
   type StaffSuggestionTriggerKind,
 } from "./staff-suggestions.js";
+export {
+  cartSuggestionsPayloadSchema,
+  type CartSuggestionReason,
+  type CartSuggestionsPayload,
+  type CartSuggestionView,
+} from "./cart-suggestions.js";

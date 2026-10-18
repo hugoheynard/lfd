@@ -1,3 +1,30 @@
+> 🟡 **RS2 bâti pour le PANIER le 2026-10-18** (non commité à l'écriture ;
+> Hugo : « au moins pour le panier »). Ce qui existe : la query
+> `ReadCartSuggestionsQuery` (`b2b/recommendations/application/queries/`),
+> servie par `POST /shop/suggestions/cart` (publique, lecteur particulier) et
+> `POST /shop/suggestions/cart/mine` (l'espace courant décide du lecteur, comme
+> `/shop/catalogue/mine`) — contrat `packages/contracts/src/cart-suggestions.ts`.
+> Elle prend les règles applicables, garde celles dont le déclencheur est vrai
+> pour ce panier (`everywhere`, `product_in_cart`, `category_in_cart` — la
+> famille lue au catalogue servi, lignée comprise), passe `RecommendationFilter`,
+> et rend l'article à son prix de vitrine (`ShopCataloguePricing`) avec la
+> raison `{ source: 'staff', ruleId, phrase }`. Côté boutique,
+> `StaffCartSuggestion` (`client/cart/`) montre la suggestion du staff, et
+> **rien** sans règle applicable : la relance codée en dur `CartUpsell` (et sa
+> liste `TREATS`) est **retirée** le 2026-10-18 (Hugo), sans repli. La requête
+> vit dans un morceau chargé à la demande ; les compteurs
+> `suggestion_shown|clicked|added` partent en source `staff`, emplacement = id
+> de la règle en minuscules.
+>
+> **Tranché par Hugo le 2026-10-18** : **1 place** pour le décidé au panier
+> (`STAFF_CART_PLACES`, Q1) ; une langue sans phrase dit « Notre conseil »
+> traduit (Q2) ; un ajout depuis une suggestion compte AUSSI `added_to_cart`
+> (taux d'ajout global inclusif) ; la carte écrit le **prix** de l'article dans
+> l'assiette du rayon — HT à un pro, TTC à un particulier — par la même
+> fonction que la vignette (`shelfPriceLabel`, `client/shop/shop-price-basis.service.ts`).
+> Le calculé qui remplirait le reste n'existe pas encore. **La fiche et
+> l'accueil restent à faire** (RS2), comme RS4.
+
 # Plan — les suggestions décidées par le staff
 
 > 🟡 **RS1 et RS3 bâtis le 2026-10-18** (non commités à l'écriture de ce
@@ -112,12 +139,12 @@ commandes, comme pour le calculé.
 
 ## 7. Lots
 
-| Lot     | Contenu                                                                                                                                                                                                                                                                         |
-| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **RS1** | Agrégat, écran Gestion Boutique › Suggestions, droit `lfc_suggestions`, lecture par emplacement                                                                                                                                                                                 |
-| **RS2** | Affichage dans la boutique : panier (remplace la relance `CartUpsell`), fiche, accueil ; événements `suggestion_*` source `staff` — **le budget du paquet initial de la boutique est à ~120 octets du plafond** : l'affichage doit vivre dans des parties chargées à la demande |
-| **RS3** | Chiffres par règle dans l'écran                                                                                                                                                                                                                                                 |
-| **RS4** | La mise en avant entre dans les règles (Q4)                                                                                                                                                                                                                                     |
+| Lot     | Contenu                                                                                                                                                                                                                                                                                                      |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **RS1** | Agrégat, écran Gestion Boutique › Suggestions, droit `lfc_suggestions`, lecture par emplacement                                                                                                                                                                                                              |
+| **RS2** | Affichage dans la boutique : panier (la relance `CartUpsell` est retirée le 2026-10-18, sans repli), fiche, accueil ; événements `suggestion_*` source `staff` — **le budget du paquet initial de la boutique est à ~120 octets du plafond** : l'affichage doit vivre dans des parties chargées à la demande |
+| **RS3** | Chiffres par règle dans l'écran                                                                                                                                                                                                                                                                              |
+| **RS4** | La mise en avant entre dans les règles (Q4)                                                                                                                                                                                                                                                                  |
 
 ## 8. Questions à Hugo
 

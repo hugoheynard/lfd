@@ -246,8 +246,7 @@ export const FR: ClientCopy = {
     cartTitle: 'Votre panier',
     cartEmpty:
       'Panier vide. La fournée du matin part vite — le ski praliné ne fait jamais l’après-midi.',
-    upsell: '{name} avec ça ?',
-    upsellLine: 'La gourmandise qu’on regrette de ne pas avoir prise.',
+    staffAdvice: 'Notre conseil',
     operationOpensOn: 'Ouvre le {date}',
     operationNotOpen: 'Pas encore ouvert',
     operationClosed: 'Commandes closes',

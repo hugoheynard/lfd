@@ -41,6 +41,15 @@ import { AudienceSkuReader } from "./domain/ports/audience-sku.reader.js";
 import { RecommendationCutoffReader } from "./domain/ports/recommendation-cutoff.reader.js";
 import { AdminProductAudienceController } from "./http/admin-product-audience.controller.js";
 import { ShopProductAudienceController } from "./http/shop-product-audience.controller.js";
+import { MyShopCartSuggestionsController } from "./http/my-shop-cart-suggestions.controller.js";
+import { ShopCartSuggestionsController } from "./http/shop-cart-suggestions.controller.js";
+import { ReadCartSuggestionsHandler } from "./application/queries/read-cart-suggestions.handler.js";
+import { CartFamilyReader } from "./domain/ports/cart-family.reader.js";
+import { SuggestedArticleReader } from "./domain/ports/suggested-article.reader.js";
+import {
+  CatalogCartFamilyReader,
+  ShopSuggestedArticleReader,
+} from "./infrastructure/catalog-cart-suggestions.js";
 import { CatalogAudienceSkuReader } from "./infrastructure/catalog-audience-sku.reader.js";
 import {
   PrismaAudienceCounterReader,
@@ -61,6 +70,9 @@ import {
  * DÉCIDÉES par le staff — l'agrégat `StaffSuggestionRule`, le réglage de
  * l'ordre, les règles applicables et leurs chiffres, sous `lfc_suggestions`.
  * Elles écrivent `staff_suggestion_rules` et `staff_suggestion_order_settings`.
+ *
+ * RS2, panier : `/shop/suggestions/cart` (et `/mine`) rend la suggestion
+ * décidée d'un panier, au prix de la vitrine (`ShopCataloguePricing`).
  */
 @Module({
   imports: [CatalogModule, OrderCutoffsModule],
@@ -68,6 +80,8 @@ import {
     ShopProductAudienceController,
     AdminProductAudienceController,
     AdminStaffSuggestionsController,
+    ShopCartSuggestionsController,
+    MyShopCartSuggestionsController,
   ],
   providers: [
     RecordProductAudienceHandler,
@@ -93,6 +107,9 @@ import {
     ListApplicableStaffSuggestionsHandler,
     ListStaffSuggestionChoicesHandler,
     ListStaffSuggestionCountersHandler,
+    { provide: CartFamilyReader, useClass: CatalogCartFamilyReader },
+    { provide: SuggestedArticleReader, useClass: ShopSuggestedArticleReader },
+    ReadCartSuggestionsHandler,
   ],
 })
 export class RecommendationsModule {}

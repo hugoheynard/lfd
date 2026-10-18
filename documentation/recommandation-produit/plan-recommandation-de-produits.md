@@ -135,13 +135,14 @@ Garde-fous : ne recommander que ce qui se vend à CE client ; mesurer l'effet
 
 ### 1.5 Ce que la boutique affiche déjà
 
-- **Une relance au panier existe** : `CartUpsell`
-  (`apps/lfc-ecommerce-frontend/src/app/client/cart/cart-upsell.service.ts:29-48`)
-  propose la **première gourmandise absente** du panier, sur une liste de rayons
-  écrite en dur (`TREATS`, `…:15`), sans historique et sans raison affichée.
-  Son JSDoc l'annonce temporaire (`…:9-13`). L'usage 2 la **remplace** : c'est
-  le même emplacement, et la même règle « jamais un produit déjà dedans »
-  (`…:36-38`) s'applique.
+- **La relance codée en dur est retirée le 2026-10-18** (Hugo). `CartUpsell`
+  (`client/cart/cart-upsell.service.ts`, retiré le 2026-10-18) proposait la
+  première gourmandise absente du panier sur une liste de rayons en dur
+  (`TREATS`), sans historique ni raison. Le panier montre désormais la
+  suggestion du staff si une règle s'applique (RS2,
+  [`plan-suggestions-du-staff.md`](plan-suggestions-du-staff.md)), sinon
+  **rien** — pas de remplissage. L'usage 2 viendra s'ajouter au même
+  emplacement, avec la même règle « jamais un produit déjà dedans ».
 - L'accueil public a sa vitrine (`client/accueil-public/home-storefront/`) ; la
   route `boutique` existe (`apps/lfc-ecommerce-frontend/src/app/app.routes.ts:271`),
   comme `accueil` (`…:345`). Leur gabarit n'a **pas été ouvert** : l'emplacement
@@ -267,9 +268,9 @@ flowchart LR
 - **Boutique, accueil** — une rangée « Vos habituels » au-dessus des rayons,
   chaque carte avec sa raison en une ligne et l'ajout au panier. Absente si
   vide, absente pour un invité.
-- **Boutique, panier** — la carte de relance de `CartUpsell` devient « Souvent
-  pris avec », raison comprise ; `TREATS` reste comme repli **déclaré** tant
-  qu'il n'y a pas d'historique (Q2) — ou disparaît, selon Hugo.
+- **Boutique, panier** — « Souvent pris avec », raison comprise, dans la
+  carte de suggestion où le staff passe d'abord. Plus de repli : `TREATS` est
+  retiré le 2026-10-18 (Hugo).
 - **Back-office, fiche client** — un encart « Jamais essayé » à côté des
   habitudes déjà affichées par `ListCustomerSkus` (lot 4).
 - **Back-office, mesure** — un compteur par emplacement (affichées, cliquées,
@@ -282,7 +283,7 @@ flowchart LR
 | **R0** | contexte `b2b/recommendations/`, ports, filtre R4, **compteurs anonymes R5 bis** (table, écriture par lot, route de la boutique, premiers émetteurs : vue de fiche, ajout au panier) ; tests aux 3 niveaux                                                               | —         |
 | **R1** | « Vos habituels » (pros), rythme hebdomadaire + fréquence ; rangée d'accueil                                                                                                                                                                                             | R0        |
 | **RS** | **Suggestions décidées par le staff** (§2 bis) : règle déclencheur → articles suggérés, emplacement, audience, période, phrase ; écran « Suggestions » en Gestion Boutique ; passe avant le calculé, dans une place bornée ; la mise en avant devient un cas particulier | R0        |
-| **R2** | « Souvent pris avec » au panier, remplace `CartUpsell`                                                                                                                                                                                                                   | R0        |
+| **R2** | « Souvent pris avec » au panier (la relance `CartUpsell` est retirée le 2026-10-18)                                                                                                                                                                                      | R0        |
 | **R3** | « Vos habituels » pour le particulier connecté (`placedByUserId`), après Q1 et §6                                                                                                                                                                                        | R1        |
 | **R4** | « Jamais essayé » au back-office (sociétés du même secteur)                                                                                                                                                                                                              | R1        |
 | **R5** | « Nouveau / De saison » si la mise en avant manuelle ne suffit pas (Q4)                                                                                                                                                                                                  | R0        |
@@ -316,7 +317,8 @@ flowchart LR
    (commandes régulières), et il n'y a pas de question RGPD nouvelle.
 2. **Où d'abord — accueil ou panier ?** _Recommandation : l'accueil (« vos
    habituels »)._ Il raccourcit la commande récurrente, ce qui sert le client ;
-   le panier a déjà une relance (`CartUpsell`) qui tient en attendant.
+   le panier a la suggestion du staff (RS2) ; la relance `CartUpsell` est
+   retirée le 2026-10-18.
 3. **La ligne du commercial maintenant ou plus tard ?** _Recommandation : plus
    tard (R4)._ « Jamais essayé » demande des sociétés semblables, donc du volume ;
    les habitudes, elles, sont déjà affichées au back-office.

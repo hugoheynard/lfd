@@ -20,7 +20,7 @@ import { operationGate } from '../operations';
 import { ShopCatalogue } from '../shop-catalogue.store';
 import { objectPositionOf, tileArtOf } from '../shelf-display';
 import { mediaSrcset, sizedMedia, TILE_WIDTHS } from '../media-source';
-import { ShopPriceBasis } from '../shop-price-basis.service';
+import { shelfPriceLabel, ShopPriceBasis } from '../shop-price-basis.service';
 
 /**
  * Une pièce du rayon — la vignette de la grille.
@@ -146,11 +146,7 @@ export class ProductTile {
 
   protected readonly showsTtc = this.basis.showsTtc;
 
-  protected readonly price = computed(() =>
-    this.showsTtc()
-      ? formatCents(this.product().unitPriceTtcCents)
-      : formatCents(unitPriceCents(this.product().unitPriceMillicents)),
-  );
+  protected readonly price = computed(() => shelfPriceLabel(this.product(), this.showsTtc()));
 
   /**
    * **Le tarif catalogue barré**, ou `null` quand il n'y a rien à barrer.

@@ -248,8 +248,7 @@ export const EN: ClientCopy = {
     cartTitle: 'Your basket',
     cartEmpty:
       'Empty basket. The morning batch goes fast — the praline ski never sees the afternoon.',
-    upsell: '{name} with that?',
-    upsellLine: 'The treat you regret leaving behind.',
+    staffAdvice: 'Our advice',
     operationOpensOn: 'Opens {date}',
     operationNotOpen: 'Not open yet',
     operationClosed: 'Orders closed',

@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  DestroyRef,
+  inject,
+  input,
+  type OnInit,
+} from '@angular/core';
 import {
   FoldCalloutComponent,
   FoldIconComponent,
@@ -8,7 +16,9 @@ import {
 
 import { formatCents, formatRate } from '../../format-money';
 import { CartProductLine } from '../cart-product-line/cart-product-line';
-import { CartUpsell } from '../cart-upsell.service';
+import { StaffCartSuggestion } from '../staff-cart-suggestion.service';
+import { ProductAudience } from '../../audience/product-audience.service';
+import { shelfPriceLabel, ShopPriceBasis } from '../../shop/shop-price-basis.service';
 import { ClientCart } from '../client-cart.service';
 import { ClientLocale } from '../../client-locale.service';
 import { ClientWorkspace } from '../../client-workspace.service';
@@ -41,13 +51,17 @@ import { SHOP_TIME_ZONE } from '../../shop-time-zone';
   templateUrl: './cart-summary.html',
   styleUrl: './cart-summary.scss',
 })
-export class CartSummary {
+export class CartSummary implements OnInit {
   /** Le décompte seul, sans les lignes : la confirmation n'a plus à les lister. */
   readonly linesShown = input(true);
 
   protected readonly t = inject(ClientCopyService).t;
   protected readonly cart = inject(ClientCart);
-  private readonly upsell = inject(CartUpsell);
+  private readonly staffPick = inject(StaffCartSuggestion);
+  private readonly audience = inject(ProductAudience);
+  /** L'assiette du rayon : la carte écrit le prix comme la vignette (HT pro, TTC particulier). */
+  private readonly basis = inject(ShopPriceBasis);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly order = inject(OrderContextStore);
   private readonly locale = inject(ClientLocale);
   private readonly workspace = inject(ClientWorkspace);
@@ -252,20 +266,54 @@ export class CartSummary {
     return rest > 0 ? fill(this.t().cart.voucherRemainder, { value: formatCents(rest) }) : null;
   });
 
-  protected readonly upsellLabel = computed(() => {
-    const piece = this.upsell.suggestion();
-    return piece === null ? null : fill(this.t().shop.upsell, { name: piece.name });
+  /**
+   * La carte de suggestion : celle du staff (RS2), sa phrase dans la langue
+   * du client ou « Notre conseil ». Sans règle applicable, RIEN — la relance
+   * codée en dur (`CartUpsell`) est retirée le 2026-10-18 (Hugo).
+   */
+  protected readonly pitch = computed(() => {
+    const staff = this.staffPick.current();
+    if (staff === null) {
+      return null;
+    }
+    const shop = this.t().shop;
+    const phrase = staff.reason.phrase?.[this.locale.current()] ?? null;
+    const ttc = this.basis.showsTtc();
+    return {
+      title: phrase ?? shop.staffAdvice,
+      line: staff.item.name,
+      price: shelfPriceLabel(staff.item, ttc),
+      suffix: ttc ? shop.ttcSuffix : shop.htSuffix,
+    };
   });
+
+  /** Le panier montré avec ses lignes est un panier ouvert : la suggestion s'y demande. */
+  ngOnInit(): void {
+    if (this.linesShown()) {
+      this.staffPick.open();
+      this.destroyRef.onDestroy(() => this.staffPick.close());
+    }
+  }
 
   /** Les totaux arrivent en centimes ; le gabarit ne connaît que des libellés. */
   protected money(cents: number): string {
     return formatCents(cents);
   }
 
-  protected addUpsell(): void {
-    const piece = this.upsell.suggestion();
-    if (piece !== null) {
-      this.cart.add(piece.sku);
+  /**
+   * Le « + » de la carte : la suggestion compte son clic et son ajout, et
+   * l'entrée au panier compte AUSSI `added_to_cart` (Hugo, 2026-10-18 : le
+   * taux d'ajout global inclut les suggestions) — comme le rayon, au passage
+   * de zéro à une pièce.
+   */
+  protected addPitch(): void {
+    const staff = this.staffPick.current();
+    if (staff !== null) {
+      this.staffPick.taken(staff);
+      if (this.cart.quantityOf(staff.sku) === 0) {
+        this.audience.record(staff.sku, 'added_to_cart');
+      }
+      this.cart.add(staff.sku);
     }
   }
 }

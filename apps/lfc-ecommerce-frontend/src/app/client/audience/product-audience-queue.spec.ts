@@ -31,6 +31,23 @@ class ManualTimer implements AudienceTimer {
 }
 
 describe('ProductAudienceQueue', () => {
+  it('porte la source et l’emplacement d’un geste de suggestion', () => {
+    const transport = new RecordingTransport();
+    const timer = new ManualTimer();
+    const queue = new ProductAudienceQueue(transport, timer);
+
+    queue.record('PAI-001', 'suggestion_shown', { source: 'staff', placement: '01jrule' });
+    timer.fire();
+
+    expect(transport.sent.map((body) => JSON.parse(body))).toEqual([
+      {
+        events: [
+          { sku: 'PAI-001', event: 'suggestion_shown', source: 'staff', placement: '01jrule' },
+        ],
+      },
+    ]);
+  });
+
   it('regroupe les gestes et les envoie en UN lot, une fois le délai écoulé', () => {
     const transport = new RecordingTransport();
     const timer = new ManualTimer();

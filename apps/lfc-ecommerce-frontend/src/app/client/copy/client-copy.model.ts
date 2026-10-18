@@ -431,9 +431,8 @@ export interface ClientCopy {
     /** `{count}` est remplacé par le nombre de pièces au panier. */
     readonly cartTitle: string;
     readonly cartEmpty: string;
-    /** `{name}` est remplacé par la gourmandise proposée. */
-    readonly upsell: string;
-    readonly upsellLine: string;
+    /** La raison d'une suggestion du staff qui n'a pas écrit de phrase (RS2). */
+    readonly staffAdvice: string;
     /**
      * À la place du « + » d'un article réservé à une opération datée, tant que
      * sa commande n'est pas ouverte (D8 de `architecture-operations-datees.md`).

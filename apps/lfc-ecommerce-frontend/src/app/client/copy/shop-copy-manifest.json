@@ -1434,17 +1434,10 @@
           "variables": []
         },
         {
-          "key": "shop.upsell",
-          "fr": "{name} avec ça ?",
-          "en": "{name} with that?",
-          "it": "{name} insieme?",
-          "variables": ["name"]
-        },
-        {
-          "key": "shop.upsellLine",
-          "fr": "La gourmandise qu’on regrette de ne pas avoir prise.",
-          "en": "The treat you regret leaving behind.",
-          "it": "La golosità che si rimpiange di non aver preso.",
+          "key": "shop.staffAdvice",
+          "fr": "Notre conseil",
+          "en": "Our advice",
+          "it": "Il nostro consiglio",
           "variables": []
         },
         {

@@ -1,7 +1,12 @@
+import { signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { DELIVERY_CLOSED_FOR_AUDIENCE, type MyShopQuoteView } from '@lfd/contracts';
+import {
+  DELIVERY_CLOSED_FOR_AUDIENCE,
+  type CartSuggestionView,
+  type MyShopQuoteView,
+} from '@lfd/contracts';
 
 import { AuthFacade } from '../../../auth/auth.facade';
 import { provideRecognised } from '../../client-orders.fixture';
@@ -19,7 +24,10 @@ import {
   provideLoyalty,
   type LoyaltyDouble,
 } from '../../client-loyalty.fixture';
+import { ProductAudience } from '../../audience/product-audience.service';
 import { ClientCart } from '../client-cart.service';
+import { StaffCartSuggestion } from '../staff-cart-suggestion.service';
+import { shelfPriceLabel, ShopPriceBasis } from '../../shop/shop-price-basis.service';
 import { VoucherChoice } from '../voucher-choice.service';
 import { hydrateWith, TEST_CATALOGUE } from '../../shop/shop-catalogue.fixture';
 import { ShopCatalogue } from '../../shop/shop-catalogue.store';
@@ -499,5 +507,133 @@ describe('CartSummary — un pro au compte (F5)', () => {
     expect(grand(el)).toContain(formatCents(1464));
     expect(el.querySelectorAll('.row.vat')).toHaveLength(1);
     expect(el.textContent).not.toContain('facture du mois');
+  });
+});
+
+/** Une suggestion du staff servie à la main, et les gestes comptés. */
+class StaffPickDouble {
+  readonly current = signal<CartSuggestionView | null>(null);
+  readonly taken: CartSuggestionView[] = [];
+  opened = 0;
+  open(): void {
+    this.opened += 1;
+  }
+  close(): void {
+    this.opened -= 1;
+  }
+  take(view: CartSuggestionView): void {
+    this.taken.push(view);
+  }
+}
+
+describe('CartSummary — la carte de suggestion (RS2)', () => {
+  let fixture: ComponentFixture<CartSummary>;
+  let pick: StaffPickDouble;
+  let recorded: { sku: string; event: string }[];
+  /** L'assiette du rayon, réglée à la main : la règle elle-même est éprouvée par la vignette. */
+  const showsTtc = signal(true);
+
+  const card = (): HTMLButtonElement | null =>
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('button.suggestion');
+
+  beforeEach(() => {
+    localStorage.clear();
+    TestBed.resetTestingModule();
+    pick = new StaffPickDouble();
+    recorded = [];
+    showsTtc.set(true);
+    TestBed.configureTestingModule({
+      imports: [CartSummary],
+      providers: [
+        provideHttpClient(),
+        {
+          provide: StaffCartSuggestion,
+          useValue: {
+            current: pick.current,
+            open: () => pick.open(),
+            close: () => pick.close(),
+            taken: (view: CartSuggestionView) => pick.take(view),
+          },
+        },
+        { provide: ShopPriceBasis, useValue: { showsTtc } },
+        {
+          provide: ProductAudience,
+          useValue: { record: (sku: string, event: string) => recorded.push({ sku, event }) },
+        },
+      ],
+    });
+    hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
+    TestBed.inject(ClientCart).add('VIE-001');
+    fixture = TestBed.createComponent(CartSummary);
+    fixture.detectChanges();
+  });
+
+  it('ouvre la demande de suggestion avec le panier', () => {
+    expect(pick.opened).toBe(1);
+  });
+
+  /** La relance codée en dur est retirée (Hugo, 2026-10-18) : pas de remplissage. */
+  it('sans règle applicable, aucune carte de suggestion', () => {
+    expect(card()).toBeNull();
+    expect(recorded).toEqual([]);
+  });
+
+  it('montre la suggestion du staff, avec sa phrase, et l’ajoute au clic', () => {
+    const baguette = TestBed.inject(ShopCatalogue).itemOf('PAI-001');
+    if (baguette === null) {
+      throw new RangeError('la fixture du catalogue n’a plus de PAI-001');
+    }
+    const view: CartSuggestionView = {
+      sku: 'PAI-001',
+      item: baguette,
+      reason: {
+        source: 'staff',
+        ruleId: '01jrule',
+        phrase: { fr: 'Avec un croissant, la baguette' },
+      },
+    };
+    pick.current.set(view);
+    fixture.detectChanges();
+
+    expect(card()?.textContent).toContain('Avec un croissant, la baguette');
+    // Un visiteur lit le TTC servi, comme sur la vignette.
+    expect(card()?.textContent).toContain(`${formatCents(baguette.unitPriceTtcCents)} TTC`);
+    card()?.click();
+
+    expect(pick.taken).toEqual([view]);
+    // Le taux d'ajout global inclut les suggestions (Hugo, 2026-10-18).
+    expect(recorded).toEqual([{ sku: 'PAI-001', event: 'added_to_cart' }]);
+    expect(TestBed.inject(ClientCart).quantityOf('PAI-001')).toBe(1);
+  });
+
+  it('écrit le prix HT à un pro, comme la vignette', () => {
+    const baguette = TestBed.inject(ShopCatalogue).itemOf('PAI-001');
+    if (baguette === null) {
+      throw new RangeError('la fixture du catalogue n’a plus de PAI-001');
+    }
+    showsTtc.set(false);
+    pick.current.set({
+      sku: 'PAI-001',
+      item: baguette,
+      reason: { source: 'staff', ruleId: '01jrule', phrase: null },
+    });
+    fixture.detectChanges();
+
+    expect(card()?.textContent).toContain(`${shelfPriceLabel(baguette, false)} HT`);
+  });
+
+  it('sans phrase, dit « Notre conseil »', () => {
+    const baguette = TestBed.inject(ShopCatalogue).itemOf('PAI-001');
+    if (baguette === null) {
+      throw new RangeError('la fixture du catalogue n’a plus de PAI-001');
+    }
+    pick.current.set({
+      sku: 'PAI-001',
+      item: baguette,
+      reason: { source: 'staff', ruleId: '01jrule', phrase: null },
+    });
+    fixture.detectChanges();
+
+    expect(card()?.textContent).toContain('Notre conseil');
   });
 });

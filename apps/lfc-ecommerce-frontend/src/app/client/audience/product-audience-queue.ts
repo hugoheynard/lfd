@@ -19,6 +19,12 @@ export const AUDIENCE_FLUSH_DELAY_MS = 5_000;
  */
 const DIRECT_SOURCE: ProductAudienceSource = 'none';
 
+/** D'où vient un geste de suggestion : sa source, et l'emplacement compté. */
+export interface AudienceOrigin {
+  readonly source: ProductAudienceSource;
+  readonly placement: string;
+}
+
 /** Ce que la file sait faire du réseau — doublé dans les tests. */
 export interface AudienceTransport {
   /** Envoi ordinaire, pendant la visite. */
@@ -50,9 +56,17 @@ export class ProductAudienceQueue {
     private readonly timer: AudienceTimer,
   ) {}
 
-  /** Les émetteurs d'aujourd'hui (vue, ajout) ne viennent d'aucune suggestion. */
-  record(sku: string, event: ProductAudienceEvent): void {
-    this.pending.push({ sku, event, source: DIRECT_SOURCE });
+  /**
+   * Sans origine, le geste ne vient d'aucune suggestion (vue, ajout direct).
+   * Une suggestion porte sa source et son emplacement — pour le staff, l'id
+   * de la règle en minuscules (§6 du plan des suggestions du staff).
+   */
+  record(sku: string, event: ProductAudienceEvent, origin: AudienceOrigin | null = null): void {
+    this.pending.push(
+      origin === null
+        ? { sku, event, source: DIRECT_SOURCE }
+        : { sku, event, source: origin.source, placement: origin.placement },
+    );
     if (this.pending.length >= MAX_AUDIENCE_EVENTS_PER_BATCH) {
       this.flush(false);
     } else if (!this.armed) {
