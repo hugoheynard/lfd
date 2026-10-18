@@ -60,6 +60,7 @@ function armTools(canWrite = true) {
     | 'setOrder'
     | 'preview'
     | 'results'
+    | 'alerts'
   > = {
     list: () => Promise.resolve([...wire.rules]),
     choices: () => Promise.resolve(CHOICES),
@@ -119,6 +120,19 @@ function armTools(canWrite = true) {
           revenueEstimateCents: 240,
         })),
       }),
+    alerts: () =>
+      Promise.resolve({
+        today: '2026-10-18',
+        rules: wire.rules.map((rule) => ({
+          ruleId: rule.id,
+          severity: 'empty' as const,
+          triggerWithdrawn: false,
+          items: [
+            { sku: 'PAI-001', audience: 'public' as const, reason: 'hidden_for_audience' as const },
+          ],
+          window: { from: '2026-10-18', to: '2026-10-25', capped: false },
+        })),
+      }),
     order: () => Promise.resolve({ order: wire.order, updatedAt: null }),
     setOrder: (order) => {
       wire.order = order;
@@ -152,6 +166,7 @@ describe('declareSuggestionAgentTools', () => {
       'suggestion_order_get',
       'suggestion_preview',
       'suggestion_results',
+      'suggestion_alerts',
     ];
     expect(names).toEqual(reads);
     expect([...registered.keys()]).toEqual(reads);
@@ -252,5 +267,24 @@ describe('suggestion_results', () => {
     expect(text).toContain('taux d’ajout 25 %');
     expect(text).toContain('commandées (estimé) 2');
     expect(text).toContain('CA HT apporté (estimé) 2,40 €');
+  });
+});
+
+describe('suggestion_alerts', () => {
+  it('rend chaque règle à corriger, sa gravité, ses codes et ses raisons en clair', async () => {
+    const { tool, wire } = armTools(false);
+    wire.rules.push(staffSuggestion());
+    const text = (await tool('suggestion_alerts').execute({})).replace(/\s+/gu, ' ');
+    expect(text).toContain('1 suggestion(s) à corriger');
+    expect(text).toContain('id 01JRULE');
+    expect(text).toContain('Vide [empty] [PAI-001:hidden_for_audience]');
+    expect(text).toContain('« Baguette » est masqué pour les particuliers.');
+  });
+
+  it('sans règle à corriger, le dit', async () => {
+    const { tool } = armTools(false);
+    expect(await tool('suggestion_alerts').execute({})).toContain(
+      'aucune suggestion active n’est à corriger',
+    );
   });
 });

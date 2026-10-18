@@ -2241,3 +2241,14 @@ export {
   type StaffSuggestionResultsQuery,
   type StaffSuggestionResultsView,
 } from "./staff-suggestion-results.js";
+export {
+  STAFF_SUGGESTION_ALERT_HORIZON_DAYS,
+  STAFF_SUGGESTION_ALERT_REASONS,
+  STAFF_SUGGESTION_ALERT_SEVERITIES,
+  type StaffSuggestionAlertReason,
+  type StaffSuggestionAlertSeverity,
+  type StaffSuggestionAlertsView,
+  type StaffSuggestionAlertWindow,
+  type StaffSuggestionItemAlert,
+  type StaffSuggestionRuleAlert,
+} from "./staff-suggestion-alerts.js";

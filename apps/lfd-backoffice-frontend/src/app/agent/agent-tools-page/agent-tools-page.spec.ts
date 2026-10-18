@@ -254,6 +254,7 @@ describe('AgentToolsPage', () => {
       'suggestion_order_get',
       'suggestion_preview',
       'suggestion_results',
+      'suggestion_alerts',
     ]);
     expect(root.textContent).toContain('pas le droit de modifier les suggestions');
   });

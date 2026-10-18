@@ -12,6 +12,7 @@ import {
   type StaffSuggestionChoicesView,
   type StaffSuggestionResultPeriod,
   type StaffSuggestionResultRow,
+  type StaffSuggestionRuleAlert,
   type StaffSuggestionRuleView,
 } from '@lfd/contracts';
 import {
@@ -45,6 +46,14 @@ import {
   revenueLabel,
 } from '../suggestion-results';
 import { ruleSummary, STATE_BADGES, stateOf } from '../suggestion-summary';
+import {
+  ALERT_BADGES,
+  ALERT_FILTER_ALL,
+  ALERT_FILTER_TO_FIX,
+  alertFilterOf,
+  alertLines,
+  type AlertFilter,
+} from '../suggestion-alerts';
 
 type LoadState = 'loading' | 'error' | 'ready';
 
@@ -60,6 +69,10 @@ type LoadState = 'loading' | 'error' | 'ready';
  * et chiffre d'affaires (RS6) sont ESTIMÉS côté serveur, et l'écran dit
  * comment, sur la période choisie (7, 30 ou 90 jours). Une panne
  * des chiffres ou du catalogue n'efface pas la liste : elle se dit à côté.
+ *
+ * Les alertes (RS10) disent, sous la phrase d'une règle vivante, quel article
+ * ne se vend plus et pourquoi ; « À corriger » ne garde qu'elles. Leur panne
+ * se dit à côté, comme celle des chiffres.
  *
  * L'aperçu (RS5) se lit sous `lfc_suggestions:read`, comme la liste : il
  * dit ce que la boutique montrerait, et pourquoi une règle reste muette.
@@ -110,6 +123,15 @@ export class SuggestionsPage {
   protected readonly revenueLabel = revenueLabel;
   private readonly catalogueFailed = signal(false);
   private readonly resultsFailed = signal(false);
+  private readonly alerts = signal<ReadonlyMap<string, StaffSuggestionRuleAlert> | null>(null);
+  private readonly alertsFailed = signal(false);
+  /** « Toutes » ou « À corriger » — la tête de la liste (RS10). */
+  protected readonly alertFilter = signal<AlertFilter>(ALERT_FILTER_ALL);
+  protected readonly alertsLoaded = computed(() => this.alerts() !== null);
+  protected readonly alertFilterOptions = computed(() => [
+    { value: ALERT_FILTER_ALL, label: 'Toutes' },
+    { value: ALERT_FILTER_TO_FIX, label: `À corriger (${String(this.alerts()?.size ?? 0)})` },
+  ]);
   /** Le catalogue ou les chiffres manquent : la liste reste, la panne se dit. */
   protected readonly partialFailure = computed(() => {
     const problems = [
@@ -117,6 +139,7 @@ export class SuggestionsPage {
         ? ['le catalogue n’a pas pu être lu : les articles se disent par leur référence']
         : []),
       ...(this.resultsFailed() ? ['les chiffres n’ont pas pu être lus'] : []),
+      ...(this.alertsFailed() ? ['les alertes n’ont pas pu être lues'] : []),
     ];
     return problems.length === 0 ? null : `Affichage partiel : ${problems.join(' ; ')}.`;
   });
@@ -125,6 +148,13 @@ export class SuggestionsPage {
 
   private readonly split = computed(() => splitArchived(this.rules()));
   protected readonly live = computed(() => this.split().live);
+  /** Les vivantes, réduites à celles à corriger quand le filtre le demande. */
+  protected readonly listed = computed(() => {
+    const alerts = this.alerts();
+    return this.alertFilter() === ALERT_FILTER_TO_FIX && alerts !== null
+      ? this.live().filter((rule) => alerts.has(rule.id))
+      : this.live();
+  });
   protected readonly archived = computed(() => this.split().archived);
   protected readonly canWrite = computed(() => this.permissions.can('lfc_suggestions:write'));
   /** Aucune règle n'a encore été montrée en boutique : les chiffres restent à zéro. */
@@ -140,6 +170,12 @@ export class SuggestionsPage {
     ruleSummary(rule, this.choices());
   protected readonly badgeOf = (rule: StaffSuggestionRuleView) =>
     STATE_BADGES[stateOf(rule, parisToday())];
+  protected readonly alertOf = (rule: StaffSuggestionRuleView): StaffSuggestionRuleAlert | null =>
+    this.alerts()?.get(rule.id) ?? null;
+  protected readonly alertBadgeOf = (alert: StaffSuggestionRuleAlert) =>
+    ALERT_BADGES[alert.severity];
+  protected readonly alertLinesOf = (alert: StaffSuggestionRuleAlert): readonly string[] =>
+    alertLines(alert, this.choices());
   protected readonly countsOf = (rule: StaffSuggestionRuleView): StaffSuggestionResultRow | null =>
     this.counters()?.get(rule.id) ?? null;
 
@@ -167,7 +203,23 @@ export class SuggestionsPage {
     } catch {
       this.catalogueFailed.set(true);
     }
-    await this.loadResults();
+    await Promise.all([this.loadResults(), this.loadAlerts()]);
+  }
+
+  /** Les alertes (RS10) ; leur panne se dit à côté de la liste. */
+  private async loadAlerts(): Promise<void> {
+    try {
+      const view = await this.api.alerts();
+      this.alerts.set(new Map(view.rules.map((alert) => [alert.ruleId, alert])));
+      this.alertsFailed.set(false);
+    } catch {
+      this.alerts.set(null);
+      this.alertsFailed.set(true);
+    }
+  }
+
+  protected chooseAlertFilter(value: string): void {
+    this.alertFilter.set(alertFilterOf(value) ?? ALERT_FILTER_ALL);
   }
 
   /** Les chiffres de la période choisie ; leur panne se dit à côté de la liste. */

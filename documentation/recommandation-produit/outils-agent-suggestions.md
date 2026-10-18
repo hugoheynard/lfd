@@ -14,33 +14,34 @@ l'admin recommandation staff ».
 
 ## Qui les voit
 
-| Droit                   | Ce qui est déclaré                                                                                              |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `lfc_suggestions:read`  | `suggestion_list`, `suggestion_order_get`, `suggestion_preview`, `suggestion_results` — les lectures de l'écran |
-| `lfc_suggestions:write` | en plus, les cinq outils d'écriture — le droit que `POST`/`PUT` opposent                                        |
+| Droit                   | Ce qui est déclaré                                                                                                                   |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `lfc_suggestions:read`  | `suggestion_list`, `suggestion_order_get`, `suggestion_preview`, `suggestion_results`, `suggestion_alerts` — les lectures de l'écran |
+| `lfc_suggestions:write` | en plus, les cinq outils d'écriture — le droit que `POST`/`PUT` opposent                                                             |
 
 La route `/outils-agent` et son entrée de menu s'ouvrent désormais à l'un des
 **sept** droits (`lfc_suggestions:read` ajouté). Aucun droit n'est écrit à un
 rôle : `lfc_suggestions` s'accorde à l'écran des rôles.
 
-## Les neuf outils
+## Les dix outils
 
 Code : [`agent/suggestion-agent-tools.ts`](../../apps/lfd-backoffice-frontend/src/app/agent/suggestion-agent-tools.ts),
 textes dans [`agent/suggestion-agent-text.ts`](../../apps/lfd-backoffice-frontend/src/app/agent/suggestion-agent-text.ts),
 refus par `said` (`agent-tool-text.ts`, partagé). Client : `StaffSuggestionsService`,
 celui de l'écran Gestion Boutique › Suggestions.
 
-| Outil                   | Route                                  | Ce qu'il fait                                                                                |
-| ----------------------- | -------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `suggestion_list`       | `GET admin/suggestions` (+ `choices`)  | chaque règle (id, état, phrase, déclencheur, articles…), puis le catalogue servi             |
-| `suggestion_order_get`  | `GET admin/suggestions/order`          | l'ordre entre règles concurrentes : `recent` ou `priority`                                   |
-| `suggestion_preview`    | `POST admin/suggestions/preview`       | l'aperçu (RS5) : la carte que verrait le client, puis chaque règle « Affichée » ou sa raison |
-| `suggestion_results`    | `GET admin/suggestions/results`        | les chiffres (RS6) sur 7, 30 ou 90 jours : comptés, taux d'ajout, commandées et CA estimés   |
-| `suggestion_create`     | `POST admin/suggestions`               | crée une règle, née active, et la rend relue                                                 |
-| `suggestion_update`     | `GET` puis `PUT admin/suggestions/:id` | réécrit par `id` : un champ omis garde sa valeur                                             |
-| `suggestion_set_active` | `PUT admin/suggestions/:id/active`     | coupe ou rallume, sans rien supprimer                                                        |
-| `suggestion_archive`    | `PUT admin/suggestions/:id/archive`    | retire pour toujours ; une archivée ne se modifie plus                                       |
-| `suggestion_order_set`  | `PUT admin/suggestions/order`          | règle l'ordre, journalisé                                                                    |
+| Outil                   | Route                                                | Ce qu'il fait                                                                                  |
+| ----------------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `suggestion_list`       | `GET admin/suggestions` (+ `choices`)                | chaque règle (id, état, phrase, déclencheur, articles…), puis le catalogue servi               |
+| `suggestion_order_get`  | `GET admin/suggestions/order`                        | l'ordre entre règles concurrentes : `recent` ou `priority`                                     |
+| `suggestion_preview`    | `POST admin/suggestions/preview`                     | l'aperçu (RS5) : la carte que verrait le client, puis chaque règle « Affichée » ou sa raison   |
+| `suggestion_results`    | `GET admin/suggestions/results`                      | les chiffres (RS6) sur 7, 30 ou 90 jours : comptés, taux d'ajout, commandées et CA estimés     |
+| `suggestion_alerts`     | `GET admin/suggestions/alerts` (+ `list`, `choices`) | les règles à corriger (RS10) : « Vide » / « Partielle », codes de raison et phrases de l'écran |
+| `suggestion_create`     | `POST admin/suggestions`                             | crée une règle, née active, et la rend relue                                                   |
+| `suggestion_update`     | `GET` puis `PUT admin/suggestions/:id`               | réécrit par `id` : un champ omis garde sa valeur                                               |
+| `suggestion_set_active` | `PUT admin/suggestions/:id/active`                   | coupe ou rallume, sans rien supprimer                                                          |
+| `suggestion_archive`    | `PUT admin/suggestions/:id/archive`                  | retire pour toujours ; une archivée ne se modifie plus                                         |
+| `suggestion_order_set`  | `PUT admin/suggestions/order`                        | règle l'ordre, journalisé                                                                      |
 
 Les refus sont ceux de l'agrégat `StaffSuggestionRule`, rendus mot pour mot :
 déclencheur suggéré, emplacement où le déclencheur ne peut pas être vrai, fin
@@ -60,3 +61,10 @@ et **CA HT apporté (estimé)** en euros. L'estimation est celle de l'écran,
 décrite dans [`suggestions-du-staff.md`](suggestions-du-staff.md) §8.2 :
 les compteurs ne nomment personne, une commande ne se relie pas à un clic.
 Code : [`agent/suggestion-results-agent-tool.ts`](../../apps/lfd-backoffice-frontend/src/app/agent/suggestion-results-agent-tool.ts).
+
+`suggestion_alerts` (RS10, 2026-10-18) ne prend rien et rend, par règle à
+corriger, sa gravité (`[empty]` ou `[partial]`), ses codes
+(`[PAI-001:hidden_for_audience]`, `trigger_withdrawn`) et les phrases mêmes
+de l'écran (`alertLines`). Le calcul est décrit dans
+[`suggestions-du-staff.md`](suggestions-du-staff.md) §13.
+Code : [`agent/suggestion-alerts-agent-tool.ts`](../../apps/lfd-backoffice-frontend/src/app/agent/suggestion-alerts-agent-tool.ts).

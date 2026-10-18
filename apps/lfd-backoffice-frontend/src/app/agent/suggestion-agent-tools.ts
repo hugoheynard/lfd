@@ -12,6 +12,7 @@ import {
 import { StaffSuggestionsService } from '../suggestions/staff-suggestions.service';
 
 import { said } from './agent-tool-text';
+import { declareSuggestionAlertsTool } from './suggestion-alerts-agent-tool';
 import { declareSuggestionPreviewTool } from './suggestion-preview-agent-tool';
 import { declareSuggestionResultsTool } from './suggestion-results-agent-tool';
 import { orderText, suggestionText } from './suggestion-agent-text';
@@ -22,6 +23,7 @@ export const SUGGESTION_READ_TOOLS = [
   'suggestion_order_get',
   'suggestion_preview',
   'suggestion_results',
+  'suggestion_alerts',
 ] as const;
 /** Les outils d'écriture — déclarés en plus avec `lfc_suggestions:write`. */
 export const SUGGESTION_WRITE_TOOLS = [
@@ -127,6 +129,7 @@ export function declareSuggestionAgentTools(canWrite: boolean): readonly string[
 
   declareSuggestionPreviewTool(api, choices);
   declareSuggestionResultsTool(api);
+  declareSuggestionAlertsTool(api, choices);
 
   if (!canWrite) {
     return SUGGESTION_READ_TOOLS;

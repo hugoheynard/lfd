@@ -1,9 +1,9 @@
 # Les suggestions décidées par le staff — ce qui est bâti
 
 > **Doc d'état** (2026-10-18, relue contre le code au commit `651b446d3` ;
-> l'accueil et l'après-ajout, RS7, ajoutés le même jour). Elle décrit ce qui
-> existe. Ce qui reste à faire (des règles plus fines, les gestes du staff, l'alerte, la mise en avant dans les
-> règles) est dans [`plan-suggestions-du-staff.md`](plan-suggestions-du-staff.md).
+> l'accueil et l'après-ajout, RS7, et les alertes, RS10, ajoutés le même jour).
+> Elle décrit ce qui existe. Ce qui reste à faire (des règles plus fines, les
+> gestes du staff, la mise en avant dans les règles) est dans [`plan-suggestions-du-staff.md`](plan-suggestions-du-staff.md).
 > L'ensemble du sujet (calculé, décidé, mis en avant) est présenté dans
 > [`README.md`](README.md).
 
@@ -19,7 +19,7 @@ Code : `apps/lfd-api/src/b2b/recommendations/` (backend),
 `client/cart/staff-cart-suggestion.service.ts` (boutique). Contrats :
 `packages/contracts/src/staff-suggestions.ts`, `cart-suggestions.ts`,
 `product-suggestions.ts`, `home-suggestions.ts`, `staff-suggestion-preview.ts`,
-`staff-suggestion-results.ts`.
+`staff-suggestion-results.ts`, `staff-suggestion-alerts.ts`.
 
 ## 1. Le parcours
 
@@ -289,7 +289,9 @@ sous `b2b_growth`.
   « Ouvrir l'aperçu » ;
 - **Ordre** (`suggestion-order-card/`) : `recent` ou `priority` ;
 - **Suggestions** : la liste (active, période, déclencheur → suggérés,
-  emplacement, audience), le panneau d'édition (`suggestion-panel/`) ;
+  emplacement, audience), le panneau d'édition (`suggestion-panel/`) ; en
+  tête, le filtre « Toutes / À corriger (n) », et sur chaque règle signalée
+  le badge « Vide » ou « Partielle » et ses raisons en clair (§13) ;
 - **Archivées** : lisibles, plus rien n'en paraît en boutique.
 
 Une règle neuve est préremplie « partout, à l'accueil, pour tous, aujourd'hui
@@ -297,9 +299,10 @@ seulement » (`suggestion-draft.ts`) — un défaut qui s'affiche depuis RS7.
 
 ## 11. Les outils agent
 
-Neuf outils WebMCP sous `lfc_suggestions`, déclarés par l'écran
-`/outils-agent` : quatre lectures (`suggestion_list`, `suggestion_order_get`,
-`suggestion_preview`, `suggestion_results`) et cinq écritures. Détail dans
+Dix outils WebMCP sous `lfc_suggestions`, déclarés par l'écran
+`/outils-agent` : cinq lectures (`suggestion_list`, `suggestion_order_get`,
+`suggestion_preview`, `suggestion_results`, `suggestion_alerts`) et cinq
+écritures. Détail dans
 [`outils-agent-suggestions.md`](outils-agent-suggestions.md).
 
 ## 12. Les routes
@@ -312,6 +315,7 @@ Neuf outils WebMCP sous `lfc_suggestions`, déclarés par l'écran
 | `GET /admin/suggestions/order`        | `lfc_suggestions:read`  | l'ordre réglé                                       |
 | `GET /admin/suggestions/counters`     | `lfc_suggestions:read`  | affichée, cliquée, ajoutée par règle                |
 | `GET /admin/suggestions/results`      | `lfc_suggestions:read`  | les résultats du §8.2                               |
+| `GET /admin/suggestions/alerts`       | `lfc_suggestions:read`  | les alertes du §13                                  |
 | `POST /admin/suggestions/preview`     | `lfc_suggestions:read`  | l'aperçu du §7                                      |
 | `POST /admin/suggestions`             | `lfc_suggestions:write` | crée une règle                                      |
 | `PUT /admin/suggestions/order`        | `lfc_suggestions:write` | règle l'ordre                                       |
@@ -328,8 +332,56 @@ Neuf outils WebMCP sous `lfc_suggestions`, déclarés par l'écran
 
 Pas de `DELETE` : on archive. Les chemins nommés sont déclarés avant `:id`.
 
-## 13. Ce qui reste à faire
+## 13. Les alertes
+
+Une règle qui **vit** — non archivée, allumée, période en cours ou à venir —
+et qui ne peut plus rien montrer ne doit pas passer inaperçue (RS10).
+`GET /admin/suggestions/alerts` (`lfc_suggestions:read`) rend les seules
+règles signalées, calculées à la demande, sans table. Une règle finie, coupée
+ou archivée n'est jamais signalée : elle ne s'affiche déjà plus.
+
+Pour chaque clientèle de la règle (`both` = les deux), chaque article suggéré
+passe par le filtre de la boutique, `RecommendationFilter.judgeOver` — le
+même `resolveMany` puis `judgeOrderable` jour par jour. Raisons, en
+vocabulaire fermé (`STAFF_SUGGESTION_ALERT_REASONS`) :
+
+| Code                  | À l'écran                                                   | Lu par                                         |
+| --------------------- | ----------------------------------------------------------- | ---------------------------------------------- |
+| `withdrawn`           | « … est retiré du catalogue. » (une seule ligne, pour tous) | paramétrage : aucune déclinaison en rayon      |
+| `not_for_audience`    | « … n'est plus vendu aux particuliers. »                    | hors gamme, validation en attente, sans tarif  |
+| `hidden_for_audience` | « … est masqué pour les particuliers. »                     | paramétrage : toutes ses déclinaisons masquées |
+| `never_orderable`     | « … n'est commandable aucun jour d'ici le 25 octobre (…). » | heure limite de l'article ou règle du commerce |
+
+La cause d'un refus de service se lit au paramétrage du catalogue
+(`NotServedCauseReader`, adaptateur `CatalogNotServedCauseReader` sur
+`CatalogAdminReader`) : `resolveMany` dit ce qui est servi, pas pourquoi le
+reste ne l'est pas.
+
+**« Jamais commandable »** cherche un jour ouvert de la plus tardive
+d'aujourd'hui et du début, à la plus proche de la fin et d'aujourd'hui + 30 :
+**31 jours au plus** (`STAFF_SUGGESTION_ALERT_HORIZON_DAYS`). Une période plus
+longue n'est regardée que jusque-là, et la vue le dit (`window.capped`,
+« la suite de la période n'est pas regardée ») ; une règle qui commence
+au-delà n'est pas jugée sur ce point. Sans point de retrait : la règle
+générale du commerce, celle de la livraison — une heure limite propre à un
+point de retrait n'est pas regardée.
+
+**Le déclencheur** : un article (au panier, fiche ouverte) qu'aucune
+clientèle de la règle ne reçoit, ou une famille que le catalogue servi ne
+connaît plus (`SuggestionFamilyReader`, celui de l'écriture) — la règle ne
+peut plus se déclencher (`triggerWithdrawn`).
+
+**Gravité** : un article passe s'il est servi et commandable pour au moins
+une clientèle de la règle. Aucun ne passe, ou un déclencheur mort : **Vide**
+(badge alerte). Sinon, la moindre raison : **Partielle** (avertissement).
+
+Domaine pur : `domain/services/suggestion-alerts.ts` (`watchedRules`,
+`alertWindow`, `ruleAlert`) ; cas d'usage :
+`list-staff-suggestion-alerts.handler.ts`. Écran : `suggestion-alerts.ts`
+(les phrases), outil agent `suggestion_alerts`.
+
+## 14. Ce qui reste à faire
 
 Dans [`plan-suggestions-du-staff.md`](plan-suggestions-du-staff.md) : des
-règles plus fines (RS8), les gestes du staff (RS9),
-l'alerte sur une règle vide (RS10), et la mise en avant dans les règles (RS4).
+règles plus fines (RS8), les gestes du staff (RS9), et la mise en avant dans
+les règles (RS4).

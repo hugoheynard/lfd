@@ -9,6 +9,7 @@ import {
   staffSuggestionRulePayloadSchema,
   type SetStaffSuggestionActivePayload,
   type SetStaffSuggestionOrderPayload,
+  type StaffSuggestionAlertsView,
   type StaffSuggestionApplicableQuery,
   type StaffSuggestionChoicesView,
   type StaffSuggestionCountersQuery,
@@ -43,6 +44,7 @@ import { CreateStaffSuggestionCommand } from "../application/commands/create-sta
 import { ReviseStaffSuggestionCommand } from "../application/commands/revise-staff-suggestion.command.js";
 import { SetStaffSuggestionActiveCommand } from "../application/commands/set-staff-suggestion-active.command.js";
 import { SetStaffSuggestionOrderCommand } from "../application/commands/set-staff-suggestion-order.command.js";
+import { ListStaffSuggestionAlertsQuery } from "../application/queries/list-staff-suggestion-alerts.query.js";
 import { GetStaffSuggestionOrderQuery } from "../application/queries/get-staff-suggestion-order.query.js";
 import { ListApplicableStaffSuggestionsQuery } from "../application/queries/list-applicable-staff-suggestions.query.js";
 import { ListStaffSuggestionChoicesQuery } from "../application/queries/list-staff-suggestion-choices.query.js";
@@ -61,7 +63,7 @@ import {
  * verbe. Pas de `DELETE` : on archive.
  *
  * Les chemins nommés (`order`, `applicable`, `choices`, `counters`, `results`,
- * `preview`) sont
+ * `alerts`, `preview`) sont
  * déclarés AVANT `:id` : Nest prend la première route qui correspond.
  */
 @Controller("admin/suggestions")
@@ -137,6 +139,17 @@ export class AdminStaffSuggestionsController {
   ): Promise<StaffSuggestionResultsView> {
     return this.queries.execute<ListStaffSuggestionResultsQuery, StaffSuggestionResultsView>(
       new ListStaffSuggestionResultsQuery(query.days ?? DEFAULT_STAFF_SUGGESTION_RESULT_PERIOD),
+    );
+  }
+
+  /**
+   * Les alertes (RS10) : les règles vivantes dont un article ne se vend plus,
+   * ou dont le déclencheur ne peut plus être vrai. Calculées à la demande.
+   */
+  @Get("alerts")
+  alerts(): Promise<StaffSuggestionAlertsView> {
+    return this.queries.execute<ListStaffSuggestionAlertsQuery, StaffSuggestionAlertsView>(
+      new ListStaffSuggestionAlertsQuery(),
     );
   }
 

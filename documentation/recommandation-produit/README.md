@@ -45,14 +45,14 @@ Le mot sert à trois choses, à ne pas confondre :
 
 ## 4. Les docs du dossier
 
-| Doc                                                                        | Nature     | À quoi elle sert                                                                                                     |
-| -------------------------------------------------------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------- |
-| [`suggestions-du-staff.md`](suggestions-du-staff.md)                       | doc d'état | ce qui est bâti des suggestions du staff : la règle, l'ordre, l'affichage, le filtre, l'aperçu, les chiffres estimés |
-| [`plan-suggestions-du-staff.md`](plan-suggestions-du-staff.md)             | plan       | ce qui reste aux suggestions du staff : RS8, RS9, RS10, RS4                                                          |
-| [`plan-recommandation-de-produits.md`](plan-recommandation-de-produits.md) | plan       | le plan général : l'existant d'origine, les décisions R1–R5 bis, l'ordre des lots (R0, RS, R2, A1, R1, R3)           |
-| [`historique-du-particulier.md`](historique-du-particulier.md)             | analyse    | ce qu'il faut pour recommander à un particulier : finalité, base légale, interrupteur, rien pour un invité           |
-| [`plan-audiences.md`](plan-audiences.md)                                   | plan       | les segments de clientèle, leurs sources, le seuil de 5 clients, lots A1–A4                                          |
-| [`outils-agent-suggestions.md`](outils-agent-suggestions.md)               | doc d'état | les neuf outils WebMCP des suggestions du staff                                                                      |
+| Doc                                                                        | Nature     | À quoi elle sert                                                                                                                  |
+| -------------------------------------------------------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| [`suggestions-du-staff.md`](suggestions-du-staff.md)                       | doc d'état | ce qui est bâti des suggestions du staff : la règle, l'ordre, l'affichage, le filtre, l'aperçu, les alertes, les chiffres estimés |
+| [`plan-suggestions-du-staff.md`](plan-suggestions-du-staff.md)             | plan       | ce qui reste aux suggestions du staff : RS8, RS9, RS4                                                                             |
+| [`plan-recommandation-de-produits.md`](plan-recommandation-de-produits.md) | plan       | le plan général : l'existant d'origine, les décisions R1–R5 bis, l'ordre des lots (R0, RS, R2, A1, R1, R3)                        |
+| [`historique-du-particulier.md`](historique-du-particulier.md)             | analyse    | ce qu'il faut pour recommander à un particulier : finalité, base légale, interrupteur, rien pour un invité                        |
+| [`plan-audiences.md`](plan-audiences.md)                                   | plan       | les segments de clientèle, leurs sources, le seuil de 5 clients, lots A1–A4                                                       |
+| [`outils-agent-suggestions.md`](outils-agent-suggestions.md)               | doc d'état | les neuf outils WebMCP des suggestions du staff                                                                                   |
 
 La mise en avant par audience est décrite avec le catalogue :
 [`../catalogue/catalogue-synchronise.md`](../catalogue/catalogue-synchronise.md)

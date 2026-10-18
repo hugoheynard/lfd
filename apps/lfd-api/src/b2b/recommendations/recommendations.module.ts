@@ -14,6 +14,9 @@ import { ListApplicableStaffSuggestionsHandler } from "./application/queries/lis
 import { ListStaffSuggestionChoicesHandler } from "./application/queries/list-staff-suggestion-choices.handler.js";
 import { ListStaffSuggestionCountersHandler } from "./application/queries/list-staff-suggestion-counters.handler.js";
 import { ListStaffSuggestionResultsHandler } from "./application/queries/list-staff-suggestion-results.handler.js";
+import { ListStaffSuggestionAlertsHandler } from "./application/queries/list-staff-suggestion-alerts.handler.js";
+import { NotServedCauseReader } from "./domain/ports/not-served-cause.reader.js";
+import { CatalogNotServedCauseReader } from "./infrastructure/catalog-not-served-cause.reader.js";
 import { ListStaffSuggestionsHandler } from "./application/queries/list-staff-suggestions.handler.js";
 import { StaffSuggestionCounterReader } from "./domain/ports/staff-suggestion-counter.reader.js";
 import { StaffSuggestionRuleReader } from "./domain/ports/staff-suggestion-rule.reader.js";
@@ -99,6 +102,10 @@ import {
  * lisent par `SuggestedSkuSalesReader`, déclaré ici et implémenté par la
  * commande (`OrdersModule` l'exporte) : des totaux par jour et article,
  * jamais une commande ni un client.
+ *
+ * RS10 : `GET /admin/suggestions/alerts` signale les règles vivantes dont un
+ * article ne se vend plus ; la cause d'un refus se lit au paramétrage du
+ * catalogue (`CatalogAdminReader`, exporté par `CatalogModule`).
  */
 @Module({
   imports: [CatalogModule, OrderCutoffsModule, OrdersModule],
@@ -138,6 +145,8 @@ import {
     ListStaffSuggestionChoicesHandler,
     ListStaffSuggestionCountersHandler,
     ListStaffSuggestionResultsHandler,
+    ListStaffSuggestionAlertsHandler,
+    { provide: NotServedCauseReader, useClass: CatalogNotServedCauseReader },
     { provide: StaffSuggestionCounterReader, useClass: PrismaStaffSuggestionCounterReader },
     { provide: CartFamilyReader, useClass: CatalogCartFamilyReader },
     { provide: SuggestedArticleReader, useClass: ShopSuggestedArticleReader },

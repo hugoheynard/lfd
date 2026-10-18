@@ -90,4 +90,41 @@ describe("RecommendationFilter", () => {
       filter.keep({ candidates: [], audience: "pro", inCart: [], target: null }),
     ).resolves.toEqual([]);
   });
+
+  describe("judgeOver — sur plusieurs jours (RS10)", () => {
+    it("un article fermé demain mais ouvert après-demain est commandable sur la période", async () => {
+      const filter = new RecommendationFilter(catalog, new StubCutoffs([]), clock());
+
+      const judged = await filter.judgeOver({
+        candidates: ["UNKNOWN", "CLOSED"],
+        audience: "pro",
+        days: [TOMORROW, addDays(TODAY, 2)],
+      });
+
+      expect([...judged.notServed]).toEqual(["UNKNOWN"]);
+      expect([...judged.neverOrderable]).toEqual([]);
+    });
+
+    it("fermé chaque jour de la période : jamais commandable", async () => {
+      const filter = new RecommendationFilter(catalog, new StubCutoffs([]), clock());
+
+      const judged = await filter.judgeOver({
+        candidates: ["CLOSED", "OPEN"],
+        audience: "pro",
+        days: [TOMORROW],
+      });
+
+      expect([...judged.neverOrderable]).toEqual(["CLOSED"]);
+    });
+
+    it("sans jour, ne juge que le service et ne lit pas les règles du commerce", async () => {
+      const cutoffs = new StubCutoffs([]);
+      const filter = new RecommendationFilter(catalog, cutoffs, clock());
+
+      const judged = await filter.judgeOver({ candidates: ["CLOSED"], audience: "pro", days: [] });
+
+      expect(judged.neverOrderable.size).toBe(0);
+      expect(cutoffs.calls).toBe(0);
+    });
+  });
 });

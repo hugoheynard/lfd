@@ -71,8 +71,20 @@
           <fold-card>
             <div class="section">
               <fold-element-title variant="title" title="Suggestions" />
+              @if (alertsLoaded()) {
+                <fold-view-toggle
+                  ariaLabel="Filtrer les suggestions"
+                  size="sm"
+                  [options]="alertFilterOptions()"
+                  [value]="alertFilter()"
+                  (valueChange)="chooseAlertFilter($event)"
+                />
+              }
+              @if (listed().length === 0) {
+                <p class="estimate-help">Aucune suggestion à corriger.</p>
+              }
               <ul class="rules">
-                @for (rule of live(); track rule.id) {
+                @for (rule of listed(); track rule.id) {
                   <ng-container
                     [ngTemplateOutlet]="row"
                     [ngTemplateOutletContext]="{ $implicit: rule }"
@@ -112,7 +124,18 @@
       <span class="rule-summary">{{ summary(rule) }}</span>
       @let badge = badgeOf(rule);
       <fold-badge [content]="badge.label" [variant]="badge.variant" radius="pill" />
+      @if (alertOf(rule); as alert) {
+        @let alertBadge = alertBadgeOf(alert);
+        <fold-badge [content]="alertBadge.label" [variant]="alertBadge.variant" radius="pill" />
+      }
     </div>
+    @if (alertOf(rule); as alert) {
+      <ul class="rule-alerts">
+        @for (text of alertLinesOf(alert); track text) {
+          <li>{{ text }}</li>
+        }
+      </ul>
+    }
     <dl class="rule-facts">
       <div>
         <dt>Présentée par</dt>

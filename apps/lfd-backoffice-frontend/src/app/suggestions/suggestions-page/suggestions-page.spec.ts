@@ -2,6 +2,7 @@ import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import type {
   StaffPermission,
+  StaffSuggestionRuleAlert,
   StaffSuggestionResultPeriod,
   StaffSuggestionResultRow,
   StaffSuggestionResultsView,
@@ -28,6 +29,8 @@ class FakeApi {
   readonly periods: StaffSuggestionResultPeriod[] = [];
   failList = false;
   failCounters = false;
+  alertRules: readonly StaffSuggestionRuleAlert[] = [];
+  failAlerts = false;
   readonly toggled: { readonly id: string; readonly active: boolean }[] = [];
 
   list(): Promise<readonly StaffSuggestionRuleView[]> {
@@ -42,6 +45,11 @@ class FakeApi {
       ? Promise.reject(new Error('réseau'))
       : Promise.resolve({ days, from: '2026-09-19', to: '2026-10-18', rules: this.rows });
   }
+  alerts() {
+    return this.failAlerts
+      ? Promise.reject(new Error('réseau'))
+      : Promise.resolve({ today: '2026-10-18', rules: this.alertRules });
+  }
   order() {
     return Promise.resolve({ order: 'recent' as const, updatedAt: null });
   }
@@ -52,6 +60,13 @@ class FakeApi {
 }
 
 async function render(
+  api: FakeApi,
+  granted: readonly StaffPermission[] = ['lfc_suggestions:read'],
+) {
+  return (await renderFixture(api, granted)).nativeElement as HTMLElement;
+}
+
+async function renderFixture(
   api: FakeApi,
   granted: readonly StaffPermission[] = ['lfc_suggestions:read'],
 ) {
@@ -73,7 +88,7 @@ async function render(
   fixture.detectChanges();
   await fixture.whenStable();
   fixture.detectChanges();
-  return fixture.nativeElement as HTMLElement;
+  return fixture;
 }
 
 const zeroRow: StaffSuggestionResultRow = {
@@ -166,5 +181,50 @@ describe('SuggestionsPage', () => {
     cut?.click();
     await Promise.resolve();
     expect(api.toggled).toEqual([{ id: '01JRULE', active: false }]);
+  });
+
+  describe('les alertes (RS10)', () => {
+    const emptyAlert: StaffSuggestionRuleAlert = {
+      ruleId: 'EMPTY',
+      severity: 'empty',
+      triggerWithdrawn: false,
+      items: [{ sku: 'PAI-001', audience: 'public', reason: 'hidden_for_audience' }],
+      window: { from: '2026-10-18', to: '2026-10-25', capped: false },
+    };
+
+    it('« Vide » et la raison en clair sous la phrase ; « À corriger » ne garde que les signalées', async () => {
+      const api = new FakeApi();
+      api.rules = [
+        staffSuggestion({ id: 'EMPTY' }),
+        staffSuggestion({ id: 'SANE', phrase: { fr: 'Une règle saine' } }),
+      ];
+      api.alertRules = [emptyAlert];
+      const fixture = await renderFixture(api);
+      const root = fixture.nativeElement as HTMLElement;
+      const text = () => (root.textContent ?? '').replace(/\s+/gu, ' ');
+      expect(text()).toContain('Vide');
+      expect(text()).toContain('« Baguette » est masqué pour les particuliers.');
+      expect(text()).toContain('Une règle saine');
+
+      const toFix = [...root.querySelectorAll<HTMLElement>('[role="radio"]')].find((segment) =>
+        segment.textContent?.includes('À corriger (1)'),
+      );
+      expect(toFix).toBeDefined();
+      toFix?.click();
+      fixture.detectChanges();
+      await fixture.whenStable();
+
+      expect(text()).not.toContain('Une règle saine');
+      expect(text()).toContain('« Baguette » est masqué pour les particuliers.');
+    });
+
+    it('une panne des alertes laisse la liste et le dit', async () => {
+      const api = new FakeApi();
+      api.rules = [staffSuggestion()];
+      api.failAlerts = true;
+      const root = await render(api);
+      expect(root.textContent).toContain('Avec un croissant, la baguette');
+      expect(root.textContent).toContain('les alertes n’ont pas pu être lues');
+    });
   });
 });

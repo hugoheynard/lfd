@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import type {
+  StaffSuggestionAlertsView,
   StaffSuggestionChoicesView,
   StaffSuggestionOrder,
   StaffSuggestionOrderView,
@@ -72,6 +73,11 @@ export class StaffSuggestionsService {
         params: { days: String(days) },
       }),
     );
+  }
+
+  /** Les alertes (RS10) : les règles vivantes dont un article ne se vend plus, et pourquoi. */
+  alerts(): Promise<StaffSuggestionAlertsView> {
+    return firstValueFrom(this.http.get<StaffSuggestionAlertsView>(this.url('alerts')));
   }
 
   /** L'aperçu (RS5) : ce que la boutique afficherait, et pourquoi chaque règle s'affiche ou non. */

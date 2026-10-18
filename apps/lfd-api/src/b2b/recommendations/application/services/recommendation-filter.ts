@@ -81,6 +81,60 @@ export class RecommendationFilter {
     }
     return { kept, refused };
   }
+
+  /**
+   * **Le même filtre, sur plusieurs jours** — pour l'alerte (RS10) : ce qui
+   * n'est pas servi à ce lecteur, et ce qui, servi, n'est commandable AUCUN
+   * des jours donnés (`judgeOrderable`, la porte de la boutique, jour par
+   * jour). Sans panier, et sans point de retrait : la règle générale du
+   * commerce, celle de la livraison. Une liste de jours vide ne juge que le
+   * service.
+   */
+  async judgeOver(input: PeriodFilterInput): Promise<PeriodJudgement> {
+    if (input.candidates.length === 0) {
+      return { notServed: new Set(), neverOrderable: new Set() };
+    }
+    const [served, fallback] = await Promise.all([
+      this.catalog.resolveMany(input.candidates, input.audience),
+      input.days.length === 0 ? Promise.resolve([]) : this.cutoffs.list(),
+    ]);
+    const notServed = new Set(input.candidates.filter((sku) => !served.has(sku)));
+    const items = [...served.values()];
+    const now = this.clock.now();
+    const openSomeDay = new Set<string>();
+    for (const date of input.days) {
+      const verdicts = judgeOrderable({
+        candidates: items.filter((item) => !openSomeDay.has(item.sku)),
+        inCart: new Set(),
+        target: { date, pickupAddressId: null },
+        fallback,
+        now,
+      });
+      verdicts
+        .filter(({ refusal }) => refusal === null)
+        .forEach(({ candidate }) => openSomeDay.add(candidate.sku));
+    }
+    const neverOrderable = new Set(
+      input.days.length === 0
+        ? []
+        : items.map((item) => item.sku).filter((sku) => !openSomeDay.has(sku)),
+    );
+    return { notServed, neverOrderable };
+  }
+}
+
+/** Ce qu'on demande au filtre sur une période : des candidats, un lecteur, des jours. */
+export interface PeriodFilterInput {
+  readonly candidates: readonly string[];
+  readonly audience: ShopAudience;
+  /** Les jours `AAAA-MM-JJ` où chercher un jour commandable. */
+  readonly days: readonly string[];
+}
+
+/** Ce que le filtre dit d'une période. */
+export interface PeriodJudgement {
+  readonly notServed: ReadonlySet<string>;
+  readonly neverOrderable: ReadonlySet<string>;
 }
 
 /** Pourquoi le filtre écarte un SKU. */
