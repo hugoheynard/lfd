@@ -1455,6 +1455,13 @@
           "variables": []
         },
         {
+          "key": "shop.boughtWith",
+          "fr": "Souvent pris avec {name}",
+          "en": "Often bought with {name}",
+          "it": "Spesso preso con {name}",
+          "variables": ["name"]
+        },
+        {
           "key": "shop.addedToCart",
           "fr": "Ajouté !",
           "en": "Added!",

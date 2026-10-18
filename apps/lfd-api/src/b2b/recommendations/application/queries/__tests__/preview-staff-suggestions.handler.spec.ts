@@ -8,7 +8,9 @@ import {
   StaffSuggestionRule,
   type StaffSuggestionRuleInput,
 } from "../../../domain/entities/staff-suggestion-rule.js";
+import { CoPurchaseReader, type CoPurchaseAsk } from "../../../domain/ports/co-purchase.reader.js";
 import { RecommendationCutoffReader } from "../../../domain/ports/recommendation-cutoff.reader.js";
+import type { CoPurchasePair } from "../../../domain/services/bought-with.js";
 import { SuggestedArticleReader } from "../../../domain/ports/suggested-article.reader.js";
 import { NO_SUGGESTION_CONDITIONS } from "../../../domain/value-objects/suggestion-conditions.js";
 import { CatalogCartFamilyReader } from "../../../infrastructure/catalog-cart-suggestions.js";
@@ -19,6 +21,7 @@ import {
   OrderSetting,
   RuleStore,
 } from "../../commands/__tests__/staff-suggestion-doubles.js";
+import { BoughtWithShowcase } from "../../services/bought-with-showcase.js";
 import { RecommendationFilter } from "../../services/recommendation-filter.js";
 import { StaffSuggestionShowcase } from "../../services/staff-suggestion-showcase.js";
 import { PreviewStaffSuggestionsHandler } from "../preview-staff-suggestions.handler.js";
@@ -69,6 +72,18 @@ class Shelf extends SuggestedArticleReader {
   }
 }
 
+/** Les paires des commandes ; le double garde la clientèle demandée. */
+class CoPurchases extends CoPurchaseReader {
+  readonly audiences: ShopAudience[] = [];
+  constructor(private readonly rows: readonly CoPurchasePair[]) {
+    super();
+  }
+  pairs(ask: CoPurchaseAsk) {
+    this.audiences.push(ask.audience);
+    return Promise.resolve(this.rows.filter((row) => ask.anchors.includes(row.anchorSku)));
+  }
+}
+
 function shopItem(sku: string): ShopItemView {
   return {
     sku,
@@ -86,7 +101,7 @@ function shopItem(sku: string): ShopItemView {
 
 type Seed = readonly [string, Partial<StaffSuggestionRuleInput>, number, boolean?];
 
-function harness(rules: readonly Seed[]) {
+function harness(rules: readonly Seed[], pairs: readonly CoPurchasePair[] = []) {
   const store = new RuleStore();
   for (const [id, over, minutesAgo, active = true] of rules) {
     const declared = StaffSuggestionRule.declare(
@@ -102,15 +117,18 @@ function harness(rules: readonly Seed[]) {
   }
   const shelf = new Shelf();
   const clock = new FixedClock(NOW);
+  const filter = new RecommendationFilter(CATALOG, new NoCutoffs(), clock);
   const showcase = new StaffSuggestionShowcase(
     new InMemoryRuleReader(store),
     new OrderReader(new OrderSetting()),
-    new RecommendationFilter(CATALOG, new NoCutoffs(), clock),
+    filter,
     shelf,
     clock,
   );
+  const coPurchases = new CoPurchases(pairs);
   const handler = new PreviewStaffSuggestionsHandler(
     showcase,
+    new BoughtWithShowcase(coPurchases, filter, shelf, clock),
     new CatalogCartFamilyReader(CATALOG),
     clock,
   );
@@ -136,7 +154,7 @@ function harness(rules: readonly Seed[]) {
         options.cartTotalCents ?? null,
       ),
     );
-  return { preview, shelf };
+  return { preview, shelf, coPurchases };
 }
 
 const CART: PreviewPlace = { placement: "cart" };
@@ -331,5 +349,46 @@ describe("PreviewStaffSuggestionsHandler — les conditions (RS8)", () => {
     const { preview } = harness([["R", conditions({ cartWithoutFamilyId: "fam-vien" }), 0]]);
 
     expect(statuses((await preview(CART, ["VIE-001"])).rules)).toEqual([["R", "cart_has_family"]]);
+  });
+});
+
+describe("PreviewStaffSuggestionsHandler — le calculé (R2)", () => {
+  const PAIRS: readonly CoPurchasePair[] = [
+    { anchorSku: "VIE-001", withSku: "BOI-001", clients: 9 },
+    { anchorSku: "VIE-001", withSku: "PAI-001", clients: 6 },
+  ];
+
+  it("au panier, le calculé suit le décidé dans « shown », sans doublon, sa raison comprise", async () => {
+    const { preview } = harness([["A", {}, 0]], PAIRS);
+
+    const view = await preview({ placement: "cart" }, ["VIE-001"]);
+
+    expect(view.shown.map(({ sku, reason }) => [sku, reason.source])).toEqual([
+      ["BOI-001", "staff"],
+      ["PAI-001", "data"],
+    ]);
+    expect(view.shown[1]?.reason).toEqual({
+      source: "data",
+      kind: "bought_with",
+      withSku: "VIE-001",
+      withName: "VIE-001",
+    });
+  });
+
+  it("lit les commandes de la clientèle choisie", async () => {
+    const { preview, coPurchases } = harness([], PAIRS);
+
+    await preview({ placement: "cart" }, ["VIE-001"], { audience: "pro" });
+
+    expect(coPurchases.audiences).toEqual(["pro"]);
+  });
+
+  it("ni la fiche ni l'accueil n'ont de calculé", async () => {
+    const { preview, coPurchases } = harness([], PAIRS);
+
+    await preview({ placement: "product", viewedSku: "VIE-001" }, ["VIE-001"]);
+    await preview({ placement: "home" }, ["VIE-001"]);
+
+    expect(coPurchases.audiences).toEqual([]);
   });
 });

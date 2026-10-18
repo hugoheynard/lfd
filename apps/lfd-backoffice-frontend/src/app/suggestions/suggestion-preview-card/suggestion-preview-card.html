@@ -118,6 +118,21 @@
           Le client ne verrait aucune suggestion décidée ici.
         </fold-callout>
       }
+      @for (pick of computedCards(); track pick.sku) {
+        <div class="client-card">
+          <fold-element-title variant="title" [title]="pick.title" />
+          <ul class="client-items">
+            <li class="client-item">
+              <span>{{ pick.name }}</span>
+              <span class="price">{{ pick.price }}</span>
+            </li>
+          </ul>
+          <p class="muted">
+            Calculée : au moins cinq clients l’ont pris dans la même commande, ces 90 derniers
+            jours.
+          </p>
+        </div>
+      }
       @if (audience() === 'pro') {
         <p class="muted">
           Aux professionnels, le prix est celui de la vitrine pro sans tarif de société : ni

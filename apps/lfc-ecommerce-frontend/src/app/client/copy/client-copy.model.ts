@@ -437,6 +437,11 @@ export interface ClientCopy {
     readonly alsoLike: string;
     /** La même, à l'ACCUEIL (RS7) — titre de la rangée. */
     readonly ourPicks: string;
+    /**
+     * Le titre d'une suggestion CALCULÉE au panier (R2) — `{name}` est
+     * l'article du panier avec lequel d'autres clients l'ont pris.
+     */
+    readonly boughtWith: string;
     /** Le bref retour après un ajout au panier, quand il propose une suggestion (RS7). */
     readonly addedToCart: string;
     /**

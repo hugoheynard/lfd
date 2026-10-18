@@ -108,7 +108,8 @@ export interface StaffSuggestionPreviewView {
   /**
    * EXACTEMENT ce que la boutique afficherait. Pour un pro : la vitrine pro
    * SANS tarif de société (ni mercuriale, ni tarif négocié) — un aperçu n'a
-   * pas de client.
+   * pas de client. Au panier, le calculé (R2, « souvent pris avec ») suit
+   * le décidé, comme en boutique.
    */
   readonly shown: readonly CartSuggestionView[];
   /** Les règles applicables d'abord, dans l'ordre réglé ; puis les autres. */

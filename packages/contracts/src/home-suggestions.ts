@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { CartSuggestionView } from "./cart-suggestions.js";
+import type { StaffSuggestionView } from "./cart-suggestions.js";
 
 /**
  * ── Les suggestions de l'ACCUEIL de la boutique ─────────────────────────────
@@ -32,5 +32,5 @@ export const homeSuggestionsPayloadSchema = z.strictObject({
 });
 export type HomeSuggestionsPayload = z.infer<typeof homeSuggestionsPayloadSchema>;
 
-/** La même vue que le panier : un article à son prix de vitrine, et sa raison. */
-export type HomeSuggestionView = CartSuggestionView;
+/** Un article décidé par le staff, à son prix de vitrine, et sa raison (rien de calculé ici). */
+export type HomeSuggestionView = StaffSuggestionView;

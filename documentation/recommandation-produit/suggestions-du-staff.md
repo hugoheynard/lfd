@@ -159,8 +159,10 @@ Les places sont des constantes du domaine, `STAFF_CART_PLACES`,
 `product-suggestions.ts`, `home-suggestions.ts`). Hugo a tranché **une place
 au panier** le 2026-10-18, et validé le même jour la même valeur sur la fiche
 et **deux** places à l'accueil — la recommandation d'origine (« 2 sur 3 »),
-avec « Notre sélection » pour titre par défaut. Le calculé qui remplirait les places suivantes
-n'existe pas encore.
+avec « Notre sélection » pour titre par défaut. Au **panier**, le calculé
+« souvent pris avec » (R2) suit la carte du staff, à sa propre place, sans
+reprendre son article ([`suggestions-calculees.md`](suggestions-calculees.md)) ;
+la fiche et l'accueil n'ont pas de calculé.
 
 **Au panier**, la carte remplace la relance codée en dur d'avant
 (cart-upsell.service.ts et sa liste `TREATS`, retirés le 2026-10-18 par Hugo,

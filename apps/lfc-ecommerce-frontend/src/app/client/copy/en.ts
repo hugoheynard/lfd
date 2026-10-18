@@ -251,6 +251,7 @@ export const EN: ClientCopy = {
     staffAdvice: 'Our advice',
     alsoLike: 'You may also like',
     ourPicks: 'Our picks',
+    boughtWith: 'Often bought with {name}',
     addedToCart: 'Added!',
     operationOpensOn: 'Opens {date}',
     operationNotOpen: 'Not open yet',

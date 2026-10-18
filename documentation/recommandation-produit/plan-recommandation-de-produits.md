@@ -6,7 +6,7 @@
 > | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 > | **R0** — socle                      | ✅ bâti : contexte `b2b/recommendations/`, filtre R4, compteurs d'audience anonymes (R5 bis)                                                                                                                    |
 > | **RS** — suggestions du staff       | 🟡 en cours : panier, fiche, accueil, après-ajout, aperçu, chiffres bâtis ([`suggestions-du-staff.md`](suggestions-du-staff.md)) ; la suite dans [`plan-suggestions-du-staff.md`](plan-suggestions-du-staff.md) |
-> | **R2** — « souvent pris avec »      | à faire, après RS                                                                                                                                                                                               |
+> | **R2** — « souvent pris avec »      | ✅ bâti le 2026-10-18 au panier ([`suggestions-calculees.md`](suggestions-calculees.md)) ; restent les chiffres du calculé à l'écran des résultats, la fiche et l'accueil                                       |
 > | **A1** — tableau des audiences      | à faire ([`plan-audiences.md`](plan-audiences.md))                                                                                                                                                              |
 > | **R1** — « vos habituels » (pros)   | à faire                                                                                                                                                                                                         |
 > | **R3** — « vos habituels » (public) | après l'avis du cabinet ([`historique-du-particulier.md`](historique-du-particulier.md))                                                                                                                        |
@@ -161,11 +161,20 @@ avec le volume ; on la **précalcule** dans une table de paires
 (`sku_a, sku_b, audience, count, computed_at`) quand elle dépasse un seuil
 mesuré — pas avant. Le précalcul est une projection, pas un fait métier.
 
+> Bâti à la lecture le 2026-10-18 (R2) : 66 ms en médiane sur 30 000
+> commandes de la base jetable, aucune table de paires
+> ([`suggestions-calculees.md`](suggestions-calculees.md) §2.2).
+
 **R3 — Chaque suggestion porte sa raison, comme une donnée typée.**
 `reason: { kind: "weekly_rhythm", weekday } | { kind: "frequent", orderCount }
 | { kind: "bought_with", sku, share } | { kind: "featured" } | { kind: "new" }`
 — le front la met en phrase (libellés en français, dictionnaire de la
 boutique). Jamais une phrase fabriquée côté serveur, jamais un score nu.
+
+> Bâti le 2026-10-18 pour « souvent pris avec » sous la forme
+> `{ source: "data", kind: "bought_with", withSku, withName }` : **sans
+> `share`** — une part ou un compte, près du seuil d'anonymat, dirait combien
+> de personnes ont fait ce panier. `source` sépare le calculé du décidé (§2 bis).
 
 **R4 — Le filtre est celui de la commande, appliqué en dernier, sans repli.**
 Après le calcul : `resolveMany(skus, audience)` puis `servedTo`, puis la limite
@@ -249,16 +258,16 @@ flowchart LR
 
 Dans l'ordre retenu le 2026-10-18 :
 
-| Lot    | Contenu                                                                                                                            | Dépend de   | État                                                                         |
-| ------ | ---------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------------------------------------------------------------------------- |
-| **R0** | contexte `b2b/recommendations/`, filtre R4, compteurs anonymes R5 bis (table, route de la boutique, vue de fiche, ajout au panier) | —           | ✅ bâti                                                                      |
-| **RS** | suggestions décidées par le staff (§2 bis)                                                                                         | R0          | 🟡 en cours — [`plan-suggestions-du-staff.md`](plan-suggestions-du-staff.md) |
-| **R2** | « Souvent pris avec » au panier, après la place du staff, sous le seuil d'anonymat                                                 | R0, RS      | à faire                                                                      |
-| **A1** | tableau de bord des audiences ([`plan-audiences.md`](plan-audiences.md))                                                           | R0          | à faire                                                                      |
-| **R1** | « Vos habituels » (pros), rythme hebdomadaire + fréquence ; rangée d'accueil                                                       | R0          | à faire                                                                      |
-| **R3** | « Vos habituels » pour le particulier connecté (`placedByUserId`)                                                                  | R1, cabinet | après l'avis du cabinet                                                      |
-| **R4** | « Jamais essayé » au back-office (sociétés du même secteur)                                                                        | R1          | plus tard                                                                    |
-| **R5** | « Nouveau / De saison » si la mise en avant manuelle ne suffit pas (Q4)                                                            | R0          | plus tard                                                                    |
+| Lot    | Contenu                                                                                                                            | Dépend de   | État                                                                                     |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------- | ----------- | ---------------------------------------------------------------------------------------- |
+| **R0** | contexte `b2b/recommendations/`, filtre R4, compteurs anonymes R5 bis (table, route de la boutique, vue de fiche, ajout au panier) | —           | ✅ bâti                                                                                  |
+| **RS** | suggestions décidées par le staff (§2 bis)                                                                                         | R0          | 🟡 en cours — [`plan-suggestions-du-staff.md`](plan-suggestions-du-staff.md)             |
+| **R2** | « Souvent pris avec » au panier, après la place du staff, sous le seuil d'anonymat                                                 | R0, RS      | ✅ bâti au panier le 2026-10-18 — [`suggestions-calculees.md`](suggestions-calculees.md) |
+| **A1** | tableau de bord des audiences ([`plan-audiences.md`](plan-audiences.md))                                                           | R0          | à faire                                                                                  |
+| **R1** | « Vos habituels » (pros), rythme hebdomadaire + fréquence ; rangée d'accueil                                                       | R0          | à faire                                                                                  |
+| **R3** | « Vos habituels » pour le particulier connecté (`placedByUserId`)                                                                  | R1, cabinet | après l'avis du cabinet                                                                  |
+| **R4** | « Jamais essayé » au back-office (sociétés du même secteur)                                                                        | R1          | plus tard                                                                                |
+| **R5** | « Nouveau / De saison » si la mise en avant manuelle ne suffit pas (Q4)                                                            | R0          | plus tard                                                                                |
 
 ## 6. Risques
 

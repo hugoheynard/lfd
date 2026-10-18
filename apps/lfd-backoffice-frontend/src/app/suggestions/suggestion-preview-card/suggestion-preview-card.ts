@@ -37,6 +37,7 @@ import { parisToday } from '../../shared/paris-today';
 import { StaffSuggestionsService } from '../staff-suggestions.service';
 import { refusalOf } from '../suggestion-format';
 import {
+  boughtWithTitle,
   defaultCardTitle,
   previewPayload,
   previewPrice,
@@ -168,22 +169,43 @@ export class SuggestionPreviewCard {
     }),
   );
 
-  /** La carte telle que le client la verrait : son titre, et chaque article à son prix. */
+  /** La carte du staff telle que le client la verrait : son titre, et chaque article à son prix. */
   protected readonly card = computed(() => {
-    const view = this.result();
-    const first = view?.shown[0];
-    if (view === null || first === undefined) {
+    const staff = (this.result()?.shown ?? []).flatMap((view) =>
+      view.reason.source === 'staff' ? [{ ...view, reason: view.reason }] : [],
+    );
+    const first = staff[0];
+    if (first === undefined) {
       return null;
     }
     return {
       title: first.reason.phrase?.fr ?? defaultCardTitle(this.placement()),
-      items: view.shown.map(({ sku, item }) => ({
+      items: staff.map(({ sku, item }) => ({
         sku,
         name: item.name,
         price: previewPrice(item, this.shownFor()),
       })),
     };
   });
+
+  /**
+   * Les cartes CALCULÉES (R2, au panier) que le client verrait après celle du
+   * staff : leur titre dit leur raison, « Souvent pris avec … ».
+   */
+  protected readonly computedCards = computed(() =>
+    (this.result()?.shown ?? []).flatMap(({ sku, item, reason }) =>
+      reason.source === 'data'
+        ? [
+            {
+              sku,
+              title: boughtWithTitle(reason.withName),
+              name: item.name,
+              price: previewPrice(item, this.shownFor()),
+            },
+          ]
+        : [],
+    ),
+  );
 
   /** Ouvert depuis une règle : l'emplacement et le déclencheur qui la rendent vraie, puis l'aperçu. */
   async openFor(setup: PreviewSetup): Promise<void> {

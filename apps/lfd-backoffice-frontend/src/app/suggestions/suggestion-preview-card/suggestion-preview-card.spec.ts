@@ -1,5 +1,9 @@
 import { TestBed } from '@angular/core/testing';
-import type { StaffSuggestionPreviewPayload, StaffSuggestionPreviewView } from '@lfd/contracts';
+import type {
+  CartSuggestionView,
+  StaffSuggestionPreviewPayload,
+  StaffSuggestionPreviewView,
+} from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { staffSuggestion } from '../staff-suggestion.testing';
@@ -20,6 +24,7 @@ const ENDED = staffSuggestion({ id: '01JENDED', endsOn: '2026-10-18' });
 
 class FakeApi {
   readonly asked: StaffSuggestionPreviewPayload[] = [];
+  constructor(private readonly computed: readonly CartSuggestionView[] = []) {}
   preview(payload: StaffSuggestionPreviewPayload): Promise<StaffSuggestionPreviewView> {
     this.asked.push(payload);
     return Promise.resolve({
@@ -42,6 +47,7 @@ class FakeApi {
           },
           reason: { source: 'staff', ruleId: '01jshown', phrase: null },
         },
+        ...this.computed,
       ],
       rules: [
         {
@@ -130,5 +136,59 @@ describe('SuggestionPreviewCard', () => {
 
     expect(api.asked.map((payload) => payload.placement)).toEqual(['home']);
     expect((root.textContent ?? '').replace(/\s+/gu, ' ')).toContain('Notre sélection');
+  });
+
+  it('R2 : au panier, la suggestion calculée suit la carte du staff, avec sa raison', async () => {
+    const api = new FakeApi([
+      {
+        sku: 'VIE-002',
+        item: {
+          sku: 'VIE-002',
+          name: 'Pain au chocolat',
+          note: null,
+          image: null,
+          thumbnail: null,
+          unitPriceMillicents: 100_000,
+          unitPriceTtcCents: 125,
+          vatRatePercent: 5.5,
+          shelfId: 'fam-vien',
+          isFeatured: false,
+        },
+        reason: { source: 'data', kind: 'bought_with', withSku: 'VIE-001', withName: 'Croissant' },
+      },
+    ]);
+    TestBed.configureTestingModule({
+      imports: [SuggestionPreviewCard],
+      providers: [{ provide: StaffSuggestionsService, useValue: api }],
+    });
+    const fixture = TestBed.createComponent(SuggestionPreviewCard);
+    fixture.componentRef.setInput('rules', [SHOWN, ENDED]);
+    fixture.componentRef.setInput('choices', CHOICES);
+    const root = fixture.nativeElement as HTMLElement;
+    root.scrollIntoView = () => undefined;
+    fixture.detectChanges();
+
+    await fixture.componentInstance.openFor({
+      placement: 'cart',
+      cart: ['VIE-001'],
+      viewedSku: null,
+      audience: 'public',
+      day: '2026-10-20',
+      time: '',
+      cartTotal: '',
+      siteId: null,
+    });
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const cards = [...root.querySelectorAll('.client-card')].map((card) =>
+      (card.textContent ?? '').replace(/\s+/gu, ' '),
+    );
+    expect(cards).toHaveLength(2);
+    expect(cards[0]).toContain('Notre conseil');
+    expect(cards[0]).not.toContain('Pain au chocolat');
+    expect(cards[1]).toContain('Souvent pris avec Croissant');
+    expect(cards[1]).toContain('Pain au chocolat');
+    expect(cards[1]).toContain('1,25 € TTC');
   });
 });

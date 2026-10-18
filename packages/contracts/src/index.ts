@@ -2209,7 +2209,10 @@ export {
 } from "./staff-suggestions.js";
 export {
   cartSuggestionsPayloadSchema,
+  type BoughtWithSuggestionReason,
   type CartSuggestionReason,
+  type StaffSuggestionReason,
+  type StaffSuggestionView,
   type CartSuggestionsPayload,
   type CartSuggestionView,
 } from "./cart-suggestions.js";

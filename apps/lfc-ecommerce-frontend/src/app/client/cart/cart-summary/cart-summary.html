@@ -16,7 +16,7 @@
     </ul>
   }
 
-  @if (staffPick.current(); as view) {
+  @for (view of staffPick.shown(); track view.sku) {
     <app-staff-suggestion-card
       [view]="view"
       [fallbackTitle]="t().shop.staffAdvice"

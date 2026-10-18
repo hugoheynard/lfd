@@ -515,7 +515,7 @@ describe('CartSummary — un pro au compte (F5)', () => {
 
 /** Une suggestion du staff servie à la main, et les gestes comptés. */
 class StaffPickDouble {
-  readonly current = signal<CartSuggestionView | null>(null);
+  readonly shown = signal<readonly CartSuggestionView[]>([]);
   readonly taken: CartSuggestionView[] = [];
   readonly clicked: CartSuggestionView[] = [];
   opened = 0;
@@ -555,7 +555,7 @@ describe('CartSummary — la carte de suggestion (RS2)', () => {
         {
           provide: StaffCartSuggestion,
           useValue: {
-            current: pick.current,
+            shown: pick.shown,
             open: () => pick.open(),
             close: () => pick.close(),
             taken: (view: CartSuggestionView) => pick.take(view),
@@ -599,7 +599,7 @@ describe('CartSummary — la carte de suggestion (RS2)', () => {
         phrase: { fr: 'Avec un croissant, la baguette' },
       },
     };
-    pick.current.set(view);
+    pick.shown.set([view]);
     fixture.detectChanges();
 
     expect(card()?.textContent).toContain('Avec un croissant, la baguette');
@@ -625,7 +625,7 @@ describe('CartSummary — la carte de suggestion (RS2)', () => {
       item: baguette,
       reason: { source: 'staff', ruleId: '01jrule', phrase: null },
     };
-    pick.current.set(view);
+    pick.shown.set([view]);
     fixture.detectChanges();
 
     button('pitch')?.click();
@@ -643,14 +643,38 @@ describe('CartSummary — la carte de suggestion (RS2)', () => {
       throw new RangeError('la fixture du catalogue n’a plus de PAI-001');
     }
     showsTtc.set(false);
-    pick.current.set({
-      sku: 'PAI-001',
-      item: baguette,
-      reason: { source: 'staff', ruleId: '01jrule', phrase: null },
-    });
+    pick.shown.set([
+      {
+        sku: 'PAI-001',
+        item: baguette,
+        reason: { source: 'staff', ruleId: '01jrule', phrase: null },
+      },
+    ]);
     fixture.detectChanges();
 
     expect(card()?.textContent).toContain(`${shelfPriceLabel(baguette, false)} HT`);
+  });
+
+  it('R2 : la calculée suit la décidée, et dit « Souvent pris avec » l’article du panier', () => {
+    const baguette = TestBed.inject(ShopCatalogue).itemOf('PAI-001');
+    const coffee = TestBed.inject(ShopCatalogue).itemOf('VIE-002');
+    if (baguette === null || coffee === null) {
+      throw new RangeError('la fixture du catalogue n’a plus PAI-001 ou VIE-002');
+    }
+    pick.shown.set([
+      { sku: 'PAI-001', item: baguette, reason: { source: 'staff', ruleId: '01j', phrase: null } },
+      {
+        sku: 'VIE-002',
+        item: coffee,
+        reason: { source: 'data', kind: 'bought_with', withSku: 'VIE-001', withName: 'Croissant' },
+      },
+    ]);
+    fixture.detectChanges();
+
+    const cards = (fixture.nativeElement as HTMLElement).querySelectorAll('.suggestion');
+    expect(cards).toHaveLength(2);
+    expect(cards[0]?.textContent).toContain('Notre conseil');
+    expect(cards[1]?.textContent).toContain('Souvent pris avec Croissant');
   });
 
   it('sans phrase, dit « Notre conseil »', () => {
@@ -658,11 +682,13 @@ describe('CartSummary — la carte de suggestion (RS2)', () => {
     if (baguette === null) {
       throw new RangeError('la fixture du catalogue n’a plus de PAI-001');
     }
-    pick.current.set({
-      sku: 'PAI-001',
-      item: baguette,
-      reason: { source: 'staff', ruleId: '01jrule', phrase: null },
-    });
+    pick.shown.set([
+      {
+        sku: 'PAI-001',
+        item: baguette,
+        reason: { source: 'staff', ruleId: '01jrule', phrase: null },
+      },
+    ]);
     fixture.detectChanges();
 
     expect(card()?.textContent).toContain('Notre conseil');

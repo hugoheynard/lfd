@@ -11,13 +11,14 @@ décision du catalogue).
 
 ## 1. Trois sources d'une suggestion
 
-| Source                                                  | Qui décide                                                                    | Où on la voit                                                     | État                                                           |
-| ------------------------------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------- | -------------------------------------------------------------- |
-| **Décidée par le staff**                                | une règle « quand le client fait ceci, montre-lui cela », datée, par audience | carte au panier, sur la fiche, à l'accueil et après un ajout      | 🟡 panier, fiche, accueil, après-ajout, aperçu, chiffres bâtis |
-| **Mise en avant « Incontournable »**                    | une case par article et par audience (pros, particuliers)                     | la pastille sur la vignette du rayon, selon l'audience du lecteur | ✅ bâtie                                                       |
-| **Calculée** (« souvent pris avec », « vos habituels ») | nos propres commandes, agrégées                                               | panier, accueil                                                   | à faire (R2, puis R1 ; R3 après le cabinet)                    |
+| Source                                                  | Qui décide                                                                    | Où on la voit                                                     | État                                                                           |
+| ------------------------------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| **Décidée par le staff**                                | une règle « quand le client fait ceci, montre-lui cela », datée, par audience | carte au panier, sur la fiche, à l'accueil et après un ajout      | 🟡 panier, fiche, accueil, après-ajout, aperçu, chiffres bâtis                 |
+| **Mise en avant « Incontournable »**                    | une case par article et par audience (pros, particuliers)                     | la pastille sur la vignette du rayon, selon l'audience du lecteur | ✅ bâtie                                                                       |
+| **Calculée** (« souvent pris avec », « vos habituels ») | nos propres commandes, agrégées, sous un seuil de 5 clients distincts         | « souvent pris avec » au panier ; « vos habituels » à l'accueil   | 🟡 « souvent pris avec » bâti au panier (R2) ; R1 à faire, R3 après le cabinet |
 
-La décidée passe **avant** la calculée, dans une place bornée ; les deux
+La décidée passe **avant** la calculée, chacune dans sa place bornée (au
+panier : une, puis une) ; les deux
 passent le **même filtre** (servi à ce lecteur, commandable au jour visé,
 absente du panier), sans repli : rien plutôt qu'un article qu'on ne peut pas
 commander. La mise en avant reste hors des règles du staff pour l'instant
@@ -49,6 +50,7 @@ Le mot sert à trois choses, à ne pas confondre :
 
 | Doc                                                                        | Nature     | À quoi elle sert                                                                                                                                  |
 | -------------------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`suggestions-calculees.md`](suggestions-calculees.md)                     | doc d'état | « souvent pris avec » au panier (R2) : le calcul, le seuil, les exclusions, la mesure de coût, la place après le staff, l'aperçu, ce qui reste    |
 | [`suggestions-du-staff.md`](suggestions-du-staff.md)                       | doc d'état | ce qui est bâti des suggestions du staff : la règle, l'ordre, l'affichage, le filtre, l'aperçu, les alertes, les conditions, les chiffres estimés |
 | [`plan-suggestions-du-staff.md`](plan-suggestions-du-staff.md)             | plan       | ce qui reste aux suggestions du staff : les segments de RS8, le reste de RS9, RS4                                                                 |
 | [`plan-recommandation-de-produits.md`](plan-recommandation-de-produits.md) | plan       | le plan général : l'existant d'origine, les décisions R1–R5 bis, l'ordre des lots (R0, RS, R2, A1, R1, R3)                                        |

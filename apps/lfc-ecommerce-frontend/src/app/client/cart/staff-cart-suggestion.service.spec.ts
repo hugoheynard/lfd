@@ -25,6 +25,13 @@ const STAFF_PICK: CartSuggestionView = {
   reason: { source: 'staff', ruleId: '01jrule', phrase: { fr: 'Avec un croissant, la baguette' } },
 };
 
+/** La calculée (R2) : le café, souvent pris avec le croissant. */
+const DATA_PICK: CartSuggestionView = {
+  sku: 'PAI-001',
+  item: BAGUETTE,
+  reason: { source: 'data', kind: 'bought_with', withSku: 'VIE-001', withName: 'Croissant' },
+};
+
 const ROUTE = (request: { url: string }): boolean => request.url.endsWith('/shop/suggestions/cart');
 
 /** Les gestes comptés, sans file ni réseau. */
@@ -106,7 +113,7 @@ describe('StaffCartSuggestion', () => {
     const body = await answer(http, [STAFF_PICK]);
 
     expect(body).toEqual({ skus: ['VIE-001', 'VIE-002'], target: null });
-    expect(pick.current()).toEqual(STAFF_PICK);
+    expect(pick.shown()).toEqual([STAFF_PICK]);
     TestBed.tick();
     expect(audience.events).toEqual([
       {
@@ -154,10 +161,10 @@ describe('StaffCartSuggestion', () => {
     await answer(http, [STAFF_PICK]);
 
     cart.add('PAI-001');
-    expect(pick.current()).toBeNull();
+    expect(pick.shown()).toEqual([]);
     await settle();
     await answer(http, []);
-    expect(pick.current()).toBeNull();
+    expect(pick.shown()).toEqual([]);
   });
 
   it('un échec laisse la relance : aucune suggestion', async () => {
@@ -168,7 +175,25 @@ describe('StaffCartSuggestion', () => {
     asked.flush('panne', { status: 500, statusText: 'Server Error' });
     await vi.advanceTimersByTimeAsync(0);
 
-    expect(pick.current()).toBeNull();
+    expect(pick.shown()).toEqual([]);
+  });
+
+  it('R2 : montre la calculée après la décidée, et compte chacune à sa source', async () => {
+    const { pick, http, audience } = boot();
+    pick.open();
+    await settle();
+    const coffee = { ...DATA_PICK, sku: 'VIE-002', item: { ...BAGUETTE, sku: 'VIE-002' } };
+    await answer(http, [STAFF_PICK, coffee]);
+    TestBed.tick();
+
+    pick.taken(coffee);
+
+    expect(pick.shown()).toEqual([STAFF_PICK, coffee]);
+    expect(audience.events.map(({ sku, event, origin }) => [sku, event, origin])).toEqual([
+      ['PAI-001', 'suggestion_shown', { source: 'staff', placement: '01jrule' }],
+      ['VIE-002', 'suggestion_shown', { source: 'data', placement: 'bought_with' }],
+      ['VIE-002', 'suggestion_added', { source: 'data', placement: 'bought_with' }],
+    ]);
   });
 
   it('RS8 : envoie le total que le client lit, seulement une fois le panier chiffré', async () => {

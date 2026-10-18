@@ -9,6 +9,7 @@ import { CartStore } from '../cart/cart.store';
 import { StaffCartSuggestion } from '../cart/staff-cart-suggestion.service';
 import { ClientWorkspace } from '../client-workspace.service';
 import { OrderContextStore } from '../order-context.store';
+import { suggestionOrigin } from './suggestion-origin';
 import { cartSkus, suggestionTarget } from './suggestion-target';
 
 /** Ce que l'après-ajout propose, et à quelle entrée il répond. */
@@ -29,8 +30,9 @@ interface Offer {
  *
  * Il compte comme le panier : `suggestion_shown` une fois par proposition,
  * `suggestion_clicked` quand la carte ouvre la fiche, `suggestion_added`
- * quand son « + » ajoute (Hugo, 2026-10-18 : deux gestes, deux compteurs) — source `staff`,
- * emplacement = l'id de la règle.
+ * quand son « + » ajoute (Hugo, 2026-10-18 : deux gestes, deux compteurs) — à
+ * la source de la suggestion (`suggestionOrigin`). La première du panier :
+ * celle du staff, sinon la calculée (R2), comme la carte du panier les range.
  */
 @Injectable({ providedIn: 'root' })
 export class AfterAddSuggestion {
@@ -125,6 +127,6 @@ export class AfterAddSuggestion {
     view: CartSuggestionView,
     event: 'suggestion_shown' | 'suggestion_clicked' | 'suggestion_added',
   ): void {
-    this.audience.record(view.sku, event, { source: 'staff', placement: view.reason.ruleId });
+    this.audience.record(view.sku, event, suggestionOrigin(view.reason));
   }
 }

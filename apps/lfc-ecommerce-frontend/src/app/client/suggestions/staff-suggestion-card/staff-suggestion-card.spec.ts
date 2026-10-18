@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import type { CartSuggestionView } from '@lfd/contracts';
+import type { CartSuggestionView, StaffSuggestionView } from '@lfd/contracts';
 
 import { ProductAudience } from '../../audience/product-audience.service';
 import { ClientCart } from '../../cart/client-cart.service';
@@ -17,7 +17,7 @@ if (BAGUETTE === undefined) {
   throw new RangeError('la fixture du catalogue n’a plus de PAI-001');
 }
 
-const VIEW: CartSuggestionView = {
+const VIEW: StaffSuggestionView = {
   sku: 'PAI-001',
   item: BAGUETTE,
   reason: { source: 'staff', ruleId: '01jrule', phrase: { fr: 'Avec le pain, la terrine' } },
@@ -80,6 +80,20 @@ describe('StaffSuggestionCard', () => {
 
     expect(card()?.textContent).toContain('Vous aimerez aussi');
     expect(card()?.textContent).toContain(`${shelfPriceLabel(BAGUETTE, false)} HT`);
+  });
+
+  it('R2 : une calculée dit « Souvent pris avec » l’article du panier, jamais le titre du staff', () => {
+    mount(
+      {
+        sku: 'PAI-001',
+        item: BAGUETTE,
+        reason: { source: 'data', kind: 'bought_with', withSku: 'VIE-001', withName: 'Croissant' },
+      },
+      'Notre conseil',
+    );
+
+    expect(card()?.textContent).toContain('Souvent pris avec Croissant');
+    expect(card()?.textContent).not.toContain('Notre conseil');
   });
 
   it('un clic sur la carte ouvre la fiche de l’article, et n’ajoute rien', () => {

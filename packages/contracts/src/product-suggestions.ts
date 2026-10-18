@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { CartSuggestionView } from "./cart-suggestions.js";
+import type { StaffSuggestionView } from "./cart-suggestions.js";
 
 /**
  * ── Les suggestions de la FICHE d'un article ────────────────────────────────
@@ -34,5 +34,5 @@ export const productSuggestionsPayloadSchema = z.strictObject({
 });
 export type ProductSuggestionsPayload = z.infer<typeof productSuggestionsPayloadSchema>;
 
-/** La même vue que le panier : un article à son prix de vitrine, et sa raison. */
-export type ProductSuggestionView = CartSuggestionView;
+/** Un article décidé par le staff, à son prix de vitrine, et sa raison (rien de calculé ici). */
+export type ProductSuggestionView = StaffSuggestionView;

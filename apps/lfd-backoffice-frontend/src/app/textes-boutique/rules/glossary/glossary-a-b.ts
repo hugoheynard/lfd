@@ -100,6 +100,7 @@ export const GLOSSARY_A_B: Readonly<Record<string, string>> = {
   bookGroup: 'Carnet d’adresses',
   booked: 'Rappel demandé — créneau',
   bookedTitle: 'Rappel demandé — titre',
+  boughtWith: 'Suggestion calculée au panier — « Souvent pris avec … »',
   brandLine: 'Signature de la marque',
   browse: 'Visiter la boutique',
   browseSub: 'Visiter la boutique — sous-titre',

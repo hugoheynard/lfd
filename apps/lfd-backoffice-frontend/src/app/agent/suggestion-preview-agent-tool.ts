@@ -11,6 +11,7 @@ import {
 
 import type { StaffSuggestionsService } from '../suggestions/staff-suggestions.service';
 import {
+  boughtWithTitle,
   defaultCardTitle,
   previewPayload,
   previewPrice,
@@ -104,13 +105,23 @@ export function previewText(
   args: Pick<PreviewArgs, 'placement' | 'audience'>,
   ctx: ReasonContext,
 ): string {
-  const first = view.shown[0];
+  const staff = view.shown.flatMap((shown) =>
+    shown.reason.source === 'staff' ? [{ item: shown.item, phrase: shown.reason.phrase }] : [],
+  );
+  const first = staff[0];
   const card =
     first === undefined
       ? `Le ${view.day}, le client ne verrait aucune suggestion décidée.`
-      : `Le ${view.day}, le client verrait « ${first.reason.phrase?.fr ?? defaultCardTitle(args.placement)} » : ${view.shown
+      : `Le ${view.day}, le client verrait « ${first.phrase?.fr ?? defaultCardTitle(args.placement)} » : ${staff
           .map(({ item }) => `${item.name} [${item.sku}] ${previewPrice(item, args.audience)}`)
           .join(' ; ')}.`;
+  const computed = view.shown.flatMap(({ item, reason }) =>
+    reason.source === 'data'
+      ? [
+          `Puis, calculée : « ${boughtWithTitle(reason.withName)} » : ${item.name} [${item.sku}] ${previewPrice(item, args.audience)}.`,
+        ]
+      : [],
+  );
   const lines = view.rules.flatMap((row) => {
     const rule = ctx.rules.get(row.ruleId);
     if (rule === undefined) {
@@ -122,5 +133,9 @@ export function previewText(
         : '';
     return [`id ${row.ruleId} [${row.status}] — ${previewReason(rule, row, ctx)}${items}`];
   });
-  return [card, lines.length === 0 ? 'Aucune suggestion en cours.' : lines.join('\n')].join('\n');
+  return [
+    card,
+    ...computed,
+    lines.length === 0 ? 'Aucune suggestion en cours.' : lines.join('\n'),
+  ].join('\n');
 }

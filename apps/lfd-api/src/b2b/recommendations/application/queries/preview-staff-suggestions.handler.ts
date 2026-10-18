@@ -1,9 +1,15 @@
-import { instantToLocal, type StaffSuggestionPreviewView } from "@lfd/contracts";
+import {
+  instantToLocal,
+  type CartSuggestionView,
+  type StaffSuggestionPreviewView,
+} from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../../platform/time/clock.js";
 import type { ShopAudience } from "../../../catalog/domain/ports/catalog.reader.js";
+import type { FulfillmentTarget } from "../../domain/orderable-today.js";
 import { CartFamilyReader } from "../../domain/ports/cart-family.reader.js";
+import { BOUGHT_WITH_CART_PLACES } from "../../domain/services/bought-with.js";
 import { cartTriggering, STAFF_CART_PLACES } from "../../domain/services/cart-suggestions.js";
 import { homeTriggering, STAFF_HOME_PLACES } from "../../domain/services/home-suggestions.js";
 import {
@@ -12,7 +18,11 @@ import {
 } from "../../domain/services/product-suggestions.js";
 import { shopSiteOf } from "../../domain/services/suggestion-conditions-gate.js";
 import type { SuggestionTriggering } from "../../domain/services/suggestion-candidates.js";
-import { StaffSuggestionShowcase } from "../services/staff-suggestion-showcase.js";
+import { BoughtWithShowcase } from "../services/bought-with-showcase.js";
+import {
+  StaffSuggestionShowcase,
+  type ShowcaseDiagnosis,
+} from "../services/staff-suggestion-showcase.js";
 import {
   PreviewStaffSuggestionsQuery,
   type PreviewPlace,
@@ -34,6 +44,11 @@ interface PlaceSetup {
  * maintenant) juge les créneaux de RS8, le montant donné le seuil de panier.
  *
  * Sans société : à un pro, la vitrine pro sans tarif de société.
+ *
+ * Au panier, le calculé (R2, `BoughtWithShowcase`) suit le décidé, comme en
+ * boutique : sa fenêtre finit aujourd'hui, le jour choisi ne sert qu'à son
+ * heure limite. Il n'a pas de règle, donc rien à diagnostiquer : il paraît
+ * dans `shown`, avec sa raison.
  */
 @QueryHandler(PreviewStaffSuggestionsQuery)
 export class PreviewStaffSuggestionsHandler implements IQueryHandler<
@@ -42,6 +57,7 @@ export class PreviewStaffSuggestionsHandler implements IQueryHandler<
 > {
   constructor(
     private readonly showcase: StaffSuggestionShowcase,
+    private readonly boughtWith: BoughtWithShowcase,
     private readonly families: CartFamilyReader,
     private readonly clock: Clock,
   ) {}
@@ -51,13 +67,14 @@ export class PreviewStaffSuggestionsHandler implements IQueryHandler<
     const day = query.day ?? now.day;
     const time = query.time ?? now.time;
     const { place } = query;
+    const target: FulfillmentTarget = { date: day, pickupAddressId: query.pickupAddressId };
     const diagnosis = await this.showcase.diagnose({
       placement: place.placement,
       audience: query.audience,
       day,
       time,
       inCart: query.skus,
-      target: { date: day, pickupAddressId: query.pickupAddressId },
+      target,
       // Sans point choisi, l'aperçu joue le client qui n'a pas encore choisi :
       // l'heure limite suit la règle générale, une règle à points ne paraît pas.
       site: shopSiteOf(
@@ -68,7 +85,27 @@ export class PreviewStaffSuggestionsHandler implements IQueryHandler<
       cartTotalCents: place.placement === "cart" ? query.cartTotalCents : null,
       ...this.setupOf(place, query.skus),
     });
-    return staffSuggestionPreviewView(day, time, diagnosis);
+    const computed = await this.computedOf(query, target, diagnosis);
+    return staffSuggestionPreviewView(day, time, diagnosis, computed);
+  }
+
+  /** Le calculé du panier — rien ailleurs : la fiche et l'accueil n'en ont pas encore. */
+  private computedOf(
+    query: PreviewStaffSuggestionsQuery,
+    target: FulfillmentTarget,
+    diagnosis: ShowcaseDiagnosis,
+  ): Promise<readonly CartSuggestionView[]> {
+    if (query.place.placement !== "cart") {
+      return Promise.resolve([]);
+    }
+    return this.boughtWith.show({
+      companyId: null,
+      audience: query.audience,
+      inCart: query.skus,
+      taken: diagnosis.shown.map((view) => view.sku),
+      target,
+      places: BOUGHT_WITH_CART_PLACES,
+    });
   }
 
   /** La place et le déclencheur de chaque emplacement, ceux de son handler de boutique. */

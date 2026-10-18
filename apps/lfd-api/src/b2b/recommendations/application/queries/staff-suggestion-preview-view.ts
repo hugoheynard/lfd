@@ -1,4 +1,5 @@
 import type {
+  CartSuggestionView,
   StaffSuggestionPreviewItem,
   StaffSuggestionPreviewRule,
   StaffSuggestionPreviewView,
@@ -10,13 +11,22 @@ import type {
 } from "../../domain/services/suggestion-diagnosis.js";
 import type { ShowcaseDiagnosis } from "../services/staff-suggestion-showcase.js";
 
-/** L'aperçu tel que l'écran le lit : un statut fermé, et la règle gagnante à part. */
+/**
+ * L'aperçu tel que l'écran le lit : un statut fermé, et la règle gagnante à
+ * part. `computed` suit le décidé dans `shown`, comme au panier de la boutique.
+ */
 export function staffSuggestionPreviewView(
   day: string,
   time: string,
   diagnosis: ShowcaseDiagnosis,
+  computed: readonly CartSuggestionView[],
 ): StaffSuggestionPreviewView {
-  return { day, time, shown: diagnosis.shown, rules: diagnosis.rules.map(ruleView) };
+  return {
+    day,
+    time,
+    shown: [...diagnosis.shown, ...computed],
+    rules: diagnosis.rules.map(ruleView),
+  };
 }
 
 function ruleView(diagnosis: RuleDiagnosis): StaffSuggestionPreviewRule {

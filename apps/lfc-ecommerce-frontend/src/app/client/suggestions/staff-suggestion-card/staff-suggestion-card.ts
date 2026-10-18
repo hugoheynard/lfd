@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
-import type { CartSuggestionView } from '@lfd/contracts';
+import type { CartSuggestionReason, CartSuggestionView } from '@lfd/contracts';
 import { FoldIconComponent } from 'fold-ng';
 
 import { ProductAudience } from '../../audience/product-audience.service';
@@ -24,6 +24,13 @@ import { shelfPriceLabel, ShopPriceBasis } from '../../shop/shop-price-basis.ser
  * (le taux d'ajout global inclut les suggestions). Les compteurs
  * `suggestion_*` sont à l'hôte, qui sait d'où la carte est montrée :
  * `suggestion_clicked` sur `opened`, `suggestion_added` sur `taken`.
+ *
+ * Une suggestion CALCULÉE (R2, au panier seulement) a la même carte : son
+ * titre dit sa raison, « Souvent pris avec … » et le nom de l'article du
+ * panier (`shop.boughtWith`) — jamais combien de clients.
+ *
+ * Générique sur la vue : la fiche et l'accueil, qui ne servent que le
+ * décidé, reçoivent leurs propres vues en retour.
  */
 @Component({
   selector: 'app-staff-suggestion-card',
@@ -32,15 +39,15 @@ import { shelfPriceLabel, ShopPriceBasis } from '../../shop/shop-price-basis.ser
   templateUrl: './staff-suggestion-card.html',
   styleUrl: './staff-suggestion-card.scss',
 })
-export class StaffSuggestionCard {
-  readonly view = input.required<CartSuggestionView>();
+export class StaffSuggestionCard<V extends CartSuggestionView = CartSuggestionView> {
+  readonly view = input.required<V>();
   /** Le titre quand la règle n'a pas de phrase dans la langue du client. */
   readonly fallbackTitle = input.required<string>();
 
   /** Le « + » : l'article entre au panier. */
-  readonly taken = output<CartSuggestionView>();
+  readonly taken = output<V>();
   /** La carte : la fiche de l'article s'ouvre. */
-  readonly opened = output<CartSuggestionView>();
+  readonly opened = output<V>();
 
   private readonly t = inject(ClientCopyService).t;
   private readonly locale = inject(ClientLocale);
@@ -55,13 +62,20 @@ export class StaffSuggestionCard {
     const shop = this.t().shop;
     const ttc = this.basis.showsTtc();
     return {
-      title: view.reason.phrase?.[this.locale.current()] ?? this.fallbackTitle(),
+      title: this.titleOf(view.reason, shop.boughtWith),
       line: view.item.name,
       price: shelfPriceLabel(view.item, ttc),
       suffix: ttc ? shop.ttcSuffix : shop.htSuffix,
       addLabel: fill(shop.addAria, { name: view.item.name }),
     };
   });
+
+  private titleOf(reason: CartSuggestionReason, boughtWith: string): string {
+    if (reason.source === 'data') {
+      return fill(boughtWith, { name: reason.withName });
+    }
+    return reason.phrase?.[this.locale.current()] ?? this.fallbackTitle();
+  }
 
   protected open(): void {
     const view = this.view();

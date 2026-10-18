@@ -9,6 +9,7 @@ import { ProductAudience } from '../audience/product-audience.service';
 import { ClientCompany } from '../client-company.service';
 import { ClientWorkspace } from '../client-workspace.service';
 import { OrderContextStore } from '../order-context.store';
+import { suggestionOrigin } from '../suggestions/suggestion-origin';
 import { cartSkus, suggestionTarget } from '../suggestions/suggestion-target';
 import { CartStore } from './cart.store';
 import { ClientCart } from './client-cart.service';
@@ -25,13 +26,15 @@ interface SuggestionRequest {
 }
 
 /**
- * **La suggestion du staff au panier** (RS2, panier, de
- * `documentation/recommandation-produit/suggestions-du-staff.md`).
+ * **Les suggestions du panier** : celle du staff (RS2, de
+ * `documentation/recommandation-produit/suggestions-du-staff.md`), puis la
+ * calculée « souvent pris avec » (R2) à sa propre place — le serveur rend
+ * les deux dans cet ordre, au plus une de chaque.
  *
  * Elle envoie le panier, le jour visé et son point de retrait, et le total
  * que le client lit quand il est chiffré (RS8 : créneau, seuil, point).
  *
- * Sans règle applicable, le panier ne montre rien (la relance codée en dur,
+ * Sans règle applicable ni paire assez partagée, le panier ne montre rien (la relance codée en dur,
  * `CartUpsell`, est retirée le 2026-10-18). Rien en SSR ; une requête par ouverture du panier et
  * par changement de son contenu, du lecteur ou du jour visé, après
  * {@link CART_SUGGESTION_DEBOUNCE_MS} ; la requête vit dans un morceau chargé
@@ -40,7 +43,7 @@ interface SuggestionRequest {
  * Elle compte ce qu'elle montre : `suggestion_shown` une fois par article et
  * par ouverture, `suggestion_clicked` quand la carte ouvre la fiche, `suggestion_added`
  * quand son « + » ajoute (Hugo, 2026-10-18 : deux gestes, deux compteurs) — source
- * `staff`, emplacement = l'id de la règle.
+ * `staff` à l'id de la règle, ou `data` à `bought_with` (`suggestionOrigin`).
  */
 @Injectable({ providedIn: 'root' })
 export class StaffCartSuggestion {
@@ -55,7 +58,7 @@ export class StaffCartSuggestion {
   private readonly firm = inject(ClientCompany);
 
   private readonly openings = signal(0);
-  private readonly served = signal<CartSuggestionView | null>(null);
+  private readonly served = signal<readonly CartSuggestionView[]>([]);
   private shownThisOpening = new Set<string>();
   private timer: ReturnType<typeof setTimeout> | null = null;
   private asked: string | null = null;
@@ -63,10 +66,10 @@ export class StaffCartSuggestion {
   /** Le panier est ouvert : l'après-ajout s'y tait, la carte du panier y parle déjà. */
   readonly isOpen = computed(() => this.openings() > 0);
 
-  /** Ce que le panier montre — jamais un article qu'il contient déjà. */
-  readonly current = computed(() => {
-    const view = this.served();
-    return view !== null && (this.store.quantities()[view.sku] ?? 0) === 0 ? view : null;
+  /** Ce que le panier montre, le décidé d'abord — jamais un article qu'il contient déjà. */
+  readonly shown = computed(() => {
+    const quantities = this.store.quantities();
+    return this.served().filter((view) => (quantities[view.sku] ?? 0) === 0);
   });
 
   /** La demande à faire, ou `null` : panier fermé, SSR, ou espace pas encore connu. */
@@ -93,8 +96,11 @@ export class StaffCartSuggestion {
       }
     });
     effect(() => {
-      const view = this.current();
-      if (view !== null && this.openings() > 0 && !this.shownThisOpening.has(view.sku)) {
+      const views = this.shown();
+      if (this.openings() === 0) {
+        return;
+      }
+      for (const view of views.filter(({ sku }) => !this.shownThisOpening.has(sku))) {
         this.shownThisOpening.add(view.sku);
         this.count(view, 'suggestion_shown');
       }
@@ -126,7 +132,7 @@ export class StaffCartSuggestion {
     view: CartSuggestionView,
     event: 'suggestion_shown' | 'suggestion_clicked' | 'suggestion_added',
   ): void {
-    this.audience.record(view.sku, event, { source: 'staff', placement: view.reason.ruleId });
+    this.audience.record(view.sku, event, suggestionOrigin(view.reason));
   }
 
   private payload(): CartSuggestionsPayload {
@@ -175,12 +181,12 @@ export class StaffCartSuggestion {
       const { fetchStaffSuggestions } = await import('../suggestions/staff-suggestion.fetch');
       const views = await fetchStaffSuggestions(this.http, 'cart', payload, token);
       if (this.asked === key) {
-        this.served.set(views[0] ?? null);
+        this.served.set(views);
       }
     } catch {
       // Une suggestion qui échoue laisse la relance : jamais un geste bloqué.
       if (this.asked === key) {
-        this.served.set(null);
+        this.served.set([]);
       }
     }
   }

@@ -1,7 +1,7 @@
 import {
   instantToLocal,
-  type CartSuggestionView,
   type StaffSuggestionPlacement,
+  type StaffSuggestionView,
 } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
@@ -69,7 +69,7 @@ export interface ShowcasePreviewAsk extends Omit<ShowcaseAsk, "companyId"> {
 
 /** Ce que l'aperçu rend : l'affichage exact, et chaque règle diagnostiquée. */
 export interface ShowcaseDiagnosis {
-  readonly shown: readonly CartSuggestionView[];
+  readonly shown: readonly StaffSuggestionView[];
   readonly rules: readonly RuleDiagnosis[];
 }
 
@@ -90,8 +90,9 @@ interface ShowcaseRun extends Omit<ShowcaseAsk, "companyId"> {
  * du panier), et la place bornée. L'article sort à son prix de vitrine.
  *
  * Un emplacement de plus est une query de plus qui l'appelle avec son
- * déclencheur, pas une branche ici. La vue rendue est celle du panier
- * (`CartSuggestionView`) : la fiche en sert la même (`ProductSuggestionView`).
+ * déclencheur, pas une branche ici. La vue rendue est `StaffSuggestionView` :
+ * la fiche et l'accueil la servent telle quelle, le panier y ajoute le
+ * calculé (`BoughtWithShowcase`).
  *
  * Le lecteur se déduit de la société agissante comme partout dans le commerce
  * (`ShopCataloguePricing`) : sans société, particulier.
@@ -107,7 +108,7 @@ export class StaffSuggestionShowcase {
   ) {}
 
   /** Ce que la boutique affiche : le lecteur se déduit de la société, le jour du `Clock`. */
-  async show(ask: ShowcaseAsk): Promise<readonly CartSuggestionView[]> {
+  async show(ask: ShowcaseAsk): Promise<readonly StaffSuggestionView[]> {
     const audience = ask.companyId === null ? "public" : "pro";
     const reader: ShelfReader = { companyId: ask.companyId, audience };
     const { day, time } = instantToLocal(this.clock.now());
@@ -127,7 +128,7 @@ export class StaffSuggestionShowcase {
 
   private async run(
     ask: ShowcaseRun,
-  ): Promise<{ readonly shown: readonly CartSuggestionView[]; readonly trace: ShowcaseTrace }> {
+  ): Promise<{ readonly shown: readonly StaffSuggestionView[]; readonly trace: ShowcaseTrace }> {
     const { audience } = ask.reader;
     const [live, order] = await Promise.all([this.rules.listLive(), this.order.current()]);
     const gate = {
@@ -169,14 +170,14 @@ export class StaffSuggestionShowcase {
     keptItems: readonly { readonly sku: string }[],
     reader: ShelfReader,
     refused: Map<string, ItemRefusal>,
-  ): Promise<readonly CartSuggestionView[]> {
+  ): Promise<readonly StaffSuggestionView[]> {
     const kept = keptItems.map((item) => item.sku);
     if (kept.length === 0) {
       return [];
     }
     const items = await this.articles.articles(kept, reader.companyId, reader.audience);
     const ruleOf = new Map(candidates.map((candidate) => [candidate.sku, candidate.rule]));
-    return kept.flatMap((sku): CartSuggestionView[] => {
+    return kept.flatMap((sku): StaffSuggestionView[] => {
       const item = items.get(sku);
       const rule = ruleOf.get(sku);
       if (item === undefined || rule === undefined) {
@@ -211,7 +212,7 @@ function contextOf(ask: ShowcaseRun): ConditionContext {
 
 /** L'id réel de la règle d'un article affiché — la raison le porte en minuscules. */
 function ruleIdOf(
-  reason: CartSuggestionView["reason"],
+  reason: StaffSuggestionView["reason"],
   ordered: readonly StaffSuggestionRuleSnapshot[],
 ): string {
   return ordered.find((rule) => rule.id.toLowerCase() === reason.ruleId)?.id ?? reason.ruleId;

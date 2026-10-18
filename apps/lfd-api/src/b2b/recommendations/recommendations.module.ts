@@ -65,6 +65,7 @@ import { ShopHomeSuggestionsController } from "./http/shop-home-suggestions.cont
 import { ReadHomeSuggestionsHandler } from "./application/queries/read-home-suggestions.handler.js";
 import { PreviewStaffSuggestionsHandler } from "./application/queries/preview-staff-suggestions.handler.js";
 import { ReadProductSuggestionsHandler } from "./application/queries/read-product-suggestions.handler.js";
+import { BoughtWithShowcase } from "./application/services/bought-with-showcase.js";
 import { StaffSuggestionShowcase } from "./application/services/staff-suggestion-showcase.js";
 import { ReadCartSuggestionsHandler } from "./application/queries/read-cart-suggestions.handler.js";
 import { CartFamilyReader } from "./domain/ports/cart-family.reader.js";
@@ -119,6 +120,11 @@ import {
  * RS8 : les conditions facultatives d'une règle (jours, heures, seuil et
  * familles du panier, points de retrait). Les points se lisent aux sites
  * (`SitesModule` exporte `SiteReader`).
+ *
+ * R2 : « souvent pris avec » au panier, après la place du staff
+ * (`BoughtWithShowcase`). Les paires se lisent par `CoPurchaseReader`,
+ * déclaré ici et implémenté par la commande (`OrdersModule` l'exporte) : des
+ * comptes de paires sous un seuil d'anonymat, jamais un client.
  */
 @Module({
   imports: [CatalogModule, OrderCutoffsModule, OrdersModule, SitesModule],
@@ -166,6 +172,7 @@ import {
     { provide: CartFamilyReader, useClass: CatalogCartFamilyReader },
     { provide: SuggestedArticleReader, useClass: ShopSuggestedArticleReader },
     StaffSuggestionShowcase,
+    BoughtWithShowcase,
     ReadCartSuggestionsHandler,
     ReadProductSuggestionsHandler,
     ReadHomeSuggestionsHandler,

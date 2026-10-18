@@ -11,7 +11,9 @@ import {
   NO_SUGGESTION_CONDITIONS,
   type SuggestionConditionsInput,
 } from "../../../domain/value-objects/suggestion-conditions.js";
+import { CoPurchaseReader, type CoPurchaseAsk } from "../../../domain/ports/co-purchase.reader.js";
 import { RecommendationCutoffReader } from "../../../domain/ports/recommendation-cutoff.reader.js";
+import type { CoPurchasePair } from "../../../domain/services/bought-with.js";
 import { SuggestedArticleReader } from "../../../domain/ports/suggested-article.reader.js";
 import {
   croissantInput,
@@ -21,6 +23,7 @@ import {
   RuleStore,
 } from "../../commands/__tests__/staff-suggestion-doubles.js";
 import { CatalogCartFamilyReader } from "../../../infrastructure/catalog-cart-suggestions.js";
+import { BoughtWithShowcase } from "../../services/bought-with-showcase.js";
 import { RecommendationFilter } from "../../services/recommendation-filter.js";
 import { StaffSuggestionShowcase } from "../../services/staff-suggestion-showcase.js";
 import { ReadCartSuggestionsHandler } from "../read-cart-suggestions.handler.js";
@@ -67,6 +70,18 @@ class Shelf extends SuggestedArticleReader {
   }
 }
 
+/** Les paires des commandes, toutes clientèles confondues : le double rend ce qu'on lui donne. */
+class CoPurchases extends CoPurchaseReader {
+  readonly asked: CoPurchaseAsk[] = [];
+  constructor(private readonly rows: readonly CoPurchasePair[]) {
+    super();
+  }
+  pairs(ask: CoPurchaseAsk) {
+    this.asked.push(ask);
+    return Promise.resolve(this.rows.filter((row) => ask.anchors.includes(row.anchorSku)));
+  }
+}
+
 function shopItem(sku: string): ShopItemView {
   return {
     sku,
@@ -82,7 +97,10 @@ function shopItem(sku: string): ShopItemView {
   };
 }
 
-function harness(rules: readonly [string, Partial<StaffSuggestionRuleInput>, number][]) {
+function harness(
+  rules: readonly [string, Partial<StaffSuggestionRuleInput>, number][],
+  pairs: readonly CoPurchasePair[] = [],
+) {
   const store = new RuleStore();
   for (const [id, over, minutesAgo] of rules) {
     const declared = StaffSuggestionRule.declare(
@@ -95,14 +113,21 @@ function harness(rules: readonly [string, Partial<StaffSuggestionRuleInput>, num
   }
   const shelf = new Shelf();
   const clock = new FixedClock(NOW);
+  const filter = new RecommendationFilter(CATALOG, new NoCutoffs(), clock);
   const showcase = new StaffSuggestionShowcase(
     new InMemoryRuleReader(store),
     new OrderReader(new OrderSetting()),
-    new RecommendationFilter(CATALOG, new NoCutoffs(), clock),
+    filter,
     shelf,
     clock,
   );
-  const handler = new ReadCartSuggestionsHandler(showcase, new CatalogCartFamilyReader(CATALOG));
+  const coPurchases = new CoPurchases(pairs);
+  const boughtWith = new BoughtWithShowcase(coPurchases, filter, shelf, clock);
+  const handler = new ReadCartSuggestionsHandler(
+    showcase,
+    boughtWith,
+    new CatalogCartFamilyReader(CATALOG),
+  );
   const read = async (skus: readonly string[], companyId: string | null = null, date?: string) =>
     handler.execute(
       new ReadCartSuggestionsQuery(
@@ -125,7 +150,7 @@ function harness(rules: readonly [string, Partial<StaffSuggestionRuleInput>, num
         cartTotalCents,
       ),
     );
-  return { read, readWith, shelf };
+  return { read, readWith, shelf, coPurchases };
 }
 
 describe("ReadCartSuggestionsHandler", () => {
@@ -180,7 +205,9 @@ describe("ReadCartSuggestionsHandler", () => {
 
     const shown = await read(["VIE-001"]);
 
-    expect(shown.map(({ sku, reason }) => [sku, reason.ruleId])).toEqual([["BOI-001", "new"]]);
+    expect(
+      shown.map(({ sku, reason }) => [sku, reason.source === "staff" && reason.ruleId]),
+    ).toEqual([["BOI-001", "new"]]);
   });
 
   it("l'audience suit la société : une règle « pro » ne parle qu'au pro", async () => {
@@ -216,7 +243,8 @@ describe("ReadCartSuggestionsHandler — les conditions (RS8)", () => {
       ["OUT", { ...only({ weekdays: [other] }), suggestedSkus: ["BOI-002"] }, 5],
     ]);
 
-    expect((await read(["VIE-001"])).map(({ reason }) => reason.ruleId)).toEqual(["in"]);
+    const shown = await read(["VIE-001"]);
+    expect(shown.map(({ reason }) => reason.source === "staff" && reason.ruleId)).toEqual(["in"]);
   });
 
   it("la plage horaire : début compris, fin exclue, à l'heure de Paris du Clock", async () => {
@@ -258,5 +286,96 @@ describe("ReadCartSuggestionsHandler — les conditions (RS8)", () => {
     expect(await readWith(["VIE-001"], { pickupAddressId: null }, null)).toEqual([]);
     expect(await readWith(["VIE-001"], { pickupAddressId: "site-gare" }, null)).toEqual([]);
     expect(await readWith(["VIE-001"], { pickupAddressId: "site-centre" }, null)).toHaveLength(1);
+  });
+});
+
+describe("ReadCartSuggestionsHandler — « souvent pris avec » (R2)", () => {
+  const pair = (anchorSku: string, withSku: string, clients: number): CoPurchasePair => ({
+    anchorSku,
+    withSku,
+    clients,
+  });
+
+  it("sans règle du staff, le calculé prend SA place, raison typée sans aucun compte", async () => {
+    const { read } = harness([], [pair("VIE-001", "BOI-002", 7)]);
+
+    expect(await read(["VIE-001"])).toEqual([
+      {
+        sku: "BOI-002",
+        item: shopItem("BOI-002"),
+        reason: { source: "data", kind: "bought_with", withSku: "VIE-001", withName: "VIE-001" },
+      },
+    ]);
+  });
+
+  it("le décidé passe d'abord, le calculé suit, sans reprendre l'article du staff", async () => {
+    const { read } = harness(
+      [["A", {}, 0]],
+      [pair("VIE-001", "BOI-001", 9), pair("VIE-001", "BOI-002", 6)],
+    );
+
+    const shown = await read(["VIE-001"]);
+
+    expect(shown.map(({ sku, reason }) => [sku, reason.source])).toEqual([
+      ["BOI-001", "staff"],
+      ["BOI-002", "data"],
+    ]);
+  });
+
+  it("une seule place calculée : la paire au plus fort soutien", async () => {
+    const { read } = harness([], [pair("VIE-001", "BOI-001", 5), pair("VIE-001", "BOI-002", 8)]);
+
+    expect((await read(["VIE-001"])).map(({ sku }) => sku)).toEqual(["BOI-002"]);
+  });
+
+  it("le seuil d'anonymat : quatre clients distincts ne suffisent pas", async () => {
+    const { read, shelf } = harness([], [pair("VIE-001", "BOI-002", 4)]);
+
+    expect(await read(["VIE-001"])).toEqual([]);
+    expect(shelf.asked).toEqual([]);
+  });
+
+  it("le même filtre R4 : l'inconnu et le fermé au jour visé cèdent la place au suivant", async () => {
+    const { read } = harness(
+      [],
+      [
+        pair("VIE-001", "ZZZ-404", 12),
+        pair("VIE-001", "THE-001", 11),
+        pair("VIE-001", "BOI-002", 5),
+      ],
+    );
+
+    const shown = await read(["VIE-001"], null, addDays(TODAY, 1));
+
+    expect(shown.map(({ sku }) => sku)).toEqual(["BOI-002"]);
+  });
+
+  it("lit les commandes de la clientèle du lecteur, sur 90 jours, sous le seuil de 5", async () => {
+    const { read, coPurchases } = harness([], []);
+
+    await read(["VIE-001"]);
+    await read(["VIE-001"], "company-1");
+
+    expect(coPurchases.asked.map(({ audience }) => audience)).toEqual(["public", "pro"]);
+    expect(coPurchases.asked[0]).toMatchObject({
+      anchors: ["VIE-001"],
+      since: addDays(TODAY, -89),
+      minClients: 5,
+    });
+  });
+
+  it("un panier vide ne demande rien aux commandes", async () => {
+    const { read, coPurchases } = harness([], [pair("VIE-001", "BOI-002", 9)]);
+
+    expect(await read([])).toEqual([]);
+    expect(coPurchases.asked).toEqual([]);
+  });
+
+  it("le prix vient de la vitrine du lecteur, société comprise", async () => {
+    const { read, shelf } = harness([], [pair("VIE-001", "BOI-002", 9)]);
+
+    await read(["VIE-001"], "company-1");
+
+    expect(shelf.asked).toEqual(["company-1"]);
   });
 });

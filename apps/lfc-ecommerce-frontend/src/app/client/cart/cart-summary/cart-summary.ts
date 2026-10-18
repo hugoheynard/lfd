@@ -53,8 +53,9 @@ export class CartSummary implements OnInit {
   protected readonly t = inject(ClientCopyService).t;
   protected readonly cart = inject(ClientCart);
   /**
-   * La suggestion du staff (RS2), montrée par la carte partagée avec la
-   * fiche ; sans règle applicable, RIEN — la relance codée en dur
+   * La suggestion du staff (RS2), puis la calculée « souvent pris avec »
+   * (R2), montrées par la carte partagée avec la fiche ; sans règle
+   * applicable ni paire assez partagée, RIEN — la relance codée en dur
    * (`CartUpsell`) est retirée le 2026-10-18 (Hugo).
    */
   protected readonly staffPick = inject(StaffCartSuggestion);

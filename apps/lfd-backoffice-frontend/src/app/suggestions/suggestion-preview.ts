@@ -55,6 +55,11 @@ export function defaultCardTitle(placement: StaffSuggestionPlacement): string {
   return DEFAULT_CARD_TITLES[placement];
 }
 
+/** Le titre d'une suggestion calculée (R2), comme la boutique l'écrit (`shop.boughtWith`). */
+export function boughtWithTitle(withName: string): string {
+  return `Souvent pris avec ${withName}`;
+}
+
 /** Le prix tel que la carte l'écrit : HT à un pro, TTC à un particulier, arrondi au centime comme le rayon. */
 export function previewPrice(item: ShopItemView, audience: StaffSuggestionReader): string {
   return audience === 'pro'
