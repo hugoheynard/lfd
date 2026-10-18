@@ -359,6 +359,14 @@ export const staffResourceSchema = z.enum([
    */
   "lfc_loyalty",
   /**
+   * **Les suggestions décidées** — « quand le client fait ceci, montre-lui
+   * cela » : les règles du staff, leur ordre et leurs chiffres
+   * (`documentation/recommandation-produit/plan-suggestions-du-staff.md`, RS1,
+   * Hugo, 2026-10-18). Un droit à lui, en Gestion Boutique. Elle s'accorde à
+   * l'écran ; la graine ne la donne qu'à l'administrateur.
+   */
+  "lfc_suggestions",
+  /**
    * **La vitrine** — composer les pages de la boutique : formes, positions,
    * rayons, contenus, gabarits (`documentation/commandes/boutique-rayon-layout.md`,
    * D7).
@@ -724,6 +732,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   lfc_order_settings: "Heure limite et annulation des commandes",
   lfc_order_opening: "Ouverture des commandes",
   lfc_loyalty: "Fidélité",
+  lfc_suggestions: "Suggestions de la boutique",
   staff_access: "Équipe et accès",
   staff_notifications: "Notifications internes",
   ops_health: "Santé de l'écosystème",
@@ -853,6 +862,9 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // L'administrateur seul (Hugo, 2026-10-16) : la comptabilité ne garde pas
     // la fidélité, et les autres rôles la reçoivent à l'écran.
     lfc_loyalty: "write",
+    // L'administrateur seul (2026-10-18, plan des suggestions du staff, RS1) :
+    // en production, accordée à l'écran.
+    lfc_suggestions: "write",
     // La graine seule (2026-10-13, réglages commerciaux) : en production,
     // ces deux droits s'accordent à l'écran.
     b2b_commercial_appointment: "write",

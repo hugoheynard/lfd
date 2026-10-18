@@ -126,6 +126,10 @@ enum StaffResource {
   /// `b2b_accounting`, `plan-fidelite-en-gestion-boutique.md`, F1). Accordée à
   /// l'écran ; les gardes la portent au lot F2.
   lfc_loyalty
+  /// LES SUGGESTIONS DÉCIDÉES — les règles du staff, leur ordre, leurs
+  /// chiffres (2026-10-18, `plan-suggestions-du-staff.md`, RS1). Accordée à
+  /// l'écran.
+  lfc_suggestions
   /// La VITRINE — composer les pages de la boutique (2026-09-24,
   /// `boutique-rayon-layout.md`, D7).
   b2b_storefront

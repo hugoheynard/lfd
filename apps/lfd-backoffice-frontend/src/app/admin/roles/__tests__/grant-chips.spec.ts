@@ -116,9 +116,11 @@ describe('grantGroups', () => {
    * le même jour : `b2b_catalog` est retiré (L2) — il reste lisible, mais ne
    * compte plus parmi les domaines qu'on accorde. 59 le même jour :
    * `lfc_loyalty`, la fidélité, détachée de `b2b_accounting`
-   * (comptabilite/fidelite/plan-fidelite-en-gestion-boutique.md, F1).
+   * (comptabilite/fidelite/plan-fidelite-en-gestion-boutique.md, F1). 60 le
+   * 2026-10-18 : `lfc_suggestions`, les suggestions décidées par l'équipe
+   * (recommandation-produit/plan-suggestions-du-staff.md, RS1).
    */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(59);
+    expect(RESOURCE_COUNT).toBe(60);
   });
 });

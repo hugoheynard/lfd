@@ -15,6 +15,7 @@ import { declareCustomerAgentTools } from '../customer-agent-tools';
 import { declareMediaAgentTools } from '../media-agent-tools';
 import { declareOpsAgentTools } from '../ops-agent-tools';
 import { declarePimAgentTools } from '../pim-agent-tools';
+import { declareSuggestionAgentTools } from '../suggestion-agent-tools';
 import { declareVehicleAgentTools } from '../vehicle-agent-tools';
 
 /**
@@ -146,8 +147,15 @@ export class AgentToolsPage {
   protected readonly accessTools = signal<readonly string[]>([]);
 
   /**
+   * La trousse des suggestions décidées (2026-10-18, RS1) — vide sans
+   * `lfc_suggestions:read`, le droit de lecture de `admin/suggestions` ; ses
+   * outils d'écriture ne sont déclarés qu'avec `lfc_suggestions:write`.
+   */
+  protected readonly suggestionTools = signal<readonly string[]>([]);
+
+  /**
    * Lus une fois : la garde de la route a déjà chargé les permissions. Elle
-   * laisse passer l'un des six droits ; chaque trousse suit le sien, et la
+   * laisse passer l'un des sept droits ; chaque trousse suit le sien, et la
    * page dit laquelle manque.
    */
   private readonly permissions = inject(PermissionsStore);
@@ -160,6 +168,8 @@ export class AgentToolsPage {
   protected readonly vehiclesWritable = this.permissions.can('delivery_settings:write');
   protected readonly accessAllowed = this.permissions.can('staff_access:read');
   protected readonly accessWritable = this.permissions.can('staff_access:write');
+  protected readonly suggestionsAllowed = this.permissions.can('lfc_suggestions:read');
+  protected readonly suggestionsWritable = this.permissions.can('lfc_suggestions:write');
 
   /** Un agent est-il branché ? Un signal, puisque la réponse change. */
   protected readonly bridged = signal(false);
@@ -209,7 +219,7 @@ export class AgentToolsPage {
     return true;
   }
 
-  /** Déclare les six trousses ; à appeler dans le contexte d'injection du composant. */
+  /** Déclare les sept trousses ; à appeler dans le contexte d'injection du composant. */
   private declareAll(): void {
     this.tools.set(this.pimAllowed ? declarePimAgentTools(this.reemitAllowed) : []);
     this.mediaTools.set(this.mediaAllowed ? declareMediaAgentTools() : []);
@@ -219,5 +229,8 @@ export class AgentToolsPage {
       this.vehiclesAllowed ? declareVehicleAgentTools(this.vehiclesWritable) : [],
     );
     this.accessTools.set(this.accessAllowed ? declareAccessAgentTools(this.accessWritable) : []);
+    this.suggestionTools.set(
+      this.suggestionsAllowed ? declareSuggestionAgentTools(this.suggestionsWritable) : [],
+    );
   }
 }

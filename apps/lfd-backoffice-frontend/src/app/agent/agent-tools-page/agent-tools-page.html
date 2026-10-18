@@ -182,4 +182,30 @@
       la porte.
     </p>
   </section>
+
+  <section class="tools">
+    <h2>Suggestions de la boutique</h2>
+    @if (suggestionsAllowed) {
+      <ul>
+        @for (tool of suggestionTools(); track tool) {
+          <li>
+            <code>{{ tool }}</code>
+          </li>
+        }
+      </ul>
+      @if (!suggestionsWritable) {
+        <p class="excluded">
+          Lecture seule&nbsp;: votre compte n'a pas le droit de modifier les suggestions.
+        </p>
+      }
+    } @else {
+      <p class="excluded">
+        Non déclarés&nbsp;: votre compte n'a pas le droit de lire les suggestions.
+      </p>
+    }
+    <p class="excluded">
+      <strong>Ce qui n'est délibérément pas là&nbsp;:</strong> les chiffres par suggestion — ils se
+      lisent à l'écran, et restent à zéro tant que la boutique n'affiche pas ces suggestions.
+    </p>
+  </section>
 </fold-page-layout>

@@ -32,6 +32,7 @@ import { CONTACT_PHRASES } from './contact-phrases';
 import { ORDER_CUTOFF_SETTINGS_PHRASES } from './order-cutoff-settings-phrases';
 import { ORDER_OPENING_PHRASES } from './order-opening-phrases';
 import { STOREFRONT_PHRASES } from './storefront-phrases';
+import { SUGGESTION_PHRASES } from './suggestion-phrases';
 import { SUB_ACCOUNT_PHRASES } from './sub-account-phrases';
 import { TEAM_PHRASES } from './team-phrases';
 
@@ -167,6 +168,7 @@ export const PHRASES: Readonly<Record<JournalFactType, Phrase>> = {
   ...COMMERCE_PHRASES,
   ...COMMERCE_OPERATION_PHRASES,
   ...STOREFRONT_PHRASES,
+  ...SUGGESTION_PHRASES,
   ...ORDERS_PHRASES,
   ...DELIVERY_ROUND_PHRASES,
   ...DELIVERY_TRANSFER_PHRASES,

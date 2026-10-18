@@ -1,0 +1,25 @@
+<fold-card>
+  <div class="card">
+    <fold-element-title
+      variant="title"
+      title="Quand plusieurs suggestions s'appliquent"
+      subtitle="Au même endroit et au même moment, laquelle passe d'abord."
+    />
+    @if (order() !== null) {
+      @if (canWrite()) {
+        <fold-view-toggle
+          ariaLabel="Ordre des suggestions"
+          size="sm"
+          [options]="options"
+          [value]="order() ?? ''"
+          (valueChange)="choose($event)"
+        />
+      } @else {
+        <p class="current">{{ label() }}</p>
+      }
+    }
+    @if (failure(); as message) {
+      <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+    }
+  </div>
+</fold-card>

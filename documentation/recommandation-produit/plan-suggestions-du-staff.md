@@ -1,5 +1,27 @@
 # Plan — les suggestions décidées par le staff
 
+> 🟡 **RS1 et RS3 bâtis le 2026-10-18** (non commités à l'écriture de ce
+> bandeau ; Hugo : « on peut faire tout l'admin recommandation staff »). Ce qui
+> existe : l'agrégat `StaffSuggestionRule` et le réglage de l'ordre dans
+> `apps/lfd-api/src/b2b/recommendations/` (tables `public.staff_suggestion_rules`
+> et `public.staff_suggestion_order_settings`), le droit `lfc_suggestions`
+> (accordé à l'écran, jamais en migration), les routes `/admin/suggestions`,
+> la lecture des règles applicables (période, audience, interrupteur, ordre —
+> **sans** déclencheur ni filtre R0, qui sont de RS2), l'écran Gestion
+> Boutique › Suggestions avec ses chiffres par règle, et la trousse
+> [`outils-agent-suggestions.md`](outils-agent-suggestions.md). **RS2 et RS4
+> restent à faire.**
+>
+> Pris pour bâtir, à confirmer par Hugo : **Q2** — phrase française
+> obligatoire s'il y a phrase, anglais et italien facultatifs ; **Q4** — la
+> mise en avant reste hors des règles ; **Q1** — ne concerne que l'affichage
+> (RS2). Et quatre valeurs que le plan laissait ouvertes : la phrase est bornée
+> à **90 caractères** par langue ; la priorité va de **0 à 999** ; « la plus
+> récente » est la plus récemment **créée** (une réécriture ne la fait pas
+> passer devant) ; « une fiche ouverte ne déclenche pas au panier » est
+> généralisé — un déclencheur de panier ne vaut qu'au panier, une fiche
+> ouverte qu'en fiche, « partout » partout.
+
 > 📐 **Doc-first, rien n'est bâti** (Hugo, 2026-10-18 : « il faut qu'on
 > distingue les recos data driven et business driven — le staff décrète une
 > suggestion », puis « j'ai besoin d'une doc à part pour la reco staff »).

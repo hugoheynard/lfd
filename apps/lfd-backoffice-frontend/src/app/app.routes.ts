@@ -90,6 +90,16 @@ export const routes: Routes = [
     title: 'Fidélité — LFC B2B admin',
     loadComponent: () => import('./fidelite/fidelite-page').then((m) => m.FidelitePage),
   },
+  {
+    // LES SUGGESTIONS DÉCIDÉES — « quand le client fait ceci, montre-lui
+    // cela » — en Gestion Boutique, sous LEUR droit (`lfc_suggestions`,
+    // plan-suggestions-du-staff.md, RS1, 2026-10-18).
+    path: 'suggestions',
+    canActivate: [permissionGuard('lfc_suggestions:read')],
+    title: 'Suggestions — LFC B2B admin',
+    loadComponent: () =>
+      import('./suggestions/suggestions-page/suggestions-page').then((m) => m.SuggestionsPage),
+  },
   // L'ancienne adresse, dans des favoris. ORDRE : avant `comptabiliteRoutes`,
   // dont la coquille exige `b2b_accounting:read` — y loger la redirection
   // refuserait qui n'a que `lfc_loyalty`.
@@ -229,8 +239,10 @@ export const routes: Routes = [
     // LECTURE des réglages de livraison pour la flotte (2026-10-14), dont les
     // outils d'écriture ne se déclarent qu'avec `delivery_settings:write` ; la
     // LECTURE des droits pour la trousse « Droits » (2026-10-15), dont les
-    // outils d'écriture ne se déclarent qu'avec `staff_access:write`.
-    // L'un des six suffit : la
+    // outils d'écriture ne se déclarent qu'avec `staff_access:write` ; la
+    // LECTURE des suggestions décidées (2026-10-18), dont les outils
+    // d'écriture ne se déclarent qu'avec `lfc_suggestions:write`.
+    // L'un des sept suffit : la
     // page ne déclare que les trousses dont le compte a le droit.
     path: 'outils-agent',
     canActivate: [
@@ -241,6 +253,7 @@ export const routes: Routes = [
         'b2b_companies:read',
         'delivery_settings:read',
         'staff_access:read',
+        'lfc_suggestions:read',
       ),
     ],
     title: 'Outils agent — LFC B2B admin',

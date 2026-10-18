@@ -14,6 +14,7 @@ import {
   type JournalFactFamily,
 } from "./fact.js";
 import { COMMERCE_OPERATION_FACTS } from "./commerce-operations.js";
+import { COMMERCE_SUGGESTION_FACTS } from "./commerce-suggestions.js";
 
 /**
  * **Le commerce et le catalogue B2B** — ce qu'on vend aux pros (prix négocié,
@@ -127,6 +128,9 @@ export const COMMERCE_FACTS = {
   // Les opérations tenues AU COMMERCE (plan de l'opération au commerce, O6,
   // lot 1, 2026-10-15) — rangées dans leur fichier, comptées dans la famille.
   ...COMMERCE_OPERATION_FACTS,
+  // Les suggestions décidées par le staff (plan des suggestions du staff,
+  // RS1, 2026-10-18) — rangées dans leur fichier, comptées dans la famille.
+  ...COMMERCE_SUGGESTION_FACTS,
   "catalog_delivery.accepted": fact(
     payload({
       deliveryId: ref("catalog_delivery"),

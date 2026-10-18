@@ -1,0 +1,126 @@
+<fold-panel-header
+  [title]="editing() ? 'Modifier la suggestion' : 'Nouvelle suggestion'"
+  subtitle="Quand le client fait ceci, la boutique lui montre cela."
+/>
+
+<fold-panel-body>
+  <div class="form">
+    <fold-listbox
+      label="Déclencheur"
+      [options]="triggers"
+      [value]="draft().triggerKind"
+      (selectionChange)="setTrigger($event)"
+    />
+    @if (needsArticle()) {
+      <app-storefront-product-picker
+        [products]="products()"
+        [sku]="draft().triggerRef === '' ? null : draft().triggerRef"
+        (picked)="set('triggerRef', $event)"
+      />
+    } @else if (needsFamily()) {
+      <fold-listbox
+        label="Famille"
+        placeholder="Choisir une famille"
+        [options]="families()"
+        [value]="draft().triggerRef === '' ? null : draft().triggerRef"
+        (selectionChange)="set('triggerRef', $event)"
+      />
+    }
+
+    <div class="suggested">
+      <p class="suggested-title">
+        Articles montrés ({{ suggested().length }} sur {{ maxSuggested }} au plus)
+      </p>
+      @if (suggested().length > 0) {
+        <ol class="suggested-list">
+          @for (item of suggested(); track item.sku) {
+            <li class="suggested-item">
+              <span>{{ item.name }}</span>
+              <span class="suggested-sku">{{ item.sku }}</span>
+              <fold-button-icon
+                icon="close"
+                size="sm"
+                tooltip="Retirer"
+                (clicked)="removeSuggested(item.sku)"
+              />
+            </li>
+          }
+        </ol>
+      }
+      @if (suggested().length < maxSuggested) {
+        <app-storefront-product-picker [products]="products()" (picked)="addSuggested($event)" />
+      }
+    </div>
+
+    <fold-listbox
+      label="Emplacement"
+      hint="Seuls les emplacements où le déclencheur peut être vrai sont proposés."
+      [options]="placements()"
+      [value]="draft().placement"
+      (selectionChange)="set('placement', $event)"
+    />
+    <fold-listbox
+      label="Audience"
+      [options]="audiences"
+      [value]="draft().audience"
+      (selectionChange)="set('audience', $event)"
+    />
+
+    <div class="period">
+      <fold-date
+        label="Premier jour"
+        required
+        [value]="draft().startsOn"
+        (valueChange)="set('startsOn', $event)"
+      />
+      <fold-date
+        label="Dernier jour"
+        required
+        [value]="draft().endsOn"
+        (valueChange)="set('endsOn', $event)"
+      />
+    </div>
+
+    <fold-input
+      label="Phrase (français)"
+      hint="Facultative : sans phrase, la boutique dit « Notre conseil ». 90 caractères au plus."
+      [value]="draft().phraseFr"
+      (valueChange)="set('phraseFr', $event)"
+    />
+    <fold-input
+      label="Phrase (anglais)"
+      optional
+      [value]="draft().phraseEn"
+      (valueChange)="set('phraseEn', $event)"
+    />
+    <fold-input
+      label="Phrase (italien)"
+      optional
+      [value]="draft().phraseIt"
+      (valueChange)="set('phraseIt', $event)"
+    />
+
+    <fold-number-input
+      label="Priorité"
+      hint="De 0 à 999, la plus haute d'abord — lue seulement quand l'ordre est « par priorité »."
+      integer
+      [min]="0"
+      [max]="999"
+      [value]="draft().priority"
+      (valueChange)="set('priority', $event)"
+    />
+
+    @if (refusal(); as message) {
+      <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+    } @else if (missing(); as message) {
+      <fold-callout appearance="inset" variant="neutral">{{ message }}</fold-callout>
+    }
+  </div>
+</fold-panel-body>
+
+<fold-panel-footer align="end">
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton [disabled]="missing() !== null" [loading]="busy()" (click)="submit()">
+    Enregistrer
+  </button>
+</fold-panel-footer>

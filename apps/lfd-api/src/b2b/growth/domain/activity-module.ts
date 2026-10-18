@@ -85,6 +85,11 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // Les textes de la boutique publiés (2026-10-11) : le même métier que la
     // vitrine — ce que la boutique dit, sous le même droit.
     "shop_copy.",
+    // Les suggestions décidées par le staff et leur ordre (2026-10-18, RS1) :
+    // le même métier que la mise en avant — ce que la boutique conseille.
+    // ⚠️ `staff_suggestion_order.` ne tombe PAS sous `staff_suggestion.`.
+    "staff_suggestion.",
+    "staff_suggestion_order.",
   ],
   // Zones, points de retrait, heures limites et ouverture de la livraison
   // décident où et quand une commande part : ils se lisent avec les commandes,

@@ -163,6 +163,18 @@ describe('App — Gestion Boutique', () => {
     expect(render(['b2b_accounting:read']).querySelector(rail(link))).toBeNull();
   });
 
+  /** Les suggestions décidées (2026-10-18, RS1) : leur droit seul les ouvre. */
+  it('montre « Suggestions » sous lfc_suggestions:read, dans les deux arbres', () => {
+    const link = '/suggestions';
+    const entry = render(['lfc_suggestions:read']).querySelector(rail(link));
+    expect(entry?.getAttribute('label')).toBe('Suggestions');
+    expect(entry?.closest('fold-menu-section')?.getAttribute('label')).toBe('Gestion Boutique');
+    expect(
+      render(['lfc_suggestions:read'], true).querySelector(tile(link))?.getAttribute('label'),
+    ).toBe('Suggestions');
+    expect(render(['lfc_loyalty:read']).querySelector(rail(link))).toBeNull();
+  });
+
   it('est absente sans aucun de ses droits', () => {
     const host = render(['b2b_orders:read']);
     expect(host.querySelector('fold-menu-section[label="Gestion Boutique"]')).toBeNull();

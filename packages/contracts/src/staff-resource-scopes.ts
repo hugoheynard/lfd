@@ -197,6 +197,11 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     write:
       "Régler le programme, ajuster le solde d'un client, annuler un bon. N'ouvre encore aucun geste jusqu'à la bascule (F2).",
   },
+  lfc_suggestions: {
+    read: "Voir les suggestions décidées par l'équipe — ce qui les déclenche, ce qu'elles montrent, où, à qui et quand — leur ordre, et leurs chiffres (affichée, cliquée, ajoutée).",
+    write:
+      "Créer, réécrire, couper, rallumer ou archiver une suggestion, et choisir l'ordre entre suggestions concurrentes — ce que la boutique conseille à chaque client.",
+  },
   b2b_storefront: {
     read: "Voir la composition des pages de la boutique.",
     write: "Composer la vitrine — formes, positions, rayons, contenus — et l'enregistrer.",

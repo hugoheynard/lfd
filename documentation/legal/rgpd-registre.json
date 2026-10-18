@@ -1107,6 +1107,33 @@
       "information": false
     },
     {
+      "colonne": "public.staff_suggestion_rules.created_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a créé une suggestion décidée (`created_by`) sur `staff_suggestion_rules` (`recommandation-produit/plan-suggestions-du-staff.md`, RS1).",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.staff_suggestion_rules.updated_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a écrit en dernier une suggestion décidée (`updated_by`) sur `staff_suggestion_rules` ; le journal dit le reste.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.staff_suggestion_order_settings.updated_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a réglé l'ordre des suggestions décidées (`updated_by`) sur `staff_suggestion_order_settings`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "public.loyalty_vouchers.cancelled_by_staff_id",
       "personne": "staff",
       "categorie": "auteur-geste",

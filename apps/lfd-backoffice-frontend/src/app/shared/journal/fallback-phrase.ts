@@ -90,6 +90,8 @@ const SUBJECT_NOUNS: Readonly<Record<string, string>> = {
   delivery_availability: 'l’ouverture de la livraison',
   delivery_zone: 'la zone de livraison',
   order_opening: 'l’ouverture de la boutique',
+  staff_suggestion: 'la suggestion',
+  staff_suggestion_order: 'l’ordre des suggestions',
   feature_access: 'la fonctionnalité',
   floor: 'la limite de prix',
   ingredient: 'l’ingrédient',

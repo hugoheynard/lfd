@@ -243,4 +243,19 @@ describe('AgentToolsPage', () => {
     const without = render(['pim_catalog:write']);
     expect(without.root.textContent).toContain('pas le droit de lire les rôles et l');
   });
+
+  it('ne déclare QUE la lecture des suggestions sans `lfc_suggestions:write`', () => {
+    const { root } = render(['lfc_suggestions:read']);
+    const listed = [...root.querySelectorAll('code')].map((el) => el.textContent?.trim() ?? '');
+
+    expect(listed).toEqual(['suggestion_list', 'suggestion_order_get']);
+    expect(root.textContent).toContain('pas le droit de modifier les suggestions');
+  });
+
+  it('déclare l’écriture des suggestions avec `lfc_suggestions:write`', () => {
+    const { root } = render(['lfc_suggestions:read', 'lfc_suggestions:write']);
+    const listed = [...root.querySelectorAll('code')].map((el) => el.textContent?.trim());
+    expect(listed).toContain('suggestion_create');
+    expect(listed).toContain('suggestion_order_set');
+  });
 });

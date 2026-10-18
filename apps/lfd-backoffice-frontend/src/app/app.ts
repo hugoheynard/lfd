@@ -300,7 +300,15 @@ export class App {
    * entrées est ouverte ; chacune garde le droit de sa route.
    */
   protected readonly canSeeShopManagement = computed(
-    () => this.canSeeSettings() || this.canSeeCommerceOperations() || this.canSeeLoyalty(),
+    () =>
+      this.canSeeSettings() ||
+      this.canSeeCommerceOperations() ||
+      this.canSeeLoyalty() ||
+      this.canSeeSuggestions(),
+  );
+  /** Les suggestions décidées : leur droit à elles (`lfc_suggestions`, 2026-10-18, RS1). */
+  protected readonly canSeeSuggestions = computed(() =>
+    this.permissions.can('lfc_suggestions:read'),
   );
   /** La fidélité : son droit à elle (`lfc_loyalty`, 2026-10-16), pas la comptabilité. */
   protected readonly canSeeLoyalty = computed(() => this.permissions.can('lfc_loyalty:read'));
@@ -340,9 +348,9 @@ export class App {
    * rendrait 403 — et la route, elle, le refuserait de toute façon
    * (`app.routes.ts`, `anyPermissionGuard('pim_catalog:write',
    * 'media_library:write', 'ops_health:read', 'b2b_companies:read', 'delivery_settings:read',
-   * 'staff_access:read')`).
+   * 'staff_access:read', 'lfc_suggestions:read')`).
    */
-  // Le même « l'un des six » que la garde de `/outils-agent` (2026-10-15) :
+  // Le même « l'un des sept » que la garde de `/outils-agent` (2026-10-18) :
   // l'entrée suit la route, sinon un compte médiathèque ou exploitation seul
   // aurait un écran ouvert que rien n'annonce.
   protected readonly canUseAgentTools = computed(
@@ -352,7 +360,8 @@ export class App {
       this.permissions.can('ops_health:read') ||
       this.permissions.can('b2b_companies:read') ||
       this.permissions.can('delivery_settings:read') ||
-      this.permissions.can('staff_access:read'),
+      this.permissions.can('staff_access:read') ||
+      this.permissions.can('lfc_suggestions:read'),
   );
 
   /**

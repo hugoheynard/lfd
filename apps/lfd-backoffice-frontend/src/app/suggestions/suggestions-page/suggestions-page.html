@@ -1,0 +1,179 @@
+<fold-page-layout icon="lightning" title="Suggestions">
+  <p description>
+    Les suggestions que l'équipe décide : quand le client fait ceci, la boutique lui montre cela.
+    Elles passent avant les suggestions calculées, et disparaissent d'elles-mêmes sur un article qui
+    ne se commande pas.
+  </p>
+
+  @if (canWrite()) {
+    <div pageActions>
+      <button foldButton icon="plus" [disabled]="state() !== 'ready'" (click)="edit(null)">
+        Nouvelle suggestion
+      </button>
+    </div>
+  }
+
+  <app-suggestion-order-card />
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Chargement des suggestions…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Impossible de charger les suggestions">
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @default {
+      @if (partialFailure(); as message) {
+        <fold-callout appearance="inset" variant="warning">{{ message }}</fold-callout>
+      }
+      @if (actionFailure(); as message) {
+        <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+      }
+      @if (live().length === 0 && archived().length === 0) {
+        <fold-empty-state
+          title="Aucune suggestion"
+          [subtitle]="
+            canWrite()
+              ? 'L’équipe n’a encore décidé aucune suggestion : créez-en une.'
+              : 'L’équipe n’a encore décidé aucune suggestion.'
+          "
+        >
+          <fold-icon empty-icon name="lightning" [size]="28" />
+        </fold-empty-state>
+      } @else {
+        @if (nothingCounted()) {
+          <fold-callout appearance="inset" variant="info">
+            Aucune suggestion décidée n'a encore été montrée en boutique : les chiffres restent à
+            zéro tant que la boutique ne les affiche pas.
+          </fold-callout>
+        }
+        @if (live().length > 0) {
+          <fold-card>
+            <div class="section">
+              <fold-element-title variant="title" title="Suggestions" />
+              <ul class="rules">
+                @for (rule of live(); track rule.id) {
+                  <ng-container
+                    [ngTemplateOutlet]="row"
+                    [ngTemplateOutletContext]="{ $implicit: rule }"
+                  />
+                }
+              </ul>
+            </div>
+          </fold-card>
+        }
+        @if (archived().length > 0) {
+          <fold-card>
+            <div class="section">
+              <fold-element-title
+                variant="title"
+                title="Archivées"
+                subtitle="Retirées pour toujours : elles se lisent, rien n'en paraît en boutique."
+              />
+              <ul class="rules">
+                @for (rule of archived(); track rule.id) {
+                  <ng-container
+                    [ngTemplateOutlet]="row"
+                    [ngTemplateOutletContext]="{ $implicit: rule }"
+                  />
+                }
+              </ul>
+            </div>
+          </fold-card>
+        }
+      }
+    }
+  }
+</fold-page-layout>
+
+<ng-template #row let-rule>
+  <li class="rule">
+    <div class="rule-head">
+      <span class="rule-phrase">{{ phrase(rule) }}</span>
+      @if (rule.archivedAt !== null) {
+        <fold-badge content="Archivée" variant="neutral" radius="pill" />
+      } @else if (rule.active) {
+        <fold-badge content="Active" variant="success" radius="pill" />
+      } @else {
+        <fold-badge content="Coupée" variant="warning" radius="pill" />
+      }
+    </div>
+    <p class="rule-flow">{{ trigger(rule) }} → {{ suggested(rule) }}</p>
+    <dl class="rule-facts">
+      <div>
+        <dt>Période</dt>
+        <dd>{{ period(rule) }}</dd>
+      </div>
+      <div>
+        <dt>Emplacement</dt>
+        <dd>{{ placement(rule) }}</dd>
+      </div>
+      <div>
+        <dt>Audience</dt>
+        <dd>{{ audience(rule) }}</dd>
+      </div>
+      <div>
+        <dt>Priorité</dt>
+        <dd>{{ rule.priority }}</dd>
+      </div>
+      @if (countsOf(rule); as counts) {
+        <div>
+          <dt>Affichée</dt>
+          <dd>{{ counts.shown }}</dd>
+        </div>
+        <div>
+          <dt>Cliquée</dt>
+          <dd>{{ counts.clicked }}</dd>
+        </div>
+        <div>
+          <dt>Ajoutée</dt>
+          <dd>{{ counts.added }}</dd>
+        </div>
+      }
+    </dl>
+    @if (canWrite() && rule.archivedAt === null) {
+      <div class="rule-actions">
+        <button
+          foldButton
+          size="sm"
+          emphasis="soft"
+          intent="neutral"
+          [disabled]="pending() !== null"
+          (click)="edit(rule)"
+        >
+          Modifier
+        </button>
+        <button
+          foldButton
+          size="sm"
+          emphasis="soft"
+          intent="neutral"
+          [loading]="pending() === rule.id"
+          [disabled]="pending() !== null"
+          (click)="toggle(rule)"
+        >
+          {{ rule.active ? 'Couper' : 'Rallumer' }}
+        </button>
+        <fold-inline-confirm
+          intent="danger"
+          message="Archiver cette suggestion ? Elle ne paraîtra plus jamais, et ne se modifiera plus."
+          [labels]="{ confirm: 'Archiver' }"
+          [loading]="pending() === rule.id"
+          (confirmed)="archive(rule)"
+        >
+          <button
+            foldButton
+            size="sm"
+            emphasis="soft"
+            intent="danger"
+            [disabled]="pending() !== null"
+          >
+            Archiver
+          </button>
+        </fold-inline-confirm>
+      </div>
+    }
+  </li>
+</ng-template>

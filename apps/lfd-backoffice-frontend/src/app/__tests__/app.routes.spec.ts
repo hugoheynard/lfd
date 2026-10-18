@@ -163,6 +163,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // bascule) depuis le retrait de l'écran du référentiel (2026-10-16).
   operations: 'lfc_operations:read',
   fidelite: 'lfc_loyalty:read',
+  suggestions: 'lfc_suggestions:read',
   'operations/:key': 'lfc_operations:read',
   promotions: 'b2b_settings:read',
   // **Catalogue publié** — parti de l'espace E-commerce le 2026-10-15 (H9),
@@ -197,6 +198,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // Trois depuis le 2026-10-11 : l'exploitation, en lecture (`ops_health:read`).
   // Cinq depuis le 2026-10-14 : la flotte, en lecture (`delivery_settings:read`).
   // Six depuis le 2026-10-15 : les droits, en lecture (`staff_access:read`).
+  // Sept depuis le 2026-10-18 : les suggestions, en lecture (`lfc_suggestions:read`).
   'outils-agent': {
     anyOf: [
       'pim_catalog:write',
@@ -205,6 +207,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
       'b2b_companies:read',
       'delivery_settings:read',
       'staff_access:read',
+      'lfc_suggestions:read',
     ],
   },
 

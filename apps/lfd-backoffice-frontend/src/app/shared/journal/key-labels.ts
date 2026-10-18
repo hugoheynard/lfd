@@ -112,6 +112,7 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   email: 'Adresse e-mail',
   en: 'Anglais',
   endDate: 'Fin',
+  endsOn: 'Dernier jour',
   energyKcal: 'Énergie',
   excluded: 'Articles écartés',
   excludedSkus: 'Articles écartés',
@@ -145,6 +146,7 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   // réduction de prix (CLAUDE.md racine, §8, décidé le 2026-09-12).
   handedOverAt: 'Retirée le',
   handedOverBy: 'Retrait validé par',
+  phrase: 'Phrase',
   pickup: 'Retrait',
   // Les clientèles du retrait d'un site (2026-10-15).
   pickupForB2b: 'Retrait pour les pros',
@@ -207,6 +209,7 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   pickupFrom: 'Premier jour de retrait',
   pickupMarginMinutes: 'Marge de retrait',
   pickupUntil: 'Dernier jour de retrait',
+  placement: 'Emplacement',
   play: 'Coup recommandé',
   plural: 'Pluriel',
   pointOfSale: 'Point de vente',
@@ -221,6 +224,7 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   previousValue: 'Valeur d’avant',
   priceCents: 'Prix TTC',
   priceMillicents: 'Prix HT',
+  priority: 'Priorité',
   promisedQuantity: 'Quantité promise',
   // Lot P : le prix pro HT saisi (`product.pricing_saved`, `product.pro_price_prefilled`).
   proPriceMillicents: 'Prix pro HT',
@@ -273,6 +277,7 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   staffUserId: 'Fiche du personnel',
   startAt: 'Début',
   startDate: 'Début',
+  startsOn: 'Premier jour',
   status: 'Statut',
   step: 'Étape',
   story: 'Histoire',
@@ -296,6 +301,8 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   toLabel: 'Nouveau rôle',
   totalCents: 'Total',
   transferMode: 'Mode du transfert',
+  trigger: 'Déclencheur',
+  triggerRef: 'Article ou famille déclencheur',
   unitsPerContainer: 'Unités par contenant',
   url: 'Image',
   userId: 'Personne',

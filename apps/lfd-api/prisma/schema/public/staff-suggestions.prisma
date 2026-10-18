@@ -1,0 +1,75 @@
+/// **Les suggestions décidées par le staff** — « quand le client fait ceci,
+/// montre-lui cela » (`documentation/recommandation-produit/plan-suggestions-du-staff.md`,
+/// RS1, 2026-10-18). L'agrégat `StaffSuggestionRule` de `b2b/recommendations`
+/// en est le seul écrivain.
+///
+/// Dans `public` et non dans `growth` : une règle est une DÉCISION du commerce
+/// — ce que la boutique conseille, à qui et quand —, au même titre que la mise
+/// en avant ou une opération datée. `growth` porte ce qu'on OBSERVE (les
+/// compteurs d'audience), pas ce qu'on décide.
+///
+/// 🔴 **Jamais supprimée** : une règle s'archive (`archived_at`). Les SKU et la
+/// famille sont des identifiants opaques du catalogue servi, sans clé
+/// étrangère : un article retiré ne fait pas disparaître la règle qui le
+/// citait.
+model StaffSuggestionRule {
+  /// L'id de l'`IdGenerator` (ULID). En minuscules, il est l'emplacement des
+  /// compteurs d'audience `staff` de la règle (§6 du plan).
+  id String @id
+
+  /// `everywhere` · `product_in_cart` · `category_in_cart` · `product_viewed` (`CHECK`).
+  triggerKind String  @map("trigger_kind")
+  /// Le SKU ou l'id de famille du déclencheur ; `NULL` pour `everywhere` (`CHECK`).
+  triggerRef  String? @map("trigger_ref")
+
+  /// 1 à 3 SKU, dans l'ordre voulu (`CHECK` sur la taille).
+  suggestedSkus String[] @map("suggested_skus")
+
+  /// `cart` · `product` · `home` (`CHECK`).
+  placement String
+  /// `pro` · `public` · `both` (`CHECK`).
+  audience  String
+
+  /// Des JOURS métier, bornes comprises (`CHECK` : fin ≥ début).
+  startsOn DateTime @map("starts_on") @db.Date
+  endsOn   DateTime @map("ends_on") @db.Date
+
+  /// La phrase du staff : le français si phrase il y a, `NULL` sinon.
+  phraseFr String? @map("phrase_fr")
+  phraseEn String? @map("phrase_en")
+  phraseIt String? @map("phrase_it")
+
+  /// Plus haut = d'abord, quand le réglage de l'ordre est `priority`.
+  priority Int     @default(0)
+  active   Boolean @default(true)
+
+  /// Instants des gestes, lus du `Clock`.
+  createdAt  DateTime  @map("created_at") @db.Timestamptz(3)
+  updatedAt  DateTime  @map("updated_at") @db.Timestamptz(3)
+  archivedAt DateTime? @map("archived_at") @db.Timestamptz(3)
+
+  /// Qui l'a créée, puis qui l'a écrite en dernier : un `StaffUser.id`, jamais un `sub`.
+  createdBy String? @map("created_by")
+  updatedBy String? @map("updated_by")
+
+  @@index([archivedAt, startsOn, endsOn])
+  @@map("staff_suggestion_rules")
+  @@schema("public")
+}
+
+/// **L'ordre entre suggestions concurrentes** (Q3, Hugo, 2026-10-18) : une
+/// ligne unique, de clé `suggestions`. **Ligne absente = `recent`**, sans semis.
+model StaffSuggestionOrderSetting {
+  /// Toujours `suggestions` : il n'y a qu'un réglage.
+  key String @id
+
+  /// `recent` · `priority` (`CHECK`).
+  order String
+
+  updatedAt DateTime @map("updated_at") @db.Timestamptz(3)
+  /// Qui l'a posé : un `StaffUser.id`, jamais un `sub`.
+  updatedBy String?  @map("updated_by")
+
+  @@map("staff_suggestion_order_settings")
+  @@schema("public")
+}

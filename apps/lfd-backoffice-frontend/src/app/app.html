@@ -267,6 +267,20 @@
               (click)="mobileNavOpen.set(false)"
             ></a>
           }
+          @if (canSeeSuggestions()) {
+            <!-- Les SUGGESTIONS décidées par l'équipe (2026-10-18, RS1), sous
+                 leur droit `lfc_suggestions`. -->
+            <a
+              fold-menu-item
+              icon="lightning"
+              label="Suggestions"
+              routerLink="/suggestions"
+              routerLinkActive
+              #suggestionsRla="routerLinkActive"
+              [active]="suggestionsRla.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
         </fold-menu-section>
       }
 
@@ -894,6 +908,19 @@
               routerLinkActive
               #loyaltyTile="routerLinkActive"
               [active]="loyaltyTile.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
+          @if (canSeeSuggestions()) {
+            <!-- Les SUGGESTIONS : la même entrée qu'au rail (deux arbres). -->
+            <a
+              fold-nav-tile
+              icon="lightning"
+              label="Suggestions"
+              routerLink="/suggestions"
+              routerLinkActive
+              #suggestionsTile="routerLinkActive"
+              [active]="suggestionsTile.isActive"
               (click)="mobileNavOpen.set(false)"
             ></a>
           }

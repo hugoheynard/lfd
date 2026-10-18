@@ -297,6 +297,7 @@
   "test/staff-catalog-right-transfer.e2e-spec.ts": 8124,
   "test/staff-roles-in-database.e2e-spec.ts": 9404,
   "test/staff-roles.e2e-spec.ts": 55877,
+  "test/staff-suggestions.e2e-spec.ts": 9229,
   "test/staff-users.e2e-spec.ts": 10030,
   "test/storefront-catalog.e2e-spec.ts": 3899,
   "test/storefront-focal-race.e2e-spec.ts": 6027,
