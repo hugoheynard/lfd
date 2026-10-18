@@ -1,9 +1,10 @@
 # Les suggestions décidées par le staff — ce qui est bâti
 
 > **Doc d'état** (2026-10-18, relue contre le code au commit `651b446d3` ;
-> l'accueil et l'après-ajout, RS7, et les alertes, RS10, ajoutés le même jour).
-> Elle décrit ce qui existe. Ce qui reste à faire (des règles plus fines, les
-> gestes du staff, la mise en avant dans les règles) est dans [`plan-suggestions-du-staff.md`](plan-suggestions-du-staff.md).
+> l'accueil et l'après-ajout, RS7, les alertes, RS10, et les gestes du staff,
+> RS9, ajoutés le même jour).
+> Elle décrit ce qui existe. Ce qui reste à faire (des règles plus fines, la
+> recherche dans le champ article, la mise en avant dans les règles) est dans [`plan-suggestions-du-staff.md`](plan-suggestions-du-staff.md).
 > L'ensemble du sujet (calculé, décidé, mis en avant) est présenté dans
 > [`README.md`](README.md).
 
@@ -288,11 +289,27 @@ sous `b2b_growth`.
   chaque règle, à l'un des trois emplacements ; chaque règle a un bouton
   « Ouvrir l'aperçu » ;
 - **Ordre** (`suggestion-order-card/`) : `recent` ou `priority` ;
-- **Suggestions** : la liste (active, période, déclencheur → suggérés,
-  emplacement, audience), le panneau d'édition (`suggestion-panel/`) ; en
-  tête, le filtre « Toutes / À corriger (n) », et sur chaque règle signalée
-  le badge « Vide » ou « Partielle » et ses raisons en clair (§13) ;
-- **Archivées** : lisibles, plus rien n'en paraît en boutique.
+- **Suggestions** (`suggestion-rule-list/`, RS9) : la liste **regroupée par
+  état** — l'état que le badge de la ligne dit déjà (`stateOf`,
+  `suggestion-groups.ts`) : « À venir », « En cours », « Finies », puis
+  « Coupées » et « Archivées », **repliées** (`fold-disclosure`). Chaque groupe
+  dit son compte, un groupe vide ne paraît pas. En tête, le filtre « Toutes /
+  À corriger (n) » : il ne garde que les règles signalées, les archivées
+  restant à part (une archivée n'est jamais signalée) ;
+- **Une règle** (`suggestion-rule-row/`) : sa phrase résumée en ligne
+  principale, son état, et si elle est signalée le badge « Vide » ou
+  « Partielle » et ses raisons en clair (§13) ; ses chiffres ; puis les gestes
+  — « Ouvrir l'aperçu », « Modifier », « Dupliquer », « Couper / Rallumer »,
+  « Archiver ». Une archivée ne garde que « Dupliquer » (on décline une saison
+  retirée sans la ressusciter) ;
+- **Dupliquer** (RS9) ouvre le panneau d'édition (`suggestion-panel/`) sur une
+  **copie** (`copyDraftOf`, `suggestion-draft.ts`) : mêmes déclencheur,
+  articles, emplacement, clientèle, phrase et priorité ; la période **garde sa
+  durée et commence au plus tôt aujourd'hui** — une règle finie se décline pour
+  la saison suivante sans revivre dans le passé, une règle à venir garde ses
+  jours pour une variante. L'enregistrement passe par la **création**
+  (`POST admin/suggestions`) : une nouvelle règle, née active, l'originale
+  intacte. Aucune route n'a été ajoutée.
 
 Une règle neuve est préremplie « partout, à l'accueil, pour tous, aujourd'hui
 seulement » (`suggestion-draft.ts`) — un défaut qui s'affiche depuis RS7.
@@ -383,5 +400,5 @@ Domaine pur : `domain/services/suggestion-alerts.ts` (`watchedRules`,
 ## 14. Ce qui reste à faire
 
 Dans [`plan-suggestions-du-staff.md`](plan-suggestions-du-staff.md) : des
-règles plus fines (RS8), les gestes du staff (RS9), et la mise en avant dans
-les règles (RS4).
+règles plus fines (RS8), la recherche dans le champ article (reste de RS9,
+attend un combobox de fold-ng), et la mise en avant dans les règles (RS4).

@@ -34,6 +34,7 @@ import { StorefrontProductPicker } from '../../contenu/storefront-product-picker
 import { parisToday } from '../../shared/paris-today';
 import { StaffSuggestionsService } from '../staff-suggestions.service';
 import {
+  copyDraftOf,
   draftOf,
   emptyDraft,
   MAX_SUGGESTED,
@@ -54,10 +55,15 @@ import {
 } from '../suggestion-format';
 import { summaryOf } from '../suggestion-summary';
 
-/** Ce que le panneau reçoit : la règle à réécrire (`null` = une neuve), et le catalogue servi. */
+/**
+ * Ce que le panneau reçoit : la règle à réécrire (`null` = une neuve), et le
+ * catalogue servi. `copy` (RS9) : la règle n'est qu'un modèle — le panneau
+ * part de sa copie et enregistre une NOUVELLE règle, l'original intact.
+ */
 export interface SuggestionPanelData {
   readonly rule: StaffSuggestionRuleView | null;
   readonly choices: StaffSuggestionChoicesView;
+  readonly copy?: boolean;
 }
 
 /**
@@ -103,12 +109,24 @@ export class SuggestionPanel {
 
   protected readonly draft = linkedSignal<SuggestionDraft>(() => {
     const rule = this.data()?.rule ?? null;
-    return rule === null ? emptyDraft(parisToday()) : draftOf(rule);
+    if (rule === null) {
+      return emptyDraft(parisToday());
+    }
+    return this.copying() ? copyDraftOf(rule, parisToday()) : draftOf(rule);
   });
   protected readonly busy = signal(false);
   protected readonly refusal = signal<string | null>(null);
 
-  protected readonly editing = computed(() => (this.data()?.rule ?? null) !== null);
+  protected readonly copying = computed(() => this.data()?.copy === true);
+  protected readonly editing = computed(
+    () => (this.data()?.rule ?? null) !== null && !this.copying(),
+  );
+  protected readonly heading = computed(() => {
+    if (this.copying()) {
+      return 'Dupliquer la suggestion';
+    }
+    return this.editing() ? 'Modifier la suggestion' : 'Nouvelle suggestion';
+  });
   protected readonly placements = computed(() => placementOptions(this.draft().triggerKind));
   protected readonly products = computed<readonly CatalogProduct[]>(() =>
     (this.data()?.choices.articles ?? []).map((article) => ({
@@ -182,7 +200,7 @@ export class SuggestionPanel {
     if (this.missing() !== null) {
       return;
     }
-    const rule = this.data()?.rule ?? null;
+    const rule = this.editing() ? (this.data()?.rule ?? null) : null;
     const payload = payloadOf(this.draft());
     this.busy.set(true);
     this.refusal.set(null);

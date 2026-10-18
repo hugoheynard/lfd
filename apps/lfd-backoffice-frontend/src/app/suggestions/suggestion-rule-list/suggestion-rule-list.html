@@ -1,0 +1,54 @@
+@if (alerts() !== null) {
+  <fold-view-toggle
+    ariaLabel="Filtrer les suggestions"
+    size="sm"
+    [options]="alertFilterOptions()"
+    [value]="alertFilter()"
+    (valueChange)="chooseAlertFilter($event)"
+  />
+}
+@if (nothingToFix()) {
+  <p class="hint">Aucune suggestion à corriger.</p>
+}
+@for (group of groups(); track group.state) {
+  <fold-card [attr.data-group]="group.state">
+    <div class="section">
+      <fold-element-title
+        variant="title"
+        [title]="group.title + ' (' + group.rules.length + ')'"
+        [subtitle]="group.subtitle"
+      />
+      @if (group.collapsed) {
+        <fold-disclosure>
+          <span summary>Afficher</span>
+          <ng-container
+            [ngTemplateOutlet]="list"
+            [ngTemplateOutletContext]="{ $implicit: group.rules }"
+          />
+        </fold-disclosure>
+      } @else {
+        <ng-container
+          [ngTemplateOutlet]="list"
+          [ngTemplateOutletContext]="{ $implicit: group.rules }"
+        />
+      }
+    </div>
+  </fold-card>
+}
+
+<ng-template #list let-rules>
+  <ul class="rules">
+    @for (rule of rules; track rule.id) {
+      <li
+        app-suggestion-rule-row
+        [rule]="rule"
+        [choices]="choices()"
+        [alert]="alertOf(rule)"
+        [counts]="countsOf(rule)"
+        [canWrite]="canWrite()"
+        [pending]="pending()"
+        (gesture)="gesture.emit($event)"
+      ></li>
+    }
+  </ul>
+</ng-template>

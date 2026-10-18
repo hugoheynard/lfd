@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
+import { staffSuggestion } from '../staff-suggestion.testing';
 import {
+  copyDraftOf,
   emptyDraft,
   MAX_SUGGESTED,
   missingOf,
@@ -51,6 +53,27 @@ describe('le brouillon d’une suggestion', () => {
     expect(payloadOf({ ...draft, triggerRef: 'VIE-001' }).trigger).toEqual({
       kind: 'everywhere',
       ref: null,
+    });
+  });
+
+  describe('la copie (RS9)', () => {
+    it('une règle finie garde sa durée et recommence ce jour-là', () => {
+      const copy = copyDraftOf(
+        staffSuggestion({ startsOn: '2025-12-20', endsOn: '2025-12-31', priority: 4 }),
+        DAY,
+      );
+      expect(copy).toMatchObject({ startsOn: DAY, endsOn: '2026-10-29', priority: 4 });
+      expect(copy.triggerRef).toBe('VIE-001');
+      expect(copy.phraseFr).toBe('Avec un croissant, la baguette');
+    });
+
+    it('une règle à venir garde ses jours ; une période d’un jour reste d’un jour', () => {
+      expect(
+        copyDraftOf(staffSuggestion({ startsOn: '2026-12-01', endsOn: '2026-12-24' }), DAY),
+      ).toMatchObject({ startsOn: '2026-12-01', endsOn: '2026-12-24' });
+      expect(
+        copyDraftOf(staffSuggestion({ startsOn: '2026-01-06', endsOn: '2026-01-06' }), DAY),
+      ).toMatchObject({ startsOn: DAY, endsOn: DAY });
     });
   });
 });

@@ -3,7 +3,8 @@
 > **Ce qui est bâti se lit dans [`suggestions-du-staff.md`](suggestions-du-staff.md)**
 > (doc d'état, 2026-10-18) : la règle, l'ordre, le panier, la fiche, l'accueil
 > et l'après-ajout, le filtre, l'aperçu, les chiffres estimés, l'écran, les
-> outils agent, les alertes. RS1, RS2 (panier et fiche), RS3, RS5, RS6, RS7 et RS10 y sont
+> outils agent, les alertes. RS1, RS2 (panier et fiche), RS3, RS5, RS6, RS7, RS10 et RS9 (sauf la
+> recherche d'article) y sont
 > fondus ; ce plan ne garde que ce
 > qui reste, et les décisions qui s'y rattachent.
 >
@@ -40,10 +41,11 @@ récente » = la plus récemment **créée**.
 | Lot     | Quoi                                                                                                                                                                                                                                                                   | Pourquoi                                                                            |
 | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
 | **RS8** | **Règles plus fines** : créneau horaire / jours de la semaine, seuil de panier (montant, « sans boisson »), site de retrait, segments ([plan des audiences](plan-audiences.md))                                                                                        | quand l'usage le demandera                                                          |
-| **RS9** | **Gestes du staff** : dupliquer une règle ; liste regroupée « à venir / en cours / finies » ; recherche dans le champ article (attend un combobox dans fold-ng)                                                                                                        | décliner une saison sans ressaisir                                                  |
+| **RS9** | **Recherche dans le champ article** — le reste de RS9 ; dupliquer et la liste regroupée sont bâtis (2026-10-18). Attend un **combobox** dans fold-ng : c'est un chantier fold, pas applicatif                                                                          | retrouver un article sans dérouler le catalogue                                     |
 | **RS4** | **La mise en avant entre dans les règles** (Q4) — « partout, sans déclencheur, sans date ». Elle est une décision par audience depuis le 2026-10-18 (« Incontournable », [`catalogue-synchronise.md`](../catalogue/catalogue-synchronise.md)) et reste hors des règles | une fois l'écran des suggestions éprouvé, pour ne pas toucher deux écrans à la fois |
 
-Ordre retenu : RS9 ; RS8 à l'usage ; RS4 en dernier. RS10 (l'alerte) est bâti le
+Ordre retenu : le reste de RS9 dès que fold-ng sert un combobox ; RS8 à
+l'usage ; RS4 en dernier. RS10 (l'alerte) est bâti le
 2026-10-18 et décrit dans [`suggestions-du-staff.md`](suggestions-du-staff.md) §13.
 
 ## 3. Pris pour bâtir RS7, non confirmés

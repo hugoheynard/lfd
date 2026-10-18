@@ -168,17 +168,6 @@ export function suggestedLabel(
   return rule.suggestedSkus.map((sku) => nameOf(choices, 'sku', sku)).join(', ');
 }
 
-/** Les vivantes d'abord, les archivées à part : on ne les confond pas. */
-export function splitArchived(rules: readonly StaffSuggestionRuleView[]): {
-  readonly live: readonly StaffSuggestionRuleView[];
-  readonly archived: readonly StaffSuggestionRuleView[];
-} {
-  return {
-    live: rules.filter((rule) => rule.archivedAt === null),
-    archived: rules.filter((rule) => rule.archivedAt !== null),
-  };
-}
-
 export function refusalOf(error: unknown, fallback: string): string {
   return httpErrorMessage(error, fallback);
 }

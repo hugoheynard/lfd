@@ -1,8 +1,9 @@
 import { TestBed } from '@angular/core/testing';
-import type { StaffSuggestionRulePayload } from '@lfd/contracts';
+import { addDays, type StaffSuggestionRulePayload } from '@lfd/contracts';
 import { FoldPanelRef } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
 
+import { parisToday } from '../../shared/paris-today';
 import { staffSuggestion } from '../staff-suggestion.testing';
 import { StaffSuggestionsService } from '../staff-suggestions.service';
 import { SuggestionPanel, type SuggestionPanelData } from './suggestion-panel';
@@ -29,7 +30,9 @@ class FakeApi {
   order() {
     return Promise.resolve({ order: 'recent' as const, updatedAt: null });
   }
-  create() {
+  readonly created: StaffSuggestionRulePayload[] = [];
+  create(payload: StaffSuggestionRulePayload) {
+    this.created.push(payload);
     return Promise.resolve({ id: 'NEW' });
   }
 }
@@ -135,5 +138,59 @@ describe('SuggestionPanel', () => {
       ),
     ).toBe(true);
     expect(root.textContent).toContain('Il est aujourd’hui sur « La plus récente »');
+  });
+
+  describe('dupliquer (RS9)', () => {
+    it('part d’une copie, et enregistre une NOUVELLE règle sans toucher l’originale', async () => {
+      const today = parisToday();
+      const api = new FakeApi();
+      const original = staffSuggestion({
+        startsOn: addDays(today, -30),
+        endsOn: addDays(today, -23),
+        priority: 7,
+        audience: 'pro',
+      });
+      const { root, ref, fixture } = await render(api, {
+        rule: original,
+        choices: CHOICES,
+        copy: true,
+      });
+      expect(root.textContent).toContain('Dupliquer la suggestion');
+      expect(root.textContent).toContain('l’originale ne change pas');
+
+      button(root, 'Enregistrer')?.click();
+      await fixture.whenStable();
+
+      expect(api.revised).toEqual([]);
+      expect(api.created).toHaveLength(1);
+      expect(api.created[0]).toMatchObject({
+        trigger: { kind: 'product_in_cart', ref: 'VIE-001' },
+        suggestedSkus: ['PAI-001'],
+        audience: 'pro',
+        priority: 7,
+        phrase: { fr: 'Avec un croissant, la baguette' },
+        // Finie : la durée est gardée, la période recommence aujourd'hui.
+        startsOn: today,
+        endsOn: addDays(today, 7),
+      });
+      expect(ref.closedWith).toBe('NEW');
+      expect(original.startsOn).toBe(addDays(today, -30));
+    });
+
+    it('une règle à venir garde ses jours dans la copie', async () => {
+      const today = parisToday();
+      const api = new FakeApi();
+      const { root, fixture } = await render(api, {
+        rule: staffSuggestion({ startsOn: addDays(today, 10), endsOn: addDays(today, 12) }),
+        choices: CHOICES,
+        copy: true,
+      });
+      button(root, 'Enregistrer')?.click();
+      await fixture.whenStable();
+      expect(api.created[0]).toMatchObject({
+        startsOn: addDays(today, 10),
+        endsOn: addDays(today, 12),
+      });
+    });
   });
 });

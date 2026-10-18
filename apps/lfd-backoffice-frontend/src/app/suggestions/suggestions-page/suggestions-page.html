@@ -32,7 +32,7 @@
         <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
       }
       <app-suggestion-preview-card [rules]="rules()" [choices]="choices()" />
-      @if (live().length === 0 && archived().length === 0) {
+      @if (rules().length === 0) {
         <fold-empty-state
           title="Aucune suggestion"
           [subtitle]="
@@ -67,164 +67,16 @@
             <p class="estimate-help">{{ estimateHelp }}</p>
           </div>
         </fold-card>
-        @if (live().length > 0) {
-          <fold-card>
-            <div class="section">
-              <fold-element-title variant="title" title="Suggestions" />
-              @if (alertsLoaded()) {
-                <fold-view-toggle
-                  ariaLabel="Filtrer les suggestions"
-                  size="sm"
-                  [options]="alertFilterOptions()"
-                  [value]="alertFilter()"
-                  (valueChange)="chooseAlertFilter($event)"
-                />
-              }
-              @if (listed().length === 0) {
-                <p class="estimate-help">Aucune suggestion à corriger.</p>
-              }
-              <ul class="rules">
-                @for (rule of listed(); track rule.id) {
-                  <ng-container
-                    [ngTemplateOutlet]="row"
-                    [ngTemplateOutletContext]="{ $implicit: rule }"
-                  />
-                }
-              </ul>
-            </div>
-          </fold-card>
-        }
-        @if (archived().length > 0) {
-          <fold-card>
-            <div class="section">
-              <fold-element-title
-                variant="title"
-                title="Archivées"
-                subtitle="Retirées pour toujours : elles se lisent, rien n'en paraît en boutique."
-              />
-              <ul class="rules">
-                @for (rule of archived(); track rule.id) {
-                  <ng-container
-                    [ngTemplateOutlet]="row"
-                    [ngTemplateOutletContext]="{ $implicit: rule }"
-                  />
-                }
-              </ul>
-            </div>
-          </fold-card>
-        }
+        <app-suggestion-rule-list
+          [rules]="rules()"
+          [choices]="choices()"
+          [alerts]="alerts()"
+          [counters]="counters()"
+          [canWrite]="canWrite()"
+          [pending]="pending()"
+          (gesture)="onGesture($event)"
+        />
       }
     }
   }
 </fold-page-layout>
-
-<ng-template #row let-rule>
-  <li class="rule">
-    <div class="rule-head">
-      <span class="rule-summary">{{ summary(rule) }}</span>
-      @let badge = badgeOf(rule);
-      <fold-badge [content]="badge.label" [variant]="badge.variant" radius="pill" />
-      @if (alertOf(rule); as alert) {
-        @let alertBadge = alertBadgeOf(alert);
-        <fold-badge [content]="alertBadge.label" [variant]="alertBadge.variant" radius="pill" />
-      }
-    </div>
-    @if (alertOf(rule); as alert) {
-      <ul class="rule-alerts">
-        @for (text of alertLinesOf(alert); track text) {
-          <li>{{ text }}</li>
-        }
-      </ul>
-    }
-    <dl class="rule-facts">
-      <div>
-        <dt>Présentée par</dt>
-        <dd>{{ phrase(rule) }}</dd>
-      </div>
-      <div>
-        <dt>Priorité</dt>
-        <dd>{{ rule.priority }}</dd>
-      </div>
-      @if (countsOf(rule); as counts) {
-        <div>
-          <dt>Affichée</dt>
-          <dd>{{ counts.shown }}</dd>
-        </div>
-        <div>
-          <dt>Cliquée</dt>
-          <dd>{{ counts.clicked }}</dd>
-        </div>
-        <div>
-          <dt>Ajoutée</dt>
-          <dd>{{ counts.added }}</dd>
-        </div>
-        <div>
-          <dt>Taux d'ajout</dt>
-          <dd>{{ addRateLabel(counts) }}</dd>
-        </div>
-        <div>
-          <dt>Commandées (estimé)</dt>
-          <dd>{{ counts.orderedEstimate }}</dd>
-        </div>
-        <div>
-          <dt>CA HT apporté (estimé)</dt>
-          <dd>{{ revenueLabel(counts) }}</dd>
-        </div>
-      }
-    </dl>
-    @if (rule.archivedAt === null) {
-      <div class="rule-actions">
-        <button
-          foldButton
-          size="sm"
-          emphasis="soft"
-          intent="neutral"
-          icon="eye"
-          (click)="openPreview(rule)"
-        >
-          Ouvrir l’aperçu
-        </button>
-        @if (canWrite()) {
-          <button
-            foldButton
-            size="sm"
-            emphasis="soft"
-            intent="neutral"
-            [disabled]="pending() !== null"
-            (click)="edit(rule)"
-          >
-            Modifier
-          </button>
-          <button
-            foldButton
-            size="sm"
-            emphasis="soft"
-            intent="neutral"
-            [loading]="pending() === rule.id"
-            [disabled]="pending() !== null"
-            (click)="toggle(rule)"
-          >
-            {{ rule.active ? 'Couper' : 'Rallumer' }}
-          </button>
-          <fold-inline-confirm
-            intent="danger"
-            message="Archiver cette suggestion ? Elle ne paraîtra plus jamais, et ne se modifiera plus."
-            [labels]="{ confirm: 'Archiver' }"
-            [loading]="pending() === rule.id"
-            (confirmed)="archive(rule)"
-          >
-            <button
-              foldButton
-              size="sm"
-              emphasis="soft"
-              intent="danger"
-              [disabled]="pending() !== null"
-            >
-              Archiver
-            </button>
-          </fold-inline-confirm>
-        }
-      </div>
-    }
-  </li>
-</ng-template>

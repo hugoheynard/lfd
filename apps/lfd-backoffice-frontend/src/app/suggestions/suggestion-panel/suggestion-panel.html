@@ -1,5 +1,5 @@
 <fold-panel-header
-  [title]="editing() ? 'Modifier la suggestion' : 'Nouvelle suggestion'"
+  [title]="heading()"
   subtitle="Quand le client fait ceci, la boutique lui propose cela. Répondez aux questions dans l’ordre."
 />
 
@@ -8,6 +8,12 @@
     <fold-callout appearance="inset" variant="info">
       <span class="summary">{{ summary() }}</span>
     </fold-callout>
+    @if (copying()) {
+      <fold-callout appearance="inset" variant="info">
+        Une copie : l’enregistrer crée une nouvelle suggestion, l’originale ne change pas. La
+        période garde sa durée et commence au plus tôt aujourd’hui.
+      </fold-callout>
+    }
 
     <fold-fieldset
       legend="Quand la proposer ?"

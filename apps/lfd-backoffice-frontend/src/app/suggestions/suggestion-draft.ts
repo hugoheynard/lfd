@@ -5,6 +5,7 @@ import type {
   StaffSuggestionRuleView,
   StaffSuggestionTriggerKind,
 } from '@lfd/contracts';
+import { addDays } from '@lfd/contracts';
 
 import { PLACEMENTS_OF } from './suggestion-format';
 
@@ -58,6 +59,34 @@ export function draftOf(rule: StaffSuggestionRuleView): SuggestionDraft {
     phraseEn: rule.phrase?.en ?? '',
     phraseIt: rule.phrase?.it ?? '',
     priority: rule.priority,
+  };
+}
+
+const DAY_MS = 86_400_000;
+
+/** Le nombre de jours de `from` à `to` (0 pour une période d'un jour). Des jours civils, sans horloge. */
+function daysFrom(from: string, to: string): number {
+  const utc = (day: string): number => {
+    const [year = 0, month = 1, date = 1] = day.split('-').map(Number);
+    return Date.UTC(year, month - 1, date);
+  };
+  return Math.round((utc(to) - utc(from)) / DAY_MS);
+}
+
+/**
+ * **La copie d'une règle, à enregistrer comme une NOUVELLE** (RS9) : mêmes
+ * déclencheur, articles, emplacement, clientèle, phrase et priorité. La
+ * période garde sa durée et commence au plus tôt aujourd'hui — une règle
+ * finie se décline pour la saison suivante sans revivre dans le passé ; une
+ * règle à venir garde ses jours, pour en faire une variante (une autre
+ * clientèle, un autre article) sur la même période.
+ */
+export function copyDraftOf(rule: StaffSuggestionRuleView, today: string): SuggestionDraft {
+  const startsOn = rule.startsOn < today ? today : rule.startsOn;
+  return {
+    ...draftOf(rule),
+    startsOn,
+    endsOn: addDays(startsOn, Math.max(0, daysFrom(rule.startsOn, rule.endsOn))),
   };
 }
 

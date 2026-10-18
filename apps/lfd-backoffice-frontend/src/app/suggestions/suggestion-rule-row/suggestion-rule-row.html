@@ -1,0 +1,121 @@
+<div class="rule-head">
+  <span class="rule-summary">{{ summary() }}</span>
+  <fold-badge [content]="badge().label" [variant]="badge().variant" radius="pill" />
+  @if (alertBadge(); as alertBadge) {
+    <fold-badge [content]="alertBadge.label" [variant]="alertBadge.variant" radius="pill" />
+  }
+</div>
+@if (alertTexts().length > 0) {
+  <ul class="rule-alerts">
+    @for (text of alertTexts(); track text) {
+      <li>{{ text }}</li>
+    }
+  </ul>
+}
+<dl class="rule-facts">
+  <div>
+    <dt>Présentée par</dt>
+    <dd>{{ phrase() }}</dd>
+  </div>
+  <div>
+    <dt>Priorité</dt>
+    <dd>{{ rule().priority }}</dd>
+  </div>
+  @if (counts(); as counts) {
+    <div>
+      <dt>Affichée</dt>
+      <dd>{{ counts.shown }}</dd>
+    </div>
+    <div>
+      <dt>Cliquée</dt>
+      <dd>{{ counts.clicked }}</dd>
+    </div>
+    <div>
+      <dt>Ajoutée</dt>
+      <dd>{{ counts.added }}</dd>
+    </div>
+    <div>
+      <dt>Taux d'ajout</dt>
+      <dd>{{ addRateLabel(counts) }}</dd>
+    </div>
+    <div>
+      <dt>Commandées (estimé)</dt>
+      <dd>{{ counts.orderedEstimate }}</dd>
+    </div>
+    <div>
+      <dt>CA HT apporté (estimé)</dt>
+      <dd>{{ revenueLabel(counts) }}</dd>
+    </div>
+  }
+</dl>
+@if (!archived() || canWrite()) {
+  <div class="rule-actions">
+    @if (!archived()) {
+      <button
+        foldButton
+        size="sm"
+        emphasis="soft"
+        intent="neutral"
+        icon="eye"
+        (click)="ask('preview')"
+      >
+        Ouvrir l’aperçu
+      </button>
+    }
+    @if (canWrite()) {
+      @if (!archived()) {
+        <button
+          foldButton
+          size="sm"
+          emphasis="soft"
+          intent="neutral"
+          [disabled]="pending() !== null"
+          (click)="ask('edit')"
+        >
+          Modifier
+        </button>
+      }
+      <button
+        foldButton
+        size="sm"
+        emphasis="soft"
+        intent="neutral"
+        icon="copy"
+        [disabled]="pending() !== null"
+        (click)="ask('duplicate')"
+      >
+        Dupliquer
+      </button>
+      @if (!archived()) {
+        <button
+          foldButton
+          size="sm"
+          emphasis="soft"
+          intent="neutral"
+          [loading]="pending() === rule().id"
+          [disabled]="pending() !== null"
+          (click)="ask('toggle')"
+        >
+          {{ rule().active ? 'Couper' : 'Rallumer' }}
+        </button>
+        <fold-inline-confirm
+          intent="danger"
+          message="Archiver cette suggestion ? Elle ne paraîtra plus jamais, et ne se modifiera plus."
+          [labels]="{ confirm: 'Archiver' }"
+          [loading]="pending() === rule().id"
+          (confirmed)="ask('archive')"
+        >
+          <button
+            foldButton
+            size="sm"
+            emphasis="soft"
+            intent="danger"
+            [disabled]="pending() !== null"
+          >
+            Archiver
+          </button>
+        </fold-inline-confirm>
+      }
+    }
+  </div>
+}
