@@ -197,8 +197,9 @@ français) ; la durée réelle d'un balayage sous le cron du Worker.
    (la mise en avant publique : sans elle, `isFeatured` ne sort pas).
 2. **Les pages éditoriales** (les pages composées de la boutique —
    `apps/lfd-api/src/b2b/storefront/`, Gestion Boutique › Vitrine : blocs,
-   images et annonces placés à la main au-dessus des rayons) : réponse en
-   attente, après explication.
+   images et annonces placés à la main au-dessus des rayons) : **hors du
+   webhook** (Hugo, 2026-10-18) — l'agence compose son site à partir des
+   articles.
 3. **L'écran multi-abonnés dès le premier lot** (corrigé par Hugo le
    2026-10-18 : « non, directement une page multi-abonnés ») : Gestion
    Boutique, liste des abonnés, création, cases, rotation du secret et de la
