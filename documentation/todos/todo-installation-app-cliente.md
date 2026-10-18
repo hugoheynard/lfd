@@ -19,6 +19,10 @@
 > ⚠️ **Budget** (mesuré le 2026-10-10) : la configuration `cloudflare` de la
 > boutique pèse 1,29 Mo pour un plafond d'erreur de 1,30 Mo — il reste une
 > dizaine de ko avant que le déploiement refuse.
+>
+> **Relevé le 2026-10-18 (Hugo) à 1,40 Mo** (`cloudflare` et `capacitor`) : le
+> paquet initial était à 120 octets du plafond (1 299,88 ko), et chaque lot
+> devait renoncer à une fonction pour tenir. L'avertissement reste à 1,05 Mo.
 
 ## Le problème
 

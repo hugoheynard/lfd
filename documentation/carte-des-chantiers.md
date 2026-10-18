@@ -105,8 +105,8 @@ pastille « Format » sur une fiche.
 - **Demande de rappel** : aucun nom de contact n'est stocké ; le courriel à
   l'équipe prend celui de la société (`todos/todo-notifications.md`).
 - **Bandeau d'installation** : à vérifier sur de vrais téléphones ; la
-  boutique pèse 1,29 Mo pour un plafond de 1,30 Mo en configuration
-  déployée (`todos/todo-installation-app-cliente.md`).
+  boutique pèse 1,30 Mo pour un plafond relevé à 1,40 Mo (Hugo, 2026-10-18)
+  en configuration déployée (`todos/todo-installation-app-cliente.md`).
 - **Courriels internes** : partent seulement si `MAILER_STAFF_INBOX` est
   renseignée.
 - **Projection des images** : `CatalogItem.showVisuals` n'a plus d'appelant ;
