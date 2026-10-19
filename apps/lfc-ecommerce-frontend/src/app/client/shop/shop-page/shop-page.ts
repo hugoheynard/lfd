@@ -27,6 +27,7 @@ import { Shop } from '../shop.service';
 import { ShopStorefront } from '../storefront/shop-storefront.store';
 import { ShopStore } from '../shop.store';
 import { ShelfAddress } from '../shelf-address';
+import { FEATURED_SHELF } from '../shelves';
 import { CartFulfillmentDays } from '../cart-fulfillment-days.service';
 import { OrderBar } from '../order-bar/order-bar';
 import { OrderDoors } from '../order-doors';
@@ -115,7 +116,7 @@ export class ShopPage {
    */
   private readonly pageState = computed(() => {
     const shelf = this.shop.activeShelf();
-    return shelf === null ? null : this.storefront.stateOf(shelf);
+    return shelf === null || shelf === FEATURED_SHELF ? null : this.storefront.stateOf(shelf);
   });
 
   /**
@@ -234,7 +235,8 @@ export class ShopPage {
     effect(() => {
       const shelf = this.shop.activeShelf();
       this.storefront.reader();
-      if (shelf !== null) {
+      // La mise en avant n'a pas de page de vitrine : c'est un filtre.
+      if (shelf !== null && shelf !== FEATURED_SHELF) {
         untracked(() => {
           void this.storefront.load(shelf);
         });

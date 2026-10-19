@@ -7,7 +7,7 @@ import { operationShelfId } from './operations';
 import { ShopCatalogue } from './shop-catalogue.store';
 import { ShopStore } from './shop.store';
 import { Shop } from './shop.service';
-import { ALL_SHELVES, SHELF_PARAM } from './shelves';
+import { ALL_SHELVES, FEATURED_SHELF, SHELF_PARAM } from './shelves';
 
 /** Sentinelle « aucun paramètre encore lu » — distincte de `null` (paramètre absent). */
 const UNREAD = Symbol('unread');
@@ -45,6 +45,7 @@ export class ShelfAddress {
     () =>
       new Set<string>([
         ALL_SHELVES,
+        ...(this.catalogue.items().some((item) => item.isFeatured) ? [FEATURED_SHELF] : []),
         ...this.catalogue.operations().map((operation) => operationShelfId(operation.key)),
         ...this.catalogue.shelves().map((shelf) => shelf.id),
       ]),

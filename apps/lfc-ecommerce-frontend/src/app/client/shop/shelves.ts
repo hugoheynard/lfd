@@ -14,3 +14,14 @@ export const ALL_SHELVES = 'all';
  * le routeur de la boutique pour une chaîne.
  */
 export const SHELF_PARAM = 'rayon';
+
+/**
+ * **La mise en avant, en rayon** — n'ouvre que les articles `isFeatured` de la
+ * vue lue (publique, `/mine`, tarif pro en visite) : la vue porte déjà la mise
+ * en avant de la bonne audience, la vitrine ne fait que filtrer.
+ *
+ * Comme « Tout », ce n'est pas un rayon du référentiel. La clé porte un `:`,
+ * comme `op:<key>` des opérations : un identifiant de famille n'en porte pas,
+ * donc elle ne peut pas en rencontrer un dans `?rayon=`.
+ */
+export const FEATURED_SHELF = 'vitrine:featured';

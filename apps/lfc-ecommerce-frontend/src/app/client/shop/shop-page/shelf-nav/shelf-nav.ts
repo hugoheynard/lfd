@@ -4,7 +4,7 @@ import { ClientCopyService } from '../../../copy/client-copy.service';
 import { ShopCatalogue } from '../../shop-catalogue.store';
 import { ClientLocale } from '../../../client-locale.service';
 import { operationShelfId, operationText } from '../../operations';
-import { ALL_SHELVES } from '../../shelves';
+import { ALL_SHELVES, FEATURED_SHELF } from '../../shelves';
 
 /**
  * **Le rail des rayons** — « Tout », les opérations datées servies, puis les
@@ -49,9 +49,16 @@ export class ShelfNav {
   /**
    * Une opération servie est un rayon **juste après « Tout »**, dans l'ordre du
    * serveur (D8) : c'est le moment de l'année, pas une famille de plus.
+   *
+   * La mise en avant passe devant elles (Hugo, 2026-10-19), sous le texte même
+   * de la pastille des tuiles (`product.bestSeller`) — et seulement si la vue
+   * lue en porte une.
    */
   protected readonly shelves = computed(() => [
     { id: ALL_SHELVES, label: this.t().shop.allShelves },
+    ...(this.catalogue.items().some((item) => item.isFeatured)
+      ? [{ id: FEATURED_SHELF, label: this.t().product.bestSeller }]
+      : []),
     ...this.catalogue.operations().map((operation) => ({
       id: operationShelfId(operation.key),
       label: operationText(operation.name, this.locale.current()),

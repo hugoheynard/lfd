@@ -29,6 +29,7 @@ import { NOEL, storefrontObject } from '../storefront/storefront.fixture';
 import { ClientOrders } from '../../client-orders.service';
 import { PieceRequest } from '../piece-request.service';
 import { Shop } from '../shop.service';
+import { FEATURED_SHELF } from '../shelves';
 import { ShopPage } from './shop-page';
 
 // `matchMedia` pour TOUS les cas du fichier : « Régler » ouvre le panier par
@@ -178,7 +179,7 @@ describe('ShopPage', () => {
       await settle();
       expect(info()).not.toBeNull();
 
-      chips()[2]?.click();
+      chips()[3]?.click();
       fixture.detectChanges();
       storefront('cat_pains').flush({ rows: 0, objects: [] });
       await settle();
@@ -223,12 +224,35 @@ describe('ShopPage', () => {
   });
 
   it('un rayon filtre la vitrine sans toucher au reste', () => {
-    // Le troisième bouton : « Tout », « Viennoiseries », puis « Pains ».
-    chips()[2]?.click();
+    // Le quatrième bouton : « Tout », la mise en avant, « Viennoiseries », puis « Pains ».
+    chips()[3]?.click();
     fixture.detectChanges();
 
     // « Pains » : la campagne et la tradition.
     expect(tiles().length).toBe(2);
+  });
+
+  describe('la mise en avant, en rayon', () => {
+    it('vient juste après « Tout », sous le nom de la pastille, et ne montre que les mis en avant', () => {
+      expect(chips()[1]?.textContent?.trim()).toBe(FR.product.bestSeller);
+
+      chips()[1]?.click();
+      fixture.detectChanges();
+
+      const featured = TEST_ITEMS.filter((item) => item.isFeatured);
+      expect(featured.length).toBeGreaterThan(0);
+      expect(tiles().length).toBe(featured.length);
+    });
+
+    it('n’existe pas quand la vue lue ne met rien en avant', () => {
+      hydrateWith(TestBed.inject(ShopCatalogue), {
+        ...TEST_CATALOGUE,
+        items: TEST_ITEMS.map((item) => ({ ...item, isFeatured: false })),
+      });
+      fixture.detectChanges();
+
+      expect(chips().map((chip) => chip.textContent?.trim())).not.toContain(FR.product.bestSeller);
+    });
   });
 
   it('la recherche TRAVERSE les rayons — le client ne sait pas où c’est rangé', () => {
@@ -242,7 +266,7 @@ describe('ShopPage', () => {
   });
 
   it('chercher remet le filtre à zéro : les deux répondent à la même question', () => {
-    chips()[2]?.click();
+    chips()[3]?.click();
     fixture.detectChanges();
     type('eclair');
 
@@ -263,7 +287,7 @@ describe('ShopPage', () => {
     type('eclair');
     expect(field().value).toBe('eclair');
 
-    chips()[2]?.click();
+    chips()[3]?.click();
     fixture.detectChanges();
 
     expect(field().value).toBe('');
@@ -595,6 +619,24 @@ describe('ShopPage — la visite pro par #pro', () => {
 
     expect(TestBed.inject(Router).url).toBe('/boutique?rayon=cat_pains#pro');
     expect(TestBed.inject(ProVisit).active()).toBe(true);
+  });
+
+  it('`?rayon=` rouvre la mise en avant, et `#pro` cohabite avec elle', async () => {
+    const page = await arrive(`/boutique?rayon=${FEATURED_SHELF}#pro`);
+
+    expect(TestBed.inject(Router).url).toBe(`/boutique?rayon=${FEATURED_SHELF}#pro`);
+    expect(TestBed.inject(ProVisit).active()).toBe(true);
+    expect(page.querySelectorAll('app-product-tile').length).toBe(
+      TEST_ITEMS.filter((item) => item.isFeatured).length,
+    );
+  });
+
+  it('choisir la mise en avant l’écrit dans l’adresse, #pro gardé', async () => {
+    await arrive('/boutique#pro');
+    harness.routeDebugElement?.injector.get(Shop).browse(FEATURED_SHELF);
+    await harness.fixture.whenStable();
+
+    expect(TestBed.inject(Router).url).toBe(`/boutique?rayon=${FEATURED_SHELF}#pro`);
   });
 
   it('ouvrir une fiche garde #pro dans l’adresse, et la visite', async () => {

@@ -5,7 +5,7 @@ import { ShopCatalogue } from './shop-catalogue.store';
 import { ShopStore } from './shop.store';
 import { ClientLocale } from '../client-locale.service';
 import { operationKeyOf, operationText } from './operations';
-import { ALL_SHELVES } from './shelves';
+import { ALL_SHELVES, FEATURED_SHELF } from './shelves';
 
 /**
  * Retire accents et casse : « éclair » et « eclair » cherchent la même chose.
@@ -73,6 +73,9 @@ export class Shop {
     if (shelf === ALL_SHELVES) {
       return items;
     }
+    if (shelf === FEATURED_SHELF) {
+      return items.filter((item) => item.isFeatured);
+    }
     const operationKey = operationKeyOf(shelf);
     if (operationKey !== null) {
       // Le rayon d'une opération suit l'ordre du référentiel, pas celui des
@@ -126,6 +129,9 @@ export class Shop {
   }
 
   private shelfTitle(shelf: string, fallback: string): string {
+    if (shelf === FEATURED_SHELF) {
+      return this.t().product.bestSeller;
+    }
     const operationKey = operationKeyOf(shelf);
     if (operationKey !== null) {
       const operation = this.catalogue.operationOf(operationKey);

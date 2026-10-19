@@ -2,7 +2,7 @@ import { type ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { provideHttpClient } from '@angular/common/http';
 
-import { ALL_SHELVES } from '../../shelves';
+import { ALL_SHELVES, FEATURED_SHELF } from '../../shelves';
 import {
   hydrateWith,
   operationCatalogue,
@@ -32,9 +32,10 @@ describe('ShelfNav', () => {
     fixture.detectChanges();
   });
 
-  it('ouvre par « Tout », puis les familles du catalogue dans l’ordre', () => {
+  it('ouvre par « Tout », la mise en avant, puis les familles du catalogue dans l’ordre', () => {
     expect(labels(chips())).toEqual([
       FR.shop.allShelves,
+      FR.product.bestSeller,
       ...TEST_SHELVES.map((shelf) => shelf.name),
     ]);
   });
@@ -70,9 +71,18 @@ describe('ShelfNav', () => {
     const picked: string[] = [];
     fixture.componentInstance.picked.subscribe((id) => picked.push(id));
 
-    chips()[2]?.click();
+    chips()[3]?.click();
 
     expect(picked).toEqual([TEST_SHELVES[1]?.id]);
+  });
+
+  it('signale la clé dédiée quand on choisit la mise en avant', () => {
+    const picked: string[] = [];
+    fixture.componentInstance.picked.subscribe((id) => picked.push(id));
+
+    chips()[1]?.click();
+
+    expect(picked).toEqual([FEATURED_SHELF]);
   });
 
   /** D8 : une opération servie est un rayon juste après « Tout », avant les familles. */
@@ -80,8 +90,9 @@ describe('ShelfNav', () => {
     hydrateWith(TestBed.inject(ShopCatalogue), operationCatalogue('announced'));
     fixture.detectChanges();
 
-    expect(labels(chips()).slice(0, 3)).toEqual([
+    expect(labels(chips()).slice(0, 4)).toEqual([
       FR.shop.allShelves,
+      FR.product.bestSeller,
       'Noël',
       TEST_SHELVES[0]?.name,
     ]);
@@ -93,12 +104,12 @@ describe('ShelfNav', () => {
 
     locale.current.set('en');
     fixture.detectChanges();
-    expect(labels(chips())[1]).toBe('Christmas');
+    expect(labels(chips())[2]).toBe('Christmas');
 
     // Le référentiel n'a pas saisi l'italien : le français le remplace.
     locale.current.set('it');
     fixture.detectChanges();
-    expect(labels(chips())[1]).toBe('Noël');
+    expect(labels(chips())[2]).toBe('Noël');
   });
 
   it('signale la clé `op:<key>` quand on choisit l’opération', () => {
@@ -107,7 +118,7 @@ describe('ShelfNav', () => {
     const picked: string[] = [];
     fixture.componentInstance.picked.subscribe((id) => picked.push(id));
 
-    chips()[1]?.click();
+    chips()[2]?.click();
 
     expect(picked).toEqual([`op:${TEST_OPERATION_KEY}`]);
   });

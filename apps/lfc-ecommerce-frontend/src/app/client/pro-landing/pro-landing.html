@@ -74,6 +74,12 @@
       </div>
     </section>
 
+    <!-- Le grand appel (Hugo, 2026-10-19) : voir le rayon, en visiteur.
+         Il passe AU-DESSUS des incontournables (même jour). -->
+    <a foldButton size="lg" block data-test="pro-browse" [routerLink]="shop" fragment="pro">
+      {{ c().browse }}
+    </a>
+
     <!-- Les incontournables pros, SANS PRIX (Hugo, 2026-10-19) : un tarif pro
          dépend de la société. Chaque carte mène à la connexion, comme les
          modes. Vide ou en échec, la section se tait. -->
@@ -89,10 +95,5 @@
         </div>
       </section>
     }
-
-    <!-- Le grand appel (Hugo, 2026-10-19) : voir le rayon, en visiteur. -->
-    <a foldButton size="lg" block data-test="pro-browse" [routerLink]="shop" fragment="pro">
-      {{ c().browse }}
-    </a>
   </div>
 </div>

@@ -224,6 +224,17 @@ describe('ProLanding — l’accueil pro public (/pro)', () => {
     expect(img?.getAttribute('alt')).toBe('Grande');
   });
 
+  it('le grand appel « je visite la boutique » précède les incontournables', async () => {
+    answerFeatured(FEATURED);
+    await settle();
+    const browse = maybe('pro-browse');
+    const featured = maybe('pro-featured');
+    if (browse === null || featured === null) throw new Error('bouton ou section absent');
+    expect(
+      browse.compareDocumentPosition(featured) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   it('incontournables : liste vide, la section est absente', async () => {
     answerFeatured([]);
     await settle();
