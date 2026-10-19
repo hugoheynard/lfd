@@ -13,7 +13,7 @@ import { B2B_API_BASE } from '../../api/api-config';
 /**
  * **La carte de contact** côté back-office — ses textes et ses numéros. Les
  * motifs et les demandes ont leur service (`b2b/demandes/`, plan
- * `documentation/contenu-ecommerce/demandes-clients.md`).
+ * `documentation/demandes-client/demandes-clients.md`).
  *
  * Les écritures rendent `204` (ou l'identifiant créé) : l'appelant relit.
  */

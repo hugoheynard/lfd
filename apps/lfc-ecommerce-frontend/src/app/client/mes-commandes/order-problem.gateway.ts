@@ -16,7 +16,7 @@ export interface OrderProblemDraft {
 
 /**
  * **« Signaler un problème »**, côté réseau
- * (`documentation/contenu-ecommerce/demandes-clients.md`, §3.2 et §7).
+ * (`documentation/demandes-client/demandes-clients.md`, §3.2 et §7).
  *
  * `POST /me/orders/:orderId/problems` en multipart : le serveur prend nom et
  * e-mail au compte, vérifie que la commande est celle de l'acteur (404 sinon)

@@ -16,7 +16,7 @@ const WHAT: Readonly<Record<string, string>> = {
 };
 
 /**
- * **Les demandes clients** (`documentation/contenu-ecommerce/demandes-clients.md`)
+ * **Les demandes clients** (`documentation/demandes-client/demandes-clients.md`)
  * — le miroir de `customer_request.handled` dans `@lfd/contracts`, qui a
  * remplacé `contact_message.handled`. La charge ne porte que le motif, figé à
  * la réception, et le type : ni l'auteur ni le texte, que l'anonymisation

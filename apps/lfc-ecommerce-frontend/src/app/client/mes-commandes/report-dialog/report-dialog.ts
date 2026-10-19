@@ -66,7 +66,7 @@ export function photoIssue(file: File): 'type' | 'size' | null {
 
 /**
  * **« Signaler un problème »** sur une commande retirée ou livrée
- * (`documentation/contenu-ecommerce/demandes-clients.md`, §3.2, §6, §7).
+ * (`documentation/demandes-client/demandes-clients.md`, §3.2, §6, §7).
  *
  * Un motif `order_problem` du public de l'espace (réglé au back-office), un
  * mot facultatif, jusqu'à trois photos. Le message part AVEC la commande :

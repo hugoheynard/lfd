@@ -302,7 +302,7 @@ async function triggerQualityUploadSweep(env: Env): Promise<void> {
     "admin/delivery/geocoding/sweep",
     "admin/delivery/positions/sweep",
     // L'anonymisation des messages « Nous écrire » traités depuis douze mois
-    // (`documentation/contenu-ecommerce/demandes-clients.md`, §5.3).
+    // (`documentation/demandes-client/demandes-clients.md`, §5.3).
     "admin/contact/messages/anonymization/sweep",
   ]) {
     await postSweep(env, token, path);

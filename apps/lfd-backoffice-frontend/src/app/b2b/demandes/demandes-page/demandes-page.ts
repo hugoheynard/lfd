@@ -62,7 +62,7 @@ function pick<T extends string>(value: string, among: readonly T[]): T | undefin
  * **Commercial › Demandes clients** — les messages « Nous écrire » et les
  * problèmes de commande, dans une seule boîte. Une vue de la coquille du
  * Commercial depuis le 2026-10-17 (Hugo) : le titre et l'intro sont les siens
- * (`documentation/contenu-ecommerce/demandes-clients.md`, §3.3).
+ * (`documentation/demandes-client/demandes-clients.md`, §3.3).
  *
  * L'état et le type vont au serveur ; la priorité filtre la liste reçue, dont
  * l'ordre est celui de l'API (à traiter : urgentes d'abord). La liste « à

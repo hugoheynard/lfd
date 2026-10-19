@@ -20,7 +20,7 @@ const TABS: readonly FoldTabItem<RequestKind>[] = REQUEST_KINDS.map((kind) => ({
 /**
  * **Réglages › Commercial › Motifs des demandes** — ce que le client
  * choisit en écrivant ou en signalant un problème de commande, et où chaque
- * demande part (`documentation/contenu-ecommerce/demandes-clients.md`,
+ * demande part (`documentation/demandes-client/demandes-clients.md`,
  * §3.4). Le motif ne change pas de type : on le crée dans son onglet.
  *
  * Dans les Réglages depuis le 2026-10-13 (Hugo) : leur coquille ne dessine

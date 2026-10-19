@@ -67,7 +67,7 @@ import {
 /**
  * **Les demandes clients** — motifs par formulaire, demandes (« Nous écrire »,
  * « Signaler un problème ») et leurs photos, la carte de contact et ses
- * numéros (`documentation/contenu-ecommerce/demandes-clients.md`).
+ * numéros (`documentation/demandes-client/demandes-clients.md`).
  *
  * Importe `AccountModule` pour le `StaffDirectory` (l'auteur figé d'un geste),
  * et `OrdersModule` pour LIRE la commande signalée par ses ports et sa règle

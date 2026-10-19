@@ -38,7 +38,7 @@ type SubjectsState = 'loading' | 'failed' | 'ready';
 
 /**
  * **« Nous écrire »** — le message à l'équipe, par objet
- * (`documentation/contenu-ecommerce/demandes-clients.md`, §2.2 et §4).
+ * (`documentation/demandes-client/demandes-clients.md`, §2.2 et §4).
  *
  * Remplace le `mailto:` de la carte de contact : l'objet choisi décide à quelle
  * adresse le message part, et le message est aussi rangé au back-office.

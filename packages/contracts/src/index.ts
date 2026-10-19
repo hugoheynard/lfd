@@ -476,26 +476,6 @@ export type {
   AppointmentView,
   CreatedAppointmentResponse,
 } from "./appointment.js";
-export {
-  attachableKindSchema,
-  requestTopicSchema,
-  requestSubjectSchema,
-  requestFamilySchema,
-  REQUEST_TOPICS,
-  familyOf,
-  attachmentOf,
-  topicsOf,
-  classificationIssue,
-  autoAttach,
-  offerableTopics,
-} from "./request-topic.js";
-export type {
-  AttachableKind,
-  RequestTopic,
-  RequestSubject,
-  RequestClassification,
-  ClassificationIssue,
-} from "./request-topic.js";
 export { activationPieceSchema } from "./platform-settings.js";
 export { companyWarningKindSchema, companyWarningSchema } from "./company-warning.js";
 export type { CompanyWarning, CompanyWarningKind } from "./company-warning.js";

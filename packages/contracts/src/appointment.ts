@@ -135,9 +135,10 @@ export type AvailabilityExceptionsPayload = z.infer<typeof availabilityException
  * vite, e-mail — parce que la question « de quoi s'agit-il ? » est la même dans
  * les trois cas ; seule la façon d'y répondre change.
  *
- * C'est le **premier niveau** de la classification : le second, le *sujet*
- * (« changer la fréquence », « sauter une échéance »), vit dans `request-topic`,
- * avec l'objet sur lequel chaque sujet porte.
+ * C'est le seul niveau de classification porté : le *sujet* (« changer la
+ * fréquence », « sauter une échéance ») et l'objet rattaché ont été retirés
+ * du contrat le 2026-10-19 faute de lecteur, et restent à faire
+ * (`documentation/todos/todo-commercial-acquisition.md`).
  */
 export const appointmentPurposeSchema = z.enum([
   "discover",

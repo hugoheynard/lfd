@@ -2,7 +2,7 @@ import type { CustomerAudience } from "./customer-audience.js";
 
 /**
  * **Les demandes clients** — motifs, demandes, carte de contact et numéros,
- * sans zod (`documentation/contenu-ecommerce/demandes-clients.md`).
+ * sans zod (`documentation/demandes-client/demandes-clients.md`).
  *
  * Séparé de `contact.ts` pour la raison de poids de `order-opening.values.ts` :
  * la boutique lit la carte et les motifs au démarrage, et le baril

@@ -20,8 +20,8 @@ const PURPOSES: Readonly<Record<AppointmentPurpose, PurposeCopy>> = {
   discover: { choice: "Découvrir l'offre et les tarifs", short: 'Découverte' },
   quote: { choice: 'Demander un devis', short: 'Devis' },
   order: { choice: 'Une commande en cours', short: 'Commande' },
-  // Famille, et non action : le détail (créer, changer la fréquence, sauter une
-  // échéance) est porté par le **sujet**, cf. `topic-labels`.
+  // Famille, et non action : le sujet (créer, changer la fréquence, sauter une
+  // échéance) n'est pas porté (contrat retiré le 2026-10-19, cf. todo-commercial-acquisition.md).
   recurring: { choice: 'Un panier récurrent', short: 'Récurrence' },
   billing: { choice: 'Facturation ou paiement', short: 'Facturation' },
   account: { choice: 'Mon compte et mon entreprise', short: 'Compte' },

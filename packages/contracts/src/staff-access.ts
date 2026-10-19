@@ -388,7 +388,7 @@ export const staffResourceSchema = z.enum([
   /**
    * **« Nous écrire »** — régler les objets de contact et la carte de contact
    * de la boutique, lire et traiter les messages reçus
-   * (`documentation/contenu-ecommerce/demandes-clients.md`, §5.6, 2026-10-09).
+   * (`documentation/demandes-client/demandes-clients.md`, §5.6, 2026-10-09).
    * Les objets (motifs) en sont sortis le 2026-10-13 : `b2b_request_reasons`.
    *
    * Ajoutée SANS être accordée par la migration : elle s'accorde à l'écran

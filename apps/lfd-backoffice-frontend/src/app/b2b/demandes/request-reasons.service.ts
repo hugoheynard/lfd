@@ -8,7 +8,7 @@ import { B2B_API_BASE } from '../../api/api-config';
 /**
  * **Les motifs des demandes clients** — ce que le client choisit en écrivant
  * (« Nous écrire ») ou en signalant un problème de commande, par `kind`
- * (`documentation/contenu-ecommerce/demandes-clients.md`, §3.4).
+ * (`documentation/demandes-client/demandes-clients.md`, §3.4).
  *
  * Le `kind` d'un motif ne change pas : le serveur refuse sa révision.
  */

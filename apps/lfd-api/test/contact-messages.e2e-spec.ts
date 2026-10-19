@@ -1,6 +1,6 @@
 /**
  * E2E de **« Nous écrire »**, une demande `contact`
- * (`documentation/contenu-ecommerce/demandes-clients.md`) — vrai
+ * (`documentation/demandes-client/demandes-clients.md`) — vrai
  * Postgres, mailer doublé.
  *
  * Ce que seul le vrai chemin prouve : qu'un visiteur sans jeton écrit

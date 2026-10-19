@@ -9,7 +9,7 @@ import { ContactCardSettings } from '../contact-card-settings/contact-card-setti
  *
  * Elle portait aussi les objets et la messagerie : ils sont devenus les
  * « Motifs des demandes » (Réglages) et la boîte « Demandes clients »
- * (`documentation/contenu-ecommerce/demandes-clients.md`, §3.5).
+ * (`documentation/demandes-client/demandes-clients.md`, §3.5).
  */
 @Component({
   selector: 'app-contact-page',

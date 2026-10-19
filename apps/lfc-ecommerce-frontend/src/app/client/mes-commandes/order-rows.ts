@@ -105,7 +105,7 @@ export type OrderRowStatus =
 /**
  * La commande est-elle RETIRÉE ou LIVRÉE (`status === 'fulfilled'` au serveur) ?
  * C'est la seule condition d'un signalement de problème (plan
- * `documentation/contenu-ecommerce/demandes-clients.md`, §6.6).
+ * `documentation/demandes-client/demandes-clients.md`, §6.6).
  */
 export function isFulfilled(row: { readonly status: OrderRowStatus }): boolean {
   return row.status === 'done' || row.status === 'delivered';

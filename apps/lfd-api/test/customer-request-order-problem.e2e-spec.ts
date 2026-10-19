@@ -1,6 +1,6 @@
 /**
  * E2E de **« Signaler un problème »** — `POST /me/orders/:id/problems`
- * (`documentation/contenu-ecommerce/demandes-clients.md`, §3.2, §6, §7) —
+ * (`documentation/demandes-client/demandes-clients.md`, §3.2, §6, §7) —
  * vrai Postgres, vrai MinIO, mailer doublé.
  *
  * Ce que seul le vrai chemin prouve : le multipart et ses photos rangées sous

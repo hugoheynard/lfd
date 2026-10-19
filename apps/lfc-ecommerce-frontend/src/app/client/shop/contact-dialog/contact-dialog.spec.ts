@@ -17,7 +17,7 @@ import { ShopCopyOverrides } from '../../copy/shop-copy-overrides';
 
 /**
  * **« Nous écrire »** — ce que le dialogue propose, ce qu'il pré-remplit, et ce
- * qu'il envoie (`documentation/contenu-ecommerce/demandes-clients.md`, §3 « Front »).
+ * qu'il envoie (`documentation/demandes-client/demandes-clients.md`, §3 « Front »).
  */
 
 const FR = contactDialogCopy('fr');

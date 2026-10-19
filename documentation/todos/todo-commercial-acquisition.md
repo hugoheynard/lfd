@@ -277,3 +277,18 @@ d'événements + next best action + actions qui réécrivent dans le journal).
 | self vs staff (adoption+)            | `Company.declare` / `declareOwnedBy` vs `declareUnowned`                                            |
 | Dette Clock/Id                       | `Company.activate`, `PrismaOrderRepository.markPaid`, `generateOrderNumber`, `drawCompanyReference` |
 | Surface staff + mur                  | `AdminAuthGuard`, `admin-*.controller.ts`                                                           |
+
+---
+
+## Le sujet d'un rendez-vous (ajouté le 2026-10-19)
+
+Un rendez-vous ne porte que sa **famille** (`purpose`, colonne
+`Appointment.purpose` dans `apps/lfd-api/prisma/schema/growth.prisma`, vérifié
+le 2026-10-19) : « un panier récurrent » ne dit pas s'il s'agit de le créer ou
+d'en changer la fréquence, ni lequel. La conception du second niveau (sujet +
+objet rattaché) est dans
+[`architecture-prise-de-rendez-vous.md`](../b2b/architecture-prise-de-rendez-vous.md)
+§2.2 ter ; son contrat (`RequestTopic`), jamais lu, a été retiré le
+2026-10-19 et sera à réécrire avec la persistance. Repris de
+l'ancien TODO des types de demande, supprimé ce jour (les demandes client
+ont leur dossier : [`../demandes-client/`](../demandes-client/README.md)).

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { CONTACT_BOUNDS } from "./contact.values.js";
 
 /**
- * Contrat de fil des **demandes clients** (`documentation/contenu-ecommerce/demandes-clients.md`) :
+ * Contrat de fil des **demandes clients** (`documentation/demandes-client/demandes-clients.md`) :
  * les schémas des charges, et le reste par réexport depuis `contact.values.ts`
  * (sans zod, pour la boutique).
  *

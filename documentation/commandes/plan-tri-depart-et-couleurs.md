@@ -106,7 +106,7 @@ Deux candidats, aucun ne colle tel quel :
    (`apps/lfc-ecommerce-frontend/src/app/legacy/contact/contact-panel/contact-panel.html`),
    qui recueille déjà nom, e-mail, téléphone, motif et texte
    (`CustomerRequest`, doc
-   [`../contenu-ecommerce/demandes-clients.md`](../contenu-ecommerce/demandes-clients.md)).
+   [`../demandes-client/demandes-clients.md`](../demandes-client/demandes-clients.md)).
 2. **La saisie d'une commande par l'équipe** : `/comptoir/nouvelle-commande`
    ne saisit rien, elle cherche un compte pro actif puis passe la main à
    `commandes/nouvelle-commande/`

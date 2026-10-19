@@ -96,13 +96,20 @@ parler.
 
 ### 2.2 ter La liste officielle des **types de demande**, et ce qu'on y rattache
 
+> ⚠️ **Non bâti, et contrat retiré le 2026-10-19.** Le contrat des sujets et ses
+> libellés n'étaient lus par aucune application ; ils ont été supprimés. Seule
+> la famille (`purpose`) est persistée. Ce qui suit reste la conception visée ;
+> le besoin est suivi dans [`todo-commercial-acquisition.md`](../todos/todo-commercial-acquisition.md).
+> Les demandes client (contact, problème de commande) ont pris un autre
+> chemin : [`demandes-client/`](../demandes-client/README.md).
+
 Le motif seul dit la famille, pas ce qu'on veut faire : « un panier récurrent »
 recouvre aussi bien le créer que changer sa fréquence ou sauter une échéance —
 trois conversations différentes. D'où un **second niveau**, le **sujet**
 (`RequestTopic`), et un troisième apport qui est le vrai gain : chaque sujet
 déclare **sur quoi il porte**.
 
-Le contrat vit dans `packages/contracts/src/request-topic.ts`. Les sujets sont
+Le contrat vivait dans le paquet `contracts` (retiré). Les sujets étaient
 préfixés par leur famille (`recurring.frequency`), pour se lire tels quels dans
 un journal.
 
