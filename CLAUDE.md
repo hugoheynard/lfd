@@ -194,9 +194,14 @@ Depuis le **2026-09-03**, les deux portes le tiennent pour de bon :
   requête `public × ops` passait sous l'ancienne liste et échoue sous la
   nouvelle.
 
-⚠️ Ce que ça ne tient toujours pas : une classe de `platform/` qui interroge
+⚠️ Ce que ces deux-là ne tiennent pas : une classe de `platform/` qui interroge
 les tables d'un domaine en Prisma direct. Le graphe d'imports ne la voit pas,
-et la porte SQL ne lit que le SQL écrit à la main. C'est arrivé deux fois.
+et la porte SQL ne lit que le SQL écrit à la main. C'est arrivé deux fois —
+d'où la troisième porte, `lint:prisma-model-ownership` (2026-09-09) : un modèle
+n'est lu que par le bloc qui l'écrit. (Cette phrase disait « ne tient toujours
+pas » jusqu'au 2026-10-19, six semaines après que la brèche a été fermée. Seule
+limite : une table que personne n'écrit n'a pas de propriétaire, et la porte
+se tait.)
 
 Corollaire : pas de `packages/shared-types` global qui mélangerait les deux
 langages. Un type partagé n'est légitime que s'il est vraiment transverse
@@ -427,7 +432,9 @@ importé que par `b2b/`, et n'importe que `platform/`.
 
 ⚠️ **Une frontière qu'on ne franchit qu'en SQL est franchie quand même.** Le
 gate lit les imports ; il ne verra pas une classe de `platform/` qui interroge
-les tables d'un domaine en Prisma direct. C'est arrivé deux fois.
+les tables d'un domaine en Prisma direct. C'est arrivé deux fois, et c'est
+`lint:prisma-model-ownership` qui le tient depuis le 2026-09-09 (corrigé ici le
+2026-10-19).
 
 Règles non négociables :
 
