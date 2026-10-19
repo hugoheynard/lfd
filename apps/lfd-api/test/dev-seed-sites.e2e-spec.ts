@@ -7,6 +7,7 @@
 import type { DevSeedReport } from "@lfd/contracts";
 
 import { CLIENT_RAISON_SOCIALE } from "../src/dev/seeding/client.seed.js";
+import { FEATURED_SKUS } from "../src/dev/seeding/featured.seed.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { ADMIN_VERIFIER_OVERRIDE, admin } from "./delivery-rounds-scene.js";
 import { seedDriverRole } from "./delivery-driver-scene.js";
@@ -116,8 +117,48 @@ describe("le semis, à la norme des sites", () => {
 
     expect(personal.every((order) => order.companyId === null)).toBe(true);
     expect(pickupSites.filter((id) => id === sites.get("Le Labo"))).toHaveLength(2);
-    expect(pickupSites.filter((id) => id === sites.get("Le Village"))).toHaveLength(1);
+    // Trois depuis le 2026-10-19 : le Village ne remet plus qu'aux particuliers
+    // (Hugo), ses deux retraits pros du jour sont devenus particuliers.
+    expect(pickupSites.filter((id) => id === sites.get("Le Village"))).toHaveLength(3);
     expect(personal.filter((order) => order.fulfillmentMethod === "delivery")).toHaveLength(1);
+  });
+
+  /** Hugo (2026-10-19) : l'accueil public n'est plus vide après un rechargement. */
+  it("la boutique publique porte ses « Incontournables » semés, et eux seuls", async () => {
+    const shop = jsonBody<{ items: { sku: string; isFeatured: boolean }[] }>(
+      await ctx.http().get("/shop/catalogue").expect(200),
+    );
+    const featured = shop.items
+      .filter((item) => item.isFeatured)
+      .map((item) => item.sku)
+      .sort();
+
+    expect(featured).toEqual([...FEATURED_SKUS.public].sort());
+  });
+
+  it("la mise en avant pro est posée sur ses articles", async () => {
+    const pro = await ctx.prisma.catalogItem.findMany({
+      where: { isDefault: true, override: { isFeaturedPro: true } },
+      select: { productSku: true },
+    });
+
+    expect(pro.map((item) => item.productSku).sort()).toEqual([...FEATURED_SKUS.pro].sort());
+  });
+
+  /** Décision de Hugo (2026-10-19) : en dev, le Labo est le seul retrait des pros. */
+  it("le Village ne remet qu'aux particuliers, et aucun retrait pro n'y est semé", async () => {
+    const village = await ctx.prisma.site.findFirstOrThrow({
+      where: { label: "Le Village" },
+      select: { id: true, pickupForB2b: true, pickupForB2c: true },
+    });
+    const pros = await ctx.prisma.order.findMany({
+      where: { clientele: "pro", fulfillmentMethod: "pickup" },
+      select: { pickupAddress: true },
+    });
+
+    expect(village).toMatchObject({ pickupForB2b: false, pickupForB2c: true });
+    expect(pros.length).toBeGreaterThan(0);
+    expect(pros.filter((order) => siteIdOf(order.pickupAddress) === village.id)).toHaveLength(0);
   });
 
   it("le retrait particulier du Village part dans le transfert du jour", async () => {

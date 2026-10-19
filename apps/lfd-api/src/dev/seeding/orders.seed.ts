@@ -18,6 +18,7 @@ import {
   scenarioDayOf,
 } from "./today.seed.js";
 import { openDeliveryToPersonal, situatePersonalAddress } from "./personal-orders.seed.js";
+import { featureSeededItems } from "./featured.seed.js";
 import { paintSeededSites } from "./site-colors.seed.js";
 import { placeTomorrowRounds, TOMORROW_ROUNDS_SKUS } from "./tomorrow-rounds.seed.js";
 import { prepareClients, type ScenarioClients } from "./scenario-clients.seed.js";
@@ -148,6 +149,8 @@ export async function resetScenario(
   await paintSeededSites(context);
   await openDeliveryToPersonal(context);
   await situatePersonalAddress(context);
+  // Les « Incontournables » des deux accueils (2026-10-19).
+  await featureSeededItems(context);
   const day = scenarioDayOf(context.now);
   const scope = await resolveScenarioScope(context.prisma, clients.companyIds, [
     isoDay(shiftDays(day.today, -1)),

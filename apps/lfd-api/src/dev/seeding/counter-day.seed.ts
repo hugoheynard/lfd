@@ -157,15 +157,25 @@ export const COUNTER: readonly CounterOrder[] = [
   // est approvisionné PAR TRANSFERT, et le comptoir refuse de tendre une
   // commande dont le transfert n'est pas reçu. Le scénario s'arrête avant
   // tout départ de tournée : le transfert n'est donc ni parti, ni reçu.
+  // Des PARTICULIERS depuis le 2026-10-19 : le Village ne remet plus aux pros
+  // (Hugo) ; les deux tranches restent, pour que le comptoir garde ses onglets.
   {
     point: VILLAGE,
     window: VILLAGE_MORNING,
     outcome: "ready",
     step: 3,
     client: 2,
+    personal: true,
   },
   // ⚠️ Après 15 h, elle devient à son tour un retard « par nous ».
-  { point: VILLAGE, window: VILLAGE_AFTERNOON, outcome: "expected", step: 4, client: 3 },
+  {
+    point: VILLAGE,
+    window: VILLAGE_AFTERNOON,
+    outcome: "expected",
+    step: 4,
+    client: 3,
+    personal: true,
+  },
   // 🔴 Une LIVRAISON du même jour. Elle ne paraît plus dans la file de remise
   // depuis le 2026-09-11 — le comptoir ne tend pas un sac qu'un coursier
   // emporte, et la livraison aura son propre écran. Elle reste semée pour lui,

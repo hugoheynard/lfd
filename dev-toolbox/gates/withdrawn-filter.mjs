@@ -74,6 +74,10 @@ const ALLOWED = new Set([
   // La faire passer par un port du catalogue lui ferait traverser le bus pour
   // une question qu'elle pose à la base d'à côté.
   "apps/lfd-api/src/dev/seeding/orders.seed.ts",
+  // La mise en avant semée (2026-10-19) : elle PORTE le filtre
+  // (`...STILL_SOLD`) — elle résout la déclinaison par défaut des SKU du corpus
+  // pour la commande de l'écran, et un article retiré ne se met pas en avant.
+  "apps/lfd-api/src/dev/seeding/featured.seed.ts",
 ]);
 
 /** Les opérations qui LISENT. Les autres écrivent, et doivent voir toute la table. */

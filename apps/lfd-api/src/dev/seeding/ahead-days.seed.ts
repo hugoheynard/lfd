@@ -27,7 +27,8 @@ export const PEAK_AHEAD = 2;
 
 /**
  * Demain : **trois clients**, un retrait par comptoir et une livraison, plus un
- * retrait particulier au Village (2026-10-14) — cf.
+ * retrait particulier au Village (2026-10-14) — le retrait du Village est
+ * particulier lui aussi depuis le 2026-10-19 — cf.
  * `seedOrders`. `client` est un rang : 0 = le client de référence, puis les
  * voisins de `NEIGHBOURS` dans leur ordre.
  *
@@ -48,8 +49,10 @@ export const TOMORROW: readonly (Pick<CounterOrder, "point" | "window" | "person
       { sku: "PAI-001", quantity: 20 },
     ],
   },
+  // Un particulier depuis le 2026-10-19 : le Village ne remet plus aux pros.
   {
     client: 1,
+    personal: true,
     point: VILLAGE,
     window: VILLAGE_MORNING,
     lines: [
@@ -88,8 +91,8 @@ export const TOMORROW: readonly (Pick<CounterOrder, "point" | "window" | "person
  * Le plan du soir arrête la prochaine journée À VENIR qui a des commandes.
  * Demain vide, il sautait au pic de J+2 : en démonstration, « arrêter le plan
  * du soir » arrêtait le surlendemain, et la suite du geste — fiche d'atelier,
- * fournée, colisage de demain — ne se montrait pas. Trois commandes pros (et le
- * retrait particulier), une par
+ * fournée, colisage de demain — ne se montrait pas. Deux commandes pros, deux
+ * particuliers (le Village, depuis le 2026-10-19), une par
  * acheminement et les deux comptoirs, laissées OUVERTES : c'est à l'équipe de
  * les arrêter, à l'écran.
  */
