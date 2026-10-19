@@ -211,11 +211,13 @@ describe('SignInDialog', () => {
     expect(wire.calls).toEqual(['password:/mon-espace:—']);
   });
 
-  it('annuler ne connecte personne', () => {
+  /** Régression : « Annuler » doublait la croix de l'en-tête (Hugo, 2026-10-19). */
+  it('n’offre pas de bouton Annuler, la croix suffit', () => {
     fixture = boot();
-    clickLabelled(FR.account.cancel);
+    const labels = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('button'),
+    ).map((b) => (b.textContent ?? '').trim());
 
-    expect(wire.closed).toEqual(['closed']);
-    expect(wire.calls).toEqual([]);
+    expect(labels).not.toContain(FR.account.cancel);
   });
 });

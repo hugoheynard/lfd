@@ -1,9 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core';
 import {
-  FoldButtonComponent,
   FoldPanelBodyComponent,
   type FoldPanelDefaults,
-  FoldPanelFooterComponent,
   FoldPanelHeaderComponent,
   FoldPanelHostService,
   FoldPanelRef,
@@ -55,13 +53,7 @@ import { SignInChoices } from '../sign-in-choices/sign-in-choices';
 @Component({
   selector: 'app-sign-in-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    FoldButtonComponent,
-    FoldPanelBodyComponent,
-    FoldPanelFooterComponent,
-    FoldPanelHeaderComponent,
-    SignInChoices,
-  ],
+  imports: [FoldPanelBodyComponent, FoldPanelHeaderComponent, SignInChoices],
   templateUrl: './sign-in-dialog.html',
 })
 export class SignInDialog {
@@ -88,7 +80,7 @@ export class SignInDialog {
   protected readonly t = inject(ClientCopyService).t;
   private readonly ref = inject(FoldPanelRef);
 
-  /** Annuler, ou partir chez Auth0 : dans les deux cas le dialogue se referme. */
+  /** Partir chez Auth0 referme le dialogue ; la croix de l'en-tête, elle, est à fold. */
   protected close(): void {
     this.ref.close();
   }

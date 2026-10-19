@@ -1,13 +1,8 @@
 <fold-panel-header [title]="t().chrome.signIn" [closeLabel]="t().dialog.close" />
 
 <!-- Les méthodes vivent dans `app-sign-in-choices`, que la carte du panier
-     pose aussi : le dialogue n'ajoute que son cadre et « Annuler ». -->
+     pose aussi : le dialogue n'ajoute que son cadre. Pas de « Annuler » :
+     il doublait la croix de l'en-tête (Hugo, 2026-10-19). -->
 <fold-panel-body>
   <app-sign-in-choices [target]="data().target" [email]="data().email" (leaving)="close()" />
 </fold-panel-body>
-
-<fold-panel-footer>
-  <button foldButton emphasis="outline" intent="neutral" type="button" (click)="close()">
-    {{ t().account.cancel }}
-  </button>
-</fold-panel-footer>
