@@ -426,7 +426,7 @@ export interface ClientCopy {
     readonly priceTtc: string;
     readonly ttcSuffix: string;
     /**
-     * Le repère d'un visiteur venu de `/pro` : la boutique montre les tarifs pro
+     * Le repère d'un visiteur venu de `/espace-pro` : la boutique montre les tarifs pro
      * de base hors taxe, et le dit — ce ne sont pas encore SES conditions.
      */
     readonly proVisitNote: string;

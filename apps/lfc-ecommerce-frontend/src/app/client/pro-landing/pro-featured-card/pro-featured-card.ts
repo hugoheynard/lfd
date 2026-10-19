@@ -4,7 +4,7 @@ import { FoldCardComponent } from 'fold-ng';
 import type { FeaturedCard } from '../pro-landing';
 
 /**
- * Un incontournable de `/pro`, en carte éditoriale : grande image portrait,
+ * Un incontournable de `/espace-pro`, en carte éditoriale : grande image portrait,
  * nom en capitales d'affiche, note dessous — et TOUJOURS sans prix (Hugo,
  * 2026-10-19 : un tarif pro dépend de la société). La carte entière est un
  * seul contrôle, qui mène à la connexion : d'où `fold-card interactive`.

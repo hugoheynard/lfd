@@ -14,7 +14,7 @@ import { ClientShell } from './client-shell';
 /**
  * Ce que la barre du haut tait quand l'écran le demande : le panier et
  * l'entrée du visiteur. Défaut inchangé pour tous les écrans ; seule la
- * landing `/pro` les éteint (2026-10-19).
+ * landing `/espace-pro` les éteint (2026-10-19).
  */
 describe('ClientShell — panier et entrée de la barre', () => {
   let fixture: ComponentFixture<ClientShell>;

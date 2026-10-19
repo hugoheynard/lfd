@@ -175,7 +175,11 @@ export const routes: Routes = [
         // L'ACCUEIL PRO PUBLIC (Hugo, 2026-10-19) : la page vers laquelle
         // l'agence web envoie un professionnel non connecté — le pendant de
         // `/bienvenue`. Sans garde, et sans rien lire du compte.
-        path: 'pro',
+        //
+        // ⚠️ Pas `/pro` : la passerelle renvoie tout `/pro/…` vers la racine —
+        // c'était l'ancienne adresse de la boutique (gateway/src/index.ts,
+        // `redirectTo`). Constaté en production le 2026-10-19 : 302 vers `/`.
+        path: 'espace-pro',
         title: 'Espace pro — La Folie Coffee',
         loadComponent: () => import('./client/pro-landing/pro-landing').then((m) => m.ProLanding),
       },

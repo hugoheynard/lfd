@@ -73,7 +73,7 @@ export const PRO_REGISTER = '/inscription#pro';
 export const SHOP = '/boutique';
 
 /**
- * **L'accueil pro public** (`/pro`) — la page vers laquelle l'agence web envoie
+ * **L'accueil pro public** (`/espace-pro`) — la page vers laquelle l'agence web envoie
  * un professionnel non connecté (Hugo, 2026-10-19).
  *
  * 🔴 RIEN DU COMPTE N'Y EST LU. Les portes de `/bienvenue` sont remplies selon

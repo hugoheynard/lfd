@@ -38,7 +38,7 @@ export interface ProLandingFeaturedCopy {
 }
 
 /**
- * **Ce que dit l'accueil pro public** (`/pro`) — la page vers laquelle l'agence
+ * **Ce que dit l'accueil pro public** (`/espace-pro`) — la page vers laquelle l'agence
  * web envoie un professionnel qui n'est pas connecté (Hugo, 2026-10-19).
  *
  * 🔴 Les deux modes sont dits de façon GÉNÉRIQUE : un visiteur n'a ni statut,
