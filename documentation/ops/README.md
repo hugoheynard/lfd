@@ -18,6 +18,7 @@ fronts vivent dans [`../ci-cd/`](../ci-cd/) ; la table ci-dessous y renvoie.
 | [`runbook.md`](runbook.md)                                                     | « Comment je fais, et comment je sais que ça a marché ? » — les gestes et leurs contrôles                                                                                                                              |
 | [`mailer-resend.md`](mailer-resend.md)                                         | « Pourquoi l'e-mail n'est pas arrivé ? » — le domaine à vérifier, les 4 réglages, les contrôles                                                                                                                        |
 | [`cloudflare-images.md`](cloudflare-images.md)                                 | « Les images sont-elles bien servies ? » — bucket `lfc-media`, domaine média (TLS 1.2), transformations mesurées, cache immuable, coût et la question ouverte au-delà de 5 000 transformations, gestes de vérification |
+| [`utilisation-cloudflare.md`](utilisation-cloudflare.md)                       | « Combien consommons-nous chez Cloudflare, et contre quel plafond ? » — inventaire, quotas, ce qu'on mesure, ce qu'on pourrait mesurer                                                                                 |
 
 Voir aussi, hors de ce dossier :
 [`b2b/admin-app-ios-capacitor.md`](../b2b/admin-app-ios-capacitor.md) (l'admin en
