@@ -254,4 +254,35 @@ body {
     max-height: none !important;
     width: auto !important;
   }
+
+  /* Le PDF coupait la droite (Hugo, 2026-10-19) : une page dessinée pour
+     l'écran garde des largeurs mini (tableaux, schémas, grilles) que la
+     feuille A4 ne contient pas. Sur papier, rien ne dépasse la feuille. */
+  body:has(.print-standalone) .print-standalone * {
+    min-width: 0 !important;
+  }
+
+  body:has(.print-standalone) .print-standalone :is(pre, table, img, fold-card, fold-callout) {
+    max-width: 100% !important;
+  }
+
+  body:has(.print-standalone) .print-standalone svg.diagram {
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  body:has(.print-standalone) .print-standalone table {
+    width: 100% !important;
+  }
+
+  body:has(.print-standalone) .print-standalone :is(th, td) {
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+  }
+}
+
+/* La feuille : A4, des marges d'imprimeur, et non celles du navigateur. */
+@page {
+  size: A4;
+  margin: 14mm 12mm;
 }

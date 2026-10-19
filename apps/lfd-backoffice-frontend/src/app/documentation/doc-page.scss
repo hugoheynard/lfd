@@ -14,6 +14,9 @@
 
 .doc-stack {
   display: grid;
+  /* `minmax(0, …)` : sans lui, la colonne prend la largeur du plus long
+     exemple de code, et toute la page déborde à droite (2026-10-19). */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--fold-space-lg, 1.25rem);
 }
 
