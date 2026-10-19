@@ -171,6 +171,14 @@ export const routes: Routes = [
         loadComponent: () => import('./login/accueil-page/accueil-page').then((m) => m.AccueilPage),
       },
       {
+        // L'ACCUEIL PRO PUBLIC (Hugo, 2026-10-19) : la page vers laquelle
+        // l'agence web envoie un professionnel non connecté — le pendant de
+        // `/bienvenue`. Sans garde, et sans rien lire du compte.
+        path: 'pro',
+        title: 'Espace pro — La Folie Coffee',
+        loadComponent: () => import('./client/pro-landing/pro-landing').then((m) => m.ProLanding),
+      },
+      {
         // LA PORTE PRO : le lien que donne la commerciale (plan
         // `plan-inscription-pro-seule.md` §3). Sans garde : on ouvre son compte
         // à tous les niveaux de la boutique, c'est même tout l'intérêt quand

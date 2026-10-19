@@ -26,6 +26,7 @@ export const GLOSSARY_Q_R: Readonly<Record<string, string>> = {
   refundedFull: 'Remboursée',
   refundedPartial: 'Remboursée en partie',
   refused: 'Paiement refusé',
+  register: 'Ouvrir un compte',
   removeAction: 'Supprimer l’étape',
   removeAria: 'Retirer — lecteur d’écran',
   removeBusy: 'Suppression en cours',

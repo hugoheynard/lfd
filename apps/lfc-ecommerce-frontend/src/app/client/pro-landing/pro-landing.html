@@ -1,0 +1,67 @@
+<!-- Le châssis de `/bienvenue` : l'accroche d'encre, puis la feuille crème où
+     les deux modes mordent l'encre. Aucune donnée de compte n'est lue. -->
+<div class="page">
+  <!-- DEUX COLONNES au bureau (Hugo, 2026-10-19) : l'accroche à gauche, la
+       connexion à droite, de même poids. Empilées en pile, accroche d'abord. -->
+  <header class="intro">
+    <div class="pitch">
+      <p class="screen-kicker">{{ c().kicker }}</p>
+      <h1 class="screen-title">{{ c().title }}</h1>
+      <p class="screen-lede">{{ c().lede }}</p>
+
+      <ul class="pills">
+        @for (pill of c().pills; track pill) {
+          <li class="pill">{{ pill }}</li>
+        }
+      </ul>
+    </div>
+
+    <!-- 🔴 L'ACCENT EST SUR LA CONNEXION : celui que l'agence envoie ici a le
+         plus souvent déjà un compte. Une carte fold de même poids que
+         l'accroche ; l'ouverture de compte en lien secondaire, dessous. -->
+    <fold-hero-card accent="subtle">
+      <div class="sign-in-body">
+        <h2 class="sign-in-title">{{ c().signInLead }}</h2>
+        <p class="sign-in-pitch">{{ c().signInPitch }}</p>
+        <button foldButton size="lg" block data-test="pro-sign-in" (click)="signIn()">
+          {{ c().signIn }}
+        </button>
+        <fold-link data-test="pro-register" [href]="registerHref">{{ c().register }}</fold-link>
+      </div>
+    </fold-hero-card>
+  </header>
+
+  <div class="sheet">
+    <section class="modes" [attr.aria-label]="c().modesTitle">
+      <!-- L'encre et le beurre, comme les portes d'un pro sur `/bienvenue` —
+           mais ce sont des cartes qu'on LIT : aucun clic, aucun survol. -->
+      <div class="mode mode-pickup">
+        <span class="mode-tag">{{ c().pickup.tag }}</span>
+        <h2 class="mode-title">{{ c().pickup.title }}</h2>
+        <p class="mode-intro">{{ c().pickup.intro }}</p>
+        @if (pointsLoading()) {
+          <fold-loading size="xs" [message]="c().pickupPoints.loading" />
+        } @else if (pointsLine(); as line) {
+          <p class="mode-points" data-test="pro-pickup-points">{{ line }}</p>
+        }
+        <span class="mode-note" data-test="pro-pickup-note">{{ pickupNote() }}</span>
+      </div>
+      <div class="mode mode-delivery">
+        <span class="mode-tag">{{ c().delivery.tag }}</span>
+        <h2 class="mode-title">{{ c().delivery.title }}</h2>
+        <p class="mode-intro">{{ c().delivery.intro }}</p>
+        <span class="mode-note">{{ c().delivery.note }}</span>
+      </div>
+    </section>
+
+    <!-- Le grand appel (Hugo, 2026-10-19) : voir le rayon, en visiteur. -->
+    <a foldButton size="lg" block data-test="pro-browse" [routerLink]="shop">
+      {{ c().browse }}
+    </a>
+
+    <p class="personal">
+      {{ c().personalLead }}
+      <a data-test="pro-personal" [routerLink]="personalLanding">{{ c().personalLink }}</a>
+    </p>
+  </div>
+</div>

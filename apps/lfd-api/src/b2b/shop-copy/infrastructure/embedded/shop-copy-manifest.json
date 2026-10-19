@@ -433,6 +433,197 @@
       "unrecorded": []
     },
     {
+      "space": "proLanding",
+      "title": "Accueil pro public — le professionnel sans compte (/pro)",
+      "source": "screens/pro-landing.copy.ts",
+      "journey": true,
+      "entries": [
+        {
+          "key": "proLanding.kicker",
+          "fr": "Espace professionnel",
+          "en": "Trade customers",
+          "it": "Spazio professionisti",
+          "variables": []
+        },
+        {
+          "key": "proLanding.title",
+          "fr": "Votre boulangerie\nen station.",
+          "en": "Your bakery\nin the resort.",
+          "it": "La vostra panetteria\nin stazione.",
+          "variables": []
+        },
+        {
+          "key": "proLanding.lede",
+          "fr": "Hôtels, restaurants, chalets : commandez au prix pro, retirez au point convenu ou faites-vous livrer sur les créneaux de votre contrat.",
+          "en": "Hotels, restaurants, chalets: order at trade prices, collect at the agreed point or get deliveries on the slots of your contract.",
+          "it": "Hotel, ristoranti, chalet: ordinate a prezzi pro, ritirate al punto concordato o ricevete le consegne negli orari del vostro contratto.",
+          "variables": []
+        },
+        {
+          "key": "proLanding.pills.0",
+          "fr": "Tarifs pro",
+          "en": "Trade prices",
+          "it": "Prezzi pro",
+          "variables": []
+        },
+        {
+          "key": "proLanding.pills.1",
+          "fr": "Livraison en station",
+          "en": "Delivery in resort",
+          "it": "Consegna in stazione",
+          "variables": []
+        },
+        {
+          "key": "proLanding.pills.2",
+          "fr": "Facturation mensuelle",
+          "en": "Monthly invoicing",
+          "it": "Fatturazione mensile",
+          "variables": []
+        },
+        {
+          "key": "proLanding.signInLead",
+          "fr": "Déjà inscrit ?",
+          "en": "Already registered?",
+          "it": "Già registrati?",
+          "variables": []
+        },
+        {
+          "key": "proLanding.signInPitch",
+          "fr": "Retrouvez vos commandes, vos paniers récurrents et vos factures.",
+          "en": "Find your orders, recurring baskets and invoices.",
+          "it": "Ritrovate i vostri ordini, i carrelli ricorrenti e le fatture.",
+          "variables": []
+        },
+        {
+          "key": "proLanding.signIn",
+          "fr": "Je me connecte",
+          "en": "Sign in",
+          "it": "Accedo",
+          "variables": []
+        },
+        {
+          "key": "proLanding.register",
+          "fr": "Ouvrir un compte pro",
+          "en": "Open a trade account",
+          "it": "Aprire un conto pro",
+          "variables": []
+        },
+        {
+          "key": "proLanding.modesTitle",
+          "fr": "Deux façons d’être servi",
+          "en": "Two ways to be served",
+          "it": "Due modi di essere serviti",
+          "variables": []
+        },
+        {
+          "key": "proLanding.pickup.tag",
+          "fr": "Retrait",
+          "en": "Pickup",
+          "it": "Ritiro",
+          "variables": []
+        },
+        {
+          "key": "proLanding.pickup.title",
+          "fr": "Je passe\nla prendre",
+          "en": "I’ll come\nand get it",
+          "it": "Passo\na prenderlo",
+          "variables": []
+        },
+        {
+          "key": "proLanding.pickup.intro",
+          "fr": "Au point de retrait convenu avec votre commercial, prête à l’heure choisie.",
+          "en": "At the pickup point agreed with your sales contact, ready at the time you choose.",
+          "it": "Al punto di ritiro concordato con il vostro commerciale, pronto all’ora scelta.",
+          "variables": []
+        },
+        {
+          "key": "proLanding.pickup.note",
+          "fr": "Point convenu",
+          "en": "Agreed point",
+          "it": "Punto concordato",
+          "variables": []
+        },
+        {
+          "key": "proLanding.delivery.tag",
+          "fr": "Livraison",
+          "en": "Delivery",
+          "it": "Consegna",
+          "variables": []
+        },
+        {
+          "key": "proLanding.delivery.title",
+          "fr": "On vous\nl’apporte",
+          "en": "We bring\nit to you",
+          "it": "Ve lo\nportiamo noi",
+          "variables": []
+        },
+        {
+          "key": "proLanding.delivery.intro",
+          "fr": "Livrée à votre établissement, sur les créneaux fixés par votre contrat.",
+          "en": "Delivered to your venue, on the slots set by your contract.",
+          "it": "Consegnato al vostro locale, negli orari fissati dal contratto.",
+          "variables": []
+        },
+        {
+          "key": "proLanding.delivery.note",
+          "fr": "Sous contrat",
+          "en": "Under contract",
+          "it": "Su contratto",
+          "variables": []
+        },
+        {
+          "key": "proLanding.pickupPoints.loading",
+          "fr": "Points de retrait…",
+          "en": "Pickup points…",
+          "it": "Punti di ritiro…",
+          "variables": []
+        },
+        {
+          "key": "proLanding.pickupPoints.many",
+          "fr": "{count} points de retrait",
+          "en": "{count} pickup points",
+          "it": "{count} punti di ritiro",
+          "variables": ["count"]
+        },
+        {
+          "key": "proLanding.pickupPoints.one",
+          "fr": "Je retire à {place}",
+          "en": "I collect at {place}",
+          "it": "Ritiro a {place}",
+          "variables": ["place"]
+        },
+        {
+          "key": "proLanding.pickupPoints.discount",
+          "fr": "Jusqu’à −{value}",
+          "en": "Up to −{value}",
+          "it": "Fino a −{value}",
+          "variables": ["value"]
+        },
+        {
+          "key": "proLanding.browse",
+          "fr": "Je visite la boutique",
+          "en": "Browse the shop",
+          "it": "Visito il negozio",
+          "variables": []
+        },
+        {
+          "key": "proLanding.personalLead",
+          "fr": "Vous commandez pour vous ?",
+          "en": "Ordering for yourself?",
+          "it": "Ordinate per voi?",
+          "variables": []
+        },
+        {
+          "key": "proLanding.personalLink",
+          "fr": "La boutique des particuliers",
+          "en": "The shop for individuals",
+          "it": "Il negozio per i privati",
+          "variables": []
+        }
+      ],
+      "unrecorded": []
+    },
+    {
       "space": "steps",
       "title": "Les trois étapes du parcours (où, quand, quoi)",
       "source": "screens/steps.copy.ts",

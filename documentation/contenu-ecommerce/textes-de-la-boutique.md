@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1349 textes
+## Sommaire — 1375 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -12,6 +12,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | --- | --- | --- |
 | **Parcours de commande** | | |
 | [Accueil public — le visiteur sans compte](#espace-accueilpublic) | `accueilPublic` | 61 |
+| [Accueil pro public — le professionnel sans compte (/pro)](#espace-prolanding) | `proLanding` | 26 |
 | [Les trois étapes du parcours (où, quand, quoi)](#espace-steps) | `steps` | 13 |
 | [Accueil — l'en-tête de bienvenue](#espace-hero) | `hero` | 4 |
 | [Accueil — les portes d'entrée](#espace-doors) | `doors` | 23 |
@@ -46,7 +47,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
-| **Total** | | **1349** |
+| **Total** | | **1375** |
 
 ## Le parcours de commande
 
@@ -119,6 +120,41 @@ Source : `screens/accueil-public.copy.ts` · 61 textes.
 | `accueilPublic.empty.deliveryCta` | Me faire livrer | Have it delivered | Fatemelo consegnare |  |
 | `accueilPublic.empty.noServiceTitle` | Commande indisponible | Ordering unavailable | Ordine non disponibile |  |
 | `accueilPublic.empty.noServiceSubtitle` | Ni retrait ni livraison ne vous sont proposés pour l’instant. Appelez-nous, juste en dessous. | Neither pickup nor delivery is offered to you at the moment. Call us, just below. | Né ritiro né consegna vi sono proposti al momento. Chiamateci, qui sotto. |  |
+
+<a id="espace-prolanding"></a>
+
+### Accueil pro public — le professionnel sans compte (/pro) — `proLanding`
+
+Source : `screens/pro-landing.copy.ts` · 26 textes.
+
+| Clé | FR | EN | IT | Variables |
+| --- | --- | --- | --- | --- |
+| `proLanding.kicker` | Espace professionnel | Trade customers | Spazio professionisti |  |
+| `proLanding.title` | Votre boulangerie<br>en station. | Your bakery<br>in the resort. | La vostra panetteria<br>in stazione. |  |
+| `proLanding.lede` | Hôtels, restaurants, chalets : commandez au prix pro, retirez au point convenu ou faites-vous livrer sur les créneaux de votre contrat. | Hotels, restaurants, chalets: order at trade prices, collect at the agreed point or get deliveries on the slots of your contract. | Hotel, ristoranti, chalet: ordinate a prezzi pro, ritirate al punto concordato o ricevete le consegne negli orari del vostro contratto. |  |
+| `proLanding.pills.0` | Tarifs pro | Trade prices | Prezzi pro |  |
+| `proLanding.pills.1` | Livraison en station | Delivery in resort | Consegna in stazione |  |
+| `proLanding.pills.2` | Facturation mensuelle | Monthly invoicing | Fatturazione mensile |  |
+| `proLanding.signInLead` | Déjà inscrit ? | Already registered? | Già registrati? |  |
+| `proLanding.signInPitch` | Retrouvez vos commandes, vos paniers récurrents et vos factures. | Find your orders, recurring baskets and invoices. | Ritrovate i vostri ordini, i carrelli ricorrenti e le fatture. |  |
+| `proLanding.signIn` | Je me connecte | Sign in | Accedo |  |
+| `proLanding.register` | Ouvrir un compte pro | Open a trade account | Aprire un conto pro |  |
+| `proLanding.modesTitle` | Deux façons d’être servi | Two ways to be served | Due modi di essere serviti |  |
+| `proLanding.pickup.tag` | Retrait | Pickup | Ritiro |  |
+| `proLanding.pickup.title` | Je passe<br>la prendre | I’ll come<br>and get it | Passo<br>a prenderlo |  |
+| `proLanding.pickup.intro` | Au point de retrait convenu avec votre commercial, prête à l’heure choisie. | At the pickup point agreed with your sales contact, ready at the time you choose. | Al punto di ritiro concordato con il vostro commerciale, pronto all’ora scelta. |  |
+| `proLanding.pickup.note` | Point convenu | Agreed point | Punto concordato |  |
+| `proLanding.delivery.tag` | Livraison | Delivery | Consegna |  |
+| `proLanding.delivery.title` | On vous<br>l’apporte | We bring<br>it to you | Ve lo<br>portiamo noi |  |
+| `proLanding.delivery.intro` | Livrée à votre établissement, sur les créneaux fixés par votre contrat. | Delivered to your venue, on the slots set by your contract. | Consegnato al vostro locale, negli orari fissati dal contratto. |  |
+| `proLanding.delivery.note` | Sous contrat | Under contract | Su contratto |  |
+| `proLanding.pickupPoints.loading` | Points de retrait… | Pickup points… | Punti di ritiro… |  |
+| `proLanding.pickupPoints.many` | {count} points de retrait | {count} pickup points | {count} punti di ritiro | `{count}` |
+| `proLanding.pickupPoints.one` | Je retire à {place} | I collect at {place} | Ritiro a {place} | `{place}` |
+| `proLanding.pickupPoints.discount` | Jusqu’à −{value} | Up to −{value} | Fino a −{value} | `{value}` |
+| `proLanding.browse` | Je visite la boutique | Browse the shop | Visito il negozio |  |
+| `proLanding.personalLead` | Vous commandez pour vous ? | Ordering for yourself? | Ordinate per voi? |  |
+| `proLanding.personalLink` | La boutique des particuliers | The shop for individuals | Il negozio per i privati |  |
 
 <a id="espace-steps"></a>
 

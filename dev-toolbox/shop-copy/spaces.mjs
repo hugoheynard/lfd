@@ -27,6 +27,13 @@ export const ORDER_JOURNEY = [
   },
   {
     kind: "screen",
+    space: "proLanding",
+    title: "Accueil pro public — le professionnel sans compte (/pro)",
+    file: "screens/pro-landing.copy.ts",
+    fn: "proLandingCopy",
+  },
+  {
+    kind: "screen",
     space: "steps",
     title: "Les trois étapes du parcours (où, quand, quoi)",
     file: "screens/steps.copy.ts",

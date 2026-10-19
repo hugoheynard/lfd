@@ -1,0 +1,245 @@
+/* L'accueil pro public. Les valeurs reprennent celles de `/bienvenue`
+   (`accueil-public.scss`) et des portes pro (`service-doors.scss`), recomposées
+   ici : ces fichiers ne sont pas à toucher, et leurs portes sont des boutons
+   remplis par le compte — celles-ci sont des cartes qu'on lit. */
+:host {
+  display: block;
+}
+
+.page,
+.pitch,
+.sheet,
+.mode {
+  display: flex;
+  flex-direction: column;
+}
+
+.intro {
+  display: grid;
+  gap: var(--fold-space-2xl);
+  padding: var(--fold-space-lg) var(--lfc-inset) var(--fold-space-2xl);
+  background: linear-gradient(
+    to bottom,
+    var(--lfc-ink-800) 0%,
+    var(--lfc-ink-900) 60%,
+    color-mix(in srgb, var(--lfc-ink-950) 55%, var(--lfc-ink-900)) 100%
+  );
+  color: var(--lfc-paper-50);
+}
+
+.pitch {
+  gap: var(--fold-space-lg);
+}
+
+.screen-kicker,
+.screen-title,
+.sign-in-title,
+.sign-in-pitch,
+.screen-lede,
+.mode-title,
+.mode-intro,
+.mode-points,
+.personal {
+  margin: 0;
+}
+
+.screen-kicker {
+  font-family: var(--lfc-font-caps);
+  font-size: var(--lfc-text-kicker);
+  font-weight: var(--fold-weight-extrabold);
+  letter-spacing: var(--lfc-tracking-kicker);
+  text-transform: uppercase;
+  color: var(--lfc-color-on-primary-muted);
+}
+
+.screen-title,
+.sign-in-title,
+.mode-title {
+  font-family: var(--fold-font-label);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-display);
+  text-transform: uppercase;
+  white-space: pre-line;
+}
+
+.screen-title {
+  font-size: var(--lfc-text-screen);
+  line-height: var(--lfc-leading-display);
+}
+
+.screen-lede {
+  max-width: 36em;
+  font-size: var(--lfc-text-lede);
+  line-height: var(--lfc-leading-body);
+  color: var(--lfc-color-on-primary-lede);
+}
+
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pill,
+.mode-tag,
+.mode-note {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  padding: 0 13px;
+  border-radius: var(--fold-radius-pill);
+  font-family: var(--lfc-font-caps);
+  font-weight: var(--lfc-weight-black);
+  text-transform: uppercase;
+}
+
+.pill {
+  height: 30px;
+  border: 1px solid var(--lfc-color-on-primary-edge);
+  background: var(--lfc-color-on-primary-tile);
+  color: var(--lfc-paper-0);
+  font-size: var(--fold-text-xs);
+  letter-spacing: var(--lfc-tracking-eyebrow);
+}
+
+/* Le bloc de connexion : une carte fold, de même poids que l'accroche — un
+   titre en gros, ce qu'on y retrouve, puis l'action pleine largeur. */
+.sign-in-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.sign-in-title {
+  font-size: clamp(2rem, 3.4vw, 2.75rem);
+  line-height: 0.94;
+  color: var(--fold-color-text);
+}
+
+.sign-in-pitch {
+  font-size: var(--lfc-text-lede-tile);
+  line-height: var(--lfc-leading-body);
+  color: var(--fold-color-text-muted);
+}
+
+.sheet {
+  flex: 1 0 auto;
+  gap: var(--fold-space-2xl);
+  padding: var(--fold-space-2xl) var(--lfc-inset);
+  background: var(--lfc-paper-50);
+}
+
+.modes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-lg);
+}
+
+.mode {
+  flex: 1 1 270px;
+  min-width: 0;
+  gap: 15px;
+  justify-content: flex-end;
+  min-height: 260px;
+  padding: 28px;
+  border-radius: var(--lfc-radius-sheet);
+  box-shadow: var(--lfc-shadow-lifted);
+}
+
+.mode-pickup {
+  background: var(--lfc-ink-800);
+  color: var(--lfc-paper-0);
+}
+
+.mode-delivery {
+  background: var(--lfc-butter-100);
+  color: var(--lfc-soot-900);
+}
+
+.mode-tag {
+  height: 28px;
+  font-size: var(--fold-text-2xs);
+  letter-spacing: var(--lfc-tracking-eyebrow);
+}
+
+.mode-pickup .mode-tag {
+  background: var(--lfc-paper-0);
+  color: var(--lfc-ink-800);
+}
+
+.mode-delivery .mode-tag {
+  background: var(--lfc-color-accent);
+  color: var(--lfc-color-on-accent);
+}
+
+.mode-title {
+  font-size: clamp(2rem, 3.4vw, 2.75rem);
+  line-height: 0.94;
+}
+
+.mode-intro {
+  max-width: 22em;
+  font-size: var(--lfc-text-lede-tile);
+  line-height: 1.45;
+}
+
+.mode-pickup .mode-intro {
+  color: var(--lfc-color-on-primary-lede);
+}
+
+.mode-delivery .mode-intro {
+  color: var(--lfc-soot-700);
+}
+
+.mode-note {
+  height: 32px;
+  font-size: var(--fold-text-xs);
+  letter-spacing: var(--lfc-tracking-cta);
+}
+
+.mode-pickup .mode-note {
+  background: var(--lfc-butter-300);
+  color: var(--lfc-butter-900);
+}
+
+.mode-delivery .mode-note {
+  background: var(--lfc-paper-0);
+  border: 1px solid var(--fold-color-border);
+  color: var(--lfc-butter-800);
+}
+
+/* Les points lus : une ligne en capitales, sous l'accroche de la carte. */
+.mode-points {
+  font-family: var(--lfc-font-caps);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-cta);
+  text-transform: uppercase;
+}
+
+/* Le lien vers les particuliers : discret, une ligne de texte. */
+.personal {
+  font-size: var(--lfc-text-note);
+  color: var(--lfc-soot-700);
+}
+
+@media (min-width: 900px) {
+  .intro {
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    padding-bottom: 7.5rem;
+  }
+
+  .sheet {
+    padding-top: 0;
+  }
+
+  /* Le seul écart de marge admis : le chevauchement délibéré de l'encre, comme
+     les portes d'un pro sur `/bienvenue`. */
+  .modes {
+    margin-top: -6rem;
+  }
+}
