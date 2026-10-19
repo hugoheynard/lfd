@@ -38,17 +38,6 @@ function staff(): ReturnType<E2eContext["http"]> {
   return ctx.http().set("Authorization", "Bearer staff-e2e");
 }
 
-/** Attend qu'une condition asynchrone (abonné détaché) se réalise, ou échoue. */
-async function waitFor(predicate: () => Promise<boolean>): Promise<void> {
-  for (let attempt = 0; attempt < 40; attempt += 1) {
-    if (await predicate()) {
-      return;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 25));
-  }
-  throw new Error("condition non réalisée dans le délai imparti");
-}
-
 describe("POST /admin/leads", () => {
   it("mure la route côté staff (401 sans jeton porteur)", async () => {
     await ctx.http().post("/admin/leads").send({ businessName: "X" }).expect(401);
@@ -170,11 +159,15 @@ describe("Rapprochement automatique à l'inscription (user.registered)", () => {
     // Le prospect démarché finit par s'inscrire (même e-mail, casse différente).
     ctx.app.get(EventBus).publish(new UserRegisteredEvent("user_99", "marie@bistrot.fr"));
 
-    await waitFor(async () => {
-      const row = await ctx.prisma.lead.findUnique({ where: { id: created.id } });
-      return row?.status === "converted";
-    });
+    // On DRAINE, on ne sonde plus (2026-10-19). L'abonné écrit en DEUX temps —
+    // le lead, puis le journal — et la sonde rendait la main dès le premier :
+    // sous la charge d'une suite complète, le journal arrivait après
+    // l'assertion (rouge « Received length: 0 », vert seul). Prouvé en
+    // retardant la seconde écriture : la sonde rougit à chaque passage, le
+    // drain jamais. Le drain attend la fin de l'abonné, pas son premier effet.
+    await ctx.drain();
     const row = await ctx.prisma.lead.findUnique({ where: { id: created.id } });
+    expect(row?.status).toBe("converted");
     expect(row?.linkedUserId).toBe("user_99");
 
     const journal = await ctx.prisma.activityEvent.findMany({ where: { type: "lead.converted" } });
