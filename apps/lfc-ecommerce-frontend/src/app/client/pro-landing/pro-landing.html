@@ -84,30 +84,7 @@
         <h2 class="featured-title">{{ c().featured.title }}</h2>
         <div class="featured-grid">
           @for (item of featured(); track item.sku) {
-            <fold-card
-              interactive
-              padding="none"
-              data-test="pro-featured-card"
-              [ariaLabel]="item.label"
-              (activated)="signIn()"
-            >
-              <img
-                class="featured-art"
-                [src]="item.src"
-                [attr.srcset]="item.srcset || null"
-                sizes="(min-width: 900px) 20vw, 50vw"
-                [attr.alt]="item.alt"
-                [style.object-position]="item.position"
-                loading="lazy"
-                decoding="async"
-              />
-              <div class="featured-body">
-                <span class="featured-name">{{ item.name }}</span>
-                @if (item.note; as note) {
-                  <span class="featured-note">{{ note }}</span>
-                }
-              </div>
-            </fold-card>
+            <app-pro-featured-card [card]="item" (activated)="signIn()" />
           }
         </div>
       </section>

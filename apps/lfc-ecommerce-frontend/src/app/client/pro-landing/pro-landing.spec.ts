@@ -202,6 +202,28 @@ describe('ProLanding — l’accueil pro public (/pro)', () => {
     ]);
   });
 
+  it('incontournables : la grande image prime sur la vignette', async () => {
+    const [first] = FEATURED;
+    if (first === undefined) throw new Error('fixture vide');
+    answerFeatured([
+      {
+        ...first,
+        image: {
+          url: 'https://media.example/baguette-grande.jpg',
+          alt: 'Grande',
+          width: 1600,
+          height: 2000,
+        },
+      },
+    ]);
+    await settle();
+    const img = (fixture.nativeElement as HTMLElement).querySelector(
+      '[data-test="pro-featured-card"] img',
+    );
+    expect(img?.getAttribute('src')).toContain('baguette-grande');
+    expect(img?.getAttribute('alt')).toBe('Grande');
+  });
+
   it('incontournables : liste vide, la section est absente', async () => {
     answerFeatured([]);
     await settle();

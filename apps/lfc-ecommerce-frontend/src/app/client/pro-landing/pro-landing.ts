@@ -11,7 +11,6 @@ import { Router, RouterLink } from '@angular/router';
 import type { PickupAddressView, ShopFeaturedItemView, ShopImageView } from '@lfd/contracts';
 import {
   FoldButtonComponent,
-  FoldCardComponent,
   FoldHeroCardComponent,
   FoldLinkComponent,
   FoldLoadingStateComponent,
@@ -22,18 +21,18 @@ import { AuthFacade } from '../../auth/auth.facade';
 import { SignInDialog } from '../../login/sign-in-dialog/sign-in-dialog';
 import { ClientChrome } from '../client-chrome.service';
 import { fill } from '../copy/client-copy.service';
+import { ProFeaturedCard } from './pro-featured-card/pro-featured-card';
 import { proLandingCopy } from '../copy/screens/pro-landing.copy';
 import { screenCopy } from '../copy/shop-copy-composer';
 import { bestPickupDiscount, discountLabel } from '../shop/pickup-discount';
-import { mediaSrcset, sizedMedia, TILE_WIDTHS } from '../shop/media-source';
+import { mediaSrcset, sizedMedia } from '../shop/media-source';
 import { ProFeaturedGateway } from '../shop/pro-featured.gateway';
 import { ProPickupListGateway } from '../shop/pro-pickup-list.gateway';
 import { objectPositionOf, shelfArtOf } from '../shop/shelf-display';
 
 /**
- * Un incontournable tel que la carte le pose : la vignette, sinon l'ouverture,
- * sinon l'illustration du rayon — le repli de `tileArtOf`, qui ne prend qu'un
- * article complet du rayon.
+ * Un incontournable tel que la carte éditoriale le pose : l'ouverture (la
+ * grande image), sinon la vignette, sinon l'illustration du rayon.
  */
 export interface FeaturedCard {
   readonly sku: string;
@@ -48,10 +47,16 @@ export interface FeaturedCard {
 
 function artOfFeatured(item: ShopFeaturedItemView): ShopImageView {
   return (
-    item.thumbnail ??
-    item.image ?? { url: shelfArtOf(item.shelfId), alt: item.name, width: null, height: null }
+    item.image ??
+    item.thumbnail ?? { url: shelfArtOf(item.shelfId), alt: item.name, width: null, height: null }
   );
 }
+
+/**
+ * Les largeurs d'une carte éditoriale : jusqu'à une demi-feuille au bureau,
+ * toute la largeur d'un téléphone — et leur double pour la haute densité.
+ */
+export const FEATURED_WIDTHS = [560, 1120] as const;
 
 /**
  * Où revient un pro après connexion : l'accueil de son espace. La même cible
@@ -86,10 +91,10 @@ export const SHOP = '/boutique';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldButtonComponent,
-    FoldCardComponent,
     FoldHeroCardComponent,
     FoldLinkComponent,
     FoldLoadingStateComponent,
+    ProFeaturedCard,
     RouterLink,
   ],
   templateUrl: './pro-landing.html',
@@ -127,7 +132,7 @@ export class ProLanding {
   private readonly featuredItems = signal<readonly ShopFeaturedItemView[] | null>(null);
   protected readonly featuredLoading = computed(() => this.featuredItems() === null);
 
-  /** Les cartes des incontournables, aux tailles de la vignette du rayon. */
+  /** Les cartes des incontournables, aux tailles de la carte éditoriale. */
   protected readonly featured = computed<readonly FeaturedCard[]>(() =>
     (this.featuredItems() ?? []).map((item) => {
       const art = artOfFeatured(item);
@@ -137,8 +142,8 @@ export class ProLanding {
         note: item.note,
         label: fill(this.c().featured.signInLabel, { name: item.name }),
         alt: art.alt,
-        src: sizedMedia(art.url, TILE_WIDTHS[0]),
-        srcset: mediaSrcset(art.url, TILE_WIDTHS),
+        src: sizedMedia(art.url, FEATURED_WIDTHS[0]),
+        srcset: mediaSrcset(art.url, FEATURED_WIDTHS),
         position: objectPositionOf(art),
       };
     }),

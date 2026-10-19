@@ -1,0 +1,85 @@
+:host {
+  display: block;
+}
+
+/* La même famille que les cartes de mode : coin de feuille, élévation douce,
+   soulèvement au survol. */
+.card {
+  display: block;
+  height: 100%;
+  overflow: hidden;
+  border-radius: var(--lfc-radius-sheet);
+  box-shadow: var(--lfc-shadow-lifted);
+  transition: transform 200ms ease;
+
+  &:hover {
+    transform: translateY(-4px);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--fold-color-primary);
+    outline-offset: 3px;
+  }
+}
+
+/* Le cadre portrait recadre ; l'image y zoome doucement au survol. */
+.art {
+  overflow: hidden;
+  aspect-ratio: 4 / 5;
+  background: var(--fold-color-surface-sunken);
+}
+
+.art-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 500ms ease;
+}
+
+.card:hover .art-image {
+  transform: scale(1.05);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-lg);
+}
+
+.name,
+.note {
+  margin: 0;
+}
+
+.name {
+  font-family: var(--fold-font-label);
+  font-size: clamp(1.5rem, 2.4vw, 2rem);
+  font-weight: var(--lfc-weight-black);
+  line-height: var(--lfc-leading-display);
+  letter-spacing: var(--lfc-tracking-display);
+  text-transform: uppercase;
+}
+
+.note {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  font-size: var(--lfc-text-lede-tile);
+  line-height: 1.45;
+  color: var(--fold-color-text-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .art-image {
+    transition: none;
+  }
+
+  .card:hover,
+  .card:hover .art-image {
+    transform: none;
+  }
+}

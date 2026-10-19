@@ -249,15 +249,13 @@
   }
 }
 
-/* Les incontournables : une grille de vignettes fold, image 4/3 puis nom et
-   ligne courte — la vignette du rayon, sans prix ni « + ». */
+/* Les incontournables : des cartes éditoriales. Une colonne pleine largeur en
+   pile ; au bureau, autant de colonnes de 300px au moins que la feuille en
+   tient (deux ou trois), sans jamais étirer un article seul au-delà. */
 .featured,
-.featured-body {
+.featured-grid {
   display: flex;
   flex-direction: column;
-}
-
-.featured {
   gap: var(--fold-space-lg);
 }
 
@@ -270,33 +268,10 @@
   text-transform: uppercase;
 }
 
-.featured-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: var(--fold-space-lg);
-}
-
-.featured-art {
-  display: block;
-  width: 100%;
-  aspect-ratio: 4 / 3;
-  object-fit: cover;
-}
-
-.featured-body {
-  gap: var(--fold-space-xs);
-  padding: var(--fold-space-md);
-}
-
-.featured-name {
-  font-weight: var(--fold-weight-bold);
-}
-
-.featured-note {
-  display: -webkit-box;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  font-size: var(--fold-text-sm);
-  color: var(--fold-color-text-muted);
+@media (min-width: 600px) {
+  .featured-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--fold-space-xl);
+  }
 }
