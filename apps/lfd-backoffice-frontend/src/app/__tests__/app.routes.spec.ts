@@ -106,7 +106,17 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // ADMIN — ce qui se règle sur les GENS. Le parent s'ouvre sur le plus faible
   // des deux droits, et chaque vue porte le sien : `null` aurait donné à
   // l'annuaire de l'équipe le mur des sociétés, qui n'est pas le sien.
-  admin: 'b2b_companies:read',
+  // L'un QUELCONQUE des droits de ses vues (Hugo, 2026-10-19) : qui n'avait
+  // que `staff_access:read` voyait l'entrée et se faisait refuser.
+  admin: {
+    anyOf: [
+      'b2b_companies:read',
+      'staff_access:read',
+      'b2b_feature_access:read',
+      'activity:read',
+      'shop_vitrine:read',
+    ],
+  },
   'admin/acces-en-attente': 'b2b_companies:read',
   'admin/utilisateurs': 'staff_access:read',
   // Le MÊME droit que l'annuaire, délibérément : définir un rôle et
@@ -123,6 +133,9 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // Le journal traverse les modules : il a sa propre ressource, et n'hérite
   // donc pas du `companies:read` de son parent.
   'admin/journal': 'activity:read',
+  // Le webhook de la vitrine, venu de Gestion Boutique le 2026-10-19, sous le
+  // droit que ses routes serveur opposent (`@AdminSurface("shop_vitrine")`).
+  'admin/webhook-vitrine': 'shop_vitrine:read',
 
   // Son PROPRE périmètre, et pas `settings:read` : regarder la flotte n'est pas
   // la régler. Le jour où l'un s'ouvre à quelqu'un, l'autre n'a aucune raison
@@ -165,9 +178,6 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   operations: 'lfc_operations:read',
   fidelite: 'lfc_loyalty:read',
   suggestions: 'lfc_suggestions:read',
-  // Le webhook de la vitrine (2026-10-18), sous le droit que ses routes
-  // serveur opposent (`@AdminSurface("shop_vitrine")`).
-  'webhook-vitrine': 'shop_vitrine:read',
   // La mise en avant par audience (2026-10-18), sous le droit que la route
   // serveur oppose (`@AdminSurface("lfc_catalog")`).
   'mise-en-avant': 'lfc_catalog:read',
@@ -508,6 +518,14 @@ describe("l'arbre de routes du back-office", () => {
       '/catalogue-publie',
     );
     expect(children.find((child) => child.path === '')?.redirectTo).toBe('/commercial/demandes');
+  });
+
+  it('renvoie l’ancienne adresse du webhook vitrine vers l’Admin', () => {
+    // Partie le 2026-10-19 (Hugo) : un lien a pu être donné. Absolue, elle
+    // s'applique avant tout mur ; la vue d'arrivée porte le sien.
+    const moved = routes.find((route) => route.path === 'webhook-vitrine');
+    expect(moved?.redirectTo).toBe('/admin/webhook-vitrine');
+    expect(moved?.pathMatch).toBe('full');
   });
 
   it('renvoie l’ancienne boîte des demandes clients vers le Commercial', () => {

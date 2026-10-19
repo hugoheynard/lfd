@@ -675,7 +675,39 @@ export const ADMIN_VIEWS: readonly WorkspaceView[] = [
     icon: 'timeline',
     needs: 'activity:read',
   },
+  {
+    // Venu de Gestion Boutique le 2026-10-19 (Hugo) : l'agence du site
+    // vitrine est un tiers à qui l'on ouvre une porte — qui entre, et dans
+    // quoi. En dernier : on règle ses propres gens avant un abonné externe.
+    key: 'webhook-vitrine',
+    label: 'Webhook vitrine',
+    link: '/admin/webhook-vitrine',
+    icon: 'globe',
+    needs: 'shop_vitrine:read',
+  },
 ];
+
+/**
+ * Les droits qui ouvrent l'**Admin** : l'un quelconque de ceux de ses vues
+ * (Hugo, 2026-10-19). Dérivés de `ADMIN_VIEWS`, jamais recopiés — l'entrée du
+ * menu et le garde de `/admin` lisent cette liste, et une vue ajoutée à la
+ * table ouvre l'espace à qui ne tient qu'elle.
+ *
+ * Une vue gardée par PLUSIEURS droits cumulés ne s'exprime pas en « l'un ou
+ * l'autre » : la refuser ici plutôt que l'ouvrir à qui n'en tient qu'un.
+ */
+export function adminEntryPermissions(): readonly [StaffPermission, ...StaffPermission[]] {
+  const rights = ADMIN_VIEWS.map((view) => view.needs);
+  const single = rights.filter((needs): needs is StaffPermission => typeof needs === 'string');
+  // Utilisateurs et Rôles partagent `staff_access` : le droit n'est dit qu'une fois.
+  const [first, ...others] = [...new Set(single)];
+  if (first === undefined || single.length !== rights.length) {
+    throw new Error(
+      "Chaque vue de l'Admin doit porter UN droit : l'entrée de l'espace s'ouvre sur l'un d'eux.",
+    );
+  }
+  return [first, ...others];
+}
 
 /**
  * Les vues de la **Comptabilité**.

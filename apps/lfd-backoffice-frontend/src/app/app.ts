@@ -305,7 +305,6 @@ export class App {
       this.canSeeCommerceOperations() ||
       this.canSeeLoyalty() ||
       this.canSeeSuggestions() ||
-      this.canSeeVitrineWebhook() ||
       this.canSeeFeatured(),
   );
   /** La mise en avant : le droit du catalogue publié (`lfc_catalog`, 2026-10-18). */
@@ -313,10 +312,6 @@ export class App {
   /** Les suggestions décidées : leur droit à elles (`lfc_suggestions`, 2026-10-18, RS1). */
   protected readonly canSeeSuggestions = computed(() =>
     this.permissions.can('lfc_suggestions:read'),
-  );
-  /** Le webhook de la vitrine : son droit à lui (`shop_vitrine`, 2026-10-18). */
-  protected readonly canSeeVitrineWebhook = computed(() =>
-    this.permissions.can('shop_vitrine:read'),
   );
   /** La fidélité : son droit à elle (`lfc_loyalty`, 2026-10-16), pas la comptabilité. */
   protected readonly canSeeLoyalty = computed(() => this.permissions.can('lfc_loyalty:read'));
@@ -375,16 +370,14 @@ export class App {
   );
 
   /**
-   * **Admin** — deux vues, deux murs : les accès à remettre demandent
-   * `companies:read`, l'annuaire de l'équipe `staff:read`. L'entrée s'ouvre sur
-   * le PLUS FAIBLE des deux, et la coquille filtre ses onglets ensuite : la
-   * fermer sur `staff:read` retirerait au commercial un canal de secours qu'il
-   * utilise, la fermer sur les deux à la fois enfermerait dehors qui n'a que
-   * l'un. Le mur reste, comme toujours, côté backend.
+   * **Admin** — on le voit dès qu'on lit AU MOINS UNE de ses vues, et la
+   * coquille n'en montre que celles-là (Hugo, 2026-10-19). Tiré de la table
+   * des vues, comme le garde de `/admin` (`adminEntryPermissions`) : l'entrée
+   * disait `companies` OU `staff_access` quand le garde n'admettait que le
+   * premier, et qui n'avait que le second voyait l'entrée et se faisait
+   * refuser. Le mur reste, comme toujours, côté backend.
    */
-  protected readonly canSeeAdmin = computed(
-    () => this.permissions.can('b2b_companies:read') || this.permissions.can('staff_access:read'),
-  );
+  protected readonly canSeeAdmin = computed(() => this.adminViews().length > 0);
   protected readonly canSeeSettings = computed(() => this.permissions.can('b2b_settings:read'));
   /**
    * **Comptabilité** — son propre droit, et surtout pas `b2b_settings`.

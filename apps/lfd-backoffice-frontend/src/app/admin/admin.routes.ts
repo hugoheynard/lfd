@@ -1,6 +1,8 @@
 import { type Routes } from '@angular/router';
 
-import { permissionGuard } from '../auth/permission.guard';
+import { anyPermissionGuard, permissionGuard } from '../auth/permission.guard';
+import { adminEntryPermissions } from '../shared/workspace-rail/workspaces';
+import { firstAdminView } from './first-admin-view';
 
 /** Les routes de la section **Admin** — annuaire staff, accès, journal. */
 export const adminRoutes: Routes = [
@@ -16,15 +18,19 @@ export const adminRoutes: Routes = [
     // qu'il porte sur le commerce : il répond à la même question, pour tout le
     // monde à la fois (plan `plan-inscription-pro-seule.md`).
     //
-    // Le garde du parent est le PLUS FAIBLE des deux enfants, et chaque vue
-    // porte le sien : le contraire enfermerait dehors qui n'a que l'un des deux
-    // droits — même prudence que sur Commercial.
+    // Le garde du parent laisse entrer qui lit AU MOINS UNE vue, et chaque vue
+    // porte le sien (Hugo, 2026-10-19). Il exigeait `b2b_companies:read` alors
+    // que l'entrée du menu s'affichait aussi sous `staff_access:read` : qui
+    // n'avait que ce dernier voyait « Admin » et se faisait refuser. Les deux
+    // lisent désormais la même liste, tirée de `ADMIN_VIEWS`.
     path: 'admin',
-    canActivate: [permissionGuard('b2b_companies:read')],
+    canActivate: [anyPermissionGuard(...adminEntryPermissions())],
     title: 'Admin — LFC B2B admin',
     loadComponent: () => import('./admin-page/admin-page').then((m) => m.AdminPage),
     children: [
-      { path: '', pathMatch: 'full', redirectTo: 'acces-en-attente' },
+      // `/admin` mène à la PREMIÈRE vue que ces droits ouvrent, dans l'ordre du
+      // rail — « Accès à remettre » n'est pas lisible par tout le monde.
+      { path: '', pathMatch: 'full', redirectTo: firstAdminView },
       {
         path: 'acces-en-attente',
         canActivate: [permissionGuard('b2b_companies:read')],
@@ -93,6 +99,18 @@ export const adminRoutes: Routes = [
         canActivate: [permissionGuard('activity:read')],
         title: 'Journal d’activité — LFC B2B admin',
         loadComponent: () => import('./journal/journal-page').then((m) => m.JournalPage),
+      },
+      {
+        // LE WEBHOOK DE LA VITRINE — les abonnés (l'agence du site vitrine),
+        // leurs cases et le journal des envois, sous SON droit (`shop_vitrine`,
+        // webhooks/vitrine.md). Venu de Gestion Boutique le 2026-10-19 (Hugo).
+        path: 'webhook-vitrine',
+        canActivate: [permissionGuard('shop_vitrine:read')],
+        title: 'Webhook vitrine — LFC B2B admin',
+        loadComponent: () =>
+          import('../vitrine-webhook/vitrine-webhook-page/vitrine-webhook-page').then(
+            (m) => m.VitrineWebhookPage,
+          ),
       },
     ],
   },

@@ -1016,7 +1016,8 @@ commande ne porte (un lien libre) sonne aussi la cloche, sans rien écrire.
 
 > Bâti le 2026-10-18 (lot W,
 > [`vitrine.md`](../webhooks/vitrine.md)). Écran :
-> Gestion Boutique › **Webhook vitrine** (`/webhook-vitrine`), sous le droit
+> Admin › **Webhook vitrine** (`/admin/webhook-vitrine`, rangé là le 2026-10-19 ;
+> l'ancienne adresse `/webhook-vitrine` redirige), sous le droit
 > `shop_vitrine`.
 
 **Après le déploiement : accorder `shop_vitrine`.** La migration

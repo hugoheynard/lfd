@@ -175,16 +175,17 @@ describe('App — Gestion Boutique', () => {
     expect(render(['lfc_loyalty:read']).querySelector(rail(link))).toBeNull();
   });
 
-  /** Le webhook de la vitrine (2026-10-18) : son droit seul l'ouvre. */
-  it('montre « Webhook vitrine » sous shop_vitrine:read, dans les deux arbres', () => {
-    const link = '/webhook-vitrine';
-    const entry = render(['shop_vitrine:read']).querySelector(rail(link));
-    expect(entry?.getAttribute('label')).toBe('Webhook vitrine');
-    expect(entry?.closest('fold-menu-section')?.getAttribute('label')).toBe('Gestion Boutique');
-    expect(
-      render(['shop_vitrine:read'], true).querySelector(tile(link))?.getAttribute('label'),
-    ).toBe('Webhook vitrine');
-    expect(render(['b2b_storefront:read']).querySelector(rail(link))).toBeNull();
+  /**
+   * Parti en Admin le 2026-10-19 (Hugo) : plus aucune entrée de Gestion
+   * Boutique ne mène au webhook, ni au rail ni aux tuiles, et son seul droit
+   * ne fait plus paraître la section.
+   */
+  it('ne montre plus « Webhook vitrine » sous Gestion Boutique, dans aucun des deux arbres', () => {
+    for (const host of [render(['shop_vitrine:read']), render(['shop_vitrine:read'], true)]) {
+      expect(host.querySelector('fold-menu-section[label="Gestion Boutique"]')).toBeNull();
+      expect(host.querySelector('fold-nav-group[label="Gestion Boutique"]')).toBeNull();
+      expect(host.querySelector('a[href="/webhook-vitrine"]')).toBeNull();
+    }
   });
 
   it('est absente sans aucun de ses droits', () => {

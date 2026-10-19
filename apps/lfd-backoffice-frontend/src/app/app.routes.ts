@@ -101,16 +101,12 @@ export const routes: Routes = [
       import('./suggestions/suggestions-page/suggestions-page').then((m) => m.SuggestionsPage),
   },
   {
-    // LE WEBHOOK DE LA VITRINE — les abonnés (l'agence du site vitrine), leurs
-    // cases et le journal des envois, en Gestion Boutique, sous SON droit
-    // (`shop_vitrine`, webhooks/vitrine.md, 2026-10-18).
+    // LE WEBHOOK DE LA VITRINE est parti en Admin le 2026-10-19 (Hugo) :
+    // l'ancienne adresse a pu être donnée à quelqu'un, elle redirige. Absolue,
+    // elle s'applique avant tout mur ; la vue porte le sien (`shop_vitrine`).
     path: 'webhook-vitrine',
-    canActivate: [permissionGuard('shop_vitrine:read')],
-    title: 'Webhook vitrine — LFC B2B admin',
-    loadComponent: () =>
-      import('./vitrine-webhook/vitrine-webhook-page/vitrine-webhook-page').then(
-        (m) => m.VitrineWebhookPage,
-      ),
+    pathMatch: 'full',
+    redirectTo: '/admin/webhook-vitrine',
   },
   {
     // LA MISE EN AVANT — les incontournables, par audience (Hugo, 2026-10-18),
