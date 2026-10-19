@@ -20,47 +20,36 @@
 
   <!-- Les deux acteurs et leurs lignes de vie -->
   <rect class="actor" x="40" y="12" width="220" height="44" rx="8" />
-  <text class="actor-label" x="150" y="40">La Folie Coffee (serveur)</text>
+  <text class="actor-label" x="150" y="40">{{ actors.server }}</text>
   <rect class="actor" x="500" y="12" width="220" height="44" rx="8" />
-  <text class="actor-label" x="610" y="40">Votre site</text>
+  <text class="actor-label" x="610" y="40">{{ actors.site }}</text>
   <line class="life" x1="150" y1="56" x2="150" y2="392" />
   <line class="life" x1="610" y1="56" x2="610" y2="392" />
 
   <!-- 1. Le balayage -->
   <rect class="note" x="20" y="72" width="260" height="34" rx="6" />
-  <text class="note-label" x="150" y="94">
-    ① toutes les 5 min au plus : qu'est-ce qui a changé ?
-  </text>
+  <text class="note-label" x="150" y="94">{{ sweep }}</text>
 
   <!-- 2. La notification -->
   <line class="msg" x1="150" y1="134" x2="606" y2="134" marker-end="url(#vsd-arrow)" />
-  <text class="msg-label" x="380" y="126">② POST signé — Vitrine-Signature, Vitrine-Delivery</text>
-  <text class="msg-sub" x="380" y="150">corps : les clés changées et retirées, pas le contenu</text>
+  <text class="msg-label" x="380" y="126">{{ messages.notify.label }}</text>
+  <text class="msg-sub" x="380" y="150">{{ messages.notify.sub }}</text>
 
   <!-- 3. La réponse -->
   <line class="reply" x1="610" y1="180" x2="154" y2="180" marker-end="url(#vsd-arrow)" />
-  <text class="msg-label" x="380" y="172">③ 2xx en moins de 5 s</text>
+  <text class="msg-label" x="380" y="172">{{ messages.ack.label }}</text>
 
   <!-- 4. La relecture -->
   <line class="msg" x1="610" y1="226" x2="154" y2="226" marker-end="url(#vsd-arrow)" />
-  <text class="msg-label" x="380" y="218">④ GET /vitrine/… ?lang= — X-Vitrine-Key</text>
+  <text class="msg-label" x="380" y="218">{{ messages.read.label }}</text>
   <line class="reply" x1="150" y1="262" x2="606" y2="262" marker-end="url(#vsd-arrow)" />
-  <text class="msg-label" x="380" y="254">⑤ JSON — la vue publique, filtrée par vos cases</text>
+  <text class="msg-label" x="380" y="254">{{ messages.served.label }}</text>
 
   <line class="rule" x1="20" y1="290" x2="740" y2="290" />
 
   <!-- La branche d'échec -->
-  <text class="fail-title" x="20" y="316">
-    Si ③ n'arrive pas (autre statut, redirection, délai dépassé) :
-  </text>
-  <text class="fail" x="20" y="340">
-    nouvel essai de la MÊME livraison (même Vitrine-Delivery), au plus tôt après 30 s, 1 min, 2 min…
-    en doublant ;
-  </text>
-  <text class="fail" x="20" y="362">
-    au 10ᵉ échec, l'abonnement passe « en échec » et plus rien ne part, jusqu'à ce que La Folie
-  </text>
-  <text class="fail" x="20" y="384">
-    clique « Tout renvoyer » : la notification suivante nomme alors TOUT comme changé.
-  </text>
+  <text class="fail-title" x="20" y="316">{{ failure.title }}</text>
+  @for (line of failure.lines; track $index) {
+    <text class="fail" x="20" [attr.y]="340 + $index * 22">{{ line }}</text>
+  }
 </svg>

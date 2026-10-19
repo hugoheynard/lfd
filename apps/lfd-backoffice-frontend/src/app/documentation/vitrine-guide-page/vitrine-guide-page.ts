@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DOCUMENT, inject } from '@angular/core';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
@@ -11,6 +11,10 @@ import {
   type FoldTableColumn,
 } from 'fold-ng';
 
+import * as content from '../vitrine-guide/vitrine-guide-content';
+import { type DocRow } from '../vitrine-guide/vitrine-guide-content';
+import { renderInlineMarkdown } from '../vitrine-guide/vitrine-guide-inline';
+import { buildVitrineGuideMarkdown } from '../vitrine-guide/vitrine-guide-markdown';
 import {
   NODE_VERIFY,
   PHP_VERIFY,
@@ -31,28 +35,14 @@ import { VitrineSchemaDiagram } from '../vitrine-schema-diagram/vitrine-schema-d
 import { VitrineSequenceDiagram } from '../vitrine-sequence-diagram/vitrine-sequence-diagram';
 
 /**
- * 🚩 **Le XML est servi** depuis le 2026-10-18 : `Accept: application/xml`,
- * `?format=xml` et `GET /vitrine/schema.xsd` répondent
- * (`apps/lfd-api/src/b2b/vitrine/http/vitrine.controller.ts`). Le drapeau
- * reste pour qu'un retrait se fasse en une ligne.
- */
-export const VITRINE_XML_AVAILABLE = true;
-
-/** Une ligne d'un tableau qui n'est pas un champ : une route, une erreur, un en-tête. */
-interface DocRow {
-  readonly key: string;
-  readonly a: string;
-  readonly b: string;
-  readonly c: string;
-}
-
-/**
  * **Le guide de l'agence du site vitrine** — ce qu'un développeur extérieur
  * doit savoir pour consommer le webhook, sans avoir notre code sous les yeux.
  *
- * Écrit pour être ENVOYÉ : Hugo l'imprime en PDF depuis le navigateur. D'où
- * le bouton « Imprimer », et la classe `print-standalone` posée sur l'hôte,
- * que `styles.scss` lit pour n'imprimer que la page, sans le menu de l'app.
+ * Écrit pour être ENVOYÉ, en PDF depuis le navigateur ou en `.md`. D'où le
+ * bouton « Imprimer », la classe `print-standalone` posée sur l'hôte, que
+ * `styles.scss` lit pour n'imprimer que la page, et le téléchargement en
+ * Markdown — généré par `buildVitrineGuideMarkdown` depuis les mêmes sources
+ * que ce gabarit (`../vitrine-guide/`), pour qu'aucun texte n'existe deux fois.
  *
  * Sources relues le 2026-10-18 : `packages/contracts/src/vitrine.ts`,
  * `shop-catalogue.ts`, `apps/lfd-api/src/b2b/vitrine/` (contrôleur, signature,
@@ -79,7 +69,11 @@ interface DocRow {
   host: { class: 'print-standalone' },
 })
 export class DocVitrineGuidePage {
-  protected readonly xmlAvailable = VITRINE_XML_AVAILABLE;
+  private readonly document = inject(DOCUMENT);
+
+  protected readonly xmlAvailable = content.VITRINE_XML_AVAILABLE;
+  protected readonly content = content;
+  protected readonly inline = renderInlineMarkdown;
 
   protected readonly entities = VITRINE_ENTITIES;
   protected readonly notificationFields = VITRINE_NOTIFICATION_FIELDS;
@@ -97,77 +91,45 @@ export class DocVitrineGuidePage {
   };
 
   protected readonly fieldColumns: readonly FoldTableColumn<VitrineField>[] = [
-    { key: 'field', label: 'Champ', width: '13rem' },
-    { key: 'type', label: 'Type', width: '11rem', value: (row) => row.type },
-    { key: 'presence', label: 'Présence', width: '9rem', value: (row) => row.presence },
-    { key: 'description', label: 'Description', value: (row) => row.description },
+    { key: 'field', label: content.FIELD_HEADERS[0], width: '13rem' },
+    { key: 'type', label: content.FIELD_HEADERS[1], width: '11rem', value: (row) => row.type },
+    {
+      key: 'presence',
+      label: content.FIELD_HEADERS[2],
+      width: '9rem',
+      value: (row) => row.presence,
+    },
+    { key: 'description', label: content.FIELD_HEADERS[3], value: (row) => row.description },
   ];
   protected readonly fieldKey = (row: VitrineField): string => row.field;
 
-  protected readonly routeColumns = docColumns('Route', 'Rend', 'Notes');
-  protected readonly routes: readonly DocRow[] = [
-    {
-      key: 'catalogue',
-      a: 'GET /vitrine/catalogue',
-      b: 'Le catalogue',
-      c: 'Tout, en une fois : rayons, articles, opérations. La relecture la plus simple.',
-    },
-    {
-      key: 'article',
-      a: 'GET /vitrine/articles/:sku',
-      b: 'Article',
-      c: '404 si l’article n’est plus en vente au public (traitez-le comme retiré).',
-    },
-    {
-      key: 'textes',
-      a: 'GET /vitrine/textes',
-      b: 'Les textes',
-      c: 'Les textes de la boutique dans la langue demandée.',
-    },
-    {
-      key: 'schema',
-      a: 'GET /vitrine/schema.xsd',
-      b: 'Le schéma XSD',
-      c: 'Décrit les trois lectures en XML. Sans clé.',
-    },
-  ];
-
-  protected readonly errorColumns = docColumns('Statut', 'code', 'Cas');
-  protected readonly errors: readonly DocRow[] = [
-    {
-      key: '400',
-      a: '400',
-      b: 'http.payload.invalid',
-      c: 'lang inconnue (autre que fr, en, it), ou format inconnu (autre que json, xml).',
-    },
-    {
-      key: '403',
-      a: '403',
-      b: 'vitrine.read_key.refused',
-      c: 'Clé absente, inconnue, remplacée par une régénération, ou abonnement coupé de notre côté.',
-    },
-    {
-      key: '404',
-      a: '404',
-      b: 'vitrine.article.not_found',
-      c: 'Article absent de votre vue (GET /vitrine/articles/:sku seulement).',
-    },
-    {
-      key: '429',
-      a: '429',
-      b: '—',
-      c: 'Plus de 60 requêtes par minute depuis la même adresse IP.',
-    },
-  ];
+  protected readonly routeColumns = docColumns(content.ROUTE_TABLE.headers);
+  protected readonly errorColumns = docColumns(content.ERROR_TABLE.headers);
 
   protected readonly rowKey = (row: DocRow): string => row.key;
 
   protected print(): void {
     window.print();
   }
+
+  /** Le guide en `.md`, fabriqué dans le navigateur : rien ne passe par un serveur. */
+  protected downloadMarkdown(): void {
+    const blob = new Blob([buildVitrineGuideMarkdown(this.xmlAvailable)], {
+      type: 'text/markdown;charset=utf-8',
+    });
+    const url = URL.createObjectURL(blob);
+    const link = this.document.createElement('a');
+    link.href = url;
+    link.download = content.VITRINE_GUIDE_FILE_NAME;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
 }
 
-function docColumns(a: string, b: string, c: string): readonly FoldTableColumn<DocRow>[] {
+function docColumns(
+  headers: readonly [string, string, string],
+): readonly FoldTableColumn<DocRow>[] {
+  const [a, b, c] = headers;
   return [
     { key: 'a', label: a, width: '15rem' },
     { key: 'b', label: b, width: '13rem', value: (row) => row.b },

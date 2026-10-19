@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 
+import { buildVitrineGuideMarkdown } from '../vitrine-guide/vitrine-guide-markdown';
 import { VITRINE_ENTITIES } from '../vitrine-guide/vitrine-guide-schema';
 import { DocVitrineGuidePage } from './vitrine-guide-page';
 
@@ -9,6 +10,15 @@ async function render(): Promise<HTMLElement> {
   await fixture.whenStable();
   fixture.detectChanges();
   return fixture.nativeElement as HTMLElement;
+}
+
+/** jsdom n'a pas `Blob.text()` ; `FileReader`, si. */
+function readText(blob: Blob): Promise<string> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.readAsText(blob);
+  });
 }
 
 describe('DocVitrineGuidePage', () => {
@@ -41,6 +51,28 @@ describe('DocVitrineGuidePage', () => {
     host.querySelector<HTMLButtonElement>('[data-print]')?.click();
     expect(print).toHaveBeenCalledOnce();
     print.mockRestore();
+  });
+
+  it('télécharge le guide en Markdown, fabriqué dans le navigateur', async () => {
+    const host = await render();
+    const create = vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:guide');
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+    const click = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(() => undefined);
+
+    host.querySelector<HTMLButtonElement>('[data-download-md]')?.click();
+
+    expect(create).toHaveBeenCalledOnce();
+    const blob = create.mock.calls[0]?.[0];
+    expect(blob).toBeInstanceOf(Blob);
+    expect((blob as Blob).type).toBe('text/markdown;charset=utf-8');
+    expect(await readText(blob as Blob)).toBe(buildVitrineGuideMarkdown(true));
+    const link = click.mock.contexts[0] as HTMLAnchorElement;
+    expect(link.download).toBe('guide-webhook-vitrine.md');
+    expect(link.href).toBe('blob:guide');
+    expect(revoke).toHaveBeenCalledWith('blob:guide');
+    vi.restoreAllMocks();
   });
 
   it('a un tableau par entité du schéma', async () => {
