@@ -541,6 +541,49 @@ sale_context_id, sale_context_occurrence)`. C'est elle que le premier merge
 
 ---
 
+### 7.4 Colisage et livraison : regrouper par article à la frontière (proposé le 2026-10-19)
+
+**Le principe.** Le contexte de vente ne regarde que le **commerce** : le prix,
+le regroupement au panier, le bon, la facture. Le fournil, le colisage et la
+livraison manipulent des **pièces** : quatre croissants à cuire, à mettre au
+bac, à remettre. Pour eux, deux lignes « croissant » d'une même commande sont
+**une seule quantité**. Plutôt que de faire entrer le contexte dans leurs
+schémas (`packing.prisma:72`, `:197`, `delivery.prisma:994`,
+`production.prisma:339` — clés par SKU), le commerce **additionne par SKU** au
+moment où la commande quitte son contexte.
+
+**Où, vérifié le 2026-10-19.** La production reçoit les lignes d'une commande
+par un seul adaptateur, `apps/lfd-api/src/b2b/orders/infrastructure/prisma-day-orders.source.ts`
+(lignes `select { sku, productNameSnapshot, quantity }`, `:83`, mappées une à
+une `:103-107`), servi au fournil par `SitedDayOrders` (`b2b/orders/application/services/sited-day-orders.service.ts`)
+qui implémente `DayOrdersReader` (`production/channels/commerce/day-orders.reader.ts:125`).
+Le colisage reçoit ce que le fournil publie (`production/channels/packing/`) :
+il hérite du regroupement sans être touché. La livraison lit le commerce par
+ses propres canaux (`delivery/channels/commerce/delivery-orders.reader.ts`,
+faits `commerce-order-placed` / `-cancelled`), le retrait aussi
+(`handover/channels/commerce/`).
+
+**Le geste.** Chaque implémentation d'un canal qui transmet des lignes de
+commande hors du commerce **regroupe par SKU** (somme des quantités, premier
+libellé), dans une fonction pure unique du domaine `orders` — pas une par
+canal. Le regroupement est une **projection** : la commande, elle, garde ses
+lignes par contexte et occurrence.
+
+- Ce qu'on gagne : aucune migration dans `packing`, `delivery`, `production` ;
+  le `skipDuplicates` de l'ombre du colisage (`prisma-packing-shadow.ledger.ts:39-47`)
+  ne voit jamais deux lignes du même SKU ; le fournil cuit le bon nombre.
+- Ce qu'on perd, et qu'il faut accepter ou non : le colisage ne sait pas qu'un
+  croissant est « dans un petit déjeuner ». Si Hugo veut un **sachet par
+  formule** au bac, le regroupement ne suffit plus — il faudrait alors faire
+  entrer l'occurrence dans le colisage (question Q13).
+- ⚠️ À tenir : **une seule** fonction de regroupement, et une porte ou un test
+  d'architecture qui vérifie que tout lecteur de canal sortant passe par elle
+  — sinon le prochain canal l'oubliera, et le défaut revient en silence.
+- L'inventaire T0bis dit la liste exacte des canaux sortants à couvrir ; la
+  liste ci-dessus est celle ouverte le 2026-10-19, pas exhaustive.
+- Annulation d'un article de formule : le fait d'annulation sort, lui aussi,
+  regroupé — la quantité retirée d'un SKU, pas la ligne.
+
 ## 8. Ce qui se cumule (D5 du plan d'origine, revu)
 
 | Terme                      | Sur un article de formule ?                                                  | Pourquoi                                                                                                  |
@@ -552,7 +595,18 @@ sale_context_id, sale_context_occurrence)`. C'est elle que le premier merge
 | Bon de fidélité            | **oui**                                                                      | Il porte sur le total.                                                                                    |
 | Gain de points             | **oui**                                                                      | Sur le HT réellement payé.                                                                                |
 
-### 8.1 Les paliers — question ouverte (S8)
+### 8.1 Les paliers — réglés en admin, comme la promotion (Hugo, 2026-10-19)
+
+> **Orientation de Hugo (2026-10-19)** : « ça se décide en admin ». La formule
+> porte un réglage **« les articles de cette formule comptent dans les paliers »**
+> (oui / non ; défaut proposé : **non** — un palier récompense un volume acheté
+> à l'unité, et compter les formules ferait dépendre le prix de chacune du reste
+> du panier). Côté moteur : `OrderLinePricing` additionne aujourd'hui par SKU
+> (`order-line-pricing.service.ts:112-115`) ; avec « non », la quantité d'une
+> clé `(sku, bundle:X)` n'entre pas dans le seuil du barème du SKU hors formule,
+> et le barème ne s'ouvre pas sur la clé de formule ; avec « oui », les deux
+> quantités s'additionnent pour franchir le seuil. Le texte ci-dessous décrit
+> la question telle qu'elle se posait avant ce réglage.
 
 `vitruve` (2026-10-19) : les paliers lisent la quantité par article
 (`b2b/pricing/domain/volume-ladder.ts:55`). Avec M7, la quantité présentée au
@@ -648,6 +702,7 @@ lignes de commandes réelles — `(kind, id, occurrence)`, figée (§7.3).
   avec le cabinet**, Factur-X compris (`facturx-xml.ts:98` émet une ligne par
   ligne de commande : un intitulé de formule sans montant y a-t-il une
   forme admise ?).
+- **Q13** — 🆕 Un **sachet par formule** au colisage ? Si non, le regroupement par SKU à la frontière (§7.4) suffit ; si oui, l'occurrence doit entrer dans le colisage.
 - **Q12** — 🆕 **Un pro sous mercuriale qui achète une formule pro** : sa
   mercuriale scelle la chaîne (`resolve-price.ts:117-128`) et écarterait la
   règle de formule. La formule s'applique-t-elle par-dessus
