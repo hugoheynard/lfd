@@ -152,7 +152,7 @@ pas ce que le plan décrivait. **Corrigé dans le plan** ; reste ici pour mémoi
   `test/pim-allergens.e2e-spec.ts`).
 - Le défaut de groupement `entry.incoLabel ?? 'Hors obligation UE'` est aussi
   dans `provenance/ingredient-panel/ingredient-panel.ts`, surface que le plan
-  classe ✅ sans réserve. Cf. [`todo-fold-multiselect-recherche.md`](todo-fold-multiselect-recherche.md).
+  classe ✅ sans réserve. Cf. la recherche de `fold-multiselect` (`searchable`, fold-ng 0.31.0, 2026-10-19 ; le TODO qui la demandait est retiré).
 - `citedBy` peut retenir la clé d'un ingrédient supprimé — `RemoveIngredientHandler`
   fait un `remove(key)` physique. Clé morte, jamais nettoyée.
 - L'entrée d'index de `documentation/README.md` résume une rédaction antérieure.

@@ -226,7 +226,7 @@ supprimé, sauf si un `migration.sql` le cite — alors bandeau daté) :
 ## 7. Les dettes comptées et le reste
 
 - `todos/todo-agregat-company-trop-gros.md` : `company.ts` dépasse 740 lignes (règle ≲ 300), découpe « à la cinquième transition ».
-- `ci-cd/todo-flake-des-e2e.md`, `todo-e2e-dependantes-de-l-ordre.md`, `ci-cd/todo-tests-unitaires-en-ci.md` : la CI tient, la cause n'est pas trouvée.
+- `ci-cd/todo-flake-des-e2e.md`, `ci-cd/todo-tests-unitaires-en-ci.md` : la CI tient, la cause n'est pas trouvée.
 - `mediatheque/mediatheque.md` §11 : la médiathèque refaite à plat le 2026-10-10, quatorze points à faire, dont trois qui attendent une décision (rôle par défaut, emprunts au référentiel, ratios).
 - `livraisons/tournees/todo-calculateur.md` : « Proposer » à 200 clients, p95 12,4 s.
 - `todos/todo-retrait-de-pro-les-restes.md` : passer la redirection `/pro` en 301, retirer les URL Auth0.
