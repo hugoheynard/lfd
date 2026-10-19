@@ -49,6 +49,7 @@ import { StaffAccessResolver } from "../src/platform/auth/staff-access.resolver.
 import { prismaSchemaSource } from "../src/platform/database/prisma-schema-source.js";
 import { addDays, instantToLocal } from "@lfd/contracts";
 import { testDatabaseUrl } from "./setup-env.js";
+import { waitForDatabase } from "./database-readiness.js";
 import { BootStopwatch } from "./e2e-boot-log.js";
 import { ensureTestBucket, resetStorage } from "./storage.js";
 import { seedE2eCatalog } from "./catalog-fixture.js";
@@ -128,6 +129,9 @@ export interface E2eOptions {
 /** Boote l'app e2e et vérifie que la base de test est bien joignable et migrée. */
 export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext> {
   const stopwatch = new BootStopwatch();
+  // Avant le boot : `app.init()` interroge déjà la base, et quatre workers qui
+  // démarrent ensemble peuvent la trouver pas encore prête (cf. le fichier).
+  await waitForDatabase(testDatabaseUrl());
   const builder = Test.createTestingModule({ imports: [AppModule, ...(options.imports ?? [])] })
     .overrideProvider(AccessTokenVerifier)
     .useValue(stubVerifier)

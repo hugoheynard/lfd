@@ -102,7 +102,7 @@ Trois garanties, chacune tenue par un morceau :
   métier) après N jours, ou archivage ?
 - Les e2e : `ctx.drain()` doit aussi vider la boîte d'envoi — et c'est
   probablement le remède du rouge intermittent `production-batch`
-  (`todos/todo-flake-des-e2e.md`).
+  (`ci-cd/e2e-connexions-et-isolation.md` §3 : le drain avant `ctx.reset()` est en place).
 
 ## 7. Contradiction de `vitruve` (2026-10-04), et la v2
 

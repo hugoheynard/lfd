@@ -108,8 +108,66 @@ function applyMigrations(database: TestDatabase): void {
   }
 }
 
+/**
+ * Au-delà, une base de worker est déclarée **encombrée**. Une base saine en a
+ * ZÉRO après un `CHECKPOINT` (mesuré le 2026-10-19 sur les quatre) ; le
+ * 2026-10-03, il y en avait ~400 000 par base, et le volume Docker a manqué
+ * d'inodes en plein run.
+ */
+const ORPHAN_FILE_THRESHOLD = 10_000;
+
+/**
+ * Compte les fichiers de la base qui ne sont le `relfilenode` d'aucune relation.
+ *
+ * 🔴 **Après un `CHECKPOINT`, pas avant.** Chaque `TRUNCATE` de `ctx.reset()`
+ * donne un fichier neuf à chaque table ; l'ancien reste sur disque jusqu'au
+ * prochain checkpoint. Au sortir d'un run de vingt suites, `w1` en portait
+ * 63 396, et zéro une fois le checkpoint passé (2026-10-19) : compter avant
+ * crierait au loup après chaque run. Ce qui reste après est un vrai orphelin —
+ * celui d'un serveur arrêté brutalement, que Postgres ne nettoiera jamais.
+ *
+ * `pg_ls_dir` et `CHECKPOINT` exigent un superutilisateur (`lfc` l'est dans le
+ * conteneur de dev). Sans ce droit, on le DIT et on continue : la mesure est
+ * un diagnostic, pas une condition du provisionnement.
+ */
+async function warnIfCluttered(database: TestDatabase): Promise<void> {
+  const client = new Client({ connectionString: database.url });
+  await client.connect();
+  try {
+    await client.query("CHECKPOINT");
+    const result = await client.query<{ orphans: number }>(
+      `SELECT count(*)::int AS orphans
+         FROM pg_ls_dir('base/' || (SELECT oid FROM pg_database WHERE datname = current_database())) AS file
+        WHERE file ~ '^[0-9]+$'
+          AND file::oid NOT IN (SELECT pg_relation_filenode(oid) FROM pg_class
+                                 WHERE pg_relation_filenode(oid) IS NOT NULL)`,
+    );
+    const orphans = result.rows[0]?.orphans ?? 0;
+    if (orphans > ORPHAN_FILE_THRESHOLD) {
+      process.stdout.write(clutterWarning(database, orphans));
+    }
+  } catch (cause) {
+    process.stdout.write(
+      `⚠ encombrement de ${databaseName(database.url)} non mesuré : ${String(cause)}\n`,
+    );
+  } finally {
+    await client.end();
+  }
+}
+
+function clutterWarning(database: TestDatabase, orphans: number): string {
+  const name = databaseName(database.url);
+  return (
+    `⚠ ${name} porte ${String(orphans)} fichiers orphelins (seuil ${String(ORPHAN_FILE_THRESHOLD)}).\n` +
+    `  Un run risque de tomber en « No space left on device » (inodes). Bases jetables, à recréer :\n` +
+    `  docker exec lfd-dev-postgres sh -c "psql -U \\"\\$POSTGRES_USER\\" -d postgres -c 'DROP DATABASE IF EXISTS \\"${name}\\" WITH (FORCE)'"\n` +
+    `  pnpm --filter lfd-api db:test:setup\n`
+  );
+}
+
 for (const database of DATABASES) {
   await createDatabaseIfMissing(database);
+  await warnIfCluttered(database);
   applyMigrations(database);
   process.stdout.write(`✔ base de test prête (${database.label}) : ${database.url}\n`);
 }
