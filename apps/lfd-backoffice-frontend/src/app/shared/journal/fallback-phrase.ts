@@ -81,6 +81,7 @@ const SUBJECT_NOUNS: Readonly<Record<string, string>> = {
   allergen_category: 'la catégorie d’allergènes',
   allergen_entry: 'l’allergène',
   appellation: 'l’appellation',
+  bundle: 'la formule',
   catalog_delivery: 'l’arrivée du référentiel',
   catalog_item: 'l’article',
   catalog_operation: 'l’opération reçue',

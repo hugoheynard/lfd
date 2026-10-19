@@ -13,6 +13,7 @@ import {
   subjectLabel,
   type JournalFactFamily,
 } from "./fact.js";
+import { COMMERCE_BUNDLE_FACTS } from "./commerce-bundles.js";
 import { COMMERCE_OPERATION_FACTS } from "./commerce-operations.js";
 import { COMMERCE_SUGGESTION_FACTS } from "./commerce-suggestions.js";
 
@@ -140,6 +141,8 @@ export const COMMERCE_FACTS = {
   // Les suggestions décidées par le staff (plan des suggestions du staff,
   // RS1, 2026-10-18) — rangées dans leur fichier, comptées dans la famille.
   ...COMMERCE_SUGGESTION_FACTS,
+  // Les formules (plan des formules, F2a, 2026-10-19) — même rangement.
+  ...COMMERCE_BUNDLE_FACTS,
   "catalog_delivery.accepted": fact(
     payload({
       deliveryId: ref("catalog_delivery"),

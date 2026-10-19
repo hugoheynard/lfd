@@ -4,6 +4,7 @@ import type { Phrase } from '../phrase';
 
 import { ACCOUNTING_PHRASES } from './accounting-phrases';
 import { BILLING_MODE_PHRASES } from './billing-mode-phrases';
+import { BUNDLE_PHRASES } from './bundle-phrases';
 import { ACCOUNTS_PHRASES } from './accounts-phrases';
 import { COMMERCE_PHRASES } from './commerce-phrases';
 import { DELIVERY_BIN_PHRASES } from './delivery-bin-phrases';
@@ -64,7 +65,7 @@ import { TEAM_PHRASES } from './team-phrases';
  * | `referentialCatalogue`| `referential-phrases.ts`          | `values/referential-values.ts`   |
  * | `referentialSettings` | `referential-settings-phrases.ts` | `values/referential-values.ts`   |
  * | `referentialOperations` | `operation-phrases.ts`          | `values/referential-values.ts`   |
- * | `commerce`            | `commerce-phrases.ts`, `storefront-phrases.ts`, `operation-phrases.ts` (`catalog_operation.*` sauf la surcharge) | `values/commerce-values.ts` |
+ * | `commerce`            | `commerce-phrases.ts`, `storefront-phrases.ts`, `operation-phrases.ts` (`catalog_operation.*` sauf la surcharge), `bundle-phrases.ts` | `values/commerce-values.ts` |
  * | `accountsAndCarts`    | `accounts-phrases.ts`             | `values/accounts-values.ts`      |
  * | `ordersAndProduction` | `orders-phrases.ts`               | `values/orders-values.ts`        |
  * | `pricing`             | `pricing-phrases.ts`              | `values/pricing-values.ts`       |
@@ -169,6 +170,7 @@ export const PHRASES: Readonly<Record<JournalFactType, Phrase>> = {
   ...COMMERCE_OPERATION_PHRASES,
   ...STOREFRONT_PHRASES,
   ...SUGGESTION_PHRASES,
+  ...BUNDLE_PHRASES,
   ...ORDERS_PHRASES,
   ...DELIVERY_ROUND_PHRASES,
   ...DELIVERY_TRANSFER_PHRASES,

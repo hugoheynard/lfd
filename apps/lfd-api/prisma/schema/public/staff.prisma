@@ -134,6 +134,10 @@ enum StaffResource {
   /// (2026-10-18, `documentation/webhooks/vitrine.md`). Accordée à
   /// l'écran.
   shop_vitrine
+  /// LES FORMULES — composer une offre de plusieurs articles au choix
+  /// (2026-10-19, `documentation/formules/plan-les-formules.md`, F2a).
+  /// Accordée à l'écran.
+  shop_bundles
   /// La VITRINE — composer les pages de la boutique (2026-09-24,
   /// `boutique-rayon-layout.md`, D7).
   b2b_storefront

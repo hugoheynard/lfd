@@ -90,6 +90,9 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // ⚠️ `staff_suggestion_order.` ne tombe PAS sous `staff_suggestion.`.
     "staff_suggestion.",
     "staff_suggestion_order.",
+    // Les formules composées par le staff (2026-10-19, plan des formules,
+    // F2a) : le même métier — ce que la boutique propose, et comment.
+    "bundle.",
   ],
   // Zones, points de retrait, heures limites et ouverture de la livraison
   // décident où et quand une commande part : ils se lisent avec les commandes,

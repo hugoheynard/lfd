@@ -1,5 +1,17 @@
 # Plan — les formules
 
+> 🧱 **Lot F2a bâti le 2026-10-19, non commité à l'écriture de cette note** —
+> la composition seule, sans prix ni facturabilité (Hugo, 2026-10-19 :
+> « l'admin de formule, SANS réfléchir au pricing pour l'instant, mais au
+> moins la COMPOSITION »). Recommandations appliquées pour ce lot : **Q1** —
+> la formule vit entièrement au commerce (`apps/lfd-api/src/b2b/bundles/`) ;
+> **D2** — les choix sont une liste de SKU ; **Q5/D4** — un champ d'audience
+> porté par l'agrégat, `public` seule valeur admise. Le statut ne connaît que
+> `draft` et `withdrawn` : `on_sale` exige un prix et viendra avec lui. Droit
+> `shop_bundles`, accordé à l'écran. Routes `/admin/bundles` et
+> `/admin/bundle-choices` (contrat `packages/contracts/src/bundles.ts`).
+> Rien côté boutique, panier, devis ni commande.
+
 > 🔁 **Relu contre le code le 2026-10-17** (dépôt `dev`, après le lot D, le
 > lot S, l'audience, X0 et X1 ; X2 en cours). Chaque affirmation du §1 est
 > citée `fichier:ligne` et a été ouverte ce jour-là. Changements de cette
@@ -439,14 +451,15 @@ sequenceDiagram
 
 ## 6. Les lots
 
-| Lot    | Contenu                                                                                                                                                         | Qui                                   |
-| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
-| **F0** | Mesurer le §2 bis sur le **catalogue réel** (combien d'étiquettes en service sont encaissées à un autre montant) ; Hugo décide (Q0). Pas de code produit.       | moi + Hugo (lecture prod)             |
-| **F1** | La répartition et son contrôle (§3), fonction pure du domaine `orders`, tests de propriété sur `q` de 1 à 10.                                                   | `batisseur`                           |
-| **F2** | L'agrégat `Bundle`, sa migration **additive**, son droit, la facturabilité à la pose, l'admin par le bus.                                                       | `batisseur`                           |
-| **F3** | La commande : unicité `(orderId, sku, occurrence)` en deux temps, étage de trace `bundle`, relecture de chaque lecteur par SKU, devis, empreinte, refus nommés. | `batisseur` + `lecteur-de-migrations` |
-| **F4** | Le back-office (Gestion Boutique).                                                                                                                              | `pablo`                               |
-| **F5** | La boutique, le mail, le bon de commande.                                                                                                                       | `pablo`                               |
+| Lot     | Contenu                                                                                                                                                                                                                                                         | Qui                                   |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| **F0**  | Mesurer le §2 bis sur le **catalogue réel** (combien d'étiquettes en service sont encaissées à un autre montant) ; Hugo décide (Q0). Pas de code produit.                                                                                                       | moi + Hugo (lecture prod)             |
+| **F1**  | La répartition et son contrôle (§3), fonction pure du domaine `orders`, tests de propriété sur `q` de 1 à 10.                                                                                                                                                   | `batisseur`                           |
+| **F2a** | 🧱 **Bâti le 2026-10-19** — la COMPOSITION seule, sous-ensemble de F2 sans prix ni facturabilité : agrégat `Bundle` (groupes, choix, brouillon / retirée), migration additive, droit `shop_bundles`, admin par le bus, recherche d'articles admissibles (§4.2). | `batisseur`                           |
+| **F2**  | L'agrégat `Bundle`, sa migration **additive**, son droit, la facturabilité à la pose, l'admin par le bus.                                                                                                                                                       | `batisseur`                           |
+| **F3**  | La commande : unicité `(orderId, sku, occurrence)` en deux temps, étage de trace `bundle`, relecture de chaque lecteur par SKU, devis, empreinte, refus nommés.                                                                                                 | `batisseur` + `lecteur-de-migrations` |
+| **F4**  | Le back-office (Gestion Boutique).                                                                                                                                                                                                                              | `pablo`                               |
+| **F5**  | La boutique, le mail, le bon de commande.                                                                                                                                                                                                                       | `pablo`                               |
 
 ⚠️ **F0 a changé de nature (2026-10-17)** : la mesure reste à faire, mais la
 décision ne revient plus à Hugo seul — elle suit la réponse du cabinet sur

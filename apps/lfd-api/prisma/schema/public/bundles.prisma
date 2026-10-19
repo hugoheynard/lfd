@@ -1,0 +1,66 @@
+/// **Une formule** — des groupes d'articles au choix, vendus ensemble
+/// (`documentation/formules/plan-les-formules.md`, lot F2a, 2026-10-19).
+///
+/// Ce lot n'en tient que la COMPOSITION : aucune colonne de prix, et le statut
+/// ne connaît que `draft` et `withdrawn` — `on_sale` viendra avec le prix.
+/// Jamais supprimée : on la retire.
+model Bundle {
+  /// Un ULID (`IdGenerator`).
+  id          String  @id
+  /// L'identité dans l'URL, tirée du nom à la création, puis immuable. Ne se
+  /// réemploie jamais, retirée comprise.
+  key         String  @unique
+  name        String
+  description String?
+  /// `public` seulement pour l'instant (D4) — `CHECK` en base.
+  audience    String
+  /// `draft` | `withdrawn` — `CHECK` en base.
+  status      String
+
+  createdAt DateTime @map("created_at") @db.Timestamptz(3)
+  writtenAt DateTime @map("written_at") @db.Timestamptz(3)
+  /// Qui l'a écrite en dernier — un `StaffUser.id`, jamais une clé étrangère.
+  writtenBy String?  @map("written_by")
+
+  groups BundleGroup[]
+
+  @@map("bundles")
+  @@schema("public")
+}
+
+/// Un groupe d'une formule, à son rang. Sa clé est stable : tirée du libellé
+/// à la naissance du groupe, gardée quand il est renommé.
+model BundleGroup {
+  bundleId String @map("bundle_id")
+  key      String
+  label    String
+  position Int
+
+  bundle  Bundle         @relation(fields: [bundleId], references: [id], onDelete: Restrict)
+  choices BundleChoice[]
+
+  @@id([bundleId, key])
+  @@map("bundle_groups")
+  @@schema("public")
+}
+
+/// Un article au choix dans un groupe, à son rang — un SKU du catalogue porté
+/// en texte, jamais une clé étrangère : un article retiré ne doit pas emporter
+/// la formule.
+///
+/// 🔴 La clé primaire `(bundle_id, sku)` tient en base l'invariant de
+/// l'agrégat : un article n'entre qu'UNE fois dans une formule, tous groupes
+/// confondus.
+model BundleChoice {
+  bundleId String @map("bundle_id")
+  groupKey String @map("group_key")
+  sku      String
+  position Int
+
+  group BundleGroup @relation(fields: [bundleId, groupKey], references: [bundleId, key], onDelete: Restrict)
+
+  @@id([bundleId, sku])
+  @@index([bundleId, groupKey])
+  @@map("bundle_choices")
+  @@schema("public")
+}

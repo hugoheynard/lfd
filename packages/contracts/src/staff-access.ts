@@ -375,6 +375,13 @@ export const staffResourceSchema = z.enum([
    */
   "shop_vitrine",
   /**
+   * **Les formules** — composer une offre de plusieurs articles au choix
+   * (`documentation/formules/plan-les-formules.md`, lot F2a, 2026-10-19). Un
+   * droit à lui, en Gestion Boutique. Il s'accorde à l'écran ; la graine ne le
+   * donne qu'à l'administrateur.
+   */
+  "shop_bundles",
+  /**
    * **La vitrine** — composer les pages de la boutique : formes, positions,
    * rayons, contenus, gabarits (`documentation/commandes/boutique-rayon-layout.md`,
    * D7).
@@ -742,6 +749,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   lfc_loyalty: "Fidélité",
   lfc_suggestions: "Suggestions de la boutique",
   shop_vitrine: "Webhook de la vitrine",
+  shop_bundles: "Formules",
   staff_access: "Équipe et accès",
   staff_notifications: "Notifications internes",
   ops_health: "Santé de l'écosystème",
@@ -877,6 +885,9 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // L'administrateur seul (2026-10-18, plan du webhook de la vitrine) : en
     // production, accordée à l'écran.
     shop_vitrine: "write",
+    // L'administrateur seul (2026-10-19, plan des formules, F2a) : en
+    // production, accordée à l'écran.
+    shop_bundles: "write",
     // La graine seule (2026-10-13, réglages commerciaux) : en production,
     // ces deux droits s'accordent à l'écran.
     b2b_commercial_appointment: "write",

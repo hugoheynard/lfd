@@ -207,6 +207,11 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     write:
       "Créer un abonné, choisir ce qu'il reçoit, régénérer son secret et sa clé, le couper ou le rallumer, renvoyer un envoi — ce qui part chez l'agence du site vitrine.",
   },
+  shop_bundles: {
+    read: "Voir les formules — leurs groupes et les articles au choix de chacun — et chercher les articles qu'on pourrait y mettre.",
+    write:
+      "Créer une formule, la renommer, composer ses groupes et ses choix, la retirer ou la remettre en brouillon. Elle n'est pas encore vendue : aucune formule ne paraît en boutique.",
+  },
   b2b_storefront: {
     read: "Voir la composition des pages de la boutique.",
     write: "Composer la vitrine — formes, positions, rayons, contenus — et l'enregistrer.",

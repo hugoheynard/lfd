@@ -14,6 +14,7 @@ import { RecommendationsModule } from "../b2b/recommendations/recommendations.mo
 import { AudiencesModule } from "../b2b/audiences/audiences.module.js";
 import { OrderOpeningModule } from "../b2b/order-opening/order-opening.module.js";
 import { CommerceOperationsModule } from "../b2b/operations/operations.module.js";
+import { BundlesModule } from "../b2b/bundles/bundles.module.js";
 import { FeatureAccessModule } from "../b2b/feature-access/feature-access.module.js";
 import { PlatformContentModule } from "../b2b/content/content.module.js";
 import { VitrineModule } from "../b2b/vitrine/vitrine.module.js";
@@ -124,6 +125,8 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     // Les opérations datées, ÉCRITES au commerce (lot 1 de
     // plan-l-operation-passe-au-commerce.md) — routes fermées jusqu'à la bascule.
     CommerceOperationsModule,
+    // Les formules — leur composition seule, à l'admin (plan des formules, F2a).
+    BundlesModule,
     DeliveryZonesModule,
     // À qui la livraison est proposée — lu par la caisse et le devis.
     DeliveryAvailabilityModule,

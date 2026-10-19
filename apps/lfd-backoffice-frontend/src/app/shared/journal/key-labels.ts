@@ -69,6 +69,8 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   changes: 'Modifications',
   channel: 'Canal',
   channels: 'Canaux de vente',
+  // Les articles au choix d'un groupe de formule (`bundle.*`, F2a, 2026-10-19).
+  choices: 'Articles au choix',
   clientLegalName: 'Raison sociale du client',
   clientName: 'Nom du client',
   closeAt: 'Heure d’arrêt',
@@ -146,6 +148,8 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   grants: 'Droits',
   // Un RETRAIT, au comptoir ou chez le client : « remise » ne désigne que la
   // réduction de prix (CLAUDE.md racine, §8, décidé le 2026-09-12).
+  // Les groupes d'une formule (`bundle.*`, F2a, 2026-10-19).
+  groups: 'Groupes',
   handedOverAt: 'Retirée le',
   handedOverBy: 'Retrait validé par',
   hours: 'Plage horaire',

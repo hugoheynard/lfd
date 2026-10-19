@@ -810,6 +810,15 @@
       "information": false
     },
     {
+      "colonne": "public.bundles.written_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a écrit en dernier une formule (`written_by`) sur `bundles`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "public.catalog_operations.written_by",
       "personne": "staff",
       "categorie": "auteur-geste",
