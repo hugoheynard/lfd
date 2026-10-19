@@ -248,3 +248,55 @@
     margin-top: -6rem;
   }
 }
+
+/* Les incontournables : une grille de vignettes fold, image 4/3 puis nom et
+   ligne courte — la vignette du rayon, sans prix ni « + ». */
+.featured,
+.featured-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.featured {
+  gap: var(--fold-space-lg);
+}
+
+.featured-title {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-xl);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-display);
+  text-transform: uppercase;
+}
+
+.featured-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: var(--fold-space-lg);
+}
+
+.featured-art {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.featured-body {
+  gap: var(--fold-space-xs);
+  padding: var(--fold-space-md);
+}
+
+.featured-name {
+  font-weight: var(--fold-weight-bold);
+}
+
+.featured-note {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}

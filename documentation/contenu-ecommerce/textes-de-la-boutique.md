@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1378 textes
+## Sommaire — 1381 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -12,7 +12,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | --- | --- | --- |
 | **Parcours de commande** | | |
 | [Accueil public — le visiteur sans compte](#espace-accueilpublic) | `accueilPublic` | 61 |
-| [Accueil pro public — le professionnel sans compte (/pro)](#espace-prolanding) | `proLanding` | 26 |
+| [Accueil pro public — le professionnel sans compte (/pro)](#espace-prolanding) | `proLanding` | 29 |
 | [Les trois étapes du parcours (où, quand, quoi)](#espace-steps) | `steps` | 13 |
 | [Accueil — l'en-tête de bienvenue](#espace-hero) | `hero` | 4 |
 | [Accueil — les portes d'entrée](#espace-doors) | `doors` | 23 |
@@ -47,7 +47,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
-| **Total** | | **1378** |
+| **Total** | | **1381** |
 
 ## Le parcours de commande
 
@@ -125,7 +125,7 @@ Source : `screens/accueil-public.copy.ts` · 61 textes.
 
 ### Accueil pro public — le professionnel sans compte (/pro) — `proLanding`
 
-Source : `screens/pro-landing.copy.ts` · 26 textes.
+Source : `screens/pro-landing.copy.ts` · 29 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -154,6 +154,9 @@ Source : `screens/pro-landing.copy.ts` · 26 textes.
 | `proLanding.pickupPoints.many` | {count} points de retrait | {count} pickup points | {count} punti di ritiro | `{count}` |
 | `proLanding.pickupPoints.one` | Je retire à {place} | I collect at {place} | Ritiro a {place} | `{place}` |
 | `proLanding.pickupPoints.discount` | Jusqu’à −{value} | Up to −{value} | Fino a −{value} | `{value}` |
+| `proLanding.featured.title` | Nos incontournables | Our must-haves | I nostri imperdibili |  |
+| `proLanding.featured.loading` | Incontournables… | Must-haves… | Imperdibili… |  |
+| `proLanding.featured.signInLabel` | Se connecter pour voir le tarif de {name} | Sign in to see the price of {name} | Accedi per vedere il prezzo di {name} | `{name}` |
 | `proLanding.browse` | Je visite la boutique | Browse the shop | Visito il negozio |  |
 
 <a id="espace-steps"></a>

@@ -8,9 +8,10 @@ import {
   signal,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import type { PickupAddressView } from '@lfd/contracts';
+import type { PickupAddressView, ShopFeaturedItemView, ShopImageView } from '@lfd/contracts';
 import {
   FoldButtonComponent,
+  FoldCardComponent,
   FoldHeroCardComponent,
   FoldLinkComponent,
   FoldLoadingStateComponent,
@@ -24,7 +25,33 @@ import { fill } from '../copy/client-copy.service';
 import { proLandingCopy } from '../copy/screens/pro-landing.copy';
 import { screenCopy } from '../copy/shop-copy-composer';
 import { bestPickupDiscount, discountLabel } from '../shop/pickup-discount';
+import { mediaSrcset, sizedMedia, TILE_WIDTHS } from '../shop/media-source';
+import { ProFeaturedGateway } from '../shop/pro-featured.gateway';
 import { ProPickupListGateway } from '../shop/pro-pickup-list.gateway';
+import { objectPositionOf, shelfArtOf } from '../shop/shelf-display';
+
+/**
+ * Un incontournable tel que la carte le pose : la vignette, sinon l'ouverture,
+ * sinon l'illustration du rayon — le repli de `tileArtOf`, qui ne prend qu'un
+ * article complet du rayon.
+ */
+export interface FeaturedCard {
+  readonly sku: string;
+  readonly name: string;
+  readonly note: string | null;
+  readonly label: string;
+  readonly alt: string;
+  readonly src: string;
+  readonly srcset: string;
+  readonly position: string;
+}
+
+function artOfFeatured(item: ShopFeaturedItemView): ShopImageView {
+  return (
+    item.thumbnail ??
+    item.image ?? { url: shelfArtOf(item.shelfId), alt: item.name, width: null, height: null }
+  );
+}
 
 /**
  * Où revient un pro après connexion : l'accueil de son espace. La même cible
@@ -59,6 +86,7 @@ export const SHOP = '/boutique';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldButtonComponent,
+    FoldCardComponent,
     FoldHeroCardComponent,
     FoldLinkComponent,
     FoldLoadingStateComponent,
@@ -95,6 +123,27 @@ export class ProLanding {
       : fill(this.c().pickupPoints.discount, { value: discountLabel(best) });
   });
 
+  /** `null` tant que la lecture court ; vide si elle échoue — la section se tait. */
+  private readonly featuredItems = signal<readonly ShopFeaturedItemView[] | null>(null);
+  protected readonly featuredLoading = computed(() => this.featuredItems() === null);
+
+  /** Les cartes des incontournables, aux tailles de la vignette du rayon. */
+  protected readonly featured = computed<readonly FeaturedCard[]>(() =>
+    (this.featuredItems() ?? []).map((item) => {
+      const art = artOfFeatured(item);
+      return {
+        sku: item.sku,
+        name: item.name,
+        note: item.note,
+        label: fill(this.c().featured.signInLabel, { name: item.name }),
+        alt: art.alt,
+        src: sizedMedia(art.url, TILE_WIDTHS[0]),
+        srcset: mediaSrcset(art.url, TILE_WIDTHS),
+        position: objectPositionOf(art),
+      };
+    }),
+  );
+
   private readonly auth = inject(AuthFacade);
   private readonly router = inject(Router);
   private readonly panels = inject(FoldPanelHostService);
@@ -117,6 +166,12 @@ export class ProLanding {
       .then(
         (points) => this.points.set(points),
         () => this.points.set([]),
+      );
+    inject(ProFeaturedGateway)
+      .list()
+      .then(
+        (items) => this.featuredItems.set(items),
+        () => this.featuredItems.set([]),
       );
     inject(DestroyRef).onDestroy(() => {
       chrome.bandLip.set(true);

@@ -3,7 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import type { PickupAddressView } from '@lfd/contracts';
+import type { PickupAddressView, ShopFeaturedView } from '@lfd/contracts';
 import { FoldPanelHostService } from 'fold-ng';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -33,6 +33,30 @@ const VILLAGE: PickupAddressView = {
   discount: { mode: 'percent', bp: 1500 },
   discountAudiences: { b2b: false, b2c: true },
 };
+
+const FEATURED: ShopFeaturedView = [
+  {
+    sku: 'PAIN-001',
+    name: 'Baguette tradition',
+    note: 'Levain naturel, cuite le matin',
+    image: null,
+    thumbnail: {
+      url: 'https://media.example/baguette.jpg',
+      alt: 'Une baguette',
+      width: 800,
+      height: 600,
+    },
+    shelfId: 'bread',
+  },
+  {
+    sku: 'VIEN-002',
+    name: 'Croissant',
+    note: null,
+    image: null,
+    thumbnail: null,
+    shelfId: 'viennoiserie',
+  },
+];
 
 interface Opened {
   readonly component: unknown;
@@ -85,6 +109,20 @@ describe('ProLanding — l’accueil pro public (/pro)', () => {
     }
   }
 
+  /** La lecture publique des incontournables, doublée. */
+  function answerFeatured(body: ShopFeaturedView | 'error'): void {
+    const http = TestBed.inject(HttpTestingController);
+    const req = http.expectOne((r) => r.url.endsWith('/shop/featured'));
+    expect(req.request.params.get('audience')).toBe('pro');
+    expect(req.request.params.get('lang')).toBe('fr');
+    expect(req.request.headers.has('Authorization')).toBe(false);
+    if (body === 'error') {
+      req.flush('ko', { status: 500, statusText: 'Server Error' });
+    } else {
+      req.flush(body);
+    }
+  }
+
   async function settle(): Promise<void> {
     await fixture.whenStable();
     fixture.detectChanges();
@@ -118,6 +156,7 @@ describe('ProLanding — l’accueil pro public (/pro)', () => {
 
   it('échec de lecture : la carte garde ses mots génériques, sans erreur', async () => {
     answer('error');
+    answerFeatured([]);
     await settle();
     expect(maybe('pro-pickup-points')).toBeNull();
     expect((fixture.nativeElement as HTMLElement).querySelector('fold-loading')).toBeNull();
@@ -129,6 +168,50 @@ describe('ProLanding — l’accueil pro public (/pro)', () => {
     await settle();
     expect(maybe('pro-pickup-points')).toBeNull();
     expect(maybe('pro-pickup-note')?.textContent?.trim()).toBe(PRO_LANDING_FR.pickup.note);
+  });
+
+  it('incontournables : une carte par article, image + nom + note, aucun prix', async () => {
+    answerFeatured(FEATURED);
+    await settle();
+    const host = fixture.nativeElement as HTMLElement;
+    const cards = host.querySelectorAll<HTMLElement>('[data-test="pro-featured-card"]');
+    expect(cards).toHaveLength(2);
+    const [first, second] = Array.from(cards);
+    expect(first?.textContent).toContain('Baguette tradition');
+    expect(first?.textContent).toContain('Levain naturel');
+    const img = first?.querySelector('img');
+    expect(img?.getAttribute('alt')).toBe('Une baguette');
+    expect(img?.getAttribute('src')).toContain('baguette');
+    // Sans photo : l'illustration du rayon, pas un cadre vide.
+    expect(second?.querySelector('img')?.getAttribute('src')).toContain('products/');
+    expect(maybe('pro-featured')?.textContent).not.toMatch(/€|HT|TTC/);
+  });
+
+  it('incontournables : le clic sur une carte ouvre la connexion, retour sur /mon-compte', async () => {
+    answerFeatured(FEATURED);
+    await settle();
+    const card = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>(
+      '[data-test="pro-featured-card"] [role="button"], [data-test="pro-featured-card"][role="button"]',
+    );
+    expect(card?.getAttribute('aria-label')).toBe(
+      'Se connecter pour voir le tarif de Baguette tradition',
+    );
+    card?.click();
+    expect(opened).toEqual([
+      { component: SignInDialog, data: { target: '/mon-compte', email: '' } },
+    ]);
+  });
+
+  it('incontournables : liste vide, la section est absente', async () => {
+    answerFeatured([]);
+    await settle();
+    expect(maybe('pro-featured')).toBeNull();
+  });
+
+  it('incontournables : échec, la section est absente', async () => {
+    answerFeatured('error');
+    await settle();
+    expect(maybe('pro-featured')).toBeNull();
   });
 
   afterEach(() => {

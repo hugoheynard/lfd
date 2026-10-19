@@ -614,6 +614,27 @@
           "variables": ["value"]
         },
         {
+          "key": "proLanding.featured.title",
+          "fr": "Nos incontournables",
+          "en": "Our must-haves",
+          "it": "I nostri imperdibili",
+          "variables": []
+        },
+        {
+          "key": "proLanding.featured.loading",
+          "fr": "Incontournables…",
+          "en": "Must-haves…",
+          "it": "Imperdibili…",
+          "variables": []
+        },
+        {
+          "key": "proLanding.featured.signInLabel",
+          "fr": "Se connecter pour voir le tarif de {name}",
+          "en": "Sign in to see the price of {name}",
+          "it": "Accedi per vedere il prezzo di {name}",
+          "variables": ["name"]
+        },
+        {
           "key": "proLanding.browse",
           "fr": "Je visite la boutique",
           "en": "Browse the shop",

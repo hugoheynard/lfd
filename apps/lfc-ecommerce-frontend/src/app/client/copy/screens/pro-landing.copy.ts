@@ -27,6 +27,17 @@ export interface ProLandingPickupPointsCopy {
 }
 
 /**
+ * Les incontournables pros, sans prix : la section n'existe que si la liste
+ * publique en rend au moins un.
+ */
+export interface ProLandingFeaturedCopy {
+  readonly title: string;
+  readonly loading: string;
+  /** `{name}` — le nom de la carte : elle ouvre la connexion, le tarif pro demandant un compte. */
+  readonly signInLabel: string;
+}
+
+/**
  * **Ce que dit l'accueil pro public** (`/pro`) — la page vers laquelle l'agence
  * web envoie un professionnel qui n'est pas connecté (Hugo, 2026-10-19).
  *
@@ -49,6 +60,7 @@ export interface ProLandingCopy {
   readonly pickup: ProLandingModeCopy;
   readonly delivery: ProLandingModeCopy;
   readonly pickupPoints: ProLandingPickupPointsCopy;
+  readonly featured: ProLandingFeaturedCopy;
   /** Le grand appel sous les deux modes : voir le rayon avant d'ouvrir un compte. */
   readonly browse: string;
 }
@@ -83,6 +95,11 @@ export const PRO_LANDING_FR: ProLandingCopy = {
     one: 'Je retire à {place}',
     discount: 'Jusqu’à −{value}',
   },
+  featured: {
+    title: 'Nos incontournables',
+    loading: 'Incontournables…',
+    signInLabel: 'Se connecter pour voir le tarif de {name}',
+  },
   browse: 'Je visite la boutique',
 };
 
@@ -116,6 +133,11 @@ export const PRO_LANDING_EN: ProLandingCopy = {
     one: 'I collect at {place}',
     discount: 'Up to −{value}',
   },
+  featured: {
+    title: 'Our must-haves',
+    loading: 'Must-haves…',
+    signInLabel: 'Sign in to see the price of {name}',
+  },
   browse: 'Browse the shop',
 };
 
@@ -148,6 +170,11 @@ export const PRO_LANDING_IT: ProLandingCopy = {
     many: '{count} punti di ritiro',
     one: 'Ritiro a {place}',
     discount: 'Fino a −{value}',
+  },
+  featured: {
+    title: 'I nostri imperdibili',
+    loading: 'Imperdibili…',
+    signInLabel: 'Accedi per vedere il prezzo di {name}',
   },
   browse: 'Visito il negozio',
 };
