@@ -26,6 +26,7 @@ describe('AccueilPage · porte pro', () => {
   let isAuthenticated: ReturnType<typeof signal<boolean>>;
   let asked: { kind: 'registerPro' | 'login'; target: string; payload: unknown }[];
   let navigated: string[];
+  let fragments: (string | null)[];
   /** Ce que l'écran a demandé d'ouvrir, et ce que le dialogue lui a rendu. */
   let opened: unknown[];
   /** La charge passée au dialogue ouvert — vide pour ceux qui n'en prennent pas. */
@@ -94,7 +95,11 @@ describe('AccueilPage · porte pro', () => {
     });
   });
 
-  function boot(authenticated = false, door: 'perso' | 'pro' = 'pro'): void {
+  function boot(
+    authenticated = false,
+    door: 'perso' | 'pro' = 'pro',
+    fragment: string | null = null,
+  ): void {
     asked = [];
     navigated = [];
     isAuthenticated = signal(authenticated);
@@ -143,12 +148,17 @@ describe('AccueilPage · porte pro', () => {
         },
         // C'est la ROUTE qui désigne la porte au premier rendu : c'est ainsi
         // que `/ouverture-compte-pro` ouvre cette page du bon côté.
-        { provide: ActivatedRoute, useValue: { snapshot: { data: { door } } } },
+        { provide: ActivatedRoute, useValue: { snapshot: { data: { door }, fragment } } },
       ],
     });
     const router = TestBed.inject(Router);
     router.navigateByUrl = (url): Promise<boolean> => {
       navigated.push(String(url));
+      return Promise.resolve(true);
+    };
+    fragments = [];
+    router.navigate = (_commands, extras): Promise<boolean> => {
+      fragments.push(extras?.fragment ?? null);
       return Promise.resolve(true);
     };
     fixture = TestBed.createComponent(AccueilPage);
@@ -328,6 +338,29 @@ describe('AccueilPage · porte pro', () => {
     expect(shown).toContain(PRO_ACCOUNT_FR.door.heading);
     expect(shown).toContain(PRO_ACCOUNT_FR.door.proof[0]);
     expect(shown).not.toContain(FR.aside.proof[0]);
+  });
+
+  /**
+   * `/inscription#pro` ouvre la porte pro : l'agence redirige vers la bonne
+   * audience, sans que la personne ait à basculer (Hugo, 2026-10-19).
+   */
+  it('ouvre la porte pro quand l’adresse porte #pro', () => {
+    boot(false, 'perso', 'pro');
+
+    expect(el().querySelector('app-pro-step')).not.toBeNull();
+    expect(el().querySelector('app-welcome-step')).toBeNull();
+  });
+
+  /** Et l'inverse : le segmenté écrit la porte dans l'adresse, pour qu'un lien copié la rouvre. */
+  it('écrit #pro dans l’adresse quand on bascule, et le retire au retour', () => {
+    boot(false, 'perso');
+
+    button(FR.doors.proLabel).click();
+    fixture.detectChanges();
+    button(FR.doors.persoLabel).click();
+    fixture.detectChanges();
+
+    expect(fragments).toEqual(['pro', null]);
   });
 
   /** Le segmenté ramène à l'autre porte, sur place — sans changer d'adresse. */

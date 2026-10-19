@@ -6,7 +6,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, type ActivatedRouteSnapshot, Router } from '@angular/router';
 import { FoldPanelHostService } from 'fold-ng';
 
 import { AuthFacade, type PendingProfile, type ProRegistration } from '../../auth/auth.facade';
@@ -43,6 +43,19 @@ const AFTER_ENTRY = WORKSPACE_HOME_ROUTE;
 const AFTER_ENTRY_PRO = '/mon-compte';
 
 /**
+ * Le fragment qui ouvre la porte pro : `/inscription#pro`. Un fragment plutôt
+ * qu'un paramètre, parce que le serveur ne le voit pas — la page reste la même
+ * pour le cache, et seule la porte change (Hugo, 2026-10-19 : l'agence redirige
+ * vers la bonne audience).
+ */
+const PRO_FRAGMENT = 'pro';
+
+/** La porte du premier rendu : la route d'abord (`data.door`), puis `#pro`. */
+function initialDoor(route: ActivatedRouteSnapshot): SignupDoor {
+  return route.data['door'] === 'pro' || route.fragment === PRO_FRAGMENT ? 'pro' : 'perso';
+}
+
+/**
  * `/inscription` — **la porte d'entrée, et elle en a deux** : particulier et
  * professionnel, sur une seule page (handoff `handoff-inscription`, §1).
  *
@@ -72,6 +85,7 @@ export class AccueilPage {
   private readonly chrome = inject(ClientChrome);
   private readonly auth = inject(AuthFacade);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   protected readonly t = inject(ClientCopyService).t;
 
@@ -80,9 +94,7 @@ export class AccueilPage {
    * puis du segmenté ; les deux écrivent le même signal, de sorte qu'aucun
    * écran ne dépend de la façon dont on est arrivé.
    */
-  protected readonly door = signal<SignupDoor>(
-    inject(ActivatedRoute).snapshot.data['door'] === 'pro' ? 'pro' : 'perso',
-  );
+  protected readonly door = signal<SignupDoor>(initialDoor(inject(ActivatedRoute).snapshot));
 
   /** Le numéro sur lequel le fournil rappellera, quand le compte en porte un. */
   protected readonly phone = inject(ClientIdentity).phone;
@@ -165,6 +177,17 @@ export class AccueilPage {
 
   protected openDoor(door: SignupDoor): void {
     this.door.set(door);
+    // L'adresse dit la porte ouverte (`#pro`), pour qu'un lien copié — celui que
+    // l'agence met sur son site — rouvre la même (Hugo, 2026-10-19). Sur
+    // `/ouverture-compte-pro`, la route le dit déjà : on ne touche pas l'URL.
+    if (this.route.snapshot.data['door'] !== 'pro') {
+      // Sans `fragment`, `navigate([])` le retire : c'est la porte particulier.
+      void this.router.navigate([], {
+        relativeTo: this.route,
+        replaceUrl: true,
+        ...(door === 'pro' ? { fragment: PRO_FRAGMENT } : {}),
+      });
+    }
   }
 
   /**
