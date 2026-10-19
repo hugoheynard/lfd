@@ -18,7 +18,7 @@ import type { ShopItemView, ShopOperationView, ShopShelfView } from "./shop-cata
  * - `GET /vitrine/articles/:sku?lang=` → `VitrineItemView`
  * - `GET /vitrine/textes?lang=` → `VitrineTextsView`
  *
- * Routes du back-office (surface `shop_vitrine`) :
+ * Routes du back-office (surface `lfd_webhooks`) :
  *
  * - `GET  /admin/vitrine/subscribers` → `VitrineSubscriberView[]`
  * - `POST /admin/vitrine/subscribers` ← `CreateVitrineSubscriberPayload` → `VitrineCredentialsView`

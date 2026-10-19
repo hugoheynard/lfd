@@ -367,11 +367,13 @@ export const staffResourceSchema = z.enum([
    */
   "lfc_suggestions",
   /**
-   * **Le webhook de la vitrine** — les abonnés (l'agence du site vitrine),
-   * leurs cases, la rotation de leur secret et de leur clé, le journal des
-   * envois (`documentation/webhooks/vitrine.md`, Hugo,
-   * 2026-10-18). Un droit à lui, en Gestion Boutique. Il s'accorde à
-   * l'écran ; la graine ne le donne qu'à l'administrateur.
+   * 🔴 **RETIRÉ** (Hugo, 2026-10-19) : remplacé par `lfd_webhooks` — « l'édition
+   * de la vitrine et les webhooks, c'est différent ». Il ne garde plus aucune
+   * route.
+   *
+   * Il reste dans le schéma pour la même raison que `b2b_catalog` : des rôles
+   * peuvent le porter en base, et une valeur inconnue ferait échouer la
+   * lecture du rôle entier. Il est dans {@link RETIRED_STAFF_RESOURCES}.
    */
   "shop_vitrine",
   /**
@@ -381,6 +383,16 @@ export const staffResourceSchema = z.enum([
    * donne qu'à l'administrateur.
    */
   "shop_bundles",
+  /**
+   * **Les webhooks** — les abonnés du webhook de la vitrine (l'agence du site
+   * vitrine), leurs cases, la rotation de leur secret et de leur clé, le
+   * journal des envois et les annonces aux abonnés
+   * (`documentation/webhooks/vitrine.md`). Remplace `shop_vitrine` (Hugo,
+   * 2026-10-19) : une intégration technique avec l'extérieur, pas l'édition
+   * de la vitrine. Il s'accorde à l'écran ; la graine ne le donne qu'à
+   * l'administrateur.
+   */
+  "lfd_webhooks",
   /**
    * **La vitrine** — composer les pages de la boutique : formes, positions,
    * rayons, contenus, gabarits (`documentation/commandes/boutique-rayon-layout.md`,
@@ -617,7 +629,10 @@ export type StaffResource = z.infer<typeof staffResourceSchema>;
  * - jamais proposée à l'accord ; une ligne qui la porte encore se montre
  *   « retirée », et le seul geste offert est de l'enlever.
  */
-export const RETIRED_STAFF_RESOURCES = ["b2b_catalog"] as const satisfies readonly StaffResource[];
+export const RETIRED_STAFF_RESOURCES = [
+  "b2b_catalog",
+  "shop_vitrine",
+] as const satisfies readonly StaffResource[];
 export type RetiredStaffResource = (typeof RETIRED_STAFF_RESOURCES)[number];
 
 /** Vrai si la ressource est retirée : lisible, jamais accordée ni résolue. */
@@ -748,8 +763,9 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   lfc_order_opening: "Ouverture des commandes",
   lfc_loyalty: "Fidélité",
   lfc_suggestions: "Suggestions de la boutique",
-  shop_vitrine: "Webhook de la vitrine",
+  shop_vitrine: "Webhook de la vitrine (retiré)",
   shop_bundles: "Formules",
+  lfd_webhooks: "Webhooks",
   staff_access: "Équipe et accès",
   staff_notifications: "Notifications internes",
   ops_health: "Santé de l'écosystème",
@@ -882,12 +898,14 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     // L'administrateur seul (2026-10-18, plan des suggestions du staff, RS1) :
     // en production, accordée à l'écran.
     lfc_suggestions: "write",
-    // L'administrateur seul (2026-10-18, plan du webhook de la vitrine) : en
-    // production, accordée à l'écran.
-    shop_vitrine: "write",
+    // `shop_vitrine` n'est plus semé : il est retiré, remplacé par
+    // `lfd_webhooks` (Hugo, 2026-10-19).
     // L'administrateur seul (2026-10-19, plan des formules, F2a) : en
     // production, accordée à l'écran.
     shop_bundles: "write",
+    // L'administrateur seul (2026-10-19, remplace `shop_vitrine`) : en
+    // production, accordée à l'écran.
+    lfd_webhooks: "write",
     // La graine seule (2026-10-13, réglages commerciaux) : en production,
     // ces deux droits s'accordent à l'écran.
     b2b_commercial_appointment: "write",

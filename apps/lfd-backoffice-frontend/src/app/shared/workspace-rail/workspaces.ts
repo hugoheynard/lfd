@@ -683,7 +683,7 @@ export const ADMIN_VIEWS: readonly WorkspaceView[] = [
     label: 'Webhook vitrine',
     link: '/admin/webhook-vitrine',
     icon: 'globe',
-    needs: 'shop_vitrine:read',
+    needs: 'lfd_webhooks:read',
   },
 ];
 

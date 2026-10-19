@@ -35,7 +35,7 @@ type LoadState = 'loading' | 'error' | 'ready';
  * **Le webhook de la vitrine** — Admin (depuis le 2026-10-19) (doc
  * `documentation/webhooks/vitrine.md`) : les
  * abonnés, ce que chacun reçoit, ses gestes et son journal des envois. Sous
- * `shop_vitrine` ; sans l'écriture, tout se lit et rien ne se change.
+ * `lfd_webhooks` ; sans l'écriture, tout se lit et rien ne se change.
  */
 @Component({
   selector: 'app-vitrine-webhook-page',
@@ -60,7 +60,7 @@ export class VitrineWebhookPage {
   private readonly panels = inject(FoldPanelHostService);
   private readonly notify = inject(NotifyService);
 
-  protected readonly canWrite = computed(() => this.permissions.can('shop_vitrine:write'));
+  protected readonly canWrite = computed(() => this.permissions.can('lfd_webhooks:write'));
   protected readonly state = signal<LoadState>('loading');
   protected readonly subscribers = signal<readonly VitrineSubscriberView[]>([]);
   protected readonly busy = signal<string | null>(null);

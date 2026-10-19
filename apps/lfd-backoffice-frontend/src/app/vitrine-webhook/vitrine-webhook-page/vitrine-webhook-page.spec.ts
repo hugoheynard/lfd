@@ -66,7 +66,7 @@ class FakeApi {
 
 async function render(
   api: FakeApi,
-  granted: readonly StaffPermission[] = ['shop_vitrine:read', 'shop_vitrine:write'],
+  granted: readonly StaffPermission[] = ['lfd_webhooks:read', 'lfd_webhooks:write'],
 ): Promise<HTMLElement> {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
@@ -131,7 +131,7 @@ describe('VitrineWebhookPage', () => {
   });
 
   it('sans l’écriture : rien ne se change, le journal se lit', async () => {
-    const root = await render(new FakeApi(), ['shop_vitrine:read']);
+    const root = await render(new FakeApi(), ['lfd_webhooks:read']);
     expect(root.querySelector('button[data-create]')).toBeNull();
     expect(root.querySelector('button[data-test]')).toBeNull();
     expect(root.querySelector('button[data-journal]')).not.toBeNull();
@@ -217,12 +217,12 @@ describe('VitrineWebhookPage', () => {
     await settle();
     expect(api.calls).toEqual(['resume:n2']);
 
-    const readOnly = await render(api, ['shop_vitrine:read']);
+    const readOnly = await render(api, ['lfd_webhooks:read']);
     expect(readOnly.querySelector('button[data-resume]')).toBeNull();
   });
 
   it('sans l’écriture, pas de « Notifier les abonnés »', async () => {
-    const root = await render(new FakeApi(), ['shop_vitrine:read']);
+    const root = await render(new FakeApi(), ['lfd_webhooks:read']);
     expect(root.querySelector('button[data-notify]')).toBeNull();
   });
 });

@@ -121,6 +121,8 @@ describe('grantGroups', () => {
    * (recommandation-produit/suggestions-du-staff.md, RS1). 61 le même jour :
    * `shop_vitrine`, le webhook de la vitrine (webhooks/vitrine.md). 62 le
    * 2026-10-19 : `shop_bundles`, les formules (formules/plan-les-formules.md, F2a).
+   * 62 encore le même jour : `lfd_webhooks` entre, `shop_vitrine` est retiré
+   * (webhooks/vitrine.md) — comme `b2b_catalog`, il ne compte plus.
    */
   it('compte les domaines du catalogue', () => {
     expect(RESOURCE_COUNT).toBe(62);

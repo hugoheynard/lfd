@@ -203,14 +203,18 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
       "Créer, réécrire, couper, rallumer ou archiver une suggestion, et choisir l'ordre entre suggestions concurrentes — ce que la boutique conseille à chaque client.",
   },
   shop_vitrine: {
-    read: "Voir les abonnés du webhook de la vitrine — leur adresse, ce qu'ils reçoivent — et le journal des envois.",
-    write:
-      "Créer un abonné, choisir ce qu'il reçoit, régénérer son secret et sa clé, le couper ou le rallumer, renvoyer un envoi — ce qui part chez l'agence du site vitrine.",
+    read: "Retiré : n'ouvre plus rien, remplacé par Webhooks. Un rôle qui le porte encore ne gagne rien à le garder ; le seul geste est de le retirer.",
+    write: "Retiré : n'ouvre plus rien, remplacé par Webhooks. Il ne s'accorde plus.",
   },
   shop_bundles: {
     read: "Voir les formules — leurs groupes et les articles au choix de chacun — et chercher les articles qu'on pourrait y mettre.",
     write:
       "Créer une formule, la renommer, composer ses groupes et ses choix, la retirer ou la remettre en brouillon. Elle n'est pas encore vendue : aucune formule ne paraît en boutique.",
+  },
+  lfd_webhooks: {
+    read: "Voir les abonnés du webhook de la vitrine — leur adresse, ce qu'ils reçoivent — et le journal des envois.",
+    write:
+      "Créer un abonné, choisir ce qu'il reçoit, régénérer son secret et sa clé, le couper ou le rallumer, renvoyer un envoi — et écrire une annonce aux abonnés : ce qui part chez l'agence du site vitrine.",
   },
   b2b_storefront: {
     read: "Voir la composition des pages de la boutique.",

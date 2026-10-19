@@ -101,9 +101,26 @@ export const routes: Routes = [
       import('./suggestions/suggestions-page/suggestions-page').then((m) => m.SuggestionsPage),
   },
   {
+    // LES FORMULES — des groupes, un article au choix dans chacun — en
+    // Gestion Boutique, sous LEUR droit (`shop_bundles`, plan-les-formules.md
+    // §5, F2a, 2026-10-19). Même forme que les opérations : la liste, puis la
+    // page d'une formule par sa clé. La création est un panneau : la clé est
+    // tirée du nom, une adresse `/formules/nouvelle` lui aurait été prise.
+    path: 'formules',
+    canActivate: [permissionGuard('shop_bundles:read')],
+    title: 'Formules — LFC B2B admin',
+    loadComponent: () => import('./formules/bundles-page/bundles-page').then((m) => m.BundlesPage),
+  },
+  {
+    path: 'formules/:key',
+    canActivate: [permissionGuard('shop_bundles:read')],
+    title: 'Formule — LFC B2B admin',
+    loadComponent: () => import('./formules/bundle-page/bundle-page').then((m) => m.BundlePage),
+  },
+  {
     // LE WEBHOOK DE LA VITRINE est parti en Admin le 2026-10-19 (Hugo) :
     // l'ancienne adresse a pu être donnée à quelqu'un, elle redirige. Absolue,
-    // elle s'applique avant tout mur ; la vue porte le sien (`shop_vitrine`).
+    // elle s'applique avant tout mur ; la vue porte le sien (`lfd_webhooks`).
     path: 'webhook-vitrine',
     pathMatch: 'full',
     redirectTo: '/admin/webhook-vitrine',

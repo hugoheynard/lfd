@@ -102,10 +102,10 @@ export const adminRoutes: Routes = [
       },
       {
         // LE WEBHOOK DE LA VITRINE — les abonnés (l'agence du site vitrine),
-        // leurs cases et le journal des envois, sous SON droit (`shop_vitrine`,
+        // leurs cases et le journal des envois, sous SON droit (`lfd_webhooks`,
         // webhooks/vitrine.md). Venu de Gestion Boutique le 2026-10-19 (Hugo).
         path: 'webhook-vitrine',
-        canActivate: [permissionGuard('shop_vitrine:read')],
+        canActivate: [permissionGuard('lfd_webhooks:read')],
         title: 'Webhook vitrine — LFC B2B admin',
         loadComponent: () =>
           import('../vitrine-webhook/vitrine-webhook-page/vitrine-webhook-page').then(

@@ -136,12 +136,13 @@ erDiagram
 
 | Migration (additive)                                       | Ce qu'elle pose                                                                              |
 | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `20261018230000_le_droit_de_la_vitrine`                    | la ressource `shop_vitrine`, **accordée à l'écran** (runbook)                                |
+| `20261018230000_le_droit_de_la_vitrine`                    | la ressource `shop_vitrine` — **retirée** le 2026-10-19, remplacée par `lfd_webhooks`        |
 | `20261018230100_les_abonnes_de_la_vitrine`                 | abonnés, empreintes, livraisons ; index unique partiel : une livraison en attente par abonné |
 | `20261018240000_la_description_d_un_abonne_vitrine`        | description et contact, bornés par `CHECK`                                                   |
 | `20261018250000_les_annonces_aux_abonnes_vitrine`          | les annonces et leurs destinataires                                                          |
 | `20261018260000_un_envoi_vitrine_neuf_a_chaque_absorption` | `dispatch_id`                                                                                |
 | `20261019090000_le_bail_du_balayage_vitrine`               | le bail du balayage                                                                          |
+| `20261019120000_le_droit_des_webhooks`                     | la ressource `lfd_webhooks`, qui remplace `shop_vitrine` (retiré) ; **accordée à l'écran**   |
 
 ## 4. Les décisions de Hugo
 
@@ -234,7 +235,7 @@ préalable bâti le 2026-10-18) :
 
 ## 7. Les annonces aux abonnés
 
-Sous `shop_vitrine` en écriture, l'écran écrit un e-mail aux contacts : objet
+Sous `lfd_webhooks` en écriture, l'écran écrit un e-mail aux contacts : objet
 (150 caractères, une ligne) et message (5000, texte brut), destinataires =
 tous ceux qui ont un contact, ou une sélection. Un abonné **coupé reste
 notifiable** ; un abonné sans contact est signalé et ne se choisit pas. Un

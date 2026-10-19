@@ -114,7 +114,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
       'staff_access:read',
       'b2b_feature_access:read',
       'activity:read',
-      'shop_vitrine:read',
+      'lfd_webhooks:read',
     ],
   },
   'admin/acces-en-attente': 'b2b_companies:read',
@@ -134,8 +134,8 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // donc pas du `companies:read` de son parent.
   'admin/journal': 'activity:read',
   // Le webhook de la vitrine, venu de Gestion Boutique le 2026-10-19, sous le
-  // droit que ses routes serveur opposent (`@AdminSurface("shop_vitrine")`).
-  'admin/webhook-vitrine': 'shop_vitrine:read',
+  // droit que ses routes serveur opposent (`@AdminSurface("lfd_webhooks")`).
+  'admin/webhook-vitrine': 'lfd_webhooks:read',
 
   // Son PROPRE périmètre, et pas `settings:read` : regarder la flotte n'est pas
   // la régler. Le jour où l'un s'ouvre à quelqu'un, l'autre n'a aucune raison
@@ -178,6 +178,9 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   operations: 'lfc_operations:read',
   fidelite: 'lfc_loyalty:read',
   suggestions: 'lfc_suggestions:read',
+  // Les formules (2026-10-19, F2a), sous LEUR droit.
+  formules: 'shop_bundles:read',
+  'formules/:key': 'shop_bundles:read',
   // La mise en avant par audience (2026-10-18), sous le droit que la route
   // serveur oppose (`@AdminSurface("lfc_catalog")`).
   'mise-en-avant': 'lfc_catalog:read',

@@ -1,0 +1,22 @@
+-- LE DROIT DES WEBHOOKS (Hugo, 2026-10-19)
+--
+-- `lfd_webhooks` remplace `shop_vitrine` (« l'édition de la vitrine et les
+-- webhooks, c'est différent ») : il garde l'écran Admin › Webhook vitrine et
+-- toutes les routes `/admin/vitrine/*` (`documentation/webhooks/vitrine.md`).
+--
+-- 🔴 AUCUN droit accordé ici (`lint:no-role-grants-in-migrations`) : rien
+-- n'est écrit dans `staff_role_definitions` ni `staff_permission_overrides`,
+-- pas même une recopie des accords de `shop_vitrine`. Geste de mise en
+-- service : l'admin accorde `lfd_webhooks` à l'écran (`/admin/staff-roles`) à
+-- quiconque portait `shop_vitrine`.
+--
+-- `shop_vitrine` reste dans l'enum : Postgres n'ôte pas une valeur, et le code
+-- la tient pour retirée (lue, jamais résolue ni accordée).
+--
+-- SEULE dans sa migration : une valeur d'enum ne s'emploie pas dans la
+-- transaction qui l'ajoute.
+--
+-- ⚠️ IRRÉVERSIBLE, et sans conséquence : un retour arrière la laisse en place,
+-- inutilisée.
+
+ALTER TYPE "public"."StaffResource" ADD VALUE IF NOT EXISTS 'lfd_webhooks' AFTER 'shop_bundles';

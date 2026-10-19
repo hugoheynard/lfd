@@ -1018,14 +1018,18 @@ commande ne porte (un lien libre) sonne aussi la cloche, sans rien écrire.
 > [`vitrine.md`](../webhooks/vitrine.md)). Écran :
 > Admin › **Webhook vitrine** (`/admin/webhook-vitrine`, rangé là le 2026-10-19 ;
 > l'ancienne adresse `/webhook-vitrine` redirige), sous le droit
-> `shop_vitrine`.
+> `lfd_webhooks` (« Webhooks »), qui remplace `shop_vitrine` depuis le
+> 2026-10-19 (Hugo).
 
-**Après le déploiement : accorder `shop_vitrine`.** La migration
-`20261018230000_le_droit_de_la_vitrine` ajoute la ressource **sans l'accorder à
-personne** (`lint:no-role-grants-in-migrations`) : tant que rien n'est fait,
-l'entrée n'apparaît chez personne et `/admin/vitrine/*` répond 403,
-administrateur compris. Le geste : `/admin/staff-roles`, rôle
-« Administrateur », ressource « Webhook de la vitrine » → écriture.
+**Après le déploiement : accorder `lfd_webhooks`.** La migration
+`20261019120000_le_droit_des_webhooks` ajoute la ressource **sans l'accorder à
+personne** (`lint:no-role-grants-in-migrations`), et ne recopie pas les accords
+de `shop_vitrine` : tant que rien n'est fait, l'entrée n'apparaît chez personne
+et `/admin/vitrine/*` répond 403, administrateur compris. Le geste :
+`/admin/staff-roles`, rôle « Administrateur » — et tout rôle ou dérogation qui
+portait « Webhook de la vitrine (retiré) » — ressource « Webhooks » → même
+niveau. `shop_vitrine` n'ouvre plus rien ; sa ligne peut être retirée au même
+moment.
 
 **Déclarer l'agence** : « Nouvel abonné », son adresse `https://…` (sans `?`
 ni `#` : refusée à la saisie), ses cases. Le **secret de signature** et la

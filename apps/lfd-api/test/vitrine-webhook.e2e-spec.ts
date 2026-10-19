@@ -506,7 +506,7 @@ describe("le nom, la description et le contact d'un abonné", () => {
   });
 });
 
-describe("le droit `shop_vitrine`", () => {
+describe("le droit `lfd_webhooks`", () => {
   it("ferme l'écran à qui ne l'a pas", async () => {
     await ctx
       .asSub(E2E_STAFF_SUB)

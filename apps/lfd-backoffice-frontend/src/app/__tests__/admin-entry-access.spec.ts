@@ -174,18 +174,24 @@ describe("App — l'entrée Admin suit ses vues", () => {
     expect(landing(['staff_access:read'])).toBe('/admin/utilisateurs');
   });
 
-  it('shop_vitrine seul : Admin paraît, avec la seule vue « Webhook vitrine »', async () => {
-    expect(render(['shop_vitrine:read']).querySelector(RAIL_ADMIN)).not.toBeNull();
-    const launcher = render(['shop_vitrine:read'], true).querySelector(LAUNCHER_ADMIN);
+  it('lfd_webhooks seul : Admin paraît, avec la seule vue « Webhook vitrine »', async () => {
+    expect(render(['lfd_webhooks:read']).querySelector(RAIL_ADMIN)).not.toBeNull();
+    const launcher = render(['lfd_webhooks:read'], true).querySelector(LAUNCHER_ADMIN);
     const tiles = [...(launcher?.querySelectorAll('a[fold-nav-tile]') ?? [])];
     expect(tiles.map((tile) => tile.getAttribute('href'))).toEqual(['/admin/webhook-vitrine']);
-    expect(adminViewKeys(['shop_vitrine:read'])).toEqual(['webhook-vitrine']);
-    expect(await enterAdmin(['shop_vitrine:read'])).toBe(true);
-    expect(landing(['shop_vitrine:read'])).toBe('/admin/webhook-vitrine');
+    expect(adminViewKeys(['lfd_webhooks:read'])).toEqual(['webhook-vitrine']);
+    expect(await enterAdmin(['lfd_webhooks:read'])).toBe(true);
+    expect(landing(['lfd_webhooks:read'])).toBe('/admin/webhook-vitrine');
+  });
+
+  /** Régression : `shop_vitrine`, retiré le 2026-10-19, n'ouvre plus le webhook. */
+  it("shop_vitrine seul : l'ancien droit ne fait plus paraître Admin", () => {
+    expect(render(['shop_vitrine:read']).querySelector(RAIL_ADMIN)).toBeNull();
+    expect(adminViewKeys(['shop_vitrine:read'])).toEqual([]);
   });
 
   it('garde « Accès à remettre » en tête pour qui lit les sociétés', () => {
-    expect(landing(['b2b_companies:read', 'shop_vitrine:read'])).toBe('/admin/acces-en-attente');
+    expect(landing(['b2b_companies:read', 'lfd_webhooks:read'])).toBe('/admin/acces-en-attente');
   });
 
   it("sans aucune de ses vues, ni l'entrée ni la porte", async () => {

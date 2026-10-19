@@ -41,12 +41,12 @@ import { PreviewVitrineNoticeQuery } from "../application/queries/preview-vitrin
 
 /**
  * **Les abonnés du webhook de la vitrine** au back-office, Gestion Boutique
- * (plan vitrine, décision 3 du §5), sous `shop_vitrine` : lire en `GET`,
+ * (plan vitrine, décision 3 du §5), sous `lfd_webhooks` : lire en `GET`,
  * écrire sinon. Le secret et la clé ne sortent qu'à la création et à la
  * rotation — aucune lecture ne les rend.
  */
 @Controller("admin/vitrine")
-@AdminSurface("shop_vitrine")
+@AdminSurface("lfd_webhooks")
 export class AdminVitrineController {
   constructor(
     private readonly commands: CommandBus,

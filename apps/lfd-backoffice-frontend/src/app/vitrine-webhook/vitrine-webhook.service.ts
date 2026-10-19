@@ -20,7 +20,7 @@ import { B2B_API_BASE } from '../api/api-config';
 /**
  * **Les abonnés du webhook de la vitrine** — l'agence du site vitrine et ses
  * envois (`documentation/webhooks/vitrine.md`), sous
- * `shop_vitrine`. Le secret et la clé ne reviennent qu'à la création et à la
+ * `lfd_webhooks`. Le secret et la clé ne reviennent qu'à la création et à la
  * rotation : aucune lecture ne les rend.
  */
 @Injectable({ providedIn: 'root' })

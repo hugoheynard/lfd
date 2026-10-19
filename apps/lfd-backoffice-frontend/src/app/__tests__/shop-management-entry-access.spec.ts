@@ -175,13 +175,26 @@ describe('App — Gestion Boutique', () => {
     expect(render(['lfc_loyalty:read']).querySelector(rail(link))).toBeNull();
   });
 
+  /** Les formules (2026-10-19, F2a) : leur droit seul les ouvre, dans les deux arbres. */
+  it('montre « Formules » sous shop_bundles:read, dans les deux arbres', () => {
+    const link = '/formules';
+    const entry = render(['shop_bundles:read']).querySelector(rail(link));
+    expect(entry?.getAttribute('label')).toBe('Formules');
+    expect(entry?.closest('fold-menu-section')?.getAttribute('label')).toBe('Gestion Boutique');
+    expect(
+      render(['shop_bundles:read'], true).querySelector(tile(link))?.getAttribute('label'),
+    ).toBe('Formules');
+    expect(render(['lfc_suggestions:read']).querySelector(rail(link))).toBeNull();
+    expect(render(['lfc_suggestions:read'], true).querySelector(tile(link))).toBeNull();
+  });
+
   /**
    * Parti en Admin le 2026-10-19 (Hugo) : plus aucune entrée de Gestion
    * Boutique ne mène au webhook, ni au rail ni aux tuiles, et son seul droit
    * ne fait plus paraître la section.
    */
   it('ne montre plus « Webhook vitrine » sous Gestion Boutique, dans aucun des deux arbres', () => {
-    for (const host of [render(['shop_vitrine:read']), render(['shop_vitrine:read'], true)]) {
+    for (const host of [render(['lfd_webhooks:read']), render(['lfd_webhooks:read'], true)]) {
       expect(host.querySelector('fold-menu-section[label="Gestion Boutique"]')).toBeNull();
       expect(host.querySelector('fold-nav-group[label="Gestion Boutique"]')).toBeNull();
       expect(host.querySelector('a[href="/webhook-vitrine"]')).toBeNull();
