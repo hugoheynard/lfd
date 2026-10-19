@@ -32,7 +32,7 @@ const languageQuerySchema = z
 
 /**
  * **Les lectures de l'agence du site vitrine** (plan
- * `documentation/webhooks/plan-webhook-vitrine.md`, W6 et S4) : après une
+ * `documentation/webhooks/vitrine.md` §6) : après une
  * notification, elle relit ici.
  *
  * `@Public()` parce que la vue l'est déjà (`GET /shop/catalogue`) : la clé

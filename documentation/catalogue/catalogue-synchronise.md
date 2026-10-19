@@ -126,7 +126,7 @@ voulus : zéro déclinaison est admis (une fiche inactive s'émet quand même), 
 la fiche porte statut, audience, manques et famille.
 
 **Les traductions** (lot des langues, 2026-10-18 —
-[`plan-webhook-vitrine.md`](../webhooks/plan-webhook-vitrine.md) §6) : le
+[`vitrine.md`](../webhooks/vitrine.md) §5) : le
 français reste dans `name` et `note` ; à côté, `nameTranslations` sur chaque
 déclinaison et sur la famille, `noteTranslations` sur la fiche, `{ en?, it? }`
 (`apps/lfd-api/src/pim/channels/b2b-platform/products/translations.ts:24`).

@@ -7,9 +7,9 @@
 
 ## Sortants — ce que nous envoyons
 
-| Webhook             | À qui                                 | État                                                | Doc                                                  |
-| ------------------- | ------------------------------------- | --------------------------------------------------- | ---------------------------------------------------- |
-| **Vitrine** (lot W) | l'agence web qui fait le site vitrine | ✅ bâti le 2026-10-18 — état et reste au §7 du plan | [`plan-webhook-vitrine.md`](plan-webhook-vitrine.md) |
+| Webhook             | À qui                                 | État                                                                                    | Doc                        |
+| ------------------- | ------------------------------------- | --------------------------------------------------------------------------------------- | -------------------------- |
+| **Vitrine** (lot W) | l'agence web qui fait le site vitrine | ✅ implémenté (2026-10-18, restes finis le 2026-10-19) — reste la recette avec l'agence | [`vitrine.md`](vitrine.md) |
 
 Le principe retenu : **notifier, puis laisser relire**. Le webhook ne porte
 qu'un signal (ce qui a changé) ; le contenu se relit par des routes que nous

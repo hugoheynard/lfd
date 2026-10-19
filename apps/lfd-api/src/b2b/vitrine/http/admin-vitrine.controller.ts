@@ -26,6 +26,7 @@ import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { CreateVitrineSubscriberCommand } from "../application/commands/create-vitrine-subscriber.command.js";
 import { ResendVitrineDeliveryCommand } from "../application/commands/resend-vitrine-delivery.command.js";
+import { ResumeVitrineNoticeCommand } from "../application/commands/resume-vitrine-notice.command.js";
 import { ResyncVitrineSubscriberCommand } from "../application/commands/resync-vitrine-subscriber.command.js";
 import { RotateVitrineCredentialsCommand } from "../application/commands/rotate-vitrine-credentials.command.js";
 import { SendVitrineTestCommand } from "../application/commands/send-vitrine-test.command.js";
@@ -179,6 +180,15 @@ export class AdminVitrineController {
       ),
     );
     return { id };
+  }
+
+  /** « Reprendre l'envoi » : les seuls destinataires restés « pas tentés ». */
+  @Post("notices/:id/resume")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async resumeNotice(@Param("id") id: string): Promise<void> {
+    await this.commands.execute<ResumeVitrineNoticeCommand, void>(
+      new ResumeVitrineNoticeCommand(id),
+    );
   }
 
   @Get("notices")

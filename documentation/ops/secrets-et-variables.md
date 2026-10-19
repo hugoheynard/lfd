@@ -150,7 +150,7 @@ alors par la boutique, rien d'autre ne casse. Changer l'étiquette a le même
 effet. Ne la tourner que sur fuite.
 
 **Elle scelle aussi le secret de signature des abonnés de la vitrine**
-(2026-10-18, [`plan-webhook-vitrine.md`](../webhooks/plan-webhook-vitrine.md)) :
+(2026-10-18, [`vitrine.md`](../webhooks/vitrine.md)) :
 une rotation le rend illisible, et chaque abonné doit être régénéré à l'écran
 — le geste est au [runbook](runbook.md) (« Le webhook de la vitrine »).
 

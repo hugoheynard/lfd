@@ -1,4 +1,4 @@
-import type { VitrineNoticeView } from "@lfd/contracts";
+import type { VitrineNoticeEntry } from "../domain/ports/vitrine-notice.reader.js";
 
 /** Une ligne `vitrine_notice_recipients`, telle que Prisma la rend. */
 interface VitrineNoticeRecipientRowShape {
@@ -19,11 +19,11 @@ export interface VitrineNoticeRecord {
   readonly recipients: readonly VitrineNoticeRecipientRowShape[];
 }
 
-/** Ligne → vue de l'écran ; le nom de l'abonné est celui d'aujourd'hui. */
+/** Ligne → entrée de l'écran ; le nom de l'abonné est celui d'aujourd'hui, l'auteur reste un id. */
 export function noticeToView(
   row: VitrineNoticeRecord,
   nameOf: ReadonlyMap<string, string>,
-): VitrineNoticeView {
+): VitrineNoticeEntry {
   return {
     id: row.id,
     authorStaffId: row.authorStaffId,

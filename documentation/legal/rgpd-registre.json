@@ -1717,7 +1717,7 @@
       "colonne": "public.vitrine_subscribers.contact_email",
       "personne": "tiers",
       "categorie": "coordonnees",
-      "finalite": "L'adresse de contact de l'agence abonnée au webhook de la vitrine, facultative et possiblement nominative : lui écrire les annonces de mise à jour (plan-webhook-vitrine.md §7).",
+      "finalite": "L'adresse de contact de l'agence abonnée au webhook de la vitrine, facultative et possiblement nominative : lui écrire les annonces de mise à jour (webhooks/vitrine.md §7).",
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": false
@@ -1726,7 +1726,7 @@
       "colonne": "public.vitrine_notice_recipients.contact_email",
       "personne": "tiers",
       "categorie": "coordonnees",
-      "finalite": "Copie de l'adresse de contact d'un abonné de la vitrine au moment d'une annonce : savoir à qui l'annonce a été écrite et si le fournisseur l'a acceptée (plan-webhook-vitrine.md §7).",
+      "finalite": "Copie de l'adresse de contact d'un abonné de la vitrine au moment d'une annonce : savoir à qui l'annonce a été écrite et si le fournisseur l'a acceptée (webhooks/vitrine.md §7).",
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": false
@@ -1735,7 +1735,7 @@
       "colonne": "public.vitrine_notices.author_staff_id",
       "personne": "staff",
       "categorie": "auteur-geste",
-      "finalite": "Tracer quel membre du staff a envoyé une annonce aux abonnés de la vitrine (plan-webhook-vitrine.md §7).",
+      "finalite": "Tracer quel membre du staff a envoyé une annonce aux abonnés de la vitrine (webhooks/vitrine.md §7).",
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": false

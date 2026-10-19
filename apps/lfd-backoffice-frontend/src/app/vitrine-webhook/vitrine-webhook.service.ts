@@ -19,7 +19,7 @@ import { B2B_API_BASE } from '../api/api-config';
 
 /**
  * **Les abonnés du webhook de la vitrine** — l'agence du site vitrine et ses
- * envois (`documentation/webhooks/plan-webhook-vitrine.md`), sous
+ * envois (`documentation/webhooks/vitrine.md`), sous
  * `shop_vitrine`. Le secret et la clé ne reviennent qu'à la création et à la
  * rotation : aucune lecture ne les rend.
  */
@@ -95,6 +95,13 @@ export class VitrineWebhookService {
     return firstValueFrom(
       this.http.post<VitrineNoticeSentView>(`${this.base}/notices`, payload),
     ).then((created) => created.id);
+  }
+
+  /** « Reprendre l'envoi » : n'écrit qu'aux destinataires restés « pas tentés ». */
+  resumeNotice(id: string): Promise<void> {
+    return firstValueFrom(
+      this.http.post<void>(`${this.base}/notices/${encodeURIComponent(id)}/resume`, null),
+    );
   }
 
   notices(): Promise<readonly VitrineNoticeView[]> {

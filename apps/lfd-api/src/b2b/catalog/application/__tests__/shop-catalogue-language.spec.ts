@@ -4,8 +4,8 @@ import { catalogItem } from "./sale-operations-doubles.js";
 
 /**
  * La vitrine dans une langue, et l'audience de ses articles (lot des langues,
- * 2026-10-18 — `documentation/webhooks/plan-webhook-vitrine.md` §5 points 5
- * et 7). Aucune date n'est comparée : la vente ne porte pas d'opération.
+ * 2026-10-18 — `documentation/webhooks/vitrine.md` §4 décisions 5
+ * et 7, §5). Aucune date n'est comparée : la vente ne porte pas d'opération.
  */
 
 const NOW = new Date(0);

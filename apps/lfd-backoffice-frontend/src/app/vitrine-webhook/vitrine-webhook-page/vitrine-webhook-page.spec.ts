@@ -54,6 +54,10 @@ class FakeApi {
     this.calls.push(`test:${id}`);
     return Promise.resolve();
   }
+  resumeNotice(id: string): Promise<void> {
+    this.calls.push(`resume:${id}`);
+    return Promise.resolve();
+  }
   setActive(id: string, active: boolean): Promise<void> {
     this.calls.push(`active:${id}:${String(active)}`);
     return Promise.resolve();
@@ -150,6 +154,7 @@ describe('VitrineWebhookPage', () => {
       {
         id: 'n1',
         authorStaffId: 'staff_1',
+        authorName: 'Inès Boutique',
         subject: 'Le catalogue d’automne',
         message: 'Bonjour',
         createdAt: '2026-10-18T08:00:00.000Z',
@@ -171,6 +176,49 @@ describe('VitrineWebhookPage', () => {
       'Accepté par l’envoi',
     );
     expect(root.textContent).toContain('pas qu’il');
+    expect(root.querySelector('[data-notice]')?.textContent).toContain('par Inès Boutique');
+    expect(root.querySelector('button[data-resume]')).toBeNull();
+  });
+
+  it('une annonce interrompue propose « Reprendre l’envoi », pour ses seuls pas tentés', async () => {
+    const api = new FakeApi();
+    api.subscribers = [subscriber({ contactEmail: 'web@agence.example' })];
+    api.noticeList = [
+      {
+        id: 'n2',
+        authorStaffId: 'staff_parti',
+        authorName: null,
+        subject: 'Coupée au milieu',
+        message: 'Bonjour',
+        createdAt: '2026-10-18T08:00:00.000Z',
+        recipients: [
+          {
+            subscriberId: 'sub_1',
+            subscriberName: 'Agence du site',
+            contactEmail: 'web@agence.example',
+            mailSent: true,
+            attemptedAt: '2026-10-18T08:00:01.000Z',
+          },
+          {
+            subscriberId: 'sub_2',
+            subscriberName: 'Autre agence',
+            contactEmail: 'autre@agence.example',
+            mailSent: null,
+            attemptedAt: null,
+          },
+        ],
+      },
+    ];
+    const root = await render(api);
+    expect(root.querySelector('[data-notice]')?.textContent).toContain('par staff_parti');
+    const resume = root.querySelector<HTMLButtonElement>('button[data-resume]');
+    expect(resume?.textContent).toContain('Reprendre l’envoi (1)');
+    resume?.click();
+    await settle();
+    expect(api.calls).toEqual(['resume:n2']);
+
+    const readOnly = await render(api, ['shop_vitrine:read']);
+    expect(readOnly.querySelector('button[data-resume]')).toBeNull();
   });
 
   it('sans l’écriture, pas de « Notifier les abonnés »', async () => {

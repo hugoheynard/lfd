@@ -369,7 +369,7 @@ export const staffResourceSchema = z.enum([
   /**
    * **Le webhook de la vitrine** — les abonnés (l'agence du site vitrine),
    * leurs cases, la rotation de leur secret et de leur clé, le journal des
-   * envois (`documentation/webhooks/plan-webhook-vitrine.md`, Hugo,
+   * envois (`documentation/webhooks/vitrine.md`, Hugo,
    * 2026-10-18). Un droit à lui, en Gestion Boutique. Il s'accorde à
    * l'écran ; la graine ne le donne qu'à l'administrateur.
    */

@@ -3,6 +3,7 @@ import { Module } from "@nestjs/common";
 import { OutboundModule } from "../../platform/outbound/outbound.module.js";
 import { CreateVitrineSubscriberHandler } from "./application/commands/create-vitrine-subscriber.handler.js";
 import { ResendVitrineDeliveryHandler } from "./application/commands/resend-vitrine-delivery.handler.js";
+import { ResumeVitrineNoticeHandler } from "./application/commands/resume-vitrine-notice.handler.js";
 import { ResyncVitrineSubscriberHandler } from "./application/commands/resync-vitrine-subscriber.handler.js";
 import { RotateVitrineCredentialsHandler } from "./application/commands/rotate-vitrine-credentials.handler.js";
 import { SendVitrineTestHandler } from "./application/commands/send-vitrine-test.handler.js";
@@ -19,6 +20,7 @@ import { ReadVitrineArticleHandler } from "./application/queries/read-vitrine-ar
 import { ReadVitrineCatalogueHandler } from "./application/queries/read-vitrine-catalogue.handler.js";
 import { ReadVitrineTextsHandler } from "./application/queries/read-vitrine-texts.handler.js";
 import { VitrineCredentialsMint } from "./application/services/vitrine-credentials.js";
+import { VitrineNoticeDispatcher } from "./application/services/vitrine-notice-dispatcher.js";
 import { VitrineRelay } from "./application/services/vitrine-relay.js";
 import { VitrineShowcaseLoader } from "./application/services/vitrine-showcase.loader.js";
 import { VitrineDeliveryReader } from "./domain/ports/vitrine-delivery.reader.js";
@@ -30,6 +32,7 @@ import { VitrineNoticeRepository } from "./domain/ports/vitrine-notice.repositor
 import { VitrineShowcaseSource } from "./domain/ports/vitrine-showcase.source.js";
 import { VitrineSubscriberReader } from "./domain/ports/vitrine-subscriber.reader.js";
 import { VitrineSubscriberRepository } from "./domain/ports/vitrine-subscriber.repository.js";
+import { VitrineSweepLease } from "./domain/ports/vitrine-sweep.lease.js";
 import { AdminVitrineController } from "./http/admin-vitrine.controller.js";
 import { VitrineSweepController } from "./http/vitrine-sweep.controller.js";
 import { VitrineController } from "./http/vitrine.controller.js";
@@ -42,10 +45,10 @@ import { PrismaVitrineNoticeRepository } from "./infrastructure/prisma-vitrine-n
 import { TemplateVitrineNoticeMailRenderer } from "./infrastructure/template-vitrine-notice-mail.renderer.js";
 import { PrismaVitrineSubscriberReader } from "./infrastructure/prisma-vitrine-subscriber.reader.js";
 import { PrismaVitrineSubscriberRepository } from "./infrastructure/prisma-vitrine-subscriber.repository.js";
+import { PrismaVitrineSweepLease } from "./infrastructure/prisma-vitrine-sweep.lease.js";
 
 /**
- * **Le webhook de la vitrine** (plan `documentation/webhooks/plan-webhook-vitrine.md`,
- * lot W) : les abonnés, le balayage par empreintes, le relais signé, et les
+ * **Le webhook de la vitrine** (doc `documentation/webhooks/vitrine.md`) : les abonnés, le balayage par empreintes, le relais signé, et les
  * lectures de l'agence.
  *
  * Il lit la boutique par ses lectures NOMMÉES, sur le bus (la vue publique,
@@ -61,12 +64,14 @@ import { PrismaVitrineSubscriberRepository } from "./infrastructure/prisma-vitri
     { provide: VitrineDeliveryRepository, useClass: PrismaVitrineDeliveryRepository },
     { provide: VitrineDeliveryReader, useClass: PrismaVitrineDeliveryReader },
     { provide: VitrineFingerprintStore, useClass: PrismaVitrineFingerprintStore },
+    { provide: VitrineSweepLease, useClass: PrismaVitrineSweepLease },
     { provide: VitrineShowcaseSource, useClass: BusVitrineShowcaseSource },
     { provide: VitrineNoticeRepository, useClass: PrismaVitrineNoticeRepository },
     { provide: VitrineNoticeReader, useClass: PrismaVitrineNoticeReader },
     { provide: VitrineNoticeMailRenderer, useClass: TemplateVitrineNoticeMailRenderer },
     VitrineCredentialsMint,
     VitrineRelay,
+    VitrineNoticeDispatcher,
     VitrineShowcaseLoader,
     CreateVitrineSubscriberHandler,
     RotateVitrineCredentialsHandler,
@@ -78,6 +83,7 @@ import { PrismaVitrineSubscriberRepository } from "./infrastructure/prisma-vitri
     ResendVitrineDeliveryHandler,
     SweepVitrineHandler,
     SendVitrineNoticeHandler,
+    ResumeVitrineNoticeHandler,
     PreviewVitrineNoticeHandler,
     ListVitrineNoticesHandler,
     ListVitrineSubscribersHandler,

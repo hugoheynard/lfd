@@ -7,7 +7,7 @@ import type { ShopItemView, ShopOperationView, ShopShelfView } from "./shop-cata
  * ── Le webhook de la VITRINE ─────────────────────────────────────────────────
  *
  * L'agence web qui fait le site vitrine est prévenue quand le catalogue publié
- * change, puis relit (`documentation/webhooks/plan-webhook-vitrine.md`, lot W,
+ * change, puis relit (`documentation/webhooks/vitrine.md`,
  * décisions de Hugo du 2026-10-18). Ce contrat ne valide que la **forme** :
  * l'URL https sans requête, le nom borné et les cases connues sont tenus par
  * l'agrégat `VitrineSubscriber` du commerce.
@@ -33,6 +33,7 @@ import type { ShopItemView, ShopOperationView, ShopShelfView } from "./shop-cata
  * - `POST /admin/vitrine/notices/preview` ← `VitrineNoticeDraftPayload` → `VitrineNoticePreviewView`
  * - `POST /admin/vitrine/notices` ← `SendVitrineNoticePayload` → `VitrineNoticeSentView` (« Notifier les abonnés »)
  * - `GET  /admin/vitrine/notices` → `VitrineNoticeView[]` (les dernières annonces)
+ * - `POST /admin/vitrine/notices/:id/resume` (« Reprendre l'envoi » : les destinataires pas encore tentés)
  */
 
 /**
@@ -126,6 +127,12 @@ export type VitrineDeliveryKind = "change" | "test";
 
 export interface VitrineDeliveryView {
   readonly id: string;
+  /**
+   * L'identifiant d'ENVOI — celui de l'en-tête `Vitrine-Delivery` que
+   * l'agence a reçu : stable d'un essai à l'autre, neuf quand la livraison a
+   * absorbé d'autres changements. C'est lui qu'on lui cite pour rapprocher.
+   */
+  readonly dispatchId: string;
   readonly kind: VitrineDeliveryKind;
   readonly sequence: number | null;
   readonly state: VitrineDeliveryState;
@@ -231,6 +238,11 @@ export interface VitrineNoticeView {
   readonly id: string;
   /** L'id du membre du staff qui l'a envoyée. */
   readonly authorStaffId: string;
+  /**
+   * « Prénom Nom » lu dans l'annuaire à la LECTURE (jamais recopié en base) ;
+   * `null` si l'id ne désigne plus personne — l'écran montre alors l'id.
+   */
+  readonly authorName: string | null;
   readonly subject: string;
   readonly message: string;
   readonly createdAt: string;

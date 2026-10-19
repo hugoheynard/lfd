@@ -785,9 +785,10 @@ procédure dans `documentation/ops/runbook.md`.
 ### Lot W — le webhook de la vitrine (décidé le 2026-10-15)
 
 > **Déplacé le 2026-10-18** dans
-> [`../webhooks/plan-webhook-vitrine.md`](../webhooks/plan-webhook-vitrine.md),
+> [`../webhooks/vitrine.md`](../webhooks/vitrine.md),
 > qui fait foi (Hugo : « rassemble tout ce qui peut concerner ça dans
-> documentation/webhooks »). Rien n'est bâti.
+> documentation/webhooks »). Rien n'était bâti ; il l'est depuis le
+> 2026-10-18, et ce document décrit désormais l'état.
 
 ### Lot D — le prix ne se décide plus sur la plateforme (décidé le 2026-10-15)
 

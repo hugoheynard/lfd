@@ -43,7 +43,9 @@ type LoadState = 'loading' | 'ready' | 'error';
 
 /**
  * **Le journal des envois** d'un abonné (W7) : livré, en attente, en échec —
- * et pourquoi. « Renvoyer » remet un envoi en attente ; « Tout renvoyer » lève
+ * et pourquoi. Chaque envoi montre son identifiant d'envoi — l'en-tête
+ * `Vitrine-Delivery` que l'agence a reçu — copiable, pour rapprocher ce
+ * qu'elle dit avoir reçu de ce qui est parti. « Renvoyer » remet un envoi en attente ; « Tout renvoyer » lève
  * l'échec et renvoie tout au prochain passage du cron (cinq minutes au plus).
  */
 @Component({
@@ -112,6 +114,20 @@ export class VitrineJournalPanel implements FoldPanelContent<VitrineJournalData>
       () => this.api.resync(this.data().subscriber.id),
       'Tout repartira en une notification au prochain passage, dans cinq minutes au plus.',
     );
+  }
+
+  /**
+   * Copie l'identifiant d'envoi. Un refus du navigateur (contexte non sûr,
+   * permission) l'affiche pour être copié à la main, comme les liens de
+   * paiement — il ne se perd pas.
+   */
+  protected async copyDispatch(delivery: VitrineDeliveryView): Promise<void> {
+    try {
+      await navigator.clipboard.writeText(delivery.dispatchId);
+      this.notice.set('Identifiant d’envoi copié.');
+    } catch {
+      this.notice.set(`Identifiant d’envoi à copier : ${delivery.dispatchId}`);
+    }
   }
 
   protected close(): void {

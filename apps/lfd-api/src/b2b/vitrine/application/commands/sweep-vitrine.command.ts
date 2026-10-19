@@ -7,6 +7,11 @@ export interface VitrineSweepReport {
   /** Les essais d'envoi faits à ce passage. */
   readonly attempted: number;
   readonly delivered: number;
+  /**
+   * Un autre balayage tenait le bail : celui-ci n'a RIEN fait (ni lecture, ni
+   * envoi) — un passage du cron a duré plus de cinq minutes.
+   */
+  readonly alreadyRunning: boolean;
 }
 
 /** Le balayage du cron `*\/5` : comparer les empreintes, puis livrer ce qui est dû. */

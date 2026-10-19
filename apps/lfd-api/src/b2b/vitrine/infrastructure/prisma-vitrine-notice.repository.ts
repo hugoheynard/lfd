@@ -5,7 +5,7 @@ import {
   type VitrineNoticeOpening,
   VitrineNoticeRepository,
 } from "../domain/ports/vitrine-notice.repository.js";
-import type { VitrineNotice } from "../domain/vitrine-notice.js";
+import { VitrineNotice } from "../domain/vitrine-notice.js";
 
 /** Adaptateur Prisma de l'écriture des annonces. */
 @Injectable()
@@ -42,15 +42,30 @@ export class PrismaVitrineNoticeRepository extends VitrineNoticeRepository {
     }
   }
 
+  async load(id: string): Promise<VitrineNotice | null> {
+    const row = await this.prisma.vitrineNotice.findUnique({
+      where: { id },
+      include: { recipients: { orderBy: { subscriberId: "asc" } } },
+    });
+    return row === null ? null : VitrineNotice.rehydrate(row);
+  }
+
+  /**
+   * Seuls les destinataires dont l'issue est connue s'écrivent, et seulement
+   * là où la base les tient encore « pas tentés » (`mail_sent IS NULL`) : une
+   * issue consignée par une reprise concurrente n'est pas écrasée.
+   */
   async save(notice: VitrineNotice): Promise<void> {
     const { id, recipients } = notice.toPersistence();
     await this.prisma.$transaction(
-      recipients.map((r) =>
-        this.prisma.vitrineNoticeRecipient.update({
-          where: { noticeId_subscriberId: { noticeId: id, subscriberId: r.subscriberId } },
-          data: { mailSent: r.mailSent, attemptedAt: r.attemptedAt },
-        }),
-      ),
+      recipients
+        .filter((r) => r.mailSent !== null)
+        .map((r) =>
+          this.prisma.vitrineNoticeRecipient.updateMany({
+            where: { noticeId: id, subscriberId: r.subscriberId, mailSent: null },
+            data: { mailSent: r.mailSent, attemptedAt: r.attemptedAt },
+          }),
+        ),
     );
   }
 }

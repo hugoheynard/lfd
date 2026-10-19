@@ -4,7 +4,7 @@ import { receivedFamilyOf, receivedProductOf } from "../catalog-fact-mapping.js"
 
 /**
  * **Les langues dans les faits du catalogue, côté commerce** (lot des
- * langues, 2026-10-18 — `documentation/webhooks/plan-webhook-vitrine.md` §6).
+ * langues, 2026-10-18 — `documentation/webhooks/vitrine.md` §5).
  *
  * Les payloads sont écrits À LA MAIN, tels qu'ils dorment en boîte d'envoi :
  * un fait émis avant le lot ne porte aucune traduction, et il doit rester

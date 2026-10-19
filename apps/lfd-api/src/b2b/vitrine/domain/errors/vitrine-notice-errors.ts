@@ -63,3 +63,13 @@ export class VitrineNoticeAttemptRecordedError extends BusinessError {
     );
   }
 }
+
+/** « Reprendre l'envoi » sur une annonce dont chaque destinataire a déjà son issue. */
+export class VitrineNoticeNothingToResumeError extends BusinessError {
+  constructor(id: string) {
+    super(
+      "vitrine.notice.nothing_to_resume",
+      `L'annonce ${id} n'a plus aucun destinataire en attente : chaque envoi est déjà consigné (accepté ou refusé). Pour réécrire à un abonné, composer une nouvelle annonce.`,
+    );
+  }
+}

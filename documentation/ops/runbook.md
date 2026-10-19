@@ -1060,7 +1060,7 @@ commande ne porte (un lien libre) sonne aussi la cloche, sans rien écrire.
 ## Le webhook de la vitrine — mise en service, abonné en échec, rotation de clé
 
 > Bâti le 2026-10-18 (lot W,
-> [`plan-webhook-vitrine.md`](../webhooks/plan-webhook-vitrine.md)). Écran :
+> [`vitrine.md`](../webhooks/vitrine.md)). Écran :
 > Gestion Boutique › **Webhook vitrine** (`/webhook-vitrine`), sous le droit
 > `shop_vitrine`.
 
@@ -1095,6 +1095,18 @@ abonné : « Régénérer le secret et la clé », transmettre les neufs à l'ag
 puis « Tout renvoyer » s'il est passé en échec. La clé de lecture, elle, est
 hachée et ne dépend pas de la clé de chiffrement — mais la régénération la
 remplace aussi : l'agence doit mettre à jour les deux.
+
+**Une annonce interrompue** (2026-10-19) : un redémarrage pendant « Notifier
+les abonnés » laisse des destinataires « Pas tenté » aux dernières annonces.
+Le geste : « Reprendre l'envoi » sur l'annonce — il n'écrit qu'à eux, sous la
+même clé Resend (un e-mail déjà accepté ne repart pas). Un destinataire
+« Non envoyé » n'est pas repris : lui écrire par une nouvelle annonce.
+
+**Un balayage « écarté »** dans les logs (`SweepVitrineHandler`, « le
+précédent passage tient encore le bail ») : deux passages du cron se sont
+chevauchés, le second n'a rien fait — c'est le bail qui joue son rôle. Répété
+à chaque passage, il dit qu'un balayage dure plus de cinq minutes : le
+mesurer. Un balayage tué en route libère le bail au bout de quinze minutes.
 
 ## Verrouiller les PDF des factures pour dix ans
 

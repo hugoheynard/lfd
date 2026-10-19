@@ -52,6 +52,20 @@
                 }
               </div>
             </fold-element-title>
+            <div class="vjp-dispatch" data-dispatch>
+              <span class="vjp-detail">Identifiant d’envoi (en-tête Vitrine-Delivery)</span>
+              <code class="vjp-dispatch-id">{{ delivery.dispatchId }}</code>
+              <button
+                foldButton
+                emphasis="soft"
+                size="sm"
+                type="button"
+                (click)="copyDispatch(delivery)"
+                data-copy-dispatch
+              >
+                Copier
+              </button>
+            </div>
             <p class="vjp-detail">
               {{ delivery.attempts }} essai(s)
               @if (delivery.lastError) {

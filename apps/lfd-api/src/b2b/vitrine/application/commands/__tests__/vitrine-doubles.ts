@@ -23,6 +23,7 @@ import {
   VitrineSubscriberReader,
 } from "../../../domain/ports/vitrine-subscriber.reader.js";
 import { VitrineSubscriberRepository } from "../../../domain/ports/vitrine-subscriber.repository.js";
+import { VitrineSweepLease } from "../../../domain/ports/vitrine-sweep.lease.js";
 import type { VitrineElementPrint } from "../../../domain/services/vitrine-fingerprints.js";
 import { hashVitrineReadKey } from "../../../domain/services/vitrine-read-key.js";
 import type { VitrineContents } from "../../../domain/vitrine-contents.js";
@@ -160,10 +161,14 @@ export class StaticShowcase extends VitrineShowcaseSource {
   view: ShopCatalogueView = catalogue();
   textsByKey: Readonly<Record<string, string>> = { "product.bestSeller": "Incontournable" };
   catalogueReads = 0;
+  /** La boutique ne répond pas : le balayage échoue en route. */
+  failing = false;
 
   catalogue(_language: ContentLocale): Promise<ShopCatalogueView> {
     this.catalogueReads += 1;
-    return Promise.resolve(this.view);
+    return this.failing
+      ? Promise.reject(new Error("boutique indisponible"))
+      : Promise.resolve(this.view);
   }
 
   texts(_language: ContentLocale): Promise<Readonly<Record<string, string>>> {
@@ -179,5 +184,27 @@ export class ScriptedPoster extends WebhookPoster {
   post(request: WebhookPost): Promise<WebhookPostOutcome> {
     this.received.push(request);
     return Promise.resolve(this.outcome);
+  }
+}
+
+/** Le bail en mémoire, avec la même sémantique que l'écriture conditionnée. */
+export class MemorySweepLease extends VitrineSweepLease {
+  held: { readonly token: string; readonly until: Date } | null = null;
+  releases = 0;
+
+  claim(token: string, until: Date, wallNow: Date): Promise<boolean> {
+    if (this.held !== null && this.held.until.getTime() >= wallNow.getTime()) {
+      return Promise.resolve(false);
+    }
+    this.held = { token, until };
+    return Promise.resolve(true);
+  }
+
+  release(token: string): Promise<void> {
+    if (this.held?.token === token) {
+      this.held = null;
+      this.releases += 1;
+    }
+    return Promise.resolve();
   }
 }

@@ -1,7 +1,7 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import type { VitrineDeliveryView } from '@lfd/contracts';
 import { FoldPanelRef } from 'fold-ng';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { VitrineWebhookService } from '../vitrine-webhook.service';
 import { VitrineJournalPanel, type VitrineJournalData } from './vitrine-journal-panel';
@@ -10,6 +10,7 @@ const NONE = { items: [], operations: [], shelves: [], texts: [] };
 
 const FAILED: VitrineDeliveryView = {
   id: 'd1',
+  dispatchId: 'disp_01JX',
   kind: 'change',
   sequence: 2,
   state: 'failed',
@@ -105,5 +106,41 @@ describe('VitrineJournalPanel', () => {
     const fixture = await boot({ ...DATA, canWrite: false });
     expect(host(fixture).querySelector('button[data-resend]')).toBeNull();
     expect(host(fixture).querySelector('button[data-resync]')).toBeNull();
+  });
+
+  describe('l’identifiant d’envoi', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('s’affiche sur chaque envoi, et se copie', async () => {
+      const copied: string[] = [];
+      vi.stubGlobal('navigator', {
+        clipboard: {
+          writeText: (text: string) => {
+            copied.push(text);
+            return Promise.resolve();
+          },
+        },
+      });
+      const fixture = await boot({ ...DATA, canWrite: false });
+      expect(host(fixture).querySelector('[data-dispatch]')?.textContent).toContain('disp_01JX');
+      host(fixture).querySelector<HTMLButtonElement>('button[data-copy-dispatch]')?.click();
+      await settle(fixture);
+      expect(copied).toEqual(['disp_01JX']);
+      expect(host(fixture).querySelector('[data-notice]')?.textContent).toContain('copié');
+    });
+
+    it('un refus du navigateur l’affiche pour être copié à la main', async () => {
+      vi.stubGlobal('navigator', {
+        clipboard: { writeText: () => Promise.reject(new Error('refusé')) },
+      });
+      const fixture = await boot();
+      host(fixture).querySelector<HTMLButtonElement>('button[data-copy-dispatch]')?.click();
+      await settle(fixture);
+      expect(host(fixture).querySelector('[data-notice]')?.textContent).toContain(
+        'Identifiant d’envoi à copier : disp_01JX',
+      );
+    });
   });
 });

@@ -1,7 +1,13 @@
-import type { VitrineSubscriberView } from '@lfd/contracts';
+import type { VitrineNoticeView, VitrineSubscriberView } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
-import { noticeOutcome, noticeSelection, vitrineNoticeIssue } from '../vitrine-notice-format';
+import {
+  noticeAuthor,
+  noticeOutcome,
+  noticeSelection,
+  unattemptedCount,
+  vitrineNoticeIssue,
+} from '../vitrine-notice-format';
 
 const sub = (id: string, contactEmail: string | null): VitrineSubscriberView => ({
   id,
@@ -40,5 +46,50 @@ describe('vitrine-notice-format', () => {
       'refused',
       'pending',
     ]);
+  });
+});
+
+const notice = (overrides: Partial<VitrineNoticeView> = {}): VitrineNoticeView => ({
+  id: 'n1',
+  authorStaffId: 'staff_1',
+  authorName: 'Inès Boutique',
+  subject: 'o',
+  message: 'm',
+  createdAt: '2026-10-18T08:00:00.000Z',
+  recipients: [
+    {
+      subscriberId: 'a',
+      subscriberName: 'a',
+      contactEmail: 'a@x.fr',
+      mailSent: true,
+      attemptedAt: null,
+    },
+    {
+      subscriberId: 'b',
+      subscriberName: 'b',
+      contactEmail: 'b@x.fr',
+      mailSent: false,
+      attemptedAt: null,
+    },
+    {
+      subscriberId: 'c',
+      subscriberName: 'c',
+      contactEmail: 'c@x.fr',
+      mailSent: null,
+      attemptedAt: null,
+    },
+  ],
+  ...overrides,
+});
+
+describe('une annonce au journal', () => {
+  it('nomme l’auteur, et retombe sur son id quand l’annuaire ne le connaît plus', () => {
+    expect(noticeAuthor(notice())).toBe('Inès Boutique');
+    expect(noticeAuthor(notice({ authorName: null }))).toBe('staff_1');
+  });
+
+  it('ne compte à reprendre que les pas tentés — ni l’accepté, ni le refusé', () => {
+    expect(unattemptedCount(notice())).toBe(1);
+    expect(unattemptedCount(notice({ recipients: [] }))).toBe(0);
   });
 });

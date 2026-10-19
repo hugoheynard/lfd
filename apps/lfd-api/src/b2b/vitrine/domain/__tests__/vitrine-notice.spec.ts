@@ -8,6 +8,7 @@ import {
   VitrineNoticeAttemptRecordedError,
   VitrineNoticeMessageInvalidError,
   VitrineNoticeNoRecipientError,
+  VitrineNoticeNothingToResumeError,
   VitrineNoticeRecipientWithoutContactError,
   VitrineNoticeSubjectInvalidError,
 } from "../errors/vitrine-notice-errors.js";
@@ -129,6 +130,14 @@ describe("VitrineNotice", () => {
     expect(n.toPersistence().recipients[0]).toMatchObject({ mailSent: true, attemptedAt: LATER });
     expect(n.unattempted.map((r) => r.subscriberId)).toEqual(["s3"]);
     expect(() => n.recordAttempt("s1", false, LATER)).toThrow(VitrineNoticeAttemptRecordedError);
+  });
+
+  it("une reprise ne rend que les pas tentés — ni l'accepté, ni le refusé", () => {
+    const n = notice();
+    n.recordAttempt("s1", true, LATER);
+    expect(n.resumption().map((r) => r.subscriberId)).toEqual(["s3"]);
+    n.recordAttempt("s3", false, LATER);
+    expect(() => n.resumption()).toThrow(VitrineNoticeNothingToResumeError);
   });
 
   it("refuse de consigner pour qui n'est pas destinataire", () => {

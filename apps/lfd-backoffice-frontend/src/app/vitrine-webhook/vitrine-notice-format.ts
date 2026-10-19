@@ -1,6 +1,7 @@
 import {
   VITRINE_NOTICE_MESSAGE_MAX_LENGTH,
   VITRINE_NOTICE_SUBJECT_MAX_LENGTH,
+  type VitrineNoticeView,
   type VitrineSubscriberView,
 } from '@lfd/contracts';
 import type { FoldBadgeVariant } from 'fold-ng';
@@ -65,3 +66,13 @@ export const NOTICE_OUTCOME_VARIANTS: Readonly<Record<NoticeOutcome, FoldBadgeVa
   refused: 'alert',
   pending: 'warning',
 };
+
+/** L'auteur par son nom — ou par son id quand l'annuaire ne le connaît plus. */
+export function noticeAuthor(notice: VitrineNoticeView): string {
+  return notice.authorName ?? notice.authorStaffId;
+}
+
+/** Combien de destinataires restent « pas tentés » : ce que « Reprendre l'envoi » reprendrait. */
+export function unattemptedCount(notice: VitrineNoticeView): number {
+  return notice.recipients.filter((recipient) => recipient.mailSent === null).length;
+}

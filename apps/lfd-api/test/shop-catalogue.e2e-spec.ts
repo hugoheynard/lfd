@@ -125,7 +125,7 @@ describe("la vitrine publique", () => {
     expect(Object.keys(body).sort()).toEqual(["items", "operations", "shelves"]);
     expect(Object.keys(body.items[0] ?? {}).sort()).toEqual([
       // ⚠️ **Un élargissement ASSUMÉ** (2026-10-18, Hugo, option a de B1 —
-      // `documentation/webhooks/plan-webhook-vitrine.md` §5 point 5) : à qui
+      // `documentation/webhooks/vitrine.md` §4 décision 5) : à qui
       // l'article se vend, `public` ou `both` sur cette route — « aussi pour
       // les professionnels ». Rien que le rayon pro ne montre déjà.
       "audience",

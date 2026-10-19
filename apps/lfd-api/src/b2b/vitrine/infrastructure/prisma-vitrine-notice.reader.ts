@@ -1,8 +1,10 @@
-import type { VitrineNoticeView } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
-import { VitrineNoticeReader } from "../domain/ports/vitrine-notice.reader.js";
+import {
+  type VitrineNoticeEntry,
+  VitrineNoticeReader,
+} from "../domain/ports/vitrine-notice.reader.js";
 import type { VitrineNoticeCandidate } from "../domain/vitrine-notice-audience.js";
 import { noticeToView } from "./vitrine-notice.mapper.js";
 
@@ -21,7 +23,7 @@ export class PrismaVitrineNoticeReader extends VitrineNoticeReader {
     return rows.map((r) => ({ subscriberId: r.id, name: r.name, contactEmail: r.contactEmail }));
   }
 
-  async recent(limit: number): Promise<readonly VitrineNoticeView[]> {
+  async recent(limit: number): Promise<readonly VitrineNoticeEntry[]> {
     const rows = await this.prisma.vitrineNotice.findMany({
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: limit,

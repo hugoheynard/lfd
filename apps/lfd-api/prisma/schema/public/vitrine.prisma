@@ -1,5 +1,5 @@
 /// **Les abonnés de la vitrine** — ceux qu'on prévient quand le catalogue
-/// publié change (`documentation/webhooks/plan-webhook-vitrine.md`, lot W,
+/// publié change (`documentation/webhooks/vitrine.md`, lot W,
 /// 2026-10-18). L'agrégat `VitrineSubscriber` de `b2b/vitrine` en est le seul
 /// écrivain.
 ///
@@ -156,5 +156,22 @@ model VitrineNoticeRecipient {
 
   @@id([noticeId, subscriberId])
   @@map("vitrine_notice_recipients")
+  @@schema("public")
+}
+
+/// **Le bail du balayage** (`documentation/webhooks/vitrine.md`, 2026-10-19) :
+/// une ligne par balayage nommé, prise par une seule écriture conditionnée.
+/// Deux passages du cron qui se chevauchent (un balayage de plus de cinq
+/// minutes) ne livrent pas deux fois : le second trouve le bail tenu et sort
+/// sans rien faire. Un bail échu (processus tué) se reprend de lui-même.
+model VitrineSweepLease {
+  /// `sweep` — le seul balayage aujourd'hui.
+  name         String    @id
+  /// Le jeton du passage qui tient le bail ; seul lui le rend.
+  claimToken   String?   @map("claim_token")
+  /// `NULL` : libre. Échu au mur (`WallClock`) : libre aussi.
+  claimedUntil DateTime? @map("claimed_until") @db.Timestamptz(3)
+
+  @@map("vitrine_sweep_leases")
   @@schema("public")
 }

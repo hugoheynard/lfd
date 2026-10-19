@@ -18,7 +18,7 @@
 
 /**
  * **Les langues de la vue** (lot des langues, 2026-10-18 —
- * `documentation/webhooks/plan-webhook-vitrine.md` §6).
+ * `documentation/webhooks/vitrine.md` §5).
  *
  * `GET /shop/catalogue?lang=en` rend `name` et `note` des articles et `name`
  * des rayons dans la langue demandée, **en français quand le référentiel ne
@@ -181,7 +181,7 @@ export interface ShopItemView {
   readonly isFeatured: boolean;
   /**
    * **À qui l'article se vend**, tel que le référentiel le dit (Hugo,
-   * 2026-10-18, option a de B1 — `plan-webhook-vitrine.md` §5 point 5) :
+   * 2026-10-18, option a de B1 — `vitrine.md` §4 décision 5) :
    * `both` se lit « aussi pour les professionnels ».
    *
    * 🔴 La route publique ne rend que `public` ou `both` : un article réservé

@@ -1,13 +1,14 @@
 /**
- * E2E des **annonces aux abonnés de la vitrine** (plan
- * `documentation/webhooks/plan-webhook-vitrine.md` §7, Hugo 2026-10-18) — vrai
+ * E2E des **annonces aux abonnés de la vitrine** (doc
+ * `documentation/webhooks/vitrine.md`, Hugo 2026-10-18 et 2026-10-19) — vrai
  * Postgres, mailer doublé (le seul tiers).
  *
  * Ce que seul ce niveau prouve : la clé d'idempotence tenue par l'index
  * unique (un double clic n'écrit qu'une annonce et n'envoie qu'une fois), un
  * e-mail par adresse sans aucune autre en copie, l'aperçu qui n'écrit rien,
  * le journal relu à l'écran avec l'auteur et l'issue par destinataire, et le
- * refus d'un abonné sans contact.
+ * refus d'un abonné sans contact ; l'auteur nommé par l'annuaire ; la
+ * reprise d'une annonce interrompue, qui n'écrit qu'aux pas tentés.
  */
 import type {
   VitrineCredentialsView,
@@ -114,6 +115,7 @@ describe("annoncer aux abonnés", () => {
     expect(others).toHaveLength(0);
     expect(notice?.id).toBe(id);
     expect(notice?.authorStaffId).not.toBe("");
+    expect(notice?.authorName).toBe("Opérateur E2E");
     expect(notice?.recipients).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ subscriberId: first, mailSent: true }),
@@ -139,5 +141,47 @@ describe("annoncer aux abonnés", () => {
       .post("/admin/vitrine/notices")
       .send({ ...draft, subscriberIds: null, idempotencyKey: "abc" })
       .expect(400);
+  });
+});
+
+describe("reprendre l'envoi d'une annonce interrompue", () => {
+  /**
+   * Régression (2026-10-19) : un envoi coupé au milieu laissait des
+   * destinataires « pas tentés », sans geste pour les relancer.
+   *
+   * L'interruption (processus tué entre deux e-mails) ne se produit pas par
+   * une route : on remet en base un destinataire à « pas tenté », l'état
+   * exact qu'elle laisse.
+   */
+  it("n'écrit qu'aux pas tentés, sous la même clé, puis refuse quand il n'en reste aucun", async () => {
+    await subscribe("Agence", "web@agence.fr");
+    const cut = await subscribe("Coupée", "coupee@agence.fr");
+    const id = jsonBody<{ id: string }>(
+      await staff()
+        .post("/admin/vitrine/notices")
+        .send({ ...draft, subscriberIds: null, idempotencyKey: KEY })
+        .expect(201),
+    ).id;
+    await ctx.prisma.vitrineNoticeRecipient.update({
+      where: { noticeId_subscriberId: { noticeId: id, subscriberId: cut } },
+      data: { mailSent: null, attemptedAt: null },
+    });
+    sentMails.splice(0);
+
+    await staff().post(`/admin/vitrine/notices/${id}/resume`).expect(204);
+
+    expect(sentMails.map((m) => [m.to, m.idempotencyKey])).toEqual([
+      ["coupee@agence.fr", `vitrine-notice:${id}:${cut}`],
+    ]);
+    const [notice] = await notices();
+    expect(notice?.recipients.every((r) => r.mailSent === true)).toBe(true);
+
+    const refused = await staff().post(`/admin/vitrine/notices/${id}/resume`).expect(409);
+    expect(jsonBody<{ code: string }>(refused).code).toBe("vitrine.notice.nothing_to_resume");
+    expect(sentMails).toHaveLength(1);
+  });
+
+  it("une annonce inconnue répond 404", async () => {
+    await staff().post("/admin/vitrine/notices/absente/resume").expect(404);
   });
 });

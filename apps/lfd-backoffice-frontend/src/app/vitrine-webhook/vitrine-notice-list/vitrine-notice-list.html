@@ -8,10 +8,24 @@
       <fold-element-title
         variant="title"
         [title]="notice.subject"
-        [subtitle]="
-          (notice.createdAt | date: 'dd/MM/yyyy HH:mm') + ' — par ' + notice.authorStaffId
-        "
-      />
+        [subtitle]="(notice.createdAt | date: 'dd/MM/yyyy HH:mm') + ' — par ' + author(notice)"
+      >
+        @if (canWrite() && unattempted(notice) > 0) {
+          <button
+            titleAction
+            foldButton
+            emphasis="outline"
+            size="sm"
+            type="button"
+            [loading]="busy() === notice.id"
+            [disabled]="busy() !== null"
+            (click)="resume.emit(notice)"
+            data-resume
+          >
+            Reprendre l’envoi ({{ unattempted(notice) }})
+          </button>
+        }
+      </fold-element-title>
       <p class="vnl-message">{{ notice.message }}</p>
       <ul class="vnl-recipients">
         @for (recipient of notice.recipients; track recipient.subscriberId) {

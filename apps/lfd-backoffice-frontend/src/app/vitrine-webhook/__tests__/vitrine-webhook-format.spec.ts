@@ -8,6 +8,7 @@ const NONE = { items: [], operations: [], shelves: [], texts: [] };
 function delivery(overrides: Partial<VitrineDeliveryView> = {}): VitrineDeliveryView {
   return {
     id: 'd1',
+    dispatchId: 'disp_1',
     kind: 'change',
     sequence: 3,
     state: 'delivered',

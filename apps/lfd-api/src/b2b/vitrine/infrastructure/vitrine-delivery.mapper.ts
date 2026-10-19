@@ -40,6 +40,7 @@ export function deliveryToView(row: VitrineDeliveryRowShape): VitrineDeliveryVie
   const { changed, removed } = record.changes.toShape();
   return {
     id: record.id,
+    dispatchId: record.dispatchId,
     kind: record.kind,
     sequence: record.sequence,
     state: record.state,

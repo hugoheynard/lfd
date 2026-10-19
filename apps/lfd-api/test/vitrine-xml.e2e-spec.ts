@@ -1,6 +1,6 @@
 /**
  * E2E du **XML de la vitrine** (Hugo, 2026-10-18 — plan
- * `documentation/webhooks/plan-webhook-vitrine.md` §5 point 4) : les trois lectures
+ * `documentation/webhooks/vitrine.md` §4 décision 4) : les trois lectures
  * servent la MÊME ressource en XML, et `GET /vitrine/schema.xsd` la décrit.
  *
  * Ce que seul ce niveau prouve : la négociation réelle (en-tête, paramètre,

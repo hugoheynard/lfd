@@ -5,16 +5,18 @@ import {
   retryDelayMs,
 } from "../../../../../platform/outbox/retry-policy.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
+import { FixedWallClock } from "../../../../../platform/time/fixed-wall-clock.js";
 import { verifyVitrineSignature } from "../../../domain/services/vitrine-signature.js";
 import { catalogue, item } from "../../../domain/__tests__/vitrine-fixtures.js";
 import { VitrineSubscriber } from "../../../domain/vitrine-subscriber.js";
 import { VitrineRelay } from "../../services/vitrine-relay.js";
 import { VitrineShowcaseLoader } from "../../services/vitrine-showcase.loader.js";
-import { SweepVitrineHandler } from "../sweep-vitrine.handler.js";
+import { SweepVitrineHandler, VITRINE_SWEEP_LEASE_MS } from "../sweep-vitrine.handler.js";
 import {
   MemoryDeliveries,
   MemoryPrints,
   MemorySubscribers,
+  MemorySweepLease,
   ScriptedPoster,
   StaticShowcase,
   testCipher,
@@ -32,6 +34,8 @@ function world(...subscribers: VitrineSubscriber[]) {
   const prints = new MemoryPrints();
   const shop = new StaticShowcase();
   const poster = new ScriptedPoster();
+  const lease = new MemorySweepLease();
+  const wall = new FixedWallClock(START);
   const sweep = new SweepVitrineHandler(
     store,
     deliveries,
@@ -41,8 +45,10 @@ function world(...subscribers: VitrineSubscriber[]) {
     new FixedIdGenerator("d"),
     clock,
     new DirectUnitOfWork(),
+    lease,
+    wall,
   );
-  return { clock, cipher, store, deliveries, prints, shop, poster, sweep };
+  return { clock, cipher, store, deliveries, prints, shop, poster, sweep, lease, wall };
 }
 
 function declared(cipher = testCipher(), id = "sub_agence") {
@@ -68,6 +74,7 @@ describe("le balayage de la vitrine", () => {
       notified: 0,
       attempted: 0,
       delivered: 0,
+      alreadyRunning: false,
     });
     expect(shop.catalogueReads).toBe(0);
   });
@@ -172,5 +179,52 @@ describe("le balayage de la vitrine", () => {
     await sweep.execute();
     expect(poster.received).toHaveLength(0);
     expect(deliveries.all()[0]?.toPersistence().lastError).toContain("régénérer");
+  });
+});
+
+describe("le bail du balayage", () => {
+  /**
+   * Régression (2026-10-19) : deux passages du cron qui se chevauchaient (un
+   * balayage de plus de cinq minutes) postaient deux fois la même livraison.
+   */
+  it("deux balayages qui se chevauchent ne livrent qu'une fois : le second sort et le dit", async () => {
+    const { sweep, poster, shop } = world(declared().subscriber);
+    const reports = await Promise.all([sweep.execute(), sweep.execute()]);
+
+    expect(poster.received).toHaveLength(1);
+    expect(shop.catalogueReads).toBe(3);
+    expect(reports).toContainEqual({
+      subscribers: 0,
+      notified: 0,
+      attempted: 0,
+      delivered: 0,
+      alreadyRunning: true,
+    });
+    expect(reports).toContainEqual(
+      expect.objectContaining({ delivered: 1, alreadyRunning: false }),
+    );
+  });
+
+  it("rend le bail à la fin : le passage suivant balaie", async () => {
+    const { sweep, lease } = world(declared().subscriber);
+    await sweep.execute();
+    expect(lease.held).toBeNull();
+    expect(await sweep.execute()).toMatchObject({ alreadyRunning: false });
+  });
+
+  it("rend le bail même quand le balayage échoue", async () => {
+    const { sweep, lease, shop } = world(declared().subscriber);
+    shop.failing = true;
+    await expect(sweep.execute()).rejects.toThrow();
+    expect(lease.held).toBeNull();
+    expect(lease.releases).toBe(1);
+  });
+
+  it("un bail échu (balayage tué en route) se reprend, mesuré au mur", async () => {
+    const { sweep, lease, wall } = world(declared().subscriber);
+    lease.held = { token: "mort", until: new Date(START.getTime() + VITRINE_SWEEP_LEASE_MS) };
+    expect(await sweep.execute()).toMatchObject({ alreadyRunning: true });
+    wall.advanceMs(VITRINE_SWEEP_LEASE_MS + 1);
+    expect(await sweep.execute()).toMatchObject({ alreadyRunning: false, notified: 1 });
   });
 });

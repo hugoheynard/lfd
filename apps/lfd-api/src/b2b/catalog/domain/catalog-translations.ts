@@ -12,7 +12,7 @@ export type TranslatedLanguage = Exclude<ContentLocale, typeof CATALOG_SOURCE_LA
 
 /**
  * **Les traductions d'un texte reçu du référentiel** (lot des langues,
- * 2026-10-18 — `documentation/webhooks/plan-webhook-vitrine.md` §6) : une
+ * 2026-10-18 — `documentation/webhooks/vitrine.md` §5) : une
  * entrée par langue traduite, la source restant dans le champ qu'elle a
  * toujours occupé. Une langue absente n'a pas d'entrée.
  */

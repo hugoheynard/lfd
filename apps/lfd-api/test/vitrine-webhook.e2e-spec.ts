@@ -1,6 +1,6 @@
 /**
- * E2E du **webhook de la vitrine** (plan `documentation/webhooks/plan-webhook-vitrine.md`,
- * lot W, 2026-10-18) — vrai Postgres, vraie vue publique, vraie signature.
+ * E2E du **webhook de la vitrine** (doc `documentation/webhooks/vitrine.md`,
+ * 2026-10-18) — vrai Postgres, vraie vue publique, vraie signature.
  *
  * Ce que seul ce niveau prouve :
  *
@@ -10,6 +10,8 @@
  *   fenêtre se détecte ;
  * - une agence en panne : UNE livraison en vol, puis l'abonné « en échec »,
  *   plus rien ne part, et « tout renvoyer » resynchronise ;
+ * - deux balayages qui se chevauchent ne livrent qu'une fois (le bail) ;
+ * - le journal montre l'identifiant d'envoi que l'agence a reçu ;
  * - sur la route `/vitrine` ELLE-MÊME : jamais un prix pro, un article pro, un
  *   masqué au public, une mise en avant pro ; les cases décochées retirent.
  *
@@ -56,6 +58,8 @@ interface Received {
 class AgencyServer {
   readonly received: Received[] = [];
   status = 204;
+  /** Une agence lente : le temps de faire chevaucher deux balayages. */
+  delayMs = 0;
   private server: Server | null = null;
 
   async start(): Promise<void> {
@@ -67,8 +71,10 @@ class AgencyServer {
           body: Buffer.concat(chunks).toString("utf8"),
           headers: request.headers,
         });
-        response.statusCode = this.status;
-        response.end();
+        setTimeout(() => {
+          response.statusCode = this.status;
+          response.end();
+        }, this.delayMs);
       });
     });
     await new Promise<void>((resolve) => this.server?.listen(0, "127.0.0.1", resolve));
@@ -135,6 +141,7 @@ beforeEach(async () => {
   await ctx.prisma.catalogCategory.deleteMany();
   agency.received.splice(0);
   agency.status = 204;
+  agency.delayMs = 0;
 });
 
 const ALL: readonly VitrineContent[] = ["catalogue", "operations", "texts", "featured"];
@@ -161,6 +168,16 @@ async function sweep(): Promise<void> {
     .post("/admin/vitrine/sweep")
     .set("x-lfc-recompute-token", TEST_RECOMPUTE_TOKEN)
     .expect(200);
+}
+
+async function sweepReport(): Promise<{ readonly alreadyRunning: boolean }> {
+  return jsonBody<{ readonly alreadyRunning: boolean }>(
+    await ctx
+      .http()
+      .post("/admin/vitrine/sweep")
+      .set("x-lfc-recompute-token", TEST_RECOMPUTE_TOKEN)
+      .expect(200),
+  );
 }
 
 async function journal(id: string): Promise<readonly VitrineDeliveryView[]> {
@@ -221,7 +238,10 @@ describe("de la création à la notification signée", () => {
         nowSeconds: nowSeconds() + 6 * 60,
       }),
     ).toBe("stale");
-    expect((await journal(credentials.id))[0]).toMatchObject({ state: "delivered", sequence: 1 });
+    const [delivered] = await journal(credentials.id);
+    expect(delivered).toMatchObject({ state: "delivered", sequence: 1 });
+    // L'identifiant d'envoi du journal est celui que l'agence a reçu.
+    expect(delivered?.dispatchId).toBe(sent?.headers["vitrine-delivery"]);
 
     // Rien n'a changé : le balayage suivant se tait.
     await sweep();
@@ -243,6 +263,25 @@ describe("de la création à la notification signée", () => {
       .send({ name: "A", endpointUrl: "https://agence.e2e.test/hook?token=x", contents: ALL })
       .expect(400);
     expect(jsonBody<{ code: string }>(refusal).code).toBe("vitrine.endpoint.carries_secret");
+  });
+});
+
+describe("le bail du balayage", () => {
+  /**
+   * Régression (2026-10-19) : deux passages du cron qui se chevauchaient (un
+   * balayage de plus de cinq minutes) postaient deux fois la même livraison.
+   */
+  it("deux balayages qui se chevauchent ne livrent qu'une fois : le second sort et le dit", async () => {
+    await push([{ sku: "VIE-001", priceMillicents: 140_000 }]);
+    await subscribe();
+    agency.delayMs = 400;
+
+    const reports = await Promise.all([sweepReport(), sweepReport()]);
+
+    expect(agency.received).toHaveLength(1);
+    expect(reports.map((report) => report.alreadyRunning).sort()).toEqual([false, true]);
+    // Le bail est rendu : le passage suivant balaie.
+    expect((await sweepReport()).alreadyRunning).toBe(false);
   });
 });
 

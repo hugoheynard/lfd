@@ -1,11 +1,14 @@
+import { Logger } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { Clock } from "../../../../platform/time/clock.js";
+import { WallClock } from "../../../../platform/time/wall-clock.js";
 import { VitrineDeliveryRepository } from "../../domain/ports/vitrine-delivery.repository.js";
 import { VitrineFingerprintStore } from "../../domain/ports/vitrine-fingerprint.store.js";
 import { VitrineSubscriberRepository } from "../../domain/ports/vitrine-subscriber.repository.js";
+import { VitrineSweepLease } from "../../domain/ports/vitrine-sweep.lease.js";
 import {
   compareVitrinePrints,
   vitrineKindsFor,
@@ -21,7 +24,20 @@ import { SweepVitrineCommand, type VitrineSweepReport } from "./sweep-vitrine.co
 /** Les essais d'un passage : cinq secondes au plus chacun, le cron repasse dans cinq minutes. */
 export const VITRINE_RELAY_BATCH = 20;
 
-const NOTHING: VitrineSweepReport = { subscribers: 0, notified: 0, attempted: 0, delivered: 0 };
+/**
+ * La durée du bail : bien au-delà d'un passage ordinaire (vingt essais de
+ * cinq secondes au plus, trois lectures du catalogue). Un balayage tué en
+ * route libère la place à son échéance.
+ */
+export const VITRINE_SWEEP_LEASE_MS = 15 * 60 * 1000;
+
+const NOTHING: VitrineSweepReport = {
+  subscribers: 0,
+  notified: 0,
+  attempted: 0,
+  delivered: 0,
+  alreadyRunning: false,
+};
 
 /**
  * **Le balayage de la vitrine** (W3′, B3, S3), au cron `*\/5` du Worker.
@@ -33,6 +49,11 @@ const NOTHING: VitrineSweepReport = { subscribers: 0, notified: 0, attempted: 0,
  *    qui attend encore (une seule en vol) — et les empreintes avancent.
  * 4. Les livraisons dues partent, signées ; épuisées, l'abonné passe en échec.
  *
+ * 🔴 **Sous bail** (2026-10-19) : deux passages du cron qui se chevauchent
+ * posteraient deux fois la même livraison. Le second trouve le bail tenu,
+ * sort sans rien lire ni envoyer, et le dit (`alreadyRunning`, log). Le bail
+ * se mesure au `WallClock`, jamais au `Clock` gelé à l'ingress.
+ *
  * @sans-journal un balayage technique ; ses effets se lisent au journal des
  * envois de l'écran.
  */
@@ -41,6 +62,8 @@ export class SweepVitrineHandler implements ICommandHandler<
   SweepVitrineCommand,
   VitrineSweepReport
 > {
+  private readonly logger = new Logger(SweepVitrineHandler.name);
+
   constructor(
     private readonly subscribers: VitrineSubscriberRepository,
     private readonly deliveries: VitrineDeliveryRepository,
@@ -50,9 +73,28 @@ export class SweepVitrineHandler implements ICommandHandler<
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
+    private readonly lease: VitrineSweepLease,
+    private readonly wall: WallClock,
   ) {}
 
   async execute(): Promise<VitrineSweepReport> {
+    const token = this.ids.next();
+    const wallNow = this.wall.elapsedNow();
+    const until = new Date(wallNow.getTime() + VITRINE_SWEEP_LEASE_MS);
+    if (!(await this.lease.claim(token, until, wallNow))) {
+      this.logger.warn(
+        "Balayage de la vitrine écarté : le précédent passage tient encore le bail, il livrera seul.",
+      );
+      return { ...NOTHING, alreadyRunning: true };
+    }
+    try {
+      return await this.sweep();
+    } finally {
+      await this.lease.release(token);
+    }
+  }
+
+  private async sweep(): Promise<VitrineSweepReport> {
     const subscribers = await this.subscribers.listDeliverable();
     if (subscribers.length === 0) {
       return NOTHING;
@@ -65,7 +107,7 @@ export class SweepVitrineHandler implements ICommandHandler<
       }
     }
     const relayed = await this.relayDue(subscribers);
-    return { subscribers: subscribers.length, notified, ...relayed };
+    return { subscribers: subscribers.length, notified, ...relayed, alreadyRunning: false };
   }
 
   private compare(subscriber: VitrineSubscriber, showcase: VitrineShowcase): Promise<boolean> {

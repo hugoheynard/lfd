@@ -242,7 +242,7 @@ model CatalogItem {
   note String?
 
   /// **Les traductions du nom et de la ligne** (lot des langues, 2026-10-18 —
-  /// `documentation/webhooks/plan-webhook-vitrine.md` §6) : `{ "en": …, "it": … }`,
+  /// `documentation/webhooks/vitrine.md` §5) : `{ "en": …, "it": … }`,
   /// le français restant dans `name` et `note`. Reçues du fait de la fiche ;
   /// `NULL` = pas encore reçues (ligne d'avant le lot, ou fait d'avant lui) — la
   /// vitrine sert alors le français, et une réémission les remplit.

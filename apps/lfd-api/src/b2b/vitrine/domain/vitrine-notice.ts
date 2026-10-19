@@ -1,6 +1,7 @@
 import {
   VitrineNoticeAttemptRecordedError,
   VitrineNoticeNoRecipientError,
+  VitrineNoticeNothingToResumeError,
 } from "./errors/vitrine-notice-errors.js";
 import { VitrineSubscriberNotFoundError } from "./errors/vitrine-errors.js";
 import type { VitrineNoticeAddressee } from "./vitrine-notice-audience.js";
@@ -92,6 +93,23 @@ export class VitrineNotice {
         r.subscriberId === subscriberId ? { ...r, mailSent, attemptedAt: at } : r,
       ),
     };
+  }
+
+  /**
+   * **Reprendre une annonce interrompue** : les destinataires restés « pas
+   * tentés », et eux seuls. Un destinataire dont l'issue est consignée —
+   * accepté (`true`) comme refusé (`false`) — n'est jamais repris : un accepté
+   * ne reçoit pas deux fois, et un refusé garde son issue au journal (on ne
+   * réécrit pas un journal ; une nouvelle annonce lui réécrit).
+   *
+   * @throws {VitrineNoticeNothingToResumeError} il n'en reste aucun.
+   */
+  resumption(): readonly VitrineNoticeRecipientRow[] {
+    const remaining = this.unattempted;
+    if (remaining.length === 0) {
+      throw new VitrineNoticeNothingToResumeError(this.state.id);
+    }
+    return remaining;
   }
 
   /** Les destinataires dont l'e-mail n'a pas encore été tenté. */

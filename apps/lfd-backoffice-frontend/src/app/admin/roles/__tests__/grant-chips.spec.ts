@@ -119,7 +119,7 @@ describe('grantGroups', () => {
    * (comptabilite/fidelite/plan-fidelite-en-gestion-boutique.md, F1). 60 le
    * 2026-10-18 : `lfc_suggestions`, les suggestions décidées par l'équipe
    * (recommandation-produit/suggestions-du-staff.md, RS1). 61 le même jour :
-   * `shop_vitrine`, le webhook de la vitrine (webhooks/plan-webhook-vitrine.md).
+   * `shop_vitrine`, le webhook de la vitrine (webhooks/vitrine.md).
    */
   it('compte les domaines du catalogue', () => {
     expect(RESOURCE_COUNT).toBe(61);

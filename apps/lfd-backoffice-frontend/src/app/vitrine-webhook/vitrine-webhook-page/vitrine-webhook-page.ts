@@ -32,8 +32,8 @@ import { VitrineWebhookService } from '../vitrine-webhook.service';
 type LoadState = 'loading' | 'error' | 'ready';
 
 /**
- * **Le webhook de la vitrine** — Gestion Boutique (plan
- * `documentation/webhooks/plan-webhook-vitrine.md`, décision 3 du §5) : les
+ * **Le webhook de la vitrine** — Gestion Boutique (doc
+ * `documentation/webhooks/vitrine.md`) : les
  * abonnés, ce que chacun reçoit, ses gestes et son journal des envois. Sous
  * `shop_vitrine` ; sans l'écriture, tout se lit et rien ne se change.
  */
@@ -67,6 +67,7 @@ export class VitrineWebhookPage {
   protected readonly refusal = signal<string | null>(null);
   protected readonly notices = signal<readonly VitrineNoticeView[]>([]);
   protected readonly noticesFailed = signal(false);
+  protected readonly resuming = signal<string | null>(null);
   protected readonly anyContact = computed(() =>
     this.subscribers().some((subscriber) => subscriber.contactEmail !== null),
   );
@@ -107,6 +108,21 @@ export class VitrineWebhookPage {
     if ((await ref.closed) !== undefined) {
       this.notify.success('Annonce envoyée : l’issue de chaque e-mail est aux dernières annonces.');
       await this.loadNotices();
+    }
+  }
+
+  /** « Reprendre l'envoi » d'une annonce interrompue ; le refus se dit en haut de page. */
+  protected async resumeNotice(notice: VitrineNoticeView): Promise<void> {
+    this.resuming.set(notice.id);
+    this.refusal.set(null);
+    try {
+      await this.api.resumeNotice(notice.id);
+      this.notify.success('Envoi repris : l’issue de chaque e-mail est aux dernières annonces.');
+      await this.loadNotices();
+    } catch (error) {
+      this.refusal.set(httpErrorMessage(error, 'La reprise de l’envoi n’a pas abouti.'));
+    } finally {
+      this.resuming.set(null);
     }
   }
 

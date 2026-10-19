@@ -449,8 +449,8 @@ async function triggerOrderRefundSweep(env: Env): Promise<void> {
 /**
  * Réveille le container et passe le balayage de la vitrine : la vue publique
  * comparée, par abonné, à la dernière empreinte émise, puis les notifications
- * dues envoyées, signées (plan `documentation/webhooks/plan-webhook-vitrine.md`,
- * W3′). Sur le cron de RAFRAÎCHISSEMENT : l'agence est prévenue en cinq
+ * dues envoyées, signées (doc `documentation/webhooks/vitrine.md`,
+ * §1). Sur le cron de RAFRAÎCHISSEMENT : l'agence est prévenue en cinq
  * minutes au plus. Même porte et même jeton que la boîte d'envoi ; sans
  * abonné allumé, le backend ne calcule rien.
  */

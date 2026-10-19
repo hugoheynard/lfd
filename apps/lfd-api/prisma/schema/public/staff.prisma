@@ -131,7 +131,7 @@ enum StaffResource {
   /// l'écran.
   lfc_suggestions
   /// LE WEBHOOK DE LA VITRINE — les abonnés, leurs cases, leurs envois
-  /// (2026-10-18, `documentation/webhooks/plan-webhook-vitrine.md`). Accordée à
+  /// (2026-10-18, `documentation/webhooks/vitrine.md`). Accordée à
   /// l'écran.
   shop_vitrine
   /// La VITRINE — composer les pages de la boutique (2026-09-24,

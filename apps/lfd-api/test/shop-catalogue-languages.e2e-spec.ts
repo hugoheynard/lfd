@@ -1,7 +1,7 @@
 /**
  * E2E — **les langues de la vitrine publique**, du référentiel à
  * `GET /shop/catalogue?lang=` (lot des langues, 2026-10-18 —
- * `documentation/webhooks/plan-webhook-vitrine.md` §6).
+ * `documentation/webhooks/vitrine.md` §5).
  *
  * Ce que seul ce niveau prouve : qu'une traduction saisie AU RÉFÉRENTIEL —
  * nom de déclinaison, ligne de vitrine, nom de famille — descend par les faits

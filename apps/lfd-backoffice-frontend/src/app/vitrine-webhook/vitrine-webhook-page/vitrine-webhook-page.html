@@ -92,7 +92,12 @@
             <fold-icon empty-icon name="mail" />
           </fold-empty-state>
         } @else {
-          <app-vitrine-notice-list [notices]="notices()" />
+          <app-vitrine-notice-list
+            [notices]="notices()"
+            [canWrite]="canWrite()"
+            [busy]="resuming()"
+            (resume)="resumeNotice($event)"
+          />
         }
       </section>
     }

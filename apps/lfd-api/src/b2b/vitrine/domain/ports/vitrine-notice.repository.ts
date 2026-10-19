@@ -14,6 +14,12 @@ export abstract class VitrineNoticeRepository {
    * contrainte d'unicité qui tranche, pas une lecture préalable.
    */
   abstract open(notice: VitrineNotice): Promise<VitrineNoticeOpening>;
-  /** Consigne l'issue des envois (destinataires seulement : le texte ne bouge pas). */
+  /** L'annonce et ses destinataires, ou `null` si l'id ne désigne rien. */
+  abstract load(id: string): Promise<VitrineNotice | null>;
+  /**
+   * Consigne l'issue des envois (destinataires seulement : le texte ne bouge
+   * pas). Une issue DÉJÀ consignée en base n'est jamais réécrite — deux
+   * reprises simultanées ne se contredisent pas au journal.
+   */
   abstract save(notice: VitrineNotice): Promise<void>;
 }
