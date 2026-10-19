@@ -14,6 +14,7 @@ import {
   PICKUP_CHOICE_REQUIRED,
   type PickupAddressView,
   type PickupDiscountAudiences,
+  pickupDiscountFor,
   type ShopQuoteView,
 } from "@lfd/contracts";
 import type request from "supertest";
@@ -123,6 +124,32 @@ describe("les listes, filtrées au serveur", () => {
       "Les deux",
       "Particuliers seulement",
     ]);
+  });
+
+  /** Hugo, 2026-10-19 : la landing pro publique lit les points pros sans compte. */
+  it("?audience=pro rend au visiteur les sites ouverts aux pros, avec leur remise", async () => {
+    await seedSite("Les deux", undefined, 100);
+    await seedSite("Pros seulement", { b2b: true, b2c: false }, 200);
+    await seedSite("Particuliers seulement", { b2b: false, b2c: true }, 300);
+
+    const response = await ctx.http().get("/pickup-addresses?audience=pro").expect(200);
+    const points = jsonBody<readonly PickupAddressView[]>(response);
+
+    expect(labels(points)).toEqual(["Les deux", "Pros seulement"]);
+    expect(points.map((point) => pickupDiscountFor(point, "b2b"))).toEqual([
+      { mode: "amount", cents: 100 },
+      { mode: "amount", cents: 200 },
+    ]);
+    expect(Object.keys(points[0] ?? {}).sort()).toEqual(
+      ["codePostal", "discount", "discountAudiences", "gps", "id", "label", "ligne1", "ligne2"]
+        .concat(["opening", "pays", "pickupAudiences", "ville"])
+        .sort(),
+    );
+  });
+
+  it("refuse une clientèle inconnue plutôt que de rendre celle du particulier", async () => {
+    await ctx.http().get("/pickup-addresses?audience=xx").expect(400);
+    await ctx.http().get("/pickup-addresses?audience=b2c").expect(400);
   });
 
   it("le pro ne voit que les siens, l'espace perso ceux des particuliers", async () => {
