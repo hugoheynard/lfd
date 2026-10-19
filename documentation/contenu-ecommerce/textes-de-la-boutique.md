@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1375 textes
+## Sommaire — 1378 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -19,7 +19,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Accueil — la carte d'événement](#espace-event) | `event` | 5 |
 | [Connexion et création de compte](#espace-signup) | `signup` | 24 |
 | [Commander — l'écran d'entrée de la commande](#espace-commande) | `commande` | 39 |
-| [Rayon / boutique](#espace-shop) | `shop` | 54 |
+| [Rayon / boutique](#espace-shop) | `shop` | 57 |
 | [Rayon — la fiche produit](#espace-product) | `product` | 12 |
 | [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 23 |
 | [Choix du lieu — la maison](#espace-housepicker) | `housePicker` | 8 |
@@ -47,7 +47,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
-| **Total** | | **1375** |
+| **Total** | | **1378** |
 
 ## Le parcours de commande
 
@@ -144,17 +144,17 @@ Source : `screens/pro-landing.copy.ts` · 26 textes.
 | `proLanding.pickup.title` | Je passe<br>la prendre | I’ll come<br>and get it | Passo<br>a prenderlo |  |
 | `proLanding.pickup.intro` | Au point de retrait convenu avec votre commercial, prête à l’heure choisie. | At the pickup point agreed with your sales contact, ready at the time you choose. | Al punto di ritiro concordato con il vostro commerciale, pronto all’ora scelta. |  |
 | `proLanding.pickup.note` | Point convenu | Agreed point | Punto concordato |  |
+| `proLanding.pickup.signInLabel` | Se connecter pour commander en retrait | Sign in to order for pickup | Accedi per ordinare con ritiro |  |
 | `proLanding.delivery.tag` | Livraison | Delivery | Consegna |  |
 | `proLanding.delivery.title` | On vous<br>l’apporte | We bring<br>it to you | Ve lo<br>portiamo noi |  |
 | `proLanding.delivery.intro` | Livrée à votre établissement, sur les créneaux fixés par votre contrat. | Delivered to your venue, on the slots set by your contract. | Consegnato al vostro locale, negli orari fissati dal contratto. |  |
 | `proLanding.delivery.note` | Sous contrat | Under contract | Su contratto |  |
+| `proLanding.delivery.signInLabel` | Se connecter pour commander en livraison | Sign in to order for delivery | Accedi per ordinare con consegna |  |
 | `proLanding.pickupPoints.loading` | Points de retrait… | Pickup points… | Punti di ritiro… |  |
 | `proLanding.pickupPoints.many` | {count} points de retrait | {count} pickup points | {count} punti di ritiro | `{count}` |
 | `proLanding.pickupPoints.one` | Je retire à {place} | I collect at {place} | Ritiro a {place} | `{place}` |
 | `proLanding.pickupPoints.discount` | Jusqu’à −{value} | Up to −{value} | Fino a −{value} | `{value}` |
 | `proLanding.browse` | Je visite la boutique | Browse the shop | Visito il negozio |  |
-| `proLanding.personalLead` | Vous commandez pour vous ? | Ordering for yourself? | Ordinate per voi? |  |
-| `proLanding.personalLink` | La boutique des particuliers | The shop for individuals | Il negozio per i privati |  |
 
 <a id="espace-steps"></a>
 
@@ -322,7 +322,7 @@ Source : `fr.ts · en.ts · it.ts` · 39 textes.
 
 ### Rayon / boutique — `shop`
 
-Source : `fr.ts · en.ts · it.ts` · 54 textes.
+Source : `fr.ts · en.ts · it.ts` · 57 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -351,6 +351,9 @@ Source : `fr.ts · en.ts · it.ts` · 54 textes.
 | `shop.htSuffix` | HT | excl. VAT | IVA escl. |  |
 | `shop.priceTtc` | {price} TTC | {price} incl. VAT | {price} IVA incl. | `{price}` |
 | `shop.ttcSuffix` | TTC | incl. VAT | IVA incl. |  |
+| `shop.proVisitNote` | Tarifs professionnels hors taxe — vos conditions négociées après connexion | Trade prices excluding VAT — your negotiated terms once signed in | Prezzi professionali IVA esclusa — le vostre condizioni negoziate dopo l’accesso |  |
+| `shop.proVisitSignIn` | Je me connecte | Sign in | Accedo |  |
+| `shop.proVisitShowTtc` | Voir les prix TTC | Show prices incl. VAT | Vedi i prezzi IVA incl. |  |
 | `shop.addAria` | Ajouter {name} | Add {name} | Aggiungi {name} | `{name}` |
 | `shop.removeAria` | Retirer {name} | Remove {name} | Togli {name} | `{name}` |
 | `shop.cartTitle` | Votre panier | Your basket | Il suo carrello |  |

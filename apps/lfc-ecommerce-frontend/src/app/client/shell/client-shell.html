@@ -115,7 +115,9 @@
          d'accueil — et le sien disparaissait de la barre.
          Le niveau de boutique qui le conditionnait encore (`shop`) a été
          retiré le 2026-10-09 : on commande toujours. -->
-    <app-client-cart-pill />
+    @if (chrome.cart()) {
+      <app-client-cart-pill />
+    }
 
     <!-- L'identité ferme la rangée. Pas de sélecteur d'espace : il n'existe
          qu'à partir de deux espaces, et le compte n'en a qu'un — la réf
@@ -149,7 +151,7 @@
          Google d'abord, puis l'e-mail — un seul écran, qu'on ait un compte ou
          non. Le bouton ouvrait jusque-là l'écran d'Auth0 directement, et la
          phrase son onglet inscription, en sautant les trois champs. -->
-    @if (!recognised()) {
+    @if (!recognised() && chrome.entry()) {
       <span class="sign">
         <!-- 🔴 LES TROIS LIBELLÉS SONT DANS LE BOUTON, empilés dans la même
              cellule de grille : un seul se voit, les deux autres réservent leur

@@ -40,9 +40,6 @@ export const PRO_REGISTER = '/inscription#pro';
 /** La boutique, ouverte aux visiteurs (sans garde). */
 export const SHOP = '/boutique';
 
-/** La page des particuliers, pour la dualité. */
-export const PERSONAL_LANDING = '/bienvenue';
-
 /**
  * **L'accueil pro public** (`/pro`) — la page vers laquelle l'agence web envoie
  * un professionnel non connecté (Hugo, 2026-10-19).
@@ -73,7 +70,6 @@ export const PERSONAL_LANDING = '/bienvenue';
 export class ProLanding {
   protected readonly c = screenCopy('proLanding', proLandingCopy);
   protected readonly registerHref = PRO_REGISTER;
-  protected readonly personalLanding = PERSONAL_LANDING;
   protected readonly shop = SHOP;
 
   /** `null` tant que la lecture court ; vide si elle échoue. */
@@ -112,6 +108,10 @@ export class ProLanding {
     // L'accroche d'encre suit la barre : ni lèvre, ni bande fixe en pile.
     chrome.bandLip.set(false);
     chrome.bandNarrow.set(false);
+    // La page porte déjà en grand l'entrée et la commande : la barre ne les
+    // double pas (Hugo, 2026-10-19).
+    chrome.cart.set(false);
+    chrome.entry.set(false);
     inject(ProPickupListGateway)
       .list()
       .then(
@@ -121,6 +121,8 @@ export class ProLanding {
     inject(DestroyRef).onDestroy(() => {
       chrome.bandLip.set(true);
       chrome.bandNarrow.set(true);
+      chrome.cart.set(true);
+      chrome.entry.set(true);
     });
   }
 

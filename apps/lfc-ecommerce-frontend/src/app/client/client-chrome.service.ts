@@ -88,4 +88,25 @@ export class ClientChrome {
    * C'est l'écran qui l'éteint et le rallume en partant, comme la lèvre.
    */
   readonly bandNarrow = signal(true);
+
+  /**
+   * La barre porte-t-elle la pastille du PANIER ?
+   *
+   * Oui par défaut, sur tous les écrans. Non sur une landing qui porte déjà ses
+   * gestes en grand (`/pro`, décidé par Hugo le 2026-10-19) : un panier vide
+   * dans la barre y promettrait une commande que la page ne propose pas encore.
+   * C'est l'écran qui l'éteint et le rallume en partant, comme la lèvre.
+   */
+  readonly cart = signal(true);
+
+  /**
+   * La barre porte-t-elle l'ENTRÉE du visiteur — « Se connecter » et
+   * « Créer mon compte » ?
+   *
+   * Oui par défaut. Non sur une landing dont le corps porte déjà ces deux
+   * gestes en grand (`/pro`, 2026-10-19) : les doubler dans la barre dispute
+   * l'attention à l'appel de la page. Sans effet sur qui est reconnu, dont la
+   * barre sert le menu de personne. Éteint et rallumé par l'écran, comme `cart`.
+   */
+  readonly entry = signal(true);
 }

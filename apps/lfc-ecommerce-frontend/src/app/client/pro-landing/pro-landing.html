@@ -33,9 +33,20 @@
 
   <div class="sheet">
     <section class="modes" [attr.aria-label]="c().modesTitle">
-      <!-- L'encre et le beurre, comme les portes d'un pro sur `/bienvenue` —
-           mais ce sont des cartes qu'on LIT : aucun clic, aucun survol. -->
-      <div class="mode mode-pickup">
+      <!-- L'encre et le beurre, comme les portes d'un pro sur `/bienvenue`.
+           Chaque carte est UN contrôle (Hugo, 2026-10-19) : le même geste que
+           « Je me connecte ». Pas un `<button>` : il ne peut pas porter de
+           titre `h2` ; d'où le rôle, le focus et les deux touches. -->
+      <div
+        class="mode mode-pickup"
+        role="button"
+        tabindex="0"
+        data-test="pro-mode-pickup"
+        [attr.aria-label]="c().pickup.signInLabel"
+        (click)="signIn()"
+        (keydown.enter)="signIn()"
+        (keydown.space)="$event.preventDefault(); signIn()"
+      >
         <span class="mode-tag">{{ c().pickup.tag }}</span>
         <h2 class="mode-title">{{ c().pickup.title }}</h2>
         <p class="mode-intro">{{ c().pickup.intro }}</p>
@@ -46,7 +57,16 @@
         }
         <span class="mode-note" data-test="pro-pickup-note">{{ pickupNote() }}</span>
       </div>
-      <div class="mode mode-delivery">
+      <div
+        class="mode mode-delivery"
+        role="button"
+        tabindex="0"
+        data-test="pro-mode-delivery"
+        [attr.aria-label]="c().delivery.signInLabel"
+        (click)="signIn()"
+        (keydown.enter)="signIn()"
+        (keydown.space)="$event.preventDefault(); signIn()"
+      >
         <span class="mode-tag">{{ c().delivery.tag }}</span>
         <h2 class="mode-title">{{ c().delivery.title }}</h2>
         <p class="mode-intro">{{ c().delivery.intro }}</p>
@@ -55,13 +75,8 @@
     </section>
 
     <!-- Le grand appel (Hugo, 2026-10-19) : voir le rayon, en visiteur. -->
-    <a foldButton size="lg" block data-test="pro-browse" [routerLink]="shop">
+    <a foldButton size="lg" block data-test="pro-browse" [routerLink]="shop" fragment="pro">
       {{ c().browse }}
     </a>
-
-    <p class="personal">
-      {{ c().personalLead }}
-      <a data-test="pro-personal" [routerLink]="personalLanding">{{ c().personalLink }}</a>
-    </p>
   </div>
 </div>

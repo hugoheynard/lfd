@@ -3,6 +3,8 @@
   "renames": {
     "deliveryAddress.when.other": null,
     "orderCancel.refusals.closed": null,
+    "proLanding.personalLead": null,
+    "proLanding.personalLink": null,
     "shop.upsell": null,
     "shop.upsellLine": null
   }

@@ -38,8 +38,7 @@
 .screen-lede,
 .mode-title,
 .mode-intro,
-.mode-points,
-.personal {
+.mode-points {
   margin: 0;
 }
 
@@ -147,6 +146,18 @@
   padding: 28px;
   border-radius: var(--lfc-radius-sheet);
   box-shadow: var(--lfc-shadow-lifted);
+  cursor: pointer;
+  transition: transform 160ms ease;
+
+  /* Un contrôle : il se soulève au survol et montre son focus au clavier. */
+  &:hover {
+    transform: translateY(-3px);
+  }
+
+  &:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 3px;
+  }
 }
 
 .mode-pickup {
@@ -218,12 +229,6 @@
   font-weight: var(--lfc-weight-black);
   letter-spacing: var(--lfc-tracking-cta);
   text-transform: uppercase;
-}
-
-/* Le lien vers les particuliers : discret, une ligne de texte. */
-.personal {
-  font-size: var(--lfc-text-note);
-  color: var(--lfc-soot-700);
 }
 
 @media (min-width: 900px) {

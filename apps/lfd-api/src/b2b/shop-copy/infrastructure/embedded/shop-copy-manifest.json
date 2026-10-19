@@ -544,6 +544,13 @@
           "variables": []
         },
         {
+          "key": "proLanding.pickup.signInLabel",
+          "fr": "Se connecter pour commander en retrait",
+          "en": "Sign in to order for pickup",
+          "it": "Accedi per ordinare con ritiro",
+          "variables": []
+        },
+        {
           "key": "proLanding.delivery.tag",
           "fr": "Livraison",
           "en": "Delivery",
@@ -569,6 +576,13 @@
           "fr": "Sous contrat",
           "en": "Under contract",
           "it": "Su contratto",
+          "variables": []
+        },
+        {
+          "key": "proLanding.delivery.signInLabel",
+          "fr": "Se connecter pour commander en livraison",
+          "en": "Sign in to order for delivery",
+          "it": "Accedi per ordinare con consegna",
           "variables": []
         },
         {
@@ -604,20 +618,6 @@
           "fr": "Je visite la boutique",
           "en": "Browse the shop",
           "it": "Visito il negozio",
-          "variables": []
-        },
-        {
-          "key": "proLanding.personalLead",
-          "fr": "Vous commandez pour vous ?",
-          "en": "Ordering for yourself?",
-          "it": "Ordinate per voi?",
-          "variables": []
-        },
-        {
-          "key": "proLanding.personalLink",
-          "fr": "La boutique des particuliers",
-          "en": "The shop for individuals",
-          "it": "Il negozio per i privati",
           "variables": []
         }
       ],
@@ -1594,6 +1594,27 @@
           "fr": "TTC",
           "en": "incl. VAT",
           "it": "IVA incl.",
+          "variables": []
+        },
+        {
+          "key": "shop.proVisitNote",
+          "fr": "Tarifs professionnels hors taxe — vos conditions négociées après connexion",
+          "en": "Trade prices excluding VAT — your negotiated terms once signed in",
+          "it": "Prezzi professionali IVA esclusa — le vostre condizioni negoziate dopo l’accesso",
+          "variables": []
+        },
+        {
+          "key": "shop.proVisitSignIn",
+          "fr": "Je me connecte",
+          "en": "Sign in",
+          "it": "Accedo",
+          "variables": []
+        },
+        {
+          "key": "shop.proVisitShowTtc",
+          "fr": "Voir les prix TTC",
+          "en": "Show prices incl. VAT",
+          "it": "Vedi i prezzi IVA incl.",
           "variables": []
         },
         {

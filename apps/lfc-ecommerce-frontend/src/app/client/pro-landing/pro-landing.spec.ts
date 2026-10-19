@@ -166,6 +166,19 @@ describe('ProLanding — l’accueil pro public (/pro)', () => {
     expect(opened).toEqual([]);
   });
 
+  for (const mode of ['pickup', 'delivery'] as const) {
+    it(`la carte ${mode} ouvre la même connexion, au clic et au clavier`, () => {
+      const card = el(`pro-mode-${mode}`);
+      expect(card.getAttribute('role')).toBe('button');
+      expect(card.getAttribute('aria-label')).toBe(PRO_LANDING_FR[mode].signInLabel);
+      card.click();
+      card.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+      card.dispatchEvent(new KeyboardEvent('keydown', { key: ' ' }));
+      const expected = { component: SignInDialog, data: { target: '/mon-compte', email: '' } };
+      expect(opened).toEqual([expected, expected, expected]);
+    });
+  }
+
   it('« Ouvrir un compte pro » mène à /inscription#pro', () => {
     const link = el('pro-register').querySelector('a');
     expect(link?.textContent?.trim()).toBe(PRO_LANDING_FR.register);
@@ -175,13 +188,13 @@ describe('ProLanding — l’accueil pro public (/pro)', () => {
   it('« Je visite la boutique » mène à /boutique', () => {
     const link = el('pro-browse');
     expect(link.textContent?.trim()).toBe(PRO_LANDING_FR.browse);
-    expect(link.getAttribute('href')).toBe('/boutique');
+    expect(link.getAttribute('href')).toBe('/boutique#pro');
   });
 
-  it('un lien discret mène à la page des particuliers', () => {
-    const link = el('pro-personal');
-    expect(link.textContent?.trim()).toBe(PRO_LANDING_FR.personalLink);
-    expect(link.getAttribute('href')).toBe('/bienvenue');
+  // Le lien vers la boutique des particuliers a été retiré (Hugo, 2026-10-19).
+  it('ne mène plus à la page des particuliers', () => {
+    const host = fixture.nativeElement as HTMLElement;
+    expect(host.querySelector('a[href="/bienvenue"]')).toBeNull();
   });
 
   it('éteint la lèvre et la bande fixe, et les rallume en partant', () => {
@@ -190,5 +203,14 @@ describe('ProLanding — l’accueil pro public (/pro)', () => {
     fixture.destroy();
     expect(chrome.bandLip()).toBe(true);
     expect(chrome.bandNarrow()).toBe(true);
+  });
+
+  it('éteint le panier et l’entrée de la barre, et les rallume en partant', () => {
+    const chrome = TestBed.inject(ClientChrome);
+    expect(chrome.cart()).toBe(false);
+    expect(chrome.entry()).toBe(false);
+    fixture.destroy();
+    expect(chrome.cart()).toBe(true);
+    expect(chrome.entry()).toBe(true);
   });
 });

@@ -8,6 +8,8 @@ export interface ProLandingModeCopy {
   readonly intro: string;
   /** La pastille au pied de la carte — ce que le contrat fixe. */
   readonly note: string;
+  /** Le nom de la carte pour un lecteur d'écran : elle ouvre la connexion. */
+  readonly signInLabel: string;
 }
 
 /**
@@ -49,9 +51,6 @@ export interface ProLandingCopy {
   readonly pickupPoints: ProLandingPickupPointsCopy;
   /** Le grand appel sous les deux modes : voir le rayon avant d'ouvrir un compte. */
   readonly browse: string;
-  /** La dualité avec la page des particuliers — un lien discret. */
-  readonly personalLead: string;
-  readonly personalLink: string;
 }
 
 export const PRO_LANDING_FR: ProLandingCopy = {
@@ -69,12 +68,14 @@ export const PRO_LANDING_FR: ProLandingCopy = {
     title: 'Je passe\nla prendre',
     intro: 'Au point de retrait convenu avec votre commercial, prête à l’heure choisie.',
     note: 'Point convenu',
+    signInLabel: 'Se connecter pour commander en retrait',
   },
   delivery: {
     tag: 'Livraison',
     title: 'On vous\nl’apporte',
     intro: 'Livrée à votre établissement, sur les créneaux fixés par votre contrat.',
     note: 'Sous contrat',
+    signInLabel: 'Se connecter pour commander en livraison',
   },
   pickupPoints: {
     loading: 'Points de retrait…',
@@ -83,8 +84,6 @@ export const PRO_LANDING_FR: ProLandingCopy = {
     discount: 'Jusqu’à −{value}',
   },
   browse: 'Je visite la boutique',
-  personalLead: 'Vous commandez pour vous ?',
-  personalLink: 'La boutique des particuliers',
 };
 
 export const PRO_LANDING_EN: ProLandingCopy = {
@@ -102,12 +101,14 @@ export const PRO_LANDING_EN: ProLandingCopy = {
     title: 'I’ll come\nand get it',
     intro: 'At the pickup point agreed with your sales contact, ready at the time you choose.',
     note: 'Agreed point',
+    signInLabel: 'Sign in to order for pickup',
   },
   delivery: {
     tag: 'Delivery',
     title: 'We bring\nit to you',
     intro: 'Delivered to your venue, on the slots set by your contract.',
     note: 'Under contract',
+    signInLabel: 'Sign in to order for delivery',
   },
   pickupPoints: {
     loading: 'Pickup points…',
@@ -116,8 +117,6 @@ export const PRO_LANDING_EN: ProLandingCopy = {
     discount: 'Up to −{value}',
   },
   browse: 'Browse the shop',
-  personalLead: 'Ordering for yourself?',
-  personalLink: 'The shop for individuals',
 };
 
 export const PRO_LANDING_IT: ProLandingCopy = {
@@ -135,12 +134,14 @@ export const PRO_LANDING_IT: ProLandingCopy = {
     title: 'Passo\na prenderlo',
     intro: 'Al punto di ritiro concordato con il vostro commerciale, pronto all’ora scelta.',
     note: 'Punto concordato',
+    signInLabel: 'Accedi per ordinare con ritiro',
   },
   delivery: {
     tag: 'Consegna',
     title: 'Ve lo\nportiamo noi',
     intro: 'Consegnato al vostro locale, negli orari fissati dal contratto.',
     note: 'Su contratto',
+    signInLabel: 'Accedi per ordinare con consegna',
   },
   pickupPoints: {
     loading: 'Punti di ritiro…',
@@ -149,8 +150,6 @@ export const PRO_LANDING_IT: ProLandingCopy = {
     discount: 'Fino a −{value}',
   },
   browse: 'Visito il negozio',
-  personalLead: 'Ordinate per voi?',
-  personalLink: 'Il negozio per i privati',
 };
 
 const DICTIONARIES: Readonly<Record<LocaleCode, ProLandingCopy>> = {
