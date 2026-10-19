@@ -3,3 +3,34 @@
   flex-direction: column;
   gap: var(--fold-space-sm);
 }
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+.thumb {
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--fold-radius-sm);
+  object-fit: cover;
+}
+
+.thumb-none {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--fold-color-surface-sunken);
+  color: var(--fold-color-text-muted);
+}
+
+.option-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.muted {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+}

@@ -8,21 +8,26 @@ import {
   signal,
 } from '@angular/core';
 import type { BundleChoiceCandidateView } from '@lfd/contracts';
-import { FoldCalloutComponent, FoldListboxComponent, FoldSearchComponent } from 'fold-ng';
+import {
+  FoldCalloutComponent,
+  FoldComboboxComponent,
+  FoldIconComponent,
+  type FoldSelectOption,
+} from 'fold-ng';
 
 import { BundlesService } from '../bundles.service';
 
 /**
  * Chercher un article à ajouter à un groupe : le serveur cherche
  * (`/admin/bundle-choices?q=`, 30 au plus) parmi ce qui PEUT entrer dans une
- * formule — servi au public, pas réservé aux opérations. Même geste que le
- * sélecteur des suggestions (une recherche, puis la liste), mais la recherche
- * part au serveur, une fois la frappe posée.
+ * formule — servi au public, pas réservé aux opérations. Un seul champ :
+ * on tape, les propositions s'ouvrent dessous, le choix ajoute l'article et
+ * vide le champ. La recherche part au serveur, une fois la frappe posée.
  */
 @Component({
   selector: 'app-bundle-choice-search',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldCalloutComponent, FoldListboxComponent, FoldSearchComponent],
+  imports: [FoldCalloutComponent, FoldComboboxComponent, FoldIconComponent],
   templateUrl: './bundle-choice-search.html',
   styleUrl: './bundle-choice-search.scss',
 })
@@ -33,21 +38,18 @@ export class BundleChoiceSearch {
   readonly taken = input<readonly string[]>([]);
   readonly picked = output<BundleChoiceCandidateView>();
 
-  protected readonly query = signal('');
   private readonly results = signal<readonly BundleChoiceCandidateView[]>([]);
   protected readonly searched = signal(false);
   protected readonly failed = signal(false);
+  protected readonly loading = signal(false);
   private latest = 0;
 
   private readonly offered = computed(() =>
     this.results().filter((candidate) => !this.taken().includes(candidate.sku)),
   );
 
-  protected readonly options = computed(() =>
-    this.offered().map((candidate) => ({
-      value: candidate.sku,
-      label: `${candidate.name} · ${candidate.shelf}`,
-    })),
+  protected readonly options = computed<readonly FoldSelectOption<BundleChoiceCandidateView>[]>(
+    () => this.offered().map((candidate) => ({ value: candidate, label: candidate.name })),
   );
 
   protected readonly hint = computed(() => {
@@ -67,8 +69,10 @@ export class BundleChoiceSearch {
     if (term === '') {
       this.results.set([]);
       this.searched.set(false);
+      this.loading.set(false);
       return;
     }
+    this.loading.set(true);
     try {
       const found = await this.api.searchChoices(term);
       if (ticket === this.latest) {
@@ -80,13 +84,14 @@ export class BundleChoiceSearch {
         this.results.set([]);
         this.failed.set(true);
       }
+    } finally {
+      if (ticket === this.latest) {
+        this.loading.set(false);
+      }
     }
   }
 
-  protected pick(sku: string): void {
-    const candidate = this.results().find((result) => result.sku === sku);
-    if (candidate !== undefined) {
-      this.picked.emit(candidate);
-    }
+  protected pick(candidate: BundleChoiceCandidateView): void {
+    this.picked.emit(candidate);
   }
 }

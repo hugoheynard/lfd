@@ -1,24 +1,33 @@
 <div class="search">
-  <fold-search
+  <fold-combobox
     size="sm"
-    ariaLabel="Chercher un article par nom ou par référence"
-    placeholder="Ajouter un article : nom ou référence"
-    [delayMs]="250"
-    [value]="query()"
-    [resultCount]="searched() ? options().length : null"
-    (valueChange)="query.set($event)"
-    (searchChange)="search($event)"
-  />
-  <fold-listbox
-    size="sm"
+    filter="none"
+    clearOnSelect
     label="Article à ajouter"
-    placeholder="Choisir un article"
-    [disabled]="options().length === 0"
+    placeholder="Ajouter un article : nom ou référence"
+    emptyText="Aucun article ne correspond."
+    loadingText="Recherche…"
+    [delayMs]="250"
     [hint]="hint()"
+    [loading]="loading()"
     [options]="options()"
-    [value]="null"
+    (searchChange)="search($event)"
     (selectionChange)="pick($event)"
-  />
+  >
+    <ng-template #option let-o>
+      <span class="option">
+        @if (o.value.thumbnailUrl; as url) {
+          <img class="thumb" [src]="url" alt="" />
+        } @else {
+          <span class="thumb thumb-none"><fold-icon name="package" [size]="16" /></span>
+        }
+        <span class="option-text">
+          <span>{{ o.value.name }}</span>
+          <span class="muted">{{ o.value.shelf }} · {{ o.value.sku }}</span>
+        </span>
+      </span>
+    </ng-template>
+  </fold-combobox>
   @if (failed()) {
     <fold-callout appearance="inset" variant="alert" announce>
       La recherche n'a pas abouti. Réessayez dans un instant.
