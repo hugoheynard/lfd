@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1381 textes
+## Sommaire — 1384 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -19,8 +19,8 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Accueil — la carte d'événement](#espace-event) | `event` | 5 |
 | [Connexion et création de compte](#espace-signup) | `signup` | 24 |
 | [Commander — l'écran d'entrée de la commande](#espace-commande) | `commande` | 39 |
-| [Rayon / boutique](#espace-shop) | `shop` | 57 |
-| [Rayon — la fiche produit](#espace-product) | `product` | 12 |
+| [Rayon / boutique](#espace-shop) | `shop` | 59 |
+| [Rayon — la fiche produit](#espace-product) | `product` | 13 |
 | [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 23 |
 | [Choix du lieu — la maison](#espace-housepicker) | `housePicker` | 8 |
 | [Choix du lieu et de l’heure — le dialogue commun](#espace-dialog) | `dialog` | 1 |
@@ -47,7 +47,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
-| **Total** | | **1381** |
+| **Total** | | **1384** |
 
 ## Le parcours de commande
 
@@ -325,7 +325,7 @@ Source : `fr.ts · en.ts · it.ts` · 39 textes.
 
 ### Rayon / boutique — `shop`
 
-Source : `fr.ts · en.ts · it.ts` · 57 textes.
+Source : `fr.ts · en.ts · it.ts` · 59 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -354,9 +354,11 @@ Source : `fr.ts · en.ts · it.ts` · 57 textes.
 | `shop.htSuffix` | HT | excl. VAT | IVA escl. |  |
 | `shop.priceTtc` | {price} TTC | {price} incl. VAT | {price} IVA incl. | `{price}` |
 | `shop.ttcSuffix` | TTC | incl. VAT | IVA incl. |  |
-| `shop.proVisitNote` | Tarifs professionnels hors taxe — vos conditions négociées après connexion | Trade prices excluding VAT — your negotiated terms once signed in | Prezzi professionali IVA esclusa — le vostre condizioni negoziate dopo l’accesso |  |
+| `shop.proVisitNote` | Tarifs professionnels hors taxe — vos conditions négociées après connexion. | Trade prices excluding VAT — your negotiated terms once signed in. | Prezzi professionali IVA esclusa — le vostre condizioni negoziate dopo l’accesso. |  |
 | `shop.proVisitSignIn` | Je me connecte | Sign in | Accedo |  |
 | `shop.proVisitShowTtc` | Voir les prix TTC | Show prices incl. VAT | Vedi i prezzi IVA incl. |  |
+| `shop.proVisitOrder` | Connectez-vous pour commander à vos conditions. | Sign in to order on your terms. | Accedete per ordinare alle vostre condizioni. |  |
+| `shop.addAriaProVisit` | Se connecter pour commander {name} | Sign in to order {name} | Accedi per ordinare {name} | `{name}` |
 | `shop.addAria` | Ajouter {name} | Add {name} | Aggiungi {name} | `{name}` |
 | `shop.removeAria` | Retirer {name} | Remove {name} | Togli {name} | `{name}` |
 | `shop.cartTitle` | Votre panier | Your basket | Il suo carrello |  |
@@ -391,7 +393,7 @@ Source : `fr.ts · en.ts · it.ts` · 57 textes.
 
 ### Rayon — la fiche produit — `product`
 
-Source : `fr.ts · en.ts · it.ts` · 12 textes.
+Source : `fr.ts · en.ts · it.ts` · 13 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -407,6 +409,7 @@ Source : `fr.ts · en.ts · it.ts` · 12 textes.
 | `product.addCount` | Ajouter {n} | Add {n} | Aggiungi {n} | `{n}` |
 | `product.update` | Mettre à jour | Update | Aggiorna |  |
 | `product.inCart` | Déjà au panier | Already in basket | Già nel carrello |  |
+| `product.signInToOrder` | Se connecter pour commander | Sign in to order | Accedi per ordinare |  |
 
 <a id="espace-commandterms"></a>
 

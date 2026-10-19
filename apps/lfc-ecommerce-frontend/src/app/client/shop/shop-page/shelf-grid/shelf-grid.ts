@@ -108,10 +108,13 @@ export class ShelfGrid {
    */
   protected addPiece(sku: string): void {
     const entering = this.cart.quantityOf(sku) === 0;
+    // La visite pro détourne le geste vers la connexion : rien n'est compté.
+    if (this.cart.add(sku) === 'signInRequired') {
+      return;
+    }
     if (entering) {
       this.audience.record(sku, 'added_to_cart');
     }
-    this.cart.add(sku);
     if (entering && this.cart.quantityOf(sku) > 0) {
       this.entries.entered(sku);
     }

@@ -1619,9 +1619,9 @@
         },
         {
           "key": "shop.proVisitNote",
-          "fr": "Tarifs professionnels hors taxe — vos conditions négociées après connexion",
-          "en": "Trade prices excluding VAT — your negotiated terms once signed in",
-          "it": "Prezzi professionali IVA esclusa — le vostre condizioni negoziate dopo l’accesso",
+          "fr": "Tarifs professionnels hors taxe — vos conditions négociées après connexion.",
+          "en": "Trade prices excluding VAT — your negotiated terms once signed in.",
+          "it": "Prezzi professionali IVA esclusa — le vostre condizioni negoziate dopo l’accesso.",
           "variables": []
         },
         {
@@ -1637,6 +1637,20 @@
           "en": "Show prices incl. VAT",
           "it": "Vedi i prezzi IVA incl.",
           "variables": []
+        },
+        {
+          "key": "shop.proVisitOrder",
+          "fr": "Connectez-vous pour commander à vos conditions.",
+          "en": "Sign in to order on your terms.",
+          "it": "Accedete per ordinare alle vostre condizioni.",
+          "variables": []
+        },
+        {
+          "key": "shop.addAriaProVisit",
+          "fr": "Se connecter pour commander {name}",
+          "en": "Sign in to order {name}",
+          "it": "Accedi per ordinare {name}",
+          "variables": ["name"]
         },
         {
           "key": "shop.addAria",
@@ -1926,6 +1940,13 @@
           "fr": "Déjà au panier",
           "en": "Already in basket",
           "it": "Già nel carrello",
+          "variables": []
+        },
+        {
+          "key": "product.signInToOrder",
+          "fr": "Se connecter pour commander",
+          "en": "Sign in to order",
+          "it": "Accedi per ordinare",
           "variables": []
         }
       ],

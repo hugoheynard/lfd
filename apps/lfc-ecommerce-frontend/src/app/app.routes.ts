@@ -9,6 +9,7 @@ import {
   workspaceHomeGuard,
 } from './client/client-workspace.guard';
 import { ClientShell } from './client/shell/client-shell';
+import { noProVisitGuard } from './client/shop/pro-visit.guard';
 import { FEATURE_DASHBOARD, FEATURE_PRO_SPACE } from './feature-flags';
 
 /**
@@ -287,6 +288,8 @@ export const routes: Routes = [
         // Un panneau dans le panier n'aurait tenu ni l'un ni l'autre.
         path: 'reglement/:id',
         title: 'Régler ma commande — La Folie Coffee',
+        // En visite pro, on ne règle pas : la connexion d'abord (2026-10-19).
+        canActivate: [noProVisitGuard],
         loadComponent: () =>
           import('./client/commande/reglement-page/reglement-page').then((m) => m.ReglementPage),
       },

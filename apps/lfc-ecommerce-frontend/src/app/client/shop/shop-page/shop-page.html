@@ -24,17 +24,20 @@
        faute de condition de règlement sur un écran servi sans jeton.
        Depuis le lot 2 (2026-09-24), elle porte AUSSI pièces, remise et
        « Régler » : au bureau, le pied se retire quand elle est là. -->
-  <app-order-bar
-    class="terms"
-    (houseRequested)="changeHouse()"
-    (timeRequested)="changeTime()"
-    (pay)="void pay()"
-  />
+  <!-- En visite pro, ni barre ni pied : on n'y commande pas (2026-10-19). -->
+  @if (!proVisit()) {
+    <app-order-bar
+      class="terms"
+      (houseRequested)="changeHouse()"
+      (timeRequested)="changeTime()"
+      (pay)="void pay()"
+    />
+  }
 </ng-template>
 
 <div
   class="shop"
-  [class.under-bar]="!needsService() || !cart.isEmpty()"
+  [class.under-bar]="!proVisit() && (!needsService() || !cart.isEmpty())"
   [class.with-pro-visit]="proVisit()"
 >
   <!-- Le repère de la visite pro : rien pour un particulier ni un connecté.
@@ -111,7 +114,9 @@
      changement le plus fréquent, et le dialogue a son propre « Retour » vers la
      maison. Renvoyer à l'accueil faisait re-choisir la maison pour changer
      d'heure — ce que la barre du bureau évite déjà avec ses deux liens. -->
-<app-cart-bar class="cartbar" (pay)="void pay()" (edit)="void changeTime()" />
+@if (!proVisit()) {
+  <app-cart-bar class="cartbar" (pay)="void pay()" (edit)="void changeTime()" />
+}
 
 <app-product-sheet
   [product]="piece()"

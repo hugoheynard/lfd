@@ -23,6 +23,7 @@ import { artOf, objectPositionOf, ovenHoursOf } from '../shelf-display';
 import { mediaSrcset, sizedMedia, SHEET_WIDTHS } from '../media-source';
 import { ShopCatalogue } from '../shop-catalogue.store';
 import { ShopPriceBasis } from '../shop-price-basis.service';
+import { ProVisit } from '../pro-visit.service';
 import { QuantityRail } from '../quantity-rail/quantity-rail';
 import { StaffProductSuggestion } from '../../suggestions/staff-product-suggestion.service';
 import { StaffSuggestionCard } from '../../suggestions/staff-suggestion-card/staff-suggestion-card';
@@ -237,8 +238,14 @@ export class ProductSheet {
     return this.draft() === inCart ? 'inCart' : 'update';
   });
 
+  private readonly proVisit = inject(ProVisit).active;
+
   protected readonly ctaLabel = computed(() => {
     const c = this.t().product;
+    // En visite pro, le bouton ouvre la connexion : il ne promet pas un ajout.
+    if (this.proVisit()) {
+      return c.signInToOrder;
+    }
     switch (this.ctaState()) {
       case 'add':
         return fill(c.addCount, { n: String(this.draft()) });

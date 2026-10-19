@@ -2,9 +2,17 @@ import { provideHttpClient } from '@angular/common/http';
 import { signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import type { StaffSuggestionView, SuggestionView } from '@lfd/contracts';
+import { FoldPanelHostService } from 'fold-ng';
+import { vi } from 'vitest';
 
 import { ProductAudience } from '../../audience/product-audience.service';
+import { SignInDialog } from '../../../login/sign-in-dialog/sign-in-dialog';
+import { CartStore } from '../../cart/cart.store';
 import { ClientCart } from '../../cart/client-cart.service';
+import { fill } from '../../copy/client-copy.service';
+import { FR } from '../../copy/fr';
+import { matchMediaAt } from '../../mon-compte/account.fixture';
+import { ProVisit } from '../../shop/pro-visit.service';
 import { formatCents } from '../../format-money';
 import { hydrateWith, TEST_CATALOGUE, TEST_ITEMS } from '../../shop/shop-catalogue.fixture';
 import { ShopCatalogue } from '../../shop/shop-catalogue.store';
@@ -29,12 +37,15 @@ describe('StaffSuggestionCard', () => {
   let taken: SuggestionView[];
   let opened: SuggestionView[];
   let asked: string[];
+  let signedIn: unknown[];
   const showsTtc = signal(true);
 
   const root = (): HTMLElement => fixture.nativeElement as HTMLElement;
   const card = (): HTMLElement | null => root().querySelector('.suggestion');
   const pitch = (): HTMLButtonElement | null => root().querySelector('button.pitch');
   const plus = (): HTMLButtonElement | null => root().querySelector('button.add');
+
+  const proVisit = signal(false);
 
   function mount(view: SuggestionView, fallbackTitle: string): void {
     TestBed.resetTestingModule();
@@ -43,6 +54,7 @@ describe('StaffSuggestionCard', () => {
     taken = [];
     opened = [];
     asked = [];
+    signedIn = [];
     TestBed.configureTestingModule({
       imports: [StaffSuggestionCard],
       providers: [
@@ -53,6 +65,16 @@ describe('StaffSuggestionCard', () => {
           useValue: { record: (sku: string, event: string) => recorded.push({ sku, event }) },
         },
         { provide: PieceRequest, useValue: { open: (sku: string) => asked.push(sku) } },
+        { provide: ProVisit, useValue: { active: proVisit } },
+        {
+          provide: FoldPanelHostService,
+          useValue: {
+            open: (component: unknown, options: { data?: unknown }): { close: () => void } => {
+              signedIn.push({ component, data: options.data });
+              return { close: (): void => undefined };
+            },
+          },
+        },
       ],
     });
     hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
@@ -64,7 +86,29 @@ describe('StaffSuggestionCard', () => {
     fixture.detectChanges();
   }
 
-  beforeEach(() => showsTtc.set(true));
+  beforeEach(() => {
+    showsTtc.set(true);
+    proVisit.set(false);
+  });
+
+  /** « Un pro non loggé ne doit pas pouvoir commander » (Hugo, 2026-10-19). */
+  it('en visite pro, le « + » ouvre la connexion, n’ajoute rien et ne compte rien', () => {
+    vi.stubGlobal('matchMedia', matchMediaAt(false));
+    proVisit.set(true);
+    mount(VIEW, 'Vous aimerez aussi');
+
+    expect(plus()?.getAttribute('aria-label')).toBe(
+      fill(FR.shop.addAriaProVisit, { name: BAGUETTE.name }),
+    );
+    plus()?.click();
+
+    expect(signedIn).toEqual([
+      { component: SignInDialog, data: { target: '/mon-compte', email: '' } },
+    ]);
+    expect(TestBed.inject(CartStore).quantityOf('PAI-001')).toBe(0);
+    expect(taken).toEqual([]);
+    expect(recorded).toEqual([]);
+  });
 
   it('écrit la phrase du staff, le nom et le prix TTC d’un particulier', () => {
     mount(VIEW, 'Vous aimerez aussi');

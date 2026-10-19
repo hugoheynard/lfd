@@ -800,6 +800,10 @@ export class AccueilPublic {
     if (order === null) {
       return;
     }
+    // Avant de vider : en visite pro, le panier caché ne doit pas disparaître.
+    if (this.cart.admit() === 'signInRequired') {
+      return;
+    }
     await this.catalogue.hydrate();
     this.cart.clear();
     let gone = 0;

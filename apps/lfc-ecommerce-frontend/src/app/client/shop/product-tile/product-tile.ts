@@ -21,6 +21,7 @@ import { ShopCatalogue } from '../shop-catalogue.store';
 import { objectPositionOf, tileArtOf } from '../shelf-display';
 import { mediaSrcset, sizedMedia, TILE_WIDTHS } from '../media-source';
 import { shelfPriceLabel, ShopPriceBasis } from '../shop-price-basis.service';
+import { ProVisit } from '../pro-visit.service';
 
 /**
  * Une pièce du rayon — la vignette de la grille.
@@ -189,9 +190,14 @@ export class ProductTile {
 
   protected readonly artSrcset = computed(() => mediaSrcset(this.art().url, TILE_WIDTHS));
 
-  protected readonly addLabel = computed(() =>
-    fill(this.t().shop.addAria, { name: this.product().name }),
-  );
+  private readonly proVisit = inject(ProVisit).active;
+
+  /** En visite pro, le « + » ouvre la connexion — et le dit (2026-10-19). */
+  protected readonly addLabel = computed(() => {
+    const shop = this.t().shop;
+    const template = this.proVisit() ? shop.addAriaProVisit : shop.addAria;
+    return fill(template, { name: this.product().name });
+  });
 
   protected readonly removeLabel = computed(() =>
     fill(this.t().shop.removeAria, { name: this.product().name }),

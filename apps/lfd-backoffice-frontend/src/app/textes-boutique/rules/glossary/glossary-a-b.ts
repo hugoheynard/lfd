@@ -18,6 +18,7 @@ export const GLOSSARY_A_B: Readonly<Record<string, string>> = {
   active: 'Compte actif',
   add: 'Bouton « ajouter »',
   addAria: 'Ajouter — lecteur d’écran',
+  addAriaProVisit: 'Ajouter en visite pro — lecteur d’écran',
   addCount: 'Ajouter n pièces',
   addStep: 'Ajouter une étape',
   addedToCart: 'Retour bref après un ajout au panier — « Ajouté ! »',

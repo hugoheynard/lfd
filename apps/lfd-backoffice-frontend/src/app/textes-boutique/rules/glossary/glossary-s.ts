@@ -24,6 +24,7 @@ export const GLOSSARY_S: Readonly<Record<string, string>> = {
   settleCard: 'Règlement — paiement direct',
   settleTitle: 'Règlement — question',
   signInLabel: 'Connexion — nom de la carte (lecteur d’écran)',
+  signInToOrder: 'Se connecter pour commander',
   signInPitch: 'Connexion — ce qu’on y retrouve',
   staffAdvice: 'Suggestion du staff au panier — « Notre conseil »',
   shelvesGroup: 'Les rayons',

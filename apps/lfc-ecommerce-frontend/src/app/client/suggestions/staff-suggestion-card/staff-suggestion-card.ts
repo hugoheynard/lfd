@@ -9,6 +9,7 @@ import { ClientLocale } from '../../client-locale.service';
 import type { ClientCopy } from '../../copy/client-copy.model';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { PieceRequest } from '../../shop/piece-request.service';
+import { ProVisit } from '../../shop/pro-visit.service';
 import { shelfPriceLabel, ShopPriceBasis } from '../../shop/shop-price-basis.service';
 
 /**
@@ -63,6 +64,7 @@ export class StaffSuggestionCard<V extends SuggestionView = SuggestionView> {
   private readonly audience = inject(ProductAudience);
   private readonly entries = inject(CartEntries);
   private readonly pieces = inject(PieceRequest);
+  private readonly proVisit = inject(ProVisit).active;
 
   protected readonly card = computed(() => {
     const view = this.view();
@@ -73,7 +75,10 @@ export class StaffSuggestionCard<V extends SuggestionView = SuggestionView> {
       line: view.item.name,
       price: shelfPriceLabel(view.item, ttc),
       suffix: ttc ? shop.ttcSuffix : shop.htSuffix,
-      addLabel: fill(shop.addAria, { name: view.item.name }),
+      // En visite pro, le « + » ouvre la connexion — et le dit.
+      addLabel: fill(this.proVisit() ? shop.addAriaProVisit : shop.addAria, {
+        name: view.item.name,
+      }),
     };
   });
 
@@ -99,8 +104,12 @@ export class StaffSuggestionCard<V extends SuggestionView = SuggestionView> {
 
   protected take(): void {
     const view = this.view();
-    this.taken.emit(view);
     const entering = this.cart.quantityOf(view.sku) === 0;
+    // La visite pro détourne le geste vers la connexion : ni `taken`, ni compte.
+    if (this.cart.admit() === 'signInRequired') {
+      return;
+    }
+    this.taken.emit(view);
     if (entering) {
       this.audience.record(view.sku, 'added_to_cart');
     }

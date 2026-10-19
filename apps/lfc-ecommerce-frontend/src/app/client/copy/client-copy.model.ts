@@ -433,6 +433,10 @@ export interface ClientCopy {
     readonly proVisitSignIn: string;
     /** Revenir en taxe comprise efface le choix de la visite. */
     readonly proVisitShowTtc: string;
+    /** Un visiteur en visite pro ne commande pas : le repère le dit (2026-10-19). */
+    readonly proVisitOrder: string;
+    /** Le « + » en visite pro ouvre la connexion. `{name}` = le nom de la pièce. */
+    readonly addAriaProVisit: string;
     /** `{name}` est remplacé par le nom de la pièce. */
     readonly addAria: string;
     readonly removeAria: string;
@@ -530,6 +534,8 @@ export interface ClientCopy {
     readonly addCount: string;
     readonly update: string;
     readonly inCart: string;
+    /** Le bouton de la fiche en visite pro : il ouvre la connexion au lieu d'ajouter. */
+    readonly signInToOrder: string;
   };
   readonly cart: {
     readonly kicker: string;

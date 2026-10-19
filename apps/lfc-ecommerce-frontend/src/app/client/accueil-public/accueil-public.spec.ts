@@ -150,6 +150,10 @@ class FakeShop {
   clear(): void {
     this.posed.clear();
   }
+  /** Hors visite pro : le geste passe. */
+  admit(): 'applied' {
+    return 'applied';
+  }
   setQuantity(sku: string, quantity: number): void {
     this.posed.set(sku, quantity);
   }

@@ -8,13 +8,16 @@ import { of } from 'rxjs';
 import { AUTH_CONFIG } from '../../../auth/auth.config';
 import { ProVisit } from '../pro-visit.service';
 import { NEVER } from 'rxjs';
+import { FoldPanelHostService } from 'fold-ng';
 import { vi } from 'vitest';
 
 import { matchMediaAt } from '../../mon-compte/account.fixture';
 
 import { hydrateWith, TEST_CATALOGUE, TEST_ITEMS } from '../shop-catalogue.fixture';
 import { ShopCatalogue } from '../shop-catalogue.store';
+import { CartStore } from '../../cart/cart.store';
 import { ClientCart } from '../../cart/client-cart.service';
+import { SignInDialog } from '../../../login/sign-in-dialog/sign-in-dialog';
 import { OrderContextStore } from '../../../client/order-context.store';
 import { FR } from '../../../client/copy/fr';
 import { COMMAND_TERMS_FR } from '../../copy/screens/command-terms.copy';
@@ -514,8 +517,9 @@ describe('ShopPage — Régler, connecté', () => {
  * ne change.
  */
 describe('ShopPage — la visite pro par #pro', () => {
-  async function arrive(url: string): Promise<HTMLElement> {
+  async function arrive(url: string, before: () => void = () => undefined): Promise<HTMLElement> {
     sessionStorage.clear();
+    localStorage.clear();
     TestBed.configureTestingModule({
       providers: [
         provideRouter([{ path: 'boutique', component: ShopPage }]),
@@ -528,6 +532,7 @@ describe('ShopPage — la visite pro par #pro', () => {
         provideWorkspace(workspaceDouble()),
       ],
     });
+    before();
     const harness = await RouterTestingHarness.create();
     await harness.navigateByUrl(url, ShopPage);
     const http = TestBed.inject(HttpTestingController);
@@ -555,5 +560,65 @@ describe('ShopPage — la visite pro par #pro', () => {
 
     expect(page.textContent).not.toContain(FR.shop.proVisitNote);
     expect(page.querySelector('app-product-tile')?.textContent).toContain(FR.shop.ttcSuffix);
+  });
+
+  /**
+   * « Un pro non loggé ne doit pas pouvoir commander » (Hugo, 2026-10-19) : en
+   * visite pro, le panier d'avant est caché — pas vidé —, le « + » ouvre la
+   * connexion, et tout revient en sortant de la visite.
+   */
+  describe('on n’y commande pas', () => {
+    const SKU = TEST_ITEMS[0]?.sku ?? '';
+
+    let opened: unknown[];
+
+    function fillCart(): void {
+      opened = [];
+      TestBed.overrideProvider(FoldPanelHostService, {
+        useValue: {
+          open: (component: unknown, options: { data?: unknown }): { close: () => void } => {
+            opened.push({ component, data: options.data });
+            return { close: (): void => undefined };
+          },
+        },
+      });
+      hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
+      TestBed.inject(CartStore).setQuantity(SKU, 2);
+    }
+
+    it('cache le panier d’avant, et le « + » ouvre la connexion sans rien ajouter', async () => {
+      const page = await arrive('/boutique#pro', fillCart);
+
+      expect(TestBed.inject(ClientChrome).cart()).toBe(false);
+      expect(page.querySelector('app-cart-bar')).toBeNull();
+      expect(page.querySelector('app-order-bar')).toBeNull();
+      expect(TestBed.inject(ClientCart).count()).toBe(0);
+
+      page.querySelector<HTMLButtonElement>('app-product-tile .quick')?.click();
+
+      expect(opened).toEqual([
+        { component: SignInDialog, data: { target: '/mon-compte', email: '' } },
+      ]);
+      expect(TestBed.inject(CartStore).quantityOf(SKU)).toBe(2);
+    });
+
+    it('« Voir les prix TTC » rend le panier et son contenu', async () => {
+      const page = await arrive('/boutique#pro', fillCart);
+      const showTtc = Array.from(page.querySelectorAll('button')).find(
+        (b) => b.textContent?.trim() === FR.shop.proVisitShowTtc,
+      );
+      showTtc?.click();
+      TestBed.tick();
+
+      expect(TestBed.inject(ClientChrome).cart()).toBe(true);
+      expect(TestBed.inject(ClientCart).quantityOf(SKU)).toBe(2);
+      expect(page.querySelector('app-cart-bar')).not.toBeNull();
+    });
+
+    it('hors visite pro, le panier reste dans la barre', async () => {
+      await arrive('/boutique', fillCart);
+
+      expect(TestBed.inject(ClientChrome).cart()).toBe(true);
+    });
   });
 });

@@ -247,9 +247,11 @@ export const IT: ClientCopy = {
     priceTtc: '{price} IVA incl.',
     ttcSuffix: 'IVA incl.',
     proVisitNote:
-      'Prezzi professionali IVA esclusa — le vostre condizioni negoziate dopo l’accesso',
+      'Prezzi professionali IVA esclusa — le vostre condizioni negoziate dopo l’accesso.',
     proVisitSignIn: 'Accedo',
     proVisitShowTtc: 'Vedi i prezzi IVA incl.',
+    proVisitOrder: 'Accedete per ordinare alle vostre condizioni.',
+    addAriaProVisit: 'Accedi per ordinare {name}',
     addAria: 'Aggiungi {name}',
     removeAria: 'Togli {name}',
     cartTitle: 'Il suo carrello',
@@ -296,6 +298,7 @@ export const IT: ClientCopy = {
     addCount: 'Aggiungi {n}',
     update: 'Aggiorna',
     inCart: 'Già nel carrello',
+    signInToOrder: 'Accedi per ordinare',
   },
   cart: {
     kicker: 'Il carrello',

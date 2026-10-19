@@ -241,9 +241,11 @@ export const FR: ClientCopy = {
     // au lieu d'en faire partie — d'où un suffixe, comme son voisin.
     priceTtc: '{price} TTC',
     ttcSuffix: 'TTC',
-    proVisitNote: 'Tarifs professionnels hors taxe — vos conditions négociées après connexion',
+    proVisitNote: 'Tarifs professionnels hors taxe — vos conditions négociées après connexion.',
     proVisitSignIn: 'Je me connecte',
     proVisitShowTtc: 'Voir les prix TTC',
+    proVisitOrder: 'Connectez-vous pour commander à vos conditions.',
+    addAriaProVisit: 'Se connecter pour commander {name}',
     addAria: 'Ajouter {name}',
     removeAria: 'Retirer {name}',
     cartTitle: 'Votre panier',
@@ -290,6 +292,7 @@ export const FR: ClientCopy = {
     addCount: 'Ajouter {n}',
     update: 'Mettre à jour',
     inCart: 'Déjà au panier',
+    signInToOrder: 'Se connecter pour commander',
   },
   cart: {
     kicker: 'Le panier',

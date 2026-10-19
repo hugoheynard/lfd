@@ -109,6 +109,7 @@ export const GLOSSARY_P: Readonly<Record<string, string>> = {
   proPrice: 'Prix pro',
   proSub: 'Professionnel — sous-titre',
   proVisitNote: 'Visite pro — repère des prix hors taxe',
+  proVisitOrder: 'Visite pro — se connecter pour commander',
   proVisitShowTtc: 'Visite pro — revenir au TTC',
   proVisitSignIn: 'Visite pro — se connecter',
   problem: 'Signaler un problème',

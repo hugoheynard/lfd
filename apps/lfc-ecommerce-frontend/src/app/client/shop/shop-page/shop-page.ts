@@ -174,10 +174,13 @@ export class ShopPage {
       return;
     }
     const entering = this.cart.quantityOf(id) === 0 && quantity > 0;
+    // La visite pro détourne le geste vers la connexion : la fiche reste ouverte.
+    if (this.cart.setQuantity(id, quantity) === 'signInRequired') {
+      return;
+    }
     if (entering) {
       this.audience.record(id, 'added_to_cart');
     }
-    this.cart.setQuantity(id, quantity);
     if (entering && this.cart.quantityOf(id) > 0) {
       this.entries.entered(id);
     }
@@ -224,6 +227,11 @@ export class ShopPage {
     if (inject(ActivatedRoute).snapshot.fragment === PRO_VISIT_FRAGMENT) {
       inject(ProVisit).enter();
     }
+    // En visite pro, le panier quitte la barre (Hugo, 2026-10-19 : « un pro non
+    // loggé ne doit pas pouvoir commander ») ; il revient quand elle cesse, ou
+    // en quittant la page.
+    effect(() => this.chrome.cart.set(!this.proVisit()));
+    inject(DestroyRef).onDestroy(() => this.chrome.cart.set(true));
     // L'HYDRATATION, au seul endroit qui l'ouvre. Idempotente : revenir au rayon
     // depuis le panier ne redemande rien.
     void this.catalogue.hydrate();

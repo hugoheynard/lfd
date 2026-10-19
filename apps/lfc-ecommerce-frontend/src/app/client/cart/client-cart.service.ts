@@ -1,10 +1,23 @@
 import { computed, effect, inject, Injectable, Injector, untracked } from '@angular/core';
+import { FoldPanelHostService } from 'fold-ng';
 
 import { type CartLine } from './cart-total';
 import { CartStore } from './cart.store';
 import { ShopCartSync } from './shop-cart-sync.service';
 import { ShopQuote } from './shop-quote.service';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
+import { ProVisit } from '../shop/pro-visit.service';
+import { SignInDialog } from '../../login/sign-in-dialog/sign-in-dialog';
+
+/** Où mène la connexion demandée par un geste d'achat en visite pro — la porte du repère. */
+const PRO_VISIT_SIGN_IN = '/mon-compte';
+
+/**
+ * Ce qu'est devenu un geste d'achat : posé au panier, ou détourné vers la
+ * connexion (visite pro). L'appelant le lit pour ne pas compter un ajout qui
+ * n'a pas eu lieu.
+ */
+export type CartGesture = 'applied' | 'signInRequired';
 
 /**
  * **Le panier en cours** — un seul, partagé par le rayon, la fiche et le panier.
@@ -33,6 +46,8 @@ export class ClientCart {
   private readonly store = inject(CartStore);
   private readonly quote = inject(ShopQuote);
   private readonly catalogue = inject(ShopCatalogue);
+  private readonly proVisit = inject(ProVisit);
+  private readonly panels = inject(FoldPanelHostService);
 
   private readonly injector = inject(Injector);
 
@@ -93,6 +108,12 @@ export class ClientCart {
    * ce qui rend l'élagage du stockage inoffensif quand il tarde.
    */
   readonly lines = computed<readonly CartLine[]>(() => {
+    // 🔴 En visite pro, le panier est CACHÉ, pas vidé (Hugo, 2026-10-19 : « un
+    // pro non loggé ne doit pas pouvoir commander ») : le dépôt garde ce qu'un
+    // particulier y avait mis, et tout reparaît quand la visite cesse.
+    if (this.proVisit.active()) {
+      return [];
+    }
     const quantities = this.store.quantities();
     return this.catalogue
       .items()
@@ -132,14 +153,36 @@ export class ClientCart {
   readonly voucherTotalEffectCents = this.quote.voucherTotalEffectCents;
 
   quantityOf(productId: string): number {
-    return this.store.quantityOf(productId);
+    return this.proVisit.active() ? 0 : this.store.quantityOf(productId);
   }
 
-  add(productId: string): void {
-    if (this.catalogue.itemOf(productId) === null) {
-      return;
+  /**
+   * **La porte de tout geste d'achat.** En visite pro, rien n'entre au panier :
+   * la connexion s'ouvre à la place — la même que partout (`SignInDialog`) —
+   * et le geste rend `signInRequired`.
+   *
+   * Elle est ICI, et pas sur chaque bouton, parce que ce service est le seul à
+   * faire bouger le panier : un point d'entrée ajouté demain (une carte de
+   * plus, un « recommander ») passe par {@link add} ou {@link setQuantity} et
+   * hérite du refus sans le savoir. Un appelant qui doit agir AVANT d'écrire
+   * (vider pour recommander) l'appelle lui-même.
+   */
+  admit(): CartGesture {
+    if (!this.proVisit.active()) {
+      return 'applied';
     }
-    this.store.setQuantity(productId, this.store.quantityOf(productId) + 1);
+    SignInDialog.open(this.panels, PRO_VISIT_SIGN_IN);
+    return 'signInRequired';
+  }
+
+  add(productId: string): CartGesture {
+    if (this.admit() === 'signInRequired') {
+      return 'signInRequired';
+    }
+    if (this.catalogue.itemOf(productId) !== null) {
+      this.store.setQuantity(productId, this.store.quantityOf(productId) + 1);
+    }
+    return 'applied';
   }
 
   /** Retirer la dernière pièce retire la ligne : une ligne à zéro n'existe pas. */
@@ -154,11 +197,14 @@ export class ClientCart {
    * Le catalogue garde la porte comme pour {@link add} : une référence qu'il
    * ne connaît pas n'entre pas dans un état qu'aucun écran ne saurait afficher.
    */
-  setQuantity(productId: string, quantity: number): void {
-    if (this.catalogue.itemOf(productId) === null) {
-      return;
+  setQuantity(productId: string, quantity: number): CartGesture {
+    if (this.admit() === 'signInRequired') {
+      return 'signInRequired';
     }
-    this.store.setQuantity(productId, quantity);
+    if (this.catalogue.itemOf(productId) !== null) {
+      this.store.setQuantity(productId, quantity);
+    }
+    return 'applied';
   }
 
   /**

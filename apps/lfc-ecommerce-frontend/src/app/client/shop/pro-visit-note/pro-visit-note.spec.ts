@@ -56,6 +56,10 @@ describe('ProVisitNote — le repère de la visite pro', () => {
     expect(el().textContent).toContain(FR.shop.proVisitNote);
   });
 
+  it('dit qu’on commande une fois connecté', () => {
+    expect(el().textContent).toContain('Connectez-vous pour commander à vos conditions.');
+  });
+
   it('« Je me connecte » ouvre la connexion vers l’espace pro', () => {
     button(FR.shop.proVisitSignIn).click();
 
