@@ -326,6 +326,8 @@ jobs:
   b2b-lint:
     name: Backend B2B · lint
     runs-on: ubuntu-latest
+    # Limite ≈ 3× la durée mesurée : voir le commentaire de `b2b-unit`.
+    timeout-minutes: 15
     needs: changes
     if: needs.changes.outputs.api == 'true'
     steps:
@@ -344,6 +346,8 @@ jobs:
   b2b-typecheck:
     name: Backend B2B · typecheck
     runs-on: ubuntu-latest
+    # Limite ≈ 3× la durée mesurée : voir le commentaire de `b2b-unit`.
+    timeout-minutes: 8
     needs: changes
     if: needs.changes.outputs.api == 'true'
     steps:
@@ -370,6 +374,14 @@ jobs:
   b2b-unit:
     name: Backend B2B · tests unitaires
     runs-on: ubuntu-latest
+    # `timeout-minutes` ≈ 3× la plus longue des 5 dernières CI vertes de
+    # `dev` (mesuré le 2026-10-19). Sans limite écrite, GitHub coupe à 6 h ou
+    # annule sans dire pourquoi (le 2026-10-07 : « The operation was
+    # canceled » vers la 12e minute, aucun test rouge). Mesures : unitaires 4 min 45
+    # (étape 3 min 52), lint 4 min 42, typecheck 2 min 24, e2e 8 min 21. Une limite écrite
+    # nomme la coupure. Si la suite grossit au point d'approcher la limite,
+    # c'est une mesure à refaire, pas un chiffre à pousser.
+    timeout-minutes: 15
     needs: changes
     if: needs.changes.outputs.api == 'true'
     steps:
@@ -393,6 +405,7 @@ jobs:
           key: jest-unit-${{ hashFiles('pnpm-lock.yaml', 'apps/lfd-api/jest.base.cjs') }}-${{ github.sha }}
           restore-keys: jest-unit-${{ hashFiles('pnpm-lock.yaml', 'apps/lfd-api/jest.base.cjs') }}-
       - name: Tests unitaires
+        timeout-minutes: 12
         run: pnpm --filter lfd-api test:unit
       - name: Sauvegarder le cache Jest
         if: github.ref == 'refs/heads/dev'
@@ -421,6 +434,8 @@ jobs:
   b2b-backend:
     name: Backend B2B · e2e ${{ matrix.shard }}/20
     runs-on: ubuntu-latest
+    # Limite ≈ 3× la durée mesurée : voir le commentaire de `b2b-unit`.
+    timeout-minutes: 25
     needs: changes
     if: needs.changes.outputs.api == 'true'
     strategy:
@@ -541,6 +556,7 @@ jobs:
       # alors « --shard=1/4 » comme un motif de chemin de test. Zéro suite
       # trouvée, et un échec qui parle de tout sauf de la vraie cause.
       - name: Tests e2e
+        timeout-minutes: 20
         # `E2E_WORKERS` gouverne À LA FOIS le nombre de workers Jest et le nombre
         # de bases provisionnées à l'étape précédente — une seule source, sinon
         # un worker sans base retomberait dans le partage qu'on vient de fermer.

@@ -19,8 +19,6 @@ const base = require("./jest.base.cjs");
 // `test/`. Lever ce mur en douce
 // ramènerait exactement la course que `jest.e2e.cjs` décrit, mais sans le
 // commentaire qui l'explique.
-//
-// Pas de `maxWorkers` : Jest prend les cœurs disponibles.
 module.exports = {
   ...base,
   displayName: "lfd-api:unit",
@@ -29,5 +27,16 @@ module.exports = {
   // ont été coupés deux fois par GitHub vers la 12e minute, sans test rouge
   // (2026-10-07). Au-delà de ce seuil, le worker est remplacé entre deux fichiers.
   workerIdleMemoryLimit: "1536MB",
+  // 75 % des cœurs, écrit plutôt que laissé au défaut (cœurs − 1), mesuré le
+  // 2026-10-19 sur la suite entière (10 749 tests, M1 Pro 10 cœurs) :
+  // défaut (9 workers) 76 s, 75 % (7) 69 s, 3 workers 100 s. Sur un runner
+  // GitHub `ubuntu-latest` d'un dépôt public (4 vCPU, 16 Go), 75 % donne
+  // 3 workers — ce que la CI prenait déjà. Plafond mémoire : 3 × ~1,5 Go
+  // avant recyclage, loin des 16 Go. Ce qui gonfle un worker : une spec
+  // d'application laisse ~47 Mo de tas par fichier, une spec de domaine ~15 Mo
+  // (mesure en série avec `--expose-gc`, le tas net, lui, ne monte que de 274 Mo :
+  // pas de fuite). Hypothèse NON prouvée : les handlers importent
+  // `@nestjs/cqrs` (627 modules CommonJS), que chaque fichier réévalue.
+  maxWorkers: "75%",
   testMatch: ["<rootDir>/**/?(*.)+(spec|test).ts"],
 };
