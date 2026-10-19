@@ -29,6 +29,10 @@ import { AdminCapabilitiesController } from "./capabilities/admin-capabilities.c
 import { CapabilityInventory } from "./capabilities/capability-inventory.port.js";
 import { ReadCapabilitiesHandler } from "./capabilities/read-capabilities.handler.js";
 import { StartupCapabilityInventory } from "./capabilities/startup-capability-inventory.js";
+import { ContainerMetricsReader } from "./container/container-metrics-reader.port.js";
+import { ContainerUsageService } from "./container/container-usage.service.js";
+import { GraphqlContainerMetricsReader } from "./container/graphql-container-metrics.reader.js";
+import { UnconfiguredContainerMetricsReader } from "./container/unconfigured-container-metrics.reader.js";
 
 /**
  * Les sondes de fronts sont **dérivées de la carte**, pas listées à la main :
@@ -105,6 +109,22 @@ const FRONTEND_PROBES: readonly NodeProbe[] = TOPOLOGY.flatMap((node) =>
     // lu par un port étroit — la même source que la route au jeton.
     ReadCapabilitiesHandler,
     { provide: CapabilityInventory, useClass: StartupCapabilityInventory },
+    // CPU et mémoire du container de l'API. Même choix au démarrage que le
+    // trafic, mais SANS répétition : un CPU inventé est précisément la
+    // confusion que ce chiffre vient lever. Non configuré, il le dit.
+    GraphqlContainerMetricsReader,
+    UnconfiguredContainerMetricsReader,
+    ContainerUsageService,
+    {
+      provide: ContainerMetricsReader,
+      inject: [AppConfig, GraphqlContainerMetricsReader, UnconfiguredContainerMetricsReader],
+      useFactory: (
+        config: AppConfig,
+        graphql: GraphqlContainerMetricsReader,
+        unconfigured: UnconfiguredContainerMetricsReader,
+      ): ContainerMetricsReader =>
+        config.containerMetricsConfig() === null ? unconfigured : graphql,
+    },
     {
       // Le choix se fait UNE FOIS, au démarrage, sur la présence de la
       // configuration — jamais requête par requête. Une bascule en cours de

@@ -116,6 +116,10 @@ const RUNTIME_KEYS = [
   // s'authentifie. Absents, OPS rend une fenêtre de répétition — et le dit.
   "CLOUDFLARE_ACCOUNT_ID",
   "CLOUDFLARE_ANALYTICS_TOKEN",
+  // L'application Containers de l'API : ce qui isole SON CPU et SA mémoire
+  // parmi les containers du compte. Pas un secret. Absente, la case API de la
+  // page Santé dit « CPU non mesuré » — et le bulletin de démarrage le dit.
+  "CLOUDFLARE_API_CONTAINER_APPLICATION_ID",
   // La paire VAPID qui signe nos envois Web Push, et l'adresse de contact
   // qu'exige la norme. Absentes, la cloche sonne toujours DANS le back-office ;
   // seul le téléphone reste muet — et le bulletin de démarrage le dit.

@@ -47,6 +47,8 @@ export interface CapabilitySnapshot {
    * `https://` (livraison, lots 8 et 8 bis).
    */
   readonly hasRoadRouting: boolean;
+  /** Compte, jeton ET application Containers : la lecture du CPU de l'API. */
+  readonly hasContainerMetrics: boolean;
 }
 
 /**
@@ -253,6 +255,15 @@ const CHECKS: readonly Check[] = [
       "« Proposer », « Chronométrer » et le simulateur de tournée sont refusés : il n'y a plus de repli à vol d'oiseau (L10b-C5), les tournées existantes restent composables à la main",
     severity: "degraded",
     present: (s) => s.hasRoadRouting,
+  },
+  {
+    capability: "CPU et mémoire du container de l'API (carte de santé)",
+    setting:
+      "CLOUDFLARE_ACCOUNT_ID / CLOUDFLARE_ANALYTICS_TOKEN / CLOUDFLARE_API_CONTAINER_APPLICATION_ID",
+    consequence:
+      "la case API de la page Santé dit « CPU non mesuré » : seule la pression de latence reste lisible, et elle n'est pas un CPU",
+    severity: "degraded",
+    present: (s) => s.hasContainerMetrics,
   },
 ];
 

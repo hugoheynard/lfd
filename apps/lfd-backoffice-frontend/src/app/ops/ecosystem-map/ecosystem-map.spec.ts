@@ -1,6 +1,11 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 
-import type { NodeHealth, TrafficWindow } from '@lfd/ops-contract';
+import type {
+  ContainerUsage,
+  ContainerUsageGap,
+  NodeHealth,
+  TrafficWindow,
+} from '@lfd/ops-contract';
 
 import { EcosystemMap } from './ecosystem-map';
 
@@ -30,10 +35,18 @@ function trafficWindow(overrides: Partial<TrafficWindow>): TrafficWindow {
   };
 }
 
-function render(windows: readonly TrafficWindow[]): ComponentFixture<EcosystemMap> {
+const GENERATED_AT = '2026-01-01T00:05:30.000Z';
+
+function render(
+  windows: readonly TrafficWindow[],
+  container: { usage?: ContainerUsage; gap?: ContainerUsageGap } = {},
+): ComponentFixture<EcosystemMap> {
   const fixture = TestBed.createComponent(EcosystemMap);
   fixture.componentRef.setInput('nodes', [API]);
   fixture.componentRef.setInput('windows', windows);
+  fixture.componentRef.setInput('containerUsage', container.usage ?? null);
+  fixture.componentRef.setInput('containerUsageGap', container.gap ?? null);
+  fixture.componentRef.setInput('generatedAt', GENERATED_AT);
   fixture.detectChanges();
   return fixture;
 }
@@ -59,7 +72,7 @@ describe('EcosystemMap — la jauge dit ce qu’elle mesure', () => {
 
     expect(squeeze(node?.querySelector('.node-gauge-value')?.textContent)).toBe('40 %');
     expect(squeeze(node?.querySelector('.node-gauge-measure')?.textContent)).toBe('p95 470 ms');
-    expect(node?.getAttribute('aria-label')).toContain('d’après la latence');
+    expect(node?.getAttribute('aria-label')).toContain('Pression de latence 40 %');
     expect(node?.getAttribute('aria-label')).toContain('ni un CPU ni une mémoire');
     expect(squeeze(node?.querySelector('title')?.textContent)).toContain('ni un CPU');
   });
@@ -70,11 +83,65 @@ describe('EcosystemMap — la jauge dit ce qu’elle mesure', () => {
 
     expect(squeeze(node?.querySelector('.node-gauge-value')?.textContent)).toBe('12 %');
     expect(squeeze(node?.querySelector('.node-gauge-measure')?.textContent)).toBe('12 % en 429');
-    expect(node?.getAttribute('aria-label')).toContain('d’après les rejets');
+    expect(node?.getAttribute('aria-label')).toContain('Pression de rejet 12 %');
   });
 
   it('n’affiche aucune jauge sans mesure', () => {
     expect(gauge(render([]))).toBeNull();
     expect(gauge(render([trafficWindow({ requests: 0 })]))).toBeNull();
+  });
+
+  it('affiche le CPU et la mémoire du container sur la case API, et la pression dessous', () => {
+    const f = render([trafficWindow({ p95Ms: 470 })], {
+      usage: {
+        cpuPercent: 12.4,
+        memoryPercent: 8,
+        measuredAt: '2026-01-01T00:03:00.000Z',
+        instances: 1,
+        instanceType: 'standard-1',
+        windowMinutes: 5,
+      },
+    });
+    const node = gauge(f);
+    const host = f.nativeElement as HTMLElement;
+
+    expect(squeeze(node?.querySelector('.node-gauge-value')?.textContent)).toBe(
+      'CPU 12 % · Mém. 8 %',
+    );
+    expect(squeeze(node?.querySelector('.node-gauge-measure')?.textContent)).toBe('pression 40 %');
+    expect(node?.getAttribute('aria-label')).toContain('Pression de latence 40 %');
+    expect(squeeze(host.querySelector('.map-caveat')?.textContent)).toContain(
+      'mesuré il y a 2 min',
+    );
+  });
+
+  it('dit pourquoi le CPU manque, et le geste, sans cacher la pression', () => {
+    const f = render([trafficWindow({ p95Ms: 470 })], {
+      gap: { reason: 'not-configured', detail: 'Posez CLOUDFLARE_API_CONTAINER_APPLICATION_ID.' },
+    });
+    const host = f.nativeElement as HTMLElement;
+
+    expect(squeeze(gauge(f)?.querySelector('.node-gauge-value')?.textContent)).toBe(
+      'CPU non mesuré',
+    );
+    expect(squeeze(host.querySelector('fold-callout')?.textContent)).toContain(
+      'CLOUDFLARE_API_CONTAINER_APPLICATION_ID',
+    );
+  });
+
+  it('porte le pire des deux sur la barre : un CPU au plafond l’emporte sur une latence calme', () => {
+    const f = render([trafficWindow({ p95Ms: 50 })], {
+      usage: {
+        cpuPercent: 90,
+        memoryPercent: 10,
+        measuredAt: '2026-01-01T00:04:00.000Z',
+        instances: 1,
+        instanceType: 'standard-1',
+        windowMinutes: 5,
+      },
+    });
+    const bar = (f.nativeElement as HTMLElement).querySelector('.node-gauge-fill');
+
+    expect(Number(bar?.getAttribute('width'))).toBeCloseTo((208 - 2) * 0.9);
   });
 });

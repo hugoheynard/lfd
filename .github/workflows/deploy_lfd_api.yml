@@ -233,6 +233,9 @@ jobs:
           # lecteur s'authentifie. Absents, OPS rend une fenêtre de RÉPÉTITION et
           # l'annonce dans sa réponse — il ne se tait pas.
           CLOUDFLARE_ANALYTICS_TOKEN: ${{ secrets.CLOUDFLARE_ANALYTICS_TOKEN }}
+          # L'application Containers de l'API, pour lire SON CPU et SA mémoire
+          # (page Santé). Une Variable : elle n'ouvre rien sans le jeton.
+          CLOUDFLARE_API_CONTAINER_APPLICATION_ID: ${{ vars.CLOUDFLARE_API_CONTAINER_APPLICATION_ID }}
           # La paire VAPID qui SIGNE nos envois Web Push. La publique voyage
           # dans chaque abonnement de navigateur — elle est publique par
           # construction — mais elle passe par le même chemin que la privée :
@@ -293,6 +296,7 @@ jobs:
                       R2_PRODUCTION_ACCESS_KEY_ID R2_PRODUCTION_SECRET_ACCESS_KEY \
                       STRIPE_SECRET_KEY STRIPE_PUBLISHABLE_KEY STRIPE_WEBHOOK_SECRET \
                       CLOUDFLARE_ACCOUNT_ID CLOUDFLARE_ANALYTICS_TOKEN \
+                      CLOUDFLARE_API_CONTAINER_APPLICATION_ID \
                       VAPID_PUBLIC_KEY VAPID_PRIVATE_KEY VAPID_SUBJECT \
                       RECOMPUTE_TOKEN \
                       FIELD_ENCRYPTION_KEY BAN_GEOCODER_URL ROUTE_PLANNER_URL ROUTE_PLANNER_TOKEN; do

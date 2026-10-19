@@ -12,6 +12,7 @@ import {
 import {
   optionalAdminDevBypass,
   optionalAnalyticsConfig,
+  optionalContainerApplicationId,
   optionalDevImpersonation,
   optionalFieldEncryptionKey,
   optionalJournalStrictFacts,
@@ -73,6 +74,7 @@ export class AppConfig {
   private readonly management: Auth0ManagementCredentials | null;
   private readonly stripeValue: StripeConfig | null;
   private readonly analyticsValue: AnalyticsConfig | null;
+  private readonly containerApplicationIdValue: string | null;
   private readonly mailerValue: MailerConfig;
   private readonly webPushValue: WebPushConfig | null;
   private readonly portValue: number;
@@ -103,6 +105,7 @@ export class AppConfig {
     this.management = optionalManagementCredentials();
     this.stripeValue = optionalStripeConfig();
     this.analyticsValue = optionalAnalyticsConfig();
+    this.containerApplicationIdValue = optionalContainerApplicationId();
     this.mailerValue = optionalMailerConfig();
     this.webPushValue = optionalWebPushConfig();
     this.portValue = optionalPort("PORT", 3200);
@@ -344,6 +347,18 @@ export class AppConfig {
   }
 
   /**
+   * Ce qu'il faut pour lire CPU et mémoire du container de l'API : le compte
+   * et le jeton d'Analytics Engine, plus l'identifiant de l'application.
+   * `null` ⇒ la carte dit « non mesuré », elle ne répète rien et n'invente rien.
+   */
+  containerMetricsConfig(): ContainerMetricsConfig | null {
+    if (this.analyticsValue === null || this.containerApplicationIdValue === null) {
+      return null;
+    }
+    return { ...this.analyticsValue, applicationId: this.containerApplicationIdValue };
+  }
+
+  /**
    * Réglages e-mail. **Toujours présent** — contrairement à Stripe : sans clé,
    * `apiKey` vaut `null` et le mailer part à blanc (il journalise au lieu
    * d'envoyer). C'est ce qui permet au développement, aux tests et à la CI de
@@ -546,6 +561,11 @@ export interface MailerConfig {
 export interface AnalyticsConfig {
   readonly accountId: string;
   readonly apiToken: string;
+}
+
+/** La lecture des métriques du container de l'API (GraphQL Analytics de Cloudflare). */
+export interface ContainerMetricsConfig extends AnalyticsConfig {
+  readonly applicationId: string;
 }
 
 export interface StripeConfig {

@@ -1,6 +1,9 @@
 import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
+import { FoldCalloutComponent } from 'fold-ng';
 import type {
+  ContainerUsage,
+  ContainerUsageGap,
   HealthStatus,
   NodeHealth,
   NodeKind,
@@ -8,6 +11,12 @@ import type {
   TrafficWindow,
 } from '@lfd/ops-contract';
 
+import {
+  CONTAINER_NODE,
+  containerReading,
+  withContainerUsage,
+  type ContainerReading,
+} from '../container-usage';
 import { layoutOf, type Lane, type LaneWidths, type MapLayout, type PlacedNode } from '../layout';
 import { occupancyOf, occupancyReading, type Occupancy, type OccupancyReading } from '../occupancy';
 import { sparklineOf, type Sparkline } from '../sparkline';
@@ -106,13 +115,20 @@ interface Box {
   readonly x: number;
   readonly y: number;
   readonly statusLabel: string;
+  /** Ce qui colore le lien et remplit la barre : le pire de tout ce qu'on mesure. */
   readonly occupancy: Occupancy;
   readonly title: string;
   readonly glyph: readonly string[];
-  /** Part du plafond, en pourcentage plein — `null` quand rien n'est mesuré. */
+  /** La barre de l'arête basse (0..1) — `null` quand rien n'est mesuré. */
   readonly gauge: number | null;
-  /** La grandeur réelle derrière `gauge` — `null` quand rien n'est mesuré. */
+  /** La pression vue par la gateway (0..1) — `null` quand rien ne la mesure. */
+  readonly pressure: number | null;
+  /** La grandeur réelle derrière `pressure` — `null` quand rien n'est mesuré. */
   readonly gaugeReading: OccupancyReading | null;
+  /** CPU et mémoire du container — seulement sur la case de l'API. */
+  readonly container: ContainerReading | null;
+  /** L'infobulle de la jauge : tout ce qu'elle résume, en phrases. */
+  readonly gaugeSentence: string;
   /** Ce que CE nœud dit de son activité, déjà mis en forme. Vide = rien à dire. */
   readonly readings: string;
   /** Sa courbe des 24 h, ou `null` — rien ne garde l'histoire d'un tiers. */
@@ -143,7 +159,7 @@ interface Box {
 @Component({
   selector: 'app-ecosystem-map',
   standalone: true,
-  imports: [DecimalPipe],
+  imports: [DecimalPipe, FoldCalloutComponent],
   templateUrl: './ecosystem-map.html',
   styleUrl: './ecosystem-map.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -152,6 +168,15 @@ export class EcosystemMap {
   readonly nodes = input.required<readonly NodeHealth[]>();
   readonly windows = input<readonly TrafficWindow[]>([]);
   readonly series = input<readonly TrafficSeries[]>([]);
+  /** CPU et mémoire du container de l'API, ou `null` — et alors `containerUsageGap`. */
+  readonly containerUsage = input<ContainerUsage | null>(null);
+  readonly containerUsageGap = input<ContainerUsageGap | null>(null);
+  /** L'instant du constat : c'est de lui que part « mesuré il y a N min ». */
+  readonly generatedAt = input<string>('');
+
+  protected readonly container = computed(() =>
+    containerReading(this.containerUsage(), this.containerUsageGap(), this.generatedAt()),
+  );
 
   private readonly sparklines = computed(() => {
     const byNode = new Map(this.series().map((one) => [one.node, one.points]));
@@ -169,7 +194,8 @@ export class EcosystemMap {
     () => new Map(this.windows().map((window) => [window.node, window])),
   );
 
-  private readonly occupancies = computed(() => {
+  /** La pression vue par la gateway, nœud par nœud — latence ou rejets. */
+  private readonly pressures = computed(() => {
     const byNode = this.windowsByNode();
     return new Map(
       this.nodes().map((node) => [node.node, occupancyOf(byNode.get(node.node))] as const),
@@ -194,23 +220,29 @@ export class EcosystemMap {
 
   protected readonly boxes = computed<readonly Box[]>(() =>
     this.layout().nodes.map((placed) => {
-      const occupancy = this.occupancies().get(placed.health.node) ?? {
-        ratio: 0,
-        tone: 'calm' as const,
-        basis: 'aucune mesure' as const,
-      };
+      const id = placed.health.node;
+      const pressure = this.pressures().get(id) ?? UNMEASURED;
+      const container = id === CONTAINER_NODE ? this.container() : null;
+      const occupancy =
+        id === CONTAINER_NODE ? withContainerUsage(pressure, this.containerUsage()) : pressure;
+      const gaugeReading = occupancyReading(this.windowsByNode().get(id), pressure);
       return {
         node: placed.health,
         x: position(placed, this.layout()).x,
         y: position(placed, this.layout()).y,
         statusLabel: STATUS_LABEL[placed.health.status],
         occupancy,
-        title: describe(placed.health, occupancy),
+        title: describe(placed.health, pressure, container),
         glyph: GLYPHS[placed.health.kind],
         gauge: occupancy.basis === 'aucune mesure' ? null : occupancy.ratio,
-        gaugeReading: occupancyReading(this.windowsByNode().get(placed.health.node), occupancy),
+        pressure: pressure.basis === 'aucune mesure' ? null : pressure.ratio,
+        gaugeReading,
+        container,
+        gaugeSentence: [container?.sentence, gaugeReading?.sentence]
+          .filter((part) => part !== undefined)
+          .join(' '),
         readings: formatReadings(placed.health.readings),
-        spark: this.sparklines().get(placed.health.node) ?? null,
+        spark: this.sparklines().get(id) ?? null,
       };
     }),
   );
@@ -263,6 +295,9 @@ export class EcosystemMap {
     this.boxes().every((box) => box.occupancy.basis === 'aucune mesure'),
   );
 }
+
+/** Un nœud que la gateway ne voit pas : ni pression, ni couleur. */
+const UNMEASURED: Occupancy = { ratio: 0, tone: 'calm', basis: 'aucune mesure' };
 
 /** Le pas d'un nœud au suivant, dans un même couloir. */
 const STEP = NODE.width + GAP.column;
@@ -357,10 +392,18 @@ function flowDuration(requests: number): number {
 }
 
 /** L'infobulle : ce que la couleur ne peut pas dire. */
-function describe(node: NodeHealth, occupancy: Occupancy): string {
+function describe(
+  node: NodeHealth,
+  pressure: Occupancy,
+  container: ContainerReading | null,
+): string {
   const parts = [`${node.label} — ${STATUS_LABEL[node.status]} (${REASON_LABEL[node.reason]})`];
-  if (occupancy.basis !== 'aucune mesure') {
-    parts.push(`occupation ${Math.round(occupancy.ratio * 100)} % d'après la ${occupancy.basis}`);
+  if (container !== null) {
+    parts.push(container.label);
+  }
+  if (pressure.basis === 'latence' || pressure.basis === 'rejets') {
+    const name = pressure.basis === 'latence' ? 'pression de latence' : 'pression de rejet';
+    parts.push(`${name} ${Math.round(pressure.ratio * 100)} %`);
   }
   if (node.note !== undefined) {
     parts.push(node.note);

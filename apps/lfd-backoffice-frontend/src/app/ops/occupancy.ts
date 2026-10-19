@@ -26,7 +26,7 @@ export const P95_SATURATED_MS = 1000;
 export const P95_CALM_MS = 120;
 
 /** Ce sur quoi l'occupation est établie — parce qu'une jauge sans source se croit. */
-export type OccupancyBasis = 'latence' | 'rejets' | 'aucune mesure';
+export type OccupancyBasis = 'latence' | 'rejets' | 'conteneur' | 'aucune mesure';
 
 export type OccupancyTone = 'calm' | 'busy' | 'strained' | 'saturated';
 
@@ -64,7 +64,8 @@ function throttlePressure(traffic: TrafficWindow): number {
   return traffic.requests <= 0 ? 0 : clamp(traffic.throttled / traffic.requests);
 }
 
-function toneOf(ratio: number): OccupancyTone {
+/** La teinte d'un ratio — partagée avec l'usage du container, une seule échelle. */
+export function toneOf(ratio: number): OccupancyTone {
   if (ratio >= 0.8) {
     return 'saturated';
   }
@@ -118,12 +119,18 @@ export interface OccupancyReading {
  * Le 2026-10-12, Hugo a lu « 40 % » sur la carte comme un CPU de Cloudflare :
  * un pourcentage nu se rattache à la jauge la plus connue, pas à la nôtre. On
  * affiche donc la grandeur qui le produit, et la phrase dit ce qu'il n'est pas.
+ * Depuis le 2026-10-19, elle s'appelle « pression » à l'écran, et le vrai CPU
+ * de l'API est à côté (`container-usage.ts`).
  */
 export function occupancyReading(
   traffic: TrafficWindow | undefined,
   occupancy: Occupancy,
 ): OccupancyReading | null {
-  if (traffic === undefined || occupancy.basis === 'aucune mesure') {
+  if (
+    traffic === undefined ||
+    occupancy.basis === 'aucune mesure' ||
+    occupancy.basis === 'conteneur'
+  ) {
     return null;
   }
   const percent = Math.round(occupancy.ratio * 100);
@@ -132,12 +139,12 @@ export function occupancyReading(
     const share = Math.round((traffic.throttled / traffic.requests) * 100);
     return {
       measure: `${share} % en 429`,
-      sentence: `Occupation ${percent} % d’après les rejets : ${share} % des requêtes refusées par le throttler (429). ${caveat}`,
+      sentence: `Pression de rejet ${percent} % : ${share} % des requêtes refusées par le throttler (429). ${caveat}`,
     };
   }
   const p95 = Math.round(traffic.p95Ms);
   return {
     measure: `p95 ${p95} ms`,
-    sentence: `Occupation ${percent} % d’après la latence : p95 ${p95} ms, entre ${P95_CALM_MS} ms (0 %) et ${P95_SATURATED_MS} ms (100 %). ${caveat}`,
+    sentence: `Pression de latence ${percent} % : p95 ${p95} ms, entre ${P95_CALM_MS} ms (0 %) et ${P95_SATURATED_MS} ms (100 %). ${caveat}`,
   };
 }

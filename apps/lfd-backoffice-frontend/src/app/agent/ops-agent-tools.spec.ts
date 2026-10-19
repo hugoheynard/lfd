@@ -48,6 +48,8 @@ const HEALTH: EcosystemHealth = {
     }),
     node('mailer', { status: 'degraded', reason: 'error-rate' }),
   ],
+  containerUsage: null,
+  containerUsageGap: null,
 };
 
 const TRAFFIC: TrafficReport = {

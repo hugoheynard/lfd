@@ -10,6 +10,7 @@ import type {
 
 import { Clock } from "../../platform/time/clock.js";
 import { Cached } from "../cached.js";
+import { ContainerUsageService } from "../container/container-usage.service.js";
 import { TrafficReader } from "../traffic/traffic-reader.port.js";
 import { TOPOLOGY } from "../topology/topology.js";
 import { Auth0ReadingsReader } from "./auth0-readings.reader.js";
@@ -73,19 +74,24 @@ export class OpsHealthService {
     private readonly probes: ProbeRunner,
     private readonly journal: StatusJournal,
     private readonly vitals: VitalsStore,
+    private readonly container: ContainerUsageService,
     private readonly clock: Clock,
   ) {}
 
   async read(): Promise<EcosystemHealth> {
     const now = this.clock.now();
     await this.hydrate();
-    const [report, databaseReadings, mailReadings, auth0Readings, probes] = await Promise.all([
-      this.traffic.read(HEALTH_WINDOW_MINUTES),
-      this.database.read(),
-      this.mail.read(),
-      this.cachedAuth0.read(now.getTime()),
-      this.cachedProbes.read(now.getTime()),
-    ]);
+    const [report, databaseReadings, mailReadings, auth0Readings, probes, container] =
+      await Promise.all([
+        this.traffic.read(HEALTH_WINDOW_MINUTES),
+        this.database.read(),
+        this.mail.read(),
+        this.cachedAuth0.read(now.getTime()),
+        this.cachedProbes.read(now.getTime()),
+        // La même fenêtre que le trafic : un CPU et une latence lus sur deux
+        // durées différentes ne se comparent pas.
+        this.container.read(now, HEALTH_WINDOW_MINUTES),
+      ]);
 
     const evidence = new Map<string, NodeEvidence>(
       // Chaque service porte SA charge par module : c'est ce qui transforme
@@ -159,7 +165,12 @@ export class OpsHealthService {
       })),
     );
 
-    return { generatedAt: now.toISOString(), nodes };
+    return {
+      generatedAt: now.toISOString(),
+      nodes,
+      containerUsage: container.usage,
+      containerUsageGap: container.gap,
+    };
   }
 
   /**

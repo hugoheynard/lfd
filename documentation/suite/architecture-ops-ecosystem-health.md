@@ -1243,6 +1243,7 @@ section qui porte le raisonnement.
 | ------------------------------------------------------------- | ---------------------------------------------------------------------- | --------------- |
 | `RESEND_WEBHOOK_SECRET` (après création du webhook, §26)      | la route de retour refuse tout                                         | Secrets         |
 | `CLOUDFLARE_ANALYTICS_TOKEN`                                  | OPS rend la répétition, et le dit                                      | Secrets         |
+| `CLOUDFLARE_API_CONTAINER_APPLICATION_ID` (§31)               | la case API dit « CPU non mesuré »                                     | Variables       |
 | Périmètre `read:stats` sur l'app M2M Auth0 (§24 — facultatif) | on affiche les identités, un **majorant**, au lieu des actifs facturés | dashboard Auth0 |
 
 ### La séquence du webhook Resend, dans l'ordre (§26)
@@ -1487,3 +1488,40 @@ sert chaque image. Aucune clé, aucune écriture. La racine n'est pas un objet :
 le `404` que R2 rend alors prouve que le domaine est relié et servi (**up**,
 note « domaine public servi »). `401`/`403` (accès public retiré), `5xx`, délai
 dépassé : **down**. Variable absente : **unknown** (« non configuré »).
+
+## 31. Le vrai CPU de l'API — et la jauge qui n'en était pas un (2026-10-19)
+
+La case API affichait « 50 % » : c'était une **pression de latence** (p95
+entre 120 ms et 1 s, ou part de `429`), lue comme un CPU. Décision de Hugo :
+afficher le vrai usage du container, et renommer la jauge.
+
+- **Source** : API GraphQL d'analytics de Cloudflare, dataset
+  `containersMetricsAdaptiveGroups`, par minute et par instance, filtré sur
+  l'application Containers de l'API (`apps/lfd-api/src/ops/container/`).
+- **CPU** = `sum.cpuTimeSec` ÷ (minutes-instance remontées × 60 s × vCPU
+  alloués) ; **mémoire** = pic de `max.memory` ÷ mémoire allouée. Le type
+  d'instance (`standard-1`, ½ vCPU, 4 GiB) est recopié de `wrangler.jsonc`,
+  et un test relit le fichier. `cpuUtilization` n'est pas lu : la doc ne dit
+  pas à quoi ce ratio est rapporté.
+- **Délai de remontée** : `measuredAt` est la fin de la dernière minute
+  remontée ; la case dit « mesuré il y a N min ». La minute en cours est
+  écartée.
+- **Contrat** : `EcosystemHealth.containerUsage` (ou `null`) et
+  `containerUsageGap` — `not-configured`, `no-samples`, `forbidden`,
+  `unavailable`. Jamais de 500, jamais de chiffre de répétition.
+- **Couleur du lien** : le pire de la pression, du CPU et de la mémoire.
+  C'est la règle du §13 appliquée plus fidèlement — la couleur vient d'un
+  rapport d'occupation de l'instance, et CPU et mémoire en sont un, plus
+  direct que la latence. La pression reste dans le max : une file d'attente
+  sur la base se voit en latence avec un CPU au repos.
+
+⚠️ **À confirmer contre l'API réelle** (non introspectée, faute de jeton le
+2026-10-19) : le filtre `applicationId`, `orderBy: [datetimeMinute_ASC]`, et le
+libellé d'un refus de droits. Tous dans `container-metrics-query.ts`, seul
+fichier qui nomme des champs Cloudflare.
+
+**Hors dépôt** : poser la Variable GitHub `CLOUDFLARE_API_CONTAINER_APPLICATION_ID`
+(identifiant de l'application `lfd-api` — tableau de bord Containers, ou
+`wrangler containers list`), et vérifier que `CLOUDFLARE_ANALYTICS_TOKEN` porte
+« Account Analytics: Read ». Sans la permission, la case le dit
+(`forbidden`) et nomme la permission.

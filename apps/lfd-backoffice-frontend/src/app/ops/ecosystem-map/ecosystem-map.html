@@ -125,28 +125,47 @@
         {{ box.statusLabel }}
       </text>
 
-      @if (box.gauge !== null) {
-        <!-- Le pourcentage en haut à droite, la grandeur qui le fait dessous :
-             un pourcentage nu se lit comme un CPU (Hugo, 2026-10-12). La ligne
-             basse tient en douze signes, à droite du statut. -->
-        <g class="node-gauge" role="img" [attr.aria-label]="box.gaugeReading?.sentence">
-          <title>{{ box.gaugeReading?.sentence }}</title>
-          <text class="node-gauge-value" [attr.x]="box.x + node.width - 14" [attr.y]="box.y + 21">
-            {{ box.gauge * 100 | number: '1.0-0' }} %
-          </text>
-          @if (box.gaugeReading) {
-            <text
-              class="node-gauge-measure"
-              [attr.x]="box.x + node.width - 14"
-              [attr.y]="box.y + 35"
-            >
-              {{ box.gaugeReading.measure }}
+      @if (box.container !== null || box.pressure !== null) {
+        <!-- Le chiffre en haut à droite, la grandeur qui le fait dessous : un
+             pourcentage nu se lit comme un CPU (Hugo, 2026-10-12). Sur l'API,
+             le haut EST le CPU et la mémoire du container (2026-10-19), et la
+             pression de latence descend d'une ligne, sous son nom. -->
+        <g class="node-gauge" role="img" [attr.aria-label]="box.gaugeSentence">
+          <title>{{ box.gaugeSentence }}</title>
+          @if (box.container; as container) {
+            <text class="node-gauge-value" [attr.x]="box.x + node.width - 14" [attr.y]="box.y + 21">
+              {{ container.label }}
             </text>
+            @if (box.pressure !== null) {
+              <text
+                class="node-gauge-measure"
+                [attr.x]="box.x + node.width - 14"
+                [attr.y]="box.y + 35"
+              >
+                pression {{ box.pressure * 100 | number: '1.0-0' }} %
+              </text>
+            }
+          } @else if (box.pressure !== null) {
+            <text class="node-gauge-value" [attr.x]="box.x + node.width - 14" [attr.y]="box.y + 21">
+              {{ box.pressure * 100 | number: '1.0-0' }} %
+            </text>
+            @if (box.gaugeReading) {
+              <text
+                class="node-gauge-measure"
+                [attr.x]="box.x + node.width - 14"
+                [attr.y]="box.y + 35"
+              >
+                {{ box.gaugeReading.measure }}
+              </text>
+            }
           }
         </g>
+      }
+      @if (box.gauge !== null) {
         <!-- La jauge court sur l'ARÊTE BASSE de la carte : une longueur se
              compare d'une brique à l'autre, un chiffre non — et posée là, elle
-             ne prend aucune hauteur. -->
+             ne prend aucune hauteur. Elle porte le pire de ce qu'on mesure,
+             comme la couleur du lien. -->
         <rect
           class="node-gauge-fill"
           [attr.x]="box.x + 1"
@@ -235,6 +254,18 @@
     </span>
   }
 </div>
+
+@if (container(); as container) {
+  <!-- Sous la carte, ce que la case ne peut pas dire en douze signes : depuis
+       quand le CPU est mesuré, ou pourquoi il ne l'est pas — et le geste. -->
+  @if (container.missing) {
+    <fold-callout class="map-container-note" appearance="flat" variant="warning">
+      {{ container.note }}
+    </fold-callout>
+  } @else {
+    <p class="map-caveat">{{ container.note }}</p>
+  }
+}
 
 @if (hasNothingMeasured()) {
   <p class="map-caveat">

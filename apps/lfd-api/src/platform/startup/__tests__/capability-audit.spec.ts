@@ -25,6 +25,7 @@ const ALL_PRESENT: CapabilitySnapshot = {
   hasAdminBaseUrl: true,
   hasGeocoderUrl: true,
   hasRoadRouting: true,
+  hasContainerMetrics: true,
 };
 
 function without(...keys: readonly (keyof CapabilitySnapshot)[]): CapabilitySnapshot {
@@ -101,6 +102,13 @@ describe("auditCapabilities", () => {
     expect(missing?.setting).toContain("ROUTE_PLANNER_URL");
     expect(missing?.setting).toContain("ROUTE_PLANNER_TOKEN");
     expect(missing?.consequence).toMatch(/« Proposer ».*refusés/);
+    expect(missing?.severity).toBe("degraded");
+  });
+
+  it("tient la lecture du CPU de l'API pour un dégradé, et nomme l'identifiant d'application", () => {
+    const [missing] = auditCapabilities(without("hasContainerMetrics"));
+
+    expect(missing?.setting).toContain("CLOUDFLARE_API_CONTAINER_APPLICATION_ID");
     expect(missing?.severity).toBe("degraded");
   });
 

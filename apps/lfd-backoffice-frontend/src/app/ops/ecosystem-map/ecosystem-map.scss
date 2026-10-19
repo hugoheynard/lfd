@@ -299,6 +299,13 @@
   background: var(--fold-color-alert);
 }
 
+/* La note du CPU de l'API, quand il manque : la carte la pose, le callout
+   ne pose pas sa marge lui-même. */
+.map-container-note {
+  display: block;
+  margin-top: var(--fold-space-sm);
+}
+
 .map-caveat {
   margin: var(--fold-space-sm) 0 0;
   color: var(--fold-color-text-muted);

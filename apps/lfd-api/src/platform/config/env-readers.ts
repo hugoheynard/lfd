@@ -472,6 +472,19 @@ export function optionalAnalyticsConfig(): AnalyticsConfig | null {
 }
 
 /**
+ * L'identifiant de l'**application Containers** de l'API chez Cloudflare
+ * (`CLOUDFLARE_API_CONTAINER_APPLICATION_ID`) — ce qui sépare ses métriques de
+ * celles des autres containers du compte (le planificateur de tournées en est
+ * un). Ce n'est pas un secret : il ne donne accès à rien sans le jeton.
+ *
+ * Absent, la case API de la carte dit « CPU non mesuré » et nomme la variable ;
+ * l'API démarre et sert comme avant.
+ */
+export function optionalContainerApplicationId(): string | null {
+  return optionalString("CLOUDFLARE_API_CONTAINER_APPLICATION_ID");
+}
+
+/**
  * Le journal refuse-t-il un fait que son catalogue ne reconnaît pas
  * (`JOURNAL_STRICT_FACTS`) ?
  *

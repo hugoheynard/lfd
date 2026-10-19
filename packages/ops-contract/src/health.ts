@@ -1,3 +1,4 @@
+import type { ContainerUsage, ContainerUsageGap } from "./container.js";
 import type { HeartbeatMetrics } from "./heartbeat.js";
 import type { HealthStatus, NodeKind } from "./node.js";
 
@@ -103,4 +104,10 @@ export interface NodeHealth {
 export interface EcosystemHealth {
   readonly generatedAt: string;
   readonly nodes: readonly NodeHealth[];
+  /**
+   * CPU et mémoire du container de l'API (nœud `b2b`), ou `null` — et alors
+   * `containerUsageGap` dit pourquoi. Jamais les deux à la fois, jamais aucun.
+   */
+  readonly containerUsage: ContainerUsage | null;
+  readonly containerUsageGap: ContainerUsageGap | null;
 }

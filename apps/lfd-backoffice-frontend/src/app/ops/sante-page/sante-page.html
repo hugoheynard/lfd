@@ -100,7 +100,14 @@
   }
 
   <section class="board" aria-label="Schéma de l'écosystème">
-    <app-ecosystem-map [nodes]="nodes()" [windows]="windows()" [series]="series()" />
+    <app-ecosystem-map
+      [nodes]="nodes()"
+      [windows]="windows()"
+      [series]="series()"
+      [containerUsage]="health()?.containerUsage ?? null"
+      [containerUsageGap]="health()?.containerUsageGap ?? null"
+      [generatedAt]="health()?.generatedAt ?? ''"
+    />
   </section>
 
   <section class="charge" aria-label="Charge par requête">
