@@ -39,7 +39,9 @@ export class PieceRequest {
   open(sku: string): void {
     this.count += 1;
     this.asked.set({ id: this.count, sku });
-    if (this.router.url.split('?')[0] !== SHOP) {
+    // `#pro` compris : une fiche demandée depuis la boutique en visite pro ne
+    // renavigue pas — ce qui effacerait le fragment, et la visite avec lui.
+    if (this.router.url.split(/[?#]/)[0] !== SHOP) {
       void this.router.navigate([SHOP]);
     }
   }

@@ -1,7 +1,8 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { signal, type WritableSignal } from '@angular/core';
+import { Component, signal, type WritableSignal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
+import { provideRouter, Router } from '@angular/router';
 import { of } from 'rxjs';
 import { beforeEach, describe, expect, it } from 'vitest';
 
@@ -15,6 +16,14 @@ import { ProVisit } from './pro-visit.service';
 
 const PUBLIC_URL = `${AUTH_CONFIG.apiBaseUrl}/shop/catalogue`;
 
+@Component({ selector: 'app-blank', template: '' })
+class Blank {}
+
+/** Une adresse atteinte : c'est elle, et elle seule, qui dit la visite. */
+async function at(url: string): Promise<void> {
+  await TestBed.inject(Router).navigateByUrl(url);
+}
+
 /**
  * La visite pro (Hugo, 2026-10-19) : un visiteur venu de `/pro` lit les tarifs
  * pro hors taxe ; un particulier et une personne reconnue ne voient rien changer.
@@ -23,10 +32,13 @@ describe('ProVisit — l’affichage pro d’un visiteur', () => {
   let signedIn: WritableSignal<boolean>;
 
   beforeEach(() => {
-    sessionStorage.clear();
     signedIn = signal(false);
     TestBed.configureTestingModule({
       providers: [
+        provideRouter([
+          { path: 'boutique', component: Blank },
+          { path: 'pro', component: Blank },
+        ]),
         provideHttpClient(),
         provideHttpClientTesting(),
         {
@@ -38,50 +50,69 @@ describe('ProVisit — l’affichage pro d’un visiteur', () => {
     });
   });
 
-  it('un visiteur sans #pro garde le TTC', () => {
+  it('un visiteur sans #pro garde le TTC', async () => {
+    await at('/boutique');
+
     expect(TestBed.inject(ProVisit).active()).toBe(false);
     expect(TestBed.inject(ShopPriceBasis).showsTtc()).toBe(true);
   });
 
-  it('un visiteur arrivé par #pro passe en hors taxe', () => {
-    TestBed.inject(ProVisit).enter();
+  it('un visiteur arrivé par #pro passe en hors taxe', async () => {
+    await at('/boutique#pro');
 
     expect(TestBed.inject(ProVisit).active()).toBe(true);
     expect(TestBed.inject(ShopPriceBasis).showsTtc()).toBe(false);
   });
 
-  it('une personne reconnue garde l’affichage de son espace', () => {
+  it('#pro ne vaut que sur la boutique', async () => {
+    await at('/pro#pro');
+
+    expect(TestBed.inject(ProVisit).active()).toBe(false);
+  });
+
+  it('un rayon dans l’adresse garde la visite', async () => {
+    await at('/boutique?rayon=pains#pro');
+
+    expect(TestBed.inject(ProVisit).active()).toBe(true);
+  });
+
+  it('une personne reconnue garde l’affichage de son espace', async () => {
     signedIn.set(true);
-    TestBed.inject(ProVisit).enter();
+    await at('/boutique#pro');
 
     expect(TestBed.inject(ProVisit).active()).toBe(false);
     // Espace personnel, sans société : le TTC, comme avant.
     expect(TestBed.inject(ShopPriceBasis).showsTtc()).toBe(true);
   });
 
-  it('« Voir les prix TTC » efface le choix, pour la visite aussi', () => {
-    const visit = TestBed.inject(ProVisit);
-    visit.enter();
-    visit.leave();
+  it('« Voir les prix TTC » retire #pro de l’adresse, et la visite avec lui', async () => {
+    await at('/boutique?rayon=pains#pro');
+    await TestBed.inject(ProVisit).leave();
 
-    expect(visit.active()).toBe(false);
-    expect(sessionStorage.length).toBe(0);
+    expect(TestBed.inject(Router).url).toBe('/boutique?rayon=pains');
+    expect(TestBed.inject(ProVisit).active()).toBe(false);
   });
 
-  it('le choix survit à une navigation : une nouvelle lecture le retrouve', () => {
-    TestBed.inject(ProVisit).enter();
-    TestBed.resetTestingModule();
-    TestBed.configureTestingModule({
-      providers: [{ provide: AuthFacade, useValue: { isAuthenticated: signal(false) } }],
-    });
+  /**
+   * Régression (Hugo, 2026-10-19) : revenu sur `/boutique` sans `#pro` après
+   * une visite pro, on restait en hors taxe — le choix était gardé en
+   * `sessionStorage`. L'adresse dit désormais ce qu'on voit.
+   */
+  it('revenu sur /boutique sans #pro après une visite pro, on lit le TTC', async () => {
+    sessionStorage.setItem('lfd.shop.pro-visit', '1');
+    await at('/boutique#pro');
+    await at('/pro');
+    await at('/boutique');
 
-    expect(TestBed.inject(ProVisit).active()).toBe(true);
+    expect(TestBed.inject(ProVisit).active()).toBe(false);
+    expect(TestBed.inject(ShopPriceBasis).showsTtc()).toBe(true);
+    sessionStorage.clear();
   });
 
   it('la vitrine se lit à la source pro pendant la visite, publique sinon', async () => {
     const catalogue = TestBed.inject(ShopCatalogue);
     const http = TestBed.inject(HttpTestingController);
-    TestBed.inject(ProVisit).enter();
+    await at('/boutique#pro');
 
     const pro = catalogue.hydrate();
     const request = http.expectOne((r) => r.url === PUBLIC_URL);
@@ -89,7 +120,7 @@ describe('ProVisit — l’affichage pro d’un visiteur', () => {
     request.flush(TEST_CATALOGUE);
     await pro;
 
-    TestBed.inject(ProVisit).leave();
+    await at('/boutique');
     TestBed.tick();
     const plain = http.expectOne((r) => r.url === PUBLIC_URL);
     expect(plain.request.params.has('audience')).toBe(false);

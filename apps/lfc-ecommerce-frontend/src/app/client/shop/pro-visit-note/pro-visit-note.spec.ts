@@ -2,6 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
+import { provideRouter, Router } from '@angular/router';
 import { FoldPanelHostService } from 'fold-ng';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -26,13 +27,13 @@ describe('ProVisitNote — le repère de la visite pro', () => {
     return found;
   };
 
-  beforeEach(() => {
-    sessionStorage.clear();
+  beforeEach(async () => {
     opened = [];
     vi.stubGlobal('matchMedia', matchMediaAt(false));
     TestBed.configureTestingModule({
       imports: [ProVisitNote],
       providers: [
+        provideRouter([{ path: 'boutique', component: ProVisitNote }]),
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: AuthFacade, useValue: { isAuthenticated: signal(false) } },
@@ -47,7 +48,7 @@ describe('ProVisitNote — le repère de la visite pro', () => {
         },
       ],
     });
-    TestBed.inject(ProVisit).enter();
+    await TestBed.inject(Router).navigateByUrl('/boutique#pro');
     fixture = TestBed.createComponent(ProVisitNote);
     fixture.detectChanges();
   });
@@ -68,10 +69,12 @@ describe('ProVisitNote — le repère de la visite pro', () => {
     ]);
   });
 
-  it('« Voir les prix TTC » efface le choix et retire le repère', () => {
+  it('« Voir les prix TTC » retire #pro de l’adresse, le choix et le repère', async () => {
     button(FR.shop.proVisitShowTtc).click();
+    await fixture.whenStable();
     fixture.detectChanges();
 
+    expect(TestBed.inject(Router).url).toBe('/boutique');
     expect(TestBed.inject(ProVisit).active()).toBe(false);
     expect(el().textContent).not.toContain(FR.shop.proVisitNote);
   });

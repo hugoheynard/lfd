@@ -16,7 +16,6 @@ import {
   FoldSearchComponent,
 } from 'fold-ng';
 
-import { ActivatedRoute } from '@angular/router';
 import { formatCents } from '../../../client/format-money';
 import { CartEntries } from '../../cart/cart-entries';
 import { ClientCart } from '../../cart/client-cart.service';
@@ -36,7 +35,7 @@ import { ClientBannerOutlet } from '../../nav/client-banner';
 import { ProductAudience } from '../../audience/product-audience.service';
 import { ProductSheet } from '../product-sheet/product-sheet';
 import { ProVisitNote } from '../pro-visit-note/pro-visit-note';
-import { PRO_VISIT_FRAGMENT, ProVisit } from '../pro-visit.service';
+import { ProVisit } from '../pro-visit.service';
 import { PieceRequest } from '../piece-request.service';
 import { OperationNotice } from '../operation-notice/operation-notice';
 import { ShelfGrid } from './shelf-grid/shelf-grid';
@@ -222,11 +221,6 @@ export class ShopPage {
     // l'écran la demande — et la rend en partant.
     this.chrome.bandHandle.set(true);
     inject(DestroyRef).onDestroy(() => this.chrome.bandHandle.set(false));
-    // La visite pro (`/boutique#pro`, depuis la landing `/pro`) : posée AVANT
-    // l'hydratation, pour que la première photo soit déjà la vitrine pro.
-    if (inject(ActivatedRoute).snapshot.fragment === PRO_VISIT_FRAGMENT) {
-      inject(ProVisit).enter();
-    }
     // En visite pro, le panier quitte la barre (Hugo, 2026-10-19 : « un pro non
     // loggé ne doit pas pouvoir commander ») ; il revient quand elle cesse, ou
     // en quittant la page.

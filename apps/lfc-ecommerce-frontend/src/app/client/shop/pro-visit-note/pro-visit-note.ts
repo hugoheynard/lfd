@@ -31,6 +31,6 @@ export class ProVisitNote {
   }
 
   protected showTtc(): void {
-    this.visit.leave();
+    void this.visit.leave();
   }
 }

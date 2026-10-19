@@ -82,6 +82,8 @@ export class ShelfAddress {
       relativeTo: this.route,
       queryParams: { [SHELF_PARAM]: wanted },
       queryParamsHandling: 'merge',
+      // `#pro` est la visite pro (`ProVisit`) : changer de rayon la garde.
+      preserveFragment: true,
       replaceUrl: true,
     });
   }

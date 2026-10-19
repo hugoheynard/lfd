@@ -28,6 +28,7 @@ import { provideWorkspace, workspaceDouble } from '../../client-workspace.fixtur
 import { NOEL, storefrontObject } from '../storefront/storefront.fixture';
 import { ClientOrders } from '../../client-orders.service';
 import { PieceRequest } from '../piece-request.service';
+import { Shop } from '../shop.service';
 import { ShopPage } from './shop-page';
 
 // `matchMedia` pour TOUS les cas du fichier : « Régler » ouvre le panier par
@@ -517,8 +518,9 @@ describe('ShopPage — Régler, connecté', () => {
  * ne change.
  */
 describe('ShopPage — la visite pro par #pro', () => {
+  let harness: RouterTestingHarness;
+
   async function arrive(url: string, before: () => void = () => undefined): Promise<HTMLElement> {
-    sessionStorage.clear();
     localStorage.clear();
     TestBed.configureTestingModule({
       providers: [
@@ -533,7 +535,7 @@ describe('ShopPage — la visite pro par #pro', () => {
       ],
     });
     before();
-    const harness = await RouterTestingHarness.create();
+    harness = await RouterTestingHarness.create();
     await harness.navigateByUrl(url, ShopPage);
     const http = TestBed.inject(HttpTestingController);
     // Deux passes : la requête de la vitrine peut ne partir qu’au second tour.
@@ -560,6 +562,59 @@ describe('ShopPage — la visite pro par #pro', () => {
 
     expect(page.textContent).not.toContain(FR.shop.proVisitNote);
     expect(page.querySelector('app-product-tile')?.textContent).toContain(FR.shop.ttcSuffix);
+  });
+
+  /**
+   * Régression (Hugo, 2026-10-19) : revenu sur `/boutique` sans `#pro` après
+   * une visite pro, la boutique restait en hors taxe — le choix vivait en
+   * `sessionStorage`, et rien à l'écran ne disait pourquoi.
+   */
+  it('revenu sur /boutique sans #pro après une visite pro, la boutique est en TTC', async () => {
+    await arrive('/boutique#pro');
+    await harness.navigateByUrl('/boutique', ShopPage);
+    // La vitrine se relit à la source publique : on la sert.
+    const http = TestBed.inject(HttpTestingController);
+    for (let pass = 0; pass < 2; pass += 1) {
+      http
+        .match((r) => r.url === `${AUTH_CONFIG.apiBaseUrl}/shop/catalogue`)
+        .forEach((r) => r.flush(TEST_CATALOGUE));
+      await harness.fixture.whenStable();
+    }
+    harness.detectChanges();
+    const page = harness.routeNativeElement ?? document.createElement('div');
+
+    expect(TestBed.inject(ProVisit).active()).toBe(false);
+    expect(page.textContent).not.toContain(FR.shop.proVisitNote);
+    expect(page.querySelector('app-product-tile')?.textContent).toContain(FR.shop.ttcSuffix);
+  });
+
+  it('changer de rayon garde #pro dans l’adresse, et la visite', async () => {
+    await arrive('/boutique#pro');
+    harness.routeDebugElement?.injector.get(Shop).browse('cat_pains');
+    await harness.fixture.whenStable();
+
+    expect(TestBed.inject(Router).url).toBe('/boutique?rayon=cat_pains#pro');
+    expect(TestBed.inject(ProVisit).active()).toBe(true);
+  });
+
+  it('ouvrir une fiche garde #pro dans l’adresse, et la visite', async () => {
+    await arrive('/boutique#pro');
+    TestBed.inject(PieceRequest).open(TEST_ITEMS[0]?.sku ?? '');
+    await harness.fixture.whenStable();
+
+    expect(TestBed.inject(Router).url).toBe('/boutique#pro');
+    expect(TestBed.inject(ProVisit).active()).toBe(true);
+  });
+
+  it('« Voir les prix TTC » retire #pro de l’adresse', async () => {
+    const page = await arrive('/boutique#pro');
+    Array.from(page.querySelectorAll('button'))
+      .find((b) => b.textContent?.trim() === FR.shop.proVisitShowTtc)
+      ?.click();
+    await harness.fixture.whenStable();
+
+    expect(TestBed.inject(Router).url).toBe('/boutique');
+    expect(TestBed.inject(ProVisit).active()).toBe(false);
   });
 
   /**
@@ -608,7 +663,8 @@ describe('ShopPage — la visite pro par #pro', () => {
         (b) => b.textContent?.trim() === FR.shop.proVisitShowTtc,
       );
       showTtc?.click();
-      TestBed.tick();
+      await harness.fixture.whenStable();
+      harness.detectChanges();
 
       expect(TestBed.inject(ClientChrome).cart()).toBe(true);
       expect(TestBed.inject(ClientCart).quantityOf(SKU)).toBe(2);
