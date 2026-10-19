@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1384 textes
+## Sommaire — 1385 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -12,7 +12,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | --- | --- | --- |
 | **Parcours de commande** | | |
 | [Accueil public — le visiteur sans compte](#espace-accueilpublic) | `accueilPublic` | 61 |
-| [Accueil pro public — le professionnel sans compte (/pro)](#espace-prolanding) | `proLanding` | 29 |
+| [Accueil pro public — le professionnel sans compte (/pro)](#espace-prolanding) | `proLanding` | 30 |
 | [Les trois étapes du parcours (où, quand, quoi)](#espace-steps) | `steps` | 13 |
 | [Accueil — l'en-tête de bienvenue](#espace-hero) | `hero` | 4 |
 | [Accueil — les portes d'entrée](#espace-doors) | `doors` | 23 |
@@ -47,7 +47,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
-| **Total** | | **1384** |
+| **Total** | | **1385** |
 
 ## Le parcours de commande
 
@@ -125,7 +125,7 @@ Source : `screens/accueil-public.copy.ts` · 61 textes.
 
 ### Accueil pro public — le professionnel sans compte (/pro) — `proLanding`
 
-Source : `screens/pro-landing.copy.ts` · 29 textes.
+Source : `screens/pro-landing.copy.ts` · 30 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -158,6 +158,7 @@ Source : `screens/pro-landing.copy.ts` · 29 textes.
 | `proLanding.featured.loading` | Incontournables… | Must-haves… | Imperdibili… |  |
 | `proLanding.featured.signInLabel` | Se connecter pour voir le tarif de {name} | Sign in to see the price of {name} | Accedi per vedere il prezzo di {name} | `{name}` |
 | `proLanding.browse` | Je visite la boutique | Browse the shop | Visito il negozio |  |
+| `proLanding.contact` | Nous contacter | Contact us | Contattaci |  |
 
 <a id="espace-steps"></a>
 

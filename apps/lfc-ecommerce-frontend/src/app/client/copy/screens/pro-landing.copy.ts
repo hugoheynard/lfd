@@ -63,6 +63,8 @@ export interface ProLandingCopy {
   readonly featured: ProLandingFeaturedCopy;
   /** Le grand appel sous les deux modes : voir le rayon avant d'ouvrir un compte. */
   readonly browse: string;
+  /** Le libellé du contact, à plat à gauche de « Je visite la boutique ». */
+  readonly contact: string;
 }
 
 export const PRO_LANDING_FR: ProLandingCopy = {
@@ -101,6 +103,7 @@ export const PRO_LANDING_FR: ProLandingCopy = {
     signInLabel: 'Se connecter pour voir le tarif de {name}',
   },
   browse: 'Je visite la boutique',
+  contact: 'Nous contacter',
 };
 
 export const PRO_LANDING_EN: ProLandingCopy = {
@@ -139,6 +142,7 @@ export const PRO_LANDING_EN: ProLandingCopy = {
     signInLabel: 'Sign in to see the price of {name}',
   },
   browse: 'Browse the shop',
+  contact: 'Contact us',
 };
 
 export const PRO_LANDING_IT: ProLandingCopy = {
@@ -177,6 +181,7 @@ export const PRO_LANDING_IT: ProLandingCopy = {
     signInLabel: 'Accedi per vedere il prezzo di {name}',
   },
   browse: 'Visito il negozio',
+  contact: 'Contattaci',
 };
 
 const DICTIONARIES: Readonly<Record<LocaleCode, ProLandingCopy>> = {

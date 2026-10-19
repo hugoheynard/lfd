@@ -6,26 +6,36 @@ import {
   effect,
   inject,
   signal,
+  untracked,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import type { PickupAddressView, ShopFeaturedItemView, ShopImageView } from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldHeroCardComponent,
+  FoldIconComponent,
   FoldLinkComponent,
   FoldLoadingStateComponent,
   FoldPanelHostService,
 } from 'fold-ng';
 
+import { HOME_PAGE } from '@lfd/storefront-layout';
+import type { StorefrontImage as DoorImage } from '@lfd/contracts';
 import { AuthFacade } from '../../auth/auth.facade';
 import { SignInDialog } from '../../login/sign-in-dialog/sign-in-dialog';
 import { ClientChrome } from '../client-chrome.service';
 import { fill } from '../copy/client-copy.service';
+import { ClientLocale } from '../client-locale.service';
+import { accueilPublicCopy } from '../copy/screens/accueil-public.copy';
+import { CallDialog } from '../shop/call-dialog/call-dialog';
+import { ContactDialog } from '../shop/contact-dialog/contact-dialog';
+import { ContactSettingsStore, phonesFor, telHref } from '../shop/contact-settings.store';
 import { ProFeaturedCard } from './pro-featured-card/pro-featured-card';
 import { proLandingCopy } from '../copy/screens/pro-landing.copy';
 import { screenCopy } from '../copy/shop-copy-composer';
 import { bestPickupDiscount, discountLabel } from '../shop/pickup-discount';
-import { mediaSrcset, sizedMedia } from '../shop/media-source';
+import { mediaSrcset, SHEET_WIDTHS, sizedMedia } from '../shop/media-source';
+import { ShopStorefront } from '../shop/storefront/shop-storefront.store';
 import { ProFeaturedGateway } from '../shop/pro-featured.gateway';
 import { ProPickupListGateway } from '../shop/pro-pickup-list.gateway';
 import { objectPositionOf, shelfArtOf } from '../shop/shelf-display';
@@ -50,6 +60,16 @@ function artOfFeatured(item: ShopFeaturedItemView): ShopImageView {
     item.image ??
     item.thumbnail ?? { url: shelfArtOf(item.shelfId), alt: item.name, width: null, height: null }
   );
+}
+
+/** Une photo de porte en valeur CSS, à la largeur d'une fiche ; `null` sans photo. */
+function photoOf(image: DoorImage | null | undefined): string | null {
+  return image ? `url(${JSON.stringify(sizedMedia(image.url, SHEET_WIDTHS[1]))})` : null;
+}
+
+/** Son recadrage (`background-position`) ; `null` sans photo. */
+function focusOf(image: DoorImage | null | undefined): string | null {
+  return image ? objectPositionOf(image) : null;
 }
 
 /**
@@ -92,6 +112,7 @@ export const SHOP = '/boutique';
   imports: [
     FoldButtonComponent,
     FoldHeroCardComponent,
+    FoldIconComponent,
     FoldLinkComponent,
     FoldLoadingStateComponent,
     ProFeaturedCard,
@@ -103,6 +124,43 @@ export const SHOP = '/boutique';
 export class ProLanding {
   protected readonly c = screenCopy('proLanding', proLandingCopy);
   protected readonly registerHref = PRO_REGISTER;
+
+  /**
+   * Les mots de `/bienvenue` que cette page reprend sans les redire : les deux
+   * verbes du contact (« Appeler », « Écrire »).
+   */
+  protected readonly welcome = screenCopy('accueilPublic', accueilPublicCopy);
+
+  private readonly locale = inject(ClientLocale);
+  private readonly contactSettings = inject(ContactSettingsStore);
+
+  /**
+   * Les numéros et les deux verbes du contact, tels que `/bienvenue` les
+   * compose pour un PRO (`accueil-public.ts`, `contact`, relu le 2026-10-19) :
+   * le réglage public `GET /contact-settings` côté `b2b`, sinon le numéro de
+   * `CONTACT_CARD_DEFAULTS`. Aucune lecture qui demande une connexion.
+   */
+  protected readonly contact = computed(() => {
+    const words = this.welcome().contact;
+    return {
+      phones: phonesFor(this.contactSettings.settings(), 'b2b', this.locale.current()),
+      call: words.call,
+      write: words.write,
+    };
+  });
+
+  protected readonly telHref = telHref;
+
+  /** Plusieurs numéros : « Nous appeler », comme la bande de `/bienvenue`. */
+  protected call(): void {
+    CallDialog.open(this.panels, { phones: this.contact().phones });
+  }
+
+  /** « Nous écrire », le même dialogue que sur `/bienvenue`. */
+  protected write(): void {
+    ContactDialog.open(this.panels);
+  }
+
   protected readonly shop = SHOP;
 
   /** `null` tant que la lecture court ; vide si elle échoue. */
@@ -149,6 +207,22 @@ export class ProLanding {
     }),
   );
 
+  /**
+   * Les photos des deux portes, celles de `/bienvenue` (`accueil-public.ts`,
+   * `doorPhoto`/`courierPhoto`, relu le 2026-10-19) : la page `home` de la
+   * vitrine, servie à la largeur d'une fiche, recadrée sur son point focal.
+   * `null` sans photo : la carte garde son aplat.
+   */
+  private readonly storefront = inject(ShopStorefront);
+  private readonly homePage = computed(() => {
+    const state = this.storefront.stateOf(HOME_PAGE);
+    return state?.status === 'ready' ? state.page : null;
+  });
+  protected readonly pickupPhoto = computed(() => photoOf(this.homePage()?.pickupDoorImage));
+  protected readonly pickupPosition = computed(() => focusOf(this.homePage()?.pickupDoorImage));
+  protected readonly courierPhoto = computed(() => photoOf(this.homePage()?.deliveryDoorImage));
+  protected readonly courierPosition = computed(() => focusOf(this.homePage()?.deliveryDoorImage));
+
   private readonly auth = inject(AuthFacade);
   private readonly router = inject(Router);
   private readonly panels = inject(FoldPanelHostService);
@@ -166,6 +240,12 @@ export class ProLanding {
     // double pas (Hugo, 2026-10-19).
     chrome.cart.set(false);
     chrome.entry.set(false);
+    void this.contactSettings.hydrate();
+    // La page `home` de la vitrine, comme `/bienvenue` : relue si le lecteur change.
+    effect(() => {
+      this.storefront.reader();
+      untracked(() => void this.storefront.load(HOME_PAGE));
+    });
     inject(ProPickupListGateway)
       .list()
       .then(

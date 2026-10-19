@@ -32,7 +32,16 @@
   </header>
 
   <div class="sheet">
-    <section class="modes" [attr.aria-label]="c().modesTitle">
+    <!-- Les photos des portes de `/bienvenue`, choisies dans la vitrine (page
+         Accueil), par les mêmes variables et le même voile. -->
+    <section
+      class="modes"
+      [attr.aria-label]="c().modesTitle"
+      [style.--door-photo-pickup]="pickupPhoto()"
+      [style.--door-photo-pickup-at]="pickupPosition()"
+      [style.--door-photo-courier]="courierPhoto()"
+      [style.--door-photo-courier-at]="courierPosition()"
+    >
       <!-- L'encre et le beurre, comme les portes d'un pro sur `/bienvenue`.
            Chaque carte est UN contrôle (Hugo, 2026-10-19) : le même geste que
            « Je me connecte ». Pas un `<button>` : il ne peut pas porter de
@@ -74,11 +83,60 @@
       </div>
     </section>
 
-    <!-- Le grand appel (Hugo, 2026-10-19) : voir le rayon, en visiteur.
-         Il passe AU-DESSUS des incontournables (même jour). -->
-    <a foldButton size="lg" block data-test="pro-browse" [routerLink]="shop" fragment="pro">
-      {{ c().browse }}
-    </a>
+    <!-- LA RANGÉE CONTACT · BOUTIQUE (Hugo, 2026-10-19). La disposition des
+         raccourcis de l'accueil d'un pro connecté (`app-shop-shortcuts`) — deux
+         moitiés côte à côte, même hauteur — mais BASSE, une ligne chacune.
+         Le contact est À PLAT, sans carte, actions discrètes : la boutique, à
+         droite, est l'action principale. En pile : le contact d'abord. -->
+    <div class="reach" data-test="pro-reach">
+      <div class="contact" data-test="pro-contact">
+        <span class="contact-lead">{{ c().contact }}</span>
+        <!-- Les gestes de la bande de `/bienvenue` : un seul numéro, « Appeler »
+             EST son `tel:` ; plusieurs, le dialogue « Nous appeler ». -->
+        @if (contact().phones.length === 1) {
+          <a
+            foldButton
+            emphasis="outline"
+            intent="neutral"
+            size="sm"
+            data-test="pro-call"
+            [href]="telHref(contact().phones[0]!.number)"
+          >
+            <fold-icon name="phone" size="sm" />
+            {{ contact().call }} · {{ contact().phones[0]!.number }}
+          </a>
+        } @else {
+          <button
+            foldButton
+            emphasis="outline"
+            intent="neutral"
+            size="sm"
+            type="button"
+            data-test="pro-call"
+            (click)="call()"
+          >
+            <fold-icon name="phone" size="sm" />
+            {{ contact().call }}
+          </button>
+        }
+        <button
+          foldButton
+          emphasis="outline"
+          intent="neutral"
+          size="sm"
+          type="button"
+          data-test="pro-write"
+          (click)="write()"
+        >
+          <fold-icon name="mail" size="sm" />
+          {{ contact().write }}
+        </button>
+      </div>
+      <a foldButton size="lg" block data-test="pro-browse" [routerLink]="shop" fragment="pro">
+        {{ c().browse }}
+        <fold-icon name="arrow-right" size="sm" />
+      </a>
+    </div>
 
     <!-- Les incontournables pros, SANS PRIX (Hugo, 2026-10-19) : un tarif pro
          dépend de la société. Chaque carte mène à la connexion, comme les

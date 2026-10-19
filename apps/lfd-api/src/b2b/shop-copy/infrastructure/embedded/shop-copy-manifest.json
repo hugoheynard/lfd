@@ -640,6 +640,13 @@
           "en": "Browse the shop",
           "it": "Visito il negozio",
           "variables": []
+        },
+        {
+          "key": "proLanding.contact",
+          "fr": "Nous contacter",
+          "en": "Contact us",
+          "it": "Contattaci",
+          "variables": []
         }
       ],
       "unrecorded": []

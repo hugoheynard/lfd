@@ -160,6 +160,61 @@
   }
 }
 
+/* LA PHOTO ET SON VOILE, ceux des portes de `/bienvenue` (`service-doors.scss`,
+   relu le 2026-10-19) : deux calques en pseudo-éléments — la carte est un
+   contrôle, des balises décoratives n'ajouteraient rien à son nom. Le voile
+   descend vers l'encre (ou le beurre) là où vit le texte. Sans source, pas de
+   calque photo ; la livraison sans photo reprend celle du retrait. */
+.mode {
+  position: relative;
+  overflow: hidden;
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  &::before {
+    background-size: cover;
+  }
+
+  > * {
+    position: relative;
+    z-index: 1;
+  }
+}
+
+.mode-pickup::before {
+  background-image: var(--door-photo-pickup, none);
+  background-position: var(--door-photo-pickup-at, center);
+}
+
+.mode-delivery::before {
+  background-image: var(--door-photo-courier, var(--door-photo-pickup, none));
+  background-position: var(--door-photo-courier-at, var(--door-photo-pickup-at, center));
+}
+
+.mode-pickup::after {
+  background: linear-gradient(
+    168deg,
+    color-mix(in srgb, var(--lfc-ink-900) 48%, transparent) 0%,
+    color-mix(in srgb, var(--lfc-ink-900) 88%, transparent) 52%,
+    color-mix(in srgb, var(--lfc-ink-950) 97%, transparent) 100%
+  );
+}
+
+.mode-delivery::after {
+  background: linear-gradient(
+    168deg,
+    color-mix(in srgb, var(--lfc-butter-100) 40%, transparent) 0%,
+    color-mix(in srgb, var(--lfc-butter-100) 90%, transparent) 48%,
+    color-mix(in srgb, var(--lfc-butter-200) 98%, transparent) 100%
+  );
+}
+
 .mode-pickup {
   background: var(--lfc-ink-800);
   color: var(--lfc-paper-0);
@@ -247,6 +302,38 @@
   .modes {
     margin-top: -6rem;
   }
+}
+
+/* La rangée contact · boutique : deux moitiés de même hauteur, basses. Elles
+   se replient d'elles-mêmes sous ~620 px (bases de 300 px, comme la sortie
+   de `shop-shortcuts.scss`) : c'est la largeur qui décide. */
+.reach {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: var(--fold-space-md);
+}
+
+.reach > * {
+  flex: 1 1 300px;
+  min-width: 0;
+}
+
+/* À plat sur la feuille : ni fond, ni bordure, ni ombre. */
+.contact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+.contact-lead {
+  font-family: var(--lfc-font-caps);
+  font-size: var(--fold-text-sm);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-cta);
+  text-transform: uppercase;
+  color: var(--fold-color-text-muted);
 }
 
 /* Les incontournables : des cartes éditoriales. Une colonne pleine largeur en

@@ -12,6 +12,8 @@ import { SignInDialog } from '../../login/sign-in-dialog/sign-in-dialog';
 import { ClientChrome } from '../client-chrome.service';
 import { matchMediaAt } from '../mon-compte/account.fixture';
 import { PRO_LANDING_FR } from '../copy/screens/pro-landing.copy';
+import { ContactDialog } from '../shop/contact-dialog/contact-dialog';
+import { NO_CONTACT_SETTINGS } from '../shop/contact-settings.store';
 import { ProLanding } from './pro-landing';
 
 const LABO: PickupAddressView = {
@@ -224,15 +226,22 @@ describe('ProLanding — l’accueil pro public (/pro)', () => {
     expect(img?.getAttribute('alt')).toBe('Grande');
   });
 
-  it('le grand appel « je visite la boutique » précède les incontournables', async () => {
+  it('ordre : les modes, puis la rangée contact · boutique, puis les incontournables', async () => {
     answerFeatured(FEATURED);
     await settle();
-    const browse = maybe('pro-browse');
+    const modes = maybe('pro-mode-delivery');
+    const reach = maybe('pro-reach');
     const featured = maybe('pro-featured');
-    if (browse === null || featured === null) throw new Error('bouton ou section absent');
-    expect(
-      browse.compareDocumentPosition(featured) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
+    if (modes === null || reach === null || featured === null) throw new Error('bloc absent');
+    const follows = (a: Node, b: Node): boolean =>
+      (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+    expect(follows(modes, reach)).toBe(true);
+    expect(follows(reach, featured)).toBe(true);
+  });
+
+  it('la rangée a deux moitiés : le contact à gauche, la boutique à droite', () => {
+    const halves = Array.from(el('pro-reach').children).map((c) => c.getAttribute('data-test'));
+    expect(halves).toEqual(['pro-contact', 'pro-browse']);
   });
 
   it('incontournables : liste vide, la section est absente', async () => {
@@ -301,10 +310,31 @@ describe('ProLanding — l’accueil pro public (/pro)', () => {
     expect(link?.getAttribute('href')).toBe('/inscription#pro');
   });
 
-  it('« Je visite la boutique » mène à /boutique', () => {
-    const link = el('pro-browse');
-    expect(link.textContent?.trim()).toBe(PRO_LANDING_FR.browse);
-    expect(link.getAttribute('href')).toBe('/boutique#pro');
+  it('« Je visite la boutique » mène à /boutique#pro', () => {
+    const browse = el('pro-browse');
+    expect(browse.textContent).toContain(PRO_LANDING_FR.browse);
+    expect(browse.getAttribute('href')).toBe('/boutique#pro');
+  });
+
+  it('le contact lit le réglage public, sans jeton, et « Appeler » compose le numéro', async () => {
+    const http = TestBed.inject(HttpTestingController);
+    const req = http.expectOne((r) => r.url.endsWith('/contact-settings'));
+    expect(req.request.headers.has('Authorization')).toBe(false);
+    req.flush({
+      ...NO_CONTACT_SETTINGS,
+      phones: [
+        { number: '+33 4 79 06 12 40', label: { fr: '', en: '', it: '' }, audience: 'both' },
+      ],
+    });
+    await settle();
+    const call = el('pro-call');
+    expect(call?.getAttribute('href')).toBe('tel:+33479061240');
+  });
+
+  it('« Écrire » ouvre le dialogue « Nous écrire » de /bienvenue', () => {
+    const write = el('pro-write');
+    write.click();
+    expect(opened.map((o) => o.component)).toEqual([ContactDialog]);
   });
 
   // Le lien vers la boutique des particuliers a été retiré (Hugo, 2026-10-19).
