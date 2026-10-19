@@ -82,6 +82,10 @@
       hint="Ce que cette matière contient — les fiches qui la citent s’en serviront."
       info="Ne rien cocher n’affirme rien : c’est « personne n’a renseigné », jamais « sans allergène ». Le périmètre est mondial — le sarrasin, le maïs et la noix de coco n’ont pas d’obligation européenne mais restent des faits. Le filtre légal appartient à la fiche réglementaire de la déclinaison."
       allowClear
+      searchable
+      searchLabel="Chercher un allergène"
+      emptyText="Aucun allergène ne correspond"
+      resultLabel="allergènes"
       [options]="allergenOptions()"
       [(value)]="draftAllergens"
     />

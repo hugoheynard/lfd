@@ -114,26 +114,6 @@ summary,
   touch-action: manipulation;
 }
 
-/* LE ZOOM À LA MISE AU POINT D'UN CHAMP. Safari agrandit la page dès qu'un
-   champ porte moins de 16 px — et l'échelle de l'app plafonne à 15 px, même
-   pour la taille la plus grande. Tous les champs déclenchaient donc le zoom, et
-   la page restait grossie après la saisie : c'est le « déplacement non voulu ».
-   Le plancher ne vaut qu'au doigt ; à la souris, l'échelle du thème est intacte.
-
-   🔴 `!important` (2026-10-12, Hugo : « très important ») : les champs fold
-   portent leur taille dans un style de composant scopé (`input[_ngcontent-…]`),
-   plus spécifique que cette règle — sans lui, le plancher ne s'appliquait pas
-   aux champs fold, c'est-à-dire à presque tous. Même règle que le back-office. */
-@media (pointer: coarse) {
-  input:not([type='checkbox']):not([type='radio']),
-  select,
-  textarea,
-  [contenteditable='true'],
-  [contenteditable='plaintext-only'] {
-    font-size: max(16px, 1em) !important;
-  }
-}
-
 /* ── LES TROIS POPOVERS DE LA BARRE SE CALENT SUR LA GOUTTIÈRE ────────────────
    Hugo, 2026-09-20 : « est-ce que c'est possible que tous les popovers soient
    alignés à droite de l'écran comme sur la démo ? »
