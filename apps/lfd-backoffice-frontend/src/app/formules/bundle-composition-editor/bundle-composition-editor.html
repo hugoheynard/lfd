@@ -1,0 +1,127 @@
+<div class="composition">
+  @if (groups().length === 0) {
+    <fold-empty-state
+      title="Aucun groupe"
+      [subtitle]="
+        locked()
+          ? 'Cette formule n’a aucun groupe.'
+          : 'Ajoutez un groupe par choix du client : « Boisson », « Viennoiserie »…'
+      "
+    >
+      <fold-icon empty-icon name="basket" [size]="28" />
+    </fold-empty-state>
+  }
+
+  @for (
+    group of groups();
+    track group.id;
+    let groupIndex = $index;
+    let firstGroup = $first;
+    let lastGroup = $last
+  ) {
+    <section class="group">
+      <div class="group-head">
+        <span class="rank">{{ groupIndex + 1 }}</span>
+        <div class="group-label">
+          <fold-input
+            size="sm"
+            label="Libellé du groupe"
+            required
+            [readOnly]="locked()"
+            [value]="group.label"
+            (valueChange)="rename(group.id, $event)"
+          />
+        </div>
+        @if (!locked()) {
+          <span class="actions">
+            <fold-button-icon
+              icon="chevron-up"
+              size="sm"
+              tooltip="Monter le groupe"
+              [disabled]="firstGroup"
+              (clicked)="moveGroup(groupIndex, -1)"
+            />
+            <fold-button-icon
+              icon="chevron-down"
+              size="sm"
+              tooltip="Descendre le groupe"
+              [disabled]="lastGroup"
+              (clicked)="moveGroup(groupIndex, 1)"
+            />
+            <fold-button-icon
+              icon="bin"
+              size="sm"
+              tooltip="Retirer le groupe"
+              (clicked)="removeGroup(group.id)"
+            />
+          </span>
+        }
+      </div>
+
+      @if (group.choices.length > 0) {
+        <ol class="choices">
+          @for (
+            choice of group.choices;
+            track choice.sku;
+            let index = $index;
+            let first = $first;
+            let last = $last
+          ) {
+            <li class="choice">
+              @if (choice.thumbnailUrl; as url) {
+                <img class="thumb" [src]="url" alt="" />
+              } @else {
+                <span class="thumb thumb-none"><fold-icon name="package" [size]="16" /></span>
+              }
+              <span class="choice-text">
+                <span>{{ choice.name ?? 'Article inconnu du catalogue' }}</span>
+                <span class="muted">{{ choice.shelf ?? 'Rayon inconnu' }} · {{ choice.sku }}</span>
+              </span>
+              @if (reason(choice.standing); as why) {
+                <fold-badge radius="pill" variant="warning" [content]="why" />
+              }
+              @if (!locked()) {
+                <span class="actions">
+                  <fold-button-icon
+                    icon="chevron-up"
+                    size="sm"
+                    tooltip="Monter"
+                    [disabled]="first"
+                    (clicked)="moveChoice(group.id, index, -1)"
+                  />
+                  <fold-button-icon
+                    icon="chevron-down"
+                    size="sm"
+                    tooltip="Descendre"
+                    [disabled]="last"
+                    (clicked)="moveChoice(group.id, index, 1)"
+                  />
+                  <fold-button-icon
+                    icon="close"
+                    size="sm"
+                    tooltip="Retirer du groupe"
+                    (clicked)="removeChoice(group.id, choice.sku)"
+                  />
+                </span>
+              }
+            </li>
+          }
+        </ol>
+      } @else {
+        <p class="muted">Aucun article dans ce groupe.</p>
+      }
+
+      @if (!locked()) {
+        <app-bundle-choice-search [taken]="skusOf(group)" (picked)="addChoice(group.id, $event)" />
+      }
+    </section>
+  }
+
+  @if (!locked()) {
+    <div>
+      <button foldButton size="sm" emphasis="outline" icon="plus" (click)="addGroup()">
+        Ajouter un groupe
+      </button>
+    </div>
+  }
+</div>

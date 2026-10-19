@@ -87,8 +87,24 @@ describe('les domaines rangés par outil', () => {
     expect(toolOf('delivery_loading')).toBe('delivery');
   });
 
+  /** Régression : `shop_bundles` tombait sous « Transverse » (2026-10-19). */
+  it('range les formules avec la Gestion Boutique', () => {
+    expect(toolOf('shop_bundles')).toBe('lfc');
+    expect(toolOf('shop_bundles')).toBe(toolOf('lfc_loyalty'));
+    expect(toolOf('shop_bundles')).toBe(toolOf('lfc_suggestions'));
+  });
+
   it('rattache le journal au transverse — il traverse les outils', () => {
     expect(toolOf('activity')).toBe('transverse');
+  });
+
+  /**
+   * `lfd_webhooks` (2026-10-19) : une intégration technique avec l'extérieur,
+   * qui n'appartient à aucun outil métier — ni à l'équipe et ses accès, ni à
+   * la santé de l'écosystème. Son préfixe n'en nomme aucun : transverse.
+   */
+  it('range les webhooks au transverse — une intégration, pas un outil', () => {
+    expect(toolOf('lfd_webhooks')).toBe('transverse');
   });
 
   it('couvre chaque ressource par `toolOf`', () => {

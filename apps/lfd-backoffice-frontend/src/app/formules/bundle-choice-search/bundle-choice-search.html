@@ -1,0 +1,27 @@
+<div class="search">
+  <fold-search
+    size="sm"
+    ariaLabel="Chercher un article par nom ou par référence"
+    placeholder="Ajouter un article : nom ou référence"
+    [delayMs]="250"
+    [value]="query()"
+    [resultCount]="searched() ? options().length : null"
+    (valueChange)="query.set($event)"
+    (searchChange)="search($event)"
+  />
+  <fold-listbox
+    size="sm"
+    label="Article à ajouter"
+    placeholder="Choisir un article"
+    [disabled]="options().length === 0"
+    [hint]="hint()"
+    [options]="options()"
+    [value]="null"
+    (selectionChange)="pick($event)"
+  />
+  @if (failed()) {
+    <fold-callout appearance="inset" variant="alert" announce>
+      La recherche n'a pas abouti. Réessayez dans un instant.
+    </fold-callout>
+  }
+</div>

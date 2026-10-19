@@ -295,6 +295,19 @@
               (click)="mobileNavOpen.set(false)"
             ></a>
           }
+          @if (canSeeBundles()) {
+            <!-- Les FORMULES (2026-10-19, F2a), sous leur droit `shop_bundles`. -->
+            <a
+              fold-menu-item
+              icon="basket"
+              label="Formules"
+              routerLink="/formules"
+              routerLinkActive
+              #bundlesRla="routerLinkActive"
+              [active]="bundlesRla.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
         </fold-menu-section>
       }
 
@@ -970,6 +983,19 @@
               routerLinkActive
               #suggestionsTile="routerLinkActive"
               [active]="suggestionsTile.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
+          @if (canSeeBundles()) {
+            <!-- Les FORMULES : la même entrée qu'au rail (deux arbres). -->
+            <a
+              fold-nav-tile
+              icon="basket"
+              label="Formules"
+              routerLink="/formules"
+              routerLinkActive
+              #bundlesTile="routerLinkActive"
+              [active]="bundlesTile.isActive"
               (click)="mobileNavOpen.set(false)"
             ></a>
           }

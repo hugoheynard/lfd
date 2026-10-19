@@ -305,6 +305,7 @@ export class App {
       this.canSeeCommerceOperations() ||
       this.canSeeLoyalty() ||
       this.canSeeSuggestions() ||
+      this.canSeeBundles() ||
       this.canSeeFeatured(),
   );
   /** La mise en avant : le droit du catalogue publié (`lfc_catalog`, 2026-10-18). */
@@ -313,6 +314,8 @@ export class App {
   protected readonly canSeeSuggestions = computed(() =>
     this.permissions.can('lfc_suggestions:read'),
   );
+  /** Les formules : leur droit à elles (`shop_bundles`, 2026-10-19, F2a). */
+  protected readonly canSeeBundles = computed(() => this.permissions.can('shop_bundles:read'));
   /** La fidélité : son droit à elle (`lfc_loyalty`, 2026-10-16), pas la comptabilité. */
   protected readonly canSeeLoyalty = computed(() => this.permissions.can('lfc_loyalty:read'));
   /** Les opérations tenues au commerce : leur droit à elles (`lfc_operations`, Q2). */

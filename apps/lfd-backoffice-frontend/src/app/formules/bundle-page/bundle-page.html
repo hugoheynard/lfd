@@ -1,0 +1,167 @@
+<fold-page-layout [title]="bundle()?.name ?? 'Formule'" headerBleed separator>
+  <fold-back-link pageEyebrow icon="arrow-back" label="Formules" routerLink="/formules" />
+
+  @if (bundle(); as current) {
+    <fold-badge
+      titleBadge
+      [content]="withdrawn() ? 'Retirée' : 'Brouillon'"
+      [variant]="withdrawn() ? 'neutral' : 'info'"
+      radius="pill"
+    />
+  }
+  @if (bundle(); as current) {
+    <span pageSubtitle>Clé {{ current.key }}</span>
+  }
+
+  @if (withdrawn() && canWrite()) {
+    <div pageActions>
+      <button
+        foldButton
+        emphasis="outline"
+        icon="undo"
+        [loading]="busy() === 'draft'"
+        (click)="backToDraft()"
+      >
+        Remettre en brouillon
+      </button>
+    </div>
+  }
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Lecture de la formule…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Formule illisible" [subtitle]="failure()">
+        <button foldButton (click)="load(key())">Réessayer</button>
+      </fold-empty-state>
+    }
+    @default {
+      @if (bundle(); as current) {
+        @if (withdrawn()) {
+          <fold-callout appearance="inset" variant="neutral">
+            Retirée : elle se lit, elle ne se modifie plus. Remettez-la en brouillon pour la
+            reprendre.
+          </fold-callout>
+        } @else if (!canWrite()) {
+          <fold-callout appearance="inset" variant="neutral">
+            Lecture seule : modifier une formule demande le droit d'écrire les formules.
+          </fold-callout>
+        }
+        @if (refusal('draft'); as message) {
+          <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+        }
+        @if (inadmissible() > 0) {
+          <fold-callout appearance="inset" variant="warning">
+            Un article au moins n'est plus admissible : il reste dans la formule, marqué de sa
+            raison ci-dessous. Retirez-le ou remplacez-le.
+          </fold-callout>
+        }
+
+        <fold-card>
+          <div class="card">
+            <fold-element-title
+              variant="title"
+              title="Présentation"
+              subtitle="Ce que le client lira de la formule."
+            >
+              @if (!locked()) {
+                <button
+                  titleAction
+                  foldButton
+                  size="sm"
+                  [disabled]="!presentationChanged() || nameMissing()"
+                  [loading]="busy() === 'presentation'"
+                  (click)="savePresentation()"
+                >
+                  Enregistrer
+                </button>
+              }
+            </fold-element-title>
+            <fold-input
+              label="Nom"
+              required
+              [readOnly]="locked()"
+              [value]="name()"
+              (valueChange)="name.set($event)"
+            />
+            <fold-textarea
+              label="Description"
+              optional
+              [rows]="2"
+              [readOnly]="locked()"
+              [value]="description()"
+              (valueChange)="description.set($event)"
+            />
+            @if (refusal('presentation'); as message) {
+              <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+            } @else if (nameMissing() && !locked()) {
+              <fold-callout appearance="inset" variant="neutral">
+                Le nom est obligatoire.
+              </fold-callout>
+            }
+          </div>
+        </fold-card>
+
+        <fold-card>
+          <div class="card">
+            <fold-element-title
+              variant="title"
+              title="Composition"
+              subtitle="Les groupes dans l'ordre où le client choisira, un article par groupe."
+            >
+              @if (!locked()) {
+                <button
+                  titleAction
+                  foldButton
+                  size="sm"
+                  [disabled]="!compositionChanged() || compositionProblem() !== null"
+                  [loading]="busy() === 'composition'"
+                  (click)="saveComposition()"
+                >
+                  Enregistrer
+                </button>
+              }
+            </fold-element-title>
+            <app-bundle-composition-editor [(groups)]="groups" [locked]="locked()" />
+            @if (refusal('composition'); as message) {
+              <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+            } @else if (compositionProblem(); as message) {
+              @if (!locked()) {
+                <fold-callout appearance="inset" variant="neutral">{{ message }}</fold-callout>
+              }
+            }
+            <p class="said">La mise en vente viendra avec le prix.</p>
+          </div>
+        </fold-card>
+
+        @if (!locked()) {
+          <fold-danger-zone appearance="section" title="Retirer cette formule">
+            <div class="card">
+              <p class="said">
+                Retirer n'efface rien : la formule reste lisible et se remet en brouillon à tout
+                moment.
+              </p>
+              @if (refusal('withdraw'); as message) {
+                <fold-callout appearance="inset" variant="alert" announce>{{
+                  message
+                }}</fold-callout>
+              }
+              <fold-inline-confirm
+                intent="danger"
+                confirmIcon="archive"
+                message="Retirer cette formule ?"
+                [labels]="{ confirm: 'Retirer' }"
+                (confirmed)="withdraw()"
+              >
+                <button foldButton intent="danger" icon="archive" [loading]="busy() === 'withdraw'">
+                  Retirer la formule
+                </button>
+              </fold-inline-confirm>
+            </div>
+          </fold-danger-zone>
+        }
+      }
+    }
+  }
+</fold-page-layout>

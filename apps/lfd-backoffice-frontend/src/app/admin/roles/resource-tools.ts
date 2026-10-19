@@ -25,8 +25,9 @@ import {
  * découpé, et la table est devenue dérivable. C'est le bon sens de l'histoire —
  * un échafaudage se retire quand le mur tient.
  *
- * ⚠️ Reste **une** exception, et elle est nommée : `activity` n'a pas de
- * préfixe, parce que le journal ne se range dans aucun outil.
+ * ⚠️ Restent des exceptions, et elles sont nommées : `activity` n'a pas de
+ * préfixe, parce que le journal ne se range dans aucun outil ; `shop_bundles`
+ * se range à la main (`SHOP_RESOURCE_TOOLS`).
  */
 export type StaffTool =
   'pim' | 'lfc' | 'b2b' | 'production' | 'handover' | 'delivery' | 'staff' | 'ops' | 'transverse';
@@ -91,6 +92,16 @@ export interface ToolGroup {
 }
 
 /**
+ * Les droits `shop_*` n'ont pas d'outil à leur préfixe : `shop` nomme la
+ * boutique, pas un écran. Les formules vont où leur écran vit, en Gestion
+ * Boutique avec la fidélité et les suggestions (`lfc`, Hugo, 2026-10-19) ;
+ * avant, elles tombaient en « Transverse ».
+ */
+const SHOP_RESOURCE_TOOLS: Readonly<Partial<Record<StaffResource, StaffTool>>> = {
+  shop_bundles: 'lfc',
+};
+
+/**
  * L'outil d'un domaine — **lu dans sa clé**.
  *
  * Une clé sans préfixe connu tombe dans `transverse` plutôt que d'échouer :
@@ -99,6 +110,10 @@ export interface ToolGroup {
  * qu'une exception silencieuse n'est jamais.
  */
 export function toolOf(resource: StaffResource): StaffTool {
+  const exception = SHOP_RESOURCE_TOOLS[resource];
+  if (exception !== undefined) {
+    return exception;
+  }
   const prefix = resource.split('_')[0];
   switch (prefix) {
     case 'pim':

@@ -1,0 +1,39 @@
+<fold-panel-header
+  title="Créer une formule"
+  subtitle="Un brouillon : rien n'en paraît en boutique. La mise en vente viendra avec le prix."
+/>
+
+<fold-panel-body>
+  <div class="form">
+    <fold-input
+      label="Nom"
+      placeholder="Formule petit-déjeuner"
+      hint="Son adresse en est tirée, et ne changera plus."
+      required
+      [value]="name()"
+      (valueChange)="name.set($event)"
+    />
+    <fold-textarea
+      label="Description"
+      optional
+      [rows]="2"
+      [value]="description()"
+      (valueChange)="description.set($event)"
+    />
+
+    <app-bundle-composition-editor [(groups)]="groups" />
+
+    @if (refusal(); as message) {
+      <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+    } @else if (missing(); as message) {
+      <fold-callout appearance="inset" variant="neutral">{{ message }}</fold-callout>
+    }
+  </div>
+</fold-panel-body>
+
+<fold-panel-footer align="end">
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton [disabled]="missing() !== null" [loading]="busy()" (click)="submit()">
+    Créer
+  </button>
+</fold-panel-footer>

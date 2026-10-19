@@ -1,0 +1,70 @@
+<fold-page-layout icon="basket" title="Formules">
+  <p description>
+    Les formules : des groupes, et dans chacun des articles au choix — le client en prend un par
+    groupe. La mise en vente viendra avec le prix.
+  </p>
+
+  @if (canWrite()) {
+    <div pageActions>
+      <button foldButton icon="plus" [disabled]="state() !== 'ready'" (click)="create()">
+        Créer une formule
+      </button>
+    </div>
+  }
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Chargement des formules…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Impossible de charger les formules">
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @default {
+      @if (bundles().length === 0) {
+        <fold-empty-state
+          title="Aucune formule"
+          [subtitle]="
+            canWrite()
+              ? 'Composez la première : ses groupes, et les articles au choix dans chacun.'
+              : 'Aucune formule n’a encore été composée.'
+          "
+        >
+          <fold-icon empty-icon name="basket" [size]="28" />
+          @if (canWrite()) {
+            <button foldButton icon="plus" (click)="create()">Créer une formule</button>
+          }
+        </fold-empty-state>
+      } @else {
+        <fold-card>
+          <ul class="bundles">
+            @for (bundle of bundles(); track bundle.key) {
+              <li class="bundle">
+                <div class="bundle-head">
+                  <a class="bundle-name" [routerLink]="['/formules', bundle.key]">{{
+                    bundle.name
+                  }}</a>
+                  @if (bundle.status === 'withdrawn') {
+                    <fold-badge content="Retirée" variant="neutral" radius="pill" />
+                  } @else {
+                    <fold-badge content="Brouillon" variant="info" radius="pill" />
+                  }
+                </div>
+                <span class="summary">{{ summary(bundle) }}</span>
+                @if (inadmissible(bundle); as count) {
+                  <fold-callout appearance="inset" variant="warning">
+                    {{ count }} article{{ count > 1 ? 's ne sont' : ' n’est' }} plus admissible{{
+                      count > 1 ? 's' : ''
+                    }}
+                    : ouvrez la formule pour voir lesquels.
+                  </fold-callout>
+                }
+              </li>
+            }
+          </ul>
+        </fold-card>
+      }
+    }
+  }
+</fold-page-layout>
