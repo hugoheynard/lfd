@@ -660,12 +660,11 @@ un schéma (cf. `CLAUDE.md` §1, redressé le 2026-08-31). Une telle jointure
 discipline. La justification d'origine de cette décision (« lecture
 inter-bases ») était fausse ; la décision, elle, tient.
 
-Corollaire à ne pas se cacher : D6 est un nettoyage **sans cliquet**.
-`lint:context-boundaries` autorise `b2b → pim` sans réserve, donc rien
-n'empêchera le prochain import. Le resserrement de la porte est suivi dans
-[`todos/todo-mur-entre-contextes.md`](../../todos/todo-mur-entre-contextes.md),
-et il doit venir **après** D6, sous peine de faire rougir la CI sur du code
-qu'on est en train de corriger.
+Corollaire, devenu caduc : D6 a d'abord été un nettoyage **sans cliquet**. Le
+cliquet est posé depuis le 2026-09-03 — `lint:context-boundaries` n'admet
+`b2b → pim` que par `pim/channels/b2b-platform/`, sans exception — et
+`lint:prisma-model-ownership` (2026-09-09) ferme la brèche du Prisma direct
+(TODO « mur entre contextes » retiré le 2026-10-19).
 
 Trois coûts que la première rédaction passait sous silence :
 
