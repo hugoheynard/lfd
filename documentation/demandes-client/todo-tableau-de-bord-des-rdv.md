@@ -1,4 +1,4 @@
-# TODO — tableau de bord commercial
+# TODO — tableau de bord des rendez-vous
 
 > **État au 2026-08-09** : la page est refaite — en-tête à chiffres, comptes
 > **épinglés**, file des coups du jour, et un rail « aujourd'hui » qui porte le
