@@ -8,6 +8,22 @@ import { Public } from "../../../platform/auth/public.decorator.js";
 import { ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
 import { ReadShopCatalogueQuery } from "../application/queries/read-shop-catalogue.js";
 import { CATALOG_SOURCE_LANGUAGE } from "../domain/catalog-translations.js";
+import type { ShopAudience } from "../domain/ports/catalog.reader.js";
+
+/** `pro` seul : sans le paramètre, la vitrine publique d'avant, à l'identique. */
+const SHOP_CATALOGUE_AUDIENCES = ["pro"] as const satisfies readonly ShopAudience[];
+
+/**
+ * `?audience=pro`, facultatif — absent, la vitrine publique. Une autre valeur
+ * est un 400 qui dit laquelle on sert : `public` n'est pas accepté en clair,
+ * pour qu'il n'y ait qu'une seule façon de demander la vitrine publique.
+ */
+const audienceQuerySchema = z
+  .enum(
+    SHOP_CATALOGUE_AUDIENCES,
+    `audience inconnue : « audience » n'accepte que ${SHOP_CATALOGUE_AUDIENCES.join(", ")} (absent = la vitrine publique)`,
+  )
+  .optional();
 
 /**
  * `?lang=fr|en|it`, facultatif — absent, le français : la vue d'avant le lot
@@ -50,6 +66,14 @@ const languageQuerySchema = z
  * `?lang=en|it` (lot des langues, 2026-10-18) : noms, lignes et rayons dans
  * cette langue, en français quand le référentiel ne les a pas traduits. La
  * vitrine de l'agence (lot W) relira la même vue dans les trois langues.
+ *
+ * `?audience=pro` (Hugo, 2026-10-19) : le rayon des pros au **tarif pro de
+ * base**, hors taxe — pour le visiteur arrivé par la landing `/pro`. Exposer
+ * ce tarif est une décision : c'est l'étiquette d'un pro qui n'a rien négocié,
+ * pas une condition commerciale. Mercuriales, règles visant une société et
+ * engagements restent derrière la connexion — la porte de prix est appelée
+ * sans société, elle ne peut pas les lire. Même forme de vue, même porte ;
+ * `isFeatured` y est la mise en avant PRO.
  */
 @Controller("shop/catalogue")
 @Public()
@@ -60,9 +84,10 @@ export class ShopCatalogueController {
   @Get()
   read(
     @Query("lang", new ZodQuery(languageQuerySchema)) language: ContentLocale,
+    @Query("audience", new ZodQuery(audienceQuerySchema)) audience: ShopAudience | undefined,
   ): Promise<ShopCatalogueView> {
     return this.queries.execute<ReadShopCatalogueQuery, ShopCatalogueView>(
-      new ReadShopCatalogueQuery(language),
+      new ReadShopCatalogueQuery(language, audience ?? "public"),
     );
   }
 }

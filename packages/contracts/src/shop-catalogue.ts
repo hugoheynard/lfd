@@ -143,8 +143,8 @@ export interface ShopItemView {
   readonly unitPriceTtcCents: number;
   /**
    * **Le tarif à barrer** — l'étiquette publique sur la route publique, le
-   * tarif du canal pro sur la route reconnue — **absent** quand il n'y a rien
-   * à barrer.
+   * tarif du canal pro sur la route reconnue et sur `?audience=pro` —
+   * **absent** quand il n'y a rien à barrer.
    *
    * ⚠️ Ce JSDoc disait « le tarif catalogue pro » pour les deux routes jusqu'au
    * 2026-10-18 (relevé par `vitruve`) : sur `GET /shop/catalogue`, le tarif
@@ -186,7 +186,9 @@ export interface ShopItemView {
    *
    * 🔴 La route publique ne rend que `public` ou `both` : un article réservé
    * aux pros n'y sort pas (`servedTo`). `pro` n'apparaît que sur la route
-   * reconnue d'un client pro (`/shop/catalogue/mine`), qui partage cette vue.
+   * reconnue d'un client pro (`/shop/catalogue/mine`), qui partage cette vue,
+   * et sur le rayon pro sans jeton (`/shop/catalogue?audience=pro`, Hugo,
+   * 2026-10-19 — tarif pro de base, hors taxe, rien de négocié).
    *
    * ⚠️ **Un élargissement ASSUMÉ** de la surface publique : il ne dit rien que
    * le rayon pro ne montre déjà, et l'e2e qui énumère les clés le nomme.

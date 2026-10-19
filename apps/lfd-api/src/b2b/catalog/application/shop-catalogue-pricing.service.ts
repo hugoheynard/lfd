@@ -109,10 +109,19 @@ export class ShopCataloguePricing {
    * client. À `public`, c'est exactement `priced(null)`. À `pro`, le rayon des
    * pros au prix sans rien de négocié : ni mercuriale, ni tarif de canal — ce
    * qu'aucun pro réel ne voit tout à fait, et que l'aperçu dit. La boutique ne
-   * l'appelle jamais : la déduction de `priced` reste la seule pour un client.
+   * l'appelle jamais POUR UN CLIENT : la déduction de `priced` reste la seule
+   * pour un client.
+   *
+   * Depuis le 2026-10-19 (Hugo), c'est aussi la vitrine pro **sans jeton**
+   * (`GET /shop/catalogue?audience=pro`) : le tarif pro de base est public,
+   * les conditions négociées ne le sont pas — et elles ne peuvent pas fuir
+   * d'ici, la porte ne recevant aucune société.
    */
-  pricedWithoutCompany(audience: ShopAudience): Promise<ShopCatalogueView> {
-    return this.pricedFor(audience, null, CATALOG_SOURCE_LANGUAGE);
+  pricedWithoutCompany(
+    audience: ShopAudience,
+    language: ContentLocale = CATALOG_SOURCE_LANGUAGE,
+  ): Promise<ShopCatalogueView> {
+    return this.pricedFor(audience, null, language);
   }
 
   private async pricedFor(

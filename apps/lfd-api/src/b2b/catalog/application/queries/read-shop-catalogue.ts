@@ -1,6 +1,7 @@
 import type { ContentLocale, ShopCatalogueView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
+import type { ShopAudience } from "../../domain/ports/catalog.reader.js";
 import { ShopCataloguePricing } from "../shop-catalogue-pricing.service.js";
 
 /**
@@ -11,8 +12,15 @@ import { ShopCataloguePricing } from "../shop-catalogue-pricing.service.js";
  * journaliser sans passer par HTTP.
  */
 export class ReadShopCatalogueQuery {
-  /** @param language la langue des noms, lignes et rayons — le français par défaut à la route. */
-  constructor(readonly language: ContentLocale) {}
+  /**
+   * @param language la langue des noms, lignes et rayons — le français par défaut à la route.
+   * @param audience la clientèle de la vitrine — `public` par défaut à la route ;
+   * `pro` est le rayon des pros au tarif pro de BASE (2026-10-19).
+   */
+  constructor(
+    readonly language: ContentLocale,
+    readonly audience: ShopAudience = "public",
+  ) {}
 }
 
 @QueryHandler(ReadShopCatalogueQuery)
@@ -34,6 +42,15 @@ export class ReadShopCatalogueHandler implements IQueryHandler<ReadShopCatalogue
    * comment ce trou s'est ouvert.
    */
   async execute(query: ReadShopCatalogueQuery): Promise<ShopCatalogueView> {
+    // 🔴 **Le rayon pro sans jeton** (Hugo, 2026-10-19) : le visiteur venu de
+    // la landing `/pro` voit le tarif pro de BASE, hors taxe — celui d'un pro
+    // sans mercuriale, sans règle visant une société, sans engagement. La
+    // porte ne reçoit aucune société (`companyId: null`) : rien de négocié ne
+    // peut s'y lire, par construction et non par filtre. Les conditions
+    // négociées restent derrière la connexion (`/shop/catalogue/mine`).
+    if (query.audience === "pro") {
+      return this.pricing.pricedWithoutCompany("pro", query.language);
+    }
     return this.pricing.priced(null, query.language);
   }
 }
