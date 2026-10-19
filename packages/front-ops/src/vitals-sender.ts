@@ -7,7 +7,7 @@ export type VitalsFetch = (input: string, init: RequestInit) => Promise<unknown>
  * **Envoie les mesures en une requête qui survit à la fermeture de l'onglet**,
  * sans identifiants.
  *
- * 🔴 Ce n'est plus `sendBeacon` (2026-10-10, `todos/todo-vitals-refuses-par-le-cors.md`) :
+ * 🔴 Ce n'est plus `sendBeacon` (2026-10-10 ; TODO « vitals refusés par le CORS » retiré le 2026-10-19 après contrôle en prod) :
  * un beacon cross-origin part TOUJOURS en mode `credentials: include`, et le
  * préflight que déclenche `application/json` revenait sans
  * `Access-Control-Allow-Credentials` — le navigateur refusait, et `/health`

@@ -23,7 +23,7 @@ describe("sendVitals — l'envoi des web vitals", () => {
   /**
    * Régression : `sendBeacon` partait en `credentials: include`, le CORS de
    * l'API le refusait, et `/health` comptait zéro mesure depuis le premier
-   * jour (todo-vitals-refuses-par-le-cors.md, 2026-09-09 → corrigé 2026-10-10).
+   * jour (TODO « vitals refusés par le CORS », 2026-09-09 → corrigé 2026-10-10, retiré le 2026-10-19 après contrôle en prod).
    */
   it("n'envoie aucun identifiant, et survit à la fermeture de l'onglet", () => {
     const { calls, send } = recorder();
