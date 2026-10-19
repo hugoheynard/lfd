@@ -55,7 +55,8 @@ export interface FeaturedCard {
   readonly position: string;
 }
 
-function artOfFeatured(item: ShopFeaturedItemView): ShopImageView {
+/** L’image d’un incontournable : l’ouverture, sinon la vignette, sinon le rayon. */
+export function artOfFeatured(item: ShopFeaturedItemView): ShopImageView {
   return (
     item.image ??
     item.thumbnail ?? { url: shelfArtOf(item.shelfId), alt: item.name, width: null, height: null }

@@ -29,6 +29,7 @@ import { LIVE_PICKUP } from '../mes-commandes/order-view.fixture';
 import { ServicePoints } from '../shop/pickup-points.store';
 import { CartFulfillmentDays } from '../shop/cart-fulfillment-days.service';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
+import { ShopPriceBasis } from '../shop/shop-price-basis.service';
 import { ShopWarmup } from '../shop/warmup/shop-warmup';
 import type { PublicContactSettingsView } from '@lfd/contracts/shop-values';
 import { ContactSettingsStore, NO_CONTACT_SETTINGS } from '../shop/contact-settings.store';
@@ -117,6 +118,9 @@ function whoProviders(who: Regard, status?: CompanyStatus): readonly unknown[] {
       },
     },
     { provide: ClientIdentity, useValue: { firstName: signal(null) } },
+    // L'assiette des prix des incontournables (`home-featured`) n'est pas le
+    // sujet de l'accueil — et la vraie relirait le compte au réseau.
+    { provide: ShopPriceBasis, useValue: { showsTtc: signal(who !== 'pro') } },
   ];
 }
 

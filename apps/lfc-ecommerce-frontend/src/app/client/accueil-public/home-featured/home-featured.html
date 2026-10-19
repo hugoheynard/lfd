@@ -1,0 +1,14 @@
+@if (cards().length > 0) {
+  <section class="featured" data-test="home-featured" [attr.aria-label]="c().featured.title">
+    <h2 class="title">{{ c().featured.title }}</h2>
+    <div class="grid">
+      @for (entry of cards(); track entry.card.sku) {
+        <app-pro-featured-card
+          [card]="entry.card"
+          [price]="entry.price"
+          (activated)="open(entry.card.sku)"
+        />
+      }
+    </div>
+  </section>
+}

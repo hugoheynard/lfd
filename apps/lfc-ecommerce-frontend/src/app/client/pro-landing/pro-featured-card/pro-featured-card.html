@@ -24,5 +24,8 @@
     @if (card().note; as note) {
       <p class="note">{{ note }}</p>
     }
+    @if (price(); as label) {
+      <p class="price" data-test="featured-price">{{ label }}</p>
+    }
   </div>
 </fold-card>

@@ -18,6 +18,12 @@ import type { FeaturedCard } from '../pro-landing';
 })
 export class ProFeaturedCard {
   readonly card = input.required<FeaturedCard>();
+  /**
+   * Le prix déjà mis en forme, assiette comprise (« 3,20 € TTC »). Absent sur
+   * `/pro`, où aucun prix ne se montre ; posé par l'accueil `/bienvenue`, qui
+   * connaît le tarif de son lecteur.
+   */
+  readonly price = input<string | null>(null);
   /** Clic ou clavier sur la carte : la page ouvre la connexion. */
   readonly activated = output();
 }
