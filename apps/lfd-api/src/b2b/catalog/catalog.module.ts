@@ -36,7 +36,9 @@ import { PrismaCatalogVisualsProjection } from "./infrastructure/prisma-catalog-
 import { PrismaCatalogReader } from "./infrastructure/prisma-catalog.reader.js";
 import { AdminCatalogController } from "./http/admin-catalog.controller.js";
 import { ShopCatalogueController } from "./http/shop-catalogue.controller.js";
+import { ShopFeaturedController } from "./http/shop-featured.controller.js";
 import { ReadShopCatalogueHandler } from "./application/queries/read-shop-catalogue.js";
+import { ReadShopFeaturedHandler } from "./application/queries/read-shop-featured.handler.js";
 import { SaleOperations } from "./application/sale-operations.service.js";
 import { ShopCataloguePricing } from "./application/shop-catalogue-pricing.service.js";
 import { ExportCatalogCsvHandler } from "./application/queries/export-catalog-csv.handler.js";
@@ -88,6 +90,7 @@ import { PrismaCatalogColdReader } from "./infrastructure/prisma-catalog-cold.re
     AdminCatalogController,
     // La vitrine, sans jeton : on visite d'abord, on s'identifie pour régler.
     ShopCatalogueController,
+    ShopFeaturedController,
   ],
   providers: [
     // L'abonné qui projette les visuels d'une fiche sans attendre un push.
@@ -103,6 +106,7 @@ import { PrismaCatalogColdReader } from "./infrastructure/prisma-catalog-cold.re
     GetPublishedCatalogHandler,
     ExportCatalogCsvHandler,
     ReadShopCatalogueHandler,
+    ReadShopFeaturedHandler,
     // 🔴 LA logique de prix de la vitrine, pour les DEUX routes. Exportée plus
     // bas : la route reconnue l'appelle avec un `companyId`, la publique avec
     // `null`, et c'est la seule différence entre elles.

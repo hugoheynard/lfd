@@ -286,6 +286,7 @@
   "test/shop-cart.e2e-spec.ts": 6279,
   "test/shop-catalogue-languages.e2e-spec.ts": 10435,
   "test/shop-catalogue.e2e-spec.ts": 7754,
+  "test/shop-featured.e2e-spec.ts": 12315,
   "test/shop-copy.e2e-spec.ts": 8102,
   "test/shop-order.e2e-spec.ts": 5551,
   "test/shop-quote.e2e-spec.ts": 6182,

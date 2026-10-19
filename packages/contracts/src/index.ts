@@ -656,6 +656,11 @@ export type {
   ShopOperationView,
   ShopShelfView,
 } from "./shop-catalogue.js";
+export type {
+  ShopFeaturedAudience,
+  ShopFeaturedItemView,
+  ShopFeaturedView,
+} from "./shop-featured.js";
 export {
   shopQuoteLineSchema,
   shopQuoteFulfillmentSchema,
