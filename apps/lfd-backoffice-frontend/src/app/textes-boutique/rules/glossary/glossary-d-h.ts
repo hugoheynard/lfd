@@ -105,6 +105,7 @@ export const GLOSSARY_D_H: Readonly<Record<string, string>> = {
   expand: 'Déplier la commande',
   facebook: 'Continuer avec Facebook',
   failed: 'Échec',
+  featured: 'Incontournables',
   fee: 'Frais de livraison',
   feeVatProrata: 'TVA des frais — au prorata',
   feeVatStandard: 'TVA des frais — taux normal',
