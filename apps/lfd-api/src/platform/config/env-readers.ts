@@ -542,7 +542,8 @@ export function optionalFieldEncryptionKey(): Buffer | null {
  * seule chose qu'un exploitant puisse lire à 7 h du matin.
  *
  * ⚠️ Prisma retire Accelerate le **1er décembre 2026** : après cette date,
- * l'ancienne URL ne joint plus rien de toute façon.
+ * l'ancienne URL ne joint plus rien de toute façon. Pas de retour arrière :
+ * l'ancien secret Accelerate est supprimé de GitHub (2026-10-19).
  */
 export function postgresUrl(value: string): string {
   if (value.startsWith("postgresql://") || value.startsWith("postgres://")) {
@@ -551,6 +552,6 @@ export function postgresUrl(value: string): string {
   throw new Error(
     "DATABASE_LFD_URL ne pointe pas vers un Postgres direct (`postgresql://…`). " +
       "Une URL `prisma+postgres://…` vise Accelerate, que cette application ne sait " +
-      "plus joindre depuis le 2026-09-22 (voir documentation/ops/plan-sortie-d-accelerate.md).",
+      "plus joindre depuis le 2026-09-22 (voir documentation/ops/base-de-production.md).",
   );
 }

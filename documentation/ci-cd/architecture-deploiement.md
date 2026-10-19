@@ -148,37 +148,18 @@ le compte `dev@lafoliedouce.com`.
 
 ```mermaid
 flowchart LR
-    B2B["Backend B2B"] -->|"prisma+postgres://<br/>(Accelerate)"| A["accelerate.prisma-data.net"]
-    PIM["Backend PIM"] -->|"prisma+postgres://"| A
-    A --> DB[("Prisma Postgres<br/>2 bases séparées")]
+    API["lfd-api<br/>adaptateur pg"] -->|"postgres://<br/>pooled.db.prisma.io"| P["Pooler Prisma"]
+    P --> DB[("Prisma Postgres")]
 ```
 
-**Le schéma de l'URL choisit le transport**, et les deux backends branchent
-dessus :
+✅ **Sortie d'Accelerate faite** (bascule 2026-09-19, resserrement
+2026-09-22) — un seul transport, l'adaptateur `pg` : le container joint le
+pooler mutualisé (5 connexions par instance, 5 s pour en obtenir une), la
+migration du déploiement passe par l'URL **directe** `db.prisma.io` (secret
+`DATABASE_LFD_PROD_DIRECT_URL`), et une URL `prisma+postgres://` est refusée au
+démarrage. Détail : [`base-de-production.md`](../ops/base-de-production.md).
 
-- `prisma+postgres://…` → **Accelerate** (pooling + cache — cache jamais
-  utilisé par le code) ;
-- `postgres://…` → **adapter `pg`** (TCP), utilisé par les tests e2e, le poste,
-  et la production une fois sortie d'Accelerate.
-
-📐 **Sortie d'Accelerate — bâtie, pas encore basculée** (2026-09-19,
-[`plan-sortie-d-accelerate.md`](../ops/plan-sortie-d-accelerate.md)). Prisma
-retire Accelerate le 1er décembre 2026. La production est **sur Accelerate
-jusqu'à la bascule du week-end** ; le code sait déjà servir le pooler
-mutualisé :
-
-- le container recevra `postgres://…@pooled.db.prisma.io:5432/postgres` dans
-  `DATABASE_LFD_URL`, joint par l'adaptateur `pg` avec un pool réglé (5
-  connexions par instance, 5 s pour en obtenir une) ;
-- la migration du déploiement passe **déjà** par l'URL **directe**
-  `db.prisma.io` (secret `DATABASE_LFD_PROD_DIRECT_URL`) — une migration ne traverse
-  pas un pooler ;
-- `/health` publie le transport servi (`database: "pg" | "accelerate"`), et le
-  déploiement échoue s'il n'est pas celui qu'écrit
-  `EXPECTED_DATABASE_TRANSPORT` en tête de `deploy_lfd_api.yml`
-  (`accelerate` aujourd'hui).
-
-Le schéma ne suffit donc plus à distinguer la production d'un conteneur local :
+En `postgres://`, le schéma ne suffit plus à distinguer la production d'un conteneur local :
 les outils de `prisma/` qui écrivent lisent aussi l'**hôte**
 (`prisma/local-target.ts`).
 

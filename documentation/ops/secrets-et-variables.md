@@ -16,11 +16,13 @@
 > contre GitHub à cette date.
 >
 > **2026-09-19** — sortie d'Accelerate
-> ([`plan-sortie-d-accelerate.md`](plan-sortie-d-accelerate.md)) : nouveau
+> ([`base-de-production.md`](base-de-production.md)) : nouveau
 > secret **`DATABASE_LFD_PROD_DIRECT_URL`** (§3), et `LFD_PRODUCTION_DATABASE_URL`,
-> qui n'est **pas** un secret GitHub (§3). La production est **encore** sur
-> Accelerate jusqu'à la bascule du week-end ; le code sait déjà servir le
-> pooler. Écrit contre le code et le workflow, pas relu contre GitHub.
+> qui n'est **pas** un secret GitHub (§3).
+>
+> **2026-10-19** — sortie d'Accelerate terminée : l'ancien secret
+> `DATABASE_LFD_URL` (valeur Accelerate) est **supprimé** de GitHub (confirmé
+> par Hugo) ; restent `DATABASE_LFD_PROD_URL` et `DATABASE_LFD_PROD_DIRECT_URL`.
 
 ## 1. La règle
 
@@ -118,8 +120,7 @@ la production.
 
 | Secret                                                                            | Va vers                             | Notes                                                                                                                                                                                                                                                    |
 | --------------------------------------------------------------------------------- | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DATABASE_LFD_URL`                                                                | backend B2B                         | `prisma+postgres://` (Accelerate) — relayé au container jusqu'à la bascule, puis gardé pour le retour arrière                                                                                                                                            |
-| `DATABASE_LFD_PROD_URL`                                                           | backend B2B, **après la bascule**   | `postgres://…@pooled.db.prisma.io` (pooler) — relayé au container sous le nom `DATABASE_LFD_URL` ; cf. ci-dessous                                                                                                                                        |
+| `DATABASE_LFD_PROD_URL`                                                           | backend B2B                         | `postgres://…@pooled.db.prisma.io` (pooler) — relayé au container sous le nom `DATABASE_LFD_URL` ; cf. ci-dessous                                                                                                                                        |
 | `DATABASE_LFD_PROD_DIRECT_URL`                                                    | `migrate deploy` (CI) **seulement** | URL **directe** `db.prisma.io` — jamais relayée au container ; **aucun repli** : absente, la migration échoue                                                                                                                                            |
 | `STRIPE_SECRET_KEY` · `STRIPE_WEBHOOK_SECRET` · `STRIPE_PUBLISHABLE_KEY`          | backend B2B                         | mode démo                                                                                                                                                                                                                                                |
 | `RESEND_MAILER_B2B_API_KEY`                                                       | backend B2B                         | envoi sortant — mise en service : [`mailer-resend.md`](mailer-resend.md)                                                                                                                                                                                 |
@@ -158,21 +159,12 @@ une rotation le rend illisible, et chaque abonné doit être régénéré à l'�
 container joint le **pooler mutualisé** ; une migration tient des verrous et
 enchaîne des instructions sur une même session, et ne passe donc **pas** par un
 pooler : `deploy_lfd_api.yml` (« Migrer la base ») la lance par
-`DATABASE_LFD_PROD_DIRECT_URL`. Tant que la production est sur Accelerate, cette URL
-directe vise déjà la même base.
+`DATABASE_LFD_PROD_DIRECT_URL`. Les deux visent la même base
+([`base-de-production.md`](base-de-production.md)).
 
-- **Le transport servi se lit, le secret non.** `GET /health` publie
-  `database: "pg" | "accelerate"` (un mot, ni hôte ni utilisateur), et le
-  déploiement **échoue** si ce n'est pas `EXPECTED_DATABASE_TRANSPORT`, écrit
-  en tête du workflow (`accelerate` aujourd'hui). Changer le secret relayé
-  sans changer cette ligne dans le même push fait donc échouer le déploiement —
-  c'est le but. Geste de bascule et de retour arrière : [`runbook.md`](runbook.md).
-- **La bascule ne touche aucun secret** (Hugo, 2026-09-19) : l'URL mutualisée
-  vit dans `DATABASE_LFD_PROD_URL`, et un commit fait lire ce secret à la
-  synchro au lieu de `DATABASE_LFD_URL`. Ce dernier garde la valeur
-  Accelerate : c'est le retour arrière (un `git revert`), jusqu'au
-  resserrement. La copie au gestionnaire de mots de passe reste une ceinture —
-  un secret GitHub ne se relit pas.
+- **Une URL Accelerate est refusée au démarrage** (2026-09-22) : l'API ne
+  démarre que sur un `postgres(ql)://`. Il n'y a plus de retour arrière vers
+  Accelerate, et `/health` ne publie plus de transport.
 - **`LFD_PRODUCTION_DATABASE_URL` n'est ni un secret GitHub ni une ligne du
   `.env`.** ⚠️ Plus aucun outil ne la lit depuis le 2026-10-15 : son seul
   lecteur, l’import de la mercuriale, est supprimé avec le prix décidé

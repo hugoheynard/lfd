@@ -19,7 +19,7 @@ const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
  * 🔴 **C'est l'HÔTE qui décide, pas le schéma.** Tant que la production passait
  * par Accelerate (`prisma+postgres://`), le schéma suffisait à la reconnaître,
  * et plusieurs outils s'en contentaient. Depuis la sortie d'Accelerate
- * (`documentation/ops/plan-sortie-d-accelerate.md`), la production s'écrit
+ * (`documentation/ops/base-de-production.md`), la production s'écrit
  * `postgres://…@pooled.db.prisma.io` : un outil qui ne lirait que le schéma
  * la prendrait pour un conteneur local. L'URL Accelerate reste refusée par le
  * même test, jusqu'au resserrement.

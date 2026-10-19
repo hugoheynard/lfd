@@ -320,7 +320,7 @@ JWT, cold start, WS futur) sont **bornés et assumés**, pas ignorés.
   Prisma retire Accelerate le 1er décembre 2026. La production y reste jusqu'à
   la bascule du week-end ; le code sait déjà joindre le pooler mutualisé en TCP,
   ce que le choix de Containers (vrai process Node, TCP sortant) rend possible
-  ([`../ops/plan-sortie-d-accelerate.md`](../ops/plan-sortie-d-accelerate.md)).
+  ([`../ops/base-de-production.md`](../ops/base-de-production.md)).
 
   **Coût (tarifs Cloudflare, cf. §11).** CPU facturé **à l'usage réel** ; seuls
   **mémoire + disque** courent tant que le conteneur est **réveillé** ; **endormi

@@ -40,7 +40,7 @@ import { clearSeededBuckets } from "./seeding/storage.seed.js";
  *    et local — schéma **et hôte**. Le schéma seul ne suffit plus : la
  *    production sort d'Accelerate (`prisma+postgres://`) pour le pooler
  *    mutualisé, qui s'écrit `postgres://…@pooled.db.prisma.io`
- *    (`documentation/ops/plan-sortie-d-accelerate.md`). C'est l'hôte, hors de
+ *    (`documentation/ops/base-de-production.md`). C'est l'hôte, hors de
  *    la liste blanche {@link LOCAL_HOSTS}, qui rend le rechargement
  *    **inexprimable** contre elle, pas seulement interdit.
  * 2. **L'environnement.** `NODE_ENV=production` referme la porte, quelle que

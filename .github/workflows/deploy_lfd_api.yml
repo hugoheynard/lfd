@@ -118,10 +118,9 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_LFD_API_WORKER }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          # Sortie d'Accelerate (2026-09-19) : le container reçoit l'URL du POOLER
-          # mutualisé, rangée dans son propre secret. `secrets.DATABASE_LFD_URL`
-          # garde la valeur Accelerate : le retour arrière est un `git revert`
-          # de ce changement (documentation/ops/runbook.md).
+          # Le container reçoit l'URL du POOLER mutualisé, rangée dans son propre
+          # secret. Aucun retour à Accelerate : l'API refuse une URL
+          # `prisma+postgres://` au démarrage (documentation/ops/base-de-production.md).
           DATABASE_LFD_URL: ${{ secrets.DATABASE_LFD_PROD_URL }}
           # Identifiants Auth0 = PUBLICS → GitHub VARIABLES (pas Secrets). Tenant PROD.
           AUTH0_DOMAIN: ${{ vars.AUTH0_DOMAIN }}
@@ -331,7 +330,7 @@ jobs:
       #    rien : du temps de CI, pas une indisponibilité.
       #
       #    🔴 Par l'URL DIRECTE (`db.prisma.io`), jamais par celle du container.
-      #    Celle-ci vise le pooler mutualisé une fois sorti d'Accelerate, et une
+      #    Celle-ci vise le pooler mutualisé, et une
       #    migration ne passe pas par un pooler : elle tient des verrous et
       #    enchaîne des instructions sur une même session. Le secret est passé
       #    SANS repli — un nom mal saisi fait échouer la migration, ce qu'on

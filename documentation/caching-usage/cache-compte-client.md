@@ -10,7 +10,7 @@
 >
 > **2026-09-19** — **le cache d'Accelerate disparaît**, sans remplacement :
 > Prisma retire Accelerate le 1er décembre 2026, et la production en sort
-> ([`ops/plan-sortie-d-accelerate.md`](../ops/plan-sortie-d-accelerate.md)).
+> ([`ops/base-de-production.md`](../ops/base-de-production.md)).
 > Elle y reste jusqu'à la bascule du week-end ; le code sait déjà servir le
 > pooler mutualisé, qui ne cache rien. Le **lot 4** (`cacheStrategy`) devient
 > donc sans objet, et la comparaison du §5 se tranche d'elle-même : il ne reste

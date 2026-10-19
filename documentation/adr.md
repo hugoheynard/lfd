@@ -47,9 +47,10 @@ flowchart LR
 Les deux fronts sont servis en statique par Cloudflare Pages. La passerelle est
 le seul chemin public vers l'API (`gateway/`, `CLAUDE.md` en tête).
 
-Le maillon Accelerate est **en sursis** : Prisma le retire le 1er décembre 2026. La production y passe jusqu'à la bascule du week-end du 2026-09-19 ; le
-code sait déjà joindre à sa place le pooler mutualisé, en TCP
-([`ops/plan-sortie-d-accelerate.md`](ops/plan-sortie-d-accelerate.md)).
+⚠️ **Périmé depuis le 2026-09-19** : le maillon Accelerate n'existe plus. La
+production joint le pooler mutualisé en TCP par l'adaptateur `pg`, et une URL
+Accelerate est refusée au démarrage depuis le 2026-09-22
+([`ops/base-de-production.md`](ops/base-de-production.md)).
 
 ---
 
@@ -178,7 +179,7 @@ ce qui a dicté la forme de `prisma/clone-dev.ts`. Le client généré vit dans
 `src/infra/database/client/` qui n'a jamais existé.
 
 **2026-09-19** — sortie d'Accelerate
-([`ops/plan-sortie-d-accelerate.md`](ops/plan-sortie-d-accelerate.md)). Le
+([`ops/base-de-production.md`](ops/base-de-production.md)). Le
 schéma choisit toujours le transport, mais le schéma de gauche est déjà faux
 sur deux points : le développement n'est **pas** sur Accelerate (le `.env` vise
 un Postgres local, confirmé par Hugo ce jour-là), et la production passera en

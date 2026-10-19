@@ -12,7 +12,7 @@
 >
 > **2026-09-19** — le §5 dit Accelerate « prod & dev applicatif » : c'était déjà
 > faux pour le dev (un Postgres local), et la production en sort
-> ([`plan-sortie-d-accelerate.md`](../ops/plan-sortie-d-accelerate.md)) — elle
+> ([`base-de-production.md`](../ops/base-de-production.md)) — elle
 > y reste jusqu'à la bascule du week-end, le code sait déjà servir le pooler
 > mutualisé, et la migration passe par un second secret,
 > `DATABASE_LFD_PROD_DIRECT_URL`. État réel : `architecture-deploiement.md` §5.

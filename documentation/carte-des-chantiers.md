@@ -19,12 +19,11 @@
 
 ## 1. Les échéances
 
-| Quand            | Quoi                                                                                                                                                                                                                         | Qui                         | Doc                                                                                      |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- | ---------------------------------------------------------------------------------------- |
-| avant le 30 nov  | **65 sociétés sans adresse de facturation**, et les mentions de paiement de l'entité (pénalités, indemnité de 40 €) : la facture du mois les refuse déjà                                                                     | Hugo (saisie)               | `comptabilite/facturation/todo-facture-du-mois.md`                                       |
-| avant le 1er déc | **Sortie d'Accelerate** : le code est fait (`prisma.service.ts`) ; restent la vérification en production et la révocation de la clé                                                                                          | Hugo (console Prisma)       | `todos/todo-sortie-d-accelerate.md`                                                      |
-| **maintenant**   | Accorder à l'écran `b2b_contact`, `delivery_availability`, `delivery_fee` — sans quoi personne, admin compris, ne règle les zones ni ne traite les demandes clients                                                          | Hugo (`/admin/staff-roles`) | `demandes-client/demandes-clients.md`                                                    |
-| **maintenant**   | Lancer les deux requêtes de contrôle de la grâce des invitations : aucune invitation en cours ne doit avoir été fermée par la migration `20261010140000` (appliquée sans sauvegarde préalable, que la relecture conseillait) | Hugo (base de prod)         | `ops/runbook.md`, `auth-inscription/architecture-compte-client-cycle-de-vie.md` §8.1 bis |
+| Quand           | Quoi                                                                                                                                                                                                                         | Qui                         | Doc                                                                                      |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- | ---------------------------------------------------------------------------------------- |
+| avant le 30 nov | **65 sociétés sans adresse de facturation**, et les mentions de paiement de l'entité (pénalités, indemnité de 40 €) : la facture du mois les refuse déjà                                                                     | Hugo (saisie)               | `comptabilite/facturation/todo-facture-du-mois.md`                                       |
+| **maintenant**  | Accorder à l'écran `b2b_contact`, `delivery_availability`, `delivery_fee` — sans quoi personne, admin compris, ne règle les zones ni ne traite les demandes clients                                                          | Hugo (`/admin/staff-roles`) | `demandes-client/demandes-clients.md`                                                    |
+| **maintenant**  | Lancer les deux requêtes de contrôle de la grâce des invitations : aucune invitation en cours ne doit avoir été fermée par la migration `20261010140000` (appliquée sans sauvegarde préalable, que la relecture conseillait) | Hugo (base de prod)         | `ops/runbook.md`, `auth-inscription/architecture-compte-client-cycle-de-vie.md` §8.1 bis |
 
 ### Déployé le 2026-10-10 au soir (`main` = `9b42839c6`)
 
@@ -194,6 +193,10 @@ Les questions sont dans le doc ; je peux les résumer chacune en une liste.
 Rien de cela ne change le code ; chaque ligne est un document qui dit faux.
 Un après-midi en tout, en un seul commit `docs:` par dossier.
 
+✅ **Sortie d'Accelerate — finie le 2026-10-19** : plan et TODO remplacés par
+`ops/base-de-production.md` ; reste à Hugo la révocation de la clé dans la
+console Prisma.
+
 **Plans bâtis à transformer en doc d'état** (règle : doc au présent, plan
 supprimé, sauf si un `migration.sql` le cite — alors bandeau daté) :
 
@@ -205,7 +208,7 @@ supprimé, sauf si un `migration.sql` le cite — alors bandeau daté) :
 - `pim/plan-separer-allergenes-et-nutrition.md` (§9, §10 restent) — le plan des méthodes de remise professionnelle est retiré le 2026-10-16, repris dans `catalogue/catalogue-synchronise.md`
 - `livraisons/architecture/plan-schema-delivery.md`, `chargement/plan-geometrie-du-plancher.md`, `clientele/plan-remise-et-livraison-par-clientele.md`, `clientele/plan-retrait-slots.md`, `clientele/plan-procedure-de-livraison.md`
 - `production/plan-fournees-progressives.md`, `plan-controle-qualite.md` (le bandeau dit « rien n'est bâti », QC1–QC5 le sont), `relecture-des-postes.md`
-- `ci-cd/plan-nouvelle-version-des-fronts.md`, `journalisation/plan-journal-d-activite.md`, `plan-phrases-du-journal.md`, `ops/plan-sortie-d-accelerate.md`
+- `ci-cd/plan-nouvelle-version-des-fronts.md`, `journalisation/plan-journal-d-activite.md`, `plan-phrases-du-journal.md`
 
 **Docs qui contredisent le code** (les plus trompeurs d'abord) :
 
