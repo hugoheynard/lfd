@@ -8,7 +8,7 @@ import { ClientLocale } from '../client-locale.service';
 
 /**
  * **Les incontournables pros, pour un visiteur** — ce que l'accueil pro public
- * (`/espace-pro`) montre sous les deux modes (Hugo, 2026-10-19).
+ * (`/pro`) montre sous les deux modes (Hugo, 2026-10-19).
  *
  * Route publique, sans jeton : `GET /shop/featured?audience=pro&lang=…`.
  * Aucun prix n'y voyage, par décision (`shop-featured.ts`) : un tarif pro

@@ -210,6 +210,9 @@ dire « pro ») :
   comprise (`redirectTo`, `gateway/src/index.ts`) : le lien de la commerciale,
   les favoris et les courriels mènent au bon écran. 302 et non 301, tant que la
   racine n'a pas fait ses preuves : un 301 se garde en cache sans limite.
+  **Depuis le 2026-10-19, `/pro` EXACT** (barre finale admise) n'est plus
+  renvoyé : c'est l'accueil pro public de la boutique, servi comme toute page de
+  la racine (`resolveTarget`, `gateway/src/routes.ts`). Seul `/pro/<chemin>` renvoie.
 - **L'app** : `baseHref: "/"` dans la config de build `cloudflare`, comme
   `capacitor`. `appBaseUrl()` rend donc `https://lafoliecoffee.info`, qui doit
   figurer dans les URL de **rappel** et de **déconnexion** de l'application

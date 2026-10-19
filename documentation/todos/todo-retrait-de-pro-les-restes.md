@@ -6,6 +6,9 @@
 > Hugo**. Ce qui suit n'est pas urgent : ce sont les gestes qu'on a
 > délibérément laissés pour plus tard.
 >
+> **2026-10-19** : `/pro` exact n'est plus renvoyé — c'est l'accueil pro public
+> de la boutique ; seul `/pro/<chemin>` renvoie encore en 302.
+>
 > Le contexte : [`../ci-cd/architecture-deploiement.md`](../ci-cd/architecture-deploiement.md),
 > section « Le front client à la racine de `lafoliecoffee.info` ».
 

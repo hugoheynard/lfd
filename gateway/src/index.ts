@@ -121,6 +121,8 @@ async function handle(request: Request, url: URL, env: Env): Promise<Handled> {
 
 /**
  * L'ancienne adresse `/pro/…` renvoie vers la même page sans le préfixe.
+ * `/pro` EXACT n'est pas renvoyé depuis le 2026-10-19 : c'est l'accueil pro de
+ * la boutique (cf. `resolveTarget`).
  *
  * **302 et pas 301**, délibérément : un navigateur garde une redirection
  * permanente en cache sans limite, et la défaire demanderait à chaque client de

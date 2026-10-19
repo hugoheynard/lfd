@@ -176,10 +176,11 @@ export const routes: Routes = [
         // l'agence web envoie un professionnel non connecté — le pendant de
         // `/bienvenue`. Sans garde, et sans rien lire du compte.
         //
-        // ⚠️ Pas `/pro` : la passerelle renvoie tout `/pro/…` vers la racine —
-        // c'était l'ancienne adresse de la boutique (gateway/src/index.ts,
-        // `redirectTo`). Constaté en production le 2026-10-19 : 302 vers `/`.
-        path: 'espace-pro',
+        // `/pro` EXACT : la passerelle le libère depuis le 2026-10-19 et le
+        // sert comme toute page de la racine, mais renvoie toujours `/pro/…`
+        // vers la racine — l'ancienne adresse de la boutique
+        // (gateway/src/routes.ts, `resolveTarget`). Pas d'enfant sous `pro`.
+        path: 'pro',
         title: 'Espace pro — La Folie Coffee',
         loadComponent: () => import('./client/pro-landing/pro-landing').then((m) => m.ProLanding),
       },

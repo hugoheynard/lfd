@@ -75,10 +75,19 @@ describe("resolveTarget — le front client : la racine de la zone, et /pro qui 
     expect(target).toEqual({ kind: "redirect", path: "/ouverture-compte-pro" });
   });
 
-  it("le préfixe nu renvoie vers la racine, pas vers la chaîne vide", () => {
-    expect(resolveTarget(ZONE_HOSTNAME, FRONT_PREFIXES.pro)).toEqual({
+  it("sur la zone, /pro EXACT est servi par la boutique, chemin intact (2026-10-19)", () => {
+    // Décision du 2026-10-19 : l'accueil pro public vit sur `/pro` ; il
+    // renvoyait en 302 vers `/` depuis la bascule du 2026-09-15.
+    const served = { kind: "front", front: "pro", path: FRONT_PREFIXES.pro };
+    expect(resolveTarget(ZONE_HOSTNAME, FRONT_PREFIXES.pro)).toEqual(served);
+    expect(resolveTarget(ZONE_HOSTNAME, `${FRONT_PREFIXES.pro}/`)).toEqual(served);
+  });
+
+  it("sur la zone, un chemin sous /pro/ renvoie toujours, requête à part", () => {
+    // La requête (`?x=1`) n'est pas dans le pathname : `index.ts` la recolle.
+    expect(resolveTarget(ZONE_HOSTNAME, `${FRONT_PREFIXES.pro}/boutique`)).toEqual({
       kind: "redirect",
-      path: "/",
+      path: "/boutique",
     });
   });
 

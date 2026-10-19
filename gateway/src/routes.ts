@@ -64,7 +64,9 @@ export type BackendKey = keyof typeof API_PREFIXES;
  *
  * `lafoliecoffee.info/pro` était un CHEMIN, pas un sous-domaine. Depuis le
  * 2026-09-15 la boutique est à la racine (`ZONE_HOSTNAME`) et ce préfixe ne sert
- * plus qu'à RENVOYER les anciennes adresses — sur la zone. Hors zone il sert
+ * plus qu'à RENVOYER les anciennes adresses `/pro/…` — sur la zone. Depuis le
+ * 2026-10-19, `/pro` EXACT n'est plus renvoyé : c'est l'accueil pro public de la
+ * boutique, servi comme n'importe quelle page de la racine. Hors zone il sert
  * encore le front en retirant le préfixe : rien n'y mène, mais rien n'y casse.
  *
  * ⚠️ Contrairement aux backends, la destination est un `fetch()` PUBLIC et non
@@ -186,16 +188,23 @@ export function resolveTarget(hostname: string, pathname: string): Target | unde
   for (const [front, prefix] of entriesOf(FRONT_PREFIXES)) {
     const path = stripPrefix(pathname, prefix);
     if (path !== undefined) {
-      // Sur la zone, l'ancienne adresse RENVOIE vers la nouvelle (étape 2 du
-      // retrait de `/pro`) : les liens déjà donnés — celui de la commerciale,
-      // un favori, un courriel — continuent de mener au bon écran.
-      return hostname === ZONE_HOSTNAME
-        ? { kind: "redirect", path }
-        : { kind: "front", front, path };
+      if (hostname !== ZONE_HOSTNAME) {
+        return { kind: "front", front, path };
+      }
+      // Sur la zone, `/pro` EXACT (barre finale admise) est une page de la
+      // boutique — l'accueil pro public — depuis le 2026-10-19 (Hugo) : il part
+      // au front, chemin `/pro` intact, comme toute la racine.
+      if (path === "/") {
+        return { kind: "front", front, path: prefix };
+      }
+      // Tout `/pro/…` RENVOIE vers la nouvelle adresse (étape 2 du retrait de
+      // `/pro`) : les liens déjà donnés — celui de la commerciale, un favori,
+      // un courriel — continuent de mener au bon écran.
+      return { kind: "redirect", path };
     }
   }
   // Tout le reste de la zone part au front, chemin intact : Pages sert depuis sa
-  // racine. APRÈS les API et `/pro`, pour qu'aucun des deux ne soit capté.
+  // racine. APRÈS les API et `/pro/…`, pour qu'aucun des deux ne soit capté.
   if (hostname === ZONE_HOSTNAME) {
     return { kind: "front", front: "pro", path: pathname };
   }
