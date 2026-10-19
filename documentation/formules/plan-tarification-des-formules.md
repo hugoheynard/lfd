@@ -576,6 +576,14 @@ lignes par contexte et occurrence.
   croissant est « dans un petit déjeuner ». Si Hugo veut un **sachet par
   formule** au bac, le regroupement ne suffit plus — il faudrait alors faire
   entrer l'occurrence dans le colisage (question Q13).
+
+> 🔒 **Limitation assumée (Hugo, 2026-10-19)** : **pas de sachet par formule**
+> au colisage. Le bac reçoit les pièces d'une commande additionnées par
+> article ; rien ne dit au colisage qu'un croissant appartient à tel petit
+> déjeuner. Le jour où un sachet par formule sera voulu, l'occurrence devra
+> entrer dans le colisage (schéma `packing`, faits du fournil) — ce n'est
+> **pas** un réglage, c'est un lot.
+
 - ⚠️ À tenir : **une seule** fonction de regroupement, et une porte ou un test
   d'architecture qui vérifie que tout lecteur de canal sortant passe par elle
   — sinon le prochain canal l'oubliera, et le défaut revient en silence.
@@ -702,7 +710,7 @@ lignes de commandes réelles — `(kind, id, occurrence)`, figée (§7.3).
   avec le cabinet**, Factur-X compris (`facturx-xml.ts:98` émet une ligne par
   ligne de commande : un intitulé de formule sans montant y a-t-il une
   forme admise ?).
-- **Q13** — 🆕 Un **sachet par formule** au colisage ? Si non, le regroupement par SKU à la frontière (§7.4) suffit ; si oui, l'occurrence doit entrer dans le colisage.
+- **Q13** — ✅ **Tranchée par Hugo le 2026-10-19 : pas de sachet par formule pour le moment.** Le regroupement par SKU à la frontière (§7.4) est retenu ; la limitation est consignée au §7.4.
 - **Q12** — 🆕 **Un pro sous mercuriale qui achète une formule pro** : sa
   mercuriale scelle la chaîne (`resolve-price.ts:117-128`) et écarterait la
   règle de formule. La formule s'applique-t-elle par-dessus
