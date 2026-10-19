@@ -32,7 +32,17 @@
   />
 </ng-template>
 
-<div class="shop" [class.under-bar]="!needsService() || !cart.isEmpty()">
+<div
+  class="shop"
+  [class.under-bar]="!needsService() || !cart.isEmpty()"
+  [class.with-pro-visit]="proVisit()"
+>
+  <!-- Le repère de la visite pro : rien pour un particulier ni un connecté.
+       La rangée n'existe qu'avec lui, sans quoi le `gap` laisserait un vide. -->
+  @if (proVisit()) {
+    <app-pro-visit-note class="pro-visit" />
+  }
+
   <fold-search
     class="search"
     [(value)]="shop.query"

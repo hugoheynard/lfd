@@ -246,6 +246,10 @@ export const IT: ClientCopy = {
     htSuffix: 'IVA escl.',
     priceTtc: '{price} IVA incl.',
     ttcSuffix: 'IVA incl.',
+    proVisitNote:
+      'Prezzi professionali IVA esclusa — le vostre condizioni negoziate dopo l’accesso',
+    proVisitSignIn: 'Accedo',
+    proVisitShowTtc: 'Vedi i prezzi IVA incl.',
     addAria: 'Aggiungi {name}',
     removeAria: 'Togli {name}',
     cartTitle: 'Il suo carrello',

@@ -5,6 +5,7 @@ import { unitPriceCents } from '@lfd/money';
 
 import { ClientCompany } from '../client-company.service';
 import { formatCents } from '../format-money';
+import { ProVisit } from './pro-visit.service';
 
 /**
  * **Dans quelle assiette le rayon affiche ses prix** — hors taxe ou taxe
@@ -33,9 +34,13 @@ import { formatCents } from '../format-money';
 @Injectable({ providedIn: 'root' })
 export class ShopPriceBasis {
   private readonly company = inject(ClientCompany);
+  private readonly proVisit = inject(ProVisit);
 
-  /** Vrai pour un visiteur anonyme comme pour un compte personnel. */
-  readonly showsTtc = computed(() => this.company.company() === null);
+  /**
+   * Vrai pour un visiteur anonyme comme pour un compte personnel — sauf le
+   * visiteur venu de `/pro`, qui lit les tarifs pro hors taxe (`ProVisit`).
+   */
+  readonly showsTtc = computed(() => this.company.company() === null && !this.proVisit.active());
 }
 
 /**

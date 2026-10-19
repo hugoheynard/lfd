@@ -425,6 +425,14 @@ export interface ClientCopy {
     /** Le rayon d'un particulier affiche le TTC (D13) — même forme que son voisin. */
     readonly priceTtc: string;
     readonly ttcSuffix: string;
+    /**
+     * Le repère d'un visiteur venu de `/pro` : la boutique montre les tarifs pro
+     * de base hors taxe, et le dit — ce ne sont pas encore SES conditions.
+     */
+    readonly proVisitNote: string;
+    readonly proVisitSignIn: string;
+    /** Revenir en taxe comprise efface le choix de la visite. */
+    readonly proVisitShowTtc: string;
     /** `{name}` est remplacé par le nom de la pièce. */
     readonly addAria: string;
     readonly removeAria: string;

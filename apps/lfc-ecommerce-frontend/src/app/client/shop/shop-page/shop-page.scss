@@ -17,6 +17,14 @@
   grid-area: chips;
 }
 
+.pro-visit {
+  grid-area: pro-visit;
+}
+
+.shop.with-pro-visit {
+  grid-template-areas: 'pro-visit' 'search' 'chips' 'grid';
+}
+
 .grid {
   grid-area: grid;
 }
@@ -105,6 +113,10 @@
     grid-template-columns: minmax(0, 1fr) minmax(240px, 380px);
     grid-template-areas: 'chips search' 'grid grid';
     align-items: center;
+  }
+
+  .shop.with-pro-visit {
+    grid-template-areas: 'pro-visit pro-visit' 'chips search' 'grid grid';
   }
 
   /* 🔴 LA BARRE « MA COMMANDE » À CHEVAL (plan lot 2, SPEC §2) : 50 px sur

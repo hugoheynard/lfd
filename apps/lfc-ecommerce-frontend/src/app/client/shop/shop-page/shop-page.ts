@@ -16,6 +16,7 @@ import {
   FoldSearchComponent,
 } from 'fold-ng';
 
+import { ActivatedRoute } from '@angular/router';
 import { formatCents } from '../../../client/format-money';
 import { CartEntries } from '../../cart/cart-entries';
 import { ClientCart } from '../../cart/client-cart.service';
@@ -34,6 +35,8 @@ import { CartBar } from '../../cart/cart-bar/cart-bar';
 import { ClientBannerOutlet } from '../../nav/client-banner';
 import { ProductAudience } from '../../audience/product-audience.service';
 import { ProductSheet } from '../product-sheet/product-sheet';
+import { ProVisitNote } from '../pro-visit-note/pro-visit-note';
+import { PRO_VISIT_FRAGMENT, ProVisit } from '../pro-visit.service';
 import { PieceRequest } from '../piece-request.service';
 import { OperationNotice } from '../operation-notice/operation-notice';
 import { ShelfGrid } from './shelf-grid/shelf-grid';
@@ -73,6 +76,7 @@ import { ShelfNav } from './shelf-nav/shelf-nav';
     FoldSearchComponent,
     OperationNotice,
     ProductSheet,
+    ProVisitNote,
     ShelfGrid,
     ShelfNav,
   ],
@@ -145,6 +149,9 @@ export class ShopPage {
    * décompte le réclame (remise, frais), et le bouton mène alors à la question
    * au lieu de la sauter.
    */
+  /** La visite pro est-elle à l'écran ? Elle ouvre une rangée de plus. */
+  protected readonly proVisit = inject(ProVisit).active;
+
   protected readonly needsService = computed(() => this.choice() === null);
 
   protected readonly piece = computed(() => {
@@ -212,6 +219,11 @@ export class ShopPage {
     // l'écran la demande — et la rend en partant.
     this.chrome.bandHandle.set(true);
     inject(DestroyRef).onDestroy(() => this.chrome.bandHandle.set(false));
+    // La visite pro (`/boutique#pro`, depuis la landing `/pro`) : posée AVANT
+    // l'hydratation, pour que la première photo soit déjà la vitrine pro.
+    if (inject(ActivatedRoute).snapshot.fragment === PRO_VISIT_FRAGMENT) {
+      inject(ProVisit).enter();
+    }
     // L'HYDRATATION, au seul endroit qui l'ouvre. Idempotente : revenir au rayon
     // depuis le panier ne redemande rien.
     void this.catalogue.hydrate();

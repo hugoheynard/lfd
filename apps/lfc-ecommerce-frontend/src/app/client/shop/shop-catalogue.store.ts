@@ -12,9 +12,14 @@ import { switchMap } from 'rxjs/operators';
 import { AUTH_CONFIG } from '../../auth/auth.config';
 import { AuthFacade } from '../../auth/auth.facade';
 import { ClientWorkspace } from '../client-workspace.service';
+import { ProShelfSource } from './pro-shelf.source';
+import { ProVisit } from './pro-visit.service';
 
 /** La clé de la photo d'un visiteur non reconnu — la vitrine publique. */
 const VISITOR = 'visiteur';
+
+/** La clé de la photo d'un visiteur venu de `/pro` — la vitrine pro publique. */
+const PRO_VISITOR = 'visiteur-pro';
 
 /** Où en est l'hydratation. `idle` = personne n'a encore ouvert la boutique. */
 export type CatalogueStatus = 'idle' | 'loading' | 'ready' | 'failed';
@@ -72,6 +77,8 @@ export class ShopCatalogue {
   private readonly auth = inject(AuthFacade);
 
   private readonly workspace = inject(ClientWorkspace);
+  private readonly proVisit = inject(ProVisit);
+  private readonly proShelf = inject(ProShelfSource);
 
   private readonly state = signal<CatalogueStatus>('idle');
   /**
@@ -141,7 +148,11 @@ export class ShopCatalogue {
    * ou `null` tant que cet espace n'est pas connu.
    */
   private readerKey(): string | null {
-    return this.auth.isAuthenticated() ? this.workspace.current() : VISITOR;
+    if (this.auth.isAuthenticated()) {
+      return this.workspace.current();
+    }
+    // La visite pro est une autre photo : un autre tarif, la même forme.
+    return this.proVisit.active() ? PRO_VISITOR : VISITOR;
   }
 
   /**
@@ -192,7 +203,7 @@ export class ShopCatalogue {
     this.photoFor = reader;
     this.state.set('loading');
     try {
-      const view = reader === VISITOR ? await this.publicShelf() : await this.mine();
+      const view = await this.shelfFor(reader);
       if (this.photoFor === reader) {
         this.receive(view);
       }
@@ -201,6 +212,13 @@ export class ShopCatalogue {
         this.state.set('failed');
       }
     }
+  }
+
+  private shelfFor(reader: string): Promise<ShopCatalogueView> {
+    if (reader === VISITOR) {
+      return this.publicShelf();
+    }
+    return reader === PRO_VISITOR ? this.proShelf.load() : this.mine();
   }
 
   /** La vitrine publique : le tarif catalogue, sans jeton. */

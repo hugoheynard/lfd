@@ -241,6 +241,9 @@ export const FR: ClientCopy = {
     // au lieu d'en faire partie — d'où un suffixe, comme son voisin.
     priceTtc: '{price} TTC',
     ttcSuffix: 'TTC',
+    proVisitNote: 'Tarifs professionnels hors taxe — vos conditions négociées après connexion',
+    proVisitSignIn: 'Je me connecte',
+    proVisitShowTtc: 'Voir les prix TTC',
     addAria: 'Ajouter {name}',
     removeAria: 'Retirer {name}',
     cartTitle: 'Votre panier',

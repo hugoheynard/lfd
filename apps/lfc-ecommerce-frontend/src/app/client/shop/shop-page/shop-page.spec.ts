@@ -2,6 +2,11 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
+import { signal } from '@angular/core';
+import { of } from 'rxjs';
+import { AUTH_CONFIG } from '../../../auth/auth.config';
+import { ProVisit } from '../pro-visit.service';
 import { NEVER } from 'rxjs';
 import { vi } from 'vitest';
 
@@ -500,5 +505,55 @@ describe('ShopPage — Régler, connecté', () => {
     });
     expect(place).not.toHaveBeenCalled();
     expect(navigate).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * La visite pro (Hugo, 2026-10-19) : `/boutique#pro`, depuis la landing `/pro`,
+ * met un visiteur en tarifs pro hors taxe, avec son repère ; sans `#pro`, rien
+ * ne change.
+ */
+describe('ShopPage — la visite pro par #pro', () => {
+  async function arrive(url: string): Promise<HTMLElement> {
+    sessionStorage.clear();
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([{ path: 'boutique', component: ShopPage }]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        {
+          provide: AuthFacade,
+          useValue: { isAuthenticated: signal(false), accessToken$: () => of('jeton') },
+        },
+        provideWorkspace(workspaceDouble()),
+      ],
+    });
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl(url, ShopPage);
+    const http = TestBed.inject(HttpTestingController);
+    // Deux passes : la requête de la vitrine peut ne partir qu’au second tour.
+    for (let pass = 0; pass < 2; pass += 1) {
+      http
+        .match((r) => r.url === `${AUTH_CONFIG.apiBaseUrl}/shop/catalogue`)
+        .forEach((r) => r.flush(TEST_CATALOGUE));
+      await harness.fixture.whenStable();
+    }
+    harness.detectChanges();
+    return harness.routeNativeElement ?? document.createElement('div');
+  }
+
+  it('un visiteur arrivé par #pro lit le hors taxe et le repère', async () => {
+    const page = await arrive('/boutique#pro');
+
+    expect(TestBed.inject(ProVisit).active()).toBe(true);
+    expect(page.textContent).toContain(FR.shop.proVisitNote);
+    expect(page.querySelector('app-product-tile')?.textContent).toContain(FR.shop.htSuffix);
+  });
+
+  it('un visiteur sans #pro garde le TTC, sans repère', async () => {
+    const page = await arrive('/boutique');
+
+    expect(page.textContent).not.toContain(FR.shop.proVisitNote);
+    expect(page.querySelector('app-product-tile')?.textContent).toContain(FR.shop.ttcSuffix);
   });
 });
