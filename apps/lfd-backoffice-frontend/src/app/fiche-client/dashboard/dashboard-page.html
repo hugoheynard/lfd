@@ -21,7 +21,9 @@
          projection dans le rail ne s'applique pas. -->
     <fold-aside-layout asideRightLabel="Historique commercial">
       @if (sheet(); as view) {
-        <app-customer-sheet [sheet]="view" (changed)="load()" />
+        <app-customer-sheet [sheet]="view" (changed)="load()">
+          <app-sub-accounts-summary afterIdentity [companyId]="view.companyId" />
+        </app-customer-sheet>
       }
       @if (sheet(); as view) {
         <app-customer-timeline asideRight [entries]="view.timeline" />

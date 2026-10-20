@@ -8,6 +8,7 @@ import {
 import { CustomerSheet } from '../../commercial/calendrier/customer-sheet/customer-sheet';
 import { CustomerTimeline } from '../../commercial/calendrier/customer-timeline/customer-timeline';
 import { ClientSheetStore } from '../client-sheet.store';
+import { SubAccountsSummary } from '../sub-accounts-summary/sub-accounts-summary';
 
 /**
  * **Tableau de bord** d'un compte : ce que le commercial regarde avant d'appeler
@@ -35,6 +36,7 @@ import { ClientSheetStore } from '../client-sheet.store';
     FoldButtonComponent,
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
+    SubAccountsSummary,
   ],
   templateUrl: './dashboard-page.html',
 })

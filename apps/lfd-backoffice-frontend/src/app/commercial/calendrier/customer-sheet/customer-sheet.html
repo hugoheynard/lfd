@@ -38,6 +38,10 @@
   </dl>
 </fold-card>
 
+<!-- Ce que la page hôte veut juste après l'identité — le tableau de bord d'un
+     compte y pose ses sous-comptes. Le calendrier n'y met rien. -->
+<ng-content select="[afterIdentity]" />
+
 <!-- QUOI il a commandé : de quoi ouvrir la conversation. -->
 <fold-card class="cs-card">
   <fold-element-title

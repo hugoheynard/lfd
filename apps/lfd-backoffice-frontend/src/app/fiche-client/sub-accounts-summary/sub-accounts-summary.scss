@@ -1,0 +1,38 @@
+/* Sans sous-compte la carte ne rend rien : `contents` évite que l'hôte vide
+   compte pour un écart de plus dans la colonne de la fiche. */
+:host {
+  display: contents;
+}
+
+/* Mêmes lignes que la carte de l'onglet Sous-comptes : un site se reconnaît
+   au même dessin aux deux endroits. */
+.children {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.child {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-sm) 0;
+  border-bottom: 1px solid var(--fold-color-border-subtle);
+}
+
+.child:last-child {
+  border-bottom: none;
+}
+
+.child-name {
+  font-weight: var(--fold-weight-semibold);
+}
+
+.child-city {
+  flex: 1 1 auto;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
