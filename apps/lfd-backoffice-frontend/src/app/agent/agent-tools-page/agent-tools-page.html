@@ -58,6 +58,33 @@
   </section>
 
   <section class="tools">
+    <h2>Ingrédients</h2>
+    @if (ingredientsAllowed) {
+      <ul>
+        @for (tool of ingredientTools(); track tool) {
+          <li>
+            <code>{{ tool }}</code>
+          </li>
+        }
+      </ul>
+      @if (!pimAllowed) {
+        <p class="excluded">
+          Lecture seule&nbsp;: votre compte n'a pas le droit d'écrire dans le référentiel.
+        </p>
+      }
+    } @else {
+      <p class="excluded">
+        Non déclarés&nbsp;: votre compte n'a pas le droit de lire le référentiel.
+      </p>
+    }
+    <p class="excluded">
+      <strong>Ce qui n'est délibérément pas là&nbsp;:</strong> les allergènes déclarés d'une
+      déclinaison — les ingrédients les proposent, la fiche décide, à l'écran&nbsp;; corriger ou
+      effacer un ingrédient, et toute écriture d'appellation.
+    </p>
+  </section>
+
+  <section class="tools">
     <h2>Médiathèque</h2>
     @if (mediaAllowed) {
       <ul>

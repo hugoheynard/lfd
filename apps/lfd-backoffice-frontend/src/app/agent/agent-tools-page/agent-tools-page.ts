@@ -13,6 +13,7 @@ import { PermissionsStore } from '../../auth/permissions.store';
 import { declareAccessAgentTools } from '../access-agent-tools';
 import { declareAudienceAgentTools } from '../audience-agent-tools';
 import { declareCustomerAgentTools } from '../customer-agent-tools';
+import { declareIngredientAgentTools } from '../ingredient-agent-tools';
 import { declareMediaAgentTools } from '../media-agent-tools';
 import { declareOpsAgentTools } from '../ops-agent-tools';
 import { declarePimAgentTools } from '../pim-agent-tools';
@@ -162,12 +163,21 @@ export class AgentToolsPage {
   protected readonly audienceTools = signal<readonly string[]>([]);
 
   /**
+   * La trousse des ingrédients (2026-10-20) — vide sans `pim_catalog:read`,
+   * le droit que `@AdminSurface("pim_catalog")` oppose aux `GET` des
+   * ingrédients et des appellations ; ses outils d'écriture ne sont déclarés
+   * qu'avec `pim_catalog:write`.
+   */
+  protected readonly ingredientTools = signal<readonly string[]>([]);
+
+  /**
    * Lus une fois : la garde de la route a déjà chargé les permissions. Elle
-   * laisse passer l'un des huit droits ; chaque trousse suit le sien, et la
+   * laisse passer l'un des neuf droits ; chaque trousse suit le sien, et la
    * page dit laquelle manque.
    */
   private readonly permissions = inject(PermissionsStore);
   protected readonly pimAllowed = this.permissions.can('pim_catalog:write');
+  protected readonly ingredientsAllowed = this.permissions.can('pim_catalog:read');
   protected readonly reemitAllowed = this.permissions.can('pim_channels:write');
   protected readonly mediaAllowed = this.permissions.can('media_library:write');
   protected readonly opsAllowed = this.permissions.can('ops_health:read');
@@ -228,7 +238,7 @@ export class AgentToolsPage {
     return true;
   }
 
-  /** Déclare les huit trousses ; à appeler dans le contexte d'injection du composant. */
+  /** Déclare les neuf trousses ; à appeler dans le contexte d'injection du composant. */
   private declareAll(): void {
     this.tools.set(this.pimAllowed ? declarePimAgentTools(this.reemitAllowed) : []);
     this.mediaTools.set(this.mediaAllowed ? declareMediaAgentTools() : []);
@@ -242,5 +252,8 @@ export class AgentToolsPage {
       this.suggestionsAllowed ? declareSuggestionAgentTools(this.suggestionsWritable) : [],
     );
     this.audienceTools.set(this.audiencesAllowed ? declareAudienceAgentTools() : []);
+    this.ingredientTools.set(
+      this.ingredientsAllowed ? declareIngredientAgentTools(this.pimAllowed) : [],
+    );
   }
 }

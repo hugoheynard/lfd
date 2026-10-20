@@ -96,6 +96,62 @@ porte que l'écran**, validations serveur comprises.
 
 ---
 
+## 2 bis. Les dix outils des ingrédients (2026-10-20)
+
+Une trousse à part, déclarée par le même écran : code dans
+[`agent/ingredient-agent-tools.ts`](../../apps/lfd-backoffice-frontend/src/app/agent/ingredient-agent-tools.ts),
+textes dans `ingredient-agent-text.ts`, client HTTP
+[`pim/provenance/ingredient-http-api.ts`](../../apps/lfd-backoffice-frontend/src/app/pim/provenance/ingredient-http-api.ts)
+— sans état, parce que `ProvenanceStore` range ses lectures dans un signal et
+en absorbe l'échec (A.1). Aucune route neuve : celles d'`IngredientController`
+et d'`AppellationController`, toutes sous `@AdminSurface("pim_catalog")`.
+
+**Droits.** La trousse se déclare avec **`pim_catalog:read`** (lectures
+seules) ; les écritures s'ajoutent avec **`pim_catalog:write`**, le droit que
+le serveur oppose à tout ce qui n'est pas un `GET`. La garde de
+`/outils-agent` et l'entrée du menu (rail et tuiles, un seul `computed`)
+s'ouvrent depuis ce jour à `pim_catalog:read`.
+
+| Outil                          | Route                                        |
+| ------------------------------ | -------------------------------------------- |
+| `ingredient_search`            | `GET /pim/ingredients` (filtré côté outil)   |
+| `ingredient_get`               | `GET /pim/ingredients`                       |
+| `ingredient_appellations_list` | `GET /pim/appellations`                      |
+| `ingredient_product_list`      | `GET /pim/products/:id/ingredients`          |
+| `ingredient_product_allergens` | `GET /pim/products/:id/ingredient-allergens` |
+| `ingredient_create`            | `POST /pim/ingredients`                      |
+| `ingredient_set_allergens`     | `PUT /pim/ingredients/:key/allergens`        |
+| `ingredient_product_add`       | `PUT /pim/products/:id/ingredients`          |
+| `ingredient_product_remove`    | `PUT /pim/products/:id/ingredients`          |
+| `ingredient_product_reorder`   | `PUT /pim/products/:id/ingredients`          |
+
+Ce que les outils tiennent eux-mêmes :
+
+- **D5 est dit à l'agent** : `ingredient_product_allergens` rend ce que la
+  composition PROPOSE et, par déclinaison, ce qui est proposé sans être
+  déclaré — et chaque rendu finit par « les ingrédients proposent, la fiche
+  décide ». Une proposition vide est dite « ne veut pas dire rien à
+  ajouter » ; une matière sans code, « ne dit pas sans allergène ».
+- **Les `PUT` remplacent la liste entière** : chaque écriture relit l'état,
+  change un élément (code ajouté ou retiré, clé ajoutée, retirée, ordre) et
+  renvoie le tout, puis relit et rend l'état d'après. `reorder` refuse ce qui
+  n'est pas une permutation exacte, `add` une clé inconnue, sans rien écrire.
+- **Aucune écriture ne touche aux allergènes déclarés d'une déclinaison** :
+  aucune de ces routes ne les atteint, et les descriptions le disent.
+- Les listes sont bornées à 30 lignes, avec « liste COUPÉE ».
+- « Où il est utilisé » : le serveur ne sert que le **nombre** de fiches qui
+  citent un ingrédient (`usedBy`), pas leur liste — l'outil le dit.
+
+**Écartés, délibérément** : corriger ou effacer un ingrédient
+(`PUT`/`DELETE /pim/ingredients/:key`), et toute écriture d'appellation — un
+signe officiel et l'effacement d'une matière citée restent des gestes de
+l'écran. Les quantités n'existent pas sur ces routes (la liste est
+éditoriale, les quantités appartiennent à la déclinaison).
+
+Pas encore éprouvée dans un navigateur devant un agent réel.
+
+---
+
 ## 3. Ce qui a été constaté en bâtissant, et qui a changé le code
 
 Éprouvé dans un navigateur contre l'API locale, pont posé à la main :

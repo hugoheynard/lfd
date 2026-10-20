@@ -277,8 +277,10 @@ export const routes: Routes = [
     // outils d'écriture ne se déclarent qu'avec `staff_access:write` ; la
     // LECTURE des suggestions décidées (2026-10-18), dont les outils
     // d'écriture ne se déclarent qu'avec `lfc_suggestions:write` ; la LECTURE
-    // de la croissance pour les audiences (2026-10-18, A1), en lecture seule.
-    // L'un des huit suffit : la
+    // de la croissance pour les audiences (2026-10-18, A1), en lecture seule ; la
+    // LECTURE du référentiel pour les ingrédients (2026-10-20), dont les
+    // outils d'écriture ne se déclarent qu'avec `pim_catalog:write`.
+    // L'un des neuf suffit : la
     // page ne déclare que les trousses dont le compte a le droit.
     path: 'outils-agent',
     canActivate: [
@@ -291,6 +293,7 @@ export const routes: Routes = [
         'staff_access:read',
         'lfc_suggestions:read',
         'b2b_growth:read',
+        'pim_catalog:read',
       ),
     ],
     title: 'Outils agent — LFC B2B admin',

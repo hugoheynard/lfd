@@ -275,4 +275,29 @@ describe('AgentToolsPage', () => {
     const without = render(['pim_catalog:write']);
     expect(without.root.textContent).toContain('pas le droit de lire la croissance');
   });
+
+  it('ne déclare QUE la lecture des ingrédients sans `pim_catalog:write`', () => {
+    const { root } = render(['pim_catalog:read']);
+    const listed = [...root.querySelectorAll('code')].map((el) => el.textContent?.trim() ?? '');
+
+    expect(listed).toContain('ingredient_search');
+    expect(listed).toContain('ingredient_product_allergens');
+    expect(listed.some((name) => name === 'ingredient_create')).toBe(false);
+    expect(listed.some((name) => name.startsWith('pim_'))).toBe(false);
+  });
+
+  it('déclare l’écriture des ingrédients avec `pim_catalog:write`, rien sans lecture du référentiel', () => {
+    const granted = render(['pim_catalog:read', 'pim_catalog:write']);
+    const listed = [...granted.root.querySelectorAll('code')].map((el) => el.textContent?.trim());
+    expect(listed).toContain('ingredient_create');
+    expect(listed).toContain('ingredient_product_reorder');
+    TestBed.resetTestingModule();
+
+    const without = render(['ops_health:read']);
+    const none = [...without.root.querySelectorAll('code')].map(
+      (el) => el.textContent?.trim() ?? '',
+    );
+    expect(none.some((name) => name.startsWith('ingredient_'))).toBe(false);
+    expect(without.root.textContent).toContain('pas le droit de lire le référentiel');
+  });
 });

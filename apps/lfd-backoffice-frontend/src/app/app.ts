@@ -346,18 +346,14 @@ export class App {
   protected readonly canSeeContact = computed(() => this.permissions.can('b2b_contact:read'));
 
   /**
-   * **Outils agent** — l'ÉCRITURE du catalogue, pas sa lecture, et c'est la
-   * seule entrée du rail gardée plus serré que l'écran qu'elle surplombe.
+   * **Outils agent** — l'entrée suit la garde de la route, droit pour droit
+   * (`app.routes.ts`, `anyPermissionGuard` de `/outils-agent`).
    *
-   * Ouvrir cet écran ARME les outils WebMCP : ils écrivent. Le montrer à qui
-   * n'a que `pim_catalog:read` lui promettrait un atelier dont chaque appel
-   * rendrait 403 — et la route, elle, le refuserait de toute façon
-   * (`app.routes.ts`, `anyPermissionGuard('pim_catalog:write',
-   * 'media_library:write', 'ops_health:read', 'b2b_companies:read', 'delivery_settings:read',
-   * 'staff_access:read', 'lfc_suggestions:read', 'b2b_growth:read')`).
+   * Elle a été gardée sur l'ÉCRITURE du catalogue seule : `pim_catalog:read`
+   * n'ouvrait alors aucun outil utile. Depuis le 2026-10-20, il ouvre la
+   * trousse des ingrédients en lecture, et l'entrée le suit.
    */
-  // Le même « l'un des huit » que la garde de `/outils-agent` (2026-10-18,
-  // les audiences en huitième) :
+  // Le même « l'un des neuf » que la garde de `/outils-agent` :
   // l'entrée suit la route, sinon un compte médiathèque ou exploitation seul
   // aurait un écran ouvert que rien n'annonce.
   protected readonly canUseAgentTools = computed(
@@ -369,7 +365,8 @@ export class App {
       this.permissions.can('delivery_settings:read') ||
       this.permissions.can('staff_access:read') ||
       this.permissions.can('lfc_suggestions:read') ||
-      this.permissions.can('b2b_growth:read'),
+      this.permissions.can('b2b_growth:read') ||
+      this.permissions.can('pim_catalog:read'),
   );
 
   /**

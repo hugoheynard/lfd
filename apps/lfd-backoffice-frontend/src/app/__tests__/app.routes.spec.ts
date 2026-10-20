@@ -221,6 +221,8 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // Six depuis le 2026-10-15 : les droits, en lecture (`staff_access:read`).
   // Sept depuis le 2026-10-18 : les suggestions, en lecture (`lfc_suggestions:read`).
   // Huit le même jour : les audiences, en lecture de la croissance (`b2b_growth:read`).
+  // Neuf depuis le 2026-10-20 : les ingrédients, en lecture du référentiel
+  // (`pim_catalog:read`) ; leurs écritures ne se déclarent qu'avec `:write`.
   'outils-agent': {
     anyOf: [
       'pim_catalog:write',
@@ -231,6 +233,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
       'staff_access:read',
       'lfc_suggestions:read',
       'b2b_growth:read',
+      'pim_catalog:read',
     ],
   },
 
