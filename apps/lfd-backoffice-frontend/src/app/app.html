@@ -64,8 +64,9 @@
         <!-- APP EXPLOITATION — les postes du jour, de la supervision au
              coursier (Hugo, 2026-10-12), en vert pomme : on y vient pour
              TRAVAILLER, pas pour régler. La section n'existe que si l'une au
-             moins de ses entrées est ouverte. Le lanceur mobile n'a pas de
-             sections : il garde ses tuiles. -->
+             moins de ses entrées est ouverte. Le lanceur mobile range les mêmes
+             tuiles sous la même section, de la même teinte (fold 0.33,
+             2026-10-20). -->
         <fold-menu-section
           label="App exploitation"
           [color]="operationsTint"
@@ -789,105 +790,110 @@
           (click)="mobileNavOpen.set(false)"
         ></a>
       }
-      @if (canSeeSupervision()) {
-        <!-- La MÊME entrée qu'au rail : les deux arbres ne partagent pas leur modèle. -->
-        <a
-          fold-nav-tile
-          icon="eye"
-          label="Supervision"
-          routerLink="/supervision"
-          routerLinkActive
-          #supervisionTile="routerLinkActive"
-          [active]="supervisionTile.isActive"
-          (click)="mobileNavOpen.set(false)"
-        ></a>
-      }
-      @if (canSeeProdManager()) {
-        <!-- La MÊME entrée qu'au rail, au-dessus du Fournil. -->
-        <a
-          fold-nav-tile
-          icon="calendar"
-          label="Prod manager"
-          routerLink="/prod-manager"
-          routerLinkActive
-          #prodManagerTile="routerLinkActive"
-          [active]="prodManagerTile.isActive"
-          (click)="mobileNavOpen.set(false)"
-        ></a>
-      }
-      @if (canSeeTourManager()) {
-        <!-- La MÊME entrée qu'au rail, sous Prod manager. -->
-        <a
-          fold-nav-tile
-          icon="places"
-          label="Tour manager"
-          routerLink="/tour-manager"
-          routerLinkActive
-          #tourManagerTile="routerLinkActive"
-          [active]="tourManagerTile.isActive"
-          (click)="mobileNavOpen.set(false)"
-        ></a>
-      }
-      @if (canSeeBakehouse()) {
-        <!-- La MÊME entrée qu'au rail, en tuile simple comme le Colisage. -->
-        <a
-          fold-nav-tile
-          icon="croissant"
-          label="Fournil"
-          routerLink="/fournil"
-          routerLinkActive
-          #bakehouseTile="routerLinkActive"
-          [active]="bakehouseTile.isActive"
-          (click)="mobileNavOpen.set(false)"
-        ></a>
-      }
-      @if (canSeePacking()) {
-        <!-- La MÊME entrée qu'au rail, en tuile simple comme le Coursier. -->
-        <a
-          fold-nav-tile
-          icon="package"
-          label="Colisage"
-          routerLink="/colisage"
-          routerLinkActive
-          #packingTile="routerLinkActive"
-          [active]="packingTile.isActive"
-          (click)="mobileNavOpen.set(false)"
-        ></a>
-      }
-      @if (canSeeCounter()) {
-        <!-- La MÊME entrée qu'au rail, et il faut la poser deux fois : les
-             deux arbres ne partagent pas leur modèle. Comme la production, le
-             lanceur montre les vues de l'espace, lues dans le MÊME catalogue
-             que les onglets du comptoir. -->
-        <fold-nav-group icon="package-check" label="Comptoir" [entryCountLabel]="entriesLabel">
-          @for (view of comptoirViews(); track view.key) {
+      @if (canSeeOperationsApps()) {
+        <!-- La MÊME section qu'au rail, même teinte (fold 0.33). -->
+        <fold-nav-section label="App exploitation" [color]="operationsTint">
+          @if (canSeeSupervision()) {
+            <!-- La MÊME entrée qu'au rail : les deux arbres ne partagent pas leur modèle. -->
             <a
               fold-nav-tile
-              [icon]="view.icon"
-              [label]="view.label"
-              [badge]="view.badge"
-              [routerLink]="view.link"
+              icon="eye"
+              label="Supervision"
+              routerLink="/supervision"
               routerLinkActive
-              #comptoirTile="routerLinkActive"
-              [active]="comptoirTile.isActive"
+              #supervisionTile="routerLinkActive"
+              [active]="supervisionTile.isActive"
               (click)="mobileNavOpen.set(false)"
             ></a>
           }
-        </fold-nav-group>
-      }
-      @if (canSeeCourier()) {
-        <!-- La MÊME entrée qu'au rail. Une tuile simple, comme le Fournil :
-             l'espace n'a qu'une vue, un groupe d'une tuile la déclarerait deux fois. -->
-        <a
-          fold-nav-tile
-          icon="map-pin"
-          label="Coursier"
-          routerLink="/coursier"
-          routerLinkActive
-          #courierTile="routerLinkActive"
-          [active]="courierTile.isActive"
-          (click)="mobileNavOpen.set(false)"
-        ></a>
+          @if (canSeeProdManager()) {
+            <!-- La MÊME entrée qu'au rail, au-dessus du Fournil. -->
+            <a
+              fold-nav-tile
+              icon="calendar"
+              label="Prod manager"
+              routerLink="/prod-manager"
+              routerLinkActive
+              #prodManagerTile="routerLinkActive"
+              [active]="prodManagerTile.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
+          @if (canSeeTourManager()) {
+            <!-- La MÊME entrée qu'au rail, sous Prod manager. -->
+            <a
+              fold-nav-tile
+              icon="places"
+              label="Tour manager"
+              routerLink="/tour-manager"
+              routerLinkActive
+              #tourManagerTile="routerLinkActive"
+              [active]="tourManagerTile.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
+          @if (canSeeBakehouse()) {
+            <!-- La MÊME entrée qu'au rail, en tuile simple comme le Colisage. -->
+            <a
+              fold-nav-tile
+              icon="croissant"
+              label="Fournil"
+              routerLink="/fournil"
+              routerLinkActive
+              #bakehouseTile="routerLinkActive"
+              [active]="bakehouseTile.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
+          @if (canSeePacking()) {
+            <!-- La MÊME entrée qu'au rail, en tuile simple comme le Coursier. -->
+            <a
+              fold-nav-tile
+              icon="package"
+              label="Colisage"
+              routerLink="/colisage"
+              routerLinkActive
+              #packingTile="routerLinkActive"
+              [active]="packingTile.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
+          @if (canSeeCounter()) {
+            <!-- La MÊME entrée qu'au rail, et il faut la poser deux fois : les
+               deux arbres ne partagent pas leur modèle. Comme la production, le
+               lanceur montre les vues de l'espace, lues dans le MÊME catalogue
+               que les onglets du comptoir. -->
+            <fold-nav-group icon="package-check" label="Comptoir" [entryCountLabel]="entriesLabel">
+              @for (view of comptoirViews(); track view.key) {
+                <a
+                  fold-nav-tile
+                  [icon]="view.icon"
+                  [label]="view.label"
+                  [badge]="view.badge"
+                  [routerLink]="view.link"
+                  routerLinkActive
+                  #comptoirTile="routerLinkActive"
+                  [active]="comptoirTile.isActive"
+                  (click)="mobileNavOpen.set(false)"
+                ></a>
+              }
+            </fold-nav-group>
+          }
+          @if (canSeeCourier()) {
+            <!-- La MÊME entrée qu'au rail. Une tuile simple, comme le Fournil :
+               l'espace n'a qu'une vue, un groupe d'une tuile la déclarerait deux fois. -->
+            <a
+              fold-nav-tile
+              icon="map-pin"
+              label="Coursier"
+              routerLink="/coursier"
+              routerLinkActive
+              #courierTile="routerLinkActive"
+              [active]="courierTile.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
+        </fold-nav-section>
       }
       @if (canSeePim()) {
         <fold-nav-group icon="catalog" label="Catalogue" [entryCountLabel]="entriesLabel">
@@ -909,7 +915,7 @@
 
       @if (canSeeShopManagement()) {
         <!-- La MÊME section qu'au rail : les deux arbres ne partagent pas leur modèle. -->
-        <fold-nav-group icon="tag" label="Gestion Boutique" [entryCountLabel]="entriesLabel">
+        <fold-nav-section label="Gestion Boutique" [color]="shopManagementTint">
           @if (canSeeSettings()) {
             <a
               fold-nav-tile
@@ -999,11 +1005,11 @@
               (click)="mobileNavOpen.set(false)"
             ></a>
           }
-        </fold-nav-group>
+        </fold-nav-section>
       }
       @if (canSeeCommunication()) {
         <!-- La MÊME section qu'au rail : les deux arbres ne partagent pas leur modèle. -->
-        <fold-nav-group icon="edit" label="Communication" [entryCountLabel]="entriesLabel">
+        <fold-nav-section label="Communication" [color]="communicationTint">
           @if (canSeeStorefront()) {
             <a
               fold-nav-tile
@@ -1054,7 +1060,7 @@
               (click)="mobileNavOpen.set(false)"
             ></a>
           }
-        </fold-nav-group>
+        </fold-nav-section>
       }
       @if (canSeeMedia()) {
         <!-- La MÊME entrée qu'au rail, de premier niveau depuis le 2026-10-13
@@ -1113,7 +1119,7 @@
       }
       @if (canSeeAnalytics()) {
         <!-- La MÊME section qu'au rail : les deux arbres ne partagent pas leur modèle. -->
-        <fold-nav-group icon="stats" label="Analytics" [entryCountLabel]="entriesLabel">
+        <fold-nav-section label="Analytics">
           <a
             fold-nav-tile
             icon="stats"
@@ -1135,7 +1141,7 @@
             [active]="audiencesTile.isActive"
             (click)="mobileNavOpen.set(false)"
           ></a>
-        </fold-nav-group>
+        </fold-nav-section>
       }
       @if (canSeeOps()) {
         <a
