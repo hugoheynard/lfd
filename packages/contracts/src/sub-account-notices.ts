@@ -31,6 +31,7 @@ export const SUB_ACCOUNT_NOTICE_KINDS_WITH_MAIL: readonly SubAccountNoticeKind[]
   "order_placed",
   "order_cancelled",
   "payment_failed",
+  "delivery_address_changed",
   "order_problem_reported",
 ];
 

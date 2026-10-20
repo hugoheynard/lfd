@@ -10,6 +10,8 @@ import { CompanyAddressRepository } from "../../domain/ports/company-address.rep
 import { AddDeliveryAddressByStaffCommand } from "./add-delivery-address-by-staff.command.js";
 import { AccountJournalNames } from "../services/account-journal-names.service.js";
 import { deliveryAddressOf } from "../../domain/events/journal-names.js";
+import { DELIVERY_ADDRESS_ADDED } from "../../domain/events/site-gesture.fact.js";
+import { SiteGesturePublisher } from "../services/site-gesture.publisher.js";
 
 /**
  * Geste du staff sur les **adresses** d'un client : une adresse de livraison de
@@ -30,6 +32,7 @@ export class AddDeliveryAddressByStaffHandler implements ICommandHandler<
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
     private readonly names: AccountJournalNames,
+    private readonly gestures: SiteGesturePublisher,
   ) {}
 
   async execute(command: AddDeliveryAddressByStaffCommand): Promise<string> {
@@ -39,6 +42,12 @@ export class AddDeliveryAddressByStaffHandler implements ICommandHandler<
     const company = await this.names.company(command.companyId);
     const addressId = await this.uow.run(async () => {
       await this.addresses.saveDeliveryBook(book);
+      await this.gestures.publish({
+        type: DELIVERY_ADDRESS_ADDED,
+        site: company,
+        subjectId: created,
+        actor: { kind: "team" },
+      });
       await this.events.publishTraced(
         new DeliveryAddressAddedByStaffEvent(
           company,

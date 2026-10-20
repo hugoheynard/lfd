@@ -20,6 +20,10 @@ export async function purgeOutbox(tx: PurgeClient, scope: ScenarioScope): Promis
     OR: [
       ...scope.days.map((day) => ({ payload: { path: ["serviceDay"], equals: day } })),
       ...scope.orderIds.map((id) => ({ payload: { path: ["orderId"], equals: id } })),
+      // Les gestes d'un site (adresses, contacts, RIB… — avis au principal,
+      // N4) ne portent ni journée ni commande : leur clé est la société. Sans
+      // cette ligne, chaque rechargement en ajoutait (2026-10-20).
+      ...scope.companyIds.map((id) => ({ payload: { path: ["siteCompanyId"], equals: id } })),
     ],
   };
   if (message.OR.length === 0) {

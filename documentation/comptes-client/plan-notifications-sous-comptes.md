@@ -1,6 +1,6 @@
 # Plan — le principal est prévenu de ce que font ses sous-comptes
 
-> 📐 **Plan — N1, N2, N3 et N4a bâtis le 2026-10-20**, N4b…N4e à faire. Demande de Hugo : « savoir quelles
+> 📐 **Plan — N1, N2, N3, N4a et N4b bâtis le 2026-10-20**, N4c…N4e à faire. Demande de Hugo : « savoir quelles
 > actions menées par le sous-compte doivent être notifiées au principal, avec un
 > mapping de rôle ». Décisions de Hugo le même jour : **mail seul** ; le
 > tableau action × rôle est **réglé par le staff, principal par principal**.
@@ -356,13 +356,13 @@ Notes par action :
 
 #### Lots v2, dans cet ordre
 
-| Lot | Contexte                     | Handlers touchés                                                                        |
-| --- | ---------------------------- | --------------------------------------------------------------------------------------- |
-| N4a | `contact/` + socle           | 1 client                                                                                |
-| N4b | `account/` adresses          | 3 client, 3 équipe (+1 et +1 si le défaut changé entre, N4-Q1)                          |
-| N4c | `account/` contacts          | 2 client, 2 équipe (+2 et +2 si la modification et le contact principal entrent, N4-Q1) |
-| N4d | `payments/`                  | 2 client, 2 équipe                                                                      |
-| N4e | `subscriptions/` + migration | 3 client                                                                                |
+| Lot | Contexte                     | Handlers touchés                                                          |
+| --- | ---------------------------- | ------------------------------------------------------------------------- |
+| N4a | `contact/` + socle           | 1 client                                                                  |
+| N4b | `account/` adresses          | 4 client, 4 équipe (défaut compris, N4-Q1 oui)                            |
+| N4c | `account/` contacts          | 4 client, 4 équipe (modification et contact principal compris, N4-Q1 oui) |
+| N4d | `payments/`                  | 2 client, 2 équipe                                                        |
+| N4e | `subscriptions/` + migration | 3 client                                                                  |
 
 Soit **11 client et 7 équipe** au périmètre strict du §1, **14 et 10** si
 N4-Q1 répond oui partout. L'écran N3 montre une ligne dès que son lot est
@@ -384,14 +384,40 @@ orders`. `payments → account` : un fichier implémente déjà un port
   `orders` en Prisma hors de leur propriétaire ; tout passe par les ports.
 - `lint:rgpd-staff` : aucune colonne de personne staff.
 
-#### Questions ouvertes pour Hugo
+#### Questions de N4 tranchées par Hugo (2026-10-20)
 
-- **N4-Q1** — Le §1 dit « ajoutée, modifiée, retirée » (adresses) et
-  « ajouté ou retiré » (contacts) : le défaut de livraison changé, la
-  modification d'un contact, le contact principal changé — dedans ?
-- **N4-Q2** — RGPD : combien de temps garder `sub_account_notice_sends.user_id`
-  et l'auteur (`authorUserId`) dans la charge des faits de la boîte d'envoi ?
-  Aucune durée n'est décidée ; rien n'est inventé ici.
+- **N4-Q1 — oui** : le défaut de livraison changé, la modification d'un
+  contact et le changement de contact principal entrent dans le périmètre —
+  **14 gestes client, 10 équipe**.
+- **N4-Q2 — douze mois** pour `sub_account_notice_sends.user_id` et pour
+  l'auteur (`authorUserId`) porté par les faits de la boîte d'envoi, comme les
+  demandes clients.
+
+🔴 **Dette nommée (2026-10-20) : rien ne purge ces deux traces.** Les demandes
+clients s'anonymisent à douze mois par une commande à elles
+(`apps/lfd-api/src/b2b/contact/application/commands/anonymize-customer-requests.handler.ts`,
+durée `CUSTOMER_REQUEST_RETENTION_MONTHS` dans
+`apps/lfd-api/src/b2b/contact/domain/contact-retention.ts`). Aucune purge
+n'existe ni pour `sub_account_notice_sends`, ni pour la boîte d'envoi
+`platform.outbox` (seul le semis de démonstration en vide une,
+`apps/lfd-api/src/dev/scenario/purge/outbox.purge.ts`). La durée décidée
+n'est donc pas encore tenue ; la purge n'est pas bâtie, sur consigne. Le
+registre `documentation/legal/rgpd-registre.json` ne la porte pas : sa porte
+(`lint:rgpd-staff`) ne vise que le staff, les réceptionnaires, les personnes
+qui écrivent et les tiers — pas un client, et pas une charge JSON.
+
+**Décision (Hugo, 2026-10-20) : la purge se bâtit APRÈS N4, en un lot, nocturne
+comme celle des demandes.** Deux gestes, parce que les deux traces ne servent
+pas à la même chose :
+
+- `sub_account_notice_sends` — **effacement** des lignes de plus de douze mois.
+  Elle ne sert qu'à ne pas renvoyer un mail sur une relivraison ; passé ce
+  délai, aucun fait ne sera plus livré, et l'identifiant de la personne fait
+  partie de la clé : l'anonymiser ne laisserait rien.
+- Les faits de geste en `platform.outbox` — **anonymisation** : l'auteur
+  (`authorUserId`) est vidé, le fait reste (site, geste, instant), comme une
+  demande client anonymisée garde la demande. Ni l'une ni l'autre ne sont des
+  agrégats métier : la règle « pas de DELETE physique » ne les vise pas.
 
 #### N4a bâti (2026-10-20) — et ses écarts
 
@@ -420,6 +446,36 @@ orders`. `payments → account` : un fichier implémente déjà un port
 - e2e `apps/lfd-api/test/sub-account-notice-gestures.e2e-spec.ts` : bons rôles,
   auteure exclue, invitée exclue, aucun contenu du message ; commande sans
   principal copié → rien ; relivraison → aucun doublon.
+
+#### N4b bâti (2026-10-20) — et ses écarts
+
+- **Le port « principal sous verrou »** : `SitePrincipalLock`
+  (`apps/lfd-api/src/b2b/account/domain/ports/site-principal.lock.ts`),
+  adaptateur `SELECT parent_company_id … FOR UPDATE` qui **refuse d'être
+  appelé hors d'une unité de travail**
+  (`apps/lfd-api/src/b2b/account/infrastructure/prisma-site-principal.lock.ts`).
+  Le carnet prend déjà ce verrou en sauvant ; le reprendre dans la même
+  transaction ne coûte rien, et les lots suivants (contacts, RIB, abonnements),
+  qui ne le prennent pas, l'auront par ce port.
+- **L'annonce** : `SiteGesturePublisher`
+  (`apps/lfd-api/src/b2b/account/application/services/site-gesture.publisher.ts`)
+  lit le principal sous verrou, tire un id de geste et écrit un
+  `SiteGestureFact` (`apps/lfd-api/src/b2b/account/domain/events/site-gesture.fact.ts`)
+  sous le nom du journal : `company.delivery_address_added|updated|removed`,
+  `company.default_delivery_set`. Charge : site, nom, principal, auteur,
+  `byTeam`, et l'id de l'adresse — **rien d'autre**. Appelé dans le
+  `uow.run` des huit handlers (quatre client, quatre équipe).
+- **Les abonnés** : quatre, un par type, qui partagent
+  `apps/lfd-api/src/b2b/sub-account-notices/application/handlers/site-gesture-notice.ts` ;
+  le gabarit gagne quatre gestes, sans rien de l'adresse.
+- **L'écran N3** montre la ligne `delivery_address_changed` (liste partagée).
+- **Le rattachement concurrent** est éprouvé en e2e : une transaction qui
+  rattache le site ailleurs tient la ligne, le geste attend, le fait porte le
+  NOUVEAU principal. ⚠️ Ici c'est le verrou du carnet qui attend en premier ;
+  le test ne distingue pas les deux verrous, il prouve le résultat.
+- e2e `apps/lfd-api/test/sub-account-notice-addresses.e2e-spec.ts` ; scène
+  partagée avec N4a extraite dans
+  `apps/lfd-api/test/sub-account-notice-scene.ts`.
 
 #### Ce que `vitruve` a changé (2026-10-20)
 

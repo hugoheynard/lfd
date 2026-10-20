@@ -48,6 +48,7 @@ import {
   PHONE,
   STREET,
 } from "./member-acts-doubles.js";
+import { silentGestures } from "./site-gesture-doubles.js";
 
 /**
  * **Ce que le client inscrit quand il touche au compte de sa société** (plan
@@ -98,13 +99,24 @@ describe("les adresses, par le client", () => {
       clock,
       uow,
       names,
+      silentGestures(),
     ).execute(new AddDeliveryAddressCommand("u1", "c1", DELIVERY));
-    await new UpdateDeliveryAddressHandler(member, addresses, events, uow, names).execute(
-      new UpdateDeliveryAddressCommand("u1", "c1", added, DELIVERY),
-    );
-    await new SetDefaultDeliveryAddressHandler(member, addresses, events, uow, names).execute(
-      new SetDefaultDeliveryAddressCommand("u1", "c1", added),
-    );
+    await new UpdateDeliveryAddressHandler(
+      member,
+      addresses,
+      events,
+      uow,
+      names,
+      silentGestures(),
+    ).execute(new UpdateDeliveryAddressCommand("u1", "c1", added, DELIVERY));
+    await new SetDefaultDeliveryAddressHandler(
+      member,
+      addresses,
+      events,
+      uow,
+      names,
+      silentGestures(),
+    ).execute(new SetDefaultDeliveryAddressCommand("u1", "c1", added));
     await new RemoveDeliveryAddressHandler(
       member,
       addresses,
@@ -112,6 +124,7 @@ describe("les adresses, par le client", () => {
       clock,
       events,
       uow,
+      silentGestures(),
     ).execute(new RemoveDeliveryAddressCommand("u1", "c1", "a1"));
 
     expect(events.traced.map((event) => event.journalFact())).toEqual([

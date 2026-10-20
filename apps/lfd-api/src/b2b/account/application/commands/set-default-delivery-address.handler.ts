@@ -9,6 +9,8 @@ import { ensureCompanyAdmin } from "../../domain/services/company-access.js";
 import { SetDefaultDeliveryAddressCommand } from "./address-commands.js";
 import { AccountJournalNames } from "../services/account-journal-names.service.js";
 import { deliveryAddressOf } from "../../domain/events/journal-names.js";
+import { DEFAULT_DELIVERY_SET } from "../../domain/events/site-gesture.fact.js";
+import { SiteGesturePublisher } from "../services/site-gesture.publisher.js";
 
 /**
  * Désigne l'adresse de livraison par défaut, réservé au gestionnaire.
@@ -28,6 +30,7 @@ export class SetDefaultDeliveryAddressHandler implements ICommandHandler<
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
     private readonly names: AccountJournalNames,
+    private readonly gestures: SiteGesturePublisher,
   ) {}
 
   async execute(command: SetDefaultDeliveryAddressCommand): Promise<void> {
@@ -39,6 +42,12 @@ export class SetDefaultDeliveryAddressHandler implements ICommandHandler<
     const company = await this.names.company(command.companyId);
     await this.uow.run(async () => {
       await this.addresses.saveDeliveryBook(book);
+      await this.gestures.publish({
+        type: DEFAULT_DELIVERY_SET,
+        site: company,
+        subjectId: command.addressId,
+        actor: { kind: "customer", userId: command.actorUserId },
+      });
       await this.events.publishTraced(
         new DefaultDeliverySetByMemberEvent(company, deliveryAddressOf(book, command.addressId)),
       );

@@ -18,7 +18,6 @@ import { WORKSPACE_HEADER, type CreatedIdResponse } from "@lfd/contracts";
 import { NotifyPrincipalOnOrderProblemReported } from "../src/b2b/sub-account-notices/application/handlers/notify-principal-on-order-problem-reported.handler.js";
 import { ORDER_PROBLEM_REPORTED } from "../src/b2b/contact/domain/order-problem-reported.fact.js";
 import {
-  CustomerRole,
   OrderClientele,
   OrderStatus,
   PaymentStatus,
@@ -27,7 +26,7 @@ import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { attachTo, createCompany, createUser } from "./factories.js";
+import { mailOf, noticeScene, recordOf, type NoticeScene } from "./sub-account-notice-scene.js";
 
 const TEMPLATE = "customer.sub-account-gesture";
 
@@ -46,7 +45,7 @@ const recordingMailer = {
 };
 
 let ctx: E2eContext;
-let seq = 0;
+let seq = 0; // numéros de commande
 
 beforeAll(async () => {
   ctx = await bootstrapE2e({
@@ -63,63 +62,8 @@ beforeEach(async () => {
   mails.splice(0);
 });
 
-/** Un membre ACCEPTÉ de `companyId`, désigné par son `sub`. */
-async function member(companyId: string, role: CustomerRole, accepted = true): Promise<string> {
-  const sub = `n4a-${String((seq += 1))}`;
-  const user = await createUser(ctx.prisma, { auth0Sub: sub, email: `${sub}@alpes.test` });
-  await attachTo(ctx.prisma, user.id, companyId, role);
-  if (accepted) {
-    await ctx.prisma.membership.updateMany({
-      where: { userId: user.id, companyId },
-      data: { acceptedAt: new Date(daysAgo(10)) },
-    });
-  }
-  return sub;
-}
-
-interface Scene {
-  readonly principal: string;
-  readonly site: string;
-  /** Le `sub` de la gouvernante : owner du site ET admin du principal. */
-  readonly housekeeper: string;
-  readonly owner: string;
-  readonly admin: string;
-  readonly orders: string;
-  readonly billing: string;
-  readonly invited: string;
-}
-
-async function scene(): Promise<Scene> {
-  const principal = (await createCompany(ctx.prisma, { raisonSociale: "SAS Alpes Chalets" })).id;
-  const site = (await createCompany(ctx.prisma, { raisonSociale: "", enseigne: "Chalet Gentiane" }))
-    .id;
-  await ctx.prisma.company.update({ where: { id: site }, data: { parentCompanyId: principal } });
-  const housekeeper = await member(site, CustomerRole.owner);
-  const housekeeperId = (
-    await ctx.prisma.user.findUniqueOrThrow({ where: { auth0Sub: housekeeper } })
-  ).id;
-  await ctx.prisma.membership.create({
-    data: {
-      userId: housekeeperId,
-      companyId: principal,
-      role: CustomerRole.admin,
-      acceptedAt: new Date(daysAgo(10)),
-    },
-  });
-  return {
-    principal,
-    site,
-    housekeeper,
-    owner: await member(principal, CustomerRole.owner),
-    admin: await member(principal, CustomerRole.admin),
-    orders: await member(principal, CustomerRole.orders),
-    billing: await member(principal, CustomerRole.billing),
-    invited: await member(principal, CustomerRole.orders, false),
-  };
-}
-
 /** Une commande RETIRÉE du site ; `principal` : la copie de N1, `null` : d'avant N1. */
-async function fulfilledOrder(s: Scene, principal: string | null): Promise<string> {
+async function fulfilledOrder(s: NoticeScene, principal: string | null): Promise<string> {
   const buyer = await ctx.prisma.user.findUniqueOrThrow({ where: { auth0Sub: s.housekeeper } });
   const order = await ctx.prisma.order.create({
     data: {
@@ -157,7 +101,7 @@ async function reason(): Promise<string> {
   return jsonBody<CreatedIdResponse>(response).id;
 }
 
-async function report(s: Scene, orderId: string): Promise<void> {
+async function report(s: NoticeScene, orderId: string): Promise<void> {
   await ctx
     .asSub(s.housekeeper)
     .post(`/me/orders/${orderId}/problems`)
@@ -170,18 +114,11 @@ async function report(s: Scene, orderId: string): Promise<void> {
 
 const notices = (): SentMail[] => mails.filter((mail) => mail.template === TEMPLATE);
 const recipients = (sent: readonly SentMail[]): string[] => sent.map((mail) => mail.to).sort();
-/** La charge JSON relue, en objet — sans cast. */
-function recordOf(value: unknown): Readonly<Record<string, unknown>> {
-  return typeof value === "object" && value !== null
-    ? Object.fromEntries(Object.entries(value))
-    : {};
-}
-
-const at = (sub: string): string => `${sub}@alpes.test`;
+const at = mailOf;
 
 describe("un site signale un problème sur une commande retirée", () => {
   it("prévient owner, admin et orders du principal COPIÉ — ni billing, ni l'auteure, ni l'invité ; sans le message", async () => {
-    const s = await scene();
+    const s = await noticeScene(ctx);
     const orderId = await fulfilledOrder(s, s.principal);
 
     await report(s, orderId);
@@ -201,7 +138,7 @@ describe("un site signale un problème sur une commande retirée", () => {
 
   /** BLOQUANT 2 de vitruve : pas de repli sur la hiérarchie vivante. */
   it("une commande d'avant la copie du principal (N1) ne prévient personne, bien que le site ait un principal", async () => {
-    const s = await scene();
+    const s = await noticeScene(ctx);
     const orderId = await fulfilledOrder(s, null);
 
     await report(s, orderId);
@@ -211,7 +148,7 @@ describe("un site signale un problème sur une commande retirée", () => {
   });
 
   it("une relivraison du même fait n'envoie aucun doublon (journal d'envoi)", async () => {
-    const s = await scene();
+    const s = await noticeScene(ctx);
     await report(s, await fulfilledOrder(s, s.principal));
     const [row] = await ctx.prisma.outboxMessage.findMany({
       where: { type: ORDER_PROBLEM_REPORTED },

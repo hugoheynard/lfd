@@ -45,4 +45,15 @@ describe("le courriel « un de vos sites a… » d'un geste hors commande", () =
     expect(rendered.subject).toBe("Chalet Gentiane — Problème signalé par un de vos sites");
     expect(rendered.html).not.toContain("Commande");
   });
+
+  it("un geste d'adresse ne dit RIEN de l'adresse, ni de référence", () => {
+    const rendered = render({ gesture: "default_delivery_set", reference: null, byTeam: true });
+
+    expect(rendered.subject).toBe(
+      "Chalet Gentiane — Adresse de livraison par défaut changée sur un de vos sites",
+    );
+    expect(rendered.html).toContain(
+      "Votre site Chalet Gentiane a changé son adresse de livraison par défaut (fait par notre équipe).",
+    );
+  });
 });

@@ -10,6 +10,8 @@ import { ensureCompanyAdmin } from "../../domain/services/company-access.js";
 import { UpdateDeliveryAddressCommand } from "./address-commands.js";
 import { AccountJournalNames } from "../services/account-journal-names.service.js";
 import { deliveryAddressOf } from "../../domain/events/journal-names.js";
+import { DELIVERY_ADDRESS_UPDATED } from "../../domain/events/site-gesture.fact.js";
+import { SiteGesturePublisher } from "../services/site-gesture.publisher.js";
 
 /**
  * Remplace une adresse de livraison, réservé au gestionnaire de l'entreprise.
@@ -37,6 +39,7 @@ export class UpdateDeliveryAddressHandler implements ICommandHandler<
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
     private readonly names: AccountJournalNames,
+    private readonly gestures: SiteGesturePublisher,
   ) {}
 
   async execute(command: UpdateDeliveryAddressCommand): Promise<void> {
@@ -52,6 +55,12 @@ export class UpdateDeliveryAddressHandler implements ICommandHandler<
     const address = deliveryAddressOf(book, command.addressId);
     await this.uow.run(async () => {
       await this.addresses.saveDeliveryBook(book);
+      await this.gestures.publish({
+        type: DELIVERY_ADDRESS_UPDATED,
+        site: company,
+        subjectId: command.addressId,
+        actor: { kind: "customer", userId: command.actorUserId },
+      });
       await this.events.publishTraced(
         new DeliveryAddressUpdatedByMemberEvent(company, address, command.payload),
       );

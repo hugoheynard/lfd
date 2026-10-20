@@ -8,7 +8,12 @@ import type { SubAccountActivityShell } from "./sub-account-activity-mail.js";
  * Chaque lot de N4 ajoute SON membre, avec ses deux phrases : une union, pas
  * un champ libre, pour qu'un geste sans phrase ne compile pas.
  */
-export type SubAccountGesture = "problem_reported";
+export type SubAccountGesture =
+  | "problem_reported"
+  | "delivery_address_added"
+  | "delivery_address_updated"
+  | "delivery_address_removed"
+  | "default_delivery_set";
 
 /**
  * Les données de l'avis **« un de vos sites a… »** pour un geste qui n'est
@@ -31,13 +36,23 @@ export interface SubAccountGestureMailData {
 
 const VERB: Readonly<Record<SubAccountGesture, string>> = {
   problem_reported: "a signalé un problème sur la commande",
+  // Rien de l'adresse : ni ville, ni code postal, ni libellé (Hugo, 2026-10-20).
+  delivery_address_added: "a ajouté une adresse de livraison",
+  delivery_address_updated: "a modifié une adresse de livraison",
+  delivery_address_removed: "a retiré une adresse de livraison",
+  default_delivery_set: "a changé son adresse de livraison par défaut",
 };
 
 const TITLE: Readonly<Record<SubAccountGesture, string>> = {
   problem_reported: "Problème signalé par un de vos sites",
+  delivery_address_added: "Adresse de livraison ajoutée sur un de vos sites",
+  delivery_address_updated: "Adresse de livraison modifiée sur un de vos sites",
+  delivery_address_removed: "Adresse de livraison retirée sur un de vos sites",
+  default_delivery_set: "Adresse de livraison par défaut changée sur un de vos sites",
 };
 
-const REFERENCE_LABEL: Readonly<Record<SubAccountGesture, string>> = {
+/** Le libellé de la référence, pour les gestes qui en portent une. */
+const REFERENCE_LABEL: Readonly<Partial<Record<SubAccountGesture, string>>> = {
   problem_reported: "Commande",
 };
 
@@ -71,6 +86,6 @@ function rowsOf(data: SubAccountGestureMailData): readonly LayoutRow[] {
     { label: "Site", value: data.siteName },
     ...(data.reference === null
       ? []
-      : [{ label: REFERENCE_LABEL[data.gesture], value: data.reference }]),
+      : [{ label: REFERENCE_LABEL[data.gesture] ?? "Référence", value: data.reference }]),
   ];
 }

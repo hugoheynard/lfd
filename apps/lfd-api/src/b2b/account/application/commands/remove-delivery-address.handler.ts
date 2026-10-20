@@ -11,6 +11,8 @@ import { MembershipReader } from "../../domain/ports/membership.reader.js";
 import { ensureCompanyAdmin } from "../../domain/services/company-access.js";
 import { RemoveDeliveryAddressCommand } from "./address-commands.js";
 import { companyNamed, deliveryAddressOf } from "../../domain/events/journal-names.js";
+import { DELIVERY_ADDRESS_REMOVED } from "../../domain/events/site-gesture.fact.js";
+import { SiteGesturePublisher } from "../services/site-gesture.publisher.js";
 
 /**
  * Archive une adresse de livraison, réservé au gestionnaire de l'entreprise.
@@ -43,6 +45,7 @@ export class RemoveDeliveryAddressHandler implements ICommandHandler<
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly gestures: SiteGesturePublisher,
   ) {}
 
   async execute(command: RemoveDeliveryAddressCommand): Promise<void> {
@@ -67,6 +70,12 @@ export class RemoveDeliveryAddressHandler implements ICommandHandler<
 
     await this.uow.run(async () => {
       await this.addresses.saveDeliveryBook(book);
+      await this.gestures.publish({
+        type: DELIVERY_ADDRESS_REMOVED,
+        site: companyNamed(command.companyId, company),
+        subjectId: command.addressId,
+        actor: { kind: "customer", userId: command.actorUserId },
+      });
       if (orphaned) {
         await this.companies.save(company);
       }

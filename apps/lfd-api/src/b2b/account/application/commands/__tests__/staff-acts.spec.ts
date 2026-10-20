@@ -21,6 +21,7 @@ import { RemoveContactByStaffHandler } from "../remove-contact-by-staff.handler.
 import { ChangeCompanyStatusCommand } from "../change-company-status.command.js";
 import { ChangeCompanyStatusHandler } from "../change-company-status.handler.js";
 import { COMPANY_LABEL, journalNames } from "./member-acts-doubles.js";
+import { silentGestures } from "./site-gesture-doubles.js";
 
 /**
  * **Ce que le staff inscrit quand il touche au compte d'un client.**
@@ -171,6 +172,7 @@ describe("Les actes du staff au journal", () => {
       new FixedClock(new Date("2026-02-03T10:00:00Z")),
       new DirectUnitOfWork(),
       journalNames(companies(), book),
+      silentGestures(),
     ).execute(new AddDeliveryAddressByStaffCommand("c1", DELIVERY));
 
     // L'identifiant rendu est bien celui qui part au journal : sans lui, on

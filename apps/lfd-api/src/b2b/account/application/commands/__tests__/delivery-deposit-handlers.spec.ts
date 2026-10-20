@@ -13,6 +13,7 @@ import {
   journalNames,
   OwnerMembership,
 } from "./member-acts-doubles.js";
+import { silentGestures } from "./site-gesture-doubles.js";
 
 /**
  * **« Dépôt autorisé »** (`documentation/livraisons/livreur/a-la-porte.md`, AP-D5) :
@@ -29,6 +30,7 @@ function build() {
     events,
     new DirectUnitOfWork(),
     names,
+    silentGestures(),
   );
   const staff = new SetDeliveryDepositByStaffHandler(
     addresses,

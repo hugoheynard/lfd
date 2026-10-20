@@ -37,6 +37,7 @@ import { SetDefaultDeliveryAddressHandler } from "../set-default-delivery-addres
 import { UpdateDeliveryAddressHandler } from "../update-delivery-address.handler.js";
 import { journalNames } from "./member-acts-doubles.js";
 import { withSlotList } from "../../../domain/services/delivery-slot-list.js";
+import { silentGestures } from "./site-gesture-doubles.js";
 
 /** Publisher doublé : ignore (les étapes d'activation ne sont pas l'objet de ce spec). */
 /** Fabrique un publisher doublé frais. */
@@ -189,6 +190,7 @@ describe("handlers d'adresses — les murs member / admin", () => {
         clock(),
         new DirectUnitOfWork(),
         journalNames(companiesReturningSample()),
+        silentGestures(),
       ).execute(new AddDeliveryAddressCommand("u1", "c1", DELIVERY)),
     ).rejects.toBeInstanceOf(CompanyNotFoundError);
     expect(recorder.writes).toEqual([]);
@@ -203,6 +205,7 @@ describe("handlers d'adresses — les murs member / admin", () => {
         events(),
         new DirectUnitOfWork(),
         journalNames(companiesReturningSample()),
+        silentGestures(),
       ).execute(new UpdateDeliveryAddressCommand("u1", "c1", "a1", DELIVERY)),
     ).rejects.toBeInstanceOf(CompanyAdminRequiredError);
     expect(recorder.writes).toEqual([]);
@@ -222,6 +225,7 @@ describe("handlers d'adresses — les murs member / admin", () => {
       clock(),
       new DirectUnitOfWork(),
       names,
+      silentGestures(),
     ).execute(new AddDeliveryAddressCommand("u1", "c1", DELIVERY));
     await new UpdateDeliveryAddressHandler(
       admin,
@@ -229,6 +233,7 @@ describe("handlers d'adresses — les murs member / admin", () => {
       events(),
       new DirectUnitOfWork(),
       names,
+      silentGestures(),
     ).execute(new UpdateDeliveryAddressCommand("u1", "c1", "a1", DELIVERY));
     await new SetDefaultDeliveryAddressHandler(
       admin,
@@ -236,6 +241,7 @@ describe("handlers d'adresses — les murs member / admin", () => {
       events(),
       new DirectUnitOfWork(),
       names,
+      silentGestures(),
     ).execute(new SetDefaultDeliveryAddressCommand("u1", "c1", "a1"));
     await new RemoveDeliveryAddressHandler(
       admin,
@@ -244,6 +250,7 @@ describe("handlers d'adresses — les murs member / admin", () => {
       clock(),
       events(),
       new DirectUnitOfWork(),
+      silentGestures(),
     ).execute(new RemoveDeliveryAddressCommand("u1", "c1", "a1"));
 
     // Le carnet compte deux adresses après l'ajout, et retombe à une seule

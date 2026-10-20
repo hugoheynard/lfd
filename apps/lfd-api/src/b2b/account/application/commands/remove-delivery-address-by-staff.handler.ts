@@ -9,6 +9,8 @@ import { CompanyAddressRepository } from "../../domain/ports/company-address.rep
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { RemoveDeliveryAddressByStaffCommand } from "./remove-delivery-address-by-staff.command.js";
 import { companyNamed, deliveryAddressOf } from "../../domain/events/journal-names.js";
+import { DELIVERY_ADDRESS_REMOVED } from "../../domain/events/site-gesture.fact.js";
+import { SiteGesturePublisher } from "../services/site-gesture.publisher.js";
 
 /**
  * Archive une adresse de livraison, à la place du client.
@@ -33,6 +35,7 @@ export class RemoveDeliveryAddressByStaffHandler implements ICommandHandler<
     private readonly events: DomainEventPublisher,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
+    private readonly gestures: SiteGesturePublisher,
   ) {}
 
   async execute(command: RemoveDeliveryAddressByStaffCommand): Promise<void> {
@@ -54,6 +57,12 @@ export class RemoveDeliveryAddressByStaffHandler implements ICommandHandler<
 
     await this.uow.run(async () => {
       await this.addresses.saveDeliveryBook(book);
+      await this.gestures.publish({
+        type: DELIVERY_ADDRESS_REMOVED,
+        site: companyNamed(command.companyId, company),
+        subjectId: command.addressId,
+        actor: { kind: "team" },
+      });
       if (orphaned) {
         await this.companies.save(company);
       }

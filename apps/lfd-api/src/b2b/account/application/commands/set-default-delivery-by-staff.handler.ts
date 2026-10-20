@@ -7,6 +7,8 @@ import { CompanyAddressRepository } from "../../domain/ports/company-address.rep
 import { SetDefaultDeliveryByStaffCommand } from "./set-default-delivery-by-staff.command.js";
 import { AccountJournalNames } from "../services/account-journal-names.service.js";
 import { deliveryAddressOf } from "../../domain/events/journal-names.js";
+import { DEFAULT_DELIVERY_SET } from "../../domain/events/site-gesture.fact.js";
+import { SiteGesturePublisher } from "../services/site-gesture.publisher.js";
 
 /**
  * Désigne l'adresse de livraison par défaut, à la place du client.
@@ -30,6 +32,7 @@ export class SetDefaultDeliveryByStaffHandler implements ICommandHandler<
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
     private readonly names: AccountJournalNames,
+    private readonly gestures: SiteGesturePublisher,
   ) {}
 
   async execute(command: SetDefaultDeliveryByStaffCommand): Promise<void> {
@@ -38,6 +41,12 @@ export class SetDefaultDeliveryByStaffHandler implements ICommandHandler<
     const company = await this.names.company(command.companyId);
     await this.uow.run(async () => {
       await this.addresses.saveDeliveryBook(book);
+      await this.gestures.publish({
+        type: DEFAULT_DELIVERY_SET,
+        site: company,
+        subjectId: command.addressId,
+        actor: { kind: "team" },
+      });
       await this.events.publishTraced(
         new DefaultDeliverySetByStaffEvent(company, deliveryAddressOf(book, command.addressId)),
       );

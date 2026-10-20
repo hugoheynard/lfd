@@ -11,6 +11,16 @@ import {
 } from "../../__tests__/order-notice-doubles.js";
 import { GestureNoticeDispatcher } from "../../services/gesture-notice.dispatcher.js";
 import { PrincipalNoticeSender } from "../../services/principal-notice.sender.js";
+import {
+  DELIVERY_ADDRESS_ADDED,
+  SiteGestureFact,
+  SiteGesturePayloadError,
+  type SiteGestureStamp,
+} from "../../../../account/domain/events/site-gesture.fact.js";
+import { NotifyPrincipalOnDefaultDeliverySet } from "../notify-principal-on-default-delivery-set.handler.js";
+import { NotifyPrincipalOnDeliveryAddressAdded } from "../notify-principal-on-delivery-address-added.handler.js";
+import { NotifyPrincipalOnDeliveryAddressRemoved } from "../notify-principal-on-delivery-address-removed.handler.js";
+import { NotifyPrincipalOnDeliveryAddressUpdated } from "../notify-principal-on-delivery-address-updated.handler.js";
 import { NotifyPrincipalOnOrderProblemReported } from "../notify-principal-on-order-problem-reported.handler.js";
 
 const member = (userId: string, role: AcceptedMember["role"]): AcceptedMember => ({
@@ -47,6 +57,10 @@ function build(status: CompanyStatus = "active") {
     rules,
     gestures,
     reported: new NotifyPrincipalOnOrderProblemReported(gestures),
+    added: new NotifyPrincipalOnDeliveryAddressAdded(gestures),
+    updated: new NotifyPrincipalOnDeliveryAddressUpdated(gestures),
+    removed: new NotifyPrincipalOnDeliveryAddressRemoved(gestures),
+    defaulted: new NotifyPrincipalOnDefaultDeliverySet(gestures),
   };
 }
 
@@ -134,5 +148,83 @@ describe("GestureNoticeDispatcher — un geste de l'équipe", () => {
       ["admin@alpes.test", "buyer@alpes.test", "housekeeper@alpes.test", "owner@alpes.test"].sort(),
     );
     expect(mailer.sent.every((m) => (m.data as { byTeam: boolean }).byTeam)).toBe(true);
+  });
+});
+
+const CUSTOMER: SiteGestureStamp = {
+  siteCompanyId: "chalet",
+  siteName: "Chalet Gentiane",
+  principalCompanyId: "alpes",
+  authorUserId: "housekeeper",
+  byTeam: false,
+};
+
+function addressFact(stamp: SiteGestureStamp = CUSTOMER, eventId = "evt_addr") {
+  const fact = new SiteGestureFact(DELIVERY_ADDRESS_ADDED, "g1", "addr_1", stamp);
+  return { eventId, type: DELIVERY_ADDRESS_ADDED, payload: fact.durableFact().payload };
+}
+
+describe("les gestes du carnet de livraison d'un site (N4b)", () => {
+  it("geste client : owner et admin du principal, moins l'auteure ; rien de l'adresse", async () => {
+    const { added, mailer } = build();
+    await added.handle(addressFact());
+
+    expect(recipients(mailer)).toEqual(["admin@alpes.test", "owner@alpes.test"]);
+    expect(mailer.sent[0]).toMatchObject({
+      template: "customer.sub-account-gesture",
+      data: {
+        gesture: "delivery_address_added",
+        siteName: "Chalet Gentiane",
+        reference: null,
+        byTeam: false,
+      },
+    });
+  });
+
+  it("geste de l'équipe : « notre équipe », et personne n'est retiré", async () => {
+    const { updated, mailer } = build();
+    await updated.handle(addressFact({ ...CUSTOMER, authorUserId: null, byTeam: true }));
+
+    expect(recipients(mailer)).toEqual(
+      ["admin@alpes.test", "housekeeper@alpes.test", "owner@alpes.test"].sort(),
+    );
+    expect(mailer.sent.every((m) => (m.data as { byTeam: boolean }).byTeam)).toBe(true);
+  });
+
+  it("chaque abonné dit SON geste", async () => {
+    const { added, updated, removed, defaulted, mailer } = build();
+    await added.handle(addressFact(CUSTOMER, "e1"));
+    await updated.handle(addressFact(CUSTOMER, "e2"));
+    await removed.handle(addressFact(CUSTOMER, "e3"));
+    await defaulted.handle(addressFact(CUSTOMER, "e4"));
+
+    const gestures = new Set(mailer.sent.map((m) => (m.data as { gesture: string }).gesture));
+    expect([...gestures]).toEqual([
+      "delivery_address_added",
+      "delivery_address_updated",
+      "delivery_address_removed",
+      "default_delivery_set",
+    ]);
+  });
+
+  it("un site sans principal : personne", async () => {
+    const { added, mailer } = build();
+    await added.handle(addressFact({ ...CUSTOMER, principalCompanyId: null }));
+    expect(mailer.sent).toEqual([]);
+  });
+
+  it("une relivraison n'envoie aucun doublon", async () => {
+    const { added, mailer } = build();
+    await added.handle(addressFact());
+    await added.handle(addressFact());
+    expect(mailer.sent).toHaveLength(2);
+  });
+
+  it("une charge illisible lève, sans rien envoyer", async () => {
+    const { added, mailer } = build();
+    await expect(
+      added.handle({ eventId: "e", type: DELIVERY_ADDRESS_ADDED, payload: { siteName: "x" } }),
+    ).rejects.toThrow(SiteGesturePayloadError);
+    expect(mailer.sent).toEqual([]);
   });
 });

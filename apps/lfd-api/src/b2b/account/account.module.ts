@@ -198,6 +198,9 @@ import { PrismaInvitationRenewal } from "./infrastructure/prisma-invitation-rene
 import { AcceptedMembersReader } from "./domain/ports/accepted-members.reader.js";
 import { DeliveryPostalCodesReader } from "./domain/ports/delivery-postal-codes.reader.js";
 import { CompanyParentReader } from "./domain/ports/company-parent.reader.js";
+import { SitePrincipalLock } from "./domain/ports/site-principal.lock.js";
+import { PrismaSitePrincipalLock } from "./infrastructure/prisma-site-principal.lock.js";
+import { SiteGesturePublisher } from "./application/services/site-gesture.publisher.js";
 import { SubAccountNoticeRulesReader } from "./domain/ports/sub-account-notice-rules.reader.js";
 import { SubAccountNoticeRulesWriter } from "./domain/ports/sub-account-notice-rules.writer.js";
 import { PrismaAcceptedMembersReader } from "./infrastructure/prisma-accepted-members.reader.js";
@@ -438,6 +441,8 @@ import {
     // tables sont ici, le contexte `sub-account-notices/` les lit par ces ports.
     { provide: AcceptedMembersReader, useClass: PrismaAcceptedMembersReader },
     { provide: CompanyParentReader, useClass: PrismaCompanyParentReader },
+    { provide: SitePrincipalLock, useClass: PrismaSitePrincipalLock },
+    SiteGesturePublisher,
     { provide: CompanyLifecycleReader, useClass: PrismaCompanyLifecycleReader },
     { provide: SubAccountNoticeRulesReader, useClass: PrismaSubAccountNoticeRulesReader },
     { provide: SubAccountNoticeRulesWriter, useClass: PrismaSubAccountNoticeRulesWriter },

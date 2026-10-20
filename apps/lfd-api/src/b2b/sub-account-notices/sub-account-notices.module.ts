@@ -8,6 +8,10 @@ import { NotifyPrincipalOnOrderPlaced } from "./application/handlers/notify-prin
 import { NotifyPrincipalOnPaymentFailed } from "./application/handlers/notify-principal-on-payment-failed.handler.js";
 import { GestureNoticeDispatcher } from "./application/services/gesture-notice.dispatcher.js";
 import { PrincipalNoticeSender } from "./application/services/principal-notice.sender.js";
+import { NotifyPrincipalOnDeliveryAddressAdded } from "./application/handlers/notify-principal-on-delivery-address-added.handler.js";
+import { NotifyPrincipalOnDeliveryAddressUpdated } from "./application/handlers/notify-principal-on-delivery-address-updated.handler.js";
+import { NotifyPrincipalOnDeliveryAddressRemoved } from "./application/handlers/notify-principal-on-delivery-address-removed.handler.js";
+import { NotifyPrincipalOnDefaultDeliverySet } from "./application/handlers/notify-principal-on-default-delivery-set.handler.js";
 import { NotifyPrincipalOnOrderProblemReported } from "./application/handlers/notify-principal-on-order-problem-reported.handler.js";
 import { SubAccountNoticeDispatcher } from "./application/services/sub-account-notice.dispatcher.js";
 import { NoticeSendJournal } from "./domain/ports/notice-send.journal.js";
@@ -27,7 +31,8 @@ import { AdminSubAccountNoticesController } from "./http/admin-sub-account-notic
  * N1 : le tableau et son réglage. N2 : les trois abonnés durables des faits
  * de commande, qui lisent la commande par le port qu'`orders/` exporte.
  * N4a : le premier geste hors commande (problème signalé), dont le fait
- * durable porte le principal figé.
+ * durable porte le principal figé. N4b : les quatre gestes du carnet de
+ * livraison, client et équipe.
  */
 @Module({
   imports: [AccountModule, OrdersModule],
@@ -44,6 +49,10 @@ import { AdminSubAccountNoticesController } from "./http/admin-sub-account-notic
     NotifyPrincipalOnOrderCancelled,
     NotifyPrincipalOnPaymentFailed,
     NotifyPrincipalOnOrderProblemReported,
+    NotifyPrincipalOnDeliveryAddressAdded,
+    NotifyPrincipalOnDeliveryAddressUpdated,
+    NotifyPrincipalOnDeliveryAddressRemoved,
+    NotifyPrincipalOnDefaultDeliverySet,
     { provide: NoticeSendJournal, useClass: PrismaNoticeSendJournal },
   ],
 })

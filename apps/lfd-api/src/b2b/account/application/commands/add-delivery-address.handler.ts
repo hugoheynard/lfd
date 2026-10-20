@@ -12,6 +12,8 @@ import { ensureCompanyAdmin } from "../../domain/services/company-access.js";
 import { AddDeliveryAddressCommand } from "./address-commands.js";
 import { AccountJournalNames } from "../services/account-journal-names.service.js";
 import { deliveryAddressOf } from "../../domain/events/journal-names.js";
+import { DELIVERY_ADDRESS_ADDED } from "../../domain/events/site-gesture.fact.js";
+import { SiteGesturePublisher } from "../services/site-gesture.publisher.js";
 
 /**
  * Ajoute une adresse de livraison, réservé au gestionnaire de l'entreprise.
@@ -37,6 +39,7 @@ export class AddDeliveryAddressHandler implements ICommandHandler<
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
     private readonly names: AccountJournalNames,
+    private readonly gestures: SiteGesturePublisher,
   ) {}
 
   async execute(command: AddDeliveryAddressCommand): Promise<string> {
@@ -49,6 +52,12 @@ export class AddDeliveryAddressHandler implements ICommandHandler<
     const company = await this.names.company(command.companyId);
     await this.uow.run(async () => {
       await this.addresses.saveDeliveryBook(book);
+      await this.gestures.publish({
+        type: DELIVERY_ADDRESS_ADDED,
+        site: company,
+        subjectId: addressId,
+        actor: { kind: "customer", userId: command.actorUserId },
+      });
       await this.events.publishTraced(
         new DeliveryAddressAddedByMemberEvent(
           company,
