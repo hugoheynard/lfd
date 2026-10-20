@@ -5,6 +5,7 @@ import { TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 
 import { AuthFacade } from '../auth/auth.facade';
+import { LoginMoment } from '../auth/login-moment';
 import { NotifyService } from '../notify.service';
 import { AccountService } from './account.service';
 import type { EstablishmentDraft } from './establishment';
@@ -238,5 +239,58 @@ describe('AccountService — écritures à refus rendu', () => {
     sent.flush(null);
     await outcome;
     http.expectOne((r) => r.url.endsWith('/me'));
+  });
+});
+
+/** La commerciale, 2026-10-20 : qui a un compte pro entre dans un espace pro. */
+describe('AccountService — l’espace à la connexion', () => {
+  const COMPANY = { id: 'cmp_1', status: 'active' };
+
+  function boot(fresh: boolean): { http: HttpTestingController; account: AccountService } {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        {
+          provide: AuthFacade,
+          useValue: {
+            isAuthenticated: signal(false),
+            authEmail: signal(null),
+            accessToken$: () => of('jeton'),
+          },
+        },
+        { provide: NotifyService, useValue: { success: () => undefined, error: () => undefined } },
+      ],
+    });
+    TestBed.inject(LoginMoment).fresh.set(fresh);
+    return { http: TestBed.inject(HttpTestingController), account: TestBed.inject(AccountService) };
+  }
+
+  function me(workspace: string | null): object {
+    return { profile: {}, companies: [COMPANY], navPrefs: { catalogueView: null, workspace } };
+  }
+
+  it('au retour d’une connexion, un perso mémorisé cède la place à la société', () => {
+    const { http, account } = boot(true);
+    account.load();
+    http.expectOne((r) => r.url.endsWith('/me') && r.method === 'GET').flush(me('personal'));
+    const patch = http.expectOne((r) => r.url.endsWith('/me/nav-prefs'));
+    expect(patch.request.body).toEqual({ workspace: 'cmp_1' });
+    expect(TestBed.inject(LoginMoment).fresh()).toBe(false);
+  });
+
+  it('sans connexion (un rechargement), le perso mémorisé reste', () => {
+    const { http, account } = boot(false);
+    account.load();
+    http.expectOne((r) => r.url.endsWith('/me') && r.method === 'GET').flush(me('personal'));
+    http.expectNone((r) => r.url.endsWith('/me/nav-prefs'));
+  });
+
+  it('à la connexion, une société mémorisée reste', () => {
+    const { http, account } = boot(true);
+    account.load();
+    http.expectOne((r) => r.url.endsWith('/me') && r.method === 'GET').flush(me('cmp_1'));
+    http.expectNone((r) => r.url.endsWith('/me/nav-prefs'));
   });
 });

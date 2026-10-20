@@ -69,10 +69,21 @@ appelée par `auth.guard.ts` avec les rattachements que
 
 - `ClientWorkspace.current` vaut `null` **tant que `/me` n'a pas répondu** ; les
   lecteurs par espace attendent une valeur au lieu de partir sans en-tête.
-- L'espace par défaut : la préférence si elle désigne encore `personal` ou un
-  rattachement ; sinon la société si elle est **la seule** ; le perso à
-  plusieurs sociétés comme sans société (Hugo, Q2). C'est exactement ce que le
-  serveur sert sans en-tête : aucun changement de prix pour qui n'a rien choisi.
+- L'espace par défaut (révisé le 2026-10-20 à la demande de la commerciale :
+  « qui a un compte pro doit se retrouver dans un espace pro ») : la
+  préférence si elle désigne encore `personal` ou un rattachement ; sinon,
+  dès qu'il y a une société, **la première société active** dans l'ordre de
+  `/me`, à défaut la première (`account/default-workspace.ts`) ; le perso
+  seulement sans société. Avant, plusieurs sociétés menaient au perso (Hugo,
+  Q2, 2026-09-15).
+- **À chaque connexion**, un perso mémorisé cède la place à l'espace pro :
+  `LoginMoment` (`auth/login-moment.ts`) est levé au retour d'Auth0, et
+  `AccountService` le lit une fois au retour de `/me`. Une société mémorisée
+  reste ; un simple rechargement ne change rien ; la personne peut repasser
+  dans son perso pendant sa session.
+- ⚠️ Le serveur, lui, sert toujours le perso à plusieurs sociétés **sans
+  en-tête**. L'écart ne coûte rien tant que le front déclare l'espace à chaque
+  requête, ce qu'il fait dès `/me` (relu le 2026-10-20).
 - `workspaceInterceptor` (`client-workspace.interceptor.ts`, enregistré dans
   `app.config.ts`) pose l'en-tête **vers l'API seulement** (`targetsApi`, sur
   une frontière de chemin), **seulement quand l'espace est connu**, et **jamais
@@ -147,8 +158,9 @@ pros, ni livraison fermée au public.
 
 ## Ce qui n'existe pas, volontairement
 
-- **Aucun « premier » par défaut** : à plusieurs sociétés sans déclaration, le
-  serveur sert le perso.
+- **Côté serveur, aucun « premier » par défaut** : à plusieurs sociétés sans
+  déclaration, le serveur sert le perso. C'est le front qui choisit la
+  première société active (ci-dessus) et la déclare.
 - **Pas de tarif public** distinct : en perso, tarif catalogue et carte.
 - **Pas d'espace deviné avant `/me`**, ni au rendu serveur : l'en-tête n'y part
   pas.

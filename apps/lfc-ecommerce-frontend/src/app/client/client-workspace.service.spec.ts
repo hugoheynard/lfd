@@ -64,11 +64,17 @@ describe('ClientWorkspace — l’espace par défaut (plan D5, Hugo 2026-09-15)'
     expect(workspace.hasChoice()).toBe(true);
   });
 
-  /** Q2 : ce que le serveur sert déjà sans en-tête — aucun changement de prix. */
-  it('plusieurs sociétés et aucune préférence : le perso, pas la première', () => {
-    const workspace = resolve(account([MAISON_A, MAISON_B]));
-    expect(workspace.current()).toBe(PERSONAL_WORKSPACE);
-    expect(workspace.company()).toBeNull();
+  /** La commerciale, 2026-10-20 : qui a un compte pro entre dans un espace pro. */
+  it('plusieurs sociétés et aucune préférence : la première société active', () => {
+    const pending: CompanyView = { ...MAISON_A, status: 'pending' };
+    const active: CompanyView = { ...MAISON_B, status: 'active' };
+    expect(resolve(account([pending, active])).current()).toBe('cmp_b');
+  });
+
+  it('plusieurs sociétés, aucune active : la première', () => {
+    const a: CompanyView = { ...MAISON_A, status: 'pending' };
+    const b: CompanyView = { ...MAISON_B, status: 'pending' };
+    expect(resolve(account([a, b])).current()).toBe('cmp_a');
   });
 
   it('la préférence gagne quand elle désigne encore un rattachement', () => {
@@ -133,7 +139,8 @@ describe('ClientWorkspace.choose — la préférence écrite', () => {
 
   it('bascule tout de suite, et écrit la seule préférence d’espace', () => {
     const { workspace, http } = boot();
-    expect(workspace.current()).toBe(PERSONAL_WORKSPACE);
+    // Sans préférence, plusieurs sociétés : la première active (2026-10-20).
+    expect(workspace.current()).toBe('cmp_a');
 
     workspace.choose('cmp_b');
 
@@ -148,12 +155,13 @@ describe('ClientWorkspace.choose — la préférence écrite', () => {
   it('revient en arrière et le dit quand l’écriture échoue', () => {
     const { workspace, http, errors } = boot();
 
-    workspace.choose('cmp_a');
+    workspace.choose(PERSONAL_WORKSPACE);
+    expect(workspace.current()).toBe(PERSONAL_WORKSPACE);
     http
       .expectOne((r) => r.url.endsWith('/me/nav-prefs'))
       .flush({ message: 'refus' }, { status: 409, statusText: 'Conflict' });
 
-    expect(workspace.current()).toBe(PERSONAL_WORKSPACE);
+    expect(workspace.current()).toBe('cmp_a');
     expect(errors).toHaveLength(1);
   });
 

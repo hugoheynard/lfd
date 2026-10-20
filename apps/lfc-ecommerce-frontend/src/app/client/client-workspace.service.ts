@@ -5,6 +5,7 @@ import type { CompanyView } from '@lfd/contracts';
 import { PERSONAL_WORKSPACE } from '@lfd/contracts/workspace';
 
 import { AccountService } from '../account/account.service';
+import { defaultProWorkspace } from '../account/default-workspace';
 
 /** Un espace proposable : `personal`, ou une société de la personne. */
 export interface WorkspaceOption {
@@ -38,12 +39,18 @@ export interface WorkspaceOption {
  * repasse `status` en `loading` le temps de relire `/me`, et l'espace ne doit
  * pas redevenir inconnu pour autant.
  *
- * ## La règle par défaut (Hugo, 2026-09-15)
+ * ## La règle par défaut (Hugo, 2026-09-15 ; révisée le 2026-10-20)
  *
- * La préférence si elle désigne encore le perso ou un rattachement ; sinon la
- * société si elle est la SEULE ; le perso à plusieurs sociétés comme sans
- * société. C'est ce que le serveur sert déjà sans en-tête : aucun changement de
- * prix ni de règlement pour qui n'a encore rien choisi.
+ * La préférence si elle désigne encore le perso ou un rattachement ; sinon,
+ * dès qu'il y a une société, **un espace pro** (`defaultProWorkspace`) ;
+ * le perso seulement sans société.
+ *
+ * Révisée à la demande de la commerciale : « une personne qui a un compte pro
+ * doit se retrouver dans un espace pro, pas son perso ». Avant, plusieurs
+ * sociétés menaient au perso. Et **à chaque connexion**, un perso mémorisé
+ * cède la place à l'espace pro (`AccountService`, au retour de `/me`) : la
+ * personne peut y revenir pendant sa session, elle n'y retombe plus en
+ * entrant.
  */
 @Injectable({ providedIn: 'root' })
 export class ClientWorkspace {
@@ -61,7 +68,7 @@ export class ClientWorkspace {
     if (preferred === PERSONAL_WORKSPACE || (preferred !== null && ids.includes(preferred))) {
       return preferred;
     }
-    return ids.length === 1 ? (ids[0] ?? PERSONAL_WORKSPACE) : PERSONAL_WORKSPACE;
+    return defaultProWorkspace(account.companies) ?? PERSONAL_WORKSPACE;
   });
 
   /** La société de l'espace courant — `null` en perso comme avant `/me`. */

@@ -22,6 +22,7 @@ import {
   writeLastConnection,
 } from './auth-redirect';
 import { DEV_BYPASS_AUTH } from './dev-flags';
+import { LoginMoment } from './login-moment';
 import { signInFailureOf } from './sign-in-failure';
 
 /**
@@ -138,6 +139,8 @@ export class AuthFacade {
    */
   readonly pendingProRegistration = signal<ProRegistration | null>(null);
 
+  private readonly loginMoment = inject(LoginMoment);
+
   /**
    * En bypass dev, l'inscription pro EN COURS sur l'écran d'Auth0 simulé.
    *
@@ -163,6 +166,7 @@ export class AuthFacade {
     }
     writeDevSignedOut(false);
     this.devSignedOut.set(false);
+    this.loginMoment.fresh.set(true);
     this.pendingProRegistration.set(signup.registration);
     this.devSignup.set(null);
     return signup.target;
@@ -185,6 +189,11 @@ export class AuthFacade {
     // deux abonnés.
     this.auth0?.appState$.subscribe((state: unknown) => {
       this.pendingProRegistration.set(readProRegistration(state));
+    });
+    // Le SDK n'émet l'`appState` qu'au retour du callback : c'est la marque
+    // d'une connexion, que le compte lit une fois (`LoginMoment`).
+    this.auth0?.appState$.subscribe(() => {
+      this.loginMoment.fresh.set(true);
     });
   }
 
@@ -349,6 +358,7 @@ export class AuthFacade {
   private enterInDev(target: string): void {
     writeDevSignedOut(false);
     this.devSignedOut.set(false);
+    this.loginMoment.fresh.set(true);
     void this.router.navigateByUrl(target);
   }
 

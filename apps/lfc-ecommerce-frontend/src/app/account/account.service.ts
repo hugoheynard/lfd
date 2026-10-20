@@ -6,13 +6,16 @@ import type {
   FulfillmentPreferenceView,
   UpdateIdentityPayload,
 } from '@lfd/contracts';
+import { PERSONAL_WORKSPACE } from '@lfd/contracts/workspace';
 import { httpErrorCode, httpErrorMessage } from '@lfd/endpoints';
 import { firstValueFrom, type Observable } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 
 import { AUTH_CONFIG } from '../auth/auth.config';
 import { AuthFacade } from '../auth/auth.facade';
+import { LoginMoment } from '../auth/login-moment';
 import { NotifyService } from '../notify.service';
+import { defaultProWorkspace } from './default-workspace';
 import {
   PERSON_ALREADY_ATTACHED,
   refusalFrom,
@@ -68,6 +71,7 @@ export type AccountStatus = 'idle' | 'loading' | 'ready' | 'error';
 export class AccountService {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthFacade);
+  private readonly loginMoment = inject(LoginMoment);
   private readonly notify = inject(NotifyService);
 
   private readonly state = signal<Account | null>(null);
@@ -484,6 +488,28 @@ export class AccountService {
     this.state.set(account);
     this._status.set('ready');
     this._error.set(null);
+    this.enterProAfterLogin(account);
+  }
+
+  /**
+   * Au retour d'une CONNEXION, un perso mémorisé cède la place à l'espace pro
+   * (la commerciale, 2026-10-20 : « une personne qui a un compte pro doit se
+   * retrouver loggée sur un espace pro »). Lu une fois : la personne peut
+   * repasser dans son perso pendant sa session. Un simple rechargement ne
+   * lève pas `LoginMoment`, et une société mémorisée reste.
+   */
+  private enterProAfterLogin(account: Account): void {
+    if (!this.loginMoment.fresh()) {
+      return;
+    }
+    this.loginMoment.fresh.set(false);
+    if (account.navPrefs.workspace !== PERSONAL_WORKSPACE) {
+      return;
+    }
+    const pro = defaultProWorkspace(account.companies);
+    if (pro !== null) {
+      this.setWorkspace(pro);
+    }
   }
 
   /**
