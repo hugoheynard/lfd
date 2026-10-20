@@ -33,6 +33,14 @@ export const ROW_GRAY = "#999999";
 
 export type Doc = PDFKit.PDFDocument;
 
+/**
+ * Le sens de la page. Paysage : la matrice des allergènes, quatorze colonnes
+ * de l'annexe II qui ne tiennent pas en portrait (2026-10-20). Les constantes
+ * ci-dessus restent celles du portrait ; un papier en paysage échange largeur
+ * et hauteur lui-même.
+ */
+export type PageLayout = "portrait" | "landscape";
+
 const MONTHS = [
   "janvier",
   "février",
@@ -211,8 +219,11 @@ export async function render(
   title: string,
   draw: (doc: Doc) => void,
   bufferPages = false,
+  layout: PageLayout = "portrait",
 ): Promise<Buffer> {
   const doc = new PDFDocument({
+    // Repris par chaque `addPage()` sans option.
+    layout,
     // `bufferPages` garde les pages ouvertes jusqu'à la fin, pour qu'un pied
     // puisse dire « 3/12 » une fois le total connu.
     bufferPages,

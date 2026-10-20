@@ -1,11 +1,14 @@
 /**
  * E2E — **la matrice des allergènes**, sur un vrai Postgres (plan
- * `documentation/pim/plan-matrice-des-allergenes.md`, lot AM1).
+ * `documentation/pim/plan-matrice-des-allergenes.md`, lots AM1 et AM2).
  *
  * Ce que seul ce niveau prouve : la matrice lit ce que la base a recollé —
  * deux tables pour une déclaration, un drapeau d'alignement, le référentiel
  * administrable et son italien semé — et pas ce qu'un double lui tend.
  */
+import { Buffer } from "node:buffer";
+
+import { pdfPages } from "../src/platform/pdf/__tests__/pdf-text.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { makeActivatable } from "./pim-sellable.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
@@ -240,6 +243,43 @@ describe("GET /pim/allergen-matrix.csv", () => {
     expect(response.headers["content-disposition"]).toContain("matrice-allergenes-fr.csv");
     expect(response.text).toContain('"Croissant-e";"";');
     expect(response.text).toContain('"contient : Blé"');
-    expect(response.text).toContain('"traces"');
+    expect(response.text).toContain('"Peut contenir des traces"');
+  });
+});
+
+describe("GET /pim/allergen-matrix.pdf", () => {
+  it("sert le PDF ENTIER dans la langue demandée, avec le logo lu sur le disque", async () => {
+    const { productId, defaultId } = await aProduct("-f");
+    await declare(productId, defaultId, ["UW"], ["AM"]);
+    await publish(productId);
+
+    const response = await staff()
+      .get(`${MATRIX}.pdf?locale=it`)
+      .buffer(true)
+      .parse((res, callback) => {
+        const chunks: Buffer[] = [];
+        res.on("data", (chunk: Buffer) => chunks.push(chunk));
+        res.on("end", () => {
+          callback(null, Buffer.concat(chunks));
+        });
+      })
+      .expect(200);
+
+    expect(response.headers["content-type"]).toContain("application/pdf");
+    expect(response.headers["content-disposition"]).toContain("matrice-allergenes-it.pdf");
+    const body: unknown = response.body;
+    if (!(body instanceof Uint8Array)) {
+      throw new TypeError("le corps servi n'est pas binaire");
+    }
+    const text = pdfPages(Buffer.from(body)).join(" ").replace(/\s+/gu, " ");
+    expect(text).toContain("Sostanze o prodotti che provocano allergie o intolleranze");
+    expect(text).toContain("Croissant-f");
+    expect(text).toContain("Grano");
+    expect(text).toContain("Può contenere tracce");
+    expect(text).toContain("Pagina 1/1");
+  });
+
+  it("refuse une langue inconnue", async () => {
+    await staff().get(`${MATRIX}.pdf?locale=de`).expect(400);
   });
 });

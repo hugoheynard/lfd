@@ -48,6 +48,11 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     write:
       "Créer ou modifier un taux de TVA et les règles comptables — et lire le journal fiscal, qui demande ce niveau.",
   },
+  allergen_matrix: {
+    read: "Lire la matrice des allergènes — chaque déclinaison et les allergènes qu'elle contient ou peut contenir en traces — et l'exporter en PDF ou en tableur, sans ouvrir les fiches.",
+    write:
+      "Aucun geste de plus : la matrice se lit, elle se corrige dans les fiches (Référentiel — Catalogue).",
+  },
   media_library: {
     read: "Ouvrir l'écran Médiathèque : parcourir le fonds d'images, ses imports en échec, et savoir quelles fiches affichent chaque image. Aller voir ces fiches demande Référentiel — Catalogue en lecture.",
     write: "Déposer des images, les taguer, les décrire et les retirer du fonds.",

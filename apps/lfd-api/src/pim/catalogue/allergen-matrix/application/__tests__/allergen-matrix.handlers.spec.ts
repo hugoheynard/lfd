@@ -1,3 +1,9 @@
+import { Buffer } from "node:buffer";
+import { readFileSync } from "node:fs";
+
+import { BrandLogoUnavailableError } from "../../../../../platform/brand/brand-logo-unavailable.error.js";
+import { BrandLogoSource } from "../../../../../platform/brand/brand-logo.source.js";
+import { pdfPages } from "../../../../../platform/pdf/__tests__/pdf-text.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import {
   AllergenCatalogueReader,
@@ -9,12 +15,40 @@ import {
   AllergenMatrixSource,
   type MatrixFamilyRecord,
 } from "../../domain/ports/allergen-matrix.source.js";
-import { families, product, referential, variant } from "../../domain/__tests__/matrix-fixtures.js";
+import {
+  FAMILY_ID,
+  families,
+  product,
+  referential,
+  variant,
+} from "../../domain/__tests__/matrix-fixtures.js";
 import {
   ExportAllergenMatrixCsvHandler,
   ExportAllergenMatrixCsvQuery,
 } from "../export-allergen-matrix-csv.js";
+import {
+  ExportAllergenMatrixPdfHandler,
+  ExportAllergenMatrixPdfQuery,
+} from "../export-allergen-matrix-pdf.js";
 import { GetAllergenMatrixHandler, GetAllergenMatrixQuery } from "../get-allergen-matrix.js";
+
+/** Le vrai logo du dépôt, tendu par le port. */
+class RepositoryLogo extends BrandLogoSource {
+  load(): Promise<Buffer> {
+    return Promise.resolve(
+      readFileSync(
+        new URL("../../../../../../assets/logo-la-folie-coffee-noir-et-blanc.png", import.meta.url),
+      ),
+    );
+  }
+}
+
+/** Un dossier `assets/` qui n'a pas été déployé. */
+class MissingLogo extends BrandLogoSource {
+  load(): Promise<Buffer> {
+    return Promise.reject(new BrandLogoUnavailableError("assets/logo.png", null));
+  }
+}
 
 /** Le référentiel, servi tel quel. */
 class FixedReferential extends AllergenCatalogueReader {
@@ -107,5 +141,39 @@ describe("ExportAllergenMatrixCsvHandler", () => {
     expect(file.csv).toContain('"Cereali contenenti glutine"');
     expect(file.csv).toContain('"contiene : Blé (it)"');
     expect(file.csv).toContain('"Altri"');
+  });
+});
+
+describe("ExportAllergenMatrixPdfHandler", () => {
+  it("imprime la matrice dans sa langue, nomme la famille filtrée, et la date de l'horloge", async () => {
+    const handler = new ExportAllergenMatrixPdfHandler(
+      new FixedReferential(referential()),
+      new FixedSource(RECORDS),
+      new RepositoryLogo(),
+      new FixedClock(GENERATED_AT),
+    );
+
+    const file = await handler.execute(
+      new ExportAllergenMatrixPdfQuery({ ...FILTERS, categoryId: FAMILY_ID }),
+    );
+    const text = pdfPages(Buffer.from(file.bytes)).join(" ").replace(/\s+/gu, " ");
+
+    expect(file.fileName).toBe("matrice-allergenes-it.pdf");
+    expect(text).toContain("Famiglia: Viennoiserie");
+    expect(text).toContain("Generata il 1 gennaio 1970 alle 01:00");
+    expect(text).toContain("Ultima modifica di una scheda: 1 gennaio 1970 alle 01:00");
+  });
+
+  it("laisse passer le refus du logo manquant", async () => {
+    const handler = new ExportAllergenMatrixPdfHandler(
+      new FixedReferential(referential()),
+      new FixedSource(RECORDS),
+      new MissingLogo(),
+      new FixedClock(GENERATED_AT),
+    );
+
+    await expect(handler.execute(new ExportAllergenMatrixPdfQuery(FILTERS))).rejects.toBeInstanceOf(
+      BrandLogoUnavailableError,
+    );
   });
 });

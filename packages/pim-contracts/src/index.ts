@@ -97,6 +97,7 @@ export type {
   AllergenMatrixFamily,
   AllergenMatrixOtherAllergen,
   AllergenMatrixOthersCell,
+  AllergenMatrixDocumentWording,
   AllergenMatrixWording,
   AllergenMatrixPresence,
   AllergenMatrixQuery,

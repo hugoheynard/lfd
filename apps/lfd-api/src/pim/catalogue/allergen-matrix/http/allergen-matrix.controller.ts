@@ -1,4 +1,4 @@
-import { Controller, Get, Header, Query, Res } from "@nestjs/common";
+import { Controller, Get, Header, Query, Res, StreamableFile } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
 import type { Response } from "express";
 import {
@@ -14,6 +14,10 @@ import {
   ExportAllergenMatrixCsvQuery,
   type AllergenMatrixCsvFile,
 } from "../application/export-allergen-matrix-csv.js";
+import {
+  ExportAllergenMatrixPdfQuery,
+  type AllergenMatrixPdfFile,
+} from "../application/export-allergen-matrix-pdf.js";
 import { GetAllergenMatrixQuery } from "../application/get-allergen-matrix.js";
 import type { MatrixFilters } from "../domain/allergen-matrix.js";
 
@@ -30,10 +34,10 @@ function filtersOf(query: AllergenMatrixQuery): MatrixFilters {
  * **La matrice des allergènes** — `GET /pim/allergen-matrix` et son tableur
  * (plan `documentation/pim/plan-matrice-des-allergenes.md`, lot AM1).
  *
- * En lecture, sous `@AdminSurface("pim_catalog")` comme le référentiel
- * d'allergènes (plan §2).
+ * En lecture, sous SON droit `allergen_matrix` (Hugo, 2026-10-20, plan §2) :
+ * lire la matrice n'est pas rédiger une fiche, `pim_catalog` n'y suffit plus.
  */
-@AdminSurface("pim_catalog")
+@AdminSurface("allergen_matrix")
 @Controller()
 export class AllergenMatrixController {
   constructor(private readonly queries: QueryBus) {}
@@ -61,5 +65,22 @@ export class AllergenMatrixController {
       contentDispositionAttachment(sanitiseFileName(file.fileName, "matrice-allergenes.csv")),
     );
     return file.csv;
+  }
+
+  /** Le PDF A4 paysage, ENTIER dans la langue demandée (lot AM2, Q4). */
+  @Get("allergen-matrix.pdf")
+  @Header("Content-Type", "application/pdf")
+  async pdf(
+    @Query(new ZodQuery(allergenMatrixQuerySchema)) query: AllergenMatrixQuery,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<StreamableFile> {
+    const file = await this.queries.execute<ExportAllergenMatrixPdfQuery, AllergenMatrixPdfFile>(
+      new ExportAllergenMatrixPdfQuery(filtersOf(query)),
+    );
+    response.setHeader(
+      "Content-Disposition",
+      contentDispositionAttachment(sanitiseFileName(file.fileName, "matrice-allergenes.pdf")),
+    );
+    return new StreamableFile(file.bytes);
   }
 }

@@ -2,7 +2,7 @@ import { Buffer } from "node:buffer";
 
 import type { ClientSheet } from "@lfd/contracts";
 
-import { OrderSheetLogoUnavailableError } from "../../../domain/errors/order-sheet-logo-unavailable.error.js";
+import { BrandLogoUnavailableError } from "../../../../../platform/brand/brand-logo-unavailable.error.js";
 import { sheet } from "../../../domain/services/__tests__/client-sheet.fixture.js";
 import { OrderSheetArchive } from "../order-sheet-archive.service.js";
 import {
@@ -150,8 +150,6 @@ describe("l'archive du bon de commande", () => {
       new FixedSheetColor(),
     );
 
-    await expect(archive.pdfOf(sheet(), null)).rejects.toBeInstanceOf(
-      OrderSheetLogoUnavailableError,
-    );
+    await expect(archive.pdfOf(sheet(), null)).rejects.toBeInstanceOf(BrandLogoUnavailableError);
   });
 });

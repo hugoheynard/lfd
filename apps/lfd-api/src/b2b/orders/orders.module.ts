@@ -57,6 +57,8 @@ import { SendPaymentFailedMail } from "./application/handlers/send-payment-faile
 import { OrderPlacedMail } from "./application/services/order-placed-mail.service.js";
 import { OrderReadyMail } from "./application/services/order-ready-mail.service.js";
 import { SendHandoverReminderHandler } from "./application/commands/send-handover-reminder.handler.js";
+import { BrandLogoSource } from "../../platform/brand/brand-logo.source.js";
+import { BrandModule } from "../../platform/brand/brand.module.js";
 import { AppConfig } from "../../platform/config/app-config.js";
 import { OrderMailOrigins } from "./domain/ports/order-mail-origins.js";
 import { OrderPaymentLinkReader } from "./domain/ports/order-payment-link.reader.js";
@@ -124,7 +126,6 @@ import { OrderSheetAttachment } from "./application/services/order-sheet-attachm
 import { OrderSheetLogoSource } from "./domain/ports/order-sheet-logo.source.js";
 import { OrderSheetColorSource } from "./domain/ports/order-sheet-color.source.js";
 import { PrismaOrderSheetColorSource } from "./infrastructure/prisma-order-sheet-color.source.js";
-import { DiskOrderSheetLogoSource } from "./infrastructure/disk-order-sheet-logo.source.js";
 import { MailDeliveryEnRoute } from "./application/handlers/mail-delivery-en-route.handler.js";
 import { OnProductionDayClosed } from "./application/handlers/on-production-day-closed.handler.js";
 import { OnProductionDayReopened } from "./application/handlers/on-production-day-reopened.handler.js";
@@ -231,6 +232,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
  */
 @Module({
   imports: [
+    BrandModule,
     PickupAddressesModule,
     DeliveryZonesModule,
     // À qui la livraison est proposée : `CartAdjustments` le refuse au serveur.
@@ -331,7 +333,9 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     OrderSheetArchive,
     OrderSheetAttachment,
     // Le logo du bon (plan-bon-public §2.1), lu dans `assets/` comme les polices de la facture.
-    { provide: OrderSheetLogoSource, useClass: DiskOrderSheetLogoSource },
+    // Le logo de la marque, lu par `platform/brand` (plan matrice des
+    // allergènes §2) : un seul lecteur pour tous les papiers.
+    { provide: OrderSheetLogoSource, useExisting: BrandLogoSource },
     { provide: OrderSheetColorSource, useClass: PrismaOrderSheetColorSource },
     GetOrderPaymentHandler,
     GetAdminOrderHandler,

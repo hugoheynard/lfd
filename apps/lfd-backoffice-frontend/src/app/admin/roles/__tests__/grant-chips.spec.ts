@@ -122,9 +122,11 @@ describe('grantGroups', () => {
    * `shop_vitrine`, le webhook de la vitrine (webhooks/vitrine.md). 62 le
    * 2026-10-19 : `shop_bundles`, les formules (formules/plan-les-formules.md, F2a).
    * 62 encore le même jour : `lfd_webhooks` entre, `shop_vitrine` est retiré
-   * (webhooks/vitrine.md) — comme `b2b_catalog`, il ne compte plus.
+   * (webhooks/vitrine.md) — comme `b2b_catalog`, il ne compte plus. 63 le
+   * 2026-10-20 : `allergen_matrix`, la matrice des allergènes et ses exports
+   * (pim/plan-matrice-des-allergenes.md, AM2).
    */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(62);
+    expect(RESOURCE_COUNT).toBe(63);
   });
 });

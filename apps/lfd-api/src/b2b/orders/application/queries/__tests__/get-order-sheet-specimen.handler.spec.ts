@@ -1,6 +1,6 @@
 import { pdfPages } from "../../../../../platform/pdf/__tests__/pdf-text.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
-import { OrderSheetLogoUnavailableError } from "../../../domain/errors/order-sheet-logo-unavailable.error.js";
+import { BrandLogoUnavailableError } from "../../../../../platform/brand/brand-logo-unavailable.error.js";
 import {
   FixedLogo,
   FixedSheetOrigins,
@@ -51,7 +51,7 @@ describe("GetOrderSheetSpecimenHandler", () => {
     );
 
     await expect(handler.execute(new GetOrderSheetSpecimenQuery("pro"))).rejects.toBeInstanceOf(
-      OrderSheetLogoUnavailableError,
+      BrandLogoUnavailableError,
     );
   });
 });

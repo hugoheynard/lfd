@@ -4,9 +4,9 @@ import {
   type Locale,
 } from "@lfd/pim-contracts";
 
-import type { OutsideAnnexLabel } from "../../../allergens/domain/services/inco-projector.js";
 import type { AllergenMatrix, MatrixFamily, MatrixRow } from "./allergen-matrix.js";
 import type { MatrixCell, MatrixOthersCell } from "./matrix-row.js";
+import { otherAllergenName } from "./other-allergen-name.js";
 
 /** Le point-virgule : le séparateur qu'un tableur français attend. */
 const SEPARATOR = ";";
@@ -56,22 +56,14 @@ function cellText(
   return parts.join(PART_SEPARATOR);
 }
 
-/**
- * Le code GS1 suit le libellé d'une entrée OFFICIELLE hors annexe (AM0,
- * décision de Hugo) ; une entrée maison n'est jamais officielle.
- */
-function otherName(other: OutsideAnnexLabel): string {
-  return other.official ? `${other.label} (${other.code})` : other.label;
-}
-
 function othersText(others: MatrixOthersCell | null, wording: AllergenMatrixWording): string {
   if (others === null) {
     return "";
   }
   return cellText(
     others.presence,
-    others.contains.map(otherName),
-    others.traces.map(otherName),
+    others.contains.map(otherAllergenName),
+    others.traces.map(otherAllergenName),
     wording,
   );
 }

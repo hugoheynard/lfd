@@ -90,7 +90,7 @@ export class OrderSheetArchive {
    * fabriqué à chaque demande. Ne pas relire l'archive empêche aussi d'y
    * reprendre le QR d'une commande remboursée avant son retrait.
    *
-   * @throws {OrderSheetLogoUnavailableError} le logo manque sur le disque.
+   * @throws {BrandLogoUnavailableError} le logo manque sur le disque.
    */
   async pdfOf(sheet: ClientSheet, handoverToken: string | null): Promise<OrderSheetPdf> {
     const key = orderSheetPdfKey(sheet);

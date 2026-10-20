@@ -81,6 +81,15 @@ export const staffResourceSchema = z.enum([
    * décide de ce qui existe, la fiscalité de ce qui est taxé et à quel taux.
    */
   "pim_tax",
+  /**
+   * **La matrice des allergènes** — la lire et l'exporter (JSON, tableur,
+   * PDF), en lecture seule (Hugo, 2026-10-20,
+   * `documentation/pim/plan-matrice-des-allergenes.md` §2). Un droit à elle,
+   * et pas `pim_catalog` : afficher la matrice au comptoir n'est pas rédiger
+   * une fiche. Il s'accorde à l'écran ; la graine ne le donne qu'à
+   * l'administrateur.
+   */
+  "allergen_matrix",
 
   // ── LE FONDS D'IMAGES ───────────────────────────────────────────────────
   /**
@@ -710,6 +719,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   pim_channels: "Référentiel — Diffusion",
   pim_settings: "Référentiel — Points et contextes de vente",
   pim_tax: "Référentiel — Fiscalité",
+  allergen_matrix: "Matrice des allergènes",
   media_library: "Médiathèque",
   b2b_storefront: "Vitrine",
   b2b_contact: "Nous écrire",
@@ -843,6 +853,10 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     pim_channels: "write",
     pim_settings: "write",
     pim_tax: "write",
+    // L'administrateur seul (2026-10-20, plan de la matrice des allergènes) :
+    // en production, accordée à l'écran. `write` n'ouvre rien de plus, mais
+    // l'administrateur tient tout (invariant de `resolveStaffPermissions`).
+    allergen_matrix: "write",
     b2b_companies: "write",
     b2b_orders: "write",
     b2b_place_order: "write",

@@ -146,8 +146,43 @@ export interface AllergenMatrixView {
   readonly families: readonly AllergenMatrixFamily[];
 }
 
+/**
+ * Les mots du DOCUMENT imprimé (lot AM2) — tête, périmètre, légende, pied.
+ * Une phrase qui porte une valeur la reçoit par un repère entre accolades
+ * (`{date}`, `{name}`, `{page}`, `{count}`) : l'ordre des mots appartient à
+ * la langue, pas au rendu.
+ */
+export interface AllergenMatrixDocumentWording {
+  readonly generatedAt: string;
+  readonly lastModifiedAt: string;
+  readonly perimeter: string;
+  readonly scopes: Readonly<Record<AllergenMatrixScope, string>>;
+  readonly family: string;
+  readonly allFamilies: string;
+  readonly undeclaredIncluded: string;
+  readonly undeclaredExcluded: string;
+  /** Q4 : une mention manque dans la langue et s'affiche en français. */
+  readonly untranslated: string;
+  readonly legend: string;
+  readonly legendAbsent: string;
+  readonly legendNotDeclared: string;
+  /** Plan §1 : « Établie à partir des fiches au [date] ; … ». */
+  readonly footer: string;
+  readonly page: string;
+  readonly continued: string;
+  readonly empty: string;
+  /** « 20 octobre 2026 à 21:59 » : le mot entre la date et l'heure. */
+  readonly timeJoiner: string;
+  readonly months: readonly string[];
+}
+
 /** Les mots fixes d'une matrice dans une langue — en-têtes, états, valeurs. */
 export interface AllergenMatrixWording {
+  /**
+   * Le titre de la matrice = le titre de l'annexe II d'INCO 1169/2011 —
+   * RÉGLEMENTAIRE, verbatim.
+   */
+  readonly title: string;
   readonly headers: {
     readonly family: string;
     readonly product: string;
@@ -157,7 +192,13 @@ export interface AllergenMatrixWording {
     readonly others: string;
   };
   readonly states: Readonly<Record<AllergenMatrixRowState, string>>;
+  /**
+   * `contains` est RÉGLEMENTAIRE (art. 21 d'INCO 1169/2011, verbatim) ;
+   * `traces` est une FORMULE D'USAGE validée par Hugo : le règlement n'en
+   * fixe aucune pour l'étiquetage de précaution (art. 36).
+   */
   readonly presence: { readonly contains: string; readonly traces: string };
+  readonly document: AllergenMatrixDocumentWording;
 }
 
 /**
@@ -165,12 +206,24 @@ export interface AllergenMatrixWording {
  * et l'écran (AM3) le lisent ici, pour qu'un même mot ne s'écrive pas trois
  * fois (Q4 : une sortie est ENTIÈRE dans sa langue).
  *
- * ⚠️ L'anglais et l'italien sont des traductions de libellés d'interface, non
- * relues par Hugo au 2026-10-20 — rien de réglementaire : les mentions
- * d'allergènes viennent du référentiel.
+ * Ce qui est RÉGLEMENTAIRE (décision de Hugo, 2026-10-20) — recopié du
+ * règlement (UE) n° 1169/2011 consolidé au 2018-01-01 (EUR-Lex,
+ * `CELEX:02011R1169-20180101`), dans ses versions fr, en et it :
+ *
+ * - `title` = le titre de l'annexe II ;
+ * - `presence.contains` = le mot de l'art. 21 (« contient », « contains »,
+ *   « contiene »).
+ *
+ * `presence.traces` est une FORMULE D'USAGE, validée par Hugo le même jour :
+ * le règlement n'en fixe aucune (art. 36, information facultative).
+ *
+ * ⚠️ Tous les AUTRES mots — en-têtes, états, tête et pied du document — sont
+ * des traductions de libellés d'interface, rien de réglementaire ; les
+ * mentions d'allergènes elles-mêmes viennent du référentiel.
  */
 export const ALLERGEN_MATRIX_WORDING: Readonly<Record<Locale, AllergenMatrixWording>> = {
   fr: {
+    title: "Substances ou produits provoquant des allergies ou intolérances",
     headers: {
       family: "Famille",
       product: "Produit",
@@ -185,9 +238,45 @@ export const ALLERGEN_MATRIX_WORDING: Readonly<Record<Locale, AllergenMatrixWord
       to_review: "Déclaration à revoir",
       declared: "",
     },
-    presence: { contains: "contient", traces: "traces" },
+    presence: { contains: "contient", traces: "Peut contenir des traces" },
+    document: {
+      generatedAt: "Générée le {date}",
+      lastModifiedAt: "Dernière modification d'une fiche : {date}",
+      perimeter: "Périmètre : {value}",
+      scopes: { published: "Produits publiés", all: "Tous les produits, brouillons compris" },
+      family: "Famille : {name}",
+      allFamilies: "Toutes les familles",
+      undeclaredIncluded: "Non renseignés inclus",
+      undeclaredExcluded: "Non renseignés exclus",
+      untranslated:
+        "Certaines mentions n'existent pas encore dans cette langue : elles s'affichent en français.",
+      legend: "Légende :",
+      legendAbsent: "Case vide : ne contient pas cette catégorie",
+      legendNotDeclared: "« Non renseigné » : la fiche ne déclare rien, ce n'est pas « aucun »",
+      footer:
+        "Établie à partir des fiches au {date} ; la déclaration en vigueur est celle de l'étiquette.",
+      page: "Page {page}/{count}",
+      continued: "(suite)",
+      empty: "Aucune déclinaison dans ce périmètre.",
+      timeJoiner: "à",
+      months: [
+        "janvier",
+        "février",
+        "mars",
+        "avril",
+        "mai",
+        "juin",
+        "juillet",
+        "août",
+        "septembre",
+        "octobre",
+        "novembre",
+        "décembre",
+      ],
+    },
   },
   en: {
+    title: "Substances or products causing allergies or intolerances",
     headers: {
       family: "Family",
       product: "Product",
@@ -202,9 +291,44 @@ export const ALLERGEN_MATRIX_WORDING: Readonly<Record<Locale, AllergenMatrixWord
       to_review: "Declaration to review",
       declared: "",
     },
-    presence: { contains: "contains", traces: "traces" },
+    presence: { contains: "contains", traces: "May contain traces" },
+    document: {
+      generatedAt: "Generated on {date}",
+      lastModifiedAt: "Last product sheet change: {date}",
+      perimeter: "Scope: {value}",
+      scopes: { published: "Published products", all: "All products, drafts included" },
+      family: "Family: {name}",
+      allFamilies: "All families",
+      undeclaredIncluded: "Not provided included",
+      undeclaredExcluded: "Not provided excluded",
+      untranslated: "Some mentions do not exist in this language yet: they are shown in French.",
+      legend: "Key:",
+      legendAbsent: "Empty cell: does not contain this category",
+      legendNotDeclared: '"Not provided": the sheet declares nothing, which is not "none"',
+      footer:
+        "Drawn up from the product sheets on {date}; the declaration in force is the one on the label.",
+      page: "Page {page}/{count}",
+      continued: "(continued)",
+      empty: "No variant in this scope.",
+      timeJoiner: "at",
+      months: [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+      ],
+    },
   },
   it: {
+    title: "Sostanze o prodotti che provocano allergie o intolleranze",
     headers: {
       family: "Famiglia",
       product: "Prodotto",
@@ -219,6 +343,42 @@ export const ALLERGEN_MATRIX_WORDING: Readonly<Record<Locale, AllergenMatrixWord
       to_review: "Dichiarazione da rivedere",
       declared: "",
     },
-    presence: { contains: "contiene", traces: "tracce" },
+    presence: { contains: "contiene", traces: "Può contenere tracce" },
+    document: {
+      generatedAt: "Generata il {date}",
+      lastModifiedAt: "Ultima modifica di una scheda: {date}",
+      perimeter: "Perimetro: {value}",
+      scopes: { published: "Prodotti pubblicati", all: "Tutti i prodotti, bozze comprese" },
+      family: "Famiglia: {name}",
+      allFamilies: "Tutte le famiglie",
+      undeclaredIncluded: "Non compilati inclusi",
+      undeclaredExcluded: "Non compilati esclusi",
+      untranslated:
+        "Alcune diciture non esistono ancora in questa lingua: sono riportate in francese.",
+      legend: "Legenda:",
+      legendAbsent: "Casella vuota: non contiene questa categoria",
+      legendNotDeclared:
+        "« Non compilato »: la scheda non dichiara nulla, non significa « nessuno »",
+      footer:
+        "Redatta a partire dalle schede il {date}; la dichiarazione in vigore è quella dell'etichetta.",
+      page: "Pagina {page}/{count}",
+      continued: "(segue)",
+      empty: "Nessuna variante in questo perimetro.",
+      timeJoiner: "alle",
+      months: [
+        "gennaio",
+        "febbraio",
+        "marzo",
+        "aprile",
+        "maggio",
+        "giugno",
+        "luglio",
+        "agosto",
+        "settembre",
+        "ottobre",
+        "novembre",
+        "dicembre",
+      ],
+    },
   },
 };

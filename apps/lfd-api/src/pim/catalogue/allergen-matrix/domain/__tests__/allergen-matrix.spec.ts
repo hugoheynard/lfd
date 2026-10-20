@@ -253,7 +253,7 @@ describe("allergenMatrixCsv", () => {
       '"Famille";"Produit";"Déclinaison";"SKU";"État";"Céréales contenant du gluten";"Lait";"Fruits à coque";"Autres"',
     );
     expect(lines).toContain(
-      '"Viennoiseries";"Produit p";"";"SKU-p_v1";"";"contient : Blé / traces : Seigle";"traces";"";"contient : Sarrasin (BWD)"',
+      '"Viennoiseries";"Produit p";"";"SKU-p_v1";"";"contient : Blé / Peut contenir des traces : Seigle";"Peut contenir des traces";"";"contient : Sarrasin (BWD)"',
     );
     expect(lines).toContain(
       '"Viennoiseries";"Produit vide";"";"SKU-vide_v1";"Non renseigné";"";"";"";""',

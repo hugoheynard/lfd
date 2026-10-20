@@ -113,8 +113,14 @@ ou non les non renseignés (défaut : inclus, pour qu'on les voie).
 - **Les signes ● et ◐ sont DESSINÉS** (disque plein, demi-disque) avec les
   formes de la trousse : les polices standard ne les ont pas. Un test du texte
   du PDF ne le verrait pas ; le test vérifie la présence des formes.
-- **Droit** : `@AdminSurface("pim_catalog")`, en lecture (confirmé sur
-  `apps/lfd-api/src/pim/allergens/http/allergen.controller.ts`).
+- **Droit** : ~~`@AdminSurface("pim_catalog")`~~ — **corrigé le 2026-10-20
+  (Hugo)** : la matrice a SON droit, la ressource staff `allergen_matrix`
+  (lecture), sur les trois routes (JSON, tableur, PDF). `pim_catalog` seul
+  n'y donne plus accès, et `allergen_matrix` seul n'ouvre pas les fiches.
+  Migration `20261020160000_le_droit_de_la_matrice_des_allergenes` : ajoute
+  la valeur d'enum, n'accorde rien ; l'admin l'accorde à l'écran
+  (`/admin/staff-roles`), la graine `ROLE_GRANTS` la donne à l'administrateur
+  (dev, e2e).
 - **Une matrice imprimée vieillit**, et c'est assumé : la date de génération
   est sur chaque page, et la page Catalogue affiche « Dernière modification
   d'une fiche : [date] » au-dessus des boutons d'export, pour qu'on sache
@@ -122,12 +128,12 @@ ou non les non renseignés (défaut : inclus, pour qu'on les voie).
 
 ## 3. Les lots
 
-| Lot                   | Contenu                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Agent     |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| **AM0** ✅ 2026-10-20 | Les libellés italiens du référentiel (catégories annexe II et précisions céréales / fruits à coque), tirés de la version italienne officielle de l'annexe II d'INCO 1169/2011, **validés par Hugo** avant écriture ; migration de données sur des lignes officielles verrouillées (relue par `lecteur-de-migrations`, et par `vitruve` : c'est une migration de données réglementaires)                                                                                                                                                                                                                                                                                                        | batisseur |
-| **AM1**               | Query `GetAllergenMatrix` (filtres) : lignes déclinaison × catégories en trois états, + état de déclaration ; route `GET /pim/allergen-matrix` (JSON) et `…/allergen-matrix.csv` ; tests (dont : non renseigné ≠ aucun ; une trace n'est pas une présence ; une catégorie archivée). **Précisé le 2026-10-20** : colonne « Autres » (Q3 l'emporte sur §1, « à revoir » = code rangé nulle part) ; filtre famille = la famille et ses sous-familles ; `lastModifiedAt` (max des `updated_at` fiche, déclinaisons, déclarations retenues) ; déclinaisons arrêtées exclues (Q5) ; mots fixes du tableur dans le dictionnaire `ALLERGEN_MATRIX_WORDING` de `@lfd/pim-contracts`, que AM2 réutilise | batisseur |
-| **AM2**               | Rendu PDF A4 (paysage) : `renderAllergenMatrixPdf` pur, logo par port, pagination et en-têtes répétés ; route `…/allergen-matrix.pdf` ; test qui lit le texte du PDF                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | batisseur |
-| **AM3**               | Page Catalogue « Matrice des allergènes » : filtres, tableau (fold-data-table), légende, boutons « PDF » et « Tableur » ; entrée de menu (rail ET tuiles)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | pablo     |
+| Lot                                       | Contenu                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Agent     |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| **AM0** ✅ 2026-10-20                     | Les libellés italiens du référentiel (catégories annexe II et précisions céréales / fruits à coque), tirés de la version italienne officielle de l'annexe II d'INCO 1169/2011, **validés par Hugo** avant écriture ; migration de données sur des lignes officielles verrouillées (relue par `lecteur-de-migrations`, et par `vitruve` : c'est une migration de données réglementaires)                                                                                                                                                                                                                                                                                                        | batisseur |
+| **AM1**                                   | Query `GetAllergenMatrix` (filtres) : lignes déclinaison × catégories en trois états, + état de déclaration ; route `GET /pim/allergen-matrix` (JSON) et `…/allergen-matrix.csv` ; tests (dont : non renseigné ≠ aucun ; une trace n'est pas une présence ; une catégorie archivée). **Précisé le 2026-10-20** : colonne « Autres » (Q3 l'emporte sur §1, « à revoir » = code rangé nulle part) ; filtre famille = la famille et ses sous-familles ; `lastModifiedAt` (max des `updated_at` fiche, déclinaisons, déclarations retenues) ; déclinaisons arrêtées exclues (Q5) ; mots fixes du tableur dans le dictionnaire `ALLERGEN_MATRIX_WORDING` de `@lfd/pim-contracts`, que AM2 réutilise | batisseur |
+| **AM2** 🔨 2026-10-20 (bâti, non commité) | Rendu PDF A4 (paysage) : `renderAllergenMatrixPdf` pur, logo par port, pagination et en-têtes répétés ; route `…/allergen-matrix.pdf` ; test qui lit le texte du PDF                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | batisseur |
+| **AM3**                                   | Page « Matrice des allergènes » — **entrée de menu à part, juste sous Catalogue** (Hugo, 2026-10-20 : « pour le moment »), visible avec le seul droit `allergen_matrix` : filtres, tableau (fold-data-table), légende, boutons « PDF » et « Tableur » ; entrée de menu (rail ET tuiles)                                                                                                                                                                                                                                                                                                                                                                                                        | pablo     |
 
 ### 3.1 AM0 — les libellés italiens, validés par Hugo (2026-10-20)
 
@@ -241,6 +247,23 @@ garde le mot de l'annexe, sans ✳ : il est réglementaire.
   en-têtes, états, pied). Le référentiel n'a pas de libellés italiens : lot
   **AM0**, ci-dessous. Tant qu'une mention italienne manque, elle s'affiche en
   français et le PDF italien le dit en tête — jamais une case vide.
+
+- **Q6 — Droit dédié** (Hugo, 2026-10-20) : `allergen_matrix`, en lecture,
+  remplace `pim_catalog` sur les trois routes de la matrice (cf. §2 « Droit »).
+- **Q7 — Les mots du PDF et du tableur** (Hugo, 2026-10-20), posés dans
+  `ALLERGEN_MATRIX_WORDING` (`@lfd/pim-contracts`), source en JSDoc :
+  - **réglementaires**, verbatim du règlement (UE) n° 1169/2011 consolidé au
+    2018-01-01 (EUR-Lex, `CELEX:02011R1169-20180101`) : le **titre de la
+    matrice** est le titre de l'annexe II — fr « Substances ou produits
+    provoquant des allergies ou intolérances », en « Substances or products
+    causing allergies or intolerances », it « Sostanze o prodotti che
+    provocano allergie o intolleranze » ; la **présence** est le mot de
+    l'art. 21 — « contient », « contains », « contiene » ;
+  - **formule d'usage** validée par Hugo pour les **traces** (le règlement
+    n'en fixe aucune, art. 36) : « Peut contenir des traces », « May contain
+    traces », « Può contenere tracce » — le tableur l'écrit aussi ;
+  - **tous les autres mots** (en-têtes, états, tête et pied du document) sont
+    des traductions de libellés d'interface, rien de réglementaire.
 
 ## 6. Ce que `vitruve` a changé (2026-10-20)
 

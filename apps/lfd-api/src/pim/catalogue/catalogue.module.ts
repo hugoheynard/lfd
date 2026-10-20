@@ -1,7 +1,9 @@
 import { Module } from "@nestjs/common";
 
+import { BrandModule } from "../../platform/brand/brand.module.js";
 import { AllergensModule } from "../allergens/allergens.module.js";
 import { ExportAllergenMatrixCsvHandler } from "./allergen-matrix/application/export-allergen-matrix-csv.js";
+import { ExportAllergenMatrixPdfHandler } from "./allergen-matrix/application/export-allergen-matrix-pdf.js";
 import { GetAllergenMatrixHandler } from "./allergen-matrix/application/get-allergen-matrix.js";
 import { AllergenMatrixSource } from "./allergen-matrix/domain/ports/allergen-matrix.source.js";
 import { AllergenMatrixController } from "./allergen-matrix/http/allergen-matrix.controller.js";
@@ -109,6 +111,8 @@ import {
   // jamais.
   imports: [
     PimDatabaseModule,
+    // Le logo des papiers : la matrice des allergènes en PDF (plan §2).
+    BrandModule,
     AllergensModule,
     VatRatesModule,
     SalesContextsModule,
@@ -198,6 +202,7 @@ import {
     { provide: AllergenMatrixSource, useClass: RepositoryAllergenMatrixSource },
     GetAllergenMatrixHandler,
     ExportAllergenMatrixCsvHandler,
+    ExportAllergenMatrixPdfHandler,
   ],
   // Seul contrat visible depuis l'extérieur : les adaptateurs de canal lisent le
   // catalogue par ce port, jamais par ses dépôts ni ses tables (ADR-13).

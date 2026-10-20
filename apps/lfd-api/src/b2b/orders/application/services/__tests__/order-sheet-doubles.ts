@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 
 import { CustomerDocumentStore } from "../../../../../platform/storage/customer-document-store.js";
 import type { StoredDocument } from "../../../../../platform/storage/document-store.js";
-import { OrderSheetLogoUnavailableError } from "../../../domain/errors/order-sheet-logo-unavailable.error.js";
+import { BrandLogoUnavailableError } from "../../../../../platform/brand/brand-logo-unavailable.error.js";
 import { OrderMailOrigins } from "../../../domain/ports/order-mail-origins.js";
 import { OrderSheetColorSource } from "../../../domain/ports/order-sheet-color.source.js";
 import { OrderSheetLogoSource } from "../../../domain/ports/order-sheet-logo.source.js";
@@ -61,7 +61,7 @@ export class FixedSheetColor extends OrderSheetColorSource {
 /** Un dossier `assets/` qui n'a pas été déployé. */
 export class MissingLogo extends OrderSheetLogoSource {
   load(): Promise<Buffer> {
-    return Promise.reject(new OrderSheetLogoUnavailableError("assets/logo.png", null));
+    return Promise.reject(new BrandLogoUnavailableError("assets/logo.png", null));
   }
 }
 
