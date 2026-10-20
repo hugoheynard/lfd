@@ -51,7 +51,10 @@ function sheetWith(orders: readonly CustomerOrderLine[]): CustomerSheetView {
   };
 }
 
-function render(orders: readonly CustomerOrderLine[]): HTMLElement {
+function render(
+  orders: readonly CustomerOrderLine[],
+  parent: CustomerSheetView['parent'] = null,
+): HTMLElement {
   TestBed.configureTestingModule({
     providers: [
       provideZonelessChangeDetection(),
@@ -61,7 +64,7 @@ function render(orders: readonly CustomerOrderLine[]): HTMLElement {
     ],
   });
   const fixture = TestBed.createComponent(CustomerSheet);
-  fixture.componentRef.setInput('sheet', sheetWith(orders));
+  fixture.componentRef.setInput('sheet', { ...sheetWith(orders), parent });
   fixture.detectChanges();
   return fixture.nativeElement as HTMLElement;
 }
@@ -99,5 +102,22 @@ describe('la carte des dernières commandes', () => {
     // onglets à qui parcourt un dossier.
     expect(hrefs).toContain('/comptes-clients/co_1/commandes/or_1');
     expect(hrefs).toContain('/comptes-clients/co_1/commandes');
+  });
+});
+
+describe('la carte identité d’un sous-compte', () => {
+  beforeEach(() => {
+    TestBed.resetTestingModule();
+  });
+
+  it('nomme son principal, avec le lien vers sa fiche', () => {
+    const host = render([], { id: 'p1', enseigne: 'Alpes Chalets', kind: 'site' });
+    const row = host.querySelector('[data-identity-parent]');
+    expect(row?.previousElementSibling?.textContent).toContain('Site de');
+    expect(row?.querySelector('a')?.getAttribute('href')).toBe('/comptes-clients/p1');
+  });
+
+  it('ne dit rien pour un compte sans principal', () => {
+    expect(render([]).querySelector('[data-identity-parent]')).toBeNull();
   });
 });

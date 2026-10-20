@@ -25,6 +25,15 @@
     <dt>Référence</dt>
     <dd class="cs-num">{{ view.reference }}</dd>
 
+    <!-- Un sous-compte nomme son principal DANS l'identité : c'est ce qu'il
+         est, pas un détail de l'en-tête (Hugo, 2026-10-20). -->
+    @if (view.parent; as parent) {
+      <dt>{{ parent.kind === 'site' ? 'Site de' : 'Entité rattachée à' }}</dt>
+      <dd data-identity-parent>
+        <a [routerLink]="['/comptes-clients', parent.id]">{{ parent.enseigne }}</a>
+      </dd>
+    }
+
     <dt>Contact</dt>
     <dd>
       {{ view.contactName }}
