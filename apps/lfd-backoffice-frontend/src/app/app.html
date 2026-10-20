@@ -69,6 +69,7 @@
              2026-10-20). -->
         <fold-menu-section
           label="App exploitation"
+          icon="wrench"
           [color]="operationsTint"
           collapsible
           [collapsed]="menuFolded('operations')"
@@ -211,6 +212,7 @@
              elles vivent dans des favoris. -->
         <fold-menu-section
           label="Gestion Boutique"
+          icon="tag"
           [color]="shopManagementTint"
           collapsible
           [collapsed]="menuFolded('shop-management')"
@@ -326,6 +328,7 @@
              sur le trait de la section. -->
         <fold-menu-section
           label="Communication"
+          icon="edit"
           [color]="communicationTint"
           collapsible
           [collapsed]="menuFolded('communication')"
@@ -456,6 +459,7 @@
              quand on est sur les audiences, qui vivent sous elle. -->
         <fold-menu-section
           label="Analytics"
+          icon="stats"
           collapsible
           [collapsed]="menuFolded('analytics')"
           (collapsedChange)="foldMenu('analytics', $event)"
@@ -792,7 +796,7 @@
       }
       @if (canSeeOperationsApps()) {
         <!-- La MÊME section qu'au rail, même teinte (fold 0.33). -->
-        <fold-nav-section label="App exploitation" [color]="operationsTint">
+        <fold-nav-section label="App exploitation" icon="wrench" [color]="operationsTint">
           @if (canSeeSupervision()) {
             <!-- La MÊME entrée qu'au rail : les deux arbres ne partagent pas leur modèle. -->
             <a
@@ -915,7 +919,7 @@
 
       @if (canSeeShopManagement()) {
         <!-- La MÊME section qu'au rail : les deux arbres ne partagent pas leur modèle. -->
-        <fold-nav-section label="Gestion Boutique" [color]="shopManagementTint">
+        <fold-nav-section label="Gestion Boutique" icon="tag" [color]="shopManagementTint">
           @if (canSeeSettings()) {
             <a
               fold-nav-tile
@@ -1009,7 +1013,7 @@
       }
       @if (canSeeCommunication()) {
         <!-- La MÊME section qu'au rail : les deux arbres ne partagent pas leur modèle. -->
-        <fold-nav-section label="Communication" [color]="communicationTint">
+        <fold-nav-section label="Communication" icon="edit" [color]="communicationTint">
           @if (canSeeStorefront()) {
             <a
               fold-nav-tile
@@ -1119,7 +1123,7 @@
       }
       @if (canSeeAnalytics()) {
         <!-- La MÊME section qu'au rail : les deux arbres ne partagent pas leur modèle. -->
-        <fold-nav-section label="Analytics">
+        <fold-nav-section label="Analytics" icon="stats">
           <a
             fold-nav-tile
             icon="stats"
