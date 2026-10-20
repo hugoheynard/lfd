@@ -397,7 +397,7 @@ Back-office, `apps/lfd-backoffice-frontend/src/app/` :
   la route du sous-compte : mêmes gardes serveur qu'avant. Cela **inverse**
   la règle d'origine calquée sur les déclinaisons (« on ne règle pas un
   sous-compte depuis son principal ») pour ces gestes-là.
-- **Ce que le principal reçoit par mail** (`sub-account-notices-card/`,
+- **Ce que les contacts du compte principal reçoivent par mail** (`sub-account-notices-card/`,
   2026-10-20, lot N3 de [`plan-notifications-sous-comptes.md`](plan-notifications-sous-comptes.md)) :
   sous la carte des sous-comptes, sur un principal qui en a au moins un. Une
   ligne par action dont le mail existe (commande passée, annulée ou
