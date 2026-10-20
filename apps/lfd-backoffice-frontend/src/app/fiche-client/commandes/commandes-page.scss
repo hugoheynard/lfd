@@ -39,3 +39,11 @@
 
 /* La seule colonne qu'on parcourt de haut en bas : chiffres de largeur fixe,
    sans quoi les montants ne s'alignent pas d'une ligne à l'autre. */
+
+/* Site et période sur une ligne au bureau, empilés en poche. */
+.cmd-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--fold-space-md);
+}

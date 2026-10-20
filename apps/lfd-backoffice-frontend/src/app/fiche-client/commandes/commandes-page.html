@@ -23,24 +23,51 @@
         }
       </header>
 
-      @if (hasSites()) {
+      <!-- Site et période se combinent : « les commandes du Chalet Edelweiss
+           en septembre ». La période porte sur le jour de PASSATION, bornes
+           incluses, à l'heure de Paris (la route le fait déjà). -->
+      <div class="cmd-filters">
+        @if (hasSites()) {
+          <fold-listbox
+            label="Site"
+            hint="Ce compte et ses sous-comptes actuels. Qui règle quoi est sur le relevé de cycle."
+            [options]="siteChoices()"
+            [value]="site()"
+            (selectionChange)="onSite($event)"
+            data-orders-site
+          />
+        }
         <fold-listbox
-          class="cmd-site"
-          label="Site"
-          hint="Ce compte et ses sous-comptes actuels. Qui règle quoi est sur le relevé de cycle."
-          [options]="siteChoices()"
-          [value]="site()"
-          (selectionChange)="onSite($event)"
-          data-orders-site
+          label="Règlement"
+          [options]="paymentChoices"
+          [value]="payment()"
+          (selectionChange)="onPayment($event)"
+          data-orders-payment
         />
-      }
+        <fold-date
+          label="Passées du"
+          optional
+          [max]="placedTo() || undefined"
+          [value]="placedFrom()"
+          (valueChange)="onPlacedFrom($event)"
+          data-orders-from
+        />
+        <fold-date
+          label="au"
+          optional
+          [min]="placedFrom() || undefined"
+          [value]="placedTo()"
+          (valueChange)="onPlacedTo($event)"
+          data-orders-to
+        />
+      </div>
 
       <app-orders-table
         caption="Commandes du compte"
         [rows]="rows()"
         [siteOf]="hasSites() ? siteOf : null"
         [loading]="state() === 'loading'"
-        [empty]="emptyState"
+        [empty]="emptyState()"
         (opened)="openOrder($event)"
       />
 

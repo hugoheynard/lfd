@@ -12,17 +12,19 @@ import { Router, RouterLink } from '@angular/router';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
+  FoldDateComponent,
   FoldEmptyStateComponent,
   FoldListboxComponent,
   type FoldSelectOption,
   type FoldTableEmpty,
 } from 'fold-ng';
-import type { AdminOrderRow, CustomerSheetView } from '@lfd/contracts';
+import type { AdminOrderRow, CustomerSheetView, PaymentStatus } from '@lfd/contracts';
 
 import { CustomerSheetService } from '../../commercial/calendrier/customer-sheet/customer-sheet.service';
 import { PermissionsStore } from '../../auth/permissions.store';
 import { AdminOrdersService } from '../../commandes/orders.service';
 import { OrdersTable } from '../../commandes/orders-table/orders-table';
+import { ANY, type Choice, PAYMENT_CHOICES } from '../../commandes/order-list-filters';
 import { ALL_SITES, siteChoicesOf, siteLabelOf } from './order-sites';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -56,6 +58,7 @@ const PAGE_SIZE = 50;
   imports: [
     FoldButtonComponent,
     FoldCalloutComponent,
+    FoldDateComponent,
     FoldEmptyStateComponent,
     FoldListboxComponent,
     OrdersTable,
@@ -92,10 +95,23 @@ export class ClientCommandesPage {
   /** Vrai quand la page est pleine : au-delà, il manque peut-être des commandes. */
   protected readonly maybeTruncated = computed(() => this.rows().length === PAGE_SIZE);
 
-  protected readonly emptyState: FoldTableEmpty = {
-    title: 'Aucune commande',
-    subtitle: "Ce compte n'a encore rien commandé.",
-  };
+  /** Le règlement : mêmes choix que la liste globale des commandes. */
+  protected readonly paymentChoices = PAYMENT_CHOICES;
+  protected readonly payment = signal<Choice<PaymentStatus>>(ANY);
+
+  /** Les bornes de la période, `''` quand elles sont ouvertes (jour `AAAA-MM-JJ`). */
+  protected readonly placedFrom = signal('');
+  protected readonly placedTo = signal('');
+  private readonly hasPeriod = computed(() => this.placedFrom() !== '' || this.placedTo() !== '');
+  /** Un filtre qui peut cacher un site : la liste n'est plus complète. */
+  private readonly narrowed = computed(() => this.hasPeriod() || this.payment() !== ANY);
+
+  /** Une liste vide sous un filtre ne dit pas « rien commandé ». */
+  protected readonly emptyState = computed<FoldTableEmpty>(() =>
+    this.narrowed() || this.site() !== ALL_SITES
+      ? { title: 'Aucune commande', subtitle: 'Rien ne correspond à ces filtres.' }
+      : { title: 'Aucune commande', subtitle: "Ce compte n'a encore rien commandé." },
+  );
 
   /** Une flèche, pour être passée telle quelle au tableau partagé. */
   protected readonly siteOf = (row: AdminOrderRow): string => siteLabelOf(row, this.id());
@@ -103,6 +119,21 @@ export class ClientCommandesPage {
   protected onSite(site: string): void {
     this.site.set(site);
     void this.load();
+  }
+
+  protected onPayment(payment: Choice<PaymentStatus>): Promise<void> {
+    this.payment.set(payment);
+    return this.load();
+  }
+
+  protected onPlacedFrom(day: string): Promise<void> {
+    this.placedFrom.set(day);
+    return this.load();
+  }
+
+  protected onPlacedTo(day: string): Promise<void> {
+    this.placedTo.set(day);
+    return this.load();
   }
 
   constructor() {
@@ -113,6 +144,9 @@ export class ClientCommandesPage {
       untracked(() => {
         this.site.set(ALL_SITES);
         this.siteChoices.set([]);
+        this.payment.set(ANY);
+        this.placedFrom.set('');
+        this.placedTo.set('');
         void this.load(id);
       });
     });
@@ -125,18 +159,26 @@ export class ClientCommandesPage {
       // le compte de paniers de la fiche commerciale. Les enchaîner aurait doublé
       // l'attente sans rien apporter.
       const site = this.site();
+      const payment = this.payment();
+      const period = {
+        ...(payment === ANY ? {} : { paymentStatus: payment }),
+        ...(this.placedFrom() === '' ? {} : { placedFrom: this.placedFrom() }),
+        ...(this.placedTo() === '' ? {} : { placedTo: this.placedTo() }),
+      };
       const [rows, sheet] = await Promise.all([
         this.orders
           .list(
             site === ALL_SITES
-              ? { companyId: id, withSubAccounts: true, limit: PAGE_SIZE }
-              : { companyId: site, limit: PAGE_SIZE },
+              ? { companyId: id, withSubAccounts: true, limit: PAGE_SIZE, ...period }
+              : { companyId: site, limit: PAGE_SIZE, ...period },
           )
           .then((page) => page.rows),
         this.sheets.sheet(id),
       ]);
       this.rows.set(rows);
-      if (site === ALL_SITES) {
+      // Les sites se lisent sur la liste COMPLÈTE : une période ou un règlement
+      // ferait disparaître du sélecteur un site qui n'a rien de tel.
+      if (site === ALL_SITES && !this.narrowed()) {
         this.siteChoices.set(siteChoicesOf(rows, id));
       }
       this.sheet.set(sheet);
