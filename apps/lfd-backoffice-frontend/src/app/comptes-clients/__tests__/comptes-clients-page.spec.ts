@@ -135,6 +135,27 @@ describe('ComptesClientsPage', () => {
     expect(page['filtered']().map((c) => c.id)).toEqual(['5']);
   });
 
+  it('filtre par place dans la hiérarchie, combinable avec le statut', async () => {
+    const sub = (id: string, status: CompanyStatus): AdminCompany => ({
+      ...makeCompany(id, status),
+      parent: { id: '3', enseigne: 'Principal' },
+    });
+    const page = await setup([...COMPANIES, sub('6', 'active'), sub('7', 'pending')]);
+
+    page['onHierarchyChange']('sub');
+    expect(page['filtered']().map((c) => c.id)).toEqual(['6', '7']);
+
+    page['onFilterChange']('pending');
+    expect(page['filtered']().map((c) => c.id)).toEqual(['7']);
+
+    page['onFilterChange']('all');
+    page['onHierarchyChange']('principal');
+    expect(page['filtered']().map((c) => c.id)).toEqual(['3']);
+
+    page['onHierarchyChange']('bogus');
+    expect(page['hierarchy']()).toBe('principal');
+  });
+
   it('ignore une valeur de filtre inconnue', async () => {
     const page = await setup();
     page['onFilterChange']('active');

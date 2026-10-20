@@ -68,6 +68,19 @@ const FILTER_ORDER: readonly FilterValue[] = [
   'terminated',
 ];
 
+/**
+ * Place dans la hiérarchie : tous, les comptes principaux (ceux qui ont au
+ * moins un sous-compte), ou les sous-comptes. Orthogonal au statut : un
+ * sous-compte suspendu reste un sous-compte.
+ */
+type HierarchyValue = 'all' | 'principal' | 'sub';
+
+const HIERARCHY_ORDER: readonly HierarchyValue[] = ['all', 'principal', 'sub'];
+
+function isHierarchyValue(value: string): value is HierarchyValue {
+  return (HIERARCHY_ORDER as readonly string[]).includes(value);
+}
+
 /** Vrai si la chaîne est une valeur de filtre connue (garde l'événement du toggle). */
 function isFilterValue(value: string): value is FilterValue {
   return (FILTER_ORDER as readonly string[]).includes(value);
@@ -144,6 +157,7 @@ export class ComptesClientsPage {
    */
   protected readonly loadedAt = signal(new Date());
   protected readonly filter = signal<FilterValue>('all');
+  protected readonly hierarchy = signal<HierarchyValue>('all');
   /** Le terme cherché — société, SIRET, ou propriétaire de l'espace. */
   protected readonly search = signal('');
   /**
@@ -181,6 +195,21 @@ export class ComptesClientsPage {
     { value: 'terminated', label: 'Résilié' },
   ];
 
+  /** Segments du filtre de hiérarchie — dans l'ordre de `HIERARCHY_ORDER`. */
+  protected readonly hierarchySegments: readonly FoldViewToggleOption[] = [
+    { value: 'all', label: 'Tous' },
+    { value: 'principal', label: 'Principaux' },
+    { value: 'sub', label: 'Sous-comptes' },
+  ];
+
+  /**
+   * Les comptes qui ont au moins un sous-compte. Lu dans la liste elle-même :
+   * chaque sous-compte y porte son `parent`, et la liste est chargée entière.
+   */
+  private readonly principalIds = computed(
+    () => new Set(this.companies().flatMap((c) => (c.parent === null ? [] : [c.parent.id]))),
+  );
+
   /**
    * Une société `pending` qui a **demandé de l'assistance** (support ouvert) —
    * à rappeler, distinct de la simple attente de vérification des pièces.
@@ -212,9 +241,8 @@ export class ComptesClientsPage {
     const term = this.search();
     const all = this.companies();
     const byStatus = current === 'all' ? all : all.filter((company) => company.status === current);
-    return term === ''
-      ? byStatus
-      : byStatus.filter((company) => matchesCompanySearch(company, term));
+    const byPlace = byStatus.filter((company) => this.inHierarchy(company));
+    return term === '' ? byPlace : byPlace.filter((company) => matchesCompanySearch(company, term));
   });
 
   /**
@@ -259,6 +287,13 @@ export class ComptesClientsPage {
       return {
         title: `Aucun résultat pour « ${this.search()} »`,
         subtitle: 'La recherche porte sur la société, le SIRET et le propriétaire de l’espace.',
+      };
+    }
+    if (this.hierarchy() !== 'all') {
+      const label = this.hierarchy() === 'sub' ? 'sous-compte' : 'compte principal';
+      return {
+        title: `Aucun ${label} pour ce filtre`,
+        subtitle: 'Change de filtre pour voir les autres.',
       };
     }
     const current = this.filter();
@@ -331,6 +366,25 @@ export class ComptesClientsPage {
     if (isFilterValue(value)) {
       this.filter.set(value);
       this.page.set(1);
+    }
+  }
+
+  /** Applique le filtre de hiérarchie (ignore une valeur inconnue). */
+  protected onHierarchyChange(value: string): void {
+    if (isHierarchyValue(value)) {
+      this.hierarchy.set(value);
+      this.page.set(1);
+    }
+  }
+
+  private inHierarchy(company: AdminCompany): boolean {
+    switch (this.hierarchy()) {
+      case 'all':
+        return true;
+      case 'principal':
+        return this.principalIds().has(company.id);
+      case 'sub':
+        return company.parent !== null;
     }
   }
 

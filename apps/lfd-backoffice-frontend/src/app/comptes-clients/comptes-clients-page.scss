@@ -133,6 +133,12 @@
   background: var(--fold-color-surface-sunken);
 }
 
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+}
+
 .toolbar .search {
   flex: 0 1 22rem;
 }

@@ -44,13 +44,25 @@
     </fold-empty-state>
   } @else {
     <div class="toolbar">
-      <fold-view-toggle
-        class="filter"
-        ariaLabel="Filtrer les comptes par statut"
-        [options]="segments"
-        [value]="filter()"
-        (valueChange)="onFilterChange($event)"
-      />
+      <div class="filters">
+        <fold-view-toggle
+          class="filter"
+          ariaLabel="Filtrer les comptes par statut"
+          [options]="segments"
+          [value]="filter()"
+          (valueChange)="onFilterChange($event)"
+        />
+
+        <!-- La place dans la hiérarchie, à côté du statut : deux questions
+           indépendantes, qui se combinent (« les sous-comptes en attente »). -->
+        <fold-view-toggle
+          class="filter"
+          ariaLabel="Filtrer les comptes par place dans la hiérarchie"
+          [options]="hierarchySegments"
+          [value]="hierarchy()"
+          (valueChange)="onHierarchyChange($event)"
+        />
+      </div>
 
       <!-- Trois chemins d'arrivée : le nom en tête, un SIRET lu sur un document,
            ou la personne qui administre l'espace au téléphone. Un seul champ,
