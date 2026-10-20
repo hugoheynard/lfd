@@ -146,24 +146,22 @@ sequenceDiagram
 N1 → N2 → N3 livrent la valeur sur les commandes. N4 est séparé parce qu'il
 touche cinq contextes qui ne publient aujourd'hui qu'au journal.
 
-## 5. Questions ouvertes
+## 5. Décisions (Hugo, 2026-10-20)
 
-🔴 **Q1, Q2 et Q4 se tranchent AVANT N2** : le gabarit du premier mail en
-dépend (montant ou non, envoi ou non, mention de l'auteur).
-
-- **Q1 — Montants.** Un hôtel « entité » (il ne suit pas `billing`) paie
-  seul : son principal doit-il voir le montant de ses commandes ? Proposition :
-  oui si le site suit `billing` ou `pricing`, sinon le mail dit l'action sans
-  montant.
-- **Q2 — Principal suspendu ou résilié.** On prévient quand même ?
-  Proposition : non pour `terminated`, oui pour `suspended`.
-- **Q3 — Volume.** Un site qui passe 30 commandes par semaine fait 30 mails par
-  personne. Un récapitulatif quotidien a été écarté pour l'instant (choix du
-  2026-10-20) ; à rouvrir si le volume gêne.
-- **Q4 — Le sous-compte le sait-il ?** Le RGPD demande d'annoncer à une
-  personne qu'une information la concernant part ailleurs : les membres d'un
-  sous-compte doivent-ils être informés que leurs commandes sont signalées au
-  principal ? À voir avec le registre (`documentation/legal/`).
+- **Q1 — Montants : oui, si le site suit `billing` ou `pricing`** au moment de
+  la commande ; sinon le mail dit l'action sans montant. Ce « au moment »
+  se fige comme le principal : `orders.principal_sees_amount` est copié à la
+  passation, à côté de `principal_company_id`. Un suivi ouvert ou fermé
+  ensuite ne change pas ce qu'on dit d'une commande passée.
+- **Q2 — Principal `suspended` : prévenu. `terminated` : non.** Le statut
+  lu est celui du principal à l'envoi (il dit si l'on écrit encore à ce
+  client, pas ce qu'il était à la commande).
+- **Q4 — Le mail ne nomme que le SITE**, jamais la personne qui a agi : ni nom,
+  ni adresse, ni rôle. Ce qui part au principal est une information sur une
+  société, pas sur une personne. La mention reste due dans les conditions
+  générales des sous-comptes (à rédiger, hors de ce plan).
+- **Q3 — Volume** : ouvert. Un récapitulatif quotidien a été écarté le
+  2026-10-20 ; à rouvrir si le volume gêne.
 
 ## 6. Hors périmètre
 
