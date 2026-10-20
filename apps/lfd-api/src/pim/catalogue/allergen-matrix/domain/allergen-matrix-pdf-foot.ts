@@ -12,6 +12,15 @@ const LEGEND_SIZE = 7.5;
 const GAP = 14;
 const RADIUS = 3;
 
+/**
+ * La légende ouvre chaque mot par une capitale (Hugo, 2026-10-20) : le mot de
+ * l'article 21 reste « contient » dans le dictionnaire et dans les cases, la
+ * capitale n'est qu'une convention d'affichage de la légende.
+ */
+function asLegendEntry(word: string): string {
+  return word.charAt(0).toLocaleUpperCase() + word.slice(1);
+}
+
 /** La légende, sur une ligne : signe ET mot, jamais la couleur seule (plan §1). */
 function legend(doc: Doc, wording: AllergenMatrixWording, y: number): void {
   let x = SHEET_LEFT;
@@ -20,8 +29,9 @@ function legend(doc: Doc, wording: AllergenMatrixWording, y: number): void {
   for (const kind of ["contains", "traces"] as const) {
     drawMark(doc, kind, x + RADIUS, y + RADIUS, RADIUS);
     x += 2 * RADIUS + 4;
-    put(doc, wording.presence[kind], x, y, { size: LEGEND_SIZE });
-    x += doc.widthOfString(wording.presence[kind]) + GAP;
+    const word = asLegendEntry(wording.presence[kind]);
+    put(doc, word, x, y, { size: LEGEND_SIZE });
+    x += doc.widthOfString(word) + GAP;
   }
   for (const text of [wording.document.legendAbsent, wording.document.legendNotDeclared]) {
     put(doc, text, x, y, { size: LEGEND_SIZE });
