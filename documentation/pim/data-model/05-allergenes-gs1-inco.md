@@ -34,11 +34,11 @@ Trois choses, dans cet ordre de difficulté croissante :
 
 Le référentiel vit dans trois fichiers de `src/pim/allergens/`, en dur :
 
-| Fichier                  | Ce qu'il porte                                                                                                                                                                                                    |
-| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `allergen-mapping.ts`    | **30 codes GS1** (T4078) → **14 catégories INCO** + 3 hors obligation UE, libellés `fr`/`en`. La provenance de chaque code est documentée en tête, avec les trois codes provisoires faux corrigés au recoupement. |
-| `allergen-reference.ts`  | Le filtre de catalogue : `eu` = ce qui porte une obligation, `world` = tout.                                                                                                                                      |
-| `allergen-projection.ts` | `toInco()` — **filtre**, **dédup n:1**, **localise** ; `toGdsn()` — passe-plat validant.                                                                                                                          |
+| Fichier                  | Ce qu'il porte                                                                                                                                                                                                                                                                                   |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `allergen-mapping.ts`    | **30 codes GS1** (T4078) → **14 catégories INCO** + 3 hors obligation UE, libellés `fr`/`en`/`it` (l'italien recopié de l'annexe II officielle, migration `20261020150000`). La provenance de chaque code est documentée en tête, avec les trois codes provisoires faux corrigés au recoupement. |
+| `allergen-reference.ts`  | Le filtre de catalogue : `eu` = ce qui porte une obligation, `world` = tout.                                                                                                                                                                                                                     |
+| `allergen-projection.ts` | `toInco()` — **filtre**, **dédup n:1**, **localise** ; `toGdsn()` — passe-plat validant.                                                                                                                                                                                                         |
 
 Le mapping est **n:1** : blé, seigle, orge, avoine, épeautre, khorasan et
 triticale retombent tous sur `gluten` ; les huit fruits à coque sur
@@ -1087,8 +1087,10 @@ référentiel dérive n'est visitée par rien (D5).
 - **Filtrer le catalogue par allergène** (« tous les produits sans gluten »). La
   table de liaison le rend possible ; l'écran ne l'est pas.
 - **Étendre l'annexe II.** Voir plus haut : c'est un semis, pas une saisie.
-- **Traduire les libellés officiels au-delà de `fr`/`en`.** La structure
-  l'accepte (`Json` localisé), le contenu n'existe pas.
+- **Traduire les libellés officiels au-delà de `fr`/`en`/`it`.** L'italien
+  est posé depuis le 2026-10-20 (AM0 de
+  [`plan-matrice-des-allergenes.md`](../plan-matrice-des-allergenes.md)) ; une
+  quatrième langue demanderait le même démontage du verrou.
 - **Changer la forme de `may_contain`.** Il suit le même référentiel et le même
   chemin. Ce que D5 tranche est son **poids** face à la composition — il
   n'absout pas un code que le référentiel dit contenu — pas sa structure.

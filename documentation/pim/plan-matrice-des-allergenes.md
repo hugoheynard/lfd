@@ -13,7 +13,7 @@
 
 | Fait                                                                                                                                                                                                                                                                           | Où                                                                                                                                                                                                        |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Référentiel ADMINISTRABLE en base : catégories (renommables, ordonnées par `position`, archivables) et entrées (codes GS1) ; libellés `fr` / `en` (pas d'italien). La table figée de 30 codes (`allergen-mapping.ts`) n'est que la graine                                      | tables `pim.allergen_category` / `pim.allergen_entry`                                                                                                                                                     |
+| Référentiel ADMINISTRABLE en base : catégories (renommables, ordonnées par `position`, archivables) et entrées (codes GS1) ; libellés `fr` / `en` (l'italien arrive avec AM0). La table figée de 30 codes (`allergen-mapping.ts`) n'est que la graine                          | tables `pim.allergen_category` / `pim.allergen_entry`                                                                                                                                                     |
 | **Le seul rangement en vigueur** « code déclaré → catégorie INCO » est `IncoProjector`, qui lit ce référentiel et signale `incomplete` quand un code ne se range pas (hors UE ou inconnu) ; c'est lui que lit le canal B2B, et le commerce relit ce que le PIM a projeté       | `apps/lfd-api/src/pim/allergens/domain/services/inco-projector.ts`, `apps/lfd-api/src/pim/channels/b2b-platform/products/projection.ts`, `apps/lfd-api/src/b2b/catalog/infrastructure/allergen-labels.ts` |
 | Une déclinaison peut **suivre** les allergènes (et les traces) de la déclinaison par défaut : un drapeau d'alignement, PAS une ligne `variant_allergens`                                                                                                                       | `apps/lfd-api/prisma/schema/pim/product.prisma`, `apps/lfd-api/src/pim/catalogue/product/domain/entities/variant.ts`                                                                                      |
 | L'annexe II impose de NOMMER la céréale et le fruit à coque ; c'est pourquoi le référentiel garde les codes précis                                                                                                                                                             | `apps/lfd-api/src/pim/allergens/allergen-mapping.ts` (commentaire)                                                                                                                                        |
@@ -105,12 +105,99 @@ ou non les non renseignés (défaut : inclus, pour qu'on les voie).
 
 ## 3. Les lots
 
-| Lot     | Contenu                                                                                                                                                                                                                                                                                                                                                                                 | Agent     |
-| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| **AM0** | Les libellés italiens du référentiel (catégories annexe II et précisions céréales / fruits à coque), tirés de la version italienne officielle de l'annexe II d'INCO 1169/2011, **validés par Hugo** avant écriture ; migration de données sur des lignes officielles verrouillées (relue par `lecteur-de-migrations`, et par `vitruve` : c'est une migration de données réglementaires) | batisseur |
-| **AM1** | Query `GetAllergenMatrix` (filtres) : lignes déclinaison × catégories en trois états, + état de déclaration ; route `GET /pim/allergen-matrix` (JSON) et `…/allergen-matrix.csv` ; tests (dont : non renseigné ≠ aucun ; une trace n'est pas une présence ; une catégorie archivée)                                                                                                     | batisseur |
-| **AM2** | Rendu PDF A4 (paysage) : `renderAllergenMatrixPdf` pur, logo par port, pagination et en-têtes répétés ; route `…/allergen-matrix.pdf` ; test qui lit le texte du PDF                                                                                                                                                                                                                    | batisseur |
-| **AM3** | Page Catalogue « Matrice des allergènes » : filtres, tableau (fold-data-table), légende, boutons « PDF » et « Tableur » ; entrée de menu (rail ET tuiles)                                                                                                                                                                                                                               | pablo     |
+| Lot                   | Contenu                                                                                                                                                                                                                                                                                                                                                                                 | Agent     |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| **AM0** ✅ 2026-10-20 | Les libellés italiens du référentiel (catégories annexe II et précisions céréales / fruits à coque), tirés de la version italienne officielle de l'annexe II d'INCO 1169/2011, **validés par Hugo** avant écriture ; migration de données sur des lignes officielles verrouillées (relue par `lecteur-de-migrations`, et par `vitruve` : c'est une migration de données réglementaires) | batisseur |
+| **AM1**               | Query `GetAllergenMatrix` (filtres) : lignes déclinaison × catégories en trois états, + état de déclaration ; route `GET /pim/allergen-matrix` (JSON) et `…/allergen-matrix.csv` ; tests (dont : non renseigné ≠ aucun ; une trace n'est pas une présence ; une catégorie archivée)                                                                                                     | batisseur |
+| **AM2**               | Rendu PDF A4 (paysage) : `renderAllergenMatrixPdf` pur, logo par port, pagination et en-têtes répétés ; route `…/allergen-matrix.pdf` ; test qui lit le texte du PDF                                                                                                                                                                                                                    | batisseur |
+| **AM3**               | Page Catalogue « Matrice des allergènes » : filtres, tableau (fold-data-table), légende, boutons « PDF » et « Tableur » ; entrée de menu (rail ET tuiles)                                                                                                                                                                                                                               | pablo     |
+
+### 3.1 AM0 — les libellés italiens, validés par Hugo (2026-10-20)
+
+**Source** : règlement (UE) n° 1169/2011, **allegato II**, version italienne
+consolidée du 2018-01-01, téléchargée d'EUR-Lex le 2026-10-20
+(`CELEX:02011R1169-20180101`). Chaque libellé ci-dessous est RECOPIÉ de ce
+texte, avec la casse d'un libellé ; rien n'est traduit, sauf les trois lignes
+marquées ✳.
+
+**Décision de Hugo** : « je te fais confiance, dans le doute on précise le code
+universel en plus ». Une ligne ✳ (absente de l'annexe, donc traduite) porte
+son code GS1 à côté de son libellé dans la matrice italienne — `Mais (NM)`.
+Les autres non.
+
+| Catégorie   | Italien (annexe II, verbatim)                                        |
+| ----------- | -------------------------------------------------------------------- |
+| gluten      | Cereali contenenti glutine                                           |
+| crustaceans | Crostacei                                                            |
+| eggs        | Uova                                                                 |
+| fish        | Pesce                                                                |
+| peanuts     | Arachidi                                                             |
+| soybeans    | Soia                                                                 |
+| milk        | Latte                                                                |
+| tree_nuts   | Frutta a guscio                                                      |
+| celery      | Sedano                                                               |
+| mustard     | Senape                                                               |
+| sesame      | Semi di sesamo                                                       |
+| sulphites   | Anidride solforosa e solfiti                                         |
+| lupin       | Lupini                                                               |
+| molluscs    | Molluschi                                                            |
+| non_eu ✳    | Fuori obbligo UE (15ᵉ catégorie, officielle, hors annexe : traduite) |
+
+| Code    | Italien                      | D'où                                     |
+| ------- | ---------------------------- | ---------------------------------------- |
+| UW      | Grano                        | annexe, pt 1                             |
+| NR      | Segale                       | annexe, pt 1                             |
+| GB      | Orzo                         | annexe, pt 1                             |
+| GO      | Avena                        | annexe, pt 1                             |
+| GS      | Farro                        | annexe, pt 1                             |
+| GK      | Grano khorasan               | annexe, pt 1                             |
+| AW      | Ceppi ibridati               | annexe, pt 1 (« i loro ceppi ibridati ») |
+| SA      | Mandorle                     | annexe, pt 8                             |
+| SH      | Nocciole                     | annexe, pt 8                             |
+| SW      | Noci                         | annexe, pt 8                             |
+| SC      | Noci di acagiù               | annexe, pt 8                             |
+| SP      | Noci di pecan                | annexe, pt 8                             |
+| SR      | Noci del Brasile             | annexe, pt 8                             |
+| ST      | Pistacchi                    | annexe, pt 8                             |
+| SM      | Noci macadamia               | annexe, pt 8                             |
+| AC … UM | le libellé de leur catégorie | une entrée par catégorie                 |
+| BWD ✳   | Grano saraceno               | hors annexe — code affiché               |
+| NM ✳    | Mais                         | hors annexe — code affiché               |
+| SO ✳    | Cocco                        | hors annexe — code affiché               |
+
+**Ce que `vitruve` a changé (2026-10-20)** — trois bloquants, corrigés ici :
+
+- **15 catégories, pas 14** : `alg_cat_non_eu` (« Hors obligation UE ») est
+  officielle et verrouillée ; elle reçoit son italien dans la MÊME migration.
+- **Le verrou se démonte** : les deux triggers refusent tout changement de
+  `name` sur une ligne `official`. Une seule migration, sur les deux tables :
+  `DROP TRIGGER` → `UPDATE` → `CREATE TRIGGER` à l'identique (geste du
+  runbook). L'`UPDATE` **fusionne** — `name = name || jsonb_build_object('it', …)`,
+  jamais une réécriture du jsonb, qui effacerait `fr` et `en` — et la
+  migration vérifie ensuite (bloc `DO`, `RAISE EXCEPTION`) que les 45 lignes
+  officielles ont `fr`, `en` et `it`, et que `fr`/`en` n'ont pas bougé.
+- **L'oracle suit la base** : `Lang` (`allergen-mapping.ts`) devient
+  `"fr" | "en" | "it"` ; `entry(...)`, `INCO_LABELS` (qui gagne `non_eu`) et
+  leurs signatures portent l'italien ; `test/pim-allergens.e2e-spec.ts`
+  (égalités exactes l.130, l.145, l.172, assistant `localizedText`) compare
+  les trois langues. Le chemin de lecture (`Locale`, `LOCALES` de
+  `@lfd/pim-contracts`) accepte déjà `it` : ni les fronts ni la boutique ne
+  changent. (Le doublon `Lang`/`Locale` est une dette connue, pas celle d'AM0.)
+
+Et trois choix assumés :
+
+- **Pas de fait au journal** : l'italien est AJOUTÉ, pas renommé ; la
+  migration le dit en tête. L'historique d'une catégorie ne le montrera pas.
+- **Qui affiche le code** : une règle de RENDU, pas une donnée —
+  `official && incoCategory === null`, c'est-à-dire les entrées de `non_eu`.
+  Une entrée maison n'est jamais `official` : son code libre ne s'affiche pas.
+- **Irréversible à bon marché** : après application, corriger un libellé
+  italien redemande le démontage du verrou. La validation de Hugo
+  (2026-10-20) est le dernier moment gratuit.
+
+⚠️ `AW` : le libellé français dit « Triticale et autres souches hybridées » ;
+l'annexe italienne ne nomme pas le triticale, elle dit « ceppi ibridati ». On
+garde le mot de l'annexe, sans ✳ : il est réglementaire.
 
 ## 4. Hors périmètre
 

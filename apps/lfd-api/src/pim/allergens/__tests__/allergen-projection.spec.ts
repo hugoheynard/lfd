@@ -97,6 +97,8 @@ describe("le référentiel", () => {
     expect(aw?.incoCategory).toBe("gluten");
     expect(aw?.labels.fr).toContain("Triticale");
     expect(aw?.labels.fr).not.toContain("Céréales");
+    // L'annexe italienne ne nomme pas le triticale : on garde son mot à elle.
+    expect(aw?.labels.it).toBe("Ceppi ibridati");
     // Six céréales nommées, plus les hybrides.
     expect(ALLERGEN_MAPPINGS.filter((m) => m.incoCategory === "gluten")).toHaveLength(7);
   });
@@ -115,5 +117,10 @@ describe("le référentiel", () => {
 
   it("n’a plus aucun code provisoire", () => {
     expect(ALLERGEN_MAPPINGS.filter((m) => m.gs1Code.startsWith("TBD_"))).toEqual([]);
+  });
+
+  it("porte l'italien sur chacun des 30 codes", () => {
+    // Lot AM0 : l'oracle suit la migration `20261020150000_les_allergenes_en_italien`.
+    expect(ALLERGEN_MAPPINGS.filter((m) => m.labels.it.trim() === "")).toEqual([]);
   });
 });

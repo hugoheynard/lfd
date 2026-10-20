@@ -22,6 +22,7 @@ import type { AllergenCategoryAdminView, AllergenReference } from "@lfd/pim-cont
 import {
   ALLERGEN_MAPPINGS,
   incoLabel,
+  nonEuLabel,
   type IncoCategory,
 } from "../src/pim/allergens/allergen-mapping.js";
 import { allergenReference } from "../src/pim/allergens/allergen-reference.js";
@@ -79,11 +80,17 @@ function expectedCategoryKey(incoCategory: IncoCategory | null): string {
 function localizedText(
   value: unknown,
   subject: string,
-): { readonly fr: string; readonly en: string } {
-  if (typeof value === "object" && value !== null && "fr" in value && "en" in value) {
-    const { fr, en } = value;
-    if (typeof fr === "string" && typeof en === "string") {
-      return { fr, en };
+): { readonly fr: string; readonly en: string; readonly it: string } {
+  if (
+    typeof value === "object" &&
+    value !== null &&
+    "fr" in value &&
+    "en" in value &&
+    "it" in value
+  ) {
+    const { fr, en, it } = value;
+    if (typeof fr === "string" && typeof en === "string" && typeof it === "string") {
+      return { fr, en, it };
     }
   }
   throw new Error(`libellé localisé illisible sur ${subject} : ${JSON.stringify(value)}`);
@@ -130,6 +137,7 @@ describe("le référentiel semé par la migration", () => {
       expect(localizedText(category.name, `catégorie ${key}`)).toEqual({
         fr: incoLabel(key, "fr"),
         en: incoLabel(key, "en"),
+        it: incoLabel(key, "it"),
       });
       expect(category.incoCategory).toBe(key);
     }
@@ -143,8 +151,9 @@ describe("le référentiel semé par la migration", () => {
     });
 
     expect(localizedText(category.name, "catégorie non_eu")).toEqual({
-      fr: "Hors obligation UE",
-      en: "Not EU-declarable",
+      fr: nonEuLabel("fr"),
+      en: nonEuLabel("en"),
+      it: nonEuLabel("it"),
     });
     expect(category.incoCategory).toBeNull();
     expect(category.official).toBe(true);
@@ -402,7 +411,9 @@ describe("le verrou d'immuabilité", () => {
       where: { id: entry.id },
       data: { name: { fr: "Souchet", en: "Tiger nut" } },
     });
-    expect(localizedText(renamed.name, "entrée maison").fr).toBe("Souchet");
+    // Une entrée maison n'a pas d'italien obligatoire : `localizedText` exige
+    // les trois langues de l'officiel, on lit donc le jsonb tel quel.
+    expect(renamed.name).toMatchObject({ fr: "Souchet" });
 
     // Le pendant du cas précédent : une entrée maison, elle, s'archive — c'est
     // le retrait normal du référentiel administrable.

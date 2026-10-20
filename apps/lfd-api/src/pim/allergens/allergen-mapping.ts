@@ -40,7 +40,7 @@
 // `UN` (Shellfish) est écarté pour la raison inverse : il chevauche crustacés
 // ET mollusques, donc aucune projection INCO ne peut être juste.
 
-export type Lang = "fr" | "en";
+export type Lang = "fr" | "en" | "it";
 
 /** Les **14** catégories à déclaration obligatoire (UE 1169/2011, annexe II). */
 export type IncoCategory =
@@ -61,6 +61,9 @@ export type IncoCategory =
 
 export type AllergenCode = string;
 
+/** La 15ᵉ catégorie semée : officielle, hors annexe II (`inco_category` nul). */
+export const NON_EU_CATEGORY = "non_eu";
+
 export interface AllergenMapping {
   /** Code GS1 `AllergenTypeCode` (T4078) — le stockage canonique. */
   readonly gs1Code: AllergenCode;
@@ -75,8 +78,9 @@ function entry(
   incoCategory: IncoCategory | null,
   fr: string,
   en: string,
+  it: string,
 ): AllergenMapping {
-  return { gs1Code, incoCategory, labels: { fr, en } };
+  return { gs1Code, incoCategory, labels: { fr, en, it } };
 }
 
 /**
@@ -89,78 +93,99 @@ function entry(
 export const ALLERGEN_MAPPINGS: readonly AllergenMapping[] = [
   // Céréales contenant du gluten — n:1. Épeautre et Khorasan sont des blés que
   // l'annexe II cite nommément ; ils ont leur propre code GS1.
-  entry("UW", "gluten", "Blé", "Wheat"),
-  entry("NR", "gluten", "Seigle", "Rye"),
-  entry("GB", "gluten", "Orge", "Barley"),
-  entry("GO", "gluten", "Avoine", "Oats"),
-  entry("GS", "gluten", "Épeautre", "Spelt"),
-  entry("GK", "gluten", "Blé de Khorasan (kamut)", "Khorasan wheat"),
+  entry("UW", "gluten", "Blé", "Wheat", "Grano"),
+  entry("NR", "gluten", "Seigle", "Rye", "Segale"),
+  entry("GB", "gluten", "Orge", "Barley", "Orzo"),
+  entry("GO", "gluten", "Avoine", "Oats", "Avena"),
+  entry("GS", "gluten", "Épeautre", "Spelt", "Farro"),
+  entry("GK", "gluten", "Blé de Khorasan (kamut)", "Khorasan wheat", "Grano khorasan"),
   // L'annexe II couvre aussi « leurs souches hybridées », dont le triticale, et
   // GS1 n'a pas de code dédié : sa définition de `AW` les cite nommément. On
   // reprend donc `AW`, mais sous le libellé de ce qu'il sert à déclarer ICI. Le
   // laisser s'appeler « Céréales » rouvrirait la porte que la sélection de
   // codes ferme — celle qui laisse déclarer du gluten sans dire lequel.
-  entry("AW", "gluten", "Triticale et autres souches hybridées", "Triticale and other hybrids"),
+  entry(
+    "AW",
+    "gluten",
+    "Triticale et autres souches hybridées",
+    "Triticale and other hybrids",
+    "Ceppi ibridati",
+  ),
 
   // Fruits à coque — n:1. Les huit que l'annexe II énumère, ni plus ni moins.
-  entry("SA", "tree_nuts", "Amandes", "Almonds"),
-  entry("SH", "tree_nuts", "Noisettes", "Hazelnuts"),
-  entry("SW", "tree_nuts", "Noix", "Walnuts"),
-  entry("SC", "tree_nuts", "Noix de cajou", "Cashews"),
-  entry("SP", "tree_nuts", "Noix de pécan", "Pecan nuts"),
-  entry("SR", "tree_nuts", "Noix du Brésil", "Brazil nuts"),
-  entry("ST", "tree_nuts", "Pistaches", "Pistachios"),
-  entry("SM", "tree_nuts", "Noix de macadamia", "Macadamia nuts"),
+  entry("SA", "tree_nuts", "Amandes", "Almonds", "Mandorle"),
+  entry("SH", "tree_nuts", "Noisettes", "Hazelnuts", "Nocciole"),
+  entry("SW", "tree_nuts", "Noix", "Walnuts", "Noci"),
+  entry("SC", "tree_nuts", "Noix de cajou", "Cashews", "Noci di acagiù"),
+  entry("SP", "tree_nuts", "Noix de pécan", "Pecan nuts", "Noci di pecan"),
+  entry("SR", "tree_nuts", "Noix du Brésil", "Brazil nuts", "Noci del Brasile"),
+  entry("ST", "tree_nuts", "Pistaches", "Pistachios", "Pistacchi"),
+  entry("SM", "tree_nuts", "Noix de macadamia", "Macadamia nuts", "Noci macadamia"),
 
   // Une entrée par catégorie pour les douze autres : la catégorie EST la
   // substance, GS1 n'y offre rien de plus fin qui soit obligatoire.
-  entry("AC", "crustaceans", "Crustacés", "Crustaceans"),
-  entry("AE", "eggs", "Œufs", "Eggs"),
-  entry("AF", "fish", "Poissons", "Fish"),
-  entry("AP", "peanuts", "Arachides", "Peanuts"),
-  entry("AY", "soybeans", "Soja", "Soybeans"),
-  entry("AM", "milk", "Lait", "Milk"),
-  entry("BC", "celery", "Céleri", "Celery"),
-  entry("BM", "mustard", "Moutarde", "Mustard"),
-  entry("AS", "sesame", "Graines de sésame", "Sesame seeds"),
-  entry("AU", "sulphites", "Anhydride sulfureux et sulfites", "Sulphur dioxide and sulphites"),
-  entry("NL", "lupin", "Lupin", "Lupine"),
-  entry("UM", "molluscs", "Mollusques", "Molluscs"),
+  entry("AC", "crustaceans", "Crustacés", "Crustaceans", "Crostacei"),
+  entry("AE", "eggs", "Œufs", "Eggs", "Uova"),
+  entry("AF", "fish", "Poissons", "Fish", "Pesce"),
+  entry("AP", "peanuts", "Arachides", "Peanuts", "Arachidi"),
+  entry("AY", "soybeans", "Soja", "Soybeans", "Soia"),
+  entry("AM", "milk", "Lait", "Milk", "Latte"),
+  entry("BC", "celery", "Céleri", "Celery", "Sedano"),
+  entry("BM", "mustard", "Moutarde", "Mustard", "Senape"),
+  entry("AS", "sesame", "Graines de sésame", "Sesame seeds", "Semi di sesamo"),
+  entry(
+    "AU",
+    "sulphites",
+    "Anhydride sulfureux et sulfites",
+    "Sulphur dioxide and sulphites",
+    "Anidride solforosa e solfiti",
+  ),
+  entry("NL", "lupin", "Lupin", "Lupine", "Lupini"),
+  entry("UM", "molluscs", "Mollusques", "Molluscs", "Molluschi"),
 
   // Hors obligation UE — visibles au catalogue « monde », filtrés à la
   // projection INCO. Les trois que la boulangerie rencontre vraiment : le
   // sarrasin est à déclaration obligatoire au Japon et en Corée, le maïs et la
   // noix de coco le sont sur plusieurs marchés hors UE.
-  entry("BWD", null, "Sarrasin", "Buckwheat"),
-  entry("NM", null, "Maïs", "Corn"),
-  entry("SO", null, "Noix de coco", "Coconut"),
+  entry("BWD", null, "Sarrasin", "Buckwheat", "Grano saraceno"),
+  entry("NM", null, "Maïs", "Corn", "Mais"),
+  entry("SO", null, "Noix de coco", "Coconut", "Cocco"),
 ];
 
 /**
  * Libellés **réglementaires** des catégories — ce sont eux qui doivent figurer
- * sur l'étiquette, pas le libellé granulaire.
+ * sur l'étiquette, pas le libellé granulaire. L'italien est recopié de
+ * l'allegato II (EUR-Lex, CELEX:02011R1169-20180101), validé par Hugo le
+ * 2026-10-20 ; seul `non_eu`, hors annexe, est traduit.
+ *
+ * `non_eu` y figure parce que la base la sème officielle et verrouillée : cet
+ * oracle rejoue les 15 catégories de la migration, pas seulement les 14 de
+ * l'annexe.
  */
-const INCO_LABELS: Record<IncoCategory, Record<Lang, string>> = {
+const INCO_LABELS: Record<IncoCategory | typeof NON_EU_CATEGORY, Record<Lang, string>> = {
   gluten: {
     fr: "Céréales contenant du gluten",
     en: "Cereals containing gluten",
+    it: "Cereali contenenti glutine",
   },
-  crustaceans: { fr: "Crustacés", en: "Crustaceans" },
-  eggs: { fr: "Œufs", en: "Eggs" },
-  fish: { fr: "Poissons", en: "Fish" },
-  peanuts: { fr: "Arachides", en: "Peanuts" },
-  soybeans: { fr: "Soja", en: "Soybeans" },
-  milk: { fr: "Lait", en: "Milk" },
-  tree_nuts: { fr: "Fruits à coque", en: "Tree nuts" },
-  celery: { fr: "Céleri", en: "Celery" },
-  mustard: { fr: "Moutarde", en: "Mustard" },
-  sesame: { fr: "Graines de sésame", en: "Sesame seeds" },
+  crustaceans: { fr: "Crustacés", en: "Crustaceans", it: "Crostacei" },
+  eggs: { fr: "Œufs", en: "Eggs", it: "Uova" },
+  fish: { fr: "Poissons", en: "Fish", it: "Pesce" },
+  peanuts: { fr: "Arachides", en: "Peanuts", it: "Arachidi" },
+  soybeans: { fr: "Soja", en: "Soybeans", it: "Soia" },
+  milk: { fr: "Lait", en: "Milk", it: "Latte" },
+  tree_nuts: { fr: "Fruits à coque", en: "Tree nuts", it: "Frutta a guscio" },
+  celery: { fr: "Céleri", en: "Celery", it: "Sedano" },
+  mustard: { fr: "Moutarde", en: "Mustard", it: "Senape" },
+  sesame: { fr: "Graines de sésame", en: "Sesame seeds", it: "Semi di sesamo" },
   sulphites: {
     fr: "Anhydride sulfureux et sulfites",
     en: "Sulphur dioxide and sulphites",
+    it: "Anidride solforosa e solfiti",
   },
-  lupin: { fr: "Lupin", en: "Lupin" },
-  molluscs: { fr: "Mollusques", en: "Molluscs" },
+  lupin: { fr: "Lupin", en: "Lupin", it: "Lupini" },
+  molluscs: { fr: "Mollusques", en: "Molluscs", it: "Molluschi" },
+  non_eu: { fr: "Hors obligation UE", en: "Not EU-declarable", it: "Fuori obbligo UE" },
 };
 
 const BY_GS1 = new Map<string, AllergenMapping>(
@@ -175,4 +200,9 @@ export function findMapping(gs1Code: string): AllergenMapping | undefined {
 /** Libellé localisé d'une catégorie INCO. */
 export function incoLabel(category: IncoCategory, lang: Lang): string {
   return INCO_LABELS[category][lang];
+}
+
+/** Libellé localisé de la catégorie hors obligation UE. */
+export function nonEuLabel(lang: Lang): string {
+  return INCO_LABELS[NON_EU_CATEGORY][lang];
 }
