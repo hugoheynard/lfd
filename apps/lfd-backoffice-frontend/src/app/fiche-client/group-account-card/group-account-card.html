@@ -1,12 +1,18 @@
 <fold-card>
-  <fold-element-title cardHeader variant="title" icon="company" title="Compte de groupe" />
+  <fold-element-title cardHeader variant="title" icon="company" title="Holding" />
   <div class="body">
+    <!-- L'explication est TOUJOURS là : le mot « holding » ne dit pas seul
+         ce qu'il retire (Hugo, 2026-10-20). -->
+    <p class="explain">
+      Une holding négocie pour ses sous-comptes et ne commande jamais elle-même : aucune commande
+      n'est acceptée à son nom, et son activation n'exige ni adresse de livraison ni préférence
+      d'acheminement.
+    </p>
     <p class="state" data-group-state>
       @if (checked()) {
-        <strong>Compte de groupe, sans livraison.</strong> Il négocie pour ses sous-comptes et ne
-        commande pas pour lui-même.
+        <strong>Ce compte est une holding.</strong>
       } @else {
-        Ce compte commande pour lui-même.
+        <strong>Ce compte commande pour lui-même.</strong>
       }
     </p>
 
@@ -32,7 +38,7 @@
         (click)="confirming.set(true)"
         data-group-toggle
       >
-        {{ checked() ? 'Désactiver' : 'Activer' }}
+        {{ checked() ? 'Repasser en compte qui commande' : 'Transformer en holding' }}
       </button>
     }
 

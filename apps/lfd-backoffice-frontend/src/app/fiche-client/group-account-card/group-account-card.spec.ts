@@ -105,9 +105,21 @@ describe('GroupAccountCard', () => {
   it('dit l’état enregistré', () => {
     const { fixture } = boot(principal({ groupWithoutDelivery: true }));
     expect(host(fixture).querySelector('[data-group-state]')?.textContent).toContain(
-      'ne commande pas pour lui-même',
+      'Ce compte est une holding',
     );
-    expect(host(fixture).querySelector('[data-group-toggle]')?.textContent).toContain('Désactiver');
+    expect(host(fixture).querySelector('[data-group-toggle]')?.textContent).toContain(
+      'Repasser en compte qui commande',
+    );
+  });
+
+  it('propose « Transformer en holding », et explique toujours ce que c’est', () => {
+    const { fixture } = boot(principal());
+    expect(host(fixture).querySelector('[data-group-toggle]')?.textContent).toContain(
+      'Transformer en holding',
+    );
+    expect(host(fixture).querySelector('.explain')?.textContent).toContain(
+      'ne commande jamais elle-même',
+    );
   });
 
   it('demande confirmation, en disant que le compte ne pourra plus commander', async () => {

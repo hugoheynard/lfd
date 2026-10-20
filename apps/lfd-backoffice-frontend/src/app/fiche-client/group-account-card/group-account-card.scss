@@ -5,6 +5,11 @@
   gap: var(--fold-space-sm);
 }
 
+.explain,
 .state {
   margin: 0;
+}
+
+.explain {
+  color: var(--fold-color-text-muted);
 }

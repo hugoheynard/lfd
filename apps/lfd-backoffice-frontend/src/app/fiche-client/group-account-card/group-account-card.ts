@@ -65,8 +65,8 @@ export class GroupAccountCard {
    */
   protected readonly confirmMessage = computed(() =>
     this.checked()
-      ? 'Désactiver « compte de groupe » ? Le compte pourra de nouveau commander pour lui-même ; son activation exigera alors une adresse de livraison et une préférence d’acheminement.'
-      : 'Activer « compte de groupe » ? Le compte ne pourra plus commander pour lui-même : aucune commande ne sera acceptée à son nom. Il négocie pour ses sous-comptes, et son activation n’exigera ni adresse de livraison ni préférence d’acheminement.',
+      ? 'Repasser ce compte en compte qui commande ? Il pourra de nouveau commander pour lui-même ; son activation exigera alors une adresse de livraison et une préférence d’acheminement.'
+      : 'Transformer ce compte en holding ? Il ne pourra plus commander pour lui-même : aucune commande ne sera acceptée à son nom. Il négocie pour ses sous-comptes, et son activation n’exigera ni adresse de livraison ni préférence d’acheminement.',
   );
   protected readonly saving = signal(false);
   protected readonly refusal = signal<string | null>(null);
