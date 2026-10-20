@@ -1,27 +1,13 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  effect,
-  inject,
-  input,
-  output,
-  signal,
-  untracked,
-} from '@angular/core';
-import { httpErrorMessage } from '@lfd/endpoints';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import {
   FoldButtonComponent,
-  FoldCalloutComponent,
   FoldCardComponent,
-  FoldCheckboxComponent,
   FoldElementTitleComponent,
   FoldEmptyStateComponent,
   FoldIconComponent,
   FoldPanelHostService,
 } from 'fold-ng';
 
-import { AdminCompanyHierarchyService } from '../../comptes-clients/admin-company-hierarchy.service';
 import { type AdminCompanyDetail } from '../../comptes-clients/admin-company';
 import { FORM_PANEL } from '../informations/fiche-client.panels';
 import { FollowGrid } from '../follow-grid/follow-grid';
@@ -31,8 +17,8 @@ import { SubAccountPanel } from '../panels/sub-account-panel/sub-account-panel';
 /**
  * **Les sous-comptes d'un principal** (`sous-comptes.md` §4) : la liste
  * des enfants (enseigne, ville, statut, aspects suivis), « Créer un
- * sous-compte », « Rattacher un compte client existant », et la case « Compte de
- * groupe, sans livraison » (R6).
+ * sous-compte » et « Rattacher un compte client existant ». La case « Compte
+ * de groupe » vit dans Informations depuis le 2026-10-20 (`GroupAccountCard`).
  *
  * Calqué sur la barre de déclinaisons de la fiche produit : chaque enfant
  * mène à SA fiche, où l'on règle ce qu'il suit — on ne règle pas un
@@ -47,9 +33,7 @@ import { SubAccountPanel } from '../panels/sub-account-panel/sub-account-panel';
   imports: [
     FollowGrid,
     FoldButtonComponent,
-    FoldCalloutComponent,
     FoldCardComponent,
-    FoldCheckboxComponent,
     FoldElementTitleComponent,
     FoldEmptyStateComponent,
     FoldIconComponent,
@@ -58,7 +42,6 @@ import { SubAccountPanel } from '../panels/sub-account-panel/sub-account-panel';
   styleUrl: './sub-accounts-card.scss',
 })
 export class SubAccountsCard {
-  private readonly service = inject(AdminCompanyHierarchyService);
   private readonly panels = inject(FoldPanelHostService);
 
   readonly company = input.required<AdminCompanyDetail>();
@@ -67,21 +50,11 @@ export class SubAccountsCard {
   readonly changed = output<void>();
 
   protected readonly subAccounts = computed(() => this.company().hierarchy.subAccounts);
-  protected readonly groupChecked = signal(false);
-  protected readonly savingGroup = signal(false);
-  protected readonly refusal = signal<string | null>(null);
 
   protected readonly parentName = computed(() => {
     const company = this.company();
     return company.enseigne.trim() === '' ? company.raisonSociale : company.enseigne;
   });
-
-  constructor() {
-    effect(() => {
-      const enabled = this.company().hierarchy.groupWithoutDelivery;
-      untracked(() => this.groupChecked.set(enabled));
-    });
-  }
 
   protected create(): void {
     const company = this.company();
@@ -106,25 +79,6 @@ export class SubAccountsCard {
         data: { parentId: this.company().id, parentName: this.parentName() },
       })
       .closed.then((id) => this.changedIf(id));
-  }
-
-  protected async setGroup(enabled: boolean): Promise<void> {
-    if (this.savingGroup()) {
-      return;
-    }
-    const previous = this.groupChecked();
-    this.groupChecked.set(enabled);
-    this.savingGroup.set(true);
-    this.refusal.set(null);
-    try {
-      await this.service.setGroupWithoutDelivery(this.company().id, enabled);
-      this.changed.emit();
-    } catch (error) {
-      this.groupChecked.set(previous);
-      this.refusal.set(httpErrorMessage(error, '« Compte de groupe » n’a pas été enregistré.'));
-    } finally {
-      this.savingGroup.set(false);
-    }
   }
 
   /** Un panneau fermé sans rien créer ne fait pas relire la fiche. */

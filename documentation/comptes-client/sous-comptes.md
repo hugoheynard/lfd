@@ -381,7 +381,9 @@ Back-office, `apps/lfd-backoffice-frontend/src/app/` :
   **grille des suivis** (`follow-grid/`, dans `sub-accounts-card/`), une
   ligne par sous-compte, « Créer un sous-compte »
   (`panels/sub-account-panel/`), « Rattacher un compte client existant »
-  (`panels/attach-sub-account-panel/`), la case « compte de groupe ». Sur un
+  (`panels/attach-sub-account-panel/`). La case « compte de groupe, sans
+  livraison » vit dans l'onglet Informations, sous l'identité
+  (`group-account-card/`, déplacée le 2026-10-20). Sur un
   sous-compte : le bandeau « Site de / Entité rattachée à »
   (`parent-banner/`), la carte des sous-comptes floutée sous un cadenas
   (profondeur 1), la forme de prélèvement d'un site.

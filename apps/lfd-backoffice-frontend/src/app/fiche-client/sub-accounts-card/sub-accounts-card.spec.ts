@@ -166,35 +166,4 @@ describe('SubAccountsCard', () => {
     });
     expect(wire.changed).toBe(1);
   });
-
-  it('la case « Compte de groupe » s’écrit dès qu’on la coche', async () => {
-    const { fixture, wire } = boot(principal());
-    host(fixture)
-      .querySelector<HTMLInputElement>('[data-group-without-delivery] input[type="checkbox"]')
-      ?.click();
-    await settle(fixture);
-
-    expect(wire.group).toEqual([true]);
-    expect(wire.changed).toBe(1);
-  });
-
-  it('un refus de la case s’affiche tel quel, et elle revient à l’enregistré', async () => {
-    const { fixture, wire } = boot(principal());
-    wire.refuse = new HttpErrorResponse({
-      status: 409,
-      error: { message: 'Un sous-compte ne peut pas être un compte de groupe.' },
-    });
-    const box = host(fixture).querySelector<HTMLInputElement>(
-      '[data-group-without-delivery] input[type="checkbox"]',
-    );
-    box?.click();
-    fixture.detectChanges();
-    await settle(fixture);
-    await settle(fixture);
-
-    expect(host(fixture).querySelector('[data-group-refusal]')?.textContent).toContain(
-      'Un sous-compte ne peut pas être un compte de groupe.',
-    );
-    expect(box?.checked).toBe(false);
-  });
 });

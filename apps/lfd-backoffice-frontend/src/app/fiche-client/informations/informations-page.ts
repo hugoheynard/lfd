@@ -46,6 +46,7 @@ import { followsBilling, openingSteps } from './activation-steps';
 import type { AdminCompanyDetail } from '../../comptes-clients/admin-company';
 import { SiteIdentityCard } from '../site-identity-card/site-identity-card';
 import { SitePaymentNote } from '../site-payment-note/site-payment-note';
+import { GroupAccountCard } from '../group-account-card/group-account-card';
 
 /**
  * Fiche **détail** d'un compte client (staff) — reflète l'**état d'activation**
@@ -72,6 +73,7 @@ import { SitePaymentNote } from '../site-payment-note/site-payment-note';
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [FicheClientFacade, FicheClientStore, FicheClientPanels, FicheClientActions],
   imports: [
+    GroupAccountCard,
     FoldAsideLayoutComponent,
     FoldButtonComponent,
     FoldCalloutComponent,

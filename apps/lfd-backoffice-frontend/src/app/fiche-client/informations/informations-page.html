@@ -181,6 +181,14 @@
           </lfd-company-identity-card>
         }
 
+        <!-- Ce que le compte EST, juste sous son identité : une holding qui
+             négocie et ne commande pas. Jamais sur un sous-compte. -->
+        @if (!fiche.draft() && fiche.company(); as c) {
+          @if (c.hierarchy.parent === null) {
+            <app-group-account-card [company]="c" (changed)="fiche.reload()" />
+          }
+        }
+
         @if (!fiche.draft()) {
           <!-- UNE carte : les interlocuteurs, détenteur compris, chacun portant
                l'état de son accès. Éditable comme côté client — le commercial

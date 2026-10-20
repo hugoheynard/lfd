@@ -1,0 +1,14 @@
+<fold-card>
+  <fold-element-title cardHeader variant="title" icon="company" title="Compte de groupe" />
+  <fold-checkbox
+    label="Compte de groupe, sans livraison"
+    hint="Une holding qui négocie et ne commande jamais : ni adresse de livraison ni préférence d’acheminement exigées pour l’activer, et aucune commande acceptée à son propre nom."
+    [checked]="checked()"
+    [disabled]="saving()"
+    (checkedChange)="set($event)"
+    data-group-without-delivery
+  />
+  @if (refusal(); as refusal) {
+    <fold-callout variant="alert" data-group-refusal>{{ refusal }}</fold-callout>
+  }
+</fold-card>
