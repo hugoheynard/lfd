@@ -22,6 +22,7 @@ import { resetProduction } from "./seeding/production.seed.js";
 import { resetToSeed } from "./seeding/reset.seed.js";
 import { seedLegalDocuments } from "./seeding/legal-documents.seed.js";
 import { seedStation } from "./seeding/station.seed.js";
+import { seedSubAccounts } from "./seeding/sub-accounts.seed.js";
 import { refuseUnlessLocalDevelopment } from "./local-development.lock.js";
 import { clearSeededBuckets } from "./seeding/storage.seed.js";
 
@@ -126,6 +127,10 @@ export class DevSeedService {
     // `pnpm seed:orders`, pour que le bouton et la ligne de commande posent le
     // même jeu de données.
     const orders = await seedOrders(context, this.composer);
+    // Les sous-comptes APRÈS le reste : la remise à blanc ci-dessus efface tout
+    // client que le seed ne déclare pas, eux compris — sans cette ligne, le
+    // bouton les faisait disparaître. Mêmes fonctions que `pnpm seed:sub-accounts`.
+    await seedSubAccounts(context);
     return { reset, orders: ordersOf(orders), storage, delivery: deliveryOf(orders) };
   }
 

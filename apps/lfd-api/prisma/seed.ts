@@ -10,6 +10,7 @@ import {
 } from "../src/dev/seeding/client.seed.js";
 import { seedLegalDocuments } from "../src/dev/seeding/legal-documents.seed.js";
 import { seedStation } from "../src/dev/seeding/station.seed.js";
+import { seedSubAccountStructure } from "../src/dev/seeding/sub-accounts.seed.js";
 import { refuseNonLocalTarget } from "./local-target.js";
 import { bootstrapHarness } from "./seed-growth/harness.js";
 
@@ -76,8 +77,12 @@ async function main(): Promise<void> {
     // Le compte d'impersonation doit voir les deux espaces, sinon on développe
     // sous un utilisateur membre de rien.
     await seedImpersonatedAccess(context, [client.companyId, pendingCompanyId]);
+    // Les sous-comptes, leur STRUCTURE seulement : leur tarif et leurs
+    // commandes nomment des SKU, que la base neuve n'a pas encore
+    // (`pnpm seed:sub-accounts` les pose une fois le catalogue là).
+    await seedSubAccountStructure(context);
     console.log(`\n✔ Base prête — ${CLIENT_ENSEIGNE} (${client.reference}) + un dossier EN COURS.`);
-    console.log("  Étape suivante : pnpm --filter lfd-api seed:orders");
+    console.log("  Étape suivante : pnpm --filter lfd-api seed:orders, puis seed:sub-accounts");
   } finally {
     await harness.close();
   }

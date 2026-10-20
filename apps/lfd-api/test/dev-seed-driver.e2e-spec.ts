@@ -61,9 +61,12 @@ beforeEach(async () => {
  * Un rechargement COMPLET du jeu de données sème des dizaines de commandes par
  * les vrais handlers : 10 à 15 s seul, au-delà de 30 s quand toute la suite
  * e2e tourne (constaté le 2026-10-01 à la racine : les deux cas tombaient au
- * délai par défaut, pas sur une assertion).
+ * délai par défaut, pas sur une assertion). Porté à 240 s le 2026-10-20,
+ * comme `dev-scenario` et `dev-seed-packing` : le rechargement repose aussi
+ * les sous-comptes et leurs commandes, et 120 s ont été dépassées sous la
+ * charge de la suite.
  */
-const FULL_RELOAD_TIMEOUT_MS = 120_000;
+const FULL_RELOAD_TIMEOUT_MS = 240_000;
 
 async function reload(): Promise<DevSeedReport> {
   return jsonBody<DevSeedReport>(await admin(ctx).post(RELOAD).expect(200));

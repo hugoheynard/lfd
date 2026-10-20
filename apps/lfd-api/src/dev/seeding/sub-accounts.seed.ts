@@ -1,3 +1,4 @@
+import type { ClientContext } from "./client.seed.js";
 import { atHour, type SeedContext, shiftDays } from "./order-placing.seed.js";
 import { seedAlpesChalets } from "./sub-account-chalets.seed.js";
 import { seedHotelGroup } from "./sub-account-hotels.seed.js";
@@ -26,6 +27,19 @@ export interface SubAccountsReport {
 
 /** L'heure des gestes de structure, la veille du mois dernier. */
 const STRUCTURE_HOUR = 9;
+
+/**
+ * **La structure seule** — les deux principaux et leurs sites, sans tarif ni
+ * commande : ce que `db:seed` pose sur une base neuve, où le catalogue n'est
+ * pas encore là (le tarif et les commandes nomment des SKU). Additif, comme
+ * lui ; relancé, il ne double rien.
+ */
+export async function seedSubAccountStructure(context: ClientContext): Promise<void> {
+  const from = startOfPreviousMonth(context.now);
+  const structure = { ...context, now: atHour(shiftDays(from, -1), STRUCTURE_HOUR) };
+  await seedAlpesChalets(structure);
+  await seedHotelGroup(structure);
+}
 
 export async function seedSubAccounts(context: SeedContext): Promise<SubAccountsReport> {
   const from = startOfPreviousMonth(context.now);
