@@ -89,13 +89,20 @@ export const SUB_FAMILY_ID = "cat_pains_speciaux";
 
 export function families(): readonly MatrixFamilyRecord[] {
   return [
-    { id: OTHER_FAMILY_ID, name: { fr: "Pains" }, parentId: null, position: 2 },
-    { id: SUB_FAMILY_ID, name: { fr: "Pains spéciaux" }, parentId: OTHER_FAMILY_ID, position: 0 },
+    { id: OTHER_FAMILY_ID, name: { fr: "Pains" }, parentId: null, position: 2, isArchived: false },
+    {
+      id: SUB_FAMILY_ID,
+      name: { fr: "Pains spéciaux" },
+      parentId: OTHER_FAMILY_ID,
+      position: 0,
+      isArchived: false,
+    },
     {
       id: FAMILY_ID,
       name: { fr: "Viennoiseries", it: "Viennoiserie" },
       parentId: null,
       position: 1,
+      isArchived: false,
     },
   ];
 }

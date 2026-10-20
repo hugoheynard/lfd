@@ -5,7 +5,7 @@
  * matrice n'est pas rédiger une fiche. Les rôles sont posés en base, comme
  * la production les garde : la migration n'accorde rien.
  */
-import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 
 let ctx: E2eContext;
@@ -59,6 +59,44 @@ describe("le droit `allergen_matrix`", () => {
   it("n'ouvre pas les fiches pour autant", async () => {
     const sub = await holderOf("matrice-seule", [{ resource: "allergen_matrix", action: "read" }]);
     await ctx.asSub(sub).get("/pim/catalogue/products").expect(403);
+  });
+});
+
+/** Une famille posée par le staff de semis, qui tient le catalogue. */
+async function aFamily(name: string, parentId?: string): Promise<string> {
+  const body = parentId === undefined ? { name: { fr: name } } : { name: { fr: name }, parentId };
+  const created = await ctx.asSub(E2E_STAFF_SUB).post("/pim/catalogue/categories").send(body);
+  expect(created.status).toBe(201);
+  return jsonBody<{ id: string }>(created).id;
+}
+
+describe("la liste des familles du filtre (Hugo, 2026-10-20)", () => {
+  /**
+   * L'écran n'a que ce droit et ne lit pas l'arbre du catalogue : la matrice
+   * le lui sert, mère sans fiche comprise, archivées exclues, quel que soit
+   * le filtre.
+   */
+  it("vient avec la matrice sous le seul droit `allergen_matrix`", async () => {
+    const mother = await aFamily("Pains");
+    const daughter = await aFamily("Pains spéciaux", mother);
+    const archived = await aFamily("Ancienne gamme");
+    await ctx
+      .asSub(E2E_STAFF_SUB)
+      .put(`/pim/catalogue/categories/${archived}/archive`)
+      .send({})
+      .expect(200);
+    const sub = await holderOf("matrice-familles", [
+      { resource: "allergen_matrix", action: "read" },
+    ]);
+
+    const view = jsonBody<{
+      familyChoices: { id: string; label: string; parentId: string | null; depth: number }[];
+    }>(await ctx.asSub(sub).get(`/pim/allergen-matrix?categoryId=${daughter}`).expect(200));
+
+    expect(view.familyChoices).toEqual([
+      { id: mother, label: "Pains", parentId: null, depth: 0 },
+      { id: daughter, label: "Pains spéciaux", parentId: mother, depth: 1 },
+    ]);
   });
 });
 

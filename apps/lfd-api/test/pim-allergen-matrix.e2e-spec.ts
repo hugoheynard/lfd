@@ -60,7 +60,11 @@ interface Other {
 }
 interface Matrix {
   readonly lastModifiedAt: string | null;
-  readonly columns: readonly { readonly category: string; readonly label: string }[];
+  readonly columns: readonly {
+    readonly category: string;
+    readonly label: string;
+    readonly header: string;
+  }[];
   readonly families: readonly { readonly id: string; readonly rows: readonly Row[] }[];
   readonly mentionsTranslated: boolean;
 }
@@ -133,7 +137,11 @@ describe("GET /pim/allergen-matrix", () => {
   it("rend les quatorze catégories de l'annexe II, en italien semé", async () => {
     const view = await matrix("?locale=it");
     expect(view.columns).toHaveLength(14);
-    expect(view.columns[0]).toEqual({ category: "gluten", label: "Cereali contenenti glutine" });
+    expect(view.columns[0]).toEqual({
+      category: "gluten",
+      label: "Cereali contenenti glutine",
+      header: "Glutine",
+    });
     expect(view.mentionsTranslated).toBe(true);
   });
 
@@ -244,6 +252,7 @@ describe("GET /pim/allergen-matrix.csv", () => {
     expect(response.text).toContain('"Croissant-e";"";');
     expect(response.text).toContain('"contient : Blé"');
     expect(response.text).toContain('"Peut contenir des traces"');
+    expect(response.text).toContain('"Gluten";');
   });
 });
 
@@ -277,6 +286,10 @@ describe("GET /pim/allergen-matrix.pdf", () => {
     expect(text).toContain("Grano");
     expect(text).toContain("Può contenere tracce");
     expect(text).toContain("Pagina 1/1");
+    // Les noms courts, rendus en pied à leur libellé réglementaire semé (Hugo, 2026-10-20).
+    expect(text).toContain(
+      "Glutine: cereali contenenti glutine · Sesamo: semi di sesamo · Solfiti: anidride solforosa e solfiti in concentrazioni superiori a 10 mg/kg o 10 mg/litro",
+    );
   });
 
   it("refuse une langue inconnue", async () => {

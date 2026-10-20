@@ -105,7 +105,8 @@ describe("renderAllergenMatrixPdf", () => {
       "Périmètre : Produits publiés · Toutes les familles · Non renseignés inclus",
     );
     expect(page).toContain("Générée le 20 octobre 2026 à 21:59");
-    expect(page).toContain("Céréales contenant du gluten");
+    expect(page).toContain("Produit Gluten Lait Fruits à coque Autres");
+    expect(page).toContain("Gluten : céréales contenant du gluten");
     expect(page).toContain("Non renseigné");
     expect(page).toContain("Contient"); // la légende ouvre par une capitale (Hugo, 2026-10-20)
     expect(page).toContain("Peut contenir des traces");
@@ -139,8 +140,8 @@ describe("renderAllergenMatrixPdf", () => {
     const pages = await pagesOf(paper(many));
     expect(pages.length).toBeGreaterThan(1);
     pages.forEach((page, index) => {
-      expect(page).toContain("Céréales contenant du gluten");
-      expect(page).toContain("Fruits à coque");
+      expect(page).toContain("Produit Gluten Lait Fruits à coque Autres");
+      expect(page).toContain("Gluten : céréales contenant du gluten");
       expect(page).toContain(`Page ${String(index + 1)}/${String(pages.length)}`);
       expect(page).toContain("Établie à partir des fiches au 20 octobre 2026");
     });
@@ -162,6 +163,9 @@ describe("renderAllergenMatrixPdf", () => {
     expect(page).toContain("Può contenere tracce");
     expect(page).toContain("Non compilato");
     expect(page).toContain("Pagina 1/1");
+    // Le plus long en-tête des trois langues tient sur une ligne (en-tête resserré, 2026-10-20).
+    expect(page).toContain("Glutine Lait Frutta a guscio Altri");
+    expect(page).toContain("Glutine: cereali contenenti glutine");
     expect(page).toContain("Alcune diciture non esistono ancora in questa lingua");
   });
 

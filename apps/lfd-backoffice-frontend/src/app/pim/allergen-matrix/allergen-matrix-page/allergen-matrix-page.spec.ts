@@ -10,8 +10,8 @@ import { AllergenMatrixStore } from '../allergen-matrix.store';
 import { AllergenMatrixPage } from './allergen-matrix-page';
 
 const COLUMNS = [
-  { category: 'gluten', label: 'Céréales contenant du gluten' },
-  { category: 'milk', label: 'Lait' },
+  { category: 'gluten', label: 'Céréales contenant du gluten', header: 'Gluten' },
+  { category: 'milk', label: 'Lait', header: 'Lait' },
 ];
 
 function absentCells(): AllergenMatrixRow['cells'] {
@@ -60,6 +60,13 @@ const NOT_DECLARED = row({
 });
 const NONE = row({ variantId: 'v3', productName: 'Eau', state: 'none_declared' });
 
+/** L'arbre complet : une mère sans fiche à elle, sa fille, et une racine. */
+const FAMILY_CHOICES = [
+  { id: 'f-boulangerie', label: 'Boulangerie', parentId: null, depth: 0 },
+  { id: 'f-pains', label: 'Pains', parentId: 'f-boulangerie', depth: 1 },
+  { id: 'f-boissons', label: 'Boissons', parentId: null, depth: 0 },
+];
+
 function view(over: Partial<AllergenMatrixView> = {}): AllergenMatrixView {
   return {
     locale: 'fr',
@@ -70,6 +77,7 @@ function view(over: Partial<AllergenMatrixView> = {}): AllergenMatrixView {
     lastModifiedAt: '2026-10-19T08:30:00.000Z',
     mentionsTranslated: true,
     columns: COLUMNS,
+    familyChoices: FAMILY_CHOICES,
     families: [
       { id: 'f-pains', name: 'Pains', rows: [DECLARED, NOT_DECLARED] },
       { id: 'f-boissons', name: 'Boissons', rows: [NONE] },
@@ -165,6 +173,21 @@ describe('AllergenMatrixPage', () => {
     expect(text(host)).not.toContain('Aucune déclinaison');
   });
 
+  it('titre les colonnes du nom courant, et rend le libellé réglementaire dans la légende', async () => {
+    setup(vi.fn().mockResolvedValue(view()));
+    const host = (await render()).nativeElement as HTMLElement;
+    const headers = [...host.querySelectorAll('th')].map((th) => text(th).trim());
+    expect(headers).toContain('Gluten');
+    expect(headers).not.toContain('Céréales contenant du gluten');
+    const pairs = [...host.querySelectorAll('.legend > div')].map((entry) => [
+      entry.querySelector('dt')?.textContent?.trim(),
+      entry.querySelector('dd')?.textContent?.trim(),
+    ]);
+    expect(pairs).toContainEqual(['Gluten', 'Céréales contenant du gluten']);
+    // « Lait » a le même nom court que réglementaire : rien à rendre.
+    expect(pairs.some(([term]) => term === 'Lait')).toBe(false);
+  });
+
   it('rend le vide quand aucune déclinaison n’est retenue', async () => {
     setup(vi.fn().mockResolvedValue(view({ families: [], lastModifiedAt: null })));
     const host = (await render()).nativeElement as HTMLElement;
@@ -178,7 +201,18 @@ describe('AllergenMatrixStore', () => {
     return TestBed.runInInjectionContext(() => new AllergenMatrixStore());
   }
 
-  it('garde la liste des familles quand on en choisit une', async () => {
+  it('propose l’arbre complet des familles, indenté par rang', async () => {
+    setup(vi.fn().mockResolvedValue(view()));
+    const s = store();
+    await s.load();
+    expect(s.familyOptions()).toEqual([
+      { value: 'f-boulangerie', label: 'Boulangerie' },
+      { value: 'f-pains', label: '— Pains' },
+      { value: 'f-boissons', label: 'Boissons' },
+    ]);
+  });
+
+  it('garde toutes les familles quand on en choisit une', async () => {
     const read = vi
       .fn<(filters: AllergenMatrixFilters) => Promise<AllergenMatrixView>>()
       .mockResolvedValueOnce(view())
@@ -190,7 +224,11 @@ describe('AllergenMatrixStore', () => {
     await vi.waitFor(() => expect(s.loading()).toBe(false));
 
     expect(read).toHaveBeenLastCalledWith(expect.objectContaining({ categoryId: 'f-pains' }));
-    expect(s.familyOptions().map((o) => o.label)).toEqual(['Pains', 'Boissons']);
+    expect(s.familyOptions().map((o) => o.value)).toEqual([
+      'f-boulangerie',
+      'f-pains',
+      'f-boissons',
+    ]);
   });
 
   it('n’applique pas une réponse dépassée par une demande plus récente', async () => {

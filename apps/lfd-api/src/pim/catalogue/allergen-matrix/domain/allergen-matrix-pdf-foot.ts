@@ -1,12 +1,13 @@
 import type { AllergenMatrixWording } from "@lfd/pim-contracts";
 
 import { type Doc, MARGIN_Y, put, putRight } from "../../../../platform/pdf/paper-pdf-kit.js";
+import type { MatrixColumn } from "./allergen-matrix.js";
 import { SHEET_HEIGHT, SHEET_LEFT, SHEET_RIGHT } from "./allergen-matrix-pdf-grid.js";
 import { drawMark } from "./allergen-matrix-pdf-marks.js";
 import { fill, localDateTime } from "./allergen-matrix-pdf-words.js";
 
-/** La place réservée au pied : légende, puis phrase datée et folio. */
-export const FOOT_HEIGHT = 30;
+/** La place réservée au pied : légende, noms réglementaires, phrase datée et folio. */
+export const FOOT_HEIGHT = 42;
 
 const LEGEND_SIZE = 7.5;
 const GAP = 14;
@@ -40,11 +41,40 @@ function legend(doc: Doc, wording: AllergenMatrixWording, y: number): void {
 }
 
 /**
+ * Rend chaque nom COURANT d'en-tête à son libellé réglementaire (Hugo,
+ * 2026-10-20) : « Gluten : céréales contenant du gluten · … ». Vide quand
+ * aucune colonne n'est raccourcie.
+ */
+export function shortNameNotes(
+  columns: readonly MatrixColumn[],
+  wording: AllergenMatrixWording,
+): string {
+  return columns
+    .filter((column) => column.header !== column.label)
+    .map((column) =>
+      fill(wording.document.shortNameNote, {
+        name: column.header,
+        label:
+          column.label.charAt(0).toLocaleLowerCase() +
+          column.label.slice(1) +
+          (wording.columnNoteSuffixes[column.category] ?? ""),
+      }),
+    )
+    .join(" · ");
+}
+
+/**
  * Le pied de CHAQUE page, posé une fois le total connu : la légende, la
  * phrase datée du plan §1 (« Établie à partir des fiches au … ») et le folio.
  * La matrice est un instantané : sa date est sur chaque page (plan §2).
  */
-export function drawPageFoot(doc: Doc, wording: AllergenMatrixWording, generatedAt: Date): void {
+export function drawPageFoot(
+  doc: Doc,
+  wording: AllergenMatrixWording,
+  generatedAt: Date,
+  columns: readonly MatrixColumn[],
+): void {
+  const notes = shortNameNotes(columns, wording);
   const range = doc.bufferedPageRange();
   const footer = fill(wording.document.footer, {
     date: localDateTime(generatedAt, wording.document),
@@ -53,6 +83,7 @@ export function drawPageFoot(doc: Doc, wording: AllergenMatrixWording, generated
   for (let index = 0; index < range.count; index++) {
     doc.switchToPage(range.start + index);
     legend(doc, wording, bottom - FOOT_HEIGHT + 6);
+    put(doc, notes, SHEET_LEFT, bottom - 21, { size: 7 });
     put(doc, footer, SHEET_LEFT, bottom - 8, { size: 7.5 });
     const folio = fill(wording.document.page, {
       page: String(index + 1),

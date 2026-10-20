@@ -264,6 +264,30 @@ garde le mot de l'annexe, sans ✳ : il est réglementaire.
     traces », « Può contenere tracce » — le tableur l'écrit aussi ;
   - **tous les autres mots** (en-têtes, états, tête et pied du document) sont
     des traductions de libellés d'interface, rien de réglementaire.
+- **Q8 — La liste des familles du filtre** (Hugo, 2026-10-20) : la réponse
+  JSON de `GET /pim/allergen-matrix` porte `familyChoices: { id, label,
+parentId, depth }[]`, parce que l'écran, ouvert au seul droit
+  `allergen_matrix`, ne lit pas l'arbre du catalogue. Ce sont les familles
+  NON archivées, avec leur libellé dans la `locale` demandée. Une famille
+  mère sans fiche propre y figure. La liste ne dépend ni du filtre de
+  famille ni du périmètre : c'est la liste du filtre, pas le contenu. Ordre
+  en profondeur : chaque mère avant ses filles, frères par `position` puis
+  `id`. Une fille dont la mère est archivée remonte à la racine
+  (`depth` 0). Le nom `families` restait pris par les groupes de lignes
+  (choix du coordinateur, même jour). Lue par `AllergenMatrixSource.families()`,
+  sans seconde lecture.
+- **Q9 — Les en-têtes de colonne prennent un nom courant** (Hugo,
+  2026-10-20). Le référentiel ne change pas. Trois diffèrent : gluten →
+  « Gluten » / « Gluten » / « Glutine » ; sesame → « Sésame » / « Sesame » /
+  « Sesamo » ; sulphites → « Sulfites » / « Sulphites » / « Solfiti ». Les
+  onze autres gardent le libellé du référentiel. La table est
+  `ALLERGEN_MATRIX_WORDING[locale].columnShortNames`, partielle. Chaque
+  colonne du JSON porte un `header` à côté du `label` réglementaire. Le
+  tableur et le PDF prennent le `header`. Le pied du PDF gagne une ligne,
+  dans sa langue, qui rend le nom réglementaire de chaque nom court, avec
+  le seuil des sulfites (`columnNoteSuffixes`, verbatim de l'annexe II
+  pt 12 en italien). L'en-tête du PDF passe de 84 à 58 pt : le plus long des
+  trois langues, « Frutta a guscio », mesure 50,2 pt en Helvetica-Bold 7.
 
 ## 6. Ce que `vitruve` a changé (2026-10-20)
 

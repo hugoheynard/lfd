@@ -21,6 +21,9 @@ export type MatrixExportKind = 'pdf' | 'csv';
 /** La langue de la PAGE : l'écran parle français, seuls les exports changent de langue (Q4). */
 const SCREEN_LOCALE: Locale = 'fr';
 
+/** Un niveau de sous-famille, en tête de son libellé dans le filtre. */
+const FAMILY_DEPTH_MARK = '— ';
+
 const FALLBACK_FILE_NAMES: Readonly<Record<MatrixExportKind, string>> = {
   pdf: 'matrice-allergenes.pdf',
   csv: 'matrice-allergenes.csv',
@@ -56,16 +59,20 @@ export class AllergenMatrixStore {
   readonly exportError = signal<string | null>(null);
 
   /**
-   * Les familles du filtre — celles que la matrice SANS filtre de famille a
-   * rendues, gardées quand on en choisit une : la vue filtrée ne contient plus
-   * que celle-là.
-   *
-   * ⚠️ Une famille qui n'a aucune fiche à elle (une famille mère dont tout vit
-   * dans ses sous-familles) n'y figure pas : la matrice ne la nomme jamais.
-   * La liste complète des familles est sous `pim_catalog`, que le seul droit
-   * `allergen_matrix` n'ouvre pas.
+   * Les familles du filtre — l'arbre complet que le serveur rend avec chaque
+   * matrice (`familyChoices`), indépendant du filtre : choisir une famille ne
+   * fait disparaître aucune option. Le rang se lit par un préfixe « — » par
+   * niveau, `fold-listbox` n'ayant pas d'indentation d'option (vérifié dans
+   * `fold-ng.d.ts`, `FoldSelectOption`, le 2026-10-20). Gardées pendant une
+   * relecture : la vue précédente reste tenue jusqu'à la suivante.
    */
-  readonly familyOptions = signal<readonly FamilyOption[]>([]);
+  readonly familyOptions = computed<readonly FamilyOption[]>(
+    () =>
+      this.view()?.familyChoices.map((choice) => ({
+        value: choice.id,
+        label: `${FAMILY_DEPTH_MARK.repeat(choice.depth)}${choice.label}`,
+      })) ?? [],
+  );
 
   readonly hasRows = computed(
     () => this.view()?.families.some((family) => family.rows.length > 0) ?? false,
@@ -105,11 +112,6 @@ export class AllergenMatrixStore {
         return;
       }
       this.view.set(view);
-      if (filters.categoryId === null) {
-        this.familyOptions.set(
-          view.families.map((family) => ({ value: family.id, label: family.name })),
-        );
-      }
     } catch (caught) {
       if (seq === this.requestSeq) {
         this.loadError.set(httpErrorMessage(caught));

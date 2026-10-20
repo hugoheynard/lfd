@@ -57,10 +57,20 @@ function declaring(declared: readonly string[], mayContain: readonly string[] = 
 describe("buildAllergenMatrix — les colonnes", () => {
   it("rend les catégories de l'annexe II du référentiel, dans son ordre", () => {
     expect(build([]).columns).toEqual([
-      { category: "gluten", label: "Céréales contenant du gluten" },
-      { category: "milk", label: "Lait" },
-      { category: "tree_nuts", label: "Fruits à coque" },
+      { category: "gluten", label: "Céréales contenant du gluten", header: "Gluten" },
+      { category: "milk", label: "Lait", header: "Lait" },
+      { category: "tree_nuts", label: "Fruits à coque", header: "Fruits à coque" },
     ]);
+  });
+
+  /** Hugo, 2026-10-20 : l'en-tête prend un nom courant, le libellé reste réglementaire. */
+  it("donne un en-tête court au gluten, dans la langue, sans toucher au libellé", () => {
+    const matrix = build([], { locale: "it" });
+    expect(matrix.columns[0]).toEqual({
+      category: "gluten",
+      label: "Cereali contenenti glutine",
+      header: "Glutine",
+    });
   });
 
   it("parle italien, et dit qu'aucune mention ne manque", () => {
@@ -250,7 +260,7 @@ describe("allergenMatrixCsv", () => {
     const lines = linesOf(csv);
     expect(csv.startsWith(BOM)).toBe(true);
     expect(lines[0]).toBe(
-      '"Famille";"Produit";"Déclinaison";"SKU";"État";"Céréales contenant du gluten";"Lait";"Fruits à coque";"Autres"',
+      '"Famille";"Produit";"Déclinaison";"SKU";"État";"Gluten";"Lait";"Fruits à coque";"Autres"',
     );
     expect(lines).toContain(
       '"Viennoiseries";"Produit p";"";"SKU-p_v1";"";"contient : Blé / Peut contenir des traces : Seigle";"Peut contenir des traces";"";"contient : Sarrasin (BWD)"',

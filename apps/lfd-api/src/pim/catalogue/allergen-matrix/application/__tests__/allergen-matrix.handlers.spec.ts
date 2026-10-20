@@ -17,6 +17,8 @@ import {
 } from "../../domain/ports/allergen-matrix.source.js";
 import {
   FAMILY_ID,
+  OTHER_FAMILY_ID,
+  SUB_FAMILY_ID,
   families,
   product,
   referential,
@@ -128,6 +130,27 @@ describe("GetAllergenMatrixHandler", () => {
   });
 });
 
+describe("GetAllergenMatrixHandler — la liste du filtre", () => {
+  it("rend toutes les familles vivantes, quel que soit le filtre de famille et le périmètre", async () => {
+    const handler = new GetAllergenMatrixHandler(
+      new FixedReferential(referential()),
+      new FixedSource(RECORDS),
+      new FixedClock(GENERATED_AT),
+    );
+
+    const view = await handler.execute(
+      new GetAllergenMatrixQuery({ ...FILTERS, scope: "all", categoryId: SUB_FAMILY_ID }),
+    );
+
+    expect(view.families).toEqual([]);
+    expect(view.familyChoices).toEqual([
+      { id: FAMILY_ID, label: "Viennoiserie", parentId: null, depth: 0 },
+      { id: OTHER_FAMILY_ID, label: "Pains", parentId: null, depth: 0 },
+      { id: SUB_FAMILY_ID, label: "Pains spéciaux", parentId: OTHER_FAMILY_ID, depth: 1 },
+    ]);
+  });
+});
+
 describe("ExportAllergenMatrixCsvHandler", () => {
   it("rend le tableur et un nom de fichier qui dit la langue", async () => {
     const handler = new ExportAllergenMatrixCsvHandler(
@@ -138,7 +161,7 @@ describe("ExportAllergenMatrixCsvHandler", () => {
     const file = await handler.execute(new ExportAllergenMatrixCsvQuery(FILTERS));
 
     expect(file.fileName).toBe("matrice-allergenes-it.csv");
-    expect(file.csv).toContain('"Cereali contenenti glutine"');
+    expect(file.csv).toContain('"Glutine"');
     expect(file.csv).toContain('"contiene : Blé (it)"');
     expect(file.csv).toContain('"Altri"');
   });

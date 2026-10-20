@@ -1,4 +1,10 @@
-import { ALLERGEN_MATRIX_WORDING, LOCALES, allergenMatrixQuerySchema } from "../index.js";
+import {
+  ALLERGEN_MATRIX_WORDING,
+  LOCALES,
+  allergenMatrixQuerySchema,
+  type AllergenMatrixFamilyChoice,
+  type AllergenMatrixView,
+} from "../index.js";
 
 describe("allergenMatrixQuerySchema", () => {
   it("pose les défauts : français, publiés, non renseignés inclus", () => {
@@ -76,5 +82,18 @@ describe("ALLERGEN_MATRIX_WORDING — les mots réglementaires (Hugo, 2026-10-20
       expect(document.page).toContain("{count}");
       expect(document.family).toContain("{name}");
     }
+  });
+});
+
+describe("AllergenMatrixView.familyChoices", () => {
+  it("est exporté avec la vue : une famille du filtre porte son rang d'indentation", () => {
+    const choice: AllergenMatrixFamilyChoice = {
+      id: "cat_fille",
+      label: "Pains spéciaux",
+      parentId: "cat_mere",
+      depth: 1,
+    };
+    const choices: AllergenMatrixView["familyChoices"] = [choice];
+    expect(choices[0]).toEqual(choice);
   });
 });

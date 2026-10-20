@@ -3,6 +3,7 @@ import type { AllergenMatrixView } from "@lfd/pim-contracts";
 
 import { Clock } from "../../../../platform/time/clock.js";
 import { AllergenCatalogueReader } from "../../../allergens/domain/ports/allergen-catalogue.reader.js";
+import { familyChoices } from "../domain/family-choices.js";
 import type { MatrixFilters } from "../domain/allergen-matrix.js";
 import { AllergenMatrixSource } from "../domain/ports/allergen-matrix.source.js";
 import { loadAllergenMatrix } from "./allergen-matrix-support.js";
@@ -29,7 +30,11 @@ export class GetAllergenMatrixHandler implements IQueryHandler<
   ) {}
 
   async execute({ filters }: GetAllergenMatrixQuery): Promise<AllergenMatrixView> {
-    const { matrix, productIds } = await loadAllergenMatrix(this.referential, this.source, filters);
+    const { matrix, productIds, families } = await loadAllergenMatrix(
+      this.referential,
+      this.source,
+      filters,
+    );
     const lastModifiedAt = await this.source.lastModifiedAt(productIds);
     return {
       locale: filters.locale,
@@ -41,6 +46,7 @@ export class GetAllergenMatrixHandler implements IQueryHandler<
       mentionsTranslated: matrix.mentionsTranslated,
       columns: matrix.columns,
       families: matrix.families,
+      familyChoices: familyChoices(families, filters.locale),
     };
   }
 }

@@ -1,4 +1,4 @@
-import { readLocalized, type Locale } from "@lfd/pim-contracts";
+import { ALLERGEN_MATRIX_WORDING, readLocalized, type Locale } from "@lfd/pim-contracts";
 
 import type { AllergenCategoryView } from "../../../allergens/domain/ports/allergen-catalogue.reader.js";
 import { IncoProjector } from "../../../allergens/domain/services/inco-projector.js";
@@ -31,6 +31,8 @@ export interface MatrixFilters {
 export interface MatrixColumn {
   readonly category: IncoCategory;
   readonly label: string;
+  /** Le nom courant de l'en-tête ; `label` quand le dictionnaire n'en a pas. */
+  readonly header: string;
 }
 
 export interface MatrixRow {
@@ -89,11 +91,20 @@ export function buildAllergenMatrix(input: MatrixInput): AllergenMatrix {
     entryNames: entryNamesOf(input.referential),
     locale: filters.locale,
   };
-  const columns = columnViews.flatMap((category) =>
-    category.incoCategory === null
-      ? []
-      : [{ category: category.incoCategory, label: readLocalized(category.name, filters.locale) }],
-  );
+  const shortNames = ALLERGEN_MATRIX_WORDING[filters.locale].columnShortNames;
+  const columns = columnViews.flatMap((category) => {
+    if (category.incoCategory === null) {
+      return [];
+    }
+    const label = readLocalized(category.name, filters.locale);
+    return [
+      {
+        category: category.incoCategory,
+        label,
+        header: shortNames[category.incoCategory] ?? label,
+      },
+    ];
+  });
   return {
     columns,
     families: familiesOf(input, ranking),

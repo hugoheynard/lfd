@@ -8,6 +8,8 @@ export interface MatrixFamilyRecord {
   /** Le filtre « famille » retient aussi ses sous-familles. */
   readonly parentId: string | null;
   readonly position: number;
+  /** Une famille archivée range encore ses fiches, mais ne se propose plus au filtre. */
+  readonly isArchived: boolean;
 }
 
 /**

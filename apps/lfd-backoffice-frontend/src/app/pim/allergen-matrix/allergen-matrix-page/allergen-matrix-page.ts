@@ -119,7 +119,7 @@ export class AllergenMatrixPage {
       { key: PRODUCT_KEY, label: WORDING.headers.product },
       ...(view?.columns ?? []).map((column, index) => ({
         key: allergenKey(index),
-        label: column.label,
+        label: column.header,
         align: 'center' as const,
         // Seulement au-delà des gabarits : un gabarit l'emporte sur `value`.
         ...(index >= ALLERGEN_SLOT_COUNT
@@ -129,6 +129,17 @@ export class AllergenMatrixPage {
       { key: OTHERS_KEY, label: WORDING.headers.others },
     ];
   });
+
+  /**
+   * Les en-têtes courts rendus à leur libellé réglementaire, dans la légende :
+   * une entrée par colonne dont le nom courant diffère (« Gluten » → « Céréales
+   * contenant du gluten »). La légende plutôt qu'un `title` : lue par tous, au
+   * clavier comme au lecteur d'écran, et la table fold n'a pas d'infobulle
+   * d'en-tête.
+   */
+  protected readonly shortNames = computed(
+    () => this.store.view()?.columns.filter((column) => column.header !== column.label) ?? [],
+  );
 
   private readonly categoryKeys = computed(
     () => this.store.view()?.columns.map((column) => column.category) ?? [],

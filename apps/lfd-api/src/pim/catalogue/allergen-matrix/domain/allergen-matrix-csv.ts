@@ -106,7 +106,7 @@ export function allergenMatrixCsv(matrix: AllergenMatrix, locale: Locale): strin
     headers.variant,
     headers.sku,
     headers.state,
-    ...matrix.columns.map((column) => column.label),
+    ...matrix.columns.map((column) => column.header),
     headers.others,
   ]);
   const lines = matrix.families.flatMap((family) =>

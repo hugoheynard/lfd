@@ -24,8 +24,13 @@ export const SHEET_RIGHT = SHEET_WIDTH - MARGIN_X;
 
 const PRODUCT_WIDTH = 160;
 const OTHERS_WIDTH = 105;
-/** La hauteur des en-têtes de colonnes, écrits à la verticale. */
-export const COLUMN_HEADER_HEIGHT = 84;
+/**
+ * La hauteur des en-têtes de colonnes, écrits à la verticale. Resserrée de 84
+ * à 58 avec les noms courants (Hugo, 2026-10-20) : le plus long des trois
+ * langues, « Frutta a guscio », mesure 50,2 pt en Helvetica-Bold 7 (mesuré le
+ * 2026-10-20) et tient sur une ligne dans 58 − 2 × PAD = 52 pt.
+ */
+export const COLUMN_HEADER_HEIGHT = 58;
 const PAD = 3;
 const MIN_ROW = 16;
 const MARK_RADIUS = 3.2;
@@ -62,10 +67,10 @@ export function drawColumnHeaders(
   grid.columns.forEach((column, index) => {
     const size = 7;
     const options = { width: COLUMN_HEADER_HEIGHT - 2 * PAD };
-    const height = doc.font(BOLD).fontSize(size).heightOfString(column.label, options);
+    const height = doc.font(BOLD).fontSize(size).heightOfString(column.header, options);
     const x = cellLeft(grid, index) + Math.max(PAD / 2, (grid.cellWidth - height) / 2);
     doc.save().rotate(-90, { origin: [x, bottom - PAD] });
-    doc.text(column.label, x, bottom - PAD, options);
+    doc.text(column.header, x, bottom - PAD, options);
     doc.restore();
   });
   put(doc, wording.headers.others, grid.othersLeft + PAD, bottom - 10, { size: 8, bold: true });

@@ -18,6 +18,8 @@ export interface LoadedAllergenMatrix {
   readonly productIds: readonly string[];
   /** Le nom de la famille filtrée, dans la langue ; `null` = toutes. */
   readonly familyName: string | null;
+  /** Toutes les familles lues, pour la liste du filtre — pas de seconde lecture. */
+  readonly families: readonly MatrixFamilyRecord[];
 }
 
 /**
@@ -40,6 +42,7 @@ export async function loadAllergenMatrix(
     matrix: buildAllergenMatrix(input),
     productIds: retainedProducts(input).map((product) => product.id),
     familyName: familyNameOf(families, filters),
+    families,
   };
 }
 

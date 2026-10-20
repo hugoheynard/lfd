@@ -39,6 +39,7 @@ export class RepositoryAllergenMatrixSource extends AllergenMatrixSource {
       name: category.name,
       parentId: category.parentId,
       position: category.position,
+      isArchived: category.isArchived,
     }));
   }
 

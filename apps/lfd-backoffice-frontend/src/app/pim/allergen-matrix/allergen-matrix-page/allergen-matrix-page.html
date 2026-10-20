@@ -113,6 +113,12 @@
           <dt>{{ wording.states.not_declared }}</dt>
           <dd>{{ wording.document.legendNotDeclared }}</dd>
         </div>
+        @for (column of shortNames(); track column.category) {
+          <div>
+            <dt>{{ column.header }}</dt>
+            <dd>{{ column.label }}</dd>
+          </div>
+        }
       </dl>
       @if (store.view()?.mentionsTranslated === false) {
         <fold-callout variant="warning">{{ wording.document.untranslated }}</fold-callout>

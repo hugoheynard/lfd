@@ -174,7 +174,7 @@ export function renderAllergenMatrixPdf(paper: AllergenMatrixPaper, logo: Buffer
     (doc) => {
       const sheet: Sheet = { doc, paper, wording, grid: gridOf(paper.matrix.columns), y: MARGIN_Y };
       drawBody(sheet, logo);
-      drawPageFoot(doc, wording, paper.generatedAt);
+      drawPageFoot(doc, wording, paper.generatedAt, paper.matrix.columns);
     },
     true,
     "landscape",

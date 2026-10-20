@@ -64,6 +64,12 @@ export interface AllergenMatrixColumn {
   readonly category: string;
   /** La mention d'étiquette, dans la langue demandée (repli français). */
   readonly label: string;
+  /**
+   * Le nom COURANT de l'en-tête (Hugo, 2026-10-20) : « Gluten » plutôt que
+   * « Céréales contenant du gluten ». Égal à `label` quand le dictionnaire
+   * n'en donne pas (`columnShortNames`).
+   */
+  readonly header: string;
 }
 
 export interface AllergenMatrixCell {
@@ -121,6 +127,21 @@ export interface AllergenMatrixFamily {
   readonly rows: readonly AllergenMatrixRow[];
 }
 
+/**
+ * Une famille que le filtre propose (décision de Hugo, 2026-10-20) : l'écran
+ * de la matrice n'a que le droit `allergen_matrix` et ne lit pas l'arbre du
+ * catalogue ailleurs.
+ */
+export interface AllergenMatrixFamilyChoice {
+  readonly id: string;
+  /** Dans la langue demandée (repli français). */
+  readonly label: string;
+  /** `null` pour une racine — y compris une fille dont la mère est archivée. */
+  readonly parentId: string | null;
+  /** 0 pour une racine : l'écran indente par ce rang. */
+  readonly depth: number;
+}
+
 /** La matrice entière — un instantané daté. */
 export interface AllergenMatrixView {
   readonly locale: Locale;
@@ -144,6 +165,13 @@ export interface AllergenMatrixView {
   readonly mentionsTranslated: boolean;
   readonly columns: readonly AllergenMatrixColumn[];
   readonly families: readonly AllergenMatrixFamily[];
+  /**
+   * La LISTE du filtre, pas le contenu : toutes les familles non archivées,
+   * indépendamment de `categoryId` et de `scope` — une mère sans fiche propre
+   * comprise. Parcours en profondeur : chaque mère avant ses filles, frères
+   * par rang puis identifiant.
+   */
+  readonly familyChoices: readonly AllergenMatrixFamilyChoice[];
 }
 
 /**
@@ -174,6 +202,8 @@ export interface AllergenMatrixDocumentWording {
   /** « 20 octobre 2026 à 21:59 » : le mot entre la date et l'heure. */
   readonly timeJoiner: string;
   readonly months: readonly string[];
+  /** Une entrée du pied qui rend un nom court à son libellé réglementaire. */
+  readonly shortNameNote: string;
 }
 
 /** Les mots fixes d'une matrice dans une langue — en-têtes, états, valeurs. */
@@ -199,6 +229,17 @@ export interface AllergenMatrixWording {
    */
   readonly presence: { readonly contains: string; readonly traces: string };
   readonly document: AllergenMatrixDocumentWording;
+  /**
+   * Les noms COURANTS des en-têtes, par catégorie INCO (Hugo, 2026-10-20) —
+   * PARTIELLE : une catégorie absente garde le libellé du référentiel, qui ne
+   * change pas. Le PDF rend en pied le nom réglementaire de chacune.
+   */
+  readonly columnShortNames: Readonly<Partial<Record<string, string>>>;
+  /**
+   * Ce que le pied ajoute au libellé réglementaire d'une catégorie raccourcie
+   * — le seuil des sulfites, verbatim de l'annexe II pt 12 en italien.
+   */
+  readonly columnNoteSuffixes: Readonly<Partial<Record<string, string>>>;
 }
 
 /**
@@ -273,7 +314,10 @@ export const ALLERGEN_MATRIX_WORDING: Readonly<Record<Locale, AllergenMatrixWord
         "novembre",
         "décembre",
       ],
+      shortNameNote: "{name} : {label}",
     },
+    columnShortNames: { gluten: "Gluten", sesame: "Sésame", sulphites: "Sulfites" },
+    columnNoteSuffixes: { sulphites: ", au-delà de 10 mg/kg ou 10 mg/l" },
   },
   en: {
     title: "Substances or products causing allergies or intolerances",
@@ -325,7 +369,10 @@ export const ALLERGEN_MATRIX_WORDING: Readonly<Record<Locale, AllergenMatrixWord
         "November",
         "December",
       ],
+      shortNameNote: "{name}: {label}",
     },
+    columnShortNames: { gluten: "Gluten", sesame: "Sesame", sulphites: "Sulphites" },
+    columnNoteSuffixes: { sulphites: ", above 10 mg/kg or 10 mg/litre" },
   },
   it: {
     title: "Sostanze o prodotti che provocano allergie o intolleranze",
@@ -379,6 +426,9 @@ export const ALLERGEN_MATRIX_WORDING: Readonly<Record<Locale, AllergenMatrixWord
         "novembre",
         "dicembre",
       ],
+      shortNameNote: "{name}: {label}",
     },
+    columnShortNames: { gluten: "Glutine", sesame: "Sesamo", sulphites: "Solfiti" },
+    columnNoteSuffixes: { sulphites: " in concentrazioni superiori a 10 mg/kg o 10 mg/litro" },
   },
 };
