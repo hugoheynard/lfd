@@ -205,7 +205,7 @@ const PAYMENT_STEPS: Readonly<
 > = {
   // Facturée au terme : rien n'est encaissé au checkout, et rien n'attend.
   // L'étape est acquise du point de vue du parcours — le badge d'en-tête, lui,
-  // dit toujours « À facturer ».
+  // dit toujours « Au compte — à facturer ».
   not_required: {
     label: 'Facturée au terme',
     icon: 'receipt',

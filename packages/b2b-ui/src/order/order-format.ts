@@ -49,7 +49,9 @@ const STATUS: Readonly<Record<OrderStatus, Labelled>> = {
  * sans quoi une commande à régler passerait pour une commande sans reste à payer.
  */
 const PAYMENT: Readonly<Record<PaymentStatus, Labelled>> = {
-  not_required: { label: 'À facturer', variant: 'neutral' },
+  // « Au compte » d'abord : c'est le régime (rien ne s'encaisse au checkout),
+  // puis ce qui reste à faire (Hugo, 2026-10-20).
+  not_required: { label: 'Au compte — à facturer', variant: 'neutral' },
   pending: { label: 'Paiement en attente', variant: 'warning' },
   paid: { label: 'Payée', variant: 'success' },
   failed: { label: 'Paiement échoué', variant: 'alert' },
