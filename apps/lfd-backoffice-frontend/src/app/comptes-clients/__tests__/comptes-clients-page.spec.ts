@@ -156,6 +156,16 @@ describe('ComptesClientsPage', () => {
     expect(page['hierarchy']()).toBe('principal');
   });
 
+  it('compte les sous-comptes de chaque principal', async () => {
+    const sub = (id: string): AdminCompany => ({
+      ...makeCompany(id, 'active'),
+      parent: { id: '3', enseigne: 'Principal' },
+    });
+    const page = await setup([...COMPANIES, sub('6'), sub('7')]);
+    expect(page['subAccountsOf'](makeCompany('3', 'active'))).toBe(2);
+    expect(page['subAccountsOf'](makeCompany('1', 'pending'))).toBe(0);
+  });
+
   it('ignore une valeur de filtre inconnue', async () => {
     const page = await setup();
     page['onFilterChange']('active');

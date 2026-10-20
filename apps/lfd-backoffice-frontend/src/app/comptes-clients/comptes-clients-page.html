@@ -141,6 +141,14 @@
           @if (row.parent; as parent) {
             <app-sub-account-badge [parent]="parent" />
           }
+          <!-- Un principal le dit, avec son nombre de sous-comptes. -->
+          @if (subAccountsOf(row); as count) {
+            <fold-badge
+              variant="info"
+              [content]="count + ' sous-compte' + (count > 1 ? 's' : '')"
+              data-sub-account-count
+            />
+          }
         </span>
         <!-- En second : la dénomination du greffe, quand elle diffère du nom
              d'usage. Elle sert à retrouver un dossier, pas à reconnaître un
@@ -234,6 +242,14 @@
         @if (row.parent; as parent) {
           <span class="rc-parent">
             <app-sub-account-badge [parent]="parent" />
+          </span>
+        }
+        @if (subAccountsOf(row); as count) {
+          <span class="rc-parent">
+            <fold-badge
+              variant="info"
+              [content]="count + ' sous-compte' + (count > 1 ? 's' : '')"
+            />
           </span>
         }
 

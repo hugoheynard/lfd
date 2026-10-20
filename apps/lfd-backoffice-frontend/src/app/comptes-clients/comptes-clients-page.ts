@@ -206,9 +206,22 @@ export class ComptesClientsPage {
    * Les comptes qui ont au moins un sous-compte. Lu dans la liste elle-même :
    * chaque sous-compte y porte son `parent`, et la liste est chargée entière.
    */
-  private readonly principalIds = computed(
-    () => new Set(this.companies().flatMap((c) => (c.parent === null ? [] : [c.parent.id]))),
-  );
+  private readonly subAccountCounts = computed(() => {
+    const counts = new Map<string, number>();
+    for (const company of this.companies()) {
+      if (company.parent !== null) {
+        counts.set(company.parent.id, (counts.get(company.parent.id) ?? 0) + 1);
+      }
+    }
+    return counts;
+  });
+
+  private readonly principalIds = computed(() => new Set(this.subAccountCounts().keys()));
+
+  /** Combien de sous-comptes ce compte porte — `0` s'il n'est pas un principal. */
+  protected subAccountsOf(company: AdminCompany): number {
+    return this.subAccountCounts().get(company.id) ?? 0;
+  }
 
   /**
    * Une société `pending` qui a **demandé de l'assistance** (support ouvert) —

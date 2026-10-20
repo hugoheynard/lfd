@@ -405,8 +405,11 @@ Back-office, `apps/lfd-backoffice-frontend/src/app/` :
   (Hugo : « beaucoup de mélange avec les warnings ») : identité, facturation
   et paiement du principal en lecture.
 - **Badge « Sous-compte de _Principal_ »** (`comptes-clients/sub-account-badge/`),
-  cliquable, dans la liste des clients, le cockpit (`pinned-accounts`) et la
-  fiche. Chaque sous-compte reste un client à part entière, sans total de
+  cliquable, dans la liste des clients et le cockpit (`pinned-accounts`) ;
+  sur la fiche, le principal est une ligne de la carte identité du tableau
+  de bord (« Site de » / « Entité rattachée à »), plus un badge d'en-tête
+  depuis le 2026-10-20. Un principal porte dans la liste un badge
+  « N sous-comptes », compté sur la liste chargée. Chaque sous-compte reste un client à part entière, sans total de
   groupe. ⚠️ Non retrouvé dans la liste des commandes (le lecteur
   `prisma-admin-order-list.reader.ts` connaît la hiérarchie ; l'écran n'a pas
   été ouvert).
