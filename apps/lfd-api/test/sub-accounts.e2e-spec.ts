@@ -279,6 +279,29 @@ describe("Rattacher et détacher", () => {
     expect(await ctx.prisma.companyFollow.count({ where: { companyId: client } })).toBe(1);
   });
 
+  /**
+   * Un compte a UN principal : le rattacher ailleurs sans le détacher le
+   * ferait changer de payeur et de tarif en un geste (Hugo, 2026-10-20).
+   */
+  it("refuse de rattacher ailleurs un compte déjà rattaché, tant qu'il n'est pas détaché", async () => {
+    const premier = await principal();
+    const second = await principal();
+    const client = (await createCompany(ctx.prisma, { enseigne: "Chalet Mélèze" })).id;
+    await admin().post(`/admin/companies/${client}/parent`).send({ parentId: premier }).expect(204);
+
+    const refused = await admin()
+      .post(`/admin/companies/${client}/parent`)
+      .send({ parentId: second })
+      .expect(409);
+    expect(refused.body).toMatchObject({ code: "account.hierarchy.already_sub_account" });
+    const row = await ctx.prisma.company.findUniqueOrThrow({ where: { id: client } });
+    expect(row.parentCompanyId).toBe(premier);
+
+    // Le chemin de sortie que le message nomme : détacher, puis rattacher.
+    await admin().post(`/admin/companies/${client}/parent/detach`).expect(204);
+    await admin().post(`/admin/companies/${client}/parent`).send({ parentId: second }).expect(204);
+  });
+
   it("refuse un principal qui est son propre sous-compte, et un cycle", async () => {
     const groupe = await principal();
     const chalet = await createChalet(groupe, []);
