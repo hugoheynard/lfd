@@ -80,12 +80,13 @@ function focusOf(image: DoorImage | null | undefined): string | null {
 export const FEATURED_WIDTHS = [560, 1120] as const;
 
 /**
- * Où revient un pro après connexion : l'accueil de son espace. La même cible
- * que la porte pro de l'inscription (`AFTER_ENTRY_PRO`, `accueil-page.ts`,
- * relu le 2026-10-19) — recopiée plutôt qu'importée, l'inscription n'exportant
- * pas sa constante et ne devant pas être touchée.
+ * Où revient un pro après connexion : l'accueil, `/bienvenue` (Hugo,
+ * 2026-10-20 : « quand je me connecte depuis /pro ça m'amène à /mon-compte au
+ * lieu de bienvenue »). Ce n'est PAS la cible de l'inscription pro
+ * (`AFTER_ENTRY_PRO`, `accueil-page.ts`), qui mène à Mon compte pour compléter
+ * un dossier neuf : se connecter n'est pas s'inscrire.
  */
-export const PRO_HOME = '/mon-compte';
+export const PRO_HOME = '/bienvenue';
 
 /** L'inscription, ouverte du côté pro (`#pro`, cf. `accueil-page.ts`). */
 export const PRO_REGISTER = '/inscription#pro';

@@ -189,7 +189,7 @@ describe('ProLanding — l’accueil pro public (/pro)', () => {
     expect(maybe('pro-featured')?.textContent).not.toMatch(/€|HT|TTC/);
   });
 
-  it('incontournables : le clic sur une carte ouvre la connexion, retour sur /mon-compte', async () => {
+  it('incontournables : le clic sur une carte ouvre la connexion, retour sur /bienvenue', async () => {
     answerFeatured(FEATURED);
     await settle();
     const card = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>(
@@ -200,7 +200,7 @@ describe('ProLanding — l’accueil pro public (/pro)', () => {
     );
     card?.click();
     expect(opened).toEqual([
-      { component: SignInDialog, data: { target: '/mon-compte', email: '' } },
+      { component: SignInDialog, data: { target: '/bienvenue', email: '' } },
     ]);
   });
 
@@ -275,19 +275,19 @@ describe('ProLanding — l’accueil pro public (/pro)', () => {
     expect(text).toContain(PRO_LANDING_FR.delivery.tag);
   });
 
-  it('« Je me connecte » ouvre la connexion de la boutique, retour sur /mon-compte', () => {
+  it('« Je me connecte » ouvre la connexion de la boutique, retour sur /bienvenue', () => {
     expect(el('pro-sign-in').textContent?.trim()).toBe(PRO_LANDING_FR.signIn);
     el('pro-sign-in').click();
     expect(opened).toEqual([
-      { component: SignInDialog, data: { target: '/mon-compte', email: '' } },
+      { component: SignInDialog, data: { target: '/bienvenue', email: '' } },
     ]);
   });
 
-  it('déjà reconnu, « Je me connecte » mène droit à /mon-compte sans dialogue', () => {
+  it('déjà reconnu, « Je me connecte » mène droit à /bienvenue sans dialogue', () => {
     authenticated.set(true);
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
     el('pro-sign-in').click();
-    expect(navigate).toHaveBeenCalledWith('/mon-compte');
+    expect(navigate).toHaveBeenCalledWith('/bienvenue');
     expect(opened).toEqual([]);
   });
 
@@ -299,7 +299,7 @@ describe('ProLanding — l’accueil pro public (/pro)', () => {
       card.click();
       card.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
       card.dispatchEvent(new KeyboardEvent('keydown', { key: ' ' }));
-      const expected = { component: SignInDialog, data: { target: '/mon-compte', email: '' } };
+      const expected = { component: SignInDialog, data: { target: '/bienvenue', email: '' } };
       expect(opened).toEqual([expected, expected, expected]);
     });
   }
