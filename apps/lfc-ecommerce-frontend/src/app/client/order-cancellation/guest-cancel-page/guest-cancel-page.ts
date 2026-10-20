@@ -168,7 +168,6 @@ export class GuestCancelPage {
     const auth = inject(AuthFacade);
     effect(() => chrome.kicker.set(this.c().guestTitle));
     chrome.back.set(null);
-    chrome.bell.set(null);
     effect(() => chrome.menu.set(auth.isAuthenticated()));
     // Le fragment n'existe que dans le navigateur : le serveur rend le chargement.
     if (isPlatformBrowser(inject(PLATFORM_ID))) {

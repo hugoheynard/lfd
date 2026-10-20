@@ -36,12 +36,6 @@ export class ClientChrome {
    */
   readonly menu = signal(false);
 
-  /** Ce que fait la cloche — `null` quand l'écran n'en porte pas. */
-  readonly bell = signal<(() => void) | null>(null);
-
-  /** Le nombre de non-lues. Zéro : la cloche reste, sa pastille disparaît. */
-  readonly bellCount = signal(0);
-
   /**
    * L'écran garde-t-il la barre au-delà du pli ?
    *

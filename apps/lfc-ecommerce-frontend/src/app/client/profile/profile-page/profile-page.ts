@@ -100,7 +100,6 @@ export class ProfilePage {
     effect(() => this.chrome.kicker.set(this.t().chrome.myProfile));
     this.chrome.back.set(null);
     this.chrome.menu.set(true);
-    this.chrome.bell.set(null);
     this.chrome.barOnDesktop.set(true);
   }
 

@@ -283,7 +283,6 @@ describe('AccueilPage · porte pro', () => {
     const chrome = TestBed.inject(ClientChrome);
 
     expect(chrome.menu()).toBe(false);
-    expect(chrome.bell()).toBeNull();
     expect(chrome.barOnDesktop()).toBe(false);
     expect(chrome.kicker()).toBe(PRO_ACCOUNT_FR.door.kicker);
   });

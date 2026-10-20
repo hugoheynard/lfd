@@ -126,7 +126,6 @@ export class CommandesPage {
     effect(() => this.chrome.kicker.set(this.t().nav.destinations.orders));
     this.chrome.back.set(null);
     this.chrome.menu.set(true);
-    this.chrome.bell.set(null);
     this.chrome.barOnDesktop.set(true);
   }
 

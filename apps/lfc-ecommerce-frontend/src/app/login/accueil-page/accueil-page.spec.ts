@@ -142,9 +142,8 @@ describe('AccueilPage', () => {
     expect(chrome.back()).toBeNull();
   });
 
-  it("garde la pastille de marque : un visiteur n'a ni menu ni cloche", () => {
+  it("garde la pastille de marque : un visiteur n'a pas de menu", () => {
     expect(chrome.menu()).toBe(false);
-    expect(chrome.bell()).toBeNull();
   });
 
   /**

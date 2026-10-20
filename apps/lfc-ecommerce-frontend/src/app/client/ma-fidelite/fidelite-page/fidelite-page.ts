@@ -46,7 +46,6 @@ export class FidelitePage {
     effect(() => this.chrome.kicker.set(this.c().title));
     this.chrome.back.set(null);
     this.chrome.menu.set(true);
-    this.chrome.bell.set(null);
     this.chrome.barOnDesktop.set(true);
   }
 }

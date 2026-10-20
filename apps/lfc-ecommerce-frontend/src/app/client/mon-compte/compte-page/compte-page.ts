@@ -347,7 +347,6 @@ export class ComptePage {
     });
     this.chrome.back.set(null);
     this.chrome.menu.set(true);
-    this.chrome.bell.set(null);
     this.chrome.barOnDesktop.set(true);
     // En pile, le bandeau descend dans la page pour y défiler (voir le gabarit).
     // Rallumé en partant : l'écran suivant n'a pas repris le sien.
