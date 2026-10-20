@@ -100,7 +100,10 @@
          ⚠️ `ClientChrome.bell` et `bellCount` perdent ici leur dernier lecteur,
          et six écrans les règlent encore pour personne. Signalé à Hugo ; leur
          retrait est un geste à part, comme celui de `kicker`. -->
-    @if (recognised()) {
+    <!-- Masquée le 2026-10-20 (Hugo) : son fil est encore la maquette
+         (`NOTIFICATIONS_DEMO`), et un vrai client y lisait des notifications
+         inventées. Elle revient quand le fil sera réel : `notificationsReady`. -->
+    @if (recognised() && notificationsReady) {
       <app-notifications-menu />
     }
 

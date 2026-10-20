@@ -117,6 +117,13 @@ export class ClientShell {
 
   /** Reconnu = la barre sert son menu de personne ; sinon, elle sert l'entrée. */
   protected readonly recognised = computed(() => this.auth.isAuthenticated());
+  /**
+   * La cloche attend un fil RÉEL : `NotificationsFeed` ne lit encore que la
+   * maquette (`notifications.fixture.ts`), qu'un vrai client prendrait pour
+   * ses notifications. Masquée le 2026-10-20 à la demande de Hugo ; passer à
+   * `true` le jour où le fil lit le serveur.
+   */
+  protected readonly notificationsReady = false;
 
   constructor() {
     // Instancié pour son EFFET, pas pour son API : c'est lui qui repose prénom
