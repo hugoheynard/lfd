@@ -28,6 +28,19 @@ export const PRIMARY_CONTACT_CHANGED = "company.primary_contact_changed";
 export const BANK_ACCOUNT_CHANGED = "company.bank_account_changed";
 export const MANDATE_PROOF_ATTACHED = "payment_mandate.proof_attached";
 
+/**
+ * Les gestes d'un site sur ses paniers récurrents (N4e) — mêmes noms qu'au
+ * journal. ⚠️ `subscription.created` y est écrit par la croissance (en
+ * mémoire) ; le fait durable du même nom vit dans la boîte d'envoi et
+ * n'écrit rien au journal.
+ */
+export const SUBSCRIPTION_CREATED = "subscription.created";
+export const SUBSCRIPTION_STATUS_CHANGED = "subscription.status_changed";
+export const SUBSCRIPTION_DELETED = "subscription.deleted";
+
+/** L'état d'un panier récurrent APRÈS un changement de statut. */
+export type GestureStatus = "active" | "paused";
+
 /** Un geste de site écrit en durable. */
 export type SiteGestureType =
   | typeof DELIVERY_ADDRESS_ADDED
@@ -39,7 +52,10 @@ export type SiteGestureType =
   | typeof CONTACT_REMOVED
   | typeof PRIMARY_CONTACT_CHANGED
   | typeof BANK_ACCOUNT_CHANGED
-  | typeof MANDATE_PROOF_ATTACHED;
+  | typeof MANDATE_PROOF_ATTACHED
+  | typeof SUBSCRIPTION_CREATED
+  | typeof SUBSCRIPTION_STATUS_CHANGED
+  | typeof SUBSCRIPTION_DELETED;
 
 /** Qui a fait le geste : un client nommé par son id, ou l'équipe. */
 export type GestureActor =
@@ -74,14 +90,30 @@ export class SiteGestureFact implements DurableEvent {
     /** L'objet du geste (l'adresse, le contact ; le site pour le contact principal) — un identifiant, jamais son contenu. */
     readonly subjectId: string,
     readonly stamp: SiteGestureStamp,
+    /** L'état d'arrivée d'un changement de statut ; `null` pour tout autre geste. */
+    readonly status: GestureStatus | null = null,
   ) {}
 
   durableFact(): DurableFact {
     return {
       type: this.type,
       key: `${this.type}:${this.gestureId}`,
-      payload: { gestureId: this.gestureId, subjectId: this.subjectId, ...this.stamp },
+      payload: {
+        gestureId: this.gestureId,
+        subjectId: this.subjectId,
+        ...this.stamp,
+        ...(this.status === null ? {} : { status: this.status }),
+      },
     };
+  }
+
+  /** @throws {SiteGesturePayloadError} un changement de statut sans état d'arrivée lisible. */
+  static statusOf(payload: Readonly<Record<string, unknown>>): GestureStatus {
+    const { status } = payload;
+    if (status !== "active" && status !== "paused") {
+      throw new SiteGesturePayloadError();
+    }
+    return status;
   }
 
   /** @throws {SiteGesturePayloadError} charge hors forme — faute d'émetteur. */

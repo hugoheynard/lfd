@@ -1,6 +1,6 @@
 # Plan — le principal est prévenu de ce que font ses sous-comptes
 
-> 📐 **Plan — N1, N2, N3, N4a à N4d et l'interrupteur bâtis le 2026-10-20**, N4e à faire. Demande de Hugo : « savoir quelles
+> 📐 **Plan — N1 à N4e et l'interrupteur bâtis le 2026-10-20.** Reste : la purge à douze mois (dette nommée). Demande de Hugo : « savoir quelles
 > actions menées par le sous-compte doivent être notifiées au principal, avec un
 > mapping de rôle ». Décisions de Hugo le même jour : **mail seul** ; le
 > tableau action × rôle est **réglé par le staff, principal par principal**.
@@ -560,6 +560,191 @@ principal, désactivé par défaut**.
 - **Idempotence** : une requête rejouée fait deux faits, donc deux avis —
   assumé, sur un RIB deux avis valent mieux que zéro.
 - e2e `apps/lfd-api/test/sub-account-notice-bank.e2e-spec.ts`.
+
+#### N4e — conception, v2 (2026-10-20)
+
+> Écrite sur ce qui a été OUVERT le 2026-10-20 ; chaque chemin cité l'a été.
+> **v2** : contredite par `vitruve` le même jour (aucun BLOQUANT, six
+> SÉRIEUX), puis tranchée par Hugo — voir « Décisions de Hugo sur N4e » et
+> « Ce que `vitruve` a changé à N4e », en fin de section.
+
+**Ce qui existe.** Un abonnement (`prisma/schema/public/subscriptions.prisma`,
+modèle `Subscription`) appartient à une PERSONNE (`placed_by_user_id`), pas à
+une société : aucune colonne `company_id`. Le mur est la personne — `load(id,
+ownerUserId)` filtre sur `placedByUserId`
+(`apps/lfd-api/src/b2b/subscriptions/infrastructure/prisma-subscription.repository.ts`).
+La vue staff rattache par les rattachements de la personne
+(`listForCompany`, `placedBy.memberships.some(companyId)`,
+`prisma-subscription.reader.ts`). Le staff ne fait AUCUN geste : son
+contrôleur n'a qu'un `GET` (`admin-subscriptions.controller.ts`).
+
+**La migration** (additive) : `subscriptions.company_id TEXT NULL`, index,
+clé étrangère vers `companies` en **`ON DELETE RESTRICT`** — comme
+`orders.principal_company_id` (N1). Une société n'est jamais supprimée
+physiquement (archivage, CLAUDE.md §3) ; `SET NULL` effacerait en silence le
+seul lien entre un abonnement et son site le jour où quelqu'un le ferait,
+alors que `RESTRICT` le refuse bruyamment. Les abonnements existants restent
+**NULL**, sans remplissage deviné (une personne de deux sociétés rend le site
+indécidable) : **un geste sur eux ne prévient personne** — écrit et assumé
+(pré-lancement).
+
+**La création porte la société qui agit** : `@ActingCompany()` dans
+`SubscriptionsController.create`, passé à `CreateSubscriptionCommand`, copié
+par `Subscription.open` et persisté. L'espace est déjà déclaré par l'en-tête
+d'espace de travail que la boutique pose sur chaque requête vers l'API
+(`apps/lfc-ecommerce-frontend/src/app/client/client-workspace.interceptor.ts`)
+et que le garde vérifie contre les rattachements (`resolve-company.ts`) : **le
+contrat HTTP ne change pas**, et l'écran de création
+(`legacy/commandes/recurring-order-panel/`, routé par `commande-page`) non
+plus. Qui peut créer pour une société : **tout membre**, comme une commande
+(`ensureOrderMember`, `orders/domain/services/order-access.ts`). En perso
+(espace perso ou sans rattachement), `company_id` NULL : pas d'avis.
+
+**Les gestes** (client seulement — le staff n'en a pas) :
+
+| Geste               | Handler                                 | Fait durable (nom du journal)        | Mail                                   |
+| ------------------- | --------------------------------------- | ------------------------------------ | -------------------------------------- |
+| création            | `create-subscription.handler.ts`        | `subscription.created`               | « a créé un panier récurrent »         |
+| pause               | `set-subscription-status.handler.ts`    | `subscription.status_changed`        | « a mis en pause un panier récurrent » |
+| reprise             | idem                                    | idem                                 | « a repris un panier récurrent »       |
+| arrêt               | `delete-subscription.handler.ts`        | `subscription.deleted`               | « a arrêté un panier récurrent »       |
+| occurrence modifiée | `upsert-occurrence-override.handler.ts` | `subscription.occurrence_overridden` | **hors périmètre proposé** (N4e-Q2)    |
+
+- Pour pause, reprise et arrêt, la société est **celle copiée sur
+  l'abonnement** (lue au chargement), pas l'espace de la requête : un geste
+  sur un abonnement d'un site reste un geste de ce site.
+- 🔴 **L'arrêt supprime physiquement** (`subscriptions.remove` →
+  `prisma.subscription.delete`) : l'avis « arrêté » et le fait du journal en
+  sont les seules traces. Le fait durable est écrit dans la même `uow.run`
+  que la suppression ; sa charge vient de l'état CHARGÉ avant le geste (v2).
+- La création n'a **pas** d'unité de travail aujourd'hui (`create` puis
+  `publish` en mémoire, best-effort) : N4e en ajoute une autour de l'écriture
+  et du fait durable ; le signal de croissance en mémoire reste après.
+- Chaque fait porte `siteCompanyId` (purge du scénario de dev), le principal
+  lu par `SitePrincipalLock` dans la transaction, l'auteur (le client), `byTeam:
+false`. Un abonnement sans `company_id` écrit son fait sans principal
+  (règle N4 v2) : aucun avis. Un
+  seul abonné par type, `GestureNoticeDispatcher`, l'interrupteur dans l'envoi
+  commun.
+- La clé du tableau est `subscription_changed` (défaut owner, admin, orders) ;
+  la ligne apparaît dans la carte N3 par la liste partagée.
+
+**Le mail** : l'action seule et le site. Ni lignes, ni adresse, ni cadence, ni
+montant — un abonnement n'a pas de prix (« Aucun prix ici »,
+`create-subscription.handler.ts`).
+
+**Dev** : la remise à blanc (`src/dev/seeding/reset.seed.ts`) supprime les
+abonnements des personnes du périmètre AVANT les sociétés — compatible avec
+`RESTRICT` ; on y ajoute `OR company_id ∈ companyIds`, pour l'abonnement d'une
+personne hors périmètre posé sur une société du périmètre. La purge du
+scénario efface les faits par `siteCompanyId` : rien à faire.
+
+**Tests prévus** : domaine (`Subscription.open` porte la société, perso =
+null) ; application (les quatre handlers écrivent leur fait dans l'unité de
+travail, verrou pris dedans, la charge de l'arrêt lue sur l'état chargé, un abonnement
+sans société ne prévient pas) ; abonnés et gabarit ; e2e (création dans
+l'espace d'un site → principal prévenu aux bons rôles, auteur exclu ;
+création en perso → rien ; pause/reprise/arrêt → un avis chacun ; avis
+coupés → rien ; relivraison → pas de doublon ; abonnement d'avant la colonne
+→ rien ; rattachement concurrent sous verrou).
+
+**Risques** : bruit faible (gestes rares) ; une personne qui QUITTE la
+société gardait la main sur l'abonnement du site — fermé dans N4e (v2, « le
+mur »).
+
+**Failles de l'existant, nommées** (v2 : les deux premières sont traitées
+dans N4e) :
+
+- `NotFoundException` lancée depuis `application/` (trois handlers :
+  statut, suppression, occurrence) — **nettoyé dans N4e**.
+- Suppression physique d'un agrégat métier (`remove`) — interdit (§3) ;
+  l'arrêt devrait être un statut.
+- L'identifiant est tiré par la base (`@default(cuid())`), pas par
+  `IdGenerator`.
+- Le mur est la seule personne : un membre qui a quitté la société garde son
+  abonnement — **fermé dans N4e** pour un abonnement de société ; ses
+  co-membres, eux, ne le voient toujours pas (hors lot).
+- La vue staff rattache par les rattachements actuels de la personne, pas par
+  la société de l'abonnement (à basculer sur `company_id` une fois remplie).
+
+**Décisions de Hugo sur N4e (2026-10-20)** :
+
+- **Q1 — la reprise prévient.** **Q2 — la modification d'une occurrence ne
+  prévient pas.** **Q3 — la vue staff ne bascule pas** dans ce lot :
+  🔴 **écart accepté** — le principal peut être prévenu d'un abonnement que la
+  fiche staff du site ne montre pas (elle rattache par les rattachements
+  actuels de la personne, pas par `company_id`).
+- **Le sens de la colonne** : `subscriptions.company_id` EST la société de
+  l'abonnement. Le jour où le planificateur existera, ses commandes seront
+  celles de cette société (tarif, payeur, principal). **Une fois remplie, elle
+  ne change plus** : aucune méthode de l'agrégat ne la réécrit.
+- **L'espace se déclare toujours** côté boutique (défaut pro, changé le
+  2026-10-20) : la création passe par l'intercepteur global
+  (`apps/lfc-ecommerce-frontend/src/app/app.config.ts`, `workspaceInterceptor`),
+  que les deux services (`legacy/commandes/subscriptions.service.ts`,
+  `client/client-subscriptions.service.ts`, ce dernier en lecture seule)
+  traversent comme toute requête vers l'API. En perso explicite, NULL.
+- **Le mur se ferme dans N4e** : un geste (pause, reprise, arrêt, dérogation
+  d'occurrence) sur un abonnement qui a un `company_id` exige d'être membre
+  ACTUEL de cette société (`MembershipReader.roleOf`, qui ne lit qu'un
+  rattachement ouvrant). Refus nommé : « Vous n'êtes plus membre de X : cet
+  abonnement ne se gère plus depuis votre compte. » Les abonnements perso sont
+  inchangés.
+
+**Ce que `vitruve` a changé à N4e (2026-10-20)** :
+
+- **`subscription.created` a déjà un auteur au journal** : l'abonné de
+  croissance en mémoire (`b2b/growth/application/handlers/on-subscription-created.handler.ts`).
+  Le fait durable du même nom vit dans la boîte d'envoi, un AUTRE registre ;
+  il n'écrit rien au journal. Une seule écriture `subscription.created` au
+  journal reste celle de la croissance — éprouvé en e2e (une ligne d'activité,
+  pas deux) ; le JSDoc `@sans-journal` du handler de création est corrigé.
+- **Création** : l'id est tiré par la base, donc le fait est écrit APRÈS le
+  `create`, dans la même unité de travail (le `create` de l'adaptateur
+  rejoint la transaction ambiante par `transactionalPrisma`). Un POST rejoué
+  crée deux abonnements, donc deux avis : assumé.
+- **Abonnement sans société** : aucun avis. ⚠️ Bâti sans fait du tout, et
+  non « fait sans principal » : il n'a pas de site (voir « N4e bâti »).
+- **Arrêt** : la justification « avant la suppression » ne valait rien dans
+  une transaction. Ce qui compte : la charge vient de l'état CHARGÉ avant le
+  geste, et la ligne n'est pas relue.
+- **`NotFoundException` depuis `application/`** dans les trois handlers
+  touchés : nettoyés (« un fichier touché est un fichier nettoyé », §6),
+  remplacés par une erreur `ResourceNotFoundError` du domaine.
+- **`reset.seed.ts`** : supprime aussi les abonnements dont `company_id` est
+  dans le périmètre (`RESTRICT`).
+- **RGPD** : l'avis « arrêté » survit à la suppression de l'abonnement (fait
+  en boîte d'envoi, ligne du journal d'envoi) : il relève de la purge à douze
+  mois déjà décidée (N4-Q2), toujours non bâtie.
+
+#### N4e bâti (2026-10-20) — et ses écarts
+
+- **Migration** `20261020140000_la_societe_d_un_abonnement` : `subscriptions.company_id`
+  nullable, index, clé `RESTRICT` ; aucun remplissage. À relire par
+  `lecteur-de-migrations` avant le commit.
+- **Création** : `@ActingCompany()` → `CreateSubscriptionCommand.companyId` →
+  `Subscription.open` (champ `companyId`, en lecture seule, que rien ne
+  réécrit). Hors requête, la société est confrontée aux rattachements comme
+  pour une commande. Contrat HTTP et écrans inchangés.
+- **Le mur et l'annonce** : `SubscriptionGestures`
+  (`apps/lfd-api/src/b2b/subscriptions/application/services/subscription-gestures.ts`)
+  — `loadManaged` (404 `SubscriptionNotFoundError`, 403
+  `SubscriptionSiteMembershipLostError` pour un ancien membre) et `announce`
+  (fait durable dans l'unité de travail du geste). Lit deux ports d'`account/`
+  désormais exportés : `MembershipReader` (rattachement ouvrant) et
+  `CompanyNameReader` (neuf). `SubscriptionsModule` importe `AccountModule`.
+- **Faits** : `subscription.created`, `subscription.status_changed` (la charge
+  porte `status`, l'état d'arrivée — `SiteGestureFact` gagne ce champ
+  facultatif), `subscription.deleted`. Une échéance dérogée n'en écrit pas.
+- ⚠️ **Écart à la consigne « sans société → fait sans principal »** : un
+  panier sans société (perso, ou d'avant la colonne) n'a pas de SITE, donc ni
+  `siteCompanyId` ni nom à porter ; aucun fait d'avis n'est écrit. La règle
+  « fait sans principal » reste celle d'un site sans principal, qui, lui,
+  écrit son fait.
+- `NotFoundException` retirés des trois handlers touchés.
+- Écran N3 : la ligne `subscription_changed` s'affiche ; plus aucune ligne
+  cachée, la phrase qui le disait est retirée.
+- e2e `apps/lfd-api/test/sub-account-notice-subscriptions.e2e-spec.ts`.
 
 #### Ce que `vitruve` a changé (2026-10-20)
 

@@ -1,16 +1,21 @@
-import { NotFoundException } from "@nestjs/common";
-
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { OccurrenceOutsideWindowError } from "../../../domain/errors/subscription-errors.js";
 import { UpsertOccurrenceOverrideCommand } from "../upsert-occurrence-override.command.js";
 import { UpsertOccurrenceOverrideHandler } from "../upsert-occurrence-override.handler.js";
 import { activeSubscription, FakeSubscriptionRepository } from "./fake-subscription-repository.js";
+import { SubscriptionNotFoundError } from "../../../domain/errors/subscription-errors.js";
+import { subscriptionGestures } from "./subscription-gesture-doubles.js";
 
 function build() {
   const repo = new FakeSubscriptionRepository();
   const events = new RecordingPublisher();
-  const handler = new UpsertOccurrenceOverrideHandler(repo, events, new DirectUnitOfWork());
+  const handler = new UpsertOccurrenceOverrideHandler(
+    repo,
+    events,
+    new DirectUnitOfWork(),
+    subscriptionGestures(repo).gestures,
+  );
   return { repo, events, handler };
 }
 
@@ -29,7 +34,7 @@ describe("UpsertOccurrenceOverrideHandler", () => {
           note: "",
         }),
       ),
-    ).rejects.toBeInstanceOf(NotFoundException);
+    ).rejects.toBeInstanceOf(SubscriptionNotFoundError);
     expect(events.traced).toHaveLength(0);
   });
 

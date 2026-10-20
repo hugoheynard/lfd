@@ -40,6 +40,7 @@ export class PrismaSubscriptionRepository extends SubscriptionRepository {
     const created = await this.prisma.subscription.create({
       data: {
         placedByUserId: state.placedByUserId,
+        companyId: state.companyId,
         fromOrderId: state.fromOrderId,
         recurrence: state.recurrence,
         status: state.status,
@@ -123,6 +124,7 @@ function toOccurrenceData(override: PersistedOverride): {
 function toDomain(row: {
   id: string;
   placedByUserId: string;
+  companyId: string | null;
   fromOrderId: string | null;
   recurrence: string;
   status: string;
@@ -143,6 +145,7 @@ function toDomain(row: {
   return Subscription.reconstitute({
     id: row.id,
     placedByUserId: row.placedByUserId,
+    companyId: row.companyId,
     fromOrderId: row.fromOrderId,
     recurrence: recurrenceSchema.parse(row.recurrence),
     status: subscriptionStatusSchema.parse(row.status),

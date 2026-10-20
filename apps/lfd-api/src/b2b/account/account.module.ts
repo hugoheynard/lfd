@@ -116,6 +116,8 @@ import { EstablishmentDirectory } from "./domain/ports/establishment-directory.j
 import { OnCompanyDeclaredResolveNaf } from "./application/handlers/on-company-declared-resolve-naf.handler.js";
 import { RechercheEntreprisesEstablishmentDirectory } from "./infrastructure/recherche-entreprises-establishment.directory.js";
 import { MembershipReader } from "./domain/ports/membership.reader.js";
+import { CompanyNameReader } from "./domain/ports/company-name.reader.js";
+import { PrismaCompanyNameReader } from "./infrastructure/prisma-company-name.reader.js";
 import { NavPreferencesRepository } from "./domain/ports/nav-preferences.repository.js";
 import { UserProfileRepository } from "./domain/ports/user-profile.repository.js";
 import { AppConfig } from "../../platform/config/app-config.js";
@@ -390,6 +392,7 @@ import {
     RemoveDeliveryStepByStaffHandler,
     ReorderDeliveryStepsByStaffHandler,
     { provide: MembershipReader, useClass: PrismaMembershipReader },
+    { provide: CompanyNameReader, useClass: PrismaCompanyNameReader },
     { provide: AccountReader, useClass: PrismaAccountReader },
     {
       // 🔴 **En production, l'adaptateur Auth0 et lui seul** — avec ou sans M2M.
@@ -463,6 +466,10 @@ import {
   // le même port que la certification d'un KBIS (2026-09-14).
   exports: [
     SiteGesturePublisher,
+    // N4e (2026-10-20) : les paniers récurrents nomment leur site et murent
+    // leurs gestes par le rattachement ACTUEL.
+    CompanyNameReader,
+    MembershipReader,
     ImpersonationSubjects,
     PrincipalResolver,
     StaffDirectory,

@@ -37,10 +37,11 @@ export class FakeSubscriptionRepository implements SubscriptionRepository {
 }
 
 /** Un abonnement **actif** reconstitué (comme s'il venait de la base). */
-export function activeSubscription(id = "sub_1"): Subscription {
+export function activeSubscription(id = "sub_1", companyId: string | null = null): Subscription {
   return Subscription.reconstitute({
     id,
     placedByUserId: "user_1",
+    companyId,
     fromOrderId: null,
     recurrence: "weekly",
     status: "active",

@@ -8,6 +8,13 @@ model Subscription {
   placedByUserId String @map("placed_by_user_id")
   placedBy       User   @relation(fields: [placedByUserId], references: [id])
 
+  /// La société de l'abonnement — celle de l'espace où il a été créé, `null`
+  /// en perso (plan-notifications-sous-comptes.md, N4e). Le planificateur en
+  /// fera la société de ses commandes ; une fois remplie, elle ne change plus.
+  /// Les abonnements d'avant la colonne restent `null`, sans remplissage deviné.
+  companyId String?  @map("company_id")
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: Restrict)
+
   // Traçabilité : commande d'origine (celle « transformée en panier récurrent »).
   fromOrderId String? @map("from_order_id")
 
@@ -32,6 +39,7 @@ model Subscription {
   occurrences SubscriptionOccurrence[]
 
   @@index([placedByUserId])
+  @@index([companyId])
   @@map("subscriptions")
   @@schema("public")
 }

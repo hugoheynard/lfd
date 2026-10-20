@@ -22,6 +22,7 @@ import {
 } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
+import { ActingCompany } from "../../../platform/auth/acting-company.decorator.js";
 import { CurrentUser } from "../../../platform/auth/current-user.decorator.js";
 import type { Principal } from "../../../platform/auth/principal.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
@@ -45,14 +46,20 @@ export class SubscriptionsController {
     private readonly queries: QueryBus,
   ) {}
 
+  /**
+   * Crée un panier dans l'espace de la requête : la société déclarée par
+   * l'en-tête d'espace (vérifiée contre les rattachements), `null` en perso.
+   * Le panier la porte pour toujours (N4e).
+   */
   @Post()
   @HttpCode(HttpStatus.CREATED)
   create(
     @CurrentUser() user: Principal,
+    @ActingCompany() companyId: string | null,
     @Body(new ZodBody(createSubscriptionPayloadSchema)) payload: CreateSubscriptionPayload,
   ): Promise<CreatedSubscription> {
     return this.commands.execute<CreateSubscriptionCommand, CreatedSubscription>(
-      new CreateSubscriptionCommand(user.userId, payload),
+      new CreateSubscriptionCommand(user.userId, payload, companyId),
     );
   }
 

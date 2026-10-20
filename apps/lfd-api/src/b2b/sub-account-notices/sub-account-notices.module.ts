@@ -18,6 +18,9 @@ import { NotifyPrincipalOnContactRemoved } from "./application/handlers/notify-p
 import { NotifyPrincipalOnPrimaryContactChanged } from "./application/handlers/notify-principal-on-primary-contact-changed.handler.js";
 import { NotifyPrincipalOnBankAccountChanged } from "./application/handlers/notify-principal-on-bank-account-changed.handler.js";
 import { NotifyPrincipalOnMandateProofAttached } from "./application/handlers/notify-principal-on-mandate-proof-attached.handler.js";
+import { NotifyPrincipalOnSubscriptionCreated } from "./application/handlers/notify-principal-on-subscription-created.handler.js";
+import { NotifyPrincipalOnSubscriptionStatusChanged } from "./application/handlers/notify-principal-on-subscription-status-changed.handler.js";
+import { NotifyPrincipalOnSubscriptionDeleted } from "./application/handlers/notify-principal-on-subscription-deleted.handler.js";
 import { NotifyPrincipalOnOrderProblemReported } from "./application/handlers/notify-principal-on-order-problem-reported.handler.js";
 import { SubAccountNoticeDispatcher } from "./application/services/sub-account-notice.dispatcher.js";
 import { NoticeSendJournal } from "./domain/ports/notice-send.journal.js";
@@ -40,7 +43,7 @@ import { AdminSubAccountNoticesController } from "./http/admin-sub-account-notic
  * N4a : le premier geste hors commande (problème signalé), dont le fait
  * durable porte le principal figé. N4b : les quatre gestes du carnet de
  * livraison, client et équipe. N4c : les quatre gestes sur les contacts.
- * N4d : le RIB et la preuve de mandat.
+ * N4d : le RIB et la preuve de mandat. N4e : les paniers récurrents.
  */
 @Module({
   imports: [AccountModule, OrdersModule],
@@ -68,6 +71,9 @@ import { AdminSubAccountNoticesController } from "./http/admin-sub-account-notic
     NotifyPrincipalOnPrimaryContactChanged,
     NotifyPrincipalOnBankAccountChanged,
     NotifyPrincipalOnMandateProofAttached,
+    NotifyPrincipalOnSubscriptionCreated,
+    NotifyPrincipalOnSubscriptionStatusChanged,
+    NotifyPrincipalOnSubscriptionDeleted,
     { provide: NoticeSendJournal, useClass: PrismaNoticeSendJournal },
   ],
 })

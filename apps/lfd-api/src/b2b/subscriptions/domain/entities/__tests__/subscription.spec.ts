@@ -27,6 +27,7 @@ const line = (sku: string, qty: number): SubscriptionLine => SubscriptionLine.cr
 function openInput(overrides: Partial<OpenSubscriptionInput> = {}): OpenSubscriptionInput {
   return {
     placedByUserId: "user_1",
+    companyId: null,
     fromOrderId: null,
     recurrence: "weekly",
     startDate: IsoDate.fromString("2026-08-10"),
@@ -268,5 +269,14 @@ describe("Subscription — ce que le journal en relit", () => {
     });
     expect(JSON.stringify(decision)).not.toContain(ADDRESS.ligne1);
     expect(JSON.stringify(decision)).not.toContain("1234");
+  });
+});
+
+describe("Subscription — la société de l'abonnement (N4e)", () => {
+  it("open la porte telle quelle, perso compris", () => {
+    expect(Subscription.open(openInput({ companyId: "chalet" })).toPersistence().companyId).toBe(
+      "chalet",
+    );
+    expect(Subscription.open(openInput()).companyId).toBeNull();
   });
 });

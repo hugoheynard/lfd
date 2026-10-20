@@ -1,5 +1,7 @@
 import { Module } from "@nestjs/common";
 
+import { AccountModule } from "../account/account.module.js";
+import { SubscriptionGestures } from "./application/services/subscription-gestures.js";
 import { CatalogModule } from "../catalog/catalog.module.js";
 import { CreateSubscriptionHandler } from "./application/commands/create-subscription.handler.js";
 import { DeleteSubscriptionHandler } from "./application/commands/delete-subscription.handler.js";
@@ -20,13 +22,16 @@ import { SubscriptionsController } from "./http/subscriptions.controller.js";
  */
 @Module({
   // Le catalogue, pour refuser un article d'opération datée (`SaleOperations`).
-  imports: [CatalogModule],
+  // `AccountModule` depuis N4e (2026-10-20) : le mur par le rattachement
+  // actuel, le nom du site, l'annonce au principal.
+  imports: [CatalogModule, AccountModule],
   controllers: [SubscriptionsController, AdminSubscriptionsController],
   providers: [
     CreateSubscriptionHandler,
     UpsertOccurrenceOverrideHandler,
     SetSubscriptionStatusHandler,
     DeleteSubscriptionHandler,
+    SubscriptionGestures,
     ListSubscriptionsHandler,
     ListCompanySubscriptionsHandler,
     { provide: SubscriptionRepository, useClass: PrismaSubscriptionRepository },

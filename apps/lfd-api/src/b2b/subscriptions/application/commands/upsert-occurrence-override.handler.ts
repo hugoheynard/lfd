@@ -1,4 +1,3 @@
-import { NotFoundException } from "@nestjs/common";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
@@ -7,6 +6,7 @@ import { SubscriptionOccurrenceOverriddenEvent } from "../../domain/events/subsc
 import { SubscriptionRepository } from "../../domain/ports/subscription.repository.js";
 import { IsoDate } from "../../domain/value-objects/iso-date.js";
 import { SubscriptionLine } from "../../domain/value-objects/subscription-line.js";
+import { SubscriptionGestures } from "../services/subscription-gestures.js";
 import { UpsertOccurrenceOverrideCommand } from "./upsert-occurrence-override.command.js";
 
 /**
@@ -27,13 +27,16 @@ export class UpsertOccurrenceOverrideHandler implements ICommandHandler<
     private readonly subscriptions: SubscriptionRepository,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly gestures: SubscriptionGestures,
   ) {}
 
   async execute(command: UpsertOccurrenceOverrideCommand): Promise<void> {
-    const subscription = await this.subscriptions.load(command.subscriptionId, command.actorUserId);
-    if (subscription === null) {
-      throw new NotFoundException("Panier récurrent introuvable.");
-    }
+    // Le mur de N4e : panier de société ⇒ membre actuel. Pas d'avis au
+    // principal pour une échéance dérogée (décision de Hugo, 2026-10-20).
+    const subscription = await this.gestures.loadManaged(
+      command.subscriptionId,
+      command.actorUserId,
+    );
     const { payload } = command;
     const date = IsoDate.fromString(command.date);
     const before = subscription.overrideOn(date);

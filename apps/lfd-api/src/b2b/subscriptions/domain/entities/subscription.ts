@@ -35,6 +35,12 @@ export interface OccurrenceOverride {
 /** Ce qu'il faut pour **ouvrir** un panier récurrent (aucun id : la base l'attribue). */
 export interface OpenSubscriptionInput {
   readonly placedByUserId: string;
+  /**
+   * La société de l'abonnement — celle de l'espace où il est créé, `null` en
+   * perso. Le planificateur en fera la société de ses commandes ; elle ne
+   * change plus (aucune méthode ne la réécrit).
+   */
+  readonly companyId: string | null;
   readonly fromOrderId: string | null;
   readonly recurrence: Recurrence;
   readonly startDate: IsoDate;
@@ -69,6 +75,7 @@ export interface PersistedOverride {
 export interface SubscriptionState {
   readonly id: string | null;
   readonly placedByUserId: string;
+  readonly companyId: string | null;
   readonly fromOrderId: string | null;
   readonly recurrence: Recurrence;
   readonly status: SubscriptionStatus;
@@ -120,6 +127,8 @@ export class Subscription {
   private constructor(
     private readonly id: string | null,
     private readonly placedByUserId: string,
+    /** La société de l'abonnement, `null` en perso — figée à l'ouverture. */
+    readonly companyId: string | null,
     private readonly fromOrderId: string | null,
     private readonly recurrence: Recurrence,
     status: SubscriptionStatus,
@@ -146,6 +155,7 @@ export class Subscription {
     return new Subscription(
       null,
       input.placedByUserId,
+      input.companyId,
       input.fromOrderId,
       input.recurrence,
       "active",
@@ -163,6 +173,7 @@ export class Subscription {
     return new Subscription(
       input.id,
       input.placedByUserId,
+      input.companyId,
       input.fromOrderId,
       input.recurrence,
       input.status,
@@ -241,6 +252,7 @@ export class Subscription {
     return {
       id: this.id,
       placedByUserId: this.placedByUserId,
+      companyId: this.companyId,
       fromOrderId: this.fromOrderId,
       recurrence: this.recurrence,
       status: this.status,

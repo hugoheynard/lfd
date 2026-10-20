@@ -19,7 +19,11 @@ export type SubAccountGesture =
   | "contact_removed"
   | "primary_contact_changed"
   | "bank_account_changed"
-  | "mandate_proof_attached";
+  | "mandate_proof_attached"
+  | "subscription_created"
+  | "subscription_paused"
+  | "subscription_resumed"
+  | "subscription_stopped";
 
 /**
  * Les données de l'avis **« un de vos sites a… »** pour un geste qui n'est
@@ -55,6 +59,11 @@ const VERB: Readonly<Record<SubAccountGesture, string>> = {
   // Ni IBAN, ni ses derniers caractères, ni titulaire, ni BIC (N4d).
   bank_account_changed: "a enregistré un nouveau RIB",
   mandate_proof_attached: "a déposé une preuve de mandat",
+  // Rien du panier : ni lignes, ni adresse, ni cadence, ni montant (N4e).
+  subscription_created: "a créé un panier récurrent",
+  subscription_paused: "a mis en pause un panier récurrent",
+  subscription_resumed: "a repris un panier récurrent",
+  subscription_stopped: "a arrêté un panier récurrent",
 };
 
 const TITLE: Readonly<Record<SubAccountGesture, string>> = {
@@ -69,6 +78,10 @@ const TITLE: Readonly<Record<SubAccountGesture, string>> = {
   primary_contact_changed: "Contact principal changé sur un de vos sites",
   bank_account_changed: "Nouveau RIB sur un de vos sites",
   mandate_proof_attached: "Preuve de mandat déposée sur un de vos sites",
+  subscription_created: "Panier récurrent créé sur un de vos sites",
+  subscription_paused: "Panier récurrent mis en pause sur un de vos sites",
+  subscription_resumed: "Panier récurrent repris sur un de vos sites",
+  subscription_stopped: "Panier récurrent arrêté sur un de vos sites",
 };
 
 /** Le libellé de la référence, pour les gestes qui en portent une. */

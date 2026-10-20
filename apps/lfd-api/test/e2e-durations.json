@@ -351,5 +351,6 @@
   "test/sub-account-notice-gestures.e2e-spec.ts": 8211,
   "test/sub-account-notice-addresses.e2e-spec.ts": 11003,
   "test/sub-account-notice-contacts.e2e-spec.ts": 12018,
-  "test/sub-account-notice-bank.e2e-spec.ts": 11477
+  "test/sub-account-notice-bank.e2e-spec.ts": 11477,
+  "test/sub-account-notice-subscriptions.e2e-spec.ts": 14294
 }

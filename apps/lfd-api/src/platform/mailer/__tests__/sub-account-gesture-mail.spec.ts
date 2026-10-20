@@ -75,4 +75,13 @@ describe("le courriel « un de vos sites a… » d'un geste hors commande", () =
       render({ gesture: "mandate_proof_attached", reference: null, byTeam: true }).html,
     ).toContain("a déposé une preuve de mandat (fait par notre équipe).");
   });
+
+  it("un panier récurrent : l'action seule", () => {
+    expect(render({ gesture: "subscription_paused", reference: null }).html).toContain(
+      "Votre site Chalet Gentiane a mis en pause un panier récurrent.",
+    );
+    expect(render({ gesture: "subscription_stopped", reference: null }).subject).toBe(
+      "Chalet Gentiane — Panier récurrent arrêté sur un de vos sites",
+    );
+  });
 });

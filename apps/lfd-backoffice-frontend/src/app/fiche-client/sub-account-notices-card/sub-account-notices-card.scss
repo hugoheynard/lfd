@@ -18,8 +18,7 @@
 
 .state,
 .default,
-.summary,
-.hidden-kinds {
+.summary {
   font-size: var(--fold-text-sm);
   color: var(--fold-color-text-muted);
 }
@@ -31,10 +30,6 @@
 
 .default {
   font-style: italic;
-}
-
-.hidden-kinds {
-  margin: 0;
 }
 
 /* L'interrupteur, en tête : l'état à gauche, le geste à droite. */

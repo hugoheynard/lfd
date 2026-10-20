@@ -1,16 +1,21 @@
-import { NotFoundException } from "@nestjs/common";
-
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { SubscriptionAlreadyActiveError } from "../../../domain/errors/subscription-errors.js";
 import { SetSubscriptionStatusCommand } from "../set-subscription-status.command.js";
 import { SetSubscriptionStatusHandler } from "../set-subscription-status.handler.js";
 import { activeSubscription, FakeSubscriptionRepository } from "./fake-subscription-repository.js";
+import { SubscriptionNotFoundError } from "../../../domain/errors/subscription-errors.js";
+import { subscriptionGestures } from "./subscription-gesture-doubles.js";
 
 function build() {
   const repo = new FakeSubscriptionRepository();
   const events = new RecordingPublisher();
-  const handler = new SetSubscriptionStatusHandler(repo, events, new DirectUnitOfWork());
+  const handler = new SetSubscriptionStatusHandler(
+    repo,
+    events,
+    new DirectUnitOfWork(),
+    subscriptionGestures(repo).gestures,
+  );
   return { repo, events, handler };
 }
 
@@ -20,7 +25,7 @@ describe("SetSubscriptionStatusHandler", () => {
 
     await expect(
       handler.execute(new SetSubscriptionStatusCommand("user_1", "sub_1", "paused")),
-    ).rejects.toBeInstanceOf(NotFoundException);
+    ).rejects.toBeInstanceOf(SubscriptionNotFoundError);
     expect(repo.saved).toHaveLength(0);
     expect(events.traced).toHaveLength(0);
   });

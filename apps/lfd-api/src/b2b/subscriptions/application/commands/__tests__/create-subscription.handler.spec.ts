@@ -11,6 +11,8 @@ import { SubscriptionCreatedEvent } from "../../../domain/events/subscription-cr
 import { CreateSubscriptionCommand } from "../create-subscription.command.js";
 import { CreateSubscriptionHandler } from "../create-subscription.handler.js";
 import { FakeSubscriptionRepository } from "./fake-subscription-repository.js";
+import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
+import { subscriptionGestures } from "./subscription-gesture-doubles.js";
 
 /** Publisher doublé : capture les événements publiés (extension du port, sans cast). */
 const payload: CreateSubscriptionPayload = {
@@ -35,9 +37,11 @@ describe("CreateSubscriptionHandler", () => {
       repo,
       new RecordingPublisher(),
       noSaleOperations(NOW),
+      new DirectUnitOfWork(),
+      subscriptionGestures(new FakeSubscriptionRepository()).gestures,
     );
 
-    const result = await handler.execute(new CreateSubscriptionCommand("user_1", payload));
+    const result = await handler.execute(new CreateSubscriptionCommand("user_1", payload, null));
 
     expect(result).toEqual({ id: "sub_created" });
     expect(repo.created).toHaveLength(1);
@@ -53,9 +57,11 @@ describe("CreateSubscriptionHandler", () => {
       new FakeSubscriptionRepository(),
       events,
       noSaleOperations(NOW),
+      new DirectUnitOfWork(),
+      subscriptionGestures(new FakeSubscriptionRepository()).gestures,
     );
 
-    await handler.execute(new CreateSubscriptionCommand("user_1", payload));
+    await handler.execute(new CreateSubscriptionCommand("user_1", payload, null));
 
     expect(events.published).toHaveLength(1);
     const [event] = events.published;
@@ -76,16 +82,26 @@ describe("CreateSubscriptionHandler", () => {
     it("est refusé à la création, en nommant l'article, et rien n'est écrit", async () => {
       const repo = new FakeSubscriptionRepository();
       const events = new RecordingPublisher();
-      const handler = new CreateSubscriptionHandler(repo, events, sale);
+      const handler = new CreateSubscriptionHandler(
+        repo,
+        events,
+        sale,
+        new DirectUnitOfWork(),
+        subscriptionGestures(new FakeSubscriptionRepository()).gestures,
+      );
 
       const refused = handler.execute(
-        new CreateSubscriptionCommand("user_1", {
-          ...payload,
-          lines: [
-            { sku: "SKU-1", quantity: 2 },
-            { sku: "PAT-002", quantity: 1 },
-          ],
-        }),
+        new CreateSubscriptionCommand(
+          "user_1",
+          {
+            ...payload,
+            lines: [
+              { sku: "SKU-1", quantity: 2 },
+              { sku: "PAT-002", quantity: 1 },
+            ],
+          },
+          null,
+        ),
       );
 
       await expect(refused).rejects.toBeInstanceOf(OperationOnlyInSubscriptionError);
@@ -96,9 +112,15 @@ describe("CreateSubscriptionHandler", () => {
 
     it("laisse passer un panier d'articles courants", async () => {
       const repo = new FakeSubscriptionRepository();
-      const handler = new CreateSubscriptionHandler(repo, new RecordingPublisher(), sale);
+      const handler = new CreateSubscriptionHandler(
+        repo,
+        new RecordingPublisher(),
+        sale,
+        new DirectUnitOfWork(),
+        subscriptionGestures(new FakeSubscriptionRepository()).gestures,
+      );
 
-      await handler.execute(new CreateSubscriptionCommand("user_1", payload));
+      await handler.execute(new CreateSubscriptionCommand("user_1", payload, null));
 
       expect(repo.created).toHaveLength(1);
     });

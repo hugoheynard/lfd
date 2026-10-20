@@ -5,6 +5,7 @@ import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.
 import type { NamedRef } from "../../domain/events/journal-names.js";
 import {
   type GestureActor,
+  type GestureStatus,
   SiteGestureFact,
   type SiteGestureType,
 } from "../../domain/events/site-gesture.fact.js";
@@ -18,6 +19,8 @@ export interface SiteGesture {
   /** L'objet du geste (l'adresse), par son identifiant. */
   readonly subjectId: string;
   readonly actor: GestureActor;
+  /** L'état d'arrivée d'un changement de statut (N4e). */
+  readonly status?: GestureStatus;
 }
 
 /**
@@ -39,13 +42,19 @@ export class SiteGesturePublisher {
 
   async publish(gesture: SiteGesture): Promise<void> {
     const locked = await this.principals.lockedPrincipalOf(gesture.site.id);
-    const fact = new SiteGestureFact(gesture.type, this.ids.next(), gesture.subjectId, {
-      siteCompanyId: gesture.site.id,
-      siteName: gesture.site.name,
-      principalCompanyId: locked?.principalCompanyId ?? null,
-      authorUserId: gesture.actor.kind === "customer" ? gesture.actor.userId : null,
-      byTeam: gesture.actor.kind === "team",
-    });
+    const fact = new SiteGestureFact(
+      gesture.type,
+      this.ids.next(),
+      gesture.subjectId,
+      {
+        siteCompanyId: gesture.site.id,
+        siteName: gesture.site.name,
+        principalCompanyId: locked?.principalCompanyId ?? null,
+        authorUserId: gesture.actor.kind === "customer" ? gesture.actor.userId : null,
+        byTeam: gesture.actor.kind === "team",
+      },
+      gesture.status ?? null,
+    );
     await this.durable.publish(fact.durableFact());
   }
 }

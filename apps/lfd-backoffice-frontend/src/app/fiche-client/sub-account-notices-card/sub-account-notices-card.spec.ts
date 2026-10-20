@@ -141,6 +141,7 @@ describe('SubAccountNoticesCard', () => {
       'order_placed',
       'order_cancelled',
       'payment_failed',
+      'subscription_changed',
       'delivery_address_changed',
       'contact_changed',
       'bank_account_changed',

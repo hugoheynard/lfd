@@ -258,6 +258,8 @@ model Company {
   subAccountNoticeRules   SubAccountNoticeRule[]
   /// L'interrupteur des avis à ce principal ; absent = désactivés.
   subAccountNoticeSetting SubAccountNoticeSetting?
+  /// Les paniers récurrents créés dans l'espace de cette société (N4e).
+  subscriptions           Subscription[]
   /// Les dérogations d'heure limite accordées à ce client.
   orderCutoffWaivers      OrderCutoffWaiver[]
   orderDraft              OrderDraft?

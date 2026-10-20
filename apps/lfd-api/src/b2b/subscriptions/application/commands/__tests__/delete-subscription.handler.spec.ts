@@ -1,15 +1,20 @@
-import { NotFoundException } from "@nestjs/common";
-
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { DeleteSubscriptionCommand } from "../delete-subscription.command.js";
 import { DeleteSubscriptionHandler } from "../delete-subscription.handler.js";
 import { activeSubscription, FakeSubscriptionRepository } from "./fake-subscription-repository.js";
+import { SubscriptionNotFoundError } from "../../../domain/errors/subscription-errors.js";
+import { subscriptionGestures } from "./subscription-gesture-doubles.js";
 
 function build() {
   const repo = new FakeSubscriptionRepository();
   const events = new RecordingPublisher();
-  const handler = new DeleteSubscriptionHandler(repo, events, new DirectUnitOfWork());
+  const handler = new DeleteSubscriptionHandler(
+    repo,
+    events,
+    new DirectUnitOfWork(),
+    subscriptionGestures(repo).gestures,
+  );
   return { repo, events, handler };
 }
 
@@ -19,7 +24,7 @@ describe("DeleteSubscriptionHandler", () => {
 
     await expect(
       handler.execute(new DeleteSubscriptionCommand("user_1", "sub_1")),
-    ).rejects.toBeInstanceOf(NotFoundException);
+    ).rejects.toBeInstanceOf(SubscriptionNotFoundError);
     expect(repo.removed).toHaveLength(0);
     expect(events.traced).toHaveLength(0);
   });

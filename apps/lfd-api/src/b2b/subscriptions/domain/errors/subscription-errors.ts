@@ -1,4 +1,9 @@
-import { BusinessError, DomainError } from "../../../../platform/shared/errors/app-error.js";
+import {
+  AuthorizationError,
+  BusinessError,
+  DomainError,
+  ResourceNotFoundError,
+} from "../../../../platform/shared/errors/app-error.js";
 
 // ─── Données mal formées : le modèle se protège lui-même (400) ───────────────
 
@@ -87,6 +92,39 @@ export class OperationOnlyInSubscriptionError extends BusinessError {
     super(
       "subscriptions.operation_only",
       `${productNames.map((name) => `« ${name} »`).join(", ")} ne se vend${productNames.length > 1 ? "ent" : ""} que pendant une opération datée, pas en panier récurrent. Retirez-le${productNames.length > 1 ? "s" : ""} de l’abonnement, et commandez-le${productNames.length > 1 ? "s" : ""} pour un jour de l’opération.`,
+    );
+  }
+}
+
+// ─── Le mur (N4e, 2026-10-20) ───────────────────────────────────────────────
+
+/**
+ * Le panier n'existe pas, ou n'est pas à cette personne (404 non divulguant).
+ * Remplace le `NotFoundException` que trois handlers levaient depuis
+ * `application/`.
+ */
+export class SubscriptionNotFoundError extends ResourceNotFoundError {
+  constructor(readonly subscriptionId: string) {
+    super(
+      "subscriptions.not_found",
+      "Panier récurrent introuvable : il a peut-être été arrêté. Rechargez la liste de vos paniers.",
+    );
+  }
+}
+
+/**
+ * Un panier de société ne se gère que par un membre ACTUEL de cette société
+ * (`plan-notifications-sous-comptes.md`, N4e) : une personne qui l'a quittée
+ * gardait sinon la main sur le panier du site.
+ */
+export class SubscriptionSiteMembershipLostError extends AuthorizationError {
+  constructor(
+    readonly companyId: string,
+    companyName: string,
+  ) {
+    super(
+      "subscriptions.site_membership_lost",
+      `Vous n'êtes plus membre de ${companyName} : cet abonnement ne se gère plus depuis votre compte.`,
     );
   }
 }

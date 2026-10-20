@@ -192,7 +192,11 @@ async function wipe(prisma: PrismaClient, companyIds: string[], userIds: string[
       ],
     },
   });
-  await prisma.subscription.deleteMany({ where: { placedByUserId: { in: userIds } } });
+  // `company_id` en `Restrict` (N4e) : le panier d'une personne hors périmètre
+  // posé sur une société du périmètre partirait sinon en erreur.
+  await prisma.subscription.deleteMany({
+    where: { OR: [{ placedByUserId: { in: userIds } }, { companyId: { in: companyIds } }] },
+  });
   // Les préférences d'acheminement POINTENT sur les adresses : les délier avant
   // de supprimer, sinon la FK refuse et le message ne dit pas pourquoi.
   await prisma.company.updateMany({

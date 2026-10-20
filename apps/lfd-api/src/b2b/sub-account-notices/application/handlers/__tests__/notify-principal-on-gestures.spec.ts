@@ -13,12 +13,16 @@ import { GestureNoticeDispatcher } from "../../services/gesture-notice.dispatche
 import { PrincipalNoticeSender } from "../../services/principal-notice.sender.js";
 import {
   BANK_ACCOUNT_CHANGED,
+  SUBSCRIPTION_STATUS_CHANGED,
   CONTACT_ADDED,
   DELIVERY_ADDRESS_ADDED,
   SiteGestureFact,
   SiteGesturePayloadError,
   type SiteGestureStamp,
 } from "../../../../account/domain/events/site-gesture.fact.js";
+import { NotifyPrincipalOnSubscriptionCreated } from "../notify-principal-on-subscription-created.handler.js";
+import { NotifyPrincipalOnSubscriptionDeleted } from "../notify-principal-on-subscription-deleted.handler.js";
+import { NotifyPrincipalOnSubscriptionStatusChanged } from "../notify-principal-on-subscription-status-changed.handler.js";
 import { NotifyPrincipalOnBankAccountChanged } from "../notify-principal-on-bank-account-changed.handler.js";
 import { NotifyPrincipalOnMandateProofAttached } from "../notify-principal-on-mandate-proof-attached.handler.js";
 import { NotifyPrincipalOnContactAdded } from "../notify-principal-on-contact-added.handler.js";
@@ -80,6 +84,9 @@ function build(
     primaryChanged: new NotifyPrincipalOnPrimaryContactChanged(gestures),
     bank: new NotifyPrincipalOnBankAccountChanged(gestures),
     proof: new NotifyPrincipalOnMandateProofAttached(gestures),
+    subCreated: new NotifyPrincipalOnSubscriptionCreated(gestures),
+    subStatus: new NotifyPrincipalOnSubscriptionStatusChanged(gestures),
+    subDeleted: new NotifyPrincipalOnSubscriptionDeleted(gestures),
   };
 }
 
@@ -395,5 +402,40 @@ describe("le RIB et la preuve de mandat d'un site (N4d)", () => {
     await bank.handle(bankFact(CUSTOMER, "r"));
     await bank.handle(bankFact(CUSTOMER, "r"));
     expect(mailer.sent).toHaveLength(2);
+  });
+});
+
+function subscriptionFact(status: "active" | "paused" | null, eventId: string) {
+  const fact = new SiteGestureFact(SUBSCRIPTION_STATUS_CHANGED, "g1", "sub_1", CUSTOMER, status);
+  return { eventId, type: SUBSCRIPTION_STATUS_CHANGED, payload: fact.durableFact().payload };
+}
+
+describe("les paniers récurrents d'un site (N4e)", () => {
+  it("créé, mis en pause, repris, arrêté : chacun ses mots ; owner, admin, orders moins l'auteure", async () => {
+    const { subCreated, subStatus, subDeleted, mailer } = build();
+    await subCreated.handle({ ...subscriptionFact(null, "s1"), type: "subscription.created" });
+    await subStatus.handle(subscriptionFact("paused", "s2"));
+    await subStatus.handle(subscriptionFact("active", "s3"));
+    await subDeleted.handle({ ...subscriptionFact(null, "s4"), type: "subscription.deleted" });
+
+    const toOwner = mailer.sent.filter((m) => m.to === "owner@alpes.test");
+    expect(toOwner.map((m) => (m.data as { gesture: string }).gesture)).toEqual([
+      "subscription_created",
+      "subscription_paused",
+      "subscription_resumed",
+      "subscription_stopped",
+    ]);
+    expect(recipients(mailer).filter((to) => to.startsWith("housekeeper"))).toEqual([]);
+    expect(new Set(recipients(mailer))).toEqual(
+      new Set(["admin@alpes.test", "buyer@alpes.test", "owner@alpes.test"]),
+    );
+  });
+
+  it("un changement de statut sans état d'arrivée lisible lève, sans rien envoyer", async () => {
+    const { subStatus, mailer } = build();
+    await expect(subStatus.handle(subscriptionFact(null, "x"))).rejects.toThrow(
+      SiteGesturePayloadError,
+    );
+    expect(mailer.sent).toEqual([]);
   });
 });
