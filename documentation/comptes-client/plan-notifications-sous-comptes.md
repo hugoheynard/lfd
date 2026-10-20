@@ -232,6 +232,8 @@ principal_company_id` : un site qui paie lui-même ne fait pas prévenir son
   refus s'affiche en `fold-callout` qui nomme l'action et le rôle, la cellule
   redit l'enregistré.
 - Les cinq clés de N4 sont cachées ; une ligne discrète sous le tableau le dit.
+- **Validé par Hugo le 2026-10-20** : les libellés de colonne et le droit
+  `b2b_companies:write` restent tels quels.
 
 ### N4 — conception, v2 (2026-10-20)
 
@@ -547,7 +549,7 @@ principal, désactivé par défaut**.
   `payment_mandate.proof_attached`, le nom que le journal portait DÉJÀ
   (`packages/contracts/src/journal-facts/accounting.ts`) — la v2 l'annonçait
   neuf sous `company.mandate_proof_attached`, à tort ; la règle « mêmes noms
-  qu'au journal » l'emporte. À trancher par Hugo s'il préfère le nom neuf.
+  qu'au journal » l'emporte. Hugo a gardé l'ancien nom le 2026-10-20.
 - **Le verrou** : ces gestes n'en prenaient aucun sur la ligne du site ;
   `SitePrincipalLock` le prend, éprouvé en e2e (rattachement concurrent).
 - **L'arête `payments → account`** : `PaymentsModule` importe désormais
