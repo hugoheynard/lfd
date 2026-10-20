@@ -1,0 +1,41 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.site {
+  display: block;
+  font-weight: var(--fold-weight-semibold);
+}
+
+.city,
+.state {
+  display: block;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+/* La case et sa date, centrées sous l'en-tête de l'aspect. */
+.cell {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
+.state.on {
+  color: var(--fold-color-text);
+  font-weight: var(--fold-weight-semibold);
+}
+
+.summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}

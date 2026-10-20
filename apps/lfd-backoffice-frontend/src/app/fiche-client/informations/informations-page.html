@@ -200,10 +200,8 @@
                 @if (c.hierarchy.parent; as parent) {
                   <app-follow-parent-toggle
                     aspect="contacts"
-                    [companyId]="c.id"
                     [parent]="parent"
                     [follows]="c.hierarchy.follows"
-                    (changed)="fiche.reload()"
                   />
                 }
               }
@@ -262,7 +260,6 @@
             <app-site-payment-note [parent]="parent" />
           } @else if (fiche.company(); as c) {
             <app-paiement-section
-              [companyId]="c.id"
               [companyName]="c.raisonSociale"
               [siren]="c.siren"
               [companyLegalForm]="c.formeJuridique"

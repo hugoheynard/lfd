@@ -1,20 +1,23 @@
-<div class="follow">
-  <fold-checkbox
-    label="Suivre le compte principal"
-    [hint]="hint()"
-    [checked]="checked()"
-    [disabled]="!canEdit() || saving()"
-    (checkedChange)="toggle($event)"
-    data-follow-parent
-  />
+<!-- En LECTURE depuis le 2026-10-20 : le suivi se règle dans la grille de la
+     page Sous-comptes du principal, où l'on voit tous ses sites ensemble. -->
+<fold-callout [variant]="current() === null ? 'neutral' : 'info'" data-follow-parent>
   @if (current() !== null) {
-    <fold-callout variant="info" data-follow-since>
-      Hérité de
+    <span data-follow-since>
+      {{ label() }} : suit
       <a [routerLink]="['/comptes-clients', parent().id]">{{ parent().enseigne }}</a>
-      depuis le {{ since() }}.
-    </fold-callout>
+      depuis le {{ since() }}. {{ hint() }}
+    </span>
+  } @else {
+    <span>{{ label() }} : ne suit pas {{ parent().enseigne }}.</span>
   }
-  @if (refusal(); as refusal) {
-    <fold-callout variant="alert" data-follow-refusal>{{ refusal }}</fold-callout>
-  }
-</div>
+  <a
+    actions
+    foldButton
+    size="sm"
+    emphasis="outline"
+    [routerLink]="['/comptes-clients', parent().id, 'sous-comptes']"
+    data-follow-settle
+  >
+    Régler depuis {{ parent().enseigne }}
+  </a>
+</fold-callout>

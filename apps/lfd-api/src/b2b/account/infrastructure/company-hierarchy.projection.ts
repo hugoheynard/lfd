@@ -83,6 +83,7 @@ export async function readHierarchy(
       city: child.addresses[0]?.ville ?? null,
       status: child.status,
       followedAspects: inForce(child.follows, now).map((follow) => follow.aspect),
+      follows: inForce(child.follows, now),
     })),
     follows: inForce(follows, now),
     groupWithoutDelivery: row.groupWithoutDelivery,

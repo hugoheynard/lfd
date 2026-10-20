@@ -12,6 +12,7 @@ const CHALET: SubAccountView = {
   city: "Val d'Isère",
   status: 'active',
   followedAspects: ['billing'],
+  follows: [{ aspect: 'billing', since: '2026-09-10T08:00:00.000Z' }],
 };
 
 async function render(

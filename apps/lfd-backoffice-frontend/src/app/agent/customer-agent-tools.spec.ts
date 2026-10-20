@@ -72,6 +72,7 @@ const DETAIL = {
         city: 'Annecy',
         status: 'active',
         followedAspects: ['billing'],
+        follows: [{ aspect: 'billing', since: '2026-09-10T08:00:00.000Z' }],
       },
     ],
     follows: [],

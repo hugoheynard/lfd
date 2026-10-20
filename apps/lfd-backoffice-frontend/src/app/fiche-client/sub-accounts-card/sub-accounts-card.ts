@@ -9,11 +9,8 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
-import type { SubAccountView } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
-  FoldBadgeComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
@@ -22,16 +19,12 @@ import {
   FoldEmptyStateComponent,
   FoldIconComponent,
   FoldPanelHostService,
-  FoldStatusBadgeComponent,
 } from 'fold-ng';
 
 import { AdminCompanyHierarchyService } from '../../comptes-clients/admin-company-hierarchy.service';
-import {
-  FOLLOW_ASPECT_LABELS,
-  STATUS_LABELS,
-  type AdminCompanyDetail,
-} from '../../comptes-clients/admin-company';
+import { type AdminCompanyDetail } from '../../comptes-clients/admin-company';
 import { FORM_PANEL } from '../informations/fiche-client.panels';
+import { FollowGrid } from '../follow-grid/follow-grid';
 import { AttachSubAccountPanel } from '../panels/attach-sub-account-panel/attach-sub-account-panel';
 import { SubAccountPanel } from '../panels/sub-account-panel/sub-account-panel';
 
@@ -52,8 +45,7 @@ import { SubAccountPanel } from '../panels/sub-account-panel/sub-account-panel';
   selector: 'app-sub-accounts-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    RouterLink,
-    FoldBadgeComponent,
+    FollowGrid,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,
@@ -61,7 +53,6 @@ import { SubAccountPanel } from '../panels/sub-account-panel/sub-account-panel';
     FoldElementTitleComponent,
     FoldEmptyStateComponent,
     FoldIconComponent,
-    FoldStatusBadgeComponent,
   ],
   templateUrl: './sub-accounts-card.html',
   styleUrl: './sub-accounts-card.scss',
@@ -75,13 +66,12 @@ export class SubAccountsCard {
   /** La hiérarchie a changé : la fiche relit. */
   readonly changed = output<void>();
 
-  protected readonly statusLabels = STATUS_LABELS;
   protected readonly subAccounts = computed(() => this.company().hierarchy.subAccounts);
   protected readonly groupChecked = signal(false);
   protected readonly savingGroup = signal(false);
   protected readonly refusal = signal<string | null>(null);
 
-  private readonly name = computed(() => {
+  protected readonly parentName = computed(() => {
     const company = this.company();
     return company.enseigne.trim() === '' ? company.raisonSociale : company.enseigne;
   });
@@ -93,10 +83,6 @@ export class SubAccountsCard {
     });
   }
 
-  protected aspectsOf(subAccount: SubAccountView): string {
-    return subAccount.followedAspects.map((aspect) => FOLLOW_ASPECT_LABELS[aspect]).join(' · ');
-  }
-
   protected create(): void {
     const company = this.company();
     void this.panels
@@ -104,7 +90,7 @@ export class SubAccountsCard {
         ...FORM_PANEL,
         data: {
           parentId: company.id,
-          parentName: this.name(),
+          parentName: this.parentName(),
           parentRaisonSociale: company.raisonSociale,
           parentSiret: company.siret,
           parentVatNumber: company.vatNumber,
@@ -117,7 +103,7 @@ export class SubAccountsCard {
     void this.panels
       .open(AttachSubAccountPanel, {
         ...FORM_PANEL,
-        data: { parentId: this.company().id, parentName: this.name() },
+        data: { parentId: this.company().id, parentName: this.parentName() },
       })
       .closed.then((id) => this.changedIf(id));
   }

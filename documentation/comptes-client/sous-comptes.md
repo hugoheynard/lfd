@@ -378,16 +378,29 @@ Back-office, `apps/lfd-backoffice-frontend/src/app/` :
 
 - **Onglet « Sous-comptes »** de la fiche client (route `sous-comptes`,
   `fiche-client/sous-comptes/sub-accounts-page`). Sur un principal : la
-  liste (`sub-accounts-card/`), « Créer un sous-compte »
-  (`panels/sub-account-panel/`), « Rattacher un client existant »
+  **grille des suivis** (`follow-grid/`, dans `sub-accounts-card/`), une
+  ligne par sous-compte, « Créer un sous-compte »
+  (`panels/sub-account-panel/`), « Rattacher un compte client existant »
   (`panels/attach-sub-account-panel/`), la case « compte de groupe ». Sur un
   sous-compte : le bandeau « Site de / Entité rattachée à »
-  (`parent-banner/`) et « Détacher ».
-- **Cases « Suivre le compte principal »** dans leurs onglets
-  (`follow-parent-toggle/`, phrases pour `billing`, `pricing`, `contacts`) ;
-  le suivi du tarif a sa carte (`pricing-follow/`) dans l'onglet Tarifs ; la
-  forme de prélèvement sa carte (`payer-billing-mode-card/`) ; les impayés
-  détachés la leur (`detached-unpaid-card/`).
+  (`parent-banner/`), la carte des sous-comptes floutée sous un cadenas
+  (profondeur 1), la forme de prélèvement d'un site.
+- 🔴 **Suivre et détacher se règlent depuis le principal** (Hugo,
+  2026-10-20). La grille porte, par sous-compte, un bouton Activer /
+  Désactiver pour `billing`, `pricing` et `contacts`, et « Détacher » ;
+  chacun passe par un `fold-inline-confirm` qui dit les conséquences (payeur,
+  prix des prochaines commandes, suivis fermés). Raisons : c'est le principal
+  qui négocie et paie, on règle souvent plusieurs sites le même jour, et
+  l'incohérence entre sites ne se voit que d'en haut. Chaque bouton appelle
+  la route du sous-compte : mêmes gardes serveur qu'avant. Cela **inverse**
+  la règle d'origine calquée sur les déclinaisons (« on ne règle pas un
+  sous-compte depuis son principal ») pour ces gestes-là.
+- **Sur la fiche de l'enfant, en lecture** : `follow-parent-toggle/` dit
+  l'état de chaque aspect et sa date, dans son onglet (Contacts dans
+  Informations, Tarif dans Tarifs via `pricing-follow/`), avec « Régler depuis
+  _Principal_ » ; le bandeau renvoie au même endroit. La forme de prélèvement
+  (`payer-billing-mode-card/`) et les impayés détachés
+  (`detached-unpaid-card/`) restent sur la fiche du site.
 - **L'onglet Informations d'un site montre l'hérité, il ne le réclame pas**
   (Hugo : « beaucoup de mélange avec les warnings ») : identité, facturation
   et paiement du principal en lecture.

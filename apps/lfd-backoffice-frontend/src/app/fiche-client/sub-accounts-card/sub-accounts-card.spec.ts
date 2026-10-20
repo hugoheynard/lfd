@@ -127,7 +127,7 @@ describe('SubAccountsCard', () => {
     expect(host(fixture).textContent).toContain('Aucun sous-compte');
   });
 
-  it('liste chaque sous-compte : enseigne vers sa fiche, ville, statut, aspects suivis', () => {
+  it('pose la grille des suivis, une ligne par sous-compte', () => {
     const { fixture } = boot(
       principal({
         subAccounts: [
@@ -137,15 +137,18 @@ describe('SubAccountsCard', () => {
             city: 'Courchevel',
             status: 'pending',
             followedAspects: ['billing', 'pricing'],
+            follows: [
+              { aspect: 'billing', since: '2026-09-10T08:00:00.000Z' },
+              { aspect: 'pricing', since: '2026-09-10T08:00:00.000Z' },
+            ],
           },
         ],
       }),
     );
-    const row = host(fixture).querySelector('[data-sub-account]');
-    expect(row?.querySelector('a')?.getAttribute('href')).toBe('/comptes-clients/child_1');
-    expect(row?.textContent).toContain('Courchevel');
-    expect(row?.textContent).toContain('En attente');
-    expect(row?.textContent).toContain('Facturation · Tarif');
+    const grid = host(fixture).querySelector('app-follow-grid');
+    expect(grid?.textContent).toContain('Chalet des Cimes');
+    expect(grid?.textContent).toContain('Courchevel');
+    expect(grid?.querySelector('[data-follow-cell="child_1:billing"]')).not.toBeNull();
   });
 
   it('« Créer un sous-compte » ouvre le panneau sous ce principal, SIREN proposé', async () => {

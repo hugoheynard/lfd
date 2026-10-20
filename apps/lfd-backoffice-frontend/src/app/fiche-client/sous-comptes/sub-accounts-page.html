@@ -9,23 +9,7 @@
           [open]="c.hierarchy.parent === null && c.hierarchy.subAccounts.length === 0"
         />
         @if (c.hierarchy.parent; as parent) {
-          <app-parent-banner
-            [companyId]="c.id"
-            [parent]="parent"
-            [follows]="c.hierarchy.follows"
-            (detached)="fiche.reload()"
-          />
-          <!-- La case qui fait d'un sous-compte un SITE : facturé et prélevé au
-               nom du principal. Elle vit ici, pas dans Informations. -->
-          <fold-card data-billing-follow>
-            <app-follow-parent-toggle
-              aspect="billing"
-              [companyId]="c.id"
-              [parent]="parent"
-              [follows]="c.hierarchy.follows"
-              (changed)="fiche.reload()"
-            />
-          </fold-card>
+          <app-parent-banner [parent]="parent" [follows]="c.hierarchy.follows" />
           <!-- La forme de prélèvement n'a de sens que pour un SITE : le serveur
                la refuse à un compte qui paie seul (§2.1 ter). -->
           @if (followsBilling(c.hierarchy.follows)) {

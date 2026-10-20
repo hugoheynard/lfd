@@ -115,7 +115,14 @@ describe('ClientSubAccountsPage', () => {
 
     const withChild = principal({
       subAccounts: [
-        { id: 's1', enseigne: 'Chalet', city: null, status: 'pending', followedAspects: [] },
+        {
+          id: 's1',
+          enseigne: 'Chalet',
+          city: null,
+          status: 'pending',
+          followedAspects: [],
+          follows: [],
+        },
       ],
     });
     expect(helpOpen(boot(withChild).nativeElement as HTMLElement)).toBe(false);
@@ -136,7 +143,8 @@ describe('ClientSubAccountsPage', () => {
     expect(locked?.querySelector('.locked-veil a')?.getAttribute('href')).toBe(
       '/comptes-clients/p1',
     );
-    expect(host.querySelector('[data-billing-follow] app-follow-parent-toggle')).not.toBeNull();
+    // Les cases se règlent chez le principal depuis le 2026-10-20 : plus de case ici.
+    expect(host.querySelector('[data-billing-follow]')).toBeNull();
     const billing = host.querySelector('[data-follow-reminder="billing"]');
     expect(billing?.textContent).toContain('suivi depuis le');
     expect(billing?.querySelector('a')?.getAttribute('href')).toBe(

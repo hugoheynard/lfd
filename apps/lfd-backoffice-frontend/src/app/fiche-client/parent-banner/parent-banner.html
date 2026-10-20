@@ -1,37 +1,17 @@
-<div class="banner">
-  <fold-callout variant="info" icon="company" data-parent-banner>
-    {{ kindLabel() }}
-    <a [routerLink]="['/comptes-clients', parent().id]">{{ parent().enseigne }}</a
-    >.
-    @if (!confirming()) {
-      <button
-        actions
-        foldButton
-        size="sm"
-        emphasis="outline"
-        intent="danger"
-        (click)="confirming.set(true)"
-        data-detach
-      >
-        Détacher
-      </button>
-    }
-  </fold-callout>
-
-  @if (confirming()) {
-    <fold-inline-confirm
-      [open]="true"
-      intent="danger"
-      [message]="confirmMessage()"
-      [loading]="detaching()"
-      (confirmed)="detach()"
-      (cancelled)="confirming.set(false)"
-      data-detach-confirm
-    >
-      <span hidden></span>
-    </fold-inline-confirm>
-  }
-  @if (refusal(); as refusal) {
-    <fold-callout variant="alert" data-detach-refusal>{{ refusal }}</fold-callout>
-  }
-</div>
+<!-- Détacher se fait depuis le principal depuis le 2026-10-20 : c'est sa
+     page Sous-comptes qui montre ce que le détachement lui retire. -->
+<fold-callout variant="info" icon="company" data-parent-banner>
+  {{ kindLabel() }}
+  <a [routerLink]="['/comptes-clients', parent().id]">{{ parent().enseigne }}</a
+  >.
+  <a
+    actions
+    foldButton
+    size="sm"
+    emphasis="outline"
+    [routerLink]="['/comptes-clients', parent().id, 'sous-comptes']"
+    data-parent-settle
+  >
+    Régler depuis {{ parent().enseigne }}
+  </a>
+</fold-callout>

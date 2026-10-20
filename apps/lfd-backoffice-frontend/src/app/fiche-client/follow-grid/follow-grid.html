@@ -1,0 +1,105 @@
+<fold-data-table
+  caption="Ce que chaque sous-compte suit de son principal"
+  density="compact"
+  narrowLayout="scroll"
+  [columns]="columns"
+  [rows]="subAccounts()"
+  [rowKey]="rowKey"
+  [rowNote]="hasNote"
+>
+  <ng-template foldCell="site" let-row>
+    <a class="site" [routerLink]="['/comptes-clients', row.id]">{{ row.enseigne }}</a>
+    <span class="city">{{ row.city ?? 'Sans adresse de livraison' }}</span>
+  </ng-template>
+
+  <ng-template foldCell="status" let-row>
+    <fold-status-badge [status]="row.status" [label]="statusLabel(row)" />
+  </ng-template>
+
+  <!-- Une case par aspect, écrite trois fois : la table cherche ses gabarits
+       par leur clé, et un gabarit posé dans un @for lui échapperait. -->
+  <ng-template foldCell="billing" let-row>
+    <ng-container *ngTemplateOutlet="followCell; context: { $implicit: row, aspect: 'billing' }" />
+  </ng-template>
+  <ng-template foldCell="pricing" let-row>
+    <ng-container *ngTemplateOutlet="followCell; context: { $implicit: row, aspect: 'pricing' }" />
+  </ng-template>
+  <ng-template foldCell="contacts" let-row>
+    <ng-container *ngTemplateOutlet="followCell; context: { $implicit: row, aspect: 'contacts' }" />
+  </ng-template>
+  <ng-template foldCell="detach" let-row>
+    <button
+      foldButton
+      size="sm"
+      emphasis="outline"
+      intent="danger"
+      [disabled]="busy()"
+      (click)="pending.set(null); detaching.set(row)"
+      [attr.data-detach]="row.id"
+    >
+      Détacher
+    </button>
+  </ng-template>
+  <ng-template foldRowNote let-row>
+    <ul class="summary" [attr.data-capabilities]="row.id">
+      @for (aspect of summaryAspects; track aspect) {
+        <li>
+          <strong>{{ aspectLabel(aspect) }}</strong> : {{ capability(row, aspect) }}
+        </li>
+      }
+    </ul>
+  </ng-template>
+</fold-data-table>
+
+@if (pending(); as change) {
+  <fold-inline-confirm
+    [open]="true"
+    [intent]="change.following ? 'primary' : 'danger'"
+    [message]="pendingMessage(change)"
+    [loading]="saving() !== null"
+    (confirmed)="confirmPending()"
+    (cancelled)="pending.set(null)"
+    data-follow-confirm
+  >
+    <span hidden></span>
+  </fold-inline-confirm>
+}
+
+@if (detaching(); as row) {
+  <fold-inline-confirm
+    [open]="true"
+    intent="danger"
+    [message]="confirmMessage(row)"
+    [loading]="busy()"
+    (confirmed)="detach(row)"
+    (cancelled)="detaching.set(null)"
+    data-detach-confirm
+  >
+    <span hidden></span>
+  </fold-inline-confirm>
+}
+
+@if (refusal(); as refusal) {
+  <fold-callout variant="alert" data-follow-refusal>{{ refusal }}</fold-callout>
+}
+
+<ng-template #followCell let-row let-aspect="aspect">
+  <span class="cell" [attr.data-follow-cell]="row.id + ':' + aspect">
+    @if (sinceOf(row, aspect); as since) {
+      <span class="state on">Actif depuis le {{ since }}</span>
+    } @else {
+      <span class="state">Inactif</span>
+    }
+    <button
+      foldButton
+      size="sm"
+      [emphasis]="sinceOf(row, aspect) === null ? 'solid' : 'outline'"
+      [attr.aria-label]="ariaOf(row, aspect)"
+      [disabled]="!canEdit(aspect) || saving() !== null"
+      (click)="ask(row, aspect)"
+      data-follow-toggle
+    >
+      {{ sinceOf(row, aspect) === null ? 'Activer' : 'Désactiver' }}
+    </button>
+  </span>
+</ng-template>

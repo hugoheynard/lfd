@@ -71,6 +71,11 @@ export interface SubAccountView {
   readonly city: string | null;
   readonly status: CompanyStatus;
   readonly followedAspects: readonly CompanyFollowAspect[];
+  /**
+   * Les mêmes suivis, avec la date de leur période en cours : la grille de
+   * la page Sous-comptes du principal les règle et les date (2026-10-20).
+   */
+  readonly follows: readonly FollowedAspectView[];
 }
 
 /** La place d'une société dans la hiérarchie des comptes, telle que la fiche la montre. */

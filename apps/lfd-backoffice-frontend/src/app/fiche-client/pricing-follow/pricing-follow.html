@@ -7,9 +7,7 @@
 } @else if (hierarchy()?.parent; as parent) {
   <app-follow-parent-toggle
     aspect="pricing"
-    [companyId]="companyId()"
     [parent]="parent"
     [follows]="hierarchy()?.follows ?? []"
-    (changed)="load()"
   />
 }
