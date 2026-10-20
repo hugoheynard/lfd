@@ -94,6 +94,21 @@ describe('les domaines rangés par outil', () => {
     expect(toolOf('shop_bundles')).toBe(toolOf('lfc_suggestions'));
   });
 
+  /**
+   * Régression : `allergen_matrix` tombait sous « Transverse » (2026-10-20) —
+   * sa clé n'a pas de préfixe d'outil. La matrice est une lecture du
+   * référentiel : elle se range avec `pim_catalog` (Hugo).
+   */
+  it('range la matrice des allergènes avec le Référentiel, à côté du catalogue', () => {
+    expect(toolOf('allergen_matrix')).toBe('pim');
+    const pim = toolGroups().find((group) => group.tool === 'pim');
+    expect(pim?.resources.map((r) => r.resource)).toEqual(
+      expect.arrayContaining(['pim_catalog', 'allergen_matrix']),
+    );
+    const transverse = toolGroups().find((group) => group.tool === 'transverse');
+    expect(transverse?.resources.map((r) => r.resource) ?? []).not.toContain('allergen_matrix');
+  });
+
   it('rattache le journal au transverse — il traverse les outils', () => {
     expect(toolOf('activity')).toBe('transverse');
   });

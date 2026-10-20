@@ -1,0 +1,246 @@
+<fold-page-layout icon="grid" title="Matrice des allergènes" separator>
+  <p description>
+    Chaque déclinaison et les allergènes de l'annexe II qu'elle contient ou peut contenir, établis à
+    partir des fiches. À réimprimer à chaque changement de la gamme&nbsp;: la déclaration en vigueur
+    est celle de l'étiquette.
+  </p>
+
+  <fold-card>
+    <fold-element-title cardHeader variant="title" icon="filter" title="Périmètre" />
+    <div class="filters">
+      <fold-listbox
+        size="sm"
+        label="Produits"
+        [options]="scopeOptions"
+        [value]="store.scope()"
+        (selectionChange)="setScope($event)"
+      />
+      <fold-listbox
+        size="sm"
+        label="Famille"
+        [placeholder]="wording.document.allFamilies"
+        allowClear
+        clearLabel="Toutes les familles"
+        [options]="store.familyOptions()"
+        [value]="store.categoryId()"
+        (valueChange)="setCategory($event)"
+      />
+      <fold-checkbox
+        label="Inclure les déclinaisons non renseignées"
+        [checked]="store.includeUndeclared()"
+        (checkedChange)="setIncludeUndeclared($event)"
+      />
+    </div>
+  </fold-card>
+
+  <fold-card>
+    <fold-element-title cardHeader variant="title" icon="download" title="Exporter" />
+    <div class="export">
+      @if (lastModified(); as line) {
+        <p class="last-modified">{{ line }}</p>
+      }
+      <div class="export-actions">
+        <fold-listbox
+          size="sm"
+          label="Langue des exports"
+          [options]="exportLocales"
+          [value]="store.exportLocale()"
+          (selectionChange)="setExportLocale($event)"
+        />
+        <button
+          foldButton
+          emphasis="outline"
+          icon="download"
+          [loading]="store.exporting() === 'pdf'"
+          [disabled]="store.exporting() !== null || store.view() === null"
+          (click)="export('pdf')"
+        >
+          PDF
+        </button>
+        <button
+          foldButton
+          emphasis="outline"
+          icon="download"
+          [loading]="store.exporting() === 'csv'"
+          [disabled]="store.exporting() !== null || store.view() === null"
+          (click)="export('csv')"
+        >
+          Tableur
+        </button>
+      </div>
+      @if (store.exportError(); as message) {
+        <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+      }
+    </div>
+  </fold-card>
+
+  @if (store.loading()) {
+    <fold-loading message="Lecture de la matrice…" />
+  } @else if (store.loadError(); as message) {
+    <fold-empty-state tone="alert" title="La matrice n'a pas pu être lue" [subtitle]="message">
+      <button foldButton emphasis="outline" icon="reload" (click)="retry()">Réessayer</button>
+    </fold-empty-state>
+  } @else if (!store.hasRows()) {
+    <fold-empty-state title="Aucune déclinaison" [subtitle]="wording.document.empty">
+      <fold-icon empty-icon name="grid" />
+    </fold-empty-state>
+  } @else {
+    <fold-card>
+      <fold-element-title
+        cardHeader
+        variant="title"
+        icon="info"
+        [title]="wording.document.legend"
+      />
+      <dl class="legend">
+        <div>
+          <dt>
+            <span aria-hidden="true">{{ signs.contains }}</span>
+          </dt>
+          <dd>{{ legend.contains }}</dd>
+        </div>
+        <div>
+          <dt>
+            <span aria-hidden="true">{{ signs.traces }}</span>
+          </dt>
+          <dd>{{ legend.traces }}</dd>
+        </div>
+        <div>
+          <dt>—</dt>
+          <dd>{{ wording.document.legendAbsent }}</dd>
+        </div>
+        <div>
+          <dt>{{ wording.states.not_declared }}</dt>
+          <dd>{{ wording.document.legendNotDeclared }}</dd>
+        </div>
+      </dl>
+      @if (store.view()?.mentionsTranslated === false) {
+        <fold-callout variant="warning">{{ wording.document.untranslated }}</fold-callout>
+      }
+    </fold-card>
+
+    @for (family of families(); track family.id) {
+      <fold-card>
+        <fold-element-title cardHeader variant="title" [title]="family.name" />
+        <fold-data-table
+          density="compact"
+          stickyFirst
+          columnRules
+          [caption]="family.name"
+          [columns]="columns()"
+          [rows]="family.rows"
+          [rowKey]="rowKey"
+          [rowTone]="rowTone"
+          [rowNote]="hasStateNote"
+        >
+          <ng-template foldCell="product" let-row>
+            <span class="product">
+              <strong>{{ row.productName }}</strong>
+              @if (row.variantName !== null) {
+                <span>{{ row.variantName }}</span>
+              }
+              <span class="sku">{{ row.sku }}</span>
+            </span>
+          </ng-template>
+          <!-- Une case : ses marques, contient puis traces. -->
+          <ng-template #marksCell let-lines>
+            <span class="marks">
+              @for (line of lines; track line.kind) {
+                <span class="mark">
+                  <span class="sign" role="img" [attr.aria-label]="markLabel(line)">{{
+                    sign(line)
+                  }}</span>
+                  @if (line.names !== '') {
+                    <span>{{ line.names }}</span>
+                  }
+                </span>
+              }
+            </span>
+          </ng-template>
+
+          <!-- 🔴 Une clé LIÉE (`[foldCell]="…"` dans un @for) n'est pas encore
+               posée quand la table lit ses gabarits : NG0950 (vu le 2026-10-20,
+               comme `purchase-table-grid` le 2026-09-30). D'où une clé ÉCRITE
+               par colonne : les quatorze mentions de l'annexe II. Au-delà, la
+               colonne retombe sur son accesseur texte (`value`). -->
+          <ng-template foldCell="allergen-0" let-row>
+            <ng-container
+              *ngTemplateOutlet="marksCell; context: { $implicit: categoryMarksAt(row, 0) }"
+            />
+          </ng-template>
+          <ng-template foldCell="allergen-1" let-row>
+            <ng-container
+              *ngTemplateOutlet="marksCell; context: { $implicit: categoryMarksAt(row, 1) }"
+            />
+          </ng-template>
+          <ng-template foldCell="allergen-2" let-row>
+            <ng-container
+              *ngTemplateOutlet="marksCell; context: { $implicit: categoryMarksAt(row, 2) }"
+            />
+          </ng-template>
+          <ng-template foldCell="allergen-3" let-row>
+            <ng-container
+              *ngTemplateOutlet="marksCell; context: { $implicit: categoryMarksAt(row, 3) }"
+            />
+          </ng-template>
+          <ng-template foldCell="allergen-4" let-row>
+            <ng-container
+              *ngTemplateOutlet="marksCell; context: { $implicit: categoryMarksAt(row, 4) }"
+            />
+          </ng-template>
+          <ng-template foldCell="allergen-5" let-row>
+            <ng-container
+              *ngTemplateOutlet="marksCell; context: { $implicit: categoryMarksAt(row, 5) }"
+            />
+          </ng-template>
+          <ng-template foldCell="allergen-6" let-row>
+            <ng-container
+              *ngTemplateOutlet="marksCell; context: { $implicit: categoryMarksAt(row, 6) }"
+            />
+          </ng-template>
+          <ng-template foldCell="allergen-7" let-row>
+            <ng-container
+              *ngTemplateOutlet="marksCell; context: { $implicit: categoryMarksAt(row, 7) }"
+            />
+          </ng-template>
+          <ng-template foldCell="allergen-8" let-row>
+            <ng-container
+              *ngTemplateOutlet="marksCell; context: { $implicit: categoryMarksAt(row, 8) }"
+            />
+          </ng-template>
+          <ng-template foldCell="allergen-9" let-row>
+            <ng-container
+              *ngTemplateOutlet="marksCell; context: { $implicit: categoryMarksAt(row, 9) }"
+            />
+          </ng-template>
+          <ng-template foldCell="allergen-10" let-row>
+            <ng-container
+              *ngTemplateOutlet="marksCell; context: { $implicit: categoryMarksAt(row, 10) }"
+            />
+          </ng-template>
+          <ng-template foldCell="allergen-11" let-row>
+            <ng-container
+              *ngTemplateOutlet="marksCell; context: { $implicit: categoryMarksAt(row, 11) }"
+            />
+          </ng-template>
+          <ng-template foldCell="allergen-12" let-row>
+            <ng-container
+              *ngTemplateOutlet="marksCell; context: { $implicit: categoryMarksAt(row, 12) }"
+            />
+          </ng-template>
+          <ng-template foldCell="allergen-13" let-row>
+            <ng-container
+              *ngTemplateOutlet="marksCell; context: { $implicit: categoryMarksAt(row, 13) }"
+            />
+          </ng-template>
+          <ng-template foldCell="others" let-row>
+            <ng-container *ngTemplateOutlet="marksCell; context: { $implicit: otherMarks(row) }" />
+          </ng-template>
+          <ng-template foldRowNote let-row>
+            <span class="state">{{ stateLabel(row) }}</span>
+          </ng-template>
+        </fold-data-table>
+      </fold-card>
+    }
+  }
+</fold-page-layout>

@@ -27,7 +27,7 @@ import {
  *
  * ⚠️ Restent des exceptions, et elles sont nommées : `activity` n'a pas de
  * préfixe, parce que le journal ne se range dans aucun outil ; `shop_bundles`
- * se range à la main (`SHOP_RESOURCE_TOOLS`).
+ * et `allergen_matrix` se rangent à la main (`RESOURCE_TOOL_EXCEPTIONS`).
  */
 export type StaffTool =
   'pim' | 'lfc' | 'b2b' | 'production' | 'handover' | 'delivery' | 'staff' | 'ops' | 'transverse';
@@ -92,13 +92,20 @@ export interface ToolGroup {
 }
 
 /**
- * Les droits `shop_*` n'ont pas d'outil à leur préfixe : `shop` nomme la
- * boutique, pas un écran. Les formules vont où leur écran vit, en Gestion
- * Boutique avec la fidélité et les suggestions (`lfc`, Hugo, 2026-10-19) ;
- * avant, elles tombaient en « Transverse ».
+ * **Les ressources dont le préfixe ne nomme pas l'outil** — rangées à la main,
+ * chacune avec sa raison.
+ *
+ * - `shop_bundles` : `shop` nomme la boutique, pas un écran. Les formules vont
+ *   où leur écran vit, en Gestion Boutique avec la fidélité et les suggestions
+ *   (`lfc`, Hugo, 2026-10-19) ; avant, elles tombaient en « Transverse ».
+ * - `allergen_matrix` : la matrice est une lecture du RÉFÉRENTIEL (routes
+ *   `/pim/allergen-matrix*`), rangée avec `pim_catalog` (Hugo, 2026-10-20). Sa
+ *   clé n'a pas de préfixe `pim_` — le contrat l'a nommée ainsi, et une valeur
+ *   d'enum ne se renomme pas pour ranger un écran.
  */
-const SHOP_RESOURCE_TOOLS: Readonly<Partial<Record<StaffResource, StaffTool>>> = {
+const RESOURCE_TOOL_EXCEPTIONS: Readonly<Partial<Record<StaffResource, StaffTool>>> = {
   shop_bundles: 'lfc',
+  allergen_matrix: 'pim',
 };
 
 /**
@@ -110,7 +117,7 @@ const SHOP_RESOURCE_TOOLS: Readonly<Partial<Record<StaffResource, StaffTool>>> =
  * qu'une exception silencieuse n'est jamais.
  */
 export function toolOf(resource: StaffResource): StaffTool {
-  const exception = SHOP_RESOURCE_TOOLS[resource];
+  const exception = RESOURCE_TOOL_EXCEPTIONS[resource];
   if (exception !== undefined) {
     return exception;
   }

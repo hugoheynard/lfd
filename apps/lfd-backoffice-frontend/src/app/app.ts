@@ -286,6 +286,17 @@ export class App {
   protected readonly canSeePim = computed(() => this.permissions.can('pim_catalog:read'));
 
   /**
+   * La matrice des allergènes — SON droit, celui que ses trois routes serveur
+   * opposent (`@AdminSurface("allergen_matrix")`) et que garde sa route
+   * (`matrice-allergenes`). Entrée à part, juste sous le Catalogue (Hugo,
+   * 2026-10-20) : `pim_catalog` n'y mène pas, et elle seule n'ouvre pas les
+   * fiches. Le même `computed` tient le rail et la tuile.
+   */
+  protected readonly canSeeAllergenMatrix = computed(() =>
+    this.permissions.can('allergen_matrix:read'),
+  );
+
+  /**
    * La Médiathèque — son droit à elle, celui que le serveur oppose
    * (`@AdminSurface("media_library")`). Elle a quitté le référentiel le
    * 2026-09-23 ; l'entrée suivait encore `pim_catalog` jusqu'au 2026-10-02.

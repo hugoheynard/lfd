@@ -202,6 +202,23 @@
         ></a>
       }
 
+      @if (canSeeAllergenMatrix()) {
+        <!-- LA MATRICE DES ALLERGÈNES — entrée à part, juste sous le Catalogue
+             (Hugo, 2026-10-20, « pour le moment »), sous SON droit
+             `allergen_matrix:read` : on l'affiche au comptoir sans rédiger de
+             fiche. La même entrée existe aux tuiles, plus bas. -->
+        <a
+          fold-menu-item
+          icon="grid"
+          label="Matrice des allergènes"
+          routerLink="/matrice-allergenes"
+          routerLinkActive
+          #allergenMatrixRla="routerLinkActive"
+          [active]="allergenMatrixRla.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
+      }
+
       @if (canSeeShopManagement()) {
         <!-- GESTION BOUTIQUE — ce qu'on vend, ce qu'on met en avant, et quand
              (Hugo, 2026-10-13 ; le catalogue publié depuis le 2026-10-15) : les opérations datées, venues du rail du Catalogue,
@@ -915,6 +932,21 @@
             ></a>
           }
         </fold-nav-group>
+      }
+      @if (canSeeAllergenMatrix()) {
+        <!-- La MÊME entrée qu'au rail, juste sous le Catalogue : deux arbres,
+             deux modèles, une entrée posée d'un seul côté est invisible de
+             l'autre. -->
+        <a
+          fold-nav-tile
+          icon="grid"
+          label="Matrice des allergènes"
+          routerLink="/matrice-allergenes"
+          routerLinkActive
+          #allergenMatrixTile="routerLinkActive"
+          [active]="allergenMatrixTile.isActive"
+          (click)="mobileNavOpen.set(false)"
+        ></a>
       }
 
       @if (canSeeShopManagement()) {

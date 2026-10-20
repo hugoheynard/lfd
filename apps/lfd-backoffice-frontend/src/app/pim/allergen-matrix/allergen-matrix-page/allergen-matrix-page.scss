@@ -1,0 +1,72 @@
+.filters,
+.export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--fold-space-md);
+}
+
+.export {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.last-modified {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-secondary);
+}
+
+/* La légende : le signe ET le mot, jamais la couleur seule (plan §1). */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm) var(--fold-space-xl);
+  margin: 0;
+
+  div {
+    display: flex;
+    align-items: baseline;
+    gap: var(--fold-space-xs);
+  }
+
+  dt {
+    font-weight: var(--fold-weight-semibold);
+  }
+
+  dd {
+    margin: 0;
+    color: var(--fold-color-text-secondary);
+  }
+}
+
+.product,
+.marks,
+.mark {
+  display: flex;
+  flex-direction: column;
+}
+
+.marks {
+  gap: var(--fold-space-xs);
+}
+
+.mark {
+  align-items: center;
+  font-size: var(--fold-text-sm);
+}
+
+.sku {
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-secondary);
+}
+
+.sign {
+  font-size: var(--fold-text-lg);
+  line-height: var(--fold-leading-none);
+}
+
+.state {
+  font-weight: var(--fold-weight-semibold);
+}

@@ -209,6 +209,20 @@ export const routes: Routes = [
       import('./mediatheque/ui/mediatheque-page/mediatheque-page').then((m) => m.MediathequePage),
   },
   {
+    // **La matrice des allergènes** — premier niveau, HORS de `pim/` : ce
+    // parent est gardé par `pim_catalog:read`, et la matrice a SON droit
+    // (plan-matrice-des-allergenes.md, Q6) — afficher la matrice au comptoir
+    // n'est pas rédiger une fiche. `allergen_matrix:read` est le mur que les
+    // trois routes serveur opposent (`@AdminSurface("allergen_matrix")`).
+    path: 'matrice-allergenes',
+    canActivate: [permissionGuard('allergen_matrix:read')],
+    title: 'Matrice des allergènes — LFC B2B admin',
+    loadComponent: () =>
+      import('./pim/allergen-matrix/allergen-matrix-page/allergen-matrix-page').then(
+        (m) => m.AllergenMatrixPage,
+      ),
+  },
+  {
     // **Vitrine** — composer les pages de la boutique. Route de PREMIER niveau,
     // hors de l'espace `b2b` : ce parent est gardé par `b2b_settings:read`, et
     // l'ouvrir à la communication, qui compose la vitrine, lui aurait ouvert

@@ -169,6 +169,9 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // route serveur oppose (`@AdminSurface("media_library")`). Elle a eu la
   // sienne le 2026-09-23 ; cette ligne a suivi le 2026-10-02.
   mediatheque: 'media_library:read',
+  // **Matrice des allergènes** — hors de `pim/` (gardé par `pim_catalog`),
+  // derrière SON droit, celui des trois routes serveur (plan Q6, 2026-10-20).
+  'matrice-allergenes': 'allergen_matrix:read',
 
   // **Opérations datées** et **Promotions** — premier niveau depuis le
   // 2026-10-13 (Hugo), sous le mur des espaces qu'elles ont quittés :
