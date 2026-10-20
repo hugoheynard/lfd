@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 
+import { AccountModule } from "../account/account.module.js";
 import { AccountingModule } from "../accounting/accounting.module.js";
 import { FeatureAccessModule } from "../feature-access/feature-access.module.js";
 
@@ -95,7 +96,10 @@ import { StripeCheckoutGateway } from "./infrastructure/stripe-checkout-gateway.
   // la flèche est ce qui empêche les deux de se tenir l'un l'autre.
   // `feature-access` pour le seul drapeau `customerMandate`, lu par un
   // adaptateur : les handlers du mandat n'en voient qu'un port booléen.
-  imports: [AccountingModule, FeatureAccessModule],
+  // `AccountModule` depuis N4d (2026-10-20) : l'annonce des gestes de site
+  // (`SiteGesturePublisher`) — arête neuve, sans cycle (`AccountModule`
+  // n'importe aucun module, vérifié le 2026-10-20).
+  imports: [AccountingModule, AccountModule, FeatureAccessModule],
   controllers: [
     PaymentsWebhookController,
     AdminMandatesController,

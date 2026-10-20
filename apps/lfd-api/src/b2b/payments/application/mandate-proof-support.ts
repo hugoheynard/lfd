@@ -1,5 +1,10 @@
 import type { Buffer } from "node:buffer";
 
+import type { SiteGesturePublisher } from "../../account/application/services/site-gesture.publisher.js";
+import {
+  MANDATE_PROOF_ATTACHED,
+  type GestureActor,
+} from "../../account/domain/events/site-gesture.fact.js";
 import type { FieldCipher } from "../../../platform/crypto/field-cipher.js";
 import type { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import type { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
@@ -23,6 +28,8 @@ export interface MandateProofDeps {
   readonly clock: Clock;
   readonly events: DomainEventPublisher;
   readonly uow: UnitOfWork;
+  /** L'avis au principal du site (N4d) : un fait durable par dépôt. */
+  readonly gestures: SiteGesturePublisher;
 }
 
 /** Le fichier reçu, et qui l'envoie. */
@@ -30,7 +37,12 @@ export interface MandateProofUpload {
   readonly companyId: string;
   readonly fileName: string;
   readonly bytes: Buffer;
-  readonly via: MandateActorChannel;
+  /** Le client qui dépose, ou l'équipe — le canal du journal en est dérivé. */
+  readonly actor: GestureActor;
+}
+
+function channelOf(actor: GestureActor): MandateActorChannel {
+  return actor.kind === "team" ? "staff" : "customer";
 }
 
 /**
@@ -103,15 +115,24 @@ async function recordDeposit(
   try {
     await deps.uow.run(async () => {
       await deps.mandates.depositProof(mandate, previousKey);
+      const site = await mandateCompanyOf(deps.mandates, upload.companyId);
       await deps.events.publishTraced(
         new MandateProofAttachedEvent(
           mandate.id,
-          await mandateCompanyOf(deps.mandates, upload.companyId),
+          site,
           mandate.reference,
           mandate.toView().proofFileName,
-          upload.via,
+          channelOf(upload.actor),
         ),
       );
+      // Ni le nom du fichier ni la référence : le site, son principal sous
+      // verrou et l'auteur (N4d).
+      await deps.gestures.publish({
+        type: MANDATE_PROOF_ATTACHED,
+        site,
+        subjectId: mandate.id,
+        actor: upload.actor,
+      });
     });
   } catch (error) {
     const deposited = mandate.proofStorageKey();

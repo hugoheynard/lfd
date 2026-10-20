@@ -66,4 +66,13 @@ describe("le courriel « un de vos sites a… » d'un geste hors commande", () =
       "a ajouté un contact.",
     );
   });
+
+  it("le RIB et la preuve de mandat : rien du compte", () => {
+    expect(render({ gesture: "bank_account_changed", reference: null }).html).toContain(
+      "Votre site Chalet Gentiane a enregistré un nouveau RIB.",
+    );
+    expect(
+      render({ gesture: "mandate_proof_attached", reference: null, byTeam: true }).html,
+    ).toContain("a déposé une preuve de mandat (fait par notre équipe).");
+  });
 });

@@ -143,6 +143,7 @@ describe('SubAccountNoticesCard', () => {
       'payment_failed',
       'delivery_address_changed',
       'contact_changed',
+      'bank_account_changed',
       'order_problem_reported',
     ]);
   });

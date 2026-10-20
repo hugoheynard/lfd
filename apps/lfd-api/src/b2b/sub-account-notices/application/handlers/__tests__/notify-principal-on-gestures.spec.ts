@@ -12,12 +12,15 @@ import {
 import { GestureNoticeDispatcher } from "../../services/gesture-notice.dispatcher.js";
 import { PrincipalNoticeSender } from "../../services/principal-notice.sender.js";
 import {
+  BANK_ACCOUNT_CHANGED,
   CONTACT_ADDED,
   DELIVERY_ADDRESS_ADDED,
   SiteGestureFact,
   SiteGesturePayloadError,
   type SiteGestureStamp,
 } from "../../../../account/domain/events/site-gesture.fact.js";
+import { NotifyPrincipalOnBankAccountChanged } from "../notify-principal-on-bank-account-changed.handler.js";
+import { NotifyPrincipalOnMandateProofAttached } from "../notify-principal-on-mandate-proof-attached.handler.js";
 import { NotifyPrincipalOnContactAdded } from "../notify-principal-on-contact-added.handler.js";
 import { NotifyPrincipalOnContactRemoved } from "../notify-principal-on-contact-removed.handler.js";
 import { NotifyPrincipalOnContactUpdated } from "../notify-principal-on-contact-updated.handler.js";
@@ -75,6 +78,8 @@ function build(
     contactUpdated: new NotifyPrincipalOnContactUpdated(gestures),
     contactRemoved: new NotifyPrincipalOnContactRemoved(gestures),
     primaryChanged: new NotifyPrincipalOnPrimaryContactChanged(gestures),
+    bank: new NotifyPrincipalOnBankAccountChanged(gestures),
+    proof: new NotifyPrincipalOnMandateProofAttached(gestures),
   };
 }
 
@@ -344,5 +349,51 @@ describe("l'interrupteur des avis du principal (2026-10-20)", () => {
     const { reported, mailer } = build();
     await reported.handle(reportedFact());
     expect(mailer.sent).toHaveLength(3);
+  });
+});
+
+function bankFact(stamp: SiteGestureStamp = CUSTOMER, eventId = "evt_bank") {
+  const fact = new SiteGestureFact(BANK_ACCOUNT_CHANGED, "g1", "cba_1", stamp);
+  return { eventId, type: BANK_ACCOUNT_CHANGED, payload: fact.durableFact().payload };
+}
+
+describe("le RIB et la preuve de mandat d'un site (N4d)", () => {
+  it("RIB par le client : owner et billing du principal ; rien du compte", async () => {
+    const { bank, mailer } = build();
+    await bank.handle(bankFact());
+
+    expect(recipients(mailer)).toEqual(["accountant@alpes.test", "owner@alpes.test"]);
+    expect(mailer.sent[0]?.data).toEqual({
+      gesture: "bank_account_changed",
+      siteName: "Chalet Gentiane",
+      reference: null,
+      byTeam: false,
+    });
+  });
+
+  it("preuve de mandat par l'équipe : « notre équipe », sous la clé `bank_account_changed`", async () => {
+    const { proof, mailer, rules } = build();
+    await rules.writer.set(
+      "alpes",
+      { kind: "bank_account_changed", role: "owner", enabled: false },
+      "staff_1",
+      new Date(Date.UTC(2030, 0, 1)),
+    );
+    await proof.handle(bankFact({ ...CUSTOMER, authorUserId: null, byTeam: true }));
+    expect(recipients(mailer)).toEqual(["accountant@alpes.test"]);
+    expect(mailer.sent[0]?.data).toMatchObject({ gesture: "mandate_proof_attached", byTeam: true });
+  });
+
+  it("avis coupés : rien ; sans principal : rien ; relivraison : aucun doublon", async () => {
+    const off = build("active", new InMemoryNoticeSwitches());
+    await off.bank.handle(bankFact());
+    expect(off.mailer.sent).toEqual([]);
+
+    const { bank, mailer } = build();
+    await bank.handle(bankFact({ ...CUSTOMER, principalCompanyId: null }, "n"));
+    expect(mailer.sent).toEqual([]);
+    await bank.handle(bankFact(CUSTOMER, "r"));
+    await bank.handle(bankFact(CUSTOMER, "r"));
+    expect(mailer.sent).toHaveLength(2);
   });
 });

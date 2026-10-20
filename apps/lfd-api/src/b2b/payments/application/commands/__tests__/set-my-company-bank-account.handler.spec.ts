@@ -25,6 +25,7 @@ import {
 } from "../../__tests__/payment-doubles.js";
 import { SetMyCompanyBankAccountCommand } from "../set-my-company-bank-account.command.js";
 import { SetMyCompanyBankAccountHandler } from "../set-my-company-bank-account.handler.js";
+import { silentGestures } from "../../../../account/application/commands/__tests__/site-gesture-doubles.js";
 
 const IBAN = "FR1420041010050500013M02606";
 
@@ -70,6 +71,7 @@ function build(role: BankAccountRole | null) {
     new StepUnitOfWork(steps),
     notifier,
     new MemoryStore(steps),
+    silentGestures(),
   );
   return { handler, guard, repo, mandates, events, notifier };
 }

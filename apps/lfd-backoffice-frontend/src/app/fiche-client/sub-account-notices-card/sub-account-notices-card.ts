@@ -43,6 +43,7 @@ const KIND_LABELS: Readonly<Partial<Record<SubAccountNoticeKind, string>>> = {
   payment_failed: 'Paiement échoué à la charge du principal',
   delivery_address_changed: 'Adresse de livraison ajoutée, modifiée, retirée ou mise par défaut',
   contact_changed: 'Contact ajouté, modifié, retiré, ou contact principal changé',
+  bank_account_changed: 'RIB enregistré ou preuve de mandat déposée',
   order_problem_reported: 'Problème de commande signalé',
 };
 
@@ -53,6 +54,7 @@ const KIND_EVENTS: Readonly<Partial<Record<SubAccountNoticeKind, string>>> = {
   payment_failed: 'paiement échoué à sa charge',
   delivery_address_changed: 'adresse de livraison changée',
   contact_changed: 'contact changé',
+  bank_account_changed: 'RIB ou preuve de mandat déposé',
   order_problem_reported: 'problème de commande signalé',
 };
 

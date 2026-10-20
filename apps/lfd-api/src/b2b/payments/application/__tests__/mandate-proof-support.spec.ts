@@ -13,6 +13,7 @@ import {
   Steps,
   StepUnitOfWork,
 } from "./payment-doubles.js";
+import { silentGestures } from "../../../account/application/commands/__tests__/site-gesture-doubles.js";
 
 const NOW = new Date("2026-09-15T09:00:00.000Z");
 const CIPHER = new AesGcmFieldCipher(Buffer.alloc(32, 9));
@@ -39,9 +40,15 @@ function harness(previousKey: string | null = PREVIOUS_KEY) {
     clock: new FixedClock(NOW),
     events,
     uow: new StepUnitOfWork(steps),
+    gestures: silentGestures(),
   };
   const run = () =>
-    attachProofToDraft(deps, { companyId: "cmp_1", fileName: "v2.pdf", bytes: PDF, via: "staff" });
+    attachProofToDraft(deps, {
+      companyId: "cmp_1",
+      fileName: "v2.pdf",
+      bytes: PDF,
+      actor: { kind: "team" },
+    });
   return { steps, mandates, store, events, run };
 }
 

@@ -10,6 +10,7 @@ import {
 import { AttachMandateProofCommand } from "../attach-mandate-proof.command.js";
 import { AttachMandateProofHandler } from "../attach-mandate-proof.handler.js";
 import { activeMandate, doubles, draftMandate, NOW, type Trace } from "./staff-mandate-doubles.js";
+import { silentGestures } from "../../../../account/application/commands/__tests__/site-gesture-doubles.js";
 
 const PDF = Buffer.from("%PDF-1.4\nmandat", "latin1");
 
@@ -48,6 +49,7 @@ describe("AttachMandateProofHandler", () => {
       new FixedClock(NOW),
       new RecordingPublisher(),
       new DirectUnitOfWork(),
+      silentGestures(),
     );
 
     await handler.execute(new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF));
@@ -67,6 +69,7 @@ describe("AttachMandateProofHandler", () => {
       new FixedClock(NOW),
       events,
       new DirectUnitOfWork(),
+      silentGestures(),
     );
 
     await handler.execute(new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF));
@@ -89,6 +92,7 @@ describe("AttachMandateProofHandler", () => {
       new FixedClock(NOW),
       new RecordingPublisher(),
       new DirectUnitOfWork(),
+      silentGestures(),
     );
 
     await handler.execute(new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF));
@@ -110,6 +114,7 @@ describe("AttachMandateProofHandler", () => {
       new FixedClock(NOW),
       new RecordingPublisher(),
       new DirectUnitOfWork(),
+      silentGestures(),
     );
 
     await expect(
@@ -128,6 +133,7 @@ describe("AttachMandateProofHandler", () => {
       new FixedClock(NOW),
       new RecordingPublisher(),
       new DirectUnitOfWork(),
+      silentGestures(),
     );
 
     await expect(
@@ -147,6 +153,7 @@ describe("AttachMandateProofHandler", () => {
       new FixedClock(NOW),
       new RecordingPublisher(),
       new DirectUnitOfWork(),
+      silentGestures(),
     );
 
     await handler.execute(new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF));
@@ -169,6 +176,7 @@ describe("AttachMandateProofHandler", () => {
         new FixedClock(at),
         new RecordingPublisher(),
         new DirectUnitOfWork(),
+        silentGestures(),
       );
       await handler.execute(new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF));
       keys.push(trace.stored?.key ?? "");
@@ -192,6 +200,7 @@ describe("AttachMandateProofHandler", () => {
       new FixedClock(NOW),
       new RecordingPublisher(),
       new DirectUnitOfWork(),
+      silentGestures(),
     );
 
     await handler.execute(new AttachMandateProofCommand("cmp_1", "mandat.pdf", PDF));
@@ -210,6 +219,7 @@ describe("AttachMandateProofHandler", () => {
       new FixedClock(NOW),
       new RecordingPublisher(),
       new DirectUnitOfWork(),
+      silentGestures(),
     );
 
     await expect(

@@ -16,6 +16,8 @@ import {
 } from "../../__tests__/payment-doubles.js";
 import { HolderLegalFormNotALegalFormError } from "../../../domain/errors/bank-account-errors.js";
 import { recordCompanyBankAccount } from "../record-company-bank-account.js";
+import { silentGestures } from "../../../../account/application/commands/__tests__/site-gesture-doubles.js";
+import type { GestureActor } from "../../../../account/domain/events/site-gesture.fact.js";
 
 /**
  * Le fait `company.bank_account_changed` (plan
@@ -25,6 +27,9 @@ import { recordCompanyBankAccount } from "../record-company-bank-account.js";
  * c'est elle qui l'écrit, pour le staff comme pour le client.
  */
 const OTHER_IBAN = "DE89370400440532013000";
+
+const CUSTOMER: GestureActor = { kind: "customer", userId: "u1" };
+const TEAM: GestureActor = { kind: "team" };
 
 function build() {
   const steps = new Steps();
@@ -40,6 +45,7 @@ function build() {
     uow: new StepUnitOfWork(steps),
     notifier: new RecordingNotifier(steps),
     store: new MemoryStore(steps),
+    gestures: silentGestures(),
   };
   return { deps, accounts, mandates, events, steps };
 }
@@ -48,7 +54,7 @@ describe("recordCompanyBankAccount — le fait du RIB", () => {
   it("un premier dépôt : pas d'avant, l'après par ses quatre derniers et son titulaire", async () => {
     const { deps, events } = build();
 
-    await recordCompanyBankAccount("cmp_1", RIB_PAYLOAD, "customer", deps);
+    await recordCompanyBankAccount("cmp_1", RIB_PAYLOAD, CUSTOMER, deps);
 
     expect(events.traced).toHaveLength(1);
     expect(events.traced[0]?.journalFact()).toEqual({
@@ -73,7 +79,7 @@ describe("recordCompanyBankAccount — le fait du RIB", () => {
     await recordCompanyBankAccount(
       "cmp_1",
       { ...RIB_PAYLOAD, iban: OTHER_IBAN, holder: "Refuge du Col SAS" },
-      "staff",
+      TEAM,
       deps,
     );
 
@@ -91,7 +97,7 @@ describe("recordCompanyBankAccount — le fait du RIB", () => {
     const { deps, accounts, events } = build();
     accounts.stored = bankAccount();
 
-    await recordCompanyBankAccount("cmp_1", { ...RIB_PAYLOAD, iban: OTHER_IBAN }, "staff", deps);
+    await recordCompanyBankAccount("cmp_1", { ...RIB_PAYLOAD, iban: OTHER_IBAN }, TEAM, deps);
 
     const written = JSON.stringify(events.traced[0]?.journalFact());
     expect(written).not.toContain(IBAN);
@@ -105,7 +111,7 @@ describe("recordCompanyBankAccount — le fait du RIB", () => {
     const { deps, mandates, steps } = build();
     mandates.draft = mandate();
 
-    await recordCompanyBankAccount("cmp_1", RIB_PAYLOAD, "staff", deps);
+    await recordCompanyBankAccount("cmp_1", RIB_PAYLOAD, TEAM, deps);
 
     expect(
       steps.log.slice(steps.log.indexOf("uow:begin"), steps.log.indexOf("uow:end") + 1),
@@ -126,7 +132,7 @@ describe("recordCompanyBankAccount — le fait du RIB", () => {
       recordCompanyBankAccount(
         "cmp_1",
         { ...RIB_PAYLOAD, iban: "FR1420041010050500013M02607" },
-        "staff",
+        TEAM,
         deps,
       ),
     ).rejects.toBeInstanceOf(InvalidIbanError);
@@ -144,7 +150,7 @@ describe("recordCompanyBankAccount — le fait du RIB", () => {
       recordCompanyBankAccount(
         "cmp_1",
         { ...RIB_PAYLOAD, holder: "Col Pers", holderLegalForm: "Col Pers SAS" },
-        "staff",
+        TEAM,
         deps,
       ),
     ).rejects.toBeInstanceOf(HolderLegalFormNotALegalFormError);

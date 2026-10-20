@@ -9,6 +9,11 @@ import {
   bankAccountTraceOf,
   CompanyBankAccountChangedEvent,
 } from "../../domain/events/company-bank-account.events.js";
+import {
+  BANK_ACCOUNT_CHANGED,
+  type GestureActor,
+} from "../../../account/domain/events/site-gesture.fact.js";
+import type { SiteGesturePublisher } from "../../../account/application/services/site-gesture.publisher.js";
 import type { MandateActorChannel } from "../../domain/events/payment-mandate-facts.js";
 import type { CompanyBankAccountRepository } from "../../domain/ports/company-bank-account.repository.js";
 import { DebtorAccount } from "../../domain/value-objects/debtor-account.js";
@@ -21,6 +26,8 @@ import { mandateCompanyOf } from "../mandate-journal-names.js";
 export interface RecordBankAccountDeps extends DraftVoidingDeps, MandateBellDeps {
   readonly accounts: CompanyBankAccountRepository;
   readonly ids: IdGenerator;
+  /** L'avis au principal du site (N4d) : un fait durable par dépôt. */
+  readonly gestures: SiteGesturePublisher;
 }
 
 /**
@@ -46,6 +53,12 @@ export interface RecordBankAccountDeps extends DraftVoidingDeps, MandateBellDeps
  * titulaire, jamais par l'IBAN (plan
  * `documentation/journalisation/plan-journal-d-activite.md`, lot 1).
  *
+ * ## Le principal du site est prévenu (depuis le 2026-10-20, N4d)
+ *
+ * Dans la même unité de travail, un fait durable `company.bank_account_changed`
+ * porte le principal lu sous le verrou de la ligne du site et l'auteur
+ * (`actor`) — ce qui remplace l'ancien `via` nu, qui en est dérivé.
+ *
  * ## La forme juridique du titulaire se fusionne (depuis le 2026-09-15)
  *
  * Le RIB se réécrit en entier, sauf ce champ : **absent de la charge =
@@ -68,9 +81,10 @@ export interface RecordBankAccountDeps extends DraftVoidingDeps, MandateBellDeps
 export async function recordCompanyBankAccount(
   companyId: string,
   payload: SetCompanyBankAccountPayload,
-  via: MandateActorChannel,
+  actor: GestureActor,
   deps: RecordBankAccountDeps,
 ): Promise<void> {
+  const via: MandateActorChannel = actor.kind === "team" ? "staff" : "customer";
   // Les value objects valident AVANT toute lecture : un IBAN mal recopié se
   // refuse sans avoir touché la base.
   const submitted = debtorAccountFrom(payload);
@@ -84,9 +98,10 @@ export async function recordCompanyBankAccount(
   const written = replaceOrDeclare(existing, account, companyId, deps.ids);
 
   const trigger = { cause: "bank_account_changed", via } as const;
+  const site = await mandateCompanyOf(deps.mandates, companyId);
   const changed = new CompanyBankAccountChangedEvent(
     written.id,
-    await mandateCompanyOf(deps.mandates, companyId),
+    site,
     before,
     bankAccountTraceOf(account),
     via,
@@ -94,6 +109,10 @@ export async function recordCompanyBankAccount(
   const voided = await writeVoidingDraft(deps, companyId, trigger, async () => {
     await deps.accounts.save(written);
     await deps.events.publishTraced(changed);
+    // Ni IBAN, ni titulaire : le fait ne porte que le site, son principal lu
+    // sous verrou et l'auteur. Une requête rejouée fait un second avis —
+    // assumé : sur un RIB, deux avis valent mieux que zéro.
+    await deps.gestures.publish({ type: BANK_ACCOUNT_CHANGED, site, subjectId: written.id, actor });
   });
   if (voided !== null) {
     await ringDraftVoided(deps, voided, "bank_account_changed");

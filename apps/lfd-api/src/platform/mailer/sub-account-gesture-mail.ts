@@ -17,7 +17,9 @@ export type SubAccountGesture =
   | "contact_added"
   | "contact_updated"
   | "contact_removed"
-  | "primary_contact_changed";
+  | "primary_contact_changed"
+  | "bank_account_changed"
+  | "mandate_proof_attached";
 
 /**
  * Les données de l'avis **« un de vos sites a… »** pour un geste qui n'est
@@ -50,6 +52,9 @@ const VERB: Readonly<Record<SubAccountGesture, string>> = {
   contact_updated: "a modifié un contact",
   contact_removed: "a retiré un contact",
   primary_contact_changed: "a changé son contact principal",
+  // Ni IBAN, ni ses derniers caractères, ni titulaire, ni BIC (N4d).
+  bank_account_changed: "a enregistré un nouveau RIB",
+  mandate_proof_attached: "a déposé une preuve de mandat",
 };
 
 const TITLE: Readonly<Record<SubAccountGesture, string>> = {
@@ -62,6 +67,8 @@ const TITLE: Readonly<Record<SubAccountGesture, string>> = {
   contact_updated: "Contact modifié sur un de vos sites",
   contact_removed: "Contact retiré sur un de vos sites",
   primary_contact_changed: "Contact principal changé sur un de vos sites",
+  bank_account_changed: "Nouveau RIB sur un de vos sites",
+  mandate_proof_attached: "Preuve de mandat déposée sur un de vos sites",
 };
 
 /** Le libellé de la référence, pour les gestes qui en portent une. */

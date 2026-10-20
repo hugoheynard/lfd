@@ -11,6 +11,7 @@ import { PaymentMandateRepository } from "../../domain/payment-mandate.repositor
 import { CompanyBankAccountRepository } from "../../domain/ports/company-bank-account.repository.js";
 import { recordCompanyBankAccount } from "./record-company-bank-account.js";
 import { SetCompanyBankAccountCommand } from "./set-company-bank-account.command.js";
+import { SiteGesturePublisher } from "../../../account/application/services/site-gesture.publisher.js";
 
 /**
  * Recopie le RIB d'un client, depuis le **back-office**.
@@ -49,6 +50,7 @@ export class SetCompanyBankAccountHandler implements ICommandHandler<
     private readonly uow: UnitOfWork,
     private readonly notifier: StaffNotifier,
     private readonly store: DocumentStore,
+    private readonly gestures: SiteGesturePublisher,
   ) {}
 
   async execute({ companyId, payload }: SetCompanyBankAccountCommand): Promise<void> {
@@ -57,15 +59,21 @@ export class SetCompanyBankAccountHandler implements ICommandHandler<
       throw new BankAccountBoundToActiveMandateError(companyId, "staff");
     }
 
-    await recordCompanyBankAccount(companyId, payload, "staff", {
-      accounts: this.accounts,
-      ids: this.ids,
-      mandates: this.mandates,
-      clock: this.clock,
-      events: this.events,
-      uow: this.uow,
-      notifier: this.notifier,
-      store: this.store,
-    });
+    await recordCompanyBankAccount(
+      companyId,
+      payload,
+      { kind: "team" },
+      {
+        accounts: this.accounts,
+        ids: this.ids,
+        mandates: this.mandates,
+        clock: this.clock,
+        events: this.events,
+        uow: this.uow,
+        notifier: this.notifier,
+        store: this.store,
+        gestures: this.gestures,
+      },
+    );
   }
 }

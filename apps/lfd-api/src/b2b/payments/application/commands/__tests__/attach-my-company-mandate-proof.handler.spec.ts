@@ -27,6 +27,7 @@ import {
 } from "../../__tests__/payment-doubles.js";
 import { AttachMyCompanyMandateProofCommand } from "../attach-my-company-mandate-proof.command.js";
 import { AttachMyCompanyMandateProofHandler } from "../attach-my-company-mandate-proof.handler.js";
+import { silentGestures } from "../../../../account/application/commands/__tests__/site-gesture-doubles.js";
 
 const NOW = new Date("2026-09-14T09:00:00.000Z");
 const CIPHER = new AesGcmFieldCipher(Buffer.alloc(32, 7));
@@ -49,6 +50,7 @@ function harness(
     events,
     new StepUnitOfWork(steps),
     notifier,
+    silentGestures(),
   );
   const run = (bytes: Buffer = PDF) =>
     handler.execute(new AttachMyCompanyMandateProofCommand("usr_1", "cmp_1", "mandat.pdf", bytes));

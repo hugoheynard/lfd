@@ -16,6 +16,8 @@ import { NotifyPrincipalOnContactAdded } from "./application/handlers/notify-pri
 import { NotifyPrincipalOnContactUpdated } from "./application/handlers/notify-principal-on-contact-updated.handler.js";
 import { NotifyPrincipalOnContactRemoved } from "./application/handlers/notify-principal-on-contact-removed.handler.js";
 import { NotifyPrincipalOnPrimaryContactChanged } from "./application/handlers/notify-principal-on-primary-contact-changed.handler.js";
+import { NotifyPrincipalOnBankAccountChanged } from "./application/handlers/notify-principal-on-bank-account-changed.handler.js";
+import { NotifyPrincipalOnMandateProofAttached } from "./application/handlers/notify-principal-on-mandate-proof-attached.handler.js";
 import { NotifyPrincipalOnOrderProblemReported } from "./application/handlers/notify-principal-on-order-problem-reported.handler.js";
 import { SubAccountNoticeDispatcher } from "./application/services/sub-account-notice.dispatcher.js";
 import { NoticeSendJournal } from "./domain/ports/notice-send.journal.js";
@@ -38,6 +40,7 @@ import { AdminSubAccountNoticesController } from "./http/admin-sub-account-notic
  * N4a : le premier geste hors commande (problème signalé), dont le fait
  * durable porte le principal figé. N4b : les quatre gestes du carnet de
  * livraison, client et équipe. N4c : les quatre gestes sur les contacts.
+ * N4d : le RIB et la preuve de mandat.
  */
 @Module({
   imports: [AccountModule, OrdersModule],
@@ -63,6 +66,8 @@ import { AdminSubAccountNoticesController } from "./http/admin-sub-account-notic
     NotifyPrincipalOnContactUpdated,
     NotifyPrincipalOnContactRemoved,
     NotifyPrincipalOnPrimaryContactChanged,
+    NotifyPrincipalOnBankAccountChanged,
+    NotifyPrincipalOnMandateProofAttached,
     { provide: NoticeSendJournal, useClass: PrismaNoticeSendJournal },
   ],
 })

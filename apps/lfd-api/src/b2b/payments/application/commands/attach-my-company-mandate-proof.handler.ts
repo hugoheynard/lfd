@@ -13,6 +13,7 @@ import { ensureCustomerMandateAccess } from "../customer-mandate-access.js";
 import { attachProofToDraft } from "../mandate-proof-support.js";
 import { ringProofDeposited } from "../mandate-staff-bell.js";
 import { AttachMyCompanyMandateProofCommand } from "./attach-my-company-mandate-proof.command.js";
+import { SiteGesturePublisher } from "../../../account/application/services/site-gesture.publisher.js";
 
 /**
  * Dépose le scan signé du client — **sur le brouillon seulement**, après le mur
@@ -41,6 +42,7 @@ export class AttachMyCompanyMandateProofHandler implements ICommandHandler<
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
     private readonly notifier: StaffNotifier,
+    private readonly gestures: SiteGesturePublisher,
   ) {}
 
   async execute(command: AttachMyCompanyMandateProofCommand): Promise<void> {
@@ -58,12 +60,13 @@ export class AttachMyCompanyMandateProofHandler implements ICommandHandler<
         clock: this.clock,
         events: this.events,
         uow: this.uow,
+        gestures: this.gestures,
       },
       {
         companyId: command.companyId,
         fileName: command.fileName,
         bytes: command.bytes,
-        via: "customer",
+        actor: { kind: "customer", userId: command.actorUserId },
       },
     );
     await ringProofDeposited(

@@ -19,6 +19,15 @@ export const CONTACT_UPDATED = "company.contact_updated";
 export const CONTACT_REMOVED = "company.contact_removed";
 export const PRIMARY_CONTACT_CHANGED = "company.primary_contact_changed";
 
+/**
+ * Les gestes d'un site sur son RIB et son mandat (N4d) — mêmes noms qu'au
+ * journal : `company.bank_account_changed`, et `payment_mandate.proof_attached`
+ * pour la preuve (le plan v2 le croyait neuf ; il existait au journal, vérifié
+ * le 2026-10-20 dans `packages/contracts/src/journal-facts/accounting.ts`).
+ */
+export const BANK_ACCOUNT_CHANGED = "company.bank_account_changed";
+export const MANDATE_PROOF_ATTACHED = "payment_mandate.proof_attached";
+
 /** Un geste de site écrit en durable. */
 export type SiteGestureType =
   | typeof DELIVERY_ADDRESS_ADDED
@@ -28,7 +37,9 @@ export type SiteGestureType =
   | typeof CONTACT_ADDED
   | typeof CONTACT_UPDATED
   | typeof CONTACT_REMOVED
-  | typeof PRIMARY_CONTACT_CHANGED;
+  | typeof PRIMARY_CONTACT_CHANGED
+  | typeof BANK_ACCOUNT_CHANGED
+  | typeof MANDATE_PROOF_ATTACHED;
 
 /** Qui a fait le geste : un client nommé par son id, ou l'équipe. */
 export type GestureActor =

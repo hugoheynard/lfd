@@ -1,6 +1,6 @@
 # Plan — le principal est prévenu de ce que font ses sous-comptes
 
-> 📐 **Plan — N1, N2, N3, N4a, N4b, N4c et l'interrupteur bâtis le 2026-10-20**, N4d et N4e à faire. Demande de Hugo : « savoir quelles
+> 📐 **Plan — N1, N2, N3, N4a à N4d et l'interrupteur bâtis le 2026-10-20**, N4e à faire. Demande de Hugo : « savoir quelles
 > actions menées par le sous-compte doivent être notifiées au principal, avec un
 > mapping de rôle ». Décisions de Hugo le même jour : **mail seul** ; le
 > tableau action × rôle est **réglé par le staff, principal par principal**.
@@ -274,9 +274,11 @@ Les noms déjà au journal (`packages/contracts/src/journal-facts/accounts.ts`) 
 `company.delivery_address_added|updated|removed`, `company.contact_added|removed`,
 `company.bank_account_changed`, `subscription.created|status_changed|deleted`.
 Les types durables les **réutilisent** — la boîte d'envoi et le journal sont
-deux registres distincts, et un même nom y désigne le même geste. Neufs :
-`order.problem_reported` et `company.mandate_proof_attached` (aucun fait de
-journal n'existe pour eux).
+deux registres distincts, et un même nom y désigne le même geste. Neuf :
+`order.problem_reported` (aucun fait de journal n'existe pour lui). La preuve
+de mandat a son nom au journal, `payment_mandate.proof_attached` — cette
+phrase la disait neuve sous `company.mandate_proof_attached` jusqu'à N4d
+(corrigé le 2026-10-20).
 
 `@DurableHandler` n'écoute qu'**un type** par classe
 (`platform/outbox/durable-handler.ts`) : « un seul abonné » se lit donc **un
@@ -322,13 +324,13 @@ Bâti en N4a, sans rien laisser aux lots suivants :
 
 #### Par action
 
-| Action                     | Gestes client (contrôleur → handler)                                                                                                                                                                            | Gestes équipe                                                                                                                                  | Fait durable                                                            | Ce que dit le mail                             | Ce qu'il ne dit jamais                                               |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ---------------------------------------------- | -------------------------------------------------------------------- |
-| `order_problem_reported`   | `contact/http/my-order-problems.controller.ts` → `report-order-problem.handler.ts`                                                                                                                              | aucun                                                                                                                                          | `order.problem_reported` (neuf)                                         | site, numéro de commande                       | motif, message, photos (ils s'anonymisent ; un mail ne s'efface pas) |
-| `delivery_address_changed` | `account/http/company-addresses.controller.ts` → `add-` / `update-` / `remove-delivery-address.handler.ts`                                                                                                      | `add-` / `update-` / `remove-delivery-address-by-staff.handler.ts`                                                                             | `company.delivery_address_added                                         | updated                                        | removed`                                                             | site, « ajouté / modifié / retiré une adresse »     | toute partie de l'adresse (décision de Hugo)                    |
-| `contact_changed`          | `account/http/company-contacts.controller.ts` → `add-` / `remove-company-contact.handler.ts`                                                                                                                    | `add-` / `remove-contact-by-staff.handler.ts`                                                                                                  | `company.contact_added                                                  | removed`                                       | site, « ajouté / retiré un contact »                                 | nom, adresse, rôle du contact (une personne tierce) |
-| `bank_account_changed`     | `payments/http/company-bank-account.controller.ts` → `set-my-company-bank-account.handler.ts` (par `recordCompanyBankAccount`) ; `company-mandate.controller.ts` → `attach-my-company-mandate-proof.handler.ts` | `set-company-bank-account.handler.ts` (par `recordCompanyBankAccount`), `attach-mandate-proof.handler.ts` — hors de `recordCompanyBankAccount` | `company.bank_account_changed`, `company.mandate_proof_attached` (neuf) | site, « RIB déposé » / « mandat signé déposé » | IBAN, quatre derniers caractères, titulaire (peut être une personne) |
-| `subscription_changed`     | `subscriptions/http/subscriptions.controller.ts` → `create-` / `set-subscription-status-` / `delete-subscription.handler.ts`                                                                                    | aucun (`admin-subscriptions.controller.ts` ne fait que lire)                                                                                   | `subscription.created                                                   | status_changed                                 | deleted`                                                             | site, « créé / mis en pause / repris / arrêté »     | lignes, adresse ; aucun montant (un abonnement n'a pas de prix) |
+| Action                     | Gestes client (contrôleur → handler)                                                                                                                                                                            | Gestes équipe                                                                                                                                  | Fait durable                                                                                       | Ce que dit le mail                             | Ce qu'il ne dit jamais                                               |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ---------------------------------------------- | -------------------------------------------------------------------- |
+| `order_problem_reported`   | `contact/http/my-order-problems.controller.ts` → `report-order-problem.handler.ts`                                                                                                                              | aucun                                                                                                                                          | `order.problem_reported` (neuf)                                                                    | site, numéro de commande                       | motif, message, photos (ils s'anonymisent ; un mail ne s'efface pas) |
+| `delivery_address_changed` | `account/http/company-addresses.controller.ts` → `add-` / `update-` / `remove-delivery-address.handler.ts`                                                                                                      | `add-` / `update-` / `remove-delivery-address-by-staff.handler.ts`                                                                             | `company.delivery_address_added                                                                    | updated                                        | removed`                                                             | site, « ajouté / modifié / retiré une adresse »     | toute partie de l'adresse (décision de Hugo)                    |
+| `contact_changed`          | `account/http/company-contacts.controller.ts` → `add-` / `remove-company-contact.handler.ts`                                                                                                                    | `add-` / `remove-contact-by-staff.handler.ts`                                                                                                  | `company.contact_added                                                                             | removed`                                       | site, « ajouté / retiré un contact »                                 | nom, adresse, rôle du contact (une personne tierce) |
+| `bank_account_changed`     | `payments/http/company-bank-account.controller.ts` → `set-my-company-bank-account.handler.ts` (par `recordCompanyBankAccount`) ; `company-mandate.controller.ts` → `attach-my-company-mandate-proof.handler.ts` | `set-company-bank-account.handler.ts` (par `recordCompanyBankAccount`), `attach-mandate-proof.handler.ts` — hors de `recordCompanyBankAccount` | `company.bank_account_changed`, `payment_mandate.proof_attached` (déjà au journal — corrigé à N4d) | site, « RIB déposé » / « mandat signé déposé » | IBAN, quatre derniers caractères, titulaire (peut être une personne) |
+| `subscription_changed`     | `subscriptions/http/subscriptions.controller.ts` → `create-` / `set-subscription-status-` / `delete-subscription.handler.ts`                                                                                    | aucun (`admin-subscriptions.controller.ts` ne fait que lire)                                                                                   | `subscription.created                                                                              | status_changed                                 | deleted`                                                             | site, « créé / mis en pause / repris / arrêté »     | lignes, adresse ; aucun montant (un abonnement n'a pas de prix) |
 
 Notes par action :
 
@@ -531,6 +533,33 @@ principal, désactivé par défaut**.
   (`apps/lfd-api/test/sub-account-notice-scene.ts`, `enableNotices`), comme
   le groupe de l'e2e N2 ; l'e2e N4a éprouve « par défaut rien, activé un
   mail, coupé plus rien — et rien de rattrapé ».
+
+#### N4d bâti (2026-10-20) — et ses écarts
+
+- **RIB** : `recordCompanyBankAccount`
+  (`apps/lfd-api/src/b2b/payments/application/commands/record-company-bank-account.ts`)
+  reçoit désormais l'auteur (`GestureActor`) au lieu du seul `via`, qui en
+  est dérivé, et écrit `company.bank_account_changed` en durable dans la
+  closure qui sauve le RIB. Ses deux appelants (client, équipe) le passent.
+- **Preuve de mandat** : les deux chemins (`attach-my-company-mandate-proof`,
+  `attach-mandate-proof`) passent par `attachProofToDraft`, dont l'unité de
+  travail écrit le fait durable. ⚠️ **Écart au plan v2** : le type est
+  `payment_mandate.proof_attached`, le nom que le journal portait DÉJÀ
+  (`packages/contracts/src/journal-facts/accounting.ts`) — la v2 l'annonçait
+  neuf sous `company.mandate_proof_attached`, à tort ; la règle « mêmes noms
+  qu'au journal » l'emporte. À trancher par Hugo s'il préfère le nom neuf.
+- **Le verrou** : ces gestes n'en prenaient aucun sur la ligne du site ;
+  `SitePrincipalLock` le prend, éprouvé en e2e (rattachement concurrent).
+- **L'arête `payments → account`** : `PaymentsModule` importe désormais
+  `AccountModule`, qui exporte `SiteGesturePublisher` (arête neuve, sans
+  cycle : `AccountModule` n'importe aucun module).
+- **Le mail** : « a enregistré un nouveau RIB », « a déposé une preuve de
+  mandat » — ni IBAN, ni ses derniers caractères, ni titulaire, ni BIC, ni
+  nom de fichier. Les deux gestes partagent la ligne `bank_account_changed`
+  (owner et billing par défaut), qui apparaît dans la carte N3.
+- **Idempotence** : une requête rejouée fait deux faits, donc deux avis —
+  assumé, sur un RIB deux avis valent mieux que zéro.
+- e2e `apps/lfd-api/test/sub-account-notice-bank.e2e-spec.ts`.
 
 #### Ce que `vitruve` a changé (2026-10-20)
 

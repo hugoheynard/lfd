@@ -8,6 +8,7 @@ import { Clock } from "../../../../platform/time/clock.js";
 import { PaymentMandateRepository } from "../../domain/payment-mandate.repository.js";
 import { attachProofToDraft } from "../mandate-proof-support.js";
 import { AttachMandateProofCommand } from "./attach-mandate-proof.command.js";
+import { SiteGesturePublisher } from "../../../account/application/services/site-gesture.publisher.js";
 
 /**
  * Dépose le mandat signé scanné, depuis le back-office — **sur le brouillon
@@ -29,6 +30,7 @@ export class AttachMandateProofHandler implements ICommandHandler<AttachMandateP
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly gestures: SiteGesturePublisher,
   ) {}
 
   async execute(command: AttachMandateProofCommand): Promise<void> {
@@ -40,12 +42,13 @@ export class AttachMandateProofHandler implements ICommandHandler<AttachMandateP
         clock: this.clock,
         events: this.events,
         uow: this.uow,
+        gestures: this.gestures,
       },
       {
         companyId: command.companyId,
         fileName: command.fileName,
         bytes: command.bytes,
-        via: "staff",
+        actor: { kind: "team" },
       },
     );
   }

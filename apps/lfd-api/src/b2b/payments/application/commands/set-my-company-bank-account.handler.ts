@@ -13,6 +13,7 @@ import { CompanyBankAccountRepository } from "../../domain/ports/company-bank-ac
 import { ensureBankAccountAccess } from "../../domain/services/bank-account-access.js";
 import { recordCompanyBankAccount } from "./record-company-bank-account.js";
 import { SetMyCompanyBankAccountCommand } from "./set-my-company-bank-account.command.js";
+import { SiteGesturePublisher } from "../../../account/application/services/site-gesture.publisher.js";
 
 /**
  * Dépose le RIB après le mur (détenteur ou facturation) — la séquence de dépôt
@@ -42,6 +43,7 @@ export class SetMyCompanyBankAccountHandler implements ICommandHandler<
     private readonly uow: UnitOfWork,
     private readonly notifier: StaffNotifier,
     private readonly store: DocumentStore,
+    private readonly gestures: SiteGesturePublisher,
   ) {}
 
   async execute(command: SetMyCompanyBankAccountCommand): Promise<void> {
@@ -53,15 +55,21 @@ export class SetMyCompanyBankAccountHandler implements ICommandHandler<
       throw new BankAccountBoundToActiveMandateError(command.companyId, "customer");
     }
 
-    await recordCompanyBankAccount(command.companyId, command.payload, "customer", {
-      accounts: this.accounts,
-      ids: this.ids,
-      mandates: this.mandates,
-      clock: this.clock,
-      events: this.events,
-      uow: this.uow,
-      notifier: this.notifier,
-      store: this.store,
-    });
+    await recordCompanyBankAccount(
+      command.companyId,
+      command.payload,
+      { kind: "customer", userId: command.actorUserId },
+      {
+        accounts: this.accounts,
+        ids: this.ids,
+        mandates: this.mandates,
+        clock: this.clock,
+        events: this.events,
+        uow: this.uow,
+        notifier: this.notifier,
+        store: this.store,
+        gestures: this.gestures,
+      },
+    );
   }
 }

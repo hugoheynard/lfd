@@ -462,6 +462,7 @@ import {
   // `StaffDirectory` : l'accès aux fonctionnalités fige l'auteur d'un écart par
   // le même port que la certification d'un KBIS (2026-09-14).
   exports: [
+    SiteGesturePublisher,
     ImpersonationSubjects,
     PrincipalResolver,
     StaffDirectory,

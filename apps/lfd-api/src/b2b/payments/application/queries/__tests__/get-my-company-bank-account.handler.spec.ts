@@ -24,6 +24,7 @@ import { MandateOptions } from "../../../domain/value-objects/mandate-options.js
 import { recordCompanyBankAccount } from "../../commands/record-company-bank-account.js";
 import { GetMyCompanyBankAccountHandler } from "../get-my-company-bank-account.handler.js";
 import { GetMyCompanyBankAccountQuery } from "../get-my-company-bank-account.query.js";
+import { silentGestures } from "../../../../account/application/commands/__tests__/site-gesture-doubles.js";
 
 const IBAN = "FR1420041010050500013M02606";
 
@@ -67,16 +68,22 @@ class FakeRepository extends CompanyBankAccountRepository {
 async function repoWithAccount(): Promise<FakeRepository> {
   const repo = new FakeRepository();
   const steps = new Steps();
-  await recordCompanyBankAccount("cmp_1", PAYLOAD, "customer", {
-    accounts: repo,
-    ids: new FixedIdGenerator("cba"),
-    mandates: new InMemoryMandates(steps),
-    clock: new FixedClock(new Date("2026-09-14T09:00:00.000Z")),
-    events: new StepPublisher(steps),
-    uow: new StepUnitOfWork(steps),
-    notifier: new RecordingNotifier(steps),
-    store: new MemoryStore(steps),
-  });
+  await recordCompanyBankAccount(
+    "cmp_1",
+    PAYLOAD,
+    { kind: "customer", userId: "u1" },
+    {
+      accounts: repo,
+      ids: new FixedIdGenerator("cba"),
+      mandates: new InMemoryMandates(steps),
+      clock: new FixedClock(new Date("2026-09-14T09:00:00.000Z")),
+      events: new StepPublisher(steps),
+      uow: new StepUnitOfWork(steps),
+      notifier: new RecordingNotifier(steps),
+      store: new MemoryStore(steps),
+      gestures: silentGestures(),
+    },
+  );
   repo.stored?.setOptions(
     MandateOptions.create({ debtorReference: "C-9P2X4B", contractNumber: "CT-42" }),
   );
