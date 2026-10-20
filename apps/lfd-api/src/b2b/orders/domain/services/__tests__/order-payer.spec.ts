@@ -11,6 +11,8 @@ function standing(over: Partial<OrderPayerStanding> = {}): OrderPayerStanding {
     companyName: "Chalet Edelweiss",
     groupWithoutDelivery: false,
     billingFollow: null,
+    principalId: null,
+    followsPricing: false,
     ...over,
   };
 }

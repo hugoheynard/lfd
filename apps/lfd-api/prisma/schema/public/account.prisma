@@ -252,6 +252,10 @@ model Company {
   orders             Order[]                 @relation("OrderCompany")
   /// Les commandes dont cette société est le PAYEUR copié (§2.3).
   billedOrders       Order[]                 @relation("OrderBilledCompany")
+  /// Les commandes de ses sous-comptes, dont elle était le principal à la passation.
+  principalOrders    Order[]                 @relation("OrderPrincipalCompany")
+  /// Les dérogations du staff au tableau des avis à ce principal.
+  subAccountNoticeRules SubAccountNoticeRule[]
   /// Les dérogations d'heure limite accordées à ce client.
   orderCutoffWaivers OrderCutoffWaiver[]
   orderDraft         OrderDraft?
@@ -416,6 +420,8 @@ model User {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   memberships      Membership[]
+  /// Les avis au principal déjà envoyés à cette personne (journal d'envoi).
+  subAccountNoticeSends SubAccountNoticeSend[]
   ordersPlaced     Order[] @relation("OrderPlacedBy")
   /// Les commandes que ce client a ANNULÉES lui-même (lot C6) — l'auteur, ou un membre.
   ordersCancelled  Order[] @relation("OrderCancelledByUser")

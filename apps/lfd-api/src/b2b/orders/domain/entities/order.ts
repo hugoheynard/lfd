@@ -11,7 +11,10 @@ import type {
 } from "@lfd/contracts";
 
 import { EmptyOrderError, InvalidOrderPaymentError } from "../errors/order-errors.js";
-import { BilledWithoutCompanyError } from "../errors/order-payer-errors.js";
+import {
+  BilledWithoutCompanyError,
+  PrincipalWithoutCompanyError,
+} from "../errors/order-payer-errors.js";
 import { StaffOrderLocaleError } from "../errors/order-locale-errors.js";
 import type { VatShare } from "@lfd/money";
 
@@ -25,6 +28,7 @@ import { clienteleOf, normalizeFulfillment } from "./order-fulfillment.js";
 import type {
   DraftOrderInput,
   OrderFulfillmentInput,
+  OrderPrincipal,
   OrderSalesTerms,
   OrderToPlace,
 } from "./order-shapes.js";
@@ -36,6 +40,7 @@ import type { OrderLocale } from "../value-objects/order-locale.js";
 export type {
   DraftOrderInput,
   OrderFulfillmentInput,
+  OrderPrincipal,
   OrderSalesTerms,
   OrderToPlace,
   OrderVoucher,
@@ -59,6 +64,7 @@ export class Order {
   private constructor(
     private readonly companyId: string | null,
     private readonly billedCompanyIdValue: string | null,
+    private readonly principal: OrderPrincipal | null,
     private readonly placedByUserId: string,
     private readonly placedByStaffId: string | null,
     private readonly fulfillment: OrderFulfillmentInput,
@@ -91,6 +97,9 @@ export class Order {
     // L'image du CHECK `order_billed_needs_company` : refusé ici, avant la base.
     if (input.companyId === null && input.billedCompanyId !== null) {
       throw new BilledWithoutCompanyError();
+    }
+    if (input.companyId === null && input.principal !== null) {
+      throw new PrincipalWithoutCompanyError();
     }
     if (input.placedByStaffId !== null && input.locale !== null) {
       throw new StaffOrderLocaleError();
@@ -140,6 +149,7 @@ export class Order {
     return new Order(
       input.companyId,
       input.billedCompanyId,
+      input.principal,
       input.placedByUserId,
       input.placedByStaffId,
       fulfillment,
@@ -247,6 +257,8 @@ export class Order {
     return {
       companyId: this.companyId,
       billedCompanyId: this.billedCompanyIdValue,
+      principalCompanyId: this.principal?.companyId ?? null,
+      principalSeesAmount: this.principal?.seesAmount ?? null,
       clientele: clienteleOf(this.companyId),
       placedByUserId: this.placedByUserId,
       placedByStaffId: this.placedByStaffId,

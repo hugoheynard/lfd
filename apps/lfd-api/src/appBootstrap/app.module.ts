@@ -7,6 +7,7 @@ import { PricingFollowJournalModule } from "./pricing-follow-journal.module.js";
 import { SiteMandateRevocationModule } from "./site-mandate-revocation.module.js";
 import { AlertsModule } from "../b2b/alerts/alerts.module.js";
 import { ClientNotesModule } from "../b2b/client-notes/client-notes.module.js";
+import { SubAccountNoticesModule } from "../b2b/sub-account-notices/sub-account-notices.module.js";
 import { DeliveryZonesModule } from "../b2b/delivery-zones/delivery-zones.module.js";
 import { DeliveryAvailabilityModule } from "../b2b/delivery-availability/delivery-availability.module.js";
 import { ContactModule } from "../b2b/contact/contact.module.js";
@@ -210,6 +211,8 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     // Alertes de compte client : surveille un compte DÉJÀ client (produit inédit,
     // écart à sa propre moyenne). Après Orders : il écoute `order.placed`.
     AlertsModule,
+    // Les avis au principal (plan-notifications-sous-comptes.md) — lot N1 : le tableau.
+    SubAccountNoticesModule,
   ],
   controllers: [AppController],
   providers: [

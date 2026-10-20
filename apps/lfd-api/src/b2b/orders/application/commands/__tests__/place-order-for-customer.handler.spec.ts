@@ -764,6 +764,8 @@ describe("PlaceOrderForCustomerHandler — un site facturé à son principal", (
           companyName: "Chalet Edelweiss",
           groupWithoutDelivery: false,
           billingFollow: { payerId: "alpes", payerName: "Alpes Chalets", payerStatus: "active" },
+          principalId: "alpes",
+          followsPricing: false,
         },
       ],
     ]),

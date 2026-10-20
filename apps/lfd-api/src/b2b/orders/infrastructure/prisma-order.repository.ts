@@ -87,6 +87,9 @@ export class PrismaOrderRepository extends OrderRepository {
         companyId: state.companyId,
         // Le payeur copié à la passation (sous-comptes §2.3).
         billedCompanyId: state.billedCompanyId,
+        // Le principal et ce qu'il voit, copiés à la passation (avis au principal, §2).
+        principalCompanyId: state.principalCompanyId,
+        principalSeesAmount: state.principalSeesAmount,
         // Qui commande, déduit par l'agrégat et figé : jamais relu depuis la
         // société, qui peut changer ou disparaître après la passation.
         clientele: state.clientele,

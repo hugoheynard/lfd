@@ -83,6 +83,18 @@ model Order {
   billedCompanyId String?  @map("billed_company_id")
   billedCompany   Company? @relation("OrderBilledCompany", fields: [billedCompanyId], references: [id], onDelete: Restrict)
 
+  /// Le PRINCIPAL de la société qui commande, copié à la passation
+  /// (`plan-notifications-sous-comptes.md`, §2) : aucun historique des
+  /// rattachements n'existe, et relire `parent_company_id` plus tard
+  /// préviendrait le principal d'APRÈS. `null` = pas de principal à la
+  /// passation, ou commande d'avant la colonne.
+  principalCompanyId String?  @map("principal_company_id")
+  principalCompany   Company? @relation("OrderPrincipalCompany", fields: [principalCompanyId], references: [id], onDelete: Restrict)
+  /// Le principal voit-il le MONTANT de cette commande (Q1) : le site suivait
+  /// `billing` ou `pricing` à la passation. `null` = commande d'avant la
+  /// colonne, ou sans principal.
+  principalSeesAmount Boolean? @map("principal_sees_amount")
+
   // AU NOM DE QUI la commande est passée — toujours un client. Quand l'équipe
   // la saisit au téléphone, c'est le contact du compte qui est porté ici : la
   // commande reste celle du client, et elle apparaît dans « Mes commandes ».
@@ -357,6 +369,7 @@ model Order {
 
   @@index([companyId])
   @@index([billedCompanyId])
+  @@index([principalCompanyId])
   @@index([placedByUserId])
   @@index([placedByStaffId])
   @@index([requestedDeliveryDate])

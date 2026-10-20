@@ -175,8 +175,19 @@ async function wipe(prisma: PrismaClient, companyIds: string[], userIds: string[
   // suivent en cascade. Absent jusqu'au 2026-09-29 : une société d'essai dotée
   // d'un carnet faisait échouer tout le rechargement sur la clé étrangère.
   await prisma.clientNotebook.deleteMany({ where: { companyId: { in: companyIds } } });
+  // Les avis au principal pointent la société en `Restrict` : à vider avant
+  // elle, comme les commandes qui la nomment PRINCIPAL (2026-10-20).
+  await prisma.subAccountNoticeRule.deleteMany({
+    where: { principalCompanyId: { in: companyIds } },
+  });
   await prisma.order.deleteMany({
-    where: { OR: [{ companyId: { in: companyIds } }, { placedByUserId: { in: userIds } }] },
+    where: {
+      OR: [
+        { companyId: { in: companyIds } },
+        { principalCompanyId: { in: companyIds } },
+        { placedByUserId: { in: userIds } },
+      ],
+    },
   });
   await prisma.subscription.deleteMany({ where: { placedByUserId: { in: userIds } } });
   // Les préférences d'acheminement POINTENT sur les adresses : les délier avant

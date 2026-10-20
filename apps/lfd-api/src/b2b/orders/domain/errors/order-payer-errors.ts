@@ -53,3 +53,17 @@ export class BilledWithoutCompanyError extends DomainError {
     );
   }
 }
+
+/**
+ * Un principal copié sur une commande sans société. Le principal se lit sur la
+ * société qui commande (`plan-notifications-sous-comptes.md`, §2) : une
+ * commande personnelle n'en a pas, et l'agrégat le refuse avant la base.
+ */
+export class PrincipalWithoutCompanyError extends DomainError {
+  constructor() {
+    super(
+      "order.principal_without_company",
+      "Une commande sans société n'a pas de principal à copier : le principal se lit sur la société qui commande.",
+    );
+  }
+}

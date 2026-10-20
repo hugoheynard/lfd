@@ -50,6 +50,17 @@ export interface OrderVoucher {
   readonly valueCents: number;
 }
 
+/**
+ * Le principal de la société qui commande, **copié à la passation**
+ * (`plan-notifications-sous-comptes.md`, §2, Q1) : qui prévenir, et s'il voit
+ * le montant. Un suivi ouvert ou fermé ensuite ne change rien à la commande.
+ */
+export interface OrderPrincipal {
+  readonly companyId: string;
+  /** Le site suivait `billing` ou `pricing` à la passation. */
+  readonly seesAmount: boolean;
+}
+
 /** Ce qu'il faut pour **composer** une commande (prix/frais déjà résolus serveur). */
 export interface DraftOrderInput {
   readonly companyId: string | null;
@@ -59,6 +70,8 @@ export interface DraftOrderInput {
    * `null` sans société — l'agrégat refuse un payeur sans elle.
    */
   readonly billedCompanyId: string | null;
+  /** Le principal copié (`orderPrincipalOf`), ou `null` : pas de principal, ou pas de société. */
+  readonly principal: OrderPrincipal | null;
   /** Au nom de qui — toujours un client, même quand l'équipe saisit pour lui. */
   readonly placedByUserId: string;
   /** Qui l'a saisie chez LFC, ou `null` quand le client a commandé seul. */
@@ -133,6 +146,10 @@ export interface OrderToPlace {
   readonly companyId: string | null;
   /** Le payeur copié (cf. {@link DraftOrderInput.billedCompanyId}). */
   readonly billedCompanyId: string | null;
+  /** Le principal copié (cf. {@link DraftOrderInput.principal}), `null` sans principal. */
+  readonly principalCompanyId: string | null;
+  /** `null` sans principal ; sinon s'il voit le montant (Q1). */
+  readonly principalSeesAmount: boolean | null;
   /** Qui commande, déduit par l'agrégat — cf. `clienteleOf` dans `order-fulfillment.ts`. */
   readonly clientele: OrderClientele;
   readonly placedByUserId: string;

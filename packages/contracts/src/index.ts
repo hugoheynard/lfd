@@ -2337,3 +2337,12 @@ export {
   type VitrineNoticeView,
   type VitrineNoticeSentView,
 } from "./vitrine.js";
+export {
+  setSubAccountNoticeRulePayloadSchema,
+  subAccountNoticeKindSchema,
+} from "./sub-account-notices.js";
+export type {
+  SetSubAccountNoticeRulePayload,
+  SubAccountNoticeKind,
+  SubAccountNoticeRuleView,
+} from "./sub-account-notices.js";

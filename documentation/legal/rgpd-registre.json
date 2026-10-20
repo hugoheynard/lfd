@@ -756,6 +756,15 @@
       "information": false
     },
     {
+      "colonne": "public.sub_account_notice_rules.updated_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`updated_by`) sur `sub_account_notice_rules`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "public.account_alerts.acknowledged_by",
       "personne": "staff",
       "categorie": "auteur-geste",

@@ -1791,6 +1791,8 @@ describe("PlaceOrderHandler — un site facturé à son principal", () => {
               payerName: "Alpes Chalets Privés",
               payerStatus: status,
             },
+            principalId: "alpes",
+            followsPricing: false,
           },
         ],
       ]),
@@ -1808,6 +1810,9 @@ describe("PlaceOrderHandler — un site facturé à son principal", () => {
 
     expect(sink.placed?.companyId).toBe("chalet");
     expect(sink.placed?.billedCompanyId).toBe("alpes");
+    // Le principal est copié avec le payeur, et voit le montant : le site suit `billing`.
+    expect(sink.placed?.principalCompanyId).toBe("alpes");
+    expect(sink.placed?.principalSeesAmount).toBe(true);
     expect(sink.placed?.paymentStatus).toBe("not_required");
     expect(asked).toEqual(["alpes"]);
     // Le payeur est lu à l'instant de la passation, pas à une date choisie par l'appelant.
@@ -1822,6 +1827,9 @@ describe("PlaceOrderHandler — un site facturé à son principal", () => {
     );
 
     expect(sink.placed?.billedCompanyId).toBe("chalet");
+    // Sans principal, rien à copier — et rien à dire du montant.
+    expect(sink.placed?.principalCompanyId).toBeNull();
+    expect(sink.placed?.principalSeesAmount).toBeNull();
   });
 
   it("refuse un site dont le principal est suspendu, en le nommant, sans rien écrire (Q4)", async () => {
@@ -1847,6 +1855,8 @@ describe("PlaceOrderHandler — un site facturé à son principal", () => {
             companyName: "Groupe Hôtelier des Cimes",
             groupWithoutDelivery: true,
             billingFollow: null,
+            principalId: null,
+            followsPricing: false,
           },
         ],
       ]),

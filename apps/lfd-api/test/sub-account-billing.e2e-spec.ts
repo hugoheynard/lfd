@@ -319,12 +319,55 @@ describe("la passation d'un site (§2.3, §2.4)", () => {
 
     const order = await ctx.prisma.order.findUniqueOrThrow({
       where: { id: jsonBody<{ id: string }>(placed).id },
-      select: { companyId: true, billedCompanyId: true, paymentStatus: true },
+      select: {
+        companyId: true,
+        billedCompanyId: true,
+        paymentStatus: true,
+        principalCompanyId: true,
+        principalSeesAmount: true,
+      },
     });
     expect(order).toEqual({
       companyId: g.site,
       billedCompanyId: g.principal,
       paymentStatus: "not_required",
+      // Avis au principal (N1) : le principal est copié, et voit le montant —
+      // le site suit `billing`.
+      principalCompanyId: g.principal,
+      principalSeesAmount: true,
+    });
+  });
+
+  it("copie le principal SANS le montant pour un site qui ne suit rien (avis au principal, Q1)", async () => {
+    const g = await group();
+    await ctx.prisma.companyFollow.deleteMany({ where: { companyId: g.site } });
+
+    const placed = await placeOrder(g.housekeeper, "card").expect(201);
+
+    const order = await ctx.prisma.order.findUniqueOrThrow({
+      where: { id: jsonBody<{ id: string }>(placed).id },
+      select: { billedCompanyId: true, principalCompanyId: true, principalSeesAmount: true },
+    });
+    expect(order).toEqual({
+      billedCompanyId: g.site,
+      principalCompanyId: g.principal,
+      principalSeesAmount: false,
+    });
+  });
+
+  it("ne copie aucun principal pour une société qui n'est rattachée à rien", async () => {
+    const g = await group();
+
+    const placed = await placeOrder(g.owner, "account").expect(201);
+
+    const order = await ctx.prisma.order.findUniqueOrThrow({
+      where: { id: jsonBody<{ id: string }>(placed).id },
+      select: { companyId: true, principalCompanyId: true, principalSeesAmount: true },
+    });
+    expect(order).toEqual({
+      companyId: g.principal,
+      principalCompanyId: null,
+      principalSeesAmount: null,
     });
   });
 

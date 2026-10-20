@@ -195,6 +195,16 @@ import { GuestAccountClaim } from "./infrastructure/guest-account-claim.js";
 import { MembershipAcceptance } from "./infrastructure/membership-acceptance.js";
 import { InvitationRenewal } from "./domain/ports/invitation-renewal.js";
 import { PrismaInvitationRenewal } from "./infrastructure/prisma-invitation-renewal.js";
+import { AcceptedMembersReader } from "./domain/ports/accepted-members.reader.js";
+import { CompanyParentReader } from "./domain/ports/company-parent.reader.js";
+import { SubAccountNoticeRulesReader } from "./domain/ports/sub-account-notice-rules.reader.js";
+import { SubAccountNoticeRulesWriter } from "./domain/ports/sub-account-notice-rules.writer.js";
+import { PrismaAcceptedMembersReader } from "./infrastructure/prisma-accepted-members.reader.js";
+import { PrismaCompanyParentReader } from "./infrastructure/prisma-company-parent.reader.js";
+import {
+  PrismaSubAccountNoticeRulesReader,
+  PrismaSubAccountNoticeRulesWriter,
+} from "./infrastructure/prisma-sub-account-notice-rules.store.js";
 
 /**
  * Contexte **compte** : la personne (son profil) et ses entreprises.
@@ -420,6 +430,12 @@ import { PrismaInvitationRenewal } from "./infrastructure/prisma-invitation-rene
     // Le bypass d'impersonation de développement demandait `prisma.user` depuis
     // `platform/auth`. La table est ici, l'adaptateur aussi.
     { provide: ImpersonationSubjects, useClass: PrismaImpersonationSubjects },
+    // Les avis au principal (plan-notifications-sous-comptes.md, §3) : les
+    // tables sont ici, le contexte `sub-account-notices/` les lit par ces ports.
+    { provide: AcceptedMembersReader, useClass: PrismaAcceptedMembersReader },
+    { provide: CompanyParentReader, useClass: PrismaCompanyParentReader },
+    { provide: SubAccountNoticeRulesReader, useClass: PrismaSubAccountNoticeRulesReader },
+    { provide: SubAccountNoticeRulesWriter, useClass: PrismaSubAccountNoticeRulesWriter },
   ],
   // `StaffDirectory` : l'accès aux fonctionnalités fige l'auteur d'un écart par
   // le même port que la certification d'un KBIS (2026-09-14).
@@ -429,6 +445,10 @@ import { PrismaInvitationRenewal } from "./infrastructure/prisma-invitation-rene
     StaffDirectory,
     DeliveryStepPhotoLocator,
     CommerceDeliveryAddressPointCorrector,
+    AcceptedMembersReader,
+    CompanyParentReader,
+    SubAccountNoticeRulesReader,
+    SubAccountNoticeRulesWriter,
   ],
 })
 export class AccountModule {}

@@ -1,6 +1,9 @@
 import { StaffOrderLocaleError } from "../../errors/order-locale-errors.js";
 import { OrderLocale } from "../../value-objects/order-locale.js";
-import { BilledWithoutCompanyError } from "../../errors/order-payer-errors.js";
+import {
+  BilledWithoutCompanyError,
+  PrincipalWithoutCompanyError,
+} from "../../errors/order-payer-errors.js";
 import { ProductionPlanClosedError } from "../../errors/production-plan-closed.error.js";
 import type { BillingAddressPayload } from "@lfd/contracts";
 
@@ -43,6 +46,7 @@ function draftInput(over: Partial<DraftOrderInput> = {}): DraftOrderInput {
   return {
     companyId: null,
     billedCompanyId: null,
+    principal: null,
     placedByStaffId: null,
     // L'acheminement CONVENU, figé à la commande : ici, le défaut du point.
     agreed: {
@@ -582,6 +586,36 @@ describe("Order.draft — le payeur copié (sous-comptes §2.3)", () => {
     expect(() => Order.draft(draftInput({ companyId: null, billedCompanyId: "alpes" }))).toThrow(
       BilledWithoutCompanyError,
     );
+  });
+});
+
+describe("Order.draft — le principal copié (avis au principal, §2, Q1)", () => {
+  it("porte le principal et ce qu'il voit jusqu'à la persistance", () => {
+    const order = Order.draft(
+      draftInput({ companyId: "chalet", principal: { companyId: "alpes", seesAmount: false } }),
+    );
+    order.deferPayment();
+
+    expect(order.toPersistence()).toMatchObject({
+      principalCompanyId: "alpes",
+      principalSeesAmount: false,
+    });
+  });
+
+  it("écrit deux `null` sans principal : rien à prévenir, rien à montrer", () => {
+    const order = Order.draft(draftInput({ companyId: "chalet" }));
+    order.deferPayment();
+
+    expect(order.toPersistence()).toMatchObject({
+      principalCompanyId: null,
+      principalSeesAmount: null,
+    });
+  });
+
+  it("refuse un principal sur une commande sans société", () => {
+    expect(() =>
+      Order.draft(draftInput({ principal: { companyId: "alpes", seesAmount: true } })),
+    ).toThrow(PrincipalWithoutCompanyError);
   });
 });
 

@@ -1,0 +1,49 @@
+/// Les actions d'un sous-compte dont son principal peut être prévenu
+/// (`plan-notifications-sous-comptes.md`, §1). Valeurs de donnée : une clé
+/// inconnue est inexprimable, en retirer une est une migration.
+enum SubAccountNoticeKind {
+  order_placed
+  order_cancelled
+  payment_failed
+  subscription_changed
+  delivery_address_changed
+  contact_changed
+  bank_account_changed
+  order_problem_reported
+
+  @@schema("public")
+}
+
+/// Une **dérogation** du staff au tableau par défaut des avis d'un principal
+/// (§3). Pas de ligne = le défaut, qui vit dans le domaine
+/// (`b2b/sub-account-notices/domain/`) : changer le défaut ne demande pas de
+/// migration, et une ligne posée reste la volonté du staff.
+model SubAccountNoticeRule {
+  principalCompanyId String               @map("principal_company_id")
+  principalCompany   Company              @relation(fields: [principalCompanyId], references: [id], onDelete: Restrict)
+  kind               SubAccountNoticeKind
+  role               CustomerRole
+  enabled            Boolean
+  /// L'id de fiche du staff qui a posé la dérogation (registre RGPD).
+  updatedBy          String               @map("updated_by")
+  updatedAt          DateTime             @map("updated_at") @db.Timestamptz(3)
+
+  @@id([principalCompanyId, kind, role])
+  @@map("sub_account_notice_rules")
+  @@schema("public")
+}
+
+/// Le **journal d'envoi** des avis au principal (§2) : une ligne par fait et
+/// par destinataire, écrite avant l'envoi. Une relivraison saute les
+/// destinataires déjà servis — l'idempotence ne repose pas sur le fournisseur.
+model SubAccountNoticeSend {
+  eventId String   @map("event_id")
+  userId  String   @map("user_id")
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sentAt  DateTime @map("sent_at") @db.Timestamptz(3)
+
+  @@id([eventId, userId])
+  @@index([userId])
+  @@map("sub_account_notice_sends")
+  @@schema("public")
+}

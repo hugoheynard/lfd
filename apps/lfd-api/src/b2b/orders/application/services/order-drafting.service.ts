@@ -32,10 +32,14 @@ import { OrderCutoffReader } from "../../domain/ports/order-cutoff.reader.js";
 import { OrderCutoffWaiverGate } from "../../domain/ports/order-cutoff-waiver.gate.js";
 import { OrderDeliveryVatReader } from "../../domain/ports/order-delivery-vat.reader.js";
 import { OrderLateFeeReader } from "../../domain/ports/order-late-fee.reader.js";
-import { OrderPayerReader } from "../../domain/ports/order-payer.reader.js";
+import {
+  OrderPayerReader,
+  type OrderPayerStanding,
+} from "../../domain/ports/order-payer.reader.js";
 import { OrderSalesTermsReader } from "../../domain/ports/order-sales-terms.reader.js";
 import { salesTermsOf } from "../../domain/services/sales-terms-of.js";
 import { orderPayerOf } from "../../domain/services/order-payer.js";
+import { orderPrincipalOf } from "../../domain/services/order-principal.js";
 import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import { ensureWithinOrderCutoff } from "../../domain/services/order-cutoff-guard.js";
 import { Clock } from "../../../../platform/time/clock.js";
@@ -162,7 +166,12 @@ export class OrderDrafting {
     // trois portes de passation partagent (client, saisie staff, boutique), et
     // un refus — payeur suspendu, compte de groupe — ne doit rien coûter de
     // plus que cette lecture (sous-comptes §2.3, §2.4).
-    const billedCompanyId = await this.payerOf(parties.companyId);
+    const standing = await this.standingOf(parties.companyId);
+    const billedCompanyId = orderPayerOf(standing);
+    // Le principal se copie sur la MÊME lecture que le payeur : aucun
+    // historique des rattachements ne permettrait de le retrouver ensuite
+    // (avis au principal, §2).
+    const principal = orderPrincipalOf(standing);
     // L'arrêt du plan ferme la journée au CLIENT, heure limite ou pas (lot O3) :
     // refusé ici, tôt et sans verrou ; `holdPlan` le reprend sous verrou. La
     // saisie de l'équipe passe, et sera reçue « hors plan » (§8.3).
@@ -219,6 +228,7 @@ export class OrderDrafting {
       agreed,
       companyId: parties.companyId,
       billedCompanyId,
+      principal,
       placedByUserId: parties.placedByUserId,
       placedByStaffId: parties.placedByStaffId,
       fulfillment: {
@@ -440,12 +450,12 @@ export class OrderDrafting {
    *
    * @throws {DeliveryClosedForAudienceError} la livraison est fermée à la clientèle.
    */
-  /** Le payeur à copier, à l'instant de la passation — `null` sans société. */
-  private async payerOf(companyId: string | null): Promise<string | null> {
+  /** La société qui commande, lue à l'instant de la passation — `null` sans société. */
+  private async standingOf(companyId: string | null): Promise<OrderPayerStanding | null> {
     if (companyId === null) {
       return null;
     }
-    return orderPayerOf(await this.payers.standingAt(companyId, this.clock.now()));
+    return this.payers.standingAt(companyId, this.clock.now());
   }
 
   /** Les CGV de ce texte en vigueur maintenant, prêtes à figer. */

@@ -23,6 +23,8 @@ export class FixedOrderPayers extends OrderPayerReader {
         companyName: companyId,
         groupWithoutDelivery: false,
         billingFollow: null,
+        principalId: null,
+        followsPricing: false,
       },
     );
   }

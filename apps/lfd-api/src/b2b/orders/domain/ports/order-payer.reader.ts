@@ -15,6 +15,13 @@ export interface OrderPayerStanding {
   readonly groupWithoutDelivery: boolean;
   /** La période `billing` en cours à l'instant demandé, ou `null` : la société paie seule. */
   readonly billingFollow: OrderPayerFollow | null;
+  /**
+   * Son principal à l'instant de la lecture, ou `null` : la passation le COPIE
+   * sur la commande (`plan-notifications-sous-comptes.md`, §2).
+   */
+  readonly principalId: string | null;
+  /** Une période `pricing` est en cours à l'instant demandé (Q1 : le principal voit le montant). */
+  readonly followsPricing: boolean;
 }
 
 /**

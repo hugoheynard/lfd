@@ -1,6 +1,6 @@
 # Plan — le principal est prévenu de ce que font ses sous-comptes
 
-> 📐 **Plan, rien n'est bâti** (2026-10-20). Demande de Hugo : « savoir quelles
+> 📐 **Plan — N1 bâti le 2026-10-20**, N2 à N4 à faire. Demande de Hugo : « savoir quelles
 > actions menées par le sous-compte doivent être notifiées au principal, avec un
 > mapping de rôle ». Décisions de Hugo le même jour : **mail seul** ; le
 > tableau action × rôle est **réglé par le staff, principal par principal**.
@@ -113,7 +113,7 @@ reste dans le bloc `b2b` : ni `durable-cross-block` ni `context-boundaries`
 ne sont franchis.
 
 Pas de ligne = le défaut du §1. Le défaut vit dans le domaine
-(`b2b/account/domain/…/sub-account-notice-defaults.ts`), pas en base : changer
+(`apps/lfd-api/src/b2b/sub-account-notices/domain/sub-account-notice-defaults.ts`), pas en base : changer
 le défaut ne demande pas de migration, et une dérogation posée reste la
 volonté du staff.
 
@@ -145,6 +145,27 @@ sequenceDiagram
 
 N1 → N2 → N3 livrent la valeur sur les commandes. N4 est séparé parce qu'il
 touche cinq contextes qui ne publient aujourd'hui qu'au journal.
+
+### N1 bâti (2026-10-20) — et ses écarts
+
+- Migration `20261020110000_les_avis_au_principal` (additive, lue par
+  `lecteur-de-migrations`). Copie à la passation par `OrderPayerReader`, qui
+  rend aussi `principalId` et `followsPricing` (même lecture que le payeur) ;
+  règle pure `apps/lfd-api/src/b2b/orders/domain/services/order-principal.ts`.
+- `b2b/account/` déclare et implémente QUATRE ports, pas deux :
+  `AcceptedMembersReader`, `SubAccountNoticeRulesReader`, et en plus
+  `SubAccountNoticeRulesWriter` (lecture et écriture séparées) et
+  `CompanyParentReader` (la garde « est un principal »).
+- Le type des clés vient de `@lfd/contracts` : le domaine des avis et
+  `account` le partagent sans dépendre l'un de l'autre.
+- ⚠️ **Assumé** : la garde « ce compte est un principal » est lue puis suivie
+  d'une écriture, sans verrou. Un rattachement exactement concurrent peut
+  laisser une dérogation sur un compte devenu sous-compte ; elle est inerte
+  (un sous-compte n'a pas de sous-comptes), et le détacher la réveille.
+- **Reporté à N2** : le port « résumé de commande » (`orders/`), dont le mail
+  est le premier lecteur.
+- La remise à blanc de dev (`src/dev/seeding/reset.seed.ts`) vide les
+  dérogations avant les sociétés : la clé étrangère est en `Restrict`.
 
 ## 5. Décisions (Hugo, 2026-10-20)
 
