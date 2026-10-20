@@ -93,10 +93,8 @@ function boot(company: AdminCompanyDetail): {
   return { fixture, wire };
 }
 
-const box = (fixture: ComponentFixture<GroupAccountCard>): HTMLInputElement | null =>
-  (fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>(
-    '[data-group-without-delivery] input[type="checkbox"]',
-  );
+const host = (fixture: ComponentFixture<GroupAccountCard>): HTMLElement =>
+  fixture.nativeElement as HTMLElement;
 
 async function settle(fixture: ComponentFixture<GroupAccountCard>): Promise<void> {
   await fixture.whenStable();
@@ -104,33 +102,42 @@ async function settle(fixture: ComponentFixture<GroupAccountCard>): Promise<void
 }
 
 describe('GroupAccountCard', () => {
-  it('montre ce qui est enregistré', () => {
+  it('dit l’état enregistré', () => {
     const { fixture } = boot(principal({ groupWithoutDelivery: true }));
-    expect(box(fixture)?.checked).toBe(true);
+    expect(host(fixture).querySelector('[data-group-state]')?.textContent).toContain(
+      'ne commande pas pour lui-même',
+    );
+    expect(host(fixture).querySelector('[data-group-toggle]')?.textContent).toContain('Désactiver');
   });
 
-  it('s’écrit dès qu’on la coche, puis fait relire la fiche', async () => {
+  it('demande confirmation, en disant que le compte ne pourra plus commander', async () => {
     const { fixture, wire } = boot(principal());
-    box(fixture)?.click();
+    host(fixture).querySelector<HTMLButtonElement>('[data-group-toggle]')?.click();
+    fixture.detectChanges();
+    expect(wire.group).toEqual([]);
+    expect(host(fixture).querySelector('[data-group-confirm]')).not.toBeNull();
+    expect(fixture.componentInstance['confirmMessage']()).toContain(
+      'ne pourra plus commander pour lui-même',
+    );
+
+    await fixture.componentInstance['apply']();
     await settle(fixture);
     expect(wire.group).toEqual([true]);
     expect(wire.changed).toBe(1);
   });
 
-  it('un refus s’affiche tel quel, et la case revient à l’enregistré', async () => {
+  it('un refus s’affiche tel quel, et l’état revient à l’enregistré', async () => {
     const { fixture, wire } = boot(principal());
     wire.refuse = new HttpErrorResponse({
       status: 409,
       error: { message: 'Un sous-compte ne peut pas être un compte de groupe.' },
     });
-    box(fixture)?.click();
-    fixture.detectChanges();
+    await fixture.componentInstance['apply']();
     await settle(fixture);
-    await settle(fixture);
-    expect(
-      (fixture.nativeElement as HTMLElement).querySelector('[data-group-refusal]')?.textContent,
-    ).toContain('Un sous-compte ne peut pas être un compte de groupe.');
-    expect(box(fixture)?.checked).toBe(false);
+    expect(host(fixture).querySelector('[data-group-refusal]')?.textContent).toContain(
+      'Un sous-compte ne peut pas être un compte de groupe.',
+    );
+    expect(fixture.componentInstance['checked']()).toBe(false);
     expect(wire.changed).toBe(0);
   });
 });
