@@ -434,6 +434,13 @@ qui change la structure prend donc d'abord le verrou consultatif
 port `AccountHierarchyLock`), qui refuse d'être appelé hors transaction. Les
 triggers restent en seconde ligne.
 
+**Un principal ne se remplace pas** (2026-10-20, migration
+`20261020100000_un_principal_ne_se_remplace_pas`). Le geste refuse de
+rattacher un compte déjà rattaché (`AlreadySubAccountError`) ; le trigger
+`companies_parent_not_replaced` refuse en base le passage direct d'un
+principal à un autre, qui laisserait ouvertes des périodes de suivi au nom
+de l'ancien. Rattacher et détacher, chacun en sa propre écriture, passent.
+
 - `billed_company_id` est nul sur les commandes d'avant : lu comme « la
   société de la commande ». Aucun remplissage rétroactif.
 - Aucun droit accordé à un rôle par migration.

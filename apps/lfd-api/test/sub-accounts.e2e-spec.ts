@@ -365,6 +365,18 @@ describe("Les courses sur la hiérarchie (§5)", () => {
     }
   });
 
+  it("la base refuse de changer de principal hors du geste (seconde ligne)", async () => {
+    const [a, b, c] = await three();
+    await ctx.prisma.company.update({ where: { id: a }, data: { parentCompanyId: b } });
+
+    await expect(
+      ctx.prisma.company.update({ where: { id: a }, data: { parentCompanyId: c } }),
+    ).rejects.toThrow(/company_parent_replaced/u);
+    // Détacher puis rattacher, chacun en sa propre écriture, passe.
+    await ctx.prisma.company.update({ where: { id: a }, data: { parentCompanyId: null } });
+    await ctx.prisma.company.update({ where: { id: a }, data: { parentCompanyId: c } });
+  });
+
   it("le déclencheur refuse une écriture faite HORS du geste (seconde ligne)", async () => {
     const [a, b, c] = await three();
     await ctx.prisma.company.update({ where: { id: b }, data: { parentCompanyId: c } });
