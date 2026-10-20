@@ -19,6 +19,9 @@ import { GetInvoiceSpecimenQuery } from "./get-invoice-specimen.query.js";
  * @throws {InvoiceXmlInconsistentError} le XML ne se recompose pas — un
  * défaut du calcul, que l'exemple montre au lieu de le masquer.
  */
+
+/** Le mot posé en travers de la facture d'exemple. */
+const SPECIMEN_WATERMARK = "EXEMPLE";
 @QueryHandler(GetInvoiceSpecimenQuery)
 export class GetInvoiceSpecimenHandler implements IQueryHandler<
   GetInvoiceSpecimenQuery,
@@ -41,6 +44,8 @@ export class GetInvoiceSpecimenHandler implements IQueryHandler<
       xml,
       fonts: await this.fonts.load(),
       logo: null,
+      // Un exemple porte un numéro plausible : le filigrane le dit sur chaque page.
+      watermark: SPECIMEN_WATERMARK,
     });
     return { bytes, fileName: "exemple-facture.pdf" };
   }

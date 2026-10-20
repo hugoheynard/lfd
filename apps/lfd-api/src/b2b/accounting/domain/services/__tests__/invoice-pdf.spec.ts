@@ -190,6 +190,25 @@ describe("renderInvoicePdf — ce que la facture imprime", () => {
     expect(printed).toContain("Réf. SKU69");
   });
 
+  /** La planche des documents (2026-10-20) : une facture d'exemple ne doit pas passer pour vraie. */
+  it("le filigrane demandé traverse CHAQUE page ; une vraie pièce n'en a aucun", async () => {
+    const many = Array.from({ length: 70 }, (_, index) => line(`SKU${String(index)}`, 5.5, 100));
+    const invoice = Invoice.issue(issueInput({ lines: many, vat: breakdownOf(many) }));
+    const marked = drawnUnicodeText(
+      await renderInvoicePdf({
+        invoice,
+        xml: renderFacturXml(invoice),
+        fonts: FONTS,
+        logo: null,
+        watermark: "EXEMPLE",
+      }),
+    );
+    const pages = (marked.match(/page \d+ \/ /gu) ?? []).length;
+    expect(pages).toBeGreaterThan(1);
+    expect(marked.split("EXEMPLE").length - 1).toBe(pages);
+    expect(drawnUnicodeText(await render(invoice))).not.toContain("EXEMPLE");
+  });
+
   it("le logo de l'entité, quand il existe, entre comme image", async () => {
     const pdf = await render(issuedInvoice(), tinyPng());
 

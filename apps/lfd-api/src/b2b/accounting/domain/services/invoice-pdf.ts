@@ -3,7 +3,7 @@ import type { Buffer } from "node:buffer";
 import type { Invoice } from "../entities/invoice.js";
 import type { InvoiceState } from "../entities/invoice.types.js";
 import type { InvoicePdfFonts } from "../ports/invoice-font-source.js";
-import { renderFacturXPdf } from "./facturx-pdf-document.js";
+import { BOLD, type InvoiceDoc, renderFacturXPdf } from "./facturx-pdf-document.js";
 import { drawHeader, drawParties } from "./invoice-pdf-header.js";
 import { drawLines } from "./invoice-pdf-lines.js";
 import { InvoiceSheet, LEFT, MUTED } from "./invoice-pdf-sheet.js";
@@ -18,6 +18,13 @@ export interface InvoicePdfInput {
   readonly fonts: InvoicePdfFonts;
   /** Le logo de l'entité émettrice ; `null` : la pièce sort sans, valide. */
   readonly logo: Buffer | null;
+  /**
+   * Un filigrane en travers de chaque page, ou rien. Seule la planche des
+   * documents en pose un (« EXEMPLE ») : une facture d'exemple porte un numéro
+   * plausible, et un PDF qui sortirait de l'écran pourrait passer pour vrai
+   * (Hugo, 2026-10-20). Une vraie pièce n'en a jamais.
+   */
+  readonly watermark?: string | undefined;
 }
 
 /**
@@ -50,8 +57,43 @@ export function renderInvoicePdf(input: InvoicePdfInput): Promise<Buffer> {
       drawTotals(sheet, state);
       drawMentions(sheet, state);
       drawFooters(sheet, state);
+      if (input.watermark !== undefined) {
+        drawWatermark(doc, input.watermark);
+      }
     },
   );
+}
+
+/** La taille du filigrane, en points : il traverse une page A4 en diagonale. */
+const WATERMARK_SIZE = 110;
+/** Assez pâle pour lire la pièce au travers, assez net pour ne pas l'oublier. */
+const WATERMARK_OPACITY = 0.12;
+/** Un rouge, pour qu'on ne le prenne pas pour un gris d'impression. */
+const WATERMARK_COLOR = "#9a1b1b";
+
+/**
+ * Le filigrane, sur CHAQUE page (les pages sont tamponnées : `bufferPages`).
+ * L'opacité est admise par PDF/A-3, qui n'interdit plus la transparence.
+ */
+function drawWatermark(doc: InvoiceDoc, text: string): void {
+  const range = doc.bufferedPageRange();
+  for (let index = range.start; index < range.start + range.count; index += 1) {
+    doc.switchToPage(index);
+    const { width, height } = doc.page;
+    doc.save();
+    doc.rotate(-45, { origin: [width / 2, height / 2] });
+    doc
+      .font(BOLD)
+      .fontSize(WATERMARK_SIZE)
+      .fillColor(WATERMARK_COLOR)
+      .fillOpacity(WATERMARK_OPACITY)
+      .text(text, 0, height / 2 - WATERMARK_SIZE / 2, {
+        width,
+        align: "center",
+        lineBreak: false,
+      });
+    doc.restore();
+  }
 }
 
 /** En tête d'une page de suite : de quelle pièce elle est. */
