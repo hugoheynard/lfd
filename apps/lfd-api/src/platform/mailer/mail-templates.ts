@@ -40,6 +40,10 @@ import {
   renderSubAccountActivityMail,
   type SubAccountActivityMailData,
 } from "./sub-account-activity-mail.js";
+import {
+  renderSubAccountGestureMail,
+  type SubAccountGestureMailData,
+} from "./sub-account-gesture-mail.js";
 
 /**
  * Les **e-mails de la plateforme B2B** — la carte et le registre que
@@ -137,6 +141,12 @@ export interface B2bMails {
    * `sub-account-activity-mail.ts`.
    */
   "customer.sub-account-activity": SubAccountActivityMailData;
+  /**
+   * **Un de vos sites a fait un geste hors commande** — l'avis au principal
+   * de N4 (même plan). Destinataires : ceux de `customer.sub-account-activity`.
+   * Cf. `sub-account-gesture-mail.ts`.
+   */
+  "customer.sub-account-gesture": SubAccountGestureMailData;
   /**
    * **Le lien de règlement d'une commande**, renvoyé par la comptabilité (plan
    * `blocage-et-liens-de-paiement.md`). Destinataire :
@@ -602,6 +612,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
     "customer.invoice-issued": (data) => renderInvoiceIssuedMail(data, customerMail),
     "customer.order-cancelled": (data) => renderOrderCancelledMail(data, customerMail),
     "customer.sub-account-activity": (data) => renderSubAccountActivityMail(data, customerMail),
+    "customer.sub-account-gesture": (data) => renderSubAccountGestureMail(data, customerMail),
     "customer.order-placed": (data) => {
       const copy = mailCopyOf(data.locale).orderPlaced;
       const settlement = settlementCopyKeyOf(data.sheet);

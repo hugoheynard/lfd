@@ -1,9 +1,16 @@
+import type { ReportingSite } from "../order-problem-reported.fact.js";
+
 /** Une commande que le demandeur a le droit de voir, réduite à ce qu'un signalement en lit. */
 export interface ReportableOrder {
   readonly id: string;
   readonly number: string;
   /** Retirée ou livrée (`status === 'fulfilled'`, la source du suivi). */
   readonly fulfilled: boolean;
+  /**
+   * La société de la commande et son principal COPIÉ à la passation, ou
+   * `null` : commande personnelle (N4a de `plan-notifications-sous-comptes.md`).
+   */
+  readonly site: ReportingSite | null;
 }
 
 /**

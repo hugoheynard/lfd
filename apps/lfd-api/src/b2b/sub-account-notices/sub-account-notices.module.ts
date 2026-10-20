@@ -6,6 +6,9 @@ import { NotifyPrincipalOnOrderCancelled } from "./application/handlers/notify-p
 import { NotifyPrincipalOnOrderPaid } from "./application/handlers/notify-principal-on-order-paid.handler.js";
 import { NotifyPrincipalOnOrderPlaced } from "./application/handlers/notify-principal-on-order-placed.handler.js";
 import { NotifyPrincipalOnPaymentFailed } from "./application/handlers/notify-principal-on-payment-failed.handler.js";
+import { GestureNoticeDispatcher } from "./application/services/gesture-notice.dispatcher.js";
+import { PrincipalNoticeSender } from "./application/services/principal-notice.sender.js";
+import { NotifyPrincipalOnOrderProblemReported } from "./application/handlers/notify-principal-on-order-problem-reported.handler.js";
 import { SubAccountNoticeDispatcher } from "./application/services/sub-account-notice.dispatcher.js";
 import { NoticeSendJournal } from "./domain/ports/notice-send.journal.js";
 import { PrismaNoticeSendJournal } from "./infrastructure/prisma-notice-send.journal.js";
@@ -23,6 +26,8 @@ import { AdminSubAccountNoticesController } from "./http/admin-sub-account-notic
  * d'`account/` que par les ports que celui-ci déclare et implémente.
  * N1 : le tableau et son réglage. N2 : les trois abonnés durables des faits
  * de commande, qui lisent la commande par le port qu'`orders/` exporte.
+ * N4a : le premier geste hors commande (problème signalé), dont le fait
+ * durable porte le principal figé.
  */
 @Module({
   imports: [AccountModule, OrdersModule],
@@ -31,11 +36,14 @@ import { AdminSubAccountNoticesController } from "./http/admin-sub-account-notic
     GetSubAccountNoticeRulesHandler,
     SetSubAccountNoticeRuleHandler,
     ResetSubAccountNoticeRulesHandler,
+    PrincipalNoticeSender,
     SubAccountNoticeDispatcher,
+    GestureNoticeDispatcher,
     NotifyPrincipalOnOrderPlaced,
     NotifyPrincipalOnOrderPaid,
     NotifyPrincipalOnOrderCancelled,
     NotifyPrincipalOnPaymentFailed,
+    NotifyPrincipalOnOrderProblemReported,
     { provide: NoticeSendJournal, useClass: PrismaNoticeSendJournal },
   ],
 })

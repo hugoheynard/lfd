@@ -22,6 +22,19 @@ export const subAccountNoticeKindSchema = z.enum([
 export type SubAccountNoticeKind = z.infer<typeof subAccountNoticeKindSchema>;
 
 /**
+ * **Les actions dont le mail EXISTE** — celles que l'écran du staff montre
+ * (plan des avis au principal, N3 et N4). Les autres restent cachées : une
+ * ligne réglable sans mail derrière laisserait croire que le principal sera
+ * prévenu. Un lot de N4 bâti y ajoute sa clé, et rien d'autre ne change.
+ */
+export const SUB_ACCOUNT_NOTICE_KINDS_WITH_MAIL: readonly SubAccountNoticeKind[] = [
+  "order_placed",
+  "order_cancelled",
+  "payment_failed",
+  "order_problem_reported",
+];
+
+/**
  * Une **cellule** du tableau action × rôle d'un principal, telle que le
  * serveur l'a résolue : `atDefault` dit si le staff y a dérogé. Le front ne
  * recompose jamais `dérogation ?? défaut`.

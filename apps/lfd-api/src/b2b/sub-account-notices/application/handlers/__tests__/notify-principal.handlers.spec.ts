@@ -12,6 +12,7 @@ import {
   MemoryNoticeJournal,
   RecordingMailer,
 } from "../../__tests__/order-notice-doubles.js";
+import { PrincipalNoticeSender } from "../../services/principal-notice.sender.js";
 import { SubAccountNoticeDispatcher } from "../../services/sub-account-notice.dispatcher.js";
 import { NotifyPrincipalOnOrderCancelled } from "../notify-principal-on-order-cancelled.handler.js";
 import { NotifyPrincipalOnOrderPaid } from "../notify-principal-on-order-paid.handler.js";
@@ -43,12 +44,14 @@ function build(options: Options = {}) {
   const rules = new InMemoryNoticeRules();
   const dispatcher = new SubAccountNoticeDispatcher(
     new FixedOrderSummaries([options.order ?? chaletOrder()]),
-    new FixedLifecycle(new Map([["alpes", options.status ?? "active"]])),
-    rules,
-    new FixedMembers(new Map([["alpes", options.members ?? ALPES]])),
-    journal,
-    new FixedClock(new Date(Date.UTC(2030, 0, 1, 10))),
-    mailer,
+    new PrincipalNoticeSender(
+      new FixedLifecycle(new Map([["alpes", options.status ?? "active"]])),
+      rules,
+      new FixedMembers(new Map([["alpes", options.members ?? ALPES]])),
+      journal,
+      new FixedClock(new Date(Date.UTC(2030, 0, 1, 10))),
+      mailer,
+    ),
   );
   return {
     mailer,

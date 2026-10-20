@@ -1,6 +1,10 @@
 import { Buffer } from "node:buffer";
 
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
+import {
+  TransactionalDurablePublisher,
+  TransactionalUnitOfWork,
+} from "../../../../../platform/outbox/__tests__/transactional-durable.js";
 import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { CustomerRequestReceivedEvent } from "../../../domain/customer-request.events.js";
@@ -13,6 +17,7 @@ import {
   TooManyRequestPhotosError,
 } from "../../../domain/errors/contact-errors.js";
 import { AT, pngOf, reason } from "../../../domain/__tests__/request-fixtures.js";
+import { ORDER_PROBLEM_REPORTED } from "../../../domain/order-problem-reported.fact.js";
 import type { ReportableOrder } from "../../../domain/ports/reportable-order.reader.js";
 import { ReportOrderProblemCommand } from "../report-order-problem.command.js";
 import { ReportOrderProblemHandler } from "../report-order-problem.handler.js";
@@ -32,24 +37,40 @@ const DAMAGED = reason({
   audience: "both",
   priority: "medium",
 });
-const FULFILLED: ReportableOrder = { id: "o1", number: "CMD-0001", fulfilled: true };
-const PENDING: ReportableOrder = { id: "o2", number: "CMD-0002", fulfilled: false };
+const FULFILLED: ReportableOrder = { id: "o1", number: "CMD-0001", fulfilled: true, site: null };
+const PENDING: ReportableOrder = { id: "o2", number: "CMD-0002", fulfilled: false, site: null };
+/** Une commande du site `chalet`, son principal `alpes` COPIÉ à la passation. */
+const SITE_ORDER: ReportableOrder = {
+  id: "o3",
+  number: "CMD-0003",
+  fulfilled: true,
+  site: { companyId: "chalet", name: "Chalet Gentiane", principalCompanyId: "alpes" },
+};
+/** La même, passée avant la copie du principal (N1) : aucun principal. */
+const BEFORE_N1: ReportableOrder = {
+  id: "o4",
+  number: "CMD-0004",
+  fulfilled: true,
+  site: { companyId: "chalet", name: "Chalet Gentiane", principalCompanyId: null },
+};
 const JEAN = { name: "Jean Martin", email: "jean@exemple.fr", phone: "" };
-const ME = { userId: "u1", companyId: null };
+const ME: ReportOrderProblemCommand["actor"] = { userId: "u1", companyId: null };
 
 function setup(...reasons: ReturnType<typeof reason>[]): {
   handler: ReportOrderProblemHandler;
   requests: MemoryRequests;
   store: MemoryPhotoStore;
   events: RecordingPublisher;
+  uow: TransactionalUnitOfWork;
   log: string[];
 } {
   const log: string[] = [];
   const requests = new MemoryRequests([], log);
   const store = new MemoryPhotoStore(log);
   const events = new RecordingPublisher();
+  const uow = new TransactionalUnitOfWork();
   const handler = new ReportOrderProblemHandler(
-    new VisibleOrders({ o1: FULFILLED, o2: PENDING }),
+    new VisibleOrders({ o1: FULFILLED, o2: PENDING, o3: SITE_ORDER, o4: BEFORE_N1 }),
     new MemoryReasons(...(reasons.length === 0 ? [DAMAGED] : reasons)),
     new Authors({ u1: JEAN }),
     new FixedAudiences(),
@@ -58,8 +79,10 @@ function setup(...reasons: ReturnType<typeof reason>[]): {
     new FixedIdGenerator("q"),
     new FixedClock(AT),
     events,
+    new TransactionalDurablePublisher(uow),
+    uow,
   );
-  return { handler, requests, store, events, log };
+  return { handler, requests, store, events, uow, log };
 }
 
 function report(
@@ -147,5 +170,65 @@ describe("ReportOrderProblemHandler — signaler un problème", () => {
     await expect(
       handler.execute(report("o1", [], { userId: "u_gone", companyId: null })),
     ).rejects.toThrow(RequestAuthorUnknownError);
+  });
+
+  it("une commande personnelle n'écrit aucun fait « problème signalé »", async () => {
+    const { handler, uow } = setup();
+    await handler.execute(report("o1"));
+    expect(uow.of(ORDER_PROBLEM_REPORTED)).toEqual([]);
+  });
+});
+
+describe("ReportOrderProblemHandler — le fait durable pour le principal (N4a)", () => {
+  const SITE_ACTOR = { userId: "u1", companyId: "chalet" };
+
+  it("écrit `order.problem_reported` avec le principal COPIÉ, le site et l'auteur — sans motif ni message", async () => {
+    const { handler, uow } = setup();
+    const id = await handler.execute(report("o3", [], SITE_ACTOR));
+
+    const [fact] = uow.of(ORDER_PROBLEM_REPORTED);
+    expect(fact).toEqual({
+      type: ORDER_PROBLEM_REPORTED,
+      key: `${ORDER_PROBLEM_REPORTED}:${id}`,
+      payload: {
+        requestId: id,
+        orderId: "o3",
+        orderNumber: "CMD-0003",
+        siteCompanyId: "chalet",
+        siteName: "Chalet Gentiane",
+        principalCompanyId: "alpes",
+        authorUserId: "u1",
+      },
+    });
+    expect(JSON.stringify(fact?.payload)).not.toContain("écrasé");
+  });
+
+  it("une commande d'avant la copie du principal : le fait part, principal nul (personne ne sera prévenu)", async () => {
+    const { handler, uow } = setup();
+    await handler.execute(report("o4", [], SITE_ACTOR));
+    expect(uow.of(ORDER_PROBLEM_REPORTED)[0]?.payload).toMatchObject({
+      principalCompanyId: null,
+    });
+  });
+
+  it("une demande refusée n'écrit aucun fait", async () => {
+    const { handler, uow } = setup(reason({ id: "r_damaged", kind: "contact", audience: "both" }));
+    await expect(handler.execute(report("o3", [], SITE_ACTOR))).rejects.toThrow(
+      RequestReasonUnavailableError,
+    );
+    expect(uow.committed).toEqual([]);
+  });
+
+  it("la demande et le fait partent dans la MÊME unité de travail", async () => {
+    const { handler, requests, uow } = setup();
+    const opened: boolean[] = [];
+    const save = requests.save.bind(requests);
+    requests.save = (request) => {
+      opened.push(uow.isOpen);
+      return save(request);
+    };
+    await handler.execute(report("o3", [], SITE_ACTOR));
+    expect(opened).toEqual([true]);
+    expect(uow.of(ORDER_PROBLEM_REPORTED)).toHaveLength(1);
   });
 });

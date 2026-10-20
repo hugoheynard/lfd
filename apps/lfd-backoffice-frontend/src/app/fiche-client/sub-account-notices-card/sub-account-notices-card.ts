@@ -11,6 +11,7 @@ import {
 import { NgTemplateOutlet } from '@angular/common';
 import {
   COMPANY_ROLE_LABELS,
+  SUB_ACCOUNT_NOTICE_KINDS_WITH_MAIL,
   type CompanyMemberRole,
   type SubAccountNoticeKind,
   type SubAccountNoticeRuleView,
@@ -33,17 +34,6 @@ import {
 import { PermissionsStore } from '../../auth/permissions.store';
 import { AdminCompanyHierarchyService } from '../../comptes-clients/admin-company-hierarchy.service';
 
-/**
- * Les actions dont le mail EXISTE (N2, 2026-10-20). Les cinq autres clés du
- * contrat restent cachées jusqu'à N4 : une ligne réglable sans mail derrière
- * laisserait croire que le principal sera prévenu.
- */
-export const VISIBLE_NOTICE_KINDS: readonly SubAccountNoticeKind[] = [
-  'order_placed',
-  'order_cancelled',
-  'payment_failed',
-];
-
 const ROLES: readonly CompanyMemberRole[] = ['owner', 'admin', 'orders', 'billing'];
 
 /** L'action, dite comme une ligne du tableau. */
@@ -51,6 +41,7 @@ const KIND_LABELS: Readonly<Partial<Record<SubAccountNoticeKind, string>>> = {
   order_placed: 'Commande passée',
   order_cancelled: 'Commande annulée ou abandonnée',
   payment_failed: 'Paiement échoué à la charge du principal',
+  order_problem_reported: 'Problème de commande signalé',
 };
 
 /** L'action, dite dans la phrase « … à chaque … par ses sous-comptes ». */
@@ -58,6 +49,7 @@ const KIND_EVENTS: Readonly<Partial<Record<SubAccountNoticeKind, string>>> = {
   order_placed: 'commande passée',
   order_cancelled: 'commande annulée ou abandonnée',
   payment_failed: 'paiement échoué à sa charge',
+  order_problem_reported: 'problème de commande signalé',
 };
 
 /** Une ligne du tableau : une action, ses quatre cellules. */
@@ -69,7 +61,7 @@ export interface NoticeRow {
 
 /** Range les cellules rendues par le serveur en lignes visibles, dans l'ordre du plan. */
 export function noticeRows(rules: readonly SubAccountNoticeRuleView[]): readonly NoticeRow[] {
-  return VISIBLE_NOTICE_KINDS.map((kind) => {
+  return SUB_ACCOUNT_NOTICE_KINDS_WITH_MAIL.map((kind) => {
     const cells: Partial<Record<CompanyMemberRole, SubAccountNoticeRuleView>> = {};
     for (const rule of rules) {
       if (rule.kind === kind) {

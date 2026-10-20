@@ -1,6 +1,6 @@
 # Plan — le principal est prévenu de ce que font ses sous-comptes
 
-> 📐 **Plan — N1, N2 et N3 bâtis le 2026-10-20**, N4 à faire. Demande de Hugo : « savoir quelles
+> 📐 **Plan — N1, N2, N3 et N4a bâtis le 2026-10-20**, N4b…N4e à faire. Demande de Hugo : « savoir quelles
 > actions menées par le sous-compte doivent être notifiées au principal, avec un
 > mapping de rôle ». Décisions de Hugo le même jour : **mail seul** ; le
 > tableau action × rôle est **réglé par le staff, principal par principal**.
@@ -141,7 +141,7 @@ sequenceDiagram
 | **N1** | Défaut du tableau (domaine pur + tests), migration additive (`orders.principal_company_id` copié à la passation par `OrderDraftingService`, dérogations, journal d'envoi), ports « membres acceptés d'une société par rôle » et « dérogations » (déclarés et implémentés en `account/`), port « résumé de commande » (`orders/`) ; routes staff `GET/PUT /admin/companies/:id/sub-account-notices` sous `@AdminSurface("b2b_companies")` ; e2e | batisseur |
 | **N2** | Abonnés durables sur les faits de commande déjà durables (`order_placed`, `order_cancelled`, `payment_failed`) ; gabarit `customer.sub-account-activity` ; e2e : un site commande → les membres acceptés du principal aux bons rôles reçoivent ; l'auteur non, le frère non, l'invité non accepté non ; **un site rattaché ailleurs APRÈS sa commande ne fait pas prévenir le nouveau principal** ; une relivraison ne double aucun mail       | batisseur |
 | **N3** | ✅ 2026-10-20. Écran : sous la grille de la page Sous-comptes du principal, le tableau action × rôle en boutons Activer / Désactiver (même forme que la grille), défaut visible et « Revenir au défaut ». **Seules les lignes dont le mail existe** s'affichent : les cinq de N4 restent cachées jusqu'à leur lot                                                                                                                              | pablo     |
-| **N4** | Rendre durables les faits qui ne le sont pas (abonnements, adresses, contacts, RIB, problème signalé), chacun portant la copie du principal et l'auteur (client ou staff), puis leurs abonnés. **Non chiffré** : cinq contextes qui ne publient aujourd'hui qu'au journal ; à inventorier et à recontredire avant de bâtir                                                                                                                     | batisseur |
+| **N4** | Voir « N4 — conception, v2 » ci-dessous : cinq lots N4a…N4e, le socle dans N4a                                                                                                                                                                                                                                                                                                                                                                 | batisseur |
 
 N1 → N2 → N3 livrent la valeur sur les commandes. N4 est séparé parce qu'il
 touche cinq contextes qui ne publient aujourd'hui qu'au journal.
@@ -232,6 +232,212 @@ principal_company_id` : un site qui paie lui-même ne fait pas prévenir son
   refus s'affiche en `fold-callout` qui nomme l'action et le rôle, la cellule
   redit l'enregistré.
 - Les cinq clés de N4 sont cachées ; une ligne discrète sous le tableau le dit.
+
+### N4 — conception, v2 (2026-10-20)
+
+> **v2** : la v1 a été contredite par `vitruve` le 2026-10-20, et Hugo a
+> tranché le même jour (voir « Décisions de Hugo sur N4 » et « Ce que
+> `vitruve` a changé », plus bas). Chaque chemin cité a été ouvert le
+> 2026-10-20.
+
+#### Décisions de Hugo sur N4 (2026-10-20)
+
+- **Les gestes de l'équipe au nom du client préviennent aussi** le principal ;
+  le mail dit « fait par notre équipe ».
+- **Un mail par geste**, aucun regroupement : dix modifications d'une adresse
+  font dix mails, assumé.
+- **Le mail d'adresse ne dit RIEN de l'adresse** — ni ville, ni code postal, ni
+  libellé : « X a ajouté / modifié / retiré une adresse de livraison ».
+- **Tout N4, abonnements compris** : `subscriptions.company_id` (la société
+  qui agit) s'ajoute par migration additive, et la commande de création la
+  porte.
+
+#### Le choix : un fait durable PAR GESTE, qui porte le principal figé
+
+Chaque geste écrit, **dans la même `UnitOfWork.run` que son écriture**, un fait
+`DurablePublisher` (`apps/lfd-api/src/platform/outbox/durable-publisher.ts`)
+**nommé par le geste** — `order.problem_reported`,
+`company.delivery_address_added`… — et non un fait générique « activité d'un
+sous-compte ». Deux raisons :
+
+- **Le nom est métier.** Le fait dit ce qui s'est passé dans le contexte qui
+  l'émet ; il ne sait pas que l'avis au principal l'écoute (même règle que
+  `production → b2b`, CLAUDE.md §3). Un fait « pour l'avis » ferait de
+  l'émetteur un client de son abonné.
+- **Le principal est figé dans la charge.** Chaque fait porte
+  `principalCompanyId` (nul si le site n'a pas de principal), `siteCompanyId`,
+  `siteName`, `authorUserId` (nul quand l'équipe agit) et `byTeam`. L'abonné ne
+  relit jamais `parent_company_id` (§2). Le fait est écrit même sans
+  principal : c'est un fait du domaine, pas un avis.
+
+Les noms déjà au journal (`packages/contracts/src/journal-facts/accounts.ts`) :
+`company.delivery_address_added|updated|removed`, `company.contact_added|removed`,
+`company.bank_account_changed`, `subscription.created|status_changed|deleted`.
+Les types durables les **réutilisent** — la boîte d'envoi et le journal sont
+deux registres distincts, et un même nom y désigne le même geste. Neufs :
+`order.problem_reported` et `company.mandate_proof_attached` (aucun fait de
+journal n'existe pour eux).
+
+`@DurableHandler` n'écoute qu'**un type** par classe
+(`platform/outbox/durable-handler.ts`) : « un seul abonné » se lit donc **un
+abonné par type, un seul dispatcher commun**, comme N2.
+
+**Clé** (`DurableFact.key`, unique en base) : par GESTE, tirée par
+`IdGenerator` ou égale à l'id créé (`order.problem_reported:<requestId>`) —
+jamais par objet. ⚠️ **Une requête rejouée par le client fait deux gestes,
+donc deux mails** : assumé (côté RIB, deux avis valent mieux que zéro).
+
+#### La lecture du principal rejoint la transaction
+
+`PrismaUnitOfWork.run` (`platform/database/unit-of-work.ts`) pose la
+transaction dans un contexte asynchrone ; `transactionalPrisma`
+(`platform/database/transactional-prisma.ts`) route **tout** appel du
+`PrismaService` injecté vers la transaction en cours. Un port d'`account/`
+lu à l'intérieur de `uow.run` lit donc dans la transaction de l'écriture, sans
+passer de client. La lecture du principal se fait **dans** `uow.run`, après
+un `SELECT … FOR UPDATE` sur la ligne `companies` du site — le rattachement
+écrit cette ligne (`parent_company_id`), le verrou range donc le geste avant
+ou après lui. Le carnet d'adresses le prend déjà
+(`account/infrastructure/prisma-company-address.repository.ts`) ; contacts,
+RIB, preuve de mandat et abonnement le prendront par le port de lecture du
+principal (un port d'`account/`, déclaré et implémenté là, livré avec N4b,
+son premier lecteur : le problème signalé ne lit pas la hiérarchie).
+
+#### Le socle (N4a, et lui seul)
+
+Bâti en N4a, sans rien laisser aux lots suivants :
+
+- le dispatcher de N2 **découpé** : la fin commune (statut du principal → rôles
+  → membres acceptés moins l'auteur → journal d'envoi → mail) devient
+  `PrincipalNoticeSender` ; la commande garde sa lecture
+  (`SubAccountNoticeDispatcher`) ; les gestes ont la leur
+  (`GestureNoticeDispatcher`), qui ne lit que le fait ;
+- un **second gabarit** `customer.sub-account-gesture` : le premier exige
+  `orderNumber` et reste juste pour la commande (LSP : on ne relâche pas un
+  contrat servi) ; chaque lot ajoute UN membre à l'union `SubAccountGesture`
+  et ses deux phrases ;
+- la **liste partagée** des actions dont le mail existe,
+  `SUB_ACCOUNT_NOTICE_KINDS_WITH_MAIL` dans `@lfd/contracts`, que l'écran N3
+  lit au lieu de sa liste en dur à trois : un lot bâti l'allonge d'une valeur.
+
+#### Par action
+
+| Action                     | Gestes client (contrôleur → handler)                                                                                                                                                                            | Gestes équipe                                                                                                                                  | Fait durable                                                            | Ce que dit le mail                             | Ce qu'il ne dit jamais                                               |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ---------------------------------------------- | -------------------------------------------------------------------- |
+| `order_problem_reported`   | `contact/http/my-order-problems.controller.ts` → `report-order-problem.handler.ts`                                                                                                                              | aucun                                                                                                                                          | `order.problem_reported` (neuf)                                         | site, numéro de commande                       | motif, message, photos (ils s'anonymisent ; un mail ne s'efface pas) |
+| `delivery_address_changed` | `account/http/company-addresses.controller.ts` → `add-` / `update-` / `remove-delivery-address.handler.ts`                                                                                                      | `add-` / `update-` / `remove-delivery-address-by-staff.handler.ts`                                                                             | `company.delivery_address_added                                         | updated                                        | removed`                                                             | site, « ajouté / modifié / retiré une adresse »     | toute partie de l'adresse (décision de Hugo)                    |
+| `contact_changed`          | `account/http/company-contacts.controller.ts` → `add-` / `remove-company-contact.handler.ts`                                                                                                                    | `add-` / `remove-contact-by-staff.handler.ts`                                                                                                  | `company.contact_added                                                  | removed`                                       | site, « ajouté / retiré un contact »                                 | nom, adresse, rôle du contact (une personne tierce) |
+| `bank_account_changed`     | `payments/http/company-bank-account.controller.ts` → `set-my-company-bank-account.handler.ts` (par `recordCompanyBankAccount`) ; `company-mandate.controller.ts` → `attach-my-company-mandate-proof.handler.ts` | `set-company-bank-account.handler.ts` (par `recordCompanyBankAccount`), `attach-mandate-proof.handler.ts` — hors de `recordCompanyBankAccount` | `company.bank_account_changed`, `company.mandate_proof_attached` (neuf) | site, « RIB déposé » / « mandat signé déposé » | IBAN, quatre derniers caractères, titulaire (peut être une personne) |
+| `subscription_changed`     | `subscriptions/http/subscriptions.controller.ts` → `create-` / `set-subscription-status-` / `delete-subscription.handler.ts`                                                                                    | aucun (`admin-subscriptions.controller.ts` ne fait que lire)                                                                                   | `subscription.created                                                   | status_changed                                 | deleted`                                                             | site, « créé / mis en pause / repris / arrêté »     | lignes, adresse ; aucun montant (un abonnement n'a pas de prix) |
+
+Notes par action :
+
+- **Problème signalé** — le principal est celui **COPIÉ sur la commande**
+  (`orders.principal_company_id`, N1), lu par `OrderNoticeSummaryReader` au
+  moment du signalement : la commande dit à qui elle appartenait. Le
+  signalement n'avait **aucune** unité de travail (`requests.save` puis
+  `publish` en mémoire) : N4a en ajoute une autour de la sauvegarde et du fait,
+  les photos restant rangées avant, hors transaction, comme aujourd'hui.
+  🔴 **Une commande d'avant N1 (`principal_company_id` nul) ne prévient
+  personne**, sans repli sur la hiérarchie vivante : assumé (pré-lancement,
+  très peu de commandes).
+- **Adresses** — la `uow.run` et le verrou existent ; un `publish` s'y ajoute.
+- **Contacts** — `uow.run` existe ; le verrou et la lecture du principal
+  s'ajoutent.
+- **RIB** — `recordCompanyBankAccount` ne reçoit que `via` : il recevra
+  l'auteur et le `DurablePublisher`, et publiera dans la closure de
+  `writeVoidingDraft` qui sauve le RIB. Les deux handlers de preuve de mandat
+  en sont **hors** et se traitent à part.
+- **Abonnements** — la création n'a pas d'unité de travail : N4e en ajoute
+  une. `DeleteSubscriptionHandler` **supprime physiquement**
+  (`subscriptions.remove`) : l'avis « arrêté » reste dû, le fait porte ce
+  qu'il faut avant la suppression. Les abonnements d'avant la colonne
+  (`company_id` nul) ne préviennent personne.
+
+#### Lots v2, dans cet ordre
+
+| Lot | Contexte                     | Handlers touchés                                                                        |
+| --- | ---------------------------- | --------------------------------------------------------------------------------------- |
+| N4a | `contact/` + socle           | 1 client                                                                                |
+| N4b | `account/` adresses          | 3 client, 3 équipe (+1 et +1 si le défaut changé entre, N4-Q1)                          |
+| N4c | `account/` contacts          | 2 client, 2 équipe (+2 et +2 si la modification et le contact principal entrent, N4-Q1) |
+| N4d | `payments/`                  | 2 client, 2 équipe                                                                      |
+| N4e | `subscriptions/` + migration | 3 client                                                                                |
+
+Soit **11 client et 7 équipe** au périmètre strict du §1, **14 et 10** si
+N4-Q1 répond oui partout. L'écran N3 montre une ligne dès que son lot est
+bâti (la liste partagée du socle).
+
+#### Portes
+
+- `lint:durable-cross-block` : émetteurs (`contact`, `account`, `payments`,
+  `subscriptions`) et abonnés (`sub-account-notices`) sont tous dans `b2b`.
+- `lint:events-tracked` : abonnés durables portés par le relais, qui
+  n'ouvrent pas d'unité de travail.
+- `lint:context-boundaries` : intra-bloc. `contact → account` existe déjà
+  (`contact/contact.module.ts` importe `AccountModule`), comme `contact →
+orders`. `payments → account` : un fichier implémente déjà un port
+  d'`account/` (`payments/application/site-mandate-revoker.ts`), mais
+  `PaymentsModule` n'importe pas `AccountModule` — **l'import de module est
+  une arête neuve** (sans cycle selon `vitruve` ; à revérifier au bâti N4d).
+- `lint:prisma-model-ownership` : aucun émetteur ne lit `companies` ni
+  `orders` en Prisma hors de leur propriétaire ; tout passe par les ports.
+- `lint:rgpd-staff` : aucune colonne de personne staff.
+
+#### Questions ouvertes pour Hugo
+
+- **N4-Q1** — Le §1 dit « ajoutée, modifiée, retirée » (adresses) et
+  « ajouté ou retiré » (contacts) : le défaut de livraison changé, la
+  modification d'un contact, le contact principal changé — dedans ?
+- **N4-Q2** — RGPD : combien de temps garder `sub_account_notice_sends.user_id`
+  et l'auteur (`authorUserId`) dans la charge des faits de la boîte d'envoi ?
+  Aucune durée n'est décidée ; rien n'est inventé ici.
+
+#### N4a bâti (2026-10-20) — et ses écarts
+
+- **Socle** : `PrincipalNoticeSender`
+  (`apps/lfd-api/src/b2b/sub-account-notices/application/services/principal-notice.sender.ts`),
+  la fin commune ; `SubAccountNoticeDispatcher` (commande) et
+  `GestureNoticeDispatcher` (gestes) n'en sont plus que la lecture. Gabarit
+  `customer.sub-account-gesture`
+  (`apps/lfd-api/src/platform/mailer/sub-account-gesture-mail.ts`), union
+  `SubAccountGesture` à un membre (`problem_reported`). Liste partagée
+  `SUB_ACCOUNT_NOTICE_KINDS_WITH_MAIL` (`packages/contracts/src/sub-account-notices.ts`),
+  lue par la carte N3 : la ligne « Problème de commande signalé » s'affiche.
+- **Problème signalé** : fait `order.problem_reported`
+  (`apps/lfd-api/src/b2b/contact/domain/order-problem-reported.fact.ts`),
+  écrit avec la demande dans une `UnitOfWork` neuve, sur une commande
+  d'entreprise seulement. Le site et le principal COPIÉ sont lus par
+  `OrderReportableOrderReader` via `OrderNoticeSummaryReader` (exporté par
+  `orders/`) — `contact → orders` existait déjà. Abonné
+  `NotifyPrincipalOnOrderProblemReported`.
+- **Pas de verrou ni de lecture de la hiérarchie** ici : le principal vient
+  de la commande. Le port de lecture du principal sous verrou arrive avec
+  N4b, son premier lecteur.
+- **Pas d'e2e « geste de l'équipe »** : un signalement n'a pas de geste
+  équipe. « Fait par notre équipe » est éprouvé en unitaire (gabarit et
+  `GestureNoticeDispatcher`) ; son premier e2e viendra avec N4b.
+- e2e `apps/lfd-api/test/sub-account-notice-gestures.e2e-spec.ts` : bons rôles,
+  auteure exclue, invitée exclue, aucun contenu du message ; commande sans
+  principal copié → rien ; relivraison → aucun doublon.
+
+#### Ce que `vitruve` a changé (2026-10-20)
+
+- **BLOQUANT** — le socle était réparti entre N4a et N4b → il est dans N4a
+  seul (« Le socle »).
+- **BLOQUANT** — une commande d'avant N1 n'a pas de principal copié → pas
+  d'avis, sans repli ; écrit et assumé.
+- **SÉRIEUX** — un fait générique « activité » → un fait par geste, nommé par
+  le geste, portant le principal figé.
+- **SÉRIEUX** — la course avec un rattachement était « tolérée » → verrou
+  `FOR UPDATE` sur la ligne du site, et le mécanisme par lequel la lecture
+  rejoint la transaction est écrit.
+- **SÉRIEUX** — la preuve de mandat (deux handlers hors
+  `recordCompanyBankAccount`) manquait → incluse. Chiffrage en handlers par
+  lot. Idempotence par geste et rejeu assumé. `payments → account` est une
+  arête de module neuve.
+- **MINEUR** — durée RGPD posée en question (N4-Q2) ; la suppression
+  physique d'un abonnement n'efface pas l'avis « arrêté ».
 
 ## 5. Décisions (Hugo, 2026-10-20)
 

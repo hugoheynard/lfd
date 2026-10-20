@@ -1,22 +1,12 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 
-import { AcceptedMembersReader } from "../../../account/domain/ports/accepted-members.reader.js";
-import { CompanyLifecycleReader } from "../../../account/domain/ports/company-lifecycle.reader.js";
-import { SubAccountNoticeRulesReader } from "../../../account/domain/ports/sub-account-notice-rules.reader.js";
 import {
   OrderNoticeSummaryReader,
   type OrderNoticeSummary,
 } from "../../../orders/domain/ports/order-notice-summary.reader.js";
-import { MAILER, type B2bMailer } from "../../../../platform/mailer/mailer.tokens.js";
 import type { SubAccountActivity } from "../../../../platform/mailer/sub-account-activity-mail.js";
-import { Clock } from "../../../../platform/time/clock.js";
-import {
-  chargedToPrincipal,
-  noticeRecipients,
-  principalStillWritten,
-} from "../../domain/notice-recipients.js";
-import { notifiedRoles } from "../../domain/notified-roles.js";
-import { NoticeSendJournal } from "../../domain/ports/notice-send.journal.js";
+import { chargedToPrincipal } from "../../domain/notice-recipients.js";
+import { PrincipalNoticeSender } from "./principal-notice.sender.js";
 
 /** Les trois clés du tableau qu'un fait de commande peut toucher (N2). */
 export type OrderNoticeKind = "order_placed" | "order_cancelled" | "payment_failed";
@@ -39,20 +29,15 @@ export interface OrderNotice {
  * (`plan-notifications-sous-comptes.md`, §2, §3). Partagé par les trois
  * abonnés : ils ne diffèrent que par le fait lu et la clé du tableau.
  *
- * Tourne dans l'unité de travail de la garde du relais. Pour chaque
- * destinataire : la ligne du journal d'envoi d'abord, l'envoi ensuite ; une
- * ligne déjà là saute ce destinataire.
+ * Il ne fait que lire la commande — le principal y est COPIÉ — et trier ;
+ * destinataires, journal d'envoi et mail sont la fin commune à tous les avis
+ * (`PrincipalNoticeSender`, extraite en N4a).
  */
 @Injectable()
 export class SubAccountNoticeDispatcher {
   constructor(
     private readonly orders: OrderNoticeSummaryReader,
-    private readonly lifecycle: CompanyLifecycleReader,
-    private readonly rules: SubAccountNoticeRulesReader,
-    private readonly members: AcceptedMembersReader,
-    private readonly journal: NoticeSendJournal,
-    private readonly clock: Clock,
-    @Inject(MAILER) private readonly mailer: B2bMailer,
+    private readonly sender: PrincipalNoticeSender,
   ) {}
 
   async notify(notice: OrderNotice): Promise<void> {
@@ -70,42 +55,22 @@ export class SubAccountNoticeDispatcher {
     ) {
       return;
     }
-    if (!principalStillWritten(await this.lifecycle.statusOf(principalId))) {
-      return;
-    }
-    const roles = notifiedRoles(notice.kind, await this.rules.overridesOf(principalId));
-    const recipients = noticeRecipients(
-      await this.members.withRoles(principalId, roles),
-      notice.authorOf(summary),
-    );
-    for (const recipient of recipients) {
-      await this.sendOnce(notice, summary, summary.companyName, recipient);
-    }
-  }
-
-  private async sendOnce(
-    notice: OrderNotice,
-    summary: OrderNoticeSummary,
-    siteName: string,
-    recipient: { readonly userId: string; readonly email: string },
-  ): Promise<void> {
-    if (!(await this.journal.claim(notice.eventId, recipient.userId, this.clock.now()))) {
-      return;
-    }
-    await this.mailer.send({
-      to: recipient.email,
-      template: "customer.sub-account-activity",
-      data: {
+    await this.sender.send(
+      {
+        eventId: notice.eventId,
+        kind: notice.kind,
+        principalId,
+        authorUserId: notice.authorOf(summary),
+      },
+      "customer.sub-account-activity",
+      {
         activity: notice.activity,
-        siteName,
+        siteName: summary.companyName,
         orderNumber: summary.orderNumber,
         totalCents: summary.principalSeesAmount ? summary.totalCents : null,
         requestedFor: summary.requestedFor,
         enteredByTeam: summary.enteredByTeam,
       },
-      // Seconde ligne, chez le fournisseur : le journal est annulé avec la
-      // transaction de la garde si un envoi suivant lève (cf. le plan, N2 bâti).
-      idempotencyKey: `sub-account-notice:${notice.eventId}:${recipient.userId}`,
-    });
+    );
   }
 }

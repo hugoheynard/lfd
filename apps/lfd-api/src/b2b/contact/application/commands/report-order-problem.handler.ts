@@ -1,6 +1,8 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import { DurablePublisher } from "../../../../platform/outbox/durable-publisher.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { CustomerRequest } from "../../domain/customer-request.js";
@@ -19,6 +21,7 @@ import {
 import { RequestAuthorDirectory } from "../../domain/ports/request-author.directory.js";
 import { RequestPhotoStore } from "../../domain/ports/request-photo.store.js";
 import { RequestReasonRepository } from "../../domain/ports/request-reason.repository.js";
+import { OrderProblemReportedFact } from "../../domain/order-problem-reported.fact.js";
 import { RequestPhoto } from "../../domain/request-photo.js";
 import { offeredReason } from "./offered-reason.js";
 import { ReportOrderProblemCommand } from "./report-order-problem.command.js";
@@ -36,6 +39,13 @@ import { ReportOrderProblemCommand } from "./report-order-problem.command.js";
  *
  * @sans-journal comme « Nous écrire » : pas un acte du staff, et la charge
  * porterait des données qui s'anonymisent.
+ *
+ * Depuis N4a (`plan-notifications-sous-comptes.md`, 2026-10-20) : sur une
+ * commande d'entreprise, la demande et le fait DURABLE `order.problem_reported`
+ * s'écrivent dans la même unité de travail — le principal du site en est
+ * prévenu même après un redémarrage. Le fait porte le principal COPIÉ sur la
+ * commande ; une commande d'avant la copie n'en a pas, et personne n'est
+ * prévenu (assumé). Le courriel à l'équipe reste en mémoire, comme avant.
  */
 @CommandHandler(ReportOrderProblemCommand)
 export class ReportOrderProblemHandler implements ICommandHandler<
@@ -52,6 +62,8 @@ export class ReportOrderProblemHandler implements ICommandHandler<
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
+    private readonly durable: DurablePublisher,
+    private readonly uow: UnitOfWork,
   ) {}
 
   async execute(command: ReportOrderProblemCommand): Promise<string> {
@@ -90,9 +102,33 @@ export class ReportOrderProblemHandler implements ICommandHandler<
     for (const { photo, ref } of attached) {
       await this.store.save(ref.storageKey, { bytes: photo.bytes, contentType: photo.contentType });
     }
-    await this.requests.save(request);
+    await this.persist(request, order, actor.userId);
     this.events.publish(new CustomerRequestReceivedEvent(request, reason.recipientEmail));
     return request.id;
+  }
+
+  /**
+   * La demande, et sur une commande d'entreprise le fait durable qui la dit,
+   * dans la même transaction : l'un ne part jamais sans l'autre.
+   */
+  private async persist(
+    request: CustomerRequest,
+    order: ReportableOrder,
+    authorUserId: string,
+  ): Promise<void> {
+    await this.uow.run(async () => {
+      await this.requests.save(request);
+      if (order.site !== null) {
+        const fact = new OrderProblemReportedFact(
+          request.id,
+          order.id,
+          order.number,
+          order.site,
+          authorUserId,
+        );
+        await this.durable.publish(fact.durableFact());
+      }
+    });
   }
 
   /** @throws {ReportedOrderNotFoundError} hors périmètre. @throws {OrderNotYetFulfilledError} pas encore reçue. */

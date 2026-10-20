@@ -1,8 +1,10 @@
 import { Injectable } from "@nestjs/common";
 
+import { OrderNoticeSummaryReader } from "../../orders/domain/ports/order-notice-summary.reader.js";
 import { OrderGuardReader } from "../../orders/domain/ports/order-guard.reader.js";
 import { OrderReader } from "../../orders/domain/ports/order.reader.js";
 import { isOrderVisible } from "../../orders/domain/services/order-access.js";
+import type { ReportingSite } from "../domain/order-problem-reported.fact.js";
 import {
   type ReportableOrder,
   ReportableOrderReader,
@@ -19,6 +21,7 @@ export class OrderReportableOrderReader extends ReportableOrderReader {
   constructor(
     private readonly orders: OrderReader,
     private readonly guard: OrderGuardReader,
+    private readonly notices: OrderNoticeSummaryReader,
   ) {
     super();
   }
@@ -37,6 +40,24 @@ export class OrderReportableOrderReader extends ReportableOrderReader {
       id: owned.view.id,
       number: owned.view.orderNumber,
       fulfilled: owned.view.status === "fulfilled",
+      site: await this.siteOf(orderId),
+    };
+  }
+
+  /**
+   * Le site et son principal tels que la commande les a COPIÉS — par le port
+   * qu'`orders/` exporte pour l'avis au principal, pas par une lecture de la
+   * hiérarchie (`plan-notifications-sous-comptes.md`, N4a).
+   */
+  private async siteOf(orderId: string): Promise<ReportingSite | null> {
+    const summary = await this.notices.summaryOf(orderId);
+    if (summary === null || summary.companyId === null || summary.companyName === null) {
+      return null;
+    }
+    return {
+      companyId: summary.companyId,
+      name: summary.companyName,
+      principalCompanyId: summary.principalCompanyId,
     };
   }
 }

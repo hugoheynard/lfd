@@ -114,14 +114,19 @@ describe('SubAccountNoticesCard', () => {
     expect(host(fixture).querySelector('[data-notices-reset]')).toBeNull();
   });
 
-  it('n’affiche que les trois actions dont le mail existe', async () => {
+  it('n’affiche que les actions dont le mail existe, dans l’ordre du plan', async () => {
     const { fixture } = await boot();
     const kinds = new Set(
       Array.from(host(fixture).querySelectorAll('[data-notice-cell]')).map(
         (cell) => cell.getAttribute('data-notice-cell')?.split(':')[0],
       ),
     );
-    expect([...kinds]).toEqual(['order_placed', 'order_cancelled', 'payment_failed']);
+    expect([...kinds]).toEqual([
+      'order_placed',
+      'order_cancelled',
+      'payment_failed',
+      'order_problem_reported',
+    ]);
   });
 
   it('confirme en disant la conséquence, puis règle la cellule et relit', async () => {
