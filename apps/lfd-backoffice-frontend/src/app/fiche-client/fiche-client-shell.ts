@@ -24,7 +24,6 @@ import { WorkspaceCatalogue } from '../shared/workspace-rail/workspaces';
 import { provideWorkspaceRail } from '../shared/workspace-rail/workspace-rail.store';
 import { ClientSheetStore } from './client-sheet.store';
 import { CompteChiffres } from '../shared/compte-chiffres/compte-chiffres';
-import { SubAccountBadge } from '../comptes-clients/sub-account-badge/sub-account-badge';
 
 /**
  * La **coquille d'un compte client** : un en-tête qui porte le nom de la société
@@ -135,7 +134,6 @@ const ALL_TABS: readonly GuardedTab[] = [
     RouterLink,
     RouterOutlet,
     CompteChiffres,
-    SubAccountBadge,
     FoldBadgeComponent,
     FoldButtonComponent,
     FoldIconComponent,

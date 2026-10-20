@@ -128,21 +128,17 @@ describe('la coquille d’un compte client', () => {
     return fixture.nativeElement as HTMLElement;
   }
 
-  it('nomme le principal d’un sous-compte dans l’en-tête, lien vers sa fiche (T28)', async () => {
+  /**
+   * Le principal a quitté l'en-tête le 2026-10-20 (Hugo) : il est dans la
+   * carte identité du tableau de bord. Un badge revenu ici le dirait deux fois.
+   */
+  it('ne pose plus le badge du principal dans l’en-tête', async () => {
     const host = await mastheadOf({
       ...SHEET,
       parent: { id: 'co_group', enseigne: 'Club Med', kind: 'entity' },
     });
 
-    const badge = host.querySelector('.masthead app-sub-account-badge a');
-    expect(badge?.textContent).toContain('Sous-compte de Club Med');
-    expect(badge?.getAttribute('href')).toBe('/comptes-clients/co_group');
-  });
-
-  it('ne pose aucun badge sur un compte sans principal', async () => {
-    const host = await mastheadOf(SHEET);
-
-    expect(host.querySelector('app-sub-account-badge')).toBeNull();
+    expect(host.querySelector('.masthead app-sub-account-badge')).toBeNull();
   });
 });
 
