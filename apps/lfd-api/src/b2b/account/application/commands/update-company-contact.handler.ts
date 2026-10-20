@@ -10,6 +10,8 @@ import { ContactDetails } from "../../domain/value-objects/contact-details.js";
 import { UpdateCompanyContactCommand } from "./contact-commands.js";
 import { AccountJournalNames } from "../services/account-journal-names.service.js";
 import { contactRef } from "../../domain/events/journal-names.js";
+import { CONTACT_UPDATED } from "../../domain/events/site-gesture.fact.js";
+import { SiteGesturePublisher } from "../services/site-gesture.publisher.js";
 
 /**
  * Remplace un contact additionnel, réservé au gestionnaire de l'entreprise.
@@ -29,6 +31,7 @@ export class UpdateCompanyContactHandler implements ICommandHandler<
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
     private readonly names: AccountJournalNames,
+    private readonly gestures: SiteGesturePublisher,
   ) {}
 
   async execute(command: UpdateCompanyContactCommand): Promise<void> {
@@ -41,6 +44,12 @@ export class UpdateCompanyContactHandler implements ICommandHandler<
     const company = await this.names.company(command.companyId);
     await this.uow.run(async () => {
       await this.book.replace(command.companyId, command.contactId, details, command.role);
+      await this.gestures.publish({
+        type: CONTACT_UPDATED,
+        site: company,
+        subjectId: command.contactId,
+        actor: { kind: "customer", userId: command.actorUserId },
+      });
       await this.events.publishTraced(
         new ContactUpdatedByMemberEvent(
           company,

@@ -8,6 +8,8 @@ import { MembershipReader } from "../../domain/ports/membership.reader.js";
 import { ensureCompanyAdmin } from "../../domain/services/company-access.js";
 import { RemoveCompanyContactCommand } from "./contact-commands.js";
 import { AccountJournalNames } from "../services/account-journal-names.service.js";
+import { CONTACT_REMOVED } from "../../domain/events/site-gesture.fact.js";
+import { SiteGesturePublisher } from "../services/site-gesture.publisher.js";
 
 /**
  * Retire un contact additionnel, réservé au gestionnaire de l'entreprise.
@@ -27,6 +29,7 @@ export class RemoveCompanyContactHandler implements ICommandHandler<
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
     private readonly names: AccountJournalNames,
+    private readonly gestures: SiteGesturePublisher,
   ) {}
 
   async execute(command: RemoveCompanyContactCommand): Promise<void> {
@@ -36,6 +39,12 @@ export class RemoveCompanyContactHandler implements ICommandHandler<
     const company = await this.names.company(command.companyId);
     await this.uow.run(async () => {
       await this.contacts.remove(command.companyId, command.contactId);
+      await this.gestures.publish({
+        type: CONTACT_REMOVED,
+        site: company,
+        subjectId: command.contactId,
+        actor: { kind: "customer", userId: command.actorUserId },
+      });
       await this.events.publishTraced(
         // Le retrait ne relit pas la fiche qu'il efface : l'id seul, le fait
         // d'ajout — toujours au journal — dit qui c'était.

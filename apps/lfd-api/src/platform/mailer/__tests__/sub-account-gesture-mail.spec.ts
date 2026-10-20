@@ -56,4 +56,14 @@ describe("le courriel « un de vos sites a… » d'un geste hors commande", () =
       "Votre site Chalet Gentiane a changé son adresse de livraison par défaut (fait par notre équipe).",
     );
   });
+
+  it("un geste sur un contact ne nomme personne", () => {
+    const rendered = render({ gesture: "primary_contact_changed", reference: null });
+
+    expect(rendered.subject).toBe("Chalet Gentiane — Contact principal changé sur un de vos sites");
+    expect(rendered.html).toContain("Votre site Chalet Gentiane a changé son contact principal.");
+    expect(render({ gesture: "contact_added", reference: null }).html).toContain(
+      "a ajouté un contact.",
+    );
+  });
 });

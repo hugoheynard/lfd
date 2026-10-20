@@ -23,6 +23,7 @@ import { RemoveCompanyContactHandler } from "../remove-company-contact.handler.j
 import { UpdateCompanyContactHandler } from "../update-company-contact.handler.js";
 import { UpdatePrimaryContactHandler } from "../update-primary-contact.handler.js";
 import { journalNames } from "./member-acts-doubles.js";
+import { silentGestures } from "./site-gesture-doubles.js";
 
 /** Les noms que les faits figent : lus dans une société témoin, sans rien écrire. */
 function names() {
@@ -150,6 +151,7 @@ describe("handlers de contacts — le mur owner/admin", () => {
       companiesRecorder(recorder),
       new RecordingPublisher(),
       new DirectUnitOfWork(),
+      silentGestures(),
     );
 
     await handler.execute(new UpdatePrimaryContactCommand("u1", "c1", DETAILS));
@@ -164,6 +166,7 @@ describe("handlers de contacts — le mur owner/admin", () => {
       new RecordingPublisher(),
       new DirectUnitOfWork(),
       names(),
+      silentGestures(),
     );
 
     await expect(
@@ -180,6 +183,7 @@ describe("handlers de contacts — le mur owner/admin", () => {
       new RecordingPublisher(),
       new DirectUnitOfWork(),
       names(),
+      silentGestures(),
     );
 
     await expect(
@@ -195,18 +199,24 @@ describe("handlers de contacts — le mur owner/admin", () => {
     const events = new RecordingPublisher();
     const uow = new DirectUnitOfWork();
 
-    await new AddCompanyContactHandler(admin, book, events, uow, names()).execute(
+    await new AddCompanyContactHandler(admin, book, events, uow, names(), silentGestures()).execute(
       new AddCompanyContactCommand("u1", "c1", DETAILS, "orders"),
     );
-    await new UpdateCompanyContactHandler(admin, book, events, uow, names()).execute(
-      new UpdateCompanyContactCommand("u1", "c1", "ct1", DETAILS, "orders"),
-    );
+    await new UpdateCompanyContactHandler(
+      admin,
+      book,
+      events,
+      uow,
+      names(),
+      silentGestures(),
+    ).execute(new UpdateCompanyContactCommand("u1", "c1", "ct1", DETAILS, "orders"));
     await new RemoveCompanyContactHandler(
       admin,
       contactsRecorder(recorder),
       events,
       uow,
       names(),
+      silentGestures(),
     ).execute(new RemoveCompanyContactCommand("u1", "c1", "ct1"));
 
     expect(recorder.writes).toEqual(["add", "update", "remove"]);

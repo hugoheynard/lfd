@@ -6,6 +6,8 @@ import { ContactRemovedByStaffEvent } from "../../domain/events/staff-contact-ac
 import { CompanyContactRepository } from "../../domain/ports/company-contact.repository.js";
 import { RemoveContactByStaffCommand } from "./remove-contact-by-staff.command.js";
 import { AccountJournalNames } from "../services/account-journal-names.service.js";
+import { CONTACT_REMOVED } from "../../domain/events/site-gesture.fact.js";
+import { SiteGesturePublisher } from "../services/site-gesture.publisher.js";
 
 /** Retire un interlocuteur additionnel, à la place du client. */
 @CommandHandler(RemoveContactByStaffCommand)
@@ -18,12 +20,19 @@ export class RemoveContactByStaffHandler implements ICommandHandler<
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
     private readonly names: AccountJournalNames,
+    private readonly gestures: SiteGesturePublisher,
   ) {}
 
   async execute(command: RemoveContactByStaffCommand): Promise<void> {
     const company = await this.names.company(command.companyId);
     await this.uow.run(async () => {
       await this.contacts.remove(command.companyId, command.contactId);
+      await this.gestures.publish({
+        type: CONTACT_REMOVED,
+        site: company,
+        subjectId: command.contactId,
+        actor: { kind: "team" },
+      });
       await this.events.publishTraced(
         // Le retrait ne relit pas la fiche qu'il efface : l'id seul, le fait
         // d'ajout — toujours au journal — dit qui c'était.

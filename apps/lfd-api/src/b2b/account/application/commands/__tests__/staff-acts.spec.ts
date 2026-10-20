@@ -198,6 +198,7 @@ describe("Les actes du staff au journal", () => {
       events,
       new DirectUnitOfWork(),
       journalNames(companies(), addresses()),
+      silentGestures(),
     ).execute(new RemoveContactByStaffCommand("c1", "contact_9"));
 
     expect(events.factTypes()).toEqual(["company.contact_removed"]);

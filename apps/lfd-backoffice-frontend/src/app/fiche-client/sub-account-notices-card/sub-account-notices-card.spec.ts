@@ -126,6 +126,7 @@ describe('SubAccountNoticesCard', () => {
       'order_cancelled',
       'payment_failed',
       'delivery_address_changed',
+      'contact_changed',
       'order_problem_reported',
     ]);
   });

@@ -183,16 +183,31 @@ describe("les contacts, par le client", () => {
       phone: PHONE,
     };
 
-    const contactId = await new AddCompanyContactHandler(member, book, events, uow, names).execute(
-      new AddCompanyContactCommand("u1", "c1", details, "orders"),
-    );
-    await new UpdateCompanyContactHandler(member, book, events, uow, names).execute(
-      new UpdateCompanyContactCommand("u1", "c1", contactId, details, "admin"),
-    );
-    await new RemoveCompanyContactHandler(member, contacts, events, uow, names).execute(
-      new RemoveCompanyContactCommand("u1", "c1", contactId),
-    );
-    await new UpdatePrimaryContactHandler(member, companies, events, uow).execute(
+    const contactId = await new AddCompanyContactHandler(
+      member,
+      book,
+      events,
+      uow,
+      names,
+      silentGestures(),
+    ).execute(new AddCompanyContactCommand("u1", "c1", details, "orders"));
+    await new UpdateCompanyContactHandler(
+      member,
+      book,
+      events,
+      uow,
+      names,
+      silentGestures(),
+    ).execute(new UpdateCompanyContactCommand("u1", "c1", contactId, details, "admin"));
+    await new RemoveCompanyContactHandler(
+      member,
+      contacts,
+      events,
+      uow,
+      names,
+      silentGestures(),
+    ).execute(new RemoveCompanyContactCommand("u1", "c1", contactId));
+    await new UpdatePrimaryContactHandler(member, companies, events, uow, silentGestures()).execute(
       new UpdatePrimaryContactCommand("u1", "c1", details),
     );
 

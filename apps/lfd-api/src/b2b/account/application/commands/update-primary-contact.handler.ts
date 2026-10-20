@@ -10,6 +10,8 @@ import { MembershipReader } from "../../domain/ports/membership.reader.js";
 import { ensureCompanyAdmin } from "../../domain/services/company-access.js";
 import { ContactDetails } from "../../domain/value-objects/contact-details.js";
 import { UpdatePrimaryContactCommand } from "./contact-commands.js";
+import { PRIMARY_CONTACT_CHANGED } from "../../domain/events/site-gesture.fact.js";
+import { SiteGesturePublisher } from "../services/site-gesture.publisher.js";
 
 /**
  * Édite le contact **principal** d'une entreprise, réservé à son gestionnaire. Le
@@ -30,6 +32,7 @@ export class UpdatePrimaryContactHandler implements ICommandHandler<
     private readonly companies: CompanyRepository,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly gestures: SiteGesturePublisher,
   ) {}
 
   async execute(command: UpdatePrimaryContactCommand): Promise<void> {
@@ -45,6 +48,12 @@ export class UpdatePrimaryContactHandler implements ICommandHandler<
     company.changePrimaryContact(ContactDetails.create(command.details));
     await this.uow.run(async () => {
       await this.companies.save(company);
+      await this.gestures.publish({
+        type: PRIMARY_CONTACT_CHANGED,
+        site: companyNamed(command.companyId, company),
+        subjectId: command.companyId,
+        actor: { kind: "customer", userId: command.actorUserId },
+      });
       await this.events.publishTraced(
         new PrimaryContactChangedByMemberEvent(companyNamed(command.companyId, company)),
       );

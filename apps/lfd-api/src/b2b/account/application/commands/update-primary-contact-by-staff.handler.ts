@@ -8,6 +8,8 @@ import { companyNamed } from "../../domain/events/journal-names.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
 import { ContactDetails } from "../../domain/value-objects/contact-details.js";
 import { UpdatePrimaryContactByStaffCommand } from "./update-primary-contact-by-staff.command.js";
+import { PRIMARY_CONTACT_CHANGED } from "../../domain/events/site-gesture.fact.js";
+import { SiteGesturePublisher } from "../services/site-gesture.publisher.js";
 
 /**
  * Le **détenteur** de la société, édité par le staff.
@@ -24,6 +26,7 @@ export class UpdatePrimaryContactByStaffHandler implements ICommandHandler<
     private readonly companies: CompanyRepository,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly gestures: SiteGesturePublisher,
   ) {}
 
   async execute(command: UpdatePrimaryContactByStaffCommand): Promise<void> {
@@ -34,6 +37,12 @@ export class UpdatePrimaryContactByStaffHandler implements ICommandHandler<
     company.changePrimaryContact(ContactDetails.create(command.details));
     await this.uow.run(async () => {
       await this.companies.save(company);
+      await this.gestures.publish({
+        type: PRIMARY_CONTACT_CHANGED,
+        site: companyNamed(command.companyId, company),
+        subjectId: command.companyId,
+        actor: { kind: "team" },
+      });
       await this.events.publishTraced(
         new PrimaryContactChangedByStaffEvent(companyNamed(command.companyId, company)),
       );

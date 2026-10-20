@@ -8,6 +8,8 @@ import { CompanyContactBook } from "../services/company-contact-book.service.js"
 import { AddContactByStaffCommand } from "./add-contact-by-staff.command.js";
 import { AccountJournalNames } from "../services/account-journal-names.service.js";
 import { contactRef } from "../../domain/events/journal-names.js";
+import { CONTACT_ADDED } from "../../domain/events/site-gesture.fact.js";
+import { SiteGesturePublisher } from "../services/site-gesture.publisher.js";
 
 /** Ajoute un interlocuteur **additionnel** — un carnet d'adresses, pas un accès. */
 @CommandHandler(AddContactByStaffCommand)
@@ -17,6 +19,7 @@ export class AddContactByStaffHandler implements ICommandHandler<AddContactBySta
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
     private readonly names: AccountJournalNames,
+    private readonly gestures: SiteGesturePublisher,
   ) {}
 
   async execute(command: AddContactByStaffCommand): Promise<string> {
@@ -24,6 +27,12 @@ export class AddContactByStaffHandler implements ICommandHandler<AddContactBySta
     const company = await this.names.company(command.companyId);
     return await this.uow.run(async () => {
       const contactId = await this.book.add(command.companyId, details, command.role);
+      await this.gestures.publish({
+        type: CONTACT_ADDED,
+        site: company,
+        subjectId: contactId,
+        actor: { kind: "team" },
+      });
       await this.events.publishTraced(
         new ContactAddedByStaffEvent(company, contactRef(contactId, details), command.role),
       );

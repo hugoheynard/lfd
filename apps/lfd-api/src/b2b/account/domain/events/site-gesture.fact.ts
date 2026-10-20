@@ -3,7 +3,8 @@ import { TechnicalError } from "../../../../platform/shared/errors/app-error.js"
 
 /**
  * Les gestes d'un site sur son carnet de livraison, écrits en DURABLE
- * (`plan-notifications-sous-comptes.md`, N4b). Les noms sont ceux du journal
+ * (`plan-notifications-sous-comptes.md`, N4b). Toute charge porte
+ * `siteCompanyId` : la purge du scénario de dev s'en sert pour les effacer. Les noms sont ceux du journal
  * (`packages/contracts/src/journal-facts/accounts.ts`) : un même nom désigne le
  * même geste dans les deux registres.
  */
@@ -12,12 +13,22 @@ export const DELIVERY_ADDRESS_UPDATED = "company.delivery_address_updated";
 export const DELIVERY_ADDRESS_REMOVED = "company.delivery_address_removed";
 export const DEFAULT_DELIVERY_SET = "company.default_delivery_set";
 
+/** Les gestes d'un site sur ses contacts (N4c) — mêmes noms qu'au journal. */
+export const CONTACT_ADDED = "company.contact_added";
+export const CONTACT_UPDATED = "company.contact_updated";
+export const CONTACT_REMOVED = "company.contact_removed";
+export const PRIMARY_CONTACT_CHANGED = "company.primary_contact_changed";
+
 /** Un geste de site écrit en durable. */
 export type SiteGestureType =
   | typeof DELIVERY_ADDRESS_ADDED
   | typeof DELIVERY_ADDRESS_UPDATED
   | typeof DELIVERY_ADDRESS_REMOVED
-  | typeof DEFAULT_DELIVERY_SET;
+  | typeof DEFAULT_DELIVERY_SET
+  | typeof CONTACT_ADDED
+  | typeof CONTACT_UPDATED
+  | typeof CONTACT_REMOVED
+  | typeof PRIMARY_CONTACT_CHANGED;
 
 /** Qui a fait le geste : un client nommé par son id, ou l'équipe. */
 export type GestureActor =
@@ -49,7 +60,7 @@ export class SiteGestureFact implements DurableEvent {
   constructor(
     readonly type: SiteGestureType,
     readonly gestureId: string,
-    /** L'objet du geste (l'adresse) — un identifiant, jamais son contenu. */
+    /** L'objet du geste (l'adresse, le contact ; le site pour le contact principal) — un identifiant, jamais son contenu. */
     readonly subjectId: string,
     readonly stamp: SiteGestureStamp,
   ) {}

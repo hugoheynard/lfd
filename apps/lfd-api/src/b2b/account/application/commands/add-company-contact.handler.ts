@@ -10,6 +10,8 @@ import { ContactDetails } from "../../domain/value-objects/contact-details.js";
 import { AddCompanyContactCommand } from "./contact-commands.js";
 import { AccountJournalNames } from "../services/account-journal-names.service.js";
 import { contactRef } from "../../domain/events/journal-names.js";
+import { CONTACT_ADDED } from "../../domain/events/site-gesture.fact.js";
+import { SiteGesturePublisher } from "../services/site-gesture.publisher.js";
 
 /**
  * Ajoute un contact additionnel à une entreprise, réservé à son gestionnaire.
@@ -26,6 +28,7 @@ export class AddCompanyContactHandler implements ICommandHandler<AddCompanyConta
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
     private readonly names: AccountJournalNames,
+    private readonly gestures: SiteGesturePublisher,
   ) {}
 
   async execute(command: AddCompanyContactCommand): Promise<string> {
@@ -36,6 +39,12 @@ export class AddCompanyContactHandler implements ICommandHandler<AddCompanyConta
     const company = await this.names.company(command.companyId);
     return this.uow.run(async () => {
       const contactId = await this.book.add(command.companyId, details, command.role);
+      await this.gestures.publish({
+        type: CONTACT_ADDED,
+        site: company,
+        subjectId: contactId,
+        actor: { kind: "customer", userId: command.actorUserId },
+      });
       await this.events.publishTraced(
         new ContactAddedByMemberEvent(company, contactRef(contactId, details), command.role),
       );

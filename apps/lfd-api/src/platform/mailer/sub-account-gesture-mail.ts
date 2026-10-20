@@ -13,7 +13,11 @@ export type SubAccountGesture =
   | "delivery_address_added"
   | "delivery_address_updated"
   | "delivery_address_removed"
-  | "default_delivery_set";
+  | "default_delivery_set"
+  | "contact_added"
+  | "contact_updated"
+  | "contact_removed"
+  | "primary_contact_changed";
 
 /**
  * Les données de l'avis **« un de vos sites a… »** pour un geste qui n'est
@@ -41,6 +45,11 @@ const VERB: Readonly<Record<SubAccountGesture, string>> = {
   delivery_address_updated: "a modifié une adresse de livraison",
   delivery_address_removed: "a retiré une adresse de livraison",
   default_delivery_set: "a changé son adresse de livraison par défaut",
+  // Personne n'est nommé : ni nom, ni rôle, ni e-mail du contact (Q4, RGPD).
+  contact_added: "a ajouté un contact",
+  contact_updated: "a modifié un contact",
+  contact_removed: "a retiré un contact",
+  primary_contact_changed: "a changé son contact principal",
 };
 
 const TITLE: Readonly<Record<SubAccountGesture, string>> = {
@@ -49,6 +58,10 @@ const TITLE: Readonly<Record<SubAccountGesture, string>> = {
   delivery_address_updated: "Adresse de livraison modifiée sur un de vos sites",
   delivery_address_removed: "Adresse de livraison retirée sur un de vos sites",
   default_delivery_set: "Adresse de livraison par défaut changée sur un de vos sites",
+  contact_added: "Contact ajouté sur un de vos sites",
+  contact_updated: "Contact modifié sur un de vos sites",
+  contact_removed: "Contact retiré sur un de vos sites",
+  primary_contact_changed: "Contact principal changé sur un de vos sites",
 };
 
 /** Le libellé de la référence, pour les gestes qui en portent une. */

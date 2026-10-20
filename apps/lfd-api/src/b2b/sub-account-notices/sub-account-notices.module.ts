@@ -12,6 +12,10 @@ import { NotifyPrincipalOnDeliveryAddressAdded } from "./application/handlers/no
 import { NotifyPrincipalOnDeliveryAddressUpdated } from "./application/handlers/notify-principal-on-delivery-address-updated.handler.js";
 import { NotifyPrincipalOnDeliveryAddressRemoved } from "./application/handlers/notify-principal-on-delivery-address-removed.handler.js";
 import { NotifyPrincipalOnDefaultDeliverySet } from "./application/handlers/notify-principal-on-default-delivery-set.handler.js";
+import { NotifyPrincipalOnContactAdded } from "./application/handlers/notify-principal-on-contact-added.handler.js";
+import { NotifyPrincipalOnContactUpdated } from "./application/handlers/notify-principal-on-contact-updated.handler.js";
+import { NotifyPrincipalOnContactRemoved } from "./application/handlers/notify-principal-on-contact-removed.handler.js";
+import { NotifyPrincipalOnPrimaryContactChanged } from "./application/handlers/notify-principal-on-primary-contact-changed.handler.js";
 import { NotifyPrincipalOnOrderProblemReported } from "./application/handlers/notify-principal-on-order-problem-reported.handler.js";
 import { SubAccountNoticeDispatcher } from "./application/services/sub-account-notice.dispatcher.js";
 import { NoticeSendJournal } from "./domain/ports/notice-send.journal.js";
@@ -32,7 +36,7 @@ import { AdminSubAccountNoticesController } from "./http/admin-sub-account-notic
  * de commande, qui lisent la commande par le port qu'`orders/` exporte.
  * N4a : le premier geste hors commande (problème signalé), dont le fait
  * durable porte le principal figé. N4b : les quatre gestes du carnet de
- * livraison, client et équipe.
+ * livraison, client et équipe. N4c : les quatre gestes sur les contacts.
  */
 @Module({
   imports: [AccountModule, OrdersModule],
@@ -53,6 +57,10 @@ import { AdminSubAccountNoticesController } from "./http/admin-sub-account-notic
     NotifyPrincipalOnDeliveryAddressUpdated,
     NotifyPrincipalOnDeliveryAddressRemoved,
     NotifyPrincipalOnDefaultDeliverySet,
+    NotifyPrincipalOnContactAdded,
+    NotifyPrincipalOnContactUpdated,
+    NotifyPrincipalOnContactRemoved,
+    NotifyPrincipalOnPrimaryContactChanged,
     { provide: NoticeSendJournal, useClass: PrismaNoticeSendJournal },
   ],
 })

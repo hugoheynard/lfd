@@ -12,11 +12,16 @@ import {
 import { GestureNoticeDispatcher } from "../../services/gesture-notice.dispatcher.js";
 import { PrincipalNoticeSender } from "../../services/principal-notice.sender.js";
 import {
+  CONTACT_ADDED,
   DELIVERY_ADDRESS_ADDED,
   SiteGestureFact,
   SiteGesturePayloadError,
   type SiteGestureStamp,
 } from "../../../../account/domain/events/site-gesture.fact.js";
+import { NotifyPrincipalOnContactAdded } from "../notify-principal-on-contact-added.handler.js";
+import { NotifyPrincipalOnContactRemoved } from "../notify-principal-on-contact-removed.handler.js";
+import { NotifyPrincipalOnContactUpdated } from "../notify-principal-on-contact-updated.handler.js";
+import { NotifyPrincipalOnPrimaryContactChanged } from "../notify-principal-on-primary-contact-changed.handler.js";
 import { NotifyPrincipalOnDefaultDeliverySet } from "../notify-principal-on-default-delivery-set.handler.js";
 import { NotifyPrincipalOnDeliveryAddressAdded } from "../notify-principal-on-delivery-address-added.handler.js";
 import { NotifyPrincipalOnDeliveryAddressRemoved } from "../notify-principal-on-delivery-address-removed.handler.js";
@@ -61,6 +66,10 @@ function build(status: CompanyStatus = "active") {
     updated: new NotifyPrincipalOnDeliveryAddressUpdated(gestures),
     removed: new NotifyPrincipalOnDeliveryAddressRemoved(gestures),
     defaulted: new NotifyPrincipalOnDefaultDeliverySet(gestures),
+    contactAdded: new NotifyPrincipalOnContactAdded(gestures),
+    contactUpdated: new NotifyPrincipalOnContactUpdated(gestures),
+    contactRemoved: new NotifyPrincipalOnContactRemoved(gestures),
+    primaryChanged: new NotifyPrincipalOnPrimaryContactChanged(gestures),
   };
 }
 
@@ -226,5 +235,79 @@ describe("les gestes du carnet de livraison d'un site (N4b)", () => {
       added.handle({ eventId: "e", type: DELIVERY_ADDRESS_ADDED, payload: { siteName: "x" } }),
     ).rejects.toThrow(SiteGesturePayloadError);
     expect(mailer.sent).toEqual([]);
+  });
+});
+
+function contactFact(stamp: SiteGestureStamp = CUSTOMER, eventId = "evt_contact") {
+  const fact = new SiteGestureFact(CONTACT_ADDED, "g1", "contact_1", stamp);
+  return { eventId, type: CONTACT_ADDED, payload: fact.durableFact().payload };
+}
+
+describe("les gestes sur les contacts d'un site (N4c)", () => {
+  it("geste client : owner et admin du principal, moins l'auteure ; personne n'est nommé", async () => {
+    const { contactAdded, mailer } = build();
+    await contactAdded.handle(contactFact());
+
+    expect(recipients(mailer)).toEqual(["admin@alpes.test", "owner@alpes.test"]);
+    expect(mailer.sent[0]?.data).toEqual({
+      gesture: "contact_added",
+      siteName: "Chalet Gentiane",
+      reference: null,
+      byTeam: false,
+    });
+  });
+
+  it("geste de l'équipe : « notre équipe », et personne n'est retiré", async () => {
+    const { primaryChanged, mailer } = build();
+    await primaryChanged.handle(contactFact({ ...CUSTOMER, authorUserId: null, byTeam: true }));
+    expect(recipients(mailer)).toEqual(
+      ["admin@alpes.test", "housekeeper@alpes.test", "owner@alpes.test"].sort(),
+    );
+    expect(mailer.sent.every((m) => (m.data as { byTeam: boolean }).byTeam)).toBe(true);
+  });
+
+  it("chaque abonné dit SON geste", async () => {
+    const { contactAdded, contactUpdated, contactRemoved, primaryChanged, mailer } = build();
+    await contactAdded.handle(contactFact(CUSTOMER, "c1"));
+    await contactUpdated.handle(contactFact(CUSTOMER, "c2"));
+    await contactRemoved.handle(contactFact(CUSTOMER, "c3"));
+    await primaryChanged.handle(contactFact(CUSTOMER, "c4"));
+    const gestures = new Set(mailer.sent.map((m) => (m.data as { gesture: string }).gesture));
+    expect([...gestures]).toEqual([
+      "contact_added",
+      "contact_updated",
+      "contact_removed",
+      "primary_contact_changed",
+    ]);
+  });
+
+  it("une dérogation sur `contact_changed` ne touche pas les adresses", async () => {
+    const { contactAdded, added, mailer, rules } = build();
+    await rules.writer.set(
+      "alpes",
+      { kind: "contact_changed", role: "admin", enabled: false },
+      "staff_1",
+      new Date(Date.UTC(2030, 0, 1)),
+    );
+    await contactAdded.handle(contactFact(CUSTOMER, "c5"));
+    await added.handle(addressFact(CUSTOMER, "a5"));
+    expect(
+      mailer.sent.map((m) => `${(m.data as { gesture: string }).gesture}:${m.to}`).sort(),
+    ).toEqual(
+      [
+        "contact_added:owner@alpes.test",
+        "delivery_address_added:admin@alpes.test",
+        "delivery_address_added:owner@alpes.test",
+      ].sort(),
+    );
+  });
+
+  it("un site sans principal : personne ; une relivraison : aucun doublon", async () => {
+    const { contactRemoved, mailer } = build();
+    await contactRemoved.handle(contactFact({ ...CUSTOMER, principalCompanyId: null }, "n"));
+    expect(mailer.sent).toEqual([]);
+    await contactRemoved.handle(contactFact(CUSTOMER, "r"));
+    await contactRemoved.handle(contactFact(CUSTOMER, "r"));
+    expect(mailer.sent).toHaveLength(2);
   });
 });

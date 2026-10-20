@@ -42,6 +42,7 @@ const KIND_LABELS: Readonly<Partial<Record<SubAccountNoticeKind, string>>> = {
   order_cancelled: 'Commande annulée ou abandonnée',
   payment_failed: 'Paiement échoué à la charge du principal',
   delivery_address_changed: 'Adresse de livraison ajoutée, modifiée, retirée ou mise par défaut',
+  contact_changed: 'Contact ajouté, modifié, retiré, ou contact principal changé',
   order_problem_reported: 'Problème de commande signalé',
 };
 
@@ -51,6 +52,7 @@ const KIND_EVENTS: Readonly<Partial<Record<SubAccountNoticeKind, string>>> = {
   order_cancelled: 'commande annulée ou abandonnée',
   payment_failed: 'paiement échoué à sa charge',
   delivery_address_changed: 'adresse de livraison changée',
+  contact_changed: 'contact changé',
   order_problem_reported: 'problème de commande signalé',
 };
 

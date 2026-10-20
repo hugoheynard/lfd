@@ -1,6 +1,6 @@
 # Plan — le principal est prévenu de ce que font ses sous-comptes
 
-> 📐 **Plan — N1, N2, N3, N4a et N4b bâtis le 2026-10-20**, N4c…N4e à faire. Demande de Hugo : « savoir quelles
+> 📐 **Plan — N1, N2, N3, N4a, N4b et N4c bâtis le 2026-10-20**, N4d et N4e à faire. Demande de Hugo : « savoir quelles
 > actions menées par le sous-compte doivent être notifiées au principal, avec un
 > mapping de rôle ». Décisions de Hugo le même jour : **mail seul** ; le
 > tableau action × rôle est **réglé par le staff, principal par principal**.
@@ -476,6 +476,29 @@ pas à la même chose :
 - e2e `apps/lfd-api/test/sub-account-notice-addresses.e2e-spec.ts` ; scène
   partagée avec N4a extraite dans
   `apps/lfd-api/test/sub-account-notice-scene.ts`.
+
+#### N4c bâti (2026-10-20) — et ses écarts
+
+- **Huit handlers** (quatre client, quatre équipe) : contact ajouté,
+  modifié, retiré, contact principal changé. Même forme que N4b :
+  `SiteGesturePublisher` dans le `uow.run` de l'écriture, sous les noms du
+  journal `company.contact_added|updated|removed` et
+  `company.primary_contact_changed`. L'objet du geste est l'id du contact ;
+  pour le contact principal, qui n'a pas d'id, c'est le site.
+- **Le verrou** : les contacts n'en prenaient AUCUN sur la ligne du site.
+  `SitePrincipalLock` le prend maintenant, et l'e2e « rattachement
+  concurrent » le montre : le geste attend, le fait porte le nouveau
+  principal. (Une insertion de contact ne prend qu'un `KEY SHARE` sur
+  `companies` par sa clé étrangère, qui ne range pas un changement de
+  `parent_company_id` — c'est pourquoi le verrou explicite est nécessaire.)
+- **Personne n'est nommé** : la charge porte l'id du contact, jamais son
+  nom, sa fonction, son rôle, son e-mail ni son téléphone ; le mail dit
+  « a ajouté / modifié / retiré un contact », « a changé son contact
+  principal ».
+- Toute charge de geste garde `siteCompanyId` : la purge du scénario de dev
+  s'en sert (`apps/lfd-api/src/dev/scenario/purge/outbox.purge.ts`, corrigée
+  au commit de N4b).
+- e2e `apps/lfd-api/test/sub-account-notice-contacts.e2e-spec.ts`.
 
 #### Ce que `vitruve` a changé (2026-10-20)
 
