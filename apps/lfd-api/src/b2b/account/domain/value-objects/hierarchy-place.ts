@@ -17,7 +17,7 @@ export interface HierarchyPlaceInput {
 
 /**
  * **La place d'une société dans la hiérarchie des comptes** (plan
- * `plan-sous-comptes.md`, §2 et §5) — immuable, chaque geste rend une place
+ * `sous-comptes.md`, §2 et §5) — immuable, chaque geste rend une place
  * neuve ou refuse.
  *
  * Les règles de profondeur vivent ICI, pas dans le handler : un compte n'est

@@ -74,7 +74,7 @@ model Order {
   companyId String?  @map("company_id")
   company   Company? @relation("OrderCompany", fields: [companyId], references: [id])
 
-  /// Le PAYEUR, copié à la passation (`plan-sous-comptes.md` §2.3) : le principal
+  /// Le PAYEUR, copié à la passation (`sous-comptes.md` §2.3) : le principal
   /// que le site suivait en `billing` à cet instant, sinon la société elle-même.
   /// Après la passation, tout ce qui touche l'argent lit
   /// `COALESCE(billed_company_id, company_id)` — réaligner un site ne déplace

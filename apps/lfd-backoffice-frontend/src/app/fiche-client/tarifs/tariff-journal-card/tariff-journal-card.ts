@@ -8,7 +8,7 @@ import {
 
 /**
  * **Le journal du tarif d'un client**, en place dans l'onglet Tarifs
- * (`plan-sous-comptes.md`, S3, T21) : le compte tarifaire de la société
+ * (`sous-comptes.md`, S3, T21) : le compte tarifaire de la société
  * (sujet `company`) — « Suit la mercuriale de X depuis le … », « Y suit votre
  * mercuriale depuis le … ». Lecture seule ; la table datée des suivis reste
  * la source de la relecture des prix.

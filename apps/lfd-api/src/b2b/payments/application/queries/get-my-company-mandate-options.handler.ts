@@ -77,7 +77,7 @@ export class GetMyCompanyMandateOptionsHandler implements IQueryHandler<
     );
     // 🔴 Les zones vivent sur la ligne du RIB DÉBITÉ. Un site qui garde le RIB
     // de son principal ne les lit pas : ce sont celles du principal, et aucune
-    // route client ne résout vers lui (plan-sous-comptes §3).
+    // route client ne résout vers lui (sous-comptes §3).
     const own = account !== null && debtor.accountCompanyId === companyId;
     return {
       options: own ? optionsOf(account.options) : null,

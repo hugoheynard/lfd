@@ -357,7 +357,7 @@ model PaymentMandate {
   companyId String  @map("company_id")
   company   Company @relation("MandateCompany", fields: [companyId], references: [id], onDelete: Cascade)
 
-  /// Le compte que ce mandat débite (`plan-sous-comptes.md` §2.1 ter, T8) —
+  /// Le compte que ce mandat débite (`sous-comptes.md` §2.1 ter, T8) —
   /// posé à la frappe. Celui du principal pour un site qui garde son RIB,
   /// celui du site pour un « RIB propre ». `null` = mandat d'avant S4 : il
   /// débite le RIB de sa société, comme hier.

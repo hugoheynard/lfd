@@ -6,7 +6,7 @@ import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 import { AccountHierarchyLock } from "../domain/ports/account-hierarchy.lock.js";
 
 /**
- * La clé du verrou : UNE pour tout le portefeuille (plan-sous-comptes §5).
+ * La clé du verrou : UNE pour tout le portefeuille (sous-comptes §5).
  * Son espace de noms la tient à l'écart des autres verrous consultatifs.
  */
 const LOCK_KEY = "account.company-hierarchy";

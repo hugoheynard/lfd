@@ -17,7 +17,7 @@ import type { VolumeLadder } from "../../domain/volume-ladder.js";
 import { PricingMaterialsLoader } from "../pricing-materials.loader.js";
 
 /**
- * **Le chargeur à deux clés** (`plan-sous-comptes.md`, §2.2) : les règles
+ * **Le chargeur à deux clés** (`sous-comptes.md`, §2.2) : les règles
  * d'audience `company` sur la société servie, la mercuriale et les engagements
  * sur le compte de tarif.
  *

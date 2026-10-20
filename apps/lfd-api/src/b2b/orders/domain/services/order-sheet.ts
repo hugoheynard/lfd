@@ -268,7 +268,7 @@ function customerPhoneOf(variant: SheetVariant, buyerPhone: string | null): stri
  * La feuille du client : son engagement, dans ses mots.
  *
  * `billedCustomer` : quand un AUTRE a réglé — un site facturé à son principal
- * (`plan-sous-comptes.md` §2.3, §3) —, le bon porte le nom du site et la
+ * (`sous-comptes.md` §2.3, §3) —, le bon porte le nom du site et la
  * raison sociale du PAYEUR copié à la passation : c'est la mention légale.
  * `null`, et c'est le cas de toute commande d'une société qui paie seule.
  *

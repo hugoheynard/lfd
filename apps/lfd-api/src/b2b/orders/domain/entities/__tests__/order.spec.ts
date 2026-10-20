@@ -571,7 +571,7 @@ describe("Order — le bon de fidélité", () => {
   });
 });
 
-describe("Order.draft — le payeur copié (plan-sous-comptes §2.3)", () => {
+describe("Order.draft — le payeur copié (sous-comptes §2.3)", () => {
   it("porte le payeur jusqu'à la persistance", () => {
     expect(deferred({ companyId: "chalet", billedCompanyId: "alpes" }).billedCompanyId).toBe(
       "alpes",

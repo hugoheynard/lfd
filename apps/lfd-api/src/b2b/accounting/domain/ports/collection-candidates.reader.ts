@@ -69,7 +69,7 @@ export abstract class CollectionCandidatesReader {
 
   /**
    * La forme de prélèvement de ces sites en vigueur à `at` — la CLÔTURE du
-   * cycle, jamais l'heure du téléchargement (plan-sous-comptes §2.1 ter). Un
+   * cycle, jamais l'heure du téléchargement (sous-comptes §2.1 ter). Un
    * site absent de la carte n'a pas de décision : `principal_mandate`.
    */
   abstract collectionFormsAt(

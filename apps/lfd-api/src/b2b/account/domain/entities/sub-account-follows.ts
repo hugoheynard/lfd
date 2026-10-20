@@ -9,7 +9,7 @@ import type { Company } from "./company.js";
 
 /**
  * **Ce qu'un sous-compte suit de son principal, période par période** (plan
- * `plan-sous-comptes.md`, §2.1) — l'agrégat de la table `company_follows`
+ * `sous-comptes.md`, §2.1) — l'agrégat de la table `company_follows`
  * pour UNE société.
  *
  * Il tient trois règles, que la base tient aussi en seconde ligne :

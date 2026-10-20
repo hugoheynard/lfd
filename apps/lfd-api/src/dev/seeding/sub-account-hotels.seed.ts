@@ -11,7 +11,7 @@ import { asStaff, SEED_STAFF_SUB } from "./order-placing.seed.js";
 import { asCustomer, ensurePerson } from "./sub-account-people.seed.js";
 
 /**
- * **Le groupe hôtelier** — le second cas réel de `plan-sous-comptes.md`
+ * **Le groupe hôtelier** — le second cas réel de `sous-comptes.md`
  * (§2.1, « le Club Med ») : deux établissements qui règlent chacun, sous la
  * mercuriale et l'engagement négociés par le groupe.
  *

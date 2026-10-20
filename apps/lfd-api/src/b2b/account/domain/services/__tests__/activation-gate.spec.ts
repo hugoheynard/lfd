@@ -248,7 +248,7 @@ describe("activationGate — le verdict, et il n'y en a qu'un", () => {
     expect(actif.blocking).toEqual([]);
     expect(actif.canActivate).toBe(false);
   });
-  describe("un sous-compte qui suit la facturation (plan-sous-comptes §2.1 bis)", () => {
+  describe("un sous-compte qui suit la facturation (sous-comptes §2.1 bis)", () => {
     /** Un chalet : ni SIRET, ni forme, ni détenteur — tout le reste en règle. */
     const CHALET: Partial<AdminCompanyDetailView> = {
       ...COMPLETE,

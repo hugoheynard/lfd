@@ -75,7 +75,7 @@ const commitmentTermsV1 = {
 
 /**
  * Un suivi de mercuriale entre un sous-compte et son principal
- * (`plan-sous-comptes.md`, S3) : écrit deux fois par geste, une fois sur le
+ * (`sous-comptes.md`, S3) : écrit deux fois par geste, une fois sur le
  * compte tarifaire de chacun. `counterpart` est l'autre compte, nommé au
  * moment de l'acte. La table datée `company_follows` reste la source de la
  * relecture des prix ; ces faits ne servent qu'à la lecture humaine.

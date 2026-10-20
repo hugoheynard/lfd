@@ -29,7 +29,7 @@ export interface SelfPayingEntity {
  *
  * ⚠️ Disparaît en partie avec S4 : une fois `orders.billed_company_id` figé à la
  * passation, le payeur se lit sur la commande et `followsTowards` n'a plus de
- * lecteur (plan-sous-comptes §2.3).
+ * lecteur (sous-comptes §2.3).
  */
 export abstract class StatementBillingReader {
   /** Les périodes `billing` dont `payerId` est le payeur, qui chevauchent le cycle. */

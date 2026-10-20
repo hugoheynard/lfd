@@ -1,5 +1,5 @@
 /**
- * **Révoquer les mandats d'un site qui nomment son principal** (`plan-sous-comptes.md`
+ * **Révoquer les mandats d'un site qui nomment son principal** (`sous-comptes.md`
  * §2.1 ter).
  *
  * Un site qui cesse de suivre `billing` — ou qu'on détache — reprend son

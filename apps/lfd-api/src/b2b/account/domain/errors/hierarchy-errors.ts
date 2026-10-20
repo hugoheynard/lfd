@@ -8,7 +8,7 @@ import {
 } from "../../../../platform/shared/errors/app-error.js";
 
 /**
- * Les refus de la **hiérarchie des comptes** (plan `plan-sous-comptes.md`,
+ * Les refus de la **hiérarchie des comptes** (plan `sous-comptes.md`,
  * lot S1). Chaque message nomme le cas réel et le geste de sortie : il est lu
  * par un commercial qui n'a pas le code sous les yeux.
  */

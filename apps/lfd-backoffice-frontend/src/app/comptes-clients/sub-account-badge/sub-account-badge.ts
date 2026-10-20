@@ -5,7 +5,7 @@ import { FoldBadgeComponent } from 'fold-ng';
 
 /**
  * **« Sous-compte de _Principal_ »** — le badge cliquable vers la fiche du
- * principal (`plan-sous-comptes.md` §4, R9).
+ * principal (`sous-comptes.md` §4, R9).
  *
  * Un composant et non trois copies : la liste, la fiche et le cockpit le
  * posent, et une phrase écrite trois fois finit par se dire de trois façons.

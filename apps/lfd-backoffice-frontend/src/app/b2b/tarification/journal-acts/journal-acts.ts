@@ -45,7 +45,7 @@ const PAGINATOR_LABELS: FoldPaginatorLabels = {
  * **Les actes d'un sujet de prix**, du plus récent au plus ancien — lecture
  * seule, par pages sur un instantané.
  *
- * Extrait du panneau de journal le 2026-10-05 (`plan-sous-comptes.md`, S3) :
+ * Extrait du panneau de journal le 2026-10-05 (`sous-comptes.md`, S3) :
  * l'onglet Tarifs d'une fiche client le pose EN PLACE, dans une carte, et le
  * panneau l'entoure de son en-tête. Un seul lecteur de journal, deux cadres.
  *

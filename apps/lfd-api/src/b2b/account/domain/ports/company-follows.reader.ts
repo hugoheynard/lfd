@@ -3,7 +3,7 @@ import type { CompanyFollowAspect } from "@lfd/contracts";
 import type { FollowPeriod } from "../value-objects/follow-period.js";
 
 /**
- * Port de **lecture à date** des suivis (plan `plan-sous-comptes.md`, §2.1).
+ * Port de **lecture à date** des suivis (plan `sous-comptes.md`, §2.1).
  *
  * Distinct du port d'écriture : les lecteurs à venir — le prix (S3), le payeur
  * (S4) — demandent « qui suivait qui à cet instant », jamais l'agrégat entier.

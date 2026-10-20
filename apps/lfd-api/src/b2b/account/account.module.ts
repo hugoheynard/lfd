@@ -222,7 +222,7 @@ import { PrismaInvitationRenewal } from "./infrastructure/prisma-invitation-rene
     AdminCompanyPiecesController,
     CompanyDeliveryProcedureController,
     AdminCompanyDeliveryProcedureController,
-    // Les sous-comptes (plan `plan-sous-comptes.md`, S1) : la fiche, et le
+    // Les sous-comptes (plan `sous-comptes.md`, S1) : la fiche, et le
     // suivi du tarif derrière le droit de tarification (Q9).
     AdminCompanyHierarchyController,
     AdminCompanyPricingFollowController,

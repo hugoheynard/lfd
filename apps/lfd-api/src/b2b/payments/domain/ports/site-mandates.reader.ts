@@ -1,7 +1,7 @@
 import type { PaymentMandate } from "../entities/payment-mandate.js";
 
 /**
- * Les mandats qu'un site porte au nom d'un autre débiteur (`plan-sous-comptes.md`
+ * Les mandats qu'un site porte au nom d'un autre débiteur (`sous-comptes.md`
  * §2.1 ter). Un port à part de `PaymentMandateRepository` (ISP) : seule la
  * révocation d'un suivi `billing` le lit, et le dépôt n'a pas à grossir pour
  * elle.

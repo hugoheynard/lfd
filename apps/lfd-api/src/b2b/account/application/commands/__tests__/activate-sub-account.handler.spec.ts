@@ -165,7 +165,7 @@ function handler(
   };
 }
 
-describe("Activer un sous-compte qui suit la facturation (plan-sous-comptes §2.1 bis)", () => {
+describe("Activer un sous-compte qui suit la facturation (sous-comptes §2.1 bis)", () => {
   it("s'active sans SIRET ni détenteur, en relisant le suivi sous le verrou", async () => {
     const { run, log, companies } = handler(principalCompany("active"), "active");
 

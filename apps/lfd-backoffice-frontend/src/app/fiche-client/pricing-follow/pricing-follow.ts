@@ -7,7 +7,7 @@ import { FollowParentToggle } from '../follow-parent-toggle/follow-parent-toggle
 
 /**
  * **« Suivre le compte principal »**, dans l'onglet Tarifs d'un sous-compte
- * (`plan-sous-comptes.md` §4, Q9).
+ * (`sous-comptes.md` §4, Q9).
  *
  * L'onglet lit les prix, pas la fiche : la hiérarchie se lit donc ici, et rien
  * ne s'affiche pour un compte sans principal — la plupart. Pendant la lecture,

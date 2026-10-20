@@ -159,7 +159,7 @@ pros, ni livraison fermée au public.
 ## Ce qui va changer : les sous-comptes
 
 Le chantier des sous-comptes
-([`plan-sous-comptes.md`](plan-sous-comptes.md), §3 ; ledger T6 de
+([`sous-comptes.md`](sous-comptes.md), §3 ; ledger T6 de
 [`ledger-sous-comptes.md`](ledger-sous-comptes.md)) réécrit `resolveCompany` en
 S6 : le sélecteur listera les rattachements **et les sous-comptes
 atteignables**, et la branche « un seul rattachement sert d'office » ne tiendra

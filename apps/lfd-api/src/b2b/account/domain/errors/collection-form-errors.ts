@@ -2,7 +2,7 @@ import { BusinessError, DomainError } from "../../../../platform/shared/errors/a
 
 /**
  * **Une forme de prélèvement n'a de sens que pour un site facturé au principal**
- * (`plan-sous-comptes.md` §2.1 ter). Une société qui paie seule se prélève sur
+ * (`sous-comptes.md` §2.1 ter). Une société qui paie seule se prélève sur
  * son propre mandat ; il n'y a rien à choisir.
  */
 export class CollectionFormNeedsBillingFollowError extends BusinessError {

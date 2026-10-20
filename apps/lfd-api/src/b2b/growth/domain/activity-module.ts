@@ -63,7 +63,7 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // posée, renommée, archivée par le même commercial (2026-09-19).
     "company_mercuriale.",
     // Le suivi de la mercuriale d'un principal par un sous-compte : une
-    // décision du commercial (Q9, `plan-sous-comptes.md`, S3).
+    // décision du commercial (Q9, `sous-comptes.md`, S3).
     "pricing_follow.",
     "pricing_follower.",
     // Le catalogue B2B — prix négocié, vitrine, arrivée validée — décide ce

@@ -85,7 +85,7 @@ export class PrismaOrderRepository extends OrderRepository {
         // le coursier scanne aussi. La fonction reste pour NOMMER la décision.
         handoverToken: issuesHandoverToken() ? this.secrets.next() : null,
         companyId: state.companyId,
-        // Le payeur copié à la passation (plan-sous-comptes §2.3).
+        // Le payeur copié à la passation (sous-comptes §2.3).
         billedCompanyId: state.billedCompanyId,
         // Qui commande, déduit par l'agrégat et figé : jamais relu depuis la
         // société, qui peut changer ou disparaître après la passation.

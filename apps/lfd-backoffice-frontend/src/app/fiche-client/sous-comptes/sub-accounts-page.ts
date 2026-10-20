@@ -63,7 +63,7 @@ export function followsBilling(follows: readonly FollowedAspectView[]): boolean 
 }
 
 /**
- * **L'onglet Sous-comptes** de la fiche (`plan-sous-comptes.md` §4) — sorti
+ * **L'onglet Sous-comptes** de la fiche (`sous-comptes.md` §4) — sorti
  * d'Informations, où S2 l'avait posé, pour que la hiérarchie se lise d'un bloc.
  *
  * Sur un principal (ou un client seul) : ses sous-comptes, « Créer », « Rattacher »

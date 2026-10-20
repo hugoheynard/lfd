@@ -3,7 +3,7 @@ import { PricingPartiesResolver } from "../pricing-parties.resolver.js";
 import { SpannedPricingAccounts } from "./pricing-parties.doubles.js";
 
 /**
- * Le résolveur des parties d'un prix, à date (`plan-sous-comptes.md`, §2.2).
+ * Le résolveur des parties d'un prix, à date (`sous-comptes.md`, §2.2).
  *
  * Les dates sont absolues et ne sont comparées qu'entre elles : aucune horloge
  * ici (exception écrite au §5 de `CLAUDE.md`).

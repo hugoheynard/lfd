@@ -1,5 +1,5 @@
 /**
- * Comment un site qui suit `billing` est prélevé (`plan-sous-comptes.md`
+ * Comment un site qui suit `billing` est prélevé (`sous-comptes.md`
  * §2.1 ter). Le débiteur nommé est toujours la société du principal ; ce qui
  * change est le MANDAT, et donc le nombre de lignes du lot.
  *

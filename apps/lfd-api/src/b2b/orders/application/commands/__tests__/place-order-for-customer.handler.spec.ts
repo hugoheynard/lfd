@@ -750,7 +750,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
 });
 
 /**
- * S4 (`plan-sous-comptes.md` §2.3, T44) : la saisie staff copie le payeur et
+ * S4 (`sous-comptes.md` §2.3, T44) : la saisie staff copie le payeur et
  * lit les termes du PAYEUR, comme le client — c'est la même règle
  * (`accountStanding`), écrite une fois.
  */

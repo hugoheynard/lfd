@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 /**
  * E2E du lot **S4 — le payeur des sous-comptes** (plan
- * `documentation/comptes-client/plan-sous-comptes.md`, §2.1 ter, §2.1
+ * `documentation/comptes-client/sous-comptes.md`, §2.1 ter, §2.1
  * quater, §2.3, §2.4, §3).
  *
  * Ce que seul le vrai SQL prouve : la passation copie le payeur résolu dans

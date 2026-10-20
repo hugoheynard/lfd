@@ -57,7 +57,7 @@ export class MintMyCompanyMandateHandler implements ICommandHandler<
     );
 
     // Un site prélevé sur le compte de son principal ne frappe pas depuis son
-    // espace : le papier imprimerait l'IBAN du principal (plan-sous-comptes §3).
+    // espace : le papier imprimerait l'IBAN du principal (sous-comptes §3).
     await ensureSiteDebitsOwnAccount(this.debtors, command.companyId, this.clock.now());
 
     const current = await this.mandates.findCurrent(command.companyId);

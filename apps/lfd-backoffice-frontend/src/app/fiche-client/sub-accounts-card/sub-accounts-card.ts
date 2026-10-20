@@ -36,7 +36,7 @@ import { AttachSubAccountPanel } from '../panels/attach-sub-account-panel/attach
 import { SubAccountPanel } from '../panels/sub-account-panel/sub-account-panel';
 
 /**
- * **Les sous-comptes d'un principal** (`plan-sous-comptes.md` §4) : la liste
+ * **Les sous-comptes d'un principal** (`sous-comptes.md` §4) : la liste
  * des enfants (enseigne, ville, statut, aspects suivis), « Créer un
  * sous-compte », « Rattacher un client existant », et la case « Compte de
  * groupe, sans livraison » (R6).

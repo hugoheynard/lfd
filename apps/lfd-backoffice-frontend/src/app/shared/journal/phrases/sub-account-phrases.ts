@@ -16,7 +16,7 @@ import { COLLECTION_FORM, FOLLOW_ASPECT } from '../values/accounts-values';
 
 /**
  * **Les sous-comptes** — le lien d'un client vers son compte principal, et
- * les aspects qu'il en suit (plan `documentation/comptes-client/plan-sous-comptes.md`,
+ * les aspects qu'il en suit (plan `documentation/comptes-client/sous-comptes.md`,
  * lot S1, 2026-10-05). Le sujet est toujours le SOUS-COMPTE ; le principal
  * est cité sous son nom du moment.
  */

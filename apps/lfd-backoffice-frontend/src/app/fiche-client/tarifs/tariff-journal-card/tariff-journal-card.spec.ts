@@ -7,7 +7,7 @@ import { TarificationService } from '../../../b2b/tarification/tarification.serv
 import { TariffJournalCard } from './tariff-journal-card';
 
 /**
- * La carte « Journal du tarif » de l'onglet Tarifs (`plan-sous-comptes.md`,
+ * La carte « Journal du tarif » de l'onglet Tarifs (`sous-comptes.md`,
  * S3) : elle lit le compte tarifaire de LA société (sujet `company`) et pose
  * les phrases figées en place, sans panneau.
  */

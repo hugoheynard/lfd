@@ -438,7 +438,7 @@ export const pricingActSchema = z.enum([
   "renamed",
   /**
    * Sur le compte tarifaire d'un sous-compte (sujet `company`) : il commence /
-   * cesse de suivre la mercuriale de son principal (`plan-sous-comptes.md`, S3).
+   * cesse de suivre la mercuriale de son principal (`sous-comptes.md`, S3).
    */
   "started",
   "ended",
@@ -457,7 +457,7 @@ export type PricingActKind = z.infer<typeof pricingActSchema>;
  * doit rendre UN acte — « posée le 8 septembre, 92 articles » — et non les N que
  * la pose écrivait, dont aucun ne disait à quelle grille il appartenait.
  *
- * `company` (2026-10-05, `plan-sous-comptes.md`, S3) : le **compte tarifaire**
+ * `company` (2026-10-05, `sous-comptes.md`, S3) : le **compte tarifaire**
  * d'un client, `subjectId` = son identifiant. Il porte les suivis de
  * mercuriale entre un sous-compte et son principal, des deux côtés.
  */

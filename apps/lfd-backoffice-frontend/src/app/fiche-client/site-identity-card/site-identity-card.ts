@@ -12,7 +12,7 @@ import type { AdminCompanyDetail } from '../../comptes-clients/admin-company';
 
 /**
  * **L'identité légale d'un site** : celle de son principal, en lecture. Un
- * site n'a ni SIRET, ni KBIS, ni TVA à lui (`plan-sous-comptes.md` §2.1 bis) ;
+ * site n'a ni SIRET, ni KBIS, ni TVA à lui (`sous-comptes.md` §2.1 bis) ;
  * lui montrer la carte d'identité éditable d'un client faisait réclamer des
  * pièces que le serveur a levées.
  */

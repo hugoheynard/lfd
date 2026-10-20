@@ -48,7 +48,7 @@ import { PrismaCompanyFollowsReader } from "../account/infrastructure/prisma-com
     { provide: VolumeLadderReader, useClass: PrismaVolumeLadderReader },
     { provide: VolumeCommitmentReader, useClass: PrismaVolumeCommitmentReader },
     { provide: CustomerVolumeReader, useClass: PrismaCustomerVolumeReader },
-    // 🔴 La seule fabrique des parties d'un prix (`plan-sous-comptes.md`,
+    // 🔴 La seule fabrique des parties d'un prix (`sous-comptes.md`,
     // §2.2). Le lecteur des suivis est celui de `account/`, sans état : le
     // lier ici évite d'importer tout `AccountModule` dans la tarification.
     PricingPartiesResolver,

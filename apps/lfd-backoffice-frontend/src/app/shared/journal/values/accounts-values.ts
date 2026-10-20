@@ -146,7 +146,7 @@ export const LOGIN_PROVIDER = domain('méthode de connexion', {
   facebook: 'Facebook',
 });
 
-/** L'aspect qu'un sous-compte suit de son principal (`company.parent_followed`, plan-sous-comptes §2.1). */
+/** L'aspect qu'un sous-compte suit de son principal (`company.parent_followed`, sous-comptes §2.1). */
 export const FOLLOW_ASPECT = domain('aspect suivi du compte principal', {
   billing: 'Facturation',
   pricing: 'Tarif',

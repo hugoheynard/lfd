@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { renderFact, type FactInput } from '../render-fact';
 
 /**
- * **Le suivi d'une mercuriale, au journal général** (`plan-sous-comptes.md`,
+ * **Le suivi d'une mercuriale, au journal général** (`sous-comptes.md`,
  * S3) : la copie de l'acte de prix, écrite sur le sous-compte ET sur le
  * principal. Elle tient lieu de `company.parent_followed` pour le tarif.
  */

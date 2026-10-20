@@ -250,7 +250,7 @@ export class CompanyMercuriale {
    * ## Le compte de tarif, pas la société servie
    *
    * Un sous-compte qui suit le tarif de son principal paie la mercuriale du
-   * principal (`plan-sous-comptes.md`, §2.2). Elle ne vaut donc que pour le
+   * principal (`sous-comptes.md`, §2.2). Elle ne vaut donc que pour le
    * compte de tarif du contexte (`pricingCompanyId`), et la règle rendue vise
    * la société servie : c'est à elle que la résolution confronte l'audience.
    * Une mercuriale d'un autre compte ne rend rien.

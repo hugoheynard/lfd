@@ -65,7 +65,7 @@ export async function buildCustomerMandate(
   deps: CustomerMandateDeps,
   companyId: string,
 ): Promise<CustomerMandateDocument> {
-  // 🔴 Le compte et le débiteur RÉSOLUS (plan-sous-comptes §2.1 ter) : un
+  // 🔴 Le compte et le débiteur RÉSOLUS (sous-comptes §2.1 ter) : un
   // site qui suit `billing` imprime la société du principal, et le RIB de son
   // principal tant qu'il n'a pas le sien.
   const resolved = await deps.debtors.resolve(companyId, deps.clock.now());

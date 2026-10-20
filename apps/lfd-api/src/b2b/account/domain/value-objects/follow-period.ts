@@ -4,7 +4,7 @@ import { FollowPeriodWindowError } from "../errors/hierarchy-errors.js";
 
 /**
  * **Une période de suivi** : du `validFrom` inclus au `validTo` exclu, ce
- * sous-compte suivait cet aspect de ce principal (plan-sous-comptes §2.1).
+ * sous-compte suivait cet aspect de ce principal (sous-comptes §2.1).
  *
  * Une période, et non un booléen : le prix et le payeur se relisent à date,
  * et « qui suivait qui le 12 mars » doit avoir une réponse. `validTo: null`

@@ -26,7 +26,7 @@ const FOLLOW: BillingFollow = {
   validTo: new Date("2026-09-20T00:00:00.000Z"),
 };
 
-describe("detachedUnpaidOf — les impayés d'un site détaché (plan-sous-comptes §2.1 quater)", () => {
+describe("detachedUnpaidOf — les impayés d'un site détaché (sous-comptes §2.1 quater)", () => {
   it("les montre au principal qui les réglait, avec le payeur copié", () => {
     expect(detachedUnpaidOf("alpes", [row()], [])).toEqual([{ row: row(), payerId: "alpes" }]);
   });

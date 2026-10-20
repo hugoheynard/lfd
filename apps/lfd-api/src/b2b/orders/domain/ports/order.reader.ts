@@ -39,7 +39,7 @@ export interface OwnedOrder {
   readonly loyaltyVoucherId: string | null;
   /**
    * Le client tel que le bon de commande le NOMME quand la commande a été
-   * réglée par un autre que la société qui a commandé (`plan-sous-comptes.md`
+   * réglée par un autre que la société qui a commandé (`sous-comptes.md`
    * §2.3, §3) : le nom du site, et la raison sociale du payeur COPIÉ — une
    * mention légale, relue après un détachement telle qu'elle était à la
    * passation. `null` quand la société paie elle-même, ou sans payeur copié.

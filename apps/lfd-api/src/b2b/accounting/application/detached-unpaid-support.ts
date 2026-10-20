@@ -4,7 +4,7 @@ import type { DetachedUnpaidReader } from "../domain/ports/detached-unpaid.reade
 import { detachedUnpaidOf } from "../domain/services/detached-unpaid.js";
 
 /**
- * La lecture partagée par l'admin et le client (`plan-sous-comptes.md`
+ * La lecture partagée par l'admin et le client (`sous-comptes.md`
  * §2.1 quater) : les commandes écartées `payer_detached` que `companyId` a
  * commandées en site, ou réglait en principal. Ce n'est pas un handler (§4 de
  * `CLAUDE.md`) : c'est le geste commun de deux lectures.

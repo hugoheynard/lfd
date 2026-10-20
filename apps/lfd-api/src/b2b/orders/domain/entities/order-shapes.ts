@@ -54,7 +54,7 @@ export interface OrderVoucher {
 export interface DraftOrderInput {
   readonly companyId: string | null;
   /**
-   * Le PAYEUR résolu à la passation (`orderPayerOf`, `plan-sous-comptes.md`
+   * Le PAYEUR résolu à la passation (`orderPayerOf`, `sous-comptes.md`
    * §2.3) : le principal d'un site qui suit `billing`, sinon la société.
    * `null` sans société — l'agrégat refuse un payeur sans elle.
    */

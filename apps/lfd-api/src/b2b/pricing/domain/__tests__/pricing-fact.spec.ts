@@ -97,7 +97,7 @@ describe("pricingFactOf", () => {
 });
 
 /**
- * Le suivi d'une mercuriale (`plan-sous-comptes.md`, S3) : sujet `company`,
+ * Le suivi d'une mercuriale (`sous-comptes.md`, S3) : sujet `company`,
  * quatre gestes, et la période citée avec l'autre compte nommé.
  */
 describe("pricingFactOf — le compte tarifaire d'un client", () => {

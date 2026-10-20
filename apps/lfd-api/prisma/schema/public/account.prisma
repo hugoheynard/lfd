@@ -226,7 +226,7 @@ model Company {
   activatedByRole    String? @map("activated_by_role")
 
   /// Le compte PRINCIPAL dont celui-ci est un sous-compte, ou `null`
-  /// (`documentation/comptes-client/plan-sous-comptes.md`, §1–§2). La STRUCTURE actuelle,
+  /// (`documentation/comptes-client/sous-comptes.md`, §1–§2). La STRUCTURE actuelle,
   /// pour la fiche — qui suivait qui à une date se lit dans `company_follows`.
   /// Profondeur 1 : tenue par l'agrégat sous le verrou consultatif de la
   /// hiérarchie, et en seconde ligne par un déclencheur (§5).
@@ -291,7 +291,7 @@ model Company {
   @@schema("public")
 }
 
-/// Ce qu'un sous-compte peut suivre de son principal (plan-sous-comptes §2.1).
+/// Ce qu'un sous-compte peut suivre de son principal (sous-comptes §2.1).
 enum CompanyFollowAspect {
   billing
   pricing
@@ -301,7 +301,7 @@ enum CompanyFollowAspect {
 }
 
 /// Une **période** pendant laquelle un sous-compte suit un aspect de son
-/// principal (plan-sous-comptes §2.1). Datée, et non un booléen : le prix et le
+/// principal (sous-comptes §2.1). Datée, et non un booléen : le prix et le
 /// payeur se relisent à date. Suivre ouvre une période, cesser la ferme ; rien
 /// ne s'efface. Deux périodes d'un même aspect ne se chevauchent pas
 /// (contrainte d'exclusion `company_follows_no_overlap`, en migration).
@@ -321,7 +321,7 @@ model CompanyFollow {
   @@schema("public")
 }
 
-/// Comment un site qui suit `billing` est prélevé (plan-sous-comptes §2.1 ter).
+/// Comment un site qui suit `billing` est prélevé (sous-comptes §2.1 ter).
 /// Le débiteur nommé est toujours la société du principal.
 enum CollectionForm {
   /// le mandat du principal, sur son RIB — une ligne pour la société

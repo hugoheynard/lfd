@@ -22,7 +22,7 @@ import { DetachedUnpaidService } from '../facturation/detached-unpaid.service';
 
 /**
  * **« Commandes restant à régler »** — les commandes d'un site détaché que le
- * prélèvement a écartées (`plan-sous-comptes.md` §2.1 quater). Le principal
+ * prélèvement a écartées (`sous-comptes.md` §2.1 quater). Le principal
  * n'est jamais débité d'office : la carte les signale pour qu'on les règle par
  * lien de paiement ou à la main.
  *

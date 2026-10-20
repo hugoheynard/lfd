@@ -4,7 +4,7 @@ import { ContactDetails } from "../../value-objects/contact-details.js";
 import { HierarchyPlace } from "../../value-objects/hierarchy-place.js";
 
 /**
- * Les sociétés des cas réels du plan (plan-sous-comptes §2.1) : un gestionnaire
+ * Les sociétés des cas réels du plan (sous-comptes §2.1) : un gestionnaire
  * de chalets, et un chalet sans SIRET ni détenteur propre.
  */
 export function principalCompany(

@@ -62,7 +62,7 @@ export interface MandateSnapshot {
 }
 
 /**
- * Le **débiteur figé à la frappe** (`plan-sous-comptes.md` §2.1 ter, T9) : les
+ * Le **débiteur figé à la frappe** (`sous-comptes.md` §2.1 ter, T9) : les
  * mentions obligatoires du mandat, telles qu'elles étaient ce jour-là. Pour un
  * site qui suit `billing`, c'est la société du principal ; sinon la société
  * elle-même. Un changement d'identité ne réécrit pas un papier signé.

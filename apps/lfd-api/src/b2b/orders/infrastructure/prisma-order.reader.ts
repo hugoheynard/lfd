@@ -450,7 +450,7 @@ interface NameableRow {
 }
 
 /**
- * Le client du bon quand un AUTRE a réglé (plan-sous-comptes §2.3) : le nom du
+ * Le client du bon quand un AUTRE a réglé (sous-comptes §2.3) : le nom du
  * site en tête, la raison sociale du payeur copié en mention légale.
  */
 function billedCustomerOf(row: {

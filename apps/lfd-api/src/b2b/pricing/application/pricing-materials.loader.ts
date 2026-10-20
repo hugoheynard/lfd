@@ -143,7 +143,7 @@ export class PricingMaterialsLoader {
       //
       // 🔴 Mercuriale et engagements se lisent sur le COMPTE DE TARIF — le
       // principal qu'un sous-compte suit à `at` —, les règles d'audience
-      // `company` restent sur la société servie (`plan-sous-comptes.md`, §2.2).
+      // `company` restent sur la société servie (`sous-comptes.md`, §2.2).
       replay
         ? this.mercuriales.liveAsOf(parties.pricingCompanyId, at)
         : this.mercuriales.liveFor(parties.pricingCompanyId, at),

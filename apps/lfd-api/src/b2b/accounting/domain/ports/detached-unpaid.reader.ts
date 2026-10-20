@@ -22,7 +22,7 @@ export interface DetachedUnpaidRow {
 }
 
 /**
- * **Les impayés d'un site détaché** (`plan-sous-comptes.md` §2.1 quater, R3) :
+ * **Les impayés d'un site détaché** (`sous-comptes.md` §2.1 quater, R3) :
  * les commandes que la constitution d'un lot a écartées `payer_detached`, et
  * qui le restent. Elles se règlent à la main ; le principal n'est jamais
  * débité d'office.

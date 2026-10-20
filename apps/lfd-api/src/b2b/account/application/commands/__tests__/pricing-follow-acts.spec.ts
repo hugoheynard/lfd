@@ -28,7 +28,7 @@ import {
 } from "./hierarchy-doubles.js";
 
 /**
- * **Le suivi du tarif va au journal des prix** (`plan-sous-comptes.md`, S3) :
+ * **Le suivi du tarif va au journal des prix** (`sous-comptes.md`, S3) :
  * les quatre gestes qui ouvrent ou ferment une période `pricing` l'inscrivent
  * par le port, et n'émettent plus `company.parent_followed/unfollowed` pour
  * cet aspect — la copie générale de l'acte de prix en tient lieu.

@@ -211,7 +211,7 @@ export interface PricingContext {
   readonly companyId: string | null;
   /**
    * Le compte dont la **mercuriale** s'applique à cet instant : le principal
-   * suivi par un sous-compte, la société elle-même sinon (`plan-sous-comptes.md`,
+   * suivi par un sous-compte, la société elle-même sinon (`sous-comptes.md`,
    * §2.2). Seule la mercuriale le lit ; les règles d'audience `company` restent
    * jugées sur `companyId`.
    */

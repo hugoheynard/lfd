@@ -12,7 +12,7 @@ import { loadCompany, named } from "../services/account-hierarchy-support.js";
 import { SetCollectionFormCommand } from "./set-collection-form.command.js";
 
 /**
- * Pose la forme de prélèvement d'un site (`plan-sous-comptes.md` §2.1 ter) :
+ * Pose la forme de prélèvement d'un site (`sous-comptes.md` §2.1 ter) :
  * ferme la période en cours, ouvre la nouvelle à l'instant du geste.
  *
  * Sous le verrou de la hiérarchie, comme les suivis : « ce site suit-il

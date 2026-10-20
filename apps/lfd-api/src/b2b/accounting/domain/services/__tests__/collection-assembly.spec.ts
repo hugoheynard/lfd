@@ -174,7 +174,7 @@ describe("assembleCollection — qui paie quoi, sous quel mandat", () => {
 });
 
 /**
- * S4 (`plan-sous-comptes.md` §2.1 ter) : le payeur COPIÉ à la passation, et le
+ * S4 (`sous-comptes.md` §2.1 ter) : le payeur COPIÉ à la passation, et le
  * mandat effectif choisi selon la forme de prélèvement du site à la clôture.
  */
 describe("assembleCollection — les sites d'un principal (S4)", () => {

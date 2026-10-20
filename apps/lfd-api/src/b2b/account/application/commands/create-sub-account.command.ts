@@ -2,7 +2,7 @@ import type { CreateSubAccountPayload } from "@lfd/contracts";
 
 /**
  * Commande **staff** : créer un sous-compte de `parentId` (plan
- * `plan-sous-comptes.md`, §4) — identité, première adresse de livraison, puis
+ * `sous-comptes.md`, §4) — identité, première adresse de livraison, puis
  * les aspects à suivre. Il naît `pending`, comme toute création staff, et
  * s'active par le chemin existant.
  */

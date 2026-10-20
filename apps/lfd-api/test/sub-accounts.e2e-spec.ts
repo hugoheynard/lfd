@@ -1,5 +1,5 @@
 /**
- * E2E des **sous-comptes** (plan `documentation/comptes-client/plan-sous-comptes.md`,
+ * E2E des **sous-comptes** (plan `documentation/comptes-client/sous-comptes.md`,
  * lot S1) : créer, rattacher, détacher, suivre — sur le vrai Postgres.
  *
  * Ce que seul l'e2e prouve : la contrainte d'exclusion des périodes, les
@@ -178,7 +178,7 @@ describe("Créer un sous-compte", () => {
   });
 });
 
-describe("Le chalet sans SIRET (plan-sous-comptes §2.1 bis)", () => {
+describe("Le chalet sans SIRET (sous-comptes §2.1 bis)", () => {
   it("s'active en suivant la facturation, puis cesser de la suivre ramène l'identité manquante", async () => {
     const groupe = await principal();
     const chalet = await createChalet(groupe, ["billing"]);

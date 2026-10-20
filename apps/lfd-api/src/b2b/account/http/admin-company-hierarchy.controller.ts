@@ -28,7 +28,7 @@ import { SetGroupWithoutDeliveryCommand } from "../application/commands/set-grou
 import { StopFollowingParentCommand } from "../application/commands/stop-following-parent.command.js";
 
 /**
- * **Les sous-comptes, depuis la fiche client** (plan `plan-sous-comptes.md`,
+ * **Les sous-comptes, depuis la fiche client** (plan `sous-comptes.md`,
  * lot S1) : créer, rattacher, détacher, suivre la facturation ou les contacts
  * du principal, et la case « Compte de groupe ».
  *
@@ -125,7 +125,7 @@ export class AdminCompanyHierarchyController {
   }
 
   /**
-   * La forme de prélèvement d'un site qui suit `billing` (plan-sous-comptes
+   * La forme de prélèvement d'un site qui suit `billing` (sous-comptes
    * §2.1 ter) : décision datée, à l'instant du geste. `409` si le site paie
    * seul. Le client la choisira lui-même plus tard ; le staff peut la régler.
    */

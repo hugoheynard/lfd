@@ -34,7 +34,7 @@ import { ActivateCompanyByStaffCommand } from "./activate-company.command.js";
  *
  * Aucun mur membership : l'auth staff garde la route en amont.
  *
- * **Sous-comptes** (plan-sous-comptes §2.1 bis) : un sous-compte qui suit
+ * **Sous-comptes** (sous-comptes §2.1 bis) : un sous-compte qui suit
  * `billing` d'un principal actif s'active sans SIRET, sans KBIS ni détenteur
  * propres. Le suivi et le statut du principal sont relus sous le verrou de
  * la hiérarchie, dans la transaction de la transition, et c'est l'agrégat qui

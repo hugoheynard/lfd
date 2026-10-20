@@ -49,7 +49,7 @@ export const PRICING_ACTS = [
    */
   "renamed",
   /**
-   * **Le suivi d'une mercuriale** entre comptes (`plan-sous-comptes.md`, S3),
+   * **Le suivi d'une mercuriale** entre comptes (`sous-comptes.md`, S3),
    * sur le sujet `company` seulement : le sous-compte commence / cesse de
    * suivre (`started` / `ended`), le principal gagne / perd un sous-compte qui
    * le suit (`joined` / `left`).

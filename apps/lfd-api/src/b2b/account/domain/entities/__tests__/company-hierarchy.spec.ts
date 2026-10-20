@@ -9,7 +9,7 @@ import { chaletCompany, principalCompany } from "./company-hierarchy-fixtures.js
 const NOW = new Date("2030-03-01T08:00:00.000Z");
 const AGENT = { staffUserId: "staff_1", name: "Camille", role: "commercial" };
 
-describe("Company — sous-comptes (plan-sous-comptes S1)", () => {
+describe("Company — sous-comptes (sous-comptes S1)", () => {
   it("un sous-compte déclaré porte son principal, et le persiste", () => {
     const company = Company.declare(
       {

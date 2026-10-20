@@ -59,7 +59,7 @@ export class CompanyBankAccountController {
 
   /**
    * À qui la société est facturée : `{ billedTo: { name } }` pour un site qui
-   * suit `billing`, `{ billedTo: null }` sinon (plan-sous-comptes §3). Jamais
+   * suit `billing`, `{ billedTo: null }` sinon (sous-comptes §3). Jamais
    * l'IBAN ni le mandat du payeur — ses routes restent murées sur le site.
    */
   @Get(":companyId/billed-to")

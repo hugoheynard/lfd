@@ -6,7 +6,7 @@ import type { CompanyRepository } from "../../domain/ports/company.repository.js
 
 /**
  * Les deux lectures que partagent les gestes de la hiérarchie des comptes
- * (plan `plan-sous-comptes.md`, lot S1). Toutes se font APRÈS la prise du
+ * (plan `sous-comptes.md`, lot S1). Toutes se font APRÈS la prise du
  * verrou `AccountHierarchyLock` : c'est ce qui rend leur résultat vrai au
  * moment où l'agrégat tranche.
  */

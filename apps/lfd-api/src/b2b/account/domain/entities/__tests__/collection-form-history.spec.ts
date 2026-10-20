@@ -8,7 +8,7 @@ import { CollectionFormHistory } from "../collection-form-history.js";
 const MARCH = new Date("2030-03-01T08:00:00.000Z");
 const APRIL = new Date("2030-04-01T08:00:00.000Z");
 
-describe("CollectionFormHistory — la forme de prélèvement datée (plan-sous-comptes §2.1 ter)", () => {
+describe("CollectionFormHistory — la forme de prélèvement datée (sous-comptes §2.1 ter)", () => {
   it("vaut le mandat du principal tant qu'aucune décision n'est posée", () => {
     expect(CollectionFormHistory.reconstitute("chalet", []).formAt(MARCH)).toBe(
       "principal_mandate",

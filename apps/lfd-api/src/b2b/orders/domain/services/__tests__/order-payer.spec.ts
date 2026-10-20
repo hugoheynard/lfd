@@ -17,7 +17,7 @@ function standing(over: Partial<OrderPayerStanding> = {}): OrderPayerStanding {
 
 const PRINCIPAL = { payerId: "alpes", payerName: "Alpes Chalets Privés" } as const;
 
-describe("orderPayerOf — le payeur copié à la passation (plan-sous-comptes §2.3, §2.4)", () => {
+describe("orderPayerOf — le payeur copié à la passation (sous-comptes §2.3, §2.4)", () => {
   it("n'a pas de payeur pour une commande sans société", () => {
     expect(orderPayerOf(null)).toBeNull();
   });

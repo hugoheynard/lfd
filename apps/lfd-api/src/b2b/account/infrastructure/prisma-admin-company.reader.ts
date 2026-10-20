@@ -80,7 +80,7 @@ const COMPANY_SELECT = {
     select: { id: true },
     take: 1,
   },
-  // Les sous-comptes (plan-sous-comptes §4) : le principal pour le badge et la
+  // Les sous-comptes (sous-comptes §4) : le principal pour le badge et la
   // fiche, le suivi `billing` en cours pour les avertissements (§2.1 bis).
   groupWithoutDelivery: true,
   parentCompany: { select: { id: true, enseigne: true, status: true } },

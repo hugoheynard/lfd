@@ -204,7 +204,7 @@ export function describeWindowOf(validFrom: Date, validTo: Date | null): string 
 }
 
 /**
- * **Les phrases figées d'un suivi de mercuriale** (`plan-sous-comptes.md`,
+ * **Les phrases figées d'un suivi de mercuriale** (`sous-comptes.md`,
  * S3), une par côté et par geste. Le nom de l'autre compte est celui du
  * moment de l'acte.
  */

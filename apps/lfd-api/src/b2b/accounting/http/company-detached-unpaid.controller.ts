@@ -7,7 +7,7 @@ import type { Principal } from "../../../platform/auth/principal.js";
 import { GetMyDetachedUnpaidOrdersQuery } from "../application/queries/detached-unpaid-queries.js";
 
 /**
- * Surface **client** des impayés de sites détachés (`plan-sous-comptes.md`
+ * Surface **client** des impayés de sites détachés (`sous-comptes.md`
  * §2.1 quater) : le principal voit ce qu'il reste à régler à la main. Le mur
  * (détenteur ou facturation ; non-membre 404, autre rôle 403) vit dans le
  * handler.

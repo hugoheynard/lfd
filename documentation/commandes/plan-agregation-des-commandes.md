@@ -4,7 +4,7 @@
 > suivant) ; A3 attend S4. Contredit par `vitruve` le
 > même jour : une objection BLOQUANTE, quatre SÉRIEUSES, reprises au §6.
 > Prérequis de la facturation des
-> sous-comptes ([`../comptes-client/plan-sous-comptes.md`](../comptes-client/plan-sous-comptes.md),
+> sous-comptes ([`../comptes-client/sous-comptes.md`](../comptes-client/sous-comptes.md),
 > S4), et premier pas vers la facture.
 >
 > 🔴 **Décision de Hugo, 2026-10-05** : « c'est nous qui allons produire le

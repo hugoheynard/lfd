@@ -18,7 +18,7 @@ const DEFAULT_FORM: CollectionForm = "principal_mandate";
 
 /**
  * **Les formes de prélèvement d'un site, période par période**
- * (`plan-sous-comptes.md` §2.1 ter) — l'agrégat de `company_collection_form`
+ * (`sous-comptes.md` §2.1 ter) — l'agrégat de `company_collection_form`
  * pour UNE société.
  *
  * Une décision DATÉE, comme les suivis : le lot lit la forme en vigueur à la

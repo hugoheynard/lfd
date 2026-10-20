@@ -1,5 +1,5 @@
 /**
- * **Le compte dont le tarif s'applique**, à un instant (`plan-sous-comptes.md`,
+ * **Le compte dont le tarif s'applique**, à un instant (`sous-comptes.md`,
  * §2.2).
  *
  * Un sous-compte qui suit le tarif de son principal paie la mercuriale et les

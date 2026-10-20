@@ -161,7 +161,7 @@ export class OrderDrafting {
     // 🔴 Le payeur se décide ICI, et en premier : c'est le seul chemin que les
     // trois portes de passation partagent (client, saisie staff, boutique), et
     // un refus — payeur suspendu, compte de groupe — ne doit rien coûter de
-    // plus que cette lecture (plan-sous-comptes §2.3, §2.4).
+    // plus que cette lecture (sous-comptes §2.3, §2.4).
     const billedCompanyId = await this.payerOf(parties.companyId);
     // L'arrêt du plan ferme la journée au CLIENT, heure limite ou pas (lot O3) :
     // refusé ici, tôt et sans verrou ; `holdPlan` le reprend sous verrou. La

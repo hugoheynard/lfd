@@ -17,7 +17,7 @@ import { FoldCalloutComponent, FoldCheckboxComponent } from 'fold-ng';
 import { PermissionsStore } from '../../auth/permissions.store';
 import { AdminCompanyHierarchyService } from '../../comptes-clients/admin-company-hierarchy.service';
 
-/** Ce que « suivre » veut dire, aspect par aspect (`plan-sous-comptes.md` §2.1). */
+/** Ce que « suivre » veut dire, aspect par aspect (`sous-comptes.md` §2.1). */
 const HINTS: Readonly<Record<CompanyFollowAspect, (parent: string) => string>> = {
   billing: (parent) =>
     `Facturé et prélevé au nom de ${parent} : son RIB, son mandat et ses conditions de règlement.`,
@@ -27,7 +27,7 @@ const HINTS: Readonly<Record<CompanyFollowAspect, (parent: string) => string>> =
 
 /**
  * **« Suivre le compte principal »** — la case d'un aspect, dans le panneau
- * qui le règle (Facturation, Tarif, Contacts — `plan-sous-comptes.md` §4).
+ * qui le règle (Facturation, Tarif, Contacts — `sous-comptes.md` §4).
  * C'est le geste « Aligner sur la déclinaison par défaut » de la fiche produit.
  *
  * Écrite dès qu'on la coche ; le serveur relit et refuse (principal inactif,

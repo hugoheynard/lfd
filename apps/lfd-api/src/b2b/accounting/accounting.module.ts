@@ -276,7 +276,7 @@ import { PrismaOrderRowsLock } from "./infrastructure/prisma-order-rows-lock.js"
     { provide: AutoCollectionEntitiesReader, useClass: PrismaAutoCollectionEntitiesReader },
     { provide: AutomaticCollectionConstituter, useClass: BusAutomaticCollectionConstituter },
     RunCollectionAutopilotHandler,
-    // Les impayés d'un site détaché (plan-sous-comptes §2.1 quater).
+    // Les impayés d'un site détaché (sous-comptes §2.1 quater).
     { provide: DetachedUnpaidReader, useClass: PrismaDetachedUnpaidReader },
     { provide: UnpaidAccessReader, useClass: PrismaUnpaidAccessReader },
     GetDetachedUnpaidOrdersHandler,

@@ -5,7 +5,7 @@ import { ALPES, seedSubAccountOrders } from "./sub-account-orders.seed.js";
 import { seedSubAccountPricing, startOfPreviousMonth } from "./sub-account-pricing.seed.js";
 
 /**
- * **Les sous-comptes, en démonstration** (`plan-sous-comptes.md`, §2.1 et §4) :
+ * **Les sous-comptes, en démonstration** (`sous-comptes.md`, §2.1 et §4) :
  * le gestionnaire de chalets et ses trois sites, le groupe hôtelier et ses
  * deux établissements, leurs tarifs négociés et deux mois de commandes.
  *

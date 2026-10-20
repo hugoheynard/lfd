@@ -9,7 +9,7 @@ import { GetMyCompanyBilledToQuery } from "./get-my-company-billed-to.query.js";
 
 /**
  * « Facturé à _Principal_ » — la seule chose qu'un site voit de son payeur
- * (`plan-sous-comptes.md` §3).
+ * (`sous-comptes.md` §3).
  *
  * Même mur que la section RIB (détenteur ou facturation ; non-membre 404,
  * autre rôle 403) : c'est sur cet écran que la mention remplace un RIB absent.

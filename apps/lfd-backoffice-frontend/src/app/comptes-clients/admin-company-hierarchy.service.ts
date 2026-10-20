@@ -14,7 +14,7 @@ import { B2B_API_BASE } from '../api/api-config';
 import { AdminCompaniesService } from './admin-companies.service';
 
 /**
- * Les **sous-comptes**, vus du back-office (`plan-sous-comptes.md`, lot S2) :
+ * Les **sous-comptes**, vus du back-office (`sous-comptes.md`, lot S2) :
  * créer, rattacher, détacher, suivre un aspect du principal, et la case
  * « Compte de groupe, sans livraison ».
  *

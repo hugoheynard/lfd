@@ -47,7 +47,7 @@ export function activationGate(company: AdminCompanyDetailView): ActivationGate 
 
   const blocking: ActivationBlocker[] = [];
   // Un sous-compte qui suit `billing` d'un principal ACTIF est facturé au nom
-  // du principal : ni identité légale ni détenteur propres (plan-sous-comptes
+  // du principal : ni identité légale ni détenteur propres (sous-comptes
   // §2.1 bis). `Company.activate` tient la même règle.
   const carried = isLegallyCarried(company);
   // L'identité légale n'est pas une pièce parmi d'autres : sans SIRET, il n'y a
@@ -72,7 +72,7 @@ export function activationGate(company: AdminCompanyDetailView): ActivationGate 
     const blocker = PIECE_BLOCKERS[check.piece];
     // TVA et facturation sont celles du PAYEUR quand le sous-compte suit
     // `billing` : c'est le principal, actif, qui les a fournies à sa propre
-    // activation (plan-sous-comptes §2.1 bis, précisé le 2026-10-05).
+    // activation (sous-comptes §2.1 bis, précisé le 2026-10-05).
     if (check.blocking && !check.done && blocker !== undefined && !carried) {
       blocking.push(blocker);
     }

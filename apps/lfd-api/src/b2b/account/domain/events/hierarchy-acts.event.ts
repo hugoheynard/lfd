@@ -7,7 +7,7 @@ import { CompanyStaffAct } from "./staff-acts.event.js";
 
 /**
  * **Les actes du staff sur la hiérarchie des comptes** (plan
- * `plan-sous-comptes.md`, lot S1). Le sujet est toujours le SOUS-COMPTE ; le
+ * `sous-comptes.md`, lot S1). Le sujet est toujours le SOUS-COMPTE ; le
  * principal est cité nommé, sous son nom du moment.
  */
 
@@ -97,7 +97,7 @@ export class GroupWithoutDeliverySetEvent extends CompanyStaffAct {
   }
 }
 
-/** La forme de prélèvement d'un site, à partir de `since` (plan-sous-comptes §2.1 ter). */
+/** La forme de prélèvement d'un site, à partir de `since` (sous-comptes §2.1 ter). */
 export class CollectionFormSetEvent extends CompanyStaffAct {
   constructor(
     company: NamedRef,

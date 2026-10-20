@@ -58,7 +58,7 @@ export function needsSiteMandate(form: CollectionForm | null): boolean {
 }
 
 /**
- * **Facturation d'un site** (`plan-sous-comptes.md` §2.1, §2.1 ter) : la forme
+ * **Facturation d'un site** (`sous-comptes.md` §2.1, §2.1 ter) : la forme
  * de prélèvement, qui dit aussi si la facturation est groupée ou séparée. Le
  * débiteur nommé reste toujours la société du principal.
  *

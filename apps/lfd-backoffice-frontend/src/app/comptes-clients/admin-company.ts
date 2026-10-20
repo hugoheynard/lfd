@@ -55,7 +55,7 @@ export const STATUS_LABELS: Readonly<Record<CompanyStatus, string>> = {
 
 /**
  * Libellé FR d'un aspect qu'un sous-compte suit de son principal
- * (`plan-sous-comptes.md` §2.1). Même raison que {@link STATUS_LABELS} : le
+ * (`sous-comptes.md` §2.1). Même raison que {@link STATUS_LABELS} : le
  * contrat dit quels aspects existent, l'écran dit comment on les nomme.
  */
 export const FOLLOW_ASPECT_LABELS: Readonly<Record<CompanyFollowAspect, string>> = {

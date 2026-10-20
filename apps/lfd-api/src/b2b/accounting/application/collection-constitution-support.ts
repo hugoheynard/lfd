@@ -127,7 +127,7 @@ export async function readAssembly(
   const follows = await candidates.billingFollowsOf(unique(orders.map((order) => order.companyId)));
   const payers = unique(orders.map((order) => billedPayerOf(order, follows)));
   // Les sites réglés par un autre : leur propre mandat peut être l'effectif
-  // (formes 2 et 3, plan-sous-comptes §2.1 ter), jugé à la CLÔTURE du cycle.
+  // (formes 2 et 3, sous-comptes §2.1 ter), jugé à la CLÔTURE du cycle.
   const sites = unique(
     orders
       .filter((order) => billedPayerOf(order, follows) !== order.companyId)

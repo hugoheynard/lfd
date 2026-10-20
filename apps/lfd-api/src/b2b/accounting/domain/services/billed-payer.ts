@@ -25,7 +25,7 @@ export function billingFollowAt(
  * 🔴 **Le payeur d'une commande — le SEUL endroit où il se lit.**
  *
  * Depuis S4, le payeur est COPIÉ sur la commande à sa passation
- * (`orders.billed_company_id`, plan-sous-comptes §2.3) : c'est lui, et la
+ * (`orders.billed_company_id`, sous-comptes §2.3) : c'est lui, et la
  * résolution vivante n'y entre plus. Réaligner un site ne déplace jamais une
  * commande déjà passée d'un payeur à l'autre.
  *

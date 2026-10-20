@@ -1,7 +1,7 @@
 import type { CompanyRole } from "../value-objects/company-role.js";
 
 /**
- * Les rôles du principal qui ouvrent ses sous-comptes (plan-sous-comptes §3).
+ * Les rôles du principal qui ouvrent ses sous-comptes (sous-comptes §3).
  * `orders` et `billing` du principal ne donnent rien sur un sous-compte : ils
  * n'administrent pas le principal lui-même.
  */

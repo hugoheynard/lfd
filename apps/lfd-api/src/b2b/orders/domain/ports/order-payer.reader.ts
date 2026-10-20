@@ -18,7 +18,7 @@ export interface OrderPayerStanding {
 }
 
 /**
- * **Qui paie une commande, lu au moment de la passer** (`plan-sous-comptes.md`
+ * **Qui paie une commande, lu au moment de la passer** (`sous-comptes.md`
  * §2.3, §2.4).
  *
  * Un port à part d'`OrderGuardReader` (ISP) : seule la composition le lit, une

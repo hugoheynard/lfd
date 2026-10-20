@@ -136,7 +136,7 @@ export class Pricer {
     const epoch = epochOf(at, now);
     // Le compte de tarif est résolu à `at`, comme les décisions : une relecture
     // d'une commande passée avant l'alignement d'un sous-compte lit SA
-    // mercuriale d'alors, pas celle du principal (`plan-sous-comptes.md`, §2.2).
+    // mercuriale d'alors, pas celle du principal (`sous-comptes.md`, §2.2).
     const [items, parties] = await Promise.all([
       this.sealedAt(request.articles, at, epoch),
       this.parties.partiesAt(request.companyId, at),

@@ -153,7 +153,7 @@ export class PrismaCompanyRepository extends CompanyRepository {
           siren: company.sirenDigits,
           vatNumber: company.vatNumber,
           ...contactColumns(company.toPersistence().contact),
-          // Un sous-compte naît rattaché (plan-sous-comptes §4) ; le verrou de
+          // Un sous-compte naît rattaché (sous-comptes §4) ; le verrou de
           // la hiérarchie est pris par le handler.
           parentCompanyId: company.parentCompanyId,
           // Déclarée, pas cliente : l'activation reste commerciale.

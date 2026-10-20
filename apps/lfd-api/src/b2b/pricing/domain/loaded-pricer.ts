@@ -19,7 +19,7 @@ import { volumeTierPrices } from "./volume-tier-prices.js";
 
 /**
  * Ce que l'appelant sait du client au moment de tarifer — **deux clés**
- * (`plan-sous-comptes.md`, §2.2).
+ * (`sous-comptes.md`, §2.2).
  *
  * `companyId` est la société servie : c'est elle que visent les règles
  * d'audience `company`. `pricingCompanyId` est le compte dont la mercuriale et

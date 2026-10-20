@@ -2,7 +2,7 @@ import { BusinessError } from "../../../../platform/shared/errors/app-error.js";
 
 /**
  * **Un site prélevé sur le compte de son principal ne prépare pas son mandat
- * depuis son espace** (`plan-sous-comptes.md` §3).
+ * depuis son espace** (`sous-comptes.md` §3).
  *
  * Le papier d'un tel mandat imprime l'IBAN du principal : aucune route client
  * d'un site ne résout vers le principal, et celle-ci le ferait. Le mandat se

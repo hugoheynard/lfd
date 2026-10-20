@@ -14,7 +14,7 @@ import { ensureAdminMembership, ensurePerson, type SeedPerson } from "./sub-acco
 
 /**
  * **Le gestionnaire de chalets privés** — le premier des deux cas réels de
- * `plan-sous-comptes.md` (§2.1) : une société, trois chalets, chacun son
+ * `sous-comptes.md` (§2.1) : une société, trois chalets, chacun son
  * adresse et sa gouvernante, tout facturé et prélevé au nom de la société.
  *
  * Le principal suit le chemin des voisins (`seedFictiveClients`) ; les chalets
@@ -279,7 +279,7 @@ async function ensureReachable(
  * Aucun terme n'est accordé AU CHALET : depuis S4, la passation lit les
  * termes du PAYEUR (`order-settlement.ts`, `accountStanding`), et le chalet
  * commande au compte de son principal. Le contournement daté qui lui
- * accordait le mensuel a été retiré au lot S4 (plan-sous-comptes, T44).
+ * accordait le mensuel a été retiré au lot S4 (sous-comptes, T44).
  */
 async function activateSite({ prisma, commands, now }: ClientContext, companyId: string) {
   const company = await prisma.company.findUnique({

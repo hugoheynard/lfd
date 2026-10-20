@@ -168,7 +168,7 @@ export interface CompanySoftState {
    * Pas un détail : `save()` réécrit toute la ligne. Une correction d'identité
    * chargée AVANT un rattachement concurrent, puis enregistrée APRÈS, remettrait
    * `parent_company_id` à `null` sans que personne l'ait décidé. Les gestes de
-   * la hiérarchie, eux, chargent sous le verrou (plan-sous-comptes §5).
+   * la hiérarchie, eux, chargent sous le verrou (sous-comptes §5).
    */
   readonly hierarchyChange: {
     readonly parentCompanyId: string | null;
@@ -219,7 +219,7 @@ export class Company {
     private kbisValue: KbisDeposit | null,
     /** Le prélèvement bloqué (crédit conservé), ou `null`. */
     private directDebitBlockValue: DirectDebitBlock | null,
-    /** Principal, sous-comptes, compte de groupe (plan-sous-comptes §2). */
+    /** Principal, sous-comptes, compte de groupe (sous-comptes §2). */
     private hierarchyValue: HierarchyPlace,
   ) {
     this.loadedHierarchy = hierarchyValue;
@@ -654,7 +654,7 @@ export class Company {
     // ensuite) ; le rester au moment de devenir client ne l'est pas.
     // Un sous-compte qui suit `billing` d'un principal ACTIF n'a ni identité
     // légale ni détenteur propres à fournir : il est facturé au nom du
-    // principal (plan-sous-comptes §2.1 bis). Le principal est lu par le
+    // principal (sous-comptes §2.1 bis). Le principal est lu par le
     // handler sous le verrou de la hiérarchie.
     const carried = this.isLegallyCarriedBy(billingCarrier);
     if (this.contactValue === null && !carried) {

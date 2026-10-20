@@ -5,7 +5,7 @@ import { PricingFollowJournalWriter } from "../b2b/pricing/infrastructure/pricin
 import { PricingAdminModule } from "../b2b/pricing/pricing-admin.module.js";
 
 /**
- * **Le suivi d'une mercuriale, inscrit au journal des prix** (`plan-sous-comptes.md`,
+ * **Le suivi d'une mercuriale, inscrit au journal des prix** (`sous-comptes.md`,
  * S3). `account` déclare le port, la tarification l'implémente avec son
  * écrivain d'actes ; la liaison vit ici pour qu'`account` n'importe rien de
  * `pricing`.

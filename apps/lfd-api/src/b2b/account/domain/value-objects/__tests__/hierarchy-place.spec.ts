@@ -9,7 +9,7 @@ import {
 import { HierarchyPlace } from "../hierarchy-place.js";
 
 /**
- * La place d'une société dans la hiérarchie (plan-sous-comptes §5) : la
+ * La place d'une société dans la hiérarchie (sous-comptes §5) : la
  * profondeur 1 et l'absence de cycle sont des règles de CE value object.
  */
 const principal = (): HierarchyPlace => HierarchyPlace.standalone();

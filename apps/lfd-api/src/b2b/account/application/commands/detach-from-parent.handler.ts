@@ -18,7 +18,7 @@ import { DetachFromParentCommand } from "./detach-from-parent.command.js";
  * principal actuel (`company_follows_current_parent`).
  *
  * Un site qui suivait `billing` voit révoquer, dans la même transaction, ses
- * mandats qui nomment le principal (plan-sous-comptes §2.1 ter, S4) : le
+ * mandats qui nomment le principal (sous-comptes §2.1 ter, S4) : le
  * principal n'est plus son débiteur.
  */
 @CommandHandler(DetachFromParentCommand)

@@ -24,7 +24,7 @@ function read(role: BankAccountRole | null, billedTo: { companyId: string; name:
   ).execute(new GetMyCompanyBilledToQuery("usr_1", "cmp_1"));
 }
 
-describe("GetMyCompanyBilledToHandler — « Facturé à » (plan-sous-comptes §3)", () => {
+describe("GetMyCompanyBilledToHandler — « Facturé à » (sous-comptes §3)", () => {
   it("nomme le principal d'un site, et rien d'autre — ni son identifiant", async () => {
     await expect(read("owner", { companyId: "alpes", name: "Alpes Chalets" })).resolves.toEqual({
       billedTo: { name: "Alpes Chalets" },

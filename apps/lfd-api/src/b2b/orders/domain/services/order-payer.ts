@@ -5,7 +5,7 @@ import {
 import type { OrderPayerStanding } from "../ports/order-payer.reader.js";
 
 /**
- * **Le payeur d'une commande, décidé à sa passation** (`plan-sous-comptes.md`
+ * **Le payeur d'une commande, décidé à sa passation** (`sous-comptes.md`
  * §2.3, §2.4) — puis copié sur la commande (`billed_company_id`).
  *
  * - une commande sans société n'a pas de payeur ;

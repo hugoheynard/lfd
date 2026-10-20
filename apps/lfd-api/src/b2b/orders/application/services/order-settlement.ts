@@ -102,7 +102,7 @@ export interface SettlementParties {
  * Une société **active** dont le PAYEUR a un crédit accordé, et un
  * prélèvement non bloqué, peut régler au compte.
  *
- * 🔴 Les termes lus sont ceux du payeur (`plan-sous-comptes.md` §2.3, T44) :
+ * 🔴 Les termes lus sont ceux du payeur (`sous-comptes.md` §2.3, T44) :
  * un site qui suit `billing` commande au compte de son principal. Le statut lu
  * reste celui de la société qui commande — un site en attente ne commande pas
  * au compte de qui que ce soit ; celui du payeur a déjà été jugé à la

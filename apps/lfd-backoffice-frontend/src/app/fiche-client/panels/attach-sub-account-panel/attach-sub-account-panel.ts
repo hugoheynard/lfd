@@ -33,7 +33,7 @@ const MAX_RESULTS = 8;
 type LoadState = 'loading' | 'ready' | 'error';
 
 /**
- * **Rattacher un client existant** comme sous-compte (`plan-sous-comptes.md`
+ * **Rattacher un client existant** comme sous-compte (`sous-comptes.md`
  * §4) — la recherche est celle de la liste des comptes (société, SIRET,
  * propriétaire de l'espace).
  *

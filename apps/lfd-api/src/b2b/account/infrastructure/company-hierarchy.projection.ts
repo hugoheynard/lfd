@@ -34,7 +34,7 @@ const OPEN_FOLLOWS = {
 
 /**
  * **La place d'une société dans la hiérarchie**, pour la fiche staff (plan
- * `plan-sous-comptes.md`, §4) : principal, sous-comptes (enseigne, ville,
+ * `sous-comptes.md`, §4) : principal, sous-comptes (enseigne, ville,
  * statut, aspects suivis) et aspects suivis en cours avec leur date.
  *
  * Lecture **cross-tenant** assumée, comme le reste de la fiche staff.

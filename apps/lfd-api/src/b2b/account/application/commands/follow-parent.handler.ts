@@ -42,7 +42,7 @@ export class FollowParentHandler implements ICommandHandler<FollowParentCommand,
       }
       await this.follows.save(follows);
       // `pricing` s'inscrit au journal des prix, dont la copie générale tient
-      // lieu de `company.parent_followed` (`plan-sous-comptes.md`, S3).
+      // lieu de `company.parent_followed` (`sous-comptes.md`, S3).
       if (command.aspect === "pricing") {
         await this.pricingJournal.followStarted({
           child: named(child),

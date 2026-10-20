@@ -9,7 +9,7 @@ import { GetMyDetachedUnpaidOrdersQuery } from "./detached-unpaid-queries.js";
 
 /**
  * « 3 commandes du chalet X restent à régler » — côté client, pour le
- * principal (`plan-sous-comptes.md` §2.1 quater). Murée sur la société
+ * principal (`sous-comptes.md` §2.1 quater). Murée sur la société
  * déclarée : un principal voit ce qu'il réglait, un site ce qu'il a commandé ;
  * jamais les impayés d'un autre.
  */

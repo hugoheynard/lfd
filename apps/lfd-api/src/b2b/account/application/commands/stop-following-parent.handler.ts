@@ -22,7 +22,7 @@ import { StopFollowingParentCommand } from "./stop-following-parent.command.js";
  * aussitôt l'identité légale manquante.
  *
  * Cesser de suivre `billing` RÉVOQUE, dans la même transaction, les mandats du
- * site qui nomment le principal (plan-sous-comptes §2.1 ter, S4).
+ * site qui nomment le principal (sous-comptes §2.1 ter, S4).
  */
 @CommandHandler(StopFollowingParentCommand)
 export class StopFollowingParentHandler implements ICommandHandler<

@@ -79,7 +79,7 @@ export class CompanyPricingQuery {
     const at = this.clock.now();
     await this.assertCompanyExists(companyId);
     // Le compte de tarif À CET INSTANT : un sous-compte qui suit son principal
-    // paie la mercuriale du principal (`plan-sous-comptes.md`, §2.2).
+    // paie la mercuriale du principal (`sous-comptes.md`, §2.2).
     const parties = await this.parties.partiesAt(companyId, at);
 
     const [ladders, articles, mercuriales, live] = await Promise.all([

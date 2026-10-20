@@ -14,7 +14,7 @@ export interface MandateAccountKey {
 }
 
 /**
- * **Le compte que chaque mandat débite** (`plan-sous-comptes.md` §2.1 ter, T8).
+ * **Le compte que chaque mandat débite** (`sous-comptes.md` §2.1 ter, T8).
  *
  * Celui que le mandat DÉSIGNE (`bank_account_id`, posé à la frappe depuis S4),
  * et à défaut — un mandat d'avant S4 — le RIB de sa société, la règle d'hier.

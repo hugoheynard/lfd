@@ -7,7 +7,7 @@ import { StopFollowingParentCommand } from "../application/commands/stop-followi
 
 /**
  * **Suivre le tarif du principal** — une décision du commercial (plan
- * `plan-sous-comptes.md`, Q9). Elle est donc derrière le droit de
+ * `sous-comptes.md`, Q9). Elle est donc derrière le droit de
  * tarification (`b2b_pricing`, le même que `admin-company-pricing.controller`),
  * et non derrière celui de la fiche client : un agent qui corrige une adresse
  * ne fait pas, du même geste, appliquer une mercuriale négociée.

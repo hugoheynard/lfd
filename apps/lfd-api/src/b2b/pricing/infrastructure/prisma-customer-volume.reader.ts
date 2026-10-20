@@ -46,7 +46,7 @@ export class PrismaCustomerVolumeReader extends CustomerVolumeReader {
 
   /**
    * 🔴 **Les sous-comptes qui suivaient son tarif comptent avec lui** (Q6 du
-   * plan `plan-sous-comptes.md`, défaut validé par Hugo le 2026-10-05) : le
+   * plan `sous-comptes.md`, défaut validé par Hugo le 2026-10-05) : le
    * Club Med a négocié pour trois établissements, et leurs commandes font
    * avancer ensemble le palier. Chaque commande d'un sous-compte n'entre que si
    * sa date tombe dans une période de suivi `pricing` vers ce compte : un

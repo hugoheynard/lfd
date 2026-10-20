@@ -8,7 +8,7 @@ export interface BilledTo {
 
 /**
  * Le débiteur qu'un mandat de cette société nommerait **à cet instant**, et le
- * compte qu'il débiterait (`plan-sous-comptes.md` §2.1 ter).
+ * compte qu'il débiterait (`sous-comptes.md` §2.1 ter).
  */
 export interface ResolvedMandateDebtor {
   /** Les mentions obligatoires — celles de la société du principal pour un site. */

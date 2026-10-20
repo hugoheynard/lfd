@@ -9,7 +9,7 @@ import {
 import { GetDetachedUnpaidOrdersQuery } from "../application/queries/detached-unpaid-queries.js";
 
 /**
- * Surface **staff** des impayés de sites détachés (`plan-sous-comptes.md`
+ * Surface **staff** des impayés de sites détachés (`sous-comptes.md`
  * §2.1 quater). Comme le relevé, la lecture s'ouvre à la comptabilité OU à la
  * fiche client : elle s'affiche sur la fiche du site et sur celle du principal.
  */

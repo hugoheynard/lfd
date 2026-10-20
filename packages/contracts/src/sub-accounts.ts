@@ -5,7 +5,7 @@ import { deliveryAddressPayloadSchema } from "./address.js";
 
 /**
  * **Les sous-comptes d'un compte pro** — plan
- * `documentation/comptes-client/plan-sous-comptes.md` (lot S1).
+ * `documentation/comptes-client/sous-comptes.md` (lot S1).
  *
  * Un sous-compte EST une société (§1) : il commande, il est livré, il a ses
  * adresses. Ce qui est neuf se limite au LIEN vers son principal et aux
@@ -128,7 +128,7 @@ export const groupWithoutDeliveryPayloadSchema = z.strictObject({ enabled: z.boo
 export type GroupWithoutDeliveryPayload = z.infer<typeof groupWithoutDeliveryPayloadSchema>;
 
 /**
- * Comment un site qui suit `billing` est prélevé (`plan-sous-comptes.md`
+ * Comment un site qui suit `billing` est prélevé (`sous-comptes.md`
  * §2.1 ter). Le débiteur nommé est toujours la société du principal :
  * - `principal_mandate` : le mandat du principal — une ligne pour la société ;
  * - `own_mandate_principal_iban` : un mandat du site, sur le RIB du principal ;
@@ -150,7 +150,7 @@ export type CollectionFormPayload = z.infer<typeof collectionFormPayloadSchema>;
 
 /**
  * Une commande d'un site **détaché** qui reste à régler à la main
- * (`plan-sous-comptes.md` §2.1 quater) : passée au compte de son principal,
+ * (`sous-comptes.md` §2.1 quater) : passée au compte de son principal,
  * écartée du prélèvement parce que le site ne le suit plus. Le principal n'est
  * jamais débité d'office ; la liste sert à la régler autrement.
  */

@@ -1,7 +1,7 @@
 import { BusinessError, DomainError } from "../../../../platform/shared/errors/app-error.js";
 
 /**
- * **Le payeur du site n'est pas actif** (`plan-sous-comptes.md` §2.4, Q4).
+ * **Le payeur du site n'est pas actif** (`sous-comptes.md` §2.4, Q4).
  *
  * Un site qui suit `billing` est réglé par son principal : la passation lit le
  * statut du PAYEUR, pas seulement celui du site. Un 409 — l'état du monde

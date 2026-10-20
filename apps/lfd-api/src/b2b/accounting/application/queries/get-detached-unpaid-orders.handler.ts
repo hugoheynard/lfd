@@ -7,7 +7,7 @@ import { GetDetachedUnpaidOrdersQuery } from "./detached-unpaid-queries.js";
 
 /**
  * Les impayés d'un site détaché, sur la fiche du site ET sur celle de son
- * ancien principal (`plan-sous-comptes.md` §2.1 quater, R3). Le droit est
+ * ancien principal (`sous-comptes.md` §2.1 quater, R3). Le droit est
  * celui du contrôleur ; aucun mur tenant côté staff.
  */
 @QueryHandler(GetDetachedUnpaidOrdersQuery)

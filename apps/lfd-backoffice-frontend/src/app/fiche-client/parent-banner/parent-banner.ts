@@ -19,7 +19,7 @@ import { NotifyService } from '../../notify.service';
 /**
  * **« Site de _Principal_ » / « Entité rattachée à _Principal_ »** — le bandeau d'une fiche de sous-compte,
  * avec le lien vers son principal et le geste « Détacher »
- * (`plan-sous-comptes.md` §4).
+ * (`sous-comptes.md` §4).
  *
  * Détacher ferme TOUTES les périodes de suivi : la confirmation le dit, en
  * nommant celles qui sont ouvertes, parce qu'un clic qui fait changer un

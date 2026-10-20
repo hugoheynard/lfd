@@ -8,7 +8,7 @@ export interface PricingFollowEntry {
 }
 
 /**
- * **Le journal des prix, vu des gestes de la hiérarchie** (`plan-sous-comptes.md`,
+ * **Le journal des prix, vu des gestes de la hiérarchie** (`sous-comptes.md`,
  * S3, T21).
  *
  * Suivre ou cesser de suivre le tarif du principal est une décision de prix :

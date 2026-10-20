@@ -122,7 +122,7 @@ export type CustomerBankAccountView = Omit<
 
 /**
  * `GET /companies/:companyId/billed-to` — **à qui ce site est facturé**
- * (`plan-sous-comptes.md` §3).
+ * (`sous-comptes.md` §3).
  *
  * Un site qui suit `billing` est facturé et prélevé au nom de son principal.
  * Ses routes RIB et mandat restent murées sur lui-même : elles ne rendent ni

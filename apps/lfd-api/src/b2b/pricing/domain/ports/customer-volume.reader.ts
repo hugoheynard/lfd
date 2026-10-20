@@ -24,7 +24,7 @@ export abstract class CustomerVolumeReader {
   /**
    * Le volume qui compte pour **l'engagement** de ce compte : le sien, plus
    * les commandes des sous-comptes qui suivaient son tarif à la date de
-   * chaque commande (Q6, R5 — `plan-sous-comptes.md`).
+   * chaque commande (Q6, R5 — `sous-comptes.md`).
    *
    * Séparé de {@link volumesFor} parce que seul le palier agrège : côté
    * commercial, chaque sous-compte est vu seul (R9), et l'effort de vente

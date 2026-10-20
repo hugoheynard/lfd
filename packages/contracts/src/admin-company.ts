@@ -99,7 +99,7 @@ export interface AdminCompanyView {
   readonly warnings: readonly CompanyWarning[];
   /**
    * Le compte principal dont celui-ci est un sous-compte, ou `null` — le badge
-   * « Sous-compte de _Principal_ » de la liste (plan-sous-comptes §4).
+   * « Sous-compte de _Principal_ » de la liste (sous-comptes §4).
    */
   readonly parent: CompanyRefView | null;
 }
@@ -161,7 +161,7 @@ export interface AdminCompanyDetailView extends AdminCompanyView {
 
   /**
    * Sa place dans la hiérarchie des comptes : principal, sous-comptes, aspects
-   * suivis en ce moment et depuis quand (plan-sous-comptes §4). Le verdict
+   * suivis en ce moment et depuis quand (sous-comptes §4). Le verdict
    * d'activation la lit : un sous-compte qui suit `billing` d'un principal
    * actif n'a pas d'identité légale propre à fournir (§2.1 bis).
    */

@@ -14,7 +14,7 @@ const SYSTEM_ACTOR = "system";
 
 /**
  * Le suivi d'une mercuriale, écrit au journal des prix sur le compte
- * tarifaire des DEUX sociétés (`plan-sous-comptes.md`, S3) : `started` /
+ * tarifaire des DEUX sociétés (`sous-comptes.md`, S3) : `started` /
  * `ended` sur le sous-compte, `joined` / `left` sur le principal. Les deux
  * actes et leurs copies générales partent dans la transaction du geste.
  *

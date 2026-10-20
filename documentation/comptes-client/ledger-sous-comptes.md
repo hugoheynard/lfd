@@ -1,11 +1,11 @@
 # Ledger du chantier « sous-comptes »
 
-> ⚠️ **2026-10-20** : T1, T2, T4, T8–T10, T16, T17 sont bâties (voir le bandeau de `plan-sous-comptes.md`) ; leurs « Où ça se voit » pointent des lignes déplacées. T12 : l'émission RCUR/OOFF est dans `pain008-document.ts`. T36 : `volume-commitments.query.ts` n'a qu'une méthode. T38 : l'onglet Tarifs a sa frise (`tariff-journal-card`).
+> ⚠️ **2026-10-20** : T1, T2, T4, T8–T10, T16, T17 sont bâties (voir le bandeau de `sous-comptes.md`) ; leurs « Où ça se voit » pointent des lignes déplacées. T12 : l'émission RCUR/OOFF est dans `pain008-document.ts`. T36 : `volume-commitments.query.ts` n'a qu'une méthode. T38 : l'onglet Tarifs a sa frise (`tariff-journal-card`).
 
 Ce que le chantier a **découvert** sur l'existant en chemin : des trous, des
 contraintes cachées, des affirmations fausses. Une ligne par trouvaille, datée,
 avec où elle se voit et ce qu'on en a fait. Plan :
-[`plan-sous-comptes.md`](plan-sous-comptes.md).
+[`sous-comptes.md`](sous-comptes.md).
 
 Ce n'est ni un TODO ni un journal de commits. C'est ce qu'on ne savait pas en
 ouvrant le chantier, et qu'il ne faut pas réapprendre.

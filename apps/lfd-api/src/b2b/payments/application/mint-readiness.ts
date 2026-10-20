@@ -32,7 +32,7 @@ export interface MintReadiness {
   /** La société du mandat — sa référence entre dans la RUM. */
   readonly holder: MandateHolder;
   /**
-   * Le débiteur RÉSOLU (plan-sous-comptes §2.1 ter) : la société du principal
+   * Le débiteur RÉSOLU (sous-comptes §2.1 ter) : la société du principal
    * pour un site qui suit `billing`, et le compte que le mandat débiterait.
    */
   readonly debtor: ResolvedMandateDebtor;

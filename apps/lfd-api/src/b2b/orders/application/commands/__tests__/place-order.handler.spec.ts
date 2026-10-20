@@ -1736,7 +1736,7 @@ describe("PlaceOrderHandler — créneau ou échéance", () => {
 });
 
 /**
- * S4 (`plan-sous-comptes.md` §2.3, §2.4, T44) : un site qui suit `billing`
+ * S4 (`sous-comptes.md` §2.3, §2.4, T44) : un site qui suit `billing`
  * commande au compte de son PRINCIPAL. Le payeur est copié sur la commande,
  * et ce sont les termes du payeur qui décident du règlement au compte.
  */

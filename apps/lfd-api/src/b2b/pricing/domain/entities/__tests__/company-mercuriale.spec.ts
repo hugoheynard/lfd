@@ -210,7 +210,7 @@ describe("vue comme une règle", () => {
   });
 
   it("sert un sous-compte qui suit son tarif, et vise la société servie", () => {
-    // `plan-sous-comptes.md`, §2.2 : la mercuriale du principal s'applique au
+    // `sous-comptes.md`, §2.2 : la mercuriale du principal s'applique au
     // sous-compte ; c'est à la société servie que l'audience est confrontée.
     expect(pose().asRuleFor({ ...CONTEXT, companyId: "co_site" })).toMatchObject({
       audience: { type: "company", id: "co_site" },

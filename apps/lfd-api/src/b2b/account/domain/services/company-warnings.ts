@@ -22,7 +22,7 @@ export interface WarningInput {
   readonly kbisCertifiedAt: Date | null;
   /**
    * Sous-compte qui suit `billing` d'un principal ACTIF : son identité légale
-   * et son détenteur sont ceux du principal (plan-sous-comptes §2.1 bis). La
+   * et son détenteur sont ceux du principal (sous-comptes §2.1 bis). La
    * même règle que `activationGate` — il ne doit pas afficher bloqué ce que la
    * porte laisserait passer.
    */

@@ -1,7 +1,7 @@
 # TODO — régler une sélection de commandes, et en tirer une facture
 
 **Ouvert le 2026-10-05**, pendant le chantier sous-comptes
-([`../comptes-client/plan-sous-comptes.md`](../comptes-client/plan-sous-comptes.md)).
+([`../comptes-client/sous-comptes.md`](../comptes-client/sous-comptes.md)).
 
 ## Le besoin (Hugo, 2026-10-05)
 

@@ -1,6 +1,6 @@
 /**
  * Commande **staff** : rattacher un client existant comme sous-compte de
- * `parentId` (plan `plan-sous-comptes.md`, §4). Aucun aspect n'est suivi
+ * `parentId` (plan `sous-comptes.md`, §4). Aucun aspect n'est suivi
  * d'office : chacun se décide à part.
  */
 export class AttachToParentCommand {

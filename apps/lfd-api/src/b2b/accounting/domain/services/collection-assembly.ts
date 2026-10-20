@@ -19,8 +19,8 @@ import type { CollectionExclusionReason } from "../entities/order-collection.js"
  *    suivait en `billing` à la date de la commande, sinon la société ;
  * 2. si ce payeur n'est plus suivi **aujourd'hui** → `payer_detached` : le
  *    principal n'est jamais débité d'office pour un sous-compte qui ne le suit
- *    plus (Hugo, 2026-10-05, plan-sous-comptes §2.1 quater) ;
- * 3. **le mandat effectif** (plan-sous-comptes §2.1 ter) : pour un site réglé
+ *    plus (Hugo, 2026-10-05, sous-comptes §2.1 quater) ;
+ * 3. **le mandat effectif** (sous-comptes §2.1 ter) : pour un site réglé
  *    par son principal dont la forme, à la clôture, est « mandat du site »
  *    (sur le RIB du principal ou le sien), le mandat actif du SITE qui nomme
  *    ce principal débiteur ; à défaut, ou dans la forme « mandat du

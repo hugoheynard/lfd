@@ -28,7 +28,7 @@ const PRINCIPAL = { companyId: "alpes", name: "Alpes Chalets Privés" } as const
 
 /**
  * Un chalet sans SIREN, facturé à son principal : la frappe lit l'identité
- * RÉSOLUE (plan-sous-comptes §2.1 ter, T9), et un mandat de site fige le
+ * RÉSOLUE (sous-comptes §2.1 ter, T9), et un mandat de site fige le
  * principal comme débiteur et le compte qu'il débite.
  */
 function site(options: { readonly ownIban?: boolean } = {}) {
