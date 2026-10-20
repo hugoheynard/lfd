@@ -7,6 +7,7 @@ import {
   FoldCardComponent,
   FoldElementTitleComponent,
   FoldEmptyStateComponent,
+  FoldIconComponent,
   FoldLoadingStateComponent,
 } from 'fold-ng';
 
@@ -81,6 +82,7 @@ export function followsBilling(follows: readonly FollowedAspectView[]): boolean 
     FoldCardComponent,
     FoldElementTitleComponent,
     FoldEmptyStateComponent,
+    FoldIconComponent,
     FoldLoadingStateComponent,
     CollectionFormCard,
     FollowParentToggle,

@@ -61,6 +61,23 @@
               }
             </ul>
           </fold-card>
+          <!-- Profondeur 1 : un sous-compte n'a pas de sous-comptes. La carte
+               reste visible, floutée et INERTE (ni clic, ni clavier, ni
+               lecteur d'écran), pour qu'on voie ce qu'on n'a pas ici et
+               pourquoi — plutôt qu'un onglet qui se tairait. -->
+          <div class="locked" data-sub-accounts-locked>
+            <div class="locked-content" inert aria-hidden="true">
+              <app-sub-accounts-card [company]="c" />
+            </div>
+            <div class="locked-veil">
+              <fold-icon name="lock" />
+              <p class="locked-text">
+                « {{ c.enseigne || c.raisonSociale }} » est un sous-compte de
+                <a [routerLink]="['/comptes-clients', parent.id]">{{ parent.enseigne }}</a
+                >. Il ne peut pas avoir lui-même de sous-comptes sans être détaché de son principal.
+              </p>
+            </div>
+          </div>
         } @else {
           <app-sub-accounts-card [company]="c" (changed)="fiche.reload()" />
         }

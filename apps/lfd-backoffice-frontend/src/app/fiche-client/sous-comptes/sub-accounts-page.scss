@@ -11,3 +11,42 @@
   flex-direction: column;
   gap: var(--fold-space-xs);
 }
+
+/* Le verrou de profondeur : la carte en fond, le voile par-dessus. */
+.locked {
+  position: relative;
+  display: grid;
+}
+
+.locked-content,
+.locked-veil {
+  grid-area: 1 / 1;
+}
+
+.locked-content {
+  filter: blur(3px);
+  opacity: 0.6;
+  pointer-events: none;
+  user-select: none;
+}
+
+.locked-veil {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-lg);
+  text-align: center;
+  color: var(--fold-color-text);
+}
+
+.locked-veil fold-icon {
+  font-size: var(--fold-text-xl);
+}
+
+.locked-text {
+  max-width: 34rem;
+  margin: 0;
+  text-wrap: balance;
+}

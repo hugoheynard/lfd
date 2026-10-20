@@ -38,7 +38,7 @@ import { SubAccountPanel } from '../panels/sub-account-panel/sub-account-panel';
 /**
  * **Les sous-comptes d'un principal** (`sous-comptes.md` §4) : la liste
  * des enfants (enseigne, ville, statut, aspects suivis), « Créer un
- * sous-compte », « Rattacher un client existant », et la case « Compte de
+ * sous-compte », « Rattacher un compte client existant », et la case « Compte de
  * groupe, sans livraison » (R6).
  *
  * Calqué sur la barre de déclinaisons de la fiche produit : chaque enfant

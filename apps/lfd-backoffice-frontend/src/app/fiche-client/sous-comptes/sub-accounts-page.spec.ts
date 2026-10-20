@@ -129,7 +129,13 @@ describe('ClientSubAccountsPage', () => {
     const host = boot(site).nativeElement as HTMLElement;
 
     expect(host.querySelector('[data-parent-banner]')?.textContent).toContain('Site de');
-    expect(host.querySelector('app-sub-accounts-card')).toBeNull();
+    // Profondeur 1 : la carte reste en fond, inerte, sous le verrou qui dit pourquoi.
+    const locked = host.querySelector('[data-sub-accounts-locked]');
+    expect(locked?.querySelector('[inert] app-sub-accounts-card')).not.toBeNull();
+    expect(locked?.textContent).toContain('ne peut pas avoir lui-même de sous-comptes');
+    expect(locked?.querySelector('.locked-veil a')?.getAttribute('href')).toBe(
+      '/comptes-clients/p1',
+    );
     expect(host.querySelector('[data-billing-follow] app-follow-parent-toggle')).not.toBeNull();
     const billing = host.querySelector('[data-follow-reminder="billing"]');
     expect(billing?.textContent).toContain('suivi depuis le');
