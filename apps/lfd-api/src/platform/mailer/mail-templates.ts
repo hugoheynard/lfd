@@ -36,6 +36,10 @@ import { MANDATE_TO_SIGN_WORDING, type MandateMailScheme } from "./mandate-to-si
 import { type OrderSheetMailDocument, withAttachments } from "./order-sheet-mail-document.js";
 import { qrPng } from "./qr-image.js";
 import { renderVitrineNoticeMail, type VitrineNoticeMailData } from "./vitrine-notice-mail.js";
+import {
+  renderSubAccountActivityMail,
+  type SubAccountActivityMailData,
+} from "./sub-account-activity-mail.js";
 
 /**
  * Les **e-mails de la plateforme B2B** — la carte et le registre que
@@ -126,6 +130,13 @@ export interface B2bMails {
    * le client. Cf. `order-cancelled-mail.ts`.
    */
   "customer.order-cancelled": OrderCancelledMailData;
+  /**
+   * **Un de vos sites a agi** — l'avis au principal (plan
+   * `documentation/comptes-client/plan-notifications-sous-comptes.md`, N2).
+   * Destinataires : les membres acceptés du principal aux rôles cochés. Cf.
+   * `sub-account-activity-mail.ts`.
+   */
+  "customer.sub-account-activity": SubAccountActivityMailData;
   /**
    * **Le lien de règlement d'une commande**, renvoyé par la comptabilité (plan
    * `blocage-et-liens-de-paiement.md`). Destinataire :
@@ -590,6 +601,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
     "customer.collection-notice": (data) => renderCollectionNoticeMail(data, customerMail),
     "customer.invoice-issued": (data) => renderInvoiceIssuedMail(data, customerMail),
     "customer.order-cancelled": (data) => renderOrderCancelledMail(data, customerMail),
+    "customer.sub-account-activity": (data) => renderSubAccountActivityMail(data, customerMail),
     "customer.order-placed": (data) => {
       const copy = mailCopyOf(data.locale).orderPlaced;
       const settlement = settlementCopyKeyOf(data.sheet);

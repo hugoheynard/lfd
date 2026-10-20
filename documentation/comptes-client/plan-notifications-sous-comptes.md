@@ -1,6 +1,6 @@
 # Plan — le principal est prévenu de ce que font ses sous-comptes
 
-> 📐 **Plan — N1 bâti le 2026-10-20**, N2 à N4 à faire. Demande de Hugo : « savoir quelles
+> 📐 **Plan — N1 et N2 bâtis le 2026-10-20**, N3 et N4 à faire. Demande de Hugo : « savoir quelles
 > actions menées par le sous-compte doivent être notifiées au principal, avec un
 > mapping de rôle ». Décisions de Hugo le même jour : **mail seul** ; le
 > tableau action × rôle est **réglé par le staff, principal par principal**.
@@ -166,6 +166,54 @@ touche cinq contextes qui ne publient aujourd'hui qu'au journal.
   est le premier lecteur.
 - La remise à blanc de dev (`src/dev/seeding/reset.seed.ts`) vide les
   dérogations avant les sociétés : la clé étrangère est en `Restrict`.
+
+### N2 bâti (2026-10-20) — et ses écarts
+
+- Trois `@DurableHandler` dans `b2b/sub-account-notices/application/handlers/`,
+  un service commun (`SubAccountNoticeDispatcher`) et des règles pures
+  (`apps/lfd-api/src/b2b/sub-account-notices/domain/notice-recipients.ts`). Gabarit `customer.sub-account-activity`
+  (`apps/lfd-api/src/platform/mailer/sub-account-activity-mail.ts`), français seul. e2e
+  `apps/lfd-api/test/sub-account-notices.e2e-spec.ts`.
+- **La passation n'a pas de fait `order.placed` durable** : le seul fait
+  durable est `commerce.order_placed` (canal de la livraison), écrit par les
+  trois entrées. L'abonné l'écoute, comme l'accusé de réception au client.
+- **L'abandon n'a pas de fait durable à lui** (`OrderAbandonedEvent` ne va
+  qu'au journal) : c'est `order.payment_failed` cause `abandoned` qui porte la
+  ligne `order_cancelled`. `refused` et `day_closed` → `payment_failed` ;
+  `expired` et `replaced` (clientèle `public` seule) → rien.
+- **Port « résumé de commande »** déclaré ET implémenté par `orders/`
+  (`OrderNoticeSummaryReader`, exporté), comme les ports d'`account/` en N1 ;
+  le statut du principal est relu par un cinquième port d'`account/`,
+  `CompanyLifecycleReader`.
+- **L'auteur exclu est celui du GESTE** (§2), pas toujours `placedByUserId` :
+  passation → `placedByUserId`, sauf commande saisie par l'équipe (personne) ;
+  annulation → `cancelledByUserId` (personne si l'équipe a annulé) ; abandon
+  → `placedByUserId` ; paiement échoué → personne.
+- **« À la charge du principal »** (§1) est lu `billed_company_id =
+principal_company_id` : un site qui paie lui-même ne fait pas prévenir son
+  principal d'un refus de carte.
+- **« Saisie par La Folie Douce »** (§2) est écrit « saisie par notre
+  équipe » : un courriel client porte la marque `La Folie Coffee`
+  (`mail-templates.ts`, `CUSTOMER_BRAND`), et nommer la maison y est la faute
+  corrigée le 2026-09-22.
+- `event_id` est STABLE d'une relivraison à l'autre : c'est l'id de la ligne
+  `platform.outbox`, tiré une fois à l'écriture et relu à chaque tentative
+  (vérifié le 2026-10-20).
+- ⚠️ **Limite du journal d'envoi** : il est écrit dans la transaction de la
+  garde du relais. Si un envoi lève au milieu de la liste, la transaction est
+  annulée, journal compris, et la relivraison renvoie à tous ; c'est la clé
+  d'idempotence du fournisseur (`sub-account-notice:<eventId>:<userId>`) qui
+  évite alors le doublon. Le journal tient la relivraison d'un fait déjà
+  validé (rejeu, reçu remis à zéro), pas l'échec partiel.
+- **Décision de Hugo (2026-10-20)** : une commande payée par CARTE ne
+  prévient le principal qu'au paiement confirmé (`order.paid`), comme
+  l'accusé au client ; une commande au compte (`not_required`) prévient à la
+  passation. Un quatrième abonné (`NotifyPrincipalOnOrderPaid`) envoie la clé
+  `order_placed` ; la règle est UNE (`settlementDecidedAtPlacement`, dans
+  `orders/domain/services/`, que l'accusé au client lit aussi).
+- « Saisie par notre équipe » validé par Hugo le 2026-10-20.
+- Aucune colonne de personne ajoutée en N2 : `sub_account_notice_sends.user_id`
+  (N1) désigne un client, hors du périmètre de `lint:rgpd-staff`, qui est vert.
 
 ## 5. Décisions (Hugo, 2026-10-20)
 

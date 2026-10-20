@@ -17,6 +17,7 @@ import { OrderRecipientReader } from "../../domain/ports/order-recipient.reader.
 import { OrderReader } from "../../domain/ports/order.reader.js";
 import { handoverUrlOf } from "../../domain/services/handover-url.js";
 import { clientSheetOf } from "../../domain/services/order-sheet.js";
+import { settlementDecidedAtPlacement } from "../../domain/services/settlement-decided-at-placement.js";
 import { OrderSheetAttachment } from "../services/order-sheet-attachment.service.js";
 import { OrderManageLink } from "../services/order-manage-link.js";
 
@@ -100,7 +101,7 @@ export class SendOrderPlacedMail implements DurableSubscriber {
    * part d'ici : une commande carte ne l'est à aucun moment de sa vie.
    */
   private decidedAtPlacement(payment: PaymentStatus): boolean {
-    return payment === "not_required";
+    return settlementDecidedAtPlacement(payment);
   }
 
   private async run(orderId: string): Promise<void> {

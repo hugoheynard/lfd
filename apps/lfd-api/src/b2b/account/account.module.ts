@@ -201,6 +201,8 @@ import { SubAccountNoticeRulesReader } from "./domain/ports/sub-account-notice-r
 import { SubAccountNoticeRulesWriter } from "./domain/ports/sub-account-notice-rules.writer.js";
 import { PrismaAcceptedMembersReader } from "./infrastructure/prisma-accepted-members.reader.js";
 import { PrismaCompanyParentReader } from "./infrastructure/prisma-company-parent.reader.js";
+import { CompanyLifecycleReader } from "./domain/ports/company-lifecycle.reader.js";
+import { PrismaCompanyLifecycleReader } from "./infrastructure/prisma-company-lifecycle.reader.js";
 import {
   PrismaSubAccountNoticeRulesReader,
   PrismaSubAccountNoticeRulesWriter,
@@ -434,6 +436,7 @@ import {
     // tables sont ici, le contexte `sub-account-notices/` les lit par ces ports.
     { provide: AcceptedMembersReader, useClass: PrismaAcceptedMembersReader },
     { provide: CompanyParentReader, useClass: PrismaCompanyParentReader },
+    { provide: CompanyLifecycleReader, useClass: PrismaCompanyLifecycleReader },
     { provide: SubAccountNoticeRulesReader, useClass: PrismaSubAccountNoticeRulesReader },
     { provide: SubAccountNoticeRulesWriter, useClass: PrismaSubAccountNoticeRulesWriter },
   ],
@@ -447,6 +450,7 @@ import {
     CommerceDeliveryAddressPointCorrector,
     AcceptedMembersReader,
     CompanyParentReader,
+    CompanyLifecycleReader,
     SubAccountNoticeRulesReader,
     SubAccountNoticeRulesWriter,
   ],

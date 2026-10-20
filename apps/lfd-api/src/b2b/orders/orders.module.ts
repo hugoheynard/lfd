@@ -23,6 +23,8 @@ import { RingFailedProSettlement } from "./application/handlers/ring-failed-pro-
 import { SendPaymentExpiredMail } from "./application/handlers/send-payment-expired-mail.handler.js";
 import { FailedSettlementReader } from "./domain/ports/failed-settlement.reader.js";
 import { PrismaFailedSettlementReader } from "./infrastructure/prisma-failed-settlement.reader.js";
+import { OrderNoticeSummaryReader } from "./domain/ports/order-notice-summary.reader.js";
+import { PrismaOrderNoticeSummaryReader } from "./infrastructure/prisma-order-notice-summary.reader.js";
 import { UnsettledSettlementReader } from "./domain/ports/unsettled-settlement.reader.js";
 import { PrismaUnsettledSettlementReader } from "./infrastructure/prisma-unsettled-settlement.reader.js";
 import { UnpaidLinkOrderReader } from "./domain/ports/unpaid-link-order.reader.js";
@@ -370,6 +372,9 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // Tout règlement pro qui meurt sonne, quelle qu'en soit la cause (D4).
     RingFailedProSettlement,
     { provide: FailedSettlementReader, useClass: PrismaFailedSettlementReader },
+    // Les avis au principal (plan-notifications-sous-comptes.md, N2) lisent la
+    // commande par ce port, jamais dans ses tables.
+    { provide: OrderNoticeSummaryReader, useClass: PrismaOrderNoticeSummaryReader },
     // La clôture tue les règlements en vol de sa journée AVANT de compter
     // (plan d'abandon, Q1, B1) : le port est celui du fournil, relié dans
     // `ProductionFeedModule`.
@@ -532,6 +537,8 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     PurchaseHistoryReader,
     // Les agrégats par segment, lus par les audiences (A1).
     AudienceOrderReader,
+    // Le résumé d'une commande, que les avis au principal lisent (N2).
+    OrderNoticeSummaryReader,
   ],
 })
 export class OrdersModule {}

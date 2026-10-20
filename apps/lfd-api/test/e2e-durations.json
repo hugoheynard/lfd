@@ -325,6 +325,7 @@
   "test/sub-account-billing.e2e-spec.ts": 7857,
   "test/sub-account-pricing.e2e-spec.ts": 7067,
   "test/sub-account-notice-rules.e2e-spec.ts": 9000,
+  "test/sub-account-notices.e2e-spec.ts": 9000,
   "test/sub-accounts.e2e-spec.ts": 12492,
   "test/subscriptions-journal.e2e-spec.ts": 4485,
   "test/subscriptions.e2e-spec.ts": 3933,
