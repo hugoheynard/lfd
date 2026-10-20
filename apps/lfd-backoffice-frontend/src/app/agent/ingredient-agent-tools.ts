@@ -1,5 +1,9 @@
 import { declareExperimentalWebMcpTool, inject } from '@angular/core';
-import type { CreateIngredientPayload, IngredientView } from '@lfd/pim-contracts';
+import type {
+  CreateIngredientPayload,
+  IngredientView,
+  UpdateIngredientPayload,
+} from '@lfd/pim-contracts';
 
 import { IngredientHttpApi } from '../pim/provenance/ingredient-http-api';
 
@@ -24,6 +28,7 @@ export const INGREDIENT_READ_TOOLS = [
 /** Les outils d'écriture — déclarés en plus avec `pim_catalog:write`. */
 export const INGREDIENT_WRITE_TOOLS = [
   'ingredient_create',
+  'ingredient_update',
   'ingredient_set_allergens',
   'ingredient_product_add',
   'ingredient_product_remove',
@@ -49,9 +54,12 @@ const NOT_DECLARATION =
  * Les écritures de liste (`PUT` = la liste ENTIÈRE) partent de la liste lue :
  * un code ou une clé omis n'est jamais effacé par mégarde.
  *
- * Absents, délibérément : corriger ou effacer un ingrédient, et toute
- * écriture d'appellation — un signe officiel et l'effacement d'une matière
- * citée restent des gestes de l'écran.
+ * Corriger un ingrédient est ouvert depuis le 2026-10-20 (Hugo) ; la
+ * correction se répercute sur toutes les fiches qui le citent.
+ *
+ * Absents, délibérément : effacer un ingrédient, et toute écriture
+ * d'appellation (y compris en changer sur un ingrédient) — un signe officiel
+ * et l'effacement d'une matière citée restent des gestes de l'écran.
  */
 export function declareIngredientAgentTools(canWrite: boolean): readonly string[] {
   const api = inject(IngredientHttpApi);
@@ -199,6 +207,36 @@ function declareWriteTools(
   });
 
   void declareExperimentalWebMcpTool({
+    name: 'ingredient_update',
+    description:
+      'Corrige un ingrédient (`key`, gelée) : `nameFr`, `origin`, `descriptionFr` (vide = effacer la description). Un champ omis reste tel quel ; les autres langues sont gardées. ⚠️ La correction se répercute sur TOUTES les fiches qui citent l’ingrédient : lire d’abord ingredient_get et donner à l’utilisateur ce nombre (`usedBy`). Sert à CORRIGER (faute, précision d’origine ou de libellé), jamais à changer de matière — une autre matière est un autre ingrédient (ingredient_create puis ingredient_product_add / _remove). Ni appellation ni allergènes ici. Rend l’ingrédient relu.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        key: { type: 'string' },
+        nameFr: { type: 'string' },
+        origin: { type: 'string' },
+        descriptionFr: { type: 'string' },
+      },
+      required: ['key'],
+      additionalProperties: false,
+    },
+    execute: (args) =>
+      said('Correction de l’ingrédient', async () => {
+        const current = await byKey(args.key);
+        if (current === undefined) {
+          return `Correction de l’ingrédient — REFUSÉ : aucun ingrédient n’a la clé ${args.key}. Chercher par ingredient_search.`;
+        }
+        const payload = correction(current, args);
+        if (Object.keys(payload).length === 0) {
+          return `RIEN À FAIRE — aucun champ ne change. ${ingredientText(current)}`;
+        }
+        await api.update(current.key, payload);
+        return `CORRIGÉ (répercuté sur ${current.usedBy} fiche(s) qui le citent) — ${await reread(current.key)}`;
+      }),
+  });
+
+  void declareExperimentalWebMcpTool({
     name: 'ingredient_set_allergens',
     description: `Change ce qu’un ingrédient (\`key\`) CONTIENT : \`add\` et \`remove\`, des codes GS1 (référentiel complet, codes hors obligation UE compris). Un code non nommé GARDE son état. Un code inconnu est refusé par le serveur. ${NOT_DECLARATION} Rend l’ingrédient relu.`,
     inputSchema: {
@@ -280,6 +318,35 @@ function declareWriteTools(
         rewriteProduct(args.productId, (keys) => reordered(keys, args.keys)),
       ),
   });
+}
+
+/**
+ * Ce qui change vraiment, champ par champ — un champ omis ou identique
+ * n'est pas envoyé, et le nom garde ses autres langues.
+ */
+export function correction(
+  current: IngredientView,
+  wanted: {
+    readonly nameFr?: string | undefined;
+    readonly origin?: string | undefined;
+    readonly descriptionFr?: string | undefined;
+  },
+): UpdateIngredientPayload {
+  const nameFr = wanted.nameFr?.trim();
+  const origin = wanted.origin?.trim();
+  const descriptionFr = wanted.descriptionFr?.trim();
+  return {
+    ...(nameFr === undefined || nameFr === '' || nameFr === current.name.fr
+      ? {}
+      : { name: { ...current.name, fr: nameFr } }),
+    ...(origin === undefined || origin === current.origin ? {} : { origin }),
+    ...(descriptionFr === undefined || descriptionFr === (current.description?.fr ?? '')
+      ? {}
+      : {
+          description:
+            descriptionFr === '' ? null : { ...(current.description ?? {}), fr: descriptionFr },
+        }),
+  };
 }
 
 /** Le nouvel ordre, s'il est une permutation exacte de l'actuel — sinon le refus nommé. */

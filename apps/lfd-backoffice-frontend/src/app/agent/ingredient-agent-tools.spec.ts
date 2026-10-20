@@ -15,6 +15,7 @@ import { D5_NOTICE, SHOWN_INGREDIENTS } from './ingredient-agent-text';
 import {
   INGREDIENT_READ_TOOLS,
   INGREDIENT_WRITE_TOOLS,
+  correction,
   declareIngredientAgentTools,
   reordered,
 } from './ingredient-agent-tools';
@@ -223,6 +224,27 @@ describe('declareIngredientAgentTools — écritures', () => {
     expect(text).toContain('CRÉÉ');
   });
 
+  it('corrige par PUT /ingredients/:key après relecture, et dit la portée', async () => {
+    const { call, server } = armTools(true, [FARINE]);
+    const text = await call('ingredient_update', { key: 'farine', nameFr: 'Farine T65' });
+    expect(server.calls).toEqual([
+      'GET /pim/ingredients',
+      'PUT /pim/ingredients/farine',
+      'GET /pim/ingredients',
+    ]);
+    expect(server.bodies[0]).toEqual({ name: { fr: 'Farine T65' } });
+    expect(text).toContain('CORRIGÉ (répercuté sur 3 fiche(s)');
+  });
+
+  it('ne corrige rien sans changement, ni une clé inconnue', async () => {
+    const { call, server } = armTools(true, [FARINE]);
+    expect(await call('ingredient_update', { key: 'farine', origin: 'Savoie, France' })).toContain(
+      'RIEN À FAIRE',
+    );
+    expect(await call('ingredient_update', { key: 'nawak', nameFr: 'X' })).toContain('REFUSÉ');
+    expect(server.calls.some((line) => line.startsWith('PUT'))).toBe(false);
+  });
+
   it('modifie les allergènes en gardant les codes non nommés', async () => {
     const { call, server } = armTools(true, [ingredient('pain', { allergens: ['GLU', 'SES'] })]);
     await call('ingredient_set_allergens', { key: 'pain', add: ['MLK'], remove: ['SES'] });
@@ -264,6 +286,19 @@ describe('declareIngredientAgentTools — écritures', () => {
       await call('ingredient_product_reorder', { productId: 'p1', keys: ['farine'] }),
     ).toContain('REFUSÉ');
     expect(server.calls.some((line) => line.startsWith('PUT'))).toBe(false);
+  });
+});
+
+describe('correction', () => {
+  it('garde les autres langues et efface la description sur un texte vide', () => {
+    const current = ingredient('pain', {
+      name: { fr: 'pain', en: 'bread' },
+      description: { fr: 'au levain' },
+    });
+    expect(correction(current, { nameFr: 'Pain', descriptionFr: '' })).toEqual({
+      name: { fr: 'Pain', en: 'bread' },
+      description: null,
+    });
   });
 });
 

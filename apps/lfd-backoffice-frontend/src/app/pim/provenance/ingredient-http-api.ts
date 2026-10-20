@@ -7,6 +7,7 @@ import type {
   ProductIngredientAllergensView,
   SetIngredientAllergensPayload,
   SetProductIngredientsPayload,
+  UpdateIngredientPayload,
 } from '@lfd/pim-contracts';
 import { firstValueFrom } from 'rxjs';
 
@@ -58,6 +59,11 @@ export class IngredientHttpApi {
 
   async create(payload: CreateIngredientPayload): Promise<void> {
     await firstValueFrom(this.http.post(`${this.base}/ingredients`, payload));
+  }
+
+  /** Corrige nom, origine ou description ; la clé reste gelée. */
+  async update(key: string, payload: UpdateIngredientPayload): Promise<void> {
+    await firstValueFrom(this.http.put(`${this.base}/ingredients/${key}`, payload));
   }
 
   /** La liste ENTIÈRE de ce que la matière contient, pas un delta. */
