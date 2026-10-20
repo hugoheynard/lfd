@@ -14,6 +14,17 @@ const HINTS: Readonly<Record<CompanyFollowAspect, (parent: string) => string>> =
 };
 
 /**
+ * Ce qui est vrai quand l'aspect n'est PAS suivi : le compte a le sien. Dire
+ * « ne suit pas _Principal_ » nommait ce qui manque, pas ce qui est (Hugo,
+ * 2026-10-20).
+ */
+const OWN: Readonly<Record<CompanyFollowAspect, string>> = {
+  billing: 'ce compte est facturé et prélevé à son propre nom.',
+  pricing: 'ce compte a ses propres prix.',
+  contacts: 'ce compte a ses propres contacts.',
+};
+
+/**
  * **Ce qu'un sous-compte suit de son principal**, pour un aspect — en
  * lecture, sur la fiche de l'enfant (Facturation, Tarif, Contacts).
  *
@@ -41,6 +52,7 @@ export class FollowParentToggle {
 
   protected readonly label = computed(() => FOLLOW_ASPECT_LABELS[this.aspect()]);
   protected readonly hint = computed(() => HINTS[this.aspect()](this.parent().enseigne));
+  protected readonly own = computed(() => OWN[this.aspect()]);
 
   protected readonly since = computed(() => {
     const current = this.current();

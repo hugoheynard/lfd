@@ -26,9 +26,11 @@ describe('FollowParentToggle (en lecture)', () => {
     expect(host.querySelector('[data-follow-since]')?.textContent).toContain('10/09/2026');
   });
 
-  it('dit qu’il ne suit pas, sans case à cocher', () => {
+  it('dit ce qui est vrai quand il ne suit pas, sans case à cocher', () => {
     const host = render('contacts', []);
-    expect(host.querySelector('[data-follow-parent]')?.textContent).toContain('ne suit pas');
+    expect(host.querySelector('[data-follow-parent]')?.textContent).toContain(
+      'ce compte a ses propres contacts',
+    );
     expect(host.querySelector('input[type="checkbox"]')).toBeNull();
   });
 
