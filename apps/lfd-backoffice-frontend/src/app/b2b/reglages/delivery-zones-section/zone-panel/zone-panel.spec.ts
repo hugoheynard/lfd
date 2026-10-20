@@ -55,7 +55,7 @@ interface Harness {
   readonly ref: FoldPanelRef<boolean>;
 }
 
-async function mount(zone: DeliveryZoneView | null): Promise<Harness> {
+async function mount(zone: DeliveryZoneView | null, postalCode?: string): Promise<Harness> {
   const zones = new FakeZones();
   const ref = new FoldPanelRef<boolean>(1, () => undefined);
   TestBed.configureTestingModule({
@@ -67,7 +67,7 @@ async function mount(zone: DeliveryZoneView | null): Promise<Harness> {
     ],
   });
   const fixture = TestBed.createComponent(ZonePanel);
-  fixture.componentRef.setInput('data', { zone });
+  fixture.componentRef.setInput('data', postalCode === undefined ? { zone } : { zone, postalCode });
   fixture.detectChanges();
   await fixture.whenStable();
   fixture.detectChanges();
@@ -139,5 +139,23 @@ describe('ZonePanel — l’enregistrement', () => {
     expect(zones.updated).toHaveLength(1);
     expect(close).not.toHaveBeenCalled();
     expect(alert(fixture)?.textContent).toContain('Préfixe déjà couvert par une autre zone.');
+  });
+});
+
+describe('ZonePanel — la création préremplie', () => {
+  /** Le code d'une adresse de livraison hors zone arrive déjà saisi (2026-10-20). */
+  it('pose le code postal reçu en première ligne', async () => {
+    const { fixture } = await mount(null, '73320');
+
+    expect(fixture.componentInstance['rows']()).toEqual([
+      expect.objectContaining({ type: 'postcode', value: '73320' }),
+    ]);
+    expect(fixture.componentInstance['prefixes']()).toEqual(['73320']);
+  });
+
+  it('sans code reçu, part d’une ligne vide', async () => {
+    const { fixture } = await mount(null);
+
+    expect(fixture.componentInstance['prefixes']()).toEqual([]);
   });
 });

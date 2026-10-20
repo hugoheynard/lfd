@@ -22,6 +22,14 @@
         }
       </div>
 
+      @if (canReadFees()) {
+        <app-uncovered-postal-codes
+          class="uncovered"
+          [canWrite]="canWrite()"
+          (addZone)="addFor($event)"
+        />
+      }
+
       <ul class="zones">
         @for (zone of list(); track zone.id) {
           <li class="zone">

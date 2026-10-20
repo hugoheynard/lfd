@@ -223,6 +223,10 @@
                l'ouverture. Ce que le réglage de livraison ferme, c'est l'OFFRE
                — le choix au panier, la préférence d'acheminement — pas la
                fiche. -->
+          <!-- Une adresse de livraison hors zone : le serveur refusera la
+               commande livrée. Le commercial le lit ici avant le client. -->
+          <app-uncovered-delivery-addresses [deliveries]="fiche.deliveries()" />
+
           <lfd-company-addresses-card
             [billing]="isSite() ? (principal()?.addresses?.billing ?? null) : fiche.billing()"
             [billingCarriedBy]="

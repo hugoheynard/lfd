@@ -80,6 +80,18 @@ Deux règles complètent le pivot, posées le **2026-08-12** :
    `orders.delivery_zone.not_served`) et non une livraison à 0 € : c'est un
    secteur dont la tournée n'a pas de coût connu.
 
+   **Le refus se voit avant la commande** (2026-10-20, Hugo). Le réglage des
+   zones (`/reglages/livraison/zones`) avertit des codes postaux d'adresses de
+   LIVRAISON (non archivées, sociétés non résiliées) qu'aucune zone ne couvre —
+   `GET /admin/delivery-zones/uncovered-postal-codes`, lu par le port
+   `DeliveryPostalCodesReader` qu'`account/` implémente — avec, par code, les
+   comptes concernés et « Ajouter un tarif », qui ouvre le panneau de zone
+   prérempli. La fiche client (onglet Informations) fait le même rapprochement
+   côté front, sur la liste publique des zones, et renvoie au réglage par
+   `?addPostalCode=73320`. Les deux appliquent `longestMatchingPrefix` de
+   `@lfd/contracts`, la règle du checkout : l'avertissement ne peut pas dire
+   autre chose que le refus.
+
 ## Provisioning local JIT (prérequis auth)
 
 L'authentification (`CustomerUserResolver`) relie le `sub` Auth0 à un `User`

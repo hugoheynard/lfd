@@ -6,6 +6,7 @@ import type {
   CreatedDeliveryZoneResponse,
   DeliveryZonePayload,
   DeliveryZoneView,
+  UncoveredPostalCodeView,
 } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../../api/api-config';
@@ -23,6 +24,15 @@ export class DeliveryZonesService {
   list(): Promise<readonly DeliveryZoneView[]> {
     return firstValueFrom(
       this.http.get<readonly DeliveryZoneView[]>(`${B2B_API_BASE}/delivery-zones`),
+    );
+  }
+
+  /** Les codes postaux d'adresses de livraison qu'aucune zone ne couvre (staff). */
+  uncoveredPostalCodes(): Promise<readonly UncoveredPostalCodeView[]> {
+    return firstValueFrom(
+      this.http.get<readonly UncoveredPostalCodeView[]>(
+        `${B2B_API_BASE}/admin/delivery-zones/uncovered-postal-codes`,
+      ),
     );
   }
 

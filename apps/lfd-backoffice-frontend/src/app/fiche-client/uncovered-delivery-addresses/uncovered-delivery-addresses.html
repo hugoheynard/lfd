@@ -1,0 +1,18 @@
+@for (address of uncovered(); track address.id) {
+  <fold-callout appearance="inset" variant="warning" icon="truck">
+    L'adresse <strong>{{ name(address) }}</strong> ({{ address.codePostal }} {{ address.ville }})
+    n'est couverte par aucune zone de livraison : ce client ne peut pas être livré à cette adresse.
+    @if (canAddFee()) {
+      <a
+        actions
+        foldButton
+        emphasis="outline"
+        size="sm"
+        [routerLink]="zonesParam"
+        [queryParams]="query(address)"
+      >
+        Ajouter un tarif pour {{ address.codePostal }}
+      </a>
+    }
+  </fold-callout>
+}

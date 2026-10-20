@@ -4,6 +4,7 @@
   "test/audiences.e2e-spec.ts": 8841,
   "test/bundles.e2e-spec.ts": 13045,
   "test/bought-with.e2e-spec.ts": 9483,
+  "test/delivery-zones-uncovered.e2e-spec.ts": 7298,
   "test/usual-suggestions.e2e-spec.ts": 10831,
   "test/account-journal.e2e-spec.ts": 7134,
   "test/account.e2e-spec.ts": 7770,

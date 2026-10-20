@@ -196,10 +196,12 @@ import { MembershipAcceptance } from "./infrastructure/membership-acceptance.js"
 import { InvitationRenewal } from "./domain/ports/invitation-renewal.js";
 import { PrismaInvitationRenewal } from "./infrastructure/prisma-invitation-renewal.js";
 import { AcceptedMembersReader } from "./domain/ports/accepted-members.reader.js";
+import { DeliveryPostalCodesReader } from "./domain/ports/delivery-postal-codes.reader.js";
 import { CompanyParentReader } from "./domain/ports/company-parent.reader.js";
 import { SubAccountNoticeRulesReader } from "./domain/ports/sub-account-notice-rules.reader.js";
 import { SubAccountNoticeRulesWriter } from "./domain/ports/sub-account-notice-rules.writer.js";
 import { PrismaAcceptedMembersReader } from "./infrastructure/prisma-accepted-members.reader.js";
+import { PrismaDeliveryPostalCodesReader } from "./infrastructure/prisma-delivery-postal-codes.reader.js";
 import { PrismaCompanyParentReader } from "./infrastructure/prisma-company-parent.reader.js";
 import { CompanyLifecycleReader } from "./domain/ports/company-lifecycle.reader.js";
 import { PrismaCompanyLifecycleReader } from "./infrastructure/prisma-company-lifecycle.reader.js";
@@ -439,6 +441,8 @@ import {
     { provide: CompanyLifecycleReader, useClass: PrismaCompanyLifecycleReader },
     { provide: SubAccountNoticeRulesReader, useClass: PrismaSubAccountNoticeRulesReader },
     { provide: SubAccountNoticeRulesWriter, useClass: PrismaSubAccountNoticeRulesWriter },
+    // Les codes postaux de livraison, que le réglage des zones rapproche (2026-10-20).
+    { provide: DeliveryPostalCodesReader, useClass: PrismaDeliveryPostalCodesReader },
   ],
   // `StaffDirectory` : l'accès aux fonctionnalités fige l'auteur d'un écart par
   // le même port que la certification d'un KBIS (2026-09-14).
@@ -453,6 +457,7 @@ import {
     CompanyLifecycleReader,
     SubAccountNoticeRulesReader,
     SubAccountNoticeRulesWriter,
+    DeliveryPostalCodesReader,
   ],
 })
 export class AccountModule {}

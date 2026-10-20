@@ -1,0 +1,34 @@
+:host {
+  display: block;
+}
+.codes {
+  list-style: none;
+  margin: var(--fold-space-sm) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+.code {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+}
+.code-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--fold-space-sm);
+}
+.code-cp {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.code-city,
+.code-companies {
+  font-size: var(--fold-text-sm);
+}
+.code-city {
+  color: var(--fold-color-text-muted);
+}

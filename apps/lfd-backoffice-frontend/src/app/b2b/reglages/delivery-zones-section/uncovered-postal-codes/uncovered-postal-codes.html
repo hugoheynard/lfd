@@ -1,0 +1,43 @@
+@if (state() === 'error') {
+  <fold-callout appearance="inset" variant="neutral">
+    Impossible de vérifier quelles adresses de livraison sont hors zone.
+  </fold-callout>
+} @else if (state() === 'ready' && codes().length > 0) {
+  <fold-callout appearance="inset" variant="warning" icon="truck">
+    <strong>{{ headline() }}</strong>
+    <ul class="codes">
+      @for (code of codes(); track code.postalCode) {
+        <li class="code">
+          <div class="code-main">
+            <span class="code-cp">{{ code.postalCode }}</span>
+            @if (code.cities.length > 0) {
+              <span class="code-city">{{ code.cities.join(', ') }}</span>
+            }
+            <span class="code-companies">
+              @for (company of code.companies; track company.id; let last = $last) {
+                <a [routerLink]="['/comptes-clients', company.id, 'informations']">{{
+                  company.name
+                }}</a
+                >{{ last ? '' : ', ' }}
+              }
+              @if (others(code) > 0) {
+                et {{ others(code) }} autre{{ others(code) > 1 ? 's' : '' }}
+              }
+            </span>
+          </div>
+          @if (canWrite()) {
+            <button
+              foldButton
+              emphasis="outline"
+              size="sm"
+              icon="plus"
+              (click)="addZone.emit(code.postalCode)"
+            >
+              Ajouter un tarif
+            </button>
+          }
+        </li>
+      }
+    </ul>
+  </fold-callout>
+}

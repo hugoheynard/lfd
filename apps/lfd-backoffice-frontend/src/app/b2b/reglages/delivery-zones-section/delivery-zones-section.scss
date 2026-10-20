@@ -18,6 +18,9 @@
   color: var(--fold-color-text-muted);
   max-width: 44rem;
 }
+.uncovered {
+  margin-top: var(--fold-space-lg);
+}
 .zones {
   list-style: none;
   margin: var(--fold-space-lg) 0 0;

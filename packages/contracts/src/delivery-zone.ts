@@ -57,3 +57,28 @@ export function longestMatchingPrefix(prefixes: readonly string[], codePostal: s
   }
   return best;
 }
+
+/** Un compte qui a une adresse de livraison sous un code postal non couvert. */
+export interface UncoveredPostalCodeCompany {
+  readonly id: string;
+  /** L'enseigne, ou la raison sociale à défaut. */
+  readonly name: string;
+}
+
+/**
+ * Un code postal d'adresse de livraison qu'**aucune** zone ne couvre
+ * (`GET /admin/delivery-zones/uncovered-postal-codes`). Hors zone, une commande
+ * livrée est refusée : ces comptes ne peuvent pas être livrés tant qu'un tarif
+ * n'est pas posé. `companies` en montre au plus {@link UNCOVERED_POSTAL_CODE_COMPANIES_SHOWN} ;
+ * `companyCount` les compte tous.
+ */
+export interface UncoveredPostalCodeView {
+  readonly postalCode: string;
+  /** Les villes saisies sous ce code, sans doublon, triées. */
+  readonly cities: readonly string[];
+  readonly companyCount: number;
+  readonly companies: readonly UncoveredPostalCodeCompany[];
+}
+
+/** Combien de comptes une ligne de {@link UncoveredPostalCodeView} nomme, au plus. */
+export const UNCOVERED_POSTAL_CODE_COMPANIES_SHOWN = 3;

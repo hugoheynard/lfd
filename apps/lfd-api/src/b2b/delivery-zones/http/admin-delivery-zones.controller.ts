@@ -3,12 +3,24 @@ import {
   type CreatedDeliveryZoneResponse,
   type DeliveryZonePayload,
   deliveryZonePayloadSchema,
+  type UncoveredPostalCodeView,
 } from "@lfd/contracts";
-import { Body, Controller, Delete, HttpCode, HttpStatus, Param, Patch, Post } from "@nestjs/common";
-import { CommandBus } from "@nestjs/cqrs";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+} from "@nestjs/common";
+import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { CreateDeliveryZoneCommand } from "../application/create-delivery-zone.command.js";
+import { ListUncoveredPostalCodesQuery } from "../application/list-uncovered-postal-codes.query.js";
 import { RemoveDeliveryZoneCommand } from "../application/remove-delivery-zone.command.js";
 import { UpdateDeliveryZoneCommand } from "../application/update-delivery-zone.command.js";
 
@@ -21,7 +33,22 @@ import { UpdateDeliveryZoneCommand } from "../application/update-delivery-zone.c
 @Controller("admin/delivery-zones")
 @AdminSurface("delivery_fee")
 export class AdminDeliveryZonesController {
-  constructor(private readonly commands: CommandBus) {}
+  constructor(
+    private readonly commands: CommandBus,
+    private readonly queries: QueryBus,
+  ) {}
+
+  /**
+   * Les codes postaux d'adresses de livraison qu'aucune zone ne couvre : ces
+   * comptes ne peuvent pas être livrés. Lu par l'écran des zones pour proposer
+   * d'ajouter un tarif.
+   */
+  @Get("uncovered-postal-codes")
+  uncoveredPostalCodes(): Promise<readonly UncoveredPostalCodeView[]> {
+    return this.queries.execute<ListUncoveredPostalCodesQuery, readonly UncoveredPostalCodeView[]>(
+      new ListUncoveredPostalCodesQuery(),
+    );
+  }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)

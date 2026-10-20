@@ -30,9 +30,14 @@ import {
 import { NotifyService } from '../../../../notify.service';
 import { DeliveryZonesService } from '../../delivery-zones.service';
 
-/** Charge d'ouverture : la zone à éditer, ou `null` pour en créer une. */
+/**
+ * Charge d'ouverture : la zone à éditer, ou `null` pour en créer une. En
+ * création, `postalCode` préremplit la première ligne — le code d'une adresse
+ * de livraison qu'aucune zone ne couvre (2026-10-20).
+ */
 export interface ZonePanelData {
   readonly zone: DeliveryZoneView | null;
+  readonly postalCode?: string;
 }
 
 /** Type d'une entrée : un code postal exact (5 chiffres) ou un préfixe de secteur. */
@@ -125,6 +130,7 @@ export class ZonePanel {
     effect(() => {
       const zone = this.data()?.zone ?? null;
       if (zone === null) {
+        this.prefill(this.data()?.postalCode ?? '');
         return;
       }
       this.rows.set(
@@ -137,6 +143,16 @@ export class ZonePanel {
       this.label.set(zone.label);
       this.fee.set(zone.fee);
     });
+  }
+
+  /** Création préremplie : une ligne, typée par la longueur comme à l'édition. */
+  private prefill(postalCode: string): void {
+    if (postalCode === '') {
+      return;
+    }
+    this.rows.set([
+      { id: this.seq++, type: postalCode.length === 5 ? 'postcode' : 'prefix', value: postalCode },
+    ]);
   }
 
   protected addRow(): void {

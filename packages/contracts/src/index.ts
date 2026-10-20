@@ -823,11 +823,17 @@ export type {
   DossierRecipientView,
   DossierStaffCandidateView,
 } from "./production-dossier-recipients.js";
-export { deliveryZonePayloadSchema, longestMatchingPrefix } from "./delivery-zone.js";
+export {
+  deliveryZonePayloadSchema,
+  longestMatchingPrefix,
+  UNCOVERED_POSTAL_CODE_COMPANIES_SHOWN,
+} from "./delivery-zone.js";
 export type {
   DeliveryZonePayload,
   DeliveryZoneView,
   CreatedDeliveryZoneResponse,
+  UncoveredPostalCodeCompany,
+  UncoveredPostalCodeView,
 } from "./delivery-zone.js";
 export {
   staffResourceSchema,
