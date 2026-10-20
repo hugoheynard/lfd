@@ -1,5 +1,21 @@
 # Les sous-comptes d'un compte pro
 
+> 🔴 **Bandeau du 2026-10-20 — « rien n'est bâti » est FAUX.** Relu contre le code :
+>
+> | Lot  | État                                                                                                                                      |
+> | ---- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+> | S1   | ✅ bâti — `parent_company_id`, `company_follows`, migrations `20261005100000` ; l'alignement s'appelle Follow/StopFollowing               |
+> | S2   | ✅ pour l'essentiel — écrans de la fiche client (sous-comptes, bandeau parent, bascule de suivi)                                          |
+> | S3   | ✅ bâti — `pricingCompanyId` (`pricing-parties.resolver.ts`), e2e `sub-account-pricing`                                                   |
+> | S4-0 | ✅ bâti — lot de prélèvement figé (`20261005140000`)                                                                                      |
+> | S4   | 🟡 partiel — payeur copié (`order-drafting.service.ts`), mandat par compte bancaire + instantané débiteur ; `activeFor` reste par société |
+> | S5   | ❔ non vérifié                                                                                                                            |
+> | S6   | ❌ non bâti — `resolve-company.ts` ignore les sous-comptes                                                                                |
+>
+> ⚠️ `effective-role.ts` (§3, « une seule règle lue par les deux voies ») existe et est testé, mais **aucun code de
+> production ne l'importe**. Les numéros de ligne cités plus bas (et dans le ledger) ont bougé : ne pas s'y fier
+> sans rouvrir. Le corps ci-dessous est le plan tel qu'écrit, non réécrit.
+
 > 📐 **Plan v3, rien n'est bâti** (2026-10-05). v3 : les deux cas de Hugo
 > (chalets, Club Med), puis une seconde contradiction de `vitruve` (§9).
 > La v1 a été contredite par

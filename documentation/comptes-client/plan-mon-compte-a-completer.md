@@ -1,6 +1,11 @@
 # Plan — Mon compte dit ce qui manque, comme la fiche client de l'admin
 
 > **Ouvert et construit le 2026-09-15** à la demande de Hugo. 🟡 Non vu à l'écran par l'assistant.
+>
+> ✅ **Les deux lots du §3 sont bâtis** (relu le 2026-10-20) : `GET /companies/:companyId/activation`
+> (`get-my-company-activation.handler.ts`, `test/company-activation.e2e-spec.ts`) et l'écran
+> (`client/mon-compte/completion/`). Le §1 décrit l'état **avant** construction : la ligne
+> « servi qu'au staff » n'est plus vraie.
 
 ## 0. La demande
 
@@ -14,7 +19,7 @@
 | Fait                                                                                                                                                                                                                                                            | Où                                                                                                              |
 | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
 | L'admin affiche en haut de la fiche `lfd-company-activation-checklist` : un `fold-callout` warning, une ligne par manque, un bouton par ligne                                                                                                                   | `packages/b2b-ui/src/company/company-activation-checklist/`, `fiche-client/informations/informations-page.html` |
-| Le composant porte une chaîne française en dur : « n'empêche pas l'activation »                                                                                                                                                                                 | `company-activation-checklist.html:28`                                                                          |
+| Le composant porte une chaîne française en dur : « n'empêche pas l'activation »                                                                                                                                                                                 | `company-activation-checklist.ts` (`input(...)`, pas le gabarit)                                                |
 | Les manques sont **jugés par le serveur** : `activationGate(company)` rend `ActivationGate { canActivate, blocking, checklist }` — blocages `identite_legale`, `detenteur`, `telephone`, `vat`, `facturation` ; pièces `vat`, `kbis` (non bloquante), `billing` | `account/domain/services/activation-gate.ts`, contrat `packages/contracts/src/admin-company.ts`                 |
 | Ce verdict n'est servi **qu'au staff** (`GetCompanyForStaffHandler`, via `AdminCompanyReader.byId`)                                                                                                                                                             | `account/application/queries/get-company-for-staff.handler.ts`                                                  |
 | Le client connaît ses adresses (`ClientAddresses.billing`, `.deliveries`) et les blocages de frappe (`ClientMandate.mintBlockers`, `issuerScheme`)                                                                                                              | `client/client-addresses.service.ts`, `client/client-mandate.service.ts`                                        |

@@ -18,8 +18,10 @@ puisses regarder ». **Regarder, pas agir.**
 ## 1. S'en servir
 
 1. Ouvrir **Outils agent** (`/outils-agent`). La route et son entrée de menu
-   (rail et tuiles) s'ouvrent à l'un des quatre droits : `pim_catalog:write`,
-   `media_library:write`, `ops_health:read` ou **`b2b_companies:read`** — le
+   (rail et tuiles) s'ouvrent à l'un des huit droits (`app.routes.ts`, relu le 2026-10-20) :
+   `pim_catalog:write`, `media_library:write`, `ops_health:read`,
+   `delivery_settings:read`, `staff_access:read`, `lfc_suggestions:read`,
+   `b2b_growth:read` ou **`b2b_companies:read`** — le
    droit de la fiche client (`fiche-client.routes.ts`) et de ses routes
    (`@AdminSurface("b2b_companies")`).
 2. La trousse n'est déclarée **qu'avec `b2b_companies:read`** ; sans lui, la

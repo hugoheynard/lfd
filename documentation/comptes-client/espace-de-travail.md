@@ -55,8 +55,10 @@ appelée par `auth.guard.ts` avec les rattachements que
   rattachement est ignorée, jamais servie. Un identifiant de société est un
   `cuid()`, qui ne peut pas valoir `personal`.
 - Seul `@ActingCompany()` lit le résultat : vitrine reconnue
-  (`/shop/catalogue/mine`), devis (`/shop/quote/mine`), panier (`/shop/cart`)
-  et passation (`POST /orders`). Les routes `/companies/:companyId/*` passent
+  (`/shop/catalogue/mine`), devis (`/shop/quote/mine`), panier (`/shop/cart`),
+  passation (`POST /orders`), et aussi fidélité, messages et signalements de
+  commande, vitrine du client, points de retrait et recommandations (relevé le
+  2026-10-20 : `grep -rl ActingCompany apps/lfd-api/src/b2b/*/http`). Les routes `/companies/:companyId/*` passent
   par le rôle, pas par l'espace.
 - **Le perso est ouvert à tout rattaché, sans condition** (Hugo, Q1) : tarif
   catalogue et carte, hors mercuriale, hors engagement de volume, y compris

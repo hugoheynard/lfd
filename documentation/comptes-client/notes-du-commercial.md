@@ -134,7 +134,8 @@ sequenceDiagram
 ## 5. Le journal — sans contenu
 
 Chaque geste publie `company.client_note_edited_by_staff`
-`{ companyId, noteId, action }`, `action` ∈ `note_added` / `note_revised` /
+`{ subjectLabel, noteId?, action }` — la société en est le `subjectId`,
+pas un champ de la charge (lot B, 2026-09-19) — `action` ∈ `note_added` / `note_revised` /
 `note_removed` / `notes_reordered` (sans `noteId` pour ce dernier : le geste
 range tout le carnet). **Ni titre, ni description, ni clé de photo** : le
 journal est append-only, et une note supprimée définitivement y resterait

@@ -1,6 +1,8 @@
 # Alertes de compte client
 
-**État : livré — tranches A à E.** Ce document reste la référence du _pourquoi_ ;
+**État : livré — tranches A à D ; E livrée côté API seulement.** La route
+`POST /orders/preflight` existe, mais aucun écran de la boutique ne l'appelle
+(vérifié le 2026-10-20). Ce document reste la référence du _pourquoi_ ;
 les écarts entre ce qui était prévu ici et ce qui a été construit sont signalés
 en place.
 
@@ -17,13 +19,13 @@ paramétrée globalement, évaluée à chaque commande, dérogeable compte par c
 
 ## 1. Le vocabulaire
 
-| Terme                    | Ce que c'est                                                                                      |
-| ------------------------ | ------------------------------------------------------------------------------------------------- |
-| **Type d'alerte** (kind) | Un **détecteur** — du code : `first_order`, `quantity_drift`, `quantity_outlier`. Ouvert au code. |
-| **Règle globale**        | Un type + ses paramètres + ses canaux, valables pour **tous** les comptes. Une ligne par type.    |
-| **Dérogation de compte** | Ce qu'un compte fait de cette règle : l'ignorer, ou en porter une version à lui.                  |
-| **Règle effective**      | `dérogation ?? règle globale`. C'est elle qu'on évalue, et elle seule.                            |
-| **Alerte** (déclenchée)  | Un fait daté : « le 11/08, sur la commande LFC-1042, 12 baguettes contre 4,3 en moyenne ».        |
+| Terme                    | Ce que c'est                                                                                                                                      |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Type d'alerte** (kind) | Un **détecteur** — du code : `product.first_order`, `product.quantity_drift`, `product.quantity_outlier`, `subscription.changed`. Ouvert au code. |
+| **Règle globale**        | Un type + ses paramètres + ses canaux, valables pour **tous** les comptes. Une ligne par type.                                                    |
+| **Dérogation de compte** | Ce qu'un compte fait de cette règle : l'ignorer, ou en porter une version à lui.                                                                  |
+| **Règle effective**      | `dérogation ?? règle globale`. C'est elle qu'on évalue, et elle seule.                                                                            |
+| **Alerte** (déclenchée)  | Un fait daté : « le 11/08, sur la commande LFC-1042, 12 baguettes contre 4,3 en moyenne ».                                                        |
 
 La distinction qui porte tout le modèle : un **type** est du code (un détecteur
 a besoin d'un algorithme), une **règle** est de la donnée (seuils, canaux, on/off).
@@ -32,7 +34,12 @@ dans un `switch` (OCP). Ajouter un seuil = écrire une ligne.
 
 ---
 
-## 2. Les trois types du premier lot
+## 2. Les types
+
+Trois types portent sur les produits d'une commande ; un quatrième,
+`subscription.changed`, écoute la modification d'un panier récurrent
+(`watchQuantities`, `watchRecurrence`, `watchFulfillment` — au moins une
+facette cochée). Ce document détaille les trois premiers.
 
 ### `product.first_order` — un produit jamais pris
 
@@ -50,10 +57,12 @@ compte.
 
 | Paramètre           | Défaut          | Pourquoi                                                                                                    |
 | ------------------- | --------------- | ----------------------------------------------------------------------------------------------------------- |
-| `tiers`             | 200/100/50/25 % | L'écart déclencheur **par palier**, indexé sur la moyenne de ce compte pour ce SKU (§2.1).                  |
+| `riseTiers`         | 200/100/50/25 % | L'écart **à la hausse** qui déclenche, par palier, indexé sur la moyenne de ce compte pour ce SKU (§2.1).   |
+| `dropTiers`         | 50/50/40/25 %   | L'écart **à la baisse**, même découpage : une baisse de moitié est un signal à tout volume.                 |
 | `direction`         | `both`          | `up` \| `down` \| `both` — on veut savoir qu'il monte (opportunité) **et** qu'il baisse (signal de départ). |
 | `baselineOrders`    | `6`             | Les N dernières commandes **contenant ce SKU**, la commande courante exclue.                                |
 | `minBaselineOrders` | `3`             | En dessous, « la moyenne » n'est pas une moyenne — la règle se tait plutôt que de mentir.                   |
+| `windowDays`        | `365`           | Au-delà, une commande est trop vieille pour dire quoi que ce soit des habitudes actuelles.                  |
 
 La **moyenne de ce compte pour ce SKU est la référence la plus adaptable dont on
 dispose** : elle sait, elle, que ce client-là prend ce produit-là à l'unité ou par
@@ -81,7 +90,7 @@ comptes confondus.
 
 | Paramètre                    | Défaut                 | Pourquoi                                                                             |
 | ---------------------------- | ---------------------- | ------------------------------------------------------------------------------------ |
-| `tiers`                      | 4 paliers (ci-dessous) | Le seuil **descend quand la norme monte** — voir juste après.                        |
+| `riseTiers`                  | 4 paliers (ci-dessous) | Le seuil **descend quand la norme monte** — voir juste après.                        |
 | `windowDays`                 | `180`                  | La fenêtre sur laquelle la norme du produit se mesure.                               |
 | `minSampleLines`             | `20`                   | Sous ce nombre de lignes observées, il n'y a pas de « norme » à invoquer.            |
 | `onlyWithoutAccountBaseline` | `true`                 | Le compte a sa propre moyenne ? Elle est plus fine, elle fait autorité — on se tait. |
@@ -97,19 +106,20 @@ C'est de la **donnée**, pas une formule cachée — on veut pouvoir la lire et 
 corriger à l'écran, et elle se règle par tâtonnement une fois qu'on voit ce que
 les alertes disent vraiment :
 
-| Référence  | `quantity_drift`<br/>(sa moyenne pour ce SKU) | `quantity_outlier`<br/>(la norme du produit) |
-| ---------- | --------------------------------------------- | -------------------------------------------- |
-| jusqu'à 2  | 200 %                                         | 400 %                                        |
-| jusqu'à 10 | 100 %                                         | 200 %                                        |
-| jusqu'à 50 | 50 %                                          | 80 %                                         |
-| au-delà    | 25 %                                          | 30 %                                         |
+| Référence  | `quantity_drift` `riseTiers`<br/>(sa moyenne pour ce SKU) | `quantity_outlier`<br/>(la norme du produit) |
+| ---------- | --------------------------------------------------------- | -------------------------------------------- |
+| jusqu'à 2  | 200 %                                                     | 400 %                                        |
+| jusqu'à 10 | 100 %                                                     | 200 %                                        |
+| jusqu'à 50 | 50 %                                                      | 80 %                                         |
+| au-delà    | 25 %                                                      | 30 %                                         |
 
 Le palier se choisit sur la **référence**, jamais sur la quantité commandée :
 c'est la référence qui dit si l'on est sur un usage à l'unité ou à la centaine.
 Et les deux colonnes ne sont pas les mêmes parce que les deux références ne se
-valent pas — voir §2.
+valent pas — voir §2. La baisse de `quantity_drift` a sa propre échelle
+(`dropTiers`, tableau du §2).
 
-Deux invariants tenus par le contrat (`alertThresholdTiersSchema`) : les bornes
+Deux invariants tenus par le contrat (`tiersSchema`, dans `packages/contracts/src/account-alert.ts`) : les bornes
 sont **strictement croissantes**, et le **dernier palier est ouvert**. Sans ce
 dernier, une norme au-dessus du plus haut seuil ne serait couverte par rien — et
 la règle se tairait précisément sur les plus gros volumes, ceux qui coûtent.
@@ -120,9 +130,10 @@ usage réel qui les a justifiés, pas une symétrie décidée d'avance.
 Ce dernier paramètre est ce qui empêche les deux règles de crier ensemble pour un
 même écart. Décoché, l'écran de réglages le dit là où on le décoche.
 
-C'est **le seul type coché « client » par défaut** : c'est un garde-fou de
-saisie, et il sert surtout au moment où personne côté staff ne peut le rattraper
-— la toute première commande d'un compte qu'on ne connaît pas encore.
+C'est un type **montrable au client** (`customerShowable`), mais **aucun type
+n'est coché « client » par défaut** : `customerVisible` vaut `false` pour tous
+dans `ALERT_KINDS` (`packages/contracts/src/account-alert-rule.ts`). Parler au
+client se décide en Réglages, jamais par défaut.
 
 > **Conséquence assumée : `quantity_drift` ne détecte pas un arrêt.** Un client qui
 > cesse complètement un produit n'a plus de ligne, donc plus d'écart. C'est un
@@ -210,15 +221,14 @@ delivery: {
 }
 ```
 
-- **`staffEmail`** — un template de plus dans `apps/lfd-api/src/platform/mailer/mail-templates.ts`.
-  Le socle existe (`staff.appointment-booked` et `staff.support-requested` le
-  prouvent).
-- **`staffInApp`** — ⚠️ **ce socle n'existe pas.** Il n'y a pas de notion de
-  notification staff dans le back-office : ni table, ni endpoint, ni cloche. La
-  tâche J2 « notification à l'équipe » la réclamait déjà pour les rendez-vous.
-  **Décidé : on le construit** (tranche D), en socle **générique** — un sujet, un
-  lien, un état lu/non-lu — dont les alertes sont le premier consommateur et J2
-  le second. Pas une cloche à alertes.
+- **`staffEmail`** — le template `staff.account-alert` de
+  `apps/lfd-api/src/platform/mailer/mail-templates.ts`.
+- **`staffInApp`** — le socle de notification staff construit en tranche D :
+  le modèle `StaffNotification` (`prisma/schema/public/staff.prisma`), la route
+  de `src/staff/notifications/http/my-staff-notifications.controller.ts`, et la
+  cloche `app-notification-bell` du back-office. Il est **générique** — un
+  sujet, un lien, un état lu/non-lu — et les alertes n'en sont qu'un
+  consommateur. Les deux canaux partent de `dispatch-alert-channels.service.ts`.
 - **`customerVisible`** — la case n'existe que pour les types **montrables au
   client** (§8). Un type déclare ce trait ; `product.first_order` ne l'est pas.
 
@@ -234,89 +244,114 @@ flowchart LR
   A[OrderPlacedEvent] --> B{companyId ?}
   B -- null --> Z[rien]
   B -- société --> C[règles effectives du compte]
-  C --> D[historique par SKU<br/>AccountOrderHistoryReader]
+  C --> D[historique par SKU<br/>OrderHistoryReader]
   D --> E[détecteurs purs<br/>kind → AlertDraft&#91;&#93;]
   E --> F[persister<br/>clé idempotente]
   F --> G[canaux : e-mail / in-app / client]
 ```
 
 - **Déclencheur** : `OrderPlacedEvent`, qui existe et est déjà écouté par
-  `growth/`. Un nouveau contexte `alerts/` s'y abonne à son tour.
+  `growth/`. Le contexte `b2b/alerts/` s'y abonne (`on-order-placed.handler.ts`).
 - **Les détecteurs sont purs** : `(context, params) => AlertDraft[]`. Testables
   sans Nest, sans base, sans horloge — c'est là que vit toute la logique.
 - **Un registre** `kind → détecteur` remplace le `switch`. Nouveau type = nouveau
   fichier + une entrée.
-- **Idempotence** : clé déterministe `${kind}:${orderId}:${sku}`, `@unique`, comme
-  le fait déjà `ActivityRecorder`. Un événement rejoué n'invente pas de doublon.
+- **Idempotence** : clé déterministe `${kind}:${orderId}` (`alertIdempotencyKey`,
+  `domain/evaluate-order.ts`), `@unique`. Une alerte par (type × commande), pas
+  par produit : les lignes concernées sont dans ses `findings`. La clé ne porte
+  pas les seuils — réévaluer après un ajustement de réglage ne repeuple pas
+  l'historique.
 - **Le message est figé au déclenchement** (« 12 contre 4,3 en moyenne »), pas
   recalculé à l'affichage : la moyenne d'aujourd'hui ne doit pas réécrire ce
   qu'on a constaté en mars.
-- **Synchrone dans le handler d'événement** au volume actuel. Si l'évaluation
-  devient coûteuse (plus de types, historiques longs), elle passe en file — la
-  frontière est déjà au bon endroit pour ça.
+- **Hors de la requête** : le handler d'événement confie l'évaluation à
+  `BackgroundWork` (`platform/events/`), pour que la passation de commande
+  n'attende pas les détecteurs.
 
 ### Découpage DDD
 
-Nouveau bounded context `src/alerts/` (langage propre : règle, dérogation,
-détecteur, alerte — ce n'est ni de l'acquisition ni de la commande) :
+Le bounded context `apps/lfd-api/src/b2b/alerts/` (langage propre : règle,
+dérogation, détecteur, alerte — ce n'est ni de l'acquisition ni de la commande) :
 
 ```
-src/alerts/
+src/b2b/alerts/
 ├── domain/
-│   ├── entities/account-alert.ts          # new → acknowledged (une transition)
-│   ├── value-objects/alert-delivery.ts    # les 3 canaux
-│   ├── detectors/first-order.ts           # purs
-│   ├── detectors/quantity-drift.ts
-│   ├── detectors/registry.ts
-│   ├── rules/resolve-effective-rules.ts   # dérogation ?? global (pur)
-│   └── ports/{alert-rules.store,account-alert.repository,order-history.reader}.ts
+│   ├── alert-rules.ts              # lecture des réglages globaux, repli sur les défauts
+│   ├── account-alert-rules.ts      # resolveAccountRules : dérogation ?? global (pur)
+│   ├── evaluate-order.ts           # détecteurs → alertes, clé d'idempotence
+│   ├── customer-warnings.ts        # la phrase client, rendue depuis le constat
+│   ├── alert-labels.ts
+│   ├── detectors/{first-order,quantity-drift,quantity-outlier,deviation,context,registry}.ts
+│   ├── errors/alert-errors.ts
+│   └── ports/                      # account-alert.repository, alert-rules.store,
+│                                   # account-alert-overrides.store, order-history.reader,
+│                                   # evaluated-order.reader, product-norm.store,
+│                                   # company.reader, alert-channels
 ├── application/{commands,queries,handlers}/
 ├── infrastructure/prisma-*.ts
-└── http/{admin-alert-rules,admin-account-alerts}.controller.ts
+└── http/{admin-alert-rules,admin-account-alert-rules,admin-account-alerts,
+          admin-recompute-norms,order-preflight}.controller.ts
 ```
 
 Les réglages globaux et les dérogations sont de la **config sans transition** :
-CRUD honnête `Payload ↔ View`, validation dans les value-objects (§3.1 du
-CLAUDE.md). Seule l'alerte déclenchée porte une transition, donc une entité.
+CRUD honnête `Payload ↔ View`, validation par les schémas Zod du contrat.
+L'alerte déclenchée n'a pas d'entité non plus : sa seule transition,
+l'acquittement, est un `updateMany` **conditionné** sur `acknowledgedAt: null`
+(`prisma-account-alert.repository.ts`) — un second acquittement ne réécrit ni
+l'auteur ni l'instant.
 
-`alerts/` ne lit **jamais** les tables `orders` directement : un port
-`AccountOrderHistoryReader` déclaré dans son domaine, implémenté en Prisma dans
-son infrastructure — exactement ce que fait déjà `prisma-order-metrics.reader`
-côté `growth/`.
+`alerts/` lit les tables de commande **par ses propres adaptateurs**, sans passer
+par `b2b/orders/` : `prisma-order-history.reader.ts`,
+`prisma-evaluated-order.reader.ts` (Prisma sur `order` / `orderLine`) et
+`prisma-product-norm.store.ts` (SQL `order_lines JOIN orders`) — vérifié le
+2026-10-20. Les deux contextes sont dans le même bloc `b2b`, que la matrice des
+frontières ne cloisonne pas ; chaque lecture reste derrière un port déclaré
+dans `domain/ports/`.
 
 ---
 
 ## 7. Persistance
 
+Les trois modèles vivent dans `apps/lfd-api/prisma/schema/public/alerts.prisma`
+(commentaires omis ici) :
+
 ```prisma
-model AlertRuleSetting {          // réglage GLOBAL, une ligne par type
-  kind      String   @id          // product.first_order | product.quantity_drift
-  enabled   Boolean  @default(true)
-  params    Json                  // validé par le schéma Zod du type
-  delivery  Json                  // { staffInApp, staffEmail, customerVisible }
-  updatedAt DateTime @updatedAt
+model AlertRuleSetting {
+  kind String @id
+  enabled Boolean @default(true)
+  params Json
+  delivery Json                       // { staffInApp, staffEmail, customerVisible }
+  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedBy String?  @map("updated_by")
 }
 
-model AccountAlertOverride {      // dérogation, SEULEMENT si dérogation
-  companyId String
-  kind      String
-  mode      String                // off | custom
-  params    Json?                 // complet si custom, null si off
-  delivery  Json?
+model AccountAlertOverride {
+  companyId String  @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  kind String
+  mode String                         // off | custom
+  enabled  Boolean?                   // nuls en mode off
+  params   Json?
+  delivery Json?
+  updatedAt DateTime @updatedAt @map("updated_at")
+  updatedBy String?  @map("updated_by")
   @@id([companyId, kind])
+  @@index([companyId])
 }
 
-model AccountAlert {              // le fait déclenché
-  id             String   @id     // ULID
-  companyId      String
-  kind           String
-  orderId        String
-  sku            String
-  idempotencyKey String   @unique // kind:orderId:sku
-  occurredAt     DateTime
-  payload        Json             // quantité, moyenne, écart, nom produit figés
-  acknowledgedAt DateTime?
-  acknowledgedBy String?          // sub staff
+model AccountAlert {
+  id String @id                       // ULID
+  companyId String  @map("company_id")
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  kind String
+  orderId     String @map("order_id")
+  orderNumber String @map("order_number")
+  idempotencyKey String @unique @map("idempotency_key")   // kind:orderId
+  occurredAt DateTime @map("occurred_at")
+  findings Json                       // [{ sku, productName, quantity, baseline, deviationPercent, message }]
+  acknowledgedAt DateTime? @map("acknowledged_at")
+  acknowledgedBy String?   @map("acknowledged_by")
+  createdAt DateTime @default(now()) @map("created_at")
   @@index([companyId, occurredAt])
   @@index([companyId, acknowledgedAt])
 }
@@ -331,14 +366,8 @@ un type ne doit pas coûter une migration.
 
 ### Réglages → Commercial → « Alertes »
 
-⚠️ **Collision de noms à traiter.** La section `alertes` existe déjà et porte les
-seuils de couleur du calendrier d'acquisition (`alerts-card`, persistés en
-`localStorage` — dette P1-8). Ce n'est **pas** la même chose.
-
-Proposition : la section devient **« Alertes »** et porte deux cartes —
-_Alertes d'activation_ (l'existante, inchangée) et _Alertes compte client_ (la
-nouvelle). Une carte par type de règle : on/off, ses paramètres, ses trois cases
-de canaux.
+La section existe : `apps/lfd-backoffice-frontend/src/app/reglages/commercial/alertes-page/`.
+Une carte par type de règle : on/off, ses paramètres, ses trois cases de canaux.
 
 ### Fiche client → 5ᵉ onglet « Alertes »
 
@@ -422,10 +451,12 @@ Trois conséquences sur le modèle :
   - **Aucun nom de produit n'est résolu** : la commande n'existe pas encore, donc
     aucun nom n'a été figé — et le message client ne nomme pas le produit, le
     callout étant posé sous la ligne qui le nomme déjà.
-  - **Côté écran**, le contrôle est **débounçé** (500 ms) et son échec est
-    **silencieux**. Un stepper qu'on tient enfoncé émet une valeur par pression ;
+  - **Côté écran, rien n'est bâti** : aucun appel à `preflight` dans
+    `apps/lfc-ecommerce-frontend/src` (vérifié le 2026-10-20), donc pas de callout.
+    Ce qui est prévu pour lui : un contrôle **débounçé** (500 ms) et un échec
+    **silencieux** — un stepper qu'on tient enfoncé émet une valeur par pression,
     et afficher « le contrôle a échoué » sous une ligne inquiéterait sur un panier
-    parfaitement valide, sans appeler la moindre action.
+    parfaitement valide.
 
 - **`product.first_order` ne se montre jamais au client.** « Vous n'aviez jamais
   pris ce produit » n'est pas une erreur de saisie possible, c'est une évidence.
@@ -442,15 +473,15 @@ Trois conséquences sur le modèle :
 | **B** | ✅ Détecteurs purs + évaluation sur `order.placed` + journal + onglet Alertes (liste, acquittement) | A         |
 | **C** | ✅ Dérogations par compte (backend + rappel/désactiver/modifier sur la fiche)                       | —         |
 | **D** | ✅ Canaux staff : e-mail + **socle de notification** (table, endpoints, cloche du back-office)      | B         |
-| **E** | Garde-fou client : `POST /orders/preflight` + confirmation de commande                              | B         |
+| **E** | ◐ Garde-fou client : `POST /orders/preflight` ✅ ; callout à la confirmation de commande — à bâtir  | B         |
 
 B et C ont finalement été inversées : la dérogation était le cœur de la demande,
 et elle ne dépendait de rien d'autre que du réglage global. B a suivi, et c'est
 elle qui rend ces règles vérifiables : sans détecteur, un réglage n'est qu'une
 intention.
 
-**La tranche D a construit un socle, pas un canal.** Le back-office n'a aucune
-notion de notification staff ; on la crée ici, et les alertes en sont le premier
+**La tranche D a construit un socle, pas un canal.** Le back-office n'avait
+aucune notion de notification staff ; elle l'a créée, et les alertes en sont le premier
 consommateur. Deuxième consommateur immédiat : J2 (« RDV pris », « demande de
 contact déposée »), qui attendait exactement ça — la cloche doit donc être
 **générique** (un sujet, un lien, un état lu/non-lu), pas une cloche à alertes.
@@ -470,8 +501,8 @@ fil est commun, `readBy` dit seulement qui s'en est chargé.
 1. ✅ **Cloche staff in-app** — construite dans la foulée (tranche D), en socle
    générique réutilisé par J2.
 2. ✅ **Affichage client** — à la **confirmation de commande** (§8), comme un
-   garde-fou de saisie. Implique `customerMessage` par type et une évaluation
-   pré-passation.
+   garde-fou de saisie. L'évaluation pré-passation existe ; l'écran qui
+   l'affiche reste à bâtir.
 3. ✅ **Rétro-évaluation** — **l'avenir seulement**. Activer une règle ne rejoue
    pas l'historique : ça produirait d'un coup des centaines d'alertes que
    personne n'acquitterait, et la première chose qu'on ferait serait de les

@@ -54,14 +54,16 @@ dans un commit avec ses tests. Côté écrans, son affichage suit le réglage de
 livraison par clientèle (« E-commerce LFC → Réglages → Livraison ») — il a
 remplacé la constante `DELIVERY_SERVICE_OPEN` le 2026-09-15.
 
-## 3. Ce qui reste à construire : la ligne d'avertissements
+## 3. La ligne d'avertissements
 
 Une pièce qui ne bloque jamais devient décorative si personne ne la regarde. Le
-KBIS non vérifié doit donc **se voir**, et pas sur la fiche — qu'on n'ouvre que
+KBIS non vérifié **se voit** donc, et pas sur la fiche — qu'on n'ouvre que
 lorsqu'on a déjà un problème — mais sur la **liste des comptes clients**, l'écran
 qu'on ouvre pour travailler.
 
-**La forme retenue : une galerie horizontale** en tête de la liste — un bandeau
+**La forme : une galerie horizontale** en tête de la liste
+(`apps/lfd-backoffice-frontend/src/app/comptes-clients/warnings-gallery/`,
+posée dans `comptes-clients-page.html`) — un bandeau
 de cartes d'avertissement qu'on parcourt en scrollant latéralement, une carte par
 compte concerné.
 
@@ -87,42 +89,38 @@ modèle de **scoring commercial** (`LeadScoreView`, « les meilleurs coups du
 jour ») ; y verser une tâche de
 back-office fausserait le score.
 
-⚠️ **Ce badge est le premier d'une famille, et il faut le construire comme tel.**
-Il ne sera pas seul longtemps :
+**Le KBIS est le premier d'une famille**, et la famille est construite comme
+telle. Quatre motifs, dans `packages/contracts/src/company-warning.ts`, du plus
+coûteux au moins pressant :
 
-| Avertissement             | Ce qu'il dit                                  |
-| ------------------------- | --------------------------------------------- |
-| KBIS à vérifier           | l'extrait est là, personne ne l'a ouvert      |
-| Pièce manquante           | le dossier est incomplet, l'activation attend |
-| En attente depuis N jours | le compte est ouvert et n'avance plus         |
-| Mandat SEPA absent        | un moyen de paiement annoncé qui n'existe pas |
+| Motif (`kind`)       | Ce qu'il dit                                                     | `since`                          |
+| -------------------- | ---------------------------------------------------------------- | -------------------------------- |
+| `mandat_absent`      | un règlement différé accordé sans mandat SEPA actif              | `null` — un manque n'a pas d'âge |
+| `activation_bloquee` | dossier en attente, identité, détenteur ou facturation manquants | ouverture du compte              |
+| `attente_prolongee`  | en attente depuis 14 jours ou plus                               | ouverture du compte              |
+| `kbis_a_verifier`    | l'extrait est là, personne ne l'a ouvert                         | dépôt de l'extrait               |
 
-Ces quatre-là partagent la même forme : un **fait par compte**, daté, avec un
-degré d'urgence qui croît avec l'âge, et un geste. La bonne cible est donc une
-**ligne de données par compte** — un tableau d'avertissements calculé côté
-serveur et rendu par la liste — et non quatre calculs dispersés dans le front.
+Le calcul est **une fonction pure côté serveur**, `companyWarnings`
+(`apps/lfd-api/src/b2b/account/domain/services/company-warnings.ts`), à côté
+de `activationGate` dont elle reprend la règle du sous-compte. Elle rend un
+tableau **ordonné** (le plus grave d'abord, à gravité égale le plus vieux), et
+`AdminCompanyView` le porte en `warnings` (`packages/contracts/src/admin-company.ts`)
+— un tableau, pas un booléen KBIS qu'il aurait fallu défaire au deuxième motif.
 
-Ce qu'il faudra trancher au moment de la construire :
+Deux limites, assumées dans le code :
 
-- **Où le calcul vit.** Probablement à côté de `activationGate`, qui connaît déjà
-  l'état des pièces — mais l'ancienneté et l'inactivité n'en font pas partie.
-- **Qui porte l'âge.** `kbisUploadedAt` existe ; « en attente depuis » se déduit
-  de `createdAt`, mais « n'avance plus » demanderait une date de dernier geste
-  qui n'est aujourd'hui écrite nulle part.
-- **Le bruit.** Quatre badges sur chaque ligne d'une liste de 250 comptes, c'est
-  une liste illisible. Il faudra un ordre de priorité, et probablement un seul
-  badge visible plus un compteur.
+- **`activation_bloquee` sous-déclare** : il ne lit pas le téléphone, qui peut
+  vivre sur n'importe quel interlocuteur. Un dossier auquel il ne manque que le
+  téléphone n'apparaît pas dans la galerie ; sa fiche, elle, le dit.
+- **« N'avance plus » n'est pas mesuré.** `attente_prolongee` compte depuis
+  `createdAt`, faute d'une date de dernier geste : aucune n'est écrite sur
+  `Company` (`updatedAt` bouge à n'importe quelle écriture — vérifié le
+  2026-10-20).
 
-La donnée vient du serveur dès la première carte : `AdminCompanyView` gagne un
-**tableau** `warnings`, ordonné, et non un booléen KBIS qu'il faudrait défaire au
-deuxième motif.
-
-⚠️ Deux manques de données à combler au moment de le câbler, constatés en lisant
-`COMPANY_SELECT` (`prisma-admin-company.reader.ts`) : la liste ne charge **ni
-l'adresse de facturation ni le mandat SEPA**. « Pièce manquante » et « mandat
-absent » exigent donc d'enrichir la projection de liste — deux existences, pas
-deux jointures complètes. Le KBIS et l'ancienneté, eux, y sont déjà
-(`kbisUploadedAt`, `kbisCertifiedAt`, `createdAt`).
+La liste charge ce qu'il faut pour ce calcul : `COMPANY_SELECT`
+(`prisma-admin-company.reader.ts`) porte l'existence d'une adresse de
+facturation et d'un mandat actif (`addresses`, `mandates`), en plus de
+`kbisUploadedAt`, `kbisCertifiedAt` et `createdAt` (vérifié le 2026-10-20).
 
 ## 4. À lire ensuite
 
