@@ -64,6 +64,14 @@ function deliver(origin: string, source: unknown, data: unknown): void {
 
 const settle = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
+/**
+ * Le montage d'une scène, sous la charge de `pnpm test` à la RACINE : 4,6 s
+ * constatées le 2026-10-20, au-delà des 4,5 s d'attente et sous les 5 s par
+ * défaut d'un test. Les trois tests qui attendent une scène ont leur propre
+ * plafond, large : ils attendent la RÉPONSE, ils ne dorment pas.
+ */
+const SCENE_WAIT_MS = 12_000;
+const SCENE_TEST_MS = 15_000;
 describe('l’hôte de l’aperçu', () => {
   beforeEach(() => {
     vi.stubGlobal('matchMedia', (query: string): MediaQueryList =>
@@ -101,68 +109,76 @@ describe('l’hôte de l’aperçu', () => {
     );
   });
 
-  it('joue le parcours d’un `show` du back-office, puis ne répond qu’à son origine', async () => {
-    const parent = { postMessage: vi.fn<(message: unknown, origin: string) => void>() };
-    await new PreviewHost(framedWindow(parent), ALLOWED, shadowBrowserStorage(window)).start();
-    parent.postMessage.mockClear();
+  it(
+    'joue le parcours d’un `show` du back-office, puis ne répond qu’à son origine',
+    async () => {
+      const parent = { postMessage: vi.fn<(message: unknown, origin: string) => void>() };
+      await new PreviewHost(framedWindow(parent), ALLOWED, shadowBrowserStorage(window)).start();
+      parent.postMessage.mockClear();
 
-    // Une autre origine, puis un autre émetteur : ignorés sans bruit.
-    const show = {
-      source: SHOP_COPY_PREVIEW_SOURCE,
-      type: 'show',
-      audience: 'visitor',
-      step: 'welcome',
-      locale: 'fr',
-      viewport: 'mobile',
-      drafts: {},
-      published: {},
-      highlight: null,
-    };
-    deliver('https://evil.example', parent, show);
-    deliver(EDITOR, {}, show);
-    await settle(50);
-    expect(document.querySelector('fold-page-layout, app-client-shell')).toBeNull();
+      // Une autre origine, puis un autre émetteur : ignorés sans bruit.
+      const show = {
+        source: SHOP_COPY_PREVIEW_SOURCE,
+        type: 'show',
+        audience: 'visitor',
+        step: 'welcome',
+        locale: 'fr',
+        viewport: 'mobile',
+        drafts: {},
+        published: {},
+        highlight: null,
+      };
+      deliver('https://evil.example', parent, show);
+      deliver(EDITOR, {}, show);
+      await settle(50);
+      expect(document.querySelector('fold-page-layout, app-client-shell')).toBeNull();
 
-    deliver(EDITOR, parent, show);
-    // Attendre la RÉPONSE, pas une durée (borne sous les 5 s du test) : 800 ms fixes ne suffisaient pas sur
-    // la CI chargée (deux échecs de suite le 2026-10-12), où la scène monte
-    // plus lentement qu'en local.
-    await vi.waitFor(
-      () => {
-        expect(parent.postMessage.mock.calls.some(([message]) => isVisibleKeys(message))).toBe(
-          true,
-        );
-      },
-      { timeout: 4_500, interval: 50 },
-    );
+      deliver(EDITOR, parent, show);
+      // Attendre la RÉPONSE, pas une durée (borne sous les 5 s du test) : 800 ms fixes ne suffisaient pas sur
+      // la CI chargée (deux échecs de suite le 2026-10-12), où la scène monte
+      // plus lentement qu'en local.
+      await vi.waitFor(
+        () => {
+          expect(parent.postMessage.mock.calls.some(([message]) => isVisibleKeys(message))).toBe(
+            true,
+          );
+        },
+        { timeout: SCENE_WAIT_MS, interval: 50 },
+      );
 
-    const targets = new Set(parent.postMessage.mock.calls.map(([, origin]) => origin));
-    expect([...targets]).toEqual([EDITOR]);
-    expect(parent.postMessage.mock.calls.some(([message]) => isVisibleKeys(message))).toBe(true);
-  });
+      const targets = new Set(parent.postMessage.mock.calls.map(([, origin]) => origin));
+      expect([...targets]).toEqual([EDITOR]);
+      expect(parent.postMessage.mock.calls.some(([message]) => isVisibleKeys(message))).toBe(true);
+    },
+    SCENE_TEST_MS,
+  );
 
-  it('une autre étape REJOUE la scène : l’étape 2 ouvre le dialogue « où »', async () => {
-    const parent = { postMessage: vi.fn<(message: unknown, origin: string) => void>() };
-    await new PreviewHost(framedWindow(parent), ALLOWED, shadowBrowserStorage(window)).start();
-    deliver(EDITOR, parent, SHOW);
-    await settle(800);
-    parent.postMessage.mockClear();
+  it(
+    'une autre étape REJOUE la scène : l’étape 2 ouvre le dialogue « où »',
+    async () => {
+      const parent = { postMessage: vi.fn<(message: unknown, origin: string) => void>() };
+      await new PreviewHost(framedWindow(parent), ALLOWED, shadowBrowserStorage(window)).start();
+      deliver(EDITOR, parent, SHOW);
+      await settle(800);
+      parent.postMessage.mockClear();
 
-    deliver(EDITOR, parent, { ...SHOW, step: 'routing' });
-    // Attendre le dialogue, pas une durée : 1500 ms fixes ont échoué deux fois
-    // sous la charge de `pnpm test` à la racine (2026-10-20), comme son voisin
-    // le 2026-10-12.
-    await vi.waitFor(
-      () => {
-        const keys = parent.postMessage.mock.calls
-          .map(([message]) => message)
-          .filter(isVisibleKeys)
-          .flatMap((message) => Reflect.get(Object(message), 'keys') as readonly string[]);
-        expect(keys).toEqual(expect.arrayContaining(['housePicker.title']));
-      },
-      { timeout: 3_500, interval: 50 },
-    );
-  });
+      deliver(EDITOR, parent, { ...SHOW, step: 'routing' });
+      // Attendre le dialogue, pas une durée : 1500 ms fixes ont échoué deux fois
+      // sous la charge de `pnpm test` à la racine (2026-10-20), comme son voisin
+      // le 2026-10-12.
+      await vi.waitFor(
+        () => {
+          const keys = parent.postMessage.mock.calls
+            .map(([message]) => message)
+            .filter(isVisibleKeys)
+            .flatMap((message) => Reflect.get(Object(message), 'keys') as readonly string[]);
+          expect(keys).toEqual(expect.arrayContaining(['housePicker.title']));
+        },
+        { timeout: SCENE_WAIT_MS, interval: 50 },
+      );
+    },
+    SCENE_TEST_MS,
+  );
 
   describe('ouvert dans une fenêtre par le back-office', () => {
     it('annonce `ready` à l’opener, aux seules origines du back-office, jamais à « * »', async () => {
@@ -176,35 +192,39 @@ describe('l’hôte de l’aperçu', () => {
       expect(opener.postMessage.mock.calls.some(([, origin]) => origin === '*')).toBe(false);
     });
 
-    it('joue le `show` de l’opener, ne répond qu’à son origine, et prend la largeur demandée', async () => {
-      const opener = { postMessage: vi.fn<(message: unknown, origin: string) => void>() };
-      const resizeTo = vi.fn<(width: number, height: number) => void>();
-      await new PreviewHost(
-        openedWindow(opener, resizeTo),
-        ALLOWED,
-        shadowBrowserStorage(window),
-      ).start();
-      opener.postMessage.mockClear();
+    it(
+      'joue le `show` de l’opener, ne répond qu’à son origine, et prend la largeur demandée',
+      async () => {
+        const opener = { postMessage: vi.fn<(message: unknown, origin: string) => void>() };
+        const resizeTo = vi.fn<(width: number, height: number) => void>();
+        await new PreviewHost(
+          openedWindow(opener, resizeTo),
+          ALLOWED,
+          shadowBrowserStorage(window),
+        ).start();
+        opener.postMessage.mockClear();
 
-      // Même origine, autre émetteur : ignoré.
-      deliver(EDITOR, {}, SHOW);
-      await settle(50);
-      expect(resizeTo).not.toHaveBeenCalled();
+        // Même origine, autre émetteur : ignoré.
+        deliver(EDITOR, {}, SHOW);
+        await settle(50);
+        expect(resizeTo).not.toHaveBeenCalled();
 
-      deliver(EDITOR, opener, SHOW);
-      // Même raison qu'au-dessus : attendre la réponse, pas une durée.
-      await vi.waitFor(
-        () => {
-          expect(opener.postMessage).toHaveBeenCalled();
-          expect(resizeTo).toHaveBeenCalled();
-        },
-        { timeout: 4_500, interval: 50 },
-      );
+        deliver(EDITOR, opener, SHOW);
+        // Même raison qu'au-dessus : attendre la réponse, pas une durée.
+        await vi.waitFor(
+          () => {
+            expect(opener.postMessage).toHaveBeenCalled();
+            expect(resizeTo).toHaveBeenCalled();
+          },
+          { timeout: SCENE_WAIT_MS, interval: 50 },
+        );
 
-      const targets = new Set(opener.postMessage.mock.calls.map(([, origin]) => origin));
-      expect([...targets]).toEqual([EDITOR]);
-      expect(resizeTo).toHaveBeenCalledWith(430, expect.any(Number));
-    });
+        const targets = new Set(opener.postMessage.mock.calls.map(([, origin]) => origin));
+        expect([...targets]).toEqual([EDITOR]);
+        expect(resizeTo).toHaveBeenCalledWith(430, expect.any(Number));
+      },
+      SCENE_TEST_MS,
+    );
 
     it('refuse un opener d’une origine non autorisée, puis montre l’écran « hors cadre »', async () => {
       const opener = { postMessage: vi.fn<(message: unknown, origin: string) => void>() };
