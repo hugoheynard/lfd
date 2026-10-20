@@ -9,7 +9,7 @@ export interface VitrineSubscriberRowShape {
   readonly name: string;
   readonly description: string | null;
   readonly contactEmail: string | null;
-  readonly endpointUrl: string;
+  readonly endpointUrl: string | null;
   readonly signingSecretSealed: string;
   readonly readKeyHash: string;
   readonly contents: readonly string[];

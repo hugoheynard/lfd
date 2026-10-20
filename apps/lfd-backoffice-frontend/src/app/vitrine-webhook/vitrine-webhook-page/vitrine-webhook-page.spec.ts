@@ -120,6 +120,20 @@ describe('VitrineWebhookPage', () => {
     expect(api.calls).toEqual(['contents:sub_1:catalogue']);
   });
 
+  it('un abonné sans adresse se dit « Lecture seule — aucun envoi », sans bouton d’essai', async () => {
+    const api = new FakeApi();
+    api.subscribers = [subscriber({ endpointUrl: null })];
+    const root = await render(api);
+    expect(root.textContent).toContain('Lecture seule — aucun envoi');
+    expect(root.querySelector('button[data-test]')).toBeNull();
+    expect(root.querySelector('button[data-rotate]')).not.toBeNull();
+  });
+
+  it('un abonné pourvu d’une adresse garde son bouton d’essai', async () => {
+    const root = await render(new FakeApi());
+    expect(root.querySelector('button[data-test]')).not.toBeNull();
+  });
+
   it('un abonné en échec propose « Tout renvoyer »', async () => {
     const api = new FakeApi();
     api.subscribers = [subscriber({ state: 'failing', failedAt: '2026-10-18T09:00:00.000Z' })];

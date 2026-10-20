@@ -37,6 +37,7 @@ export class ResendVitrineDeliveryHandler implements ICommandHandler<ResendVitri
       }
       const subscriber = await loadVitrineSubscriber(this.subscribers, delivery.subscriberId);
       subscriber.assertActive();
+      subscriber.assertHasEndpoint();
       if (!subscriber.isDeliverable) {
         throw new VitrineSubscriberFailingError(subscriber.name);
       }

@@ -4,7 +4,7 @@ import type { VitrineContent } from "@lfd/contracts";
 export class CreateVitrineSubscriberCommand {
   constructor(
     readonly name: string,
-    readonly endpointUrl: string,
+    readonly endpointUrl: string | null,
     readonly contents: readonly VitrineContent[],
     /** À quoi sert l'abonné, pour le staff ; `null` si rien n'est dit. */
     readonly description: string | null = null,

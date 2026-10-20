@@ -107,7 +107,11 @@ export interface VitrineSubscriberView {
   readonly description: string | null;
   /** L'adresse où écrire à l'agence. Peut être nominative : jamais servie à l'agence. */
   readonly contactEmail: string | null;
-  readonly endpointUrl: string;
+  /**
+   * `null` : abonné en LECTURE SEULE (2026-10-20) — il lit `/vitrine/*` avec
+   * sa clé, aucun webhook ne lui part.
+   */
+  readonly endpointUrl: string | null;
   readonly contents: readonly VitrineContent[];
   readonly state: VitrineSubscriberState;
   readonly failedAt: string | null;
@@ -150,7 +154,8 @@ const vitrineContentsSchema = z.array(z.enum(vitrineContents)).max(vitrineConten
 
 export const createVitrineSubscriberPayloadSchema = z.strictObject({
   name: z.string(),
-  endpointUrl: z.string(),
+  /** Absente, `null` ou vide : pas d'adresse, l'abonné lit seulement le flux. */
+  endpointUrl: z.string().nullable().optional(),
   contents: vitrineContentsSchema,
   description: z.string().nullable().optional(),
   contactEmail: z.string().nullable().optional(),

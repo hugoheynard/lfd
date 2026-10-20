@@ -4,6 +4,7 @@ import {
   VitrineSubscriberDescriptionTooLongError,
   VitrineSubscriberInactiveError,
   VitrineSubscriberNameInvalidError,
+  VitrineSubscriberReadOnlyError,
 } from "./errors/vitrine-errors.js";
 import { EmailAddress } from "../../account/domain/value-objects/email-address.js";
 import { VitrineContents } from "./vitrine-contents.js";
@@ -29,7 +30,8 @@ export interface VitrineSubscriberState extends StoredVitrineCredentials {
   readonly name: string;
   readonly description: string | null;
   readonly contactEmail: EmailAddress | null;
-  readonly endpoint: VitrineEndpoint;
+  /** `null` : abonné en LECTURE SEULE — il lit `/vitrine/*`, rien ne lui part. */
+  readonly endpoint: VitrineEndpoint | null;
   readonly contents: VitrineContents;
   readonly active: boolean;
   readonly failedAt: Date | null;
@@ -44,7 +46,7 @@ export type VitrineSubscriberRow = Omit<
   "endpoint" | "contents" | "contactEmail"
 > & {
   readonly contactEmail: string | null;
-  readonly endpointUrl: string;
+  readonly endpointUrl: string | null;
   readonly contents: readonly string[];
 };
 
@@ -53,7 +55,8 @@ export interface DeclareVitrineSubscriber {
   readonly name: string;
   readonly description: string | null;
   readonly contactEmail: string | null;
-  readonly endpointUrl: string;
+  /** Vide ou `null` : pas d'adresse, l'abonné lit seulement le flux. */
+  readonly endpointUrl: string | null;
   readonly contents: readonly string[];
   readonly credentials: StoredVitrineCredentials;
   readonly at: Date;
@@ -67,6 +70,10 @@ export interface DeclareVitrineSubscriber {
  * posé quand une livraison a épuisé ses essais, que seul « tout renvoyer »
  * lève — jamais un simple rallumage, qui laisserait diverger l'agence sans
  * resynchronisation. Jamais supprimé : on le coupe.
+ *
+ * Depuis le 2026-10-20 (Hugo), l'adresse est FACULTATIVE : un abonné sans
+ * adresse lit le flux avec sa clé et ne reçoit aucun envoi — il n'est jamais
+ * « livrable », et un essai lui est refusé.
  */
 export class VitrineSubscriber {
   private constructor(private state: VitrineSubscriberState) {}
@@ -81,7 +88,7 @@ export class VitrineSubscriber {
       name: validName(input.name),
       description: validDescription(input.description),
       contactEmail: validContact(input.contactEmail),
-      endpoint: VitrineEndpoint.of(input.endpointUrl),
+      endpoint: validEndpoint(input.endpointUrl),
       contents: VitrineContents.of(input.contents),
       signingSecretSealed: input.credentials.signingSecretSealed,
       readKeyHash: input.credentials.readKeyHash,
@@ -98,7 +105,7 @@ export class VitrineSubscriber {
     return new VitrineSubscriber({
       ...row,
       contactEmail: validContact(row.contactEmail),
-      endpoint: VitrineEndpoint.of(row.endpointUrl),
+      endpoint: validEndpoint(row.endpointUrl),
       contents: VitrineContents.of(row.contents),
     });
   }
@@ -177,9 +184,16 @@ export class VitrineSubscriber {
     }
   }
 
-  /** Allumé et pas en échec : le balayage le compare, le relais lui livre. */
+  /** @throws {VitrineSubscriberReadOnlyError} l'abonné n'a pas d'adresse. */
+  assertHasEndpoint(): void {
+    if (this.state.endpoint === null) {
+      throw new VitrineSubscriberReadOnlyError();
+    }
+  }
+
+  /** Allumé, pas en échec, et une adresse : le balayage le compare, le relais lui livre. */
   get isDeliverable(): boolean {
-    return this.state.active && this.state.failedAt === null;
+    return this.state.active && this.state.failedAt === null && this.state.endpoint !== null;
   }
 
   receives(content: VitrineContent): boolean {
@@ -202,8 +216,8 @@ export class VitrineSubscriber {
     return this.state.contactEmail?.value ?? null;
   }
 
-  get endpointUrl(): string {
-    return this.state.endpoint.value;
+  get endpointUrl(): string | null {
+    return this.state.endpoint?.value ?? null;
   }
 
   get contents(): VitrineContents {
@@ -219,7 +233,7 @@ export class VitrineSubscriber {
     return {
       ...rest,
       contactEmail: contactEmail?.value ?? null,
-      endpointUrl: endpoint.value,
+      endpointUrl: endpoint?.value ?? null,
       contents: contents.list(),
     };
   }
@@ -242,6 +256,12 @@ function validDescription(description: string | null): string | null {
     throw new VitrineSubscriberDescriptionTooLongError(VITRINE_SUBSCRIBER_DESCRIPTION_MAX);
   }
   return trimmed;
+}
+
+/** Vide ou `null` vaut « aucune adresse » ; une adresse saisie garde toutes ses gardes. */
+function validEndpoint(endpointUrl: string | null): VitrineEndpoint | null {
+  const trimmed = endpointUrl?.trim() ?? "";
+  return trimmed === "" ? null : VitrineEndpoint.of(trimmed);
 }
 
 function validContact(contactEmail: string | null): EmailAddress | null {

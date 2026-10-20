@@ -19,7 +19,7 @@ export class PrismaVitrineSubscriberRepository extends VitrineSubscriberReposito
 
   async listDeliverable(): Promise<readonly VitrineSubscriber[]> {
     const rows = await this.prisma.vitrineSubscriber.findMany({
-      where: { active: true, failedAt: null },
+      where: { active: true, failedAt: null, endpointUrl: { not: null } },
       orderBy: { createdAt: "asc" },
     });
     return rows.map(subscriberToDomain);

@@ -1,9 +1,11 @@
 import { InvalidEmailError } from "../../../account/domain/errors/account-errors.js";
 import {
   VitrineContentUnknownError,
+  VitrineEndpointNotHttpsError,
   VitrineSubscriberDescriptionTooLongError,
   VitrineSubscriberInactiveError,
   VitrineSubscriberNameInvalidError,
+  VitrineSubscriberReadOnlyError,
 } from "../errors/vitrine-errors.js";
 import { VITRINE_SUBSCRIBER_DESCRIPTION_MAX, VitrineSubscriber } from "../vitrine-subscriber.js";
 import { AT, LATER, subscriber } from "./vitrine-fixtures.js";
@@ -103,5 +105,36 @@ describe("un abonné de la vitrine", () => {
       declared.describe("x".repeat(VITRINE_SUBSCRIBER_DESCRIPTION_MAX + 1), LATER),
     ).toThrow(VitrineSubscriberDescriptionTooLongError);
     expect(declared.toPersistence()).toMatchObject({ name: "Agence du site", description: null });
+  });
+
+  describe("en lecture seule (sans adresse, 2026-10-20)", () => {
+    it("naît sans adresse quand elle est absente ou vide, et n'est jamais livrable", () => {
+      for (const endpointUrl of [null, "", "   "]) {
+        const reader = subscriber({ endpointUrl });
+        expect(reader.endpointUrl).toBeNull();
+        expect(reader.isDeliverable).toBe(false);
+        expect(reader.toPersistence().endpointUrl).toBeNull();
+        expect(() => reader.assertHasEndpoint()).toThrow(VitrineSubscriberReadOnlyError);
+      }
+    });
+
+    it("se réhydrate sans adresse, et reste non livrable même rallumé et resynchronisé", () => {
+      const reader = VitrineSubscriber.rehydrate(subscriber({ endpointUrl: null }).toPersistence());
+      reader.setActive(false, LATER);
+      reader.setActive(true, LATER);
+      reader.resynchronize(LATER);
+      expect(reader.endpointUrl).toBeNull();
+      expect(reader.isDeliverable).toBe(false);
+    });
+
+    it("une adresse fournie garde ses gardes : http:// reste refusé", () => {
+      expect(() => subscriber({ endpointUrl: "http://agence.example/hook" })).toThrow(
+        VitrineEndpointNotHttpsError,
+      );
+    });
+
+    it("avec une adresse, l'essai est admis", () => {
+      expect(() => subscriber().assertHasEndpoint()).not.toThrow();
+    });
   });
 });

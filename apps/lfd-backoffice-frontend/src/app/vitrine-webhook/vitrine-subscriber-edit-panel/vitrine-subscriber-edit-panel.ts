@@ -21,7 +21,7 @@ import {
 
 import { VitrineIdentityFields } from '../vitrine-identity-fields/vitrine-identity-fields';
 import { VitrineWebhookService } from '../vitrine-webhook.service';
-import { blankToNull, vitrineIdentityIssue } from '../vitrine-webhook-format';
+import { blankToNull, vitrineEndpointLabel, vitrineIdentityIssue } from '../vitrine-webhook-format';
 
 /**
  * **Modifier un abonné** — son nom, sa description, son contact. Rien de tout
@@ -49,6 +49,7 @@ export class VitrineSubscriberEditPanel {
   private readonly api = inject(VitrineWebhookService);
   private readonly panel = inject(FoldPanelRef);
 
+  protected readonly endpointLabel = vitrineEndpointLabel;
   protected readonly name = linkedSignal(() => this.data().name);
   protected readonly description = linkedSignal(() => this.data().description ?? '');
   protected readonly contactEmail = linkedSignal(() => this.data().contactEmail ?? '');

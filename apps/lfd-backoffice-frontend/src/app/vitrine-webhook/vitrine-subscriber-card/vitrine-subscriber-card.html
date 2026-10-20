@@ -2,7 +2,7 @@
   <fold-element-title
     variant="title"
     [title]="subscriber().name"
-    [subtitle]="subscriber().endpointUrl"
+    [subtitle]="endpointLabel(subscriber().endpointUrl)"
   >
     <div titleAction class="vsc-actions">
       <fold-badge
@@ -69,17 +69,19 @@
         >
           Modifier
         </button>
-        <button
-          foldButton
-          emphasis="outline"
-          size="sm"
-          type="button"
-          [disabled]="busy() || subscriber().state === 'inactive'"
-          (click)="gesture.emit({ kind: 'test' })"
-          data-test
-        >
-          Envoyer un test
-        </button>
+        @if (subscriber().endpointUrl !== null) {
+          <button
+            foldButton
+            emphasis="outline"
+            size="sm"
+            type="button"
+            [disabled]="busy() || subscriber().state === 'inactive'"
+            (click)="gesture.emit({ kind: 'test' })"
+            data-test
+          >
+            Envoyer un test
+          </button>
+        }
         <button
           foldButton
           emphasis="outline"

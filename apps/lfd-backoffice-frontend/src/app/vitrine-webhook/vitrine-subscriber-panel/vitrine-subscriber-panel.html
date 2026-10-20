@@ -18,7 +18,7 @@
         label="Adresse de réception"
         type="url"
         placeholder="https://agence.example/webhooks/lfc"
-        hint="https seulement, sans paramètre : la signature authentifie chaque envoi."
+        hint="Facultative. Laisser vide si le site lit seulement le flux XML/JSON (aucun envoi). Sinon https seulement, sans paramètre : la signature authentifie chaque envoi."
         [value]="endpointUrl()"
         (valueChange)="endpointUrl.set($event)"
         data-url

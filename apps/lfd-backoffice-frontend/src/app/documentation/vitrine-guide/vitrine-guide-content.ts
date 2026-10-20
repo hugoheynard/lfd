@@ -168,6 +168,8 @@ export const ROUTE_TABLE = {
 } as const;
 
 export const READ_POINTS: readonly string[] = [
+  '**Adresse** : les lectures se font sur `https://lafoliecoffee.info/api/lfd/vitrine/…` (par exemple `https://lafoliecoffee.info/api/lfd/vitrine/catalogue`). Le préfixe `/api/lfd` est **obligatoire** : sans lui, vous recevez une page de la boutique, pas le flux.',
+  '**Lecture seule** : si votre site lit seulement le flux (XML ou JSON) et ne veut recevoir aucun appel de notre part, dites-le nous : votre abonnement n’aura **pas d’adresse de webhook**, et seule votre clé de lecture vous servira.',
   '**Langue** : `?lang=fr`, `en` ou `it` — `fr` sans paramètre. Un nom ou une ligne non traduits sont servis **en français**, texte par texte ; la forme de la réponse ne change pas. Les opérations portent leurs langues elles-mêmes et ne dépendent pas du paramètre.',
   '**Débit** : 60 requêtes par minute et par adresse IP. Après une notification, une seule relecture du catalogue suffit le plus souvent.',
   'Les erreurs répondent en JSON : un `code` stable, un `message` en français, un `requestId` à nous transmettre si vous nous écrivez.',

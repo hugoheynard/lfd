@@ -9,6 +9,7 @@ import {
 } from "../../../../platform/outbound/webhook-poster.js";
 import { isExhausted, nextAttemptAt } from "../../../../platform/outbox/retry-policy.js";
 import { Clock } from "../../../../platform/time/clock.js";
+import { VitrineSubscriberReadOnlyError } from "../../domain/errors/vitrine-errors.js";
 import { signVitrineBody } from "../../domain/services/vitrine-signature.js";
 import type { VitrineDelivery, VitrineDeliveryFailure } from "../../domain/vitrine-delivery.js";
 import type { VitrineSubscriber } from "../../domain/vitrine-subscriber.js";
@@ -52,6 +53,11 @@ export class VitrineRelay {
     delivery: VitrineDelivery,
     subscriber: VitrineSubscriber,
   ): Promise<WebhookPostOutcome> {
+    // Garde de dernier rang : les appelants n'amènent qu'un abonné livrable.
+    const url = subscriber.endpointUrl;
+    if (url === null) {
+      throw new VitrineSubscriberReadOnlyError();
+    }
     let secret: string;
     try {
       secret = this.cipher.open(subscriber.signingSecretSealed);
@@ -68,7 +74,7 @@ export class VitrineRelay {
     const body = JSON.stringify(delivery.notification());
     const seconds = Math.floor(this.clock.now().getTime() / MS_PER_SECOND);
     return this.poster.post({
-      url: subscriber.endpointUrl,
+      url,
       body,
       headers: {
         [VITRINE_SIGNATURE_HEADER]: signVitrineBody(secret, body, seconds),

@@ -32,7 +32,7 @@ minutes font une notification. Sans abonné livrable, **rien** n'est calculé.
 | Sujet                | Ce qui existe                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Où vit le code       | `apps/lfd-api/src/b2b/vitrine/` (B2B : commande et handler en fichiers séparés) ; le relais sortant dans `apps/lfd-api/src/platform/outbound/` ; les contrats dans `packages/contracts/src/vitrine.ts` ; l'écran dans `apps/lfd-backoffice-frontend/src/app/vitrine-webhook/` (Admin › « Webhook vitrine », rail secondaire de l'Admin ET lanceur mobile, route `/admin/webhook-vitrine` depuis le 2026-10-19 ; `/webhook-vitrine` redirige). |
-| Abonné               | Agrégat `VitrineSubscriber` : URL `https` sans `?`, `#` ni identifiants (refus nommés) ; secret de signature **scellé** (`FieldCipher`) ; clé de lecture **hachée** (SHA-256) ; secret et clé montrés une fois, à la création et à la rotation. Nom, description (500 caractères) et contact facultatifs. Jamais supprimé : coupé.                                                                                                            |
+| Abonné               | Agrégat `VitrineSubscriber` : URL `https` sans `?`, `#` ni identifiants (refus nommés), **ou aucune** — abonné en lecture seule (§4, décision 12) ; secret de signature **scellé** (`FieldCipher`) ; clé de lecture **hachée** (SHA-256) ; secret et clé montrés une fois, à la création et à la rotation. Nom, description (500 caractères) et contact facultatifs. Jamais supprimé : coupé.                                                 |
 | Cases                | `catalogue` (articles + rayons), `operations`, `texts`, `featured` (« Incontournables » : sans elle, `isFeatured` ne sort pas). Une case ne fait que **retirer** un ensemble ; décocher n'envoie **aucun** retrait.                                                                                                                                                                                                                           |
 | Livraison            | Corps `{ subscriber, sequence, at, changed, removed }` ; un essai porte `sequence: 0, test: true`. En-têtes `Vitrine-Signature: t=<s>,v1=<hex HMAC-SHA256 de « t.corps »>` (à la Stripe) et `Vitrine-Delivery: <identifiant d'envoi>`. Relances par `platform/outbox/retry-policy.ts` (la même fonction, pas une copie).                                                                                                                      |
 | Lectures de l'agence | `GET /vitrine/catalogue`, `/vitrine/articles/:sku`, `/vitrine/textes`, `?lang=` `fr` · `en` · `it` (repli `fr`), en-tête `X-Vitrine-Key`. En XML sur `Accept: application/xml` ou `?format=xml`, décrites par `GET /vitrine/schema.xsd`. Textes **effectifs** : le publié, sinon le texte du code (`GetEffectiveShopCopyQuery`).                                                                                                              |
@@ -187,6 +187,27 @@ application/xml` ou `?format=xml` (`json` par défaut, toute autre valeur en
     balayage, la reprise d'une annonce interrompue, l'auteur par son nom,
     l'identifiant d'envoi au journal.
 
+12. **L'abonné en lecture seule** (2026-10-20) : un abonné peut n'avoir
+    **aucune adresse de webhook** — cas réel, l'agence du site Joomla, qui lit
+    le flux XML avec sa clé et ne veut aucun POST. Une seule représentation :
+    `endpointUrl` absente, `null` ou vide à la création vaut « pas d'adresse »,
+    et la vue rend `endpointUrl: null`. Une adresse saisie garde toutes ses
+    gardes (https, ni `?`, ni `#`, ni identifiants ; SSRF au relais). Sans
+    adresse, l'abonné n'est jamais « livrable » : le balayage ne le compare
+    pas (ni empreinte, ni livraison, ni relance — `listDeliverable` filtre
+    `endpoint_url IS NOT NULL`), et « Envoyer un test » comme « Renvoyer »
+    sont refusés en 409 `vitrine.subscriber.read_only`. Sa lecture est
+    inchangée : clé, cases cochées, et couper l'abonné bloque toujours sa
+    lecture. Les annonces par e-mail (§7) ne dépendent pas de l'adresse. Il
+    n'existe pas de geste pour poser ou retirer l'adresse après la création.
+    L'écran dit « Lecture seule — aucun envoi » à la place de l'adresse et
+    n'affiche pas le bouton d'essai. Migration
+    `20261020120000_un_abonne_vitrine_en_lecture_seule` (colonne rendue
+    nullable). Adresse publique des lectures :
+    `https://lafoliecoffee.info/api/lfd/vitrine/…` — le préfixe `/api/lfd` est
+    obligatoire (vérifié le 2026-10-20 : sans lui, la passerelle sert la
+    boutique) ; le guide de l'agence le dit.
+
 ## 5. Les langues
 
 Les traductions du référentiel descendent jusqu'à la vue publique (lot
@@ -296,5 +317,7 @@ Domaine (`apps/lfd-api/src/b2b/vitrine/domain/**/__tests__`), application
 `apps/lfd-api/test/vitrine-webhook.e2e-spec.ts` (livraison signée, rejeu
 détecté, panne, « tout renvoyer », bail, identifiant d'envoi, ce qui sort sur
 `/vitrine`), `vitrine-notices.e2e-spec.ts` (aperçu, double clic, coupé
-notifié, auteur nommé, reprise), `vitrine-xml.e2e-spec.ts` ; écran
+notifié, auteur nommé, reprise), `vitrine-xml.e2e-spec.ts`,
+`vitrine-read-only.e2e-spec.ts` (abonné sans adresse : lecture XML, aucune
+livraison, essai refusé) ; écran
 (`apps/lfd-backoffice-frontend/src/app/vitrine-webhook/**`).

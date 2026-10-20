@@ -67,7 +67,7 @@ export class AdminVitrineController {
     return this.commands.execute<CreateVitrineSubscriberCommand, VitrineCredentialsView>(
       new CreateVitrineSubscriberCommand(
         body.name,
-        body.endpointUrl,
+        body.endpointUrl ?? null,
         body.contents,
         body.description ?? null,
         body.contactEmail ?? null,

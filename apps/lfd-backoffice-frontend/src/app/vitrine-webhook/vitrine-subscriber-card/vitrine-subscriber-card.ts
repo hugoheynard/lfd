@@ -13,6 +13,7 @@ import {
   VITRINE_CONTENT_LABELS,
   VITRINE_STATE_LABELS,
   VITRINE_STATE_VARIANTS,
+  vitrineEndpointLabel,
 } from '../vitrine-webhook-format';
 
 /** Ce qu'une carte demande à la page ; la page fait l'appel et recharge. */
@@ -54,6 +55,7 @@ export class VitrineSubscriberCard {
   protected readonly hints = VITRINE_CONTENT_HINTS;
   protected readonly stateLabels = VITRINE_STATE_LABELS;
   protected readonly stateVariants = VITRINE_STATE_VARIANTS;
+  protected readonly endpointLabel = vitrineEndpointLabel;
 
   protected receives(content: VitrineContent): boolean {
     return this.subscriber().contents.includes(content);

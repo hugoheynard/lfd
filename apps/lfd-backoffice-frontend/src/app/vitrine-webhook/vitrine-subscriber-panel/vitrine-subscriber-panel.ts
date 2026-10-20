@@ -75,8 +75,8 @@ export class VitrineSubscriberPanel {
     });
     if (identity !== '') return identity;
     const url = this.endpointUrl().trim();
-    if (url === '') return 'Saisissez l’adresse que l’agence vous a donnée.';
-    if (!HTTPS_SHAPE.test(url)) {
+    // Vide : un abonné en lecture seule, qui lit le flux et ne reçoit rien.
+    if (url !== '' && !HTTPS_SHAPE.test(url)) {
       return 'L’adresse commence par https:// et ne porte ni « ? », ni « # », ni identifiant.';
     }
     return '';
@@ -99,7 +99,7 @@ export class VitrineSubscriberPanel {
       this.created.set(
         await this.api.create({
           name: this.name().trim(),
-          endpointUrl: this.endpointUrl().trim(),
+          ...this.optionalEndpoint(),
           contents: vitrineContents.filter((content) => this.contents().has(content)),
           ...this.optionalIdentity(),
         }),
@@ -109,6 +109,12 @@ export class VitrineSubscriberPanel {
     } finally {
       this.saving.set(false);
     }
+  }
+
+  /** Sans adresse, l'abonné est en lecture seule : le champ ne part pas. */
+  private optionalEndpoint(): { endpointUrl?: string } {
+    const endpointUrl = blankToNull(this.endpointUrl());
+    return endpointUrl === null ? {} : { endpointUrl };
   }
 
   /** La description et le contact ne partent que s'ils sont dits. */

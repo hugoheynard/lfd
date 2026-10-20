@@ -10,6 +10,7 @@ import {
   VitrineSubscriberInactiveError,
   VitrineSubscriberNameInvalidError,
   VitrineSubscriberNotFoundError,
+  VitrineSubscriberReadOnlyError,
 } from "../../../domain/errors/vitrine-errors.js";
 import { hashVitrineReadKey } from "../../../domain/services/vitrine-read-key.js";
 import { VitrineChanges } from "../../../domain/vitrine-changes.js";
@@ -200,6 +201,40 @@ describe("envoyer un test", () => {
     await expect(handler.execute(new SendVitrineTestCommand("sub_agence"))).rejects.toThrow(
       VitrineSubscriberInactiveError,
     );
+  });
+});
+
+describe("un abonné en lecture seule", () => {
+  it("se déclare sans adresse : rien n'est refusé, l'adresse est rangée à null", async () => {
+    const store = new MemorySubscribers();
+    const shown = await new CreateVitrineSubscriberHandler(
+      store,
+      testMint(testCipher()),
+      new FixedIdGenerator("sub"),
+      new FixedClock(AT),
+    ).execute(new CreateVitrineSubscriberCommand("Agence Joomla", null, ["catalogue"]));
+    const saved = await store.load(shown.id);
+    expect(saved?.endpointUrl).toBeNull();
+    expect(saved?.isDeliverable).toBe(false);
+  });
+
+  /** Décision Hugo du 2026-10-20 : il lit le flux, rien ne lui part — pas même un essai. */
+  it("refuse l'essai en nommant le cas, sans rien poster ni ranger", async () => {
+    const clock = new FixedClock(AT);
+    const poster = new ScriptedPoster();
+    const deliveries = new MemoryDeliveries();
+    const handler = new SendVitrineTestHandler(
+      new MemorySubscribers(subscriber({ endpointUrl: null })),
+      deliveries,
+      new VitrineRelay(poster, testCipher(), clock),
+      new FixedIdGenerator("t"),
+      clock,
+    );
+    await expect(handler.execute(new SendVitrineTestCommand("sub_agence"))).rejects.toThrow(
+      VitrineSubscriberReadOnlyError,
+    );
+    expect(poster.received).toHaveLength(0);
+    expect(deliveries.all()).toHaveLength(0);
   });
 });
 

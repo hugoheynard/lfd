@@ -21,7 +21,9 @@ model VitrineSubscriber {
 
   /// `https://…`, sans requête ni fragment ni identifiants (refusés par le
   /// domaine à la saisie ; un jeton en requête serait affiché à l'écran).
-  endpointUrl String @map("endpoint_url")
+  /// `null` : abonné en LECTURE SEULE (2026-10-20) — il lit `/vitrine/*`,
+  /// aucun webhook ne lui part ; le balayage ne le compare pas.
+  endpointUrl String? @map("endpoint_url")
 
   /// Le secret de signature, SCELLÉ (`FieldCipher`, `FIELD_ENCRYPTION_KEY`) :
   /// il faut le relire pour signer. Une rotation de la clé le rend illisible —

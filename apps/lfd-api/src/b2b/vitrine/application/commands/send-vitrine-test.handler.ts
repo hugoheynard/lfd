@@ -12,7 +12,8 @@ import { SendVitrineTestCommand } from "./send-vitrine-test.command.js";
 /**
  * Envoie un essai à l'instant — l'agence vérifie sa signature avant le
  * premier vrai changement. Un essai ne relance pas, ne compte pas dans la
- * séquence, et un essai refusé ne met pas l'abonné en échec. Le verdict se
+ * séquence, et un essai refusé ne met pas l'abonné en échec. Un abonné en
+ * lecture seule (sans adresse) est refusé : rien ne lui part. Le verdict se
  * lit au journal des envois.
  *
  * @sans-journal un geste d'essai, lisible au journal des envois.
@@ -30,6 +31,7 @@ export class SendVitrineTestHandler implements ICommandHandler<SendVitrineTestCo
   async execute(command: SendVitrineTestCommand): Promise<string> {
     const subscriber = await loadVitrineSubscriber(this.subscribers, command.subscriberId);
     subscriber.assertActive();
+    subscriber.assertHasEndpoint();
     const delivery = VitrineDelivery.test({
       id: this.ids.next(),
       subscriberId: subscriber.id,

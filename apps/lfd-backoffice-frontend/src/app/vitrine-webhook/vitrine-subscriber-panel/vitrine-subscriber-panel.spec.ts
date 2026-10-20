@@ -81,6 +81,24 @@ describe('VitrineSubscriberPanel', () => {
     );
   });
 
+  it('crée un abonné en lecture seule quand l’adresse est laissée vide : elle ne part pas', async () => {
+    const fixture = await boot();
+    type(fixture, 'data-name', 'Agence Joomla');
+    type(fixture, 'data-url', '   ');
+    expect(host(fixture).querySelector('[data-issue]')).toBeNull();
+    await submit(fixture);
+    expect(wire.creates).toEqual([
+      { name: 'Agence Joomla', contents: ['catalogue', 'operations', 'texts', 'featured'] },
+    ]);
+  });
+
+  it('dit que l’adresse est facultative, et pourquoi', async () => {
+    const fixture = await boot();
+    expect(host(fixture).querySelector('[data-url]')?.textContent).toContain(
+      'Laisser vide si le site lit seulement le flux XML/JSON (aucun envoi)',
+    );
+  });
+
   it('crée avec toutes les cases, puis montre le secret et la clé une fois', async () => {
     const fixture = await boot();
     type(fixture, 'data-name', ' Agence ');

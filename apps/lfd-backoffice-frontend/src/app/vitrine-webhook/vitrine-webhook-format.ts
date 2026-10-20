@@ -22,6 +22,14 @@ export const VITRINE_CONTENT_HINTS: Readonly<Record<VitrineContent, string>> = {
   featured: 'Sans cette case, l’agence ne sait pas quels articles sont mis en avant.',
 };
 
+/** Ce qu'on montre à la place de l'adresse d'un abonné en lecture seule (2026-10-20). */
+export const VITRINE_READ_ONLY_LABEL = 'Lecture seule — aucun envoi';
+
+/** L'adresse de l'abonné, ou la mention « lecture seule » quand il n'en a pas. */
+export function vitrineEndpointLabel(endpointUrl: string | null): string {
+  return endpointUrl ?? VITRINE_READ_ONLY_LABEL;
+}
+
 export const VITRINE_STATE_LABELS: Readonly<Record<VitrineSubscriberState, string>> = {
   active: 'Actif',
   inactive: 'Coupé',

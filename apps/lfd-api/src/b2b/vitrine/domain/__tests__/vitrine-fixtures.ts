@@ -66,14 +66,22 @@ export function showcase(
 export const ALL_CONTENTS = ["catalogue", "operations", "texts", "featured"] as const;
 
 export function subscriber(
-  overrides: { readonly id?: string; readonly contents?: readonly string[] } = {},
+  overrides: {
+    readonly id?: string;
+    readonly contents?: readonly string[];
+    /** `null` : un abonné en lecture seule. */
+    readonly endpointUrl?: string | null;
+  } = {},
 ): VitrineSubscriber {
   return VitrineSubscriber.declare({
     id: overrides.id ?? "sub_agence",
     name: "Agence du site",
     description: null,
     contactEmail: null,
-    endpointUrl: "https://agence.example/hooks/lfc",
+    endpointUrl:
+      overrides.endpointUrl === undefined
+        ? "https://agence.example/hooks/lfc"
+        : overrides.endpointUrl,
     contents: overrides.contents ?? ALL_CONTENTS,
     credentials: { signingSecretSealed: "scelle", readKeyHash: "empreinte" },
     at: AT,

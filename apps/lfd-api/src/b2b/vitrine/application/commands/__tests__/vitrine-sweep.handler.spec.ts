@@ -79,6 +79,30 @@ describe("le balayage de la vitrine", () => {
     expect(shop.catalogueReads).toBe(0);
   });
 
+  /** Décision Hugo du 2026-10-20 : un abonné en lecture seule n'a ni livraison, ni empreinte. */
+  it("ne compare ni ne livre un abonné sans adresse ; son voisin pourvu reçoit", async () => {
+    const cipher = testCipher();
+    const reader = VitrineSubscriber.declare({
+      id: "lecteur",
+      name: "Agence Joomla",
+      description: null,
+      contactEmail: null,
+      endpointUrl: null,
+      contents: ["catalogue"],
+      credentials: testMint(cipher).mint().stored,
+      at: START,
+    });
+    const { sweep, deliveries, prints, poster } = world(
+      reader,
+      declared(cipher, "hook").subscriber,
+    );
+    const report = await sweep.execute();
+    expect(report.subscribers).toBe(1);
+    expect(deliveries.all().map((delivery) => delivery.subscriberId)).toEqual(["hook"]);
+    expect(await prints.load("lecteur")).toHaveLength(0);
+    expect(poster.received).toHaveLength(1);
+  });
+
   it("lit la vue une fois par langue, quel que soit le nombre d'abonnés", async () => {
     const cipher = testCipher();
     const { sweep, shop } = world(

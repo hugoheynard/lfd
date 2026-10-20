@@ -60,6 +60,19 @@ export class VitrineSubscriberDescriptionTooLongError extends DomainError {
   }
 }
 
+/**
+ * Un essai (ou un renvoi) demandé pour un abonné en lecture seule : il n'a
+ * pas d'adresse de webhook (décision Hugo du 2026-10-20), rien ne lui part.
+ */
+export class VitrineSubscriberReadOnlyError extends BusinessError {
+  constructor() {
+    super(
+      "vitrine.subscriber.read_only",
+      "Cet abonné n'a pas d'adresse de webhook : il lit le flux, rien ne lui est envoyé.",
+    );
+  }
+}
+
 /** Une case que le webhook ne connaît pas. */
 export class VitrineContentUnknownError extends DomainError {
   constructor(content: string) {
