@@ -33,7 +33,7 @@
 >
 > Le §1 est l'état d'**avant** le chantier, et n'est plus tenu à jour.
 >
-> Lu avant : [`espace-de-travail.md`](../../b2b/comptes-client/espace-de-travail.md) (l'espace
+> Lu avant : [`espace-de-travail.md`](../../comptes-client/espace-de-travail.md) (l'espace
 > perso ou pro, bâti le même jour) et
 > [`analyse-boutique-publique.md`](../../b2b/analyse-boutique-publique.md), dont ce plan
 > **remplace** deux propositions (§2, D8).

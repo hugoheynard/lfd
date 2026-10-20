@@ -7,7 +7,7 @@
  * tests qui les tenaient sont réécrits vers le nouveau comportement et nommés
  * d'après le symptôme corrigé.
  *
- * Un filet de caractérisation (`documentation/b2b/comptes-client/notes-du-commercial.md`) : il fige ce que le code EN PRODUCTION renvoie, avant que la procédure ne
+ * Un filet de caractérisation (`documentation/comptes-client/notes-du-commercial.md`) : il fige ce que le code EN PRODUCTION renvoie, avant que la procédure ne
  * délègue à un socle partagé. Les messages sont affichés tels quels à l'écran,
  * client comme staff : un message qui change est un changement observable, même
  * sous le même statut.

@@ -4,9 +4,9 @@
 > éprouvé dans un navigateur contre l'API locale.
 
 Une quatrième trousse WebMCP, déclarée par l'écran **`/outils-agent`** à côté
-du référentiel ([`../../pim/outils-webmcp-pim.md`](../../pim/outils-webmcp-pim.md)),
-de la médiathèque ([`../../mediatheque/outils-agent.md`](../../mediatheque/outils-agent.md))
-et de l'exploitation ([`../../ops/outils-agent.md`](../../ops/outils-agent.md)),
+du référentiel ([`../pim/outils-webmcp-pim.md`](../pim/outils-webmcp-pim.md)),
+de la médiathèque ([`../mediatheque/outils-agent.md`](../mediatheque/outils-agent.md))
+et de l'exploitation ([`../ops/outils-agent.md`](../ops/outils-agent.md)),
 selon les mêmes règles : l'écran est l'interrupteur, les outils n'existent que
 tant qu'il est ouvert, et ils sont inertes tant qu'aucun agent ne pose
 `document.modelContext`.
@@ -32,7 +32,7 @@ cet outil seul, un refus lisible (`REFUSÉ : 403 — …`), jamais une exception
 
 ## 2. Les onze outils
 
-Code : [`agent/customer-agent-tools.ts`](../../../apps/lfd-backoffice-frontend/src/app/agent/customer-agent-tools.ts),
+Code : [`agent/customer-agent-tools.ts`](../../apps/lfd-backoffice-frontend/src/app/agent/customer-agent-tools.ts),
 textes dans `customer-agent-text.ts` et `customer-agent-signup-text.ts`. Chaque
 outil passe par le service de l'écran qui lit déjà la route.
 

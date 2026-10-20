@@ -22,7 +22,7 @@ la page le dit à la place de la liste.
 La route `/outils-agent` et son entrée de menu (rail et tuiles) s'ouvrent à
 l'un des quatre droits : `pim_catalog:write`, `media_library:write`,
 `ops_health:read` ou, depuis le 2026-10-12, `b2b_companies:read`
-([`../b2b/comptes-client/outils-agent-comptes.md`](../b2b/comptes-client/outils-agent-comptes.md)). Un compte qui n'a que la carte de santé y entre et ne voit
+([`../comptes-client/outils-agent-comptes.md`](../comptes-client/outils-agent-comptes.md)). Un compte qui n'a que la carte de santé y entre et ne voit
 que cette trousse.
 
 Depuis le 2026-10-15, l'écran porte aussi la trousse **des droits** — lire

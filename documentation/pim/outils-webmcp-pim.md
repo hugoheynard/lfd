@@ -24,7 +24,7 @@
    la garde depuis : l'exploitation (`ops_health:read`, 2026-10-11,
    [`../ops/outils-agent.md`](../ops/outils-agent.md)) et les comptes clients
    (`b2b_companies:read`, 2026-10-12,
-   [`../b2b/comptes-client/outils-agent-comptes.md`](../b2b/comptes-client/outils-agent-comptes.md)).
+   [`../comptes-client/outils-agent-comptes.md`](../comptes-client/outils-agent-comptes.md)).
 
 2. L'écran dit s'il y a un agent branché. **Il n'y en a aucun par défaut** :
    aucun navigateur ne fournit `modelContext` aujourd'hui, et l'assistant doit
