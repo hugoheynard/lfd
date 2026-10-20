@@ -116,6 +116,8 @@ import { GetOrderPaymentHandler } from "./application/queries/get-order-payment.
 import { GetOrderHandler } from "./application/queries/get-order.handler.js";
 import { GetOrderSheetHandler } from "./application/queries/get-order-sheet.handler.js";
 import { GetAdminOrderSheetPdfHandler } from "./application/queries/get-admin-order-sheet-pdf.handler.js";
+import { GetOrderSheetSpecimenHandler } from "./application/queries/get-order-sheet-specimen.handler.js";
+import { AdminOrderSheetSpecimensController } from "./http/admin-order-sheet-specimens.controller.js";
 import { GetOrderSheetPdfHandler } from "./application/queries/get-order-sheet-pdf.handler.js";
 import { OrderSheetArchive } from "./application/services/order-sheet-archive.service.js";
 import { OrderSheetAttachment } from "./application/services/order-sheet-attachment.service.js";
@@ -264,6 +266,8 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // Les commandes à régler par carte, vues de la comptabilité (plan liens de
     // paiement §2a) : la commande vit ici, la ressource est `b2b_accounting`.
     AdminOrderPaymentLinksController,
+    // Les bons d'EXEMPLE de la planche des documents (Comptabilité, 2026-10-20).
+    AdminOrderSheetSpecimensController,
     // La Supervision du jour, sous sa propre ressource `b2b_supervision` :
     // elle lit les commandes d'ici, mais ne les ouvre pas.
     AdminSupervisionController,
@@ -323,6 +327,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     GetOrderSheetHandler,
     GetOrderSheetPdfHandler,
     GetAdminOrderSheetPdfHandler,
+    GetOrderSheetSpecimenHandler,
     OrderSheetArchive,
     OrderSheetAttachment,
     // Le logo du bon (plan-bon-public §2.1), lu dans `assets/` comme les polices de la facture.

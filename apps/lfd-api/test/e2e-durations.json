@@ -346,5 +346,6 @@
   "test/vitrine-xml.e2e-spec.ts": 6000,
   "test/vitrine-notices.e2e-spec.ts": 8341,
   "test/vitrine-webhooks-right.e2e-spec.ts": 3400,
-  "test/vitrine-read-only.e2e-spec.ts": 6536
+  "test/vitrine-read-only.e2e-spec.ts": 6536,
+  "test/document-specimens.e2e-spec.ts": 10805
 }

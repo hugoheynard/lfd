@@ -81,6 +81,8 @@ import {
 } from "./infrastructure/prisma-quality-check.repository.js";
 import { PrismaQualityUploadRepository } from "./infrastructure/prisma-quality-upload.repository.js";
 import { GetAtelierSheetPdfHandler } from "./application/queries/get-atelier-sheet-pdf.handler.js";
+import { GetAtelierSheetSpecimenHandler } from "./application/queries/get-atelier-sheet-specimen.handler.js";
+import { AdminAtelierSheetSpecimenController } from "./http/admin-atelier-sheet-specimen.controller.js";
 import { GetCurrentProductionWorksheetHandler } from "./application/queries/get-current-production-worksheet.handler.js";
 import { GetDayDossierPdfHandler } from "./application/queries/get-day-dossier-pdf.handler.js";
 import { GetProductionCountPdfHandler } from "./application/queries/get-production-count-pdf.handler.js";
@@ -148,6 +150,8 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     QualityUploadSweepController,
     ProductionDayVersionController,
     ProductionSettingsController,
+    // La fiche d'atelier d'EXEMPLE de la planche des documents (2026-10-20).
+    AdminAtelierSheetSpecimenController,
     ProductionDossierRecipientsController,
     AutoCloseController,
   ],
@@ -178,6 +182,7 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     GetProductionCountPdfHandler,
     GetDayDossierPdfHandler,
     GetAtelierSheetPdfHandler,
+    GetAtelierSheetSpecimenHandler,
     ProductionPapers,
     // La lecture de la fiche, partagée par la route datée et la route « en
     // cours » : un handler n'en appelle pas un autre (§4).

@@ -81,6 +81,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'comptabilite/surtaxe-de-retard': 'b2b_late_fee:read',
   'comptabilite/tva-de-la-livraison': null,
   'comptabilite/dossier-de-facturation': null,
+  'comptabilite/planche-des-documents': null,
 
   'comptes-clients/:id': 'b2b_companies:read',
   'comptes-clients/:id/dashboard': null,

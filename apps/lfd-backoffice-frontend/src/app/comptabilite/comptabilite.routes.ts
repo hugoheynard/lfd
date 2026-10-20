@@ -146,6 +146,18 @@ export const comptabiliteRoutes: Routes = [
           import('./invoice-dossier/invoice-dossier-page').then((m) => m.InvoiceDossierPage),
       },
       {
+        // La PLANCHE DES DOCUMENTS : les bons et la facture rendus à partir de
+        // données d'exemple fixes, pour un contrôle visuel. Sous
+        // `b2b_accounting`, comme la coquille ; les routes serveur aussi.
+        // Doc : documentation/comptabilite/planche-des-documents.md.
+        path: 'planche-des-documents',
+        title: 'Planche des documents — LFC B2B admin',
+        loadComponent: () =>
+          import('./document-specimens/document-specimens-page').then(
+            (m) => m.DocumentSpecimensPage,
+          ),
+      },
+      {
         // La FICHE d'une entité — tout ce qui se règle sur un émetteur. Elle
         // n'a pas de garde propre pour la raison écrite en tête de fichier :
         // elle parle de la même ressource que la liste dont elle vient.

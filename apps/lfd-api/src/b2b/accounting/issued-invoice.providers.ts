@@ -5,6 +5,7 @@ import { ResendInvoiceNoticeHandler } from "./application/commands/resend-invoic
 import { RenderCreditNoteDocument } from "./application/handlers/render-credit-note-document.handler.js";
 import { SendInvoiceNotice } from "./application/handlers/send-invoice-notice.handler.js";
 import { GetIssuedInvoiceDocumentHandler } from "./application/queries/get-issued-invoice-document.handler.js";
+import { GetInvoiceSpecimenHandler } from "./application/queries/get-invoice-specimen.handler.js";
 import { GetIssuedInvoiceHandler } from "./application/queries/get-issued-invoice.handler.js";
 import { GetMyCompanyInvoiceDocumentHandler } from "./application/queries/get-my-company-invoice-document.handler.js";
 import { GetMyCompanyInvoiceHandler } from "./application/queries/get-my-company-invoice.handler.js";
@@ -51,4 +52,6 @@ export const ISSUED_INVOICE_PROVIDERS: readonly Provider[] = [
   GetMyCompanyInvoiceHandler,
   ListCompanyInvoicesHandler,
   GetIssuedInvoiceHandler,
+  // La facture d'EXEMPLE de la planche des documents (2026-10-20).
+  GetInvoiceSpecimenHandler,
 ];

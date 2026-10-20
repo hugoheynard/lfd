@@ -127,7 +127,7 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     write: "Saisir le RIB d'un client, créer, envoyer, faire signer ou révoquer son mandat.",
   },
   b2b_accounting: {
-    read: "Ouvrir la Comptabilité : nos entités juridiques et leurs coordonnées bancaires, le cycle de facturation, les liens de paiement, la fidélité, la liste des prélèvements bloqués.",
+    read: "Ouvrir la Comptabilité : nos entités juridiques et leurs coordonnées bancaires, le cycle de facturation, les liens de paiement, la fidélité, la liste des prélèvements bloqués, et la planche d'exemples des documents (bons et facture rendus sur des données fictives).",
     write:
       "Modifier nos entités émettrices — dont le compte qui reçoit l'argent —, créer ou annuler un lien de paiement, régler la fidélité. Ne donne pas le blocage du prélèvement, qui a son propre droit.",
   },

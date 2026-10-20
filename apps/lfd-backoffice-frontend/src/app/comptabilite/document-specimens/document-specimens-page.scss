@@ -1,0 +1,18 @@
+.groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+// Un A4 se lit en hauteur : l'aperçu prend presque tout l'écran.
+.viewer {
+  width: 100%;
+  height: 80vh;
+  border: 0;
+}

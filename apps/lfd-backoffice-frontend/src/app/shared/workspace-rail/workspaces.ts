@@ -795,6 +795,16 @@ export const COMPTABILITE_VIEWS: readonly WorkspaceView[] = [
     icon: 'receipt',
     needs: 'b2b_accounting:read',
   },
+  {
+    // Les papiers rendus sur des données d'exemple, pour les regarder (plan
+    // `planche-des-documents.md`) — rail ET lanceur mobile, qui lisent tous
+    // deux cette table.
+    key: 'planche-des-documents',
+    label: 'Planche des documents',
+    link: '/comptabilite/planche-des-documents',
+    icon: 'eye',
+    needs: 'b2b_accounting:read',
+  },
 ];
 
 /**

@@ -79,6 +79,7 @@ import { MonthlyInvoicesReader } from "./domain/ports/monthly-invoices.reader.js
 import { ClosureBatchesReader } from "./domain/ports/closure-batches.reader.js";
 import { MonthlyInvoicingReader } from "./domain/ports/monthly-invoicing.reader.js";
 import { AdminCardInvoicesController } from "./http/admin-card-invoices.controller.js";
+import { AdminInvoiceSpecimenController } from "./http/admin-invoice-specimen.controller.js";
 import { AdminMonthlyInvoicesController } from "./http/admin-monthly-invoices.controller.js";
 import { PrismaInvoiceAutopilotRuns } from "./infrastructure/prisma-invoice-autopilot-runs.js";
 import { PrismaMonthlyInvoiceOutcomes } from "./infrastructure/prisma-monthly-invoice-outcomes.js";
@@ -204,6 +205,7 @@ import { PrismaOrderRowsLock } from "./infrastructure/prisma-order-rows-lock.js"
     InvoiceAutopilotController,
     AdminMonthlyInvoicesController,
     AdminCardInvoicesController,
+    AdminInvoiceSpecimenController,
     AdminBillingStatementsController,
     AdminDetachedUnpaidController,
     CompanyDetachedUnpaidController,

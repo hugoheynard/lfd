@@ -26,15 +26,16 @@ Rangé par thème le 2026-10-08 (Hugo : « mets `facturation` en sous-dossier de
 plans, ses docs d'état et ses todos (les todos vivent **ici** et non dans
 `../todos/`, décidé par Hugo le 2026-09-15).
 
-| Dossier                        | Ce qu'on y trouve                                                                                                               |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
-| [`facturation/`](facturation/) | la facture : simulateur de dossier, émission Factur-X, bons et facture concordants, le prélèvement qui suit la facture          |
-| [`prelevement/`](prelevement/) | le prélèvement SEPA : le document unique, le mois automatique, le lot figé, les blocages, les rejets, les questions à la banque |
-| [`mandat/`](mandat/)           | le mandat et le RIB : RUM, mandat côté client, deux schémas, mentions obligatoires, RIB client                                  |
-| [`fidelite/`](fidelite/)       | les points de fidélité et les questions au cabinet                                                                              |
-| [`prix/`](prix/)               | les limites de prix                                                                                                             |
-| [`caisse/`](caisse/)           | pourquoi nous n'avons pas de logiciel de caisse certifié : la tolérance du BOFiP, et ce qui la ferait tomber                    |
-| [`lexique.md`](lexique.md)     | quand un sigle bloque la lecture : ICS, RUM, SDD, `pain.008`, séquences                                                         |
+| Dossier                                                | Ce qu'on y trouve                                                                                                               |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| [`facturation/`](facturation/)                         | la facture : simulateur de dossier, émission Factur-X, bons et facture concordants, le prélèvement qui suit la facture          |
+| [`prelevement/`](prelevement/)                         | le prélèvement SEPA : le document unique, le mois automatique, le lot figé, les blocages, les rejets, les questions à la banque |
+| [`mandat/`](mandat/)                                   | le mandat et le RIB : RUM, mandat côté client, deux schémas, mentions obligatoires, RIB client                                  |
+| [`fidelite/`](fidelite/)                               | les points de fidélité et les questions au cabinet                                                                              |
+| [`prix/`](prix/)                                       | les limites de prix                                                                                                             |
+| [`caisse/`](caisse/)                                   | pourquoi nous n'avons pas de logiciel de caisse certifié : la tolérance du BOFiP, et ce qui la ferait tomber                    |
+| [`lexique.md`](lexique.md)                             | quand un sigle bloque la lecture : ICS, RUM, SDD, `pain.008`, séquences                                                         |
+| [`planche-des-documents.md`](planche-des-documents.md) | la planche d'exemples : les bons et la facture rendus sur des données fixes, pour un contrôle visuel                            |
 
 ### Prélèvement
 

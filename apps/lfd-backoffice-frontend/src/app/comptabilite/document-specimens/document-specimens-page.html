@@ -1,0 +1,63 @@
+<fold-page-layout title="Documents — planche d'exemples" separator>
+  <p description>
+    Les papiers tels qu'ils sortent, rendus à partir de données d'<strong>exemple</strong> fixes —
+    jamais une vraie commande&nbsp;: rien n'est écrit, rien n'est envoyé. Pour contrôler la mise en
+    page, les mentions et les totaux.
+  </p>
+  <button
+    pageActions
+    foldButton
+    emphasis="outline"
+    icon="arrow-right"
+    [disabled]="state() !== 'ready'"
+    (click)="openInTab()"
+  >
+    Ouvrir dans un onglet
+  </button>
+
+  <fold-aside-layout asideLeftLabel="Documents">
+    <fold-card asideLeft>
+      <div class="groups">
+        @for (group of groups; track group.title) {
+          <div class="group">
+            <fold-element-title [title]="group.title" />
+            <fold-choice-row
+              layout="chips"
+              [options]="group.options"
+              [activeKey]="selected()"
+              [ariaLabel]="group.title"
+              (selected)="choose($event)"
+            />
+          </div>
+        }
+      </div>
+    </fold-card>
+
+    <fold-card>
+      <fold-element-title cardHeader variant="title" icon="eye" [title]="label()" />
+      @if (tabBlocked()) {
+        <fold-callout variant="warning">
+          Le navigateur a bloqué l'onglet.
+          <button foldButton emphasis="outline" icon="download" (click)="download()">
+            Télécharger
+          </button>
+        </fold-callout>
+      }
+      @switch (state()) {
+        @case ('loading') {
+          <fold-loading message="Rendu de l'exemplaire…" />
+        }
+        @case ('error') {
+          <fold-empty-state tone="alert" title="L'exemplaire n'a pas pu être rendu">
+            <button foldButton (click)="load()">Réessayer</button>
+          </fold-empty-state>
+        }
+        @case ('ready') {
+          @if (source(); as document) {
+            <iframe class="viewer" [title]="label()" [src]="document"></iframe>
+          }
+        }
+      }
+    </fold-card>
+  </fold-aside-layout>
+</fold-page-layout>
