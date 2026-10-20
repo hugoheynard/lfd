@@ -36,6 +36,7 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { enableNotices } from "./sub-account-notice-scene.js";
 
 const SERVICE_DAY = serviceDay();
 const TEMPLATE = "customer.sub-account-activity";
@@ -153,6 +154,8 @@ async function group(): Promise<Group> {
     where: { id: { in: [site, brother] } },
     data: { parentCompanyId: principal },
   });
+  // Avis désactivés par défaut depuis l'interrupteur (2026-10-20).
+  await enableNotices(ctx, principal);
   await ctx.prisma.companyFollow.create({
     data: {
       companyId: site,

@@ -55,3 +55,19 @@ export const setSubAccountNoticeRulePayloadSchema = z.object({
   enabled: z.boolean(),
 });
 export type SetSubAccountNoticeRulePayload = z.infer<typeof setSubAccountNoticeRulePayloadSchema>;
+
+/**
+ * **Les avis d'un principal, tels que l'écran du staff les lit** : l'interrupteur
+ * (désactivé par défaut, décision de Hugo du 2026-10-20) et le tableau.
+ */
+export interface SubAccountNoticesView {
+  /** `false` tant que le staff n'a pas activé les avis : rien ne part. */
+  readonly enabled: boolean;
+  readonly cells: readonly SubAccountNoticeRuleView[];
+}
+
+/** Activer ou couper les avis d'un principal (`PUT …/sub-account-notices/enabled`). */
+export const setSubAccountNoticesEnabledPayloadSchema = z.object({ enabled: z.boolean() });
+export type SetSubAccountNoticesEnabledPayload = z.infer<
+  typeof setSubAccountNoticesEnabledPayloadSchema
+>;

@@ -1,6 +1,6 @@
 # Plan — le principal est prévenu de ce que font ses sous-comptes
 
-> 📐 **Plan — N1, N2, N3, N4a, N4b et N4c bâtis le 2026-10-20**, N4d et N4e à faire. Demande de Hugo : « savoir quelles
+> 📐 **Plan — N1, N2, N3, N4a, N4b, N4c et l'interrupteur bâtis le 2026-10-20**, N4d et N4e à faire. Demande de Hugo : « savoir quelles
 > actions menées par le sous-compte doivent être notifiées au principal, avec un
 > mapping de rôle ». Décisions de Hugo le même jour : **mail seul** ; le
 > tableau action × rôle est **réglé par le staff, principal par principal**.
@@ -499,6 +499,38 @@ pas à la même chose :
   s'en sert (`apps/lfd-api/src/dev/scenario/purge/outbox.purge.ts`, corrigée
   au commit de N4b).
 - e2e `apps/lfd-api/test/sub-account-notice-contacts.e2e-spec.ts`.
+
+#### Interrupteur bâti (2026-10-20)
+
+**Décision de Hugo (2026-10-20)** : « un switch pour désactiver ces
+notifications dans la partie sous-compte, surtout au début » — **par
+principal, désactivé par défaut**.
+
+- **Table** `sub_account_notice_settings` (migration additive
+  `20261020130000_l_interrupteur_des_avis_au_principal`, retour arrière en
+  tête, aucun droit accordé). **Pas de ligne = désactivé** : tous les
+  principaux partent coupés, y compris ceux qui recevaient des avis depuis
+  N2. `updated_by` est au registre RGPD (`lint:rgpd-staff` l'exige). La
+  remise à blanc de dev la vide avant les sociétés (clé `Restrict`).
+- **Ports** d'`account/` : `SubAccountNoticeSwitchReader` / `Writer`
+  (`apps/lfd-api/src/b2b/account/domain/ports/sub-account-notice-switch.ts`).
+- **Envoi** : `PrincipalNoticeSender` lit l'interrupteur du principal FIGÉ
+  avant tout le reste — commandes (N2) comme gestes (N4) passent par lui.
+  Coupé : ni mail, ni ligne au journal d'envoi. 🔴 **Un geste fait pendant la
+  coupure n'est jamais rattrapé** : son fait a été livré et son reçu posé ;
+  réactiver ne vaut que pour les faits suivants.
+- **Routes** sous la surface `b2b_companies` : le `GET …/sub-account-notices`
+  rend désormais `{ enabled, cells }` (contrat cassé dans le même déploiement
+  que l'écran, pré-lancement) ; `PUT …/sub-account-notices/enabled
+{ enabled }` → `SetSubAccountNoticesEnabledCommand`.
+- **Écran N3** : en tête, « Avis par mail : désactivés / activés » et le
+  bouton derrière une confirmation qui dit la conséquence ; désactivés, le
+  tableau reste lisible mais grisé et inerte, sous « Rien ne part tant que
+  les avis sont désactivés ».
+- **e2e** : la scène commune active les avis
+  (`apps/lfd-api/test/sub-account-notice-scene.ts`, `enableNotices`), comme
+  le groupe de l'e2e N2 ; l'e2e N4a éprouve « par défaut rien, activé un
+  mail, coupé plus rien — et rien de rattrapé ».
 
 #### Ce que `vitruve` a changé (2026-10-20)
 

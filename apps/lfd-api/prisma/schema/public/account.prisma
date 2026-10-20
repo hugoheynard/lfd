@@ -246,34 +246,36 @@ model Company {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  memberships        Membership[]
-  contacts           CompanyContact[]
-  addresses          Address[]
-  orders             Order[]                 @relation("OrderCompany")
+  memberships             Membership[]
+  contacts                CompanyContact[]
+  addresses               Address[]
+  orders                  Order[]                  @relation("OrderCompany")
   /// Les commandes dont cette société est le PAYEUR copié (§2.3).
-  billedOrders       Order[]                 @relation("OrderBilledCompany")
+  billedOrders            Order[]                  @relation("OrderBilledCompany")
   /// Les commandes de ses sous-comptes, dont elle était le principal à la passation.
-  principalOrders    Order[]                 @relation("OrderPrincipalCompany")
+  principalOrders         Order[]                  @relation("OrderPrincipalCompany")
   /// Les dérogations du staff au tableau des avis à ce principal.
-  subAccountNoticeRules SubAccountNoticeRule[]
+  subAccountNoticeRules   SubAccountNoticeRule[]
+  /// L'interrupteur des avis à ce principal ; absent = désactivés.
+  subAccountNoticeSetting SubAccountNoticeSetting?
   /// Les dérogations d'heure limite accordées à ce client.
-  orderCutoffWaivers OrderCutoffWaiver[]
-  orderDraft         OrderDraft?
+  orderCutoffWaivers      OrderCutoffWaiver[]
+  orderDraft              OrderDraft?
   // Les paniers en cours composés POUR cette société — un par personne.
-  shopCarts          ShopCart[]
-  supportRequests    SupportRequest[]
-  mandates           PaymentMandate[]        @relation("MandateCompany")
+  shopCarts               ShopCart[]
+  supportRequests         SupportRequest[]
+  mandates                PaymentMandate[]         @relation("MandateCompany")
   /// Les mandats qui la nomment DÉBITEUR — les siens, et ceux de ses sites.
-  debtorMandates     PaymentMandate[]        @relation("MandateDebtor")
+  debtorMandates          PaymentMandate[]         @relation("MandateDebtor")
   /// Les formes de prélèvement datées de ce site (§2.1 ter).
-  collectionForms    CompanyCollectionForm[]
+  collectionForms         CompanyCollectionForm[]
   // Le RIB du client — au plus un (`company_id` est unique côté table).
-  bankAccount        CompanyBankAccount?
+  bankAccount             CompanyBankAccount?
   // Les liens de paiement libres adressés à ce client (cf. payments/).
-  paymentLinks       PaymentLink[]
+  paymentLinks            PaymentLink[]
   // Le grand livre de fidélité et les bons de ce client (cf. b2b/loyalty/).
-  loyaltyEntries     LoyaltyLedgerEntry[]
-  loyaltyVouchers    LoyaltyVoucher[]
+  loyaltyEntries          LoyaltyLedgerEntry[]
+  loyaltyVouchers         LoyaltyVoucher[]
 
   /// Dérogations de ce compte aux règles d'alerte globales (cf. alerts/).
   alertOverrides AccountAlertOverride[]
@@ -419,22 +421,22 @@ model User {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  memberships      Membership[]
+  memberships           Membership[]
   /// Les avis au principal déjà envoyés à cette personne (journal d'envoi).
   subAccountNoticeSends SubAccountNoticeSend[]
-  ordersPlaced     Order[] @relation("OrderPlacedBy")
+  ordersPlaced          Order[]                @relation("OrderPlacedBy")
   /// Les commandes que ce client a ANNULÉES lui-même (lot C6) — l'auteur, ou un membre.
-  ordersCancelled  Order[] @relation("OrderCancelledByUser")
-  subscriptions    Subscription[]
-  supportRequests  SupportRequest[]
+  ordersCancelled       Order[]                @relation("OrderCancelledByUser")
+  subscriptions         Subscription[]
+  supportRequests       SupportRequest[]
   // Un panier par espace de travail : le perso, puis un par société.
-  shopCarts        ShopCart[]
-  orderIdempotency OrderIdempotency[]
+  shopCarts             ShopCart[]
+  orderIdempotency      OrderIdempotency[]
   // La fidélité (cf. b2b/loyalty/) : le livre et les bons dont la personne est
   // titulaire, et les lignes dont elle est l'auteur.
-  loyaltyEntries   LoyaltyLedgerEntry[] @relation("LoyaltyEntryHolder")
-  loyaltyActs      LoyaltyLedgerEntry[] @relation("LoyaltyEntryActor")
-  loyaltyVouchers  LoyaltyVoucher[]     @relation("LoyaltyVoucherHolder")
+  loyaltyEntries        LoyaltyLedgerEntry[]   @relation("LoyaltyEntryHolder")
+  loyaltyActs           LoyaltyLedgerEntry[]   @relation("LoyaltyEntryActor")
+  loyaltyVouchers       LoyaltyVoucher[]       @relation("LoyaltyVoucherHolder")
 
   @@map("users")
   @@schema("public")

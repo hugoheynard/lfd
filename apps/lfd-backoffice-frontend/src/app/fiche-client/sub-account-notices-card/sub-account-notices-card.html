@@ -12,7 +12,7 @@
           foldButton
           size="sm"
           emphasis="outline"
-          [disabled]="!canWrite() || saving()"
+          [disabled]="!canWrite() || saving() || !enabled()"
           (click)="pending.set(null); resetting.set(true)"
           data-notices-reset
         >
@@ -37,48 +37,85 @@
         </fold-empty-state>
       }
       @default {
-        <fold-data-table
-          caption="Les mails que reçoivent les membres du principal, par action et par rôle"
-          density="compact"
-          narrowLayout="scroll"
-          [columns]="columns"
-          [rows]="rows()"
-          [rowKey]="rowKey"
-          [rowNote]="hasNote"
-        >
-          <ng-template foldCell="kind" let-row>
-            <span class="action">{{ row.label }}</span>
-          </ng-template>
-          <!-- Une case par rôle, écrite quatre fois : la table cherche ses
+        <div class="switch" data-notices-switch>
+          <span class="switch-state" [class.on]="enabled()" data-notices-state>
+            Avis par mail : {{ enabled() ? 'activés' : 'désactivés' }}
+          </span>
+          <button
+            foldButton
+            size="sm"
+            [emphasis]="enabled() ? 'outline' : 'solid'"
+            [disabled]="!canWrite() || saving()"
+            (click)="askSwitch()"
+            data-notices-switch-toggle
+          >
+            {{ enabled() ? 'Désactiver les avis' : 'Activer les avis' }}
+          </button>
+        </div>
+
+        @if (switching() !== null) {
+          <fold-inline-confirm
+            [open]="true"
+            [intent]="switching() ? 'primary' : 'danger'"
+            [message]="switchMessage(switching() === true)"
+            [loading]="saving()"
+            (confirmed)="confirmSwitch()"
+            (cancelled)="switching.set(null)"
+            data-notices-switch-confirm
+          >
+            <span hidden></span>
+          </fold-inline-confirm>
+        }
+
+        @if (!enabled()) {
+          <fold-callout variant="info" data-notices-off>
+            Rien ne part tant que les avis sont désactivés.
+          </fold-callout>
+        }
+
+        <div class="table" [class.inert]="!enabled()" [attr.inert]="enabled() ? null : ''">
+          <fold-data-table
+            caption="Les mails que reçoivent les membres du principal, par action et par rôle"
+            density="compact"
+            narrowLayout="scroll"
+            [columns]="columns"
+            [rows]="rows()"
+            [rowKey]="rowKey"
+            [rowNote]="hasNote"
+          >
+            <ng-template foldCell="kind" let-row>
+              <span class="action">{{ row.label }}</span>
+            </ng-template>
+            <!-- Une case par rôle, écrite quatre fois : la table cherche ses
                gabarits par leur clé, et un gabarit posé dans un @for lui échapperait. -->
-          <ng-template foldCell="owner" let-row>
-            <ng-container
-              *ngTemplateOutlet="noticeCell; context: { $implicit: row, role: 'owner' }"
-            />
-          </ng-template>
-          <ng-template foldCell="admin" let-row>
-            <ng-container
-              *ngTemplateOutlet="noticeCell; context: { $implicit: row, role: 'admin' }"
-            />
-          </ng-template>
-          <ng-template foldCell="orders" let-row>
-            <ng-container
-              *ngTemplateOutlet="noticeCell; context: { $implicit: row, role: 'orders' }"
-            />
-          </ng-template>
-          <ng-template foldCell="billing" let-row>
-            <ng-container
-              *ngTemplateOutlet="noticeCell; context: { $implicit: row, role: 'billing' }"
-            />
-          </ng-template>
-          <ng-template foldRowNote let-row>
-            <span class="summary" [attr.data-notice-summary]="row.kind">{{ summary(row) }}</span>
-          </ng-template>
-        </fold-data-table>
+            <ng-template foldCell="owner" let-row>
+              <ng-container
+                *ngTemplateOutlet="noticeCell; context: { $implicit: row, role: 'owner' }"
+              />
+            </ng-template>
+            <ng-template foldCell="admin" let-row>
+              <ng-container
+                *ngTemplateOutlet="noticeCell; context: { $implicit: row, role: 'admin' }"
+              />
+            </ng-template>
+            <ng-template foldCell="orders" let-row>
+              <ng-container
+                *ngTemplateOutlet="noticeCell; context: { $implicit: row, role: 'orders' }"
+              />
+            </ng-template>
+            <ng-template foldCell="billing" let-row>
+              <ng-container
+                *ngTemplateOutlet="noticeCell; context: { $implicit: row, role: 'billing' }"
+              />
+            </ng-template>
+            <ng-template foldRowNote let-row>
+              <span class="summary" [attr.data-notice-summary]="row.kind">{{ summary(row) }}</span>
+            </ng-template>
+          </fold-data-table>
+        </div>
 
         <p class="hidden-kinds">
-          Abonnements, adresses, contacts, RIB et problèmes signalés n’ont pas encore de mail : ces
-          lignes apparaîtront quand il existera.
+          Abonnements et RIB n’ont pas encore de mail : ces lignes apparaîtront quand il existera.
         </p>
       }
     }
@@ -131,7 +168,7 @@
         size="sm"
         [emphasis]="cell.enabled ? 'outline' : 'solid'"
         [attr.aria-label]="ariaOf(row, role)"
-        [disabled]="!canWrite() || saving()"
+        [disabled]="!canWrite() || saving() || !enabled()"
         (click)="ask(row, role)"
         data-notice-toggle
       >

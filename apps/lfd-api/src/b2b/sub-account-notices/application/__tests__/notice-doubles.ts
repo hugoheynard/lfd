@@ -6,6 +6,10 @@ import {
   SubAccountNoticeRulesReader,
   type SubAccountNoticeRuleOverride,
 } from "../../../account/domain/ports/sub-account-notice-rules.reader.js";
+import {
+  SubAccountNoticeSwitchReader,
+  SubAccountNoticeSwitchWriter,
+} from "../../../account/domain/ports/sub-account-notice-switch.js";
 import { SubAccountNoticeRulesWriter } from "../../../account/domain/ports/sub-account-notice-rules.writer.js";
 
 /** Les sociétés connues, et leur principal. Une société absente est inconnue. */
@@ -80,4 +84,38 @@ export function alpesAndChalet(): FixedCompanyParents {
       ["chalet", { parentCompanyId: "alpes" }],
     ]),
   );
+}
+
+/**
+ * L'interrupteur tenu en mémoire, lu et écrit par les deux ports. Sans ligne,
+ * désactivé — comme la base ; `enabledFor` l'active d'emblée pour les suites
+ * qui éprouvent l'envoi.
+ */
+export class InMemoryNoticeSwitches extends SubAccountNoticeSwitchReader {
+  readonly rows = new Map<string, { enabled: boolean; staffId: string; at: Date }>();
+
+  readonly writer: SubAccountNoticeSwitchWriter;
+
+  constructor(...enabledFor: readonly string[]) {
+    super();
+    this.writer = new InMemoryNoticeSwitchWriter(this.rows);
+    for (const principalId of enabledFor) {
+      this.rows.set(principalId, { enabled: true, staffId: "staff_seed", at: new Date(0) });
+    }
+  }
+
+  isEnabled(principalId: string): Promise<boolean> {
+    return Promise.resolve(this.rows.get(principalId)?.enabled ?? false);
+  }
+}
+
+class InMemoryNoticeSwitchWriter extends SubAccountNoticeSwitchWriter {
+  constructor(private readonly rows: Map<string, { enabled: boolean; staffId: string; at: Date }>) {
+    super();
+  }
+
+  set(principalId: string, enabled: boolean, staffId: string, at: Date): Promise<void> {
+    this.rows.set(principalId, { enabled, staffId, at });
+    return Promise.resolve();
+  }
 }

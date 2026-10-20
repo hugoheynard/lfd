@@ -92,6 +92,10 @@ type LoadState = 'loading' | 'ready' | 'error';
  * confirmation qui dit la conséquence — la même forme que la grille des
  * suivis. Le serveur résout chaque cellule (`atDefault`) ; l'écran ne
  * recompose jamais « dérogation sinon défaut ».
+ *
+ * En tête, l'interrupteur du principal (décision de Hugo, 2026-10-20) :
+ * désactivé par défaut ; tant qu'il l'est, le tableau reste lisible mais
+ * inerte — rien ne part, et rien ne sera rattrapé.
  */
 @Component({
   selector: 'app-sub-account-notices-card',
@@ -122,6 +126,10 @@ export class SubAccountNoticesCard {
 
   protected readonly state = signal<LoadState>('loading');
   private readonly rules = signal<readonly SubAccountNoticeRuleView[]>([]);
+  /** L'interrupteur du principal — désactivé tant que le staff ne l'a pas activé. */
+  protected readonly enabled = signal(false);
+  /** La bascule de l'interrupteur en attente de confirmation : la valeur visée. */
+  protected readonly switching = signal<boolean | null>(null);
   protected readonly rows = computed(() => noticeRows(this.rules()));
   protected readonly hasOverride = computed(() =>
     this.rows().some((row) => ROLES.some((role) => row.cells[role]?.atDefault === false)),
@@ -176,11 +184,40 @@ export class SubAccountNoticesCard {
       : `Reçoivent le mail : ${receivers.join(', ')}.`;
   }
 
-  /** Ouvre la confirmation : on ne coupe ni n'ouvre un courrier par réflexe. */
-  protected ask(row: NoticeRow, role: CompanyMemberRole): void {
+  /** Ouvre la confirmation de l'interrupteur, vers l'état opposé. */
+  protected askSwitch(): void {
     if (!this.canWrite()) {
       return;
     }
+    this.pending.set(null);
+    this.resetting.set(false);
+    this.switching.set(!this.enabled());
+  }
+
+  protected switchMessage(target: boolean): string {
+    return target
+      ? `Les contacts de ${this.principalName()} recevront un mail selon le tableau ci-dessous.`
+      : 'Plus aucun avis ne part ; ce qui arrive pendant ce temps ne sera pas envoyé plus tard.';
+  }
+
+  protected async confirmSwitch(): Promise<void> {
+    const target = this.switching();
+    if (target === null || this.saving()) {
+      return;
+    }
+    await this.write(
+      () => this.service.setSubAccountNoticesEnabled(this.companyId(), target),
+      target ? 'Activer les avis' : 'Désactiver les avis',
+    );
+    this.switching.set(null);
+  }
+
+  /** Ouvre la confirmation : on ne coupe ni n'ouvre un courrier par réflexe. */
+  protected ask(row: NoticeRow, role: CompanyMemberRole): void {
+    if (!this.canWrite() || !this.enabled()) {
+      return;
+    }
+    this.switching.set(null);
     this.resetting.set(false);
     this.pending.set({ kind: row.kind, role, enabled: !(row.cells[role]?.enabled ?? false) });
   }
@@ -236,7 +273,9 @@ export class SubAccountNoticesCard {
 
   private async load(companyId: string): Promise<void> {
     try {
-      this.rules.set(await this.service.subAccountNotices(companyId));
+      const board = await this.service.subAccountNotices(companyId);
+      this.enabled.set(board.enabled);
+      this.rules.set(board.cells);
       this.state.set('ready');
     } catch {
       this.state.set('error');

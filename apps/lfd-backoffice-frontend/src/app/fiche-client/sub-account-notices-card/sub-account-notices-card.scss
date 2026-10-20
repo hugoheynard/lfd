@@ -36,3 +36,25 @@
 .hidden-kinds {
   margin: 0;
 }
+
+/* L'interrupteur, en tête : l'état à gauche, le geste à droite. */
+.switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+}
+
+.switch-state {
+  font-weight: var(--fold-weight-semibold);
+  color: var(--fold-color-text-muted);
+}
+
+.switch-state.on {
+  color: var(--fold-color-text);
+}
+
+/* Désactivés : le tableau reste lisible, mais grisé et inerte. */
+.table.inert {
+  opacity: 0.55;
+}

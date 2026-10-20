@@ -3,7 +3,7 @@ import type { CompanyStatus } from "../../../../account/domain/value-objects/com
 import type { OrderNoticeSummary } from "../../../../orders/domain/ports/order-notice-summary.reader.js";
 import { OrderCancelledEvent } from "../../../../orders/domain/events/order-cancelled.event.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
-import { InMemoryNoticeRules } from "../../__tests__/notice-doubles.js";
+import { InMemoryNoticeRules, InMemoryNoticeSwitches } from "../../__tests__/notice-doubles.js";
 import {
   chaletOrder,
   FixedLifecycle,
@@ -36,6 +36,7 @@ interface Options {
   readonly order?: OrderNoticeSummary;
   readonly status?: CompanyStatus;
   readonly members?: readonly AcceptedMember[];
+  readonly switches?: InMemoryNoticeSwitches;
 }
 
 function build(options: Options = {}) {
@@ -45,6 +46,7 @@ function build(options: Options = {}) {
   const dispatcher = new SubAccountNoticeDispatcher(
     new FixedOrderSummaries([options.order ?? chaletOrder()]),
     new PrincipalNoticeSender(
+      options.switches ?? new InMemoryNoticeSwitches("alpes"),
       new FixedLifecycle(new Map([["alpes", options.status ?? "active"]])),
       rules,
       new FixedMembers(new Map([["alpes", options.members ?? ALPES]])),
@@ -275,5 +277,14 @@ describe("une commande CARTE (Hugo, 2026-10-20)", () => {
     await paid.handle(paidFact);
 
     expect(mailer.sent).toEqual([]);
+  });
+});
+
+describe("l'interrupteur, sur le chemin des commandes (N2)", () => {
+  it("un principal aux avis désactivés n'est pas prévenu d'une commande", async () => {
+    const { placed, mailer, journal } = build({ switches: new InMemoryNoticeSwitches() });
+    await placed.handle(placedFact);
+    expect(mailer.sent).toEqual([]);
+    expect(journal.rows.size).toBe(0);
   });
 });

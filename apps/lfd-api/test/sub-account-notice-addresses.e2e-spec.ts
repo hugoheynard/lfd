@@ -23,6 +23,7 @@ import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createCompany } from "./factories.js";
 import {
+  enableNotices,
   mailOf,
   noticeMember,
   noticeScene,
@@ -195,6 +196,7 @@ describe("le carnet de livraison d'un site", () => {
     const s = await noticeScene(ctx);
     const other = (await createCompany(ctx.prisma, { raisonSociale: "SAS Autre Groupe" })).id;
     const stranger = await noticeMember(ctx, other, CustomerRole.owner);
+    await enableNotices(ctx, other);
 
     let gesture: Promise<unknown> = Promise.resolve();
     await ctx.prisma.$transaction(async (tx) => {

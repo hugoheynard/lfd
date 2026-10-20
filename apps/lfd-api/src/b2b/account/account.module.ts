@@ -203,6 +203,14 @@ import { PrismaSitePrincipalLock } from "./infrastructure/prisma-site-principal.
 import { SiteGesturePublisher } from "./application/services/site-gesture.publisher.js";
 import { SubAccountNoticeRulesReader } from "./domain/ports/sub-account-notice-rules.reader.js";
 import { SubAccountNoticeRulesWriter } from "./domain/ports/sub-account-notice-rules.writer.js";
+import {
+  SubAccountNoticeSwitchReader,
+  SubAccountNoticeSwitchWriter,
+} from "./domain/ports/sub-account-notice-switch.js";
+import {
+  PrismaSubAccountNoticeSwitchReader,
+  PrismaSubAccountNoticeSwitchWriter,
+} from "./infrastructure/prisma-sub-account-notice-switch.store.js";
 import { PrismaAcceptedMembersReader } from "./infrastructure/prisma-accepted-members.reader.js";
 import { PrismaDeliveryPostalCodesReader } from "./infrastructure/prisma-delivery-postal-codes.reader.js";
 import { PrismaCompanyParentReader } from "./infrastructure/prisma-company-parent.reader.js";
@@ -446,6 +454,8 @@ import {
     { provide: CompanyLifecycleReader, useClass: PrismaCompanyLifecycleReader },
     { provide: SubAccountNoticeRulesReader, useClass: PrismaSubAccountNoticeRulesReader },
     { provide: SubAccountNoticeRulesWriter, useClass: PrismaSubAccountNoticeRulesWriter },
+    { provide: SubAccountNoticeSwitchReader, useClass: PrismaSubAccountNoticeSwitchReader },
+    { provide: SubAccountNoticeSwitchWriter, useClass: PrismaSubAccountNoticeSwitchWriter },
     // Les codes postaux de livraison, que le réglage des zones rapproche (2026-10-20).
     { provide: DeliveryPostalCodesReader, useClass: PrismaDeliveryPostalCodesReader },
   ],
@@ -462,6 +472,8 @@ import {
     CompanyLifecycleReader,
     SubAccountNoticeRulesReader,
     SubAccountNoticeRulesWriter,
+    SubAccountNoticeSwitchReader,
+    SubAccountNoticeSwitchWriter,
     DeliveryPostalCodesReader,
   ],
 })

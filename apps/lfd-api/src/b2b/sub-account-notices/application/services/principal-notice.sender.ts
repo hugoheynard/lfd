@@ -3,6 +3,7 @@ import type { SubAccountNoticeKind } from "@lfd/contracts";
 
 import { AcceptedMembersReader } from "../../../account/domain/ports/accepted-members.reader.js";
 import { CompanyLifecycleReader } from "../../../account/domain/ports/company-lifecycle.reader.js";
+import { SubAccountNoticeSwitchReader } from "../../../account/domain/ports/sub-account-notice-switch.js";
 import { SubAccountNoticeRulesReader } from "../../../account/domain/ports/sub-account-notice-rules.reader.js";
 import type { B2bMails } from "../../../../platform/mailer/mail-templates.js";
 import { MAILER, type B2bMailer } from "../../../../platform/mailer/mailer.tokens.js";
@@ -28,7 +29,10 @@ export interface PrincipalNoticeTarget {
 
 /**
  * **La fin commune de tout avis au principal** (`plan-notifications-sous-comptes.md`,
- * §2, N4 « Le socle ») : le principal est-il encore écrit (Q2), quels rôles
+ * §2, N4 « Le socle ») : les avis de ce principal sont-ils ACTIVÉS
+ * (« Interrupteur bâti » — désactivés par défaut, et rien n'est rattrapé à la
+ * réactivation : ni mail, ni ligne du journal d'envoi pendant la coupure), le
+ * principal est-il encore écrit (Q2), quels rôles
  * sont cochés, quels membres ACCEPTÉS les tiennent moins l'auteur, puis, par
  * destinataire, la ligne du journal d'envoi d'abord, l'envoi ensuite.
  *
@@ -38,6 +42,7 @@ export interface PrincipalNoticeTarget {
 @Injectable()
 export class PrincipalNoticeSender {
   constructor(
+    private readonly switches: SubAccountNoticeSwitchReader,
     private readonly lifecycle: CompanyLifecycleReader,
     private readonly rules: SubAccountNoticeRulesReader,
     private readonly members: AcceptedMembersReader,
@@ -51,6 +56,9 @@ export class PrincipalNoticeSender {
     template: K,
     data: B2bMails[K],
   ): Promise<void> {
+    if (!(await this.switches.isEnabled(target.principalId))) {
+      return;
+    }
     if (!principalStillWritten(await this.lifecycle.statusOf(target.principalId))) {
       return;
     }

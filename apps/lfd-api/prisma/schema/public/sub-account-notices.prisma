@@ -47,3 +47,19 @@ model SubAccountNoticeSend {
   @@map("sub_account_notice_sends")
   @@schema("public")
 }
+
+/// L'**interrupteur** des avis d'un principal (décision de Hugo, 2026-10-20 :
+/// « un switch pour désactiver ces notifications, surtout au début »). Pas de
+/// ligne = DÉSACTIVÉ : un principal n'est prévenu que si le staff l'a voulu.
+/// Ce qui arrive pendant la désactivation n'est jamais rattrapé.
+model SubAccountNoticeSetting {
+  principalCompanyId String   @id @map("principal_company_id")
+  principalCompany   Company  @relation(fields: [principalCompanyId], references: [id], onDelete: Restrict)
+  enabled            Boolean
+  /// L'id de fiche du staff qui a basculé l'interrupteur (registre RGPD).
+  updatedBy          String   @map("updated_by")
+  updatedAt          DateTime @map("updated_at") @db.Timestamptz(3)
+
+  @@map("sub_account_notice_settings")
+  @@schema("public")
+}

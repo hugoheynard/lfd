@@ -6,6 +6,7 @@ import type {
   StaffPermission,
   SubAccountNoticeKind,
   SubAccountNoticeRuleView,
+  SubAccountNoticesView,
 } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
@@ -34,6 +35,8 @@ function defaults(): SubAccountNoticeRuleView[] {
 
 interface Wire {
   rules: SubAccountNoticeRuleView[];
+  /** L'interrupteur ; activé par défaut ICI, pour éprouver le tableau. */
+  enabled: boolean;
   readonly calls: string[];
   refuse: HttpErrorResponse | null;
   failRead: boolean;
@@ -43,7 +46,13 @@ async function boot(
   granted: readonly StaffPermission[] = ['b2b_companies:write'],
   setup: (wire: Wire) => void = () => undefined,
 ): Promise<{ fixture: ComponentFixture<SubAccountNoticesCard>; wire: Wire }> {
-  const wire: Wire = { rules: defaults(), calls: [], refuse: null, failRead: false };
+  const wire: Wire = {
+    rules: defaults(),
+    enabled: true,
+    calls: [],
+    refuse: null,
+    failRead: false,
+  };
   setup(wire);
   const settle = (): Promise<void> =>
     wire.refuse === null ? Promise.resolve() : Promise.reject(wire.refuse);
@@ -54,11 +63,18 @@ async function boot(
       {
         provide: AdminCompanyHierarchyService,
         useValue: {
-          subAccountNotices: (id: string): Promise<readonly SubAccountNoticeRuleView[]> => {
+          subAccountNotices: (id: string): Promise<SubAccountNoticesView> => {
             wire.calls.push(`get ${id}`);
             return wire.failRead
               ? Promise.reject(new HttpErrorResponse({ status: 500 }))
-              : Promise.resolve(wire.rules);
+              : Promise.resolve({ enabled: wire.enabled, cells: wire.rules });
+          },
+          setSubAccountNoticesEnabled: (id: string, enabled: boolean): Promise<void> => {
+            wire.calls.push(`enabled ${id} ${String(enabled)}`);
+            if (wire.refuse === null) {
+              wire.enabled = enabled;
+            }
+            return settle();
           },
           setSubAccountNotice: (id: string, p: SetSubAccountNoticeRulePayload): Promise<void> => {
             wire.calls.push(`put ${id} ${p.kind} ${p.role} ${String(p.enabled)}`);
@@ -190,5 +206,56 @@ describe('SubAccountNoticesCard', () => {
     expect(host(fixture).querySelector('fold-empty-state')?.textContent).toContain(
       'Impossible de lire',
     );
+  });
+
+  it('désactivés : l’état le dit, le tableau est inerte et ses boutons coupés', async () => {
+    const { fixture } = await boot(['b2b_companies:write'], (w) => {
+      w.enabled = false;
+    });
+    expect(host(fixture).querySelector('[data-notices-state]')?.textContent).toContain(
+      'Avis par mail : désactivés',
+    );
+    expect(host(fixture).querySelector('[data-notices-off]')?.textContent).toContain(
+      'Rien ne part tant que les avis sont désactivés.',
+    );
+    expect(host(fixture).querySelector('.table.inert')).not.toBeNull();
+    expect(toggle(fixture, 'order_placed', 'owner').disabled).toBe(true);
+  });
+
+  it('activer : la confirmation dit la conséquence, puis écrit et relit', async () => {
+    const { fixture, wire } = await boot(['b2b_companies:write'], (w) => {
+      w.enabled = false;
+    });
+    host(fixture).querySelector<HTMLButtonElement>('[data-notices-switch-toggle]')?.click();
+    await stable(fixture);
+    expect(wire.calls).toEqual([]);
+    expect(fixture.componentInstance['switchMessage'](true)).toBe(
+      'Les contacts de Alpes Chalets recevront un mail selon le tableau ci-dessous.',
+    );
+    await fixture.componentInstance['confirmSwitch']();
+    await stable(fixture);
+    expect(wire.calls).toEqual(['enabled p1 true', 'get p1']);
+    expect(host(fixture).querySelector('[data-notices-state]')?.textContent).toContain(
+      'Avis par mail : activés',
+    );
+  });
+
+  it('désactiver : la confirmation dit que rien ne sera rattrapé', async () => {
+    const { fixture, wire } = await boot();
+    host(fixture).querySelector<HTMLButtonElement>('[data-notices-switch-toggle]')?.click();
+    await stable(fixture);
+    expect(host(fixture).querySelector('[data-notices-switch-confirm]')).not.toBeNull();
+    expect(fixture.componentInstance['switchMessage'](false)).toBe(
+      'Plus aucun avis ne part ; ce qui arrive pendant ce temps ne sera pas envoyé plus tard.',
+    );
+    await fixture.componentInstance['confirmSwitch']();
+    expect(wire.calls).toEqual(['enabled p1 false', 'get p1']);
+  });
+
+  it('sans le droit d’écrire, l’interrupteur est coupé', async () => {
+    const { fixture } = await boot([]);
+    expect(
+      host(fixture).querySelector<HTMLButtonElement>('[data-notices-switch-toggle]')?.disabled,
+    ).toBe(true);
   });
 });

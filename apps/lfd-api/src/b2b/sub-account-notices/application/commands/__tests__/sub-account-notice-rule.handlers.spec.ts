@@ -3,11 +3,17 @@ import {
   NotAPrincipalError,
   NoticePrincipalNotFoundError,
 } from "../../../domain/errors/sub-account-notice-errors.js";
-import { alpesAndChalet, InMemoryNoticeRules } from "../../__tests__/notice-doubles.js";
+import {
+  alpesAndChalet,
+  InMemoryNoticeRules,
+  InMemoryNoticeSwitches,
+} from "../../__tests__/notice-doubles.js";
 import { GetSubAccountNoticeRulesHandler } from "../../queries/get-sub-account-notice-rules.handler.js";
 import { GetSubAccountNoticeRulesQuery } from "../../queries/get-sub-account-notice-rules.query.js";
 import { ResetSubAccountNoticeRulesCommand } from "../reset-sub-account-notice-rules.command.js";
 import { ResetSubAccountNoticeRulesHandler } from "../reset-sub-account-notice-rules.handler.js";
+import { SetSubAccountNoticesEnabledCommand } from "../set-sub-account-notices-enabled.command.js";
+import { SetSubAccountNoticesEnabledHandler } from "../set-sub-account-notices-enabled.handler.js";
 import { SetSubAccountNoticeRuleCommand } from "../set-sub-account-notice-rule.command.js";
 import { SetSubAccountNoticeRuleHandler } from "../set-sub-account-notice-rule.handler.js";
 
@@ -16,11 +22,14 @@ const NOW = new Date(Date.UTC(2030, 0, 1, 9));
 function build() {
   const parents = alpesAndChalet();
   const rules = new InMemoryNoticeRules();
+  const switches = new InMemoryNoticeSwitches();
   return {
     rules,
+    switches,
+    enable: new SetSubAccountNoticesEnabledHandler(parents, switches.writer, new FixedClock(NOW)),
     set: new SetSubAccountNoticeRuleHandler(parents, rules.writer, new FixedClock(NOW)),
     reset: new ResetSubAccountNoticeRulesHandler(parents, rules.writer),
-    get: new GetSubAccountNoticeRulesHandler(parents, rules),
+    get: new GetSubAccountNoticeRulesHandler(parents, rules, switches),
   };
 }
 
@@ -78,7 +87,7 @@ describe("GetSubAccountNoticeRulesHandler", () => {
       new SetSubAccountNoticeRuleCommand("alpes", "payment_failed", "admin", true, "s"),
     );
 
-    const grid = await get.execute(new GetSubAccountNoticeRulesQuery("alpes"));
+    const grid = (await get.execute(new GetSubAccountNoticeRulesQuery("alpes"))).cells;
 
     expect(grid).toHaveLength(32);
     expect(grid.filter((cell) => !cell.atDefault)).toEqual([
@@ -115,6 +124,30 @@ describe("ResetSubAccountNoticeRulesHandler", () => {
 
     await expect(
       reset.execute(new ResetSubAccountNoticeRulesCommand("chalet")),
+    ).rejects.toBeInstanceOf(NotAPrincipalError);
+  });
+});
+
+describe("SetSubAccountNoticesEnabledHandler — l'interrupteur", () => {
+  it("un principal jamais réglé lit ses avis DÉSACTIVÉS (décision de Hugo, 2026-10-20)", async () => {
+    const { get } = build();
+    expect((await get.execute(new GetSubAccountNoticeRulesQuery("alpes"))).enabled).toBe(false);
+  });
+
+  it("active puis coupe, avec l'auteur et l'heure du Clock", async () => {
+    const { enable, get, switches } = build();
+
+    await enable.execute(new SetSubAccountNoticesEnabledCommand("alpes", true, "staff_1"));
+    expect((await get.execute(new GetSubAccountNoticeRulesQuery("alpes"))).enabled).toBe(true);
+
+    await enable.execute(new SetSubAccountNoticesEnabledCommand("alpes", false, "staff_2"));
+    expect(switches.rows.get("alpes")).toEqual({ enabled: false, staffId: "staff_2", at: NOW });
+  });
+
+  it("refuse un sous-compte : les avis se règlent sur son principal", async () => {
+    const { enable } = build();
+    await expect(
+      enable.execute(new SetSubAccountNoticesEnabledCommand("chalet", true, "s")),
     ).rejects.toBeInstanceOf(NotAPrincipalError);
   });
 });

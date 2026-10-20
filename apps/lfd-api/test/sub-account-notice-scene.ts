@@ -7,7 +7,7 @@
  * `sub-account-notices.e2e-spec.ts`.
  */
 import { CustomerRole } from "../src/platform/database/client/client.js";
-import { daysAgo, type E2eContext } from "./e2e-harness.js";
+import { daysAgo, E2E_STAFF_SUB, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
 export interface NoticeScene {
@@ -43,7 +43,25 @@ export async function noticeMember(
   return sub;
 }
 
-export async function noticeScene(ctx: E2eContext): Promise<NoticeScene> {
+/**
+ * Active les avis du principal par la vraie route du staff : ils sont
+ * DÉSACTIVÉS par défaut (décision de Hugo, 2026-10-20), et une scène qui
+ * éprouve l'envoi doit le dire.
+ */
+export async function enableNotices(
+  ctx: E2eContext,
+  principal: string,
+  enabled = true,
+): Promise<void> {
+  await ctx
+    .asSub(E2E_STAFF_SUB)
+    .put(`/admin/companies/${principal}/sub-account-notices/enabled`)
+    .send({ enabled })
+    .expect(204);
+}
+
+/** La scène, avis ACTIVÉS — `enabled: false` pour éprouver l'interrupteur. */
+export async function noticeScene(ctx: E2eContext, enabled = true): Promise<NoticeScene> {
   const principal = (await createCompany(ctx.prisma, { raisonSociale: "SAS Alpes Chalets" })).id;
   const site = (await createCompany(ctx.prisma, { raisonSociale: "", enseigne: "Chalet Gentiane" }))
     .id;
@@ -60,6 +78,9 @@ export async function noticeScene(ctx: E2eContext): Promise<NoticeScene> {
       acceptedAt: new Date(daysAgo(10)),
     },
   });
+  if (enabled) {
+    await enableNotices(ctx, principal);
+  }
   return {
     principal,
     site,

@@ -89,8 +89,8 @@ model CustomerRequest {
   /// Le formulaire d'où elle vient, figé.
   kind RequestKind
 
-  reasonId String        @map("reason_id")
-  reason   RequestReason @relation(fields: [reasonId], references: [id], onDelete: Restrict)
+  reasonId    String          @map("reason_id")
+  reason      RequestReason   @relation(fields: [reasonId], references: [id], onDelete: Restrict)
   /// Le libellé français du motif, figé à la réception.
   reasonLabel String          @map("reason_label")
   /// La priorité du motif, figée à la réception.
@@ -140,8 +140,8 @@ model CustomerRequest {
 /// (`purged_at` posé) — la ligne reste.
 model CustomerRequestPhoto {
   /// ULID (fourni par l'`IdGenerator`).
-  id        String @id
-  requestId String @map("request_id")
+  id        String          @id
+  requestId String          @map("request_id")
   request   CustomerRequest @relation(fields: [requestId], references: [id], onDelete: Restrict)
 
   /// Rang d'affichage, 0..2.
@@ -172,22 +172,22 @@ model ContactSettings {
   b2bKickerFr String @default("") @map("b2b_kicker_fr")
   b2bKickerEn String @default("") @map("b2b_kicker_en")
   b2bKickerIt String @default("") @map("b2b_kicker_it")
-  b2bTitleFr String @default("") @map("b2b_title_fr")
-  b2bTitleEn String @default("") @map("b2b_title_en")
-  b2bTitleIt String @default("") @map("b2b_title_it")
-  b2bBodyFr  String @default("") @map("b2b_body_fr")
-  b2bBodyEn  String @default("") @map("b2b_body_en")
-  b2bBodyIt  String @default("") @map("b2b_body_it")
+  b2bTitleFr  String @default("") @map("b2b_title_fr")
+  b2bTitleEn  String @default("") @map("b2b_title_en")
+  b2bTitleIt  String @default("") @map("b2b_title_it")
+  b2bBodyFr   String @default("") @map("b2b_body_fr")
+  b2bBodyEn   String @default("") @map("b2b_body_en")
+  b2bBodyIt   String @default("") @map("b2b_body_it")
   /// Le surtitre de la carte (« On répond » à la boutique) — 2026-10-09.
   b2cKickerFr String @default("") @map("b2c_kicker_fr")
   b2cKickerEn String @default("") @map("b2c_kicker_en")
   b2cKickerIt String @default("") @map("b2c_kicker_it")
-  b2cTitleFr String @default("") @map("b2c_title_fr")
-  b2cTitleEn String @default("") @map("b2c_title_en")
-  b2cTitleIt String @default("") @map("b2c_title_it")
-  b2cBodyFr  String @default("") @map("b2c_body_fr")
-  b2cBodyEn  String @default("") @map("b2c_body_en")
-  b2cBodyIt  String @default("") @map("b2c_body_it")
+  b2cTitleFr  String @default("") @map("b2c_title_fr")
+  b2cTitleEn  String @default("") @map("b2c_title_en")
+  b2cTitleIt  String @default("") @map("b2c_title_it")
+  b2cBodyFr   String @default("") @map("b2c_body_fr")
+  b2cBodyEn   String @default("") @map("b2c_body_en")
+  b2cBodyIt   String @default("") @map("b2c_body_it")
 
   /// Instant du geste, lu du `Clock`.
   updatedAt        DateTime @map("updated_at")

@@ -21,6 +21,7 @@ import { SubAccountNoticeDispatcher } from "./application/services/sub-account-n
 import { NoticeSendJournal } from "./domain/ports/notice-send.journal.js";
 import { PrismaNoticeSendJournal } from "./infrastructure/prisma-notice-send.journal.js";
 import { ResetSubAccountNoticeRulesHandler } from "./application/commands/reset-sub-account-notice-rules.handler.js";
+import { SetSubAccountNoticesEnabledHandler } from "./application/commands/set-sub-account-notices-enabled.handler.js";
 import { SetSubAccountNoticeRuleHandler } from "./application/commands/set-sub-account-notice-rule.handler.js";
 import { GetSubAccountNoticeRulesHandler } from "./application/queries/get-sub-account-notice-rules.handler.js";
 import { AdminSubAccountNoticesController } from "./http/admin-sub-account-notices.controller.js";
@@ -44,6 +45,7 @@ import { AdminSubAccountNoticesController } from "./http/admin-sub-account-notic
   providers: [
     GetSubAccountNoticeRulesHandler,
     SetSubAccountNoticeRuleHandler,
+    SetSubAccountNoticesEnabledHandler,
     ResetSubAccountNoticeRulesHandler,
     PrincipalNoticeSender,
     SubAccountNoticeDispatcher,

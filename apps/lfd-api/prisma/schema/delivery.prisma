@@ -41,7 +41,7 @@ model DeliveryDayChange {
 /// migration `20260929120200_la_flotte_et_le_depart`.
 model DeliveryVehicle {
   /// Assigné par la commande (`IdGenerator`), jamais par la base.
-  id    String @id
+  id    String  @id
   /// « Kangoo blanc » — ce qu'on dit au dépôt.
   name  String
   /// La forme NORMALISÉE (`AB-123-CD`) : c'est elle que l'index compare.

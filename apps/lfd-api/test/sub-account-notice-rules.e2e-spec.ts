@@ -11,7 +11,7 @@
  *
  * Seule frontière doublée : la signature du jeton staff — le jeton EST le `sub`.
  */
-import type { SubAccountNoticeRuleView } from "@lfd/contracts";
+import type { SubAccountNoticeRuleView, SubAccountNoticesView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
@@ -64,8 +64,12 @@ async function group(): Promise<{ principal: string; site: string }> {
   return { principal, site };
 }
 
-async function grid(companyId: string): Promise<SubAccountNoticeRuleView[]> {
-  return jsonBody<SubAccountNoticeRuleView[]>(await admin().get(notices(companyId)).expect(200));
+async function board(companyId: string): Promise<SubAccountNoticesView> {
+  return jsonBody<SubAccountNoticesView>(await admin().get(notices(companyId)).expect(200));
+}
+
+async function grid(companyId: string): Promise<readonly SubAccountNoticeRuleView[]> {
+  return (await board(companyId)).cells;
 }
 
 function cell(
@@ -167,6 +171,50 @@ describe("le tableau des avis d'un principal", () => {
       .put(notices(principal))
       .send({ kind: "order_eaten", role: "owner", enabled: false })
       .expect(400);
+  });
+});
+
+describe("l'interrupteur des avis (2026-10-20)", () => {
+  it("désactivé par défaut ; activé puis coupé par le staff, l'auteur tracé", async () => {
+    const { principal } = await group();
+    expect((await board(principal)).enabled).toBe(false);
+
+    await admin()
+      .put(`${notices(principal)}/enabled`)
+      .send({ enabled: true })
+      .expect(204);
+    expect((await board(principal)).enabled).toBe(true);
+
+    await admin()
+      .put(`${notices(principal)}/enabled`)
+      .send({ enabled: false })
+      .expect(204);
+    expect((await board(principal)).enabled).toBe(false);
+    const row = await ctx.prisma.subAccountNoticeSetting.findUniqueOrThrow({
+      where: { principalCompanyId: principal },
+    });
+    expect(row.updatedBy).toEqual(expect.any(String));
+  });
+
+  it("refuse un sous-compte (409) et une charge mal formée (400)", async () => {
+    const { principal, site } = await group();
+    await admin()
+      .put(`${notices(site)}/enabled`)
+      .send({ enabled: true })
+      .expect(409);
+    await admin()
+      .put(`${notices(principal)}/enabled`)
+      .send({ enabled: "oui" })
+      .expect(400);
+  });
+
+  it("403 pour un staff sans le droit d'écrire la fiche client", async () => {
+    const { principal } = await group();
+    await ctx
+      .asSub(ACCOUNTANT.sub)
+      .put(`${notices(principal)}/enabled`)
+      .send({ enabled: true })
+      .expect(403);
   });
 });
 

@@ -2345,11 +2345,14 @@ export {
 } from "./vitrine.js";
 export {
   setSubAccountNoticeRulePayloadSchema,
+  setSubAccountNoticesEnabledPayloadSchema,
   SUB_ACCOUNT_NOTICE_KINDS_WITH_MAIL,
   subAccountNoticeKindSchema,
 } from "./sub-account-notices.js";
 export type {
   SetSubAccountNoticeRulePayload,
+  SetSubAccountNoticesEnabledPayload,
   SubAccountNoticeKind,
   SubAccountNoticeRuleView,
+  SubAccountNoticesView,
 } from "./sub-account-notices.js";

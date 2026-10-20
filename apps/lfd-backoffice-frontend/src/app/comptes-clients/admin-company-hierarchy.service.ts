@@ -9,7 +9,7 @@ import type {
   CreatedIdResponse,
   CreateSubAccountPayload,
   SetSubAccountNoticeRulePayload,
-  SubAccountNoticeRuleView,
+  SubAccountNoticesView,
 } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../api/api-config';
@@ -95,12 +95,19 @@ export class AdminCompanyHierarchyService {
   }
 
   /**
-   * Le tableau action × rôle des avis au principal, résolu par le serveur
-   * (dérogation sinon défaut) — `plan-notifications-sous-comptes.md` §1.
+   * L'interrupteur et le tableau action × rôle des avis au principal, résolus
+   * par le serveur (dérogation sinon défaut) — `plan-notifications-sous-comptes.md` §1.
    */
-  async subAccountNotices(companyId: string): Promise<readonly SubAccountNoticeRuleView[]> {
+  async subAccountNotices(companyId: string): Promise<SubAccountNoticesView> {
     return firstValueFrom(
-      this.http.get<SubAccountNoticeRuleView[]>(`${this.base(companyId)}/sub-account-notices`),
+      this.http.get<SubAccountNoticesView>(`${this.base(companyId)}/sub-account-notices`),
+    );
+  }
+
+  /** Active ou coupe tous les avis du principal ; rien n'est rattrapé à la réactivation. */
+  async setSubAccountNoticesEnabled(companyId: string, enabled: boolean): Promise<void> {
+    await firstValueFrom(
+      this.http.put<void>(`${this.base(companyId)}/sub-account-notices/enabled`, { enabled }),
     );
   }
 

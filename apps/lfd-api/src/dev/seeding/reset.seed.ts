@@ -180,6 +180,9 @@ async function wipe(prisma: PrismaClient, companyIds: string[], userIds: string[
   await prisma.subAccountNoticeRule.deleteMany({
     where: { principalCompanyId: { in: companyIds } },
   });
+  await prisma.subAccountNoticeSetting.deleteMany({
+    where: { principalCompanyId: { in: companyIds } },
+  });
   await prisma.order.deleteMany({
     where: {
       OR: [

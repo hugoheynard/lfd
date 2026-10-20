@@ -55,10 +55,10 @@ model CatalogReemissionJob {
   /// `catalog_reemission_job_one_running_all` (migration, Prisma ne l'exprime pas).
   status     String
 
-  productsAttempted Int @default(0) @map("products_attempted")
-  productsSucceeded Int @default(0) @map("products_succeeded")
+  productsAttempted Int     @default(0) @map("products_attempted")
+  productsSucceeded Int     @default(0) @map("products_succeeded")
   /// `[{ productId, name, reason }]` — chaque fiche en échec, nommée.
-  failures          Json @default("[]")
+  failures          Json    @default("[]")
   /// Ce qui a arrêté le travail entier (une famille, les règles, un
   /// redémarrage). `NULL` tant qu'il tourne ou s'il a fini.
   error             String?

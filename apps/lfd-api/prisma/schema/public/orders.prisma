@@ -88,8 +88,8 @@ model Order {
   /// rattachements n'existe, et relire `parent_company_id` plus tard
   /// préviendrait le principal d'APRÈS. `null` = pas de principal à la
   /// passation, ou commande d'avant la colonne.
-  principalCompanyId String?  @map("principal_company_id")
-  principalCompany   Company? @relation("OrderPrincipalCompany", fields: [principalCompanyId], references: [id], onDelete: Restrict)
+  principalCompanyId  String?  @map("principal_company_id")
+  principalCompany    Company? @relation("OrderPrincipalCompany", fields: [principalCompanyId], references: [id], onDelete: Restrict)
   /// Le principal voit-il le MONTANT de cette commande (Q1) : le site suivait
   /// `billing` ou `pricing` à la passation. `null` = commande d'avant la
   /// colonne, ou sans principal.

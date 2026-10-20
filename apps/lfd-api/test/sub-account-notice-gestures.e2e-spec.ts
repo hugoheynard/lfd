@@ -26,7 +26,13 @@ import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { MAILER } from "../src/platform/mailer/mailer.tokens.js";
 import { ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
-import { mailOf, noticeScene, recordOf, type NoticeScene } from "./sub-account-notice-scene.js";
+import {
+  enableNotices,
+  mailOf,
+  noticeScene,
+  recordOf,
+  type NoticeScene,
+} from "./sub-account-notice-scene.js";
 
 const TEMPLATE = "customer.sub-account-gesture";
 
@@ -166,5 +172,24 @@ describe("un site signale un problème sur une commande retirée", () => {
 
     expect(notices()).toHaveLength(before);
     expect(await ctx.prisma.subAccountNoticeSend.count()).toBe(3);
+  });
+});
+
+describe("l'interrupteur des avis du principal (Hugo, 2026-10-20)", () => {
+  it("par défaut aucun mail ; activé, le mail part ; coupé ensuite, plus rien — et rien n'est rattrapé", async () => {
+    const s = await noticeScene(ctx, false);
+
+    await report(s, await fulfilledOrder(s, s.principal));
+    expect(notices()).toEqual([]);
+    expect(await ctx.prisma.subAccountNoticeSend.count()).toBe(0);
+
+    await enableNotices(ctx, s.principal);
+    await report(s, await fulfilledOrder(s, s.principal));
+    // Un seul signalement prévenu : celui d'avant l'activation n'est pas rattrapé.
+    expect(recipients(notices())).toEqual([at(s.admin), at(s.orders), at(s.owner)].sort());
+
+    await enableNotices(ctx, s.principal, false);
+    await report(s, await fulfilledOrder(s, s.principal));
+    expect(notices()).toHaveLength(3);
   });
 });

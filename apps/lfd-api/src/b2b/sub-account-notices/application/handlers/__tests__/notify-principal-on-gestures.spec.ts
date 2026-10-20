@@ -2,7 +2,7 @@ import type { AcceptedMember } from "../../../../account/domain/ports/accepted-m
 import type { CompanyStatus } from "../../../../account/domain/value-objects/company-status.js";
 import { OrderProblemReportedFact } from "../../../../contact/domain/order-problem-reported.fact.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
-import { InMemoryNoticeRules } from "../../__tests__/notice-doubles.js";
+import { InMemoryNoticeRules, InMemoryNoticeSwitches } from "../../__tests__/notice-doubles.js";
 import {
   FixedLifecycle,
   FixedMembers,
@@ -43,11 +43,15 @@ const ALPES = [
   member("housekeeper", "admin"),
 ];
 
-function build(status: CompanyStatus = "active") {
+function build(
+  status: CompanyStatus = "active",
+  switches: InMemoryNoticeSwitches = new InMemoryNoticeSwitches("alpes"),
+) {
   const mailer = new RecordingMailer();
   const journal = new MemoryNoticeJournal();
   const rules = new InMemoryNoticeRules();
   const sender = new PrincipalNoticeSender(
+    switches,
     new FixedLifecycle(new Map([["alpes", status]])),
     rules,
     new FixedMembers(new Map([["alpes", ALPES]])),
@@ -60,6 +64,7 @@ function build(status: CompanyStatus = "active") {
     mailer,
     journal,
     rules,
+    switches,
     gestures,
     reported: new NotifyPrincipalOnOrderProblemReported(gestures),
     added: new NotifyPrincipalOnDeliveryAddressAdded(gestures),
@@ -309,5 +314,35 @@ describe("les gestes sur les contacts d'un site (N4c)", () => {
     await contactRemoved.handle(contactFact(CUSTOMER, "r"));
     await contactRemoved.handle(contactFact(CUSTOMER, "r"));
     expect(mailer.sent).toHaveLength(2);
+  });
+});
+
+describe("l'interrupteur des avis du principal (2026-10-20)", () => {
+  it("sans réglage : DÉSACTIVÉ — ni mail, ni ligne au journal d'envoi", async () => {
+    const { reported, mailer, journal } = build("active", new InMemoryNoticeSwitches());
+    await reported.handle(reportedFact());
+    expect(mailer.sent).toEqual([]);
+    expect(journal.rows.size).toBe(0);
+  });
+
+  it("coupé : rien ; réactivé : le geste d'avant n'est PAS rattrapé, le suivant part", async () => {
+    const { reported, added, mailer, journal, switches } = build();
+    await switches.writer.set("alpes", false, "staff_1", new Date(0));
+    await reported.handle(reportedFact());
+    expect(mailer.sent).toEqual([]);
+    expect(journal.rows.size).toBe(0);
+
+    await switches.writer.set("alpes", true, "staff_1", new Date(0));
+    await added.handle(addressFact());
+    expect(mailer.sent.map((m) => (m.data as { gesture: string }).gesture)).toEqual([
+      "delivery_address_added",
+      "delivery_address_added",
+    ]);
+  });
+
+  it("activé : l'avis part", async () => {
+    const { reported, mailer } = build();
+    await reported.handle(reportedFact());
+    expect(mailer.sent).toHaveLength(3);
   });
 });

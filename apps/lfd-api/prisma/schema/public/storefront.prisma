@@ -45,13 +45,13 @@ model StorefrontPage {
   /// médiathèque, L6, D7) — sur la page `home` SEULE (CHECK de
   /// `20261010220000_l_accueil_de_la_vitrine`). URL de la médiathèque, comptée
   /// comme porteur par le canal `channels/media/`.
-  pickupDoorImageUrl String? @map("pickup_door_image_url")
+  pickupDoorImageUrl   String? @map("pickup_door_image_url")
   /// Texte alternatif localisé `{ fr, en?, it? }`.
-  pickupDoorImageAlt Json?   @map("pickup_door_image_alt")
+  pickupDoorImageAlt   Json?   @map("pickup_door_image_alt")
   /// Le point focal de la porte, en fractions de 0 à 1 (L10). `NULL` = centre.
   /// Les deux ou aucun (CHECK de `20261011140000_le_point_focal_jusqu_a_la_vitrine`).
-  pickupDoorFocalX   Float?  @map("pickup_door_focal_x")
-  pickupDoorFocalY   Float?  @map("pickup_door_focal_y")
+  pickupDoorFocalX     Float?  @map("pickup_door_focal_x")
+  pickupDoorFocalY     Float?  @map("pickup_door_focal_y")
   /// L'image de la porte livraison (2026-10-11) — la jumelle de la porte
   /// retrait, mêmes CHECK (`20261011200000_l_image_de_la_livraison`). `NULL` :
   /// la boutique reprend l'image de la porte retrait.
