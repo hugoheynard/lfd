@@ -23,8 +23,14 @@ import { PAYMENT_GATEWAY_OVERRIDE } from "./dev-scenario-scene.js";
 import { bootstrapE2e, type E2eContext, jsonBody } from "./e2e-harness.js";
 
 const RELOAD = "/admin/dev/seed/reload";
-/** Un rechargement complet sème des dizaines de commandes : cf. `dev-seed-driver.e2e-spec.ts`. */
-const TIMEOUT_MS = 240_000;
+/**
+ * Un rechargement complet sème des dizaines de commandes : cf.
+ * `dev-seed-driver.e2e-spec.ts`. 480 s depuis le 2026-10-20 : le rechargement
+ * repose aussi les sous-comptes et leurs commandes, et 240 s ont été dépassées
+ * deux fois ce jour-là sous la charge de `pnpm test` à la racine — la suite
+ * seule passe en 26 s : c'est le plafond qui manquait, pas le code.
+ */
+const TIMEOUT_MS = 480_000;
 /** La manne semée : pilée par deux au plus (Hugo, 2026-10-06). */
 const MANNE = { lengthMm: 665, widthMm: 460, heightMm: 715, maxStack: 2 } as const;
 const DAY_MS = 24 * 60 * 60 * 1000;
