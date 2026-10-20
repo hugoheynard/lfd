@@ -24,6 +24,29 @@ export interface IncoProjection {
 }
 
 /**
+ * Un code connu du référentiel HORS annexe II — une entrée de « hors
+ * obligation UE » ou d'une catégorie maison — tel qu'on le NOMME.
+ */
+export interface OutsideAnnexLabel {
+  readonly code: string;
+  /** Libellé GRANULAIRE de l'entrée (« Sarrasin ») : il n'y a pas de mention de catégorie à imprimer. */
+  readonly label: string;
+  /** Entrée semée et verrouillée. Le rendu affiche le code GS1 des officielles hors annexe (AM0). */
+  readonly official: boolean;
+}
+
+/** Ce que {@link IncoProjector.project} tait, trié : nommable, ou inconnu. */
+export interface OutsideAnnexProjection {
+  readonly named: readonly OutsideAnnexLabel[];
+  /**
+   * Les codes qui ne se rangent NULLE PART : inconnus du référentiel, ou
+   * rangés dans une catégorie maison ARCHIVÉE (plan matrice §2 : une catégorie
+   * retirée ne range plus ses codes dans ce qu'on imprime).
+   */
+  readonly unknown: readonly string[];
+}
+
+/**
  * **La projection INCO, à partir du référentiel en base.**
  *
  * Construit une fois par lecture du référentiel, puis appliqué autant de fois
@@ -49,6 +72,8 @@ export class IncoProjector {
   private constructor(
     /** Code → catégorie de l'annexe II. Un code hors annexe II n'y figure pas. */
     private readonly byCode: ReadonlyMap<string, IncoLabel>,
+    /** Code → entrée nommable hors annexe II (catégorie non archivée). */
+    private readonly outsideByCode: ReadonlyMap<string, OutsideAnnexLabel>,
   ) {}
 
   /**
@@ -59,9 +84,16 @@ export class IncoProjector {
    */
   static from(categories: readonly AllergenCategoryView[], locale: Locale): IncoProjector {
     const byCode = new Map<string, IncoLabel>();
+    const outsideByCode = new Map<string, OutsideAnnexLabel>();
     for (const category of categories) {
       const inco = category.incoCategory;
       if (inco === null) {
+        if (category.archivedAt === null) {
+          for (const entry of category.entries) {
+            const label = readLocalized(entry.name, locale);
+            outsideByCode.set(entry.code, { code: entry.code, label, official: entry.official });
+          }
+        }
         continue;
       }
       const label: IncoLabel = { category: inco, label: readLocalized(category.name, locale) };
@@ -69,7 +101,7 @@ export class IncoProjector {
         byCode.set(entry.code, label);
       }
     }
-    return new IncoProjector(byCode);
+    return new IncoProjector(byCode, outsideByCode);
   }
 
   /** Projette des codes déclarés vers leurs mentions, en disant ce qu'il manque. */
@@ -85,5 +117,31 @@ export class IncoProjector {
       byCategory.set(label.category, label);
     }
     return { labels: [...byCategory.values()], incomplete: dropped > 0 };
+  }
+
+  /**
+   * **Ce que {@link project} laisse tomber, trié** — sur le même rangement,
+   * construit au même endroit. Les codes de l'annexe II n'apparaissent ni
+   * dans l'un ni dans l'autre : ils sont à {@link project}.
+   *
+   * Ajouté pour la colonne « Autres » de la matrice (Q3 du plan
+   * `plan-matrice-des-allergenes.md`) : `incomplete` confond le sarrasin, qu'on
+   * sait nommer, et un code que personne ne connaît, qu'il faut revoir.
+   */
+  outsideAnnex(codes: readonly string[]): OutsideAnnexProjection {
+    const named: OutsideAnnexLabel[] = [];
+    const unknown: string[] = [];
+    for (const code of codes) {
+      if (this.byCode.has(code)) {
+        continue;
+      }
+      const label = this.outsideByCode.get(code);
+      if (label === undefined) {
+        unknown.push(code);
+      } else {
+        named.push(label);
+      }
+    }
+    return { named, unknown };
   }
 }

@@ -85,6 +85,27 @@ export type {
   ReviseAllergenEntryPayload,
 } from "./allergen.js";
 
+export {
+  ALLERGEN_MATRIX_WORDING,
+  ALLERGEN_MATRIX_ROW_STATES,
+  ALLERGEN_MATRIX_SCOPES,
+  allergenMatrixQuerySchema,
+} from "./allergen-matrix.js";
+export type {
+  AllergenMatrixCell,
+  AllergenMatrixColumn,
+  AllergenMatrixFamily,
+  AllergenMatrixOtherAllergen,
+  AllergenMatrixOthersCell,
+  AllergenMatrixWording,
+  AllergenMatrixPresence,
+  AllergenMatrixQuery,
+  AllergenMatrixRow,
+  AllergenMatrixRowState,
+  AllergenMatrixScope,
+  AllergenMatrixView,
+} from "./allergen-matrix.js";
+
 export { vatRatePayloadSchema } from "./commerce.js";
 export type { VatRatePayload, VatRateView } from "./commerce.js";
 

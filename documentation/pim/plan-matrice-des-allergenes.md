@@ -44,9 +44,18 @@ L'**état de la ligne** est toujours écrit, en clair :
 - « **Non renseigné** » — ni déclaration propre, ni alignement sur une
   déclinaison déclarée ; aucune case n'est dessinée ;
 - « **Aucun allergène déclaré** » — affirmation `[]` (propre ou suivie) ;
-- « **Déclaration à revoir** » — `IncoProjector` rend `incomplete` : un code
-  déclaré ne se range dans aucune catégorie de l'annexe II. La ligne garde ses
-  cases, mais n'est jamais lue « aucun » ;
+- « **Déclaration à revoir** » — un code déclaré (allergène ou trace) n'est
+  rangé **nulle part** par le référentiel : inconnu, ou dans une catégorie
+  maison archivée. La ligne garde ses cases, mais n'est jamais lue « aucun » ;
+
+> ⚠️ **Corrigé le 2026-10-20 (Hugo : Q3 l'emporte).** Ce point disait « à
+> revoir dès que `IncoProjector` rend `incomplete` ». Or `incomplete` vaut
+> aussi pour `non_eu` et les codes maison, que Q3 fait NOMMER dans la colonne
+> « Autres » : un pain au sarrasin aurait été « à revoir » pour toujours. La
+> distinction se lit dans `IncoProjector.outsideAnnex()` (même rangement,
+> construit au même endroit que `project()`), qui trie ce que `project()`
+> tait en « nommable » et « inconnu ».
+
 - sinon, rien : les cases parlent.
 
 Une case vide ne peut donc jamais être lue comme une absence qu'on n'a pas
@@ -80,6 +89,14 @@ ou non les non renseignés (défaut : inclus, pour qu'on les voie).
 - **Catégories archivées** : la matrice suit ce que rend `IncoProjector` ; une
   catégorie archivée n'a pas de colonne, et un code qui s'y rangeait rend la
   ligne « Déclaration à revoir ».
+  Seules les catégories maison s'archivent (celles de l'annexe II sont
+  verrouillées) : `outsideAnnex()` ne range plus le code d'une catégorie
+  maison archivée, qui tombe donc en « inconnu ». C'est un écart assumé avec
+  D2 bis (`project()` reconnaît toujours une entrée ou une catégorie archivée) :
+  un imprimé ne nomme pas une catégorie retirée (2026-10-20).
+- **Colonne « Autres »** (Q3, 2026-10-20) : chaque nom porte son libellé dans
+  la langue, son code et `official`, de quoi tenir en AM2 la règle « code GS1
+  affiché si `official && incoCategory === null` » (le tableur l'applique déjà).
 - 🔴 **Trois états, jamais deux.** « Non renseigné » ≠ « aucun » ≠ « ne
   contient pas cette catégorie ».
 - **Les mentions légales** sont les 14 catégories de l'annexe II, avec leur
@@ -105,12 +122,12 @@ ou non les non renseignés (défaut : inclus, pour qu'on les voie).
 
 ## 3. Les lots
 
-| Lot                   | Contenu                                                                                                                                                                                                                                                                                                                                                                                 | Agent     |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| **AM0** ✅ 2026-10-20 | Les libellés italiens du référentiel (catégories annexe II et précisions céréales / fruits à coque), tirés de la version italienne officielle de l'annexe II d'INCO 1169/2011, **validés par Hugo** avant écriture ; migration de données sur des lignes officielles verrouillées (relue par `lecteur-de-migrations`, et par `vitruve` : c'est une migration de données réglementaires) | batisseur |
-| **AM1**               | Query `GetAllergenMatrix` (filtres) : lignes déclinaison × catégories en trois états, + état de déclaration ; route `GET /pim/allergen-matrix` (JSON) et `…/allergen-matrix.csv` ; tests (dont : non renseigné ≠ aucun ; une trace n'est pas une présence ; une catégorie archivée)                                                                                                     | batisseur |
-| **AM2**               | Rendu PDF A4 (paysage) : `renderAllergenMatrixPdf` pur, logo par port, pagination et en-têtes répétés ; route `…/allergen-matrix.pdf` ; test qui lit le texte du PDF                                                                                                                                                                                                                    | batisseur |
-| **AM3**               | Page Catalogue « Matrice des allergènes » : filtres, tableau (fold-data-table), légende, boutons « PDF » et « Tableur » ; entrée de menu (rail ET tuiles)                                                                                                                                                                                                                               | pablo     |
+| Lot                   | Contenu                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Agent     |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| **AM0** ✅ 2026-10-20 | Les libellés italiens du référentiel (catégories annexe II et précisions céréales / fruits à coque), tirés de la version italienne officielle de l'annexe II d'INCO 1169/2011, **validés par Hugo** avant écriture ; migration de données sur des lignes officielles verrouillées (relue par `lecteur-de-migrations`, et par `vitruve` : c'est une migration de données réglementaires)                                                                                                                                                                                                                                                                                                        | batisseur |
+| **AM1**               | Query `GetAllergenMatrix` (filtres) : lignes déclinaison × catégories en trois états, + état de déclaration ; route `GET /pim/allergen-matrix` (JSON) et `…/allergen-matrix.csv` ; tests (dont : non renseigné ≠ aucun ; une trace n'est pas une présence ; une catégorie archivée). **Précisé le 2026-10-20** : colonne « Autres » (Q3 l'emporte sur §1, « à revoir » = code rangé nulle part) ; filtre famille = la famille et ses sous-familles ; `lastModifiedAt` (max des `updated_at` fiche, déclinaisons, déclarations retenues) ; déclinaisons arrêtées exclues (Q5) ; mots fixes du tableur dans le dictionnaire `ALLERGEN_MATRIX_WORDING` de `@lfd/pim-contracts`, que AM2 réutilise | batisseur |
+| **AM2**               | Rendu PDF A4 (paysage) : `renderAllergenMatrixPdf` pur, logo par port, pagination et en-têtes répétés ; route `…/allergen-matrix.pdf` ; test qui lit le texte du PDF                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | batisseur |
+| **AM3**               | Page Catalogue « Matrice des allergènes » : filtres, tableau (fold-data-table), légende, boutons « PDF » et « Tableur » ; entrée de menu (rail ET tuiles)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | pablo     |
 
 ### 3.1 AM0 — les libellés italiens, validés par Hugo (2026-10-20)
 
@@ -217,6 +234,8 @@ garde le mot de l'annexe, sans ✳ : il est réglementaire.
   les allergènes déclarés hors annexe II (`non_eu`, catégories maison), avec
   les mêmes signes contient / traces. Un code qui ne se range nulle part
   (inconnu du référentiel) garde l'état « Déclaration à revoir ».
+- **Q5 — Déclinaisons arrêtées** (Hugo, 2026-10-20) : une déclinaison
+  `isDiscontinued` sort de la matrice, JSON comme tableur (et donc du PDF).
 - **Q4 — Trois langues** (Hugo, 2026-10-20) : français, anglais, italien, au
   choix à l'export ; un PDF par langue, ENTIER dans sa langue (titre, légende,
   en-têtes, états, pied). Le référentiel n'a pas de libellés italiens : lot

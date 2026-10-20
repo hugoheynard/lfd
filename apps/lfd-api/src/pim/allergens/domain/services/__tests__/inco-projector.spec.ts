@@ -169,3 +169,37 @@ describe("IncoProjector — l'archivage ne retire pas ce qui est déjà déclar�
     });
   });
 });
+
+/**
+ * Le tri de ce que `project` tait (colonne « Autres » de la matrice, Q3) :
+ * le sarrasin se NOMME, un code inconnu se REVOIT.
+ */
+describe("IncoProjector.outsideAnnex", () => {
+  it("nomme un code hors obligation UE, avec son caractère officiel", () => {
+    expect(IncoProjector.from(referential(), "fr").outsideAnnex(["BWD"])).toEqual({
+      named: [{ code: "BWD", label: "BWD", official: true }],
+      unknown: [],
+    });
+  });
+
+  it("laisse les codes de l'annexe II à `project`", () => {
+    expect(IncoProjector.from(referential(), "fr").outsideAnnex(["UW"])).toEqual({
+      named: [],
+      unknown: [],
+    });
+  });
+
+  it("dit inconnu un code que le référentiel ne range nulle part", () => {
+    expect(IncoProjector.from(referential(), "fr").outsideAnnex(["XX"]).unknown).toEqual(["XX"]);
+  });
+
+  it("ne range plus le code d'une catégorie hors annexe archivée", () => {
+    const archived: AllergenCategoryView = {
+      ...category("maison", null, ["MAISON"]),
+      archivedAt: new Date(0),
+    };
+    expect(IncoProjector.from([archived], "fr").outsideAnnex(["MAISON"]).unknown).toEqual([
+      "MAISON",
+    ]);
+  });
+});

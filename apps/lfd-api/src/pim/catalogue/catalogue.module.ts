@@ -1,6 +1,11 @@
 import { Module } from "@nestjs/common";
 
 import { AllergensModule } from "../allergens/allergens.module.js";
+import { ExportAllergenMatrixCsvHandler } from "./allergen-matrix/application/export-allergen-matrix-csv.js";
+import { GetAllergenMatrixHandler } from "./allergen-matrix/application/get-allergen-matrix.js";
+import { AllergenMatrixSource } from "./allergen-matrix/domain/ports/allergen-matrix.source.js";
+import { AllergenMatrixController } from "./allergen-matrix/http/allergen-matrix.controller.js";
+import { RepositoryAllergenMatrixSource } from "./allergen-matrix/infrastructure/repository-allergen-matrix.source.js";
 import { VatRatesModule } from "../vat-rates/vat-rates.module.js";
 import { PrismaMediaCarriers } from "./shared/infrastructure/prisma-media-carriers.js";
 import { PimDatabaseModule } from "../infra/database/pim-database.module.js";
@@ -110,6 +115,7 @@ import {
     AccountingRulesModule,
   ],
   controllers: [
+    AllergenMatrixController,
     CatalogRevisionController,
     CategoryController,
     ProductController,
@@ -188,6 +194,10 @@ import {
     { provide: ReadinessRepository, useClass: PrismaReadinessRepository },
     { provide: CategoryEditorialReader, useClass: PrismaCategoryEditorialReader },
     { provide: CategoryEditorialRepository, useClass: PrismaCategoryEditorialRepository },
+    // La matrice des allergènes (plan AM1) : un port de lecture à elle.
+    { provide: AllergenMatrixSource, useClass: RepositoryAllergenMatrixSource },
+    GetAllergenMatrixHandler,
+    ExportAllergenMatrixCsvHandler,
   ],
   // Seul contrat visible depuis l'extérieur : les adaptateurs de canal lisent le
   // catalogue par ce port, jamais par ses dépôts ni ses tables (ADR-13).
