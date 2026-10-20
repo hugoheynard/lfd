@@ -149,13 +149,19 @@ describe('l’hôte de l’aperçu', () => {
     parent.postMessage.mockClear();
 
     deliver(EDITOR, parent, { ...SHOW, step: 'routing' });
-    await settle(1500);
-
-    const keys = parent.postMessage.mock.calls
-      .map(([message]) => message)
-      .filter(isVisibleKeys)
-      .flatMap((message) => Reflect.get(Object(message), 'keys') as readonly string[]);
-    expect(keys).toEqual(expect.arrayContaining(['housePicker.title']));
+    // Attendre le dialogue, pas une durée : 1500 ms fixes ont échoué deux fois
+    // sous la charge de `pnpm test` à la racine (2026-10-20), comme son voisin
+    // le 2026-10-12.
+    await vi.waitFor(
+      () => {
+        const keys = parent.postMessage.mock.calls
+          .map(([message]) => message)
+          .filter(isVisibleKeys)
+          .flatMap((message) => Reflect.get(Object(message), 'keys') as readonly string[]);
+        expect(keys).toEqual(expect.arrayContaining(['housePicker.title']));
+      },
+      { timeout: 3_500, interval: 50 },
+    );
   });
 
   describe('ouvert dans une fenêtre par le back-office', () => {
