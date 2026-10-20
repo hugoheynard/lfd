@@ -1,0 +1,188 @@
+# Plan — le principal est prévenu de ce que font ses sous-comptes
+
+> 📐 **Plan, rien n'est bâti** (2026-10-20). Demande de Hugo : « savoir quelles
+> actions menées par le sous-compte doivent être notifiées au principal, avec un
+> mapping de rôle ». Décisions de Hugo le même jour : **mail seul** ; le
+> tableau action × rôle est **réglé par le staff, principal par principal**.
+> Doc d'état du sujet : [`sous-comptes.md`](sous-comptes.md).
+>
+> **v2, contredit par `vitruve` le 2026-10-20** : deux objections BLOQUANTES
+> corrigées (le principal « à la date du fait » n'existait pas ; des
+> invitations jamais acceptées auraient reçu des mails), cinq SÉRIEUSES
+> intégrées. Le détail est au §7.
+
+## 0. Ce qui existe (ouvert le 2026-10-20)
+
+| Fait                                                                                                                                             | Où                                                                                                                                                   |
+| ------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Rôles d'une société : `owner`, `admin`, `orders`, `billing`                                                                                      | `prisma/schema/public/account.prisma` (`enum CustomerRole`), `account/domain/value-objects/company-role.ts`                                          |
+| Les mails de commande partent à **une** personne, celle qui a passé la commande (`placedByUserId`)                                               | `orders/application/handlers/send-order-placed-mail.handler.ts`, `send-order-cancelled-mail…`, `send-payment-failed…`                                |
+| La facture va au contact de facturation, au détenteur ou au site                                                                                 | `accounting/…/invoice-notice-recipients.ts`                                                                                                          |
+| **Aucune** préférence de notification client, **aucune** cloche client                                                                           | cherché dans `prisma/schema` et `lfc-ecommerce-frontend`                                                                                             |
+| Abonné durable : `@DurableHandler({ type, subscriber })`, au moins une fois, une seule action par la garde du relais                             | `platform/outbox/durable-handler.ts` ; exemples `growth/…/on-order-cancelled.handler.ts`, `loyalty/…/credit-points-on-handover.handler.ts`           |
+| Faits publiés en DURABLE : passation (trois entrées), abandon, annulation, paiement confirmé, **paiement échoué**, prête, retirée, remboursement | `DurablePublisher` dans `orders/application/commands/place-order*.handler.ts`, `abandon-order.handler.ts`, `services/order-cancellation.service.ts`… |
+| Faits **non** durables : abonnements, adresses, contacts, RIB (journal seulement)                                                                | `packages/contracts/src/journal-facts/accounts.ts`                                                                                                   |
+| Le principal d'une société : `Company.parentCompanyId` ; pas de port de lecture dédié hors du verrou de hiérarchie                               | `account/domain/entities/company.ts`, `account/application/services/account-hierarchy-support.ts`                                                    |
+| Le payeur est déjà COPIÉ sur la commande à la passation (`orders.billed_company_id`)                                                             | `prisma/schema/public/orders.prisma`, `orders/application/services/order-drafting.service.ts`                                                        |
+| Aucun historique des rattachements : `parent_company_id` ne dit que l'état présent                                                               | `account.prisma` ; seules les périodes de `company_follows` sont datées                                                                              |
+| Une `Membership` peut être une invitation jamais acceptée (`acceptedAt` nul)                                                                     | `account.prisma`, modèle `Membership`                                                                                                                |
+| Une commande saisie par l'équipe porte `placedByStaffId`                                                                                         | `orders/domain/entities/order.ts`                                                                                                                    |
+| Le principal ne peut PAS entrer dans l'espace client d'un sous-compte (S6 non bâti)                                                              | `sous-comptes.md` §3                                                                                                                                 |
+
+## 1. Ce qu'on bâtit
+
+Quand un **sous-compte** fait une action de la liste, les membres du
+**principal** dont le rôle est coché pour cette action reçoivent un mail. Le
+tableau est une donnée par principal ; tant que le staff n'y a pas touché, le
+défaut s'applique.
+
+### Le tableau par défaut
+
+| Action du sous-compte                           | Clé                        | owner | admin | orders | billing |
+| ----------------------------------------------- | -------------------------- | ----- | ----- | ------ | ------- |
+| Commande passée                                 | `order_placed`             | ✉     | ✉     | ✉      | —       |
+| Commande annulée ou abandonnée                  | `order_cancelled`          | ✉     | ✉     | ✉      | —       |
+| Paiement échoué **à la charge du principal**    | `payment_failed`           | ✉     | —     | —      | ✉       |
+| Abonnement créé, mis en pause, arrêté           | `subscription_changed`     | ✉     | ✉     | ✉      | —       |
+| Adresse de livraison ajoutée, modifiée, retirée | `delivery_address_changed` | ✉     | ✉     | —      | —       |
+| Contact ajouté ou retiré                        | `contact_changed`          | ✉     | ✉     | —      | —       |
+| RIB ou mandat propre déposé                     | `bank_account_changed`     | ✉     | —     | —      | ✉       |
+| Problème de commande signalé                    | `order_problem_reported`   | ✉     | ✉     | ✉      | —       |
+
+La clé est une **valeur de donnée** (CLAUDE.md §8) : elle ne se renomme qu'en
+migration.
+
+## 2. Les règles
+
+- **Sens unique, de l'enfant vers le principal.** Le principal voit ses
+  sous-comptes, jamais l'inverse (`sous-comptes.md`, règle du 2026-10-05). Un
+  frère n'est jamais prévenu.
+- 🔴 **Le principal est COPIÉ sur la commande à la passation**
+  (`orders.principal_company_id`, comme `billed_company_id`). Aucun historique
+  des rattachements n'existe : lire `parent_company_id` à la livraison du fait
+  préviendrait, après une panne du relais, le principal d'APRÈS — un site
+  détaché puis rattaché ailleurs ferait fuiter ses commandes antérieures vers
+  un autre client. La copie fige le principal de chaque commande ; annulation
+  et paiement échoué relisent la commande, pas la hiérarchie. Pour N4 (gestes
+  hors commande), le fait porte la même copie au moment où il est publié.
+- 🔴 **Destinataires : membres ACCEPTÉS seulement** (`acceptedAt` non nul) :
+  une invitation pendante ou périmée est une adresse saisie, pas une personne
+  connue.
+- **L'auteur n'est pas prévenu de son propre geste.** Une personne membre des
+  deux sociétés ne reçoit pas le mail pour ce qu'elle vient de faire. Ses
+  rôles se lisent dans le PRINCIPAL (c'est lui qu'on prévient).
+- **Un geste du staff « au nom du client » compte** : une commande saisie par
+  l'équipe pour un site est une commande du site. Le mail dit « saisie par
+  La Folie Douce ».
+- **Le mail ne porte pas de lien vers l'espace du sous-compte** : le principal
+  ne peut pas y entrer tant que S6 n'est pas bâti. Il porte le résumé
+  (site, action, numéro et montant de commande le cas échéant, date).
+- **Idempotence par un journal d'envoi en base**, pas par le fournisseur :
+  `sub_account_notice_sends (event_id, user_id)` unique, écrit dans l'unité de
+  travail de la garde avant l'envoi. Une relivraison saute les destinataires
+  déjà servis et reprend les autres. L'idempotence de Resend (fenêtre bornée)
+  reste une seconde ligne. À vérifier en N2 : `event_id` est stable d'une
+  relivraison à l'autre (`platform/outbox`).
+- **Une adresse en rebond dur ne se rattrape pas** (CLAUDE.md §0) : le
+  destinataire est une personne connue, pas une adresse saisie dans le tableau.
+
+## 3. Le modèle
+
+Trois ajouts, tous additifs : `orders.principal_company_id` (copie à la
+passation), la table des **dérogations** au défaut, et le journal d'envoi.
+
+```
+sub_account_notice_rules
+  principal_company_id  → companies.id
+  kind                  enum Postgres SubAccountNoticeKind (une clé inconnue
+                        est inexprimable ; retirer une clé = migration)
+  role                  CustomerRole
+  enabled               boolean
+  updated_by, updated_at   (updated_by au registre RGPD : lint:rgpd-staff)
+  unique (principal_company_id, kind, role)
+
+sub_account_notice_sends
+  event_id, user_id, sent_at   unique (event_id, user_id)
+```
+
+**Où vit l'abonné** : un contexte `b2b/sub-account-notices/`. Il lit les
+membres et les dérogations par des ports que `account/` déclare et
+implémente, et le résumé de la commande par un port que `orders/` implémente —
+jamais les tables d'un autre contexte (`lint:prisma-model-ownership`). Tout
+reste dans le bloc `b2b` : ni `durable-cross-block` ni `context-boundaries`
+ne sont franchis.
+
+Pas de ligne = le défaut du §1. Le défaut vit dans le domaine
+(`b2b/account/domain/…/sub-account-notice-defaults.ts`), pas en base : changer
+le défaut ne demande pas de migration, et une dérogation posée reste la
+volonté du staff.
+
+```mermaid
+sequenceDiagram
+  participant S as Sous-compte (client)
+  participant O as Commande (bloc orders)
+  participant R as Relais durable
+  participant N as Abonné « avis au principal »
+  participant M as Mailer
+  S->>O: passe une commande
+  O->>R: order.placed (durable)
+  R->>N: livraison (au moins une fois)
+  N->>N: principal COPIÉ sur la commande (sinon : rien)
+  N->>N: rôles cochés (dérogations sinon défaut)
+  N->>N: membres ACCEPTÉS du principal ayant ces rôles, moins l'auteur
+  N->>N: journal d'envoi : déjà servi ? on saute
+  N->>M: un mail par destinataire restant
+```
+
+## 4. Les lots
+
+| Lot    | Contenu                                                                                                                                                                                                                                                                                                                                                                                                                                        | Agent     |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| **N1** | Défaut du tableau (domaine pur + tests), migration additive (`orders.principal_company_id` copié à la passation par `OrderDraftingService`, dérogations, journal d'envoi), ports « membres acceptés d'une société par rôle » et « dérogations » (déclarés et implémentés en `account/`), port « résumé de commande » (`orders/`) ; routes staff `GET/PUT /admin/companies/:id/sub-account-notices` sous `@AdminSurface("b2b_companies")` ; e2e | batisseur |
+| **N2** | Abonnés durables sur les faits de commande déjà durables (`order_placed`, `order_cancelled`, `payment_failed`) ; gabarit `customer.sub-account-activity` ; e2e : un site commande → les membres acceptés du principal aux bons rôles reçoivent ; l'auteur non, le frère non, l'invité non accepté non ; **un site rattaché ailleurs APRÈS sa commande ne fait pas prévenir le nouveau principal** ; une relivraison ne double aucun mail       | batisseur |
+| **N3** | Écran : sous la grille de la page Sous-comptes du principal, le tableau action × rôle en boutons Activer / Désactiver (même forme que la grille), défaut visible et « Revenir au défaut ». **Seules les lignes dont le mail existe** s'affichent : les cinq de N4 restent cachées jusqu'à leur lot                                                                                                                                             | pablo     |
+| **N4** | Rendre durables les faits qui ne le sont pas (abonnements, adresses, contacts, RIB, problème signalé), chacun portant la copie du principal et l'auteur (client ou staff), puis leurs abonnés. **Non chiffré** : cinq contextes qui ne publient aujourd'hui qu'au journal ; à inventorier et à recontredire avant de bâtir                                                                                                                     | batisseur |
+
+N1 → N2 → N3 livrent la valeur sur les commandes. N4 est séparé parce qu'il
+touche cinq contextes qui ne publient aujourd'hui qu'au journal.
+
+## 5. Questions ouvertes
+
+🔴 **Q1, Q2 et Q4 se tranchent AVANT N2** : le gabarit du premier mail en
+dépend (montant ou non, envoi ou non, mention de l'auteur).
+
+- **Q1 — Montants.** Un hôtel « entité » (il ne suit pas `billing`) paie
+  seul : son principal doit-il voir le montant de ses commandes ? Proposition :
+  oui si le site suit `billing` ou `pricing`, sinon le mail dit l'action sans
+  montant.
+- **Q2 — Principal suspendu ou résilié.** On prévient quand même ?
+  Proposition : non pour `terminated`, oui pour `suspended`.
+- **Q3 — Volume.** Un site qui passe 30 commandes par semaine fait 30 mails par
+  personne. Un récapitulatif quotidien a été écarté pour l'instant (choix du
+  2026-10-20) ; à rouvrir si le volume gêne.
+- **Q4 — Le sous-compte le sait-il ?** Le RGPD demande d'annoncer à une
+  personne qu'une information la concernant part ailleurs : les membres d'un
+  sous-compte doivent-ils être informés que leurs commandes sont signalées au
+  principal ? À voir avec le registre (`documentation/legal/`).
+
+## 6. Hors périmètre
+
+- Une cloche dans l'espace client (écartée le 2026-10-20 : mail seul).
+- Le réglage par le client lui-même (demanderait des préférences client, qui
+  n'existent pas).
+- L'entrée du principal dans l'espace de ses sous-comptes (S6).
+
+## 7. Ce que `vitruve` a changé (2026-10-20)
+
+- **BLOQUANT** — « le principal à la date du fait » ne s'appuyait sur aucune
+  donnée : il n'y a pas d'historique des rattachements. → Copie du principal
+  sur la commande (§2), e2e « rattaché ailleurs après le fait ».
+- **BLOQUANT** — une `Membership` non acceptée aurait reçu des mails. →
+  Membres acceptés seulement.
+- **SÉRIEUX** — Q1/Q4 devaient précéder N2 → dit au §5. Idempotence par le
+  fournisseur → journal d'envoi en base. Bloc de l'abonné non dit → contexte
+  et ports nommés (§3). `kind` en texte libre → enum ; `updated_by` au
+  registre RGPD. N4 vague et lignes promises sans mail → N4 marqué non
+  chiffré, lignes cachées à l'écran jusqu'à lui.
+- **MINEUR** — rôle d'une personne membre des deux sociétés : celui du
+  principal. Paiement échoué ajouté au §0.

@@ -536,6 +536,10 @@ une migration de données.
 
 ## 8. Hors périmètre et limitations
 
+- **Prévenir le principal de ce que font ses sous-comptes** : plan à part,
+  [`plan-notifications-sous-comptes.md`](plan-notifications-sous-comptes.md)
+  (2026-10-20, rien n'est bâti).
+
 - Pas de groupe à plusieurs niveaux, ni de sous-compte d'un sous-compte.
 - Pas de facture **consolidée** pour N entités distinctes ; un site en
   `billing` est facturé au nom du principal selon sa forme.
