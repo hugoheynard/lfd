@@ -96,7 +96,7 @@ porte que l'écran**, validations serveur comprises.
 
 ---
 
-## 2 bis. Les dix outils des ingrédients (2026-10-20)
+## 2 bis. Les onze outils des ingrédients (2026-10-20)
 
 Une trousse à part, déclarée par le même écran : code dans
 [`agent/ingredient-agent-tools.ts`](../../apps/lfd-backoffice-frontend/src/app/agent/ingredient-agent-tools.ts),
@@ -120,6 +120,7 @@ s'ouvrent depuis ce jour à `pim_catalog:read`.
 | `ingredient_product_list`      | `GET /pim/products/:id/ingredients`          |
 | `ingredient_product_allergens` | `GET /pim/products/:id/ingredient-allergens` |
 | `ingredient_create`            | `POST /pim/ingredients`                      |
+| `ingredient_update`            | `PUT /pim/ingredients/:key`                  |
 | `ingredient_set_allergens`     | `PUT /pim/ingredients/:key/allergens`        |
 | `ingredient_product_add`       | `PUT /pim/products/:id/ingredients`          |
 | `ingredient_product_remove`    | `PUT /pim/products/:id/ingredients`          |
@@ -142,10 +143,18 @@ Ce que les outils tiennent eux-mêmes :
 - « Où il est utilisé » : le serveur ne sert que le **nombre** de fiches qui
   citent un ingrédient (`usedBy`), pas leur liste — l'outil le dit.
 
-**Écartés, délibérément** : corriger ou effacer un ingrédient
-(`PUT`/`DELETE /pim/ingredients/:key`), et toute écriture d'appellation — un
-signe officiel et l'effacement d'une matière citée restent des gestes de
-l'écran. Les quantités n'existent pas sur ces routes (la liste est
+- **Corriger un ingrédient est ouvert depuis le 2026-10-20 (Hugo)** :
+  `ingredient_update` relit l'ingrédient, n'envoie que les champs qui changent
+  (nom en français — les autres langues gardées —, origine, description ; vide
+  efface la description), puis relit. Sa description dit à l'agent que la
+  correction se répercute sur **toutes** les fiches qui citent l'ingrédient,
+  d'en donner le nombre (`usedBy`), et qu'elle sert à corriger (faute,
+  précision), jamais à changer de matière.
+
+**Écartés, délibérément** : effacer un ingrédient
+(`DELETE /pim/ingredients/:key`), et toute écriture d'appellation — y compris
+changer celle d'un ingrédient par `ingredient_update` — : un signe officiel et
+l'effacement d'une matière citée restent des gestes de l'écran. Les quantités n'existent pas sur ces routes (la liste est
 éditoriale, les quantités appartiennent à la déclinaison).
 
 Pas encore éprouvée dans un navigateur devant un agent réel.
