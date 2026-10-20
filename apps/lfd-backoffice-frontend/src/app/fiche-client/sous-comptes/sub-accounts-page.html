@@ -64,6 +64,12 @@
           </div>
         } @else {
           <app-sub-accounts-card [company]="c" (changed)="fiche.reload()" />
+          @if (c.hierarchy.subAccounts.length > 0) {
+            <app-sub-account-notices-card
+              [companyId]="c.id"
+              [principalName]="c.enseigne || c.raisonSociale"
+            />
+          }
         }
       }
     }

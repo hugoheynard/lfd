@@ -8,6 +8,8 @@ import type {
   CompanyHierarchyView,
   CreatedIdResponse,
   CreateSubAccountPayload,
+  SetSubAccountNoticeRulePayload,
+  SubAccountNoticeRuleView,
 } from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../api/api-config';
@@ -90,6 +92,33 @@ export class AdminCompanyHierarchyService {
    */
   async setCollectionForm(companyId: string, form: CollectionForm): Promise<void> {
     await firstValueFrom(this.http.put<void>(`${this.base(companyId)}/collection-form`, { form }));
+  }
+
+  /**
+   * Le tableau action × rôle des avis au principal, résolu par le serveur
+   * (dérogation sinon défaut) — `plan-notifications-sous-comptes.md` §1.
+   */
+  async subAccountNotices(companyId: string): Promise<readonly SubAccountNoticeRuleView[]> {
+    return firstValueFrom(
+      this.http.get<SubAccountNoticeRuleView[]>(`${this.base(companyId)}/sub-account-notices`),
+    );
+  }
+
+  /** Règle UNE cellule du tableau : elle devient une dérogation au défaut. */
+  async setSubAccountNotice(
+    companyId: string,
+    payload: SetSubAccountNoticeRulePayload,
+  ): Promise<void> {
+    await firstValueFrom(
+      this.http.put<void>(`${this.base(companyId)}/sub-account-notices`, payload),
+    );
+  }
+
+  /** Efface toutes les dérogations du principal : le défaut s'applique de nouveau. */
+  async resetSubAccountNotices(companyId: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(`${this.base(companyId)}/sub-account-notices/reset`, {}),
+    );
   }
 
   private base(companyId: string): string {

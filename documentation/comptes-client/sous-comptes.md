@@ -397,6 +397,13 @@ Back-office, `apps/lfd-backoffice-frontend/src/app/` :
   la route du sous-compte : mêmes gardes serveur qu'avant. Cela **inverse**
   la règle d'origine calquée sur les déclinaisons (« on ne règle pas un
   sous-compte depuis son principal ») pour ces gestes-là.
+- **Ce que le principal reçoit par mail** (`sub-account-notices-card/`,
+  2026-10-20, lot N3 de [`plan-notifications-sous-comptes.md`](plan-notifications-sous-comptes.md)) :
+  sous la carte des sous-comptes, sur un principal qui en a au moins un. Une
+  ligne par action dont le mail existe (commande passée, annulée ou
+  abandonnée, paiement échoué), une colonne par rôle, « Reçoit / Ne reçoit
+  pas » et « par défaut » ; Activer / Désactiver et « Revenir au défaut »
+  derrière un `fold-inline-confirm`, sous `b2b_companies:write`.
 - **Sur la fiche de l'enfant, en lecture** : `follow-parent-toggle/` dit
   l'état de chaque aspect et sa date, dans son onglet (Contacts dans
   Informations, Tarif dans Tarifs via `pricing-follow/`), avec « Régler depuis

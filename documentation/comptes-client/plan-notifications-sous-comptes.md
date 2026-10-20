@@ -1,6 +1,6 @@
 # Plan — le principal est prévenu de ce que font ses sous-comptes
 
-> 📐 **Plan — N1 et N2 bâtis le 2026-10-20**, N3 et N4 à faire. Demande de Hugo : « savoir quelles
+> 📐 **Plan — N1, N2 et N3 bâtis le 2026-10-20**, N4 à faire. Demande de Hugo : « savoir quelles
 > actions menées par le sous-compte doivent être notifiées au principal, avec un
 > mapping de rôle ». Décisions de Hugo le même jour : **mail seul** ; le
 > tableau action × rôle est **réglé par le staff, principal par principal**.
@@ -140,7 +140,7 @@ sequenceDiagram
 | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
 | **N1** | Défaut du tableau (domaine pur + tests), migration additive (`orders.principal_company_id` copié à la passation par `OrderDraftingService`, dérogations, journal d'envoi), ports « membres acceptés d'une société par rôle » et « dérogations » (déclarés et implémentés en `account/`), port « résumé de commande » (`orders/`) ; routes staff `GET/PUT /admin/companies/:id/sub-account-notices` sous `@AdminSurface("b2b_companies")` ; e2e | batisseur |
 | **N2** | Abonnés durables sur les faits de commande déjà durables (`order_placed`, `order_cancelled`, `payment_failed`) ; gabarit `customer.sub-account-activity` ; e2e : un site commande → les membres acceptés du principal aux bons rôles reçoivent ; l'auteur non, le frère non, l'invité non accepté non ; **un site rattaché ailleurs APRÈS sa commande ne fait pas prévenir le nouveau principal** ; une relivraison ne double aucun mail       | batisseur |
-| **N3** | Écran : sous la grille de la page Sous-comptes du principal, le tableau action × rôle en boutons Activer / Désactiver (même forme que la grille), défaut visible et « Revenir au défaut ». **Seules les lignes dont le mail existe** s'affichent : les cinq de N4 restent cachées jusqu'à leur lot                                                                                                                                             | pablo     |
+| **N3** | ✅ 2026-10-20. Écran : sous la grille de la page Sous-comptes du principal, le tableau action × rôle en boutons Activer / Désactiver (même forme que la grille), défaut visible et « Revenir au défaut ». **Seules les lignes dont le mail existe** s'affichent : les cinq de N4 restent cachées jusqu'à leur lot                                                                                                                              | pablo     |
 | **N4** | Rendre durables les faits qui ne le sont pas (abonnements, adresses, contacts, RIB, problème signalé), chacun portant la copie du principal et l'auteur (client ou staff), puis leurs abonnés. **Non chiffré** : cinq contextes qui ne publient aujourd'hui qu'au journal ; à inventorier et à recontredire avant de bâtir                                                                                                                     | batisseur |
 
 N1 → N2 → N3 livrent la valeur sur les commandes. N4 est séparé parce qu'il
@@ -214,6 +214,24 @@ principal_company_id` : un site qui paie lui-même ne fait pas prévenir son
 - « Saisie par notre équipe » validé par Hugo le 2026-10-20.
 - Aucune colonne de personne ajoutée en N2 : `sub_account_notice_sends.user_id`
   (N1) désigne un client, hors du périmètre de `lint:rgpd-staff`, qui est vert.
+
+### N3 bâti (2026-10-20) — et ses écarts
+
+- Carte `apps/lfd-backoffice-frontend/src/app/fiche-client/sub-account-notices-card/`,
+  posée sur la page Sous-comptes SOUS la carte des sous-comptes (et non dans
+  la grille des suivis : c'est un réglage du principal, pas d'un site),
+  seulement quand le principal a au moins un sous-compte. Appels dans
+  `AdminCompanyHierarchyService` (trois méthodes).
+- Libellés de colonne : `COMPANY_ROLE_LABELS` de `@lfd/contracts` (« Détenteur
+  du compte », « Administrateur », « Commandes », « Facturation »), la seule
+  traduction des rôles — pas de libellés propres à l'écran.
+- Droit : boutons désactivés sans `b2b_companies:write`. La grille des suivis
+  ne garde que le tarif ; ici toute la carte est sur la surface
+  `b2b_companies`, et le serveur reste le juge.
+- Après toute écriture, réussie ou refusée, la carte RELIT le tableau : le
+  refus s'affiche en `fold-callout` qui nomme l'action et le rôle, la cellule
+  redit l'enregistré.
+- Les cinq clés de N4 sont cachées ; une ligne discrète sous le tableau le dit.
 
 ## 5. Décisions (Hugo, 2026-10-20)
 

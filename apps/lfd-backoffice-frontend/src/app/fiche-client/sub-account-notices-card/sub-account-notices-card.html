@@ -1,0 +1,142 @@
+<fold-card data-sub-account-notices>
+  <fold-element-title
+    cardHeader
+    variant="title"
+    icon="mail"
+    title="Ce que le principal reçoit par mail"
+    subtitle="Quand un sous-compte agit, les membres du principal qui ont le rôle coché reçoivent un mail qui nomme le site, jamais la personne. Le montant n’y figure que si le site suit la facturation ou le tarif."
+  >
+    @if (state() === 'ready' && hasOverride()) {
+      <span titleAction>
+        <button
+          foldButton
+          size="sm"
+          emphasis="outline"
+          [disabled]="!canWrite() || saving()"
+          (click)="pending.set(null); resetting.set(true)"
+          data-notices-reset
+        >
+          Revenir au défaut
+        </button>
+      </span>
+    }
+  </fold-element-title>
+
+  <div class="body">
+    @switch (state()) {
+      @case ('loading') {
+        <fold-loading message="Chargement des avis au principal…" />
+      }
+      @case ('error') {
+        <fold-empty-state
+          tone="alert"
+          title="Impossible de lire ce que le principal reçoit"
+          subtitle="La lecture a échoué — les réglages, eux, sont intacts."
+        >
+          <button foldButton (click)="reload()">Réessayer</button>
+        </fold-empty-state>
+      }
+      @default {
+        <fold-data-table
+          caption="Les mails que reçoivent les membres du principal, par action et par rôle"
+          density="compact"
+          narrowLayout="scroll"
+          [columns]="columns"
+          [rows]="rows()"
+          [rowKey]="rowKey"
+          [rowNote]="hasNote"
+        >
+          <ng-template foldCell="kind" let-row>
+            <span class="action">{{ row.label }}</span>
+          </ng-template>
+          <!-- Une case par rôle, écrite quatre fois : la table cherche ses
+               gabarits par leur clé, et un gabarit posé dans un @for lui échapperait. -->
+          <ng-template foldCell="owner" let-row>
+            <ng-container
+              *ngTemplateOutlet="noticeCell; context: { $implicit: row, role: 'owner' }"
+            />
+          </ng-template>
+          <ng-template foldCell="admin" let-row>
+            <ng-container
+              *ngTemplateOutlet="noticeCell; context: { $implicit: row, role: 'admin' }"
+            />
+          </ng-template>
+          <ng-template foldCell="orders" let-row>
+            <ng-container
+              *ngTemplateOutlet="noticeCell; context: { $implicit: row, role: 'orders' }"
+            />
+          </ng-template>
+          <ng-template foldCell="billing" let-row>
+            <ng-container
+              *ngTemplateOutlet="noticeCell; context: { $implicit: row, role: 'billing' }"
+            />
+          </ng-template>
+          <ng-template foldRowNote let-row>
+            <span class="summary" [attr.data-notice-summary]="row.kind">{{ summary(row) }}</span>
+          </ng-template>
+        </fold-data-table>
+
+        <p class="hidden-kinds">
+          Abonnements, adresses, contacts, RIB et problèmes signalés n’ont pas encore de mail : ces
+          lignes apparaîtront quand il existera.
+        </p>
+      }
+    }
+
+    @if (pending(); as change) {
+      <fold-inline-confirm
+        [open]="true"
+        [intent]="change.enabled ? 'primary' : 'danger'"
+        [message]="pendingMessage(change)"
+        [loading]="saving()"
+        (confirmed)="confirmPending()"
+        (cancelled)="pending.set(null)"
+        data-notice-confirm
+      >
+        <span hidden></span>
+      </fold-inline-confirm>
+    }
+
+    @if (resetting()) {
+      <fold-inline-confirm
+        [open]="true"
+        intent="danger"
+        [message]="resetMessage()"
+        [loading]="saving()"
+        (confirmed)="confirmReset()"
+        (cancelled)="resetting.set(false)"
+        data-notices-reset-confirm
+      >
+        <span hidden></span>
+      </fold-inline-confirm>
+    }
+
+    @if (refusal(); as refusal) {
+      <fold-callout variant="alert" data-notice-refusal>{{ refusal }}</fold-callout>
+    }
+  </div>
+</fold-card>
+
+<ng-template #noticeCell let-row let-role="role">
+  @if (cellOf(row, role); as cell) {
+    <span class="cell" [attr.data-notice-cell]="row.kind + ':' + role">
+      <span class="state" [class.on]="cell.enabled">{{
+        cell.enabled ? 'Reçoit' : 'Ne reçoit pas'
+      }}</span>
+      @if (cell.atDefault) {
+        <span class="default" data-notice-default>par défaut</span>
+      }
+      <button
+        foldButton
+        size="sm"
+        [emphasis]="cell.enabled ? 'outline' : 'solid'"
+        [attr.aria-label]="ariaOf(row, role)"
+        [disabled]="!canWrite() || saving()"
+        (click)="ask(row, role)"
+        data-notice-toggle
+      >
+        {{ cell.enabled ? 'Désactiver' : 'Activer' }}
+      </button>
+    </span>
+  }
+</ng-template>

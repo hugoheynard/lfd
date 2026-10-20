@@ -1,0 +1,38 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.action {
+  font-weight: var(--fold-weight-semibold);
+}
+
+/* L'état, la marque du défaut et le bouton, centrés sous l'en-tête du rôle. */
+.cell {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
+.state,
+.default,
+.summary,
+.hidden-kinds {
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+.state.on {
+  color: var(--fold-color-text);
+  font-weight: var(--fold-weight-semibold);
+}
+
+.default {
+  font-style: italic;
+}
+
+.hidden-kinds {
+  margin: 0;
+}

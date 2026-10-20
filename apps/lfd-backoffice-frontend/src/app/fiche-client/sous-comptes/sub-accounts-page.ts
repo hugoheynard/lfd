@@ -18,6 +18,7 @@ import { FicheClientPanels } from '../informations/fiche-client.panels';
 import { FicheClientStore } from '../informations/fiche-client.store';
 import { CollectionFormCard } from '../collection-form-card/collection-form-card';
 import { ParentBanner } from '../parent-banner/parent-banner';
+import { SubAccountNoticesCard } from '../sub-account-notices-card/sub-account-notices-card';
 import { SubAccountsCard } from '../sub-accounts-card/sub-accounts-card';
 import { SubAccountsHelp } from './sub-accounts-help';
 
@@ -85,6 +86,7 @@ export function followsBilling(follows: readonly FollowedAspectView[]): boolean 
     FoldLoadingStateComponent,
     CollectionFormCard,
     ParentBanner,
+    SubAccountNoticesCard,
     SubAccountsCard,
     SubAccountsHelp,
   ],
