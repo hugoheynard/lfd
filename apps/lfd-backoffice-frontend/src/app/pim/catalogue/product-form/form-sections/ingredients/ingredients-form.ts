@@ -1,18 +1,11 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  effect,
-  inject,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
 
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldIconComponent,
-  FoldListboxComponent,
-  FoldOptionComponent,
+  FoldComboboxComponent,
+  type FoldSelectOption,
 } from 'fold-ng';
 
 import { ProvenanceStore } from '../../../../provenance/provenance.store';
@@ -20,7 +13,6 @@ import { ProductFormStore } from '../../product-form-store';
 import { ProductIngredientsStore } from './product-ingredients.store';
 
 /** Le vide de la liste déroulante — « choisir un ingrédient » n'est pas une valeur. */
-const NONE = '';
 
 /**
  * Section **Ingrédients** de la fiche — d'où vient ce qu'il y a dedans.
@@ -43,13 +35,7 @@ const NONE = '';
   selector: 'app-ingredients-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [ProductIngredientsStore],
-  imports: [
-    FoldListboxComponent,
-    FoldOptionComponent,
-    FoldButtonComponent,
-    FoldCalloutComponent,
-    FoldIconComponent,
-  ],
+  imports: [FoldComboboxComponent, FoldButtonComponent, FoldCalloutComponent, FoldIconComponent],
   templateUrl: './ingredients-form.html',
   styleUrl: './ingredients-form.scss',
 })
@@ -57,8 +43,6 @@ export class IngredientsForm {
   private readonly form = inject(ProductFormStore);
   private readonly provenance = inject(ProvenanceStore);
   protected readonly store = inject(ProductIngredientsStore);
-
-  protected readonly picked = signal<string>(NONE);
 
   /** La fiche n'existe pas encore : rien à citer tant qu'elle n'est pas créée. */
   protected readonly isNew = computed(() => this.form.productId() === '');
@@ -86,6 +70,17 @@ export class IngredientsForm {
     return this.provenance.ingredients().filter((row) => !already.has(row.key));
   });
 
+  /** Les mêmes, en options du combobox : le nom français, l'appellation en appui. */
+  protected readonly addableOptions = computed<FoldSelectOption<string>[]>(() =>
+    this.addable().map((row) => {
+      const appellation = this.appellationLabel(row);
+      return {
+        value: row.key,
+        label: appellation === '' ? row.name.fr : `${row.name.fr} (${appellation})`,
+      };
+    }),
+  );
+
   constructor() {
     effect(() => {
       void this.store.load(this.form.productId()).catch(() => undefined);
@@ -103,17 +98,9 @@ export class IngredientsForm {
     return held.scheme === '' ? held.label.fr : `${held.scheme} — ${held.label.fr}`;
   }
 
-  /** `valueChange` rend `null` quand rien n'est choisi — c'est le vide de la liste. */
-  protected pick(value: string | null): void {
-    this.picked.set(value ?? NONE);
-  }
-
-  protected add(): void {
-    const key = this.picked();
-    if (key !== NONE) {
-      this.store.add(key);
-      this.picked.set(NONE);
-    }
+  /** Choisir dans le combobox ajoute : le champ se vide de lui-même (`clearOnSelect`). */
+  protected add(key: string): void {
+    this.store.add(key);
   }
 
   /**

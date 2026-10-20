@@ -45,16 +45,20 @@
     </ul>
   }
 
+  <!-- On TAPE pour trouver (2026-10-20, suggestion d'une utilisatrice : la
+       liste déroulante n'acceptait que la première lettre, sans le dire).
+       Choisir ajoute tout de suite et vide le champ pour le suivant. -->
   <div class="if-add">
-    <fold-listbox label="Ajouter un ingrédient" [value]="picked()" (valueChange)="pick($event)">
-      <fold-option value="">Choisir…</fold-option>
-      @for (option of addable(); track option.key) {
-        <fold-option [value]="option.key">{{ option.name.fr }}</fold-option>
-      }
-    </fold-listbox>
-    <button foldButton emphasis="outline" [disabled]="picked() === ''" (click)="add()">
-      Ajouter
-    </button>
+    <fold-combobox
+      clearOnSelect
+      label="Ajouter un ingrédient"
+      placeholder="Tapez le nom d'un ingrédient…"
+      emptyText="Aucun ingrédient ne correspond — créez-le dans Provenance."
+      resultLabel="ingrédients"
+      [options]="addableOptions()"
+      (selectionChange)="add($event)"
+      data-ingredient-add
+    />
   </div>
 
   <!-- Le bouton vit ICI et non dans l'en-tête de section : cette liste part sur

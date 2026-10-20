@@ -82,6 +82,12 @@
   gap: var(--fold-space-sm);
 }
 
+/* Assez large pour lire un nom et son appellation, sans prendre la ligne. */
+.if-add fold-combobox {
+  flex: 1 1 22rem;
+  max-width: 32rem;
+}
+
 .if-foot {
   display: flex;
   justify-content: flex-end;
