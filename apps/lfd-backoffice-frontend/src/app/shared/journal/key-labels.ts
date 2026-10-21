@@ -58,6 +58,8 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   // Lot C6 : l'annulation par le client lui-même (`order.cancelled`).
   cancelledByCustomer: 'Annulée par le client',
   cancelledByKind: 'Annulée par',
+  // Lot C1 des sous-comptes : le compte principal dont l'auteur est membre (`order.cancelled`).
+  cancelledFromPrincipal: 'Du compte principal',
   candidates: 'Articles candidats',
   carbsG: 'Glucides',
   cartWithoutFamilyId: 'Sans article de la famille',

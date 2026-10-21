@@ -1,0 +1,48 @@
+/**
+ * Les segments des textes de « Mes commandes » ajoutés par les commandes des
+ * sites (C2) et le récapitulatif des commandes (R1–R3, 2026-10-21). Placé AVANT
+ * les autres dans le glossaire : un segment déjà connu ailleurs garde son
+ * libellé.
+ */
+export const GLOSSARY_ORDERS_SUMMARY: Readonly<Record<string, string>> = {
+  colSite: 'Colonne — site',
+  filterSite: 'Filtre — site',
+  filterAllSites: 'Filtre — tous les sites',
+  authorCustomer: 'Passée par (nom du client)',
+  authorTeam: 'Passée par l’équipe',
+  detailSite: 'Détail — site',
+  summary: 'Récapitulatif',
+  filterFrom: 'Filtre — date de début',
+  filterTo: 'Filtre — date de fin',
+  filterClear: 'Effacer les dates',
+  filterUndated: 'Filtre — les commandes sans date n’apparaissent pas',
+  selectedMany: 'Sélection — plusieurs commandes',
+  selectedOne: 'Sélection — une commande',
+  selectedNone: 'Sélection — aucune commande',
+  capHint: 'Plafond — rappel du nombre maximum',
+  capExceeded: 'Plafond — dépassé',
+  selection: 'Sélection de commandes',
+  periodBetween: 'Période — du … au …',
+  periodFrom: 'Période — à partir du …',
+  periodTo: 'Période — jusqu’au …',
+  amountsNote: 'Note sur les montants',
+  colProduct: 'Colonne — produit',
+  colSku: 'Colonne — SKU',
+  colQuantity: 'Colonne — quantité',
+  colHt: 'Colonne — total HT',
+  orderCountMany: 'Nombre de commandes (plusieurs)',
+  orderCountOne: 'Nombre de commandes (une)',
+  voucher: 'Bons de fidélité',
+  deliveryFee: 'Frais de livraison',
+  lateFee: 'Surtaxes de commande tardive',
+  unventilatedVat: 'TVA non ventilée',
+  grandTotal: 'Total général',
+  noneCounted: 'Aucune commande comptée',
+  excludedHead: 'Commandes exclues — titre',
+  excludedCancelled: 'Exclue : annulée',
+  excludedPending: 'Exclue : paiement en attente',
+  excludedFailed: 'Exclue : paiement refusé',
+  pdf: 'Bouton PDF',
+  csv: 'Bouton tableur',
+  exportFailed: 'Échec du fichier',
+};

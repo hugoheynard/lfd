@@ -138,11 +138,34 @@ function customerCancelled(fact: PhraseFact, kind: 'customer' | 'guest'): Said {
     kind === 'guest'
       ? [text('Un client invité')]
       : citePerson(fact.payload['cancelledByCustomer'], 'Un client');
+  const principal = fact.payload['cancelledFromPrincipal'];
   return said(
-    [...who, text(' a annulé sa commande '), name(orDash(fact.payload['orderNumber']))],
-    ['orderNumber', 'cancelledBy', 'cancelledByKind', 'cancelledByCustomer'],
+    [
+      ...who,
+      ...(principal === undefined || principal === null
+        ? []
+        : [text(', du '), ...cite(FROM_PRINCIPAL, principal), text(',')]),
+      text(' a annulé '),
+      text(principal === undefined || principal === null ? 'sa commande ' : 'la commande '),
+      name(orDash(fact.payload['orderNumber'])),
+    ],
+    [
+      'orderNumber',
+      'cancelledBy',
+      'cancelledByKind',
+      'cancelledByCustomer',
+      'cancelledFromPrincipal',
+    ],
   );
 }
+
+/**
+ * Le compte principal dont l'auteur de l'annulation est membre, sans l'être
+ * du site (`cancelledFromPrincipal`, lot C1 des sous-comptes, §7.9 de
+ * `plan-commandes-des-sites.md`) : « Jean D., du compte principal « Groupe X »,
+ * a annulé la commande ORD-7 ». Absent d'une annulation par un membre du site.
+ */
+const FROM_PRINCIPAL: Noun = { the: 'compte principal', a: 'compte principal' };
 
 /** Le client d'une dérogation : nommé depuis le lot B, par son seul id avant. */
 const TO_CLIENT: Noun = { the: 'au client', a: 'à un client' };
