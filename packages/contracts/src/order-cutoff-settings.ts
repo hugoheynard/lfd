@@ -21,7 +21,7 @@ export interface OrderCutoffSettingsView {
    * (Hugo, 2026-10-21 : « la limite ou absence de limite [du réassort] devrait
    * être définie dans les réglages limites ».) `true` par défaut. Stocké et
    * affiché, SANS effet tant que le réapprovisionnement n'est pas commandé au
-   * fournil (`documentation/livraisons/transferts/plan-reapprovisionnement.md`).
+   * fournil (`documentation/reassort-boutiques/plan-reapprovisionnement.md`).
    */
   readonly resupplySubjectToCutoff: boolean;
   /** Instant du dernier geste ; `null` tant que personne n'a rien réglé. */

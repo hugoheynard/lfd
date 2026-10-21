@@ -17,7 +17,7 @@ import { PrismaResupplySites } from "./infrastructure/prisma-resupply-sites.js";
 
 /**
  * **Le réapprovisionnement d'un site** (modèle B de
- * `documentation/livraisons/transferts/plan-reapprovisionnement.md`, Hugo
+ * `documentation/reassort-boutiques/plan-reapprovisionnement.md`, Hugo
  * 2026-10-21) — pour l'instant sa seule RÉCEPTION : ce que la vitrine a reçu,
  * saisi au comptoir (lot J1 du plan du jour même). La demande au fournil
  * (`SiteResupply`) viendra ici, à côté. Aucune dépendance au modèle `Order`.

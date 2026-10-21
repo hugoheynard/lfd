@@ -31,7 +31,7 @@ export interface ResupplyReceiptSnapshot {
 /**
  * **La réception du réapprovisionnement d'un site, pour une journée** — ce que
  * la vitrine a reçu (plan `limites-de-commande/plan-jour-meme-sur-stock.md`,
- * J1 ; modèle B de `livraisons/transferts/plan-reapprovisionnement.md`, décidé
+ * J1 ; modèle B de `reassort-boutiques/plan-reapprovisionnement.md`, décidé
  * par Hugo le 2026-10-21).
  *
  * C'est la partie « reçue » du futur `SiteResupply` (la demande au fournil,

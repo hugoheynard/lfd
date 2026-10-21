@@ -1,6 +1,6 @@
 /// **La réception d'un réapprovisionnement** — ce qu'un site a reçu pour sa
 /// vitrine un jour donné (plan `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`,
-/// lot J1 ; modèle B de `documentation/livraisons/transferts/plan-reapprovisionnement.md`).
+/// lot J1 ; modèle B de `documentation/reassort-boutiques/plan-reapprovisionnement.md`).
 ///
 /// La partie « reçue » du futur `SiteResupply` : un mouvement interne, JAMAIS
 /// une commande — aucun prix, aucune TVA, aucun règlement. Une par (site,

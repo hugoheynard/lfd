@@ -106,7 +106,7 @@ heure de fin. Chaque commande décompte le stock déclaré.**
 - **Q4** — Le stock du jour **s'aligne sur le réassort reçu** : ce que le
   réapprovisionnement du site a apporté ce jour-là est le stock offert, que le
   comptoir corrige. ⚠️ Le réapprovisionnement **n'est pas bâti** (plan
-  doc-first [`../livraisons/transferts/plan-reapprovisionnement.md`](../livraisons/transferts/plan-reapprovisionnement.md),
+  doc-first [`../reassort-boutiques/plan-reapprovisionnement.md`](../reassort-boutiques/plan-reapprovisionnement.md),
   2026-10-14 ; la page « Réassort boutique » du comptoir est vide, vérifié le
   2026-10-21). Conséquence pour l'ordre des lots : tant qu'il n'existe pas, le
   comptoir déclare à la main (J1) ; le jour où le réassort est reçu en base, la
@@ -124,7 +124,7 @@ produit et des quantités, et éventuellement un stock »).
   la vitrine d'un point de retrait a reçu pour une journée — une par (site,
   journée), des lignes (SKU produit, libellé figé lu au catalogue publié de la
   boutique, quantité reçue entière ≥ 0). C'est la partie **reçue** du futur
-  `SiteResupply` (modèle B, [`plan-reapprovisionnement.md`](../livraisons/transferts/plan-reapprovisionnement.md)
+  `SiteResupply` (modèle B, [`plan-reapprovisionnement.md`](../reassort-boutiques/plan-reapprovisionnement.md)
   §9) : deux agrégats, parce que demander et recevoir ont deux auteurs et deux
   moments. Aucun prix, aucune dépendance au modèle `Order`.
 - **Un article en double est refusé** (409, « corrigez sa quantité ») plutôt

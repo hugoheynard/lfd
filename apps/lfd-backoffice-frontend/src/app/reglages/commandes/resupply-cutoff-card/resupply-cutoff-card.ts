@@ -23,7 +23,7 @@ type LoadState = 'loading' | 'ready' | 'error';
  * définie dans les réglages limites »).
  *
  * Stockée et affichée, SANS effet : le réapprovisionnement n'est pas encore
- * commandé au fournil (`livraisons/transferts/plan-reapprovisionnement.md`).
+ * commandé au fournil (`reassort-boutiques/plan-reapprovisionnement.md`).
  * La carte le dit. Même droit que la page, `lfc_order_settings`.
  */
 @Component({

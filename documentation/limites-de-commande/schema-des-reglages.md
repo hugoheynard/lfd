@@ -228,7 +228,8 @@ l'heure, elle propose le premier jour encore ouvert (le surlendemain).
 **Ajouté le 2026-10-21** : ⑨, la limite du réassort boutique, sur la page de
 l'heure limite (`order_cutoff_settings.resupply_subject_to_cutoff`, oui par
 défaut). Elle ne décide rien encore : le réassort n'est pas commandé au
-fournil ([`plan-jour-meme-sur-stock.md`](plan-jour-meme-sur-stock.md) §7).
+fournil ([`plan-jour-meme-sur-stock.md`](plan-jour-meme-sur-stock.md) §7 ; le réassort a son dossier,
+[`../reassort-boutiques/`](../reassort-boutiques/README.md)).
 
 **Reste à faire** : les recommandations « commandable aujourd'hui » alignées sur
 « la plus stricte gagne », le devis qui signale la limite, le rattrapage réuni
