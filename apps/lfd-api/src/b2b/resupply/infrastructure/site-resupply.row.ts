@@ -20,6 +20,7 @@ export interface SiteResupplyRow {
   readonly serviceDay: Date;
   readonly version: number;
   readonly origin: string;
+  readonly name: string | null;
   readonly placedAt: Date | null;
   readonly placedByStaffId: string | null;
   readonly placedByName: string | null;
@@ -48,6 +49,7 @@ export function snapshotOf(row: SiteResupplyRow): SiteResupplySnapshot {
     serviceDay: row.serviceDay.toISOString().slice(0, 10),
     version: row.version,
     origin: resupplyOriginOf(row.origin),
+    name: row.name,
     lines: row.lines,
     placed:
       row.placedAt === null

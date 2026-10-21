@@ -33,6 +33,7 @@ const RESUPPLY: PlacedResupply = {
   resupplyId: "rs_1",
   siteId: "site_village",
   siteLabel: "Le Village",
+  name: null,
   servedByTransfer: true,
   lines: [
     { sku: "VIE-001", productName: "Croissant", quantity: 12 },

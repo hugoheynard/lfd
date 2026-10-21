@@ -2,6 +2,7 @@ import {
   SHELF_LABEL_OFF_CATALOG,
   SHELF_LABEL_UNKNOWN,
   type CatalogFamilyView,
+  resupplyTitleOf,
 } from "@lfd/contracts";
 
 import type {
@@ -96,6 +97,12 @@ export function dayDossierOf(
 /** Le nom du point ; un point sans nom figé se dit par son identifiant — rien d'autre n'est sûr. */
 export function siteLabelOf(resupply: ProductionResupplySnapshot): string {
   return resupply.siteLabel ?? resupply.siteId;
+}
+
+/** Le titre du bon (R1g) : « Vitrine du matin — Village », ou « Réassort Village » sans nom. */
+export function resupplySheetTitleOf(resupply: ProductionResupplySnapshot): string {
+  const site = siteLabelOf(resupply);
+  return resupplyTitleOf(resupply.name, site, `Réassort ${site}`);
 }
 
 function talliesOf(

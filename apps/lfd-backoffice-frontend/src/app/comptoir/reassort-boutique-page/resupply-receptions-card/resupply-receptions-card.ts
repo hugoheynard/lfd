@@ -42,6 +42,9 @@ import { ResupplyReceiptsService } from '../resupply-receipts.service';
  * lui-même est marqué « Envoyé par le fournil » ; il se réceptionne d'un
  * geste comme les autres.
  *
+ * Un réassort nommé (R1g) se lit sous son nom, la visée à côté : la page
+ * est celle d'un seul point, qu'on ne répète pas.
+ *
  * La carte fait ses gestes et prévient la page (`changed`), qui relit tout
  * (le stock du jour et les alertes que la réception a levées).
  */

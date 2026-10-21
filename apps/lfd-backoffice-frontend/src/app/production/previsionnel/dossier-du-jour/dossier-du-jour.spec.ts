@@ -179,6 +179,7 @@ describe('les réassorts au dossier', () => {
         resupplyId: 'r-1',
         siteId: 'site-v',
         siteLabel: 'Village',
+        name: null,
         servedByTransfer: true,
         lines: [{ sku: 'PAC', productName: 'Pain au chocolat', quantity: 18 }],
       },

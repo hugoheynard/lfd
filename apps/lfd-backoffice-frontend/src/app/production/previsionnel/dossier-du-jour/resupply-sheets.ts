@@ -1,5 +1,7 @@
 import type { ProductionDayResupply } from '@lfd/contracts';
 
+import { resupplyTitle } from '../../../shared/resupply-labels';
+
 /**
  * **La pile des bons de réassort** (R3d-bis) — un bon par réassort, jamais
  * fusionnés : le même rangement que le PDF du serveur
@@ -19,6 +21,15 @@ export function resupplySheetsOf(
 /** Le nom du point, ou son identifiant — rien d'autre n'est sûr. */
 export function resupplySiteLabel(resupply: ProductionDayResupply): string {
   return resupply.siteLabel ?? resupply.siteId;
+}
+
+/**
+ * Le titre du bon (R1g) : « Vitrine du matin — Village », ou « Réassort
+ * Village » sans nom — comme le PDF du serveur.
+ */
+export function resupplySheetTitle(resupply: ProductionDayResupply): string {
+  const site = resupplySiteLabel(resupply);
+  return resupplyTitle(resupply.name, site, `Réassort ${site}`);
 }
 
 /** Ordre des codes, indépendant de la langue de l'hôte — comme le serveur. */

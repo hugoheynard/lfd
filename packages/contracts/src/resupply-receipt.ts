@@ -44,6 +44,8 @@ export interface ResupplyReceptionView {
   readonly target: ResupplyTarget;
   /** `bakehouse` : « envoyé par le fournil » (R1d) ; il se réceptionne comme les autres. */
   readonly origin: ResupplyOrigin;
+  /** Son nom libre (R1g), « Vitrine du matin » ; `null` : sans nom. */
+  readonly name: string | null;
   readonly placedAt: string;
   /** Nom figé de qui l'a envoyé ; `null` s'il est inconnu. */
   readonly placedBy: string | null;

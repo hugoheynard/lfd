@@ -215,6 +215,8 @@ model PackingResupply {
   /// Le point servi par transfert, opaque, et son nom figé à l'arrêt.
   siteId    String  @map("site_id")
   siteLabel String? @map("site_label")
+  /// Le nom du réassort (lot R1g), tiré du fait du fournil ; `null` : sans nom.
+  name      String?
 
   drawnAt DateTime @map("drawn_at") @db.Timestamptz(6)
 

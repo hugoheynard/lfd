@@ -1,5 +1,5 @@
 import type { ProductionResupplySnapshot } from "../entities/production-day.js";
-import { siteLabelOf } from "./day-dossier.js";
+import { resupplySheetTitleOf } from "./day-dossier.js";
 import {
   LEFT,
   MARGIN_Y,
@@ -41,7 +41,7 @@ export function drawResupplySheet(
   let y = MARGIN_Y;
   putCaps(doc, `${banner} · ${rank.toUpperCase()}`, LEFT, y);
   y += 5 * MM;
-  put(doc, `Réassort ${siteLabelOf(resupply)}`, LEFT, y, {
+  put(doc, resupplySheetTitleOf(resupply), LEFT, y, {
     size: 16,
     bold: true,
     width: WIDTH - 40 * MM,

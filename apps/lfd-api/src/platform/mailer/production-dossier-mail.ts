@@ -25,6 +25,10 @@ export interface ProductionDossierMailData {
   readonly orderCount: number;
   readonly pickupCount: number;
   readonly deliveryCount: number;
+  /** Les réassorts figés au plan (R3d-bis) ; leurs pièces sont DANS `pieceCount`. */
+  readonly resupplyCount: number;
+  readonly resupplyPieceCount: number;
+  /** Toutes les pièces du lot, commandes et réassorts — le compte du PDF. */
   readonly pieceCount: number;
   /** `true` après un retirage : le dossier remplace celui qui était parti. */
   readonly completed: boolean;
@@ -62,7 +66,11 @@ function when(verb: string, data: ProductionDossierMailData): string {
   return `${verb}${by} le ${data.arrestedAtLabel}`;
 }
 
-/** « 3 commandes — 2 en retrait, 1 en livraison — et 40 pièces » ; une part à zéro se tait. */
+/**
+ * « 3 commandes — 2 en retrait, 1 en livraison — et 40 pièces » ; une part à
+ * zéro se tait. Avec des réassorts, comme l'en-tête du PDF : « … — 1 réassort
+ * et 58 pièces dont 18 de réassort ».
+ */
 function figures(data: ProductionDossierMailData): string {
   const split = [
     data.pickupCount > 0 ? `${String(data.pickupCount)} en retrait` : "",
@@ -72,6 +80,12 @@ function figures(data: ProductionDossierMailData): string {
     .join(", ");
   const orders = counted(data.orderCount, "commande");
   const pieces = counted(data.pieceCount, "pièce");
+  if (data.resupplyCount > 0) {
+    const resupplies = counted(data.resupplyCount, "réassort");
+    const share = `${pieces} dont ${String(data.resupplyPieceCount)} de réassort`;
+    const head = split === "" ? orders : `${orders} — ${split}`;
+    return `${head} — ${resupplies} et ${share}`;
+  }
   return split === "" ? `${orders} et ${pieces}` : `${orders} — ${split} — et ${pieces}`;
 }
 
@@ -86,7 +100,7 @@ export function productionDossierBody(data: ProductionDossierMailData): string {
     hello,
     what,
     "Vous trouverez en pièce jointe le dossier à imprimer : un récapitulatif de ce " +
-      "qu'il faut fabriquer, puis un bon par commande.",
+      `qu'il faut fabriquer, puis un bon par commande${data.resupplyCount > 0 ? " et par réassort" : ""}.`,
     `En chiffres : ${figures(data)}.`,
     ...(data.completed ? ["Ce dossier remplace le précédent."] : []),
     SIGNATURE,

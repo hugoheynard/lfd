@@ -44,12 +44,15 @@ class FakeResupplies {
     ['tomorrow', new Map()],
   ]);
   private version = 0;
+  private readonly names = new Map<ResupplyTarget, string>();
   tomorrowOrderUntil: string | null = null;
+  usedNames: readonly string[] = [];
 
   list(siteId: string): Promise<SiteResuppliesView> {
     const drafts = (['asap', 'tomorrow'] as const).flatMap((target) => {
       const lines = [...(this.lines.get(target) ?? new Map<string, number>())];
-      return lines.length === 0
+      const name = this.names.get(target) ?? null;
+      return lines.length === 0 && name === null
         ? []
         : [
             {
@@ -57,6 +60,7 @@ class FakeResupplies {
               target,
               serviceDay: TODAY,
               version: this.version,
+              name,
               lines: lines.map(([sku, quantity]) => ({ sku, label: sku, quantity })),
             },
           ];
@@ -68,7 +72,19 @@ class FakeResupplies {
       tomorrowOrderUntil: this.tomorrowOrderUntil,
       drafts,
       resupplies: [],
+      usedNames: this.usedNames,
     });
+  }
+  name(_s: string, target: ResupplyTarget, name: string | null): Promise<{ id: string }> {
+    this.calls.push(`name ${target} ${name ?? ''}`);
+    const trimmed = (name ?? '').trim();
+    if (trimmed === '') {
+      this.names.delete(target);
+    } else {
+      this.names.set(target, trimmed);
+    }
+    this.version += 1;
+    return Promise.resolve({ id: `draft_${target}` });
   }
   addLine(
     _s: string,
@@ -402,5 +418,22 @@ describe('ResupplyStockTable', () => {
     expect(root(fixture).querySelector('[data-resupply-state]')).toBeNull();
     expect(root(fixture).querySelector('fold-number-input')).toBeNull();
     expect(root(fixture).querySelector('[data-resupply-send]')).toBeNull();
+  });
+
+  it('nomme la demande de la visée affichée (R1g), propose les noms employés, et relit le nom', async () => {
+    const { fixture, table, resupplies } = await mount();
+    resupplies.usedNames = ['Vitrine du matin', 'Goûter'];
+    await TestBed.inject(SiteResuppliesStore).load('site_v');
+    await settle(fixture);
+
+    expect(table['usedNames']()).toEqual(['Vitrine du matin', 'Goûter']);
+    expect(root(fixture).querySelector('[data-resupply-name]')).not.toBeNull();
+
+    await table['rename']('Vitrine du matin');
+    await settle(fixture);
+
+    expect(resupplies.calls).toEqual(['name tomorrow Vitrine du matin']);
+    expect(table['draftName']()).toBe('Vitrine du matin');
+    expect(table['nameText']()).toBe('Vitrine du matin');
   });
 });

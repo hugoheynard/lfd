@@ -139,6 +139,7 @@ describe('le récapitulatif de production', () => {
         resupplyId: 'r-1',
         siteId: 'site-v',
         siteLabel: 'Village',
+        name: null,
         servedByTransfer: true,
         lines: [
           { sku: 'CRO', productName: 'Croissant', quantity: 18 },

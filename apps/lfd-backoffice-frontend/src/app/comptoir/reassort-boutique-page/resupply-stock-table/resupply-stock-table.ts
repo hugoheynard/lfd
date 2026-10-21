@@ -5,6 +5,7 @@ import {
   ElementRef,
   inject,
   input,
+  linkedSignal,
   output,
   signal,
 } from '@angular/core';
@@ -28,6 +29,7 @@ import {
   FoldViewToggleComponent,
 } from 'fold-ng';
 
+import { ResupplyNameField } from '../../../shared/resupply-name-field/resupply-name-field';
 import { ResupplyReceiptsService } from '../resupply-receipts.service';
 import { SiteResuppliesStore } from '../site-resupplies.store';
 import { SiteStockAlertsStore } from '../site-stock-alerts.store';
@@ -97,6 +99,9 @@ function normalize(text: string): string {
  * Elle ne garde rien que le serveur n'ait pas : un état passe par
  * `SiteStockAlertsStore`, une demande par `SiteResuppliesStore` (lot R1c),
  * le reçu sans commande par `ResupplyReceiptsService` — puis la page relit.
+ *
+ * La demande de la visée affichée se nomme au-dessus d'« Envoyer » (R1g,
+ * « Vitrine du matin ») ; les noms déjà employés au point sont proposés.
  */
 @Component({
   selector: 'app-resupply-stock-table',
@@ -110,6 +115,7 @@ function normalize(text: string): string {
     FoldNumberInputComponent,
     FoldSearchComponent,
     FoldViewToggleComponent,
+    ResupplyNameField,
   ],
   templateUrl: './resupply-stock-table.html',
   styleUrl: './resupply-stock-table.scss',
@@ -240,6 +246,17 @@ export class ResupplyStockTable {
   });
 
   protected readonly targetCount = computed(() => this.countOf(this.target()));
+
+  /** La demande de la visée affichée, et son nom (R1g) — le champ suit la relecture. */
+  protected readonly targetDraft = computed(() => this.draftFor(this.target()));
+  protected readonly draftName = computed(() => this.targetDraft()?.name ?? null);
+  protected readonly nameText = linkedSignal(() => this.draftName() ?? '');
+  protected readonly usedNames = this.resupplies.usedNames;
+
+  /** Nomme la demande de la visée affichée ; vide retire le nom. */
+  protected async rename(name: string): Promise<void> {
+    await this.resupplies.name(this.target(), name);
+  }
 
   protected chooseTarget(value: string): void {
     if (value === 'asap' || value === 'tomorrow') {

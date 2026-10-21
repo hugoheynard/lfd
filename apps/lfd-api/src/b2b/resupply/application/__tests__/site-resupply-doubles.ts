@@ -1,6 +1,7 @@
 import { ResupplyCutoff } from "../../domain/resupply-cutoff.js";
 import { ResupplyReceptions } from "../../domain/resupply-receptions.js";
 import { ResupplySiteLabels } from "../../domain/resupply-site-labels.js";
+import { ResupplyUsedNames } from "../../domain/resupply-used-names.js";
 import {
   isPlaced,
   type PlacedSiteResupplySnapshot,
@@ -25,6 +26,7 @@ function snapshotOf(resupply: SiteResupply, version: number): SiteResupplySnapsh
     serviceDay: resupply.serviceDay,
     version,
     origin: resupply.origin,
+    name: resupply.name,
     lines: resupply.lines,
     placed: resupply.placed,
     cancelled: resupply.cancelled,
@@ -157,5 +159,24 @@ export class KnownReceptions extends ResupplyReceptions {
   receptionOf(siteId: string, resupplyId: string): Promise<SiteResupplyTrace | null> {
     this.asked.push(`${siteId}:${resupplyId}`);
     return Promise.resolve(this.known.get(`${siteId}:${resupplyId}`) ?? null);
+  }
+}
+
+/**
+ * Les noms employés, lus sur le même stockage que la base les regrouperait :
+ * distincts, du plus récent au plus ancien (ordre d'insertion inverse).
+ */
+export class InMemoryResupplyUsedNames extends ResupplyUsedNames {
+  constructor(private readonly store: InMemorySiteResupplies) {
+    super();
+  }
+
+  usedAt(siteId: string, limit: number): Promise<readonly string[]> {
+    const names = this.store
+      .all()
+      .filter((row) => row.siteId === siteId)
+      .reverse()
+      .flatMap((row) => (row.name === null ? [] : [row.name]));
+    return Promise.resolve([...new Set(names)].slice(0, limit));
   }
 }

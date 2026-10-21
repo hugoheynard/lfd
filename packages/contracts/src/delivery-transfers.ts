@@ -39,6 +39,11 @@ export interface TransferManifestItemView {
    * réapprovisionnement, ou clientèle inconnue.
    */
   readonly clientele?: OrderClientele;
+  /**
+   * Un réassort nommé (R1g) : son nom, « Vitrine du matin ». Absent : une
+   * commande, un réassort sans nom, ou une vue d'avant le champ.
+   */
+  readonly name?: string;
 }
 
 export interface TransferManifestSectionView {

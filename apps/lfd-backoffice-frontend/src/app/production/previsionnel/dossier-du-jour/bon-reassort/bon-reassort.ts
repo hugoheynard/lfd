@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import type { ProductionDayResupply } from '@lfd/contracts';
 
-import { resupplySiteLabel } from '../resupply-sheets';
+import { resupplySheetTitle } from '../resupply-sheets';
 
 /**
  * **Le bon de réassort** (R3d-bis, Hugo 2026-10-21) — l'aperçu à l'écran de
@@ -22,7 +22,7 @@ export class BonReassort {
   readonly total = input.required<number>();
   readonly dayLabel = input.required<string>();
 
-  protected readonly siteLabel = computed(() => resupplySiteLabel(this.resupply()));
+  protected readonly title = computed(() => resupplySheetTitle(this.resupply()));
   protected readonly pieces = computed(() =>
     this.resupply().lines.reduce((sum, line) => sum + line.quantity, 0),
   );

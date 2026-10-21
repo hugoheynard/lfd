@@ -34,6 +34,10 @@ import { ResupplyReceiptRepository } from "./domain/resupply-receipt.repository.
 import { ResupplySiteLabels } from "./domain/resupply-site-labels.js";
 import { ResupplySites } from "./domain/resupply-sites.js";
 import { SiteResupplyReader } from "./domain/site-resupply.reader.js";
+import { ResupplyUsedNames } from "./domain/resupply-used-names.js";
+import { PrismaResupplyUsedNames } from "./infrastructure/prisma-resupply-used-names.js";
+import { NameSiteResupplyHandler } from "./application/name-site-resupply.handler.js";
+import { ListResupplyUsedNamesHandler } from "./application/list-resupply-used-names.handler.js";
 import { SiteResupplyRepository } from "./domain/site-resupply.repository.js";
 import { StockAlertReader } from "./domain/stock-alert.reader.js";
 import { StockAlertRepository } from "./domain/stock-alert.repository.js";
@@ -96,6 +100,7 @@ import { PrismaTransferServedSites } from "./infrastructure/prisma-transfer-serv
     { provide: ResupplySites, useClass: PrismaResupplySites },
     { provide: SiteResupplyRepository, useClass: PrismaSiteResupplyRepository },
     { provide: SiteResupplyReader, useClass: PrismaSiteResupplyReader },
+    { provide: ResupplyUsedNames, useClass: PrismaResupplyUsedNames },
     { provide: ResupplyCutoff, useClass: SettingsResupplyCutoff },
     { provide: ResupplySiteLabels, useClass: PrismaResupplySiteLabels },
     { provide: TransferServedSites, useClass: PrismaTransferServedSites },
@@ -115,6 +120,8 @@ import { PrismaTransferServedSites } from "./infrastructure/prisma-transfer-serv
     CorrectSiteResupplyLineHandler,
     WithdrawSiteResupplyLineHandler,
     SendSiteResupplyHandler,
+    NameSiteResupplyHandler,
+    ListResupplyUsedNamesHandler,
     ListSiteResuppliesHandler,
     ListResuppliesToProduceHandler,
     DeclareStockAlertHandler,

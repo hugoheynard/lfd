@@ -116,6 +116,7 @@ describe("SiteResupply — les lignes", () => {
       serviceDay: "2026-01-02",
       version: 3,
       origin: "counter",
+      name: null,
       lines: [],
       placed: null,
       cancelled: null,
@@ -243,6 +244,7 @@ describe("SiteResupply — l'origine (R1d)", () => {
 
   it("le fournil crée ET envoie son réassort d'un geste, sans brouillon", () => {
     const sent = SiteResupply.sentByBakehouse({
+      name: null,
       id: "rs2",
       siteId: "site_1",
       target: "asap",
@@ -264,6 +266,7 @@ describe("SiteResupply — l'origine (R1d)", () => {
   it("le fournil suit les règles d'envoi du comptoir : pas vide, l'heure limite pour demain", () => {
     const send = (lines: readonly SiteResupplyLine[], deadline: Date | null) =>
       SiteResupply.sentByBakehouse({
+        name: null,
         id: "rs3",
         siteId: "site_1",
         target: "tomorrow",
@@ -302,6 +305,7 @@ describe("SiteResupply — le plan du fournil arrêté (lot R3a)", () => {
   it("le fournil est refusé lui aussi, avec son recours", () => {
     const send = () =>
       SiteResupply.sentByBakehouse({
+        name: null,
         id: "rs4",
         siteId: "site_1",
         target: "tomorrow",

@@ -3,6 +3,7 @@ import {
   type PlaceSiteResupplyPayload,
   placeSiteResupplySchema,
   type ResupplyArticleView,
+  type ResupplyUsedNamesView,
 } from "@lfd/contracts";
 import { Body, Controller, Get, Param, Post } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
@@ -10,6 +11,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
+import { ListResupplyUsedNamesQuery } from "../application/list-resupply-used-names.query.js";
 import { ListResupplyArticlesQuery } from "../application/list-resupply-articles.query.js";
 import { SendBakehouseResupplyCommand } from "../application/send-bakehouse-resupply.command.js";
 
@@ -39,6 +41,14 @@ export class AdminBakehouseResuppliesController {
     );
   }
 
+  /** Les noms déjà employés au point, proposés à la saisie (R1g). */
+  @Get("sites/:siteId/names")
+  names(@Param("siteId") siteId: string): Promise<ResupplyUsedNamesView> {
+    return this.queries.execute<ListResupplyUsedNamesQuery, ResupplyUsedNamesView>(
+      new ListResupplyUsedNamesQuery(siteId),
+    );
+  }
+
   @Post("sites/:siteId")
   async send(
     @Param("siteId") siteId: string,
@@ -46,7 +56,13 @@ export class AdminBakehouseResuppliesController {
     @StaffUserId() staffUserId: string,
   ): Promise<PlacedSiteResupplyResponse> {
     const id = await this.commands.execute<SendBakehouseResupplyCommand, string>(
-      new SendBakehouseResupplyCommand(siteId, body.target, body.lines, staffUserId),
+      new SendBakehouseResupplyCommand(
+        siteId,
+        body.target,
+        body.lines,
+        staffUserId,
+        body.name ?? null,
+      ),
     );
     return { id };
   }

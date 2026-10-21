@@ -40,7 +40,7 @@ describe('TransferManifestDialog', () => {
     const host = await render(() => Promise.resolve(VIEW));
     expect(host.textContent).toContain('Commandes');
     expect(host.textContent).toContain('Pain de campagne');
-    expect(host.textContent).not.toContain('Réapprovisionnement');
+    expect(host.textContent).not.toContain('Réassort');
   });
 
   /** R3d : le réassort du Village se lit au manifeste de l'écran, comme au papier. */
@@ -55,8 +55,10 @@ describe('TransferManifestDialog', () => {
         },
       }),
     );
-    expect(host.textContent).toContain('Réapprovisionnement');
-    expect(host.textContent).toContain('1 réapprovisionnement');
+    // R1g : « Réassort », plus « Réapprovisionnement » (décision de vocabulaire).
+    expect(host.textContent).toContain('Réassorts');
+    expect(host.textContent).toContain('1 réassort');
+    expect(host.textContent).not.toContain('Réapprovisionnement');
     expect(host.textContent).toContain('Pain de campagne');
     expect(host.textContent).not.toContain('ne porte encore rien');
   });

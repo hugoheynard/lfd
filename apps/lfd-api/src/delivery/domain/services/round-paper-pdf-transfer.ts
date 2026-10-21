@@ -25,10 +25,14 @@ function sectionRows(
   doc: Doc,
   title: string,
   lines: readonly RoundPaperTransferLine[],
+  names: readonly string[] = [],
 ): readonly Row[] {
   return [
     gap(1 * MM),
     textRow(doc, title, { size: SMALL_SIZE, bold: true, color: MUTED }),
+    ...(names.length === 0
+      ? []
+      : [textRow(doc, names.join(" · "), { size: SMALL_SIZE, color: LIVE.ink, indent: 3 * MM })]),
     ...lines.map((line) =>
       textRow(doc, `${String(line.quantity)} × ${line.productName}`, {
         size: BODY_SIZE,
@@ -42,7 +46,8 @@ function sectionRows(
 /**
  * **Le bloc d'un arrêt de transfert** (décision de Hugo du 2026-10-13) : le
  * site et son heure d'arrivée requise, son adresse, les bacs, puis le
- * manifeste — commandes et réapprovisionnement, totalisés par article. La
+ * manifeste — commandes et réassorts, totalisés par article (les réassorts
+ * nommés sous leur titre, R1g). La
  * case dit « Remis » : le geste de l'arrêt est « Remis au site ».
  */
 export function transferStopBlock(doc: Doc, stop: RoundPaperTransferStop, rank: number): Block {
@@ -69,8 +74,9 @@ export function transferStopBlock(doc: Doc, stop: RoundPaperTransferStop, rank: 
       ? []
       : sectionRows(
           doc,
-          `RÉAPPROVISIONNEMENT · ${countLabel(stop.resupplyCount, "élément", "éléments").toUpperCase()}`,
+          `RÉASSORTS · ${countLabel(stop.resupplyCount, "réassort", "réassorts").toUpperCase()}`,
           stop.resupplyTotals,
+          stop.resupplyNames,
         )),
   ];
   return {

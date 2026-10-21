@@ -4,6 +4,7 @@ import type {
   PlacedSiteResupplyResponse,
   PlaceSiteResupplyPayload,
   ResupplyArticleView,
+  ResupplyUsedNamesView,
 } from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 
@@ -22,6 +23,16 @@ export class BakehouseResuppliesService {
   /** Le catalogue publié de la boutique, sans prix. */
   articles(): Promise<readonly ResupplyArticleView[]> {
     return firstValueFrom(this.http.get<readonly ResupplyArticleView[]>(`${this.base()}/articles`));
+  }
+
+  /** Les noms déjà employés au point, proposés à la saisie (R1g). */
+  async usedNames(siteId: string): Promise<readonly string[]> {
+    const view = await firstValueFrom(
+      this.http.get<ResupplyUsedNamesView>(
+        `${this.base()}/sites/${encodeURIComponent(siteId)}/names`,
+      ),
+    );
+    return view.names;
   }
 
   send(siteId: string, payload: PlaceSiteResupplyPayload): Promise<PlacedSiteResupplyResponse> {

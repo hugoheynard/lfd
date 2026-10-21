@@ -3,6 +3,8 @@ import {
   addSiteResupplyLineSchema,
   type CorrectSiteResupplyLinePayload,
   correctSiteResupplyLineSchema,
+  type NameSiteResupplyPayload,
+  nameSiteResupplySchema,
   type PlacedSiteResupplyResponse,
   RESUPPLY_TARGETS,
   type ResupplyTarget,
@@ -10,7 +12,17 @@ import {
   seenSiteResupplyVersionSchema,
   type SiteResuppliesView,
 } from "@lfd/contracts";
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Patch, Post } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Put,
+} from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface, RequirePermission } from "../../../platform/auth/admin-surface.decorator.js";
@@ -21,6 +33,7 @@ import { z } from "zod";
 import { AddSiteResupplyLineCommand } from "../application/add-site-resupply-line.command.js";
 import { CancelSiteResupplyCommand } from "../application/cancel-site-resupply.command.js";
 import { CorrectSiteResupplyLineCommand } from "../application/correct-site-resupply-line.command.js";
+import { NameSiteResupplyCommand } from "../application/name-site-resupply.command.js";
 import { ListSiteResuppliesQuery } from "../application/list-site-resupplies.query.js";
 import { SendSiteResupplyCommand } from "../application/send-site-resupply.command.js";
 import { WithdrawSiteResupplyLineCommand } from "../application/withdraw-site-resupply-line.command.js";
@@ -83,6 +96,20 @@ export class AdminSiteResuppliesController {
   ): Promise<PlacedSiteResupplyResponse> {
     const id = await this.commands.execute<AddSiteResupplyLineCommand, string>(
       new AddSiteResupplyLineCommand(siteId, target, body.sku, body.quantity),
+    );
+    return { id };
+  }
+
+  /** Nomme la demande en cours de la visée, ouverte au besoin (R1g). */
+  @Put(":siteId/drafts/:target/name")
+  @RequirePermission("handover_counter:write")
+  async name(
+    @Param("siteId") siteId: string,
+    @Param("target", new ZodQuery(targetParamSchema)) target: ResupplyTarget,
+    @Body(new ZodBody(nameSiteResupplySchema)) body: NameSiteResupplyPayload,
+  ): Promise<PlacedSiteResupplyResponse> {
+    const id = await this.commands.execute<NameSiteResupplyCommand, string>(
+      new NameSiteResupplyCommand(siteId, target, body.name),
     );
     return { id };
   }

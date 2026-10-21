@@ -36,6 +36,7 @@ export class OnResupplyListDrawn implements DurableSubscriber {
       resupplyId: event.resupply.resupplyId,
       siteId: event.resupply.siteId,
       siteLabel: event.resupply.siteLabel,
+      name: event.resupply.name,
       drawnAt: event.drawnAt,
       lines: linesBySku(event.resupply.lines),
     });

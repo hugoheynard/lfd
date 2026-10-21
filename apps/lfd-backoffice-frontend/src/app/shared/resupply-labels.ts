@@ -31,3 +31,14 @@ export const RESUPPLY_TARGET_LABELS: Readonly<Record<ResupplyTarget, string>> = 
  * comptoir (lot R1d) — la même sur l'écran du fournil et à la réception.
  */
 export const BAKEHOUSE_ORIGIN_MARK = 'Envoyé par le fournil';
+
+/**
+ * Le titre d'un réassort nommé (R1g, Hugo 2026-10-21) : « Vitrine du matin —
+ * Village ». Sans nom, `unnamed` — l'affichage de l'endroit tel qu'avant le
+ * nom. Même forme que `resupplyTitleOf` de `@lfd/contracts`, recopiée ici
+ * pour ne pas faire dépendre l'écran d'un export neuf du paquet, que le
+ * pré-bundle du serveur de dev ne verrait pas.
+ */
+export function resupplyTitle(name: string | null, siteLabel: string, unnamed: string): string {
+  return name === null ? unnamed : `${name} — ${siteLabel}`;
+}

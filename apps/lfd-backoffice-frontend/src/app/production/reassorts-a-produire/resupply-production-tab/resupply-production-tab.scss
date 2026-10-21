@@ -77,6 +77,13 @@
   color: var(--fold-color-text);
 }
 
+/* Les noms des réassorts du point (R1g), sous son nom. */
+.rp-table .rp-names {
+  display: block;
+  font-weight: normal;
+  color: var(--fold-color-text-muted);
+}
+
 /* Un « pour demain » figé se dit dans son en-tête : il ne bouge plus. */
 .rp-table .rp-frozen {
   color: var(--fold-color-info-text);

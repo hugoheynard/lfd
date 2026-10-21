@@ -208,7 +208,7 @@ export class DossierDispatch {
     if (!(await this.log.claim(slot, addressee.name, this.clock.now()))) {
       return;
     }
-    const counts = dossierCountsOf(day.orders);
+    const counts = dossierCountsOf(day.orders, day.resupplies);
     try {
       const receipt = await this.mailer.send({
         to: addressee.email,
@@ -221,6 +221,8 @@ export class DossierDispatch {
           orderCount: counts.orders,
           pickupCount: counts.pickup,
           deliveryCount: counts.delivery,
+          resupplyCount: counts.resupplies,
+          resupplyPieceCount: counts.resupplyPieces,
           pieceCount: counts.pieces,
           completed: occasion.completed,
           pdfBase64: paper.bytes.toString("base64"),

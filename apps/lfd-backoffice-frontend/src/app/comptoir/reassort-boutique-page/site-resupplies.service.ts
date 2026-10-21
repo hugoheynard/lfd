@@ -41,6 +41,22 @@ export class SiteResuppliesService {
     );
   }
 
+  /**
+   * Nomme la demande en cours de la visée, ouverte au besoin (R1g) ; vide ou
+   * `null` retire le nom. Le serveur rogne et borne.
+   */
+  name(
+    siteId: string,
+    target: ResupplyTarget,
+    name: string | null,
+  ): Promise<PlacedSiteResupplyResponse> {
+    return firstValueFrom(
+      this.http.put<PlacedSiteResupplyResponse>(`${this.site(siteId)}/drafts/${target}/name`, {
+        name,
+      }),
+    );
+  }
+
   correctLine(
     siteId: string,
     resupplyId: string,

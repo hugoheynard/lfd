@@ -31,6 +31,7 @@ import {
   KnownReceptions,
   InMemorySiteResupplyReader,
   SiteLabels,
+  InMemoryResupplyUsedNames,
 } from "./site-resupply-doubles.js";
 
 /** 17 h à Paris le 2 janvier ; l'heure limite double est posée relativement à lui. */
@@ -82,7 +83,12 @@ function setup(deadline: Date | null = null, stopped: readonly string[] = []) {
       uow,
     ),
     cancel: new CancelSiteResupplyHandler(store, receptions, staff, clock, gate, uow),
-    list: new ListSiteResuppliesHandler(reader, cutoff, clock),
+    list: new ListSiteResuppliesHandler(
+      reader,
+      cutoff,
+      clock,
+      new InMemoryResupplyUsedNames(store),
+    ),
     toProduce: new ListResuppliesToProduceHandler(
       reader,
       new SiteLabels(new Map([[VILLAGE, "Val Village"]])),
@@ -115,6 +121,7 @@ describe("le fournil envoie un réassort (R1d)", () => {
         serviceDay: TOMORROW,
         target: "tomorrow",
         origin: "bakehouse",
+        name: null,
         status: "placed",
         lines: [{ sku: "CRO", label: "Croissant", quantity: 24 }],
         placedAt: NOW.toISOString(),

@@ -64,6 +64,14 @@ export class SiteResuppliesStore {
     return this.act((siteId) => this.service.addLine(siteId, target, sku, quantity));
   }
 
+  /** Nomme la demande en cours de la visée (R1g) ; vide retire le nom. */
+  name(target: ResupplyTarget, name: string): Promise<boolean> {
+    return this.act((siteId) => this.service.name(siteId, target, name));
+  }
+
+  /** Les noms déjà employés au point, proposés à la saisie (R1g). */
+  readonly usedNames = computed<readonly string[]>(() => this.view()?.usedNames ?? []);
+
   correctLine(draft: SiteResupplyDraftView, sku: string, quantity: number): Promise<boolean> {
     return this.act((siteId) =>
       this.service.correctLine(siteId, draft.id, sku, quantity, draft.version),

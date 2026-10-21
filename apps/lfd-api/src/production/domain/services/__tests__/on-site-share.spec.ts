@@ -18,6 +18,7 @@ function resupply(servedByTransfer: boolean, quantity: number): ProductionResupp
     resupplyId: servedByTransfer ? "res_village" : "res_labo",
     siteId: servedByTransfer ? "village" : "labo",
     siteLabel: null,
+    name: null,
     servedByTransfer,
     lines: [{ sku: SKU, productName: "Croissant", quantity }],
   };

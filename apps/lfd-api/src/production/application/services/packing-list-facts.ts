@@ -69,6 +69,7 @@ export function resupplyListFactsOf(
             resupplyId: resupply.resupplyId,
             siteId: resupply.siteId,
             siteLabel: resupply.siteLabel,
+            name: resupply.name,
             lines: resupply.lines.map((line) => ({
               sku: line.sku,
               productName: line.productName,

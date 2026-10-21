@@ -765,6 +765,8 @@ model ProductionResupply {
   /// Le point qui le recevra, opaque, et son nom figé à l'arrêt (`null` : inconnu).
   siteId     String  @map("site_id")
   siteLabel  String? @map("site_label")
+  /// Le nom du réassort (lot R1g), figé à l'arrêt ; `null` : sans nom.
+  name       String?
 
   /// Le point est servi par un transfert interne, figé à l'arrêt (réassort,
   /// lot R3b) : seul un tel réassort a une fiche au colisage. `false` pour un

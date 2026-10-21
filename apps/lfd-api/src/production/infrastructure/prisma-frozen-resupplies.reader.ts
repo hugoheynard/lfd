@@ -32,6 +32,7 @@ export class PrismaFrozenResuppliesReader extends FrozenResuppliesReader {
         serviceDay: true,
         siteId: true,
         siteLabel: true,
+        name: true,
         servedByTransfer: true,
         lines: {
           orderBy: { sku: "asc" },

@@ -2421,14 +2421,19 @@ export type {
 export {
   addSiteResupplyLineSchema,
   correctSiteResupplyLineSchema,
+  nameSiteResupplySchema,
   placeSiteResupplySchema,
+  RESUPPLY_NAME_MAX,
   RESUPPLY_ORIGINS,
   RESUPPLY_TARGETS,
+  RESUPPLY_USED_NAMES_MAX,
+  resupplyTitleOf,
   seenSiteResupplyVersionSchema,
 } from "./site-resupply.js";
 export type {
   AddSiteResupplyLinePayload,
   CorrectSiteResupplyLinePayload,
+  NameSiteResupplyPayload,
   PlacedSiteResupplyResponse,
   PlaceSiteResupplyPayload,
   ResuppliesToProduceView,
@@ -2438,6 +2443,7 @@ export type {
   ResupplySiteToProduceView,
   ResupplyTarget,
   ResupplyTotalView,
+  ResupplyUsedNamesView,
   SeenSiteResupplyVersionPayload,
   SiteResuppliesView,
   SiteResupplyDraftView,

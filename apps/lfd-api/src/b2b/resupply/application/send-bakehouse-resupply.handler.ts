@@ -61,6 +61,7 @@ export class SendBakehouseResupplyHandler implements ICommandHandler<
         id,
         siteId: command.siteId,
         target: command.target,
+        name: command.name,
         lines,
         trace,
         deadline,

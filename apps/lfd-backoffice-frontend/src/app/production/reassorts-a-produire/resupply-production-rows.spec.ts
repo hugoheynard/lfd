@@ -13,6 +13,7 @@ function resupply(
   siteId: string,
   target: 'tomorrow' | 'asap',
   lines: readonly [string, string, number][],
+  name: string | null = null,
 ): SiteResupplyView {
   return {
     id: `${siteId}-${target}`,
@@ -20,6 +21,7 @@ function resupply(
     serviceDay: DAY,
     target,
     origin: 'counter',
+    name,
     status: 'placed',
     lines: lines.map(([sku, label, quantity]) => ({ sku, label, quantity })),
     placedAt: '2026-01-02T17:00:00.000Z',
@@ -86,9 +88,30 @@ const ALERTS: LiveStockAlertsView = {
 describe('la table des réassorts de Prod manager (R3d)', () => {
   it('une colonne par point qui demande, puis par point qui alerte ; un point sans nom le dit', () => {
     expect(resupplyPoints(VIEW, ALERTS)).toEqual([
-      { siteId: 'labo', label: 'Le Labo' },
-      { siteId: 'village', label: 'Point inconnu' },
-      { siteId: 'gare', label: 'La Gare' },
+      { siteId: 'labo', label: 'Le Labo', names: [] },
+      { siteId: 'village', label: 'Point inconnu', names: [] },
+      { siteId: 'gare', label: 'La Gare', names: [] },
+    ]);
+  });
+
+  it('un point porte les noms de ses réassorts nommés, distincts (R1g)', () => {
+    const named: ResupplyProductionDayView = {
+      ...VIEW,
+      sites: [
+        {
+          siteId: 'labo',
+          siteLabel: 'Le Labo',
+          resupplies: [
+            resupply('labo', 'tomorrow', [['CRO', 'Croissant', 10]], 'Vitrine du matin'),
+            resupply('labo', 'asap', [['CRO', 'Croissant', 2]], 'Goûter'),
+            resupply('labo', 'asap', [['CRO', 'Croissant', 1]]),
+            resupply('labo', 'asap', [['CRO', 'Croissant', 1]], 'Goûter'),
+          ],
+        },
+      ],
+    };
+    expect(resupplyPoints(named, null)).toEqual([
+      { siteId: 'labo', label: 'Le Labo', names: ['Vitrine du matin', 'Goûter'] },
     ]);
   });
 

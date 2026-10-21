@@ -18,7 +18,7 @@
           placeholder="Choisir un point"
           [options]="siteOptions()"
           [value]="siteId()"
-          (selectionChange)="siteId.set($event)"
+          (selectionChange)="pickSite($event)"
         />
         <div class="targets" role="group" aria-label="Pour quand">
           <button
@@ -69,6 +69,13 @@
           Ajouter
         </button>
       </div>
+
+      <app-resupply-name-field
+        [usedNames]="usedNames()"
+        [disabled]="pending()"
+        [text]="name()"
+        (textChange)="name.set($event)"
+      />
 
       @if (lines().length > 0) {
         <ul class="lines">

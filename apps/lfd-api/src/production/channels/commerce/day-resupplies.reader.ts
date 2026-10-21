@@ -15,6 +15,8 @@ export interface PlacedResupply {
   readonly siteId: string;
   /** Son nom, pour la feuille ; `null` : inconnu du commerce. */
   readonly siteLabel: string | null;
+  /** Son nom libre (réassort R1g), « Vitrine du matin » ; `null` : sans nom. */
+  readonly name: string | null;
   /**
    * Le point est servi par un transfert interne (`supply = transfer` au
    * commerce, lot R3b) : seul un tel réassort passe au colisage (§13.4,

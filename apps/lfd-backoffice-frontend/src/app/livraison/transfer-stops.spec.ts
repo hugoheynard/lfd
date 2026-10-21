@@ -176,7 +176,7 @@ describe('le manifeste', () => {
     ]);
   });
 
-  it('écrit le réapprovisionnement quand il y en a', () => {
+  it('écrit les réassorts quand il y en a — « Réassort » depuis R1g', () => {
     const withResupply = {
       ...view,
       resupplies: {
@@ -184,10 +184,36 @@ describe('le manifeste', () => {
         totals: [line],
       },
     };
-    expect(manifestSections(withResupply).map((s) => s.title)).toEqual([
-      'Commandes',
-      'Réapprovisionnement',
-    ]);
+    expect(manifestSections(withResupply).map((s) => s.title)).toEqual(['Commandes', 'Réassorts']);
+  });
+
+  it('nomme les réassorts nommés au sous-titre, distincts (R1g)', () => {
+    const named = {
+      ...view,
+      resupplies: {
+        items: [
+          {
+            itemId: 'i2',
+            kind: 'resupply' as const,
+            subjectId: 'r1',
+            lines: [line],
+            name: 'Vitrine du matin',
+          },
+          { itemId: 'i3', kind: 'resupply' as const, subjectId: 'r2', lines: [line] },
+          {
+            itemId: 'i4',
+            kind: 'resupply' as const,
+            subjectId: 'r3',
+            lines: [line],
+            name: 'Goûter',
+          },
+        ],
+        totals: [{ ...line, quantity: 12 }],
+      },
+    };
+    expect(manifestSections(named)[1]?.subtitle).toBe(
+      '3 réassorts · 12 pièces · Vitrine du matin, Goûter',
+    );
   });
 
   it('dit s’il est figé', () => {

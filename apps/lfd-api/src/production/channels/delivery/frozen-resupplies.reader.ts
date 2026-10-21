@@ -13,6 +13,8 @@ export interface FrozenResupply {
   /** Le point, opaque, et son nom figé à l'arrêt (`null` : inconnu). */
   readonly siteId: string;
   readonly siteLabel: string | null;
+  /** Le nom du réassort (R1g), figé à l'arrêt ; `null` : sans nom. */
+  readonly name: string | null;
   /** Le point est servi par un transfert interne, figé à l'arrêt (R3b). */
   readonly servedByTransfer: boolean;
   readonly lines: readonly FrozenResupplyLine[];

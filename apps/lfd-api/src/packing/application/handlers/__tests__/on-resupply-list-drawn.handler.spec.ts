@@ -20,6 +20,7 @@ const FACT = new ResupplyListDrawnEvent(DAY, DRAWN, {
   resupplyId: "rs_1",
   siteId: "site_village",
   siteLabel: "Le Village",
+  name: null,
   lines: [
     { sku: "CRO", productName: "Croissant", quantity: 6 },
     { sku: "CRO", productName: "Croissant", quantity: 6 },
@@ -37,10 +38,38 @@ describe("OnResupplyListDrawn (colisage, R3b)", () => {
       resupplyId: "rs_1",
       siteId: "site_village",
       siteLabel: "Le Village",
+      name: null,
       drawnAt: DRAWN,
       closed: null,
       lines: [{ sku: "CRO", productName: "Croissant", quantity: 12, packed: null }],
     });
+  });
+
+  it("porte le nom du réassort (R1g) ; un fait publié avant le champ se relit sans nom", async () => {
+    const named = new ResupplyListDrawnEvent(DAY, DRAWN, {
+      resupplyId: "rs_2",
+      siteId: "site_village",
+      siteLabel: "Le Village",
+      name: "Vitrine du matin",
+      lines: [{ sku: "CRO", productName: "Croissant", quantity: 6 }],
+    }).durableFact();
+    // Le réassort d'un fait publié avant R1g : sans champ `name`.
+    const before = {
+      resupplyId: "rs_1",
+      siteId: "site_village",
+      siteLabel: "Le Village",
+      lines: [{ sku: "CRO", productName: "Croissant", quantity: 6 }],
+    };
+    const table = new InMemoryResupplies();
+
+    await new OnResupplyListDrawn(table).handle(delivery(named.payload));
+    await new OnResupplyListDrawn(table).handle(delivery({ ...FACT.payload, resupply: before }));
+
+    expect(table.rows.get(`${DAY}/rs_2`)?.name).toBe("Vitrine du matin");
+    expect(table.rows.get(`${DAY}/rs_1`)?.name).toBeNull();
+    expect(() =>
+      ResupplyListDrawnEvent.fromPayload({ ...named.payload, resupply: { ...before, name: 3 } }),
+    ).toThrow(ResupplyListDrawnPayloadError);
   });
 
   it("un rejeu ne réécrit pas une fiche déjà entamée", async () => {

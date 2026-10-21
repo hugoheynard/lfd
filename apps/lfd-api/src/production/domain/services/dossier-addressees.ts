@@ -1,5 +1,8 @@
 import { type DossierStaffCard, UNNAMED_EXTERNAL_LABEL } from "../entities/dossier-recipient.js";
-import type { ProductionOrderSnapshot } from "../entities/production-day.js";
+import type {
+  ProductionOrderSnapshot,
+  ProductionResupplySnapshot,
+} from "../entities/production-day.js";
 import type { StoredDossierRecipient } from "../ports/dossier-recipients.reader.js";
 
 /**
@@ -75,25 +78,43 @@ function fullName(firstName: string, lastName: string): string {
   return `${firstName} ${lastName}`.trim();
 }
 
-/** Ce que l'e-mail annonce : les commandes (par mode) et les pièces figées. */
+/**
+ * Ce que l'e-mail annonce : les commandes (par mode), les réassorts et les
+ * pièces figées — `pieces` compte commandes ET réassorts, `resupplyPieces`
+ * en est la part.
+ */
 export interface DossierCounts {
   readonly orders: number;
   readonly pickup: number;
   readonly delivery: number;
+  readonly resupplies: number;
+  readonly resupplyPieces: number;
   readonly pieces: number;
 }
 
-/** Les mêmes comptes que l'en-tête du dossier (`dayDossierOf`). */
-export function dossierCountsOf(orders: readonly ProductionOrderSnapshot[]): DossierCounts {
+function piecesOf(lines: readonly { readonly quantity: number }[]): number {
+  return lines.reduce((sum, line) => sum + line.quantity, 0);
+}
+
+/**
+ * Les mêmes comptes que l'en-tête du dossier (`dayDossierOf`) — réassorts
+ * compris depuis R1g : jusque-là, l'e-mail annonçait les pièces des seules
+ * commandes quand le PDF joint comptait aussi les réassorts.
+ */
+export function dossierCountsOf(
+  orders: readonly ProductionOrderSnapshot[],
+  resupplies: readonly ProductionResupplySnapshot[],
+): DossierCounts {
   const pickup = orders.filter((order) => order.fulfillmentMethod === "pickup").length;
+  const orderPieces = orders.reduce((sum, order) => sum + piecesOf(order.lines), 0);
+  const resupplyPieces = resupplies.reduce((sum, resupply) => sum + piecesOf(resupply.lines), 0);
   return {
     orders: orders.length,
     pickup,
     delivery: orders.length - pickup,
-    pieces: orders.reduce(
-      (sum, order) => sum + order.lines.reduce((lines, line) => lines + line.quantity, 0),
-      0,
-    ),
+    resupplies: resupplies.length,
+    resupplyPieces,
+    pieces: orderPieces + resupplyPieces,
   };
 }
 

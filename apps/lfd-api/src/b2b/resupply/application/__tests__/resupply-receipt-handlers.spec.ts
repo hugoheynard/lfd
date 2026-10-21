@@ -24,6 +24,7 @@ describe("« Réceptionner » un réassort", () => {
         resupplyId: "resupply_1",
         target: "asap",
         origin: "counter",
+        name: null,
         placedAt: AT.toISOString(),
         placedBy: "Lou Martin",
         status: "expected",
@@ -33,6 +34,15 @@ describe("« Réceptionner » un réassort", () => {
       },
     ]);
     expect(view.stock).toEqual([]);
+  });
+
+  it("un réassort nommé (R1g) se lit sous son nom dans la liste à réceptionner", async () => {
+    const { resupplies, read } = setup();
+    resupplies.put(placed("resupply_1", CRO_24, { name: "Vitrine du matin" }));
+
+    const view = await read.execute(new GetResupplyReceiptQuery(SITE, DAY));
+
+    expect(view.receptions[0]?.name).toBe("Vitrine du matin");
   });
 
   it("recopie l'attendu en reçu, et le stock monte", async () => {

@@ -89,6 +89,9 @@ model SiteResupply {
   /// cours ; `bakehouse` — le fournil, « je t'envoie ça », jamais brouillon
   /// (CHECK `site_resupply_bakehouse_placed`).
   origin     String   @default("counter")
+  /// Son nom libre et facultatif (lot R1g), « Vitrine du matin » : rogné,
+  /// 1 à 60 caractères (CHECK `site_resupply_name_trimmed`), `null` : sans nom.
+  name       String?  @db.VarChar(60)
 
   /// Verrou optimiste : deux postes qui remplissent, envoient ou annulent en
   /// même temps ne s'écrasent pas.

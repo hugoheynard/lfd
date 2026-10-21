@@ -55,6 +55,7 @@ export function freezeResupply(resupply: PlacedResupply): ProductionResupplySnap
     resupplyId: resupply.resupplyId,
     siteId: resupply.siteId,
     siteLabel: resupply.siteLabel,
+    name: resupply.name,
     servedByTransfer: resupply.servedByTransfer,
     lines: resupply.lines.map((line) => ({
       sku: line.sku,

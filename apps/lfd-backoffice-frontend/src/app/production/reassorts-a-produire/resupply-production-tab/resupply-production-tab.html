@@ -104,6 +104,11 @@
                   [attr.data-resupply-point]="point.siteId"
                 >
                   {{ point.label }}
+                  @if (point.names.length > 0) {
+                    <span class="rp-names" [attr.data-resupply-point-names]="point.siteId">{{
+                      point.names.join(' · ')
+                    }}</span>
+                  }
                 </th>
               }
               <th scope="col" rowspan="2" class="num">Total</th>

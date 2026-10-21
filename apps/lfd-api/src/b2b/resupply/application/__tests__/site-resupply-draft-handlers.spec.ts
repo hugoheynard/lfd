@@ -35,6 +35,7 @@ import {
   FixedResupplyCutoff,
   InMemorySiteResupplies,
   InMemorySiteResupplyReader,
+  InMemoryResupplyUsedNames,
 } from "./site-resupply-doubles.js";
 
 /** 17 h à Paris le 2 janvier : les journées ne sont comparées qu'à cette horloge figée. */
@@ -85,7 +86,12 @@ function setup(deadline: Date | null = null, stopped: readonly string[] = []) {
       gate,
       uow,
     ),
-    list: new ListSiteResuppliesHandler(new InMemorySiteResupplyReader(store), cutoff, clock),
+    list: new ListSiteResuppliesHandler(
+      new InMemorySiteResupplyReader(store),
+      cutoff,
+      clock,
+      new InMemoryResupplyUsedNames(store),
+    ),
   };
 }
 
@@ -106,6 +112,7 @@ describe("la demande en cours — ajouter", () => {
         target: "tomorrow",
         serviceDay: TOMORROW,
         version: 1,
+        name: null,
         lines: [{ sku: "CRO", label: "Croissant", quantity: 12 }],
       },
     ]);
@@ -168,6 +175,7 @@ describe("la demande en cours — ajouter", () => {
       serviceDay: TODAY,
       version: 1,
       origin: "counter",
+      name: null,
       lines: [],
       placed: null,
       cancelled: null,

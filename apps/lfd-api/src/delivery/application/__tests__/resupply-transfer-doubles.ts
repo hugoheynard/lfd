@@ -62,6 +62,7 @@ export function frozenResupply(
     readonly siteLabel?: string | null;
     readonly servedByTransfer?: boolean;
     readonly quantity?: number;
+    readonly name?: string | null;
   } = {},
 ): FrozenResupply {
   return {
@@ -69,6 +70,7 @@ export function frozenResupply(
     serviceDay,
     siteId: options.siteId ?? "site_vv",
     siteLabel: options.siteLabel === undefined ? "Val Village" : options.siteLabel,
+    name: options.name ?? null,
     servedByTransfer: options.servedByTransfer ?? true,
     lines: [{ sku: "CRO-001", productName: "Croissant", quantity: options.quantity ?? 6 }],
   };

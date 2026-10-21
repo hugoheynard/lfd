@@ -9,6 +9,11 @@ import type {
 export interface ResupplyPoint {
   readonly siteId: string;
   readonly label: string;
+  /**
+   * Les noms des réassorts nommés du point, la journée affichée (R1g,
+   * « Vitrine du matin »), distincts, dans l'ordre du serveur ; vide : aucun.
+   */
+  readonly names: readonly string[];
 }
 
 /** Ce qu'un point demande d'un produit, la journée affichée, et son alerte. */
@@ -50,7 +55,14 @@ export function resupplyPoints(
       points.set(site.siteId, site.siteLabel ?? UNKNOWN_POINT);
     }
   }
-  return [...points].map(([siteId, label]) => ({ siteId, label }));
+  return [...points].map(([siteId, label]) => ({ siteId, label, names: namesOf(view, siteId) }));
+}
+
+function namesOf(view: ResupplyProductionDayView, siteId: string): readonly string[] {
+  const resupplies = view.sites.find((site) => site.siteId === siteId)?.resupplies ?? [];
+  return [
+    ...new Set(resupplies.flatMap((resupply) => (resupply.name === null ? [] : [resupply.name]))),
+  ];
 }
 
 /**

@@ -45,3 +45,21 @@ function itemWithClientele(
   const clientele = item.kind === "order" ? clienteles.get(item.subjectId) : undefined;
   return clientele === undefined ? item : { ...item, clientele };
 }
+
+/**
+ * La section des réassorts, chaque élément nommé portant son nom (R1g) —
+ * lu dans la copie figée du fournil, même pour un manifeste figé au départ :
+ * un réassort envoyé ne se renomme plus.
+ */
+export function withResupplyNames(
+  section: TransferManifestSectionView,
+  names: ReadonlyMap<string, string>,
+): TransferManifestSectionView {
+  return {
+    ...section,
+    items: section.items.map((item) => {
+      const name = item.kind === "resupply" ? names.get(item.subjectId) : undefined;
+      return name === undefined ? item : { ...item, name };
+    }),
+  };
+}

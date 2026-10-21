@@ -9,6 +9,7 @@ export const RESUPPLY_SELECT = {
   resupplyId: true,
   siteId: true,
   siteLabel: true,
+  name: true,
   drawnAt: true,
   closedAt: true,
   closedBy: true,
@@ -39,6 +40,7 @@ interface ResupplyRow {
   readonly resupplyId: string;
   readonly siteId: string;
   readonly siteLabel: string | null;
+  readonly name: string | null;
   readonly drawnAt: Date;
   readonly closedAt: Date | null;
   readonly closedBy: string | null;
@@ -65,6 +67,7 @@ export function resupplyOf(row: ResupplyRow): PackingResupplySnapshot {
     resupplyId: row.resupplyId,
     siteId: row.siteId,
     siteLabel: row.siteLabel,
+    name: row.name,
     drawnAt: row.drawnAt,
     closed:
       row.closedAt === null || row.closedBy === null

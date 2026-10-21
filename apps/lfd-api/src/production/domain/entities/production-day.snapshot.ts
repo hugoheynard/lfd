@@ -146,6 +146,8 @@ export interface ProductionResupplySnapshot {
   readonly siteId: string;
   /** Son nom figé à l'arrêt ; `null` : inconnu. */
   readonly siteLabel: string | null;
+  /** Le nom du réassort (R1g), figé à l'arrêt ; `null` : sans nom, ou figé avant la colonne. */
+  readonly name: string | null;
   /**
    * Servi par transfert, figé à l'arrêt (lot R3b) : décide de la fiche au
    * colisage. `false` pour un réassort figé avant la colonne.

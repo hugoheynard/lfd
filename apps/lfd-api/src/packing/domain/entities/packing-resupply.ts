@@ -27,6 +27,8 @@ export interface PackingResupplySnapshot {
   readonly resupplyId: string;
   readonly siteId: string;
   readonly siteLabel: string | null;
+  /** Le nom du réassort (R1g) ; `null` : sans nom, ou fiche tirée avant le champ. */
+  readonly name: string | null;
   readonly drawnAt: Date;
   readonly closed: ResupplyMark | null;
   readonly lines: readonly PackingResupplyLineSnapshot[];
@@ -58,6 +60,7 @@ export class PackingResupply {
     readonly resupplyId: string,
     readonly siteId: string,
     readonly siteLabel: string | null,
+    readonly name: string | null,
     readonly drawnAt: Date,
     private closedValue: ResupplyMark | null,
     private linesValue: readonly PackingResupplyLineSnapshot[],
@@ -69,15 +72,19 @@ export class PackingResupply {
       snapshot.resupplyId,
       snapshot.siteId,
       snapshot.siteLabel,
+      snapshot.name,
       snapshot.drawnAt,
       snapshot.closed,
       snapshot.lines,
     );
   }
 
-  /** « Réassort <point> » — le nom du point, ou son identifiant s'il est inconnu. */
+  /**
+   * « Vitrine du matin — <point> » s'il est nommé (R1g), sinon « Réassort
+   * <point> » — le nom du point, ou son identifiant s'il est inconnu.
+   */
   get title(): string {
-    return titleOf(this.siteLabel, this.siteId);
+    return titleOf(this.siteLabel, this.siteId, this.name);
   }
 
   get closed(): ResupplyMark | null {
@@ -144,6 +151,7 @@ export class PackingResupply {
       resupplyId: this.resupplyId,
       siteId: this.siteId,
       siteLabel: this.siteLabel,
+      name: this.name,
       drawnAt: this.drawnAt,
       closed: this.closedValue,
       lines: this.linesValue,
@@ -157,7 +165,8 @@ export class PackingResupply {
   }
 }
 
-/** « Réassort <point> » — partagé avec la lecture du poste. */
-export function titleOf(siteLabel: string | null, siteId: string): string {
-  return `Réassort ${siteLabel ?? siteId}`;
+/** Le titre de la fiche — partagé avec la lecture du poste. */
+export function titleOf(siteLabel: string | null, siteId: string, name: string | null): string {
+  const site = siteLabel ?? siteId;
+  return name === null ? `Réassort ${site}` : `${name} — ${site}`;
 }

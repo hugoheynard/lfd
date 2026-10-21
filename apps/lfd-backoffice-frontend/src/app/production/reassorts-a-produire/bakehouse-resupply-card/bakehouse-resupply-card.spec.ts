@@ -37,6 +37,11 @@ class FakeBakehouse {
       },
     ]);
   }
+  readonly namesAsked: string[] = [];
+  usedNames(siteId: string): Promise<readonly string[]> {
+    this.namesAsked.push(siteId);
+    return Promise.resolve(siteId === 'site_v' ? ['Vitrine du matin', 'Goûter'] : []);
+  }
   send(siteId: string, payload: PlaceSiteResupplyPayload): Promise<{ id: string }> {
     if (this.refuse) {
       return Promise.reject(new Error('refusé'));
@@ -111,6 +116,7 @@ describe('BakehouseResupplyCard', () => {
         siteId: 'site_v',
         payload: {
           target: 'tomorrow',
+          name: null,
           lines: [
             { sku: 'CRO', quantity: 12 },
             { sku: 'PAC', quantity: 4 },
@@ -137,8 +143,28 @@ describe('BakehouseResupplyCard', () => {
     await clickSend(fixture);
 
     expect(bakehouse.sent).toEqual([
-      { siteId: 'site_l', payload: { target: 'asap', lines: [{ sku: 'CRO', quantity: 3 }] } },
+      {
+        siteId: 'site_l',
+        payload: { target: 'asap', name: null, lines: [{ sku: 'CRO', quantity: 3 }] },
+      },
     ]);
+  });
+
+  it('propose les noms déjà employés au point choisi, et envoie le nom avec le réassort (R1g)', async () => {
+    const { fixture, card, bakehouse, add, root } = await mount();
+    await card['pickSite']('site_v');
+    fixture.detectChanges();
+
+    expect(bakehouse.namesAsked).toEqual(['site_v']);
+    expect(card['usedNames']()).toEqual(['Vitrine du matin', 'Goûter']);
+    expect(root.querySelector('[data-resupply-name]')).not.toBeNull();
+
+    card['name'].set('Vitrine du matin');
+    add('CRO', 6);
+    await clickSend(fixture);
+
+    expect(bakehouse.sent[0]?.payload.name).toBe('Vitrine du matin');
+    expect(card['name']()).toBe('');
   });
 
   it('retire une ligne avant l’envoi', async () => {

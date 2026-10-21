@@ -29,6 +29,7 @@ export class PrismaPackingResupplyListing extends PackingResupplyListing {
           ...key,
           siteId: resupply.siteId,
           siteLabel: resupply.siteLabel,
+          name: resupply.name,
           drawnAt: resupply.drawnAt,
         },
       ],

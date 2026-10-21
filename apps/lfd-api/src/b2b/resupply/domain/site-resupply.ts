@@ -15,6 +15,7 @@ import {
   SiteResupplyChangedMeanwhileError,
   UnknownResupplyTargetError,
 } from "./site-resupply-errors.js";
+import { resupplyNameOf } from "./resupply-name.js";
 import type { ResupplyOrigin } from "./resupply-origin.js";
 import { SiteResupplyLine } from "./site-resupply-line.js";
 
@@ -53,6 +54,8 @@ export interface SiteResupplySnapshot {
   readonly version: number;
   /** Qui l'envoie (lot R1d) ; `counter` pour tout ce qui précède. */
   readonly origin: ResupplyOrigin;
+  /** Son nom libre (lot R1g) ; `null` : sans nom. */
+  readonly name: string | null;
   readonly lines: readonly {
     readonly sku: string;
     readonly label: string;
@@ -101,6 +104,10 @@ export function serviceDayFor(target: ResupplyTarget, at: Date): string {
  *
  * Depuis R1d, le fournil envoie les siens (`bakehouse`), créés ET envoyés
  * d'un geste : sans brouillon, ils ne touchent jamais la demande du comptoir.
+ *
+ * Depuis R1g, il porte un nom libre et facultatif (« Vitrine du matin »),
+ * posé sur la demande en cours tant qu'elle n'est pas envoyée, ou à l'envoi
+ * du fournil ; envoyé, il ne change plus.
  */
 export class SiteResupply {
   private constructor(
@@ -110,6 +117,7 @@ export class SiteResupply {
     readonly serviceDay: string,
     readonly version: number,
     readonly origin: ResupplyOrigin,
+    private currentName: string | null,
     private lineList: readonly SiteResupplyLine[],
     private placedTrace: SiteResupplyTrace | null,
     private cancelledTrace: SiteResupplyTrace | null,
@@ -135,12 +143,14 @@ export class SiteResupply {
     readonly id: string;
     readonly siteId: string;
     readonly target: ResupplyTarget;
+    readonly name: string | null;
     readonly lines: readonly SiteResupplyLine[];
     readonly trace: SiteResupplyTrace;
     readonly deadline: Date | null;
     readonly planStopped: boolean;
   }): SiteResupply {
     const resupply = SiteResupply.blank(input, input.trace.at, "bakehouse");
+    resupply.rename(input.name);
     for (const line of input.lines) {
       resupply.addLine(line);
     }
@@ -157,6 +167,7 @@ export class SiteResupply {
       snapshot.serviceDay,
       snapshot.version,
       snapshot.origin,
+      snapshot.name,
       snapshot.lines.map((line) => SiteResupplyLine.of(line)),
       snapshot.placed,
       snapshot.cancelled,
@@ -176,10 +187,24 @@ export class SiteResupply {
       serviceDayFor(input.target, at),
       0,
       origin,
+      null,
       [],
       null,
       null,
     );
+  }
+
+  get name(): string | null {
+    return this.currentName;
+  }
+
+  /**
+   * Nomme la demande en cours (lot R1g) — rogné, vide retire le nom, plus de
+   * 60 caractères refusé. Envoyée, elle ne se renomme plus.
+   */
+  rename(name: string | null): void {
+    this.assertDraft();
+    this.currentName = resupplyNameOf(name);
   }
 
   get lines(): readonly SiteResupplyLine[] {

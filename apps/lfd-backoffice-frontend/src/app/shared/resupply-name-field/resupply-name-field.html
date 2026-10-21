@@ -1,0 +1,17 @@
+<div data-resupply-name (focusout)="commit()" (keydown.enter)="commit()">
+  <fold-combobox
+    label="Nom du réassort"
+    optional
+    optionalLabel="facultatif"
+    placeholder="Vitrine du matin"
+    hint="60 caractères au plus ; les noms déjà employés au point sont proposés."
+    emptyText="Aucun nom déjà employé ne correspond."
+    resultLabel="noms"
+    size="sm"
+    [options]="options()"
+    [disabled]="disabled()"
+    [query]="text()"
+    (queryChange)="type($event)"
+    (selectionChange)="pick($event)"
+  />
+</div>

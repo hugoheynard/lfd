@@ -11,6 +11,7 @@ const EXPECTED: ResupplyReceptionView = {
   resupplyId: 'r1',
   target: 'tomorrow',
   origin: 'counter',
+  name: null,
   placedAt: '2026-01-01T18:00:00.000Z',
   placedBy: 'Max',
   status: 'expected',
@@ -58,6 +59,22 @@ describe('ResupplyReceptionsCard', () => {
 
     expect(service.calls).toEqual(['receive site_v r1']);
     expect(changed()).toBe(1);
+  });
+
+  it('un réassort nommé se lit sous son nom, la visée à côté (R1g)', () => {
+    const { root } = mount(
+      [EXPECTED, { ...EXPECTED, resupplyId: 'r2', name: 'Vitrine du matin' }],
+      true,
+    );
+
+    expect(
+      root.querySelector('[data-resupply-reception="r1"] [data-resupply-reception-name]'),
+    ).toBeNull();
+    const named = root.querySelector('[data-resupply-reception="r2"] .reception-head');
+    expect(named?.querySelector('[data-resupply-reception-name]')?.textContent).toBe(
+      'Vitrine du matin',
+    );
+    expect(named?.textContent).toContain('Pour demain');
   });
 
   it('marque « Envoyé par le fournil » le réassort du fournil, qui se réceptionne en un geste (R1d)', async () => {

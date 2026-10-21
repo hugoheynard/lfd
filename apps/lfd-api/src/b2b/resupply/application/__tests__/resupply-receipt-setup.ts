@@ -52,6 +52,7 @@ export function placed(
     serviceDay: DAY,
     version: 2,
     origin: "counter",
+    name: null,
     lines,
     placed: { at: AT, author: AUTHOR },
     cancelled: null,

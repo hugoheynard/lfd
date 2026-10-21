@@ -4,6 +4,8 @@ export interface ResupplyToDraw {
   readonly resupplyId: string;
   readonly siteId: string;
   readonly siteLabel: string | null;
+  /** Le nom du réassort (R1g) ; `null` : sans nom. */
+  readonly name: string | null;
   readonly drawnAt: Date;
   /** Additionnées par article : une ligne par SKU. */
   readonly lines: readonly {

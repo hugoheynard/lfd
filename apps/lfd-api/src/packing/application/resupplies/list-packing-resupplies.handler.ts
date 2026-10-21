@@ -26,7 +26,7 @@ export class ListPackingResuppliesHandler implements IQueryHandler<
 function viewOf(sheet: PackingResupplySnapshot): PackingResupplyView {
   return {
     resupplyId: sheet.resupplyId,
-    title: titleOf(sheet.siteLabel, sheet.siteId),
+    title: titleOf(sheet.siteLabel, sheet.siteId, sheet.name),
     siteId: sheet.siteId,
     destination: { kind: "transfer", siteId: sheet.siteId },
     status: sheet.closed === null ? "open" : "closed",

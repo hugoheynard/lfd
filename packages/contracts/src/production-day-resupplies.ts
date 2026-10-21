@@ -20,6 +20,8 @@ export interface ProductionDayResupply {
   readonly siteId: string;
   /** Le nom du point ; `null` : inconnu. */
   readonly siteLabel: string | null;
+  /** Le nom du réassort (R1g), « Vitrine du matin » ; `null` : sans nom. */
+  readonly name: string | null;
   /** Servi par un transfert (Village) ; `false` : servi sur place (Labo). */
   readonly servedByTransfer: boolean;
   readonly lines: readonly ProductionDayResupplyLine[];

@@ -57,6 +57,7 @@
 .send {
   display: flex;
   flex-wrap: wrap;
+  align-items: end;
   justify-content: flex-end;
   gap: var(--fold-space-md);
 }

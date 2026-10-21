@@ -20,6 +20,11 @@ export interface ResupplyToPack {
   readonly siteId: string;
   /** Son nom figé à l'arrêt ; `null` : inconnu du commerce. */
   readonly siteLabel: string | null;
+  /**
+   * Le nom du réassort (R1g), figé à l'arrêt ; `null` : sans nom. Absent
+   * d'un fait publié avant le champ — relu `null`.
+   */
+  readonly name: string | null;
   readonly lines: readonly ResupplyListLine[];
 }
 
@@ -87,16 +92,18 @@ function resupplyOf(value: unknown): ResupplyToPack | null {
   const resupplyId = textOf(raw["resupplyId"]);
   const siteId = textOf(raw["siteId"]);
   const siteLabel = raw["siteLabel"];
+  const name = raw["name"] ?? null;
   const lines = linesOf(raw["lines"]);
   if (
     resupplyId === null ||
     siteId === null ||
     (siteLabel !== null && typeof siteLabel !== "string") ||
+    (name !== null && typeof name !== "string") ||
     lines === null
   ) {
     return null;
   }
-  return { resupplyId, siteId, siteLabel, lines };
+  return { resupplyId, siteId, siteLabel, name, lines };
 }
 
 function linesOf(value: unknown): readonly ResupplyListLine[] | null {

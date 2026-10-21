@@ -10,10 +10,11 @@ import {
 import { SiteResupplyRepository } from "../domain/site-resupply.repository.js";
 import { dayColumn, SITE_RESUPPLY_LINES, snapshotOf } from "./site-resupply.row.js";
 
-/** Les colonnes des deux gestes datés, `null` tant qu'ils n'ont pas eu lieu. */
+/** Le nom (R1g) et les colonnes des deux gestes datés, `null` tant qu'ils n'ont pas eu lieu. */
 function tracesOf(resupply: SiteResupply) {
   const { placed, cancelled } = resupply;
   return {
+    name: resupply.name,
     placedAt: placed?.at ?? null,
     placedByStaffId: placed?.author.staffUserId ?? null,
     placedByName: placed?.author.name ?? null,

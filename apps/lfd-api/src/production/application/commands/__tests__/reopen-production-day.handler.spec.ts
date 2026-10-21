@@ -163,6 +163,7 @@ describe("ReopenProductionDayHandler", () => {
         resupplyId: "rs_1",
         siteId: "site_village",
         siteLabel: "Le Village",
+        name: null,
         servedByTransfer: true,
         lines: [{ sku: "PAI-SEI", productName: "Pain de seigle", quantity: 3 }],
       },

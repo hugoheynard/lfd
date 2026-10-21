@@ -1,12 +1,17 @@
 import type { ProductionDayResupply } from '@lfd/contracts';
 
-import { resupplySheetsOf, resupplySiteLabel } from './resupply-sheets';
+import { resupplySheetsOf, resupplySheetTitle, resupplySiteLabel } from './resupply-sheets';
 
-function resupply(resupplyId: string, siteLabel: string | null): ProductionDayResupply {
+function resupply(
+  resupplyId: string,
+  siteLabel: string | null,
+  name: string | null = null,
+): ProductionDayResupply {
   return {
     resupplyId,
     siteId: `site-${resupplyId}`,
     siteLabel,
+    name,
     servedByTransfer: true,
     lines: [{ sku: 'CRO', productName: 'Croissant', quantity: 6 }],
   };
@@ -24,5 +29,14 @@ describe('resupplySheetsOf', () => {
 
   it('dit un point sans nom par son identifiant', () => {
     expect(resupplySiteLabel(resupply('r-9', null))).toBe('site-r-9');
+  });
+});
+
+describe('resupplySheetTitle (R1g)', () => {
+  it('« <nom> — <point> » s’il est nommé, « Réassort <point> » sinon', () => {
+    expect(resupplySheetTitle(resupply('r-1', 'Village', 'Vitrine du matin'))).toBe(
+      'Vitrine du matin — Village',
+    );
+    expect(resupplySheetTitle(resupply('r-2', 'Village'))).toBe('Réassort Village');
   });
 });

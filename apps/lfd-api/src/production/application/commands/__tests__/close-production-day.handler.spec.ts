@@ -550,6 +550,7 @@ const VILLAGE_RESUPPLY = {
   resupplyId: "rs_1",
   siteId: "site_village",
   siteLabel: "Le Village",
+  name: null,
   servedByTransfer: true,
   lines: [
     { sku: "VIE-001", productName: "Croissant", quantity: 12 },
@@ -646,6 +647,7 @@ const LABO_RESUPPLY = {
   resupplyId: "rs_labo",
   siteId: "site_labo",
   siteLabel: "Le Labo",
+  name: null,
   servedByTransfer: false,
   lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 6 }],
 };
@@ -666,6 +668,7 @@ describe("le réassort à coliser (lot R3b)", () => {
         resupplyId: "rs_1",
         siteId: "site_village",
         siteLabel: "Le Village",
+        name: null,
         lines: VILLAGE_RESUPPLY.lines,
       }).durableFact(),
     ]);
@@ -692,7 +695,7 @@ describe("le réassort à coliser (lot R3b)", () => {
     const fact = new ResupplyListDrawnEvent(
       DAY,
       NOW,
-      { resupplyId: "rs_1", siteId: "site_village", siteLabel: null, lines: [] },
+      { resupplyId: "rs_1", siteId: "site_village", siteLabel: null, name: null, lines: [] },
       reopenedAt,
     ).durableFact();
 

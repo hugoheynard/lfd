@@ -153,6 +153,7 @@ function expected(resupplyId: string, quantity: number): ResupplyReceptionView {
     resupplyId,
     target: 'asap',
     origin: 'counter',
+    name: null,
     placedAt: '2026-01-02T07:00:00.000Z',
     placedBy: 'Max',
     status: 'expected',
@@ -184,10 +185,12 @@ class FakeResupplies {
                 target: 'asap',
                 serviceDay: TODAY,
                 version: this.added.length,
+                name: null,
                 lines: this.added.map((sku) => ({ sku, label: sku, quantity: 1 })),
               },
             ],
       resupplies: [],
+      usedNames: [],
     });
   }
 

@@ -50,7 +50,7 @@ export async function roundPaperTransfersOf(
     }
   }
   const siteIds = [...new Set(loaded.map((transfer) => transfer.siteId))];
-  const [contents, bins, places, sites] = await Promise.all([
+  const [contents, bins, places, sites, names] = await Promise.all([
     itemContentsOf(
       sources.contents,
       sources.resupplies,
@@ -59,6 +59,7 @@ export async function roundPaperTransfersOf(
     sources.bins.liveBinCounts(loaded.map((transfer) => transfer.id)),
     sources.places.placesOf(siteIds),
     sources.sites.sitesFor(day, siteIds),
+    sources.resupplies.namesOf(loaded),
   ]);
   return new Map(
     loaded.map((transfer) => {
@@ -74,6 +75,10 @@ export async function roundPaperTransfersOf(
         orderTotals: printedLines(manifest.orders.totals),
         resupplyCount: manifest.resupplies.items.length,
         resupplyTotals: printedLines(manifest.resupplies.totals),
+        resupplyNames: manifest.resupplies.items.flatMap((item) => {
+          const name = names.get(item.subjectId);
+          return name === undefined ? [] : [name];
+        }),
       };
       return [transfer.id, stop];
     }),

@@ -16,5 +16,7 @@ export class SendBakehouseResupplyCommand {
     readonly target: ResupplyTarget,
     readonly lines: readonly RequestedResupplyLine[],
     readonly staffUserId: string,
+    /** Son nom libre (R1g) ; `null` ou vide : sans nom. */
+    readonly name: string | null = null,
   ) {}
 }

@@ -28,6 +28,25 @@ export const RESUPPLY_ORIGINS = ["counter", "bakehouse"] as const;
 export type ResupplyOrigin = (typeof RESUPPLY_ORIGINS)[number];
 
 /**
+ * Le nom d'un réassort tient en 60 caractères au plus (lot R1g, Hugo
+ * 2026-10-21 : « vitrine du matin »). Libre et facultatif : rogné par le
+ * serveur, vide vaut « sans nom ».
+ */
+export const RESUPPLY_NAME_MAX = 60;
+
+/**
+ * Le titre d'un réassort nommé, partout où il se lit (R1g) : « Vitrine du
+ * matin — Village ». Sans nom, `unnamed` — l'affichage de l'endroit, tel
+ * qu'avant le nom (« Réassort Village »…).
+ */
+export function resupplyTitleOf(name: string | null, siteLabel: string, unnamed: string): string {
+  return name === null ? unnamed : `${name} — ${siteLabel}`;
+}
+
+/** Combien de noms déjà employés au point la saisie propose, au plus. */
+export const RESUPPLY_USED_NAMES_MAX = 20;
+
+/**
  * `placed` tant que rien ne l'a annulé. Un brouillon — la demande en cours —
  * n'a pas de statut ici : il est servi à part (`SiteResupplyDraftView`).
  */
@@ -48,6 +67,8 @@ export interface SiteResupplyView {
   readonly target: ResupplyTarget;
   /** Qui l'a envoyé : le comptoir, ou le fournil (R1d). */
   readonly origin: ResupplyOrigin;
+  /** Son nom libre (R1g), « Vitrine du matin » ; `null` : sans nom. */
+  readonly name: string | null;
   readonly status: SiteResupplyStatus;
   /** Dans l'ordre de saisie. */
   readonly lines: readonly SiteResupplyLineView[];
@@ -71,6 +92,8 @@ export interface SiteResupplyDraftView {
   /** `AAAA-MM-JJ`. Une demande « pour demain » restée sans envoi garde sa journée. */
   readonly serviceDay: string;
   readonly version: number;
+  /** Le nom posé sur la demande (R1g) ; `null` : sans nom. */
+  readonly name: string | null;
   /** Dans l'ordre de premier ajout ; peut être vide (tout a été retiré). */
   readonly lines: readonly SiteResupplyLineView[];
 }
@@ -96,7 +119,29 @@ export interface SiteResuppliesView {
   readonly drafts: readonly SiteResupplyDraftView[];
   /** Les réassorts envoyés, les plus récents d'abord. */
   readonly resupplies: readonly SiteResupplyView[];
+  /**
+   * Les noms déjà employés au point (R1g), distincts, les plus récents
+   * d'abord, {@link RESUPPLY_USED_NAMES_MAX} au plus : proposés à la saisie.
+   */
+  readonly usedNames: readonly string[];
 }
+
+/**
+ * `GET /admin/bakehouse-resupplies/sites/:siteId/names` — les noms déjà
+ * employés au point, pour la carte « Envoyer un réassort » du fournil (R1g).
+ */
+export interface ResupplyUsedNamesView {
+  readonly names: readonly string[];
+}
+
+/**
+ * `PUT /admin/site-resupplies/sites/:siteId/drafts/:target/name` — nomme la
+ * demande en cours de la visée, ouverte au besoin (R1g). `null` ou vide :
+ * retire le nom. Sans version : le dernier nom posé l'emporte. La borne de
+ * longueur vit dans le domaine.
+ */
+export const nameSiteResupplySchema = z.object({ name: z.string().nullable() }).strict();
+export type NameSiteResupplyPayload = z.infer<typeof nameSiteResupplySchema>;
 
 /**
  * `POST /admin/bakehouse-resupplies/sites/:siteId` — le fournil envoie un
@@ -114,6 +159,8 @@ export interface SiteResuppliesView {
 export const placeSiteResupplySchema = z
   .object({
     target: z.enum(RESUPPLY_TARGETS),
+    /** Son nom (R1g) ; absent, `null` ou vide : sans nom. */
+    name: z.string().nullable().optional(),
     lines: z
       .array(z.object({ sku: z.string().trim().min(1), quantity: z.number() }).strict())
       .max(200),

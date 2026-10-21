@@ -51,6 +51,7 @@ function resupply(servedByTransfer: boolean, quantity: number): PlacedResupply {
     resupplyId: servedByTransfer ? "res_village" : "res_labo",
     siteId: servedByTransfer ? "village" : "labo",
     siteLabel: servedByTransfer ? "Val Village" : "Le Labo",
+    name: null,
     servedByTransfer,
     lines: [{ sku: SKU, productName: "Croissant", quantity }],
   };

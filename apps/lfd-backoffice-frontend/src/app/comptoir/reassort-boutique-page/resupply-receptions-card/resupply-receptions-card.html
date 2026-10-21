@@ -15,7 +15,12 @@
     @for (reception of receptions(); track reception.resupplyId) {
       <section class="reception" [attr.data-resupply-reception]="reception.resupplyId">
         <div class="reception-head">
-          <strong>{{ targetLabels[reception.target] }}</strong>
+          @if (reception.name; as name) {
+            <strong data-resupply-reception-name>{{ name }}</strong>
+            <span>{{ targetLabels[reception.target] }}</span>
+          } @else {
+            <strong>{{ targetLabels[reception.target] }}</strong>
+          }
           @if (reception.origin === 'bakehouse') {
             <span class="origin" data-resupply-reception-bakehouse>{{ bakehouseMark }}</span>
           }

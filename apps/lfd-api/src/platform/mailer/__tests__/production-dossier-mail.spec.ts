@@ -15,6 +15,8 @@ const DATA: ProductionDossierMailData = {
   orderCount: 3,
   pickupCount: 2,
   deliveryCount: 1,
+  resupplyCount: 0,
+  resupplyPieceCount: 0,
   pieceCount: 40,
   completed: false,
   pdfBase64: "JVBERi0=",
@@ -86,6 +88,31 @@ describe("le courriel du dossier de production", () => {
         pieceCount: 1,
       }),
     ).toContain("En chiffres : 1 commande — 1 en retrait — et 1 pièce.");
+  });
+
+  it("compte les réassorts comme l'en-tête du PDF, et leurs bons", () => {
+    const body = productionDossierBody({
+      ...DATA,
+      resupplyCount: 2,
+      resupplyPieceCount: 18,
+      pieceCount: 58,
+    });
+    expect(body).toContain(
+      "En chiffres : 3 commandes — 2 en retrait, 1 en livraison — 2 réassorts et 58 pièces " +
+        "dont 18 de réassort.",
+    );
+    expect(body).toContain("puis un bon par commande et par réassort.");
+    expect(
+      productionDossierBody({
+        ...DATA,
+        orderCount: 0,
+        pickupCount: 0,
+        deliveryCount: 0,
+        resupplyCount: 1,
+        resupplyPieceCount: 18,
+        pieceCount: 18,
+      }),
+    ).toContain("En chiffres : 0 commande — 1 réassort et 18 pièces dont 18 de réassort.");
   });
 
   it("signe au nom du fournil", () => {

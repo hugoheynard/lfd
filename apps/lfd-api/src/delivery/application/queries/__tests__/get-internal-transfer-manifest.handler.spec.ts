@@ -7,7 +7,7 @@ import {
 } from "../../__tests__/transfer-doubles.js";
 import { GetInternalTransferManifestHandler } from "../get-internal-transfer-manifest.handler.js";
 import { GetInternalTransferManifestQuery } from "../get-internal-transfer-manifest.query.js";
-import { resupplyContentsOver } from "../../__tests__/resupply-transfer-doubles.js";
+import { frozenResupply, resupplyContentsOver } from "../../__tests__/resupply-transfer-doubles.js";
 
 // Des jours comparés entre eux seulement, jamais à l'horloge.
 const DAY = "2030-03-12";
@@ -21,11 +21,12 @@ const LINES = new Map([
 function handlerOver(
   transfers: InMemoryInternalTransfers,
   contents = new FixedTransferContents(LINES),
+  resupplies = resupplyContentsOver(),
 ) {
   return new GetInternalTransferManifestHandler(
     new InternalTransfersReaderOver(transfers),
     contents,
-    resupplyContentsOver(),
+    resupplies,
   );
 }
 
@@ -52,6 +53,34 @@ describe("GetInternalTransferManifestHandler — « on doit savoir ce qu'on tran
     expect(view.frozen).toBe(true);
     expect(view.totals).toEqual([{ sku: "TARTE", productName: "Tarte", quantity: 1 }]);
     expect(contents.asked).toEqual([]);
+  });
+
+  it("un réassort nommé porte son nom (R1g), prévu comme parti ; sans nom, aucun", async () => {
+    const transfer = plannedTransfer("t_1", DAY, AT, []);
+    for (const resupplyId of ["r_named", "r_plain"]) {
+      transfer.attach(
+        { itemId: `i_${resupplyId}`, item: { kind: "resupply", resupplyId } },
+        { siteId: "site_vv", serviceDay: DAY },
+        AT,
+      );
+    }
+    const resupplies = resupplyContentsOver([
+      frozenResupply("r_named", DAY, { name: "Vitrine du matin" }),
+      frozenResupply("r_plain", DAY),
+    ]);
+    const transfers = new InMemoryInternalTransfers(transfer);
+    const query = new GetInternalTransferManifestQuery("t_1");
+
+    const planned = await handlerOver(transfers, undefined, resupplies).execute(query);
+    transfer.depart(AT, () => [{ sku: "CRO-001", productName: "Croissant", quantity: 6 }]);
+    const departed = await handlerOver(transfers, undefined, resupplies).execute(query);
+
+    for (const view of [planned, departed]) {
+      expect(view.resupplies.items.map((item) => [item.subjectId, item.name])).toEqual([
+        ["r_named", "Vitrine du matin"],
+        ["r_plain", undefined],
+      ]);
+    }
   });
 
   it("un transfert inconnu : 404 nommé", async () => {

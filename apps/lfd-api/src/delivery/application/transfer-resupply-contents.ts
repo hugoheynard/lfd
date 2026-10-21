@@ -32,10 +32,40 @@ export class TransferResupplyContents {
     private readonly packed: PackedResuppliesReader,
   ) {}
 
+  /**
+   * Le nom de chaque réassort NOMMÉ de ces transferts (R1g), par réassort —
+   * lu dans la même copie figée, partis compris : un réassort envoyé ne se
+   * renomme plus, le nom figé à l'arrêt est donc celui qui a été envoyé. Un
+   * réassort sans nom, ou introuvable, est absent.
+   */
+  async namesOf(transfers: readonly InternalTransfer[]): Promise<ReadonlyMap<string, string>> {
+    const frozen = await this.frozenOf(transfers);
+    return new Map(
+      frozen.flatMap((resupply) =>
+        resupply.name === null ? [] : [[resupply.resupplyId, resupply.name] as const],
+      ),
+    );
+  }
+
   /** Les lignes de chaque réassort de ces transferts, par réassort. */
   async linesOf(
     transfers: readonly InternalTransfer[],
   ): Promise<ReadonlyMap<string, readonly ManifestLine[]>> {
+    const frozen = await this.frozenOf(transfers);
+    if (frozen.length === 0) {
+      return new Map();
+    }
+    const packed = await this.packed.packedOf(frozen.map((resupply) => resupply.resupplyId));
+    return new Map(
+      frozen.map((resupply) => [
+        resupply.resupplyId,
+        linesOf(resupply, packed.get(resupply.resupplyId) ?? null),
+      ]),
+    );
+  }
+
+  /** Les copies figées des réassorts de ces transferts, lues par journée. */
+  private async frozenOf(transfers: readonly InternalTransfer[]): Promise<FrozenResupply[]> {
     const byDay = new Map<string, string[]>();
     for (const transfer of transfers) {
       const ids = transfer.resupplyIds;
@@ -47,16 +77,7 @@ export class TransferResupplyContents {
     for (const [day, ids] of byDay) {
       frozen.push(...(await this.frozen.frozenOf(day, ids)));
     }
-    if (frozen.length === 0) {
-      return new Map();
-    }
-    const packed = await this.packed.packedOf(frozen.map((resupply) => resupply.resupplyId));
-    return new Map(
-      frozen.map((resupply) => [
-        resupply.resupplyId,
-        linesOf(resupply, packed.get(resupply.resupplyId) ?? null),
-      ]),
-    );
+    return frozen;
   }
 }
 

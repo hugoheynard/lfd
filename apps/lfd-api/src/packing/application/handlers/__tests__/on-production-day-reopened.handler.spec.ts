@@ -74,6 +74,7 @@ describe("OnProductionDayReopened (colisage)", () => {
         resupplyId,
         siteId: "site_village",
         siteLabel: "Le Village",
+        name: null,
         drawnAt: CLOSED,
         lines: [{ sku: "CRO", productName: "Croissant", quantity: 6 }],
       });

@@ -855,7 +855,8 @@ table. »
 - **Le manifeste à l'écran** : il montrait déjà la section
   « Réapprovisionnement » remplie par R3c — rien à bâtir que l'avis d'un
   transfert vide. Le mot reste « Réapprovisionnement », comme le papier de
-  tournée de R3c (le §13.1 disait « Réassort »).
+  tournée de R3c (le §13.1 disait « Réassort »). — Passés tous deux à
+  « Réassorts » par R1g (2026-10-22).
 
 **Non fait** : la carte d'arrêt de transfert du tableau des tournées compte
 les commandes seules (« 0 commande » pour un transfert de réassort).
@@ -906,7 +907,7 @@ additionné) :
   commande : le point, ses lignes, ses quantités — sans prix. Il remplace la
   section « Réassorts » de R3d dans le PDF si elle fait doublon.
 
-### R1g — Nommer un réassort (Hugo, 2026-10-21 ; doc-first)
+### R1g ✅ — Nommer un réassort (Hugo, 2026-10-21 ; bâti le 2026-10-22, non commité)
 
 « On devrait pouvoir donner un nom à une demande de réassort ou à un réassort,
 exemple : vitrine du matin. »
@@ -921,6 +922,50 @@ exemple : vitrine du matin. »
   liste à administrer). Premier pas vers le modèle récurrent (Q-C1, « plus
   tard ») sans le décider.
 - Migration additive (une colonne nullable).
+
+✅ **Bâti le 2026-10-22 (non commité).** Décision de Hugo : nom LIBRE,
+facultatif, les noms déjà employés au point proposés à la saisie. Ce qui
+précise ou diffère du texte :
+
+- **Trois colonnes, pas une** (`20261022120000_le_nom_du_reassort`, additive) :
+  `site_resupply.name` (`VARCHAR(60)`, CHECK `site_resupply_name_trimmed` :
+  1 à 60 caractères, sans blanc en bord), et ses copies figées
+  `production_resupply.name` (à l'arrêt) et `packing_resupply.name` (tirée du
+  fait `production.resupply_list_drawn`, qui porte `name` ; un fait publié
+  avant le champ se relit sans nom).
+- **Le domaine** : `resupplyNameOf` (rogné, blancs intérieurs ramenés à un
+  espace, vide → `null`, plus de 60 caractères refusé en 400, jamais
+  tronqué) ; `SiteResupply.rename()` sur la demande en cours seulement,
+  `sentByBakehouse({ name })` à l'envoi du fournil.
+- **Routes** : `PUT admin/site-resupplies/sites/:siteId/drafts/:target/name`
+  (`handover_counter:write`, ouvre la demande au besoin, sans version — le
+  dernier nom l'emporte) ; `POST admin/bakehouse-resupplies/sites/:siteId`
+  accepte `name` ; `GET admin/bakehouse-resupplies/sites/:siteId/names`
+  (`production_resupply`). Les noms employés (port `ResupplyUsedNames` :
+  distincts, les plus récents d'abord, 20 au plus, brouillons et annulés
+  compris) sont aussi dans `SiteResuppliesView.usedNames`.
+- **Où il se lit** : vues du comptoir, de la réception (`name`), de
+  l'onglet Réassorts (sous le nom du point, la table étant par produit), bon
+  de réassort du dossier (écran et PDF `v8` : « Vitrine du matin — Village »),
+  fiche du colisage (son titre), manifeste à l'écran et « Ma tournée » (le
+  sous-titre de la section cite les noms) et papier de tournée (une ligne
+  sous le titre de la section). **Au manifeste et au papier, le nom seul** :
+  le transfert est déjà celui d'un point, « — Village » y serait répété.
+  Idem à la réception, page d'un seul point.
+- **Le nom d'un transfert parti** se lit dans la copie figée du fournil, pas
+  dans le manifeste figé au départ : un réassort envoyé ne se renomme plus,
+  la copie de l'arrêt est donc le nom envoyé — aucune colonne au schéma
+  `delivery`.
+- **Au passage** : le manifeste (écran) et le papier de tournée disent
+  « Réassorts » (plus « Réapprovisionnement ») ; l'e-mail du dossier compte
+  les réassorts comme l'en-tête du PDF (« … — 1 réassort et 58 pièces dont
+  18 de réassort », « un bon par commande et par réassort »).
+- **Front** : `shared/resupply-name-field/` (`fold-combobox`, texte libre,
+  noms proposés) au-dessus d'« Envoyer » dans la table du comptoir (la
+  demande de la visée affichée, écrite au champ quitté, à Entrée ou au
+  choix d'un nom) et sur la carte « Envoyer un réassort » (envoyé avec le
+  réassort).
+- e2e : `apps/lfd-api/test/resupply-name.e2e-spec.ts`.
 
 ✅ **Bâti le 2026-10-21 (non commité).** Précision de Hugo pendant le lot :
 « comprendre le volume global par produit » — chaque produit dit d'abord son

@@ -21,6 +21,7 @@ import {
 } from 'fold-ng';
 
 import { PickupAddressesService } from '../../../b2b/reglages/pickup-addresses.service';
+import { ResupplyNameField } from '../../../shared/resupply-name-field/resupply-name-field';
 import { BakehouseResuppliesService } from '../bakehouse-resupplies.service';
 
 /** Un point proposé. */
@@ -40,6 +41,9 @@ interface SiteChoice {
  * La liste se compose À L'ÉCRAN, sans brouillon partagé : le réassort ne
  * naît qu'à l'envoi, à part de la demande en cours du comptoir, qu'il ne
  * touche jamais. Montée par la page sous `production_resupply:write`.
+ *
+ * Un nom facultatif (R1g) part avec l'envoi ; les noms déjà employés au point
+ * choisi sont proposés.
  */
 @Component({
   selector: 'app-bakehouse-resupply-card',
@@ -53,6 +57,7 @@ interface SiteChoice {
     FoldEmptyStateComponent,
     FoldListboxComponent,
     FoldNumberInputComponent,
+    ResupplyNameField,
   ],
   templateUrl: './bakehouse-resupply-card.html',
   styleUrl: './bakehouse-resupply-card.scss',
@@ -72,6 +77,10 @@ export class BakehouseResupplyCard {
   protected readonly pickedSku = signal<string | null>(null);
   protected readonly pickedQuantity = signal<number | null>(null);
   protected readonly lines = signal<readonly SiteResupplyLineView[]>([]);
+  /** Le nom du réassort (R1g), envoyé avec lui ; vide : sans nom. */
+  protected readonly name = signal('');
+  /** Les noms déjà employés au point choisi ; vides tant qu'aucun n'est choisi. */
+  protected readonly usedNames = signal<readonly string[]>([]);
   protected readonly pending = signal(false);
   protected readonly failure = signal<string | null>(null);
   protected readonly done = signal<string | null>(null);
@@ -104,6 +113,20 @@ export class BakehouseResupplyCard {
       this.articles.set(articles);
     } catch {
       this.loadFailed.set(true);
+    }
+  }
+
+  /** Choisit le point, puis lit ses noms déjà employés ; une lecture échouée ne propose rien. */
+  protected async pickSite(siteId: string): Promise<void> {
+    this.siteId.set(siteId);
+    this.usedNames.set([]);
+    try {
+      const names = await this.service.usedNames(siteId);
+      if (this.siteId() === siteId) {
+        this.usedNames.set(names);
+      }
+    } catch {
+      // Les propositions sont un confort : sans elles, le nom se tape.
     }
   }
 
@@ -145,10 +168,12 @@ export class BakehouseResupplyCard {
     try {
       await this.service.send(siteId, {
         target: this.target(),
+        name: this.name().trim() === '' ? null : this.name(),
         lines: this.lines().map((line) => ({ sku: line.sku, quantity: line.quantity })),
       });
       const label = this.sites().find((site) => site.id === siteId)?.label ?? 'le point';
       this.lines.set([]);
+      this.name.set('');
       this.done.set(`Réassort envoyé à ${label}.`);
       this.sent.emit();
     } catch (error) {

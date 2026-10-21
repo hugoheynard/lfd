@@ -22,6 +22,7 @@ function resupply(resupplyId: string, quantity: number): PlacedResupply {
     resupplyId,
     siteId: "site-v",
     siteLabel: "Village",
+    name: null,
     servedByTransfer: true,
     lines: [{ sku: "VIE-001", productName: "Croissant", quantity }],
   };

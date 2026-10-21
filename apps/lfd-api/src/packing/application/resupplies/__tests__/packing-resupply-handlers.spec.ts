@@ -30,6 +30,7 @@ async function setup(received = 24) {
     resupplyId: "rs_1",
     siteId: "site_village",
     siteLabel: "Le Village",
+    name: null,
     drawnAt: AT,
     lines: [{ sku: "CRO", productName: "Croissant", quantity: 12 }],
   });

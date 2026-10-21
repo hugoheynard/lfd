@@ -53,7 +53,7 @@ export interface RoundPaperTransferLine {
 /**
  * **Un arrêt de transfert interne** (décision de Hugo du 2026-10-13) : le
  * site, l'heure d'arrivée requise, les bacs, et ce que le transfert
- * transporte — commandes et réapprovisionnement, totalisés par article.
+ * transporte — commandes et réassorts, totalisés par article.
  * Aucun client.
  */
 export interface RoundPaperTransferStop {
@@ -68,6 +68,8 @@ export interface RoundPaperTransferStop {
   readonly orderTotals: readonly RoundPaperTransferLine[];
   readonly resupplyCount: number;
   readonly resupplyTotals: readonly RoundPaperTransferLine[];
+  /** Les noms des réassorts nommés (R1g), dans l'ordre du manifeste ; vide : aucun nommé. */
+  readonly resupplyNames: readonly string[];
 }
 
 export type RoundPaperStop = RoundPaperSheetStop | RoundPaperAbsentStop | RoundPaperTransferStop;

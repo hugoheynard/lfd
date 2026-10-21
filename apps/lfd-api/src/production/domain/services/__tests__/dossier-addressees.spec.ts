@@ -81,13 +81,45 @@ describe("dossierCountsOf", () => {
       lines: quantities.map(line),
       packed: null,
     });
-    expect(dossierCountsOf([order("a", [12, 3]), order("b", [5], "delivery")])).toEqual({
+    expect(dossierCountsOf([order("a", [12, 3]), order("b", [5], "delivery")], [])).toEqual({
       orders: 2,
       pickup: 1,
       delivery: 1,
+      resupplies: 0,
+      resupplyPieces: 0,
       pieces: 20,
     });
-    expect(dossierCountsOf([])).toEqual({ orders: 0, pickup: 0, delivery: 0, pieces: 0 });
+    expect(dossierCountsOf([], [])).toEqual({
+      orders: 0,
+      pickup: 0,
+      delivery: 0,
+      resupplies: 0,
+      resupplyPieces: 0,
+      pieces: 0,
+    });
+  });
+
+  /** Régression : l'e-mail annonçait les pièces des commandes seules, le PDF joint comptait les réassorts. */
+  it("compte les réassorts dans les pièces, comme l'en-tête du PDF", () => {
+    const resupply = {
+      resupplyId: "r-1",
+      siteId: "site-v",
+      siteLabel: "Village",
+      name: null,
+      servedByTransfer: true,
+      lines: [
+        { sku: "CRO", productName: "Croissant", quantity: 12 },
+        { sku: "PAC", productName: "Pain au chocolat", quantity: 6 },
+      ],
+    };
+    expect(dossierCountsOf([], [resupply])).toEqual({
+      orders: 0,
+      pickup: 0,
+      delivery: 0,
+      resupplies: 1,
+      resupplyPieces: 18,
+      pieces: 18,
+    });
   });
 });
 

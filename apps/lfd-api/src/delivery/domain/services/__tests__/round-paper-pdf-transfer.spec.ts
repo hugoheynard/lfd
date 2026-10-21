@@ -21,6 +21,7 @@ function transfer(overrides: Partial<RoundPaperTransferStop> = {}): RoundPaperTr
     orderTotals: [{ productName: "Croissant", quantity: 12 }],
     resupplyCount: 0,
     resupplyTotals: [],
+    resupplyNames: [],
     ...overrides,
   };
 }
@@ -49,7 +50,7 @@ describe("la feuille de tournée — l'arrêt de transfert", () => {
     expect(text).toContain("12 × Croissant");
     expect(text).toContain("Remis");
     expect(text).toContain("2 bacs à charger");
-    expect(text).not.toContain("RÉAPPROVISIONNEMENT");
+    expect(text).not.toContain("RÉASSORT");
   });
 
   it("sans heure ni adresse ni bac : le dit, sans rien inventer", async () => {
@@ -60,7 +61,7 @@ describe("la feuille de tournée — l'arrêt de transfert", () => {
     expect(text).toContain("Aucun bac déclaré");
   });
 
-  it("imprime le réapprovisionnement comme une section à part", async () => {
+  it("imprime le réassort comme une section à part — « Réassort », plus « Réapprovisionnement » (R1g)", async () => {
     const text = await textOf(
       transfer({
         resupplyCount: 1,
@@ -68,7 +69,21 @@ describe("la feuille de tournée — l'arrêt de transfert", () => {
       }),
     );
 
-    expect(text).toContain("RÉAPPROVISIONNEMENT · 1 ÉLÉMENT");
+    expect(text).toContain("RÉASSORTS · 1 RÉASSORT");
+    expect(text).not.toContain("RÉAPPROVISIONNEMENT");
     expect(text).toContain("20 × Baguette");
+  });
+
+  it("nomme les réassorts nommés sous le titre de la section (R1g)", async () => {
+    const text = await textOf(
+      transfer({
+        resupplyCount: 2,
+        resupplyTotals: [{ productName: "Baguette", quantity: 20 }],
+        resupplyNames: ["Vitrine du matin", "Goûter"],
+      }),
+    );
+
+    expect(text).toContain("RÉASSORTS · 2 RÉASSORTS");
+    expect(text).toContain("Vitrine du matin · Goûter");
   });
 });

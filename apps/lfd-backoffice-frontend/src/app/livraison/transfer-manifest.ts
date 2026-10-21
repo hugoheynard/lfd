@@ -36,9 +36,10 @@ export function sectionSubtitle(
 
 /**
  * Les sections NON vides, commandes d'abord. Une section vide ne s'écrit pas :
- * « Réapprovisionnement : 0 » sur chaque transfert ferait chercher ce qui n'y
- * est pas. Le réassort d'un point servi par transfert y entre à l'arrêt du
- * plan depuis R3c (2026-10-21), le même mot que le papier de tournée.
+ * « Réassorts : 0 » sur chaque transfert ferait chercher ce qui n'y est pas.
+ * Le réassort d'un point servi par transfert y entre à l'arrêt du plan depuis
+ * R3c (2026-10-21), le même mot que le papier de tournée — « Réassort » depuis
+ * R1g, qui ajoute au sous-titre les noms des réassorts nommés.
  */
 export function manifestSections(
   view: Pick<InternalTransferManifestView, 'orders' | 'resupplies'>,
@@ -48,15 +49,7 @@ export function manifestSections(
     sections.push(section('orders', 'Commandes', 'commande', 'commandes', view.orders));
   }
   if (view.resupplies.items.length > 0) {
-    sections.push(
-      section(
-        'resupplies',
-        'Réapprovisionnement',
-        'réapprovisionnement',
-        'réapprovisionnements',
-        view.resupplies,
-      ),
-    );
+    sections.push(section('resupplies', 'Réassorts', 'réassort', 'réassorts', view.resupplies));
   }
   return sections;
 }
@@ -68,10 +61,14 @@ function section(
   many: string,
   view: TransferManifestSectionView,
 ): ManifestSection {
+  const names = [
+    ...new Set(view.items.flatMap((item) => (item.name === undefined ? [] : [item.name]))),
+  ];
+  const counted = sectionSubtitle(view.items.length, one, many, view.totals);
   return {
     key,
     title,
-    subtitle: sectionSubtitle(view.items.length, one, many, view.totals),
+    subtitle: names.length === 0 ? counted : `${counted} · ${names.join(', ')}`,
     totals: view.totals,
   };
 }

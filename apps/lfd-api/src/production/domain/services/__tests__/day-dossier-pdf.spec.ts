@@ -220,7 +220,7 @@ describe("renderDayDossierPdf", () => {
 describe("dayDossierPdfKey — la version de mise en page", () => {
   it("n'est plus la clé d'avant E1b : un dossier archivé à l'ancien papier n'est jamais resservi", () => {
     expect(dayDossierPdfKey(DAY, null)).not.toBe(`${DAY}/dossier-du-jour.pdf`);
-    expect(dayDossierPdfKey(DAY, RETAKEN)).toContain("-v7-retirage-");
+    expect(dayDossierPdfKey(DAY, RETAKEN)).toContain("-v8-retirage-");
   });
 });
 
@@ -228,7 +228,7 @@ describe("dayDossierPdfKey", () => {
   it("une clé pour la clôture, une autre par retirage : le complément n'écrase pas l'original", () => {
     const original = dayDossierPdfKey(DAY, null);
     const completed = dayDossierPdfKey(DAY, RETAKEN);
-    expect(original).toBe(`${DAY}/dossier-du-jour-v7.pdf`);
+    expect(original).toBe(`${DAY}/dossier-du-jour-v8.pdf`);
     expect(completed).not.toBe(original);
     expect(completed.startsWith(`${DAY}/`)).toBe(true);
   });
@@ -239,6 +239,7 @@ describe("dayDossierPdfKey", () => {
         resupplyId: "r-1",
         siteId: "site-v",
         siteLabel: "Village",
+        name: null,
         servedByTransfer: true,
         lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 18 }],
       },
@@ -265,6 +266,7 @@ describe("dayDossierPdfKey", () => {
         resupplyId: "r-1",
         siteId: "site-v",
         siteLabel: "Village",
+        name: null,
         servedByTransfer: true,
         lines: [{ sku: "VIE-002", productName: "Pain au chocolat", quantity: 18 }],
       },
@@ -273,5 +275,22 @@ describe("dayDossierPdfKey", () => {
     expect(pages).toHaveLength(2);
     expect(pages[0]).toContain("1 réassort · 18 pièces dont 18 de réassort");
     expect(pages[1]).toContain("Réassort Village");
+  });
+
+  it("le bon d'un réassort nommé (R1g) se titre « <nom> — <point> »", async () => {
+    const dossier = dayDossierOf([], new Map(), [
+      {
+        resupplyId: "r-1",
+        siteId: "site-v",
+        siteLabel: "Village",
+        name: "Vitrine du matin",
+        servedByTransfer: true,
+        lines: [{ sku: "VIE-002", productName: "Pain au chocolat", quantity: 18 }],
+      },
+    ]);
+    const pages = pdfPages(await renderDayDossierPdf(dossier, STAMP, () => ""));
+    // Le tiret long n'est pas relu par `pdf-text` : le nom, puis le point.
+    expect(pages[1]).toMatch(/Vitrine du matin .{0,2}Village/);
+    expect(pages[1]).not.toContain("Réassort Village");
   });
 });

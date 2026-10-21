@@ -25,6 +25,7 @@ export class InMemoryResupplies extends PackingResupplyListing {
         resupplyId: resupply.resupplyId,
         siteId: resupply.siteId,
         siteLabel: resupply.siteLabel,
+        name: resupply.name,
         drawnAt: resupply.drawnAt,
         closed: null,
         lines: resupply.lines.map((line) => ({ ...line, packed: null })),

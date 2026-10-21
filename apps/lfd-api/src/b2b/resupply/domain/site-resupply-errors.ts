@@ -207,3 +207,13 @@ export class SiteResupplyDraftOpenedMeanwhileError extends BusinessError {
     );
   }
 }
+
+/** Un nom de réassort plus long que la borne (lot R1g). */
+export class ResupplyNameTooLongError extends DomainError {
+  constructor(readonly max: number) {
+    super(
+      "resupply.order.name_too_long",
+      `Le nom d'un réassort tient en ${String(max)} caractères au plus (« Vitrine du matin ») : raccourcissez-le.`,
+    );
+  }
+}

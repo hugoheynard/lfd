@@ -16,6 +16,7 @@ function sheet(): PackingResupply {
     resupplyId: "rs_1",
     siteId: "site_village",
     siteLabel: "Le Village",
+    name: null,
     drawnAt: AT,
     closed: null,
     lines: [
@@ -30,6 +31,15 @@ describe("PackingResupply — la fiche de réassort au colisage (R3b)", () => {
     expect(sheet().title).toBe("Réassort Le Village");
     const anonymous = PackingResupply.fromSnapshot({ ...sheet().toSnapshot(), siteLabel: null });
     expect(anonymous.title).toBe("Réassort site_village");
+  });
+
+  it("nommé (R1g), se titre « <nom> — <point> »", () => {
+    const named = PackingResupply.fromSnapshot({
+      ...sheet().toSnapshot(),
+      name: "Vitrine du matin",
+    });
+    expect(named.title).toBe("Vitrine du matin — Le Village");
+    expect(named.toSnapshot().name).toBe("Vitrine du matin");
   });
 
   it("saisit l'emballé, 0 et la quantité demandée compris, et rend l'écart à la réserve", () => {

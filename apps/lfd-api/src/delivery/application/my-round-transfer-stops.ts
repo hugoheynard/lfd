@@ -8,7 +8,7 @@ import type { InternalTransfer } from "../domain/entities/internal-transfer.js";
 import type { DriverTransferStopRow } from "../domain/ports/driver-rounds.reader.js";
 import type { InternalTransfersReader } from "../domain/ports/internal-transfers.reader.js";
 import type { TransferBinCounts } from "../domain/ports/transfer-bin-counts.reader.js";
-import { transferClientelesOf, withClienteles } from "./transfer-categories.js";
+import { transferClientelesOf, withClienteles, withResupplyNames } from "./transfer-categories.js";
 import { itemContentsOf } from "./transfer-contents.js";
 import type { TransferResupplyContents } from "./transfer-resupply-contents.js";
 
@@ -50,11 +50,12 @@ export async function driverTransferStopsOf(
     }
   }
   const unfrozen = [...loaded.values()].filter((transfer) => transfer.departedAt === null);
-  const [itemContents, clienteles, binCounts, places] = await Promise.all([
+  const [itemContents, clienteles, binCounts, places, names] = await Promise.all([
     itemContentsOf(sources.contents, sources.resupplies, unfrozen),
     transferClientelesOf(sources.contents, [...loaded.values()]),
     sources.bins.liveBinCounts([...loaded.keys()]),
     sources.places.placesOf([...new Set([...loaded.values()].map((t) => t.siteId))]),
+    sources.resupplies.namesOf([...loaded.values()]),
   ]);
   return rows.map((row) => {
     const transfer = loaded.get(row.transferId);
@@ -71,7 +72,8 @@ export async function driverTransferStopsOf(
       receivedAt: row.receivedAt?.toISOString() ?? null,
       totals: manifest?.totals ?? [],
       orders: manifest === undefined ? NO_SECTION : withClienteles(manifest.orders, clienteles),
-      resupplies: manifest?.resupplies ?? NO_SECTION,
+      resupplies:
+        manifest === undefined ? NO_SECTION : withResupplyNames(manifest.resupplies, names),
       binCount: binCounts.get(row.transferId) ?? 0,
       siteAddress: place?.address ?? null,
       siteGps: place?.gps ?? null,

@@ -118,8 +118,11 @@ export function renderDayDossierPdf(
  * `v7` (2026-10-21, R3d-bis du réassort) : les fiches de poste comptent
  * commandes + réassorts (« dont N réassort » en détail), et un bon par
  * réassort suit les bons de commande ; la section « Réassorts » est retirée.
+ *
+ * `v8` (2026-10-21, R1g du réassort) : le bon d'un réassort nommé se titre
+ * « Vitrine du matin — Village ».
  */
-export const DOSSIER_LAYOUT_VERSION = "v7";
+export const DOSSIER_LAYOUT_VERSION = "v8";
 
 export function dayDossierPdfKey(serviceDay: string, retakenAt: Date | null): string {
   const base = `${serviceDay}/dossier-du-jour-${DOSSIER_LAYOUT_VERSION}`;
