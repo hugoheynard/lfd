@@ -7,7 +7,7 @@ import {
   CancelledOrderNotPayableError,
   PaymentIntentClosedError,
 } from "../../domain/errors/order-payment-errors.js";
-import { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
+import { OrderAccessReader } from "../../domain/ports/order-access.reader.js";
 import { OrderReader } from "../../domain/ports/order.reader.js";
 import { ensureOrderVisible } from "../../domain/services/order-access.js";
 import { awaitsCardPayment } from "../../domain/services/payment-link.js";
@@ -48,7 +48,7 @@ export class GetOrderPaymentHandler implements IQueryHandler<
   OrderPaymentIntent
 > {
   constructor(
-    private readonly guard: OrderGuardReader,
+    private readonly access: OrderAccessReader,
     private readonly orders: OrderReader,
     private readonly payments: PaymentGateway,
   ) {}
@@ -59,7 +59,7 @@ export class GetOrderPaymentHandler implements IQueryHandler<
       throw new OrderNotFoundError(query.orderId);
     }
     const role =
-      owned.companyId === null ? null : await this.guard.roleOf(query.actorUserId, owned.companyId);
+      owned.companyId === null ? null : await this.access.accessToOrder(query.actorUserId, owned);
     ensureOrderVisible(owned, query.actorUserId, role, query.orderId);
 
     // Avant le règlement : une commande annulée ne se paie plus, quel que soit

@@ -9,7 +9,8 @@ import type {
   AdminOrderAuthor,
   AdminOrderAuthorReader,
 } from "../../../domain/ports/admin-order-author.reader.js";
-import { OrderGuardReader, type OrderRole } from "../../../domain/ports/order-guard.reader.js";
+import { OrderAccessReader } from "../../../domain/ports/order-access.reader.js";
+import type { OrderRole } from "../../../domain/ports/order-guard.reader.js";
 import { OrderReader, type OwnedOrder } from "../../../domain/ports/order.reader.js";
 import { OrderInscriptionReader } from "../../../../../production/channels/commerce/index.js";
 import type { CancellationSubject } from "../../../domain/ports/cancellation-subject.reader.js";
@@ -41,23 +42,19 @@ function reader(owned: OwnedOrder | null): OrderReader {
     findAuthorByReference: () => Promise.resolve(null),
     findForPacking: () => Promise.reject(new Error("non utilisé")),
     listForProduction: () => Promise.resolve([]),
-    listByCompany: () => Promise.resolve([]),
     listPersonal: () => Promise.resolve([]),
     findById: () => Promise.resolve(owned),
   };
 }
 
 /** Garde-fou doublé, qui note s'il a été interrogé (pour le cas personnel). */
-function guard(role: OrderRole | null): OrderGuardReader & { asked: boolean } {
+function guard(role: OrderRole | null): OrderAccessReader & { asked: boolean } {
   const spy = {
     asked: false,
-    roleOf: () => {
+    accessToOrder: () => {
       spy.asked = true;
       return Promise.resolve(role);
     },
-    companyStatusOf: () => Promise.resolve(null),
-    paymentTermOf: () => Promise.resolve(null),
-    settlesOnAccount: () => Promise.resolve("none" as const),
   };
   return spy;
 }

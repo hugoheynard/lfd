@@ -1,6 +1,6 @@
 # Plan — les commandes des sites dans la boutique du principal
 
-> **Doc-first, 2026-10-21.** Rien n'est bâti. Demandé par Hugo le 2026-10-21 :
+> **Doc-first, 2026-10-21.** C1 (serveur) bâti le 2026-10-21 — §8 ; C2 à faire. Demandé par Hugo le 2026-10-21 :
 > « voir la page mes commandes avec les sites ». C'est une partie du lot **S6**
 > de [`sous-comptes.md`](sous-comptes.md) (« côté client », 🟡 à faire),
 > limitée aux COMMANDES. Déplace une frontière de sécurité (le mur tenant) :
@@ -161,3 +161,58 @@ principal qui annule la commande d'un site, le mail d'annulation au site et le
 suivi de la commande le DISENT — « annulée par [nom], du compte principal
 [enseigne du principal] ». Même mention dans l'historique de la commande vu par
 le site et par l'équipe. Une annulation par un membre du site garde son texte.
+
+## 8. Bâti — lot C1, serveur (2026-10-21, non commité à l'écriture)
+
+**Ce qui existe désormais :**
+
+- **`OrderAccessReader.accessToOrder(userId, order)`**
+  (`apps/lfd-api/src/b2b/orders/domain/ports/order-access.reader.ts`, adaptateur
+  `apps/lfd-api/src/b2b/orders/infrastructure/prisma-order-access.reader.ts`) : rôle effectif dans la société DE LA
+  COMMANDE, en une lecture — membership propre (`openingMembership`) et
+  membership du principal ACTUEL, acceptée, principal `active`, passées à
+  `effectiveRole`. Le lisent : détail, bon, PDF, règlement, abandon (le mur
+  de l'auteur reste), signalement (`contact/…/order-reportable-order.reader.ts`).
+  `OrderGuardReader.roleOf` est inchangé et garde passation, devis, passation
+  par l'équipe et l'entrée de la liste.
+- **Le mur d'annulation** (`CancellingMemberReader.standingOn`) applique ses
+  conditions à la chaîne effective : société de la commande `active`,
+  rattachement propre accepté (`own`) ou `owner`/`admin` accepté d'un
+  principal `active` (`principal`, avec son enseigne). Site suspendu : lu,
+  pas annulé (§7.7).
+- **§7.9** : le principal voyage du mur au fait `order.cancelled`
+  (`cancelledFromPrincipal`, additif) ; le courriel au site dit « annulée par
+  [Prénom N.], du compte principal [enseigne] » (`introByPrincipal`, fr/en/it) ;
+  le journal porte `cancelledFromPrincipal` (`named("company")`, contrat
+  `journal-facts/orders-production.ts`). Une annulation par un membre du site
+  garde son texte.
+- **§7.3** : le signalement prend la société de la commande (audience et
+  `companyId` de la demande) ; `ReportOrderProblemCommand` ne reçoit plus de
+  société, la route ne lit plus `ActingCompany`.
+- **La liste** `GET /companies/:companyId/orders?site=…` : contrat
+  `CompanyOrderListItemView` (`packages/contracts/src/company-orders.ts`) =
+  `CustomerOrderView` + `site` (`null` pour la société listée) + `author`
+  (`team` | nom du client, §7.6). Port `CompanyOrderListReader` ; le mur des
+  sites est DANS le `where` (parent actuel = la société listée, demandeur
+  `owner`/`admin` accepté, société listée `active`), le filtre `site` en `AND`.
+  `OrderReader.listByCompany` est retiré (plus aucun appelant).
+- JSDoc d'`effectiveRole` corrigé ; `INHERITING_PARENT_ROLES` exporté.
+- E2E `apps/lfd-api/test/site-orders-from-principal.e2e-spec.ts` (22 cas) ;
+  `order-customer-cancel.e2e-spec.ts` : le cas « société mère » ne change pas
+  de sens (membre `orders`), commentaire daté.
+
+**Écarts au plan :**
+
+- **« count et pagination » (§7.5)** : la liste n'a ni pagination ni `count`
+  (elle rend tout). Le `IN` est dans la seule requête qui existe ; l'e2e
+  compte les lignes rendues. Une pagination future devra reprendre `wallOf`.
+- **« historique vu par le site » (§7.9)** : aucun historique de commande
+  n'est servi au client aujourd'hui (le journal n'est lu que par le détail
+  staff). La mention vit dans le courriel et le journal staff ; l'afficher au
+  site demande un champ de contrat — à trancher pour C2.
+- **Invitation non acceptée au principal** : par HTTP, une invitation VIVANTE
+  est acceptée à la première requête (`MembershipAcceptance.acceptLive`) ;
+  l'e2e éprouve donc l'invitation PÉRIMÉE.
+- **Règlement et PDF** : passent par `accessToOrder`, sans e2e propre (le
+  double Stripe de la scène ne relit pas d'intention ; le PDF partage le
+  handler du bon).

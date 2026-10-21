@@ -92,10 +92,6 @@ class OneOrderReader extends OrderReader {
     } as OwnedOrder);
   }
 
-  override listByCompany(): Promise<readonly OrderView[]> {
-    return unused("listByCompany");
-  }
-
   override listPersonal(): Promise<readonly OrderView[]> {
     return unused("listPersonal");
   }

@@ -9,7 +9,7 @@ import {
   CancelledOrderNotPayableError,
   PaymentIntentClosedError,
 } from "../../../domain/errors/order-payment-errors.js";
-import { OrderGuardReader } from "../../../domain/ports/order-guard.reader.js";
+import { OrderAccessReader } from "../../../domain/ports/order-access.reader.js";
 import { OrderReader, type OwnedOrder } from "../../../domain/ports/order.reader.js";
 import { orderView } from "../../handlers/__tests__/payment-failure-doubles.js";
 import { GetOrderPaymentHandler } from "../get-order-payment.handler.js";
@@ -42,7 +42,6 @@ function owned(over: {
 function reader(order: OwnedOrder | null): OrderReader {
   return {
     listForProduction: () => Promise.resolve([]),
-    listByCompany: () => Promise.resolve([]),
     listPersonal: () => Promise.resolve([]),
     findById: () => Promise.resolve(order),
     findAuthorByReference: () => Promise.resolve(null),
@@ -50,10 +49,8 @@ function reader(order: OwnedOrder | null): OrderReader {
   };
 }
 
-const guard: OrderGuardReader = {
-  roleOf: () => Promise.resolve(null),
-  companyStatusOf: () => Promise.resolve(null),
-  settlesOnAccount: () => Promise.resolve("none" as const),
+const guard: OrderAccessReader = {
+  accessToOrder: () => Promise.resolve(null),
 };
 
 function payments(

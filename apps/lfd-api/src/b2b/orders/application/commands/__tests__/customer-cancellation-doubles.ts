@@ -5,7 +5,11 @@ import {
 
 import { CustomerCancellationSettingsReader } from "../../../../order-opening/domain/ports/customer-cancellation-settings.reader.js";
 import { CancellationLinkSigner } from "../../../domain/ports/cancellation-link-signer.js";
-import { CancellingMemberReader } from "../../../domain/ports/cancelling-member.reader.js";
+import {
+  CancellingMemberReader,
+  type CancellingPrincipal,
+  type CancellingStanding,
+} from "../../../domain/ports/cancelling-member.reader.js";
 import {
   CustomerCancellationSubjectReader,
   type CustomerCancellationSubject,
@@ -47,12 +51,24 @@ export class FixedCustomerSubjects extends CustomerCancellationSubjectReader {
 
 /** Le mur pro : les paires `userId:companyId` admises. */
 export class FixedMembers extends CancellingMemberReader {
-  constructor(private readonly admitted: readonly string[] = []) {
+  /**
+   * @param admitted `user:company` — membres de la société de la commande.
+   * @param viaPrincipal `user:company` → le principal par lequel ils l'atteignent.
+   */
+  constructor(
+    private readonly admitted: readonly string[] = [],
+    private readonly viaPrincipal: Readonly<Record<string, CancellingPrincipal>> = {},
+  ) {
     super();
   }
 
-  mayCancelFor(userId: string, companyId: string): Promise<boolean> {
-    return Promise.resolve(this.admitted.includes(`${userId}:${companyId}`));
+  standingOn(userId: string, companyId: string): Promise<CancellingStanding | null> {
+    const key = `${userId}:${companyId}`;
+    if (this.admitted.includes(key)) {
+      return Promise.resolve({ via: "own" });
+    }
+    const principal = this.viaPrincipal[key];
+    return Promise.resolve(principal === undefined ? null : { via: "principal", principal });
   }
 }
 

@@ -43,11 +43,14 @@ export interface OrderCancelledMailData {
    * `team` : « annulée par notre équipe », comme avant C6. `self` : le client
    * lui-même (ou l'invité). `member` : un autre membre de la société — son
    * nom (« Prénom N. ») et la société. Le motif n'y figure jamais.
+   * `principal` (lot C1 des sous-comptes, §7.9, 2026-10-21) : un membre du
+   * compte principal, sans l'être du site — son nom et l'enseigne du principal.
    */
   readonly author?:
     | { readonly kind: "team" }
     | { readonly kind: "self" }
-    | { readonly kind: "member"; readonly name: string; readonly company: string };
+    | { readonly kind: "member"; readonly name: string; readonly company: string }
+    | { readonly kind: "principal"; readonly name: string; readonly principal: string };
   readonly locale: ContentLocale;
 }
 
@@ -113,6 +116,12 @@ function introOf(
       return day === null
         ? fill(copy.introByMemberWithoutDay, who)
         : fill(copy.introByMember, { ...who, day });
+    }
+    case "principal": {
+      const who = { name: author.name, principal: author.principal, ref };
+      return day === null
+        ? fill(copy.introByPrincipalWithoutDay, who)
+        : fill(copy.introByPrincipal, { ...who, day });
     }
   }
 }

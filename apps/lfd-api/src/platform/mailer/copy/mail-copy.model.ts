@@ -240,6 +240,13 @@ export interface OrderCancelledCopy {
   readonly introByMember: string;
   /** Le même, sans jour. `{name}`, `{company}`, `{ref}`. */
   readonly introByMemberWithoutDay: string;
+  /**
+   * Lot C1 des sous-comptes (§7.9) : un membre du compte PRINCIPAL a annulé la
+   * commande du site. `{name}`, `{principal}` (son enseigne), `{ref}`, `{day}`.
+   */
+  readonly introByPrincipal: string;
+  /** Le même, sans jour. `{name}`, `{principal}`, `{ref}`. */
+  readonly introByPrincipalWithoutDay: string;
   /** Total nul : rien à facturer. */
   readonly nothingBilled: string;
   /** Carte non payée, fermée chez Stripe : rien n'a été prélevé. */

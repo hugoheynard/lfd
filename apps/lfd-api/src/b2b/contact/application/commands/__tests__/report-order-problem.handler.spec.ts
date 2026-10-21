@@ -37,13 +37,26 @@ const DAMAGED = reason({
   audience: "both",
   priority: "medium",
 });
-const FULFILLED: ReportableOrder = { id: "o1", number: "CMD-0001", fulfilled: true, site: null };
-const PENDING: ReportableOrder = { id: "o2", number: "CMD-0002", fulfilled: false, site: null };
+const FULFILLED: ReportableOrder = {
+  id: "o1",
+  number: "CMD-0001",
+  fulfilled: true,
+  companyId: null,
+  site: null,
+};
+const PENDING: ReportableOrder = {
+  id: "o2",
+  number: "CMD-0002",
+  fulfilled: false,
+  companyId: null,
+  site: null,
+};
 /** Une commande du site `chalet`, son principal `alpes` COPIÉ à la passation. */
 const SITE_ORDER: ReportableOrder = {
   id: "o3",
   number: "CMD-0003",
   fulfilled: true,
+  companyId: "chalet",
   site: { companyId: "chalet", name: "Chalet Gentiane", principalCompanyId: "alpes" },
 };
 /** La même, passée avant la copie du principal (N1) : aucun principal. */
@@ -51,10 +64,11 @@ const BEFORE_N1: ReportableOrder = {
   id: "o4",
   number: "CMD-0004",
   fulfilled: true,
+  companyId: "chalet",
   site: { companyId: "chalet", name: "Chalet Gentiane", principalCompanyId: null },
 };
 const JEAN = { name: "Jean Martin", email: "jean@exemple.fr", phone: "" };
-const ME: ReportOrderProblemCommand["actor"] = { userId: "u1", companyId: null };
+const ME: ReportOrderProblemCommand["actor"] = { userId: "u1" };
 
 function setup(...reasons: ReturnType<typeof reason>[]): {
   handler: ReportOrderProblemHandler;
@@ -167,9 +181,9 @@ describe("ReportOrderProblemHandler — signaler un problème", () => {
 
   it("refuse un compte disparu plutôt que d'inventer un auteur", async () => {
     const { handler } = setup();
-    await expect(
-      handler.execute(report("o1", [], { userId: "u_gone", companyId: null })),
-    ).rejects.toThrow(RequestAuthorUnknownError);
+    await expect(handler.execute(report("o1", [], { userId: "u_gone" }))).rejects.toThrow(
+      RequestAuthorUnknownError,
+    );
   });
 
   it("une commande personnelle n'écrit aucun fait « problème signalé »", async () => {
@@ -180,7 +194,18 @@ describe("ReportOrderProblemHandler — signaler un problème", () => {
 });
 
 describe("ReportOrderProblemHandler — le fait durable pour le principal (N4a)", () => {
-  const SITE_ACTOR = { userId: "u1", companyId: "chalet" };
+  const SITE_ACTOR = { userId: "u1" };
+
+  /**
+   * Lot C1 de `plan-commandes-des-sites.md` (§7.3, 2026-10-21) : la demande
+   * s'écrivait au nom de l'ESPACE DE TRAVAIL ; un membre du principal qui
+   * signale sur la commande d'un site l'aurait rangée chez le principal.
+   */
+  it("la demande est écrite au nom de la société DE LA COMMANDE, pas de l'espace de travail", async () => {
+    const { handler, requests } = setup();
+    await handler.execute(report("o3", [], SITE_ACTOR));
+    expect(requests.saved[0]?.toPersistence()).toMatchObject({ companyId: "chalet" });
+  });
 
   it("écrit `order.problem_reported` avec le principal COPIÉ, le site et l'auteur — sans motif ni message", async () => {
     const { handler, uow } = setup();

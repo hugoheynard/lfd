@@ -264,6 +264,7 @@ export class OrderCancellation {
         customerUserOf(intent.actor),
         intent.reasonCode,
         intent.policy,
+        intent.fromPrincipal ?? null,
       ).durableFact(),
     );
     // La livraison sort la commande de son transfert prévu (lot T2) : même transaction.

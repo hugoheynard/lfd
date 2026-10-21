@@ -78,7 +78,9 @@ export class SendOrderCancelledMail implements DurableSubscriber {
    * Qui a annulé, pour la phrase d'ouverture (lot C6, C6.9) : l'équipe ; le
    * client lui-même (ou l'invité) ; ou un AUTRE membre de la société —
    * « Prénom N. » et la société, pour que celui qui a passé la commande sache
-   * qui l'a défaite (Q-C6.3). Le motif n'y figure jamais.
+   * qui l'a défaite (Q-C6.3) ; ou un membre du compte PRINCIPAL sur la
+   * commande d'un site — « Prénom N., du compte principal [enseigne] » (lot C1
+   * des sous-comptes, §7.9). Le motif n'y figure jamais.
    */
   private async authorOf(
     event: OrderCancelledEvent,
@@ -92,6 +94,12 @@ export class SendOrderCancelledMail implements DurableSubscriber {
       return { kind: "self" };
     }
     const member = await this.recipients.findById(by);
+    const principal = event.cancelledFromPrincipal;
+    // Lot C1 des sous-comptes (§7.9) : le site apprend que c'est le compte
+    // PRINCIPAL qui a annulé, pas un de ses propres membres.
+    if (principal !== null) {
+      return { kind: "principal", name: shortNameOf(member), principal: principal.name };
+    }
     return { kind: "member", name: shortNameOf(member), company };
   }
 }

@@ -32,7 +32,8 @@ export class GetOrderCancellabilityHandler implements IQueryHandler<
     if (subject === null) {
       throw new OrderNotFoundError(query.orderId);
     }
-    const allowed = (await this.wall.mayCancel(subject, query.userId)) ? true : "not_allowed";
+    const allowed =
+      (await this.wall.standingOf(subject, query.userId)) !== null ? true : "not_allowed";
     return this.cancellability.of(subject, this.clock.now(), allowed);
   }
 }

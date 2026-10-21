@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { OrderNoticeSummaryReader } from "../../orders/domain/ports/order-notice-summary.reader.js";
-import { OrderGuardReader } from "../../orders/domain/ports/order-guard.reader.js";
+import { OrderAccessReader } from "../../orders/domain/ports/order-access.reader.js";
 import { OrderReader } from "../../orders/domain/ports/order.reader.js";
 import { isOrderVisible } from "../../orders/domain/services/order-access.js";
 import type { ReportingSite } from "../domain/order-problem-reported.fact.js";
@@ -12,15 +12,16 @@ import {
 
 /**
  * La commande signalée, lue par les ports des COMMANDES et murée par LEUR
- * règle (`isOrderVisible`, celle de `GetOrderHandler` — vérifié le
- * 2026-10-09) : aucune requête sur leurs tables d'ici, aucune seconde règle.
- * Le rôle n'est demandé que pour une commande d'entreprise, comme là-bas.
+ * règle (`OrderAccessReader` + `isOrderVisible`, celle de `GetOrderHandler` —
+ * vérifié le 2026-10-21) : aucune requête sur leurs tables d'ici, aucune
+ * seconde règle. L'`owner`/`admin` du principal signale donc sur la
+ * commande d'un site (lot C1 de `plan-commandes-des-sites.md`).
  */
 @Injectable()
 export class OrderReportableOrderReader extends ReportableOrderReader {
   constructor(
     private readonly orders: OrderReader,
-    private readonly guard: OrderGuardReader,
+    private readonly access: OrderAccessReader,
     private readonly notices: OrderNoticeSummaryReader,
   ) {
     super();
@@ -32,13 +33,14 @@ export class OrderReportableOrderReader extends ReportableOrderReader {
       return null;
     }
     const role =
-      owned.companyId === null ? null : await this.guard.roleOf(actorUserId, owned.companyId);
+      owned.companyId === null ? null : await this.access.accessToOrder(actorUserId, owned);
     if (!isOrderVisible(owned, actorUserId, role)) {
       return null;
     }
     return {
       id: owned.view.id,
       number: owned.view.orderNumber,
+      companyId: owned.companyId,
       fulfilled: owned.view.status === "fulfilled",
       site: await this.siteOf(orderId),
     };

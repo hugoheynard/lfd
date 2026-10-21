@@ -79,10 +79,6 @@ export class OneOrderReader extends OrderReader {
     return Promise.resolve(this.owned);
   }
 
-  override listByCompany() {
-    return Promise.reject(new Error("non utilisé"));
-  }
-
   override listPersonal() {
     return Promise.reject(new Error("non utilisé"));
   }

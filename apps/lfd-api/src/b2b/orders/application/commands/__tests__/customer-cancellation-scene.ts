@@ -5,6 +5,7 @@ import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import type { IntentCancellation } from "../../../../payments/domain/payment-gateway.js";
 import type { OrderWithdrawalOutcome } from "../../../../../production/channels/commerce/index.js";
 import type { CancellationSubject } from "../../../domain/ports/cancellation-subject.reader.js";
+import type { CancellingPrincipal } from "../../../domain/ports/cancelling-member.reader.js";
 import type { CustomerCancellationSubject } from "../../../domain/ports/customer-cancellation-subject.reader.js";
 import { CancellationRefundRequester } from "../../services/cancellation-refund-requester.js";
 import { CancellationRule } from "../../services/cancellation-rule.js";
@@ -45,6 +46,8 @@ export interface CustomerScene {
   readonly customer?: Partial<CustomerCancellationSubject>;
   readonly settings?: Partial<CustomerCancellationSettingsView>;
   readonly members?: readonly string[];
+  /** `user:company` → le principal par lequel le client atteint la commande d'un site. */
+  readonly principals?: Readonly<Record<string, CancellingPrincipal>>;
   readonly stripe?: IntentCancellation;
   readonly desk?: OrderWithdrawalOutcome;
   readonly failures?: number;
@@ -90,7 +93,7 @@ export function customerScene(options: CustomerScene) {
     customers,
     signer,
     clock: new FixedClock(options.now),
-    wall: new CancellationWall(new FixedMembers(options.members ?? [])),
+    wall: new CancellationWall(new FixedMembers(options.members ?? [], options.principals ?? {})),
     links: new GuestCancellationLinkResolver(signer, customers),
     cancellation: new CustomerOrderCancellation(new CustomerCancellationPolicyGate(settings), core),
   };

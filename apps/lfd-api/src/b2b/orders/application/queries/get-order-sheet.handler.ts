@@ -2,7 +2,7 @@ import type { ClientSheet } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { OrderNotFoundError } from "../../domain/errors/order-errors.js";
-import { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
+import { OrderAccessReader } from "../../domain/ports/order-access.reader.js";
 import { OrderReader } from "../../domain/ports/order.reader.js";
 import { ensureOrderVisible } from "../../domain/services/order-access.js";
 import { clientSheetOf } from "../../domain/services/order-sheet.js";
@@ -22,7 +22,7 @@ import { GetOrderSheetQuery } from "./get-order-sheet.query.js";
 @QueryHandler(GetOrderSheetQuery)
 export class GetOrderSheetHandler implements IQueryHandler<GetOrderSheetQuery, ClientSheet> {
   constructor(
-    private readonly guard: OrderGuardReader,
+    private readonly access: OrderAccessReader,
     private readonly orders: OrderReader,
   ) {}
 
@@ -32,7 +32,7 @@ export class GetOrderSheetHandler implements IQueryHandler<GetOrderSheetQuery, C
       throw new OrderNotFoundError(query.orderId);
     }
     const role =
-      owned.companyId === null ? null : await this.guard.roleOf(query.actorUserId, owned.companyId);
+      owned.companyId === null ? null : await this.access.accessToOrder(query.actorUserId, owned);
 
     ensureOrderVisible(owned, query.actorUserId, role, query.orderId);
     return clientSheetOf(owned.view, owned.billedCustomer, owned.buyerPhone);

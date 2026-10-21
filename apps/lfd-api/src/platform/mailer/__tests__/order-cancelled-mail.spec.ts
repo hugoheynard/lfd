@@ -214,4 +214,13 @@ describe("customer.order-cancelled — qui a annulé (lot C6)", () => {
     }).html;
     expect(html).toContain("Léa P. a annulé la commande ORD-4812 de Café des Halles");
   });
+
+  /** Lot C1 des sous-comptes (`plan-commandes-des-sites.md`, §7.9). */
+  it("un membre du compte principal : son nom et l'enseigne du principal", () => {
+    const html = mail({
+      ...base,
+      author: { kind: "principal", name: "Marc D.", principal: "Groupe Alpes" },
+    }).html;
+    expect(html).toContain("annulée par Marc D., du compte principal Groupe Alpes");
+  });
 });

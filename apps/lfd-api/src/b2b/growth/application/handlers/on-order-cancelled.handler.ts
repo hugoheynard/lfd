@@ -94,6 +94,16 @@ export class OnOrderCancelled implements DurableSubscriber {
           : { id: event.cancelledByUserId, name: named.subjectLabel },
       reasonCode: event.reasonCode,
       policy: event.policy,
+      // Lot C1 des sous-comptes (§7.9) : la commande d'un site annulée depuis
+      // le compte PRINCIPAL le dit dans l'historique ; absent sinon.
+      ...(event.cancelledFromPrincipal === null
+        ? {}
+        : {
+            cancelledFromPrincipal: {
+              id: event.cancelledFromPrincipal.companyId,
+              name: event.cancelledFromPrincipal.name,
+            },
+          }),
     };
   }
 }

@@ -98,6 +98,10 @@ export const MAIL_FR: MailCopy = {
     introBySelfWithoutDay: "Vous avez annulé votre commande {ref}.",
     introByMember: "{name} a annulé la commande {ref} de {company} pour le {day}.",
     introByMemberWithoutDay: "{name} a annulé la commande {ref} de {company}.",
+    introByPrincipal:
+      "La commande {ref} pour le {day} a été annulée par {name}, du compte principal {principal}.",
+    introByPrincipalWithoutDay:
+      "La commande {ref} a été annulée par {name}, du compte principal {principal}.",
     nothingBilled: "Rien ne vous sera facturé pour cette commande.",
     nothingCharged: "Aucun paiement n'a été prélevé.",
     nothingInvoiced: "Rien ne sera facturé ni prélevé pour cette commande.",

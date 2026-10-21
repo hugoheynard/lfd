@@ -93,6 +93,10 @@ export const MAIL_IT: MailCopy = {
     introBySelfWithoutDay: "Ha annullato il suo ordine {ref}.",
     introByMember: "{name} ha annullato l'ordine {ref} di {company} per {day}.",
     introByMemberWithoutDay: "{name} ha annullato l'ordine {ref} di {company}.",
+    introByPrincipal:
+      "L'ordine {ref} per {day} è stato annullato da {name}, dell'account principale {principal}.",
+    introByPrincipalWithoutDay:
+      "L'ordine {ref} è stato annullato da {name}, dell'account principale {principal}.",
     nothingBilled: "Non le verrà addebitato nulla per questo ordine.",
     nothingCharged: "Nessun pagamento è stato prelevato.",
     nothingInvoiced: "Per questo ordine non verrà fatturato né addebitato nulla.",

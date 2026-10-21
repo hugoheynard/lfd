@@ -81,10 +81,6 @@ class ManyOrdersReader extends OrderReader {
     );
   }
 
-  override listByCompany() {
-    return Promise.reject(new Error("non utilisé"));
-  }
-
   override listPersonal() {
     return Promise.reject(new Error("non utilisé"));
   }

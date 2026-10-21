@@ -1,6 +1,7 @@
 import type { CustomerCancellationReasonCode } from "@lfd/contracts";
 
 import type { CancellationPolicyApplied } from "../../domain/events/order-cancelled.event.js";
+import type { CancellingPrincipal } from "../../domain/ports/cancelling-member.reader.js";
 import type { CancellationRecord } from "../../domain/ports/order-cancellation.repository.js";
 import type { CancellationActor } from "../../domain/services/cancellation-actor.js";
 
@@ -15,6 +16,12 @@ export interface CancellationIntent {
   readonly reasonCode: CustomerCancellationReasonCode | null;
   /** Le délai appliqué à un particulier, figé au fait (C6.5) ; `null` sinon. */
   readonly policy: CancellationPolicyApplied | null;
+  /**
+   * Le principal par lequel un client a atteint la commande d'un site
+   * (`plan-commandes-des-sites.md`, §7.9) ; absent ou `null` sinon — l'équipe
+   * et l'invité ne le posent jamais.
+   */
+  readonly fromPrincipal?: CancellingPrincipal | null;
 }
 
 /**

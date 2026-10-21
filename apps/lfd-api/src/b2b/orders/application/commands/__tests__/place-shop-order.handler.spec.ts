@@ -373,7 +373,6 @@ function capturingRepo(sink: { placed: OrderToPlace | null }): OrderRepository {
  * qui s'éprouve en e2e contre une vraie `OrderView`.
  */
 const noReader: OrderReader = {
-  listByCompany: () => Promise.resolve([]),
   listPersonal: () => Promise.resolve([]),
   findById: () => Promise.resolve(null),
   findAuthorByReference: () => Promise.resolve(null),

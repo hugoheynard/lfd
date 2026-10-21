@@ -48,9 +48,6 @@ class Reader extends OrderReader {
     return Promise.resolve(first ?? null);
   }
 
-  listByCompany(): Promise<never> {
-    return Promise.reject(new Error("non utilisé"));
-  }
   listPersonal(): Promise<never> {
     return Promise.reject(new Error("non utilisé"));
   }

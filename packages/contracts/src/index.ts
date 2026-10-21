@@ -941,6 +941,13 @@ export {
   refundedCentsOf,
 } from "./order.js";
 export { exposedHandoverToken, isSettled } from "./order-settlement.values.js";
+export { companyOrdersQuerySchema } from "./company-orders.js";
+export type {
+  CompanyOrdersQuery,
+  CompanyOrderSiteView,
+  CompanyOrderAuthorView,
+  CompanyOrderListItemView,
+} from "./company-orders.js";
 export type {
   OrderStatus,
   PaymentStatus,

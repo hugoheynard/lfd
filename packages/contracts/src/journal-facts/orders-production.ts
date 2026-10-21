@@ -344,6 +344,11 @@ export const ORDERS_PRODUCTION_FACTS = {
    * facultatif), `reasonCode` est le motif choisi dans la liste, `policy` le
    * délai appliqué à un particulier. Les quatre clés sont ABSENTES d'une
    * annulation staff, d'avant comme d'après C6.
+   *
+   * Lot C1 des sous-comptes (`plan-commandes-des-sites.md`, §7.9,
+   * 2026-10-21) : `cancelledFromPrincipal` — le compte principal (son
+   * enseigne du moment) dont le client qui a annulé la commande d'un SITE est
+   * membre, sans l'être du site. ABSENT sinon, et de tout fait d'avant.
    */
   "order.cancelled": fact(
     payload({
@@ -354,6 +359,7 @@ export const ORDERS_PRODUCTION_FACTS = {
       reason: z.string().nullable(),
       cancelledByKind: z.enum(["customer", "guest"]).optional(),
       cancelledByCustomer: namedOrBare("user").optional(),
+      cancelledFromPrincipal: named("company").optional(),
       reasonCode: z.enum(CUSTOMER_CANCELLATION_REASON_CODES).nullable().optional(),
       policy: payload({ hoursBefore: count() }).nullable().optional(),
       regime: z.enum(["free", "due", "account", "paid"]),

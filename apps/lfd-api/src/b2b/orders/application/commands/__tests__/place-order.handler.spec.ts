@@ -386,7 +386,6 @@ const freeKeys: OrderIdempotencyStore = {
  * `no-type-escapes` refuse, et elle a raison.
  */
 const noReader: OrderReader = {
-  listByCompany: () => Promise.resolve([]),
   listPersonal: () => Promise.resolve([]),
   findById: () => Promise.resolve(null),
   findAuthorByReference: () => Promise.resolve(null),

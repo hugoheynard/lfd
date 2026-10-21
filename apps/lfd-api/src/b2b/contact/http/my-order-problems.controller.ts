@@ -14,7 +14,6 @@ import {
 } from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
 
-import { ActingCompany } from "../../../platform/auth/acting-company.decorator.js";
 import { CurrentUser } from "../../../platform/auth/current-user.decorator.js";
 import type { Principal } from "../../../platform/auth/principal.js";
 import { perAccountThrottleGuard } from "../../../platform/security/per-account-throttle.guard.js";
@@ -37,8 +36,9 @@ export const OrderProblemThrottleGuard = perAccountThrottleGuard({
 /**
  * **Signaler un problème** — `POST /me/orders/:id/problems`, en multipart :
  * les champs `reasonId` et `message`, et jusqu'à trois fichiers `photos`. La
- * personne et la société viennent du jeton et du contexte ; nom et e-mail
- * sont pris au compte. Rend l'id de la demande.
+ * personne vient du jeton ; nom et e-mail
+ * sont pris au compte ; la société est celle de la COMMANDE, jamais l'espace
+ * de travail (`plan-commandes-des-sites.md`, §7.3). Rend l'id de la demande.
  */
 @Controller("me/orders/:orderId/problems")
 export class MyOrderProblemsController {
@@ -52,12 +52,10 @@ export class MyOrderProblemsController {
     @Body(new ZodBody(orderProblemPayloadSchema)) payload: OrderProblemPayload,
     @UploadedFiles() files: readonly UploadedPhotoPart[] | undefined,
     @CurrentUser() principal: Principal,
-    @ActingCompany() companyId: string | null,
   ): Promise<CreatedIdResponse> {
     const id = await this.commands.execute<ReportOrderProblemCommand, string>(
       new ReportOrderProblemCommand(orderId, payload, photoBytesOf(files), {
         userId: principal.userId,
-        companyId,
       }),
     );
     return { id };

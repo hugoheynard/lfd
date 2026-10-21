@@ -19,7 +19,9 @@ import { CancelOrderByCustomerCommand } from "./cancel-order-by-customer.command
  * 3. P2 (si le délai est imposé) pour une commande personnelle, puis le noyau staff à l'identique
  *    (`CustomerOrderCancellation`).
  *
- * L'instant est lu UNE fois (`now` gelé de la requête, S5).
+ * L'instant est lu UNE fois (`now` gelé de la requête, S5). Quand le mur
+ * admet par le compte PRINCIPAL (lot C1 des sous-comptes, §7.9), le principal
+ * voyage jusqu'au fait : le courriel et le journal le disent.
  */
 @CommandHandler(CancelOrderByCustomerCommand)
 export class CancelOrderByCustomerHandler implements ICommandHandler<
@@ -36,7 +38,8 @@ export class CancelOrderByCustomerHandler implements ICommandHandler<
   async execute(command: CancelOrderByCustomerCommand): Promise<void> {
     const reason = CustomerCancellationReason.of(command.reasonCode, command.reasonText);
     const subject = await this.subjects.find(command.orderId);
-    if (subject === null || !(await this.wall.mayCancel(subject, command.userId))) {
+    const standing = subject === null ? null : await this.wall.standingOf(subject, command.userId);
+    if (subject === null || standing === null) {
       throw new OrderNotFoundError(command.orderId);
     }
     await this.cancellation.cancel({
@@ -44,6 +47,7 @@ export class CancelOrderByCustomerHandler implements ICommandHandler<
       actor: { kind: "customer", userId: command.userId },
       reason,
       now: this.clock.now(),
+      fromPrincipal: standing.via === "principal" ? standing.principal : null,
     });
   }
 }

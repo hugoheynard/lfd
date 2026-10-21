@@ -18,12 +18,8 @@ import {
 import { OrderNotFoundError } from "../../../domain/errors/order-errors.js";
 import { OrderAbandonedEvent } from "../../../domain/events/order-abandoned.event.js";
 import { OrderPaymentFailedEvent } from "../../../domain/events/order-payment-failed.event.js";
-import {
-  OrderGuardReader,
-  type AccountSettlementStanding,
-  type OrderCompanyStatus,
-  type OrderRole,
-} from "../../../domain/ports/order-guard.reader.js";
+import { OrderAccessReader } from "../../../domain/ports/order-access.reader.js";
+import type { OrderRole } from "../../../domain/ports/order-guard.reader.js";
 import {
   OrderRepository,
   type AbandonedSettlement,
@@ -38,21 +34,13 @@ import { RecordingDurable } from "./durable-doubles.js";
 import { RecordingRedemption } from "./voucher-doubles.js";
 
 /** Un seul rôle, pour tout demandeur : membre (`orders`) ou étranger (`null`). */
-class OneRoleGuard extends OrderGuardReader {
+class OneRoleGuard extends OrderAccessReader {
   constructor(private readonly role: OrderRole | null) {
     super();
   }
 
-  roleOf(): Promise<OrderRole | null> {
+  accessToOrder(): Promise<OrderRole | null> {
     return Promise.resolve(this.role);
-  }
-
-  companyStatusOf(): Promise<OrderCompanyStatus | null> {
-    return Promise.reject(new Error("non utilisé"));
-  }
-
-  settlesOnAccount(): Promise<AccountSettlementStanding> {
-    return Promise.reject(new Error("non utilisé"));
   }
 }
 

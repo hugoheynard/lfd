@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { CustomerCancellationRefusedError } from "../../domain/errors/customer-cancellation-errors.js";
+import type { CancellingPrincipal } from "../../domain/ports/cancelling-member.reader.js";
 import type { CustomerCancellationSubject } from "../../domain/ports/customer-cancellation-subject.reader.js";
 import { tooLatePhraseOf } from "../../domain/services/customer-cancellation-refusal.js";
 import type { CustomerCancellationReason } from "../../domain/value-objects/customer-cancellation-reason.js";
@@ -33,6 +34,8 @@ export class CustomerOrderCancellation {
     readonly actor: { readonly kind: "customer" | "guest"; readonly userId: string };
     readonly reason: CustomerCancellationReason;
     readonly now: Date;
+    /** Le principal par lequel le client atteint la commande d'un site (§7.9). */
+    readonly fromPrincipal?: CancellingPrincipal | null;
   }): Promise<void> {
     const applied = await this.policy.windowOf(input.subject, input.now);
     if (applied !== null && applied.window.kind === "too_late") {
@@ -44,6 +47,7 @@ export class CustomerOrderCancellation {
         reasonText: input.reason.text,
         reasonCode: input.reason.code,
         policy: applied === null ? null : { hoursBefore: applied.hoursBefore },
+        fromPrincipal: input.fromPrincipal ?? null,
       });
     } catch (error) {
       throw customerErrorOf(error, input.subject.orderId);

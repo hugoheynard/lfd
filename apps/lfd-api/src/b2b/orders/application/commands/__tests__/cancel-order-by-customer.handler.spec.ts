@@ -139,6 +139,21 @@ describe("CancelOrderByCustomerHandler — le délai P2 (C6.3)", () => {
     expect(scene.settings.reads).toBe(0);
     expect(factOf(scene).cancelledByUserId).toBe("usr_2");
     expect(factOf(scene).policy).toBeNull();
+    expect(factOf(scene).cancelledFromPrincipal).toBeNull();
+  });
+
+  /** Lot C1 des sous-comptes (`plan-commandes-des-sites.md`, §7.9). */
+  it("admis par le compte PRINCIPAL : le fait porte le principal, pour le courriel et le journal", async () => {
+    const principal = { companyId: "co_alpes", name: "Groupe Alpes" };
+    const scene = handlerOf({
+      customer: { companyId: "co_site", serviceDay: SERVICE_DAY },
+      principals: { "usr_9:co_site": principal },
+    });
+
+    await scene.handler.execute(by("usr_9"));
+
+    expect(factOf(scene).cancelledByUserId).toBe("usr_9");
+    expect(factOf(scene).cancelledFromPrincipal).toEqual(principal);
   });
 });
 

@@ -2,7 +2,7 @@ import { exposedHandoverToken } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { OrderNotFoundError } from "../../domain/errors/order-errors.js";
-import { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
+import { OrderAccessReader } from "../../domain/ports/order-access.reader.js";
 import { OrderReader } from "../../domain/ports/order.reader.js";
 import { ensureOrderVisible } from "../../domain/services/order-access.js";
 import { clientSheetOf } from "../../domain/services/order-sheet.js";
@@ -83,7 +83,7 @@ export class GetOrderSheetPdfHandler implements IQueryHandler<
   OrderSheetPdf
 > {
   constructor(
-    private readonly guard: OrderGuardReader,
+    private readonly access: OrderAccessReader,
     private readonly orders: OrderReader,
     private readonly archive: OrderSheetArchive,
   ) {}
@@ -94,7 +94,7 @@ export class GetOrderSheetPdfHandler implements IQueryHandler<
       throw new OrderNotFoundError(query.orderId);
     }
     const role =
-      owned.companyId === null ? null : await this.guard.roleOf(query.actorUserId, owned.companyId);
+      owned.companyId === null ? null : await this.access.accessToOrder(query.actorUserId, owned);
     ensureOrderVisible(owned, query.actorUserId, role, query.orderId);
 
     return this.archive.pdfOf(

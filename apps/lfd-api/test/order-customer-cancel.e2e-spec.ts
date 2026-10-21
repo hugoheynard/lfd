@@ -148,7 +148,13 @@ describe("le mur (C6.2)", () => {
     },
   );
 
-  it("membre de la société mère sans rattachement au site : 404", async () => {
+  /**
+   * Relu le 2026-10-21 (lot C1 de `plan-commandes-des-sites.md`) : le sens
+   * NE change PAS — ce membre est `orders` du principal (défaut de `member`),
+   * et `orders`/`billing` n'héritent de rien (§7.8). L'`owner`/`admin` du
+   * principal, lui, annule désormais : `site-orders-from-principal.e2e-spec.ts`.
+   */
+  it("membre `orders` de la société mère sans rattachement au site : 404", async () => {
     const parentId = await company();
     const site = await ctx.prisma.company.update({
       where: { id: await company() },

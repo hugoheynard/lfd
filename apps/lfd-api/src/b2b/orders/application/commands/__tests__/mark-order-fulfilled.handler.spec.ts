@@ -30,7 +30,6 @@ class Reader extends OrderReader {
     return Promise.resolve(this.author);
   }
 
-  listByCompany = unused;
   listPersonal = unused;
   findById = unused;
   findForPacking = unused;

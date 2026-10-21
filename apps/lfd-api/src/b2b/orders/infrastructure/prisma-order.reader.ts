@@ -68,7 +68,7 @@ interface OrderLineRow {
 }
 
 /** Une commande telle que Prisma la sélectionne. */
-interface OrderRow {
+export interface OrderRow {
   readonly id: string;
   readonly orderNumber: string;
   readonly status: OrderStatus;
@@ -117,7 +117,7 @@ interface OrderRow {
 }
 
 /** Colonnes d'une commande à lire (partagées entreprise / personnel). */
-const ORDER_SELECT = {
+export const ORDER_SELECT = {
   id: true,
   orderNumber: true,
   status: true,
@@ -195,7 +195,7 @@ const ORDER_SELECT = {
  * où mène la passation ; le panier, gardé jusqu'au paiement, permet de la
  * repasser, et la nouvelle remplace l'ancienne (`replace-unsettled-shop-orders`).
  */
-const CUSTOMER_VISIBLE = {
+export const CUSTOMER_VISIBLE = {
   paymentStatus: { notIn: [PaymentStatusValue.pending, PaymentStatusValue.failed] },
 } satisfies Prisma.OrderWhereInput;
 
@@ -204,15 +204,6 @@ const CUSTOMER_VISIBLE = {
 export class PrismaOrderReader extends OrderReader {
   constructor(private readonly prisma: PrismaService) {
     super();
-  }
-
-  async listByCompany(companyId: string): Promise<readonly OrderView[]> {
-    const rows = await this.prisma.order.findMany({
-      where: { companyId, ...CUSTOMER_VISIBLE },
-      orderBy: { createdAt: "desc" },
-      select: ORDER_SELECT,
-    });
-    return rows.map((row) => toOrderView(row));
   }
 
   async listPersonal(userId: string): Promise<readonly OrderView[]> {
@@ -509,7 +500,7 @@ function parseAddress(value: Prisma.JsonValue | null): BillingAddressPayload | n
   return value === null ? null : billingAddressPayloadSchema.parse(value);
 }
 
-function toOrderView(row: OrderRow): OrderView {
+export function toOrderView(row: OrderRow): OrderView {
   return {
     id: row.id,
     orderNumber: row.orderNumber,

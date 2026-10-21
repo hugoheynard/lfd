@@ -70,7 +70,10 @@ export class ReportOrderProblemHandler implements ICommandHandler<
     const photos = command.photos.map((bytes) => RequestPhoto.create(bytes));
     const { actor } = command;
     const order = await this.fulfilledOrder(command.orderId, actor.userId);
-    const audience = await this.audiences.of(actor.companyId);
+    // La société de la COMMANDE, jamais l'espace de travail (§7.3 de
+    // `plan-commandes-des-sites.md`) : un membre du principal qui signale sur
+    // la commande d'un site écrit la demande AU NOM DU SITE.
+    const audience = await this.audiences.of(order.companyId);
     const reason = await offeredReason(
       this.reasons,
       command.payload.reasonId,
@@ -89,7 +92,7 @@ export class ReportOrderProblemHandler implements ICommandHandler<
       author,
       body: command.payload.message,
       userId: actor.userId,
-      companyId: actor.companyId,
+      companyId: order.companyId,
       order: { id: order.id, number: order.number },
       at,
     });

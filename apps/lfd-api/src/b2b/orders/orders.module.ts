@@ -151,6 +151,8 @@ import { ListCompanyOrdersHandler } from "./application/queries/list-company-ord
 import { ListPersonalOrdersHandler } from "./application/queries/list-personal-orders.handler.js";
 import { CustomerSkuReader } from "./domain/ports/customer-sku.reader.js";
 import { OrderCutoffReader } from "./domain/ports/order-cutoff.reader.js";
+import { CompanyOrderListReader } from "./domain/ports/company-order-list.reader.js";
+import { OrderAccessReader } from "./domain/ports/order-access.reader.js";
 import { OrderGuardReader } from "./domain/ports/order-guard.reader.js";
 import { OrderPayerReader } from "./domain/ports/order-payer.reader.js";
 import { OrderReader } from "./domain/ports/order.reader.js";
@@ -174,6 +176,8 @@ import { PurchaseHistoryReader } from "../recommendations/domain/ports/purchase-
 import { PrismaPurchaseHistoryReader } from "./infrastructure/prisma-purchase-history.reader.js";
 import { AudienceOrderReader } from "../audiences/domain/ports/audience-order.reader.js";
 import { PrismaAudienceOrderReader } from "./infrastructure/prisma-audience-order.reader.js";
+import { PrismaCompanyOrderListReader } from "./infrastructure/prisma-company-order-list.reader.js";
+import { PrismaOrderAccessReader } from "./infrastructure/prisma-order-access.reader.js";
 import { PrismaOrderGuardReader } from "./infrastructure/prisma-order-guard.reader.js";
 import { PrismaPreferredPickupReader } from "./infrastructure/prisma-preferred-pickup.reader.js";
 import { PrismaOrderPayerReader } from "./infrastructure/prisma-order-payer.reader.js";
@@ -475,6 +479,11 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // d'ajouter un cache à l'une et pas à l'autre.
     { provide: OrderCutoffReader, useExisting: OrderCutoffsInForce },
     { provide: OrderGuardReader, useClass: PrismaOrderGuardReader },
+    // Le mur des gestes sur une commande EXISTANTE, héritage du principal
+    // compris (lot C1 de `plan-commandes-des-sites.md`) ; distinct de
+    // `roleOf`, qui garde la passation et le devis.
+    { provide: OrderAccessReader, useClass: PrismaOrderAccessReader },
+    { provide: CompanyOrderListReader, useClass: PrismaCompanyOrderListReader },
     { provide: OrderPayerReader, useClass: PrismaOrderPayerReader },
     // Le port étroit du statut, sur la MÊME instance que le garde : la clientèle
     // n'a besoin que de lui, et deux lecteurs du statut n'auraient aucune raison
@@ -527,10 +536,11 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // DÉLÈGUE la lecture du sujet de remise plutôt que de recopier son `select`,
     // et Nest doit pouvoir le lui donner là où il est instancié.
     OrderReader,
-    // Le garde-fou d'accès, que le signalement d'un problème (`b2b/contact`)
-    // applique avec `isOrderVisible` : la règle d'accès d'une commande, pas
-    // une seconde (`demandes-clients.md`, §6.4, 2026-10-09).
-    OrderGuardReader,
+    // Le mur d'une commande existante, que le signalement d'un problème
+    // (`b2b/contact`) applique avec `isOrderVisible` : la règle d'accès d'une
+    // commande, pas une seconde (`demandes-clients.md`, §6.4 ; héritage du
+    // principal depuis le lot C1 de `plan-commandes-des-sites.md`).
+    OrderAccessReader,
     // Les commandes définitives, que la fidélité crédite (plan des points,
     // D3) : elle les lit par ce port, jamais dans les tables de la commande.
     CompletedOrderReader,

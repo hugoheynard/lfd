@@ -60,8 +60,6 @@ export interface OwnedOrder {
  * appliqués par les handlers, jamais ici.
  */
 export abstract class OrderReader {
-  abstract listByCompany(companyId: string): Promise<readonly OrderView[]>;
-
   /**
    * Les commandes **personnelles** d'un client (sans entreprise), la plus récente
    * en tête. Mur = le seul `placedByUserId` (pas d'entreprise à vérifier).

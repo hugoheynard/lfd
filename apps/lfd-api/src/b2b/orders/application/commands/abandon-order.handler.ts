@@ -20,7 +20,7 @@ import { OrderNotFoundError } from "../../domain/errors/order-errors.js";
 import { OrderAbandonedEvent } from "../../domain/events/order-abandoned.event.js";
 import { OrderPaymentFailedEvent } from "../../domain/events/order-payment-failed.event.js";
 import { LoyaltyVoucherRedemption } from "../../domain/ports/loyalty-voucher-redemption.js";
-import { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
+import { OrderAccessReader } from "../../domain/ports/order-access.reader.js";
 import { OrderReader, type OwnedOrder } from "../../domain/ports/order.reader.js";
 import { OrderRepository, type AbandonedSettlement } from "../../domain/ports/order.repository.js";
 import { ensureOrderVisible } from "../../domain/services/order-access.js";
@@ -72,7 +72,7 @@ export class AbandonOrderHandler implements ICommandHandler<AbandonOrderCommand,
   private readonly logger = new Logger(AbandonOrderHandler.name);
 
   constructor(
-    private readonly guard: OrderGuardReader,
+    private readonly access: OrderAccessReader,
     private readonly orders: OrderReader,
     private readonly repository: OrderRepository,
     private readonly payments: PaymentGateway,
@@ -144,9 +144,7 @@ export class AbandonOrderHandler implements ICommandHandler<AbandonOrderCommand,
       throw new OrderNotFoundError(command.orderId);
     }
     const role =
-      owned.companyId === null
-        ? null
-        : await this.guard.roleOf(command.actorUserId, owned.companyId);
+      owned.companyId === null ? null : await this.access.accessToOrder(command.actorUserId, owned);
     ensureOrderVisible(owned, command.actorUserId, role, command.orderId);
     ensureOrderAuthor(owned, command.actorUserId, command.orderId);
     return owned;

@@ -4,6 +4,12 @@ import type { ReportingSite } from "../order-problem-reported.fact.js";
 export interface ReportableOrder {
   readonly id: string;
   readonly number: string;
+  /**
+   * La société DE LA COMMANDE, `null` pour une commande personnelle. C'est
+   * elle qui fait foi pour l'audience et la société de la demande — jamais
+   * l'espace de travail (`plan-commandes-des-sites.md`, §7.3).
+   */
+  readonly companyId: string | null;
   /** Retirée ou livrée (`status === 'fulfilled'`, la source du suivi). */
   readonly fulfilled: boolean;
   /**

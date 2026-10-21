@@ -5,6 +5,7 @@ import {
 
 import type { DurableEvent, DurableFact } from "../../../../platform/outbox/durable-event.js";
 import { OrderSettlementPayloadError } from "../errors/order-settlement-payload.error.js";
+import type { CancellingPrincipal } from "../ports/cancelling-member.reader.js";
 import type { CancellationActorKind } from "../services/cancellation-actor.js";
 import type { CancellableRegime } from "../services/order-cancellation.js";
 
@@ -63,6 +64,11 @@ export const ORDER_CANCELLED = "order.cancelled";
  * C6 n'en a aucun et se lit `staff`, comme il l'était. Pour un client,
  * `cancelledBy` (la fiche staff) est `null`, et `reason` peut l'être (motif
  * facultatif, Q-C6.1).
+ *
+ * Lot C1 des sous-comptes (`plan-commandes-des-sites.md`, §7.9, 2026-10-21) :
+ * `cancelledFromPrincipal`, ADDITIF — le compte principal par lequel le client
+ * a atteint la commande d'un site dont il n'est pas membre. Un fait sans la
+ * clé se lit `null`.
  */
 export class OrderCancelledEvent implements DurableEvent {
   constructor(
@@ -81,6 +87,7 @@ export class OrderCancelledEvent implements DurableEvent {
     readonly cancelledByUserId: string | null = null,
     readonly reasonCode: CustomerCancellationReasonCode | null = null,
     readonly policy: CancellationPolicyApplied | null = null,
+    readonly cancelledFromPrincipal: CancellingPrincipal | null = null,
   ) {}
 
   durableFact(): DurableFact {
@@ -103,6 +110,7 @@ export class OrderCancelledEvent implements DurableEvent {
         cancelledByUserId: this.cancelledByUserId,
         reasonCode: this.reasonCode,
         policy: this.policy,
+        cancelledFromPrincipal: this.cancelledFromPrincipal,
       },
     };
   }
@@ -120,6 +128,7 @@ export class OrderCancelledEvent implements DurableEvent {
     const voucher = voucherOf(payload["voucher"]);
     const refund = refundOf(payload["refund"]);
     const author = authorOf(payload, text);
+    const fromPrincipal = principalOf(payload["cancelledFromPrincipal"]);
     if (
       orderId === null ||
       orderNumber === null ||
@@ -127,7 +136,8 @@ export class OrderCancelledEvent implements DurableEvent {
       (regime !== "free" && regime !== "due" && regime !== "account" && regime !== "paid") ||
       voucher === undefined ||
       refund === undefined ||
-      author === undefined
+      author === undefined ||
+      fromPrincipal === undefined
     ) {
       throw new OrderSettlementPayloadError(ORDER_CANCELLED);
     }
@@ -144,8 +154,24 @@ export class OrderCancelledEvent implements DurableEvent {
       author.userId,
       author.reasonCode,
       author.policy,
+      fromPrincipal,
     );
   }
+}
+
+/** Le principal d'un fait — `null` absent (fait d'avant C1), `undefined` hors forme. */
+function principalOf(raw: unknown): CancellingPrincipal | null | undefined {
+  if (raw === undefined || raw === null) {
+    return null;
+  }
+  if (typeof raw !== "object") {
+    return undefined;
+  }
+  const companyId: unknown = Reflect.get(raw, "companyId");
+  const name: unknown = Reflect.get(raw, "name");
+  return typeof companyId === "string" && typeof name === "string"
+    ? { companyId, name }
+    : undefined;
 }
 
 interface CancellationAuthorPayload {
