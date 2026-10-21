@@ -71,6 +71,28 @@ describe("les retours bancaires (R5a)", () => {
     ]);
   });
 
+  /**
+   * Régression (2026-10-21, repris le 2026-11-08) : la cloche « prélèvement
+   * rejeté » écrivait dans la transaction de l'enregistrement, déjà close quand
+   * elle s'exécutait — P2028 « Transaction already closed », et aucune
+   * notification.
+   */
+  it("un retour enregistré sonne la cloche « prélèvement rejeté »", async () => {
+    const entityId = await setUpEntity(staff);
+    await invoicedPayer(ctx, staff, entityId, closesAt);
+    const { batchId } = await depositedLine(entityId);
+
+    const returnId = await signal(batchId);
+    await ctx.drain();
+
+    const bell = await ctx.prisma.staffNotification.findMany({
+      where: { kind: "collection.returned" },
+    });
+    expect(bell.map((row) => row.idempotencyKey)).toEqual([
+      `notification:collection.returned:${returnId}`,
+    ]);
+  });
+
   it("un second retour sur la même ligne : 409", async () => {
     const entityId = await setUpEntity(staff);
     await invoicedPayer(ctx, staff, entityId, closesAt);

@@ -1,6 +1,7 @@
 import { Logger } from "@nestjs/common";
 import { EventsHandler, type IEventHandler } from "@nestjs/cqrs";
 
+import { AfterCommit } from "../../../../platform/database/after-commit.js";
 import { BackgroundWork } from "../../../../platform/events/background-work.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { StaffNotifier } from "../../../../staff/notifications/domain/ports/staff-notifier.js";
@@ -9,6 +10,8 @@ import {
   returnedBatchLabel,
 } from "../../domain/events/collection-return.events.js";
 
+const RING_COLLECTION_RETURNED = "ring-collection-returned";
+
 /**
  * **« Prélèvement rejeté »** (plan `retours-bancaires.md`) : la
  * banque a renvoyé une ligne, ses commandes ne sont plus prélevées, et
@@ -16,6 +19,11 @@ import {
  * `RingRefundNotCredited`. Pas de blocage automatique du client (A36) : la
  * cloche le dit, le staff décide. Une clé par retour : rejouée, elle ne sonne
  * pas deux fois.
+ *
+ * Le fait est publié DANS la transaction qui enregistre le retour : la cloche
+ * attend sa validation. Lancée tout de suite, elle héritait de la transaction
+ * ambiante et l'écrivait une fois close (P2028, constaté le 2026-10-21 sur
+ * `seed:invoices`) — et un retour annulé aurait sonné quand même.
  */
 @EventsHandler(CollectionReturnedEvent)
 export class RingCollectionReturned implements IEventHandler<CollectionReturnedEvent> {
@@ -25,10 +33,14 @@ export class RingCollectionReturned implements IEventHandler<CollectionReturnedE
     private readonly notifier: StaffNotifier,
     private readonly clock: Clock,
     private readonly work: BackgroundWork,
+    private readonly afterCommit: AfterCommit,
   ) {}
 
   handle(event: CollectionReturnedEvent): void {
-    void this.work.track(this.run(event), "ring-collection-returned");
+    this.afterCommit.defer(
+      () => this.work.track(this.run(event), RING_COLLECTION_RETURNED),
+      RING_COLLECTION_RETURNED,
+    );
   }
 
   private async run(event: CollectionReturnedEvent): Promise<void> {
