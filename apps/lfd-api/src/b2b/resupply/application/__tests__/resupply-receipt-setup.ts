@@ -1,0 +1,92 @@
+import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
+import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
+import { FixedClock } from "../../../../platform/time/fixed-clock.js";
+import type { SiteResupplySnapshot } from "../../domain/site-resupply.js";
+import { CorrectReceivedResupplyLineHandler } from "../correct-received-resupply-line.handler.js";
+import { CorrectResupplyLineHandler } from "../correct-resupply-line.handler.js";
+import { GetResupplyReceiptHandler } from "../get-resupply-receipt.handler.js";
+import { ReceiveResupplyLineHandler } from "../receive-resupply-line.handler.js";
+import { ReceiveSiteResupplyHandler } from "../receive-site-resupply.handler.js";
+import { WithdrawResupplyLineHandler } from "../withdraw-resupply-line.handler.js";
+import {
+  Catalogue,
+  Directory,
+  InMemoryReceiptReader,
+  InMemoryReceipts,
+  Sites,
+} from "./resupply-doubles.js";
+import { InMemorySiteResupplies, InMemorySiteResupplyReader } from "./site-resupply-doubles.js";
+import { InMemoryStockAlerts } from "./stock-alert-doubles.js";
+
+/** Le banc des handlers de la réception (lot R2) : doubles partagés, une horloge fixe. */
+export const AT = new Date(0);
+export const SITE = "site_village";
+export const OTHER = "site_labo";
+export const DAY = "2026-01-02";
+export const CATALOGUE = new Catalogue([
+  { sku: "CRO", name: "Croissant" },
+  { sku: "PAC", name: "Pain au chocolat" },
+]);
+export const AUTHOR = { staffUserId: "staff_lou", name: "Lou Martin", role: "counter" };
+
+/** Un réassort envoyé, tel que la base le rendrait. */
+export function placed(
+  id: string,
+  lines: SiteResupplySnapshot["lines"],
+  overrides: Partial<SiteResupplySnapshot> = {},
+): SiteResupplySnapshot {
+  return {
+    id,
+    siteId: SITE,
+    target: "asap",
+    serviceDay: DAY,
+    version: 2,
+    lines,
+    placed: { at: AT, author: AUTHOR },
+    cancelled: null,
+    ...overrides,
+  };
+}
+
+export function setup() {
+  const receipts = new InMemoryReceipts();
+  const resupplies = new InMemorySiteResupplies();
+  const alerts = new InMemoryStockAlerts();
+  const staff = new Directory({ name: "Lou Martin", role: "counter" });
+  const clock = new FixedClock(AT);
+  const uow = new DirectUnitOfWork();
+  const ids = new FixedIdGenerator("receipt");
+  return {
+    receipts,
+    resupplies,
+    alerts,
+    receiveResupply: new ReceiveSiteResupplyHandler(
+      resupplies,
+      receipts,
+      alerts,
+      staff,
+      clock,
+      ids,
+      uow,
+    ),
+    correctReceived: new CorrectReceivedResupplyLineHandler(receipts, staff, clock, uow),
+    receive: new ReceiveResupplyLineHandler(
+      receipts,
+      alerts,
+      CATALOGUE,
+      new Sites([SITE]),
+      staff,
+      clock,
+      ids,
+      uow,
+    ),
+    correct: new CorrectResupplyLineHandler(receipts, staff, clock, uow),
+    withdraw: new WithdrawResupplyLineHandler(receipts, staff, clock, uow),
+    read: new GetResupplyReceiptHandler(
+      new InMemoryReceiptReader(receipts),
+      new InMemorySiteResupplyReader(resupplies),
+    ),
+  };
+}
+
+export const CRO_24 = [{ sku: "CRO", label: "Croissant", quantity: 24 }];

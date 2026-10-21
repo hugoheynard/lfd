@@ -3,12 +3,15 @@ import { signal } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import type {
   ResupplyArticleView,
+  ResupplyReceiptLineView,
   ResupplyReceiptView,
+  ResupplyReceptionView,
   SiteResuppliesView,
   SiteStockAlertsView,
   StaffPermission,
   StockAlertLevel,
   StockAlertView,
+  UnorderedReceiptLineView,
 } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
@@ -18,15 +21,18 @@ import { HandoverQueueStore } from '../../handover-shop/handover-queue.store';
 import { parisToday } from '../../shared/paris-today';
 import { ReassortBoutiquePage } from './reassort-boutique-page';
 import { ResupplyReceiptsService } from './resupply-receipts.service';
+import { ResupplyReceptionsCard } from './resupply-receptions-card/resupply-receptions-card';
 import { AsapDraftAdder } from './asap-draft-adder/asap-draft-adder';
 import { SiteResuppliesService } from './site-resupplies.service';
 import { SiteStockAlertsService } from './site-stock-alerts.service';
 import { StockAlertsCard } from './stock-alerts-card/stock-alerts-card';
+import { UnorderedReceiptCard } from './unordered-receipt-card/unordered-receipt-card';
 
 /**
- * Le réassort boutique (J1, 2026-10-21) : un point de retrait, une journée,
- * des lignes reçues ; le stock estimé est le reçu tant que le jour même sur
- * stock n'existe pas — aucune colonne « commandé ».
+ * Le réassort boutique (J1, refait au lot R2 le 2026-10-21) : un point de
+ * retrait, une journée, un reçu par réassort réceptionné d'un geste, le
+ * réassort sans commande, et le stock estimé, somme des reçus — aucune
+ * colonne « commandé ».
  */
 const TODAY = parisToday();
 const VILLAGE: CounterPlace = { id: 'site_v', label: 'Village' };
@@ -46,10 +52,14 @@ const ARTICLES: readonly ResupplyArticleView[] = [
   { sku: 'PAC', name: 'Pain au chocolat' },
 ];
 
-/** Un serveur en mémoire : les gestes changent la liste que la lecture rend. */
+/**
+ * Un serveur en mémoire : les gestes changent ce que la lecture rend. Le
+ * stock est la somme des reçus, comme côté serveur (lot R2).
+ */
 class FakeReceipts {
   readonly calls: string[] = [];
-  lines: ResupplyReceiptView['lines'] = [];
+  unordered: UnorderedReceiptLineView[] = [];
+  receptions: ResupplyReceptionView[] = [];
   failRead = false;
 
   articles(): Promise<readonly ResupplyArticleView[]> {
@@ -63,32 +73,92 @@ class FakeReceipts {
     return Promise.resolve({
       siteId,
       serviceDay: day,
-      lines: this.lines,
-      updatedAt: null,
-      updatedBy: null,
+      receptions: this.receptions,
+      unordered: { lines: this.unordered, updatedAt: null, updatedBy: null },
+      stock: this.stock(),
     });
+  }
+  receiveResupply(_site: string, resupplyId: string): Promise<void> {
+    this.calls.push(`receive-resupply ${resupplyId}`);
+    this.receptions = this.receptions.map((r) =>
+      r.resupplyId === resupplyId
+        ? {
+            ...r,
+            status: 'received',
+            receivedAt: '2026-01-02T08:30:00.000Z',
+            receivedBy: 'Lou',
+            lines: r.lines.map((l) => ({ ...l, receivedQuantity: l.expectedQuantity })),
+          }
+        : r,
+    );
+    return Promise.resolve();
+  }
+  correctReceived(_site: string, resupplyId: string, sku: string, quantity: number): Promise<void> {
+    this.calls.push(`correct-received ${resupplyId} ${sku} ${String(quantity)}`);
+    this.receptions = this.receptions.map((r) =>
+      r.resupplyId === resupplyId
+        ? {
+            ...r,
+            lines: r.lines.map((l) => (l.sku === sku ? { ...l, receivedQuantity: quantity } : l)),
+          }
+        : r,
+    );
+    return Promise.resolve();
   }
   receive(_site: string, _day: string, sku: string, quantity: number): Promise<void> {
     this.calls.push(`receive ${sku} ${String(quantity)}`);
     const label = ARTICLES.find((a) => a.sku === sku)?.name ?? sku;
-    this.lines = [
-      ...this.lines,
-      { sku, label, receivedQuantity: quantity, estimatedStock: quantity },
-    ];
+    this.unordered = [...this.unordered, { sku, label, receivedQuantity: quantity }];
     return Promise.resolve();
   }
   correct(_site: string, _day: string, sku: string, quantity: number): Promise<void> {
     this.calls.push(`correct ${sku} ${String(quantity)}`);
-    this.lines = this.lines.map((l) =>
-      l.sku === sku ? { ...l, receivedQuantity: quantity, estimatedStock: quantity } : l,
+    this.unordered = this.unordered.map((l) =>
+      l.sku === sku ? { ...l, receivedQuantity: quantity } : l,
     );
     return Promise.resolve();
   }
   withdraw(_site: string, _day: string, sku: string): Promise<void> {
     this.calls.push(`withdraw ${sku}`);
-    this.lines = this.lines.filter((l) => l.sku !== sku);
+    this.unordered = this.unordered.filter((l) => l.sku !== sku);
     return Promise.resolve();
   }
+
+  private stock(): ResupplyReceiptLineView[] {
+    const totals = new Map<string, ResupplyReceiptLineView>();
+    const received = [
+      ...this.receptions.flatMap((r) =>
+        r.lines.flatMap((l) =>
+          l.receivedQuantity === null ? [] : [{ ...l, receivedQuantity: l.receivedQuantity }],
+        ),
+      ),
+      ...this.unordered,
+    ];
+    for (const line of received) {
+      const sum = (totals.get(line.sku)?.receivedQuantity ?? 0) + line.receivedQuantity;
+      totals.set(line.sku, {
+        sku: line.sku,
+        label: line.label,
+        receivedQuantity: sum,
+        estimatedStock: sum,
+      });
+    }
+    return [...totals.values()];
+  }
+}
+
+/** Un réassort envoyé, attendu. */
+function expected(resupplyId: string, quantity: number): ResupplyReceptionView {
+  return {
+    resupplyId,
+    target: 'asap',
+    placedAt: '2026-01-02T07:00:00.000Z',
+    placedBy: 'Max',
+    status: 'expected',
+    receivedAt: null,
+    receivedBy: null,
+    lines: [{ sku: 'CRO', label: 'Croissant', expectedQuantity: quantity, receivedQuantity: null }],
+  };
 }
 
 /**
@@ -208,6 +278,24 @@ async function mount(
 const root = (fixture: ComponentFixture<ReassortBoutiquePage>): HTMLElement =>
   fixture.nativeElement as HTMLElement;
 
+function unorderedCard(fixture: ComponentFixture<ReassortBoutiquePage>): UnorderedReceiptCard {
+  const card: unknown = fixture.debugElement.query(
+    By.css('app-unordered-receipt-card'),
+  ).componentInstance;
+  if (!(card instanceof UnorderedReceiptCard)) {
+    throw new Error('la carte du réassort sans commande manque');
+  }
+  return card;
+}
+
+function clickOn(fixture: ComponentFixture<ReassortBoutiquePage>, selector: string): void {
+  const button = root(fixture).querySelector<HTMLButtonElement>(selector);
+  if (button === null) {
+    throw new Error(`bouton absent : ${selector}`);
+  }
+  button.click();
+}
+
 describe('ReassortBoutiquePage', () => {
   it('lit le point ouvert dans la bande pour aujourd’hui, et dit le vide', async () => {
     const { fixture, api } = await mount(['handover_counter:read']);
@@ -217,52 +305,70 @@ describe('ReassortBoutiquePage', () => {
     expect(root(fixture).querySelector('[data-resupply-add]')).toBeNull();
   });
 
-  it('montre le reçu et le stock estimé, sans colonne « commandé »', async () => {
+  it('montre le stock estimé du jour, somme des reçus, sans colonne « commandé »', async () => {
     const api = new FakeReceipts();
-    api.lines = [{ sku: 'CRO', label: 'Croissant', receivedQuantity: 12, estimatedStock: 12 }];
+    api.unordered = [{ sku: 'CRO', label: 'Croissant', receivedQuantity: 2 }];
+    api.receptions = [{ ...expected('r1', 12) }];
+    await api.receiveResupply('site_v', 'r1');
     const { fixture } = await mount(['handover_counter:read'], api);
 
-    const row = root(fixture).querySelector('[data-resupply-line="CRO"]');
+    const row = root(fixture).querySelector('[data-resupply-stock] [data-resupply-line="CRO"]');
     expect(row?.textContent).toContain('Croissant');
-    expect(row?.querySelector('[data-resupply-estimated]')?.textContent?.trim()).toBe('12');
+    expect(row?.querySelector('[data-resupply-estimated]')?.textContent?.trim()).toBe('14');
     expect(root(fixture).querySelector('thead')?.textContent).not.toContain('ommandé');
     expect(root(fixture).textContent).toContain('le stock estimé est le reçu');
   });
 
-  it('ajoute, corrige et retire une ligne sous le droit d’écriture, en relisant après chaque geste', async () => {
-    const { fixture, api } = await mount(['handover_counter:read', 'handover_counter:write']);
-    const page = fixture.componentInstance;
+  it('réceptionne un réassort d’un geste, puis dit qui et quand, et corrige un écart', async () => {
+    const api = new FakeReceipts();
+    api.receptions = [expected('r1', 12)];
+    const { fixture } = await mount(['handover_counter:read', 'handover_counter:write'], api);
+    const reception = '[data-resupply-reception="r1"]';
 
-    page['pickedSku'].set('CRO');
-    page['pickedQuantity'].set(12);
-    await page['add']();
+    expect(root(fixture).querySelector(`${reception} [data-resupply-correct-received]`)).toBeNull();
+    expect(root(fixture).querySelector('[data-resupply-stock] [data-resupply-line]')).toBeNull();
+    clickOn(fixture, `${reception} [data-resupply-receive]`);
     await settle(fixture);
-    expect(root(fixture).querySelector('[data-resupply-line="CRO"]')).not.toBeNull();
-    expect(page['pickedSku']()).toBeNull();
 
-    const line = api.lines[0];
-    if (line === undefined) {
-      throw new Error('la ligne ajoutée manque');
+    expect(root(fixture).querySelector(`${reception} [data-resupply-receive]`)).toBeNull();
+    expect(
+      root(fixture).querySelector(`${reception} [data-resupply-received-by]`)?.textContent,
+    ).toContain('Réceptionné par Lou à');
+    expect(
+      root(fixture).querySelector('[data-resupply-line="CRO"] [data-resupply-estimated]')
+        ?.textContent,
+    ).toContain('12');
+
+    const card: unknown = fixture.debugElement.query(
+      By.css('app-resupply-receptions-card'),
+    ).componentInstance;
+    const view = api.receptions[0];
+    const line = view?.lines[0];
+    if (!(card instanceof ResupplyReceptionsCard) || view === undefined || line === undefined) {
+      throw new Error('la carte de réception manque');
     }
-    page['setDraft']('CRO', 10);
-    await page['correct'](line);
-    await page['withdraw'](line);
+    card['setDraft'](view, line, 10);
+    await settle(fixture);
+    clickOn(fixture, `${reception} [data-resupply-correct-received]`);
     await settle(fixture);
 
     expect(api.calls.filter((c) => !c.startsWith('read'))).toEqual([
-      'receive CRO 12',
-      'correct CRO 10',
-      'withdraw CRO',
+      'receive-resupply r1',
+      'correct-received r1 CRO 10',
     ]);
-    expect(root(fixture).querySelector('[data-resupply-line="CRO"]')).toBeNull();
+    expect(
+      root(fixture).querySelector('[data-resupply-line="CRO"] [data-resupply-estimated]')
+        ?.textContent,
+    ).toContain('10');
   });
 
-  it('ne propose plus un article déjà sur la liste', async () => {
+  it('en lecture seule, ni « Réceptionner » ni saisie sans commande', async () => {
     const api = new FakeReceipts();
-    api.lines = [{ sku: 'CRO', label: 'Croissant', receivedQuantity: 1, estimatedStock: 1 }];
-    const { fixture } = await mount(['handover_counter:read', 'handover_counter:write'], api);
+    api.receptions = [expected('r1', 12)];
+    const { fixture } = await mount(['handover_counter:read'], api);
 
-    expect(fixture.componentInstance['addableOptions']().map((o) => o.value)).toEqual(['PAC']);
+    expect(root(fixture).querySelector('[data-resupply-receive]')).toBeNull();
+    expect(root(fixture).querySelector('[data-resupply-add]')).toBeNull();
   });
 
   it('suit le point de la bande : un changement relit la liste, et le titre le nomme', async () => {
@@ -379,9 +485,9 @@ describe('ReassortBoutiquePage — ruptures et stocks faibles (R1b)', () => {
     expect(root(fixture).querySelector('[data-stock-alert="PAC"]')).toBeNull();
   });
 
-  it('déclare depuis une ligne reçue, et relit les alertes après une réception', async () => {
+  it('déclare depuis une ligne du stock, et relit les alertes après une réception', async () => {
     const api = new FakeReceipts();
-    api.lines = [{ sku: 'CRO', label: 'Croissant', receivedQuantity: 2, estimatedStock: 2 }];
+    api.unordered = [{ sku: 'CRO', label: 'Croissant', receivedQuantity: 2 }];
     const { fixture, alerts } = await mount(WRITE, api);
 
     click(fixture, '[data-resupply-line="CRO"] [data-stock-alert-declare="out_of_stock"]');
@@ -392,10 +498,11 @@ describe('ReassortBoutiquePage — ruptures et stocks faibles (R1b)', () => {
     ).not.toBeNull();
 
     const before = alerts.calls.filter((c) => c.startsWith('list')).length;
-    const page = fixture.componentInstance;
-    page['pickedSku'].set('PAC');
-    page['pickedQuantity'].set(6);
-    await page['add']();
+    const card = unorderedCard(fixture);
+    card['pickedSku'].set('PAC');
+    card['pickedQuantity'].set(6);
+    await card['add']();
+    await settle(fixture);
     expect(alerts.calls.filter((c) => c.startsWith('list')).length).toBe(before + 1);
   });
 

@@ -8,7 +8,7 @@ import { ReceiptLineNotFoundError } from "../domain/resupply-receipt-errors.js";
 import { CorrectResupplyLineCommand } from "./correct-resupply-line.command.js";
 import { traceOf } from "./resupply-receipt-trace.js";
 
-/** **Corrige la quantité reçue** d'un article déjà sur la liste. */
+/** **Corrige la quantité reçue** d'un article du réassort sans commande. */
 @CommandHandler(CorrectResupplyLineCommand)
 export class CorrectResupplyLineHandler implements ICommandHandler<
   CorrectResupplyLineCommand,
@@ -24,7 +24,7 @@ export class CorrectResupplyLineHandler implements ICommandHandler<
   async execute(command: CorrectResupplyLineCommand): Promise<void> {
     const trace = await traceOf(this.staff, this.clock, command.staffUserId);
     await this.uow.run(async () => {
-      const receipt = await this.receipts.load(command.siteId, command.serviceDay);
+      const receipt = await this.receipts.loadUnordered(command.siteId, command.serviceDay);
       if (receipt === null) {
         throw new ReceiptLineNotFoundError(command.sku);
       }

@@ -2,30 +2,53 @@ import type { ResupplyReceiptView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { estimateStock } from "../domain/estimated-stock.js";
-import { ResupplyReceiptRepository } from "../domain/resupply-receipt.repository.js";
+import { ResupplyReceipt } from "../domain/resupply-receipt.js";
+import { ResupplyReceiptReader } from "../domain/resupply-receipt.reader.js";
+import { isPlaced } from "../domain/site-resupply.js";
+import { SiteResupplyReader } from "../domain/site-resupply.reader.js";
 import { GetResupplyReceiptQuery } from "./get-resupply-receipt.query.js";
+import { receptionView, unorderedView } from "./resupply-receipt-view.js";
 
 /**
- * Sert la liste reçue et son stock estimé. Lecture pure : une journée sans
- * saisie rend une liste vide, sans rien ouvrir.
+ * Sert la page de réception d'un point pour une journée (lot R2) : les
+ * réassorts envoyés qui la visent — « au plus tôt » du jour et « pour
+ * demain » de la veille ont la même journée —, chacun avec sa réception, le
+ * réassort sans commande, et le stock estimé, somme des reçus. Un réassort
+ * annulé n'est servi que s'il avait déjà été réceptionné : ce qui est arrivé
+ * reste arrivé. Lecture pure : rien ne s'ouvre.
  */
 @QueryHandler(GetResupplyReceiptQuery)
 export class GetResupplyReceiptHandler implements IQueryHandler<
   GetResupplyReceiptQuery,
   ResupplyReceiptView
 > {
-  constructor(private readonly receipts: ResupplyReceiptRepository) {}
+  constructor(
+    private readonly receipts: ResupplyReceiptReader,
+    private readonly resupplies: SiteResupplyReader,
+  ) {}
 
   async execute(query: GetResupplyReceiptQuery): Promise<ResupplyReceiptView> {
-    const receipt = await this.receipts.load(query.siteId, query.serviceDay);
-    const change = receipt?.lastChange ?? null;
+    const [snapshots, resupplies] = await Promise.all([
+      this.receipts.on(query.siteId, query.serviceDay),
+      this.resupplies.forSite(query.siteId, [query.serviceDay]),
+    ]);
+    const receipts = snapshots.map((snapshot) => ResupplyReceipt.restore(snapshot));
+    const byResupply = new Map(
+      receipts.flatMap((receipt) =>
+        receipt.resupplyId === null ? [] : [[receipt.resupplyId, receipt] as const],
+      ),
+    );
+    const receptions = resupplies
+      .filter(isPlaced)
+      .filter((resupply) => resupply.cancelled === null || byResupply.has(resupply.id))
+      .sort((a, b) => a.placed.at.getTime() - b.placed.at.getTime() || a.id.localeCompare(b.id))
+      .map((resupply) => receptionView(resupply, byResupply.get(resupply.id) ?? null));
     return {
       siteId: query.siteId,
       serviceDay: query.serviceDay,
-      lines: receipt === null ? [] : estimateStock(receipt.lines),
-      updatedAt: change === null ? null : change.at.toISOString(),
-      // Un agent que l'annuaire ne connaissait pas a été figé sans nom : on ne l'invente pas.
-      updatedBy: change === null || change.author.name === "" ? null : change.author.name,
+      receptions,
+      unordered: unorderedView(receipts.find((receipt) => receipt.resupplyId === null) ?? null),
+      stock: estimateStock(receipts),
     };
   }
 }

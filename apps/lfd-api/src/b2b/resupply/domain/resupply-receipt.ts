@@ -1,70 +1,108 @@
+import { instantToLocal } from "@lfd/contracts";
+
 import type { StaffTrace } from "../../account/domain/value-objects/staff-trace.js";
 import {
   InvalidServiceDayError,
+  ReceiptBoundToResupplyError,
   ReceiptLineAlreadyPresentError,
   ReceiptLineNotFoundError,
+  ReceiptNotYetReceivedError,
+  ResupplyAlreadyReceivedError,
 } from "./resupply-receipt-errors.js";
-import { ResupplyReceiptLine } from "./resupply-receipt-line.js";
+import { ResupplyReceiptLine, type ResupplyReceiptLineSnapshot } from "./resupply-receipt-line.js";
 
 const SERVICE_DAY = /^\d{4}-\d{2}-\d{2}$/;
 
-/** La trace du dernier geste sur la liste. */
+/** Un geste daté et signé. */
 export interface ResupplyReceiptTrace {
   readonly at: Date;
   readonly author: StaffTrace;
 }
+
+/** `expected` : arrivé ou en route, pas encore attesté ; `received` : compte au stock. */
+export type ResupplyReceiptStatus = "expected" | "received";
 
 /** L'état persisté, tel que l'adaptateur le relit. */
 export interface ResupplyReceiptSnapshot {
   readonly id: string;
   readonly siteId: string;
   readonly serviceDay: string;
+  /** Le réassort réceptionné ; `null` pour un réassort sans commande. */
+  readonly resupplyId: string | null;
   readonly version: number;
+  readonly lines: readonly ResupplyReceiptLineSnapshot[];
+  /** Le geste « Réceptionner », ou la première saisie d'un réassort sans commande. */
+  readonly received: ResupplyReceiptTrace | null;
+  readonly lastChange: ResupplyReceiptTrace | null;
+}
+
+/** Ce qu'il faut d'un réassort envoyé pour en attendre la réception. */
+export interface ReceivableResupply {
+  readonly id: string;
+  readonly siteId: string;
+  readonly serviceDay: string;
   readonly lines: readonly {
     readonly sku: string;
     readonly label: string;
     readonly quantity: number;
   }[];
-  readonly lastChange: ResupplyReceiptTrace | null;
 }
 
 /**
- * **La réception du réapprovisionnement d'un site, pour une journée** — ce que
- * la vitrine a reçu (plan `limites-de-commande/plan-jour-meme-sur-stock.md`,
- * J1 ; modèle B de `reassort-boutiques/plan-reapprovisionnement.md`, décidé
- * par Hugo le 2026-10-21).
+ * **Un reçu de réassort** — ce que la vitrine d'un point a reçu (lot R2 de
+ * `reassort-boutiques/plan-reapprovisionnement.md` §12 ; décisions de Hugo du
+ * 2026-10-21 : « personne ne fera du ligne par ligne en plein service », un
+ * reçu par réassort, le stock du jour additionne les reçus).
  *
- * C'est la partie « reçue » du futur `SiteResupply` (la demande au fournil,
- * non bâtie) : deux agrégats, parce que demander et recevoir ont deux
- * auteurs et deux moments — ce qui arrive n'est pas toujours ce qui a été
- * demandé, et le comptoir corrige ce qu'il voit. Le jour où la demande
- * existera, elle PRÉ-REMPLIRA cette réception (Q4 du plan du jour même).
+ * Deux sortes, un seul agrégat — parce que la règle qui compte au stock est la
+ * même (seul le REÇU compte) et que le stock les additionne sans les
+ * distinguer :
  *
- * Ce que l'agrégat garantit : un article au plus une fois (un doublon est
- * refusé, cf. `ReceiptLineAlreadyPresentError`), des quantités entières ≥ 0,
- * et un auteur sur chaque geste. Il ne connaît ni prix, ni commande : le stock
- * estimé se calcule à la lecture (`estimateStock`).
+ * - **le reçu d'un réassort envoyé** (`resupplyId`) : ses lignes ATTENDUES
+ *   sont celles du réassort ; un geste unique, `receiveAll`, recopie l'attendu
+ *   en reçu. Une ligne ne se corrige qu'APRÈS ce geste (un écart constaté) ;
+ *   on n'y ajoute ni n'en retire d'article. Un second « Réceptionner » est
+ *   refusé (409), jamais rejoué en silence ;
+ * - **le réassort sans commande** (`resupplyId` nul) : la saisie de secours,
+ *   ligne par ligne, un par (point, journée). Chaque ligne y est reçue dès
+ *   sa saisie ; un même article deux fois est refusé (corrigez sa quantité).
  */
 export class ResupplyReceipt {
   private constructor(
     readonly id: string,
     readonly siteId: string,
     readonly serviceDay: string,
+    readonly resupplyId: string | null,
     readonly version: number,
     private lineList: readonly ResupplyReceiptLine[],
+    private receivedTrace: ResupplyReceiptTrace | null,
     private trace: ResupplyReceiptTrace | null,
   ) {}
 
-  /** Une réception vide, ouverte au premier geste du jour sur ce site. */
-  static open(input: {
+  /** Le reçu attendu d'un réassort envoyé : son attendu est la quantité demandée. */
+  static expecting(id: string, resupply: ReceivableResupply): ResupplyReceipt {
+    assertServiceDay(resupply.serviceDay);
+    const lines = resupply.lines.map((line) => ResupplyReceiptLine.expected(line));
+    return new ResupplyReceipt(
+      id,
+      resupply.siteId,
+      resupply.serviceDay,
+      resupply.id,
+      0,
+      lines,
+      null,
+      null,
+    );
+  }
+
+  /** Un réassort sans commande, vide, ouvert à la première saisie du jour au point. */
+  static openUnordered(input: {
     readonly id: string;
     readonly siteId: string;
     readonly serviceDay: string;
   }): ResupplyReceipt {
-    if (!SERVICE_DAY.test(input.serviceDay)) {
-      throw new InvalidServiceDayError(input.serviceDay);
-    }
-    return new ResupplyReceipt(input.id, input.siteId, input.serviceDay, 0, [], null);
+    assertServiceDay(input.serviceDay);
+    return new ResupplyReceipt(input.id, input.siteId, input.serviceDay, null, 0, [], null, null);
   }
 
   /** Réhydrate depuis la base ; chaque ligne revalide. */
@@ -73,8 +111,10 @@ export class ResupplyReceipt {
       snapshot.id,
       snapshot.siteId,
       snapshot.serviceDay,
+      snapshot.resupplyId,
       snapshot.version,
       snapshot.lines.map((line) => ResupplyReceiptLine.of(line)),
+      snapshot.received,
       snapshot.lastChange,
     );
   }
@@ -83,33 +123,65 @@ export class ResupplyReceipt {
     return this.lineList;
   }
 
+  get status(): ResupplyReceiptStatus {
+    return this.receivedTrace === null ? "expected" : "received";
+  }
+
+  get received(): ResupplyReceiptTrace | null {
+    return this.receivedTrace;
+  }
+
   get lastChange(): ResupplyReceiptTrace | null {
     return this.trace;
   }
 
-  /** Ajoute un article reçu, à la fin de la liste. Refusé s'il y est déjà. */
+  /** « Réceptionner » : toutes les lignes attendues deviennent reçues, d'un geste. */
+  receiveAll(trace: ResupplyReceiptTrace): void {
+    const already = this.receivedTrace;
+    if (already !== null) {
+      const at = instantToLocal(already.at);
+      throw new ResupplyAlreadyReceivedError(already.author.name, `le ${at.day} à ${at.time}`);
+    }
+    this.lineList = this.lineList.map((line) => line.receivedAsExpected());
+    this.receivedTrace = trace;
+    this.trace = trace;
+  }
+
+  /** Réassort sans commande : ajoute un article reçu. Refusé s'il y est déjà. */
   receive(line: ResupplyReceiptLine, trace: ResupplyReceiptTrace): void {
+    this.assertUnordered();
     if (this.lineList.some((existing) => existing.sku === line.sku)) {
       throw new ReceiptLineAlreadyPresentError(line.sku);
     }
     this.lineList = [...this.lineList, line];
+    this.receivedTrace ??= trace;
     this.trace = trace;
   }
 
-  /** Corrige la quantité reçue d'un article de la liste. */
+  /** Corrige le reçu d'un article — un écart, après réception seulement. */
   correct(sku: string, quantity: number, trace: ResupplyReceiptTrace): void {
+    if (this.receivedTrace === null) {
+      throw new ReceiptNotYetReceivedError();
+    }
     const target = this.lineOf(sku);
     this.lineList = this.lineList.map((line) =>
-      line === target ? line.withQuantity(quantity) : line,
+      line === target ? line.withReceived(quantity) : line,
     );
     this.trace = trace;
   }
 
-  /** Retire un article de la liste (saisi par erreur). */
+  /** Réassort sans commande : retire un article saisi par erreur. */
   withdraw(sku: string, trace: ResupplyReceiptTrace): void {
+    this.assertUnordered();
     const target = this.lineOf(sku);
     this.lineList = this.lineList.filter((line) => line !== target);
     this.trace = trace;
+  }
+
+  private assertUnordered(): void {
+    if (this.resupplyId !== null) {
+      throw new ReceiptBoundToResupplyError();
+    }
   }
 
   private lineOf(sku: string): ResupplyReceiptLine {
@@ -118,5 +190,11 @@ export class ResupplyReceipt {
       throw new ReceiptLineNotFoundError(sku);
     }
     return line;
+  }
+}
+
+function assertServiceDay(serviceDay: string): void {
+  if (!SERVICE_DAY.test(serviceDay)) {
+    throw new InvalidServiceDayError(serviceDay);
   }
 }

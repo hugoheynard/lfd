@@ -43,25 +43,6 @@
   font-size: var(--fold-text-2xs);
 }
 
-.actions {
-  display: flex;
-  gap: var(--fold-space-xs);
-  justify-content: flex-end;
-}
-
-.add {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--fold-space-md);
-  align-items: end;
-}
-
-.trace {
-  margin: 0;
-  color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-sm);
-}
-
 /* La légende nomme le tableau pour un lecteur d'écran sans encombrer l'œil. */
 .sr {
   position: absolute;

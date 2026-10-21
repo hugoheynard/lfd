@@ -1,7 +1,8 @@
 # Le réassort des boutiques
 
 > **État : 🟡 partiel, 2026-10-21.** La **réception** au comptoir est bâtie
-> (commit `558b376c8`) ; la **commande** au fournil aussi (lot R1, 2026-10-21),
+> (commit `558b376c8`), et se fait en **un geste par réassort** depuis le lot
+> R2 (2026-10-21) ; la **commande** au fournil aussi (lot R1, 2026-10-21),
 > mais le fournil ne fait encore que la LIRE : elle n'entre ni au plan figé, ni
 > au colisage, ni au transfert (R3). Les **ruptures et stocks faibles** du
 > comptoir aussi (lot R1b, 2026-10-21), sans effet encore sur la boutique. La
@@ -22,8 +23,8 @@ vitrine est un second agrégat, la **réception**, parce que demander et
 recevoir ont deux auteurs et deux moments — ce qui arrive n'est pas toujours
 ce qui a été demandé, et le comptoir corrige ce qu'il voit.
 
-Les deux existent depuis le 2026-10-21, sans lien encore : la demande ne
-pré-remplit pas la réception (lot R2).
+Les deux existent depuis le 2026-10-21, liés depuis le lot R2 : un réassort
+envoyé attend son reçu, pré-rempli de la quantité demandée.
 
 ## Ce qui est bâti : commander le réassort (lot R1, 2026-10-21)
 
@@ -136,7 +137,7 @@ placed_at IS NULL` ; deux postes qui l'ouvrent au même instant, le second
 flowchart LR
   C["Comptoir › Réassort<br/>« Rupture » / « Stock faible »<br/>(une ligne reçue ou le catalogue)"] --> A["StockAlert<br/>vivante → levée"]
   A --> F["Fournil › Réassorts à produire<br/>« Village : rupture — Croissant »<br/>« Lancer un réassort au plus tôt »"]
-  R["Réception d'une ligne de l'article<br/>au point (ResupplyReceipt)"] -->|"même transaction"| A
+  R["« Réceptionner » un réassort, ou une ligne<br/>sans commande, de l'article au point"] -->|"même transaction"| A
   C -->|"« Lever »"| A
 ```
 
@@ -150,10 +151,11 @@ flowchart LR
   lève (`manual`) ou qu'une ligne de l'article soit reçue au point avec une
   quantité > 0 (`receipt`) — jamais d'elle-même le lendemain.
 - **La levée par la réception** : `liftStockAlertOnReceipt`
-  (`apps/lfd-api/src/b2b/resupply/application/lift-stock-alert-on-receipt.ts`), appelé par
-  `ReceiveResupplyLineHandler` dans l'unité de travail de la réception. C'est
-  le seul chemin ; R2 (la réception en un geste) s'y branchera. Corriger ou
-  retirer une ligne ne lève rien.
+  (`apps/lfd-api/src/b2b/resupply/application/lift-stock-alert-on-receipt.ts`), appelé dans
+  l'unité de travail de la réception par `ReceiveSiteResupplyHandler`
+  (« Réceptionner », une fois par ligne reçue > 0, lot R2) et par
+  `ReceiveResupplyLineHandler` (le réassort sans commande). C'est le seul
+  chemin. Corriger ou retirer une ligne ne lève rien.
 - **La table** : `site_stock_alert`, schéma `public`, migration
   `20261021190000_les_alertes_de_stock_du_comptoir` (additive). Index unique
   PARTIEL `(site_id, sku) WHERE lifted_at IS NULL` : une seule alerte vivante,
@@ -177,46 +179,70 @@ flowchart LR
   encore rien, un stock faible n'avertit aucun client (lot J2). L'écran du
   comptoir le dit.
 
-## Ce qui est bâti : la réception au comptoir
+## Ce qui est bâti : la réception au comptoir (refaite au lot R2, 2026-10-21)
 
 ```mermaid
 flowchart LR
-  F["Fournil<br/>(commande de réassort : NON bâtie)"] -.-> V["Vitrine du site"]
-  V --> C["Comptoir : page Réassort<br/>saisit ce qui est reçu"]
-  C --> R["ResupplyReceipt<br/>(site, jour) → lignes SKU × quantité"]
-  R --> S["Stock estimé<br/>= reçu (aujourd'hui)"]
+  S["SiteResupply envoyé<br/>(pour la journée)"] --> E["Reçu attendu<br/>attendu = quantité demandée"]
+  E -->|"« Réceptionner » (un geste)"| R["Reçu réceptionné<br/>reçu = attendu"]
+  R -->|"un écart, par ligne"| R
+  U["Réassort sans commande<br/>(saisie ligne par ligne)"] --> T
+  R --> T["Stock estimé du jour<br/>= somme des reçus"]
 ```
 
+Décisions de Hugo (2026-10-21) : « personne ne fera du ligne par ligne en
+plein service » ; un reçu par réassort ; la saisie de secours devient un
+« réassort sans commande » ; le stock du jour additionne les reçus.
+
 - **Le code** : `apps/lfd-api/src/b2b/resupply/`. L'agrégat
-  `ResupplyReceipt` (`domain/resupply-receipt.ts`) tient, pour **un site et
-  une journée**, la liste des articles reçus : `receive`, `correct`,
-  `withdraw`. Il ne connaît ni prix ni commande.
-- **Les invariants** : un article au plus une fois — une seconde saisie du
-  même SKU est **refusée** (`ReceiptLineAlreadyPresentError`, « corrigez sa
-  quantité ») plutôt qu'additionnée ; des quantités entières ≥ 0 ; une journée
-  `AAAA-MM-JJ` ; un auteur sur chaque geste.
-- **Le verrou optimiste** : la réception porte une `version` ; l'adaptateur
-  réécrit sous la version lue, et deux postes qui corrigent en même temps
-  font refuser le second (`ResupplyReceiptChangedMeanwhileError`).
-- **Les articles proposés** : le catalogue publié aux particuliers, lu par
-  `CatalogReader` (SKU produit, aucun prix).
-- **Les tables** : `resupply_receipt` (unique par site et jour) et
-  `resupply_receipt_line` (unique par réception et SKU), schéma `public`
-  (`apps/lfd-api/prisma/schema/public/resupply.prisma`).
-- **Les routes** : `admin/resupply-receipts` sous la surface
-  `handover_counter` — lecture `handover_counter:read` (articles, liste du
-  jour), écriture `handover_counter:write` (ajouter, corriger, retirer une
-  ligne).
+  `ResupplyReceipt` (`domain/resupply-receipt.ts`) a deux sortes, un seul
+  modèle — la règle qui compte au stock est la même (seul le reçu compte) :
+  - **le reçu d'un réassort envoyé** (`resupplyId`) : `expecting` le fait
+    naître attendu des lignes du réassort (attendu = quantité DEMANDÉE ; R3 y
+    mettra la quantité emballée), `receiveAll` recopie l'attendu en reçu, d'un
+    geste. Une ligne ne se corrige (`correct`) qu'**après** ; on n'y ajoute ni
+    n'en retire d'article. Un second « Réceptionner » est refusé (409), il
+    n'est jamais rejoué en silence. Seul un réassort envoyé et non annulé se
+    réceptionne ;
+  - **le réassort sans commande** (`resupplyId` nul) : `receive`, `correct`,
+    `withdraw`, ligne par ligne, chaque ligne reçue dès sa saisie ; un même
+    article deux fois est refusé (« corrigez sa quantité »).
+- **Le reçu n'est écrit qu'une fois reçu** : avant « Réceptionner », l'attendu
+  se lit du réassort lui-même. Le stock ne monte qu'à la réception, jamais à
+  l'envoi.
+- **Le verrou optimiste** : un reçu porte une `version` ; deux postes qui
+  corrigent en même temps font refuser le second
+  (`ResupplyReceiptChangedMeanwhileError`).
+- **Les tables** : `resupply_receipt` (`resupply_id` unique et clé vers
+  `site_resupply` ; au plus un sans commande par (point, journée), index
+  unique partiel `resupply_receipt_unordered_key` ; `received_*` : le geste)
+  et `resupply_receipt_line` (`expected_quantity` nul sans commande,
+  `quantity` = le reçu), schéma `public`. Migration
+  `20261021230000_un_recu_par_reassort`, **non additive** (elle retire
+  l'unicité (site, journée) d'une table jamais déployée).
+- **Les routes** : `admin/resupply-receipts` sous `handover_counter` —
+  lecture `:read` (`GET :siteId/:day` : les réassorts envoyés de la journée
+  avec leur réception, le sans commande, le stock), écriture `:write` :
+  `POST :siteId/resupplies/:resupplyId/receive` (« Réceptionner »),
+  `PATCH :siteId/resupplies/:resupplyId/lines/:sku` (un écart),
+  `POST|PATCH|DELETE :siteId/:day/lines…` (le sans commande). Le point est
+  dans chaque `where` : un réassort d'un autre point est introuvable (404).
 - **L'écran** : `apps/lfd-backoffice-frontend/src/app/comptoir/reassort-boutique-page/`,
-  route `reassort` de l'espace comptoir.
+  pour le point et la journée du bandeau — « Réceptionner les réassorts »
+  (`resupply-receptions-card/` : les réassorts envoyés qui visent la journée,
+  « au plus tôt » du jour comme « pour demain » de la veille, attendus en
+  lecture et un bouton ; puis « Réceptionné par X à HH:MM » et l'écart par
+  ligne), le tableau « Stock estimé du jour », et « Réassort sans commande »
+  replié en bas (`unordered-receipt-card/`).
 
 ### Le stock estimé
 
-`estimateStock` (`domain/estimated-stock.ts`) calcule, à la lecture, reçu −
+`estimateStock` (`domain/estimated-stock.ts`) additionne, à la lecture, les
+reçus **réceptionnés** du jour au point — réassorts et sans commande —, moins
 ce que les commandes « jour même sur stock » ont pris. Ce circuit n'existe pas
-(lot J2), donc **le stock estimé est le reçu**. Les commandes déjà passées
-pour ce jour ne se soustraient pas : passées la veille avant l'heure limite,
-elles sont dans le plan du fournil et ne puisent pas dans la vitrine.
+(lot J2), donc **le stock estimé est la somme des reçus**. Les commandes déjà
+passées pour ce jour ne se soustraient pas : passées la veille avant l'heure
+limite, elles sont dans le plan du fournil et ne puisent pas dans la vitrine.
 
 ## Le réglage : « réassort soumis à l'heure limite / sans limite »
 
@@ -228,8 +254,10 @@ n'y est jamais soumis. Voir
 
 ## Ce qui reste
 
-- **La réception en un geste** (R2) : un reçu par réassort, pré-rempli de la
+- **La quantité emballée** comme attendu (R3) : l'attendu est encore la
   quantité demandée.
+- **Annuler un réassort déjà réceptionné** : l'annulation n'en sait rien et
+  reste permise ; le reçu reste et compte au stock (l'écran le sert encore).
 - **Le branchement de la commande** (R3, R4) : produite au plan figé, colisée,
   portée par le transfert interne
   ([`../livraisons/transferts/plan-transfert-interne.md`](../livraisons/transferts/plan-transfert-interne.md)) —

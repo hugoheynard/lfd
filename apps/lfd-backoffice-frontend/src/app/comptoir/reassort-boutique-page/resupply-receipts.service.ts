@@ -8,7 +8,9 @@ import { B2B_API_BASE } from '../../api/api-config';
 /**
  * **La réception du réassort boutique** — `/admin/resupply-receipts`, sous le
  * droit du comptoir (`handover_counter`). Les gestes rendent `204` : l'écran
- * relit la liste après chacun.
+ * relit la liste après chacun. Depuis le lot R2 : « Réceptionner » un
+ * réassort et en corriger un écart ; `receive` / `correct` / `withdraw` tiennent
+ * le réassort sans commande.
  */
 @Injectable({ providedIn: 'root' })
 export class ResupplyReceiptsService {
@@ -21,6 +23,26 @@ export class ResupplyReceiptsService {
 
   read(siteId: string, day: string): Promise<ResupplyReceiptView> {
     return firstValueFrom(this.http.get<ResupplyReceiptView>(this.receipt(siteId, day)));
+  }
+
+  /** « Réceptionner » : l'attendu devient le reçu, d'un geste. */
+  receiveResupply(siteId: string, resupplyId: string): Promise<void> {
+    return firstValueFrom(this.http.post<void>(`${this.resupply(siteId, resupplyId)}/receive`, {}));
+  }
+
+  /** Un écart après réception : le reçu d'une ligne corrigé. */
+  correctReceived(
+    siteId: string,
+    resupplyId: string,
+    sku: string,
+    quantity: number,
+  ): Promise<void> {
+    return firstValueFrom(
+      this.http.patch<void>(
+        `${this.resupply(siteId, resupplyId)}/lines/${encodeURIComponent(sku)}`,
+        { quantity },
+      ),
+    );
   }
 
   receive(siteId: string, day: string, sku: string, quantity: number): Promise<void> {
@@ -43,6 +65,10 @@ export class ResupplyReceiptsService {
 
   private receipt(siteId: string, day: string): string {
     return `${this.base()}/${encodeURIComponent(siteId)}/${encodeURIComponent(day)}`;
+  }
+
+  private resupply(siteId: string, resupplyId: string): string {
+    return `${this.base()}/${encodeURIComponent(siteId)}/resupplies/${encodeURIComponent(resupplyId)}`;
   }
 
   private line(siteId: string, day: string, sku: string): string {

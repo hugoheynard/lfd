@@ -19,9 +19,10 @@ import { ReceiveResupplyLineCommand } from "./receive-resupply-line.command.js";
 import { traceOf } from "./resupply-receipt-trace.js";
 
 /**
- * **Ajoute un article reçu.** Le libellé est lu au catalogue publié, jamais
- * pris du client : la liste affiche ce que la boutique vend. La réception du
- * jour s'ouvre au premier article.
+ * **Ajoute un article au réassort sans commande** — la saisie de secours,
+ * ligne par ligne (lot R2 : ce qui arrive sans avoir été commandé). Le libellé
+ * est lu au catalogue publié, jamais pris du client. Le réassort sans
+ * commande du jour s'ouvre au premier article, et compte au stock aussitôt.
  *
  * Depuis le lot R1b (2026-10-21), l'article reçu lève l'alerte de stock
  * vivante du point (rupture, stock faible), dans la même transaction.
@@ -50,7 +51,7 @@ export class ReceiveResupplyLineHandler implements ICommandHandler<
     if (article === null) {
       throw new ResupplyArticleUnknownError(command.sku);
     }
-    const line = ResupplyReceiptLine.of({
+    const line = ResupplyReceiptLine.unordered({
       sku: article.sku,
       label: article.name,
       quantity: command.quantity,
@@ -58,8 +59,8 @@ export class ReceiveResupplyLineHandler implements ICommandHandler<
     const trace = await traceOf(this.staff, this.clock, command.staffUserId);
     await this.uow.run(async () => {
       const receipt =
-        (await this.receipts.load(command.siteId, command.serviceDay)) ??
-        ResupplyReceipt.open({
+        (await this.receipts.loadUnordered(command.siteId, command.serviceDay)) ??
+        ResupplyReceipt.openUnordered({
           id: this.ids.next(),
           siteId: command.siteId,
           serviceDay: command.serviceDay,
@@ -68,7 +69,7 @@ export class ReceiveResupplyLineHandler implements ICommandHandler<
       await this.receipts.save(receipt);
       await liftStockAlertOnReceipt(
         this.alerts,
-        { siteId: command.siteId, sku: line.sku, quantity: line.quantity },
+        { siteId: command.siteId, sku: line.sku, quantity: command.quantity },
         trace,
       );
     });

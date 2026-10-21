@@ -39,7 +39,9 @@ heure de fin. Chaque commande décompte le stock déclaré.**
   soustraient pas** : passées la veille avant l'heure limite, elles sont dans
   le plan du fournil, fabriquées pour elles, et ne puisent pas dans la vitrine
   (Hugo, 2026-10-21). Tant que J2 n'existe pas, le stock estimé **est** le
-  reçu.
+  reçu. Depuis le lot R2 du réassort (2026-10-21), « le reçu » est la
+  **somme des reçus du jour au point**, tous confondus : chaque réassort
+  réceptionné, plus le réassort sans commande (voir §7).
 - **L'heure de fin du jour même** : un réglage, « jusqu'à 16 h » par exemple ;
   passé, « aujourd'hui » n'est plus proposé.
 - **Qui** : les particuliers seulement (`public`). Un pro commande pour demain.
@@ -132,6 +134,17 @@ produit et des quantités, et éventuellement un stock »).
   arrivage.
 - **Le stock estimé** est calculé à la lecture (`estimateStock`) et vaut le
   reçu ; aucun port de décompte n'est posé d'avance — J2 l'ajoutera.
+
+⚠️ **Refait au lot R2 du réassort, le 2026-10-21**
+([`../reassort-boutiques/README.md`](../reassort-boutiques/README.md)) : la
+réception n'est plus une liste par (site, journée) mais **un reçu par
+réassort envoyé**, réceptionné d'un geste (« Réceptionner »), plus au plus un
+**réassort sans commande** par (site, journée) — la saisie ligne par ligne
+décrite ci-dessus, où le refus du doublon reste vrai. Le **stock estimé du
+jour est la somme des reçus réceptionnés** du jour au point, tous reçus
+confondus ; un réassort envoyé mais pas encore réceptionné n'y compte pas.
+Migration `20261021230000_un_recu_par_reassort`.
+
 - **Routes** `/admin/resupply-receipts` sous `handover_counter` (Q1 : le
   comptoir), table `resupply_receipt` + `resupply_receipt_line` (migration
   additive `20261021150000`), verrou optimiste par version.

@@ -1,7 +1,7 @@
 <fold-page-layout icon="package" [title]="title()">
   <p description>
-    Commander le réassort du point au fournil, et saisir ce que la vitrine a reçu pour la journée.
-    Le stock estimé découle du reçu : il n'est jamais saisi.
+    Commander le réassort du point au fournil, puis le réceptionner d'un geste quand il arrive. Le
+    stock estimé du jour est la somme des reçus : il n'est jamais saisi.
   </p>
 
   @switch (state()) {
@@ -32,31 +32,35 @@
           @if (siteId(); as id) {
             <app-resupply-order-card [siteId]="id" [articles]="articles()" />
           }
-          <fold-card data-resupply-receipt>
+          @if (siteId(); as id) {
+            <app-resupply-receptions-card
+              [siteId]="id"
+              [receptions]="receipt()?.receptions ?? []"
+              [canWrite]="canWrite()"
+              (changed)="refresh()"
+            />
+          }
+          <fold-card data-resupply-stock>
             <fold-element-title
               cardHeader
               variant="title"
-              title="Reçu pour la vitrine"
-              subtitle="Stock estimé = reçu − ce que les commandes « jour même sur stock » en prendront. Ce circuit n'est pas encore ouvert : aujourd'hui, le stock estimé est le reçu. Les commandes déjà passées pour ce jour sont fabriquées pour elles et ne puisent pas dans la vitrine."
+              title="Stock estimé du jour"
+              subtitle="La somme de ce qui a été reçu dans la journée : réassorts réceptionnés et réassort sans commande. Stock estimé = reçu − ce que les commandes « jour même sur stock » en prendront ; ce circuit n'est pas encore ouvert : aujourd'hui, le stock estimé est le reçu. Les commandes déjà passées pour ce jour sont fabriquées pour elles et ne puisent pas dans la vitrine."
             />
 
             <!-- L'espacement vient du gap, pas d'une marge posée par un enfant. -->
             <div class="receipt-body">
-              @if (lines().length === 0) {
+              @if (stock().length === 0) {
                 <fold-empty-state
                   title="Rien de reçu pour cette journée"
-                  [subtitle]="
-                    canWrite()
-                      ? 'Ajoutez les articles arrivés en vitrine, ci-dessous.'
-                      : 'Personne n’a encore saisi le réassort de ce jour.'
-                  "
+                  subtitle="Le stock monte à la réception d'un réassort, ou à la saisie d'un réassort sans commande."
                 >
                   <fold-icon empty-icon name="package" />
                 </fold-empty-state>
               } @else {
                 <table class="lines" data-resupply-lines>
                   <caption class="sr">
-                    Articles reçus
+                    Stock estimé du jour
                   </caption>
                   <thead>
                     <tr>
@@ -64,57 +68,22 @@
                       <th scope="col" class="num">Reçu</th>
                       <th scope="col" class="num">Stock estimé</th>
                       @if (canWrite()) {
-                        <th scope="col"><span class="sr">Gestes</span></th>
                         <th scope="col" class="num">Alerte</th>
                       }
                     </tr>
                   </thead>
                   <tbody>
-                    @for (line of lines(); track line.sku) {
+                    @for (line of stock(); track line.sku) {
                       <tr [attr.data-resupply-line]="line.sku">
                         <td>
                           {{ line.label }}
                           <span class="muted">{{ line.sku }}</span>
                         </td>
-                        <td class="num">
-                          @if (canWrite()) {
-                            <fold-number-input
-                              size="sm"
-                              label="Reçu"
-                              [value]="draftOf(line)"
-                              (valueChange)="setDraft(line.sku, $event)"
-                              [min]="0"
-                              integer
-                              [disabled]="pending()"
-                            />
-                          } @else {
-                            {{ line.receivedQuantity }}
-                          }
+                        <td class="num" data-resupply-received-total>
+                          {{ line.receivedQuantity }}
                         </td>
                         <td class="num" data-resupply-estimated>{{ line.estimatedStock }}</td>
                         @if (canWrite()) {
-                          <td class="actions">
-                            @if (changed(line)) {
-                              <button
-                                foldButton
-                                size="sm"
-                                [disabled]="pending()"
-                                (click)="correct(line)"
-                              >
-                                Corriger
-                              </button>
-                            }
-                            <button
-                              foldButton
-                              size="sm"
-                              emphasis="outline"
-                              intent="danger"
-                              [disabled]="pending()"
-                              (click)="withdraw(line)"
-                            >
-                              Retirer
-                            </button>
-                          </td>
                           <td>
                             <app-stock-alert-actions [sku]="line.sku" />
                           </td>
@@ -125,39 +94,25 @@
                 </table>
               }
 
-              @if (canWrite()) {
-                <div class="add" data-resupply-add>
-                  <fold-combobox
-                    label="Article reçu"
-                    placeholder="Nom ou référence d'un article du catalogue"
-                    emptyText="Aucun article ne correspond — ou il est déjà sur la liste."
-                    resultLabel="articles"
-                    [options]="addableOptions()"
-                    [value]="pickedSku()"
-                    (valueChange)="pickedSku.set($event)"
-                  />
-                  <fold-number-input
-                    label="Quantité reçue"
-                    [value]="pickedQuantity()"
-                    (valueChange)="pickedQuantity.set($event)"
-                    [min]="0"
-                    integer
-                  />
-                  <button foldButton [disabled]="!canAdd()" [loading]="pending()" (click)="add()">
-                    Ajouter
-                  </button>
-                </div>
-              }
-
-              @if (receipt()?.updatedBy; as author) {
-                <p class="trace">Dernière saisie par {{ author }}.</p>
-              }
-
-              @if (failure(); as message) {
-                <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+              @if (refreshFailed()) {
+                <fold-callout variant="alert" announce>
+                  Le geste est enregistré, mais la page n'a pas pu se relire : rechargez-la.
+                </fold-callout>
               }
             </div>
           </fold-card>
+          @if (siteId(); as id) {
+            @if (receipt(); as current) {
+              <app-unordered-receipt-card
+                [siteId]="id"
+                [day]="day()"
+                [receipt]="current.unordered"
+                [articles]="articles()"
+                [canWrite]="canWrite()"
+                (changed)="refresh()"
+              />
+            }
+          }
         </div>
       }
     }

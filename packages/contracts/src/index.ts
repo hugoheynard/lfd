@@ -1971,6 +1971,11 @@ export type {
   ResupplyArticleView,
   ResupplyReceiptLineView,
   ResupplyReceiptView,
+  ResupplyReceptionLineView,
+  ResupplyReceptionStatus,
+  ResupplyReceptionView,
+  UnorderedReceiptLineView,
+  UnorderedReceiptView,
 } from "./resupply-receipt.js";
 export {
   DEFAULT_ORDER_OPENING,

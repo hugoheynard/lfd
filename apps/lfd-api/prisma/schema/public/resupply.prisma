@@ -1,10 +1,13 @@
-/// **La réception d'un réapprovisionnement** — ce qu'un site a reçu pour sa
-/// vitrine un jour donné (plan `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`,
-/// lot J1 ; modèle B de `documentation/reassort-boutiques/plan-reapprovisionnement.md`).
+/// **Un reçu de réassort** — ce que la vitrine d'un point a reçu (lot J1 de
+/// `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`, refait au
+/// lot R2 de `documentation/reassort-boutiques/plan-reapprovisionnement.md`).
 ///
-/// La partie « reçue » du futur `SiteResupply` : un mouvement interne, JAMAIS
-/// une commande — aucun prix, aucune TVA, aucun règlement. Une par (site,
-/// journée). Le stock estimé (reçu − commandé) n'est pas stocké : il se calcule.
+/// Un mouvement interne, JAMAIS une commande — aucun prix, aucune TVA, aucun
+/// règlement. Un reçu par réassort envoyé (`resupplyId`), et au plus un
+/// « réassort sans commande » par (point, journée) (`resupplyId` nul, index
+/// unique partiel `resupply_receipt_unordered_key`, écrit dans la migration).
+/// Écrit seulement une fois reçu. Le stock estimé (somme des reçus) n'est pas
+/// stocké : il se calcule.
 model ResupplyReceipt {
   id String @id
 
@@ -14,8 +17,19 @@ model ResupplyReceipt {
   /// La journée de vente (date civile de Paris).
   serviceDay DateTime @map("service_day") @db.Date
 
-  /// Verrou optimiste : deux postes qui corrigent la même liste ne s'écrasent pas.
+  /// Le réassort réceptionné ; `null` pour un réassort sans commande.
+  resupplyId String?       @unique @map("resupply_id")
+  resupply   SiteResupply? @relation(fields: [resupplyId], references: [id], onDelete: Restrict)
+
+  /// Verrou optimiste : deux postes qui corrigent le même reçu ne s'écrasent pas.
   version Int @default(0)
+
+  /// « Réceptionner » (ou la première saisie d'un réassort sans commande) :
+  /// instant du `Clock`, auteur figé.
+  receivedAt        DateTime @map("received_at")
+  receivedByStaffId String   @map("received_by_staff_id")
+  receivedByName    String   @map("received_by_name")
+  receivedByRole    String   @map("received_by_role")
 
   /// Instant du dernier geste, lu du `Clock`.
   updatedAt        DateTime @map("updated_at")
@@ -26,24 +40,27 @@ model ResupplyReceipt {
 
   lines ResupplyReceiptLine[]
 
-  @@unique([siteId, serviceDay])
+  @@index([siteId, serviceDay])
   @@map("resupply_receipt")
   @@schema("public")
 }
 
-/// Une ligne reçue : le SKU produit, son libellé FIGÉ à la saisie (lu au
-/// catalogue publié), la quantité reçue (entier ≥ 0).
+/// Une ligne d'un reçu : le SKU produit, son libellé FIGÉ (lu au catalogue
+/// publié, ou recopié du réassort), l'attendu et le reçu (entiers ≥ 0).
 model ResupplyReceiptLine {
   id String @id @default(cuid())
 
   receiptId String          @map("receipt_id")
   receipt   ResupplyReceipt @relation(fields: [receiptId], references: [id], onDelete: Restrict)
 
-  sku      String
-  label    String
-  quantity Int
-  /// Rang d'affichage : l'ordre de saisie.
-  position Int
+  sku              String
+  label            String
+  /// L'attendu : la quantité demandée au réassort ; `null` sans commande.
+  expectedQuantity Int?   @map("expected_quantity")
+  /// Le reçu.
+  quantity         Int
+  /// Rang d'affichage : l'ordre du réassort, ou de saisie.
+  position         Int
 
   @@unique([receiptId, sku])
   @@index([receiptId])
@@ -87,7 +104,9 @@ model SiteResupply {
   cancelledByName    String?   @map("cancelled_by_name")
   cancelledByRole    String?   @map("cancelled_by_role")
 
-  lines SiteResupplyLine[]
+  lines   SiteResupplyLine[]
+  /// Son reçu, une fois réceptionné (lot R2).
+  receipt ResupplyReceipt?
 
   @@index([serviceDay, siteId])
   @@map("site_resupply")

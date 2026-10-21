@@ -1,0 +1,104 @@
+<fold-card data-resupply-receptions>
+  <fold-element-title
+    cardHeader
+    variant="title"
+    title="Réceptionner les réassorts"
+    subtitle="Les réassorts envoyés pour cette journée. « Réceptionner » reçoit toutes les lignes attendues d'un geste ; corrigez ensuite une ligne seulement s'il y a un écart. Le stock ne monte qu'à la réception."
+  />
+
+  <!-- L'espacement vient du gap, pas d'une marge posée par un enfant. -->
+  <div class="receptions-body">
+    @if (empty()) {
+      <p class="muted" data-resupply-receptions-empty>Aucun réassort envoyé pour cette journée.</p>
+    }
+
+    @for (reception of receptions(); track reception.resupplyId) {
+      <section class="reception" [attr.data-resupply-reception]="reception.resupplyId">
+        <div class="reception-head">
+          <strong>{{ targetLabels[reception.target] }}</strong>
+          @if (reception.status === 'received') {
+            <fold-status-badge status="active" label="Réceptionné" />
+          } @else {
+            <fold-status-badge status="pending" label="Attendu" />
+          }
+        </div>
+
+        <table class="lines">
+          <caption class="sr">
+            Lignes du réassort
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Article</th>
+              <th scope="col" class="num">Attendu</th>
+              <th scope="col" class="num">Reçu</th>
+              @if (canWrite() && reception.status === 'received') {
+                <th scope="col"><span class="sr">Gestes</span></th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (line of reception.lines; track line.sku) {
+              <tr [attr.data-resupply-reception-line]="line.sku">
+                <td>{{ line.label }}</td>
+                <td class="num">{{ line.expectedQuantity }}</td>
+                <td class="num" data-resupply-received>
+                  @if (reception.status === 'expected') {
+                    —
+                  } @else if (canWrite()) {
+                    <fold-number-input
+                      size="sm"
+                      label="Reçu"
+                      [value]="draftOf(reception, line)"
+                      (valueChange)="setDraft(reception, line, $event)"
+                      [min]="0"
+                      integer
+                      [disabled]="pending()"
+                    />
+                  } @else {
+                    {{ line.receivedQuantity }}
+                  }
+                </td>
+                @if (canWrite() && reception.status === 'received') {
+                  <td class="actions">
+                    @if (changedLine(reception, line)) {
+                      <button
+                        foldButton
+                        size="sm"
+                        data-resupply-correct-received
+                        [disabled]="pending()"
+                        (click)="correct(reception, line)"
+                      >
+                        Corriger
+                      </button>
+                    }
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+
+        @if (reception.status === 'received') {
+          <p class="muted" data-resupply-received-by>{{ receivedLine(reception) }}</p>
+        } @else if (canWrite()) {
+          <div class="submit">
+            <button
+              foldButton
+              data-resupply-receive
+              [disabled]="pending()"
+              [loading]="pending()"
+              (click)="receive(reception)"
+            >
+              Réceptionner
+            </button>
+          </div>
+        }
+      </section>
+    }
+
+    @if (failure(); as message) {
+      <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+    }
+  </div>
+</fold-card>

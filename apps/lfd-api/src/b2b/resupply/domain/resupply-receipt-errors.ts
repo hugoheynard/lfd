@@ -2,6 +2,7 @@ import {
   BusinessError,
   DomainError,
   ResourceNotFoundError,
+  TechnicalError,
 } from "../../../platform/shared/errors/app-error.js";
 
 /** Une quantité reçue qui n'est pas un entier positif ou nul. */
@@ -84,6 +85,63 @@ export class ResupplyReceiptChangedMeanwhileError extends BusinessError {
     super(
       "resupply.receipt.changed_meanwhile",
       "La liste reçue vient d'être modifiée depuis un autre poste : rechargez la page, puis refaites votre geste.",
+    );
+  }
+}
+
+/**
+ * Le réassort est déjà réceptionné. Refusé plutôt qu'ignoré : un second
+ * « Réceptionner » vient d'un autre poste, et le dire évite de croire qu'on
+ * a soi-même attesté l'arrivée.
+ */
+export class ResupplyAlreadyReceivedError extends BusinessError {
+  constructor(byName: string, atLabel: string) {
+    super(
+      "resupply.receipt.already_received",
+      `Ce réassort est déjà réceptionné${byName === "" ? "" : ` par ${byName}`} (${atLabel}) : rechargez la page, puis corrigez une ligne s'il y a un écart.`,
+    );
+  }
+}
+
+/** Un écart ne se corrige qu'après « Réceptionner » : avant, rien n'est reçu. */
+export class ReceiptNotYetReceivedError extends BusinessError {
+  constructor() {
+    super(
+      "resupply.receipt.not_yet_received",
+      "Ce réassort n'est pas encore réceptionné : cliquez d'abord sur « Réceptionner », puis corrigez la ligne où il y a un écart.",
+    );
+  }
+}
+
+/** Un reçu de réassort porte les lignes du réassort, et elles seules. */
+export class ReceiptBoundToResupplyError extends BusinessError {
+  constructor() {
+    super(
+      "resupply.receipt.bound_to_resupply",
+      "Ce reçu suit un réassort commandé : on n'y ajoute ni n'en retire d'article. Saisissez l'article arrivé en plus dans « Réassort sans commande », ou mettez la quantité reçue à zéro.",
+    );
+  }
+}
+
+/** Seul un réassort envoyé et non annulé se réceptionne. */
+export class ResupplyNotReceivableError extends BusinessError {
+  constructor() {
+    super(
+      "resupply.receipt.resupply_not_receivable",
+      "Ce réassort n'a pas été envoyé au fournil, ou a été annulé : il n'y a rien à réceptionner. Saisissez ce qui est arrivé dans « Réassort sans commande ».",
+    );
+  }
+}
+
+/**
+ * Un reçu encore attendu n'a rien à écrire : seul « Réceptionner » le fait
+ * exister en base. Arriver ici est un défaut de programmation.
+ */
+export class UnreceivedReceiptNotPersistableError extends TechnicalError {
+  constructor() {
+    super(
+      "resupply.receipt.unreceived_not_persistable",
+      "Un reçu de réassort ne s'enregistre qu'une fois réceptionné : le geste n'a rien écrit. Rechargez la page et réessayez ; si cela se reproduit, signalez-le.",
     );
   }
 }

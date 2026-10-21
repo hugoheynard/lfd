@@ -23,15 +23,21 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { AdminSurface, RequirePermission } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody, ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
+import { CorrectReceivedResupplyLineCommand } from "../application/correct-received-resupply-line.command.js";
 import { CorrectResupplyLineCommand } from "../application/correct-resupply-line.command.js";
 import { GetResupplyReceiptQuery } from "../application/get-resupply-receipt.query.js";
 import { ListResupplyArticlesQuery } from "../application/list-resupply-articles.query.js";
 import { ReceiveResupplyLineCommand } from "../application/receive-resupply-line.command.js";
+import { ReceiveSiteResupplyCommand } from "../application/receive-site-resupply.command.js";
 import { WithdrawResupplyLineCommand } from "../application/withdraw-resupply-line.command.js";
 
 /**
  * **La réception du réapprovisionnement** — Comptoir › Réassort boutique
  * (plan `limites-de-commande/plan-jour-meme-sur-stock.md`, J1, 2026-10-21).
+ *
+ * Depuis le lot R2 (2026-10-21) : un reçu par réassort envoyé —
+ * « Réceptionner » d'un geste, puis la correction d'un écart par ligne — et
+ * les routes `:siteId/:day/lines` tiennent le « réassort sans commande ».
  *
  * Sous `handover_counter`, le droit qui garde déjà l'onglet au back-office :
  * c'est le poste du comptoir qui voit arriver la marchandise (Q1, Hugo).
@@ -62,6 +68,36 @@ export class AdminResupplyReceiptsController {
   ): Promise<ResupplyReceiptView> {
     return this.queries.execute<GetResupplyReceiptQuery, ResupplyReceiptView>(
       new GetResupplyReceiptQuery(siteId, day),
+    );
+  }
+
+  /** « Réceptionner » : l'attendu devient le reçu, d'un geste. */
+  @Post(":siteId/resupplies/:resupplyId/receive")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @RequirePermission("handover_counter:write")
+  async receiveResupply(
+    @Param("siteId") siteId: string,
+    @Param("resupplyId") resupplyId: string,
+    @StaffUserId() staffUserId: string,
+  ): Promise<void> {
+    await this.commands.execute<ReceiveSiteResupplyCommand, void>(
+      new ReceiveSiteResupplyCommand(siteId, resupplyId, staffUserId),
+    );
+  }
+
+  /** Un écart, après « Réceptionner » : le reçu d'une ligne corrigé. */
+  @Patch(":siteId/resupplies/:resupplyId/lines/:sku")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @RequirePermission("handover_counter:write")
+  async correctReceived(
+    @Param("siteId") siteId: string,
+    @Param("resupplyId") resupplyId: string,
+    @Param("sku") sku: string,
+    @Body(new ZodBody(correctResupplyLineSchema)) body: CorrectResupplyLinePayload,
+    @StaffUserId() staffUserId: string,
+  ): Promise<void> {
+    await this.commands.execute<CorrectReceivedResupplyLineCommand, void>(
+      new CorrectReceivedResupplyLineCommand(siteId, resupplyId, sku, body.quantity, staffUserId),
     );
   }
 

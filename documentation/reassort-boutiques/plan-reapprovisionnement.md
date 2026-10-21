@@ -316,7 +316,7 @@ Décisions de Hugo :
 | Lot                                         | Contenu                                                                                                                                                                                                                                                  | Touche                                                      |
 | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
 | **R1** ✅ (bâti le 2026-10-21, non commité) | `SiteResupply` : commander (le soir pour demain, ou « au plus tôt »), annuler ; écran du comptoir pour le point du bandeau ; écran du fournil « réassorts à produire » EN LECTURE (demain et aujourd'hui, distingués) — état dans le [README](README.md) | commerce, back-office                                       |
-| **R2**                                      | Réception en un geste : un reçu par réassort, pré-rempli de la quantité DEMANDÉE, « Réceptionner », écarts par ligne ; la saisie de secours = réassort sans commande ; stock du jour = somme des reçus                                                   | commerce, back-office (migration de la réception : vitruve) |
+| **R2** ✅ (bâti le 2026-10-21, non commité) | Réception en un geste : un reçu par réassort, pré-rempli de la quantité DEMANDÉE, « Réceptionner », écarts par ligne ; la saisie de secours = réassort sans commande ; stock du jour = somme des reçus                                                   | commerce, back-office (migration de la réception : vitruve) |
 | **R3**                                      | Le réassort du soir au plan figé : feuille de production, colisage (quantité réelle), transfert du Village — section distincte                                                                                                                           | fournil, colisage, livraison                                |
 | **R4**                                      | « Au plus tôt » : le plan live au colisage et aux tournées                                                                                                                                                                                               | à concevoir                                                 |
 
@@ -375,3 +375,65 @@ demande vide ou d'une journée passée ne part pas. Le `POST` d'un seul tenant
 de R1 est gardé et passe par la demande en cours (le bouton du fournil
 l'ajoute à la demande « au plus tôt » et l'envoie entière). État dans le
 [README](README.md).
+
+### R2 ✅ — La réception en un geste (Hugo, 2026-10-21 ; bâti le 2026-10-21, non commité)
+
+« Personne ne fera du ligne par ligne en plein service. » Un reçu par
+réassort ; la saisie de secours devient un « réassort sans commande » ; le
+stock du jour additionne les reçus.
+
+- **Un reçu par réassort envoyé** : `ResupplyReceipt` porte désormais un
+  `resupplyId`, et chaque ligne son **attendu** (la quantité DEMANDÉE, en
+  attendant la quantité emballée de R3) et son **reçu**. « Réceptionner »
+  recopie l'attendu en reçu pour toutes les lignes, d'un geste ; le reçu ne
+  s'écrit en base qu'à ce moment. Le stock ne monte qu'à la réception, jamais
+  à l'envoi.
+- **La règle de l'écart** : une ligne ne se corrige qu'**après**
+  « Réceptionner » (avant, rien n'est reçu : 409
+  `resupply.receipt.not_yet_received`). On n'ajoute ni ne retire d'article à
+  un reçu de réassort : un article arrivé en plus va au réassort sans
+  commande, un manquant se corrige à zéro.
+- **Un second « Réceptionner » est refusé** (409
+  `resupply.receipt.already_received`, en nommant qui et quand), jamais
+  rejoué en silence ; une course entre deux postes bute sur l'index unique
+  `resupply_receipt_resupply_id_key`. Seul un réassort envoyé et non annulé se
+  réceptionne (409 `resupply.receipt.resupply_not_receivable`) ; celui d'un
+  autre point est introuvable (404).
+- **Le réassort sans commande** : même agrégat, `resupplyId` nul, au plus un
+  par (point, journée) (index unique partiel `resupply_receipt_unordered_key`)
+  — la saisie ligne par ligne d'avant, refus du doublon compris.
+- **Le stock estimé du jour** = somme des reçus réceptionnés du jour au
+  point, tous reçus confondus (`estimateStock`).
+- **Les alertes de R1b** se lèvent à « Réceptionner », pour chaque ligne reçue
+  > 0, dans la même transaction, et toujours à la saisie sans commande.
+- **Migration** `20261021230000_un_recu_par_reassort` — **non additive** :
+  elle retire l'index unique (site, journée) de
+  `20261021150000_la_reception_du_reapprovisionnement`, jamais déployée
+  (absente de `origin/main`, vérifié le 2026-10-21).
+- **L'écran** (Comptoir › Réassort) : « Réceptionner les réassorts » (les
+  réassorts envoyés pour la journée du bandeau, attendus en lecture, un
+  bouton, puis « Réceptionné par X à HH:MM » et l'écart par ligne), le
+  tableau « Stock estimé du jour » en somme, et « Réassort sans commande »
+  replié en bas. État dans le [README](README.md).
+
+### R1d — Le fournil envoie un réassort, à part de la demande du comptoir (Hugo, 2026-10-21)
+
+« Pourquoi le fournil lancerait le réassort [du comptoir] ? Après, je trouve
+intéressant la capacité du fournil à dire "je t'envoie ça" — typiquement si le
+comptoir demande au téléphone, le fournil peut entrer la demande. C'est une
+autre façon de faire. »
+
+- **Corrige R1b/R1c** : sur l'écran du fournil, le bouton d'une alerte
+  « Lancer un réassort au plus tôt » envoyait la demande « au plus tôt » DU
+  COMPTOIR, avec ce que le comptoir y avait mis. Il disparaît. Les alertes
+  restent chez le fournil, pour information.
+- **« Envoyer un réassort »** sur l'écran du fournil, par point : le fournil
+  choisit articles et quantités et envoie. C'est un réassort À PART, signé
+  « par le fournil » (origine), qui ne touche jamais la demande en cours du
+  comptoir.
+- **Au comptoir**, il arrive dans les réassorts à réceptionner (R2), marqué
+  « envoyé par le fournil », et se réceptionne en un geste comme les autres.
+- **Droit** : le geste du fournil a son propre droit (à trancher à l'écran des
+  rôles), distinct de `handover_counter`.
+
+Bâti juste après R2.
