@@ -80,6 +80,7 @@ describe("le nom d'un réassort (R1g)", () => {
       lines: resupply.lines,
       placed: null,
       cancelled: null,
+      arrived: null,
     });
     expect(restored.name).toBe("Vitrine du matin");
   });

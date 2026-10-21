@@ -5,6 +5,7 @@ import { ClosedPlansReader } from "../../../production/channels/commerce/index.j
 import { ResupplyCatalogue } from "../domain/resupply-catalogue.js";
 import { ResupplySiteLabels } from "../domain/resupply-site-labels.js";
 import { SiteResupplyReader } from "../domain/site-resupply.reader.js";
+import { TransferServedSites } from "../domain/transfer-served-sites.js";
 import { GetResupplyProductionDayQuery } from "./get-resupply-production-day.query.js";
 import { resupplyDayView } from "./resupply-day-view.js";
 
@@ -22,6 +23,9 @@ import { resupplyDayView } from "./resupply-day-view.js";
  * plan, l'envoi et l'annulation d'un réassort pour demain sont refusés une
  * fois la journée arrêtée (R3a), donc les deux listes sont les mêmes ; et
  * l'onglet a besoin des « au plus tôt », que le fournil ne fige jamais.
+ *
+ * Depuis R3e, il dit quels points sont servis par transfert : aux autres,
+ * l'onglet propose « Monté ».
  */
 @QueryHandler(GetResupplyProductionDayQuery)
 export class GetResupplyProductionDayHandler implements IQueryHandler<
@@ -33,6 +37,7 @@ export class GetResupplyProductionDayHandler implements IQueryHandler<
     private readonly sites: ResupplySiteLabels,
     private readonly plans: ClosedPlansReader,
     private readonly catalogue: ResupplyCatalogue,
+    private readonly served: TransferServedSites,
   ) {}
 
   async execute(query: GetResupplyProductionDayQuery): Promise<ResupplyProductionDayView> {
@@ -42,11 +47,16 @@ export class GetResupplyProductionDayHandler implements IQueryHandler<
       this.plans.closedBetween(day, day),
       this.catalogue.articles(),
     ]);
-    const labels = await this.sites.labelsOf([...new Set(placed.map((r) => r.siteId))]);
+    const siteIds = [...new Set(placed.map((r) => r.siteId))];
+    const [labels, transferSites] = await Promise.all([
+      this.sites.labelsOf(siteIds),
+      this.served.servedByTransfer(siteIds),
+    ]);
     return {
       ...resupplyDayView(day, placed, labels),
       planStopped: stopped.includes(day),
       articles,
+      transferSiteIds: siteIds.filter((siteId) => transferSites.has(siteId)),
     };
   }
 }

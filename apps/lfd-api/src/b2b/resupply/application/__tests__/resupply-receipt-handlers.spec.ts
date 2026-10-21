@@ -28,12 +28,28 @@ describe("« Réceptionner » un réassort", () => {
         placedAt: AT.toISOString(),
         placedBy: "Lou Martin",
         status: "expected",
+        arrivedAt: null,
+        arrivedBy: null,
         receivedAt: null,
         receivedBy: null,
         lines: [{ sku: "CRO", label: "Croissant", expectedQuantity: 24, receivedQuantity: null }],
       },
     ]);
     expect(view.stock).toEqual([]);
+  });
+
+  /** Lot R3e : « arrivé » se lit dans la liste, et Réceptionner ne l'attend pas. */
+  it("un réassort arrivé se lit « arrivé », avec l'instant et l'auteur du signal", async () => {
+    const { resupplies, read } = setup();
+    resupplies.put(placed("resupply_1", CRO_24, { arrived: { at: AT, author: AUTHOR } }));
+
+    const view = await read.execute(new GetResupplyReceiptQuery(SITE, DAY));
+
+    expect(view.receptions[0]).toMatchObject({
+      status: "expected",
+      arrivedAt: AT.toISOString(),
+      arrivedBy: "Lou Martin",
+    });
   });
 
   it("un réassort nommé (R1g) se lit sous son nom dans la liste à réceptionner", async () => {

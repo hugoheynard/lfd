@@ -7,6 +7,7 @@ import {
   TransferReceptionReasonRequiredError,
 } from "../../domain/errors/internal-transfer-errors.js";
 import { TransferReception } from "../transfer-reception.js";
+import { RecordingDurable } from "../commands/__tests__/decision-doubles.js";
 import {
   FixedTransferBinCounts,
   InMemoryInternalTransfers,
@@ -20,24 +21,54 @@ const DAY = "2030-03-12";
 const AT = new Date(0);
 const NOW = new Date(60_000);
 
-function scene(departed: boolean) {
+function scene(departed: boolean, resupplyIds: readonly string[] = []) {
   const transfer = plannedTransfer("t_1", DAY, AT, ["o_1"]);
+  for (const resupplyId of resupplyIds) {
+    transfer.attach(
+      { itemId: `t_1_${resupplyId}`, item: { kind: "resupply", resupplyId } },
+      { siteId: "site_vv", serviceDay: DAY },
+      AT,
+    );
+  }
   if (departed) {
     transfer.depart(AT, () => []);
   }
   const transfers = new InMemoryInternalTransfers(transfer);
   const events = new RecordingPublisher();
+  const durable = new RecordingDurable();
   const desk = new TransferReception(
     transfers,
     new FixedTransferBinCounts(new Map([["t_1", 3]])),
     new FixedClock(NOW),
     events,
+    durable,
     new DirectUnitOfWork(),
   );
-  return { desk, transfers, events };
+  return { desk, transfers, events, durable };
 }
 
 describe("TransferReception", () => {
+  it("écrit le fait durable « transfert reçu », avec les réassorts qu'il porte (lot R3e)", async () => {
+    const { desk, durable } = scene(false, ["rs_1"]);
+
+    await desk.receiveForOrder({ orderId: "o_1", staffUserId: "staff_c", reason: "Venu à pied" });
+
+    expect(durable.facts).toEqual([
+      {
+        type: "delivery.transfer_received",
+        key: "delivery.transfer_received:t_1",
+        payload: {
+          transferId: "t_1",
+          siteId: "site_vv",
+          serviceDay: DAY,
+          receivedAt: NOW.toISOString(),
+          receivedByStaffId: "staff_c",
+          resupplyIds: ["rs_1"],
+        },
+      },
+    ]);
+  });
+
   it("reçoit un transfert parti, au comptoir, et le journalise", async () => {
     const { desk, transfers, events } = scene(true);
 

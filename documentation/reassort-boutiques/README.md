@@ -8,7 +8,9 @@
 > compte au prévisionnel, le dossier du jour (écran et PDF) les imprime, le
 > poste du colisage tient leurs fiches (R3d, 2026-10-21). Les **ruptures et stocks faibles** du
 > comptoir aussi (lot R1b, 2026-10-21), sans effet encore sur la boutique. La
-> **demande en cours** est enregistrée depuis le lot R1c (2026-10-21). Le
+> **demande en cours** est enregistrée depuis le lot R1c (2026-10-21). Un
+> réassort **arrivé** (transfert reçu, ou « Monté » au fournil) sonne au
+> comptoir depuis le lot R3e (2026-10-22). Le
 > **fournil envoie ses propres réassorts**, à part, depuis le lot R1d
 > (2026-10-21). L'écran du comptoir est **une table de tous les produits**
 > depuis le lot R1e (2026-10-21). Ce document décrit ce qui existe, vérifié
@@ -429,7 +431,54 @@ flowchart LR
   « Réapprovisionnement » dès que le serveur la remplit (R3c) ; l'avis d'un
   transfert vide nomme désormais les réassorts.
 
+## Ce qui est bâti : le réassort arrivé (lot R3e, 2026-10-22)
+
+« Un seul signal, deux gestes » : un réassort envoyé passe d'**attendu** à
+**arrivé** (`site_resupply.arrived_*`, instant et auteur figés, migration
+`20261022130000_le_reassort_arrive`), et la cloche sonne au comptoir.
+
+```mermaid
+flowchart LR
+  V["Village (servi par transfert)<br/>« Remis au site » · « Réceptionner » le transfert"] -->|"delivery.transfer_received<br/>(boîte d'envoi)"| A["commerce<br/>MarkArrivedOnTransferReceived"]
+  L["Labo (servi sur place)<br/>Prod manager › Réassorts › « Monté »"] -->|"POST admin/bakehouse-resupplies/sites/:siteId/:id/mounted"| A
+  A -->|"SiteResupply.markArrived"| S["site_resupply.arrived_*"]
+  A --> C["cloche : « Réassort arrivé — à réceptionner »<br/>audience handover_counter:read"]
+  S --> R["Comptoir › Réassort boutique<br/>« Attendu » / « Arrivé »"]
+```
+
+- **Le domaine** : `SiteResupply.markArrived(trace, reception)` refuse une
+  demande en cours ou un réassort annulé (409) ; déjà arrivé ou déjà
+  réceptionné, rien ne change et rien ne sonne. Réceptionner n'attend
+  jamais le signal : le comptoir fait foi.
+- **Village** : les DEUX chemins de la réception d'un transfert (« Remis au
+  site » du livreur, « Réceptionner » au comptoir) écrivent le fait durable
+  `delivery.transfer_received` (`apps/lfd-api/src/delivery/channels/commerce/transfer-received.fact.ts`,
+  déclaré et écrit par la livraison) ; le commerce l'écoute en
+  `@DurableHandler` et marque arrivés les réassorts que le transfert porte —
+  à l'instant et sous l'auteur de la réception.
+- **Labo** : « Monté », carte « À monter » de l'onglet Réassorts
+  (`production/reassorts-a-produire/resupply-mount-card/`), sous
+  `production_resupply:write` — le droit de l'envoi du fournil. La vue de
+  l'onglet porte `transferSiteIds` : la carte ne liste que les points servis
+  sur place.
+- **La cloche** ne sait adresser qu'un droit, pas un point
+  (`StaffNotice.audience`) : elle sonne pour tout `handover_counter:read`, le
+  point est dans le titre (« … : Vitrine du matin — Le Labo »). Une clé par
+  réassort.
+- **Au comptoir** : la liste à réceptionner dit « Attendu » ou « Arrivé »
+  (`arrivedAt`, `arrivedBy` sur `ResupplyReceptionView`) ; `SiteResupplyView`
+  les porte aussi.
+- e2e : `apps/lfd-api/test/resupply-arrived.e2e-spec.ts`.
+
 ## Ce qui reste
+
+- **Un transfert de réassort seul ne se réceptionne qu'au site** (« Remis au
+  site ») : « Réceptionner » au comptoir passe par une commande du transfert
+  (`TransferReceptionDesk.receiveForOrder`). Sans tournée, ses réassorts ne
+  passent pas « arrivé » — le comptoir les réceptionne quand même.
+- **« Au plus tôt » au Village** : ni transfert (R4), ni « Monté » proposé
+  (l'écran le réserve aux points servis sur place ; le serveur l'accepte).
+- **La cloche ne cible pas le point** : tout le comptoir l'entend.
 
 - **La carte d'arrêt de transfert** (tableau des tournées) dit « N commandes »
   et rien des réassorts : un transfert de réassort seul s'y lit « 0 commande ».

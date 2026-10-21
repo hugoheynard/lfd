@@ -45,6 +45,10 @@ import { ResupplyReceiptsService } from '../resupply-receipts.service';
  * Un réassort nommé (R1g) se lit sous son nom, la visée à côté : la page
  * est celle d'un seul point, qu'on ne répète pas.
  *
+ * Depuis le lot R3e (2026-10-22), un réassort attendu dit s'il est
+ * « Arrivé » (le transfert reçu au point, ou « Monté » au fournil) ou encore
+ * « Attendu ». Réceptionner ne l'attend pas : le comptoir fait foi.
+ *
  * La carte fait ses gestes et prévient la page (`changed`), qui relit tout
  * (le stock du jour et les alertes que la réception a levées).
  */
@@ -90,6 +94,11 @@ export class ResupplyReceptionsCard {
   protected receivedLine(reception: ResupplyReceptionView): string {
     const at = reception.receivedAt === null ? '' : ` à ${parisClock(reception.receivedAt)}`;
     return `Réceptionné${reception.receivedBy === null ? '' : ` par ${reception.receivedBy}`}${at}`;
+  }
+
+  protected arrivedLine(reception: ResupplyReceptionView): string {
+    const at = reception.arrivedAt === null ? '' : ` à ${parisClock(reception.arrivedAt)}`;
+    return `Arrivé${reception.arrivedBy === null ? '' : `, signalé par ${reception.arrivedBy}`}${at}`;
   }
 
   protected draftOf(

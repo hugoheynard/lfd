@@ -15,6 +15,8 @@ const EXPECTED: ResupplyReceptionView = {
   placedAt: '2026-01-01T18:00:00.000Z',
   placedBy: 'Max',
   status: 'expected',
+  arrivedAt: null,
+  arrivedBy: null,
   receivedAt: null,
   receivedBy: null,
   lines: [LINE],
@@ -47,6 +49,27 @@ function mount(receptions: readonly ResupplyReceptionView[], canWrite: boolean) 
 }
 
 describe('ResupplyReceptionsCard', () => {
+  /** Lot R3e : attendu ou arrivé, et Réceptionner ne l'attend pas. */
+  it('dit « Attendu » tant que rien n’est signalé, « Arrivé » ensuite, et laisse réceptionner', () => {
+    const arrived: ResupplyReceptionView = {
+      ...EXPECTED,
+      resupplyId: 'r2',
+      arrivedAt: '2026-01-02T06:30:00.000Z',
+      arrivedBy: 'Paul',
+    };
+    const { root } = mount([EXPECTED, arrived], true);
+
+    const first = root.querySelector('[data-resupply-reception="r1"]');
+    const second = root.querySelector('[data-resupply-reception="r2"]');
+    expect(first?.querySelector('[data-resupply-awaited]')?.textContent).toContain('Attendu');
+    expect(first?.querySelector('[data-resupply-arrived]')).toBeNull();
+    expect(second?.querySelector('[data-resupply-arrived]')?.textContent).toContain('Arrivé');
+    expect(second?.querySelector('[data-resupply-arrived-by]')?.textContent).toContain(
+      'Arrivé, signalé par Paul à 07:30',
+    );
+    expect(root.querySelectorAll('[data-resupply-receive]')).toHaveLength(2);
+  });
+
   it('montre l’attendu en lecture et un seul bouton « Réceptionner », qui prévient la page', async () => {
     const { root, service, changed, fixture } = mount([EXPECTED], true);
 

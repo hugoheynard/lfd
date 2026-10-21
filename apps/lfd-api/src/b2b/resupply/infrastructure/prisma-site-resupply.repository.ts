@@ -10,9 +10,9 @@ import {
 import { SiteResupplyRepository } from "../domain/site-resupply.repository.js";
 import { dayColumn, SITE_RESUPPLY_LINES, snapshotOf } from "./site-resupply.row.js";
 
-/** Le nom (R1g) et les colonnes des deux gestes datés, `null` tant qu'ils n'ont pas eu lieu. */
+/** Le nom (R1g) et les colonnes des trois gestes datés (l'arrivée depuis R3e), `null` tant qu'ils n'ont pas eu lieu. */
 function tracesOf(resupply: SiteResupply) {
-  const { placed, cancelled } = resupply;
+  const { placed, cancelled, arrived } = resupply;
   return {
     name: resupply.name,
     placedAt: placed?.at ?? null,
@@ -23,6 +23,10 @@ function tracesOf(resupply: SiteResupply) {
     cancelledByStaffId: cancelled?.author.staffUserId ?? null,
     cancelledByName: cancelled?.author.name ?? null,
     cancelledByRole: cancelled?.author.role ?? null,
+    arrivedAt: arrived?.at ?? null,
+    arrivedByStaffId: arrived?.author.staffUserId ?? null,
+    arrivedByName: arrived?.author.name ?? null,
+    arrivedByRole: arrived?.author.role ?? null,
   };
 }
 

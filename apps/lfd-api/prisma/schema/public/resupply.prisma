@@ -112,6 +112,15 @@ model SiteResupply {
   cancelledByName    String?   @map("cancelled_by_name")
   cancelledByRole    String?   @map("cancelled_by_role")
 
+  /// Le signal « il est là » (lot R3e) : la réception au site du transfert
+  /// qui le porte, ou « Monté » au fournil pour un point servi sur place.
+  /// Tous `null` tant qu'il est attendu ; jamais sur une demande en cours
+  /// (CHECK `site_resupply_arrival_whole`, `site_resupply_arrival_placed`).
+  arrivedAt        DateTime? @map("arrived_at")
+  arrivedByStaffId String?   @map("arrived_by_staff_id")
+  arrivedByName    String?   @map("arrived_by_name")
+  arrivedByRole    String?   @map("arrived_by_role")
+
   lines   SiteResupplyLine[]
   /// Son reçu, une fois réceptionné (lot R2).
   receipt ResupplyReceipt?

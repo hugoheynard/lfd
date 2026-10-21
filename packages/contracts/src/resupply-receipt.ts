@@ -50,6 +50,13 @@ export interface ResupplyReceptionView {
   /** Nom figé de qui l'a envoyé ; `null` s'il est inconnu. */
   readonly placedBy: string | null;
   readonly status: ResupplyReceptionStatus;
+  /**
+   * « Il est là » (lot R3e) : la réception du transfert, ou « Monté » au
+   * fournil. Un réassort `expected` avec `arrivedAt` se dit « arrivé » ;
+   * sans, « attendu ». Réceptionner n'attend jamais ce signal.
+   */
+  readonly arrivedAt: string | null;
+  readonly arrivedBy: string | null;
   /** Instant de « Réceptionner » ; `null` tant qu'il est attendu. */
   readonly receivedAt: string | null;
   readonly receivedBy: string | null;

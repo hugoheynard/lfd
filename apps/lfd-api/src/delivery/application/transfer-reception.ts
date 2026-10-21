@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { UnitOfWork } from "../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../platform/events/domain-event-publisher.js";
+import { DurablePublisher } from "../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../platform/time/clock.js";
 import {
   TransferReceptionDesk,
@@ -12,7 +13,7 @@ import { InternalTransferReceivedEvent } from "../domain/events/internal-transfe
 import { InternalTransferRepository } from "../domain/ports/internal-transfer.repository.js";
 import { TransferBinCounts } from "../domain/ports/transfer-bin-counts.reader.js";
 import type { InternalTransfer } from "../domain/entities/internal-transfer.js";
-import { loadTransfer } from "./internal-transfer-support.js";
+import { loadTransfer, publishTransferReceived } from "./internal-transfer-support.js";
 
 /**
  * **« Réceptionner » au comptoir du site** (plan du transfert interne, §6.3,
@@ -22,7 +23,8 @@ import { loadTransfer } from "./internal-transfer-support.js";
  * Dans UNE unité de travail : le transfert qui porte la commande est chargé,
  * il refuse ou reçoit (`receive` — manuel depuis `planned`, motif exigé), il
  * est écrit sous `received_at IS NULL`, et le journal le dit — avec le
- * nombre de bacs du transfert (lot T3), ce que le site doit avoir reçu. L'arrêt de
+ * nombre de bacs du transfert (lot T3), ce que le site doit avoir reçu — et
+ * le fait durable `delivery.transfer_received` (lot R3e). L'arrêt de
  * transfert, s'il roule encore, reste à clore par le livreur (« Remis au
  * site » sur un transfert déjà reçu ne fait que le clore).
  */
@@ -33,6 +35,7 @@ export class TransferReception extends TransferReceptionDesk {
     private readonly bins: TransferBinCounts,
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
+    private readonly durable: DurablePublisher,
     private readonly uow: UnitOfWork,
   ) {
     super();
@@ -51,6 +54,7 @@ export class TransferReception extends TransferReceptionDesk {
       await this.events.publishTraced(
         new InternalTransferReceivedEvent(transfer, "counter", manual, await this.binsOf(transfer)),
       );
+      await publishTransferReceived(this.durable, transfer);
     });
   }
 

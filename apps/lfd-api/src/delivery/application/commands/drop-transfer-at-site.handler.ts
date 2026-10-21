@@ -2,6 +2,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
+import { DurablePublisher } from "../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../platform/time/clock.js";
 import type { DeliveryRound } from "../../domain/entities/delivery-round.js";
 import { DoorstepStopNotFoundError } from "../../domain/errors/delivery-doorstep-errors.js";
@@ -13,7 +14,7 @@ import { InternalTransferRepository } from "../../domain/ports/internal-transfer
 import { TransferBinCounts } from "../../domain/ports/transfer-bin-counts.reader.js";
 import type { InternalTransfer } from "../../domain/entities/internal-transfer.js";
 import { ensureFreshForDriver, gesturePositionOf } from "../doorstep-support.js";
-import { loadTransfer } from "../internal-transfer-support.js";
+import { loadTransfer, publishTransferReceived } from "../internal-transfer-support.js";
 import { DropTransferAtSiteCommand } from "./drop-transfer-at-site.command.js";
 
 /**
@@ -29,7 +30,8 @@ import { DropTransferAtSiteCommand } from "./drop-transfer-at-site.command.js";
  *    l'est déjà, réceptionné au comptoir avant l'arrivée : l'arrêt se clôt
  *    alors sans seconde réception ;
  * 5. `closeStop`, avec la position du téléphone (YA-D4), les deux `save`, le
- *    fait — qui compte les bacs du transfert (lot T3).
+ *    fait — qui compte les bacs du transfert (lot T3) —, et le fait durable
+ *    `delivery.transfer_received` (lot R3e) quand c'est lui qui le reçoit.
  *
  * @throws {DriverRoundNotFoundError} @throws {DoorstepStopNotFoundError}
  * @throws {StopNotATransferError} @throws {DoorstepRoundStaleError}
@@ -44,6 +46,7 @@ export class DropTransferAtSiteHandler implements ICommandHandler<DropTransferAt
     private readonly bins: TransferBinCounts,
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
+    private readonly durable: DurablePublisher,
     private readonly uow: UnitOfWork,
   ) {}
 
@@ -80,6 +83,7 @@ export class DropTransferAtSiteHandler implements ICommandHandler<DropTransferAt
             await this.binsOf(transfer),
           ),
         );
+        await publishTransferReceived(this.durable, transfer);
       }
     });
   }

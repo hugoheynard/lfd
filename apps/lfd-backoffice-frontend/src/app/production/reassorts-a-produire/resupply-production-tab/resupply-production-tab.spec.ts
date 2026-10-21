@@ -25,6 +25,7 @@ class FakeResupplies {
     return Promise.resolve({
       serviceDay,
       planStopped: this.stopped,
+      transferSiteIds: [],
       sites: [
         {
           siteId: 'labo',
@@ -43,6 +44,8 @@ class FakeResupplies {
               placedBy: null,
               cancelledAt: null,
               cancelledBy: null,
+              arrivedAt: null,
+              arrivedBy: null,
             },
           ],
         },
@@ -111,6 +114,13 @@ describe("l'onglet Réassorts de Prod manager", () => {
   it("n'offre l'envoi du fournil qu'à qui tient son droit", async () => {
     const without = await mount();
     expect(without.el.querySelector('app-bakehouse-resupply-card')).toBeNull();
+  });
+
+  /** Lot R3e : le Labo est servi sur place, ses réassorts sont « à monter ». */
+  it('montre la carte « À monter », en lecture sans le droit du fournil', async () => {
+    const { el } = await mount();
+    expect(el.querySelector('[data-resupply-mount-row="r1"]')?.textContent).toContain('Le Labo');
+    expect(el.querySelector('[data-resupply-mount]')).toBeNull();
   });
 
   it('déplace la journée d’un clic, et relit', async () => {

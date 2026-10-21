@@ -24,6 +24,8 @@ import { isoDay, shiftDay } from '../../previsionnel/previsionnel-range';
 import { BakehouseResupplyCard } from '../bakehouse-resupply-card/bakehouse-resupply-card';
 import { LiveStockAlertsService } from '../live-stock-alerts.service';
 import { ResuppliesToProduceService } from '../resupplies-to-produce.service';
+import { ResupplyMountCard } from '../resupply-mount-card/resupply-mount-card';
+import { resupplyMountRows } from '../resupply-mount-card/resupply-mount-rows';
 import {
   resupplyPoints,
   resupplyProductionRows,
@@ -57,6 +59,9 @@ function normalize(text: string): string {
  * feuille du fournil, et ne bougent plus. Les alertes sont celles de
  * maintenant : une journée passée ne les montre pas.
  *
+ * Depuis le lot R3e (2026-10-22), la carte « À monter » porte le second
+ * geste : « Monté », pour les réassorts d'un point servi sur place.
+ *
  * La journée vit dans l'URL (`?day=`) ; par défaut, demain — le service que
  * le fournil prépare.
  */
@@ -65,6 +70,7 @@ function normalize(text: string): string {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     BakehouseResupplyCard,
+    ResupplyMountCard,
     FoldButtonComponent,
     FoldButtonIconComponent,
     FoldCalloutComponent,
@@ -98,6 +104,12 @@ export class ResupplyProductionTab {
   private readonly alerts = signal<LiveStockAlertsView | null>(null);
   /** Les alertes n'ont pas pu être lues : la table reste juste, sans leurs marques. */
   protected readonly alertsLost = signal(false);
+
+  /** La journée, si un point servi sur place y a un réassort envoyé : la carte « À monter ». */
+  protected readonly mountable = computed(() => {
+    const view = this.view();
+    return view !== null && resupplyMountRows(view).length > 0 ? view : null;
+  });
 
   protected readonly planStopped = computed(() => this.view()?.planStopped ?? false);
   /** « Pour demain · figé » une fois le plan arrêté, « · envoyé » avant. */

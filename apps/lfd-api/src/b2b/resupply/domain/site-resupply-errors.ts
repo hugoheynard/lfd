@@ -150,6 +150,21 @@ export class ResupplyNotCancellableError extends BusinessError {
   }
 }
 
+/**
+ * « Monté » (ou la réception d'un transfert) sur un réassort qui n'est pas en
+ * route : une demande encore en cours, ou un réassort annulé (lot R3e).
+ */
+export class ResupplyNotArrivableError extends BusinessError {
+  constructor(readonly draft: boolean) {
+    super(
+      "resupply.order.not_arrivable",
+      draft
+        ? "Ce réassort n'a pas été envoyé : c'est encore la demande en cours du comptoir, rien n'est à monter. Rechargez la page."
+        : "Ce réassort a été annulé : il n'est pas à monter. Rechargez la page ; si les pièces sont parties quand même, le comptoir les saisit en réassort sans commande.",
+    );
+  }
+}
+
 /** Aucun réassort de cet identifiant pour ce point. */
 export class SiteResupplyNotFoundError extends ResourceNotFoundError {
   constructor(readonly resupplyId: string) {

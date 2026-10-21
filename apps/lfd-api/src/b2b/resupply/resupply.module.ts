@@ -17,6 +17,9 @@ import { GetResupplyReceiptHandler } from "./application/get-resupply-receipt.ha
 import { ListResuppliesToProduceHandler } from "./application/list-resupplies-to-produce.handler.js";
 import { ListResupplyArticlesHandler } from "./application/list-resupply-articles.handler.js";
 import { ListSiteResuppliesHandler } from "./application/list-site-resupplies.handler.js";
+import { MarkArrivedOnTransferReceived } from "./application/mark-arrived-on-transfer-received.handler.js";
+import { MarkResupplyMountedHandler } from "./application/mark-resupply-mounted.handler.js";
+import { ResupplyArrivedBell } from "./application/resupply-arrived-bell.js";
 import { ProductionDayResupplies } from "./application/production-day-resupplies.js";
 import { ProductionRangeResupplies } from "./application/production-range-resupplies.js";
 import { ResupplyPlanGate } from "./application/resupply-plan-gate.js";
@@ -81,6 +84,11 @@ import { PrismaTransferServedSites } from "./infrastructure/prisma-transfer-serv
  * fournil reliés par `ProductionDeskFeedModule`), et le module publie
  * `ProductionDayResupplies`, que `ProductionFeedModule` relie au port
  * `DayResuppliesReader` du fournil.
+ *
+ * Depuis le lot R3e (2026-10-22), le réassort ARRIVÉ : « Monté » au fournil,
+ * ou la réception du transfert qui le porte (`MarkArrivedOnTransferReceived`,
+ * abonné durable du fait `delivery.transfer_received`) ; la cloche sonne au
+ * comptoir (`ResupplyArrivedBell`).
  */
 @Module({
   imports: [CatalogModule, AccountModule, OrderCutoffsInForceModule],
@@ -128,6 +136,9 @@ import { PrismaTransferServedSites } from "./infrastructure/prisma-transfer-serv
     LiftStockAlertHandler,
     ListSiteStockAlertsHandler,
     ListLiveStockAlertsHandler,
+    MarkResupplyMountedHandler,
+    MarkArrivedOnTransferReceived,
+    ResupplyArrivedBell,
     ResupplyPlanGate,
     ProductionDayResupplies,
     ProductionRangeResupplies,

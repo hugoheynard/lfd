@@ -120,6 +120,7 @@ describe("SiteResupply — les lignes", () => {
       lines: [],
       placed: null,
       cancelled: null,
+      arrived: null,
     });
     expect(() => resupply.assertSeen(2)).toThrow(SiteResupplyChangedMeanwhileError);
     expect(() => resupply.assertSeen(3)).not.toThrow();

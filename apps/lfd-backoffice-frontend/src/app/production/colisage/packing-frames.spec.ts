@@ -264,9 +264,7 @@ describe('packingFrames — les cadres de couleur du colisage (L1b, revus le 202
     ]);
     const empty = packingFrames([], PALETTE, [{ siteId: 'vv', items: [] }]);
 
-    expect(titles(withItems)).toEqual([
-      ['Transfert Val Village', ['Réapprovisionnement Val Village']],
-    ]);
+    expect(titles(withItems)).toEqual([['Transfert Val Village', ['Réassort Val Village']]]);
     expect(empty).toEqual([]);
   });
 

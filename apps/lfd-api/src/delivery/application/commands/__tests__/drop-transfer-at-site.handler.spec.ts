@@ -13,6 +13,7 @@ import {
 } from "../../__tests__/transfer-doubles.js";
 import { DropTransferAtSiteCommand } from "../drop-transfer-at-site.command.js";
 import { DropTransferAtSiteHandler } from "../drop-transfer-at-site.handler.js";
+import { RecordingDurable } from "./decision-doubles.js";
 import { InMemoryDeliveryRounds } from "./round-doubles.js";
 
 /*
@@ -56,15 +57,17 @@ function scene(transfer = departedTransfer()) {
   const rounds = new InMemoryDeliveryRounds(departedRound());
   const transfers = new InMemoryInternalTransfers(transfer);
   const events = new RecordingPublisher();
+  const durable = new RecordingDurable();
   const handler = new DropTransferAtSiteHandler(
     rounds,
     transfers,
     new FixedTransferBinCounts(new Map([["t_1", 2]])),
     new FixedClock(NOW),
     events,
+    durable,
     new DirectUnitOfWork(),
   );
-  return { handler, rounds, transfers, events };
+  return { handler, rounds, transfers, events, durable };
 }
 
 function drop(stopId = "s_transfer", version = 3, staff = PAUL): DropTransferAtSiteCommand {
@@ -87,6 +90,21 @@ describe("DropTransferAtSiteHandler", () => {
       // Lot T3 : « Remis au site » compte les bacs du transfert.
       bins: 2,
     });
+  });
+
+  it("écrit le fait durable « transfert reçu » (lot R3e) ; déjà reçu au comptoir, aucun second", async () => {
+    const { handler, durable } = scene();
+
+    await handler.execute(drop());
+
+    expect(durable.facts.map((fact) => fact.key)).toEqual(["delivery.transfer_received:t_1"]);
+    expect(durable.facts[0]?.payload).toMatchObject({ receivedByStaffId: PAUL, resupplyIds: [] });
+
+    const received = departedTransfer();
+    received.receive({ at: DEPARTED, by: "staff_counter", reason: null });
+    const again = scene(received);
+    await again.handler.execute(drop());
+    expect(again.durable.facts).toEqual([]);
   });
 
   it("déjà réceptionné au comptoir : il ne fait que clore l'arrêt, sans seconde réception", async () => {

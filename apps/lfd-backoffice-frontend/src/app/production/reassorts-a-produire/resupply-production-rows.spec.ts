@@ -28,12 +28,15 @@ function resupply(
     placedBy: null,
     cancelledAt: null,
     cancelledBy: null,
+    arrivedAt: null,
+    arrivedBy: null,
   };
 }
 
 const VIEW: ResupplyProductionDayView = {
   serviceDay: DAY,
   planStopped: false,
+  transferSiteIds: ['village'],
   sites: [
     {
       siteId: 'labo',

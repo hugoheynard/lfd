@@ -16,6 +16,7 @@ import {
 } from "../../domain/site-resupply-errors.js";
 import { SiteResupplyReader } from "../../domain/site-resupply.reader.js";
 import { SiteResupplyRepository } from "../../domain/site-resupply.repository.js";
+import { TransferServedSites } from "../../domain/transfer-served-sites.js";
 
 /** L'instantané d'un réassort, brouillon compris, tel que la base le rendrait. */
 function snapshotOf(resupply: SiteResupply, version: number): SiteResupplySnapshot {
@@ -30,6 +31,7 @@ function snapshotOf(resupply: SiteResupply, version: number): SiteResupplySnapsh
     lines: resupply.lines,
     placed: resupply.placed,
     cancelled: resupply.cancelled,
+    arrived: resupply.arrived,
   };
 }
 
@@ -178,5 +180,16 @@ export class InMemoryResupplyUsedNames extends ResupplyUsedNames {
       .reverse()
       .flatMap((row) => (row.name === null ? [] : [row.name]));
     return Promise.resolve([...new Set(names)].slice(0, limit));
+  }
+}
+
+/** Les points servis par transfert, posés à la main (lot R3e). */
+export class FixedTransferServedSites extends TransferServedSites {
+  constructor(private readonly transferSites: readonly string[] = []) {
+    super();
+  }
+
+  servedByTransfer(siteIds: readonly string[]): Promise<ReadonlySet<string>> {
+    return Promise.resolve(new Set(siteIds.filter((id) => this.transferSites.includes(id))));
   }
 }

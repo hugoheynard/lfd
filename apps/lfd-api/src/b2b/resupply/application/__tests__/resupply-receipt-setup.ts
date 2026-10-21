@@ -56,6 +56,7 @@ export function placed(
     lines,
     placed: { at: AT, author: AUTHOR },
     cancelled: null,
+    arrived: null,
     ...overrides,
   };
 }

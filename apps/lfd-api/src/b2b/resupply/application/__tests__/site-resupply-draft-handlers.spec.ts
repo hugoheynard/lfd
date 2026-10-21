@@ -179,6 +179,7 @@ describe("la demande en cours — ajouter", () => {
       lines: [],
       placed: null,
       cancelled: null,
+      arrived: null,
     });
     const add = new AddSiteResupplyLineHandler(
       store,

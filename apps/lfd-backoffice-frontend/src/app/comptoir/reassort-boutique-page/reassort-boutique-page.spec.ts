@@ -157,6 +157,8 @@ function expected(resupplyId: string, quantity: number): ResupplyReceptionView {
     placedAt: '2026-01-02T07:00:00.000Z',
     placedBy: 'Max',
     status: 'expected',
+    arrivedAt: null,
+    arrivedBy: null,
     receivedAt: null,
     receivedBy: null,
     lines: [{ sku: 'CRO', label: 'Croissant', expectedQuantity: quantity, receivedQuantity: null }],

@@ -26,8 +26,10 @@
           }
           @if (reception.status === 'received') {
             <fold-status-badge status="active" label="Réceptionné" />
+          } @else if (reception.arrivedAt !== null) {
+            <fold-status-badge data-resupply-arrived status="pending" label="Arrivé" />
           } @else {
-            <fold-status-badge status="pending" label="Attendu" />
+            <fold-status-badge data-resupply-awaited status="coming-soon" label="Attendu" />
           }
         </div>
 
@@ -89,7 +91,10 @@
 
         @if (reception.status === 'received') {
           <p class="muted" data-resupply-received-by>{{ receivedLine(reception) }}</p>
-        } @else if (canWrite()) {
+        } @else if (reception.arrivedAt !== null) {
+          <p class="muted" data-resupply-arrived-by>{{ arrivedLine(reception) }}</p>
+        }
+        @if (reception.status === 'expected' && canWrite()) {
           <div class="submit">
             <button
               foldButton

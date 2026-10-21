@@ -44,6 +44,16 @@ export class BakehouseResuppliesService {
     );
   }
 
+  /** « Monté » (lot R3e) : le réassort d'un point servi sur place est là. Idempotent. */
+  async mounted(siteId: string, resupplyId: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(
+        `${this.base()}/sites/${encodeURIComponent(siteId)}/${encodeURIComponent(resupplyId)}/mounted`,
+        null,
+      ),
+    );
+  }
+
   private base(): string {
     return `${B2B_API_BASE}/admin/bakehouse-resupplies`;
   }

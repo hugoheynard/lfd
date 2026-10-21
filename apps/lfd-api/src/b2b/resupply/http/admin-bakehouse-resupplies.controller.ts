@@ -5,7 +5,7 @@ import {
   type ResupplyArticleView,
   type ResupplyUsedNamesView,
 } from "@lfd/contracts";
-import { Body, Controller, Get, Param, Post } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
@@ -13,6 +13,7 @@ import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { ListResupplyUsedNamesQuery } from "../application/list-resupply-used-names.query.js";
 import { ListResupplyArticlesQuery } from "../application/list-resupply-articles.query.js";
+import { MarkResupplyMountedCommand } from "../application/mark-resupply-mounted.command.js";
 import { SendBakehouseResupplyCommand } from "../application/send-bakehouse-resupply.command.js";
 
 /**
@@ -65,5 +66,23 @@ export class AdminBakehouseResuppliesController {
       ),
     );
     return { id };
+  }
+
+  /**
+   * « Monté » (lot R3e) : le réassort d'un point servi sur place est là — la
+   * cloche sonne au comptoir. Sous `production_resupply:write`, le droit de
+   * l'envoi du fournil. Idempotent : un second « Monté » répond 204 sans rien
+   * changer.
+   */
+  @Post("sites/:siteId/:resupplyId/mounted")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async mounted(
+    @Param("siteId") siteId: string,
+    @Param("resupplyId") resupplyId: string,
+    @StaffUserId() staffUserId: string,
+  ): Promise<void> {
+    await this.commands.execute<MarkResupplyMountedCommand, void>(
+      new MarkResupplyMountedCommand(siteId, resupplyId, staffUserId),
+    );
   }
 }

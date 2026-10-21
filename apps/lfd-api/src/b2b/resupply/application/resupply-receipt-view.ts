@@ -28,6 +28,8 @@ export function receptionView(
     placedAt: resupply.placed.at.toISOString(),
     placedBy: nameOf(resupply.placed.author.name),
     status: received === null ? "expected" : "received",
+    arrivedAt: resupply.arrived?.at.toISOString() ?? null,
+    arrivedBy: resupply.arrived === null ? null : nameOf(resupply.arrived.author.name),
     receivedAt: received?.at.toISOString() ?? null,
     receivedBy: received === null ? null : nameOf(received.author.name),
     lines:

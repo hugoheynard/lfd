@@ -1,0 +1,40 @@
+<fold-card data-resupply-mount-card>
+  <fold-element-title
+    cardHeader
+    variant="title"
+    title="À monter"
+    subtitle="Les réassorts des points servis sur place. « Monté » dit au comptoir que le réassort est là : il passe à « arrivé » et la cloche sonne. Ceux d'un point servi par transfert arrivent à la réception du transfert."
+  />
+
+  <div class="body">
+    @for (row of rows(); track row.resupplyId) {
+      <div class="row" [attr.data-resupply-mount-row]="row.resupplyId">
+        <div class="said">
+          <strong>{{ titleOf(row) }}</strong>
+          <span class="muted">{{ targetLabels[row.target] }} · {{ row.pieces }} pièces</span>
+        </div>
+        @if (row.arrivedAt !== null) {
+          <fold-status-badge status="active" label="Arrivé" />
+          <span class="muted" data-resupply-mounted-by>{{ arrivedLine(row) }}</span>
+        } @else if (canMount()) {
+          <button
+            foldButton
+            size="sm"
+            data-resupply-mount
+            [disabled]="pending() !== null"
+            [loading]="pending() === row.resupplyId"
+            (click)="mount(row)"
+          >
+            Monté
+          </button>
+        } @else {
+          <fold-status-badge status="coming-soon" label="Attendu" />
+        }
+      </div>
+    }
+
+    @if (failure(); as message) {
+      <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+    }
+  </div>
+</fold-card>

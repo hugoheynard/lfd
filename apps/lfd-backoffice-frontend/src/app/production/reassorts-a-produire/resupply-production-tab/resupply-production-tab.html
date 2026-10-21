@@ -158,5 +158,9 @@
         </table>
       </div>
     }
+
+    @if (mountable(); as view) {
+      <app-resupply-mount-card [view]="view" [canMount]="canSend()" (mounted)="load()" />
+    }
   }
 }

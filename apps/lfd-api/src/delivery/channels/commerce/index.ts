@@ -86,3 +86,10 @@ export {
   OrderDeliveryHistoryReader,
   type OrderDeliveryStopFact,
 } from "./order-delivery-history.reader.js";
+// « Transfert reçu », fait durable (lot R3e, 2026-10-22) : déclaré ET écrit
+// par la livraison, entendu par le commerce — ses réassorts sont arrivés.
+export {
+  DELIVERY_TRANSFER_RECEIVED,
+  TransferReceivedFact,
+  TransferReceivedPayloadError,
+} from "./transfer-received.fact.js";

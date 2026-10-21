@@ -29,6 +29,10 @@ export interface SiteResupplyRow {
   readonly cancelledByStaffId: string | null;
   readonly cancelledByName: string | null;
   readonly cancelledByRole: string | null;
+  readonly arrivedAt: Date | null;
+  readonly arrivedByStaffId: string | null;
+  readonly arrivedByName: string | null;
+  readonly arrivedByRole: string | null;
   readonly lines: readonly {
     readonly sku: string;
     readonly label: string;
@@ -38,7 +42,7 @@ export interface SiteResupplyRow {
 
 /**
  * Ligne → instantané du domaine. La visée et l'origine revalident ; la journée se relit en
- * UTC. Un envoi est entier en base (CHECK `site_resupply_placement_whole`) :
+ * UTC. Un envoi, comme une arrivée, est entier en base (CHECK `site_resupply_placement_whole`, `…_arrival_whole`) :
  * un auteur absent à côté d'un instant n'arrive pas.
  */
 export function snapshotOf(row: SiteResupplyRow): SiteResupplySnapshot {
@@ -71,6 +75,17 @@ export function snapshotOf(row: SiteResupplyRow): SiteResupplySnapshot {
               staffUserId: row.cancelledByStaffId ?? "",
               name: row.cancelledByName ?? "",
               role: row.cancelledByRole ?? "",
+            },
+          },
+    arrived:
+      row.arrivedAt === null
+        ? null
+        : {
+            at: row.arrivedAt,
+            author: {
+              staffUserId: row.arrivedByStaffId ?? "",
+              name: row.arrivedByName ?? "",
+              role: row.arrivedByRole ?? "",
             },
           },
   };

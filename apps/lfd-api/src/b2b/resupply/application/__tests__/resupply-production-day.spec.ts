@@ -17,6 +17,7 @@ import { SendBakehouseResupplyHandler } from "../send-bakehouse-resupply.handler
 import { Catalogue, Directory, Sites } from "./resupply-doubles.js";
 import {
   FixedResupplyCutoff,
+  FixedTransferServedSites,
   InMemorySiteResupplies,
   InMemorySiteResupplyReader,
   KnownReceptions,
@@ -80,6 +81,7 @@ async function world() {
       new SiteLabels(new Map([[VILLAGE, "Val Village"]])),
       new FixedClosedPlans(stopped),
       new Catalogue(ARTICLES),
+      new FixedTransferServedSites([VILLAGE]),
     );
   return { reader, dayOf };
 }
@@ -101,6 +103,8 @@ describe("l'onglet Réassorts de Prod manager (R3d)", () => {
       { sku: "PAC", label: "Pain au chocolat", quantity: 6 },
     ]);
     expect(view.articles.map((article) => article.sku)).toEqual(["CRO", "PAC"]);
+    // Lot R3e : le Village arrive par transfert ; au Labo, le fournil dit « Monté ».
+    expect(view.transferSiteIds).toEqual([VILLAGE]);
   });
 
   /** « Réassorts à produire » les tait une fois figés (R3a) ; l'onglet les montre, et dit pourquoi. */

@@ -191,7 +191,7 @@ function transferFrames(
       inner.push({
         kind: 'replenishment',
         key: `replenishment:${site.id}`,
-        title: `Réapprovisionnement ${site.label}`,
+        title: `Réassort ${site.label}`,
         color: null,
         ink: 'neutral',
         items,

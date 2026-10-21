@@ -77,6 +77,13 @@ export interface SiteResupplyView {
   readonly placedBy: string | null;
   readonly cancelledAt: string | null;
   readonly cancelledBy: string | null;
+  /**
+   * « Il est là » (lot R3e) : la réception du transfert qui le porte, ou
+   * « Monté » au fournil ; `null` tant qu'il est attendu.
+   */
+  readonly arrivedAt: string | null;
+  /** Nom figé de qui l'a dit arrivé ; `null` s'il est attendu ou inconnu. */
+  readonly arrivedBy: string | null;
 }
 
 /**
@@ -253,4 +260,10 @@ export interface ResupplyProductionDayView extends ResupplyDayToProduceView {
   readonly planStopped: boolean;
   /** Le catalogue publié de la boutique, sans prix : les lignes de la table et leurs familles. */
   readonly articles: readonly ResupplyArticleView[];
+  /**
+   * Les points de la journée servis par transfert (lot R3e) : leurs réassorts
+   * arrivent à la réception du transfert. Aux autres (servis sur place), le
+   * fournil dit « Monté ».
+   */
+  readonly transferSiteIds: readonly string[];
 }

@@ -128,6 +128,8 @@ describe("le fournil envoie un réassort (R1d)", () => {
         placedBy: "Lou Martin",
         cancelledAt: null,
         cancelledBy: null,
+        arrivedAt: null,
+        arrivedBy: null,
       },
     ]);
   });

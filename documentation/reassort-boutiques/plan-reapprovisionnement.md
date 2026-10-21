@@ -756,7 +756,7 @@ le précise :
   transaction de l'abonné).
 - e2e : `apps/lfd-api/test/resupply-transfer.e2e-spec.ts`.
 
-### R3e — « Réassort arrivé » : un seul signal, deux gestes (Hugo, 2026-10-21 ; doc-first, après R3d)
+### R3e ✅ — « Réassort arrivé » : un seul signal, deux gestes (Hugo, 2026-10-21 ; bâti le 2026-10-22, non commité)
 
 « Comment le fournil dit à la boutique Labo : je t'envoie ça ? » — « Ça ne
 peut pas être le même signal que dans le cas colisage → Village ? »
@@ -777,6 +777,33 @@ Derrière, la même chose : la cloche du back-office sonne au comptoir du point
 À vérifier avant de bâtir : la réception d'un transfert au site existe-t-elle
 dans le code, ou seulement dans
 [`../livraisons/transferts/plan-transfert-interne.md`](../livraisons/transferts/plan-transfert-interne.md) ?
+
+✅ **Bâti le 2026-10-22 (non commité).** La réception existe (lot T2 :
+« Remis au site », « Réceptionner » au comptoir). Ce qui précise le texte :
+
+- **État** : `site_resupply.arrived_at` + auteur figé (migration additive
+  `20261022130000_le_reassort_arrive`, CHECK entier et « jamais sur une
+  demande en cours ») ; `SiteResupply.markArrived` — idempotent, sans effet
+  sur un réassort déjà réceptionné, refusé (409) sur une demande en cours ou
+  un annulé. Réceptionner reste permis sans le signal.
+- **Village** : fait durable `delivery.transfer_received` déclaré dans
+  `delivery/channels/commerce/`, écrit par les deux chemins de la réception,
+  entendu par le commerce en `@DurableHandler` ; instant et auteur de la
+  réception. Un réassort introuvable ou annulé est écarté (journalisé), pas
+  relivré sans fin.
+- **Labo** : « Monté » sous `production_resupply:write` (le droit de l'envoi
+  du fournil), route `POST admin/bakehouse-resupplies/sites/:siteId/:resupplyId/mounted` ;
+  carte « À monter » sous la table de l'onglet Réassorts, limitée aux points
+  servis sur place (`transferSiteIds` dans la vue). **Choix du bâtisseur** :
+  le serveur ne refuse pas « Monté » à un point servi par transfert (seul
+  l'écran le réserve), faute d'écrit et parce qu'un « au plus tôt » du
+  Village n'a pas de transfert pour le dire arrivé.
+- **La cloche** ne cible qu'un droit : `handover_counter:read`, le point dans
+  le titre. Lien `/comptoir/reassort`.
+- **Limite** : un transfert de réassort seul ne se réceptionne qu'au site
+  (« Remis au site ») — « Réceptionner » au comptoir passe par une commande.
+- Au passage : le cadre du colisage dit « Réassort <point> »
+  (`packing-frames.ts`).
 
 ### R3d ✅ — Les écrans (Hugo, 2026-10-21 ; bâti le 2026-10-21 — points 1–3 en `7849c011c`, la suite non commitée) — l'emporte sur la ligne R3d du §13.2
 
@@ -990,3 +1017,28 @@ TOTAL, la part de réassort en second.
 - PDF en `v7` ; les rayons du PDF sont lus aussi pour les SKU des réassorts.
 - **Non touché** : l'e-mail du dossier (`dossierCountsOf`) annonce encore les
   pièces des commandes seules.
+
+### S1 — L'onglet Stock de la Supervision (conçu le 2026-10-22, après R3e)
+
+Conçu à partir de la page ouverte le 2026-10-22
+(`apps/lfd-backoffice-frontend/src/app/supervision/supervision-page/`) : la
+Supervision est un tableau à trois colonnes (préparation, colisage, retrait),
+dont les onglets n'existent qu'en écran étroit (`fold-view-nav`, `tabs()`).
+
+- **Une bascule « Journée · Stock » dans le bandeau**, en large comme en
+  étroit, à côté du choix du jour. « Journée » = le tableau actuel, inchangé.
+  « Stock » = la vue ci-dessous, pour le jour regardé.
+- **Une carte par point** (Labo, Village…), dans l'ordre des points :
+  - en tête, les **réassorts du jour** : nom (R1g), visée, état — envoyé,
+    figé, **arrivé** (R3e), **réceptionné** (R2) — et l'origine
+    (comptoir / fournil) ;
+  - puis une **table des produits** du point : stock du jour (somme des reçus
+    réceptionnés), alerte en cours (rupture / faible, R1b), et ce qui est
+    attendu non encore réceptionné ; tri : alertes, puis attendus, puis le
+    reste ; seuls les produits qui ont un reçu, une alerte ou un attendu.
+- **Lecture seule** : aucun geste ; un lien « Ouvrir le réassort » mène à
+  l'onglet Réassorts de Prod manager (le fournil) — le comptoir agit depuis
+  sa page.
+- **Serveur** : une lecture `GetDayStockOverview(day)` dans `b2b/resupply`,
+  tous points confondus, sous `b2b_supervision:read` (le droit de la page),
+  sans écriture ; rafraîchie comme le reste de la Supervision.
