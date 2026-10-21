@@ -54,6 +54,15 @@ describe('copy-labels — un nom lisible pour chaque clé', () => {
     expect(name('product.madeToOrderEve').label).toBe('Fiche — préparé sur commande, la veille');
   });
 
+  it('nomme l’article dont la limite est déjà passée (2026-10-21)', () => {
+    expect(name('commandTerms.itemTooLate').label).toBe(
+      'Limite d’un article — trop tard pour le jour, possible à partir de…',
+    );
+    expect(name('commandTerms.itemTooLateOthers').label).toBe(
+      'Limite d’un article — trop tard, avec plusieurs autres articles',
+    );
+  });
+
   it('se replie encore sur un rôle en fin de nom, puis sur les mots du segment', () => {
     expect(name('x.inconnuTitle').label).toBe('Titre — inconnu');
     expect(name('x.inconnu').label).toBe('Inconnu');

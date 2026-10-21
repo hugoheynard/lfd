@@ -2148,6 +2148,27 @@
           "variables": ["day", "name", "time"]
         },
         {
+          "key": "commandTerms.itemTooLate",
+          "fr": "{name} : trop tard pour {day}, possible à partir de {next}.",
+          "en": "{name}: too late for {day}, available from {next}.",
+          "it": "{name}: troppo tardi per {day}, possibile da {next}.",
+          "variables": ["name", "day", "next"]
+        },
+        {
+          "key": "commandTerms.itemTooLateOther",
+          "fr": "{name} + 1 autre : trop tard pour {day}, possible à partir de {next}.",
+          "en": "{name} + 1 other: too late for {day}, available from {next}.",
+          "it": "{name} + 1 altro: troppo tardi per {day}, possibile da {next}.",
+          "variables": ["name", "day", "next"]
+        },
+        {
+          "key": "commandTerms.itemTooLateOthers",
+          "fr": "{name} + {others} autres : trop tard pour {day}, possible à partir de {next}.",
+          "en": "{name} + {others} others: too late for {day}, available from {next}.",
+          "it": "{name} + altri {others}: troppo tardi per {day}, possibile da {next}.",
+          "variables": ["name", "others", "day", "next"]
+        },
+        {
           "key": "commandTerms.modeTitle",
           "fr": "Retrait ou coursier ?",
           "en": "Pickup or courier?",

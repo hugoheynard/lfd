@@ -150,6 +150,34 @@ describe('ServiceDayNotice — l’heure limite annoncée', () => {
     expect(notice.message()).toBe('Plus que 1 h 40 pour commander la bûche pour mercredi.');
   });
 
+  /**
+   * 🔴 La limite d'un article déjà passée pour le jour retenu : la barre se
+   * taisait alors que la passation refuserait (Hugo, 2026-10-21).
+   */
+  it('dit « trop tard pour jeudi, possible à partir de samedi » pour l’article', () => {
+    const { notice } = setUp(
+      new Date('2026-10-20T13:00:00.000Z'),
+      [{ pickupAddressId: null, date: WEDNESDAY, orderUntil: TUESDAY_23H }],
+      '2026-10-22',
+    );
+    const base = TEST_CATALOGUE.items[0];
+    if (base === undefined) {
+      throw new Error('le catalogue de test est vide');
+    }
+    const piece = {
+      ...base,
+      name: 'Tarte myrtille T1',
+      orderTimeLimit: { daysBefore: 3, time: '12:00' },
+    };
+    TestBed.inject(ShopCatalogue).receive({ ...TEST_CATALOGUE, items: [piece] });
+    TestBed.inject(CartStore).setQuantity(piece.sku, 1);
+    TestBed.tick();
+
+    expect(notice.message()).toBe(
+      'Tarte myrtille T1 : trop tard pour jeudi, possible à partir de samedi.',
+    );
+  });
+
   it('dit le temps restant sous six heures', () => {
     const { notice } = setUp(
       new Date('2026-10-20T18:45:00.000Z'),

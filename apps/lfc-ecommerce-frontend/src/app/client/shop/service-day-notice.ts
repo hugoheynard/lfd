@@ -155,6 +155,20 @@ export class ServiceDayNotice {
           day: weekdayLabel(notice.first, locale),
           name: notice.item ?? '',
         });
+      case 'itemTooLate':
+        return fill(
+          notice.others === 0
+            ? copy.itemTooLate
+            : notice.others === 1
+              ? copy.itemTooLateOther
+              : copy.itemTooLateOthers,
+          {
+            name: notice.item,
+            others: String(notice.others),
+            day: weekdayLabel(notice.day, locale),
+            next: weekdayLabel(notice.next, locale),
+          },
+        );
       case 'calm':
         return fill(notice.item === undefined ? copy.cutoffCalm : copy.cutoffCalmItem, {
           day: weekdayLabel(notice.first, locale),

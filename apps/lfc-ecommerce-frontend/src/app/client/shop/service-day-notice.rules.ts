@@ -69,6 +69,19 @@ export type DayNotice =
       readonly minutesLeft: number;
       readonly item?: string;
     }
+  /**
+   * 🔴 La limite PROPRE d'un article du panier est déjà passée pour `day` :
+   * la passation le refuserait (Hugo, 2026-10-21). `item` le premier article
+   * dans ce cas, `others` combien d'autres, `next` le jour le plus tardif où
+   * ils redeviennent tous possibles. L'emporte sur `calm` et `countdown`.
+   */
+  | {
+      readonly kind: 'itemTooLate';
+      readonly day: string;
+      readonly item: string;
+      readonly others: number;
+      readonly next: string;
+    }
   /** La limite du premier jour tombe aujourd'hui, plus tard. `item` : idem. */
   | { readonly kind: 'calm'; readonly first: string; readonly until: Date; readonly item?: string }
   | null;
@@ -97,13 +110,17 @@ export function decideDayNotice(input: DayNoticeInput): DayNotice {
   const tomorrow = addDays(instantToLocal(input.now).day, 1);
   if (first > tomorrow) {
     if (held === null) {
-      // Rien n'est choisi : rien n'est « trop tard », et l'opération se dira
-      // au choix du jour.
-      return null;
+      // Rien n'est choisi : rien n'est « trop tard » pour la boutique, et
+      // l'opération se dira au choix du jour — sauf un article du panier.
+      return itemTooLate(first, first, input.now, input.cartLimits);
     }
     return input.byOperation
       ? { kind: 'operation', first }
       : { kind: 'late', held, passedAt: passedLimit(input.tomorrowOrderUntil, input.now) };
+  }
+  const tooLate = itemTooLate(held ?? first, first, input.now, input.cartLimits);
+  if (tooLate !== null) {
+    return tooLate;
   }
   const deciding = decidingLimit(first, input.firstOrderUntil, input.cartLimits);
   const notice = deadlineNotice(first, deciding.until, input.now);
@@ -135,6 +152,61 @@ function decidingLimit(
     }
   }
   return { until: until === null ? null : until.toISOString(), item };
+}
+
+/** Au-delà, on cesse de chercher : aucune limite d'article n'est si lointaine. */
+const MAX_DAYS_AHEAD = 60;
+
+/**
+ * **Le premier jour où cet article est encore possible** — le plus petit jour
+ * `≥ from` dont la limite propre (`daysBefore` jours avant, à `time` heure de
+ * Paris, sans grâce) n'est pas encore passée à `now`. Fonction pure, horloge
+ * injectée ; `null` si rien dans les {@link MAX_DAYS_AHEAD} jours.
+ */
+export function firstPossibleDay(
+  limit: ShopItemOrderLimit,
+  from: string,
+  now: Date,
+): string | null {
+  for (let offset = 0; offset <= MAX_DAYS_AHEAD; offset += 1) {
+    const day = addDays(from, offset);
+    const at = orderLimitInstant({ ...limit, graceMinutes: 0 }, day);
+    if (at !== null && now.getTime() < at.getTime()) {
+      return day;
+    }
+  }
+  return null;
+}
+
+/**
+ * Les articles du panier dont la limite propre est passée pour `day` : le
+ * premier nommé, le compte des autres, et le jour le plus tardif où ils
+ * redeviennent tous possibles (cherché à partir de `first`, le premier jour
+ * que le serveur accorde).
+ */
+function itemTooLate(
+  day: string,
+  first: string,
+  now: Date,
+  cartLimits: readonly CartItemLimit[],
+): Extract<DayNotice, { readonly kind: 'itemTooLate' }> | null {
+  const late = cartLimits.flatMap((entry) => {
+    const at = orderLimitInstant({ ...entry.limit, graceMinutes: 0 }, day);
+    if (at === null || now.getTime() < at.getTime()) {
+      return [];
+    }
+    const next = firstPossibleDay(entry.limit, first, now);
+    return next === null ? [] : [{ name: entry.name, next }];
+  });
+  const [head] = late;
+  if (head === undefined) {
+    return null;
+  }
+  const next = late.reduce(
+    (latest, entry) => (entry.next > latest ? entry.next : latest),
+    head.next,
+  );
+  return { kind: 'itemTooLate', day, item: head.name, others: late.length - 1, next };
 }
 
 /** La limite de demain, seulement si elle est bien passée. */

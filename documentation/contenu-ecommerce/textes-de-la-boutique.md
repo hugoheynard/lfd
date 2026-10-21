@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1514 textes
+## Sommaire — 1517 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -21,7 +21,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Commander — l'écran d'entrée de la commande](#espace-commande) | `commande` | 39 |
 | [Rayon / boutique](#espace-shop) | `shop` | 59 |
 | [Rayon — la fiche produit](#espace-product) | `product` | 19 |
-| [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 33 |
+| [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 36 |
 | [Choix du lieu — la maison](#espace-housepicker) | `housePicker` | 8 |
 | [Choix du lieu et de l’heure — le dialogue commun](#espace-dialog) | `dialog` | 1 |
 | [Choix du lieu — le retrait](#espace-pickupdialog) | `pickupDialog` | 10 |
@@ -47,7 +47,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
-| **Total** | | **1514** |
+| **Total** | | **1517** |
 
 ## Le parcours de commande
 
@@ -422,7 +422,7 @@ Source : `fr.ts · en.ts · it.ts` · 19 textes.
 
 ### Barre de commande — la maison et l’heure retenues — `commandTerms`
 
-Source : `screens/command-terms.copy.ts` · 33 textes.
+Source : `screens/command-terms.copy.ts` · 36 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -446,6 +446,9 @@ Source : `screens/command-terms.copy.ts` · 33 textes.
 | `commandTerms.cutoffCalm` | Pour {day}, commandez avant {time}. | For {day}, order before {time}. | Per {day}, ordinate entro le {time}. | `{day}` `{time}` |
 | `commandTerms.cutoffCountdownItem` | Plus que {left} pour commander {name} pour {day}. | Only {left} left to order {name} for {day}. | Ancora {left} per ordinare {name} per {day}. | `{left}` `{name}` `{day}` |
 | `commandTerms.cutoffCalmItem` | Pour {day}, commandez {name} avant {time}. | For {day}, order {name} before {time}. | Per {day}, ordinate {name} entro le {time}. | `{day}` `{name}` `{time}` |
+| `commandTerms.itemTooLate` | {name} : trop tard pour {day}, possible à partir de {next}. | {name}: too late for {day}, available from {next}. | {name}: troppo tardi per {day}, possibile da {next}. | `{name}` `{day}` `{next}` |
+| `commandTerms.itemTooLateOther` | {name} + 1 autre : trop tard pour {day}, possible à partir de {next}. | {name} + 1 other: too late for {day}, available from {next}. | {name} + 1 altro: troppo tardi per {day}, possibile da {next}. | `{name}` `{day}` `{next}` |
+| `commandTerms.itemTooLateOthers` | {name} + {others} autres : trop tard pour {day}, possible à partir de {next}. | {name} + {others} others: too late for {day}, available from {next}. | {name} + altri {others}: troppo tardi per {day}, possibile da {next}. | `{name}` `{others}` `{day}` `{next}` |
 | `commandTerms.modeTitle` | Retrait ou coursier ? | Pickup or courier? | Ritiro o corriere? |  |
 | `commandTerms.close` | Fermer | Close | Chiudi |  |
 | `commandTerms.pickup` | Retrait | Pickup | Ritiro |  |

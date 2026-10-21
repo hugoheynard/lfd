@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { decideDayNotice, type DayNoticeInput, limitHasPassed } from './service-day-notice.rules';
+import {
+  decideDayNotice,
+  type DayNoticeInput,
+  firstPossibleDay,
+  limitHasPassed,
+} from './service-day-notice.rules';
 
 /**
  * Horloge INJECTÉE : les dates ne se comparent qu'entre elles et à cet
@@ -216,5 +221,82 @@ describe('decideDayNotice — sans choix de service', () => {
 
   it('ni opération ni « slipped » sans jour gardé', () => {
     expect(decideDayNotice(input({ held: null, first: THURSDAY, byOperation: true }))).toBeNull();
+  });
+});
+
+/**
+ * 🔴 La limite PROPRE d'un article déjà passée pour le jour dont parle la
+ * barre (Hugo, 2026-10-21) : la barre se taisait alors que la passation
+ * refuserait.
+ */
+describe('firstPossibleDay', () => {
+  it('la veille à 18 h, passée mardi 19 h : jeudi, pas mercredi', () => {
+    expect(firstPossibleDay({ daysBefore: 1, time: '18:00' }, WEDNESDAY, tuesdayAt('19:00'))).toBe(
+      THURSDAY,
+    );
+  });
+
+  it('la veille à 18 h, mardi 17 h : mercredi reste possible', () => {
+    expect(firstPossibleDay({ daysBefore: 1, time: '18:00' }, WEDNESDAY, tuesdayAt('17:00'))).toBe(
+      WEDNESDAY,
+    );
+  });
+
+  it('deux jours avant à 12 h, mardi 15 h : vendredi', () => {
+    expect(firstPossibleDay({ daysBefore: 2, time: '12:00' }, WEDNESDAY, tuesdayAt('15:00'))).toBe(
+      '2026-10-23',
+    );
+  });
+
+  /** Passage à l'heure d'hiver le dimanche 25 octobre 2026 : Paris = UTC+1 ensuite. */
+  it('lit l’heure de Paris après le passage à l’heure d’hiver', () => {
+    const eve = { daysBefore: 1, time: '23:00' };
+    // Dimanche 25, 22 h 59 Paris (UTC+1) : la limite de lundi n'est pas tombée.
+    expect(firstPossibleDay(eve, '2026-10-25', new Date('2026-10-25T21:59:00.000Z'))).toBe(
+      '2026-10-26',
+    );
+    // Dimanche 25, 23 h Paris : elle l'est — mardi.
+    expect(firstPossibleDay(eve, '2026-10-25', new Date('2026-10-25T22:00:00.000Z'))).toBe(
+      '2026-10-27',
+    );
+  });
+});
+
+describe('decideDayNotice — un article déjà trop tard', () => {
+  const TART = { name: 'Tarte myrtille T1', limit: { daysBefore: 3, time: '12:00' } };
+
+  it('l’emporte sur la forme calme : nomme l’article et le jour où il redevient possible', () => {
+    expect(decideDayNotice(input({ held: THURSDAY, cartLimits: [TART] }))).toEqual({
+      kind: 'itemTooLate',
+      day: THURSDAY,
+      item: 'Tarte myrtille T1',
+      others: 0,
+      next: '2026-10-24',
+    });
+  });
+
+  it('plusieurs articles : le premier nommé, le compte des autres, le jour le plus tardif', () => {
+    const eve = { name: 'la bûche', limit: { daysBefore: 1, time: '12:00' } };
+    const late = { name: 'le kouglof', limit: { daysBefore: 4, time: '12:00' } };
+    expect(decideDayNotice(input({ cartLimits: [eve, TART, late] }))).toEqual({
+      kind: 'itemTooLate',
+      day: WEDNESDAY,
+      item: 'la bûche',
+      others: 2,
+      next: '2026-10-25',
+    });
+  });
+
+  it('sans service choisi aussi, sur le premier jour accordé', () => {
+    expect(decideDayNotice(input({ held: null, cartLimits: [TART] }))).toMatchObject({
+      kind: 'itemTooLate',
+      day: WEDNESDAY,
+      next: '2026-10-24',
+    });
+  });
+
+  it('se tait quand l’article est encore possible pour ce jour', () => {
+    const notice = decideDayNotice(input({ held: '2026-10-24', cartLimits: [TART] }));
+    expect(notice?.kind).not.toBe('itemTooLate');
   });
 });

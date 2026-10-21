@@ -29,6 +29,14 @@
   --fold-color-primary: var(--lfc-ink-800);
   --fold-color-primary-strong: var(--lfc-ink-900);
   --fold-color-on-primary: var(--lfc-paper-50);
+
+  /* 🔴 Même raison pour l'avertissement : la descente le peint en VOILE sur
+     l'encre, texte crème (`#f0dcae`) — crème sur crème ici, illisible
+     (vu par Hugo au bureau le 2026-10-21). L'avis « commandez avant 18 h »
+     reprend les rôles du papier : fond beurre clair, texte beurre profond. */
+  --fold-color-warning-surface: var(--lfc-butter-100);
+  --fold-color-warning-border: var(--lfc-butter-450);
+  --fold-color-warning-text: var(--lfc-butter-800);
 }
 
 .said {

@@ -74,6 +74,16 @@ export interface CommandTermsCopy {
   readonly cutoffCountdownItem: string;
   /** La même chose, plus de six heures devant soi : `{name}`, `{day}`, `{time}`. */
   readonly cutoffCalmItem: string;
+  /**
+   * 🔴 La limite d'un ARTICLE du panier est déjà passée pour ce jour — la
+   * passation le refuserait (Hugo, 2026-10-21) : « Tarte myrtille T1 : trop
+   * tard pour jeudi, possible à partir de samedi ». `{name}`, `{day}`, `{next}`.
+   */
+  readonly itemTooLate: string;
+  /** La même chose, un autre article aussi : `{next}` le jour le plus tardif. */
+  readonly itemTooLateOther: string;
+  /** La même chose, `{others}` autres articles (deux ou plus). */
+  readonly itemTooLateOthers: string;
 
   /** La question qui précède les deux portes quand rien n'est choisi (O6, 2026-10-13). */
   readonly modeTitle: string;
@@ -132,6 +142,10 @@ export const COMMAND_TERMS_FR: CommandTermsCopy = {
   cutoffCalm: 'Pour {day}, commandez avant {time}.',
   cutoffCountdownItem: 'Plus que {left} pour commander {name} pour {day}.',
   cutoffCalmItem: 'Pour {day}, commandez {name} avant {time}.',
+  itemTooLate: '{name} : trop tard pour {day}, possible à partir de {next}.',
+  itemTooLateOther: '{name} + 1 autre : trop tard pour {day}, possible à partir de {next}.',
+  itemTooLateOthers:
+    '{name} + {others} autres : trop tard pour {day}, possible à partir de {next}.',
   modeTitle: 'Retrait ou coursier ?',
   close: 'Fermer',
   pickup: 'Retrait',
@@ -170,6 +184,9 @@ export const COMMAND_TERMS_EN: CommandTermsCopy = {
   cutoffCalm: 'For {day}, order before {time}.',
   cutoffCountdownItem: 'Only {left} left to order {name} for {day}.',
   cutoffCalmItem: 'For {day}, order {name} before {time}.',
+  itemTooLate: '{name}: too late for {day}, available from {next}.',
+  itemTooLateOther: '{name} + 1 other: too late for {day}, available from {next}.',
+  itemTooLateOthers: '{name} + {others} others: too late for {day}, available from {next}.',
   modeTitle: 'Pickup or courier?',
   close: 'Close',
   pickup: 'Pickup',
@@ -209,6 +226,9 @@ export const COMMAND_TERMS_IT: CommandTermsCopy = {
   cutoffCalm: 'Per {day}, ordinate entro le {time}.',
   cutoffCountdownItem: 'Ancora {left} per ordinare {name} per {day}.',
   cutoffCalmItem: 'Per {day}, ordinate {name} entro le {time}.',
+  itemTooLate: '{name}: troppo tardi per {day}, possibile da {next}.',
+  itemTooLateOther: '{name} + 1 altro: troppo tardi per {day}, possibile da {next}.',
+  itemTooLateOthers: '{name} + altri {others}: troppo tardi per {day}, possibile da {next}.',
   modeTitle: 'Ritiro o corriere?',
   close: 'Chiudi',
   pickup: 'Ritiro',
