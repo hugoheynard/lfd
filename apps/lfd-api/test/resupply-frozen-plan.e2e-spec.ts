@@ -11,7 +11,10 @@
  * L'horloge est gelée la VEILLE de la journée servie (`SERVICE_DAY`, dans une
  * semaine) : les heures se comparent à elle seule, jamais au calendrier.
  */
+import { Buffer } from "node:buffer";
+
 import type {
+  ProductionDayResuppliesView,
   ProductionForecastView,
   ResupplyArticleView,
   ResuppliesToProduceView,
@@ -19,6 +22,7 @@ import type {
 } from "@lfd/contracts";
 import { addDays, localToInstant } from "@lfd/contracts";
 
+import { pdfPages } from "../src/platform/pdf/__tests__/pdf-text.js";
 import { Clock } from "../src/platform/time/clock.js";
 import { FixedClock } from "../src/platform/time/fixed-clock.js";
 import { jsonBody, type E2eContext } from "./e2e-harness.js";
@@ -277,5 +281,46 @@ describe("Prod manager voit les réassorts (R3d)", () => {
 
   it("refuse une journée mal formée (400)", async () => {
     await ctx.asSub(STAFF).get("/admin/site-resupplies/to-produce/demain").expect(400);
+  });
+
+  async function dossierResupplies(): Promise<ProductionDayResuppliesView> {
+    return jsonBody<ProductionDayResuppliesView>(
+      await ctx.asSub(STAFF).get(`/admin/production/batch/${SERVICE_DAY}/resupplies`).expect(200),
+    );
+  }
+
+  /** Hugo, 2026-10-21 : « mes 18 sont dans le prévisionnel mais pas au dossier ». */
+  it("le dossier du jour montre l'envoyé avant l'arrêt, le figé après, et le PDF l'imprime", async () => {
+    await twoHours();
+    clock.set(at("19:00"));
+    const { id } = await sendTomorrow(18);
+
+    expect(await dossierResupplies()).toMatchObject({
+      frozen: false,
+      resupplies: [{ resupplyId: id, lines: [{ quantity: 18 }] }],
+    });
+
+    clock.set(at("20:00"));
+    expect(await tour()).toBe("closed");
+    expect(await dossierResupplies()).toMatchObject({
+      frozen: true,
+      resupplies: [{ resupplyId: id, lines: [{ quantity: 18 }] }],
+    });
+
+    const pdf = await ctx
+      .asSub(STAFF)
+      .get(`/admin/production/batch/${SERVICE_DAY}/dossier.pdf`)
+      .buffer()
+      .parse((res, callback) => {
+        const chunks: Buffer[] = [];
+        res.on("data", (chunk: Buffer) => chunks.push(chunk));
+        res.on("end", () => {
+          callback(null, Buffer.concat(chunks));
+        });
+      })
+      .expect(200);
+    const pages = Buffer.isBuffer(pdf.body) ? pdfPages(pdf.body) : [];
+    expect(pages[0]).toContain("18 pièces de réassort");
+    expect(pages[0]).toContain("18 pièces pour 1 point");
   });
 });

@@ -1,6 +1,10 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
-import type { AtelierSheet, ProductionBatchView } from '@lfd/contracts';
+import type {
+  AtelierSheet,
+  ProductionBatchView,
+  ProductionDayResuppliesView,
+} from '@lfd/contracts';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AdminCatalogService } from '../../../commandes/catalog.service';
@@ -42,18 +46,22 @@ interface Doubles {
 async function render(
   dossierPdf: () => Promise<Blob>,
   closed: boolean | null = null,
+  day: { sheets?: readonly AtelierSheet[]; resupplies?: ProductionDayResuppliesView } = {},
 ): Promise<{ fixture: ComponentFixture<DossierDuJour>; doubles: Doubles }> {
   const doubles = { dossierPdf: vi.fn(dossierPdf) };
   const batch = async (date: string): Promise<ProductionBatchView> => ({
     date,
-    sheets: [SHEET],
+    sheets: day.sheets ?? [SHEET],
   });
+  const dayResupplies = async (date: string): Promise<ProductionDayResuppliesView> =>
+    day.resupplies ?? { date, frozen: false, resupplies: [] };
   TestBed.configureTestingModule({
     providers: [
       {
         provide: ProductionService,
         useValue: {
           batch,
+          dayResupplies,
           dossierPdf: doubles.dossierPdf,
           dueThresholds: async () => ({ date: '', lines: [] }),
         },
@@ -156,5 +164,49 @@ describe('le tirage du dossier', () => {
 
     expect(el.querySelector('fold-callout.pr-pdf-failed')).not.toBeNull();
     expect(printButton(el).disabled).toBe(false);
+  });
+});
+
+/** Lot R3d : ce que le prévisionnel compte en réassorts se retrouve au dossier. */
+describe('les réassorts au dossier', () => {
+  beforeEach(() => TestBed.resetTestingModule());
+
+  const VILLAGE = (frozen: boolean): ProductionDayResuppliesView => ({
+    date: '',
+    frozen,
+    resupplies: [
+      {
+        resupplyId: 'r-1',
+        siteId: 'site-v',
+        siteLabel: 'Village',
+        servedByTransfer: true,
+        lines: [{ sku: 'PAC', productName: 'Pain au chocolat', quantity: 18 }],
+      },
+    ],
+  });
+
+  it('montre une journée à réassorts seuls, comptés à part, sans changer le nombre de commandes', async () => {
+    const { fixture } = await render(async () => new Blob(), false, {
+      sheets: [],
+      resupplies: VILLAGE(false),
+    });
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(el.textContent).not.toContain('Rien à produire ce jour-là');
+    expect(el.querySelector('.pr-count')?.textContent).toContain('0 commande');
+    expect(el.querySelector('.pr-count-resupply')?.textContent).toContain(
+      '+ 18 pièces de réassort',
+    );
+    expect(el.querySelector('.pr-resupplies')?.textContent).toContain('Réassort Village');
+    expect(el.querySelector('.pr-resupplies-live')).not.toBeNull();
+  });
+
+  it('ne dit plus « envoyés » sur une journée arrêtée : ce sont les réassorts figés', async () => {
+    const { fixture } = await render(async () => new Blob(), true, { resupplies: VILLAGE(true) });
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(el.querySelector('.pr-count')?.textContent).toContain('1 commande');
+    expect(el.querySelector('.pr-resupplies')?.textContent).toContain('Pain au chocolat');
+    expect(el.querySelector('.pr-resupplies-live')).toBeNull();
   });
 });

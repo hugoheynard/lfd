@@ -11,7 +11,7 @@
     />
   </div>
 
-  @if (state() === 'ready' && sheets().length > 0) {
+  @if (state() === 'ready' && !empty()) {
     <fold-view-toggle
       size="sm"
       ariaLabel="Lecture du lot"
@@ -23,6 +23,11 @@
       {{ sheets().length }} commande{{ sheets().length > 1 ? 's' : '' }} · {{ pieces() }} pièce{{
         pieces() > 1 ? 's' : ''
       }}
+      @if (resupplyPieces() > 0) {
+        <span class="pr-count-resupply">
+          + {{ resupplyPieces() }} pièce{{ resupplyPieces() > 1 ? 's' : '' }} de réassort
+        </span>
+      }
     </p>
     <!-- Le tirage est le PDF figé du serveur, pas l'onglet affiché : le
          fournil reçoit le paquet entier (2026-10-06). -->
@@ -71,6 +76,13 @@
   </fold-callout>
 }
 
+@if (resuppliesLost() && state() === 'ready') {
+  <fold-callout variant="warning">
+    Les réassorts de cette journée n'ont pas pu être lus — les commandes sont justes. Rechargez pour
+    les retrouver.
+  </fold-callout>
+}
+
 <!-- Le compte à rebours de la même journée (V0, lecture seule). -->
 <app-due-thresholds-section [date]="date()" />
 
@@ -88,52 +100,94 @@
     </fold-empty-state>
   }
   @default {
-    @if (sheets().length === 0) {
+    @if (empty()) {
       <fold-empty-state
         title="Rien à produire ce jour-là"
-        subtitle="Aucune commande n'est à retirer ni à livrer à cette date."
+        subtitle="Aucune commande ni aucun réassort pour cette date."
       />
     } @else {
       <!-- Les deux vues sont un aperçu à l'écran ; le papier est le PDF du
            serveur (2026-10-06). -->
       <section class="pr-view" [class.is-hidden]="view() !== 'recap'" aria-label="Récapitulatif">
-        <article class="pr-sheet pr-recap">
-          <header class="pr-recap-head">
-            <p class="pr-recap-batch">Lot du {{ dayLabel() }}</p>
-            <h2 class="pr-recap-title">À fabriquer</h2>
-            <p class="pr-recap-sum">
-              {{ sheets().length }} commande{{ sheets().length > 1 ? 's' : '' }} ·
-              {{ pieces() }} pièce{{ pieces() > 1 ? 's' : '' }}
-            </p>
-          </header>
+        @if (sheets().length > 0) {
+          <article class="pr-sheet pr-recap">
+            <header class="pr-recap-head">
+              <p class="pr-recap-batch">Lot du {{ dayLabel() }}</p>
+              <h2 class="pr-recap-title">À fabriquer</h2>
+              <p class="pr-recap-sum">
+                {{ sheets().length }} commande{{ sheets().length > 1 ? 's' : '' }} ·
+                {{ pieces() }} pièce{{ pieces() > 1 ? 's' : '' }}
+              </p>
+            </header>
 
-          @for (group of recap(); track group.label) {
-            <section class="pr-group">
-              <h3 class="pr-group-title">
-                {{ group.label }}
-                <span class="pr-group-sum">{{ group.quantity }}</span>
-              </h3>
-              <table class="pr-table">
-                <tbody>
-                  @for (line of group.lines; track line.sku) {
-                    <tr>
-                      <td class="pr-qty">{{ line.quantity }}</td>
-                      <td>
-                        <span class="pr-product">{{ line.productName }}</span>
-                        <span class="pr-sku">{{ line.sku }}</span>
-                      </td>
-                      <!-- Sur combien de commandes ça se répartit : 240 en 3 fois
+            @for (group of recap(); track group.label) {
+              <section class="pr-group">
+                <h3 class="pr-group-title">
+                  {{ group.label }}
+                  <span class="pr-group-sum">{{ group.quantity }}</span>
+                </h3>
+                <table class="pr-table">
+                  <tbody>
+                    @for (line of group.lines; track line.sku) {
+                      <tr>
+                        <td class="pr-qty">{{ line.quantity }}</td>
+                        <td>
+                          <span class="pr-product">{{ line.productName }}</span>
+                          <span class="pr-sku">{{ line.sku }}</span>
+                        </td>
+                        <!-- Sur combien de commandes ça se répartit : 240 en 3 fois
                            ne se prépare pas comme 240 en 40. -->
-                      <td class="pr-spread">
-                        {{ line.orderCount }} cde{{ line.orderCount > 1 ? 's' : '' }}
-                      </td>
-                    </tr>
-                  }
-                </tbody>
-              </table>
-            </section>
-          }
-        </article>
+                        <td class="pr-spread">
+                          {{ line.orderCount }} cde{{ line.orderCount > 1 ? 's' : '' }}
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </section>
+            }
+          </article>
+        }
+
+        <!-- Les réassorts, à part des commandes : ni client ni bon (R3d). -->
+        @if (resupplyPoints().length > 0) {
+          <article class="pr-sheet pr-recap pr-resupplies" aria-label="Réassorts">
+            <header class="pr-recap-head">
+              <h2 class="pr-recap-title">Réassorts</h2>
+              <p class="pr-recap-sum">
+                {{ resupplyPieces() }} pièce{{ resupplyPieces() > 1 ? 's' : '' }} pour
+                {{ resupplyPoints().length }} point{{ resupplyPoints().length > 1 ? 's' : '' }}
+              </p>
+            </header>
+            @if (!resuppliesFrozen()) {
+              <fold-callout variant="info" class="pr-resupplies-live">
+                Envoyés pour ce jour : ils seront figés à l’arrêt du plan, et imprimés avec le
+                dossier.
+              </fold-callout>
+            }
+            @for (point of resupplyPoints(); track point.siteId) {
+              <section class="pr-group">
+                <h3 class="pr-group-title">
+                  Réassort {{ point.label }}
+                  <span class="pr-group-sum">{{ point.quantity }}</span>
+                </h3>
+                <table class="pr-table">
+                  <tbody>
+                    @for (line of point.lines; track line.sku) {
+                      <tr>
+                        <td class="pr-qty">{{ line.quantity }}</td>
+                        <td>
+                          <span class="pr-product">{{ line.productName }}</span>
+                          <span class="pr-sku">{{ line.sku }}</span>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </section>
+            }
+          </article>
+        }
       </section>
 
       <section class="pr-view" [class.is-hidden]="view() !== 'bons'" aria-label="Bons de commande">

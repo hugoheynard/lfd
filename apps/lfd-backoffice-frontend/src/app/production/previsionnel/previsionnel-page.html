@@ -173,7 +173,9 @@
                     day.orderCount +
                     ' commande(s), ' +
                     day.totalUnits +
-                    ' pièce(s) ? Son compte à produire sera figé.'
+                    ' pièce(s)' +
+                    (day.resupplyUnits > 0 ? ' dont ' + day.resupplyUnits + ' de réassort' : '') +
+                    ' ? Son compte à produire sera figé.'
                   "
                   (confirmed)="arrest(day.date)"
                   (cancelled)="arrestingDay.set(null)"

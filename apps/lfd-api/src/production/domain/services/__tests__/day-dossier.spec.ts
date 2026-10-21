@@ -92,4 +92,66 @@ describe("dayDossierOf", () => {
     );
     expect(dossier.recap[0]?.lines.map((line) => line.productName)).toEqual(["Brioche", "Zeste"]);
   });
+
+  it("range les réassorts à part, par point, fusionnés par produit, le plus gros d'abord", () => {
+    const dossier = dayDossierOf(ORDERS, SHELVES, [
+      {
+        resupplyId: "r-1",
+        siteId: "site-v",
+        siteLabel: "Village",
+        servedByTransfer: true,
+        lines: [
+          { sku: "VIE-001", productName: "Croissant", quantity: 6 },
+          { sku: "VIE-002", productName: "Pain au chocolat", quantity: 10 },
+        ],
+      },
+      {
+        resupplyId: "r-2",
+        siteId: "site-v",
+        siteLabel: "Village",
+        servedByTransfer: true,
+        lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 6 }],
+      },
+      {
+        resupplyId: "r-3",
+        siteId: "site-l",
+        siteLabel: null,
+        servedByTransfer: false,
+        lines: [{ sku: "PAI-SEI", productName: "Pain de seigle", quantity: 3 }],
+      },
+    ]);
+    expect(dossier.resupplies).toEqual([
+      {
+        label: "site-l",
+        quantity: 3,
+        lines: [{ sku: "PAI-SEI", productName: "Pain de seigle", quantity: 3 }],
+      },
+      {
+        label: "Village",
+        quantity: 22,
+        lines: [
+          { sku: "VIE-001", productName: "Croissant", quantity: 12 },
+          { sku: "VIE-002", productName: "Pain au chocolat", quantity: 10 },
+        ],
+      },
+    ]);
+    expect(dossier.resupplyPieces).toBe(25);
+    // Les commandes ne bougent pas : le récapitulatif reste le leur.
+    expect(dossier.pieces).toBe(93);
+  });
+
+  it("monte un dossier de réassorts seuls, sans bon", () => {
+    const dossier = dayDossierOf([], SHELVES, [
+      {
+        resupplyId: "r-1",
+        siteId: "site-v",
+        siteLabel: "Village",
+        servedByTransfer: true,
+        lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 18 }],
+      },
+    ]);
+    expect(dossier.sheets).toEqual([]);
+    expect(dossier.recap).toEqual([]);
+    expect(dossier.resupplyPieces).toBe(18);
+  });
 });

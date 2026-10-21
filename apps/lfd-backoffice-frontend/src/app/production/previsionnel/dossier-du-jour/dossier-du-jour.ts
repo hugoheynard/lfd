@@ -18,13 +18,18 @@ import {
   FoldViewToggleComponent,
   type FoldViewToggleOption,
 } from 'fold-ng';
-import type { CatalogItemView, ProductionBatchView } from '@lfd/contracts';
+import type {
+  CatalogItemView,
+  ProductionBatchView,
+  ProductionDayResuppliesView,
+} from '@lfd/contracts';
 
 import { AdminCatalogService } from '../../../commandes/catalog.service';
 import { FicheProduction } from '../../fiche-production/fiche-production';
 import { productionRecap, totalPieces } from '../../production-recap';
 import { ProductionService } from '../../production.service';
 import { DueThresholdsSection } from '../due-thresholds-section/due-thresholds-section';
+import { resupplyPiecesOf, resupplyPointsOf } from './resupply-points';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -156,6 +161,24 @@ export class DossierDuJour {
   );
   protected readonly pieces = computed(() => totalPieces(this.recap()));
 
+  /**
+   * Les réassorts de la journée (lot R3d) : figés si le plan est arrêté,
+   * envoyés « pour demain » sinon — à part des commandes, qu'ils ne comptent
+   * pas. `null` : pas encore lus, ou lecture ratée (`resuppliesLost`).
+   */
+  private readonly resupplies = signal<ProductionDayResuppliesView | null>(null);
+  protected readonly resuppliesLost = signal(false);
+  protected readonly resupplyPoints = computed(() =>
+    resupplyPointsOf(this.resupplies()?.resupplies ?? []),
+  );
+  protected readonly resupplyPieces = computed(() => resupplyPiecesOf(this.resupplyPoints()));
+  /** Les réassorts affichés sont-ils la copie figée à l'arrêt ? */
+  protected readonly resuppliesFrozen = computed(() => this.resupplies()?.frozen ?? false);
+  /** Rien à montrer : ni commande, ni réassort. */
+  protected readonly empty = computed(
+    () => this.sheets().length === 0 && this.resupplyPoints().length === 0,
+  );
+
   /** « samedi 16 août » — l'en-tête de chaque feuille. */
   protected readonly dayLabel = computed(() =>
     DAY_LABEL.format(new Date(`${this.date()}T00:00:00`)),
@@ -211,16 +234,31 @@ export class DossierDuJour {
       // mais elle ne doit pas se taire non plus, d'où le `null` plutôt qu'un
       // tableau vide : les deux se lisent pareil à l'affichage, et un seul des
       // deux est une panne.
-      const [batch, catalogue] = await Promise.all([
+      const [batch, catalogue, resupplies] = await Promise.all([
         this.production.batch(date),
         this.catalog.list().catch(() => null),
+        this.readResupplies(date),
       ]);
       this.batch.set(batch);
+      this.resupplies.set(resupplies);
+      this.resuppliesLost.set(resupplies === null);
       this.shelvesLost.set(catalogue === null);
       this.catalogue.set(catalogue ?? []);
       this.state.set('ready');
     } catch {
       this.state.set('error');
+    }
+  }
+
+  /**
+   * Les réassorts, ou `null` si leur lecture échoue : elle ne fait pas tomber
+   * le lot des commandes, mais elle se dit (`resuppliesLost`).
+   */
+  private async readResupplies(date: string): Promise<ProductionDayResuppliesView | null> {
+    try {
+      return await this.production.dayResupplies(date);
+    } catch {
+      return null;
     }
   }
 

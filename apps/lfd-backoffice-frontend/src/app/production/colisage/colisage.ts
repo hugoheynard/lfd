@@ -26,6 +26,7 @@ import { PackingGestures } from './packing-gestures';
 import { PackingOpenOrder } from './packing-open-order/packing-open-order';
 import { PackingOrders } from './packing-orders/packing-orders';
 import { PackingResources } from './packing-resources/packing-resources';
+import { PackingResupplies } from './packing-resupplies/packing-resupplies';
 import { PackingRoundsReader } from './packing-rounds.reader';
 import { SitePaletteStore } from '../../shared/logistics-colors/site-palette.store';
 import { sheetsInRoundOrder } from './packing-rounds';
@@ -84,6 +85,7 @@ const COMPACT_MASTHEAD_QUERY = '(max-width: 1366px)';
     PackingOpenOrder,
     PackingOrders,
     PackingResources,
+    PackingResupplies,
     RouterLink,
   ],
   // Fournis ICI, pas à la racine : un poste ouvert deux fois ne partage ni sa
@@ -123,6 +125,9 @@ export class Colisage {
    * croire qu'un article n'est nulle part — est fermé par {@link onlyElsewhere}.
    */
   protected readonly stack = signal<PackingStack>('todo');
+
+  /** Le corps montre les fiches de réassort (R3d) plutôt que les commandes. */
+  protected readonly showResupplies = signal(false);
 
   /**
    * La commande qu'on vient de déclarer prête, le temps de le dire. C'est le

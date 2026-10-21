@@ -2,7 +2,11 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import type { ProductionPackingView } from '@lfd/contracts';
+import type {
+  EnterPackedResupplyLine,
+  PackingResuppliesView,
+  ProductionPackingView,
+} from '@lfd/contracts';
 
 import { B2B_API_BASE } from '../api/api-config';
 
@@ -53,6 +57,48 @@ export class PackingService {
    */
   async reopenOrder(date: string, orderId: string): Promise<void> {
     await firstValueFrom(this.http.post<void>(`${this.orderUrl(date, orderId)}/reopen`, {}));
+  }
+
+  /**
+   * **Les fiches de réassort** du jour (lot R3b, écran R3d) — une par
+   * réassort d'un point servi par transfert, à part des commandes.
+   */
+  async resupplies(date: string): Promise<PackingResuppliesView> {
+    return firstValueFrom(this.http.get<PackingResuppliesView>(this.resuppliesUrl(date)));
+  }
+
+  /**
+   * Saisit la quantité **réellement emballée** d'une ligne (≤ demandée, 0
+   * permis). `204` ; un refus (`409` : la réserve n'a pas les pièces, fiche
+   * close) porte son message.
+   */
+  async enterResupplyLine(
+    date: string,
+    resupplyId: string,
+    sku: string,
+    quantity: number,
+  ): Promise<void> {
+    const body: EnterPackedResupplyLine = { quantity };
+    await firstValueFrom(
+      this.http.put<void>(
+        `${this.resuppliesUrl(date)}/${encodeURIComponent(resupplyId)}/lines/${encodeURIComponent(sku)}`,
+        body,
+      ),
+    );
+  }
+
+  /** **Clôt une fiche de réassort** — refusé tant qu'une ligne n'est pas saisie. */
+  async closeResupply(date: string, resupplyId: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(
+        `${this.resuppliesUrl(date)}/${encodeURIComponent(resupplyId)}/close`,
+        {},
+      ),
+    );
+  }
+
+  private resuppliesUrl(date: string): string {
+    return `${B2B_API_BASE}/admin/packing/${encodeURIComponent(date)}/resupplies`;
   }
 
   private orderUrl(date: string, orderId: string): string {

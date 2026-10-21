@@ -220,7 +220,7 @@ describe("renderDayDossierPdf", () => {
 describe("dayDossierPdfKey — la version de mise en page", () => {
   it("n'est plus la clé d'avant E1b : un dossier archivé à l'ancien papier n'est jamais resservi", () => {
     expect(dayDossierPdfKey(DAY, null)).not.toBe(`${DAY}/dossier-du-jour.pdf`);
-    expect(dayDossierPdfKey(DAY, RETAKEN)).toContain("-v5-retirage-");
+    expect(dayDossierPdfKey(DAY, RETAKEN)).toContain("-v6-retirage-");
   });
 });
 
@@ -228,8 +228,41 @@ describe("dayDossierPdfKey", () => {
   it("une clé pour la clôture, une autre par retirage : le complément n'écrase pas l'original", () => {
     const original = dayDossierPdfKey(DAY, null);
     const completed = dayDossierPdfKey(DAY, RETAKEN);
-    expect(original).toBe(`${DAY}/dossier-du-jour-v5.pdf`);
+    expect(original).toBe(`${DAY}/dossier-du-jour-v6.pdf`);
     expect(completed).not.toBe(original);
     expect(completed.startsWith(`${DAY}/`)).toBe(true);
+  });
+
+  it("imprime la section « Réassorts » par point sous le récapitulatif, comptée dans le lot", async () => {
+    const dossier = dayDossierOf([order("LFC-0001", 6)], new Map(), [
+      {
+        resupplyId: "r-1",
+        siteId: "site-v",
+        siteLabel: "Village",
+        servedByTransfer: true,
+        lines: [{ sku: "VIE-002", productName: "Pain au chocolat", quantity: 18 }],
+      },
+    ]);
+    const pages = pdfPages(await renderDayDossierPdf(dossier, STAMP, () => ""));
+    expect(pages).toHaveLength(2);
+    expect(pages[0]).toContain("1 commande (1 en livraison) · 6 pièces + 18 pièces de réassort");
+    expect(pages[0]).toContain("18 pièces pour 1 point");
+    expect(pages[0]).toContain("RÉASSORT VILLAGE");
+    expect(pages[0]).toContain("Pain au chocolat");
+  });
+
+  it("une journée à réassorts seuls se tire en une page, sans bon", async () => {
+    const dossier = dayDossierOf([], new Map(), [
+      {
+        resupplyId: "r-1",
+        siteId: "site-v",
+        siteLabel: "Village",
+        servedByTransfer: true,
+        lines: [{ sku: "VIE-002", productName: "Pain au chocolat", quantity: 18 }],
+      },
+    ]);
+    const pages = pdfPages(await renderDayDossierPdf(dossier, STAMP, () => ""));
+    expect(pages).toHaveLength(1);
+    expect(pages[0]).toContain("RÉASSORT VILLAGE");
   });
 });

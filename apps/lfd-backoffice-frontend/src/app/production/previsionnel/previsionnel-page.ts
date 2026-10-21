@@ -227,14 +227,18 @@ export class PrevisionnelPage {
    * La plus proche, parce que le geste du soir vise le service suivant. Et
    * jamais une journée vide : `close` refuse d'arrêter le néant
    * (`ProductionDayEmptyError`), donc proposer le bouton là serait proposer un
-   * refus. Naviguer d'une fenêtre à l'autre change la cible, ce qui rend toutes
+   * refus. Une journée à réassorts seuls n'est pas vide (R3a) : elle est
+   * proposée (R3d). Naviguer d'une fenêtre à l'autre change la cible, ce qui rend toutes
    * les journées atteignables sans encombrer chaque colonne d'un bouton.
    *
    * `undefined` = rien à arrêter dans cette fenêtre, et la bande disparaît.
    */
   protected readonly dayToArrest = computed(() =>
     this.aheadHeaders().find(
-      (header) => header.date > this.today && !header.closed && header.orderCount > 0,
+      (header) =>
+        header.date > this.today &&
+        !header.closed &&
+        (header.orderCount > 0 || header.resupplyUnits > 0),
     ),
   );
 
@@ -305,7 +309,12 @@ export class PrevisionnelPage {
 
   protected readonly dayToCatchUp = computed(() => {
     const day = this.aheadDays().find((candidate) => candidate.date === this.today);
-    if (day === undefined || day.date !== this.today || day.closed || day.orderCount === 0) {
+    if (
+      day === undefined ||
+      day.date !== this.today ||
+      day.closed ||
+      (day.orderCount === 0 && day.resupplyUnits === 0)
+    ) {
       return undefined;
     }
     return forecastHeaders([day], null, this.today)[0];

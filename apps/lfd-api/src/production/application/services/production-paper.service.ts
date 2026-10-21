@@ -126,7 +126,7 @@ export class ProductionPapers {
     }
     const shelves = await this.shelvesOrNull(snapshot.serviceDay, snapshot.orders);
     const bytes = await renderDayDossierPdf(
-      dayDossierOf(snapshot.orders, shelves),
+      dayDossierOf(snapshot.orders, shelves, snapshot.resupplies ?? []),
       {
         serviceDay: snapshot.serviceDay,
         closedAt,

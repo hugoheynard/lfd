@@ -5,6 +5,7 @@ import type { ProductionOrderSnapshot } from "../entities/production-day.js";
 import { methodSplitOf } from "./dossier-addressees.js";
 import type { DayDossier, DossierRecapGroup } from "./day-dossier.js";
 import { dossierSheetHeadOf, type DossierSheetHead } from "./dossier-sheet-head.js";
+import { drawResupplies } from "./day-dossier-resupplies-pdf.js";
 import {
   LEFT,
   MARGIN_Y,
@@ -103,8 +104,11 @@ export function renderDayDossierPdf(
  * `v4` (2026-10-06) : le pied dit QUI a arrêté (« Arrêté par Marie Dupont le
  * … », « Arrêté automatiquement le … ») et qui a complété ; le récapitulatif
  * sépare les commandes en retrait et en livraison.
+ *
+ * `v6` (2026-10-21, R3d du réassort) : la section « Réassorts » par point, et
+ * leurs pièces dans le compte du lot.
  */
-export const DOSSIER_LAYOUT_VERSION = "v5";
+export const DOSSIER_LAYOUT_VERSION = "v6";
 
 export function dayDossierPdfKey(serviceDay: string, retakenAt: Date | null): string {
   const base = `${serviceDay}/dossier-du-jour-${DOSSIER_LAYOUT_VERSION}`;
@@ -126,7 +130,10 @@ function lotCount(dossier: DayDossier): string {
   const pickup = dossier.sheets.filter((order) => order.fulfillmentMethod === "pickup").length;
   const split = methodSplitOf(pickup, dossier.sheets.length - pickup);
   const orders = plural(dossier.sheets.length, "commande");
-  return `${split === "" ? orders : `${orders} (${split})`} · ${plural(dossier.pieces, "pièce")}`;
+  const lot = `${split === "" ? orders : `${orders} (${split})`} · ${plural(dossier.pieces, "pièce")}`;
+  return dossier.resupplyPieces === 0
+    ? lot
+    : `${lot} + ${plural(dossier.resupplyPieces, "pièce")} de réassort`;
 }
 
 function drawRecap(doc: Doc, dossier: DayDossier, stamp: DossierStamp): void {
@@ -141,6 +148,7 @@ function drawRecap(doc: Doc, dossier: DayDossier, stamp: DossierStamp): void {
   for (const group of dossier.recap) {
     y = drawGroup(doc, group, y, stamp);
   }
+  drawResupplies(doc, dossier, y, (at, needed) => room(doc, at, needed, stamp));
 }
 
 function drawGroup(doc: Doc, group: DossierRecapGroup, top: number, stamp: DossierStamp): number {

@@ -162,3 +162,18 @@
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
+
+/* ── Les réassorts (R3d) : à part des commandes ──────────────────────────── */
+
+.pr-count-resupply {
+  color: var(--fold-color-text-muted);
+}
+
+.pr-resupplies {
+  margin-top: var(--fold-space-lg);
+}
+
+.pr-resupplies-live {
+  display: block;
+  margin-top: var(--fold-space-sm);
+}

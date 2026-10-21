@@ -1,0 +1,109 @@
+<!-- Les fiches de réassort du jour (R3d) : saisir l'emballé, puis clore. -->
+<section class="pr-resupplies" aria-label="Fiches de réassort">
+  @if (failure(); as reason) {
+    <fold-callout variant="alert" class="pr-failure">{{ reason }}</fold-callout>
+  }
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Lecture des fiches de réassort…" />
+    }
+    @case ('error') {
+      <fold-empty-state
+        tone="alert"
+        title="Impossible de lire les fiches de réassort"
+        subtitle="La lecture a échoué — ce qui a été saisi, lui, est intact."
+      >
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @default {
+      @if (resupplies().length === 0) {
+        <fold-empty-state
+          title="Aucune fiche de réassort"
+          subtitle="Aucun réassort d’un point servi par transfert n’est figé pour cette journée."
+        />
+      } @else {
+        <p class="pr-summary">
+          {{ resupplies().length }} fiche{{ resupplies().length > 1 ? 's' : '' }} ·
+          {{ openCount() }} à clore
+        </p>
+        @for (resupply of resupplies(); track resupply.resupplyId) {
+          <fold-card class="pr-card" [ariaLabel]="resupply.title">
+            <header cardHeader class="pr-head">
+              <h2 class="pr-title">{{ resupply.title }}</h2>
+              <fold-status-badge
+                [status]="resupply.status === 'closed' ? 'success' : 'pending'"
+                [label]="resupply.status === 'closed' ? 'Close' : 'À emballer'"
+              />
+            </header>
+            <table class="pr-table">
+              <thead>
+                <tr>
+                  <th scope="col">Produit</th>
+                  <th scope="col" class="pr-num">Demandé</th>
+                  <th scope="col" class="pr-num">Emballé</th>
+                  <th scope="col"><span class="pr-hidden">Geste</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (line of resupply.lines; track line.sku) {
+                  <tr [attr.data-sku]="line.sku">
+                    <td>
+                      <span class="pr-product">{{ line.productName }}</span>
+                      <span class="pr-sku">{{ line.sku }}</span>
+                    </td>
+                    <td class="pr-num pr-requested">{{ line.requested }}</td>
+                    <td class="pr-num">
+                      @if (resupply.status === 'open') {
+                        <fold-number-input
+                          size="sm"
+                          integer
+                          [min]="0"
+                          [max]="line.requested"
+                          [value]="draftOf(resupply, line)"
+                          (valueChange)="setDraft(resupply, line, $event)"
+                        />
+                      } @else {
+                        {{ line.packed }}
+                      }
+                    </td>
+                    <td class="pr-gesture">
+                      @if (resupply.status === 'open') {
+                        <button
+                          foldButton
+                          size="sm"
+                          emphasis="outline"
+                          class="pr-save"
+                          [disabled]="!canSave(resupply, line)"
+                          [loading]="isBusy(resupply, line.sku)"
+                          (click)="save(resupply, line)"
+                        >
+                          Enregistrer
+                        </button>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+            @if (resupply.status === 'open') {
+              <footer cardFooter class="pr-foot">
+                <button
+                  foldButton
+                  class="pr-close"
+                  icon="check"
+                  [disabled]="!canClose(resupply)"
+                  [loading]="isBusy(resupply)"
+                  (click)="close(resupply)"
+                >
+                  Clore la fiche
+                </button>
+              </footer>
+            }
+          </fold-card>
+        }
+      }
+    }
+  }
+</section>

@@ -5,8 +5,8 @@
 > R2 (2026-10-21) ; la **commande** au fournil aussi (lot R1, 2026-10-21),
 > et elle entre au plan figé (R3a), au colisage (R3b) et au transfert du point
 > (R3c, 2026-10-21) ; Prod manager montre les réassorts dans un onglet et les
-> compte au prévisionnel (R3d, 2026-10-21) ; la feuille, le poste du colisage
-> et le manifeste à l'écran restent à faire (fin de R3d). Les **ruptures et stocks faibles** du
+> compte au prévisionnel, le dossier du jour (écran et PDF) les imprime, le
+> poste du colisage tient leurs fiches (R3d, 2026-10-21). Les **ruptures et stocks faibles** du
 > comptoir aussi (lot R1b, 2026-10-21), sans effet encore sur la boutique. La
 > **demande en cours** est enregistrée depuis le lot R1c (2026-10-21). Le
 > **fournil envoie ses propres réassorts**, à part, depuis le lot R1d
@@ -398,12 +398,34 @@ flowchart LR
   compte, seule la part est dite) — `resupplyUnits`, `resupplyQuantities`.
   Le compte de commandes n'en dit rien.
 
+- **Le dossier du jour** (`/prod-manager/previsionnel`, et son PDF figé) :
+  une section « Réassorts » par point et par produit, à part du
+  récapitulatif des commandes. Route `GET admin/production/batch/:date/resupplies`
+  (`GetDayResuppliesQuery`, `ProductionDayResuppliesView`) : la copie figée
+  (`production_resupply`) d'une journée arrêtée, l'envoyé « pour demain »
+  (`DayResuppliesReader`) d'une journée ouverte — l'écran le dit « envoyés »,
+  le PDF reste refusé tant que le plan n'est pas arrêté. Le compte de la barre
+  ajoute « + N pièces de réassort », le nombre de commandes ne bouge pas. Le
+  PDF (mise en page `v6`) imprime la section sous le récapitulatif
+  (`apps/lfd-api/src/production/domain/services/day-dossier-resupplies-pdf.ts`)
+  et ajoute les pièces au compte du lot. Une journée à réassorts seuls se tire.
+- **« Arrêter le plan »** propose une journée sans commande mais à réassorts
+  (`resupplyUnits > 0`), comme le serveur l'accepte depuis R3a.
+- **Les fiches de réassort au poste du colisage** : bouton « Fiches de
+  réassort » dans la bande (journée arrêtée), et d'office sous « Aucune
+  commande » pour une journée à réassorts seuls
+  (`apps/lfd-backoffice-frontend/src/app/production/colisage/packing-resupplies/`) :
+  demandé, emballé saisi par ligne (« Enregistrer »), « Clore la fiche » une
+  fois toutes les lignes saisies ; les refus du serveur s'affichent tels quels.
+- **Le manifeste du transfert à l'écran** montrait déjà la section
+  « Réapprovisionnement » dès que le serveur la remplit (R3c) ; l'avis d'un
+  transfert vide nomme désormais les réassorts.
+
 ## Ce qui reste
 
-- **Fin de R3d** : la section « Réassorts » de la feuille de production
-  (écran et PDF du dossier), les fiches de réassort au poste du colisage
-  (routes R3b : `GET admin/packing/:date/resupplies`, `PUT …/lines/:sku`,
-  `POST …/close`), le réassort dans le manifeste du transfert à l'écran.
+- **La carte d'arrêt de transfert** (tableau des tournées) dit « N commandes »
+  et rien des réassorts : un transfert de réassort seul s'y lit « 0 commande ».
+  Il faudrait un `resupplyCount` sur `DeliveryRoundTransferStopView`.
 
 - **La course annuler / réceptionner** : l'annulation lit la réception puis
   écrit le réassort ; « Réceptionner » ne touche pas la version du réassort.

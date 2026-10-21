@@ -4,7 +4,10 @@ import {
   type CatalogFamilyView,
 } from "@lfd/contracts";
 
-import type { ProductionOrderSnapshot } from "../entities/production-day.js";
+import type {
+  ProductionOrderSnapshot,
+  ProductionResupplySnapshot,
+} from "../entities/production-day.js";
 import { byPositionThenName } from "./production-worksheet-groups.js";
 
 /**
@@ -46,6 +49,27 @@ export interface DayDossier {
   /** Un bon par commande, **par référence** : deux tirages rendent la même pile. */
   readonly sheets: readonly ProductionOrderSnapshot[];
   readonly pieces: number;
+  /**
+   * Les réassorts figés, par point (lot R3d du réassort) — À PART du
+   * récapitulatif des commandes : ils n'ont ni client ni bon, mais ils se
+   * fabriquent (leurs pièces sont au compte à produire).
+   */
+  readonly resupplies: readonly DossierResupplyPoint[];
+  readonly resupplyPieces: number;
+}
+
+/** Une ligne de réassort : un produit pour un point. */
+export interface DossierResupplyLine {
+  readonly sku: string;
+  readonly productName: string;
+  readonly quantity: number;
+}
+
+/** Les réassorts d'un point, fusionnés par produit. */
+export interface DossierResupplyPoint {
+  readonly label: string;
+  readonly quantity: number;
+  readonly lines: readonly DossierResupplyLine[];
 }
 
 interface Tally {
@@ -58,13 +82,55 @@ interface Tally {
 export function dayDossierOf(
   orders: readonly ProductionOrderSnapshot[],
   shelves: ReadonlyMap<string, CatalogFamilyView> | null,
+  resupplies: readonly ProductionResupplySnapshot[] = [],
 ): DayDossier {
   const recap = recapOf(talliesOf(orders), shelves);
+  const points = resupplyPointsOf(resupplies);
   return {
     recap,
     sheets: [...orders].sort((left, right) => compareCodes(left.reference, right.reference)),
     pieces: recap.reduce((sum, group) => sum + group.quantity, 0),
+    resupplies: points,
+    resupplyPieces: points.reduce((sum, point) => sum + point.quantity, 0),
   };
+}
+
+/**
+ * Un bloc par point (deux réassorts d'un même point se fusionnent), par nom ;
+ * dans un point, le plus gros d'abord, à égalité par nom. Un point sans nom
+ * figé se dit par son identifiant — rien d'autre n'est sûr.
+ */
+function resupplyPointsOf(
+  resupplies: readonly ProductionResupplySnapshot[],
+): readonly DossierResupplyPoint[] {
+  const bySite = new Map<string, { label: string; bySku: Map<string, DossierResupplyLine> }>();
+  for (const resupply of resupplies) {
+    const site = bySite.get(resupply.siteId) ?? {
+      label: resupply.siteLabel ?? resupply.siteId,
+      bySku: new Map<string, DossierResupplyLine>(),
+    };
+    bySite.set(resupply.siteId, site);
+    for (const line of resupply.lines) {
+      const known = site.bySku.get(line.sku);
+      site.bySku.set(line.sku, {
+        sku: line.sku,
+        productName: line.productName,
+        quantity: (known?.quantity ?? 0) + line.quantity,
+      });
+    }
+  }
+  return [...bySite.values()]
+    .map((site) => groupOf(site.label, [...site.bySku.values()].map(asRecapLine)))
+    .map((group) => ({
+      label: group.label,
+      quantity: group.quantity,
+      lines: group.lines.map(({ sku, productName, quantity }) => ({ sku, productName, quantity })),
+    }))
+    .sort((left, right) => left.label.localeCompare(right.label, "fr"));
+}
+
+function asRecapLine(line: DossierResupplyLine): DossierRecapLine {
+  return { ...line, orderCount: 0 };
 }
 
 function talliesOf(orders: readonly ProductionOrderSnapshot[]): readonly DossierRecapLine[] {

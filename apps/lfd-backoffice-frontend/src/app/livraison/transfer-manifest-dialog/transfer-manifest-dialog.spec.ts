@@ -43,6 +43,24 @@ describe('TransferManifestDialog', () => {
     expect(host.textContent).not.toContain('Réapprovisionnement');
   });
 
+  /** R3d : le réassort du Village se lit au manifeste de l'écran, comme au papier. */
+  it('écrit le réassort d’un transfert qui ne porte aucune commande', async () => {
+    const host = await render(() =>
+      Promise.resolve({
+        ...VIEW,
+        orders: { items: [], totals: [] },
+        resupplies: {
+          items: [{ itemId: 'i2', kind: 'resupply', subjectId: 'r-1', lines: [LINE] }],
+          totals: [LINE],
+        },
+      }),
+    );
+    expect(host.textContent).toContain('Réapprovisionnement');
+    expect(host.textContent).toContain('1 réapprovisionnement');
+    expect(host.textContent).toContain('Pain de campagne');
+    expect(host.textContent).not.toContain('ne porte encore rien');
+  });
+
   it('un échec de lecture est un état d’erreur', async () => {
     const host = await render(() => Promise.reject(new Error('500')));
     expect(host.textContent).toContain('Manifeste illisible');

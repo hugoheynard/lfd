@@ -36,8 +36,9 @@ export function sectionSubtitle(
 
 /**
  * Les sections NON vides, commandes d'abord. Une section vide ne s'écrit pas :
- * « Réapprovisionnement : 0 » sur chaque transfert ferait chercher ce qui
- * n'existe pas encore.
+ * « Réapprovisionnement : 0 » sur chaque transfert ferait chercher ce qui n'y
+ * est pas. Le réassort d'un point servi par transfert y entre à l'arrêt du
+ * plan depuis R3c (2026-10-21), le même mot que le papier de tournée.
  */
 export function manifestSections(
   view: Pick<InternalTransferManifestView, 'orders' | 'resupplies'>,

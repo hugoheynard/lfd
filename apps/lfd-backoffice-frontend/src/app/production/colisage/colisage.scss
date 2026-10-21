@@ -263,3 +263,18 @@ fold-page-layout {
     overflow-y: auto;
   }
 }
+
+/* ── Les fiches de réassort (R3d) : le corps défile pour lui-même ────────── */
+.co-resupplies-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+  padding: var(--fold-space-lg) var(--fold-page-gutter);
+}
+
+.co-resupplies-toggle {
+  flex: none;
+}

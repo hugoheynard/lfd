@@ -731,6 +731,11 @@ export type {
   ProductionDueThresholdLine,
   ProductionDueThresholdsView,
 } from "./production-due-thresholds.js";
+export type {
+  ProductionDayResuppliesView,
+  ProductionDayResupply,
+  ProductionDayResupplyLine,
+} from "./production-day-resupplies.js";
 export { productionBatchQuerySchema } from "./production-sheet.js";
 export type {
   ProductionBatchQuery,

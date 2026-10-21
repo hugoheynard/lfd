@@ -1,4 +1,5 @@
 import {
+  type ProductionDayResuppliesView,
   type ProductionDayStatus,
   type ProductionDueThresholdsView,
   type ProductionForecastQuery,
@@ -19,6 +20,7 @@ import { CloseProductionDayCommand } from "../application/commands/close-product
 import { ReopenProductionDayCommand } from "../application/commands/reopen-production-day.command.js";
 import { GetAtelierSheetPdfQuery } from "../application/queries/get-atelier-sheet-pdf.query.js";
 import { GetDayDossierPdfQuery } from "../application/queries/get-day-dossier-pdf.query.js";
+import { GetDayResuppliesQuery } from "../application/queries/get-day-resupplies.query.js";
 import { GetProductionCountPdfQuery } from "../application/queries/get-production-count-pdf.query.js";
 import { GetProductionDayStatusQuery } from "../application/queries/get-production-day-status.query.js";
 import { GetProductionForecastQuery } from "../application/queries/get-production-forecast.query.js";
@@ -168,6 +170,18 @@ export class ProductionDayController {
   async dueThresholds(@Param("date") date: string): Promise<ProductionDueThresholdsView> {
     return this.queries.execute<GetProductionDueThresholdsQuery, ProductionDueThresholdsView>(
       new GetProductionDueThresholdsQuery(productionBatchQuerySchema.parse({ date }).date),
+    );
+  }
+
+  /**
+   * **Les réassorts d'une journée** (lot R3d du réassort) — figés si elle est
+   * arrêtée, envoyés « pour demain » sinon. Le dossier du jour les montre à
+   * part des commandes.
+   */
+  @Get("batch/:date/resupplies")
+  async resupplies(@Param("date") date: string): Promise<ProductionDayResuppliesView> {
+    return this.queries.execute<GetDayResuppliesQuery, ProductionDayResuppliesView>(
+      new GetDayResuppliesQuery(productionBatchQuerySchema.parse({ date }).date),
     );
   }
 

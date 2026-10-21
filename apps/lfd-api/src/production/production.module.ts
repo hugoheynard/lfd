@@ -83,6 +83,7 @@ import { GetAtelierSheetSpecimenHandler } from "./application/queries/get-atelie
 import { AdminAtelierSheetSpecimenController } from "./http/admin-atelier-sheet-specimen.controller.js";
 import { GetCurrentProductionWorksheetHandler } from "./application/queries/get-current-production-worksheet.handler.js";
 import { GetDayDossierPdfHandler } from "./application/queries/get-day-dossier-pdf.handler.js";
+import { GetDayResuppliesHandler } from "./application/queries/get-day-resupplies.handler.js";
 import { GetProductionCountPdfHandler } from "./application/queries/get-production-count-pdf.handler.js";
 import { GetProductionDayStatusHandler } from "./application/queries/get-production-day-status.handler.js";
 import { GetProductionForecastHandler } from "./application/queries/get-production-forecast.handler.js";
@@ -179,6 +180,7 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     ListProductionContainersHandler,
     GetProductionCountPdfHandler,
     GetDayDossierPdfHandler,
+    GetDayResuppliesHandler,
     GetAtelierSheetPdfHandler,
     GetAtelierSheetSpecimenHandler,
     ProductionPapers,

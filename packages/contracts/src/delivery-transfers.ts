@@ -10,7 +10,7 @@ import type { OrderClientele } from "./order-handover.js";
  * transporte »).
  *
  * Un même transfert porte EN MÊME TEMPS des commandes (retraits au site) et
- * du réapprovisionnement de la boutique du site (non bâti) : deux sections, chacune
+ * du réapprovisionnement de la boutique du site (réassort, R3c) : deux sections, chacune
  * détaillée par élément et totalisée par SKU, et un total tous genres
  * confondus. Les deux genres ont le MÊME format de ligne — le réapprovisionnement s'y
  * branchera sans le changer.
@@ -143,7 +143,7 @@ export interface DriverTransferStopView {
   readonly totals: readonly TransferManifestLineView[];
   /** Le manifeste détaillé : les commandes portées, par élément et par SKU. */
   readonly orders: TransferManifestSectionView;
-  /** Le réapprovisionnement du site (non bâti : vide aujourd'hui). */
+  /** Le réassort du site, attaché à l'arrêt du plan (lot R3c du réassort). */
   readonly resupplies: TransferManifestSectionView;
   /** Les bacs non annulés du transfert — ce que le site doit recevoir. */
   readonly binCount: number;

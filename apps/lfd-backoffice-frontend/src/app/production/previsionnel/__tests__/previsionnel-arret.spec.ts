@@ -51,6 +51,7 @@ function day(
   options: {
     readonly closed?: boolean;
     readonly orderCount?: number;
+    readonly resupplyUnits?: number;
     readonly closesAt?: string | null;
   } = {},
 ): ProductionForecastView['days'][number] {
@@ -58,7 +59,7 @@ function day(
     date,
     totalUnits: 120,
     orderCount: options.orderCount ?? 4,
-    resupplyUnits: 0,
+    resupplyUnits: options.resupplyUnits ?? 0,
     closed: options.closed ?? false,
     state: options.closed === true ? 'closed' : 'open',
     // Sans heure limite posée par défaut : rien n'arrête le plan seul, le bouton reste ouvert.
@@ -190,6 +191,18 @@ describe('le prévisionnel — arrêter le plan', () => {
     );
 
     expect(page['dayToArrest']()?.date).toBe(dayIn(2));
+  });
+
+  /** R3d : le serveur arrête une journée à réassorts seuls depuis R3a. */
+  it('propose une journée sans commande mais à réassorts', async () => {
+    const { page } = await mount(
+      forecast([
+        day(dayIn(1), { orderCount: 0, resupplyUnits: 18 }),
+        day(dayIn(2), { orderCount: 2 }),
+      ]),
+    );
+
+    expect(page['dayToArrest']()?.date).toBe(dayIn(1));
   });
 
   it('ne propose rien quand toute la fenêtre est arrêtée', async () => {

@@ -50,6 +50,20 @@
         {{ ordersFolded() ? 'Commandes' : 'Replier les commandes' }}
       </button>
 
+      <!-- Les fiches de réassort (R3d) : à part des commandes, sur le même poste. -->
+      @if (day.closedAt() !== null) {
+        <button
+          foldButton
+          emphasis="outline"
+          icon="package"
+          class="co-resupplies-toggle"
+          [attr.aria-pressed]="showResupplies()"
+          (click)="showResupplies.set(!showResupplies())"
+        >
+          {{ showResupplies() ? 'Commandes' : 'Fiches de réassort' }}
+        </button>
+      }
+
       <fold-search
         class="co-search"
         size="lg"
@@ -217,6 +231,10 @@
         <fold-icon empty-icon name="clock" size="lg" />
         <a foldButton routerLink="/prod-manager">Ouvrir le prévisionnel</a>
       </fold-empty-state>
+    } @else if (showResupplies()) {
+      <section class="co-resupplies-body" aria-label="Fiches de réassort">
+        <app-packing-resupplies [date]="day.date()" />
+      </section>
     } @else if (day.sheets().length > 0) {
       <!--
         🔴 Le corps se rend dès que la JOURNÉE porte des commandes, pas dès que
@@ -279,12 +297,16 @@
         </div>
       </section>
     } @else {
-      <fold-empty-state
-        title="Aucune commande ce jour-là"
-        subtitle="Le plan est arrêté, mais la journée ne porte aucune commande à coliser."
-      >
-        <fold-icon empty-icon name="package" size="lg" />
-      </fold-empty-state>
+      <!-- Une journée à réassorts seuls (R3d) : les fiches sont tout le travail. -->
+      <section class="co-resupplies-body" aria-label="Fiches de réassort">
+        <fold-empty-state
+          title="Aucune commande ce jour-là"
+          subtitle="Le plan est arrêté, mais la journée ne porte aucune commande à coliser."
+        >
+          <fold-icon empty-icon name="package" size="lg" />
+        </fold-empty-state>
+        <app-packing-resupplies [date]="day.date()" />
+      </section>
     }
   }
 }

@@ -778,7 +778,7 @@ Derrière, la même chose : la cloche du back-office sonne au comptoir du point
 dans le code, ou seulement dans
 [`../livraisons/transferts/plan-transfert-interne.md`](../livraisons/transferts/plan-transfert-interne.md) ?
 
-### R3d 🟡 — Les écrans (Hugo, 2026-10-21 ; bâti en partie le 2026-10-21, non commité) — l'emporte sur la ligne R3d du §13.2
+### R3d ✅ — Les écrans (Hugo, 2026-10-21 ; bâti le 2026-10-21 — points 1–3 en `7849c011c`, la suite non commitée) — l'emporte sur la ligne R3d du §13.2
 
 « Il faut que j'arrive à visualiser les demandes dans Prod manager ;
 `/reassorts-a-produire` n'a pas de sens en autonome, ça devrait être un onglet
@@ -836,9 +836,29 @@ table. »
   dit « dont N réassort » dans la case et une ligne « dont réassorts » au pied.
   `orderCount` inchangé.
 
-**Reste de R3d** : la section « Réassorts » de la feuille (écran et PDF du
-dossier), les fiches de réassort au poste du colisage (les routes R3b
-existent), le réassort dans le manifeste du transfert à l'écran.
+✅ **Bâti le 2026-10-21 (non commité) : la suite.** Constat de Hugo : « mes
+18 sont dans le prévisionnel mais pas au dossier ».
+
+- **Le dossier du jour** : route `GET admin/production/batch/:date/resupplies`
+  (fournil) — figés si la journée est arrêtée, envoyés « pour demain » sinon
+  (`DayResuppliesReader`, le port de l'arrêt) ; écran : section « Réassorts »
+  par point et produit, « envoyés » sur une journée ouverte, « + N pièces de
+  réassort » dans la barre, nombre de commandes inchangé ; une journée à
+  réassorts seuls n'est plus « rien à produire ». PDF (`v6`) : la section
+  sous le récapitulatif, et les pièces au compte du lot. **Choix du
+  bâtisseur** : le récapitulatif « À fabriquer » reste celui des commandes
+  (avec « + N pièces de réassort » dans son compte), plutôt que d'y fondre
+  les réassorts.
+- **« Arrêter le plan »** : proposé à une journée de réassorts seuls.
+- **Le poste du colisage** : les fiches (bouton « Fiches de réassort »),
+  saisie de l'emballé par ligne, clôture.
+- **Le manifeste à l'écran** : il montrait déjà la section
+  « Réapprovisionnement » remplie par R3c — rien à bâtir que l'avis d'un
+  transfert vide. Le mot reste « Réapprovisionnement », comme le papier de
+  tournée de R3c (le §13.1 disait « Réassort »).
+
+**Non fait** : la carte d'arrêt de transfert du tableau des tournées compte
+les commandes seules (« 0 commande » pour un transfert de réassort).
 
 ### À venir — un onglet « Stock » dans la Supervision (Hugo, 2026-10-21 ; non conçu)
 

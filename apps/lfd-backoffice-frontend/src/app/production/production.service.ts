@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 
 import type {
   ProductionBatchView,
+  ProductionDayResuppliesView,
   ProductionDueThresholdsView,
   ProductionForecastView,
   ProductionPlanClosure,
@@ -98,6 +99,18 @@ export class ProductionService {
     return firstValueFrom(
       this.http.get<ProductionBatchView>(
         `${B2B_API_BASE}/admin/production/batch?date=${encodeURIComponent(date)}`,
+      ),
+    );
+  }
+
+  /**
+   * Les **réassorts** d'une journée (`AAAA-MM-JJ`, lot R3d) : figés si son
+   * plan est arrêté, envoyés « pour demain » sinon (`frozen` le dit).
+   */
+  async dayResupplies(date: string): Promise<ProductionDayResuppliesView> {
+    return firstValueFrom(
+      this.http.get<ProductionDayResuppliesView>(
+        `${B2B_API_BASE}/admin/production/batch/${encodeURIComponent(date)}/resupplies`,
       ),
     );
   }
