@@ -44,9 +44,14 @@
    ⚠️ **Seulement sur le MUR.** Le dossier du jour reste en flux, donc il défile
    avec la coquille. Depuis le 2026-10-06, son papier est le PDF du serveur, et
    plus rien de cet écran ne passe par l'impression navigateur. */
+/* 🔴 Depuis le lot R3d (2026-10-21), la page est l'onglet « Prévisionnel » de
+   l'espace Prod manager : c'est l'ESPACE qui prend `inset: 0` sur
+   `main.content` (et défile), sous sa bande d'onglets. Le mur, lui, prend la
+   hauteur qui reste dans sa colonne flex — une hauteur définie, donc le pied
+   collant colle toujours. */
 :host(.is-wall) {
-  position: absolute;
-  inset: 0;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 :host {

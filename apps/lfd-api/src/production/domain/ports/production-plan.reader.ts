@@ -1,4 +1,4 @@
-import type { DayDemand } from "../services/production-forecast.js";
+import type { DayDemand, DayResupplyDemand } from "../services/production-forecast.js";
 import type { ServiceRange } from "../value-objects/service-range.value-object.js";
 
 /**
@@ -23,4 +23,11 @@ import type { ServiceRange } from "../value-objects/service-range.value-object.j
  */
 export abstract class ProductionPlanReader {
   abstract arrestedBetween(range: ServiceRange): Promise<readonly DayDemand[]>;
+
+  /**
+   * Les réassorts FIGÉS des journées closes de la plage, fusionnés par
+   * article (lot R3d, 2026-10-21). Ils sont déjà dans le compte que rend
+   * {@link arrestedBetween} : le prévisionnel n'en tire que la part.
+   */
+  abstract arrestedResuppliesBetween(range: ServiceRange): Promise<readonly DayResupplyDemand[]>;
 }

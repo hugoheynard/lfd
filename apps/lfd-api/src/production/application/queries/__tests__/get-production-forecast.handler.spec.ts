@@ -4,11 +4,15 @@ import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import type { ExpectedDayProduction } from "../../../channels/commerce/expected-production.reader.js";
 import { ExpectedProductionReader } from "../../../channels/commerce/expected-production.reader.js";
 import {
+  type ExpectedDayResupplies,
+  ExpectedResuppliesReader,
+} from "../../../channels/commerce/expected-resupplies.reader.js";
+import {
   AutoCloseAttemptLog,
   type DatedAttemptTrace,
 } from "../../../domain/ports/auto-close-attempt-log.js";
 import { ProductionPlanReader } from "../../../domain/ports/production-plan.reader.js";
-import type { DayDemand } from "../../../domain/services/production-forecast.js";
+import type { DayDemand, DayResupplyDemand } from "../../../domain/services/production-forecast.js";
 import type { ServiceRange } from "../../../domain/value-objects/service-range.value-object.js";
 import { GetProductionForecastHandler } from "../get-production-forecast.handler.js";
 import { GetProductionForecastQuery } from "../get-production-forecast.query.js";
@@ -62,6 +66,7 @@ function handlerOf(
   plan: ProductionPlanReader,
   expected: ExpectedProductionReader,
   w: World = world(),
+  resupplies: ExpectedResuppliesReader = new ResuppliesStub([]),
 ): GetProductionForecastHandler {
   return new GetProductionForecastHandler(
     plan,
@@ -70,6 +75,7 @@ function handlerOf(
     new SettingsReader(w.closedDays),
     w.attempts,
     stopRulesOf(w.cutoffs),
+    resupplies,
   );
 }
 
@@ -77,11 +83,32 @@ function handlerOf(
 class PlanStub extends ProductionPlanReader {
   asked: ServiceRange | null = null;
 
-  constructor(private readonly days: readonly DayDemand[]) {
+  constructor(
+    private readonly days: readonly DayDemand[],
+    private readonly frozen: readonly DayResupplyDemand[] = [],
+  ) {
     super();
   }
 
   arrestedBetween(range: ServiceRange): Promise<readonly DayDemand[]> {
+    this.asked = range;
+    return Promise.resolve(this.days);
+  }
+
+  arrestedResuppliesBetween(): Promise<readonly DayResupplyDemand[]> {
+    return Promise.resolve(this.frozen);
+  }
+}
+
+/** Les réassorts pour demain envoyés au commerce, doublés. */
+class ResuppliesStub extends ExpectedResuppliesReader {
+  asked: ServiceRange | null = null;
+
+  constructor(private readonly days: readonly ExpectedDayResupplies[]) {
+    super();
+  }
+
+  expectedBetween(range: ServiceRange): Promise<readonly ExpectedDayResupplies[]> {
     this.asked = range;
     return Promise.resolve(this.days);
   }
@@ -128,6 +155,7 @@ describe("GetProductionForecastHandler", () => {
       {
         date: "2026-09-03",
         totalUnits: 186,
+        resupplyUnits: 0,
         orderCount: 12,
         closed: true,
         state: "closed",
@@ -136,6 +164,7 @@ describe("GetProductionForecastHandler", () => {
       {
         date: "2026-09-04",
         totalUnits: 0,
+        resupplyUnits: 0,
         orderCount: 0,
         closed: false,
         state: "open",
@@ -144,6 +173,7 @@ describe("GetProductionForecastHandler", () => {
       {
         date: "2026-09-05",
         totalUnits: 410,
+        resupplyUnits: 0,
         orderCount: 47,
         closed: false,
         state: "open",
@@ -151,7 +181,13 @@ describe("GetProductionForecastHandler", () => {
       },
     ]);
     expect(view.lines).toEqual([
-      { sku: "PAI-BAG", productName: "Baguette", quantities: [186, 0, 410], totalUnits: 596 },
+      {
+        sku: "PAI-BAG",
+        productName: "Baguette",
+        quantities: [186, 0, 410],
+        resupplyQuantities: [0, 0, 0],
+        totalUnits: 596,
+      },
     ]);
     expect(view.peakDate).toBe("2026-09-05");
     expect(view.totalUnits).toBe(596);
@@ -175,6 +211,37 @@ describe("GetProductionForecastHandler", () => {
     await expect(
       handler.execute(new GetProductionForecastQuery("2026-09-09", "2026-09-03")),
     ).rejects.toThrow(/précède/u);
+  });
+
+  it("compte les réassorts à part : figés d'une journée close, envoyés d'une journée ouverte", async () => {
+    const baguettes = (quantity: number) => [{ sku: "PAI-BAG", productName: "Baguette", quantity }];
+    // Le 3 est clos : ses 6 baguettes de réassort sont DÉJÀ dans les 186 du compte (R3a).
+    const plan = new PlanStub(
+      [{ day: "2026-09-03", items: baguettes(186), orderCount: 12 }],
+      [{ day: "2026-09-03", items: baguettes(6) }],
+    );
+    const expected = new ExpectedStub([
+      { day: "2026-09-05", items: baguettes(410), orderCount: 47 },
+    ]);
+    // Le 3 envoyé au commerce est ignoré (journée close) ; le 4 n'a QUE des réassorts.
+    const resupplies = new ResuppliesStub([
+      { day: "2026-09-03", items: baguettes(99) },
+      { day: "2026-09-04", items: baguettes(8) },
+      { day: "2026-09-05", items: baguettes(20) },
+    ]);
+
+    const view = await handlerOf(plan, expected, world(), resupplies).execute(
+      new GetProductionForecastQuery("2026-09-03", "2026-09-05"),
+    );
+
+    expect(view.days.map((day) => [day.totalUnits, day.resupplyUnits, day.orderCount])).toEqual([
+      [186, 6, 12],
+      [8, 8, 0],
+      [430, 20, 47],
+    ]);
+    expect(view.lines[0]?.quantities).toEqual([186, 8, 430]);
+    expect(view.lines[0]?.resupplyQuantities).toEqual([6, 8, 20]);
+    expect(resupplies.asked?.from.value).toBe("2026-09-03");
   });
 
   describe("l'état de chaque journée, à l'heure de la maison (A3)", () => {

@@ -12,11 +12,13 @@ import { ListSiteStockAlertsHandler } from "./application/list-site-stock-alerts
 import { CorrectReceivedResupplyLineHandler } from "./application/correct-received-resupply-line.handler.js";
 import { CorrectResupplyLineHandler } from "./application/correct-resupply-line.handler.js";
 import { CorrectSiteResupplyLineHandler } from "./application/correct-site-resupply-line.handler.js";
+import { GetResupplyProductionDayHandler } from "./application/get-resupply-production-day.handler.js";
 import { GetResupplyReceiptHandler } from "./application/get-resupply-receipt.handler.js";
 import { ListResuppliesToProduceHandler } from "./application/list-resupplies-to-produce.handler.js";
 import { ListResupplyArticlesHandler } from "./application/list-resupply-articles.handler.js";
 import { ListSiteResuppliesHandler } from "./application/list-site-resupplies.handler.js";
 import { ProductionDayResupplies } from "./application/production-day-resupplies.js";
+import { ProductionRangeResupplies } from "./application/production-range-resupplies.js";
 import { ResupplyPlanGate } from "./application/resupply-plan-gate.js";
 import { ReceiveResupplyLineHandler } from "./application/receive-resupply-line.handler.js";
 import { ReceiveSiteResupplyHandler } from "./application/receive-site-resupply.handler.js";
@@ -104,6 +106,7 @@ import { PrismaTransferServedSites } from "./infrastructure/prisma-transfer-serv
     WithdrawResupplyLineHandler,
     ReceiveSiteResupplyHandler,
     CorrectReceivedResupplyLineHandler,
+    GetResupplyProductionDayHandler,
     GetResupplyReceiptHandler,
     ListResupplyArticlesHandler,
     SendBakehouseResupplyHandler,
@@ -120,7 +123,8 @@ import { PrismaTransferServedSites } from "./infrastructure/prisma-transfer-serv
     ListLiveStockAlertsHandler,
     ResupplyPlanGate,
     ProductionDayResupplies,
+    ProductionRangeResupplies,
   ],
-  exports: [ProductionDayResupplies],
+  exports: [ProductionDayResupplies, ProductionRangeResupplies],
 })
 export class ResupplyModule {}

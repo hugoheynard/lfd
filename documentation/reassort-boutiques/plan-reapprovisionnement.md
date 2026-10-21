@@ -777,3 +777,90 @@ Derrière, la même chose : la cloche du back-office sonne au comptoir du point
 À vérifier avant de bâtir : la réception d'un transfert au site existe-t-elle
 dans le code, ou seulement dans
 [`../livraisons/transferts/plan-transfert-interne.md`](../livraisons/transferts/plan-transfert-interne.md) ?
+
+### R3d 🟡 — Les écrans (Hugo, 2026-10-21 ; bâti en partie le 2026-10-21, non commité) — l'emporte sur la ligne R3d du §13.2
+
+« Il faut que j'arrive à visualiser les demandes dans Prod manager ;
+`/reassorts-a-produire` n'a pas de sens en autonome, ça devrait être un onglet
+de Prod manager, et reprendre la structure de la demande de réassort, en
+table. »
+
+- **Prod manager (`/prod-manager`) gagne des onglets** : « Prévisionnel »
+  (l'écran actuel) et « Réassorts ». L'entrée autonome
+  `/reassorts-a-produire` disparaît du menu et redirige vers l'onglet.
+- **L'onglet Réassorts reprend la table de la demande (R1e)** : une ligne par
+  produit, les puces de catégorie et la recherche au-dessus ; en colonnes, par
+  point (Labo, Village…) les quantités **pour demain** (envoyées, figées ou
+  non) et **au plus tôt** du jour affiché ; ruptures et stocks faibles des
+  points en marque sur la ligne ; un total par produit. Navigation par
+  journée, comme le prévisionnel. L'envoi du fournil (« Envoyer un réassort »,
+  R1d) y vit, à la place de la carte actuelle.
+- **Le prévisionnel compte les réassorts** : chaque jour à venir ajoute les
+  réassorts pour demain envoyés, distingués des commandes (ligne ou teinte à
+  part), le total additionne ; le compte de commandes ne change pas.
+- **La feuille de production** (écran et PDF) : section « Réassorts » par
+  point et produit, en plus du total.
+- **Le poste du colisage** : les fiches de réassort (Village) — saisir
+  l'emballé, clore.
+- **Le transfert** : le réassort dans le manifeste à l'écran (le papier l'a
+  déjà depuis R3c).
+
+🟡 **Bâti le 2026-10-21 (non commité) : les trois premiers points.**
+
+- **Prod manager est un espace à routes enfants, comme le comptoir**
+  (précision de Hugo pendant le lot) : `/prod-manager/previsionnel`
+  (`production_plan:read`) et `/prod-manager/reassorts` (fournée OU
+  prévisionnel, le droit de l'ancienne entrée) ; `/prod-manager` ouvre le
+  premier onglet permis (`production/prod-manager/`) ; `/reassorts-a-produire`
+  et `/production/previsionnel` redirigent vers leur onglet. L'entrée
+  « Réassorts » du rail et des tuiles est retirée ; « Prod manager » s'ouvre
+  aussi à la seule fournée. L'espace prend `inset: 0` et défile ; le mur du
+  prévisionnel prend la hauteur sous la bande.
+- **L'onglet Réassorts** (`production/reassorts-a-produire/resupply-production-tab/`) :
+  une ligne par produit du catalogue, puces de famille et recherche, une
+  colonne « pour demain · envoyé / figé » et « au plus tôt » par point, les
+  marques Rupture / Faible (alertes vivantes, tues sur une journée passée), le
+  total par produit et de la journée ; la journée dans l'URL (`?day=`, demain
+  par défaut) ; « Envoyer un réassort » en tête sous `production_resupply:write`.
+  Servi par une route ajoutée, `GET admin/site-resupplies/to-produce/:day`
+  (`ResupplyProductionDayView` : `planStopped`, le catalogue) — l'ancienne
+  route reste, inchangée. **Lu au commerce, pas à la copie figée** : sous le
+  guichet du plan, la liste envoyée d'une journée arrêtée EST la liste figée
+  (R3a), et l'onglet a besoin des « au plus tôt », que le fournil ne fige pas.
+- **Le prévisionnel compte les réassorts** : port `ExpectedResuppliesReader`
+  (`production/channels/commerce/`, implémenté par le commerce,
+  `ProductionRangeResupplies`) pour une journée ouverte, réassorts figés lus
+  au fournil (`ProductionPlanReader.arrestedResuppliesBetween`) pour une
+  journée close — déjà dans son compte, on n'en tire que la part. Le contrat
+  gagne `resupplyUnits` (colonne) et `resupplyQuantities` (ligne) ; l'écran
+  dit « dont N réassort » dans la case et une ligne « dont réassorts » au pied.
+  `orderCount` inchangé.
+
+**Reste de R3d** : la section « Réassorts » de la feuille (écran et PDF du
+dossier), les fiches de réassort au poste du colisage (les routes R3b
+existent), le réassort dans le manifeste du transfert à l'écran.
+
+### À venir — un onglet « Stock » dans la Supervision (Hugo, 2026-10-21 ; non conçu)
+
+« Il faudra sûrement un onglet stock vision sur Superviseur. » La Supervision
+du jour (`/supervision`) regarde, elle n'agit pas : un onglet **Stock** y
+montrerait, par point, le stock du jour (somme des reçus), les ruptures et
+stocks faibles déclarés, et les réassorts attendus, en route, arrivés et
+réceptionnés (ces deux derniers états viennent du signal de R3e). La table
+d'action reste dans Prod manager (R3d). À concevoir après R3e.
+
+### R1f — Une seule colonne de quantité au comptoir (Hugo, 2026-10-21 ; après R3d)
+
+« Pourquoi au plus tôt et pour demain sont sur la même page ? Ça nous encombre
+visuellement. » Les deux colonnes de R1e reprenaient la demande en cours (R1c),
+qui tient les deux visées — un choix de conception, pas une demande.
+
+- **Une seule colonne de quantité**, et un sélecteur **« Au plus tôt · Pour
+  demain »** au-dessus de la table, à côté des catégories.
+- **Position par défaut selon l'heure limite du réassort** (Hugo) : « Pour
+  demain » tant qu'elle n'est pas passée, « Au plus tôt » ensuite. Un clic
+  change de visée.
+- **Un seul « Envoyer »**, pour la visée affichée.
+- L'autre visée, si elle porte déjà des quantités, se signale sur le sélecteur
+  (« Pour demain (3) ») : la demande en cours garde les deux, rien ne se perd.
+- Aucun changement serveur.

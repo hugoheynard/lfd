@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { ResupplyArticleView } from "./resupply-receipt.js";
+
 /**
  * **Commander un réassort** — la demande d'un point de retrait au fournil
  * (lot R1 de `documentation/reassort-boutiques/plan-reapprovisionnement.md`,
@@ -184,4 +186,24 @@ export interface ResupplyDayToProduceView {
  */
 export interface ResuppliesToProduceView {
   readonly days: readonly ResupplyDayToProduceView[];
+}
+
+/**
+ * `GET /admin/site-resupplies/to-produce/:day` — l'onglet « Réassorts » de
+ * Prod manager (lot R3d, `reassort-boutiques/plan-reapprovisionnement.md`,
+ * Hugo 2026-10-21) : UNE journée, et ses réassorts pour demain MÊME figés.
+ *
+ * Là où `ResuppliesToProduceView` tait les réassorts figés (ils sont sur la
+ * feuille du fournil, R3a), celle-ci les montre et dit pourquoi ils ne
+ * bougent plus : `planStopped`.
+ */
+export interface ResupplyProductionDayView extends ResupplyDayToProduceView {
+  /**
+   * Le plan du fournil pour cette journée est arrêté : ses réassorts « pour
+   * demain » y sont figés (ni ajout, ni annulation). Les « au plus tôt » ne
+   * le sont jamais.
+   */
+  readonly planStopped: boolean;
+  /** Le catalogue publié de la boutique, sans prix : les lignes de la table et leurs familles. */
+  readonly articles: readonly ResupplyArticleView[];
 }

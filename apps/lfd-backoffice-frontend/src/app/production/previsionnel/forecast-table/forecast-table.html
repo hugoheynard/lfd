@@ -79,6 +79,13 @@
             >
               @if (cell.quantity > 0) {
                 <span class="pv-qty-value">{{ cell.quantity }}</span>
+                <!-- La part des réassorts, à part des commandes (lot R3d) : déjà
+                     comptée dans le chiffre, jamais en plus. -->
+                @if (cell.resupply > 0) {
+                  <span class="pv-resupply" data-forecast-resupply
+                    >dont {{ cell.resupply }} réassort</span
+                  >
+                }
                 @if (cell.exceptional) {
                   <span class="pv-exceptional" title="Bien au-delà de l’ordinaire pour ce produit"
                     >exceptionnel</span
@@ -121,6 +128,24 @@
           [attr.data-tone]="day.tone"
         >
           {{ day.totalUnits || '' }}
+        </div>
+      }
+    </div>
+
+    <!-- Les réassorts pour demain, en ligne à part (lot R3d, 2026-10-21) :
+         une part du total des pièces, jamais une commande. -->
+    <div class="pv-row pv-row--resupplies" foldSurface="chrome">
+      <div class="pv-cell pv-cell--label">
+        <span class="pv-col-label">dont réassorts</span>
+      </div>
+      @for (day of headers(); track day.date) {
+        <div
+          class="pv-cell pv-foot-resupplies"
+          [class.is-peak]="day.peak"
+          [attr.data-tone]="day.tone"
+          data-forecast-resupplies
+        >
+          {{ day.resupplyUnits || '' }}
         </div>
       }
     </div>

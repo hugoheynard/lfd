@@ -1,0 +1,11 @@
+<!-- La bande des onglets, au-dessus des vues : elle reste quand on change d'onglet. -->
+<header class="masthead" foldSurface="chrome">
+  <fold-view-nav
+    [items]="views()"
+    direction="horizontal"
+    size="compact"
+    activeStyle="fill"
+    background="transparent"
+  />
+</header>
+<router-outlet />

@@ -2,7 +2,11 @@ import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../platform/database/prisma.service.js";
 import { ProductionPlanReader } from "../domain/ports/production-plan.reader.js";
-import type { DayDemand } from "../domain/services/production-forecast.js";
+import type {
+  DayDemand,
+  DayResupplyDemand,
+  DemandItem,
+} from "../domain/services/production-forecast.js";
 import type { ServiceRange } from "../domain/value-objects/service-range.value-object.js";
 
 /**
@@ -45,6 +49,39 @@ export class PrismaProductionPlanReader extends ProductionPlanReader {
       items,
       orderCount: orders.get(day) ?? 0,
     }));
+  }
+
+  async arrestedResuppliesBetween(range: ServiceRange): Promise<readonly DayResupplyDemand[]> {
+    const lines = await this.prisma.productionResupplyLine.findMany({
+      where: {
+        resupply: {
+          serviceDay: { gte: range.from.value, lte: range.to.value },
+          day: { closedAt: { not: null } },
+        },
+      },
+      orderBy: [{ sku: "asc" }],
+      select: {
+        sku: true,
+        productName: true,
+        quantity: true,
+        resupply: { select: { serviceDay: true } },
+      },
+    });
+    const byDay = new Map<
+      string,
+      Map<string, { sku: string; productName: string; quantity: number }>
+    >();
+    for (const line of lines) {
+      const items = byDay.get(line.resupply.serviceDay) ?? new Map<string, DemandItem>();
+      const item = items.get(line.sku);
+      items.set(line.sku, {
+        sku: line.sku,
+        productName: item?.productName ?? line.productName,
+        quantity: (item?.quantity ?? 0) + line.quantity,
+      });
+      byDay.set(line.resupply.serviceDay, items);
+    }
+    return [...byDay.entries()].map(([day, items]) => ({ day, items: [...items.values()] }));
   }
 
   /** Le compte à produire, ligne par ligne. */

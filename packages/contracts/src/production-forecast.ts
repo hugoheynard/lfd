@@ -78,6 +78,12 @@ export interface ProductionForecastDay {
    */
   readonly orderCount: number;
   /**
+   * La part des **réassorts pour demain** dans `totalUnits` (lot R3d,
+   * 2026-10-21) — jamais en plus : figés au plan d'une journée close,
+   * envoyés pour une journée ouverte. `orderCount` n'en compte aucun.
+   */
+  readonly resupplyUnits: number;
+  /**
    * `true` = la journée est **close**, et sa colonne est le compte à produire
    * arrêté à la clôture — un fait, pas une prévision.
    *
@@ -111,6 +117,8 @@ export interface ProductionForecastLine {
   readonly productName: string;
   /** Même longueur que `days`, dans le même ordre. Un trou vaut `0`. */
   readonly quantities: readonly number[];
+  /** La part des réassorts dans `quantities`, jour par jour (lot R3d). */
+  readonly resupplyQuantities: readonly number[];
   /** Le poids du produit sur toute la plage — l'ordre de lecture d'un rayon. */
   readonly totalUnits: number;
 }

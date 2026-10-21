@@ -1,0 +1,157 @@
+<!-- La journée : on la déplace, on y revient. Demain est le service que le fournil prépare. -->
+<header class="rp-bar">
+  <div class="rp-said">
+    <p class="rp-eyebrow">Réassorts des points</p>
+    <h2 class="rp-title" data-resupply-day>{{ dayLabel() }}</h2>
+  </div>
+  <div class="rp-nav">
+    <button
+      foldButton
+      emphasis="outline"
+      size="sm"
+      [disabled]="atTomorrow()"
+      (click)="backToTomorrow()"
+    >
+      Demain
+    </button>
+    <fold-button-icon
+      icon="chevron-left"
+      size="sm"
+      tooltip="Journée précédente"
+      (clicked)="shift(-1)"
+    />
+    <fold-button-icon
+      icon="chevron-right"
+      size="sm"
+      tooltip="Journée suivante"
+      (clicked)="shift(1)"
+    />
+  </div>
+</header>
+
+<!-- Hors du @switch : la relecture après un envoi ne doit pas effacer la carte. -->
+@if (canSend()) {
+  <app-bakehouse-resupply-card (sent)="load()" />
+}
+
+@switch (state()) {
+  @case ('loading') {
+    <fold-loading message="Lecture des réassorts…" />
+  }
+  @case ('error') {
+    <fold-empty-state tone="alert" title="Impossible de lire les réassorts">
+      <button foldButton (click)="load()">Réessayer</button>
+    </fold-empty-state>
+  }
+  @default {
+    @if (planStopped()) {
+      <fold-callout variant="info" data-resupply-plan-stopped>
+        Le plan du {{ dayLabel() }} est arrêté : ses réassorts « pour demain » sont figés sur la
+        feuille du fournil.
+      </fold-callout>
+    }
+    @if (alertsLost()) {
+      <fold-callout variant="warning">
+        Les ruptures et stocks faibles des points n'ont pas pu être lus — la table est juste, sans
+        leurs marques.
+      </fold-callout>
+    }
+
+    <div class="rp-filters">
+      @if (categoryOptions().length > 1) {
+        <fold-view-toggle
+          data-resupply-categories
+          ariaLabel="Filtrer par famille"
+          size="sm"
+          [options]="categoryOptions()"
+          [value]="category()"
+          (valueChange)="category.set($event)"
+        />
+      }
+      <fold-search
+        placeholder="Chercher un produit"
+        ariaLabel="Chercher un produit"
+        [value]="query()"
+        (valueChange)="query.set($event)"
+        [resultCount]="visibleRows().length"
+        resultLabel="produits"
+      />
+    </div>
+
+    @if (points().length === 0) {
+      <fold-empty-state
+        icon="store"
+        title="Aucun réassort pour cette journée"
+        subtitle="Aucun point n'a demandé de réassort, et aucun ne signale de rupture."
+      />
+    } @else {
+      <div class="rp-scroll">
+        <table class="rp-table" data-resupply-production-table>
+          <caption class="sr">
+            Réassorts par produit et par point,
+            {{
+              dayLabel()
+            }}
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col" rowspan="2">Produit</th>
+              @for (point of points(); track point.siteId) {
+                <th
+                  scope="colgroup"
+                  colspan="2"
+                  class="rp-point"
+                  [attr.data-resupply-point]="point.siteId"
+                >
+                  {{ point.label }}
+                </th>
+              }
+              <th scope="col" rowspan="2" class="num">Total</th>
+            </tr>
+            <tr>
+              @for (point of points(); track point.siteId) {
+                <th scope="col" class="num" [class.rp-frozen]="planStopped()">
+                  {{ tomorrowLabel() }}
+                </th>
+                <th scope="col" class="num">Au plus tôt</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of visibleRows(); track row.sku) {
+              <tr
+                [attr.data-resupply-row]="row.sku"
+                [class.out]="row.alert === 'out_of_stock'"
+                [class.low]="row.alert === 'low'"
+              >
+                <td>
+                  {{ row.name }}
+                  <span class="muted">{{ row.sku }}</span>
+                </td>
+                @for (cell of row.cells; track $index) {
+                  <td class="num">
+                    @if (cell.alert === 'out_of_stock') {
+                      <span class="rp-mark rp-mark--out" data-resupply-alert>Rupture</span>
+                    } @else if (cell.alert === 'low') {
+                      <span class="rp-mark rp-mark--low" data-resupply-alert>Faible</span>
+                    }
+                    {{ cell.tomorrow || '' }}
+                  </td>
+                  <td class="num">{{ cell.asap || '' }}</td>
+                }
+                <td class="num rp-total" data-resupply-total>{{ row.total || '' }}</td>
+              </tr>
+            }
+          </tbody>
+          <tfoot>
+            <tr>
+              <th scope="row">Total pièces</th>
+              <td [attr.colspan]="points().length * 2"></td>
+              <td class="num rp-total" data-resupply-pieces>{{ pieces() }}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    }
+  }
+}

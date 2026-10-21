@@ -221,9 +221,15 @@ export class App {
     this.permissions.can('b2b_supervision:read'),
   );
 
-  /** Prod manager — le prévisionnel, au premier niveau (2026-10-10), sous le plan du soir. */
-  protected readonly canSeeProdManager = computed(() =>
-    this.permissions.can('production_plan:read'),
+  /**
+   * Prod manager — le prévisionnel, au premier niveau (2026-10-10), et depuis
+   * le lot R3d (2026-10-21) son onglet « Réassorts », qui a gardé le droit de
+   * l'ancienne entrée : la fournée OU le prévisionnel.
+   */
+  protected readonly canSeeProdManager = computed(
+    () =>
+      this.permissions.can('production_plan:read') ||
+      this.permissions.can('production_worksheet:read'),
   );
 
   /** Tour manager — l'organisation des tournées, au premier niveau (2026-10-10). */
@@ -234,16 +240,6 @@ export class App {
   /** Le Fournil — la fournée du jour, poste à part (2026-10-06), sous son seul droit. */
   protected readonly canSeeBakehouse = computed(() =>
     this.permissions.can('production_worksheet:read'),
-  );
-
-  /**
-   * Réassorts à produire (lot R1, 2026-10-21) — sous le Fournil, à qui tient
-   * la fournée ou le prévisionnel : le même droit que sa route serveur.
-   */
-  protected readonly canSeeResuppliesToProduce = computed(
-    () =>
-      this.permissions.can('production_worksheet:read') ||
-      this.permissions.can('production_plan:read'),
   );
 
   /** Le Colisage — un poste à part (2026-10-04), sous son seul droit. */
@@ -286,7 +282,6 @@ export class App {
       this.canSeeProdManager() ||
       this.canSeeTourManager() ||
       this.canSeeBakehouse() ||
-      this.canSeeResuppliesToProduce() ||
       this.canSeePacking() ||
       this.canSeeCounter() ||
       this.canSeeCourier(),

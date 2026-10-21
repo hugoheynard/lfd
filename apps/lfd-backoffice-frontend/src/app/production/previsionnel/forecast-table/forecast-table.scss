@@ -112,6 +112,7 @@
 }
 
 .pv-row--total,
+.pv-row--resupplies,
 .pv-row--orders {
   background: var(--fold-color-bg-rail-primary);
 }
@@ -197,6 +198,7 @@
 .pv-qty.is-peak,
 .pv-rayon-sum.is-peak,
 .pv-foot-total.is-peak,
+.pv-foot-resupplies.is-peak,
 .pv-foot-orders.is-peak {
   background: var(--fold-color-warning-surface);
 }
@@ -303,10 +305,12 @@
 }
 
 .pv-row--total .pv-cell,
+.pv-row--resupplies .pv-cell,
 .pv-row--orders .pv-cell {
   padding-block: var(--fold-space-xs);
 }
 
+.pv-foot-resupplies,
 .pv-foot-orders {
   font-family: var(--fold-font-mono);
   font-size: var(--fold-text-xs);
@@ -345,6 +349,7 @@
 .pv-qty,
 .pv-rayon-sum,
 .pv-foot-total,
+.pv-foot-resupplies,
 .pv-foot-orders {
   align-self: stretch;
   display: flex;
@@ -464,4 +469,18 @@
 .pv-day[data-tone='overdue'],
 .pv-foot-total[data-tone='overdue'] {
   border-bottom-color: var(--fold-color-alert);
+}
+
+/* La part des réassorts dans une case (lot R3d) : une teinte à part des
+   commandes, sous le chiffre qu'elle compose — jamais un second chiffre. */
+.pv-resupply {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xs);
+  color: var(--fold-color-info-text);
+}
+
+.pv-foot-resupplies {
+  color: var(--fold-color-info-text);
 }

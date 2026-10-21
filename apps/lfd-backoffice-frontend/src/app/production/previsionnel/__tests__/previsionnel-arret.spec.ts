@@ -58,6 +58,7 @@ function day(
     date,
     totalUnits: 120,
     orderCount: options.orderCount ?? 4,
+    resupplyUnits: 0,
     closed: options.closed ?? false,
     state: options.closed === true ? 'closed' : 'open',
     // Sans heure limite posée par défaut : rien n'arrête le plan seul, le bouton reste ouvert.

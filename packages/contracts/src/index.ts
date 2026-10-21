@@ -2428,6 +2428,7 @@ export type {
   PlaceSiteResupplyPayload,
   ResuppliesToProduceView,
   ResupplyDayToProduceView,
+  ResupplyProductionDayView,
   ResupplyOrigin,
   ResupplySiteToProduceView,
   ResupplyTarget,

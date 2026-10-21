@@ -24,6 +24,7 @@ function header(over: Partial<ForecastHeader> = {}): ForecastHeader {
     offset: 'aujourd’hui',
     totalUnits: 100,
     orderCount: 4,
+    resupplyUnits: 0,
     closed: true,
     today: true,
     peak: false,
@@ -41,6 +42,7 @@ const HEADERS: readonly ForecastHeader[] = [
     offset: 'J+1',
     totalUnits: 60,
     orderCount: 2,
+    resupplyUnits: 0,
     closed: false,
     today: false,
     peak: true,
@@ -61,8 +63,8 @@ const RAYONS: readonly ForecastRayon[] = [
         sku: 'VIE-001',
         productName: 'Croissant',
         cells: [
-          { quantity: 100, exceptional: false },
-          { quantity: 0, exceptional: false },
+          { quantity: 100, exceptional: false, resupply: 0 },
+          { quantity: 0, exceptional: false, resupply: 0 },
         ],
         totalUnits: 100,
       },
@@ -70,8 +72,8 @@ const RAYONS: readonly ForecastRayon[] = [
         sku: 'VIE-002',
         productName: 'Pain au chocolat',
         cells: [
-          { quantity: 0, exceptional: false },
-          { quantity: 60, exceptional: false },
+          { quantity: 0, exceptional: false, resupply: 0 },
+          { quantity: 60, exceptional: false, resupply: 0 },
         ],
         totalUnits: 60,
       },
@@ -92,8 +94,8 @@ describe('ForecastTable', () => {
     const fixture = mount();
     const rows = fixture.nativeElement.querySelectorAll('.pv-row');
 
-    // tête + rayon + deux produits + deux pieds
-    expect(rows).toHaveLength(6);
+    // tête + rayon + deux produits + trois pieds (pièces, dont réassorts, commandes — R3d)
+    expect(rows).toHaveLength(7);
     for (const row of rows) {
       expect(row.querySelectorAll('.pv-cell')).toHaveLength(HEADERS.length + 1);
     }
@@ -106,6 +108,36 @@ describe('ForecastTable', () => {
     );
 
     expect(cells).toEqual(['100', '', '', '60']);
+  });
+
+  it('dit la part des réassorts dans la case et au pied, sans la rajouter (R3d)', () => {
+    const fixture = TestBed.createComponent(ForecastTable);
+    fixture.componentRef.setInput(
+      'headers',
+      HEADERS.map((head, index) => ({ ...head, resupplyUnits: index === 0 ? 8 : 0 })),
+    );
+    fixture.componentRef.setInput(
+      'rayons',
+      RAYONS.map((rayon) => ({
+        ...rayon,
+        lines: rayon.lines.map((line, index) => ({
+          ...line,
+          cells: line.cells.map((cell, column) => ({
+            ...cell,
+            resupply: index === 0 && column === 0 ? 8 : 0,
+          })),
+        })),
+      })),
+    );
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(el.querySelector('[data-forecast-resupply]')?.textContent).toContain('dont 8 réassort');
+    expect(el.querySelectorAll('[data-forecast-resupply]')).toHaveLength(1);
+    const foot = [...el.querySelectorAll('[data-forecast-resupplies]')].map((cell) =>
+      cell.textContent?.trim(),
+    );
+    expect(foot).toEqual(['8', '']);
   });
 
   it('replie un rayon, et le dit', () => {
@@ -159,16 +191,17 @@ describe('ForecastTable', () => {
     fixture.detectChanges();
     const el: HTMLElement = fixture.nativeElement;
 
-    // tête + rayon + deux produits + deux pieds = six cellules par colonne
-    expect(el.querySelectorAll('[data-tone="overdue"]')).toHaveLength(6);
-    expect(el.querySelectorAll('[data-tone="closedDay"]')).toHaveLength(6);
+    // tête + rayon + deux produits + trois pieds = sept cellules par colonne
+    // (le pied « dont réassorts » porte le repère de colonne, R3d)
+    expect(el.querySelectorAll('[data-tone="overdue"]')).toHaveLength(7);
+    expect(el.querySelectorAll('[data-tone="closedDay"]')).toHaveLength(7);
     const labels = [...el.querySelectorAll('.pv-day-state')].map((n) => n.textContent?.trim());
     expect(labels).toEqual(['Plan non arrêté', 'Fournil fermé']);
   });
 
   it('ne pose aucune surcouche sur une colonne sans ton', () => {
     const fixture = mount();
-    expect(fixture.nativeElement.querySelectorAll('[data-tone="current"]')).toHaveLength(6);
-    expect(fixture.nativeElement.querySelectorAll('[data-tone]')).toHaveLength(6);
+    expect(fixture.nativeElement.querySelectorAll('[data-tone="current"]')).toHaveLength(7);
+    expect(fixture.nativeElement.querySelectorAll('[data-tone]')).toHaveLength(7);
   });
 });

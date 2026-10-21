@@ -4,8 +4,9 @@
 > (commit `558b376c8`), et se fait en **un geste par réassort** depuis le lot
 > R2 (2026-10-21) ; la **commande** au fournil aussi (lot R1, 2026-10-21),
 > et elle entre au plan figé (R3a), au colisage (R3b) et au transfert du point
-> (R3c, 2026-10-21) ; les écrans du fournil, du colisage et du manifeste
-> restent à faire (R3d). Les **ruptures et stocks faibles** du
+> (R3c, 2026-10-21) ; Prod manager montre les réassorts dans un onglet et les
+> compte au prévisionnel (R3d, 2026-10-21) ; la feuille, le poste du colisage
+> et le manifeste à l'écran restent à faire (fin de R3d). Les **ruptures et stocks faibles** du
 > comptoir aussi (lot R1b, 2026-10-21), sans effet encore sur la boutique. La
 > **demande en cours** est enregistrée depuis le lot R1c (2026-10-21). Le
 > **fournil envoie ses propres réassorts**, à part, depuis le lot R1d
@@ -84,6 +85,8 @@ flowchart LR
   réception, qui n'a pas changé ; au fournil, **Réassorts à produire**
   (`production/reassorts-a-produire/`, route `/reassorts-a-produire`, au rail
   et aux tuiles sous le Fournil), en lecture, distinct des commandes client.
+  Depuis R3d, c'est l'onglet « Réassorts » de Prod manager (section dédiée
+  plus bas) ; l'ancienne adresse y redirige.
 - **Pourquoi pas de canal du fournil en R1** : l'écran du fournil lit la route
   du commerce depuis le navigateur ; aucun bloc serveur ne traverse
   (`production → b2b` reste interdit). Le canal viendra quand le réassort
@@ -181,8 +184,8 @@ flowchart LR
 - **Les écrans** : au comptoir, la carte « Ruptures et stocks faibles » en
   tête de la page Réassort (`comptoir/reassort-boutique-page/stock-alerts-card/`),
   et les gestes sur chaque ligne reçue ; au fournil, « Alertes des points » en
-  tête de « Réassorts à produire »
-  (`production/reassorts-a-produire/live-stock-alerts-card/`), **pour
+  tête de « Réassorts à produire » (depuis R3d : en marque sur les lignes de
+  l'onglet Réassorts de Prod manager), **pour
   information** depuis le lot R1d : le bouton « Lancer un réassort au plus
   tôt », qui envoyait la demande du comptoir, est retiré. Pour répondre, le
   fournil envoie son propre réassort (section suivante).
@@ -369,7 +372,38 @@ flowchart LR
   le point sur place, puis le surplus au colisage). Une demande de retour ne
   porte que ce qui a été remis.
 
+## Ce qui est bâti : les réassorts dans Prod manager (lot R3d, 2026-10-21)
+
+```mermaid
+flowchart LR
+  S["SiteResupply<br/>pour demain · au plus tôt"] -->|"GET to-produce/:day"| T["Prod manager › Réassorts<br/>produit × point · figé ou envoyé"]
+  S -->|"ExpectedResuppliesReader<br/>(journée ouverte)"| F["Prod manager › Prévisionnel<br/>« dont N réassort »"]
+  Z["production_resupply<br/>(figé à l'arrêt)"] -->|"journée close"| F
+```
+
+- **Prod manager est un espace à onglets**, comme le comptoir :
+  `/prod-manager/previsionnel` (`production_plan:read`) et
+  `/prod-manager/reassorts` (fournée OU prévisionnel), le premier permis à
+  l'ouverture (`apps/lfd-backoffice-frontend/src/app/production/prod-manager/`).
+  `/reassorts-a-produire` y redirige ; l'entrée « Réassorts » du menu est
+  retirée.
+- **L'onglet Réassorts** : la table de la demande du comptoir vue du fournil —
+  une ligne par produit, une colonne par point (« pour demain · envoyé » ou
+  « · figé », « au plus tôt »), ruptures et stocks faibles en marque, total par
+  produit ; la journée dans l'URL, demain par défaut ; « Envoyer un
+  réassort » en tête. Route `GET admin/site-resupplies/to-produce/:day`, qui
+  montre les « pour demain » figés avec `planStopped`.
+- **Le prévisionnel** compte les réassorts pour demain à part : envoyés pour
+  une journée ouverte (ajoutés), figés pour une journée close (déjà dans le
+  compte, seule la part est dite) — `resupplyUnits`, `resupplyQuantities`.
+  Le compte de commandes n'en dit rien.
+
 ## Ce qui reste
+
+- **Fin de R3d** : la section « Réassorts » de la feuille de production
+  (écran et PDF du dossier), les fiches de réassort au poste du colisage
+  (routes R3b : `GET admin/packing/:date/resupplies`, `PUT …/lines/:sku`,
+  `POST …/close`), le réassort dans le manifeste du transfert à l'écran.
 
 - **La course annuler / réceptionner** : l'annulation lit la réception puis
   écrit le réassort ; « Réceptionner » ne touche pas la version du réassort.

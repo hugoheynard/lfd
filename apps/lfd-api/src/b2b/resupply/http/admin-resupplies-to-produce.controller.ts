@@ -1,11 +1,17 @@
-import type { ResuppliesToProduceView } from "@lfd/contracts";
-import { Controller, Get } from "@nestjs/common";
+import {
+  type ResuppliesToProduceView,
+  type ResupplyProductionDayView,
+  resupplyServiceDaySchema,
+} from "@lfd/contracts";
+import { Controller, Get, Param } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
 
 import {
   AdminSurface,
   RequireAnyPermission,
 } from "../../../platform/auth/admin-surface.decorator.js";
+import { ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
+import { GetResupplyProductionDayQuery } from "../application/get-resupply-production-day.query.js";
 import { ListResuppliesToProduceQuery } from "../application/list-resupplies-to-produce.query.js";
 
 /**
@@ -27,6 +33,20 @@ export class AdminResuppliesToProduceController {
   list(): Promise<ResuppliesToProduceView> {
     return this.queries.execute<ListResuppliesToProduceQuery, ResuppliesToProduceView>(
       new ListResuppliesToProduceQuery(),
+    );
+  }
+
+  /**
+   * Une journée, réassorts figés compris : l'onglet « Réassorts » de Prod
+   * manager (lot R3d, 2026-10-21). Sous les mêmes droits.
+   */
+  @Get(":day")
+  @RequireAnyPermission("production_worksheet:read", "production_plan:read")
+  day(
+    @Param("day", new ZodQuery(resupplyServiceDaySchema)) day: string,
+  ): Promise<ResupplyProductionDayView> {
+    return this.queries.execute<GetResupplyProductionDayQuery, ResupplyProductionDayView>(
+      new GetResupplyProductionDayQuery(day),
     );
   }
 }

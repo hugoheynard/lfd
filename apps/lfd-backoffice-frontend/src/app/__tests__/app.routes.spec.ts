@@ -6,6 +6,7 @@ import { routes } from '../app.routes';
 import { legacyLegalMentionRedirect } from '../b2b/b2b.routes';
 import { LEGAL_MENTION_SLUGS } from '../reglages/legal-mention-slugs';
 import { comptoirLanding } from '../comptoir/comptoir-landing';
+import { prodManagerLanding } from '../production/prod-manager/prod-manager-views';
 import type { AnyPermissionGuard, PermissionGuard } from '../auth/permission.guard';
 
 /**
@@ -282,9 +283,11 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   production: OPEN,
   // LE FOURNIL, sorti de la Production le 2026-10-06, sous la fiche d'atelier.
   fournil: 'production_worksheet:read',
-  'prod-manager': 'production_plan:read',
-  // Les réassorts à produire (lot R1, 2026-10-21) : la fournée OU le prévisionnel.
-  'reassorts-a-produire': { anyOf: ['production_worksheet:read', 'production_plan:read'] },
+  // UN ESPACE depuis le lot R3d (2026-10-21) : coquille ouverte, onglets gardés.
+  'prod-manager': OPEN,
+  'prod-manager/previsionnel': 'production_plan:read',
+  // Les réassorts (ancien « Réassorts à produire », lot R1) : la fournée OU le prévisionnel.
+  'prod-manager/reassorts': { anyOf: ['production_worksheet:read', 'production_plan:read'] },
   // Partis en Réglages › Production le 2026-10-13 (Hugo).
   'reglages/production/fournil': 'production_settings:read',
   // LE COMPTOIR non plus : la file de retrait (`handover_counter`) et la
@@ -744,7 +747,7 @@ describe("l'arbre de routes du back-office", () => {
     expect(moved).toEqual([
       ['', '/prod-manager'],
       ['journee', '/fournil'],
-      ['previsionnel', '/prod-manager'],
+      ['previsionnel', '/prod-manager/previsionnel'],
       // Partis en Réglages › Production le 2026-10-13.
       ['reglages', '/reglages/production/fournil'],
       ['colisage', '/colisage'],
@@ -786,6 +789,14 @@ describe("l'arbre de routes du back-office", () => {
     const supervision = routes.find((route) => route.path === 'supervision');
 
     expect(supervision && declaredPermission(supervision)).toEqual(['b2b_supervision:read']);
+  });
+
+  it('ouvre Prod manager sur le premier onglet permis, et y mène les anciennes adresses (R3d)', () => {
+    const prodManager = routes.find((route) => route.path === 'prod-manager');
+    const root = prodManager?.children?.find((child) => child.path === '');
+    expect(root?.redirectTo).toBe(prodManagerLanding);
+    const legacy = routes.find((route) => route.path === 'reassorts-a-produire');
+    expect(legacy?.redirectTo).toBe('/prod-manager/reassorts');
   });
 
   it('ouvre le comptoir sur le premier onglet permis', () => {

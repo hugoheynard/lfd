@@ -246,6 +246,7 @@ describe("le prévisionnel du fournil", () => {
     expect(before.days[0]).toEqual({
       date: DAY_1,
       totalUnits: 6,
+      resupplyUnits: 0,
       orderCount: 1,
       closed: false,
       state: "open",
@@ -259,6 +260,7 @@ describe("le prévisionnel du fournil", () => {
     expect(after.days[0]).toEqual({
       date: DAY_1,
       totalUnits: 6,
+      resupplyUnits: 0,
       orderCount: 1,
       closed: true,
       state: "closed",

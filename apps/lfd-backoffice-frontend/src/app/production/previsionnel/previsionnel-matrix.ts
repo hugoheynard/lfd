@@ -62,6 +62,8 @@ export interface ForecastCell {
   readonly quantity: number;
   /** `true` = plus de deux fois la moyenne du produit sur ses jours actifs. */
   readonly exceptional: boolean;
+  /** La part des réassorts dans `quantity` (lot R3d) — jamais en plus. */
+  readonly resupply: number;
 }
 
 /** Une ligne de la grille : un produit, et ce qu'il pèse chaque jour. */
@@ -157,6 +159,7 @@ function productOf(
       const quantity = line.quantities[column] ?? 0;
       return {
         quantity,
+        resupply: line.resupplyQuantities[column] ?? 0,
         // Deux silences, et le second a été trouvé en REGARDANT la grille :
         //
         // - un produit qui ne sort qu'un jour n'a rien d'exceptionnel : sa

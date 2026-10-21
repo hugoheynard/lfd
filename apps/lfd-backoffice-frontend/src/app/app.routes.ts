@@ -3,6 +3,7 @@ import { NEW_VERSION_BANNER } from '@lfd/front-ops';
 
 import { anyPermissionGuard, permissionGuard } from './auth/permission.guard';
 import { comptoirLanding } from './comptoir/comptoir-landing';
+import { prodManagerLanding } from './production/prod-manager/prod-manager-views';
 import {
   ORDER_ENTRY_ORIGIN_KEY,
   type OrderEntryOrigin,
@@ -604,11 +605,36 @@ export const routes: Routes = [
   // pour une entrée de premier niveau, juste au-dessus du Fournil — on regarde
   // ce qui tombe avant de lancer la fournée. L'ancienne adresse redirige.
   {
+    // Un ESPACE depuis le lot R3d (2026-10-21, Hugo : « comme le comptoir ») :
+    // deux onglets, une route chacun, sous son propre droit. La coquille n'est
+    // pas gardée — « Réassorts » s'ouvre aussi à la seule fournée.
     path: 'prod-manager',
-    canActivate: [permissionGuard('production_plan:read')],
-    title: 'Prod manager — LFC B2B admin',
     loadComponent: () =>
-      import('./production/previsionnel/previsionnel-page').then((m) => m.PrevisionnelPage),
+      import('./production/prod-manager/prod-manager-workspace-page').then(
+        (m) => m.ProdManagerWorkspacePage,
+      ),
+    children: [
+      // Le premier onglet PERMIS, dans l'ordre de `PROD_MANAGER_VIEWS`.
+      { path: '', pathMatch: 'full', redirectTo: prodManagerLanding },
+      {
+        path: 'previsionnel',
+        canActivate: [permissionGuard('production_plan:read')],
+        title: 'Prod manager — LFC B2B admin',
+        loadComponent: () =>
+          import('./production/previsionnel/previsionnel-page').then((m) => m.PrevisionnelPage),
+      },
+      {
+        // L'ancien écran « Réassorts à produire » (lot R1), en table : la
+        // fournée OU le prévisionnel, le droit de sa route serveur.
+        path: 'reassorts',
+        canActivate: [anyPermissionGuard('production_worksheet:read', 'production_plan:read')],
+        title: 'Réassorts — Prod manager — LFC B2B admin',
+        loadComponent: () =>
+          import('./production/reassorts-a-produire/resupply-production-tab/resupply-production-tab').then(
+            (m) => m.ResupplyProductionTab,
+          ),
+      },
+    ],
   },
   // TOUR MANAGER (Hugo, 2026-10-10) : l'organisation des tournées sort de la
   // Livraison pour une entrée de premier niveau, sous Prod manager.
@@ -629,17 +655,13 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./production/fiche-atelier/fiche-atelier').then((m) => m.FicheAtelier),
   },
-  // RÉASSORTS À PRODUIRE (lot R1, `reassort-boutiques/plan-reapprovisionnement.md`
-  // §12, 2026-10-21) : ce que les points ont commandé pour leur vitrine, en
-  // lecture, sous le Fournil — sous la fournée ou le prévisionnel, comme la route.
+  // RÉASSORTS À PRODUIRE (lot R1) n'est plus une entrée : c'est l'onglet
+  // « Réassorts » de Prod manager depuis le lot R3d (2026-10-21, Hugo :
+  // « n'a pas de sens en autonome »). L'ancienne adresse y mène.
   {
     path: 'reassorts-a-produire',
-    canActivate: [anyPermissionGuard('production_worksheet:read', 'production_plan:read')],
-    title: 'Réassorts à produire — LFC B2B admin',
-    loadComponent: () =>
-      import('./production/reassorts-a-produire/resupplies-to-produce-page').then(
-        (m) => m.ResuppliesToProducePage,
-      ),
+    pathMatch: 'full',
+    redirectTo: '/prod-manager/reassorts',
   },
   // CHARGER MA TOURNÉE : le chargement du livreur a sa propre adresse, sous
   // le même droit — un rechargement le rouvre.
@@ -927,7 +949,7 @@ export const routes: Routes = [
       // colisage : l'ancienne adresse est le favori des postes de labo.
       { path: 'journee', pathMatch: 'full', redirectTo: '/fournil' },
       // Devenu « Prod manager », au premier niveau (2026-10-10) : favori.
-      { path: 'previsionnel', pathMatch: 'full', redirectTo: '/prod-manager' },
+      { path: 'previsionnel', pathMatch: 'full', redirectTo: '/prod-manager/previsionnel' },
       // Les réglages du fournil sont partis en Réglages › Production le
       // 2026-10-13 (Hugo) : l'ancienne adresse est un favori.
       { path: 'reglages', pathMatch: 'full', redirectTo: '/reglages/production/fournil' },

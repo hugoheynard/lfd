@@ -1,0 +1,132 @@
+/* En flux, comme le dossier du jour : l'onglet défile avec la coquille, et
+   prend les gouttières de la page. */
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+  padding-inline: var(--fold-page-gutter);
+  padding-block: var(--fold-space-lg) var(--fold-space-3xl);
+}
+
+.rp-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+}
+
+.rp-eyebrow {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-semibold);
+  letter-spacing: var(--fold-tracking-wide);
+  text-transform: uppercase;
+}
+
+.rp-title {
+  margin: 0;
+  font-size: var(--fold-text-xl);
+  font-weight: var(--fold-weight-semibold);
+}
+
+.rp-nav,
+.rp-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+/* Une colonne par point : la table défile de côté plutôt que d'écraser ses chiffres. */
+.rp-scroll {
+  overflow-x: auto;
+}
+
+.rp-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.rp-table th {
+  padding: 0 var(--fold-space-xs) var(--fold-space-xs);
+  border-bottom: 1px solid var(--fold-color-border);
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-semibold);
+  letter-spacing: var(--fold-tracking-wide);
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.rp-table td {
+  padding: var(--fold-space-xs);
+  border-bottom: 1px solid var(--fold-color-border-subtle);
+  font-size: var(--fold-text-sm);
+  vertical-align: middle;
+}
+
+.rp-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.rp-table .rp-point {
+  text-align: center;
+  color: var(--fold-color-text);
+}
+
+/* Un « pour demain » figé se dit dans son en-tête : il ne bouge plus. */
+.rp-table .rp-frozen {
+  color: var(--fold-color-info-text);
+}
+
+.rp-total {
+  font-weight: var(--fold-weight-semibold);
+}
+
+.rp-table tfoot th,
+.rp-table tfoot td {
+  padding-top: var(--fold-space-sm);
+  border-bottom: 0;
+}
+
+/* Une rupture en rouge, un stock faible en orange, comme au comptoir (R1e). */
+.rp-table tr.out td {
+  background: var(--fold-color-alert-surface);
+}
+
+.rp-table tr.low td {
+  background: var(--fold-color-warning-surface);
+}
+
+.rp-mark {
+  margin-inline-end: var(--fold-space-xs);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-semibold);
+  text-transform: uppercase;
+}
+
+.rp-mark--out {
+  color: var(--fold-color-alert-text);
+}
+
+.rp-mark--low {
+  color: var(--fold-color-warning-text);
+}
+
+.muted {
+  display: block;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-2xs);
+}
+
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

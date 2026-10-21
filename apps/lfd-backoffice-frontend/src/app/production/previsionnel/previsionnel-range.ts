@@ -35,6 +35,8 @@ export interface ForecastHeader {
   readonly totalUnits: number;
   /** En combien de commandes ces pièces se répartissent — le pied de la table. */
   readonly orderCount: number;
+  /** La part des réassorts pour demain dans `totalUnits` (lot R3d). */
+  readonly resupplyUnits: number;
   /** La journée est arrêtée : son chiffre est un fait, pas une prévision. */
   readonly closed: boolean;
   readonly today: boolean;
@@ -134,6 +136,7 @@ export function forecastHeaders(
       offset: offsetLabel(today, day.date),
       totalUnits: day.totalUnits,
       orderCount: day.orderCount,
+      resupplyUnits: day.resupplyUnits,
       closed: day.closed,
       today: day.date === today,
       peak: day.date === peakDate,

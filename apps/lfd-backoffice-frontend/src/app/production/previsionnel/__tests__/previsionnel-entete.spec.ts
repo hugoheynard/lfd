@@ -22,7 +22,15 @@ function dayIn(offset: number): string {
 }
 
 function openDay(date: string): ProductionForecastView['days'][number] {
-  return { date, totalUnits: 120, orderCount: 4, closed: false, state: 'open', closesAt: null };
+  return {
+    date,
+    totalUnits: 120,
+    orderCount: 4,
+    resupplyUnits: 0,
+    closed: false,
+    state: 'open',
+    closesAt: null,
+  };
 }
 
 const FORECAST: ProductionForecastView = {

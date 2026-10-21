@@ -1,15 +1,13 @@
-import type { ResuppliesToProduceView, ResupplyDayToProduceView } from "@lfd/contracts";
+import type { ResuppliesToProduceView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../platform/time/clock.js";
 import { ClosedPlansReader } from "../../../production/channels/commerce/index.js";
 import { ResupplySiteLabels } from "../domain/resupply-site-labels.js";
-import { resupplyTotals } from "../domain/resupply-totals.js";
-import type { PlacedSiteResupplySnapshot } from "../domain/site-resupply.js";
 import { SiteResupplyReader } from "../domain/site-resupply.reader.js";
 import { ListResuppliesToProduceQuery } from "./list-resupplies-to-produce.query.js";
+import { resupplyDayView } from "./resupply-day-view.js";
 import { resupplyDays } from "./resupply-days.js";
-import { siteResupplyView } from "./site-resupply-view.js";
 
 /**
  * Sert l'écran du fournil « Réassorts à produire », EN LECTURE : par journée
@@ -42,7 +40,7 @@ export class ListResuppliesToProduceHandler implements IQueryHandler<
     const labels = await this.sites.labelsOf([...new Set(placed.map((r) => r.siteId))]);
     return {
       days: [today, tomorrow].map((day) =>
-        dayView(
+        resupplyDayView(
           day,
           placed.filter((resupply) => resupply.serviceDay === day),
           labels,
@@ -50,21 +48,4 @@ export class ListResuppliesToProduceHandler implements IQueryHandler<
       ),
     };
   }
-}
-
-function dayView(
-  serviceDay: string,
-  resupplies: readonly PlacedSiteResupplySnapshot[],
-  labels: ReadonlyMap<string, string>,
-): ResupplyDayToProduceView {
-  const siteIds = [...new Set(resupplies.map((resupply) => resupply.siteId))];
-  return {
-    serviceDay,
-    sites: siteIds.map((siteId) => ({
-      siteId,
-      siteLabel: labels.get(siteId) ?? null,
-      resupplies: resupplies.filter((r) => r.siteId === siteId).map(siteResupplyView),
-    })),
-    totals: resupplyTotals(resupplies.map((resupply) => resupply.lines)),
-  };
 }

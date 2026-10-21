@@ -11,7 +11,12 @@
  * L'horloge est gelée la VEILLE de la journée servie (`SERVICE_DAY`, dans une
  * semaine) : les heures se comparent à elle seule, jamais au calendrier.
  */
-import type { ResupplyArticleView, ResuppliesToProduceView } from "@lfd/contracts";
+import type {
+  ProductionForecastView,
+  ResupplyArticleView,
+  ResuppliesToProduceView,
+  ResupplyProductionDayView,
+} from "@lfd/contracts";
 import { addDays, localToInstant } from "@lfd/contracts";
 
 import { Clock } from "../src/platform/time/clock.js";
@@ -229,5 +234,48 @@ describe("le réassort au plan figé (R3a)", () => {
       expect(cancelled.status).toBe(409);
       expect([row.cancelledAt, inPlan]).toEqual([null, true]);
     }
+  });
+});
+
+describe("Prod manager voit les réassorts (R3d)", () => {
+  async function forecastDay() {
+    const view = jsonBody<ProductionForecastView>(
+      await ctx
+        .asSub(STAFF)
+        .get(`/admin/production/forecast?from=${SERVICE_DAY}&to=${SERVICE_DAY}`)
+        .expect(200),
+    );
+    return view.days[0];
+  }
+
+  it("le prévisionnel compte le réassort envoyé à part, puis le figé ; l'onglet le montre figé", async () => {
+    await place(ctx, issued, [{ sku: CROISSANT, quantity: 4 }]);
+    await twoHours();
+    clock.set(at("19:00"));
+    const { id } = await sendTomorrow(6);
+
+    expect(await forecastDay()).toMatchObject({ totalUnits: 10, resupplyUnits: 6, orderCount: 1 });
+
+    clock.set(at("20:00"));
+    expect(await tour()).toBe("closed");
+
+    expect(await forecastDay()).toMatchObject({
+      closed: true,
+      totalUnits: 10,
+      resupplyUnits: 6,
+      orderCount: 1,
+    });
+    const day = jsonBody<ResupplyProductionDayView>(
+      await ctx.asSub(STAFF).get(`/admin/site-resupplies/to-produce/${SERVICE_DAY}`).expect(200),
+    );
+    expect(day.planStopped).toBe(true);
+    expect(day.sites.flatMap((site) => site.resupplies.map((resupply) => resupply.id))).toEqual([
+      id,
+    ]);
+    expect(day.articles.length).toBeGreaterThan(0);
+  });
+
+  it("refuse une journée mal formée (400)", async () => {
+    await ctx.asSub(STAFF).get("/admin/site-resupplies/to-produce/demain").expect(400);
   });
 });

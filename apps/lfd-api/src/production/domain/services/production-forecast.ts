@@ -40,10 +40,32 @@ export interface DayDemand {
   readonly orderCount: number;
 }
 
+/** Les réassorts « pour demain » d'une journée, article par article. */
+export interface DayResupplyDemand {
+  /** `AAAA-MM-JJ`. */
+  readonly day: string;
+  readonly items: readonly DemandItem[];
+}
+
+/**
+ * Les réassorts de la plage, par source (lot R3d, 2026-10-21) : `arrested`
+ * sont les réassorts FIGÉS à l'arrêt — déjà comptés dans le compte à
+ * produire, la matrice n'en tire que la part ; `expected` sont ceux d'une
+ * journée encore ouverte, que la matrice ajoute à la demande.
+ */
+export interface ForecastResupplies {
+  readonly arrested: readonly DayResupplyDemand[];
+  readonly expected: readonly DayResupplyDemand[];
+}
+
+const NO_RESUPPLIES: ForecastResupplies = { arrested: [], expected: [] };
+
 /** Une colonne de la matrice. */
 export interface ForecastColumn {
   readonly date: string;
   readonly totalUnits: number;
+  /** La part des réassorts dans `totalUnits` — jamais en plus. */
+  readonly resupplyUnits: number;
   readonly orderCount: number;
   readonly closed: boolean;
 }
@@ -54,6 +76,8 @@ export interface ForecastRow {
   readonly productName: string;
   /** Même longueur que les colonnes, dans le même ordre. */
   readonly quantities: readonly number[];
+  /** La part des réassorts dans `quantities`, colonne par colonne. */
+  readonly resupplyQuantities: readonly number[];
   readonly totalUnits: number;
 }
 
@@ -99,11 +123,20 @@ export interface ForecastMatrix {
  * celui qui tombe le premier, donc celui qu'on prépare d'abord. `null` sur une
  * plage entièrement vide — un pic à zéro pièce désignerait un mur qui n'existe
  * pas.
+ *
+ * ## Les réassorts (lot R3d, 2026-10-21)
+ *
+ * Même arbitrage que les commandes : une journée close prend ses réassorts
+ * FIGÉS, qui sont déjà dans son compte à produire (R3a) — la matrice n'en
+ * tire que la part, pour la distinguer ; une journée ouverte prend les
+ * réassorts envoyés, et les AJOUTE à sa demande. Le compte de commandes
+ * n'en dit rien.
  */
 export function forecastMatrix(
   range: ServiceRange,
   arrested: readonly DayDemand[],
   expected: readonly DayDemand[],
+  resupplies: ForecastResupplies = NO_RESUPPLIES,
 ): ForecastMatrix {
   const closed = new Set(arrested.map((day) => day.day));
   const demandOf = new Map<string, DayDemand>();
@@ -115,42 +148,104 @@ export function forecastMatrix(
   for (const day of arrested) {
     demandOf.set(day.day, day);
   }
+  const resupplyOf = resuppliesByDay(closed, resupplies);
 
-  const rows = new Map<string, { productName: string; quantities: number[] }>();
-  const totals = Array.from({ length: range.length }, () => 0);
-
+  const grid = new Grid(range.length);
   range.days.forEach((day, column) => {
     for (const item of demandOf.get(day.value)?.items ?? []) {
-      const row = rows.get(item.sku) ?? {
-        productName: item.productName,
-        quantities: Array.from({ length: range.length }, () => 0),
-      };
-      row.quantities[column] = (row.quantities[column] ?? 0) + item.quantity;
-      rows.set(item.sku, row);
-      totals[column] = (totals[column] ?? 0) + item.quantity;
+      grid.add(column, item, false);
+    }
+    for (const item of resupplyOf.get(day.value) ?? []) {
+      // Une journée close a déjà ses réassorts dans son compte : on n'en marque que la part.
+      grid.add(column, item, true, !closed.has(day.value));
     }
   });
 
   const columns = range.days.map((day, index) => ({
     date: day.value,
-    totalUnits: totals[index] ?? 0,
+    totalUnits: grid.totals[index] ?? 0,
+    resupplyUnits: grid.resupplyTotals[index] ?? 0,
     orderCount: demandOf.get(day.value)?.orderCount ?? 0,
     closed: closed.has(day.value),
   }));
 
   return {
     columns,
-    rows: [...rows.entries()]
+    rows: [...grid.rows.entries()]
       .sort(([left], [right]) => left.localeCompare(right))
       .map(([sku, row]) => ({
         sku,
         productName: row.productName,
         quantities: row.quantities,
+        resupplyQuantities: row.resupplyQuantities,
         totalUnits: row.quantities.reduce((sum, quantity) => sum + quantity, 0),
       })),
     peakDate: peakOf(columns),
     totalUnits: columns.reduce((sum, column) => sum + column.totalUnits, 0),
   };
+}
+
+/** Les réassorts de chaque journée, de la source que son état désigne. */
+function resuppliesByDay(
+  closed: ReadonlySet<string>,
+  resupplies: ForecastResupplies,
+): ReadonlyMap<string, readonly DemandItem[]> {
+  const byDay = new Map<string, readonly DemandItem[]>();
+  for (const day of resupplies.expected) {
+    if (!closed.has(day.day)) {
+      byDay.set(day.day, day.items);
+    }
+  }
+  for (const day of resupplies.arrested) {
+    if (closed.has(day.day)) {
+      byDay.set(day.day, day.items);
+    }
+  }
+  return byDay;
+}
+
+interface GridRow {
+  readonly productName: string;
+  readonly quantities: number[];
+  readonly resupplyQuantities: number[];
+}
+
+/** L'accumulateur de la matrice : les lignes par SKU et les totaux par colonne. */
+class Grid {
+  readonly rows = new Map<string, GridRow>();
+  readonly totals: number[];
+  readonly resupplyTotals: number[];
+
+  constructor(private readonly width: number) {
+    this.totals = this.zeros();
+    this.resupplyTotals = this.zeros();
+  }
+
+  /**
+   * Inscrit un article dans une colonne. `asResupply` en marque la part de
+   * réassort ; `counted` = `false` quand la quantité est DÉJÀ dans le total
+   * (réassort figé d'une journée close).
+   */
+  add(column: number, item: DemandItem, asResupply: boolean, counted = true): void {
+    const row = this.rows.get(item.sku) ?? {
+      productName: item.productName,
+      quantities: this.zeros(),
+      resupplyQuantities: this.zeros(),
+    };
+    if (counted) {
+      row.quantities[column] = (row.quantities[column] ?? 0) + item.quantity;
+      this.totals[column] = (this.totals[column] ?? 0) + item.quantity;
+    }
+    if (asResupply) {
+      row.resupplyQuantities[column] = (row.resupplyQuantities[column] ?? 0) + item.quantity;
+      this.resupplyTotals[column] = (this.resupplyTotals[column] ?? 0) + item.quantity;
+    }
+    this.rows.set(item.sku, row);
+  }
+
+  private zeros(): number[] {
+    return Array.from({ length: this.width }, () => 0);
+  }
 }
 
 /** Le jour le plus chargé ; à égalité le plus proche, et `null` si tout est vide. */

@@ -7,6 +7,7 @@ import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../platform/time/clock.js";
 import { ExpectedProductionReader } from "../../channels/commerce/expected-production.reader.js";
+import { ExpectedResuppliesReader } from "../../channels/commerce/expected-resupplies.reader.js";
 import {
   AutoCloseAttemptLog,
   type DatedAttemptTrace,
@@ -38,6 +39,10 @@ import { GetProductionForecastQuery } from "./get-production-forecast.query.js";
  * les jours fermés et les tentatives automatiques lus en même temps que le
  * reste. Chaque colonne porte l'instant où son plan s'arrête tout seul.
  *
+ * Depuis le lot R3d (2026-10-21), il lit aussi les réassorts pour demain —
+ * figés au fournil pour une journée close, envoyés au commerce pour une
+ * journée ouverte — que la matrice compte à part des commandes.
+ *
  * Il n'écrit rien, pas même un compteur — §4.
  */
 @QueryHandler(GetProductionForecastQuery)
@@ -52,18 +57,21 @@ export class GetProductionForecastHandler implements IQueryHandler<
     private readonly settings: ProductionSettingsReader,
     private readonly attempts: AutoCloseAttemptLog,
     private readonly stopRules: PlanStopRules,
+    private readonly resupplies: ExpectedResuppliesReader,
   ) {}
 
   async execute(query: GetProductionForecastQuery): Promise<ProductionForecastView> {
     const range = ServiceRange.of(query.from, query.to);
-    const [arrested, expected, rules, closedDays, attempts] = await Promise.all([
+    const [arrested, expected, rules, closedDays, attempts, frozen, sent] = await Promise.all([
       this.plan.arrestedBetween(range),
       this.expected.expectedBetween(range),
       this.stopRules.rules(),
       this.settings.closedDaysFrom(range.from.value),
       this.attempts.between(range),
+      this.plan.arrestedResuppliesBetween(range),
+      this.resupplies.expectedBetween(range),
     ]);
-    const matrix = forecastMatrix(range, arrested, expected);
+    const matrix = forecastMatrix(range, arrested, expected, { arrested: frozen, expected: sent });
     const now = this.clock.now();
     const local = instantToLocal(now);
     const moment: HouseMoment = { today: local.day, now };

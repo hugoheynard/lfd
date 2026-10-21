@@ -68,6 +68,7 @@ describe("forecastMatrix", () => {
     expect(matrix.columns[0]).toEqual({
       date: "2026-09-03",
       totalUnits: 186,
+      resupplyUnits: 0,
       orderCount: 1,
       closed: true,
     });
@@ -178,5 +179,58 @@ describe("forecastMatrix", () => {
     );
     expect(matrix.rows).toHaveLength(1);
     expect(matrix.rows[0]?.productName).toBe("Baguette");
+  });
+
+  describe("les réassorts pour demain (lot R3d)", () => {
+    const resupply = (day: string, quantity: number) => ({
+      day,
+      items: [{ sku: "PAI-BAG", productName: "Baguette", quantity }],
+    });
+
+    it("ajoute les réassorts envoyés d'une journée ouverte, et en marque la part", () => {
+      const matrix = forecastMatrix(
+        WEEK,
+        [],
+        [demand("2026-09-04", [["PAI-BAG", "Baguette", 40]], 3)],
+        {
+          arrested: [],
+          expected: [resupply("2026-09-04", 12)],
+        },
+      );
+      expect(matrix.columns[1]).toMatchObject({ totalUnits: 52, resupplyUnits: 12, orderCount: 3 });
+      expect(matrix.rows[0]?.quantities[1]).toBe(52);
+      expect(matrix.rows[0]?.resupplyQuantities[1]).toBe(12);
+      expect(matrix.totalUnits).toBe(52);
+    });
+
+    it("une journée de réassorts seuls a sa colonne, sans commande", () => {
+      const matrix = forecastMatrix(WEEK, [], [], {
+        arrested: [],
+        expected: [resupply("2026-09-05", 7)],
+      });
+      expect(matrix.columns[2]).toMatchObject({ totalUnits: 7, resupplyUnits: 7, orderCount: 0 });
+      expect(matrix.peakDate).toBe("2026-09-05");
+    });
+
+    /** Le compte arrêté porte DÉJÀ les réassorts figés (R3a) : les rajouter les ferait produire deux fois. */
+    it("une journée close n'ajoute rien : elle marque la part figée, et ignore l'envoyé", () => {
+      const matrix = forecastMatrix(
+        WEEK,
+        [demand("2026-09-03", [["PAI-BAG", "Baguette", 186]])],
+        [],
+        { arrested: [resupply("2026-09-03", 6)], expected: [resupply("2026-09-03", 99)] },
+      );
+      expect(matrix.columns[0]).toMatchObject({ totalUnits: 186, resupplyUnits: 6 });
+      expect(matrix.rows[0]?.quantities[0]).toBe(186);
+      expect(matrix.rows[0]?.resupplyQuantities[0]).toBe(6);
+    });
+
+    it("des réassorts figés d'une journée qui n'est pas close ne comptent pas", () => {
+      const matrix = forecastMatrix(WEEK, [], [], {
+        arrested: [resupply("2026-09-03", 6)],
+        expected: [],
+      });
+      expect(matrix.columns[0]).toMatchObject({ totalUnits: 0, resupplyUnits: 0 });
+    });
   });
 });

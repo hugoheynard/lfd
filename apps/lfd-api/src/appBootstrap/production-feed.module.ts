@@ -12,12 +12,14 @@ import { SitedDayOrders } from "../b2b/orders/application/services/sited-day-ord
 import { PrismaExpectedProductionReader } from "../b2b/orders/infrastructure/prisma-expected-production.reader.js";
 import { PrismaPendingOrdersReader } from "../b2b/orders/infrastructure/prisma-pending-orders.reader.js";
 import { ProductionDayResupplies } from "../b2b/resupply/application/production-day-resupplies.js";
+import { ProductionRangeResupplies } from "../b2b/resupply/application/production-range-resupplies.js";
 import { ResupplyModule } from "../b2b/resupply/resupply.module.js";
 import {
   DayOrdersReader,
   DayResuppliesReader,
   DueThresholdsReader,
   ExpectedProductionReader,
+  ExpectedResuppliesReader,
   OrderCutoffRulesReader,
   PendingCommerceOrdersReader,
   PendingSettlementSweeper,
@@ -84,12 +86,15 @@ import {
     // Un canal à part des commandes : jamais mêlés à `ProducibleOrder`.
     { provide: ResupplyCutoffTimeReader, useClass: ProductionResupplyCutoffTimeReader },
     { provide: DayResuppliesReader, useExisting: ProductionDayResupplies },
+    // Le prévisionnel compte les réassorts pour demain, à part (lot R3d).
+    { provide: ExpectedResuppliesReader, useExisting: ProductionRangeResupplies },
   ],
   exports: [
     DayOrdersReader,
     DayResuppliesReader,
     DueThresholdsReader,
     ExpectedProductionReader,
+    ExpectedResuppliesReader,
     OrderCutoffRulesReader,
     PendingCommerceOrdersReader,
     PendingSettlementSweeper,

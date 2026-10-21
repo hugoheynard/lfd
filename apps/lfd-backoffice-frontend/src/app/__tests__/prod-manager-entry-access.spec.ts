@@ -13,15 +13,16 @@ import { NavCountsService } from '../nav-counts.service';
 import { PushNotificationsService } from '../shared/push/push-notifications.service';
 
 /**
- * **L'entrée « Réassorts »** (lot R1, `reassort-boutiques/plan-reapprovisionnement.md`
- * §12, 2026-10-21) : l'écran du fournil « Réassorts à produire », juste sous
- * le Fournil, au rail ET aux tuiles, pour qui tient la fournée OU le
- * prévisionnel — le droit de sa route serveur. Le comptoir seul n'y mène pas.
+ * **L'entrée « Prod manager »** depuis le lot R3d
+ * (`reassort-boutiques/plan-reapprovisionnement.md`, 2026-10-21) : l'ancienne
+ * entrée « Réassorts » est devenue un onglet de Prod manager. L'entrée
+ * s'ouvre donc à qui tient le prévisionnel OU la seule fournée (le droit de
+ * l'ancienne entrée), au rail ET aux tuiles ; « Réassorts » n'y est plus.
  */
 @Component({ template: '' })
 class Blank {}
 
-const LINK = '/reassorts-a-produire';
+const LINK = '/prod-manager';
 
 function configureApp(granted: readonly StaffPermission[]): void {
   TestBed.resetTestingModule();
@@ -29,7 +30,7 @@ function configureApp(granted: readonly StaffPermission[]): void {
     imports: [App],
     providers: [
       provideRouter([
-        { path: 'reassorts-a-produire', component: Blank },
+        { path: 'prod-manager', component: Blank },
         { path: 'fournil', component: Blank },
       ]),
       {
@@ -103,23 +104,24 @@ async function tileLabels(granted: readonly StaffPermission[]): Promise<(string 
   }
 }
 
-describe("App — l'entrée Réassorts à produire", () => {
-  it('paraît au rail pour qui tient la fournée, ou le seul prévisionnel', () => {
-    expect(railLabels(['production_worksheet:read'])).toContain('Réassorts');
-    expect(railLabels(['production_plan:read'])).toContain('Réassorts');
+describe("App — l'entrée Prod manager (R3d)", () => {
+  it('paraît au rail pour qui tient le prévisionnel, ou la seule fournée', () => {
+    expect(railLabels(['production_plan:read'])).toContain('Prod manager');
+    expect(railLabels(['production_worksheet:read'])).toContain('Prod manager');
+  });
+
+  it("n'a plus d'entrée « Réassorts » à part", () => {
+    expect(railLabels(['production_worksheet:read', 'production_plan:read'])).not.toContain(
+      'Réassorts',
+    );
   });
 
   it('reste fermée au comptoir seul', () => {
-    expect(railLabels(['handover_counter:write'])).not.toContain('Réassorts');
-  });
-
-  it('se range juste sous le Fournil', () => {
-    const labels = railLabels(['production_worksheet:read']);
-    expect(labels[labels.indexOf('Fournil') + 1]).toBe('Réassorts');
+    expect(railLabels(['handover_counter:write'])).not.toContain('Prod manager');
   });
 
   it('paraît aussi aux tuiles du menu mobile, sous le même droit', async () => {
-    expect(await tileLabels(['production_worksheet:read'])).toEqual(['Réassorts']);
+    expect(await tileLabels(['production_worksheet:read'])).toEqual(['Prod manager']);
     expect(await tileLabels(['handover_counter:write'])).toEqual([]);
   });
 });
