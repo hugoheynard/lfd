@@ -57,6 +57,9 @@ const source = (id: string): OrderSummarySource => ({
   orderNumber: `CMD-${id}`,
   companyId: "co_principal",
   companyName: "Maison mère",
+  day: "2026-10-07",
+  fulfillmentMethod: "pickup",
+  author: { kind: "customer", name: "Léa Martin" },
   cancelled: false,
   paymentStatus: "not_required",
   subtotalCents: 1_000,
@@ -84,6 +87,23 @@ describe("SummarizeCompanyOrdersHandler (plan récapitulatif, lot R1)", () => {
       { actorUserId: "usr_1", companyId: "co_principal", orderIds: ["o1", "o2"] },
     ]);
     expect(summary.total.bottom.totalCents).toBe(2_110);
+  });
+
+  it("porte les bons comptés de chaque société, chacun avec le HT de son bon (§10)", async () => {
+    const reader = new RecordingSummary([source("o1"), source("o2")]);
+    const handler = new SummarizeCompanyOrdersHandler(new OwnRole("owner"), reader);
+
+    const summary = await handler.execute(query(["o1", "o2"]));
+
+    expect(summary.companies[0]?.orders.map((o) => [o.orderNumber, o.pretaxCents])).toEqual([
+      ["CMD-o1", 1_000],
+      ["CMD-o2", 1_000],
+    ]);
+    expect(summary.total.ordersPretax).toEqual({
+      pretaxCents: 2_000,
+      gapCents: 0,
+      cappedDiscountCents: 0,
+    });
   });
 
   it("un id hors du mur : refus qui le nomme, jamais un récapitulatif partiel", async () => {

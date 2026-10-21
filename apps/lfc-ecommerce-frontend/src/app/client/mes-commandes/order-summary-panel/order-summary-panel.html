@@ -68,6 +68,10 @@
           </ul>
         </section>
       }
+
+      @if (ready(); as summary) {
+        <app-order-summary-orders [summary]="summary" />
+      }
     }
   }
 </fold-panel-body>

@@ -2,6 +2,7 @@ import type { ClientSheet, SheetMoney } from "@lfd/contracts";
 
 import { sheetShowsTtc } from "./order-sheet.js";
 import { money } from "./order-sheet-pdf-format.js";
+import { orderPretaxCents } from "./order-pretax.js";
 
 /**
  * **Le pavé de totaux du bon de commande**, ligne par ligne — sans dessin.
@@ -84,11 +85,7 @@ function taxedTail(totals: SheetMoney, pretaxCents: number): readonly TotalRow[]
 
 /** Le pied du bon pro, dans l'ordre où la référence le pose. */
 function proRows(totals: SheetMoney): readonly TotalRow[] {
-  const net = Math.max(
-    0,
-    totals.subtotalCents - totals.discountCents - totals.voucherDiscountCents,
-  );
-  const pretax = net + totals.deliveryFeeCents + totals.lateFeeCents;
+  const pretax = orderPretaxCents(totals);
   return [
     // 🔴 **« HT » est écrit, il n'est plus sous-entendu.** La colonne des
     // articles peut être en TTC ; un pied qui dirait « Sous-total » au-dessous

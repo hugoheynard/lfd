@@ -734,6 +734,45 @@ catalogue. Tant que le **lot 1** de
 rien pour porter cet affichage — l'application côté serveur, elle, ne l'attend
 pas.
 
+### ✅ La barre et le panier préviennent avant « trop tard » — livré le 2026-10-21
+
+> « j'ai besoin qu'on prévienne AVANT trop tard pour demain » — Hugo, après une
+> démo où la boutique de prod a dit « Trop tard pour demain » sans raison.
+
+La faute : `ServiceDayNotice` comparait le jour **gardé** par le choix du client
+(localStorage) à demain, et disait « Trop tard pour demain » dès qu'il était
+postérieur — jour choisi plus tôt, ou panier d'une opération datée — alors que
+`GET /fulfillment-days` accordait bien demain.
+
+**Le serveur** : `FulfillmentDayView.orderUntil` (champ additif) porte l'instant
+limite ANNONCÉ de la journée rendue, en ISO, ou `null` (aucune journée, aucune
+règle en vigueur, heure sautée du passage à l'heure d'été). Même résolution que
+`decideOrderCutoff` (`announcedOrderUntil`, `@lfd/contracts`), **grâce non
+comprise** — la grâce ne s'annonce pas, cf. plus haut. Calculé pour la journée
+finalement rendue, donc aussi pour un jour d'opération.
+
+**La boutique** (`service-day-notice.rules.ts`, fonction pure, horloge
+injectée ; `ShopClock` avance d'une minute en minute, navigateur seul) :
+
+| Situation                                                   | Ce qui se dit                                                     |
+| ----------------------------------------------------------- | ----------------------------------------------------------------- |
+| jour gardé antérieur au premier jour accordé                | « Trop tard pour {jour} : le premier jour encore possible est … » |
+| premier jour accordé après demain, panier d'opération datée | « Ce produit se retire à partir du … »                            |
+| premier jour accordé après demain                           | « Trop tard pour demain[, la limite était 23 h] : … »             |
+| limite du premier jour aujourd'hui, ≤ 6 h restantes         | « Plus que 2 h 15 pour commander pour mercredi. » (« 12 min »)    |
+| limite du premier jour aujourd'hui, > 6 h restantes         | « Pour mercredi, commandez avant 23 h. »                          |
+| sinon (jour gardé plus tard que nécessaire compris)         | rien — la barre nomme déjà le jour retenu                         |
+
+L'heure dans « trop tard » n'est dite que si la limite de demain a été **lue
+avant de tomber** : le serveur ne sert que celle du jour qu'il accorde. Quand
+une limite tombe page ouverte, la boutique relit `/fulfillment-days` une fois et
+bascule. Tout cela reste une annonce : un article peut porter sa propre limite,
+et la passation seule refuse.
+
+⚠️ Un jour gardé antérieur au premier jour accordé n'est **pas** remplacé
+d'office : le message dit le jour possible et demande de changer avant de
+régler (le créneau choisi pourrait ne pas exister l'autre jour).
+
 ## 10. ✅ Le piège du fuseau — réglé le 2026-09-04
 
 `orderCutoffInstant` construit son instant avec le constructeur `Date` local :

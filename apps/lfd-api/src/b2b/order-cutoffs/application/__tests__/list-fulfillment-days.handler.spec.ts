@@ -126,7 +126,7 @@ function handler(
 describe("ListFulfillmentDaysHandler — les opérations datées", () => {
   it("sans panier, rend la journée des délais du commerce", async () => {
     expect(await handler().execute(new ListFulfillmentDaysQuery())).toEqual([
-      { pickupAddressId: null, date: nextFulfillmentDay([], null, NOW) },
+      { pickupAddressId: null, date: nextFulfillmentDay([], null, NOW), orderUntil: null },
     ]);
   });
 
@@ -139,14 +139,14 @@ describe("ListFulfillmentDaysHandler — les opérations datées", () => {
     const days = await handler().execute(
       new ListFulfillmentDaysQuery(["VIE-001", "PAT-002"], "public"),
     );
-    expect(days).toEqual([{ pickupAddressId: null, date: "2026-12-20" }]);
+    expect(days).toEqual([{ pickupAddressId: null, date: "2026-12-20", orderUntil: null }]);
   });
 
   it("ne propose aucun jour quand l'opération n'est pas ouverte à cette clientèle", async () => {
     const days = await handler([{ ...NOEL, audience: "pro" }]).execute(
       new ListFulfillmentDaysQuery(["PAT-002"], "public"),
     );
-    expect(days).toEqual([{ pickupAddressId: null, date: null }]);
+    expect(days).toEqual([{ pickupAddressId: null, date: null, orderUntil: null }]);
   });
 });
 
@@ -163,14 +163,14 @@ describe("ListFulfillmentDaysHandler — l'arrêt du plan", () => {
     const days = await handler([], { plans: new FixedClosedPlans([TODAY]) }).execute(
       new ListFulfillmentDaysQuery(),
     );
-    expect(days).toEqual([{ pickupAddressId: null, date: TOMORROW }]);
+    expect(days).toEqual([{ pickupAddressId: null, date: TOMORROW, orderUntil: null }]);
   });
 
   it("saute plusieurs journées arrêtées d'affilée", async () => {
     const days = await handler([], { plans: new FixedClosedPlans([TODAY, TOMORROW]) }).execute(
       new ListFulfillmentDaysQuery(),
     );
-    expect(days).toEqual([{ pickupAddressId: null, date: "2026-12-03" }]);
+    expect(days).toEqual([{ pickupAddressId: null, date: "2026-12-03", orderUntil: null }]);
   });
 
   it("compose avec la règle en vigueur : la plus tardive des deux bornes l'emporte", async () => {
@@ -188,7 +188,10 @@ describe("ListFulfillmentDaysHandler — l'arrêt du plan", () => {
       rules: [veille],
       plans: new FixedClosedPlans([TOMORROW]),
     }).execute(new ListFulfillmentDaysQuery());
-    expect(days).toEqual([{ pickupAddressId: null, date: "2026-12-03" }]);
+    // La limite annoncée est celle de la journée RENDUE : le 2 à 18 h Paris.
+    expect(days).toEqual([
+      { pickupAddressId: null, date: "2026-12-03", orderUntil: "2026-12-02T17:00:00.000Z" },
+    ]);
   });
 
   it("lit les arrêts sur l'horizon de recherche, à partir d'aujourd'hui", async () => {
@@ -201,6 +204,39 @@ describe("ListFulfillmentDaysHandler — l'arrêt du plan", () => {
     const days = await handler([], { sameDayAllowed: false }).execute(
       new ListFulfillmentDaysQuery(),
     );
-    expect(days).toEqual([{ pickupAddressId: null, date: TOMORROW }]);
+    expect(days).toEqual([{ pickupAddressId: null, date: TOMORROW, orderUntil: null }]);
+  });
+});
+
+/**
+ * 2026-10-21 (Hugo, « prévenir AVANT trop tard pour demain ») : chaque journée
+ * rendue porte l'heure limite ANNONCÉE. `NOW` : le 1er décembre, 11 h à Paris.
+ */
+describe("ListFulfillmentDaysHandler — l'heure limite annoncée", () => {
+  const veille23h: OrderCutoffView = {
+    id: "c1",
+    pickupAddressId: null,
+    pickupLabel: null,
+    weekday: null,
+    daysBefore: 1,
+    time: "23:00",
+    graceMinutes: 30,
+  };
+
+  it("rend la limite de la veille à 23 h pour demain, sans la grâce", async () => {
+    const days = await handler([], { rules: [veille23h] }).execute(new ListFulfillmentDaysQuery());
+    // Le 1er décembre à 23 h Paris (heure d'hiver) : 22:00Z.
+    expect(days).toEqual([
+      { pickupAddressId: null, date: "2026-12-02", orderUntil: "2026-12-01T22:00:00.000Z" },
+    ]);
+  });
+
+  it("rend la limite du jour d'opération quand le panier déplace la journée", async () => {
+    const days = await handler([NOEL], { rules: [veille23h] }).execute(
+      new ListFulfillmentDaysQuery(["PAT-002"], "public"),
+    );
+    expect(days).toEqual([
+      { pickupAddressId: null, date: "2026-12-20", orderUntil: "2026-12-19T22:00:00.000Z" },
+    ]);
   });
 });

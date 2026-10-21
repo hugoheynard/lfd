@@ -1,0 +1,44 @@
+@if (blocks().length > 0) {
+  <fold-disclosure data-summary-orders>
+    <span summary>{{ copy().ordersHead }}</span>
+    <div class="orders">
+      <p class="note">{{ copy().ordersNote }}</p>
+      @for (block of blocks(); track block.companyId) {
+        <section class="block" [attr.data-summary-orders-company]="block.companyId">
+          <fold-element-title variant="caps" [title]="block.name" />
+          <fold-data-table
+            narrowLayout="cards"
+            density="compact"
+            [caption]="block.name"
+            [columns]="columns()"
+            [rows]="block.rows"
+            [rowKey]="rowKey"
+          />
+          <ng-container
+            [ngTemplateOutlet]="foot"
+            [ngTemplateOutletContext]="{ $implicit: block.foot }"
+          />
+        </section>
+      }
+      @if (totalFoot().length > 0) {
+        <div data-summary-orders-total>
+          <ng-container
+            [ngTemplateOutlet]="foot"
+            [ngTemplateOutletContext]="{ $implicit: totalFoot() }"
+          />
+        </div>
+      }
+    </div>
+  </fold-disclosure>
+}
+
+<ng-template #foot let-lines>
+  <dl class="foot">
+    @for (line of lines; track line.label) {
+      <div class="foot-line" [class.foot-line--strong]="line.strong">
+        <dt>{{ line.label }}</dt>
+        <dd>{{ line.amount }}</dd>
+      </div>
+    }
+  </dl>
+</ng-template>

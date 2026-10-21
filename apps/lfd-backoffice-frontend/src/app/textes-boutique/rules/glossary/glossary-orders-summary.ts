@@ -1,6 +1,7 @@
 /**
  * Les segments des textes de « Mes commandes » ajoutés par les commandes des
- * sites (C2) et le récapitulatif des commandes (R1–R3, 2026-10-21). Placé AVANT
+ * sites (C2) et le récapitulatif des commandes (R1–R3, et la liste des bons
+ * inclus, §10 — 2026-10-21). Placé AVANT
  * les autres dans le glossaire : un segment déjà connu ailleurs garde son
  * libellé.
  */
@@ -45,4 +46,16 @@ export const GLOSSARY_ORDERS_SUMMARY: Readonly<Record<string, string>> = {
   pdf: 'Bouton PDF',
   csv: 'Bouton tableur',
   exportFailed: 'Échec du fichier',
+  ordersHead: 'Bons inclus — titre',
+  ordersNote: 'Bons inclus — note sur le HT',
+  colDay: 'Colonne — jour de retrait ou de livraison',
+  colAuthor: 'Colonne — auteur',
+  undated: 'Bon sans date',
+  ordersPretax: 'Bons inclus — total HT',
+  ordersGap: 'Bons inclus — écart avec le sous-total HT',
+  gapDiscount: 'Écart dû aux remises',
+  gapVoucher: 'Écart dû aux bons de fidélité',
+  gapDelivery: 'Écart dû à la livraison',
+  gapLateFee: 'Écart dû aux surtaxes',
+  gapCapped: 'Écart dû à une remise plafonnée',
 };

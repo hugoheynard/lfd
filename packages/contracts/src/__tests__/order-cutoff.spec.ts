@@ -1,4 +1,5 @@
 import {
+  announcedOrderUntil,
   decideOrderCutoff,
   orderCutoffInstant,
   resolveOrderCutoff,
@@ -216,5 +217,37 @@ describe("decideOrderCutoff — les trois états", () => {
     const now = new Date("2026-08-10T10:30:00.000Z");
     expect(decideOrderCutoff(rules, "labo", FULFILLMENT_DAY, now).status).toBe("closed");
     expect(decideOrderCutoff(rules, null, FULFILLMENT_DAY, now).status).toBe("open");
+  });
+});
+
+/**
+ * L'heure que la boutique ANNONCE (2026-10-21, « plus que … pour commander ») :
+ * la même règle que la décision, sans la grâce — qu'un humain accorde, et qui
+ * ne s'annonce donc pas.
+ */
+describe("announcedOrderUntil", () => {
+  it("rend l'instant limite de la règle la plus spécifique, grâce non comprise", () => {
+    const rules = [
+      rule({ id: "def", time: "23:00", graceMinutes: 45 }),
+      rule({ id: "labo", pickupAddressId: "labo", time: "18:00" }),
+    ];
+    // La veille du 12 août à 23 h Paris (heure d'été) : 21:00Z.
+    expect(announcedOrderUntil(rules, null, "2026-08-12")).toBe("2026-08-11T21:00:00.000Z");
+    expect(announcedOrderUntil(rules, "labo", "2026-08-12")).toBe("2026-08-11T16:00:00.000Z");
+  });
+
+  it("concorde avec la limite de decideOrderCutoff", () => {
+    const rules = [rule({ daysBefore: 2, time: "06:30", graceMinutes: 30 })];
+    const decision = decideOrderCutoff(rules, null, "2026-12-03", new Date(0));
+    expect(announcedOrderUntil(rules, null, "2026-12-03")).toBe(decision.limit?.toISOString());
+  });
+
+  it("rend null sans journée, sans règle, ou sur l'heure sautée du passage à l'heure d'été", () => {
+    expect(announcedOrderUntil([rule()], null, null)).toBeNull();
+    expect(announcedOrderUntil([], null, "2026-08-12")).toBeNull();
+    // 29 mars 2026 : 2 h 30 n'existe pas à Paris.
+    expect(
+      announcedOrderUntil([rule({ daysBefore: 0, time: "02:30" })], null, "2026-03-29"),
+    ).toBeNull();
   });
 });

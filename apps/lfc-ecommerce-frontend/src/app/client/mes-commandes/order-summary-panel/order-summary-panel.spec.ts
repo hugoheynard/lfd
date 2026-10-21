@@ -10,7 +10,7 @@ import {
   type OrderSummarySelection,
   OrderSummaryService,
 } from '../order-summary.service';
-import { BOTTOM, SUMMARY } from '../order-summary.fixture';
+import { BOTTOM, ORDERS_PRETAX, SUMMARY } from '../order-summary.fixture';
 import { OrderSummaryPanel } from './order-summary-panel';
 
 const SELECTION: OrderSummarySelection = {
@@ -112,12 +112,21 @@ describe('OrderSummaryPanel — le récapitulatif à l’écran (plan du récapi
       orderCount: 1,
       products: [{ sku: 'VIE-002', name: 'Pain au chocolat', quantity: 6, htCents: 600 }],
       bottom: BOTTOM,
+      ordersPretax: ORDERS_PRETAX,
+      orders: [],
     };
     const host = await boot(() =>
       Promise.resolve({ ...SUMMARY, companies: [...SUMMARY.companies, site] }),
     );
     expect(host.querySelector('[data-summary-block="co_2"]')).not.toBeNull();
     expect(host.querySelector('[data-summary-block="total"] fold-data-table')).not.toBeNull();
+  });
+
+  it('les bons de commande inclus suivent, repliés (§10)', async () => {
+    const host = await boot(() => Promise.resolve(SUMMARY));
+    const orders = host.querySelector('[data-summary-orders]');
+    expect(orders?.textContent).toContain('Bons de commande inclus');
+    expect(orders?.querySelector('[aria-expanded="false"]')).not.toBeNull();
   });
 
   it('un refus du serveur s’affiche avec SON message', async () => {

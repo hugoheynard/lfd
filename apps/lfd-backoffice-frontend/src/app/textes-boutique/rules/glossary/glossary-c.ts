@@ -102,5 +102,10 @@ export const GLOSSARY_C: Readonly<Record<string, string>> = {
   ctaBlocked: 'Bouton bloqué',
   ctaReady: 'Bouton prêt',
   current: 'Choix actuel',
+  cutoffCalm: 'Heure limite — commander avant (plus de 6 h)',
+  cutoffCountdown: 'Heure limite — temps restant pour commander',
+  cutoffLeftHours: 'Heure limite — durée en heures rondes',
+  cutoffLeftHoursMinutes: 'Heure limite — durée en heures et minutes',
+  cutoffLeftMinutes: 'Heure limite — durée en minutes',
   checking: 'Vérification en cours',
 };

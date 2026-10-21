@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1481 textes
+## Sommaire — 1506 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -21,7 +21,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Commander — l'écran d'entrée de la commande](#espace-commande) | `commande` | 39 |
 | [Rayon / boutique](#espace-shop) | `shop` | 59 |
 | [Rayon — la fiche produit](#espace-product) | `product` | 13 |
-| [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 23 |
+| [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 31 |
 | [Choix du lieu — la maison](#espace-housepicker) | `housePicker` | 8 |
 | [Choix du lieu et de l’heure — le dialogue commun](#espace-dialog) | `dialog` | 1 |
 | [Choix du lieu — le retrait](#espace-pickupdialog) | `pickupDialog` | 10 |
@@ -38,7 +38,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le cadre — bandeaux, installation, erreurs générales](#espace-chrome) | `chrome` | 39 |
 | [La navigation](#espace-nav) | `nav` | 24 |
 | [La colonne d’accompagnement](#espace-aside) | `aside` | 4 |
-| [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 148 |
+| [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 165 |
 | [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 54 |
 | [Fidélité](#espace-loyalty) | `loyalty` | 38 |
 | [Mon compte (factures comprises)](#espace-account) | `account` | 525 |
@@ -47,7 +47,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
-| **Total** | | **1481** |
+| **Total** | | **1506** |
 
 ## Le parcours de commande
 
@@ -416,7 +416,7 @@ Source : `fr.ts · en.ts · it.ts` · 13 textes.
 
 ### Barre de commande — la maison et l’heure retenues — `commandTerms`
 
-Source : `screens/command-terms.copy.ts` · 23 textes.
+Source : `screens/command-terms.copy.ts` · 31 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -430,6 +430,14 @@ Source : `screens/command-terms.copy.ts` · 23 textes.
 | `commandTerms.lateDelivery` | Trop tard pour demain : votre commande sera livrée {day}. | Too late for tomorrow: your order will be delivered on {day}. | Troppo tardi per domani: il vostro ordine sarà consegnato {day}. | `{day}` |
 | `commandTerms.latePickup` | Trop tard pour demain : votre commande sera à retirer {day}. | Too late for tomorrow: your order will be ready for pickup on {day}. | Troppo tardi per domani: il vostro ordine sarà da ritirare {day}. | `{day}` |
 | `commandTerms.slipped` | Trop tard pour {day} : le premier jour encore possible est {next}. Changez le jour avant de régler. | Too late for {day}: the first day still open is {next}. Change the day before paying. | Troppo tardi per {day}: il primo giorno ancora possibile è {next}. Cambiate il giorno prima di pagare. | `{day}` `{next}` |
+| `commandTerms.lateDeliveryAt` | Trop tard pour demain, la limite était {time} : votre commande sera livrée {day}. | Too late for tomorrow, orders closed at {time}: your order will be delivered on {day}. | Troppo tardi per domani, il limite era alle {time}: il vostro ordine sarà consegnato {day}. | `{time}` `{day}` |
+| `commandTerms.latePickupAt` | Trop tard pour demain, la limite était {time} : votre commande sera à retirer {day}. | Too late for tomorrow, orders closed at {time}: your order will be ready for pickup on {day}. | Troppo tardi per domani, il limite era alle {time}: il vostro ordine sarà da ritirare {day}. | `{time}` `{day}` |
+| `commandTerms.operationPickupFrom` | Ce produit se retire à partir du {day}. | This product can be picked up from {day}. | Questo prodotto si ritira a partire da {day}. | `{day}` |
+| `commandTerms.cutoffCountdown` | Plus que {left} pour commander pour {day}. | Only {left} left to order for {day}. | Ancora {left} per ordinare per {day}. | `{left}` `{day}` |
+| `commandTerms.cutoffLeftHoursMinutes` | {h} h {mm} | {h} h {mm} min | {h} h {mm} | `{h}` `{mm}` |
+| `commandTerms.cutoffLeftHours` | {h} h | {h} h | {h} h | `{h}` |
+| `commandTerms.cutoffLeftMinutes` | {m} min | {m} min | {m} min | `{m}` |
+| `commandTerms.cutoffCalm` | Pour {day}, commandez avant {time}. | For {day}, order before {time}. | Per {day}, ordinate entro le {time}. | `{day}` `{time}` |
 | `commandTerms.modeTitle` | Retrait ou coursier ? | Pickup or courier? | Ritiro o corriere? |  |
 | `commandTerms.close` | Fermer | Close | Chiudi |  |
 | `commandTerms.pickup` | Retrait | Pickup | Ritiro |  |
@@ -886,7 +894,7 @@ Source : `fr.ts · en.ts · it.ts` · 4 textes.
 
 ### Mes commandes (récapitulatif compris) — `orders`
 
-Source : `screens/orders.copy.ts · screens/order-summary.copy.ts` · 148 textes.
+Source : `screens/orders.copy.ts · screens/order-summary.copy.ts` · 165 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -961,6 +969,23 @@ Source : `screens/orders.copy.ts · screens/order-summary.copy.ts` · 148 textes
 | `orders.summary.csv` | Tableur | Spreadsheet | Foglio di calcolo |  |
 | `orders.summary.failed` | Le récapitulatif n’a pas pu être établi. Réessayez dans un instant. | The summary could not be built. Try again in a moment. | Non è stato possibile preparare il riepilogo. Riprova tra un istante. |  |
 | `orders.summary.exportFailed` | Le fichier n’a pas pu être produit. Réessayez dans un instant. | The file could not be produced. Try again in a moment. | Non è stato possibile produrre il file. Riprova tra un istante. |  |
+| `orders.summary.ordersHead` | Bons de commande inclus | Order forms included | Buoni d’ordine inclusi |  |
+| `orders.summary.ordersNote` | Montants HT tels que chaque bon les imprime — la TVA se calcule sur la facture. | Amounts excl. VAT as each order form prints them — VAT is worked out on the invoice. | Importi IVA esclusa come li stampa ogni buono — l’IVA si calcola in fattura. |  |
+| `orders.summary.colOrder` | Bon | Order | Buono |  |
+| `orders.summary.colDay` | Jour | Day | Giorno |  |
+| `orders.summary.colMode` | Mode | Mode | Modalità |  |
+| `orders.summary.colAuthor` | Auteur | Placed by | Autore |  |
+| `orders.summary.modePickup` | Retrait | Pickup | Ritiro |  |
+| `orders.summary.modeDelivery` | Livraison | Delivery | Consegna |  |
+| `orders.summary.authorTeam` | l’équipe | our team | il nostro team |  |
+| `orders.summary.undated` | sans date | no date | senza data |  |
+| `orders.summary.ordersPretax` | Total HT des bons | Order forms total excl. VAT | Totale buoni IVA esclusa |  |
+| `orders.summary.ordersGap` | Écart avec le sous-total HT : {causes} | Difference from the subtotal excl. VAT: {causes} | Differenza dal subtotale IVA esclusa: {causes} | `{causes}` |
+| `orders.summary.gapDiscount` | remises | discounts | sconti |  |
+| `orders.summary.gapVoucher` | bons de fidélité | loyalty vouchers | buoni fedeltà |  |
+| `orders.summary.gapDelivery` | livraison | delivery | consegna |  |
+| `orders.summary.gapLateFee` | surtaxes de commande tardive | late order surcharges | maggiorazioni per ordine tardivo |  |
+| `orders.summary.gapCapped` | remise plafonnée au montant des articles | discount capped at the items amount | sconto limitato all’importo degli articoli |  |
 | `orders.authorCustomer` | passée par {name} | placed by {name} | effettuato da {name} | `{name}` |
 | `orders.authorTeam` | par l’équipe | by our team | dal nostro team |  |
 | `orders.detailSite` | Site | Site | Sede |  |

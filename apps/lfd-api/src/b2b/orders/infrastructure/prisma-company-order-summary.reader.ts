@@ -1,4 +1,9 @@
-import { companyDisplayName, vatSharesSchema, type VatShareView } from "@lfd/contracts";
+import {
+  type CompanyOrderAuthorView,
+  companyDisplayName,
+  vatSharesSchema,
+  type VatShareView,
+} from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { OrderStatus, type Prisma } from "../../../platform/database/client/client.js";
@@ -16,6 +21,10 @@ const SUMMARY_SELECT = {
   companyId: true,
   status: true,
   paymentStatus: true,
+  requestedDeliveryDate: true,
+  fulfillmentMethod: true,
+  placedByStaffId: true,
+  placedBy: { select: { firstName: true, lastName: true, email: true } },
   subtotalCents: true,
   discountCents: true,
   voucherDiscountCents: true,
@@ -65,6 +74,12 @@ function sourceOf(row: SummaryRow): readonly OrderSummarySource[] {
       orderNumber: row.orderNumber,
       companyId: row.companyId,
       companyName: companyDisplayName(row.company),
+      day:
+        row.requestedDeliveryDate === null
+          ? null
+          : row.requestedDeliveryDate.toISOString().slice(0, 10),
+      fulfillmentMethod: row.fulfillmentMethod,
+      author: authorOf(row),
       cancelled: row.status === OrderStatus.cancelled,
       paymentStatus: row.paymentStatus,
       subtotalCents: row.subtotalCents,
@@ -83,6 +98,18 @@ function sourceOf(row: SummaryRow): readonly OrderSummarySource[] {
       })),
     },
   ];
+}
+
+/**
+ * Qui a passé la commande — la même règle que la liste (C1, §7.6) : l'équipe
+ * si elle l'a saisie, sinon le nom du client, son e-mail à défaut.
+ */
+function authorOf(row: SummaryRow): CompanyOrderAuthorView {
+  if (row.placedByStaffId !== null) {
+    return { kind: "team" };
+  }
+  const name = `${row.placedBy.firstName} ${row.placedBy.lastName}`.trim();
+  return { kind: "customer", name: name === "" ? row.placedBy.email : name };
 }
 
 function vatSharesOf(value: Prisma.JsonValue | null): readonly VatShareView[] | null {

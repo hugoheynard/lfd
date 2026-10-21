@@ -77,6 +77,9 @@ const source = (id: string): OrderSummarySource => ({
   orderNumber: `CMD-${id}`,
   companyId: "co_principal",
   companyName: "Maison mère",
+  day: "2026-10-07",
+  fulfillmentMethod: "pickup",
+  author: { kind: "customer", name: "Léa Martin" },
   cancelled: false,
   paymentStatus: "not_required",
   subtotalCents: 1_000,
@@ -124,6 +127,21 @@ describe("le récapitulatif imprimé et au tableur (lot R2)", () => {
     expect(reader.scopes).toHaveLength(1);
     expect(file.fileName).toBe("recapitulatif-maison-mere-2026-10-21.pdf");
     expect(pdfText(file.bytes)).toContain("21,10");
+  });
+
+  it("PDF et CSV portent les bons inclus, au HT de leur bon (§10)", async () => {
+    const reader = new RecordingSummary([source("o1")]);
+    const ids = ["o1"];
+
+    const pdf = await pdfHandler(reader).execute(
+      new ExportCompanyOrderSummaryPdfQuery("usr_1", "co_principal", ids),
+    );
+    const csv = await csvHandler(reader).execute(
+      new ExportCompanyOrderSummaryCsvQuery("usr_1", "co_principal", ids),
+    );
+
+    expect(pdfText(pdf.bytes)).toContain("BONS DE COMMANDE INCLUS");
+    expect(csv.csv).toContain('"CMD-o1";"Maison mère";07/10/2026;"Retrait";"Léa Martin";10,00');
   });
 
   it("CSV : même lecture, même nom au bon suffixe", async () => {

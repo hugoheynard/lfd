@@ -277,7 +277,7 @@ describe("l'arrêt du plan est une limite (O5)", () => {
       await ctx.http().get("/fulfillment-days").expect(200),
     );
 
-    expect(days[0]).toEqual({ pickupAddressId: null, date: serviceDay(1) });
+    expect(days[0]).toEqual({ pickupAddressId: null, date: serviceDay(1), orderUntil: null });
   });
 });
 
@@ -288,7 +288,7 @@ describe("le jour même, réglage admin (§8.3)", () => {
     const days = jsonBody<readonly FulfillmentDayView[]>(
       await ctx.http().get("/fulfillment-days").expect(200),
     );
-    expect(days[0]).toEqual({ pickupAddressId: null, date: serviceDay(1) });
+    expect(days[0]).toEqual({ pickupAddressId: null, date: serviceDay(1), orderUntil: null });
 
     const refused = await ctx
       .asSub(MEMBER)
@@ -310,6 +310,6 @@ describe("le jour même, réglage admin (§8.3)", () => {
     const days = jsonBody<readonly FulfillmentDayView[]>(
       await ctx.http().get("/fulfillment-days").expect(200),
     );
-    expect(days[0]).toEqual({ pickupAddressId: null, date: serviceDay(0) });
+    expect(days[0]).toEqual({ pickupAddressId: null, date: serviceDay(0), orderUntil: null });
   });
 });

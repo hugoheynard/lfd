@@ -79,7 +79,7 @@ export class OrderBar {
 
   protected readonly choice = this.order.choice;
 
-  /** « Trop tard pour demain : … » — ou `null` quand le jour retenu est demain. */
+  /** L’heure limite qui approche, ou « trop tard » quand c’est vrai — sinon `null`. */
   protected readonly lateNotice = inject(ServiceDayNotice).message;
 
   /** Le compte de pièces du panier — celui que le pied lisait déjà. */

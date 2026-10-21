@@ -139,6 +139,7 @@ export class ServicePoints {
    * c'est elle qui les lira.
    */
   scopeDaysTo(operationSkus: readonly string[], audience: 'pro' | 'public'): void {
+    this.scopedToCart.set(operationSkus.length > 0);
     this.cartQuery =
       operationSkus.length === 0
         ? ''
@@ -157,6 +158,10 @@ export class ServicePoints {
    * pour la même raison que {@link scopeDaysTo}.
    */
   private readonly ceiling = signal<string | null>(null);
+
+  /** Vrai quand les jours sont bornés par une opération que porte le panier. */
+  private readonly scopedToCart = signal(false);
+  readonly daysScopedToCart = this.scopedToCart.asReadonly();
   readonly lastDay = this.ceiling.asReadonly();
 
   capDaysAt(lastDay: string | null): void {
@@ -174,12 +179,12 @@ export class ServicePoints {
   receive(
     pickups: readonly ServedPickup[],
     zones: readonly DeliveryZoneView[],
-    days: readonly FulfillmentDayView[] = [],
+    days: readonly ServedDay[] = [],
     settings: ServedDeliveryAvailability | null = null,
   ): void {
     this.pickupList.set(pickups.map(servedPickup));
     this.zoneList.set(zones);
-    this.dayList.set(days);
+    this.dayList.set(days.map(servedDay));
     this.settingsHeld.set(settings === null ? null : servedSettings(settings));
     this.asked = true;
     // La liste posée vaut pour le lecteur du moment : sans quoi l'effet la
@@ -254,13 +259,25 @@ export class ServicePoints {
   }
 
   /** Les jours pour cette requête, retenus comme sa réponse. */
+  /**
+   * Relit les jours : une limite annoncée vient de tomber pendant que la page
+   * était ouverte (2026-10-21), la réponse connue ne vaut plus.
+   */
+  refreshDaysNow(): void {
+    if (this.asked) {
+      void this.refreshDays(this.cartQuery);
+    }
+  }
+
   private async daysFor(query: string): Promise<readonly FulfillmentDayView[]> {
     this.daysAskedFor = query;
-    return firstValueFrom(
+    // Typé par le contrat ; une API d'avant `orderUntil` passe par le normaliseur.
+    const days = await firstValueFrom(
       this.http.get<readonly FulfillmentDayView[]>(
         `${AUTH_CONFIG.apiBaseUrl}/fulfillment-days${query}`,
       ),
     );
+    return days.map(servedDay);
   }
 
   /**
@@ -290,7 +307,12 @@ export class ServicePoints {
    * refuse.
    */
   nextDayFor(pickupAddressId: string | null): string | null {
-    return this.dayList().find((day) => day.pickupAddressId === pickupAddressId)?.date ?? null;
+    return this.dayFor(pickupAddressId)?.date ?? null;
+  }
+
+  /** La journée servie pour ce point, avec sa limite annoncée — ou `null`. */
+  dayFor(pickupAddressId: string | null): FulfillmentDayView | null {
+    return this.dayList().find((day) => day.pickupAddressId === pickupAddressId) ?? null;
   }
 
   /** La zone qui dessert ce code postal, par le MÊME préfixe que le serveur. */
@@ -319,6 +341,16 @@ export class ServicePoints {
 type ServedPickup = Omit<PickupAddressView, 'discountAudiences'> & {
   readonly discountAudiences?: PickupAddressView['discountAudiences'];
 };
+
+/** Une journée telle qu'une API d'avant le 2026-10-21 la rend : sans `orderUntil`. */
+type ServedDay = Omit<FulfillmentDayView, 'orderUntil'> & {
+  readonly orderUntil?: string | null;
+};
+
+/** Une limite absente de la vue est inconnue : la boutique ne l'annonce pas. */
+function servedDay(day: ServedDay): FulfillmentDayView {
+  return { ...day, orderUntil: day.orderUntil ?? null };
+}
 
 /** Le réglage tel qu'une API partiellement à jour peut le rendre. */
 type ServedDeliveryAvailability = Partial<PublicDeliveryAvailabilityView>;

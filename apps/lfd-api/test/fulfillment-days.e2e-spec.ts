@@ -93,13 +93,28 @@ describe("prochaine journée demandable", () => {
     // que les points le laisserait sans date, donc à réinventer côté écran.
     const rows = await days();
 
-    expect(rows).toEqual([{ pickupAddressId: null, date: "2026-09-08" }]);
+    expect(rows).toEqual([{ pickupAddressId: null, date: "2026-09-08", orderUntil: null }]);
   });
 
   it("propose demain tant que la limite de la veille n’est pas tombée", async () => {
     await createRule({ pickupAddressId: null, daysBefore: 1, time: "18:00", graceMinutes: 0 });
 
     expect(fallbackDay(await days())).toBe("2026-09-09");
+  });
+
+  /**
+   * 2026-10-21 : la boutique annonce l'heure limite (« plus que … pour
+   * commander »). C'est l'heure ANNONCÉE — la grâce n'y entre pas.
+   */
+  it("sert l'instant limite de la journée proposée, grâce non comprise", async () => {
+    await createRule({ pickupAddressId: null, daysBefore: 1, time: "18:00", graceMinutes: 30 });
+
+    const rows = await days();
+
+    // Le 8 à 18 h à Paris, heure d'été : 16 h UTC.
+    expect(rows).toEqual([
+      { pickupAddressId: null, date: "2026-09-09", orderUntil: "2026-09-08T16:00:00.000Z" },
+    ]);
   });
 
   /** 18 h 01 à Paris : le 9 est fermé. L'écran doit proposer le 10, pas le 9. */

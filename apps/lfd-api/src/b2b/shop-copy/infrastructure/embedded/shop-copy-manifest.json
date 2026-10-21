@@ -2036,6 +2036,62 @@
           "variables": ["day", "next"]
         },
         {
+          "key": "commandTerms.lateDeliveryAt",
+          "fr": "Trop tard pour demain, la limite était {time} : votre commande sera livrée {day}.",
+          "en": "Too late for tomorrow, orders closed at {time}: your order will be delivered on {day}.",
+          "it": "Troppo tardi per domani, il limite era alle {time}: il vostro ordine sarà consegnato {day}.",
+          "variables": ["time", "day"]
+        },
+        {
+          "key": "commandTerms.latePickupAt",
+          "fr": "Trop tard pour demain, la limite était {time} : votre commande sera à retirer {day}.",
+          "en": "Too late for tomorrow, orders closed at {time}: your order will be ready for pickup on {day}.",
+          "it": "Troppo tardi per domani, il limite era alle {time}: il vostro ordine sarà da ritirare {day}.",
+          "variables": ["time", "day"]
+        },
+        {
+          "key": "commandTerms.operationPickupFrom",
+          "fr": "Ce produit se retire à partir du {day}.",
+          "en": "This product can be picked up from {day}.",
+          "it": "Questo prodotto si ritira a partire da {day}.",
+          "variables": ["day"]
+        },
+        {
+          "key": "commandTerms.cutoffCountdown",
+          "fr": "Plus que {left} pour commander pour {day}.",
+          "en": "Only {left} left to order for {day}.",
+          "it": "Ancora {left} per ordinare per {day}.",
+          "variables": ["left", "day"]
+        },
+        {
+          "key": "commandTerms.cutoffLeftHoursMinutes",
+          "fr": "{h} h {mm}",
+          "en": "{h} h {mm} min",
+          "it": "{h} h {mm}",
+          "variables": ["h", "mm"]
+        },
+        {
+          "key": "commandTerms.cutoffLeftHours",
+          "fr": "{h} h",
+          "en": "{h} h",
+          "it": "{h} h",
+          "variables": ["h"]
+        },
+        {
+          "key": "commandTerms.cutoffLeftMinutes",
+          "fr": "{m} min",
+          "en": "{m} min",
+          "it": "{m} min",
+          "variables": ["m"]
+        },
+        {
+          "key": "commandTerms.cutoffCalm",
+          "fr": "Pour {day}, commandez avant {time}.",
+          "en": "For {day}, order before {time}.",
+          "it": "Per {day}, ordinate entro le {time}.",
+          "variables": ["day", "time"]
+        },
+        {
           "key": "commandTerms.modeTitle",
           "fr": "Retrait ou coursier ?",
           "en": "Pickup or courier?",
@@ -4764,6 +4820,125 @@
           "fr": "Le fichier n’a pas pu être produit. Réessayez dans un instant.",
           "en": "The file could not be produced. Try again in a moment.",
           "it": "Non è stato possibile produrre il file. Riprova tra un istante.",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.ordersHead",
+          "fr": "Bons de commande inclus",
+          "en": "Order forms included",
+          "it": "Buoni d’ordine inclusi",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.ordersNote",
+          "fr": "Montants HT tels que chaque bon les imprime — la TVA se calcule sur la facture.",
+          "en": "Amounts excl. VAT as each order form prints them — VAT is worked out on the invoice.",
+          "it": "Importi IVA esclusa come li stampa ogni buono — l’IVA si calcola in fattura.",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.colOrder",
+          "fr": "Bon",
+          "en": "Order",
+          "it": "Buono",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.colDay",
+          "fr": "Jour",
+          "en": "Day",
+          "it": "Giorno",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.colMode",
+          "fr": "Mode",
+          "en": "Mode",
+          "it": "Modalità",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.colAuthor",
+          "fr": "Auteur",
+          "en": "Placed by",
+          "it": "Autore",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.modePickup",
+          "fr": "Retrait",
+          "en": "Pickup",
+          "it": "Ritiro",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.modeDelivery",
+          "fr": "Livraison",
+          "en": "Delivery",
+          "it": "Consegna",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.authorTeam",
+          "fr": "l’équipe",
+          "en": "our team",
+          "it": "il nostro team",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.undated",
+          "fr": "sans date",
+          "en": "no date",
+          "it": "senza data",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.ordersPretax",
+          "fr": "Total HT des bons",
+          "en": "Order forms total excl. VAT",
+          "it": "Totale buoni IVA esclusa",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.ordersGap",
+          "fr": "Écart avec le sous-total HT : {causes}",
+          "en": "Difference from the subtotal excl. VAT: {causes}",
+          "it": "Differenza dal subtotale IVA esclusa: {causes}",
+          "variables": ["causes"]
+        },
+        {
+          "key": "orders.summary.gapDiscount",
+          "fr": "remises",
+          "en": "discounts",
+          "it": "sconti",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.gapVoucher",
+          "fr": "bons de fidélité",
+          "en": "loyalty vouchers",
+          "it": "buoni fedeltà",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.gapDelivery",
+          "fr": "livraison",
+          "en": "delivery",
+          "it": "consegna",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.gapLateFee",
+          "fr": "surtaxes de commande tardive",
+          "en": "late order surcharges",
+          "it": "maggiorazioni per ordine tardivo",
+          "variables": []
+        },
+        {
+          "key": "orders.summary.gapCapped",
+          "fr": "remise plafonnée au montant des articles",
+          "en": "discount capped at the items amount",
+          "it": "sconto limitato all’importo degli articoli",
           "variables": []
         },
         {

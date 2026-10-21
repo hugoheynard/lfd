@@ -29,6 +29,8 @@ const bottom = {
   totalCents: 12_400,
 };
 
+const ordersPretax = { pretaxCents: 11_550, gapCents: -450, cappedDiscountCents: 0 };
+
 function company(id: string, name: string, products: number): OrderSummaryCompanyView {
   return {
     companyId: id,
@@ -41,6 +43,17 @@ function company(id: string, name: string, products: number): OrderSummaryCompan
       htCents: 1_000 + index,
     })),
     bottom,
+    ordersPretax,
+    orders: [
+      {
+        orderId: `${id}_o1`,
+        orderNumber: `CMD-${id}`,
+        day: "2026-10-07",
+        fulfillmentMethod: "delivery",
+        author: { kind: "team" },
+        pretaxCents: 11_550,
+      },
+    ],
   };
 }
 
@@ -53,7 +66,7 @@ function paper(over: Partial<CompanyOrderSummaryView> = {}): OrderSummaryPaper {
     summary: {
       amountsAt: "placement",
       companies,
-      total: { orderCount: 4, products: companies[0]?.products ?? [], bottom },
+      total: { orderCount: 4, products: companies[0]?.products ?? [], bottom, ordersPretax },
       excluded: [{ orderId: "o9", orderNumber: "CMD-009", reason: "cancelled" }],
       ...over,
     },
@@ -103,7 +116,9 @@ describe("le récapitulatif en PDF", () => {
       "Total général",
       "CMD-009",
       "annulée",
-      "Page 1/1",
+      // Les bons en annexe, sur leur page (§10).
+      "Page 1/2",
+      "Page 2/2",
     ]) {
       expect(text).toContain(expected);
     }

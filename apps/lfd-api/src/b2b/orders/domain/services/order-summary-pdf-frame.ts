@@ -30,6 +30,18 @@ const LOGO_SIZE = 18 * MM;
 /** La place réservée au folio en bas de page. */
 export const FOOT_SPACE = 10 * MM;
 
+/** La dernière ordonnée utile, au-dessus du folio. */
+export const SUMMARY_LIMIT = PAGE_HEIGHT - MARGIN_Y - FOOT_SPACE;
+
+/** Une page neuve si `needed` ne tient plus ; rend l'ordonnée où écrire. */
+export function summaryRoom(doc: Doc, y: number, needed: number): number {
+  if (y + needed <= SUMMARY_LIMIT) {
+    return y;
+  }
+  doc.addPage();
+  return MARGIN_Y;
+}
+
 /**
  * Le logo, le titre et « montants à la commande », la société demandeuse, la
  * période s'il y en a une, la sélection, la date de génération et ce que les montants ne sont pas (§6.4).

@@ -1,6 +1,6 @@
 # Plan — filtrer par date et récapituler des commandes dans la boutique
 
-> **Doc-first, 2026-10-21.** R1, R2 et R3 bâtis le 2026-10-21 (§7–§9). Demandé par Hugo le 2026-10-21 :
+> **Doc-first, 2026-10-21.** R1, R2 et R3 bâtis le 2026-10-21 (§7–§9) ; les bons inclus le même jour (§10). Demandé par Hugo le 2026-10-21 :
 > « filtrer aussi par date, sélectionner les rows de commande et demander un
 > récapitulatif avec une agrégation des skus ». Touche à l'argent (HT, TVA,
 > TTC) : contredit par `vitruve` avant d'être soumis. **Contredit le 2026-10-21 :
@@ -234,3 +234,50 @@ récapitulatif des particuliers serait une autre route, en TTC. Hors de ce plan.
   `history-table/history-table.spec.ts`, `apps/lfc-ecommerce-frontend/src/app/client/mes-commandes/order-day-filter/order-day-filter.spec.ts`,
   `apps/lfc-ecommerce-frontend/src/app/client/mes-commandes/order-selection-bar/order-selection-bar.spec.ts`,
   `apps/lfc-ecommerce-frontend/src/app/client/mes-commandes/order-summary-panel/order-summary-panel.spec.ts`, `apps/lfc-ecommerce-frontend/src/app/client/mes-commandes/order-summary.service.spec.ts`.
+
+## 10. Les bons de commande inclus — bâti le 2026-10-21 (non commité à l'écriture de ces lignes)
+
+Demandé par Hugo le 2026-10-21 : « il me faudrait les bons de commande
+associés » ; « les bons sont toujours HT pour la question de l'arrondi
+final ».
+
+- **Le HT d'un bon est celui que le bon imprime**, par UNE règle sortie du
+  bon (`apps/lfd-api/src/b2b/orders/domain/services/order-pretax.ts`, lue par
+  `order-sheet-pdf-totals.ts` et par le récapitulatif) : articles moins remise
+  et bon de fidélité, plancher à zéro, plus livraison et surtaxe — le « Total
+  HT » d'un bon au compte (F5), le « Total avant TVA » d'un bon réglé à la
+  commande. Aucune TVA ni TTC par bon.
+- **La vue** (`packages/contracts/src/company-orders.ts`) : chaque table de
+  société porte `orders` — ses commandes COMPTÉES (`OrderSummaryOrderView` :
+  référence, jour `AAAA-MM-JJ` ou `null`, mode `pickup | delivery`, auteur
+  comme la liste C1, `pretaxCents`), par jour croissant, sans date en
+  dernier, puis référence. Chaque table, le total général compris, porte
+  `ordersPretax` : la somme des bons, l'écart signé avec son sous-total HT, et
+  la part de cet écart due à une remise plafonnée par le bon. Le site est la
+  table elle-même : la liste suit l'ordre des tables.
+- **L'écart n'est jamais muet** : sous la somme, une ligne « Écart avec le
+  sous-total HT : remises, livraison… » nomme les gestes qui ont eu lieu, et
+  « remise plafonnée au montant des articles » quand un bon s'est arrêté à
+  zéro. Sans écart, pas de ligne.
+- **PDF** : en ANNEXE, sur page neuve après les exclues
+  (`apps/lfd-api/src/b2b/orders/domain/services/order-summary-pdf-orders.ts`) — le récapitulatif garde sa lecture d'une
+  traite, la liste (jusqu'à 200 lignes) sert à pointer. Une sous-section par
+  société (son nom en titre), barre de titres reprise sur chaque page avec
+  « (suite) », la somme et l'écart sous chaque société, puis « Total HT des
+  bons — total général » s'il y a plusieurs sociétés. Mots communs au PDF et
+  au tableur : `apps/lfd-api/src/b2b/orders/domain/services/order-summary-orders.ts`.
+- **CSV** : un bloc « Bons de commande inclus » après les exclues — une ligne
+  par bon (bon, société, jour `JJ/MM/AAAA`, mode, auteur, montant HT), puis
+  la somme et l'écart par société, puis le total général s'il y en a
+  plusieurs.
+- **Boutique** : `app-order-summary-orders`
+  (`apps/lfc-ecommerce-frontend/src/app/client/mes-commandes/order-summary-orders/`),
+  un `fold-disclosure` replié sous les exclues ; textes `orders.summary.*`
+  (fr/en/it) dans `order-summary.copy.ts`, recueil régénéré, libellés du
+  glossaire du back-office (`glossary-orders-summary.ts`).
+- **La ligne « Livraison » du bas** : vérifiée avec une commande livrée, au
+  domaine→PDF et en e2e (`Livraison 7,50` lu dans le PDF servi).
+- Tests : `apps/lfd-api/src/b2b/orders/domain/services/__tests__/order-summary-included-orders.spec.ts`,
+  `apps/lfd-api/src/b2b/orders/domain/services/__tests__/order-summary-included-orders-papers.spec.ts`,
+  les deux specs de handlers, e2e `apps/lfd-api/test/company-order-summary.e2e-spec.ts` ;
+  boutique `apps/lfc-ecommerce-frontend/src/app/client/mes-commandes/order-summary-orders/order-summary-orders.spec.ts` et `order-summary-panel.spec.ts`.

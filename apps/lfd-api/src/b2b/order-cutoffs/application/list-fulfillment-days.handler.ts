@@ -1,5 +1,6 @@
 import {
   addDays,
+  announcedOrderUntil,
   type FulfillmentDayView,
   instantToLocal,
   NEXT_FULFILLMENT_HORIZON_DAYS,
@@ -72,13 +73,19 @@ export class ListFulfillmentDaysHandler implements IQueryHandler<
     ]);
     // Aujourd'hui n'est proposé que si le réglage « jour même » l'autorise (§8.3).
     const unavailable = new Set(settings.sameDayAllowed ? closed : [...closed, today]);
-    const dayOf = (pickupAddressId: string | null): FulfillmentDayView => ({
-      pickupAddressId,
-      date: firstPickupDay(
+    // `orderUntil` : la limite ANNONCÉE de la journée rendue (2026-10-21), grâce
+    // non comprise — la boutique prévient avant le « trop tard ».
+    const dayOf = (pickupAddressId: string | null): FulfillmentDayView => {
+      const date = firstPickupDay(
         nextFulfillmentDay(rules, pickupAddressId, now, NEXT_FULFILLMENT_HORIZON_DAYS, unavailable),
         windows,
-      ),
-    });
+      );
+      return {
+        pickupAddressId,
+        date,
+        orderUntil: announcedOrderUntil(rules, pickupAddressId, date),
+      };
+    };
     // Le défaut EN TÊTE et toujours présent : c'est la journée de la livraison,
     // qui ne vise aucun point. Une réponse qui ne listerait que les points
     // laisserait le chemin livraison sans date, donc à réinventer côté écran.

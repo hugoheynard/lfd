@@ -621,6 +621,7 @@ export type {
 } from "./admin-order-detail.js";
 export { adminCancelOrderPayloadSchema } from "./admin-order-detail.js";
 export {
+  announcedOrderUntil,
   clockTimeSchema,
   orderCutoffPayloadSchema,
   decideOrderCutoff,
@@ -956,6 +957,8 @@ export type {
   OrderSummaryExcludedView,
   OrderSummaryExclusionReason,
   OrderSummaryFormat,
+  OrderSummaryOrdersPretaxView,
+  OrderSummaryOrderView,
   OrderSummaryProductView,
   OrderSummaryTableView,
   CompanyOrdersQuery,

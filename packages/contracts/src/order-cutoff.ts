@@ -344,4 +344,34 @@ export interface FulfillmentDayView {
   readonly pickupAddressId: string | null;
   /** La prochaine journée demandable, ou `null` — aucune dans l'horizon. */
   readonly date: string | null;
+  /**
+   * **Jusqu'à quand** on peut commander pour {@link date} — l'instant limite en
+   * ISO 8601, ou `null` : aucune journée, aucune règle en vigueur, ou heure
+   * inexistante ce jour-là (cf. {@link orderCutoffInstant}).
+   *
+   * Calculé par la même règle que {@link decideOrderCutoff}, **grâce non
+   * comprise** : la boutique annonce l'heure annoncée, pas le rattrapage qu'un
+   * humain peut accorder après elle (2026-10-21, « plus que … pour commander »).
+   *
+   * Comme {@link date}, une annonce et jamais une autorisation : un article peut
+   * porter sa propre limite, et la passation reste seule à refuser.
+   */
+  readonly orderUntil: string | null;
+}
+
+/**
+ * L'instant limite ANNONCÉ pour cette journée et ce point — celui que
+ * {@link FulfillmentDayView.orderUntil} sert. Même résolution que
+ * {@link decideOrderCutoff} ; la grâce n'y entre pas.
+ */
+export function announcedOrderUntil(
+  rules: readonly OrderCutoffView[],
+  pickupAddressId: string | null,
+  fulfillmentDate: string | null,
+): string | null {
+  if (fulfillmentDate === null) {
+    return null;
+  }
+  const rule = resolveOrderCutoff(rules, pickupAddressId, weekdayOfDate(fulfillmentDate));
+  return rule === null ? null : (orderCutoffInstant(rule, fulfillmentDate)?.toISOString() ?? null);
 }

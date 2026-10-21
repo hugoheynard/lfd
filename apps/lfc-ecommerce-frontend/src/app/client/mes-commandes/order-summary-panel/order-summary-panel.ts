@@ -32,6 +32,7 @@ import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { formatCents } from '../../format-money';
 import { panelSide } from '../../panel-side';
 import { downloadBlob } from '../download-blob';
+import { OrderSummaryOrders } from '../order-summary-orders/order-summary-orders';
 import {
   exclusionLabel,
   orderCountLabel,
@@ -69,7 +70,8 @@ interface SummaryBlock {
  * Tout vient du serveur, qui calcule : une table par société (le compte puis
  * ses sites), son bas comme une facture, le total général — ses produits ne
  * sont répétés que s'il y a plusieurs sociétés, comme au PDF —, puis les
- * commandes exclues et pourquoi. « PDF » et « Tableur » renvoient LA MÊME
+ * commandes exclues et pourquoi, puis les bons de commande inclus, repliés
+ * (§10). « PDF » et « Tableur » renvoient LA MÊME
  * sélection et la période affichée ; le nom du fichier est celui du serveur.
  * Un refus (un id hors du mur, le plafond) s'affiche avec SON message.
  */
@@ -85,6 +87,7 @@ interface SummaryBlock {
     FoldPanelBodyComponent,
     FoldPanelHeaderComponent,
     NgTemplateOutlet,
+    OrderSummaryOrders,
   ],
   templateUrl: './order-summary-panel.html',
   styleUrl: './order-summary-panel.scss',
@@ -148,6 +151,12 @@ export class OrderSummaryPanel {
     }
     const block = this.blockOf('total', this.copy().grandTotal, state.summary.total);
     return state.summary.companies.length > 1 ? block : { ...block, products: [] };
+  });
+
+  /** Le récapitulatif servi, pour la liste des bons ; `null` avant lui. */
+  protected readonly ready = computed(() => {
+    const state = this.state();
+    return state.kind === 'ready' ? state.summary : null;
   });
 
   protected readonly excluded = computed(() => {

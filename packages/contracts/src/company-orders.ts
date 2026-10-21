@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { CustomerOrderView, VatShareView } from "./order.js";
+import type { CustomerOrderView, FulfillmentMethod, VatShareView } from "./order.js";
 
 /** Un jour `AAAA-MM-JJ` ; l'existence au calendrier se vérifie au serveur. */
 const orderDaySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "jour attendu au format AAAA-MM-JJ");
@@ -112,17 +112,58 @@ export interface OrderSummaryBottomView {
   readonly totalCents: number;
 }
 
+/**
+ * **Un bon de commande inclus** (plan §10, Hugo 2026-10-21 : « il me faudrait
+ * les bons de commande associés ») — une commande COMPTÉE, telle que son bon
+ * l'imprime. Aucune TVA ni TTC : un bon de pro est en HT (F5).
+ */
+export interface OrderSummaryOrderView {
+  readonly orderId: string;
+  readonly orderNumber: string;
+  /** Le jour de retrait/livraison `AAAA-MM-JJ` ; `null` : sans date. */
+  readonly day: string | null;
+  readonly fulfillmentMethod: FulfillmentMethod;
+  /** Qui l'a passée — même fait que la liste (C1, §7.6). */
+  readonly author: CompanyOrderAuthorView;
+  /**
+   * Le « Total HT » du bon (`order-sheet-pdf-totals.ts`, F5) : articles moins
+   * remise et bon de fidélité (plancher à zéro), plus livraison et surtaxe.
+   */
+  readonly pretaxCents: number;
+}
+
+/**
+ * La somme des HT des bons d'une table, rapprochée de son sous-total HT : les
+ * deux diffèrent des gestes du bas (remises, bons, livraison, surtaxes) — la
+ * différence est servie pour être EXPLIQUÉE, jamais laissée muette.
+ */
+export interface OrderSummaryOrdersPretaxView {
+  /** Somme des `pretaxCents` des bons. */
+  readonly pretaxCents: number;
+  /** `pretaxCents − subtotalCents`, signé. */
+  readonly gapCents: number;
+  /**
+   * La part de l'écart qui ne vient PAS des gestes du bas : une remise
+   * plafonnée au montant des articles (le bon ne descend pas sous zéro).
+   */
+  readonly cappedDiscountCents: number;
+}
+
 /** Une table : les produits et le bas d'un ensemble de commandes. */
 export interface OrderSummaryTableView {
   readonly orderCount: number;
   readonly products: readonly OrderSummaryProductView[];
   readonly bottom: OrderSummaryBottomView;
+  /** Le rapprochement des bons inclus avec le sous-total HT (§10). */
+  readonly ordersPretax: OrderSummaryOrdersPretaxView;
 }
 
 /** La table d'une société : le principal, ou l'un de ses sites (§6.2). */
 export interface OrderSummaryCompanyView extends OrderSummaryTableView {
   readonly companyId: string;
   readonly name: string;
+  /** Ses bons comptés, par jour croissant (sans date en dernier), puis référence. */
+  readonly orders: readonly OrderSummaryOrderView[];
 }
 
 export const ORDER_SUMMARY_EXCLUSION_REASONS = [

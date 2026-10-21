@@ -1,10 +1,14 @@
 import {
+  type CompanyOrderAuthorView,
   type CompanyOrderSummaryView,
+  type FulfillmentMethod,
   ORDER_SUMMARY_MAX_ORDERS,
   type OrderSummaryBottomView,
   type OrderSummaryCompanyView,
   type OrderSummaryExcludedView,
   type OrderSummaryExclusionReason,
+  type OrderSummaryOrdersPretaxView,
+  type OrderSummaryOrderView,
   type OrderSummaryProductView,
   type OrderSummaryTableView,
   type PaymentStatus,
@@ -15,6 +19,7 @@ import {
   OrderSummaryOrdersNotFoundError,
   OrderSummaryTooManyOrdersError,
 } from "../errors/order-summary-errors.js";
+import { orderPretaxCents } from "./order-pretax.js";
 
 /** Une ligne figée à la passation — ce que le récapitulatif en lit. */
 export interface OrderSummaryLine {
@@ -34,6 +39,10 @@ export interface OrderSummarySource {
   readonly orderNumber: string;
   readonly companyId: string;
   readonly companyName: string;
+  /** Le jour de retrait/livraison `AAAA-MM-JJ`, `null` sans date. */
+  readonly day: string | null;
+  readonly fulfillmentMethod: FulfillmentMethod;
+  readonly author: CompanyOrderAuthorView;
   readonly cancelled: boolean;
   readonly paymentStatus: PaymentStatus;
   readonly subtotalCents: number;
@@ -140,6 +149,7 @@ function companyTables(
     companyId,
     name: bucket.name,
     ...tableOf(bucket.orders),
+    orders: includedOrdersOf(bucket.orders),
   }));
   return tables.sort((a, b) => companyRank(a, b, listedCompanyId));
 }
@@ -159,11 +169,64 @@ function companyRank(
 }
 
 function tableOf(orders: readonly OrderSummarySource[]): OrderSummaryTableView {
+  const bottom = bottomOf(orders);
   return {
     orderCount: orders.length,
     products: productsOf(orders),
-    bottom: bottomOf(orders),
+    bottom,
+    ordersPretax: ordersPretaxOf(orders, bottom),
   };
+}
+
+/**
+ * Les bons comptés d'une société (§10), chacun avec le HT que SON bon imprime
+ * (`orderPretaxCents`, la règle du bon) — jamais de TVA ni de TTC par bon.
+ * Jour croissant, les commandes sans date en dernier, puis la référence.
+ */
+function includedOrdersOf(orders: readonly OrderSummarySource[]): readonly OrderSummaryOrderView[] {
+  return orders
+    .map((order) => ({
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      day: order.day,
+      fulfillmentMethod: order.fulfillmentMethod,
+      author: order.author,
+      pretaxCents: orderPretaxCents(order),
+    }))
+    .sort(
+      (a, b) =>
+        dayRank(a.day, b.day) ||
+        a.orderNumber.localeCompare(b.orderNumber, "fr", { numeric: true }),
+    );
+}
+
+function dayRank(a: string | null, b: string | null): number {
+  if (a === b) {
+    return 0;
+  }
+  if (a === null) {
+    return 1;
+  }
+  return b === null ? -1 : a.localeCompare(b);
+}
+
+/**
+ * La somme des HT des bons, rapprochée du sous-total HT. L'écart attendu est
+ * celui des gestes du bas ; ce qui reste vient d'une remise que le bon a
+ * plafonnée au montant des articles — servi à part pour être dit.
+ */
+function ordersPretaxOf(
+  orders: readonly OrderSummarySource[],
+  bottom: OrderSummaryBottomView,
+): OrderSummaryOrdersPretaxView {
+  const pretaxCents = orders.reduce((sum, order) => sum + orderPretaxCents(order), 0);
+  const gapCents = pretaxCents - bottom.subtotalCents;
+  const gesturesCents =
+    bottom.deliveryFeeCents +
+    bottom.lateFeeCents -
+    bottom.discountCents -
+    bottom.voucherDiscountCents;
+  return { pretaxCents, gapCents, cappedDiscountCents: gapCents - gesturesCents };
 }
 
 function productsOf(orders: readonly OrderSummarySource[]): readonly OrderSummaryProductView[] {

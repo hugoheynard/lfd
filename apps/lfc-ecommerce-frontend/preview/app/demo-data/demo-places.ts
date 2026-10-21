@@ -69,8 +69,12 @@ export const DEMO_DELIVERY_AVAILABILITY: PublicDeliveryAvailabilityView = {
 export function demoFulfillmentDays(): readonly FulfillmentDayView[] {
   const tomorrow = demoDay(1);
   return [
-    { pickupAddressId: null, date: tomorrow },
-    ...DEMO_PICKUP_ADDRESSES.map((point) => ({ pickupAddressId: point.id, date: tomorrow })),
+    { pickupAddressId: null, date: tomorrow, orderUntil: null },
+    ...DEMO_PICKUP_ADDRESSES.map((point) => ({
+      pickupAddressId: point.id,
+      date: tomorrow,
+      orderUntil: null,
+    })),
   ];
 }
 

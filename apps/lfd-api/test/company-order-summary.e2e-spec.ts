@@ -238,7 +238,49 @@ describe("le récapitulatif en PDF et au tableur (lot R2) — même mur, mêmes 
     expect(text).toContain("Total général");
     expect(text).toContain("21,10");
     expect(text).toContain("annulée");
-    expect(text).toContain("Page 1/1");
+    // Les bons inclus en annexe, sur leur page (§10).
+    expect(text).toContain("Page 1/2");
+    expect(text).toContain("BONS DE COMMANDE INCLUS");
+  });
+
+  it("les bons inclus : une commande LIVRÉE porte ses frais au bas et dans le HT de son bon (§10)", async () => {
+    const g = await group();
+    const boss = await principalMember(g, CustomerRole.owner);
+    const pickedUp = await accountOrder(g.principal, boss);
+    const delivered = await accountOrder(g.principal, boss);
+    await ctx.prisma.order.update({
+      where: { id: delivered },
+      data: { fulfillmentMethod: "delivery", deliveryFeeCents: 750, totalCents: 1_955 },
+    });
+    const cancelled = await accountOrder(g.principal, boss, { status: OrderStatus.cancelled });
+    const ids = [pickedUp, delivered, cancelled];
+
+    const summary = jsonBody<CompanyOrderSummaryView>(
+      await summarize(boss, g.principal, ids).expect(200),
+    );
+
+    const bons = summary.companies[0]?.orders ?? [];
+    expect(bons.map((o) => [o.orderId, o.fulfillmentMethod, o.pretaxCents]).sort()).toEqual(
+      [
+        [pickedUp, "pickup", 1_000],
+        [delivered, "delivery", 1_750],
+      ].sort(),
+    );
+    expect(bons[0]?.author).toEqual({ kind: "customer", name: "Léa Petit" });
+    expect(bons[0]?.day).toMatch(/^\d{4}-\d{2}-\d{2}$/u);
+    expect(summary.total.bottom.deliveryFeeCents).toBe(750);
+    expect(summary.total.ordersPretax).toEqual({
+      pretaxCents: 2_750,
+      gapCents: 750,
+      cappedDiscountCents: 0,
+    });
+
+    const pdf = await summarizeAs(boss, g.principal, ids, "pdf").expect(200);
+    const text = pdfPages(bytesOf(pdf.body)).join(" ").replace(/\s+/gu, " ");
+    expect(text).toContain("Livraison 7,50");
+    expect(text).toContain("Écart avec le sous-total HT : livraison");
+    const csv = await summarizeAs(boss, g.principal, ids, "csv").expect(200);
+    expect(bytesOf(csv.body).toString("utf8")).toContain('"Total HT des bons";');
   });
 
   it("CSV : BOM, une ligne par (société, produit), puis le bas", async () => {

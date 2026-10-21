@@ -7,7 +7,6 @@ import {
   LEFT,
   MARGIN_Y,
   MM,
-  PAGE_HEIGHT,
   put,
   putCaps,
   putRight,
@@ -24,7 +23,13 @@ import {
   summaryBottomRows,
   TOTAL_LABEL,
 } from "./order-summary-paper.js";
-import { drawSummaryFolios, drawSummaryHeader, FOOT_SPACE } from "./order-summary-pdf-frame.js";
+import {
+  drawSummaryFolios,
+  drawSummaryHeader,
+  SUMMARY_LIMIT,
+  summaryRoom,
+} from "./order-summary-pdf-frame.js";
+import { drawIncludedOrders } from "./order-summary-pdf-orders.js";
 
 /**
  * **Le récapitulatif de commandes en PDF** (plan
@@ -51,17 +56,8 @@ const BOTTOM_ROW_HEIGHT = 5 * MM;
 const SECTION_HEAD_SPACE = 22 * MM;
 const BOTTOM_BLOCK_LEFT = RIGHT - 80 * MM;
 
-/** La dernière ordonnée utile, au-dessus du folio. */
-const LIMIT = PAGE_HEIGHT - MARGIN_Y - FOOT_SPACE;
-
-/** Une page neuve si `needed` ne tient plus ; rend l'ordonnée où écrire. */
-function room(doc: Doc, y: number, needed: number): number {
-  if (y + needed <= LIMIT) {
-    return y;
-  }
-  doc.addPage();
-  return MARGIN_Y;
-}
+const LIMIT = SUMMARY_LIMIT;
+const room = summaryRoom;
 
 /** Le nom de la table, et « (suite) » quand elle reprend sur une page neuve. */
 function sectionTitle(doc: Doc, title: string, orderCount: number, y: number): number {
@@ -179,6 +175,9 @@ function draw(doc: Doc, paper: OrderSummaryPaper, logo: Buffer): void {
   // Une seule société : sa table EST le total, on n'en répète que le bas.
   y = section(doc, TOTAL_LABEL, summary.total, summary.companies.length > 1, y);
   excludedSection(doc, paper, y);
+  // Les bons en ANNEXE, sur page neuve : le récapitulatif se lit d'abord
+  // d'un bloc, la liste des bons sert à pointer (§10).
+  drawIncludedOrders(doc, summary);
   drawSummaryFolios(doc, paper);
 }
 

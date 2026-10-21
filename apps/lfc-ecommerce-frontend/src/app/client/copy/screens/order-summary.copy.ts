@@ -60,6 +60,26 @@ export interface OrderSummaryCopy {
   /** Un refus sans message lisible (réseau, panne). */
   readonly failed: string;
   readonly exportFailed: string;
+  /** Les bons de commande inclus (§10) : HT seul, comme chaque bon l'imprime. */
+  readonly ordersHead: string;
+  readonly ordersNote: string;
+  readonly colOrder: string;
+  readonly colDay: string;
+  readonly colMode: string;
+  readonly colAuthor: string;
+  readonly modePickup: string;
+  readonly modeDelivery: string;
+  /** L'auteur quand l'équipe a saisi la commande. */
+  readonly authorTeam: string;
+  readonly undated: string;
+  readonly ordersPretax: string;
+  /** `{causes}` : les gestes qui font l'écart, séparés par des virgules. */
+  readonly ordersGap: string;
+  readonly gapDiscount: string;
+  readonly gapVoucher: string;
+  readonly gapDelivery: string;
+  readonly gapLateFee: string;
+  readonly gapCapped: string;
 }
 
 export const ORDER_SUMMARY_FR: OrderSummaryCopy = {
@@ -107,6 +127,23 @@ export const ORDER_SUMMARY_FR: OrderSummaryCopy = {
   csv: 'Tableur',
   failed: 'Le récapitulatif n’a pas pu être établi. Réessayez dans un instant.',
   exportFailed: 'Le fichier n’a pas pu être produit. Réessayez dans un instant.',
+  ordersHead: 'Bons de commande inclus',
+  ordersNote: 'Montants HT tels que chaque bon les imprime — la TVA se calcule sur la facture.',
+  colOrder: 'Bon',
+  colDay: 'Jour',
+  colMode: 'Mode',
+  colAuthor: 'Auteur',
+  modePickup: 'Retrait',
+  modeDelivery: 'Livraison',
+  authorTeam: 'l’équipe',
+  undated: 'sans date',
+  ordersPretax: 'Total HT des bons',
+  ordersGap: 'Écart avec le sous-total HT : {causes}',
+  gapDiscount: 'remises',
+  gapVoucher: 'bons de fidélité',
+  gapDelivery: 'livraison',
+  gapLateFee: 'surtaxes de commande tardive',
+  gapCapped: 'remise plafonnée au montant des articles',
 };
 
 export const ORDER_SUMMARY_EN: OrderSummaryCopy = {
@@ -154,6 +191,24 @@ export const ORDER_SUMMARY_EN: OrderSummaryCopy = {
   csv: 'Spreadsheet',
   failed: 'The summary could not be built. Try again in a moment.',
   exportFailed: 'The file could not be produced. Try again in a moment.',
+  ordersHead: 'Order forms included',
+  ordersNote:
+    'Amounts excl. VAT as each order form prints them — VAT is worked out on the invoice.',
+  colOrder: 'Order',
+  colDay: 'Day',
+  colMode: 'Mode',
+  colAuthor: 'Placed by',
+  modePickup: 'Pickup',
+  modeDelivery: 'Delivery',
+  authorTeam: 'our team',
+  undated: 'no date',
+  ordersPretax: 'Order forms total excl. VAT',
+  ordersGap: 'Difference from the subtotal excl. VAT: {causes}',
+  gapDiscount: 'discounts',
+  gapVoucher: 'loyalty vouchers',
+  gapDelivery: 'delivery',
+  gapLateFee: 'late order surcharges',
+  gapCapped: 'discount capped at the items amount',
 };
 
 export const ORDER_SUMMARY_IT: OrderSummaryCopy = {
@@ -201,4 +256,21 @@ export const ORDER_SUMMARY_IT: OrderSummaryCopy = {
   csv: 'Foglio di calcolo',
   failed: 'Non è stato possibile preparare il riepilogo. Riprova tra un istante.',
   exportFailed: 'Non è stato possibile produrre il file. Riprova tra un istante.',
+  ordersHead: 'Buoni d’ordine inclusi',
+  ordersNote: 'Importi IVA esclusa come li stampa ogni buono — l’IVA si calcola in fattura.',
+  colOrder: 'Buono',
+  colDay: 'Giorno',
+  colMode: 'Modalità',
+  colAuthor: 'Autore',
+  modePickup: 'Ritiro',
+  modeDelivery: 'Consegna',
+  authorTeam: 'il nostro team',
+  undated: 'senza data',
+  ordersPretax: 'Totale buoni IVA esclusa',
+  ordersGap: 'Differenza dal subtotale IVA esclusa: {causes}',
+  gapDiscount: 'sconti',
+  gapVoucher: 'buoni fedeltà',
+  gapDelivery: 'consegna',
+  gapLateFee: 'maggiorazioni per ordine tardivo',
+  gapCapped: 'sconto limitato all’importo degli articoli',
 };
