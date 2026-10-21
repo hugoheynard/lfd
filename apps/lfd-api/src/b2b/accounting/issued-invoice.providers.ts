@@ -17,10 +17,12 @@ import { CompanyInvoicesReader } from "./domain/ports/company-invoices.reader.js
 import { InvoiceFontSource } from "./domain/ports/invoice-font-source.js";
 import { InvoiceMailOrigins } from "./domain/ports/invoice-mail-origins.js";
 import { InvoicePeriodsReader } from "./domain/ports/invoice-periods.reader.js";
+import { InvoiceSettlementFactsReader } from "./domain/ports/invoice-settlement-facts.reader.js";
 import { InvoiceSiteContactsReader } from "./domain/ports/invoice-site-contacts.reader.js";
 import { PrismaCompanyInvoicesReader } from "./infrastructure/prisma-company-invoices.reader.js";
 import { DiskInvoiceFontSource } from "./infrastructure/disk-invoice-font-source.js";
 import { PrismaInvoicePeriodsReader } from "./infrastructure/prisma-invoice-periods.reader.js";
+import { PrismaInvoiceSettlementFactsReader } from "./infrastructure/prisma-invoice-settlement-facts.reader.js";
 import { PrismaInvoiceSiteContactsReader } from "./infrastructure/prisma-invoice-site-contacts.reader.js";
 
 /**
@@ -32,6 +34,7 @@ import { PrismaInvoiceSiteContactsReader } from "./infrastructure/prisma-invoice
 export const ISSUED_INVOICE_PROVIDERS: readonly Provider[] = [
   { provide: CompanyInvoicesReader, useClass: PrismaCompanyInvoicesReader },
   { provide: InvoicePeriodsReader, useClass: PrismaInvoicePeriodsReader },
+  { provide: InvoiceSettlementFactsReader, useClass: PrismaInvoiceSettlementFactsReader },
   { provide: InvoiceSiteContactsReader, useClass: PrismaInvoiceSiteContactsReader },
   {
     provide: InvoiceMailOrigins,

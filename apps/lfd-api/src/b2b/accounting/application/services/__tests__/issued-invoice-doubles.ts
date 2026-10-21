@@ -5,6 +5,10 @@ import type { StoredDocument } from "../../../../../platform/storage/document-st
 import type { Invoice } from "../../../domain/entities/invoice.js";
 import { CompanyInvoicesReader } from "../../../domain/ports/company-invoices.reader.js";
 import { InvoicePeriodsReader } from "../../../domain/ports/invoice-periods.reader.js";
+import {
+  InvoiceSettlementFactsReader,
+  type InvoiceCollectionFacts,
+} from "../../../domain/ports/invoice-settlement-facts.reader.js";
 import type { BillingCycle } from "../../../domain/services/billing-cycle.js";
 import { InvoiceReader } from "../../../domain/ports/invoice.reader.js";
 import { PayerNoticeContactsReader } from "../../../domain/ports/payer-notice-contacts.reader.js";
@@ -73,6 +77,20 @@ export class FixedInvoicePeriods extends InvoicePeriodsReader {
   periodsOf(invoiceIds: readonly string[]): Promise<ReadonlyMap<string, BillingCycle>> {
     return Promise.resolve(
       new Map([...this.periods].filter(([invoiceId]) => invoiceIds.includes(invoiceId))),
+    );
+  }
+}
+
+/** Les faits de prélèvement par pièce ; compte les lectures pour prouver qu'elles vont par lot. */
+export class FixedSettlementFacts extends InvoiceSettlementFactsReader {
+  readonly calls: (readonly string[])[] = [];
+  constructor(private readonly facts: ReadonlyMap<string, InvoiceCollectionFacts> = new Map()) {
+    super();
+  }
+  factsOf(invoiceIds: readonly string[]): Promise<ReadonlyMap<string, InvoiceCollectionFacts>> {
+    this.calls.push(invoiceIds);
+    return Promise.resolve(
+      new Map([...this.facts].filter(([invoiceId]) => invoiceIds.includes(invoiceId))),
     );
   }
 }

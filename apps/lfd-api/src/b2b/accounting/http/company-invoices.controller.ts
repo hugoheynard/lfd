@@ -1,10 +1,16 @@
-import type { IssuedInvoiceView, IssuedInvoicesView } from "@lfd/contracts";
-import { Controller, Get, Param, Res, StreamableFile } from "@nestjs/common";
+import {
+  myInvoicesQuerySchema,
+  type IssuedInvoiceView,
+  type MyInvoicesQuery,
+  type MyIssuedInvoicesView,
+} from "@lfd/contracts";
+import { Controller, Get, Param, Query, Res, StreamableFile } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
 import type { Response } from "express";
 
 import { CurrentUser } from "../../../platform/auth/current-user.decorator.js";
 import type { Principal } from "../../../platform/auth/principal.js";
+import { ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
 import type { InvoiceDocument } from "../application/invoice-document-support.js";
 import {
   GetMyCompanyInvoiceDocumentQuery,
@@ -21,13 +27,19 @@ import { invoicePdfResponse } from "./invoice-pdf-response.js";
 export class CompanyInvoicesController {
   constructor(private readonly queries: QueryBus) {}
 
+  /** La liste filtrée (émission, genre), chaque pièce avec son règlement, et le total dû du compte. */
   @Get(":companyId/invoices")
   list(
     @CurrentUser() user: Principal,
     @Param("companyId") companyId: string,
-  ): Promise<IssuedInvoicesView> {
-    return this.queries.execute<ListMyCompanyInvoicesQuery, IssuedInvoicesView>(
-      new ListMyCompanyInvoicesQuery(user.userId, companyId),
+    @Query(new ZodQuery(myInvoicesQuerySchema)) query: MyInvoicesQuery,
+  ): Promise<MyIssuedInvoicesView> {
+    return this.queries.execute<ListMyCompanyInvoicesQuery, MyIssuedInvoicesView>(
+      new ListMyCompanyInvoicesQuery(user.userId, companyId, {
+        year: query.year ?? null,
+        month: query.month ?? null,
+        kind: query.kind ?? null,
+      }),
     );
   }
 

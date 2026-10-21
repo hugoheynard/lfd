@@ -10,6 +10,7 @@ import {
   FixedInvoicePeriods,
   SEPTEMBER_2026,
   FixedRoles,
+  FixedSettlementFacts,
   MemoryCompanyInvoices,
   MemoryInvoiceReader,
 } from "../../services/__tests__/issued-invoice-doubles.js";
@@ -72,7 +73,12 @@ const siteVisible = new MemoryCompanyInvoices(
 );
 
 describe("« Mes factures » côté client (E6)", () => {
-  const list = new ListMyCompanyInvoicesHandler(roles, visible, periods);
+  const list = new ListMyCompanyInvoicesHandler(
+    roles,
+    visible,
+    periods,
+    new FixedSettlementFacts(),
+  );
   const read = new GetMyCompanyInvoiceHandler(roles, visible, periods);
 
   it("le détenteur et le rôle facturation voient les pièces adressées à leur société, récentes d'abord", async () => {
@@ -102,6 +108,7 @@ describe("« Mes factures » côté client (E6)", () => {
       totalVatCents: 155,
       totalTtcCents: 1_655,
       documentAvailable: false,
+      settlement: { status: "collection_planned", date: "2026-10-14", otherInvoicesOnDebit: 0 },
     });
   });
 
@@ -147,7 +154,12 @@ describe("« Mes factures » côté client (E6)", () => {
 });
 
 describe("« Mes factures » d'un site (E6, suite (a))", () => {
-  const list = new ListMyCompanyInvoicesHandler(roles, siteVisible, periods);
+  const list = new ListMyCompanyInvoicesHandler(
+    roles,
+    siteVisible,
+    periods,
+    new FixedSettlementFacts(),
+  );
   const read = new GetMyCompanyInvoiceHandler(roles, siteVisible, periods);
 
   it("voit, en lecture, les pièces de sa maison mère qui couvrent un de ses bons", async () => {
@@ -165,6 +177,89 @@ describe("« Mes factures » d'un site (E6, suite (a))", () => {
     await expect(
       list.execute(new ListMyCompanyInvoicesQuery("u_site_orders", "c_site")),
     ).rejects.toBeInstanceOf(InvoiceRoleRequiredError);
+  });
+});
+
+/** Un retour à traiter sur une ligne déposée qui portait trois factures. */
+const REJECTED = {
+  debits: [
+    {
+      batchId: "01B",
+      batchStatus: "deposited",
+      constitutedAt: new Date("2026-10-02T08:00:00.000Z"),
+      requestedCollectionDay: "2026-10-09",
+      noticeCollectionDay: "2026-10-08",
+      returnResolution: "pending",
+      returnedOn: "2026-10-12",
+      invoiceCountOnDebit: 3,
+    },
+  ],
+  blocked: false,
+} as const;
+
+describe("« Mes factures » : règlement, total dû, filtres (plan page-mes-factures, P1)", () => {
+  it("chaque pièce porte son statut ; le total dû compte le prévu et le rejeté, lus en UNE fois", async () => {
+    const facts = new FixedSettlementFacts(new Map([["inv_1", REJECTED]]));
+    const list = new ListMyCompanyInvoicesHandler(roles, visible, periods, facts);
+
+    const view = await list.execute(new ListMyCompanyInvoicesQuery("u_compta", "c_port"));
+
+    expect(view.invoices.map((one) => [one.number, one.settlement])).toEqual([
+      [
+        "FA-2026-000002",
+        { status: "collection_planned", date: "2026-11-14", otherInvoicesOnDebit: 0 },
+      ],
+      [
+        "FA-2026-000001",
+        { status: "collection_rejected", date: "2026-10-12", otherInvoicesOnDebit: 2 },
+      ],
+    ]);
+    expect(view.amountDue).toEqual({
+      totalCents: 2 * 1_655,
+      invoiceCount: 2,
+      rejectedCount: 1,
+      rejectedCents: 1_655,
+    });
+    expect(facts.calls).toEqual([["inv_1", "inv_2"]]);
+  });
+
+  it("le filtre choisit les lignes, jamais le total dû (§7.3)", async () => {
+    const facts = new FixedSettlementFacts(new Map([["inv_1", REJECTED]]));
+    const list = new ListMyCompanyInvoicesHandler(roles, visible, periods, facts);
+
+    const view = await list.execute(
+      new ListMyCompanyInvoicesQuery("u_owner", "c_port", { year: 2026, month: 10, kind: null }),
+    );
+
+    expect(view.invoices.map((one) => one.number)).toEqual(["FA-2026-000002"]);
+    expect(view.amountDue.totalCents).toBe(2 * 1_655);
+    const notes = await list.execute(
+      new ListMyCompanyInvoicesQuery("u_owner", "c_port", {
+        year: null,
+        month: null,
+        kind: "credit_note",
+      }),
+    );
+    expect(notes.invoices).toEqual([]);
+  });
+
+  it("un site compte dans SON total la pièce rejetée de sa maison mère (Q-C)", async () => {
+    const facts = new FixedSettlementFacts(new Map([["inv_9", REJECTED]]));
+    const list = new ListMyCompanyInvoicesHandler(roles, siteVisible, periods, facts);
+
+    const view = await list.execute(new ListMyCompanyInvoicesQuery("u_site", "c_site"));
+
+    expect(view.amountDue).toMatchObject({ invoiceCount: 1, rejectedCount: 1 });
+  });
+
+  it("le mur passe avant toute lecture : un autre rôle, 403, et rien n'est lu", async () => {
+    const facts = new FixedSettlementFacts();
+    const list = new ListMyCompanyInvoicesHandler(roles, visible, periods, facts);
+
+    await expect(
+      list.execute(new ListMyCompanyInvoicesQuery("u_orders", "c_port")),
+    ).rejects.toBeInstanceOf(InvoiceRoleRequiredError);
+    expect(facts.calls).toEqual([]);
   });
 });
 

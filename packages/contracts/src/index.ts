@@ -255,6 +255,15 @@ export type {
   IssuedInvoicesView,
   OrderInvoicesView,
 } from "./issued-invoices.js";
+export { myInvoicesQuerySchema } from "./my-issued-invoices.js";
+export type {
+  MyAmountDueView,
+  MyInvoiceSettlementStatus,
+  MyInvoiceSettlementView,
+  MyInvoicesQuery,
+  MyIssuedInvoicesView,
+  MyIssuedInvoiceView,
+} from "./my-issued-invoices.js";
 export type {
   BillingStatementBuyerView,
   BillingStatementOrderView,

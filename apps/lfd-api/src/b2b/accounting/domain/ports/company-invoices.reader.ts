@@ -8,7 +8,7 @@ import type { Invoice } from "../entities/invoice.js";
  * site frère. Le mur est dans la requête, pas dans l'appelant.
  */
 export abstract class CompanyInvoicesReader {
-  /** Les pièces visibles, dans l'ordre des numéros. */
+  /** Les pièces visibles, les plus récentes d'abord (numéro décroissant). */
   abstract visibleTo(companyId: string): Promise<readonly Invoice[]>;
 
   /** La pièce si elle est visible par cette société, sinon `null` (absente ou d'un autre). */

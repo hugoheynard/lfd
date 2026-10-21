@@ -21,7 +21,7 @@ export class PrismaCompanyInvoicesReader extends CompanyInvoicesReader {
     const rows = await this.prisma.invoice.findMany({
       where: { OR: [{ payerCompanyId: companyId }, { id: { in: [...covering] } }] },
       include: INVOICE_ROW_INCLUDE,
-      orderBy: [{ year: "asc" }, { rank: "asc" }],
+      orderBy: [{ year: "desc" }, { rank: "desc" }],
     });
     return rows.map(toInvoice);
   }

@@ -25,7 +25,8 @@ export interface IssuedInvoiceReaders {
  * **Les factures d'un payeur légal**, les plus récentes d'abord — numéro
  * décroissant, l'ordre chronologique de la séquence (E2). Le mur est
  * `payer_company_id` — la fiche staff d'une société ; « Mes factures » d'un
- * client passe par `invoicesViewOf`, qui voit aussi les pièces de ses bons.
+ * client a sa vue à lui (`my-invoices-view-support.ts`), qui voit aussi les
+ * pièces de ses bons et leur règlement.
  */
 export async function issuedInvoicesOf(
   readers: IssuedInvoiceReaders,
@@ -34,11 +35,8 @@ export async function issuedInvoicesOf(
   return invoicesViewOf(readers.periods, await readers.invoices.byPayer(payerCompanyId));
 }
 
-/**
- * Des pièces déjà lues, les plus récentes d'abord, avec leur mois facturé —
- * « Mes factures » les lit par `CompanyInvoicesReader` (E6 (a)).
- */
-export async function invoicesViewOf(
+/** Des pièces déjà lues (dans l'ordre des numéros), les plus récentes d'abord, avec leur mois facturé. */
+async function invoicesViewOf(
   periodsReader: InvoicePeriodsReader,
   read: readonly Invoice[],
 ): Promise<IssuedInvoicesView> {
@@ -95,7 +93,8 @@ export async function orderInvoicesOf(
   };
 }
 
-function summaryOf(invoice: Invoice, period: BillingCycle | null): IssuedInvoiceSummaryView {
+/** Le résumé partagé d'une pièce — la fiche, la commande, et « Mes factures » qui l'étend. */
+export function summaryOf(invoice: Invoice, period: BillingCycle | null): IssuedInvoiceSummaryView {
   const state = invoice.toState();
   return {
     invoiceId: state.id,

@@ -354,5 +354,6 @@
   "test/sub-account-notice-contacts.e2e-spec.ts": 12018,
   "test/sub-account-notice-bank.e2e-spec.ts": 11477,
   "test/sub-account-notice-subscriptions.e2e-spec.ts": 14294,
-  "test/pim-allergen-matrix-right.e2e-spec.ts": 8120
+  "test/pim-allergen-matrix-right.e2e-spec.ts": 8120,
+  "test/my-invoices.e2e-spec.ts": 10091
 }

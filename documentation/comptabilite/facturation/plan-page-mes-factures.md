@@ -160,3 +160,56 @@ en-têtes, rangé en STORE (un PDF/A ne se compresse pas), plafond de 200
 pièces (refus nommé au-delà) ; une pièce non rendue ou un id non visible fait
 REFUSER le zip en les nommant, jamais un zip incomplet en 200. Le mur : une
 seule lecture `visibleTo` filtrée par les ids.
+
+## 8. Ce qui est bâti
+
+### P1 — le serveur (2026-10-21, non commité à l'écriture)
+
+- **Le contrat** `packages/contracts/src/my-issued-invoices.ts` :
+  `MyIssuedInvoiceView` = `IssuedInvoiceSummaryView` + `settlement`
+  (`status`, `date`, `otherInvoicesOnDebit`), `MyAmountDueView`,
+  `MyIssuedInvoicesView`, et `myInvoicesQuerySchema` (`year`, `month`,
+  `kind` ; un mois sans année est refusé). `IssuedInvoiceSummaryView` n'a
+  pas bougé : le back-office lit toujours `IssuedInvoicesView`.
+- **Le statut**, pur : `apps/lfd-api/src/b2b/accounting/domain/services/invoice-settlement.ts`,
+  la table du §7.1 dans son ordre. À instant de constitution égal, le lot
+  d'id le plus grand (ULID) l'emporte.
+- **« Bloquée »**, lue ainsi : la facture n'a AUCUNE ligne dans un lot non
+  annulé, et au moins un de ses bons (`invoice_order`) a une ligne
+  `order_collection` dans un autre état que `due` — `excluded` (quelle que
+  soit la raison, pas seulement `no_mandate` / `invoice_split`),
+  `settled_otherwise`, `cancelled`, ou un état de lot sans ligne de facture.
+  L'absence de ligne `order_collection` vaut `due`.
+- **Le total dû et les filtres**, purs : `apps/lfd-api/src/b2b/accounting/domain/services/my-invoices-ledger.ts`.
+  Le total compte `collection_planned`, `collection_rejected` **et
+  `recollection_planned`** (voir écarts) ; il est calculé sur toutes les
+  pièces visibles, AVANT le filtre. Le filtre porte sur l'année et le mois
+  d'**émission**. L'ordre : numéro décroissant.
+- **La lecture** : port `apps/lfd-api/src/b2b/accounting/domain/ports/invoice-settlement-facts.reader.ts`,
+  adaptateur `apps/lfd-api/src/b2b/accounting/infrastructure/prisma-invoice-settlement-facts.reader.ts` —
+  deux requêtes pour toutes les pièces (lignes + lot + avis + retour + nombre
+  de factures de la ligne ; bons sortis de `due`). Lots annulés lus, écartés
+  par le domaine.
+- **La route** `GET /companies/:companyId/invoices?year&month&kind` rend
+  `MyIssuedInvoicesView` ; le mur des rôles (`owner|billing`) n'a pas bougé.
+- **L'ordre** : `PrismaCompanyInvoicesReader.visibleTo` lit `year desc, rank desc`.
+- **Tests** : domaine (`apps/lfd-api/src/b2b/accounting/domain/services/__tests__/invoice-settlement.spec.ts`,
+  `apps/lfd-api/src/b2b/accounting/domain/services/__tests__/my-invoices-ledger.spec.ts`),
+  application (`issued-invoice.handlers.spec.ts`, un double
+  `FixedSettlementFacts`), e2e `apps/lfd-api/test/my-invoices.e2e-spec.ts` (émise → en lot
+  → déposée → rejetée, bon réglé autrement, filtres, 403 / 404), contrat
+  (`packages/contracts/src/__tests__/my-issued-invoices.spec.ts`).
+
+**Écarts avec le plan**
+
+- Le §0 disait que l'`ORDER BY asc` contredisait le contrat : faux, la vue le
+  retournait (`invoicesViewOf` faisait `reverse()`). La liste était déjà
+  « plus récentes d'abord ». L'ordre est désormais dit par la lecture ET par
+  le domaine.
+- `recollection_planned` (re-présentée, sans lot encore) entre dans le total
+  dû : le §7.1 ne le tranchait pas ; c'est un prélèvement prévu au sens de Q2.
+  **À confirmer par Hugo.**
+- « Bloquée » s'étend à toute raison d'exclusion (le §7.1 en citait deux).
+  **À confirmer par Hugo.**
+- `settled` et `closed` n'ont pas de date ; `collection_planned` /
+  `collected` d'un lot sans échéance figée ni avis rendent `date: null`.

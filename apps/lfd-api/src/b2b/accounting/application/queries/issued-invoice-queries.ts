@@ -1,12 +1,18 @@
+import { NO_LEDGER_FILTER, type LedgerFilter } from "../../domain/services/my-invoices-ledger.js";
+
 /**
  * Les lectures des **factures émises** (plan `facture-emise.md`). Des lectures pures : une pièce émise ne change plus.
  */
 
-/** « Mes factures » — le demandeur décide du mur. */
+/**
+ * « Mes factures » — le demandeur décide du mur ; le filtre ne choisit que
+ * les lignes, jamais le total dû (plan `plan-page-mes-factures.md` §7.3).
+ */
 export class ListMyCompanyInvoicesQuery {
   constructor(
     readonly actorUserId: string,
     readonly companyId: string,
+    readonly filter: LedgerFilter = NO_LEDGER_FILTER,
   ) {}
 }
 
