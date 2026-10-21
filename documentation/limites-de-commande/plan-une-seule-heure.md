@@ -29,9 +29,10 @@
   passe « hors plan ». En prod : aucune ligne de réglage, donc **manuel, alerte
   à 20:00** (lu le 2026-10-21).
 - **Le fournil lit déjà l'heure limite** par son canal :
-  `production/channels/commerce/order-cutoff-rules.reader.ts` et
-  `order-cutoff-switch.reader.ts` — déclarés par le fournil, implémentés par
-  le commerce (`production → b2b` reste interdit).
+  `production/channels/commerce/order-cutoff-rules.reader.ts` — déclaré par
+  le fournil, implémenté par le commerce (`production → b2b` reste interdit).
+  (Le lecteur de l'interrupteur qui l'accompagnait a été retiré par le lot 2,
+  avec l'interrupteur, le 2026-10-21.)
 
 ## 1. Ce qu'on bâtit
 
