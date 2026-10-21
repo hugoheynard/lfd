@@ -35,7 +35,7 @@ describe('ChannelsForm', () => {
     ]);
     store.categories.set([
       {
-        id: 'cat_vien',
+        id: 'fam_morning',
         name: { fr: 'Viennoiseries' },
         slug: { fr: 'viennoiseries' },
         parentId: null,
@@ -46,7 +46,7 @@ describe('ChannelsForm', () => {
         audience: 'both',
       },
     ]);
-    store.categoryId.set('cat_vien');
+    store.categoryId.set('fam_morning');
     const fixture = TestBed.createComponent(ChannelsForm);
     fixture.detectChanges();
     const text = (fixture.nativeElement as HTMLElement).textContent ?? '';

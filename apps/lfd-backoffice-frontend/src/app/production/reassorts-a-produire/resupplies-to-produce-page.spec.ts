@@ -112,7 +112,9 @@ class FakePickups {
 
 class FakeBakehouse {
   articles(): Promise<readonly { sku: string; name: string }[]> {
-    return Promise.resolve([{ sku: 'CRO', name: 'Croissant' }]);
+    return Promise.resolve([
+      { sku: 'CRO', name: 'Croissant', categoryId: 'fam_morning', categoryName: 'Viennoiseries' },
+    ]);
   }
   send(): Promise<{ id: string }> {
     return Promise.resolve({ id: 'rs_new' });

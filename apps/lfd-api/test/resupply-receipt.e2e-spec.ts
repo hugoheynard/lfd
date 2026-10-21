@@ -283,6 +283,18 @@ describe("les trous fermés au lot R1d", () => {
 });
 
 describe("le réassort sans commande", () => {
+  it("chaque article porte sa famille, lue au catalogue publié (filtre du comptoir)", async () => {
+    const agent = await counter();
+    const articles = jsonBody<readonly ResupplyArticleView[]>(
+      await agent.get("/admin/resupply-receipts/articles").expect(200),
+    );
+    expect(articles.length).toBeGreaterThan(0);
+    for (const article of articles) {
+      expect(article.categoryId).not.toBe("");
+      expect(article.categoryName).not.toBe("");
+    }
+  });
+
   it("le comptoir pose, corrige et retire des lignes ; le libellé vient du catalogue", async () => {
     const agent = await counter();
     const siteId = await seedSite();

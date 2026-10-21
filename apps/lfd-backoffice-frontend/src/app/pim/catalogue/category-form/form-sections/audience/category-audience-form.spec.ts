@@ -13,7 +13,7 @@ function setup(write: (id: string, value: OperationAudience) => Promise<void>) {
   const said: string[] = [];
   TestBed.configureTestingModule({
     providers: [
-      { provide: CategoryFormStore, useValue: { audience, id: () => 'cat_vien' } },
+      { provide: CategoryFormStore, useValue: { audience, id: () => 'fam_morning' } },
       { provide: CategoryHttpApi, useValue: { setAudience: write } },
       {
         provide: NotifyService,
@@ -41,7 +41,7 @@ describe('CategoryAudienceForm — le sélecteur d’audience de la famille', ()
       sent.push([id, value]);
     });
     await form['onChange']('pro');
-    expect(sent).toEqual([['cat_vien', 'pro']]);
+    expect(sent).toEqual([['fam_morning', 'pro']]);
     expect(audience()).toBe('pro');
     expect(said).toEqual(['ok:Audience de la famille enregistrée.']);
   });

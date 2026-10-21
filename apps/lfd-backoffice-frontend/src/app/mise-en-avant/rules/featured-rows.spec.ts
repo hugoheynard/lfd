@@ -8,7 +8,7 @@ function item(over: Partial<CatalogAdminItemView> = {}): CatalogAdminItemView {
     sku: 'VIE-001-1',
     productSku: 'VIE-001',
     name: 'Croissant',
-    categoryId: 'cat_vien',
+    categoryId: 'fam_morning',
     categoryName: 'Viennoiseries',
     pimPriceMillicents: 170_616,
     vatRatePercent: 5.5,
@@ -76,7 +76,7 @@ describe('filterRows et familiesOf', () => {
 
   it('liste chaque famille une fois, dans l’ordre du catalogue', () => {
     expect(familiesOf([...rows, ...rows])).toEqual([
-      { id: 'cat_vien', name: 'Viennoiseries' },
+      { id: 'fam_morning', name: 'Viennoiseries' },
       { id: 'cat_pat', name: 'Pâtisserie' },
     ]);
   });

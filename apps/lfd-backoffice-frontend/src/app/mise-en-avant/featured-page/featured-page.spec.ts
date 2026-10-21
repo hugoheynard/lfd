@@ -15,7 +15,7 @@ function item(over: Partial<CatalogAdminItemView> = {}): CatalogAdminItemView {
     sku: 'VIE-001-1',
     productSku: 'VIE-001',
     name: 'Croissant',
-    categoryId: 'cat_vien',
+    categoryId: 'fam_morning',
     categoryName: 'Viennoiseries',
     pimPriceMillicents: 170_616,
     vatRatePercent: 5.5,

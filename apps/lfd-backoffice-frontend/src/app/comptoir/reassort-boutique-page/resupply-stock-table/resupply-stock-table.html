@@ -1,4 +1,14 @@
 <div class="stock-table">
+  @if (categoryOptions().length > 1) {
+    <fold-view-toggle
+      data-resupply-categories
+      ariaLabel="Filtrer par famille"
+      size="sm"
+      [options]="categoryOptions()"
+      [value]="category()"
+      (valueChange)="category.set($event)"
+    />
+  }
   <fold-search
     placeholder="Chercher un produit"
     ariaLabel="Chercher un produit"

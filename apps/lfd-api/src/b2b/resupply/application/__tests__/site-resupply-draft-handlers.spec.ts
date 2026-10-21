@@ -48,8 +48,13 @@ function setup(deadline: Date | null = null) {
   const clock = new FixedClock(NOW);
   const staff = new Directory({ name: "Lou Martin", role: "counter" });
   const catalogue = new Catalogue([
-    { sku: "CRO", name: "Croissant" },
-    { sku: "PAC", name: "Pain au chocolat" },
+    { sku: "CRO", name: "Croissant", categoryId: "fam_morning", categoryName: "Viennoiseries" },
+    {
+      sku: "PAC",
+      name: "Pain au chocolat",
+      categoryId: "fam_morning",
+      categoryName: "Viennoiseries",
+    },
   ]);
   const sites = new Sites([VILLAGE, LABO]);
   const ids = new FixedIdGenerator("resupply");
@@ -150,7 +155,9 @@ describe("la demande en cours — ajouter", () => {
     });
     const add = new AddSiteResupplyLineHandler(
       store,
-      new Catalogue([{ sku: "CRO", name: "Croissant" }]),
+      new Catalogue([
+        { sku: "CRO", name: "Croissant", categoryId: "fam_morning", categoryName: "Viennoiseries" },
+      ]),
       new Sites([VILLAGE]),
       new FixedClock(NOW),
       new FixedIdGenerator("resupply"),

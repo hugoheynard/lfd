@@ -29,7 +29,7 @@ function item(over: Partial<CatalogAdminItemView> = {}): CatalogAdminItemView {
     sku: 'VIE-001-1',
     productSku: 'VIE-001',
     name: 'Croissant',
-    categoryId: 'cat_vien',
+    categoryId: 'fam_morning',
     categoryName: 'Viennoiseries',
     pimPriceMillicents: 170_616,
     vatRatePercent: 5.5,
@@ -86,7 +86,7 @@ function entry(over: Partial<PublishedEntryView> = {}): PublishedEntryView {
     productId: 'prd_vie_001',
     productSku: 'VIE-001',
     name: 'Croissant',
-    categoryId: 'cat_vien',
+    categoryId: 'fam_morning',
     status: 'active',
     audience: 'both',
     audienceInherited: true,
@@ -106,7 +106,7 @@ function viewOf(items: readonly CatalogAdminItemView[]): PublishedCatalogView {
   return {
     shelves: [
       {
-        categoryId: 'cat_vien',
+        categoryId: 'fam_morning',
         name: 'Viennoiseries',
         position: 0,
         withdrawn: false,
@@ -508,7 +508,7 @@ describe('CataloguePage — la validation des arrivées', () => {
       productId: 'prd_vie_001',
       productSku: 'VIE-001',
       name: 'Croissant',
-      categoryId: 'cat_vien',
+      categoryId: 'fam_morning',
       audiences: ['pro', 'public'],
       receivedAt: '2026-09-01T08:00:00.000Z',
       ...over,

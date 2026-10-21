@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import type { ResupplyArticleView, ResupplyReceiptView } from '@lfd/contracts';
 import {
+  FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
   FoldEmptyStateComponent,
@@ -76,6 +77,7 @@ type LoadState = 'loading' | 'ready' | 'error';
   selector: 'app-reassort-boutique-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,
     FoldEmptyStateComponent,

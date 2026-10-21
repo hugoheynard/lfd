@@ -1,6 +1,9 @@
 import { Injectable } from "@nestjs/common";
 
-import { CatalogReader } from "../../catalog/domain/ports/catalog.reader.js";
+import {
+  CatalogReader,
+  type ResolvedCatalogItem,
+} from "../../catalog/domain/ports/catalog.reader.js";
 import { type ResupplyArticle, ResupplyCatalogue } from "../domain/resupply-catalogue.js";
 
 /** La vitrine sert les particuliers : c'est leur catalogue qu'elle reçoit. */
@@ -19,13 +22,20 @@ export class CatalogResupplyCatalogue extends ResupplyCatalogue {
 
   async articles(): Promise<readonly ResupplyArticle[]> {
     const items = await this.catalog.listSellable(SHOP_AUDIENCE);
-    return items
-      .filter((item) => item.isDefault)
-      .map((item) => ({ sku: item.productSku, name: item.name }));
+    return items.filter((item) => item.isDefault).map(toArticle);
   }
 
   async article(sku: string): Promise<ResupplyArticle | null> {
     const item = await this.catalog.findDefaultByProductSku(sku, SHOP_AUDIENCE);
-    return item === null ? null : { sku: item.productSku, name: item.name };
+    return item === null ? null : toArticle(item);
   }
+}
+
+function toArticle(item: ResolvedCatalogItem): ResupplyArticle {
+  return {
+    sku: item.productSku,
+    name: item.name,
+    categoryId: item.categoryId,
+    categoryName: item.categoryName,
+  };
 }

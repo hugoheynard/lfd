@@ -28,8 +28,13 @@ class FakeBakehouse {
   refuse = false;
   articles(): Promise<readonly { sku: string; name: string }[]> {
     return Promise.resolve([
-      { sku: 'CRO', name: 'Croissant' },
-      { sku: 'PAC', name: 'Pain au chocolat' },
+      { sku: 'CRO', name: 'Croissant', categoryId: 'fam_morning', categoryName: 'Viennoiseries' },
+      {
+        sku: 'PAC',
+        name: 'Pain au chocolat',
+        categoryId: 'fam_morning',
+        categoryName: 'Viennoiseries',
+      },
     ]);
   }
   send(siteId: string, payload: PlaceSiteResupplyPayload): Promise<{ id: string }> {

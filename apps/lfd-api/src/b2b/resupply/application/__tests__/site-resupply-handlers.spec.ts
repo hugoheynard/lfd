@@ -34,8 +34,13 @@ const TOMORROW = "2026-01-03";
 const VILLAGE = "site_village";
 const LABO = "site_labo";
 const CATALOGUE = new Catalogue([
-  { sku: "CRO", name: "Croissant" },
-  { sku: "PAC", name: "Pain au chocolat" },
+  { sku: "CRO", name: "Croissant", categoryId: "fam_morning", categoryName: "Viennoiseries" },
+  {
+    sku: "PAC",
+    name: "Pain au chocolat",
+    categoryId: "fam_morning",
+    categoryName: "Viennoiseries",
+  },
 ]);
 
 function setup(deadline: Date | null = null) {

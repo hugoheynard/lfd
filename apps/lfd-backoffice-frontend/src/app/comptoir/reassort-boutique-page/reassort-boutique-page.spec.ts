@@ -43,8 +43,13 @@ function counter(initial: CounterPlace | null = VILLAGE) {
 }
 
 const ARTICLES: readonly ResupplyArticleView[] = [
-  { sku: 'CRO', name: 'Croissant' },
-  { sku: 'PAC', name: 'Pain au chocolat' },
+  { sku: 'CRO', name: 'Croissant', categoryId: 'fam_morning', categoryName: 'Viennoiseries' },
+  {
+    sku: 'PAC',
+    name: 'Pain au chocolat',
+    categoryId: 'fam_morning',
+    categoryName: 'Viennoiseries',
+  },
 ];
 
 /**
@@ -327,7 +332,7 @@ describe('ReassortBoutiquePage', () => {
     const { fixture } = await mount(['handover_counter:read'], api);
 
     expect(root(fixture).querySelector('[data-resupply-receive]')).toBeNull();
-    expect(root(fixture).querySelector('fold-view-toggle')).toBeNull();
+    expect(root(fixture).querySelector('[data-resupply-state]')).toBeNull();
   });
 
   it('suit le point de la bande, sans titre à elle : l’onglet le nomme déjà', async () => {

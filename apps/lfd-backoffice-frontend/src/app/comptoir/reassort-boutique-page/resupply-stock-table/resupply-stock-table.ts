@@ -38,6 +38,8 @@ type RowState = 'ok' | StockAlertLevel;
 interface StockRow {
   readonly sku: string;
   readonly name: string;
+  /** La famille de l'article ; `null` pour un article reçu puis retiré du catalogue. */
+  readonly categoryId: string | null;
   readonly stock: number;
   readonly state: RowState;
   readonly asap: number;
@@ -51,6 +53,9 @@ const STATE_OPTIONS = [
   { value: 'low', label: 'Faible' },
   { value: 'out_of_stock', label: 'Rupture' },
 ] as const;
+
+/** La puce « Tout » : aucun filtre de famille. Hors de l'espace des identifiants de famille. */
+const ALL_CATEGORIES = '';
 
 /** Les pas rapides à côté de chaque case de demande. */
 const STEPS = [1, 5, 10] as const;
@@ -117,6 +122,22 @@ export class ResupplyStockTable {
   protected readonly steps = STEPS;
   protected readonly targets: readonly ResupplyTarget[] = ['asap', 'tomorrow'];
   protected readonly query = signal('');
+  /** La famille retenue par les puces ; `ALL_CATEGORIES` par défaut. */
+  protected readonly category = signal<string>(ALL_CATEGORIES);
+
+  /** « Tout », puis une puce par famille présente au catalogue, dans son ordre. */
+  protected readonly categoryOptions = computed(() => {
+    const families = new Map<string, string>();
+    for (const article of this.articles()) {
+      if (!families.has(article.categoryId)) {
+        families.set(article.categoryId, article.categoryName);
+      }
+    }
+    return [
+      { value: ALL_CATEGORIES, label: 'Tout' },
+      ...[...families].map(([value, label]) => ({ value, label })),
+    ];
+  });
   protected readonly alertsPending = this.alerts.pending;
   protected readonly resuppliesPending = this.resupplies.pending;
   protected readonly alertFailure = this.alerts.failure;
@@ -145,11 +166,12 @@ export class ResupplyStockTable {
       ...this.articles(),
       ...this.stock()
         .filter((line) => !known.has(line.sku))
-        .map((line) => ({ sku: line.sku, name: line.label })),
+        .map((line) => ({ sku: line.sku, name: line.label, categoryId: null })),
     ];
     const rows = products.map((product): StockRow => ({
       sku: product.sku,
       name: product.name,
+      categoryId: product.categoryId,
       stock: stock.get(product.sku)?.estimatedStock ?? 0,
       state: alerts.get(product.sku)?.level ?? 'ok',
       asap: asap.get(product.sku) ?? 0,
@@ -162,11 +184,15 @@ export class ResupplyStockTable {
       .map(({ row }) => row);
   });
 
+  /** Les puces et la recherche se combinent : une ligne passe les deux filtres. */
   protected readonly visibleRows = computed(() => {
     const query = normalize(this.query().trim());
-    return query === ''
-      ? this.rows()
-      : this.rows().filter((row) => normalize(`${row.name} ${row.sku}`).includes(query));
+    const category = this.category();
+    return this.rows().filter(
+      (row) =>
+        (category === ALL_CATEGORIES || row.categoryId === category) &&
+        (query === '' || normalize(`${row.name} ${row.sku}`).includes(query)),
+    );
   });
 
   protected readonly asapCount = computed(() => this.asapDraft()?.lines.length ?? 0);

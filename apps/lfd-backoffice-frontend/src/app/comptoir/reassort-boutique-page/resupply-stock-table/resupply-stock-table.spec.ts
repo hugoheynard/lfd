@@ -26,9 +26,14 @@ import { ResupplyStockTable } from './resupply-stock-table';
  */
 const TODAY = parisToday();
 const ARTICLES: readonly ResupplyArticleView[] = [
-  { sku: 'BAG', name: 'Baguette' },
-  { sku: 'CRO', name: 'Croissant' },
-  { sku: 'PAC', name: 'Pain au chocolat' },
+  { sku: 'BAG', name: 'Baguette', categoryId: 'fam_bread', categoryName: 'Pains' },
+  { sku: 'CRO', name: 'Croissant', categoryId: 'fam_morning', categoryName: 'Viennoiseries' },
+  {
+    sku: 'PAC',
+    name: 'Pain au chocolat',
+    categoryId: 'fam_morning',
+    categoryName: 'Viennoiseries',
+  },
 ];
 
 /** La demande en cours, en mémoire : une version par geste, comme le serveur. */
@@ -320,10 +325,36 @@ describe('ResupplyStockTable', () => {
     expect(order(fixture)).toEqual(['PAC']);
   });
 
+  it('les puces de famille : « Tout » puis une par famille présente, un clic filtre, combiné à la recherche', async () => {
+    const { fixture, table } = await mount({
+      stock: [{ sku: 'OLD', label: 'Ancien', receivedQuantity: 3, estimatedStock: 3 }],
+    });
+
+    expect(root(fixture).querySelector('[data-resupply-categories]')).not.toBeNull();
+    expect(table['categoryOptions']().map((option) => option.label)).toEqual([
+      'Tout',
+      'Pains',
+      'Viennoiseries',
+    ]);
+
+    table['category'].set('fam_morning');
+    await settle(fixture);
+    expect(order(fixture)).toEqual(['CRO', 'PAC']);
+
+    table['query'].set('chocolat');
+    await settle(fixture);
+    expect(order(fixture)).toEqual(['PAC']);
+
+    table['query'].set('');
+    table['category'].set('');
+    await settle(fixture);
+    expect(order(fixture)).toEqual(['BAG', 'CRO', 'PAC', 'OLD']);
+  });
+
   it('en lecture seule : ni sélecteur d’état, ni case, ni envoi', async () => {
     const { fixture } = await mount({ canWrite: false });
 
-    expect(root(fixture).querySelector('fold-view-toggle')).toBeNull();
+    expect(root(fixture).querySelector('[data-resupply-state]')).toBeNull();
     expect(root(fixture).querySelector('fold-number-input')).toBeNull();
     expect(root(fixture).querySelector('[data-resupply-send-asap]')).toBeNull();
   });

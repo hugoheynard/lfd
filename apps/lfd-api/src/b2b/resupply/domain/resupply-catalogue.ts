@@ -1,7 +1,12 @@
-/** Un article qu'un site peut recevoir : le SKU produit et son nom publié. */
+/**
+ * Un article qu'un site peut recevoir : le SKU produit, son nom publié et sa
+ * famille (tête de lignée), par laquelle le comptoir range sa table.
+ */
 export interface ResupplyArticle {
   readonly sku: string;
   readonly name: string;
+  readonly categoryId: string;
+  readonly categoryName: string;
 }
 
 /**

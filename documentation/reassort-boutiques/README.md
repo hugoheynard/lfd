@@ -289,8 +289,11 @@ plein service » ; un reçu par réassort ; la saisie de secours devient un
   curseur dans « Au plus tôt »), « Au plus tôt » et « Pour demain » saisis
   dans la case (la demande en cours de R1c) avec des pas +1/+5/+10,
   « Envoyer au plus tôt (N) » / « Envoyer pour demain (N) », et le reçu sans
-  commande dans le menu de la ligne. Une recherche ; **pas de puces de
-  catégorie** : `ResupplyArticleView` ne porte pas la famille.
+  commande dans le menu de la ligne. Au-dessus, des puces de famille
+  (« Tout » par défaut, une par famille présente au catalogue publié, un
+  clic filtre), combinées à la recherche ; la famille (`categoryId`,
+  `categoryName`) arrive avec chaque article de
+  `admin/resupply-receipts/articles`.
 
 ### Le stock estimé
 

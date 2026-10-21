@@ -89,6 +89,12 @@ export interface ResupplyReceiptView {
 export interface ResupplyArticleView {
   readonly sku: string;
   readonly name: string;
+  /**
+   * Sa famille au catalogue (la tête de sa lignée) : ce par quoi le comptoir
+   * filtre la table. Une donnée du référentiel, jamais une liste en dur.
+   */
+  readonly categoryId: string;
+  readonly categoryName: string;
 }
 
 const DAY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;

@@ -491,7 +491,10 @@ juste après R1d (même page).
 « Réassort <point> » est retiré (l'onglet du bandeau le dit, Hugo) ; la carte
 « Réceptionner les réassorts » passe en tête, seulement s'il y en a ; les
 cartes « Commander au fournil » et « Réassort sans commande » sont
-supprimées (la table les remplace). **Non bâti : les puces de catégorie** —
-`ResupplyArticleView` ne porte que `sku` et `name`, la famille n'arrive pas
-au comptoir ; il faut l'ajouter à la route `admin/resupply-receipts/articles`
-(manque serveur, à décider). La recherche est là.
+supprimées (la table les remplace). La recherche est là.
+Les **puces de catégorie** sont bâties le 2026-10-21 (R1e-bis, demande de
+Hugo, non commité) : `ResupplyArticleView` gagne `categoryId` et
+`categoryName` (la tête de la famille, lue sur `CatalogReader` comme le
+catalogue publié du commerce — champ ajouté, rien retiré) ; la table
+affiche « Tout » puis une puce par famille présente (`fold-view-toggle`),
+combinée à la recherche.
