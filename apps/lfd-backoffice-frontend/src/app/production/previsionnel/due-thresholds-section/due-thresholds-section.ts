@@ -7,12 +7,10 @@ import {
   input,
   signal,
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import type { DueThresholdView, ProductionDueThresholdsView } from '@lfd/contracts';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
-  FoldCalloutComponent,
   FoldCardComponent,
   FoldElementTitleComponent,
   FoldEmptyStateComponent,
@@ -79,12 +77,10 @@ export function dueThresholdRows(view: ProductionDueThresholdsView): readonly Du
   imports: [
     FoldBadgeComponent,
     FoldButtonComponent,
-    FoldCalloutComponent,
     FoldCardComponent,
     FoldElementTitleComponent,
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
-    RouterLink,
   ],
   templateUrl: './due-thresholds-section.html',
   styleUrl: './due-thresholds-section.scss',
@@ -114,8 +110,14 @@ export class DueThresholdsSection {
   /** « livraison 90 min · retrait 30 min » — à côté de quoi lire les heures. */
   protected readonly marginsLabel = computed(() => {
     const view = this.view();
-    if (view === null || this.marginsMissing()) {
-      return '';
+    if (view === null) {
+      return 'Ce qui doit être sorti avant chaque échéance, cumulé.';
+    }
+    // Facultatives aux Réglages, et voulues telles : on le dit sans le
+    // réclamer — un bandeau dans le dossier se lisait comme un oubli (Hugo,
+    // 2026-10-21).
+    if (this.marginsMissing()) {
+      return 'Une seule échéance, « la journée » — marges de production facultatives, non réglées (Réglages › Zones de livraison).';
     }
     return `Marges : livraison ${view.deliveryMarginMinutes} min · retrait ${view.pickupMarginMinutes} min`;
   });

@@ -97,11 +97,15 @@ describe('DueThresholdsSection', () => {
     expect(fixture.nativeElement.querySelector('fold-callout')).toBeNull();
   });
 
-  it('pose un bandeau vers le réglage quand une marge manque', async () => {
+  /**
+   * Régression : un bandeau « Régler les marges » s'ouvrait dans le dossier du
+   * jour, alors que les marges sont facultatives aux Réglages (2026-10-21).
+   */
+  it('dit la seule échéance sous le titre, sans bandeau, quand une marge manque', async () => {
     const fixture = await mount(UNSET);
 
-    const link: HTMLAnchorElement | null = fixture.nativeElement.querySelector('fold-callout a');
-    expect(link?.getAttribute('href')).toBe('/reglages/livraison/zones');
+    expect(fixture.nativeElement.querySelector('fold-callout')).toBeNull();
+    expect(text(fixture)).toContain('marges de production facultatives, non réglées');
   });
 
   it('dit l’échec de lecture', async () => {

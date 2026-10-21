@@ -3,7 +3,7 @@
     cardHeader
     variant="title"
     title="Le compte à rebours"
-    [subtitle]="marginsLabel() || 'Ce qui doit être sorti avant chaque échéance, cumulé.'"
+    [subtitle]="marginsLabel()"
   />
 
   <div class="dt-body">
@@ -17,14 +17,6 @@
         </fold-empty-state>
       }
       @default {
-        @if (marginsMissing()) {
-          <fold-callout variant="info">
-            Une seule échéance, « la journée » : les marges de production (facultatives) ne sont pas
-            réglées toutes les deux. Les régler découpe la journée selon l'heure de chaque commande.
-            <a routerLink="/reglages/livraison/zones">Marges de production</a>
-          </fold-callout>
-        }
-
         @if (rows().length === 0) {
           <fold-empty-state
             title="Aucune échéance ce jour-là"
