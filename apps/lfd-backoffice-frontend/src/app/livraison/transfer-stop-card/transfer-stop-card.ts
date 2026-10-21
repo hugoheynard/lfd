@@ -48,11 +48,30 @@ export class TransferStopCard {
   protected readonly title = computed(() => `→ ${this.stop().siteLabel}`);
 
   protected readonly subtitle = computed(() => {
-    const { position, orderCount } = this.stop();
-    return `Arrêt ${position} · transfert · ${orderCount} ${orderCount === 1 ? 'commande' : 'commandes'}`;
+    const { position } = this.stop();
+    return `Arrêt ${position} · transfert · ${carriedLabel(this.stop())}`;
   });
 
   protected move(toKey: string): void {
     this.moved.emit({ stopId: this.stop().stopId, toKey });
   }
+}
+
+/**
+ * « 2 commandes · 3 réassorts », ou « 3 réassorts » seul : un transfert de
+ * réassort seul (R3c) ne se lit pas « 0 commande ». Ni l'un ni l'autre : le
+ * compte des commandes, comme avant.
+ */
+export function carriedLabel(stop: DeliveryRoundTransferStopView): string {
+  const resupplies = stop.resupplyCount ?? 0;
+  const orders = plural(stop.orderCount, 'commande', 'commandes');
+  if (resupplies === 0) {
+    return orders;
+  }
+  const resupplyPart = plural(resupplies, 'réassort', 'réassorts');
+  return stop.orderCount === 0 ? resupplyPart : `${orders} · ${resupplyPart}`;
+}
+
+function plural(count: number, one: string, many: string): string {
+  return `${count} ${count === 1 ? one : many}`;
 }

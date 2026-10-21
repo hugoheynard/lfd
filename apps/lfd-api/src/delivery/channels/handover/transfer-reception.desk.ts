@@ -21,6 +21,24 @@ export abstract class TransferReceptionDesk {
    * @throws {TransferReceptionReasonRequiredError} manuelle sans motif (400).
    */
   abstract receiveForOrder(request: TransferReceptionRequest): Promise<void>;
+
+  /**
+   * Reçoit ce transfert, désigné par lui-même — le chemin d'un transfert de
+   * réassort seul (R3c), qu'aucune commande ne désigne. Même règle, même
+   * journal, même fait durable que {@link receiveForOrder}.
+   *
+   * @throws {InternalTransferNotFoundError} aucun transfert de cet identifiant (404).
+   * @throws {TransferAlreadyReceivedError} déjà reçu (409).
+   * @throws {TransferReceptionReasonRequiredError} manuelle sans motif (400).
+   */
+  abstract receiveTransfer(request: TransferIdReceptionRequest): Promise<void>;
+}
+
+/** La réception d'un transfert désigné par son identifiant. */
+export interface TransferIdReceptionRequest {
+  readonly transferId: string;
+  readonly staffUserId: string;
+  readonly reason: string | null;
 }
 
 /** Qui reçoit (une fiche staff), et pourquoi quand il n'est pas venu par une tournée. */

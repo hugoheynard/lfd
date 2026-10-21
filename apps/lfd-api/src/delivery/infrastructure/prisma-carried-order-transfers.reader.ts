@@ -47,7 +47,8 @@ export class PrismaCarriedOrderTransfers extends CarriedOrderTransfers {
   }
 }
 
-function stateOfTransfer(transfer: {
+/** Où en est un transfert (diagramme du §3), lu de ses trois instants. */
+export function stateOfTransfer(transfer: {
   readonly id: string;
   readonly siteLabel: string;
   readonly createdAt: Date;

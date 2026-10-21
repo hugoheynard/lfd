@@ -80,10 +80,32 @@ describe('transfersOf', () => {
       entry({ orderId: 'd' }),
     ];
     const cards = transfersOf(rows);
-    expect(cards.map((c) => [c.key, c.orderCount, c.anyOrderId])).toEqual([
-      ['tr_2', 1, 'c'],
-      ['tr_1', 2, 'a'],
+    expect(cards.map((c) => [c.key, c.orderCount, c.transferId])).toEqual([
+      ['tr_2', 1, 'tr_2'],
+      ['tr_1', 2, 'tr_1'],
     ]);
+  });
+
+  /** Régression (R3c, R3e) : un transfert de réassort seul n'avait aucune carte au comptoir. */
+  it('ajoute un transfert de réassort seul, réceptionnable, compté en réassorts', () => {
+    const cards = transfersOf(
+      [entry({ orderId: 'a', transfer: transfer({ transferId: 'tr_1', state: 'received' }) })],
+      [
+        {
+          transferId: 'tr_rs',
+          siteId: 'site_vv',
+          siteLabel: 'Val Village',
+          state: 'departed',
+          at: '2026-09-10T05:12:00.000Z',
+          binCount: 1,
+          resupplyCount: 2,
+        },
+      ],
+    );
+    const [resupply] = cards;
+    expect(cards.map((c) => c.key)).toEqual(['tr_rs', 'tr_1']);
+    expect(resupply && receivable(resupply)).toBe(true);
+    expect(resupply && transferSummary(resupply)).toMatch(/^1 bac · 2 réassorts · parti à /u);
   });
 
   it('regroupe les commandes pas encore composées par site', () => {

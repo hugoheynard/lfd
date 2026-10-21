@@ -2211,6 +2211,7 @@ export type {
   OrderTransferStateView,
   OrderTransferView,
   ReceiveTransferPayload,
+  ResupplyTransferView,
 } from "./delivery-transfers.js";
 export {
   MAX_AUDIENCE_EVENTS_PER_BATCH,
@@ -2460,3 +2461,10 @@ export type {
   StockAlertSiteView,
   StockAlertView,
 } from "./site-stock-alert.js";
+export type {
+  DayStockOverviewView,
+  DayStockProductView,
+  DayStockResupplyState,
+  DayStockResupplyView,
+  DayStockSiteView,
+} from "./day-stock-overview.js";

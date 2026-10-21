@@ -6,11 +6,14 @@ import { DetachOnOrderCancelled } from "./application/handlers/detach-on-order-c
 import { TransferMembership } from "./application/transfer-membership.js";
 import { TransferReception } from "./application/transfer-reception.js";
 import { TransferArrivalStatus } from "./application/transfer-arrival-status.js";
+import { ResupplyTransfersAtCounter } from "./application/resupply-transfers-at-counter.js";
 import { DeclareTransferBinsHandler } from "./application/commands/declare-transfer-bins.handler.js";
 import { GetDeliveryTransferBinsHandler } from "./application/queries/get-delivery-transfer-bins.handler.js";
 import { CarriedOrderTransfers } from "./domain/ports/carried-order-transfers.reader.js";
+import { ResupplyOnlyTransfers } from "./domain/ports/resupply-only-transfers.reader.js";
 import { TransferBinCounts } from "./domain/ports/transfer-bin-counts.reader.js";
 import { PrismaCarriedOrderTransfers } from "./infrastructure/prisma-carried-order-transfers.reader.js";
+import { PrismaResupplyOnlyTransfers } from "./infrastructure/prisma-resupply-only-transfers.reader.js";
 import { PrismaTransferBinCounts } from "./infrastructure/prisma-transfer-bin-counts.reader.js";
 import { GetInternalTransferManifestHandler } from "./application/queries/get-internal-transfer-manifest.handler.js";
 import { TransferAttachment } from "./application/transfer-attachment.js";
@@ -70,4 +73,7 @@ export const INTERNAL_TRANSFER_PROVIDERS: readonly Provider[] = [
   TransferArrivalStatus,
   { provide: CarriedOrderTransfers, useClass: PrismaCarriedOrderTransfers },
   { provide: TransferBinCounts, useClass: PrismaTransferBinCounts },
+  // R3c, R3e : les transferts de réassort seul, vus du comptoir.
+  ResupplyTransfersAtCounter,
+  { provide: ResupplyOnlyTransfers, useClass: PrismaResupplyOnlyTransfers },
 ];

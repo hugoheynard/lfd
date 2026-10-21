@@ -72,11 +72,15 @@ export class TransferReceptionDialog implements FoldPanelContent<CounterTransfer
     if (!this.canSubmit()) {
       return;
     }
+    const transferId = this.data().transferId;
+    if (transferId === null) {
+      return;
+    }
     this.saving.set(true);
     this.error.set(null);
     try {
       const reason = this.trimmed();
-      await this.api.receiveTransfer(this.data().anyOrderId, reason === '' ? null : reason);
+      await this.api.receiveTransfer(transferId, reason === '' ? null : reason);
       this.panel.close(true);
     } catch (caught) {
       this.error.set(httpErrorMessage(caught, "Le transfert n'a pas pu être réceptionné."));

@@ -369,5 +369,7 @@
   "test/resupply-packing.e2e-spec.ts": 7808,
   "test/resupply-transfer.e2e-spec.ts": 6806,
   "test/resupply-name.e2e-spec.ts": 5967,
-  "test/resupply-arrived.e2e-spec.ts": 5673
+  "test/resupply-arrived.e2e-spec.ts": 5673,
+  "test/resupply-transfer-reception.e2e-spec.ts": 8010,
+  "test/supervision-stock.e2e-spec.ts": 7400
 }

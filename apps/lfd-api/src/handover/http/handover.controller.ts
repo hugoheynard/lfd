@@ -12,6 +12,7 @@ import { StaffUserId } from "../../platform/auth/staff.decorator.js";
 import { ConfirmHandoverCommand } from "../application/commands/confirm-handover.command.js";
 import { ConfirmManualHandoverCommand } from "../application/commands/confirm-manual-handover.command.js";
 import { ReceiveTransferAtCounterCommand } from "../application/commands/receive-transfer-at-counter.command.js";
+import { ReceiveTransferByIdAtCounterCommand } from "../application/commands/receive-transfer-by-id-at-counter.command.js";
 import { ZodBody } from "../../platform/shared/http/zod-body.pipe.js";
 import { GetHandoverByOrderQuery } from "../application/queries/get-handover-by-order.query.js";
 import { GetHandoverQueueQuery } from "../application/queries/get-handover-queue.query.js";
@@ -123,6 +124,22 @@ export class HandoverController {
   ): Promise<void> {
     await this.commands.execute<ReceiveTransferAtCounterCommand, void>(
       new ReceiveTransferAtCounterCommand(orderId, staffUserId, payload.reason),
+    );
+  }
+
+  /**
+   * **« Réceptionner »** un transfert par lui-même (R3c, R3e) — 204. Le seul
+   * chemin d'un transfert de réassort seul, qu'aucune commande ne désigne.
+   */
+  @Post("transfers/:transferId/reception")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async receiveTransferById(
+    @Param("transferId") transferId: string,
+    @StaffUserId() staffUserId: string,
+    @Body(new ZodBody(receiveTransferPayloadSchema)) payload: ReceiveTransferPayload,
+  ): Promise<void> {
+    await this.commands.execute<ReceiveTransferByIdAtCounterCommand, void>(
+      new ReceiveTransferByIdAtCounterCommand(transferId, staffUserId, payload.reason),
     );
   }
 

@@ -647,6 +647,12 @@ vocabulaire « réapprovisionnement », Hugo, 2026-10-13 ; aucune donnée).
   (I9 se termine) ; déjà reçu au comptoir : clôt seulement.
 - **« Réceptionner »** : `POST /admin/handover/orders/:orderId/transfer-reception`
   (`handover_counter`) → `TransferReceptionDesk`.
+  Depuis le 2026-10-22 (réassort R3c/R3e, non commité), aussi par le
+  transfert lui-même : `POST /admin/handover/transfers/:transferId/reception`
+  (`receiveTransfer`, même règle et mêmes faits) — le seul chemin d'un
+  transfert de réassort seul, que la file rend à part
+  (`HandoverQueueView.resupplyTransfers`, `ResupplyTransfersReader`). L'écran
+  du comptoir passe par cette route pour tous les transferts.
 - **Refus au comptoir** : `TransferStatusReader` lu par `HandoverAttestation`
   avant l'agrégat → `TransferNotReceivedError` (409,
   `handover.transfer_not_received`). La file du comptoir porte `transfer`

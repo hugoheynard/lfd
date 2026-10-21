@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { DeliveryRoundTransferStopView } from '@lfd/contracts';
 
-import { TransferStopCard } from './transfer-stop-card';
+import { TransferStopCard, carriedLabel } from './transfer-stop-card';
 
 /** L'arrêt de transfert d'une colonne : le manifeste toujours, retirer et déplacer si l'on écrit. */
 
@@ -44,5 +44,23 @@ describe('TransferStopCard', () => {
     host.querySelector<HTMLButtonElement>('[data-transfer-remove]')?.click();
     expect(removed).toEqual(['ts_1']);
     expect(host.querySelector('fold-listbox')).not.toBeNull();
+  });
+});
+
+describe('carriedLabel', () => {
+  /** Régression (R3c) : un transfert de réassort seul se lisait « 0 commande ». */
+  it('dit les réassorts seuls, sans « 0 commande »', () => {
+    expect(carriedLabel({ ...STOP, orderCount: 0, resupplyCount: 3 })).toBe('3 réassorts');
+  });
+
+  it('dit les deux quand le transfert porte commandes et réassorts', () => {
+    expect(carriedLabel({ ...STOP, orderCount: 1, resupplyCount: 1 })).toBe(
+      '1 commande · 1 réassort',
+    );
+  });
+
+  it('garde le compte des commandes sans réassort, ou sans le champ', () => {
+    expect(carriedLabel({ ...STOP, resupplyCount: 0 })).toBe('2 commandes');
+    expect(carriedLabel(STOP)).toBe('2 commandes');
   });
 });

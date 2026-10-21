@@ -12,7 +12,7 @@
  * aléatoire et n'apparaît que dans l'écran du client.
  */
 
-import type { OrderTransferView } from "./delivery-transfers.js";
+import type { OrderTransferView, ResupplyTransferView } from "./delivery-transfers.js";
 import type { FulfillmentMethod, FulfillmentSource } from "./order.js";
 
 /**
@@ -143,6 +143,11 @@ export interface HandoverQueueView {
   /** Le jour demandé, `AAAA-MM-JJ` — renvoyé pour que l'écran sache ce qu'il montre. */
   readonly day: string;
   readonly entries: readonly HandoverQueueEntryView[];
+  /**
+   * Les transferts de réassort seul de la journée (R3c, R3e), tous sites :
+   * l'écran les range par onglet. Absent : serveur d'avant le champ.
+   */
+  readonly resupplyTransfers?: readonly ResupplyTransferView[];
 }
 
 /** Qui commande : une société (`pro`) ou un particulier (`public`). */

@@ -7,7 +7,7 @@ import {
   signal,
   type Signal,
 } from '@angular/core';
-import { addDays, type HandoverQueueEntryView } from '@lfd/contracts';
+import { addDays, type HandoverQueueEntryView, type ResupplyTransferView } from '@lfd/contracts';
 import type { FoldTabItem, FoldTabsContext } from 'fold-ng';
 
 import { DayVersionWatcher } from '../shared/day-version/day-version-watcher';
@@ -136,6 +136,9 @@ export class HandoverQueueStore {
   private readonly entriesState = signal<readonly HandoverQueueEntryView[]>([]);
   readonly entries = this.entriesState.asReadonly();
 
+  /** Les transferts de réassort seul de la journée (R3c, R3e), tous sites. */
+  private readonly resupplyTransfersState = signal<readonly ResupplyTransferView[]>([]);
+
   /** La clé d'onglet demandée par l'utilisateur — pas forcément encore valide. */
   private readonly requested = signal<string>('');
   readonly requestedTab = this.requested.asReadonly();
@@ -189,6 +192,11 @@ export class HandoverQueueStore {
    */
   readonly rows = computed<readonly HandoverQueueEntryView[]>(() =>
     entriesForTab(this.entries(), this.activeTab(), this.places()),
+  );
+
+  /** Les transferts de réassort seul du site ouvert : la bande les montre avec les autres. */
+  readonly resupplyTransfers = computed<readonly ResupplyTransferView[]>(() =>
+    this.resupplyTransfersState().filter((transfer) => transfer.siteId === this.activeTab()),
   );
 
   readonly total = computed(() => this.entries().length);
@@ -274,11 +282,13 @@ export class HandoverQueueStore {
       // 🔴 La coupe est faite UNE fois, à la lecture : les onglets, les
       // compteurs, la file et la sélection en dérivent tous.
       this.entriesState.set(atTheCounter(view.entries));
+      this.resupplyTransfersState.set(view.resupplyTransfers ?? []);
       this.nowState.set(new Date());
       this.refreshFailed.set(false);
       this.state.set('ready');
     } catch {
       this.entriesState.set([]);
+      this.resupplyTransfersState.set([]);
       this.state.set('error');
     }
   }
@@ -297,6 +307,7 @@ export class HandoverQueueStore {
       const view = await this.api.forDay(day);
       if (day === this.day()) {
         this.entriesState.set(atTheCounter(view.entries));
+        this.resupplyTransfersState.set(view.resupplyTransfers ?? []);
         this.refreshFailed.set(false);
       }
     } catch {

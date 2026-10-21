@@ -1,7 +1,11 @@
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 
-import type { HandoverQueueEntryView, OrderTransferView } from '@lfd/contracts';
+import type {
+  HandoverQueueEntryView,
+  OrderTransferView,
+  ResupplyTransferView,
+} from '@lfd/contracts';
 
 import { TransferStrip } from './transfer-strip';
 
@@ -43,10 +47,12 @@ const DEPARTED: OrderTransferView = {
 async function render(
   entries: readonly HandoverQueueEntryView[],
   canReceive: boolean,
+  resupplyTransfers: readonly ResupplyTransferView[] = [],
 ): Promise<HTMLElement> {
   TestBed.configureTestingModule({ imports: [TransferStrip] });
   const fixture = TestBed.createComponent(TransferStrip);
   fixture.componentRef.setInput('entries', entries);
+  fixture.componentRef.setInput('resupplyTransfers', resupplyTransfers);
   fixture.componentRef.setInput('canReceive', canReceive);
   await fixture.whenStable();
   return fixture.nativeElement as HTMLElement;
@@ -74,5 +80,23 @@ describe('TransferStrip', () => {
     TestBed.resetTestingModule();
     const received = { ...DEPARTED, state: 'received' as const };
     expect(buttons(await render([entry('a', received)], true))).toEqual([]);
+  });
+
+  /** Régression (R3c, R3e) : un transfert de réassort seul ne se réceptionnait pas au comptoir. */
+  it('montre un transfert de réassort seul, sans commande, et le réceptionne', async () => {
+    const host = await render([], true, [
+      {
+        transferId: 'tr_rs',
+        siteId: 'site_vv',
+        siteLabel: 'Val Village',
+        state: 'planned',
+        at: '2026-09-10T05:12:00.000Z',
+        binCount: 0,
+        resupplyCount: 3,
+      },
+    ]);
+    expect(host.querySelectorAll('fold-card')).toHaveLength(1);
+    expect(host.textContent).toContain('0 bacs · 3 réassorts');
+    expect(buttons(host)).toEqual(['Réceptionner']);
   });
 });

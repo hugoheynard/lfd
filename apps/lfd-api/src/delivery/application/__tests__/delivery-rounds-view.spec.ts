@@ -38,6 +38,38 @@ const round: RoundRow = {
 };
 
 describe("deliveryRoundsDayView", () => {
+  /** Régression (R3c) : un transfert de réassort seul se lisait « 0 commande » au tableau. */
+  it("compte à part les commandes et les réassorts d'un arrêt de transfert", () => {
+    const view = deliveryRoundsDayView(
+      inputs({
+        rounds: [
+          {
+            ...round,
+            stops: [{ kind: "transfer", stopId: "s_t", transferId: "t_1", position: 1 }],
+            transfers: new Map([
+              [
+                "t_1",
+                { siteId: "site_vv", siteLabel: "Val Village", orderCount: 0, resupplyCount: 2 },
+              ],
+            ]),
+          },
+        ],
+      }),
+    );
+
+    expect(view.rounds[0]?.transferStops).toEqual([
+      {
+        stopId: "s_t",
+        transferId: "t_1",
+        siteLabel: "Val Village",
+        siteId: "site_vv",
+        position: 1,
+        orderCount: 0,
+        resupplyCount: 2,
+      },
+    ]);
+  });
+
   it("rend la place d'une tournée au dépôt, et `null` pour une tournée non jugée", () => {
     const over = { status: "over" as const, unknownOrders: 0 };
 

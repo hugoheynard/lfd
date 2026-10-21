@@ -2,6 +2,7 @@ import { DirectUnitOfWork } from "../../../platform/database/__tests__/direct-un
 import { RecordingPublisher } from "../../../platform/events/__tests__/recording-publisher.js";
 import { FixedClock } from "../../../platform/time/fixed-clock.js";
 import {
+  InternalTransferNotFoundError,
   OrderNotInTransferError,
   TransferAlreadyReceivedError,
   TransferReceptionReasonRequiredError,
@@ -115,5 +116,43 @@ describe("TransferReception", () => {
     await expect(
       desk.receiveForOrder({ orderId: "o_x", staffUserId: "staff_c", reason: null }),
     ).rejects.toThrow(OrderNotInTransferError);
+  });
+
+  describe("par le transfert lui-même (transfert de réassort seul, R3c)", () => {
+    it("reçoit, journalise et écrit le même fait durable que par la commande", async () => {
+      const { desk, transfers, events, durable } = scene(true, ["rs_1"]);
+
+      await desk.receiveTransfer({ transferId: "t_1", staffUserId: "staff_c", reason: null });
+
+      expect(transfers.all()[0]?.received).toEqual({ at: NOW, by: "staff_c", reason: null });
+      expect(events.traced[0]?.journalFact()).toMatchObject({
+        type: "internal_transfer.received",
+        payload: { via: "counter", manual: false, bins: 3 },
+      });
+      expect(durable.facts[0]).toMatchObject({
+        type: "delivery.transfer_received",
+        payload: { transferId: "t_1", resupplyIds: ["rs_1"], receivedByStaffId: "staff_c" },
+      });
+    });
+
+    it("garde la règle de l'agrégat : motif d'une réception manuelle, une seule réception", async () => {
+      const { desk } = scene(false, ["rs_1"]);
+
+      await expect(
+        desk.receiveTransfer({ transferId: "t_1", staffUserId: "staff_c", reason: null }),
+      ).rejects.toThrow(TransferReceptionReasonRequiredError);
+      await desk.receiveTransfer({ transferId: "t_1", staffUserId: "staff_c", reason: "À pied" });
+      await expect(
+        desk.receiveTransfer({ transferId: "t_1", staffUserId: "staff_d", reason: "À pied" }),
+      ).rejects.toThrow(TransferAlreadyReceivedError);
+    });
+
+    it("un transfert inconnu : 404 nommé", async () => {
+      const { desk } = scene(true);
+
+      await expect(
+        desk.receiveTransfer({ transferId: "t_x", staffUserId: "staff_c", reason: null }),
+      ).rejects.toThrow(InternalTransferNotFoundError);
+    });
   });
 });

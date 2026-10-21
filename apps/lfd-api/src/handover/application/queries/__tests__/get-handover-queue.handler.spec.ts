@@ -1,4 +1,5 @@
 import { HandoverQueueReader, type HandoverQueueEntry } from "../../../channels/commerce/index.js";
+import { FixedResupplyTransfers } from "../../__tests__/fixed-resupply-transfers.js";
 import { FixedTransferStatus } from "../../__tests__/fixed-transfer-status.js";
 import {
   HandoverAttestationsReader,
@@ -84,10 +85,17 @@ function handlerOf(
   attested: ReadonlyMap<string, AttestedHandover>,
   holds: FixedQualityHolds = new FixedQualityHolds(),
   transfers: FixedTransferStatus = new FixedTransferStatus(),
+  resupplyTransfers: FixedResupplyTransfers = new FixedResupplyTransfers(),
 ) {
   const queue = new RecordingHandoverQueueReader(entries);
   const attestations = new RecordingHandoverAttestationsReader(attested);
-  const handler = new GetHandoverQueueHandler(queue, attestations, holds, transfers);
+  const handler = new GetHandoverQueueHandler(
+    queue,
+    attestations,
+    holds,
+    transfers,
+    resupplyTransfers,
+  );
   return { handler, queue, attestations, holds };
 }
 
@@ -349,6 +357,46 @@ describe("GetHandoverQueueHandler — le transfert d'une ligne (lots T2, T3)", (
         binCount: 2,
       },
       { transferId: null, siteLabel: "Val Village", state: "awaiting", at: null, binCount: 0 },
+    ]);
+  });
+});
+
+describe("GetHandoverQueueHandler — un transfert de réassort seul (R3c, R3e)", () => {
+  /** Régression : un transfert sans commande n'avait aucune ligne pour le montrer au comptoir. */
+  it("le rend à part, avec son site, sans ligne de file", async () => {
+    const resupplies = new FixedResupplyTransfers([
+      {
+        transferId: "t_rs",
+        siteId: "site_village",
+        siteLabel: "Val Village",
+        state: "departed",
+        at: new Date(0),
+        binCount: 1,
+        resupplyCount: 2,
+      },
+    ]);
+    const { handler } = handlerOf(
+      [],
+      new Map(),
+      new FixedQualityHolds(),
+      new FixedTransferStatus(),
+      resupplies,
+    );
+
+    const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10"));
+
+    expect(resupplies.asked).toEqual(["2026-09-10"]);
+    expect(view.entries).toEqual([]);
+    expect(view.resupplyTransfers).toEqual([
+      {
+        transferId: "t_rs",
+        siteId: "site_village",
+        siteLabel: "Val Village",
+        state: "departed",
+        at: new Date(0).toISOString(),
+        binCount: 1,
+        resupplyCount: 2,
+      },
     ]);
   });
 });

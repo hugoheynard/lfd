@@ -11,6 +11,7 @@
  * | `RoundPlacementsReader`   | « quelle tournée, quel rang ? » — implémenté par la livraison elle-même (2026-10-06) |
  * | `TransferStatusReader`    | « arrivée au site ? » — implémenté par la livraison elle-même (T2, 2026-10-13) |
  * | `TransferReceptionDesk`   | « réceptionner » — implémenté par la livraison elle-même (T2, 2026-10-13) |
+ * | `ResupplyTransfersReader` | « quels transferts de réassort seul ? » — implémenté par la livraison elle-même (R3e, 2026-10-22) |
  *
  * `lint:context-boundaries` n'autorise `handover → delivery` que par ce
  * chemin ; `delivery → handover` reste interdit.
@@ -50,4 +51,13 @@ export {
   type OrderTransferStatus,
   TransferStatusReader,
 } from "./transfer-status.reader.js";
-export { TransferReceptionDesk, type TransferReceptionRequest } from "./transfer-reception.desk.js";
+// R3c, R3e (2026-10-22) : un transfert de réassort seul, vu et réceptionné au comptoir.
+export {
+  ResupplyTransfersReader,
+  type ResupplyOnlyTransferStatus,
+} from "./resupply-transfers.reader.js";
+export {
+  type TransferIdReceptionRequest,
+  TransferReceptionDesk,
+  type TransferReceptionRequest,
+} from "./transfer-reception.desk.js";

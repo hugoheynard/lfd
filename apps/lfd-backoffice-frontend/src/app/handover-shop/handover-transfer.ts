@@ -2,6 +2,7 @@ import type {
   HandoverQueueEntryView,
   OrderTransferStateView,
   OrderTransferView,
+  ResupplyTransferView,
 } from '@lfd/contracts';
 import type { FoldBadgeVariant } from 'fold-ng';
 
@@ -28,11 +29,8 @@ export interface CounterTransfer {
   readonly at: string | null;
   readonly binCount: number;
   readonly orderCount: number;
-  /**
-   * Une commande du transfert : la route de réception est par commande
-   * (`POST /admin/handover/orders/:orderId/transfer-reception`).
-   */
-  readonly anyOrderId: string;
+  /** Les réassorts d'un transfert de réassort seul (R3c) ; 0 sinon. */
+  readonly resupplyCount: number;
 }
 
 const STATE_ORDER: Readonly<Record<OrderTransferStateView, number>> = {
@@ -94,10 +92,12 @@ function blockOf(transfer: OrderTransferView): string | null {
 /**
  * **Les transferts des lignes de l'onglet**, un par transfert, du plus en
  * retard (pas encore composé) au reçu. Les commandes qu'aucun transfert ne
- * porte encore se regroupent par site.
+ * porte encore se regroupent par site. Les transferts de réassort seul
+ * (R3c, R3e), qu'aucune ligne ne désigne, s'y ajoutent.
  */
 export function transfersOf(
   entries: readonly HandoverQueueEntryView[],
+  resupplyOnly: readonly ResupplyTransferView[] = [],
 ): readonly CounterTransfer[] {
   const byKey = new Map<string, CounterTransfer>();
   for (const entry of entries) {
@@ -118,20 +118,38 @@ export function transfersOf(
             at: transfer.at,
             binCount: transfer.binCount,
             orderCount: 1,
-            anyOrderId: entry.orderId,
+            resupplyCount: 0,
           }
         : { ...known, orderCount: known.orderCount + 1 },
     );
   }
+  for (const transfer of resupplyOnly) {
+    byKey.set(transfer.transferId, {
+      key: transfer.transferId,
+      transferId: transfer.transferId,
+      siteLabel: transfer.siteLabel,
+      state: transfer.state,
+      at: transfer.at,
+      binCount: transfer.binCount,
+      orderCount: 0,
+      resupplyCount: transfer.resupplyCount,
+    });
+  }
   return [...byKey.values()].sort((a, b) => STATE_ORDER[a.state] - STATE_ORDER[b.state]);
 }
 
-/** « 3 bacs · 5 commandes · parti à 7 h 12 » — la ligne sous le nom du site. */
+/**
+ * « 3 bacs · 5 commandes · parti à 7 h 12 » — la ligne sous le nom du site ;
+ * « 1 bac · 2 réassorts · … » pour un transfert de réassort seul.
+ */
 export function transferSummary(transfer: CounterTransfer): string {
-  const parts = [
-    plural(transfer.binCount, 'bac', 'bacs'),
-    plural(transfer.orderCount, 'commande', 'commandes'),
-  ];
+  const parts = [plural(transfer.binCount, 'bac', 'bacs')];
+  if (transfer.orderCount > 0 || transfer.resupplyCount === 0) {
+    parts.push(plural(transfer.orderCount, 'commande', 'commandes'));
+  }
+  if (transfer.resupplyCount > 0) {
+    parts.push(plural(transfer.resupplyCount, 'réassort', 'réassorts'));
+  }
   if (transfer.at !== null && transfer.state !== 'planned') {
     const hour = formatHour(clockOf(new Date(transfer.at)));
     parts.push(transfer.state === 'received' ? `reçu à ${hour}` : `parti à ${hour}`);

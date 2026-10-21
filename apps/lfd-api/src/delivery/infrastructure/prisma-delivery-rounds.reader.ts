@@ -9,8 +9,11 @@ import { orderStopsOnly } from "./order-stop.js";
 /** Un arrêt vivant : ni retiré, ni clos (C12). */
 const LIVE_STOP = { removedAt: null, closedAt: null } as const;
 
-/** Un élément « commande » d'un transfert — le réapprovisionnement n'est pas bâti. */
-const ORDER_ITEM = { kind: "order" } as const;
+/**
+ * Les éléments PORTÉS d'un transfert (un élément sorti à la réouverture
+ * n'y est plus), avec leur genre : commandes et réassorts se comptent à part.
+ */
+const CARRIED_ITEMS = { where: { detachedAt: null }, select: { kind: true } } as const;
 
 /** Adaptateur Prisma de la lecture de la composition. Il n'écrit rien. */
 @Injectable()
@@ -33,7 +36,7 @@ export class PrismaDeliveryRoundsReader extends DeliveryRoundsReader {
               select: {
                 siteId: true,
                 siteLabel: true,
-                _count: { select: { items: { where: ORDER_ITEM } } },
+                items: CARRIED_ITEMS,
               },
             },
           },
@@ -70,7 +73,8 @@ export class PrismaDeliveryRoundsReader extends DeliveryRoundsReader {
                   {
                     siteId: stop.transfer.siteId,
                     siteLabel: stop.transfer.siteLabel,
-                    orderCount: stop.transfer._count.items,
+                    orderCount: countOf(stop.transfer.items, "order"),
+                    resupplyCount: countOf(stop.transfer.items, "resupply"),
                   },
                 ] as const,
               ],
@@ -89,4 +93,9 @@ export class PrismaDeliveryRoundsReader extends DeliveryRoundsReader {
     });
     return new Set(orderStopsOnly(rows).map((row) => row.orderId));
   }
+}
+
+/** Le nombre d'éléments portés de ce genre. */
+function countOf(items: readonly { readonly kind: string }[], kind: string): number {
+  return items.filter((item) => item.kind === kind).length;
 }

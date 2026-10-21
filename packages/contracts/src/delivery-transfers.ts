@@ -118,6 +118,23 @@ export interface OrderTransferView {
 }
 
 /**
+ * **Un transfert de réassort seul, au comptoir du site** (R3c, R3e) — aucune
+ * commande de la file ne le désigne : la file le porte à part, pour qu'il se
+ * voie et se réceptionne (`POST admin/handover/transfers/:transferId/reception`).
+ */
+export interface ResupplyTransferView {
+  readonly transferId: string;
+  /** Le site servi : l'onglet du comptoir. */
+  readonly siteId: string;
+  readonly siteLabel: string;
+  readonly state: Exclude<OrderTransferStateView, "awaiting">;
+  /** Instant ISO de l'état : ouverture, départ ou réception. */
+  readonly at: string;
+  readonly binCount: number;
+  readonly resupplyCount: number;
+}
+
+/**
  * **L'arrêt de transfert dans « Ma tournée »** (lot T2) — le site, et ce que
  * l'arrêt transporte, totalisé par SKU. Aucun client, aucune adresse de
  * client.

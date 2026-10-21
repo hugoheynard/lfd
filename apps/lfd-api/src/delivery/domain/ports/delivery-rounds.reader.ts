@@ -12,12 +12,16 @@ export type RoundStopRow = StopSubject & {
   readonly position: number;
 };
 
-/** Ce que la vue dit d'un transfert interne : son site, et combien de commandes il porte. */
+/**
+ * Ce que la vue dit d'un transfert interne : son site, et combien de commandes
+ * et de réassorts il porte (un transfert de réassort seul porte 0 commande).
+ */
 export interface RoundTransferRow {
   /** Le site servi, identifiant opaque du commerce (L1a, la couleur). */
   readonly siteId: string;
   readonly siteLabel: string;
   readonly orderCount: number;
+  readonly resupplyCount: number;
 }
 
 /** Une tournée du jour, telle que la vue la lit. */

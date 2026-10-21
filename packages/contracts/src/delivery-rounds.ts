@@ -83,7 +83,7 @@ export interface DeliveryRoundView {
   readonly transferStops?: readonly DeliveryRoundTransferStopView[];
 }
 
-/** Un arrêt de transfert interne : un site servi, le nombre de ses commandes. */
+/** Un arrêt de transfert interne : un site servi, le nombre de ses commandes et réassorts. */
 export interface DeliveryRoundTransferStopView {
   readonly stopId: string;
   readonly transferId: string;
@@ -97,6 +97,11 @@ export interface DeliveryRoundTransferStopView {
   /** Dans la même séquence 1..n que les arrêts de commande. */
   readonly position: number;
   readonly orderCount: number;
+  /**
+   * Les réassorts qu'il porte (R3c) : un transfert de réassort seul porte 0
+   * commande. Absent : serveur d'avant le champ.
+   */
+  readonly resupplyCount?: number;
 }
 
 /**

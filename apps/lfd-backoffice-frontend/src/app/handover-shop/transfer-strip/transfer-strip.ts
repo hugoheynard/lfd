@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
-import type { HandoverQueueEntryView } from '@lfd/contracts';
+import type { HandoverQueueEntryView, ResupplyTransferView } from '@lfd/contracts';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
@@ -38,12 +38,16 @@ export class TransferStrip {
 
   /** Les lignes de l'onglet ouvert. */
   readonly entries = input.required<readonly HandoverQueueEntryView[]>();
+  /** Les transferts de réassort seul du site ouvert (R3c, R3e) : aucune ligne ne les désigne. */
+  readonly resupplyTransfers = input<readonly ResupplyTransferView[]>([]);
   /** `handover_counter:write` — sans lui, l'état se lit, le bouton n'existe pas. */
   readonly canReceive = input<boolean>(false);
   /** Un transfert vient d'être réceptionné : la file est à relire. */
   readonly received = output<void>();
 
-  protected readonly transfers = computed(() => transfersOf(this.entries()));
+  protected readonly transfers = computed(() =>
+    transfersOf(this.entries(), this.resupplyTransfers()),
+  );
 
   protected title(transfer: CounterTransfer): string {
     return `Transfert → ${transfer.siteLabel}`;

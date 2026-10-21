@@ -5,6 +5,7 @@ import { DomainEventPublisher } from "../../platform/events/domain-event-publish
 import { DurablePublisher } from "../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../platform/time/clock.js";
 import {
+  type TransferIdReceptionRequest,
   TransferReceptionDesk,
   type TransferReceptionRequest,
 } from "../channels/handover/index.js";
@@ -20,7 +21,10 @@ import { loadTransfer, publishTransferReceived } from "./internal-transfer-suppo
  * Q-T6, lot T2) — l'implémentation, par la livraison, du port qu'elle publie
  * pour le retrait.
  *
- * Dans UNE unité de travail : le transfert qui porte la commande est chargé,
+ * Deux portes, une règle : par la commande qu'il porte, ou par le transfert
+ * lui-même (un transfert de réassort seul, R3c, n'a pas de commande).
+ *
+ * Dans UNE unité de travail : le transfert est chargé,
  * il refuse ou reçoit (`receive` — manuel depuis `planned`, motif exigé), il
  * est écrit sous `received_at IS NULL`, et le journal le dit — avec le
  * nombre de bacs du transfert (lot T3), ce que le site doit avoir reçu — et
@@ -47,15 +51,27 @@ export class TransferReception extends TransferReceptionDesk {
       if (holderId === null) {
         throw new OrderNotInTransferError(request.orderId);
       }
-      const transfer = await loadTransfer(this.transfers, holderId);
-      const manual = transfer.status === "planned";
-      transfer.receive({ at: this.clock.now(), by: request.staffUserId, reason: request.reason });
-      await this.transfers.save(transfer);
-      await this.events.publishTraced(
-        new InternalTransferReceivedEvent(transfer, "counter", manual, await this.binsOf(transfer)),
-      );
-      await publishTransferReceived(this.durable, transfer);
+      await this.receiveHeld(holderId, request);
     });
+  }
+
+  async receiveTransfer(request: TransferIdReceptionRequest): Promise<void> {
+    await this.uow.run(() => this.receiveHeld(request.transferId, request));
+  }
+
+  /** Charge, reçoit, écrit, journalise — dans l'unité de travail de l'appelant. */
+  private async receiveHeld(
+    transferId: string,
+    request: { readonly staffUserId: string; readonly reason: string | null },
+  ): Promise<void> {
+    const transfer = await loadTransfer(this.transfers, transferId);
+    const manual = transfer.status === "planned";
+    transfer.receive({ at: this.clock.now(), by: request.staffUserId, reason: request.reason });
+    await this.transfers.save(transfer);
+    await this.events.publishTraced(
+      new InternalTransferReceivedEvent(transfer, "counter", manual, await this.binsOf(transfer)),
+    );
+    await publishTransferReceived(this.durable, transfer);
   }
 
   /** Les bacs non annulés du transfert, à cet instant. */

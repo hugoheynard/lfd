@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 
 import { TransferReception } from "./application/transfer-reception.js";
 import { TransferArrivalStatus } from "./application/transfer-arrival-status.js";
+import { ResupplyTransfersAtCounter } from "./application/resupply-transfers-at-counter.js";
 import { ApplyDeliveryProposalHandler } from "./application/commands/apply-delivery-proposal.handler.js";
 import { RoundTimingEstimator } from "./application/round-timing-estimator.js";
 import { LocateDeliveryStopsHandler } from "./application/commands/locate-delivery-stops.handler.js";
@@ -268,6 +269,7 @@ import {
     RoutedTravelTimeReader,
     TransferReception,
     TransferArrivalStatus,
+    ResupplyTransfersAtCounter,
   ],
 })
 export class DeliveryModule {}

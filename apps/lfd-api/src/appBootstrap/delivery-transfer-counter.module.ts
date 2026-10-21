@@ -1,12 +1,14 @@
 import { Global, Module } from "@nestjs/common";
 
 import {
+  ResupplyTransfersReader,
   TransferReceptionDesk,
   TransferStatusReader,
 } from "../delivery/channels/handover/index.js";
 import { TransferReception } from "../delivery/application/transfer-reception.js";
 import { DeliveryModule } from "../delivery/delivery.module.js";
 import { TransferArrivalStatus } from "../delivery/application/transfer-arrival-status.js";
+import { ResupplyTransfersAtCounter } from "../delivery/application/resupply-transfers-at-counter.js";
 
 /**
  * **Le transfert interne, vu du comptoir, relié** (plan du transfert interne,
@@ -21,7 +23,8 @@ import { TransferArrivalStatus } from "../delivery/application/transfer-arrival-
   providers: [
     { provide: TransferStatusReader, useExisting: TransferArrivalStatus },
     { provide: TransferReceptionDesk, useExisting: TransferReception },
+    { provide: ResupplyTransfersReader, useExisting: ResupplyTransfersAtCounter },
   ],
-  exports: [TransferStatusReader, TransferReceptionDesk],
+  exports: [TransferStatusReader, TransferReceptionDesk, ResupplyTransfersReader],
 })
 export class DeliveryTransferCounterModule {}

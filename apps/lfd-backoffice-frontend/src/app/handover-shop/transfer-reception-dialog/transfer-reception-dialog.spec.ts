@@ -19,18 +19,18 @@ const BASE: CounterTransfer = {
   at: '2026-09-10T05:12:00.000Z',
   binCount: 3,
   orderCount: 2,
-  anyOrderId: 'ord_1',
+  resupplyCount: 0,
 };
 
 class FakeApi {
-  calls: { orderId: string; reason: string | null }[] = [];
+  calls: { transferId: string; reason: string | null }[] = [];
   refuse: unknown = null;
 
-  receiveTransfer(orderId: string, reason: string | null): Promise<void> {
+  receiveTransfer(transferId: string, reason: string | null): Promise<void> {
     if (this.refuse !== null) {
       return Promise.reject(this.refuse);
     }
-    this.calls.push({ orderId, reason });
+    this.calls.push({ transferId, reason });
     return Promise.resolve();
   }
 }
@@ -83,7 +83,7 @@ describe('TransferReceptionDialog', () => {
     expect(submit().disabled).toBe(false);
     submit().click();
     await fixture.whenStable();
-    expect(api.calls).toEqual([{ orderId: 'ord_1', reason: null }]);
+    expect(api.calls).toEqual([{ transferId: 'tr_1', reason: null }]);
     expect(closedWith).toEqual([true]);
   });
 
@@ -96,7 +96,7 @@ describe('TransferReceptionDialog', () => {
     expect(submit().disabled).toBe(false);
     submit().click();
     await fixture.whenStable();
-    expect(api.calls).toEqual([{ orderId: 'ord_1', reason: 'apporté en voiture' }]);
+    expect(api.calls).toEqual([{ transferId: 'tr_1', reason: 'apporté en voiture' }]);
     expect(closedWith).toEqual([true]);
   });
 

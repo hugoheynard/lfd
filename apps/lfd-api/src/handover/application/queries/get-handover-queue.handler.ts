@@ -1,4 +1,9 @@
-import type { HandoverQueueEntryView, HandoverQueueView, OrderTransferView } from "@lfd/contracts";
+import type {
+  HandoverQueueEntryView,
+  HandoverQueueView,
+  OrderTransferView,
+  ResupplyTransferView,
+} from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { HandoverQueueReader, type HandoverQueueEntry } from "../../channels/commerce/index.js";
@@ -10,6 +15,8 @@ import { queueStateOf, showsInQueue } from "../../domain/services/queue-state.js
 import { QualityHoldsReader } from "../../../production/channels/handover/index.js";
 import {
   type OrderTransferStatus,
+  type ResupplyOnlyTransferStatus,
+  ResupplyTransfersReader,
   TransferStatusReader,
 } from "../../../delivery/channels/handover/index.js";
 import { GetHandoverQueueQuery } from "./get-handover-queue.query.js";
@@ -30,11 +37,12 @@ import { GetHandoverQueueQuery } from "./get-handover-queue.query.js";
  * retrait à joindre `orders` — c'est-à-dire à franchir la frontière que tout ce
  * chantier vient de poser.
  *
- * ## Trois questions, jamais N + 1
+ * ## Quatre questions, jamais N + 1
  *
  * Une pour la file, une pour les attestations du lot, une pour les retenues
  * qualité du lot (`QualityHoldsReader`, publié par la production —
- * `plan-controle-qualite.md`, D4). Demander ligne par ligne ferait autant
+ * `plan-controle-qualite.md`, D4), et une pour les transferts de réassort
+ * seul de la journée (R3c, R3e). Demander ligne par ligne ferait autant
  * d'allers-retours que de commandes pour peindre un écran.
  */
 @QueryHandler(GetHandoverQueueQuery)
@@ -47,15 +55,17 @@ export class GetHandoverQueueHandler implements IQueryHandler<
     private readonly attestations: HandoverAttestationsReader,
     private readonly holds: QualityHoldsReader,
     private readonly transfers: TransferStatusReader,
+    private readonly resupplyTransfers: ResupplyTransfersReader,
   ) {}
 
   async execute(query: GetHandoverQueueQuery): Promise<HandoverQueueView> {
     const expected = await this.queue.expectedOn(query.day);
     const orderIds = expected.map((entry) => entry.orderId);
-    const [attested, held, transfers] = await Promise.all([
+    const [attested, held, transfers, resupplyOnly] = await Promise.all([
       this.attestations.forOrders(orderIds),
       this.holds.heldOrders(query.day, orderIds),
       this.transfers.statusOf(orderIds),
+      this.resupplyTransfers.resupplyOnlyOn(query.day),
     ]);
     return {
       day: query.day,
@@ -68,6 +78,8 @@ export class GetHandoverQueueHandler implements IQueryHandler<
           // Lot T2 du transfert interne : « Réceptionner » tant qu'il n'est pas reçu.
           transfer: transferViewOf(transfers.get(entry.orderId)),
         })),
+      // R3c, R3e : un transfert de réassort seul, qu'aucune ligne ne désigne.
+      resupplyTransfers: resupplyOnly.map(resupplyTransferViewOf),
     };
   }
 }
@@ -122,5 +134,17 @@ function transferViewOf(status: OrderTransferStatus | undefined): OrderTransferV
     state: status.state,
     at: status.at.toISOString(),
     binCount: status.binCount,
+  };
+}
+
+function resupplyTransferViewOf(status: ResupplyOnlyTransferStatus): ResupplyTransferView {
+  return {
+    transferId: status.transferId,
+    siteId: status.siteId,
+    siteLabel: status.siteLabel,
+    state: status.state,
+    at: status.at.toISOString(),
+    binCount: status.binCount,
+    resupplyCount: status.resupplyCount,
   };
 }

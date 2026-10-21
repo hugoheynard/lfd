@@ -80,15 +80,17 @@ export class HandoverQueueService {
   }
 
   /**
-   * **« Réceptionner »** le transfert interne qui porte cette commande (lot
-   * T2) : la route est par commande, le serveur retrouve le transfert. Motif
+   * **« Réceptionner »** un transfert interne, désigné par lui-même (lot T2 ;
+   * R3c, R3e) : le même geste pour un transfert de commandes et pour un
+   * transfert de réassort seul, qu'aucune commande ne désigne. Motif
    * obligatoire quand il n'est parti dans aucune tournée — le domaine le dit.
+   * La route par commande reste servie (`orders/:orderId/transfer-reception`).
    */
-  async receiveTransfer(orderId: string, reason: string | null): Promise<void> {
+  async receiveTransfer(transferId: string, reason: string | null): Promise<void> {
     const payload: ReceiveTransferPayload = { reason };
     await firstValueFrom(
       this.http.post<void>(
-        `${B2B_API_BASE}/admin/handover/orders/${encodeURIComponent(orderId)}/transfer-reception`,
+        `${B2B_API_BASE}/admin/handover/transfers/${encodeURIComponent(transferId)}/reception`,
         payload,
       ),
     );

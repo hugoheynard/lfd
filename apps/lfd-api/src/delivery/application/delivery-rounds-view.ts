@@ -120,6 +120,7 @@ function roundView(round: RoundRow, inputs: DeliveryRoundsDayInputs): DeliveryRo
         ...(transfer === undefined ? {} : { siteId: transfer.siteId }),
         position: stop.position,
         orderCount: transfer?.orderCount ?? 0,
+        resupplyCount: transfer?.resupplyCount ?? 0,
       };
     }),
     place: inputs.places.get(round.id) ?? null,
