@@ -3,7 +3,8 @@
 > **État : 🟡 partiel, 2026-10-21.** La **réception** au comptoir est bâtie
 > (commit `558b376c8`) ; la **commande** au fournil aussi (lot R1, 2026-10-21),
 > mais le fournil ne fait encore que la LIRE : elle n'entre ni au plan figé, ni
-> au colisage, ni au transfert (R3). Ce document décrit ce qui existe, vérifié
+> au colisage, ni au transfert (R3). Les **ruptures et stocks faibles** du
+> comptoir aussi (lot R1b, 2026-10-21), sans effet encore sur la boutique. Ce document décrit ce qui existe, vérifié
 > dans le code le 2026-10-21. La conception
 > complète, lots et questions ouvertes compris, est dans
 > [`plan-reapprovisionnement.md`](plan-reapprovisionnement.md).
@@ -73,6 +74,53 @@ flowchart LR
   (`production → b2b` reste interdit). Le canal viendra quand le réassort
   entrera au plan figé (R3).
 
+## Ce qui est bâti : rupture et stock faible au comptoir (lot R1b, 2026-10-21)
+
+```mermaid
+flowchart LR
+  C["Comptoir › Réassort<br/>« Rupture » / « Stock faible »<br/>(une ligne reçue ou le catalogue)"] --> A["StockAlert<br/>vivante → levée"]
+  A --> F["Fournil › Réassorts à produire<br/>« Village : rupture — Croissant »<br/>« Lancer un réassort au plus tôt »"]
+  R["Réception d'une ligne de l'article<br/>au point (ResupplyReceipt)"] -->|"même transaction"| A
+  C -->|"« Lever »"| A
+```
+
+- **Le code** : `apps/lfd-api/src/b2b/resupply/domain/stock-alert.ts`. Une
+  alerte par (point, SKU) : niveau `out_of_stock` (rupture) ou `low` (stock
+  faible), libellé figé du catalogue publié, auteur et instant de la DERNIÈRE
+  déclaration. Redéclarer l'alerte vivante change son niveau (le handler la
+  recharge plutôt que d'en ouvrir une seconde). Une alerte levée ne se rouvre
+  ni ne se relève : on en déclare une nouvelle.
+- **Sa durée** : aucune échéance. Elle tient jusqu'à ce que le comptoir la
+  lève (`manual`) ou qu'une ligne de l'article soit reçue au point avec une
+  quantité > 0 (`receipt`) — jamais d'elle-même le lendemain.
+- **La levée par la réception** : `liftStockAlertOnReceipt`
+  (`apps/lfd-api/src/b2b/resupply/application/lift-stock-alert-on-receipt.ts`), appelé par
+  `ReceiveResupplyLineHandler` dans l'unité de travail de la réception. C'est
+  le seul chemin ; R2 (la réception en un geste) s'y branchera. Corriger ou
+  retirer une ligne ne lève rien.
+- **La table** : `site_stock_alert`, schéma `public`, migration
+  `20261021190000_les_alertes_de_stock_du_comptoir` (additive). Index unique
+  PARTIEL `(site_id, sku) WHERE lifted_at IS NULL` : une seule alerte vivante,
+  la course entre deux postes est refusée en 409. Pas de suppression : une
+  levée garde qui, quand et pourquoi (`lift_reason`).
+- **Les routes** : `admin/site-stock-alerts/sites/:siteId` sous
+  `handover_counter` — lecture (les alertes vivantes du point), déclarer
+  (`POST`, `{ sku, level }`), lever (`…/:alertId/lift`) ; le point est dans
+  chaque `where`. `admin/site-stock-alerts/live` sous
+  `production_worksheet:read` **ou** `production_plan:read` : les alertes
+  vivantes de tous les points.
+- **Les écrans** : au comptoir, la carte « Ruptures et stocks faibles » en
+  tête de la page Réassort (`comptoir/reassort-boutique-page/stock-alerts-card/`),
+  et les gestes sur chaque ligne reçue ; au fournil, « Alertes des points » en
+  tête de « Réassorts à produire »
+  (`production/reassorts-a-produire/live-stock-alerts-card/`). « Lancer un
+  réassort au plus tôt » passe un réassort `asap` de l'article pour le point
+  par la route du comptoir : il n'apparaît qu'à qui tient
+  `handover_counter:write` — aucun droit du fournil ne couvre cette route.
+- **Aucun effet sur la boutique ni sur la passation** : une rupture ne bloque
+  encore rien, un stock faible n'avertit aucun client (lot J2). L'écran du
+  comptoir le dit.
+
 ## Ce qui est bâti : la réception au comptoir
 
 ```mermaid
@@ -131,5 +179,6 @@ n'y est jamais soumis. Voir
   ([`../livraisons/transferts/plan-transfert-interne.md`](../livraisons/transferts/plan-transfert-interne.md)) —
   lots du [plan](plan-reapprovisionnement.md).
 - **Le jour même sur stock** (J2) : les commandes qui puisent dans la vitrine,
-  et leur décompte dans le stock estimé —
+  leur décompte dans le stock estimé, et l'effet des alertes de R1b (une
+  rupture bloque la vente en ligne du jour, un stock faible avertit) —
   [`../limites-de-commande/plan-jour-meme-sur-stock.md`](../limites-de-commande/plan-jour-meme-sur-stock.md).

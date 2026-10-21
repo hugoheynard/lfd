@@ -28,6 +28,7 @@
       } @else {
         <!-- Commander puis recevoir : deux cartes, l'espacement vient du gap. -->
         <div class="cards">
+          <app-stock-alerts-card [articles]="articles()" [canWrite]="canWrite()" />
           @if (siteId(); as id) {
             <app-resupply-order-card [siteId]="id" [articles]="articles()" />
           }
@@ -64,6 +65,7 @@
                       <th scope="col" class="num">Stock estimé</th>
                       @if (canWrite()) {
                         <th scope="col"><span class="sr">Gestes</span></th>
+                        <th scope="col" class="num">Alerte</th>
                       }
                     </tr>
                   </thead>
@@ -112,6 +114,9 @@
                             >
                               Retirer
                             </button>
+                          </td>
+                          <td>
+                            <app-stock-alert-actions [sku]="line.sku" />
                           </td>
                         }
                       </tr>

@@ -17,6 +17,7 @@ import { ReceiveResupplyLineHandler } from "../receive-resupply-line.handler.js"
 import { WithdrawResupplyLineCommand } from "../withdraw-resupply-line.command.js";
 import { WithdrawResupplyLineHandler } from "../withdraw-resupply-line.handler.js";
 import { Catalogue, Directory, InMemoryReceipts, Sites } from "./resupply-doubles.js";
+import { InMemoryStockAlerts } from "./stock-alert-doubles.js";
 
 const AT = new Date(0);
 const SITE = "site_village";
@@ -35,6 +36,7 @@ function setup(identity = { name: "Lou Martin", role: "counter" }) {
     receipts,
     receive: new ReceiveResupplyLineHandler(
       receipts,
+      new InMemoryStockAlerts(),
       CATALOGUE,
       new Sites([SITE]),
       staff,

@@ -108,3 +108,44 @@ model SiteResupplyLine {
   @@map("site_resupply_line")
   @@schema("public")
 }
+
+/// **Une alerte de stock** — « rupture » ou « stock faible » déclarée par le
+/// comptoir sur un article, pour un point (lot R1b de
+/// `documentation/reassort-boutiques/plan-reapprovisionnement.md`, Hugo
+/// 2026-10-21). Aucun effet sur la boutique ni la passation (lot J2).
+///
+/// Une seule alerte VIVANTE (`lifted_at IS NULL`) par (point, article) : index
+/// unique partiel écrit dans la migration (Prisma ne sait pas le déclarer).
+/// Pas de suppression : une alerte levée garde qui, quand et pourquoi.
+model SiteStockAlert {
+  id String @id
+
+  /// Le point de retrait (`pickup_addresses.id`), sans clé étrangère.
+  siteId String @map("site_id")
+  /// Le SKU produit, et son libellé FIGÉ à la première déclaration.
+  sku    String
+  label  String
+  /// `out_of_stock` (rupture) | `low` (stock faible).
+  level  String
+
+  /// Verrou optimiste : deux postes qui touchent la même alerte ne s'écrasent pas.
+  version Int @default(1)
+
+  /// La DERNIÈRE déclaration : instant du `Clock`, auteur figé.
+  declaredAt        DateTime @map("declared_at")
+  declaredByStaffId String   @map("declared_by_staff_id")
+  declaredByName    String   @map("declared_by_name")
+  declaredByRole    String   @map("declared_by_role")
+
+  /// La levée ; tous `null` tant qu'elle est vivante.
+  liftedAt        DateTime? @map("lifted_at")
+  liftedByStaffId String?   @map("lifted_by_staff_id")
+  liftedByName    String?   @map("lifted_by_name")
+  liftedByRole    String?   @map("lifted_by_role")
+  /// `manual` (le comptoir) | `receipt` (un réassort de l'article reçu au point).
+  liftReason      String?   @map("lift_reason")
+
+  @@index([siteId, liftedAt])
+  @@map("site_stock_alert")
+  @@schema("public")
+}

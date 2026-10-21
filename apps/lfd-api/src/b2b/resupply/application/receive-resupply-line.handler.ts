@@ -13,6 +13,8 @@ import {
 import { ResupplyReceiptLine } from "../domain/resupply-receipt-line.js";
 import { ResupplyReceiptRepository } from "../domain/resupply-receipt.repository.js";
 import { ResupplySites } from "../domain/resupply-sites.js";
+import { StockAlertRepository } from "../domain/stock-alert.repository.js";
+import { liftStockAlertOnReceipt } from "./lift-stock-alert-on-receipt.js";
 import { ReceiveResupplyLineCommand } from "./receive-resupply-line.command.js";
 import { traceOf } from "./resupply-receipt-trace.js";
 
@@ -20,6 +22,9 @@ import { traceOf } from "./resupply-receipt-trace.js";
  * **Ajoute un article reçu.** Le libellé est lu au catalogue publié, jamais
  * pris du client : la liste affiche ce que la boutique vend. La réception du
  * jour s'ouvre au premier article.
+ *
+ * Depuis le lot R1b (2026-10-21), l'article reçu lève l'alerte de stock
+ * vivante du point (rupture, stock faible), dans la même transaction.
  */
 @CommandHandler(ReceiveResupplyLineCommand)
 export class ReceiveResupplyLineHandler implements ICommandHandler<
@@ -28,6 +33,7 @@ export class ReceiveResupplyLineHandler implements ICommandHandler<
 > {
   constructor(
     private readonly receipts: ResupplyReceiptRepository,
+    private readonly alerts: StockAlertRepository,
     private readonly catalogue: ResupplyCatalogue,
     private readonly sites: ResupplySites,
     private readonly staff: StaffDirectory,
@@ -60,6 +66,11 @@ export class ReceiveResupplyLineHandler implements ICommandHandler<
         });
       receipt.receive(line, trace);
       await this.receipts.save(receipt);
+      await liftStockAlertOnReceipt(
+        this.alerts,
+        { siteId: command.siteId, sku: line.sku, quantity: line.quantity },
+        trace,
+      );
     });
   }
 }

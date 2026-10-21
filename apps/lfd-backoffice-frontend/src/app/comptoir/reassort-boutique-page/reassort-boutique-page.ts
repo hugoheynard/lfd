@@ -31,6 +31,9 @@ import { PermissionsStore } from '../../auth/permissions.store';
 import { HandoverQueueStore } from '../../handover-shop/handover-queue.store';
 import { ResupplyOrderCard } from './resupply-order-card/resupply-order-card';
 import { ResupplyReceiptsService } from './resupply-receipts.service';
+import { SiteStockAlertsStore } from './site-stock-alerts.store';
+import { StockAlertActions } from './stock-alert-actions/stock-alert-actions';
+import { StockAlertsCard } from './stock-alerts-card/stock-alerts-card';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -43,6 +46,11 @@ type LoadState = 'loading' | 'ready' | 'error';
  * 2026-10-21), la page commande aussi le réassort au fournil
  * (`ResupplyOrderCard`), au-dessus de la réception, qui ne change pas (R2 la
  * refera).
+ *
+ * Depuis le lot R1b (2026-10-21), la page déclare aussi les ruptures et
+ * stocks faibles du point (`StockAlertsCard` en tête, et les gestes sur
+ * chaque ligne reçue) ; un article reçu lève son alerte côté serveur, d'où la
+ * relecture des alertes après chaque geste de réception.
  *
  * Le stock estimé est le reçu tant que le circuit « jour même sur stock »
  * n'existe pas (J2) : les commandes déjà passées pour ce jour l'ont été la
@@ -71,7 +79,10 @@ type LoadState = 'loading' | 'ready' | 'error';
     FoldNumberInputComponent,
     FoldPageLayoutComponent,
     ResupplyOrderCard,
+    StockAlertActions,
+    StockAlertsCard,
   ],
+  providers: [SiteStockAlertsStore],
   templateUrl: './reassort-boutique-page.html',
   styleUrl: './reassort-boutique-page.scss',
 })
@@ -79,6 +90,7 @@ export class ReassortBoutiquePage {
   private readonly service = inject(ResupplyReceiptsService);
   private readonly counter = inject(HandoverQueueStore);
   private readonly permissions = inject(PermissionsStore);
+  private readonly alerts = inject(SiteStockAlertsStore);
 
   protected readonly canWrite = computed(() => this.permissions.can('handover_counter:write'));
   protected readonly state = signal<LoadState>('loading');
@@ -206,7 +218,10 @@ export class ReassortBoutiquePage {
     const siteId = this.siteId();
     const day = this.day();
     this.drafts.set(new Map());
-    const receipt = siteId === null ? null : await this.service.read(siteId, day);
+    const [receipt] = await Promise.all([
+      siteId === null ? null : this.service.read(siteId, day),
+      this.alerts.load(siteId),
+    ]);
     // Une réponse d'un point ou d'un jour quitté entre-temps est jetée.
     if (siteId === this.siteId() && day === this.day()) {
       this.receipt.set(receipt);

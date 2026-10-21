@@ -1,7 +1,7 @@
 <fold-page-layout icon="store" title="Réassorts à produire">
   <p description>
-    Ce que les points de retrait ont commandé pour leur vitrine, en lecture. Ce ne sont pas des
-    commandes client : elles n'apparaissent ni au prévisionnel ni sur la fournée.
+    Ce que les points de retrait ont commandé pour leur vitrine, et les ruptures qu'ils signalent.
+    Ce ne sont pas des commandes client : elles n'apparaissent ni au prévisionnel ni sur la fournée.
   </p>
   <button foldButton pageActions emphasis="outline" (click)="load()">Actualiser</button>
 
@@ -16,6 +16,9 @@
     }
     @case ('ready') {
       <div class="days">
+        @if (alerts(); as live) {
+          <app-live-stock-alerts-card [view]="live" (placed)="load()" />
+        }
         @for (day of days(); track day.serviceDay) {
           <fold-card [attr.data-to-produce-day]="day.serviceDay">
             <fold-element-title cardHeader variant="title" [title]="day.title" />

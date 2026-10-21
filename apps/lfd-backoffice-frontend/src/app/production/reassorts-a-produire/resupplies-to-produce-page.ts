@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import type { ResuppliesToProduceView } from '@lfd/contracts';
+import type { LiveStockAlertsView, ResuppliesToProduceView } from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldCardComponent,
@@ -11,6 +11,8 @@ import {
 } from 'fold-ng';
 
 import { parisClock, RESUPPLY_TARGET_LABELS, resupplyDayLabel } from '../../shared/resupply-labels';
+import { LiveStockAlertsCard } from './live-stock-alerts-card/live-stock-alerts-card';
+import { LiveStockAlertsService } from './live-stock-alerts.service';
 import { ResuppliesToProduceService } from './resupplies-to-produce.service';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -22,6 +24,9 @@ type LoadState = 'loading' | 'ready' | 'error';
  * point et ses réassorts. Distinct des commandes client : le réassort
  * n'entre au plan figé qu'au lot R3 — d'ici là, cet écran est la seule
  * feuille où le fournil le voit.
+ *
+ * En tête depuis le lot R1b (2026-10-21) : les ruptures et stocks faibles
+ * déclarés par les points, avec « Lancer un réassort au plus tôt ».
  */
 @Component({
   selector: 'app-resupplies-to-produce-page',
@@ -34,15 +39,18 @@ type LoadState = 'loading' | 'ready' | 'error';
     FoldIconComponent,
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
+    LiveStockAlertsCard,
   ],
   templateUrl: './resupplies-to-produce-page.html',
   styleUrl: './resupplies-to-produce-page.scss',
 })
 export class ResuppliesToProducePage {
   private readonly service = inject(ResuppliesToProduceService);
+  private readonly stockAlerts = inject(LiveStockAlertsService);
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly view = signal<ResuppliesToProduceView | null>(null);
+  protected readonly alerts = signal<LiveStockAlertsView | null>(null);
   protected readonly targetLabels = RESUPPLY_TARGET_LABELS;
   protected readonly placedAt = parisClock;
 
@@ -61,7 +69,9 @@ export class ResuppliesToProducePage {
   protected async load(): Promise<void> {
     this.state.set('loading');
     try {
-      this.view.set(await this.service.read());
+      const [view, alerts] = await Promise.all([this.service.read(), this.stockAlerts.read()]);
+      this.view.set(view);
+      this.alerts.set(alerts);
       this.state.set('ready');
     } catch {
       this.state.set('error');

@@ -1,0 +1,32 @@
+<div class="gestures" [attr.data-stock-alert-actions]="sku()">
+  @if (alert()?.level !== 'out_of_stock') {
+    <button
+      foldButton
+      size="sm"
+      emphasis="outline"
+      intent="danger"
+      data-stock-alert-declare="out_of_stock"
+      [disabled]="pending()"
+      (click)="declare('out_of_stock')"
+    >
+      Rupture
+    </button>
+  }
+  @if (alert()?.level !== 'low') {
+    <button
+      foldButton
+      size="sm"
+      emphasis="outline"
+      data-stock-alert-declare="low"
+      [disabled]="pending()"
+      (click)="declare('low')"
+    >
+      Stock faible
+    </button>
+  }
+  @if (alert() !== null) {
+    <button foldButton size="sm" data-stock-alert-lift [disabled]="pending()" (click)="lift()">
+      Lever
+    </button>
+  }
+</div>

@@ -1,0 +1,64 @@
+<fold-card data-stock-alerts>
+  <fold-element-title
+    cardHeader
+    variant="title"
+    title="Ruptures et stocks faibles"
+    subtitle="Le fournil les voit sur « Réassorts à produire ». Une alerte tient jusqu'à la réception d'un réassort de l'article ici, ou jusqu'à ce qu'on la lève."
+  />
+
+  <div class="body">
+    <p class="notice" data-stock-alerts-no-effect>
+      Sans effet sur la boutique ni sur les commandes pour l'instant : l'alerte avertit le fournil.
+    </p>
+
+    @if (loadFailed()) {
+      <fold-callout variant="alert">Les alertes du point n'ont pas pu être lues.</fold-callout>
+    } @else if (alerts().length === 0) {
+      <p class="notice" data-stock-alerts-empty>Aucune alerte en cours pour ce point.</p>
+    } @else {
+      <ul class="alerts">
+        @for (alert of alerts(); track alert.id) {
+          <li [attr.data-stock-alert]="alert.sku">
+            <fold-badge
+              [variant]="levelVariants[alert.level]"
+              [content]="levelLabels[alert.level]"
+            />
+            <span class="label">
+              {{ alert.label }}
+              <span class="muted">
+                depuis {{ declaredAt(alert.declaredAt) }}
+                @if (alert.declaredBy; as by) {
+                  · {{ by }}
+                }
+              </span>
+            </span>
+            @if (canWrite()) {
+              <app-stock-alert-actions [sku]="alert.sku" />
+            }
+          </li>
+        }
+      </ul>
+    }
+
+    @if (canWrite()) {
+      <div class="declare" data-stock-alerts-declare>
+        <fold-combobox
+          label="Signaler un article"
+          placeholder="Nom ou référence d'un article du catalogue"
+          emptyText="Aucun article ne correspond."
+          resultLabel="articles"
+          [options]="options()"
+          [value]="pickedSku()"
+          (valueChange)="pickedSku.set($event)"
+        />
+        @if (pickedSku(); as sku) {
+          <app-stock-alert-actions [sku]="sku" />
+        }
+      </div>
+    }
+
+    @if (failure(); as message) {
+      <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+    }
+  </div>
+</fold-card>

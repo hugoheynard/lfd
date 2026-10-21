@@ -320,7 +320,7 @@ Décisions de Hugo :
 | **R3**                                      | Le réassort du soir au plan figé : feuille de production, colisage (quantité réelle), transfert du Village — section distincte                                                                                                                           | fournil, colisage, livraison                                |
 | **R4**                                      | « Au plus tôt » : le plan live au colisage et aux tournées                                                                                                                                                                                               | à concevoir                                                 |
 
-### R1b — Rupture et stock faible au comptoir (Hugo, 2026-10-21)
+### R1b ✅ — Rupture et stock faible au comptoir (Hugo, 2026-10-21 ; bâti le 2026-10-21, non commité)
 
 « Au comptoir on devrait pouvoir déclarer une rupture, un stock faible sur un
 produit, ce qui permettrait déjà de bloquer les commandes, avertir. » Et : « pas
@@ -340,4 +340,28 @@ forcément pour aujourd'hui, dans la mesure où un réassort relève le stock. �
   sur stock de ce produit au point ; un stock faible avertit le client. Les
   commandes pour demain ne sont jamais bloquées (elles sont produites au plan).
 
-Bâti juste après R1 (même page).
+Bâti juste après R1 (même page). ✅ **Bâti le 2026-10-21** : l'agrégat
+`StockAlert` (`b2b/resupply/`), la table `site_stock_alert` (migration
+additive `20261021190000_les_alertes_de_stock_du_comptoir`), la levée par la
+réception branchée dans `ReceiveResupplyLineHandler`, les deux écrans — état
+dans le [README](README.md). Le bouton « Lancer un réassort au plus tôt » du
+fournil passe par la route du comptoir : il n'apparaît qu'à qui tient
+`handover_counter:write`.
+
+### R1c — La demande en cours, enregistrée (Hugo, 2026-10-21)
+
+« Un état général de la demande de réassort, pré-envoi de la demande, stocké. »
+En R1, le brouillon ne vit qu'à l'écran : un rechargement ou un autre poste le
+perd. R1c l'enregistre :
+
+- **Une demande ouverte par point et par visée** (« pour demain », « au plus
+  tôt ») — l'état `draft` de `SiteResupply`, persisté.
+- **Le comptoir y ajoute et en retire des articles au fil du service**, depuis
+  n'importe quel poste (verrou de version : deux postes ne s'écrasent pas).
+- **« Envoyer le réassort »** la fige (`place`) et la transmet au fournil ; une
+  nouvelle demande s'ouvre ensuite pour la même visée.
+- **Avec R1b** : déclarer une rupture ou un stock faible propose d'ajouter le
+  produit à la demande « au plus tôt » en cours, plutôt que d'ouvrir un
+  réassort à part.
+
+Bâti juste après R1b (mêmes écrans, même agrégat).

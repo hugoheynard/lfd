@@ -1,7 +1,18 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import type { ResuppliesToProduceView, SiteResupplyView } from '@lfd/contracts';
+import { By } from '@angular/platform-browser';
+import type {
+  LiveStockAlertsView,
+  PlaceSiteResupplyPayload,
+  ResuppliesToProduceView,
+  SiteResupplyView,
+  StaffPermission,
+} from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
+import { PermissionsStore } from '../../auth/permissions.store';
+import { SiteResuppliesService } from '../../comptoir/reassort-boutique-page/site-resupplies.service';
+import { LiveStockAlertsService } from './live-stock-alerts.service';
+import { LiveStockAlertsCard } from './live-stock-alerts-card/live-stock-alerts-card';
 import { ResuppliesToProducePage } from './resupplies-to-produce-page';
 import { ResuppliesToProduceService } from './resupplies-to-produce.service';
 
@@ -53,13 +64,59 @@ class FakeService {
   }
 }
 
+/** Les alertes vivantes des points (R1b). */
+const ALERTS: LiveStockAlertsView = {
+  sites: [
+    {
+      siteId: 'site_v',
+      siteLabel: 'Village',
+      alerts: [
+        {
+          id: 'alert_1',
+          siteId: 'site_v',
+          sku: 'CRO',
+          label: 'Croissant',
+          level: 'out_of_stock',
+          declaredAt: '2026-01-02T08:30:00.000Z',
+          declaredBy: 'Lou',
+        },
+      ],
+    },
+  ],
+};
+
+class FakeAlerts {
+  read(): Promise<LiveStockAlertsView> {
+    return Promise.resolve(ALERTS);
+  }
+}
+
+/** La passation du comptoir, doublée : retient ce qui est passé. */
+class FakeResupplies {
+  readonly placed: { siteId: string; payload: PlaceSiteResupplyPayload }[] = [];
+  place(siteId: string, payload: PlaceSiteResupplyPayload): Promise<{ id: string }> {
+    this.placed.push({ siteId, payload });
+    return Promise.resolve({ id: 'rs_new' });
+  }
+}
+
 async function mount(
   api = new FakeService(),
+  permissions: readonly StaffPermission[] = ['production_worksheet:read'],
+  resupplies = new FakeResupplies(),
 ): Promise<{ fixture: ComponentFixture<ResuppliesToProducePage>; root: HTMLElement }> {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [ResuppliesToProducePage],
-    providers: [{ provide: ResuppliesToProduceService, useValue: api }],
+    providers: [
+      { provide: ResuppliesToProduceService, useValue: api },
+      { provide: LiveStockAlertsService, useValue: new FakeAlerts() },
+      { provide: SiteResuppliesService, useValue: resupplies },
+      {
+        provide: PermissionsStore,
+        useValue: { can: (p: StaffPermission): boolean => permissions.includes(p) },
+      },
+    ],
   });
   const fixture = TestBed.createComponent(ResuppliesToProducePage);
   fixture.detectChanges();
@@ -107,5 +164,45 @@ describe('ResuppliesToProducePage', () => {
     fixture.detectChanges();
     expect(api.reads).toBe(2);
     expect(root.querySelector(`[data-to-produce-day="${TODAY}"]`)).not.toBeNull();
+  });
+});
+
+describe('ResuppliesToProducePage — alertes des points (R1b)', () => {
+  it('dit en tête « Village : rupture — Croissant » ; sans le droit du comptoir, aucun bouton', async () => {
+    const { root } = await mount();
+
+    const alert = root.querySelector('[data-live-stock-alert="site_v:CRO"]');
+    expect(alert?.textContent).toContain('Village : rupture — Croissant');
+    expect(root.querySelector('[data-live-stock-alert-open]')).toBeNull();
+  });
+
+  it('avec le droit du comptoir, lance un réassort « au plus tôt » de cet article pour ce point', async () => {
+    const api = new FakeService();
+    const resupplies = new FakeResupplies();
+    const { fixture, root } = await mount(
+      api,
+      ['production_worksheet:read', 'handover_counter:write'],
+      resupplies,
+    );
+
+    root.querySelector<HTMLButtonElement>('[data-live-stock-alert-open]')?.click();
+    fixture.detectChanges();
+    const card: unknown = fixture.debugElement.query(
+      By.css('app-live-stock-alerts-card'),
+    ).componentInstance;
+    if (!(card instanceof LiveStockAlertsCard)) {
+      throw new Error('la carte des alertes manque');
+    }
+    card['quantity'].set(18);
+    fixture.detectChanges();
+    root.querySelector<HTMLButtonElement>('[data-live-stock-alert-place]')?.click();
+    await new Promise((resolve) => setTimeout(resolve));
+    await fixture.whenStable();
+
+    expect(resupplies.placed).toEqual([
+      { siteId: 'site_v', payload: { target: 'asap', lines: [{ sku: 'CRO', quantity: 18 }] } },
+    ]);
+    // La page relit après la passation.
+    expect(api.reads).toBe(2);
   });
 });
