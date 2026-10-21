@@ -1,14 +1,24 @@
 <div class="stock-table">
-  @if (categoryOptions().length > 1) {
+  <div class="selectors">
+    @if (categoryOptions().length > 1) {
+      <fold-view-toggle
+        data-resupply-categories
+        ariaLabel="Filtrer par famille"
+        size="sm"
+        [options]="categoryOptions()"
+        [value]="category()"
+        (valueChange)="category.set($event)"
+      />
+    }
     <fold-view-toggle
-      data-resupply-categories
-      ariaLabel="Filtrer par famille"
+      data-resupply-target
+      ariaLabel="Visée de la demande"
       size="sm"
-      [options]="categoryOptions()"
-      [value]="category()"
-      (valueChange)="category.set($event)"
+      [options]="targetOptions()"
+      [value]="target()"
+      (valueChange)="chooseTarget($event)"
     />
-  }
+  </div>
   <fold-search
     placeholder="Chercher un produit"
     ariaLabel="Chercher un produit"
@@ -37,8 +47,7 @@
         <th scope="col">Produit</th>
         <th scope="col" class="num">Stock du jour</th>
         <th scope="col">État</th>
-        <th scope="col">Au plus tôt</th>
-        <th scope="col">Pour demain</th>
+        <th scope="col">{{ targetLabel() }}</th>
         @if (canWrite()) {
           <th scope="col"><span class="sr">Actions</span></th>
         }
@@ -69,43 +78,40 @@
               {{ row.state === 'ok' ? 'OK' : row.state === 'low' ? 'Faible' : 'Rupture' }}
             }
           </td>
-          @for (target of targets; track target) {
-            <td>
-              @if (canWrite()) {
-                <div
-                  class="quantity"
-                  [attr.data-resupply-asap]="target === 'asap' ? row.sku : null"
-                  [attr.data-resupply-tomorrow]="target === 'tomorrow' ? row.sku : null"
-                  (focusout)="commit(target, row)"
-                  (keydown.enter)="commit(target, row)"
-                >
-                  <fold-number-input
+          <td>
+            @if (canWrite()) {
+              <div
+                class="quantity"
+                [attr.data-resupply-quantity]="row.sku"
+                (focusout)="commit(target(), row)"
+                (keydown.enter)="commit(target(), row)"
+              >
+                <fold-number-input
+                  size="sm"
+                  [value]="quantityOf(target(), row)"
+                  (valueChange)="setQuantity(target(), row, $event)"
+                  [min]="0"
+                  integer
+                  [disabled]="resuppliesPending()"
+                />
+                @for (quantity of steps; track quantity) {
+                  <button
+                    foldButton
+                    type="button"
+                    emphasis="soft"
+                    intent="neutral"
                     size="sm"
-                    [value]="quantityOf(target, row)"
-                    (valueChange)="setQuantity(target, row, $event)"
-                    [min]="0"
-                    integer
                     [disabled]="resuppliesPending()"
-                  />
-                  @for (quantity of steps; track quantity) {
-                    <button
-                      foldButton
-                      type="button"
-                      emphasis="soft"
-                      intent="neutral"
-                      size="sm"
-                      [disabled]="resuppliesPending()"
-                      (click)="step(target, row, quantity)"
-                    >
-                      +{{ quantity }}
-                    </button>
-                  }
-                </div>
-              } @else {
-                {{ target === 'asap' ? row.asap : row.tomorrow }}
-              }
-            </td>
-          }
+                    (click)="step(target(), row, quantity)"
+                  >
+                    +{{ quantity }}
+                  </button>
+                }
+              </div>
+            } @else {
+              {{ target() === 'asap' ? row.asap : row.tomorrow }}
+            }
+          </td>
           @if (canWrite()) {
             <td class="num">
               <fold-dropdown placement="bottom-end" ariaLabel="Autres gestes">
@@ -171,20 +177,11 @@
       <button
         foldButton
         type="button"
-        data-resupply-send-asap
-        [disabled]="asapCount() === 0 || resuppliesPending()"
-        (click)="send('asap')"
+        data-resupply-send
+        [disabled]="targetCount() === 0 || resuppliesPending()"
+        (click)="send(target())"
       >
-        Envoyer au plus tôt ({{ asapCount() }})
-      </button>
-      <button
-        foldButton
-        type="button"
-        data-resupply-send-tomorrow
-        [disabled]="tomorrowCount() === 0 || resuppliesPending()"
-        (click)="send('tomorrow')"
-      >
-        Envoyer pour demain ({{ tomorrowCount() }})
+        Envoyer — {{ targetLabel() }} ({{ targetCount() }})
       </button>
     </div>
   }

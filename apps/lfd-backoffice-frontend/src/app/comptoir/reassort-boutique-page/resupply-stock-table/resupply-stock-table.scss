@@ -40,6 +40,13 @@
   background: var(--fold-color-warning-surface);
 }
 
+.selectors {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+}
+
 .quantity {
   display: flex;
   flex-wrap: wrap;

@@ -57,6 +57,12 @@ const STATE_OPTIONS = [
 /** La puce « Tout » : aucun filtre de famille. Hors de l'espace des identifiants de famille. */
 const ALL_CATEGORIES = '';
 
+/** Les libellés des deux visées, sur le sélecteur et le bouton d'envoi. */
+const TARGET_LABELS: Readonly<Record<ResupplyTarget, string>> = {
+  asap: 'Au plus tôt',
+  tomorrow: 'Pour demain',
+};
+
 /** Les pas rapides à côté de chaque case de demande. */
 const STEPS = [1, 5, 10] as const;
 
@@ -82,6 +88,11 @@ function normalize(text: string): string {
  * leur état (OK · Faible · Rupture) en un clic, et la demande en cours de
  * chaque visée saisie dans la case. Ruptures et stocks faibles en tête, puis
  * les demandés, puis le reste.
+ *
+ * Une seule colonne de quantité (lot R1f, Hugo 2026-10-21 : « ça nous
+ * encombre visuellement ») : un sélecteur choisit la visée affichée. Par
+ * défaut « Pour demain » tant que l'heure limite du réassort n'est pas
+ * passée, « Au plus tôt » ensuite ; la demande en cours garde les deux.
  *
  * Elle ne garde rien que le serveur n'ait pas : un état passe par
  * `SiteStockAlertsStore`, une demande par `SiteResuppliesStore` (lot R1c),
@@ -115,12 +126,45 @@ export class ResupplyStockTable {
   readonly stock = input.required<readonly ResupplyReceiptLineView[]>();
   readonly unordered = input.required<readonly UnorderedReceiptLineView[]>();
   readonly canWrite = input.required<boolean>();
+  /**
+   * L'instant qui choisit la visée par défaut. Une entrée plutôt qu'un
+   * `new Date()` au rendu, comme `cycle-bar` : le test le fixe.
+   */
+  readonly now = input(Date.now());
   /** Un reçu sans commande a été écrit : la page relit le stock. */
   readonly changed = output();
 
   protected readonly stateOptions = STATE_OPTIONS;
   protected readonly steps = STEPS;
-  protected readonly targets: readonly ResupplyTarget[] = ['asap', 'tomorrow'];
+  /** La visée choisie d'un clic ; `null` tant que personne n'a cliqué. */
+  private readonly chosenTarget = signal<ResupplyTarget | null>(null);
+
+  /**
+   * La visée affichée : celle du clic, sinon « Pour demain » tant que
+   * l'heure limite (`tomorrowOrderUntil`, résolue par le serveur depuis
+   * `resupplyCutoffTime`) n'est pas passée — ou s'il n'y en a pas.
+   */
+  protected readonly target = computed<ResupplyTarget>(() => {
+    const chosen = this.chosenTarget();
+    if (chosen !== null) {
+      return chosen;
+    }
+    const until = this.resupplies.view()?.tomorrowOrderUntil ?? null;
+    return until === null || this.now() < Date.parse(until) ? 'tomorrow' : 'asap';
+  });
+  protected readonly targetLabel = computed(() => TARGET_LABELS[this.target()]);
+
+  /** Les deux visées ; l'autre porte son nombre de lignes s'il y en a. */
+  protected readonly targetOptions = computed(() =>
+    (['asap', 'tomorrow'] as const).map((value) => {
+      const count = this.countOf(value);
+      const label = TARGET_LABELS[value];
+      return {
+        value,
+        label: value !== this.target() && count > 0 ? `${label} (${String(count)})` : label,
+      };
+    }),
+  );
   protected readonly query = signal('');
   /** La famille retenue par les puces ; `ALL_CATEGORIES` par défaut. */
   protected readonly category = signal<string>(ALL_CATEGORIES);
@@ -195,10 +239,15 @@ export class ResupplyStockTable {
     );
   });
 
-  protected readonly asapCount = computed(() => this.asapDraft()?.lines.length ?? 0);
-  protected readonly tomorrowCount = computed(() => this.tomorrowDraft()?.lines.length ?? 0);
+  protected readonly targetCount = computed(() => this.countOf(this.target()));
 
-  /** Un clic déclare (Faible, Rupture) ou lève (OK). Une rupture met le curseur dans « Au plus tôt ». */
+  protected chooseTarget(value: string): void {
+    if (value === 'asap' || value === 'tomorrow') {
+      this.chosenTarget.set(value);
+    }
+  }
+
+  /** Un clic déclare (Faible, Rupture) ou lève (OK). Une rupture passe en « Au plus tôt » et y met le curseur. */
   protected async setState(row: StockRow, value: string): Promise<void> {
     if (value === row.state) {
       return;
@@ -215,7 +264,8 @@ export class ResupplyStockTable {
     }
     await this.alerts.declare(row.sku, value);
     if (value === 'out_of_stock') {
-      setTimeout(() => this.focusAsap(row.sku));
+      this.chosenTarget.set('asap');
+      setTimeout(() => this.focusQuantity(row.sku));
     }
   }
 
@@ -312,6 +362,11 @@ export class ResupplyStockTable {
     }
   }
 
+  private countOf(target: ResupplyTarget): number {
+    const draft = target === 'asap' ? this.asapDraft() : this.tomorrowDraft();
+    return draft?.lines.length ?? 0;
+  }
+
   private draftFor(target: ResupplyTarget): SiteResupplyDraftView | null {
     const view = this.resupplies.view();
     if (view === null) {
@@ -331,10 +386,10 @@ export class ResupplyStockTable {
     return `${target}:${String(draft?.version ?? 0)}:${sku}`;
   }
 
-  private focusAsap(sku: string): void {
+  private focusQuantity(sku: string): void {
     // Par comparaison d'attribut plutôt qu'un sélecteur échappé : un SKU peut tout contenir.
-    const cell = [...this.host.nativeElement.querySelectorAll('[data-resupply-asap]')].find(
-      (element) => element.getAttribute('data-resupply-asap') === sku,
+    const cell = [...this.host.nativeElement.querySelectorAll('[data-resupply-quantity]')].find(
+      (element) => element.getAttribute('data-resupply-quantity') === sku,
     );
     cell?.querySelector('input')?.focus();
   }

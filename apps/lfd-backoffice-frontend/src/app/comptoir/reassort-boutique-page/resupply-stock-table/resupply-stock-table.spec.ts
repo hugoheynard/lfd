@@ -44,6 +44,7 @@ class FakeResupplies {
     ['tomorrow', new Map()],
   ]);
   private version = 0;
+  tomorrowOrderUntil: string | null = null;
 
   list(siteId: string): Promise<SiteResuppliesView> {
     const drafts = (['asap', 'tomorrow'] as const).flatMap((target) => {
@@ -64,7 +65,7 @@ class FakeResupplies {
       siteId,
       today: TODAY,
       tomorrow: TODAY,
-      tomorrowOrderUntil: null,
+      tomorrowOrderUntil: this.tomorrowOrderUntil,
       drafts,
       resupplies: [],
     });
@@ -168,9 +169,12 @@ async function mount(
     readonly stock?: readonly ResupplyReceiptLineView[];
     readonly unordered?: readonly UnorderedReceiptLineView[];
     readonly alerts?: FakeAlerts;
+    readonly tomorrowOrderUntil?: string;
+    readonly now?: number;
   } = {},
 ): Promise<Mounted> {
   const resupplies = new FakeResupplies();
+  resupplies.tomorrowOrderUntil = options.tomorrowOrderUntil ?? null;
   const alerts = options.alerts ?? new FakeAlerts();
   const receipts = new FakeReceipts();
   TestBed.resetTestingModule();
@@ -193,6 +197,9 @@ async function mount(
   fixture.componentRef.setInput('stock', options.stock ?? []);
   fixture.componentRef.setInput('unordered', options.unordered ?? []);
   fixture.componentRef.setInput('canWrite', options.canWrite ?? true);
+  if (options.now !== undefined) {
+    fixture.componentRef.setInput('now', options.now);
+  }
   await settle(fixture);
   return { fixture, table: fixture.componentInstance, resupplies, alerts, receipts };
 }
@@ -285,21 +292,59 @@ describe('ResupplyStockTable', () => {
     ]);
   });
 
-  it('« Envoyer au plus tôt (N) » envoie la demande de la visée', async () => {
+  it('un seul « Envoyer », pour la visée affichée', async () => {
     const { fixture, table, resupplies } = await mount();
 
+    table['chooseTarget']('asap');
     await table['step']('asap', rowOf(table, 'CRO'), 1);
     await table['step']('asap', rowOf(table, 'PAC'), 5);
     await settle(fixture);
-    const button = root(fixture).querySelector<HTMLButtonElement>('[data-resupply-send-asap]');
-    expect(button?.textContent).toContain('Envoyer au plus tôt (2)');
-    expect(
-      root(fixture).querySelector<HTMLButtonElement>('[data-resupply-send-tomorrow]')?.disabled,
-    ).toBe(true);
+    const buttons = root(fixture).querySelectorAll<HTMLButtonElement>('[data-resupply-send]');
+    expect(buttons.length).toBe(1);
+    expect(buttons[0]?.textContent).toContain('Au plus tôt (2)');
 
-    button?.click();
+    buttons[0]?.click();
     await settle(fixture);
     expect(resupplies.calls.at(-1)).toBe('send draft_asap');
+  });
+
+  /** R1f (2026-10-21) : une colonne, la visée choisie par l'heure limite puis d'un clic. */
+  it('par défaut « Pour demain » avant l’heure limite, « Au plus tôt » après', async () => {
+    const until = '2026-10-21T18:00:00.000Z';
+    const before = await mount({ tomorrowOrderUntil: until, now: Date.parse(until) - 1 });
+    expect(before.table['target']()).toBe('tomorrow');
+    const after = await mount({ tomorrowOrderUntil: until, now: Date.parse(until) });
+    expect(after.table['target']()).toBe('asap');
+    const unlimited = await mount();
+    expect(unlimited.table['target']()).toBe('tomorrow');
+  });
+
+  it('une seule colonne de quantité ; l’autre visée se signale par son compte', async () => {
+    const { fixture, table } = await mount();
+    expect(
+      root(fixture).querySelectorAll('[data-resupply-row="CRO"] fold-number-input').length,
+    ).toBe(1);
+
+    await table['step']('tomorrow', rowOf(table, 'CRO'), 3);
+    await table['step']('tomorrow', rowOf(table, 'PAC'), 3);
+    await settle(fixture);
+    expect(table['targetOptions']().map((option) => option.label)).toEqual([
+      'Au plus tôt',
+      'Pour demain',
+    ]);
+
+    table['chooseTarget']('asap');
+    await settle(fixture);
+    expect(table['targetOptions']().map((option) => option.label)).toEqual([
+      'Au plus tôt',
+      'Pour demain (2)',
+    ]);
+  });
+
+  it('une rupture passe la visée en « Au plus tôt »', async () => {
+    const { table } = await mount();
+    await table['setState'](rowOf(table, 'PAC'), 'out_of_stock');
+    expect(table['target']()).toBe('asap');
   });
 
   it('le reçu sans commande se saisit depuis la ligne, et la page relit', async () => {
@@ -356,6 +401,6 @@ describe('ResupplyStockTable', () => {
 
     expect(root(fixture).querySelector('[data-resupply-state]')).toBeNull();
     expect(root(fixture).querySelector('fold-number-input')).toBeNull();
-    expect(root(fixture).querySelector('[data-resupply-send-asap]')).toBeNull();
+    expect(root(fixture).querySelector('[data-resupply-send]')).toBeNull();
   });
 });

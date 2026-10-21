@@ -869,7 +869,7 @@ stocks faibles déclarés, et les réassorts attendus, en route, arrivés et
 réceptionnés (ces deux derniers états viennent du signal de R3e). La table
 d'action reste dans Prod manager (R3d). À concevoir après R3e.
 
-### R1f — Une seule colonne de quantité au comptoir (Hugo, 2026-10-21 ; après R3d)
+### R1f ✅ — Une seule colonne de quantité au comptoir (Hugo, 2026-10-21 ; après R3d ; bâti le 2026-10-21, non commité)
 
 « Pourquoi au plus tôt et pour demain sont sur la même page ? Ça nous encombre
 visuellement. » Les deux colonnes de R1e reprenaient la demande en cours (R1c),
@@ -884,3 +884,9 @@ qui tient les deux visées — un choix de conception, pas une demande.
 - L'autre visée, si elle porte déjà des quantités, se signale sur le sélecteur
   (« Pour demain (3) ») : la demande en cours garde les deux, rien ne se perd.
 - Aucun changement serveur.
+
+✅ **Bâti le 2026-10-21** (`resupply-stock-table/`) : `fold-view-toggle` à côté
+des puces de famille ; l'heure limite est lue dans `tomorrowOrderUntil`, que la
+vue des réassorts du site porte déjà (résolue par le serveur depuis
+`resupplyCutoffTime`, `null` = sans limite → « Pour demain ») ; l'instant est
+une entrée `now` du composant. Une rupture déclarée bascule en « Au plus tôt ».
