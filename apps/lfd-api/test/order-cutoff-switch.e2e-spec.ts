@@ -98,9 +98,9 @@ const staff = () => ctx.asSub(STAFF);
 /** La limite générale, posée par la route de l'écran : la veille à 00:01. */
 async function seedGeneralRule(): Promise<void> {
   await staff()
-    .post("/admin/order-cutoffs")
-    .send({ pickupAddressId: null, weekday: null, daysBefore: 1, time: "00:01", graceMinutes: 0 })
-    .expect(201);
+    .put("/admin/order-cutoffs/general")
+    .send({ daysBefore: 1, time: "00:01", graceMinutes: 0 })
+    .expect(204);
 }
 
 async function setEnabled(enabled: boolean): Promise<void> {

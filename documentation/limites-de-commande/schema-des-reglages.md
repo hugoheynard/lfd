@@ -132,9 +132,14 @@ Chaque point est un fait du code, avec l'exemple qui le rend concret.
   d'échelle. ④ est **une limite par produit**, règle entière (délai ET heure) ;
   plus de famille, plus de déclinaison (elle suit son produit). Détail :
   [`limites-produit.md`](limites-produit.md).
-- **Les règles par point × jour** : les éditer à l'écran, ou les retirer ?
-  (Tranché par Hugo le 2026-10-21 : les retirer — **pas encore bâti**, lot à
-  part.)
+- ✅ **Les règles par point × jour** — tranché par Hugo le 2026-10-21 : les
+  retirer ; **bâti le 2026-10-21** (lot 1). Il ne reste que ① : la base le
+  tient (CHECK `order_cutoffs_general_only`, index `order_cutoffs_single_rule`,
+  migration `20261021130000_une_seule_heure_limite_generale`), le domaine
+  refuse un point ou un jour (`order_cutoffs.scope_retired`), les lectures
+  ignorent une ligne résiduelle (`resolveOrderCutoff`), et l'écran n'a plus
+  qu'une ressource, `GET`/`PUT admin/order-cutoffs/general`. ①bis disparaît
+  de la carte. État : [`reglages-generaux.md`](reglages-generaux.md) §1.
 - **L'arrêt du plan** : l'aligner sur la limite (il ne la contredit jamais), ou
   l'annoncer dans la boutique ?
 - **Le devis** : vérifie-t-il la limite ?

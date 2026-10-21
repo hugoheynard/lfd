@@ -68,21 +68,21 @@ export interface CommandTermsCopy {
   /**
    * 🔴 C'est la limite d'un ARTICLE du panier qui décide — plus stricte que la
    * générale pour ce jour (Hugo, 2026-10-21) : « Plus que 1 h 40 pour
-   * commander la bûche pour jeudi ». `{name}` le nom de l'article, `{left}`
-   * et `{day}` comme {@link cutoffCountdown}.
+   * commander un article de votre panier pour jeudi » — sans le nom de l'article
+   * (Hugo, 2026-10-21 : l'article n'est pas sous les yeux). `{left}` et `{day}` comme {@link cutoffCountdown}.
    */
   readonly cutoffCountdownItem: string;
-  /** La même chose, plus de six heures devant soi : `{name}`, `{day}`, `{time}`. */
+  /** La même chose, plus de six heures devant soi : `{day}`, `{time}`. */
   readonly cutoffCalmItem: string;
   /**
    * 🔴 La limite d'un ARTICLE du panier est déjà passée pour ce jour — la
-   * passation le refuserait (Hugo, 2026-10-21) : « Tarte myrtille T1 : trop
-   * tard pour jeudi, possible à partir de samedi ». `{name}`, `{day}`, `{next}`.
+   * passation le refuserait (Hugo, 2026-10-21) : « Un article de votre panier :
+   * trop tard pour jeudi, possible à partir de samedi ». `{day}`, `{next}`.
    */
   readonly itemTooLate: string;
-  /** La même chose, un autre article aussi : `{next}` le jour le plus tardif. */
+  /** La même chose, deux articles : `{next}` le jour le plus tardif. */
   readonly itemTooLateOther: string;
-  /** La même chose, `{others}` autres articles (deux ou plus). */
+  /** La même chose, `{count}` articles (trois ou plus). */
   readonly itemTooLateOthers: string;
 
   /** La question qui précède les deux portes quand rien n'est choisi (O6, 2026-10-13). */
@@ -140,12 +140,13 @@ export const COMMAND_TERMS_FR: CommandTermsCopy = {
   cutoffLeftHours: '{h} h',
   cutoffLeftMinutes: '{m} min',
   cutoffCalm: 'Pour {day}, commandez avant {time}.',
-  cutoffCountdownItem: 'Plus que {left} pour commander {name} pour {day}.',
-  cutoffCalmItem: 'Pour {day}, commandez {name} avant {time}.',
-  itemTooLate: '{name} : trop tard pour {day}, possible à partir de {next}.',
-  itemTooLateOther: '{name} + 1 autre : trop tard pour {day}, possible à partir de {next}.',
+  cutoffCountdownItem: 'Plus que {left} pour commander un article de votre panier pour {day}.',
+  cutoffCalmItem: 'Pour {day}, un article de votre panier se commande avant {time}.',
+  itemTooLate: 'Un article de votre panier : trop tard pour {day}, possible à partir de {next}.',
+  itemTooLateOther:
+    '2 articles de votre panier : trop tard pour {day}, possible à partir de {next}.',
   itemTooLateOthers:
-    '{name} + {others} autres : trop tard pour {day}, possible à partir de {next}.',
+    '{count} articles de votre panier : trop tard pour {day}, possible à partir de {next}.',
   modeTitle: 'Retrait ou coursier ?',
   close: 'Fermer',
   pickup: 'Retrait',
@@ -182,11 +183,11 @@ export const COMMAND_TERMS_EN: CommandTermsCopy = {
   cutoffLeftHours: '{h} h',
   cutoffLeftMinutes: '{m} min',
   cutoffCalm: 'For {day}, order before {time}.',
-  cutoffCountdownItem: 'Only {left} left to order {name} for {day}.',
-  cutoffCalmItem: 'For {day}, order {name} before {time}.',
-  itemTooLate: '{name}: too late for {day}, available from {next}.',
-  itemTooLateOther: '{name} + 1 other: too late for {day}, available from {next}.',
-  itemTooLateOthers: '{name} + {others} others: too late for {day}, available from {next}.',
+  cutoffCountdownItem: 'Only {left} left to order an item in your basket for {day}.',
+  cutoffCalmItem: 'For {day}, an item in your basket must be ordered before {time}.',
+  itemTooLate: 'An item in your basket: too late for {day}, available from {next}.',
+  itemTooLateOther: '2 items in your basket: too late for {day}, available from {next}.',
+  itemTooLateOthers: '{count} items in your basket: too late for {day}, available from {next}.',
   modeTitle: 'Pickup or courier?',
   close: 'Close',
   pickup: 'Pickup',
@@ -224,11 +225,12 @@ export const COMMAND_TERMS_IT: CommandTermsCopy = {
   cutoffLeftHours: '{h} h',
   cutoffLeftMinutes: '{m} min',
   cutoffCalm: 'Per {day}, ordinate entro le {time}.',
-  cutoffCountdownItem: 'Ancora {left} per ordinare {name} per {day}.',
-  cutoffCalmItem: 'Per {day}, ordinate {name} entro le {time}.',
-  itemTooLate: '{name}: troppo tardi per {day}, possibile da {next}.',
-  itemTooLateOther: '{name} + 1 altro: troppo tardi per {day}, possibile da {next}.',
-  itemTooLateOthers: '{name} + altri {others}: troppo tardi per {day}, possibile da {next}.',
+  cutoffCountdownItem: 'Ancora {left} per ordinare un articolo del vostro carrello per {day}.',
+  cutoffCalmItem: 'Per {day}, un articolo del vostro carrello va ordinato entro le {time}.',
+  itemTooLate: 'Un articolo del vostro carrello: troppo tardi per {day}, possibile da {next}.',
+  itemTooLateOther: '2 articoli del vostro carrello: troppo tardi per {day}, possibile da {next}.',
+  itemTooLateOthers:
+    '{count} articoli del vostro carrello: troppo tardi per {day}, possibile da {next}.',
   modeTitle: 'Ritiro o corriere?',
   close: 'Chiudi',
   pickup: 'Ritiro',

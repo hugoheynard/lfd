@@ -130,7 +130,7 @@ describe('ServiceDayNotice — l’heure limite annoncée', () => {
 
   /**
    * 🔴 La limite d'un article du panier, plus stricte que la générale, décide
-   * (Hugo, 2026-10-21) : « Plus que 1 h 40 pour commander la bûche pour jeudi ».
+   * (Hugo, 2026-10-21) : « Plus que 1 h 40 pour commander un article de votre panier pour jeudi ».
    */
   it('nomme l’article du panier dont la limite décide', () => {
     const { notice } = setUp(
@@ -147,7 +147,9 @@ describe('ServiceDayNotice — l’heure limite annoncée', () => {
     TestBed.inject(CartStore).setQuantity(piece.sku, 1);
     TestBed.tick();
 
-    expect(notice.message()).toBe('Plus que 1 h 40 pour commander la bûche pour mercredi.');
+    expect(notice.message()).toBe(
+      'Plus que 1 h 40 pour commander un article de votre panier pour mercredi.',
+    );
   });
 
   /**
@@ -174,7 +176,7 @@ describe('ServiceDayNotice — l’heure limite annoncée', () => {
     TestBed.tick();
 
     expect(notice.message()).toBe(
-      'Tarte myrtille T1 : trop tard pour jeudi, possible à partir de samedi.',
+      'Un article de votre panier : trop tard pour jeudi, possible à partir de samedi.',
     );
   });
 

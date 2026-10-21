@@ -36,14 +36,12 @@ function line(sku: string, limit: OrderLimitSpec | null = null): LineOrderLimit 
 function guard(over: {
   lines?: readonly LineOrderLimit[];
   fallback?: readonly OrderCutoffView[];
-  pickupAddressId?: string | null;
   waiver?: { id: string } | null;
   now?: string;
 }): string | null {
   return ensureWithinOrderCutoff({
     lines: over.lines ?? [line("VIE-001")],
     fallback: over.fallback ?? [commerceRule()],
-    pickupAddressId: over.pickupAddressId ?? null,
     fulfillmentDate: FULFILLMENT_DAY,
     waiver: over.waiver ?? null,
     now: new Date(over.now ?? CUTOFF_INSTANT),
@@ -73,17 +71,20 @@ describe("la règle du commerce, pour les articles qui n'ont pas la leur", () =>
     expect(() => guard({ fallback: [], now: "2030-01-01T00:00:00.000Z" })).not.toThrow();
   });
 
-  it("oppose la règle du POINT plutôt que celle du défaut", () => {
+  /**
+   * Les règles par point × jour sont retirées (Hugo, 2026-10-21, schéma des
+   * réglages §4 point 4) : une ligne résiduelle du point qui fermait plus tôt
+   * ne refuse plus rien ; seule la générale est opposée.
+   */
+  it("ignore une règle résiduelle du POINT : seule la générale est opposée", () => {
     const rules = [
       commerceRule({ id: "labo", pickupAddressId: "labo", daysBefore: 2, time: "12:00" }),
+      commerceRule({ id: "dimanche", weekday: "wed", daysBefore: 2, time: "12:00" }),
       commerceRule(),
     ];
-    // Lundi 10 à 12 h Paris = 10:00Z. Passé pour le labo, pas pour le défaut.
+    // Lundi 10 à 12 h Paris = 10:00Z : passé pour les lignes résiduelles, pas pour la générale.
     const now = "2026-08-10T10:30:00.000Z";
-    expect(() => guard({ fallback: rules, pickupAddressId: "labo", now })).toThrow(
-      PastOrderCutoffError,
-    );
-    expect(() => guard({ fallback: rules, pickupAddressId: null, now })).not.toThrow();
+    expect(() => guard({ fallback: rules, now })).not.toThrow();
   });
 });
 

@@ -1,17 +1,13 @@
 import { decideOrderCutoff, instantToLocal, type OrderCutoffView } from "@lfd/contracts";
 
-/**
- * La règle d'heure limite qu'on oppose à une JOURNÉE, et non à un panier : le
- * défaut de la plateforme (`pickupAddressId` à `null`), comme le fil des
- * journées demandables.
- *
- * ⚠️ Une commande ne garde ni l'identifiant de son point de retrait (seulement
- * le snapshot postal), ni la limite propre de ses articles (vérifié le
- * 2026-09-26, `orders.prisma`, `Order.pickupAddress`). La journée est donc le
- * seul grain qu'on sait relire après coup — c'est aussi celui que le plan
- * nomme (« l'heure limite de commande de la journée », Q6).
+/*
+ * La règle opposée à une JOURNÉE est la règle générale — la seule depuis le
+ * 2026-10-21. ⚠️ Une commande ne garde ni l'identifiant de son point de
+ * retrait (seulement le snapshot postal), ni la limite propre de ses articles
+ * (vérifié le 2026-09-26, `orders.prisma`, `Order.pickupAddress`). La journée
+ * est donc le seul grain qu'on sait relire après coup — c'est aussi celui que
+ * le plan nomme (« l'heure limite de commande de la journée », Q6).
  */
-const DAY_RULE_POINT = null;
 
 /** Ce qu'il faut savoir d'une commande pour la situer dans sa journée. */
 export interface SettlementReminderSubject {
@@ -50,5 +46,5 @@ export function isSettlementReminderDue(
   serviceDay: string,
   now: Date,
 ): boolean {
-  return decideOrderCutoff(rules, DAY_RULE_POINT, serviceDay, now).status !== "open";
+  return decideOrderCutoff(rules, serviceDay, now).status !== "open";
 }

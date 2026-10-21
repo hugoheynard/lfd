@@ -1,19 +1,6 @@
 import type { OrderCutoffView } from '@lfd/contracts';
 
 /**
- * Les jours vivaient ICI et n'y servaient qu'aux heures limites. Les créneaux
- * publics en ont le même besoin, alors ils sont montés d'un cran — les recopier
- * aurait fait deux vérités sur les jours de la semaine. Réexportés pour que les
- * lecteurs de ce module n'aient rien à changer.
- */
-export { WEEKDAY_CHOICES, weekdayLabel } from '../../../b2b/reglages/weekday-choices';
-
-/** À qui s'applique la règle : un point nommé, ou le défaut de la plateforme. */
-export function scopeLabel(rule: OrderCutoffView): string {
-  return rule.pickupLabel ?? 'Tous les points (défaut)';
-}
-
-/**
  * La règle en une phrase : « La veille à 18:00 », « L'avant-veille à 18:00 »,
  * « Le jour même à 06:30 ».
  *

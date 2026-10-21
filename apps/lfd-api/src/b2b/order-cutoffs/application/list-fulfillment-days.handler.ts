@@ -20,6 +20,10 @@ import { ListFulfillmentDaysQuery } from "./list-fulfillment-days.query.js";
 /**
  * **Quelle journée l'écran de commande peut proposer**, point par point.
  *
+ * Depuis le 2026-10-21, seule la règle générale existe : la journée ne diffère
+ * plus d'un point à l'autre que par une opération datée. La forme par point
+ * reste — la boutique la lit, et rien ne gagne à la casser.
+ *
  * 🔴 Le front la calculait lui-même : « demain », depuis `new Date()`, c'est-à-
  * dire depuis **l'horloge du navigateur du client**. Deux fautes en une — la
  * journée du fournil n'est pas celle d'un poste mal réglé, et « demain » ne
@@ -77,13 +81,13 @@ export class ListFulfillmentDaysHandler implements IQueryHandler<
     // non comprise — la boutique prévient avant le « trop tard ».
     const dayOf = (pickupAddressId: string | null): FulfillmentDayView => {
       const date = firstPickupDay(
-        nextFulfillmentDay(rules, pickupAddressId, now, NEXT_FULFILLMENT_HORIZON_DAYS, unavailable),
+        nextFulfillmentDay(rules, now, NEXT_FULFILLMENT_HORIZON_DAYS, unavailable),
         windows,
       );
       return {
         pickupAddressId,
         date,
-        orderUntil: announcedOrderUntil(rules, pickupAddressId, date),
+        orderUntil: announcedOrderUntil(rules, date),
       };
     };
     // Le défaut EN TÊTE et toujours présent : c'est la journée de la livraison,

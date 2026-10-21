@@ -126,13 +126,13 @@ function handler(
 describe("ListFulfillmentDaysHandler — les opérations datées", () => {
   it("sans panier, rend la journée des délais du commerce", async () => {
     expect(await handler().execute(new ListFulfillmentDaysQuery())).toEqual([
-      { pickupAddressId: null, date: nextFulfillmentDay([], null, NOW), orderUntil: null },
+      { pickupAddressId: null, date: nextFulfillmentDay([], NOW), orderUntil: null },
     ]);
   });
 
   it("un panier d'articles courants de l'opération n'est pas contraint", async () => {
     const days = await handler().execute(new ListFulfillmentDaysQuery(["VIE-001"], "public"));
-    expect(days[0]?.date).toBe(nextFulfillmentDay([], null, NOW));
+    expect(days[0]?.date).toBe(nextFulfillmentDay([], NOW));
   });
 
   it("un panier qui porte la bûche ne propose que les jours de retrait de Noël", async () => {
@@ -226,6 +226,21 @@ describe("ListFulfillmentDaysHandler — l'heure limite annoncée", () => {
   it("rend la limite de la veille à 23 h pour demain, sans la grâce", async () => {
     const days = await handler([], { rules: [veille23h] }).execute(new ListFulfillmentDaysQuery());
     // Le 1er décembre à 23 h Paris (heure d'hiver) : 22:00Z.
+    expect(days).toEqual([
+      { pickupAddressId: null, date: "2026-12-02", orderUntil: "2026-12-01T22:00:00.000Z" },
+    ]);
+  });
+
+  /**
+   * Les règles par point × jour sont retirées (Hugo, 2026-10-21) : un
+   * mercredi « deux jours avant » résiduel aurait fermé le 2 décembre et
+   * poussé la journée au 3. Il est ignoré.
+   */
+  it("ignore une règle résiduelle d'un jour de semaine", async () => {
+    const mercredi: OrderCutoffView = { ...veille23h, id: "wed", weekday: "wed", daysBefore: 2 };
+    const days = await handler([], { rules: [mercredi, veille23h] }).execute(
+      new ListFulfillmentDaysQuery(),
+    );
     expect(days).toEqual([
       { pickupAddressId: null, date: "2026-12-02", orderUntil: "2026-12-01T22:00:00.000Z" },
     ]);

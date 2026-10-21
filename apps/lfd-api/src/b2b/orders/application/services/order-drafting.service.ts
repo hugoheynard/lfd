@@ -200,7 +200,7 @@ export class OrderDrafting {
     // celle du point EFFECTIVEMENT retenu, qu'on ne connaît qu'ici. Le coût est
     // de tarifer un panier qu'on refusera ensuite ; le prix de l'inverse serait
     // d'opposer la mauvaise règle, ce qui est un refus faux.
-    const waiverUsed = await this.ensureNotTooLate(content, acheminement, parties);
+    const waiverUsed = await this.ensureNotTooLate(content, parties);
     // APRÈS le délai de fabrication, et sans la dérogation : les deux gardes
     // s'appliquent, c'est le plus tôt qui ferme, et l'équipe ne rouvre pas une
     // opération close (D6 du plan des opérations datées).
@@ -376,7 +376,6 @@ export class OrderDrafting {
    */
   private async ensureNotTooLate(
     content: OrderContent,
-    acheminement: ResolvedFulfillment,
     parties: OrderParties,
   ): Promise<string | null> {
     if (content.requestedDeliveryDate === null) {
@@ -399,7 +398,6 @@ export class OrderDrafting {
       // —, et pas ici pour une heure.
       lines: skus.map((sku) => ({ sku, limit: items.get(sku)?.orderTimeLimit ?? null })),
       fallback,
-      pickupAddressId: acheminement.pickupAddressId,
       fulfillmentDate: content.requestedDeliveryDate,
       waiver,
       now: this.clock.now(),

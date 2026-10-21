@@ -21,6 +21,9 @@ import type { JournalFact, JournaledEvent } from "../../../platform/journal/jour
  * de nom à elle : pas de `subjectLabel`, son contenu la dit.
  */
 export const ORDER_CUTOFF_FACTS = {
+  // `removed` n'est plus écrit depuis le 2026-10-21 (la règle générale ne se
+  // supprime pas, l'interrupteur l'éteint) ; le type reste, les faits passés
+  // le portent.
   created: "order_cutoff.created",
   updated: "order_cutoff.updated",
   removed: "order_cutoff.removed",
@@ -39,6 +42,8 @@ function pickupOf(id: string | null, name: string | null): unknown {
 }
 
 function ruleOf(payload: OrderCutoffPayload, pickupName: string | null): Record<string, unknown> {
+  // Depuis le 2026-10-21, `pickupAddress` et `weekday` valent toujours `null`
+  // ici (la règle générale) ; la FORME reste celle des faits passés.
   return {
     // `null` n'est pas une absence ici : c'est « la règle par défaut de la
     // plateforme », et « tous les jours ». Le journal doit pouvoir les relire.
@@ -85,31 +90,6 @@ export class OrderCutoffUpdatedEvent implements JournaledEvent {
       subjectType: "order_cutoff",
       subjectId: this.cutoffId,
       payload: ruleOf(this.payload, this.pickupName),
-    };
-  }
-}
-
-/**
- * La suppression emporte la règle qu'elle efface — même forme que la
- * création. Elle n'emportait que l'identifiant jusqu'au 2026-09-19, et c'était
- * perdre la réponse à « qu'est-ce que la règle disait ce jour-là » dès qu'on
- * l'avait retirée.
- */
-export class OrderCutoffRemovedEvent implements JournaledEvent {
-  constructor(
-    readonly cutoffId: string,
-    /** Ce que la règle décidait, lu avant de la supprimer. */
-    readonly rule: OrderCutoffPayload,
-    /** Le nom du point visé au moment du retrait ; `null` s'il n'y en a pas, ou s'il est inconnu. */
-    readonly pickupName: string | null,
-  ) {}
-
-  journalFact(): JournalFact {
-    return {
-      type: ORDER_CUTOFF_FACTS.removed,
-      subjectType: "order_cutoff",
-      subjectId: this.cutoffId,
-      payload: ruleOf(this.rule, this.pickupName),
     };
   }
 }

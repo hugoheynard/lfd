@@ -7,8 +7,16 @@
 > qui gardent l'historique des décisions. Entrée du dossier : [`README.md`](README.md).
 
 La règle **du commerce** : jusqu'à quand on prend commande pour une journée,
-quel que soit l'article. Un article qui porte sa propre limite n'est pas jugé
-par elle ([`limites-produit.md`](limites-produit.md)).
+quel que soit l'article. Un article qui porte sa propre limite est jugé par
+les deux, et **la plus stricte gagne toujours** (Hugo, 2026-10-21) : une
+limite d'article plus tardive ne relâche jamais la règle générale
+([`limites-produit.md`](limites-produit.md), [`README.md`](README.md) §2).
+(Cette phrase disait l'inverse — « n'est pas jugé par elle » — jusqu'au
+2026-10-21 : c'était l'ancien remplacement, défait le même jour.)
+
+**Une seule règle, la générale** — ni point de retrait, ni jour de semaine
+(décision de Hugo du 2026-10-21, [`schema-des-reglages.md`](schema-des-reglages.md)
+§4, point 4 ; bâti le 2026-10-21, lot 1).
 
 ## 1. Les tables
 
@@ -16,21 +24,35 @@ par elle ([`limites-produit.md`](limites-produit.md)).
 
 | Colonne             | Sens                                                                   |
 | ------------------- | ---------------------------------------------------------------------- |
-| `pickup_address_id` | le point de retrait visé ; `NULL` = règle par défaut de la plateforme  |
-| `weekday`           | `mon`…`sun` ; `NULL` = tous les jours                                  |
+| `pickup_address_id` | toujours `NULL` depuis le 2026-10-21 (CHECK) — colonne gardée, morte   |
+| `weekday`           | toujours `NULL` depuis le 2026-10-21 (CHECK) — colonne gardée, morte   |
 | `days_before`       | combien de jours avant la journée de service (défaut `1`)              |
 | `time`              | `HH:MM`, pendule d'Europe/Paris (jamais un instant UTC)                |
 | `grace_minutes`     | le rattrapage après la limite, en minutes (défaut `0`, borne `0..720`) |
 
-Une règle par couple (point, jour) ; la plus spécifique gagne
-(`resolveOrderCutoff`, `packages/contracts/src/order-cutoff.ts`). La conversion
-en instant passe explicitement par `Europe/Paris` (fuseau : §10 de
+**Une ligne au plus, la générale.** La migration
+`20261021130000_une_seule_heure_limite_generale` (additive) pose le CHECK
+`order_cutoffs_general_only` (point ET jour à `NULL`) et l'index unique
+`order_cutoffs_single_rule` (une ligne). Les colonnes restent : une migration
+additive ne les retire pas. `resolveOrderCutoff`
+(`packages/contracts/src/order-cutoff.ts`) ne rend que la règle générale et
+ignore une ligne résiduelle à point ou à jour — pour la passation, la boutique,
+le fournil, la relance et la vitrine à la fois. Jusqu'au 2026-10-21, il y avait
+une règle par couple (point, jour), la plus spécifique l'emportant. La
+conversion en instant passe explicitement par `Europe/Paris` (fuseau : §10 de
 [`architecture-heure-limite-de-commande.md`](architecture-heure-limite-de-commande.md)).
 
-L'écran (`reglages/commandes/cutoffs-section/`) n'**édite que la ligne
-générale** (`pickup_address_id` et `weekday` à `NULL`) ; une règle par point ou
-par jour se lit, marquée « non reprise ». Routes `admin/order-cutoffs`
-(GET/POST/PATCH/DELETE), sous `@AdminSurface("lfc_order_settings")`.
+**Une ressource, deux routes** (`b2b/order-cutoffs/http/admin-order-cutoffs.controller.ts`,
+sous `@AdminSurface("lfc_order_settings")`) : `GET admin/order-cutoffs/general`
+rend `{ rule }` (`null` tant qu'elle n'est pas posée) ; `PUT
+admin/order-cutoffs/general` la pose ou la règle (entité `GeneralOrderCutoffRule`,
+faits `order_cutoff.created` / `order_cutoff.updated`). Une charge qui porte un
+point ou un jour est refusée en 400, `order_cutoffs.scope_retired`, avec un
+message qui renvoie à la règle générale et à la limite produit. Les routes de
+collection (`GET` liste, `POST`, `PATCH /:id`, `DELETE /:id`) sont retirées : la
+générale ne se supprime pas, l'interrupteur l'éteint. L'écran
+(`reglages/commandes/cutoffs-section/`) ne montre que la générale ; il ne liste
+plus de règles « non reprises ».
 
 ### `public.order_cutoff_settings` — l'interrupteur et le jour même (`OrderCutoffSettings`, `prisma/schema/public/settings.prisma`)
 
@@ -50,6 +72,8 @@ non autorisé.** Routes `GET`/`PATCH admin/order-cutoff-settings`
 - **Dev** (`lfc_b2b_dev`, lu le 2026-10-21) : aucune ligne dans
   `order_cutoff_settings` non plus — donc **activée**, jour même refusé — et une
   seule règle, la générale, « la veille à 18:00 », rattrapage `0`.
+- Les deux n'ont que la ligne générale dans `order_cutoffs` (prod : lu par Hugo
+  le 2026-10-21) : la migration du CHECK y passe.
 
 ## 2. L'interrupteur
 
@@ -150,9 +174,10 @@ avec l'`orderUntil` servi. La régression est nommée dans le JSDoc de
 
 ## 7. Ce qui reste ouvert
 
-- **Où vit la règle générale à terme** (B : le rang global du référentiel ; C :
-  une table du commerce par clientèle) — Q9 de `plan-reglages-commandes.md`,
-  préalable à la reprise du [démontage](demontage-order-cutoff.md).
-- **Une règle par clientèle** : le public suit la même règle générale que les
-  pros (`ensureNotTooLate` ne distingue pas la clientèle, vérifié le
-  2026-10-21) — [`plan-heure-limite-par-clientele.md`](plan-heure-limite-par-clientele.md).
+- ~~Où vit la règle générale à terme~~ — tranché le 2026-10-21 : ici, au
+  commerce ([`schema-des-reglages.md`](schema-des-reglages.md) §4, point 1) ;
+  le [démontage](demontage-order-cutoff.md) est caduc.
+- ~~Une règle par clientèle~~ — le modèle du 2026-10-21 l'écarte
+  ([`schema-des-reglages.md`](schema-des-reglages.md) §0) : demain avant
+  l'heure limite pour tout le monde, aujourd'hui sur le stock (chantier à
+  part, le stock de la vitrine n'existe pas encore).

@@ -1,3 +1,4 @@
+import { resolveOrderCutoff } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import {
@@ -12,8 +13,9 @@ import { OrderCutoffsInForce } from "../domain/order-cutoffs-in-force.js";
  * Q5).
  *
  * Le commerce implémente le port que la production déclare : elle ne lit pas
- * ses tables. Toutes les règles, sans point ni jour — l'heure d'arrêt est une
- * pour la maison, elle suit la plus tardive.
+ * ses tables. Depuis le 2026-10-21, la règle générale seule (schéma des
+ * réglages §4, point 4) : une ligne résiduelle à point ou à jour est ignorée,
+ * elle ne repousse plus l'heure d'arrêt.
  *
  * Les règles EN VIGUEUR (lot O3, 2026-10-14) : l'heure limite générale
  * désactivée, il n'en rend aucune, et plus rien ne borne l'heure d'arrêt —
@@ -26,11 +28,15 @@ export class ProductionOrderCutoffRulesReader extends OrderCutoffRulesReader {
   }
 
   async rules(): Promise<readonly OrderCutoffRule[]> {
-    const rules = await this.cutoffs.list();
-    return rules.map((rule) => ({
-      daysBefore: rule.daysBefore,
-      time: rule.time,
-      graceMinutes: rule.graceMinutes,
-    }));
+    const general = resolveOrderCutoff(await this.cutoffs.list());
+    return general === null
+      ? []
+      : [
+          {
+            daysBefore: general.daysBefore,
+            time: general.time,
+            graceMinutes: general.graceMinutes,
+          },
+        ];
   }
 }

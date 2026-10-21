@@ -9,8 +9,9 @@ import type { OrderCutoffRule } from "../../domain/services/latest-order-cutoff.
  * port — `production → b2b` est interdit —, le commerce l'implémente, la
  * racine de composition les relie.
  *
- * Toutes les règles, sans le point ni le jour : la production n'a que faire de
- * savoir à qui elles s'appliquent, seulement jusqu'à quand on commande. Les
+ * Depuis le 2026-10-21, au plus UNE règle : la générale (les règles par
+ * point × jour sont retirées, `limites-de-commande/schema-des-reglages.md`
+ * §4, point 4). La forme en liste reste, la production n'a pas à changer. Les
  * DÉROGATIONS (un client, un jour) n'y sont pas : elles ne sont pas un réglage
  * qu'une heure d'arrêt peut suivre.
  */

@@ -89,3 +89,12 @@ et elle déclenche tout. »
   se fige : liste à coliser, tournées, paiements en suspens annulés.
 - **L'écran de production** affiche l'heure de l'arrêt en lecture, avec le lien
   vers Réglages › Commandes.
+
+## 6. Le jour même garde son réglage, sur sa propre page (Hugo, 2026-10-21)
+
+« Le réglage autoriser le jour même devra avoir sa page, car nous y
+réfléchirons après. » Il ne disparaît PAS avec l'interrupteur : il quitte
+l'écran de l'heure limite pour une page à lui (Réglages › Commandes › Jour
+même), avec le même droit `lfc_order_settings` et le même comportement
+(`order_cutoff_settings.same_day_allowed`) — le temps de le repenser avec la
+commande à J sur stock (schéma §0). Fait partie du lot 2 (H2).

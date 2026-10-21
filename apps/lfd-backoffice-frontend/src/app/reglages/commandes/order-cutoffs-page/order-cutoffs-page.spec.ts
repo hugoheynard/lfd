@@ -24,7 +24,7 @@ async function mount(
     imports: [OrderCutoffsPage],
     providers: [
       provideRouter([]),
-      { provide: OrderCutoffsService, useValue: { list: () => Promise.resolve([]) } },
+      { provide: OrderCutoffsService, useValue: { general: () => Promise.resolve(null) } },
       {
         provide: OrderCutoffSettingsService,
         useValue: {

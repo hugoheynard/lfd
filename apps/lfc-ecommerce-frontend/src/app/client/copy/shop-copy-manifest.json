@@ -2135,38 +2135,38 @@
         },
         {
           "key": "commandTerms.cutoffCountdownItem",
-          "fr": "Plus que {left} pour commander {name} pour {day}.",
-          "en": "Only {left} left to order {name} for {day}.",
-          "it": "Ancora {left} per ordinare {name} per {day}.",
-          "variables": ["left", "name", "day"]
+          "fr": "Plus que {left} pour commander un article de votre panier pour {day}.",
+          "en": "Only {left} left to order an item in your basket for {day}.",
+          "it": "Ancora {left} per ordinare un articolo del vostro carrello per {day}.",
+          "variables": ["left", "day"]
         },
         {
           "key": "commandTerms.cutoffCalmItem",
-          "fr": "Pour {day}, commandez {name} avant {time}.",
-          "en": "For {day}, order {name} before {time}.",
-          "it": "Per {day}, ordinate {name} entro le {time}.",
-          "variables": ["day", "name", "time"]
+          "fr": "Pour {day}, un article de votre panier se commande avant {time}.",
+          "en": "For {day}, an item in your basket must be ordered before {time}.",
+          "it": "Per {day}, un articolo del vostro carrello va ordinato entro le {time}.",
+          "variables": ["day", "time"]
         },
         {
           "key": "commandTerms.itemTooLate",
-          "fr": "{name} : trop tard pour {day}, possible à partir de {next}.",
-          "en": "{name}: too late for {day}, available from {next}.",
-          "it": "{name}: troppo tardi per {day}, possibile da {next}.",
-          "variables": ["name", "day", "next"]
+          "fr": "Un article de votre panier : trop tard pour {day}, possible à partir de {next}.",
+          "en": "An item in your basket: too late for {day}, available from {next}.",
+          "it": "Un articolo del vostro carrello: troppo tardi per {day}, possibile da {next}.",
+          "variables": ["day", "next"]
         },
         {
           "key": "commandTerms.itemTooLateOther",
-          "fr": "{name} + 1 autre : trop tard pour {day}, possible à partir de {next}.",
-          "en": "{name} + 1 other: too late for {day}, available from {next}.",
-          "it": "{name} + 1 altro: troppo tardi per {day}, possibile da {next}.",
-          "variables": ["name", "day", "next"]
+          "fr": "2 articles de votre panier : trop tard pour {day}, possible à partir de {next}.",
+          "en": "2 items in your basket: too late for {day}, available from {next}.",
+          "it": "2 articoli del vostro carrello: troppo tardi per {day}, possibile da {next}.",
+          "variables": ["day", "next"]
         },
         {
           "key": "commandTerms.itemTooLateOthers",
-          "fr": "{name} + {others} autres : trop tard pour {day}, possible à partir de {next}.",
-          "en": "{name} + {others} others: too late for {day}, available from {next}.",
-          "it": "{name} + altri {others}: troppo tardi per {day}, possibile da {next}.",
-          "variables": ["name", "others", "day", "next"]
+          "fr": "{count} articles de votre panier : trop tard pour {day}, possible à partir de {next}.",
+          "en": "{count} items in your basket: too late for {day}, available from {next}.",
+          "it": "{count} articoli del vostro carrello: troppo tardi per {day}, possibile da {next}.",
+          "variables": ["count", "day", "next"]
         },
         {
           "key": "commandTerms.modeTitle",

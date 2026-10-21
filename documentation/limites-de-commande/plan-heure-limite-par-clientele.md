@@ -1,5 +1,13 @@
 # La limite du B2C : le délai de l'ARTICLE à J+N, le stock à J
 
+> 🗄️ **Remplacé — 2026-10-21.** Le modèle tranché par Hugo ce jour-là
+> ([`schema-des-reglages.md`](schema-des-reglages.md) §0) le remplace :
+> **demain (J+1 et au-delà) se commande avant l'heure limite générale, pour
+> tout le monde** — l'heure limite protège le plan, pas une clientèle — et
+> **aujourd'hui se prend dans le stock** (chantier à part, le stock de la
+> vitrine n'existe pas encore). Ce plan reste comme trace de la réflexion ;
+> ne pas le bâtir.
+
 > ⚠️ **Relu le 2026-10-21** : le lot 1 (§4) n'est **pas** bâti — la passation
 > oppose la règle générale à toute ligne sans limite d'article, quelle que soit
 > la clientèle (`OrderDrafting.ensureNotTooLate`). Le « jour même » demandé au

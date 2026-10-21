@@ -6,30 +6,26 @@ import { PickupAddressesModule } from "../pickup-addresses/pickup-addresses.modu
 import { GetOrderCutoffSettingsHandler } from "./application/get-order-cutoff-settings.handler.js";
 import { ListFulfillmentDaysHandler } from "./application/list-fulfillment-days.handler.js";
 import { UpdateOrderCutoffSettingsHandler } from "./application/update-order-cutoff-settings.handler.js";
-import { CreateOrderCutoffHandler } from "./application/create-order-cutoff.handler.js";
-import { ListOrderCutoffsHandler } from "./application/list-order-cutoffs.handler.js";
-import { RemoveOrderCutoffHandler } from "./application/remove-order-cutoff.handler.js";
-import { UpdateOrderCutoffHandler } from "./application/update-order-cutoff.handler.js";
+import { DefineGeneralOrderCutoffHandler } from "./application/define-general-order-cutoff.handler.js";
+import { GetGeneralOrderCutoffHandler } from "./application/get-general-order-cutoff.handler.js";
+import { GeneralOrderCutoffRepository } from "./domain/general-order-cutoff.repository.js";
 import { OrderCutoffSettingsRepository } from "./domain/order-cutoff-settings.repository.js";
 import { OrderCutoffsInForceModule } from "./order-cutoffs-in-force.module.js";
 import { AdminOrderCutoffSettingsController } from "./http/admin-order-cutoff-settings.controller.js";
 import { AdminOrderCutoffsController } from "./http/admin-order-cutoffs.controller.js";
 import { FulfillmentDaysController } from "./http/fulfillment-days.controller.js";
+import { PrismaGeneralOrderCutoffRepository } from "./infrastructure/prisma-general-order-cutoff.repository.js";
 import { PrismaOrderCutoffSettingsRepository } from "./infrastructure/prisma-order-cutoff-settings.repository.js";
 
 /**
  * **Heures limites de commande** — jusqu'à quand on commande pour un
- * acheminement donné. Une règle par ligne (point de retrait × jour), la plus
- * spécifique l'emportant.
+ * acheminement donné. Une seule règle, la générale, depuis le 2026-10-21
+ * (`limites-de-commande/schema-des-reglages.md` §4, point 4).
  *
- * Exporte son repository : le contexte `orders` en aura besoin pour décider
- * si un avenant entre dans la production du jour ou doit passer par la
- * validation de la prod (cf. `architecture-commande-immuable-avenants.md`).
- *
- * Exporte aussi `OrderCutoffsInForce` (lot O3, 2026-10-14) : les règles telles
+ * Exporte `OrderCutoffsInForce` (lot O3, 2026-10-14) : les règles telles
  * que l'interrupteur de l'heure limite générale les laisse s'appliquer. C'est
- * lui que la passation, la relance et le fournil lisent ; le repository reste
- * la lecture de l'écran, qui montre une règle même endormie. `AccountModule`
+ * lui que la passation, la relance et le fournil lisent ; `StoredOrderCutoffReader`
+ * reste la lecture de l'écran, qui montre une règle même endormie. `AccountModule`
  * pour le seul `StaffDirectory` (l'auteur figé de la bascule).
  */
 @Module({
@@ -44,10 +40,9 @@ import { PrismaOrderCutoffSettingsRepository } from "./infrastructure/prisma-ord
   ],
   providers: [
     ListFulfillmentDaysHandler,
-    ListOrderCutoffsHandler,
-    CreateOrderCutoffHandler,
-    UpdateOrderCutoffHandler,
-    RemoveOrderCutoffHandler,
+    GetGeneralOrderCutoffHandler,
+    DefineGeneralOrderCutoffHandler,
+    { provide: GeneralOrderCutoffRepository, useClass: PrismaGeneralOrderCutoffRepository },
     { provide: OrderCutoffSettingsRepository, useClass: PrismaOrderCutoffSettingsRepository },
     GetOrderCutoffSettingsHandler,
     UpdateOrderCutoffSettingsHandler,

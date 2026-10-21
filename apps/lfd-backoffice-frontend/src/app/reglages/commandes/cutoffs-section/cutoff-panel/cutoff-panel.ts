@@ -38,10 +38,9 @@ const DAYS_BEFORE_CHOICES: readonly { readonly value: number; readonly label: st
  * Panneau **Heure limite** — pose ou édite la **limite générale** du commerce,
  * celle qui vaut pour tous les points et tous les jours.
  *
- * Elle seule s'édite depuis le 2026-10-13 (option A de
- * `documentation/commandes/plan-reglages-commandes.md` §2) : la limite par
- * point de retrait ou par jour n'est pas reprise, son démontage est décidé.
- * Le panneau n'offre donc plus de portée ; il écrit `null` × `null`.
+ * Elle seule existe depuis le 2026-10-21 (schéma des réglages §4, point 4) :
+ * les limites par point de retrait ou par jour sont retirées, et le serveur
+ * les refuse. Le panneau n'offre donc pas de portée ; il écrit `null` × `null`.
  *
  * Deux champs portent un sens qu'il faut nommer : **combien de jours avant** la
  * limite tombe — « 18 h » sans lui ne dit pas 18 h de quel jour — et le
@@ -127,13 +126,13 @@ export class CutoffPanel {
   }
 
   protected async submit(): Promise<void> {
-    const rule = this.data()?.rule ?? null;
+    const creating = this.isCreate();
     if (!this.canSubmit()) {
       return;
     }
     this.saving.set(true);
     const payload: OrderCutoffPayload = {
-      // La limite générale : tous les points, tous les jours (option A).
+      // La limite générale : tous les points, tous les jours.
       pickupAddressId: null,
       weekday: null,
       daysBefore: this.daysBefore(),
@@ -141,13 +140,8 @@ export class CutoffPanel {
       graceMinutes: this.graceMinutes(),
     };
     try {
-      if (rule === null) {
-        await this.api.create(payload);
-        this.notify.success('Limite générale posée.');
-      } else {
-        await this.api.update(rule.id, payload);
-        this.notify.success('Limite générale mise à jour.');
-      }
+      await this.api.define(payload);
+      this.notify.success(creating ? 'Limite générale posée.' : 'Limite générale mise à jour.');
       this.ref.close(true);
     } catch (error) {
       this.notify.error(error);

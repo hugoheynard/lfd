@@ -784,6 +784,12 @@ model OrderCutoff {
   // Une seule règle par couple (point, jour) : deux règles concurrentes rendraient
   // la résolution dépendante de l'ordre de lecture. Postgres traite chaque NULL
   // comme distinct, d'où les index partiels ci-dessous pour couvrir les défauts.
+  //
+  // Depuis le 2026-10-21 (migration `20261021130000_une_seule_heure_limite_generale`),
+  // la table ne porte plus QUE la règle générale : CHECK `order_cutoffs_general_only`
+  // (point ET jour à NULL) et index unique `order_cutoffs_single_rule` (une ligne).
+  // Prisma n'exprime ni l'un ni l'autre ; les colonnes restent, une migration additive
+  // ne les retire pas.
   @@unique([pickupAddressId, weekday])
   @@index([pickupAddressId])
   @@map("order_cutoffs")

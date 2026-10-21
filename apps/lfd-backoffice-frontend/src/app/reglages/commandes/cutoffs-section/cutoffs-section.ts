@@ -14,25 +14,19 @@ import {
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { OrderCutoffsService } from '../order-cutoffs.service';
 import { CutoffPanel, type CutoffPanelData } from './cutoff-panel/cutoff-panel';
-import { cutoffSentence, graceSentence, scopeLabel, weekdayLabel } from './cutoff-format';
+import { cutoffSentence, graceSentence } from './cutoff-format';
 
 type LoadState = 'loading' | 'ready' | 'error';
-
-/** La limite générale : tous les points, tous les jours. */
-function isGeneral(rule: OrderCutoffView): boolean {
-  return rule.pickupAddressId === null && rule.weekday === null;
-}
 
 /**
  * **La limite générale de la clientèle professionnelle** — Réglages ›
  * Commandes › Heure limite de commande.
  *
- * Option A de `documentation/commandes/plan-reglages-commandes.md` (§2, Hugo,
- * 2026-10-13) : seule la ligne générale d'`OrderCutoff` s'édite ici. Une règle
- * par point de retrait ou par jour, s'il en reste, se lit sans geste, marquée
- * « non reprise » : son démontage est décidé (`demontage-order-cutoff.md`).
- * Aucune ne se supprime d'ici — retirer la ligne générale ouvrirait toute
- * commande que le référentiel ne limite pas.
+ * Une seule règle : la générale (décision de Hugo du 2026-10-21,
+ * `documentation/limites-de-commande/schema-des-reglages.md` §4, point 4). Les
+ * règles par point de retrait ou par jour sont retirées — le serveur les
+ * refuse et n'en sert plus —, et l'écran ne les liste plus. La générale ne se
+ * supprime pas d'ici : l'interrupteur l'éteint.
  *
  * Le serveur ouvre la lecture sous `lfc_order_settings:read` et l'écriture
  * sous `lfc_order_settings:write` (plan, §3.4) : sans ce dernier, la règle se
@@ -69,11 +63,7 @@ export class CutoffsSection {
   protected readonly canWrite = computed(() => this.permissions.can('lfc_order_settings:write'));
 
   protected readonly state = signal<LoadState>('loading');
-  protected readonly rules = signal<readonly OrderCutoffView[]>([]);
-
-  protected readonly general = computed(() => this.rules().find(isGeneral) ?? null);
-  /** Les règles par point ou par jour : lues, plus réglées (option A). */
-  protected readonly legacy = computed(() => this.rules().filter((rule) => !isGeneral(rule)));
+  protected readonly general = signal<OrderCutoffView | null>(null);
 
   constructor() {
     void this.load();
@@ -82,7 +72,7 @@ export class CutoffsSection {
   protected async load(): Promise<void> {
     this.state.set('loading');
     try {
-      this.rules.set(await this.api.list());
+      this.general.set(await this.api.general());
       this.state.set('ready');
     } catch {
       this.state.set('error');
@@ -91,14 +81,6 @@ export class CutoffsSection {
 
   protected edit(): void {
     this.open({ rule: this.general() });
-  }
-
-  protected scope(rule: OrderCutoffView): string {
-    return scopeLabel(rule);
-  }
-
-  protected day(rule: OrderCutoffView): string {
-    return weekdayLabel(rule.weekday);
   }
 
   protected grace(rule: OrderCutoffView): string | null {

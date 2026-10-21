@@ -280,14 +280,14 @@ les routes des bacs avec le colisage.
 
 Deux surfaces de commande vivent sous les réglages de la plateforme :
 
-| Méthode et chemin                                              | Exige                                                            |
-| -------------------------------------------------------------- | ---------------------------------------------------------------- |
-| `GET /admin/order-opening`                                     | `lfc_order_opening:read` (depuis le 2026-10-13)                  |
-| `PATCH /admin/order-opening`                                   | `lfc_order_opening:write` — ouvrir / fermer la prise de commande |
-| `GET /admin/order-cutoffs`                                     | `lfc_order_settings:read` (depuis le 2026-10-13)                 |
-| `POST /admin/order-cutoffs`, `DELETE /admin/order-cutoffs/:id` | `lfc_order_settings:write` — les heures limites                  |
-| `GET/PATCH /admin/customer-cancellation`                       | `lfc_order_settings` — l'annulation par le client                |
-| `GET /admin/order-cutoff-waivers`                              | `b2b_order_waivers:read` — les dérogations d'actualité           |
+| Méthode et chemin                                                       | Exige                                                            |
+| ----------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `GET /admin/order-opening`                                              | `lfc_order_opening:read` (depuis le 2026-10-13)                  |
+| `PATCH /admin/order-opening`                                            | `lfc_order_opening:write` — ouvrir / fermer la prise de commande |
+| `GET /admin/order-cutoffs/general`                                      | `lfc_order_settings:read` (depuis le 2026-10-13)                 |
+| `PUT /admin/order-cutoffs/general` (seules routes depuis le 2026-10-21) | `lfc_order_settings:write` — l'heure limite générale             |
+| `GET/PATCH /admin/customer-cancellation`                                | `lfc_order_settings` — l'annulation par le client                |
+| `GET /admin/order-cutoff-waivers`                                       | `b2b_order_waivers:read` — les dérogations d'actualité           |
 
 **Back-office** : Réglages › Commandes — `/reglages/commandes/ouverture`
 (`lfc_order_opening:read`), `/heure-limite` et `/annulation`

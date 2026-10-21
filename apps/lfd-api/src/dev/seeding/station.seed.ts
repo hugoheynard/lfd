@@ -8,7 +8,7 @@ import {
 } from "@lfd/contracts";
 import type { CommandBus } from "@nestjs/cqrs";
 
-import { CreateOrderCutoffCommand } from "../../b2b/order-cutoffs/application/create-order-cutoff.command.js";
+import { DefineGeneralOrderCutoffCommand } from "../../b2b/order-cutoffs/application/define-general-order-cutoff.command.js";
 import { CreatePickupAddressCommand } from "../../b2b/pickup-addresses/application/create-pickup-address.command.js";
 import { CreateDeliveryZoneCommand } from "../../b2b/delivery-zones/application/create-delivery-zone.command.js";
 import type { PrismaClient } from "../../platform/database/client/client.js";
@@ -216,6 +216,6 @@ async function seedOrderCutoffs({ prisma, commands }: StationContext): Promise<v
     time: "18:00",
     graceMinutes: 60,
   };
-  await commands.execute(new CreateOrderCutoffCommand(payload));
+  await commands.execute(new DefineGeneralOrderCutoffCommand(payload));
   console.log("✓ Heure limite par défaut semée (veille 18 h, rattrapage 1 h).");
 }

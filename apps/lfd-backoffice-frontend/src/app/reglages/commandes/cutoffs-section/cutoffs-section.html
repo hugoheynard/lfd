@@ -49,30 +49,6 @@
           <fold-icon empty-icon name="clock" [size]="28" />
         </fold-empty-state>
       }
-
-      @if (legacy().length > 0) {
-        <fold-callout variant="warning">
-          Des règles par point de retrait ou par jour existent encore. Elles s'appliquent toujours,
-          mais ne se règlent plus ici : non reprises, elles seront retirées au démontage.
-        </fold-callout>
-        <ul class="rules" data-cutoff-legacy>
-          @for (rule of legacy(); track rule.id) {
-            <li class="rule">
-              <div class="rule-main">
-                <span class="rule-scope">{{ scope(rule) }}</span>
-                <span class="rule-day">{{ day(rule) }}</span>
-              </div>
-              <span class="rule-when">
-                {{ sentence(rule) }}
-                @if (grace(rule); as label) {
-                  <fold-badge [content]="label" variant="neutral" />
-                }
-              </span>
-              <fold-badge content="Non reprise" variant="warning" />
-            </li>
-          }
-        </ul>
-      }
     }
   }
 </fold-card>

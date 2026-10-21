@@ -171,9 +171,9 @@ describe("la règle générale du commerce, en lecture", () => {
 
   it("montre la règle par défaut, et dit quand l'interrupteur la coupe", async () => {
     await staff()
-      .post("/admin/order-cutoffs")
+      .put("/admin/order-cutoffs/general")
       .send({ pickupAddressId: null, weekday: null, daysBefore: 1, time: "18:00", graceMinutes: 0 })
-      .expect(201);
+      .expect(204);
 
     expect(jsonBody(await staff().get(GENERAL).expect(200))).toEqual({
       enabled: true,

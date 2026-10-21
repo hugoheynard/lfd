@@ -100,18 +100,16 @@ beforeEach(async () => {
   buyerId = member.id;
 });
 
-/** Une règle d'heure limite, écrite directement (table de réglage, pas d'agrégat). */
+/** La règle générale, écrite directement (la seule depuis le 2026-10-21). */
 async function seedCutoff(rule: {
-  pickupAddressId?: string | null;
-  weekday?: string | null;
   daysBefore: number;
   time: string;
   graceMinutes?: number;
 }): Promise<void> {
   await ctx.prisma.orderCutoff.create({
     data: {
-      pickupAddressId: rule.pickupAddressId ?? null,
-      weekday: rule.weekday ?? null,
+      pickupAddressId: null,
+      weekday: null,
       daysBefore: rule.daysBefore,
       time: rule.time,
       graceMinutes: rule.graceMinutes ?? 0,
@@ -210,24 +208,26 @@ describe("l'heure limite est opposée au client", () => {
   });
 
   /**
-   * La règle qui s'applique est celle du point **effectivement retenu**. Ça ne
-   * se voit qu'ici : le handler reçoit un `pickupAddressId`, mais c'est le
-   * repository qui décide quel point sert, et opposer la règle du défaut
-   * plateforme serait un refus faux.
+   * Décision de Hugo du 2026-10-21 (schéma des réglages §4, point 4) : les
+   * règles par point × jour sont retirées. La base les refuse désormais
+   * (CHECK `order_cutoffs_general_only`), et n'en tient qu'une
+   * (`order_cutoffs_single_rule`) — le second barreau, sous le domaine.
    */
-  it("oppose la règle du point retenu plutôt que le défaut plateforme", async () => {
-    // Le défaut laisserait passer (limite dans 29 jours) ; le point, non.
+  it("la base refuse une règle par point ou par jour, et une seconde règle générale", async () => {
     await seedCutoff({ daysBefore: 1, time: "00:01" });
-    await seedCutoff({ pickupAddressId: pickupId, daysBefore: 60, time: "23:59" });
 
-    const response = await ctx
-      .asSub(MEMBER)
-      .post("/orders")
-      .send(order({ requestedDeliveryDate: serviceDay(30) }))
-      .expect(409);
-
-    expect(response.body).toMatchObject({ code: "orders.cutoff.past" });
-    expect(await orderCount()).toBe(0);
+    await expect(
+      ctx.prisma.orderCutoff.create({
+        data: { pickupAddressId: pickupId, daysBefore: 60, time: "23:59" },
+      }),
+    ).rejects.toThrow(/order_cutoffs_general_only/u);
+    await expect(
+      ctx.prisma.orderCutoff.create({ data: { weekday: "mon", daysBefore: 1, time: "18:00" } }),
+    ).rejects.toThrow(/order_cutoffs_general_only/u);
+    await expect(
+      ctx.prisma.orderCutoff.create({ data: { daysBefore: 1, time: "18:00" } }),
+    ).rejects.toThrow();
+    expect(await ctx.prisma.orderCutoff.count()).toBe(1);
   });
 });
 
@@ -737,39 +737,63 @@ describe("la dérogation, seul chemin de sortie", () => {
   });
 });
 
-describe("le retrait d'une règle au journal", () => {
-  /**
-   * Régression : `order_cutoff.removed` n'emportait que l'identifiant — « que
-   * disait la règle ce jour-là » n'avait plus de réponse une fois retirée.
-   * Le point est nommé comme il l'est AU MOMENT de chaque geste (D5).
-   */
-  it("garde la règle effacée, et le nom du point au moment de chaque geste", async () => {
-    const rule = { pickupAddressId: pickupId, weekday: "mon", daysBefore: 1, time: "17:00" };
-    const created = await ctx
+describe("la règle générale, seule ressource de l'écran", () => {
+  it("se pose, se relit, se règle — et chaque geste est au journal", async () => {
+    await ctx.asSub(STAFF).get("/admin/order-cutoffs/general").expect(200, { rule: null });
+
+    const rule = { daysBefore: 1, time: "17:00", graceMinutes: 30 };
+    await ctx.asSub(STAFF).put("/admin/order-cutoffs/general").send(rule).expect(204);
+    await ctx
       .asSub(STAFF)
-      .post("/admin/order-cutoffs")
-      .send({ ...rule, graceMinutes: 30 })
-      .expect(201);
-    const { id } = created.body as { id: string };
-    await ctx.prisma.site.update({ where: { id: pickupId }, data: { label: "Atelier" } });
+      .put("/admin/order-cutoffs/general")
+      .send({ ...rule, time: "23:00" })
+      .expect(204);
 
-    await ctx.asSub(STAFF).delete(`/admin/order-cutoffs/${id}`).expect(204);
+    const read = await ctx.asSub(STAFF).get("/admin/order-cutoffs/general").expect(200);
+    const { rule: stored } = read.body as { rule: { id: string } };
+    expect(stored).toEqual({
+      id: stored.id,
+      pickupAddressId: null,
+      pickupLabel: null,
+      weekday: null,
+      daysBefore: 1,
+      time: "23:00",
+      graceMinutes: 30,
+    });
+    expect(await ctx.prisma.orderCutoff.count()).toBe(1);
 
-    const payloads = await ctx.prisma.activityEvent.findMany({
-      where: { subjectId: id },
+    const facts = await ctx.prisma.activityEvent.findMany({
+      where: { subjectId: stored.id },
       orderBy: { id: "asc" },
       select: { type: true, payload: true },
     });
-    const { pickupAddressId: _point, ...kept } = rule;
-    expect(payloads).toEqual([
-      {
-        type: "order_cutoff.created",
-        payload: { ...kept, pickupAddress: { id: pickupId, name: "Labo" }, graceMinutes: 30 },
-      },
-      {
-        type: "order_cutoff.removed",
-        payload: { ...kept, pickupAddress: { id: pickupId, name: "Atelier" }, graceMinutes: 30 },
-      },
+    const general = { pickupAddress: null, weekday: null, daysBefore: 1, graceMinutes: 30 };
+    expect(facts).toEqual([
+      { type: "order_cutoff.created", payload: { ...general, time: "17:00" } },
+      { type: "order_cutoff.updated", payload: { ...general, time: "23:00" } },
     ]);
+  });
+
+  /** 2026-10-21 : plus de règle par point ou par jour — refus nommé, rien d'écrit. */
+  it("refuse un point ou un jour en 400, avec le geste qui reste", async () => {
+    const base = { daysBefore: 1, time: "17:00", graceMinutes: 0 };
+    for (const scope of [{ pickupAddressId: pickupId }, { weekday: "mon" }]) {
+      const response = await ctx
+        .asSub(STAFF)
+        .put("/admin/order-cutoffs/general")
+        .send({ ...base, ...scope })
+        .expect(400);
+      expect(response.body).toMatchObject({ code: "order_cutoffs.scope_retired" });
+    }
+    expect(await ctx.prisma.orderCutoff.count()).toBe(0);
+  });
+
+  it("n'offre plus les routes de collection", async () => {
+    await ctx.asSub(STAFF).get("/admin/order-cutoffs").expect(404);
+    await ctx
+      .asSub(STAFF)
+      .post("/admin/order-cutoffs")
+      .send({ daysBefore: 1, time: "17:00" })
+      .expect(404);
   });
 });

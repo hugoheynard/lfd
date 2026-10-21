@@ -12,7 +12,7 @@ comment elles se combinent, où chacune se règle, et ce que la boutique en dit.
 
 | Règle                                 | Ce qu'elle dit                                                                            | Où elle se règle (écran · droit)                                                                | Doc                                                                                                                |
 | ------------------------------------- | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| **Heure limite générale** (commerce)  | « la veille à 23 h », par défaut ou par point × jour de semaine                           | Réglages › Commandes › Heure limite (`/reglages/commandes/heure-limite`) · `lfc_order_settings` | [`reglages-generaux.md`](reglages-generaux.md)                                                                     |
+| **Heure limite générale** (commerce)  | « la veille à 23 h » — une seule règle, ni point ni jour (2026-10-21)                     | Réglages › Commandes › Heure limite (`/reglages/commandes/heure-limite`) · `lfc_order_settings` | [`reglages-generaux.md`](reglages-generaux.md)                                                                     |
 | **Interrupteur** de la règle générale | activée / désactivée — désactivée, la règle n'est plus servie                             | même écran · `lfc_order_settings`                                                               | [`reglages-generaux.md`](reglages-generaux.md)                                                                     |
 | **Jour même**                         | une commande peut-elle viser aujourd'hui ? (non par défaut)                               | même écran · `lfc_order_settings`                                                               | [`reglages-generaux.md`](reglages-generaux.md)                                                                     |
 | **Limite d'article** (référentiel)    | « 2 jours avant, 12 h » pour un produit (2026-10-21 : produit seulement, sans rattrapage) | Référentiel › Limites de commande (`/pim/limites-de-commande`) et fiche produit · `pim_catalog` | [`limites-produit.md`](limites-produit.md)                                                                         |
@@ -37,8 +37,8 @@ client, invité et équipe :
    **Ligne par ligne, la plus stricte gagne toujours** (décision de Hugo,
    2026-10-21) : la décision d'une ligne est la plus fermée entre la limite de
    l'article, si elle existe (`decideOrderLimit`), et la règle générale en
-   vigueur pour ce jour et ce point (`decideOrderCutoff`, calculée une fois par
-   panier). Une limite d'article plus tardive ne relâche jamais la règle
+   vigueur (`decideOrderCutoff`, calculée une fois par panier ; la seule règle
+   depuis le 2026-10-21, les règles par point × jour sont retirées). Une limite d'article plus tardive ne relâche jamais la règle
    générale. Règle générale désactivée (interrupteur) : seule la limite
    d'article compte. **Seule la règle générale a une grâce** : une limite
    d'article ferme sèchement à son heure (2026-10-21), et l'on compare des
@@ -59,13 +59,14 @@ possible. Toutes s'appliquent : c'est la plus tôt qui ferme.
 
 ## 3. Ce que la boutique dit
 
-| Où                          | Phrase                                                                | Source                        |
-| --------------------------- | --------------------------------------------------------------------- | ----------------------------- |
-| barre / panier, forme calme | « Pour jeudi, commandez avant 23 h. »                                 | `orderUntil` du jour accordé  |
-| les six dernières heures    | « Plus que 2 h 15 pour commander pour jeudi. »                        | idem                          |
-| vraiment trop tard          | « Trop tard pour demain, la limite était 23 h : … »                   | premier jour accordé > demain |
-| article plus strict         | « Plus que 1 h 40 pour commander Bûche pour jeudi. »                  | limite d'article du panier    |
-| fiche, ligne du panier      | « Préparé sur commande — à commander 2 jours à l'avance, avant 12 h » | `ShopItemView.orderTimeLimit` |
+| Où                          | Phrase                                                                              | Source                        |
+| --------------------------- | ----------------------------------------------------------------------------------- | ----------------------------- |
+| barre / panier, forme calme | « Pour jeudi, commandez avant 23 h. »                                               | `orderUntil` du jour accordé  |
+| les six dernières heures    | « Plus que 2 h 15 pour commander pour jeudi. »                                      | idem                          |
+| vraiment trop tard          | « Trop tard pour demain, la limite était 23 h : … »                                 | premier jour accordé > demain |
+| article plus strict         | « Plus que 1 h 40 pour commander un article de votre panier pour jeudi. »           | limite d'article du panier    |
+| article déjà trop tard      | « Un article de votre panier : trop tard pour jeudi, possible à partir de samedi. » | limite d'article du panier    |
+| fiche, ligne du panier      | « Préparé sur commande — à commander 2 jours à l'avance, avant 12 h »               | `ShopItemView.orderTimeLimit` |
 
 La grâce n'est **jamais** annoncée. Tout cela est une **annonce** : seule la
 passation refuse. Détail : [`reglages-generaux.md`](reglages-generaux.md) §6 et
@@ -101,15 +102,15 @@ flowchart LR
 
 ## 5. Les docs du dossier
 
-| Doc                                                                                    | État | Ce qu'elle porte                                                                                                                                                                        |
-| -------------------------------------------------------------------------------------- | ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [`schema-des-reglages.md`](schema-des-reglages.md)                                     | 🗺️   | **Le schéma** (2026-10-21) : les huit réglages, le chemin d'une commande, ce qui rend le paramétrage incompréhensible, les questions à trancher (1 à 3 tranchées et bâties, 4 tranchée) |
-| [`plan-une-seule-heure.md`](plan-une-seule-heure.md)                                   | 📐   | **Plan** (2026-10-21) : l'arrêt du plan du fournil suit l'heure limite — une seule heure                                                                                                |
-| [`reglages-generaux.md`](reglages-generaux.md)                                         | ✅   | **État** de l'heure limite générale : tables, interrupteur, jour même, dérogations, `orderUntil`, compte à rebours                                                                      |
-| [`limites-produit.md`](limites-produit.md)                                             | ✅   | **État** de la limite par produit (règle entière, sans rattrapage), propagation, passation, « Préparé sur commande »                                                                    |
-| [`architecture-heure-limite-de-commande.md`](architecture-heure-limite-de-commande.md) | 🟡   | Le **pourquoi** (2026-09-04) : trois états, grâce, dérogation, **surtaxe de retard**, fuseau                                                                                            |
-| [`demontage-order-cutoff.md`](demontage-order-cutoff.md)                               | ⏸️   | Plan **suspendu** : retirer `OrderCutoff` au profit de l'échelle                                                                                                                        |
-| [`plan-heure-limite-par-clientele.md`](plan-heure-limite-par-clientele.md)             | 📐   | Plan **non bâti** : la limite du B2C (délai d'article à J+N, stock à J)                                                                                                                 |
+| Doc                                                                                    | État | Ce qu'elle porte                                                                                                                                                            |
+| -------------------------------------------------------------------------------------- | ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`schema-des-reglages.md`](schema-des-reglages.md)                                     | 🗺️   | **Le schéma** (2026-10-21) : les huit réglages, le chemin d'une commande, ce qui rend le paramétrage incompréhensible, les questions à trancher (1 à 4 tranchées et bâties) |
+| [`plan-une-seule-heure.md`](plan-une-seule-heure.md)                                   | 📐   | **Plan** (2026-10-21) : l'arrêt du plan du fournil suit l'heure limite — une seule heure                                                                                    |
+| [`reglages-generaux.md`](reglages-generaux.md)                                         | ✅   | **État** de l'heure limite générale : tables, interrupteur, jour même, dérogations, `orderUntil`, compte à rebours                                                          |
+| [`limites-produit.md`](limites-produit.md)                                             | ✅   | **État** de la limite par produit (règle entière, sans rattrapage), propagation, passation, « Préparé sur commande »                                                        |
+| [`architecture-heure-limite-de-commande.md`](architecture-heure-limite-de-commande.md) | 🟡   | Le **pourquoi** (2026-09-04) : trois états, grâce, dérogation, **surtaxe de retard**, fuseau                                                                                |
+| [`demontage-order-cutoff.md`](demontage-order-cutoff.md)                               | 🗄️   | Plan **caduc** (2026-10-21) : la décision 1 garde `OrderCutoff` comme règle générale                                                                                        |
+| [`plan-heure-limite-par-clientele.md`](plan-heure-limite-par-clientele.md)             | 🗄️   | Plan **remplacé** (2026-10-21) par le modèle du schéma §0                                                                                                                   |
 
 Hors du dossier, et cités plutôt que déplacés :
 [`../commandes/plan-reglages-commandes.md`](../commandes/plan-reglages-commandes.md)

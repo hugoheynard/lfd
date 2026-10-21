@@ -50,7 +50,7 @@ const SURFACES: readonly { readonly resource: StaffResource; readonly path: stri
    * Les RÉGLAGES DES COMMANDES (2026-10-13) — sortis de `b2b_settings`
    * (plan-reglages-commandes.md, §3.4, lot O1a).
    */
-  { resource: "lfc_order_settings", path: "/admin/order-cutoffs" },
+  { resource: "lfc_order_settings", path: "/admin/order-cutoffs/general" },
   { resource: "lfc_order_settings", path: "/admin/customer-cancellation" },
   { resource: "lfc_order_opening", path: "/admin/order-opening" },
   { resource: "staff_access", path: "/admin/staff-users" },
@@ -220,9 +220,9 @@ describe("la matrice des rôles — l'écriture se déduit du verbe", () => {
     // un client si la boutique est ouverte, pas la fermer.
     const agent = await asRole("commercial");
 
-    await agent.get("/admin/order-cutoffs").expect(200);
+    await agent.get("/admin/order-cutoffs/general").expect(200);
     await agent.get("/admin/order-opening").expect(200);
-    expect((await agent.patch("/admin/order-cutoffs/inexistant").send({})).status).toBe(403);
+    expect((await agent.put("/admin/order-cutoffs/general").send({})).status).toBe(403);
     expect((await agent.patch("/admin/order-opening").send({})).status).toBe(403);
     expect((await agent.patch("/admin/customer-cancellation").send({})).status).toBe(403);
   });
@@ -230,7 +230,7 @@ describe("la matrice des rôles — l'écriture se déduit du verbe", () => {
   it("laisse l'administrateur écrire l'heure limite et l'ouverture", async () => {
     const agent = await asRole("admin");
 
-    expect((await agent.patch("/admin/order-cutoffs/inexistant").send({})).status).not.toBe(403);
+    expect((await agent.put("/admin/order-cutoffs/general").send({})).status).not.toBe(403);
     expect((await agent.patch("/admin/order-opening").send({})).status).not.toBe(403);
   });
 });

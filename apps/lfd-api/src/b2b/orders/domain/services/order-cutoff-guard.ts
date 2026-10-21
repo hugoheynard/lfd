@@ -93,7 +93,6 @@ export function ensureWithinOrderCutoff(input: {
   readonly lines: readonly LineOrderLimit[];
   /** Les règles du commerce EN VIGUEUR (aucune si l'interrupteur est coupé), opposées à toutes les lignes. */
   readonly fallback: readonly OrderCutoffView[];
-  readonly pickupAddressId: string | null;
   readonly fulfillmentDate: string;
   /** La dérogation ouverte de ce client pour cette journée, ou `null`. */
   readonly waiver: { readonly id: string } | null;
@@ -122,19 +121,13 @@ export function ensureWithinOrderCutoff(input: {
 function strictestOf(input: {
   readonly lines: readonly LineOrderLimit[];
   readonly fallback: readonly OrderCutoffView[];
-  readonly pickupAddressId: string | null;
   readonly fulfillmentDate: string;
   readonly now: Date;
 }): OrderCutoffDecision {
   if (input.lines.length === 0) {
     return { status: "open", rule: null, limit: null, graceEnd: null };
   }
-  const commerce = decideOrderCutoff(
-    input.fallback,
-    input.pickupAddressId,
-    input.fulfillmentDate,
-    input.now,
-  );
+  const commerce = decideOrderCutoff(input.fallback, input.fulfillmentDate, input.now);
   let strictest: OrderCutoffDecision = commerce;
   for (const line of input.lines) {
     strictest = stricterOf(

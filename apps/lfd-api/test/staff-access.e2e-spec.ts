@@ -401,7 +401,7 @@ describe("le mur staff — le balayage des huit ressources", () => {
     { resource: "b2b_appointments", path: "/admin/appointments?from=2026-08-01&to=2026-08-31" },
     { resource: "b2b_support", path: "/admin/support-requests" },
     { resource: "b2b_settings", path: "/admin/content/footer" },
-    { resource: "lfc_order_settings", path: "/admin/order-cutoffs" },
+    { resource: "lfc_order_settings", path: "/admin/order-cutoffs/general" },
     { resource: "lfc_order_settings", path: "/admin/customer-cancellation" },
     { resource: "lfc_order_opening", path: "/admin/order-opening" },
     { resource: "staff_access", path: "/admin/staff-users" },
@@ -503,7 +503,7 @@ describe("le mur staff — les réglages des commandes ont leurs droits", () => 
   }
 
   const MOVED = [
-    { resource: "lfc_order_settings", path: "/admin/order-cutoffs" },
+    { resource: "lfc_order_settings", path: "/admin/order-cutoffs/general" },
     { resource: "lfc_order_settings", path: "/admin/customer-cancellation" },
     { resource: "lfc_order_opening", path: "/admin/order-opening" },
   ] as const;
@@ -534,7 +534,7 @@ describe("le mur staff — les réglages des commandes ont leurs droits", () => 
     const opening = await holderOf("ouverture", [
       { resource: "lfc_order_opening", action: "write" },
     ]);
-    expect((await opening.get("/admin/order-cutoffs")).status).toBe(403);
+    expect((await opening.get("/admin/order-cutoffs/general")).status).toBe(403);
   });
 
   it("refuse l'écriture à qui ne tient que la lecture", async () => {
@@ -543,7 +543,7 @@ describe("le mur staff — les réglages des commandes ont leurs droits", () => 
       { resource: "lfc_order_opening", action: "read" },
     ]);
 
-    expect((await agent.patch("/admin/order-cutoffs/inexistant").send({})).status).toBe(403);
+    expect((await agent.put("/admin/order-cutoffs/general").send({})).status).toBe(403);
     expect((await agent.patch("/admin/customer-cancellation").send({})).status).toBe(403);
     expect((await agent.patch("/admin/order-opening").send({})).status).toBe(403);
   });

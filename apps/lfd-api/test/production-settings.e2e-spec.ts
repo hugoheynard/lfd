@@ -78,9 +78,9 @@ describe("le réglage d'arrêt du plan", () => {
 
   it("passe en automatique après l'heure limite, et le journalise", async () => {
     await admin()
-      .post("/admin/order-cutoffs")
+      .put("/admin/order-cutoffs/general")
       .send({ time: "18:00", daysBefore: 1, graceMinutes: 30 })
-      .expect(201);
+      .expect(204);
 
     await admin()
       .put(`${ROUTE}/close`)
@@ -99,9 +99,9 @@ describe("le réglage d'arrêt du plan", () => {
 
   it("refuse (409) une heure d'arrêt antérieure à l'heure limite, rattrapage compris", async () => {
     await admin()
-      .post("/admin/order-cutoffs")
+      .put("/admin/order-cutoffs/general")
       .send({ time: "18:00", daysBefore: 1, graceMinutes: 30 })
-      .expect(201);
+      .expect(204);
 
     const response = await admin()
       .put(`${ROUTE}/close`)

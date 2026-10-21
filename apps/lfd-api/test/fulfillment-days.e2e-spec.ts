@@ -9,7 +9,7 @@
  * **lues en base**, la règle du point l'emporte sur le défaut, et l'horloge est
  * celle du serveur — la suite la gèle pour l'exiger.
  */
-import type { CreatedOrderCutoffResponse, FulfillmentDayView } from "@lfd/contracts";
+import type { FulfillmentDayView } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { Clock } from "../src/platform/time/clock.js";
@@ -72,9 +72,9 @@ async function createPoint(label: string): Promise<string> {
   return jsonBody<{ id: string }>(response).id;
 }
 
-async function createRule(rule: Record<string, unknown>): Promise<string> {
-  const response = await staff().post("/admin/order-cutoffs").send(rule).expect(201);
-  return jsonBody<CreatedOrderCutoffResponse>(response).id;
+/** Pose la règle générale par la route de l'écran (la seule depuis le 2026-10-21). */
+async function createRule(rule: Record<string, unknown>): Promise<void> {
+  await staff().put("/admin/order-cutoffs/general").send(rule).expect(204);
 }
 
 async function days(): Promise<readonly FulfillmentDayView[]> {
@@ -125,15 +125,22 @@ describe("prochaine journée demandable", () => {
     expect(fallbackDay(await days())).toBe("2026-09-10");
   });
 
-  it("donne sa PROPRE journée à un point qui a sa propre règle", async () => {
+  /**
+   * Les règles par point × jour sont retirées (Hugo, 2026-10-21) : chaque point
+   * a la journée de la règle générale, et une règle du point ne se pose plus.
+   */
+  it("donne à chaque point la journée de la règle générale", async () => {
     const labo = await createPoint("Le Labo");
     await createRule({ pickupAddressId: null, daysBefore: 1, time: "18:00", graceMinutes: 0 });
-    await createRule({ pickupAddressId: labo, daysBefore: 3, time: "18:00", graceMinutes: 0 });
+    await staff()
+      .put("/admin/order-cutoffs/general")
+      .send({ pickupAddressId: labo, daysBefore: 3, time: "18:00", graceMinutes: 0 })
+      .expect(400);
 
     const rows = await days();
 
     expect(fallbackDay(rows)).toBe("2026-09-09");
-    expect(rows.find((row) => row.pickupAddressId === labo)?.date).toBe("2026-09-11");
+    expect(rows.find((row) => row.pickupAddressId === labo)?.date).toBe("2026-09-09");
   });
 
   /**

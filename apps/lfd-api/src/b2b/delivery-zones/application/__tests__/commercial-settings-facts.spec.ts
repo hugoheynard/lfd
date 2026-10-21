@@ -1,25 +1,10 @@
-import type {
-  DeliveryZonePayload,
-  DeliveryZoneView,
-  OrderCutoffPayload,
-  OrderCutoffView,
-  PickupAddressPayload,
-  PickupAddressView,
-} from "@lfd/contracts";
+import type { DeliveryZonePayload, DeliveryZoneView, PickupAddressPayload } from "@lfd/contracts";
 
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
-import { OrderCutoffRepository } from "../../../order-cutoffs/domain/order-cutoff.repository.js";
-import { CreateOrderCutoffCommand } from "../../../order-cutoffs/application/create-order-cutoff.command.js";
-import { CreateOrderCutoffHandler } from "../../../order-cutoffs/application/create-order-cutoff.handler.js";
-import { RemoveOrderCutoffCommand } from "../../../order-cutoffs/application/remove-order-cutoff.command.js";
-import { RemoveOrderCutoffHandler } from "../../../order-cutoffs/application/remove-order-cutoff.handler.js";
-import { UpdateOrderCutoffCommand } from "../../../order-cutoffs/application/update-order-cutoff.command.js";
-import { UpdateOrderCutoffHandler } from "../../../order-cutoffs/application/update-order-cutoff.handler.js";
 import { RemovePickupAddressCommand } from "../../../pickup-addresses/application/remove-pickup-address.command.js";
 import { RemovePickupAddressHandler } from "../../../pickup-addresses/application/remove-pickup-address.handler.js";
 import { PickupAddressNotFoundError } from "../../../pickup-addresses/domain/pickup-errors.js";
-import { PickupAddressRepository } from "../../../pickup-addresses/domain/pickup-address.repository.js";
 import { UpdatePickupAddressCommand } from "../../../pickup-addresses/application/update-pickup-address.command.js";
 import { UpdatePickupAddressHandler } from "../../../pickup-addresses/application/update-pickup-address.handler.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
@@ -69,14 +54,6 @@ const PICKUP: PickupAddressPayload = {
   opening: { publicOpening: null, proPickup: null },
 };
 
-const CUTOFF: OrderCutoffPayload = {
-  pickupAddressId: null,
-  weekday: null,
-  daysBefore: 1,
-  time: "17:00",
-  graceMinutes: 0,
-};
-
 /** La zone telle qu'elle est en base ; `null` = aucune zone de cet id. */
 function zones(stored: DeliveryZoneView | null = null): DeliveryZoneRepository {
   return {
@@ -86,20 +63,6 @@ function zones(stored: DeliveryZoneView | null = null): DeliveryZoneRepository {
     create: () => Promise.resolve("zone_3"),
     update: () => Promise.resolve(),
     remove: () => Promise.resolve(),
-  };
-}
-
-/** Le point tel qu'il est en base avant la modification. */
-const STORED_PICKUP: PickupAddressView = {
-  ...PICKUP,
-  id: "pickup_2",
-  discountAudiences: { b2b: true, b2c: true },
-};
-
-function pickups(stored: PickupAddressView | null = STORED_PICKUP): PickupAddressRepository {
-  return {
-    list: () => Promise.resolve([] as readonly PickupAddressView[]),
-    resolve: () => Promise.resolve(stored),
   };
 }
 
@@ -115,24 +78,6 @@ function sites(): InMemorySites {
 
 /** Un instant quelconque : l'archivage le date, aucun test ne le compare à l'horloge. */
 const NOW = new FixedClock(new Date(0));
-
-/** La règle telle qu'elle est en base avant son retrait : le lundi, au laboratoire. */
-const STORED_CUTOFF: OrderCutoffView = {
-  ...CUTOFF,
-  id: "cutoff_5",
-  pickupAddressId: "pickup_2",
-  pickupLabel: "Laboratoire",
-  weekday: "mon",
-};
-
-function cutoffs(): OrderCutoffRepository {
-  return {
-    list: () => Promise.resolve([] as readonly OrderCutoffView[]),
-    create: () => Promise.resolve("cutoff_5"),
-    update: () => Promise.resolve(),
-    remove: () => Promise.resolve(STORED_CUTOFF),
-  };
-}
 
 describe("Les réglages commerciaux au journal", () => {
   it("emporte le TARIF d'une zone, et le nombre de préfixes — jamais la liste", async () => {
@@ -232,83 +177,5 @@ describe("Les réglages commerciaux au journal", () => {
         payload: { subjectLabel: "Laboratoire" },
       },
     ]);
-  });
-
-  it("emporte la règle d'heure limite ENTIÈRE — chaque champ change la réponse", async () => {
-    const events = new RecordingPublisher();
-
-    await new CreateOrderCutoffHandler(
-      cutoffs(),
-      pickups(),
-      events,
-      new DirectUnitOfWork(),
-    ).execute(new CreateOrderCutoffCommand(CUTOFF));
-
-    // `null` n'est pas une absence ici : c'est « la règle par défaut » et
-    // « tous les jours ». Le journal doit pouvoir les relire.
-    expect(events.traced[0]?.journalFact().payload).toEqual({
-      pickupAddress: null,
-      weekday: null,
-      daysBefore: 1,
-      time: "17:00",
-      graceMinutes: 0,
-    });
-  });
-
-  it("cite le point d'une règle AVEC son nom du moment (D5)", async () => {
-    const events = new RecordingPublisher();
-
-    await new UpdateOrderCutoffHandler(
-      cutoffs(),
-      pickups(),
-      events,
-      new DirectUnitOfWork(),
-    ).execute(new UpdateOrderCutoffCommand("cutoff_5", { ...CUTOFF, pickupAddressId: "pickup_2" }));
-
-    expect(events.traced[0]?.journalFact().payload).toMatchObject({
-      pickupAddress: { id: "pickup_2", name: "Laboratoire" },
-    });
-  });
-
-  it("cite par son seul id un point que l'annuaire ne connaît plus — sans refuser la règle", async () => {
-    const events = new RecordingPublisher();
-
-    await new CreateOrderCutoffHandler(
-      cutoffs(),
-      pickups(null),
-      events,
-      new DirectUnitOfWork(),
-    ).execute(new CreateOrderCutoffCommand({ ...CUTOFF, pickupAddressId: "pickup_disparu" }));
-
-    expect(events.traced[0]?.journalFact().payload).toMatchObject({
-      pickupAddress: "pickup_disparu",
-    });
-  });
-
-  /**
-   * Régression : le retrait d'une règle n'emportait que son identifiant, et
-   * « qu'est-ce que la règle disait ce jour-là » n'avait plus de réponse dès
-   * qu'on l'avait retirée.
-   */
-  it("garde la règle ENTIÈRE d'un réglage supprimé, point nommé compris", async () => {
-    const events = new RecordingPublisher();
-
-    await new RemoveOrderCutoffHandler(
-      cutoffs(),
-      pickups(),
-      events,
-      new DirectUnitOfWork(),
-    ).execute(new RemoveOrderCutoffCommand("cutoff_5"));
-
-    const fact = events.traced[0]?.journalFact();
-    expect(fact?.type).toBe("order_cutoff.removed");
-    expect(fact?.subjectId).toBe("cutoff_5");
-    expect(fact?.payload).toEqual({
-      pickupAddress: { id: "pickup_2", name: "Laboratoire" },
-      weekday: "mon",
-      daysBefore: 1,
-      time: "17:00",
-      graceMinutes: 0,
-    });
   });
 });

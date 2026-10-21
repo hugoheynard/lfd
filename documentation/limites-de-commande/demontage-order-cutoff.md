@@ -1,5 +1,13 @@
 # Démonter `OrderCutoff` — lot 9 du dossier heure limite
 
+> 🗄️ **Caduc — 2026-10-21.** La décision 1 de Hugo
+> ([`schema-des-reglages.md`](schema-des-reglages.md) §4) **garde**
+> `OrderCutoff` : c'est la règle générale du commerce, la seule limite « pour
+> tout le catalogue » ; c'est le rang global du référentiel qui a disparu, pas
+> elle. Ses règles par point × jour sont retirées (point 4, bâti le
+> 2026-10-21). Ce plan n'est plus à reprendre ; il reste comme trace. État :
+> [`reglages-generaux.md`](reglages-generaux.md).
+
 > ⏸️ **Suspendu — relu le 2026-10-21.** `OrderCutoff` (`public.order_cutoffs`)
 > est toujours lue à la passation, à la boutique et au fournil, sous un
 > interrupteur (`order_cutoff_settings`) qui n'existait pas quand ce plan a été
@@ -70,7 +78,10 @@ plateforme**. Sans écran, sans porte, sans test qui le dise. Aujourd'hui
 `RemoveOrderTimeLimitHandler` refuse de retirer le rang **global** dès qu'une
 autre règle ne pose pas à elle seule le délai **et** l'heure —
 `GlobalOrderTimeLimitStillNeededError`, 409, et le message **nomme** les règles
-en cause. Un refus, pas une consigne de runbook.
+en cause. Un refus, pas une consigne de runbook. ⚠️ **Plus vrai depuis le
+2026-10-21** (relu ce jour) : `GlobalOrderTimeLimitStillNeededError` n'existe
+plus — le rang global du référentiel ne se pose plus du tout
+(`pim.order_time_limit.scope_retired`, [`limites-produit.md`](limites-produit.md)).
 
 ⚠️ Ce que le verrou ne couvre pas, et qui reste voulu : retirer un rang global
 **seul de son espèce** passe. Il n'y a alors rien à rendre muet, et « je

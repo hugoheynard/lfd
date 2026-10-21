@@ -2,11 +2,11 @@ import { Module } from "@nestjs/common";
 
 import { SwitchedOrderCutoffs } from "./application/switched-order-cutoffs.js";
 import { OrderCutoffSettingsReader } from "./domain/order-cutoff-settings.reader.js";
-import { OrderCutoffRepository } from "./domain/order-cutoff.repository.js";
 import { OrderCutoffsInForce } from "./domain/order-cutoffs-in-force.js";
+import { StoredOrderCutoffReader } from "./domain/stored-order-cutoff.reader.js";
 import { CommerceGeneralOrderCutoffReader } from "./infrastructure/pim-general-order-cutoff.reader.js";
 import { PrismaOrderCutoffSettingsReader } from "./infrastructure/prisma-order-cutoff-settings.reader.js";
-import { PrismaOrderCutoffRepository } from "./infrastructure/prisma-order-cutoff.repository.js";
+import { PrismaStoredOrderCutoffReader } from "./infrastructure/prisma-stored-order-cutoff.reader.js";
 
 /**
  * **Les règles d'heure limite en vigueur, sans rien d'autre** — la lecture
@@ -21,7 +21,7 @@ import { PrismaOrderCutoffRepository } from "./infrastructure/prisma-order-cutof
  */
 @Module({
   providers: [
-    { provide: OrderCutoffRepository, useClass: PrismaOrderCutoffRepository },
+    { provide: StoredOrderCutoffReader, useClass: PrismaStoredOrderCutoffReader },
     { provide: OrderCutoffSettingsReader, useClass: PrismaOrderCutoffSettingsReader },
     { provide: OrderCutoffsInForce, useClass: SwitchedOrderCutoffs },
     // Ce que le référentiel lit de la règle générale (2026-10-21), relié par
@@ -29,7 +29,7 @@ import { PrismaOrderCutoffRepository } from "./infrastructure/prisma-order-cutof
     CommerceGeneralOrderCutoffReader,
   ],
   exports: [
-    OrderCutoffRepository,
+    StoredOrderCutoffReader,
     OrderCutoffsInForce,
     OrderCutoffSettingsReader,
     CommerceGeneralOrderCutoffReader,

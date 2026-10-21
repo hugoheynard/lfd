@@ -153,7 +153,6 @@ export class ServiceDayNotice {
         return fill(notice.item === undefined ? copy.cutoffCountdown : copy.cutoffCountdownItem, {
           left: leftLabel(notice.minutesLeft, copy),
           day: weekdayLabel(notice.first, locale),
-          name: notice.item ?? '',
         });
       case 'itemTooLate':
         return fill(
@@ -163,8 +162,7 @@ export class ServiceDayNotice {
               ? copy.itemTooLateOther
               : copy.itemTooLateOthers,
           {
-            name: notice.item,
-            others: String(notice.others),
+            count: String(notice.others + 1),
             day: weekdayLabel(notice.day, locale),
             next: weekdayLabel(notice.next, locale),
           },
@@ -173,7 +171,6 @@ export class ServiceDayNotice {
         return fill(notice.item === undefined ? copy.cutoffCalm : copy.cutoffCalmItem, {
           day: weekdayLabel(notice.first, locale),
           time: limitHourLabel(notice.until, locale),
-          name: notice.item ?? '',
         });
     }
   }

@@ -84,7 +84,7 @@ function isOpen(
 ): boolean {
   const decision =
     candidate.orderTimeLimit === null
-      ? decideOrderCutoff(fallback, target.pickupAddressId, target.date, now)
+      ? decideOrderCutoff(fallback, target.date, now)
       : decideOrderLimit(candidate.orderTimeLimit, target.date, now);
   return decision.status === "open";
 }

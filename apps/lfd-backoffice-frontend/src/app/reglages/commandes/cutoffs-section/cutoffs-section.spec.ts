@@ -7,9 +7,9 @@ import { OrderCutoffsService } from '../order-cutoffs.service';
 import { CutoffsSection } from './cutoffs-section';
 
 /**
- * Option A de `plan-reglages-commandes.md` (§2) : seule la ligne générale
- * s'édite, sous `lfc_order_settings:write` ; une règle par point ou par jour se
- * lit, marquée « non reprise », sans aucun geste.
+ * Une seule règle, la générale (Hugo, 2026-10-21, schéma des réglages §4,
+ * point 4) : elle s'édite sous `lfc_order_settings:write`, et l'écran ne liste
+ * plus de règles par point ou par jour.
  */
 const GENERAL: OrderCutoffView = {
   id: 'cut_1',
@@ -21,25 +21,15 @@ const GENERAL: OrderCutoffView = {
   graceMinutes: 30,
 };
 
-const BY_POINT: OrderCutoffView = {
-  id: 'cut_2',
-  pickupAddressId: 'pk_1',
-  pickupLabel: 'Labo',
-  weekday: 'sun',
-  daysBefore: 2,
-  time: '12:00',
-  graceMinutes: 0,
-};
-
 async function mount(
   permissions: readonly StaffPermission[],
-  rules: readonly OrderCutoffView[],
+  rule: OrderCutoffView | null,
 ): Promise<ComponentFixture<CutoffsSection>> {
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [CutoffsSection],
     providers: [
-      { provide: OrderCutoffsService, useValue: { list: () => Promise.resolve(rules) } },
+      { provide: OrderCutoffsService, useValue: { general: () => Promise.resolve(rule) } },
       {
         provide: PermissionsStore,
         useValue: { can: (p: StaffPermission): boolean => permissions.includes(p) },
@@ -61,10 +51,7 @@ const buttons = (fixture: ComponentFixture<CutoffsSection>): readonly string[] =
 
 describe('CutoffsSection — la limite générale', () => {
   it('avec `lfc_order_settings:write`, propose de modifier la ligne générale, et elle seule', async () => {
-    const fixture = await mount(
-      ['lfc_order_settings:read', 'lfc_order_settings:write'],
-      [BY_POINT, GENERAL],
-    );
+    const fixture = await mount(['lfc_order_settings:read', 'lfc_order_settings:write'], GENERAL);
 
     expect(buttons(fixture)).toEqual(['Modifier']);
     expect(root(fixture).querySelector('[data-cutoff-general]')?.textContent).toContain(
@@ -73,26 +60,24 @@ describe('CutoffsSection — la limite générale', () => {
   });
 
   it('propose de poser la ligne générale quand elle manque', async () => {
-    const fixture = await mount(['lfc_order_settings:write'], []);
+    const fixture = await mount(['lfc_order_settings:write'], null);
 
     expect(buttons(fixture)).toEqual(['Poser la limite générale']);
     expect(root(fixture).textContent).toContain('Aucune limite générale');
   });
 
   it('🔴 sans `lfc_order_settings:write`, montre la règle sans aucun geste', async () => {
-    const fixture = await mount(['lfc_order_settings:read', 'b2b_settings:write'], [GENERAL]);
+    const fixture = await mount(['lfc_order_settings:read', 'b2b_settings:write'], GENERAL);
 
     expect(root(fixture).querySelector('[data-cutoff-general]')).not.toBeNull();
     expect(buttons(fixture)).toEqual([]);
   });
 
-  it('lit les règles par point ou par jour sans geste, marquées non reprises', async () => {
-    const fixture = await mount(['lfc_order_settings:write'], [BY_POINT, GENERAL]);
+  it('ne liste plus aucune règle « non reprise »', async () => {
+    const fixture = await mount(['lfc_order_settings:write'], GENERAL);
 
-    const legacy = root(fixture).querySelector('[data-cutoff-legacy]');
-    expect(legacy?.textContent).toContain('Labo');
-    expect(legacy?.textContent).toContain('Non reprise');
-    expect(legacy?.querySelector('button')).toBeNull();
+    expect(root(fixture).querySelector('[data-cutoff-legacy]')).toBeNull();
+    expect(root(fixture).textContent).not.toContain('Non reprise');
   });
 });
 
@@ -103,7 +88,7 @@ describe('CutoffsSection — la limite générale', () => {
  */
 describe('CutoffsSection — la règle qui dort', () => {
   it('désactivée, dit que la limite et son rattrapage ne s’appliquent pas', async () => {
-    const fixture = await mount(['lfc_order_settings:write'], [GENERAL]);
+    const fixture = await mount(['lfc_order_settings:write'], GENERAL);
     fixture.componentRef.setInput('dormant', true);
     fixture.detectChanges();
 
@@ -116,7 +101,7 @@ describe('CutoffsSection — la règle qui dort', () => {
   });
 
   it('activée, ne dit rien de plus', async () => {
-    const fixture = await mount(['lfc_order_settings:write'], [GENERAL]);
+    const fixture = await mount(['lfc_order_settings:write'], GENERAL);
 
     expect(root(fixture).querySelector('[data-cutoff-dormant]')).toBeNull();
     expect(root(fixture).querySelector('fold-card')?.classList.contains('dormant')).toBe(false);

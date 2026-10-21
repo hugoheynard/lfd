@@ -3,8 +3,7 @@
 }
 
 /* La règle dort (heure limite générale désactivée, lot O3) : lisible, grisée. */
-.dormant .general,
-.dormant .rules {
+.dormant .general {
   opacity: 0.55;
 }
 
@@ -42,49 +41,7 @@
   font-weight: 600;
 }
 
-.rules {
-  list-style: none;
-  margin: var(--fold-space-md) 0 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Une règle non reprise par rang, séparée d'un filet, dans l'ordre où elles
-   s'appliquent, du plus précis au plus général. */
-.rule {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
-  align-items: center;
-  gap: var(--fold-space-md);
-  padding: var(--fold-space-sm) 0;
-  border-top: 1px solid var(--fold-color-border-subtle);
-}
-
-.rule-main {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-  min-width: 0;
-}
-
-.rule-scope {
-  font-weight: 600;
-}
-
-.rule-day {
-  color: var(--fold-color-text-muted);
-  font-size: var(--fold-text-sm);
-}
-
 .rule-when {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-}
-
-@media (max-width: 44rem) {
-  .rule {
-    grid-template-columns: 1fr;
-    align-items: start;
-  }
 }

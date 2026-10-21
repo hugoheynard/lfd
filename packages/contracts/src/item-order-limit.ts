@@ -1,4 +1,4 @@
-import type { OrderCutoffView } from "./order-cutoff.js";
+import { resolveOrderCutoff, type OrderCutoffView } from "./order-cutoff.js";
 
 /**
  * **La limite propre d'un article, telle que la boutique la montre** (Hugo,
@@ -50,19 +50,6 @@ export function isStricterOrderLimit(
 }
 
 /**
- * **La règle générale de la boutique** : le défaut de la plateforme, tous
- * jours, tous points (`pickupAddressId` et `weekday` à `null`) — aujourd'hui
- * « la veille à 23 h ». `null` s'il n'y en a pas.
- *
- * ⚠️ Une règle propre à un jour ou à un point n'y entre pas : la fiche produit
- * ne sait ni le jour ni le point. C'est le compte à rebours, qui les connaît,
- * qui compare au jour près (`FulfillmentDayView.orderUntil`).
- */
-export function generalOrderCutoff(rules: readonly OrderCutoffView[]): OrderCutoffView | null {
-  return rules.find((rule) => rule.pickupAddressId === null && rule.weekday === null) ?? null;
-}
-
-/**
  * Ce que l'article sert à la boutique : sa limite résolue, **seulement** si
  * elle est plus stricte que la règle générale — sinon `null`, et la fiche ne
  * dit rien que la boutique ne dise déjà. La grâce n'est jamais rendue.
@@ -74,7 +61,7 @@ export function shownItemOrderLimit(
   if (limit === null) {
     return null;
   }
-  const general = generalOrderCutoff(rules);
+  const general = resolveOrderCutoff(rules);
   return isStricterOrderLimit(limit, general)
     ? { daysBefore: limit.daysBefore, time: limit.time }
     : null;

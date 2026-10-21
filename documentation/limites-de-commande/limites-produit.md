@@ -148,12 +148,17 @@ textes dans `copy/fr.ts`) :
 
 Absente du flux, rien ne s'affiche : l'absence est la réponse.
 
-## 6. Le compte à rebours qui nomme l'article
+## 6. Le compte à rebours d'un article du panier
 
 Quand une limite d'article du panier tombe **plus tôt** que l'`orderUntil`
 général du jour dont parle la barre, c'est elle qui décide — la plus fermée du
-panier, comme à la passation — et la phrase nomme l'article : « Plus que 1 h 40
-pour commander Bûche pour jeudi. », « Pour jeudi, commandez Bûche avant 18 h. »
+panier, comme à la passation. La phrase ne nomme pas l'article (Hugo,
+2026-10-21 : la barre ne l'a pas sous les yeux, et un nom au milieu d'une
+phrase oblige à gérer article et accord) : « Plus que 1 h 40 pour commander un
+article de votre panier pour jeudi. », « Pour jeudi, commandez un article de
+votre panier avant 18 h. » ; déjà passée : « Un article de votre panier : trop
+tard pour jeudi, possible à partir de samedi. » (« 2 articles de votre
+panier : … » s'il y en a plusieurs)
 (`decideDayNotice`, entrée `cartLimits`, `service-day-notice.rules.ts`). Sans
 règle générale, la plus fermée des articles décide. Le reste du compte à
 rebours : [`reglages-generaux.md`](reglages-generaux.md) §6.
@@ -164,7 +169,5 @@ rebours : [`reglages-generaux.md`](reglages-generaux.md) §6.
   (une limite à deux jours, commandée pour demain) : la barre se tait, la fiche
   et la ligne disent le délai, et seule la passation refuse. Dire « trop tard
   pour cet article » au panier reste à décider.
-- **L'article sans déterminant** : la phrase insère le nom tel quel
-  (« commander Bûche ») ; aucun article (« la bûche ») n'est calculé.
 - La comparaison « plus stricte » de la fiche ignore les règles par jour ou par
   point (§4) ; le compte à rebours, lui, compare au jour près.

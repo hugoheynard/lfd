@@ -1,8 +1,4 @@
-import {
-  generalOrderCutoff,
-  isStricterOrderLimit,
-  shownItemOrderLimit,
-} from "../item-order-limit.js";
+import { isStricterOrderLimit, shownItemOrderLimit } from "../item-order-limit.js";
 import type { OrderCutoffView } from "../order-cutoff.js";
 
 function rule(over: Partial<OrderCutoffView> = {}): OrderCutoffView {
@@ -45,21 +41,6 @@ describe("isStricterOrderLimit — l'instant limite tombe plus tôt pour un mêm
 
   it("sans règle générale, toute limite d'article est plus stricte", () => {
     expect(isStricterOrderLimit({ daysBefore: 0, time: "09:00" }, null)).toBe(true);
-  });
-});
-
-describe("generalOrderCutoff — le défaut plateforme, tous jours", () => {
-  it("ignore les règles d'un jour ou d'un point", () => {
-    const rules = [
-      rule({ id: "sun", weekday: "sun" }),
-      rule({ id: "labo", pickupAddressId: "labo" }),
-      rule({ id: "all" }),
-    ];
-    expect(generalOrderCutoff(rules)?.id).toBe("all");
-  });
-
-  it("rend null sans défaut", () => {
-    expect(generalOrderCutoff([rule({ weekday: "mon" })])).toBeNull();
   });
 });
 

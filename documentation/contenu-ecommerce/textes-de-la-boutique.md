@@ -444,11 +444,11 @@ Source : `screens/command-terms.copy.ts` · 36 textes.
 | `commandTerms.cutoffLeftHours` | {h} h | {h} h | {h} h | `{h}` |
 | `commandTerms.cutoffLeftMinutes` | {m} min | {m} min | {m} min | `{m}` |
 | `commandTerms.cutoffCalm` | Pour {day}, commandez avant {time}. | For {day}, order before {time}. | Per {day}, ordinate entro le {time}. | `{day}` `{time}` |
-| `commandTerms.cutoffCountdownItem` | Plus que {left} pour commander {name} pour {day}. | Only {left} left to order {name} for {day}. | Ancora {left} per ordinare {name} per {day}. | `{left}` `{name}` `{day}` |
-| `commandTerms.cutoffCalmItem` | Pour {day}, commandez {name} avant {time}. | For {day}, order {name} before {time}. | Per {day}, ordinate {name} entro le {time}. | `{day}` `{name}` `{time}` |
-| `commandTerms.itemTooLate` | {name} : trop tard pour {day}, possible à partir de {next}. | {name}: too late for {day}, available from {next}. | {name}: troppo tardi per {day}, possibile da {next}. | `{name}` `{day}` `{next}` |
-| `commandTerms.itemTooLateOther` | {name} + 1 autre : trop tard pour {day}, possible à partir de {next}. | {name} + 1 other: too late for {day}, available from {next}. | {name} + 1 altro: troppo tardi per {day}, possibile da {next}. | `{name}` `{day}` `{next}` |
-| `commandTerms.itemTooLateOthers` | {name} + {others} autres : trop tard pour {day}, possible à partir de {next}. | {name} + {others} others: too late for {day}, available from {next}. | {name} + altri {others}: troppo tardi per {day}, possibile da {next}. | `{name}` `{others}` `{day}` `{next}` |
+| `commandTerms.cutoffCountdownItem` | Plus que {left} pour commander un article de votre panier pour {day}. | Only {left} left to order an item in your basket for {day}. | Ancora {left} per ordinare un articolo del vostro carrello per {day}. | `{left}` `{day}` |
+| `commandTerms.cutoffCalmItem` | Pour {day}, un article de votre panier se commande avant {time}. | For {day}, an item in your basket must be ordered before {time}. | Per {day}, un articolo del vostro carrello va ordinato entro le {time}. | `{day}` `{time}` |
+| `commandTerms.itemTooLate` | Un article de votre panier : trop tard pour {day}, possible à partir de {next}. | An item in your basket: too late for {day}, available from {next}. | Un articolo del vostro carrello: troppo tardi per {day}, possibile da {next}. | `{day}` `{next}` |
+| `commandTerms.itemTooLateOther` | 2 articles de votre panier : trop tard pour {day}, possible à partir de {next}. | 2 items in your basket: too late for {day}, available from {next}. | 2 articoli del vostro carrello: troppo tardi per {day}, possibile da {next}. | `{day}` `{next}` |
+| `commandTerms.itemTooLateOthers` | {count} articles de votre panier : trop tard pour {day}, possible à partir de {next}. | {count} items in your basket: too late for {day}, available from {next}. | {count} articoli del vostro carrello: troppo tardi per {day}, possibile da {next}. | `{count}` `{day}` `{next}` |
 | `commandTerms.modeTitle` | Retrait ou coursier ? | Pickup or courier? | Ritiro o corriere? |  |
 | `commandTerms.close` | Fermer | Close | Chiudi |  |
 | `commandTerms.pickup` | Retrait | Pickup | Ritiro |  |

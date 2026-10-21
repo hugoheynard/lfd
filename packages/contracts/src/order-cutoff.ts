@@ -4,31 +4,31 @@ import { weekdaySchema, type Weekday } from "./address.js";
 import { addDays, instantToLocal, localToInstant, weekdayOf } from "./paris-time.js";
 
 /**
- * **Heures limites de commande** — jusqu'à quand on peut commander (ou déposer un
- * avenant) pour un acheminement donné.
+ * **Heures limites de commande** — jusqu'à quand on peut commander pour une
+ * journée de service.
  *
- * ## Pourquoi une table et pas un champ de réglage
+ * ## Une seule règle : la générale (Hugo, 2026-10-21)
  *
- * Parce que la limite n'est pas *une* valeur : un labo qui enfourne à 4 h et un
- * autre à 6 h n'ont pas la même, et le samedi ne ressemble pas au mardi. Une
- * colonne `cutoff_time` sur les réglages aurait forcé une migration à chaque
- * nuance. Ici, **une règle = une ligne** : ouvrir un second labo ou décaler le
- * dimanche, c'est de la saisie, pas du déploiement.
+ * La table a porté une règle par point de retrait × jour de semaine, la plus
+ * spécifique l'emportant. Décision de Hugo du 2026-10-21
+ * (`documentation/limites-de-commande/schema-des-reglages.md` §4, point 4) :
+ * ces règles sont **retirées**. Il ne reste que la règle générale — ni point,
+ * ni jour —, « demain se commande avant l'heure limite » (§0). La base le
+ * tient (CHECK `order_cutoffs_general_only`, migration du 2026-10-21) ; les
+ * fonctions ci-dessous ignorent quand même une ligne à point ou à jour qu'on
+ * leur passerait, pour qu'aucune ne revienne s'appliquer par la lecture.
  *
  * ## Ce qu'une règle dit
  *
- * « Pour tel point de retrait, tel jour de la semaine, il faut avoir commandé
- * **N jours avant à telle heure** ». Les deux morceaux comptent : « 18 h » seul
- * est ambigu — 18 h de quel jour ? `daysBefore` lève l'ambiguïté en comptant
- * depuis la **date d'acheminement demandée**, jamais depuis celle du dépôt.
- * Commander mardi pour jeudi ne se juge pas à l'heure de mardi.
+ * « Il faut avoir commandé **N jours avant à telle heure** ». Les deux morceaux
+ * comptent : « 18 h » seul est ambigu — 18 h de quel jour ? `daysBefore` lève
+ * l'ambiguïté en comptant depuis la **date d'acheminement demandée**, jamais
+ * depuis celle du dépôt. Commander mardi pour jeudi ne se juge pas à l'heure
+ * de mardi.
  *
- * ## Comment on choisit la règle qui s'applique
- *
- * La **plus spécifique gagne** (cf. {@link resolveOrderCutoff}), du plus précis
- * au plus général. Aucune règle ⇒ aucune limite : tout passe. C'est le défaut
- * volontaire — une plateforme qui n'a rien configuré ne doit pas refuser des
- * commandes au nom d'une limite que personne n'a posée.
+ * Aucune règle ⇒ aucune limite : tout passe. C'est le défaut volontaire — une
+ * plateforme qui n'a rien configuré ne doit pas refuser des commandes au nom
+ * d'une limite que personne n'a posée.
  */
 
 /**
@@ -57,14 +57,18 @@ export const clockTimeSchema = z
   .string()
   .regex(/^([01]\d|2[0-3]):[0-5]\d$/u, "heure attendue au format HH:MM");
 
-/** Charge de création / édition d'une règle d'heure limite. */
+/**
+ * Charge de réglage de **la règle générale** (`PUT admin/order-cutoffs/general`).
+ *
+ * `pickupAddressId` et `weekday` restent dans la FORME, à `null` par défaut :
+ * une charge qui en porte un n'est pas avalée en silence (Zod retirerait une
+ * clé inconnue sans rien dire), elle est **refusée par le serveur**, avec un
+ * message qui dit que ces règles n'existent plus (2026-10-21).
+ */
 export const orderCutoffPayloadSchema = z.object({
-  /**
-   * Le point de retrait visé, ou `null` = **règle par défaut** de la plateforme
-   * (elle s'applique à tout ce qu'aucune règle plus précise ne couvre).
-   */
+  /** Toujours `null` depuis le 2026-10-21 ; toute autre valeur est refusée. */
   pickupAddressId: z.string().trim().min(1).nullable().default(null),
-  /** Le jour d'acheminement visé, ou `null` = **tous les jours**. */
+  /** Toujours `null` depuis le 2026-10-21 ; toute autre valeur est refusée. */
   weekday: weekdaySchema.nullable().default(null),
   /** Combien de jours **avant** l'acheminement la limite tombe. `0` = le jour même. */
   daysBefore: z.number().int().min(0).max(14).default(1),
@@ -86,7 +90,10 @@ export const orderCutoffPayloadSchema = z.object({
 });
 export type OrderCutoffPayload = z.infer<typeof orderCutoffPayloadSchema>;
 
-/** Une règle telle que renvoyée (la plus spécifique en tête). */
+/**
+ * Une règle telle que renvoyée. Depuis le 2026-10-21, seule la générale est
+ * servie : `pickupAddressId`, `pickupLabel` et `weekday` y valent `null`.
+ */
 export interface OrderCutoffView {
   readonly id: string;
   readonly pickupAddressId: string | null;
@@ -99,45 +106,30 @@ export interface OrderCutoffView {
   readonly graceMinutes: number;
 }
 
-/** Réponse de création d'une règle. */
-export interface CreatedOrderCutoffResponse {
-  readonly id: string;
+/**
+ * Réponse de `GET admin/order-cutoffs/general` : la règle générale, ou `null`
+ * tant que personne ne l'a posée. Enveloppée pour qu'une absence se lise comme
+ * une donnée, pas comme un corps vide.
+ */
+export interface GeneralOrderCutoffResponse {
+  readonly rule: OrderCutoffView | null;
 }
 
 /**
- * La règle qui s'applique à un acheminement, ou `null` s'il n'y en a aucune.
+ * **La règle générale** — ni point de retrait, ni jour de semaine —, ou `null`
+ * s'il n'y en a pas.
  *
- * **La plus spécifique gagne**, dans cet ordre :
+ * Jusqu'au 2026-10-21, « la plus spécifique gagnait » entre quatre rangs
+ * (point × jour, point, jour, défaut). Les règles par point et par jour sont
+ * retirées (schéma des réglages §4, point 4) : une ligne résiduelle qui en
+ * porterait est **ignorée**, ici, pour tous les lecteurs à la fois — passation,
+ * boutique, fournil, relance, vitrine.
  *
- * 1. ce point de retrait, ce jour précis ;
- * 2. ce point de retrait, tous les jours ;
- * 3. le défaut plateforme, ce jour précis ;
- * 4. le défaut plateforme, tous les jours.
- *
- * Fonction **pure**, exportée par le contrat parce que les deux côtés en ont
- * besoin : le serveur pour trancher, l'écran de réglages pour montrer laquelle
- * s'appliquerait — et deux implémentations de cette priorité finiraient par
- * diverger sur un cas limite.
+ * Fonction **pure**, exportée par le contrat parce que le serveur et les écrans
+ * en ont besoin : deux implémentations finiraient par diverger.
  */
-export function resolveOrderCutoff(
-  rules: readonly OrderCutoffView[],
-  pickupAddressId: string | null,
-  weekday: Weekday,
-): OrderCutoffView | null {
-  const matches = (rule: OrderCutoffView, point: boolean, day: boolean): boolean =>
-    (point ? rule.pickupAddressId === pickupAddressId : rule.pickupAddressId === null) &&
-    (day ? rule.weekday === weekday : rule.weekday === null);
-
-  // `pickupAddressId === null` (livraison, ou point inconnu) ne peut pas matcher
-  // une règle de point : les deux premiers passages retombent alors sur le défaut,
-  // ce qui est exactement le comportement voulu.
-  return (
-    rules.find((rule) => matches(rule, true, true)) ??
-    rules.find((rule) => matches(rule, true, false)) ??
-    rules.find((rule) => matches(rule, false, true)) ??
-    rules.find((rule) => matches(rule, false, false)) ??
-    null
-  );
+export function resolveOrderCutoff(rules: readonly OrderCutoffView[]): OrderCutoffView | null {
+  return rules.find((rule) => rule.pickupAddressId === null && rule.weekday === null) ?? null;
 }
 
 /**
@@ -228,11 +220,10 @@ const MINUTE_MS = 60 * 1000;
  */
 export function decideOrderCutoff(
   rules: readonly OrderCutoffView[],
-  pickupAddressId: string | null,
   fulfillmentDate: string,
   now: Date,
 ): OrderCutoffDecision {
-  const rule = resolveOrderCutoff(rules, pickupAddressId, weekdayOfDate(fulfillmentDate));
+  const rule = resolveOrderCutoff(rules);
   if (rule === null) {
     return NOTHING_TO_OPPOSE;
   }
@@ -280,8 +271,8 @@ export const NEXT_FULFILLMENT_HORIZON_DAYS = 14;
 const NO_UNAVAILABLE_DAYS: ReadonlySet<string> = new Set();
 
 /**
- * **La prochaine journée de production encore demandable**, pour un point de
- * retrait (ou pour le défaut de la plateforme, `pickupAddressId` à `null`).
+ * **La prochaine journée de production encore demandable** — la même pour
+ * tous les points depuis que seule la règle générale existe (2026-10-21).
  *
  * ## Pourquoi elle est calculée SERVEUR
  *
@@ -315,7 +306,6 @@ const NO_UNAVAILABLE_DAYS: ReadonlySet<string> = new Set();
  */
 export function nextFulfillmentDay(
   rules: readonly OrderCutoffView[],
-  pickupAddressId: string | null,
   now: Date,
   horizonDays = NEXT_FULFILLMENT_HORIZON_DAYS,
   unavailableDays: ReadonlySet<string> = NO_UNAVAILABLE_DAYS,
@@ -326,7 +316,7 @@ export function nextFulfillmentDay(
     if (unavailableDays.has(day)) {
       continue;
     }
-    if (decideOrderCutoff(rules, pickupAddressId, day, now).status === "open") {
+    if (decideOrderCutoff(rules, day, now).status === "open") {
       return day;
     }
   }
@@ -360,18 +350,17 @@ export interface FulfillmentDayView {
 }
 
 /**
- * L'instant limite ANNONCÉ pour cette journée et ce point — celui que
+ * L'instant limite ANNONCÉ pour cette journée — celui que
  * {@link FulfillmentDayView.orderUntil} sert. Même résolution que
  * {@link decideOrderCutoff} ; la grâce n'y entre pas.
  */
 export function announcedOrderUntil(
   rules: readonly OrderCutoffView[],
-  pickupAddressId: string | null,
   fulfillmentDate: string | null,
 ): string | null {
   if (fulfillmentDate === null) {
     return null;
   }
-  const rule = resolveOrderCutoff(rules, pickupAddressId, weekdayOfDate(fulfillmentDate));
+  const rule = resolveOrderCutoff(rules);
   return rule === null ? null : (orderCutoffInstant(rule, fulfillmentDate)?.toISOString() ?? null);
 }

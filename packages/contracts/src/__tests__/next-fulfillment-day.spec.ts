@@ -26,25 +26,21 @@ const paris = (isoUtc: string): Date => new Date(isoUtc);
 describe("nextFulfillmentDay — la journée qu’on peut encore demander", () => {
   it("propose DEMAIN tant que la limite de la veille n’est pas passée", () => {
     // 8 septembre, 17 h à Paris : la limite pour le 9 tombe ce soir à 18 h.
-    expect(nextFulfillmentDay([VEILLE_18H], null, paris("2026-09-08T15:00:00Z"))).toBe(
-      "2026-09-09",
-    );
+    expect(nextFulfillmentDay([VEILLE_18H], paris("2026-09-08T15:00:00Z"))).toBe("2026-09-09");
   });
 
   it("passe au SURLENDEMAIN une fois la limite tombée", () => {
     // 8 septembre, 18 h 01 à Paris : le 9 est fermé, le 10 reste ouvert.
-    expect(nextFulfillmentDay([VEILLE_18H], null, paris("2026-09-08T16:01:00Z"))).toBe(
-      "2026-09-10",
-    );
+    expect(nextFulfillmentDay([VEILLE_18H], paris("2026-09-08T16:01:00Z"))).toBe("2026-09-10");
   });
 
   /** Aucune règle ⇒ rien à opposer : la journée du jour est demandable. */
   it("rend AUJOURD’HUI quand aucune règle n’est posée", () => {
-    expect(nextFulfillmentDay([], null, paris("2026-09-08T15:00:00Z"))).toBe("2026-09-08");
+    expect(nextFulfillmentDay([], paris("2026-09-08T15:00:00Z"))).toBe("2026-09-08");
   });
 
-  /** La règle du POINT gagne sur le défaut, comme partout ailleurs. */
-  it("suit la règle du point de retrait quand il en a une", () => {
+  /** Une règle résiduelle du point ne s'applique plus (2026-10-21). */
+  it("ignore une règle résiduelle du point de retrait", () => {
     const laboTroisJours: OrderCutoffView = {
       ...VEILLE_18H,
       id: "labo",
@@ -52,9 +48,9 @@ describe("nextFulfillmentDay — la journée qu’on peut encore demander", () =
       daysBefore: 3,
     };
 
-    expect(
-      nextFulfillmentDay([laboTroisJours, VEILLE_18H], "labo", paris("2026-09-08T15:00:00Z")),
-    ).toBe("2026-09-11");
+    expect(nextFulfillmentDay([laboTroisJours, VEILLE_18H], paris("2026-09-08T15:00:00Z"))).toBe(
+      "2026-09-09",
+    );
   });
 
   /**
@@ -64,7 +60,7 @@ describe("nextFulfillmentDay — la journée qu’on peut encore demander", () =
   it("rend null plutôt qu’une journée de repli", () => {
     const impossible: OrderCutoffView = { ...VEILLE_18H, daysBefore: 14 };
 
-    expect(nextFulfillmentDay([impossible], null, paris("2026-09-08T15:00:00Z"), 3)).toBeNull();
+    expect(nextFulfillmentDay([impossible], paris("2026-09-08T15:00:00Z"), 3)).toBeNull();
   });
 });
 
@@ -78,17 +74,17 @@ describe("nextFulfillmentDay — les journées qu'un réglage ferme", () => {
   const HORIZON = NEXT_FULFILLMENT_HORIZON_DAYS;
 
   it("sans règle, saute aujourd'hui quand son plan est arrêté", () => {
-    expect(nextFulfillmentDay([], null, AT, HORIZON, new Set(["2026-09-08"]))).toBe("2026-09-09");
+    expect(nextFulfillmentDay([], AT, HORIZON, new Set(["2026-09-08"]))).toBe("2026-09-09");
   });
 
   it("avec une règle, saute la journée qu'elle laissait ouverte si son plan est arrêté", () => {
-    expect(nextFulfillmentDay([VEILLE_18H], null, AT, HORIZON, new Set(["2026-09-09"]))).toBe(
+    expect(nextFulfillmentDay([VEILLE_18H], AT, HORIZON, new Set(["2026-09-09"]))).toBe(
       "2026-09-10",
     );
   });
 
   it("rend null quand tout l'horizon est arrêté", () => {
     const all = new Set(["2026-09-08", "2026-09-09", "2026-09-10"]);
-    expect(nextFulfillmentDay([], null, AT, 2, all)).toBeNull();
+    expect(nextFulfillmentDay([], AT, 2, all)).toBeNull();
   });
 });

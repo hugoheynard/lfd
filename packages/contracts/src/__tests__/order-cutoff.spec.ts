@@ -20,46 +20,29 @@ function rule(over: Partial<OrderCutoffView> = {}): OrderCutoffView {
   };
 }
 
-describe("resolveOrderCutoff — la plus spécifique gagne", () => {
-  const platformAllDays = rule({ id: "platform-all" });
-  const platformSunday = rule({ id: "platform-sun", weekday: "sun" });
-  const laboAllDays = rule({ id: "labo-all", pickupAddressId: "labo" });
+/**
+ * Décision de Hugo du 2026-10-21 (schéma des réglages §4, point 4) : les
+ * règles par point de retrait × jour de semaine sont retirées. Une ligne
+ * résiduelle qui en porterait ne doit plus s'appliquer, par AUCUN lecteur.
+ */
+describe("resolveOrderCutoff — la règle générale, et elle seule", () => {
+  const general = rule({ id: "general" });
+  const sunday = rule({ id: "sun", weekday: "sun", time: "12:00" });
+  const labo = rule({ id: "labo", pickupAddressId: "labo", time: "12:00" });
   const laboSunday = rule({ id: "labo-sun", pickupAddressId: "labo", weekday: "sun" });
 
-  const ALL = [platformAllDays, platformSunday, laboAllDays, laboSunday];
-
-  it("le point + le jour précis passe avant tout", () => {
-    expect(resolveOrderCutoff(ALL, "labo", "sun")?.id).toBe("labo-sun");
+  it("rend la règle générale, quel que soit l'ordre des lignes", () => {
+    expect(resolveOrderCutoff([labo, laboSunday, sunday, general])?.id).toBe("general");
   });
 
-  it("puis le point, tous jours", () => {
-    expect(resolveOrderCutoff(ALL, "labo", "wed")?.id).toBe("labo-all");
-  });
-
-  it("puis le défaut plateforme du jour, pour un point sans règle propre", () => {
-    expect(resolveOrderCutoff(ALL, "autre-labo", "sun")?.id).toBe("platform-sun");
-  });
-
-  it("puis le défaut plateforme tous jours", () => {
-    expect(resolveOrderCutoff(ALL, "autre-labo", "wed")?.id).toBe("platform-all");
-  });
-
-  it("une livraison (aucun point) retombe sur le défaut plateforme", () => {
-    expect(resolveOrderCutoff(ALL, null, "wed")?.id).toBe("platform-all");
+  it("ignore une ligne résiduelle à point ou à jour, même seule", () => {
+    expect(resolveOrderCutoff([sunday])).toBeNull();
+    expect(resolveOrderCutoff([labo])).toBeNull();
+    expect(resolveOrderCutoff([laboSunday])).toBeNull();
   });
 
   it("aucune règle configurée ⇒ aucune limite, jamais un refus par défaut", () => {
-    expect(resolveOrderCutoff([], "labo", "tue")).toBeNull();
-  });
-
-  it("des règles qui ne couvrent pas ce point et sans défaut ⇒ null", () => {
-    expect(resolveOrderCutoff([laboAllDays], "autre-labo", "tue")).toBeNull();
-  });
-
-  it("l'ordre du tableau n'influe pas sur la priorité", () => {
-    const shuffled = [platformAllDays, laboSunday, platformSunday, laboAllDays];
-
-    expect(resolveOrderCutoff(shuffled, "labo", "sun")?.id).toBe("labo-sun");
+    expect(resolveOrderCutoff([])).toBeNull();
   });
 });
 
@@ -137,7 +120,7 @@ describe("decideOrderCutoff — les trois états", () => {
   const LIMIT = "2026-08-11T16:00:00.000Z";
 
   function at(instant: string, rules: readonly OrderCutoffView[] = RULES) {
-    return decideOrderCutoff(rules, null, FULFILLMENT_DAY, new Date(instant));
+    return decideOrderCutoff(rules, FULFILLMENT_DAY, new Date(instant));
   }
 
   it("est `open` une minute avant la limite", () => {
@@ -201,22 +184,27 @@ describe("decideOrderCutoff — les trois états", () => {
 
   it("est `open` quand l'heure de la règle n'existe pas ce jour-là", () => {
     const gap = [rule({ daysBefore: 1, time: "02:30", graceMinutes: 45 })];
-    const decision = decideOrderCutoff(gap, null, "2026-03-30", new Date("2030-01-01T00:00:00Z"));
+    const decision = decideOrderCutoff(gap, "2026-03-30", new Date("2030-01-01T00:00:00Z"));
     expect(decision.status).toBe("open");
     // La règle est bien celle retenue : c'est l'INSTANT qui manque, pas la règle.
     expect(decision.rule?.time).toBe("02:30");
     expect(decision.limit).toBeNull();
   });
 
-  it("prend la règle du POINT quand il y en a une", () => {
+  /**
+   * Régression voulue (2026-10-21) : une règle du point qui fermait plus tôt
+   * que la générale l'emportait. Elle est désormais ignorée.
+   */
+  it("ignore une règle résiduelle du POINT : seule la générale décide", () => {
     const rules = [
       rule({ id: "labo", pickupAddressId: "labo", daysBefore: 2, time: "12:00" }),
       rule({ id: "def", daysBefore: 1, time: "18:00" }),
     ];
-    // Limite du labo : lundi 10 à 12 h Paris (10:00Z). Le défaut dirait mardi 18 h.
+    // Limite du labo : lundi 10 à 12 h Paris (10:00Z). La générale dit mardi 18 h.
     const now = new Date("2026-08-10T10:30:00.000Z");
-    expect(decideOrderCutoff(rules, "labo", FULFILLMENT_DAY, now).status).toBe("closed");
-    expect(decideOrderCutoff(rules, null, FULFILLMENT_DAY, now).status).toBe("open");
+    const decision = decideOrderCutoff(rules, FULFILLMENT_DAY, now);
+    expect(decision.status).toBe("open");
+    expect(decision.rule?.id).toBe("def");
   });
 });
 
@@ -226,28 +214,26 @@ describe("decideOrderCutoff — les trois états", () => {
  * ne s'annonce donc pas.
  */
 describe("announcedOrderUntil", () => {
-  it("rend l'instant limite de la règle la plus spécifique, grâce non comprise", () => {
+  it("rend l'instant limite de la règle générale, grâce non comprise", () => {
     const rules = [
-      rule({ id: "def", time: "23:00", graceMinutes: 45 }),
       rule({ id: "labo", pickupAddressId: "labo", time: "18:00" }),
+      rule({ id: "def", time: "23:00", graceMinutes: 45 }),
     ];
-    // La veille du 12 août à 23 h Paris (heure d'été) : 21:00Z.
-    expect(announcedOrderUntil(rules, null, "2026-08-12")).toBe("2026-08-11T21:00:00.000Z");
-    expect(announcedOrderUntil(rules, "labo", "2026-08-12")).toBe("2026-08-11T16:00:00.000Z");
+    // La veille du 12 août à 23 h Paris (heure d'été) : 21:00Z. La ligne du
+    // labo, résiduelle, n'y entre pas (2026-10-21).
+    expect(announcedOrderUntil(rules, "2026-08-12")).toBe("2026-08-11T21:00:00.000Z");
   });
 
   it("concorde avec la limite de decideOrderCutoff", () => {
     const rules = [rule({ daysBefore: 2, time: "06:30", graceMinutes: 30 })];
-    const decision = decideOrderCutoff(rules, null, "2026-12-03", new Date(0));
-    expect(announcedOrderUntil(rules, null, "2026-12-03")).toBe(decision.limit?.toISOString());
+    const decision = decideOrderCutoff(rules, "2026-12-03", new Date(0));
+    expect(announcedOrderUntil(rules, "2026-12-03")).toBe(decision.limit?.toISOString());
   });
 
   it("rend null sans journée, sans règle, ou sur l'heure sautée du passage à l'heure d'été", () => {
-    expect(announcedOrderUntil([rule()], null, null)).toBeNull();
-    expect(announcedOrderUntil([], null, "2026-08-12")).toBeNull();
+    expect(announcedOrderUntil([rule()], null)).toBeNull();
+    expect(announcedOrderUntil([], "2026-08-12")).toBeNull();
     // 29 mars 2026 : 2 h 30 n'existe pas à Paris.
-    expect(
-      announcedOrderUntil([rule({ daysBefore: 0, time: "02:30" })], null, "2026-03-29"),
-    ).toBeNull();
+    expect(announcedOrderUntil([rule({ daysBefore: 0, time: "02:30" })], "2026-03-29")).toBeNull();
   });
 });
