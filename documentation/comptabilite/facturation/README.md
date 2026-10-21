@@ -19,6 +19,7 @@ sont conformes.
 | [`todo-facture-du-mois.md`](todo-facture-du-mois.md)                                     | ⏳ avant le 30 novembre : 65 sociétés sans adresse de facturation, mentions de paiement de l'entité ; la règle « pas de commande, pas de facture »                                                     |
 | [`facture-carte-et-remboursements.md`](facture-carte-et-remboursements.md)               | ✅ doc d'état — la facture acquittée d'une commande pro payée par carte, retirée et payée ; les remboursements Stripe constatés et leur avoir au prorata, reste exact au solde                         |
 | [`plan-rythme-de-facturation.md`](plan-rythme-de-facturation.md)                         | 📐 plan (2026-10-12), contredit par `vitruve` — mensuel, deux fois par mois ou chaque semaine, réglé sur l'entité (révisé le 2026-10-12) ; la facture suit le rythme                                   |
+| [`plan-page-mes-factures.md`](plan-page-mes-factures.md)                                 | 📐 plan (2026-10-21), contredit par `vitruve` — la page « Mes factures » de la boutique : statut de règlement dérivé des lots, total dû, filtres, zip                                                  |
 
 ## Ce qui existe ailleurs, et qu'il ne faut pas réécrire
 
